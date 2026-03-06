@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/interactable_item.gd" id="1_t8isk"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a3cga"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 1.0
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_fv2fu"]
+height = 1.0
+radius = 0.4
+
+[node name="OilBarrel" type="RigidBody3D" unique_id=1511901755]
+mass = 20.0
+script = ExtResource("1_t8isk")
+item_name = "Oil Barrel"
+is_large = true
+
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="." unique_id=1788947863]
+mesh = SubResource("CylinderMesh_a3cga")
+
+[node name="@CollisionShape3D@5" type="CollisionShape3D" parent="." unique_id=86131144]
+shape = SubResource("CylinderShape3D_fv2fu")

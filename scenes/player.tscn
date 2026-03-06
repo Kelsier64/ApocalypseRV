@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://ba2pjoku5pbje"]
+
+[ext_resource type="Script" uid="uid://ojcp2r8kqqwo" path="res://scripts/player.gd" id="1_onrkg"]
+[ext_resource type="Script" uid="uid://dlqaokodbqi47" path="res://scripts/player_interact.gd" id="2_i3pqv"]
+[ext_resource type="Script" uid="uid://2t35vhurhlf4" path="res://scripts/inventory_ui.gd" id="3_qhqgy"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_hqtel"]
+radius = 0.4
+height = 1.6
+
+[node name="Player" type="CharacterBody3D" unique_id=1367277200]
+script = ExtResource("1_onrkg")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=739798906]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_hqtel")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=378965090]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3178656, 0)
+
+[node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=2048363016]
+target_position = Vector3(0, 0, -2)
+collide_with_areas = true
+script = ExtResource("2_i3pqv")
+
+[node name="InventoryUI" type="CanvasLayer" parent="." unique_id=1997914371]
+script = ExtResource("3_qhqgy")
