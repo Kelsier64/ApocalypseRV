@@ -34,10 +34,10 @@ size = Vector3(3, 2, 0.1)
 size = Vector3(3, 1, 0.1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_kyxdl"]
-size = Vector3(3, 3, 0.1)
+size = Vector3(3, 2, 0.1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ceyt3"]
-size = Vector3(3, 3, 0.1)
+size = Vector3(3, 2, 0.1)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_isps1"]
 height = 0.4
@@ -96,15 +96,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 3.95)
 mesh = SubResource("BoxMesh_6ymao")
 
 [node name="WallBackCol" type="CollisionShape3D" parent="." unique_id=1921371137]
-transform = Transform3D(1, 0, 0, 0, -0.47659123, 0.879125, 0, -0.879125, -0.47659123, 0, 0.80395305, -5.2955623)
+transform = Transform3D(1, 0, 0, 0, -0.47659123, 0.879125, 0, -0.879125, -0.47659123, 0, 1.0546724, -4.849373)
 shape = SubResource("BoxShape3D_kyxdl")
 
 [node name="WallBackMesh" type="MeshInstance3D" parent="." unique_id=2017209881]
-transform = Transform3D(1, 0, 0, 0, -0.47659123, 0.879125, 0, -0.879125, -0.47659123, 0, 0.80395305, -5.2955623)
+transform = Transform3D(1, 0, 0, 0, -0.47659123, 0.879125, 0, -0.879125, -0.47659123, 0, 1.0546724, -4.849373)
 mesh = SubResource("BoxMesh_ceyt3")
 
 [node name="Wheel_FL" type="VehicleWheel3D" parent="." unique_id=637723641]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.60888076, 3.2)
 use_as_steering = true
 suspension_travel = 0.5
 suspension_stiffness = 30.0
@@ -115,7 +115,7 @@ transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 
 mesh = SubResource("CylinderMesh_isps1")
 
 [node name="Wheel_FR" type="VehicleWheel3D" parent="." unique_id=611992831]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.60888076, 3.2)
 use_as_steering = true
 suspension_travel = 0.5
 suspension_stiffness = 30.0
@@ -126,7 +126,7 @@ transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 
 mesh = SubResource("CylinderMesh_qf83o")
 
 [node name="Wheel_RL" type="VehicleWheel3D" parent="." unique_id=283780513]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0, -3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.60888076, -3.2)
 use_as_traction = true
 suspension_travel = 0.5
 suspension_stiffness = 30.0
@@ -137,7 +137,7 @@ transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 
 mesh = SubResource("CylinderMesh_lsuow")
 
 [node name="Wheel_RR" type="VehicleWheel3D" parent="." unique_id=758294461]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0, -3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.60888076, -3.2)
 use_as_traction = true
 suspension_travel = 0.5
 suspension_stiffness = 30.0
@@ -148,4 +148,4 @@ transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 
 mesh = SubResource("CylinderMesh_qjruq")
 
 [node name="DriverSeat" parent="." unique_id=2108999545 instance=ExtResource("2_3jjni")]
-transform = Transform3D(-0.9998788, 0, 0.015567779, 0, 1, 0, -0.015567779, 0, -0.9998788, 0.8343369, 1.55, 2.95)
+transform = Transform3D(-0.9998788, 0, 0.015567779, 0, 1, 0, -0.015567779, 0, -0.9998788, 0.8343369, 1.4443411, 2.95)

@@ -1,10 +1,8 @@
 [gd_scene format=3 uid="uid://di4720addaiat"]
 
 [ext_resource type="PackedScene" uid="uid://c5bm5r2jy1xla" path="res://scenes/rv.tscn" id="1_nrstc"]
-[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_ar7ra"]
-[ext_resource type="PackedScene" path="res://scenes/house.tscn" id="5_8hcw6"]
-[ext_resource type="PackedScene" path="res://scenes/scrap.tscn" id="6_mjm4b"]
-[ext_resource type="PackedScene" path="res://scenes/oil_barrel.tscn" id="8_x05cw"]
+[ext_resource type="PackedScene" uid="uid://ba2pjoku5pbje" path="res://scenes/player.tscn" id="3_ar7ra"]
+[ext_resource type="Script" uid="uid://cvekkdba1681v" path="res://scripts/world_generator.gd" id="9_8hcw6"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
 
@@ -25,36 +23,17 @@ shadow_enabled = true
 environment = SubResource("Environment_ko4od")
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=489555787]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38583565, -0.10175502, 0.2841463)
 use_collision = true
-size = Vector3(100, 1, 100)
+size = Vector3(20, 1, 20)
 
 [node name="RV" parent="." unique_id=419084803 instance=ExtResource("1_nrstc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+transform = Transform3D(-0.99938655, 0, 0.035021685, 0, 1, 0, -0.035021685, 0, -0.99938655, -1.3254609, 1.8910427, 0)
+max_engine_force = 2000.0
 
 [node name="Player" parent="." unique_id=1367277200 instance=ExtResource("3_ar7ra")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015213013, 2.8277454, 7.0146275)
 
-[node name="House" parent="." unique_id=2113591493 instance=ExtResource("5_8hcw6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 15)
-
-[node name="Scrap" parent="." unique_id=1747957583 instance=ExtResource("6_mjm4b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.530242, 2, 10.269945)
-
-[node name="@RigidBody3D@2" parent="." unique_id=2016622811 instance=ExtResource("6_mjm4b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.507237, 2, 9.133999)
-
-[node name="@RigidBody3D@3" parent="." unique_id=2135477702 instance=ExtResource("6_mjm4b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.856932, 2, 11.2759075)
-
-[node name="@RigidBody3D@4" parent="." unique_id=625919845 instance=ExtResource("6_mjm4b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.074078, 2, 11.08063)
-
-[node name="@RigidBody3D@5" parent="." unique_id=1794625579 instance=ExtResource("6_mjm4b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.754948, 2, 10.581203)
-
-[node name="OilBarrel" parent="." unique_id=1511901755 instance=ExtResource("8_x05cw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2690077, 1.1362092, 15)
-
-[node name="OilBarrel2" parent="." unique_id=1173397057 instance=ExtResource("8_x05cw")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.595384, 1.3524104, 9.858117)
+[node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450 node_paths=PackedStringArray("player")]
+script = ExtResource("9_8hcw6")
+player = NodePath("../RV")
