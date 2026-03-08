@@ -66,8 +66,8 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float) -> Tra
 	control_p1 = Vector3(0, 0, -CHUNK_SIZE * 0.33)
 	control_p2 = end_pos + Vector3(-sin(next_turn_angle) * CHUNK_SIZE * 0.33, 0, CHUNK_SIZE * 0.33)
 	
-	# Determine if this chunk has a house (30% chance)
-	has_house = randf() < 0.3
+	# Determine if this chunk has a house (50% chance)
+	has_house = randf() < 0.5
 	if has_house:
 		# Random position within the chunk, avoiding the very edges
 		var hx = randf_range(-CHUNK_SIZE/2.0 + 20.0, CHUNK_SIZE/2.0 - 20.0)
@@ -106,6 +106,9 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float) -> Tra
 	
 	if has_house:
 		_spawn_house()
+	
+	# Always spawn some zombies along the road (even without houses)
+	_spawn_road_zombies()
 		
 	return global_transform * local_end_transform
 
@@ -400,3 +403,58 @@ func _spawn_house():
 				var sp = spawn_points[i]
 				item.position = sp.position 
 				house.add_child(item)
+	
+	# Spawn zombies around the house
+	_spawn_zombies(house_local_pos)
+
+func _spawn_zombies(center_pos: Vector3):
+	var zombie_scene = load("res://enemies/zombie.tscn")
+	if not zombie_scene: return
+	
+	var num_zombies = randi_range(1, 3)
+	for i in range(num_zombies):
+		var zombie = zombie_scene.instantiate()
+		var offset_x = randf_range(-15.0, 15.0)
+		var offset_z = randf_range(-15.0, 15.0)
+		
+		var local_x = center_pos.x + offset_x
+		var local_z = center_pos.z + offset_z
+		
+		var global_spawn = global_transform * Vector3(local_x, 0, local_z)
+		var terrain_h = _get_terrain_height(global_spawn.x, global_spawn.z, 0.0)
+		var local_y = terrain_h - global_transform.origin.y + 2.0
+		
+		zombie.position = Vector3(local_x, local_y, local_z)
+		add_child(zombie)
+
+func _spawn_road_zombies():
+	var zombie_scene = load("res://enemies/zombie.tscn")
+	if not zombie_scene: return
+	
+	# 60% chance to spawn roadside zombies per chunk
+	if randf() > 0.6: return
+	
+	var num_zombies = randi_range(1, 2)
+	for i in range(num_zombies):
+		# Pick a random point along the road curve
+		var t = randf_range(0.1, 0.9)
+		var road_pt = _cubic_bezier(t)
+		
+		# Offset to the side of the road (not on it, but close enough to see)
+		var t_next = t + 0.01
+		var tangent = (_cubic_bezier(t_next) - road_pt).normalized()
+		var right = tangent.cross(Vector3.UP).normalized()
+		
+		# Place the zombie 10-20m to a random side of the road
+		var side = 1.0 if randf() > 0.5 else -1.0
+		var offset_dist = randf_range(10.0, 20.0)
+		var spawn_local = road_pt + right * side * offset_dist
+		
+		# Get terrain height
+		var global_spawn = global_transform * spawn_local
+		var terrain_h = _get_terrain_height(global_spawn.x, global_spawn.z, 0.0)
+		spawn_local.y = terrain_h - global_transform.origin.y + 2.0
+		
+		var zombie = zombie_scene.instantiate()
+		zombie.position = spawn_local
+		add_child(zombie)

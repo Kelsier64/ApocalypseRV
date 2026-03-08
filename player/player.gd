@@ -23,7 +23,14 @@ var can_place_equipment: bool = false
 # UI State
 var in_ui_mode: bool = false
 
+# Health System
+var max_player_health: float = 100.0
+var current_player_health: float = 100.0
+var damage_cooldown: float = 0.0
+var is_player_dead: bool = false
+
 @onready var inventory_ui = $InventoryUI
+@onready var health_bar = $HealthBarUI
 
 func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
 	if is_large and has_large_item:
@@ -103,6 +110,9 @@ func _ready():
 	camera.current = true
 	_update_inventory_display()
 	_equip_active_slot()
+	add_to_group("player")
+	current_player_health = max_player_health
+	_update_health_bar()
 
 func is_placing_equipment() -> bool:
 	return placing_equipment != null
@@ -215,6 +225,10 @@ func _unhandled_input(event):
 func _physics_process(delta):
 	if in_ui_mode: return
 	
+	# Damage cooldown
+	if damage_cooldown > 0.0:
+		damage_cooldown -= delta
+	
 	# Add the gravity.
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -293,4 +307,38 @@ func _physics_process(delta):
 			can_place_equipment = false
 			# Hide it when looking at the sky so they know they can't place
 			placing_equipment.visible = false
+
+# --- HEALTH SYSTEM ---
+func take_damage(amount: float):
+	if is_player_dead: return
+	if damage_cooldown > 0.0: return
 	
+	current_player_health -= amount
+	damage_cooldown = 0.5  # Half second invincibility after hit
+	
+	print("Player took ", amount, " damage! HP: ", current_player_health, "/", max_player_health)
+	
+	# Screen flash effect
+	_update_health_bar()
+	
+	if current_player_health <= 0.0:
+		current_player_health = 0.0
+		_player_die()
+
+func _update_health_bar():
+	if health_bar and health_bar.has_method("set_health"):
+		health_bar.set_health(current_player_health, max_player_health)
+
+func _player_die():
+	is_player_dead = true
+	print(">>> PLAYER DIED! <<<")
+	# For now just respawn with full health after 2 seconds
+	var tween = create_tween()
+	tween.tween_interval(2.0)
+	tween.tween_callback(_respawn)
+
+func _respawn():
+	is_player_dead = false
+	current_player_health = max_player_health
+	_update_health_bar()
+	print("Player respawned!")

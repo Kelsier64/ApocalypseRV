@@ -83,6 +83,8 @@
 ---
 
 ## 3. 敵人與威脅 (Enemies & Hazards)
+- 怪物class
+
 - **車禍 (Accidents)**： 撞到路障或打滑。巨大的撞擊聲會吸引怪物。
 - **怪物類型 (Cyber-Horror)**： 
     - **拾荒鬼 (Scrappers)**： 會試圖拆卸車輛零件的小型怪。

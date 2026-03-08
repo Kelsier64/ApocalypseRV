@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/monster.gd" id="1_uur8n"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ujw3w"]
+albedo_color = Color(0.8, 0.15, 0.1, 1)
+roughness = 0.7
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_c8iql"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1p8ux"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xiyom"]
+radius = 0.6
+
+[node name="Zombie" type="CharacterBody3D" unique_id=1079522932]
+script = ExtResource("1_uur8n")
+monster_name = "Zombie"
+max_health = 80.0
+move_speed = 2.5
+contact_damage = 15.0
+loot_drops = {
+"Metal Parts": Vector2(0, 1),
+"Unknown Material": Vector2(1, 3)
+}
+
+[node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1785665373]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+material_override = SubResource("StandardMaterial3D_ujw3w")
+mesh = SubResource("CapsuleMesh_c8iql")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=252508903]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1p8ux")
+
+[node name="HitBox" type="Area3D" parent="." unique_id=930569743]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+collision_layer = 0
+monitorable = false
+
+[node name="HitBoxShape" type="CollisionShape3D" parent="HitBox" unique_id=1048566703]
+shape = SubResource("CapsuleShape3D_xiyom")

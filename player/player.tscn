@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://d0nshlbjpxseb" path="res://player/player.gd" id="1_rkbax"]
 [ext_resource type="Script" uid="uid://brg6kmofswawj" path="res://player/player_interact.gd" id="2_g1dw6"]
 [ext_resource type="Script" uid="uid://jcwd7ew7poyc" path="res://player/inventory_ui.gd" id="3_invui"]
+[ext_resource type="Script" path="res://player/health_bar_ui.gd" id="4_hpbar"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yw30f"]
 radius = 0.4
@@ -25,3 +26,8 @@ script = ExtResource("2_g1dw6")
 
 [node name="InventoryUI" type="CanvasLayer" parent="." unique_id=1997914371]
 script = ExtResource("3_invui")
+
+[node name="HealthBarUI" type="CanvasLayer" parent="."]
+layer = 2
+script = ExtResource("4_hpbar")
+
