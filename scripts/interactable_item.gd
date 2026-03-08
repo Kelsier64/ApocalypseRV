@@ -1,8 +1,13 @@
 extends RigidBody3D
-class_name InteractableItem
+class_name Prop
 
 @export var item_name: String = "Unknown Item"
 @export var is_large: bool = false
+
+@export_group("Held Visuals")
+@export var hold_position: Vector3 = Vector3.ZERO
+@export var hold_rotation: Vector3 = Vector3.ZERO
+@export var hold_scale: Vector3 = Vector3.ONE
 
 # This function is called by the player_interact RayCast3D
 func interact(player: Node3D):

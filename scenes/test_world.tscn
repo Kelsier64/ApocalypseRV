@@ -1,7 +1,12 @@
 [gd_scene format=3 uid="uid://di4720addaiat"]
 
-[ext_resource type="PackedScene" uid="uid://c5bm5r2jy1xla" path="res://scenes/rv.tscn" id="1_nrstc"]
+[ext_resource type="PackedScene" path="res://scenes/rv.tscn" id="1_nrstc"]
 [ext_resource type="PackedScene" uid="uid://ba2pjoku5pbje" path="res://scenes/player.tscn" id="3_ar7ra"]
+[ext_resource type="PackedScene" path="res://scenes/generator.tscn" id="6_dvny0"]
+[ext_resource type="PackedScene" path="res://scenes/scrap.tscn" id="6_mjm4b"]
+[ext_resource type="PackedScene" uid="uid://cai81wv1ii55u" path="res://scenes/scrapper.tscn" id="7_xwrkq"]
+[ext_resource type="PackedScene" uid="uid://bts8xn8lx04h1" path="res://scenes/tablet_screen.tscn" id="8_nrstc"]
+[ext_resource type="PackedScene" path="res://scenes/oil_barrel.tscn" id="8_x05cw"]
 [ext_resource type="Script" uid="uid://cvekkdba1681v" path="res://scripts/world_generator.gd" id="9_8hcw6"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
@@ -23,12 +28,12 @@ shadow_enabled = true
 environment = SubResource("Environment_ko4od")
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=489555787]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38583565, -0.10175502, 0.2841463)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3754325, -0.1017555, 0.27853394)
 use_collision = true
-size = Vector3(20, 1, 20)
+size = Vector3(20, 0.1, 20)
 
 [node name="RV" parent="." unique_id=419084803 instance=ExtResource("1_nrstc")]
-transform = Transform3D(-0.99938655, 0, 0.035021685, 0, 1, 0, -0.035021685, 0, -0.99938655, -1.3254609, 1.8910427, 0)
+transform = Transform3D(-0.99938655, 0, 0.035021685, 0, 1, 0, -0.035021685, 0, -0.99938655, -1.3254609, 1.7080982, 0)
 max_engine_force = 2000.0
 
 [node name="Player" parent="." unique_id=1367277200 instance=ExtResource("3_ar7ra")]
@@ -37,3 +42,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015213013, 2.8277454, 7.014
 [node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450 node_paths=PackedStringArray("player")]
 script = ExtResource("9_8hcw6")
 player = NodePath("../RV")
+
+[node name="OilBarrel" parent="." unique_id=1511901755 instance=ExtResource("8_x05cw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0)
+
+[node name="Scrap" parent="." unique_id=1747957583 instance=ExtResource("6_mjm4b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 2.363562)
+
+[node name="Generator" parent="." unique_id=1087168760 instance=ExtResource("6_dvny0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.0577474, 3.84232)
+
+[node name="Generator2" parent="." unique_id=492643397 instance=ExtResource("6_dvny0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.0671206, 5.247431)
+
+[node name="Scrapper" parent="." unique_id=1514036190 instance=ExtResource("7_xwrkq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4173422, 0.4201641, 0)
+
+[node name="TabletScreen" parent="." unique_id=557968637 instance=ExtResource("8_nrstc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4173422, 0.7720275, 2.2061598)

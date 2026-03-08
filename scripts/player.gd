@@ -15,6 +15,14 @@ var has_large_item: bool = false
 var active_slot_index: int = 0
 var held_item_node: Node3D = null
 
+# Equipment Placement
+var placing_equipment: Node3D = null
+var max_place_distance: float = 4.0
+var can_place_equipment: bool = false
+
+# UI State
+var in_ui_mode: bool = false
+
 @onready var inventory_ui = $InventoryUI
 
 func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
@@ -81,13 +89,34 @@ func _equip_active_slot():
 				held_item_node.collision_mask = 0
 				
 			hand_marker.add_child(held_item_node)
-			held_item_node.transform = Transform3D.IDENTITY
+			
+			# Apply visual holding offsets if it's our new Prop class
+			if held_item_node is Prop:
+				held_item_node.position = held_item_node.hold_position
+				held_item_node.rotation_degrees = held_item_node.hold_rotation
+				held_item_node.scale = held_item_node.hold_scale
+			else:
+				held_item_node.transform = Transform3D.IDENTITY
 
 func _ready():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	camera.current = true
 	_update_inventory_display()
 	_equip_active_slot()
+
+func is_placing_equipment() -> bool:
+	return placing_equipment != null
+
+func enter_equipment_placement(equip: Node3D):
+	placing_equipment = equip
+
+func enter_ui_mode():
+	in_ui_mode = true
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	
+func exit_ui_mode():
+	in_ui_mode = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func drop_item():
 	if active_slot_index >= 0 and active_slot_index < inventory.size():
@@ -126,6 +155,8 @@ func drop_item():
 		_equip_active_slot()
 
 func _unhandled_input(event):
+	if in_ui_mode: return
+	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
@@ -153,8 +184,37 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		if event.physical_keycode == KEY_G:
 			drop_item()
+			
+	# Equipment Placement confirmation
+	if placing_equipment:
+		if event is InputEventMouseButton and event.is_pressed():
+			if event.button_index == MOUSE_BUTTON_LEFT and can_place_equipment:
+				# We attempt to find what we are placing it ON to reparent it properly
+				var space_state = get_world_3d().direct_space_state
+				var from = camera.global_position
+				var to = from + -camera.global_transform.basis.z * max_place_distance
+				
+				# Ignore ourselves and the equipment itself
+				var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), placing_equipment.get_rid()])
+				var result = space_state.intersect_ray(query)
+				
+				var new_parent = null
+				if result:
+					if result.collider is Node3D:
+						new_parent = result.collider
+				else:
+					new_parent = get_tree().current_scene
+					
+				placing_equipment.confirm_placement(placing_equipment.global_transform, new_parent)
+				placing_equipment = null
+				
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				placing_equipment.cancel_placement()
+				placing_equipment = null
 
 func _physics_process(delta):
+	if in_ui_mode: return
+	
 	# Add the gravity.
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -184,4 +244,53 @@ func _physics_process(delta):
 
 	# move_and_slide handles platform position
 	move_and_slide()
+	
+	# Handle Equipment Placement Ghost
+	if placing_equipment:
+		var space_state = get_world_3d().direct_space_state
+		var from = camera.global_position
+		var to = from + -camera.global_transform.basis.z * max_place_distance
+		
+		# Ignore ourselves and the equipment
+		var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), placing_equipment.get_rid()])
+		var result = space_state.intersect_ray(query)
+		
+		if result:
+			can_place_equipment = true
+			placing_equipment.visible = true
+			
+			var equip = placing_equipment as Equipment
+			var offset = equip.placement_offset if equip else 0.0
+			# Align to surface normal first so the offset is applied in the correct local direction relative to the normal
+			var normal = result.normal
+			
+			# If the surface is mostly horizontal (within 60 degrees of UP or DOWN)
+			if abs(normal.dot(Vector3.UP)) > 0.5: 
+				# Project the camera's looking direction onto the surface plane
+				var cam_dir = -camera.global_transform.basis.z
+				
+				# Remove the component of cam_dir that is parallel to the normal
+				cam_dir = (cam_dir - normal * cam_dir.dot(normal)).normalized()
+				
+				# Fallback if pointing exactly down the normal (rare but possible)
+				if cam_dir.length_squared() < 0.001:
+					cam_dir = Vector3.FORWARD.cross(normal).normalized()
+					if cam_dir.length_squared() < 0.001:
+						cam_dir = Vector3.RIGHT.cross(normal).normalized()
+				
+				# Use looking_at with the surface normal as UP
+				placing_equipment.global_transform.basis = Basis.looking_at(cam_dir, normal)
+			else:
+				var x_axis = normal.cross(Vector3.UP).normalized()
+				if x_axis.length_squared() < 0.001:
+					x_axis = normal.cross(Vector3.FORWARD).normalized()
+				var z_axis = x_axis.cross(normal).normalized()
+				placing_equipment.global_transform.basis = Basis(x_axis, normal, z_axis)
+				
+			# Place at hit point + normal * offset
+			placing_equipment.global_position = result.position + (normal * offset)
+		else:
+			can_place_equipment = false
+			# Hide it when looking at the sky so they know they can't place
+			placing_equipment.visible = false
 	

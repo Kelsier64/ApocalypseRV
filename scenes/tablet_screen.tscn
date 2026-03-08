@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bts8xn8lx04h1"]
+
+[ext_resource type="Script" uid="uid://b78dl1jh0ovh1" path="res://scripts/tablet_screen.gd" id="1_js8em"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ngrwl"]
+albedo_color = Color(1, 0.101960786, 0.101960786, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xfhhy"]
+size = Vector3(0.6, 0.05, 0.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cjchr"]
+size = Vector3(0.6, 0.05, 0.4)
+
+[node name="TabletScreen" type="RigidBody3D" unique_id=2003751090]
+mass = 5.0
+script = ExtResource("1_js8em")
+equipment_name = "Tablet Screen"
+placement_offset = 0.025
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1075691714]
+material_override = SubResource("StandardMaterial3D_ngrwl")
+mesh = SubResource("BoxMesh_xfhhy")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=994397307]
+shape = SubResource("BoxShape3D_cjchr")

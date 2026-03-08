@@ -1,7 +1,8 @@
-[gd_scene format=3 uid="uid://c5bm5r2jy1xla"]
+[gd_scene format=3]
 
-[ext_resource type="Script" uid="uid://3hbd8lo1c41r" path="res://scripts/rv.gd" id="1_opvd1"]
-[ext_resource type="PackedScene" uid="uid://c7bc2mai6gwru" path="res://scenes/driver_seat.tscn" id="2_3jjni"]
+[ext_resource type="Script" path="res://scripts/rv.gd" id="1_opvd1"]
+[ext_resource type="PackedScene" path="res://scenes/driver_seat.tscn" id="2_3jjni"]
+[ext_resource type="Script" path="res://scripts/driver_seat.gd" id="3_cnp45"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ybuj8"]
 size = Vector3(3, 0.1, 8)
@@ -52,7 +53,7 @@ height = 0.4
 height = 0.4
 
 [node name="RV" type="VehicleBody3D" unique_id=419084803]
-mass = 2000.0
+mass = 3500.0
 script = ExtResource("1_opvd1")
 
 [node name="FloorCol" type="CollisionShape3D" parent="." unique_id=2129597861]
@@ -105,10 +106,14 @@ mesh = SubResource("BoxMesh_ceyt3")
 
 [node name="Wheel_FL" type="VehicleWheel3D" parent="." unique_id=637723641]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.60888076, 3.2)
+use_as_traction = true
 use_as_steering = true
+wheel_friction_slip = 3.5
 suspension_travel = 0.5
-suspension_stiffness = 30.0
-suspension_max_force = 10000.0
+suspension_stiffness = 40.0
+suspension_max_force = 15000.0
+damping_compression = 0.88
+damping_relaxation = 0.95
 
 [node name="WheelMesh" type="MeshInstance3D" parent="Wheel_FL" unique_id=910412342]
 transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 1, -4.371139e-08, -4.371139e-08, 0, 0, 0)
@@ -116,10 +121,14 @@ mesh = SubResource("CylinderMesh_isps1")
 
 [node name="Wheel_FR" type="VehicleWheel3D" parent="." unique_id=611992831]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.60888076, 3.2)
+use_as_traction = true
 use_as_steering = true
+wheel_friction_slip = 3.5
 suspension_travel = 0.5
-suspension_stiffness = 30.0
-suspension_max_force = 10000.0
+suspension_stiffness = 40.0
+suspension_max_force = 15000.0
+damping_compression = 0.88
+damping_relaxation = 0.95
 
 [node name="WheelMesh" type="MeshInstance3D" parent="Wheel_FR" unique_id=1915509774]
 transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 1, -4.371139e-08, -4.371139e-08, 0, 0, 0)
@@ -128,9 +137,12 @@ mesh = SubResource("CylinderMesh_qf83o")
 [node name="Wheel_RL" type="VehicleWheel3D" parent="." unique_id=283780513]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0.60888076, -3.2)
 use_as_traction = true
+wheel_friction_slip = 3.5
 suspension_travel = 0.5
-suspension_stiffness = 30.0
-suspension_max_force = 10000.0
+suspension_stiffness = 40.0
+suspension_max_force = 15000.0
+damping_compression = 0.88
+damping_relaxation = 0.95
 
 [node name="WheelMesh" type="MeshInstance3D" parent="Wheel_RL" unique_id=1258122806]
 transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 1, -4.371139e-08, -4.371139e-08, 0, 0, 0)
@@ -139,13 +151,17 @@ mesh = SubResource("CylinderMesh_lsuow")
 [node name="Wheel_RR" type="VehicleWheel3D" parent="." unique_id=758294461]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0.60888076, -3.2)
 use_as_traction = true
+wheel_friction_slip = 3.5
 suspension_travel = 0.5
-suspension_stiffness = 30.0
-suspension_max_force = 10000.0
+suspension_stiffness = 40.0
+suspension_max_force = 15000.0
+damping_compression = 0.88
+damping_relaxation = 0.95
 
 [node name="WheelMesh" type="MeshInstance3D" parent="Wheel_RR" unique_id=69334196]
 transform = Transform3D(-4.371139e-08, -1, 0, -4.371139e-08, 1.9106855e-15, -1, 1, -4.371139e-08, -4.371139e-08, 0, 0, 0)
 mesh = SubResource("CylinderMesh_qjruq")
 
-[node name="DriverSeat" parent="." unique_id=2108999545 instance=ExtResource("2_3jjni")]
+[node name="DriverSeat" type="Area3D" parent="." unique_id=2108999545 instance=ExtResource("2_3jjni")]
 transform = Transform3D(-0.9998788, 0, 0.015567779, 0, 1, 0, -0.015567779, 0, -0.9998788, 0.8343369, 1.4443411, 2.95)
+script = ExtResource("3_cnp45")

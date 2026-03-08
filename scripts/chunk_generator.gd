@@ -14,6 +14,9 @@ var end_pos: Vector3
 var control_p1: Vector3
 var control_p2: Vector3
 
+var has_house: bool = false
+var house_local_pos: Vector3
+
 # Helper to get the consistent height of the terrain at any global 2D coordinate
 # micro_multiplier: 0.0 for smooth road, 1.0 for bumpy offroad terrain
 func _get_terrain_height(gx: float, gz: float, micro_multiplier: float = 1.0) -> float:
@@ -63,6 +66,27 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float) -> Tra
 	control_p1 = Vector3(0, 0, -CHUNK_SIZE * 0.33)
 	control_p2 = end_pos + Vector3(-sin(next_turn_angle) * CHUNK_SIZE * 0.33, 0, CHUNK_SIZE * 0.33)
 	
+	# Determine if this chunk has a house (30% chance)
+	has_house = randf() < 0.3
+	if has_house:
+		# Random position within the chunk, avoiding the very edges
+		var hx = randf_range(-CHUNK_SIZE/2.0 + 20.0, CHUNK_SIZE/2.0 - 20.0)
+		var hz = randf_range(-CHUNK_SIZE + 20.0, -20.0)
+		var global_hp = global_transform * Vector3(hx, 0, hz)
+		
+		# Foundation must be perfectly flat, so micro_multiplier = 0.0
+		var h_height = _get_terrain_height(global_hp.x, global_hp.z, 0.0)
+		
+		# Calculate distance to road center to ensure it's not literally on the asphalt
+		var curve_data = _get_closest_curve_point(hx, hz)
+		var curve_pt: Vector3 = curve_data[0]
+		var dist_to_road = Vector2(curve_pt.x - hx, curve_pt.z - hz).length()
+		
+		if dist_to_road < ROAD_WIDTH / 2.0 + 10.0:
+			has_house = false # Too close to the road, cancel spawn
+		else:
+			house_local_pos = Vector3(hx, h_height - global_transform.origin.y, hz)
+	
 	# 3. Generate the Meshes
 	_build_terrain_mesh()
 	_build_road_mesh()
@@ -79,6 +103,10 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float) -> Tra
 	end_pos.y = true_end_height - global_transform.origin.y
 	
 	var local_end_transform = Transform3D(end_basis, end_pos)
+	
+	if has_house:
+		_spawn_house()
+		
 	return global_transform * local_end_transform
 
 func _cubic_bezier(t: float) -> Vector3:
@@ -143,13 +171,35 @@ func _build_terrain_mesh():
 			# Smooth road (0.0 multiplier) gradually blending into bumpy terrain (1.0 multiplier)
 			var micro_mult = clamp((dist_to_road - ROAD_WIDTH / 2.0) / (ROAD_BLEND_DISTANCE * 0.5), 0.0, 1.0)
 			
+			# Factor in house foundation distance
+			var blend_factor = 1.0
+			var dist_to_house = INF
+			if has_house:
+				dist_to_house = Vector2(house_local_pos.x - lx, house_local_pos.z - lz).length()
+				var foundation_radius = 8.0 # Flat area size
+				var house_blend = 10.0 # Transition slope size
+				if dist_to_house < foundation_radius:
+					micro_mult = 0.0
+					blend_factor = 0.0
+				elif dist_to_house < foundation_radius + house_blend:
+					var t = (dist_to_house - foundation_radius) / house_blend
+					micro_mult = min(micro_mult, t)
+					blend_factor = t
+			
 			# Terrain now completely dictates the height, no flattening!
 			var final_h = _get_terrain_height(global_p.x, global_p.z, micro_mult)
 			var local_h = final_h - global_transform.origin.y
 			
+			# Flatten to house height
+			if has_house and blend_factor < 1.0:
+				local_h = lerp(house_local_pos.y, local_h, blend_factor)
+				
 			var col = Color.WHITE
 			
-			if dist_to_road < ROAD_WIDTH / 2.0:
+			if dist_to_house < 8.0:
+				var dirt_factor = clamp(abs(local_h) / MAX_HEIGHT, 0.0, 1.0)
+				col = Color(0.3, 0.35, 0.2).lerp(Color(0.5, 0.45, 0.3), dirt_factor) # Dirt under house
+			elif dist_to_road < ROAD_WIDTH / 2.0:
 				col = Color(0.2, 0.25, 0.1) # Dirt directly under the road
 			elif dist_to_road < ROAD_WIDTH / 2.0 + ROAD_BLEND_DISTANCE:
 				col = Color(0.3, 0.35, 0.2) # Dirt transition
@@ -316,3 +366,37 @@ func _build_road_mesh():
 	mesh_node.add_child(static_body)
 	
 	add_child(mesh_node)
+
+func _spawn_house():
+	var house_scene = load("res://scenes/house.tscn")
+	if not house_scene: return
+	
+	var house = house_scene.instantiate()
+	house.position = house_local_pos
+	# Random Y rotation to make it feel organic
+	house.rotation.y = randf_range(0, TAU)
+	add_child(house)
+	
+	# Spawn loot
+	var scrap_scene = load("res://scenes/scrap.tscn")
+	var oil_scene = load("res://scenes/oil_barrel.tscn")
+	var spawns = house.get_node_or_null("LootSpawns")
+	
+	if spawns and spawns.get_child_count() > 0:
+		# Spawn 1 to 3 items
+		var num_items = randi_range(1, 3)
+		var spawn_points = spawns.get_children()
+		spawn_points.shuffle()
+		
+		for i in range(min(num_items, spawn_points.size())):
+			var is_scrap = randf() > 0.3
+			var item
+			if is_scrap and scrap_scene: 
+				item = scrap_scene.instantiate()
+			elif oil_scene: 
+				item = oil_scene.instantiate()
+				
+			if item:
+				var sp = spawn_points[i]
+				item.position = sp.position 
+				house.add_child(item)
