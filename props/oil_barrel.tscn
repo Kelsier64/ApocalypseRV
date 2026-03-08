@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/interactable_item.gd" id="1_jc5bg"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ssqw3"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 1.0
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_vagdt"]
+height = 1.0
+radius = 0.4
+
+[node name="OilBarrel" type="RigidBody3D" unique_id=71407304]
+mass = 20.0
+script = ExtResource("1_jc5bg")
+item_name = "Oil Barrel"
+is_large = true
+scrap_yields = {
+"Electronic Scrap": Vector2(0, 1),
+"Metal Parts": Vector2(1, 4),
+"Unrefined Fuel": Vector2(10, 20)
+}
+
+[node name="@MeshInstance3D@4" type="MeshInstance3D" parent="." unique_id=1951476285]
+mesh = SubResource("CylinderMesh_ssqw3")
+
+[node name="@CollisionShape3D@5" type="CollisionShape3D" parent="." unique_id=1224918941]
+shape = SubResource("CylinderShape3D_vagdt")

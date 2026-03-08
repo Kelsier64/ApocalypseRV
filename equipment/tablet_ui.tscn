@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://b7o7gb3ahjd5"]
+
+[ext_resource type="Script" uid="uid://0t6nfj6rcbf" path="res://equipment/tablet_ui.gd" id="1_2ljoj"]
+
+[node name="TabletUI" type="CanvasLayer" unique_id=886135826]
+script = ExtResource("1_2ljoj")
+
+[node name="Background" type="ColorRect" parent="." unique_id=165905973]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.4)
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1221619875]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = 60.0
+offset_right = -60.0
+offset_bottom = -60.0
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer" unique_id=1822773759]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer" unique_id=400352406]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=1545474909]
+layout_mode = 2
+alignment = 2
+
+[node name="Title" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=1374637551]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SMART TERMINAL OS v1.0"
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer/Header" unique_id=273617778]
+layout_mode = 2
+text = " [ X ] "
+
+[node name="ContentLabel" type="Label" parent="PanelContainer/MarginContainer/VBoxContainer" unique_id=401681666]
+layout_mode = 2
+size_flags_vertical = 3
+text = "
+
+Welcome to the Smart Terminal.
+
+Here you will be able to control power, lighting, and cameras.
+
+(Systems Offline)"
+horizontal_alignment = 1

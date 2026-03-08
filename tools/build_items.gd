@@ -7,11 +7,14 @@ func _init():
 	var scrap_root = RigidBody3D.new()
 	scrap_root.name = "Scrap"
 	# attach the interactable item script
-	var script = load("res://scripts/interactable_item.gd")
+	var script = load("res://props/interactable_item.gd")
 	if script:
 		scrap_root.set_script(script)
 		scrap_root.set("item_name", "Scrap Metal")
 		scrap_root.set("is_large", false)
+		scrap_root.set("scrap_yields", {
+			"Metal Parts": Vector2(2, 5)
+		})
 	else:
 		printerr("Could not load interactable_item.gd")
 
@@ -31,8 +34,8 @@ func _init():
 	
 	var packed_scrap = PackedScene.new()
 	if packed_scrap.pack(scrap_root) == OK:
-		ResourceSaver.save(packed_scrap, "res://scenes/scrap.tscn")
-		print("-> Created: res://scenes/scrap.tscn")
+		ResourceSaver.save(packed_scrap, "res://props/scrap.tscn")
+		print("-> Created: res://props/scrap.tscn")
 	
 	# Large Item: Oil Barrel
 	var barrel_root = RigidBody3D.new()
@@ -41,6 +44,11 @@ func _init():
 		barrel_root.set_script(script)
 		barrel_root.set("item_name", "Oil Barrel")
 		barrel_root.set("is_large", true)
+		barrel_root.set("scrap_yields", {
+			"Unrefined Fuel": Vector2(10, 20),
+			"Metal Parts": Vector2(1, 4),
+			"Electronic Scrap": Vector2(0, 1)
+		})
 		
 	# Make the barrel heavier
 	barrel_root.mass = 20.0 
@@ -64,8 +72,47 @@ func _init():
 	
 	var packed_barrel = PackedScene.new()
 	if packed_barrel.pack(barrel_root) == OK:
-		ResourceSaver.save(packed_barrel, "res://scenes/oil_barrel.tscn")
-		print("-> Created: res://scenes/oil_barrel.tscn")
+		ResourceSaver.save(packed_barrel, "res://props/oil_barrel.tscn")
+		print("-> Created: res://props/oil_barrel.tscn")
+		
+	# Medium Item: Gasoline Can
+	var gas_can_root = RigidBody3D.new()
+	gas_can_root.name = "GasolineCan"
+	if script:
+		gas_can_root.set_script(script)
+		gas_can_root.set("item_name", "Gasoline Can")
+		gas_can_root.set("is_large", false)
+		gas_can_root.set("scrap_yields", {
+			"Unrefined Fuel": Vector2(1, 3), # Just a little bit if you scrap it
+			"Metal Parts": Vector2(0, 1)
+		})
+		
+	gas_can_root.mass = 5.0
+
+	var gas_mesh = MeshInstance3D.new()
+	var gas_box = BoxMesh.new()
+	gas_box.size = Vector3(0.2, 0.4, 0.3)
+	gas_mesh.mesh = gas_box
+	
+	# Try to make it red
+	var red_mat = StandardMaterial3D.new()
+	red_mat.albedo_color = Color(0.8, 0.1, 0.1)
+	gas_mesh.material_override = red_mat
+	
+	gas_can_root.add_child(gas_mesh)
+	gas_mesh.owner = gas_can_root
+	
+	var gas_col = CollisionShape3D.new()
+	var gas_col_box = BoxShape3D.new()
+	gas_col_box.size = Vector3(0.2, 0.4, 0.3)
+	gas_col.shape = gas_col_box
+	gas_can_root.add_child(gas_col)
+	gas_col.owner = gas_can_root
+	
+	var packed_gas = PackedScene.new()
+	if packed_gas.pack(gas_can_root) == OK:
+		ResourceSaver.save(packed_gas, "res://props/gas_can.tscn")
+		print("-> Created: res://props/gas_can.tscn")
 
 	print("--- Generation Complete ---")
 	quit()

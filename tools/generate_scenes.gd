@@ -19,7 +19,7 @@ func _generate_player_scene():
 	root.name = "Player"
 	
 	# Load and attach script
-	var script = load("res://scripts/player.gd")
+	var script = load("res://player/player.gd")
 	if script:
 		root.set_script(script)
 	
@@ -42,8 +42,8 @@ func _generate_player_scene():
 	# Save Scene
 	var packed_scene = PackedScene.new()
 	if packed_scene.pack(root) == OK:
-		ResourceSaver.save(packed_scene, "res://scenes/player.tscn")
-		print("-> Created: res://scenes/player.tscn")
+		ResourceSaver.save(packed_scene, "res://player/player.tscn")
+		print("-> Created: res://player/player.tscn")
 	else:
 		printerr("Failed to pack player scene")
 
@@ -53,7 +53,7 @@ func _generate_rv_scene():
 	root.mass = 2000.0 # Make it a heavy vehicle
 	
 	# Load and attach script
-	var script = load("res://scripts/rv.gd")
+	var script = load("res://rv/rv.gd")
 	if script:
 		root.set_script(script)
 		
@@ -91,8 +91,8 @@ func _generate_rv_scene():
 	# Save Scene
 	var packed_scene = PackedScene.new()
 	if packed_scene.pack(root) == OK:
-		ResourceSaver.save(packed_scene, "res://scenes/rv.tscn")
-		print("-> Created: res://scenes/rv.tscn")
+		ResourceSaver.save(packed_scene, "res://rv/rv.tscn")
+		print("-> Created: res://rv/rv.tscn")
 	else:
 		printerr("Failed to pack RV scene")
 

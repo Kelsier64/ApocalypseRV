@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/interactable_item.gd" id="1_kfnut"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_cxucu"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xqh2i"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[node name="Scrap" type="RigidBody3D" unique_id=1391208981]
+script = ExtResource("1_kfnut")
+item_name = "Scrap Metal"
+scrap_yields = {
+"Metal Parts": Vector2(2, 5)
+}
+
+[node name="@MeshInstance3D@2" type="MeshInstance3D" parent="." unique_id=747362514]
+mesh = SubResource("BoxMesh_cxucu")
+
+[node name="@CollisionShape3D@3" type="CollisionShape3D" parent="." unique_id=2066708620]
+shape = SubResource("BoxShape3D_xqh2i")

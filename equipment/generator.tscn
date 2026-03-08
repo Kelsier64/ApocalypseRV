@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/equipment.gd" id="1_5yxne"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w5vnv"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ef8yp"]
+size = Vector3(0.8, 0.6, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rqoq6"]
+size = Vector3(0.8, 0.6, 1.2)
+
+[node name="Generator" type="RigidBody3D" unique_id=1087168760]
+mass = 50.0
+script = ExtResource("1_5yxne")
+equipment_name = "Portable Generator"
+placement_offset = 0.3
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1014470640]
+material_override = SubResource("StandardMaterial3D_w5vnv")
+mesh = SubResource("BoxMesh_ef8yp")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=279040092]
+shape = SubResource("BoxShape3D_rqoq6")

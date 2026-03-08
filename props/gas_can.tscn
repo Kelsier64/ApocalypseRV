@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/interactable_item.gd" id="1_u7m75"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_35tw8"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_a81wi"]
+size = Vector3(0.2, 0.4, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_31uht"]
+size = Vector3(0.2, 0.4, 0.3)
+
+[node name="GasolineCan" type="RigidBody3D" unique_id=710085464]
+mass = 5.0
+script = ExtResource("1_u7m75")
+item_name = "Gasoline Can"
+scrap_yields = {
+"Metal Parts": Vector2(0, 1),
+"Unrefined Fuel": Vector2(1, 3)
+}
+
+[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="." unique_id=1125248936]
+material_override = SubResource("StandardMaterial3D_35tw8")
+mesh = SubResource("BoxMesh_a81wi")
+
+[node name="@CollisionShape3D@7" type="CollisionShape3D" parent="." unique_id=347863693]
+shape = SubResource("BoxShape3D_31uht")

@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://rv/driver_seat.gd" id="1_2l2ci"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pjra0"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_smhcn"]
+size = Vector3(0.6, 0.8, 0.6)
+
+[node name="DriverSeat" type="Area3D" unique_id=269340115]
+script = ExtResource("1_2l2ci")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2015620646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BoxShape3D_pjra0")
+
+[node name="SeatMesh" type="MeshInstance3D" parent="." unique_id=95354989]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("BoxMesh_smhcn")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1567191114]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.2)

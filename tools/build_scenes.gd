@@ -12,7 +12,7 @@ func _generate_player_scene():
 	var root = CharacterBody3D.new()
 	root.name = "Player"
 	
-	var script = load("res://scripts/player.gd")
+	var script = load("res://player/player.gd")
 	if script:
 		root.set_script(script)
 	
@@ -35,7 +35,7 @@ func _generate_player_scene():
 	ray.name = "InteractRay"
 	ray.target_position = Vector3(0, 0, -2.0) # 2 meters reach
 	ray.collide_with_areas = true # IMPORTANT: Driver seat is an Area3D
-	var ray_script = load("res://scripts/player_interact.gd")
+	var ray_script = load("res://player/player_interact.gd")
 	if ray_script:
 		ray.set_script(ray_script)
 	cam.add_child(ray)
@@ -43,8 +43,8 @@ func _generate_player_scene():
 	
 	var packed_scene = PackedScene.new()
 	if packed_scene.pack(root) == OK:
-		ResourceSaver.save(packed_scene, "res://scenes/player.tscn")
-		print("-> Created: res://scenes/player.tscn")
+		ResourceSaver.save(packed_scene, "res://player/player.tscn")
+		print("-> Created: res://player/player.tscn")
 	else:
 		printerr("Failed to pack player scene")
 
@@ -52,7 +52,7 @@ func _generate_driver_seat_scene():
 	var root = Area3D.new()
 	root.name = "DriverSeat"
 	
-	var script = load("res://scripts/driver_seat.gd")
+	var script = load("res://rv/driver_seat.gd")
 	if script:
 		root.set_script(script)
 		
@@ -82,8 +82,8 @@ func _generate_driver_seat_scene():
 	
 	var packed_scene = PackedScene.new()
 	if packed_scene.pack(root) == OK:
-		ResourceSaver.save(packed_scene, "res://scenes/driver_seat.tscn")
-		print("-> Created: res://scenes/driver_seat.tscn")
+		ResourceSaver.save(packed_scene, "res://rv/driver_seat.tscn")
+		print("-> Created: res://rv/driver_seat.tscn")
 	else:
 		printerr("Failed to pack driver seat scene")
 
@@ -92,26 +92,30 @@ func _generate_rv_scene():
 	root.name = "RV"
 	root.mass = 2000.0
 	
-	var script = load("res://scripts/rv.gd")
+	var script = load("res://rv/rv.gd")
 	if script:
 		root.set_script(script)
 		
 	# Body Parts (Hollow RV) - Floor at y=1.5
-	_add_wall(root, "Floor", Vector3(2.0, 0.2, 4.5), Vector3(0, 1.5, 0))
-	_add_wall(root, "Ceiling", Vector3(2.0, 0.2, 4.5), Vector3(0, 3.5, 0))
-	_add_wall(root, "WallLeft", Vector3(0.2, 1.8, 4.5), Vector3(0.9, 2.5, 0))
-	_add_wall(root, "WallRight", Vector3(0.2, 1.8, 4.5), Vector3(-0.9, 2.5, 0))
-	_add_wall(root, "WallFront", Vector3(1.6, 1.8, 0.2), Vector3(0, 2.5, 2.15))
-	_add_wall(root, "WallBack", Vector3(1.6, 0.8, 0.2), Vector3(0, 2.0, -2.15)) # Low back wall
+	# Body Parts (Hollow RV) - Exterior dimensions: approx 3.0 x 2.0 x 8.0
+	# Interior floor space: 2.6 x 7.6
+	_add_wall(root, "Floor", Vector3(3.0, 0.2, 8.0), Vector3(0, 1.5, 0))
+	_add_wall(root, "Ceiling", Vector3(3.0, 0.2, 8.0), Vector3(0, 3.5, 0))
+	_add_wall(root, "WallLeft", Vector3(0.2, 1.8, 8.0), Vector3(1.4, 2.5, 0))
+	_add_wall(root, "WallRight", Vector3(0.2, 1.8, 8.0), Vector3(-1.4, 2.5, 0))
+	_add_wall(root, "WallFront", Vector3(2.6, 1.8, 0.2), Vector3(0, 2.5, 3.9))
+	_add_wall(root, "WallBack", Vector3(2.6, 0.8, 0.2), Vector3(0, 2.0, -3.9)) # Low back wall
 	
-	_add_wheel(root, "Wheel_FL", Vector3(1.1, 0.0, 1.6), true, false)
-	_add_wheel(root, "Wheel_FR", Vector3(-1.1, 0.0, 1.6), true, false)
+	# Wheels (x: width/2, y: ground clearance, z: length/2)
+	# Wheels are pushed wider to match 3.0 width and further apart for 8.0 length
+	_add_wheel(root, "Wheel_FL", Vector3(1.6, 0.0, 2.8), true, false)
+	_add_wheel(root, "Wheel_FR", Vector3(-1.6, 0.0, 2.8), true, false)
 	
-	_add_wheel(root, "Wheel_RL", Vector3(1.1, 0.0, -1.6), false, true)
-	_add_wheel(root, "Wheel_RR", Vector3(-1.1, 0.0, -1.6), false, true)
+	_add_wheel(root, "Wheel_RL", Vector3(1.6, 0.0, -2.8), false, true)
+	_add_wheel(root, "Wheel_RR", Vector3(-1.6, 0.0, -2.8), false, true)
 	
 	# Add Driver Seat
-	var seat_scene = load("res://scenes/driver_seat.tscn")
+	var seat_scene = load("res://rv/driver_seat.tscn")
 	if seat_scene:
 		var seat = seat_scene.instantiate()
 		seat.name = "DriverSeat"
@@ -124,8 +128,8 @@ func _generate_rv_scene():
 	
 	var packed_scene = PackedScene.new()
 	if packed_scene.pack(root) == OK:
-		ResourceSaver.save(packed_scene, "res://scenes/rv.tscn")
-		print("-> Created: res://scenes/rv.tscn")
+		ResourceSaver.save(packed_scene, "res://rv/rv.tscn")
+		print("-> Created: res://rv/rv.tscn")
 	else:
 		printerr("Failed to pack RV scene")
 
