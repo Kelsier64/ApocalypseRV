@@ -117,6 +117,23 @@ func _ready():
 func is_placing_equipment() -> bool:
 	return placing_equipment != null
 
+func get_active_item_name() -> String:
+	if active_slot_index >= 0 and active_slot_index < inventory.size():
+		return inventory[active_slot_index].get("name", "")
+	return ""
+
+func consume_active_item() -> void:
+	if active_slot_index < 0 or active_slot_index >= inventory.size():
+		return
+	var item_data: Dictionary = inventory[active_slot_index]
+	if item_data.get("is_large", false):
+		has_large_item = false
+	inventory.remove_at(active_slot_index)
+	if active_slot_index >= inventory.size():
+		active_slot_index = max(0, inventory.size() - 1)
+	_update_inventory_display()
+	_equip_active_slot()
+
 func enter_equipment_placement(equip: Node3D):
 	placing_equipment = equip
 

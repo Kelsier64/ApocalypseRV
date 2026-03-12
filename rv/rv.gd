@@ -4,7 +4,7 @@ class_name RV
 @export var max_engine_force: float = 20000.0 # Massive starting torque for 3.5 tons!
 @export var max_speed: float = 35.0 # Max speed in m/s (~126 km/h)
 @export var max_braking_force: float = 300.0 # Heavy brakes
-@export var max_steering: float = 0.6 
+@export var max_steering: float = 0.6
 @export var is_player_driving: bool = false
 
 # Artificially lower the center of mass so the tall RV doesn't flip easily
@@ -26,11 +26,8 @@ var max_power: float = 100.0
 # -----------------------------------
 
 func _ready():
-	# Godot 4 VehicleBody3D center of mass can be adjusted via mass properties, 
-	# but setting it dynamically here ensures it's always applied safely.
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
-	
 	add_to_group("rv")
 
 # --- INVENTORY MANAGEMENT ---
