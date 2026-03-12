@@ -7,8 +7,9 @@
 [sub_resource type="BoxMesh" id="BoxMesh_smhcn"]
 size = Vector3(0.6, 0.8, 0.6)
 
-[node name="DriverSeat" type="Area3D" unique_id=269340115]
+[node name="DriverSeat" type="RigidBody3D" unique_id=269340115]
 script = ExtResource("1_2l2ci")
+equipment_name = "Driver Seat"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2015620646]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)

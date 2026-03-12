@@ -1,15 +1,16 @@
 [gd_scene format=3 uid="uid://di4720addaiat"]
 
-[ext_resource type="PackedScene" path="res://rv/rv.tscn" id="1_nrstc"]
+[ext_resource type="PackedScene" uid="uid://dwfmiwryubpgl" path="res://rv/rv.tscn" id="1_nrstc"]
 [ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="3_7bidm"]
 [ext_resource type="PackedScene" uid="uid://d0lnuba3je77s" path="res://player/player.tscn" id="3_ar7ra"]
 [ext_resource type="PackedScene" path="res://equipment/generator.tscn" id="6_dvny0"]
 [ext_resource type="PackedScene" path="res://props/scrap.tscn" id="6_mjm4b"]
 [ext_resource type="PackedScene" uid="uid://bts8xn8lx04h1" path="res://equipment/tablet_screen.tscn" id="8_nrstc"]
-[ext_resource type="PackedScene" path="res://equipment/scrapper.tscn" id="8_olf76"]
+[ext_resource type="PackedScene" uid="uid://cp7aw6ux4duo4" path="res://equipment/scrapper.tscn" id="8_olf76"]
 [ext_resource type="PackedScene" uid="uid://6sdbg58ph7q0" path="res://props/oil_barrel.tscn" id="8_x05cw"]
 [ext_resource type="Script" uid="uid://b8qdd1ouhohtu" path="res://world/world_generator.gd" id="9_8hcw6"]
 [ext_resource type="PackedScene" uid="uid://bkfm4o6gc5rw7" path="res://props/gas_can.tscn" id="10_e5drx"]
+[ext_resource type="PackedScene" path="res://rv/driver_seat.tscn" id="11_v5l3q"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
 
@@ -35,7 +36,7 @@ use_collision = true
 size = Vector3(20, 0.1, 20)
 
 [node name="RV" parent="." unique_id=419084803 instance=ExtResource("1_nrstc")]
-transform = Transform3D(-0.99938655, 0, 0.035021685, 0, 1, 0, -0.035021685, 0, -0.99938655, -1.3254609, 0.964102, 0)
+transform = Transform3D(-0.99938655, 0, 0.035021685, 0, 1, 0, -0.035021685, 0, -0.99938655, -1.3202325, 0.9612627, 0.0013285875)
 max_engine_force = 2000.0
 
 [node name="Player" parent="." unique_id=1367277200 instance=ExtResource("3_ar7ra")]
@@ -74,3 +75,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1387677, 1.774471, 0.936527
 
 [node name="GasolineCan" parent="." unique_id=710085464 instance=ExtResource("10_e5drx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6538649, 1.8605764, 0)
+
+[node name="DriverSeat" parent="." unique_id=269340115 instance=ExtResource("11_v5l3q")]
+transform = Transform3D(0.9998995, -0.0005255803, -0.014164986, 0.0006203012, 0.99997747, 0.0066820304, 0.014161155, -0.006690147, 0.99987733, 3.0666585, 0.74488354, 0)

@@ -19,7 +19,7 @@ When assisting with Godot 4.x development:
 
 3. **Editor Assistance**: When handling complex tasks, instead of modifying `.tscn` files directly, provide the required GDScript (`.gd`) files and give explicit, step-by-step instructions on what needs to be done via the Godot Editor UI.
 
-4. **Fresh Generation Scripts**: **Never re-use EditorScript.** When using an `EditorScript` to generate a `.tscn` file, always create new script content instead of reusing previous versions to avoid accidentally overwriting the user's manual modifications.
+4. **Fresh Generation Scripts**: **Never re-use Generation Script.** When using an `Generation Script` to generate a `.tscn` file, always create new script content instead of reusing previous versions to avoid accidentally overwriting the user's manual modifications.
 
 5. **GDScript Generation**: Ensure GDScript is compatible with Godot 4.x. Use static typing where applicable and follow standard Godot naming conventions.
 

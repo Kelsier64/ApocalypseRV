@@ -23,12 +23,11 @@ func _physics_process(_delta):
 						
 			# Otherwise just normal instant interact
 			elif obj.has_method("interact"):
-				if obj is Prop or not obj is Equipment:
-					obj.interact(player)
-					set_physics_process(false)
-					await get_tree().create_timer(0.5).timeout
-					set_physics_process(true)
-					return
+				obj.interact(player)
+				set_physics_process(false)
+				await get_tree().create_timer(0.5).timeout
+				set_physics_process(true)
+				return
 					
 	# 2. Hold F Interaction for Placeable Equipment
 	elif Input.is_physical_key_pressed(KEY_F):
