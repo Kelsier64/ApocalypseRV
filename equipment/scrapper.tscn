@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cp7aw6ux4duo4"]
 
-[ext_resource type="Script" path="res://equipment/scrapper.gd" id="1_sut5x"]
+[ext_resource type="Script" uid="uid://bpfsmse26wlie" path="res://equipment/scrapper.gd" id="1_sut5x"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ojfv"]
 albedo_color = Color(0.8, 0.2, 0.2, 1)
@@ -21,7 +21,7 @@ size = Vector3(0.07, 0.63, 0.91)
 size = Vector3(0.07, 0.63, 0.91)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ekvep"]
-size = Vector3(0.7, 0.14, 0.7)
+size = Vector3(0.5, 0.59441406, 0.6)
 
 [node name="Scrapper" type="RigidBody3D" unique_id=1514036190]
 mass = 80.0
@@ -59,7 +59,20 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.49, 0.385, 0)
 shape = SubResource("BoxShape3D_fkocx")
 
 [node name="HopperArea" type="Area3D" parent="." unique_id=1550467164]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.14, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4161125, 0)
 
 [node name="@CollisionShape3D@2" type="CollisionShape3D" parent="HopperArea" unique_id=2092308823]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9418446, 0)
 shape = SubResource("BoxShape3D_ekvep")
+
+[node name="CSGCylinder3D" type="CSGCylinder3D" parent="." unique_id=2089081524]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.2, 0.5, 0)
+radius = 0.2
+height = 1.0
+sides = 10
+
+[node name="CSGCylinder3D2" type="CSGCylinder3D" parent="." unique_id=1335461225]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.2, 0.5, 0)
+radius = 0.2
+height = 1.0
+sides = 10

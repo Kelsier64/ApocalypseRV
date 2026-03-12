@@ -371,40 +371,43 @@ func _build_road_mesh():
 	add_child(mesh_node)
 
 func _spawn_house():
-	var house_scene = load("res://world/house.tscn")
-	if not house_scene: return
+	# Use procedural building generator instead of static house
+	var building_script = load("res://world/building/building_generator.gd")
+	if not building_script: return
 	
-	var house = house_scene.instantiate()
-	house.position = house_local_pos
-	# Random Y rotation to make it feel organic
-	house.rotation.y = randf_range(0, TAU)
-	add_child(house)
+	var building = Node3D.new()
+	building.set_script(building_script)
+	building.name = "ProceduralBuilding"
+	building.position = house_local_pos
+	building.rotation.y = randf_range(0, TAU)
 	
-	# Spawn loot
+	# Randomize room count (10-20 rooms per building)
+	building.set("max_rooms", randi_range(10, 20))
+	
+	add_child(building)
+	
+	# Spawn loot on the floor of the entry area
 	var scrap_scene = load("res://props/scrap.tscn")
 	var oil_scene = load("res://props/oil_barrel.tscn")
-	var spawns = house.get_node_or_null("LootSpawns")
 	
-	if spawns and spawns.get_child_count() > 0:
-		# Spawn 1 to 3 items
-		var num_items = randi_range(1, 3)
-		var spawn_points = spawns.get_children()
-		spawn_points.shuffle()
+	var num_items = randi_range(1, 4)
+	for i in range(num_items):
+		var item
+		if randf() > 0.3 and scrap_scene:
+			item = scrap_scene.instantiate()
+		elif oil_scene:
+			item = oil_scene.instantiate()
 		
-		for i in range(min(num_items, spawn_points.size())):
-			var is_scrap = randf() > 0.3
-			var item
-			if is_scrap and scrap_scene: 
-				item = scrap_scene.instantiate()
-			elif oil_scene: 
-				item = oil_scene.instantiate()
-				
-			if item:
-				var sp = spawn_points[i]
-				item.position = sp.position 
-				house.add_child(item)
+		if item:
+			# Scatter items on the floor of the first room (9x9x9)
+			item.position = Vector3(
+				randf_range(1.0, 7.0),
+				1.0,
+				randf_range(1.0, 7.0)
+			)
+			building.add_child(item)
 	
-	# Spawn zombies around the house
+	# Spawn zombies around the building
 	_spawn_zombies(house_local_pos)
 
 func _spawn_zombies(center_pos: Vector3):

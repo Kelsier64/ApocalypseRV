@@ -7,8 +7,9 @@
 [ext_resource type="PackedScene" path="res://props/scrap.tscn" id="6_mjm4b"]
 [ext_resource type="PackedScene" uid="uid://bts8xn8lx04h1" path="res://equipment/tablet_screen.tscn" id="8_nrstc"]
 [ext_resource type="PackedScene" path="res://equipment/scrapper.tscn" id="8_olf76"]
-[ext_resource type="PackedScene" path="res://props/oil_barrel.tscn" id="8_x05cw"]
+[ext_resource type="PackedScene" uid="uid://6sdbg58ph7q0" path="res://props/oil_barrel.tscn" id="8_x05cw"]
 [ext_resource type="Script" uid="uid://b8qdd1ouhohtu" path="res://world/world_generator.gd" id="9_8hcw6"]
+[ext_resource type="PackedScene" uid="uid://bkfm4o6gc5rw7" path="res://props/gas_can.tscn" id="10_e5drx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
 
@@ -70,3 +71,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0.936527
 
 [node name="Scrap3" parent="." unique_id=359224590 instance=ExtResource("6_mjm4b")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1387677, 1.774471, 0.93652785)
+
+[node name="GasolineCan" parent="." unique_id=710085464 instance=ExtResource("10_e5drx")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6538649, 1.8605764, 0)
