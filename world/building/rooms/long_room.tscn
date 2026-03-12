@@ -1,0 +1,80 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://world/building/room_node.gd" id="1_mdomf"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3os3h"]
+albedo_color = Color(0.42, 0.4, 0.36, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q80ps"]
+albedo_color = Color(0.252, 0.24000001, 0.216, 1)
+roughness = 0.95
+
+[node name="LongRoom" type="Node3D" unique_id=326550450]
+script = ExtResource("1_mdomf")
+room_name = "Long Room"
+weight = 1.5
+grid_size = Vector3i(2, 1, 1)
+doors = [{
+"grid_offset": Vector3i(0, 0, 0),
+"wall": "north"
+}, {
+"grid_offset": Vector3i(1, 0, 0),
+"wall": "south"
+}, {
+"grid_offset": Vector3i(1, 0, 0),
+"wall": "east"
+}, {
+"grid_offset": Vector3i(0, 0, 0),
+"wall": "west"
+}]
+
+[node name="Walls" type="CSGBox3D" parent="." unique_id=192380272]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 4.5, 4.5)
+use_collision = true
+size = Vector3(18, 9, 9)
+material = SubResource("StandardMaterial3D_3os3h")
+
+[node name="Interior" type="CSGBox3D" parent="Walls" unique_id=539119874]
+operation = 2
+size = Vector3(17, 8, 8)
+
+[node name="Door_north" type="CSGBox3D" parent="Walls" unique_id=40021796]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, -2.25, -4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_south" type="CSGBox3D" parent="Walls" unique_id=1092484704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, -2.25, 4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_east" type="CSGBox3D" parent="Walls" unique_id=2068968837]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, -2.25, 0)
+operation = 2
+size = Vector3(2, 3.5, 3)
+
+[node name="Door_west" type="CSGBox3D" parent="Walls" unique_id=1503631295]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, -2.25, 0)
+operation = 2
+size = Vector3(2, 3.5, 3)
+
+[node name="Floor" type="CSGBox3D" parent="." unique_id=594621280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.55, 4.5)
+use_collision = true
+size = Vector3(17, 0.1, 8)
+material = SubResource("StandardMaterial3D_q80ps")
+
+[node name="LootSpawns" type="Node3D" parent="." unique_id=1550654672]
+
+[node name="Spawn1" type="Marker3D" parent="LootSpawns" unique_id=909862089]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.107469, 0.8, 6.9430904)
+
+[node name="Spawn2" type="Marker3D" parent="LootSpawns" unique_id=808749399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.4004955, 0.8, 2.2451594)
+
+[node name="Spawn3" type="Marker3D" parent="LootSpawns" unique_id=1690189008]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0901375, 0.8, 2.171675)
+
+[node name="Spawn4" type="Marker3D" parent="LootSpawns" unique_id=379244393]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.697428, 0.8, 3.7017305)

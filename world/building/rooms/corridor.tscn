@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://world/building/room_node.gd" id="1_asci2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gpf8u"]
+albedo_color = Color(0.4, 0.38, 0.35, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nwyqr"]
+albedo_color = Color(0.24000001, 0.228, 0.21, 1)
+roughness = 0.95
+
+[node name="Corridor" type="Node3D" unique_id=1935350975]
+script = ExtResource("1_asci2")
+room_name = "Corridor"
+weight = 2.0
+doors = [{
+"grid_offset": Vector3i(0, 0, 0),
+"wall": "north"
+}, {
+"grid_offset": Vector3i(0, 0, 0),
+"wall": "south"
+}]
+
+[node name="Walls" type="CSGBox3D" parent="." unique_id=1787031806]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 4.5, 4.5)
+use_collision = true
+size = Vector3(9, 9, 9)
+material = SubResource("StandardMaterial3D_gpf8u")
+
+[node name="Interior" type="CSGBox3D" parent="Walls" unique_id=1729792845]
+operation = 2
+size = Vector3(8, 8, 8)
+
+[node name="Door_north" type="CSGBox3D" parent="Walls" unique_id=2055331001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.25, -4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_south" type="CSGBox3D" parent="Walls" unique_id=143785937]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.25, 4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Floor" type="CSGBox3D" parent="." unique_id=1091948877]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.55, 4.5)
+use_collision = true
+size = Vector3(8, 0.1, 8)
+material = SubResource("StandardMaterial3D_nwyqr")

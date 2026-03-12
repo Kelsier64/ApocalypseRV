@@ -1,0 +1,103 @@
+[gd_scene format=3 uid="uid://mrvrloyko02w"]
+
+[ext_resource type="Script" uid="uid://d21b1esmvilrb" path="res://world/building/room_node.gd" id="1_frfl0"]
+[ext_resource type="Script" uid="uid://bm1o6mgc2mct5" path="res://world/building/elevator_platform.gd" id="2_860i5"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wo2al"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8nwj0"]
+albedo_color = Color(0.2, 0.2, 0.25, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eji0o"]
+albedo_color = Color(0.5, 0.4, 0.2, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_b1pjh"]
+size = Vector3(7.8, 0.3, 7.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ffwwx"]
+size = Vector3(7.8, 0.3, 7.8)
+
+[node name="Node3D" type="Node3D" unique_id=1777367525]
+script = ExtResource("1_frfl0")
+room_name = "Elevator"
+weight = 0.0
+grid_size = Vector3i(1, 4, 1)
+doors = [{
+"grid_offset": Vector3i(0, 0, 0),
+"wall": "south"
+}, {
+"grid_offset": Vector3i(0, 3, 0),
+"wall": "north"
+}, {
+"grid_offset": Vector3i(0, 3, 0),
+"wall": "south"
+}, {
+"grid_offset": Vector3i(0, 3, 0),
+"wall": "east"
+}, {
+"grid_offset": Vector3i(0, 3, 0),
+"wall": "west"
+}]
+
+[node name="Walls" type="CSGBox3D" parent="." unique_id=1454137939]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 18, 4.5)
+use_collision = true
+size = Vector3(9, 36, 9)
+material = SubResource("StandardMaterial3D_wo2al")
+
+[node name="Interior" type="CSGBox3D" parent="Walls" unique_id=1757749007]
+operation = 2
+size = Vector3(8, 35, 8)
+
+[node name="Door_south_entry" type="CSGBox3D" parent="Walls" unique_id=1427789767]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -15.75, 4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_north_top" type="CSGBox3D" parent="Walls" unique_id=341477667]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.9, -4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_south_top" type="CSGBox3D" parent="Walls" unique_id=1251670193]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10.9, 4.5)
+operation = 2
+size = Vector3(3, 3.5, 2)
+
+[node name="Door_east_top" type="CSGBox3D" parent="Walls" unique_id=1298111392]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 10.9, 0)
+operation = 2
+size = Vector3(2, 3.5, 3)
+
+[node name="Door_west_top" type="CSGBox3D" parent="Walls" unique_id=1228138962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 10.9, 0)
+operation = 2
+size = Vector3(2, 3.5, 3)
+
+[node name="Floor" type="CSGBox3D" parent="." unique_id=154605152]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.55, 4.5)
+use_collision = true
+size = Vector3(8, 0.1, 8)
+material = SubResource("StandardMaterial3D_8nwj0")
+
+[node name="LiftStart" type="Marker3D" parent="." unique_id=2024977613]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.6, 4.5)
+
+[node name="LiftEnd" type="Marker3D" parent="." unique_id=1560189136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 27.15, 4.5)
+
+[node name="LiftPlatform" type="AnimatableBody3D" parent="." unique_id=1855020642]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 0.6, 4.5)
+script = ExtResource("2_860i5")
+bottom_y = 0.6
+
+[node name="LiftMesh" type="MeshInstance3D" parent="LiftPlatform" unique_id=2142299778]
+material_override = SubResource("StandardMaterial3D_eji0o")
+mesh = SubResource("BoxMesh_b1pjh")
+
+[node name="LiftCollision" type="CollisionShape3D" parent="LiftPlatform" unique_id=1246546781]
+shape = SubResource("BoxShape3D_ffwwx")
