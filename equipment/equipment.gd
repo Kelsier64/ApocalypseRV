@@ -1,9 +1,39 @@
 extends RigidBody3D
 class_name Equipment
 
+enum BottomFace { DOWN, UP, FRONT, BACK, LEFT, RIGHT }
+
 @export var equipment_name: String = "Unknown Equipment"
 @export var ghost_material: Material
-@export var placement_offset: float = 0.0 # How much to push the origin up from the surface
+@export var bottom_face: BottomFace = BottomFace.DOWN # Which local face sticks to the surface (Mode 1)
+
+## Returns the half-extents of the first BoxShape3D collision child, or mesh AABB fallback.
+func get_half_extents() -> Vector3:
+	for child in get_children():
+		if child is CollisionShape3D and child.shape is BoxShape3D:
+			return child.shape.size / 2.0
+	for child in get_children():
+		if child is MeshInstance3D:
+			return child.get_aabb().size / 2.0
+	return Vector3(0.5, 0.5, 0.5)
+
+## Returns a correction Basis that rotates the equipment so [bottom_face] aligns with -Y.
+## Applied before the placement orientation basis.
+func get_bottom_face_correction() -> Basis:
+	match bottom_face:
+		BottomFace.DOWN:
+			return Basis.IDENTITY
+		BottomFace.UP:
+			return Basis(Vector3.RIGHT, PI)
+		BottomFace.BACK:
+			return Basis(Vector3.RIGHT, PI / 2.0)
+		BottomFace.FRONT:
+			return Basis(Vector3.RIGHT, -PI / 2.0)
+		BottomFace.LEFT:
+			return Basis(Vector3.FORWARD, PI / 2.0)
+		BottomFace.RIGHT:
+			return Basis(Vector3.FORWARD, -PI / 2.0)
+	return Basis.IDENTITY
 
 var original_transform: Transform3D
 var original_local_transform: Transform3D
@@ -115,6 +145,6 @@ func cancel_placement():
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	collision_layer = 1
-	collision_mask = 1
+	collision_mask = 0
 	restore_original_materials(self)
 	print(equipment_name, " placement cancelled. Returned to original spot.")

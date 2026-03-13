@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://dn0w2tc4r8kib"]
+
+[ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
+albedo_color = Color(0.45, 0.47, 0.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mesh"]
+size = Vector3(4, 0.2, 12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
+size = Vector3(4, 0.2, 12)
+
+[node name="RvFloor" type="RigidBody3D" unique_id=332602999]
+mass = 200.0
+script = ExtResource("1_script")
+equipment_name = "RV Floor Panel"
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1768083926]
+material_override = SubResource("StandardMaterial3D_mat")
+mesh = SubResource("BoxMesh_mesh")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=284330102]
+shape = SubResource("BoxShape3D_col")

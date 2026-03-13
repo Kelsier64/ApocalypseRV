@@ -14,7 +14,11 @@ func interact_hold(player: Node3D) -> void:
 		return
 
 	if chassis.has_method("remove_wheel"):
-		var spawn_pos: Vector3 = global_position + Vector3(0, 1.0, 0)
+		# Outward direction: from chassis center to wheel, horizontal only
+		var outward: Vector3 = global_position - chassis.global_position
+		outward.y = 0.0
+		outward = outward.normalized()
+		var spawn_pos: Vector3 = global_position + outward * 2 + Vector3(0, 0.5, 0)
 		chassis.remove_wheel(slot_index)
 		# Spawn a wheel prop at the removal position
 		var wheel_scene := load(WHEEL_PROP_SCENE) as PackedScene
@@ -22,6 +26,9 @@ func interact_hold(player: Node3D) -> void:
 			var wheel_prop := wheel_scene.instantiate()
 			chassis.get_parent().add_child(wheel_prop)
 			wheel_prop.global_position = spawn_pos
+			# Apply outward + upward impulse
+			if wheel_prop is RigidBody3D:
+				wheel_prop.linear_velocity = outward * 4.0 + Vector3(0, 3.0, 0)
 
 func _get_chassis() -> Node3D:
 	# Walk up: WheelHitbox -> Wheel_XX -> Chassis

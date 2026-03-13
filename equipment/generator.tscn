@@ -15,7 +15,6 @@ size = Vector3(0.8, 0.6, 1.2)
 mass = 50.0
 script = ExtResource("1_5yxne")
 equipment_name = "Portable Generator"
-placement_offset = 0.3
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1014470640]
 material_override = SubResource("StandardMaterial3D_w5vnv")

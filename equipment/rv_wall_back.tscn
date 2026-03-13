@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://6ijedjc6opf7"]
+
+[ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
+albedo_color = Color(0.7, 0.72, 0.75, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_mesh"]
+size = Vector3(3.6, 2, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
+size = Vector3(3.6, 2, 0.2)
+
+[node name="RvWallBack" type="RigidBody3D" unique_id=1921625581]
+mass = 80.0
+script = ExtResource("1_script")
+equipment_name = "RV Wall Back"
+bottom_face = 3
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1630050718]
+material_override = SubResource("StandardMaterial3D_mat")
+mesh = SubResource("BoxMesh_mesh")
+
+[node name="Collision" type="CollisionShape3D" parent="." unique_id=1237018238]
+shape = SubResource("BoxShape3D_col")
