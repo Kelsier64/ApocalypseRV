@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://cfye3m5c1musc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_llexp"]
+cull_mode = 2
+albedo_color = Color(0.62, 0.6, 0.58, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_jtbcu"]
+material = SubResource("StandardMaterial3D_llexp")
+size = Vector3(0.6, 8, 0.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_h5kva"]
+size = Vector3(0.4, 3, 0.4)
+
+[node name="pillar" type="Node3D" unique_id=1195979645]
+
+[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1027635058]
+mesh = SubResource("BoxMesh_jtbcu")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=181461160]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=936173069]
+shape = SubResource("BoxShape3D_h5kva")

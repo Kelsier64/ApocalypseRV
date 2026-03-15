@@ -1,0 +1,172 @@
+[gd_scene format=3 uid="uid://ddpx74rtn07ik"]
+
+[ext_resource type="PackedScene" uid="uid://cfye3m5c1musc" path="res://world/building/tiles/pillar.tscn" id="1_cdw25"]
+[ext_resource type="PackedScene" path="res://world/building/tiles/fuel_pump.tscn" id="2_2ic2e"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_23sj8"]
+cull_mode = 2
+albedo_color = Color(0.5, 0.48, 0.45, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="BoxMesh_wqqjc"]
+material = SubResource("StandardMaterial3D_23sj8")
+size = Vector3(18, 0.2, 22)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3mrtq"]
+size = Vector3(18, 0.15, 14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c2s2j"]
+cull_mode = 2
+albedo_color = Color(0.65, 0.6, 0.55, 1)
+metallic = 0.3
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_86bnl"]
+material = SubResource("StandardMaterial3D_c2s2j")
+size = Vector3(10, 0.15, 7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_i7loi"]
+size = Vector3(10, 0.15, 7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oiycn"]
+cull_mode = 2
+albedo_color = Color(0.5, 0.45, 0.4, 1)
+metallic = 0.4
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_k0rrt"]
+material = SubResource("StandardMaterial3D_oiycn")
+size = Vector3(10, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_v1b1w"]
+material = SubResource("StandardMaterial3D_oiycn")
+size = Vector3(10, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_r4rdr"]
+material = SubResource("StandardMaterial3D_oiycn")
+size = Vector3(0.1, 0.3, 7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_in2wf"]
+material = SubResource("StandardMaterial3D_oiycn")
+size = Vector3(0.1, 0.3, 7)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w5cfl"]
+cull_mode = 2
+albedo_color = Color(0.58, 0.56, 0.52, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_fqqf5"]
+material = SubResource("StandardMaterial3D_w5cfl")
+size = Vector3(8, 0.15, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ybi1v"]
+size = Vector3(8, 0.15, 1.2)
+
+[node name="GasStation" type="Node3D" unique_id=307486830]
+
+[node name="GroundSlab" type="MeshInstance3D" parent="." unique_id=651222650]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.075, -0.25)
+mesh = SubResource("BoxMesh_wqqjc")
+
+[node name="@StaticBody3D@3" type="StaticBody3D" parent="GroundSlab" unique_id=1576530288]
+
+[node name="@CollisionShape3D@2" type="CollisionShape3D" parent="GroundSlab/@StaticBody3D@3" unique_id=759231745]
+shape = SubResource("BoxShape3D_3mrtq")
+
+[node name="roof" type="Node3D" parent="." unique_id=990254465]
+transform = Transform3D(-8.742278e-08, 0, 2, 0, 2, 0, -2, 0, -8.742278e-08, 0, 6, 0)
+
+[node name="CanopyRoof" type="MeshInstance3D" parent="roof" unique_id=2090013298]
+mesh = SubResource("BoxMesh_86bnl")
+
+[node name="@StaticBody3D@17" type="StaticBody3D" parent="roof/CanopyRoof" unique_id=1999993049]
+
+[node name="@CollisionShape3D@16" type="CollisionShape3D" parent="roof/CanopyRoof/@StaticBody3D@17" unique_id=1935479574]
+shape = SubResource("BoxShape3D_i7loi")
+
+[node name="FasciaNorth" type="MeshInstance3D" parent="roof" unique_id=838889892]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22500014, -3.5)
+mesh = SubResource("BoxMesh_k0rrt")
+
+[node name="FasciaSouth" type="MeshInstance3D" parent="roof" unique_id=736432314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.22500014, 3.5)
+mesh = SubResource("BoxMesh_v1b1w")
+
+[node name="FasciaEast" type="MeshInstance3D" parent="roof" unique_id=1578914006]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, -0.22500014, 0)
+mesh = SubResource("BoxMesh_r4rdr")
+
+[node name="FasciaWest" type="MeshInstance3D" parent="roof" unique_id=237935370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, -0.22500014, 0)
+mesh = SubResource("BoxMesh_in2wf")
+
+[node name="pump+pillar" type="Node3D" parent="." unique_id=1469678655]
+
+[node name="CanopyPillar2" parent="pump+pillar" unique_id=1195979645 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, 0)
+
+[node name="CanopyPillar4" parent="pump+pillar" unique_id=366717335 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 0)
+
+[node name="FuelPump1" parent="pump+pillar" unique_id=1153120519 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1, 0)
+
+[node name="FuelPump2" parent="pump+pillar" unique_id=1984249974 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0)
+
+[node name="PumpIsland" type="MeshInstance3D" parent="pump+pillar" unique_id=829570369]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.075, 0)
+mesh = SubResource("BoxMesh_fqqf5")
+
+[node name="_StaticBody3D_19" type="StaticBody3D" parent="pump+pillar/PumpIsland" unique_id=612485663]
+
+[node name="_CollisionShape3D_18" type="CollisionShape3D" parent="pump+pillar/PumpIsland/_StaticBody3D_19" unique_id=1033099141]
+shape = SubResource("BoxShape3D_ybi1v")
+
+[node name="pump+pillar2" type="Node3D" parent="." unique_id=1857375915]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7)
+
+[node name="CanopyPillar2" parent="pump+pillar2" unique_id=695022344 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, 0)
+
+[node name="CanopyPillar4" parent="pump+pillar2" unique_id=647399893 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 0)
+
+[node name="FuelPump1" parent="pump+pillar2" unique_id=787092021 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1, 0)
+
+[node name="FuelPump2" parent="pump+pillar2" unique_id=1161066306 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0)
+
+[node name="PumpIsland" type="MeshInstance3D" parent="pump+pillar2" unique_id=1000281469]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.075, 0)
+mesh = SubResource("BoxMesh_fqqf5")
+
+[node name="_StaticBody3D_19" type="StaticBody3D" parent="pump+pillar2/PumpIsland" unique_id=2105755409]
+
+[node name="_CollisionShape3D_18" type="CollisionShape3D" parent="pump+pillar2/PumpIsland/_StaticBody3D_19" unique_id=24613764]
+shape = SubResource("BoxShape3D_ybi1v")
+
+[node name="pump+pillar3" type="Node3D" parent="." unique_id=1413198699]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7)
+
+[node name="CanopyPillar2" parent="pump+pillar3" unique_id=256386319 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, 0)
+
+[node name="CanopyPillar4" parent="pump+pillar3" unique_id=348998761 instance=ExtResource("1_cdw25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2, 0)
+
+[node name="FuelPump1" parent="pump+pillar3" unique_id=1480028641 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1, 0)
+
+[node name="FuelPump2" parent="pump+pillar3" unique_id=1616331746 instance=ExtResource("2_2ic2e")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0)
+
+[node name="PumpIsland" type="MeshInstance3D" parent="pump+pillar3" unique_id=33406197]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.075, 0)
+mesh = SubResource("BoxMesh_fqqf5")
+
+[node name="_StaticBody3D_19" type="StaticBody3D" parent="pump+pillar3/PumpIsland" unique_id=1827724159]
+
+[node name="_CollisionShape3D_18" type="CollisionShape3D" parent="pump+pillar3/PumpIsland/_StaticBody3D_19" unique_id=1751781461]
+shape = SubResource("BoxShape3D_ybi1v")
