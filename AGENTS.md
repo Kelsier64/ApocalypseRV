@@ -115,4 +115,3 @@ Base class for all pickups (extends RigidBody3D). Key exports: `item_name`, `is_
 - **Simple scenes**: Edit `.tscn` directly only for simple tasks
 - **Complex scenes**: Write `SceneTree` generation scripts and run with `godot --headless -s`; always create fresh scripts (never reuse) to avoid overwriting manual edits
 - **Editor tasks**: Provide `.gd` files + step-by-step Editor UI instructions instead of editing `.tscn` directly
-- **Renderer**: GL Compatibility — not Vulkan/Forward+. Shader features are limited.

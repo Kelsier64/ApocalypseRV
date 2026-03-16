@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8n1nxxv2p8a1"]
-
-[ext_resource type="PackedScene" uid="uid://ddpx74rtn07ik" path="res://world/building/scenes/gas_station.tscn" id="1_xxx"]
-
-[node name="GasStationWithStore" type="Node3D"]
-
-[node name="GasStation" parent="." instance=ExtResource("1_xxx")]
