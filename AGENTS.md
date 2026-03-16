@@ -1,99 +1,118 @@
-# ApocalypseRV - Agentic AI Coding Guidelines
+# CLAUDE.md
 
-This document provides instructions for AI coding agents operating within the ApocalypseRV repository. It outlines how to run, test, and style code for this cooperative first-person survival game built with **Godot 4.6**, **Jolt Physics**, and **GL Compatibility renderer**.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
----
+## Project Overview
 
-## 1. Build, Lint, and Test Commands
+ApocalypseRV is a cooperative first-person survival game built with **Godot 4.6**, **Jolt Physics**, and **GL Compatibility** renderer. Players drive an RV through a procedurally generated post-apocalyptic highway, scavenging buildings, crafting upgrades, and fighting zombies.
 
-ApocalypseRV does not have a traditional compilation step for the game itself, as it relies on the Godot engine. However, there are Python-based offline tools managed by `uv`.
+## Commands
 
-### Running the Game
-To run the game (the main scene is `test_world.tscn`):
 ```bash
+# Run the game (main scene: res://world/test_world.tscn)
 godot --path . res://world/test_world.tscn
+
+# Run a generation script headlessly
+godot --headless -s <script.gd>
+
+# Python offline tools (not Godot runtime)
+uv run main.py
+uv run test_building_gen.py
 ```
-*Note: If testing within the Godot 4.6 Editor, simply press **F5**.*
 
-### Python Offline Tools & Tests
-The repository uses Python (managed via `uv`) for offline tooling like generation helpers and migration scripts.
+There is no build step or test suite. Open in Godot 4.6 Editor and press F5 to run.
 
-- **Run main tooling script:**
-  ```bash
-  uv run main.py
-  ```
-- **Run a single test (e.g., building generation test):**
-  ```bash
-  uv run test_building_gen.py
-  ```
-*(Agent Note: Always use `uv run <script_name>.py` to execute Python scripts in this repository to ensure the correct environment and dependencies are used.)*
+## Architecture
 
----
-
-## 2. Code Style & Conventions
-
-The codebase primarily consists of **GDScript** for the game engine and **Python** for offline tooling. Ensure all code adheres to these guidelines.
-
-### GDScript Guidelines
-
-#### Naming Conventions
-- **Variables & Functions:** Use `snake_case` (e.g., `health_points`, `calculate_damage()`).
-- **Internal/Private Members:** Prefix with an underscore `_` (e.g., `_process_chase()`, `_build_terrain_mesh()`, `_current_state`).
-- **Class Names (and Node types):** Use `PascalCase` (e.g., `CharacterBody3D`, `InventoryManager`).
-- **Constants:** Use `ALL_CAPS` (e.g., `MAX_INVENTORY_SIZE`).
-
-#### Formatting & Syntax
-- **Node References:** Always use `@onready var foo = $NodePath` for node references. Use `get_node_or_null()` when dealing with dynamic or uncertain node structures to program defensively.
-- **Inspector Properties:** Use `@export_group("Name")` to organize exported variables in the Godot inspector.
-- **UI Construction:** Player HUDs (inventory, health bar) are built entirely programmatically in `_ready()`—do not rely on `.tscn` files for them.
-- **Signals:** Connect signals programmatically using `.connect(callable)` or lambdas. Always disconnect before reconnecting when re-using nodes.
-
-#### Typing & Imports
-- **Duck-Typing:** Avoid circular imports or hard dependencies by utilizing duck-typing. Use `has_method("method_name")` and `"property" in obj` before interacting with external nodes (e.g., `if target.has_method("take_damage"): target.take_damage(amount)`).
-- **Node Lookups:** There are **no autoloads (singletons)**. For cross-tree lookups, rely on the SceneTree's group system: `get_tree().get_nodes_in_group("group_name")`. (Valid groups: `"player"`, `"monsters"`, `"rv"`, `"crafting_stations"`).
-
-#### Error Handling
-- Fail gracefully. Since GDScript does not use traditional try-catch blocks for game logic, always check if a node exists (`is_instance_valid()`, `!= null`) before accessing its properties.
-
-### Python Guidelines (Offline Tools)
-- Follow standard **PEP 8** formatting.
-- Use explicit type hinting for function arguments and return types.
-- Ensure any file operations use context managers (`with open(...) as f:`).
-
----
-
-## 3. Architecture & Cross-System Communication
-
-### Scene Hierarchy (`test_world.tscn`)
+### Scene Hierarchy (test_world.tscn)
 ```
 TestWorld (Node3D)
-├── RV (VehicleBody3D)          <- WorldGenerator tracks this, NOT the player
+├── RV / Chassis (VehicleBody3D)   ← WorldGenerator tracks THIS, not the Player
 ├── Player (CharacterBody3D)
 │   ├── Camera3D
-│   │   ├── PlayerInteract (RayCast3D)
-│   │   └── HandMarker (Marker3D - created at runtime)
-│   ├── InventoryUI (CanvasLayer - built programmatically)
-│   └── HealthBarUI (CanvasLayer - built programmatically)
-└── WorldGenerator (Node3D)    <- spawns/despawns ChunkGenerator nodes
+│   │   └── PlayerInteract (RayCast3D)
+│   ├── InventoryUI (CanvasLayer, built in _ready())
+│   └── HealthBarUI (CanvasLayer, built in _ready())
+└── WorldGenerator (Node3D)        ← spawns/despawns ChunkGenerator nodes
 ```
 
-### Communication Patterns
-- **Player -> Equipment/Props:** The `player_interact.gd` RayCast3D calls `interact()` or `start_placement()` directly on the target object.
-- **Equipment -> RV:** Equipment scripts search up the tree structure to find a connected RV using duck-typing and group checks (`"rv"`).
-- **RV -> UI:** The RV communicates inventory changes via signals like `inventory_changed(item_name, amount)`.
-- **Physics -> Logic:** Monster HitBoxes (`Area3D`) use `body_entered` to detect the `VehicleBody3D` (RV).
+### Cross-System Communication
 
----
+**No autoloads.** Cross-tree lookups use `get_tree().get_nodes_in_group()` with groups: `"player"`, `"monsters"`, `"rv"`, `"chassis"`, `"crafting_stations"`.
 
-## 4. Critical Pitfalls & Important Context (Copilot Rules)
+| From → To | Method |
+|-----------|--------|
+| Player → Equipment/Props | `player_interact.gd` RayCast3D calls `interact()` / `start_placement()` |
+| Equipment → RV | `get_connected_rv()` walks tree upward checking group `"rv"`, duck-typed |
+| RV → TabletUI | `inventory_changed(item_name, amount)` signal |
+| Monster → Player | `target_player.take_damage(amount)` via `has_method()` check |
+| Monster ← Vehicle | HitBox (Area3D) `body_entered` detects VehicleBody3D |
+| World → Chunks | `WorldGenerator._process()` compares RV Z position to chunk boundaries |
 
-When modifying code, you MUST keep these constraints in mind:
+### Collision Layer Convention
 
-- **Jolt Physics:** The game uses Jolt Physics, not Godot's default engine. Non-uniform scaling on collision shapes will cause Jolt errors. **Always** use uniform scale (e.g., `Vector3(x, x, x)`) for tweens or scaling on nodes with `CollisionShape3D`.
-- **Equipment Placement Collision:** After placing equipment on the RV, you must call `add_collision_exception_with()` on the entire parent chain to prevent physics glitches that rocket the RV into the air. If placement is cancelled, `remove_collision_exception_with()` must be called to clean up.
-- **Scrapper Dependency:** The Scrapper equipment is non-functional off the RV by design. Its `get_connected_rv()` method requires it to be a descendant of a node in the `"rv"` group.
-- **World Tracking:** The `WorldGenerator` tracks the RV (`NodePath("../RV")`), **not** the player. Chunk streaming centers on the vehicle.
-- **Prop Instantiation:** `interactable_item.gd` relies on `self.scene_file_path` to store paths for drops/spawns. Props instantiated programmatically (not from a `.tscn`) will have an empty path. Ensure fallback logic exists (currently only implemented for `oil_barrel` and `scrap`).
-- **Generation Seed:** The noise seed in `chunk_generator.gd` is currently hardcoded (`noise.seed = 1337`).
-- **Building Doors:** The procedural `BuildingGenerator` door/seal logic is currently known to be buggy (some doors are sealed when they shouldn't be, etc.). Proceed with caution when editing BSP room graph logic.
-- **Renderer Limits:** The project uses the **GL Compatibility** renderer. Do not write shaders or use features that require Vulkan/Forward+.
+- **Layer 1**: Physics (default for all physical bodies)
+- **Layer 2**: Interaction-only (e.g., wheel hitboxes — invisible to chassis physics on mask 1)
+
+### RV System (`rv/`)
+
+Two implementations exist: `rv.gd` (class `RV`) and `chassis.gd` (class `Chassis`). `Chassis` is the newer version with additional features:
+- **Wheel slot system**: 4 slots (FL/FR/RL/RR), wheels created programmatically as `VehicleWheel3D` + mesh + hitbox. Removable via hold-interact, installable from Prop inventory.
+- **Inventory**: `add_item()`, `has_materials()`, `deduct_materials()`, `get_all_items()` with `inventory_changed` signal.
+- **Fuel/power**: `current_fuel`/`max_fuel`, `current_power`/`max_power` (tracked but not yet consumed).
+- **Debug driving**: Arrow keys always work regardless of `is_player_driving` state.
+
+### Driver Seat (`equipment/driver_seat.gd`)
+
+Player boards via hold-interact on the seat. Boarding disables player physics/collision, hides the player, activates the seat's Camera3D, and calls `rv.set_driving_state(true)`. Press E to exit (teleports player to the side). Uses `call_deferred("_setup_if_on_rv")` in `_ready()` to ensure the RV's group registration completes first.
+
+### Equipment Placement Flow
+
+1. Player holds F for 2s on Equipment → `start_placement()` freezes physics, applies ghost material
+2. `_physics_process` raycasts from camera, positions ghost with surface/upright mode (toggle R)
+3. Left-click confirms: reparents to hit target (walks up to find RV), calls `add_collision_exception_with()` on entire parent chain
+4. Right-click cancels, restores original position
+
+### World Generation Pipeline
+
+1. **WorldGenerator** (`world/world_generator.gd`) — owns noise (terrain seed 1337, detail seed 7331), streams chunks based on RV position (3 ahead, 2 behind)
+2. **ChunkGenerator** (`world/chunk_generator.gd`) — 150m chunks, builds terrain + road meshes via SurfaceTool, places POIs
+3. **POIConfig** (`world/poi_config.gd`) — unified POI table with weight, footprint, loot tables, enemy config.
+4. **POISpawner** (`world/poi_spawner.gd`) — RefCounted, weighted `pick_poi()`, spawns buildings/loot/enemies
+5. **BuildingGenerator** (`world/building/building_generator.gd`) — BFS room graph on 9m occupancy grid, elevator-rooted procedural towers
+
+
+### Prop System (`props/interactable_item.gd`, class_name `Prop`)
+
+Base class for all pickups (extends RigidBody3D). Key exports: `item_name`, `is_large`, `scrap_yields` (dict of material → Vector2 min/max range), and hold visual offsets (`hold_position`, `hold_rotation`, `hold_scale`). Interaction uses duck-typing: calls `player.add_item(item_name, is_large, scene_file_path)`.
+
+## Critical Pitfalls
+
+**Jolt Physics** — Non-uniform scale on CollisionShapes causes Jolt errors. Always use uniform `Vector3(x, x, x)` for scale tweens on nodes with CollisionShapes.
+
+**Equipment collision exceptions** — After placing equipment on the RV, `add_collision_exception_with()` must be called on the entire parent chain. Forgetting this rockets the RV into the air. `cancel_placement()` must clean up with `remove_collision_exception_with()`.
+
+**Scrapper non-functional off-RV** — `get_connected_rv()` requires descendant of a node in group `"rv"`. Scrapper on the ground silently does nothing.
+
+**`scene_file_path` for props** — `interactable_item.gd` uses `self.scene_file_path` for drop/spawn paths. Programmatically instantiated props have an empty path (fallbacks only for oil_barrel and scrap).
+
+**Building door sealing is known-broken** — Procedural BuildingGenerator door/seal logic has bugs where some doors that should be sealed aren't, and vice versa.
+
+**Deferred setup for equipment on RV** — Equipment that needs to find its parent RV in `_ready()` must use `call_deferred()` because the RV hasn't added itself to group `"rv"` yet during its own `_ready()`.
+
+## GDScript Conventions
+
+- `snake_case` vars/funcs, `PascalCase` classes, `ALL_CAPS` constants
+- `_` prefix for internal functions
+- Duck-typing with `has_method()` / `"property" in obj` to avoid circular imports
+- `@export_group("Name")` for inspector organization
+- Player HUDs built entirely in `_ready()` — no .tscn files for UI
+- Use static typing where applicable
+
+## Development Rules
+
+- **Python**: Always use `uv` (`uv run <path>`)
+- **Simple scenes**: Edit `.tscn` directly only for simple tasks
+- **Complex scenes**: Write `SceneTree` generation scripts and run with `godot --headless -s`; always create fresh scripts (never reuse) to avoid overwriting manual edits
+- **Editor tasks**: Provide `.gd` files + step-by-step Editor UI instructions instead of editing `.tscn` directly
+- **Renderer**: GL Compatibility — not Vulkan/Forward+. Shader features are limited.
