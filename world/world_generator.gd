@@ -9,11 +9,13 @@ var next_transform: Transform3D = Transform3D.IDENTITY
 var next_turn_angle: float = 0.0
 var terrain_noise: FastNoiseLite
 var detail_noise: FastNoiseLite
+var poi_spawner: POISpawner
 
 @export var player: Node3D
 
 func _ready():
 	_init_noise()
+	poi_spawner = POISpawner.new()
 	print("World Generator Started. Spawning initial chunks...")
 	var chunk_length = 150.0
 
@@ -24,7 +26,7 @@ func _ready():
 		add_child(chunk)
 		# Starting far away in +Z and generating -Z towards origin
 		var start_transform = Transform3D(Basis(), Vector3(0, 0, i * chunk_length))
-		chunk.generate_chunk(start_transform, 0.0, terrain_noise, detail_noise)
+		chunk.generate_chunk(start_transform, 0.0, terrain_noise, detail_noise, poi_spawner)
 		active_chunks.append({
 			"node": chunk,
 			"start_z": start_transform.origin.z,
@@ -67,7 +69,7 @@ func _spawn_next_chunk():
 	add_child(chunk)
 	
 	# The chunk generates itself and returns the transform for the NEXT chunk's start
-	var end_transform = chunk.generate_chunk(next_transform, next_turn_angle, terrain_noise, detail_noise)
+	var end_transform = chunk.generate_chunk(next_transform, next_turn_angle, terrain_noise, detail_noise, poi_spawner)
 	
 	# Determine rough Z boundaries for streaming logic
 	var start_z = next_transform.origin.z

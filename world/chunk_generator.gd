@@ -31,11 +31,12 @@ func _get_terrain_height(gx: float, gz: float, micro_multiplier: float = 1.0) ->
 
 
 func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
-		shared_noise: FastNoiseLite, shared_detail_noise: FastNoiseLite) -> Transform3D:
+		shared_noise: FastNoiseLite, shared_detail_noise: FastNoiseLite, shared_poi_spawner: POISpawner) -> Transform3D:
 	global_transform = start_transform
 
 	noise = shared_noise
 	detail_noise = shared_detail_noise
+	_poi_spawner = shared_poi_spawner
 
 	# Bezier road curve
 	start_pos = Vector3.ZERO
@@ -45,7 +46,6 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 	control_p2 = end_pos + Vector3(-sin(next_turn_angle) * CHUNK_SIZE * 0.33, 0, CHUNK_SIZE * 0.33)
 
 	# POI placement
-	_poi_spawner = POISpawner.new()
 	has_poi = false
 	if randf() < 0.5:
 		_try_place_poi()
