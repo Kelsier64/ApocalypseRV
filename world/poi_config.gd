@@ -4,10 +4,10 @@ class_name POIConfig
 const POI_TABLE: Array[Dictionary] = [
 	{
 		"id": "gas_station",
-		"scene": "res://world/building/scenes/gas_station.tscn",
+		"scene": "res://world/building/scenes/gas_station_with_store.tscn",
 		"type": "gridmap",
 		"weight": 12,
-		"footprint_radius": 12.0,
+		"footprint_radius": 22.0,
 		"footprint_blend": 10.0,
 		"min_road_distance": 15.0,
 		"loot": {
