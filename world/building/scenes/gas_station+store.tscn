@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://jwd2nvfhj48t"]
+
+[ext_resource type="PackedScene" uid="uid://ddpx74rtn07ik" path="res://world/building/scenes/gas_station.tscn" id="1_6m86x"]
+[ext_resource type="PackedScene" uid="uid://ns64832t5lil" path="res://world/building/scenes/convenience_store.tscn" id="2_5vies"]
+
+[node name="GasStation+store" type="Node3D" unique_id=399103596]
+
+[node name="GasStation" parent="." unique_id=307486830 instance=ExtResource("1_6m86x")]
+
+[node name="ConvenienceStore" parent="." unique_id=1961780722 instance=ExtResource("2_5vies")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34481192, 0, -21.249342)
