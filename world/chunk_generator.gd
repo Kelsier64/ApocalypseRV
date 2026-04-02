@@ -63,8 +63,8 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 
 	# Spawn POI contents
 	if has_poi:
-		_poi_spawner.spawn_building(_current_poi, self, poi_local_pos)
-		_poi_spawner.spawn_loot(_current_poi, self, poi_local_pos)
+		var poi_building := _poi_spawner.spawn_building(_current_poi, self, poi_local_pos)
+		_poi_spawner.spawn_loot(_current_poi, self, poi_local_pos, poi_building)
 		_poi_spawner.spawn_enemies(_current_poi, self, poi_local_pos, _get_local_height)
 
 	_spawn_road_zombies()

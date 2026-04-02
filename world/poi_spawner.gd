@@ -32,7 +32,7 @@ func spawn_building(poi: Dictionary, parent_node: Node3D, local_pos: Vector3) ->
 	return building
 
 
-func spawn_loot(poi: Dictionary, parent_node: Node3D, center: Vector3) -> void:
+func spawn_loot(poi: Dictionary, parent_node: Node3D, center: Vector3, building: Node3D = null) -> void:
 	var loot_cfg: Dictionary = poi.get("loot", {})
 	if loot_cfg.is_empty():
 		return
@@ -43,19 +43,28 @@ func spawn_loot(poi: Dictionary, parent_node: Node3D, center: Vector3) -> void:
 	if table.is_empty():
 		return
 
+	var spawn_points: Array[Marker3D] = _collect_loot_spawn_points(building)
+
 	var num_items := randi_range(count_range.x, count_range.y)
-	for i in num_items:
+	for i in range(num_items):
 		var scene_path := _pick_from_loot_table(table)
 		var scene := _load_cached(scene_path)
 		if not scene:
 			continue
 		var item := scene.instantiate()
-		item.position = Vector3(
-			center.x + randf_range(-radius, radius),
-			center.y + 1.0,
-			center.z + randf_range(-radius, radius),
-		)
-		parent_node.add_child(item)
+		if i < spawn_points.size():
+			parent_node.add_child(item)
+			item.global_transform = spawn_points[i].global_transform
+		else:
+			item.position = Vector3(
+				center.x + randf_range(-radius, radius),
+				center.y + 1.0,
+				center.z + randf_range(-radius, radius),
+			)
+			parent_node.add_child(item)
+		if i < spawn_points.size() and item is RigidBody3D:
+			item.linear_velocity = Vector3.ZERO
+			item.angular_velocity = Vector3.ZERO
 
 
 func spawn_enemies(poi: Dictionary, parent_node: Node3D, center: Vector3,
@@ -129,3 +138,40 @@ func _load_cached(path: String) -> PackedScene:
 	if scene:
 		_scene_cache[path] = scene
 	return scene
+
+
+func _collect_loot_spawn_points(building: Node3D) -> Array[Marker3D]:
+	var result: Array[Marker3D] = []
+	if building == null:
+		return result
+
+	for loot_spawns_root in _find_nodes_named(building, "LootSpawns"):
+		for child in loot_spawns_root.get_children():
+			if child is Marker3D:
+				result.append(child)
+
+	if result.is_empty():
+		for marker in _find_markers_recursive(building):
+			if marker.name.begins_with("LootSpawn"):
+				result.append(marker)
+
+	result.shuffle()
+	return result
+
+
+func _find_nodes_named(root: Node, target_name: String) -> Array[Node]:
+	var nodes: Array[Node] = []
+	for child in root.get_children():
+		if child.name == target_name:
+			nodes.append(child)
+		nodes.append_array(_find_nodes_named(child, target_name))
+	return nodes
+
+
+func _find_markers_recursive(root: Node) -> Array[Marker3D]:
+	var markers: Array[Marker3D] = []
+	for child in root.get_children():
+		if child is Marker3D:
+			markers.append(child)
+		markers.append_array(_find_markers_recursive(child))
+	return markers
