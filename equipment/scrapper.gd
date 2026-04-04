@@ -7,6 +7,7 @@ var props_being_crushed: Array[Dictionary] = []
 var crush_speed: float = 0.5 # Units per second to pull down
 var crush_time: float = 1.5 # Seconds to crush
 var roller_spin_speed: float = 5.0 # Radians per second
+var power_draw_per_second: float = 0.8
 
 func _ready():
 	# Allow Equipment logic to initialize
@@ -20,6 +21,13 @@ func _ready():
 
 func _process(delta: float):
 	if props_being_crushed.size() > 0:
+		var rv = get_connected_rv()
+		if not rv:
+			return
+		if rv and rv.has_method("consume_power"):
+			if not rv.consume_power(power_draw_per_second * delta):
+				return
+
 		# Rotate rollers around their local Y axis (which is the cylinder's length)
 		if is_instance_valid(roller1):
 			roller1.rotate_object_local(Vector3.UP, roller_spin_speed * delta)
@@ -58,6 +66,10 @@ func recycle_prop(prop: Prop):
 	if not rv:
 		print(">>> SCRAPPER OFFLINE: Not connected to RV Power!")
 		# Bounce the item back out (or just don't accept it)
+		prop.apply_central_impulse(Vector3(0, 5.0, 0))
+		return
+	if rv.has_method("has_usable_power") and not rv.has_usable_power():
+		print(">>> SCRAPPER OFFLINE: No RV power available!")
 		prop.apply_central_impulse(Vector3(0, 5.0, 0))
 		return
 		

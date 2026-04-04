@@ -1,6 +1,7 @@
 extends Equipment
 
 var ui_instance: Node = null
+@export var power_cost_per_open: float = 0.2
 
 func _ready():
 	super._ready()
@@ -15,6 +16,17 @@ func _ready():
 # Called by player_interact when E is held for 1 second
 func interact_hold(player: Node3D):
 	if is_being_placed: return
+
+	var rv = get_connected_rv()
+	if not rv:
+		print("Tablet: Offline (not connected to RV).")
+		return
+	if rv.has_method("has_usable_power") and not rv.has_usable_power():
+		print("Tablet: No power available.")
+		return
+	if not consume_rv_power(power_cost_per_open):
+		print("Tablet: Insufficient power to boot screen.")
+		return
 	
 	if ui_instance and not ui_instance.visible:
 		# Tell the player to lock movement and camera

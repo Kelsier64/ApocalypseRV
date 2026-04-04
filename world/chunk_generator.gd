@@ -74,6 +74,8 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 
 func _try_place_poi() -> void:
 	var poi := _poi_spawner.pick_poi()
+	if poi.is_empty():
+		return
 
 	var hx := randf_range(-CHUNK_SIZE / 2.0 + 20.0, CHUNK_SIZE / 2.0 - 20.0)
 	var hz := randf_range(-CHUNK_SIZE + 20.0, -20.0)

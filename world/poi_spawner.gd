@@ -2,25 +2,39 @@ extends RefCounted
 class_name POISpawner
 
 var _scene_cache: Dictionary = {}
+var _missing_scene_warnings: Dictionary = {}
 
 
 func pick_poi() -> Dictionary:
+	var valid_pois: Array[Dictionary] = []
 	var total := 0
 	for entry in POIConfig.POI_TABLE:
-		total += entry["weight"]
+		if entry.get("type", "gridmap") == "gridmap":
+			var scene_path: String = entry.get("scene", "")
+			if not _scene_exists(scene_path):
+				continue
+		valid_pois.append(entry)
+		total += int(entry.get("weight", 0))
+
+	if valid_pois.is_empty() or total <= 0:
+		return {}
+
 	var roll := randi_range(0, total - 1)
 	var acc := 0
-	for entry in POIConfig.POI_TABLE:
-		acc += entry["weight"]
+	for entry in valid_pois:
+		acc += int(entry.get("weight", 0))
 		if roll < acc:
 			return entry
-	return POIConfig.POI_TABLE[-1]
+	return valid_pois[-1]
 
 
 func spawn_building(poi: Dictionary, parent_node: Node3D, local_pos: Vector3) -> Node3D:
+	if poi.is_empty():
+		return null
+
 	var building: Node3D = null
 
-	if poi["type"] == "procedural":
+	if poi.get("type", "gridmap") == "procedural":
 		building = _create_procedural(poi)
 	else:
 		building = _create_gridmap(poi)
@@ -94,9 +108,11 @@ func spawn_enemies(poi: Dictionary, parent_node: Node3D, center: Vector3,
 # --- Internal ---
 
 func _create_gridmap(poi: Dictionary) -> Node3D:
-	var scene := _load_cached(poi["scene"])
+	var scene_path: String = poi.get("scene", "")
+	var scene := _load_cached(scene_path)
 	if not scene:
-		push_warning("POISpawner: Failed to load " + poi["scene"])
+		if not scene_path.is_empty():
+			_warn_missing_scene(scene_path)
 		return null
 	return scene.instantiate()
 
@@ -134,10 +150,32 @@ func _load_cached(path: String) -> PackedScene:
 		return null
 	if _scene_cache.has(path):
 		return _scene_cache[path]
+	if not _scene_exists(path):
+		return null
 	var scene := load(path) as PackedScene
 	if scene:
 		_scene_cache[path] = scene
+	else:
+		_warn_missing_scene(path)
 	return scene
+
+
+func _scene_exists(path: String) -> bool:
+	if path.is_empty():
+		return false
+	if _scene_cache.has(path):
+		return true
+	if ResourceLoader.exists(path):
+		return true
+	_warn_missing_scene(path)
+	return false
+
+
+func _warn_missing_scene(path: String) -> void:
+	if _missing_scene_warnings.has(path):
+		return
+	_missing_scene_warnings[path] = true
+	push_warning("POISpawner: Missing scene file: " + path)
 
 
 func _collect_loot_spawn_points(building: Node3D) -> Array[Marker3D]:

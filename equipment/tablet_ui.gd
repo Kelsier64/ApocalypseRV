@@ -34,14 +34,10 @@ func on_open():
 		current_rv = tablet_screen.get_connected_rv()
 		
 	if current_rv != connected_rv:
-		if connected_rv and connected_rv.has_signal("inventory_changed") and connected_rv.inventory_changed.is_connected(_on_inventory_changed):
-			connected_rv.inventory_changed.disconnect(_on_inventory_changed)
+		_disconnect_rv_signals()
 			
 		connected_rv = current_rv
-		
-		if connected_rv and connected_rv.has_signal("inventory_changed"):
-			if not connected_rv.inventory_changed.is_connected(_on_inventory_changed):
-				connected_rv.inventory_changed.connect(_on_inventory_changed)
+		_connect_rv_signals()
 				
 	if not ui_setup_done:
 		_setup_crafting_ui()
@@ -91,16 +87,47 @@ func _on_inventory_changed(_item_name: String, _new_amount: int):
 	_update_inventory_display()
 	_evaluate_craft_buttons()
 
+func _on_fuel_changed(_current: float, _max_value: float):
+	_update_inventory_display()
+
+func _on_power_changed(_current: float, _max_value: float):
+	_update_inventory_display()
+
+func _disconnect_rv_signals() -> void:
+	if not connected_rv:
+		return
+	if connected_rv.has_signal("inventory_changed") and connected_rv.inventory_changed.is_connected(_on_inventory_changed):
+		connected_rv.inventory_changed.disconnect(_on_inventory_changed)
+	if connected_rv.has_signal("fuel_changed") and connected_rv.fuel_changed.is_connected(_on_fuel_changed):
+		connected_rv.fuel_changed.disconnect(_on_fuel_changed)
+	if connected_rv.has_signal("power_changed") and connected_rv.power_changed.is_connected(_on_power_changed):
+		connected_rv.power_changed.disconnect(_on_power_changed)
+
+func _connect_rv_signals() -> void:
+	if not connected_rv:
+		return
+	if connected_rv.has_signal("inventory_changed") and not connected_rv.inventory_changed.is_connected(_on_inventory_changed):
+		connected_rv.inventory_changed.connect(_on_inventory_changed)
+	if connected_rv.has_signal("fuel_changed") and not connected_rv.fuel_changed.is_connected(_on_fuel_changed):
+		connected_rv.fuel_changed.connect(_on_fuel_changed)
+	if connected_rv.has_signal("power_changed") and not connected_rv.power_changed.is_connected(_on_power_changed):
+		connected_rv.power_changed.connect(_on_power_changed)
+
 func _evaluate_craft_buttons():
 	for recipe_name in recipes.keys():
 		if craft_buttons.has(recipe_name):
 			if not connected_rv:
+				craft_buttons[recipe_name].disabled = true
+			elif connected_rv.has_method("has_usable_power") and not connected_rv.has_usable_power():
 				craft_buttons[recipe_name].disabled = true
 			else:
 				craft_buttons[recipe_name].disabled = not connected_rv.has_materials(recipes[recipe_name]["costs"])
 
 func _craft_item(recipe_name: String):
 	if not connected_rv: return
+	if connected_rv.has_method("has_usable_power") and not connected_rv.has_usable_power():
+		print("Tablet: No power available!")
+		return
 	
 	var data = recipes[recipe_name]
 	
@@ -132,8 +159,13 @@ func _update_inventory_display():
 	if not connected_rv:
 		content_label.text = "\n\n[ CRITICAL ERROR ]\n\nNO CONNECTION TO MAIN RV SERVER.\n\nSYSTEMS OFFLINE."
 		return
+
+	var fuel_text := "Fuel: %.1f / %.1f" % [connected_rv.current_fuel, connected_rv.max_fuel]
+	var power_text := "Power: %.1f / %.1f" % [connected_rv.current_power, connected_rv.max_power]
 		
 	var text = ">>> LOCAL RV MATERIAL INVENTORY <<<\n\n"
+	text += "[ " + fuel_text + " ]\n"
+	text += "[ " + power_text + " ]\n\n"
 	var items = connected_rv.get_all_items()
 	
 	if items.is_empty():

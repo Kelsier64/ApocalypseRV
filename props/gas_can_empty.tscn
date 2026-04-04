@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/interactable_item.gd" id="1_u7m75"]
+[ext_resource type="PackedScene" uid="uid://dij21ws2gkjpv" path="res://assets/gas_can.glb" id="2_35tw8"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_31uht"]
+size = Vector3(0.39759523, 0.84584963, 0.82353514)
+
+[node name="GasolineCanEmpty" type="RigidBody3D"]
+mass = 5.0
+script = ExtResource("1_u7m75")
+item_name = "Gasoline Can (Empty)"
+scrap_yields = {
+"Metal Parts": Vector2(0, 1)
+}
+
+[node name="@CollisionShape3D@7" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0022521876, -0.028735355, -0.0045410395)
+shape = SubResource("BoxShape3D_31uht")
+
+[node name="gas_can" parent="." instance=ExtResource("2_35tw8")]

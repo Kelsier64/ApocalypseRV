@@ -1,9 +1,13 @@
 [gd_scene format=3 uid="uid://bgu1l4isw02ca"]
 
 [ext_resource type="Script" uid="uid://b5vjpwyyk0ah0" path="res://rv/chassis.gd" id="1_chassis"]
+[ext_resource type="Script" path="res://rv/fuel_filler.gd" id="2_filler"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_body"]
 size = Vector3(4, 1, 12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_filler"]
+size = Vector3(0.35, 0.35, 0.2)
 
 [node name="Chassis" type="VehicleBody3D" unique_id=292402977]
 mass = 3000.0
@@ -60,3 +64,15 @@ sides = 20
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 0.125, 0)
 operation = 2
 size = Vector3(1.4, 0.8, 2)
+
+[node name="FuelFiller" type="CSGBox3D" parent="CSGBox3D" unique_id=1890289289]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.170668, -0.020527601, 2.015883)
+size = Vector3(0.3, 0.3, 0.1)
+
+[node name="InteractArea" type="StaticBody3D" parent="CSGBox3D/FuelFiller"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("2_filler")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CSGBox3D/FuelFiller/InteractArea"]
+shape = SubResource("BoxShape3D_filler")

@@ -59,6 +59,16 @@ func get_connected_rv() -> Node3D:
 		current = current.get_parent()
 	return null
 
+func consume_rv_power(amount: float) -> bool:
+	if amount <= 0.0:
+		return true
+	var rv := get_connected_rv()
+	if not rv:
+		return false
+	if not rv.has_method("consume_power"):
+		return false
+	return rv.consume_power(amount)
+
 # Called when the player successfully holds F for 2 seconds
 func start_placement(player: Node3D):
 	if is_being_placed: return
