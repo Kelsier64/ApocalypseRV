@@ -1,5 +1,5 @@
 <SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, skip this.
+If you were dispatched as a subagent to execute a specific task, ignore this.
 </SUBAGENT-STOP>
 
 <EXTREMELY-IMPORTANT>
@@ -22,7 +22,7 @@ If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "alw
 
 ## How to Access Skills
 
-Use OpenCode's native \`skill\` tool to list and load skills.
+Use your \`skill\` tool to list and load skills.
 
 
 # Using Skills
@@ -103,41 +103,21 @@ The skill itself tells you which.
 Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
 
 
-## Agent Documentation Workflow
+## Documentation 
+If docs exist(./docs), agents can check docs for task context before edits; if docs are missing, skip docs-related skills.
 
-### Required Docs Structure
-- docs/architecture.md
-- docs/design/*.md
-- docs/modules/*.md
-- docs/knowledge/*.md
 
-### Required Behavior
-
-*If docs/architecture.md is missing, DO NOT use skill:maintaining-docs-sync*
-
-1. If docs/architecture.md exists and the task needs project context, read docs directly before any code edits 
-(start with docs/architecture.md than other task-related docs). 
-2. During implementation, if docs and code diverge and docs/architecture.md exists, REQUIRED SKILL: use superpowers:patching-docs-mismatch to patch mismatches (always uses subagent dispatch).
-3. At task completion and docs/architecture.md exists, REQUIRED SKILL: use superpowers:maintaining-docs-sync to verify docs/code alignment. If mismatches found, route to superpowers:patching-docs-mismatch before completing.
-
-### Reading Priority
-1  task-related ./*.md 
-2. docs/architecture.md
-3. task-related docs/*.md  
-*Never re-read AGENTS.md since you auto-load it*
-4. task-related docs/design/*.md
-5. task-related docs/modules/*.md
-6. task-related docs/knowledge/*.md
 
 
 ## User Preferences
-Regardless of the language of user's input, please perform your internal reasoning and tool interactions in English and then translate the final output to Traditional Chinese with a concise and direct tone.
+Regardless of the language of user's input,translate the input to english and perform your internal reasoning and tool interactions in English.
 For user-facing interactions that need clarification, confirmation, or explicit choices, prioritize the **question** tool instead of freeform follow-up prompts.
 
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, ignore this.
 </SUBAGENT-STOP>
+
 
 
 

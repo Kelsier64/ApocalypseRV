@@ -49,18 +49,41 @@ var max_power: float = 100.0
 @export var power_parked_drain_per_second: float = 0.15
 @export var fuel_per_gas_can: float = 30.0
 
+@export_group("Durability")
+@export var max_chassis_health: float = 450.0
+var current_chassis_health: float = 450.0
+var chassis_destroyed: bool = false
+
 func _ready() -> void:
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
 	add_to_group("rv")
 	add_to_group("chassis")
+	add_to_group("monster_damageable")
 	current_fuel = clampf(current_fuel, 0.0, max_fuel)
 	current_power = clampf(current_power, 0.0, max_power)
+	current_chassis_health = clampf(current_chassis_health, 0.0, max_chassis_health)
 	fuel_changed.emit(current_fuel, max_fuel)
 	power_changed.emit(current_power, max_power)
 	if pre_install_wheels:
 		for i in range(WHEEL_SLOTS.size()):
 			_create_wheel_at(i)
+
+func take_damage(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	if chassis_destroyed:
+		return
+
+	current_chassis_health = maxf(current_chassis_health - amount, 0.0)
+	print("Chassis took ", amount, " damage. HP: ", current_chassis_health, "/", max_chassis_health)
+
+	if current_chassis_health <= 0.0:
+		chassis_destroyed = true
+		is_player_driving = false
+		engine_force = 0.0
+		brake = max_braking_force
+		print("Chassis destroyed!")
 
 func refuel_from_player(player: Node3D) -> void:
 	if not player or not player.has_method("get_active_item_name"):

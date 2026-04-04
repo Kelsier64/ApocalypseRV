@@ -1,177 +1,186 @@
-# ApocalypseRV Architecture
+# Architecture
 
 ## 1. Purpose and Scope
-ApocalypseRV is a cooperative first-person survival game prototype in Godot 4.6. The current implementation focuses on three runtime pillars:
-- Streaming highway world generation with POIs.
-- Player interaction, inventory, and combat survival loops.
-- RV-centered fuel and power economy that drives equipment usage.
-
-In scope:
-- Runtime gameplay logic under `world/`, `player/`, `rv/`, `equipment/`, `enemies/`, `props/`.
-- One playable test scene at `world/test_world.tscn`.
-
-Out of scope (in current repository state):
-- Multiplayer netcode implementation details.
-- Persistence/save migration strategy.
-- Deployment packaging pipeline.
+- This document defines the current executable architecture baseline for ApocalypseRV and supports implementation decisions and cross-module change impact analysis.
+- Scope includes world streaming and POI generation, RV driving and energy systems, and player interaction/inventory/equipment placement/crafting flows.
+- Out of scope includes multiplayer authority/network synchronization, long-term save systems, and full enemy AI architecture details not covered by the current evidence set.
 
 ## 2. Goals and Non-Goals
 ### Goals
-- Keep a playable vertical slice with clear gameplay loops.
-- Allow fast iteration by composing systems with scene/script contracts.
-- Maintain deterministic-enough resource rules for fuel and power.
+- Maintain a long-running road-world loop with continuous streaming and POI exploration. (world/world_generator.gd:4, world/world_generator.gd:54, world/chunk_generator.gd:66)
+- Maintain a dual-resource RV energy model (fuel/power) that supports both driving and equipment usage. (rv/chassis.gd:41, rv/chassis.gd:151, equipment/generator.gd:10)
+- Maintain a first-person interaction and equipment placement pipeline so scavenging and onboard production remain sustainable. (player/player_interact.gd:8, equipment/equipment.gd:73, equipment/tablet_ui.gd:126)
 
 ### Non-Goals
-- Full production hardening of every subsystem.
-- Deep anti-cheat/security architecture.
-- Comprehensive automated test coverage across all gameplay modules.
+- This document does not define final balance targets (for example, time-to-empty or time-to-full).
+- This document does not specify implementation details for all GDD vision features (for example, full voice systems or sleep systems).
 
 ## 3. System Context
-- Engine/runtime: Godot 4.6 with GL Compatibility renderer.
-- Physics backend: Jolt Physics.
-- Entry scene: `res://world/test_world.tscn`.
-- Main external dependency is Godot runtime itself; no network service dependency is visible in code.
-- Project constraints emphasize script-driven gameplay iteration and headless script execution for generation tooling.
+- Engine: Godot 4.6. (project.godot:17)
+- Physics: Jolt Physics. (project.godot:27)
+- Renderer: GL Compatibility. (project.godot:32)
+- Main scene: res://world/test_world.tscn. (project.godot:16)
+- Design context: the RV is the shared survival core and the world is a procedural road + POI space. (GDD.md:20, GDD.md:40)
 
 ## 4. Component Map
 | Component | Responsibility | Key Files | Depends On |
 |---|---|---|---|
-| World streaming | Spawn/despawn chunks around player and carry road continuity | `world/world_generator.gd`, `world/chunk_generator.gd` | Player position, noise, POI spawner |
-| POI and spawn system | Weighted POI selection and spawning of buildings, loot, enemies | `world/poi_spawner.gd`, `world/poi_config.gd` | Scene resources, POI table |
-| Procedural building interior | Expand rooms from elevator using occupancy-aware BFS | `world/building/building_generator.gd`, `world/building/room_node.gd` | Room templates under `world/building/rooms/` |
-| Player and interaction | Character movement, inventory, placement mode, world interaction raycast | `player/player.gd`, `player/player_interact.gd` | Equipment/prop contracts, input actions |
-| RV chassis and energy | Vehicle drive controls, fuel/power storage, wheel slots, refuel flow | `rv/chassis.gd`, `rv/fuel_filler.gd`, `rv/wheel_hitbox.gd` | Player item contracts, equipment generators |
-| Equipment runtime | Shared base placement logic and concrete modules (generator/scrapper/crafting) | `equipment/equipment.gd`, `equipment/generator.gd`, `equipment/scrapper.gd`, `equipment/crafting_station.gd` | Connected RV contracts |
-| Enemy AI | Wander/chase/attack loop and loot drop on death | `enemies/monster.gd`, `enemies/zombie.tscn` | Player group lookup, props |
-| Energy tests | Contract tests for core fuel/power API and generator/refuel behavior | `tests/test_energy_system.gd` | `Chassis`, `Equipment`, `Generator` |
+| World Streaming | Spawns/despawns chunks based on player position and maintains front/back buffers | world/world_generator.gd | Chunk Generation, POI Spawning |
+| Chunk Generation | Builds terrain/road meshes, controls road curvature/slope, and emits per-chunk navigation regions | world/chunk_generator.gd | Noise, POI Spawning |
+| POI Spawning | Performs weighted POI selection, spawns building/loot/enemies, and handles cache/missing-scene fallback | world/poi_spawner.gd, world/poi_config.gd | POI Config, Building Generator |
+| Procedural Building | Expands rooms with occupancy + BFS and builds procedural structures | world/building/building_generator.gd | Room Scenes |
+| Enemy Locomotion AI | Patrol/chase/attack with navigation-agent steering fallback and wall-climb assist on steep obstacles | enemies/monster.gd, enemies/zombie.tscn | Chunk navigation regions, player/structure targeting |
+| RV Chassis & Energy | Integrates drive input, engine/brake behavior, fuel/power state and signals, and chassis durability under monster attacks | rv/chassis.gd | Generator, Driver Seat, Fuel Filler |
+| Generator Equipment | Auxiliary conversion from fuel to power | equipment/generator.gd | RV Chassis API |
+| Driver Seat | Switches player driving state and seat camera control | equipment/driver_seat.gd | RV Chassis API |
+| Player Interaction | Raycast interactions, E/F hold-tap behavior, wheel install, and generic interactions | player/player_interact.gd | Player Inventory, Interactable Objects |
+| Player Inventory & Placement | 6-slot inventory, large-item restrictions, and placement preview/confirm/cancel | player/player.gd, equipment/equipment.gd | World Raycast, RV Hierarchy |
+| Crafting UI & Station | Displays RV resources, checks material/power constraints, and outputs crafted items | equipment/tablet_ui.gd, equipment/crafting_station.gd | RV Inventory/Power Contracts |
 
 ## 5. Runtime Flows
 ### Primary flow
-1. `world/test_world.tscn` loads and instantiates `WorldGenerator`, `Player`, RV, and equipment props.
-2. `WorldGenerator._ready()` seeds noise, creates a `POISpawner`, spawns behind/current/ahead chunks.
-3. `WorldGenerator._process()` streams chunks by player Z distance.
-4. `ChunkGenerator.generate_chunk()` builds terrain/road mesh, optionally places POI, then spawns loot/enemies.
-5. Player interaction loop runs through `player/player_interact.gd` (E/F holds and quick interactions).
-6. RV energy loop runs in `Chassis._physics_process()` via `step_energy_system()`, including generator contribution.
+1. After entering the main scene, WorldGenerator creates initial chunks and then streams/despawns chunks as the player moves. (world/world_generator.gd:16, world/world_generator.gd:54, world/world_generator.gd:61)
+2. Chunk generation builds terrain/road meshes and a road-following `ChunkNavigationRegion` for AI path queries. (world/chunk_generator.gd:54, world/chunk_generator.gd:55, world/chunk_generator.gd:56, world/chunk_generator.gd:334, world/chunk_generator.gd:377)
+3. Zombie monsters use `NavigationAgent3D` for patrol/chase steering when map data is ready; otherwise they fall back to direct steering and can wall-climb against steep blockers when target elevation requires it. (enemies/zombie.tscn:48, enemies/monster.gd:185, enemies/monster.gd:205, enemies/monster.gd:341, enemies/monster.gd:353, enemies/monster.gd:370, enemies/monster.gd:384)
+4. The player scavenges and interacts through raycast; items move into player inventory and update held visuals. (player/player_interact.gd:29, props/interactable_item.gd:22, player/player.gd:76)
+5. The player can hold F to enter equipment placement mode, then confirm stable parenting onto RV or scene nodes. (player/player_interact.gd:57, player/player.gd:227, equipment/equipment.gd:108)
+6. After entering the driver seat, chassis logic runs energy steps each frame and applies engine/steering/brake behavior. (equipment/driver_seat.gd:45, rv/chassis.gd:205, rv/chassis.gd:151)
+7. Tablet UI enables/disables crafting based on RV materials/power and routes successful outputs through Crafting Station. (equipment/tablet_ui.gd:116, equipment/tablet_ui.gd:126, equipment/crafting_station.gd:11)
 
 ### Edge flow
-1. Player uses full gas can on RV fuel filler.
-2. `Chassis.refuel_from_player()` validates active item name and fuel capacity.
-3. RV fuel increases, active can is consumed, empty can item is returned.
-4. If can is empty or tank full, operation exits without consumption.
+1. If a POI scene is missing, POISpawner filters or warns and world generation continues. (world/poi_spawner.gd:14, world/poi_spawner.gd:178)
+2. If fuel is insufficient, chassis blocks drive force and applies brake fallback. (rv/chassis.gd:167, rv/chassis.gd:251)
+3. If placement raycast does not hit a valid surface, placement confirmation is blocked. (player/player.gd:370)
+4. If RV is disconnected, unpowered, missing materials, or no matching station exists, tablet crafting is blocked. (equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:149)
 
 ## 6. Data and State Model
-- World stream state: `active_chunks`, `next_transform`, `next_turn_angle`.
-- Chunk-local generation state: Bezier road controls, POI flags, terrain mesh data.
-- Player state: inventory array (max 6), active slot, `has_large_item`, health/cooldowns, placement state.
-- RV state: `current_fuel/max_fuel`, `current_power/max_power`, wheel slot occupancy, storage inventory.
-- Enemy state: AI state enum, target pointer, health, cooldown timers.
+- World state
+  - `active_chunks`: streaming state array with `{ node, start_z, end_z }`. (world/world_generator.gd:7)
+  - `next_transform`, `next_turn_angle`: handoff state for the next chunk. (world/world_generator.gd:8, world/world_generator.gd:9)
+- POI state
+  - `POI_TABLE`: weighted POI definitions, footprint settings, loot/enemy rules, and procedural options. (world/poi_config.gd:4)
+  - `POISpawner` caches: `_scene_cache` and `_missing_scene_warnings`. (world/poi_spawner.gd:4, world/poi_spawner.gd:5)
+- RV state
+  - `current_fuel/max_fuel`, `current_power/max_power`, with state changes emitted via signals. (rv/chassis.gd:41, rv/chassis.gd:43, rv/chassis.gd:33)
+  - `inventory` as a material dictionary. (rv/chassis.gd:35)
+- Player state
+  - `inventory` (6 slots), `has_large_item`, `active_slot_index`. (player/player.gd:12, player/player.gd:13, player/player.gd:14)
+  - `placing_equipment` and placement mode. (player/player.gd:19, player/player.gd:22)
 
 ## 7. Interfaces and Contracts
-- Interactable item contract: objects implement `interact(player)`.
-- Hold-interact contract: objects expose `interact_hold(player)` and `hold_timer`.
-- Wheel install contract: target exposes `install_wheel() -> bool`.
-- RV contract used by equipment: has methods `consume_power`, `add_item`, `deduct_materials`, and group `rv`.
-- Generator contract used by chassis: nodes in group `rv_power_generators` with `get_connected_rv()` and `generate_power(rv, delta)`.
-- Test contract verifies `Chassis` API methods and behavior (`consume_fuel`, `add_power`, `step_energy_system`, `refuel_from_player`).
+- World contracts
+  - `ChunkGenerator.generate_chunk(start_transform, next_turn_angle, shared_noise, shared_detail_noise, shared_poi_spawner) -> Transform3D` returns the next chunk start transform. (world/chunk_generator.gd:33)
+  - `ChunkGenerator._build_navigation_region()` creates road-following per-chunk `NavigationRegion3D` strips for AI pathing. (world/chunk_generator.gd:334, world/chunk_generator.gd:377)
+  - `POISpawner.pick_poi() -> Dictionary|{}` and `spawn_building/spawn_loot/spawn_enemies` generate POI content from config. (world/poi_spawner.gd:8, world/poi_spawner.gd:31, world/poi_spawner.gd:49, world/poi_spawner.gd:84)
+- Enemy locomotion contracts
+  - `Monster._can_use_navigation()` and `Monster._get_navigation_direction(destination)` provide navigation-agent steering with direct-vector fallback. (enemies/monster.gd:341, enemies/monster.gd:353)
+  - `Monster._should_attempt_wall_climb(...)` and `Monster._apply_wall_climb(delta)` gate and apply bounded wall climbing based on target height gap, wall normals, and cooldown/timer limits. (enemies/monster.gd:370, enemies/monster.gd:384, enemies/monster.gd:412)
+- RV contracts
+  - `consume_fuel/add_fuel/consume_power/add_power/has_usable_power/step_energy_system/refuel_from_player`. (rv/chassis.gd:118, rv/chassis.gd:126, rv/chassis.gd:133, rv/chassis.gd:141, rv/chassis.gd:148, rv/chassis.gd:151, rv/chassis.gd:65)
+  - `take_damage(amount)` applies chassis durability loss and can disable driving at zero durability. (rv/chassis.gd:75)
+- Equipment contracts
+  - `Equipment.start_placement/confirm_placement/cancel_placement`. (equipment/equipment.gd:73, equipment/equipment.gd:108, equipment/equipment.gd:138)
+  - `Generator.generate_power(rv, delta)`. (equipment/generator.gd:10)
+- Player contracts
+  - `Player.add_item/get_active_item_name/consume_active_item`. (player/player.gd:37, player/player.gd:122, player/player.gd:127)
+  - Interactable objects must expose `interact` or optionally `interact_hold`. (player/player_interact.gd:33, player/player_interact.gd:36)
 
 ## 8. Configuration and Environment
-- `project.godot`:
-  - `run/main_scene="res://world/test_world.tscn"`
-  - physics engine set to Jolt.
-  - renderer set to `gl_compatibility`.
-- Runtime tuning is primarily via exported GDScript variables in modules.
+- Entry point: `run/main_scene = res://world/test_world.tscn`. (project.godot:16)
+- World parameters: chunk buffer sizes and noise settings. (world/world_generator.gd:4, world/world_generator.gd:5, world/world_generator.gd:94)
+- Driving/energy parameters: chassis and generator exported values. (rv/chassis.gd:3, rv/chassis.gd:46, equipment/generator.gd:3)
+- Interaction parameters: player slot count, placement distance, and interaction timing thresholds. (player/player.gd:12, player/player.gd:20, player/player_interact.gd:21)
 
 ## 9. Error Handling and Reliability
-- Defensive guard checks are common (`has_method`, null checks, early returns).
-- Missing POI scenes are filtered and warned by `POISpawner`.
-- Resource clamping in `Chassis` prevents fuel/power overflow/underflow.
-- Several gameplay paths rely on duck typing, increasing flexibility but reducing compile-time guarantees.
+- Missing POI resources follow a skip + warn-once strategy to avoid hard crashes. (world/poi_spawner.gd:14, world/poi_spawner.gd:178)
+- Monster movement degrades gracefully: if navigation maps are not ready, steering falls back to direct vectors; wall climbing is bounded by max duration and cooldown to avoid infinite vertical locking. (enemies/monster.gd:353, enemies/monster.gd:368, enemies/monster.gd:412, enemies/monster.gd:414)
+- Energy mutation paths are clamped and guarded against insufficient resources to avoid out-of-range states. (rv/chassis.gd:121, rv/chassis.gd:174, rv/chassis.gd:181)
+- Equipment placement adds collision exceptions to reduce RV physics instability risk. (equipment/equipment.gd:123)
+- Crafting uses layered gating (RV connectivity, materials, power, station validity) to reduce invalid output paths. (equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:145)
 
 ## 10. Security and Privacy Notes
-- No network I/O or user credential handling is present in current gameplay scripts.
-- Primary risk surface is gameplay state integrity, not data privacy.
+- The current evidence set does not include external network I/O, account authentication, or personal-data storage flows.
+- The primary architecture-level risk is duck-typing contract drift causing runtime feature breakage, not conventional data-exposure risk. (equipment/equipment.gd:57, equipment/tablet_ui.gd:121)
 
 ## 11. Performance Notes
-- Terrain mesh generation per chunk (`RESOLUTION = 80`) and collision mesh generation are likely hot paths.
-- Chunk streaming currently depends on distance thresholds and may spike if generation stalls.
-- Recursive node scans (loot spawn points, RV parent discovery) are acceptable at current scale but should be profiled for larger scenes.
+- Chunk generation builds mesh + collision each time and is a high-cost hotspot. (world/chunk_generator.gd:135, world/chunk_generator.gd:237, world/chunk_generator.gd:251)
+- `POISpawner` uses scene caching to reduce repeated load cost. (world/poi_spawner.gd:4, world/poi_spawner.gd:153)
+- Chassis polls the `rv_power_generators` group every frame; scalability should be monitored as equipment count grows. (rv/chassis.gd:195)
 
 ## 12. Observability and Debugging
-- Runtime uses `print()` and `push_warning()` for diagnostics in key flows.
-- Headless test script `tests/test_energy_system.gd` provides pass/fail console output.
-- No centralized logging or metrics pipeline exists yet.
+- `print/push_warning/push_error` are currently the primary observability output paths. (world/world_generator.gd:19, world/poi_spawner.gd:178, tests/test_energy_system.gd:170)
+- The energy test script provides a headless PASS/FAIL signal suitable for regression checks. (tests/test_energy_system.gd:165)
 
 ## 13. Testing Strategy and Coverage Map
 | Area | Existing Tests | Missing Tests | Priority |
 |---|---|---|---|
-| RV fuel/power API | `tests/test_energy_system.gd` | Additional edge cases for negative/zero deltas and integration with vehicle physics | High |
-| Generator behavior | `tests/test_energy_system.gd` | Multi-generator interaction and concurrent consumers | High |
-| Player interaction | None | Hold/release timing, wheel install, placement cancel/confirm | High |
-| World generation | None | Chunk streaming boundaries, POI placement validity, missing scene fallback | High |
-| Enemy AI/combat | None | State transitions, damage cooldown interactions, loot consistency | Medium |
-| Building generation | None | Room occupancy, door sealing, deterministic seeded runs | Medium |
+| RV energy and refueling | `tests/test_energy_system.gd` covers API and core behavior | Missing variable-framerate/extreme-value stress tests | High |
+| World streaming and POI | No automation; currently manual verification | Missing chunk stability and POI weight-distribution tests | High |
+| Enemy navigation and climbing | `tests/test_energy_system.gd` contract checks for navigation/climb helper availability | Missing scene-level path quality and obstacle traversal regression tests | High |
+| Player interaction and equipment placement | No automation; currently manual verification | Missing interaction timing and placement parent-selection tests | High |
+| Crafting flow | No dedicated test | Missing UI gating and station-connectivity contract tests | Medium |
 
 ## 14. Operations Notes
-- Run game:
-  - `godot --path . res://world/test_world.tscn`
-- Run generation scripts headlessly:
-  - `godot --headless -s <script.gd>`
-- Run Python offline tools:
-  - `uv run main.py`
-  - `uv run test_building_gen.py`
+- Run game: `godot --path . res://world/test_world.tscn`
+- Run headless generation script: `godot --headless -s <script.gd>`
+- Python tooling (project rule): `uv run main.py` or `uv run test_building_gen.py`
 
 ## 15. Risks and Open Questions
-- Risk: Interaction and placement systems are timing-sensitive and currently untested.
-- Risk: Procedural generation relies on many scene resources; missing assets reduce content variety.
-- Risk: World generation and collision creation could become CPU-heavy without pooling/caching.
-- Open question: What is the intended persistence model for RV inventory and world state?
-- Open question: Which systems are expected to be authoritative in future co-op implementation?
+- Risk: `POIConfig` references many scene paths; missing assets reduce content variety. (world/poi_config.gd:53, world/poi_spawner.gd:14)
+- Risk: interaction and crafting rely on duck typing, so interface changes lack compile-time protection. (equipment/tablet_ui.gd:121, equipment/equipment.gd:57)
+- Risk: world generation has no automated regression coverage, so later changes may introduce hidden degradation.
+- Open question: should deterministic seeds + event logs be introduced for replayable tests?
+- Open question: what are the target balance baselines for RV endurance and recharge speed?
 
 ## 16. Glossary
-- Chunk: One streamed world segment generated by `ChunkGenerator`.
-- POI: Point of interest with building, loot, and enemy spawn rules.
-- RV: Player vehicle that stores resources and powers equipment.
-- Equipment placement: Player-driven process that repositions an equipment node with ghost preview.
-- Large item: Inventory item that locks slot switching until dropped.
+- Chunk: base streaming unit of the road world.
+- POI: Point of Interest where players can stop and scavenge.
+- RV: shared mobile base (chassis, equipment, energy systems).
+- Placement Ghost: equipment placement preview state (semi-transparent, confirm/cancel).
+- Duck Typing Contract: cross-module interaction by method/signal naming instead of explicit typed interfaces.
 
 ## 17. Source Files Used
-- `project.godot`
-- `AGENTS.md`
-- `world/test_world.tscn`
-- `world/world_generator.gd`
-- `world/chunk_generator.gd`
-- `world/poi_spawner.gd`
-- `world/poi_config.gd`
-- `world/building/building_generator.gd`
-- `world/building/room_node.gd`
-- `player/player.gd`
-- `player/player_interact.gd`
-- `rv/chassis.gd`
-- `equipment/equipment.gd`
-- `equipment/generator.gd`
-- `enemies/monster.gd`
-- `tests/test_energy_system.gd`
+- project.godot
+- GDD.md
+- docs/design/world-generation-and-poi.md
+- docs/design/rv-energy-and-driving.md
+- docs/design/player-interaction-and-equipment.md
+- docs/modules/world-generation.md
+- docs/modules/rv-chassis-energy.md
+- docs/modules/player-equipment-interactions.md
+- world/world_generator.gd
+- world/chunk_generator.gd
+- world/poi_spawner.gd
+- world/poi_config.gd
+- world/building/building_generator.gd
+- rv/chassis.gd
+- rv/fuel_filler.gd
+- equipment/generator.gd
+- equipment/driver_seat.gd
+- player/player.gd
+- player/player_interact.gd
+- equipment/equipment.gd
+- equipment/tablet_ui.gd
+- equipment/crafting_station.gd
+- props/interactable_item.gd
+- tests/test_energy_system.gd
 
 ## 18. Completeness Report
-Generated docs set for initialization:
-- `docs/architecture.md`
-- `docs/design/gameplay-loop-and-balance.md`
-- `docs/design/procedural-generation-and-content.md`
-- `docs/modules/world-generation.md`
-- `docs/modules/player-and-interaction.md`
-- `docs/modules/rv-energy-and-equipment.md`
-- `docs/knowledge/dev-runtime-and-test-commands.md`
-- `docs/knowledge/godot-project-conventions.md`
-
-Coverage decisions:
-- Prioritized high-impact runtime systems (world, player interaction, RV energy).
-- Captured both design intent and implementation contracts.
-
-Unknowns and assumptions:
-- Assumed this branch is a single-player gameplay prototype despite co-op project framing.
-- Assumed no hidden CI or packaging requirements outside visible repo files.
-
-Follow-up recommendations:
-- Add automated tests for interaction timing and chunk generation boundaries.
-- Add a dedicated doc once save/progression architecture exists.
+- Generated files
+  - docs/design/world-generation-and-poi.md
+  - docs/design/rv-energy-and-driving.md
+  - docs/design/player-interaction-and-equipment.md
+  - docs/modules/world-generation.md
+  - docs/modules/rv-chassis-energy.md
+  - docs/modules/player-equipment-interactions.md
+  - docs/architecture.md
+- Coverage decisions
+  - Covered three high-impact partitions: world generation, RV energy, and player interaction/equipment flow.
+  - Did not create `docs/knowledge/*.md` because this initialization did not rely on external reference sources.
+- Unknowns and assumptions
+  - Networking synchronization, persistence, and detailed enemy AI architecture are not covered.
+  - Balance target values are not yet documented.
+- Follow-up recommendations
+  - Add headless verification scripts for world streaming and POI behavior.
+  - Add automated regression tests for interaction and crafting flows.
+  - Consolidate duck-typing contracts into explicit interface docs and test fixtures.

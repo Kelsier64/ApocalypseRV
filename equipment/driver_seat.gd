@@ -76,3 +76,7 @@ func exit_seat() -> void:
 		rv.set_driving_state(false)
 
 	seat_camera.rotation = Vector3.ZERO
+
+func _on_before_destroy() -> void:
+	if current_driver:
+		exit_seat()

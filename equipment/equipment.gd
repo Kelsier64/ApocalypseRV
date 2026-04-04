@@ -7,6 +7,11 @@ enum BottomFace { DOWN, UP, FRONT, BACK, LEFT, RIGHT }
 @export var ghost_material: Material
 @export var bottom_face: BottomFace = BottomFace.DOWN # Which local face sticks to the surface (Mode 1)
 
+@export_group("Durability")
+@export var max_health: float = 120.0
+@export var can_be_destroyed: bool = true
+@export var destroy_on_zero_health: bool = true
+
 ## Returns the half-extents of the first BoxShape3D collision child, or mesh AABB fallback.
 func get_half_extents() -> Vector3:
 	for child in get_children():
@@ -41,6 +46,8 @@ var original_parent: Node
 var is_being_placed: bool = false
 var original_materials: Dictionary = {} # GeometryInstance3D -> Material
 var hold_timer: float = 0.0
+var current_health: float = 0.0
+var is_destroyed: bool = false
 
 func _ready():
 	if not ghost_material:
@@ -48,6 +55,10 @@ func _ready():
 		ghost_material = StandardMaterial3D.new()
 		ghost_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5)
+
+	current_health = maxf(max_health, 0.0)
+	if can_be_destroyed:
+		add_to_group("monster_damageable")
 
 # Traverses up the scene tree to find if this equipment is placed on an RV
 func get_connected_rv() -> Node3D:
@@ -158,3 +169,27 @@ func cancel_placement():
 	collision_mask = 0
 	restore_original_materials(self)
 	print(equipment_name, " placement cancelled. Returned to original spot.")
+
+func take_damage(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	if not can_be_destroyed or is_destroyed:
+		return
+
+	current_health = maxf(current_health - amount, 0.0)
+	print(equipment_name, " took ", amount, " damage. HP: ", current_health, "/", max_health)
+
+	if current_health <= 0.0 and destroy_on_zero_health:
+		_destroy_equipment()
+
+func _destroy_equipment() -> void:
+	if is_destroyed:
+		return
+	is_destroyed = true
+
+	_on_before_destroy()
+	queue_free()
+
+func _on_before_destroy() -> void:
+	# Override in subclasses that need cleanup before removal.
+	pass

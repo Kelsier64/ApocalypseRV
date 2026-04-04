@@ -27,6 +27,9 @@ func _init() -> void:
 	_test_generator_behavior()
 	_test_equipment_power_usage()
 	_test_gas_can_states()
+	_test_chassis_monster_damage_surface()
+	_test_monster_target_filter_rule()
+	_test_monster_navigation_and_climb_contracts()
 	_finish()
 
 func _test_chassis_resource_api() -> void:
@@ -154,6 +157,56 @@ func _test_gas_can_states() -> void:
 	empty_player.free()
 	rv.free()
 	rv2.free()
+
+func _test_chassis_monster_damage_surface() -> void:
+	var rv := Chassis.new()
+	rv.pre_install_wheels = false
+	rv._ready()
+
+	_expect(rv.has_method("take_damage"), "Chassis should expose take_damage(amount) so monsters can attack chassis.")
+	_expect(rv.is_in_group("monster_damageable"), "Chassis should be in monster_damageable group.")
+
+	if rv.has_method("take_damage") and "current_chassis_health" in rv:
+		var before := float(rv.get("current_chassis_health"))
+		rv.take_damage(12.0)
+		var after := float(rv.get("current_chassis_health"))
+		_expect(after < before, "take_damage should reduce chassis health.")
+
+	rv.free()
+
+func _test_monster_target_filter_rule() -> void:
+	var monster := Monster.new()
+	var standalone_equipment := Equipment.new()
+
+	_expect(monster.has_method("_can_target_structure"), "Monster should expose _can_target_structure(node) helper for structure target filtering.")
+
+	if monster.has_method("_can_target_structure"):
+		_expect(monster._can_target_structure(standalone_equipment), "Monster should allow targeting standalone equipment even when not connected to RV.")
+
+	monster.free()
+	standalone_equipment.free()
+
+func _test_monster_navigation_and_climb_contracts() -> void:
+	var monster := Monster.new()
+
+	_expect(monster.has_method("_can_use_navigation"), "Monster should expose _can_use_navigation() when using NavigationAgent3D.")
+	_expect(monster.has_method("_get_navigation_direction"), "Monster should expose _get_navigation_direction(destination) helper.")
+	_expect(monster.has_method("_should_attempt_wall_climb"), "Monster should expose _should_attempt_wall_climb(...) helper for climb gating.")
+
+	if monster.has_method("_should_attempt_wall_climb"):
+		_expect(monster._should_attempt_wall_climb(2.5, true, Vector3(0, 0, 1)), "Monster should climb when target is much higher and wall is climbable.")
+		_expect(not monster._should_attempt_wall_climb(0.2, true, Vector3(0, 0, 1)), "Monster should not climb when target height gap is too small.")
+		_expect(not monster._should_attempt_wall_climb(2.5, false, Vector3(0, 0, 1)), "Monster should not climb without wall hit.")
+		_expect(not monster._should_attempt_wall_climb(2.5, true, Vector3.UP), "Monster should not treat floor-like normals as climb walls.")
+
+	monster.free()
+
+	var chunk_script: Script = load("res://world/chunk_generator.gd")
+	_expect(chunk_script != null, "ChunkGenerator script should exist for navigation-region generation.")
+	if chunk_script != null:
+		var chunk: Node = chunk_script.new()
+		_expect(chunk.has_method("_build_navigation_region"), "ChunkGenerator should expose _build_navigation_region() for per-chunk navigation.")
+		chunk.free()
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition:

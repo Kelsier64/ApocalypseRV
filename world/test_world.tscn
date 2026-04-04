@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://bkfm4o6gc5rw7" path="res://props/gas_can.tscn" id="10_e5drx"]
 [ext_resource type="PackedScene" uid="uid://vl4wqm5kw8xj" path="res://equipment/driver_seat.tscn" id="11_v5l3q"]
 [ext_resource type="PackedScene" uid="uid://bjbkueffwyxog" path="res://rv/new_rv.tscn" id="12_ms8km"]
+[ext_resource type="PackedScene" path="res://enemies/zombie.tscn" id="13_tqn3h"]
 [ext_resource type="PackedScene" path="res://props/wheel.tscn" id="13_wheel"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
@@ -37,7 +38,7 @@ use_collision = true
 size = Vector3(20, 0.1, 20)
 
 [node name="Player" parent="." unique_id=1367277200 instance=ExtResource("3_ar7ra")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.26393276, 2.5855896, 7.0146275)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0520482, 5.558184, 2.413094)
 
 [node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450]
 script = ExtResource("9_8hcw6")
@@ -49,7 +50,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 1.8083844)
 
 [node name="Generator" parent="." unique_id=1087168760 instance=ExtResource("6_dvny0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.0577474, 3.84232)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.511052, 1.980247, 3.84232)
 
 [node name="Generator2" parent="." unique_id=492643397 instance=ExtResource("6_dvny0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.0671206, 5.247431)
@@ -80,3 +81,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 5)
 
 [node name="NewRv" parent="." unique_id=915576965 instance=ExtResource("12_ms8km")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8359404, 1.7807889, 1.9549446)
+
+[node name="Zombie" parent="." unique_id=1079522932 instance=ExtResource("13_tqn3h")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39231348, 8.326536)

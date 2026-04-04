@@ -53,6 +53,7 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 	# Build meshes
 	_build_terrain_mesh()
 	_build_road_mesh()
+	_build_navigation_region()
 
 	# End transform for next chunk
 	var end_basis = Basis(Vector3.UP, next_turn_angle)
@@ -328,6 +329,55 @@ func _build_road_mesh():
 	mesh_node.add_child(static_body)
 
 	add_child(mesh_node)
+
+
+func _build_navigation_region() -> void:
+	var nav_mesh := NavigationMesh.new()
+	nav_mesh.agent_max_slope = 65.0
+	nav_mesh.agent_height = 1.8
+	nav_mesh.agent_radius = 0.45
+
+	var nav_vertices := PackedVector3Array()
+	var nav_segments := 44
+	var nav_half_width := ROAD_WIDTH * 0.9
+
+	for i in range(nav_segments + 1):
+		var t := float(i) / float(nav_segments)
+		var center := _cubic_bezier(t)
+
+		var t_next := minf(t + 0.01, 1.0)
+		var tangent := (_cubic_bezier(t_next) - center).normalized()
+		if tangent.length_squared() <= 0.0001:
+			tangent = Vector3.FORWARD
+		var right := tangent.cross(Vector3.UP).normalized()
+
+		var left_v := center - right * nav_half_width
+		var right_v := center + right * nav_half_width
+
+		var global_left := global_transform * left_v
+		var global_right := global_transform * right_v
+		left_v.y = _get_terrain_height(global_left.x, global_left.z, 0.0) - global_transform.origin.y + 0.2
+		right_v.y = _get_terrain_height(global_right.x, global_right.z, 0.0) - global_transform.origin.y + 0.2
+
+		nav_vertices.append(left_v)
+		nav_vertices.append(right_v)
+
+	if nav_vertices.size() < 4:
+		return
+
+	nav_mesh.vertices = nav_vertices
+	for i in range(nav_segments):
+		var a := i * 2
+		var b := a + 1
+		var c := a + 2
+		var d := a + 3
+		nav_mesh.add_polygon(PackedInt32Array([a, c, b]))
+		nav_mesh.add_polygon(PackedInt32Array([b, c, d]))
+
+	var region := NavigationRegion3D.new()
+	region.name = "ChunkNavigationRegion"
+	region.navigation_mesh = nav_mesh
+	add_child(region)
 
 
 # --- Road zombies (ambient, not POI-related) ---
