@@ -19,6 +19,16 @@ shape = SubResource("CapsuleShape3D_yw30f")
 [node name="Camera3D" type="Camera3D" parent="." unique_id=401068625]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4146006, 0)
 
+[node name="ClimbWallProbe" type="RayCast3D" parent="." unique_id=1701207776]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+target_position = Vector3(0, 0, -1)
+collision_mask = 1
+
+[node name="ClimbTopProbe" type="RayCast3D" parent="." unique_id=637104220]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -0.35)
+target_position = Vector3(0, 0.95, -0.6)
+collision_mask = 1
+
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=691259209]
 target_position = Vector3(0, 0, -2)
 collision_mask = 3

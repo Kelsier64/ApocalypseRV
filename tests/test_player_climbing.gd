@@ -8,6 +8,7 @@ func _init() -> void:
 	_test_top_gate_requires_standable_surface()
 	_test_rv_delta_compensation_math()
 	_test_climb_exit_velocity_sanitized()
+	_test_player_has_climb_state_contract()
 	_finish()
 
 func _new_player() -> Node:
@@ -82,6 +83,18 @@ func _test_climb_exit_velocity_sanitized() -> void:
 	if player.has_method("_sanitize_velocity_after_climb"):
 		var out: Vector3 = player._sanitize_velocity_after_climb(Vector3(2, 30, -1))
 		_expect(out.y <= 0.1, "Vertical velocity should be sanitized when exiting climb.")
+
+	player.free()
+
+func _test_player_has_climb_state_contract() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_try_start_climb"), "Player should expose _try_start_climb() state transition helper.")
+	_expect(player.has_method("_process_climbing"), "Player should expose _process_climbing(delta).")
+	_expect(player.has_method("_begin_mantle"), "Player should expose _begin_mantle(target).")
+	_expect(player.has_method("_process_mantle"), "Player should expose _process_mantle(delta).")
 
 	player.free()
 
