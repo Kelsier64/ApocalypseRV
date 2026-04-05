@@ -3,6 +3,12 @@ extends CharacterBody3D
 const SPEED = 5.0
 const JUMP_VELOCITY = 4.5
 const MOUSE_SENSITIVITY = 0.002
+const CLIMB_WALL_MIN_DOT = 0.15
+const CLIMB_WALL_MAX_DOT = 0.85
+const CLIMB_MIN_HIT_Y = 0.1
+const CLIMB_MAX_HIT_Y = 1.4
+const PropScript = preload("res://props/interactable_item.gd")
+const EquipmentScript = preload("res://equipment/equipment.gd")
 
 @onready var camera = $Camera3D
 
@@ -100,7 +106,7 @@ func _equip_active_slot():
 			hand_marker.add_child(held_item_node)
 			
 			# Apply visual holding offsets if it's our new Prop class
-			if held_item_node is Prop:
+			if held_item_node is PropScript:
 				held_item_node.position = held_item_node.hold_position
 				held_item_node.rotation_degrees = held_item_node.hold_rotation
 				held_item_node.scale = held_item_node.hold_scale
@@ -256,6 +262,21 @@ func _unhandled_input(event):
 				placing_equipment.cancel_placement()
 				placing_equipment = null
 
+func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
+	var n := hit_normal.normalized()
+	var up := rv_up.normalized()
+	var d := absf(n.dot(up))
+	return d >= CLIMB_WALL_MIN_DOT and d <= CLIMB_WALL_MAX_DOT
+
+func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
+	return local_hit_y >= CLIMB_MIN_HIT_Y and local_hit_y <= CLIMB_MAX_HIT_Y
+
+func _can_begin_climb(jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
+	return jump_pressed and w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
+
+func _can_start_mantle(top_surface_ok: bool, stand_clearance_ok: bool, forward_clear_ok: bool) -> bool:
+	return top_surface_ok and stand_clearance_ok and forward_clear_ok
+
 func _physics_process(delta):
 	if in_ui_mode: return
 	
@@ -307,7 +328,7 @@ func _physics_process(delta):
 			can_place_equipment = true
 			placing_equipment.visible = true
 
-			var equip = placing_equipment as Equipment
+			var equip = placing_equipment
 			var normal = result.normal
 			var base_basis: Basis
 
@@ -336,7 +357,7 @@ func _physics_process(delta):
 						tangent = Vector3.FORWARD
 					base_basis = Basis.looking_at(tangent, normal)
 
-				if equip:
+				if equip and equip is EquipmentScript:
 					base_basis = base_basis * equip.get_bottom_face_correction()
 			else:
 				# Mode 2: bottom faces up_ref-down, closest face contacts surface
@@ -360,7 +381,7 @@ func _physics_process(delta):
 
 			# Auto-calculate offset from collision shape so the contact face sits flush
 			var offset: float = 0.0
-			if equip:
+			if equip and equip is EquipmentScript:
 				var local_into_surface: Vector3 = base_basis.inverse() * (-normal)
 				var half: Vector3 = equip.get_half_extents()
 				offset = abs(local_into_surface.x) * half.x + abs(local_into_surface.y) * half.y + abs(local_into_surface.z) * half.z
