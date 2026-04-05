@@ -4,6 +4,7 @@ var failures: Array[String] = []
 
 func _init() -> void:
 	_test_wall_gate_requires_jump_and_w_and_rv()
+	_test_wall_normal_gate_accepts_vertical_rejects_floor()
 	_test_wall_gate_rejects_undercarriage_like_hits()
 	_test_top_gate_requires_standable_surface()
 	_test_rv_delta_compensation_math()
@@ -30,10 +31,22 @@ func _test_wall_gate_requires_jump_and_w_and_rv() -> void:
 	_expect(player.has_method("_can_begin_climb"), "Player should expose _can_begin_climb(jump_pressed, w_pressed, is_rv_hit, wall_normal_ok, hit_height_ok).")
 
 	if player.has_method("_can_begin_climb"):
-		_expect(not player._can_begin_climb(false, true, true, true, true), "Jump is required to start climb.")
+		_expect(player._can_begin_climb(false, true, true, true, true), "Relaxed mode: jump should not be required to start climb.")
 		_expect(not player._can_begin_climb(true, false, true, true, true), "W is required to start climb.")
 		_expect(not player._can_begin_climb(true, true, false, true, true), "RV hit is required to start climb.")
+		_expect(player._can_begin_climb(false, true, true, false, false), "Relaxed mode: wall normal and hit height should not block climb start.")
 		_expect(player._can_begin_climb(true, true, true, true, true), "All gates should allow climb start.")
+
+	player.free()
+
+func _test_wall_normal_gate_accepts_vertical_rejects_floor() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	if player.has_method("_is_rv_wall_normal"):
+		_expect(player._is_rv_wall_normal(Vector3.FORWARD, Vector3.UP), "Vertical RV wall normal should be climbable.")
+		_expect(not player._is_rv_wall_normal(Vector3.UP, Vector3.UP), "Floor-like normal should not be climbable.")
 
 	player.free()
 
@@ -56,6 +69,7 @@ func _test_top_gate_requires_standable_surface() -> void:
 	_expect(player.has_method("_can_start_mantle"), "Player should expose _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok).")
 	if player.has_method("_can_start_mantle"):
 		_expect(not player._can_start_mantle(true, false, true), "Mantle should fail without stand clearance.")
+		_expect(player._can_start_mantle(false, true, true), "Relaxed mantle gate: stand clearance should be enough to start mantle.")
 		_expect(player._can_start_mantle(true, true, true), "Mantle should pass when all top gates are valid.")
 
 	player.free()
@@ -95,6 +109,14 @@ func _test_player_has_climb_state_contract() -> void:
 	_expect(player.has_method("_process_climbing"), "Player should expose _process_climbing(delta).")
 	_expect(player.has_method("_begin_mantle"), "Player should expose _begin_mantle(target).")
 	_expect(player.has_method("_process_mantle"), "Player should expose _process_mantle(delta).")
+	_expect(player.has_method("_build_climb_motion"), "Player should expose _build_climb_motion(...) helper.")
+
+	if player.has_method("_build_climb_motion"):
+		var m: Vector3 = player._build_climb_motion(Vector3.UP, Vector3.FORWARD, 0.0, 0.0, 1.0)
+		_expect(m.dot(-Vector3.FORWARD) <= 0.0001, "Climb motion should not push player into wall interior.")
+		var tilted_up := Vector3(0.0, 0.8, 0.2).normalized()
+		var m2: Vector3 = player._build_climb_motion(tilted_up, Vector3.FORWARD, 1.0, 0.0, 1.0)
+		_expect(m2.dot(-Vector3.FORWARD) <= 0.0001, "Climb motion should not push into wall even when RV up is tilted.")
 
 	player.free()
 
