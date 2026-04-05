@@ -7,6 +7,7 @@ const CLIMB_WALL_MIN_DOT = 0.15
 const CLIMB_WALL_MAX_DOT = 0.85
 const CLIMB_MIN_HIT_Y = 0.1
 const CLIMB_MAX_HIT_Y = 1.4
+const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
 const PropScript = preload("res://props/interactable_item.gd")
 const EquipmentScript = preload("res://equipment/equipment.gd")
 
@@ -276,6 +277,15 @@ func _can_begin_climb(jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall
 
 func _can_start_mantle(top_surface_ok: bool, stand_clearance_ok: bool, forward_clear_ok: bool) -> bool:
 	return top_surface_ok and stand_clearance_ok and forward_clear_ok
+
+func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
+	return next_rv_transform.origin - prev_rv_transform.origin
+
+func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
+	var out := v
+	if out.y > CLIMB_EXIT_MAX_UP_VELOCITY:
+		out.y = 0.0
+	return out
 
 func _physics_process(delta):
 	if in_ui_mode: return

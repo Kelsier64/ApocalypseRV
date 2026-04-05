@@ -6,6 +6,8 @@ func _init() -> void:
 	_test_wall_gate_requires_jump_and_w_and_rv()
 	_test_wall_gate_rejects_undercarriage_like_hits()
 	_test_top_gate_requires_standable_surface()
+	_test_rv_delta_compensation_math()
+	_test_climb_exit_velocity_sanitized()
 	_finish()
 
 func _new_player() -> Node:
@@ -54,6 +56,32 @@ func _test_top_gate_requires_standable_surface() -> void:
 	if player.has_method("_can_start_mantle"):
 		_expect(not player._can_start_mantle(true, false, true), "Mantle should fail without stand clearance.")
 		_expect(player._can_start_mantle(true, true, true), "Mantle should pass when all top gates are valid.")
+
+	player.free()
+
+func _test_rv_delta_compensation_math() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_compute_rv_position_delta"), "Player should expose _compute_rv_position_delta(prev, next).")
+	if player.has_method("_compute_rv_position_delta"):
+		var prev := Transform3D(Basis.IDENTITY, Vector3(1, 2, 3))
+		var next := Transform3D(Basis.IDENTITY, Vector3(3, 3, 7))
+		var d: Vector3 = player._compute_rv_position_delta(prev, next)
+		_expect(d.is_equal_approx(Vector3(2, 1, 4)), "RV delta should be next.origin - prev.origin.")
+
+	player.free()
+
+func _test_climb_exit_velocity_sanitized() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_sanitize_velocity_after_climb"), "Player should expose _sanitize_velocity_after_climb(v).")
+	if player.has_method("_sanitize_velocity_after_climb"):
+		var out: Vector3 = player._sanitize_velocity_after_climb(Vector3(2, 30, -1))
+		_expect(out.y <= 0.1, "Vertical velocity should be sanitized when exiting climb.")
 
 	player.free()
 
