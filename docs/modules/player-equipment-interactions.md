@@ -51,6 +51,10 @@ Out of scope:
    - Tablet open resolves connected RV and binds live inventory/fuel/power signals. [Evidence: equipment/tablet_ui.gd:33, equipment/tablet_ui.gd:39, equipment/tablet_ui.gd:106, equipment/tablet_ui.gd:109]
    - Craft press checks RV power/materials and requires a station in `crafting_stations` tied to same RV. [Evidence: equipment/tablet_ui.gd:128, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:138, equipment/tablet_ui.gd:145]
    - On material deduction success, station spawns item and consumes per-output power. [Evidence: equipment/tablet_ui.gd:153, equipment/crafting_station.gd:25, equipment/crafting_station.gd:35]
+6. RV climbing flow
+   - Trigger requires jump press + hold W + valid RV wall probe hit; low-height/undercarriage-like hits are rejected by wall-normal and hit-height gates. [Evidence: player/player.gd:359, player/player.gd:377, player/player.gd:282]
+   - Climbing and mantling states apply RV transform-delta compensation each frame to reduce moving-platform desync and launch risk. [Evidence: player/player.gd:391, player/player.gd:528, player/player.gd:531]
+   - Top-out starts only when top probe surface, stand-clearance shape check, and forward-clear gate all pass; otherwise state exits safely. [Evidence: player/player.gd:405, player/player.gd:432, player/player.gd:505]
 
 ## Data contracts
 1. Player inventory entry contract
@@ -75,12 +79,15 @@ Out of scope:
    - Install/hold interaction uses 1.0s, placement start uses 2.0s, pickup debounce uses 0.5s wait. [Evidence: player/player_interact.gd:21, player/player_interact.gd:33, player/player_interact.gd:39, player/player_interact.gd:61]
 4. Crafting costs and power
    - Tablet recipe costs and station `power_cost_per_spawn` are script-side constants/exports. [Evidence: equipment/tablet_ui.gd:12, equipment/tablet_ui.gd:13, equipment/crafting_station.gd:5]
+5. Climbing thresholds
+   - Wall-normal gate, hit-height window, contact grace duration, RV angular speed ceiling, and mantle duration are script constants tuned for stability. [Evidence: player/player.gd:5, player/player.gd:7, player/player.gd:14, player/player.gd:15, player/player.gd:17]
 
 ## Failure modes
 1. Pickup rejected due to capacity/large-item constraints. [Evidence: player/player.gd:38, player/player.gd:41]
 2. Placement cannot confirm if raycast has no valid hit (`can_place_equipment` false). [Evidence: player/player.gd:227, player/player.gd:370]
 3. Crafted output blocked by missing RV, no usable power, insufficient materials, no station, wrong-station RV, or load failure. [Evidence: equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:129, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:139, equipment/tablet_ui.gd:149, equipment/crafting_station.gd:22]
 4. Module relies on duck-typed RV methods/signals; interface drift can break functionality at runtime. [Evidence: equipment/equipment.gd:57, equipment/tablet_ui.gd:109, equipment/tablet_ui.gd:121]
+5. Climbing can intentionally abort when RV angular speed is too high or wall contact grace expires, returning to normal locomotion to avoid fly-away bugs. [Evidence: player/player.gd:477, player/player.gd:491, player/player.gd:523]
 
 ## Testing
 1. Interaction regression matrix
@@ -91,6 +98,8 @@ Out of scope:
    - Confirm RV-parent selection and collision exceptions prevent unstable parent collisions after placement. [Evidence: player/player.gd:243, equipment/equipment.gd:123, equipment/equipment.gd:129]
 4. Craft integration tests
    - Open tablet, observe disabled/enabled craft states under power/material toggles, then validate spawned output location and power deduction behavior. [Evidence: equipment/tablet_ui.gd:116, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:153, equipment/crafting_station.gd:25, equipment/crafting_station.gd:37]
+5. Climbing tests
+   - Run `tests/test_player_climbing.gd` to validate wall trigger gates, undercarriage rejection, mantle gate checks, RV-delta compensation math, and climb exit velocity sanitization.
 
 ## Change checklist
 1. If you change inventory item shape, update all producers/consumers (`Prop.interact`, player equip/drop/consume paths). [Evidence: props/interactable_item.gd:22, player/player.gd:45, player/player.gd:90, player/player.gd:130, player/player.gd:153]
@@ -98,6 +107,7 @@ Out of scope:
 3. If you add recipes, ensure UI setup, craft button evaluation, and station spawn constraints still hold. [Evidence: equipment/tablet_ui.gd:58, equipment/tablet_ui.gd:116, equipment/tablet_ui.gd:138]
 4. If RV API/signals change, update duck-typed checks and reconnection logic in Equipment/Tablet UI. [Evidence: equipment/equipment.gd:57, equipment/tablet_ui.gd:96, equipment/tablet_ui.gd:106]
 5. If placement parenting rules change, retest collision exception behavior for RV ancestors. [Evidence: player/player.gd:237, equipment/equipment.gd:126, equipment/equipment.gd:129]
+6. If climbing constants or probe setup change, re-run `tests/test_player_climbing.gd` and manually verify jump+W climbing on parked and moving RV.
 
 ## Source Files Used
 1. player/player.gd
