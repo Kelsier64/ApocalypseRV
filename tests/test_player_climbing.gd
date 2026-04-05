@@ -7,8 +7,11 @@ func _init() -> void:
 	_test_wall_normal_gate_accepts_vertical_rejects_floor()
 	_test_wall_gate_rejects_undercarriage_like_hits()
 	_test_top_gate_requires_standable_surface()
+	_test_mantle_target_finishes_above_wall_top()
+	_test_collision_disabled_during_climb_states()
 	_test_rv_delta_compensation_math()
 	_test_climb_exit_velocity_sanitized()
+	_test_abort_contract_exists()
 	_test_player_has_climb_state_contract()
 	_finish()
 
@@ -31,10 +34,11 @@ func _test_wall_gate_requires_jump_and_w_and_rv() -> void:
 	_expect(player.has_method("_can_begin_climb"), "Player should expose _can_begin_climb(jump_pressed, w_pressed, is_rv_hit, wall_normal_ok, hit_height_ok).")
 
 	if player.has_method("_can_begin_climb"):
-		_expect(player._can_begin_climb(false, true, true, true, true), "Relaxed mode: jump should not be required to start climb.")
+		_expect(player._can_begin_climb(false, true, true, true, true), "Climb should be able to start with W+wall hit even when jump is not pressed.")
 		_expect(not player._can_begin_climb(true, false, true, true, true), "W is required to start climb.")
 		_expect(not player._can_begin_climb(true, true, false, true, true), "RV hit is required to start climb.")
-		_expect(player._can_begin_climb(false, true, true, false, false), "Relaxed mode: wall normal and hit height should not block climb start.")
+		_expect(not player._can_begin_climb(false, true, true, false, true), "Wall normal gate should block climb start when hit surface is not wall-like.")
+		_expect(not player._can_begin_climb(false, true, true, true, false), "Hit-height gate should block climb start for undercarriage-like hits.")
 		_expect(player._can_begin_climb(true, true, true, true, true), "All gates should allow climb start.")
 
 	player.free()
@@ -69,8 +73,34 @@ func _test_top_gate_requires_standable_surface() -> void:
 	_expect(player.has_method("_can_start_mantle"), "Player should expose _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok).")
 	if player.has_method("_can_start_mantle"):
 		_expect(not player._can_start_mantle(true, false, true), "Mantle should fail without stand clearance.")
-		_expect(player._can_start_mantle(false, true, true), "Relaxed mantle gate: stand clearance should be enough to start mantle.")
+		_expect(not player._can_start_mantle(false, true, true), "Mantle should fail when top surface is not standable.")
+		_expect(not player._can_start_mantle(true, true, false), "Mantle should fail when forward clearance is blocked.")
 		_expect(player._can_start_mantle(true, true, true), "Mantle should pass when all top gates are valid.")
+
+	player.free()
+
+func _test_mantle_target_finishes_above_wall_top() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_compute_mantle_target"), "Player should expose _compute_mantle_target(top_point, rv_up, cam_forward).")
+	if player.has_method("_compute_mantle_target"):
+		var target: Vector3 = player._compute_mantle_target(Vector3.ZERO, Vector3.UP, Vector3.FORWARD)
+		_expect(target.y >= 1.25, "Mantle target should provide deterministic top-out clearance (>=1.25m).")
+
+	player.free()
+
+func _test_collision_disabled_during_climb_states() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_should_disable_body_collision_for_locomotion"), "Player should expose _should_disable_body_collision_for_locomotion(state).")
+	if player.has_method("_should_disable_body_collision_for_locomotion"):
+		_expect(not player._should_disable_body_collision_for_locomotion(player.LocomotionState.NORMAL), "Body collision should stay enabled during NORMAL locomotion.")
+		_expect(player._should_disable_body_collision_for_locomotion(player.LocomotionState.CLIMBING), "Body collision should be disabled during CLIMBING.")
+		_expect(player._should_disable_body_collision_for_locomotion(player.LocomotionState.MANTLING), "Body collision should be disabled during MANTLING.")
 
 	player.free()
 
@@ -97,6 +127,15 @@ func _test_climb_exit_velocity_sanitized() -> void:
 	if player.has_method("_sanitize_velocity_after_climb"):
 		var out: Vector3 = player._sanitize_velocity_after_climb(Vector3(2, 30, -1))
 		_expect(out.y <= 0.1, "Vertical velocity should be sanitized when exiting climb.")
+
+	player.free()
+
+func _test_abort_contract_exists() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+
+	_expect(player.has_method("_abort_climb"), "Player should expose _abort_climb(reason).")
 
 	player.free()
 
