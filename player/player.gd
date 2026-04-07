@@ -73,6 +73,7 @@ var is_player_dead: bool = false
 @onready var body_collision_shape = $CollisionShape3D
 @onready var climb_wall_probe = $ClimbWallProbe
 @onready var climb_upward_probe = $ClimbUpwardProbe
+@onready var climb_roof_probe = $ClimbRoofProbe
 
 func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
 	if is_large and has_large_item:
@@ -158,6 +159,12 @@ func _ready():
 		climb_upward_probe.collide_with_bodies = true
 		climb_upward_probe.collide_with_areas = true
 		climb_upward_probe.exclude_parent = true
+	if climb_roof_probe:
+		climb_roof_probe.enabled = true
+		climb_roof_probe.collision_mask = 0xFFFFFFFF
+		climb_roof_probe.collide_with_bodies = true
+		climb_roof_probe.collide_with_areas = true
+		climb_roof_probe.exclude_parent = true
 	_sync_body_collision_to_locomotion()
 	add_to_group("player")
 	current_player_health = max_player_health
@@ -425,20 +432,22 @@ func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
 	_move_with_climb_collision(outward_step)
 
 func _probe_roof_from_above(rv_up: Vector3, cam_forward: Vector3) -> Dictionary:
-	if active_climb_rv == null:
+	if active_climb_rv == null or climb_roof_probe == null:
 		return {}
 
-	var space_state := get_world_3d().direct_space_state
 	var from := global_position + rv_up * MANTLE_ROOF_PROBE_UP + cam_forward * (MANTLE_FORWARD_OFFSET + 0.35)
 	var to := global_position - rv_up * MANTLE_ROOF_PROBE_DOWN + cam_forward * (MANTLE_FORWARD_OFFSET + 0.35)
-	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
-	var hit := space_state.intersect_ray(query)
-	if hit:
-		var hit_node := hit.collider as Node
+	var local_from := to_local(from)
+	var local_to := to_local(to)
+	climb_roof_probe.position = local_from
+	climb_roof_probe.target_position = local_to - local_from
+	climb_roof_probe.force_raycast_update()
+	if climb_roof_probe.is_colliding():
+		var hit_node := climb_roof_probe.get_collider() as Node
 		if _find_rv_ancestor(hit_node) == active_climb_rv:
 			return {
-				"position": hit.position,
-				"normal": hit.normal
+				"position": climb_roof_probe.get_collision_point(),
+				"normal": climb_roof_probe.get_collision_normal()
 			}
 	return {}
 

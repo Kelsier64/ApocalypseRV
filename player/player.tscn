@@ -30,6 +30,12 @@ target_position = Vector3(0, 1, 0)
 collision_mask = 1
 exclude_parent = true
 
+[node name="ClimbRoofProbe" type="RayCast3D" parent="." unique_id=905431117]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+target_position = Vector3(0, -1, 0)
+collision_mask = 1
+exclude_parent = true
+
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=691259209]
 target_position = Vector3(0, 0, -2)
 collision_mask = 3
