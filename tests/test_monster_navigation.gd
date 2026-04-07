@@ -4,6 +4,8 @@ var failures: Array[String] = []
 
 func _init() -> void:
 	_test_navigation_contract_methods_exist()
+	_test_climb_contract_methods_exist()
+	_test_monster_mantle_target_clearance()
 	_test_fallback_direction_is_normalized()
 	_test_stuck_progress_gate()
 	_test_stuck_threshold_scales_with_delta()
@@ -39,6 +41,33 @@ func _test_navigation_contract_methods_exist() -> void:
 	_expect(monster.has_method("_build_stuck_recovery_velocity"), "Monster should expose _build_stuck_recovery_velocity(planar_dir, side_sign).")
 	_expect(monster.has_method("_compute_vehicle_approach_speed"), "Monster should expose _compute_vehicle_approach_speed(vehicle_velocity, impact_direction).")
 	_expect(monster.has_method("_should_apply_vehicle_damage"), "Monster should expose _should_apply_vehicle_damage(vehicle_velocity, impact_direction).")
+
+	monster.free()
+
+func _test_climb_contract_methods_exist() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_start_climb"), "Monster should expose _try_start_climb(destination).")
+	_expect(monster.has_method("_process_climbing"), "Monster should expose _process_climbing(delta, destination).")
+	_expect(monster.has_method("_begin_mantle"), "Monster should expose _begin_mantle(target).")
+	_expect(monster.has_method("_process_mantle"), "Monster should expose _process_mantle(delta).")
+	_expect(monster.has_method("_compute_mantle_target"), "Monster should expose _compute_mantle_target(top_point, rv_up, approach_forward).")
+	_expect(monster.has_method("_can_start_mantle"), "Monster should expose _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok).")
+	_expect(monster.has_method("_is_rv_wall_normal"), "Monster should expose _is_rv_wall_normal(hit_normal, rv_up).")
+
+	monster.free()
+
+func _test_monster_mantle_target_clearance() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_compute_mantle_target"), "Monster should expose _compute_mantle_target(top_point, rv_up, approach_forward).")
+	if monster.has_method("_compute_mantle_target"):
+		var target: Vector3 = monster._compute_mantle_target(Vector3.ZERO, Vector3.UP, Vector3.FORWARD)
+		_expect(target.y >= 1.25, "Monster mantle target should provide deterministic top-out clearance (>=1.25m).")
 
 	monster.free()
 

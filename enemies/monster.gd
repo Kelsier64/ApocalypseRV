@@ -1,6 +1,30 @@
 extends CharacterBody3D
 class_name Monster
 
+const CLIMB_WALL_MIN_DOT = 0.0
+const CLIMB_WALL_MAX_DOT = 0.85
+const CLIMB_MIN_HIT_Y = 0.1
+const CLIMB_MAX_HIT_Y = 1.4
+const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
+const CLIMB_VERTICAL_SPEED = 2.6
+const CLIMB_SIDE_SPEED = 1.2
+const CLIMB_WALL_STICK_SPEED = 0.0
+const CLIMB_TOP_MIN_DOT = 0.35
+const CLIMB_CONTACT_GRACE_TIME = 0.28
+const CLIMB_START_CEILING_CHECK_DISTANCE = 0.8
+const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
+const CLIMB_MAX_FRAME_DELTA = 1.5
+const CLIMB_REENTER_COOLDOWN = 0.2
+const CLIMB_WALL_ALIGN_OFFSET = 0.22
+const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
+const MANTLE_DURATION = 0.22
+const MANTLE_FORWARD_OFFSET = 0.18
+const MANTLE_UP_OFFSET = 0.1
+const MANTLE_MIN_TARGET_CLEARANCE = 1.25
+const CLIMB_DEBUG_LOG_ABORTS = false
+const MANTLE_ROOF_PROBE_UP = 2.2
+const MANTLE_ROOF_PROBE_DOWN = 0.8
+
 @export var monster_name: String = "Unknown Creature"
 @export var max_health: float = 100.0
 @export var move_speed: float = 3.0
@@ -53,6 +77,17 @@ enum State { WANDER, CHASE, ATTACK }
 var ai_state: State = State.WANDER
 var target_player: Node3D = null
 
+enum LocomotionState { NORMAL, CLIMBING, MANTLING }
+var locomotion_state: LocomotionState = LocomotionState.NORMAL
+var active_climb_rv: Node3D = null
+var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
+var active_wall_normal: Vector3 = Vector3.ZERO
+var climb_contact_grace_remaining: float = 0.0
+var climb_reenter_cooldown_remaining: float = 0.0
+var mantle_start_position: Vector3 = Vector3.ZERO
+var mantle_target_position: Vector3 = Vector3.ZERO
+var mantle_elapsed: float = 0.0
+
 # Wandering
 var wander_direction: Vector3 = Vector3.ZERO
 var wander_target_position: Vector3 = Vector3.ZERO
@@ -79,6 +114,10 @@ var elevation_assist_cooldown_timer: float = 0.0
 var last_flat_position: Vector3 = Vector3.ZERO
 var has_last_flat_position: bool = false
 
+var body_collision_shape: CollisionShape3D = null
+var climb_wall_probe: RayCast3D = null
+var climb_upward_probe: RayCast3D = null
+
 var gravity: float = 20.0
 
 func _ready():
@@ -99,6 +138,16 @@ func _ready():
 		nav_agent.path_desired_distance = nav_path_desired_distance
 		nav_agent.target_desired_distance = nav_target_desired_distance
 
+	body_collision_shape = get_node_or_null("CollisionShape")
+	climb_wall_probe = get_node_or_null("ClimbWallProbe")
+	climb_upward_probe = get_node_or_null("ClimbUpwardProbe")
+	if climb_upward_probe:
+		climb_upward_probe.enabled = true
+		climb_upward_probe.collision_mask = 0xFFFFFFFF
+		climb_upward_probe.collide_with_bodies = true
+		climb_upward_probe.collide_with_areas = true
+		climb_upward_probe.exclude_parent = true
+
 	last_flat_position = _flat_position(global_position)
 	has_last_flat_position = true
 	
@@ -106,12 +155,14 @@ func _ready():
 
 func _physics_process(delta: float):
 	if is_dead: return
+	_sync_body_collision_to_locomotion()
 	
-	# Gravity
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-	else:
-		velocity.y = 0.0
+	if locomotion_state == LocomotionState.NORMAL:
+		# Gravity
+		if not is_on_floor():
+			velocity.y -= gravity * delta
+		else:
+			velocity.y = 0.0
 	
 	# Update sway for organic movement
 	sway_phase += delta * 3.0
@@ -127,45 +178,63 @@ func _physics_process(delta: float):
 		fallback_steer_timer -= delta
 	if elevation_assist_cooldown_timer > 0.0:
 		elevation_assist_cooldown_timer -= delta
+	if climb_reenter_cooldown_remaining > 0.0:
+		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
 	
 	# Find player if we don't have one
 	if not target_player or not is_instance_valid(target_player):
 		target_player = _find_nearest_player()
 
 	var moving_intent := false
-	
-	# AI State Machine
-	match ai_state:
-		State.WANDER:
-			moving_intent = _process_wander(delta)
-			# Check if player is close enough to chase
-			if target_player and global_position.distance_to(target_player.global_position) < detection_range:
-				ai_state = State.CHASE
-				
-		State.CHASE:
-			moving_intent = _process_chase(delta)
-			if target_player:
-				var dist = global_position.distance_to(target_player.global_position)
-				if dist < attack_range:
-					ai_state = State.ATTACK
-				elif dist > lose_interest_range:
-					ai_state = State.WANDER
-					_pick_new_wander_direction()
-			else:
-				ai_state = State.WANDER
-				_pick_new_wander_direction()
-				
-		State.ATTACK:
-			_process_attack(delta)
-			moving_intent = false
-			if target_player:
-				var dist = global_position.distance_to(target_player.global_position)
-				if dist > attack_range * 1.5:
-					ai_state = State.CHASE
-			else:
-				ai_state = State.WANDER
 
-	_update_stuck_watchdog(delta, moving_intent)
+	match locomotion_state:
+		LocomotionState.NORMAL:
+			# AI State Machine
+			match ai_state:
+				State.WANDER:
+					moving_intent = _process_wander(delta)
+					# Check if player is close enough to chase
+					if target_player and global_position.distance_to(target_player.global_position) < detection_range:
+						ai_state = State.CHASE
+					
+				State.CHASE:
+					moving_intent = _process_chase(delta)
+					if locomotion_state == LocomotionState.NORMAL:
+						if target_player:
+							var dist = global_position.distance_to(target_player.global_position)
+							if dist < attack_range:
+								ai_state = State.ATTACK
+							elif dist > lose_interest_range:
+								ai_state = State.WANDER
+								_pick_new_wander_direction()
+						else:
+							ai_state = State.WANDER
+							_pick_new_wander_direction()
+					
+				State.ATTACK:
+					_process_attack(delta)
+					moving_intent = false
+					if target_player:
+						var dist = global_position.distance_to(target_player.global_position)
+						if dist > attack_range * 1.5:
+							ai_state = State.CHASE
+					else:
+						ai_state = State.WANDER
+
+			_update_stuck_watchdog(delta, moving_intent)
+
+		LocomotionState.CLIMBING:
+			moving_intent = true
+			_apply_rv_delta_compensation()
+			var climb_destination := global_position
+			if target_player and is_instance_valid(target_player):
+				climb_destination = target_player.global_position
+			_process_climbing(delta, climb_destination)
+
+		LocomotionState.MANTLING:
+			moving_intent = true
+			_apply_rv_delta_compensation()
+			_process_mantle(delta)
 	
 	# Apply organic body sway (slight rotation wobble)
 	var body_mesh = get_node_or_null("BodyMesh")
@@ -173,7 +242,8 @@ func _physics_process(delta: float):
 		body_mesh.rotation.z = sin(sway_phase) * 0.08 * stagger_amount
 		body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
 	
-	move_and_slide()
+	if locomotion_state == LocomotionState.NORMAL:
+		move_and_slide()
 
 # --- WANDERING ---
 func _process_wander(delta: float) -> bool:
@@ -222,8 +292,16 @@ func _process_chase(_delta: float) -> bool:
 		return false
 
 	var destination = target_player.global_position
-	var nav_active = _can_use_navigation() and fallback_steer_timer <= 0.0
-	var dir = _get_navigation_direction(destination)
+	if _try_start_climb(destination):
+		return true
+
+	var on_rv_surface := _is_on_rv_surface()
+	var nav_active = _can_use_navigation() and fallback_steer_timer <= 0.0 and not on_rv_surface
+	var dir := Vector3.ZERO
+	if nav_active:
+		dir = _get_navigation_direction(destination)
+	else:
+		dir = _compute_fallback_direction(global_position, destination)
 	if dir.length_squared() <= 0.0001:
 		dir = _compute_fallback_direction(global_position, destination)
 	if dir.length_squared() <= 0.0001:
@@ -248,6 +326,427 @@ func _process_chase(_delta: float) -> bool:
 	
 	_face_movement_direction()
 	return true
+
+func _should_disable_body_collision_for_locomotion(state: int) -> bool:
+	return state == LocomotionState.CLIMBING or state == LocomotionState.MANTLING
+
+func _sync_body_collision_to_locomotion() -> void:
+	if body_collision_shape == null:
+		return
+	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
+
+func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
+	var n := hit_normal.normalized()
+	var up := rv_up.normalized()
+	var d := absf(n.dot(up))
+	return d >= CLIMB_WALL_MIN_DOT and d <= CLIMB_WALL_MAX_DOT
+
+func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
+	return local_hit_y >= CLIMB_MIN_HIT_Y and local_hit_y <= CLIMB_MAX_HIT_Y
+
+func _can_start_mantle(top_surface_ok: bool, stand_clearance_ok: bool, forward_clear_ok: bool) -> bool:
+	return top_surface_ok and stand_clearance_ok and forward_clear_ok
+
+func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
+	return next_rv_transform.origin - prev_rv_transform.origin
+
+func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
+	var out := v
+	if out.y > CLIMB_EXIT_MAX_UP_VELOCITY:
+		out.y = 0.0
+	return out
+
+func _compute_mantle_target(top_point: Vector3, rv_up: Vector3, approach_forward: Vector3) -> Vector3:
+	var clearance_up := maxf(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + _get_stand_origin_offset_up())
+	var stand_base: Vector3 = top_point + rv_up * clearance_up
+	return stand_base + approach_forward * MANTLE_FORWARD_OFFSET
+
+func _get_stand_origin_offset_up() -> float:
+	if body_collision_shape and body_collision_shape.shape is CapsuleShape3D:
+		var capsule := body_collision_shape.shape as CapsuleShape3D
+		var half_extent := capsule.height * 0.5 + capsule.radius
+		var center_y: float = float(body_collision_shape.position.y)
+		return maxf(0.08, half_extent - center_y + 0.03)
+	return 0.15
+
+func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: float, horizontal_input: float, delta: float) -> Vector3:
+	var wall_tangent := rv_up.cross(wall_normal).normalized()
+	if wall_tangent.length_squared() < 0.001:
+		wall_tangent = transform.basis.x.normalized()
+
+	var motion := (rv_up * vertical_input * CLIMB_VERTICAL_SPEED)
+	motion += wall_tangent * horizontal_input * CLIMB_SIDE_SPEED
+	motion += (-wall_normal) * CLIMB_WALL_STICK_SPEED
+	var inward_mag := motion.dot(-wall_normal)
+	if inward_mag > 0.0:
+		motion += wall_normal * inward_mag
+	motion *= delta
+	if motion.length() > CLIMB_MAX_FRAME_DELTA:
+		motion = motion.normalized() * CLIMB_MAX_FRAME_DELTA
+	return motion
+
+func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float) -> float:
+	if desired_upward_distance <= 0.0:
+		return 0.0
+
+	var from := global_position + rv_up * 0.2
+	var to := from + rv_up * (desired_upward_distance + 0.8)
+	var min_hit_distance := INF
+
+	if climb_upward_probe != null:
+		var local_from := to_local(from)
+		var local_to := to_local(to)
+		climb_upward_probe.position = local_from
+		climb_upward_probe.target_position = local_to - local_from
+		climb_upward_probe.force_raycast_update()
+		if climb_upward_probe.is_colliding():
+			var probe_hit_position: Vector3 = climb_upward_probe.get_collision_point()
+			min_hit_distance = minf(min_hit_distance, from.distance_to(probe_hit_position))
+
+	var space_state := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	query.hit_from_inside = true
+	var hit := space_state.intersect_ray(query)
+	if hit:
+		var hit_position: Vector3 = hit.get("position", from) as Vector3
+		min_hit_distance = minf(min_hit_distance, from.distance_to(hit_position))
+
+	if min_hit_distance == INF:
+		return desired_upward_distance
+
+	var safe_distance := maxf(0.0, min_hit_distance - 0.05)
+	return minf(desired_upward_distance, safe_distance)
+
+func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
+	if step.length_squared() <= 0.0000001:
+		return null
+	return move_and_collide(step)
+
+func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
+	if climb_wall_probe == null or not climb_wall_probe.is_colliding() or active_climb_rv == null:
+		return
+
+	var hit_node := climb_wall_probe.get_collider() as Node
+	if _find_rv_ancestor(hit_node) != active_climb_rv:
+		return
+
+	var wall_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
+	if _is_rv_wall_normal(wall_normal, rv_up):
+		active_wall_normal = wall_normal
+
+	var desired_probe_position: Vector3 = climb_wall_probe.get_collision_point() + wall_normal * CLIMB_WALL_ALIGN_OFFSET
+	var correction: Vector3 = desired_probe_position - climb_wall_probe.global_position
+	var normal_mag: float = correction.dot(wall_normal)
+	if absf(normal_mag) <= 0.0001:
+		return
+	var alignment_step: Vector3 = wall_normal * clampf(normal_mag, -CLIMB_WALL_MAX_OUTWARD_CORRECTION, CLIMB_WALL_MAX_OUTWARD_CORRECTION)
+	_move_with_climb_collision(alignment_step)
+
+func _align_to_climb_wall(rv_up: Vector3) -> void:
+	if active_wall_normal.length_squared() < 0.001:
+		return
+	var desired_forward := -active_wall_normal
+	desired_forward = (desired_forward - rv_up * desired_forward.dot(rv_up)).normalized()
+	if desired_forward.length_squared() < 0.001:
+		return
+	var desired_transform := global_transform.looking_at(global_position + desired_forward, rv_up)
+	global_transform = global_transform.interpolate_with(desired_transform, 0.35)
+
+func _probe_roof_from_above(rv_up: Vector3, approach_forward: Vector3) -> Dictionary:
+	if active_climb_rv == null:
+		return {}
+
+	var from := global_position + rv_up * MANTLE_ROOF_PROBE_UP + approach_forward * (MANTLE_FORWARD_OFFSET + 0.35)
+	var to := global_position - rv_up * MANTLE_ROOF_PROBE_DOWN + approach_forward * (MANTLE_FORWARD_OFFSET + 0.35)
+
+	var space_state := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	var hit := space_state.intersect_ray(query)
+	if hit:
+		var hit_node := hit.collider as Node
+		if _find_rv_ancestor(hit_node) == active_climb_rv:
+			return {
+				"position": hit.position,
+				"normal": hit.normal
+			}
+	return {}
+
+func _find_rv_ancestor(node: Node) -> Node3D:
+	var current := node
+	while current != null:
+		if current is Node3D and current.is_in_group("rv"):
+			return current as Node3D
+		current = current.get_parent()
+	return null
+
+func _get_climb_query_exclusions() -> Array[RID]:
+	var exclusions: Array[RID] = [self.get_rid()]
+	if target_player and is_instance_valid(target_player):
+		exclusions.append(target_player.get_rid())
+	return exclusions
+
+func _try_start_climb(_destination: Vector3) -> bool:
+	if locomotion_state != LocomotionState.NORMAL:
+		return false
+	if climb_reenter_cooldown_remaining > 0.0:
+		return false
+	if climb_wall_probe == null or not climb_wall_probe.is_colliding():
+		return false
+
+	var hit_node := climb_wall_probe.get_collider() as Node
+	var rv := _find_rv_ancestor(hit_node)
+	if rv == null:
+		return false
+
+	var hit_normal: Vector3 = climb_wall_probe.get_collision_normal()
+	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
+	var local_hit_y: float = to_local(hit_point).y
+	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
+	if _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE) < CLIMB_START_CEILING_CHECK_DISTANCE:
+		return false
+	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
+	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
+	if not wall_normal_ok or not hit_height_ok:
+		return false
+
+	locomotion_state = LocomotionState.CLIMBING
+	active_climb_rv = rv
+	previous_climb_rv_transform = rv.global_transform
+	active_wall_normal = hit_normal.normalized()
+	climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
+	velocity = Vector3.ZERO
+	return true
+
+func _apply_rv_delta_compensation() -> void:
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		return
+	var next_transform := active_climb_rv.global_transform
+	var delta_pos := _compute_rv_position_delta(previous_climb_rv_transform, next_transform)
+	if delta_pos.length() > CLIMB_MAX_FRAME_DELTA:
+		delta_pos = delta_pos.normalized() * CLIMB_MAX_FRAME_DELTA
+	var collision := _move_with_climb_collision(delta_pos)
+	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
+		active_wall_normal = collision.get_normal().normalized()
+	previous_climb_rv_transform = next_transform
+
+func _query_mantle_target(_destination: Vector3) -> Dictionary:
+	if active_climb_rv == null:
+		return {"ok": false}
+
+	var rv_up: Vector3 = active_climb_rv.global_transform.basis.y.normalized()
+	var approach_forward: Vector3 = -active_wall_normal
+	approach_forward = (approach_forward - rv_up * approach_forward.dot(rv_up)).normalized()
+	if approach_forward.length_squared() < 0.001:
+		approach_forward = -transform.basis.z
+		approach_forward = (approach_forward - rv_up * approach_forward.dot(rv_up)).normalized()
+
+	var top_hit: Dictionary = _probe_roof_from_above(rv_up, approach_forward)
+	if top_hit.is_empty():
+		return {"ok": false}
+
+	var top_normal: Vector3 = (top_hit.get("normal", rv_up) as Vector3).normalized()
+	var top_surface_ok: bool = top_normal.dot(rv_up) >= CLIMB_TOP_MIN_DOT
+	var top_point: Vector3 = top_hit.get("position", global_position) as Vector3
+	var target: Vector3 = _compute_mantle_target(top_point, rv_up, approach_forward)
+
+	var stand_clearance_ok: bool = _is_stand_position_clear(target)
+
+	var space_state := get_world_3d().direct_space_state
+	var forward_from: Vector3 = target + rv_up * 0.2
+	var forward_to: Vector3 = forward_from + approach_forward * 0.35
+	var forward_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(forward_from, forward_to, 0xFFFFFFFF, _get_climb_query_exclusions())
+	var forward_hit := space_state.intersect_ray(forward_query)
+	var forward_clear_ok := true
+	if forward_hit:
+		var f_node := forward_hit.collider as Node
+		if _find_rv_ancestor(f_node) != active_climb_rv:
+			forward_clear_ok = false
+
+	return {
+		"ok": _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok),
+		"target": target
+	}
+
+func _is_stand_position_clear(candidate_position: Vector3) -> bool:
+	if active_climb_rv == null:
+		return true
+
+	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	var space_state := get_world_3d().direct_space_state
+
+	var support_from := candidate_position + rv_up * 0.25
+	var support_depth := maxf(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + _get_stand_origin_offset_up()) + 0.2
+	var support_to := candidate_position - rv_up * support_depth
+	var support_query := PhysicsRayQueryParameters3D.create(support_from, support_to, 0xFFFFFFFF, _get_climb_query_exclusions())
+	var support_hit := space_state.intersect_ray(support_query)
+	if not support_hit:
+		return false
+	var support_node := support_hit.collider as Node
+	if _find_rv_ancestor(support_node) != active_climb_rv:
+		return false
+	var support_normal := (support_hit.normal as Vector3).normalized()
+	if support_normal.dot(rv_up) < CLIMB_TOP_MIN_DOT:
+		return false
+
+	var head_from := candidate_position + rv_up * 0.25
+	var head_to := candidate_position + rv_up * 1.9
+	var head_query := PhysicsRayQueryParameters3D.create(head_from, head_to, 0xFFFFFFFF, _get_climb_query_exclusions())
+	var head_hit := space_state.intersect_ray(head_query)
+	if head_hit:
+		return false
+
+	return true
+
+func _begin_mantle(target: Vector3) -> void:
+	if locomotion_state != LocomotionState.CLIMBING:
+		return
+	locomotion_state = LocomotionState.MANTLING
+	mantle_start_position = global_position
+	var landing_result := _resolve_mantle_landing(target)
+	if landing_result.get("ok", false):
+		mantle_target_position = landing_result.get("position", target)
+	else:
+		mantle_target_position = target
+	mantle_elapsed = 0.0
+	velocity = Vector3.ZERO
+
+func _process_climbing(delta: float, destination: Vector3) -> void:
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		_abort_climb("rv invalid")
+		return
+
+	if active_climb_rv is RigidBody3D:
+		if (active_climb_rv as RigidBody3D).angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
+			_abort_climb("rv angular speed too high")
+			return
+
+	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	_align_to_climb_wall(rv_up)
+	_apply_wall_outward_alignment(rv_up)
+	var has_valid_wall_contact := false
+	var pending_abort_lost_contact := false
+
+	if climb_wall_probe and climb_wall_probe.is_colliding():
+		var wall_node := climb_wall_probe.get_collider() as Node
+		if _find_rv_ancestor(wall_node) == active_climb_rv:
+			var hit_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
+			has_valid_wall_contact = true
+			active_wall_normal = hit_normal
+
+	if has_valid_wall_contact:
+		climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
+	else:
+		var mantle_result_on_loss := _query_mantle_target(destination)
+		if mantle_result_on_loss.get("ok", false):
+			_begin_mantle(mantle_result_on_loss.get("target", global_position))
+			return
+		climb_contact_grace_remaining -= delta
+		if climb_contact_grace_remaining <= 0.0:
+			pending_abort_lost_contact = true
+
+	var vertical_input := 1.0
+
+	if vertical_input > 0.0:
+		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
+		var allowed_upward_distance := _clamp_upward_climb_distance(rv_up, desired_upward_distance)
+		if allowed_upward_distance < desired_upward_distance:
+			_abort_climb("ceiling detected")
+			return
+		else:
+			vertical_input *= allowed_upward_distance / desired_upward_distance
+
+	var horizontal_input := 0.0
+	var wall_tangent := rv_up.cross(active_wall_normal).normalized()
+	if wall_tangent.length_squared() > 0.001:
+		var desired_to_target := destination - global_position
+		desired_to_target = (desired_to_target - rv_up * desired_to_target.dot(rv_up)).normalized()
+		if desired_to_target.length_squared() > 0.001:
+			horizontal_input = clampf(desired_to_target.dot(wall_tangent), -1.0, 1.0)
+
+	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
+	var collision := _move_with_climb_collision(motion)
+	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
+		active_wall_normal = collision.get_normal().normalized()
+	_align_to_climb_wall(rv_up)
+	velocity = Vector3.ZERO
+
+	var mantle_result := _query_mantle_target(destination)
+	if mantle_result.get("ok", false):
+		_begin_mantle(mantle_result.get("target", global_position))
+		return
+
+	if pending_abort_lost_contact:
+		var final_mantle_result := _query_mantle_target(destination)
+		if final_mantle_result.get("ok", false):
+			_begin_mantle(final_mantle_result.get("target", global_position))
+			return
+		_abort_climb("lost wall contact")
+
+func _process_mantle(delta: float) -> void:
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		_abort_climb("rv invalid")
+		return
+
+	mantle_elapsed += delta
+	var t := clampf(mantle_elapsed / MANTLE_DURATION, 0.0, 1.0)
+	var eased := t * t * (3.0 - 2.0 * t)
+	var target_position := mantle_start_position.lerp(mantle_target_position, eased)
+	_move_with_climb_collision(target_position - global_position)
+	velocity = Vector3.ZERO
+
+	if t >= 1.0:
+		var landing_result := _resolve_mantle_landing(mantle_target_position)
+		if landing_result.get("ok", false):
+			global_position = landing_result.get("position", mantle_target_position)
+			_abort_climb("mantle complete")
+			return
+		if not _is_stand_position_clear(mantle_target_position):
+			_abort_climb("mantle stand position blocked")
+			return
+		_abort_climb("mantle complete")
+
+func _resolve_mantle_landing(candidate_position: Vector3) -> Dictionary:
+	if active_climb_rv == null:
+		return {"ok": false}
+
+	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	var stand_offset := _get_stand_origin_offset_up()
+	var probe_from := candidate_position + rv_up * 0.35
+	var probe_to := candidate_position - rv_up * (MANTLE_MIN_TARGET_CLEARANCE + 0.9)
+	var space_state := get_world_3d().direct_space_state
+	var probe_query := PhysicsRayQueryParameters3D.create(probe_from, probe_to, 0xFFFFFFFF, _get_climb_query_exclusions())
+	var probe_hit := space_state.intersect_ray(probe_query)
+	if not probe_hit:
+		return {"ok": false}
+
+	var support_node := probe_hit.collider as Node
+	if _find_rv_ancestor(support_node) != active_climb_rv:
+		return {"ok": false}
+
+	var support_normal := (probe_hit.normal as Vector3).normalized()
+	if support_normal.dot(rv_up) < CLIMB_TOP_MIN_DOT:
+		return {"ok": false}
+
+	var resolved_position: Vector3 = (probe_hit.position as Vector3) + rv_up * stand_offset
+	return {
+		"ok": true,
+		"position": resolved_position
+	}
+
+func _abort_climb(reason: String = "") -> void:
+	if CLIMB_DEBUG_LOG_ABORTS and not reason.is_empty():
+		print("Monster climb aborted: ", reason)
+	_exit_climb_to_normal()
+
+func _exit_climb_to_normal() -> void:
+	locomotion_state = LocomotionState.NORMAL
+	active_climb_rv = null
+	previous_climb_rv_transform = Transform3D.IDENTITY
+	climb_contact_grace_remaining = 0.0
+	climb_reenter_cooldown_remaining = CLIMB_REENTER_COOLDOWN
+	active_wall_normal = Vector3.ZERO
+	_reset_navigation_state()
+	velocity = _sanitize_velocity_after_climb(velocity)
 
 # --- ATTACKING ---
 func _process_attack(delta: float):
@@ -323,6 +822,23 @@ func _compute_fallback_direction(origin: Vector3, destination: Vector3) -> Vecto
 	if direction.length_squared() <= 0.0001:
 		return Vector3.ZERO
 	return direction.normalized()
+
+func _is_on_rv_surface() -> bool:
+	var space_state := get_world_3d().direct_space_state
+	var from := global_position + Vector3.UP * 0.3
+	var to := from + Vector3.DOWN * 2.6
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	var hit := space_state.intersect_ray(query)
+	if not hit:
+		return false
+	var hit_node := hit.collider as Node
+	return _find_rv_ancestor(hit_node) != null
+
+func _reset_navigation_state() -> void:
+	nav_has_target = false
+	nav_repath_timer = 0.0
+	if nav_agent:
+		nav_agent.target_position = global_position
 
 func _nav_set_target(destination: Vector3, force: bool = false) -> void:
 	if nav_agent == null:

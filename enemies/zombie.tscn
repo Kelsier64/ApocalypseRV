@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cln0u40exd3a3"]
 
-[ext_resource type="Script" path="res://enemies/monster.gd" id="1_uur8n"]
+[ext_resource type="Script" uid="uid://clchxkr3515ni" path="res://enemies/monster.gd" id="1_uur8n"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ujw3w"]
 albedo_color = Color(0.8, 0.15, 0.1, 1)
@@ -8,14 +8,15 @@ roughness = 0.7
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_c8iql"]
 radius = 0.4
-height = 1.8
+height = 1.5
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1p8ux"]
 radius = 0.4
-height = 1.8
+height = 1.5
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_xiyom"]
-radius = 0.6
+radius = 0.4
+height = 1.5
 
 [node name="Zombie" type="CharacterBody3D" unique_id=1079522932]
 script = ExtResource("1_uur8n")
@@ -29,16 +30,16 @@ loot_drops = {
 }
 
 [node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1785665373]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 material_override = SubResource("StandardMaterial3D_ujw3w")
 mesh = SubResource("CapsuleMesh_c8iql")
 
 [node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=252508903]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_1p8ux")
 
 [node name="HitBox" type="Area3D" parent="." unique_id=930569743]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 collision_layer = 0
 monitorable = false
 
@@ -48,3 +49,11 @@ shape = SubResource("CapsuleShape3D_xiyom")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=2026040701]
 path_desired_distance = 0.6
 target_desired_distance = 1.2
+
+[node name="ClimbWallProbe" type="RayCast3D" parent="." unique_id=1591108596]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+target_position = Vector3(0, 0, -1)
+
+[node name="ClimbUpwardProbe" type="RayCast3D" parent="." unique_id=936381948]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7584057, 0)
+target_position = Vector3(0, 1, 0)
