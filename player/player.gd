@@ -13,6 +13,7 @@ const CLIMB_SIDE_SPEED = 1.2
 const CLIMB_WALL_STICK_SPEED = 0.0
 const CLIMB_TOP_MIN_DOT = 0.35
 const CLIMB_CONTACT_GRACE_TIME = 0.28
+const CLIMB_START_CEILING_CHECK_DISTANCE = 0.8
 const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
 const CLIMB_MAX_FRAME_DELTA = 1.5
 const CLIMB_REENTER_COOLDOWN = 0.2
@@ -71,6 +72,7 @@ var is_player_dead: bool = false
 @onready var health_bar = $HealthBarUI
 @onready var body_collision_shape = $CollisionShape3D
 @onready var climb_wall_probe = $ClimbWallProbe
+@onready var climb_upward_probe = $ClimbUpwardProbe
 
 func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
 	if is_large and has_large_item:
@@ -150,6 +152,12 @@ func _ready():
 	camera.current = true
 	_update_inventory_display()
 	_equip_active_slot()
+	if climb_upward_probe:
+		climb_upward_probe.enabled = true
+		climb_upward_probe.collision_mask = 0xFFFFFFFF
+		climb_upward_probe.collide_with_bodies = true
+		climb_upward_probe.collide_with_areas = true
+		climb_upward_probe.exclude_parent = true
 	_sync_body_collision_to_locomotion()
 	add_to_group("player")
 	current_player_health = max_player_health
@@ -357,6 +365,40 @@ func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: f
 		motion = motion.normalized() * CLIMB_MAX_FRAME_DELTA
 	return motion
 
+func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float) -> float:
+	if desired_upward_distance <= 0.0:
+		return 0.0
+
+	var from := global_position + rv_up * 0.2
+	var to := from + rv_up * (desired_upward_distance + 0.8)
+	var min_hit_distance := INF
+
+	if climb_upward_probe != null:
+		var local_from := to_local(from)
+		var local_to := to_local(to)
+		climb_upward_probe.position = local_from
+		climb_upward_probe.target_position = local_to - local_from
+		climb_upward_probe.force_raycast_update()
+		if climb_upward_probe.is_colliding():
+			var probe_hit_position: Vector3 = climb_upward_probe.get_collision_point()
+			min_hit_distance = minf(min_hit_distance, from.distance_to(probe_hit_position))
+
+	# Fallback query improves robustness when RayCast3D node config/layers miss a collider.
+	var space_state := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	query.hit_from_inside = true
+	var hit := space_state.intersect_ray(query)
+	if hit:
+		var hit_position: Vector3 = hit.get("position", from) as Vector3
+		min_hit_distance = minf(min_hit_distance, from.distance_to(hit_position))
+
+	if min_hit_distance == INF:
+		return desired_upward_distance
+
+	# Keep a small safety gap so we stop before interpenetrating the ceiling surface.
+	var safe_distance := maxf(0.0, min_hit_distance - 0.05)
+	return minf(desired_upward_distance, safe_distance)
+
 func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
 	if step.length_squared() <= 0.0000001:
 		return null
@@ -457,6 +499,9 @@ func _try_start_climb() -> void:
 	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
 	var local_hit_y: float = to_local(hit_point).y
 	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
+	if _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE) < CLIMB_START_CEILING_CHECK_DISTANCE:
+		# Ceiling detected overhead: block entering climb state.
+		return
 	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
 	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
 	if not _can_begin_climb(false, true, true, wall_normal_ok, hit_height_ok):
@@ -602,6 +647,15 @@ func _process_climbing(delta: float) -> void:
 		vertical_input += 1.0
 	if Input.is_physical_key_pressed(KEY_S):
 		vertical_input -= 1.0
+
+	if vertical_input > 0.0:
+		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
+		var allowed_upward_distance := _clamp_upward_climb_distance(rv_up, desired_upward_distance)
+		if allowed_upward_distance < desired_upward_distance:
+			_abort_climb("ceiling detected")
+			return
+		else:
+			vertical_input *= allowed_upward_distance / desired_upward_distance
 
 	var horizontal_input := 0.0
 	if Input.is_physical_key_pressed(KEY_D):
