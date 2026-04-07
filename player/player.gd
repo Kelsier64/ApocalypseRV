@@ -575,6 +575,11 @@ func _process_climbing(delta: float) -> void:
 		_abort_climb("rv invalid")
 		return
 
+	# Manual detach: pressing S or Space while climbing exits immediately to avoid floor-intersection stick cases.
+	if Input.is_physical_key_pressed(KEY_S) or Input.is_action_pressed("ui_accept"):
+		_abort_climb("manual detach")
+		return
+
 	if active_climb_rv is RigidBody3D:
 		if (active_climb_rv as RigidBody3D).angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
 			_abort_climb("rv angular speed too high")

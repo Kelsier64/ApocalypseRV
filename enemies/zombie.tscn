@@ -44,3 +44,7 @@ monitorable = false
 
 [node name="HitBoxShape" type="CollisionShape3D" parent="HitBox" unique_id=1048566703]
 shape = SubResource("CapsuleShape3D_xiyom")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=2026040701]
+path_desired_distance = 0.6
+target_desired_distance = 1.2

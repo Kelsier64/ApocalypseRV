@@ -112,7 +112,7 @@ If docs exist(./docs), agents can check docs for task context before edits; if d
 ## User Preferences
 Regardless of the language of user's input,translate the input to english and perform your internal reasoning and tool interactions in English.
 For user-facing interactions that need clarification, confirmation, or explicit choices, prioritize the **question** tool instead of freeform follow-up prompts.
-dont use git workflow skill
+dont use git worktree
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, ignore this.

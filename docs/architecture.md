@@ -29,7 +29,7 @@
 | Chunk Generation | Builds terrain/road meshes, controls road curvature/slope, and emits per-chunk navigation regions | world/chunk_generator.gd | Noise, POI Spawning |
 | POI Spawning | Performs weighted POI selection, spawns building/loot/enemies, and handles cache/missing-scene fallback | world/poi_spawner.gd, world/poi_config.gd | POI Config, Building Generator |
 | Procedural Building | Expands rooms with occupancy + BFS and builds procedural structures | world/building/building_generator.gd | Room Scenes |
-| Enemy Locomotion AI | Patrol/chase/attack with navigation-agent steering fallback and wall-climb assist on steep obstacles | enemies/monster.gd, enemies/zombie.tscn | Chunk navigation regions, player/structure targeting |
+| Enemy Locomotion AI | Patrol/chase/attack with navigation-agent steering fallback and anti-stuck repath recovery | enemies/monster.gd, enemies/zombie.tscn | Chunk navigation regions, player/structure targeting |
 | RV Chassis & Energy | Integrates drive input, engine/brake behavior, fuel/power state and signals, and chassis durability under monster attacks | rv/chassis.gd | Generator, Driver Seat, Fuel Filler |
 | Generator Equipment | Auxiliary conversion from fuel to power | equipment/generator.gd | RV Chassis API |
 | Driver Seat | Switches player driving state and seat camera control | equipment/driver_seat.gd | RV Chassis API |
@@ -41,7 +41,7 @@
 ### Primary flow
 1. After entering the main scene, WorldGenerator creates initial chunks and then streams/despawns chunks as the player moves. (world/world_generator.gd:16, world/world_generator.gd:54, world/world_generator.gd:61)
 2. Chunk generation builds terrain/road meshes and a road-following `ChunkNavigationRegion` for AI path queries. (world/chunk_generator.gd:54, world/chunk_generator.gd:55, world/chunk_generator.gd:56, world/chunk_generator.gd:334, world/chunk_generator.gd:377)
-3. Zombie monsters use `NavigationAgent3D` for patrol/chase steering when map data is ready; otherwise they fall back to direct steering and can wall-climb against steep blockers when target elevation requires it. (enemies/zombie.tscn:48, enemies/monster.gd:185, enemies/monster.gd:205, enemies/monster.gd:341, enemies/monster.gd:353, enemies/monster.gd:370, enemies/monster.gd:384)
+3. Zombie monsters use `NavigationAgent3D` for patrol/chase steering when map data is ready; otherwise they fall back to direct steering, and stuck movement triggers bounded recovery with forced repath. (enemies/zombie.tscn:48, enemies/monster.gd:185, enemies/monster.gd:207, enemies/monster.gd:285, enemies/monster.gd:314, enemies/monster.gd:334, enemies/monster.gd:355)
 4. The player scavenges and interacts through raycast; items move into player inventory and update held visuals. (player/player_interact.gd:29, props/interactable_item.gd:22, player/player.gd:76)
 5. The player can hold F to enter equipment placement mode, then confirm stable parenting onto RV or scene nodes. (player/player_interact.gd:57, player/player.gd:227, equipment/equipment.gd:108)
 6. After entering the driver seat, chassis logic runs energy steps each frame and applies engine/steering/brake behavior. (equipment/driver_seat.gd:45, rv/chassis.gd:205, rv/chassis.gd:151)
@@ -73,8 +73,8 @@
   - `ChunkGenerator._build_navigation_region()` creates road-following per-chunk `NavigationRegion3D` strips for AI pathing. (world/chunk_generator.gd:334, world/chunk_generator.gd:377)
   - `POISpawner.pick_poi() -> Dictionary|{}` and `spawn_building/spawn_loot/spawn_enemies` generate POI content from config. (world/poi_spawner.gd:8, world/poi_spawner.gd:31, world/poi_spawner.gd:49, world/poi_spawner.gd:84)
 - Enemy locomotion contracts
-  - `Monster._can_use_navigation()` and `Monster._get_navigation_direction(destination)` provide navigation-agent steering with direct-vector fallback. (enemies/monster.gd:341, enemies/monster.gd:353)
-  - `Monster._should_attempt_wall_climb(...)` and `Monster._apply_wall_climb(delta)` gate and apply bounded wall climbing based on target height gap, wall normals, and cooldown/timer limits. (enemies/monster.gd:370, enemies/monster.gd:384, enemies/monster.gd:412)
+  - `Monster._can_use_navigation()` and `Monster._get_navigation_direction(destination)` provide navigation-agent steering with direct-vector fallback. (enemies/monster.gd:285, enemies/monster.gd:314)
+  - `Monster._update_stuck_watchdog(delta, moving_intent)` and `Monster._trigger_stuck_recovery()` gate bounded unstuck behavior through progress thresholds, cooldown, and short fallback windows. (enemies/monster.gd:334, enemies/monster.gd:350, enemies/monster.gd:355)
 - RV contracts
   - `consume_fuel/add_fuel/consume_power/add_power/has_usable_power/step_energy_system/refuel_from_player`. (rv/chassis.gd:118, rv/chassis.gd:126, rv/chassis.gd:133, rv/chassis.gd:141, rv/chassis.gd:148, rv/chassis.gd:151, rv/chassis.gd:65)
   - `take_damage(amount)` applies chassis durability loss and can disable driving at zero durability. (rv/chassis.gd:75)
@@ -93,7 +93,7 @@
 
 ## 9. Error Handling and Reliability
 - Missing POI resources follow a skip + warn-once strategy to avoid hard crashes. (world/poi_spawner.gd:14, world/poi_spawner.gd:178)
-- Monster movement degrades gracefully: if navigation maps are not ready, steering falls back to direct vectors; wall climbing is bounded by max duration and cooldown to avoid infinite vertical locking. (enemies/monster.gd:353, enemies/monster.gd:368, enemies/monster.gd:412, enemies/monster.gd:414)
+- Monster movement degrades gracefully: if navigation maps are not ready, steering falls back to direct vectors; if movement stalls beyond threshold, stuck recovery forces repath with cooldown to avoid infinite lock states. (enemies/monster.gd:314, enemies/monster.gd:318, enemies/monster.gd:334, enemies/monster.gd:350, enemies/monster.gd:355)
 - Energy mutation paths are clamped and guarded against insufficient resources to avoid out-of-range states. (rv/chassis.gd:121, rv/chassis.gd:174, rv/chassis.gd:181)
 - Equipment placement adds collision exceptions to reduce RV physics instability risk. (equipment/equipment.gd:123)
 - Crafting uses layered gating (RV connectivity, materials, power, station validity) to reduce invalid output paths. (equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:145)
@@ -116,7 +116,7 @@
 |---|---|---|---|
 | RV energy and refueling | `tests/test_energy_system.gd` covers API and core behavior | Missing variable-framerate/extreme-value stress tests | High |
 | World streaming and POI | No automation; currently manual verification | Missing chunk stability and POI weight-distribution tests | High |
-| Enemy navigation and climbing | `tests/test_energy_system.gd` contract checks for navigation/climb helper availability | Missing scene-level path quality and obstacle traversal regression tests | High |
+| Enemy navigation and unstuck recovery | `tests/test_monster_navigation.gd` contract checks for navigation/fallback/stuck helper availability | Missing scene-level path quality and multi-obstacle traversal regression tests | High |
 | Player interaction and equipment placement | No automation; currently manual verification | Missing interaction timing and placement parent-selection tests | High |
 | Crafting flow | No dedicated test | Missing UI gating and station-connectivity contract tests | Medium |
 
