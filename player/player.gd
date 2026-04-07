@@ -71,7 +71,6 @@ var is_player_dead: bool = false
 @onready var health_bar = $HealthBarUI
 @onready var body_collision_shape = $CollisionShape3D
 @onready var climb_wall_probe = $ClimbWallProbe
-@onready var climb_top_probe = $ClimbTopProbe
 
 func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
 	if is_large and has_large_item:
@@ -492,17 +491,7 @@ func _query_mantle_target() -> Dictionary:
 	if cam_forward.length_squared() < 0.001:
 		cam_forward = (-active_wall_normal).normalized()
 
-	var top_hit: Dictionary = {}
-	if climb_top_probe and climb_top_probe.is_colliding():
-		var top_node: Node = climb_top_probe.get_collider() as Node
-		if _find_rv_ancestor(top_node) == active_climb_rv:
-			top_hit = {
-				"position": climb_top_probe.get_collision_point(),
-				"normal": climb_top_probe.get_collision_normal()
-			}
-
-	if top_hit.is_empty():
-		top_hit = _probe_roof_from_above(rv_up, cam_forward)
+	var top_hit: Dictionary = _probe_roof_from_above(rv_up, cam_forward)
 	if top_hit.is_empty():
 		return {"ok": false}
 

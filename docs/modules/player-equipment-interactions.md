@@ -55,7 +55,7 @@ Out of scope:
    - Trigger requires hold W + valid RV wall probe hit; jump is optional, while wall-normal and hit-height gates are required to reject undercarriage/invalid wall contacts.
    - Manual detach is explicit: pressing S or Space (`ui_accept`) while in climbing state immediately exits climb to normal locomotion.
    - Climbing and mantling states apply RV transform-delta compensation each frame to reduce moving-platform desync and launch risk.
-   - Top-out starts only when top probe surface, stand support ray + headroom ray checks, and forward-clear gate all pass; support depth is derived from mantle clearance (`max(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + stand-offset) + 0.2`) to avoid false negatives near roof edges.
+   - Top-out starts only when roof-from-above probe, stand support ray + headroom ray checks, and forward-clear gate all pass; support depth is derived from mantle clearance (`max(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + stand-offset) + 0.2`) to avoid false negatives near roof edges.
    - Lost-wall handling is deferred: on contact loss, climb attempts mantle immediately, then runs grace countdown (`CLIMB_CONTACT_GRACE_TIME = 0.28`), and performs a final mantle retry before `_abort_climb("lost wall contact")`.
 
 ## Data contracts
