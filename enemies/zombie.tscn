@@ -28,6 +28,7 @@ loot_drops = {
 "Metal Parts": Vector2(0, 1),
 "Unknown Material": Vector2(1, 3)
 }
+debug_climb_messages = true
 
 [node name="BodyMesh" type="MeshInstance3D" parent="." unique_id=1785665373]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)

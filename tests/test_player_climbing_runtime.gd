@@ -18,12 +18,11 @@ func _init() -> void:
 	if not player.has_method("_abort_climb"):
 		failures.append("Player should expose _abort_climb(reason).")
 
-	if not player.has_method("_compute_mantle_target"):
-		failures.append("Player should expose _compute_mantle_target(top_point, rv_up, cam_forward).")
-	else:
-		var target: Vector3 = player._compute_mantle_target(Vector3.ZERO, Vector3.UP, Vector3.FORWARD)
-		if target.y < 1.25:
-			failures.append("Mantle target should provide deterministic top-out clearance (>=1.25m).")
+	if player.has_method("_begin_mantle"):
+		failures.append("Player mantle API should be removed (_begin_mantle).")
+
+	if player.has_method("_process_mantle"):
+		failures.append("Player mantle API should be removed (_process_mantle).")
 
 	player.free()
 	_finish()

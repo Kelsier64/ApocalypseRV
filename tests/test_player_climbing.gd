@@ -6,8 +6,6 @@ func _init() -> void:
 	_test_wall_gate_requires_jump_and_w_and_rv()
 	_test_wall_normal_gate_accepts_vertical_rejects_floor()
 	_test_wall_gate_rejects_undercarriage_like_hits()
-	_test_top_gate_requires_standable_surface()
-	_test_mantle_target_finishes_above_wall_top()
 	_test_collision_disabled_during_climb_states()
 	_test_rv_delta_compensation_math()
 	_test_climb_exit_velocity_sanitized()
@@ -65,32 +63,6 @@ func _test_wall_gate_rejects_undercarriage_like_hits() -> void:
 
 	player.free()
 
-func _test_top_gate_requires_standable_surface() -> void:
-	var player := _new_player()
-	if player == null:
-		return
-
-	_expect(player.has_method("_can_start_mantle"), "Player should expose _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok).")
-	if player.has_method("_can_start_mantle"):
-		_expect(not player._can_start_mantle(true, false, true), "Mantle should fail without stand clearance.")
-		_expect(not player._can_start_mantle(false, true, true), "Mantle should fail when top surface is not standable.")
-		_expect(not player._can_start_mantle(true, true, false), "Mantle should fail when forward clearance is blocked.")
-		_expect(player._can_start_mantle(true, true, true), "Mantle should pass when all top gates are valid.")
-
-	player.free()
-
-func _test_mantle_target_finishes_above_wall_top() -> void:
-	var player := _new_player()
-	if player == null:
-		return
-
-	_expect(player.has_method("_compute_mantle_target"), "Player should expose _compute_mantle_target(top_point, rv_up, cam_forward).")
-	if player.has_method("_compute_mantle_target"):
-		var target: Vector3 = player._compute_mantle_target(Vector3.ZERO, Vector3.UP, Vector3.FORWARD)
-		_expect(target.y >= 1.25, "Mantle target should provide deterministic top-out clearance (>=1.25m).")
-
-	player.free()
-
 func _test_collision_disabled_during_climb_states() -> void:
 	var player := _new_player()
 	if player == null:
@@ -100,7 +72,6 @@ func _test_collision_disabled_during_climb_states() -> void:
 	if player.has_method("_should_disable_body_collision_for_locomotion"):
 		_expect(not player._should_disable_body_collision_for_locomotion(player.LocomotionState.NORMAL), "Body collision should stay enabled during NORMAL locomotion.")
 		_expect(player._should_disable_body_collision_for_locomotion(player.LocomotionState.CLIMBING), "Body collision should be disabled during CLIMBING.")
-		_expect(player._should_disable_body_collision_for_locomotion(player.LocomotionState.MANTLING), "Body collision should be disabled during MANTLING.")
 
 	player.free()
 
@@ -146,8 +117,8 @@ func _test_player_has_climb_state_contract() -> void:
 
 	_expect(player.has_method("_try_start_climb"), "Player should expose _try_start_climb() state transition helper.")
 	_expect(player.has_method("_process_climbing"), "Player should expose _process_climbing(delta).")
-	_expect(player.has_method("_begin_mantle"), "Player should expose _begin_mantle(target).")
-	_expect(player.has_method("_process_mantle"), "Player should expose _process_mantle(delta).")
+	_expect(not player.has_method("_begin_mantle"), "Player mantle helper _begin_mantle should be removed.")
+	_expect(not player.has_method("_process_mantle"), "Player mantle helper _process_mantle should be removed.")
 	_expect(player.has_method("_build_climb_motion"), "Player should expose _build_climb_motion(...) helper.")
 
 	if player.has_method("_build_climb_motion"):
