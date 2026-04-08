@@ -6,7 +6,7 @@ const CLIMB_WALL_MAX_DOT = 0.85
 const CLIMB_MIN_HIT_Y = 0.1
 const CLIMB_MAX_HIT_Y = 1.4
 const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
-const CLIMB_VERTICAL_SPEED = 0.2
+const CLIMB_VERTICAL_SPEED = 2
 const CLIMB_SIDE_SPEED = 0.2
 const CLIMB_WALL_STICK_SPEED = 0.0
 const CLIMB_CONTACT_GRACE_TIME = 1
@@ -38,6 +38,9 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 @export var attack_range: float = 2.0
 @export var chassis_attack_range: float = 4.0
 @export var climbing_touch_attack_range: float = 1.2
+@export var underfoot_attack_planar_range: float = 0.9
+@export var underfoot_attack_max_height_delta: float = 0.45
+@export var underfoot_target_below_margin: float = 0.05
 @export var attack_max_vertical_gap: float = 1.1
 @export var attack_cooldown: float = 1.5
 @export var lose_interest_range: float = 40.0
@@ -237,6 +240,7 @@ func _physics_process(delta: float):
 						var chase_destination := _get_node_target_position(chase_target_node)
 						current_combat_target["position"] = chase_destination
 						moving_intent = _process_chase(delta, chase_destination)
+						_try_attack_underfoot_equipment(chase_target_node)
 					else:
 						moving_intent = false
 					if locomotion_state == LocomotionState.NORMAL:
@@ -290,6 +294,8 @@ func _physics_process(delta: float):
 	
 	if locomotion_state == LocomotionState.NORMAL:
 		move_and_slide()
+
+	_sync_player_collision_exceptions_for_airborne()
 
 # --- WANDERING ---
 func _process_wander(delta: float) -> bool:
@@ -433,6 +439,27 @@ func _sync_body_collision_to_locomotion() -> void:
 	if body_collision_shape == null:
 		return
 	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
+
+func _should_disable_player_collision_for_airborne(locomotion_state_value: int, on_floor_now: bool) -> bool:
+	if locomotion_state_value == LocomotionState.CLIMBING:
+		return true
+	return not on_floor_now
+
+func _sync_player_collision_exceptions_for_airborne() -> void:
+	if not is_inside_tree():
+		return
+
+	var disable_player_collision := _should_disable_player_collision_for_airborne(int(locomotion_state), is_on_floor())
+	for node in get_tree().get_nodes_in_group("player"):
+		if not (node is PhysicsBody3D):
+			continue
+		var player_body := node as PhysicsBody3D
+		if player_body == null or not is_instance_valid(player_body):
+			continue
+		if disable_player_collision:
+			add_collision_exception_with(player_body)
+		else:
+			remove_collision_exception_with(player_body)
 
 func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
 	var n := hit_normal.normalized()
@@ -910,6 +937,10 @@ func _process_attack(delta: float):
 	if target_node == null:
 		return
 
+	# Underfoot structure attacks should remain available even after transitioning into ATTACK state.
+	if _try_attack_underfoot_equipment(target_node):
+		return
+
 	var target_position := _get_node_target_position(target_node)
 	current_combat_target["position"] = target_position
 	var has_attack_los := _has_attack_line_of_sight_to_target(target_node)
@@ -1069,6 +1100,77 @@ func _pick_nearest_touching_structure_target(structure_candidates: Array) -> Nod
 		if _is_climbing_touch_structure_target(node):
 			touching_candidates.append(node)
 	return _pick_nearest_target(touching_candidates)
+
+func _is_tracking_target_below(tracking_target_position: Vector3, margin: float = 0.05) -> bool:
+	var origin := _get_self_position()
+	return tracking_target_position.y < origin.y - maxf(margin, 0.0)
+
+func _select_underfoot_equipment_target(structure_candidates: Array, max_planar_distance: float, max_height_delta: float) -> Node3D:
+	var origin := _get_self_position()
+	var nearest_node: Node3D = null
+	var nearest_planar_dist: float = INF
+	var allowed_planar := maxf(max_planar_distance, 0.0)
+	var allowed_height := maxf(max_height_delta, 0.0)
+
+	for candidate in structure_candidates:
+		if not (candidate is Node3D):
+			continue
+		var node := candidate as Node3D
+		if node == null or not is_instance_valid(node):
+			continue
+		if node.is_in_group("chassis"):
+			continue
+		if not node.is_in_group("monster_damageable"):
+			continue
+		if not node.has_method("take_damage"):
+			continue
+
+		var target_pos := _get_node_target_position(node)
+		var planar_offset := target_pos - origin
+		planar_offset.y = 0.0
+		var planar_dist := planar_offset.length()
+		if planar_dist > allowed_planar:
+			continue
+
+		var touching_now := _is_node_touching_monster(node, climbing_touch_attack_range)
+		if not touching_now:
+			# Keep directional gate so underfoot does not jump to targets clearly above monster.
+			var height_delta := origin.y - target_pos.y
+			if height_delta < -0.15:
+				continue
+			if height_delta > allowed_height:
+				continue
+
+		if planar_dist < nearest_planar_dist:
+			nearest_planar_dist = planar_dist
+			nearest_node = node
+
+	return nearest_node
+
+func _try_attack_underfoot_equipment(tracking_target_node: Node3D, structure_candidates_override: Array = []) -> bool:
+	if tracking_target_node == null or not is_instance_valid(tracking_target_node):
+		return false
+	if not _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+		return false
+
+	var structure_candidates: Array = structure_candidates_override
+	if structure_candidates.is_empty():
+		structure_candidates = _collect_structure_candidates(maxf(underfoot_attack_planar_range, attack_range))
+
+	var underfoot_target := _select_underfoot_equipment_target(
+		structure_candidates,
+		underfoot_attack_planar_range,
+		underfoot_attack_max_height_delta
+	)
+	if underfoot_target == null:
+		return false
+
+	var previous_attack_timer := attack_timer
+	_execute_attack_on_target(_build_combat_target(underfoot_target, "equipment"))
+	return attack_timer > previous_attack_timer
+
+func _process_underfoot_equipment_attack(tracking_target_node: Node3D) -> void:
+	_try_attack_underfoot_equipment(tracking_target_node)
 
 func _select_combat_target(player_candidates: Array, structure_candidates: Array, is_climbing: bool) -> Dictionary:
 	var player_target := _pick_nearest_target(player_candidates)

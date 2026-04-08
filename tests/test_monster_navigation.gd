@@ -19,6 +19,8 @@ func _init() -> void:
 	_test_descent_hint_prefers_climb_side_when_target_below()
 	_test_fallback_wall_contact_helper_safe_outside_tree()
 	_test_climb_separation_state_labels()
+	_test_airborne_player_collision_gate()
+	_test_sync_player_collision_exceptions_safe_outside_tree()
 	_test_navigation_gate_after_separation_with_vertical_gap()
 	_test_abort_climb_when_target_leaves_rv()
 	_test_target_rv_contact_grace_keeps_climb()
@@ -36,6 +38,11 @@ func _init() -> void:
 	_test_select_combat_target_climbing_requires_touching_structure()
 	_test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group()
 	_test_select_combat_target_prefers_chassis_over_equipment()
+	_test_tracking_target_below_gate_for_underfoot_attack()
+	_test_select_underfoot_equipment_target_prefers_nearest()
+	_test_select_underfoot_equipment_target_accepts_damageable_without_equipment_group()
+	_test_select_underfoot_equipment_target_accepts_touching_with_realistic_center_height_gap()
+	_test_try_attack_underfoot_equipment_executes_damage()
 	_test_climbing_touch_attack_can_ignore_los_gate()
 	_test_attack_executor_damages_non_player_target()
 	_test_chassis_attack_uses_extended_range()
@@ -195,6 +202,31 @@ func _test_climb_separation_state_labels() -> void:
 		_expect(monster._get_climb_separation_state(true, 0.0) == "attached", "Separation state should be attached when wall contact exists.")
 		_expect(monster._get_climb_separation_state(false, 0.2) == "detaching", "Separation state should be detaching during grace window without contact.")
 		_expect(monster._get_climb_separation_state(false, 0.0) == "separated", "Separation state should be separated when grace is exhausted.")
+
+	monster.free()
+
+func _test_airborne_player_collision_gate() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_should_disable_player_collision_for_airborne"), "Monster should expose _should_disable_player_collision_for_airborne(locomotion_state_value, on_floor_now).")
+	if monster.has_method("_should_disable_player_collision_for_airborne"):
+		_expect(monster._should_disable_player_collision_for_airborne(1, true), "Climbing locomotion should disable monster-player collision.")
+		_expect(monster._should_disable_player_collision_for_airborne(0, false), "Normal locomotion while airborne should disable monster-player collision.")
+		_expect(not monster._should_disable_player_collision_for_airborne(0, true), "Normal locomotion on floor should keep monster-player collision enabled.")
+
+	monster.free()
+
+func _test_sync_player_collision_exceptions_safe_outside_tree() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_sync_player_collision_exceptions_for_airborne"), "Monster should expose _sync_player_collision_exceptions_for_airborne().")
+	if monster.has_method("_sync_player_collision_exceptions_for_airborne"):
+		monster._sync_player_collision_exceptions_for_airborne()
+		_expect(true, "Syncing player collision exceptions should be safe when monster is outside scene tree.")
 
 	monster.free()
 
@@ -516,6 +548,114 @@ func _test_select_combat_target_prefers_chassis_over_equipment() -> void:
 
 		chassis.free()
 		equipment.free()
+
+	monster.free()
+
+func _test_tracking_target_below_gate_for_underfoot_attack() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_is_tracking_target_below"), "Monster should expose _is_tracking_target_below(tracking_target_position, margin).")
+	if monster.has_method("_is_tracking_target_below"):
+		monster.position = Vector3(0.0, 2.0, 0.0)
+		_expect(monster._is_tracking_target_below(Vector3(0.0, 1.4, 0.0), 0.05), "Underfoot attack gate should be true when tracking target is below monster.")
+		_expect(not monster._is_tracking_target_below(Vector3(0.0, 2.1, 0.0), 0.05), "Underfoot attack gate should be false when tracking target is not below.")
+
+	monster.free()
+
+func _test_select_underfoot_equipment_target_prefers_nearest() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
+	if monster.has_method("_select_underfoot_equipment_target"):
+		monster.position = Vector3.ZERO
+
+		var near_equipment := _DummyDamageable.new()
+		near_equipment.position = Vector3(0.2, -0.05, 0.0)
+		near_equipment.add_to_group("equipment")
+		near_equipment.add_to_group("monster_damageable")
+
+		var far_equipment := _DummyDamageable.new()
+		far_equipment.position = Vector3(0.7, -0.05, 0.0)
+		far_equipment.add_to_group("equipment")
+		far_equipment.add_to_group("monster_damageable")
+
+		var chosen = monster._select_underfoot_equipment_target([far_equipment, near_equipment], 0.9, 0.4)
+		_expect(chosen == near_equipment, "Underfoot equipment selection should pick the nearest eligible equipment.")
+
+		near_equipment.free()
+		far_equipment.free()
+
+	monster.free()
+
+func _test_select_underfoot_equipment_target_accepts_damageable_without_equipment_group() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
+	if monster.has_method("_select_underfoot_equipment_target"):
+		monster.position = Vector3.ZERO
+
+		var damageable_equipment := _DummyDamageable.new()
+		damageable_equipment.position = Vector3(0.25, -0.05, 0.0)
+		damageable_equipment.add_to_group("monster_damageable")
+
+		var chosen = monster._select_underfoot_equipment_target([damageable_equipment], 0.9, 0.4)
+		_expect(chosen == damageable_equipment, "Underfoot selection should accept damageable equipment even without explicit equipment group.")
+
+		damageable_equipment.free()
+
+	monster.free()
+
+func _test_select_underfoot_equipment_target_accepts_touching_with_realistic_center_height_gap() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
+	if monster.has_method("_select_underfoot_equipment_target"):
+		# Runtime zombie origin is commonly around chest/center, so equipment center can be much lower while still underfoot.
+		monster.position = Vector3(0.0, 1.0, 0.0)
+
+		var underfoot := _DummyDamageable.new()
+		underfoot.position = Vector3(0.12, 0.0, 0.0)
+		underfoot.add_to_group("monster_damageable")
+
+		var chosen = monster._select_underfoot_equipment_target([underfoot], 0.9, 0.45)
+		_expect(chosen == underfoot, "Underfoot selection should still accept touching damageables even when center-height gap exceeds legacy threshold.")
+
+		underfoot.free()
+
+	monster.free()
+
+func _test_try_attack_underfoot_equipment_executes_damage() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_attack_underfoot_equipment"), "Monster should expose _try_attack_underfoot_equipment(tracking_target_node, structure_candidates_override).")
+	if monster.has_method("_try_attack_underfoot_equipment"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 9.0
+		monster.attack_timer = 0.0
+
+		var tracking_target := Node3D.new()
+		tracking_target.position = Vector3(0.0, 0.2, 0.0)
+
+		var underfoot := _DummyDamageable.new()
+		underfoot.position = Vector3(0.1, 0.0, 0.0)
+		underfoot.add_to_group("monster_damageable")
+
+		var attacked: bool = monster._try_attack_underfoot_equipment(tracking_target, [underfoot])
+		_expect(attacked, "Underfoot attack helper should return true when it executes an attack.")
+		_expect(underfoot.damage_received >= 9.0, "Underfoot attack helper should damage the selected underfoot target.")
+
+		underfoot.free()
+		tracking_target.free()
 
 	monster.free()
 
