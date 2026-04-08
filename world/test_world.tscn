@@ -11,7 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://bkfm4o6gc5rw7" path="res://props/gas_can.tscn" id="10_e5drx"]
 [ext_resource type="PackedScene" uid="uid://vl4wqm5kw8xj" path="res://equipment/driver_seat.tscn" id="11_v5l3q"]
 [ext_resource type="PackedScene" uid="uid://bjbkueffwyxog" path="res://rv/new_rv.tscn" id="12_ms8km"]
-[ext_resource type="PackedScene" path="res://enemies/zombie.tscn" id="13_tqn3h"]
+[ext_resource type="PackedScene" uid="uid://cln0u40exd3a3" path="res://enemies/zombie.tscn" id="13_tqn3h"]
 [ext_resource type="PackedScene" path="res://props/wheel.tscn" id="13_wheel"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
@@ -84,3 +84,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8359404, 1.7807889, 1.9549
 
 [node name="Zombie" parent="." unique_id=1079522932 instance=ExtResource("13_tqn3h")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5417638, 8.568991)
+debug_climb_messages = false
+debug_navigation_messages = true
