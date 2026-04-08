@@ -2,6 +2,12 @@ extends SceneTree
 
 var failures: Array[String] = []
 
+class _DummyDamageable extends Node3D:
+	var damage_received: float = 0.0
+
+	func take_damage(amount: float) -> void:
+		damage_received += amount
+
 func _init() -> void:
 	_test_navigation_contract_methods_exist()
 	_test_climb_contract_methods_exist()
@@ -16,12 +22,23 @@ func _init() -> void:
 	_test_navigation_gate_after_separation_with_vertical_gap()
 	_test_abort_climb_when_target_leaves_rv()
 	_test_target_rv_contact_grace_keeps_climb()
+	_test_target_on_rv_surface_probe_merge_logic()
+	_test_is_node_on_specific_rv_surface_supports_edge_overlap()
 	_test_fallback_direction_is_normalized()
 	_test_stuck_progress_gate()
 	_test_stuck_threshold_scales_with_delta()
 	_test_elevation_gap_gate()
 	_test_elevation_assist_velocity_builder()
 	_test_vehicle_impact_direction_and_speed_gate()
+	_test_select_combat_target_prioritizes_player_when_not_climbing()
+	_test_select_combat_target_excludes_player_while_climbing()
+	_test_select_combat_target_climbing_prefers_nearest_touching_structure()
+	_test_select_combat_target_climbing_requires_touching_structure()
+	_test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group()
+	_test_select_combat_target_prefers_chassis_over_equipment()
+	_test_climbing_touch_attack_can_ignore_los_gate()
+	_test_attack_executor_damages_non_player_target()
+	_test_chassis_attack_uses_extended_range()
 	_finish()
 
 func _new_monster() -> Node:
@@ -203,8 +220,8 @@ func _test_abort_climb_when_target_leaves_rv() -> void:
 
 	_expect(monster.has_method("_should_abort_climb_when_target_leaves_rv"), "Monster should expose _should_abort_climb_when_target_leaves_rv(is_climbing, target_on_same_rv, has_wall_contact).")
 	if monster.has_method("_should_abort_climb_when_target_leaves_rv"):
-		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, false), "Monster should abort climb only when target left RV and wall contact is lost.")
-		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, false, true), "Monster should keep climbing while still attached to wall, even if target briefly appears off-RV.")
+		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, false), "Monster should abort climb when target left RV.")
+		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, true), "Monster should still abort climb when target left RV even if wall contact remains.")
 		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, true, false), "Monster should keep climbing while target remains on same RV.")
 		_expect(not monster._should_abort_climb_when_target_leaves_rv(false, false, false), "Monster should not trigger climb abort logic outside climbing state.")
 
@@ -220,6 +237,55 @@ func _test_target_rv_contact_grace_keeps_climb() -> void:
 		_expect(monster._is_target_considered_on_climb_rv(true, 0.0), "Immediate RV contact should be considered on-RV.")
 		_expect(monster._is_target_considered_on_climb_rv(false, 0.2), "Recent RV contact grace should still be considered on-RV.")
 		_expect(not monster._is_target_considered_on_climb_rv(false, 0.0), "Without current contact and grace, target should be considered off-RV.")
+
+	monster.free()
+
+func _test_target_on_rv_surface_probe_merge_logic() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_is_target_on_rv_surface_from_probes"), "Monster should expose _is_target_on_rv_surface_from_probes(ray_hit_rv, overlap_hit_rv).")
+	if monster.has_method("_is_target_on_rv_surface_from_probes"):
+		_expect(monster._is_target_on_rv_surface_from_probes(true, false), "RV surface merge should keep ray hit as true.")
+		_expect(monster._is_target_on_rv_surface_from_probes(false, true), "RV surface merge should accept overlap fallback when ray misses.")
+		_expect(not monster._is_target_on_rv_surface_from_probes(false, false), "RV surface merge should be false when both probes miss.")
+
+	monster.free()
+
+func _test_is_node_on_specific_rv_surface_supports_edge_overlap() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_is_node_on_specific_rv_surface"), "Monster should expose _is_node_on_specific_rv_surface(node, rv).")
+	if monster.has_method("_is_node_on_specific_rv_surface"):
+		var harness := Node3D.new()
+		get_root().add_child(harness)
+
+		harness.add_child(monster)
+		monster.position = Vector3.ZERO
+
+		var rv := Node3D.new()
+		rv.add_to_group("rv")
+		harness.add_child(rv)
+
+		var rv_body := StaticBody3D.new()
+		var rv_shape := CollisionShape3D.new()
+		var rv_box := BoxShape3D.new()
+		rv_box.size = Vector3(2.0, 0.2, 2.0)
+		rv_shape.shape = rv_box
+		rv_body.add_child(rv_shape)
+		rv.add_child(rv_body)
+
+		var player := Node3D.new()
+		player.position = Vector3(1.55, 0.2, 0.0)
+		harness.add_child(player)
+
+		_expect(monster._is_node_on_specific_rv_surface(player, rv), "Edge-adjacent player should still be considered on RV surface even if downward ray misses.")
+
+		harness.free()
+		return
 
 	monster.free()
 
@@ -306,6 +372,219 @@ func _test_vehicle_impact_direction_and_speed_gate() -> void:
 		_expect(not monster._should_apply_vehicle_damage(Vector3(10.0, 0.0, 0.0), impact_dir), "Side swipe should not apply damage.")
 		_expect(not monster._should_apply_vehicle_damage(Vector3(0.0, 0.0, -10.0), impact_dir), "Vehicle moving away should not apply damage.")
 		_expect(not monster._should_apply_vehicle_damage(Vector3(0.0, 0.0, 1.0), impact_dir), "Low-speed contact should not apply damage.")
+
+	monster.free()
+
+func _test_select_combat_target_prioritizes_player_when_not_climbing() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+
+		var player := Node3D.new()
+		player.position = Vector3(3.0, 0.0, 0.0)
+		var structure := _DummyDamageable.new()
+		structure.position = Vector3(0.4, 0.0, 0.0)
+
+		var chosen: Dictionary = monster._select_combat_target([player], [structure], false)
+		_expect(chosen.get("node", null) == player, "Normal combat should prioritize player over structure targets.")
+
+		player.free()
+		structure.free()
+
+	monster.free()
+
+func _test_select_combat_target_excludes_player_while_climbing() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.climbing_touch_attack_range = 1.2
+
+		var player := Node3D.new()
+		player.position = Vector3(0.3, 0.0, 0.0)
+		var structure := _DummyDamageable.new()
+		structure.position = Vector3(0.8, 0.0, 0.0)
+		structure.add_to_group("equipment")
+
+		var chosen: Dictionary = monster._select_combat_target([player], [structure], true)
+		_expect(chosen.get("node", null) == structure, "Climbing should exclude player targets and choose structures.")
+
+		player.free()
+		structure.free()
+
+	monster.free()
+
+func _test_select_combat_target_climbing_prefers_nearest_touching_structure() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.climbing_touch_attack_range = 1.2
+
+		var near_equipment := Node3D.new()
+		near_equipment.position = Vector3(0.6, 0.0, 0.0)
+		near_equipment.add_to_group("equipment")
+
+		var farther_chassis := Node3D.new()
+		farther_chassis.position = Vector3(1.1, 0.0, 0.0)
+		farther_chassis.add_to_group("chassis")
+
+		var chosen: Dictionary = monster._select_combat_target([], [farther_chassis, near_equipment], true)
+		_expect(chosen.get("node", null) == near_equipment, "Climbing should target the nearest touching structure regardless of type.")
+
+		near_equipment.free()
+		farther_chassis.free()
+
+	monster.free()
+
+func _test_select_combat_target_climbing_requires_touching_structure() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.climbing_touch_attack_range = 0.9
+
+		var chassis := Node3D.new()
+		chassis.position = Vector3(1.4, 0.0, 0.0)
+		chassis.add_to_group("chassis")
+
+		var equipment := Node3D.new()
+		equipment.position = Vector3(1.6, 0.0, 0.0)
+		equipment.add_to_group("equipment")
+
+		var chosen: Dictionary = monster._select_combat_target([], [chassis, equipment], true)
+		_expect(chosen.is_empty(), "Climbing should not target structures outside touching range.")
+
+		chassis.free()
+		equipment.free()
+
+	monster.free()
+
+func _test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.climbing_touch_attack_range = 1.2
+
+		var damageable_structure := _DummyDamageable.new()
+		damageable_structure.position = Vector3(0.7, 0.0, 0.0)
+		damageable_structure.add_to_group("monster_damageable")
+
+		var chosen: Dictionary = monster._select_combat_target([], [damageable_structure], true)
+		_expect(chosen.get("node", null) == damageable_structure, "Climbing should target touching damageable structures even without equipment/chassis tags.")
+
+		damageable_structure.free()
+
+	monster.free()
+
+func _test_select_combat_target_prefers_chassis_over_equipment() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		monster.position = Vector3.ZERO
+
+		var chassis := Node3D.new()
+		chassis.position = Vector3(2.8, 0.0, 0.0)
+		chassis.add_to_group("chassis")
+
+		var equipment := Node3D.new()
+		equipment.position = Vector3(0.5, 0.0, 0.0)
+		equipment.add_to_group("equipment")
+
+		var chosen: Dictionary = monster._select_combat_target([], [equipment, chassis], false)
+		_expect(chosen.get("node", null) == chassis, "Structure selection should allow chassis to be targeted even when equipment is closer.")
+
+		chassis.free()
+		equipment.free()
+
+	monster.free()
+
+func _test_climbing_touch_attack_can_ignore_los_gate() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_can_attack_combat_target"), "Monster should expose _can_attack_combat_target(target_data, has_line_of_sight).")
+	if monster.has_method("_can_attack_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.attack_range = 2.0
+		monster.climbing_touch_attack_range = 1.2
+		monster.locomotion_state = 1 # LocomotionState.CLIMBING
+
+		var equipment := _DummyDamageable.new()
+		equipment.position = Vector3(0.8, 0.0, 0.0)
+		equipment.add_to_group("monster_damageable")
+
+		_expect(monster._can_attack_combat_target({"node": equipment, "target_type": "equipment"}, false), "Climbing touch attacks should still be allowed when LOS ray is blocked.")
+
+		equipment.free()
+
+	monster.free()
+
+func _test_attack_executor_damages_non_player_target() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_execute_attack_on_target"), "Monster should expose _execute_attack_on_target(target_data).")
+	if monster.has_method("_execute_attack_on_target"):
+		var structure := _DummyDamageable.new()
+		monster.contact_damage = 12.5
+		monster.attack_timer = 0.0
+
+		monster._execute_attack_on_target({
+			"node": structure,
+			"position": Vector3.ZERO,
+			"target_type": "equipment"
+		})
+
+		_expect(structure.damage_received >= 12.5, "Attack executor should damage non-player targets.")
+
+		structure.free()
+
+	monster.free()
+
+func _test_chassis_attack_uses_extended_range() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_can_attack_combat_target"), "Monster should expose _can_attack_combat_target(target_data, has_line_of_sight).")
+	if monster.has_method("_can_attack_combat_target"):
+		monster.position = Vector3.ZERO
+		monster.attack_range = 2.0
+		monster.chassis_attack_range = 4.0
+
+		var chassis := Node3D.new()
+		chassis.position = Vector3(3.5, 0.0, 0.0)
+		var equipment := Node3D.new()
+		equipment.position = Vector3(3.5, 0.0, 0.0)
+
+		_expect(monster._can_attack_combat_target({"node": chassis, "target_type": "chassis"}, true), "Chassis targets should use extended attack range.")
+		_expect(not monster._can_attack_combat_target({"node": equipment, "target_type": "equipment"}, true), "Non-chassis targets should keep normal attack range.")
+
+		chassis.free()
+		equipment.free()
 
 	monster.free()
 

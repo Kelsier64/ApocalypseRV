@@ -36,6 +36,8 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 @export_group("AI")
 @export var detection_range: float = 25.0
 @export var attack_range: float = 2.0
+@export var chassis_attack_range: float = 4.0
+@export var climbing_touch_attack_range: float = 1.2
 @export var attack_max_vertical_gap: float = 1.1
 @export var attack_cooldown: float = 1.5
 @export var lose_interest_range: float = 40.0
@@ -118,6 +120,7 @@ var stagger_amount: float = 0.0
 
 # Attack
 var attack_timer: float = 0.0
+var current_combat_target: Dictionary = {}
 
 # Navigation + anti-stuck
 var nav_agent: NavigationAgent3D = null
@@ -208,6 +211,8 @@ func _physics_process(delta: float):
 	if not target_player or not is_instance_valid(target_player):
 		target_player = _find_nearest_player()
 
+	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, lose_interest_range)
+
 	var moving_intent := false
 
 	match locomotion_state:
@@ -216,17 +221,30 @@ func _physics_process(delta: float):
 			match ai_state:
 				State.WANDER:
 					moving_intent = _process_wander(delta)
-					# Check if player is close enough to chase
-					if target_player and global_position.distance_to(target_player.global_position) < detection_range:
+					# Check if any valid combat target is close enough to chase.
+					var detection_target := _select_combat_target(
+						_collect_player_candidates(detection_range),
+						_collect_structure_candidates(detection_range),
+						false
+					)
+					if not detection_target.is_empty():
+						current_combat_target = detection_target
 						ai_state = State.CHASE
 					
 				State.CHASE:
-					moving_intent = _process_chase(delta)
+					var chase_target_node := _get_current_combat_target_node()
+					if chase_target_node != null:
+						var chase_destination := _get_node_target_position(chase_target_node)
+						current_combat_target["position"] = chase_destination
+						moving_intent = _process_chase(delta, chase_destination)
+					else:
+						moving_intent = false
 					if locomotion_state == LocomotionState.NORMAL:
-						if target_player:
-							var dist = global_position.distance_to(target_player.global_position)
-							var has_attack_los := _has_attack_line_of_sight_to_target(target_player)
-							if _can_attack_target_position(target_player.global_position, has_attack_los):
+						if chase_target_node != null:
+							var chase_target_position := _get_node_target_position(chase_target_node)
+							var dist := global_position.distance_to(chase_target_position)
+							var has_attack_los := _has_attack_line_of_sight_to_target(chase_target_node)
+							if _can_attack_combat_target(current_combat_target, has_attack_los):
 								ai_state = State.ATTACK
 							elif dist > lose_interest_range:
 								ai_state = State.WANDER
@@ -238,13 +256,16 @@ func _physics_process(delta: float):
 				State.ATTACK:
 					_process_attack(delta)
 					moving_intent = false
-					if target_player:
-						var dist = global_position.distance_to(target_player.global_position)
-						var has_attack_los := _has_attack_line_of_sight_to_target(target_player)
-						if not _can_attack_target_position(target_player.global_position, has_attack_los) or dist > attack_range * 1.5:
+					var attack_target_node := _get_current_combat_target_node()
+					if attack_target_node != null:
+						var attack_target_position := _get_node_target_position(attack_target_node)
+						var dist := global_position.distance_to(attack_target_position)
+						var has_attack_los := _has_attack_line_of_sight_to_target(attack_target_node)
+						if not _can_attack_combat_target(current_combat_target, has_attack_los) or dist > lose_interest_range:
 							ai_state = State.CHASE
 					else:
 						ai_state = State.WANDER
+						_pick_new_wander_direction()
 
 			_update_stuck_watchdog(delta, moving_intent)
 
@@ -252,9 +273,14 @@ func _physics_process(delta: float):
 			moving_intent = true
 			_apply_rv_delta_compensation()
 			var climb_destination := global_position
-			if target_player and is_instance_valid(target_player):
+			var climb_target_node := _get_current_combat_target_node()
+			if climb_target_node != null:
+				climb_destination = _get_node_target_position(climb_target_node)
+			elif target_player and is_instance_valid(target_player):
 				climb_destination = target_player.global_position
 			_process_climbing(delta, climb_destination)
+			if locomotion_state == LocomotionState.CLIMBING:
+				_process_attack(delta)
 	
 	# Apply organic body sway (slight rotation wobble)
 	var body_mesh = get_node_or_null("BodyMesh")
@@ -307,11 +333,7 @@ func _process_wander(delta: float) -> bool:
 	return true
 
 # --- CHASING ---
-func _process_chase(_delta: float) -> bool:
-	if not target_player or not is_instance_valid(target_player):
-		return false
-
-	var destination = target_player.global_position
+func _process_chase(_delta: float, destination: Vector3) -> bool:
 	if _try_start_climb(destination):
 		return true
 
@@ -884,24 +906,241 @@ func _exit_climb_to_normal(reason: String = "") -> void:
 
 # --- ATTACKING ---
 func _process_attack(delta: float):
-	if not target_player or not is_instance_valid(target_player): return
-	
-	# Slow down when attacking
-	velocity.x = 0.0
-	velocity.z = 0.0
-	
-	# Face the player
-	var look_pos = target_player.global_position
+	var target_node := _get_current_combat_target_node()
+	if target_node == null:
+		return
+
+	var target_position := _get_node_target_position(target_node)
+	current_combat_target["position"] = target_position
+	var has_attack_los := _has_attack_line_of_sight_to_target(target_node)
+	if not _can_attack_combat_target(current_combat_target, has_attack_los):
+		return
+
+	# Slow down when attacking only in normal locomotion; keep climbing motion intact.
+	if locomotion_state == LocomotionState.NORMAL:
+		velocity.x = 0.0
+		velocity.z = 0.0
+
+	# Face the active combat target.
+	var look_pos = target_position
 	look_pos.y = global_position.y
 	if look_pos.distance_to(global_position) > 0.01:
 		look_at(look_pos, Vector3.UP)
-	
-	# Deal damage on cooldown
-	if attack_timer <= 0.0:
-		if target_player.has_method("take_damage"):
-			target_player.take_damage(contact_damage)
-			print(">>> ", monster_name, " attacks player for ", contact_damage, " damage!")
-		attack_timer = attack_cooldown
+
+	_execute_attack_on_target(current_combat_target)
+
+func _execute_attack_on_target(target_data: Dictionary) -> void:
+	if attack_timer > 0.0:
+		return
+
+	var target_variant = target_data.get("node", null)
+	if not (target_variant is Node3D):
+		return
+
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	if not target_node.has_method("take_damage"):
+		return
+
+	target_node.take_damage(contact_damage)
+	var target_type := str(target_data.get("target_type", "target"))
+	print(">>> ", monster_name, " attacks ", target_type, " for ", contact_damage, " damage!")
+	attack_timer = attack_cooldown
+
+func _build_combat_target(target_node: Node3D, target_type: String) -> Dictionary:
+	if target_node == null or not is_instance_valid(target_node):
+		return {}
+	return {
+		"node": target_node,
+		"position": _get_node_target_position(target_node),
+		"target_type": target_type,
+	}
+
+func _resolve_structure_target_type(target_node: Node3D) -> String:
+	if target_node == null:
+		return "equipment"
+	if target_node.is_in_group("chassis"):
+		return "chassis"
+	if target_node.is_in_group("equipment"):
+		return "equipment"
+	return "equipment"
+
+func _get_self_position() -> Vector3:
+	return global_position if is_inside_tree() else position
+
+func _get_node_target_position(node: Node3D) -> Vector3:
+	if node == null:
+		return _get_self_position()
+	if node.is_inside_tree():
+		return node.global_position
+	return node.position
+
+func _pick_nearest_target(candidates: Array) -> Node3D:
+	var nearest_node: Node3D = null
+	var nearest_dist: float = INF
+	var origin := _get_self_position()
+	for candidate in candidates:
+		if not (candidate is Node3D):
+			continue
+		var node := candidate as Node3D
+		if node == null or not is_instance_valid(node) or node == self:
+			continue
+		var dist := origin.distance_to(_get_node_target_position(node))
+		if dist < nearest_dist:
+			nearest_dist = dist
+			nearest_node = node
+	return nearest_node
+
+func _pick_preferred_structure_target(structure_candidates: Array) -> Node3D:
+	var chassis_candidates: Array = []
+	var equipment_candidates: Array = []
+	var fallback_candidates: Array = []
+
+	for candidate in structure_candidates:
+		if not (candidate is Node3D):
+			continue
+		var node := candidate as Node3D
+		if node == null or not is_instance_valid(node):
+			continue
+		if node.is_in_group("chassis"):
+			chassis_candidates.append(node)
+		elif node.is_in_group("equipment"):
+			equipment_candidates.append(node)
+		else:
+			fallback_candidates.append(node)
+
+	var picked := _pick_nearest_target(chassis_candidates)
+	if picked != null:
+		return picked
+	picked = _pick_nearest_target(equipment_candidates)
+	if picked != null:
+		return picked
+	return _pick_nearest_target(fallback_candidates)
+
+func _is_climbing_touch_structure_target(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	var is_tagged_structure := node.is_in_group("chassis") or node.is_in_group("equipment")
+	var is_damageable_structure := node.is_in_group("monster_damageable") and node.has_method("take_damage") and not node.is_in_group("player")
+	if not is_tagged_structure and not is_damageable_structure:
+		return false
+	return _is_node_touching_monster(node, climbing_touch_attack_range)
+
+func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
+	var radius := maxf(touch_range, 0.0)
+	if radius <= 0.0:
+		return false
+
+	if not is_inside_tree() or not node.is_inside_tree():
+		return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
+
+	var shape := SphereShape3D.new()
+	shape.radius = maxf(radius, 0.01)
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, global_position)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [self.get_rid()]
+
+	var hits := get_world_3d().direct_space_state.intersect_shape(query, 64)
+	for hit in hits:
+		var collider := hit.get("collider", null) as Node
+		if collider == null:
+			continue
+		if collider == node:
+			return true
+		if node.is_ancestor_of(collider):
+			return true
+		if collider.is_ancestor_of(node):
+			return true
+
+	# Fallback keeps behavior predictable when overlap query misses a valid edge contact.
+	return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
+
+func _pick_nearest_touching_structure_target(structure_candidates: Array) -> Node3D:
+	var touching_candidates: Array = []
+	for candidate in structure_candidates:
+		if not (candidate is Node3D):
+			continue
+		var node := candidate as Node3D
+		if _is_climbing_touch_structure_target(node):
+			touching_candidates.append(node)
+	return _pick_nearest_target(touching_candidates)
+
+func _select_combat_target(player_candidates: Array, structure_candidates: Array, is_climbing: bool) -> Dictionary:
+	var player_target := _pick_nearest_target(player_candidates)
+	var structure_target := _pick_preferred_structure_target(structure_candidates)
+
+	if is_climbing:
+		var touching_structure_target := _pick_nearest_touching_structure_target(structure_candidates)
+		if touching_structure_target != null:
+			return _build_combat_target(touching_structure_target, _resolve_structure_target_type(touching_structure_target))
+		return {}
+
+	if player_target != null:
+		return _build_combat_target(player_target, "player")
+	if structure_target != null:
+		return _build_combat_target(structure_target, _resolve_structure_target_type(structure_target))
+	return {}
+
+func _collect_player_candidates(max_distance: float = INF) -> Array:
+	var candidates: Array = []
+	if not is_inside_tree():
+		if target_player != null and is_instance_valid(target_player):
+			candidates.append(target_player)
+		return candidates
+
+	var origin := _get_self_position()
+	for node in get_tree().get_nodes_in_group("player"):
+		if not (node is Node3D):
+			continue
+		var player_node := node as Node3D
+		if player_node == null or not is_instance_valid(player_node):
+			continue
+		if origin.distance_to(_get_node_target_position(player_node)) > max_distance:
+			continue
+		candidates.append(player_node)
+	return candidates
+
+func _collect_structure_candidates(max_distance: float = INF) -> Array:
+	var candidates: Array = []
+	if not is_inside_tree():
+		return candidates
+
+	var origin := _get_self_position()
+	for node in get_tree().get_nodes_in_group("monster_damageable"):
+		if not (node is Node3D):
+			continue
+		var structure_node := node as Node3D
+		if structure_node == null or not is_instance_valid(structure_node) or structure_node == self:
+			continue
+		if structure_node.is_in_group("player"):
+			continue
+		if not structure_node.has_method("take_damage"):
+			continue
+		if origin.distance_to(_get_node_target_position(structure_node)) > max_distance:
+			continue
+		candidates.append(structure_node)
+	return candidates
+
+func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> void:
+	current_combat_target = _select_combat_target(
+		_collect_player_candidates(max_distance),
+		_collect_structure_candidates(max_distance),
+		is_climbing
+	)
+
+func _get_current_combat_target_node() -> Node3D:
+	var target_variant = current_combat_target.get("node", null)
+	if not (target_variant is Node3D):
+		return null
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return null
+	return target_node
 
 func _pick_new_wander_direction():
 	var angle = randf_range(0, TAU)
@@ -921,6 +1160,8 @@ func _face_movement_direction():
 			global_transform = global_transform.interpolate_with(target_transform, 0.1)
 
 func _find_nearest_player() -> Node3D:
+	if not is_inside_tree():
+		return null
 	var players = get_tree().get_nodes_in_group("player")
 	if players.is_empty():
 		return null
@@ -958,7 +1199,7 @@ func _compute_fallback_direction(origin: Vector3, destination: Vector3) -> Vecto
 	return direction.normalized()
 
 func _should_abort_climb_when_target_leaves_rv(is_climbing: bool, target_on_same_rv: bool, has_wall_contact: bool) -> bool:
-	return is_climbing and not target_on_same_rv and not has_wall_contact
+	return is_climbing and not target_on_same_rv
 
 func _is_target_considered_on_climb_rv(target_on_same_rv_now: bool, target_rv_contact_grace_remaining: float) -> bool:
 	return target_on_same_rv_now or target_rv_contact_grace_remaining > 0.0
@@ -975,6 +1216,9 @@ func _should_use_navigation_for_chase(can_nav: bool, on_rv_surface: bool, vertic
 	return true
 
 func _can_attack_target_position(target_position: Vector3, has_line_of_sight: bool = true) -> bool:
+	return _can_attack_target_position_with_range(target_position, attack_range, has_line_of_sight)
+
+func _can_attack_target_position_with_range(target_position: Vector3, allowed_range: float, has_line_of_sight: bool = true) -> bool:
 	if not has_line_of_sight:
 		return false
 	var origin := global_position if is_inside_tree() else position
@@ -983,7 +1227,26 @@ func _can_attack_target_position(target_position: Vector3, has_line_of_sight: bo
 	if vertical_gap > attack_max_vertical_gap:
 		return false
 	offset.y = 0.0
-	return offset.length() <= attack_range
+	return offset.length() <= maxf(allowed_range, 0.0)
+
+func _get_attack_range_for_target(target_data: Dictionary) -> float:
+	var target_type := str(target_data.get("target_type", ""))
+	if target_type == "chassis":
+		return maxf(attack_range, chassis_attack_range)
+	return attack_range
+
+func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool = true) -> bool:
+	var target_variant = target_data.get("node", null)
+	if not (target_variant is Node3D):
+		return false
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return false
+	if locomotion_state == LocomotionState.CLIMBING and _is_climbing_touch_structure_target(target_node):
+		has_line_of_sight = true
+	var target_position := _get_node_target_position(target_node)
+	var allowed_range := _get_attack_range_for_target(target_data)
+	return _can_attack_target_position_with_range(target_position, allowed_range, has_line_of_sight)
 
 func _has_attack_line_of_sight_to_target(target: Node3D) -> bool:
 	if target == null or not is_instance_valid(target):
@@ -1040,6 +1303,32 @@ func _is_on_rv_surface() -> bool:
 	var hit_node := hit.collider as Node
 	return _find_rv_ancestor(hit_node) != null
 
+func _is_target_on_rv_surface_from_probes(ray_hit_rv: bool, overlap_hit_rv: bool) -> bool:
+	return ray_hit_rv or overlap_hit_rv
+
+func _has_overlap_hit_on_specific_rv(node: Node3D, rv: Node3D) -> bool:
+	if node == null or rv == null:
+		return false
+
+	var shape := SphereShape3D.new()
+	shape.radius = 0.65
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, node.global_position + Vector3.UP * 0.2)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [self.get_rid(), node.get_rid()]
+
+	var hits := get_world_3d().direct_space_state.intersect_shape(query, 64)
+	for hit in hits:
+		var collider := hit.get("collider", null) as Node
+		if collider == null:
+			continue
+		if _find_rv_ancestor(collider) == rv:
+			return true
+	return false
+
 func _is_node_on_specific_rv_surface(node: Node3D, rv: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
@@ -1053,10 +1342,13 @@ func _is_node_on_specific_rv_surface(node: Node3D, rv: Node3D) -> bool:
 	var to := from + Vector3.DOWN * 3.0
 	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), node.get_rid()])
 	var hit := space_state.intersect_ray(query)
-	if not hit:
-		return false
-	var hit_node := hit.collider as Node
-	return _find_rv_ancestor(hit_node) == rv
+	var ray_hit_rv := false
+	if hit:
+		var hit_node := hit.collider as Node
+		ray_hit_rv = _find_rv_ancestor(hit_node) == rv
+
+	var overlap_hit_rv := _has_overlap_hit_on_specific_rv(node, rv)
+	return _is_target_on_rv_surface_from_probes(ray_hit_rv, overlap_hit_rv)
 
 func _reset_navigation_state() -> void:
 	nav_has_target = false
@@ -1195,7 +1487,10 @@ func _trigger_stuck_recovery() -> void:
 	nav_repath_timer = 0.0
 
 	var recovery_destination = global_position + Vector3.FORWARD
-	if target_player and is_instance_valid(target_player):
+	var recovery_target := _get_current_combat_target_node()
+	if recovery_target != null:
+		recovery_destination = _get_node_target_position(recovery_target)
+	elif target_player and is_instance_valid(target_player):
 		recovery_destination = target_player.global_position
 	elif ai_state == State.WANDER:
 		recovery_destination = wander_target_position
@@ -1208,7 +1503,9 @@ func _trigger_stuck_recovery() -> void:
 	if is_on_floor():
 		velocity.y = maxf(velocity.y, recovery_velocity.y)
 
-	if target_player and is_instance_valid(target_player):
+	if recovery_target != null:
+		_nav_set_target(_get_node_target_position(recovery_target), true)
+	elif target_player and is_instance_valid(target_player):
 		_nav_set_target(target_player.global_position, true)
 	elif ai_state == State.WANDER:
 		_pick_new_wander_direction()
