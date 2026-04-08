@@ -41,10 +41,8 @@
   - The generated region is attached as `ChunkNavigationRegion`; creation is skipped when fewer than 4 nav vertices are produced. (world/chunk_generator.gd:365, world/chunk_generator.gd:377, world/chunk_generator.gd:378, world/chunk_generator.gd:380)
 - Monster navigation consumer contract:
   - `enemies/zombie.tscn` provides a `NavigationAgent3D` child consumed by `Monster` through `get_node_or_null("NavigationAgent3D")`, with desired-distance tuning in `_ready`. (enemies/zombie.tscn:48, enemies/zombie.tscn:49, enemies/zombie.tscn:50, enemies/monster.gd:78, enemies/monster.gd:86, enemies/monster.gd:87)
-  - `_ready` applies floor contact tuning (`floor_snap_length`, `floor_max_angle`) from exported values, which constrains how movement transitions between wall-climb and floor traversal. (enemies/monster.gd:24, enemies/monster.gd:25, enemies/monster.gd:83, enemies/monster.gd:84)
   - Patrol/chase steering calls `_get_navigation_direction()`, which uses nav pathing only when `_can_use_navigation()` validates the navigation map; otherwise steering falls back to direct movement. (enemies/monster.gd:160, enemies/monster.gd:185, enemies/monster.gd:201, enemies/monster.gd:205, enemies/monster.gd:341, enemies/monster.gd:348, enemies/monster.gd:351, enemies/monster.gd:353, enemies/monster.gd:359, enemies/monster.gd:368)
-  - Wall-climb runtime contract: `_physics_process` updates `climb_cooldown_timer` and invokes `_apply_wall_climb(delta)` before `move_and_slide()`, so climb logic can directly override per-frame velocity when chase movement is blocked by a climbable wall. (enemies/monster.gd:101, enemies/monster.gd:116, enemies/monster.gd:117, enemies/monster.gd:156, enemies/monster.gd:384)
-  - Wall-climb gating contract: `_should_attempt_wall_climb(...)` requires enabled climb, no cooldown, sufficient target height gap, and a valid wall hit whose normal passes `_is_climbable_wall_normal(...)`; `_apply_wall_climb(...)` enforces max duration and then arms cooldown. (enemies/monster.gd:28, enemies/monster.gd:34, enemies/monster.gd:35, enemies/monster.gd:36, enemies/monster.gd:370, enemies/monster.gd:373, enemies/monster.gd:375, enemies/monster.gd:381, enemies/monster.gd:382, enemies/monster.gd:412, enemies/monster.gd:414)
+  - Navigation helper surface is exercised by the partition test script (`_can_use_navigation`, `_get_navigation_direction`, `_compute_fallback_direction`, `_should_use_navigation_for_chase`, and related stuck/elevation helpers), which acts as the module's explicit behavior contract for enemy-navigation consumption of generated chunk nav maps. (tests/test_monster_navigation.gd:37, tests/test_monster_navigation.gd:38, tests/test_monster_navigation.gd:39, tests/test_monster_navigation.gd:209, tests/test_monster_navigation.gd:238, tests/test_monster_navigation.gd:260)
 - `POIConfig.POI_TABLE` entry contract:
   - required/observed keys: `id`, `scene`, `type`, `weight`, `footprint_radius`, `footprint_blend`, `min_road_distance`, `loot`, `enemies`. (world/poi_config.gd:6, world/poi_config.gd:7, world/poi_config.gd:8, world/poi_config.gd:9, world/poi_config.gd:10, world/poi_config.gd:11, world/poi_config.gd:12, world/poi_config.gd:13, world/poi_config.gd:22)
   - `loot` contract: `count: Vector2i`, `radius: float`, `table: [{scene, weight}]`. (world/poi_config.gd:14, world/poi_config.gd:15, world/poi_config.gd:16, world/poi_config.gd:17)
@@ -65,13 +63,13 @@
 - `player` not bound: world streaming updates do not run (no forward push, no reclamation). (world/world_generator.gd:45)
 - Navigation strip early-exit: `_build_navigation_region()` returns without creating a region when nav vertex count is too small (`< 4`), leaving that chunk without generated navigation polygons. (world/chunk_generator.gd:365, world/chunk_generator.gd:366)
 - Monster navigation fallback: when `NavigationAgent3D` is missing/invalid or map iteration is not ready, steering downgrades to direct vectors, which preserves movement but can reduce obstacle-aware pathing. (enemies/monster.gd:341, enemies/monster.gd:344, enemies/monster.gd:346, enemies/monster.gd:349, enemies/monster.gd:351, enemies/monster.gd:353, enemies/monster.gd:368)
-- Wall-climb refusal path: climb is intentionally skipped (timer reset) when there is no valid target, no movement direction, insufficient target height gap, no wall hit, or non-climbable wall normal. (enemies/monster.gd:388, enemies/monster.gd:391, enemies/monster.gd:375, enemies/monster.gd:399, enemies/monster.gd:382, enemies/monster.gd:408)
-- Wall-climb timeout/cooldown path: once `climb_timer` exceeds `wall_climb_max_duration`, climb ends immediately and `climb_cooldown_timer` is armed, delaying the next climb attempt. (enemies/monster.gd:74, enemies/monster.gd:75, enemies/monster.gd:411, enemies/monster.gd:412, enemies/monster.gd:414)
 - Missing POI scenes: gridmap entries are skipped and load failures emit warnings. (world/poi_spawner.gd:14, world/poi_spawner.gd:153, world/poi_spawner.gd:178)
 - Empty POI content config: `loot` or `enemies` generation paths are skipped directly. (world/poi_spawner.gd:51, world/poi_spawner.gd:56, world/poi_spawner.gd:87)
 - Excessive road cross-slope: height difference is clamped, which avoids over-tilt but may create local visual mismatch between road and terrain. (world/chunk_generator.gd:278, world/chunk_generator.gd:282, world/chunk_generator.gd:285)
 
 ## Testing
+- Automated verification:
+  - `tests/test_monster_navigation.gd` runs as a headless `SceneTree` contract script targeting the enemy-navigation helper surface consumed by this module's chunk navigation output, but current helper API drift should be reconciled before treating it as a green gate. (tests/test_monster_navigation.gd:1, tests/test_monster_navigation.gd:6, tests/test_monster_navigation.gd:37, tests/test_monster_navigation.gd:40, enemies/monster.gd:1120)
 - Executable manual verification:
   - Enter main scene and move forward to confirm continuous chunk generation and rear chunk reclamation. (project.godot:16, world/world_generator.gd:54, world/world_generator.gd:61)
   - Inspect a generated chunk and verify a `ChunkNavigationRegion` child exists with a road-following navigation strip. (world/chunk_generator.gd:56, world/chunk_generator.gd:334, world/chunk_generator.gd:377, world/chunk_generator.gd:378, world/chunk_generator.gd:380)
@@ -79,7 +77,7 @@
   - Validate wall-climb behavior: place an active target at least `wall_climb_min_target_height_gap` above the monster behind a near-vertical wall, then confirm short climb bursts apply upward/forward velocity and stop after cooldown is armed. (enemies/monster.gd:34, enemies/monster.gd:35, enemies/monster.gd:36, enemies/monster.gd:370, enemies/monster.gd:395, enemies/monster.gd:399, enemies/monster.gd:417, enemies/monster.gd:418, enemies/monster.gd:419, enemies/monster.gd:414)
   - Check POI frequency/content distribution against `POI_TABLE` weights and count/radius ranges. (world/chunk_generator.gd:50, world/poi_spawner.gd:22, world/poi_spawner.gd:54, world/poi_spawner.gd:90)
   - For procedural POIs, verify `max_rooms` falls within config range and triggers BuildingGenerator output. (world/poi_spawner.gd:121, world/poi_spawner.gd:128, world/poi_spawner.gd:129, world/poi_spawner.gd:130, world/building/building_generator.gd:66)
-- Unknown: this evidence set has no unit/integration test script dedicated to this partition, so verification is currently manual.
+- Unknown: this evidence set does not include an automated scene-level world-streaming/POI integration test; chunk/POI runtime behavior verification remains manual.
 
 ## Change checklist
 - When adding/changing POIs:
@@ -101,8 +99,8 @@
 - world/building/building_generator.gd
 - enemies/monster.gd
 - enemies/zombie.tscn
+- tests/test_monster_navigation.gd
 - project.godot
-- GDD.md
 
 ## Completeness notes
 - This document covers partition boundaries, control flow, data contracts, failure modes, and change-check items.

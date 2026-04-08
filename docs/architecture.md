@@ -108,16 +108,17 @@
 - Chassis polls the `rv_power_generators` group every frame; scalability should be monitored as equipment count grows. (rv/chassis.gd:195)
 
 ## 12. Observability and Debugging
-- `print/push_warning/push_error` are currently the primary observability output paths. (world/world_generator.gd:19, world/poi_spawner.gd:178, tests/test_energy_system.gd:170)
-- The energy test script provides a headless PASS/FAIL signal suitable for regression checks. (tests/test_energy_system.gd:165)
+- `print/push_warning/push_error` are currently the primary observability output paths. (world/world_generator.gd:19, world/poi_spawner.gd:178, tests/test_player_climbing.gd:157, tests/test_monster_navigation.gd:340)
+- Headless contract scripts currently available in this workspace are `tests/test_player_climbing.gd`, `tests/test_player_climbing_runtime.gd`, and `tests/test_monster_navigation.gd`. (tests/test_player_climbing.gd:1, tests/test_player_climbing_runtime.gd:1, tests/test_monster_navigation.gd:1)
+- Contract scripts are subject to helper-level API drift; re-run and inspect script output whenever helper methods are renamed or removed. (tests/test_player_climbing.gd:32, tests/test_monster_navigation.gd:40, player/player.gd:311, enemies/monster.gd:1120)
 
 ## 13. Testing Strategy and Coverage Map
 | Area | Existing Tests | Missing Tests | Priority |
 |---|---|---|---|
-| RV energy and refueling | `tests/test_energy_system.gd` covers API and core behavior | Missing variable-framerate/extreme-value stress tests | High |
-| World streaming and POI | No automation; currently manual verification | Missing chunk stability and POI weight-distribution tests | High |
-| Enemy navigation and unstuck recovery | `tests/test_monster_navigation.gd` contract checks for navigation/fallback/stuck helper availability | Missing scene-level path quality and multi-obstacle traversal regression tests | High |
-| Player interaction and equipment placement | No automation; currently manual verification | Missing interaction timing and placement parent-selection tests | High |
+| RV energy and refueling | No dedicated automated script in current workspace | Missing API-level fuel/power/refuel regression script and variable-framerate stress tests | High |
+| World streaming and POI | No dedicated streaming/POI automation; manual verification required | Missing chunk continuity, POI distribution, and navigation-region integration tests | High |
+| Enemy navigation and unstuck recovery | `tests/test_monster_navigation.gd` targets navigation/fallback/stuck/elevation helper contracts, with known helper-expectation drift to resolve | Missing scene-level path quality and multi-obstacle traversal regression tests | High |
+| Player interaction and equipment placement | `tests/test_player_climbing.gd` and `tests/test_player_climbing_runtime.gd` target climbing contracts, with known helper-expectation drift in `test_player_climbing.gd` | Missing pickup, hold-timing, placement parenting, and general interaction regressions | High |
 | Crafting flow | No dedicated test | Missing UI gating and station-connectivity contract tests | Medium |
 
 ## 14. Operations Notes
@@ -128,6 +129,7 @@
 ## 15. Risks and Open Questions
 - Risk: `POIConfig` references many scene paths; missing assets reduce content variety. (world/poi_config.gd:53, world/poi_spawner.gd:14)
 - Risk: interaction and crafting rely on duck typing, so interface changes lack compile-time protection. (equipment/tablet_ui.gd:121, equipment/equipment.gd:57)
+- Risk: helper-level API drift between scripts and contract tests can silently reduce confidence when methods are renamed or removed. (player/player.gd:311, enemies/monster.gd:1120, tests/test_player_climbing.gd:32, tests/test_monster_navigation.gd:40)
 - Risk: world generation has no automated regression coverage, so later changes may introduce hidden degradation.
 - Open question: should deterministic seeds + event logs be introduced for replayable tests?
 - Open question: what are the target balance baselines for RV endurance and recharge speed?
@@ -163,10 +165,12 @@
 - equipment/tablet_ui.gd
 - equipment/crafting_station.gd
 - props/interactable_item.gd
-- tests/test_energy_system.gd
+- tests/test_player_climbing.gd
+- tests/test_player_climbing_runtime.gd
+- tests/test_monster_navigation.gd
 
 ## 18. Completeness Report
-- Generated files
+- Refreshed files
   - docs/design/world-generation-and-poi.md
   - docs/design/rv-energy-and-driving.md
   - docs/design/player-interaction-and-equipment.md

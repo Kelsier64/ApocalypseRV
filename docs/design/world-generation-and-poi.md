@@ -1,7 +1,7 @@
 # World Generation and POI
 
 ## Why
-This partition directly supports the core game vision of an infinitely extending, procedurally generated road plus stoppable resource points (POIs). If this pipeline becomes unstable, the core gameplay loop (drive -> stop -> scavenge) breaks. (GDD.md:13, GDD.md:40, GDD.md:41, GDD.md:97, GDD.md:98, GDD.md:99)
+This partition directly supports the runtime loop where the world keeps streaming ahead, old chunks are reclaimed, and POI content is spawned from data/config at chunk generation time. If this pipeline becomes unstable, progression through the road corridor and scavenging opportunities both degrade. (world/world_generator.gd:54, world/world_generator.gd:61, world/chunk_generator.gd:66, world/chunk_generator.gd:71, world/poi_config.gd:4, world/poi_spawner.gd:8)
 
 ## Problem
 The world is assembled dynamically at runtime through chunk chaining rather than being fully baked once, and must solve all of the following at the same time:
@@ -58,6 +58,8 @@ The world is assembled dynamically at runtime through chunk chaining rather than
 - Excessive road tilt: height difference is clamped to 10 degrees to reduce undrivable surfaces. (world/chunk_generator.gd:278, world/chunk_generator.gd:279, world/chunk_generator.gd:282)
 
 ## Validation
+- Automated verification in evidence set:
+  - `tests/test_monster_navigation.gd` targets the monster navigation/climb helper contract surface used by this partition (navigation gating, chase direction resolution, fallback steering behavior, and stuck/elevation helper methods), but current helper API drift should be reconciled before treating this script as a green gate. (tests/test_monster_navigation.gd:6, tests/test_monster_navigation.gd:8, tests/test_monster_navigation.gd:11, tests/test_monster_navigation.gd:37, tests/test_monster_navigation.gd:40, enemies/monster.gd:1120)
 - Manual verification flow:
   - Enter the world from the main scene and confirm chunks keep generating forward while old chunks are reclaimed behind. (project.godot:16, world/world_generator.gd:54, world/world_generator.gd:61)
   - Confirm chunk content includes terrain/road mesh plus collision. (world/chunk_generator.gd:135, world/chunk_generator.gd:251, world/chunk_generator.gd:237, world/chunk_generator.gd:320)
@@ -65,7 +67,7 @@ The world is assembled dynamically at runtime through chunk chaining rather than
   - Confirm zombie scene contains `NavigationAgent3D`, then observe patrol/chase pathing around curved roads; optionally disable agent to verify direct-steering fallback still moves the monster. (enemies/zombie.tscn:48, enemies/monster.gd:185, enemies/monster.gd:207, enemies/monster.gd:285, enemies/monster.gd:314, enemies/monster.gd:318)
   - Confirm anti-stuck runtime: place a monster in a wall/corner trap scenario and verify low-progress accumulation triggers `_trigger_stuck_recovery`, then confirm recovery cooldown prevents continuous thrashing. (enemies/monster.gd:334, enemies/monster.gd:350, enemies/monster.gd:355, enemies/monster.gd:357)
   - Validate POI pipeline: sampling -> building -> loot -> enemies, and verify missing-scene warning behavior. (world/poi_spawner.gd:8, world/poi_spawner.gd:31, world/poi_spawner.gd:49, world/poi_spawner.gd:84, world/poi_spawner.gd:178)
-- The evidence set currently has no partition-specific automated test for this area, so this document provides executable manual validation paths only.
+- Runtime chunk/POI generation behavior still requires manual validation in-scene; the automated test coverage in this evidence set is currently focused on monster navigation contract behavior.
 
 ## Related modules
 - `world/building/building_generator.gd`: procedural POI building generator loaded by POISpawner and configured via `max_rooms`. (world/poi_spawner.gd:121, world/poi_spawner.gd:128, world/building/building_generator.gd:2)
@@ -82,9 +84,9 @@ The world is assembled dynamically at runtime through chunk chaining rather than
 - world/building/building_generator.gd
 - enemies/monster.gd
 - enemies/zombie.tscn
+- tests/test_monster_navigation.gd
 - project.godot
-- GDD.md
 
 ## Completeness notes
-- This first version covers the main world/POI generation path, core data contracts, and primary failure paths, and is suitable as an initial partition design document.
+- This refreshed version covers the main world/POI generation path, core data contracts, and primary failure paths for the current evidence set.
 - Unknown: the current evidence set does not include runtime profiling or real asset-completeness audit output, so no quantitative upper-bound performance or missing-asset ratio conclusion is provided.

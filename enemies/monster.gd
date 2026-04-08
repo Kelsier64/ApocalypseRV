@@ -6,12 +6,12 @@ const CLIMB_WALL_MAX_DOT = 0.85
 const CLIMB_MIN_HIT_Y = 0.1
 const CLIMB_MAX_HIT_Y = 1.4
 const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
-const CLIMB_VERTICAL_SPEED = 1
-const CLIMB_SIDE_SPEED = 1.2
+const CLIMB_VERTICAL_SPEED = 0.2
+const CLIMB_SIDE_SPEED = 0.2
 const CLIMB_WALL_STICK_SPEED = 0.0
-const CLIMB_CONTACT_GRACE_TIME = 0.28
-const CLIMB_CONTACT_GRACE_DISTANCE = 0.4
-const CLIMB_CONTACT_GRACE_MAX_TIME = 0.9
+const CLIMB_CONTACT_GRACE_TIME = 1
+const CLIMB_CONTACT_GRACE_DISTANCE = 0.6
+const CLIMB_CONTACT_GRACE_MAX_TIME = 2
 const CLIMB_CONTACT_FALLBACK_HEIGHT = 0.7
 const CLIMB_CONTACT_FALLBACK_RAY_LENGTH = 0.85
 const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
@@ -25,6 +25,7 @@ const CLIMB_EXIT_TRANSFER_SPEED = 2.8
 const CLIMB_DESCENT_MIN_HEIGHT_GAP = 0.8
 const CLIMB_DESCENT_HINT_WEIGHT = 0.75
 const CLIMB_POST_SEPARATION_NAV_BLOCK_TIME = 0.45
+const CLIMB_TARGET_RV_CONTACT_GRACE_TIME = 0.35
 const CLIMB_DEBUG_LOG_ABORTS = false
 
 @export var monster_name: String = "Unknown Creature"
@@ -95,6 +96,7 @@ var climb_reenter_cooldown_remaining: float = 0.0
 var last_climb_wall_normal: Vector3 = Vector3.ZERO
 var last_climb_separation_state: String = "unknown"
 var post_separation_nav_block_remaining: float = 0.0
+var target_rv_contact_grace_remaining: float = 0.0
 var post_climb_transfer_direction: Vector3 = Vector3.ZERO
 var post_climb_transfer_time_remaining: float = 0.0
 var debug_last_ceiling_hit_distance: float = INF
@@ -197,6 +199,8 @@ func _physics_process(delta: float):
 		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
 	if post_separation_nav_block_remaining > 0.0:
 		post_separation_nav_block_remaining = maxf(0.0, post_separation_nav_block_remaining - delta)
+	if target_rv_contact_grace_remaining > 0.0:
+		target_rv_contact_grace_remaining = maxf(0.0, target_rv_contact_grace_remaining - delta)
 	if post_climb_transfer_time_remaining > 0.0:
 		post_climb_transfer_time_remaining = maxf(0.0, post_climb_transfer_time_remaining - delta)
 	
@@ -647,6 +651,7 @@ func _try_start_climb(_destination: Vector3) -> bool:
 	climb_contact_grace_remaining = _get_climb_contact_grace_time()
 	last_climb_separation_state = "attached"
 	post_separation_nav_block_remaining = 0.0
+	target_rv_contact_grace_remaining = CLIMB_TARGET_RV_CONTACT_GRACE_TIME
 	velocity = Vector3.ZERO
 	_debug_climb_log(
 		"start_ok",
@@ -714,6 +719,14 @@ func _process_climbing(delta: float, destination: Vector3) -> void:
 			_abort_climb("rv angular speed too high")
 			return
 
+	var target_on_same_rv_now := true
+	var target_on_same_rv := true
+	if target_player and is_instance_valid(target_player):
+		target_on_same_rv_now = _is_node_on_specific_rv_surface(target_player, active_climb_rv)
+		if target_on_same_rv_now:
+			target_rv_contact_grace_remaining = CLIMB_TARGET_RV_CONTACT_GRACE_TIME
+		target_on_same_rv = _is_target_considered_on_climb_rv(target_on_same_rv_now, target_rv_contact_grace_remaining)
+
 	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
 	_align_to_climb_wall(rv_up)
 	_apply_wall_outward_alignment(rv_up)
@@ -764,6 +777,23 @@ func _process_climbing(delta: float, destination: Vector3) -> void:
 		],
 		separation_changed or pending_abort_lost_contact
 	)
+
+	if target_player and is_instance_valid(target_player):
+		if _should_abort_climb_when_target_leaves_rv(locomotion_state == LocomotionState.CLIMBING, target_on_same_rv, has_valid_wall_contact):
+			_debug_nav_log(
+				"target_left_rv",
+				"target_on_same_rv_now=%s grace=%.2f target_on_same_rv=%s wall_contact=%s side=%s wall_n=%s" % [
+					str(target_on_same_rv_now),
+					target_rv_contact_grace_remaining,
+					str(target_on_same_rv),
+					str(has_valid_wall_contact),
+					_debug_climb_side_label(active_climb_rv, active_wall_normal),
+					_debug_v3(active_wall_normal)
+				],
+				true
+			)
+			_abort_climb("target left rv")
+			return
 
 	var vertical_input := 1.0
 
@@ -833,6 +863,7 @@ func _exit_climb_to_normal(reason: String = "") -> void:
 	last_climb_wall_normal = exit_wall_normal
 	last_climb_separation_state = "separated"
 	active_wall_normal = Vector3.ZERO
+	target_rv_contact_grace_remaining = 0.0
 	_reset_navigation_state()
 	velocity = _sanitize_velocity_after_climb(velocity)
 
@@ -926,6 +957,12 @@ func _compute_fallback_direction(origin: Vector3, destination: Vector3) -> Vecto
 		return Vector3.ZERO
 	return direction.normalized()
 
+func _should_abort_climb_when_target_leaves_rv(is_climbing: bool, target_on_same_rv: bool, has_wall_contact: bool) -> bool:
+	return is_climbing and not target_on_same_rv and not has_wall_contact
+
+func _is_target_considered_on_climb_rv(target_on_same_rv_now: bool, target_rv_contact_grace_remaining: float) -> bool:
+	return target_on_same_rv_now or target_rv_contact_grace_remaining > 0.0
+
 func _should_use_navigation_for_chase(can_nav: bool, on_rv_surface: bool, vertical_gap: float, post_separation_block_remaining: float) -> bool:
 	if not can_nav:
 		return false
@@ -1003,6 +1040,24 @@ func _is_on_rv_surface() -> bool:
 	var hit_node := hit.collider as Node
 	return _find_rv_ancestor(hit_node) != null
 
+func _is_node_on_specific_rv_surface(node: Node3D, rv: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if rv == null or not is_instance_valid(rv):
+		return false
+	if not is_inside_tree() or not node.is_inside_tree():
+		return true
+
+	var space_state := get_world_3d().direct_space_state
+	var from := node.global_position + Vector3.UP * 0.3
+	var to := from + Vector3.DOWN * 3.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), node.get_rid()])
+	var hit := space_state.intersect_ray(query)
+	if not hit:
+		return false
+	var hit_node := hit.collider as Node
+	return _find_rv_ancestor(hit_node) == rv
+
 func _reset_navigation_state() -> void:
 	nav_has_target = false
 	nav_repath_timer = 0.0
@@ -1039,6 +1094,9 @@ func _get_navigation_direction(destination: Vector3) -> Vector3:
 
 func _is_progress_too_small(progress: float, threshold: float) -> bool:
 	return progress < threshold
+
+func _can_trigger_stuck_recovery() -> bool:
+	return stuck_cooldown_timer <= 0.0
 
 func _get_frame_progress_threshold(delta: float) -> float:
 	var frame_delta = maxf(delta, 0.0001)
@@ -1107,9 +1165,6 @@ func _should_apply_elevation_assist(destination: Vector3) -> bool:
 		return false
 	var height_gap = destination.y - global_position.y
 	return _is_elevation_gap_climbable(height_gap)
-
-func _can_trigger_stuck_recovery() -> bool:
-	return stuck_cooldown_timer <= 0.0
 
 func _update_stuck_watchdog(delta: float, moving_intent: bool) -> void:
 	var current_flat = _flat_position(global_position)

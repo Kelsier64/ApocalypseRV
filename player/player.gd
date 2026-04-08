@@ -11,7 +11,6 @@ const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
 const CLIMB_VERTICAL_SPEED = 2.6
 const CLIMB_SIDE_SPEED = 1.2
 const CLIMB_WALL_STICK_SPEED = 0.0
-const CLIMB_TOP_MIN_DOT = 0.35
 const CLIMB_CONTACT_GRACE_TIME = 0.28
 const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
 const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
@@ -312,9 +311,6 @@ func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> boo
 func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
 	return local_hit_y >= CLIMB_MIN_HIT_Y and local_hit_y <= CLIMB_MAX_HIT_Y
 
-func _can_begin_climb(jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
-	return w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
-
 func _should_disable_body_collision_for_locomotion(state: int) -> bool:
 	return state == LocomotionState.CLIMBING
 
@@ -529,7 +525,7 @@ func _try_start_climb() -> void:
 		return
 	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
 	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
-	if not _can_begin_climb(false, true, true, wall_normal_ok, hit_height_ok):
+	if not (wall_normal_ok and hit_height_ok):
 		_debug_climb_log(
 			"start_gate_reject",
 			"side=%s wall_ok=%s hit_y=%.2f range=[%.2f, %.2f] wall_dot_up=%.2f" % [

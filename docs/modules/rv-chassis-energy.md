@@ -76,30 +76,28 @@ This module owns RV driving-state energy arbitration, chassis durability under m
 - Chassis can be rendered undrivable after repeated monster attacks once durability reaches zero. [rv/chassis.gd:87] [rv/chassis.gd:90]
 
 ## Testing
-- Automated SceneTree tests assert chassis API surface for fuel/power/step/refuel methods. [tests/test_energy_system.gd:32] [tests/test_energy_system.gd:40]
-- Behavior tests cover fuel/power consume logic and drive/idle energy transitions. [tests/test_energy_system.gd:51] [tests/test_energy_system.gd:70]
-- Generator tests cover consumption/charge and near-cap upper bound behavior. [tests/test_energy_system.gd:96] [tests/test_energy_system.gd:103]
-- Refuel tests cover full-can success path and empty-can rejection path. [tests/test_energy_system.gd:134] [tests/test_energy_system.gd:148] [tests/test_energy_system.gd:151]
-- Durability tests cover chassis damage API surface and health reduction behavior under monster-style damage. [tests/test_energy_system.gd:158] [tests/test_energy_system.gd:169]
-- Monster targeting filter tests cover acceptance of standalone equipment targets without RV-parent constraints. [tests/test_energy_system.gd:172] [tests/test_energy_system.gd:180]
+- Current headless scripts target player climbing and monster navigation contracts, but helper-level contract drift in the working tree means these scripts should be treated as active diagnostics rather than guaranteed green gates until expectations and helper APIs are aligned. [tests/test_player_climbing.gd:32] [tests/test_monster_navigation.gd:40] [player/player.gd:311] [enemies/monster.gd:1120]
+- Existing tests instantiate player and monster scripts and do not directly invoke chassis energy/refuel APIs in this evidence set. [tests/test_player_climbing.gd:16] [tests/test_player_climbing_runtime.gd:6] [tests/test_monster_navigation.gd:26] [rv/chassis.gd:141] [rv/chassis.gd:174] [rv/chassis.gd:88]
+- RV energy and refuel paths currently require in-scene regression checks when this module changes. [rv/chassis.gd:184] [rv/chassis.gd:188] [rv/chassis.gd:88] [equipment/generator.gd:39] [project.godot:16]
 
 ## Change checklist
-- Confirm any change to exported burn/charge constants keeps test expectations valid. [rv/chassis.gd:46] [tests/test_energy_system.gd:64]
+- Confirm any change to exported burn/charge constants keeps driving and parked energy behavior coherent during in-scene regression. [rv/chassis.gd:46] [rv/chassis.gd:49] [rv/chassis.gd:174] [project.godot:16]
 - If adding new driving states, keep seat toggle integration aligned with set_driving_state entrypoint. [equipment/driver_seat.gd:45] [rv/chassis.gd:115]
 - If changing generator group name or connection lookup, update both generator registration and chassis polling. [equipment/generator.gd:8] [rv/chassis.gd:195]
-- If changing refuel item names, update chassis string checks and test fixtures together. [rv/chassis.gd:69] [tests/test_energy_system.gd:6] [tests/test_energy_system.gd:147]
-- Re-run headless energy tests after modifications to this partition. [tests/test_energy_system.gd:165]
+- If changing refuel item names, update chassis item string checks and the spawned replacement can item metadata together. [rv/chassis.gd:92] [rv/chassis.gd:106] [rv/chassis.gd:24] [rv/chassis.gd:25]
+- Re-run the current headless suite (player climbing and monster navigation) after partition edits to catch shared movement/AI regressions. [tests/test_player_climbing.gd:139] [tests/test_player_climbing_runtime.gd:32] [tests/test_monster_navigation.gd:289]
 
 ## Source Files Used
 - rv/chassis.gd
 - rv/fuel_filler.gd
 - equipment/generator.gd
 - equipment/driver_seat.gd
-- tests/test_energy_system.gd
+- tests/test_player_climbing.gd
+- tests/test_player_climbing_runtime.gd
+- tests/test_monster_navigation.gd
 - project.godot
-- GDD.md
 
 ## Completeness notes
 - Assumption: this module intentionally allows arrow-key fallback for remote control/testing even outside seat-driven mode, because behavior is explicitly implemented but not described in design docs. [rv/chassis.gd:218] [rv/chassis.gd:226]
-- Unknown: exact desired balancing targets for fuel_per_gas_can, generator rates, and parked drain are not defined in GDD or project settings evidence set. [rv/chassis.gd:50] [equipment/generator.gd:3] [equipment/generator.gd:4] [GDD.md:35]
+- Unknown: exact desired balancing targets for fuel_per_gas_can, generator rates, and parked drain are not defined in the code-level evidence set beyond exported defaults. [rv/chassis.gd:50] [equipment/generator.gd:3] [equipment/generator.gd:4]
 - Unknown: no explicit persistence/save contract for fuel/power state appears in this partition.

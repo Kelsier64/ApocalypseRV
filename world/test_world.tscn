@@ -85,4 +85,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8359404, 1.7807889, 1.9549
 [node name="Zombie" parent="." unique_id=1079522932 instance=ExtResource("13_tqn3h")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5417638, 8.568991)
 debug_climb_messages = false
-debug_navigation_messages = true

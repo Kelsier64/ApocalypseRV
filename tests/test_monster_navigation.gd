@@ -14,6 +14,8 @@ func _init() -> void:
 	_test_fallback_wall_contact_helper_safe_outside_tree()
 	_test_climb_separation_state_labels()
 	_test_navigation_gate_after_separation_with_vertical_gap()
+	_test_abort_climb_when_target_leaves_rv()
+	_test_target_rv_contact_grace_keeps_climb()
 	_test_fallback_direction_is_normalized()
 	_test_stuck_progress_gate()
 	_test_stuck_threshold_scales_with_delta()
@@ -132,7 +134,7 @@ func _test_climb_contact_grace_scales_with_vertical_speed() -> void:
 
 	_expect(monster.has_method("_compute_climb_contact_grace_time"), "Monster should expose _compute_climb_contact_grace_time(vertical_speed).")
 	if monster.has_method("_compute_climb_contact_grace_time"):
-		var low_speed_grace: float = monster._compute_climb_contact_grace_time(1.0)
+		var low_speed_grace: float = monster._compute_climb_contact_grace_time(0.2)
 		var high_speed_grace: float = monster._compute_climb_contact_grace_time(3.0)
 		_expect(low_speed_grace > high_speed_grace, "Lower climb speed should increase wall-contact grace time.")
 		_expect(high_speed_grace >= 0.28, "Grace time should not drop below base minimum.")
@@ -191,6 +193,33 @@ func _test_navigation_gate_after_separation_with_vertical_gap() -> void:
 		_expect(not monster._should_use_navigation_for_chase(true, false, 0.2, 0.3), "Navigation should stay paused during post-separation block even with small vertical gaps.")
 		_expect(monster._should_use_navigation_for_chase(true, false, 0.2, 0.0), "Navigation should resume for small vertical gaps after post-separation block expires.")
 		_expect(not monster._should_use_navigation_for_chase(true, true, 0.2, 0.0), "Navigation should be disabled when standing on RV surface.")
+
+	monster.free()
+
+func _test_abort_climb_when_target_leaves_rv() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_should_abort_climb_when_target_leaves_rv"), "Monster should expose _should_abort_climb_when_target_leaves_rv(is_climbing, target_on_same_rv, has_wall_contact).")
+	if monster.has_method("_should_abort_climb_when_target_leaves_rv"):
+		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, false), "Monster should abort climb only when target left RV and wall contact is lost.")
+		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, false, true), "Monster should keep climbing while still attached to wall, even if target briefly appears off-RV.")
+		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, true, false), "Monster should keep climbing while target remains on same RV.")
+		_expect(not monster._should_abort_climb_when_target_leaves_rv(false, false, false), "Monster should not trigger climb abort logic outside climbing state.")
+
+	monster.free()
+
+func _test_target_rv_contact_grace_keeps_climb() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_is_target_considered_on_climb_rv"), "Monster should expose _is_target_considered_on_climb_rv(target_on_same_rv_now, target_rv_contact_grace_remaining).")
+	if monster.has_method("_is_target_considered_on_climb_rv"):
+		_expect(monster._is_target_considered_on_climb_rv(true, 0.0), "Immediate RV contact should be considered on-RV.")
+		_expect(monster._is_target_considered_on_climb_rv(false, 0.2), "Recent RV contact grace should still be considered on-RV.")
+		_expect(not monster._is_target_considered_on_climb_rv(false, 0.0), "Without current contact and grace, target should be considered off-RV.")
 
 	monster.free()
 

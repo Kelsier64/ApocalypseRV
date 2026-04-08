@@ -1,74 +1,66 @@
 # Player Interaction and Equipment
 
-## Why
-This partition implements the core scavenging loop where players pick up world props, manage a 6-slot personal carry set, and reposition vehicle equipment for survival uptime. The loop exists to support the GDD goals around scavenging, role execution, and movable equipment systems. [Evidence: GDD.md:46, GDD.md:55, GDD.md:56, GDD.md:57, GDD.md:64, GDD.md:65]
+## Scope
+This document records runtime behavior for player interaction timing, inventory carry rules, equipment placement, climb interaction contracts, and tablet-driven crafting for the current code state. [Evidence: player/player_interact.gd:8, player/player.gd:30, player/player.gd:40, player/player.gd:488, equipment/tablet_ui.gd:126]
 
-## Problem
-Without a unified interaction/placement flow, players can accidentally double-trigger interactions, bypass carry constraints, or place physics objects in unstable hierarchies. Current scripts solve this by centralizing interaction timing on the raycast, constraining large-item carry behavior, and finalizing equipment under stable parents with collision exceptions. [Evidence: player/player_interact.gd:28, player/player_interact.gd:39, player/player_interact.gd:56, player/player.gd:38, player/player.gd:67, player/player.gd:243, equipment/equipment.gd:123]
+## Runtime context
+The partition runs in the configured Godot 4.6 project with Jolt Physics and GL Compatibility renderer. [Evidence: project.godot:17, project.godot:27, project.godot:32]
 
-## Goals
-1. Enforce inventory capacity and one-large-item carry rule while keeping slot selection responsive. [Evidence: player/player.gd:12, player/player.gd:37, player/player.gd:41, player/player.gd:48, player/player.gd:67]
-2. Keep pickup/hold interactions deterministic with clear hold durations and release behavior. [Evidence: player/player_interact.gd:16, player/player_interact.gd:21, player/player_interact.gd:28, player/player_interact.gd:33, player/player_interact.gd:44, player/player_interact.gd:61]
-3. Support equipment ghost placement with two orientation modes and safe confirm/cancel paths. [Evidence: player/player.gd:22, player/player.gd:221, player/player.gd:252, player/player.gd:256, player/player.gd:323, equipment/equipment.gd:73, equipment/equipment.gd:108, equipment/equipment.gd:138]
-4. Gate crafting by RV connectivity, material availability, and usable power before spawning output. [Evidence: equipment/tablet_ui.gd:117, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:145, equipment/tablet_ui.gd:153, equipment/crafting_station.gd:12, equipment/crafting_station.gd:16, equipment/crafting_station.gd:25]
+## Inventory and pickup behavior
+1. Player inventory is a 6-slot array of dictionaries (`name`, `is_large`, `scene_path`). [Evidence: player/player.gd:30, player/player.gd:31, player/player.gd:76]
+2. `add_item` rejects pickup when inventory is full and rejects a second large item while one is already carried. [Evidence: player/player.gd:76, player/player.gd:80]
+3. Slot switching is blocked when the currently active slot contains a large item and the target slot is different. [Evidence: player/player.gd:103]
+4. Dropping the active item (G key path) respawns the item scene in front of the player and removes inventory state. [Evidence: player/player.gd:197, player/player.gd:233]
+5. Prop pickup passes `item_name`, `is_large`, and scene path through `player.add_item(...)`; successful pickup queues the prop for deletion. [Evidence: props/interactable_item.gd:16, props/interactable_item.gd:22, props/interactable_item.gd:25]
 
-## Tradeoffs
-1. Interaction simplicity over contextual complexity: fixed thresholds (1s/2s) are predictable but not per-object configurable in the interaction driver. [Evidence: player/player_interact.gd:21, player/player_interact.gd:33, player/player_interact.gd:61]
-2. Pickup debounce via temporary physics-process disable avoids repeat pickup spam but introduces a hardcoded delay. [Evidence: player/player_interact.gd:38, player/player_interact.gd:39, player/player_interact.gd:50, player/player_interact.gd:51]
-3. Placement correctness over free simulation: placed equipment remains frozen/static and mask-limited, reducing emergent movement but improving stability on the RV. [Evidence: equipment/equipment.gd:120, equipment/equipment.gd:121, equipment/equipment.gd:132, equipment/equipment.gd:133]
-4. Crafting is RV-coupled and station-coupled, which prevents disconnected abuse but blocks local/off-grid crafting behavior. [Evidence: equipment/tablet_ui.gd:119, equipment/tablet_ui.gd:145, equipment/tablet_ui.gd:149, equipment/crafting_station.gd:12, equipment/crafting_station.gd:14]
+## Interaction timing behavior
+1. `player_interact.gd` drives interaction from one raycast update loop. [Evidence: player/player_interact.gd:8]
+2. Wheel install path requires player holding `Wheel`, target exposing `install_wheel`, and E held for 1.0s. [Evidence: player/player_interact.gd:18, player/player_interact.gd:21, player/player_interact.gd:22]
+3. General hold interaction requires E plus target `interact_hold` and `hold_timer`; at 1.0s it calls `interact_hold(player)`. [Evidence: player/player_interact.gd:29, player/player_interact.gd:30, player/player_interact.gd:34]
+4. Releasing E before hold completion converts to quick interact (`interact(player)`) for hold-capable targets. [Evidence: player/player_interact.gd:44, player/player_interact.gd:49]
+5. Quick interact path applies a 0.5s temporary physics-process pause to debounce repeated pickup triggers. [Evidence: player/player_interact.gd:39, player/player_interact.gd:51]
 
-## Workflow
-1. Player looks at a Prop and taps E for quick pickup; Prop sends item metadata and scene path into player inventory and despawns on success. [Evidence: player/player_interact.gd:36, props/interactable_item.gd:16, props/interactable_item.gd:22, props/interactable_item.gd:25, player/player.gd:45]
-2. Inventory update triggers slot UI refresh and active-hand visual equip. [Evidence: player/player.gd:52, player/player.gd:60, player/player.gd:76, player/player.gd:93, player/player.gd:103]
-3. Player can drop active item with G; system respawns world instance in front of player and removes inventory entry. [Evidence: player/player.gd:215, player/player.gd:151, player/player.gd:160, player/player.gd:168, player/player.gd:178]
-4. Holding F for 2 seconds on Equipment starts placement mode, switching object into ghost/kinematic state. [Evidence: player/player_interact.gd:57, player/player_interact.gd:61, equipment/equipment.gd:73, equipment/equipment.gd:82, equipment/equipment.gd:88]
-5. During placement, raycast drives transform, orientation mode, and contact offset; LMB confirms, RMB cancels, R toggles mode. [Evidence: player/player.gd:221, player/player.gd:227, player/player.gd:256, player/player.gd:297, player/player.gd:323, player/player.gd:361, equipment/equipment.gd:108, equipment/equipment.gd:138]
-6. Tablet UI open refreshes RV linkage, renders inventory/fuel/power state, evaluates craft button state, and crafts via a valid connected crafting station. [Evidence: equipment/tablet_ui.gd:30, equipment/tablet_ui.gd:39, equipment/tablet_ui.gd:46, equipment/tablet_ui.gd:116, equipment/tablet_ui.gd:126, equipment/tablet_ui.gd:138, equipment/tablet_ui.gd:145, equipment/tablet_ui.gd:166]
+## Equipment placement behavior
+1. F-hold placement entry requires E not pressed, collider is `Equipment`, player not already placing, and `hold_timer >= 2.0`. [Evidence: player/player_interact.gd:57, player/player_interact.gd:61]
+2. Entering placement sets player placement state and resets mode to `SURFACE`. [Evidence: player/player.gd:185, player/player.gd:187]
+3. `Equipment.start_placement` stores original transform/parent, freezes rigidbody in kinematic mode, and clears collision layer/mask while in ghost mode. [Evidence: equipment/equipment.gd:84, equipment/equipment.gd:94, equipment/equipment.gd:95, equipment/equipment.gd:96]
+4. During placement preview, raycast hit drives `can_place_equipment`, orientation basis, and contact-face offset from equipment extents. [Evidence: player/player.gd:692, player/player.gd:705, player/player.gd:721, player/player.gd:757, player/player.gd:766]
+5. Placement controls: R toggles `SURFACE/UPRIGHT`, LMB confirms only when `can_place_equipment` is true, RMB cancels. [Evidence: player/player.gd:267, player/player.gd:273, player/player.gd:301]
+6. Confirm path reparents to RV ancestor when available, keeps equipment frozen/static, and adds collision exceptions up parent chain to prevent parent collisions. [Evidence: player/player.gd:298, equipment/equipment.gd:119, equipment/equipment.gd:132, equipment/equipment.gd:140]
+7. Cancel path reparents back to original parent, restores local transform/materials, and returns static frozen physics settings. [Evidence: equipment/equipment.gd:149, equipment/equipment.gd:167, equipment/equipment.gd:169]
 
-## Interfaces
-1. Player inventory API
-   - `add_item(item_name: String, is_large: bool, scene_path: String) -> bool` enforces size/capacity constraints and updates active slot visuals. [Evidence: player/player.gd:37, player/player.gd:41, player/player.gd:48, player/player.gd:52, player/player.gd:56]
-   - `get_active_item_name() -> String` and `consume_active_item()` support interaction consumers such as wheel install logic. [Evidence: player/player.gd:122, player/player.gd:127, player/player_interact.gd:17, player/player_interact.gd:23]
-2. Equipment placement API
-   - `start_placement(player)`, `confirm_placement(transform, parent)`, `cancel_placement()` define placement lifecycle. [Evidence: equipment/equipment.gd:73, equipment/equipment.gd:108, equipment/equipment.gd:138]
-   - Player-side placement state entrypoint is `enter_equipment_placement(equip)`. [Evidence: player/player.gd:139, equipment/equipment.gd:90]
-3. Crafting API surface
-   - Tablet recipe table currently defines Gasoline Can with material costs. [Evidence: equipment/tablet_ui.gd:8, equipment/tablet_ui.gd:10, equipment/tablet_ui.gd:12]
-   - Tablet crafting requires RV checks and delegates output spawning to CraftingStation. [Evidence: equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:153, equipment/crafting_station.gd:11]
-   - CraftingStation output consumes RV power and spawns into current world scene at marker/default offset. [Evidence: equipment/crafting_station.gd:25, equipment/crafting_station.gd:33, equipment/crafting_station.gd:37, equipment/crafting_station.gd:39]
+## Crafting interaction behavior
+1. Tablet UI currently exposes one recipe (`Gasoline Can`) with material costs in script data. [Evidence: equipment/tablet_ui.gd:8]
+2. `on_open` resolves current RV connection and rewires RV signals (`inventory_changed`, `fuel_changed`, `power_changed`) as connection changes. [Evidence: equipment/tablet_ui.gd:30, equipment/tablet_ui.gd:33, equipment/tablet_ui.gd:99, equipment/tablet_ui.gd:109]
+3. Craft button state is disabled when RV is missing, when RV power is unusable, or when materials are insufficient for recipe costs. [Evidence: equipment/tablet_ui.gd:116, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:124]
+4. Craft execution requires: connected RV, usable power, sufficient materials, at least one node in `crafting_stations`, and a station connected to the same RV. [Evidence: equipment/tablet_ui.gd:126, equipment/tablet_ui.gd:128, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:138, equipment/tablet_ui.gd:145]
+5. On successful `deduct_materials`, tablet delegates spawn to station `spawn_item(scene_path)`. [Evidence: equipment/tablet_ui.gd:153]
+6. `CraftingStation.spawn_item` enforces RV connectivity/power, loads scene, consumes output power, then spawns into world scene at `SpawnMarker` transform when present. [Evidence: equipment/crafting_station.gd:11, equipment/crafting_station.gd:16, equipment/crafting_station.gd:20, equipment/crafting_station.gd:25, equipment/crafting_station.gd:36, equipment/crafting_station.gd:37]
 
-## Edge cases
-1. Inventory full blocks pickup. [Evidence: player/player.gd:41, player/player.gd:43]
-2. Carrying a large item blocks acquiring another large item and blocks slot switching away from the large slot. [Evidence: player/player.gd:38, player/player.gd:49, player/player.gd:67, player/player.gd:68]
-3. Interaction release before hold completion converts into quick interact where applicable. [Evidence: player/player_interact.gd:44, player/player_interact.gd:48, player/player_interact.gd:49]
-4. Placement ray miss hides ghost and disallows confirmation. [Evidence: player/player.gd:227, player/player.gd:370, player/player.gd:372]
-5. Crafting fails on no RV, no power, insufficient materials, missing station group member, or station not connected to selected RV. [Evidence: equipment/tablet_ui.gd:127, equipment/tablet_ui.gd:129, equipment/tablet_ui.gd:134, equipment/tablet_ui.gd:139, equipment/tablet_ui.gd:149]
-6. Craft output fails if scene load fails or RV cannot pay output power cost. [Evidence: equipment/crafting_station.gd:20, equipment/crafting_station.gd:22, equipment/crafting_station.gd:25]
+## Climbing interaction behavior
+1. Climb start is attempted from normal locomotion when W is pressed and wall probe is colliding with an RV ancestor. [Evidence: player/player.gd:488, player/player.gd:495, player/player.gd:500]
+2. Start gate checks include wall-normal gate, hit-height gate, and a ceiling-distance pre-check using `CLIMB_START_CEILING_CHECK_DISTANCE`. [Evidence: player/player.gd:305, player/player.gd:311, player/player.gd:509, player/player.gd:510]
+3. While climbing, manual detach occurs immediately on S or `ui_accept` (Space by default). [Evidence: player/player.gd:575, player/player.gd:576, player/player.gd:577]
+4. While climbing, RV angular-speed guard aborts climb when RV spin exceeds limit. [Evidence: player/player.gd:582]
+5. Wall contact grace is refreshed on valid contact and otherwise counts down to lost-contact abort (`CLIMB_CONTACT_GRACE_TIME = 0.28`). [Evidence: player/player.gd:14, player/player.gd:598, player/player.gd:645]
+6. Upward climb movement is ceiling-clamped; overhead hit during upward input triggers immediate abort (`ceiling detected`). [Evidence: player/player.gd:374, player/player.gd:615, player/player.gd:627]
+7. RV delta compensation is applied each climb frame, and climb exit applies re-entry cooldown plus vertical-velocity sanitization. [Evidence: player/player.gd:558, player/player.gd:663, player/player.gd:668, player/player.gd:325]
 
-## Validation
-1. Inventory constraint test: fill 6 slots, verify slot 7 rejection and console message. [Evidence: player/player.gd:12, player/player.gd:41]
-2. Large-item lock test: pick one large prop, verify second large pickup fails and slot switching is blocked until drop/consume. [Evidence: player/player.gd:38, player/player.gd:67, player/player.gd:131, player/player.gd:175]
-3. Interaction timing test: verify E hold >=1s triggers hold path; release early triggers quick interact path. [Evidence: player/player_interact.gd:33, player/player_interact.gd:44, player/player_interact.gd:49]
-4. Placement control test: verify F hold entry, R mode toggle, LMB confirm on valid hit, RMB cancel restore. [Evidence: player/player_interact.gd:61, player/player.gd:221, player/player.gd:252, player/player.gd:256, equipment/equipment.gd:146]
-5. Crafting gate test: verify disabled craft when RV disconnected or no power/materials; verify successful spawn through connected station. [Evidence: equipment/tablet_ui.gd:119, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:124, equipment/tablet_ui.gd:153, equipment/crafting_station.gd:41]
+## Validation status
+1. `tests/test_player_climbing_runtime.gd` currently validates `_abort_climb` presence and confirms mantle helpers are removed. [Evidence: tests/test_player_climbing_runtime.gd:18, tests/test_player_climbing_runtime.gd:21, tests/test_player_climbing_runtime.gd:24]
+2. `tests/test_player_climbing.gd` currently expects `_can_begin_climb(...)` to exist; current `player.gd` does not expose that helper, so this test fails unless contract or test is updated. [Evidence: tests/test_player_climbing.gd:32, tests/test_player_climbing.gd:34, tests/test_player_climbing.gd:35]
 
-## Related modules
-1. RV systems (inventory/materials/power) are required by duck-typed calls from Equipment and Tablet UI. [Evidence: equipment/equipment.gd:57, equipment/equipment.gd:68, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:124, equipment/tablet_ui.gd:153]
-2. CraftingStation specializes Equipment and provides world item output for tablet-driven crafting. [Evidence: equipment/crafting_station.gd:1, equipment/crafting_station.gd:11]
-3. Prop interaction bridges world items into player inventory via `interact(player)`. [Evidence: props/interactable_item.gd:16, props/interactable_item.gd:22]
-
-## Source Files Used
+## Source files used
 1. player/player.gd
 2. player/player_interact.gd
 3. equipment/equipment.gd
 4. equipment/tablet_ui.gd
 5. equipment/crafting_station.gd
 6. props/interactable_item.gd
-7. GDD.md
+7. tests/test_player_climbing.gd
+8. tests/test_player_climbing_runtime.gd
+9. project.godot
 
-## Completeness notes
-1. This first version documents implemented behavior in the listed scripts, not intended future GDD features beyond this partition. [Evidence: GDD.md:46, GDD.md:64]
-2. Assumption: input actions for movement/UI exist in project settings; exact action map definitions are outside this evidence set. [Evidence: player/player.gd:198, player/player.gd:271]
-3. Unknown: the exact tablet open/close trigger path from world interactions is not shown in this partition, only UI-side close signal and open refresh hook are present. [Evidence: equipment/tablet_ui.gd:3, equipment/tablet_ui.gd:30]
-4. Unknown: exact RV class contract and signal payload definitions are inferred from duck-typed checks and signal names, not from RV source files in this scope. [Evidence: equipment/equipment.gd:57, equipment/tablet_ui.gd:99, equipment/tablet_ui.gd:111, equipment/tablet_ui.gd:113]
+## Assumptions and unknowns
+1. Assumption: this partition documents script-level behavior only; RV internal implementation remains external and duck-typed from this scope. [Evidence: equipment/equipment.gd:64, equipment/tablet_ui.gd:121, equipment/tablet_ui.gd:153]
+2. Unknown: exact in-world trigger path that opens tablet UI is outside this evidence set; only `on_open` behavior is in scope. [Evidence: equipment/tablet_ui.gd:30]
