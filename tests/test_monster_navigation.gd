@@ -8,12 +8,6 @@ class _DummyDamageable extends Node3D:
 	func take_damage(amount: float) -> void:
 		damage_received += amount
 
-class _DummyDamageableBody extends StaticBody3D:
-	var damage_received: float = 0.0
-
-	func take_damage(amount: float) -> void:
-		damage_received += amount
-
 func _init() -> void:
 	_test_navigation_contract_methods_exist()
 	_test_climb_contract_methods_exist()
@@ -45,7 +39,7 @@ func _init() -> void:
 	_test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group()
 	_test_select_combat_target_prefers_chassis_over_equipment()
 	_test_tracking_target_below_gate_for_underfoot_attack()
-	_test_select_underfoot_equipment_target_uses_underfoot_raycast()
+	_test_resolve_underfoot_probe_binds_underfootprobe_child()
 	_test_select_underfoot_equipment_target_requires_probe_hit()
 	_test_underfoot_probe_hit_excludes_chassis_and_player()
 	_test_underfoot_authorization_is_player_only()
@@ -578,7 +572,7 @@ func _test_tracking_target_below_gate_for_underfoot_attack() -> void:
 
 	monster.free()
 
-func _test_select_underfoot_equipment_target_uses_underfoot_raycast() -> void:
+func _test_resolve_underfoot_probe_binds_underfootprobe_child() -> void:
 	var monster := _new_monster()
 	if monster == null:
 		return
