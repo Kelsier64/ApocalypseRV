@@ -110,7 +110,7 @@ If docs exist(./docs), agents can check docs for task context before edits; if d
 
 
 ## User Preferences
-Regardless of the language of user's input,translate the input to english and perform your internal reasoning and tool interactions in English.
+Always respond in English.only final output use tranditional Chinese.
 For user-facing interactions that need clarification, confirmation, or explicit choices, prioritize the **question** tool instead of freeform follow-up prompts.
 dont use git worktree
 

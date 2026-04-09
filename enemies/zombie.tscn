@@ -55,5 +55,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
 target_position = Vector3(0, 0, -1)
 
 [node name="ClimbUpwardProbe" type="RayCast3D" parent="." unique_id=936381948]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7584057, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0312071, 0)
 target_position = Vector3(0, 1, 0)
+
+[node name="UnderfootProbe" type="RayCast3D" parent="." unique_id=2026040901]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+target_position = Vector3(0, -2.2, 0)

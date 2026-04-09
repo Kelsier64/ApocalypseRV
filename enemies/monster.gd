@@ -38,6 +38,7 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 @export var attack_range: float = 2.0
 @export var chassis_attack_range: float = 4.0
 @export var climbing_touch_attack_range: float = 1.2
+@export var underfoot_raycast_length: float = 2.2
 @export var underfoot_attack_planar_range: float = 0.9
 @export var underfoot_attack_max_height_delta: float = 0.45
 @export var underfoot_target_below_margin: float = 0.05
@@ -140,6 +141,7 @@ var has_last_flat_position: bool = false
 var body_collision_shape: CollisionShape3D = null
 var climb_wall_probe: RayCast3D = null
 var climb_upward_probe: RayCast3D = null
+var underfoot_probe: RayCast3D = null
 
 var gravity: float = 20.0
 
@@ -164,12 +166,15 @@ func _ready():
 	body_collision_shape = get_node_or_null("CollisionShape")
 	climb_wall_probe = get_node_or_null("ClimbWallProbe")
 	climb_upward_probe = get_node_or_null("ClimbUpwardProbe")
+	underfoot_probe = get_node_or_null("UnderfootProbe")
 	if climb_upward_probe:
 		climb_upward_probe.enabled = true
 		climb_upward_probe.collision_mask = 0xFFFFFFFF
 		climb_upward_probe.collide_with_bodies = true
 		climb_upward_probe.collide_with_areas = true
 		climb_upward_probe.exclude_parent = true
+	if underfoot_probe:
+		_configure_underfoot_probe(underfoot_probe)
 
 	last_flat_position = _flat_position(global_position)
 	has_last_flat_position = true
@@ -215,6 +220,8 @@ func _physics_process(delta: float):
 		target_player = _find_nearest_player()
 
 	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, lose_interest_range)
+	if _try_auto_attack_touching_targets(_resolve_underfoot_tracking_target()):
+		ai_state = State.ATTACK
 
 	var moving_intent := false
 
@@ -240,7 +247,6 @@ func _physics_process(delta: float):
 						var chase_destination := _get_node_target_position(chase_target_node)
 						current_combat_target["position"] = chase_destination
 						moving_intent = _process_chase(delta, chase_destination)
-						_try_attack_underfoot_equipment(chase_target_node)
 					else:
 						moving_intent = false
 					if locomotion_state == LocomotionState.NORMAL:
@@ -937,10 +943,6 @@ func _process_attack(delta: float):
 	if target_node == null:
 		return
 
-	# Underfoot structure attacks should remain available even after transitioning into ATTACK state.
-	if _try_attack_underfoot_equipment(target_node):
-		return
-
 	var target_position := _get_node_target_position(target_node)
 	current_combat_target["position"] = target_position
 	var has_attack_los := _has_attack_line_of_sight_to_target(target_node)
@@ -976,16 +978,26 @@ func _execute_attack_on_target(target_data: Dictionary) -> void:
 
 	target_node.take_damage(contact_damage)
 	var target_type := str(target_data.get("target_type", "target"))
-	print(">>> ", monster_name, " attacks ", target_type, " for ", contact_damage, " damage!")
+	var attack_source := _resolve_attack_source_label(target_data)
+	print(">>> ", monster_name, " [", attack_source, "] attacks ", target_type, " for ", contact_damage, " damage!")
 	attack_timer = attack_cooldown
 
-func _build_combat_target(target_node: Node3D, target_type: String) -> Dictionary:
+func _resolve_attack_source_label(target_data: Dictionary) -> String:
+	var source := str(target_data.get("attack_source", "state_attack"))
+	if source == "touching":
+		return "touching"
+	if source == "underfoot":
+		return "underfoot"
+	return "state_attack"
+
+func _build_combat_target(target_node: Node3D, target_type: String, attack_source: String = "state_attack") -> Dictionary:
 	if target_node == null or not is_instance_valid(target_node):
 		return {}
 	return {
 		"node": target_node,
 		"position": _get_node_target_position(target_node),
 		"target_type": target_type,
+		"attack_source": attack_source,
 	}
 
 func _resolve_structure_target_type(target_node: Node3D) -> String:
@@ -1101,72 +1113,228 @@ func _pick_nearest_touching_structure_target(structure_candidates: Array) -> Nod
 			touching_candidates.append(node)
 	return _pick_nearest_target(touching_candidates)
 
-func _is_tracking_target_below(tracking_target_position: Vector3, margin: float = 0.05) -> bool:
-	var origin := _get_self_position()
-	return tracking_target_position.y < origin.y - maxf(margin, 0.0)
+func _is_touching_attack_candidate(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if not node.has_method("take_damage"):
+		return false
+	if node.is_in_group("player"):
+		return false
+	if node.is_in_group("chassis"):
+		return true
+	if node.is_in_group("equipment"):
+		return true
+	return node.is_in_group("monster_damageable") and not node.is_in_group("player")
 
-func _select_underfoot_equipment_target(structure_candidates: Array, max_planar_distance: float, max_height_delta: float) -> Node3D:
+func _is_underfoot_equipment_candidate(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if node.is_in_group("player") or node.is_in_group("chassis"):
+		return false
+	if not node.is_in_group("monster_damageable"):
+		return false
+	if not node.has_method("take_damage"):
+		return false
+
 	var origin := _get_self_position()
-	var nearest_node: Node3D = null
-	var nearest_planar_dist: float = INF
-	var allowed_planar := maxf(max_planar_distance, 0.0)
-	var allowed_height := maxf(max_height_delta, 0.0)
+	var target_pos := _get_node_target_position(node)
+	if target_pos.y >= origin.y - maxf(underfoot_target_below_margin, 0.0):
+		return false
+	var planar_offset := target_pos - origin
+	planar_offset.y = 0.0
+	return planar_offset.length() <= maxf(underfoot_attack_planar_range, 0.0)
+
+func _is_underfoot_probe_attackable(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if node.is_in_group("player") or node.is_in_group("chassis"):
+		return false
+	if not node.is_in_group("monster_damageable"):
+		return false
+	if not node.has_method("take_damage"):
+		return false
+	return true
+
+func _configure_underfoot_probe(probe: RayCast3D) -> void:
+	if probe == null:
+		return
+	probe.enabled = true
+	probe.target_position = Vector3(0.0, -maxf(underfoot_raycast_length, 0.1), 0.0)
+	probe.collision_mask = 0xFFFFFFFF
+	probe.collide_with_bodies = true
+	probe.collide_with_areas = true
+	probe.exclude_parent = true
+
+func _resolve_underfoot_probe() -> RayCast3D:
+	if underfoot_probe != null and is_instance_valid(underfoot_probe):
+		return underfoot_probe
+	var probe_node := get_node_or_null("UnderfootProbe")
+	if probe_node != null and probe_node is RayCast3D:
+		underfoot_probe = probe_node as RayCast3D
+		_configure_underfoot_probe(underfoot_probe)
+		return underfoot_probe
+	return null
+
+func _resolve_underfoot_damageable_from_collider(collider: Node) -> Node3D:
+	var current: Node = collider
+	while current != null:
+		if current == self:
+			break
+		if current is Node3D:
+			var candidate := current as Node3D
+			if _is_underfoot_probe_attackable(candidate):
+				return candidate
+		current = current.get_parent()
+	return null
+
+func _get_underfoot_raycast_target() -> Node3D:
+	if not is_inside_tree():
+		return null
+	var probe := _resolve_underfoot_probe()
+	if probe == null:
+		return null
+	probe.force_raycast_update()
+	if not probe.is_colliding():
+		return null
+	var collider := probe.get_collider() as Node
+	if collider == null:
+		return null
+	return _resolve_underfoot_damageable_from_collider(collider)
+
+func _select_touching_attack_target(player_candidates: Array, structure_candidates: Array, tracking_target_node: Node3D = null) -> Dictionary:
+	var touching_candidates: Array = []
+	var probe_underfoot_target := _select_underfoot_equipment_target()
+
+	for candidate in player_candidates:
+		if not (candidate is Node3D):
+			continue
+		var player_node := candidate as Node3D
+		if player_node == null or not is_instance_valid(player_node):
+			continue
+		if not _is_touching_attack_candidate(player_node):
+			continue
+		if _is_node_touching_monster(player_node, climbing_touch_attack_range):
+			touching_candidates.append(player_node)
 
 	for candidate in structure_candidates:
 		if not (candidate is Node3D):
 			continue
-		var node := candidate as Node3D
-		if node == null or not is_instance_valid(node):
+		var structure_node := candidate as Node3D
+		if structure_node == null or not is_instance_valid(structure_node):
 			continue
-		if node.is_in_group("chassis"):
-			continue
-		if not node.is_in_group("monster_damageable"):
-			continue
-		if not node.has_method("take_damage"):
-			continue
-
-		var target_pos := _get_node_target_position(node)
-		var planar_offset := target_pos - origin
-		planar_offset.y = 0.0
-		var planar_dist := planar_offset.length()
-		if planar_dist > allowed_planar:
-			continue
-
-		var touching_now := _is_node_touching_monster(node, climbing_touch_attack_range)
-		if not touching_now:
-			# Keep directional gate so underfoot does not jump to targets clearly above monster.
-			var height_delta := origin.y - target_pos.y
-			if height_delta < -0.15:
+		if probe_underfoot_target != null:
+			if structure_node == probe_underfoot_target:
 				continue
-			if height_delta > allowed_height:
+			if structure_node.is_ancestor_of(probe_underfoot_target):
 				continue
+			if probe_underfoot_target.is_ancestor_of(structure_node):
+				continue
+		if not _is_touching_attack_candidate(structure_node):
+			continue
+		if not _is_node_touching_monster(structure_node, climbing_touch_attack_range):
+			continue
+		# Underfoot equipment uses a dedicated gate: only allowed when tracking target is below.
+		if _is_underfoot_equipment_candidate(structure_node):
+			continue
+		touching_candidates.append(structure_node)
 
-		if planar_dist < nearest_planar_dist:
-			nearest_planar_dist = planar_dist
-			nearest_node = node
+	var touching_target := _pick_nearest_target(touching_candidates)
+	if touching_target != null:
+		if touching_target.is_in_group("player"):
+			return _build_combat_target(touching_target, "player", "touching")
+		return _build_combat_target(touching_target, _resolve_structure_target_type(touching_target), "touching")
 
-	return nearest_node
+	if tracking_target_node != null and is_instance_valid(tracking_target_node):
+		if _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+			var underfoot_target := _select_underfoot_equipment_target()
+			if underfoot_target != null:
+				return _build_combat_target(underfoot_target, "equipment", "underfoot")
 
-func _try_attack_underfoot_equipment(tracking_target_node: Node3D, structure_candidates_override: Array = []) -> bool:
+	return {}
+
+func _resolve_underfoot_tracking_target() -> Node3D:
+	# Underfoot gate should follow player elevation only.
+	# Do not let a structure combat target authorize underfoot attacks by itself.
+	if target_player and is_instance_valid(target_player):
+		return target_player
+	var combat_target := _get_current_combat_target_node()
+	if combat_target != null and combat_target.is_in_group("player"):
+		return combat_target
+	return null
+
+func _is_same_or_related_target(candidate: Node3D, reference: Node3D) -> bool:
+	if candidate == null or reference == null:
+		return false
+	if candidate == reference:
+		return true
+	if candidate.is_ancestor_of(reference):
+		return true
+	if reference.is_ancestor_of(candidate):
+		return true
+	return false
+
+func _is_probe_hit_underfoot_target(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	var probe_underfoot_target := _select_underfoot_equipment_target()
+	if probe_underfoot_target == null:
+		return false
+	return _is_same_or_related_target(node, probe_underfoot_target)
+
+func _try_auto_attack_touching_targets(tracking_target_node: Node3D, player_candidates_override: Array = [], structure_candidates_override: Array = []) -> bool:
+	var player_candidates: Array = player_candidates_override
+	if player_candidates.is_empty():
+		player_candidates = _collect_player_candidates(maxf(attack_range, climbing_touch_attack_range))
+
+	var structure_candidates: Array = structure_candidates_override
+	if structure_candidates.is_empty():
+		structure_candidates = _collect_structure_candidates(maxf(maxf(chassis_attack_range, attack_range), climbing_touch_attack_range))
+
+	var selected_target := _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node)
+	if selected_target.is_empty():
+		return false
+	var selected_node_variant = selected_target.get("node", null)
+	if selected_node_variant is Node3D and _is_probe_hit_underfoot_target(selected_node_variant as Node3D):
+		var source := str(selected_target.get("attack_source", "state_attack"))
+		if source != "underfoot":
+			return false
+
+	var source_label := str(selected_target.get("attack_source", "state_attack"))
+	if source_label == "underfoot":
+		if tracking_target_node == null or not is_instance_valid(tracking_target_node):
+			return false
+		if not _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+			return false
+
+	var previous_attack_timer := attack_timer
+	_execute_attack_on_target(selected_target)
+	if attack_timer > previous_attack_timer:
+		current_combat_target = selected_target
+		return true
+	return false
+
+func _is_tracking_target_below(tracking_target_position: Vector3, margin: float = 0.05) -> bool:
+	var origin := _get_self_position()
+	return tracking_target_position.y < origin.y - maxf(margin, 0.0)
+
+func _select_underfoot_equipment_target() -> Node3D:
+	var raycast_target := _get_underfoot_raycast_target()
+	if raycast_target != null:
+		return raycast_target
+	return null
+
+func _try_attack_underfoot_equipment(tracking_target_node: Node3D) -> bool:
 	if tracking_target_node == null or not is_instance_valid(tracking_target_node):
 		return false
 	if not _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
 		return false
 
-	var structure_candidates: Array = structure_candidates_override
-	if structure_candidates.is_empty():
-		structure_candidates = _collect_structure_candidates(maxf(underfoot_attack_planar_range, attack_range))
-
-	var underfoot_target := _select_underfoot_equipment_target(
-		structure_candidates,
-		underfoot_attack_planar_range,
-		underfoot_attack_max_height_delta
-	)
+	var underfoot_target := _select_underfoot_equipment_target()
 	if underfoot_target == null:
 		return false
 
 	var previous_attack_timer := attack_timer
-	_execute_attack_on_target(_build_combat_target(underfoot_target, "equipment"))
+	_execute_attack_on_target(_build_combat_target(underfoot_target, "equipment", "underfoot"))
 	return attack_timer > previous_attack_timer
 
 func _process_underfoot_equipment_attack(tracking_target_node: Node3D) -> void:
@@ -1174,10 +1342,22 @@ func _process_underfoot_equipment_attack(tracking_target_node: Node3D) -> void:
 
 func _select_combat_target(player_candidates: Array, structure_candidates: Array, is_climbing: bool) -> Dictionary:
 	var player_target := _pick_nearest_target(player_candidates)
-	var structure_target := _pick_preferred_structure_target(structure_candidates)
+	var filtered_structure_candidates: Array = []
+	var probe_underfoot_target := _select_underfoot_equipment_target()
+	for candidate in structure_candidates:
+		if not (candidate is Node3D):
+			continue
+		var node := candidate as Node3D
+		if node == null or not is_instance_valid(node):
+			continue
+		if _is_probe_hit_underfoot_target(node):
+			continue
+		filtered_structure_candidates.append(node)
+
+	var structure_target := _pick_preferred_structure_target(filtered_structure_candidates)
 
 	if is_climbing:
-		var touching_structure_target := _pick_nearest_touching_structure_target(structure_candidates)
+		var touching_structure_target := _pick_nearest_touching_structure_target(filtered_structure_candidates)
 		if touching_structure_target != null:
 			return _build_combat_target(touching_structure_target, _resolve_structure_target_type(touching_structure_target))
 		return {}
@@ -1344,6 +1524,15 @@ func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool 
 	var target_node := target_variant as Node3D
 	if target_node == null or not is_instance_valid(target_node):
 		return false
+	if _is_probe_hit_underfoot_target(target_node):
+		var source := str(target_data.get("attack_source", "state_attack"))
+		if source != "underfoot":
+			return false
+		var tracking_target := _resolve_underfoot_tracking_target()
+		if tracking_target == null or not is_instance_valid(tracking_target):
+			return false
+		if not _is_tracking_target_below(_get_node_target_position(tracking_target), underfoot_target_below_margin):
+			return false
 	if locomotion_state == LocomotionState.CLIMBING and _is_climbing_touch_structure_target(target_node):
 		has_line_of_sight = true
 	var target_position := _get_node_target_position(target_node)

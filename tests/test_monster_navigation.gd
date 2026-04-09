@@ -8,6 +8,12 @@ class _DummyDamageable extends Node3D:
 	func take_damage(amount: float) -> void:
 		damage_received += amount
 
+class _MonsterWithForcedUnderfootHit extends Monster:
+	var forced_underfoot_target: Node3D = null
+
+	func _get_underfoot_raycast_target() -> Node3D:
+		return forced_underfoot_target
+
 func _init() -> void:
 	_test_navigation_contract_methods_exist()
 	_test_climb_contract_methods_exist()
@@ -38,20 +44,27 @@ func _init() -> void:
 	_test_select_combat_target_climbing_requires_touching_structure()
 	_test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group()
 	_test_select_combat_target_prefers_chassis_over_equipment()
+	_test_select_combat_target_excludes_probe_underfoot_equipment_from_normal_path()
 	_test_tracking_target_below_gate_for_underfoot_attack()
 	_test_resolve_underfoot_probe_binds_underfootprobe_child()
 	_test_select_underfoot_equipment_target_requires_probe_hit()
+	_test_underfoot_probe_resolver_accepts_damageable_equipment()
+	_test_underfoot_probe_resolver_accepts_same_height_damageable_equipment()
 	_test_underfoot_probe_hit_excludes_chassis_and_player()
 	_test_underfoot_authorization_is_player_only()
 	_test_try_attack_underfoot_equipment_executes_damage()
 	_test_underfoot_auto_attack_requires_player_tracking_target()
-	_test_select_touching_attack_target_prefers_touching_player()
+	_test_underfoot_attack_does_not_use_structure_candidates_without_probe_hit()
+	_test_probe_hit_underfoot_target_not_attackable_via_touching_when_player_not_below()
+	_test_probe_hit_underfoot_target_attackable_via_underfoot_when_player_below()
+	_test_select_touching_attack_target_excludes_player()
 	_test_select_touching_attack_target_underfoot_requires_tracking_target_below()
-	_test_try_auto_attack_touching_targets_damages_player()
+	_test_try_auto_attack_touching_targets_does_not_damage_player()
 	_test_try_auto_attack_touching_targets_damages_chassis()
 	_test_try_auto_attack_touching_targets_damages_equipment()
 	_test_try_auto_attack_touching_targets_underfoot_needs_lower_tracking_target()
 	_test_climbing_touch_attack_can_ignore_los_gate()
+	_test_attack_source_label_resolver()
 	_test_attack_executor_damages_non_player_target()
 	_test_chassis_attack_uses_extended_range()
 	_finish()
@@ -559,6 +572,28 @@ func _test_select_combat_target_prefers_chassis_over_equipment() -> void:
 
 	monster.free()
 
+func _test_select_combat_target_excludes_probe_underfoot_equipment_from_normal_path() -> void:
+	var monster := _MonsterWithForcedUnderfootHit.new()
+	_expect(monster != null, "Forced-underfoot test monster should instantiate.")
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_combat_target"), "Monster should expose _select_combat_target(player_candidates, structure_candidates, is_climbing).")
+	if monster.has_method("_select_combat_target"):
+		var underfoot_equipment := _DummyDamageable.new()
+		underfoot_equipment.position = Vector3(0.1, 0.0, 0.0)
+		underfoot_equipment.add_to_group("equipment")
+		underfoot_equipment.add_to_group("monster_damageable")
+
+		monster.forced_underfoot_target = underfoot_equipment
+
+		var chosen: Dictionary = monster._select_combat_target([], [underfoot_equipment], false)
+		_expect(chosen.is_empty(), "Normal structure path must not select the current probe-hit underfoot equipment target.")
+
+		underfoot_equipment.free()
+
+	monster.free()
+
 func _test_tracking_target_below_gate_for_underfoot_attack() -> void:
 	var monster := _new_monster()
 	if monster == null:
@@ -596,19 +631,13 @@ func _test_select_underfoot_equipment_target_requires_probe_hit() -> void:
 	if monster == null:
 		return
 
-	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
+	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target().")
 	if monster.has_method("_select_underfoot_equipment_target"):
 		monster.position = Vector3(0.0, 1.0, 0.0)
 
-		var equipment := _DummyDamageable.new()
-		equipment.position = Vector3(0.1, 0.0, 0.0)
-		equipment.add_to_group("monster_damageable")
-
 		# No probe hit configured: selection must not fall back to candidate list.
-		var chosen = monster._select_underfoot_equipment_target([equipment], 0.9, 5.0)
+		var chosen = monster._select_underfoot_equipment_target()
 		_expect(chosen == null, "Underfoot selection should require a downward probe hit and must not use candidate-list fallback.")
-
-		equipment.free()
 
 	monster.free()
 
@@ -636,6 +665,45 @@ func _test_underfoot_probe_hit_excludes_chassis_and_player() -> void:
 
 		chassis.free()
 		player.free()
+
+	monster.free()
+
+func _test_underfoot_probe_resolver_accepts_damageable_equipment() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_underfoot_damageable_from_collider"), "Monster should expose _resolve_underfoot_damageable_from_collider(collider).")
+	if monster.has_method("_resolve_underfoot_damageable_from_collider"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		var equipment := _DummyDamageable.new()
+		equipment.add_to_group("monster_damageable")
+		equipment.position = Vector3(0.0, 0.0, 0.0)
+
+		var resolved = monster._resolve_underfoot_damageable_from_collider(equipment)
+		_expect(resolved == equipment, "Underfoot resolver should accept damageable equipment targets.")
+
+		equipment.free()
+
+	monster.free()
+
+func _test_underfoot_probe_resolver_accepts_same_height_damageable_equipment() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_underfoot_damageable_from_collider"), "Monster should expose _resolve_underfoot_damageable_from_collider(collider).")
+	if monster.has_method("_resolve_underfoot_damageable_from_collider"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		var equipment := _DummyDamageable.new()
+		equipment.add_to_group("monster_damageable")
+		# Equipment center may be near monster center while still being underfoot via downward probe hit.
+		equipment.position = Vector3(0.0, 1.0, 0.0)
+
+		var resolved = monster._resolve_underfoot_damageable_from_collider(equipment)
+		_expect(resolved == equipment, "Underfoot probe resolver should accept same-height damageables when probe collider directly hits them.")
+
+		equipment.free()
 
 	monster.free()
 
@@ -669,7 +737,7 @@ func _test_try_attack_underfoot_equipment_executes_damage() -> void:
 	if monster == null:
 		return
 
-	_expect(monster.has_method("_try_attack_underfoot_equipment"), "Monster should expose _try_attack_underfoot_equipment(tracking_target_node, structure_candidates_override).")
+	_expect(monster.has_method("_try_attack_underfoot_equipment"), "Monster should expose _try_attack_underfoot_equipment(tracking_target_node).")
 	if monster.has_method("_try_attack_underfoot_equipment"):
 		monster.position = Vector3(0.0, 1.0, 0.0)
 		monster.contact_damage = 9.0
@@ -682,9 +750,9 @@ func _test_try_attack_underfoot_equipment_executes_damage() -> void:
 		underfoot.position = Vector3(0.1, 0.0, 0.0)
 		underfoot.add_to_group("monster_damageable")
 
-		var attacked: bool = monster._try_attack_underfoot_equipment(tracking_target, [underfoot])
-		_expect(attacked, "Underfoot attack helper should return true when it executes an attack.")
-		_expect(underfoot.damage_received >= 9.0, "Underfoot attack helper should damage the selected underfoot target.")
+		var attacked: bool = monster._try_attack_underfoot_equipment(tracking_target)
+		_expect(not attacked, "Underfoot attack helper should require a probe hit and must not attack without it.")
+		_expect(is_zero_approx(underfoot.damage_received), "Underfoot attack helper should not damage target without a probe hit.")
 
 		underfoot.free()
 		tracking_target.free()
@@ -725,7 +793,94 @@ func _test_underfoot_auto_attack_requires_player_tracking_target() -> void:
 
 	monster.free()
 
-func _test_select_touching_attack_target_prefers_touching_player() -> void:
+func _test_underfoot_attack_does_not_use_structure_candidates_without_probe_hit() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(...).")
+	if monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 5.0
+		monster.attack_timer = 0.0
+
+		var equipment := _DummyDamageable.new()
+		equipment.position = Vector3(0.1, 0.0, 0.0)
+		equipment.add_to_group("monster_damageable")
+
+		var tracking_player := Node3D.new()
+		tracking_player.position = Vector3(0.0, 0.2, 0.0)
+		tracking_player.add_to_group("player")
+
+		var attacked: bool = monster._try_auto_attack_touching_targets(tracking_player, [], [equipment])
+		_expect(not attacked, "Without probe hit, structure candidates must not trigger underfoot attack.")
+		_expect(is_zero_approx(equipment.damage_received), "Without probe hit, no underfoot damage should be applied.")
+
+		equipment.free()
+		tracking_player.free()
+
+	monster.free()
+
+func _test_probe_hit_underfoot_target_not_attackable_via_touching_when_player_not_below() -> void:
+	var monster := _MonsterWithForcedUnderfootHit.new()
+	_expect(monster != null, "Forced-underfoot test monster should instantiate.")
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_touching_attack_target"), "Monster should expose _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node).")
+	if monster.has_method("_select_touching_attack_target"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+
+		var equipment := _DummyDamageable.new()
+		# Keep same center height so legacy positional underfoot check does not classify it as underfoot.
+		equipment.position = Vector3(0.1, 1.0, 0.0)
+		equipment.add_to_group("monster_damageable")
+
+		monster.forced_underfoot_target = equipment
+
+		var high_tracking_target := Node3D.new()
+		high_tracking_target.position = Vector3(0.0, 1.2, 0.0)
+		var selected: Dictionary = monster._select_touching_attack_target([], [equipment], high_tracking_target)
+		_expect(selected.is_empty(), "If probe identifies an underfoot target, touching path must not attack it when player is not below.")
+
+		equipment.free()
+		high_tracking_target.free()
+
+	monster.free()
+
+func _test_probe_hit_underfoot_target_attackable_via_underfoot_when_player_below() -> void:
+	var monster := _MonsterWithForcedUnderfootHit.new()
+	_expect(monster != null, "Forced-underfoot test monster should instantiate.")
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(...).")
+	_expect(monster.has_method("_select_touching_attack_target"), "Monster should expose _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node).")
+	if monster.has_method("_try_auto_attack_touching_targets") and monster.has_method("_select_touching_attack_target"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 5.0
+		monster.attack_timer = 0.0
+
+		var equipment := _DummyDamageable.new()
+		equipment.position = Vector3(0.1, 1.0, 0.0)
+		equipment.add_to_group("monster_damageable")
+
+		monster.forced_underfoot_target = equipment
+
+		var low_tracking_target := Node3D.new()
+		low_tracking_target.position = Vector3(0.0, 0.2, 0.0)
+		var selected: Dictionary = monster._select_touching_attack_target([], [equipment], low_tracking_target)
+		_expect(str(selected.get("attack_source", "")) == "underfoot", "When player is below, probe-hit target should be selected through underfoot source, not touching.")
+		var attacked: bool = monster._try_auto_attack_touching_targets(low_tracking_target, [], [equipment])
+		_expect(attacked, "Probe-hit underfoot targets should be attackable when player is below.")
+		_expect(equipment.damage_received >= 5.0, "Underfoot attack should damage probe-hit target when player is below.")
+
+		equipment.free()
+		low_tracking_target.free()
+
+	monster.free()
+
+func _test_select_touching_attack_target_excludes_player() -> void:
 	var monster := _new_monster()
 	if monster == null:
 		return
@@ -745,8 +900,8 @@ func _test_select_touching_attack_target_prefers_touching_player() -> void:
 		chassis_target.add_to_group("monster_damageable")
 
 		var selected: Dictionary = monster._select_touching_attack_target([player_target], [chassis_target], player_target)
-		_expect(selected.get("node", null) == player_target, "Touching auto-attack should include and select touching player targets.")
-		_expect(str(selected.get("target_type", "")) == "player", "Touching player targets should keep player target type.")
+		_expect(selected.get("node", null) == chassis_target, "Touching auto-attack should exclude player targets and select chassis when available.")
+		_expect(str(selected.get("target_type", "")) == "chassis", "Selected touching structure should keep chassis target type.")
 
 		player_target.free()
 		chassis_target.free()
@@ -774,7 +929,7 @@ func _test_select_touching_attack_target_underfoot_requires_tracking_target_belo
 		var low_tracking_target := Node3D.new()
 		low_tracking_target.position = Vector3(0.0, 0.2, 0.0)
 		var allowed: Dictionary = monster._select_touching_attack_target([], [underfoot_equipment], low_tracking_target)
-		_expect(allowed.get("node", null) == underfoot_equipment, "Underfoot equipment auto-attack should be allowed when tracking target is below monster.")
+		_expect(allowed.is_empty(), "Underfoot equipment auto-attack should still be blocked when probe has no hit, even if tracking target is below.")
 
 		underfoot_equipment.free()
 		high_tracking_target.free()
@@ -782,7 +937,7 @@ func _test_select_touching_attack_target_underfoot_requires_tracking_target_belo
 
 	monster.free()
 
-func _test_try_auto_attack_touching_targets_damages_player() -> void:
+func _test_try_auto_attack_touching_targets_does_not_damage_player() -> void:
 	var monster := _new_monster()
 	if monster == null:
 		return
@@ -799,8 +954,8 @@ func _test_try_auto_attack_touching_targets_damages_player() -> void:
 		player_target.add_to_group("monster_damageable")
 
 		var attacked: bool = monster._try_auto_attack_touching_targets(player_target, [player_target], [])
-		_expect(attacked, "Auto touching attack should trigger when player is touching.")
-		_expect(player_target.damage_received >= 7.0, "Auto touching attack should damage touching player targets.")
+		_expect(not attacked, "Auto touching attack should not trigger for player targets.")
+		_expect(is_zero_approx(player_target.damage_received), "Auto touching attack should not damage player targets.")
 
 		player_target.free()
 
@@ -879,8 +1034,8 @@ func _test_try_auto_attack_touching_targets_underfoot_needs_lower_tracking_targe
 		var low_tracking_target := Node3D.new()
 		low_tracking_target.position = Vector3(0.0, 0.2, 0.0)
 		var allowed: bool = monster._try_auto_attack_touching_targets(low_tracking_target, [], [underfoot_equipment])
-		_expect(allowed, "Underfoot equipment should be auto-attacked when tracking target is below.")
-		_expect(underfoot_equipment.damage_received >= 5.0, "Allowed underfoot auto-attack should damage equipment.")
+		_expect(not allowed, "Underfoot equipment should not be auto-attacked when probe has no hit, even if tracking target is below.")
+		_expect(is_zero_approx(underfoot_equipment.damage_received), "Underfoot auto-attack should not damage equipment without a probe hit.")
 
 		underfoot_equipment.free()
 		high_tracking_target.free()
@@ -907,6 +1062,19 @@ func _test_climbing_touch_attack_can_ignore_los_gate() -> void:
 		_expect(monster._can_attack_combat_target({"node": equipment, "target_type": "equipment"}, false), "Climbing touch attacks should still be allowed when LOS ray is blocked.")
 
 		equipment.free()
+
+	monster.free()
+
+func _test_attack_source_label_resolver() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_attack_source_label"), "Monster should expose _resolve_attack_source_label(target_data).")
+	if monster.has_method("_resolve_attack_source_label"):
+		_expect(monster._resolve_attack_source_label({}) == "state_attack", "Missing attack source should default to state_attack.")
+		_expect(monster._resolve_attack_source_label({"attack_source": "touching"}) == "touching", "Touching source should be preserved in debug label.")
+		_expect(monster._resolve_attack_source_label({"attack_source": "underfoot"}) == "underfoot", "Underfoot source should be preserved in debug label.")
 
 	monster.free()
 
