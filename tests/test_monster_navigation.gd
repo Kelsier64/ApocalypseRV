@@ -8,6 +8,12 @@ class _DummyDamageable extends Node3D:
 	func take_damage(amount: float) -> void:
 		damage_received += amount
 
+class _DummyDamageableBody extends StaticBody3D:
+	var damage_received: float = 0.0
+
+	func take_damage(amount: float) -> void:
+		damage_received += amount
+
 func _init() -> void:
 	_test_navigation_contract_methods_exist()
 	_test_climb_contract_methods_exist()
@@ -39,10 +45,18 @@ func _init() -> void:
 	_test_select_combat_target_climbing_accepts_touching_damageable_without_equipment_group()
 	_test_select_combat_target_prefers_chassis_over_equipment()
 	_test_tracking_target_below_gate_for_underfoot_attack()
-	_test_select_underfoot_equipment_target_prefers_nearest()
-	_test_select_underfoot_equipment_target_accepts_damageable_without_equipment_group()
-	_test_select_underfoot_equipment_target_accepts_touching_with_realistic_center_height_gap()
+	_test_select_underfoot_equipment_target_uses_underfoot_raycast()
+	_test_select_underfoot_equipment_target_requires_probe_hit()
+	_test_underfoot_probe_hit_excludes_chassis_and_player()
+	_test_underfoot_authorization_is_player_only()
 	_test_try_attack_underfoot_equipment_executes_damage()
+	_test_underfoot_auto_attack_requires_player_tracking_target()
+	_test_select_touching_attack_target_prefers_touching_player()
+	_test_select_touching_attack_target_underfoot_requires_tracking_target_below()
+	_test_try_auto_attack_touching_targets_damages_player()
+	_test_try_auto_attack_touching_targets_damages_chassis()
+	_test_try_auto_attack_touching_targets_damages_equipment()
+	_test_try_auto_attack_touching_targets_underfoot_needs_lower_tracking_target()
 	_test_climbing_touch_attack_can_ignore_los_gate()
 	_test_attack_executor_damages_non_player_target()
 	_test_chassis_attack_uses_extended_range()
@@ -564,71 +578,95 @@ func _test_tracking_target_below_gate_for_underfoot_attack() -> void:
 
 	monster.free()
 
-func _test_select_underfoot_equipment_target_prefers_nearest() -> void:
+func _test_select_underfoot_equipment_target_uses_underfoot_raycast() -> void:
 	var monster := _new_monster()
 	if monster == null:
 		return
 
-	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
-	if monster.has_method("_select_underfoot_equipment_target"):
-		monster.position = Vector3.ZERO
+	_expect(monster.has_method("_resolve_underfoot_probe"), "Monster should expose _resolve_underfoot_probe() for underfoot raycast integration.")
+	if monster.has_method("_resolve_underfoot_probe"):
+		var probe := RayCast3D.new()
+		probe.name = "UnderfootProbe"
+		probe.target_position = Vector3(0.0, -2.2, 0.0)
+		probe.collide_with_bodies = true
+		probe.collide_with_areas = true
+		monster.add_child(probe)
 
-		var near_equipment := _DummyDamageable.new()
-		near_equipment.position = Vector3(0.2, -0.05, 0.0)
-		near_equipment.add_to_group("equipment")
-		near_equipment.add_to_group("monster_damageable")
-
-		var far_equipment := _DummyDamageable.new()
-		far_equipment.position = Vector3(0.7, -0.05, 0.0)
-		far_equipment.add_to_group("equipment")
-		far_equipment.add_to_group("monster_damageable")
-
-		var chosen = monster._select_underfoot_equipment_target([far_equipment, near_equipment], 0.9, 0.4)
-		_expect(chosen == near_equipment, "Underfoot equipment selection should pick the nearest eligible equipment.")
-
-		near_equipment.free()
-		far_equipment.free()
+		var resolved_probe: RayCast3D = monster._resolve_underfoot_probe()
+		_expect(resolved_probe == probe, "Underfoot raycast probe resolver should bind to UnderfootProbe child node.")
 
 	monster.free()
 
-func _test_select_underfoot_equipment_target_accepts_damageable_without_equipment_group() -> void:
+func _test_select_underfoot_equipment_target_requires_probe_hit() -> void:
 	var monster := _new_monster()
 	if monster == null:
 		return
 
 	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
 	if monster.has_method("_select_underfoot_equipment_target"):
-		monster.position = Vector3.ZERO
-
-		var damageable_equipment := _DummyDamageable.new()
-		damageable_equipment.position = Vector3(0.25, -0.05, 0.0)
-		damageable_equipment.add_to_group("monster_damageable")
-
-		var chosen = monster._select_underfoot_equipment_target([damageable_equipment], 0.9, 0.4)
-		_expect(chosen == damageable_equipment, "Underfoot selection should accept damageable equipment even without explicit equipment group.")
-
-		damageable_equipment.free()
-
-	monster.free()
-
-func _test_select_underfoot_equipment_target_accepts_touching_with_realistic_center_height_gap() -> void:
-	var monster := _new_monster()
-	if monster == null:
-		return
-
-	_expect(monster.has_method("_select_underfoot_equipment_target"), "Monster should expose _select_underfoot_equipment_target(structure_candidates, max_planar_distance, max_height_delta).")
-	if monster.has_method("_select_underfoot_equipment_target"):
-		# Runtime zombie origin is commonly around chest/center, so equipment center can be much lower while still underfoot.
 		monster.position = Vector3(0.0, 1.0, 0.0)
 
-		var underfoot := _DummyDamageable.new()
-		underfoot.position = Vector3(0.12, 0.0, 0.0)
-		underfoot.add_to_group("monster_damageable")
+		var equipment := _DummyDamageable.new()
+		equipment.position = Vector3(0.1, 0.0, 0.0)
+		equipment.add_to_group("monster_damageable")
 
-		var chosen = monster._select_underfoot_equipment_target([underfoot], 0.9, 0.45)
-		_expect(chosen == underfoot, "Underfoot selection should still accept touching damageables even when center-height gap exceeds legacy threshold.")
+		# No probe hit configured: selection must not fall back to candidate list.
+		var chosen = monster._select_underfoot_equipment_target([equipment], 0.9, 5.0)
+		_expect(chosen == null, "Underfoot selection should require a downward probe hit and must not use candidate-list fallback.")
 
-		underfoot.free()
+		equipment.free()
+
+	monster.free()
+
+func _test_underfoot_probe_hit_excludes_chassis_and_player() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_underfoot_damageable_from_collider"), "Monster should expose _resolve_underfoot_damageable_from_collider(collider).")
+	if monster.has_method("_resolve_underfoot_damageable_from_collider"):
+		var chassis := _DummyDamageable.new()
+		chassis.add_to_group("chassis")
+		chassis.add_to_group("monster_damageable")
+		chassis.position = Vector3(0.0, 0.0, 0.0)
+
+		var player := _DummyDamageable.new()
+		player.add_to_group("player")
+		player.add_to_group("monster_damageable")
+		player.position = Vector3(0.0, 0.0, 0.0)
+
+		var chassis_resolved = monster._resolve_underfoot_damageable_from_collider(chassis)
+		var player_resolved = monster._resolve_underfoot_damageable_from_collider(player)
+		_expect(chassis_resolved == null, "Underfoot resolver must exclude chassis targets.")
+		_expect(player_resolved == null, "Underfoot resolver must exclude player targets.")
+
+		chassis.free()
+		player.free()
+
+	monster.free()
+
+func _test_underfoot_authorization_is_player_only() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_underfoot_tracking_target"), "Monster should expose _resolve_underfoot_tracking_target().")
+	if monster.has_method("_resolve_underfoot_tracking_target"):
+		var equipment := _DummyDamageable.new()
+		equipment.add_to_group("monster_damageable")
+		equipment.position = Vector3(0.1, 0.0, 0.0)
+
+		monster.target_player = null
+		monster.current_combat_target = {
+			"node": equipment,
+			"position": equipment.position,
+			"target_type": "equipment"
+		}
+
+		var tracking_target: Node3D = monster._resolve_underfoot_tracking_target()
+		_expect(tracking_target == null, "Only player tracking source may authorize underfoot attacks.")
+
+		equipment.free()
 
 	monster.free()
 
@@ -656,6 +694,203 @@ func _test_try_attack_underfoot_equipment_executes_damage() -> void:
 
 		underfoot.free()
 		tracking_target.free()
+
+	monster.free()
+
+func _test_underfoot_auto_attack_requires_player_tracking_target() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_resolve_underfoot_tracking_target"), "Monster should expose _resolve_underfoot_tracking_target().")
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(tracking_target_node, player_candidates_override, structure_candidates_override).")
+	if monster.has_method("_resolve_underfoot_tracking_target") and monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 6.0
+		monster.attack_timer = 0.0
+
+		var underfoot_equipment := _DummyDamageable.new()
+		underfoot_equipment.position = Vector3(0.1, 0.0, 0.0)
+		underfoot_equipment.add_to_group("monster_damageable")
+
+		monster.current_combat_target = {
+			"node": underfoot_equipment,
+			"position": underfoot_equipment.position,
+			"target_type": "equipment"
+		}
+		monster.target_player = null
+
+		var tracking_target: Node3D = monster._resolve_underfoot_tracking_target()
+		_expect(tracking_target == null, "Underfoot tracking source should not fall back to non-player combat targets.")
+
+		var attacked: bool = monster._try_auto_attack_touching_targets(tracking_target, [], [underfoot_equipment])
+		_expect(not attacked, "Underfoot auto-attack should not trigger without a player tracking target below monster.")
+		_expect(is_zero_approx(underfoot_equipment.damage_received), "Underfoot auto-attack should not damage equipment when no player is tracked below.")
+
+		underfoot_equipment.free()
+
+	monster.free()
+
+func _test_select_touching_attack_target_prefers_touching_player() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_touching_attack_target"), "Monster should expose _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node).")
+	if monster.has_method("_select_touching_attack_target"):
+		monster.position = Vector3.ZERO
+
+		var player_target := _DummyDamageable.new()
+		player_target.position = Vector3(0.6, 0.0, 0.0)
+		player_target.add_to_group("player")
+		player_target.add_to_group("monster_damageable")
+
+		var chassis_target := _DummyDamageable.new()
+		chassis_target.position = Vector3(0.8, 0.0, 0.0)
+		chassis_target.add_to_group("chassis")
+		chassis_target.add_to_group("monster_damageable")
+
+		var selected: Dictionary = monster._select_touching_attack_target([player_target], [chassis_target], player_target)
+		_expect(selected.get("node", null) == player_target, "Touching auto-attack should include and select touching player targets.")
+		_expect(str(selected.get("target_type", "")) == "player", "Touching player targets should keep player target type.")
+
+		player_target.free()
+		chassis_target.free()
+
+	monster.free()
+
+func _test_select_touching_attack_target_underfoot_requires_tracking_target_below() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_select_touching_attack_target"), "Monster should expose _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node).")
+	if monster.has_method("_select_touching_attack_target"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+
+		var underfoot_equipment := _DummyDamageable.new()
+		underfoot_equipment.position = Vector3(0.1, 0.0, 0.0)
+		underfoot_equipment.add_to_group("monster_damageable")
+
+		var high_tracking_target := Node3D.new()
+		high_tracking_target.position = Vector3(0.0, 1.2, 0.0)
+		var blocked: Dictionary = monster._select_touching_attack_target([], [underfoot_equipment], high_tracking_target)
+		_expect(blocked.is_empty(), "Underfoot equipment auto-attack should be blocked when tracking target is not below monster.")
+
+		var low_tracking_target := Node3D.new()
+		low_tracking_target.position = Vector3(0.0, 0.2, 0.0)
+		var allowed: Dictionary = monster._select_touching_attack_target([], [underfoot_equipment], low_tracking_target)
+		_expect(allowed.get("node", null) == underfoot_equipment, "Underfoot equipment auto-attack should be allowed when tracking target is below monster.")
+
+		underfoot_equipment.free()
+		high_tracking_target.free()
+		low_tracking_target.free()
+
+	monster.free()
+
+func _test_try_auto_attack_touching_targets_damages_player() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(tracking_target_node, player_candidates_override, structure_candidates_override).")
+	if monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3.ZERO
+		monster.contact_damage = 7.0
+		monster.attack_timer = 0.0
+
+		var player_target := _DummyDamageable.new()
+		player_target.position = Vector3(0.7, 0.0, 0.0)
+		player_target.add_to_group("player")
+		player_target.add_to_group("monster_damageable")
+
+		var attacked: bool = monster._try_auto_attack_touching_targets(player_target, [player_target], [])
+		_expect(attacked, "Auto touching attack should trigger when player is touching.")
+		_expect(player_target.damage_received >= 7.0, "Auto touching attack should damage touching player targets.")
+
+		player_target.free()
+
+	monster.free()
+
+func _test_try_auto_attack_touching_targets_damages_chassis() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(tracking_target_node, player_candidates_override, structure_candidates_override).")
+	if monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3.ZERO
+		monster.contact_damage = 8.0
+		monster.attack_timer = 0.0
+
+		var chassis_target := _DummyDamageable.new()
+		chassis_target.position = Vector3(0.8, 0.0, 0.0)
+		chassis_target.add_to_group("chassis")
+		chassis_target.add_to_group("monster_damageable")
+
+		var attacked: bool = monster._try_auto_attack_touching_targets(chassis_target, [], [chassis_target])
+		_expect(attacked, "Auto touching attack should trigger when chassis is touching.")
+		_expect(chassis_target.damage_received >= 8.0, "Auto touching attack should damage touching chassis targets.")
+
+		chassis_target.free()
+
+	monster.free()
+
+func _test_try_auto_attack_touching_targets_damages_equipment() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(tracking_target_node, player_candidates_override, structure_candidates_override).")
+	if monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 6.0
+		monster.attack_timer = 0.0
+
+		var equipment_target := _DummyDamageable.new()
+		equipment_target.position = Vector3(0.55, 1.0, 0.0)
+		equipment_target.add_to_group("equipment")
+		equipment_target.add_to_group("monster_damageable")
+
+		var attacked: bool = monster._try_auto_attack_touching_targets(equipment_target, [], [equipment_target])
+		_expect(attacked, "Auto touching attack should trigger when equipment is touching.")
+		_expect(equipment_target.damage_received >= 6.0, "Auto touching attack should damage touching equipment targets.")
+
+		equipment_target.free()
+
+	monster.free()
+
+func _test_try_auto_attack_touching_targets_underfoot_needs_lower_tracking_target() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	_expect(monster.has_method("_try_auto_attack_touching_targets"), "Monster should expose _try_auto_attack_touching_targets(tracking_target_node, player_candidates_override, structure_candidates_override).")
+	if monster.has_method("_try_auto_attack_touching_targets"):
+		monster.position = Vector3(0.0, 1.0, 0.0)
+		monster.contact_damage = 5.0
+		monster.attack_timer = 0.0
+
+		var underfoot_equipment := _DummyDamageable.new()
+		underfoot_equipment.position = Vector3(0.1, 0.0, 0.0)
+		underfoot_equipment.add_to_group("monster_damageable")
+
+		var high_tracking_target := Node3D.new()
+		high_tracking_target.position = Vector3(0.0, 1.2, 0.0)
+		var blocked: bool = monster._try_auto_attack_touching_targets(high_tracking_target, [], [underfoot_equipment])
+		_expect(not blocked, "Underfoot equipment should not be auto-attacked when tracking target is not below.")
+		_expect(is_zero_approx(underfoot_equipment.damage_received), "Blocked underfoot attack should not damage equipment.")
+
+		monster.attack_timer = 0.0
+		var low_tracking_target := Node3D.new()
+		low_tracking_target.position = Vector3(0.0, 0.2, 0.0)
+		var allowed: bool = monster._try_auto_attack_touching_targets(low_tracking_target, [], [underfoot_equipment])
+		_expect(allowed, "Underfoot equipment should be auto-attacked when tracking target is below.")
+		_expect(underfoot_equipment.damage_received >= 5.0, "Allowed underfoot auto-attack should damage equipment.")
+
+		underfoot_equipment.free()
+		high_tracking_target.free()
+		low_tracking_target.free()
 
 	monster.free()
 
