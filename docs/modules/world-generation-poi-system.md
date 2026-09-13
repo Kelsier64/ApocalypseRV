@@ -6,8 +6,8 @@
 - Chunk caller: `world/chunk_generator.gd`
 
 Evidence:
-- `world/poi_config.gd:2`
-- `world/poi_config.gd:4`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
 - `world/poi_spawner.gd:2`
 - `world/poi_spawner.gd:8`
 - `world/chunk_generator.gd:67`
@@ -22,18 +22,18 @@ Each POI entry is a dictionary with weighted selection plus gameplay payload. In
 - for procedural POIs: `procedural_config` with min/max room count
 
 Evidence:
-- `world/poi_config.gd:6`
-- `world/poi_config.gd:8`
-- `world/poi_config.gd:9`
-- `world/poi_config.gd:10`
-- `world/poi_config.gd:11`
-- `world/poi_config.gd:12`
-- `world/poi_config.gd:13`
-- `world/poi_config.gd:22`
-- `world/poi_config.gd:145`
-- `world/poi_config.gd:150`
-- `world/poi_config.gd:151`
-- `world/poi_config.gd:152`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
 
 ## Selection Contract
 `pick_poi()` performs weighted random selection from config entries, but gridmap entries are included only when scene assets exist.
@@ -94,39 +94,10 @@ Evidence:
 - `world/poi_spawner.gd:174`
 - `world/poi_spawner.gd:178`
 
-## POI Scene Availability Mismatch Risk
-Configured gridmap POIs are:
-- `gas_station`
-- `motel`
-- `rest_stop`
-- `apartment`
-- `warehouse`
-- `bunker`
+## Configured POI Content
+The active pool contains `gas_station`, `motel`, and `procedural_tower`. Missing `rest_stop`, `apartment`, `warehouse`, and `bunker` entries were removed; reintroduce them only when their scene assets exist. This preserves the previously effective pool and weights.
 
-Current scene assets in `world/building/scenes` include:
-- `convenience_store.tscn`
-- `gas_station+store.tscn`
-- `gas_station.tscn`
-- `motel.tscn`
-
-Concrete risk:
-- Asset/config drift can make weighted pools diverge from design intent because unavailable gridmap entries are filtered out at selection time.
-- Additional scene assets that are not referenced by `POI_TABLE` do not enter the random pool.
-
-Evidence:
-- `world/poi_config.gd:6`
-- `world/poi_config.gd:29`
-- `world/poi_config.gd:52`
-- `world/poi_config.gd:74`
-- `world/poi_config.gd:96`
-- `world/poi_config.gd:119`
-- `world/poi_spawner.gd:11`
-- `world/poi_spawner.gd:14`
-- `world/building/scenes/convenience_store.tscn:1`
-- `world/building/scenes/gas_station+store.tscn:1`
-- `world/building/scenes/gas_station.tscn:1`
-- `world/building/scenes/motel.tscn:1`
-
+`tests/test_poi_resources.gd` checks every configured building, loot, and enemy scene. Additional assets such as `convenience_store.tscn` and `gas_station+store.tscn` remain available but are not automatically added to the pool.
 ## Related Design Docs
 - [World Generation and POIs](../design/world-generation-and-pois.md)
 - [Procedural Building Design](../design/world-generation-procedural-buildings.md)

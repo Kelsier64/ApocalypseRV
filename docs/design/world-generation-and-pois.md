@@ -122,49 +122,7 @@ Evidence:
 - `world/chunk_generator.gd:168`
 - `world/chunk_generator.gd:176`
 
-## POI Scene Availability Mismatch Risk
-## Why this is risky
-The POI config references six gridmap scene paths (`gas_station`, `motel`, `rest_stop`, `apartment`, `warehouse`, `bunker`), while the current scene directory also contains `convenience_store` and `gas_station+store` assets. `POISpawner.pick_poi()` filters out gridmap entries when scene files are missing and warns once per missing path. This means content availability directly changes weighted rollout and can silently skew POI distribution.
+## Configured POI Content
+The active pool contains `gas_station`, `motel`, and `procedural_tower`. Missing `rest_stop`, `apartment`, `warehouse`, and `bunker` entries were removed; reintroduce them only when their scene assets exist. This preserves the previously effective pool and weights.
 
-Configured gridmap references:
-- `res://world/building/scenes/gas_station.tscn`
-- `res://world/building/scenes/motel.tscn`
-- `res://world/building/scenes/rest_stop.tscn`
-- `res://world/building/scenes/apartment.tscn`
-- `res://world/building/scenes/warehouse.tscn`
-- `res://world/building/scenes/bunker.tscn`
-
-Observed scene assets currently in `world/building/scenes`:
-- `convenience_store.tscn`
-- `gas_station+store.tscn`
-- `gas_station.tscn`
-- `motel.tscn`
-
-Evidence:
-- `world/poi_config.gd:7`
-- `world/poi_config.gd:30`
-- `world/poi_config.gd:53`
-- `world/poi_config.gd:75`
-- `world/poi_config.gd:97`
-- `world/poi_config.gd:120`
-- `world/poi_spawner.gd:11`
-- `world/poi_spawner.gd:14`
-- `world/poi_spawner.gd:163`
-- `world/poi_spawner.gd:170`
-- `world/poi_spawner.gd:178`
-- `world/building/scenes/convenience_store.tscn:1`
-- `world/building/scenes/gas_station+store.tscn:1`
-- `world/building/scenes/gas_station.tscn:1`
-- `world/building/scenes/motel.tscn:1`
-
-## Operational Notes and Unknowns
-- `WorldGenerator._process()` exits early if `player` is unset. In `test_world.tscn`, `WorldGenerator` has script assignment shown, but no explicit `player` property assignment is visible in the inspected lines. Confirm whether editor wiring or runtime injection sets this export in actual gameplay scenes.
-- Noise seeds are hardcoded (`1337` and `7331`), so world profile is deterministic for a fixed random sequence but not exposed in scene/config as a tunable setting.
-
-Evidence:
-- `world/world_generator.gd:14`
-- `world/world_generator.gd:45`
-- `world/test_world.tscn:43`
-- `world/test_world.tscn:44`
-- `world/world_generator.gd:94`
-- `world/world_generator.gd:103`
+`tests/test_poi_resources.gd` checks every configured building, loot, and enemy scene. Additional assets such as `convenience_store.tscn` and `gas_station+store.tscn` remain available but are not automatically added to the pool.

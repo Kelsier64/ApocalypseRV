@@ -98,7 +98,7 @@ Evidence:
 
 Evidence:
 - Root-level instances: [world/test_world.tscn](../../world/test_world.tscn#L52), [world/test_world.tscn](../../world/test_world.tscn#L58), [world/test_world.tscn](../../world/test_world.tscn#L61), [world/test_world.tscn](../../world/test_world.tscn#L64), [world/test_world.tscn](../../world/test_world.tscn#L76), [world/test_world.tscn](../../world/test_world.tscn#L82)
-- RV ancestry contract: [equipment/equipment.gd](../../equipment/equipment.gd#L64), [equipment/equipment.gd](../../equipment/equipment.gd#L68)
+- RV ancestry contract: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
 
 ## Assumptions and Unknowns
 - No explicit battery cutoff, depletion fail-safe mode, or generator prioritization policy is defined beyond boolean success/failure of consume/add APIs.

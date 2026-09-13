@@ -4,7 +4,7 @@
 This document captures interaction behavior for RV equipment terminals and auxiliary RV interaction nodes in this partition.
 
 Primary references:
-- Base equipment placement/damage model: [equipment/equipment.gd](../../equipment/equipment.gd#L1)
+- Base equipment placement/damage model: [equipment/equipment.gd](../../equipment/equipment.gd)
 - Driver seat, scrapper, crafting station, tablet scripts: [equipment/driver_seat.gd](../../equipment/driver_seat.gd#L1), [equipment/scrapper.gd](../../equipment/scrapper.gd#L1), [equipment/crafting_station.gd](../../equipment/crafting_station.gd#L1), [equipment/tablet_screen.gd](../../equipment/tablet_screen.gd#L1), [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L1)
 - RV helper interaction nodes: [rv/fuel_filler.gd](../../rv/fuel_filler.gd#L1), [rv/wheel_hitbox.gd](../../rv/wheel_hitbox.gd#L1)
 
@@ -19,9 +19,9 @@ Related module contracts:
 - Canceling placement restores original parent/local transform and removes temporary collision exceptions.
 
 Evidence:
-- Placement entry operations: [equipment/equipment.gd](../../equipment/equipment.gd#L84), [equipment/equipment.gd](../../equipment/equipment.gd#L93), [equipment/equipment.gd](../../equipment/equipment.gd#L95), [equipment/equipment.gd](../../equipment/equipment.gd#L101)
-- Confirm operations: [equipment/equipment.gd](../../equipment/equipment.gd#L119), [equipment/equipment.gd](../../equipment/equipment.gd#L132), [equipment/equipment.gd](../../equipment/equipment.gd#L140), [equipment/equipment.gd](../../equipment/equipment.gd#L143)
-- Cancel operations: [equipment/equipment.gd](../../equipment/equipment.gd#L149), [equipment/equipment.gd](../../equipment/equipment.gd#L163), [equipment/equipment.gd](../../equipment/equipment.gd#L167)
+- Placement entry operations: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Confirm operations: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Cancel operations: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
 
 ## Fuel Filler Interaction Flow
 - Fuel filler provides `interact(player)` and resolves chassis by walking parent chain until it finds a node in group `chassis` with method `refuel_from_player`.
@@ -91,7 +91,7 @@ Evidence:
 
 Evidence:
 - Scene resources and root instances: [world/test_world.tscn](../../world/test_world.tscn#L3), [world/test_world.tscn](../../world/test_world.tscn#L5), [world/test_world.tscn](../../world/test_world.tscn#L7), [world/test_world.tscn](../../world/test_world.tscn#L8), [world/test_world.tscn](../../world/test_world.tscn#L12), [world/test_world.tscn](../../world/test_world.tscn#L52), [world/test_world.tscn](../../world/test_world.tscn#L58), [world/test_world.tscn](../../world/test_world.tscn#L61), [world/test_world.tscn](../../world/test_world.tscn#L64), [world/test_world.tscn](../../world/test_world.tscn#L76), [world/test_world.tscn](../../world/test_world.tscn#L82)
-- RV traversal dependency: [equipment/equipment.gd](../../equipment/equipment.gd#L64), [equipment/equipment.gd](../../equipment/equipment.gd#L68)
+- RV traversal dependency: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
 
 ## Assumptions and Unknowns
 - Input hold durations and key bindings are implemented outside this evidence set; this document captures only equipment-side interaction methods (`interact`, `interact_hold`) and observed key checks inside driver seat.

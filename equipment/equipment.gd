@@ -40,7 +40,6 @@ func get_bottom_face_correction() -> Basis:
 			return Basis(Vector3.FORWARD, -PI / 2.0)
 	return Basis.IDENTITY
 
-var original_transform: Transform3D
 var original_local_transform: Transform3D
 var original_parent: Node
 var is_being_placed: bool = false
@@ -48,6 +47,8 @@ var original_materials: Dictionary = {} # GeometryInstance3D -> Material
 var hold_timer: float = 0.0
 var current_health: float = 0.0
 var is_destroyed: bool = false
+var _collision_exception_objects: Array = [] # CollisionObject3D exceptions we added
+var _connected_rv_cache: Node3D = null # Only ever holds a verified hit; misses are re-scanned
 
 func _ready():
 	if not ghost_material:
@@ -57,18 +58,36 @@ func _ready():
 		ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5)
 
 	current_health = maxf(max_health, 0.0)
+	add_to_group(Groups.EQUIPMENT)
 	if can_be_destroyed:
-		add_to_group("monster_damageable")
+		add_to_group(Groups.MONSTER_DAMAGEABLE)
 
-# Traverses up the scene tree to find if this equipment is placed on an RV
-func get_connected_rv() -> Node3D:
-	var current = get_parent()
-	while current != null:
-		# Use duck-typing instead of strict 'is RV' to avoid circular dependency crashes
-		if current.has_method("add_item") and current.has_method("deduct_materials") and current.is_in_group("rv"):
-			return current as Node3D
+## Adds (and tracks) collision exceptions with every CollisionObject3D ancestor,
+## so a later re-placement can undo them instead of leaking stale exceptions.
+func _add_collision_exceptions_with_ancestors(start: Node) -> void:
+	var current := start
+	while current != null and current is Node3D:
+		if current is CollisionObject3D:
+			add_collision_exception_with(current)
+			_collision_exception_objects.append(current)
 		current = current.get_parent()
-	return null
+
+func _clear_tracked_collision_exceptions() -> void:
+	for obj in _collision_exception_objects:
+		if is_instance_valid(obj):
+			remove_collision_exception_with(obj)
+	_collision_exception_objects.clear()
+
+## Revalidate after placement and lazily for scene initialization/reparenting.
+## Null results are not sticky: the RV may register its groups after its children.
+func get_connected_rv() -> Node3D:
+	if RVConnection.is_rv(_connected_rv_cache) and _connected_rv_cache.is_ancestor_of(self):
+		return _connected_rv_cache
+	return refresh_rv_connection()
+
+func refresh_rv_connection() -> Node3D:
+	_connected_rv_cache = RVConnection.resolve(get_parent())
+	return _connected_rv_cache
 
 func consume_rv_power(amount: float) -> bool:
 	if amount <= 0.0:
@@ -83,22 +102,22 @@ func consume_rv_power(amount: float) -> bool:
 # Called when the player successfully holds F for 2 seconds
 func start_placement(player: Node3D):
 	if is_being_placed: return
-	
+	# The player is the mode authority: refuse when it is seated/in UI/etc.
+	if not player.enter_equipment_placement(self):
+		return
+
 	is_being_placed = true
-	original_transform = global_transform
 	original_local_transform = transform
 	original_parent = get_parent()
-	
+
 	# Disable physics
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	collision_layer = 0
 	collision_mask = 0
-	
+
 	# Apply ghost material to all immediate meshes
 	_apply_ghost_material(self)
-	
-	player.enter_equipment_placement(self)
 
 func _apply_ghost_material(node: Node):
 	if node is GeometryInstance3D:
@@ -132,14 +151,13 @@ func confirm_placement(new_global_transform: Transform3D, new_parent: Node3D):
 	freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	
 	# CRITICAL: Prevent the car from launching into space!
-	# We explicitly tell Godot's physics engine to NEVER calculate collisions 
+	# We explicitly tell Godot's physics engine to NEVER calculate collisions
 	# between this equipment and its new parent (e.g. the RV).
-	var current = new_parent
-	while current != null and current is Node3D:
-		if current is CollisionObject3D:
-			add_collision_exception_with(current)
-		current = current.get_parent()
-		
+	_clear_tracked_collision_exceptions()
+	_add_collision_exceptions_with_ancestors(new_parent)
+	refresh_rv_connection()
+
+
 	collision_layer = 1 
 	collision_mask = 0 
 	
@@ -155,14 +173,12 @@ func cancel_placement():
 		original_parent.add_child(self)
 		
 	transform = original_local_transform
-	
-	# Clear exceptions if we are canceling
-	var current = get_parent()
-	while current != null and current is Node3D:
-		if current is CollisionObject3D:
-			remove_collision_exception_with(current)
-		current = current.get_parent()
-		
+
+	# Restore exceptions to match the original parent chain
+	_clear_tracked_collision_exceptions()
+	_add_collision_exceptions_with_ancestors(original_parent)
+	refresh_rv_connection()
+
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	collision_layer = 1

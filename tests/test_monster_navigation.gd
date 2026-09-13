@@ -274,7 +274,7 @@ func _test_abort_climb_when_target_leaves_rv() -> void:
 	_expect(monster.has_method("_should_abort_climb_when_target_leaves_rv"), "Monster should expose _should_abort_climb_when_target_leaves_rv(is_climbing, target_on_same_rv, has_wall_contact).")
 	if monster.has_method("_should_abort_climb_when_target_leaves_rv"):
 		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, false), "Monster should abort climb when target left RV.")
-		_expect(monster._should_abort_climb_when_target_leaves_rv(true, false, true), "Monster should still abort climb when target left RV even if wall contact remains.")
+		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, false, true), "A monster attached to the RV can keep climbing and damaging it after the player leaves.")
 		_expect(not monster._should_abort_climb_when_target_leaves_rv(true, true, false), "Monster should keep climbing while target remains on same RV.")
 		_expect(not monster._should_abort_climb_when_target_leaves_rv(false, false, false), "Monster should not trigger climb abort logic outside climbing state.")
 
@@ -1059,7 +1059,7 @@ func _test_climbing_touch_attack_can_ignore_los_gate() -> void:
 		equipment.position = Vector3(0.8, 0.0, 0.0)
 		equipment.add_to_group("monster_damageable")
 
-		_expect(monster._can_attack_combat_target({"node": equipment, "target_type": "equipment"}, false), "Climbing touch attacks should still be allowed when LOS ray is blocked.")
+		_expect(not monster._can_attack_combat_target({"node": equipment, "target_type": "equipment"}, false), "Climbing contact must not authorize attacks through another wall.")
 
 		equipment.free()
 

@@ -1,127 +1,46 @@
 # Climbing and Combat Behavior
 
-## Scope
-This document describes climb-state transitions, climb motion constraints, and monster combat behavior that are implemented in the current partition source files.
+## Movement states
 
-Primary references:
-- Player traversal and climb state logic in [player/player.gd](../../player/player.gd#L51)
-- Monster locomotion, chase, climb, and attack logic in [enemies/monster.gd](../../enemies/monster.gd#L90)
-- Contract-defining tests in [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L30), [tests/test_player_climbing_runtime.gd](../../tests/test_player_climbing_runtime.gd#L18), and [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L71)
+Both actors use NORMAL and CLIMBING locomotion. The player enters climbing by holding forward against an RV wall with valid height, surface normal, and headroom. Monsters enter from chase. Back or a newly pressed jump detaches the player; holding jump from the approach does not repeatedly cancel climbing.
 
-## Player Climb Lifecycle
+The capsule stays enabled throughout climbing. All climbing and vehicle-follow movement uses body sweeps, so an overhead obstacle cannot be crossed simply because the wall ray remains valid.
 
-### Entry gates
-Player climb entry runs only from NORMAL locomotion and requires active forward input, valid RV wall probe contact, acceptable wall normal, acceptable hit height, and enough upward clearance.
+## Moving vehicle attachment
 
-Evidence:
-- Locomotion states and default state: [player/player.gd](../../player/player.gd#L51), [player/player.gd](../../player/player.gd#L52)
-- Start helper and NORMAL-only gate: [player/player.gd](../../player/player.gd#L488), [player/player.gd](../../player/player.gd#L489)
-- Re-enter cooldown gate: [player/player.gd](../../player/player.gd#L491)
-- Forward key requirement: [player/player.gd](../../player/player.gd#L494)
-- Ceiling-clearance gate at start: [player/player.gd](../../player/player.gd#L509)
-- Wall-normal and hit-height gates: [player/player.gd](../../player/player.gd#L526), [player/player.gd](../../player/player.gd#L527)
-- Transition to CLIMBING: [player/player.gd](../../player/player.gd#L542)
+`ClimbMath.attachment_delta` carries the actor's point through the RV's complete transform, including turns. Wall normals and actor heading rotate with the vehicle. A frame displacement over 1.5 metres aborts attachment instead of silently losing the excess displacement. High angular speed and invalid RV references also terminate climbing.
 
-### In-climb behavior and abort conditions
-While climbing, player movement uses climb-specific motion composition and can abort for invalid RV, manual detach input, high RV angular velocity, ceiling block, or expired wall-contact grace.
+Wall probes are refreshed after compensation. Brief contact loss is tolerated while reaching the upper edge. `ClimbMath.try_roof_transfer` requires a real RV roof below the destination and a clear full-capsule sweep before stepping inward. A missing wall alone does not authorize moving through the vehicle.
 
-Evidence:
-- Climb update loop: [player/player.gd](../../player/player.gd#L570)
-- RV validity abort: [player/player.gd](../../player/player.gd#L572)
-- Manual detach on S or jump action: [player/player.gd](../../player/player.gd#L576)
-- Angular-velocity safety abort: [player/player.gd](../../player/player.gd#L582)
-- Ceiling block during climb: [player/player.gd](../../player/player.gd#L612), [player/player.gd](../../player/player.gd#L627)
-- Motion builder use: [player/player.gd](../../player/player.gd#L638)
-- Lost-contact abort: [player/player.gd](../../player/player.gd#L645)
-- Abort handler: [player/player.gd](../../player/player.gd#L647)
+Detachment inherits the vehicle's point velocity. The player keeps its horizontal carrier momentum while airborne, with movement input added separately.
 
-### Exit behavior
-Climb exit always restores NORMAL locomotion, clears climb references, applies re-enter cooldown, and sanitizes upward velocity.
+## Standing on the RV
 
-Evidence:
-- Exit state reset: [player/player.gd](../../player/player.gd#L664)
-- Re-enter cooldown applied: [player/player.gd](../../player/player.gd#L668)
-- Exit velocity sanitizer call: [player/player.gd](../../player/player.gd#L670)
-- Sanitizer contract: [player/player.gd](../../player/player.gd#L325)
+`RVSupport` tracks the exact supporting collider and its owning RV. This is necessary because mounted panels are frozen child bodies and do not report the chassis's platform velocity. Player and monster disable built-in floor-platform carry to avoid applying motion twice, then explicitly follow RV supports.
 
-## Monster Climb-Chase-Combat Lifecycle
+Support is reacquired from actual floor collisions after movement. Deleted, detached, or teleported supports are released. Ordinary world floors need no carry; moving non-RV platforms are outside this prototype's supported platform contract.
 
-### State model and chase integration
-Monster behavior combines AI state (WANDER, CHASE, ATTACK) with locomotion state (NORMAL, CLIMBING). Chase attempts can trigger climb start when climb prerequisites are met.
+Seated players retain their physics callback to update their world position from the driver's seat. Monster perception therefore follows the driver instead of pursuing the old boarding location. Seat entry clears climbing/support state; seat exit inherits physical vehicle velocity.
 
-Evidence:
-- AI state enum: [enemies/monster.gd](../../enemies/monster.gd#L90)
-- Locomotion enum: [enemies/monster.gd](../../enemies/monster.gd#L94)
-- Chase attempts climb start: [enemies/monster.gd](../../enemies/monster.gd#L344)
-- Climb start helper: [enemies/monster.gd](../../enemies/monster.gd#L645)
+## Monster combat
 
-### Climb continuity and separation handling
-During climbing, monster maintains wall contact with probe plus fallback contact checks, tracks separation state, and aborts if target leaves RV (after grace policy) or climb constraints fail.
+Ground targeting normally prefers players, then structures. While climbing, only nearby visible structures qualify. A monster with valid wall contact can continue climbing and damaging the RV after its target leaves.
 
-Evidence:
-- Climb loop: [enemies/monster.gd](../../enemies/monster.gd#L762)
-- Fallback contact helper: [enemies/monster.gd](../../enemies/monster.gd#L730)
-- Contact grace computation: [enemies/monster.gd](../../enemies/monster.gd#L538)
-- Separation state labels: [enemies/monster.gd](../../enemies/monster.gd#L546), [enemies/monster.gd](../../enemies/monster.gd#L816)
-- Target-on-RV probe and grace merge: [enemies/monster.gd](../../enemies/monster.gd#L775), [enemies/monster.gd](../../enemies/monster.gd#L778), [enemies/monster.gd](../../enemies/monster.gd#L1409)
-- Abort when target leaves RV: [enemies/monster.gd](../../enemies/monster.gd#L832), [enemies/monster.gd](../../enemies/monster.gd#L845), [enemies/monster.gd](../../enemies/monster.gd#L1406)
+Contact attacks require line of sight. Touching the chassis does not count as touching every equipment descendant, and hitting an ancestor with a visibility ray does not expose an interior target through the wall.
 
-### Post-separation steering policy
-When climb exits because wall contact is lost, monster applies a temporary navigation block and short transfer vector bias before fully returning to normal chase steering.
+When a player is below the monster and the downward probe hits damageable equipment, that panel remains the attack target during cooldown. The direct probe supplies range and obstruction evidence; distance to a large panel's centre must not reject a valid foot contact. Destruction removes the support and the monster falls. Underfoot attacks exclude the chassis and players.
 
-Evidence:
-- Post-separation block constant: [enemies/monster.gd](../../enemies/monster.gd#L27)
-- Transfer-time constant: [enemies/monster.gd](../../enemies/monster.gd#L23)
-- Exit path sets block and transfer direction on lost contact: [enemies/monster.gd](../../enemies/monster.gd#L906), [enemies/monster.gd](../../enemies/monster.gd#L921), [enemies/monster.gd](../../enemies/monster.gd#L925)
-- Chase-direction blend with transfer direction: [enemies/monster.gd](../../enemies/monster.gd#L421), [enemies/monster.gd](../../enemies/monster.gd#L426)
-- Navigation gate after separation: [enemies/monster.gd](../../enemies/monster.gd#L1412)
+## Verification
 
-## Monster Attack Behavior
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1`.
 
-### Target selection policy
-- Not climbing: player target is preferred over structure targets.
-- Climbing: only touching structure targets are selected.
+`tests/test_moving_rv_climbing.gd` uses the production player, zombie, complete RV, panels, and driver's seat. It checks moving-wall ascent, roof transfer, translation and steering, physics-driven VehicleBody support, release velocity, overhead collision, occluded equipment, driver tracking, roof destruction, and falling after support removal.
 
-Evidence:
-- Selection function: [enemies/monster.gd](../../enemies/monster.gd#L1278)
-- Touching structure filter for climbing: [enemies/monster.gd](../../enemies/monster.gd#L1049), [enemies/monster.gd](../../enemies/monster.gd#L1097)
-- Auto-touch attack pass each physics update: [enemies/monster.gd](../../enemies/monster.gd#L218), [enemies/monster.gd](../../enemies/monster.gd#L1187)
+For interactive inspection:
 
-### Attack gates
-Attacks are constrained by line of sight and vertical gap/range checks, with one explicit exception: while climbing, touching structure targets can bypass LOS blocking.
+```powershell
+godot --path . res://tests/rv_climb_playground.tscn
+godot --path . res://tests/rv_climb_playground.tscn -- --replay
+```
 
-Evidence:
-- Attack processing flow: [enemies/monster.gd](../../enemies/monster.gd#L936)
-- LOS ray helper: [enemies/monster.gd](../../enemies/monster.gd#L1456)
-- Range and vertical-gap gate: [enemies/monster.gd](../../enemies/monster.gd#L1426)
-- Chassis-specific range expansion: [enemies/monster.gd](../../enemies/monster.gd#L1437)
-- Climbing touching-target LOS override: [enemies/monster.gd](../../enemies/monster.gd#L1450)
-- Damage application and cooldown set: [enemies/monster.gd](../../enemies/monster.gd#L960)
-
-### Underfoot equipment attacks
-Underfoot equipment attack is conditionally enabled only when the current tracking target is below the monster and a valid nearby damageable equipment candidate is selected.
-
-Evidence:
-- Tracking-target-below check: [enemies/monster.gd](../../enemies/monster.gd#L1207)
-- Underfoot candidate selector: [enemies/monster.gd](../../enemies/monster.gd#L1211)
-- Underfoot attack executor: [enemies/monster.gd](../../enemies/monster.gd#L1254)
-- Integration from touching-target selector: [enemies/monster.gd](../../enemies/monster.gd#L1168), [enemies/monster.gd](../../enemies/monster.gd#L1169)
-
-## Test-Derived Behavioral Contracts
-- Player climb contract methods are required and mantle helpers are expected removed.
-- Monster navigation, climb, targeting, underfoot attack, and chassis-range behavior are test-defined interfaces.
-
-Evidence:
-- Player climb method contract checks: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L118)
-- Player mantle-removal checks: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L120), [tests/test_player_climbing_runtime.gd](../../tests/test_player_climbing_runtime.gd#L21)
-- Player climb gate expectation set: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L35)
-- Monster contract method checks: [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L71), [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L92)
-- Monster target-selection expectations: [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L430), [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L454)
-- Underfoot and touching attack expectations: [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L659), [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L741)
-- Chassis extended range expectation: [tests/test_monster_navigation.gd](../../tests/test_monster_navigation.gd#L892)
-
-## Assumptions and Unknowns
-- Tests still assert presence of player helper _can_begin_climb, but this helper is not present in current player runtime script. The implemented gating appears inline in _try_start_climb. This may be intentional refactoring or stale test contract.
-  Evidence: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L32), [player/player.gd](../../player/player.gd#L488)
-- Combat target collection depends on group membership and take_damage availability, but group assignment sources for all damageable structures are outside this partition.
-  Evidence: [enemies/monster.gd](../../enemies/monster.gd#L1313)
+F2 toggles deterministic vehicle motion; F3 starts automatic player climbing; F4 switches camera; F5 seats the player to exercise roof attacks; R resets. WASD and Space use production player controls in the first-person view. The playground uses scripted RV translation/turning for reproducibility; wheel-driven handling, severe rollovers, and dense crowds still need gameplay testing.

@@ -6,6 +6,10 @@ const BASE_UNIT: float = 9.0
 @export var max_rooms: int = 20
 @export var seed_value: int = -1  # -1 = random
 
+# Room metadata never changes at runtime; scanning the directory and
+# instantiating every room scene per building is wasted work, so share it.
+static var _room_defs_cache: Array = []
+
 # Occupancy grid: Dictionary[Vector3i, bool]
 var occupied_cells: Dictionary = {}
 var room_count: int = 0
@@ -14,15 +18,25 @@ var room_count: int = 0
 # Doors format: {"wall": String, "grid_offset": Vector3i}
 var room_defs: Array = []
 
+# Local RNG so a fixed seed_value never reseeds the global RNG that the
+# rest of world generation depends on.
+var _rng := RandomNumberGenerator.new()
+
 func _ready():
 	_build_room_defs()
-	
+
 	if seed_value >= 0:
-		seed(seed_value)
-	
+		_rng.seed = seed_value
+	else:
+		_rng.randomize()
+
 	generate()
 
 func _build_room_defs():
+	if not _room_defs_cache.is_empty():
+		room_defs = _room_defs_cache
+		return
+
 	room_defs = []
 	var path = "res://world/building/rooms/"
 	var dir = DirAccess.open(path)
@@ -45,6 +59,15 @@ func _build_room_defs():
 						})
 					instance.queue_free()
 			file_name = dir.get_next()
+
+	_room_defs_cache = room_defs
+
+func _shuffle_with_rng(arr: Array) -> void:
+	for i in range(arr.size() - 1, 0, -1):
+		var j := _rng.randi_range(0, i)
+		var tmp = arr[i]
+		arr[i] = arr[j]
+		arr[j] = tmp
 
 
 # --- OCCUPANCY GRID ---
@@ -92,8 +115,8 @@ func generate():
 		{"wall": "west", "source_cell": top_cell},
 	]
 	
-	open_doors.shuffle()
-	
+	_shuffle_with_rng(open_doors)
+
 	var doors_to_seal: Array = []
 	
 	# 3. BFS expansion
@@ -121,7 +144,7 @@ func generate():
 						"def": def,
 						"door": door,
 						# Weighted random shuffle using the random key technique
-						"score": pow(randf(), 1.0 / def.get("weight", 1.0))
+						"score": pow(_rng.randf(), 1.0 / def.get("weight", 1.0))
 					})
 		
 		# Sort candidates by score descending (higher weight = prioritized)
@@ -159,7 +182,7 @@ func generate():
 						"source_cell": new_source_cell
 					})
 				
-				open_doors.shuffle()
+				_shuffle_with_rng(open_doors)
 				placed = true
 				break
 		

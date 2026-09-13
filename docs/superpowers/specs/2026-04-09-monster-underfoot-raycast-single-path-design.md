@@ -1,5 +1,7 @@
 # Monster Underfoot Attack Redesign (Raycast Single Path)
 
+> Historical record (2026-04-09). Preserved for context; implementation steps and internal helper names may be outdated. Follow [current monster module documentation](../../modules/monster-ai.md) and the current tests when changing behavior.
+
 Date: 2026-04-09
 
 ## 1. Goal

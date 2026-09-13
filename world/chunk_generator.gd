@@ -6,6 +6,8 @@ const RESOLUTION = 80
 const ROAD_WIDTH = 15.0
 const ROAD_BLEND_DISTANCE = 12.0
 const MAX_HEIGHT = 60.0
+const CURVE_SEARCH_SAMPLES = 20
+const ZOMBIE_SCENE = preload("res://enemies/zombie.tscn")
 
 var noise: FastNoiseLite
 var detail_noise: FastNoiseLite
@@ -13,6 +15,10 @@ var start_pos: Vector3
 var end_pos: Vector3
 var control_p1: Vector3
 var control_p2: Vector3
+# Bezier points sampled once per chunk; the curve is constant after
+# generate_chunk sets the control points, so closest-point searches
+# (called for every terrain grid vertex) must not re-evaluate it.
+var _curve_samples: PackedVector3Array = PackedVector3Array()
 
 var has_poi: bool = false
 var poi_local_pos: Vector3
@@ -44,6 +50,7 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 	end_pos = Vector3(end_offset_x, 0, -CHUNK_SIZE)
 	control_p1 = Vector3(0, 0, -CHUNK_SIZE * 0.33)
 	control_p2 = end_pos + Vector3(-sin(next_turn_angle) * CHUNK_SIZE * 0.33, 0, CHUNK_SIZE * 0.33)
+	_rebuild_curve_samples()
 
 	# POI placement
 	has_poi = false
@@ -62,11 +69,17 @@ func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
 	end_pos.y = true_end_height - global_transform.origin.y
 	var local_end_transform = Transform3D(end_basis, end_pos)
 
-	# Spawn POI contents
+	# Spawn POI contents. Static content (building, scavenge loot) belongs to the
+	# chunk; enemies are active entities and go to the shared WorldEntities
+	# container so a despawning chunk can't delete them mid-chase.
 	if has_poi:
 		var poi_building := _poi_spawner.spawn_building(_current_poi, self, poi_local_pos)
 		_poi_spawner.spawn_loot(_current_poi, self, poi_local_pos, poi_building)
-		_poi_spawner.spawn_enemies(_current_poi, self, poi_local_pos, _get_local_height)
+		var enemy_parent := WorldEntities.get_container(self)
+		if enemy_parent != null:
+			_poi_spawner.spawn_enemies(_current_poi, enemy_parent, global_transform * poi_local_pos, _get_global_height)
+		else:
+			_poi_spawner.spawn_enemies(_current_poi, self, poi_local_pos, _get_local_height)
 
 	_spawn_road_zombies()
 
@@ -104,6 +117,10 @@ func _get_local_height(lx: float, lz: float) -> float:
 	return terrain_h - global_transform.origin.y
 
 
+func _get_global_height(gx: float, gz: float) -> float:
+	return _get_terrain_height(gx, gz, 0.0)
+
+
 # --- Road math ---
 
 func _cubic_bezier(t: float) -> Vector3:
@@ -115,19 +132,26 @@ func _cubic_bezier(t: float) -> Vector3:
 	return r0.lerp(r1, t)
 
 
+func _rebuild_curve_samples() -> void:
+	_curve_samples.resize(CURVE_SEARCH_SAMPLES + 1)
+	for i in range(CURVE_SEARCH_SAMPLES + 1):
+		_curve_samples[i] = _cubic_bezier(float(i) / CURVE_SEARCH_SAMPLES)
+
+
 func _get_closest_curve_point(px: float, pz: float) -> Array:
+	if _curve_samples.is_empty():
+		_rebuild_curve_samples()
+
 	var closest_dist = INF
 	var closest_pt = Vector3.ZERO
 	var closest_t = 0.0
-	var samples = 20
-	for i in range(samples + 1):
-		var t = float(i) / samples
-		var pt = _cubic_bezier(t)
+	for i in range(_curve_samples.size()):
+		var pt := _curve_samples[i]
 		var d = Vector2(pt.x - px, pt.z - pz).length_squared()
 		if d < closest_dist:
 			closest_dist = d
 			closest_pt = pt
-			closest_t = t
+			closest_t = float(i) / CURVE_SEARCH_SAMPLES
 	return [closest_pt, closest_t]
 
 
@@ -383,9 +407,6 @@ func _build_navigation_region() -> void:
 # --- Road zombies (ambient, not POI-related) ---
 
 func _spawn_road_zombies():
-	var zombie_scene = load("res://enemies/zombie.tscn")
-	if not zombie_scene: return
-
 	if randf() > 0.6: return
 
 	var num_zombies = randi_range(1, 2)
@@ -405,6 +426,11 @@ func _spawn_road_zombies():
 		var terrain_h = _get_terrain_height(global_spawn.x, global_spawn.z, 0.0)
 		spawn_local.y = terrain_h - global_transform.origin.y + 2.0
 
-		var zombie = zombie_scene.instantiate()
-		zombie.position = spawn_local
-		add_child(zombie)
+		var zombie = ZOMBIE_SCENE.instantiate()
+		var entity_parent := WorldEntities.get_container(self)
+		if entity_parent != null:
+			zombie.position = global_transform * spawn_local
+			entity_parent.add_child(zombie)
+		else:
+			zombie.position = spawn_local
+			add_child(zombie)

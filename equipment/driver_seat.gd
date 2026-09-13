@@ -20,11 +20,7 @@ func _setup_if_on_rv() -> void:
 	freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	collision_layer = 1
 	collision_mask = 0
-	var ancestor := get_parent()
-	while ancestor != null and ancestor is Node3D:
-		if ancestor is CollisionObject3D:
-			add_collision_exception_with(ancestor)
-		ancestor = ancestor.get_parent()
+	_add_collision_exceptions_with_ancestors(get_parent())
 
 func interact_hold(player: Node3D) -> void:
 	if is_being_placed or current_driver:
@@ -35,10 +31,10 @@ func interact_hold(player: Node3D) -> void:
 		print("Driver Seat: not mounted on an RV — cannot drive.")
 		return
 
+	# The player owns its mode state; refuse when it can't sit down right now.
+	if not player.enter_seat_mode(self):
+		return
 	current_driver = player
-	player.set_physics_process(false)
-	player.get_node("CollisionShape3D").disabled = true
-	player.visible = false
 	seat_camera.current = true
 
 	if rv.has_method("set_driving_state"):
@@ -54,7 +50,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		seat_camera.rotation.x = clamp(seat_camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 		seat_camera.rotation.y = clamp(seat_camera.rotation.y, deg_to_rad(-120), deg_to_rad(120))
 
-	if event is InputEventKey and event.physical_keycode == KEY_E and event.pressed and not event.echo:
+	if event.is_action_pressed("interact"):
 		exit_seat()
 		get_viewport().set_input_as_handled()
 
@@ -65,17 +61,40 @@ func exit_seat() -> void:
 	var player := current_driver
 	current_driver = null
 
-	player.set_physics_process(true)
-	player.get_node("CollisionShape3D").disabled = false
-	player.visible = true
-	player.global_position = global_position + global_transform.basis.x * 1.5
-	player.get_node("Camera3D").current = true
+	player.exit_seat_mode(_find_clear_exit_position())
 
 	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"):
 		rv.set_driving_state(false)
 
 	seat_camera.rotation = Vector3.ZERO
+
+# Prefer the seat's right side, then left/back/front; if every side is inside
+# geometry (seat parked against a wall), stand the player on top of the seat.
+func _find_clear_exit_position() -> Vector3:
+	var candidates: Array[Vector3] = [
+		global_position + global_transform.basis.x * 1.5,
+		global_position - global_transform.basis.x * 1.5,
+		global_position + global_transform.basis.z * 1.5,
+		global_position - global_transform.basis.z * 1.5,
+	]
+	for candidate in candidates:
+		if _is_exit_position_clear(candidate):
+			return candidate
+	return global_position + Vector3.UP * 1.2
+
+func _is_exit_position_clear(candidate: Vector3) -> bool:
+	var shape := SphereShape3D.new()
+	shape.radius = 0.35
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	# Probe at roughly the player's torso height above the exit spot.
+	query.transform = Transform3D(Basis.IDENTITY, candidate + Vector3.UP * 0.9)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	query.exclude = [self.get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(query, 4).is_empty()
 
 func _on_before_destroy() -> void:
 	if current_driver:

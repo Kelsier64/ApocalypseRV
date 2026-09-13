@@ -14,7 +14,7 @@ In scope:
 Out of scope:
 - Network replication model
 - Save/load persistence architecture
-- Build/deployment pipelines beyond local Godot run commands
+- Release export/deployment pipelines (test CI is configured)
 
 ## 2. Goals and Non-Goals
 ### Goals
@@ -30,8 +30,8 @@ Out of scope:
 
 ## 3. System Context
 - Engine/runtime: Godot 4.6 with GL Compatibility renderer and Jolt physics.
-- Main runtime scene: [world/test_world.tscn](world/test_world.tscn#L1).
-- Main scene entry configured in [project.godot](project.godot#L16).
+- Main runtime scene: [world/test_world.tscn](../world/test_world.tscn#L1).
+- Main scene entry configured in [project.godot](../project.godot#L16).
 - Core runtime domains:
   - World generation and streaming
   - RV core and equipment
@@ -41,14 +41,15 @@ Out of scope:
 ## 4. Component Map
 | Component | Responsibility | Key Files | Depends On |
 |---|---|---|---|
-| World Stream Orchestrator | Maintain ahead/behind chunk window and spawn/despawn lifecycle | world/world_generator.gd | Chunk generator, player position |
+| Shared Contracts (core/) | Group-name constants, item-name constants, shared climb math, world-entity container | core/groups.gd, core/item_names.gd, core/climb_math.gd, core/world_entities.gd, core/rv_connection.gd | None (leaf utilities) |
+| World Stream Orchestrator | Maintain ahead/behind chunk window, spawn/despawn lifecycle, far-behind entity cleanup | world/world_generator.gd | Chunk generator, player position, WorldEntities |
 | Chunk Generator | Build terrain, road, nav mesh, optional POI content, ambient zombies | world/chunk_generator.gd | Shared noise, POISpawner |
 | POI System | Weighted POI selection and building/loot/enemy spawning | world/poi_spawner.gd, world/poi_config.gd | POI table, scene assets |
 | Procedural Building Generator | Build multi-room structures from room definitions | world/building/building_generator.gd, world/building/room_node.gd | Room scenes, occupancy grid |
 | RV Chassis Core | Driving, fuel/power, inventory, wheel lifecycle, durability | rv/chassis.gd | Input, generator group, player interactions |
 | RV Equipment Layer | Placement, power devices, terminals, seat, scrapper | equipment/equipment.gd and equipment/*.gd | RV connection via ancestry and group contracts |
-| Player Traversal and Interaction | FPS movement, climb state, inventory, interaction timing | player/player.gd, player/player_interact.gd | Equipment and prop interaction contracts |
-| Monster AI | Wander/chase/attack logic with navigation and climbing | enemies/monster.gd | Navigation data, player/chassis/equipment targets |
+| Player Traversal and Interaction | Movement and modes orchestrate inventory and placement modules | player/player.gd, player/player_inventory.gd, player/equipment_placement.gd, player/player_interact.gd | Equipment and prop interaction contracts |
+| Monster AI | Actor physics/navigation coordinate with a separate selection policy | enemies/monster.gd, enemies/combat_targeting.gd | Navigation data, contact predicates, player/chassis/equipment targets |
 | Behavior Tests | Validate climb and navigation/attack contracts | tests/test_player_climbing.gd, tests/test_monster_navigation.gd | Script API surfaces |
 
 ## 5. Runtime Flows
@@ -61,9 +62,9 @@ Out of scope:
 6. Ambient road zombies may spawn independently of POIs.
 
 Primary references:
-- [world/world_generator.gd](world/world_generator.gd#L17)
-- [world/chunk_generator.gd](world/chunk_generator.gd#L33)
-- [world/poi_spawner.gd](world/poi_spawner.gd#L8)
+- [world/world_generator.gd](../world/world_generator.gd#L17)
+- [world/chunk_generator.gd](../world/chunk_generator.gd#L33)
+- [world/poi_spawner.gd](../world/poi_spawner.gd#L8)
 
 ### Edge flow: RV interaction, crafting, and energy loop
 1. RV chassis executes physics input handling.
@@ -72,10 +73,10 @@ Primary references:
 4. Crafting terminal checks RV materials and routes spawn requests through connected crafting stations.
 
 Primary references:
-- [rv/chassis.gd](rv/chassis.gd#L174)
-- [equipment/generator.gd](equipment/generator.gd#L10)
-- [equipment/tablet_ui.gd](equipment/tablet_ui.gd#L121)
-- [equipment/crafting_station.gd](equipment/crafting_station.gd#L14)
+- [rv/chassis.gd](../rv/chassis.gd#L174)
+- [equipment/generator.gd](../equipment/generator.gd#L10)
+- [equipment/tablet_ui.gd](../equipment/tablet_ui.gd#L121)
+- [equipment/crafting_station.gd](../equipment/crafting_station.gd#L14)
 
 ### Edge flow: climbing combat loop
 1. Player and monster can enter climb locomotion under geometry/state gates.
@@ -84,10 +85,10 @@ Primary references:
 4. Tests enforce contract-level expectations for helper methods and behavior gates.
 
 Primary references:
-- [player/player.gd](player/player.gd#L488)
-- [enemies/monster.gd](enemies/monster.gd#L645)
-- [tests/test_player_climbing.gd](tests/test_player_climbing.gd#L1)
-- [tests/test_monster_navigation.gd](tests/test_monster_navigation.gd#L1)
+- [player/player.gd](../player/player.gd)
+- [enemies/monster.gd](../enemies/monster.gd)
+- [tests/test_player_climbing.gd](../tests/test_player_climbing.gd#L1)
+- [tests/test_monster_navigation.gd](../tests/test_monster_navigation.gd#L1)
 
 ## 6. Data and State Model
 Core state domains:
@@ -101,29 +102,33 @@ Core state domains:
 
 ## 7. Interfaces and Contracts
 Contract patterns used in this codebase:
-- Group membership contracts:
-  - rv, chassis, monster_damageable, rv_power_generators, crafting_stations.
+- Group membership contracts (constants in [core/groups.gd](../core/groups.gd); runtime code must reference `Groups.*`, tests deliberately use raw strings to pin the values):
+  - rv, chassis, equipment, monster_damageable, rv_power_generators, crafting_stations, player, monsters.
 - Duck-typed method contracts:
-  - Equipment resolves connected RV by checking methods like add_item and deduct_materials.
+  - Equipment resolves connected RV by checking methods like add_item and deduct_materials (result cached, invalidated on reparent).
   - Interaction adapters call interact or interact_hold when present.
 - Test-defined behavioral contracts:
-  - Climb helper availability and mantle helper removal checks.
-  - Monster navigation and attack gate helper surface checks.
+  - Climb helper availability and mantle helper removal checks. Shared climb math lives in [core/climb_math.gd](../core/climb_math.gd); the player/monster helpers are thin wrappers kept because tests pin their names.
+- Monster navigation and attack gate helper surface checks.
+- World-entity ownership contract ([core/world_entities.gd](../core/world_entities.gd)):
+  - Static chunk content (terrain, POI buildings, scavenge loot) is chunk-owned and dies with the chunk.
+  - Active entities (enemies, crafted outputs, dropped items) live in the shared WorldEntities container; WorldGenerator despawns them with the chunk distance rule.
+- Player mode contract: top-level modes (NORMAL/PLACING/UI/SEATED/DEAD) are mutually exclusive; transitions go through `enter_*`/`exit_*` helpers on the player, and callers must respect refusals.
 
 Representative files:
-- [equipment/equipment.gd](equipment/equipment.gd#L64)
-- [player/player_interact.gd](player/player_interact.gd#L30)
-- [tests/test_player_climbing.gd](tests/test_player_climbing.gd#L32)
-- [tests/test_monster_navigation.gd](tests/test_monster_navigation.gd#L71)
+- [equipment/equipment.gd](../equipment/equipment.gd)
+- [player/player_interact.gd](../player/player_interact.gd#L30)
+- [tests/test_player_climbing.gd](../tests/test_player_climbing.gd#L32)
+- [tests/test_monster_navigation.gd](../tests/test_monster_navigation.gd#L71)
 
 ## 8. Configuration and Environment
 Runtime and environment settings:
-- Main scene: [project.godot](project.godot#L16)
-- Renderer mode: GL Compatibility in [project.godot](project.godot#L28)
-- Physics engine: Jolt in [project.godot](project.godot#L24)
-- Main local run command documented in [AGENTS.md](AGENTS.md#L138)
+- Main scene: [project.godot](../project.godot#L16)
+- Renderer mode: GL Compatibility in [project.godot](../project.godot#L28)
+- Physics engine: Jolt in [project.godot](../project.godot#L24)
+- Main local run command documented in [CLAUDE.md](../CLAUDE.md)
 
-Project-level development conventions include using uv for Python-side tools as documented in [AGENTS.md](AGENTS.md#L149).
+Project-level development conventions include using uv for Python-side tools as documented in [CLAUDE.md](../CLAUDE.md).
 
 ## 9. Error Handling and Reliability
 Current reliability approach is guard-heavy and runtime-conditional:
@@ -133,10 +138,10 @@ Current reliability approach is guard-heavy and runtime-conditional:
 - Climb abort paths for unsafe conditions.
 
 Notable examples:
-- [world/world_generator.gd](world/world_generator.gd#L45)
-- [world/poi_spawner.gd](world/poi_spawner.gd#L163)
-- [equipment/crafting_station.gd](equipment/crafting_station.gd#L14)
-- [player/player.gd](player/player.gd#L647)
+- [world/world_generator.gd](../world/world_generator.gd#L45)
+- [world/poi_spawner.gd](../world/poi_spawner.gd#L163)
+- [equipment/crafting_station.gd](../equipment/crafting_station.gd#L14)
+- [player/player.gd](../player/player.gd)
 
 ## 10. Security and Privacy Notes
 This baseline has no explicit network transport, authentication, or external account handling in the inspected runtime scripts. Security concerns are therefore mostly runtime integrity and unsafe assumptions in scene wiring.
@@ -164,49 +169,44 @@ Current observability is mostly print/push_warning/push_error based:
 - SceneTree tests print PASS or push_error FAIL summaries.
 
 Key references:
-- [world/world_generator.gd](world/world_generator.gd#L20)
-- [world/poi_spawner.gd](world/poi_spawner.gd#L178)
-- [player/player.gd](player/player.gd#L43)
-- [enemies/monster.gd](enemies/monster.gd#L87)
-- [tests/test_player_climbing.gd](tests/test_player_climbing.gd#L145)
+- [world/world_generator.gd](../world/world_generator.gd#L20)
+- [world/poi_spawner.gd](../world/poi_spawner.gd#L178)
+- [player/player.gd](../player/player.gd)
+- [enemies/monster.gd](../enemies/monster.gd)
+- [tests/test_player_climbing.gd](../tests/test_player_climbing.gd#L145)
 
 ## 13. Testing Strategy and Coverage Map
 | Area | Existing Tests | Missing Tests | Priority |
 |---|---|---|---|
-| Player climbing helper contracts | tests/test_player_climbing.gd, tests/test_player_climbing_runtime.gd | Full scene-integrated climbing scenarios under moving RV | High |
+| Player climbing and moving RV integration | tests/test_player_climbing.gd, tests/test_player_climbing_runtime.gd, tests/test_moving_rv_climbing.gd | Severe rollovers, crowds, and extended wheel-driven gameplay | Medium |
 | Monster navigation/combat helper contracts | tests/test_monster_navigation.gd | Multi-monster pathing stress and perf regression tests | High |
-| World generation and POI behavior | None in tests folder for world scripts | Deterministic chunk generation and POI distribution checks | High |
-| RV fuel/power and equipment interactions | No direct automated tests in this baseline | Resource accounting and terminal workflow tests | High |
+| World generation and POI behavior | tests/test_world_entities.gd, tests/test_poi_resources.gd | Deterministic chunk generation and POI distribution checks | High |
+| RV fuel/power and equipment interactions | tests/test_equipment_lifecycle.gd | Resource accounting and terminal workflow tests | High |
 
 ## 14. Operations Notes
+Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1` for import checks, all test suites, and a 120-frame main-scene smoke test. GitHub Actions uses the same runner. Logs are under `.godot/test-logs/`.
+
 Primary local commands:
 - Run game scene:
   - godot --path . res://world/test_world.tscn
 - Run headless generation script:
   - godot --headless -s <script.gd>
-- Run Python offline tools:
-  - uv run main.py
-  - uv run test_building_gen.py
+- Run behavior tests:
+  - godot --headless --path . -s tests/<test>.gd
 
 References:
-- [AGENTS.md](AGENTS.md#L138)
+- [CLAUDE.md](../CLAUDE.md)
 
 ## 15. Risks and Open Questions
 1. POI content mismatch risk:
-- Several POI config scene paths are referenced but not present in world/building/scenes, causing filtered rollout and distribution skew.
-- Evidence: [world/poi_config.gd](world/poi_config.gd#L52), [world/building/scenes](world/building/scenes)
+- Configured POI scene paths are checked by tests. Missing placeholder entries were removed; new entries must include existing assets.
+- Evidence: [world/poi_config.gd](../world/poi_config.gd), [world/building/scenes](../world/building/scenes)
 
-2. World player wiring uncertainty:
-- world_generator.gd requires exported player for _process streaming, but explicit assignment is not visible in inspected world/test_world.tscn lines.
-- Evidence: [world/world_generator.gd](world/world_generator.gd#L14), [world/world_generator.gd](world/world_generator.gd#L45), [world/test_world.tscn](world/test_world.tscn#L43)
+2. Equipment hierarchy coupling:
+- Equipment online state depends on ancestry-based RV resolution and may vary by scene placement/reparenting. The lookup result is now cached and invalidated on reparent, but the contract is still hierarchical.
+- Evidence: [equipment/equipment.gd](../equipment/equipment.gd), [world/test_world.tscn](../world/test_world.tscn#L52)
 
-3. Potential player climb test drift:
-- tests/test_player_climbing.gd expects _can_begin_climb, but runtime player script exposes inline start logic in _try_start_climb.
-- Evidence: [tests/test_player_climbing.gd](tests/test_player_climbing.gd#L32), [player/player.gd](player/player.gd#L488)
-
-4. Equipment hierarchy coupling:
-- Equipment online state depends on ancestry-based RV resolution and may vary by scene placement/reparenting.
-- Evidence: [equipment/equipment.gd](equipment/equipment.gd#L64), [world/test_world.tscn](world/test_world.tscn#L52)
+Resolved since the baseline: world player wiring (now assigned in test_world.tscn with a group fallback), the _can_begin_climb test/runtime drift (helper implemented and wired into _try_start_climb), chassis-side generator scanning (generators push power to their own RV), and scene-root leakage of crafted/dropped items (WorldEntities container).
 
 ## 16. Glossary
 - Chunk: A generated world segment containing terrain, road, nav region, and optional POI content.
@@ -217,51 +217,51 @@ References:
 - Separation Grace: Short climb-contact continuity window before forced abort.
 
 ## 17. Source Files Used
-- [project.godot](project.godot)
-- [AGENTS.md](AGENTS.md)
-- [world/test_world.tscn](world/test_world.tscn)
-- [world/world_generator.gd](world/world_generator.gd)
-- [world/chunk_generator.gd](world/chunk_generator.gd)
-- [world/poi_spawner.gd](world/poi_spawner.gd)
-- [world/poi_config.gd](world/poi_config.gd)
-- [world/building/building_generator.gd](world/building/building_generator.gd)
-- [world/building/room_node.gd](world/building/room_node.gd)
-- [world/building/elevator_platform.gd](world/building/elevator_platform.gd)
-- [rv/chassis.gd](rv/chassis.gd)
-- [rv/fuel_filler.gd](rv/fuel_filler.gd)
-- [rv/wheel_hitbox.gd](rv/wheel_hitbox.gd)
-- [equipment/equipment.gd](equipment/equipment.gd)
-- [equipment/generator.gd](equipment/generator.gd)
-- [equipment/driver_seat.gd](equipment/driver_seat.gd)
-- [equipment/scrapper.gd](equipment/scrapper.gd)
-- [equipment/crafting_station.gd](equipment/crafting_station.gd)
-- [equipment/tablet_screen.gd](equipment/tablet_screen.gd)
-- [equipment/tablet_ui.gd](equipment/tablet_ui.gd)
-- [equipment/rv_panel.gd](equipment/rv_panel.gd)
-- [player/player.gd](player/player.gd)
-- [player/player_interact.gd](player/player_interact.gd)
-- [props/interactable_item.gd](props/interactable_item.gd)
-- [enemies/monster.gd](enemies/monster.gd)
-- [tests/test_player_climbing.gd](tests/test_player_climbing.gd)
-- [tests/test_player_climbing_runtime.gd](tests/test_player_climbing_runtime.gd)
-- [tests/test_monster_navigation.gd](tests/test_monster_navigation.gd)
+- [project.godot](../project.godot)
+- [CLAUDE.md](../CLAUDE.md)
+- [world/test_world.tscn](../world/test_world.tscn)
+- [world/world_generator.gd](../world/world_generator.gd)
+- [world/chunk_generator.gd](../world/chunk_generator.gd)
+- [world/poi_spawner.gd](../world/poi_spawner.gd)
+- [world/poi_config.gd](../world/poi_config.gd)
+- [world/building/building_generator.gd](../world/building/building_generator.gd)
+- [world/building/room_node.gd](../world/building/room_node.gd)
+- [world/building/elevator_platform.gd](../world/building/elevator_platform.gd)
+- [rv/chassis.gd](../rv/chassis.gd)
+- [rv/fuel_filler.gd](../rv/fuel_filler.gd)
+- [rv/wheel_hitbox.gd](../rv/wheel_hitbox.gd)
+- [equipment/equipment.gd](../equipment/equipment.gd)
+- [equipment/generator.gd](../equipment/generator.gd)
+- [equipment/driver_seat.gd](../equipment/driver_seat.gd)
+- [equipment/scrapper.gd](../equipment/scrapper.gd)
+- [equipment/crafting_station.gd](../equipment/crafting_station.gd)
+- [equipment/tablet_screen.gd](../equipment/tablet_screen.gd)
+- [equipment/tablet_ui.gd](../equipment/tablet_ui.gd)
+- [equipment/rv_panel.gd](../equipment/rv_panel.gd)
+- [player/player.gd](../player/player.gd)
+- [player/player_interact.gd](../player/player_interact.gd)
+- [props/interactable_item.gd](../props/interactable_item.gd)
+- [enemies/monster.gd](../enemies/monster.gd)
+- [tests/test_player_climbing.gd](../tests/test_player_climbing.gd)
+- [tests/test_player_climbing_runtime.gd](../tests/test_player_climbing_runtime.gd)
+- [tests/test_monster_navigation.gd](../tests/test_monster_navigation.gd)
 
 ## 18. Completeness Report
 ### Generated files in this docs initialization run
-- [docs/architecture.md](docs/architecture.md)
-- [docs/design/world-generation-and-pois.md](docs/design/world-generation-and-pois.md)
-- [docs/design/world-generation-procedural-buildings.md](docs/design/world-generation-procedural-buildings.md)
-- [docs/design/rv-power-and-crafting.md](docs/design/rv-power-and-crafting.md)
-- [docs/design/rv-equipment-interactions.md](docs/design/rv-equipment-interactions.md)
-- [docs/design/climbing-and-combat-behavior.md](docs/design/climbing-and-combat-behavior.md)
-- [docs/design/player-interaction-flow.md](docs/design/player-interaction-flow.md)
-- [docs/modules/world-generation.md](docs/modules/world-generation.md)
-- [docs/modules/world-generation-poi-system.md](docs/modules/world-generation-poi-system.md)
-- [docs/modules/world-generation-procedural-building.md](docs/modules/world-generation-procedural-building.md)
-- [docs/modules/rv-systems.md](docs/modules/rv-systems.md)
-- [docs/modules/rv-systems-equipment.md](docs/modules/rv-systems-equipment.md)
-- [docs/modules/player-traversal-and-interaction.md](docs/modules/player-traversal-and-interaction.md)
-- [docs/modules/monster-ai.md](docs/modules/monster-ai.md)
+- [docs/architecture.md](architecture.md)
+- [docs/design/world-generation-and-pois.md](design/world-generation-and-pois.md)
+- [docs/design/world-generation-procedural-buildings.md](design/world-generation-procedural-buildings.md)
+- [docs/design/rv-power-and-crafting.md](design/rv-power-and-crafting.md)
+- [docs/design/rv-equipment-interactions.md](design/rv-equipment-interactions.md)
+- [docs/design/climbing-and-combat-behavior.md](design/climbing-and-combat-behavior.md)
+- [docs/design/player-interaction-flow.md](design/player-interaction-flow.md)
+- [docs/modules/world-generation.md](modules/world-generation.md)
+- [docs/modules/world-generation-poi-system.md](modules/world-generation-poi-system.md)
+- [docs/modules/world-generation-procedural-building.md](modules/world-generation-procedural-building.md)
+- [docs/modules/rv-systems.md](modules/rv-systems.md)
+- [docs/modules/rv-systems-equipment.md](modules/rv-systems-equipment.md)
+- [docs/modules/player-traversal-and-interaction.md](modules/player-traversal-and-interaction.md)
+- [docs/modules/monster-ai.md](modules/monster-ai.md)
 
 ### Coverage decisions
 - Included multiple design docs to separate world, RV/equipment, and actor behavior concerns.
@@ -280,7 +280,6 @@ References:
 | Monster AI and combat | enemies/monster.gd | docs/modules/monster-ai.md | New |
 
 ### Unknowns and follow-ups
-- Verify and, if needed, fix world player export wiring in scene setup.
-- Reconcile POI config scene references with available scene assets.
-- Resolve the _can_begin_climb test/runtime contract mismatch.
-- Add automated tests for world generation and RV resource/equipment flows.
+- Extend world tests to deterministic generation and POI distribution.
+- Extend equipment lifecycle tests to full fuel accounting, crafting, and terminal workflows.
+- Reduce per-frame monster group scans / physics queries once profiling shows they matter at scale.

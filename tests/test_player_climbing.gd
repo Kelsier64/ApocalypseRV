@@ -71,7 +71,7 @@ func _test_collision_disabled_during_climb_states() -> void:
 	_expect(player.has_method("_should_disable_body_collision_for_locomotion"), "Player should expose _should_disable_body_collision_for_locomotion(state).")
 	if player.has_method("_should_disable_body_collision_for_locomotion"):
 		_expect(not player._should_disable_body_collision_for_locomotion(player.LocomotionState.NORMAL), "Body collision should stay enabled during NORMAL locomotion.")
-		_expect(player._should_disable_body_collision_for_locomotion(player.LocomotionState.CLIMBING), "Body collision should be disabled during CLIMBING.")
+		_expect(not player._should_disable_body_collision_for_locomotion(player.LocomotionState.CLIMBING), "Climbing must keep body collision enabled to prevent tunneling.")
 
 	player.free()
 

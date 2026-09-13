@@ -40,8 +40,11 @@ size = Vector3(20, 0.1, 20)
 [node name="Player" parent="." unique_id=1367277200 instance=ExtResource("3_ar7ra")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0520482, 5.558184, 2.413094)
 
+[node name="WorldEntities" type="Node3D" parent="."]
+
 [node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450]
 script = ExtResource("9_8hcw6")
+player = NodePath("../Player")
 
 [node name="OilBarrel" parent="." unique_id=1511901755 instance=ExtResource("8_x05cw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0)

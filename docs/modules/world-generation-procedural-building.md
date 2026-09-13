@@ -93,9 +93,9 @@ Evidence:
 - `world/poi_spawner.gd:120`
 - `world/poi_spawner.gd:123`
 - `world/poi_spawner.gd:128`
-- `world/poi_config.gd:150`
-- `world/poi_config.gd:151`
-- `world/poi_config.gd:152`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
 
 ## Related Design Docs
 - [Procedural Building Design](../design/world-generation-procedural-buildings.md)

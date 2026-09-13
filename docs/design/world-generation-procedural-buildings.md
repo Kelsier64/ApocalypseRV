@@ -11,11 +11,11 @@ Related contract docs:
 When a POI entry has `type = procedural`, `POISpawner` creates a `Node3D`, assigns `world/building/building_generator.gd`, and sets `max_rooms` from `procedural_config` range.
 
 Evidence:
-- `world/poi_config.gd:143`
-- `world/poi_config.gd:145`
-- `world/poi_config.gd:150`
-- `world/poi_config.gd:151`
-- `world/poi_config.gd:152`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
+- `world/poi_config.gd`
 - `world/poi_spawner.gd:120`
 - `world/poi_spawner.gd:123`
 - `world/poi_spawner.gd:126`

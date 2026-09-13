@@ -1,10 +1,13 @@
 # RV Systems Equipment Module Contract
 
+## RV Connection Boundary
+`core/rv_connection.gd` centralizes the RV group and inventory-method contract. Equipment refreshes its connection explicitly after placement confirmation/cancellation and revalidates cached ancestors on lookup. Misses are not cached, allowing child initialization before the RV registers its group. `tests/test_equipment_lifecycle.gd` covers mode refusal, cancellation, switching RVs, ground placement, and power ownership.
+
 ## Module Purpose
 This module defines contracts for RV-adjacent equipment nodes that consume/provide RV resources or expose interaction terminals.
 
 Implementation references:
-- Base equipment contract: [equipment/equipment.gd](../../equipment/equipment.gd#L1)
+- Base equipment contract: [equipment/equipment.gd](../../equipment/equipment.gd)
 - Generator: [equipment/generator.gd](../../equipment/generator.gd#L1)
 - Driver seat: [equipment/driver_seat.gd](../../equipment/driver_seat.gd#L1)
 - Scrapper: [equipment/scrapper.gd](../../equipment/scrapper.gd#L1)
@@ -24,12 +27,12 @@ Detailed behavior walk-throughs:
 - Destroyable equipment adds itself to `monster_damageable` and calls `_on_before_destroy` before queue_free.
 
 Evidence:
-- Class and exports: [equipment/equipment.gd](../../equipment/equipment.gd#L2), [equipment/equipment.gd](../../equipment/equipment.gd#L6), [equipment/equipment.gd](../../equipment/equipment.gd#L11), [equipment/equipment.gd](../../equipment/equipment.gd#L12), [equipment/equipment.gd](../../equipment/equipment.gd#L13)
-- RV detection contract: [equipment/equipment.gd](../../equipment/equipment.gd#L64), [equipment/equipment.gd](../../equipment/equipment.gd#L68)
-- Power helper: [equipment/equipment.gd](../../equipment/equipment.gd#L73), [equipment/equipment.gd](../../equipment/equipment.gd#L79)
-- Placement API: [equipment/equipment.gd](../../equipment/equipment.gd#L84), [equipment/equipment.gd](../../equipment/equipment.gd#L119), [equipment/equipment.gd](../../equipment/equipment.gd#L149)
-- Placement collision/freeze policy: [equipment/equipment.gd](../../equipment/equipment.gd#L132), [equipment/equipment.gd](../../equipment/equipment.gd#L140), [equipment/equipment.gd](../../equipment/equipment.gd#L143), [equipment/equipment.gd](../../equipment/equipment.gd#L167), [equipment/equipment.gd](../../equipment/equipment.gd#L168)
-- Destruction hook path: [equipment/equipment.gd](../../equipment/equipment.gd#L61), [equipment/equipment.gd](../../equipment/equipment.gd#L173), [equipment/equipment.gd](../../equipment/equipment.gd#L190)
+- Class and exports: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- RV detection contract: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Power helper: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Placement API: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Placement collision/freeze policy: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
+- Destruction hook path: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd)
 
 ## Generator Contract
 - Generator inherits `Equipment` and joins group `rv_power_generators`.
@@ -117,6 +120,6 @@ Evidence:
 
 ## Assumptions and Unknowns
 - The base RV connectivity contract in `Equipment.get_connected_rv()` depends on scene hierarchy, not explicit references. Runtime behavior when equipment stays outside RV ancestry is inferred as offline from guards, but cross-scene placement intent is not defined in this partition.
-  Evidence: [equipment/equipment.gd](../../equipment/equipment.gd#L64), [equipment/equipment.gd](../../equipment/equipment.gd#L68), [equipment/tablet_screen.gd](../../equipment/tablet_screen.gd#L22), [equipment/crafting_station.gd](../../equipment/crafting_station.gd#L14)
+  Evidence: [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/equipment.gd](../../equipment/equipment.gd), [equipment/tablet_screen.gd](../../equipment/tablet_screen.gd#L22), [equipment/crafting_station.gd](../../equipment/crafting_station.gd#L14)
 - Tablet UI assumes `connected_rv` exposes direct fields (`current_fuel`, `max_fuel`, `current_power`, `max_power`) and methods (`has_materials`, `deduct_materials`, `get_all_items`) without interface typing.
   Evidence: [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L163), [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L164), [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L134), [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L153), [equipment/tablet_ui.gd](../../equipment/tablet_ui.gd#L169)

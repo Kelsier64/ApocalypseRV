@@ -4,7 +4,7 @@
 This module governs first-person traversal, climb-state transitions, inventory ownership, and player-side interaction entry points.
 
 Implementation references:
-- Core script: [player/player.gd](../../player/player.gd#L1)
+- Core script: [player/player.gd](../../player/player.gd)
 - Interaction raycast adapter: [player/player_interact.gd](../../player/player_interact.gd#L1)
 - Prop pickup counterpart: [props/interactable_item.gd](../../props/interactable_item.gd#L1)
 
@@ -12,15 +12,21 @@ Detailed behavior walk-throughs:
 - Climb and combat flow: [docs/design/climbing-and-combat-behavior.md](../design/climbing-and-combat-behavior.md)
 - Interaction timing and pickup flow: [docs/design/player-interaction-flow.md](../design/player-interaction-flow.md)
 
+## Module Boundaries
+- `PlayerInventory` owns capacity, large-item restrictions, slot selection, and consumption without scene dependencies.
+- `EquipmentPlacement` owns preview state, orientation, and confirm/cancel input. `player.gd` authorizes entry via its mode helpers and passes its scene context to placement updates.
+- `player.gd` retains movement, mode transitions, health, and held-item presentation. External callers use `add_item`, `get_active_item_name`, and `consume_active_item` rather than modifying inventory fields.
+- Validate with `tests/test_player_inventory.gd` and `tests/test_equipment_lifecycle.gd`, alongside the climbing suites.
+
 ## State and Data Contracts
 - Locomotion states are NORMAL and CLIMBING.
 - Inventory slot ceiling is fixed at 6 entries.
-- One large item at a time is enforced via has_large_item.
+- PlayerInventory owns items and active-slot selection; it derives the large-item limit from item data.
 
 Evidence:
-- Locomotion enum/state: [player/player.gd](../../player/player.gd#L51), [player/player.gd](../../player/player.gd#L52)
-- Max slots: [player/player.gd](../../player/player.gd#L30)
-- Large-item state: [player/player.gd](../../player/player.gd#L32)
+- Locomotion enum/state: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
+- Max slots: [player/player.gd](../../player/player.gd)
+- Inventory rules: [player/player_inventory.gd](../../player/player_inventory.gd)
 
 ## Inventory API Contract
 
@@ -31,14 +37,14 @@ Expected behavior:
 - Adds item metadata and updates equipped slot display on success.
 
 Evidence:
-- Method and rejection gates: [player/player.gd](../../player/player.gd#L76), [player/player.gd](../../player/player.gd#L77), [player/player.gd](../../player/player.gd#L80)
+- Method and rejection gates: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 
 ### get_active_item_name() -> String
 Expected behavior:
 - Returns current slot name or empty string when slot is invalid.
 
 Evidence:
-- Method body: [player/player.gd](../../player/player.gd#L168)
+- Method body: [player/player.gd](../../player/player.gd)
 
 ### consume_active_item() -> void
 Expected behavior:
@@ -47,7 +53,7 @@ Expected behavior:
 - Re-clamps active slot index and refreshes equipped visuals.
 
 Evidence:
-- Method and large-item clear: [player/player.gd](../../player/player.gd#L173), [player/player.gd](../../player/player.gd#L178)
+- Method and large-item clear: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 
 ### drop_item() -> void
 Expected behavior:
@@ -55,7 +61,7 @@ Expected behavior:
 - Removes item from inventory and updates visual state.
 
 Evidence:
-- Method and spawn/removal flow: [player/player.gd](../../player/player.gd#L197), [player/player.gd](../../player/player.gd#L222)
+- Method and spawn/removal flow: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 
 ## Traversal and Climbing Contract
 
@@ -64,20 +70,21 @@ Expected helpers and behavior:
 - _try_start_climb performs entry checks and transitions to CLIMBING.
 - _process_climbing handles per-frame climb motion and abort conditions.
 - _abort_climb exits climb and routes cleanup.
-- _compute_rv_position_delta and _sanitize_velocity_after_climb are utility contracts tested directly.
+- `ClimbMath` carries attachment points through vehicle translation/rotation and verifies roof transfers with full-body sweeps. `RVSupport` tracks frozen RV floor panels during normal movement.
 
 Evidence:
-- Start/process/abort methods: [player/player.gd](../../player/player.gd#L488), [player/player.gd](../../player/player.gd#L570), [player/player.gd](../../player/player.gd#L647)
-- Utility methods: [player/player.gd](../../player/player.gd#L322), [player/player.gd](../../player/player.gd#L325)
+- Start/process/abort methods: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
+- Utility methods: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 - Test contract checks: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L83), [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L97), [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L109)
 
 ### Collision policy by locomotion state
 Expected behavior:
 - Body collision remains enabled in NORMAL.
-- Body collision is disabled in CLIMBING.
+- Body collision remains enabled in CLIMBING; only seated mode disables the capsule.
+- Detaching inherits vehicle motion; standing on a removed panel releases support.
 
 Evidence:
-- Collision helper and state gate: [player/player.gd](../../player/player.gd#L314), [player/player.gd](../../player/player.gd#L315)
+- Collision helper and state gate: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 - Test coverage: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L73), [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L74)
 
 ### Climb geometry gate helpers
@@ -87,7 +94,7 @@ Expected behavior:
 - _build_climb_motion must not push inward into wall interior.
 
 Evidence:
-- Helper methods: [player/player.gd](../../player/player.gd#L305), [player/player.gd](../../player/player.gd#L311), [player/player.gd](../../player/player.gd#L358)
+- Helper methods: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 - Test expectations: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L50), [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L61), [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L125)
 
 ## Interaction Adapter Contract (player_interact)
@@ -119,6 +126,6 @@ Evidence:
 
 ## Assumptions and Unknowns
 - tests/test_player_climbing.gd currently asserts _can_begin_climb exists, but player/player.gd does not define that helper in this snapshot. Contract ownership for that helper is unclear.
-  Evidence: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L32), [player/player.gd](../../player/player.gd#L488)
+  Evidence: [tests/test_player_climbing.gd](../../tests/test_player_climbing.gd#L32), [player/player.gd](../../player/player.gd)
 - Interaction adapter references a concrete Equipment type in runtime branch logic, but interface/class guarantees for Equipment are outside this partition scope.
   Evidence: [player/player_interact.gd](../../player/player_interact.gd#L58)

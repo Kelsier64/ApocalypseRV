@@ -5,7 +5,14 @@ extends Equipment
 
 func _ready() -> void:
 	super._ready()
-	add_to_group("rv_power_generators")
+	add_to_group(Groups.RV_POWER_GENERATORS)
+
+# The generator pushes power to its own RV instead of the chassis scanning the
+# generator group every frame — it already knows which RV it is mounted on.
+func _physics_process(delta: float) -> void:
+	var rv := get_connected_rv()
+	if rv != null:
+		generate_power(rv, delta)
 
 func generate_power(rv: Node, delta: float) -> void:
 	if delta <= 0.0:

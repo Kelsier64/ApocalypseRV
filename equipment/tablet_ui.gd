@@ -6,11 +6,11 @@ signal close_requested
 @onready var vbox = get_node_or_null("PanelContainer/MarginContainer/VBoxContainer")
 
 var recipes = {
-	"Gasoline Can": {
+	ItemNames.GAS_CAN: {
 		"scene": "res://props/gas_can.tscn",
 		"costs": {
-			"Unrefined Fuel": 5,
-			"Metal Parts": 2
+			ItemNames.UNREFINED_FUEL: 5,
+			ItemNames.METAL_PARTS: 2
 		}
 	}
 }
@@ -135,7 +135,7 @@ func _craft_item(recipe_name: String):
 		print("Tablet: Not enough materials!")
 		return
 		
-	var stations = get_tree().get_nodes_in_group("crafting_stations")
+	var stations = get_tree().get_nodes_in_group(Groups.CRAFTING_STATIONS)
 	if stations.is_empty():
 		print("Tablet: No Crafting Station found in the world!")
 		return

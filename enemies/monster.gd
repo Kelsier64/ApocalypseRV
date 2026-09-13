@@ -97,6 +97,9 @@ var locomotion_state: LocomotionState = LocomotionState.NORMAL
 var active_climb_rv: Node3D = null
 var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
 var active_wall_normal: Vector3 = Vector3.ZERO
+var climb_carrier_velocity := Vector3.ZERO
+var released_carrier_velocity := Vector3.ZERO
+var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
 var last_climb_wall_normal: Vector3 = Vector3.ZERO
@@ -142,12 +145,25 @@ var body_collision_shape: CollisionShape3D = null
 var climb_wall_probe: RayCast3D = null
 var climb_upward_probe: RayCast3D = null
 var underfoot_probe: RayCast3D = null
+var _body_mesh: Node3D = null
 
+# Per-physics-tick snapshot of the underfoot probe. Target selection helpers
+# query the probe many times within one frame; outside _physics_process the
+# cache is inactive so direct calls (tests, external callers) stay live.
+var _underfoot_cache_active: bool = false
+var _underfoot_cache_target: Node3D = null
+var _touch_query_shape: SphereShape3D = null
+var _last_player_collision_disabled: int = -1 # -1 unknown, else 0/1
+
+# Intentionally heavier than the project default (9.8) the player uses: the
+# climb top-out sequence relies on a fast fall back onto the roof, and halving
+# this makes monsters float above the RV after cresting a wall.
 var gravity: float = 20.0
 
 func _ready():
+	platform_floor_layers = 0
 	current_health = max_health
-	add_to_group("monsters")
+	add_to_group(Groups.MONSTERS)
 	
 	# Randomize initial sway so all zombies don't sync
 	sway_phase = randf_range(0, TAU)
@@ -167,6 +183,7 @@ func _ready():
 	climb_wall_probe = get_node_or_null("ClimbWallProbe")
 	climb_upward_probe = get_node_or_null("ClimbUpwardProbe")
 	underfoot_probe = get_node_or_null("UnderfootProbe")
+	_body_mesh = get_node_or_null("BodyMesh")
 	if climb_upward_probe:
 		climb_upward_probe.enabled = true
 		climb_upward_probe.collision_mask = 0xFFFFFFFF
@@ -183,14 +200,29 @@ func _ready():
 
 func _physics_process(delta: float):
 	if is_dead: return
+	var was_supported := false
+	var support_velocity := Vector3.ZERO
+	var lost_support := false
+	if locomotion_state == LocomotionState.NORMAL:
+		var had_support := is_instance_valid(rv_support.rv)
+		var last_support_velocity := rv_support.carrier_velocity
+		was_supported = rv_support.follow(self, delta)
+		support_velocity = rv_support.carrier_velocity
+		lost_support = had_support and not was_supported
+		if lost_support:
+			released_carrier_velocity = last_support_velocity
+			velocity.y += last_support_velocity.y
 	_sync_body_collision_to_locomotion()
+	if locomotion_state == LocomotionState.CLIMBING:
+		_apply_rv_delta_compensation()
 	
 	if locomotion_state == LocomotionState.NORMAL:
 		# Gravity
-		if not is_on_floor():
+		if not is_on_floor() or lost_support:
 			velocity.y -= gravity * delta
 		else:
 			velocity.y = 0.0
+			released_carrier_velocity = Vector3.ZERO
 	
 	# Update sway for organic movement
 	sway_phase += delta * 3.0
@@ -218,6 +250,10 @@ func _physics_process(delta: float):
 	# Find player if we don't have one
 	if not target_player or not is_instance_valid(target_player):
 		target_player = _find_nearest_player()
+
+	# Snapshot the underfoot probe once for this whole tick (see cache vars).
+	_underfoot_cache_target = _get_underfoot_raycast_target()
+	_underfoot_cache_active = true
 
 	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, lose_interest_range)
 	if _try_auto_attack_touching_targets(_resolve_underfoot_tracking_target()):
@@ -281,7 +317,6 @@ func _physics_process(delta: float):
 
 		LocomotionState.CLIMBING:
 			moving_intent = true
-			_apply_rv_delta_compensation()
 			var climb_destination := global_position
 			var climb_target_node := _get_current_combat_target_node()
 			if climb_target_node != null:
@@ -293,15 +328,24 @@ func _physics_process(delta: float):
 				_process_attack(delta)
 	
 	# Apply organic body sway (slight rotation wobble)
-	var body_mesh = get_node_or_null("BodyMesh")
-	if body_mesh:
-		body_mesh.rotation.z = sin(sway_phase) * 0.08 * stagger_amount
-		body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
-	
+	if _body_mesh:
+		_body_mesh.rotation.z = sin(sway_phase) * 0.08 * stagger_amount
+		_body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
+
 	if locomotion_state == LocomotionState.NORMAL:
+		velocity.x += released_carrier_velocity.x
+		velocity.z += released_carrier_velocity.z
 		move_and_slide()
+		velocity.x -= released_carrier_velocity.x
+		velocity.z -= released_carrier_velocity.z
+		if not rv_support.capture(self) and was_supported:
+			released_carrier_velocity = support_velocity
+			velocity.y += support_velocity.y
 
 	_sync_player_collision_exceptions_for_airborne()
+
+	_underfoot_cache_active = false
+	_underfoot_cache_target = null
 
 # --- WANDERING ---
 func _process_wander(delta: float) -> bool:
@@ -438,8 +482,8 @@ func _resolve_chase_direction(destination: Vector3, on_rv_surface: bool, nav_act
 
 	return dir
 
-func _should_disable_body_collision_for_locomotion(state: int) -> bool:
-	return state == LocomotionState.CLIMBING
+func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
+	return false
 
 func _sync_body_collision_to_locomotion() -> void:
 	if body_collision_shape == null:
@@ -456,7 +500,12 @@ func _sync_player_collision_exceptions_for_airborne() -> void:
 		return
 
 	var disable_player_collision := _should_disable_player_collision_for_airborne(int(locomotion_state), is_on_floor())
-	for node in get_tree().get_nodes_in_group("player"):
+	# Only touch the physics server when the desired state actually changes.
+	var disable_state := 1 if disable_player_collision else 0
+	if disable_state == _last_player_collision_disabled:
+		return
+	_last_player_collision_disabled = disable_state
+	for node in get_tree().get_nodes_in_group(Groups.PLAYER):
 		if not (node is PhysicsBody3D):
 			continue
 		var player_body := node as PhysicsBody3D
@@ -468,38 +517,25 @@ func _sync_player_collision_exceptions_for_airborne() -> void:
 			remove_collision_exception_with(player_body)
 
 func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
-	var n := hit_normal.normalized()
-	var up := rv_up.normalized()
-	var d := absf(n.dot(up))
-	return d >= CLIMB_WALL_MIN_DOT and d <= CLIMB_WALL_MAX_DOT
+	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
 
 func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
-	return local_hit_y >= CLIMB_MIN_HIT_Y and local_hit_y <= CLIMB_MAX_HIT_Y
+	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
 
 func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
-	return next_rv_transform.origin - prev_rv_transform.origin
+	return ClimbMath.rv_position_delta(prev_rv_transform, next_rv_transform)
 
 func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
-	var out := v
-	if out.y > CLIMB_EXIT_MAX_UP_VELOCITY:
-		out.y = 0.0
-	return out
+	return ClimbMath.sanitize_velocity_after_climb(v, CLIMB_EXIT_MAX_UP_VELOCITY)
 
 func _debug_v3(v: Vector3) -> String:
-	return "(%.2f, %.2f, %.2f)" % [v.x, v.y, v.z]
+	return ClimbMath.format_v3(v)
 
 func _debug_node_name(node: Node) -> String:
-	if node == null:
-		return "null"
-	return "%s:%s" % [node.name, node.get_class()]
+	return ClimbMath.format_node_name(node)
 
 func _debug_climb_side_label(rv: Node3D, wall_normal: Vector3) -> String:
-	if rv == null:
-		return "rv_unknown"
-	var local_normal := rv.global_transform.basis.inverse() * wall_normal.normalized()
-	if absf(local_normal.x) >= absf(local_normal.z):
-		return "rv_right" if local_normal.x >= 0.0 else "rv_left"
-	return "rv_back" if local_normal.z >= 0.0 else "rv_front"
+	return ClimbMath.climb_side_label(rv, wall_normal)
 
 func _debug_climb_log(tag: String, message: String, force: bool = false) -> void:
 	if not debug_climb_messages:
@@ -525,20 +561,8 @@ func _debug_nav_log(tag: String, message: String, force: bool = false) -> void:
 	print("[NAV_DEBUG][monster][", monster_name, "][", tag, "] ", message)
 
 func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: float, horizontal_input: float, delta: float) -> Vector3:
-	var wall_tangent := rv_up.cross(wall_normal).normalized()
-	if wall_tangent.length_squared() < 0.001:
-		wall_tangent = transform.basis.x.normalized()
-
-	var motion := (rv_up * vertical_input * CLIMB_VERTICAL_SPEED)
-	motion += wall_tangent * horizontal_input * CLIMB_SIDE_SPEED
-	motion += (-wall_normal) * CLIMB_WALL_STICK_SPEED
-	var inward_mag := motion.dot(-wall_normal)
-	if inward_mag > 0.0:
-		motion += wall_normal * inward_mag
-	motion *= delta
-	if motion.length() > CLIMB_MAX_FRAME_DELTA:
-		motion = motion.normalized() * CLIMB_MAX_FRAME_DELTA
-	return motion
+	return ClimbMath.build_climb_motion(rv_up, wall_normal, vertical_input, horizontal_input, delta,
+		CLIMB_VERTICAL_SPEED, CLIMB_SIDE_SPEED, CLIMB_WALL_STICK_SPEED, CLIMB_MAX_FRAME_DELTA, transform.basis.x)
 
 func _compute_climb_contact_grace_time(vertical_speed: float) -> float:
 	var safe_speed := maxf(vertical_speed, 0.01)
@@ -566,42 +590,16 @@ func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float
 
 	var from := global_position + rv_up * 0.2
 	var to := from + rv_up * (desired_upward_distance + 0.8)
-	var min_hit_distance := INF
-
-	if climb_upward_probe != null:
-		var local_from := to_local(from)
-		var local_to := to_local(to)
-		climb_upward_probe.position = local_from
-		climb_upward_probe.target_position = local_to - local_from
-		climb_upward_probe.force_raycast_update()
-		if climb_upward_probe.is_colliding():
-			var probe_hit_position: Vector3 = climb_upward_probe.get_collision_point()
-			var probe_hit_distance := from.distance_to(probe_hit_position)
-			if probe_hit_distance < min_hit_distance:
-				min_hit_distance = probe_hit_distance
-				debug_last_ceiling_hit_distance = probe_hit_distance
-				debug_last_ceiling_hit_position = probe_hit_position
-				debug_last_ceiling_hit_source = "upward_probe"
-				debug_last_ceiling_hit_node = _debug_node_name(climb_upward_probe.get_collider() as Node)
-
-	var space_state := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
-	query.hit_from_inside = true
-	var hit := space_state.intersect_ray(query)
-	if hit:
-		var hit_position: Vector3 = hit.get("position", from) as Vector3
-		var hit_distance := from.distance_to(hit_position)
-		if hit_distance < min_hit_distance:
-			min_hit_distance = hit_distance
-			debug_last_ceiling_hit_distance = hit_distance
-			debug_last_ceiling_hit_position = hit_position
-			debug_last_ceiling_hit_source = "intersect_ray"
-			debug_last_ceiling_hit_node = _debug_node_name(hit.get("collider", null) as Node)
-
-	if min_hit_distance == INF:
+	var hit := ClimbMath.nearest_ceiling_hit(climb_upward_probe, self, from, to)
+	if hit.is_empty():
 		return desired_upward_distance
 
-	var safe_distance := maxf(0.0, min_hit_distance - 0.05)
+	debug_last_ceiling_hit_distance = hit["distance"]
+	debug_last_ceiling_hit_position = hit["position"]
+	debug_last_ceiling_hit_source = hit["source"]
+	debug_last_ceiling_hit_node = hit["node_label"]
+
+	var safe_distance: float = maxf(0.0, hit["distance"] - 0.05)
 	return minf(desired_upward_distance, safe_distance)
 
 func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
@@ -640,12 +638,7 @@ func _align_to_climb_wall(rv_up: Vector3) -> void:
 	global_transform = global_transform.interpolate_with(desired_transform, 0.35)
 
 func _find_rv_ancestor(node: Node) -> Node3D:
-	var current := node
-	while current != null:
-		if current is Node3D and current.is_in_group("rv"):
-			return current as Node3D
-		current = current.get_parent()
-	return null
+	return ClimbMath.find_rv_ancestor(node)
 
 func _try_start_climb(_destination: Vector3) -> bool:
 	if locomotion_state != LocomotionState.NORMAL:
@@ -700,10 +693,13 @@ func _try_start_climb(_destination: Vector3) -> bool:
 		return false
 
 	locomotion_state = LocomotionState.CLIMBING
+	rv_support.clear()
 	active_climb_rv = rv
 	previous_climb_rv_transform = rv.global_transform
 	active_wall_normal = hit_normal.normalized()
 	climb_contact_grace_remaining = _get_climb_contact_grace_time()
+	climb_carrier_velocity = ClimbMath.point_velocity(rv, global_position)
+	released_carrier_velocity = Vector3.ZERO
 	last_climb_separation_state = "attached"
 	post_separation_nav_block_remaining = 0.0
 	target_rv_contact_grace_remaining = CLIMB_TARGET_RV_CONTACT_GRACE_TIME
@@ -723,13 +719,20 @@ func _apply_rv_delta_compensation() -> void:
 	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
 		return
 	var next_transform := active_climb_rv.global_transform
-	var delta_pos := _compute_rv_position_delta(previous_climb_rv_transform, next_transform)
+	var delta_pos := ClimbMath.attachment_delta(previous_climb_rv_transform, next_transform, global_position)
 	if delta_pos.length() > CLIMB_MAX_FRAME_DELTA:
-		delta_pos = delta_pos.normalized() * CLIMB_MAX_FRAME_DELTA
+		climb_carrier_velocity = Vector3.ZERO
+		_abort_climb("rv teleported")
+		return
+	var rotation_delta := next_transform.basis * previous_climb_rv_transform.basis.inverse()
+	active_wall_normal = (rotation_delta * active_wall_normal).normalized()
+	rotate_y(rotation_delta.get_euler().y)
+	climb_carrier_velocity = delta_pos / get_physics_process_delta_time()
 	var collision := _move_with_climb_collision(delta_pos)
 	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
 		active_wall_normal = collision.get_normal().normalized()
 	previous_climb_rv_transform = next_transform
+	climb_wall_probe.force_raycast_update()
 
 func _get_fallback_wall_contact_normal(rv_up: Vector3) -> Vector3:
 	if not is_inside_tree():
@@ -783,6 +786,11 @@ func _process_climbing(delta: float, destination: Vector3) -> void:
 		target_on_same_rv = _is_target_considered_on_climb_rv(target_on_same_rv_now, target_rv_contact_grace_remaining)
 
 	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	if ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
+		_exit_climb_to_normal("roof reached")
+		released_carrier_velocity = Vector3.ZERO
+		velocity = Vector3.DOWN * 0.1
+		return
 	_align_to_climb_wall(rv_up)
 	_apply_wall_outward_alignment(rv_up)
 	var has_valid_wall_contact := false
@@ -910,6 +918,9 @@ func _abort_climb(reason: String = "") -> void:
 
 func _exit_climb_to_normal(reason: String = "") -> void:
 	var exit_wall_normal := active_wall_normal
+	if locomotion_state == LocomotionState.CLIMBING:
+		released_carrier_velocity = climb_carrier_velocity
+		velocity = climb_carrier_velocity
 	locomotion_state = LocomotionState.NORMAL
 	active_climb_rv = null
 	previous_climb_rv_transform = Transform3D.IDENTITY
@@ -920,7 +931,8 @@ func _exit_climb_to_normal(reason: String = "") -> void:
 	active_wall_normal = Vector3.ZERO
 	target_rv_contact_grace_remaining = 0.0
 	_reset_navigation_state()
-	velocity = _sanitize_velocity_after_climb(velocity)
+	climb_carrier_velocity = Vector3.ZERO
+	_sync_body_collision_to_locomotion()
 
 	if reason == "lost wall contact":
 		post_separation_nav_block_remaining = CLIMB_POST_SEPARATION_NAV_BLOCK_TIME
@@ -991,23 +1003,26 @@ func _resolve_attack_source_label(target_data: Dictionary) -> String:
 	return "state_attack"
 
 func _build_combat_target(target_node: Node3D, target_type: String, attack_source: String = "state_attack") -> Dictionary:
-	if target_node == null or not is_instance_valid(target_node):
-		return {}
-	return {
-		"node": target_node,
-		"position": _get_node_target_position(target_node),
-		"target_type": target_type,
-		"attack_source": attack_source,
-	}
+	return CombatTargeting.build_target(target_node, target_type, attack_source)
+
+func _is_structure_tagged(node: Node3D) -> bool:
+	return node.is_in_group(Groups.CHASSIS) or node.is_in_group(Groups.EQUIPMENT)
+
+func _is_damageable_structure(node: Node3D) -> bool:
+	return node.is_in_group(Groups.MONSTER_DAMAGEABLE) \
+		and node.has_method("take_damage") \
+		and not node.is_in_group(Groups.PLAYER)
+
+# Underfoot attacks may only hit non-chassis damageable structure (equipment).
+func _is_underfoot_damageable(node: Node3D) -> bool:
+	if node.is_in_group(Groups.PLAYER) or node.is_in_group(Groups.CHASSIS):
+		return false
+	if not node.is_in_group(Groups.MONSTER_DAMAGEABLE):
+		return false
+	return node.has_method("take_damage")
 
 func _resolve_structure_target_type(target_node: Node3D) -> String:
-	if target_node == null:
-		return "equipment"
-	if target_node.is_in_group("chassis"):
-		return "chassis"
-	if target_node.is_in_group("equipment"):
-		return "equipment"
-	return "equipment"
+	return CombatTargeting.structure_type(target_node)
 
 func _get_self_position() -> Vector3:
 	return global_position if is_inside_tree() else position
@@ -1020,55 +1035,14 @@ func _get_node_target_position(node: Node3D) -> Vector3:
 	return node.position
 
 func _pick_nearest_target(candidates: Array) -> Node3D:
-	var nearest_node: Node3D = null
-	var nearest_dist: float = INF
-	var origin := _get_self_position()
-	for candidate in candidates:
-		if not (candidate is Node3D):
-			continue
-		var node := candidate as Node3D
-		if node == null or not is_instance_valid(node) or node == self:
-			continue
-		var dist := origin.distance_to(_get_node_target_position(node))
-		if dist < nearest_dist:
-			nearest_dist = dist
-			nearest_node = node
-	return nearest_node
-
-func _pick_preferred_structure_target(structure_candidates: Array) -> Node3D:
-	var chassis_candidates: Array = []
-	var equipment_candidates: Array = []
-	var fallback_candidates: Array = []
-
-	for candidate in structure_candidates:
-		if not (candidate is Node3D):
-			continue
-		var node := candidate as Node3D
-		if node == null or not is_instance_valid(node):
-			continue
-		if node.is_in_group("chassis"):
-			chassis_candidates.append(node)
-		elif node.is_in_group("equipment"):
-			equipment_candidates.append(node)
-		else:
-			fallback_candidates.append(node)
-
-	var picked := _pick_nearest_target(chassis_candidates)
-	if picked != null:
-		return picked
-	picked = _pick_nearest_target(equipment_candidates)
-	if picked != null:
-		return picked
-	return _pick_nearest_target(fallback_candidates)
+	return CombatTargeting.nearest(candidates, _get_self_position(), self)
 
 func _is_climbing_touch_structure_target(node: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
-	var is_tagged_structure := node.is_in_group("chassis") or node.is_in_group("equipment")
-	var is_damageable_structure := node.is_in_group("monster_damageable") and node.has_method("take_damage") and not node.is_in_group("player")
-	if not is_tagged_structure and not is_damageable_structure:
+	if not _is_structure_tagged(node) and not _is_damageable_structure(node):
 		return false
-	return _is_node_touching_monster(node, climbing_touch_attack_range)
+	return _is_node_touching_monster(node, climbing_touch_attack_range) and _has_attack_line_of_sight_to_target(node)
 
 func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
 	var radius := maxf(touch_range, 0.0)
@@ -1078,10 +1052,11 @@ func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
 	if not is_inside_tree() or not node.is_inside_tree():
 		return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
 
-	var shape := SphereShape3D.new()
-	shape.radius = maxf(radius, 0.01)
+	if _touch_query_shape == null:
+		_touch_query_shape = SphereShape3D.new()
+	_touch_query_shape.radius = maxf(radius, 0.01)
 	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = shape
+	query.shape = _touch_query_shape
 	query.transform = Transform3D(Basis.IDENTITY, global_position)
 	query.collision_mask = 0xFFFFFFFF
 	query.collide_with_areas = true
@@ -1097,43 +1072,25 @@ func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
 			return true
 		if node.is_ancestor_of(collider):
 			return true
-		if collider.is_ancestor_of(node):
-			return true
 
 	# Fallback keeps behavior predictable when overlap query misses a valid edge contact.
 	return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
-
-func _pick_nearest_touching_structure_target(structure_candidates: Array) -> Node3D:
-	var touching_candidates: Array = []
-	for candidate in structure_candidates:
-		if not (candidate is Node3D):
-			continue
-		var node := candidate as Node3D
-		if _is_climbing_touch_structure_target(node):
-			touching_candidates.append(node)
-	return _pick_nearest_target(touching_candidates)
 
 func _is_touching_attack_candidate(node: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
 	if not node.has_method("take_damage"):
 		return false
-	if node.is_in_group("player"):
+	if node.is_in_group(Groups.PLAYER):
 		return false
-	if node.is_in_group("chassis"):
+	if _is_structure_tagged(node):
 		return true
-	if node.is_in_group("equipment"):
-		return true
-	return node.is_in_group("monster_damageable") and not node.is_in_group("player")
+	return node.is_in_group(Groups.MONSTER_DAMAGEABLE)
 
 func _is_underfoot_equipment_candidate(node: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
-	if node.is_in_group("player") or node.is_in_group("chassis"):
-		return false
-	if not node.is_in_group("monster_damageable"):
-		return false
-	if not node.has_method("take_damage"):
+	if not _is_underfoot_damageable(node):
 		return false
 
 	var origin := _get_self_position()
@@ -1147,13 +1104,7 @@ func _is_underfoot_equipment_candidate(node: Node3D) -> bool:
 func _is_underfoot_probe_attackable(node: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
-	if node.is_in_group("player") or node.is_in_group("chassis"):
-		return false
-	if not node.is_in_group("monster_damageable"):
-		return false
-	if not node.has_method("take_damage"):
-		return false
-	return true
+	return _is_underfoot_damageable(node)
 
 func _configure_underfoot_probe(probe: RayCast3D) -> void:
 	if probe == null:
@@ -1233,6 +1184,8 @@ func _select_touching_attack_target(player_candidates: Array, structure_candidat
 			continue
 		if not _is_node_touching_monster(structure_node, climbing_touch_attack_range):
 			continue
+		if not _has_attack_line_of_sight_to_target(structure_node):
+			continue
 		# Underfoot equipment uses a dedicated gate: only allowed when tracking target is below.
 		if _is_underfoot_equipment_candidate(structure_node):
 			continue
@@ -1240,7 +1193,7 @@ func _select_touching_attack_target(player_candidates: Array, structure_candidat
 
 	var touching_target := _pick_nearest_target(touching_candidates)
 	if touching_target != null:
-		if touching_target.is_in_group("player"):
+		if touching_target.is_in_group(Groups.PLAYER):
 			return _build_combat_target(touching_target, "player", "touching")
 		return _build_combat_target(touching_target, _resolve_structure_target_type(touching_target), "touching")
 
@@ -1258,20 +1211,12 @@ func _resolve_underfoot_tracking_target() -> Node3D:
 	if target_player and is_instance_valid(target_player):
 		return target_player
 	var combat_target := _get_current_combat_target_node()
-	if combat_target != null and combat_target.is_in_group("player"):
+	if combat_target != null and combat_target.is_in_group(Groups.PLAYER):
 		return combat_target
 	return null
 
 func _is_same_or_related_target(candidate: Node3D, reference: Node3D) -> bool:
-	if candidate == null or reference == null:
-		return false
-	if candidate == reference:
-		return true
-	if candidate.is_ancestor_of(reference):
-		return true
-	if reference.is_ancestor_of(candidate):
-		return true
-	return false
+	return CombatTargeting.related(candidate, reference)
 
 func _is_probe_hit_underfoot_target(node: Node3D) -> bool:
 	if node == null or not is_instance_valid(node):
@@ -1318,6 +1263,10 @@ func _is_tracking_target_below(tracking_target_position: Vector3, margin: float 
 	return tracking_target_position.y < origin.y - maxf(margin, 0.0)
 
 func _select_underfoot_equipment_target() -> Node3D:
+	if _underfoot_cache_active:
+		if _underfoot_cache_target != null and not is_instance_valid(_underfoot_cache_target):
+			return null
+		return _underfoot_cache_target
 	var raycast_target := _get_underfoot_raycast_target()
 	if raycast_target != null:
 		return raycast_target
@@ -1337,36 +1286,9 @@ func _try_attack_underfoot_equipment(tracking_target_node: Node3D) -> bool:
 	_execute_attack_on_target(_build_combat_target(underfoot_target, "equipment", "underfoot"))
 	return attack_timer > previous_attack_timer
 
-func _process_underfoot_equipment_attack(tracking_target_node: Node3D) -> void:
-	_try_attack_underfoot_equipment(tracking_target_node)
-
 func _select_combat_target(player_candidates: Array, structure_candidates: Array, is_climbing: bool) -> Dictionary:
-	var player_target := _pick_nearest_target(player_candidates)
-	var filtered_structure_candidates: Array = []
-	var probe_underfoot_target := _select_underfoot_equipment_target()
-	for candidate in structure_candidates:
-		if not (candidate is Node3D):
-			continue
-		var node := candidate as Node3D
-		if node == null or not is_instance_valid(node):
-			continue
-		if _is_probe_hit_underfoot_target(node):
-			continue
-		filtered_structure_candidates.append(node)
-
-	var structure_target := _pick_preferred_structure_target(filtered_structure_candidates)
-
-	if is_climbing:
-		var touching_structure_target := _pick_nearest_touching_structure_target(filtered_structure_candidates)
-		if touching_structure_target != null:
-			return _build_combat_target(touching_structure_target, _resolve_structure_target_type(touching_structure_target))
-		return {}
-
-	if player_target != null:
-		return _build_combat_target(player_target, "player")
-	if structure_target != null:
-		return _build_combat_target(structure_target, _resolve_structure_target_type(structure_target))
-	return {}
+	return CombatTargeting.select_target(player_candidates, structure_candidates, is_climbing,
+		_get_self_position(), self, _select_underfoot_equipment_target(), _is_climbing_touch_structure_target)
 
 func _collect_player_candidates(max_distance: float = INF) -> Array:
 	var candidates: Array = []
@@ -1376,7 +1298,7 @@ func _collect_player_candidates(max_distance: float = INF) -> Array:
 		return candidates
 
 	var origin := _get_self_position()
-	for node in get_tree().get_nodes_in_group("player"):
+	for node in get_tree().get_nodes_in_group(Groups.PLAYER):
 		if not (node is Node3D):
 			continue
 		var player_node := node as Node3D
@@ -1393,13 +1315,13 @@ func _collect_structure_candidates(max_distance: float = INF) -> Array:
 		return candidates
 
 	var origin := _get_self_position()
-	for node in get_tree().get_nodes_in_group("monster_damageable"):
+	for node in get_tree().get_nodes_in_group(Groups.MONSTER_DAMAGEABLE):
 		if not (node is Node3D):
 			continue
 		var structure_node := node as Node3D
 		if structure_node == null or not is_instance_valid(structure_node) or structure_node == self:
 			continue
-		if structure_node.is_in_group("player"):
+		if structure_node.is_in_group(Groups.PLAYER):
 			continue
 		if not structure_node.has_method("take_damage"):
 			continue
@@ -1409,6 +1331,13 @@ func _collect_structure_candidates(max_distance: float = INF) -> Array:
 	return candidates
 
 func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> void:
+	var support_target := _select_underfoot_equipment_target()
+	var tracking := _resolve_underfoot_tracking_target()
+	if not is_climbing and support_target != null and tracking != null:
+		if _is_tracking_target_below(_get_node_target_position(tracking), underfoot_target_below_margin):
+			current_combat_target = _build_combat_target(support_target, "equipment", "underfoot")
+			ai_state = State.ATTACK
+			return
 	current_combat_target = _select_combat_target(
 		_collect_player_candidates(max_distance),
 		_collect_structure_candidates(max_distance),
@@ -1444,7 +1373,7 @@ func _face_movement_direction():
 func _find_nearest_player() -> Node3D:
 	if not is_inside_tree():
 		return null
-	var players = get_tree().get_nodes_in_group("player")
+	var players = get_tree().get_nodes_in_group(Groups.PLAYER)
 	if players.is_empty():
 		return null
 	var nearest = null
@@ -1481,7 +1410,7 @@ func _compute_fallback_direction(origin: Vector3, destination: Vector3) -> Vecto
 	return direction.normalized()
 
 func _should_abort_climb_when_target_leaves_rv(is_climbing: bool, target_on_same_rv: bool, has_wall_contact: bool) -> bool:
-	return is_climbing and not target_on_same_rv
+	return is_climbing and not target_on_same_rv and not has_wall_contact
 
 func _is_target_considered_on_climb_rv(target_on_same_rv_now: bool, target_rv_contact_grace_remaining: float) -> bool:
 	return target_on_same_rv_now or target_rv_contact_grace_remaining > 0.0
@@ -1533,8 +1462,8 @@ func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool 
 			return false
 		if not _is_tracking_target_below(_get_node_target_position(tracking_target), underfoot_target_below_margin):
 			return false
-	if locomotion_state == LocomotionState.CLIMBING and _is_climbing_touch_structure_target(target_node):
-		has_line_of_sight = true
+		# The live downward probe is the range/occlusion check for a large panel.
+		return target_node == _select_underfoot_equipment_target()
 	var target_position := _get_node_target_position(target_node)
 	var allowed_range := _get_attack_range_for_target(target_data)
 	return _can_attack_target_position_with_range(target_position, allowed_range, has_line_of_sight)
@@ -1558,8 +1487,6 @@ func _has_attack_line_of_sight_to_target(target: Node3D) -> bool:
 	if collider == target:
 		return true
 	if target.is_ancestor_of(collider):
-		return true
-	if collider.is_ancestor_of(target):
 		return true
 	return false
 
@@ -1809,7 +1736,7 @@ func take_damage(amount: float):
 	print(monster_name, " took ", amount, " damage! HP: ", current_health, "/", max_health)
 	
 	# Visual feedback: flash white briefly
-	var mesh = get_node_or_null("BodyMesh")
+	var mesh = _body_mesh if _body_mesh else get_node_or_null("BodyMesh")
 	if mesh and mesh.material_override:
 		var orig_color = mesh.material_override.albedo_color
 		var tween = create_tween()

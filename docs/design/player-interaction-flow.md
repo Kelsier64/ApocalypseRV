@@ -5,7 +5,7 @@ This document captures interaction behavior driven by the player raycast interac
 
 Primary references:
 - Interaction loop: [player/player_interact.gd](../../player/player_interact.gd#L8)
-- Player inventory and placement entry points: [player/player.gd](../../player/player.gd#L76)
+- Player inventory and placement entry points: [player/player.gd](../../player/player.gd)
 - Prop interaction API: [props/interactable_item.gd](../../props/interactable_item.gd#L16)
 
 ## Interaction Detection
@@ -69,20 +69,20 @@ Evidence:
 Player add_item enforces one-large-item-only and max slot count constraints.
 
 Evidence:
-- MAX_SLOTS and large-item state: [player/player.gd](../../player/player.gd#L30), [player/player.gd](../../player/player.gd#L32)
-- add_item constraints: [player/player.gd](../../player/player.gd#L76), [player/player.gd](../../player/player.gd#L77), [player/player.gd](../../player/player.gd#L80)
+- MAX_SLOTS and large-item state: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
+- add_item constraints: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 
 ### Placement confirmation/cancel flow
 When in placement mode, R toggles placement mode, left click confirms placement on resolved parent, and right click cancels placement.
 
 Evidence:
-- Placement mode fields: [player/player.gd](../../player/player.gd#L41)
-- R toggle: [player/player.gd](../../player/player.gd#L267), [player/player.gd](../../player/player.gd#L269)
-- Left-click confirm with can_place gate: [player/player.gd](../../player/player.gd#L273), [player/player.gd](../../player/player.gd#L298)
-- Right-click cancel: [player/player.gd](../../player/player.gd#L301), [player/player.gd](../../player/player.gd#L302)
+- Placement mode fields: [player/player.gd](../../player/player.gd)
+- R toggle: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
+- Left-click confirm with can_place gate: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
+- Right-click cancel: [player/player.gd](../../player/player.gd), [player/player.gd](../../player/player.gd)
 
 ## Assumptions and Unknowns
 - Interaction branches rely on duck typing for hold_timer, interact_hold, install_wheel, and start_placement. Interface definitions for those capabilities are not centralized in this partition.
   Evidence: [player/player_interact.gd](../../player/player_interact.gd#L30), [player/player_interact.gd](../../player/player_interact.gd#L22), [player/player_interact.gd](../../player/player_interact.gd#L62)
 - Equipment internals are not part of this evidence set, so placement-side validation and collision shaping behavior are documented only from caller perspective.
-  Evidence: [player/player.gd](../../player/player.gd#L298)
+  Evidence: [player/player.gd](../../player/player.gd)

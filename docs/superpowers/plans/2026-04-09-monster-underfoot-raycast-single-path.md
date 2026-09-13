@@ -1,5 +1,7 @@
 # Monster Underfoot Raycast Single-Path Implementation Plan
 
+> Historical record (2026-04-09). Preserved for context; implementation steps and internal helper names may be outdated. Follow [current monster module documentation](../../modules/monster-ai.md) and the current tests when changing behavior.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Enforce a single deterministic underfoot attack path where monster underfoot attacks only occur from UnderfootProbe raycast hits to floor equipment and only when tracked player is below the monster.

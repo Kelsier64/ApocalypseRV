@@ -5,18 +5,25 @@ extends RayCast3D
 var _e_was_pressed: bool = false
 var _install_timer: float = 0.0
 
-func _physics_process(_delta):
+func _physics_process(delta):
+	# This node keeps processing when the player script is paused (seat) or
+	# input-locked (UI), so gate on the player's mode here: the hidden/locked
+	# player must not keep picking things up or starting placements.
+	var mode = player.get_player_mode()
+	if mode == player.PlayerMode.UI or mode == player.PlayerMode.SEATED:
+		return
+
 	target_position = Vector3(0, 0, -3.0)
 
 	var obj = get_collider() if is_colliding() else null
-	var e_pressed := Input.is_physical_key_pressed(KEY_E)
+	var e_pressed := Input.is_action_pressed("interact")
 	var e_just_released := not e_pressed and _e_was_pressed
 	var is_holding := false
 
 	# 1. Install held wheel: player holds Wheel item + looks at chassis + hold E 1s
-	var holding_wheel: bool = player.get_active_item_name() == "Wheel"
+	var holding_wheel: bool = player.get_active_item_name() == ItemNames.WHEEL
 	if e_pressed and obj and obj.has_method("install_wheel") and holding_wheel:
-		_install_timer += _delta
+		_install_timer += delta
 		is_holding = true
 		if _install_timer >= 1.0:
 			if obj.install_wheel():
@@ -28,7 +35,7 @@ func _physics_process(_delta):
 	# 2. E key: hold >= 1s = interact_hold, release before 1s = interact (quick pickup)
 	if e_pressed and obj and not (obj.has_method("install_wheel") and holding_wheel):
 		if obj.has_method("interact_hold") and "hold_timer" in obj:
-			obj.hold_timer += _delta
+			obj.hold_timer += delta
 			is_holding = true
 			if obj.hold_timer >= 1.0:
 				obj.interact_hold(player)
@@ -54,9 +61,9 @@ func _physics_process(_delta):
 				return
 
 	# 3. Hold F for Equipment placement (only when E not pressed)
-	if not e_pressed and Input.is_physical_key_pressed(KEY_F):
+	if not e_pressed and Input.is_action_pressed("place_equipment"):
 		if obj and obj is Equipment and not player.is_placing_equipment():
-			obj.hold_timer += _delta
+			obj.hold_timer += delta
 			is_holding = true
 			if obj.hold_timer >= 2.0:
 				obj.start_placement(player)

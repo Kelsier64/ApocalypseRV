@@ -19,7 +19,7 @@ const WHEEL_SLOTS: Array[Dictionary] = [
 const WHEEL_HITBOX_SCRIPT: String = "res://rv/wheel_hitbox.gd"
 const WHEEL_PROP_SCENE: String = "res://props/wheel.tscn"
 const EMPTY_GAS_CAN_SCENE: String = "res://props/gas_can_empty.tscn"
-const EMPTY_GAS_CAN_ITEM_NAME: String = "Gasoline Can (Empty)"
+const EMPTY_GAS_CAN_ITEM_NAME: String = ItemNames.GAS_CAN_EMPTY
 const WHEEL_RADIUS: float = 0.7
 const WHEEL_WIDTH: float = 0.5
 
@@ -33,9 +33,9 @@ signal fuel_changed(current: float, max_value: float)
 signal power_changed(current: float, max_value: float)
 
 var inventory: Dictionary = {
-	"Metal Parts": 0,
-	"Unrefined Fuel": 0,
-	"Unknown Material": 0
+	ItemNames.METAL_PARTS: 0,
+	ItemNames.UNREFINED_FUEL: 0,
+	ItemNames.UNKNOWN_MATERIAL: 0
 }
 
 var current_fuel: float = 100.0
@@ -57,9 +57,9 @@ var chassis_destroyed: bool = false
 func _ready() -> void:
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
-	add_to_group("rv")
-	add_to_group("chassis")
-	add_to_group("monster_damageable")
+	add_to_group(Groups.RV)
+	add_to_group(Groups.CHASSIS)
+	add_to_group(Groups.MONSTER_DAMAGEABLE)
 	current_fuel = clampf(current_fuel, 0.0, max_fuel)
 	current_power = clampf(current_power, 0.0, max_power)
 	current_chassis_health = clampf(current_chassis_health, 0.0, max_chassis_health)
@@ -89,7 +89,7 @@ func refuel_from_player(player: Node3D) -> void:
 	if not player or not player.has_method("get_active_item_name"):
 		return
 
-	if player.get_active_item_name() != "Gasoline Can":
+	if player.get_active_item_name() != ItemNames.GAS_CAN:
 		print("Chassis: Need a Gasoline Can to refuel.")
 		return
 
@@ -175,8 +175,6 @@ func step_energy_system(drive_input: float, braking_input: float, steering_input
 	if delta <= 0.0:
 		return true
 
-	_run_generators(delta)
-
 	var drive_intensity := clampf(drive_input, 0.0, 1.0)
 	var wants_drive_force := drive_intensity > 0.0
 
@@ -208,23 +206,6 @@ func _set_power(value: float) -> void:
 	current_power = next
 	power_changed.emit(current_power, max_power)
 
-func _run_generators(delta: float) -> void:
-	if not is_inside_tree():
-		return
-	var tree := get_tree()
-	if tree == null:
-		return
-
-	for generator in tree.get_nodes_in_group("rv_power_generators"):
-		if not is_instance_valid(generator):
-			continue
-		if not generator.has_method("get_connected_rv"):
-			continue
-		if generator.get_connected_rv() != self:
-			continue
-		if generator.has_method("generate_power"):
-			generator.generate_power(self, delta)
-
 func _physics_process(delta: float) -> void:
 	var throttle: float = 0.0
 	var braking_input: float = 0.0
@@ -232,11 +213,11 @@ func _physics_process(delta: float) -> void:
 	var steer_right: float = 0.0
 
 	if is_player_driving:
-		if Input.is_physical_key_pressed(KEY_W): throttle = 1.0
-		if Input.is_physical_key_pressed(KEY_S): braking_input = 1.0
-		if Input.is_physical_key_pressed(KEY_A): steer_left = 1.0
-		if Input.is_physical_key_pressed(KEY_D): steer_right = 1.0
-		if Input.is_physical_key_pressed(KEY_SPACE): braking_input = 1.0
+		if Input.is_action_pressed("move_forward"): throttle = 1.0
+		if Input.is_action_pressed("move_back"): braking_input = 1.0
+		if Input.is_action_pressed("move_left"): steer_left = 1.0
+		if Input.is_action_pressed("move_right"): steer_right = 1.0
+		if Input.is_action_pressed("jump"): braking_input = 1.0
 
 	# Remote Control / Testing (Arrow Keys)
 	if Input.is_physical_key_pressed(KEY_UP): throttle = 1.0
