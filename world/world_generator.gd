@@ -1,5 +1,7 @@
 extends Node3D
 ## Monotonic highway streaming; indoor coordinates never move the outdoor anchor.
+var restore_bands: Array[int] = []
+var restoring_entities: bool = false
 var active_chunks: Array = []
 var field: WorldField
 var poi_spawner := POISpawner.new()
@@ -23,9 +25,12 @@ func _ready() -> void:
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(get_world_3d().navigation_map, 0.1)
 	print("WORLD v%d seed=%d" % [WorldField.VERSION, world_seed])
-	for index in range(-profile.chunks_behind, profile.chunks_ahead + 1):
+	var initial_bands: Array = range(-profile.chunks_behind, profile.chunks_ahead + 1) if restore_bands.is_empty() else restore_bands
+	for index in initial_bands:
 		_spawn_band(index)
-	next_band = profile.chunks_ahead + 1
+	next_band = int(initial_bands.back()) + 1
+	if not restore_bands.is_empty():
+		_refresh_horizon(next_band, false)
 	_configure_environment()
 
 func _configure_environment() -> void:
@@ -59,6 +64,7 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	building = true
 	var chunk := ChunkGenerator.new()
 	add_child(chunk)
+	chunk.set_meta("skip_actors", restoring_entities)
 	await chunk.generate(field, index, poi_spawner, gradual)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
 	generation_times.append(chunk.build_ms)

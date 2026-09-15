@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+[ext_resource type="Script" path="res://equipment/fuel_port.gd" id="1"]
+[ext_resource type="Resource" path="res://equipment/fuel_port_definition.tres" id="def"]
+
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.35, 0.3, 0.15, 1)
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(0.6, 0.3, 0.4)
+material = SubResource("mat")
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.6, 0.3, 0.4)
+[node name="FuelPort" type="RigidBody3D"]
+definition = ExtResource("def")
+script = ExtResource("1")
+equipment_name = "加油孔"
+destroy_on_zero_health = false
+mass = 8.0
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 0.4, 0)
+billboard = 1
+text = "加油孔"
+
+[node name="Cap" type="CSGCylinder3D" parent="."]
+position = Vector3(0, 0.18, 0)
+radius = 0.12
+height = 0.08
+sides = 20

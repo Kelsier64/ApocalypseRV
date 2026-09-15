@@ -1,40 +1,29 @@
 extends StaticBody3D
 
-## Hitbox for an installed wheel on the chassis.
-## Hold E to remove the wheel and get a Wheel prop back.
-
 var hold_timer: float = 0.0
 var slot_index: int = -1
 
-const WHEEL_PROP_SCENE: String = "res://props/wheel.tscn"
-
 func interact_hold(player: Node3D) -> void:
-	var chassis := _get_chassis()
-	if not chassis:
+	var rv := RVConnection.resolve(get_parent())
+	if rv == null:
 		return
+	if player.get_active_item_name() == ItemNames.WHEEL:
+		rv.install_wheel_from_player(player, slot_index)
+	else:
+		rv.remove_wheel_to_world(slot_index)
 
-	if chassis.has_method("remove_wheel"):
-		# Outward direction: from chassis center to wheel, horizontal only
-		var outward: Vector3 = global_position - chassis.global_position
-		outward.y = 0.0
-		outward = outward.normalized()
-		var spawn_pos: Vector3 = global_position + outward * 2 + Vector3(0, 0.5, 0)
-		chassis.remove_wheel(slot_index)
-		# Spawn a wheel prop at the removal position
-		var wheel_scene := load(WHEEL_PROP_SCENE) as PackedScene
-		if wheel_scene:
-			var wheel_prop := wheel_scene.instantiate()
-			chassis.get_parent().add_child(wheel_prop)
-			wheel_prop.global_position = spawn_pos
-			# Apply outward + upward impulse
-			if wheel_prop is RigidBody3D:
-				wheel_prop.linear_velocity = outward * 4.0 + Vector3(0, 3.0, 0)
+func needs_repair() -> bool:
+	var rv := RVConnection.resolve(get_parent())
+	return rv != null and rv.installed_wheels[slot_index] != null and rv.wheel_health[slot_index] < 100.0
 
-func _get_chassis() -> Node3D:
-	# Walk up: WheelHitbox -> Wheel_XX -> Chassis
-	var wheel_node := get_parent()
-	if wheel_node:
-		var chassis := wheel_node.get_parent()
-		if chassis and chassis.has_method("install_wheel"):
-			return chassis
-	return null
+func repair_health(amount: float) -> void:
+	var rv := RVConnection.resolve(get_parent())
+	if rv:
+		rv.wheel_health[slot_index] = minf(100.0, rv.wheel_health[slot_index] + amount)
+		rv._update_wheel_condition(slot_index)
+
+func take_damage(amount: float) -> void:
+	var rv := RVConnection.resolve(get_parent())
+	if rv and amount > 0.0:
+		rv.wheel_health[slot_index] = maxf(0.0, rv.wheel_health[slot_index] - amount)
+		rv._update_wheel_condition(slot_index)

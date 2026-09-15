@@ -3,6 +3,9 @@ extends SceneTree
 var failures: Array[String] = []
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	var inventory := PlayerInventory.new()
 	_expect(not inventory.consume_active(), "Empty inventory cannot consume an item.")
 	_expect(inventory.add_item("Scrap", false, "res://props/scrap.tscn"), "Small items fit.")

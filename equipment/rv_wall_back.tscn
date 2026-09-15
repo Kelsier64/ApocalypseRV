@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
 
+[ext_resource type="Resource" path="res://equipment/rv_wall_back_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
 albedo_color = Color(0.7, 0.72, 0.75, 1)
 
@@ -12,6 +14,7 @@ size = Vector3(3.6, 2, 0.2)
 size = Vector3(3.6, 2, 0.2)
 
 [node name="RvWallBack" type="RigidBody3D" unique_id=1921625581]
+definition = ExtResource("def")
 mass = 80.0
 script = ExtResource("1_script")
 equipment_name = "RV Wall Back"

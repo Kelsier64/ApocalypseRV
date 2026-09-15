@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
 
+[ext_resource type="Resource" path="res://equipment/rv_ceiling_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
 albedo_color = Color(0.75, 0.77, 0.8, 1)
 
@@ -12,6 +14,7 @@ size = Vector3(4, 0.2, 12)
 size = Vector3(4, 0.2, 12)
 
 [node name="RvCeiling" type="RigidBody3D" unique_id=1616185533]
+definition = ExtResource("def")
 mass = 150.0
 script = ExtResource("1_script")
 equipment_name = "RV Ceiling Panel"

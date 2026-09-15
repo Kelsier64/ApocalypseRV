@@ -172,6 +172,7 @@ func snapshot() -> Dictionary:
 			data["health"] = actor.current_health
 		else:
 			data["yields"] = actor.scrap_yields.duplicate(true)
+			data["state"] = actor.capture_item_state()
 			data["name"] = actor.item_name
 			data["large"] = actor.is_large
 			data["frozen"] = actor.freeze
@@ -187,6 +188,7 @@ func _restore(actors: Array) -> void:
 			actor.current_health = data.health
 		else:
 			actor.scrap_yields = data.yields.duplicate(true)
+			actor.restore_item_state(data.get("state", {"scrap_yields": data.yields}))
 			actor.item_name = data.name
 			actor.is_large = data.large
 			actor.freeze = data.frozen

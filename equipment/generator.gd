@@ -3,19 +3,16 @@ extends Equipment
 @export var fuel_consumption_per_second: float = 0.6
 @export var power_generation_per_second: float = 1.8
 
+@export var fuel_reserve: float = 5.0
+@export_range(0.0, 1.0) var recharge_below: float = 0.8
+var charging: bool = false
+
 func _ready() -> void:
 	super._ready()
 	add_to_group(Groups.RV_POWER_GENERATORS)
 
-# The generator pushes power to its own RV instead of the chassis scanning the
-# generator group every frame — it already knows which RV it is mounted on.
-func _physics_process(delta: float) -> void:
-	var rv := get_connected_rv()
-	if rv != null:
-		generate_power(rv, delta)
-
 func generate_power(rv: Node, delta: float) -> void:
-	if delta <= 0.0:
+	if not is_instance_valid(rv) or not can_operate() or not rv.energy.engine_running or delta <= 0.0:
 		return
 	if rv == null:
 		return
@@ -26,7 +23,15 @@ func generate_power(rv: Node, delta: float) -> void:
 
 	var current_power: float = float(rv.current_power)
 	var max_power: float = float(rv.max_power)
-	var current_fuel: float = float(rv.current_fuel)
+	var current_fuel: float = maxf(float(rv.current_fuel) - fuel_reserve, 0.0)
+	if max_power <= 0.0:
+		return
+	if current_power >= max_power - 0.001:
+		charging = false
+	if current_power <= max_power * recharge_below:
+		charging = true
+	if not charging:
+		return
 
 	var missing_power: float = max_power - current_power
 	if missing_power <= 0.001:
@@ -45,3 +50,12 @@ func generate_power(rv: Node, delta: float) -> void:
 	var fuel_needed := full_step_fuel * (generated_power / full_step_power)
 	if rv.consume_fuel(fuel_needed):
 		rv.add_power(generated_power)
+
+func get_status() -> String:
+	var rv := get_connected_rv()
+	if not can_operate(): return "Disabled or unmounted"
+	if not rv.energy.engine_running: return "Engine off"
+	if rv.energy.battery == null: return "No battery installed"
+	if rv.current_fuel <= fuel_reserve: return "Fuel reserve reached; engine still burns idle fuel"
+	if not charging: return "Waiting for charge threshold"
+	return "Charging: up to +%.1f power/s" % power_generation_per_second

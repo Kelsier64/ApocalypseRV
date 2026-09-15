@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://props/battery.gd" id="1"]
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.12, 0.35, 0.25, 1)
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(0.45, 0.3, 0.3)
+material = SubResource("mat")
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.45, 0.3, 0.3)
+[node name="Battery" type="RigidBody3D"]
+script = ExtResource("1")
+mass = 15.0
+item_name = "Battery"
+hold_scale = Vector3(0.55, 0.55, 0.55)
+hold_position = Vector3(0.12, -0.1, 0)
+scrap_yields = {"Metal Parts": Vector2(1, 2), "Electronic Scrap": Vector2(1, 2)}
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+[node name="Charge" type="Label3D" parent="."]
+position = Vector3(0, 0.21, 0)
+billboard = 1
+font_size = 28
+pixel_size = 0.003
+text = "BATTERY"

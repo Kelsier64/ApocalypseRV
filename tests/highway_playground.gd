@@ -88,6 +88,9 @@ func _start() -> void:
 	vehicle.linear_velocity = Vector3.ZERO
 	vehicle.angular_velocity = Vector3.ZERO
 	vehicle.current_fuel = 100.0
+	vehicle.set_engine_running(true)
+	vehicle.handbrake = false
+	vehicle.gear = 4
 	vehicle.fuel_drive_burn_per_second = 0.0
 	vehicle.fuel_idle_burn_per_second = 0.0
 	$WorldGenerator.set_process(true)
@@ -119,8 +122,10 @@ func _physics_process(delta: float) -> void:
 			parking_pause -= delta
 			_release()
 			vehicle.is_player_driving = false
+			vehicle.handbrake = true
 			return
 		vehicle.is_player_driving = true
+		vehicle.handbrake = false
 		target = parking_points[parking_leg]
 		if Vector2(position_now.x - target.x, position_now.z - target.z).length() < 2.5:
 			parking_leg += 1
@@ -152,9 +157,7 @@ func _physics_process(delta: float) -> void:
 	Input.action_press("move_right", maxf(-steering, 0.0))
 	Input.action_press("move_forward", clampf((desired_speed - speed) * 0.6, 0.0, 1.0))
 	Input.action_press("move_back", clampf((speed - desired_speed - 1) * 0.3, 0.0, 1.0))
-	if parking_reverse:
-		Input.action_press("move_forward", clampf((speed - desired_speed - 0.5) * 0.3, 0.0, 1.0))
-		Input.action_press("move_back", clampf((desired_speed - speed) * 0.6, 0.0, 1.0))
+	vehicle.gear = -1 if parking_reverse else 4
 	camera.position = position_now + vehicle.global_basis * Vector3(0, 7, 13)
 	camera.look_at(position_now + vehicle.global_basis * Vector3(0, 1, -18))
 	status.text = "DRIVE %dm / 5100m | %.1f m/s | %d chunks" % [s, speed, $WorldGenerator.active_chunks.size()]

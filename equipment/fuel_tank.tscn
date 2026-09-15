@@ -1,0 +1,3 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://equipment/fuel_port.tscn" id="1"]
+[node name="FuelPort" instance=ExtResource("1")]

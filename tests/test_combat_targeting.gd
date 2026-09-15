@@ -3,6 +3,9 @@ extends SceneTree
 var failures: Array[String] = []
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	var actor := Node3D.new()
 	var player := Node3D.new()
 	player.position.x = 10.0

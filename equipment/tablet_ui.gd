@@ -1,179 +1,189 @@
 extends CanvasLayer
 
 signal close_requested
+var connected_rv: Node3D
+var status_label: Label
+var device_box: VBoxContainer
+var material_box: VBoxContainer
+var recipe_box: VBoxContainer
+var message: Label
+var _refresh_time := 0.0
+var _signature := ""
+var recipe_buttons: Dictionary = {}
+var device_labels: Dictionary = {}
 
-@onready var content_label = get_node_or_null("PanelContainer/MarginContainer/VBoxContainer/ContentLabel")
-@onready var vbox = get_node_or_null("PanelContainer/MarginContainer/VBoxContainer")
+func _ready() -> void:
+	layer = 30
+	for child in get_children():
+		child.queue_free()
+	var shade := ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.02, 0.03, 0.04, 0.9)
+	add_child(shade)
+	var panel := MarginContainer.new()
+	var theme := Theme.new()
+	theme.default_font_size = 24
+	panel.theme = theme
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side in ["left", "top", "right", "bottom"]:
+		panel.add_theme_constant_override("margin_" + side, 40)
+	add_child(panel)
+	var scroll := ScrollContainer.new()
+	panel.add_child(scroll)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 12)
+	scroll.add_child(box)
+	var title := Label.new()
+	title.text = "RV SERVICE TERMINAL"
+	title.add_theme_font_size_override("font_size", 28)
+	box.add_child(title)
+	var close := Button.new()
+	close.text = "Close [Esc]"
+	close.pressed.connect(func(): close_requested.emit())
+	box.add_child(close)
+	status_label = Label.new()
+	status_label.add_theme_font_size_override("font_size", 22)
+	box.add_child(status_label)
+	var engine := Button.new()
+	engine.text = "Start / stop engine (stationary charging uses fuel)"
+	engine.pressed.connect(func():
+		if is_instance_valid(connected_rv):
+			var okay: bool = connected_rv.set_engine_running(not connected_rv.energy.engine_running)
+			message.text = ("引擎已發動" if connected_rv.energy.engine_running else "引擎已停止") if okay else "無法發動：底盤損壞或燃油不足"
+			_refresh())
+	box.add_child(engine)
+	message = Label.new()
+	box.add_child(message)
+	device_box = VBoxContainer.new()
+	material_box = VBoxContainer.new()
+	recipe_box = VBoxContainer.new()
+	box.add_child(device_box)
+	box.add_child(material_box)
+	box.add_child(recipe_box)
 
-var recipes = {
-	ItemNames.GAS_CAN: {
-		"scene": "res://props/gas_can.tscn",
-		"costs": {
-			ItemNames.UNREFINED_FUEL: 5,
-			ItemNames.METAL_PARTS: 2
-		}
-	}
-}
+func on_open() -> void:
+	connected_rv = get_parent().get_connected_rv()
+	_signature = ""
+	_refresh()
 
-var craft_buttons = {}
-var connected_rv = null
-var ui_setup_done = false
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("ui_cancel"):
+		close_requested.emit()
+		get_viewport().set_input_as_handled()
 
-func _ready():
-	var btn = get_node_or_null("PanelContainer/MarginContainer/VBoxContainer/Header/CloseButton")
-	if btn:
-		btn.pressed.connect(_on_close_pressed)
-		
-	if btn and btn.is_visible_in_tree():
-		btn.grab_focus()
-
-func on_open():
-	var tablet_screen = get_parent()
-	var current_rv = null
-	if tablet_screen and tablet_screen.has_method("get_connected_rv"):
-		current_rv = tablet_screen.get_connected_rv()
-		
-	if current_rv != connected_rv:
-		_disconnect_rv_signals()
-			
-		connected_rv = current_rv
-		_connect_rv_signals()
-				
-	if not ui_setup_done:
-		_setup_crafting_ui()
-		ui_setup_done = true
-		
-	_update_inventory_display()
-	_evaluate_craft_buttons()
-
-func _setup_crafting_ui():
-	var hs = HSeparator.new()
-	vbox.add_child(hs)
-	
-	var craft_title = Label.new()
-	craft_title.text = ">>> CRAFTING TERMINAL <<<"
-	craft_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(craft_title)
-	
-	for recipe_name in recipes.keys():
-		var row = HBoxContainer.new()
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		
-		var desc = recipe_name + " (Costs: "
-		var costs = recipes[recipe_name]["costs"]
-		var keys = costs.keys()
-		for i in range(keys.size()):
-			desc += str(costs[keys[i]]) + " " + keys[i]
-			if i < keys.size() - 1: desc += ", "
-		desc += ")"
-		
-		var lb = Label.new()
-		lb.text = desc
-		lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(lb)
-		
-		var craft_btn = Button.new()
-		craft_btn.text = " Craft "
-		craft_btn.pressed.connect(func(): _craft_item(recipe_name))
-		row.add_child(craft_btn)
-		
-		craft_buttons[recipe_name] = craft_btn
-		vbox.add_child(row)
-
-func _on_close_pressed():
-	close_requested.emit()
-
-func _on_inventory_changed(_item_name: String, _new_amount: int):
-	_update_inventory_display()
-	_evaluate_craft_buttons()
-
-func _on_fuel_changed(_current: float, _max_value: float):
-	_update_inventory_display()
-
-func _on_power_changed(_current: float, _max_value: float):
-	_update_inventory_display()
-
-func _disconnect_rv_signals() -> void:
-	if not connected_rv:
+func _process(delta: float) -> void:
+	if not visible:
 		return
-	if connected_rv.has_signal("inventory_changed") and connected_rv.inventory_changed.is_connected(_on_inventory_changed):
-		connected_rv.inventory_changed.disconnect(_on_inventory_changed)
-	if connected_rv.has_signal("fuel_changed") and connected_rv.fuel_changed.is_connected(_on_fuel_changed):
-		connected_rv.fuel_changed.disconnect(_on_fuel_changed)
-	if connected_rv.has_signal("power_changed") and connected_rv.power_changed.is_connected(_on_power_changed):
-		connected_rv.power_changed.disconnect(_on_power_changed)
+	_refresh_time -= delta
+	if _refresh_time <= 0.0:
+		_refresh_time = 0.2
+		_refresh()
 
-func _connect_rv_signals() -> void:
-	if not connected_rv:
-		return
-	if connected_rv.has_signal("inventory_changed") and not connected_rv.inventory_changed.is_connected(_on_inventory_changed):
-		connected_rv.inventory_changed.connect(_on_inventory_changed)
-	if connected_rv.has_signal("fuel_changed") and not connected_rv.fuel_changed.is_connected(_on_fuel_changed):
-		connected_rv.fuel_changed.connect(_on_fuel_changed)
-	if connected_rv.has_signal("power_changed") and not connected_rv.power_changed.is_connected(_on_power_changed):
-		connected_rv.power_changed.connect(_on_power_changed)
+func _station() -> Node:
+	if not is_instance_valid(connected_rv):
+		return null
+	for device in connected_rv.get_equipment():
+		if device is CraftingStation and device.can_operate():
+			return device
+	return null
 
-func _evaluate_craft_buttons():
-	for recipe_name in recipes.keys():
-		if craft_buttons.has(recipe_name):
-			if not connected_rv:
-				craft_buttons[recipe_name].disabled = true
-			elif connected_rv.has_method("has_usable_power") and not connected_rv.has_usable_power():
-				craft_buttons[recipe_name].disabled = true
-			else:
-				craft_buttons[recipe_name].disabled = not connected_rv.has_materials(recipes[recipe_name]["costs"])
+func _refresh() -> void:
+	if not is_instance_valid(connected_rv) or not is_instance_valid(status_label):
+		return
+	connected_rv.update_storage_capacity()
+	status_label.text = "ENGINE %s | FUEL %.1f / %.1f\nBATTERY %.1f / %.1f | CHARGE +%.2f / LOAD -%.2f per s\nMATERIALS %d / %d%s\nTIRES FL %.0f / FR %.0f / RL %.0f / RR %.0f\nStandby: -0.15 power/s | Hold H facing damaged hardware to repair (engine off)." % [
+		"RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.current_fuel, connected_rv.max_fuel,
+		connected_rv.current_power, connected_rv.max_power, connected_rv.energy.generated_rate, connected_rv.energy.load_rate,
+		connected_rv.storage.used(), connected_rv.storage.capacity, " — OVER CAPACITY: spend materials before recycling" if connected_rv.storage.used() > connected_rv.storage.capacity else "", connected_rv.wheel_health[0], connected_rv.wheel_health[1], connected_rv.wheel_health[2], connected_rv.wheel_health[3]]
+	if connected_rv.energy.battery == null:
+		status_label.text += "\nNO BATTERY: install a battery into an operational socket."
+	elif connected_rv.current_power <= 0.0:
+		status_label.text += "\nBATTERY EMPTY: swap it or start the engine with a generator installed."
+	var devices: Array[Node] = connected_rv.get_equipment()
+	var signature := ""
+	for device in devices:
+		signature += device.persistent_id
+	signature += str(connected_rv.get_all_items())
+	if signature != _signature:
+		_signature = signature
+		_rebuild(devices)
+	for device in devices:
+		if device_labels.has(device.persistent_id):
+			var state := "ON" if device.can_operate() else "OFFLINE"
+			if device.has_method("get_status"):
+				state = device.get_status()
+			if device is CraftingStation:
+				state += " | %d jobs | %s" % [device.jobs.size(), device.last_error]
+				if not device.jobs.is_empty():
+					state += " | %.1fs remaining" % device.jobs[0].remaining
+			if "props_being_crushed" in device:
+				state += " | %d inputs | work %.1f power/s" % [device.props_being_crushed.size(), device.power_draw_per_second]
+				if not device.props_being_crushed.is_empty():
+					state += " | %.1fs%s" % [maxf(0.0, device.props_being_crushed[0].timer), " (battery empty)" if connected_rv.current_power <= 0.0 else ""]
+			device_labels[device.persistent_id].text = "%s | HP %.0f / %.0f | %s" % [device.equipment_name, device.current_health, device.max_health, state]
+	var station := _station()
+	for recipe in RecipeCatalog.all():
+		if recipe_buttons.has(recipe.recipe_id):
+			recipe_buttons[recipe.recipe_id].disabled = station == null or not connected_rv.has_materials(recipe.costs) or not connected_rv.has_usable_power(recipe.power_cost) or station.jobs.size() >= station.queue_capacity
 
-func _craft_item(recipe_name: String):
-	if not connected_rv: return
-	if connected_rv.has_method("has_usable_power") and not connected_rv.has_usable_power():
-		print("Tablet: No power available!")
-		return
-	
-	var data = recipes[recipe_name]
-	
-	if not connected_rv.has_materials(data["costs"]):
-		print("Tablet: Not enough materials!")
-		return
-		
-	var stations = get_tree().get_nodes_in_group(Groups.CRAFTING_STATIONS)
-	if stations.is_empty():
-		print("Tablet: No Crafting Station found in the world!")
-		return
-	
-	var valid_station = null
-	for st in stations:
-		if st.has_method("get_connected_rv") and st.get_connected_rv() == connected_rv:
-			valid_station = st
-			break
-			
-	if valid_station == null:
-		print("Tablet: Crafting station is not connected to the RV!")
-		return
-		
-	if connected_rv.deduct_materials(data["costs"]):
-		valid_station.spawn_item(data["scene"])
-	
-func _update_inventory_display():
-	if not content_label: return
-	
-	if not connected_rv:
-		content_label.text = "\n\n[ CRITICAL ERROR ]\n\nNO CONNECTION TO MAIN RV SERVER.\n\nSYSTEMS OFFLINE."
-		return
-
-	var fuel_text := "Fuel: %.1f / %.1f" % [connected_rv.current_fuel, connected_rv.max_fuel]
-	var power_text := "Power: %.1f / %.1f" % [connected_rv.current_power, connected_rv.max_power]
-		
-	var text = ">>> LOCAL RV MATERIAL INVENTORY <<<\n\n"
-	text += "[ " + fuel_text + " ]\n"
-	text += "[ " + power_text + " ]\n\n"
-	var items = connected_rv.get_all_items()
-	
-	if items.is_empty():
-		text += "  [ Inventory Empty ]\n"
-	else:
-		for item_name in items:
-			var amount = items[item_name]
-			if amount > 0:
-				text += "  [ " + str(amount) + " ] " + item_name + "\n"
-				
-	content_label.text = text
+func _rebuild(devices: Array[Node]) -> void:
+	for box in [device_box, material_box, recipe_box]:
+		for child in box.get_children():
+			box.remove_child(child)
+			child.queue_free()
+	device_labels.clear()
+	recipe_buttons.clear()
+	for device in devices:
+		var row := HBoxContainer.new()
+		device_box.add_child(row)
+		var label := Label.new()
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(label)
+		device_labels[device.persistent_id] = label
+		if device.has_method("step_work") or device.has_method("generate_power"):
+			var toggle := Button.new()
+			toggle.text = "On / off"
+			toggle.pressed.connect(func():
+				if is_instance_valid(device): device.set_enabled(not device.enabled))
+			row.add_child(toggle)
+		if device.has_method("generate_power"):
+			var settings := HBoxContainer.new()
+			device_box.add_child(settings)
+			var note := Label.new()
+			note.text = "Recharge below % / fuel reserve:"
+			settings.add_child(note)
+			var threshold := SpinBox.new()
+			threshold.max_value = 100.0
+			threshold.step = 5.0
+			threshold.value = device.recharge_below * 100.0
+			threshold.value_changed.connect(func(value: float):
+				if is_instance_valid(device): device.recharge_below = value / 100.0)
+			settings.add_child(threshold)
+			var reserve := SpinBox.new()
+			reserve.max_value = connected_rv.max_fuel
+			reserve.value = device.fuel_reserve
+			reserve.value_changed.connect(func(value: float):
+				if is_instance_valid(device): device.fuel_reserve = value)
+			settings.add_child(reserve)
+		if device is CraftingStation:
+			var cancel := Button.new()
+			cancel.text = "Cancel queued jobs"
+			cancel.pressed.connect(func():
+				if is_instance_valid(device): device.cancel_jobs())
+			row.add_child(cancel)
+	for material: String in connected_rv.get_all_items():
+		var label := Label.new()
+		label.text = "%s: %d" % [material, connected_rv.get_item_count(material)]
+		material_box.add_child(label)
+	for recipe in RecipeCatalog.all():
+		var button := Button.new()
+		button.text = "Queue %s | %s | %.1f power | %.1fs" % [recipe.display_name, str(recipe.costs), recipe.power_cost, recipe.duration]
+		button.pressed.connect(func():
+			var station := _station()
+			if station:
+				station.request_craft(recipe.recipe_id)
+				message.text = station.last_error)
+		recipe_box.add_child(button)
+		recipe_buttons[recipe.recipe_id] = button

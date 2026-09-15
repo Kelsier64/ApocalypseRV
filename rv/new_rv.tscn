@@ -8,6 +8,9 @@
 [ext_resource type="PackedScene" uid="uid://b2hnoxxrv0jps" path="res://equipment/rv_wall_front.tscn" id="7_wf"]
 [ext_resource type="PackedScene" uid="uid://6ijedjc6opf7" path="res://equipment/rv_wall_back.tscn" id="8_wb"]
 
+[ext_resource type="PackedScene" path="res://equipment/fuel_port.tscn" id="9_tank"]
+[ext_resource type="PackedScene" path="res://equipment/item_box.tscn" id="10_rack"]
+
 [node name="NewRv" type="Node3D" unique_id=2120729524]
 
 [node name="Chassis" parent="." unique_id=604864203 instance=ExtResource("1_ip3wq")]
@@ -29,3 +32,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4999999, 5.9)
 
 [node name="DriverSeat" parent="Chassis" unique_id=1370501954 instance=ExtResource("2_hjrs7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.49605, -4.02)
+
+[node name="FuelPort" parent="Chassis" instance=ExtResource("9_tank")]
+position = Vector3(0.9, 0.65, 4.5)
+freeze = true
+collision_mask = 0
+[node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
+position = Vector3(-0.9, 0.8, 4.5)
+freeze = true
+collision_mask = 0

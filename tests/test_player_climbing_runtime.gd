@@ -3,6 +3,9 @@ extends SceneTree
 var failures: Array[String] = []
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	var player_script: Script = load("res://player/player.gd")
 	if player_script == null:
 		failures.append("Player script should load.")

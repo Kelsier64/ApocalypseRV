@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://equipment/recipe_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+recipe_id = "wheel"
+display_name = "Wheel"
+scene_path = "res://props/wheel.tscn"
+costs = {"Metal Parts": 8, "Unknown Material": 4}
+duration = 5.0
+power_cost = 1.2

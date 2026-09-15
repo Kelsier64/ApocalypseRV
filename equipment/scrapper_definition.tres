@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EquipmentDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://equipment/equipment_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+type_id = "scrapper"
+display_name = "Recycling Scrapper"
+weight = 80.0
+requires_upright = true
+placement_clearance = Vector3(0.8, 0.6, 0.8)
+clearance_center = Vector3(0, 1.1, 0)

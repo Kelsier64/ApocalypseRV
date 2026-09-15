@@ -18,6 +18,7 @@ albedo_color = Color(0.15, 0.15, 0.15, 1)
 mass = 15.0
 script = ExtResource("1_wheel")
 item_name = "Wheel"
+scrap_yields = {"Metal Parts": Vector2(2, 3), "Unknown Material": Vector2(1, 2)}
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0.7, 0)

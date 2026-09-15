@@ -1,6 +1,7 @@
 extends Equipment
 
 var ui_instance: Node = null
+var current_user: Node3D = null
 @export var power_cost_per_open: float = 0.2
 
 func _ready():
@@ -12,45 +13,32 @@ func _ready():
 		ui_instance = ui_scene.instantiate()
 		ui_instance.visible = false
 		add_child(ui_instance)
+		ui_instance.close_requested.connect(_close_ui)
 
 # Called by player_interact when E is held for 1 second
 func interact_hold(player: Node3D):
-	if is_being_placed: return
-
-	var rv = get_connected_rv()
-	if not rv:
-		print("Tablet: Offline (not connected to RV).")
+	if not can_operate() or not is_instance_valid(ui_instance) or ui_instance.visible:
 		return
-	if rv.has_method("has_usable_power") and not rv.has_usable_power():
-		print("Tablet: No power available.")
+	if not player.enter_ui_mode():
 		return
 	if not consume_rv_power(power_cost_per_open):
-		print("Tablet: Insufficient power to boot screen.")
-		return
-	
-	if ui_instance and not ui_instance.visible:
-		# Tell the player to lock movement and camera; abort when it refuses
-		# (already seated, placing equipment, ...).
-		if player.has_method("enter_ui_mode") and not player.enter_ui_mode():
-			return
-
-
-		if ui_instance.has_method("on_open"):
-			ui_instance.on_open()
-			
-		ui_instance.visible = true
-		
-		# Connect the close signal from the UI if it has one
-		if ui_instance.has_signal("close_requested"):
-			# Disconnect first to avoid multiple connections if opened multiple times
-			if ui_instance.is_connected("close_requested", Callable(self, "_on_ui_close")):
-				ui_instance.disconnect("close_requested", Callable(self, "_on_ui_close"))
-			
-			ui_instance.connect("close_requested", Callable(self, "_on_ui_close").bind(player))
-
-func _on_ui_close(player: Node3D):
-	if ui_instance:
-		ui_instance.visible = false
-		
-	if player and player.has_method("exit_ui_mode"):
 		player.exit_ui_mode()
+		return
+	current_user = player
+	ui_instance.on_open()
+	ui_instance.visible = true
+
+func _close_ui() -> void:
+	if is_instance_valid(ui_instance):
+		ui_instance.visible = false
+	if is_instance_valid(current_user):
+		current_user.exit_ui_mode()
+	current_user = null
+
+func _on_service_stopped() -> void:
+	_close_ui()
+
+func _physics_process(_delta: float) -> void:
+	if is_instance_valid(current_user):
+		if not can_operate() or current_user.is_player_dead or not get_connected_rv().has_usable_power():
+			_close_ui()

@@ -1,12 +1,12 @@
 # ApocalypseRV 架構
 
-更新：2026-09-15。描述目前程式；玩法與願景見 [GDD](GDD.md)，啟動與驗證見 [README](README.md)。[docs](docs/README.md) 收錄計畫、驗收紀錄與 archive 歷史封存。
+更新：2026-09-16。描述目前程式；玩法與願景見 [GDD](GDD.md)，啟動與驗證見 [README](README.md)。[docs](docs/README.md) 收錄計畫、驗收紀錄與 archive 歷史封存。
 
 ## 1. 執行環境與場景
 
-目標開發／CI 版本 Godot 4.6.1，Jolt Physics、GL Compatibility renderer。[project.godot](project.godot) 的入口為 [world/test_world.tscn](world/test_world.tscn)。目前沒有網路同步、存檔服務或任務／進度管理器。
+目標開發／CI 版本 Godot 4.6.1，Jolt Physics、GL Compatibility renderer。[project.godot](project.godot) 的入口為 [world/test_world.tscn](world/test_world.tscn)。目前沒有網路同步或任務／進度管理器；Checkpoint autoload 提供主世界檢查點。
 
-本機專案已由既有修改標為 4.7，本次 POI 和地形以安裝的 Godot 4.7.2 實測；CI 仍為 4.6.1，尚未驗證兩版結果一致。
+本機專案已由既有修改標為 4.7，本次 POI、地形與 RV 系統以安裝的 Godot 4.7.2 實測；CI 仍為 4.6.1，尚未驗證兩版結果一致。
 
 ```text
 TestWorld
@@ -19,8 +19,8 @@ TestWorld
 │       └── PoiInterior     房間／走廊／導航／WorldEntities／室內玩家
 ├── NewRv
 │   └── Chassis             VehicleBody3D、油電、材料、耐久
-│       ├── Wheel_*         執行時 VehicleWheel3D 與互動 hitbox
-│       └── 座椅／車板       固定的 Equipment
+│       ├── Wheel_*         VehicleWheel3D；獨立輪槽 hitbox 常駐底盤
+│       └── 座椅／車板／插槽／加油孔／道具箱   已安裝的 Equipment
 └── 地面設備、物品、殭屍      主場景測試實例
 ```
 
@@ -32,11 +32,14 @@ TestWorld
 |---|---|---|
 | 玩家協調 | [player.gd](player/player.gd) | 攝影機、移動、攀爬、生命、座位／UI／放置授權、手持外觀 |
 | 玩家背包 | [player_inventory.gd](player/player_inventory.gd) | 6 格、選取、大型限制與消耗，不持有場景節點 |
-| 互動 | [player_interact.gd](player/player_interact.gd) | 射線、E 短長按、F 搬運、輪胎安裝特例 |
+| 互動 | [player_interact.gd](player/player_interact.gd) | 射線、目標提示與結果、E／F 獨立按鍵狀態、快速事件緩衝、輪胎安裝特例 |
 | 放置 | [equipment_placement.gd](player/equipment_placement.gd) | 預覽位置／朝向、確認／取消輸入 |
 | 可撿物 | [interactable_item.gd](props/interactable_item.gd) | Prop 剛體、名稱、大型旗標、回收產出與手持配置 |
-| RV | [chassis.gd](rv/chassis.gd) | 驅動、油電、材料字典、輪槽、底盤耐久 |
-| RV 互動轉接 | [fuel_filler.gd](rv/fuel_filler.gd)、[wheel_hitbox.gd](rv/wheel_hitbox.gd) | 加油入口、拆輪 |
+| RV | [chassis.gd](rv/chassis.gd) | 控制授權、引擎／排檔／手煞車入口、輪槽、耐久、設備登錄與重量／重心 |
+| 能源 | [vehicle_energy.gd](rv/vehicle_energy.gd)、[battery_state.gd](rv/battery_state.gd) | 代理有效插槽的 BatteryState、集中物理步調度；燃油屬於底盤 |
+| 材料 | [material_storage.gd](rv/material_storage.gd) | 本車存量、容量、原子扣款、溢出保留 |
+| 保存 | [checkpoint.gd](rv/checkpoint.gd)、[vehicle_snapshot.gd](rv/vehicle_snapshot.gd) | 版本化磁碟檢查點、車輛／設備／輸入物件關係還原 |
+| RV 互動轉接 | [fuel_port.gd](equipment/fuel_port.gd)、[wheel_hitbox.gd](rv/wheel_hitbox.gd) | 加油入口、拆輪 |
 | 設備基類 | [equipment.gd](equipment/equipment.gd) | 放置、物理／材質恢復、連線快取、耗電、破壞 |
 | 專用設備 | [equipment/](equipment/) | generator 供電、scrapper 回收、tablet_screen/UI 顯示製作、crafting_station 出料、driver_seat 駕駛 |
 | 串流 | [world_generator.gd](world/world_generator.gd) | 固定座標區塊窗口、分幀建立、遠景與距離清理 |
@@ -62,20 +65,21 @@ TestWorld
 
 | 狀態 | 擁有者 | 資料 |
 |---|---|---|
-| 背包 | PlayerInventory | `{name, is_large, scene_path, state}` 陣列、active_slot；state 保留 scrap_yields |
+| 背包 | PlayerInventory | `{name, is_large, scene_path, state}` 陣列、active_slot；state 保存 ID、condition、scrap_yields、回收結果及電池子型別資料 |
 | 玩家模式 | player.gd | NORMAL／PLACING／UI／SEATED／DEAD，由欄位推導優先模式，非完整集中狀態機 |
 | 移動 | 各 actor | NORMAL／CLIMBING、附著 RV、前一 transform、接觸寬限、冷卻、RVSupport |
 | 怪物意圖 | Monster | WANDER／CHASE／ATTACK、追蹤玩家、攻擊目標 |
-| 車輛 | Chassis | 油電、材料 Dictionary、4 輪槽、耐久／毀損旗標 |
-| 設備 | Equipment | 原父節點／transform、預覽、材質、碰撞例外、連線快取、耐久 |
+| 車輛 | Chassis＋VehicleEnergy＋MaterialStorage | 控制、4 輪槽身分／耐久、底盤耐久、電池與材料；相容屬性轉送至專責狀態 |
+| 設備 | Equipment | 穩定 ID、EquipmentDefinition、啟用、車輛與支撐、預覽快照、耐久及工作清理 |
+| 生產工作 | 各工作站 | 配方 ID、預留材料、剩餘電費／時間、輸入物件所有權、待出料結果 |
 | 串流 | WorldGenerator | active_chunks 的 node/index/start_z/end_z、next_band、building、WorldField 和 profile |
 | 副本 | PoiInstanceManager／MazeLayout | active_id、saved_instances actor 快照、rooms／edges、局部 RNG |
 
 地形、入口和路旁靜態模組由 chunk 擁有。動態敵人、搜刮物、玩家丟棄品、合成品和死亡掉落使用所屬世界的 WorldEntities。室內與主場景根節點都以 entity_domain metadata 指定自己的容器，避免初始 ready 時 current_scene 尚未設定而落到 SceneTree 根。WorldGenerator 只清理同一 World3D、錨點後方超過 450 m 的動態物件。玩家進副本後，錨點固定在進入前位置。
 
-例外：主場景既有物品仍在根部，拆下輪胎由 wheel_hitbox.gd 加到 chassis 的父節點，不受容器直接子節點清理。室內物資和怪物死亡掉落都使用室內容器。
+例外：主場景既有物品仍在根部，拆下輪胎、成品與掉落電池使用 WorldEntities。室內物資和怪物死亡掉落都使用室內容器。
 
-玩家 `enter_*`／`exit_*` 授權 UI、座位與放置，呼叫方須尊重拒絕。DEAD 尚未完整封鎖輸入／移動；enum 存在不等於所有分支已覆蓋。
+玩家 `enter_*`／`exit_*` 授權 UI、座位與放置，呼叫方須尊重拒絕。DEAD 阻擋輸入／移動；平板和座位在玩家死亡或設備失效時釋放模式。
 
 ## 5. 主要流程
 
@@ -91,25 +95,37 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／�
 
 MazeLayout 使用 10 欄、27 m 中心間距，建立 50–100 個 9 m／18 m 房間。隨機 DFS 產生連通樹，再增加少量鄰接邊形成環路。PoiInterior 放置四門預製場景、封閉閒置門、連接走廊，依實際靜態碰撞（含家具）非同步 bake 導航；動態物資與敵人在 bake 後建立。各房物資點獨立隨機排序，最多成功抽取 4 件。
 
-PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。退出先保存室內 Prop 的場景、位置、回收資料及活怪生命／位置，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 只保存本局記憶體資料，重返重建同 seed 房間並還原剩餘 actors，沒有跨局存檔。非活動副本不繼續模擬。
+PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。退出先保存室內 Prop 的場景、位置、回收資料及活怪生命／位置，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同房間與剩餘 actors；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。
 
 WorldEntities.same_world 用於群組選敵、碰撞例外及串流清理；怪物每 physics tick 清掉跨世界的快取玩家目標。怪物與物品不穿越入口，只有原玩家與背包轉移。實例快照目前支援 Prop／Monster，未支援搬入副本的任意設備。
 
-### 設備放置
+### 設備放置與支撐
 
-F 長按 → 玩家授權 → 記錄原父節點與位置，凍結碰撞、套 ghost 材質 → 射線預覽貼面／直立朝向 → 確認時找命中物 RV 祖先，掛到 RV；非 RV 則掛命中物 → 刷新碰撞例外和連線。
+F 長按 → 玩家授權 → 保存父節點／變換／freeze／碰撞層／速度／材質 → 停止服務 → 共用 PlacementRules 驗證 ghost。驗證使用各碰撞形狀和定義的操作空間，檢查合法支撐、重疊、朝向和支撐循環；確認前重新計算候選。結構板提供可選面中心接點吸附。
 
-取消恢復原父節點與 local transform。連線快取每次驗證祖先和 RV 契約；早期查無結果不永久快取，外部 reparent 可重新解析。沒有距離供電或接線網路。
+確認後分開記錄本車歸屬與 mount_support。設備向本車登錄；支撐 removing/tree_exiting 先停機，再延後解除掛載，帶 RV 點速度落至 WorldEntities。取消還原完整物理快照。UI、駕駛與生產由共用停止入口清理，重複清理不重複退款／退料。
 
-目前可放判斷主要是射線命中，沒有完整體積重疊或 props／怪物黑名單。取消恢復固定物理設定，不是完整還原原始自由剛體狀態。
+### 能源、道具與生產
 
-### 油電與生產
+BatterySocket 繼承 Equipment 並保存 installed_battery；VehicleEnergy 透過弱參照查詢底盤的有效插槽，Chassis.current_power/max_power 保留代理介面。同車最多接通一顆電池，未接入的背包／倉庫電池不參與供電。搬移開始、支撐脫落或損壞時，插槽將 BatteryState 轉成世界 Prop 並清空自己；掉落點在車體外，繼承車輛點速度。取消搬移不自動收回。
 
-Prop 進 HopperArea → Scrapper 凍結、耗電處理 → 抽 scrap_yields → `Chassis.add_item` → `inventory_changed` 更新平板。
+底盤直接保存 current_fuel/max_fuel；FuelPort 只提供加油交易，拆除、損壞或多裝入口均不改變存量／容量。BatterySocket 交換先檢查新電池與舊電池去處，滿背包使用原槽位；沒有有效插槽就沒有隱藏電量。
 
-平板開啟扣電 → 解析 RV → 顯示油電材料 → 查配方與同車 crafting_stations → 扣材料 → 合成站載入場景、扣電 → WorldEntities 生出實物。
+Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依本車穩定 ID 呼叫正常發電機 → 電池待機支出 → 工作站 step_work。發電需要引擎運轉；無油停止引擎。發電機開關／門檻不會自動點火；燃油保留只限制發電附加負載。玩家進副本時室外照常模擬。
 
-油電集中在 Chassis，發出 `fuel_changed`／`power_changed`；平板換車重新連訊號。Generator 每 physics tick 主動補自己 RV 的電，底盤不逐幀掃發電機群組。Scrapper 在 `_process` 按 delta 處理。
+Prop 進 HopperArea → Scrapper 取得唯一 processing_owner，保存物理快照並隨機器定位 → 一個處理槽分步付費 → 固定一次回收結果 → MaterialStorage 接受後才刪物。缺電保留進度；滿庫保留完成結果；拆卸／摧毀恢復輸入物理。
+
+RecipeDefinition/RecipeCatalog 定義四個配方。平板只 request_craft，工作站檢查有效性／完整電費並預留材料，進度逐步耗電；取消退材料，已用電不退。完成後檢查出料空間才生成；堵塞保留待出料工作。spawn_item 的即時介面也在完整驗證後扣材料與電費，失敗回復。成品屬於本世界 WorldEntities，繼承 RV 點速度；製作電池初始電量為零。
+
+MaterialStorage 保存底盤數字材料，material_capacity 預設 300；容量不依賴設備，超額只允許消費／退款，不再領出 Material Bundle。底盤 stored_items 保存完整道具記錄，item_capacity 預設 24 格。ItemBox 開啟不耗電的 item_storage_ui；同車箱子共用底盤倉庫，先驗證容量／背包大型限制再轉移，按鈕保留原項目快照以拒絕過期操作。搬移、損壞、斷線與玩家死亡關閉 UI。
+
+### 駕駛、維修與保存
+
+控制仍由 Chassis 集中協調，未另做 VehicleController 類別。引擎狀態與入座分離，方向鍵遙控只可由測試明確啟用。輪槽常駐，即使沒有輪胎仍可射線互動；輪胎 ID／condition 在拆裝間保留。RepairOperation 累計持續瞄準時間，完成才扣 2 Metal Parts 並補 60 HP；切換目標、移動車輛、發動引擎或中斷免費取消。
+
+Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場或地形建立中。Variant 序列化禁用 objects，版本 2；先寫 .tmp、flush，再 rename 至 user://rv_checkpoint.save。讀取先驗證格式、版本、資源、支撐 ID 和循環。
+
+檢查點包括玩家背包／位置／生命、世界 seed／profile／有效 bands、RV、鬆散 actors 與已訪 POI 記憶。主場景 enter_tree 先配置保存的地形範圍，生成時跳過動態物資；ready 建立車輛／設備、接回支撐 ID、電池、輪胎、油料、材料及工作，最後恢復模擬。分解機持有輸入不重複列入室外 actors。版本 1 經記憶體轉換後驗證：車載燃油歸原底盤、舊電池建立插槽；游離油箱燃油及材料包（含背包、世界、POI、分解輸入）歸第一台保存車輛。保留超額材料，必要時提高燃油容量避免遺失，原檔不被讀取覆寫。新存檔保存道具倉庫及底盤容量，電池只存於設備 service。未知版本拒絕；目前沒有室內保存、多槽或未載入室外歷史恢復。
 
 ### 攀爬與戰鬥
 
@@ -121,12 +137,13 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 
 ## 6. 已知限制
 
-- 製作非原子交易：tablet_ui 先扣材料，忽略 spawn_item 失敗，沒有退款；最低可用電力不等於出料費足夠。
-- 副本只有兩種四門房型和一種外觀；布局雖有 50–100 間，獨特房型、美術變體及長局效能仍需擴充驗收。
-- 底盤毀損後 physics／入座入口未全面封鎖重啟，未形成終局。
-- 玩家死亡、平板設備毀損和放置生命週期仍需完整情境驗收，不能只由部分測試推論正確。
-- 外部生成和清理假設單向旅行；副本有同局重返，但缺跨局存檔、外部回訪還原及多人所有權。
-- 極端翻車、群體攀爬及放置重疊尚未完整驗收；長途輪驅只驗證固定 seed 測試路線，不能推論所有車輛負載和駕駛方式。
+- 設備仍是獨立凍結剛體。重量／重心已彙總，但側撞與大型外掛的碰撞力矩未合併到車體；翻車、偏載、怪物群需專項實測。
+- 控制、輪槽與登錄仍共用 Chassis；能源、材料、保存已抽離，後續可按需求再拆控制／掛載服務。
+- 配方出料以目前產品大小的 0.28 m 球體檢查；新增更大產品前需按實際形狀擴充。
+- 車上抽象材料、燃油與鬆散貨物尚未動態計重。首版檔位不模擬離合器／轉速。
+- 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；道路仍單向串流。
+- 副本目前兩種四門房型和一種外觀，內容多樣性與長局效能仍需擴充驗收。
+- 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
 
 ## 7. 測試與維護
 
@@ -152,9 +169,15 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 | [test_player_climbing_runtime](tests/test_player_climbing_runtime.gd) | 玩家 runtime 攀爬 |
 | [test_moving_rv_climbing](tests/test_moving_rv_climbing.gd) | 生產場景、移動 RV 攀爬／支撐／拆頂，含物理驅動情境 |
 | [test_world_entities](tests/test_world_entities.gd) | chunk 刪除後容器存活、場景重建 |
+| [test_rv_systems](tests/test_rv_systems.gd) | 電池交易、能源、正式設備工作／清理、失效授權 |
+| [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
+| [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、舊檔轉換 |
+| [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
+| [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |
+| [test_rv_physics_regression](tests/test_rv_physics_regression.gd) | 正式 RV 裝載設備穩定性 |
 | [test_poi_resources](tests/test_poi_resources.gd) | POI／loot／enemy 資源可載入 |
 
-以上描述測試範圍，不代表本次已執行。文件更動檢查連結與來源；程式更動執行適用測試及統一 runner。物理更動另須依 [AGENTS.md](AGENTS.md) 做互動視覺檢查。資源交易、長途經濟、極端翻車和怪物群仍是測試缺口。
+本次改版見 [共用儲存驗收](docs/validation/2026-09-16-rv-shared-storage.md)。先前執行結果見 [RV 驗收紀錄](docs/validation/2026-09-15-rv-systems.md)。文件更動檢查連結與來源；程式更動執行適用測試及統一 runner。物理更動另須依 [AGENTS.md](AGENTS.md) 做互動視覺檢查。資源交易、能源與保存已有正式場景回歸；長途經濟、極端翻車和怪物群仍需擴大驗收。
 
 遵循 GDScript tabs、可行時明確型別、snake_case 檔案／函式、PascalCase class、UPPER_SNAKE_CASE 常數；重用 core 契約。新增 POI 必須有有效內容，新增物品需設回收產出，設備需驗證連線／取消／毀損。
 

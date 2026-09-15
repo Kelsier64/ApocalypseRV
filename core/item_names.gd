@@ -8,6 +8,7 @@ class_name ItemNames
 const GAS_CAN := "Gasoline Can"
 const GAS_CAN_EMPTY := "Gasoline Can (Empty)"
 const WHEEL := "Wheel"
+const BATTERY := "Battery"
 const METAL_PARTS := "Metal Parts"
 const UNREFINED_FUEL := "Unrefined Fuel"
 const UNKNOWN_MATERIAL := "Unknown Material"

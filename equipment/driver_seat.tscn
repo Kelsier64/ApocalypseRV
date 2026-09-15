@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dui6idsuje4xd" path="res://equipment/driver_seat.gd" id="1_2l2ci"]
 
+[ext_resource type="Resource" path="res://equipment/driver_seat_definition.tres" id="def"]
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_pjra0"]
 size = Vector3(0.6, 0.8, 0.6)
 
@@ -9,6 +11,7 @@ size = Vector3(0.6, 0.8, 0.6)
 size = Vector3(0.6, 0.8, 0.6)
 
 [node name="DriverSeat" type="RigidBody3D" unique_id=269340115]
+definition = ExtResource("def")
 script = ExtResource("1_2l2ci")
 equipment_name = "Driver Seat"
 

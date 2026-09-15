@@ -15,6 +15,9 @@ class _MonsterWithForcedUnderfootHit extends Monster:
 		return forced_underfoot_target
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	_test_navigation_contract_methods_exist()
 	_test_climb_contract_methods_exist()
 	_test_descent_hint_direction_from_last_climb_wall()
@@ -31,7 +34,7 @@ func _init() -> void:
 	_test_abort_climb_when_target_leaves_rv()
 	_test_target_rv_contact_grace_keeps_climb()
 	_test_target_on_rv_surface_probe_merge_logic()
-	_test_is_node_on_specific_rv_surface_supports_edge_overlap()
+	await _test_is_node_on_specific_rv_surface_supports_edge_overlap()
 	_test_fallback_direction_is_normalized()
 	_test_stuck_progress_gate()
 	_test_stuck_threshold_scales_with_delta()
@@ -318,6 +321,7 @@ func _test_is_node_on_specific_rv_surface_supports_edge_overlap() -> void:
 
 		harness.add_child(monster)
 		monster.position = Vector3.ZERO
+		monster.set_physics_process(false)
 
 		var rv := Node3D.new()
 		rv.add_to_group("rv")
@@ -331,10 +335,12 @@ func _test_is_node_on_specific_rv_surface_supports_edge_overlap() -> void:
 		rv_body.add_child(rv_shape)
 		rv.add_child(rv_body)
 
-		var player := Node3D.new()
+		var player := CharacterBody3D.new()
 		player.position = Vector3(1.55, 0.2, 0.0)
 		harness.add_child(player)
 
+		await physics_frame
+		await physics_frame
 		_expect(monster._is_node_on_specific_rv_surface(player, rv), "Edge-adjacent player should still be considered on RV surface even if downward ray misses.")
 
 		harness.free()

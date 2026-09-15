@@ -7,50 +7,35 @@ enum PlacementMode { SURFACE, UPRIGHT }
 var placing_equipment: Node3D = null
 var max_place_distance: float = 4.0
 var can_place_equipment: bool = false
+var snap_enabled: bool = true
+var target_support: Node3D = null
+var preview_scale: Vector3 = Vector3.ONE
 var placement_mode: PlacementMode = PlacementMode.SURFACE
 
 func begin(equipment: Node3D) -> void:
 	placing_equipment = equipment
+	preview_scale = equipment.global_basis.get_scale()
 	can_place_equipment = false
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 	# Equipment Placement confirmation
 	if is_instance_valid(placing_equipment):
+		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_V:
+			snap_enabled = not snap_enabled
 		if event.is_action_pressed("toggle_placement_mode"):
 			if placement_mode == PlacementMode.SURFACE:
 				placement_mode = PlacementMode.UPRIGHT
 			else:
 				placement_mode = PlacementMode.SURFACE
 		if event is InputEventMouseButton and event.is_pressed():
-			if event.button_index == MOUSE_BUTTON_LEFT and can_place_equipment:
-				# We attempt to find what we are placing it ON to reparent it properly
-				var space_state = player.get_world_3d().direct_space_state
-				var from = player.camera.global_position
-				var to = from + -player.camera.global_transform.basis.z * max_place_distance
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				update_ghost(player)
+				if can_place_equipment and is_instance_valid(target_support):
+					var rv := RVConnection.resolve(target_support)
+					placing_equipment.confirm_placement(placing_equipment.global_transform, rv if rv else target_support, target_support)
+					placing_equipment = null
 
-				# Ignore ourselves and the equipment itself
-				var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid(), placing_equipment.get_rid()])
-				var result = space_state.intersect_ray(query)
-
-				# Walk up from the collider to find the RV chassis instead of parenting
-				# to whatever we hit (which could be another wall panel)
-				var new_parent = null
-				if result and result.collider is Node3D:
-					var candidate: Node = result.collider
-					while candidate != null:
-						if candidate is VehicleBody3D or candidate.is_in_group(Groups.RV):
-							new_parent = candidate
-							break
-						candidate = candidate.get_parent()
-					if new_parent == null:
-						new_parent = result.collider
-				else:
-					new_parent = player.get_tree().current_scene
-
-				placing_equipment.confirm_placement(placing_equipment.global_transform, new_parent)
-				placing_equipment = null
-				
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				placing_equipment.cancel_placement()
 				placing_equipment = null
@@ -67,7 +52,8 @@ func update_ghost(player: CharacterBody3D) -> void:
 	var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid(), placing_equipment.get_rid()])
 	var result = space_state.intersect_ray(query)
 
-	if result:
+	if result and PlacementRules.valid_target(placing_equipment, result.collider):
+		target_support = result.collider
 		can_place_equipment = true
 		placing_equipment.visible = true
 
@@ -120,18 +106,27 @@ func update_ghost(player: CharacterBody3D) -> void:
 				# Vertical surface: upright, back face against wall
 				base_basis = Basis.looking_at(normal, up_ref)
 
+		base_basis = base_basis.scaled_local(preview_scale)
 		placing_equipment.global_transform.basis = base_basis
 
-		# Auto-calculate offset from collision shape so the contact face sits flush
-		var offset: float = 0.0
-		if equip and equip is EquipmentScript:
-			var local_into_surface: Vector3 = base_basis.inverse() * (-normal)
-			var half: Vector3 = equip.get_half_extents()
-			offset = abs(local_into_surface.x) * half.x + abs(local_into_surface.y) * half.y + abs(local_into_surface.z) * half.z
+		if snap_enabled and target_support.has_method("get_mount_snap_points"):
+			for point in target_support.get_mount_snap_points():
+				if point.distance_to(result.position) < 0.3:
+					result.position = point
+					break
+		var bounds: AABB = equip.get_placement_bounds()
+		var scaled_half: Vector3 = bounds.size * 0.5
+		var offset := 0.0
+		for axis in range(3):
+			offset += absf(normal.dot(base_basis[axis])) * scaled_half[axis]
+		placing_equipment.global_position = result.position + normal * (offset + 0.012) - base_basis * bounds.get_center()
+		can_place_equipment = PlacementRules.can_place(equip, target_support, placing_equipment.global_transform)
+		if equip.ghost_material is StandardMaterial3D:
+			equip.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
-		placing_equipment.global_position = result.position + (normal * offset)
 	else:
 		can_place_equipment = false
+		target_support = null
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false
 

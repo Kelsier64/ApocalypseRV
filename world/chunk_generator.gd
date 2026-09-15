@@ -282,6 +282,8 @@ func _build_navigation() -> void:
 			navigation.navigation_mesh = nav)
 
 func _spawn_actors() -> void:
+	if get_meta("skip_actors", false):
+		return
 	var container := WorldEntities.get_container(self)
 	if container == null:
 		container = self

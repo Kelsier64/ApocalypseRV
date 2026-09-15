@@ -75,7 +75,7 @@ var is_player_dead: bool = false
 @onready var climb_upward_probe = $ClimbUpwardProbe
 
 func add_prop_item(prop: Prop, path: String) -> bool:
-	return add_item(prop.item_name, prop.is_large, path, {"scrap_yields": prop.scrap_yields.duplicate(true)})
+	return add_item(prop.item_name, prop.is_large, path, prop.capture_item_state())
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
 	if not inventory.add_item(item_name, is_large, scene_path, state):
@@ -120,6 +120,9 @@ func _equip_active_slot():
 				held_item_node.collision_mask = 0
 				
 			hand_marker.add_child(held_item_node)
+			# World labels should not cover the interaction HUD in a held preview.
+			for label in held_item_node.find_children("*", "Label3D", true, false):
+				label.hide()
 			
 			# Apply visual holding offsets if it's our new Prop class
 			if held_item_node is PropScript:
@@ -251,11 +254,10 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 	if node is Prop:
 		node.item_name = data["name"]
 		node.is_large = data["is_large"]
-		if data.get("state", {}).has("scrap_yields"):
-			node.scrap_yields = data.state.scrap_yields.duplicate(true)
+		node.restore_item_state(data.get("state", {}))
 
 func _unhandled_input(event):
-	if in_ui_mode: return
+	if in_ui_mode or is_player_dead: return
 	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally
@@ -641,6 +643,8 @@ func _exit_climb_to_normal() -> void:
 	_sync_body_collision_to_locomotion()
 
 func _physics_process(delta):
+	if is_player_dead:
+		return
 	_sync_body_collision_to_locomotion()
 	if is_instance_valid(seated_in):
 		global_position = seated_in.global_position
@@ -687,6 +691,9 @@ func _update_health_bar():
 		health_bar.set_health(current_player_health, max_player_health)
 
 func _player_die():
+	if is_placing_equipment():
+		placement.placing_equipment.cancel_placement()
+		placement.placing_equipment = null
 	is_player_dead = true
 	print(">>> PLAYER DIED! <<<")
 	# For now just respawn with full health after 2 seconds
@@ -699,3 +706,7 @@ func _respawn():
 	current_player_health = max_player_health
 	_update_health_bar()
 	print("Player respawned!")
+
+func refresh_inventory() -> void:
+	_update_inventory_display()
+	_equip_active_slot()

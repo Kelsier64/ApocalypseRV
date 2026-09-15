@@ -32,6 +32,12 @@ func _run() -> void:
 		room.free()
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
 	main.get_node("WorldGenerator").world_seed = 42
+	# The production sandbox may omit its debug enemy; this test owns its AI fixture.
+	if not main.has_node("Zombie"):
+		var enemy: Monster = load("res://enemies/zombie.tscn").instantiate()
+		enemy.name = "Zombie"
+		enemy.position = Vector3(0, 1, 8)
+		main.add_child(enemy)
 	root.add_child(main)
 	current_scene = main
 	# Registration occurs during ready; current_scene is set after adding in SceneTree tests.

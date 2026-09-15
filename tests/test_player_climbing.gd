@@ -3,6 +3,9 @@ extends SceneTree
 var failures: Array[String] = []
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	_test_wall_gate_requires_jump_and_w_and_rv()
 	_test_wall_normal_gate_accepts_vertical_rejects_floor()
 	_test_wall_gate_rejects_undercarriage_like_hits()

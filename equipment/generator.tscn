@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://equipment/generator.gd" id="1_5yxne"]
 
+[ext_resource type="Resource" path="res://equipment/generator_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w5vnv"]
 albedo_color = Color(0.8, 0.2, 0.2, 1)
 
@@ -12,6 +14,7 @@ size = Vector3(0.8, 0.6, 1.2)
 size = Vector3(0.8, 0.6, 1.2)
 
 [node name="Generator" type="RigidBody3D" unique_id=1087168760]
+definition = ExtResource("def")
 mass = 50.0
 script = ExtResource("1_5yxne")
 equipment_name = "Portable Generator"

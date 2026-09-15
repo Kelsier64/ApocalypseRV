@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bpfsmse26wlie" path="res://equipment/scrapper.gd" id="1_sut5x"]
 
+[ext_resource type="Resource" path="res://equipment/scrapper_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ojfv"]
 albedo_color = Color(0.8, 0.2, 0.2, 1)
 
@@ -24,6 +26,7 @@ size = Vector3(0.07, 0.63, 0.91)
 size = Vector3(0.6, 0.53623044, 0.6)
 
 [node name="Scrapper" type="RigidBody3D" unique_id=1514036190]
+definition = ExtResource("def")
 mass = 80.0
 script = ExtResource("1_sut5x")
 equipment_name = "Recycling Scrapper"

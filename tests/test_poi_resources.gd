@@ -3,6 +3,9 @@ extends SceneTree
 var failures: Array[String] = []
 
 func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
 	for entry in POIConfig.POI_TABLE:
 		if entry.get("type") != "instance_entrance" or str(entry.get("scene", "")).is_empty():
 			failures.append("POI requires an instance entrance scene: " + str(entry.get("id")))

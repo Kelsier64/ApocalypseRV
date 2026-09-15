@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://gu5xmjposerq" path="res://equipment/crafting_station.gd" id="1_2d3jp"]
 
+[ext_resource type="Resource" path="res://equipment/crafting_station_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_m78at"]
 albedo_color = Color(0.4, 0.4, 0.45, 1)
 metallic = 0.8
@@ -14,6 +16,7 @@ size = Vector3(1.2, 0.2, 0.8)
 size = Vector3(1.2, 0.2, 0.8)
 
 [node name="CraftingStation" type="RigidBody3D" unique_id=544239755]
+definition = ExtResource("def")
 mass = 25.0
 script = ExtResource("1_2d3jp")
 equipment_name = "Crafting Station"

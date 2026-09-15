@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dybd1r2hes00p" path="res://equipment/tablet_screen.gd" id="1_js8em"]
 
+[ext_resource type="Resource" path="res://equipment/tablet_screen_definition.tres" id="def"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ngrwl"]
 albedo_color = Color(1, 0.101960786, 0.101960786, 1)
 
@@ -12,6 +14,7 @@ size = Vector3(0.6, 0.05, 0.4)
 size = Vector3(0.6, 0.05, 0.4)
 
 [node name="TabletScreen" type="RigidBody3D" unique_id=2003751090]
+definition = ExtResource("def")
 mass = 5.0
 script = ExtResource("1_js8em")
 equipment_name = "Tablet Screen"
