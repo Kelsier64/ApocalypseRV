@@ -6,7 +6,7 @@ class_name CraftingStation
 
 func _ready():
 	super._ready()
-	add_to_group("crafting_stations")
+	add_to_group(Groups.CRAFTING_STATIONS)
 	
 func spawn_item(scene_path: String) -> bool:
 	var rv = get_connected_rv()
@@ -27,10 +27,12 @@ func spawn_item(scene_path: String) -> bool:
 		return false
 		
 	var item = item_scene.instantiate()
-	
-	# Spawn it in the world, not as a child, so it can be picked up and physics drop normally
-	# But actually, spawned items from machines usually pop out into the world.
-	var world = get_tree().current_scene
+
+	# Spawn into the shared entity container (not as a child of the station) so
+	# it can be picked up and physics-drop normally without leaking scene-root nodes.
+	var world: Node = WorldEntities.get_container(self)
+	if world == null:
+		world = get_tree().current_scene
 	if world:
 		world.add_child(item)
 		if spawn_marker:

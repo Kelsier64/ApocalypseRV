@@ -29,10 +29,12 @@ func interact_hold(player: Node3D):
 		return
 	
 	if ui_instance and not ui_instance.visible:
-		# Tell the player to lock movement and camera
-		if player.has_method("enter_ui_mode"):
-			player.enter_ui_mode()
-			
+		# Tell the player to lock movement and camera; abort when it refuses
+		# (already seated, placing equipment, ...).
+		if player.has_method("enter_ui_mode") and not player.enter_ui_mode():
+			return
+
+
 		if ui_instance.has_method("on_open"):
 			ui_instance.on_open()
 			

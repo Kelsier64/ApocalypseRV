@@ -11,56 +11,56 @@ const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
 const CLIMB_VERTICAL_SPEED = 2.6
 const CLIMB_SIDE_SPEED = 1.2
 const CLIMB_WALL_STICK_SPEED = 0.0
-const CLIMB_TOP_MIN_DOT = 0.35
-const CLIMB_CONTACT_GRACE_TIME = 0.28
-const CLIMB_START_CEILING_CHECK_DISTANCE = 0.8
+const CLIMB_CONTACT_GRACE_TIME = 0.6
+const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
 const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
 const CLIMB_MAX_FRAME_DELTA = 1.5
 const CLIMB_REENTER_COOLDOWN = 0.2
 const CLIMB_WALL_ALIGN_OFFSET = 0.22
 const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
-const MANTLE_DURATION = 0.22
-const MANTLE_FORWARD_OFFSET = 0.18
-const MANTLE_UP_OFFSET = 0.1
-const MANTLE_MIN_TARGET_CLEARANCE = 1.25
 const CLIMB_DEBUG_LOG_ABORTS = false
-const MANTLE_ROOF_PROBE_UP = 2.2
-const MANTLE_ROOF_PROBE_DOWN = 0.8
 const PropScript = preload("res://props/interactable_item.gd")
-const EquipmentScript = preload("res://equipment/equipment.gd")
 
 @onready var camera = $Camera3D
 
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-const MAX_SLOTS = 6
-var inventory: Array[Dictionary] = []
-var has_large_item: bool = false
-var active_slot_index: int = 0
+const MAX_SLOTS = PlayerInventory.MAX_SLOTS
+var inventory := PlayerInventory.new()
+var placement := EquipmentPlacement.new()
 var held_item_node: Node3D = null
 
-# Equipment Placement
-var placing_equipment: Node3D = null
-var max_place_distance: float = 4.0
-var can_place_equipment: bool = false
-enum PlacementMode { SURFACE, UPRIGHT } # SURFACE: bottom_face sticks to surface, UPRIGHT: bottom stays down
-var placement_mode: PlacementMode = PlacementMode.SURFACE
+@export_group("Debug")
+@export var debug_climb_messages: bool = false
+@export var debug_climb_message_interval: float = 0.35
 
 # UI State
 var in_ui_mode: bool = false
 
+# Top-level mode. The individual flags (in_ui_mode, placement state,
+# seated_in, is_player_dead) remain the storage, but every transition must go
+# through the enter_/exit_ helpers below so exclusivity is enforced in one
+# place instead of ad-hoc at each call site.
+enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD }
+var seated_in: Node3D = null
+
 # Locomotion
-enum LocomotionState { NORMAL, CLIMBING, MANTLING }
+enum LocomotionState { NORMAL, CLIMBING }
 var locomotion_state: LocomotionState = LocomotionState.NORMAL
 var active_climb_rv: Node3D = null
 var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
 var active_wall_normal: Vector3 = Vector3.ZERO
+var climb_carrier_velocity := Vector3.ZERO
+var released_carrier_velocity := Vector3.ZERO
+var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
-var mantle_start_position: Vector3 = Vector3.ZERO
-var mantle_target_position: Vector3 = Vector3.ZERO
-var mantle_elapsed: float = 0.0
+var debug_last_ceiling_hit_distance: float = INF
+var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
+var debug_last_ceiling_hit_source: String = ""
+var debug_last_ceiling_hit_node: String = ""
+var debug_climb_last_log_time_by_tag: Dictionary = {}
 
 # Health System
 var max_player_health: float = 100.0
@@ -74,42 +74,23 @@ var is_player_dead: bool = false
 @onready var climb_wall_probe = $ClimbWallProbe
 @onready var climb_upward_probe = $ClimbUpwardProbe
 
-func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
-	if is_large and has_large_item:
-		print("You are already carrying a large item! Must drop it first.")
+func add_prop_item(prop: Prop, path: String) -> bool:
+	return add_item(prop.item_name, prop.is_large, path, {"scrap_yields": prop.scrap_yields.duplicate(true)})
+
+func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+	if not inventory.add_item(item_name, is_large, scene_path, state):
 		return false
-	if inventory.size() >= MAX_SLOTS:
-		print("Inventory full!")
-		return false
-		
-	inventory.append({"name": item_name, "is_large": is_large, "scene_path": scene_path})
-	var added_index = inventory.size() - 1
-	
-	if is_large:
-		has_large_item = true
-		active_slot_index = added_index # Force select this new slot
-		
 	_update_inventory_display()
-	
-	# If the item we just added is in the slot we are currently looking at
-	if active_slot_index == added_index:
+	if inventory.active_slot == inventory.items.size() - 1:
 		_equip_active_slot()
-		
 	return true
 
 func _update_inventory_display():
 	if inventory_ui and inventory_ui.has_method("update_slots"):
-		inventory_ui.update_slots(inventory, active_slot_index)
+		inventory_ui.update_slots(inventory.items, inventory.active_slot)
 
-func _set_active_slot(index: int):
-	# If we are currently holding a large item, we CANNOT switch away from it.
-	if active_slot_index >= 0 and active_slot_index < inventory.size():
-		if inventory[active_slot_index].get("is_large", false) and index != active_slot_index:
-			print("You must drop the large item before switching slots!")
-			return
-			
-	if active_slot_index != index:
-		active_slot_index = index
+func _set_active_slot(index: int) -> void:
+	if inventory.select_slot(index):
 		_update_inventory_display()
 		_equip_active_slot()
 
@@ -126,11 +107,12 @@ func _equip_active_slot():
 		held_item_node.queue_free()
 		held_item_node = null
 		
-	if active_slot_index < inventory.size() and active_slot_index >= 0:
-		var item_data = inventory[active_slot_index]
+	if inventory.active_slot < inventory.items.size() and inventory.active_slot >= 0:
+		var item_data = inventory.items[inventory.active_slot]
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			held_item_node = scene.instantiate()
+			_restore_prop_state(held_item_node, item_data)
 			# Disable physics so it's just visual while held
 			if held_item_node is RigidBody3D:
 				held_item_node.freeze = true
@@ -148,6 +130,8 @@ func _equip_active_slot():
 				held_item_node.transform = Transform3D.IDENTITY
 
 func _ready():
+	# Frozen RV panels need explicit support motion; avoid applying it twice.
+	platform_floor_layers = 0
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	camera.current = true
 	_update_inventory_display()
@@ -159,52 +143,95 @@ func _ready():
 		climb_upward_probe.collide_with_areas = true
 		climb_upward_probe.exclude_parent = true
 	_sync_body_collision_to_locomotion()
-	add_to_group("player")
+	add_to_group(Groups.PLAYER)
 	current_player_health = max_player_health
 	_update_health_bar()
 
 func is_placing_equipment() -> bool:
-	return placing_equipment != null
+	return is_instance_valid(placement.placing_equipment)
 
 func get_active_item_name() -> String:
-	if active_slot_index >= 0 and active_slot_index < inventory.size():
-		return inventory[active_slot_index].get("name", "")
-	return ""
+	return inventory.active_item().get("name", "")
 
 func consume_active_item() -> void:
-	if active_slot_index < 0 or active_slot_index >= inventory.size():
-		return
-	var item_data: Dictionary = inventory[active_slot_index]
-	if item_data.get("is_large", false):
-		has_large_item = false
-	inventory.remove_at(active_slot_index)
-	if active_slot_index >= inventory.size():
-		active_slot_index = max(0, inventory.size() - 1)
-	_update_inventory_display()
-	_equip_active_slot()
+	if inventory.consume_active():
+		_update_inventory_display()
+		_equip_active_slot()
 
-func enter_equipment_placement(equip: Node3D):
-	placing_equipment = equip
-	placement_mode = PlacementMode.SURFACE
+func get_player_mode() -> PlayerMode:
+	if is_player_dead:
+		return PlayerMode.DEAD
+	if seated_in != null:
+		return PlayerMode.SEATED
+	if in_ui_mode:
+		return PlayerMode.UI
+	if is_placing_equipment():
+		return PlayerMode.PLACING
+	return PlayerMode.NORMAL
 
-func enter_ui_mode():
+## Modes are mutually exclusive: each enter_* helper only succeeds from NORMAL
+## and returns whether the transition happened, so callers must not proceed
+## with their side of the flow on a refusal.
+func enter_equipment_placement(equip: Node3D) -> bool:
+	if get_player_mode() != PlayerMode.NORMAL:
+		return false
+	placement.begin(equip)
+	return true
+
+func enter_ui_mode() -> bool:
+	if get_player_mode() != PlayerMode.NORMAL:
+		return false
 	in_ui_mode = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	
+	return true
+
 func exit_ui_mode():
 	in_ui_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
+## Seat flow: the player owns its own state mutation; the seat only decides
+## where the player reappears and which camera takes over.
+func enter_seat_mode(seat: Node3D) -> bool:
+	if get_player_mode() != PlayerMode.NORMAL:
+		return false
+	_exit_climb_to_normal()
+	rv_support.clear()
+	velocity = Vector3.ZERO
+	released_carrier_velocity = Vector3.ZERO
+	seated_in = seat
+	global_position = seat.global_position
+	set_process_unhandled_input(false)
+	body_collision_shape.disabled = true
+	visible = false
+	return true
+
+func exit_seat_mode(exit_position: Vector3) -> void:
+	if seated_in == null:
+		return
+	var rv := _find_rv_ancestor(seated_in)
+	velocity = ClimbMath.point_velocity(rv, exit_position)
+	released_carrier_velocity = velocity
+	seated_in = null
+	set_physics_process(true)
+	set_process_unhandled_input(true)
+	body_collision_shape.disabled = false
+	visible = true
+	global_position = exit_position
+	camera.current = true
+
 func drop_item():
-	if active_slot_index >= 0 and active_slot_index < inventory.size():
-		var item_data = inventory[active_slot_index]
+	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
+		var item_data = inventory.items[inventory.active_slot]
 		
 		# Spawn it back into the world
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			var dropped_item = scene.instantiate()
-			# Add to the root node (usually the World scene)
-			get_tree().current_scene.add_child(dropped_item)
+			_restore_prop_state(dropped_item, item_data)
+			var entity_parent: Node = WorldEntities.get_container(self)
+			if entity_parent == null:
+				entity_parent = get_tree().current_scene
+			entity_parent.add_child(dropped_item)
 			
 			# Position it in front of the player
 			var drop_transform = global_transform
@@ -218,18 +245,14 @@ func drop_item():
 			if dropped_item is RigidBody3D:
 				dropped_item.linear_velocity = -transform.basis.z * 3.0
 			
-		# Update inventory state
-		if item_data.get("is_large", false):
-			has_large_item = false
-			
-		inventory.remove_at(active_slot_index)
-		
-		# Clamp active slot index if we dropped the last item
-		if active_slot_index >= inventory.size():
-			active_slot_index = max(0, inventory.size() - 1)
-			
-		_update_inventory_display()
-		_equip_active_slot()
+		consume_active_item()
+
+func _restore_prop_state(node: Node, data: Dictionary) -> void:
+	if node is Prop:
+		node.item_name = data["name"]
+		node.is_large = data["is_large"]
+		if data.get("state", {}).has("scrap_yields"):
+			node.scrap_yields = data.state.scrap_yields.duplicate(true)
 
 func _unhandled_input(event):
 	if in_ui_mode: return
@@ -248,78 +271,35 @@ func _unhandled_input(event):
 	# Mouse wheel to change slots
 	if event is InputEventMouseButton and event.is_pressed():
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_set_active_slot((active_slot_index - 1 + MAX_SLOTS) % MAX_SLOTS)
+			_set_active_slot((inventory.active_slot - 1 + MAX_SLOTS) % MAX_SLOTS)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_set_active_slot((active_slot_index + 1) % MAX_SLOTS)
+			_set_active_slot((inventory.active_slot + 1) % MAX_SLOTS)
 			
 	# Number keys to change slots
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		if event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_6:
-			_set_active_slot(event.physical_keycode - KEY_1)
-			
+	for slot in range(MAX_SLOTS):
+		if event.is_action_pressed("hotbar_%d" % (slot + 1)):
+			_set_active_slot(slot)
+			break
+
 	# Drop item
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		if event.physical_keycode == KEY_G:
-			drop_item()
-			
-	# Equipment Placement confirmation
-	if placing_equipment:
-		if event is InputEventKey and event.is_pressed() and not event.is_echo():
-			if event.physical_keycode == KEY_R:
-				if placement_mode == PlacementMode.SURFACE:
-					placement_mode = PlacementMode.UPRIGHT
-				else:
-					placement_mode = PlacementMode.SURFACE
-		if event is InputEventMouseButton and event.is_pressed():
-			if event.button_index == MOUSE_BUTTON_LEFT and can_place_equipment:
-				# We attempt to find what we are placing it ON to reparent it properly
-				var space_state = get_world_3d().direct_space_state
-				var from = camera.global_position
-				var to = from + -camera.global_transform.basis.z * max_place_distance
+	if event.is_action_pressed("drop_item"):
+		drop_item()
 
-				# Ignore ourselves and the equipment itself
-				var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), placing_equipment.get_rid()])
-				var result = space_state.intersect_ray(query)
+	placement.handle_input(self, event)
 
-				# Walk up from the collider to find the RV chassis instead of parenting
-				# to whatever we hit (which could be another wall panel)
-				var new_parent = null
-				if result and result.collider is Node3D:
-					var candidate: Node = result.collider
-					while candidate != null:
-						if candidate is VehicleBody3D or candidate.is_in_group("rv"):
-							new_parent = candidate
-							break
-						candidate = candidate.get_parent()
-					if new_parent == null:
-						new_parent = result.collider
-				else:
-					new_parent = get_tree().current_scene
-
-				placing_equipment.confirm_placement(placing_equipment.global_transform, new_parent)
-				placing_equipment = null
-				
-			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				placing_equipment.cancel_placement()
-				placing_equipment = null
-
-func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
-	var n := hit_normal.normalized()
-	var up := rv_up.normalized()
-	var d := absf(n.dot(up))
-	return d >= CLIMB_WALL_MIN_DOT and d <= CLIMB_WALL_MAX_DOT
-
-func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
-	return local_hit_y >= CLIMB_MIN_HIT_Y and local_hit_y <= CLIMB_MAX_HIT_Y
-
-func _can_begin_climb(jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
+## Pure climb-start gate (test contract): W + RV hit + wall-like normal +
+## valid hit height are all required; jump state must not matter.
+func _can_begin_climb(_jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
 	return w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
 
-func _can_start_mantle(top_surface_ok: bool, stand_clearance_ok: bool, forward_clear_ok: bool) -> bool:
-	return top_surface_ok and stand_clearance_ok and forward_clear_ok
+func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
+	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
 
-func _should_disable_body_collision_for_locomotion(state: int) -> bool:
-	return state == LocomotionState.CLIMBING or state == LocomotionState.MANTLING
+func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
+	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
+
+func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
+	return seated_in != null
 
 func _sync_body_collision_to_locomotion() -> void:
 	if body_collision_shape == null:
@@ -327,76 +307,57 @@ func _sync_body_collision_to_locomotion() -> void:
 	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
 
 func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
-	return next_rv_transform.origin - prev_rv_transform.origin
+	return ClimbMath.rv_position_delta(prev_rv_transform, next_rv_transform)
 
 func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
-	var out := v
-	if out.y > CLIMB_EXIT_MAX_UP_VELOCITY:
-		out.y = 0.0
-	return out
+	return ClimbMath.sanitize_velocity_after_climb(v, CLIMB_EXIT_MAX_UP_VELOCITY)
 
-func _compute_mantle_target(top_point: Vector3, rv_up: Vector3, cam_forward: Vector3) -> Vector3:
-	# Keep a deterministic minimum so top-out does not regress when capsule setup changes.
-	var clearance_up := maxf(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + _get_stand_origin_offset_up())
-	var stand_base: Vector3 = top_point + rv_up * clearance_up
-	return stand_base + cam_forward * MANTLE_FORWARD_OFFSET
+func _debug_v3(v: Vector3) -> String:
+	return ClimbMath.format_v3(v)
 
-func _get_stand_origin_offset_up() -> float:
-	if body_collision_shape and body_collision_shape.shape is CapsuleShape3D:
-		var capsule := body_collision_shape.shape as CapsuleShape3D
-		var half_extent := capsule.height * 0.5 + capsule.radius
-		var center_y: float = float(body_collision_shape.position.y)
-		return maxf(0.08, half_extent - center_y + 0.03)
-	return 0.15
+func _debug_node_name(node: Node) -> String:
+	return ClimbMath.format_node_name(node)
+
+func _debug_climb_side_label(rv: Node3D, wall_normal: Vector3) -> String:
+	return ClimbMath.climb_side_label(rv, wall_normal)
+
+func _debug_climb_log(tag: String, message: String, force: bool = false) -> void:
+	if not debug_climb_messages:
+		return
+	var now: float = Time.get_ticks_msec() * 0.001
+	if not force:
+		var last: float = float(debug_climb_last_log_time_by_tag.get(tag, -INF))
+		if now - last < maxf(0.01, debug_climb_message_interval):
+			return
+	debug_climb_last_log_time_by_tag[tag] = now
+	print("[CLIMB_DEBUG][player][", tag, "] ", message)
 
 func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: float, horizontal_input: float, delta: float) -> Vector3:
-	var wall_tangent := rv_up.cross(wall_normal).normalized()
-	if wall_tangent.length_squared() < 0.001:
-		wall_tangent = transform.basis.x.normalized()
-
-	var motion := (rv_up * vertical_input * CLIMB_VERTICAL_SPEED)
-	motion += wall_tangent * horizontal_input * CLIMB_SIDE_SPEED
-	motion += (-wall_normal) * CLIMB_WALL_STICK_SPEED
-	var inward_mag := motion.dot(-wall_normal)
-	if inward_mag > 0.0:
-		motion += wall_normal * inward_mag
-	motion *= delta
-	if motion.length() > CLIMB_MAX_FRAME_DELTA:
-		motion = motion.normalized() * CLIMB_MAX_FRAME_DELTA
-	return motion
+	return ClimbMath.build_climb_motion(rv_up, wall_normal, vertical_input, horizontal_input, delta,
+		CLIMB_VERTICAL_SPEED, CLIMB_SIDE_SPEED, CLIMB_WALL_STICK_SPEED, CLIMB_MAX_FRAME_DELTA, transform.basis.x)
 
 func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float) -> float:
+	debug_last_ceiling_hit_distance = INF
+	debug_last_ceiling_hit_position = Vector3.ZERO
+	debug_last_ceiling_hit_source = ""
+	debug_last_ceiling_hit_node = ""
+
 	if desired_upward_distance <= 0.0:
 		return 0.0
 
 	var from := global_position + rv_up * 0.2
 	var to := from + rv_up * (desired_upward_distance + 0.8)
-	var min_hit_distance := INF
-
-	if climb_upward_probe != null:
-		var local_from := to_local(from)
-		var local_to := to_local(to)
-		climb_upward_probe.position = local_from
-		climb_upward_probe.target_position = local_to - local_from
-		climb_upward_probe.force_raycast_update()
-		if climb_upward_probe.is_colliding():
-			var probe_hit_position: Vector3 = climb_upward_probe.get_collision_point()
-			min_hit_distance = minf(min_hit_distance, from.distance_to(probe_hit_position))
-
-	# Fallback query improves robustness when RayCast3D node config/layers miss a collider.
-	var space_state := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
-	query.hit_from_inside = true
-	var hit := space_state.intersect_ray(query)
-	if hit:
-		var hit_position: Vector3 = hit.get("position", from) as Vector3
-		min_hit_distance = minf(min_hit_distance, from.distance_to(hit_position))
-
-	if min_hit_distance == INF:
+	var hit := ClimbMath.nearest_ceiling_hit(climb_upward_probe, self, from, to)
+	if hit.is_empty():
 		return desired_upward_distance
 
+	debug_last_ceiling_hit_distance = hit["distance"]
+	debug_last_ceiling_hit_position = hit["position"]
+	debug_last_ceiling_hit_source = hit["source"]
+	debug_last_ceiling_hit_node = hit["node_label"]
+
 	# Keep a small safety gap so we stop before interpenetrating the ceiling surface.
-	var safe_distance := maxf(0.0, min_hit_distance - 0.05)
+	var safe_distance: float = maxf(0.0, hit["distance"] - 0.05)
 	return minf(desired_upward_distance, safe_distance)
 
 func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
@@ -424,47 +385,33 @@ func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
 	var outward_step: Vector3 = wall_normal * minf(outward_mag, CLIMB_WALL_MAX_OUTWARD_CORRECTION)
 	_move_with_climb_collision(outward_step)
 
-func _probe_roof_from_above(rv_up: Vector3, cam_forward: Vector3) -> Dictionary:
-	if active_climb_rv == null:
-		return {}
-
-	var space_state := get_world_3d().direct_space_state
-	var from := global_position + rv_up * MANTLE_ROOF_PROBE_UP + cam_forward * (MANTLE_FORWARD_OFFSET + 0.35)
-	var to := global_position - rv_up * MANTLE_ROOF_PROBE_DOWN + cam_forward * (MANTLE_FORWARD_OFFSET + 0.35)
-	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
-	var hit := space_state.intersect_ray(query)
-	if hit:
-		var hit_node := hit.collider as Node
-		if _find_rv_ancestor(hit_node) == active_climb_rv:
-			return {
-				"position": hit.position,
-				"normal": hit.normal
-			}
-	return {}
-
 func _find_rv_ancestor(node: Node) -> Node3D:
-	var current := node
-	while current != null:
-		if current is Node3D and current.is_in_group("rv"):
-			return current as Node3D
-		current = current.get_parent()
-	return null
+	return ClimbMath.find_rv_ancestor(node)
 
 func _process_normal_movement(delta: float) -> void:
+	var had_support := is_instance_valid(rv_support.rv)
+	var last_support_velocity := rv_support.carrier_velocity
+	var was_supported := rv_support.follow(self, delta)
+	var support_velocity := rv_support.carrier_velocity
+	if had_support and not was_supported:
+		released_carrier_velocity = last_support_velocity
+		velocity.y += last_support_velocity.y
+	if is_on_floor() and not (had_support and not was_supported):
+		released_carrier_velocity = Vector3.ZERO
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
-	if Input.is_physical_key_pressed(KEY_A):
+	if Input.is_action_pressed("move_left"):
 		input_dir.x -= 1
-	if Input.is_physical_key_pressed(KEY_D):
+	if Input.is_action_pressed("move_right"):
 		input_dir.x += 1
-	if Input.is_physical_key_pressed(KEY_W):
+	if Input.is_action_pressed("move_forward"):
 		input_dir.y -= 1
-	if Input.is_physical_key_pressed(KEY_S):
+	if Input.is_action_pressed("move_back"):
 		input_dir.y += 1
 
 	if input_dir.length_squared() > 0.0:
@@ -475,19 +422,28 @@ func _process_normal_movement(delta: float) -> void:
 		velocity.x = direction.x * SPEED
 		velocity.z = direction.z * SPEED
 	else:
-		velocity.x = move_toward(velocity.x, 0.0, SPEED)
-		velocity.z = move_toward(velocity.z, 0.0, SPEED)
+		velocity.x = 0.0
+		velocity.z = 0.0
 
+	velocity.x += released_carrier_velocity.x
+	velocity.z += released_carrier_velocity.z
 	move_and_slide()
+	velocity.x -= released_carrier_velocity.x
+	velocity.z -= released_carrier_velocity.z
+	if not rv_support.capture(self) and was_supported:
+		released_carrier_velocity = support_velocity
+		velocity.y += support_velocity.y
 
 func _try_start_climb() -> void:
 	if locomotion_state != LocomotionState.NORMAL:
 		return
 	if climb_reenter_cooldown_remaining > 0.0:
+		_debug_climb_log("start_cooldown", "blocked by reenter cooldown: %.2f" % climb_reenter_cooldown_remaining)
 		return
-	if not Input.is_physical_key_pressed(KEY_W):
+	if not Input.is_action_pressed("move_forward"):
 		return
 	if climb_wall_probe == null or not climb_wall_probe.is_colliding():
+		_debug_climb_log("start_probe_miss", "wall probe has no hit")
 		return
 
 	var hit_node := climb_wall_probe.get_collider() as Node
@@ -499,118 +455,85 @@ func _try_start_climb() -> void:
 	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
 	var local_hit_y: float = to_local(hit_point).y
 	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
-	if _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE) < CLIMB_START_CEILING_CHECK_DISTANCE:
+	var start_allowed_upward := _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE)
+	if start_allowed_upward < CLIMB_START_CEILING_CHECK_DISTANCE:
 		# Ceiling detected overhead: block entering climb state.
+		_debug_climb_log(
+			"start_ceiling_block",
+			"side=%s allowed=%.2f wanted=%.2f hit_dist=%.2f src=%s hit_node=%s hit_pos=%s wall_n=%s" % [
+				_debug_climb_side_label(rv, hit_normal),
+				start_allowed_upward,
+				CLIMB_START_CEILING_CHECK_DISTANCE,
+				debug_last_ceiling_hit_distance,
+				debug_last_ceiling_hit_source,
+				debug_last_ceiling_hit_node,
+				_debug_v3(debug_last_ceiling_hit_position),
+				_debug_v3(hit_normal.normalized())
+			]
+		)
 		return
 	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
 	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
+	# W-pressed and RV-hit are already guaranteed by the early returns above.
 	if not _can_begin_climb(false, true, true, wall_normal_ok, hit_height_ok):
+		_debug_climb_log(
+			"start_gate_reject",
+			"side=%s wall_ok=%s hit_y=%.2f range=[%.2f, %.2f] wall_dot_up=%.2f" % [
+				_debug_climb_side_label(rv, hit_normal),
+				str(wall_normal_ok),
+				local_hit_y,
+				CLIMB_MIN_HIT_Y,
+				CLIMB_MAX_HIT_Y,
+				absf(hit_normal.normalized().dot(rv_up))
+			]
+		)
 		return
 
 	locomotion_state = LocomotionState.CLIMBING
+	rv_support.clear()
 	active_climb_rv = rv
 	previous_climb_rv_transform = rv.global_transform
 	active_wall_normal = hit_normal.normalized()
 	climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
+	climb_carrier_velocity = ClimbMath.point_velocity(rv, global_position)
+	released_carrier_velocity = Vector3.ZERO
 	velocity = Vector3.ZERO
+	_debug_climb_log(
+		"start_ok",
+		"entered climbing side=%s wall_n=%s hit_y=%.2f" % [
+			_debug_climb_side_label(rv, hit_normal),
+			_debug_v3(active_wall_normal),
+			local_hit_y
+		],
+		true
+	)
 
 func _apply_rv_delta_compensation() -> void:
 	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
 		return
 	var next_transform := active_climb_rv.global_transform
-	var delta_pos := _compute_rv_position_delta(previous_climb_rv_transform, next_transform)
+	var delta_pos := ClimbMath.attachment_delta(previous_climb_rv_transform, next_transform, global_position)
 	if delta_pos.length() > CLIMB_MAX_FRAME_DELTA:
-		delta_pos = delta_pos.normalized() * CLIMB_MAX_FRAME_DELTA
+		climb_carrier_velocity = Vector3.ZERO
+		_abort_climb("rv teleported")
+		return
+	var rotation_delta := next_transform.basis * previous_climb_rv_transform.basis.inverse()
+	active_wall_normal = (rotation_delta * active_wall_normal).normalized()
+	rotate_y(rotation_delta.get_euler().y)
+	climb_carrier_velocity = delta_pos / get_physics_process_delta_time()
 	var collision := _move_with_climb_collision(delta_pos)
 	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
 		active_wall_normal = collision.get_normal().normalized()
 	previous_climb_rv_transform = next_transform
-
-func _query_mantle_target() -> Dictionary:
-	if active_climb_rv == null:
-		return {"ok": false}
-
-	var rv_up: Vector3 = active_climb_rv.global_transform.basis.y.normalized()
-	var cam_forward: Vector3 = -camera.global_transform.basis.z
-	cam_forward = (cam_forward - rv_up * cam_forward.dot(rv_up)).normalized()
-	if cam_forward.length_squared() < 0.001:
-		cam_forward = (-active_wall_normal).normalized()
-
-	var top_hit: Dictionary = _probe_roof_from_above(rv_up, cam_forward)
-	if top_hit.is_empty():
-		return {"ok": false}
-
-	var top_normal: Vector3 = (top_hit.get("normal", rv_up) as Vector3).normalized()
-	var top_surface_ok: bool = top_normal.dot(rv_up) >= CLIMB_TOP_MIN_DOT
-	var top_point: Vector3 = top_hit.get("position", global_position) as Vector3
-	var target: Vector3 = _compute_mantle_target(top_point, rv_up, cam_forward)
-
-	var stand_clearance_ok: bool = _is_stand_position_clear(target)
-
-	var space_state := get_world_3d().direct_space_state
-	var forward_from: Vector3 = target + rv_up * 0.2
-	var forward_to: Vector3 = forward_from + cam_forward * 0.35
-	var forward_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(forward_from, forward_to, 0xFFFFFFFF, [self.get_rid()])
-	var forward_hit := space_state.intersect_ray(forward_query)
-	var forward_clear_ok := true
-	if forward_hit:
-		var f_node := forward_hit.collider as Node
-		if _find_rv_ancestor(f_node) != active_climb_rv:
-			forward_clear_ok = false
-
-	return {
-		"ok": _can_start_mantle(top_surface_ok, stand_clearance_ok, forward_clear_ok),
-		"target": target
-	}
-
-func _is_stand_position_clear(candidate_position: Vector3) -> bool:
-	if active_climb_rv == null:
-		return true
-
-	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
-	var space_state := get_world_3d().direct_space_state
-
-	# 1) Need support surface under target feet.
-	var support_from := candidate_position + rv_up * 0.25
-	var support_depth := maxf(MANTLE_MIN_TARGET_CLEARANCE, MANTLE_UP_OFFSET + _get_stand_origin_offset_up()) + 0.2
-	var support_to := candidate_position - rv_up * support_depth
-	var support_query := PhysicsRayQueryParameters3D.create(support_from, support_to, 0xFFFFFFFF, [self.get_rid()])
-	var support_hit := space_state.intersect_ray(support_query)
-	if not support_hit:
-		return false
-	var support_node := support_hit.collider as Node
-	if _find_rv_ancestor(support_node) != active_climb_rv:
-		return false
-	var support_normal := (support_hit.normal as Vector3).normalized()
-	if support_normal.dot(rv_up) < CLIMB_TOP_MIN_DOT:
-		return false
-
-	# 2) Need free headroom at target.
-	var head_from := candidate_position + rv_up * 0.25
-	var head_to := candidate_position + rv_up * 1.9
-	var head_query := PhysicsRayQueryParameters3D.create(head_from, head_to, 0xFFFFFFFF, [self.get_rid()])
-	var head_hit := space_state.intersect_ray(head_query)
-	if head_hit:
-		return false
-
-	return true
-
-func _begin_mantle(target: Vector3) -> void:
-	if locomotion_state != LocomotionState.CLIMBING:
-		return
-	locomotion_state = LocomotionState.MANTLING
-	mantle_start_position = global_position
-	mantle_target_position = target
-	mantle_elapsed = 0.0
-	velocity = Vector3.ZERO
+	climb_wall_probe.force_raycast_update()
 
 func _process_climbing(delta: float) -> void:
 	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
 		_abort_climb("rv invalid")
 		return
 
-	# Manual detach: pressing S or Space while climbing exits immediately to avoid floor-intersection stick cases.
-	if Input.is_physical_key_pressed(KEY_S) or Input.is_action_pressed("ui_accept"):
+	# Manual detach: pressing back or jump while climbing exits immediately to avoid floor-intersection stick cases.
+	if Input.is_action_pressed("move_back") or Input.is_action_just_pressed("jump"):
 		_abort_climb("manual detach")
 		return
 
@@ -620,6 +543,13 @@ func _process_climbing(delta: float) -> void:
 			return
 
 	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	if Input.is_action_pressed("move_forward") and ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
+		_exit_climb_to_normal()
+		released_carrier_velocity = Vector3.ZERO
+		velocity = Vector3.DOWN * 0.1
+		move_and_slide()
+		rv_support.capture(self)
+		return
 	_apply_wall_outward_alignment(rv_up)
 	var has_valid_wall_contact := false
 	var pending_abort_lost_contact := false
@@ -634,33 +564,42 @@ func _process_climbing(delta: float) -> void:
 	if has_valid_wall_contact:
 		climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
 	else:
-		var mantle_result_on_loss := _query_mantle_target()
-		if mantle_result_on_loss.get("ok", false):
-			_begin_mantle(mantle_result_on_loss.get("target", global_position))
-			return
 		climb_contact_grace_remaining -= delta
 		if climb_contact_grace_remaining <= 0.0:
 			pending_abort_lost_contact = true
 
 	var vertical_input := 0.0
-	if Input.is_physical_key_pressed(KEY_W):
+	if Input.is_action_pressed("move_forward"):
 		vertical_input += 1.0
-	if Input.is_physical_key_pressed(KEY_S):
+	if Input.is_action_pressed("move_back"):
 		vertical_input -= 1.0
 
 	if vertical_input > 0.0:
 		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
 		var allowed_upward_distance := _clamp_upward_climb_distance(rv_up, desired_upward_distance)
 		if allowed_upward_distance < desired_upward_distance:
+			_debug_climb_log(
+				"climb_ceiling_block",
+				"side=%s wanted=%.3f allowed=%.3f hit_dist=%.3f src=%s hit_node=%s hit_pos=%s" % [
+					_debug_climb_side_label(active_climb_rv, active_wall_normal),
+					desired_upward_distance,
+					allowed_upward_distance,
+					debug_last_ceiling_hit_distance,
+					debug_last_ceiling_hit_source,
+					debug_last_ceiling_hit_node,
+					_debug_v3(debug_last_ceiling_hit_position)
+				],
+				true
+			)
 			_abort_climb("ceiling detected")
 			return
 		else:
 			vertical_input *= allowed_upward_distance / desired_upward_distance
 
 	var horizontal_input := 0.0
-	if Input.is_physical_key_pressed(KEY_D):
+	if Input.is_action_pressed("move_right"):
 		horizontal_input += 1.0
-	if Input.is_physical_key_pressed(KEY_A):
+	if Input.is_action_pressed("move_left"):
 		horizontal_input -= 1.0
 
 	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
@@ -669,52 +608,43 @@ func _process_climbing(delta: float) -> void:
 		active_wall_normal = collision.get_normal().normalized()
 	velocity = Vector3.ZERO
 
-	var mantle_result := _query_mantle_target()
-	if mantle_result.get("ok", false):
-		_begin_mantle(mantle_result.get("target", global_position))
-		return
-
 	if pending_abort_lost_contact:
-		var final_mantle_result := _query_mantle_target()
-		if final_mantle_result.get("ok", false):
-			_begin_mantle(final_mantle_result.get("target", global_position))
-			return
 		_abort_climb("lost wall contact")
-func _process_mantle(delta: float) -> void:
-	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
-		_abort_climb("rv invalid")
-		return
-
-	mantle_elapsed += delta
-	var t := clampf(mantle_elapsed / MANTLE_DURATION, 0.0, 1.0)
-	var eased := t * t * (3.0 - 2.0 * t)
-	var target_position := mantle_start_position.lerp(mantle_target_position, eased)
-	_move_with_climb_collision(target_position - global_position)
-	velocity = Vector3.ZERO
-
-	if t >= 1.0:
-		if not _is_stand_position_clear(mantle_target_position):
-			global_position = mantle_start_position
-			_abort_climb("mantle stand position blocked")
-			return
-		_abort_climb("mantle complete")
 
 func _abort_climb(reason: String = "") -> void:
 	if CLIMB_DEBUG_LOG_ABORTS and not reason.is_empty():
 		print("Climb aborted: ", reason)
+	if debug_climb_messages and not reason.is_empty():
+		_debug_climb_log(
+			"abort",
+			"reason=%s side=%s pos=%s wall_n=%s" % [
+				reason,
+				_debug_climb_side_label(active_climb_rv, active_wall_normal),
+				_debug_v3(global_position),
+				_debug_v3(active_wall_normal)
+			],
+			true
+		)
 	_exit_climb_to_normal()
 
 func _exit_climb_to_normal() -> void:
+	if locomotion_state == LocomotionState.CLIMBING:
+		released_carrier_velocity = climb_carrier_velocity
+		velocity = climb_carrier_velocity
 	locomotion_state = LocomotionState.NORMAL
 	active_climb_rv = null
 	previous_climb_rv_transform = Transform3D.IDENTITY
 	climb_contact_grace_remaining = 0.0
 	climb_reenter_cooldown_remaining = CLIMB_REENTER_COOLDOWN
 	active_wall_normal = Vector3.ZERO
-	velocity = _sanitize_velocity_after_climb(velocity)
+	climb_carrier_velocity = Vector3.ZERO
+	_sync_body_collision_to_locomotion()
 
 func _physics_process(delta):
 	_sync_body_collision_to_locomotion()
+	if is_instance_valid(seated_in):
+		global_position = seated_in.global_position
+		return
 	if in_ui_mode:
 		return
 
@@ -729,94 +659,13 @@ func _physics_process(delta):
 			_try_start_climb()
 		LocomotionState.CLIMBING:
 			_apply_rv_delta_compensation()
-			_process_climbing(delta)
-		LocomotionState.MANTLING:
-			_apply_rv_delta_compensation()
-			_process_mantle(delta)
+			if locomotion_state == LocomotionState.CLIMBING:
+				_process_climbing(delta)
 
-	_update_equipment_placement_ghost()
+	placement.update_ghost(self)
 
-func _update_equipment_placement_ghost() -> void:
-	if not placing_equipment:
-		return
 
-	var space_state = get_world_3d().direct_space_state
-	var from = camera.global_position
-	var to = from + -camera.global_transform.basis.z * max_place_distance
 
-	# Ignore ourselves and the equipment
-	var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), placing_equipment.get_rid()])
-	var result = space_state.intersect_ray(query)
-
-	if result:
-		can_place_equipment = true
-		placing_equipment.visible = true
-
-		var equip = placing_equipment
-		var normal = result.normal
-		var base_basis: Basis
-
-		# Use RV's local up if placing on RV, so equipment aligns with the RV when it's tilted
-		var up_ref: Vector3 = Vector3.UP
-		var hit_node: Node = result.collider
-		while hit_node != null:
-			if hit_node.is_in_group("rv"):
-				up_ref = (hit_node as Node3D).global_transform.basis.y.normalized()
-				break
-			hit_node = hit_node.get_parent()
-
-		if placement_mode == PlacementMode.SURFACE:
-			# Mode 1: bottom_face sticks to the placement surface
-			if abs(normal.dot(up_ref)) > 0.5:
-				var cam_dir = -camera.global_transform.basis.z
-				cam_dir = (cam_dir - normal * cam_dir.dot(normal)).normalized()
-				if cam_dir.length_squared() < 0.001:
-					cam_dir = Vector3.FORWARD.cross(normal).normalized()
-					if cam_dir.length_squared() < 0.001:
-						cam_dir = Vector3.RIGHT.cross(normal).normalized()
-				base_basis = Basis.looking_at(cam_dir, normal)
-			else:
-				var tangent = normal.cross(up_ref).normalized()
-				if tangent.length_squared() < 0.001:
-					tangent = Vector3.FORWARD
-				base_basis = Basis.looking_at(tangent, normal)
-
-			if equip and equip is EquipmentScript:
-				base_basis = base_basis * equip.get_bottom_face_correction()
-		else:
-			# Mode 2: bottom faces up_ref-down, closest face contacts surface
-			var cam_dir = -camera.global_transform.basis.z
-			cam_dir = (cam_dir - up_ref * cam_dir.dot(up_ref)).normalized()
-			if cam_dir.length_squared() < 0.001:
-				# Camera pointing along up_ref axis - use RV's forward as fallback
-				var rv_forward := -up_ref.cross(Vector3.RIGHT).normalized()
-				if rv_forward.length_squared() < 0.001:
-					rv_forward = Vector3.FORWARD
-				cam_dir = rv_forward
-
-			if abs(normal.dot(up_ref)) > 0.5:
-				# Horizontal surface: standard upright, facing camera direction
-				base_basis = Basis.looking_at(cam_dir, up_ref)
-			else:
-				# Vertical surface: upright, back face against wall
-				base_basis = Basis.looking_at(normal, up_ref)
-
-		placing_equipment.global_transform.basis = base_basis
-
-		# Auto-calculate offset from collision shape so the contact face sits flush
-		var offset: float = 0.0
-		if equip and equip is EquipmentScript:
-			var local_into_surface: Vector3 = base_basis.inverse() * (-normal)
-			var half: Vector3 = equip.get_half_extents()
-			offset = abs(local_into_surface.x) * half.x + abs(local_into_surface.y) * half.y + abs(local_into_surface.z) * half.z
-
-		placing_equipment.global_position = result.position + (normal * offset)
-	else:
-		can_place_equipment = false
-		# Hide it when looking at the sky so they know they can't place
-		placing_equipment.visible = false
-
-# --- HEALTH SYSTEM ---
 func take_damage(amount: float):
 	if is_player_dead: return
 	if damage_cooldown > 0.0: return

@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="PackedScene" path="res://world/test_world.tscn" id="1"]
+[ext_resource type="Script" path="res://tests/highway_playground.gd" id="2"]
+[node name="HighwayPlayground" instance=ExtResource("1")]
+script = ExtResource("2")
+[node name="WorldGenerator" parent="." index="6"]
+world_seed = 42

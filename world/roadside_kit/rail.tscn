@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_433yo"]
+albedo_color = Color(0.27, 0.31, 0.3, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="BoxMesh_qm4rw"]
+size = Vector3(0.16, 0.9, 0.16)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rpk8f"]
+size = Vector3(0.16, 0.9, 0.16)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_drxbs"]
+size = Vector3(0.16, 0.9, 0.16)
+
+[sub_resource type="BoxMesh" id="BoxMesh_dc0yb"]
+size = Vector3(0.16, 0.35, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dt3ss"]
+size = Vector3(0.16, 0.35, 5)
+
+[node name="Rail" type="Node3D" unique_id=1031176152]
+
+[node name="@MeshInstance3D@26" type="MeshInstance3D" parent="." unique_id=1645037613]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, -2)
+material_override = SubResource("StandardMaterial3D_433yo")
+mesh = SubResource("BoxMesh_qm4rw")
+
+[node name="@StaticBody3D@28" type="StaticBody3D" parent="@MeshInstance3D@26" unique_id=842016984]
+
+[node name="@CollisionShape3D@27" type="CollisionShape3D" parent="@MeshInstance3D@26/@StaticBody3D@28" unique_id=463714041]
+shape = SubResource("BoxShape3D_rpk8f")
+
+[node name="@MeshInstance3D@29" type="MeshInstance3D" parent="." unique_id=1628156945]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 2)
+material_override = SubResource("StandardMaterial3D_433yo")
+mesh = SubResource("BoxMesh_qm4rw")
+
+[node name="@StaticBody3D@31" type="StaticBody3D" parent="@MeshInstance3D@29" unique_id=1727720235]
+
+[node name="@CollisionShape3D@30" type="CollisionShape3D" parent="@MeshInstance3D@29/@StaticBody3D@31" unique_id=357650138]
+shape = SubResource("BoxShape3D_drxbs")
+
+[node name="@MeshInstance3D@32" type="MeshInstance3D" parent="." unique_id=1027528990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("StandardMaterial3D_433yo")
+mesh = SubResource("BoxMesh_dc0yb")
+
+[node name="@StaticBody3D@34" type="StaticBody3D" parent="@MeshInstance3D@32" unique_id=176456711]
+
+[node name="@CollisionShape3D@33" type="CollisionShape3D" parent="@MeshInstance3D@32/@StaticBody3D@34" unique_id=111720870]
+shape = SubResource("BoxShape3D_dt3ss")

@@ -115,8 +115,8 @@ func _finish_recycle(prop: Prop):
 					yield_text += str(amount) + "x " + mat_name
 	else:
 		# Fallback if unconfigured
-		rv.add_item("Unknown Material", 1)
-		yield_text = "1x Unknown Material"
+		rv.add_item(ItemNames.UNKNOWN_MATERIAL, 1)
+		yield_text = "1x " + ItemNames.UNKNOWN_MATERIAL
 	
 	print(">>> SCRAPPER: Recycled [", item, "] -> ", yield_text)
 	

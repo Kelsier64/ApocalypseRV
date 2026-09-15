@@ -12,8 +12,4 @@ func _setup_if_on_rv() -> void:
 	freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	collision_layer = 1
 	collision_mask = 0
-	var ancestor := get_parent()
-	while ancestor != null and ancestor is Node3D:
-		if ancestor is CollisionObject3D:
-			add_collision_exception_with(ancestor)
-		ancestor = ancestor.get_parent()
+	_add_collision_exceptions_with_ancestors(get_parent())

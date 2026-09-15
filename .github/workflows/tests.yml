@@ -1,0 +1,29 @@
+name: Godot tests
+on: [push, pull_request]
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.6.1
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'godot.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'godot'
+          Invoke-WebRequest 'https://github.com/godotengine/godot/releases/download/4.6.1-stable/Godot_v4.6.1-stable_win64.exe.zip' -OutFile $archive
+          Expand-Archive -LiteralPath $archive -DestinationPath $destination
+          "GODOT_EXE=$destination/Godot_v4.6.1-stable_win64.exe" >> $env:GITHUB_ENV
+      - name: Import, test, and smoke-test main scene
+        shell: pwsh
+        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-test-logs
+          path: .godot/test-logs/
+          include-hidden-files: true

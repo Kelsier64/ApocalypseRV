@@ -1,6 +1,33 @@
 extends CharacterBody3D
 class_name Monster
 
+const CLIMB_WALL_MIN_DOT = 0.0
+const CLIMB_WALL_MAX_DOT = 0.85
+const CLIMB_MIN_HIT_Y = 0.1
+const CLIMB_MAX_HIT_Y = 1.4
+const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
+const CLIMB_VERTICAL_SPEED = 2
+const CLIMB_SIDE_SPEED = 0.2
+const CLIMB_WALL_STICK_SPEED = 0.0
+const CLIMB_CONTACT_GRACE_TIME = 1
+const CLIMB_CONTACT_GRACE_DISTANCE = 0.6
+const CLIMB_CONTACT_GRACE_MAX_TIME = 2
+const CLIMB_CONTACT_FALLBACK_HEIGHT = 0.7
+const CLIMB_CONTACT_FALLBACK_RAY_LENGTH = 0.85
+const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
+const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
+const CLIMB_MAX_FRAME_DELTA = 1.5
+const CLIMB_REENTER_COOLDOWN = 0.2
+const CLIMB_WALL_ALIGN_OFFSET = 0.22
+const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
+const CLIMB_EXIT_TRANSFER_TIME = 0.22
+const CLIMB_EXIT_TRANSFER_SPEED = 2.8
+const CLIMB_DESCENT_MIN_HEIGHT_GAP = 0.8
+const CLIMB_DESCENT_HINT_WEIGHT = 0.75
+const CLIMB_POST_SEPARATION_NAV_BLOCK_TIME = 0.45
+const CLIMB_TARGET_RV_CONTACT_GRACE_TIME = 0.35
+const CLIMB_DEBUG_LOG_ABORTS = false
+
 @export var monster_name: String = "Unknown Creature"
 @export var max_health: float = 100.0
 @export var move_speed: float = 3.0
@@ -9,6 +36,13 @@ class_name Monster
 @export_group("AI")
 @export var detection_range: float = 25.0
 @export var attack_range: float = 2.0
+@export var chassis_attack_range: float = 4.0
+@export var climbing_touch_attack_range: float = 1.2
+@export var underfoot_raycast_length: float = 2.2
+@export var underfoot_attack_planar_range: float = 0.9
+@export var underfoot_attack_max_height_delta: float = 0.45
+@export var underfoot_target_below_margin: float = 0.05
+@export var attack_max_vertical_gap: float = 1.1
 @export var attack_cooldown: float = 1.5
 @export var lose_interest_range: float = 40.0
 
@@ -45,6 +79,11 @@ class_name Monster
 @export var loot_drops: Dictionary = {} # e.g. {"Metal Parts": Vector2(1, 3)}
 @export var loot_scene: String = "res://props/scrap.tscn"
 
+@export_group("Debug")
+@export var debug_climb_messages: bool = false
+@export var debug_navigation_messages: bool = false
+@export var debug_climb_message_interval: float = 0.35
+
 var current_health: float
 var is_dead: bool = false
 
@@ -52,6 +91,28 @@ var is_dead: bool = false
 enum State { WANDER, CHASE, ATTACK }
 var ai_state: State = State.WANDER
 var target_player: Node3D = null
+
+enum LocomotionState { NORMAL, CLIMBING }
+var locomotion_state: LocomotionState = LocomotionState.NORMAL
+var active_climb_rv: Node3D = null
+var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
+var active_wall_normal: Vector3 = Vector3.ZERO
+var climb_carrier_velocity := Vector3.ZERO
+var released_carrier_velocity := Vector3.ZERO
+var rv_support := RVSupport.new()
+var climb_contact_grace_remaining: float = 0.0
+var climb_reenter_cooldown_remaining: float = 0.0
+var last_climb_wall_normal: Vector3 = Vector3.ZERO
+var last_climb_separation_state: String = "unknown"
+var post_separation_nav_block_remaining: float = 0.0
+var target_rv_contact_grace_remaining: float = 0.0
+var post_climb_transfer_direction: Vector3 = Vector3.ZERO
+var post_climb_transfer_time_remaining: float = 0.0
+var debug_last_ceiling_hit_distance: float = INF
+var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
+var debug_last_ceiling_hit_source: String = ""
+var debug_last_ceiling_hit_node: String = ""
+var debug_climb_last_log_time_by_tag: Dictionary = {}
 
 # Wandering
 var wander_direction: Vector3 = Vector3.ZERO
@@ -66,6 +127,7 @@ var stagger_amount: float = 0.0
 
 # Attack
 var attack_timer: float = 0.0
+var current_combat_target: Dictionary = {}
 
 # Navigation + anti-stuck
 var nav_agent: NavigationAgent3D = null
@@ -79,11 +141,29 @@ var elevation_assist_cooldown_timer: float = 0.0
 var last_flat_position: Vector3 = Vector3.ZERO
 var has_last_flat_position: bool = false
 
+var body_collision_shape: CollisionShape3D = null
+var climb_wall_probe: RayCast3D = null
+var climb_upward_probe: RayCast3D = null
+var underfoot_probe: RayCast3D = null
+var _body_mesh: Node3D = null
+
+# Per-physics-tick snapshot of the underfoot probe. Target selection helpers
+# query the probe many times within one frame; outside _physics_process the
+# cache is inactive so direct calls (tests, external callers) stay live.
+var _underfoot_cache_active: bool = false
+var _underfoot_cache_target: Node3D = null
+var _touch_query_shape: SphereShape3D = null
+var _last_player_collision_disabled: int = -1 # -1 unknown, else 0/1
+
+# Intentionally heavier than the project default (9.8) the player uses: the
+# climb top-out sequence relies on a fast fall back onto the roof, and halving
+# this makes monsters float above the RV after cresting a wall.
 var gravity: float = 20.0
 
 func _ready():
+	platform_floor_layers = 0
 	current_health = max_health
-	add_to_group("monsters")
+	add_to_group(Groups.MONSTERS)
 	
 	# Randomize initial sway so all zombies don't sync
 	sway_phase = randf_range(0, TAU)
@@ -99,6 +179,20 @@ func _ready():
 		nav_agent.path_desired_distance = nav_path_desired_distance
 		nav_agent.target_desired_distance = nav_target_desired_distance
 
+	body_collision_shape = get_node_or_null("CollisionShape")
+	climb_wall_probe = get_node_or_null("ClimbWallProbe")
+	climb_upward_probe = get_node_or_null("ClimbUpwardProbe")
+	underfoot_probe = get_node_or_null("UnderfootProbe")
+	_body_mesh = get_node_or_null("BodyMesh")
+	if climb_upward_probe:
+		climb_upward_probe.enabled = true
+		climb_upward_probe.collision_mask = 0xFFFFFFFF
+		climb_upward_probe.collide_with_bodies = true
+		climb_upward_probe.collide_with_areas = true
+		climb_upward_probe.exclude_parent = true
+	if underfoot_probe:
+		_configure_underfoot_probe(underfoot_probe)
+
 	last_flat_position = _flat_position(global_position)
 	has_last_flat_position = true
 	
@@ -106,12 +200,29 @@ func _ready():
 
 func _physics_process(delta: float):
 	if is_dead: return
+	var was_supported := false
+	var support_velocity := Vector3.ZERO
+	var lost_support := false
+	if locomotion_state == LocomotionState.NORMAL:
+		var had_support := is_instance_valid(rv_support.rv)
+		var last_support_velocity := rv_support.carrier_velocity
+		was_supported = rv_support.follow(self, delta)
+		support_velocity = rv_support.carrier_velocity
+		lost_support = had_support and not was_supported
+		if lost_support:
+			released_carrier_velocity = last_support_velocity
+			velocity.y += last_support_velocity.y
+	_sync_body_collision_to_locomotion()
+	if locomotion_state == LocomotionState.CLIMBING:
+		_apply_rv_delta_compensation()
 	
-	# Gravity
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-	else:
-		velocity.y = 0.0
+	if locomotion_state == LocomotionState.NORMAL:
+		# Gravity
+		if not is_on_floor() or lost_support:
+			velocity.y -= gravity * delta
+		else:
+			velocity.y = 0.0
+			released_carrier_velocity = Vector3.ZERO
 	
 	# Update sway for organic movement
 	sway_phase += delta * 3.0
@@ -127,53 +238,117 @@ func _physics_process(delta: float):
 		fallback_steer_timer -= delta
 	if elevation_assist_cooldown_timer > 0.0:
 		elevation_assist_cooldown_timer -= delta
+	if climb_reenter_cooldown_remaining > 0.0:
+		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
+	if post_separation_nav_block_remaining > 0.0:
+		post_separation_nav_block_remaining = maxf(0.0, post_separation_nav_block_remaining - delta)
+	if target_rv_contact_grace_remaining > 0.0:
+		target_rv_contact_grace_remaining = maxf(0.0, target_rv_contact_grace_remaining - delta)
+	if post_climb_transfer_time_remaining > 0.0:
+		post_climb_transfer_time_remaining = maxf(0.0, post_climb_transfer_time_remaining - delta)
 	
 	# Find player if we don't have one
+	if is_instance_valid(target_player) and not WorldEntities.same_world(self, target_player):
+		target_player = null
+		current_combat_target = {}
 	if not target_player or not is_instance_valid(target_player):
 		target_player = _find_nearest_player()
 
-	var moving_intent := false
-	
-	# AI State Machine
-	match ai_state:
-		State.WANDER:
-			moving_intent = _process_wander(delta)
-			# Check if player is close enough to chase
-			if target_player and global_position.distance_to(target_player.global_position) < detection_range:
-				ai_state = State.CHASE
-				
-		State.CHASE:
-			moving_intent = _process_chase(delta)
-			if target_player:
-				var dist = global_position.distance_to(target_player.global_position)
-				if dist < attack_range:
-					ai_state = State.ATTACK
-				elif dist > lose_interest_range:
-					ai_state = State.WANDER
-					_pick_new_wander_direction()
-			else:
-				ai_state = State.WANDER
-				_pick_new_wander_direction()
-				
-		State.ATTACK:
-			_process_attack(delta)
-			moving_intent = false
-			if target_player:
-				var dist = global_position.distance_to(target_player.global_position)
-				if dist > attack_range * 1.5:
-					ai_state = State.CHASE
-			else:
-				ai_state = State.WANDER
+	# Snapshot the underfoot probe once for this whole tick (see cache vars).
+	_underfoot_cache_target = _get_underfoot_raycast_target()
+	_underfoot_cache_active = true
 
-	_update_stuck_watchdog(delta, moving_intent)
+	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, lose_interest_range)
+	if _try_auto_attack_touching_targets(_resolve_underfoot_tracking_target()):
+		ai_state = State.ATTACK
+
+	var moving_intent := false
+
+	match locomotion_state:
+		LocomotionState.NORMAL:
+			# AI State Machine
+			match ai_state:
+				State.WANDER:
+					moving_intent = _process_wander(delta)
+					# Check if any valid combat target is close enough to chase.
+					var detection_target := _select_combat_target(
+						_collect_player_candidates(detection_range),
+						_collect_structure_candidates(detection_range),
+						false
+					)
+					if not detection_target.is_empty():
+						current_combat_target = detection_target
+						ai_state = State.CHASE
+					
+				State.CHASE:
+					var chase_target_node := _get_current_combat_target_node()
+					if chase_target_node != null:
+						var chase_destination := _get_node_target_position(chase_target_node)
+						current_combat_target["position"] = chase_destination
+						moving_intent = _process_chase(delta, chase_destination)
+					else:
+						moving_intent = false
+					if locomotion_state == LocomotionState.NORMAL:
+						if chase_target_node != null:
+							var chase_target_position := _get_node_target_position(chase_target_node)
+							var dist := global_position.distance_to(chase_target_position)
+							var has_attack_los := _has_attack_line_of_sight_to_target(chase_target_node)
+							if _can_attack_combat_target(current_combat_target, has_attack_los):
+								ai_state = State.ATTACK
+							elif dist > lose_interest_range:
+								ai_state = State.WANDER
+								_pick_new_wander_direction()
+						else:
+							ai_state = State.WANDER
+							_pick_new_wander_direction()
+					
+				State.ATTACK:
+					_process_attack(delta)
+					moving_intent = false
+					var attack_target_node := _get_current_combat_target_node()
+					if attack_target_node != null:
+						var attack_target_position := _get_node_target_position(attack_target_node)
+						var dist := global_position.distance_to(attack_target_position)
+						var has_attack_los := _has_attack_line_of_sight_to_target(attack_target_node)
+						if not _can_attack_combat_target(current_combat_target, has_attack_los) or dist > lose_interest_range:
+							ai_state = State.CHASE
+					else:
+						ai_state = State.WANDER
+						_pick_new_wander_direction()
+
+			_update_stuck_watchdog(delta, moving_intent)
+
+		LocomotionState.CLIMBING:
+			moving_intent = true
+			var climb_destination := global_position
+			var climb_target_node := _get_current_combat_target_node()
+			if climb_target_node != null:
+				climb_destination = _get_node_target_position(climb_target_node)
+			elif target_player and is_instance_valid(target_player):
+				climb_destination = target_player.global_position
+			_process_climbing(delta, climb_destination)
+			if locomotion_state == LocomotionState.CLIMBING:
+				_process_attack(delta)
 	
 	# Apply organic body sway (slight rotation wobble)
-	var body_mesh = get_node_or_null("BodyMesh")
-	if body_mesh:
-		body_mesh.rotation.z = sin(sway_phase) * 0.08 * stagger_amount
-		body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
-	
-	move_and_slide()
+	if _body_mesh:
+		_body_mesh.rotation.z = sin(sway_phase) * 0.08 * stagger_amount
+		_body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
+
+	if locomotion_state == LocomotionState.NORMAL:
+		velocity.x += released_carrier_velocity.x
+		velocity.z += released_carrier_velocity.z
+		move_and_slide()
+		velocity.x -= released_carrier_velocity.x
+		velocity.z -= released_carrier_velocity.z
+		if not rv_support.capture(self) and was_supported:
+			released_carrier_velocity = support_velocity
+			velocity.y += support_velocity.y
+
+	_sync_player_collision_exceptions_for_airborne()
+
+	_underfoot_cache_active = false
+	_underfoot_cache_target = null
 
 # --- WANDERING ---
 func _process_wander(delta: float) -> bool:
@@ -217,16 +392,48 @@ func _process_wander(delta: float) -> bool:
 	return true
 
 # --- CHASING ---
-func _process_chase(_delta: float) -> bool:
-	if not target_player or not is_instance_valid(target_player):
-		return false
+func _process_chase(_delta: float, destination: Vector3) -> bool:
+	if _try_start_climb(destination):
+		return true
 
-	var destination = target_player.global_position
-	var nav_active = _can_use_navigation() and fallback_steer_timer <= 0.0
-	var dir = _get_navigation_direction(destination)
+	var on_rv_surface := _is_on_rv_surface()
+	var can_nav := _can_use_navigation() and fallback_steer_timer <= 0.0
+	var vertical_gap := absf(destination.y - global_position.y)
+	var nav_active = _should_use_navigation_for_chase(can_nav, on_rv_surface, vertical_gap, post_separation_nav_block_remaining)
+	var dir := _resolve_chase_direction(destination, on_rv_surface, nav_active)
+	_debug_nav_log(
+		"chase_state",
+		"nav_active=%s on_rv=%s can_nav=%s vgap=%.2f nav_block=%.2f dir=%s dist=%.2f sep=%s" % [
+			str(nav_active),
+			str(on_rv_surface),
+			str(can_nav),
+			vertical_gap,
+			post_separation_nav_block_remaining,
+			_debug_v3(dir),
+			global_position.distance_to(destination),
+			last_climb_separation_state
+		]
+	)
 	if dir.length_squared() <= 0.0001:
-		dir = _compute_fallback_direction(global_position, destination)
-	if dir.length_squared() <= 0.0001:
+		_debug_climb_log(
+			"chase_stall",
+			"side=%s on_rv=%s y_gap=%.2f last_wall=%s transfer_t=%.2f" % [
+				_debug_climb_side_label(active_climb_rv, last_climb_wall_normal),
+				str(on_rv_surface),
+				global_position.y - destination.y,
+				_debug_v3(last_climb_wall_normal),
+				post_climb_transfer_time_remaining
+			]
+		)
+		_debug_nav_log(
+			"chase_stall",
+			"on_rv=%s y_gap=%.2f sep=%s" % [
+				str(on_rv_surface),
+				global_position.y - destination.y,
+				last_climb_separation_state
+			],
+			true
+		)
 		velocity.x = 0.0
 		velocity.z = 0.0
 		return false
@@ -249,26 +456,911 @@ func _process_chase(_delta: float) -> bool:
 	_face_movement_direction()
 	return true
 
+func _resolve_chase_direction(destination: Vector3, on_rv_surface: bool, nav_active: bool) -> Vector3:
+	var origin := global_position if is_inside_tree() else position
+	var dir := Vector3.ZERO
+	if nav_active:
+		dir = _get_navigation_direction(destination)
+	else:
+		dir = _compute_fallback_direction(origin, destination)
+
+	if dir.length_squared() <= 0.0001:
+		dir = _get_descent_hint_direction(destination)
+
+	if dir.length_squared() <= 0.0001 and post_climb_transfer_time_remaining > 0.0:
+		dir = post_climb_transfer_direction
+
+	if post_climb_transfer_time_remaining > 0.0 and post_climb_transfer_direction.length_squared() > 0.0001:
+		var blend := clampf(post_climb_transfer_time_remaining / CLIMB_EXIT_TRANSFER_TIME, 0.0, 1.0)
+		if dir.length_squared() <= 0.0001:
+			dir = post_climb_transfer_direction
+		else:
+			dir = (dir + post_climb_transfer_direction * blend).normalized()
+
+	if dir.length_squared() <= 0.0001:
+		dir = _compute_fallback_direction(origin, destination)
+
+	if on_rv_surface and dir.length_squared() <= 0.0001:
+		return _get_descent_hint_direction(destination)
+
+	return dir
+
+func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
+	return false
+
+func _sync_body_collision_to_locomotion() -> void:
+	if body_collision_shape == null:
+		return
+	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
+
+func _should_disable_player_collision_for_airborne(locomotion_state_value: int, on_floor_now: bool) -> bool:
+	if locomotion_state_value == LocomotionState.CLIMBING:
+		return true
+	return not on_floor_now
+
+func _sync_player_collision_exceptions_for_airborne() -> void:
+	if not is_inside_tree():
+		return
+
+	var disable_player_collision := _should_disable_player_collision_for_airborne(int(locomotion_state), is_on_floor())
+	# Only touch the physics server when the desired state actually changes.
+	var disable_state := 1 if disable_player_collision else 0
+	if disable_state == _last_player_collision_disabled:
+		return
+	_last_player_collision_disabled = disable_state
+	for node in get_tree().get_nodes_in_group(Groups.PLAYER):
+		if not (node is PhysicsBody3D):
+			continue
+		var player_body := node as PhysicsBody3D
+		if not WorldEntities.same_world(self, player_body):
+			continue
+		if player_body == null or not is_instance_valid(player_body):
+			continue
+		if disable_player_collision:
+			add_collision_exception_with(player_body)
+		else:
+			remove_collision_exception_with(player_body)
+
+func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
+	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
+
+func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
+	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
+
+func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
+	return ClimbMath.rv_position_delta(prev_rv_transform, next_rv_transform)
+
+func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
+	return ClimbMath.sanitize_velocity_after_climb(v, CLIMB_EXIT_MAX_UP_VELOCITY)
+
+func _debug_v3(v: Vector3) -> String:
+	return ClimbMath.format_v3(v)
+
+func _debug_node_name(node: Node) -> String:
+	return ClimbMath.format_node_name(node)
+
+func _debug_climb_side_label(rv: Node3D, wall_normal: Vector3) -> String:
+	return ClimbMath.climb_side_label(rv, wall_normal)
+
+func _debug_climb_log(tag: String, message: String, force: bool = false) -> void:
+	if not debug_climb_messages:
+		return
+	var now: float = Time.get_ticks_msec() * 0.001
+	if not force:
+		var last: float = float(debug_climb_last_log_time_by_tag.get(tag, -INF))
+		if now - last < maxf(0.01, debug_climb_message_interval):
+			return
+	debug_climb_last_log_time_by_tag[tag] = now
+	print("[CLIMB_DEBUG][monster][", monster_name, "][", tag, "] ", message)
+
+func _debug_nav_log(tag: String, message: String, force: bool = false) -> void:
+	if not debug_navigation_messages:
+		return
+	var now: float = Time.get_ticks_msec() * 0.001
+	var key := "nav:%s" % tag
+	if not force:
+		var last: float = float(debug_climb_last_log_time_by_tag.get(key, -INF))
+		if now - last < maxf(0.01, debug_climb_message_interval):
+			return
+	debug_climb_last_log_time_by_tag[key] = now
+	print("[NAV_DEBUG][monster][", monster_name, "][", tag, "] ", message)
+
+func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: float, horizontal_input: float, delta: float) -> Vector3:
+	return ClimbMath.build_climb_motion(rv_up, wall_normal, vertical_input, horizontal_input, delta,
+		CLIMB_VERTICAL_SPEED, CLIMB_SIDE_SPEED, CLIMB_WALL_STICK_SPEED, CLIMB_MAX_FRAME_DELTA, transform.basis.x)
+
+func _compute_climb_contact_grace_time(vertical_speed: float) -> float:
+	var safe_speed := maxf(vertical_speed, 0.01)
+	var distance_based_time := CLIMB_CONTACT_GRACE_DISTANCE / safe_speed
+	return clampf(maxf(CLIMB_CONTACT_GRACE_TIME, distance_based_time), CLIMB_CONTACT_GRACE_TIME, CLIMB_CONTACT_GRACE_MAX_TIME)
+
+func _get_climb_contact_grace_time() -> float:
+	return _compute_climb_contact_grace_time(CLIMB_VERTICAL_SPEED)
+
+func _get_climb_separation_state(has_wall_contact: bool, grace_remaining: float) -> String:
+	if has_wall_contact:
+		return "attached"
+	if grace_remaining > 0.0:
+		return "detaching"
+	return "separated"
+
+func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float) -> float:
+	debug_last_ceiling_hit_distance = INF
+	debug_last_ceiling_hit_position = Vector3.ZERO
+	debug_last_ceiling_hit_source = ""
+	debug_last_ceiling_hit_node = ""
+
+	if desired_upward_distance <= 0.0:
+		return 0.0
+
+	var from := global_position + rv_up * 0.2
+	var to := from + rv_up * (desired_upward_distance + 0.8)
+	var hit := ClimbMath.nearest_ceiling_hit(climb_upward_probe, self, from, to)
+	if hit.is_empty():
+		return desired_upward_distance
+
+	debug_last_ceiling_hit_distance = hit["distance"]
+	debug_last_ceiling_hit_position = hit["position"]
+	debug_last_ceiling_hit_source = hit["source"]
+	debug_last_ceiling_hit_node = hit["node_label"]
+
+	var safe_distance: float = maxf(0.0, hit["distance"] - 0.05)
+	return minf(desired_upward_distance, safe_distance)
+
+func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
+	if step.length_squared() <= 0.0000001:
+		return null
+	return move_and_collide(step)
+
+func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
+	if climb_wall_probe == null or not climb_wall_probe.is_colliding() or active_climb_rv == null:
+		return
+
+	var hit_node := climb_wall_probe.get_collider() as Node
+	if _find_rv_ancestor(hit_node) != active_climb_rv:
+		return
+
+	var wall_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
+	if _is_rv_wall_normal(wall_normal, rv_up):
+		active_wall_normal = wall_normal
+
+	var desired_probe_position: Vector3 = climb_wall_probe.get_collision_point() + wall_normal * CLIMB_WALL_ALIGN_OFFSET
+	var correction: Vector3 = desired_probe_position - climb_wall_probe.global_position
+	var normal_mag: float = correction.dot(wall_normal)
+	if absf(normal_mag) <= 0.0001:
+		return
+	var alignment_step: Vector3 = wall_normal * clampf(normal_mag, -CLIMB_WALL_MAX_OUTWARD_CORRECTION, CLIMB_WALL_MAX_OUTWARD_CORRECTION)
+	_move_with_climb_collision(alignment_step)
+
+func _align_to_climb_wall(rv_up: Vector3) -> void:
+	if active_wall_normal.length_squared() < 0.001:
+		return
+	var desired_forward := -active_wall_normal
+	desired_forward = (desired_forward - rv_up * desired_forward.dot(rv_up)).normalized()
+	if desired_forward.length_squared() < 0.001:
+		return
+	var desired_transform := global_transform.looking_at(global_position + desired_forward, rv_up)
+	global_transform = global_transform.interpolate_with(desired_transform, 0.35)
+
+func _find_rv_ancestor(node: Node) -> Node3D:
+	return ClimbMath.find_rv_ancestor(node)
+
+func _try_start_climb(_destination: Vector3) -> bool:
+	if locomotion_state != LocomotionState.NORMAL:
+		return false
+	if climb_reenter_cooldown_remaining > 0.0:
+		_debug_climb_log("start_cooldown", "blocked by reenter cooldown: %.2f" % climb_reenter_cooldown_remaining)
+		return false
+	if climb_wall_probe == null or not climb_wall_probe.is_colliding():
+		_debug_climb_log("start_probe_miss", "wall probe has no hit")
+		return false
+
+	var hit_node := climb_wall_probe.get_collider() as Node
+	var rv := _find_rv_ancestor(hit_node)
+	if rv == null:
+		return false
+
+	var hit_normal: Vector3 = climb_wall_probe.get_collision_normal()
+	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
+	var local_hit_y: float = to_local(hit_point).y
+	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
+	var start_allowed_upward := _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE)
+	if start_allowed_upward < CLIMB_START_CEILING_CHECK_DISTANCE:
+		var blocked_side := _debug_climb_side_label(rv, hit_normal)
+		_debug_climb_log(
+			"start_ceiling_block",
+			"side=%s allowed=%.2f wanted=%.2f hit_dist=%.2f src=%s hit_node=%s hit_pos=%s wall_n=%s" % [
+				blocked_side,
+				start_allowed_upward,
+				CLIMB_START_CEILING_CHECK_DISTANCE,
+				debug_last_ceiling_hit_distance,
+				debug_last_ceiling_hit_source,
+				debug_last_ceiling_hit_node,
+				_debug_v3(debug_last_ceiling_hit_position),
+				_debug_v3(hit_normal.normalized())
+			]
+		)
+		return false
+	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
+	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
+	if not wall_normal_ok or not hit_height_ok:
+		_debug_climb_log(
+			"start_gate_reject",
+			"side=%s wall_ok=%s hit_y=%.2f range=[%.2f, %.2f] wall_dot_up=%.2f" % [
+				_debug_climb_side_label(rv, hit_normal),
+				str(wall_normal_ok),
+				local_hit_y,
+				CLIMB_MIN_HIT_Y,
+				CLIMB_MAX_HIT_Y,
+				absf(hit_normal.normalized().dot(rv_up))
+			]
+		)
+		return false
+
+	locomotion_state = LocomotionState.CLIMBING
+	rv_support.clear()
+	active_climb_rv = rv
+	previous_climb_rv_transform = rv.global_transform
+	active_wall_normal = hit_normal.normalized()
+	climb_contact_grace_remaining = _get_climb_contact_grace_time()
+	climb_carrier_velocity = ClimbMath.point_velocity(rv, global_position)
+	released_carrier_velocity = Vector3.ZERO
+	last_climb_separation_state = "attached"
+	post_separation_nav_block_remaining = 0.0
+	target_rv_contact_grace_remaining = CLIMB_TARGET_RV_CONTACT_GRACE_TIME
+	velocity = Vector3.ZERO
+	_debug_climb_log(
+		"start_ok",
+		"entered climbing side=%s wall_n=%s hit_y=%.2f" % [
+			_debug_climb_side_label(rv, hit_normal),
+			_debug_v3(active_wall_normal),
+			local_hit_y
+		],
+		true
+	)
+	return true
+
+func _apply_rv_delta_compensation() -> void:
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		return
+	var next_transform := active_climb_rv.global_transform
+	var delta_pos := ClimbMath.attachment_delta(previous_climb_rv_transform, next_transform, global_position)
+	if delta_pos.length() > CLIMB_MAX_FRAME_DELTA:
+		climb_carrier_velocity = Vector3.ZERO
+		_abort_climb("rv teleported")
+		return
+	var rotation_delta := next_transform.basis * previous_climb_rv_transform.basis.inverse()
+	active_wall_normal = (rotation_delta * active_wall_normal).normalized()
+	rotate_y(rotation_delta.get_euler().y)
+	climb_carrier_velocity = delta_pos / get_physics_process_delta_time()
+	var collision := _move_with_climb_collision(delta_pos)
+	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
+		active_wall_normal = collision.get_normal().normalized()
+	previous_climb_rv_transform = next_transform
+	climb_wall_probe.force_raycast_update()
+
+func _get_fallback_wall_contact_normal(rv_up: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return Vector3.ZERO
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		return Vector3.ZERO
+	if active_wall_normal.length_squared() <= 0.0001:
+		return Vector3.ZERO
+
+	var toward_wall := -active_wall_normal
+	toward_wall.y = 0.0
+	if toward_wall.length_squared() <= 0.0001:
+		return Vector3.ZERO
+	toward_wall = toward_wall.normalized()
+
+	var from := global_position + rv_up * CLIMB_CONTACT_FALLBACK_HEIGHT
+	var to := from + toward_wall * CLIMB_CONTACT_FALLBACK_RAY_LENGTH
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit:
+		return Vector3.ZERO
+
+	var hit_node := hit.get("collider", null) as Node
+	if _find_rv_ancestor(hit_node) != active_climb_rv:
+		return Vector3.ZERO
+
+	var hit_normal := hit.get("normal", Vector3.ZERO) as Vector3
+	if hit_normal.length_squared() <= 0.0001:
+		return Vector3.ZERO
+	hit_normal = hit_normal.normalized()
+	if not _is_rv_wall_normal(hit_normal, rv_up):
+		return Vector3.ZERO
+	return hit_normal
+
+func _process_climbing(delta: float, destination: Vector3) -> void:
+	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+		_abort_climb("rv invalid")
+		return
+
+	if active_climb_rv is RigidBody3D:
+		if (active_climb_rv as RigidBody3D).angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
+			_abort_climb("rv angular speed too high")
+			return
+
+	var target_on_same_rv_now := true
+	var target_on_same_rv := true
+	if target_player and is_instance_valid(target_player):
+		target_on_same_rv_now = _is_node_on_specific_rv_surface(target_player, active_climb_rv)
+		if target_on_same_rv_now:
+			target_rv_contact_grace_remaining = CLIMB_TARGET_RV_CONTACT_GRACE_TIME
+		target_on_same_rv = _is_target_considered_on_climb_rv(target_on_same_rv_now, target_rv_contact_grace_remaining)
+
+	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
+	if ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
+		_exit_climb_to_normal("roof reached")
+		released_carrier_velocity = Vector3.ZERO
+		velocity = Vector3.DOWN * 0.1
+		return
+	_align_to_climb_wall(rv_up)
+	_apply_wall_outward_alignment(rv_up)
+	var has_valid_wall_contact := false
+	var pending_abort_lost_contact := false
+	var contact_source := "none"
+
+	if climb_wall_probe and climb_wall_probe.is_colliding():
+		var wall_node := climb_wall_probe.get_collider() as Node
+		if _find_rv_ancestor(wall_node) == active_climb_rv:
+			var hit_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
+			has_valid_wall_contact = true
+			active_wall_normal = hit_normal
+			contact_source = "probe"
+
+	if not has_valid_wall_contact:
+		var fallback_wall_normal := _get_fallback_wall_contact_normal(rv_up)
+		if fallback_wall_normal.length_squared() > 0.0001:
+			has_valid_wall_contact = true
+			active_wall_normal = fallback_wall_normal
+			contact_source = "fallback"
+			_debug_climb_log(
+				"contact_fallback",
+				"side=%s wall_n=%s" % [
+					_debug_climb_side_label(active_climb_rv, active_wall_normal),
+					_debug_v3(active_wall_normal)
+				]
+			)
+
+	if has_valid_wall_contact:
+		climb_contact_grace_remaining = _get_climb_contact_grace_time()
+	else:
+		climb_contact_grace_remaining -= delta
+		if climb_contact_grace_remaining <= 0.0:
+			pending_abort_lost_contact = true
+
+	var separation_state := _get_climb_separation_state(has_valid_wall_contact, climb_contact_grace_remaining)
+	var separation_changed := separation_state != last_climb_separation_state
+	last_climb_separation_state = separation_state
+	_debug_nav_log(
+		"separation_state",
+		"state=%s source=%s grace=%.2f side=%s wall_n=%s" % [
+			separation_state,
+			contact_source,
+			maxf(climb_contact_grace_remaining, 0.0),
+			_debug_climb_side_label(active_climb_rv, active_wall_normal),
+			_debug_v3(active_wall_normal)
+		],
+		separation_changed or pending_abort_lost_contact
+	)
+
+	if target_player and is_instance_valid(target_player):
+		if _should_abort_climb_when_target_leaves_rv(locomotion_state == LocomotionState.CLIMBING, target_on_same_rv, has_valid_wall_contact):
+			_debug_nav_log(
+				"target_left_rv",
+				"target_on_same_rv_now=%s grace=%.2f target_on_same_rv=%s wall_contact=%s side=%s wall_n=%s" % [
+					str(target_on_same_rv_now),
+					target_rv_contact_grace_remaining,
+					str(target_on_same_rv),
+					str(has_valid_wall_contact),
+					_debug_climb_side_label(active_climb_rv, active_wall_normal),
+					_debug_v3(active_wall_normal)
+				],
+				true
+			)
+			_abort_climb("target left rv")
+			return
+
+	var vertical_input := 1.0
+
+	if vertical_input > 0.0:
+		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
+		var allowed_upward_distance := _clamp_upward_climb_distance(rv_up, desired_upward_distance)
+		if allowed_upward_distance < desired_upward_distance:
+			_debug_climb_log(
+				"climb_ceiling_block",
+				"side=%s wanted=%.3f allowed=%.3f hit_dist=%.3f src=%s hit_node=%s hit_pos=%s" % [
+					_debug_climb_side_label(active_climb_rv, active_wall_normal),
+					desired_upward_distance,
+					allowed_upward_distance,
+					debug_last_ceiling_hit_distance,
+					debug_last_ceiling_hit_source,
+					debug_last_ceiling_hit_node,
+					_debug_v3(debug_last_ceiling_hit_position)
+				],
+				true
+			)
+			_abort_climb("ceiling detected")
+			return
+		else:
+			vertical_input *= allowed_upward_distance / desired_upward_distance
+
+	var horizontal_input := 0.0
+	var wall_tangent := rv_up.cross(active_wall_normal).normalized()
+	if wall_tangent.length_squared() > 0.001:
+		var desired_to_target := destination - global_position
+		desired_to_target = (desired_to_target - rv_up * desired_to_target.dot(rv_up)).normalized()
+		if desired_to_target.length_squared() > 0.001:
+			horizontal_input = clampf(desired_to_target.dot(wall_tangent), -1.0, 1.0)
+
+	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
+	var collision := _move_with_climb_collision(motion)
+	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
+		active_wall_normal = collision.get_normal().normalized()
+	_align_to_climb_wall(rv_up)
+	velocity = Vector3.ZERO
+
+	if pending_abort_lost_contact:
+		_abort_climb("lost wall contact")
+
+func _abort_climb(reason: String = "") -> void:
+	if CLIMB_DEBUG_LOG_ABORTS and not reason.is_empty():
+		print("Monster climb aborted: ", reason)
+	if debug_climb_messages and not reason.is_empty():
+		_debug_climb_log(
+			"abort",
+			"reason=%s side=%s pos=%s wall_n=%s" % [
+				reason,
+				_debug_climb_side_label(active_climb_rv, active_wall_normal),
+				_debug_v3(global_position),
+				_debug_v3(active_wall_normal)
+			],
+			true
+		)
+	_exit_climb_to_normal(reason)
+
+func _exit_climb_to_normal(reason: String = "") -> void:
+	var exit_wall_normal := active_wall_normal
+	if locomotion_state == LocomotionState.CLIMBING:
+		released_carrier_velocity = climb_carrier_velocity
+		velocity = climb_carrier_velocity
+	locomotion_state = LocomotionState.NORMAL
+	active_climb_rv = null
+	previous_climb_rv_transform = Transform3D.IDENTITY
+	climb_contact_grace_remaining = 0.0
+	climb_reenter_cooldown_remaining = CLIMB_REENTER_COOLDOWN
+	last_climb_wall_normal = exit_wall_normal
+	last_climb_separation_state = "separated"
+	active_wall_normal = Vector3.ZERO
+	target_rv_contact_grace_remaining = 0.0
+	_reset_navigation_state()
+	climb_carrier_velocity = Vector3.ZERO
+	_sync_body_collision_to_locomotion()
+
+	if reason == "lost wall contact":
+		post_separation_nav_block_remaining = CLIMB_POST_SEPARATION_NAV_BLOCK_TIME
+		var inward := -exit_wall_normal
+		inward.y = 0.0
+		if inward.length_squared() > 0.0001:
+			post_climb_transfer_direction = inward.normalized()
+			post_climb_transfer_time_remaining = CLIMB_EXIT_TRANSFER_TIME
+			var transfer_speed := maxf(move_speed, CLIMB_EXIT_TRANSFER_SPEED)
+			velocity.x = post_climb_transfer_direction.x * transfer_speed
+			velocity.z = post_climb_transfer_direction.z * transfer_speed
+	else:
+		post_separation_nav_block_remaining = 0.0
+		post_climb_transfer_direction = Vector3.ZERO
+		post_climb_transfer_time_remaining = 0.0
+
 # --- ATTACKING ---
 func _process_attack(delta: float):
-	if not target_player or not is_instance_valid(target_player): return
-	
-	# Slow down when attacking
-	velocity.x = 0.0
-	velocity.z = 0.0
-	
-	# Face the player
-	var look_pos = target_player.global_position
+	var target_node := _get_current_combat_target_node()
+	if target_node == null:
+		return
+
+	var target_position := _get_node_target_position(target_node)
+	current_combat_target["position"] = target_position
+	var has_attack_los := _has_attack_line_of_sight_to_target(target_node)
+	if not _can_attack_combat_target(current_combat_target, has_attack_los):
+		return
+
+	# Slow down when attacking only in normal locomotion; keep climbing motion intact.
+	if locomotion_state == LocomotionState.NORMAL:
+		velocity.x = 0.0
+		velocity.z = 0.0
+
+	# Face the active combat target.
+	var look_pos = target_position
 	look_pos.y = global_position.y
 	if look_pos.distance_to(global_position) > 0.01:
 		look_at(look_pos, Vector3.UP)
-	
-	# Deal damage on cooldown
-	if attack_timer <= 0.0:
-		if target_player.has_method("take_damage"):
-			target_player.take_damage(contact_damage)
-			print(">>> ", monster_name, " attacks player for ", contact_damage, " damage!")
-		attack_timer = attack_cooldown
+
+	_execute_attack_on_target(current_combat_target)
+
+func _execute_attack_on_target(target_data: Dictionary) -> void:
+	if attack_timer > 0.0:
+		return
+
+	var target_variant = target_data.get("node", null)
+	if not (target_variant is Node3D):
+		return
+
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return
+	if not target_node.has_method("take_damage"):
+		return
+
+	target_node.take_damage(contact_damage)
+	var target_type := str(target_data.get("target_type", "target"))
+	var attack_source := _resolve_attack_source_label(target_data)
+	print(">>> ", monster_name, " [", attack_source, "] attacks ", target_type, " for ", contact_damage, " damage!")
+	attack_timer = attack_cooldown
+
+func _resolve_attack_source_label(target_data: Dictionary) -> String:
+	var source := str(target_data.get("attack_source", "state_attack"))
+	if source == "touching":
+		return "touching"
+	if source == "underfoot":
+		return "underfoot"
+	return "state_attack"
+
+func _build_combat_target(target_node: Node3D, target_type: String, attack_source: String = "state_attack") -> Dictionary:
+	return CombatTargeting.build_target(target_node, target_type, attack_source)
+
+func _is_structure_tagged(node: Node3D) -> bool:
+	return node.is_in_group(Groups.CHASSIS) or node.is_in_group(Groups.EQUIPMENT)
+
+func _is_damageable_structure(node: Node3D) -> bool:
+	return node.is_in_group(Groups.MONSTER_DAMAGEABLE) \
+		and node.has_method("take_damage") \
+		and not node.is_in_group(Groups.PLAYER)
+
+# Underfoot attacks may only hit non-chassis damageable structure (equipment).
+func _is_underfoot_damageable(node: Node3D) -> bool:
+	if node.is_in_group(Groups.PLAYER) or node.is_in_group(Groups.CHASSIS):
+		return false
+	if not node.is_in_group(Groups.MONSTER_DAMAGEABLE):
+		return false
+	return node.has_method("take_damage")
+
+func _resolve_structure_target_type(target_node: Node3D) -> String:
+	return CombatTargeting.structure_type(target_node)
+
+func _get_self_position() -> Vector3:
+	return global_position if is_inside_tree() else position
+
+func _get_node_target_position(node: Node3D) -> Vector3:
+	if node == null:
+		return _get_self_position()
+	if node.is_inside_tree():
+		return node.global_position
+	return node.position
+
+func _pick_nearest_target(candidates: Array) -> Node3D:
+	return CombatTargeting.nearest(candidates, _get_self_position(), self)
+
+func _is_climbing_touch_structure_target(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if not _is_structure_tagged(node) and not _is_damageable_structure(node):
+		return false
+	return _is_node_touching_monster(node, climbing_touch_attack_range) and _has_attack_line_of_sight_to_target(node)
+
+func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
+	var radius := maxf(touch_range, 0.0)
+	if radius <= 0.0:
+		return false
+
+	if not is_inside_tree() or not node.is_inside_tree():
+		return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
+
+	if _touch_query_shape == null:
+		_touch_query_shape = SphereShape3D.new()
+	_touch_query_shape.radius = maxf(radius, 0.01)
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _touch_query_shape
+	query.transform = Transform3D(Basis.IDENTITY, global_position)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [self.get_rid()]
+
+	var hits := get_world_3d().direct_space_state.intersect_shape(query, 64)
+	for hit in hits:
+		var collider := hit.get("collider", null) as Node
+		if collider == null:
+			continue
+		if collider == node:
+			return true
+		if node.is_ancestor_of(collider):
+			return true
+
+	# Fallback keeps behavior predictable when overlap query misses a valid edge contact.
+	return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
+
+func _is_touching_attack_candidate(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if not node.has_method("take_damage"):
+		return false
+	if node.is_in_group(Groups.PLAYER):
+		return false
+	if _is_structure_tagged(node):
+		return true
+	return node.is_in_group(Groups.MONSTER_DAMAGEABLE)
+
+func _is_underfoot_equipment_candidate(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if not _is_underfoot_damageable(node):
+		return false
+
+	var origin := _get_self_position()
+	var target_pos := _get_node_target_position(node)
+	if target_pos.y >= origin.y - maxf(underfoot_target_below_margin, 0.0):
+		return false
+	var planar_offset := target_pos - origin
+	planar_offset.y = 0.0
+	return planar_offset.length() <= maxf(underfoot_attack_planar_range, 0.0)
+
+func _is_underfoot_probe_attackable(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	return _is_underfoot_damageable(node)
+
+func _configure_underfoot_probe(probe: RayCast3D) -> void:
+	if probe == null:
+		return
+	probe.enabled = true
+	probe.target_position = Vector3(0.0, -maxf(underfoot_raycast_length, 0.1), 0.0)
+	probe.collision_mask = 0xFFFFFFFF
+	probe.collide_with_bodies = true
+	probe.collide_with_areas = true
+	probe.exclude_parent = true
+
+func _resolve_underfoot_probe() -> RayCast3D:
+	if underfoot_probe != null and is_instance_valid(underfoot_probe):
+		return underfoot_probe
+	var probe_node := get_node_or_null("UnderfootProbe")
+	if probe_node != null and probe_node is RayCast3D:
+		underfoot_probe = probe_node as RayCast3D
+		_configure_underfoot_probe(underfoot_probe)
+		return underfoot_probe
+	return null
+
+func _resolve_underfoot_damageable_from_collider(collider: Node) -> Node3D:
+	var current: Node = collider
+	while current != null:
+		if current == self:
+			break
+		if current is Node3D:
+			var candidate := current as Node3D
+			if _is_underfoot_probe_attackable(candidate):
+				return candidate
+		current = current.get_parent()
+	return null
+
+func _get_underfoot_raycast_target() -> Node3D:
+	if not is_inside_tree():
+		return null
+	var probe := _resolve_underfoot_probe()
+	if probe == null:
+		return null
+	probe.force_raycast_update()
+	if not probe.is_colliding():
+		return null
+	var collider := probe.get_collider() as Node
+	if collider == null:
+		return null
+	return _resolve_underfoot_damageable_from_collider(collider)
+
+func _select_touching_attack_target(player_candidates: Array, structure_candidates: Array, tracking_target_node: Node3D = null) -> Dictionary:
+	var touching_candidates: Array = []
+	var probe_underfoot_target := _select_underfoot_equipment_target()
+
+	for candidate in player_candidates:
+		if not (candidate is Node3D):
+			continue
+		var player_node := candidate as Node3D
+		if player_node == null or not is_instance_valid(player_node):
+			continue
+		if not _is_touching_attack_candidate(player_node):
+			continue
+		if _is_node_touching_monster(player_node, climbing_touch_attack_range):
+			touching_candidates.append(player_node)
+
+	for candidate in structure_candidates:
+		if not (candidate is Node3D):
+			continue
+		var structure_node := candidate as Node3D
+		if structure_node == null or not is_instance_valid(structure_node):
+			continue
+		if probe_underfoot_target != null:
+			if structure_node == probe_underfoot_target:
+				continue
+			if structure_node.is_ancestor_of(probe_underfoot_target):
+				continue
+			if probe_underfoot_target.is_ancestor_of(structure_node):
+				continue
+		if not _is_touching_attack_candidate(structure_node):
+			continue
+		if not _is_node_touching_monster(structure_node, climbing_touch_attack_range):
+			continue
+		if not _has_attack_line_of_sight_to_target(structure_node):
+			continue
+		# Underfoot equipment uses a dedicated gate: only allowed when tracking target is below.
+		if _is_underfoot_equipment_candidate(structure_node):
+			continue
+		touching_candidates.append(structure_node)
+
+	var touching_target := _pick_nearest_target(touching_candidates)
+	if touching_target != null:
+		if touching_target.is_in_group(Groups.PLAYER):
+			return _build_combat_target(touching_target, "player", "touching")
+		return _build_combat_target(touching_target, _resolve_structure_target_type(touching_target), "touching")
+
+	if tracking_target_node != null and is_instance_valid(tracking_target_node):
+		if _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+			var underfoot_target := _select_underfoot_equipment_target()
+			if underfoot_target != null:
+				return _build_combat_target(underfoot_target, "equipment", "underfoot")
+
+	return {}
+
+func _resolve_underfoot_tracking_target() -> Node3D:
+	# Underfoot gate should follow player elevation only.
+	# Do not let a structure combat target authorize underfoot attacks by itself.
+	if target_player and is_instance_valid(target_player):
+		return target_player
+	var combat_target := _get_current_combat_target_node()
+	if combat_target != null and combat_target.is_in_group(Groups.PLAYER):
+		return combat_target
+	return null
+
+func _is_same_or_related_target(candidate: Node3D, reference: Node3D) -> bool:
+	return CombatTargeting.related(candidate, reference)
+
+func _is_probe_hit_underfoot_target(node: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	var probe_underfoot_target := _select_underfoot_equipment_target()
+	if probe_underfoot_target == null:
+		return false
+	return _is_same_or_related_target(node, probe_underfoot_target)
+
+func _try_auto_attack_touching_targets(tracking_target_node: Node3D, player_candidates_override: Array = [], structure_candidates_override: Array = []) -> bool:
+	var player_candidates: Array = player_candidates_override
+	if player_candidates.is_empty():
+		player_candidates = _collect_player_candidates(maxf(attack_range, climbing_touch_attack_range))
+
+	var structure_candidates: Array = structure_candidates_override
+	if structure_candidates.is_empty():
+		structure_candidates = _collect_structure_candidates(maxf(maxf(chassis_attack_range, attack_range), climbing_touch_attack_range))
+
+	var selected_target := _select_touching_attack_target(player_candidates, structure_candidates, tracking_target_node)
+	if selected_target.is_empty():
+		return false
+	var selected_node_variant = selected_target.get("node", null)
+	if selected_node_variant is Node3D and _is_probe_hit_underfoot_target(selected_node_variant as Node3D):
+		var source := str(selected_target.get("attack_source", "state_attack"))
+		if source != "underfoot":
+			return false
+
+	var source_label := str(selected_target.get("attack_source", "state_attack"))
+	if source_label == "underfoot":
+		if tracking_target_node == null or not is_instance_valid(tracking_target_node):
+			return false
+		if not _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+			return false
+
+	var previous_attack_timer := attack_timer
+	_execute_attack_on_target(selected_target)
+	if attack_timer > previous_attack_timer:
+		current_combat_target = selected_target
+		return true
+	return false
+
+func _is_tracking_target_below(tracking_target_position: Vector3, margin: float = 0.05) -> bool:
+	var origin := _get_self_position()
+	return tracking_target_position.y < origin.y - maxf(margin, 0.0)
+
+func _select_underfoot_equipment_target() -> Node3D:
+	if _underfoot_cache_active:
+		if _underfoot_cache_target != null and not is_instance_valid(_underfoot_cache_target):
+			return null
+		return _underfoot_cache_target
+	var raycast_target := _get_underfoot_raycast_target()
+	if raycast_target != null:
+		return raycast_target
+	return null
+
+func _try_attack_underfoot_equipment(tracking_target_node: Node3D) -> bool:
+	if tracking_target_node == null or not is_instance_valid(tracking_target_node):
+		return false
+	if not _is_tracking_target_below(_get_node_target_position(tracking_target_node), underfoot_target_below_margin):
+		return false
+
+	var underfoot_target := _select_underfoot_equipment_target()
+	if underfoot_target == null:
+		return false
+
+	var previous_attack_timer := attack_timer
+	_execute_attack_on_target(_build_combat_target(underfoot_target, "equipment", "underfoot"))
+	return attack_timer > previous_attack_timer
+
+func _select_combat_target(player_candidates: Array, structure_candidates: Array, is_climbing: bool) -> Dictionary:
+	return CombatTargeting.select_target(player_candidates, structure_candidates, is_climbing,
+		_get_self_position(), self, _select_underfoot_equipment_target(), _is_climbing_touch_structure_target)
+
+func _collect_player_candidates(max_distance: float = INF) -> Array:
+	var candidates: Array = []
+	if not is_inside_tree():
+		if target_player != null and is_instance_valid(target_player):
+			candidates.append(target_player)
+		return candidates
+
+	var origin := _get_self_position()
+	for node in get_tree().get_nodes_in_group(Groups.PLAYER):
+		if not (node is Node3D):
+			continue
+		var player_node := node as Node3D
+		if not WorldEntities.same_world(self, player_node):
+			continue
+		if player_node == null or not is_instance_valid(player_node):
+			continue
+		if origin.distance_to(_get_node_target_position(player_node)) > max_distance:
+			continue
+		candidates.append(player_node)
+	return candidates
+
+func _collect_structure_candidates(max_distance: float = INF) -> Array:
+	var candidates: Array = []
+	if not is_inside_tree():
+		return candidates
+
+	var origin := _get_self_position()
+	for node in get_tree().get_nodes_in_group(Groups.MONSTER_DAMAGEABLE):
+		if not (node is Node3D):
+			continue
+		var structure_node := node as Node3D
+		if not WorldEntities.same_world(self, structure_node):
+			continue
+		if structure_node == null or not is_instance_valid(structure_node) or structure_node == self:
+			continue
+		if structure_node.is_in_group(Groups.PLAYER):
+			continue
+		if not structure_node.has_method("take_damage"):
+			continue
+		if origin.distance_to(_get_node_target_position(structure_node)) > max_distance:
+			continue
+		candidates.append(structure_node)
+	return candidates
+
+func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> void:
+	var support_target := _select_underfoot_equipment_target()
+	var tracking := _resolve_underfoot_tracking_target()
+	if not is_climbing and support_target != null and tracking != null:
+		if _is_tracking_target_below(_get_node_target_position(tracking), underfoot_target_below_margin):
+			current_combat_target = _build_combat_target(support_target, "equipment", "underfoot")
+			ai_state = State.ATTACK
+			return
+	current_combat_target = _select_combat_target(
+		_collect_player_candidates(max_distance),
+		_collect_structure_candidates(max_distance),
+		is_climbing
+	)
+
+func _get_current_combat_target_node() -> Node3D:
+	var target_variant = current_combat_target.get("node", null)
+	if not (target_variant is Node3D):
+		return null
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return null
+	return target_node
 
 func _pick_new_wander_direction():
 	var angle = randf_range(0, TAU)
@@ -288,12 +1380,16 @@ func _face_movement_direction():
 			global_transform = global_transform.interpolate_with(target_transform, 0.1)
 
 func _find_nearest_player() -> Node3D:
-	var players = get_tree().get_nodes_in_group("player")
+	if not is_inside_tree():
+		return null
+	var players = get_tree().get_nodes_in_group(Groups.PLAYER)
 	if players.is_empty():
 		return null
 	var nearest = null
 	var nearest_dist = INF
 	for p in players:
+		if not p is Node3D or not WorldEntities.same_world(self, p):
+			continue
 		var d = global_position.distance_to(p.global_position)
 		if d < nearest_dist:
 			nearest_dist = d
@@ -323,6 +1419,171 @@ func _compute_fallback_direction(origin: Vector3, destination: Vector3) -> Vecto
 	if direction.length_squared() <= 0.0001:
 		return Vector3.ZERO
 	return direction.normalized()
+
+func _should_abort_climb_when_target_leaves_rv(is_climbing: bool, target_on_same_rv: bool, has_wall_contact: bool) -> bool:
+	return is_climbing and not target_on_same_rv and not has_wall_contact
+
+func _is_target_considered_on_climb_rv(target_on_same_rv_now: bool, target_rv_contact_grace_remaining: float) -> bool:
+	return target_on_same_rv_now or target_rv_contact_grace_remaining > 0.0
+
+func _should_use_navigation_for_chase(can_nav: bool, on_rv_surface: bool, vertical_gap: float, post_separation_block_remaining: float) -> bool:
+	if not can_nav:
+		return false
+	if on_rv_surface:
+		return false
+	if post_separation_block_remaining > 0.0:
+		return false
+	if last_climb_separation_state != "attached" and vertical_gap >= CLIMB_DESCENT_MIN_HEIGHT_GAP:
+		return false
+	return true
+
+func _can_attack_target_position(target_position: Vector3, has_line_of_sight: bool = true) -> bool:
+	return _can_attack_target_position_with_range(target_position, attack_range, has_line_of_sight)
+
+func _can_attack_target_position_with_range(target_position: Vector3, allowed_range: float, has_line_of_sight: bool = true) -> bool:
+	if not has_line_of_sight:
+		return false
+	var origin := global_position if is_inside_tree() else position
+	var offset := target_position - origin
+	var vertical_gap := absf(offset.y)
+	if vertical_gap > attack_max_vertical_gap:
+		return false
+	offset.y = 0.0
+	return offset.length() <= maxf(allowed_range, 0.0)
+
+func _get_attack_range_for_target(target_data: Dictionary) -> float:
+	var target_type := str(target_data.get("target_type", ""))
+	if target_type == "chassis":
+		return maxf(attack_range, chassis_attack_range)
+	return attack_range
+
+func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool = true) -> bool:
+	var target_variant = target_data.get("node", null)
+	if not (target_variant is Node3D):
+		return false
+	var target_node := target_variant as Node3D
+	if target_node == null or not is_instance_valid(target_node):
+		return false
+	if _is_probe_hit_underfoot_target(target_node):
+		var source := str(target_data.get("attack_source", "state_attack"))
+		if source != "underfoot":
+			return false
+		var tracking_target := _resolve_underfoot_tracking_target()
+		if tracking_target == null or not is_instance_valid(tracking_target):
+			return false
+		if not _is_tracking_target_below(_get_node_target_position(tracking_target), underfoot_target_below_margin):
+			return false
+		# The live downward probe is the range/occlusion check for a large panel.
+		return target_node == _select_underfoot_equipment_target()
+	var target_position := _get_node_target_position(target_node)
+	var allowed_range := _get_attack_range_for_target(target_data)
+	return _can_attack_target_position_with_range(target_position, allowed_range, has_line_of_sight)
+
+func _has_attack_line_of_sight_to_target(target: Node3D) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not is_inside_tree():
+		return true
+
+	var from := global_position + Vector3.UP * 1.0
+	var to := target.global_position + Vector3.UP * 1.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit:
+		return true
+
+	var collider := hit.get("collider", null) as Node
+	if collider == null:
+		return false
+	if collider == target:
+		return true
+	if target.is_ancestor_of(collider):
+		return true
+	return false
+
+func _get_descent_hint_direction(destination: Vector3) -> Vector3:
+	var origin := global_position if is_inside_tree() else position
+	var fallback_direction := _compute_fallback_direction(origin, destination)
+	if origin.y - destination.y < CLIMB_DESCENT_MIN_HEIGHT_GAP:
+		return fallback_direction
+
+	var hint := last_climb_wall_normal
+	hint.y = 0.0
+	if hint.length_squared() <= 0.0001:
+		return fallback_direction
+	hint = hint.normalized()
+
+	if fallback_direction.length_squared() <= 0.0001:
+		return hint
+
+	var blend := hint * CLIMB_DESCENT_HINT_WEIGHT + fallback_direction * (1.0 - CLIMB_DESCENT_HINT_WEIGHT)
+	if blend.length_squared() <= 0.0001:
+		return hint
+	return blend.normalized()
+
+func _is_on_rv_surface() -> bool:
+	var space_state := get_world_3d().direct_space_state
+	var from := global_position + Vector3.UP * 0.3
+	var to := from + Vector3.DOWN * 2.6
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid()])
+	var hit := space_state.intersect_ray(query)
+	if not hit:
+		return false
+	var hit_node := hit.collider as Node
+	return _find_rv_ancestor(hit_node) != null
+
+func _is_target_on_rv_surface_from_probes(ray_hit_rv: bool, overlap_hit_rv: bool) -> bool:
+	return ray_hit_rv or overlap_hit_rv
+
+func _has_overlap_hit_on_specific_rv(node: Node3D, rv: Node3D) -> bool:
+	if node == null or rv == null:
+		return false
+
+	var shape := SphereShape3D.new()
+	shape.radius = 0.65
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, node.global_position + Vector3.UP * 0.2)
+	query.collision_mask = 0xFFFFFFFF
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [self.get_rid(), node.get_rid()]
+
+	var hits := get_world_3d().direct_space_state.intersect_shape(query, 64)
+	for hit in hits:
+		var collider := hit.get("collider", null) as Node
+		if collider == null:
+			continue
+		if _find_rv_ancestor(collider) == rv:
+			return true
+	return false
+
+func _is_node_on_specific_rv_surface(node: Node3D, rv: Node3D) -> bool:
+	if node == null or not is_instance_valid(node):
+		return false
+	if rv == null or not is_instance_valid(rv):
+		return false
+	if not is_inside_tree() or not node.is_inside_tree():
+		return true
+
+	var space_state := get_world_3d().direct_space_state
+	var from := node.global_position + Vector3.UP * 0.3
+	var to := from + Vector3.DOWN * 3.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [self.get_rid(), node.get_rid()])
+	var hit := space_state.intersect_ray(query)
+	var ray_hit_rv := false
+	if hit:
+		var hit_node := hit.collider as Node
+		ray_hit_rv = _find_rv_ancestor(hit_node) == rv
+
+	var overlap_hit_rv := _has_overlap_hit_on_specific_rv(node, rv)
+	return _is_target_on_rv_surface_from_probes(ray_hit_rv, overlap_hit_rv)
+
+func _reset_navigation_state() -> void:
+	nav_has_target = false
+	nav_repath_timer = 0.0
+	if nav_agent:
+		nav_agent.target_position = global_position
 
 func _nav_set_target(destination: Vector3, force: bool = false) -> void:
 	if nav_agent == null:
@@ -354,6 +1615,9 @@ func _get_navigation_direction(destination: Vector3) -> Vector3:
 
 func _is_progress_too_small(progress: float, threshold: float) -> bool:
 	return progress < threshold
+
+func _can_trigger_stuck_recovery() -> bool:
+	return stuck_cooldown_timer <= 0.0
 
 func _get_frame_progress_threshold(delta: float) -> float:
 	var frame_delta = maxf(delta, 0.0001)
@@ -423,9 +1687,6 @@ func _should_apply_elevation_assist(destination: Vector3) -> bool:
 	var height_gap = destination.y - global_position.y
 	return _is_elevation_gap_climbable(height_gap)
 
-func _can_trigger_stuck_recovery() -> bool:
-	return stuck_cooldown_timer <= 0.0
-
 func _update_stuck_watchdog(delta: float, moving_intent: bool) -> void:
 	var current_flat = _flat_position(global_position)
 	if not has_last_flat_position:
@@ -455,7 +1716,10 @@ func _trigger_stuck_recovery() -> void:
 	nav_repath_timer = 0.0
 
 	var recovery_destination = global_position + Vector3.FORWARD
-	if target_player and is_instance_valid(target_player):
+	var recovery_target := _get_current_combat_target_node()
+	if recovery_target != null:
+		recovery_destination = _get_node_target_position(recovery_target)
+	elif target_player and is_instance_valid(target_player):
 		recovery_destination = target_player.global_position
 	elif ai_state == State.WANDER:
 		recovery_destination = wander_target_position
@@ -468,7 +1732,9 @@ func _trigger_stuck_recovery() -> void:
 	if is_on_floor():
 		velocity.y = maxf(velocity.y, recovery_velocity.y)
 
-	if target_player and is_instance_valid(target_player):
+	if recovery_target != null:
+		_nav_set_target(_get_node_target_position(recovery_target), true)
+	elif target_player and is_instance_valid(target_player):
 		_nav_set_target(target_player.global_position, true)
 	elif ai_state == State.WANDER:
 		_pick_new_wander_direction()
@@ -481,7 +1747,7 @@ func take_damage(amount: float):
 	print(monster_name, " took ", amount, " damage! HP: ", current_health, "/", max_health)
 	
 	# Visual feedback: flash white briefly
-	var mesh = get_node_or_null("BodyMesh")
+	var mesh = _body_mesh if _body_mesh else get_node_or_null("BodyMesh")
 	if mesh and mesh.material_override:
 		var orig_color = mesh.material_override.albedo_color
 		var tween = create_tween()
@@ -527,7 +1793,7 @@ func _spawn_loot():
 		item.set("scrap_yields", rolled_yields)
 	
 	# Spawn into the world
-	var world = get_tree().current_scene
+	var world = WorldEntities.get_container(self)
 	if world:
 		world.add_child(item)
 		item.global_position = global_position + Vector3(0, 1.0, 0)
