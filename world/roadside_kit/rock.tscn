@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_17vfk"]
+albedo_color = Color(0.4, 0.41, 0.37, 1)
+roughness = 0.95
+
+[sub_resource type="SphereMesh" id="SphereMesh_qosqp"]
+radius = 1.75
+height = 2.8
+radial_segments = 7
+rings = 3
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bx06t"]
+size = Vector3(3.5, 2.8, 3.5)
+
+[node name="Rock" type="Node3D" unique_id=1704439869]
+
+[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="." unique_id=2114660390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+material_override = SubResource("StandardMaterial3D_17vfk")
+mesh = SubResource("SphereMesh_qosqp")
+
+[node name="@StaticBody3D@14" type="StaticBody3D" parent="@MeshInstance3D@12" unique_id=1107180953]
+
+[node name="@CollisionShape3D@13" type="CollisionShape3D" parent="@MeshInstance3D@12/@StaticBody3D@14" unique_id=1692071101]
+shape = SubResource("BoxShape3D_bx06t")

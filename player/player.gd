@@ -74,8 +74,11 @@ var is_player_dead: bool = false
 @onready var climb_wall_probe = $ClimbWallProbe
 @onready var climb_upward_probe = $ClimbUpwardProbe
 
-func add_item(item_name: String, is_large: bool, scene_path: String) -> bool:
-	if not inventory.add_item(item_name, is_large, scene_path):
+func add_prop_item(prop: Prop, path: String) -> bool:
+	return add_item(prop.item_name, prop.is_large, path, {"scrap_yields": prop.scrap_yields.duplicate(true)})
+
+func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+	if not inventory.add_item(item_name, is_large, scene_path, state):
 		return false
 	_update_inventory_display()
 	if inventory.active_slot == inventory.items.size() - 1:
@@ -109,6 +112,7 @@ func _equip_active_slot():
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			held_item_node = scene.instantiate()
+			_restore_prop_state(held_item_node, item_data)
 			# Disable physics so it's just visual while held
 			if held_item_node is RigidBody3D:
 				held_item_node.freeze = true
@@ -223,6 +227,7 @@ func drop_item():
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			var dropped_item = scene.instantiate()
+			_restore_prop_state(dropped_item, item_data)
 			var entity_parent: Node = WorldEntities.get_container(self)
 			if entity_parent == null:
 				entity_parent = get_tree().current_scene
@@ -241,6 +246,13 @@ func drop_item():
 				dropped_item.linear_velocity = -transform.basis.z * 3.0
 			
 		consume_active_item()
+
+func _restore_prop_state(node: Node, data: Dictionary) -> void:
+	if node is Prop:
+		node.item_name = data["name"]
+		node.is_large = data["is_large"]
+		if data.get("state", {}).has("scrap_yields"):
+			node.scrap_yields = data.state.scrap_yields.duplicate(true)
 
 func _unhandled_input(event):
 	if in_ui_mode: return

@@ -10,7 +10,7 @@ Godot 4.6.1 survival prototype; `world/test_world.tscn` is the main scene.
 - `core/`: shared contracts, climbing geometry, and RV support.
 - `assets/`: art; scenes also live beside scripts.
 - `tests/`: behavior suites and the interactive climbing playground.
-- `docs/`: architecture, module contracts, and design.
+- Root `GDD.md`, `architecture.md`, and `README.md`: current design, architecture, and usage. `docs/` is archived; see `docs/README.md`.
 
 ## Development Commands
 

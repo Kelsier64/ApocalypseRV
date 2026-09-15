@@ -4,8 +4,8 @@ var failures: Array[String] = []
 
 func _init() -> void:
 	for entry in POIConfig.POI_TABLE:
-		if entry.get("type", "gridmap") != "procedural" and str(entry.get("scene", "")).is_empty():
-			failures.append("Non-procedural POI requires a scene: " + str(entry.get("id")))
+		if entry.get("type") != "instance_entrance" or str(entry.get("scene", "")).is_empty():
+			failures.append("POI requires an instance entrance scene: " + str(entry.get("id")))
 		_check_resources(entry)
 	if failures.is_empty():
 		print("PASS: configured POI resources exist and load")

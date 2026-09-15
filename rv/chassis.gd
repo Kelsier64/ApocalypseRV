@@ -213,10 +213,10 @@ func _physics_process(delta: float) -> void:
 	var steer_right: float = 0.0
 
 	if is_player_driving:
-		if Input.is_action_pressed("move_forward"): throttle = 1.0
-		if Input.is_action_pressed("move_back"): braking_input = 1.0
-		if Input.is_action_pressed("move_left"): steer_left = 1.0
-		if Input.is_action_pressed("move_right"): steer_right = 1.0
+		throttle = Input.get_action_strength("move_forward")
+		braking_input = Input.get_action_strength("move_back")
+		steer_left = Input.get_action_strength("move_left")
+		steer_right = Input.get_action_strength("move_right")
 		if Input.is_action_pressed("jump"): braking_input = 1.0
 
 	# Remote Control / Testing (Arrow Keys)

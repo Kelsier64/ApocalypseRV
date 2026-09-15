@@ -248,6 +248,9 @@ func _physics_process(delta: float):
 		post_climb_transfer_time_remaining = maxf(0.0, post_climb_transfer_time_remaining - delta)
 	
 	# Find player if we don't have one
+	if is_instance_valid(target_player) and not WorldEntities.same_world(self, target_player):
+		target_player = null
+		current_combat_target = {}
 	if not target_player or not is_instance_valid(target_player):
 		target_player = _find_nearest_player()
 
@@ -509,6 +512,8 @@ func _sync_player_collision_exceptions_for_airborne() -> void:
 		if not (node is PhysicsBody3D):
 			continue
 		var player_body := node as PhysicsBody3D
+		if not WorldEntities.same_world(self, player_body):
+			continue
 		if player_body == null or not is_instance_valid(player_body):
 			continue
 		if disable_player_collision:
@@ -1302,6 +1307,8 @@ func _collect_player_candidates(max_distance: float = INF) -> Array:
 		if not (node is Node3D):
 			continue
 		var player_node := node as Node3D
+		if not WorldEntities.same_world(self, player_node):
+			continue
 		if player_node == null or not is_instance_valid(player_node):
 			continue
 		if origin.distance_to(_get_node_target_position(player_node)) > max_distance:
@@ -1319,6 +1326,8 @@ func _collect_structure_candidates(max_distance: float = INF) -> Array:
 		if not (node is Node3D):
 			continue
 		var structure_node := node as Node3D
+		if not WorldEntities.same_world(self, structure_node):
+			continue
 		if structure_node == null or not is_instance_valid(structure_node) or structure_node == self:
 			continue
 		if structure_node.is_in_group(Groups.PLAYER):
@@ -1379,6 +1388,8 @@ func _find_nearest_player() -> Node3D:
 	var nearest = null
 	var nearest_dist = INF
 	for p in players:
+		if not p is Node3D or not WorldEntities.same_world(self, p):
+			continue
 		var d = global_position.distance_to(p.global_position)
 		if d < nearest_dist:
 			nearest_dist = d
@@ -1782,7 +1793,7 @@ func _spawn_loot():
 		item.set("scrap_yields", rolled_yields)
 	
 	# Spawn into the world
-	var world = get_tree().current_scene
+	var world = WorldEntities.get_container(self)
 	if world:
 		world.add_child(item)
 		item.global_position = global_position + Vector3(0, 1.0, 0)

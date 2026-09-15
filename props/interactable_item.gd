@@ -19,7 +19,7 @@ func interact(player: Node3D):
 		if path == "": # fallback just in case
 			path = "res://props/" + ("oil_barrel.tscn" if is_large else "scrap.tscn")
 			
-		var success = player.add_item(item_name, is_large, path)
+		var success: bool = player.add_prop_item(self, path) if player.has_method("add_prop_item") else player.add_item(item_name, is_large, path)
 		if success:
 			print("Player picked up: ", item_name)
 			queue_free()

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ApocalypseRV is a cooperative first-person survival game built with **Godot 4.6**, **Jolt Physics**, and the **GL Compatibility** renderer. Players drive an RV through a procedurally generated post-apocalyptic highway, scavenging buildings, crafting upgrades, and fighting zombies.
+ApocalypseRV is a single-player first-person survival prototype targeting **Godot 4.6.1**, **Jolt Physics**, and the **GL Compatibility** renderer. Players drive an RV through generated highway chunks, scavenge, recycle materials, craft gasoline cans, and evade or ram zombies. Cooperative play and equipment upgrades remain future goals; consult the root GDD.md for current scope.
 
 ## Commands
 
@@ -32,9 +32,9 @@ Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1` for i
 
 ## Architecture
 
-Detailed docs live in `docs/`: `architecture.md` (system overview), `docs/design/*` (behavior design), `docs/modules/*` (per-component contracts), and `GDD.md` (game design doc, Traditional Chinese). Directories map 1:1 to runtime domains:
+Current documentation lives at the repository root: `architecture.md` (implementation), `GDD.md` (design and gameplay, Traditional Chinese), and `README.md` (usage). `docs/` is archived in place; see `docs/README.md`. Old design/module documents are historical references, not current instructions. Directories map to runtime domains:
 
-- **`world/`** — chunk streaming pipeline: `world_generator.gd` keeps a behind/current/ahead chunk window keyed on player Z position; `chunk_generator.gd` builds terrain/road/nav mesh per chunk; `poi_spawner.gd` + `poi_config.gd` do weighted POI selection; `world/building/` generates multi-room procedural buildings from room definitions.
+- **`world/`** — `world_generator.gd` streams highway chunks using outdoor player Z or the pinned instance entry anchor; `chunk_generator.gd` builds terrain/road/nav and exterior POIs. `poi_spawner.gd` + `poi_config.gd` place maintenance entrances; `instances/` handles isolated World3D mazes, navigation and same-run actor snapshots. `poi_kit/` holds authored rooms, furniture and door/loot contracts. The old building generator and POI scenes have been removed.
 - **`rv/`** — `chassis.gd` is the RV core: driving physics, fuel/power economy, material inventory, wheel slots, durability.
 - **`equipment/`** — placeable RV devices (generator, crafting station, scrapper, driver seat, tablet UI). `equipment.gd` is the base class; equipment finds its RV **by walking ancestors and duck-typing** (checking for methods like `add_item`/`deduct_materials`), so reparenting nodes can silently break the connection.
 - **`player/`** — FPS movement with a NORMAL/CLIMBING locomotion state machine (`player.gd`), plus interaction raycasting (`player_interact.gd`) against props/equipment via duck-typed `interact`/`interact_hold`.

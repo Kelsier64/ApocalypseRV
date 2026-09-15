@@ -1,436 +1,303 @@
 extends Node3D
 class_name ChunkGenerator
-
-const CHUNK_SIZE = 150.0
-const RESOLUTION = 80
-const ROAD_WIDTH = 15.0
-const ROAD_BLEND_DISTANCE = 12.0
-const MAX_HEIGHT = 60.0
-const CURVE_SEARCH_SAMPLES = 20
+## Fixed world-grid band. Roads curve inside it; the band never rotates.
+const CHUNK_SIZE := 150.0
 const ZOMBIE_SCENE = preload("res://enemies/zombie.tscn")
+const TERRAIN_SHADER = preload("res://world/terrain/terrain_material.gdshader")
+var field: WorldField
+var band: int
+var sites: Array[Dictionary] = []
+var decoration_positions: Array[Vector3] = []
+var build_ms: float = 0.0
+var max_slice_ms: float = 0.0
+var _slice_start: int
+var navigation: NavigationRegion3D
+var _terrain: MeshInstance3D
 
-var noise: FastNoiseLite
-var detail_noise: FastNoiseLite
-var start_pos: Vector3
-var end_pos: Vector3
-var control_p1: Vector3
-var control_p2: Vector3
-# Bezier points sampled once per chunk; the curve is constant after
-# generate_chunk sets the control points, so closest-point searches
-# (called for every terrain grid vertex) must not re-evaluate it.
-var _curve_samples: PackedVector3Array = PackedVector3Array()
+func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool = false) -> void:
+	_slice_start = Time.get_ticks_usec()
+	field = data
+	band = index
+	name = "TerrainBand_%d" % band
+	sites = field.stops_in_band(band)
+	await _build_ground(gradual)
+	if gradual:
+		await _pause()
+	_build_road()
+	for site in sites:
+		_build_site(site, spawner)
+	await _decorate(gradual)
+	if gradual:
+		await _pause()
+	_build_navigation()
+	_spawn_actors()
+	_measure_slice()
 
-var has_poi: bool = false
-var poi_local_pos: Vector3
-var poi_footprint_radius: float = 8.0
-var poi_footprint_blend: float = 10.0
-var _current_poi: Dictionary = {}
-var _poi_spawner: POISpawner
+func _measure_slice() -> void:
+	var elapsed := (Time.get_ticks_usec() - _slice_start) / 1000.0
+	build_ms += elapsed
+	max_slice_ms = maxf(max_slice_ms, elapsed)
 
+func _pause() -> void:
+	_measure_slice()
+	await get_tree().process_frame
+	_slice_start = Time.get_ticks_usec()
 
-func _get_terrain_height(gx: float, gz: float, micro_multiplier: float = 1.0) -> float:
-	var raw_noise = noise.get_noise_2d(gx, gz)
-	var base_h = raw_noise * MAX_HEIGHT
-	var micro_noise = detail_noise.get_noise_2d(gx, gz)
-	base_h += micro_noise * 1.5 * micro_multiplier
-	return base_h
-
-
-func generate_chunk(start_transform: Transform3D, next_turn_angle: float,
-		shared_noise: FastNoiseLite, shared_detail_noise: FastNoiseLite, shared_poi_spawner: POISpawner) -> Transform3D:
-	global_transform = start_transform
-
-	noise = shared_noise
-	detail_noise = shared_detail_noise
-	_poi_spawner = shared_poi_spawner
-
-	# Bezier road curve
-	start_pos = Vector3.ZERO
-	var end_offset_x = sin(next_turn_angle) * CHUNK_SIZE * 0.5
-	end_pos = Vector3(end_offset_x, 0, -CHUNK_SIZE)
-	control_p1 = Vector3(0, 0, -CHUNK_SIZE * 0.33)
-	control_p2 = end_pos + Vector3(-sin(next_turn_angle) * CHUNK_SIZE * 0.33, 0, CHUNK_SIZE * 0.33)
-	_rebuild_curve_samples()
-
-	# POI placement
-	has_poi = false
-	if randf() < 0.5:
-		_try_place_poi()
-
-	# Build meshes
-	_build_terrain_mesh()
-	_build_road_mesh()
-	_build_navigation_region()
-
-	# End transform for next chunk
-	var end_basis = Basis(Vector3.UP, next_turn_angle)
-	var global_end = global_transform * end_pos
-	var true_end_height = _get_terrain_height(global_end.x, global_end.z, 0.0)
-	end_pos.y = true_end_height - global_transform.origin.y
-	var local_end_transform = Transform3D(end_basis, end_pos)
-
-	# Spawn POI contents. Static content (building, scavenge loot) belongs to the
-	# chunk; enemies are active entities and go to the shared WorldEntities
-	# container so a despawning chunk can't delete them mid-chase.
-	if has_poi:
-		var poi_building := _poi_spawner.spawn_building(_current_poi, self, poi_local_pos)
-		_poi_spawner.spawn_loot(_current_poi, self, poi_local_pos, poi_building)
-		var enemy_parent := WorldEntities.get_container(self)
-		if enemy_parent != null:
-			_poi_spawner.spawn_enemies(_current_poi, enemy_parent, global_transform * poi_local_pos, _get_global_height)
-		else:
-			_poi_spawner.spawn_enemies(_current_poi, self, poi_local_pos, _get_local_height)
-
-	_spawn_road_zombies()
-
-	return global_transform * local_end_transform
-
-
-func _try_place_poi() -> void:
-	var poi := _poi_spawner.pick_poi()
-	if poi.is_empty():
-		return
-
-	var hx := randf_range(-CHUNK_SIZE / 2.0 + 20.0, CHUNK_SIZE / 2.0 - 20.0)
-	var hz := randf_range(-CHUNK_SIZE + 20.0, -20.0)
-	var global_hp := global_transform * Vector3(hx, 0, hz)
-	var h_height := _get_terrain_height(global_hp.x, global_hp.z, 0.0)
-
-	var curve_data := _get_closest_curve_point(hx, hz)
-	var curve_pt: Vector3 = curve_data[0]
-	var dist_to_road := Vector2(curve_pt.x - hx, curve_pt.z - hz).length()
-	var min_road_dist: float = poi.get("min_road_distance", ROAD_WIDTH / 2.0 + 10.0)
-
-	if dist_to_road < min_road_dist:
-		return
-
-	has_poi = true
-	poi_local_pos = Vector3(hx, h_height - global_transform.origin.y, hz)
-	poi_footprint_radius = poi.get("footprint_radius", 8.0)
-	poi_footprint_blend = poi.get("footprint_blend", 10.0)
-	_current_poi = poi
-
-
-func _get_local_height(lx: float, lz: float) -> float:
-	var global_spawn := global_transform * Vector3(lx, 0, lz)
-	var terrain_h := _get_terrain_height(global_spawn.x, global_spawn.z, 0.0)
-	return terrain_h - global_transform.origin.y
-
-
-func _get_global_height(gx: float, gz: float) -> float:
-	return _get_terrain_height(gx, gz, 0.0)
-
-
-# --- Road math ---
-
-func _cubic_bezier(t: float) -> Vector3:
-	var q0 = start_pos.lerp(control_p1, t)
-	var q1 = control_p1.lerp(control_p2, t)
-	var q2 = control_p2.lerp(end_pos, t)
-	var r0 = q0.lerp(q1, t)
-	var r1 = q1.lerp(q2, t)
-	return r0.lerp(r1, t)
-
-
-func _rebuild_curve_samples() -> void:
-	_curve_samples.resize(CURVE_SEARCH_SAMPLES + 1)
-	for i in range(CURVE_SEARCH_SAMPLES + 1):
-		_curve_samples[i] = _cubic_bezier(float(i) / CURVE_SEARCH_SAMPLES)
-
-
-func _get_closest_curve_point(px: float, pz: float) -> Array:
-	if _curve_samples.is_empty():
-		_rebuild_curve_samples()
-
-	var closest_dist = INF
-	var closest_pt = Vector3.ZERO
-	var closest_t = 0.0
-	for i in range(_curve_samples.size()):
-		var pt := _curve_samples[i]
-		var d = Vector2(pt.x - px, pt.z - pz).length_squared()
-		if d < closest_dist:
-			closest_dist = d
-			closest_pt = pt
-			closest_t = float(i) / CURVE_SEARCH_SAMPLES
-	return [closest_pt, closest_t]
-
-
-# --- Terrain mesh ---
-
-func _build_terrain_mesh():
-	var st = SurfaceTool.new()
+func _build_ground(gradual: bool) -> void:
+	var step := field.profile.terrain_step
+	var nx := roundi(field.profile.terrain_half_width * 2.0 / step)
+	var nz := roundi(field.profile.chunk_length / step)
+	var z0 := -band * field.profile.chunk_length
+	var rows: Array = []
+	for j in range(-1, nz + 2):
+		var row: Array = []
+		for i in range(-1, nx + 2):
+			row.append(field.surface(-field.profile.terrain_half_width + i * step, z0 - j * step))
+		rows.append(row)
+		if gradual and posmod(j, 3) == 0:
+			await _pause()
+	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for j in range(nz + 1):
+		for i in range(nx + 1):
+			var sample: Dictionary = rows[j + 1][i + 1]
+			var normal := Vector3(float(rows[j + 1][i].height) - float(rows[j + 1][i + 2].height), 2.0 * step, float(rows[j + 2][i + 1].height) - float(rows[j][i + 1].height)).normalized()
+			var w: Vector3 = sample.weights
+			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
+			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
+			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
+			st.set_normal(normal)
+			st.set_color(color)
+			st.set_uv(Vector2(i, j) * step / 4.0)
+			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step, sample.height, z0 - j * step))
+		if gradual and j % 12 == 0:
+			await _pause()
+	for j in range(nz):
+		for i in range(nx):
+			var a := j * (nx + 1) + i
+			for v in [a, a + nx + 1, a + 1, a + 1, a + nx + 1, a + nx + 2]:
+				st.add_index(v)
+	_terrain = _mesh(st.commit(), "Ground", true)
+	var mat := ShaderMaterial.new()
+	mat.shader = TERRAIN_SHADER
+	_terrain.material_override = mat
+	if gradual:
+		await _pause()
+	await _build_distant_sides(gradual)
 
-	var overlap = 4.0
-	var step_z = (CHUNK_SIZE + overlap * 2.0) / RESOLUTION
-	var step_x = (CHUNK_SIZE + overlap * 2.0) / RESOLUTION
-	var half_size_x = (CHUNK_SIZE + overlap * 2.0) / 2.0
-	var x_offset = end_pos.x / 2.0
+func _build_distant_sides(gradual: bool) -> void:
+	for side in [-1.0, 1.0]:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var columns := [225.0, 255.0, 315.0, 435.0, 675.0, 1035.0]
+		for j in range(51):
+			var z := -band * 150.0 - j * 3.0
+			for x in columns:
+				st.set_color(Color(0.36, 0.39, 0.27))
+				st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
+		for j in range(50):
+			for i in range(5):
+				var a := j * 6 + i
+				var indices := [a, a + 6, a + 1, a + 1, a + 6, a + 7] if side > 0 else [a, a + 1, a + 6, a + 1, a + 7, a + 6]
+				for v in indices:
+					st.add_index(v)
+		st.generate_normals()
+		_mesh(st.commit(), "DistantTerrain", false)
+		if gradual:
+			await _pause()
 
-	var grid_data = []
-	for zi in range(RESOLUTION + 1):
-		grid_data.append([])
-		for xi in range(RESOLUTION + 1):
-			var lz = overlap - float(zi) * step_z
-			var lx = float(xi) * step_x - half_size_x + x_offset
-
-			var global_p = global_transform * Vector3(lx, 0, lz)
-
-			var curve_data = _get_closest_curve_point(lx, lz)
-			var curve_pt: Vector3 = curve_data[0]
-			var dist_to_road = Vector2(curve_pt.x - lx, curve_pt.z - lz).length()
-
-			var micro_mult = clamp((dist_to_road - ROAD_WIDTH / 2.0) / (ROAD_BLEND_DISTANCE * 0.5), 0.0, 1.0)
-
-			var blend_factor = 1.0
-			var dist_to_poi = INF
-			if has_poi:
-				dist_to_poi = Vector2(poi_local_pos.x - lx, poi_local_pos.z - lz).length()
-				if dist_to_poi < poi_footprint_radius:
-					micro_mult = 0.0
-					blend_factor = 0.0
-				elif dist_to_poi < poi_footprint_radius + poi_footprint_blend:
-					var t = (dist_to_poi - poi_footprint_radius) / poi_footprint_blend
-					micro_mult = min(micro_mult, t)
-					blend_factor = t
-
-			var final_h = _get_terrain_height(global_p.x, global_p.z, micro_mult)
-			var local_h = final_h - global_transform.origin.y
-
-			if has_poi and blend_factor < 1.0:
-				local_h = lerp(poi_local_pos.y, local_h, blend_factor)
-
-			var col = Color.WHITE
-
-			if dist_to_poi < poi_footprint_radius:
-				var dirt_factor = clamp(abs(local_h) / MAX_HEIGHT, 0.0, 1.0)
-				col = Color(0.3, 0.35, 0.2).lerp(Color(0.5, 0.45, 0.3), dirt_factor)
-			elif dist_to_road < ROAD_WIDTH / 2.0:
-				col = Color(0.2, 0.25, 0.1)
-			elif dist_to_road < ROAD_WIDTH / 2.0 + ROAD_BLEND_DISTANCE:
-				col = Color(0.3, 0.35, 0.2)
-			else:
-				var dirt_factor = clamp(abs(local_h) / MAX_HEIGHT, 0.0, 1.0)
-				col = Color(0.4, 0.5, 0.2).lerp(Color(0.6, 0.5, 0.3), dirt_factor)
-
-			grid_data[zi].append([Vector3(lx, local_h, lz), col])
-
-	for zi in range(RESOLUTION):
-		for xi in range(RESOLUTION):
-			var d0 = grid_data[zi][xi]
-			var d1 = grid_data[zi][xi+1]
-			var d2 = grid_data[zi+1][xi]
-			var d3 = grid_data[zi+1][xi+1]
-
-			st.set_color(d0[1])
-			st.set_uv(Vector2(float(xi)/RESOLUTION, float(zi)/RESOLUTION))
-			st.add_vertex(d0[0])
-
-			st.set_color(d2[1])
-			st.set_uv(Vector2(float(xi)/RESOLUTION, float(zi+1)/RESOLUTION))
-			st.add_vertex(d2[0])
-
-			st.set_color(d1[1])
-			st.set_uv(Vector2(float(xi+1)/RESOLUTION, float(zi)/RESOLUTION))
-			st.add_vertex(d1[0])
-
-			st.set_color(d1[1])
-			st.set_uv(Vector2(float(xi+1)/RESOLUTION, float(zi)/RESOLUTION))
-			st.add_vertex(d1[0])
-
-			st.set_color(d2[1])
-			st.set_uv(Vector2(float(xi)/RESOLUTION, float(zi+1)/RESOLUTION))
-			st.add_vertex(d2[0])
-
-			st.set_color(d3[1])
-			st.set_uv(Vector2(float(xi+1)/RESOLUTION, float(zi+1)/RESOLUTION))
-			st.add_vertex(d3[0])
-
-	st.generate_normals()
-	st.index()
-	var mesh = st.commit()
-
-	var mesh_node = MeshInstance3D.new()
-	mesh_node.mesh = mesh
-	add_child(mesh_node)
-
-	var mat = StandardMaterial3D.new()
+func _mesh(mesh: ArrayMesh, title: String, collision: bool) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	node.name = title
+	node.mesh = mesh
+	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.9
-	mesh_node.material_override = mat
+	mat.roughness = 0.98
+	node.material_override = mat
+	add_child(node)
+	if collision:
+		var body := StaticBody3D.new()
+		var shape := CollisionShape3D.new()
+		shape.shape = mesh.create_trimesh_shape()
+		body.add_child(shape)
+		node.add_child(body)
+	return node
 
-	var shape = ConcavePolygonShape3D.new()
-	shape.set_faces(mesh.get_faces())
-
-	var col_node = CollisionShape3D.new()
-	col_node.shape = shape
-
-	var static_body = StaticBody3D.new()
-	static_body.add_child(col_node)
-	mesh_node.add_child(static_body)
-
-
-# --- Road mesh ---
-
-func _build_road_mesh():
-	var st = SurfaceTool.new()
+func _build_road() -> void:
+	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-
-	var road_segments = 60
-	var half_width = ROAD_WIDTH / 2.0
-
-	var start_idx = -2
-	var end_idx = road_segments + 2
-	var total_verts = 0
-
-	for i in range(start_idx, end_idx + 1):
-		var t = float(i) / road_segments
-		var center = _cubic_bezier(t)
-
-		var t_next = t + 0.01
-		var tangent = (_cubic_bezier(t_next) - center).normalized()
-		var right = tangent.cross(Vector3.UP).normalized()
-
-		var left_v = center - right * half_width
-		var right_v = center + right * half_width
-
-		var global_left_p = global_transform * left_v
-		var global_right_p = global_transform * right_v
-
-		var left_h = _get_terrain_height(global_left_p.x, global_left_p.z, 0.0)
-		var right_h = _get_terrain_height(global_right_p.x, global_right_p.z, 0.0)
-
-		var max_tilt_angle_rad = deg_to_rad(10.0)
-		var max_height_diff = ROAD_WIDTH * tan(max_tilt_angle_rad)
-
-		var current_diff = right_h - left_h
-		if abs(current_diff) > max_height_diff:
-			var avg_h = (left_h + right_h) / 2.0
-			var limited_diff = sign(current_diff) * max_height_diff
-			left_h = avg_h - (limited_diff / 2.0)
-			right_h = avg_h + (limited_diff / 2.0)
-
-		left_v.y = left_h - global_transform.origin.y + 0.15
-		right_v.y = right_h - global_transform.origin.y + 0.15
-
-		st.set_color(Color(0.2, 0.2, 0.2))
-		st.set_uv(Vector2(0, t))
-		st.add_vertex(left_v)
-
-		st.set_color(Color(0.2, 0.2, 0.2))
-		st.set_uv(Vector2(1, t))
-		st.add_vertex(right_v)
-		total_verts += 1
-
-	for i in range(total_verts - 1):
-		var vert_idx = i * 2
-		st.add_index(vert_idx)
-		st.add_index(vert_idx + 2)
-		st.add_index(vert_idx + 1)
-		st.add_index(vert_idx + 1)
-		st.add_index(vert_idx + 2)
-		st.add_index(vert_idx + 3)
-
-	st.generate_normals()
-	var mesh = st.commit()
-
-	var mesh_node = MeshInstance3D.new()
-	mesh_node.mesh = mesh
-
-	var mat = StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.95
-	mesh_node.material_override = mat
-
-	var shape = ConcavePolygonShape3D.new()
-	shape.set_faces(mesh.get_faces())
-
-	var col_node = CollisionShape3D.new()
-	col_node.shape = shape
-
-	var static_body = StaticBody3D.new()
-	static_body.add_child(col_node)
-	mesh_node.add_child(static_body)
-
-	add_child(mesh_node)
-
-
-func _build_navigation_region() -> void:
-	var nav_mesh := NavigationMesh.new()
-	nav_mesh.agent_max_slope = 65.0
-	nav_mesh.agent_height = 1.8
-	nav_mesh.agent_radius = 0.45
-
-	var nav_vertices := PackedVector3Array()
-	var nav_segments := 44
-	var nav_half_width := ROAD_WIDTH * 0.9
-
-	for i in range(nav_segments + 1):
-		var t := float(i) / float(nav_segments)
-		var center := _cubic_bezier(t)
-
-		var t_next := minf(t + 0.01, 1.0)
-		var tangent := (_cubic_bezier(t_next) - center).normalized()
-		if tangent.length_squared() <= 0.0001:
-			tangent = Vector3.FORWARD
-		var right := tangent.cross(Vector3.UP).normalized()
-
-		var left_v := center - right * nav_half_width
-		var right_v := center + right * nav_half_width
-
-		var global_left := global_transform * left_v
-		var global_right := global_transform * right_v
-		left_v.y = _get_terrain_height(global_left.x, global_left.z, 0.0) - global_transform.origin.y + 0.2
-		right_v.y = _get_terrain_height(global_right.x, global_right.z, 0.0) - global_transform.origin.y + 0.2
-
-		nav_vertices.append(left_v)
-		nav_vertices.append(right_v)
-
-	if nav_vertices.size() < 4:
-		return
-
-	nav_mesh.vertices = nav_vertices
-	for i in range(nav_segments):
+	for i in range(61):
+		var s := band * 150.0 + i * 2.5
+		var frame := field.road_frame(s)
+		for side in [-1.0, 1.0]:
+			var point: Vector3 = frame.origin + frame.basis.x * side * field.road_width(s) * 0.5
+			point.y += 0.07
+			st.set_color(Color(0.135, 0.145, 0.14))
+			st.add_vertex(point)
+	for i in range(60):
 		var a := i * 2
-		var b := a + 1
-		var c := a + 2
-		var d := a + 3
-		nav_mesh.add_polygon(PackedInt32Array([a, c, b]))
-		nav_mesh.add_polygon(PackedInt32Array([b, c, d]))
+		for v in [a, a + 2, a + 1, a + 1, a + 2, a + 3]:
+			st.add_index(v)
+	st.generate_normals()
+	_mesh(st.commit(), "Road", true)
+	for i in range(15):
+		var s := band * 150.0 + i * 10.0 + 3.0
+		var frame := field.road_frame(s)
+		var paint := RoadsideKit.part(self, Vector3(0.16, 0.015, 4), frame.origin + Vector3.UP * 0.09, Color(0.76, 0.69, 0.42))
+		paint.basis = frame.basis
+		paint.rotation.x = atan2(field.road_height(s + 2) - field.road_height(s - 2), 4.0)
+	for i in range(3):
+		var s := band * 150.0 + i * 50.0 + 20.0
+		var point := field.road_frame(s) * Vector3(14, 0, 0)
+		if not _near_site(point):
+			_place_module("pole", point, field.road_frame(s).basis)
+	if posmod(band, 6) == 3:
+		var frame := field.road_frame(band * 150.0 - 35.0)
+		var sign_node := _place_module("sign", frame * Vector3(11, 0, 0), frame.basis)
+		RoadsideKit.label(sign_node, "NARROW ROAD\nSLOW", Vector3(0, 3.4, 0.08), 34)
+		for i in range(12):
+			var s := band * 150.0 + 40.0 + i * 5.0
+			var rail := field.road_frame(s)
+			var point := rail * Vector3(-field.road_width(s) * 0.5 - 1.2, 0, 0)
+			if not _near_site(point):
+				_place_module("rail", point, rail.basis)
 
-	var region := NavigationRegion3D.new()
-	region.name = "ChunkNavigationRegion"
-	region.navigation_mesh = nav_mesh
-	add_child(region)
+func _near_site(point: Vector3) -> bool:
+	var nearest := maxi(0, roundi(-point.z / field.profile.stop_spacing))
+	for i in range(maxi(0, nearest - 1), nearest + 2):
+		if field.court_distance(point.x, point.z, field.stop(i)) < 20:
+			return true
+	return false
 
+func _place_module(kind: String, point: Vector3, orientation: Basis = Basis.IDENTITY) -> Node3D:
+	var node := RoadsideKit.instantiate_module(kind)
+	node.transform = Transform3D(orientation, Vector3(point.x, field.height_at(point.x, point.z), point.z))
+	add_child(node)
+	return node
 
-# --- Road zombies (ambient, not POI-related) ---
+func _build_site(site: Dictionary, spawner: POISpawner) -> void:
+	if site.kind == "entrance":
+		spawner.spawn_site(site, self)
+	else:
+		_place_module(site.kind, site.building.origin, site.building.basis)
+	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
+	var sign_node := _place_module("sign", sign_pos, site.road.basis)
+	RoadsideKit.label(sign_node, "SERVICE" if site.kind == "entrance" else "LAY-BY", Vector3(0, 3.4, 0.08))
+	for side in [-1.0, 1.0]:
+		var point: Vector3 = site.frame * Vector3(side * 6.2, 0.05, 0)
+		var stripe := RoadsideKit.part(self, Vector3(0.15, 0.03, 24), point, Color(0.72, 0.64, 0.43))
+		stripe.basis = site.frame.basis
+	for i in range(3):
+		var point: Vector3 = site.building * Vector3(0, 0.06, 7.5 + i)
+		var stripe := RoadsideKit.part(self, Vector3(2, 0.03, 0.25), point, Color(0.70, 0.65, 0.49))
+		stripe.basis = site.building.basis
 
-func _spawn_road_zombies():
-	if randf() > 0.6: return
+func _decorate(gradual: bool) -> void:
+	var rng := field.rng_for(band, "decoration")
+	var bushes: Array[Transform3D] = []
+	for i in range(roundi(450 * field.profile.decoration_density)):
+		if gradual and i % 75 == 0:
+			await _pause()
+		var x := rng.randf_range(-210.0, 210.0)
+		var z := -band * 150.0 - rng.randf_range(4.0, 146.0)
+		var sample := field.surface(x, z)
+		if sample.reserved:
+			continue
+		var w: Vector3 = sample.weights
+		var cluster := field.clusters.get_noise_2d(x, z)
+		if rng.randf() > clampf(0.25 + cluster * 1.5 + w.y * 0.35, 0.08, 0.9):
+			continue
+		var point := Vector3(x, sample.height, z)
+		var orientation := Basis(Vector3.UP, rng.randf_range(-PI, PI))
+		var scale_value := rng.randf_range(0.7, 1.35)
+		if i % 3 != 0:
+			bushes.append(Transform3D(orientation.scaled(Vector3.ONE * scale_value), point + Vector3.UP * 0.25))
+			continue
+		if field.normal_at(x, z).y < 0.83:
+			continue
+		var kind := "rock" if rng.randf() < 0.18 + w.z * 0.6 else ("tree" if rng.randf() < 0.15 + w.y * 0.85 else "dead_tree")
+		var module := _place_module(kind, point, orientation)
+		module.scale = Vector3.ONE * scale_value
+		for child in module.get_children():
+			if child is GeometryInstance3D:
+				child.visibility_range_end = 290.0
+		decoration_positions.append(point)
+	if not bushes.is_empty():
+		var mesh := SphereMesh.new()
+		mesh.radius = 0.65
+		mesh.height = 0.8
+		mesh.radial_segments = 5
+		mesh.rings = 2
+		mesh.material = RoadsideKit.material(Color(0.32, 0.37, 0.19))
+		var multi := MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = mesh
+		multi.instance_count = bushes.size()
+		for i in range(bushes.size()):
+			multi.set_instance_transform(i, bushes[i])
+		var node := MultiMeshInstance3D.new()
+		node.multimesh = multi
+		node.visibility_range_end = 190.0
+		add_child(node)
 
-	var num_zombies = randi_range(1, 2)
-	for i in range(num_zombies):
-		var t = randf_range(0.1, 0.9)
-		var road_pt = _cubic_bezier(t)
+func _build_navigation() -> void:
+	var nav := NavigationMesh.new()
+	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nav.agent_height = 2.0
+	nav.agent_radius = 0.5
+	nav.agent_max_climb = 0.25
+	nav.agent_max_slope = 40.0
+	nav.cell_size = 0.5
+	nav.cell_height = 0.25
+	# Sub-metre ground noise should not introduce near-collinear detail
+	# triangles into the already walkable voxel contour.
+	nav.detail_sample_max_error = 2.0
+	nav.border_size = 1.0
+	nav.filter_baking_aabb = AABB(Vector3(-120, -100, -band * 150.0 - 151), Vector3(240, 250, 152))
+	navigation = NavigationRegion3D.new()
+	navigation.name = "ChunkNavigationRegion"
+	navigation.navigation_mesh = nav
+	add_child(navigation)
+	var source := NavigationMeshSourceGeometryData3D.new()
+	# The asphalt is only 7cm above the sculpted ground. Voxelizing both
+	# creates duplicate raster edges; use the ground once for navigation.
+	var road_body := get_node("Road").get_child(0) as StaticBody3D
+	road_body.collision_layer = 0
+	NavigationServer3D.parse_source_geometry_data(nav, source, self)
+	road_body.collision_layer = 1
+	# Neighbour ground halo prevents agent-radius erosion from leaving a gap
+	# at every streaming boundary. Only the interior band is kept by the bake.
+	var halo := PackedVector3Array()
+	for edge in [0, 1]:
+		var z0 := -band * 150.0 + (3.0 if edge == 0 else -150.0)
+		for i in range(80):
+			var x := -120.0 + i * 3.0
+			for offset in [Vector2(0, 0), Vector2(0, -3), Vector2(3, 0), Vector2(3, 0), Vector2(0, -3), Vector2(3, -3)]:
+				var px: float = x + offset.x
+				var pz: float = z0 + offset.y
+				halo.append(Vector3(px, field.height_at(px, pz), pz))
+	source.add_faces(halo, Transform3D.IDENTITY)
+	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, func():
+		if is_instance_valid(navigation):
+			navigation.navigation_mesh = nav)
 
-		var t_next = t + 0.01
-		var tangent = (_cubic_bezier(t_next) - road_pt).normalized()
-		var right = tangent.cross(Vector3.UP).normalized()
-
-		var side = 1.0 if randf() > 0.5 else -1.0
-		var offset_dist = randf_range(10.0, 20.0)
-		var spawn_local = road_pt + right * side * offset_dist
-
-		var global_spawn = global_transform * spawn_local
-		var terrain_h = _get_terrain_height(global_spawn.x, global_spawn.z, 0.0)
-		spawn_local.y = terrain_h - global_transform.origin.y + 2.0
-
-		var zombie = ZOMBIE_SCENE.instantiate()
-		var entity_parent := WorldEntities.get_container(self)
-		if entity_parent != null:
-			zombie.position = global_transform * spawn_local
-			entity_parent.add_child(zombie)
-		else:
-			zombie.position = spawn_local
-			add_child(zombie)
+func _spawn_actors() -> void:
+	var container := WorldEntities.get_container(self)
+	if container == null:
+		container = self
+	for site in sites:
+		if site.kind == "entrance":
+			continue
+		var loot := field.loot_plan(int(site.index))
+		for i in range(loot.size()):
+			var prop: Prop = load(loot[i]).instantiate()
+			var point: Vector3 = site.building * Vector3(-2.0 + i * 2.0, 0, 4.5)
+			point.y = field.height_at(point.x, point.z) + 0.8
+			prop.position = point
+			container.add_child(prop)
+		for i in range(field.enemy_count(int(site.index))):
+			var monster: Node3D = ZOMBIE_SCENE.instantiate()
+			var point: Vector3 = site.frame * Vector3(float(site.side) * 9, 0, -10 + i * 5)
+			point.y = field.height_at(point.x, point.z) + 0.5
+			monster.position = point
+			container.add_child(monster)
