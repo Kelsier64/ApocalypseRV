@@ -1,28 +1,300 @@
 [gd_scene format=3 uid="uid://jvg1xs75gqb8"]
 
-[ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
-
+[ext_resource type="Script" path="res://equipment/rv_panel.gd" id="script"]
 [ext_resource type="Resource" path="res://equipment/rv_wall_right_definition.tres" id="def"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/glass.tres" id="glass"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
-albedo_color = Color(0.7, 0.72, 0.75, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_mesh"]
+[sub_resource type="BoxShape3D" id="c1"]
 size = Vector3(12, 2, 0.2)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
-size = Vector3(12, 2, 0.2)
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(12, 1.05, 0.2)
+material = ExtResource("teal")
 
-[node name="RvWallRight" type="RigidBody3D" unique_id=237039706]
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(12, 0.17, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(12, 0.1, 0.23)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(12, 0.07, 0.216)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m11"]
+size = Vector3(1.82, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m15"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m16"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m17"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m18"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m19"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m20"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m21"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m22"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m23"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m24"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m25"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m26"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m27"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m28"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m29"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m30"]
+size = Vector3(0.017, 0.8, 0.008)
+material = ExtResource("metal")
+
+[node name="RvWallright" type="RigidBody3D"]
+script = ExtResource("script")
 definition = ExtResource("def")
-mass = 150.0
-script = ExtResource("1_script")
-equipment_name = "RV Wall Right"
 bottom_face = 3
 
-[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1239973651]
-material_override = SubResource("StandardMaterial3D_mat")
-mesh = SubResource("BoxMesh_mesh")
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0)
+shape = SubResource("c1")
 
-[node name="Collision" type="CollisionShape3D" parent="." unique_id=1526699043]
-shape = SubResource("BoxShape3D_col")
+[node name="LowerPanel" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.475, 0)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Header" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.915, 0)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="WindowSill" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.1, 0)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="AccentStripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.28, 0)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window0" type="MeshInstance3D" parent="."]
+position = Vector3(-5, 0.495, 0)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window1" type="MeshInstance3D" parent="."]
+position = Vector3(-3, 0.495, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window2" type="MeshInstance3D" parent="."]
+position = Vector3(-1, 0.495, 0)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window3" type="MeshInstance3D" parent="."]
+position = Vector3(1, 0.495, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window4" type="MeshInstance3D" parent="."]
+position = Vector3(3, 0.495, 0)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window5" type="MeshInstance3D" parent="."]
+position = Vector3(5, 0.495, 0)
+mesh = SubResource("m11")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar0" type="MeshInstance3D" parent="."]
+position = Vector3(-5.93, 0.49, 0)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar1" type="MeshInstance3D" parent="."]
+position = Vector3(-3.9529999999999994, 0.49, 0)
+mesh = SubResource("m13")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar2" type="MeshInstance3D" parent="."]
+position = Vector3(-1.9759999999999995, 0.49, 0)
+mesh = SubResource("m14")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar3" type="MeshInstance3D" parent="."]
+position = Vector3(0.001000000000000334, 0.49, 0)
+mesh = SubResource("m15")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar4" type="MeshInstance3D" parent="."]
+position = Vector3(1.9780000000000006, 0.49, 0)
+mesh = SubResource("m16")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar5" type="MeshInstance3D" parent="."]
+position = Vector3(3.955, 0.49, 0)
+mesh = SubResource("m17")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar6" type="MeshInstance3D" parent="."]
+position = Vector3(5.932, 0.49, 0)
+mesh = SubResource("m18")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="BadgeIn" type="Label3D" parent="."]
+position = Vector3(0, -0.66, -0.11)
+text = "WAYFARER  /  01"
+font_size = 48
+pixel_size = 0.003
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="LowerSeam-0.11_0" type="MeshInstance3D" parent="."]
+position = Vector3(-5, -0.52, -0.11)
+mesh = SubResource("m19")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam-0.11_1" type="MeshInstance3D" parent="."]
+position = Vector3(-3, -0.52, -0.11)
+mesh = SubResource("m20")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam-0.11_2" type="MeshInstance3D" parent="."]
+position = Vector3(-1, -0.52, -0.11)
+mesh = SubResource("m21")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam-0.11_3" type="MeshInstance3D" parent="."]
+position = Vector3(1, -0.52, -0.11)
+mesh = SubResource("m22")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam-0.11_4" type="MeshInstance3D" parent="."]
+position = Vector3(3, -0.52, -0.11)
+mesh = SubResource("m23")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam-0.11_5" type="MeshInstance3D" parent="."]
+position = Vector3(5, -0.52, -0.11)
+mesh = SubResource("m24")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="BadgeOut" type="Label3D" parent="."]
+position = Vector3(0, -0.66, 0.11)
+text = "WAYFARER  /  01"
+font_size = 48
+pixel_size = 0.003
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_0" type="MeshInstance3D" parent="."]
+position = Vector3(-5, -0.52, 0.11)
+mesh = SubResource("m25")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_1" type="MeshInstance3D" parent="."]
+position = Vector3(-3, -0.52, 0.11)
+mesh = SubResource("m26")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_2" type="MeshInstance3D" parent="."]
+position = Vector3(-1, -0.52, 0.11)
+mesh = SubResource("m27")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_3" type="MeshInstance3D" parent="."]
+position = Vector3(1, -0.52, 0.11)
+mesh = SubResource("m28")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_4" type="MeshInstance3D" parent="."]
+position = Vector3(3, -0.52, 0.11)
+mesh = SubResource("m29")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LowerSeam0.11_5" type="MeshInstance3D" parent="."]
+position = Vector3(5, -0.52, 0.11)
+mesh = SubResource("m30")
+rotation_degrees = Vector3(0, 0, 0)

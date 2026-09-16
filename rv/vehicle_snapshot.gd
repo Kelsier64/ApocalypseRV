@@ -8,6 +8,10 @@ static func device_state(device: Equipment) -> Dictionary:
 		support_id = device.mount_support.persistent_id
 	var data := {"scene": device.scene_file_path, "id": device.persistent_id, "transform": device.transform,
 		"health": device.current_health, "enabled": device.enabled, "support": support_id, "physics": {"mode": device.freeze_mode, "layer": device.collision_layer, "mask": device.collision_mask, "linear": device.linear_velocity, "angular": device.angular_velocity}, "service": {}}
+	if device.get("structure_kind") is String and not device.structure_kind.is_empty():
+		data.service["mount_slot"] = device.mount_slot
+	if device.has_method("restore_angles"):
+		data.service["door_angles"] = device.angles.duplicate()
 	if device is BatterySocket:
 		data.service["battery"] = device.installed_battery.snapshot() if device.installed_battery else {}
 	for key in ["charging", "fuel_reserve", "recharge_below"]:
@@ -57,12 +61,20 @@ static func validate(data: Dictionary) -> bool:
 	for item in data.items:
 		if not valid_item(item): return false
 	var ids := {}
+	var occupied_slots := {}
 	for entry in data.equipment:
 		if not entry is Dictionary or not entry.has_all(["scene", "id", "transform", "health", "enabled", "support", "service"]) or ids.has(entry.id):
 			return false
 		if not entry.scene is String or not entry.id is String or not entry.support is String or not entry.service is Dictionary or not entry.enabled is bool or not _number(entry.health) or not ResourceLoader.exists(entry.scene) or not entry.transform is Transform3D:
 			return false
 		if entry.service.has("battery") and not valid_battery(entry.service.battery): return false
+		if not valid_structure_service(entry.scene, entry.service): return false
+		var slot_id: String = entry.service.get("mount_slot", "")
+		if not slot_id.is_empty():
+			if occupied_slots.has(slot_id): return false
+			occupied_slots[slot_id] = true
+			for slot in RVStructureSlots.layout():
+				if slot.id == slot_id and (entry.transform.origin.distance_to(slot.pose.origin) > 0.03 or not entry.transform.basis.is_equal_approx(slot.pose.basis)): return false
 		ids[entry.id] = entry.support
 	for entry in data.equipment:
 		if entry.support != "chassis" and not ids.has(entry.support):
@@ -89,6 +101,10 @@ static func restore_device(device: Equipment, data: Dictionary, rv: Node3D) -> v
 	if device.current_health <= 0.0:
 		device.remove_from_group(Groups.MONSTER_DAMAGEABLE)
 	device.enabled = data.enabled
+	if device.get("structure_kind") is String:
+		device.mount_slot = data.service.get("mount_slot", device.mount_slot) if rv else ""
+	if device.has_method("restore_angles"):
+		device.restore_angles(data.service.get("door_angles", [0.0, 0.0] if device.leaf_count == 2 else [0.0]))
 	if device is BatterySocket:
 		var battery: Dictionary = data.service.get("battery", {})
 		device.installed_battery = null if battery.is_empty() else BatteryState.new(battery)
@@ -186,7 +202,7 @@ static func valid_item(value: Variant) -> bool:
 	return not value.state.has("battery") or valid_battery(value.state.battery)
 
 static func upgrade(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) == VERSION: return source
+	if source.get("version", 0) == VERSION: return _upgrade_structure(source)
 	if source.get("version", 0) != 1 or not source.get("equipment") is Array or not valid_battery(source.get("battery")): return {}
 	var data := source.duplicate(true)
 	var fuel := 0.0
@@ -215,4 +231,66 @@ static func upgrade(source: Dictionary) -> Dictionary:
 	data.material_capacity = maxi(300, material_capacity)
 	data.item_capacity = 24
 	data.items = []
+	return _upgrade_structure(data)
+
+static func valid_structure_service(scene: String, service: Dictionary) -> bool:
+	var kind := ""
+	if scene in ["res://equipment/rv_side_panel.tscn", "res://equipment/rv_side_door.tscn"]: kind = "side"
+	elif scene == "res://equipment/rv_rear_door.tscn": kind = "rear"
+	elif scene == "res://equipment/rv_wall_front.tscn": kind = "front"
+	elif scene == "res://equipment/rv_ceiling.tscn": kind = "roof"
+	if service.has("mount_slot"):
+		if not service.mount_slot is String: return false
+		if not service.mount_slot.is_empty():
+			var found := false
+			for slot in RVStructureSlots.layout():
+				if slot.id == service.mount_slot and slot.kind == kind: found = true
+			if not found: return false
+	if service.has("door_angles"):
+		var count := 2 if scene == "res://equipment/rv_rear_door.tscn" else (1 if scene == "res://equipment/rv_side_door.tscn" else 0)
+		if not service.door_angles is Array or service.door_angles.size() != count or count == 0: return false
+		for index in range(count):
+			var angle: Variant = service.door_angles[index]
+			if not _number(angle) or absf(angle) > deg_to_rad(100.0) + 0.0001: return false
+			if (index == 0 and angle > 0.0) or (index == 1 and angle < 0.0): return false
+	return true
+
+static func _upgrade_structure(source: Dictionary) -> Dictionary:
+	if not source.get("equipment") is Array: return source
+	var data := source.duplicate(true)
+	var updated: Array = []
+	var replacements := {}
+	for entry in data.equipment:
+		if not entry is Dictionary or not entry.get("transform") is Transform3D or not entry.get("service") is Dictionary or not entry.get("id") is String:
+			return {}
+		var side := "right" if entry.get("scene") == "res://equipment/rv_wall_left.tscn" else ("left" if entry.get("scene") == "res://equipment/rv_wall_right.tscn" else "")
+		var original := Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(1.9 if side == "right" else -1.9, 1.5, 0))
+		if not side.is_empty() and entry.transform.is_equal_approx(original):
+			var pieces: Array = []
+			for i in range(3):
+				var piece: Dictionary = entry.duplicate(true)
+				piece.id = entry.id if i == 1 else entry.id + "-segment-" + str(i)
+				piece.scene = "res://equipment/rv_side_door.tscn" if side == "right" and i == 1 else "res://equipment/rv_side_panel.tscn"
+				piece.support = "chassis"
+				piece.service = {"mount_slot": side + "_" + str(i)}
+				for slot in RVStructureSlots.layout():
+					if slot.id == piece.service.mount_slot: piece.transform = slot.pose
+				pieces.append(piece)
+				updated.append(piece)
+			replacements[entry.id] = pieces
+		elif entry.get("scene") == "res://equipment/rv_wall_back.tscn" and entry.transform.is_equal_approx(Transform3D(Basis.IDENTITY, Vector3(0, 1.5, 5.9))):
+			entry.scene = "res://equipment/rv_rear_door.tscn"
+			entry.service["mount_slot"] = "rear"
+			entry.support = "chassis"
+			updated.append(entry)
+		else:
+			updated.append(entry)
+	for entry in updated:
+		if replacements.has(entry.get("support", "")):
+			var nearest: Dictionary = replacements[entry.support][0]
+			for piece in replacements[entry.support]:
+				if piece.transform.origin.distance_to(entry.transform.origin) < nearest.transform.origin.distance_to(entry.transform.origin):
+					nearest = piece
+			entry.support = nearest.id
+	data.equipment = updated
 	return data

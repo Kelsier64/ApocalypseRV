@@ -1,0 +1,131 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.74, 0.16, 1.12)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.7, 0.35, 0.98)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.05, 0.59, 0.05)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(0.05, 0.59, 0.05)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(0.05, 0.59, 0.05)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.05, 0.59, 0.05)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(0.63, 0.04, 0.02)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(0.63, 0.04, 0.02)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(0.63, 0.04, 0.02)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(0.63, 0.04, 0.02)
+material = ExtResource("metal")
+
+[sub_resource type="CylinderMesh" id="m11"]
+top_radius = 0.19
+bottom_radius = 0.19
+height = 0.02
+radial_segments = 24
+material = ExtResource("metal")
+
+[sub_resource type="CylinderMesh" id="m12"]
+top_radius = 0.07
+bottom_radius = 0.07
+height = 0.028
+radial_segments = 24
+material = ExtResource("dark")
+
+[node name="GeneratorDetails" type="Node3D"]
+
+
+[node name="FuelTop" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.21, 0)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="EngineBlock" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.06, 0)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Corner-0.37-0.54" type="MeshInstance3D" parent="."]
+position = Vector3(-0.37, 0, -0.54)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Corner-0.370.54" type="MeshInstance3D" parent="."]
+position = Vector3(-0.37, 0, 0.54)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Corner0.37-0.54" type="MeshInstance3D" parent="."]
+position = Vector3(0.37, 0, -0.54)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Corner0.370.54" type="MeshInstance3D" parent="."]
+position = Vector3(0.37, 0, 0.54)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Vent-0.21" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.21, 0.596)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Vent-0.1" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.1, 0.596)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Vent0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.596)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Vent0.1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.1, 0.596)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Fan" type="MeshInstance3D" parent="."]
+position = Vector3(-0.391, -0.02, 0)
+mesh = SubResource("m11")
+rotation_degrees = Vector3(0, 0, 90)
+
+[node name="FanHub" type="MeshInstance3D" parent="."]
+position = Vector3(-0.399, -0.02, 0)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 90)
+
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 0.21, 0.607)
+text = "GENERATOR"
+font_size = 48
+pixel_size = 0.0012
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 0, 0)

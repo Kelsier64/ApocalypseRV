@@ -121,6 +121,7 @@ func read_checkpoint(path: String) -> Dictionary:
 				if not actor.has_all(["state", "frozen", "linear", "angular"]) or not actor.state is Dictionary or not actor.frozen is bool or not actor.linear is Vector3 or not actor.angular is Vector3: return {}
 			"equipment":
 				if not actor.has_all(["id", "health", "enabled", "service", "frozen"]) or not actor.service is Dictionary or not VehicleSnapshot._number(actor.health): return {}
+				if not VehicleSnapshot.valid_structure_service(actor.scene, actor.service): return {}
 			"monster":
 				if not actor.has("health") or not VehicleSnapshot._number(actor.health): return {}
 			_: return {}
@@ -199,7 +200,13 @@ func _collect_removable(node: Node, result: Array[Node]) -> void:
 
 # Convert only recognized v1 structures, in memory. Original save stays untouched.
 func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) == VERSION: return source
+	if source.get("version", 0) == VERSION:
+		if not source.get("vehicles") is Array: return {}
+		var upgraded := source.duplicate(true)
+		for index in range(upgraded.vehicles.size()):
+			if not upgraded.vehicles[index] is Dictionary: return {}
+			upgraded.vehicles[index] = VehicleSnapshot.upgrade(upgraded.vehicles[index])
+		return upgraded
 	if source.get("version", 0) != 1 or not source.get("vehicles") is Array or not source.get("actors") is Array or not source.get("player") is Dictionary or not source.player.get("items") is Array or not source.get("poi") is Dictionary: return {}
 	var data := source.duplicate(true)
 	for index in range(data.vehicles.size()):

@@ -4,11 +4,20 @@
 
 [ext_resource type="Resource" path="res://equipment/driver_seat_definition.tres" id="def"]
 
+[ext_resource type="PackedScene" path="res://rv/visuals/cockpit.tscn" id="cockpit"]
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_pjra0"]
 size = Vector3(0.6, 0.8, 0.6)
 
-[sub_resource type="BoxMesh" id="BoxMesh_smhcn"]
-size = Vector3(0.6, 0.8, 0.6)
+
+[sub_resource type="BoxShape3D" id="console_shape"]
+size = Vector3(1.44, 1.34, 0.66)
+
+[sub_resource type="BoxShape3D" id="seatback_shape"]
+size = Vector3(0.7, 1.4, 0.75)
+
+[sub_resource type="BoxShape3D" id="side_console_shape"]
+size = Vector3(0.27, 0.98, 0.84)
 
 [node name="DriverSeat" type="RigidBody3D" unique_id=269340115]
 definition = ExtResource("def")
@@ -16,12 +25,18 @@ script = ExtResource("1_2l2ci")
 equipment_name = "Driver Seat"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2015620646]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
-shape = SubResource("BoxShape3D_pjra0")
-
-[node name="SeatMesh" type="MeshInstance3D" parent="." unique_id=95354989]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
-mesh = SubResource("BoxMesh_smhcn")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0.05)
+shape = SubResource("seatback_shape")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1567191114]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.05)
+
+[node name="ConsoleCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.67, -1.25)
+shape = SubResource("console_shape")
+
+[node name="CockpitVisual" parent="." instance=ExtResource("cockpit")]
+
+[node name="SideConsoleCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0.48, 0.49, -0.28)
+shape = SubResource("side_console_shape")

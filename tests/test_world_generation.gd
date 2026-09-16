@@ -1,4 +1,5 @@
 extends SceneTree
+const ROADSIDE_CACHE = preload("res://world/terrain/roadside_kit.gd")
 var failures: Array[String] = []
 func check(ok: bool, message: String) -> void:
 	if not ok and failures.size() < 25:
@@ -87,5 +88,15 @@ func _run() -> void:
 		for failure in failures:
 			push_error("FAIL: " + failure)
 	world.queue_free()
+	await process_frame
+	# Release local mesh arrays and generated resources before engine shutdown.
+	_finish.call_deferred()
+
+func _finish() -> void:
+	# The test owns the process-wide roadside cache; release it before shutdown.
+	ROADSIDE_CACHE.scenes.clear()
+	ROADSIDE_CACHE.meshes.clear()
+	ROADSIDE_CACHE.materials.clear()
+	await physics_frame
 	await process_frame
 	quit(0 if failures.is_empty() else 1)

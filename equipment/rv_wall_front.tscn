@@ -1,28 +1,248 @@
 [gd_scene format=3 uid="uid://b2hnoxxrv0jps"]
 
-[ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
-
+[ext_resource type="Script" path="res://equipment/rv_panel.gd" id="script"]
 [ext_resource type="Resource" path="res://equipment/rv_wall_front_definition.tres" id="def"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/glass.tres" id="glass"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+[ext_resource type="Material" path="res://rv/visuals/light.tres" id="light"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
-albedo_color = Color(0.7, 0.72, 0.75, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_mesh"]
+[sub_resource type="BoxShape3D" id="c1"]
 size = Vector3(3.6, 1, 0.2)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
-size = Vector3(3.6, 1, 0.2)
+[sub_resource type="BoxShape3D" id="c2"]
+size = Vector3(3.6, 1, 0.08)
 
-[node name="RvWallFront" type="RigidBody3D" unique_id=1306813484]
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(3.6, 1, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(3.4, 0.88, 0.04)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(0.1, 1.05, 0.16)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.1, 1.05, 0.16)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(0.1, 1.05, 0.16)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(3.6, 0.1, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(3.6, 0.1, 0.25)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(3.6, 0.075, 0.215)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m11"]
+size = Vector3(1.55, 0.42, 0.07)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m15"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m16"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m17"]
+size = Vector3(1.45, 0.025, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m18"]
+size = Vector3(0.48, 0.26, 0.12)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m19"]
+size = Vector3(0.32, 0.18, 0.025)
+material = ExtResource("light")
+
+[sub_resource type="BoxMesh" id="m20"]
+size = Vector3(0.16, 0.055, 0.027)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m21"]
+size = Vector3(0.62, 0.025, 0.025)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m22"]
+size = Vector3(0.48, 0.26, 0.12)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m23"]
+size = Vector3(0.32, 0.18, 0.025)
+material = ExtResource("light")
+
+[sub_resource type="BoxMesh" id="m24"]
+size = Vector3(0.16, 0.055, 0.027)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m25"]
+size = Vector3(0.62, 0.025, 0.025)
+material = ExtResource("dark")
+
+[node name="RvWallFront" type="RigidBody3D"]
+script = ExtResource("script")
+structure_kind = "front"
+mount_slot = "front"
 definition = ExtResource("def")
-mass = 80.0
-script = ExtResource("1_script")
-equipment_name = "RV Wall Front"
 bottom_face = 3
 
-[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1874288583]
-material_override = SubResource("StandardMaterial3D_mat")
-mesh = SubResource("BoxMesh_mesh")
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0)
+shape = SubResource("c1")
 
-[node name="Collision" type="CollisionShape3D" parent="." unique_id=1565470796]
-shape = SubResource("BoxShape3D_col")
+[node name="WindshieldCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1, 0)
+shape = SubResource("c2")
+
+[node name="LowerPanel" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Windshield" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1, 0)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar-1.75" type="MeshInstance3D" parent="."]
+position = Vector3(-1.75, 1, 0)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1, 0)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar1.75" type="MeshInstance3D" parent="."]
+position = Vector3(1.75, 1, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TopFrame" type="MeshInstance3D" parent="."]
+position = Vector3(0, 1.5, 0)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Sill" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.54, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.2, 0)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Grille" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, -0.13)
+mesh = SubResource("m11")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat0" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.28, -0.175)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat1" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.21500000000000002, -0.175)
+mesh = SubResource("m13")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat2" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.15000000000000002, -0.175)
+mesh = SubResource("m14")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat3" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.08500000000000002, -0.175)
+mesh = SubResource("m15")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat4" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.020000000000000018, -0.175)
+mesh = SubResource("m16")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="GrilleSlat5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.044999999999999984, -0.175)
+mesh = SubResource("m17")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LampHousing-1.38" type="MeshInstance3D" parent="."]
+position = Vector3(-1.38, -0.08, -0.14)
+mesh = SubResource("m18")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Headlamp-1.38" type="MeshInstance3D" parent="."]
+position = Vector3(-1.38, -0.05, -0.212)
+mesh = SubResource("m19")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Indicator-1.38" type="MeshInstance3D" parent="."]
+position = Vector3(-1.38, -0.23, -0.213)
+mesh = SubResource("m20")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Wiper-1.38" type="MeshInstance3D" parent="."]
+position = Vector3(-0.759, 0.64, -0.045)
+mesh = SubResource("m21")
+rotation_degrees = Vector3(0, 0, -13.799999999999999)
+
+[node name="LampHousing1.38" type="MeshInstance3D" parent="."]
+position = Vector3(1.38, -0.08, -0.14)
+mesh = SubResource("m22")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Headlamp1.38" type="MeshInstance3D" parent="."]
+position = Vector3(1.38, -0.05, -0.212)
+mesh = SubResource("m23")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Indicator1.38" type="MeshInstance3D" parent="."]
+position = Vector3(1.38, -0.23, -0.213)
+mesh = SubResource("m24")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Wiper1.38" type="MeshInstance3D" parent="."]
+position = Vector3(0.759, 0.64, -0.045)
+mesh = SubResource("m25")
+rotation_degrees = Vector3(0, 0, 13.799999999999999)
+
+[node name="Brand" type="Label3D" parent="."]
+position = Vector3(0, 0.34, -0.115)
+text = "W A Y F A R E R"
+font_size = 48
+pixel_size = 0.0017
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 180, 0)

@@ -1,28 +1,143 @@
 [gd_scene format=3 uid="uid://6ijedjc6opf7"]
 
-[ext_resource type="Script" uid="uid://cwuc2aly43v4f" path="res://equipment/rv_panel.gd" id="1_script"]
-
+[ext_resource type="Script" path="res://equipment/rv_panel.gd" id="script"]
 [ext_resource type="Resource" path="res://equipment/rv_wall_back_definition.tres" id="def"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/red.tres" id="red"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
-albedo_color = Color(0.7, 0.72, 0.75, 1)
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(1.14, 2, 0.2)
+material = ExtResource("teal")
 
-[sub_resource type="BoxMesh" id="BoxMesh_mesh"]
-size = Vector3(3.6, 2, 0.2)
+[sub_resource type="BoxShape3D" id="c2"]
+size = Vector3(1.14, 2, 0.2)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_col"]
-size = Vector3(3.6, 2, 0.2)
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(1.14, 0.6, 0.22)
+material = ExtResource("cream")
 
-[node name="RvWallBack" type="RigidBody3D" unique_id=1921625581]
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(1.14, 0.075, 0.22)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(0.14, 0.38, 0.05)
+material = ExtResource("red")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.07, 0.2, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(1.14, 2, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxShape3D" id="c8"]
+size = Vector3(1.14, 2, 0.2)
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(1.14, 0.6, 0.22)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(1.14, 0.075, 0.22)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m11"]
+size = Vector3(0.14, 0.38, 0.05)
+material = ExtResource("red")
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(0.07, 0.2, 0.06)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(1.32, 0.1, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxShape3D" id="c14"]
+size = Vector3(1.32, 0.1, 0.2)
+
+[node name="RvWallBack" type="RigidBody3D"]
+script = ExtResource("script")
 definition = ExtResource("def")
-mass = 80.0
-script = ExtResource("1_script")
-equipment_name = "RV Wall Back"
 bottom_face = 3
 
-[node name="Mesh" type="MeshInstance3D" parent="." unique_id=1630050718]
-material_override = SubResource("StandardMaterial3D_mat")
-mesh = SubResource("BoxMesh_mesh")
+[node name="Panel-1.23" type="MeshInstance3D" parent="."]
+position = Vector3(-1.23, 0, 0)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
 
-[node name="Collision" type="CollisionShape3D" parent="." unique_id=1237018238]
-shape = SubResource("BoxShape3D_col")
+[node name="Collision-1.23" type="CollisionShape3D" parent="."]
+position = Vector3(-1.23, 0, 0)
+shape = SubResource("c2")
+
+[node name="Upper-1.23" type="MeshInstance3D" parent="."]
+position = Vector3(-1.23, 0.64, 0)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe-1.23" type="MeshInstance3D" parent="."]
+position = Vector3(-1.23, -0.28, 0)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TailLamp-1.23" type="MeshInstance3D" parent="."]
+position = Vector3(-1.5867, -0.48, 0.125)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Latch-1.23" type="MeshInstance3D" parent="."]
+position = Vector3(-0.7256999999999999, -0.05, 0.13)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Panel1.23" type="MeshInstance3D" parent="."]
+position = Vector3(1.23, 0, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Collision1.23" type="CollisionShape3D" parent="."]
+position = Vector3(1.23, 0, 0)
+shape = SubResource("c8")
+
+[node name="Upper1.23" type="MeshInstance3D" parent="."]
+position = Vector3(1.23, 0.64, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe1.23" type="MeshInstance3D" parent="."]
+position = Vector3(1.23, -0.28, 0)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="TailLamp1.23" type="MeshInstance3D" parent="."]
+position = Vector3(1.5867, -0.48, 0.125)
+mesh = SubResource("m11")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Latch1.23" type="MeshInstance3D" parent="."]
+position = Vector3(0.7256999999999999, -0.05, 0.13)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="DoorHeader" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.95, 0)
+mesh = SubResource("m13")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="HeaderCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.95, 0)
+shape = SubResource("c14")
+
+[node name="ExitSign" type="Label3D" parent="."]
+position = Vector3(0, 0.95, 0.115)
+text = "EXIT"
+font_size = 48
+pixel_size = 0.0014
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 0, 0)

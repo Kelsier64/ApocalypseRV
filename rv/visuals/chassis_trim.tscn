@@ -1,0 +1,368 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(3.6, 0.035, 11.75)
+material = ExtResource("dark")
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m11"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m15"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m16"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m17"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m18"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m19"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m20"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m21"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m22"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m23"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m24"]
+size = Vector3(3.6, 0.004, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m25"]
+size = Vector3(0.12, 0.06, 11.8)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m26"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m27"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m28"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m29"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m30"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m31"]
+size = Vector3(0.12, 0.06, 11.8)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m32"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m33"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m34"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m35"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m36"]
+size = Vector3(0.035, 0.075, 0.23)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m37"]
+size = Vector3(3.9, 0.22, 0.25)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m38"]
+size = Vector3(3.9, 0.2, 0.2)
+material = ExtResource("metal")
+
+[node name="ChassisTrim" type="Node3D"]
+
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.51, 0)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-5.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -5.5)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -5)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-4.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -4.5)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-4" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -4)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-3.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -3.5)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -3)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-2.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -2.5)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -2)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-1.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -1.5)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -1)
+mesh = SubResource("m11")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam-0.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, -0.5)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 0)
+mesh = SubResource("m13")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam0.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 0.5)
+mesh = SubResource("m14")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 1)
+mesh = SubResource("m15")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam1.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 1.5)
+mesh = SubResource("m16")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 2)
+mesh = SubResource("m17")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam2.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 2.5)
+mesh = SubResource("m18")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 3)
+mesh = SubResource("m19")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam3.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 3.5)
+mesh = SubResource("m20")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam4" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 4)
+mesh = SubResource("m21")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam4.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 4.5)
+mesh = SubResource("m22")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 5)
+mesh = SubResource("m23")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FloorSeam5.5" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.53, 5.5)
+mesh = SubResource("m24")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="EdgeRail-1.78" type="MeshInstance3D" parent="."]
+position = Vector3(-1.78, 0.51, 0)
+mesh = SubResource("m25")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector-1.78_-4.9" type="MeshInstance3D" parent="."]
+position = Vector3(-2.00606, 0.12, -4.9)
+mesh = SubResource("m26")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector-1.78_-2.7" type="MeshInstance3D" parent="."]
+position = Vector3(-2.00606, 0.12, -2.7)
+mesh = SubResource("m27")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector-1.78_0" type="MeshInstance3D" parent="."]
+position = Vector3(-2.00606, 0.12, 0)
+mesh = SubResource("m28")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector-1.78_2" type="MeshInstance3D" parent="."]
+position = Vector3(-2.00606, 0.12, 2)
+mesh = SubResource("m29")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector-1.78_4.7" type="MeshInstance3D" parent="."]
+position = Vector3(-2.00606, 0.12, 4.7)
+mesh = SubResource("m30")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="EdgeRail1.78" type="MeshInstance3D" parent="."]
+position = Vector3(1.78, 0.51, 0)
+mesh = SubResource("m31")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector1.78_-4.9" type="MeshInstance3D" parent="."]
+position = Vector3(2.00606, 0.12, -4.9)
+mesh = SubResource("m32")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector1.78_-2.7" type="MeshInstance3D" parent="."]
+position = Vector3(2.00606, 0.12, -2.7)
+mesh = SubResource("m33")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector1.78_0" type="MeshInstance3D" parent="."]
+position = Vector3(2.00606, 0.12, 0)
+mesh = SubResource("m34")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector1.78_2" type="MeshInstance3D" parent="."]
+position = Vector3(2.00606, 0.12, 2)
+mesh = SubResource("m35")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Reflector1.78_4.7" type="MeshInstance3D" parent="."]
+position = Vector3(2.00606, 0.12, 4.7)
+mesh = SubResource("m36")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FrontBumper" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.24, -5.88)
+mesh = SubResource("m37")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="RearBumper" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.27, 5.91)
+mesh = SubResource("m38")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Plate" type="Label3D" parent="."]
+position = Vector3(0, -0.2, -6.02)
+text = "RV • 001"
+font_size = 48
+pixel_size = 0.0018
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="RearPlate" type="Label3D" parent="."]
+position = Vector3(-1.2, -0.2, 6.02)
+text = "RV • 001"
+font_size = 48
+pixel_size = 0.0015
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 0, 0)

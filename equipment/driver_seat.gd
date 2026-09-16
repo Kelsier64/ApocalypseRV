@@ -1,6 +1,7 @@
 extends Equipment
 
 const MOUSE_SENSITIVITY: float = 0.002
+const REST_CAMERA_ROTATION := Vector3(-0.18, 0.0, 0.0)
 
 @onready var seat_camera: Camera3D = $Camera3D
 
@@ -8,6 +9,7 @@ var current_driver: Node3D = null
 
 func _ready() -> void:
 	super._ready()
+	seat_camera.rotation = REST_CAMERA_ROTATION
 	var dashboard := CanvasLayer.new()
 	dashboard.set_script(load("res://rv/vehicle_dashboard.gd"))
 	add_child(dashboard)
@@ -73,25 +75,27 @@ func exit_seat() -> void:
 		return
 
 	var player := current_driver
+	var exit_position := _find_clear_exit_position()
 	current_driver = null
 
-	player.exit_seat_mode(_find_clear_exit_position())
+	player.exit_seat_mode(exit_position)
 
 	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"):
 		rv.set_driving_state(false)
 		rv.handbrake = true
 
-	seat_camera.rotation = Vector3.ZERO
+	seat_camera.rotation = REST_CAMERA_ROTATION
 
 # Prefer the seat's right side, then left/back/front; if every side is inside
 # geometry (seat parked against a wall), stand the player on top of the seat.
 func _find_clear_exit_position() -> Vector3:
+	var origin := global_position + global_transform.basis.y * 0.06
 	var candidates: Array[Vector3] = [
-		global_position + global_transform.basis.x * 1.5,
-		global_position - global_transform.basis.x * 1.5,
-		global_position + global_transform.basis.z * 1.5,
-		global_position - global_transform.basis.z * 1.5,
+		origin + global_transform.basis.x * 1.5,
+		origin - global_transform.basis.x * 1.5,
+		origin + global_transform.basis.z * 1.5,
+		origin - global_transform.basis.z * 1.5,
 	]
 	for candidate in candidates:
 		if _is_exit_position_clear(candidate):
@@ -132,4 +136,4 @@ func _physics_process(_delta: float) -> void:
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	if not can_operate(): return "駕駛座｜尚未接入或已損壞"
-	return "駕駛座｜長按 E 1 秒：入座\n入座後 B：發動／熄火（無電也可手動發動，需燃油）"
+	return "駕駛座／控制台｜長按 E 1 秒：入座；長按 F：搬移整組\nB 引擎／Space 手煞車／Z X C 排檔；需燃油"

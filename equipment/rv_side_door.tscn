@@ -1,0 +1,203 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/rv_door.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/rv_side_door_definition.tres" id="def"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/screen.tres" id="screen"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[sub_resource type="BoxShape3D" id="c1"]
+size = Vector3(1.38, 1.98, 0.2)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(1.38, 1.98, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(1.38, 0.72, 0.21)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(1.38, 0.075, 0.215)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(1.22, 0.57, 0.025)
+material = ExtResource("screen")
+
+[sub_resource type="BoxShape3D" id="c6"]
+size = Vector3(1.38, 1.98, 0.2)
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(1.38, 1.98, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(1.38, 0.72, 0.21)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(1.38, 0.075, 0.215)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(1.22, 0.57, 0.025)
+material = ExtResource("screen")
+
+[sub_resource type="BoxShape3D" id="c11"]
+size = Vector3(1.2, 0.12, 0.2)
+
+[sub_resource type="BoxMesh" id="m12"]
+size = Vector3(1.2, 0.12, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m13"]
+size = Vector3(1.18, 1.8, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m14"]
+size = Vector3(1.18, 0.1, 0.12)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m15"]
+size = Vector3(1.18, 0.075, 0.212)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m16"]
+size = Vector3(1.02, 0.48, 0.015)
+material = ExtResource("screen")
+
+[sub_resource type="BoxMesh" id="m17"]
+size = Vector3(0.08, 0.22, 0.055)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m18"]
+size = Vector3(1.02, 0.48, 0.015)
+material = ExtResource("screen")
+
+[sub_resource type="BoxMesh" id="m19"]
+size = Vector3(0.08, 0.22, 0.055)
+material = ExtResource("metal")
+
+[sub_resource type="BoxShape3D" id="c20"]
+size = Vector3(1.18, 1.8, 0.2)
+
+[node name="rv_side_door" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("def")
+structure_kind = "side"
+bottom_face = 3
+leaf_count = 1
+leaf_width = 1.18
+hinge_span = 1.2
+
+[node name="JambCollision-1" type="CollisionShape3D" parent="."]
+position = Vector3(-1.29, 0, 0)
+shape = SubResource("c1")
+
+[node name="Jamb-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0, 0)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="UpperJamb-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.6, 0)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, -0.28, 0)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="JambWindow-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.6, 0.115)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="JambCollision1" type="CollisionShape3D" parent="."]
+position = Vector3(1.29, 0, 0)
+shape = SubResource("c6")
+
+[node name="Jamb1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="UpperJamb1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.6, 0)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, -0.28, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="JambWindow1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.6, 0.115)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="HeaderCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.93, 0)
+shape = SubResource("c11")
+
+[node name="Header" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.93, 0)
+mesh = SubResource("m12")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Leaf0" type="Node3D" parent="."]
+position = Vector3(-0.6, 0, 0)
+
+
+[node name="Skin" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.03, 0)
+mesh = SubResource("m13")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Top" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.82, 0)
+mesh = SubResource("m14")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.28, 0)
+mesh = SubResource("m15")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.47, -0.111)
+mesh = SubResource("m16")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Handle-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.0699999999999998, -0.18, -0.14)
+mesh = SubResource("m17")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.47, 0.111)
+mesh = SubResource("m18")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Handle1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.0699999999999998, -0.18, 0.14)
+mesh = SubResource("m19")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="LeafCollision0" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.03, 0)
+shape = SubResource("c20")
+
+[node name="HeaderSign" type="Label3D" parent="."]
+position = Vector3(0, 0.93, 0.115)
+text = "ENTRY"
+font_size = 48
+pixel_size = 0.001
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 0, 0)

@@ -4,8 +4,10 @@
 
 [ext_resource type="Resource" path="res://equipment/scrapper_definition.tres" id="def"]
 
+[ext_resource type="PackedScene" path="res://rv/visuals/scrapper.tscn" id="detail_visual"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ojfv"]
-albedo_color = Color(0.8, 0.2, 0.2, 1)
+albedo_color = Color(0.085, 0.22, 0.20, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ja3vi"]
 size = Vector3(1.05, 0.07, 1.05)
@@ -79,3 +81,5 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.2
 radius = 0.2
 height = 1.0
 sides = 10
+
+[node name="Details" parent="." instance=ExtResource("detail_visual")]

@@ -69,7 +69,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	match event.keycode:
 		KEY_F2: focus(rv.get_node("BatterySocket"), Vector3(2, 0.5, 0))
 		KEY_F3: focus(rv.get_node("DriverSeat"), Vector3(0, 1.2, 1.3))
-		KEY_F4: focus(rv.get_node("FuelPort"), Vector3(-0.5, 0.9, -1.2))
+		KEY_F4: focus(rv.get_node("FuelPort"), Vector3(1.8, 0.45, 0))
 		KEY_F5: focus(rv.get_node("ItemBox"), Vector3(0.5, 0.9, -1.2))
 		KEY_F6:
 			var socket := rv.get_node_or_null("BatterySocket")

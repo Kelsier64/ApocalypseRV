@@ -1,0 +1,80 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.1, 0.3, 0.1)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.1, 0.3, 0.1)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.1, 0.3, 0.1)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(0.1, 0.3, 0.1)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(1.15, 0.05, 0.06)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(1.2, 0.1, 0.035)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(0.48, 0.015, 0.4)
+material = ExtResource("dark")
+
+[node name="CraftingDetails" type="Node3D"]
+
+
+[node name="Leg-0.48-0.29" type="MeshInstance3D" parent="."]
+position = Vector3(-0.48, 0.15, -0.29)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Leg-0.480.29" type="MeshInstance3D" parent="."]
+position = Vector3(-0.48, 0.15, 0.29)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Leg0.48-0.29" type="MeshInstance3D" parent="."]
+position = Vector3(0.48, 0.15, -0.29)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Leg0.480.29" type="MeshInstance3D" parent="."]
+position = Vector3(0.48, 0.15, 0.29)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="BackRail" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.48, 0.35)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="FrontEdge" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.4, -0.4)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stencil" type="Label3D" parent="."]
+position = Vector3(0, 0.405, -0.422)
+text = "FABRICATOR"
+font_size = 48
+pixel_size = 0.0011
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(0, 180, 0)
+
+[node name="OutputPad" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.507, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)

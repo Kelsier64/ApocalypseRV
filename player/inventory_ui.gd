@@ -67,3 +67,7 @@ func update_slots(inventory: Array, active_slot: int = 0):
 			bg_color.a = 1.0
 			
 		children[i].color = bg_color
+
+func _process(_delta: float) -> void:
+	# Driving uses its own dashboard in this screen area.
+	visible = get_parent().seated_in == null

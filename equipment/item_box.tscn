@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://equipment/item_box.gd" id="1"]
 [ext_resource type="Resource" path="res://equipment/item_box_definition.tres" id="def"]
 
+[ext_resource type="PackedScene" path="res://rv/visuals/item_box.tscn" id="detail_visual"]
+
 [sub_resource type="StandardMaterial3D" id="mat"]
 albedo_color = Color(0.2, 0.3, 0.4, 1)
 [sub_resource type="BoxMesh" id="mesh"]
@@ -27,3 +29,5 @@ text = "道具箱"
 [node name="Handle" type="CSGBox3D" parent="."]
 position = Vector3(0, 0, -0.38)
 size = Vector3(0.3, 0.07, 0.08)
+
+[node name="Details" parent="." instance=ExtResource("detail_visual")]

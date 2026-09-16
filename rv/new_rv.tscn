@@ -3,13 +3,14 @@
 [ext_resource type="PackedScene" uid="uid://bgu1l4isw02ca" path="res://rv/chassis.tscn" id="1_ip3wq"]
 [ext_resource type="PackedScene" uid="uid://vl4wqm5kw8xj" path="res://equipment/driver_seat.tscn" id="2_hjrs7"]
 [ext_resource type="PackedScene" uid="uid://dticosvadsqs8" path="res://equipment/rv_ceiling.tscn" id="4_ceil"]
-[ext_resource type="PackedScene" uid="uid://bapuqpt42fwwm" path="res://equipment/rv_wall_left.tscn" id="5_wl"]
-[ext_resource type="PackedScene" uid="uid://jvg1xs75gqb8" path="res://equipment/rv_wall_right.tscn" id="6_wr"]
 [ext_resource type="PackedScene" uid="uid://b2hnoxxrv0jps" path="res://equipment/rv_wall_front.tscn" id="7_wf"]
-[ext_resource type="PackedScene" uid="uid://6ijedjc6opf7" path="res://equipment/rv_wall_back.tscn" id="8_wb"]
 
 [ext_resource type="PackedScene" path="res://equipment/fuel_port.tscn" id="9_tank"]
 [ext_resource type="PackedScene" path="res://equipment/item_box.tscn" id="10_rack"]
+
+[ext_resource type="PackedScene" path="res://equipment/rv_side_panel.tscn" id="sidewall"]
+[ext_resource type="PackedScene" path="res://equipment/rv_side_door.tscn" id="sidedoor"]
+[ext_resource type="PackedScene" path="res://equipment/rv_rear_door.tscn" id="reardoor"]
 
 [node name="NewRv" type="Node3D" unique_id=2120729524]
 
@@ -18,26 +19,52 @@
 [node name="Ceiling" parent="Chassis" unique_id=998136955 instance=ExtResource("4_ceil")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
 
-[node name="WallLeft" parent="Chassis" unique_id=1938252214 instance=ExtResource("5_wl")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9, 1.4999999, 0)
-
-[node name="WallRight" parent="Chassis" unique_id=1756155529 instance=ExtResource("6_wr")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -1.9, 1.5, 0)
-
 [node name="WallFront" parent="Chassis" unique_id=1457687698 instance=ExtResource("7_wf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.9)
-
-[node name="WallBack" parent="Chassis" unique_id=1754204369 instance=ExtResource("8_wb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4999999, 5.9)
 
 [node name="DriverSeat" parent="Chassis" unique_id=1370501954 instance=ExtResource("2_hjrs7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.49605, -4.02)
 
 [node name="FuelPort" parent="Chassis" instance=ExtResource("9_tank")]
-position = Vector3(0.9, 0.65, 4.5)
+position = Vector3(2.16, 0.9, 3.6)
+rotation_degrees = Vector3(0, 0, -90)
 freeze = true
 collision_mask = 0
 [node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
 position = Vector3(-0.9, 0.8, 4.5)
 freeze = true
 collision_mask = 0
+
+[node name="RightFront" parent="Chassis" instance=ExtResource("sidewall")]
+position = Vector3(1.9, 1.5, -4)
+rotation_degrees = Vector3(0, 90, 0)
+mount_slot = "right_0"
+
+[node name="RightMiddle" parent="Chassis" instance=ExtResource("sidedoor")]
+position = Vector3(1.9, 1.5, 0)
+rotation_degrees = Vector3(0, 90, 0)
+mount_slot = "right_1"
+
+[node name="RightRear" parent="Chassis" instance=ExtResource("sidewall")]
+position = Vector3(1.9, 1.5, 4)
+rotation_degrees = Vector3(0, 90, 0)
+mount_slot = "right_2"
+
+[node name="LeftFront" parent="Chassis" instance=ExtResource("sidewall")]
+position = Vector3(-1.9, 1.5, -4)
+rotation_degrees = Vector3(0, -90, 0)
+mount_slot = "left_0"
+
+[node name="LeftMiddle" parent="Chassis" instance=ExtResource("sidewall")]
+position = Vector3(-1.9, 1.5, 0)
+rotation_degrees = Vector3(0, -90, 0)
+mount_slot = "left_1"
+
+[node name="LeftRear" parent="Chassis" instance=ExtResource("sidewall")]
+position = Vector3(-1.9, 1.5, 4)
+rotation_degrees = Vector3(0, -90, 0)
+mount_slot = "left_2"
+
+[node name="RearDoor" parent="Chassis" instance=ExtResource("reardoor")]
+position = Vector3(0, 1.5, 5.9)
+mount_slot = "rear"

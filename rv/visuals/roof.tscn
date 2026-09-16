@@ -1,0 +1,98 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(4, 0.2, 12)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(0.09, 0.07, 11.95)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(0.09, 0.07, 11.95)
+material = ExtResource("teal")
+
+[node name="RoofVisual" type="Node3D"]
+
+
+[node name="RoofSkin" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib-5.8" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, -5.8)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib-3.9" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, -3.9)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib-2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, -2)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 0)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 2)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib3.9" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 3.9)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Rib5.8" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 5.8)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Gutter-1.94" type="MeshInstance3D" parent="."]
+position = Vector3(-1.94, -0.02, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Gutter1.94" type="MeshInstance3D" parent="."]
+position = Vector3(1.94, -0.02, 0)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)

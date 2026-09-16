@@ -9,13 +9,16 @@ var max_place_distance: float = 4.0
 var can_place_equipment: bool = false
 var snap_enabled: bool = true
 var target_support: Node3D = null
+var message: String = ""
 var preview_scale: Vector3 = Vector3.ONE
 var placement_mode: PlacementMode = PlacementMode.SURFACE
 
 func begin(equipment: Node3D) -> void:
 	placing_equipment = equipment
 	preview_scale = equipment.global_basis.get_scale()
+	if equipment.get("structure_kind") is String and not equipment.structure_kind.is_empty(): snap_enabled = true
 	can_place_equipment = false
+	message = "瞄準安裝位置"
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
@@ -35,10 +38,12 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 					var rv := RVConnection.resolve(target_support)
 					placing_equipment.confirm_placement(placing_equipment.global_transform, rv if rv else target_support, target_support)
 					placing_equipment = null
+					_hide_slots(player)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				placing_equipment.cancel_placement()
 				placing_equipment = null
+				_hide_slots(player)
 
 func update_ghost(player: CharacterBody3D) -> void:
 	if not is_instance_valid(placing_equipment):
@@ -51,6 +56,11 @@ func update_ghost(player: CharacterBody3D) -> void:
 	# Ignore ourselves and the equipment
 	var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid(), placing_equipment.get_rid()])
 	var result = space_state.intersect_ray(query)
+	var kind: String = placing_equipment.get("structure_kind") if placing_equipment.get("structure_kind") is String else ""
+	if snap_enabled and not kind.is_empty():
+		_update_structure_preview(player, from, (to - from).normalized(), kind, result)
+		return
+	_hide_slots(player)
 
 	if result and PlacementRules.valid_target(placing_equipment, result.collider):
 		target_support = result.collider
@@ -120,15 +130,50 @@ func update_ghost(player: CharacterBody3D) -> void:
 		for axis in range(3):
 			offset += absf(normal.dot(base_basis[axis])) * scaled_half[axis]
 		placing_equipment.global_position = result.position + normal * (offset + 0.012) - base_basis * bounds.get_center()
-		can_place_equipment = PlacementRules.can_place(equip, target_support, placing_equipment.global_transform)
+		var reason := PlacementRules.rejection_reason(equip, target_support, placing_equipment.global_transform, result.position)
+		can_place_equipment = reason.is_empty()
+		message = ("左鍵安裝｜右鍵取消｜R 貼面／直立｜V 槽位／自由" if can_place_equipment else "無法安裝：" + reason)
 		if equip.ghost_material is StandardMaterial3D:
 			equip.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
 	else:
 		can_place_equipment = false
 		target_support = null
+		message = "請瞄準有效支撐｜右鍵取消｜V 槽位／自由"
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false
 
 
 
+
+func _hide_slots(player: Node) -> void:
+	for slots in player.get_tree().get_nodes_in_group(RVStructureSlots.GROUP):
+		slots.hide_outlines()
+
+func _update_structure_preview(player: Node3D, from: Vector3, direction: Vector3, kind: String, ray_hit: Dictionary) -> void:
+	var best: Dictionary = {}
+	for slots in player.get_tree().get_nodes_in_group(RVStructureSlots.GROUP):
+		slots.show_empty(kind, placing_equipment)
+		var candidate: Dictionary = slots.pick(from, direction, max_place_distance, kind)
+		if not candidate.is_empty() and (best.is_empty() or candidate.distance < best.distance):
+			best = candidate
+	can_place_equipment = false
+	target_support = null
+	if best.is_empty():
+		placing_equipment.visible = false
+		message = "瞄準車體上的相容槽位（4 公尺內）｜右鍵取消｜V 自由放置"
+		return
+	target_support = best.manager.get_parent()
+	placing_equipment.visible = true
+	placing_equipment.global_transform = best.pose
+	var occupied: Equipment = best.manager.occupant(best.id, placing_equipment)
+	var reason := ""
+	if occupied:
+		reason = "槽位已有 " + occupied.equipment_name
+	elif not ray_hit.is_empty() and from.distance_to(ray_hit.position) + 0.16 < best.distance:
+		reason = "視線被 " + PlacementRules.object_name(ray_hit.collider) + " 擋住"
+	else:
+		reason = PlacementRules.rejection_reason(placing_equipment, target_support, best.pose)
+	can_place_equipment = reason.is_empty()
+	message = best.label + "｜" + ("左鍵安裝｜右鍵取消｜V 自由放置" if can_place_equipment else "無法安裝：" + reason)
+	placing_equipment.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)

@@ -2,6 +2,8 @@
 [ext_resource type="Script" path="res://equipment/fuel_port.gd" id="1"]
 [ext_resource type="Resource" path="res://equipment/fuel_port_definition.tres" id="def"]
 
+[ext_resource type="PackedScene" path="res://rv/visuals/fuel_port.tscn" id="detail_visual"]
+
 [sub_resource type="StandardMaterial3D" id="mat"]
 albedo_color = Color(0.35, 0.3, 0.15, 1)
 [sub_resource type="BoxMesh" id="mesh"]
@@ -29,3 +31,5 @@ position = Vector3(0, 0.18, 0)
 radius = 0.12
 height = 0.08
 sides = 20
+
+[node name="Details" parent="." instance=ExtResource("detail_visual")]

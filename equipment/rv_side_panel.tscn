@@ -1,0 +1,102 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/rv_panel.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/rv_side_panel_definition.tres" id="def"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+[ext_resource type="Material" path="res://rv/visuals/glass.tres" id="glass"]
+
+[sub_resource type="BoxShape3D" id="c1"]
+size = Vector3(3.96, 1.98, 0.2)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(3.96, 1.04, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(3.96, 0.16, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(3.96, 0.1, 0.21)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m5"]
+size = Vector3(3.96, 0.075, 0.212)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="m6"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m7"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m8"]
+size = Vector3(0.14, 0.82, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="m9"]
+size = Vector3(1.77, 0.66, 0.045)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="m10"]
+size = Vector3(1.77, 0.66, 0.045)
+material = ExtResource("glass")
+
+[node name="rv_side_panel" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("def")
+structure_kind = "side"
+bottom_face = 3
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0)
+shape = SubResource("c1")
+
+[node name="Lower" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.47, 0)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Header" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.91, 0)
+mesh = SubResource("m3")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Sill" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.1, 0)
+mesh = SubResource("m4")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.28, 0)
+mesh = SubResource("m5")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar-1.91" type="MeshInstance3D" parent="."]
+position = Vector3(-1.91, 0.49, 0)
+mesh = SubResource("m6")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.49, 0)
+mesh = SubResource("m7")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Pillar1.91" type="MeshInstance3D" parent="."]
+position = Vector3(1.91, 0.49, 0)
+mesh = SubResource("m8")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window-0.96" type="MeshInstance3D" parent="."]
+position = Vector3(-0.96, 0.49, 0)
+mesh = SubResource("m9")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Window0.96" type="MeshInstance3D" parent="."]
+position = Vector3(0.96, 0.49, 0)
+mesh = SubResource("m10")
+rotation_degrees = Vector3(0, 0, 0)

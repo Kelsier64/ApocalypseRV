@@ -68,8 +68,11 @@ func _physics_process(delta: float) -> void:
 		_f_time = 0.0
 		_e_was_pressed = e_pressed
 		_f_was_pressed = f_pressed
-		aim_marker.hide()
-		panel.hide()
+		aim_marker.visible = player.get_player_mode() == player.PlayerMode.PLACING
+		panel.visible = aim_marker.visible
+		prompt_label.text = player.placement.message if panel.visible else ""
+		repair_label.text = ""
+		feedback_label.text = ""
 		return
 	aim_marker.show()
 	target_position = Vector3(0, 0, -3.0)

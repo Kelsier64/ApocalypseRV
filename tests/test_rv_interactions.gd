@@ -42,7 +42,7 @@ func _run() -> void:
 	ray = camera.get_node("InteractRay")
 	ray.set_physics_process(false)
 	await physics_frame
-	aim(rv.get_node("FuelPort"), Vector3(-0.5, 0.9, -1.2))
+	aim(rv.get_node("FuelPort"), Vector3(1.8, 0.45, 0))
 	check(ray.prompt_label.text.contains("加油孔"), "Default mounted fuel tank has reachable interaction prompt")
 	aim(rv.get_node("ItemBox"), Vector3(0.5, 0.9, -1.2))
 	check(ray.prompt_label.text.contains("道具箱"), "Default mounted rack has reachable interaction prompt")
@@ -94,7 +94,7 @@ func _run() -> void:
 	var tank: Equipment = rv.get_node("FuelPort")
 	rv.current_fuel = 0.0
 	await physics_frame
-	aim(tank, Vector3(-0.5, 0.9, -1.2))
+	aim(tank, Vector3(1.8, 0.45, 0))
 	tap()
 	check(ray.feedback_label.text.contains("汽油罐"), "Fuel port explains required held item")
 	player.inventory.items.clear()

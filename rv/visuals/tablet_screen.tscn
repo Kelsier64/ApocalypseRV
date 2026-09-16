@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/screen.tres" id="screen"]
+[ext_resource type="Material" path="res://rv/visuals/green.tres" id="green"]
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.51, 0.012, 0.31)
+material = ExtResource("screen")
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.026, 0.013, 0.026)
+material = ExtResource("green")
+
+[node name="PanelDetails" type="Node3D"]
+
+
+[node name="Screen" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.028, 0)
+mesh = SubResource("m1")
+rotation_degrees = Vector3(0, 0, 0)
+
+[node name="Display" type="Label3D" parent="."]
+position = Vector3(0, 0.036, 0)
+text = "RV / CONTROL"
+font_size = 48
+pixel_size = 0.0008
+outline_size = 0
+modulate = Color(0.8, 0.88, 0.78, 1)
+rotation_degrees = Vector3(-90, 0, 0)
+
+[node name="PowerLED" type="MeshInstance3D" parent="."]
+position = Vector3(0.265, 0.029, -0.14)
+mesh = SubResource("m2")
+rotation_degrees = Vector3(0, 0, 0)

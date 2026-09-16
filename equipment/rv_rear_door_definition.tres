@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="EquipmentDefinition" format=3]
+[ext_resource type="Script" path="res://equipment/equipment_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+type_id = "rv_rear_door"
+display_name = "後方雙開門"
+weight = 80
+health = 120.0

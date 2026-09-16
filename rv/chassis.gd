@@ -350,22 +350,11 @@ func _create_wheel_at(slot_index: int) -> void:
 	wheel.damping_relaxation = 0.95
 	wheel.wheel_radius = WHEEL_RADIUS
 
-	# Visual mesh
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "WheelMesh"
-	var cyl_mesh := CylinderMesh.new()
-	cyl_mesh.height = WHEEL_WIDTH
-	cyl_mesh.top_radius = WHEEL_RADIUS
-	cyl_mesh.bottom_radius = WHEEL_RADIUS
-	mesh_instance.mesh = cyl_mesh
-	mesh_instance.transform = Transform3D(
-		Basis(Vector3(0, 1, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1)),
-		Vector3.ZERO
-	)
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.15, 0.15, 0.15, 1)
-	mesh_instance.set_surface_override_material(0, mat)
-	wheel.add_child(mesh_instance)
+	var wheel_visual: Node3D = preload("res://rv/visuals/wheel.tscn").instantiate()
+	wheel_visual.name = "WheelMesh"
+	# The visual scene uses a 0.5 m radius; retain the existing wheel physics.
+	wheel_visual.scale = Vector3(WHEEL_WIDTH / 0.4, WHEEL_RADIUS / 0.5, WHEEL_RADIUS / 0.5)
+	wheel.add_child(wheel_visual)
 
 
 	add_child(wheel)
