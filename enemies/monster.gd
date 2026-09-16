@@ -197,6 +197,9 @@ func _ready():
 	if nav_agent:
 		nav_agent.path_desired_distance = nav_path_desired_distance
 		nav_agent.target_desired_distance = nav_target_desired_distance
+		# Baked surfaces are 0.5 m above the floor; this capsule's root is 0.25 m
+		# below its feet. Compare path reach distance at the same reference height.
+		nav_agent.path_height_offset = 0.75
 
 	body_collision_shape = get_node_or_null("CollisionShape")
 	climb_wall_probe = get_node_or_null("ClimbWallProbe")
@@ -1519,7 +1522,9 @@ func _should_use_navigation_for_chase(can_nav: bool, on_rv_surface: bool, vertic
 		return false
 	if post_separation_block_remaining > 0.0:
 		return false
-	if last_climb_separation_state != "attached" and vertical_gap >= CLIMB_DESCENT_MIN_HEIGHT_GAP:
+	# A hillside target can be several metres higher while both actors are on
+	# ordinary ground. Only airborne post-climb descent needs this bypass.
+	if not is_on_floor() and last_climb_separation_state != "attached" and vertical_gap >= CLIMB_DESCENT_MIN_HEIGHT_GAP:
 		return false
 	return true
 
@@ -1674,10 +1679,11 @@ func _reset_navigation_state() -> void:
 func _nav_set_target(destination: Vector3, force: bool = false) -> void:
 	if nav_agent == null:
 		return
-	if not force and nav_has_target and nav_repath_timer > 0.0:
+	if not force and nav_has_target:
 		var delta = destination - nav_target_position
-		delta.y = 0.0
 		if delta.length() < nav_repath_distance_epsilon:
+			return
+		if nav_repath_timer > 0.0:
 			return
 
 	nav_target_position = destination
@@ -1693,6 +1699,17 @@ func _get_navigation_direction(destination: Vector3) -> Vector3:
 		return fallback_direction
 
 	_nav_set_target(destination)
+	# Terrain nav polygons approximate height between samples. At a waypoint
+	# already reached horizontally, use the grounded actor's actual height
+	# for advancement; otherwise a bank can make it circle a point below it.
+	# Preserve the narrow horizontal tolerance needed at pedestrian gates.
+	nav_agent.path_height_offset = 0.75
+	var path := nav_agent.get_current_navigation_path()
+	var path_index := nav_agent.get_current_navigation_path_index()
+	if is_on_floor() and path_index < path.size():
+		var waypoint := path[path_index]
+		if _flat_position(global_position).distance_to(_flat_position(waypoint)) < nav_agent.path_desired_distance:
+			nav_agent.path_height_offset = waypoint.y - global_position.y
 	var next_path_pos = nav_agent.get_next_path_position()
 	var nav_direction = _compute_fallback_direction(global_position, next_path_pos)
 	if nav_direction.length_squared() <= 0.0001:

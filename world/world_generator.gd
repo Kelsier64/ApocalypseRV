@@ -24,7 +24,7 @@ func _ready() -> void:
 	# Thin scenery and independently baked tile edges must not quantize into
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(get_world_3d().navigation_map, 0.1)
-	print("WORLD v%d seed=%d" % [WorldField.VERSION, world_seed])
+	print("WORLD v%d seed=%d" % [profile.generation_version, world_seed])
 	var initial_bands: Array = range(-profile.chunks_behind, profile.chunks_ahead + 1) if restore_bands.is_empty() else restore_bands
 	for index in initial_bands:
 		_spawn_band(index)
@@ -32,18 +32,35 @@ func _ready() -> void:
 	if not restore_bands.is_empty():
 		_refresh_horizon(next_band, false)
 	_configure_environment()
+	if not get_parent().has_node("OutdoorPresentation"):
+		var presentation := OutdoorPresentation.new()
+		presentation.name = "OutdoorPresentation"
+		get_parent().add_child.call_deferred(presentation)
 
 func _configure_environment() -> void:
 	var holder := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
 	if holder != null:
 		var environment := holder.environment.duplicate() as Environment
 		environment.fog_enabled = true
-		environment.fog_light_color = Color(0.59, 0.65, 0.62)
-		environment.fog_density = 0.005
+		environment.fog_light_color = Color("68736c")
+		environment.fog_density = 0.009
+		environment.fog_sky_affect = 1.0
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		environment.ambient_light_color = Color(0.67, 0.72, 0.68)
-		environment.ambient_light_energy = 0.45
+		environment.ambient_light_color = Color("a5b3ad")
+		environment.ambient_light_energy = 0.48
+		if environment.sky != null:
+			environment.sky = environment.sky.duplicate(true)
+			var sky := environment.sky.sky_material as ProceduralSkyMaterial
+			if sky != null:
+				sky.sky_top_color = Color("515f60")
+				sky.sky_horizon_color = Color("7a827b")
+				sky.ground_horizon_color = Color("7a827b")
+				sky.ground_bottom_color = Color("3e4944")
 		holder.environment = environment
+	var sun := get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
+	if sun != null:
+		sun.light_color = Color("c3cec5")
+		sun.light_energy = 0.55
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player):
@@ -53,12 +70,31 @@ func _process(_delta: float) -> void:
 	if instances != null and not instances.active_id.is_empty():
 		anchor = instances.stream_anchor
 	var current := floori(-anchor.z / profile.chunk_length)
+	var pinned := protected_bands(anchor)
+	if not building:
+		for index in pinned:
+			if not active_chunks.any(func(c): return int(c.index) == index):
+				_spawn_band(index, true)
+				break
 	if not building and next_band <= current + profile.chunks_ahead:
-		_spawn_band(next_band, true)
+		if not active_chunks.any(func(c): return int(c.index) == next_band):
+			_spawn_band(next_band, true)
 		next_band += 1
-	if not active_chunks.is_empty() and int(active_chunks[0].index) < current - profile.chunks_behind:
+	if not active_chunks.is_empty() and int(active_chunks[0].index) < current - profile.chunks_behind and int(active_chunks[0].index) not in pinned:
 		active_chunks.pop_front().node.queue_free()
 	_despawn_entities_behind(anchor.z)
+
+func protected_bands(anchor: Vector3) -> Array[int]:
+	var result: Array[int] = []
+	if profile.generation_version < 3: return result
+	var nearest := maxi(0, roundi(-anchor.z / profile.stop_spacing))
+	for i in range(maxi(0, nearest - 1), nearest + 2):
+		var site := field.stop(i)
+		if not site.has("bounds") or not site.bounds.has_point(anchor): continue
+		var box: AABB = site.bounds
+		for index in range(floori(-box.end.z / 150.0) - 1, floori(-box.position.z / 150.0) + 2):
+			if index not in result: result.append(index)
+	return result
 
 func _spawn_band(index: int, gradual: bool = false) -> void:
 	building = true
@@ -67,10 +103,13 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	chunk.set_meta("skip_actors", restoring_entities)
 	await chunk.generate(field, index, poi_spawner, gradual)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
+	active_chunks.sort_custom(func(a, b): return int(a.index) < int(b.index))
 	generation_times.append(chunk.build_ms)
 	if generation_times.size() > 64:
 		generation_times.pop_front()
-	if gradual or index == profile.chunks_ahead:
+	# Pinning may fill a band behind the player. Its horizon must not cover
+	# already-loaded roads and sites with a coarse visual-only terrain sheet.
+	if (gradual or index == profile.chunks_ahead) and index == int(active_chunks.back().index):
 		await _refresh_horizon(index + 1, gradual)
 	print("TERRAIN band=%d build_ms=%.1f max_slice_ms=%.1f active=%d" % [index, chunk.build_ms, chunk.max_slice_ms, active_chunks.size()])
 	building = false

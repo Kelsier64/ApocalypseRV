@@ -69,6 +69,24 @@ func _run() -> void:
 	print("CHECKPOINT written")
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	expect(not saved.is_empty(), "Checkpoint validates from disk without objects")
+	expect(saved.get("generation_version") == 4, "Generation version independent of checkpoint version")
+	var legacy_data := saved.duplicate(true)
+	legacy_data.erase("generation_version")
+	legacy_data.profile.erase("generation_version")
+	checkpoint.pending = legacy_data
+	var legacy_world: Node3D = load("res://world/test_world.tscn").instantiate()
+	checkpoint.prepare_world(legacy_world)
+	expect(legacy_world.get_node("WorldGenerator").profile.generation_version == 2, "Unversioned worlds keep v2 geometry")
+	legacy_world.free()
+	legacy_data = saved.duplicate(true)
+	legacy_data.generation_version = 3
+	checkpoint.pending = legacy_data
+	legacy_world = load("res://world/test_world.tscn").instantiate()
+	checkpoint.prepare_world(legacy_world)
+	var legacy_profile: WorldProfile = legacy_world.get_node("WorldGenerator").profile
+	expect(legacy_profile.generation_version == 3 and legacy_profile.terrain_half_width == 225, "Explicit v3 worlds retain original width despite newer saved profile fields")
+	legacy_world.free()
+	checkpoint.pending = {}
 	var bad := saved.duplicate(true)
 	bad.player.items.append(rv.get_engine().item())
 	checkpoint.write_checkpoint(PATH + ".duplicate", bad)

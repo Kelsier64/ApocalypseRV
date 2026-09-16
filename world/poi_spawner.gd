@@ -5,10 +5,12 @@ func pick_poi() -> Dictionary:
 	return POIConfig.POI_TABLE[0]
 
 func spawn_site(site: Dictionary, parent_node: Node3D) -> Node3D:
-	var scene := load(str(pick_poi().scene)) as PackedScene
+	var path := "res://world/poi_kit/exteriors/%s.tscn" % site.exterior if site.has("exterior") else str(pick_poi().scene)
+	var scene := load(path) as PackedScene
 	if scene == null:
 		return null
 	var building := scene.instantiate() as Node3D
+	building.set_meta("poi_title", site.get("title", "MAINTENANCE"))
 	building.transform = site.building
 	parent_node.add_child(building)
 	var ancestor: Node = parent_node

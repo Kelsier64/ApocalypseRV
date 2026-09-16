@@ -12,6 +12,7 @@ var build_ms: float = 0.0
 var max_slice_ms: float = 0.0
 var _slice_start: int
 var navigation: NavigationRegion3D
+var navigation_ready := false
 var _terrain: MeshInstance3D
 
 func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool = false) -> void:
@@ -26,7 +27,11 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	_build_road()
 	for site in sites:
 		_build_site(site, spawner)
+	if field.profile.generation_version >= 3:
+		await _build_exploration_scenery(gradual)
 	await _decorate(gradual)
+	if field.profile.generation_version >= 4:
+		await ForestScenery.build(self, gradual)
 	if gradual:
 		await _pause()
 	_build_navigation()
@@ -64,6 +69,8 @@ func _build_ground(gradual: bool) -> void:
 			var normal := Vector3(float(rows[j + 1][i].height) - float(rows[j + 1][i + 2].height), 2.0 * step, float(rows[j + 2][i + 1].height) - float(rows[j][i + 1].height)).normalized()
 			var w: Vector3 = sample.weights
 			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
+			if field.profile.generation_version >= 3:
+				color = Color("454b3e") * w.x + Color("343e35") * w.y + Color("555249") * w.z
 			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
 			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
 			st.set_normal(normal)
@@ -89,7 +96,8 @@ func _build_distant_sides(gradual: bool) -> void:
 	for side in [-1.0, 1.0]:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		var columns := [225.0, 255.0, 315.0, 435.0, 675.0, 1035.0]
+		var edge := field.profile.terrain_half_width
+		var columns := [edge, edge + 30, edge + 90, edge + 210, edge + 450, edge + 810]
 		for j in range(51):
 			var z := -band * 150.0 - j * 3.0
 			for x in columns:
@@ -182,7 +190,7 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		_place_module(site.kind, site.building.origin, site.building.basis)
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
 	var sign_node := _place_module("sign", sign_pos, site.road.basis)
-	RoadsideKit.label(sign_node, "SERVICE" if site.kind == "entrance" else "LAY-BY", Vector3(0, 3.4, 0.08))
+	RoadsideKit.label(sign_node, str(site.get("title", "SERVICE")) + "\nFOOT ACCESS" if site.kind == "entrance" else "LAY-BY", Vector3(0, 3.4, 0.08), 24)
 	for side in [-1.0, 1.0]:
 		var point: Vector3 = site.frame * Vector3(side * 6.2, 0.05, 0)
 		var stripe := RoadsideKit.part(self, Vector3(0.15, 0.03, 24), point, Color(0.72, 0.64, 0.43))
@@ -192,7 +200,49 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		var stripe := RoadsideKit.part(self, Vector3(2, 0.03, 0.25), point, Color(0.70, 0.65, 0.49))
 		stripe.basis = site.building.basis
 
+func _build_exploration_scenery(gradual: bool = false) -> void:
+	var first := maxi(0, floori(band * 150.0 / field.profile.stop_spacing) - 1)
+	for index in range(first, first + 4):
+		var site := field.stop(index)
+		if not site.has("route"): continue
+		# A rotated deep site can touch a band far from its road anchor.
+		if site.bounds.position.z > -band * 150.0 + 4 or site.bounds.end.z < -(band + 1) * 150.0 - 4: continue
+		var parts := ExplorationSite.wall_parts(site)
+		for part_index in range(parts.size()):
+			if gradual and part_index % 20 == 0: await _pause()
+			var data: Dictionary = parts[part_index]
+			if floori(-data.base.z / 150.0) != band: continue
+			var color := Color("50564f") if part_index % 4 != 0 else Color("424b44")
+			var part := RoadsideKit.part(self, data.size, data.transform.origin, color, true)
+			part.basis = site.road.basis
+			var cap := RoadsideKit.part(self, Vector3(data.size.x + 0.12, 0.14, data.size.z + 0.12), data.base + Vector3.UP * (data.size.y + 0.05), Color("383f38"))
+			cap.basis = site.road.basis
+		for i in range(1, site.route.size() - 1):
+			var point: Vector3 = site.route[i] + site.road.basis * Vector3(3.5, 0, 3.5 if i % 2 == 0 else -3.5)
+			if floori(-point.z / 150.0) != band: continue
+			var post := _place_module("pole", point, site.road.basis)
+			post.scale = Vector3.ONE * 0.35
+			var marker := RoadsideKit.part(self, Vector3(0.3, 0.4, 0.3), point + Vector3.UP * 1.6, Color("b6a071"))
+			marker.basis = site.road.basis
+		# Authored groves supplement sparse biome scenery, away from travel lanes.
+		if field.profile.generation_version >= 4: continue
+		var grove_rng := field.rng_for(index, "groves")
+		for i in range(70):
+			if gradual and i % 20 == 0: await _pause()
+			var u := grove_rng.randf_range(47, 148)
+			var v := grove_rng.randf_range(-34, 34)
+			var point := ExplorationSite.local_point(site, u, v)
+			if floori(-point.z / 150.0) != band or field.surface(point.x, point.z).reserved: continue
+			# Keep the elevated landmark view from the complete parking bay clear.
+			if absf(v) < 8: continue
+			var tree := _place_module("dead_tree" if i % 3 == 0 else "tree", point, Basis(Vector3.UP, grove_rng.randf_range(-PI, PI)))
+			tree.scale = Vector3.ONE * grove_rng.randf_range(0.65, 1.1)
+			for mesh in tree.find_children("*", "GeometryInstance3D", true, false):
+				mesh.visibility_range_end = 290.0
+			decoration_positions.append(point)
+
 func _decorate(gradual: bool) -> void:
+	if field.profile.generation_version >= 4: return
 	var rng := field.rng_for(band, "decoration")
 	var bushes: Array[Transform3D] = []
 	for i in range(roundi(450 * field.profile.decoration_density)):
@@ -211,7 +261,12 @@ func _decorate(gradual: bool) -> void:
 		var orientation := Basis(Vector3.UP, rng.randf_range(-PI, PI))
 		var scale_value := rng.randf_range(0.7, 1.35)
 		if i % 3 != 0:
-			bushes.append(Transform3D(orientation.scaled(Vector3.ONE * scale_value), point + Vector3.UP * 0.25))
+			var bush_scale := Vector3.ONE * scale_value
+			var bush_height := 0.25
+			if field.profile.generation_version >= 3:
+				if i % 5 == 0: bush_scale *= Vector3(1.6, 2.4, 1.6)
+				bush_height = 0.4 * bush_scale.y
+			bushes.append(Transform3D(orientation.scaled(bush_scale), point + Vector3.UP * bush_height))
 			continue
 		if field.normal_at(x, z).y < 0.83:
 			continue
@@ -228,7 +283,7 @@ func _decorate(gradual: bool) -> void:
 		mesh.height = 0.8
 		mesh.radial_segments = 5
 		mesh.rings = 2
-		mesh.material = RoadsideKit.material(Color(0.32, 0.37, 0.19))
+		mesh.material = RoadsideKit.material(Color("424c38") if field.profile.generation_version >= 3 else Color(0.32, 0.37, 0.19))
 		var multi := MultiMesh.new()
 		multi.transform_format = MultiMesh.TRANSFORM_3D
 		multi.mesh = mesh
@@ -247,13 +302,14 @@ func _build_navigation() -> void:
 	nav.agent_radius = 0.5
 	nav.agent_max_climb = 0.25
 	nav.agent_max_slope = 40.0
-	nav.cell_size = 0.5
+	nav.cell_size = 0.25 if field.profile.generation_version >= 3 else 0.5
 	nav.cell_height = 0.25
 	# Sub-metre ground noise should not introduce near-collinear detail
 	# triangles into the already walkable voxel contour.
-	nav.detail_sample_max_error = 2.0
+	nav.detail_sample_max_error = 64.0 if field.profile.generation_version >= 3 else 2.0
 	nav.border_size = 1.0
-	nav.filter_baking_aabb = AABB(Vector3(-120, -100, -band * 150.0 - 151), Vector3(240, 250, 152))
+	var nav_half := field.profile.terrain_half_width if field.profile.generation_version >= 3 else 120.0
+	nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 151), Vector3(nav_half * 2, 250, 152))
 	navigation = NavigationRegion3D.new()
 	navigation.name = "ChunkNavigationRegion"
 	navigation.navigation_mesh = nav
@@ -270,16 +326,75 @@ func _build_navigation() -> void:
 	var halo := PackedVector3Array()
 	for edge in [0, 1]:
 		var z0 := -band * 150.0 + (3.0 if edge == 0 else -150.0)
-		for i in range(80):
-			var x := -120.0 + i * 3.0
+		for i in range(roundi(nav_half * 2 / 3)):
+			var x := -nav_half + i * 3.0
 			for offset in [Vector2(0, 0), Vector2(0, -3), Vector2(3, 0), Vector2(3, 0), Vector2(0, -3), Vector2(3, -3)]:
 				var px: float = x + offset.x
 				var pz: float = z0 + offset.y
 				halo.append(Vector3(px, field.height_at(px, pz), pz))
 	source.add_faces(halo, Transform3D.IDENTITY)
-	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, func():
-		if is_instance_valid(navigation):
-			navigation.navigation_mesh = nav)
+	if field.profile.generation_version >= 3:
+		_append_neighbour_obstacles(source)
+	if field.profile.generation_version >= 4:
+		for neighbour in [band - 1, band + 1]:
+			for tree: Dictionary in ForestScenery.trees(field, neighbour):
+				if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
+				_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
+	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, _navigation_baked.bind(nav))
+
+func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> void:
+	# Query the shared plan, not loaded neighbours: bake order must not change
+	# walls at a seam. Physical segments still have exactly one owning chunk.
+	var first := maxi(0, floori(band * 150.0 / field.profile.stop_spacing) - 1)
+	for index in range(first, first + 4):
+		var site := field.stop(index)
+		if not site.has("walls"): continue
+		for part: Dictionary in ExplorationSite.wall_parts(site):
+			if floori(-part.base.z / 150.0) == band: continue
+			if part.base.z > -band * 150.0 + 5 or part.base.z < -(band + 1) * 150.0 - 5: continue
+			_append_box_faces(source, part.size, part.transform)
+		if floori(float(site.s) / 150.0) == band or absf(site.building.origin.z + band * 150.0 + 75) > 95: continue
+		# Exterior collision boxes are read without registering a second POI.
+		var model: Node3D = load("res://world/poi_kit/exteriors/%s.tscn" % site.exterior).instantiate()
+		model._ready()
+		_append_collision_boxes(source, model, site.building)
+		model.free()
+
+func _append_collision_boxes(source: NavigationMeshSourceGeometryData3D, node: Node, pose: Transform3D) -> void:
+	if node is CollisionShape3D and node.shape is BoxShape3D and not node.disabled:
+		_append_box_faces(source, node.shape.size, pose)
+	for child in node.get_children():
+		_append_collision_boxes(source, child, pose * child.transform if child is Node3D else pose)
+
+func _append_box_faces(source: NavigationMeshSourceGeometryData3D, size: Vector3, pose: Transform3D) -> void:
+	var corners := [Vector3(-1,-1,-1), Vector3(1,-1,-1), Vector3(1,1,-1), Vector3(-1,1,-1), Vector3(-1,-1,1), Vector3(1,-1,1), Vector3(1,1,1), Vector3(-1,1,1)]
+	var faces := PackedVector3Array()
+	for i in [0,1,2,0,2,3,4,6,5,4,7,6,3,2,6,3,6,7,0,5,1,0,4,5,0,3,7,0,7,4,1,5,6,1,6,2]:
+		faces.append(corners[i] * size * 0.5)
+	source.add_faces(faces, pose)
+
+func _navigation_baked(nav: NavigationMesh) -> void:
+	if not is_instance_valid(navigation): return
+	await get_tree().process_frame
+	var rid := navigation.get_region_rid()
+	var before := NavigationServer3D.region_get_iteration_id(rid)
+	# Publish an immutable result after entering the tree. Mutating a resource
+	# already attached during async bake can leave the server with empty data.
+	navigation.navigation_mesh = nav.duplicate()
+	# Baking and server synchronization finish separately. In fast headless
+	# runs, a fixed number of physics frames can still query an empty region.
+	while is_inside_tree() and (NavigationServer3D.region_get_iteration_id(rid) <= before or NavigationServer3D.region_get_bounds(rid).size == Vector3.ZERO):
+		await get_tree().physics_frame
+	if not is_inside_tree(): return
+	if nav.get_polygon_count() > 0:
+		var probe := Vector3.ZERO
+		var polygon := nav.get_polygon(0)
+		var vertices := nav.get_vertices()
+		for index in polygon: probe += vertices[index]
+		probe /= polygon.size()
+		while is_inside_tree() and NavigationServer3D.map_get_closest_point_owner(navigation.get_navigation_map(), probe) != rid:
+			await get_tree().physics_frame
+	navigation_ready = true
 
 func _spawn_actors() -> void:
 	if get_meta("skip_actors", false):

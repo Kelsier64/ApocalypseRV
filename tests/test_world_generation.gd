@@ -7,11 +7,13 @@ func check(ok: bool, message: String) -> void:
 func _init() -> void:
 	_run.call_deferred()
 func _run() -> void:
+	var legacy := WorldProfile.new()
+	legacy.generation_version = 2
 	var max_grade := 0.0
 	var max_curvature := 0.0
 	for seed_value in range(100):
-		var field := WorldField.new(seed_value)
-		var reverse := WorldField.new(seed_value)
+		var field := WorldField.new(seed_value, legacy)
+		var reverse := WorldField.new(seed_value, legacy)
 		reverse.road_height(5100)
 		for s in range(0, 5100, 5):
 			var frame := field.road_frame(s)
@@ -56,7 +58,7 @@ func _run() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
-	var field := WorldField.new(42)
+	var field := WorldField.new(42, legacy)
 	var chunks: Array[ChunkGenerator] = []
 	for index in [0, 1]:
 		var chunk := ChunkGenerator.new()

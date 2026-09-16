@@ -7,6 +7,7 @@ var viewport: SubViewport
 var busy := false
 var saved_instances: Dictionary = {}
 var stream_anchor := Vector3.ZERO
+var active_title: String = "MAINTENANCE"
 var _player: Node3D
 var _home: Node
 var _return_transform := Transform3D.IDENTITY
@@ -53,7 +54,8 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	# Face away from the building on return, with a clear area in front.
 	_return_transform.basis = building.global_basis * Basis(Vector3.UP, PI)
 	active_id = id
-	_status.text = "Preparing maintenance maze..."
+	active_title = str(building.get_meta("poi_title", "MAINTENANCE"))
+	_status.text = "Preparing %s..." % active_title
 	await get_tree().process_frame
 	viewport = SubViewport.new()
 	viewport.name = "InteriorViewport"
@@ -72,7 +74,7 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_display.show()
 	_player.exit_ui_mode()
 	busy = false
-	_status.text = "MAINTENANCE / %d ROOMS   |   Return to R001 to exit" % interior.rooms.size()
+	_status.text = "%s / %d ROOMS   |   Return to R001 to exit" % [active_title, interior.rooms.size()]
 	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
 
 func leave() -> void:

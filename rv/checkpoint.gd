@@ -57,7 +57,7 @@ func save_world(world: Node, path: String) -> bool:
 	for property in generator.profile.get_property_list():
 		if property.usage & PROPERTY_USAGE_SCRIPT_VARIABLE and not generator.profile.get(property.name) is Object:
 			profile_data[property.name] = generator.profile.get(property.name)
-	var data := {"profile": profile_data, "version": VERSION, "seed": generator.world_seed, "bands": bands, "vehicles": vehicles,
+	var data := {"generation_version": generator.profile.generation_version, "profile": profile_data, "version": VERSION, "seed": generator.world_seed, "bands": bands, "vehicles": vehicles,
 		"actors": actors, "poi": manager.saved_instances.duplicate(true),
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health}}
@@ -108,6 +108,7 @@ func read_checkpoint(path: String) -> Dictionary:
 	if not data.vehicles is Array or not data.actors is Array or not data.player is Dictionary or not data.bands is Array or data.bands.is_empty(): return {}
 	if not data.player.has_all(["items", "slot", "health", "transform"]) or not data.player.items is Array or not data.player.transform is Transform3D: return {}
 	if not data.seed is int or not data.poi is Dictionary or not data.get("profile", {}) is Dictionary or not data.player.slot is int or not VehicleSnapshot._number(data.player.health): return {}
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4]: return {}
 	for band in data.bands:
 		if not band is int: return {}
 	for item in data.player.items:
@@ -136,6 +137,7 @@ func prepare_world(world: Node) -> void:
 	var profile := WorldProfile.new()
 	for key in pending.get("profile", {}):
 		if key in profile: profile.set(key, pending.profile[key])
+	profile.generation_version = pending.get("generation_version", 2)
 	world.get_node("WorldGenerator").profile = profile
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true

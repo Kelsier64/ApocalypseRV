@@ -12,6 +12,9 @@ func check(okay: bool, message: String) -> void:
 func _run() -> void:
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
 	main.get_node("WorldGenerator").world_seed = 42
+	# Legacy near-road layout remains supported by old checkpoints.
+	main.get_node("WorldGenerator").profile = WorldProfile.new()
+	main.get_node("WorldGenerator").profile.generation_version = 2
 	root.add_child(main)
 	current_scene = main
 	for enemy in get_nodes_in_group(Groups.MONSTERS):

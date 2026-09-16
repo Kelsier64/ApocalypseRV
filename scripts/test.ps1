@@ -26,8 +26,12 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
     Write-Host "PASS: $Name"
 }
 
-Invoke-GodotCheck 'import' @('--editor', '--import')
+Invoke-GodotCheck 'import' @('--editor', '--import', '--quit')
 foreach ($test in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tests') -Filter 'test_*.gd' | Sort-Object Name) {
-    Invoke-GodotCheck $test.BaseName @('-s', ('res://tests/' + $test.Name)) $true
+    $testArguments = @('-s', ('res://tests/' + $test.Name))
+    # Long outdoor round trips exceed two minutes of simulated play. Keep
+    # normal 60 Hz physics while letting headless rendering run unthrottled.
+    if ($test.BaseName -like 'test_outdoor_*') { $testArguments += @('--fixed-fps', '60') }
+    Invoke-GodotCheck $test.BaseName $testArguments $true
 }
 Invoke-GodotCheck 'main-scene' @('--quit-after', '120')

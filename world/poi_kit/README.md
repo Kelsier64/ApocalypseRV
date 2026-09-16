@@ -6,6 +6,8 @@
 
 ## 先看樣板
 
+生成 v3 的室外入口使用 `exteriors/maintenance.tscn`、`warehouse.tscn`、`pump.tscn`、`research.tscn`，繼承已驗證的 service_entrance 底層，`exterior_style.gd` 加入原生網格輪廓及入口燈。`Entrance`／`ReturnPoint` 保留原契約；四款仍接同一套室內生成。舊生成 v2 繼續使用 service_entrance。新外觀可在 `tests/outdoor_horror_playground.tscn` 按 1–4 比較。
+
 ```powershell
 godot --path . --log-file .godot/poi-asset-workshop.log res://tests/poi_asset_workshop.tscn
 ```
@@ -104,5 +106,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 - Computer Use 實際觀察：資產展示的入口外觀、小房、大房、掀頂；正式場景 F6 回放從路旁入口進入 96 房副本，持續步行穿越連接走廊再回入口按 E 返回，畫面顯示 PASS。互動日誌無 SCRIPT ERROR／ERROR／FAIL；室外 RV 持續受到殭屍攻擊。測試遊戲視窗已關閉，編輯器保留。
 - 未驗收：每個隨機 seed 的完整實機探索、100 房上限的長時間效能、群體殭屍實戰、全部家具繞行路線、正式模型外觀、所有材質接縫及 4.6.1 相容性。
 - 日誌：`.godot/test-logs/`、`.godot/poi-visible.log`、`.godot/climb-recheck.log`，另保留先前資產展示日誌。Headless 的系統憑證讀取訊息依原測試 runner 規則排除，沒有排除腳本或其他錯誤。
-
 

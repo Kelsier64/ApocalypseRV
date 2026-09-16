@@ -1,7 +1,7 @@
 extends RefCounted
 class_name WorldField
 ## Pure world-coordinate queries. Never depends on global RNG or loaded nodes.
-const VERSION := 2
+const VERSION := 4
 var world_seed: int
 var profile: WorldProfile
 var macro := FastNoiseLite.new()
@@ -11,6 +11,7 @@ var clusters := FastNoiseLite.new()
 var _phase: float
 var _heights: Dictionary = {0: 0.0, 1: 0.0}
 var _stops: Dictionary = {}
+var forest_cache: Dictionary = {}
 
 func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	world_seed = seed_value
@@ -25,7 +26,7 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	_phase = rng_for(0, "road").randf_range(-PI, PI)
 
 func seed_for(id: int, domain: String) -> int:
-	return int(("%d:%d:%d:%s" % [VERSION, world_seed, id, domain]).hash())
+	return int(("%d:%d:%d:%s" % [profile.generation_version, world_seed, id, domain]).hash())
 
 func rng_for(id: int, domain: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -112,7 +113,9 @@ func stop(index: int) -> Dictionary:
 	var facing := (road.origin - building_pos).normalized()
 	var building := Transform3D(Basis.looking_at(-facing), building_pos)
 	var kind: String = "entrance" if index % 3 == 0 else ["wreck", "camp", "shed"][rng.randi_range(0, 2)]
-	var result := {"index": index, "id": "v%d:%d:stop:%d" % [VERSION, world_seed, index], "s": s, "side": side, "frame": frame, "building": building, "road": road, "kind": kind, "seed": seed_for(index, "interior")}
+	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "frame": frame, "building": building, "road": road, "kind": kind, "seed": seed_for(index, "interior")}
+	if profile.generation_version >= 3:
+		ExplorationSite.configure(result, self)
 	_stops[index] = result
 	return result
 
@@ -129,7 +132,8 @@ func court_distance(x: float, z: float, site: Dictionary) -> float:
 	var local: Vector3 = site.frame.affine_inverse() * Vector3(x, site.frame.origin.y, z)
 	# 12x24 parking is wholly clear, with an additional apron for the building.
 	var center_x := float(site.side) * 5.0
-	var q := Vector2(absf(local.x - center_x) - 23.0, absf(local.z) - 18.0)
+	var half_width := 7.0 if site.has("route") else 23.0
+	var q := Vector2(absf(local.x - center_x) - half_width, absf(local.z) - 18.0)
 	var court := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length()
 	var approach: Vector3 = site.road.affine_inverse() * Vector3(x, site.road.origin.y, z)
 	# Flared highway mouth accommodates the 12m RV's swept turning path.
@@ -144,8 +148,33 @@ func surface(x: float, z: float) -> Dictionary:
 	var nearest := maxi(0, roundi(-z / profile.stop_spacing))
 	for i in range(maxi(0, nearest - 1), nearest + 2):
 		var site := stop(i)
-		if absf(-z - float(site.s)) > 100.0:
+		if absf(-z - float(site.s)) > (180.0 if profile.generation_version >= 4 else 100.0):
 			continue
+		if site.has("route"):
+			var p: Vector3 = site.road.affine_inverse() * Vector3(x, site.road.origin.y, z)
+			p.x *= float(site.side)
+			var deep: bool = site.get("deep_forest", false)
+			var q := Vector2(maxf(absf(p.x - (199.5 if deep else 99.5)) - (159.5 if deep else 59.5), 0.0), maxf(absf(p.z) - (48 if deep else 42), 0.0))
+			var campus := 1.0 - smoothstep(0.0, 16.0, q.length())
+			var trail := ExplorationSite.route_distance(Vector3(x, 0, z), site.route)
+			var apron := Vector2(p.x - (335.2 if deep else 135), p.z).length() < (15.0 if deep else 13.0)
+			var hill := 0.0
+			for center in [Vector2(59, -12), Vector2(83, 8), Vector2(122, 26)]:
+				hill = maxf(hill, (1.0 - smoothstep(0.0, 13.0, Vector2(p.x, p.z).distance_to(center))) * 3.4)
+			hill *= smoothstep(4.0, 10.0, trail)
+			if deep:
+				# Narrow sunken walks between real banks, with a thin landmark slit.
+				hill = smoothstep(4.0, 11.0, trail) * (3.5 + 1.5 * medium.get_noise_2d(x, z)) * smoothstep(5.0, 12.0, absf(p.z))
+			if apron: hill = 0.0
+			height = lerpf(height, site.frame.origin.y + ExplorationSite.site_rise(site, p.x) + hill, campus)
+			gravel = maxf(gravel, (1.0 - smoothstep(1.3, 2.8, trail)) * campus)
+			reserved = reserved or trail < (3.1 if deep else 4.5) or apron
+			# Keep authored perimeter/baffles clear of random trees and rocks.
+			for wall: Dictionary in site.walls:
+				var wp: Vector3 = wall.position
+				wp.x *= float(site.side)
+				if absf(p.x - wp.x) < wall.size.x * 0.5 + 2 and absf(p.z - wp.z) < wall.size.z * 0.5 + 2:
+					reserved = true
 		var court_distance := court_distance(x, z, site)
 		var influence := 1.0 - smoothstep(0.0, 16.0, court_distance)
 		height = lerpf(height, site.frame.origin.y, influence)
@@ -170,7 +199,7 @@ func normal_at(x: float, z: float) -> Vector3:
 func loot_plan(index: int) -> Array[String]:
 	var rng := rng_for(index, "loot")
 	var result: Array[String] = []
-	for i in range(rng.randi_range(1, 3)):
+	for i in range(rng.randi_range(1, 2 if profile.generation_version >= 3 else 3)):
 		result.append("res://props/gas_can.tscn" if rng.randf() < 0.2 else "res://props/scrap.tscn")
 	return result
 

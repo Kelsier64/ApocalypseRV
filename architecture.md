@@ -45,7 +45,9 @@ TestWorld
 | 串流 | [world_generator.gd](world/world_generator.gd) | 固定座標區塊窗口、分幀建立、遠景與距離清理 |
 | 世界資料 | [world_field.gd](world/terrain/world_field.gd)、[world_profile.gd](world/terrain/world_profile.gd) | 獨立 RNG、三層噪音、區域權重、道路及停靠計畫、共用高度查詢 |
 | 地形道路 | [chunk_generator.gd](world/chunk_generator.gd) | 網格、碰撞、路面、停靠設施、裝飾、實際碰撞導航和物資／敵人 |
-| POI 外部 | [poi_config.gd](world/poi_config.gd)、[poi_spawner.gd](world/poi_spawner.gd) | 單一維修站內容表、朝向公路、註冊入口 |
+| 場址計畫 | [exploration_site.gd](world/terrain/exploration_site.gd) | v3／v4 路線、平台、鏡像、窄口、圍牆分段及邊界，共用於整地／生成／導航／串流 |
+| 室外顯示 | [outdoor_presentation.gd](world/outdoor_presentation.gd) | 主 viewport 的 3D 縮放、微量抖色、F8 偏好與室內切換；Canvas UI 不縮放 |
+| POI 外部 | [poi_config.gd](world/poi_config.gd)、[poi_spawner.gd](world/poi_spawner.gd) | v3 四種外觀、v2 原入口、穩定 ID／返回點與註冊 |
 | 副本 | [poi_instance_manager.gd](world/instances/poi_instance_manager.gd)、[poi_interior.gd](world/instances/poi_interior.gd)、[maze_layout.gd](world/instances/maze_layout.gd) | 轉場、隔離世界、拓樸、房間連接、導航、物資／敵人與同局保存 |
 | 怪物 | [monster.gd](enemies/monster.gd) | AI、導航、接觸觀測、攀爬、攻擊、車撞傷害、掉落 |
 | 選敵 | [combat_targeting.gd](enemies/combat_targeting.gd) | 候選排序，使用 actor 提供的接觸判斷 |
@@ -87,11 +89,15 @@ TestWorld
 
 WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／目前 1／前 3 個固定網格帶 → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z，仍只向 −Z 推進。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、裝飾、loot、敵人和副本亂數，入口 ID 為 v2:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。
+串流比較室外玩家或副本錨點 Z，仍只向 −Z 推進。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v3 另存 generation_version（2／3／4），缺省為 2；新 WorldProfile 預設 4。舊檔不改地形與 POI ID。
 
-外部停靠點以 450±75 m 的位置間隔配置，起始維修站固定在 (49,0,-45)，其餘每三點兩個小型搜刮點和一個入口。spawn_site 接受完整 building/road/frame 變換、穩定 id 和副本 seed。停車、建築平台及展寬支道以同一地表查詢整平，公路範圍維持道路高度。固定曲線與充足整地範圍保證預設模板可安置，沒有另加無界重抽候選。九種路旁場景位於 world/roadside_kit，首次生成腳本拒絕覆蓋既有美術。
+外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 
-地形網格使用相鄰取樣圈計算法線，邊界共享世界位置及高度。導航以實際靜態碰撞烘焙，排除僅高 7 cm 的重複瀝青層，補上相鄰地形資料避免 agent radius 蝕刻造成斷路；細節誤差設定為 2 voxel，避免噪音坡面重疊細三角形。植被小叢使用 MultiMesh；大物件有簡化碰撞及顯示距離。遠景左右及前方使用低細節網格，只提供視覺。舊 world/building 沒有恢復。
+地形網格使用相鄰取樣圈計算法線，邊界共享世界位置及高度。v4／v3 導航分別涵蓋 900／450 m 寬碰撞帶，cell_size=0.25 m；v2 維持 240 m／0.5 m。使用實體碰撞，排除高 7 cm 的重複瀝青層，補相鄰地形、圍牆與建築碰撞資料；邊界資料由共用計畫提供，不依賴相鄰 chunk 載入順序。v3／v4 高容許 detail 誤差抑制噪音坡面新增的重疊細三角形，可通行輪廓仍由 voxel 決定；v2 保留原設定。非同步烘焙後發佈獨立 NavigationMesh，navigation_ready 等待 region 和 map 真正同步，避免初始空網格。怪物地面高低差仍使用導航；path_height_offset 對齊角色腳底；落地且已到達路徑點水平範圍時，以實際腳下高度推進路徑點，避免簡化網格埋入土坡造成繞圈。未移動的目標不重複重設路徑；移動目標維持 0.25 秒更新間隔。
+
+場址牆段依中心 Z 歸唯一 chunk；整地跨帶查詢同一計畫。玩家位於場址 bounds 或室內 stream_anchor 時，protected_bands 保留並補建停車區、路線及建築的區塊與 halo。ForestScenery 以獨立 RNG 的 8 m 網格抖動形成樹林，逐列分幀規劃，樹幹簡化碰撞也提供相鄰導航 halo；快取至多 16 個帶。樹冠、樹幹和高灌叢共七批 MultiMesh，樹幹／岩石有簡化碰撞。遠景左右及前方網格只提供視覺。新造景延續分幀建立，build_ms／max_slice_ms 記錄成本。
+
+室外固定距離霧與陰天照明沿用 Compatibility。OutdoorPresentation 僅設定主 viewport.scaling_3d_scale（目標高度 540，最高 1），CanvasLayer 0 套固定微量抖色，遊戲 UI 在較高 layer。F8 偏好寫入 user://display_preferences.cfg，不進角色／車輛快照。偵測 viewport 尺寸與副本 active_id 變化，室內停用、返回恢復。
 
 MazeLayout 使用 10 欄、27 m 中心間距，建立 50–100 個 9 m／18 m 房間。隨機 DFS 產生連通樹，再增加少量鄰接邊形成環路。PoiInterior 放置四門預製場景、封閉閒置門、連接走廊，依實際靜態碰撞（含家具）非同步 bake 導航；動態物資與敵人在 bake 後建立。各房物資點獨立隨機排序，最多成功抽取 4 件。
 

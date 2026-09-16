@@ -1,9 +1,11 @@
 extends Resource
 class_name WorldProfile
-## All distances are metres. Runtime data is deterministic within generator v2.
-# Grid topology is fixed for v2; these are not Inspector tuning controls.
+@export var generation_version: int = 4
+## All distances are metres. Determinism includes the generation version.
+# Older worlds retain their original collision strip.
 var chunk_length: float = 150.0
-var terrain_half_width: float = 225.0
+var terrain_half_width: float:
+	get: return 450.0 if generation_version >= 4 else 225.0
 var terrain_step: float = 3.0
 @export var road_width: float = 15.0
 @export var narrow_width: float = 10.0
