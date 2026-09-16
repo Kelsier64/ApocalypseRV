@@ -645,6 +645,9 @@ func _exit_climb_to_normal() -> void:
 func _physics_process(delta):
 	if is_player_dead:
 		return
+	# UI/seat lock movement, not the lifetime of damage invulnerability.
+	if damage_cooldown > 0.0:
+		damage_cooldown = maxf(0.0, damage_cooldown - delta)
 	_sync_body_collision_to_locomotion()
 	if is_instance_valid(seated_in):
 		global_position = seated_in.global_position
@@ -652,8 +655,6 @@ func _physics_process(delta):
 	if in_ui_mode:
 		return
 
-	if damage_cooldown > 0.0:
-		damage_cooldown -= delta
 	if climb_reenter_cooldown_remaining > 0.0:
 		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
 

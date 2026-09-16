@@ -190,6 +190,8 @@ func _run() -> void:
 	old_rv.freeze = true
 	await physics_frame
 	var old_snapshot := VehicleSnapshot.capture(old_rv)
+	old_snapshot.version = 2
+	old_snapshot.health = old_rv.get_engine().health
 	for entry in old_snapshot.equipment:
 		entry.scene = entry.scene.replace("res://rv/legacy/", "res://equipment/")
 	var upgraded := VehicleSnapshot.upgrade(old_snapshot)

@@ -12,9 +12,15 @@
 [ext_resource type="PackedScene" path="res://equipment/rv_side_door.tscn" id="sidedoor"]
 [ext_resource type="PackedScene" path="res://equipment/rv_rear_door.tscn" id="reardoor"]
 
+[ext_resource type="PackedScene" path="res://equipment/generator.tscn" id="preset_generator"]
+[ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="preset_crafting_station"]
+[ext_resource type="PackedScene" path="res://equipment/scrapper.tscn" id="preset_scrapper"]
+[ext_resource type="PackedScene" path="res://equipment/tablet_screen.tscn" id="preset_tablet_screen"]
+
 [node name="NewRv" type="Node3D" unique_id=2120729524]
 
 [node name="Chassis" parent="." unique_id=604864203 instance=ExtResource("1_ip3wq")]
+starter_kits = true
 
 [node name="Ceiling" parent="Chassis" unique_id=998136955 instance=ExtResource("4_ceil")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
@@ -31,7 +37,7 @@ rotation_degrees = Vector3(0, 0, -90)
 freeze = true
 collision_mask = 0
 [node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
-position = Vector3(-0.9, 0.8, 4.5)
+position = Vector3(1.25, 0.8, 3.7)
 freeze = true
 collision_mask = 0
 
@@ -68,3 +74,24 @@ mount_slot = "left_2"
 [node name="RearDoor" parent="Chassis" instance=ExtResource("reardoor")]
 position = Vector3(0, 1.5, 5.9)
 mount_slot = "rear"
+
+[node name="Generator" parent="Chassis" instance=ExtResource("preset_generator")]
+position = Vector3(-1.25, 0.81, 3.7)
+freeze = true
+collision_mask = 0
+
+[node name="CraftingStation" parent="Chassis" instance=ExtResource("preset_crafting_station")]
+position = Vector3(-1.15, 0.5, 1)
+freeze = true
+collision_mask = 0
+
+[node name="Scrapper" parent="Chassis" instance=ExtResource("preset_scrapper")]
+position = Vector3(1.25, 0.5, -2.2)
+freeze = true
+collision_mask = 0
+
+[node name="TabletScreen" parent="Chassis" instance=ExtResource("preset_tablet_screen")]
+initial_support = NodePath("../CraftingStation")
+position = Vector3(-1.15, 1.03, 1.15)
+freeze = true
+collision_mask = 0

@@ -1,6 +1,6 @@
 extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
-const VERSION := 2
+const VERSION := 3
 const PATH := "user://rv_checkpoint.save"
 var pending: Dictionary = {}
 var message: String = ""
@@ -119,12 +119,14 @@ func read_checkpoint(path: String) -> Dictionary:
 		match actor.kind:
 			"prop":
 				if not actor.has_all(["state", "frozen", "linear", "angular"]) or not actor.state is Dictionary or not actor.frozen is bool or not actor.linear is Vector3 or not actor.angular is Vector3: return {}
+				if not VehicleSnapshot.valid_prop_state(actor.scene, actor.state): return {}
 			"equipment":
 				if not actor.has_all(["id", "health", "enabled", "service", "frozen"]) or not actor.service is Dictionary or not VehicleSnapshot._number(actor.health): return {}
 				if not VehicleSnapshot.valid_structure_service(actor.scene, actor.service): return {}
 			"monster":
 				if not actor.has("health") or not VehicleSnapshot._number(actor.health): return {}
 			_: return {}
+	if not _unique_engine_ids(data): return {}
 	return data
 
 func prepare_world(world: Node) -> void:
@@ -200,9 +202,10 @@ func _collect_removable(node: Node, result: Array[Node]) -> void:
 
 # Convert only recognized v1 structures, in memory. Original save stays untouched.
 func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) == VERSION:
+	if source.get("version", 0) in [2, VERSION]:
 		if not source.get("vehicles") is Array: return {}
 		var upgraded := source.duplicate(true)
+		upgraded.version = VERSION
 		for index in range(upgraded.vehicles.size()):
 			if not upgraded.vehicles[index] is Dictionary: return {}
 			upgraded.vehicles[index] = VehicleSnapshot.upgrade(upgraded.vehicles[index])
@@ -255,3 +258,6 @@ func _convert_legacy_entries(entries: Array, rv: Dictionary) -> bool:
 			var inputs: Variant = entry.get("service", {}).get("inputs", [])
 			if not inputs is Array or not _convert_legacy_entries(inputs, rv): return false
 	return true
+
+func _unique_engine_ids(data: Dictionary) -> bool:
+	return EngineState.unique_ids(data)

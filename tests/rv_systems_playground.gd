@@ -47,10 +47,9 @@ func _ready() -> void:
 	player = load("res://player/player.tscn").instantiate()
 	player.position = Vector3(7, 1, 0)
 	add_child(player)
-	generator = _mount("res://equipment/generator.tscn", Vector3(0.8, 0.7, 0))
-	station = _mount("res://equipment/crafting_station.tscn", Vector3(-0.8, 0.6, 1.8))
-	tablet = _mount("res://equipment/tablet_screen.tscn", Vector3(0.8, 1.0, -2))
-	_mount("res://equipment/scrapper.tscn", Vector3(-0.8, 0.6, -1.5))
+	generator = rv.get_node("Generator")
+	station = rv.get_node("CraftingStation")
+	tablet = rv.get_node("TabletScreen")
 	rv.current_power = 20.0
 	rv.add_item(ItemNames.METAL_PARTS, 20)
 	rv.add_item(ItemNames.UNREFINED_FUEL, 20)

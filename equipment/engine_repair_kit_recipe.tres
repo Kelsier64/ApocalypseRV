@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" format=3]
+[ext_resource type="Script" path="res://equipment/recipe_definition.gd" id="script"]
+[resource]
+script = ExtResource("script")
+recipe_id = "engine_repair_kit"
+display_name = "引擎維修包"
+scene_path = "res://props/engine_repair_kit.tscn"
+costs = {"Metal Parts": 5, "Electronic Scrap": 1}
+duration = 4.0
+power_cost = 1.0

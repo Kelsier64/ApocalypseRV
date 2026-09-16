@@ -10,8 +10,9 @@ func _init() -> void:
 	_run.call_deferred()
 
 func _tick() -> void:
+	# move_and_slide chooses its delta from Engine.is_in_physics_frame().
+	# Keep manual actor steps in the fixed physics phase, not variable render frames.
 	await physics_frame
-	await process_frame
 
 func _run() -> void:
 	world = Node3D.new()
@@ -78,7 +79,7 @@ func _run() -> void:
 	world.add_child(monster)
 	monster.set_physics_process(false)
 	player.position = Vector3(0, 3.7, 0)
-	monster.position = Vector3(2.65, 1.0, 0)
+	monster.position = Vector3(2.65, 1.0, -3.0)
 	monster.rotation.y = PI / 2.0
 	climbed = false
 	reached_roof = false
@@ -97,6 +98,29 @@ func _run() -> void:
 			break
 	_expect(climbed, "Monster autonomously grabs actual RV wall to pursue roof player.")
 	_expect(reached_roof, "Monster autonomously reaches the actual RV roof.")
+	# Floor snapping can omit slide collisions while an actor is already standing.
+	# A roof actor must retain the carrier even when it has no walking input.
+	monster.move_speed = 0.0
+	for i in range(60):
+		await _tick()
+		monster._physics_process(1.0 / 60.0)
+	# Ramp the speed gently so this tests support, not an intentional jerk-induced slide.
+	for i in range(60):
+		var ramp := float(i + 1) / 60.0
+		rv.position += -rv.basis.z * (4.0 / 60.0) * ramp
+		rv.rotate_y(0.002 * ramp)
+		player.global_position = rv.to_global(Vector3(0, 2.5, 0))
+		await _tick()
+		monster._physics_process(1.0 / 60.0)
+	var monster_anchor: Vector3 = rv.to_local(monster.global_position)
+	for i in range(180):
+		rv.position += -rv.basis.z * (4.0 / 60.0)
+		rv.rotate_y(0.002)
+		player.global_position = rv.to_global(Vector3(0, 2.5, 0))
+		await _tick()
+		monster._physics_process(1.0 / 60.0)
+	_expect(rv.to_local(monster.global_position).distance_to(monster_anchor) < 0.2, "Monster retains real roof support through sustained translation and turns.")
+	monster.move_speed = 2.5
 	player.position = Vector3(20, 10, 0)
 	monster.position = Vector3(25, 10, 0)
 	for actor in [player, monster]:

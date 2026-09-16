@@ -1,0 +1,50 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[ext_resource type="Script" path="res://props/interactable_item.gd" id="script"]
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(0.4, 0.24, 0.28)
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(0.4, 0.24, 0.28)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(0.08, 0.02, 0.28)
+
+[node name="EngineRepairKit" type="RigidBody3D"]
+script = ExtResource("script")
+item_name = "引擎維修包"
+mass = 3.0
+hold_scale = Vector3(0.65, 0.65, 0.65)
+scrap_yields = {"Metal Parts": Vector2(1, 1)}
+
+[node name="Case" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r1")
+material_override = ExtResource("orange")
+
+[node name="CaseCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0)
+shape = SubResource("r2")
+
+[node name="Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.125, 0)
+mesh = SubResource("r3")
+material_override = ExtResource("cream")
+
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 0.23, 0)
+text = "ENGINE KIT"
+font_size = 28
+pixel_size = 0.0025
+billboard = 1

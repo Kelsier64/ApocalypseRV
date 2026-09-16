@@ -103,6 +103,7 @@ func _run() -> void:
 	tap()
 	check(rv.current_fuel == 30.0 and player.get_active_item_name() == ItemNames.GAS_CAN_EMPTY, "Fuel port fills chassis and returns empty can")
 	var rack: Equipment = rv.get_node("ItemBox")
+	rv.stored_items.clear()
 	rack.position = Vector3(0, 4, 0)
 	player.inventory.items.clear()
 	player.add_item(ItemNames.BATTERY, false, "res://props/battery.tscn", {"battery": {"id": "stored-test", "charge": 19.0, "capacity": 100.0, "weight": 15.0}})

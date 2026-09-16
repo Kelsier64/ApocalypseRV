@@ -54,9 +54,9 @@ func _run() -> void:
 	gasoline.interact(player)
 	rv.get_node("FuelPort").interact(player)
 	check(rv.current_fuel == 30.0 and player.get_active_item_name() == ItemNames.GAS_CAN_EMPTY, "Refueling transfers fuel and returns empty can")
-	rv.take_damage(60.0)
-	RepairOperation.new().step(player, rv, true, 2.0)
-	check(rv.current_chassis_health == rv.max_chassis_health and rv.get_item_count(ItemNames.METAL_PARTS) == 0, "Remaining scrap repairs chassis")
+	rv.get_node("FuelPort").take_damage(60.0)
+	RepairOperation.new().step(player, rv.get_node("FuelPort"), true, 2.0)
+	check(rv.get_node("FuelPort").current_health == rv.get_node("FuelPort").max_health and rv.get_item_count(ItemNames.METAL_PARTS) == 0, "Remaining scrap repairs installed equipment")
 	rv.current_power = 0.0
 	check(rv.set_engine_running(true), "Empty battery can recover through manual ignition")
 	rv.step_energy_system(0.0, 0.0, 0.0, 5.0)

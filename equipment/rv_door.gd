@@ -9,6 +9,22 @@ var open_requested: Array[bool] = []
 var before_move: Array[float] = []
 var blocked_message: String = ""
 
+## Boarding uses the real leaf bounds; the surrounding frame is a roof climb route.
+func boarding_leaf_at(point: Vector3) -> int:
+	for index in range(angles.size()):
+		if not boarding_leaf_closed(index): continue
+		var shape: CollisionShape3D = get_node("LeafCollision" + str(index))
+		var half: Vector3 = shape.shape.size * 0.5 + Vector3(0.04, 0.04, 0.08)
+		if AABB(-half, half * 2.0).has_point(shape.to_local(point)): return index
+	return -1
+
+func boarding_leaf_closed(index: int) -> bool:
+	return can_operate() and index >= 0 and index < angles.size() and absf(angles[index]) < deg_to_rad(12.0) and not open_requested[index]
+
+func boarding_entry_point(index: int) -> Vector3:
+	var offset := hinge_span * 0.25 * (1.0 if index == 0 else -1.0) if leaf_count == 2 else leaf_width * 0.5 + 0.01
+	return to_global(leaf_pose(index, 0.0) * Vector3(offset, -0.03, 0.0))
+
 func _ready() -> void:
 	super._ready()
 	for index in range(leaf_count):
@@ -92,7 +108,7 @@ func get_interaction_prompt(player: Node3D) -> String:
 	if not can_operate(): return equipment_name + "｜尚未接入或已損壞"
 	var index := aimed_leaf(player)
 	var action := "關門" if open_requested[index] else "開門"
-	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n搬移整組門框；附掛設備會掉落\n" + blocked_message
+	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n搬移整組門框；" + dependent_summary() + "\n" + blocked_message
 
 func allows_mount_at(point: Vector3) -> bool:
 	for index in range(leaf_count):

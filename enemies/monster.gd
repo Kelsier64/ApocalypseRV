@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name Monster
 
+signal attack_landed(target: Node3D, source: String)
+
 const CLIMB_WALL_MIN_DOT = 0.0
 const CLIMB_WALL_MAX_DOT = 0.85
 const CLIMB_MIN_HIT_Y = 0.1
@@ -15,7 +17,6 @@ const CLIMB_CONTACT_GRACE_MAX_TIME = 2
 const CLIMB_CONTACT_FALLBACK_HEIGHT = 0.7
 const CLIMB_CONTACT_FALLBACK_RAY_LENGTH = 0.85
 const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
-const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
 const CLIMB_MAX_FRAME_DELTA = 1.5
 const CLIMB_REENTER_COOLDOWN = 0.2
 const CLIMB_WALL_ALIGN_OFFSET = 0.22
@@ -74,6 +75,21 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 @export var vehicle_damage_min_speed: float = 3.0
 @export var vehicle_damage_min_approach_speed: float = 2.2
 @export var vehicle_damage_min_approach_dot: float = 0.35
+
+@export_group("Boarding")
+@export var grab_speed_tolerance: float = 10.0
+@export var grab_retry_delay: float = 1.2
+@export var grip_capacity: float = 100.0
+@export var grip_drain: float = 2.0
+@export var grip_strain_scale: float = 1.4
+@export var grip_attack_cost: float = 3.0
+@export var boarding_windup: float = 0.65
+@export var brace_acceleration: float = 6.0
+@export var slip_acceleration: float = 12.0
+var boarding := MonsterBoarding.new()
+var vehicle_impact_cooldown: float = 0.0
+var contact_approach_velocity := Vector3.ZERO
+var contact_sample_frame: int = -10
 
 @export_group("Loot")
 @export var loot_drops: Dictionary = {} # e.g. {"Metal Parts": Vector2(1, 3)}
@@ -164,6 +180,9 @@ func _ready():
 	platform_floor_layers = 0
 	current_health = max_health
 	add_to_group(Groups.MONSTERS)
+	var boarding_visual := Node3D.new()
+	boarding_visual.set_script(load("res://enemies/monster_boarding_visual.gd"))
+	add_child(boarding_visual)
 	
 	# Randomize initial sway so all zombies don't sync
 	sway_phase = randf_range(0, TAU)
@@ -200,6 +219,7 @@ func _ready():
 
 func _physics_process(delta: float):
 	if is_dead: return
+	vehicle_impact_cooldown = maxf(0.0, vehicle_impact_cooldown - delta)
 	var was_supported := false
 	var support_velocity := Vector3.ZERO
 	var lost_support := false
@@ -257,9 +277,17 @@ func _physics_process(delta: float):
 	# Snapshot the underfoot probe once for this whole tick (see cache vars).
 	_underfoot_cache_target = _get_underfoot_raycast_target()
 	_underfoot_cache_active = true
+	boarding.tick(self, delta)
 
-	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, lose_interest_range)
-	if _try_auto_attack_touching_targets(_resolve_underfoot_tracking_target()):
+	var awareness_range := detection_range if ai_state == State.WANDER else lose_interest_range
+	_refresh_combat_target(locomotion_state == LocomotionState.CLIMBING, awareness_range)
+	var combat_node := _get_current_combat_target_node()
+	var player_in_reach := locomotion_state == LocomotionState.NORMAL and is_instance_valid(combat_node) and combat_node.is_in_group(Groups.PLAYER) and _can_attack_combat_target(current_combat_target, _has_attack_line_of_sight_to_target(combat_node))
+	if player_in_reach:
+		# Player melee owns this cooldown. Contact attacks must not replace it
+		# with a nearby piece of equipment just before the state machine runs.
+		ai_state = State.ATTACK
+	elif not is_instance_valid(boarding.cabin_vehicle) and _try_auto_attack_touching_targets(_resolve_underfoot_tracking_target()):
 		ai_state = State.ATTACK
 
 	var moving_intent := false
@@ -336,11 +364,21 @@ func _physics_process(delta: float):
 		_body_mesh.rotation.x = cos(sway_phase * 0.7) * 0.04 * stagger_amount
 
 	if locomotion_state == LocomotionState.NORMAL:
+		if boarding.recovery > 0.0:
+			velocity.x = move_toward(velocity.x, 0.0, delta * 3.0)
+			velocity.z = move_toward(velocity.z, 0.0, delta * 3.0)
+		velocity.x += boarding.slip.x
+		velocity.z += boarding.slip.z
 		velocity.x += released_carrier_velocity.x
 		velocity.z += released_carrier_velocity.z
+		# Preserve incoming motion before move_and_slide removes blocked components.
+		contact_approach_velocity = velocity + support_velocity
+		contact_sample_frame = Engine.get_physics_frames()
 		move_and_slide()
 		velocity.x -= released_carrier_velocity.x
 		velocity.z -= released_carrier_velocity.z
+		velocity.x -= boarding.slip.x
+		velocity.z -= boarding.slip.z
 		if not rv_support.capture(self) and was_supported:
 			released_carrier_velocity = support_velocity
 			velocity.y += support_velocity.y
@@ -393,11 +431,14 @@ func _process_wander(delta: float) -> bool:
 
 # --- CHASING ---
 func _process_chase(_delta: float, destination: Vector3) -> bool:
-	if _try_start_climb(destination):
+	if boarding.recovery > 0.0: return false
+	destination = boarding.chase_destination(self, destination)
+	if not is_instance_valid(boarding.cabin_vehicle) and _try_start_climb(destination):
 		return true
+	if boarding.recovery > 0.0: return false
 
 	var on_rv_surface := _is_on_rv_surface()
-	var can_nav := _can_use_navigation() and fallback_steer_timer <= 0.0
+	var can_nav := _can_use_navigation() and fallback_steer_timer <= 0.0 and not boarding.cabin.active
 	var vertical_gap := absf(destination.y - global_position.y)
 	var nav_active = _should_use_navigation_for_chase(can_nav, on_rv_surface, vertical_gap, post_separation_nav_block_remaining)
 	var dir := _resolve_chase_direction(destination, on_rv_surface, nav_active)
@@ -439,7 +480,7 @@ func _process_chase(_delta: float, destination: Vector3) -> bool:
 		return false
 	
 	# Stagger while chasing (not a perfectly straight line)
-	var stagger_strength = 0.05 if nav_active else 0.22
+	var stagger_strength = 0.0 if boarding.cabin.active else (0.05 if nav_active else 0.22)
 	var stagger = Vector3(sin(sway_phase * 2.0), 0, cos(sway_phase * 1.5)) * stagger_amount * stagger_strength
 	var combined = (dir + stagger).normalized()
 
@@ -662,6 +703,12 @@ func _try_start_climb(_destination: Vector3) -> bool:
 
 	var hit_normal: Vector3 = climb_wall_probe.get_collision_normal()
 	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
+	# An open doorway is traversable, never a hold on its moving door leaf.
+	if hit_node.has_method("boarding_leaf_at") and not hit_node.allows_mount_at(hit_point) and hit_node.boarding_leaf_at(hit_point) < 0:
+		return false
+	if boarding.occupied(self, rv, hit_node, hit_point): return false
+	var relative_velocity := _contact_world_velocity() - ClimbMath.point_velocity(rv, hit_point)
+	if _apply_vehicle_contact(rv, hit_normal, hit_point): return false
 	var local_hit_y: float = to_local(hit_point).y
 	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
 	var start_allowed_upward := _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE)
@@ -697,6 +744,12 @@ func _try_start_climb(_destination: Vector3) -> bool:
 		)
 		return false
 
+	if boarding.rng.randf() >= MonsterBoarding.grab_probability(relative_velocity, hit_normal, grab_speed_tolerance):
+		boarding.recovery = grab_retry_delay
+		climb_reenter_cooldown_remaining = grab_retry_delay
+		velocity += hit_normal * 1.5
+		return false
+	boarding.begin(self, rv, hit_node, hit_point)
 	locomotion_state = LocomotionState.CLIMBING
 	rv_support.clear()
 	active_climb_rv = rv
@@ -777,10 +830,10 @@ func _process_climbing(delta: float, destination: Vector3) -> void:
 		_abort_climb("rv invalid")
 		return
 
-	if active_climb_rv is RigidBody3D:
-		if (active_climb_rv as RigidBody3D).angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
-			_abort_climb("rv angular speed too high")
-			return
+	boarding.try_door_hold(self)
+	if boarding.mode == MonsterBoarding.Mode.DOOR:
+		boarding.hang_at_door(self, delta)
+		return
 
 	var target_on_same_rv_now := true
 	var target_on_same_rv := true
@@ -864,6 +917,9 @@ func _process_climbing(delta: float, destination: Vector3) -> void:
 			return
 
 	var vertical_input := 1.0
+	if boarding.mode == MonsterBoarding.Mode.ROOF:
+		if boarding.settle > 0.0: vertical_input = 0.0
+		if boarding.grip <= grip_capacity * 0.2: vertical_input = -0.2
 
 	if vertical_input > 0.0:
 		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
@@ -938,6 +994,7 @@ func _exit_climb_to_normal(reason: String = "") -> void:
 	_reset_navigation_state()
 	climb_carrier_velocity = Vector3.ZERO
 	_sync_body_collision_to_locomotion()
+	boarding.release(reason, self)
 
 	if reason == "lost wall contact":
 		post_separation_nav_block_remaining = CLIMB_POST_SEPARATION_NAV_BLOCK_TIME
@@ -956,6 +1013,7 @@ func _exit_climb_to_normal(reason: String = "") -> void:
 
 # --- ATTACKING ---
 func _process_attack(delta: float):
+	if boarding.mode == MonsterBoarding.Mode.DOOR: return
 	var target_node := _get_current_combat_target_node()
 	if target_node == null:
 		return
@@ -992,15 +1050,18 @@ func _execute_attack_on_target(target_data: Dictionary) -> void:
 		return
 	if not target_node.has_method("take_damage"):
 		return
+	if not boarding.can_attack(self, target_node): return
 
 	target_node.take_damage(contact_damage)
 	var target_type := str(target_data.get("target_type", "target"))
 	var attack_source := _resolve_attack_source_label(target_data)
+	attack_landed.emit(target_node, attack_source)
 	print(">>> ", monster_name, " [", attack_source, "] attacks ", target_type, " for ", contact_damage, " damage!")
 	attack_timer = attack_cooldown
 
 func _resolve_attack_source_label(target_data: Dictionary) -> String:
 	var source := str(target_data.get("attack_source", "state_attack"))
+	if source == "door_breach": return source
 	if source == "touching":
 		return "touching"
 	if source == "underfoot":
@@ -1232,6 +1293,7 @@ func _is_probe_hit_underfoot_target(node: Node3D) -> bool:
 	return _is_same_or_related_target(node, probe_underfoot_target)
 
 func _try_auto_attack_touching_targets(tracking_target_node: Node3D, player_candidates_override: Array = [], structure_candidates_override: Array = []) -> bool:
+	if locomotion_state == LocomotionState.CLIMBING and boarding.mode != MonsterBoarding.Mode.NONE: return false
 	var player_candidates: Array = player_candidates_override
 	if player_candidates.is_empty():
 		player_candidates = _collect_player_candidates(maxf(attack_range, climbing_touch_attack_range))
@@ -1340,6 +1402,30 @@ func _collect_structure_candidates(max_distance: float = INF) -> Array:
 	return candidates
 
 func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> void:
+	if boarding.mode == MonsterBoarding.Mode.DOOR:
+		current_combat_target = _build_combat_target(boarding.door, "equipment", "door_breach") if is_instance_valid(boarding.door) else {}
+		return
+	var players := _collect_player_candidates(max_distance)
+	if not is_climbing:
+		# A slightly lower but reachable player on the roof is not a reason to
+		# break the floor under our feet. Breach only when melee is obstructed.
+		var reachable_player: Node3D
+		var nearest_distance := INF
+		for candidate in players:
+			var distance := _get_self_position().distance_to(_get_node_target_position(candidate))
+			if distance < nearest_distance and _can_attack_target_position(_get_node_target_position(candidate), _has_attack_line_of_sight_to_target(candidate)):
+				reachable_player = candidate
+				nearest_distance = distance
+		if reachable_player != null:
+			target_player = reachable_player
+			current_combat_target = _build_combat_target(reachable_player, "player")
+			return
+	if is_instance_valid(boarding.cabin_vehicle) and is_instance_valid(target_player) and players.has(target_player):
+		current_combat_target = _build_combat_target(target_player, "player")
+		return
+	if is_instance_valid(boarding.target_vehicle) and not is_climbing and not _is_on_rv_surface() and is_instance_valid(target_player) and players.has(target_player):
+		current_combat_target = _build_combat_target(target_player, "player")
+		return
 	var support_target := _select_underfoot_equipment_target()
 	var tracking := _resolve_underfoot_tracking_target()
 	if not is_climbing and support_target != null and tracking != null:
@@ -1348,7 +1434,7 @@ func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> voi
 			ai_state = State.ATTACK
 			return
 	current_combat_target = _select_combat_target(
-		_collect_player_candidates(max_distance),
+		players,
 		_collect_structure_candidates(max_distance),
 		is_climbing
 	)
@@ -1711,6 +1797,10 @@ func _update_stuck_watchdog(delta: float, moving_intent: bool) -> void:
 
 func _trigger_stuck_recovery() -> void:
 	stuck_timer = 0.0
+	if boarding.cabin.active:
+		# Replan against changed furniture; random jumps do not solve a sealed aisle.
+		boarding.cabin.request_repath()
+		return
 	stuck_cooldown_timer = stuck_recovery_cooldown
 	fallback_steer_timer = stuck_fallback_duration
 	nav_repath_timer = 0.0
@@ -1801,19 +1891,32 @@ func _spawn_loot():
 			item.apply_central_impulse(Vector3(randf_range(-2, 2), 5.0, randf_range(-2, 2)))
 
 # --- VEHICLE COLLISION ---
+func _contact_world_velocity() -> Vector3:
+	if Engine.get_physics_frames() - contact_sample_frame <= 1:
+		return contact_approach_velocity
+	return velocity + released_carrier_velocity
+
+func _apply_vehicle_contact(rv: Node3D, normal: Vector3, point: Vector3) -> bool:
+	if is_dead or vehicle_impact_cooldown > 0.0: return vehicle_impact_cooldown > 0.0
+	if locomotion_state == LocomotionState.CLIMBING or rv_support.rv == rv: return false
+	var relative := ClimbMath.point_velocity(rv, point) - _contact_world_velocity()
+	if not _should_apply_vehicle_damage(relative, normal): return false
+	var approach := maxf(0.0, relative.dot(normal))
+	vehicle_impact_cooldown = grab_retry_delay
+	boarding.recovery = grab_retry_delay
+	climb_reenter_cooldown_remaining = grab_retry_delay
+	take_damage(approach * 5.0)
+	velocity = normal * minf(approach * 1.5, 18.0) + Vector3.UP * 3.0
+	return true
+
 func _on_hitbox_body_entered(body: Node3D):
-	if is_dead: return
-	
-	if body is VehicleBody3D:
-		var knockback_dir = (global_position - body.global_position).normalized()
-		if not _should_apply_vehicle_damage(body.linear_velocity, knockback_dir):
-			return
-
-		var approach_speed = _compute_vehicle_approach_speed(body.linear_velocity, knockback_dir)
-		var damage_amount = approach_speed * 5.0
-
-		print(">>> ", monster_name, " HIT BY VEHICLE. Approach speed: ", approach_speed, " m/s. Damage: ", damage_amount)
-		take_damage(damage_amount)
-
-		# Apply knockback away from the vehicle
-		velocity = knockback_dir * approach_speed * 2.0 + Vector3(0, 5.0, 0)
+	if is_dead or locomotion_state == LocomotionState.CLIMBING: return
+	var rv := _find_rv_ancestor(body)
+	if rv == null or rv_support.rv == rv: return
+	# Area overlap supplies only a body, so obtain a real surface normal before damage.
+	var from := global_position + Vector3.UP
+	var to := rv.global_position + Vector3.UP
+	var query := PhysicsRayQueryParameters3D.create(from, to, collision_mask, [get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and _find_rv_ancestor(hit.collider) == rv:
+		_apply_vehicle_contact(rv, hit.normal, hit.position)

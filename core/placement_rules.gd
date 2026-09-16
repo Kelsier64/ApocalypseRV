@@ -29,7 +29,7 @@ static func rejection_reason(equipment: Equipment, target: Node3D, pose: Transfo
 	if not valid_target(equipment, target):
 		return "無效支撐：不能安裝在道具、角色或相依循環上"
 	if contact is Vector3 and target.has_method("allows_mount_at") and not target.allows_mount_at(contact):
-		return "活動門扇不能安裝設備，請瞄準固定門框"
+		return "活動門扇、坡板與維修區域不能安裝設備，請選擇固定支撐面"
 	var rv := RVConnection.resolve(target)
 	var up := rv.global_basis.y.normalized() if rv else Vector3.UP
 	if equipment.definition and equipment.definition.requires_upright and pose.basis.y.normalized().dot(up) < 0.9:

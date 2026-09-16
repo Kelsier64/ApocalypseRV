@@ -30,3 +30,14 @@ F2 外觀、F3 車內、F4 入座、F5 輪驅展示、F6 舊車殼、F7 控制�
 F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C／R T／W A S D。
 
 後續正式 GLB 可取代視覺子場景，保留原點、外形尺寸、Collider、Camera3D 及 cockpit_visual.gd 使用的動態節點。
+
+## 新底盤、引擎與燈號
+
+- 正式 rv/chassis.tscn 已用 MeshInstance3D 重新製作；Deck、Rail、Cross、Arch、Bumper 與各簡單 Collider 保留原 4 × 12 m、地板和輪槽座標。舊 CSG 只留 legacy 對照。
+- rv/engine_bay.tscn 是前方固定服務槽；Hatch 為獨立 E 互動蓋，EngineVisual 顯示已裝引擎；空槽保留托架與提示。引擎道具場景在 props/engine_standard.tscn／engine_upgraded.tscn，原創原生網格，可直接編輯。
+- rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。姿態即時切換，不含展開動畫。
+- assets/rv_status 的 SVG 是本專案原創車用符號；rv/vehicle_status.gd 決定顏色和原因，實體 Sprite3D／HUD 共用。VehicleLights 使用原生燈罩與 SpotLight3D；原有裝飾 light.tres 不常亮。
+- EngineAppearance 與 PanelWear 複製材質實現低耐久／故障或三級損壞；玻璃裂紋不影響碰撞，不添加獨立玻璃 HP。
+- 預裝工作台左中、平板附在工作台；分解機右前、發電機左後、道具箱右後。中央走道至少 1 m，後門前方淨空。
+
+引擎／坡板／夜間／輪驅展示：tests/rv_rebuild_playground.tscn。F8 引擎艙、F9 後門坡板、F10 警示燈、F11 夜間、F12 輪驅回放。

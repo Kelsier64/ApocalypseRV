@@ -1,0 +1,216 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[ext_resource type="Script" path="res://rv/engine_bay.gd" id="script"]
+
+[ext_resource type="Script" path="res://rv/engine_hatch.gd" id="hatch"]
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(1.35, 0.1, 1.05)
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(1.32, 0.62, 0.96)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(0.9, 0.48, 0.66)
+
+[sub_resource type="BoxMesh" id="r4"]
+size = Vector3(0.78, 0.12, 0.59)
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(0.96, 0.38, 0.03)
+
+[sub_resource type="BoxMesh" id="r6"]
+size = Vector3(0.96, 0.38, 0.03)
+
+[sub_resource type="BoxMesh" id="r7"]
+size = Vector3(0.96, 0.38, 0.03)
+
+[sub_resource type="BoxMesh" id="r8"]
+size = Vector3(0.96, 0.38, 0.03)
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(0.96, 0.38, 0.03)
+
+[sub_resource type="BoxMesh" id="r10"]
+size = Vector3(0.65, 0.1, 0.34)
+
+[sub_resource type="CylinderMesh" id="r11"]
+top_radius = 0.16
+bottom_radius = 0.16
+height = 0.25
+radial_segments = 16
+
+[sub_resource type="CylinderMesh" id="r12"]
+top_radius = 0.22
+bottom_radius = 0.22
+height = 0.08
+radial_segments = 16
+
+[sub_resource type="BoxMesh" id="r13"]
+size = Vector3(0.32, 0.12, 0.012)
+
+[sub_resource type="BoxMesh" id="r14"]
+size = Vector3(1.46, 0.66, 0.1)
+
+[sub_resource type="BoxShape3D" id="r15"]
+size = Vector3(1.46, 0.66, 0.1)
+
+[sub_resource type="BoxMesh" id="r16"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r17"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r18"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r19"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r20"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r21"]
+size = Vector3(1.18, 0.024, 0.012)
+
+[sub_resource type="BoxMesh" id="r22"]
+size = Vector3(0.3, 0.04, 0.06)
+
+[node name="EngineBay" type="StaticBody3D"]
+script = ExtResource("script")
+collision_layer = 2
+collision_mask = 0
+
+[node name="Tray" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.33, 0)
+mesh = SubResource("r1")
+material_override = ExtResource("dark")
+
+[node name="Interaction" type="CollisionShape3D" parent="."]
+shape = SubResource("r2")
+
+[node name="EngineVisual" type="Node3D" parent="."]
+scale = Vector3(0.8, 0.8, 0.8)
+
+[node name="Block" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r3")
+material_override = ExtResource("dark")
+
+[node name="Head" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.27, 0)
+mesh = SubResource("r4")
+material_override = ExtResource("metal")
+
+[node name="Rib0" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.07, -0.26)
+mesh = SubResource("r5")
+material_override = ExtResource("metal")
+
+[node name="Rib1" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.07, -0.13)
+mesh = SubResource("r6")
+material_override = ExtResource("metal")
+
+[node name="Rib2" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.07, 0)
+mesh = SubResource("r7")
+material_override = ExtResource("metal")
+
+[node name="Rib3" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.07, 0.13)
+mesh = SubResource("r8")
+material_override = ExtResource("metal")
+
+[node name="Rib4" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.07, 0.26)
+mesh = SubResource("r9")
+material_override = ExtResource("metal")
+
+[node name="ValveCover" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.36, 0)
+mesh = SubResource("r10")
+material_override = ExtResource("teal")
+
+[node name="Alternator" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0.48, 0.05, -0.2)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("r11")
+material_override = ExtResource("orange")
+
+[node name="Pulley" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, -0.06, -0.39)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("r12")
+material_override = ExtResource("dark")
+
+[node name="Tag" type="MeshInstance3D" parent="EngineVisual"]
+position = Vector3(0, 0.12, -0.346)
+mesh = SubResource("r13")
+material_override = ExtResource("orange")
+
+[node name="Label" type="Label3D" parent="."]
+position = Vector3(0, 0.21, -0.52)
+text = "ENGINE BAY"
+font_size = 28
+pixel_size = 0.0025
+billboard = 1
+
+[node name="Hatch" type="StaticBody3D" parent="."]
+script = ExtResource("hatch")
+position = Vector3(0, -0.05, -0.58)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Cover" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r14")
+material_override = ExtResource("teal")
+
+[node name="Collision" type="CollisionShape3D" parent="Hatch"]
+shape = SubResource("r15")
+
+[node name="Grille0" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, -0.2, -0.055)
+mesh = SubResource("r16")
+material_override = ExtResource("dark")
+
+[node name="Grille1" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, -0.13, -0.055)
+mesh = SubResource("r17")
+material_override = ExtResource("dark")
+
+[node name="Grille2" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, -0.06, -0.055)
+mesh = SubResource("r18")
+material_override = ExtResource("dark")
+
+[node name="Grille3" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0.010000000000000009, -0.055)
+mesh = SubResource("r19")
+material_override = ExtResource("dark")
+
+[node name="Grille4" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0.08000000000000002, -0.055)
+mesh = SubResource("r20")
+material_override = ExtResource("dark")
+
+[node name="Grille5" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0.15000000000000002, -0.055)
+mesh = SubResource("r21")
+material_override = ExtResource("dark")
+
+[node name="Handle" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0.25, -0.08)
+mesh = SubResource("r22")
+material_override = ExtResource("orange")

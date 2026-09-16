@@ -9,6 +9,7 @@ enum BottomFace { DOWN, UP, FRONT, BACK, LEFT, RIGHT }
 var persistent_id: String = InstanceIds.create()
 var support_lost: bool = false
 var mount_support: Node3D = null
+@export var initial_support: NodePath
 var _placement_physics: Dictionary = {}
 var _placement_player: Node3D = null
 signal availability_changed
@@ -89,7 +90,8 @@ func _initialize_mount() -> void:
 		collision_mask = 0
 		_add_collision_exceptions_with_ancestors(get_parent())
 		if not is_instance_valid(mount_support):
-			set_mount_support(rv)
+			var preset: Node3D = get_node_or_null(initial_support) as Node3D if not initial_support.is_empty() else null
+			set_mount_support(preset if preset else rv)
 
 func can_operate() -> bool:
 	return enabled and not support_lost and not is_being_placed and not is_destroyed and current_health > 0.0 and get_connected_rv() != null

@@ -67,10 +67,13 @@ var control_override: Dictionary = {}
 @export var power_parked_drain_per_second: float = 0.15
 @export var fuel_per_gas_can: float = 30.0
 
-@export_group("Durability")
-@export var max_chassis_health: float = 450.0
-var current_chassis_health: float = 450.0
-var chassis_destroyed: bool = false
+var headlights_requested: bool = false
+var brake_input: float = 0.0
+var lamps_powered: bool = false
+var service_message: String = ""
+@export var starter_kits: bool = false
+var engine_bay: Node3D
+var rear_ramp: Node3D
 signal equipment_changed
 var equipment_registry: Array[Node] = []
 
@@ -91,6 +94,13 @@ func get_equipment() -> Array[Node]:
 	return result
 
 func _ready() -> void:
+	if starter_kits:
+		for i in range(2): stored_items.append({"name": "引擎維修包", "is_large": false, "scene_path": "res://props/engine_repair_kit.tscn", "state": {"id": InstanceIds.create(), "condition": 100.0}})
+	engine_bay = get_node("EngineBay")
+	rear_ramp = get_node_or_null("RearRamp")
+	for body in find_children("*", "StaticBody3D", true, false):
+		add_collision_exception_with(body)
+		body.add_collision_exception_with(self)
 	base_mass = mass
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
@@ -101,7 +111,6 @@ func _ready() -> void:
 		register_equipment(child)
 	current_fuel = clampf(current_fuel, 0.0, max_fuel)
 	current_power = clampf(current_power, 0.0, max_power)
-	current_chassis_health = clampf(current_chassis_health, 0.0, max_chassis_health)
 	fuel_changed.emit(current_fuel, max_fuel)
 	power_changed.emit(current_power, max_power)
 	for slot_index in range(WHEEL_SLOTS.size()):
@@ -110,22 +119,61 @@ func _ready() -> void:
 		for i in range(WHEEL_SLOTS.size()):
 			_create_wheel_at(i)
 
+func get_engine() -> EngineState:
+	return engine_bay.installed_engine if is_instance_valid(engine_bay) else null
+
+func has_working_engine() -> bool:
+	return get_engine() != null and get_engine().health > 0.0
+
+func engine_start_reason() -> String:
+	if get_engine() == null: return "未安裝引擎，請到車頭引擎艙裝入"
+	if not has_working_engine(): return "引擎故障，請使用引擎維修包或更換引擎"
+	if current_fuel <= 0.0: return "燃油耗盡，請使用加油孔補充"
+	return ""
+
 func take_damage(amount: float) -> void:
-	if amount <= 0.0:
-		return
-	if chassis_destroyed:
-		return
-
-	current_chassis_health = maxf(current_chassis_health - amount, 0.0)
-	print("Chassis took ", amount, " damage. HP: ", current_chassis_health, "/", max_chassis_health)
-
-	if current_chassis_health <= 0.0:
-		chassis_destroyed = true
+	var engine := get_engine()
+	if amount <= 0.0 or engine == null: return
+	engine.health = maxf(0.0, engine.health - amount)
+	if engine.health <= 0.0:
 		energy.engine_running = false
-		is_player_driving = false
 		engine_force = 0.0
-		brake = max_braking_force
-		print("Chassis destroyed!")
+
+func exchange_engine(player: Node3D) -> String:
+	var reason: String = engine_bay.service_reason()
+	if not reason.is_empty(): return reason
+	var active: Dictionary = player.inventory.active_item()
+	var state: Variant = active.get("state", {}).get("engine")
+	if not EngineState.valid(state, false): return "請先選取大型引擎道具"
+	if active.get("scene_path", "") != "res://props/engine_" + state.model + ".tscn" or not active.get("is_large", false): return "引擎道具資料不符"
+	var incoming := EngineState.new(state)
+	var old := get_engine()
+	if old:
+		player.inventory.items[player.inventory.active_slot] = old.item()
+	else:
+		player.inventory.consume_active()
+	engine_bay.installed_engine = incoming
+	player.refresh_inventory()
+	update_load()
+	return "已裝入 " + incoming.definition().display_name
+
+func remove_engine(player: Node3D) -> String:
+	var reason: String = engine_bay.service_reason()
+	if not reason.is_empty(): return reason
+	var engine := get_engine()
+	if engine == null: return "引擎槽是空的"
+	var item := engine.item()
+	if not player.add_item(item.name, true, item.scene_path, item.state): return "背包已滿或已攜帶大型物品，無法取出引擎"
+	engine_bay.installed_engine = null
+	energy.engine_running = false
+	update_load()
+	return "引擎已取出"
+
+func drive_blocked() -> bool:
+	return rear_ramp != null and rear_ramp.deployed
+
+func get_interaction_prompt(_player: Node3D) -> String:
+	return "底盤｜引擎" + ("未安裝" if get_engine() == null else "耐久 %.0f / %.0f" % [get_engine().health, get_engine().definition().max_health]) + "\n維修／更換引擎請到車頭維修蓋"
 
 # --- INVENTORY MANAGEMENT ---
 func update_storage_capacity() -> void:
@@ -189,7 +237,7 @@ func take_stored_item(player: Node3D, index: int) -> bool:
 
 # --- DRIVING ---
 func set_driving_state(state: bool) -> void:
-	is_player_driving = state and not chassis_destroyed
+	is_player_driving = state
 
 func consume_fuel(amount: float) -> bool:
 	if amount < 0.0 or not is_finite(amount) or current_fuel + 0.000001 < amount:
@@ -226,9 +274,11 @@ func step_energy_system(drive_input: float, _braking_input: float, _steering_inp
 	return result
 
 func set_engine_running(running: bool) -> bool:
-	if running and (chassis_destroyed or current_fuel <= 0.0):
+	if running and not engine_start_reason().is_empty():
+		service_message = engine_start_reason()
 		return false
 	energy.engine_running = running
+	service_message = "引擎已發動" if running else "引擎已停止"
 	return true
 
 func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
@@ -285,7 +335,7 @@ func _physics_process(delta: float) -> void:
 	var throttle := 0.0
 	var braking_input := 0.0
 	var turn := 0.0
-	if is_player_driving and not chassis_destroyed:
+	if is_player_driving:
 		throttle = Input.get_action_strength("move_forward")
 		braking_input = Input.get_action_strength("move_back")
 		turn = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
@@ -293,7 +343,8 @@ func _physics_process(delta: float) -> void:
 		throttle = control_override.get("throttle", 0.0)
 		braking_input = control_override.get("brake", 0.0)
 		turn = control_override.get("steering", 0.0)
-	var drive := throttle if gear != 0 and not handbrake and not chassis_destroyed else 0.0
+	var drive := throttle if gear != 0 and not handbrake and not drive_blocked() else 0.0
+	brake_input = braking_input
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
 	var forward := -global_transform.basis.z
 	var speed_factor := clampf(absf(linear_velocity.dot(forward)) / max_speed, 0.0, 1.0)
@@ -301,9 +352,9 @@ func _physics_process(delta: float) -> void:
 	var torque := maxf(0.1, 1.0 - absf(linear_velocity.dot(forward)) / gear_limit)
 	steering = lerpf(steering, turn * lerpf(max_steering, max_steering * 0.3, speed_factor), minf(5.0 * delta, 1.0))
 	engine_force = 0.0
-	brake = max_braking_force if handbrake or chassis_destroyed else braking_input * max_braking_force
+	brake = max_braking_force if handbrake or drive_blocked() else braking_input * max_braking_force
 	if can_drive and drive > 0.0 and braking_input == 0.0:
-		engine_force = -drive * max_engine_force * torque * (1.0 if gear > 0 else -0.3)
+		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():
 		engine_force = 0.0
 
@@ -359,13 +410,6 @@ func _create_wheel_at(slot_index: int) -> void:
 
 	add_child(wheel)
 	installed_wheels[slot_index] = wheel
-
-func needs_repair() -> bool:
-	return current_chassis_health < max_chassis_health
-
-func repair_health(amount: float) -> void:
-	current_chassis_health = minf(max_chassis_health, current_chassis_health + maxf(amount, 0.0))
-	chassis_destroyed = current_chassis_health <= 0.0
 
 func _create_wheel_socket(slot_index: int) -> void:
 	var hitbox := StaticBody3D.new()
@@ -423,6 +467,9 @@ func _update_wheel_condition(slot: int) -> void:
 func update_load() -> void:
 	var total := base_mass
 	var weighted := center_of_mass_offset * base_mass
+	if get_engine():
+		total += get_engine().definition().weight
+		weighted += engine_bay.position * get_engine().definition().weight
 	for device in get_equipment():
 		if not device.is_being_placed and not device.is_destroyed:
 			total += device.mass

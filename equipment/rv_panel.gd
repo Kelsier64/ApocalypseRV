@@ -5,6 +5,9 @@ extends Equipment
 
 func _ready() -> void:
 	super._ready()
+	var wear := Node.new()
+	wear.set_script(load("res://rv/panel_wear.gd"))
+	add_child(wear)
 	call_deferred("_setup_if_on_rv")
 
 func _setup_if_on_rv() -> void:
@@ -49,4 +52,22 @@ func start_placement(player: Node3D) -> void:
 		removing.emit()
 
 func get_interaction_prompt(_player: Node3D) -> String:
-	return equipment_name + "｜拆裝時自動對齊底盤槽位\n搬移會使附掛在本片上的設備掉落"
+	return equipment_name + "｜拆裝時自動對齊底盤槽位\n" + dependent_summary()
+
+func dependent_summary() -> String:
+	var rv := get_connected_rv()
+	if rv == null: return "未接入車輛"
+	var names := PackedStringArray()
+	for device in rv.get_equipment():
+		if device == self: continue
+		var cursor: Node = device.mount_support
+		var visited: Array[Node] = []
+		while cursor is Equipment and not visited.has(cursor):
+			if cursor == self:
+				names.append(device.equipment_name)
+				break
+			visited.append(cursor)
+			cursor = cursor.mount_support
+	if names.is_empty(): return "無附掛設備"
+	var shown := names.slice(0, 3)
+	return "搬移將掉落 %d 件：%s%s" % [names.size(), "、".join(shown), "…" if names.size() > 3 else ""]

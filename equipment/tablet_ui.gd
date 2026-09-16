@@ -50,9 +50,14 @@ func _ready() -> void:
 	engine.pressed.connect(func():
 		if is_instance_valid(connected_rv):
 			var okay: bool = connected_rv.set_engine_running(not connected_rv.energy.engine_running)
-			message.text = ("引擎已發動" if connected_rv.energy.engine_running else "引擎已停止") if okay else "無法發動：底盤損壞或燃油不足"
+			message.text = ("引擎已發動" if connected_rv.energy.engine_running else "引擎已停止") if okay else connected_rv.engine_start_reason()
 			_refresh())
 	box.add_child(engine)
+	var headlights := Button.new()
+	headlights.text = "頭燈開關"
+	headlights.pressed.connect(func():
+		if is_instance_valid(connected_rv): connected_rv.headlights_requested = not connected_rv.headlights_requested)
+	box.add_child(headlights)
 	message = Label.new()
 	box.add_child(message)
 	device_box = VBoxContainer.new()
@@ -100,6 +105,9 @@ func _refresh() -> void:
 		status_label.text += "\nNO BATTERY: install a battery into an operational socket."
 	elif connected_rv.current_power <= 0.0:
 		status_label.text += "\nBATTERY EMPTY: swap it or start the engine with a generator installed."
+	status_label.text += "\n" + VehicleStatus.messages(connected_rv)
+	var installed: EngineState = connected_rv.get_engine()
+	status_label.text += "\n" + ("引擎槽為空" if installed == null else "%s｜耐久 %.0f / %.0f" % [installed.definition().display_name, installed.health, installed.definition().max_health])
 	var devices: Array[Node] = connected_rv.get_equipment()
 	var signature := ""
 	for device in devices:

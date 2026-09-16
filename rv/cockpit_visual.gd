@@ -1,5 +1,17 @@
 extends Node3D
 ## Presentation only; every instrument reads the chassis owned by this seat.
+var warning_lamps: Dictionary = {}
+func _ready() -> void:
+	for i in range(VehicleStatus.IDS.size()):
+		var id: String = VehicleStatus.IDS[i]
+		var lamp := Sprite3D.new()
+		lamp.texture = load("res://assets/rv_status/" + id + ".svg")
+		lamp.pixel_size = 0.0009
+		lamp.position = Vector3(-0.46 + i * 0.13, 1.36, -0.94)
+		lamp.shaded = false
+		add_child(lamp)
+		warning_lamps[id] = lamp
+
 @onready var seat: Equipment = get_parent()
 @onready var steering_wheel: Node3D = $SteeringTilt/SteeringWheel
 @onready var gear_lever: Node3D = $GearLever
@@ -27,3 +39,8 @@ func _process(delta: float) -> void:
 	$EngineStatus.modulate = Color(0.3, 1.0, 0.6) if running else Color(0.95, 0.55, 0.2)
 	$BrakeStatus.text = "PARK" if parked else ""
 	$BatteryLabel.text = "NO BAT" if connected and rv.energy.battery == null else "BATT"
+
+	if connected:
+		for row in VehicleStatus.read(rv): warning_lamps[row.id].modulate = VehicleStatus.color(row.level) if rv.current_power > 0 else VehicleStatus.color(0)
+	else:
+		for lamp in warning_lamps.values(): lamp.modulate = VehicleStatus.color(0)

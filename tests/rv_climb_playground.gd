@@ -9,7 +9,9 @@ var replay := false
 var driving := false
 var elapsed := 0.0
 var player_climbed := false
+var monster_climbed := false
 var driver_demo := false
+var debug_next_sample: float = 0.0
 
 func _ready() -> void:
 	process_physics_priority = -10
@@ -61,6 +63,7 @@ func _ready() -> void:
 	monster.position = Vector3(-2.65, 0.05, 0)
 	monster.rotation.y = -PI / 2.0
 	add_child(monster)
+	if "--climb-debug" in OS.get_cmdline_user_args(): monster.debug_climb_messages = true
 	observer = Camera3D.new()
 	add_child(observer)
 	var canvas := CanvasLayer.new()
@@ -77,6 +80,12 @@ func _ready() -> void:
 func _start_replay() -> void:
 	replay = true
 	elapsed = 0.0
+	# Keep the target alive long enough to inspect support and then press F5.
+	player.max_player_health = 10000.0
+	player.current_player_health = 10000.0
+	player._update_health_bar()
+	player_climbed = false
+	monster_climbed = false
 	observer.current = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	Input.action_press("move_forward")
@@ -106,12 +115,25 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	elapsed += delta
+	if not is_instance_valid(monster):
+		status.text = "RV CLIMB PLAYGROUND | Monster defeated after release. R: reset"
+		return
+	if replay and not driver_demo and elapsed > 6.0 and "--seat-after-climb" in OS.get_cmdline_user_args():
+		driver_demo = true
+		player.enter_seat_mode(rv.get_node("DriverSeat"))
+	if "--climb-debug" in OS.get_cmdline_user_args() and elapsed >= debug_next_sample:
+		debug_next_sample = elapsed + 1.0
+		print("REPLAY ", elapsed, " player=", rv.to_local(player.global_position), " monster=", rv.to_local(monster.global_position), " mode=", monster.boarding.mode, " locomotion=", monster.locomotion_state, " grip=", monster.boarding.grip, " strain=", monster.boarding.strain, " support=", monster.rv_support.surface)
 	if replay:
 		if player.locomotion_state == player.LocomotionState.CLIMBING:
 			player_climbed = true
+		if monster.locomotion_state == monster.LocomotionState.CLIMBING:
+			monster_climbed = true
 		if driver_demo or (player_climbed and player.locomotion_state == player.LocomotionState.NORMAL):
 			Input.action_release("move_forward")
-		driving = elapsed > 0.7
+		# This replay validates carried support, not interception probability.
+		# Start movement only after both actors have actually caught a surface.
+		driving = elapsed > 0.7 and player_climbed and monster_climbed
 	if driving:
 		rv.position += -rv.basis.z * 4.0 * delta
 		rv.rotate_y(0.12 * delta)

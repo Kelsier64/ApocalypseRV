@@ -57,10 +57,6 @@ func _ready() -> void:
 	seat = rv.get_node("DriverSeat")
 	rv.current_fuel = 65
 	rv.current_power = 72
-	for entry in [["generator", Vector3(-1.2, 0.8, -1.2)], ["crafting_station", Vector3(-1.05, 0.5, 2.2)], ["scrapper", Vector3(1.2, 0.5, -2.4)], ["tablet_screen", Vector3(-1.05, 1.02, 2.35)]]:
-		var device: Equipment = load("res://equipment/" + entry[0] + ".tscn").instantiate()
-		add_child(device)
-		device.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, entry[1]), rv)
 	player = load("res://player/player.tscn").instantiate()
 	player.position = Vector3(6, 1, 6)
 	add_child(player)

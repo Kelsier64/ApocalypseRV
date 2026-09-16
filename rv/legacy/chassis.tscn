@@ -4,6 +4,9 @@
 
 [ext_resource type="PackedScene" path="res://rv/battery_socket.tscn" id="3_battery"]
 
+[ext_resource type="PackedScene" path="res://rv/engine_bay.tscn" id="bay"]
+[ext_resource type="PackedScene" path="res://rv/rear_ramp.tscn" id="ramp"]
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_body"]
 size = Vector3(4, 1, 12)
 
@@ -66,3 +69,9 @@ size = Vector3(1.4, 0.8, 2)
 [node name="BatterySocket" parent="." instance=ExtResource("3_battery")]
 position = Vector3(2.16, 0.16, 1.5)
 preinstalled_battery = true
+
+[node name="EngineBay" parent="." instance=ExtResource("bay")]
+position = Vector3(0, -0.03, -5.3)
+
+[node name="RearRamp" parent="." instance=ExtResource("ramp")]
+position = Vector3(0, 0.52, 5.94)

@@ -73,19 +73,19 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		last_error = "Invalid output"
 		return false
 	var output := spawn_marker.global_transform
-	# A clearance sphere encloses current small products. Never debit a blocked output.
-	var query := PhysicsShapeQueryParameters3D.new()
-	var shape := SphereShape3D.new()
-	shape.radius = 0.28
-	query.shape = shape
-	output.origin += global_basis.y * 0.3
-	query.transform = output
-	query.collision_mask = 1
-	query.exclude = [get_rid()]
-	if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
-		item.free()
-		last_error = "Output blocked"
-		return false
+	# Check actual product colliders, including the new large engine outputs.
+	output.origin += global_basis.y * (0.43 if item.is_large else 0.3)
+	for collider in item.get_children():
+		if not collider is CollisionShape3D or collider.shape == null: continue
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = collider.shape
+		query.transform = output * collider.transform
+		query.collision_mask = 1
+		query.exclude = [get_rid()]
+		if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
+			item.free()
+			last_error = "Output blocked"
+			return false
 	var container := WorldEntities.get_container(self)
 	if not is_instance_valid(container) or container.is_queued_for_deletion():
 		item.free()

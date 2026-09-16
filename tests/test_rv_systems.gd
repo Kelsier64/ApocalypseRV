@@ -24,8 +24,7 @@ func _run() -> void:
 	world.add_child(player)
 	player.position = Vector3(20, 1, 0)
 	player.set_physics_process(false)
-	var generator: Equipment = load("res://equipment/generator.tscn").instantiate()
-	rv.add_child(generator)
+	var generator: Equipment = rv.get_node("Generator")
 	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, 0)), rv)
 	await physics_frame
 	expect(rv.get_equipment().has(generator), "Installed generator registers with this RV")
@@ -114,12 +113,12 @@ func _run() -> void:
 	expect(generator.get_connected_rv() == null and not generator.freeze, "Destroyed support detaches dependent equipment")
 	rv.take_damage(1000.0)
 	rv.set_driving_state(true)
-	expect(not rv.is_player_driving and not rv.set_engine_running(true), "Destroyed chassis rejects both drive and engine restart")
+	expect(rv.is_player_driving and not rv.set_engine_running(true), "Failed engine retains controls but rejects engine restart")
 	rv._physics_process(1.0 / 60.0)
-	expect(rv.engine_force == 0.0, "Destroyed chassis cannot apply propulsion")
-	rv.repair_health(450.0)
+	expect(rv.engine_force == 0.0, "Failed engine cannot apply propulsion")
+	rv.engine_bay.repair_health(450.0)
 	rv.get_node("DriverSeat").interact_hold(player)
-	expect(player.seated_in != null, "Restored chassis permits seating")
+	expect(player.seated_in != null, "Engine repair permits restarting without disabling seating")
 	world.queue_free()
 	await process_frame
 	if failures.is_empty():

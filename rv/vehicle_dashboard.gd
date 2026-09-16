@@ -2,6 +2,7 @@ extends CanvasLayer
 var seat: Node3D
 var label: Label
 var status: Label
+var indicators: Dictionary = {}
 
 func _ready() -> void:
 	seat = get_parent()
@@ -10,7 +11,7 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	panel.offset_left = 24
 	panel.offset_right = -24
-	panel.offset_top = -180
+	panel.offset_top = -230
 	panel.offset_bottom = -24
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
@@ -25,17 +26,33 @@ func _ready() -> void:
 	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(rows)
 	label = Label.new()
-	label.add_theme_font_size_override("font_size", 30)
+	label.add_theme_font_size_override("font_size", 28)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(label)
+	var lamps := HBoxContainer.new()
+	lamps.add_theme_constant_override("separation", 18)
+	rows.add_child(lamps)
+	for id in VehicleStatus.IDS:
+		var cell := HBoxContainer.new()
+		lamps.add_child(cell)
+		var icon := TextureRect.new()
+		icon.texture = load("res://assets/rv_status/" + id + ".svg")
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.custom_minimum_size = Vector2(36, 36)
+		cell.add_child(icon)
+		var caption := Label.new()
+		caption.add_theme_font_size_override("font_size", 22)
+		cell.add_child(caption)
+		indicators[id] = {"icon": icon, "caption": caption}
 	status = Label.new()
-	status.add_theme_font_size_override("font_size", 24)
+	status.add_theme_font_size_override("font_size", 22)
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status.add_theme_color_override("font_color", Color(0.94, 0.72, 0.38))
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(status)
 	var controls := Label.new()
-	controls.text = "B 引擎  ·  Space 手煞車  ·  Z 倒檔 / X 空檔 / C 前進  ·  R / T 升降檔  ·  W 油門 / S 煞車  ·  E 離座"
-	controls.add_theme_font_size_override("font_size", 22)
+	controls.text = "B 引擎  ·  L 頭燈  ·  Space 手煞車  ·  Z 倒檔 / X 空檔 / C 前進  ·  R / T 升降檔  ·  W 油門 / S 煞車  ·  E 離座"
+	controls.add_theme_font_size_override("font_size", 20)
 	controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(controls)
 	visible = false
@@ -47,11 +64,8 @@ func _process(_delta: float) -> void:
 	if rv == null: return
 	var gear := "R" if rv.gear < 0 else ("N" if rv.gear == 0 else str(rv.gear))
 	label.text = "%03.0f km/h   %s 檔   |   引擎 %s   |   燃油 %.0f / %.0f   |   電池 %.0f / %.0f" % [rv.linear_velocity.length() * 3.6, gear, "運轉" if rv.energy.engine_running else "停止", rv.current_fuel, rv.max_fuel, rv.current_power, rv.max_power]
-	var messages: Array[String] = []
-	if rv.handbrake: messages.append("手煞車已拉起")
-	if rv.current_fuel <= 0.0: messages.append("燃油耗盡：使用加油孔補充")
-	if rv.energy.battery == null: messages.append("未裝電池：將電池裝入插槽")
-	elif rv.current_power <= 0.0: messages.append("電池耗盡：更換電池或發動引擎配合發電機充電")
-	if rv.get_installed_wheel_count() < 4: messages.append("輪胎缺失：停車安裝")
-	if rv.current_chassis_health < rv.max_chassis_health * 0.3: messages.append("車體嚴重損壞：熄火停穩後 H 維修")
-	status.text = "  ·  ".join(messages) if not messages.is_empty() else "車體 %.0f%%   ·   供電 +%.2f / 耗電 −%.2f 每秒" % [100.0 * rv.current_chassis_health / rv.max_chassis_health, rv.energy.generated_rate, rv.energy.load_rate]
+	for row in VehicleStatus.read(rv):
+		indicators[row.id].icon.modulate = VehicleStatus.color(row.level)
+		indicators[row.id].caption.text = row.label
+	status.text = seat.exit_message if not seat.exit_message.is_empty() else VehicleStatus.messages(rv)
+	if not rv.service_message.is_empty(): status.text += "  " + rv.service_message

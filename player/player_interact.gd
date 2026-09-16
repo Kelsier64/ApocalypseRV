@@ -176,6 +176,6 @@ func get_prompt(obj: Node) -> String:
 		text = "E 使用"
 	if _wheel_install(obj): text += "\n長按 E 1 秒安裝手持輪胎"
 	if obj is Equipment: text += "\n長按 F 2 秒搬移"
-	if obj.has_method("needs_repair") and obj.needs_repair():
+	if obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
 		text += "\n長按 H 維修：2 秒／2 Metal Parts（需熄火停穩）"
 	return text

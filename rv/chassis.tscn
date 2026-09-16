@@ -1,79 +1,777 @@
 [gd_scene format=3 uid="uid://bgu1l4isw02ca"]
 
-[ext_resource type="Script" uid="uid://b5vjpwyyk0ah0" path="res://rv/chassis.gd" id="1_chassis"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
 
-[ext_resource type="PackedScene" path="res://rv/battery_socket.tscn" id="3_battery"]
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
 
-[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="bodymat"]
-[ext_resource type="PackedScene" path="res://rv/visuals/chassis_trim.tscn" id="trim"]
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
+
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[ext_resource type="Script" path="res://rv/chassis.gd" id="script"]
+
+[ext_resource type="PackedScene" path="res://rv/battery_socket.tscn" id="battery"]
+
+[ext_resource type="PackedScene" path="res://rv/engine_bay.tscn" id="bay"]
+
+[ext_resource type="PackedScene" path="res://rv/rear_ramp.tscn" id="ramp"]
 
 [ext_resource type="Script" path="res://rv/structure_slots.gd" id="slots"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_body"]
-size = Vector3(4, 1, 12)
+[ext_resource type="Script" path="res://rv/vehicle_lights.gd" id="lights"]
 
-[node name="Chassis" type="VehicleBody3D" unique_id=292402977]
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(4, 0.2, 12)
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(4, 0.2, 12)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(0.2, 0.72, 11.6)
+
+[sub_resource type="BoxShape3D" id="r4"]
+size = Vector3(0.2, 0.72, 11.6)
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r6"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r7"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r8"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r10"]
+size = Vector3(0.2, 0.72, 11.6)
+
+[sub_resource type="BoxShape3D" id="r11"]
+size = Vector3(0.2, 0.72, 11.6)
+
+[sub_resource type="BoxMesh" id="r12"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r13"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r14"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r15"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r16"]
+size = Vector3(1.05, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r17"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxShape3D" id="r18"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r19"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxShape3D" id="r20"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r21"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxShape3D" id="r22"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r23"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxShape3D" id="r24"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r25"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxShape3D" id="r26"]
+size = Vector3(2.7, 0.18, 0.14)
+
+[sub_resource type="BoxMesh" id="r27"]
+size = Vector3(0.16, 0.85, 1.35)
+
+[sub_resource type="BoxShape3D" id="r28"]
+size = Vector3(0.16, 0.85, 1.35)
+
+[sub_resource type="BoxMesh" id="r29"]
+size = Vector3(0.16, 0.85, 4.95)
+
+[sub_resource type="BoxShape3D" id="r30"]
+size = Vector3(0.16, 0.85, 4.95)
+
+[sub_resource type="BoxMesh" id="r31"]
+size = Vector3(0.16, 0.85, 2.1)
+
+[sub_resource type="BoxShape3D" id="r32"]
+size = Vector3(0.16, 0.85, 2.1)
+
+[sub_resource type="BoxMesh" id="r33"]
+size = Vector3(0.16, 0.85, 1.35)
+
+[sub_resource type="BoxShape3D" id="r34"]
+size = Vector3(0.16, 0.85, 1.35)
+
+[sub_resource type="BoxMesh" id="r35"]
+size = Vector3(0.16, 0.85, 4.95)
+
+[sub_resource type="BoxShape3D" id="r36"]
+size = Vector3(0.16, 0.85, 4.95)
+
+[sub_resource type="BoxMesh" id="r37"]
+size = Vector3(0.16, 0.85, 2.1)
+
+[sub_resource type="BoxShape3D" id="r38"]
+size = Vector3(0.16, 0.85, 2.1)
+
+[sub_resource type="CylinderMesh" id="r39"]
+top_radius = 0.14
+bottom_radius = 0.14
+height = 3.1
+radial_segments = 16
+
+[sub_resource type="BoxMesh" id="r40"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r41"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r42"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r43"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r44"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r45"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r46"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r47"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r48"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r49"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r50"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r51"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r52"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r53"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r54"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r55"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r56"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r57"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r58"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r59"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="CylinderMesh" id="r60"]
+top_radius = 0.14
+bottom_radius = 0.14
+height = 3.1
+radial_segments = 16
+
+[sub_resource type="BoxMesh" id="r61"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r62"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r63"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r64"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r65"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r66"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r67"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r68"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r69"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r70"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r71"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r72"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r73"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r74"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r75"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r76"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r77"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r78"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r79"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r80"]
+size = Vector3(0.3, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="r81"]
+size = Vector3(3.9, 0.22, 0.18)
+
+[sub_resource type="BoxShape3D" id="r82"]
+size = Vector3(3.9, 0.22, 0.18)
+
+[sub_resource type="BoxMesh" id="r83"]
+size = Vector3(1.2, 0.23, 0.2)
+
+[sub_resource type="BoxShape3D" id="r84"]
+size = Vector3(1.2, 0.23, 0.2)
+
+[sub_resource type="BoxMesh" id="r85"]
+size = Vector3(1.2, 0.23, 0.2)
+
+[sub_resource type="BoxShape3D" id="r86"]
+size = Vector3(1.2, 0.23, 0.2)
+
+[sub_resource type="BoxMesh" id="r87"]
+size = Vector3(1.5, 0.12, 0.2)
+
+[sub_resource type="BoxShape3D" id="r88"]
+size = Vector3(1.5, 0.12, 0.2)
+
+[node name="Chassis" type="VehicleBody3D"]
+script = ExtResource("script")
 mass = 3000.0
-script = ExtResource("1_chassis")
 
-[node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=1956655371]
-shape = SubResource("BoxShape3D_body")
+[node name="Deck" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.4, 0)
+mesh = SubResource("r1")
+material_override = ExtResource("dark")
 
-[node name="CSGBox3D" type="CSGBox3D" parent="." unique_id=1719147422]
-transform = Transform3D(0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
-size = Vector3(12, 1, 4)
-material = ExtResource("bodymat")
+[node name="DeckCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.4, 0)
+shape = SubResource("r2")
 
-[node name="br" type="CSGCylinder3D" parent="CSGBox3D" unique_id=1606579110]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 3, -0.5, -1.5)
-operation = 2
-radius = 0.8
-height = 1.0
-sides = 32
+[node name="LeftFrame" type="MeshInstance3D" parent="."]
+position = Vector3(-1.35, -0.06, 0)
+mesh = SubResource("r3")
+material_override = ExtResource("metal")
 
-[node name="bl" type="CSGCylinder3D" parent="CSGBox3D" unique_id=77753002]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 3, -0.5, 1.5)
-operation = 2
-radius = 0.8
-height = 1.0
-sides = 32
+[node name="LeftFrameCollision" type="CollisionShape3D" parent="."]
+position = Vector3(-1.35, -0.06, 0)
+shape = SubResource("r4")
 
-[node name="fr" type="CSGCylinder3D" parent="CSGBox3D" unique_id=1043425849]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -3.757742, -0.5, -1.5)
-operation = 2
-radius = 0.8
-height = 1.0
-sides = 32
+[node name="LeftOutrigger0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.9180000000000001, -0.12, -5)
+mesh = SubResource("r5")
+material_override = ExtResource("dark")
 
-[node name="fl" type="CSGCylinder3D" parent="CSGBox3D" unique_id=376196827]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -3.757742, -0.5, 1.5)
-operation = 2
-radius = 0.8
-height = 1.0
-sides = 32
+[node name="LeftOutrigger3" type="MeshInstance3D" parent="."]
+position = Vector3(-0.9180000000000001, -0.12, -2)
+mesh = SubResource("r6")
+material_override = ExtResource("dark")
 
-[node name="baxis" type="CSGCylinder3D" parent="CSGBox3D" unique_id=994528394]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 3, -0.5, 0)
-radius = 0.2
-height = 3.2
-sides = 20
+[node name="LeftOutrigger5" type="MeshInstance3D" parent="."]
+position = Vector3(-0.9180000000000001, -0.12, 0)
+mesh = SubResource("r7")
+material_override = ExtResource("dark")
 
-[node name="faxis" type="CSGCylinder3D" parent="CSGBox3D" unique_id=1663101068]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -3.75, -0.5, 0)
-radius = 0.2
-height = 3.2
-sides = 20
+[node name="LeftOutrigger7" type="MeshInstance3D" parent="."]
+position = Vector3(-0.9180000000000001, -0.12, 2)
+mesh = SubResource("r8")
+material_override = ExtResource("dark")
 
-[node name="CSGBox3D" type="CSGBox3D" parent="CSGBox3D" unique_id=306911882]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3, 0.125, 0)
-operation = 2
-size = Vector3(1.4, 0.8, 2)
+[node name="LeftOutrigger10" type="MeshInstance3D" parent="."]
+position = Vector3(-0.9180000000000001, -0.12, 5)
+mesh = SubResource("r9")
+material_override = ExtResource("dark")
 
-[node name="BatterySocket" parent="." instance=ExtResource("3_battery")]
+[node name="RightFrame" type="MeshInstance3D" parent="."]
+position = Vector3(1.35, -0.06, 0)
+mesh = SubResource("r10")
+material_override = ExtResource("metal")
+
+[node name="RightFrameCollision" type="CollisionShape3D" parent="."]
+position = Vector3(1.35, -0.06, 0)
+shape = SubResource("r11")
+
+[node name="RightOutrigger0" type="MeshInstance3D" parent="."]
+position = Vector3(0.9180000000000001, -0.12, -5)
+mesh = SubResource("r12")
+material_override = ExtResource("dark")
+
+[node name="RightOutrigger3" type="MeshInstance3D" parent="."]
+position = Vector3(0.9180000000000001, -0.12, -2)
+mesh = SubResource("r13")
+material_override = ExtResource("dark")
+
+[node name="RightOutrigger5" type="MeshInstance3D" parent="."]
+position = Vector3(0.9180000000000001, -0.12, 0)
+mesh = SubResource("r14")
+material_override = ExtResource("dark")
+
+[node name="RightOutrigger7" type="MeshInstance3D" parent="."]
+position = Vector3(0.9180000000000001, -0.12, 2)
+mesh = SubResource("r15")
+material_override = ExtResource("dark")
+
+[node name="RightOutrigger10" type="MeshInstance3D" parent="."]
+position = Vector3(0.9180000000000001, -0.12, 5)
+mesh = SubResource("r16")
+material_override = ExtResource("dark")
+
+[node name="Crossmember0" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, -5)
+mesh = SubResource("r17")
+material_override = ExtResource("metal")
+
+[node name="Crossmember0Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.12, -5)
+shape = SubResource("r18")
+
+[node name="Crossmember3" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, -2)
+mesh = SubResource("r19")
+material_override = ExtResource("metal")
+
+[node name="Crossmember3Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.12, -2)
+shape = SubResource("r20")
+
+[node name="Crossmember5" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, 0)
+mesh = SubResource("r21")
+material_override = ExtResource("metal")
+
+[node name="Crossmember5Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.12, 0)
+shape = SubResource("r22")
+
+[node name="Crossmember7" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, 2)
+mesh = SubResource("r23")
+material_override = ExtResource("metal")
+
+[node name="Crossmember7Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.12, 2)
+shape = SubResource("r24")
+
+[node name="Crossmember10" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.12, 5)
+mesh = SubResource("r25")
+material_override = ExtResource("metal")
+
+[node name="Crossmember10Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.12, 5)
+shape = SubResource("r26")
+
+[node name="SkirtL-4.9" type="MeshInstance3D" parent="."]
+position = Vector3(-1.9, -0.03, -5.325)
+mesh = SubResource("r27")
+material_override = ExtResource("teal")
+
+[node name="SkirtL-4.9Collision" type="CollisionShape3D" parent="."]
+position = Vector3(-1.9, -0.03, -5.325)
+shape = SubResource("r28")
+
+[node name="SkirtL-0.37" type="MeshInstance3D" parent="."]
+position = Vector3(-1.9, -0.03, -0.375)
+mesh = SubResource("r29")
+material_override = ExtResource("teal")
+
+[node name="SkirtL-0.37Collision" type="CollisionShape3D" parent="."]
+position = Vector3(-1.9, -0.03, -0.375)
+shape = SubResource("r30")
+
+[node name="SkirtL4.95" type="MeshInstance3D" parent="."]
+position = Vector3(-1.9, -0.03, 4.95)
+mesh = SubResource("r31")
+material_override = ExtResource("teal")
+
+[node name="SkirtL4.95Collision" type="CollisionShape3D" parent="."]
+position = Vector3(-1.9, -0.03, 4.95)
+shape = SubResource("r32")
+
+[node name="SkirtR-4.9" type="MeshInstance3D" parent="."]
+position = Vector3(1.9, -0.03, -5.325)
+mesh = SubResource("r33")
+material_override = ExtResource("teal")
+
+[node name="SkirtR-4.9Collision" type="CollisionShape3D" parent="."]
+position = Vector3(1.9, -0.03, -5.325)
+shape = SubResource("r34")
+
+[node name="SkirtR-0.37" type="MeshInstance3D" parent="."]
+position = Vector3(1.9, -0.03, -0.375)
+mesh = SubResource("r35")
+material_override = ExtResource("teal")
+
+[node name="SkirtR-0.37Collision" type="CollisionShape3D" parent="."]
+position = Vector3(1.9, -0.03, -0.375)
+shape = SubResource("r36")
+
+[node name="SkirtR4.95" type="MeshInstance3D" parent="."]
+position = Vector3(1.9, -0.03, 4.95)
+mesh = SubResource("r37")
+material_override = ExtResource("teal")
+
+[node name="SkirtR4.95Collision" type="CollisionShape3D" parent="."]
+position = Vector3(1.9, -0.03, 4.95)
+shape = SubResource("r38")
+
+[node name="AxleF" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.5, -3.75)
+rotation_degrees = Vector3(0, 0, 90)
+mesh = SubResource("r39")
+material_override = ExtResource("dark")
+
+[node name="Arch-1.8_-3.75_0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.3685950493662061, -2.9203417939000844)
+mesh = SubResource("r40")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-9, 0, 0)
+
+[node name="Arch-1.8_-3.75_1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.11864798021878076, -3.001554519681771)
+mesh = SubResource("r41")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-27, 0, 0)
+
+[node name="Arch-1.8_-3.75_2" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.09396969619669981, -3.1560303038033)
+mesh = SubResource("r42")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-45, 0, 0)
+
+[node name="Arch-1.8_-3.75_3" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.24844548031822888, -3.3686479802187805)
+mesh = SubResource("r43")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-63, 0, 0)
+
+[node name="Arch-1.8_-3.75_4" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.3296582060999157, -3.6185950493662062)
+mesh = SubResource("r44")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-81, 0, 0)
+
+[node name="Arch-1.8_-3.75_5" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.3296582060999157, -3.8814049506337938)
+mesh = SubResource("r45")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-98.99999999999999, 0, 0)
+
+[node name="Arch-1.8_-3.75_6" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.248445480318229, -4.131352019781219)
+mesh = SubResource("r46")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-117, 0, 0)
+
+[node name="Arch-1.8_-3.75_7" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.09396969619669993, -4.3439696961967)
+mesh = SubResource("r47")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-135, 0, 0)
+
+[node name="Arch-1.8_-3.75_8" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.11864798021878065, -4.498445480318229)
+mesh = SubResource("r48")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-153, 0, 0)
+
+[node name="Arch-1.8_-3.75_9" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.368595049366206, -4.579658206099916)
+mesh = SubResource("r49")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-171, 0, 0)
+
+[node name="Arch1.8_-3.75_0" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.3685950493662061, -2.9203417939000844)
+mesh = SubResource("r50")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-9, 0, 0)
+
+[node name="Arch1.8_-3.75_1" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.11864798021878076, -3.001554519681771)
+mesh = SubResource("r51")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-27, 0, 0)
+
+[node name="Arch1.8_-3.75_2" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.09396969619669981, -3.1560303038033)
+mesh = SubResource("r52")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-45, 0, 0)
+
+[node name="Arch1.8_-3.75_3" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.24844548031822888, -3.3686479802187805)
+mesh = SubResource("r53")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-63, 0, 0)
+
+[node name="Arch1.8_-3.75_4" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.3296582060999157, -3.6185950493662062)
+mesh = SubResource("r54")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-81, 0, 0)
+
+[node name="Arch1.8_-3.75_5" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.3296582060999157, -3.8814049506337938)
+mesh = SubResource("r55")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-98.99999999999999, 0, 0)
+
+[node name="Arch1.8_-3.75_6" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.248445480318229, -4.131352019781219)
+mesh = SubResource("r56")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-117, 0, 0)
+
+[node name="Arch1.8_-3.75_7" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.09396969619669993, -4.3439696961967)
+mesh = SubResource("r57")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-135, 0, 0)
+
+[node name="Arch1.8_-3.75_8" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.11864798021878065, -4.498445480318229)
+mesh = SubResource("r58")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-153, 0, 0)
+
+[node name="Arch1.8_-3.75_9" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.368595049366206, -4.579658206099916)
+mesh = SubResource("r59")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-171, 0, 0)
+
+[node name="AxleB" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.5, 3)
+rotation_degrees = Vector3(0, 0, 90)
+mesh = SubResource("r60")
+material_override = ExtResource("dark")
+
+[node name="Arch-1.8_3_0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.3685950493662061, 3.8296582060999156)
+mesh = SubResource("r61")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-9, 0, 0)
+
+[node name="Arch-1.8_3_1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.11864798021878076, 3.748445480318229)
+mesh = SubResource("r62")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-27, 0, 0)
+
+[node name="Arch-1.8_3_2" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.09396969619669981, 3.5939696961967)
+mesh = SubResource("r63")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-45, 0, 0)
+
+[node name="Arch-1.8_3_3" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.24844548031822888, 3.3813520197812195)
+mesh = SubResource("r64")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-63, 0, 0)
+
+[node name="Arch-1.8_3_4" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.3296582060999157, 3.1314049506337938)
+mesh = SubResource("r65")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-81, 0, 0)
+
+[node name="Arch-1.8_3_5" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.3296582060999157, 2.8685950493662062)
+mesh = SubResource("r66")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-98.99999999999999, 0, 0)
+
+[node name="Arch-1.8_3_6" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.248445480318229, 2.618647980218781)
+mesh = SubResource("r67")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-117, 0, 0)
+
+[node name="Arch-1.8_3_7" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, 0.09396969619669993, 2.4060303038033)
+mesh = SubResource("r68")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-135, 0, 0)
+
+[node name="Arch-1.8_3_8" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.11864798021878065, 2.251554519681771)
+mesh = SubResource("r69")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-153, 0, 0)
+
+[node name="Arch-1.8_3_9" type="MeshInstance3D" parent="."]
+position = Vector3(-1.8, -0.368595049366206, 2.1703417939000844)
+mesh = SubResource("r70")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-171, 0, 0)
+
+[node name="Arch1.8_3_0" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.3685950493662061, 3.8296582060999156)
+mesh = SubResource("r71")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-9, 0, 0)
+
+[node name="Arch1.8_3_1" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.11864798021878076, 3.748445480318229)
+mesh = SubResource("r72")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-27, 0, 0)
+
+[node name="Arch1.8_3_2" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.09396969619669981, 3.5939696961967)
+mesh = SubResource("r73")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-45, 0, 0)
+
+[node name="Arch1.8_3_3" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.24844548031822888, 3.3813520197812195)
+mesh = SubResource("r74")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-63, 0, 0)
+
+[node name="Arch1.8_3_4" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.3296582060999157, 3.1314049506337938)
+mesh = SubResource("r75")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-81, 0, 0)
+
+[node name="Arch1.8_3_5" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.3296582060999157, 2.8685950493662062)
+mesh = SubResource("r76")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-98.99999999999999, 0, 0)
+
+[node name="Arch1.8_3_6" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.248445480318229, 2.618647980218781)
+mesh = SubResource("r77")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-117, 0, 0)
+
+[node name="Arch1.8_3_7" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, 0.09396969619669993, 2.4060303038033)
+mesh = SubResource("r78")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-135, 0, 0)
+
+[node name="Arch1.8_3_8" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.11864798021878065, 2.251554519681771)
+mesh = SubResource("r79")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-153, 0, 0)
+
+[node name="Arch1.8_3_9" type="MeshInstance3D" parent="."]
+position = Vector3(1.8, -0.368595049366206, 2.1703417939000844)
+mesh = SubResource("r80")
+material_override = ExtResource("metal")
+rotation_degrees = Vector3(-171, 0, 0)
+
+[node name="RearBumper" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.23, 5.95)
+mesh = SubResource("r81")
+material_override = ExtResource("metal")
+
+[node name="RearBumperCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.23, 5.95)
+shape = SubResource("r82")
+
+[node name="FrontBumper-1.35" type="MeshInstance3D" parent="."]
+position = Vector3(-1.35, -0.25, -5.94)
+mesh = SubResource("r83")
+material_override = ExtResource("metal")
+
+[node name="FrontBumper-1.35Collision" type="CollisionShape3D" parent="."]
+position = Vector3(-1.35, -0.25, -5.94)
+shape = SubResource("r84")
+
+[node name="FrontBumper1.35" type="MeshInstance3D" parent="."]
+position = Vector3(1.35, -0.25, -5.94)
+mesh = SubResource("r85")
+material_override = ExtResource("metal")
+
+[node name="FrontBumper1.35Collision" type="CollisionShape3D" parent="."]
+position = Vector3(1.35, -0.25, -5.94)
+shape = SubResource("r86")
+
+[node name="FrontBridge" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.42, -5.94)
+mesh = SubResource("r87")
+material_override = ExtResource("dark")
+
+[node name="FrontBridgeCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.42, -5.94)
+shape = SubResource("r88")
+
+[node name="BatterySocket" parent="." instance=ExtResource("battery")]
 position = Vector3(2.16, 0.9, 1.5)
 preinstalled_battery = true
 
-[node name="VisualTrim" parent="." instance=ExtResource("trim")]
+[node name="EngineBay" parent="." instance=ExtResource("bay")]
+position = Vector3(0, -0.03, -5.3)
+
+[node name="RearRamp" parent="." instance=ExtResource("ramp")]
+position = Vector3(0, 0.52, 5.94)
 
 [node name="StructureSlots" type="Node3D" parent="."]
 script = ExtResource("slots")
+
+[node name="VehicleLights" type="Node3D" parent="."]
+script = ExtResource("lights")

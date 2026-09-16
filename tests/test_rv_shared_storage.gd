@@ -62,6 +62,7 @@ func _run() -> void:
 	second.interact(player)
 	check(rv.current_power == 37.0 and player.inventory.active_item().state.battery.charge == 19.0, "Explicit target socket swaps its own battery")
 	var box: Equipment = rv.get_node("ItemBox")
+	rv.stored_items.clear() # Isolate the one-slot storage transaction from starter supplies.
 	rv.item_capacity = 1
 	check(rv.store_player_item(player, 0), "Battery enters chassis warehouse")
 	player.add_item(ItemNames.WHEEL, false, "res://props/wheel.tscn", {"condition": 27.0})
@@ -110,6 +111,7 @@ func _run() -> void:
 	# Convert representative v1 data through the disk checkpoint entry point.
 	var legacy := saved.duplicate(true)
 	legacy.version = 1
+	legacy.health = 450.0
 	legacy.battery = {"id": "old-installed", "charge": 28.0, "capacity": 100.0, "weight": 15.0}
 	for index in range(legacy.equipment.size() - 1, -1, -1):
 		if legacy.equipment[index].scene == "res://rv/battery_socket.tscn": legacy.equipment.remove_at(index)

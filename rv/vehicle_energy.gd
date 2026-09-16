@@ -44,10 +44,10 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 		return engine_running
 	generated_rate = 0.0
 	_consumed = 0.0
-	if rv.chassis_destroyed:
+	if not rv.has_working_engine():
 		engine_running = false
 	if engine_running:
-		var required: float = (rv.fuel_idle_burn_per_second + rv.fuel_drive_burn_per_second * clampf(drive_intensity, 0.0, 1.0)) * delta
+		var required: float = (rv.fuel_idle_burn_per_second + rv.fuel_drive_burn_per_second * clampf(drive_intensity, 0.0, 1.0)) * rv.get_engine().definition().fuel_multiplier * delta
 		if not rv.consume_fuel(required):
 			rv.consume_fuel(rv.current_fuel)
 			engine_running = false
@@ -67,5 +67,7 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 	for device in equipment:
 		if is_instance_valid(device) and device.can_operate() and device.has_method("step_work"):
 			device.step_work(delta)
+	var lights: float = (0.12 if rv.headlights_requested else 0.0) + (0.04 if rv.handbrake or rv.brake_input > 0.0 else 0.0) + (0.04 if rv.gear < 0 else 0.0)
+	rv.lamps_powered = battery != null and battery.charge > 0.0 and consume_power(lights * delta)
 	load_rate = _consumed / delta
 	return engine_running
