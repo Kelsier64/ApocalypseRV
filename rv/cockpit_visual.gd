@@ -2,6 +2,11 @@ extends Node3D
 ## Presentation only; every instrument reads the chassis owned by this seat.
 var warning_lamps: Dictionary = {}
 func _ready() -> void:
+	# Recess fasteners stay on the existing panel face, outside control travel.
+	for x in [-0.56, 0.56]:
+		for y in [1.02, 1.39]:
+			var screw := RoadsideKit.part(self, Vector3(0.024, 0.024, 0.012), Vector3(x, y, -0.951), Color("8a8779"))
+			screw.material_override = IndustrialArt.material("steel", Color("8a8779"))
 	for i in range(VehicleStatus.IDS.size()):
 		var id: String = VehicleStatus.IDS[i]
 		var lamp := Sprite3D.new()

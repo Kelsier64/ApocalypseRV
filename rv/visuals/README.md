@@ -41,3 +41,7 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 - 預裝工作台左中、平板附在工作台；分解機右前、發電機左後、道具箱右後。中央走道至少 1 m，後門前方淨空。
 
 引擎／坡板／夜間／輪驅展示：tests/rv_rebuild_playground.tscn。F8 引擎艙、F9 後門坡板、F10 警示燈、F11 夜間、F12 輪驅回放。
+
+## 老舊工業材質（2026-09-17）
+
+共享 paint 材質引用 `assets/materials/industrial/worn_paint.png`，採 512px 匯入限制與近鄰 mipmap；狀態燈、玻璃分開保留。磨損狀態透過額外 detail 層疊加，不抹掉底層掉漆貼圖。車頂的 CabinLighting 跟著 Equipment 支撐與供電狀態運作，不能在拆下後繼續照明。新增儀表固定件只屬視覺，不改控制件運動、碰撞或安裝面。

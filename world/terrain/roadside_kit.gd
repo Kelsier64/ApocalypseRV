@@ -17,9 +17,7 @@ static func instantiate_module(kind: String) -> Node3D:
 
 static func material(color: Color) -> StandardMaterial3D:
 	if not materials.has(color):
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = color
-		mat.roughness = 0.95
+		var mat := IndustrialArt.material("concrete", color)
 		materials[color] = mat
 	return materials[color]
 

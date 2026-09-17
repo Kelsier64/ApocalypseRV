@@ -14,6 +14,7 @@ var samples: Array[float] = []
 var interact_ticks := 0
 
 func _ready() -> void:
+	get_window().title = "ApocalypseRV - Outdoor Art Validation"
 	main = load("res://world/test_world.tscn").instantiate()
 	var generator = main.get_node("WorldGenerator")
 	generator.world_seed = 42
@@ -78,6 +79,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.action_press("interact")
 	elif event.keycode == KEY_F5:
 		get_window().size = Vector2i(1280, 800) if get_window().size.x != 1280 else Vector2i(960, 720)
+	elif event.keycode == KEY_F6:
+		stage = 5 + posmod(stage - 4, 3) if stage >= 5 else 5
+		_view()
+	elif event.keycode == KEY_F7:
+		var rv: Chassis = main.get_node("NewRv/Chassis")
+		rv.current_power = 80.0 if rv.current_power < 1 else 0.0
+	elif event.keycode == KEY_F9:
+		var panel: Equipment = main.get_node("NewRv/Chassis/RightFront")
+		panel.current_health = panel.max_health if panel.current_health < panel.max_health * 0.3 else panel.max_health * 0.2
+	elif event.keycode == KEY_F10:
+		player.in_ui_mode = false
+		main.get_node("NewRv/Chassis/TabletScreen").interact_hold(player)
 	elif event.keycode == KEY_R:
 		get_tree().reload_current_scene()
 
@@ -85,12 +98,17 @@ func _view() -> void:
 	player.in_ui_mode = true
 	camera.current = true
 	var positions := [site.road.origin + Vector3(0, 2.3, 18), site.frame.origin + Vector3(0, 1.8, 8), site.route[3] + Vector3.UP * 1.8, site.building * Vector3(11, 3, 21), site.route[6] + Vector3.UP * 1.8]
+	var rv: Chassis = main.get_node("NewRv/Chassis")
+	positions.append_array([rv.to_global(Vector3(9, 3, -11)), rv.to_global(Vector3(0.8, 1.95, -1.8)), rv.to_global(Vector3(0.8, 1.8, 5.0))])
 	camera.global_position = positions[stage]
 	var target: Vector3 = site.building.origin + Vector3.UP * 5
 	if stage == 2: target = site.route[4] + Vector3.UP * 1.8
 	if stage == 4: target = site.frame.origin + Vector3.UP * 2
+	if stage == 5: target = rv.to_global(Vector3(0, 1.1, 0))
+	if stage == 6: target = rv.to_global(Vector3(-0.45, 1.3, -5))
+	if stage == 7: target = rv.to_global(Vector3(-0.7, 1.0, 0))
 	camera.look_at(target)
-	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | F8 retro | R reset" % [ExplorationSite.NAMES[variant], ["HIGHWAY", "PARKING", "OCCLUDED TRAIL", "ENTRANCE", "RETURN VIEW"][stage]]
+	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | F8 retro\nF6 RV/cabin/equipment | F7 battery | F9 panel damage | R reset" % [ExplorationSite.NAMES[variant], ["HIGHWAY", "PARKING", "OCCLUDED TRAIL", "ENTRANCE", "RETURN VIEW", "RV", "CABIN", "EQUIPMENT"][stage]]
 
 func _physics_process(delta: float) -> void:
 	if interact_ticks > 0:
@@ -117,6 +135,9 @@ func _physics_process(delta: float) -> void:
 	label.text = "CARRY ENGINE | %.1f s | waypoint %d/%d\nF2 stop | F8 retro" % [walk_time, route_index, site.route.size() - 1]
 
 func _process(delta: float) -> void:
+	# Keep validation instructions out of the real terminal's controls.
+	var tablet: Node = main.get_node("NewRv/Chassis/TabletScreen")
+	label.visible = not tablet.ui_instance.visible
 	if walking: samples.append(delta * 1000.0)
 
 func _exit_tree() -> void:

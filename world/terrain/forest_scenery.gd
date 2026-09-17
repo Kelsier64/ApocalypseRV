@@ -41,8 +41,8 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	# Warm both seam halos in slices before the synchronous nav source parse.
 	for band in [chunk.band, chunk.band - 1, chunk.band + 1]:
 		await prepare(chunk, band, gradual)
-	var trunks: Array[Transform3D] = []
-	var crowns: Array = [[], [], []]
+	var tree_poses: Array = [[], [], [], [], [], []]
+	var variants := chunk.field.rng_for(chunk.band, "forest_art_variants")
 	var shrubs: Array = [[], [], []]
 	var body := StaticBody3D.new()
 	body.name = "ForestTrunks"
@@ -54,18 +54,14 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		if gradual and i % 60 == 0: await chunk._pause()
 		var tree: Dictionary = planned[i]
 		var basis := Basis(Vector3.UP, tree.angle)
-		trunks.append(Transform3D(basis.scaled(Vector3(0.58, tree.height, 0.58)), tree.point + Vector3.UP * tree.height * 0.5))
+		var kind := variants.randi_range(0, 3) if variants.randf() > 0.16 else variants.randi_range(4, 5)
+		tree_poses[kind].append(Transform3D(basis.scaled(Vector3(tree.width, tree.height, tree.width)), tree.point))
 		var shape := CollisionShape3D.new()
 		# Shared geometry; box height is represented by its transform.
 		shape.shape = trunk_shape
 		shape.position = tree.point + Vector3.UP * tree.height * 0.5
 		shape.scale.y = tree.height
 		body.add_child(shape)
-		for layer in range(3):
-			var radius: float = tree.width * (1.0 - layer * 0.22)
-			var height: float = tree.height * 0.49
-			var center: Vector3 = tree.point + Vector3.UP * (2.0 + height * 0.5 + layer * tree.height * 0.19)
-			crowns[tree.kind].append(Transform3D(basis.rotated(Vector3.UP, layer * 0.6).scaled(Vector3(radius, height, radius)), center))
 		chunk.decoration_positions.append(tree.point)
 	# Dense waist/head-high undergrowth; no physical snagging on leaves.
 	var rng := chunk.field.rng_for(chunk.band, "undergrowth")
@@ -79,29 +75,11 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		if landmark_slit(chunk.field, point): continue
 		var height := rng.randf_range(1.5, 3.0)
 		var radius := rng.randf_range(1.0, 2.0)
-		shrubs[i % 3].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(radius, height, radius)), point + Vector3.UP * height * 0.45))
-	var trunk := CylinderMesh.new()
-	trunk.top_radius = 0.28
-	trunk.bottom_radius = 0.5
-	trunk.height = 1
-	trunk.radial_segments = 6
-	trunk.material = RoadsideKit.material(Color("373b32"))
-	batch(chunk, "ForestBark", trunk, trunks)
+		shrubs[i % 3].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(radius, height, radius)), point))
+	for kind in range(6):
+		batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind])
 	for kind in range(3):
-		var cone := CylinderMesh.new()
-		cone.top_radius = 0
-		cone.bottom_radius = 1
-		cone.height = 1
-		cone.radial_segments = 7
-		cone.material = RoadsideKit.material([Color("29392e"), Color("354237"), Color("3e4534")][kind])
-		batch(chunk, "ForestCanopy%d" % kind, cone, crowns[kind])
-		var bush := SphereMesh.new()
-		bush.radius = 1
-		bush.height = 1
-		bush.radial_segments = 5
-		bush.rings = 2
-		bush.material = RoadsideKit.material([Color("414937"), Color("4a4b38"), Color("343f30")][kind])
-		batch(chunk, "ForestBrush%d" % kind, bush, shrubs[kind])
+		batch(chunk, "ForestBrush%d" % kind, ForestMeshes.shrub(kind), shrubs[kind])
 	print("FOREST band=%d trees=%d shrubs=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size()])
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> void:
@@ -114,6 +92,10 @@ static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> vo
 	var node := MultiMeshInstance3D.new()
 	node.name = title
 	node.multimesh = multi
+	if title.begins_with("ForestBrush"):
+		# Trunks, canopy and terrain provide the large shadows; small undergrowth
+		# still receives them without resubmitting every twig to the shadow pass.
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# MultiMesh culls as a whole band; its centre can be far from a player
 	# standing at the edge of the 900 m strip even with trees beside them.
 	node.visibility_range_end = 650

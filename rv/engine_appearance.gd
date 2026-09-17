@@ -18,5 +18,7 @@ static func apply(visual: Node3D, engine: EngineState) -> void:
 		if wear > 0:
 			material.albedo_color = material.albedo_color.lerp(Color(0.12, 0.07, 0.04), 0.45 if wear == 1 else 0.8)
 			material.roughness = 1.0
-			material.albedo_texture = preload("res://assets/rv_status/scuffed_panel.svg")
+			material.detail_enabled = true
+			material.detail_albedo = preload("res://assets/rv_status/scuffed_panel.svg")
+			material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
 		mesh.material_override = material

@@ -8,6 +8,7 @@ func _ready() -> void:
 	seat = get_parent()
 	layer = 15
 	var panel := PanelContainer.new()
+	panel.theme = IndustrialTheme.make(22)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	panel.offset_left = 24
 	panel.offset_right = -24
@@ -15,11 +16,11 @@ func _ready() -> void:
 	panel.offset_bottom = -24
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.055, 0.055, 0.92)
-	style.border_color = Color(0.32, 0.48, 0.41)
+	style.bg_color = Color(0.045, 0.055, 0.06, 0.94)
+	style.border_color = IndustrialTheme.BORDER
 	style.set_border_width_all(1)
 	style.set_content_margin_all(12)
-	style.set_corner_radius_all(6)
+	style.set_corner_radius_all(0)
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 	var rows := VBoxContainer.new()

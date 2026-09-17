@@ -18,12 +18,10 @@ func _ready() -> void:
 		child.queue_free()
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.02, 0.03, 0.04, 0.9)
+	shade.color = Color(0.045, 0.055, 0.06, 0.96)
 	add_child(shade)
 	var panel := MarginContainer.new()
-	var theme := Theme.new()
-	theme.default_font_size = 24
-	panel.theme = theme
+	panel.theme = IndustrialTheme.make(24)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "top", "right", "bottom"]:
 		panel.add_theme_constant_override("margin_" + side, 40)
@@ -36,6 +34,7 @@ func _ready() -> void:
 	scroll.add_child(box)
 	var title := Label.new()
 	title.text = "RV SERVICE TERMINAL"
+	title.add_theme_color_override("font_color", IndustrialTheme.AMBER)
 	title.add_theme_font_size_override("font_size", 28)
 	box.add_child(title)
 	var close := Button.new()

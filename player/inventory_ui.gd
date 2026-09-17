@@ -4,6 +4,7 @@ var slots_container: HBoxContainer
 
 func _ready():
 	var control = Control.new()
+	control.theme = IndustrialTheme.make(16)
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(control)
@@ -26,9 +27,10 @@ func _ready():
 	slots_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	
 	for i in range(6):
-		var panel = ColorRect.new()
+		var panel = Panel.new()
 		panel.custom_minimum_size = Vector2(80, 80)
-		panel.color = Color(0.1, 0.1, 0.1, 0.5)
+		panel.add_theme_stylebox_override("panel", IndustrialTheme.box(IndustrialTheme.BACKGROUND))
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
 		var label = Label.new()
 		label.text = "Empty"
@@ -49,24 +51,27 @@ func update_slots(inventory: Array, active_slot: int = 0):
 		var slot_label = children[i].get_child(0) as Label
 		
 		# Base color
-		var bg_color = Color(0.1, 0.1, 0.1, 0.5)
+		var bg_color = Color(0.06, 0.08, 0.085, 0.85)
 		
 		# If item exists
 		if i < inventory.size():
 			var item = inventory[i]
 			var prefix = "[L] " if item.get("is_large", false) else ""
 			slot_label.text = prefix + item.get("name", "Item")
-			bg_color = Color(0.8, 0.4, 0.4, 0.9) if item.get("is_large", false) else Color(0.2, 0.2, 0.2, 0.9)
+			bg_color = Color("453b30") if item.get("is_large", false) else Color("252d2c")
 		else:
 			slot_label.text = "Empty"
 
 		# Highlight active slot
 		if i == active_slot:
 			# Make it brighter and more opaque if it's the active slot
-			bg_color = bg_color.lightened(0.5)
+			bg_color = bg_color.lightened(0.13)
 			bg_color.a = 1.0
 			
-		children[i].color = bg_color
+		var key := str(bg_color) + str(i == active_slot)
+		if children[i].get_meta("appearance", "") != key:
+			children[i].set_meta("appearance", key)
+			children[i].add_theme_stylebox_override("panel", IndustrialTheme.box(bg_color, IndustrialTheme.AMBER if i == active_slot else IndustrialTheme.BORDER))
 
 func _process(_delta: float) -> void:
 	# Driving uses its own dashboard in this screen area.

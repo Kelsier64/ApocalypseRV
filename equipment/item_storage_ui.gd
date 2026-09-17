@@ -19,9 +19,7 @@ func _ready() -> void:
 	add_child(margin)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 18)
-	var theme := Theme.new()
-	theme.default_font_size = 24
-	box.theme = theme
+	box.theme = IndustrialTheme.make(24)
 	margin.add_child(box)
 	title = Label.new()
 	box.add_child(title)

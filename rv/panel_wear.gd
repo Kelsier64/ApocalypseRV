@@ -21,5 +21,11 @@ func _process(_delta: float) -> void:
 		if level > 0:
 			material.albedo_color = material.albedo_color.lerp(Color(0.25, 0.17, 0.1, material.albedo_color.a), 0.25 if level == 1 else 0.5)
 			material.roughness = 0.95
-			material.albedo_texture = load("res://assets/rv_status/" + ("cracked_glass.svg" if entry.glass else "scuffed_panel.svg"))
+			if entry.glass:
+				material.albedo_texture = preload("res://assets/rv_status/cracked_glass.svg")
+			else:
+				# Preserve the original paint texture under the extra damage layer.
+				material.detail_enabled = true
+				material.detail_albedo = preload("res://assets/rv_status/scuffed_panel.svg")
+				material.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
 		entry.mesh.material_override = material

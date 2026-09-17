@@ -8,6 +8,11 @@ func _ready() -> void:
 	var wear := Node.new()
 	wear.set_script(load("res://rv/panel_wear.gd"))
 	add_child(wear)
+	if structure_kind == "roof":
+		var lamps := Node3D.new()
+		lamps.name = "CabinLighting"
+		lamps.set_script(preload("res://rv/cabin_lighting.gd"))
+		add_child(lamps)
 	call_deferred("_setup_if_on_rv")
 
 func _setup_if_on_rv() -> void:

@@ -7,6 +7,7 @@ var damage_flash: ColorRect
 func _ready():
 	# Create the UI elements programmatically
 	var margin = MarginContainer.new()
+	margin.theme = IndustrialTheme.make(18)
 	margin.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	margin.add_theme_constant_override("margin_left", 20)
 	margin.add_theme_constant_override("margin_top", 20)
@@ -18,7 +19,7 @@ func _ready():
 	health_label = Label.new()
 	health_label.text = "HP: 100 / 100"
 	health_label.add_theme_font_size_override("font_size", 18)
-	health_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
+	health_label.add_theme_color_override("font_color", IndustrialTheme.INK)
 	vbox.add_child(health_label)
 	
 	health_bar = ProgressBar.new()
@@ -30,19 +31,13 @@ func _ready():
 	
 	# Style the bar
 	var fill_style = StyleBoxFlat.new()
-	fill_style.bg_color = Color(0.8, 0.15, 0.1)
-	fill_style.corner_radius_top_left = 4
-	fill_style.corner_radius_top_right = 4
-	fill_style.corner_radius_bottom_left = 4
-	fill_style.corner_radius_bottom_right = 4
+	fill_style.bg_color = Color("a5543e")
 	health_bar.add_theme_stylebox_override("fill", fill_style)
 	
 	var bg_style = StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.15, 0.15, 0.15, 0.8)
-	bg_style.corner_radius_top_left = 4
-	bg_style.corner_radius_top_right = 4
-	bg_style.corner_radius_bottom_left = 4
-	bg_style.corner_radius_bottom_right = 4
+	bg_style.bg_color = IndustrialTheme.BACKGROUND
+	bg_style.border_color = IndustrialTheme.BORDER
+	bg_style.set_border_width_all(1)
 	health_bar.add_theme_stylebox_override("background", bg_style)
 	
 	vbox.add_child(health_bar)

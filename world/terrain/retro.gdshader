@@ -6,5 +6,7 @@ void fragment() {
 	vec2 cell = floor(SCREEN_UV * pixel_grid);
 	vec3 source = texture(screen_texture, (cell + 0.5) / pixel_grid).rgb;
 	float dither = (mod(cell.x, 2.0) + mod(cell.y, 2.0) * 2.0) / 4.0 - 0.375;
-	COLOR = vec4(clamp(source + dither / 90.0, vec3(0.0), vec3(1.0)), 1.0);
+	// Restrained contrast with lifted deepest blacks, no temporal noise or UI filtering.
+	vec3 graded = clamp((source - 0.38) * 1.055 + 0.38, vec3(0.012), vec3(1.0));
+	COLOR = vec4(clamp(graded + dither / 100.0, vec3(0.0), vec3(1.0)), 1.0);
 }

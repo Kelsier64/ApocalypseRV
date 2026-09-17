@@ -70,7 +70,7 @@ func _build_ground(gradual: bool) -> void:
 			var w: Vector3 = sample.weights
 			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
 			if field.profile.generation_version >= 3:
-				color = Color("454b3e") * w.x + Color("343e35") * w.y + Color("555249") * w.z
+				color = Color("656153") * w.x + Color("515849") * w.y + Color("797369") * w.z
 			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
 			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
 			st.set_normal(normal)
@@ -87,6 +87,7 @@ func _build_ground(gradual: bool) -> void:
 	_terrain = _mesh(st.commit(), "Ground", true)
 	var mat := ShaderMaterial.new()
 	mat.shader = TERRAIN_SHADER
+	mat.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
 	_terrain.material_override = mat
 	if gradual:
 		await _pause()

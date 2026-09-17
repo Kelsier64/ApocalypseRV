@@ -26,6 +26,16 @@ These open the editor, launch gameplay, and run validation. The runner imports a
 
 ## Coding and Testing
 
+### Codex and Antigravity CLI Responsibilities
+
+Antigravity CLI is installed locally. Prefer using it for routine development, well-scoped implementation tasks, repetitive edits, and batch image generation whenever its available capabilities fit the task.
+
+- Codex owns planning, task breakdown, architecture decisions, integration review, acceptance checks, computer-use testing, and highly complex or difficult development.
+- Before delegating, Codex defines the scope, relevant files, constraints, expected outputs, and acceptance criteria. Keep delegated work bounded and avoid concurrent edits to the same files.
+- Check the locally installed CLI's help and supported capabilities before invoking it; do not invent commands, flags, or image-generation support. Use Antigravity for batch image generation when supported, with consistent asset specifications and output locations.
+- Codex reviews generated code and assets, integrates the results, and runs the applicable automated and visual checks. A successful CLI run alone does not establish acceptance.
+- If Antigravity is unavailable or unsuitable, Codex continues with available tools and briefly reports the limitation. Preserve unrelated work and follow all repository testing and preservation rules.
+
 Use UTF-8, GDScript tabs, explicit types where practical, `snake_case` files/functions, `PascalCase` classes, and `UPPER_SNAKE_CASE` constants. Reuse `core/` contracts. No dedicated formatter or numeric coverage threshold exists.
 
 Tests extend `SceneTree`, print `PASS`, and report failures with nonzero exit codes. Prefer observable behavior over private-helper assertions. Physics changes require production-scene regression tests and visual inspection.
