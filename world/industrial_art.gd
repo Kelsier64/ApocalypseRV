@@ -4,6 +4,7 @@ class_name IndustrialArt
 ## Shared exterior material library. Does not mutate indoor source resources.
 static var materials: Dictionary = {}
 static var textures: Dictionary = {}
+static var exterior_materials: Dictionary = {}
 
 static func texture(kind: String) -> Texture2D:
 	if textures.has(kind): return textures[kind]
@@ -52,4 +53,12 @@ static func dress_exterior(root: Node3D) -> void:
 		var tint: Color = source.albedo_color
 		var kind := "steel" if source.metallic > 0.3 or tint.v < 0.32 else "paint"
 		if "concrete" in source.resource_path or "floor" in source.resource_path: kind = "concrete"
-		node.material_override = material(kind, tint.lerp(Color("77746a"), 0.15))
+		# Exterior surfaces use broad construction marks, not uniform speckled wear.
+		var key := kind + tint.to_html()
+		if not exterior_materials.has(key):
+			var mat := material(kind, tint.lerp(Color("77746a"), 0.15)).duplicate() as StandardMaterial3D
+			mat.albedo_texture = preload("res://assets/materials/style_sample/concrete.svg") if kind == "concrete" else preload("res://assets/materials/style_sample/panel.svg")
+			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			mat.uv1_scale = Vector3.ONE * (0.22 if kind == "concrete" else 0.4)
+			exterior_materials[key] = mat
+		node.material_override = exterior_materials[key]

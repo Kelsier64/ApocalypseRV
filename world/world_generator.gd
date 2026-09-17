@@ -31,36 +31,10 @@ func _ready() -> void:
 	next_band = int(initial_bands.back()) + 1
 	if not restore_bands.is_empty():
 		_refresh_horizon(next_band, false)
-	_configure_environment()
 	if not get_parent().has_node("OutdoorPresentation"):
 		var presentation := OutdoorPresentation.new()
 		presentation.name = "OutdoorPresentation"
 		get_parent().add_child.call_deferred(presentation)
-
-func _configure_environment() -> void:
-	var holder := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
-	if holder != null:
-		var environment := holder.environment.duplicate() as Environment
-		environment.fog_enabled = true
-		environment.fog_light_color = Color("778086")
-		environment.fog_density = 0.009
-		environment.fog_sky_affect = 1.0
-		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		environment.ambient_light_color = Color("abb6c2")
-		environment.ambient_light_energy = 0.34
-		if environment.sky != null:
-			environment.sky = environment.sky.duplicate(true)
-			var sky := environment.sky.sky_material as ProceduralSkyMaterial
-			if sky != null:
-				sky.sky_top_color = Color("414d5a")
-				sky.sky_horizon_color = Color("80878b")
-				sky.ground_horizon_color = Color("80878b")
-				sky.ground_bottom_color = Color("383d40")
-		holder.environment = environment
-	var sun := get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
-	if sun != null:
-		sun.light_color = Color("ded6bb")
-		sun.light_energy = 0.70
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player):

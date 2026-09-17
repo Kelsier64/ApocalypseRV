@@ -1,90 +1,114 @@
 extends RefCounted
 class_name ForestMeshes
-## Four broken pine silhouettes, two snags and three irregular shrubs.
-## Geometry is cached once, and only used by MultiMesh visual instances.
+## Opaque low-poly boughs, aligned with the existing lower trunk collision.
 static var cache: Dictionary = {}
+static var materials: Dictionary = {}
 
 static func tree(kind: int) -> ArrayMesh:
 	var key := "tree%d" % kind
 	if cache.has(key): return cache[key]
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var wood := SurfaceTool.new()
+	var leaf := SurfaceTool.new()
+	wood.begin(Mesh.PRIMITIVE_TRIANGLES)
+	leaf.begin(Mesh.PRIMITIVE_TRIANGLES)
+	wood.set_smooth_group(-1)
+	leaf.set_smooth_group(-1)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 900 + kind
-	var bark := Color("625748")
-	# The full lower trunk stays centred on the original collision column.
-	_tube(st, Vector3.ZERO, Vector3(0.015 * (kind - 2), 1, 0.01), 0.10, 0.025, bark, 5)
-	for tier in range(4):
-		var y := 0.25 + tier * 0.16
-		var angle := tier * 2.39 + kind * 0.9
-		var reach := (0.96 - y) * (0.4 if kind < 4 else 0.28)
-		var end := Vector3(cos(angle) * reach, y + 0.035, sin(angle) * reach)
-		_tube(st, Vector3(0, y, 0), end, 0.014, 0.003, bark)
-		if kind >= 4: continue
-		var leaf: Color = [Color("536051"), Color("5b6050"), Color("414f47"), Color("686853")][kind]
-		var radius := (1.0 - y) * 1.27
-		var center := Vector3(cos(angle) * radius * 0.18, y, sin(angle) * radius * 0.18)
-		_crown(st, rng, center, radius, 0.28, leaf, tier)
-	if kind < 4: _crown(st, rng, Vector3(0.035, 0.88, 0), 0.16, 0.16, Color("536051"), 5)
-	st.generate_normals()
-	var mesh := st.commit()
-	mesh.surface_set_material(0, _material())
-	cache[key] = mesh
-	return mesh
+	var bend := Vector3(sin(kind * 1.7) * 0.05, 0, cos(kind * 2.1) * 0.04)
+	var bark := Color("a69984")
+	_tube(wood, Vector3.ZERO, Vector3.UP * 0.55, 0.1, 0.057, bark, 6)
+	var tip := Vector3.UP + bend
+	_tube(wood, Vector3.UP * 0.55, tip, 0.057, 0.012, bark, 5)
+	for i in range(5):
+		var a := Vector3(cos(i * TAU / 5), 0, sin(i * TAU / 5)) * 0.012
+		var b := Vector3(cos((i+1) * TAU / 5), 0, sin((i+1) * TAU / 5)) * 0.012
+		_triangle(wood, tip, tip + b, tip + a, bark)
+	for i in range(19):
+		var y := 0.25 + i * 0.037
+		var angle := i * 2.399 + kind * 0.87
+		var direction := Vector3(cos(angle), 0, sin(angle))
+		var root := Vector3.UP * y + bend * y
+		var reach := (1.0 - y) * rng.randf_range(1.35, 1.95)
+		var end := root + direction * reach + Vector3.UP * rng.randf_range(-0.065, 0.04)
+		_tube(wood, root, end, 0.012, 0.002, bark, 3)
+		if kind >= 4 or i % 7 == 0: continue
+		var tint: Color = [Color("515345"), Color("5b5949"), Color("454e46"), Color("66604b")][kind]
+		var side := direction.cross(Vector3.UP)
+		for fork in [-1.0, 0.0, 1.0]:
+			var start := root.lerp(end, 0.20)
+			var edge: Vector3 = end + side * fork * reach * 0.52 + Vector3.UP * (0.045 if fork != 0 else -0.025)
+			_bough(leaf, start, edge, reach * 0.44, tint.lightened(rng.randf_range(0, 0.10)))
+	wood.generate_normals()
+	var result := wood.commit()
+	result.surface_set_material(0, _material(true))
+	if kind < 4:
+		leaf.generate_normals()
+		leaf.commit(result)
+		result.surface_set_material(1, _material(false))
+	cache[key] = result
+	return result
 
 static func shrub(kind: int) -> ArrayMesh:
 	var key := "shrub%d" % kind
 	if cache.has(key): return cache[key]
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 401 + kind
-	for branch in range(2):
-		var angle := branch * 2.4 + kind
-		var end := Vector3(cos(angle) * 0.65, rng.randf_range(0.5, 1.0), sin(angle) * 0.65)
-		_tube(st, Vector3.ZERO, end, 0.025, 0.007, Color("6b6151"))
-		_crown(st, rng, end * 0.7, 0.58, 0.32, [Color("77745b"), Color("636854"), Color("555e4e")][kind], branch)
+	st.set_smooth_group(-1)
+	for i in range(5):
+		var angle := i * 2.399 + kind
+		var end := Vector3(cos(angle) * 0.6, 0.55 + i * 0.09, sin(angle) * 0.6)
+		_bough(st, Vector3(0, 0.08, 0), end, 0.2, Color("64634e").darkened(i * 0.035))
 	st.generate_normals()
-	var mesh := st.commit()
-	mesh.surface_set_material(0, _material())
-	cache[key] = mesh
-	return mesh
+	var result := st.commit()
+	result.surface_set_material(0, _material(false))
+	cache[key] = result
+	return result
 
-static func _material() -> StandardMaterial3D:
-	var mat := IndustrialArt.material("foliage", Color.WHITE).duplicate() as StandardMaterial3D
+static func _material(wood: bool) -> StandardMaterial3D:
+	if materials.has(wood): return materials[wood]
+	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 1.0
 	mat.metallic_specular = 0.0
-	# The baked meshes already carry UVs; avoid three texture samples per leaf.
-	mat.uv1_triplanar = false
-	mat.uv1_scale = Vector3(1, 2, 1)
+	if wood:
+		mat.albedo_texture = preload("res://assets/materials/style_sample/bark.svg")
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	else:
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mat.albedo_texture = preload("res://assets/materials/outdoor/bough.svg")
+		mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	materials[wood] = mat
 	return mat
 
-static func _triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
-	st.set_color(color)
-	for point in [a, b, c]:
-		st.set_uv(Vector2(point.x, point.y))
-		st.add_vertex(point)
+static func _triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, tint: Color) -> void:
+	st.set_color(tint)
+	for p in [a, b, c]:
+		st.set_uv(Vector2((p.x + p.z) * 4.0, p.y * 2.0))
+		st.add_vertex(p)
 
-static func _tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, color: Color, sides: int = 3) -> void:
-	var axis := (b - a).normalized()
+static func _tube(st: SurfaceTool, a: Vector3, b: Vector3, ra: float, rb: float, tint: Color, sides: int) -> void:
+	var axis := (b-a).normalized()
 	var tangent := axis.cross(Vector3.FORWARD).normalized()
 	var side := axis.cross(tangent).normalized()
 	for i in range(sides):
 		var p := tangent * cos(i * TAU / sides) + side * sin(i * TAU / sides)
-		var q := tangent * cos((i + 1) * TAU / sides) + side * sin((i + 1) * TAU / sides)
-		_triangle(st, a + p * ra, b + p * rb, a + q * ra, color)
-		_triangle(st, a + q * ra, b + p * rb, b + q * rb, color)
+		var q := tangent * cos((i+1) * TAU / sides) + side * sin((i+1) * TAU / sides)
+		_triangle(st, a+p*ra, b+p*rb, a+q*ra, tint)
+		_triangle(st, a+q*ra, b+p*rb, b+q*rb, tint)
 
-static func _crown(st: SurfaceTool, rng: RandomNumberGenerator, center: Vector3, radius: float, height: float, color: Color, tier: int) -> void:
-	st.set_smooth_group(-1)
-	var ring: Array[Vector3] = []
-	for i in range(6):
-		var angle := i * TAU / 6 + tier * 0.43
-		var r := radius * rng.randf_range(0.55, 1.08)
-		ring.append(center + Vector3(cos(angle) * r, rng.randf_range(-0.07, 0.035), sin(angle) * r))
-	var peak := center + Vector3(radius * 0.15, height, -radius * 0.12)
-	for i in range(6):
-		var tint := color * rng.randf_range(0.8, 1.08)
-		tint.a = 1
-		_triangle(st, ring[(i + 1) % 6], peak, ring[i], tint)
-		_triangle(st, ring[i], center - Vector3.UP * 0.1, ring[(i + 1) % 6], tint.darkened(0.2))
+static func _bough(st: SurfaceTool, a: Vector3, b: Vector3, width: float, tint: Color) -> void:
+	var axis := b-a
+	var side := axis.normalized().cross(Vector3.UP) * width
+	# Serrated perimeter and a raised spine give real shaded facets.
+	var outline: Array[Vector3] = []
+	for i in range(8):
+		var t := float(i) / 8.0
+		outline.append(a + axis * t + side * (0.48 if i % 2 == 0 else 1.0) * (1.0-t*0.6))
+	outline.append(b)
+	for i in range(7, -1, -1):
+		var t := float(i) / 8.0
+		outline.append(a + axis * t - side * (0.55 if i % 2 == 0 else 0.9) * (1.0-t*0.6))
+	var spine := a.lerp(b, 0.45) + Vector3.UP * width * 0.09
+	for i in range(outline.size()):
+		_triangle(st, outline[i], spine, outline[(i+1) % outline.size()], tint)

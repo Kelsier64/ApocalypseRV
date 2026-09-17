@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://umrhdcec7hn2" path="res://world/instances/poi_instance_manager.gd" id="14_instances"]
 [ext_resource type="PackedScene" path="res://props/battery.tscn" id="15_battery"]
 [ext_resource type="Script" uid="uid://0ia4tupkiatx" path="res://world/test_world.gd" id="16_root"]
+[ext_resource type="Script" path="res://world/world_clock.gd" id="17_clock"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
 
@@ -41,6 +42,9 @@ script = ExtResource("14_instances")
 [node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450]
 script = ExtResource("9_8hcw6")
 player = NodePath("../Player")
+
+[node name="WorldClock" type="Node" parent="."]
+script = ExtResource("17_clock")
 
 [node name="OilBarrel" parent="." unique_id=1511901755 instance=ExtResource("8_x05cw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0)

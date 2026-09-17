@@ -62,7 +62,6 @@ func apply() -> void:
 	_last_active = active
 	get_viewport().scaling_3d_scale = minf(1.0, 540.0 / maxf(1, size.y)) if active else 1.0
 	effect.visible = active
-	effect.material.set_shader_parameter("pixel_grid", Vector2(size) * minf(1.0, 540.0 / maxf(1, size.y)))
 
 func _exit_tree() -> void:
 	if is_inside_tree(): get_viewport().scaling_3d_scale = 1.0

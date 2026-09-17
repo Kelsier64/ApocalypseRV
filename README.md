@@ -1,5 +1,11 @@
 # ApocalypseRV
 
+## 日夜時間
+
+正式世界從第 1 天 **08:00** 開始，現實 **30 分鐘為遊戲一天**。右上角顯示日期／時間；太陽移動、陰影、天空、環境光和霧色同步變化。進入室內時間繼續，SceneTree 暫停才會停止；F6／F9 檢查點保存與恢復時間，舊存檔缺少時間時從第 1 天 08:00 開始。不計算離線時間。
+
+快速觀看四個時段：`godot --path . --log-file .godot/day-night.log res://tests/day_night_playground.tscn`。測試場景 F1 切換清晨／正午／黃昏／夜晚，F12 加速至 1 分鐘一天，Home 停住／繼續；F2 換視角，5 從高處檢查日輪，F11 隱藏測試文字。這些時間快捷鍵只存在於測試場景。
+
 Godot 4.6.1 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、搬運物資、分解製作汽油，並應對會攀車與拆車的殭屍。**目前是單人沙盒**，提供室外檢查點保存，尚無多人、任務、正式勝敗或長局進度；合作生存屬後續願景。
 
 ## 文件
@@ -18,15 +24,19 @@ godot --editor --path .
 godot --path .
 ```
 
-主場景為 `world/test_world.tscn`，使用 Jolt Physics 與 GL Compatibility。開局有完整組裝的 RV、測試物資及殭屍，並生成公路。
+主場景為 `world/test_world.tscn`，使用 Jolt Physics，桌面預設 Forward+／Vulkan。開局有完整組裝的 RV、測試物資及殭屍，並生成公路。
+
+戶外已改用林間局部體積霧，會接受太陽與車燈照明；遠處另外保留淡距離霧。更新後須重新啟動遊戲，編輯器需重新載入專案。若顯示卡不支援，可用 `godot --path . --rendering-method gl_compatibility --rendering-driver opengl3`，降級為原距離霧。畫面與測試見 [局部體積霧驗收](docs/validation/2026-09-17-volumetric-fog.md)。
 
 ## 怎麼玩
 
 ### 工業美術樣板（獨立場景）
 
+正式戶外已採用 [D 低模目標方向](docs/art_targets/outdoor/2026-09-17-d-revision.md)：分叉低模樹冠、簡化泥地、冷霧與固定雲層。F8 切換約 540p 的 3D 渲染／原生解析度，沒有額外像素格或抖色；HUD 保持清楚。驗收見 [正式戶外 D 紀錄](docs/validation/2026-09-17-outdoor-d.md)。後續 [霧效修正](docs/validation/2026-09-17-fog-refinement.md) 保留近景對比，統一天際線與霧色並減弱雲斑。
+
 執行 `godot --path . --log-file .godot/style-sample.log res://tests/industrial_style_playground.tscn`，查看同一 seed 的新舊美術對照。F1 切換樣板／原版、F2 固定視角、F3 正式角色攜引擎走完全程、F4 進入／返回、F6 RV／駕駛室／設備視角、F7 切換測試電量、F8 復古效果、F9 測試牆板損傷、F10 平板、F11 隱藏樣板文字、F5 切換視窗尺寸。這些測試按鍵僅屬樣板，不改正式操作。
 
-樣板包含分枝針葉樹、結構材質、高窗維修廠、陰天與局部照明；主場景仍使用原有美術。詳見 [視覺研究](docs/research/2026-09-17-lethal-company-visual-direction.md) 與 [樣板驗收](docs/validation/2026-09-17-style-sample.md)。
+獨立樣板仍保留前一輪針葉樹、高窗維修廠與 RV 材質實驗；F1 現在對照的是目前正式美術，不是凍結的歷史版本。正式遊玩請使用主場景；正式畫面驗收使用 `res://tests/outdoor_horror_playground.tscn`，F11 隱藏驗收文字。高窗量體與 RV 實驗材質仍未併入正式版。歷史資料見 [視覺研究](docs/research/2026-09-17-lethal-company-visual-direction.md) 與 [樣板驗收](docs/validation/2026-09-17-style-sample.md)。
 
 ### 正式遊玩
 
@@ -113,7 +123,7 @@ godot --path . --log-file .godot/poi-replay.log res://tests/poi_instance_playgro
 
 ## 公路與沿途探索
 
-室外使用固定陰天、距離霧與灰綠工業配色，配置林帶、土堤、岩石、圍牆和路標。道路有緩起伏、連續彎和 15→10 m 縮窄段；看到 SLOW 請減速。每三個停靠點有兩個離路建築、一個近路小補給。四款入口共用現有室內內容；約 488 m 的密林交錯步道與 1.8 m 窄口允許玩家攜大型物品步行，阻擋 RV 直接開到門口。
+室外使用陰天雲層、日夜光照、局部體積霧與灰綠工業配色，配置林帶、土堤、岩石、圍牆和路標。道路有緩起伏、連續彎和 15→10 m 縮窄段；看到 SLOW 請減速。每三個停靠點有兩個離路建築、一個近路小補給。四款入口共用現有室內內容；約 488 m 的密林交錯步道與 1.8 m 窄口允許玩家攜大型物品步行，阻擋 RV 直接開到門口。
 
 新世界採生成 v4：建築距公路約 330 m，樹冠與高灌叢包圍步道。既有生成 v2／v3 存檔保留原地形和入口距離；要體驗新版密林與遠距入口，請開新世界。未記錄生成版本時採 v2。F8 顯示偏好獨立寫入 user://display_preferences.cfg。復古效果只影響室外 3D，不降低背包、平板或互動文字解析度。詳見 [密林驗收紀錄](docs/validation/2026-09-16-dense-forest.md)。
 

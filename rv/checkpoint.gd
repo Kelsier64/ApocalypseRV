@@ -61,6 +61,8 @@ func save_world(world: Node, path: String) -> bool:
 		"actors": actors, "poi": manager.saved_instances.duplicate(true),
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health}}
+	var clock := world.get_node_or_null("WorldClock") as WorldClock
+	if clock != null: data["clock"] = clock.capture()
 	return write_checkpoint(path, data)
 
 func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
@@ -109,6 +111,8 @@ func read_checkpoint(path: String) -> Dictionary:
 	if not data.player.has_all(["items", "slot", "health", "transform"]) or not data.player.items is Array or not data.player.transform is Transform3D: return {}
 	if not data.seed is int or not data.poi is Dictionary or not data.get("profile", {}) is Dictionary or not data.player.slot is int or not VehicleSnapshot._number(data.player.health): return {}
 	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4]: return {}
+	# Optional v3 extension: older checkpoints start on day 1 at 08:00.
+	if data.has("clock") and not WorldClock.valid_state(data.clock): return {}
 	for band in data.bands:
 		if not band is int: return {}
 	for item in data.player.items:
@@ -132,6 +136,8 @@ func read_checkpoint(path: String) -> Dictionary:
 
 func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
+	var clock := world.get_node_or_null("WorldClock") as WorldClock
+	if clock != null and pending.has("clock"): clock.restore(pending.clock)
 	world.get_node("Player").transform = pending.player.transform
 	world.get_node("WorldGenerator").world_seed = pending.seed
 	var profile := WorldProfile.new()

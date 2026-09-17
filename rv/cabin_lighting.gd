@@ -2,7 +2,17 @@ extends Node3D
 ## Warm cabin lighting follows the roof equipment and existing standby supply.
 var lamps: Array[SpotLight3D] = []
 var lenses: Array[StandardMaterial3D] = []
+var clear_air: FogVolume
 func _ready() -> void:
+	if ForestFog.supported():
+		clear_air = FogVolume.new()
+		clear_air.name = "CabinClearAir"
+		clear_air.size = Vector3(3.7, 2.6, 11.4)
+		clear_air.position = Vector3(0, -1.35, 0)
+		var air := FogMaterial.new()
+		air.density = -1.0
+		clear_air.material = air
+		add_child(clear_air)
 	for z in [-3.2, 2.2]:
 		var light := SpotLight3D.new()
 		light.position = Vector3(0, -0.14, z)
@@ -28,6 +38,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var roof := get_parent() as Equipment
 	var rv := roof.get_connected_rv() as Chassis
+	if is_instance_valid(clear_air): clear_air.visible = rv != null and roof.can_operate() and not roof.is_being_placed
 	var powered := rv != null and roof.can_operate() and not roof.is_being_placed and rv.has_usable_power() and rv.lamps_powered
 	for lamp in lamps: lamp.visible = powered
 	for lens in lenses: lens.emission_energy_multiplier = 0.65 if powered else 0.0

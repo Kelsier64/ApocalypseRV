@@ -3,7 +3,6 @@ extends "res://tests/outdoor_horror_playground.gd"
 const MAINTENANCE_ART := preload("res://world/art_sample/maintenance_sample.gd")
 var styled := true
 var comparison: Label
-var clean_view := false
 var refresh_time := 0.0
 var materials: Array[Dictionary] = []
 var forest: Array[Dictionary] = []
@@ -18,6 +17,7 @@ var dressing_ready := false
 
 func _ready() -> void:
 	super._ready()
+	main.get_node("WorldClock").running = false
 	get_window().title = "ApocalypseRV - Industrial Style Sample"
 	await get_tree().process_frame
 	# Force the same initial comparison settings, without saving a preference.
@@ -28,6 +28,8 @@ func _ready() -> void:
 	sample_environment.ambient_light_color = Color("84979a")
 	sample_environment.fog_light_color = Color("73817f")
 	sample_environment.fog_density = 0.009
+	sample_environment.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	sample_environment.volumetric_fog_enabled = false
 	sample_environment.fog_sky_affect = 0.6
 	var sky := ShaderMaterial.new()
 	sky.shader = preload("res://world/art_sample/overcast.gdshader")
@@ -89,7 +91,7 @@ func _refresh_assets() -> void:
 		if node.has_meta("style_sample"): continue
 		node.set_meta("style_sample", true)
 		var is_brush := str(node.name).begins_with("ForestBrush")
-		var kind := int(str(node.name).trim_prefix("ForestBrush" if is_brush else "ForestTree"))
+		var kind := int(node.get_meta("forest_kind", 0))
 		# Partition only the sample visuals; production transforms/colliders stay intact.
 		var alternate := _forest_cells(node, kind, is_brush)
 		forest.append({"node": node, "base": node.multimesh, "sample": alternate})
@@ -124,6 +126,7 @@ func _forest_cells(source: MultiMeshInstance3D, kind: int, is_brush: bool) -> No
 	var holder := Node3D.new()
 	holder.name = str(source.name) + "Cells"
 	source.get_parent().add_child(holder)
+	holder.transform = source.transform
 	var cells: Dictionary = {}
 	for i in range(source.multimesh.instance_count):
 		var pose := source.multimesh.get_instance_transform(i)

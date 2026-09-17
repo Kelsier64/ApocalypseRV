@@ -36,6 +36,7 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 		await _pause()
 	_build_navigation()
 	_spawn_actors()
+	ForestFog.build(self)
 	_measure_slice()
 
 func _measure_slice() -> void:

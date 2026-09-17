@@ -22,6 +22,7 @@ func _run() -> void:
 	await physics_frame
 	await process_frame
 	check(cabin.lamps.all(func(lamp): return lamp.visible), "Powered installed ceiling illuminates cabin")
+	if ForestFog.supported(): check(cabin.clear_air.visible, "Mounted roof keeps fog outside the cabin")
 	rv.current_power = 0
 	await physics_frame
 	await process_frame
@@ -32,6 +33,7 @@ func _run() -> void:
 	await physics_frame
 	await process_frame
 	check(cabin.lamps.all(func(lamp): return not lamp.visible), "Detached ceiling never keeps powered lights")
+	if ForestFog.supported(): check(not cabin.clear_air.visible, "Detached roof cannot carry a fog-free bubble")
 	var panel: Equipment = rv.get_node("RightFront")
 	var mesh: MeshInstance3D = panel.get_node("Lower")
 	panel.current_health = panel.max_health

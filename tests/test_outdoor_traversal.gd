@@ -65,7 +65,16 @@ func _run() -> void:
 	check(manager.interior != null and not manager.busy, "Walked-to entrance loads existing instance")
 	if manager.interior != null and not manager.busy:
 		check(not main.get_node("OutdoorPresentation").effect.visible, "Interior transition removes outdoor filter")
+		var clock: WorldClock = main.get_node("WorldClock")
+		var entered_time := clock.elapsed_seconds
+		var indoor_environment: Environment = manager.interior.find_children("*", "WorldEnvironment", true, false)[0].environment
+		var indoor_color := indoor_environment.ambient_light_color
+		for i in range(15): await physics_frame
+		check(clock.elapsed_seconds > entered_time, "World time continues while player is indoors")
+		clock.set_time(2, 22.0)
+		check(indoor_environment.ambient_light_color == indoor_color and not indoor_environment.fog_enabled and not indoor_environment.volumetric_fog_enabled, "Outdoor night never changes indoor lighting or fog")
 		await manager.leave()
+		check(clock.day_number() == 2 and clock.hour_of_day() >= 22.0 and clock.sun.light_energy == 0, "Return outdoors keeps current night rather than resetting time")
 		check(player.inventory.active_item().state.engine.id == engine.id, "Instance return keeps carried engine")
 	player.inventory.consume_active()
 	player.add_item("Oil Barrel", true, "res://props/oil_barrel.tscn")

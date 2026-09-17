@@ -12,6 +12,7 @@ var route_index := 1
 var walk_time := 0.0
 var samples: Array[float] = []
 var interact_ticks := 0
+var clean_view := false
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Outdoor Art Validation"
@@ -40,6 +41,26 @@ func _ready() -> void:
 	label.add_theme_font_size_override("font_size", 20)
 	layer.add_child(label)
 	_view()
+	_validate_forest_alignment.call_deferred()
+
+func _validate_forest_alignment() -> void:
+	if DisplayServer.get_name() == "headless": return
+	var largest_error := 0.0
+	var checked := 0
+	for entry in main.get_node("WorldGenerator").active_chunks:
+		var chunk: ChunkGenerator = entry.node
+		var rendered: Array[Vector3] = []
+		for node in chunk.get_children():
+			if not node is MultiMeshInstance3D or not str(node.name).begins_with("ForestTree"): continue
+			for i in range(node.multimesh.instance_count):
+				rendered.append((node.transform * node.multimesh.get_instance_transform(i)).origin)
+		for tree in ForestScenery.trees(chunk.field, chunk.band):
+			var nearest_error := INF
+			for point in rendered: nearest_error = minf(nearest_error, point.distance_to(tree.point))
+			largest_error = maxf(largest_error, nearest_error)
+			checked += 1
+	print("VISIBLE FOREST ALIGN trees=", checked, " max_error_m=", largest_error)
+	if largest_error >= 0.001: push_error("Forest visuals shifted from collision positions")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
@@ -91,6 +112,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F10:
 		player.in_ui_mode = false
 		main.get_node("NewRv/Chassis/TabletScreen").interact_hold(player)
+	elif event.keycode == KEY_F11:
+		clean_view = not clean_view
 	elif event.keycode == KEY_R:
 		get_tree().reload_current_scene()
 
@@ -137,7 +160,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	# Keep validation instructions out of the real terminal's controls.
 	var tablet: Node = main.get_node("NewRv/Chassis/TabletScreen")
-	label.visible = not tablet.ui_instance.visible
+	label.visible = not tablet.ui_instance.visible and not clean_view
 	if walking: samples.append(delta * 1000.0)
 
 func _exit_tree() -> void:

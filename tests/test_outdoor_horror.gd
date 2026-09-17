@@ -60,6 +60,30 @@ func _run() -> void:
 	for i in range(40): await physics_frame
 	var site: Dictionary = generator.field.stop(0)
 	check(ForestScenery.trees(generator.field, 0).size() > 1000, "Dense forest built in production band")
+	# Spatial batching must neither lose trees nor shift them away from colliders.
+	for entry in generator.active_chunks:
+		var chunk: ChunkGenerator = entry.node
+		var rendered: Array[Vector3] = []
+		var rendered_count := 0
+		for node in chunk.get_children():
+			if not node is MultiMeshInstance3D or not str(node.name).begins_with("ForestTree"): continue
+			for i in range(node.multimesh.instance_count):
+				var pose: Transform3D = node.transform * node.multimesh.get_instance_transform(i)
+				rendered.append(pose.origin)
+				rendered_count += 1
+		var planned := ForestScenery.trees(generator.field, chunk.band)
+		check(rendered_count == planned.size(), "Forest cells retain every planned tree once")
+		check(chunk.get_node("ForestTrunks").get_child_count() == planned.size(), "Tree collider count unchanged")
+		# The dummy renderer returns identity from get_instance_transform().
+		# GPU transform alignment is checked by the visible production playground.
+		if DisplayServer.get_name() != "headless":
+			var largest_error := 0.0
+			for tree in planned:
+				var nearest_error := INF
+				for point in rendered: nearest_error = minf(nearest_error, point.distance_to(tree.point))
+				largest_error = maxf(largest_error, nearest_error)
+			check(largest_error < 0.001, "Rendered trunks remain within 1 mm of planned collision positions")
+			print("FOREST ALIGN band=", chunk.band, " max_error_m=", largest_error)
 	var space := main.get_world_3d().direct_space_state
 	var ray := PhysicsRayQueryParameters3D.create(site.frame.origin + Vector3.UP * 1.5, site.landmark)
 	var hit := space.intersect_ray(ray)

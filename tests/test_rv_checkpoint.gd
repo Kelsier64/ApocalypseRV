@@ -65,17 +65,23 @@ func _run() -> void:
 	rv.headlights_requested = true
 	rv.engine_bay.get_node("Hatch").set_open(true)
 	var checkpoint := root.get_node("Checkpoint")
+	var clock: WorldClock = world.get_node("WorldClock")
+	clock.running = false
+	clock.set_time(3, 17.75)
 	expect(checkpoint.save_world(world, PATH), "Checkpoint writes main-world snapshot")
 	print("CHECKPOINT written")
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	expect(not saved.is_empty(), "Checkpoint validates from disk without objects")
+	expect(saved.clock == clock.capture(), "Checkpoint captures day, fractional time and day duration")
 	expect(saved.get("generation_version") == 4, "Generation version independent of checkpoint version")
 	var legacy_data := saved.duplicate(true)
 	legacy_data.erase("generation_version")
+	legacy_data.erase("clock")
 	legacy_data.profile.erase("generation_version")
 	checkpoint.pending = legacy_data
 	var legacy_world: Node3D = load("res://world/test_world.tscn").instantiate()
 	checkpoint.prepare_world(legacy_world)
+	expect(legacy_world.get_node("WorldClock").hour_of_day() == 8.0, "Legacy checkpoint without time starts at 08:00")
 	expect(legacy_world.get_node("WorldGenerator").profile.generation_version == 2, "Unversioned worlds keep v2 geometry")
 	legacy_world.free()
 	legacy_data = saved.duplicate(true)
@@ -88,6 +94,10 @@ func _run() -> void:
 	legacy_world.free()
 	checkpoint.pending = {}
 	var bad := saved.duplicate(true)
+	bad.clock.elapsed_seconds = NAN
+	checkpoint.write_checkpoint(PATH + ".badclock", bad)
+	expect(checkpoint.read_checkpoint(PATH + ".badclock").is_empty(), "Invalid saved clock rejected before world restore")
+	bad = saved.duplicate(true)
 	bad.player.items.append(rv.get_engine().item())
 	checkpoint.write_checkpoint(PATH + ".duplicate", bad)
 	expect(checkpoint.read_checkpoint(PATH + ".duplicate").is_empty(), "Duplicate engine across installed and inventory ownership rejected")
@@ -102,7 +112,10 @@ func _run() -> void:
 	print("CHECKPOINT old world released")
 	checkpoint.pending = saved
 	world = load("res://world/test_world.tscn").instantiate()
+	world.get_node("WorldClock").running = false
 	root.add_child(world)
+	expect(world.get_node("WorldClock").capture() == saved.clock, "Disk restore preserves clock before first rendered frame")
+	expect(world.get_node("WorldClock").label.text == "DAY 3   17:45", "Restored clock HUD is populated immediately")
 	current_scene = world
 	var restored: Chassis = get_first_node_in_group(Groups.CHASSIS)
 	restored.freeze = true

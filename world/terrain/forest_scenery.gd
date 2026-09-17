@@ -84,19 +84,35 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> void:
 	if poses.is_empty(): return
+	# Cull local cells rather than rendering the entire 900 m band at once.
+	var cells: Dictionary = {}
+	for pose: Transform3D in poses:
+		var cell := Vector2i(floori(pose.origin.x / 48.0), floori(pose.origin.z / 48.0))
+		if not cells.has(cell): cells[cell] = []
+		cells[cell].append(pose)
+	for cell: Vector2i in cells:
+		var origin := Vector3(cell.x * 48.0 + 24, 0, cell.y * 48.0 + 24)
+		_cell(parent, title, mesh, cells[cell], origin, cell)
+
+static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origin: Vector3, cell: Vector2i) -> void:
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = mesh
 	multi.instance_count = poses.size()
-	for i in range(poses.size()): multi.set_instance_transform(i, poses[i])
+	for i in range(poses.size()):
+		var pose: Transform3D = poses[i]
+		pose.origin -= origin
+		multi.set_instance_transform(i, pose)
 	var node := MultiMeshInstance3D.new()
-	node.name = title
+	node.name = "%s_%d_%d" % [title, cell.x, cell.y]
+	node.position = origin
+	node.set_meta("forest_kind", title.right(1).to_int())
 	node.multimesh = multi
 	if title.begins_with("ForestBrush"):
 		# Trunks, canopy and terrain provide the large shadows; small undergrowth
 		# still receives them without resubmitting every twig to the shadow pass.
 		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# MultiMesh culls as a whole band; its centre can be far from a player
-	# standing at the edge of the 900 m strip even with trees beside them.
-	node.visibility_range_end = 650
+	# Hysteresis suppresses toggling; disappearance is hidden by distant fog.
+	node.visibility_range_end = 160 if title.begins_with("ForestBrush") else 340
+	node.visibility_range_end_margin = 16
 	parent.add_child(node)
