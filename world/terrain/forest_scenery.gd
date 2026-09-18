@@ -46,12 +46,11 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	var shrubs: Array = [[], [], []]
 	var body := StaticBody3D.new()
 	body.name = "ForestTrunks"
-	chunk.add_child(body)
+	# Assemble off-tree so each added trunk does not rebuild a live compound body.
 	var trunk_shape := BoxShape3D.new()
 	trunk_shape.size = Vector3(0.7, 1, 0.7)
 	var planned := trees(chunk.field, chunk.band)
 	for i in range(planned.size()):
-		if gradual and i % 60 == 0: await chunk._pause()
 		var tree: Dictionary = planned[i]
 		var basis := Basis(Vector3.UP, tree.angle)
 		var kind := variants.randi_range(0, 3) if variants.randf() > 0.16 else variants.randi_range(4, 5)
@@ -63,6 +62,8 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		shape.scale.y = tree.height
 		body.add_child(shape)
 		chunk.decoration_positions.append(tree.point)
+	chunk.add_child(body)
+	if gradual: await chunk._pause()
 	# Dense waist/head-high undergrowth; no physical snagging on leaves.
 	var rng := chunk.field.rng_for(chunk.band, "undergrowth")
 	for i in range(4700):
@@ -78,8 +79,10 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		shrubs[i % 3].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(radius, height, radius)), point))
 	for kind in range(6):
 		batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind])
+		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	for kind in range(3):
 		batch(chunk, "ForestBrush%d" % kind, ForestMeshes.shrub(kind), shrubs[kind])
+		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	print("FOREST band=%d trees=%d shrubs=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size()])
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> void:

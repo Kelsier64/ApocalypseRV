@@ -4,6 +4,7 @@ class_name ChunkGenerator
 const CHUNK_SIZE := 150.0
 const ZOMBIE_SCENE = preload("res://enemies/zombie.tscn")
 const TERRAIN_SHADER = preload("res://world/terrain/terrain_material.gdshader")
+const SLICE_BUDGET_USEC := 4000
 var field: WorldField
 var band: int
 var sites: Array[Dictionary] = []
@@ -34,7 +35,7 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 		await ForestScenery.build(self, gradual)
 	if gradual:
 		await _pause()
-	_build_navigation()
+	await _build_navigation(gradual)
 	_spawn_actors()
 	ForestFog.build(self)
 	_measure_slice()
@@ -43,11 +44,16 @@ func _measure_slice() -> void:
 	var elapsed := (Time.get_ticks_usec() - _slice_start) / 1000.0
 	build_ms += elapsed
 	max_slice_ms = maxf(max_slice_ms, elapsed)
+	if elapsed > 12.0 and "--profile-streaming" in OS.get_cmdline_user_args():
+		print("STREAM_SLICE ms=%.2f stack=%s" % [elapsed, get_stack()])
 
 func _pause() -> void:
 	_measure_slice()
 	await get_tree().process_frame
 	_slice_start = Time.get_ticks_usec()
+
+func slice_exhausted() -> bool:
+	return Time.get_ticks_usec() - _slice_start >= SLICE_BUDGET_USEC
 
 func _build_ground(gradual: bool) -> void:
 	var step := field.profile.terrain_step
@@ -59,8 +65,9 @@ func _build_ground(gradual: bool) -> void:
 		var row: Array = []
 		for i in range(-1, nx + 2):
 			row.append(field.surface(-field.profile.terrain_half_width + i * step, z0 - j * step))
+			if gradual and i % 32 == 0 and slice_exhausted(): await _pause()
 		rows.append(row)
-		if gradual and posmod(j, 3) == 0:
+		if gradual and slice_exhausted():
 			await _pause()
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -78,13 +85,14 @@ func _build_ground(gradual: bool) -> void:
 			st.set_color(color)
 			st.set_uv(Vector2(i, j) * step / 4.0)
 			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step, sample.height, z0 - j * step))
-		if gradual and j % 12 == 0:
+		if gradual and slice_exhausted():
 			await _pause()
 	for j in range(nz):
 		for i in range(nx):
 			var a := j * (nx + 1) + i
 			for v in [a, a + nx + 1, a + 1, a + 1, a + nx + 1, a + nx + 2]:
 				st.add_index(v)
+		if gradual and slice_exhausted(): await _pause()
 	_terrain = _mesh(st.commit(), "Ground", true)
 	var mat := ShaderMaterial.new()
 	mat.shader = TERRAIN_SHADER
@@ -105,6 +113,7 @@ func _build_distant_sides(gradual: bool) -> void:
 			for x in columns:
 				st.set_color(Color(0.36, 0.39, 0.27))
 				st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
+			if gradual and slice_exhausted(): await _pause()
 		for j in range(50):
 			for i in range(5):
 				var a := j * 6 + i
@@ -297,7 +306,7 @@ func _decorate(gradual: bool) -> void:
 		node.visibility_range_end = 190.0
 		add_child(node)
 
-func _build_navigation() -> void:
+func _build_navigation(gradual: bool = false) -> void:
 	var nav := NavigationMesh.new()
 	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nav.agent_height = 2.0
@@ -323,17 +332,26 @@ func _build_navigation() -> void:
 	road_body.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
 	road_body.collision_layer = 1
+	if gradual: await _pause()
 	# Neighbour ground halo prevents agent-radius erosion from leaving a gap
 	# at every streaming boundary. Only the interior band is kept by the bake.
 	var halo := PackedVector3Array()
 	for edge in [0, 1]:
 		var z0 := -band * 150.0 + (3.0 if edge == 0 else -150.0)
-		for i in range(roundi(nav_half * 2 / 3)):
-			var x := -nav_half + i * 3.0
-			for offset in [Vector2(0, 0), Vector2(0, -3), Vector2(3, 0), Vector2(3, 0), Vector2(0, -3), Vector2(3, -3)]:
-				var px: float = x + offset.x
-				var pz: float = z0 + offset.y
-				halo.append(Vector3(px, field.height_at(px, pz), pz))
+		var columns := roundi(nav_half * 2 / 3)
+		var rows: Array[PackedVector3Array] = []
+		# Adjacent triangles share vertices: sample each halo point once.
+		for row in range(2):
+			var points := PackedVector3Array()
+			for i in range(columns + 1):
+				var px := -nav_half + i * 3.0
+				var pz := z0 - row * 3.0
+				points.append(Vector3(px, field.height_at(px, pz), pz))
+				if gradual and i % 32 == 0 and slice_exhausted(): await _pause()
+			rows.append(points)
+		for i in range(columns):
+			for point in [rows[0][i], rows[1][i], rows[0][i + 1], rows[0][i + 1], rows[1][i], rows[1][i + 1]]:
+				halo.append(point)
 	source.add_faces(halo, Transform3D.IDENTITY)
 	if field.profile.generation_version >= 3:
 		_append_neighbour_obstacles(source)

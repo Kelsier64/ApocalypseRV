@@ -9,6 +9,7 @@ var next_band: int = 0
 var building: bool = false
 var horizon: MeshInstance3D
 var generation_times: Array[float] = []
+var _cleanup_timer := 0.0
 @export var player: Node3D
 @export var world_seed: int = -1
 @export var profile: WorldProfile
@@ -36,7 +37,7 @@ func _ready() -> void:
 		presentation.name = "OutdoorPresentation"
 		get_parent().add_child.call_deferred(presentation)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_instance_valid(player):
 		return
 	var anchor := player.global_position
@@ -56,7 +57,11 @@ func _process(_delta: float) -> void:
 		next_band += 1
 	if not active_chunks.is_empty() and int(active_chunks[0].index) < current - profile.chunks_behind and int(active_chunks[0].index) not in pinned:
 		active_chunks.pop_front().node.queue_free()
-	_despawn_entities_behind(anchor.z)
+	# Remote cleanup does not need to allocate group/child arrays every frame.
+	_cleanup_timer -= delta
+	if _cleanup_timer <= 0.0:
+		_cleanup_timer = 0.5
+		_despawn_entities_behind(anchor.z)
 
 func protected_bands(anchor: Vector3) -> Array[int]:
 	var result: Array[int] = []

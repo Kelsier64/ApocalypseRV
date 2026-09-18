@@ -37,6 +37,7 @@
 
 ## 驗收紀錄
 
+- [串流 CPU 效能與回歸檢查](validation/2026-09-18-streaming-performance.md) — `validation/2026-09-18-streaming-performance.md`
 - [公路地形與沿途探索驗收](validation/2026-09-15-highway.md) — `validation/2026-09-15-highway.md`
 - [RV 系統執行與驗收紀錄](validation/2026-09-15-rv-systems.md) — `validation/2026-09-15-rv-systems.md`
 - [密林壓迫感與遠距入口：後續驗收](validation/2026-09-16-dense-forest.md) — `validation/2026-09-16-dense-forest.md`
