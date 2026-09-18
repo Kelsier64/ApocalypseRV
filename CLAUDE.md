@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ApocalypseRV is a single-player first-person survival prototype targeting **Godot 4.6.1**, **Jolt Physics**, and the **GL Compatibility** renderer. Players drive an RV through generated highway chunks, scavenge, recycle materials, craft gasoline cans, and evade or ram zombies. Cooperative play and equipment upgrades remain future goals; consult the root GDD.md for current scope.
+ApocalypseRV is a single-player first-person survival prototype targeting **Godot 4.7.2**, **Jolt Physics**, and the **Forward+ / Vulkan** renderer (Compatibility is a fallback). Players drive an RV through generated highway chunks, scavenge, recycle materials, craft gasoline cans, and evade or ram zombies. Cooperative play and broader equipment upgrades remain future goals; replaceable standard/upgraded engines are already implemented; consult the root GDD.md for current scope.
 
 ## Commands
 
-`godot` (4.6) is on PATH.
+Use the version pinned in `.godot-version` (currently 4.7.2) and put `godot` on PATH.
 
 ```bash
 # Run the game (main scene: res://world/test_world.tscn)
@@ -32,7 +32,7 @@ Run `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1` for i
 
 ## Architecture
 
-Current documentation lives at the repository root: `architecture.md` (implementation), `GDD.md` (design and gameplay, Traditional Chinese), and `README.md` (usage). `docs/` is archived in place; see `docs/README.md`. Old design/module documents are historical references, not current instructions. Directories map to runtime domains:
+Current documentation lives at the repository root: `architecture.md` (implementation), `GDD.md` (design and gameplay, Traditional Chinese), and `README.md` (usage). `docs/` contains active plans, guides, validation and research; only `docs/archive/` is historical. See `docs/README.md`. Old design/module documents are historical references, not current instructions. Directories map to runtime domains:
 
 - **`world/`** — `world_generator.gd` streams highway chunks using outdoor player Z or the pinned instance entry anchor; `chunk_generator.gd` builds terrain/road/nav and exterior POIs. `poi_spawner.gd` + `poi_config.gd` place maintenance entrances; `instances/` handles isolated World3D mazes, navigation and same-run actor snapshots. `poi_kit/` holds authored rooms, furniture and door/loot contracts. The old building generator and POI scenes have been removed.
 - **`rv/`** — `chassis.gd` is the RV core: driving physics, fuel/power economy, material inventory, wheel slots, durability.
@@ -52,4 +52,4 @@ Current documentation lives at the repository root: `architecture.md` (implement
 - `player/player_inventory.gd` owns inventory data/rules; `player/equipment_placement.gd` owns placement state and input. The player retains scene presentation, movement, and mode authorization.
 - `enemies/combat_targeting.gd` owns target ranking; the monster supplies world observations and executes attacks. New tests should prefer module behavior over private helper-name checks.
 - `core/rv_connection.gd` defines the equipment RV lookup contract. Placement confirmation/cancellation refreshes the connection; lazy validation covers external reparenting and initialization order.
-- `docs/superpowers/` is historical reference only. Keep `todo` and `todo_for_ai` unchanged unless the user requests edits.
+- `docs/archive/superpowers/` is historical reference only. Keep `todo` and `todo_for_ai` unchanged unless the user requests edits.
