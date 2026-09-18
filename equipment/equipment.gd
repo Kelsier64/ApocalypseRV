@@ -63,6 +63,14 @@ var current_health: float = 0.0
 var is_destroyed: bool = false
 var _collision_exception_objects: Array = [] # CollisionObject3D exceptions we added
 var _connected_rv_cache: Node3D = null # Only ever holds a verified hit; misses are re-scanned
+var _world_transfer := false
+
+func begin_world_transfer() -> void:
+	_world_transfer = true
+
+func end_world_transfer() -> void:
+	_world_transfer = false
+	refresh_rv_connection()
 
 func _ready():
 	if definition:
@@ -296,6 +304,7 @@ func set_mount_support(support: Node3D) -> void:
 			mount_support.removing.connect(_support_removed)
 
 func _support_removed() -> void:
+	if _world_transfer: return
 	support_lost = true
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
@@ -330,6 +339,7 @@ func detach_from_support() -> void:
 	availability_changed.emit()
 
 func _exit_tree() -> void:
+	if _world_transfer: return
 	_on_service_stopped()
 	if is_instance_valid(_connected_rv_cache) and _connected_rv_cache.has_method("unregister_equipment"):
 		_connected_rv_cache.unregister_equipment(self)

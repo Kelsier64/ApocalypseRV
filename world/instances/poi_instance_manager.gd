@@ -4,6 +4,13 @@ class_name PoiInstanceManager
 var active_id: String = ""
 var interior: PoiInterior
 var viewport: SubViewport
+enum State { OUTDOOR, ENTERING, INDOOR, LEAVING, FAILED }
+var state := State.OUTDOOR
+var operation := 0
+var transition_timeout_ms := 60000
+var _deadline := 0
+var last_error := ""
+var interior_factory: Callable = func(): return PoiInterior.new()
 var busy := false
 var saved_instances: Dictionary = {}
 var stream_anchor := Vector3.ZERO
@@ -42,11 +49,15 @@ func register_entrance(building: Node3D, seed_value: int, stable_id: String = ""
 	building.add_to_group("poi_entrances")
 
 func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> void:
-	if busy or not active_id.is_empty() or not is_instance_valid(building):
+	if busy or not active_id.is_empty() or not is_instance_valid(building) or not is_instance_valid(player) or not building.has_node("ReturnPoint"):
 		return
 	if not player.enter_ui_mode():
 		return
 	busy = true
+	state = State.ENTERING
+	operation += 1
+	var token := operation
+	_deadline = Time.get_ticks_msec() + transition_timeout_ms
 	_player = player
 	_home = player.get_parent()
 	stream_anchor = player.global_position
@@ -57,15 +68,23 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	active_title = str(building.get_meta("poi_title", "MAINTENANCE"))
 	_status.text = "Preparing %s..." % active_title
 	await get_tree().process_frame
+	if not _valid_operation(token): return
 	viewport = SubViewport.new()
 	viewport.name = "InteriorViewport"
 	viewport.own_world_3d = true
 	viewport.size = Vector2i(get_viewport().get_visible_rect().size)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
-	interior = PoiInterior.new()
+	interior = interior_factory.call()
 	viewport.add_child(interior)
-	await interior.build(seed_value, saved_instances.get(id, {}))
+	var build_result := {"done": false, "ok": false}
+	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
+	while not build_result.done and token == operation:
+		await get_tree().process_frame
+	if token != operation: return
+	if not build_result.ok or not _valid_operation(token):
+		cancel_transition("Interior could not be prepared")
+		return
 	interior.exit_door.entry_requested.connect(func(_actor: Node3D, _destination: StringName) -> void:
 		leave.call_deferred())
 	_player.reparent(interior)
@@ -74,16 +93,26 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_display.show()
 	_player.exit_ui_mode()
 	busy = false
+	state = State.INDOOR
 	_status.text = "%s / %d ROOMS   |   Return to R001 to exit" % [active_title, interior.rooms.size()]
 	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
 
+func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
+	result.ok = await room.build(seed_value, saved)
+	result.done = true
+
 func leave() -> void:
-	if busy or active_id.is_empty() or not _player.enter_ui_mode():
+	if busy or active_id.is_empty() or not is_instance_valid(_player) or not _player.enter_ui_mode():
 		return
 	busy = true
+	state = State.LEAVING
+	operation += 1
+	var token := operation
+	_deadline = Time.get_ticks_msec() + transition_timeout_ms
 	_status.text = "Returning to highway..."
 	# Capture after deferred deaths/pickups, so an exit cannot resurrect them.
 	await get_tree().process_frame
+	if not _valid_operation(token): return
 	saved_instances[active_id] = interior.snapshot()
 	_player.reparent(_home)
 	_reset_player(_safe_return_transform())
@@ -97,6 +126,7 @@ func leave() -> void:
 	_status.text = ""
 	_player.exit_ui_mode()
 	busy = false
+	state = State.OUTDOOR
 
 func _safe_return_transform() -> Transform3D:
 	var result := _return_transform
@@ -124,18 +154,54 @@ func _safe_return_transform() -> Transform3D:
 	return result
 
 func _reset_player(at: Transform3D) -> void:
-	_player.global_transform = at
-	_player.velocity = Vector3.ZERO
-	_player.locomotion_state = _player.LocomotionState.NORMAL
-	_player.active_climb_rv = null
-	_player.rv_support.clear()
-	_player.released_carrier_velocity = Vector3.ZERO
-	_player.climb_carrier_velocity = Vector3.ZERO
-	_player.camera.rotation = Vector3.ZERO
-	_player.camera.current = true
-	_player.reset_physics_interpolation()
+	_player.complete_world_transition(at)
+
+func _valid_operation(token: int) -> bool:
+	if token != operation: return false
+	if not is_instance_valid(_player) or not is_instance_valid(_home) or _player.current_player_health <= 0:
+		cancel_transition("Transition cancelled: player unavailable")
+		return false
+	return true
+
+func cancel_transition(reason := "Transition cancelled") -> void:
+	operation += 1
+	last_error = reason
+	if is_instance_valid(_player) and is_instance_valid(_home):
+		if _player.get_parent() != _home:
+			_player.reparent(_home)
+			_reset_player(_safe_return_transform())
+		_player.exit_ui_mode()
+	_display.hide()
+	_display.texture = null
+	if is_instance_valid(interior): interior.cancelled = true
+	if is_instance_valid(viewport): _retire_viewport(viewport, interior)
+	viewport = null
+	interior = null
+	active_id = ""
+	busy = false
+	state = State.FAILED
+	_status.text = reason
+
+func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
+	retired.process_mode = Node.PROCESS_MODE_DISABLED
+	retired.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	# Let an in-flight native bake finish before releasing its geometry.
+	if is_instance_valid(room) and is_instance_valid(room.navigation):
+		var mesh := room.navigation.navigation_mesh
+		while mesh != null and NavigationServer3D.is_baking_navigation_mesh(mesh):
+			await get_tree().process_frame
+	if is_instance_valid(retired): retired.queue_free()
+
+func _exit_tree() -> void:
+	operation += 1
+	if is_instance_valid(interior): interior.cancelled = true
 
 func _process(_delta: float) -> void:
+	if busy:
+		if Time.get_ticks_msec() >= _deadline:
+			cancel_transition("Transition timed out; retry the entrance")
+		elif not _valid_operation(operation):
+			return
 	if is_instance_valid(viewport):
 		var size := Vector2i(get_viewport().get_visible_rect().size)
 		if size != viewport.size:

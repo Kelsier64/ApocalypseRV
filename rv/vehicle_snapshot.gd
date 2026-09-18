@@ -55,9 +55,9 @@ static func validate(data: Dictionary) -> bool:
 		return false
 	if not data.equipment is Array or not data.wheels is Array or not data.materials is Dictionary or not data.items is Array:
 		return false
-	if not data.transform is Transform3D or not data.linear is Vector3 or not data.angular is Vector3 or data.wheels.size() != 4:
+	if not CheckpointSchema.valid_transform(data.transform) or not CheckpointSchema.vector(data.linear) or not CheckpointSchema.vector(data.angular) or data.wheels.size() != 4:
 		return false
-	if not data.id is String or not data.engine is bool or not data.handbrake is bool or not data.gear is int or data.gear < -1 or data.gear > 4: return false
+	if not data.id is String or data.id.is_empty() or not data.engine is bool or not data.handbrake is bool or not data.gear is int or data.gear < -1 or data.gear > 4: return false
 	if not EngineState.valid(data.engine_item) or not data.headlights is bool or not data.hatch_open is bool or not RearRamp.valid_state(data.ramp): return false
 	if not _number(data.fuel) or data.fuel < 0.0 or not _number(data.fuel_capacity) or data.fuel_capacity < data.fuel: return false
 	if not data.material_capacity is int or data.material_capacity < 0 or not data.item_capacity is int or data.item_capacity < 0: return false
@@ -70,6 +70,7 @@ static func validate(data: Dictionary) -> bool:
 			return false
 		if not entry.scene is String or not entry.id is String or not entry.support is String or not entry.service is Dictionary or not entry.enabled is bool or not _number(entry.health) or not ResourceLoader.exists(entry.scene) or not entry.transform is Transform3D:
 			return false
+		if not valid_device(entry): return false
 		if entry.service.has("battery") and not valid_battery(entry.service.battery): return false
 		if not valid_structure_service(entry.scene, entry.service): return false
 		var slot_id: String = entry.service.get("mount_slot", "")
@@ -314,7 +315,44 @@ static func _upgrade_engine(data: Dictionary) -> Dictionary:
 	return data
 
 static func valid_prop_state(scene: String, state: Dictionary) -> bool:
+	if SaveSceneCatalog.resolve(scene, "prop") == null: return false
+	if state.has("id") and not state.id is String: return false
+	if state.has("condition") and (not _number(state.condition) or state.condition < 0 or state.condition > 100): return false
+	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
+	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
+	if state.has("battery") and (scene not in ["res://props/battery.tscn", "res://props/battery_large.tscn"] or not valid_battery(state.battery)): return false
 	var is_engine := scene in ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]
 	if is_engine:
 		return EngineState.valid(state.get("engine"), false) and state.get("id") == state.engine.id and scene == "res://props/engine_" + state.engine.model + ".tscn"
 	return not state.has("engine")
+
+static func valid_device(entry: Dictionary) -> bool:
+	if not entry.has_all(["scene", "id", "transform", "health", "enabled", "service"]): return false
+	if SaveSceneCatalog.resolve(entry.scene, "equipment") == null or not entry.id is String or entry.id.is_empty() or entry.id == "chassis" or not entry.enabled is bool or not _number(entry.health) or entry.health < 0 or not CheckpointSchema.valid_transform(entry.transform) or not entry.service is Dictionary: return false
+	if entry.has("physics") and not CheckpointSchema.physics(entry.physics): return false
+	var service: Dictionary = entry.service
+	for key in service:
+		match key:
+			"battery":
+				if entry.scene != "res://rv/battery_socket.tscn": return false
+			"jobs":
+				if entry.scene != "res://equipment/crafting_station.tscn": return false
+			"inputs":
+				if entry.scene != "res://equipment/scrapper.tscn": return false
+			"charging", "fuel_reserve", "recharge_below":
+				if entry.scene != "res://equipment/generator.tscn": return false
+			"mount_slot", "door_angles": pass
+			_: return false
+	if not valid_structure_service(entry.scene, service): return false
+	if service.has("battery") and not valid_battery(service.battery): return false
+	if service.has("charging") and not service.charging is bool: return false
+	if service.has("fuel_reserve") and (not _number(service.fuel_reserve) or service.fuel_reserve < 0): return false
+	if service.has("recharge_below") and (not _number(service.recharge_below) or service.recharge_below < 0 or service.recharge_below > 1): return false
+	if not service.get("jobs", []) is Array or not service.get("inputs", []) is Array: return false
+	for job in service.get("jobs", []):
+		if not job is Dictionary or not job.has_all(["recipe", "remaining", "power", "costs"]): return false
+		if not job.recipe is String or RecipeCatalog.find(job.recipe) == null or not _number(job.remaining) or job.remaining < 0 or not _number(job.power) or job.power < 0 or not job.costs is Dictionary or not MaterialStorage.new().valid_amounts(job.costs): return false
+	for input in service.get("inputs", []):
+		if not input is Dictionary or not input.has_all(["scene", "state", "timer", "local_position", "physics"]): return false
+		if not input.scene is String or not input.state is Dictionary or not valid_prop_state(input.scene, input.state) or not _number(input.timer) or input.timer < 0 or not CheckpointSchema.vector(input.local_position) or not CheckpointSchema.physics(input.physics, true): return false
+	return true

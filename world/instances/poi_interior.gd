@@ -13,8 +13,12 @@ var rooms: Array[PoiRoom] = []
 var entities: Node3D
 var exit_door: PoiEntrance
 var navigation: NavigationRegion3D
+var cancelled := false
+var build_timeout_ms := 60000
 
-func build(seed_value: int, saved: Dictionary = {}) -> void:
+func build(seed_value: int, saved: Dictionary = {}) -> bool:
+	if not saved.is_empty() and not CheckpointSchema.poi_error({"interior": saved}).is_empty(): return false
+	var deadline := Time.get_ticks_msec() + build_timeout_ms
 	set_meta("entity_domain", true)
 	entities = Node3D.new()
 	entities.name = "WorldEntities"
@@ -52,6 +56,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> void:
 		room.add_child(sign)
 		if i % 8 == 7:
 			await get_tree().process_frame
+			if cancelled or Time.get_ticks_msec() >= deadline: return false
 	for edge: Vector2i in layout.edges:
 		_connect(rooms[edge.x], rooms[edge.y])
 	_add_exit()
@@ -65,12 +70,16 @@ func build(seed_value: int, saved: Dictionary = {}) -> void:
 	mesh.cell_height = 0.25
 	navigation.navigation_mesh = mesh
 	navigation.bake_navigation_mesh(true)
-	await navigation.bake_finished
+	while NavigationServer3D.is_baking_navigation_mesh(mesh):
+		await get_tree().process_frame
+		if cancelled or Time.get_ticks_msec() >= deadline: return false
 	await get_tree().physics_frame
+	if cancelled: return false
 	if saved.has("actors"):
 		_restore(saved.actors)
 	else:
 		_populate(seed_value)
+	return true
 
 func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> void:
 	var body := StaticBody3D.new()

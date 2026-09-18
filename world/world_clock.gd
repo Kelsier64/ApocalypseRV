@@ -14,7 +14,9 @@ var label: Label
 var _last_minute := -1
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_PAUSABLE
+	# Inherit the owning world's pause/staging state; an explicit PAUSABLE
+	# mode would keep advancing even under a disabled checkpoint candidate.
+	process_mode = Node.PROCESS_MODE_INHERIT
 	var holder := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
 	sun = get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
 	if holder != null:

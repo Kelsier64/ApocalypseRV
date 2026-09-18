@@ -192,6 +192,26 @@ func exit_ui_mode():
 	in_ui_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
+func complete_world_transition(at: Transform3D) -> void:
+	global_transform = at
+	velocity = Vector3.ZERO
+	locomotion_state = LocomotionState.NORMAL
+	active_climb_rv = null
+	rv_support.clear()
+	released_carrier_velocity = Vector3.ZERO
+	climb_carrier_velocity = Vector3.ZERO
+	camera.rotation = Vector3.ZERO
+	camera.current = true
+	reset_physics_interpolation()
+
+func restore_checkpoint_state(state: Dictionary) -> void:
+	inventory.items.assign(state.items.duplicate(true))
+	inventory.active_slot = state.slot
+	current_player_health = state.health
+	complete_world_transition(state.transform)
+	refresh_inventory()
+	_update_health_bar()
+
 ## Seat flow: the player owns its own state mutation; the seat only decides
 ## where the player reappears and which camera takes over.
 func enter_seat_mode(seat: Node3D) -> bool:

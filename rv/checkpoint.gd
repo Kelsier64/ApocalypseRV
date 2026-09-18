@@ -5,6 +5,27 @@ const PATH := "user://rv_checkpoint.save"
 var pending: Dictionary = {}
 var message: String = ""
 var label: Label
+var last_error: Dictionary = {}
+var loading := false
+var world_timeout_ms := 60000
+# Injectable storage/application boundaries for controlled failure tests.
+var file_operations: RefCounted = CheckpointFiles.new()
+var vehicle_applier: Callable = VehicleSnapshot.apply
+
+func _fail(code: String, field := "", detail := "") -> bool:
+	last_error = {"code": code, "field": field, "detail": detail}
+	print("CHECKPOINT FAILURE: ", last_error)
+	return false
+
+func error_message() -> String:
+	match last_error.get("code", ""):
+		"state": return "Cannot save/load: return outdoors, finish interaction and wait for terrain"
+		"open": return "Cannot open checkpoint; check the save folder permissions"
+		"write": return "Cannot write checkpoint; check free disk space and permissions"
+		"rename", "backup": return "Cannot replace checkpoint; close programs locking the save file and retry"
+		"version": return "Unsupported checkpoint version"
+		"timeout": return "World preparation timed out; current world retained"
+		_: return "Checkpoint rejected at %s; current world retained" % last_error.get("field", "data")
 
 func _ready() -> void:
 	var layer := CanvasLayer.new()
@@ -22,31 +43,29 @@ func _unhandled_input(event: InputEvent) -> void:
 	var world := get_tree().current_scene
 	if world == null or world.scene_file_path != "res://world/test_world.tscn":
 		return
+	if loading: return
 	if event.physical_keycode == KEY_F6:
-		message = "Checkpoint saved" if save_world(world, PATH) else "Cannot save: return outdoors, finish placement and wait for terrain"
+		message = "Checkpoint saved" if save_world(world, PATH) else error_message()
 	elif event.physical_keycode == KEY_F9:
-		var data := read_checkpoint(PATH)
-		if data.is_empty():
-			message = "No compatible checkpoint"
-		else:
-			pending = data
-			message = "Loading checkpoint..."
-			get_tree().reload_current_scene()
+		load_world.call_deferred(world, PATH)
+		return
 	label.text = message
 
 func save_world(world: Node, path: String) -> bool:
+	last_error = {}
+	if loading: return _fail("state")
 	var manager: Node = world.get_node_or_null("PoiInstances")
 	var generator: Node = world.get_node_or_null("WorldGenerator")
 	var player: Node = world.get_node_or_null("Player")
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
-		return false
+		return _fail("state")
 	if player.get_player_mode() != player.PlayerMode.NORMAL:
-		return false
+		return _fail("state")
 	var vehicles: Array[Dictionary] = []
 	for rv in get_tree().get_nodes_in_group(Groups.CHASSIS):
 		if WorldEntities.same_world(player, rv):
 			var state := VehicleSnapshot.capture(rv)
-			if state.is_empty(): return false
+			if state.is_empty(): return _fail("state")
 			vehicles.append(state)
 	var actors: Array[Dictionary] = []
 	_collect_actors(world, actors)
@@ -63,6 +82,8 @@ func save_world(world: Node, path: String) -> bool:
 		"slot": player.inventory.active_slot, "health": player.current_player_health}}
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null: data["clock"] = clock.capture()
+	var field := validation_error(data)
+	if not field.is_empty(): return _fail("data", field)
 	return write_checkpoint(path, data)
 
 func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
@@ -87,52 +108,91 @@ func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
 			_collect_actors(child, result)
 
 func write_checkpoint(path: String, data: Dictionary) -> bool:
-	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
-	if file == null:
-		return false
-	file.store_var(data, false)
-	file.flush()
-	var okay := file.get_error() == OK
-	file.close()
-	if not okay:
-		return false
-	return DirAccess.rename_absolute(ProjectSettings.globalize_path(path + ".tmp"), ProjectSettings.globalize_path(path)) == OK
+	last_error = {}
+	var result: Dictionary = file_operations.write(path, data)
+	if not result.ok: return _fail(result.code, path, str(result.get("error", "")))
+	last_error = {}
+	return true
 
 func read_checkpoint(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path): return {}
+	last_error = {}
 	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null: return {}
-	var data: Variant = file.get_var(false)
-	file.close()
-	if data is Dictionary: data = _upgrade_checkpoint(data)
-	if not data is Dictionary or data.get("version", 0) != VERSION or not data.has_all(["vehicles", "player", "actors", "seed", "bands", "poi"]):
+	if file == null:
+		_fail("open", path, str(FileAccess.get_open_error()))
 		return {}
-	if not data.vehicles is Array or not data.actors is Array or not data.player is Dictionary or not data.bands is Array or data.bands.is_empty(): return {}
-	if not data.player.has_all(["items", "slot", "health", "transform"]) or not data.player.items is Array or not data.player.transform is Transform3D: return {}
-	if not data.seed is int or not data.poi is Dictionary or not data.get("profile", {}) is Dictionary or not data.player.slot is int or not VehicleSnapshot._number(data.player.health): return {}
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4]: return {}
-	# Optional v3 extension: older checkpoints start on day 1 at 08:00.
-	if data.has("clock") and not WorldClock.valid_state(data.clock): return {}
+	if file.get_length() > CheckpointSchema.MAX_BYTES:
+		file.close()
+		_fail("data", "file.size")
+		return {}
+	var data: Variant = file.get_var(false)
+	var read_error := file.get_error()
+	file.close()
+	if read_error != OK or not data is Dictionary or not CheckpointSchema.bounded(data, 0, [CheckpointSchema.MAX_ENTRIES]):
+		_fail("data", "file", str(read_error))
+		return {}
+	if not data.get("version") is int or data.version not in [1, 2, VERSION]:
+		_fail("version", "version")
+		return {}
+	data = _upgrade_checkpoint(data)
+	var field := validation_error(data)
+	if not field.is_empty():
+		_fail("data", field)
+		return {}
+	return data
+
+func validation_error(data: Dictionary) -> String:
+	if not CheckpointSchema.bounded(data, 0, [CheckpointSchema.MAX_ENTRIES]): return "data.size/depth"
+	if not data.get("version") is int or data.version != VERSION: return "version"
+	if not data.has_all(["vehicles", "player", "actors", "seed", "bands", "poi"]): return "data.fields"
+	if not data.vehicles is Array: return "vehicles"
+	if not data.actors is Array: return "actors"
+	if not data.player is Dictionary: return "player"
+	if not data.bands is Array or data.bands.is_empty() or data.bands.size() > 256: return "bands"
+	var seen := {}
 	for band in data.bands:
-		if not band is int: return {}
-	for item in data.player.items:
-		if not VehicleSnapshot.valid_item(item): return {}
-	for vehicle in data.vehicles:
-		if not vehicle is Dictionary or not VehicleSnapshot.validate(vehicle): return {}
-	for actor in data.actors:
-		if not actor is Dictionary or not actor.has_all(["kind", "scene", "transform"]) or not actor.scene is String or not actor.transform is Transform3D or not ResourceLoader.exists(actor.scene): return {}
+		if not band is int or seen.has(band): return "bands"
+		seen[band] = true
+	if not data.seed is int: return "seed"
+	if not data.get("profile", {}) is Dictionary: return "profile"
+	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
+	if not profile_error.is_empty(): return profile_error
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4]: return "generation_version"
+	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
+	var player: Dictionary = data.player
+	if not player.get("items") is Array: return "player.items"
+	# Selection is a hotbar index, including empty slots, not an item index.
+	if not player.get("slot") is int or player.slot < 0 or player.slot >= PlayerInventory.MAX_SLOTS: return "player.slot"
+	if not VehicleSnapshot._number(player.get("health")) or player.health < 0 or player.health > 100: return "player.health"
+	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"
+	for i in range(player.items.size()):
+		if not VehicleSnapshot.valid_item(player.items[i]): return "player.items[%d]" % i
+	var vehicle_ids := {}
+	for i in range(data.vehicles.size()):
+		var vehicle: Variant = data.vehicles[i]
+		if not vehicle is Dictionary or not VehicleSnapshot.validate(vehicle): return "vehicles[%d]" % i
+		if vehicle_ids.has(vehicle.id): return "vehicles[%d].id" % i
+		vehicle_ids[vehicle.id] = true
+	for i in range(data.actors.size()):
+		var actor: Variant = data.actors[i]
+		var field := "actors[%d]" % i
+		if not actor is Dictionary or not actor.get("kind") is String: return field + ".kind"
+		if SaveSceneCatalog.resolve(actor.get("scene"), actor.kind) == null or actor.kind not in ["prop", "equipment", "monster"]: return field + ".scene"
+		if not CheckpointSchema.valid_transform(actor.get("transform")): return field + ".transform"
 		match actor.kind:
 			"prop":
-				if not actor.has_all(["state", "frozen", "linear", "angular"]) or not actor.state is Dictionary or not actor.frozen is bool or not actor.linear is Vector3 or not actor.angular is Vector3: return {}
-				if not VehicleSnapshot.valid_prop_state(actor.scene, actor.state): return {}
+				if not actor.get("state") is Dictionary or not VehicleSnapshot.valid_prop_state(actor.scene, actor.state): return field + ".state"
+				if not actor.get("frozen") is bool: return field + ".frozen"
+				if not CheckpointSchema.vector(actor.get("linear")): return field + ".linear"
+				if not CheckpointSchema.vector(actor.get("angular")): return field + ".angular"
 			"equipment":
-				if not actor.has_all(["id", "health", "enabled", "service", "frozen"]) or not actor.service is Dictionary or not VehicleSnapshot._number(actor.health): return {}
-				if not VehicleSnapshot.valid_structure_service(actor.scene, actor.service): return {}
+				if not VehicleSnapshot.valid_device(actor): return field + ".device"
+				if not actor.get("frozen") is bool: return field + ".frozen"
 			"monster":
-				if not actor.has("health") or not VehicleSnapshot._number(actor.health): return {}
-			_: return {}
-	if not _unique_engine_ids(data): return {}
-	return data
+				if not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: return field + ".health"
+	var poi_error := CheckpointSchema.poi_error(data.poi)
+	if not poi_error.is_empty(): return poi_error
+	if not _unique_engine_ids(data): return "engine.id.duplicate"
+	return ""
 
 func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
@@ -142,35 +202,43 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").world_seed = pending.seed
 	var profile := WorldProfile.new()
 	for key in pending.get("profile", {}):
-		if key in profile: profile.set(key, pending.profile[key])
+		if key in profile and key != "terrain_half_width": profile.set(key, pending.profile[key])
 	profile.generation_version = pending.get("generation_version", 2)
 	world.get_node("WorldGenerator").profile = profile
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
 
-func restore_world(world: Node) -> void:
-	if pending.is_empty(): return
+func restore_world(world: Node) -> Dictionary:
+	if pending.is_empty(): return {"ok": true}
 	var data := pending
 	pending = {}
-	var player: Node = world.get_node("Player")
-	player.set_physics_process(false)
-	var generator: Node = world.get_node("WorldGenerator")
-	while generator.building:
-		await get_tree().process_frame
-	var old: Array[Node] = []
-	_collect_removable(world, old)
-	for actor in old:
-		if is_instance_valid(actor): actor.free()
-	var container := WorldEntities.get_container(world)
-	for saved in data.vehicles:
-		var rv: Node3D = load("res://rv/chassis.tscn").instantiate()
-		rv.transform = world.global_transform.affine_inverse() * saved.transform
-		world.add_child(rv)
-		VehicleSnapshot.apply(rv, saved)
+	var field := validation_error(data)
+	if not field.is_empty():
+		_fail("data", field)
+		return {"ok": false, "error": last_error}
+	# No awaits during actor staging/commit: old actors never simulate alongside new ones.
+	# A separate World3D and entity domain contain physics and recycler side effects.
+	var staging := SubViewport.new()
+	staging.own_world_3d = true
+	staging.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(staging)
+	PhysicsServer3D.space_set_active(staging.find_world_3d().space, false)
+	var domain := Node3D.new()
+	domain.set_meta("entity_domain", true)
+	staging.add_child(domain)
+	var container := WorldEntities.get_container(domain)
+	for i in range(data.vehicles.size()):
+		var saved: Dictionary = data.vehicles[i]
+		var rv: Node3D = SaveSceneCatalog.resolve("res://rv/chassis.tscn", "vehicle").instantiate()
+		domain.add_child(rv)
+		if not vehicle_applier.call(rv, saved):
+			staging.free()
+			_fail("apply", "vehicles[%d]" % i, saved.id)
+			return {"ok": false, "error": last_error}
 	for saved in data.actors:
-		var actor: Node3D = load(saved.scene).instantiate()
-		actor.transform = container.global_transform.affine_inverse() * saved.transform
+		var actor: Node3D = SaveSceneCatalog.resolve(saved.scene, saved.kind).instantiate()
 		container.add_child(actor)
+		actor.global_transform = saved.transform
 		if actor is Prop:
 			actor.restore_item_state(saved.state)
 			actor.freeze = saved.frozen
@@ -187,18 +255,91 @@ func restore_world(world: Node) -> void:
 				actor.angular_velocity = saved.physics.angular
 		elif actor is Monster:
 			actor.current_health = saved.health
+	var old: Array[Node] = []
+	_collect_removable(world, old)
+	for actor in old:
+		if is_instance_valid(actor): actor.free()
+	var destination := WorldEntities.get_container(world)
+	for actor in container.get_children(): WorldEntities.transfer(actor, destination)
+	for rv in domain.get_children():
+		if rv != container: WorldEntities.transfer(rv, world)
+	staging.free()
 	world.get_node("PoiInstances").saved_instances = data.poi.duplicate(true)
-	player.inventory.items.assign(data.player.items)
-	player.inventory.active_slot = data.player.slot
-	player.current_player_health = data.player.health
-	player.global_transform = data.player.transform
-	player.velocity = Vector3.ZERO
-	player.refresh_inventory()
-	player._update_health_bar()
-	generator.restoring_entities = false
-	player.set_physics_process(true)
+	world.get_node("Player").restore_checkpoint_state(data.player)
+	world.get_node("WorldGenerator").restoring_entities = false
 	message = "Checkpoint restored"
 	label.text = message
+	return {"ok": true}
+
+func load_world(old_world: Node, path: String) -> bool:
+	if loading: return false
+	var manager: Node = old_world.get_node("PoiInstances")
+	var player: Node = old_world.get_node("Player")
+	if manager.busy or not manager.active_id.is_empty() or player.get_player_mode() != player.PlayerMode.NORMAL:
+		_fail("state")
+		message = error_message()
+		label.text = message
+		return false
+	var data := read_checkpoint(path)
+	if data.is_empty():
+		message = error_message()
+		label.text = message
+		return false
+	loading = true
+	message = "Preparing checkpoint..."
+	label.text = message
+	var staging := SubViewport.new()
+	staging.own_world_3d = true
+	staging.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	staging.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(staging)
+	PhysicsServer3D.space_set_active(staging.find_world_3d().space, false)
+	var candidate: Node3D = load("res://world/test_world.tscn").instantiate()
+	candidate.set_meta("checkpoint_staging", true)
+	candidate.set_meta("entity_domain", true)
+	pending = data
+	prepare_world(candidate)
+	pending = {}
+	var previous_mode := old_world.process_mode
+	old_world.process_mode = Node.PROCESS_MODE_DISABLED
+	var old_space: RID = old_world.get_world_3d().space
+	PhysicsServer3D.space_set_active(old_space, false)
+	staging.add_child(candidate)
+	var ready: bool = await candidate.wait_for_play(world_timeout_ms)
+	var result := {"ok": false}
+	if ready:
+		pending = data
+		result = restore_world(candidate)
+	else:
+		_fail("timeout", "world.ready_for_play")
+	if result.ok:
+		WorldEntities.transfer(candidate, get_tree().root)
+		candidate.remove_meta("checkpoint_staging")
+		get_tree().current_scene = candidate
+		old_world.queue_free()
+		candidate.get_node("Player").camera.make_current()
+	else:
+		old_world.process_mode = previous_mode
+		message = error_message()
+		label.text = message
+	PhysicsServer3D.space_set_active(old_space, true)
+	_retire_world(staging, candidate if not result.ok else null)
+	loading = false
+	return result.ok
+
+func _retire_world(staging: SubViewport, candidate: Node) -> void:
+	if candidate != null:
+		_remove_gameplay_groups(candidate)
+		for region in candidate.find_children("*", "NavigationRegion3D", true, false):
+			var mesh: NavigationMesh = region.navigation_mesh
+			while mesh != null and NavigationServer3D.is_baking_navigation_mesh(mesh):
+				await get_tree().process_frame
+	if is_instance_valid(staging): staging.queue_free()
+
+func _remove_gameplay_groups(node: Node) -> void:
+	for group in node.get_groups():
+		if not str(group).begins_with("_"): node.remove_from_group(group)
+	for child in node.get_children(): _remove_gameplay_groups(child)
 
 func _collect_removable(node: Node, result: Array[Node]) -> void:
 	for child in node.get_children():
@@ -223,7 +364,12 @@ func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
 	for index in range(data.vehicles.size()):
 		if not data.vehicles[index] is Dictionary: return {}
 		data.vehicles[index] = VehicleSnapshot.upgrade(data.vehicles[index])
-		if not VehicleSnapshot.validate(data.vehicles[index]): return {}
+		if data.vehicles[index].is_empty(): return {}
+		var vehicle: Dictionary = data.vehicles[index]
+		# Migration consumes these fields before the final current-schema validation.
+		if not vehicle.get("materials") is Dictionary or not MaterialStorage.new().valid_amounts(vehicle.materials) or not VehicleSnapshot._number(vehicle.get("fuel")) or not VehicleSnapshot._number(vehicle.get("fuel_capacity")) or not vehicle.get("equipment") is Array: return {}
+		for device in vehicle.equipment:
+			if not device is Dictionary or not device.get("service") is Dictionary: return {}
 	if data.vehicles.is_empty(): return {}
 	var rv: Dictionary = data.vehicles[0]
 	# Legacy material bundles (inventory, loose actors, POIs, recycler inputs)
