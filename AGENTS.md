@@ -10,7 +10,7 @@ Godot 4.7.2 survival prototype; `world/test_world.tscn` is the main scene.
 - `core/`: shared contracts, climbing geometry, and RV support.
 - `assets/`: art; scenes also live beside scripts.
 - `tests/`: behavior suites and the interactive climbing playground.
-- Root `GDD.md`, `architecture.md`, and `README.md`: current design, architecture, and usage. `docs/` is archived; see `docs/README.md`.
+- Root `GDD.md`, `architecture.md`, and `README.md`: current design, architecture, and usage. `docs/` contains active plans, guides, validation and research; only `docs/archive/` is historical. See `docs/README.md`.
 
 ## Development Commands
 
@@ -26,7 +26,7 @@ These open the editor, launch gameplay, and run validation. The runner imports a
 
 ## Coding and Testing
 
-
+Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
 ## Computer Use: Game Testing
 
@@ -46,4 +46,4 @@ Close only your test window afterward. Report observed results separately from a
 
 ## Commits and Preservation
 
-Use existing `feat:`, `test:`, `chore:`, or `spec:` prefixes. PRs describe behavior, validation, related issues, and visual evidence. Preserve unrelated edits, original `todo` files, and historical `docs/superpowers/` records. Exclude `.godot/` caches from commits.
+Use existing `feat:`, `test:`, `chore:`, or `spec:` prefixes. PRs describe behavior, validation, related issues, and visual evidence. Preserve unrelated edits, original `todo` files, and historical `docs/archive/superpowers/` records. Exclude `.godot/` caches from commits.

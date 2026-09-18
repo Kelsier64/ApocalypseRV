@@ -1,66 +1,99 @@
-# 文件索引
+# 開發文件索引
 
-根目錄 [GDD](../GDD.md)、[architecture](../architecture.md) 與 [README](../README.md) 說明目前遊戲的設計、實作與使用方式。
+整理日期：2026-09-18。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。
 
-## 設計研究
+## 從哪裡開始
 
-- [Lethal Company 視覺風格與差距研究（2026-09-17）](research/2026-09-17-lethal-company-visual-direction.md)：官方畫面對照、密錄器／面罩風格區別、目前模型與明暗缺口，以及美術樣板優先順序。
-- [《Lethal Company》恐怖氛圍設計研究](research/lethal-company-horror-atmosphere.md)：分析風險／收益、資訊衰退、距離語音、規則型怪物、喜劇節奏與 Low-fi 視覺，並整理可套用於 ApocalypseRV 的優先建議。
+| 需求 | 文件 | 責任 |
+|---|---|---|
+| 啟動遊戲、查按鍵 | [README](../README.md) | 快速開始與統一驗證入口 |
+| 理解玩法、數值與未實作願景 | [GDD](../GDD.md) | 現行遊戲設計 |
+| 修改程式、查所有權與資料流 | [architecture](../architecture.md) | 現行實作與限制 |
+| 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
+| 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
+| 開發約定 | [AGENTS](../AGENTS.md)、[CLAUDE](../CLAUDE.md) | 協作與工具指引 |
+| 原始想法 | [todo](../todo)、[todo_for_ai](../todo_for_ai) | 原樣保留，不視為目前完成狀態 |
+
+## 文件維護規則
+
+- README 保持快速入口；玩法規則與數值放 GDD，技術契約放 architecture，展示場細節放指南。
+- 現況與程式不符時核對程式、場景與測試後修正文檔；計畫提案與研究建議不自動成為現有功能。
+- 計畫標明已實作、部分實作、待實作或已被取代的範圍，附驗收連結。新增功能按主題併入現行文件，避免在首尾不斷追加日期章節。
+- 驗收與審查報告保留當時版本、環境、結果與限制；修正結果另留紀錄，不把歷史測試寫成當前重新通過。
+- `docs/archive/` 內文與歷史規格保留原樣。舊相對連結可能失效，以下提供目前位置的直接入口。
 
 ## 開發計畫
 
-- [室外恐怖氛圍與離路物資點（2026-09-16）](plans/2026-09-16-outdoor-horror.md)：陰天霧、復古顯示、四款入口、步道／窄口、生成版本相容與跨區導航。
+完整狀態與證據見 [計畫總覽](plans/README.md)。
 
-- [RV 駕駛手感、操作回饋與夜間使用（2026-09-16）](plans/2026-09-16-rv-driving-experience.md)：待實作；優先駕駛調校、後照鏡、音效與機械動畫，再做車內照明及完整出車驗收。
+## 指南
 
-- [RV 完整組裝、新底盤與可替換引擎（2026-09-16）](plans/2026-09-16-rv-rebuild-engine.md)：正式預裝、引擎道具／維修／v3 存檔、後坡板、安全離座、安裝細調及汽車式狀態燈。
+- [遊玩與測試場指南](guides/playgrounds.md) — `guides/playgrounds.md`
 
-- [RV 車輛與設備系統完善計畫（2026-09-15）](plans/2026-09-15-rv-systems-roadmap.md)：架構修復、設備安裝與支撐、引擎與發電機、可更換電池道具、駕駛維修、生產儲存、重量、存檔與分階段驗收。
-- [POI 後續開發計畫（2026-09-15）](plans/2026-09-15-poi-roadmap.md)：探索目標、房型、返程、物資、敵人、效能、存檔、內容製作工具，以及三維多樓層／樓梯房系統。POI-06 地形停靠整合已完成，其餘依清單狀態安排。
+## 審查與修正
+
+- [R01–R07 修正與驗收](report/ApocalypseRV_Fixes_2026-09-18.md) — `report/ApocalypseRV_Fixes_2026-09-18.md`
+- [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
 
-- [R01–R07 可靠性修正（2026-09-18）](report/ApocalypseRV_Fixes_2026-09-18.md)：世界還原交易、存檔 schema／場景契約、轉場取消、磁碟故障與引擎／測試基線。
+- [公路地形與沿途探索驗收](validation/2026-09-15-highway.md) — `validation/2026-09-15-highway.md`
+- [RV 系統執行與驗收紀錄](validation/2026-09-15-rv-systems.md) — `validation/2026-09-15-rv-systems.md`
+- [密林壓迫感與遠距入口：後續驗收](validation/2026-09-16-dense-forest.md) — `validation/2026-09-16-dense-forest.md`
+- [怪物相對速度攀車與兩種破壞模式（2026-09-16）](validation/2026-09-16-monster-boarding.md) — `validation/2026-09-16-monster-boarding.md`
+- [破口進出與車內追擊（2026-09-16）](validation/2026-09-16-monster-cabin.md) — `validation/2026-09-16-monster-cabin.md`
+- [怪物追蹤與近戰修正（2026-09-16）](validation/2026-09-16-monster-pursuit.md) — `validation/2026-09-16-monster-pursuit.md`
+- [室外恐怖氛圍與離路物資點驗收](validation/2026-09-16-outdoor-horror.md) — `validation/2026-09-16-outdoor-horror.md`
+- [WAYFARER 車體與駕駛室原型](validation/2026-09-16-rv-cockpit.md) — `validation/2026-09-16-rv-cockpit.md`
+- [RV 電池與設備互動修正](validation/2026-09-16-rv-interactions.md) — `validation/2026-09-16-rv-interactions.md`
+- [RV 完整組裝、新底盤與可替換引擎驗收](validation/2026-09-16-rv-rebuild-engine.md) — `validation/2026-09-16-rv-rebuild-engine.md`
+- [RV 底盤共用儲存與設備入口](validation/2026-09-16-rv-shared-storage.md) — `validation/2026-09-16-rv-shared-storage.md`
+- [RV 分片車殼、車門與安裝槽驗收（2026-09-16）](validation/2026-09-16-rv-structure-doors.md) — `validation/2026-09-16-rv-structure-doors.md`
+- [世界時間、太陽與日夜霧效 — 2026-09-17](validation/2026-09-17-day-night.md) — `validation/2026-09-17-day-night.md`
+- [戶外霧效修正 — 2026-09-17](validation/2026-09-17-fog-refinement.md) — `validation/2026-09-17-fog-refinement.md`
+- [室外與 RV 工業恐怖美術驗收](validation/2026-09-17-industrial-art.md) — `validation/2026-09-17-industrial-art.md`
+- [正式戶外 D 風格驗收](validation/2026-09-17-outdoor-d.md) — `validation/2026-09-17-outdoor-d.md`
+- [工業恐怖美術樣板驗收](validation/2026-09-17-style-sample.md) — `validation/2026-09-17-style-sample.md`
+- [局部體積霧 — 2026-09-17](validation/2026-09-17-volumetric-fog.md) — `validation/2026-09-17-volumetric-fog.md`
 
-- [林間局部體積霧（2026-09-17）](validation/2026-09-17-volumetric-fog.md)：Forward+／Vulkan、世界座標局部濃淡、RV 排霧、室內隔離、效能比較與回歸。
+## 設計研究
 
-- [世界時間、太陽與日夜霧效（2026-09-17）](validation/2026-09-17-day-night.md)：30 分鐘一天、存檔相容、室內時間延續、四時段實機比較與回歸。
+- [Lethal Company 視覺風格與 ApocalypseRV 差距研究](research/2026-09-17-lethal-company-visual-direction.md) — `research/2026-09-17-lethal-company-visual-direction.md`
+- [《Lethal Company》恐怖氛圍設計研究](research/lethal-company-horror-atmosphere.md) — `research/lethal-company-horror-atmosphere.md`
 
-- [戶外霧效修正（2026-09-17）](validation/2026-09-17-fog-refinement.md)：近景去除灰霧遮罩感、統一天際線色彩、低對比雲層，同視角前後對照。
+## 美術目標
 
-- [正式戶外 D 風格（2026-09-17）](validation/2026-09-17-outdoor-d.md)：低模分叉樹冠、冷霧與固定雲層、結構材質、移除像素格／抖色、正式場景截圖與回歸。
-
-- [工業恐怖美術樣板（2026-09-17）](validation/2026-09-17-style-sample.md)：同 seed A/B、原創結構材質與針葉、高窗入口、正式搬運與入口回歸；主世界尚未套用。
-- [室外與 RV 工業恐怖美術（2026-09-17）](validation/2026-09-17-industrial-art.md)：原創生成紋理、不對稱植物、四款入口、RV 損傷材質、供電車內燈與清晰工業介面。
-
-- [密林壓迫感與遠距入口（2026-09-16）](validation/2026-09-16-dense-forest.md)：生成 v4、約 2.5 倍入口距離、97 秒搬運、密集林冠／灌叢與地形導航修正。
-
-- [室外恐怖氛圍與離路物資點（2026-09-16）](validation/2026-09-16-outdoor-horror.md)：100 seed、正式玩家搬運、怪物步道追擊、RV 停車／窄口、四款外觀截圖與效能。
-
-- [破口進出與車內追擊（2026-09-16）](validation/2026-09-16-monster-cabin.md)：破門／破頂後追擊、膠囊路徑、駕駛座碰撞、障礙重規劃與玩家離車後追出。
-
-- [怪物追蹤與近戰修正（2026-09-16）](validation/2026-09-16-monster-pursuit.md)：攻擊狀態覆寫、設備搶冷卻、介面／入座無敵計時，26 組回歸與可見測試。
-
-- [怪物掛門／登頂與相對速度攀車（2026-09-16）](validation/2026-09-16-monster-boarding.md)：兩種破壞模式、抓握耐力、撞擊優先、25 個行為測試與實機截圖。
-
-- [完整 RV 與引擎驗收（2026-09-16）](validation/2026-09-16-rv-rebuild-engine.md)：24 個行為測試、實機車燈、輪驅與攀爬拆頂，附截圖及限制。
-
-- [RV 分片車殼、安裝槽與車門（2026-09-16）](validation/2026-09-16-rv-structure-doors.md)：六片側面、後方雙扇大門、原位重裝、阻擋提示、門扇碰撞與舊檔轉換。
-
-- [RV 車體與駕駛室原型（2026-09-16）](validation/2026-09-16-rv-cockpit.md)：車身模型、整組控制台、即時儀表、設備造型、展示場景與回歸。
-
-- [RV 底盤共用儲存與設備入口（2026-09-16）](validation/2026-09-16-rv-shared-storage.md)：電池插槽設備與掉落、道具箱、加油孔、材料數字化、存檔轉換及完整回歸。
-
-- [RV 電池與設備互動修正（2026-09-16）](validation/2026-09-16-rv-interactions.md)：可見電池座／點火、操作提示、材料庫、快速按鍵及完整回歸。
-
-- [RV 系統（2026-09-15～16）](validation/2026-09-15-rv-systems.md)：引擎與電池道具、設備生命週期、生產維修、保存、完整回歸、實機與輪驅結果。
-
-- [公路地形與沿途探索（2026-09-15）](validation/2026-09-15-highway.md)：生成、實車駕駛、步行搜刮、實機觀察及效能範圍。
-
-計畫中的提案不代表已完成，也不自動取代根目錄的現況說明。實作完成並驗收後，再同步更新現行文件。
+- [D：低模與低解析度修正版](art_targets/outdoor/2026-09-17-d-revision.md) — `art_targets/outdoor/2026-09-17-d-revision.md`
+- [戶外目標圖：實際生成提示](art_targets/outdoor/2026-09-17-prompts.md) — `art_targets/outdoor/2026-09-17-prompts.md`
+- [戶外 gameplay 美術目標圖](art_targets/outdoor/README.md) — `art_targets/outdoor/README.md`
 
 ## 歷史封存
 
-- [archive 索引](archive/README.md)：既有設計、模組與歷史規格紀錄。
+- [Climbing and Combat Behavior](archive/2026-09-14/design/climbing-and-combat-behavior.md) — `archive/2026-09-14/design/climbing-and-combat-behavior.md`
+- [Player Interaction Flow](archive/2026-09-14/design/player-interaction-flow.md) — `archive/2026-09-14/design/player-interaction-flow.md`
+- [RV Equipment Interactions Design](archive/2026-09-14/design/rv-equipment-interactions.md) — `archive/2026-09-14/design/rv-equipment-interactions.md`
+- [RV Power and Crafting Design](archive/2026-09-14/design/rv-power-and-crafting.md) — `archive/2026-09-14/design/rv-power-and-crafting.md`
+- [World Generation and POI Pipeline](archive/2026-09-14/design/world-generation-and-pois.md) — `archive/2026-09-14/design/world-generation-and-pois.md`
+- [World Generation Procedural Buildings](archive/2026-09-14/design/world-generation-procedural-buildings.md) — `archive/2026-09-14/design/world-generation-procedural-buildings.md`
+- [ApocalypseRV - 遊戲設計企劃書（GDD）](archive/GDD.md) — `archive/GDD.md`
+- [docs 已封存](archive/README.md) — `archive/README.md`
+- [Architecture](archive/architecture.md) — `archive/architecture.md`
+- [Monster AI Module Contract](archive/modules/monster-ai.md) — `archive/modules/monster-ai.md`
+- [Player Traversal and Interaction Module Contract](archive/modules/player-traversal-and-interaction.md) — `archive/modules/player-traversal-and-interaction.md`
+- [RV Systems Equipment Module Contract](archive/modules/rv-systems-equipment.md) — `archive/modules/rv-systems-equipment.md`
+- [RV Systems Module Contract](archive/modules/rv-systems.md) — `archive/modules/rv-systems.md`
+- [World Generation POI System Contract](archive/modules/world-generation-poi-system.md) — `archive/modules/world-generation-poi-system.md`
+- [World Generation Procedural Building Module Contract](archive/modules/world-generation-procedural-building.md) — `archive/modules/world-generation-procedural-building.md`
+- [World Generation Module Contract](archive/modules/world-generation.md) — `archive/modules/world-generation.md`
+- [Monster Underfoot Raycast Single-Path Implementation Plan](archive/superpowers/plans/2026-04-09-monster-underfoot-raycast-single-path.md) — `archive/superpowers/plans/2026-04-09-monster-underfoot-raycast-single-path.md`
+- [Monster Underfoot Attack Redesign (Raycast Single Path)](archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md) — `archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md`
 
-保留 archive 既有內容與位置；歷史文件可能與目前遊戲不同，不作為現況或已完成項目的依據。
+## 資產與製作規格
+
+- [Original industrial horror materials](../assets/materials/industrial/README.md) — `assets/materials/industrial/README.md`
+- [正式戶外 D 風格素材](../assets/materials/outdoor/README.md) — `assets/materials/outdoor/README.md`
+- [Concrete wall albedo](../assets/materials/poi_kit/README.md) — `assets/materials/poi_kit/README.md`
+- [工業美術樣板材質](../assets/materials/style_sample/README.md) — `assets/materials/style_sample/README.md`
+- [WAYFARER RV 模型原型](../rv/visuals/README.md) — `rv/visuals/README.md`
+- [POI 資產樣板與製作規格](../world/poi_kit/README.md) — `world/poi_kit/README.md`
+- [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
