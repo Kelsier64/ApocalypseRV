@@ -39,6 +39,8 @@
 
 ## 驗收紀錄
 
+- [日夜與動態天氣](validation/2026-09-20-weather.md) — 天氣、遮雨、保存、40 組回歸與實機觀察。
+
 - [POI 共用定義與規範](validation/2026-09-19-poi-definitions.md) — 兩類 POI、資產登錄、入口分流與舊世界資料相容。
 
 - [加油機 GLB 替換驗證](validation/2026-09-19-fuel-pump-import.md) — 原創外部模型匯入、碰撞保留與灰盒比較。

@@ -39,6 +39,14 @@ static func build(chunk: ChunkGenerator) -> void:
 	chunk.add_child(holder)
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://world/terrain/forest_fog.gdshader")
+	var ancestor: Node = chunk
+	while ancestor != null and not ancestor.has_node("WorldClock"):
+		ancestor = ancestor.get_parent()
+	if ancestor != null:
+		var clock := ancestor.get_node("WorldClock") as WorldClock
+		clock.register_fog(material)
+		holder.tree_exiting.connect(func() -> void:
+			if is_instance_valid(clock): clock.unregister_fog(material))
 	for plan in plans(chunk.field, chunk.band):
 		var volume := FogVolume.new()
 		volume.shape = RenderingServer.FOG_VOLUME_SHAPE_BOX

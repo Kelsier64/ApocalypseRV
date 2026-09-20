@@ -7,6 +7,10 @@ const DEFAULT_TIME := 8.0 * 3600.0
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
 var elapsed_seconds := DEFAULT_TIME
 var running := true
+var weather := WorldWeather.new()
+var weather_running := true
+var weather_label: Label
+var fog_materials: Array[ShaderMaterial] = []
 var environment: Environment
 var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
@@ -72,6 +76,19 @@ func _ready() -> void:
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(label)
+	var generator := get_parent().get_node_or_null("WorldGenerator")
+	weather.initialize(generator.world_seed if generator != null else 42)
+	weather_label = Label.new()
+	weather_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	weather_label.position = Vector2(-350, 46)
+	weather_label.size = Vector2(326, 30)
+	weather_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	weather_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(weather_label)
+	var rain := WeatherRain.new()
+	rain.name = "WeatherRain"
+	rain.clock = self
+	add_child(rain)
 	apply_time()
 	_last_minute = -1
 	_notify_minute()
@@ -81,7 +98,9 @@ func _process(delta: float) -> void:
 
 func advance(real_seconds: float) -> void:
 	if not is_finite(real_seconds) or real_seconds < 0.0: return
-	elapsed_seconds += real_seconds * DAY_SECONDS / (maxf(1.0, day_length_minutes) * 60.0)
+	var seconds := real_seconds * DAY_SECONDS / (maxf(1.0, day_length_minutes) * 60.0)
+	elapsed_seconds += seconds
+	if weather_running: weather.advance(seconds)
 	apply_time()
 	_notify_minute()
 
@@ -129,20 +148,41 @@ func sun_direction() -> Vector3:
 
 func apply_time() -> void:
 	if environment == null or not is_instance_valid(sun): return
+	var conditions := weather.sample()
+	var clear := conditions.x
+	var rain := conditions.y / 2.0
+	var mist := conditions.z / 2.0
 	var direction := sun_direction()
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("28323d").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("121c2c").lerp(Color("7f9298"), daylight)
+	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
+	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
+	environment.fog_depth_begin = lerpf(lerpf(160.0 if ForestFog.supported() else 18.0, 240.0, clear), 5.0, mist)
+	environment.fog_depth_end = lerpf(lerpf(420.0 if ForestFog.supported() else 380.0, 700.0, clear), 65.0, mist)
+	environment.volumetric_fog_density = 0.0015 * (1.0 - clear) + mist * 0.012 + rain * 0.001
+	for material in fog_materials:
+		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 + mist))
+	if is_instance_valid(weather_label): weather_label.text = weather.description()
 	environment.fog_light_color = horizon
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
-	environment.ambient_light_energy = lerpf(0.18, 0.24, daylight)
+	environment.ambient_light_energy = lerpf(0.18, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
-	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y)
+	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90)
 	# The light emits along -Z; the visible disk sits in the opposite direction.
 	sun.global_basis = Basis.looking_at(-direction, Vector3.UP)
 	sky_material.set_shader_parameter("horizon_color", horizon)
 	sky_material.set_shader_parameter("zenith_color", zenith)
 	sky_material.set_shader_parameter("sun_direction", direction)
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y))
+	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95))
+
+func register_fog(material: ShaderMaterial) -> void:
+	fog_materials.append(material)
+	var conditions := weather.sample()
+	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 + conditions.z / 2.0))
+
+func unregister_fog(material: ShaderMaterial) -> void:
+	fog_materials.erase(material)

@@ -72,6 +72,12 @@ func _run() -> void:
 		quit(1)
 		return
 	var inside := manager.interior
+	var clock: WorldClock = main.get_node("WorldClock")
+	clock.weather.set_weather(Vector3(0, 2, 2), true)
+	var weather_before := clock.weather.remaining
+	await frames(5)
+	check(clock.weather.remaining < weather_before, "Weather keeps advancing inside POI")
+	check(clock.get_node("WeatherRain").visible_drops == 0, "Independent indoor world has no outdoor rain")
 	check(not WorldEntities.same_world(player, main), "Independent physics world")
 	check(WorldEntities.get_container(player) == inside.entities, "Indoor drops owned by indoor container")
 	var outdoor: Monster = main.get_node("Zombie")

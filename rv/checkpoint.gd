@@ -83,7 +83,9 @@ func save_world(world: Node, path: String) -> bool:
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["generated_bands"] = generator.generated_bands.duplicate()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
-	if clock != null: data["clock"] = clock.capture()
+	if clock != null:
+		data["clock"] = clock.capture()
+		data["weather"] = clock.weather.capture()
 	var field := validation_error(data)
 	if not field.is_empty(): return _fail("data", field)
 	return write_checkpoint(path, data)
@@ -146,6 +148,7 @@ func validation_error(data: Dictionary) -> String:
 	if not profile_error.is_empty(): return profile_error
 	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5]: return "generation_version"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
+	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
 	var player: Dictionary = data.player
 	if not player.get("items") is Array: return "player.items"
 	# Selection is a hotbar index, including empty slots, not an item index.
@@ -174,6 +177,7 @@ func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null and pending.has("clock"): clock.restore(pending.clock)
+	if clock != null and pending.has("weather"): clock.weather.restore(pending.weather)
 	world.get_node("Player").transform = pending.player.transform
 	world.get_node("WorldGenerator").world_seed = pending.seed
 	var profile := WorldProfile.new()

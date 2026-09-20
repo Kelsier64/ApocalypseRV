@@ -137,7 +137,7 @@ godot --path . --log-file .godot/poi-replay.log res://tests/poi_instance_playgro
 
 室外植物、地面、四款入口與 RV／設備已使用統一的老舊工業材質；生成紋理與完整提示詞見 [材質說明](../../assets/materials/industrial/README.md)。HUD、背包和平板保留操作方式，改為方角暗底及灰白／暗黃配色。新外觀適用新舊存檔，不變更世界位置；舊生成版本仍保留其原植物配置。
 
-室外展示場新增 **F6** 循環 RV 外觀／駕駛室／設備、**F7** 切換測試電池電量、**F9** 切換側牆損傷、**F10** 開啟正式平板介面。正式遊戲不增加這些快捷鍵。RV 車內暖燈隨車頂與既有待機供電；F8 仍只切换室外復古效果，文字保持清晰。
+室外展示場新增 **F6** 循環 RV 外觀／駕駛室／設備、**F7** 切換測試電池電量、**F9** 切換側牆損傷、**F10** 開啟正式平板介面。正式遊戲不增加這些快捷鍵。RV 車內暖燈隨車頂與既有待機供電；F8 仍只切換室外復古效果，文字保持清晰。
 
 [美術驗收與截圖](../../docs/validation/2026-09-17-industrial-art.md)
 
@@ -194,3 +194,25 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 `godot --path . --log-file .godot/production-station-visible.log res://tests/production_gas_station_playground.tscn`
 
 繼承主場景，以 v5、seed 42 的正式場址、整地、森林、物資與 RV 啟動。F2 鳥瞰、F3 玩家視角、F5 公路轉入停車區的真實輪驅回放、F7 截圖至 `.godot/production-station.png`。回放只在初始化放置車輛，行駛不改 transform；怪物在此驗收場移除，正常主遊戲維持原生成。原獨立灰盒場仍供素材 A/B。
+
+
+## 日夜與天氣驗收
+
+執行 `godot --path . --log-file .godot/weather-visual.log res://tests/weather_playground.tscn`。
+
+- `6` 依序切換陰天、小雨、大雨、小霧、大霧、晴天、大雨加大霧；預設立即切換方便比較。
+- `7` 雨勢、`8` 霧量、`9` 晴陰；晴天清空雨霧，增加雨霧會切回陰天。
+- `0` 切換自動天氣和時間推進；`F12` 一分鐘一天，`Home` 暫停／恢復時間；自然天氣使用平滑過渡。
+- `F1` 黎明／正午／黃昏／夜晚；`F2` 場址視角；`F6` RV／車內／設備；`Backspace` 破壞車頂；`R` 重置。
+- `F3` 既有步行回放、`F4` 入口互動／離開副本；`F8` 畫面縮放，`F11` 隱藏說明。
+
+每 5 秒記錄天氣、GPU 粒子提交數、覆蓋範圍、最高射線數及平均幀時間。粒子提交數不是遮擋後實際可見數。切換後至少等待一個完整取樣區間再比較；固定視角測量不代表行車／串流壓力測試。聲音遮蔽在固定視角跟隨驗收攝影機，步行時跟隨玩家。
+
+
+### 直接檢查新版大範圍雨幕
+
+`godot --path . --log-file .godot/rain-user-review.log res://tests/weather_playground.tscn -- --heavy-rain`
+
+直接以正午大雨開啟，無須等待自然天氣。`6` 切換天氣、`7` 循環雨勢、`F2` 更換戶外視角、`F6` 車外／車內、`Backspace` 破壞車頂。請確認近處密度、遠方樹林和建築前也有雨，轉頭／行走不露出小範圍雨柱，車內能看見窗外雨幕。高度快取首次填充約半秒，傳送到新位置時未知區暫時不顯示雨，避免穿屋頂。
+
+新版由使用者負責目視驗收；自動化只檢查行為與兩種渲染器的編譯／執行紀錄，不使用 Computer Use。

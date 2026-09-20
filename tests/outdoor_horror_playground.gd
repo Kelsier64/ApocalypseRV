@@ -23,6 +23,7 @@ func _ready() -> void:
 	generator.profile.chunks_ahead = 1
 	generator.profile.chunks_behind = 1
 	add_child(main)
+	main.get_node("WorldClock").weather_running = false
 	site = generator.field.stop(0)
 	player = main.get_node("Player")
 	for enemy in get_tree().get_nodes_in_group(Groups.MONSTERS): enemy.queue_free()
