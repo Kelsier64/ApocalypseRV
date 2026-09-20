@@ -64,3 +64,11 @@ Runner 先核對 `.godot-version`，列出頂層 `tests/test_*.gd`（零測試�
 ## 程式位置
 
 `player/` 玩家與互動、`enemies/` AI／選敵、`props/` 可撿物、`rv/` 底盤輪胎、`equipment/` 設備、`world/` 串流／POI／建築、`core/` 共用契約、`tests/` 行為測試及展示。完整對照見 [架構](architecture.md)。
+
+## 室外加油站測試
+
+`godot --path . --log-file .godot/gas-station.log res://tests/gas_station_playground.tscn`
+
+可直接步行進入商店、維修間與後院，同世界探索，無副本轉場。F1 步行、F2 外觀、F3 商店、F4 維修間、F5 步行回放；E 拾取。詳見 [加油站規格](world/poi_kit/buildings/README.md)。
+
+新世界生成 v5 已包含可直接探索的 NORTHLINE 加油站：起始維修廠之後的下一個停靠點（距世界起點沿路約 375–525 m），沿路找 GAS / SERVICE 標誌。可回頭探索，剩餘場內物資隨串流及 F6/F9 檢查點保存；舊 v2–v4 存檔保留原世界，需開新局看新建築。加油機目前是造景，燃料從物資搜刮取得。

@@ -12,6 +12,7 @@
 - [日夜時間](#section-6)
 - [正式美術與獨立樣板](#section-7)
 - [攀爬與怪物測試場](#section-8)
+- [加油站室外探索](#gas-station)
 
 <a id="section-1"></a>
 
@@ -178,3 +179,18 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 ```
 
 開局怪物破側門後追擊駕駛。F3 切換屋頂怪物破頂落入車內，F4 將玩家移到車外觀察怪物追出，R 重設。初始只隱藏屋頂外觀方便觀察，碰撞保留；展示把目標門／屋頂設為 15 HP、玩家設為 10000 HP，攻擊和移動規則沿用正式設定。[驗收紀錄](../../docs/validation/2026-09-16-monster-cabin.md)。
+
+<a id="gas-station"></a>
+
+## 加油站室外探索測試
+
+直接開啟 [gas_station_playground.tscn](../../tests/gas_station_playground.tscn)，或執行 `godot --path . --log-file .godot/gas-station.log res://tests/gas_station_playground.tscn`。
+商店、維修間、後門與加油棚同處室外世界，沒有副本入口。WASD／E／G 沿用正式操作；F1 步行、F2 外觀、F3 商店、F4 維修間、F5 步行回放、F8 截圖。詳見 [資產與測試規格](../../world/poi_kit/buildings/README.md)。
+
+加油機已接入自製 GLB。F6 近看加油機，F7 切換灰盒／模型外觀，保留同一套碰撞；本場景的 F6 不保存遊戲。模型說明見 [素材匯入樣板](../../assets/models/gas_station/README.md)。
+
+## 正式世界加油站
+
+`godot --path . --log-file .godot/production-station-visible.log res://tests/production_gas_station_playground.tscn`
+
+繼承主場景，以 v5、seed 42 的正式場址、整地、森林、物資與 RV 啟動。F2 鳥瞰、F3 玩家視角、F5 公路轉入停車區的真實輪驅回放、F7 截圖至 `.godot/production-station.png`。回放只在初始化放置車輛，行駛不改 transform；怪物在此驗收場移除，正常主遊戲維持原生成。原獨立灰盒場仍供素材 A/B。

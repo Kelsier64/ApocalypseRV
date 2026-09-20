@@ -73,7 +73,7 @@ func _run() -> void:
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	expect(not saved.is_empty(), "Checkpoint validates from disk without objects")
 	expect(saved.clock == clock.capture(), "Checkpoint captures day, fractional time and day duration")
-	expect(saved.get("generation_version") == 4, "Generation version independent of checkpoint version")
+	expect(saved.get("generation_version") == 5, "Generation version independent of checkpoint version")
 	var legacy_data := saved.duplicate(true)
 	legacy_data.erase("generation_version")
 	legacy_data.erase("clock")

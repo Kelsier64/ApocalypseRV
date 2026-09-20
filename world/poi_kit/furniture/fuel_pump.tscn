@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/gas_station/fuel_pump.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="base"]
+size = Vector3(1.35, 0.22, 1.1)
+
+[sub_resource type="BoxShape3D" id="pedestal"]
+size = Vector3(0.94, 1.1, 0.72)
+
+[sub_resource type="BoxShape3D" id="head"]
+size = Vector3(1.25, 0.95, 0.86)
+
+[node name="FuelPump" type="Node3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+
+[node name="Readout" type="Label3D" parent="Visuals"]
+position = Vector3(0, 1.97, 0.478)
+text = "--.--"
+font_size = 24
+pixel_size = 0.008
+modulate = Color(0.9, 0.85, 0.66, 1)
+outline_size = 2
+
+[node name="Notice" type="Label3D" parent="Visuals"]
+position = Vector3(0, 1.6, 0.478)
+text = "OUT OF SERVICE"
+font_size = 12
+pixel_size = 0.008
+modulate = Color(0.9, 0.85, 0.66, 1)
+outline_size = 2
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="Base" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 0.11, 0)
+shape = SubResource("base")
+
+[node name="Pedestal" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 0.77, 0)
+shape = SubResource("pedestal")
+
+[node name="Head" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 1.78, 0)
+shape = SubResource("head")

@@ -195,13 +195,13 @@ func _place_module(kind: String, point: Vector3, orientation: Basis = Basis.IDEN
 	return node
 
 func _build_site(site: Dictionary, spawner: POISpawner) -> void:
-	if site.kind == "entrance":
+	if site.kind in ["entrance", "walk_in"]:
 		spawner.spawn_site(site, self)
 	else:
 		_place_module(site.kind, site.building.origin, site.building.basis)
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
 	var sign_node := _place_module("sign", sign_pos, site.road.basis)
-	RoadsideKit.label(sign_node, str(site.get("title", "SERVICE")) + "\nFOOT ACCESS" if site.kind == "entrance" else "LAY-BY", Vector3(0, 3.4, 0.08), 24)
+	RoadsideKit.label(sign_node, str(site.get("title", "SERVICE")) + "\nFOOT ACCESS" if site.kind == "entrance" else ("NORTHLINE\nGAS / SERVICE" if site.kind == "walk_in" else "LAY-BY"), Vector3(0, 3.4, 0.08), 24)
 	for side in [-1.0, 1.0]:
 		var point: Vector3 = site.frame * Vector3(side * 6.2, 0.05, 0)
 		var stripe := RoadsideKit.part(self, Vector3(0.15, 0.03, 24), point, Color(0.72, 0.64, 0.43))
@@ -375,8 +375,8 @@ func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> 
 			_append_box_faces(source, part.size, part.transform)
 		if floori(float(site.s) / 150.0) == band or absf(site.building.origin.z + band * 150.0 + 75) > 95: continue
 		# Exterior collision boxes are read without registering a second POI.
-		var model: Node3D = load("res://world/poi_kit/exteriors/%s.tscn" % site.exterior).instantiate()
-		model._ready()
+		var model: Node3D = POIConfig.scene_for_site(site).instantiate()
+		if model.has_method("_ready"): model._ready()
 		_append_collision_boxes(source, model, site.building)
 		model.free()
 
@@ -406,24 +406,34 @@ func _navigation_baked(nav: NavigationMesh) -> void:
 	while is_inside_tree() and (NavigationServer3D.region_get_iteration_id(rid) <= before or NavigationServer3D.region_get_bounds(rid).size == Vector3.ZERO):
 		await get_tree().physics_frame
 	if not is_inside_tree(): return
+	# Region data can publish before the complete map's async synchronization.
+	# Shared seam points can belong to either neighbour; require proximity,
+	# not exclusive ownership of that point by this region.
 	if nav.get_polygon_count() > 0:
 		var probe := Vector3.ZERO
 		var polygon := nav.get_polygon(0)
 		var vertices := nav.get_vertices()
 		for index in polygon: probe += vertices[index]
 		probe /= polygon.size()
-		while is_inside_tree() and NavigationServer3D.map_get_closest_point_owner(navigation.get_navigation_map(), probe) != rid:
+		while is_inside_tree():
+			# Checkpoint staging can transfer this node to another World3D.
+			# Never retain that old map RID across an await.
+			var map := navigation.get_navigation_map()
+			if map.is_valid() and NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
 			await get_tree().physics_frame
+		if not is_inside_tree(): return
 	navigation_ready = true
 
 func _spawn_actors() -> void:
-	if get_meta("skip_actors", false):
-		return
 	var container := WorldEntities.get_container(self)
 	if container == null:
 		container = self
 	for site in sites:
-		if site.kind == "entrance":
+		if site.kind == "walk_in":
+			if not get_meta("skip_walk_in", false) and get_parent().has_method("activate_walk_in"):
+				get_parent().activate_walk_in(site, self)
+			continue
+		if site.kind == "entrance" or get_meta("skip_actors", false):
 			continue
 		var loot := field.loot_plan(int(site.index))
 		for i in range(loot.size()):

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name WorldField
 ## Pure world-coordinate queries. Never depends on global RNG or loaded nodes.
-const VERSION := 4
+const VERSION := 5
 var world_seed: int
 var profile: WorldProfile
 var macro := FastNoiseLite.new()
@@ -116,6 +116,8 @@ func stop(index: int) -> Dictionary:
 	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "frame": frame, "building": building, "road": road, "kind": kind, "seed": seed_for(index, "interior")}
 	if profile.generation_version >= 3:
 		ExplorationSite.configure(result, self)
+	if profile.generation_version >= 5 and index % 3 == 1:
+		WalkInSites.configure(result)
 	_stops[index] = result
 	return result
 
@@ -130,6 +132,8 @@ func stops_in_band(index: int) -> Array[Dictionary]:
 
 func court_distance(x: float, z: float, site: Dictionary) -> float:
 	var local: Vector3 = site.frame.affine_inverse() * Vector3(x, site.frame.origin.y, z)
+	if site.kind == "walk_in":
+		return WalkInSites.court_distance(Vector3(x, site.frame.origin.y, z), site)
 	# 12x24 parking is wholly clear, with an additional apron for the building.
 	var center_x := float(site.side) * 5.0
 	var half_width := 7.0 if site.has("route") else 23.0

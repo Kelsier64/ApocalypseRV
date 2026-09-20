@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PoiDefinition" format=3]
+
+[ext_resource type="Script" path="res://world/poi_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+definition_id = &"gas_station"
+display_name = "NORTHLINE GAS STATION"
+scene_path = "res://world/poi_kit/buildings/gas_station.tscn"
+legacy_visual_layout = false
+kind = 1
+building_bounds = AABB(-17, -0.3, -17, 28, 9.3, 31)
+site_bounds = AABB(-18, -0.5, -20, 36, 9.5, 42)
+entrance_path = NodePath("")
+return_path = NodePath("")
+interior_profile = &""
+access_paths = Array[NodePath]([NodePath("AccessPoints/Front"), NodePath("AccessPoints/Rear"), NodePath("AccessPoints/Service")])
+

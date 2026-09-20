@@ -1,8 +1,8 @@
 extends RefCounted
 class_name ExplorationSite
 ## Road-local templates. All consumers use the same route, gates and enclosure.
-const NAMES := ["MAINTENANCE", "WAREHOUSE", "PUMP STATION", "RESEARCH STATION"]
-const TYPES := ["maintenance", "warehouse", "pump", "research"]
+static var NAMES: Array[String] = POIConfig.instance_titles()
+const TYPES = POIConfig.GENERATION_IDS
 
 static func configure(site: Dictionary, field: WorldField) -> void:
 	var index: int = site.index

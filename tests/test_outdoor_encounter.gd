@@ -13,6 +13,7 @@ func _run() -> void:
 	var generator = main.get_node("WorldGenerator")
 	generator.world_seed = 42
 	generator.profile = WorldProfile.new()
+	generator.profile.generation_version = 4 # This fixture exercises the two forest entrances.
 	generator.profile.chunks_ahead = 1
 	generator.profile.chunks_behind = 1
 	root.add_child(main)

@@ -6,10 +6,19 @@ func _init() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	for entry in POIConfig.POI_TABLE:
-		if entry.get("type") != "instance_entrance" or str(entry.get("scene", "")).is_empty():
-			failures.append("POI requires an instance entrance scene: " + str(entry.get("id")))
-		_check_resources(entry)
+	var ids: Array[StringName] = []
+	for entry: PoiDefinition in POIConfig.DEFINITIONS:
+		if entry.definition_id in ids: failures.append("Duplicate definition ID")
+		ids.append(entry.definition_id)
+		for error in entry.validate(): failures.append(str(entry.definition_id) + ": " + error)
+		if entry.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE and not POIConfig.supported_interior(entry.interior_profile):
+			failures.append(str(entry.definition_id) + ": unsupported interior profile")
+		_check_resources({"scene": entry.scene_path})
+		var scene := load(entry.scene_path) as PackedScene
+		if scene == null: continue
+		var building := scene.instantiate()
+		for error in entry.validate_scene(building as Node3D): failures.append(str(entry.definition_id) + ": " + error)
+		building.free()
 	if failures.is_empty():
 		print("PASS: configured POI resources exist and load")
 		quit(0)

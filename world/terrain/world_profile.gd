@@ -1,6 +1,6 @@
 extends Resource
 class_name WorldProfile
-@export var generation_version: int = 4
+@export var generation_version: int = 5
 ## All distances are metres. Determinism includes the generation version.
 # Older worlds retain their original collision strip.
 var chunk_length: float = 150.0

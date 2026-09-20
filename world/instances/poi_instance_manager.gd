@@ -40,7 +40,8 @@ func _ready() -> void:
 	_layer.add_child(_status)
 
 func register_entrance(building: Node3D, seed_value: int, stable_id: String = "") -> void:
-	var door := building.get_node("Entrance") as PoiEntrance
+	var door := building.get_node_or_null(NodePath(building.get_meta("poi_entrance_path", ^"Entrance"))) as PoiEntrance
+	if door == null: return
 	var id := stable_id if not stable_id.is_empty() else "%d:%s" % [seed_value, building.global_position]
 	door.entry_requested.connect(func(player: Node3D, _destination: StringName) -> void:
 		enter.call_deferred(player, building, id, seed_value))
@@ -49,7 +50,10 @@ func register_entrance(building: Node3D, seed_value: int, stable_id: String = ""
 	building.add_to_group("poi_entrances")
 
 func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> void:
-	if busy or not active_id.is_empty() or not is_instance_valid(building) or not is_instance_valid(player) or not building.has_node("ReturnPoint"):
+	if busy or not active_id.is_empty() or not is_instance_valid(building) or not is_instance_valid(player):
+		return
+	var return_point := building.get_node_or_null(NodePath(building.get_meta("poi_return_path", ^"ReturnPoint"))) as Marker3D
+	if return_point == null:
 		return
 	if not player.enter_ui_mode():
 		return
@@ -61,7 +65,7 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_player = player
 	_home = player.get_parent()
 	stream_anchor = player.global_position
-	_return_transform = building.get_node("ReturnPoint").global_transform
+	_return_transform = return_point.global_transform
 	# Face away from the building on return, with a clear area in front.
 	_return_transform.basis = building.global_basis * Basis(Vector3.UP, PI)
 	active_id = id

@@ -28,6 +28,8 @@
 
 ## 指南
 
+- [POI 共用製作與接入規範](guides/poi-authoring.md) — 類型、Resource、場景層級、素材替換及生成／保存責任。
+
 - [遊玩與測試場指南](guides/playgrounds.md) — `guides/playgrounds.md`
 
 ## 審查與修正
@@ -36,6 +38,12 @@
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [POI 共用定義與規範](validation/2026-09-19-poi-definitions.md) — 兩類 POI、資產登錄、入口分流與舊世界資料相容。
+
+- [加油機 GLB 替換驗證](validation/2026-09-19-fuel-pump-import.md) — 原創外部模型匯入、碰撞保留與灰盒比較。
+
+- [室外加油站探索測試](validation/2026-09-19-gas-station.md) — 同世界商店／維修間／後院、物資與步行驗證。
 
 - [串流 CPU 效能與回歸檢查](validation/2026-09-18-streaming-performance.md) — `validation/2026-09-18-streaming-performance.md`
 - [公路地形與沿途探索驗收](validation/2026-09-15-highway.md) — `validation/2026-09-15-highway.md`
@@ -98,3 +106,5 @@
 - [WAYFARER RV 模型原型](../rv/visuals/README.md) — `rv/visuals/README.md`
 - [POI 資產樣板與製作規格](../world/poi_kit/README.md) — `world/poi_kit/README.md`
 - [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
+
+- [2026-09-20 正式世界加油站](validation/2026-09-20-production-gas-station.md)：v5 場址、回程串流、物資保存與實機輪驅停靠。

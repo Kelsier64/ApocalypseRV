@@ -80,6 +80,8 @@ func save_world(world: Node, path: String) -> bool:
 		"actors": actors, "poi": manager.saved_instances.duplicate(true),
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health}}
+	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
+	data["generated_bands"] = generator.generated_bands.duplicate()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null: data["clock"] = clock.capture()
 	var field := validation_error(data)
@@ -88,24 +90,10 @@ func save_world(world: Node, path: String) -> bool:
 
 func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
 	for child in node.get_children():
-		if child.is_queued_for_deletion() or child.is_in_group(Groups.CHASSIS) or child.is_in_group(Groups.PLAYER):
-			continue
-		if child is Prop:
-			if not is_instance_valid(child.processing_owner):
-				result.append({"kind": "prop", "scene": child.scene_file_path, "transform": child.global_transform,
-					"state": child.capture_item_state(), "frozen": child.freeze, "linear": child.linear_velocity, "angular": child.angular_velocity})
-		elif child is Equipment:
-			if child.is_being_placed: continue
-			var data := VehicleSnapshot.device_state(child)
-			data["kind"] = "equipment"
-			data["transform"] = child.global_transform
-			data["frozen"] = child.freeze
-			result.append(data)
-		elif child is Monster:
-			if not child.is_dead:
-				result.append({"kind": "monster", "scene": child.scene_file_path, "transform": child.global_transform, "health": child.current_health})
-		else:
-			_collect_actors(child, result)
+		if child.is_queued_for_deletion() or child.is_in_group(Groups.CHASSIS) or child.is_in_group(Groups.PLAYER): continue
+		var saved := WorldActorSnapshot.capture(child)
+		if not saved.is_empty(): result.append(saved)
+		elif not (child is Prop or child is Equipment or child is Monster): _collect_actors(child, result)
 
 func write_checkpoint(path: String, data: Dictionary) -> bool:
 	last_error = {}
@@ -156,7 +144,7 @@ func validation_error(data: Dictionary) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5]: return "generation_version"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	var player: Dictionary = data.player
 	if not player.get("items") is Array: return "player.items"
@@ -173,22 +161,10 @@ func validation_error(data: Dictionary) -> String:
 		if vehicle_ids.has(vehicle.id): return "vehicles[%d].id" % i
 		vehicle_ids[vehicle.id] = true
 	for i in range(data.actors.size()):
-		var actor: Variant = data.actors[i]
-		var field := "actors[%d]" % i
-		if not actor is Dictionary or not actor.get("kind") is String: return field + ".kind"
-		if SaveSceneCatalog.resolve(actor.get("scene"), actor.kind) == null or actor.kind not in ["prop", "equipment", "monster"]: return field + ".scene"
-		if not CheckpointSchema.valid_transform(actor.get("transform")): return field + ".transform"
-		match actor.kind:
-			"prop":
-				if not actor.get("state") is Dictionary or not VehicleSnapshot.valid_prop_state(actor.scene, actor.state): return field + ".state"
-				if not actor.get("frozen") is bool: return field + ".frozen"
-				if not CheckpointSchema.vector(actor.get("linear")): return field + ".linear"
-				if not CheckpointSchema.vector(actor.get("angular")): return field + ".angular"
-			"equipment":
-				if not VehicleSnapshot.valid_device(actor): return field + ".device"
-				if not actor.get("frozen") is bool: return field + ".frozen"
-			"monster":
-				if not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: return field + ".health"
+		var actor_error := WorldActorSnapshot.validation_error(data.actors[i], "actors[%d]" % i)
+		if not actor_error.is_empty(): return actor_error
+	var outdoor_error := WalkInSites.validation_error(data)
+	if not outdoor_error.is_empty(): return outdoor_error
 	var poi_error := CheckpointSchema.poi_error(data.poi)
 	if not poi_error.is_empty(): return poi_error
 	if not _unique_engine_ids(data): return "engine.id.duplicate"
@@ -207,6 +183,8 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").profile = profile
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
+	world.get_node("WorldGenerator").outdoor_sites = pending.get("outdoor_sites", {}).duplicate(true)
+	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
 
 func restore_world(world: Node) -> Dictionary:
 	if pending.is_empty(): return {"ok": true}
@@ -236,25 +214,7 @@ func restore_world(world: Node) -> Dictionary:
 			_fail("apply", "vehicles[%d]" % i, saved.id)
 			return {"ok": false, "error": last_error}
 	for saved in data.actors:
-		var actor: Node3D = SaveSceneCatalog.resolve(saved.scene, saved.kind).instantiate()
-		container.add_child(actor)
-		actor.global_transform = saved.transform
-		if actor is Prop:
-			actor.restore_item_state(saved.state)
-			actor.freeze = saved.frozen
-			actor.linear_velocity = saved.linear
-			actor.angular_velocity = saved.angular
-		elif actor is Equipment:
-			actor.freeze = saved.frozen
-			VehicleSnapshot.restore_device(actor, saved, null)
-			if saved.has("physics"):
-				actor.freeze_mode = saved.physics.mode
-				actor.collision_layer = saved.physics.layer
-				actor.collision_mask = saved.physics.mask
-				actor.linear_velocity = saved.physics.linear
-				actor.angular_velocity = saved.physics.angular
-		elif actor is Monster:
-			actor.current_health = saved.health
+		WorldActorSnapshot.restore(saved, container)
 	var old: Array[Node] = []
 	_collect_removable(world, old)
 	for actor in old:

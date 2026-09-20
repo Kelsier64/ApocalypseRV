@@ -1,5 +1,7 @@
 extends Node3D
-## Monotonic highway streaming; indoor coordinates never move the outdoor anchor.
+## v5 streams both directions; indoor coordinates retain the outdoor anchor.
+var outdoor_sites: Dictionary = {}
+var generated_bands: Array[int] = []
 var restore_bands: Array[int] = []
 var restoring_entities: bool = false
 var active_chunks: Array = []
@@ -51,6 +53,24 @@ func _process(delta: float) -> void:
 			if not active_chunks.any(func(c): return int(c.index) == index):
 				_spawn_band(index, true)
 				break
+	if profile.generation_version >= 5:
+		if not building:
+			# Fill the closest missing band first, including when returning north.
+			var wanted: Array[int] = []
+			for index in range(current - profile.chunks_behind, current + profile.chunks_ahead + 1): wanted.append(index)
+			wanted.sort_custom(func(a, b): return absi(a - current) < absi(b - current))
+			for index in wanted:
+				if not active_chunks.any(func(c): return int(c.index) == index):
+					_spawn_band(index, true)
+					break
+		for entry in active_chunks.duplicate():
+			if (entry.index < current - profile.chunks_behind or entry.index > current + profile.chunks_ahead) and entry.index not in pinned:
+				retire_band(entry)
+		_cleanup_timer -= delta
+		if _cleanup_timer <= 0.0:
+			_cleanup_timer = 0.5
+			_despawn_entities_behind(anchor.z)
+		return
 	if not building and next_band <= current + profile.chunks_ahead:
 		if not active_chunks.any(func(c): return int(c.index) == next_band):
 			_spawn_band(next_band, true)
@@ -79,8 +99,10 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	building = true
 	var chunk := ChunkGenerator.new()
 	add_child(chunk)
-	chunk.set_meta("skip_actors", restoring_entities)
+	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
+	chunk.set_meta("skip_walk_in", restoring_entities)
 	await chunk.generate(field, index, poi_spawner, gradual)
+	if index not in generated_bands: generated_bands.append(index)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
 	active_chunks.sort_custom(func(a, b): return int(a.index) < int(b.index))
 	generation_times.append(chunk.build_ms)
@@ -125,10 +147,27 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 func _despawn_entities_behind(player_z: float) -> void:
 	var distance := (profile.chunks_behind + 1) * profile.chunk_length
 	for node in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if node is Node3D and WorldEntities.same_world(self, node) and node.global_position.z - player_z > distance:
+		if node is Node3D and WorldEntities.same_world(self, node) and node.global_position.z - player_z > distance and not _in_loaded_walk_in(node.global_position):
 			node.queue_free()
 	var container := WorldEntities.get_container(self)
 	if container != null and container.is_inside_tree():
 		for child in container.get_children():
-			if child is Node3D and child.global_position.z - player_z > distance:
+			if child is Node3D and child.global_position.z - player_z > distance and not _in_loaded_walk_in(child.global_position):
 				child.queue_free()
+
+func _in_loaded_walk_in(point: Vector3) -> bool:
+	for entry in active_chunks:
+		for site in entry.node.sites:
+			if site.kind == "walk_in" and site.bounds.has_point(point): return true
+	return false
+
+func activate_walk_in(site: Dictionary, chunk: Node) -> void:
+	WalkInSites.activate(self, site, chunk)
+
+func retire_band(entry: Dictionary) -> void:
+	# Never retire a region while its asynchronous bake still owns the mesh.
+	if not entry.node.navigation_ready: return
+	for site in entry.node.sites:
+		if site.kind == "walk_in": WalkInSites.deactivate(self, site)
+	active_chunks.erase(entry)
+	entry.node.queue_free()
