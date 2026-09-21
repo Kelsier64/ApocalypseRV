@@ -120,6 +120,12 @@ func _run() -> void:
 	check(WorldEntities.same_world(player, main), "Exit returns original World3D")
 	check(player.global_position.distance_to(building.get_node("ReturnPoint").global_position) < 6, "Exit returns near exterior landing")
 	await manager.enter(player, building, id, int(building.get_meta("poi_seed")))
+	check(manager.interior != null, "Production reentry succeeds: " + manager.last_error)
+	if manager.interior == null:
+		main.queue_free()
+		await process_frame
+		quit(1)
+		return
 	check(manager.interior.entities.get_child_count() == expected.actors.size(), "Reentry preserves deaths, pickups and drops")
 	check(manager.interior.entities.get_child_count() == initial_count, "Killed enemy replaced only by its loot")
 	var restored_custom := false
@@ -131,8 +137,8 @@ func _run() -> void:
 	await frames(5)
 	var map := manager.interior.get_world_3d().navigation_map
 	for edge: Vector2i in manager.interior.layout.edges:
-		var a := manager.interior.rooms[edge.x].global_position
-		var b := manager.interior.rooms[edge.y].global_position
+		var a := manager.interior.navigation_anchor(edge.x)
+		var b := manager.interior.navigation_anchor(edge.y)
 		var path := NavigationServer3D.map_get_path(map, a, b, true)
 		check(path.size() >= 2 and path[-1].distance_to(b) < 1, "Baked navigation connects furnished rooms %s" % edge)
 	await manager.leave()

@@ -1,4 +1,4 @@
-param([string]$Godot = 'godot', [string]$TestFilter = 'test_*.gd')
+param([string]$Godot = 'godot', [string]$TestFilter = 'test_*.gd', [ValidateRange(1, 600)][int]$TimeoutSeconds = 120)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $logDirectory = Join-Path $projectRoot '.godot/test-logs'
@@ -18,9 +18,9 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
     [IO.File]::WriteAllText($log, '')
     $arguments = @('--headless', '--path', ('"' + $projectRoot + '"'), '--log-file', ('"' + $log + '"')) + $ExtraArguments
     $process = Start-Process -FilePath $executable -ArgumentList $arguments -WindowStyle Hidden -PassThru
-    if (-not $process.WaitForExit(120000)) {
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
         $process.Kill()
-        throw "$Name timed out after 120 seconds. See $log"
+        throw "$Name timed out after $TimeoutSeconds seconds. See $log"
     }
     $process.Refresh()
     $output = if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Raw } else { '' }
@@ -39,7 +39,7 @@ foreach ($test in $tests) {
     $testArguments = @('-s', ('res://tests/' + $test.Name))
     # Long outdoor round trips exceed two minutes of simulated play. Keep
     # normal 60 Hz physics while letting headless rendering run unthrottled.
-    if ($test.BaseName -like 'test_outdoor_*') { $testArguments += @('--fixed-fps', '60') }
+    if ($test.BaseName -like 'test_outdoor_*' -or $test.BaseName -eq 'test_interior_traversal') { $testArguments += @('--fixed-fps', '60') }
     Invoke-GodotCheck $test.BaseName $testArguments $true
 }
 Invoke-GodotCheck 'main-scene' @('-s', 'res://tests/main_scene_smoke.gd') $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'

@@ -10,3 +10,4 @@ scene_path = "res://world/poi_kit/exteriors/pump.tscn"
 legacy_visual_layout = true
 access_paths = Array[NodePath]([NodePath("ReturnPoint")])
 
+interior_profile = &"maintenance_v2"

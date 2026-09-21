@@ -32,4 +32,4 @@ static func scene_for_site(site: Dictionary) -> PackedScene:
 	return load(entry.scene_path) as PackedScene
 
 static func supported_interior(profile: StringName) -> bool:
-	return profile == &"maintenance_maze_v1"
+	return profile in [&"maintenance_maze_v1", &"maintenance_v2"]

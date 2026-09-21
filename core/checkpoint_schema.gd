@@ -57,6 +57,20 @@ static func poi_error(value: Variant, path := "poi") -> String:
 		var entry: Variant = value[id]
 		var prefix: String = path + "." + str(id)
 		if not id is String or not entry is Dictionary or not entry.get("actors") is Array: return prefix
+		if entry.has("layout"):
+			var layout_error := InteriorLayout.validate(entry.layout)
+			if not layout_error.is_empty(): return prefix + "." + layout_error
+			if not entry.get("objective_claimed") is bool or not entry.get("shortcut_open") is bool or not entry.get("explored") is Array: return prefix + ".progress"
+			var seen: Array[String] = []
+			for room_id in entry.explored:
+				if not room_id is String or room_id in seen: return prefix + ".explored"
+				var found := false
+				for room: Dictionary in entry.layout.rooms:
+					if room.id == room_id: found = true
+				if not found: return prefix + ".explored"
+				seen.append(room_id)
+		elif entry.has("objective_claimed") or entry.has("shortcut_open") or entry.has("explored"):
+			return prefix + ".missing_layout"
 		for i in range(entry.actors.size()):
 			var actor: Variant = entry.actors[i]
 			var field := prefix + ".actors[%d]" % i

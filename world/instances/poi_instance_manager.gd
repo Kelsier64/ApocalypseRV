@@ -10,7 +10,7 @@ var operation := 0
 var transition_timeout_ms := 60000
 var _deadline := 0
 var last_error := ""
-var interior_factory: Callable = func(): return PoiInterior.new()
+var interior_factory: Callable
 var busy := false
 var saved_instances: Dictionary = {}
 var stream_anchor := Vector3.ZERO
@@ -34,7 +34,7 @@ func _ready() -> void:
 	_display.hide()
 	_layer.add_child(_display)
 	_status = Label.new()
-	_status.position = Vector2(24, 24)
+	_status.position = Vector2(24, 50)
 	_status.add_theme_font_size_override("font_size", 22)
 	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_status)
@@ -79,7 +79,14 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	viewport.size = Vector2i(get_viewport().get_visible_rect().size)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
-	interior = interior_factory.call()
+	var saved: Dictionary = saved_instances.get(id, {})
+	var profile: StringName = building.get_meta("poi_interior_profile", &"maintenance_maze_v1")
+	if not POIConfig.supported_interior(profile):
+		cancel_transition("Unsupported interior profile")
+		return
+	# Actor-only snapshots predate v2 and always keep their original geometry.
+	var use_v2 := saved.has("layout") or (saved.is_empty() and profile == &"maintenance_v2")
+	interior = interior_factory.call() if interior_factory.is_valid() else (MaintenanceInterior.new() if use_v2 else PoiInterior.new())
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
 	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
@@ -98,7 +105,7 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
-	_status.text = "%s / %d ROOMS   |   Return to R001 to exit" % [active_title, interior.rooms.size()]
+	_status.text = "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), "Return to RECEPTION to exit" if use_v2 else "Return to R001 to exit"]
 	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
 
 func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:

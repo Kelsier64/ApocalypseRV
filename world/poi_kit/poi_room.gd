@@ -51,7 +51,7 @@ func validate() -> PackedStringArray:
 		var on_z: bool = is_equal_approx(absf(p.z), half.z) and absf(p.x) + socket.opening.x / 2.0 <= half.x
 		var outward: bool = (on_x and facing.dot(Vector3(signf(p.x), 0, 0)) > 0.999) \
 			or (on_z and facing.dot(Vector3(0, 0, signf(p.z))) > 0.999)
-		if not is_zero_approx(p.y) or not outward or socket.opening.y > clear_height or socket.opening.x <= 0:
+		if p.y < 0 or not outward or p.y + socket.opening.y > clear_height or socket.opening.x <= 0:
 			errors.append("Door must fit a boundary and face outward: " + str(socket.name))
 	if ids.is_empty():
 		errors.append("Room needs an entrance socket")

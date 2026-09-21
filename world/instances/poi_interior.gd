@@ -169,6 +169,9 @@ func _populate(seed_value: int) -> void:
 			entities.add_child(enemy)
 			enemy.global_position = enemy_points[rng.randi_range(0, enemy_points.size() - 1)].global_position
 
+func navigation_anchor(index: int) -> Vector3:
+	return rooms[index].global_position
+
 func snapshot() -> Dictionary:
 	var actors: Array[Dictionary] = []
 	for actor in entities.get_children():
