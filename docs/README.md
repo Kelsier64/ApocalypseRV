@@ -12,7 +12,7 @@
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
 | 開發約定 | [AGENTS](../AGENTS.md)、[CLAUDE](../CLAUDE.md) | 協作與工具指引 |
-| 原始想法 | [todo](../todo)、[todo_for_ai](../todo_for_ai) | 原樣保留，不視為目前完成狀態 |
+| 原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt) | 原樣保留，不視為目前完成狀態 |
 
 ## 文件維護規則
 
@@ -114,3 +114,6 @@
 - [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
 
 - [2026-09-20 正式世界加油站](validation/2026-09-20-production-gas-station.md)：v5 場址、回程串流、物資保存與實機輪驅停靠。
+
+- [副本室內 v2 製作與保存契約](guides/interior-v2.md)
+- [2026-09-22 室內 v2 驗收](validation/2026-09-22-interior-v2.md)

@@ -26,7 +26,7 @@
 | `site_bounds` | 本地 AABB，包含建築及需要淨空的入口、後院、維修動線；包住 building_bounds |
 | `entrance_path`／`return_path` | 副本入口專用，本地 PoiEntrance／Marker3D 路徑 |
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
-| `interior_profile` | 副本入口專用；目前只支援 `maintenance_maze_v1` |
+| `interior_profile` | 副本入口專用；支援 `maintenance_maze_v1` 與 `maintenance_v2`；新室內見 [v2 規格](interior-v2.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
 
 場址實例 `site.id` 與 `site.seed` 由世界規劃提供。`definition_id` 識別資產種類，**不是某一棟建築的保存 ID**；同種建築可有許多不同場址 ID。未知明確定義不能默默退回維修站。
@@ -65,7 +65,7 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 
 新資產加入正式世界前，必須讓共享場址計畫決定完整 transform、整平範圍、接近路線、避讓與串流保護範圍；地形、視覺放置及導航讀相同計畫。所有入口、後門、棚架、招牌、RV 轉彎和搬運路線都要納入驗收。
 
-直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。目前所有四款入口仍指向同一室內 profile；新增 profile 必須先實作生成及保存支援，未知 profile 在生成時拒絕。
+直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。目前四款非 legacy 入口的新訪指向 `maintenance_v2`；已保存的舊副本保留 v1 幾何；新增 profile 必須先實作生成及保存支援，未知 profile 在生成時拒絕。
 
 既有 ReturnPoint 的返回朝向仍由 PoiInstanceManager 依建築朝向計算，以保持舊行為；新 AccessPoints 的朝向規格不倒改既有轉場朝向。
 

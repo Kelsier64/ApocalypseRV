@@ -222,3 +222,7 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 直接以正午大雨開啟，無須等待自然天氣。`6` 切換天氣、`7` 循環雨勢、`F2` 更換戶外視角、`F6` 車外／車內、`Backspace` 破壞車頂。請確認近處密度、遠方樹林和建築前也有雨，轉頭／行走不露出小範圍雨柱，車內能看見窗外雨幕。高度快取首次填充約半秒，傳送到新位置時未知區暫時不顯示雨，避免穿屋頂。
 
 新版由使用者負責目視驗收；自動化只檢查行為與兩種渲染器的編譯／執行紀錄，不使用 Computer Use。
+
+## 多樓層室內 v2
+
+`tests/interior_v2_playground.tscn` 使用正式 v2 生成器，預設 12 房，支援 `-- --rooms=100 --seed=1800`。F1 步行、F2 總覽、F3 掀頂、F5 持續輸入回放，M 已探索地圖、Page Up／Down 換層。完整命令與限制見 [v2 指南](interior-v2.md)。

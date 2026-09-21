@@ -179,7 +179,11 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／�
 
 室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。OutdoorPresentation 僅設定主 viewport.scaling_3d_scale（目標高度 540，最高 1），CanvasLayer 0 只套輕微對比，不再進行像素格量化或抖色，遊戲 UI 在較高 layer。F8 偏好寫入 user://display_preferences.cfg，不進角色／車輛快照。偵測 viewport 尺寸與副本 active_id 變化，室內停用、返回恢復。
 
-MazeLayout 使用 10 欄、27 m 中心間距，建立 50–100 個 9 m／18 m 房間。隨機 DFS 產生連通樹，再增加少量鄰接邊形成環路。PoiInterior 放置四門預製場景、封閉閒置門、連接走廊，依實際靜態碰撞（含家具）非同步 bake 導航；動態物資與敵人在 bake 後建立。各房物資點獨立隨機排序，最多成功抽取 4 件。
+新訪非 legacy 副本使用 `MaintenanceInterior extends PoiInterior`，由 `InteriorLayout` 產生釘選 version=2／content_version=1 manifest。`InteriorProfile`／`InteriorRoomDefinition` Resource 登錄 11 種預製房間；門 transform 和占用尺寸從場景讀取。固定 12 房必要路線加 seed 支路擴展為兩層 50–100 房，完整接口對齊、三維 AABB 排斥與有界重試；一般高度 5.5 m／層距 6 m，樓梯及挑高占兩層。導航發布 immutable mesh 並等 region／map 同步，捷徑打開後重烘焙。物資與敵人各用獨立 RNG，總預算取代依房數堆量。
+
+`PoiInstanceManager` 以入口 profile 和保存資料選擇生成器；無 layout 的既有快照永遠交回 v1。新版快照在 actors 外增加 layout、objective_claimed、shortcut_open、explored；CheckpointSchema 驗證確定性布局及互動欄位，不相容資料保留來源並復原控制。新版進度透過現有室外檢查點寫入磁碟。`InteriorInteraction` 只送出一次性互動，`MaintenanceInterior` 擁有獎勵／門狀態，`interior_map.gd` 僅畫已探索資訊。詳見 [v2 契約](docs/guides/interior-v2.md)。
+
+舊版 MazeLayout 使用 10 欄、27 m 中心間距，建立 50–100 個 9 m／18 m 房間。隨機 DFS 產生連通樹，再增加少量鄰接邊形成環路。PoiInterior 放置四門預製場景、封閉閒置門、連接走廊，依實際靜態碰撞（含家具）非同步 bake 導航；動態物資與敵人在 bake 後建立。各房物資點獨立隨機排序，最多成功抽取 4 件。
 
 PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。退出先保存室內 Prop 的場景、位置、回收資料及活怪生命／位置，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同房間與剩餘 actors；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。轉場有明確狀態與操作序號，建立失敗、逾時、取消或玩家死亡會恢復控制並清理暫建 viewport。
 
@@ -286,7 +290,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 - 配方出料使用產物根層的實際碰撞形狀檢查；新增產品需驗證碰撞配置與出料淨空。
 - 簡化載重只加總底盤、已安裝引擎與有效的已安裝設備，並依位置計算重心；電池本體、抽象材料、庫存道具、燃油與鬆散貨物不納入車體質量。插槽與倉庫設備本體仍計重；游離道具保留既有剛體行為。BatteryState.weight 保留供道具物理與舊存檔相容使用，VehicleSnapshot 載入後以同一 update_load 重算車重，無需存檔遷移。首版檔位不模擬離合器／轉速。
 - 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；v2–v4 仍單向串流；v5 可回程載入。
-- 副本目前兩種四門房型；室外已有四款入口，共用相同室內內容，內容多樣性與長局效能仍需擴充驗收。
+- 副本 v2 有 11 種灰盒房型；室外四款入口暫時共用 v2，已訪舊副本仍使用兩種 v1 四門房型，內容多樣性與長局效能仍需擴充驗收。
 - 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
 
 

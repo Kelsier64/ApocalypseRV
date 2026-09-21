@@ -2,9 +2,9 @@
 
 新 POI 的類型、定義 Resource、場址、GLB、物資與保存責任，以 [共用製作規範](../../docs/guides/poi-authoring.md) 為準。本文件繼續規範室內房型／家具接口；9／18 m 房型不限制自由室外建築。六份現有定義位於 `world/poi_definitions/`，由 POIConfig 統一解析。
 
-這套可編輯的入口建築、房間與家具已接入主遊戲。維修站入口載入 50–100 房迷宮，具有獨立 World3D、家具導航與同局重返保存；舊 POI 場景和生成器已刪除。原始展示場景仍保留，供模型製作時快速檢查。
+這套可編輯的入口建築、房間與家具已接入主遊戲。新訪四款入口使用 50–100 房的兩層 v2，見 [室內 v2 規格](../../docs/guides/interior-v2.md)。舊副本仍保留以下 v1 房型與生成器以維持保存相容。原始展示場景供模型製作時快速檢查，不是 v2 全房型展示。
 
-正式生成使用 `rooms/maze_utility.tscn`（9×9 m／4.5 m 高）與 `rooms/maze_hall.tscn`（18×18 m／6 m 高），兩者都有四向接口，家具避開十字動線。`world/instances/maze_layout.gd` 產生布局，`poi_interior.gd` 接合門口與走廊並封閉未連接門。增加房型需同步擴充模板選擇與占地規則，不能只放進目錄就期待自動加入。
+v1 相容生成使用 `rooms/maze_utility.tscn`（9×9 m／4.5 m 高）與 `rooms/maze_hall.tscn`（18×18 m／6 m 高），兩者都有四向接口，家具避開十字動線。`world/instances/maze_layout.gd` 產生布局，`poi_interior.gd` 接合門口與走廊並封閉未連接門。增加房型需同步擴充模板選擇與占地規則，不能只放進目錄就期待自動加入。
 
 ## 先看樣板
 
@@ -28,7 +28,7 @@ Esc 釋放滑鼠後，用 F5 重新進入步行。展示入口只在這個測試
 
 可加 `-- --replay` 自動啟動 F6 路線。通過時日誌有 `PASS: workshop traversal`，不代表家具側路、完整導航、RV 或大型迷宮已驗收。
 
-## 尺寸與座標契約
+## v1 樣板尺寸與座標契約
 
 - 單位：1 Godot unit = 1 m；房間水平格網 9 m。
 - 房間原點：占地中心的地板表面，Y=0；+X 東、-Z 北、+Y 上。場景根節點縮放保持 `(1,1,1)`。
@@ -108,3 +108,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 - Computer Use 實際觀察：資產展示的入口外觀、小房、大房、掀頂；正式場景 F6 回放從路旁入口進入 96 房副本，持續步行穿越連接走廊再回入口按 E 返回，畫面顯示 PASS。互動日誌無 SCRIPT ERROR／ERROR／FAIL；室外 RV 持續受到殭屍攻擊。測試遊戲視窗已關閉，編輯器保留。
 - 未驗收：每個隨機 seed 的完整實機探索、100 房上限的長時間效能、群體殭屍實戰、全部家具繞行路線、正式模型外觀、所有材質接縫及 4.6.1 相容性。
 - 日誌：`.godot/test-logs/`、`.godot/poi-visible.log`、`.godot/climb-recheck.log`，另保留先前資產展示日誌。Headless 的系統憑證讀取訊息依原測試 runner 規則排除，沒有排除腳本或其他錯誤。
+
+## 室內 v2（2026-09-22）
+
+上述 9／18 m 四門迷宮為舊版與資產展示契約。四款非 legacy 入口的新訪改用 `rooms/v2/` 的 11 種房型與 `world/instances/catalog/` Resource；門口可在不同高度，一般淨高 5.5 m、跨層 11.5 m、層距 6 m。Visuals／Collision／標記分層繼續沿用。完整尺寸、生成、保存和新增房型流程見 [室內 v2 規格](../../docs/guides/interior-v2.md)。
