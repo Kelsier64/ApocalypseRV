@@ -284,7 +284,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 - 設備仍是獨立凍結剛體。重量／重心已彙總，但側撞與大型外掛的碰撞力矩未合併到車體；翻車、偏載、怪物群需專項實測。
 - 控制、輪槽與登錄仍共用 Chassis；能源、材料、保存已抽離，後續可按需求再拆控制／掛載服務。
 - 配方出料使用產物根層的實際碰撞形狀檢查；新增產品需驗證碰撞配置與出料淨空。
-- 車上抽象材料、燃油與鬆散貨物尚未動態計重。首版檔位不模擬離合器／轉速。
+- 簡化載重只加總底盤、已安裝引擎與有效的已安裝設備，並依位置計算重心；電池本體、抽象材料、庫存道具、燃油與鬆散貨物不納入車體質量。插槽與倉庫設備本體仍計重；游離道具保留既有剛體行為。BatteryState.weight 保留供道具物理與舊存檔相容使用，VehicleSnapshot 載入後以同一 update_load 重算車重，無需存檔遷移。首版檔位不模擬離合器／轉速。
 - 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；v2–v4 仍單向串流；v5 可回程載入。
 - 副本目前兩種四門房型；室外已有四款入口，共用相同室內內容，內容多樣性與長局效能仍需擴充驗收。
 - 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
@@ -310,6 +310,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 
 ### 統一驗證
 
+底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300，避免調整腳煞車時削弱駐車。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
+
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 
 [scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
@@ -326,6 +328,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 | [test_world_entities](tests/test_world_entities.gd) | chunk 刪除後容器存活、場景重建 |
 | [test_rv_systems](tests/test_rv_systems.gd) | 電池交易、能源、正式設備工作／清理、失效授權 |
 | [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
+| [test_rv_braking](tests/test_rv_braking.gd) | 漸進踏板、不同速度煞停距離、倒車、引擎熄火與獨立駐車 |
 | [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、舊檔轉換 |
 | [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
 | [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |
@@ -340,7 +343,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 
 ### v5 路旁加油站與戶外保存
 
-`WalkInSites` 在停靠點 index % 3 == 1 配置 gas_station；index 0 維持維修廠。定義占地加外圈步行餘量參與 WorldField.court_distance，因此地形、植被排除與車道共用同一計畫。建築碰撞參與 chunk 導航及鄰帶補圖。導航 readiness 先確認 region iteration 與有效 bounds，再等 map 上可查詢到鄰近網格；共用邊界點不必只屬於自己，等待期間重新取得 map，支援檢查點跨 World3D 轉移。
+`WalkInSites` 在停靠點 index % 3 == 1 配置 gas_station；index 0 維持維修廠。定義占地加外圈步行餘量參與 WorldField.court_distance，因此地形、植被排除與車道共用同一計畫。建築碰撞參與 chunk 導航及鄰帶補圖。導航 readiness 先確認 region iteration 與有效 bounds，再等 map 上可查詢到鄰近網格；只在 map RID 或同步 iteration 改變時重做最近點搜尋，避免等待期間每個物理步反覆掃描整張戶外導航網格。共用邊界點不必只屬於自己，等待期間重新取得 map，支援檢查點跨 World3D 轉移。
 
 WorldGenerator v5 維護前後載入窗口、場址 pinned bands 及 generated_bands，回程重建不重抽小補給點。加油站初次用獨立 walk_in_loot RNG 讀取標記；靜態資產仍不生物資。卸載 owner band 前，WalkInSites 收集 bounds 內主世界的鬆散 Prop／Equipment／活怪，保留完整 transform、狀態及速度，釋放活動 actor；回程只還原保存的剩餘物件。搬入後丟下的物品也包含在內，車輛及車上設備／庫存不歸場址。
 

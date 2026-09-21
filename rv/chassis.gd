@@ -3,7 +3,10 @@ class_name Chassis
 
 @export var max_engine_force: float = 5000.0
 @export var max_speed: float = 35.0
-@export var max_braking_force: float = 300.0
+@export var max_braking_force: float = 100.0
+@export var parking_braking_force: float = 300.0
+@export_range(0.01, 2.0) var brake_apply_seconds: float = 0.35
+@export_range(0.01, 2.0) var brake_release_seconds: float = 0.15
 @export var max_steering: float = 0.6
 @export var is_player_driving: bool = false
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
@@ -344,7 +347,8 @@ func _physics_process(delta: float) -> void:
 		braking_input = control_override.get("brake", 0.0)
 		turn = control_override.get("steering", 0.0)
 	var drive := throttle if gear != 0 and not handbrake and not drive_blocked() else 0.0
-	brake_input = braking_input
+	var brake_response := brake_apply_seconds if braking_input > brake_input else brake_release_seconds
+	brake_input = move_toward(brake_input, clampf(braking_input, 0.0, 1.0), delta / maxf(0.01, brake_response))
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
 	var forward := -global_transform.basis.z
 	var speed_factor := clampf(absf(linear_velocity.dot(forward)) / max_speed, 0.0, 1.0)
@@ -352,8 +356,8 @@ func _physics_process(delta: float) -> void:
 	var torque := maxf(0.1, 1.0 - absf(linear_velocity.dot(forward)) / gear_limit)
 	steering = lerpf(steering, turn * lerpf(max_steering, max_steering * 0.3, speed_factor), minf(5.0 * delta, 1.0))
 	engine_force = 0.0
-	brake = max_braking_force if handbrake or drive_blocked() else braking_input * max_braking_force
-	if can_drive and drive > 0.0 and braking_input == 0.0:
+	brake = parking_braking_force if handbrake or drive_blocked() else brake_input * max_braking_force
+	if can_drive and drive > 0.0 and brake_input == 0.0:
 		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():
 		engine_force = 0.0
@@ -465,6 +469,8 @@ func _update_wheel_condition(slot: int) -> void:
 		wheel.use_as_traction = WHEEL_SLOTS[slot].traction and wheel_health[slot] > 0.0
 
 func update_load() -> void:
+	# Only installed engine/equipment affect vehicle load. Batteries, fuel and
+	# stored items keep their own state but do not contribute mass or moment.
 	var total := base_mass
 	var weighted := center_of_mass_offset * base_mass
 	if get_engine():
@@ -473,13 +479,20 @@ func update_load() -> void:
 	for device in get_equipment():
 		if not device.is_being_placed and not device.is_destroyed:
 			total += device.mass
-			weighted += to_local(device.global_position) * device.mass
-		if device is BatterySocket and device.installed_battery:
-			total += device.installed_battery.weight
-			weighted += to_local(device.global_position) * device.installed_battery.weight
+			weighted += _installed_position(device) * device.mass
 	if not is_equal_approx(mass, total): mass = total
 	var next_center := weighted / total
 	if not center_of_mass.is_equal_approx(next_center): center_of_mass = next_center
+
+func _installed_position(device: Node3D) -> Vector3:
+	# Compose local transforms: world-to-local round trips lose precision far
+	# down the highway and repeatedly rewrite an otherwise unchanged COM.
+	var point := device.position
+	var parent := device.get_parent() as Node3D
+	while parent != null and parent != self:
+		point = parent.transform * point
+		parent = parent.get_parent() as Node3D
+	return point
 
 func set_gear(next: int) -> bool:
 	next = clampi(next, -1, 4)

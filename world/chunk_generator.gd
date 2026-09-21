@@ -415,11 +415,20 @@ func _navigation_baked(nav: NavigationMesh) -> void:
 		var vertices := nav.get_vertices()
 		for index in polygon: probe += vertices[index]
 		probe /= polygon.size()
+		var checked_map := RID()
+		var checked_iteration := -1
 		while is_inside_tree():
 			# Checkpoint staging can transfer this node to another World3D.
 			# Never retain that old map RID across an await.
 			var map := navigation.get_navigation_map()
-			if map.is_valid() and NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
+			var iteration := NavigationServer3D.map_get_iteration_id(map) if map.is_valid() else 0
+			# Closest-point queries scan the large outdoor map. A pending region
+			# cannot appear until synchronization publishes another map iteration;
+			# retrying the same search every physics tick only stalls gameplay.
+			if iteration > 0 and (map != checked_map or iteration != checked_iteration):
+				checked_map = map
+				checked_iteration = iteration
+				if NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
 			await get_tree().physics_frame
 		if not is_inside_tree(): return
 	navigation_ready = true

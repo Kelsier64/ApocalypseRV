@@ -196,6 +196,12 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 繼承主場景，以 v5、seed 42 的正式場址、整地、森林、物資與 RV 啟動。F2 鳥瞰、F3 玩家視角、F5 公路轉入停車區的真實輪驅回放、F7 截圖至 `.godot/production-station.png`。回放只在初始化放置車輛，行駛不改 transform；怪物在此驗收場移除，正常主遊戲維持原生成。原獨立灰盒場仍供素材 A/B。
 
 
+## 行駛幀時間量測
+
+`godot --path . --log-file .godot/driving-benchmark.log -s res://scripts/benchmark_driving.gd`
+
+使用正式主世界／RV、固定 seed 42、08:00 陰天、1024 × 720，停車取樣 4 秒，再以正式輪胎驅動直行取樣 24 秒。只在此量測程序停用 VSync，輸出平均、P95、P99、最慢幀及 CPU 渲染／GPU 時間；不改玩家偏好。結束自動退出。避免同時執行其他測試；headless 數據不能當作 GPU 幀時間。這是開局短路線量測，不包含長途、所有天氣與全部視角。
+
 ## 日夜與天氣驗收
 
 執行 `godot --path . --log-file .godot/weather-visual.log res://tests/weather_playground.tscn`。

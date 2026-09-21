@@ -39,6 +39,10 @@
 
 ## 驗收紀錄
 
+- [行駛卡頓與漸進煞車](validation/2026-09-22-driving-performance-braking.md) — 導航等待搜尋節制、長距離重心穩定、腳煞車調整與幀時間比較。
+
+- [RV 簡化載重](validation/2026-09-22-simple-vehicle-load.md) — 電池與庫存不計重、保存相容性、輪驅及車頂支撐回歸。
+
 - [日夜與動態天氣](validation/2026-09-20-weather.md) — 天氣、遮雨、保存、40 組回歸與實機觀察。
 
 - [POI 共用定義與規範](validation/2026-09-19-poi-definitions.md) — 兩類 POI、資產登錄、入口分流與舊世界資料相容。
