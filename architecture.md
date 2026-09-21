@@ -54,7 +54,9 @@ Checkpoint v3 增加可選 clock 字典（elapsed_seconds、day_length_minutes�
 
 WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨立 RNG；advance 將現實 delta 換算成遊戲秒後，同步推進時間與天氣。WorldWeather 提供 changed、sample、set_weather、capture／restore／valid_state，狀態以 Vector3 表示晴朗程度、雨級、霧級。分段剩餘時間與轉換進度都使用遊戲秒；set_time 是驗收調光入口，不重抽天氣。
 
-WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，不使用跨世界全域 shader 參數。新 chunk 立即接收目前密度；晴天淡出林間霧，Compatibility 僅使用距離霧。
+WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。夜間環境光能量為 0.002，天空與霧同步降至近黑；照明主要依賴場景燈具。小霧／大霧的距離霧終點為 110／38 m，8 m 起漸入；濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。無額外霧時維持下述遠景設定。
+
+ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，不使用跨世界全域 shader 參數。新 chunk 立即接收目前密度；晴天淡出林間霧。天氣從無霧過渡至小霧時，全域及林間體積霧一起淡出，由距離霧接手，避免體積霧二次合成重新顯露已遮蔽的輪廓。天空 shader 使用 disable_fog，起霧後收斂至相同霧色。Compatibility 僅使用距離霧。
 
 WeatherRain 使用兩層固定種子 MultiMesh 雨幕：近景 24,576 粒子／半徑 24 m／高 32 m，遠景 49,152 粒子／半徑 96 m／高 48 m。種子只上傳一次，rain_field shader 以 CPU 傳入、尊重暫停的時間計算落雨、世界座標環繞和 billboard；每幀只更新相機、時間、天氣參數，不逐滴更新位置或碰撞。大雨最多提交 73,728 粒子，小雨約 24,323；兩層交界及範圍邊緣漸淡，數字代表提交量，不是遮擋後實際可見數。
 

@@ -67,7 +67,7 @@ func _run() -> void:
 	check(material.get_shader_parameter("density") == 0.0, "Clear removes existing forest fog")
 	clock.weather.set_weather(Vector3(0, 2, 2), true)
 	clock.apply_time()
-	check(holder.environment.fog_depth_end == 65.0, "Heavy fog shortens visibility")
+	check(holder.environment.fog_depth_end <= 40.0, "Heavy fog fully hides geometry beyond 40 metres")
 	var rain := clock.get_node("WeatherRain") as WeatherRain
 	rain.listener = camera
 	var roof := StaticBody3D.new()

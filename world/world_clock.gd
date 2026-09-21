@@ -42,12 +42,12 @@ func _ready() -> void:
 			environment.fog_depth_curve = 1.8
 			environment.volumetric_fog_enabled = true
 			environment.volumetric_fog_density = 0.0015
-			environment.volumetric_fog_albedo = Color(0.78, 0.81, 0.79)
+			environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30)
 			environment.volumetric_fog_length = 160.0
 			# Concentrate froxels near the camera so fog behind a door does not bleed over it.
 			environment.volumetric_fog_detail_spread = 2.0
-			environment.volumetric_fog_anisotropy = 0.25
-			environment.volumetric_fog_ambient_inject = 0.4
+			environment.volumetric_fog_anisotropy = 0.0
+			environment.volumetric_fog_ambient_inject = 0.08
 			environment.volumetric_fog_temporal_reprojection_enabled = true
 			environment.volumetric_fog_temporal_reprojection_amount = 0.8
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -155,21 +155,32 @@ func apply_time() -> void:
 	var direction := sun_direction()
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
-	var horizon := Color("28323d").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
-	var zenith := Color("121c2c").lerp(Color("7f9298"), daylight)
+	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
+	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
-	environment.fog_depth_begin = lerpf(lerpf(160.0 if ForestFog.supported() else 18.0, 240.0, clear), 5.0, mist)
-	environment.fog_depth_end = lerpf(lerpf(420.0 if ForestFog.supported() else 380.0, 700.0, clear), 65.0, mist)
-	environment.volumetric_fog_density = 0.0015 * (1.0 - clear) + mist * 0.012 + rain * 0.001
+	# Overcast keeps its long view; even light mist must erase distant silhouettes.
+	var light_mist := minf(mist * 2.0, 1.0)
+	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
+	environment.fog_depth_begin = lerpf(lerpf(160.0 if ForestFog.supported() else 18.0, 240.0, clear), 8.0, light_mist)
+	var far_distance := lerpf(420.0 if ForestFog.supported() else 380.0, 700.0, clear)
+	environment.fog_depth_end = lerpf(lerpf(far_distance, 110.0, light_mist), 38.0, heavy_mist)
+	environment.fog_depth_curve = lerpf(1.8 if ForestFog.supported() else 0.65, 1.0, light_mist)
+	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
+	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
+	zenith = zenith.lerp(horizon, mist * 0.7)
+	# Volumetric fog composites after depth fog and can reveal already-hidden
+	# geometry again. Fade it out as weather fog takes over the full scene.
+	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
 	for material in fog_materials:
-		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 + mist))
+		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist))
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
 	environment.fog_light_color = horizon
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
-	environment.ambient_light_energy = lerpf(0.18, 0.24 + clear * 0.07 - rain * 0.04, daylight)
+	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
-	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90)
+	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90) * (1.0 - mist * 0.85)
+	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
 	# The light emits along -Z; the visible disk sits in the opposite direction.
 	sun.global_basis = Basis.looking_at(-direction, Vector3.UP)
 	sky_material.set_shader_parameter("horizon_color", horizon)
@@ -177,12 +188,13 @@ func apply_time() -> void:
 	sky_material.set_shader_parameter("sun_direction", direction)
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95))
+	sky_material.set_shader_parameter("fog_cover", light_mist)
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist))
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := weather.sample()
-	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 + conditions.z / 2.0))
+	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z, 1.0)))
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)

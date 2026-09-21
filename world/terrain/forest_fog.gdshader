@@ -13,5 +13,5 @@ void fog() {
 	float height = 1.0 - smoothstep(0.12, 0.95, UVW.y);
 	float pockets = smoothstep(0.22, 0.72, noise(WORLD_POSITION * vec3(0.045, 0.12, 0.045)));
 	DENSITY = density * border * height * mix(0.15, 1.0, pockets);
-	ALBEDO = vec3(0.78, 0.81, 0.79);
+	ALBEDO = vec3(0.28, 0.31, 0.30);
 }
