@@ -33,6 +33,18 @@ func _run() -> void:
 	check(console_hit.get("collider") == seat, "Gear and brake console targets the same seat equipment")
 	seat.interact_hold(player)
 	check(seat.current_driver == player and rv.is_player_driving, "Production cockpit grants driving through the actual seat")
+	var mirrors := rv.get_node("Mirrors")
+	mirrors._process(0.1)
+	check(mirrors.mirrors.size() == 2, "Exactly two mirrors belong to this RV")
+	for mirror in mirrors.mirrors:
+		check(mirror.rig.visible and mirror.viewport.world_3d == rv.get_world_3d(), "Installed mirrors use the vehicle world")
+		var target := rv.to_global(Vector3(mirror.side * 3.5, 1.5, 8.0))
+		var uv: Vector2 = mirror.camera.unproject_position(target)
+		check(not mirror.camera.is_position_behind(target) and Rect2(Vector2.ZERO, mirrors.resolution).has_point(uv), "Each camera covers its own rear-side obstacle")
+	rv.linear_velocity = rv.global_basis.y * 0.3
+	visual._process(1.0)
+	check(visual.get_node("Readout").text.begins_with("000"), "Suspension travel is not displayed as road speed")
+	rv.linear_velocity = Vector3.ZERO
 	press(seat, KEY_B)
 	press(seat, KEY_C)
 	press(seat, KEY_SPACE)
@@ -62,6 +74,13 @@ func _run() -> void:
 	seat.exit_seat()
 	player.set_physics_process(false)
 	check(player.seated_in == null and rv.handbrake, "Exit restores player control and engages parking brake")
+	mirrors._process(0.1)
+	for mirror in mirrors.mirrors: check(mirror.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Leaving the seat stops mirror rendering")
+	var left_panel: Equipment = rv.get_node("LeftFront")
+	left_panel.enabled = false
+	mirrors._process(0.1)
+	check(not mirrors.mirrors[0].rig.visible and mirrors.mirrors[1].rig.visible, "Disabling a mirror's side panel removes only that mirror")
+	left_panel.enabled = true
 	var exit_local := rv.to_local(player.global_position)
 	check(exit_local.x > 0.5 and exit_local.x < 1.4 and exit_local.y < 0.7, "Default cockpit exits into the aisle instead of above the roof")
 	var original := seat.transform
@@ -82,6 +101,8 @@ func _run() -> void:
 		if device.scene_file_path == "res://equipment/driver_seat.tscn": restored = device
 	check(restored != null and restored.transform.is_equal_approx(moved), "Saved cockpit position is preserved")
 	check(restored != null and restored.has_node("CockpitVisual/SteeringTilt/SteeringWheel"), "Full control assembly is reconstructed from one saved equipment")
+	mirrors._process(0.1)
+	check(mirrors.mirrors.size() == 2 and mirrors.mirrors[0].rig.visible, "Loading reconnects the existing mirror pair without orphan cameras")
 	# Open the new rear leaves before checking the passage and fixed jambs.
 	for device in rv.get_equipment():
 		if device.scene_file_path == "res://equipment/rv_rear_door.tscn": device.restore_angles([-PI / 2, PI / 2])

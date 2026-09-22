@@ -33,6 +33,7 @@ static func device_state(device: Equipment) -> Dictionary:
 	return data
 
 static func capture(rv: Node3D) -> Dictionary:
+	if not rv.save_block_reason().is_empty(): return {}
 	var devices: Array[Dictionary] = []
 	for device in rv.get_equipment():
 		if device.is_being_placed:
@@ -42,15 +43,25 @@ static func capture(rv: Node3D) -> Dictionary:
 	for index in range(4):
 		wheels.append({"installed": rv.installed_wheels[index] != null, "health": rv.wheel_health[index], "id": rv.wheel_ids[index]})
 	return {"version": VERSION, "id": rv.persistent_id, "transform": rv.global_transform,
+		"cabin_light_devices": true,
 		"linear": rv.linear_velocity, "angular": rv.angular_velocity,
-		"engine_item": rv.get_engine().snapshot() if rv.get_engine() else {}, "headlights": rv.headlights_requested,
+		"engine_item": rv.get_engine().snapshot() if rv.get_engine() else {}, "headlights": rv.headlights_requested, "comfort": rv.comfort_snapshot(),
 		"hatch_open": rv.engine_bay.hatch_open, "ramp": rv.rear_ramp.snapshot() if rv.rear_ramp else {},
 		"engine": rv.energy.engine_running, "gear": rv.gear, "handbrake": rv.handbrake,
 		"materials": rv.get_all_items(), "items": rv.stored_items.duplicate(true),
 		"fuel": rv.current_fuel, "fuel_capacity": rv.max_fuel, "material_capacity": rv.material_capacity, "item_capacity": rv.item_capacity,
 		"equipment": devices, "wheels": wheels}
 
+static func valid_comfort(data: Variant) -> bool:
+	if not data is Dictionary or not data.has_all(["lights", "brightness", "vibration"]): return false
+	if not data.lights is Dictionary or data.lights.size() != 3: return false
+	for kind in ["cabin", "work", "service"]:
+		if not data.lights.get(kind) is bool: return false
+	return _number(data.brightness) and data.brightness >= 0.2 and data.brightness <= 1.0 and _number(data.vibration) and data.vibration >= 0.0 and data.vibration <= 1.0
+
 static func validate(data: Dictionary) -> bool:
+	if data.has("cabin_light_devices") and (not data.cabin_light_devices is bool or not data.cabin_light_devices): return false
+	if data.has("comfort") and not valid_comfort(data.comfort): return false
 	if data.get("version", 0) != VERSION or not data.has_all(["equipment", "wheels", "transform", "materials", "items", "fuel", "fuel_capacity", "material_capacity", "item_capacity", "id", "engine_item", "headlights", "hatch_open", "ramp", "engine", "gear", "handbrake", "linear", "angular"]):
 		return false
 	if not data.equipment is Array or not data.wheels is Array or not data.materials is Dictionary or not data.items is Array:
@@ -174,6 +185,7 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 	rv.current_fuel = data.fuel
 	rv.engine_bay.installed_engine = null if data.engine_item.is_empty() else EngineState.new(data.engine_item)
 	rv.headlights_requested = data.headlights
+	rv.restore_comfort(data.get("comfort", {}))
 	rv.engine_bay.get_node("Hatch").set_open(data.hatch_open)
 	if rv.rear_ramp: rv.rear_ramp.restore_state(data.ramp)
 	rv.energy.engine_running = data.engine and rv.has_working_engine() and rv.current_fuel > 0.0
@@ -210,8 +222,8 @@ static func valid_item(value: Variant) -> bool:
 	return not value.state.has("battery") or valid_battery(value.state.battery)
 
 static func upgrade(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) == VERSION: return source.duplicate(true)
-	if source.get("version", 0) == 2: return _upgrade_engine(_upgrade_structure(source))
+	if source.get("version", 0) == VERSION: return _upgrade_cabin_lights(source.duplicate(true))
+	if source.get("version", 0) == 2: return _upgrade_cabin_lights(_upgrade_engine(_upgrade_structure(source)))
 	if source.get("version", 0) != 1 or not source.get("equipment") is Array or not valid_battery(source.get("battery")): return {}
 	var data := source.duplicate(true)
 	var fuel := 0.0
@@ -240,7 +252,22 @@ static func upgrade(source: Dictionary) -> Dictionary:
 	data.material_capacity = maxi(300, material_capacity)
 	data.item_capacity = 24
 	data.items = []
-	return _upgrade_engine(_upgrade_structure(data))
+	return _upgrade_cabin_lights(_upgrade_engine(_upgrade_structure(data)))
+
+static func _upgrade_cabin_lights(data: Dictionary) -> Dictionary:
+	# A one-time conversion of the old roof's two built-in lamps, not a refill.
+	if data.has("cabin_light_devices") or not validate(data): return data
+	for roof in data.equipment.duplicate():
+		if roof.scene != "res://equipment/rv_ceiling.tscn" or roof.health <= 0: continue
+		for index in range(2):
+			data.equipment.append({"scene": "res://equipment/cabin_light_strip.tscn",
+				"id": roof.id + "::cabin-light-" + str(index),
+				"transform": roof.transform * Transform3D(Basis.IDENTITY, Vector3(0, -0.16, -3.2 if index == 0 else 2.2)),
+				"health": minf(120.0, roof.health), "enabled": roof.enabled,
+				"support": roof.id, "service": {},
+				"physics": {"mode": RigidBody3D.FREEZE_MODE_STATIC, "layer": 1, "mask": 0, "linear": Vector3.ZERO, "angular": Vector3.ZERO}})
+	data.cabin_light_devices = true
+	return data
 
 static func valid_structure_service(scene: String, service: Dictionary) -> bool:
 	var kind := ""

@@ -99,9 +99,12 @@ func _run() -> void:
 	check(is_equal_approx(upgraded_burn / (100.0 - rv.current_fuel), 1.15), "Upgraded engine fuel cost multiplier")
 	rv.allow_test_controls = true
 	rv.control_override = {"throttle": 1.0}
+	rv.throttle_input = 0.0
 	rv._physics_process(0.016)
 	var standard_force := rv.engine_force
 	rv.get_engine().model_id = "upgraded"
+	# Compare the same pedal phase; consecutive ramp frames have different input.
+	rv.throttle_input = 0.0
 	rv._physics_process(0.016)
 	check(is_equal_approx(rv.engine_force / standard_force, 1.25), "Upgraded engine drive force multiplier")
 	rv.control_override.clear()

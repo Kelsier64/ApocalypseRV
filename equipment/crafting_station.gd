@@ -73,8 +73,14 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		last_error = "Invalid output"
 		return false
 	var output := spawn_marker.global_transform
-	# Check actual product colliders, including the new large engine outputs.
-	output.origin += global_basis.y * (0.43 if item.is_large else 0.3)
+	# Position the bottom of the actual product above the output marker. A
+	# fixed centre offset put tall cans into the preinstalled tablet collider.
+	var bottom := 0.0
+	for collider in item.get_children():
+		if collider is CollisionShape3D and collider.shape:
+			var bounds: AABB = collider.transform * collider.shape.get_debug_mesh().get_aabb()
+			bottom = minf(bottom, bounds.position.y)
+	output.origin += global_basis.y * (-bottom + 0.06)
 	for collider in item.get_children():
 		if not collider is CollisionShape3D or collider.shape == null: continue
 		var query := PhysicsShapeQueryParameters3D.new()

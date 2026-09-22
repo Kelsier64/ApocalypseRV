@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-文件整理：2026-09-18。描述目前實作；已實作不等於全部情境已驗收。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：2026-09-22（本次只核對文件與來源，未重跑遊戲）。描述目前工作樹實作；已實作不等於全部情境已驗收。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
@@ -70,7 +70,7 @@ Checkpoint v3 的可選 weather 字典保存 source／target、transition_elapse
 
 桌面渲染改為 Forward+／Vulkan。WorldClock 設定薄全域體積霧與 160–420 m 遠景距離霧；ForestFog 使用獨立外觀 RNG，按地形低處與實際步道路線高度建立 FogVolume，隨 chunk 回收。世界座標 3D 噪聲和柔化邊界控制局部濃淡，霧不參與碰撞、導航或怪物感知，也不改地形生成版本與物資。
 
-RV 車頂的 CabinLighting 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 降級沿用 18–380 m 距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)。
+RV 車頂的 CabinAir 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 降級沿用 18–380 m 距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)。
 
 ### 正式戶外 D 風格
 
@@ -84,7 +84,7 @@ ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材�
 
 - `IndustrialArt` 快取室外 StandardMaterial3D 與 256px 程序材質；兩張原創生成紋理位於 `assets/materials/industrial/`，Godot 匯入限制為 512px、使用 mipmap。室外建築以 mesh override 改外觀，不能修改室內共用的 POI 材質資源。
 - RV 的共享掉漆材質維持 StandardMaterial3D；PanelWear／EngineAppearance 使用 detail multiply 疊加損傷，保留原本貼圖。健康狀態仍是老舊外觀，損傷／修復由原耐久資料驅動。
-- CabinLighting 附在車頂 Equipment，兩盞暖色燈使用既有待機供電狀態，不建立新電池／存檔／控制開關。屋頂失效、搬移、拆離或無電時熄滅；既有待機耗電涵蓋其常駐照明。
+- CabinLightStrip 是獨立 Equipment；新車兩條各依附車頂，CabinLighting 只管理本條燈光。VehicleEnergy 每有效燈條支付 0.03/s，控制台提供總開關及逐條停用。拆下、損壞、移動或無電時熄滅；車頂排霧仍由 CabinAir 負責。
 - IndustrialTheme 統一背包、生命、駕駛 HUD、平板及道具箱配色、方角框線、按鈕焦點。保留原字體與中文 fallback、資訊布局、互動及原生 UI 解析度。
 - 本輪不改生成版本、地形／導航／碰撞或存檔格式；副本的 3D 材質與照明不在範圍內。驗證見 `docs/validation/2026-09-17-industrial-art.md`。
 
@@ -136,6 +136,23 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 - [world_entities.gd](core/world_entities.gd)：建立／重用場景動態容器，場景釋放後可重建。
 
 互動採 `interact(player)`／`interact_hold(player)` 方法契約，受傷目標提供 `take_damage(amount)`。群組與祖先階層錯誤可能造成離線或候選忽略，而非編譯錯誤。
+
+### 設備統一規格
+
+新增或修改可搬移設備沿用下列現有契約；這是製作與接入規格，不表示已有自動產生任意設備的工具。固定 EngineBay／RearRamp，以及作為 Prop 的引擎／電池，是既有例外，不套用自由搬移設備的所有權流程。
+
+| 面向 | 統一規則與來源 |
+|---|---|
+| 根節點與資料 | 繼承 [Equipment](equipment/equipment.gd)（RigidBody3D），以 [EquipmentDefinition](equipment/equipment_definition.gd) 集中 type_id、名稱、重量、最大 HP、直立限制與操作淨空；persistent_id 屬實例，不能用共用 Resource 保存個別耐久／工作。 |
+| 外觀與碰撞 | 外觀子節點與功能碰撞分離；get_placement_bounds 合併根層 CollisionShape3D，新增／替換模型時需保持可驗證的占用範圍。bottom_face 指定貼合面，放置方向由共同規則決定；需要額外動態掃掠的門扇另由專用設備處理。 |
+| 安裝與歸屬 | get_connected_rv／refresh_rv_connection 取得真正所屬車；mount_support 是精確支撐，與車輛歸屬分開。initial_support 只供新場景預裝，讀檔使用保存的支撐 ID。一般設備自由貼面，結構設備走固定槽位，預覽與確認都須通過 PlacementRules。 |
+| 可用性與清理 | can_operate 統一檢查啟用、支撐、預覽、毀損、耐久與連車。以 availability_changed／removing 通知；在 _on_service_stopped／_on_before_destroy 清理工作、輸入、UI 或座位。搬移立即停機，取消還原原物理狀態；失去支撐後掉落並繼承車輛點速度。 |
+| 資源與供電 | 能源由 VehicleEnergy 調度，材料由本車 MaterialStorage 管理；設備／UI 不另持有一份油電材料總量。交易失敗不吞資源、不重複退款；生產輸入由工作站持有，缺電暫停，搬移／摧毀安全退料，出口受阻保留工作。 |
+| 受損與修復 | take_damage／needs_repair／repair_health 共用耐久入口；以 destroy_on_zero_health 明定刪除或留可修殘骸。設備維修沿用 RepairOperation；損傷外觀只讀耐久，不新增另一份 HP 或隱藏碰撞。 |
+| 保存 | 場景須納入 SaveSceneCatalog；VehicleSnapshot 保存 id、scene、transform、health、enabled、support 與 service。新增 service 欄位要同步擴充捕捉、驗證、還原與相容預設；現有欄位白名單不會自動接受任意設備資料。 |
+| 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動依 AGENTS 做實機攀爬／支撐／拆頂檢查。 |
+
+基礎回歸見 [設備生命週期](tests/test_equipment_lifecycle.gd)、[RV 系統](tests/test_rv_systems.gd)、[檢查點](tests/test_rv_checkpoint.gd)。凍結設備的碰撞力矩限制仍見第 6 節；遵守上述規格不代表大型外掛物理已解決。
 
 
 <a id="section-4"></a>
@@ -267,9 +284,15 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 - EquipmentPlacement 對自由放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。結構槽維持固定姿態。接觸箭頭與控制提示跟隨預覽清理。
 - RVPanel.dependency_summary 沿 mount_support 遍歷本車設備，區分直接與間接依附。PanelWear／EngineAppearance 只讀耐久，複製材質實現磨損／玻璃裂紋，絕不改變碰撞或狀態所有權。
 - v3 VehicleSnapshot 保存 engine_item、headlights、hatch_open、ramp。v1／v2 沿用結構／儲存轉換，再以車輛 ID 衍生穩定標準引擎 ID、舊 HP 轉入；v3 不重新遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
-- CraftingStation 依實際產物根層碰撞檢查出料空間，大型引擎使用較高出料位置；完成但阻塞的工作留在佇列，不重複出貨或扣款。
+- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。
 
 #### 新增驗證入口
+
+駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有兩個共享 World3D 的 SubViewport，相機裁掉鏡面專用第 20 層避免遞迴，192×256 並交錯 UPDATE_ONCE 更新；前側板弱參照由設備登錄訊號刷新，離座停用、讀檔重連。
+
+EngineHatch／RearRamp 持有 progress、目標與 moving，動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動作中雙片碰撞、完成後連續斜面。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
+
+VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 的工作台燈隨設備釋放，CabinLighting 跟獨立燈條；照明只透過控制台控制；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；cabin_light_devices 標記將舊車頂內建燈一次性轉換成有固定 ID／支撐關係的燈條，已拆除燈條的新版存檔不補回。音源來源見 [音效說明](assets/audio/README.md)。
 
 | 測試 | 覆蓋 |
 |---|---|
@@ -333,6 +356,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下�
 | [test_rv_systems](tests/test_rv_systems.gd) | 電池交易、能源、正式設備工作／清理、失效授權 |
 | [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
 | [test_rv_braking](tests/test_rv_braking.gd) | 漸進踏板、不同速度煞停距離、倒車、引擎熄火與獨立駐車 |
+| [test_rv_handling](tests/test_rv_handling.gd) | 正式輪驅起步、轉向、低速停靠倒出、平地／5° 坡車況與設備配重、支撐離座 |
+| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋／坡板中途阻擋與反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
 | [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、舊檔轉換 |
 | [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
 | [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |

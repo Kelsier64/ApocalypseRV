@@ -40,6 +40,7 @@ func step(player: Node3D, candidate: Node, held: bool, delta: float) -> void:
 	if progress >= DURATION:
 		if rv.deduct_materials(COST):
 			candidate.repair_health(60.0)
+			rv.feedback("complete", rv.to_local(candidate.global_position))
 		progress = 0.0
 
 func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
@@ -60,5 +61,6 @@ func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
 	if progress >= 3.0:
 		if candidate.repair_requirement(player).is_empty() and player.inventory.consume_active():
 			candidate.repair_health(150.0)
+			candidate.rv.feedback("complete")
 			player.refresh_inventory()
 		progress = 0.0

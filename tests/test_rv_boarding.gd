@@ -41,6 +41,8 @@ func _run() -> void:
 	obstacle.free()
 	await physics_frame
 	var result := ramp.interact(player)
+	check(ramp.moving and rv.drive_blocked() and VehicleSnapshot.capture(rv).is_empty(), "Moving ramp locks driving and saving")
+	for i in range(200): await physics_frame
 	check(ramp.deployed, "Ramp deploys on level ground: " + result)
 	if not ramp.deployed:
 		for failure in failures: push_error(failure)
@@ -87,7 +89,9 @@ func _run() -> void:
 	check(ramp.interact(player).contains("無法收起") and ramp.deployed, "Occupied ramp cannot retract")
 	player.position = Vector3(12, 0, 0)
 	await physics_frame
-	check(ramp.interact(player).contains("收妥") and not ramp.deployed, "Empty ramp retracts")
+	check(ramp.interact(player).contains("收起中") and rv.drive_blocked(), "Empty ramp starts retracting with driving locked")
+	for i in range(200): await physics_frame
+	check(not ramp.deployed and not rv.drive_blocked(), "Fully stowed ramp unlocks driving")
 	var steep := crate(world, Vector3(0, 0.4, 9.54), Vector3(3, 0.2, 2))
 	steep.rotation.x = deg_to_rad(40)
 	await physics_frame

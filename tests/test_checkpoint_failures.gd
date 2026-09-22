@@ -38,6 +38,13 @@ func check(ok: bool, detail: String) -> void:
 
 func _run() -> void:
 	var world: Node3D = load("res://world/test_world.tscn").instantiate()
+	# Disk faults and transactional rollback do not require seven terrain bands
+	# on every staged load. Keep real terrain/navigation with a fixed fixture.
+	var fixture_generator: Node = world.get_node("WorldGenerator")
+	fixture_generator.world_seed = 42
+	fixture_generator.profile = WorldProfile.new()
+	fixture_generator.profile.chunks_ahead = 1
+	fixture_generator.profile.chunks_behind = 1
 	root.add_child(world)
 	current_scene = world
 	check(await world.wait_for_play(), "Production world becomes ready")
@@ -163,6 +170,22 @@ func _run() -> void:
 			var source: Array = saved.vehicles[0].equipment.filter(func(entry): return entry.id == device.id)
 			check(source.size() == 1 and device.service == source[0].service, "World transfer preserves device service " + device.id)
 	check(FileAccess.get_file_as_bytes(PATH) == bytes, "Loading never rewrites source")
+	# Finish navigation work before destroying the restored procedural world.
+	# A successful behavior check must also be able to shut down cleanly.
+	var retire_deadline := Time.get_ticks_msec() + 60000
+	while checkpoint.get_children().any(func(child): return child is SubViewport) and Time.get_ticks_msec() < retire_deadline:
+		await process_frame
+	check(not checkpoint.get_children().any(func(child): return child is SubViewport), "Failed checkpoint staging finishes retirement before shutdown")
+	var generator: Node = current_scene.get_node("WorldGenerator")
+	generator.set_process(false)
+	while generator.building:
+		await process_frame
+	for chunk in generator.active_chunks:
+		var navigation: NavigationRegion3D = chunk.node.navigation
+		if navigation:
+			while NavigationServer3D.is_baking_navigation_mesh(navigation.navigation_mesh):
+				await process_frame
+	await physics_frame
 	await process_frame
 	current_scene.free()
 	await process_frame

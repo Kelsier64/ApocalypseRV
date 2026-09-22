@@ -18,6 +18,7 @@ func _fail(code: String, field := "", detail := "") -> bool:
 	return false
 
 func error_message() -> String:
+	if last_error.get("code", "") == "motion": return last_error.get("detail", "")
 	match last_error.get("code", ""):
 		"state": return "Cannot save/load: return outdoors, finish interaction and wait for terrain"
 		"open": return "Cannot open checkpoint; check the save folder permissions"
@@ -64,6 +65,7 @@ func save_world(world: Node, path: String) -> bool:
 	var vehicles: Array[Dictionary] = []
 	for rv in get_tree().get_nodes_in_group(Groups.CHASSIS):
 		if WorldEntities.same_world(player, rv):
+			if not rv.save_block_reason().is_empty(): return _fail("motion", "vehicle", rv.save_block_reason())
 			var state := VehicleSnapshot.capture(rv)
 			if state.is_empty(): return _fail("state")
 			vehicles.append(state)

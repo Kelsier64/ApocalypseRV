@@ -36,7 +36,8 @@ position = Vector3(0, 0.28, 0.04)
 shape = SubResource("seat_cushion_shape")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1567191114]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.05)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.62, 0.05)
+fov = 80.0
 
 [node name="ConsoleCollision" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.67, -1.25)

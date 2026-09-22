@@ -39,7 +39,7 @@ foreach ($test in $tests) {
     $testArguments = @('-s', ('res://tests/' + $test.Name))
     # Long outdoor round trips exceed two minutes of simulated play. Keep
     # normal 60 Hz physics while letting headless rendering run unthrottled.
-    if ($test.BaseName -like 'test_outdoor_*' -or $test.BaseName -eq 'test_interior_traversal') { $testArguments += @('--fixed-fps', '60') }
+    if ($test.BaseName -like 'test_outdoor_*' -or $test.BaseName -in @('test_rv_handling', 'test_checkpoint_failures', 'test_interior_traversal')) { $testArguments += @('--fixed-fps', '60') }
     Invoke-GodotCheck $test.BaseName $testArguments $true
 }
 Invoke-GodotCheck 'main-scene' @('-s', 'res://tests/main_scene_smoke.gd') $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'

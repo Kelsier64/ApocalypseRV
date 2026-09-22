@@ -16,6 +16,7 @@ func run() -> void:
 		quit(1)
 		return
 	var rv: Chassis = world.get_node("NewRv/Chassis")
+	rv.get_node("Mirrors").render_enabled = not "--no-mirrors" in OS.get_cmdline_user_args()
 	var player: Node3D = world.get_node("Player")
 	rv.get_node("DriverSeat").interact_hold(player)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -23,15 +24,27 @@ func run() -> void:
 	rv.set_engine_running(true)
 	rv.set_gear(4)
 	var clock: WorldClock = world.get_node("WorldClock")
+	var night_lights := "--night-lights" in OS.get_cmdline_user_args()
+	var lights_off := "--lights-off" in OS.get_cmdline_user_args()
 	clock.weather_running = false
 	clock.weather.set_weather(Vector3.ZERO, true)
-	clock.set_time(1, 8)
+	clock.set_time(1, 22 if night_lights else 8)
+	clock.set_process(false)
+	if night_lights:
+		rv.engine_bay.get_node("Hatch").set_open(true)
+		for kind in rv.interior_requested: rv.interior_requested[kind] = not lights_off
 	RenderingServer.viewport_set_measure_render_time(root.get_viewport_rid(), true)
-	print("BENCHMARK engine=%s adapter=%s resolution=%s seed=42 weather=overcast vsync=off" % [Engine.get_version_info().string, RenderingServer.get_video_adapter_name(), root.size])
+	print("BENCHMARK engine=%s adapter=%s resolution=%s seed=42 weather=overcast vsync=off mirrors=%s" % [Engine.get_version_info().string, RenderingServer.get_video_adapter_name(), root.size, rv.get_node("Mirrors").render_enabled])
 	await sample("parked", 4.0, rv)
-	rv.handbrake = false
-	rv.control_override = {"throttle": 1.0}
-	await sample("driving", 24.0, rv)
+	if night_lights:
+		print("NIGHT_LIGHTS enabled=%s powered=%s" % [not lights_off, rv.interior_powered])
+		# Look down the aisle so the cabin and work fixtures are in view.
+		rv.get_node("DriverSeat").seat_camera.rotation = Vector3(-0.15, PI, 0)
+		await sample("night_cabin", 12.0, rv)
+	else:
+		rv.handbrake = false
+		rv.control_override = {"throttle": 1.0}
+		await sample("driving", 24.0, rv)
 	rv.control_override = {"brake": 1.0}
 	var generator := world.get_node("WorldGenerator")
 	generator.set_process(false)

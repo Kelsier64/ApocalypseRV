@@ -44,4 +44,4 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 ## 老舊工業材質（2026-09-17）
 
-共享 paint 材質引用 `assets/materials/industrial/worn_paint.png`，採 512px 匯入限制與近鄰 mipmap；狀態燈、玻璃分開保留。磨損狀態透過額外 detail 層疊加，不抹掉底層掉漆貼圖。車頂的 CabinLighting 跟著 Equipment 支撐與供電狀態運作，不能在拆下後繼續照明。新增儀表固定件只屬視覺，不改控制件運動、碰撞或安裝面。
+共享 paint 材質引用 `assets/materials/industrial/worn_paint.png`，採 512px 匯入限制與近鄰 mipmap；狀態燈、玻璃分開保留。磨損狀態透過額外 detail 層疊加，不抹掉底層掉漆貼圖。獨立燈條的 CabinLighting 跟著自身 Equipment 支撐、控制台請求與供電狀態運作，不能在拆下後繼續照明。新增儀表固定件只屬視覺，不改控制件運動、碰撞或安裝面。

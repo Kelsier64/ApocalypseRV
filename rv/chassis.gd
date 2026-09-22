@@ -8,6 +8,22 @@ class_name Chassis
 @export_range(0.01, 2.0) var brake_apply_seconds: float = 0.35
 @export_range(0.01, 2.0) var brake_release_seconds: float = 0.15
 @export var max_steering: float = 0.6
+@export_range(0.01, 2.0) var throttle_apply_seconds: float = 0.45
+@export_range(0.01, 2.0) var throttle_release_seconds: float = 0.2
+@export var steering_response: float = 3.5
+@export var steering_return_response: float = 5.0
+@export_range(0.05, 1.0) var high_speed_steering_ratio: float = 0.18
+@export var steering_lateral_acceleration: float = 4.0
+var throttle_input: float = 0.0
+@export_range(0.0, 1.0) var vibration_strength := 0.5
+@export_range(0.2, 1.0) var instrument_brightness := 0.65
+@export var cabin_light_draw := 0.03
+@export var work_light_draw := 0.04
+@export var service_light_draw := 0.04
+var interior_requested := {"cabin": true, "work": false, "service": false}
+var interior_powered := {"cabin": false, "work": false, "service": false}
+var _last_road_position := Vector3.INF
+var _road_speed := 0.0
 @export var is_player_driving: bool = false
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
 
@@ -97,6 +113,18 @@ func get_equipment() -> Array[Node]:
 	return result
 
 func _ready() -> void:
+	var mirrors := Node3D.new()
+	mirrors.name = "Mirrors"
+	mirrors.set_script(load("res://rv/vehicle_mirrors.gd"))
+	add_child(mirrors)
+	var sound := Node3D.new()
+	sound.name = "Audio"
+	sound.set_script(load("res://rv/vehicle_audio.gd"))
+	add_child(sound)
+	var work_lights := Node3D.new()
+	work_lights.name = "WorkLighting"
+	work_lights.set_script(load("res://rv/work_lighting.gd"))
+	add_child(work_lights)
 	if starter_kits:
 		for i in range(2): stored_items.append({"name": "引擎維修包", "is_large": false, "scene_path": "res://props/engine_repair_kit.tscn", "state": {"id": InstanceIds.create(), "condition": 100.0}})
 	engine_bay = get_node("EngineBay")
@@ -128,6 +156,37 @@ func get_engine() -> EngineState:
 func has_working_engine() -> bool:
 	return get_engine() != null and get_engine().health > 0.0
 
+func road_speed() -> float:
+	# Wheel constraint impulses can leave a small reported velocity even while
+	# parked. Instruments measure actual movement, excluding suspension travel.
+	return _road_speed
+
+func feedback(kind: String, at: Vector3 = Vector3.INF) -> void:
+	var sound := get_node_or_null("Audio")
+	if sound: sound.play_cue(kind, at)
+
+func set_handbrake(value: bool) -> void:
+	if handbrake != value: feedback("mechanical", Vector3(-0.1, 1, -4))
+	handbrake = value
+
+func toggle_interior_light(kind: String) -> void:
+	if interior_requested.has(kind):
+		interior_requested[kind] = not interior_requested[kind]
+		feedback("mechanical")
+
+func interior_light_status(kind: String) -> String:
+	var title: String = {"cabin": "車內照明", "work": "工作燈", "service": "維修燈"}.get(kind, kind)
+	return title + "｜" + ("關閉" if not interior_requested[kind] else ("供電中" if interior_powered[kind] else "已開啟，等待供電／設備就緒"))
+
+func comfort_snapshot() -> Dictionary:
+	return {"lights": interior_requested.duplicate(), "brightness": instrument_brightness, "vibration": vibration_strength}
+
+func restore_comfort(data: Dictionary) -> void:
+	interior_requested = data.get("lights", {"cabin": true, "work": false, "service": false}).duplicate()
+	instrument_brightness = data.get("brightness", 0.65)
+	vibration_strength = data.get("vibration", 0.5)
+	interior_powered = {"cabin": false, "work": false, "service": false}
+
 func engine_start_reason() -> String:
 	if get_engine() == null: return "未安裝引擎，請到車頭引擎艙裝入"
 	if not has_working_engine(): return "引擎故障，請使用引擎維修包或更換引擎"
@@ -156,6 +215,7 @@ func exchange_engine(player: Node3D) -> String:
 	else:
 		player.inventory.consume_active()
 	engine_bay.installed_engine = incoming
+	feedback("complete")
 	player.refresh_inventory()
 	update_load()
 	return "已裝入 " + incoming.definition().display_name
@@ -168,12 +228,18 @@ func remove_engine(player: Node3D) -> String:
 	var item := engine.item()
 	if not player.add_item(item.name, true, item.scene_path, item.state): return "背包已滿或已攜帶大型物品，無法取出引擎"
 	engine_bay.installed_engine = null
+	feedback("complete")
 	energy.engine_running = false
 	update_load()
 	return "引擎已取出"
 
 func drive_blocked() -> bool:
-	return rear_ramp != null and rear_ramp.deployed
+	return rear_ramp != null and rear_ramp.blocks_driving()
+
+func save_block_reason() -> String:
+	if not engine_bay.get_node("Hatch").stable(): return "維修蓋尚未開妥／關妥，暫時無法保存"
+	if rear_ramp and not rear_ramp.stable(): return "坡板尚在移動或受阻，暫時無法保存"
+	return ""
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	return "底盤｜引擎" + ("未安裝" if get_engine() == null else "耐久 %.0f / %.0f" % [get_engine().health, get_engine().definition().max_health]) + "\n維修／更換引擎請到車頭維修蓋"
@@ -280,6 +346,7 @@ func set_engine_running(running: bool) -> bool:
 	if running and not engine_start_reason().is_empty():
 		service_message = engine_start_reason()
 		return false
+	if running and not energy.engine_running: feedback("start")
 	energy.engine_running = running
 	service_message = "引擎已發動" if running else "引擎已停止"
 	return true
@@ -299,6 +366,7 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	else:
 		player.inventory.consume_active()
 	socket.installed_battery = next
+	feedback("complete", socket.position)
 	player.refresh_inventory()
 	power_changed.emit(current_power, max_power)
 	return true
@@ -311,6 +379,7 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	if not player.add_item(ItemNames.BATTERY, false, "res://props/battery.tscn", {"id": old.id, "battery": old.snapshot()}):
 		return false
 	socket.installed_battery = null
+	feedback("complete", socket.position)
 	power_changed.emit(0.0, 0.0)
 	return true
 
@@ -329,6 +398,11 @@ func _set_power(value: float) -> void:
 	power_changed.emit(current_power, max_power)
 
 func _physics_process(delta: float) -> void:
+	if _last_road_position.is_finite() and delta > 0:
+		var displacement := global_position - _last_road_position
+		var speed := displacement.slide(global_basis.y).length() / delta
+		_road_speed = lerpf(_road_speed, speed, 1.0 - exp(-delta * 8.0)) if speed < max_speed * 4.0 else 0.0
+	_last_road_position = global_position
 	update_load()
 	for index in range(4):
 		var wheel: VehicleWheel3D = installed_wheels[index]
@@ -346,7 +420,10 @@ func _physics_process(delta: float) -> void:
 		throttle = control_override.get("throttle", 0.0)
 		braking_input = control_override.get("brake", 0.0)
 		turn = control_override.get("steering", 0.0)
-	var drive := throttle if gear != 0 and not handbrake and not drive_blocked() else 0.0
+	var target_throttle := clampf(throttle, 0.0, 1.0) if gear != 0 and not handbrake and not drive_blocked() and braking_input == 0.0 else 0.0
+	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
+	throttle_input = move_toward(throttle_input, target_throttle, delta / maxf(0.01, throttle_response))
+	var drive := throttle_input if gear != 0 and not handbrake and not drive_blocked() else 0.0
 	var brake_response := brake_apply_seconds if braking_input > brake_input else brake_release_seconds
 	brake_input = move_toward(brake_input, clampf(braking_input, 0.0, 1.0), delta / maxf(0.01, brake_response))
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
@@ -354,7 +431,13 @@ func _physics_process(delta: float) -> void:
 	var speed_factor := clampf(absf(linear_velocity.dot(forward)) / max_speed, 0.0, 1.0)
 	var gear_limit: float = [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
 	var torque := maxf(0.1, 1.0 - absf(linear_velocity.dot(forward)) / gear_limit)
-	steering = lerpf(steering, turn * lerpf(max_steering, max_steering * 0.3, speed_factor), minf(5.0 * delta, 1.0))
+	var response := steering_return_response if is_zero_approx(turn) else steering_response
+	var steering_limit := lerpf(max_steering, max_steering * high_speed_steering_ratio, speed_factor)
+	# A speed-dependent steering envelope, not an extra stabilizing force.
+	var wheelbase := absf(WHEEL_SLOTS[0].position.z - WHEEL_SLOTS[2].position.z)
+	var longitudinal_speed := absf(linear_velocity.dot(forward))
+	steering_limit = minf(steering_limit, atan(wheelbase * steering_lateral_acceleration / maxf(1.0, longitudinal_speed * longitudinal_speed)))
+	steering = lerpf(steering, clampf(turn, -1.0, 1.0) * steering_limit, 1.0 - exp(-response * delta))
 	engine_force = 0.0
 	brake = parking_braking_force if handbrake or drive_blocked() else brake_input * max_braking_force
 	if can_drive and drive > 0.0 and brake_input == 0.0:
@@ -500,5 +583,6 @@ func set_gear(next: int) -> bool:
 		return false
 	if gear < 0 and next > 0 and linear_velocity.length() > 0.5:
 		return false
+	if gear != next: feedback("mechanical", Vector3(-0.1, 1, -4))
 	gear = next
 	return true

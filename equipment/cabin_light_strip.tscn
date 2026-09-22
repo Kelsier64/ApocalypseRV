@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/cabin_light_strip.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/cabin_light_strip_definition.tres" id="definition"]
+[ext_resource type="Script" path="res://rv/cabin_lighting.gd" id="lighting"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(1.2, 0.06, 0.1)
+
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(1.2, 0.06, 0.1)
+
+[node name="CabinLightStrip" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("definition")
+bottom_face = 1
+
+[node name="Housing" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+material_override = ExtResource("metal")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+
+[node name="CabinLighting" type="Node3D" parent="."]
+script = ExtResource("lighting")

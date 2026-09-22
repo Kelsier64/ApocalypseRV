@@ -1,6 +1,6 @@
 # 開發文件索引
 
-整理日期：2026-09-18。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。
+整理日期：2026-09-22。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。本次為文件／來源核對，未重跑歷史驗收。
 
 ## 從哪裡開始
 
@@ -12,7 +12,7 @@
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
 | 開發約定 | [AGENTS](../AGENTS.md)、[CLAUDE](../CLAUDE.md) | 協作與工具指引 |
-| 原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt) | 原樣保留，不視為目前完成狀態 |
+| 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt) | todo 保留原項目並標記狀態，todo_prompt 保留 POI 方向；細節見計畫總覽 |
 
 ## 文件維護規則
 
@@ -38,6 +38,12 @@
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [車內燈條設備與控制台](validation/2026-09-22-cabin-light-equipment.md) — 獨立拆裝、控制台開關、耗電、保存與舊燈轉換。
+
+- [RV 駕駛體驗](validation/2026-09-22-driving-experience.md) — 油門／轉向、鏡面、機械動畫、音效、可控照明及白天／夜間完整回放；保留人工驗收限制。
+
+- [正式世界加油站](validation/2026-09-20-production-gas-station.md) — v5 場址、回程串流、物資保存與實機輪驅停靠。
 
 - [行駛卡頓與漸進煞車](validation/2026-09-22-driving-performance-braking.md) — 導航等待搜尋節制、長距離重心穩定、腳煞車調整與幀時間比較。
 
@@ -112,8 +118,6 @@
 - [WAYFARER RV 模型原型](../rv/visuals/README.md) — `rv/visuals/README.md`
 - [POI 資產樣板與製作規格](../world/poi_kit/README.md) — `world/poi_kit/README.md`
 - [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
-
-- [2026-09-20 正式世界加油站](validation/2026-09-20-production-gas-station.md)：v5 場址、回程串流、物資保存與實機輪驅停靠。
 
 - [副本室內 v2 製作與保存契約](guides/interior-v2.md)
 - [2026-09-22 室內 v2 驗收](validation/2026-09-22-interior-v2.md)

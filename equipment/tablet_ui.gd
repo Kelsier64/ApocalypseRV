@@ -57,6 +57,22 @@ func _ready() -> void:
 	headlights.pressed.connect(func():
 		if is_instance_valid(connected_rv): connected_rv.headlights_requested = not connected_rv.headlights_requested)
 	box.add_child(headlights)
+	for kind in ["cabin", "work", "service"]:
+		var light_button := Button.new()
+		light_button.text = {"cabin": "車內照明開關", "work": "工作燈開關", "service": "維修燈開關（開蓋後照明）"}[kind]
+		light_button.pressed.connect(func():
+			if is_instance_valid(connected_rv): connected_rv.toggle_interior_light(kind))
+		box.add_child(light_button)
+	var brightness := Button.new()
+	brightness.text = "調整儀表亮度：低 → 中 → 高"
+	brightness.pressed.connect(func():
+		if is_instance_valid(connected_rv): connected_rv.instrument_brightness = 0.2 if connected_rv.instrument_brightness > 0.9 else minf(1.0, connected_rv.instrument_brightness + 0.4))
+	box.add_child(brightness)
+	var vibration := Button.new()
+	vibration.text = "引擎視覺震動：關 → 低 → 高"
+	vibration.pressed.connect(func():
+		if is_instance_valid(connected_rv): connected_rv.vibration_strength = fmod(connected_rv.vibration_strength + 0.5, 1.5))
+	box.add_child(vibration)
 	message = Label.new()
 	box.add_child(message)
 	device_box = VBoxContainer.new()
@@ -105,6 +121,8 @@ func _refresh() -> void:
 	elif connected_rv.current_power <= 0.0:
 		status_label.text += "\nBATTERY EMPTY: swap it or start the engine with a generator installed."
 	status_label.text += "\n" + VehicleStatus.messages(connected_rv)
+	for kind in ["cabin", "work", "service"]: status_label.text += "\n" + connected_rv.interior_light_status(kind)
+	status_label.text += "\n儀表亮度 %.0f%%｜視覺震動 %.0f%%" % [connected_rv.instrument_brightness * 100, connected_rv.vibration_strength * 100]
 	var installed: EngineState = connected_rv.get_engine()
 	status_label.text += "\n" + ("引擎槽為空" if installed == null else "%s｜耐久 %.0f / %.0f" % [installed.definition().display_name, installed.health, installed.definition().max_health])
 	var devices: Array[Node] = connected_rv.get_equipment()
@@ -149,7 +167,7 @@ func _rebuild(devices: Array[Node]) -> void:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(label)
 		device_labels[device.persistent_id] = label
-		if device.has_method("step_work") or device.has_method("generate_power"):
+		if device.has_method("step_work") or device.has_method("generate_power") or device is CabinLightStrip:
 			var toggle := Button.new()
 			toggle.text = "On / off"
 			toggle.pressed.connect(func():

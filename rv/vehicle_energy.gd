@@ -69,5 +69,15 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 			device.step_work(delta)
 	var lights: float = (0.12 if rv.headlights_requested else 0.0) + (0.04 if rv.handbrake or rv.brake_input > 0.0 else 0.0) + (0.04 if rv.gear < 0 else 0.0)
 	rv.lamps_powered = battery != null and battery.charge > 0.0 and consume_power(lights * delta)
+	var strips := 0
+	var benches := 0
+	for device in equipment:
+		if not device.can_operate(): continue
+		if device is CabinLightStrip: strips += 1
+		if device is CraftingStation: benches += 1
+	var available := {"cabin": strips > 0, "work": benches > 0, "service": rv.engine_bay.hatch_open}
+	var draws := {"cabin": rv.cabin_light_draw * strips, "work": rv.work_light_draw * benches, "service": rv.service_light_draw}
+	for kind in rv.interior_requested:
+		rv.interior_powered[kind] = rv.interior_requested[kind] and available[kind] and battery != null and battery.charge > 0.0 and consume_power(draws[kind] * delta)
 	load_rate = _consumed / delta
 	return engine_running

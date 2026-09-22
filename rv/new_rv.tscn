@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="preset_crafting_station"]
 [ext_resource type="PackedScene" path="res://equipment/scrapper.tscn" id="preset_scrapper"]
 [ext_resource type="PackedScene" path="res://equipment/tablet_screen.tscn" id="preset_tablet_screen"]
+[ext_resource type="PackedScene" path="res://equipment/cabin_light_strip.tscn" id="cabin_strip"]
 
 [node name="NewRv" type="Node3D" unique_id=2120729524]
 
@@ -27,6 +28,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
 
 [node name="WallFront" parent="Chassis" unique_id=1457687698 instance=ExtResource("7_wf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.9)
+
+[node name="CabinLightFront" parent="Chassis" instance=ExtResource("cabin_strip")]
+position = Vector3(0, 2.4405738, -3.2)
+initial_support = NodePath("../Ceiling")
+freeze = true
+collision_mask = 0
+
+[node name="CabinLightRear" parent="Chassis" instance=ExtResource("cabin_strip")]
+position = Vector3(0, 2.4405738, 2.2)
+initial_support = NodePath("../Ceiling")
+freeze = true
+collision_mask = 0
 
 [node name="DriverSeat" parent="Chassis" unique_id=1370501954 instance=ExtResource("2_hjrs7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.49605, -4.02)

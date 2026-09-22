@@ -17,15 +17,10 @@ func _run() -> void:
 	player.position = Vector3(15, 2, 0)
 	world.add_child(player)
 	player.set_physics_process(false)
-	var recycler: Equipment = load("res://equipment/scrapper.tscn").instantiate()
-	rv.add_child(recycler)
-	recycler.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, -2)), rv)
-	var station: CraftingStation = load("res://equipment/crafting_station.tscn").instantiate()
-	rv.add_child(station)
-	station.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, 2)), rv)
-	var generator: Equipment = load("res://equipment/generator.tscn").instantiate()
-	rv.add_child(generator)
-	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(1, 1, 0)), rv)
+	# Use the installed production devices. The old extra workstation floated
+	# above the floor, leaving too little roof clearance for a correctly raised can.
+	var recycler: Equipment = rv.get_node("Scrapper")
+	var station: CraftingStation = rv.get_node("CraftingStation")
 	await physics_frame
 	# Fix the loot roll, not the production result: exercise pickup/drop and the real recycler.
 	var loot: Prop = load("res://props/oil_barrel.tscn").instantiate()
@@ -51,6 +46,10 @@ func _run() -> void:
 	for child in WorldEntities.get_container(world).get_children():
 		if child is Prop and child.item_name == ItemNames.GAS_CAN: gasoline = child
 	check(gasoline != null and station.jobs.is_empty(), "Production creates physical fuel once")
+	if gasoline == null:
+		push_error("FAIL: Production creates physical fuel once: " + station.last_error)
+		quit(1)
+		return
 	gasoline.interact(player)
 	rv.get_node("FuelPort").interact(player)
 	check(rv.current_fuel == 30.0 and player.get_active_item_name() == ItemNames.GAS_CAN_EMPTY, "Refueling transfers fuel and returns empty can")

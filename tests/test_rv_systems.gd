@@ -62,9 +62,8 @@ func _run() -> void:
 		player.add_item(ItemNames.WHEEL, false, "res://props/wheel.tscn")
 	expect(not rv.remove_battery_to_player(player) and rv.current_power == 23.0, "Full inventory removal preserves battery")
 	expect(rv.exchange_battery(player) and rv.current_power == 61.0, "Full inventory allows atomic slot exchange")
-	var station: CraftingStation = load("res://equipment/crafting_station.tscn").instantiate()
-	rv.add_child(station)
-	station.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1.0, 2)), rv)
+	# Production placement leaves room for the real output collider below the roof.
+	var station: CraftingStation = rv.get_node("CraftingStation")
 	rv.add_item(ItemNames.METAL_PARTS, 10)
 	rv.add_item(ItemNames.UNREFINED_FUEL, 10)
 	rv.current_power = 0.1

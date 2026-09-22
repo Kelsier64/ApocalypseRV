@@ -137,7 +137,7 @@ godot --path . --log-file .godot/poi-replay.log res://tests/poi_instance_playgro
 
 室外植物、地面、四款入口與 RV／設備已使用統一的老舊工業材質；生成紋理與完整提示詞見 [材質說明](../../assets/materials/industrial/README.md)。HUD、背包和平板保留操作方式，改為方角暗底及灰白／暗黃配色。新外觀適用新舊存檔，不變更世界位置；舊生成版本仍保留其原植物配置。
 
-室外展示場新增 **F6** 循環 RV 外觀／駕駛室／設備、**F7** 切換測試電池電量、**F9** 切換側牆損傷、**F10** 開啟正式平板介面。正式遊戲不增加這些快捷鍵。RV 車內暖燈隨車頂與既有待機供電；F8 仍只切換室外復古效果，文字保持清晰。
+室外展示場新增 **F6** 循環 RV 外觀／駕駛室／設備、**F7** 切換測試電池電量、**F9** 切換側牆損傷、**F10** 開啟正式平板介面。正式遊戲不增加這些快捷鍵。RV 車內暖燈由獨立燈條設備、控制台請求與統一電力結算供電；F8 仍只切換室外復古效果，文字保持清晰。
 
 [美術驗收與截圖](../../docs/validation/2026-09-17-industrial-art.md)
 
@@ -201,6 +201,23 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 `godot --path . --log-file .godot/driving-benchmark.log -s res://scripts/benchmark_driving.gd`
 
 使用正式主世界／RV、固定 seed 42、08:00 陰天、1024 × 720，停車取樣 4 秒，再以正式輪胎驅動直行取樣 24 秒。只在此量測程序停用 VSync，輸出平均、P95、P99、最慢幀及 CPU 渲染／GPU 時間；不改玩家偏好。結束自動退出。避免同時執行其他測試；headless 數據不能當作 GPU 幀時間。這是開局短路線量測，不包含長途、所有天氣與全部視角。
+
+加 `-- --no-mirrors` 關閉鏡面作對照。`-- --night-lights` 改為 22:00 停車、開蓋及開啟車內／工作／維修燈，暖機 4 秒後取樣 12 秒；再加 `--lights-off` 作同場景關燈對照。開蓋是效能場的初始化設定。
+
+## 駕駛體驗與完整出車回放
+
+`godot --path . --log-file .godot/driving-experience.log res://tests/driving_experience_playground.tscn`
+
+開局入座；F6 左鏡、F7 右鏡、F1 前方；紅色／藍色障礙分別在車尾左右。F8 引擎艙視角後按 E 開蓋、F9 坡板、F11 夜間並開工作／維修燈、F3 車內視角、F12 正式輪驅回放。照明與儀表亮度統一由控制台操作。測試視角定位只用於觀察，不代表玩家已走到該位置。
+
+正式主世界整趟回放：
+
+```powershell
+godot --path . --log-file .godot/trip-day.log -s res://scripts/replay_rv_trip.gd
+godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.gd -- --night --stay
+```
+
+涵蓋輪驅出車、步行搬運、分解／製作、故障維修與引擎交換、收妥車輛、存讀檔後再出發。`--stay` 保留結果視窗；headless 可加 `--fixed-fps 60`。固定種子、移除怪物、替換引擎／廢料供應與零耐久故障是測試設定；取放、製作與維修呼叫正式服務入口，並非逐一滑鼠瞄準的人工遊玩。存檔使用獨立 `user://driving_trip_validation.save`。結果與限制見[驗收紀錄](../validation/2026-09-22-driving-experience.md)。
 
 ## 日夜與天氣驗收
 

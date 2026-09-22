@@ -14,7 +14,7 @@ static func read(rv: Node) -> Array[Dictionary]:
 		if device.has_method("generate_power") and device.can_operate(): generator_ok = true
 	var electrical_fault: bool = rv.energy.battery == null or rv.current_power <= 0.0 or (rv.energy.engine_running and not generator_ok)
 	rows.append({"id": "battery", "label": "充電", "level": 3 if electrical_fault else (2 if rv.current_power < rv.max_power * 0.2 else 0), "message": "電池缺失／耗盡，或運轉中的引擎沒有可用發電機" if electrical_fault else "電池電量低"})
-	var open_door: bool = rv.engine_bay.hatch_open
+	var open_door: bool = rv.engine_bay.hatch_open or not rv.engine_bay.get_node("Hatch").stable()
 	for device in rv.get_equipment():
 		if device.has_method("restore_angles"):
 			for value in device.angles:

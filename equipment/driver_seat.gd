@@ -1,7 +1,7 @@
 extends Equipment
 
 const MOUSE_SENSITIVITY: float = 0.002
-const REST_CAMERA_ROTATION := Vector3(-0.18, 0.0, 0.0)
+const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 
 @onready var seat_camera: Camera3D = $Camera3D
 
@@ -62,7 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			match event.physical_keycode:
 				KEY_B: rv.set_engine_running(not rv.energy.engine_running)
 				KEY_L: rv.headlights_requested = not rv.headlights_requested
-				KEY_SPACE: rv.handbrake = not rv.handbrake
+				KEY_SPACE: rv.set_handbrake(not rv.handbrake)
 				KEY_Z: rv.set_gear(-1)
 				KEY_X: rv.set_gear(0)
 				KEY_C: rv.set_gear(1)

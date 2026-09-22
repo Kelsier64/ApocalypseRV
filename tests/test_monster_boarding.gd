@@ -152,6 +152,7 @@ func _run() -> void:
 	rv.get_node("RearDoor").restore_angles([-deg_to_rad(100), deg_to_rad(100)])
 	await physics_frame
 	rv.rear_ramp.interact(player)
+	for i in range(200): await physics_frame
 	check(rv.rear_ramp.deployed, "Open-entry scenario deploys production rear ramp")
 	var hung_on_open_door := false
 	for i in range(300):

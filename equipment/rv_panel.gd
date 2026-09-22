@@ -10,8 +10,8 @@ func _ready() -> void:
 	add_child(wear)
 	if structure_kind == "roof":
 		var lamps := Node3D.new()
-		lamps.name = "CabinLighting"
-		lamps.set_script(preload("res://rv/cabin_lighting.gd"))
+		lamps.name = "CabinAir"
+		lamps.set_script(preload("res://rv/cabin_air.gd"))
 		add_child(lamps)
 	call_deferred("_setup_if_on_rv")
 

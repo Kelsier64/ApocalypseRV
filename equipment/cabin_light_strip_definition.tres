@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="EquipmentDefinition" format=3]
+
+[ext_resource type="Script" path="res://equipment/equipment_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+type_id = "cabin_light_strip"
+display_name = "車內燈條"
+weight = 1.5
+health = 120.0

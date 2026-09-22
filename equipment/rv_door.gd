@@ -55,8 +55,10 @@ func _physics_process(delta: float) -> void:
 		if not reason.is_empty():
 			targets[index] = angles[index]
 			blocked_message = "門被 " + reason + " 擋住，移開後再按 E"
+			get_connected_rv().feedback("blocked", position)
 			continue
 		angles[index] = next
+		if is_equal_approx(next, targets[index]): get_connected_rv().feedback("mechanical", position)
 	_sync_leaves()
 
 func swing_blocker(index: int, start: float, finish: float) -> String:
@@ -102,6 +104,7 @@ func toggle_leaf(index: int) -> String:
 	blocked_message = ""
 	targets[index] = goal
 	open_requested[index] = opening
+	get_connected_rv().feedback("mechanical", position)
 	return "開門中" if opening else "關門中"
 
 func get_interaction_prompt(player: Node3D) -> String:
