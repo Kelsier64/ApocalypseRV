@@ -23,7 +23,7 @@ static func read(rv: Node) -> Array[Dictionary]:
 	rows.append({"id": "brake", "label": "手煞車", "level": 3 if rv.handbrake else 0, "message": "手煞車已拉起"})
 	var minimum := 100.0
 	for hp in rv.wheel_health: minimum = minf(minimum, hp)
-	rows.append({"id": "tire", "label": "輪胎", "level": 3 if rv.get_installed_wheel_count() < 4 or minimum <= 0.0 else (2 if minimum < 30.0 else 0), "message": "輪胎缺失或耐久過低，請停車維修／更換"})
+	rows.append({"id": "tire", "label": "輪胎", "level": 3 if rv.get_installed_wheel_count() < 4 or minimum <= 0.0 else (2 if minimum < 30.0 else 0), "message": rv.tire_warning()})
 	rows.append({"id": "ramp", "label": "坡板", "level": 2 if rv.drive_blocked() else 0, "message": "坡板未收妥，禁止驅動；仍可怠速發電"})
 	rows.append({"id": "headlight", "label": "頭燈", "level": 1 if rv.headlights_requested and rv.lamps_powered else 0, "message": "頭燈已開啟"})
 	return rows

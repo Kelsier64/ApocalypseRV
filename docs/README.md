@@ -1,6 +1,6 @@
 # 開發文件索引
 
-整理日期：2026-09-22。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。本次為文件／來源核對，未重跑歷史驗收。
+整理日期：2026-09-22。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。本輪架構審查另記 headless 檢查結果，既有驗收紀錄保留當時結果。
 
 ## 從哪裡開始
 
@@ -12,7 +12,7 @@
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
 | 開發約定 | [AGENTS](../AGENTS.md)、[CLAUDE](../CLAUDE.md) | 協作與工具指引 |
-| 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt) | todo 保留原項目並標記狀態，todo_prompt 保留 POI 方向；細節見計畫總覽 |
+| 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt)、[GDD_add](../GDD_add.md) | 保留原項目、POI 方向與補充提案；實作狀態見 GDD 及計畫總覽 |
 
 ## 文件維護規則
 
@@ -28,16 +28,39 @@
 
 ## 指南
 
+- [副本室內 v2 製作與保存契約](guides/interior-v2.md) — 11 種房型、接口、布局 manifest 與相容規則。
+
+- [Blender 角色與怪物製作規格](guides/character-modeling.md) — 美術方向、尺寸、低模預算、骨架、動畫與 GLB 交付；含玩家全身分件、布娃娃及肢解製作需求，與現有試接限制分開標示。
+
 - [POI 共用製作與接入規範](guides/poi-authoring.md) — 類型、Resource、場景層級、素材替換及生成／保存責任。
 
 - [遊玩與測試場指南](guides/playgrounds.md) — `guides/playgrounds.md`
 
 ## 審查與修正
 
+- [2026-09-22 架構、潛在問題與遺產清理審查](report/ApocalypseRV_Architecture_Audit_2026-09-22.md) — 三個 subagent 分工、重現證據、清理候選、保留邊界及當次驗證；列出的程式問題尚未修正。
 - [R01–R07 修正與驗收](report/ApocalypseRV_Fixes_2026-09-18.md) — `report/ApocalypseRV_Fixes_2026-09-18.md`
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [Raker v017 貼臉咬擊與口腔](validation/2026-09-23-raker-v017.md) — 30／40° 上抬、前探抓頭、碰撞掃掠、牙齒與咬合衝擊。
+
+- [Raker v016 可動頸部與抓咬掙脫](validation/2026-09-22-raker-v016.md) — 限角追視、三組抓咬動畫、硬控、駕駛滑行與固定種子驗證。
+
+- [輪胎爆胎與低機率路邊釘帶](validation/2026-09-22-tire-puncture.md) — 四輪獨立狀態、16 種組合、維修／保存與世界生成；含解鎖後的爆胎、轉彎支撐與拆頂目視證據。
+
+- [裂爪 Raker：2.18 m 新怪物與 22 段動畫](validation/2026-09-22-raker.md) — 獨立行為、命中時機、低姿態進出 RV、生成／保存及完整回歸。
+- [裂爪 v011 外觀接入](validation/2026-09-22-raker-v011.md) — 污垢貼圖、深眼窩與嘴部正式替換及 Raker 回歸。
+- [Raker v013 步態與追車狂奔](validation/2026-09-22-raker-v013.md) — 三種步態、18 m/s 上限與追車回歸。
+- [Raker v014 姿勢與追車測試場](validation/2026-09-22-raker-v014.md) — 手臂內收、背頸前彎、走跑相位切換與正式輪驅 playground。
+- [Raker v015 小幅抬頭與轉向](validation/2026-09-22-raker-v015.md) — 下巴微抬、回頭方向鎖定、移動朝向一致及轉彎回放。
+- [裂爪 v012 頭部／軀幹加密](validation/2026-09-22-raker-v012.md) — 16,116 三角面、輪廓平滑、動畫掃描及正式主世界模型驗證。
+
+- [2026-09-22 室內 v2 主世界接入](validation/2026-09-22-interior-v2-main-integration.md) — 正式入口分流、舊副本相容與接入結果。
+- [2026-09-22 室內 v2 驗收](validation/2026-09-22-interior-v2.md) — 布局、接口、樓梯、目標與捷徑。
+
+- [怪物 GLB 試接](validation/2026-09-22-monster-model.md) — 模型、骨架、材質、循環播放、受傷與登車實機檢查；包含車內追擊失敗及原外觀對照。
 
 - [車內燈條設備與控制台](validation/2026-09-22-cabin-light-equipment.md) — 獨立拆裝、控制台開關、耗電、保存與舊燈轉換。
 
@@ -118,6 +141,3 @@
 - [WAYFARER RV 模型原型](../rv/visuals/README.md) — `rv/visuals/README.md`
 - [POI 資產樣板與製作規格](../world/poi_kit/README.md) — `world/poi_kit/README.md`
 - [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
-
-- [副本室內 v2 製作與保存契約](guides/interior-v2.md)
-- [2026-09-22 室內 v2 驗收](validation/2026-09-22-interior-v2.md)

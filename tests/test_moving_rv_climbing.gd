@@ -5,6 +5,7 @@ var world: Node3D
 var rv: Node3D
 var player: CharacterBody3D
 var monster: CharacterBody3D
+var monster_scene: PackedScene = preload("res://enemies/zombie.tscn")
 
 func _init() -> void:
 	_run.call_deferred()
@@ -75,7 +76,7 @@ func _run() -> void:
 	rv.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1.2, 0))
 
 	# Verify both actor controllers carry a point through translation AND turning.
-	monster = load("res://enemies/zombie.tscn").instantiate()
+	monster = monster_scene.instantiate()
 	world.add_child(monster)
 	monster.set_physics_process(false)
 	player.position = Vector3(0, 3.7, 0)

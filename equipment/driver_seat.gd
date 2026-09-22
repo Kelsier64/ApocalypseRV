@@ -47,7 +47,7 @@ func interact_hold(player: Node3D) -> void:
 		rv.set_driving_state(true)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not current_driver:
+	if not current_driver or current_driver.is_grabbed() or current_driver.is_player_dead:
 		return
 
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:

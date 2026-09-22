@@ -25,6 +25,7 @@ func interact_hold(player: Node3D):
 		player.exit_ui_mode()
 		return
 	current_user = player
+	player.grab_started.connect(_close_ui)
 	ui_instance.on_open()
 	ui_instance.visible = true
 
@@ -32,6 +33,7 @@ func _close_ui() -> void:
 	if is_instance_valid(ui_instance):
 		ui_instance.visible = false
 	if is_instance_valid(current_user):
+		if current_user.grab_started.is_connected(_close_ui): current_user.grab_started.disconnect(_close_ui)
 		current_user.exit_ui_mode()
 	current_user = null
 

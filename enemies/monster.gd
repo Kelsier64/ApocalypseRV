@@ -1855,7 +1855,9 @@ func take_damage(amount: float):
 	
 	# Visual feedback: flash white briefly
 	var mesh = _body_mesh if _body_mesh else get_node_or_null("BodyMesh")
-	if mesh and mesh.material_override:
+	if mesh and mesh.has_method("flash_damage"):
+		mesh.flash_damage()
+	elif mesh is MeshInstance3D and mesh.material_override:
 		var orig_color = mesh.material_override.albedo_color
 		var tween = create_tween()
 		mesh.material_override.albedo_color = Color.WHITE

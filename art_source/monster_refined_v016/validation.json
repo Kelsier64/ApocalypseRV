@@ -1,0 +1,252 @@
+{
+  "audit": [
+    {
+      "clip": "raker_v016_attack_left",
+      "bad_frames": [],
+      "min_z": -3.124128795661818e-7,
+      "max_height": 2.18000085600724
+    },
+    {
+      "clip": "raker_v016_attack_right",
+      "bad_frames": [],
+      "min_z": -3.124128795661818e-7,
+      "max_height": 2.180001094425819
+    },
+    {
+      "clip": "raker_v016_crouch_idle",
+      "bad_frames": [],
+      "min_z": -0.00004620711479219608,
+      "max_height": 1.5006988598106545
+    },
+    {
+      "clip": "raker_v016_crouch_walk",
+      "bad_frames": [],
+      "min_z": -0.00026727718068286777,
+      "max_height": 1.4949752948305104
+    },
+    {
+      "clip": "raker_v016_crouch_attack",
+      "bad_frames": [],
+      "min_z": -0.00003439359716139734,
+      "max_height": 1.493804396915948
+    },
+    {
+      "clip": "raker_v016_climb_loop",
+      "bad_frames": [],
+      "min_z": -0.002989016007632017,
+      "max_height": 2.1829893211834133
+    },
+    {
+      "clip": "raker_v016_hang_idle",
+      "bad_frames": [],
+      "min_z": 0.017093311995267868,
+      "max_height": 2.1629069931805134
+    },
+    {
+      "clip": "raker_v016_attack_door",
+      "bad_frames": [],
+      "min_z": -1.3360276795992831e-7,
+      "max_height": 2.180000438778549
+    },
+    {
+      "clip": "raker_v016_mantle",
+      "bad_frames": [],
+      "min_z": -0.01894284412264824,
+      "max_height": 2.1989431492984295
+    },
+    {
+      "clip": "raker_v016_roof_settle",
+      "bad_frames": [],
+      "min_z": -0.00019258000247646123,
+      "max_height": 2.180000617588661
+    },
+    {
+      "clip": "raker_v016_attack_down",
+      "bad_frames": [],
+      "min_z": -0.00011317707685520872,
+      "max_height": 2.180000617588661
+    },
+    {
+      "clip": "raker_v016_slip_loop",
+      "bad_frames": [],
+      "min_z": 0.017093311995267868,
+      "max_height": 2.1629069931805134
+    },
+    {
+      "clip": "raker_v016_fall_loop",
+      "bad_frames": [],
+      "min_z": 0.01958644762635231,
+      "max_height": 2.173512574285269
+    },
+    {
+      "clip": "raker_v016_land",
+      "bad_frames": [],
+      "min_z": -0.0012433090014383197,
+      "max_height": 2.180000617588661
+    },
+    {
+      "clip": "raker_v016_hit_react",
+      "bad_frames": [],
+      "min_z": -3.124128795661818e-7,
+      "max_height": 2.183963134373329
+    },
+    {
+      "clip": "raker_v016_death",
+      "bad_frames": [],
+      "min_z": -0.000209808349609375,
+      "max_height": 2.1925364285707474
+    },
+    {
+      "clip": "raker_v016_crouch_hit_react",
+      "bad_frames": [],
+      "min_z": -0.000044752185203833506,
+      "max_height": 1.500831771914818
+    },
+    {
+      "clip": "raker_v016_crouch_land",
+      "bad_frames": [],
+      "min_z": -0.00004469847772270441,
+      "max_height": 1.4938046464194485
+    },
+    {
+      "clip": "raker_v016_crouch_death",
+      "bad_frames": [],
+      "min_z": -0.0010928511619567871,
+      "max_height": 1.4938049699116291
+    },
+    {
+      "clip": "raker_v016_idle",
+      "bad_frames": [],
+      "min_z": -7.277423037521658e-7,
+      "max_height": 1.8333362644490876
+    },
+    {
+      "clip": "raker_v016_walk",
+      "bad_frames": [],
+      "min_z": -0.00027851309278048575,
+      "max_height": 1.7960834057691386
+    },
+    {
+      "clip": "raker_v016_chase",
+      "bad_frames": [],
+      "min_z": -0.0016581063391640782,
+      "max_height": 1.6763260607840493
+    },
+    {
+      "clip": "raker_v016_sprint",
+      "bad_frames": [],
+      "min_z": -0.01261418778449297,
+      "max_height": 1.5945900119841099
+    },
+    {
+      "clip": "raker_v016_grab_stand_reach.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.8333362381115705
+    },
+    {
+      "clip": "raker_v016_grab_stand_hold.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.8409874479428083
+    },
+    {
+      "clip": "raker_v016_grab_stand_bite.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.870253090108946
+    },
+    {
+      "clip": "raker_v016_grab_stand_release.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.8333362381115705
+    },
+    {
+      "clip": "raker_v016_grab_stand_escape.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.9056164066448957
+    },
+    {
+      "clip": "raker_v016_grab_stand_miss.002",
+      "bad_frames": [],
+      "min_z": -3.616467267875123e-7,
+      "max_height": 1.8333362381115705
+    },
+    {
+      "clip": "raker_v016_grab_low_reach.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.4938043705151358
+    },
+    {
+      "clip": "raker_v016_grab_low_hold.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.5011915317700186
+    },
+    {
+      "clip": "raker_v016_grab_low_bite.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.5290058008358756
+    },
+    {
+      "clip": "raker_v016_grab_low_release.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.4938043705151358
+    },
+    {
+      "clip": "raker_v016_grab_low_escape.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.5694594732449332
+    },
+    {
+      "clip": "raker_v016_grab_low_miss.002",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.4938043705151358
+    },
+    {
+      "clip": "raker_v016_grab_seat_reach.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.7190192094967642
+    },
+    {
+      "clip": "raker_v016_grab_seat_hold.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.7230873457119742
+    },
+    {
+      "clip": "raker_v016_grab_seat_bite.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.7189463726208487
+    },
+    {
+      "clip": "raker_v016_grab_seat_release.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.7190127721951285
+    },
+    {
+      "clip": "raker_v016_grab_seat_escape.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.742796455971984
+    },
+    {
+      "clip": "raker_v016_grab_seat_miss.004",
+      "bad_frames": [],
+      "min_z": -0.00003436719634919427,
+      "max_height": 1.7189948908016959
+    }
+  ],
+  "frames": 2121,
+  "clips": 41
+}

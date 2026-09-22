@@ -1,4 +1,5 @@
 extends Node3D
+@export var monster_scene: PackedScene = preload("res://enemies/zombie.tscn")
 ## Real actors and attack cooldowns; extra player health allows prolonged inspection.
 var player: CharacterBody3D
 var monster: Monster
@@ -50,7 +51,7 @@ func _ready() -> void:
 	var player_marker := box_mesh(Vector3(0.6, 1.6, 0.6), Color(0.2, 0.55, 0.95))
 	player.add_child(player_marker)
 	player_marker.position.y = 1.1
-	monster = preload("res://enemies/zombie.tscn").instantiate()
+	monster = monster_scene.instantiate()
 	add_child(monster)
 	monster.position = Vector3(-4, -0.25, 0)
 	monster.is_idle = true

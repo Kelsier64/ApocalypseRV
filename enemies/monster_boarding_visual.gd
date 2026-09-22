@@ -1,5 +1,5 @@
 extends Node3D
-## Lightweight original procedural poses/audio for the existing capsule monster.
+## Boarding audio, plus placeholder arms for actors without an imported model.
 var actor: Monster
 var arms: Array[Node3D] = []
 var sound: AudioStreamPlayer3D
@@ -15,7 +15,8 @@ func _ready() -> void:
 	actor = get_parent()
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.36, 0.08, 0.06)
-	for side in [-1.0, 1.0]:
+	var sides: Array = [] if actor.has_node("BodyMesh/Model") else [-1.0, 1.0]
+	for side in sides:
 		var arm := Node3D.new()
 		arm.position = Vector3(side * 0.38, 1.45, 0)
 		var mesh := MeshInstance3D.new()

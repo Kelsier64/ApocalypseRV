@@ -42,7 +42,9 @@ var in_ui_mode: bool = false
 # seated_in, is_player_dead) remain the storage, but every transition must go
 # through the enter_/exit_ helpers below so exclusivity is enforced in one
 # place instead of ad-hoc at each call site.
-enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD }
+signal grab_started
+var grab_control: Node
+enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED }
 var seated_in: Node3D = null
 
 # Locomotion
@@ -90,6 +92,7 @@ func _update_inventory_display():
 		inventory_ui.update_slots(inventory.items, inventory.active_slot)
 
 func _set_active_slot(index: int) -> void:
+	if is_grabbed(): return
 	if inventory.select_slot(index):
 		_update_inventory_display()
 		_equip_active_slot()
@@ -133,6 +136,8 @@ func _equip_active_slot():
 				held_item_node.transform = Transform3D.IDENTITY
 
 func _ready():
+	grab_control = preload("res://player/player_grab.gd").new()
+	add_child(grab_control)
 	# Frozen RV panels need explicit support motion; avoid applying it twice.
 	platform_floor_layers = 0
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -157,6 +162,7 @@ func get_active_item_name() -> String:
 	return inventory.active_item().get("name", "")
 
 func consume_active_item() -> void:
+	if is_grabbed(): return
 	if inventory.consume_active():
 		_update_inventory_display()
 		_equip_active_slot()
@@ -164,6 +170,7 @@ func consume_active_item() -> void:
 func get_player_mode() -> PlayerMode:
 	if is_player_dead:
 		return PlayerMode.DEAD
+	if is_grabbed(): return PlayerMode.GRABBED
 	if seated_in != null:
 		return PlayerMode.SEATED
 	if in_ui_mode:
@@ -193,6 +200,7 @@ func exit_ui_mode():
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 func complete_world_transition(at: Transform3D) -> void:
+	if is_grabbed(): grab_control.end("world_transition")
 	global_transform = at
 	velocity = Vector3.ZERO
 	locomotion_state = LocomotionState.NORMAL
@@ -229,6 +237,7 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	return true
 
 func exit_seat_mode(exit_position: Vector3) -> void:
+	if is_grabbed(): grab_control.end("seat_lost")
 	if seated_in == null:
 		return
 	var rv := _find_rv_ancestor(seated_in)
@@ -243,6 +252,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	camera.current = true
 
 func drop_item():
+	if is_grabbed(): return
 	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
 		var item_data = inventory.items[inventory.active_slot]
 		
@@ -277,7 +287,7 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 		node.restore_item_state(data.get("state", {}))
 
 func _unhandled_input(event):
-	if in_ui_mode or is_player_dead: return
+	if in_ui_mode or is_player_dead or is_grabbed(): return
 	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally
@@ -423,17 +433,17 @@ func _process_normal_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if not is_grabbed() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
-	if Input.is_action_pressed("move_left"):
+	if not is_grabbed() and Input.is_action_pressed("move_left"):
 		input_dir.x -= 1
-	if Input.is_action_pressed("move_right"):
+	if not is_grabbed() and Input.is_action_pressed("move_right"):
 		input_dir.x += 1
-	if Input.is_action_pressed("move_forward"):
+	if not is_grabbed() and Input.is_action_pressed("move_forward"):
 		input_dir.y -= 1
-	if Input.is_action_pressed("move_back"):
+	if not is_grabbed() and Input.is_action_pressed("move_back"):
 		input_dir.y += 1
 
 	if input_dir.length_squared() > 0.0:
@@ -591,9 +601,9 @@ func _process_climbing(delta: float) -> void:
 			pending_abort_lost_contact = true
 
 	var vertical_input := 0.0
-	if Input.is_action_pressed("move_forward"):
+	if not is_grabbed() and Input.is_action_pressed("move_forward"):
 		vertical_input += 1.0
-	if Input.is_action_pressed("move_back"):
+	if not is_grabbed() and Input.is_action_pressed("move_back"):
 		vertical_input -= 1.0
 
 	if vertical_input > 0.0:
@@ -619,9 +629,9 @@ func _process_climbing(delta: float) -> void:
 			vertical_input *= allowed_upward_distance / desired_upward_distance
 
 	var horizontal_input := 0.0
-	if Input.is_action_pressed("move_right"):
+	if not is_grabbed() and Input.is_action_pressed("move_right"):
 		horizontal_input += 1.0
-	if Input.is_action_pressed("move_left"):
+	if not is_grabbed() and Input.is_action_pressed("move_left"):
 		horizontal_input -= 1.0
 
 	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
@@ -681,7 +691,7 @@ func _physics_process(delta):
 	match locomotion_state:
 		LocomotionState.NORMAL:
 			_process_normal_movement(delta)
-			_try_start_climb()
+			if not is_grabbed(): _try_start_climb()
 		LocomotionState.CLIMBING:
 			_apply_rv_delta_compensation()
 			if locomotion_state == LocomotionState.CLIMBING:
@@ -712,6 +722,7 @@ func _update_health_bar():
 		health_bar.set_health(current_player_health, max_player_health)
 
 func _player_die():
+	if is_grabbed(): grab_control.end("death")
 	if is_placing_equipment():
 		placement.placing_equipment.cancel_placement()
 		placement.placing_equipment = null
@@ -731,3 +742,35 @@ func _respawn():
 func refresh_inventory() -> void:
 	_update_inventory_display()
 	_equip_active_slot()
+
+func is_grabbed() -> bool:
+	return is_instance_valid(grab_control) and grab_control.active()
+
+func can_be_grabbed() -> bool:
+	return is_instance_valid(grab_control) and grab_control.can_begin()
+
+func begin_grab(captor: Node3D, required: int) -> bool:
+	return grab_control.begin(captor, required)
+
+func end_grab(captor: Node3D, reason: String) -> void:
+	if grab_control.captor == captor: grab_control.end(reason)
+
+func submit_struggle() -> bool:
+	return grab_control.submit_struggle()
+
+func grab_contact_position(side: int, captor: Node3D) -> Vector3:
+	return grab_contact_origin() - Vector3.UP * (.16 if is_instance_valid(seated_in) else .23) + captor.global_basis.x * float(side) * .23
+
+func grab_contact_origin() -> Vector3:
+	var view: Camera3D = seated_in.seat_camera if is_instance_valid(seated_in) else camera
+	# Head pull is visual; shoulders remain attached to the body/seat.
+	if is_grabbed(): return view.get_parent().to_global(grab_control.camera_rest_position)
+	return view.global_position
+
+func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
+	if not is_grabbed() or grab_control.captor != captor or is_player_dead: return
+	grab_control.bite_impact()
+	current_player_health = 0.0 if fatal else maxf(0, current_player_health - 50.0)
+	damage_cooldown = .5
+	_update_health_bar()
+	if current_player_health <= 0: _player_die()

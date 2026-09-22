@@ -59,7 +59,8 @@ func _ready() -> void:
 	material.albedo_color = Color(0.2, 0.55, 1.0)
 	marker.material_override = material
 	player.add_child(marker)
-	monster = preload("res://enemies/zombie.tscn").instantiate()
+	var monster_scene: PackedScene = load("res://enemies/raker.tscn" if "--raker" in OS.get_cmdline_user_args() else "res://enemies/zombie.tscn")
+	monster = monster_scene.instantiate()
 	monster.position = Vector3(-2.65, 0.05, 0)
 	monster.rotation.y = -PI / 2.0
 	add_child(monster)
@@ -139,7 +140,7 @@ func _physics_process(delta: float) -> void:
 		rv.rotate_y(0.12 * delta)
 	observer.position = rv.to_global(Vector3(11, 7, 12))
 	observer.look_at(rv.to_global(Vector3(0, 1.5, 0)))
-	status.text = "RV CLIMB PLAYGROUND | Blue: player / Red: monster\nF2: move/stop | F3: auto climb | F4: camera | F5: seat player / roof attack | R: reset\nPlayer: %s  y=%.2f | Monster: %s  y=%.2f\nRV motion: %s | roof HP: %s" % [
+	status.text = "RV CLIMB PLAYGROUND | Blue: player / Pale: monster\nF2: move/stop | F3: auto climb | F4: camera | F5: seat player / roof attack | R: reset\nPlayer: %s  y=%.2f | Monster: %s  y=%.2f\nRV motion: %s | roof HP: %s" % [
 		player.LocomotionState.keys()[player.locomotion_state], rv.to_local(player.global_position).y,
 		monster.LocomotionState.keys()[monster.locomotion_state], rv.to_local(monster.global_position).y,
 		str(driving), str(rv.get_node("Ceiling").current_health) if rv.has_node("Ceiling") else "DESTROYED"]

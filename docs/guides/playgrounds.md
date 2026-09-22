@@ -151,7 +151,7 @@ godot --path . --log-file .godot/poi-replay.log res://tests/poi_instance_playgro
 godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playground.tscn -- --replay
 ```
 
-藍色是玩家，紅色是怪物。F2 切換車輛運動、F3 自動攀爬、F4 換攝影機、F5 玩家入座測拆頂、R 重設。去掉 `-- --replay` 可手動 WASD／Space。這些按鍵只用於 playground，與主遊戲 R 的設備模式切換不同。
+藍色是玩家，灰白模型是怪物。F2 切換車輛運動、F3 自動攀爬、F4 換攝影機、F5 玩家入座測拆頂、R 重設。去掉 `-- --replay` 可手動 WASD／Space。這些按鍵只用於 playground，與主遊戲 R 的設備模式切換不同。
 
 Replay 使用腳本控制車輛運動，整合測試另有物理驅動 RV 情境。Headless 通過仍不能代替鏡頭手感、實際輪驅操控、翻車、怪物群與設備對齊的視覺驗收。新增回歸涵蓋製作交易、電池交換、能源、維修、設備清理、重量及磁碟存讀檔；長途經濟仍需調整。
 
@@ -170,7 +170,13 @@ godot --path . --log-file .godot/boarding-visible.log res://tests/monster_boardi
 godot --path . --log-file .godot/pursuit-visible.log res://tests/monster_pursuit_playground.tscn
 ```
 
-藍色方柱標記玩家，紅色為正式 Zombie，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，觀察怪物追近後是否持續扣血。F3 放入牆壁並固定怪物移速，F4 移除牆壁；牆存在時玩家不受傷，移除後恢復近戰。[修正與驗收](../../docs/validation/2026-09-16-monster-pursuit.md)。
+藍色方柱標記玩家，灰白模型為正式 Zombie，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，觀察怪物追近後是否持續扣血。F3 放入牆壁並固定怪物移速，F4 移除牆壁；牆存在時玩家不受傷，移除後恢復近戰。[修正與驗收](../../docs/validation/2026-09-16-monster-pursuit.md)。
+
+新怪物模型的近距離預覽沿用上述追擊行為，另有 F6 扣怪物 5 HP、R 重設。目前僅播放 `TEST_InPlace` 循環，正式行走／攻擊／攀爬動畫待補。[素材設定與限制](../../assets/models/monster/README.md)。
+
+```powershell
+godot --path . --log-file .godot/monster-model-preview.log res://tests/monster_model_playground.tscn
+```
 
 破口進出與車內追擊：
 
@@ -240,6 +246,56 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 
 新版由使用者負責目視驗收；自動化只檢查行為與兩種渲染器的編譯／執行紀錄，不使用 Computer Use。
 
+## 裂爪 Raker（2.18 m）
+
+`godot --path . --log-file .godot/raker-visual.log res://tests/raker_playground.tscn`
+
+正式新怪物追擊正式玩家。F6 受傷／打斷攻擊，F7 死亡，Space 移動玩家躲避，F8 輪看 23 段動畫，F9 暫停於片段 60% 位置，R 重設回到 AI。玩家生命提高以便觀察。
+
+### Raker 車輛追逐與步態測試
+
+`godot --path . --log-file .godot/raker-vehicle-playground.log res://tests/raker_vehicle_playground.tscn`
+
+正式輪驅 RV 與新版 Raker，平坦道路長 2.4 km，玩家開始坐在車上；此測試場將玩家 HP 提至 10000、怪物感知／失去興趣距離提高，方便反覆追逐。F2 定速是油門／煞車控制，實際速度受車輛動力限制，不是直接平移車輛；加 `-- --replay` 會自動選擇 36 km/h 目標。
+
+| 按鍵 | 功能 |
+| --- | --- |
+| W / S、A / D | 油門／煞車、轉向 |
+| F1 | 回到車上，手動駕駛 |
+| F2 | 定速目標循環 0 / 18 / 36 / 61 / 90 km/h |
+| F3 | 停車 |
+| F4 | 全景、怪物近景、側面 |
+| F5 | 下車測試步行追逐 |
+| F6 | 在車後重生怪物，結束預覽並恢復 AI |
+| F7 | 10 點受傷，觀察中斷 |
+| F8 / F9 | 車旁空地輪看待機／走／跑／狂奔；暫停／續播 |
+| F10 | 輪驅 S 型轉彎回放，36 km/h 目標；再次按下停止自動轉向 |
+| R | 重設整個場景及車輛 |
+
+畫面顯示車速、怪物速度、步態、動畫與距離。建議先 F2 測低速追上，再選 90 km/h 目標觀察 64.8 km/h 狂奔上限；定速期間 A/D 仍可轉向，怪物貼車後按 F6 可重測。預覽可配合 F4 側面檢查駝背和頸部，F6 返回 AI。啟動時加 `-- --preview` 可直接看待機姿勢，`-- --turns` 直接啟動轉彎回放。無限碰撞地板防止掉出路面，超過道路範圍會自動重設。測試場入口與操作有 [自動回歸](../../tests/test_raker_playground.gd)。
+
+`godot --path . --log-file .godot/raker-climb.log res://tests/rv_climb_playground.tscn -- --replay --raker`
+
+新怪物與玩家攀上移動 RV；F5 入座觸發砸頂、屋頂破壞及墜落。其他快捷鍵沿用 RV 攀爬測試場。
+
 ## 多樓層室內 v2
 
 `tests/interior_v2_playground.tscn` 使用正式 v2 生成器，預設 12 房，支援 `-- --rooms=100 --seed=1800`。F1 步行、F2 總覽、F3 掀頂、F5 持續輸入回放，M 已探索地圖、Page Up／Down 換層。完整命令與限制見 [v2 指南](interior-v2.md)。
+
+## 輪胎爆胎與釘帶
+
+`godot --path . --log-file .godot/tire-playground.log res://tests/tire_puncture_playground.tscn`
+
+F6 自動油門駛過單側釘帶，7 秒後漸進煞車；也可加 `-- --replay` 自動開始。1–4 分別讓左前／右前／左後／右後爆胎，R 重設。Space 啟動引擎並切換手煞車，W/S 油門／煞車、A/D 修正、Z 倒車、X 前進。使用正式輪驅與爆胎邏輯，畫面顯示各輪耐久和故障位置。這裡的 F6 是測試快捷鍵，正式世界仍為保存。
+
+自動化 `test_tire_handling.gd` 檢查 16 種組合、左右偏移、成對抵銷、前後驅動差異、停車、倒車、反打、高速和真實釘帶先後接觸；`test_tire_puncture.gd` 驗證維修／換胎／保存與確定性生成。驗收及尚未完成的目視檢查見 [爆胎紀錄](../validation/2026-09-22-tire-puncture.md)。
+
+## Raker 抓咬測試（v016）
+
+`godot --path . res://tests/raker_vehicle_playground.tscn -- --grab-ground --grab-seed=218`
+
+`--grab-cabin`／`--grab-driver` 分別啟動車內步行／行駛駕駛情境，三者擇一。F11 循環三情境、F12 重試，F7 對怪物造成 10 傷害中斷。測試時恢復玩家 100 HP，使用正式 AI、車輪物理、座位、碰撞和抓咬判定；2 秒準備後開始接近。Space 需反覆按下並放開；可觀察 HUD 80% 刻度、鏡頭、張嘴與雙手接觸。F11/F12/F7 在被抓時也可用，僅 playground 開放。
+
+加上 `--grab-slow` 可將整個測試場降至 0.1 倍時間，方便逐步觀察鏡頭、雙手與咬合；抓取仍是 2 秒遊戲時間。正式遊戲與預設測試場均為正常時間。
+
+v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與雙臂接觸；F9 繼續，F12 重試，F11 換情境。正式遊戲不受這個檢查選項影響。

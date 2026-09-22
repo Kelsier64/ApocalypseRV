@@ -108,7 +108,7 @@ func destination(actor, rv: Node3D, target: Vector3) -> Vector3:
 		_goal = route_goal
 		_timer = 0.65
 		_path = _build_path(actor, rv, origin, route_goal, target_inside)
-	while not _path.is_empty() and Vector2(origin.x - _path[0].x, origin.z - _path[0].z).length() < (0.035 if _path.size() == 1 else 0.12):
+	while not _path.is_empty() and Vector2(origin.x - _path[0].x, origin.z - _path[0].z).length() < (0.01 if _path.size() == 1 else 0.12):
 		_path.remove_at(0)
 	if _path.is_empty(): return actor.global_position
 	return rv.to_global(_path[0])
@@ -156,9 +156,12 @@ func _build_path(actor, rv: Node3D, origin: Vector3, goal: Vector3, melee: bool)
 			if absf(to_player.y) > actor.attack_max_vertical_gap: continue
 			to_player.y = 0
 			if to_player.length() > actor.attack_range * 0.9: continue
-			var ray := PhysicsRayQueryParameters3D.create(rv.to_global(point) + Vector3.UP, actor.target_player.global_position + Vector3.UP, actor.collision_mask, [actor.get_rid()])
+			# Query clearance floats 3 cm above the deck. Melee LOS must use
+			# the actual grounded root height, or seat edges create unreachable goals.
+			var ray := PhysicsRayQueryParameters3D.create(rv.to_global(point - Vector3.UP * 0.03) + Vector3.UP, actor.target_player.global_position + Vector3.UP, actor.collision_mask, [actor.get_rid()])
 			var hit := space.intersect_ray(ray)
 			if not hit.is_empty() and hit.collider != actor.target_player: continue
+			if actor.has_method("can_grab_from") and not actor.can_grab_from(rv.to_global(point - Vector3.UP * .03), actor.target_player): continue
 			var route := graph.get_point_path(start, id)
 			if route.is_empty(): continue
 			var cost := float(route.size()) * STEP + to_player.length() * 0.1

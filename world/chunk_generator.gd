@@ -2,7 +2,7 @@ extends Node3D
 class_name ChunkGenerator
 ## Fixed world-grid band. Roads curve inside it; the band never rotates.
 const CHUNK_SIZE := 150.0
-const ZOMBIE_SCENE = preload("res://enemies/zombie.tscn")
+const RAKER_SCENE = preload("res://enemies/raker.tscn")
 const TERRAIN_SHADER = preload("res://world/terrain/terrain_material.gdshader")
 const SLICE_BUDGET_USEC := 4000
 var field: WorldField
@@ -26,6 +26,7 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	if gradual:
 		await _pause()
 	_build_road()
+	TireSpikeStrip.build(self, field, band)
 	for site in sites:
 		_build_site(site, spawner)
 	if field.profile.generation_version >= 3:
@@ -452,7 +453,7 @@ func _spawn_actors() -> void:
 			prop.position = point
 			container.add_child(prop)
 		for i in range(field.enemy_count(int(site.index))):
-			var monster: Node3D = ZOMBIE_SCENE.instantiate()
+			var monster: Node3D = RAKER_SCENE.instantiate()
 			var point: Vector3 = site.frame * Vector3(float(site.side) * 9, 0, -10 + i * 5)
 			point.y = field.height_at(point.x, point.z) + 0.5
 			monster.position = point

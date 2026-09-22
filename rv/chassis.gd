@@ -420,6 +420,10 @@ func _physics_process(delta: float) -> void:
 		throttle = control_override.get("throttle", 0.0)
 		braking_input = control_override.get("brake", 0.0)
 		turn = control_override.get("steering", 0.0)
+	if driver_controls_locked():
+		throttle = 0.0
+		braking_input = 0.0
+		turn = 0.0
 	var target_throttle := clampf(throttle, 0.0, 1.0) if gear != 0 and not handbrake and not drive_blocked() and braking_input == 0.0 else 0.0
 	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
 	throttle_input = move_toward(throttle_input, target_throttle, delta / maxf(0.01, throttle_response))
@@ -444,11 +448,14 @@ func _physics_process(delta: float) -> void:
 		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():
 		engine_force = 0.0
+	TireDynamics.step(self)
 
 # --- WHEEL MANAGEMENT ---
 func install_wheel() -> bool:
 	for i in range(installed_wheels.size()):
 		if installed_wheels[i] == null:
+			wheel_health[i] = 100.0
+			wheel_ids[i] = InstanceIds.create()
 			_create_wheel_at(i)
 			return true
 	return false
@@ -497,6 +504,7 @@ func _create_wheel_at(slot_index: int) -> void:
 
 	add_child(wheel)
 	installed_wheels[slot_index] = wheel
+	_update_wheel_condition(slot_index)
 
 func _create_wheel_socket(slot_index: int) -> void:
 	var hitbox := StaticBody3D.new()
@@ -548,8 +556,24 @@ func remove_wheel_to_world(slot: int) -> bool:
 func _update_wheel_condition(slot: int) -> void:
 	var wheel: VehicleWheel3D = installed_wheels[slot]
 	if wheel:
-		wheel.wheel_friction_slip = lerpf(0.7, 3.5, wheel_health[slot] / 100.0)
-		wheel.use_as_traction = WHEEL_SLOTS[slot].traction and wheel_health[slot] > 0.0
+		TireDynamics.update_condition(self, slot)
+
+func puncture_wheel(slot: int) -> bool:
+	if slot < 0 or slot >= 4 or installed_wheels[slot] == null or wheel_health[slot] <= 0.0:
+		return false
+	wheel_health[slot] = 0.0
+	_update_wheel_condition(slot)
+	feedback("blocked", WHEEL_SLOTS[slot].position)
+	return true
+
+func tire_warning() -> String:
+	var issues := PackedStringArray()
+	for slot in range(4):
+		var label: String = TireDynamics.NAMES[slot]
+		if installed_wheels[slot] == null: issues.append(label + "缺輪")
+		elif wheel_health[slot] <= 0.0: issues.append(label + "爆胎")
+		elif wheel_health[slot] < 30.0: issues.append(label + "磨損")
+	return "、".join(issues) + "｜請停穩熄火，維修或換胎" if not issues.is_empty() else ""
 
 func update_load() -> void:
 	# Only installed engine/equipment affect vehicle load. Batteries, fuel and
@@ -586,3 +610,9 @@ func set_gear(next: int) -> bool:
 	if gear != next: feedback("mechanical", Vector3(-0.1, 1, -4))
 	gear = next
 	return true
+
+func driver_controls_locked() -> bool:
+	for player in get_tree().get_nodes_in_group(Groups.PLAYER):
+		if player.has_method("is_grabbed") and (player.is_grabbed() or player.is_player_dead) and is_instance_valid(player.seated_in) and ClimbMath.find_rv_ancestor(player.seated_in) == self:
+			return true
+	return false

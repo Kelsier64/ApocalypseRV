@@ -44,6 +44,7 @@ func _ready() -> void:
 
 func open(player: Node3D, vehicle: Node3D) -> void:
 	user = player
+	player.grab_started.connect(close)
 	rv = vehicle
 	_signature = ""
 	feedback.text = ""
@@ -53,6 +54,7 @@ func open(player: Node3D, vehicle: Node3D) -> void:
 func close() -> void:
 	hide()
 	if is_instance_valid(user) and user.is_inside_tree(): user.exit_ui_mode()
+	if is_instance_valid(user) and user.grab_started.is_connected(close): user.grab_started.disconnect(close)
 	user = null
 	rv = null
 

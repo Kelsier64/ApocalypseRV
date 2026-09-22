@@ -1,0 +1,43 @@
+"""Export v016 with unchanged v011 packed 2K textures and all 41 clips."""
+import bpy
+from mathutils import Vector
+OUT='C:/Users/evan4/Projects/ApocalypseRV/art_source/monster_refined_v016/'
+scene=bpy.data.scenes['MONSTER_REFINED_V016']
+bpy.context.window.scene=scene
+rig=bpy.data.objects['Refined016_Rig']
+mesh=bpy.data.objects['Refined016_Mesh']
+rig.data.pose_position='POSE'
+scene.render.engine='BLENDER_EEVEE'
+rig.animation_data.action=None
+for track in rig.animation_data.nla_tracks: track.mute=False
+for ob in scene.objects: ob.select_set(False)
+rig.select_set(True)
+mesh.select_set(True)
+bpy.context.view_layer.objects.active=rig
+# Stable runtime node names, restored in the editable scene after export.
+source_mesh=bpy.data.objects['Raker_Mesh']
+source_rig=bpy.data.objects['Raker_Rig']
+source_mesh.name='V008_Raker_Mesh'
+source_rig.name='V008_Raker_Rig'
+mesh.name='Raker_Mesh'
+rig.name='Raker_Rig'
+try:
+    bpy.ops.export_scene.gltf(filepath=OUT+'raker_refined_v016.glb',use_selection=True,use_active_scene=True,
+        export_animations=True,export_animation_mode='NLA_TRACKS',export_def_bones=True,
+        export_force_sampling=True,export_skins=True,export_yup=True,export_vertex_color='NONE')
+finally:
+    mesh.name='Refined016_Mesh'
+    rig.name='Refined016_Rig'
+    source_mesh.name='Raker_Mesh'
+    source_rig.name='Raker_Rig'
+    for track in rig.animation_data.nla_tracks: track.mute=True
+    rig.animation_data.action=next(t.strips[0].action for t in rig.animation_data.nla_tracks if t.name=='idle')
+    rig.animation_data.action_slot=rig.animation_data.action.slots[0]
+    scene.frame_set(0)
+
+scene.camera.location=(3,-6,2.2)
+scene.camera.rotation_euler=(Vector((0,-.15,1.05))-scene.camera.location).to_track_quat('-Z','Y').to_euler()
+scene.camera.data.ortho_scale=2.6
+bpy.ops.wm.save_as_mainfile(filepath=OUT+'monster_refined_v016.blend')
+print('FINISHED',OUT)
+
