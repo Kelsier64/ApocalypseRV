@@ -2,6 +2,9 @@ extends PoiInterior
 class_name MaintenanceInterior
 const PROFILE: InteriorProfile = preload("res://world/instances/catalog/maintenance_v2.tres")
 const INTERACTION = preload("res://world/instances/interior_interaction.gd")
+# Adjacent authored rooms share boundary colliders. Their visible faces must
+# sit slightly inside their own room instead of drawing on the same plane.
+const BOUNDARY_VISUAL_INSET := 0.02
 var room_count := 0
 var objective_claimed := false
 var shortcut_open := false
@@ -51,6 +54,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 		room.transform = data.transform
 		navigation.add_child(room)
 		rooms.append(room)
+		_inset_boundary_visuals(room)
 		for socket in room.get_node("DoorSockets").get_children():
 			if not InteriorLayout.used(layout, i, str(socket.socket_id)):
 				_seal(room, socket)
@@ -114,9 +118,26 @@ func _bake() -> bool:
 
 func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
 	var holder := Node3D.new()
+	holder.name = "Sealed_" + str(socket.socket_id)
 	holder.transform = socket.transform
 	room.get_node("Collision").add_child(holder)
 	_box(holder, Vector3(socket.opening.x, socket.opening.y, 0.24), Vector3.UP * socket.opening.y/2, SEAL)
+	var body := holder.get_child(0) as StaticBody3D
+	var panel := body.get_child(0) as MeshInstance3D
+	# Socket +Z faces this room. Move only the rendered panel; its collider,
+	# saved layout and the wall on the other side retain their original poses.
+	panel.position.z = BOUNDARY_VISUAL_INSET
+
+func _inset_boundary_visuals(room: PoiRoom) -> void:
+	var half_size := Vector2(room.size_cells) * 4.5
+	for node in room.get_node("Visuals").get_children():
+		if not node is MeshInstance3D or not node.mesh is BoxMesh: continue
+		var label := str(node.name)
+		if not (label.begins_with("Wall") or label.begins_with("Lintel") or label.begins_with("LowerWall")): continue
+		if is_equal_approx(absf(node.position.x), half_size.x):
+			node.position.x -= signf(node.position.x) * BOUNDARY_VISUAL_INSET
+		if is_equal_approx(absf(node.position.z), half_size.y):
+			node.position.z -= signf(node.position.z) * BOUNDARY_VISUAL_INSET
 
 func _decorate(room: PoiRoom, index: int) -> void:
 	var zone := clampi(int(depths[index] / 45.0), 0, 2)
