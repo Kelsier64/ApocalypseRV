@@ -28,6 +28,13 @@ These open the editor, launch gameplay, and run validation. The runner imports a
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
+## Architecture and Collaboration
+
+- When you discover an architecture problem, report it to the user with the evidence, likely impact, and a proposed direction. Do not silently expand the task to address it.
+- Before making a major architecture change, explain the proposed design, affected areas, and validation plan, then ask the user to approve it. Routine changes within the existing architecture can proceed without approval.
+- Handle routine Git work yourself when practical. Inspect the working tree, stage and commit only changes for the current task, and preserve unrelated user changes.
+- When the user needs to inspect a result or make a decision, present the concrete result and ask a focused question. Continue once the required input is available.
+
 ## Computer Use: Game Testing
 
 Read the installed `computer-use` skill and its guidance/API before desktop interaction. Use `node_repl` with `@oai/sky`; initialize `sky`, then call `list_windows()`. Select exactly one returned game window, obtain it with `get_window`, activate it, and inspect `get_window_state`. Never target the Godot editor by mistake or invent window IDs.
