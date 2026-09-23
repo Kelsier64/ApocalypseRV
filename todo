@@ -3,8 +3,7 @@
 保留原始項目與順序；接續順序與證據見 docs/plans/README.md。
 
 agent:
-[持續] 發現架構問題記得回報（外掛碰撞力矩與 Chassis 職責集中仍見 architecture.md「已知限制」）
-[x] 把設備的統一規格寫進arcitecture.md（正確檔名 architecture.md，見「設備統一規格」）
+發現架構問題記得回報
 改架構或許要大修改前先問我
 可以的話自己處理git 需要使用者檢查就用詢問
 
