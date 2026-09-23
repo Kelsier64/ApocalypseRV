@@ -30,7 +30,7 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 
 ## Collaboration
 
-Report architecture issues; ask before major architecture changes. Handle Git when possible; ask the user when review is needed.
+Report architecture issues to user; ask before major architecture changes. Handle Git when possible; ask the user when review is needed.
 
 ## Computer Use: Game Testing
 
