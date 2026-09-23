@@ -759,11 +759,13 @@ func submit_struggle() -> bool:
 	return grab_control.submit_struggle()
 
 func grab_contact_position(side: int, captor: Node3D) -> Vector3:
-	return grab_contact_origin() - Vector3.UP * (.16 if is_instance_valid(seated_in) else .23) + captor.global_basis.x * float(side) * .23
+	var origin := grab_contact_origin()
+	if is_grabbed() and is_instance_valid(grab_control.camera): origin = grab_control.camera.global_position
+	return captor.grab.head_grip(origin, captor.global_basis, side)
 
 func grab_contact_origin() -> Vector3:
 	var view: Camera3D = seated_in.seat_camera if is_instance_valid(seated_in) else camera
-	# Head pull is visual; shoulders remain attached to the body/seat.
+	# Stable body/seat anchor for approach checks; visual hands follow the head.
 	if is_grabbed(): return view.get_parent().to_global(grab_control.camera_rest_position)
 	return view.global_position
 

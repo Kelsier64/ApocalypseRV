@@ -14,9 +14,12 @@ var had_support := false
 var was_seated := false
 var contact_failure := ""
 var rng := RandomNumberGenerator.new()
-const DURATIONS := {Phase.REACH: .6, Phase.HOLD: 2.0, Phase.BITE: .38, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
+const REACH_DURATION := .36
+const BITE_CONTACT := .22
+const BITE_SOURCE_CONTACT := .38
+const BITE_SPEED := BITE_SOURCE_CONTACT / BITE_CONTACT
+const DURATIONS := {Phase.REACH: REACH_DURATION, Phase.HOLD: 2.0, Phase.BITE: BITE_CONTACT, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
 const CLIPS := {Phase.REACH: "reach", Phase.HOLD: "hold", Phase.BITE: "bite", Phase.RELEASE: "release", Phase.ESCAPE: "escape", Phase.MISS: "miss"}
-const BITE_CONTACT := .38
 
 func _ready() -> void:
 	actor = get_parent()
@@ -50,7 +53,7 @@ func tick(delta: float) -> void:
 	elapsed += delta
 	match phase:
 		Phase.REACH:
-			if elapsed >= .6:
+			if elapsed >= REACH_DURATION:
 				if not valid_contact(false) or not victim.begin_grab(actor, rng.randi_range(6, 10)):
 					victim = null
 					_change(Phase.MISS)
@@ -148,13 +151,17 @@ func approach_clear(origin: Vector3, target: CharacterBody3D) -> bool:
 	var facing := Basis.looking_at(offset.normalized()) if offset.length() > .01 else actor.global_basis
 	return reach_clear_from(origin, facing, target)
 
+static func head_grip(origin: Vector3, facing: Basis, side: int) -> Vector3:
+	# Wrists below the temples, fingers wrapping up around the back of the head.
+	return origin - Vector3.UP * .12 + facing.x * float(side) * .19 + facing.z * .08
+
 func reach_clear_from(origin: Vector3, facing: Basis, target: CharacterBody3D) -> bool:
-	# The same two shoulder corridors constrain both path goals and capture.
+	# The same two head-grip corridors constrain both path goals and capture.
 	# A reachable route must go around a seatback, never grab through it.
 	for side in [-1, 1]:
 		var local := actor.to_local(actor.grab_shoulder_position(side))
 		var start := origin + facing * local
-		var contact: Vector3 = target.grab_contact_origin() - Vector3.UP * (.16 if is_instance_valid(target.seated_in) else .23) + facing.x * float(side) * .23
+		var contact := head_grip(target.grab_contact_origin(), facing, side)
 		var lengths: Vector2 = actor.get_node("BodyMesh").arm_lengths(side)
 		if start.distance_to(contact) > lengths.x + lengths.y - .005:
 			contact_failure = "arm_reach"

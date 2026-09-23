@@ -38,7 +38,7 @@ func _ready() -> void:
 	skeleton.add_child(pose_modifier)
 	play("idle")
 
-func play(clip: String, speed: float = 1.0, restart: bool = false) -> void:
+func play(clip: String, speed: float = 1.0, restart: bool = false, blend: float = .16) -> void:
 	var name := "game/" + clip
 	animation_player.speed_scale = speed
 	if animation_player.current_animation != name or restart:
@@ -47,7 +47,7 @@ func play(clip: String, speed: float = 1.0, restart: bool = false) -> void:
 		var phase := 0.0
 		if preserve_step and animation_player.current_animation_length > 0:
 			phase = fposmod(animation_player.current_animation_position / animation_player.current_animation_length, 1.0)
-		animation_player.play(name, 0.24 if preserve_step else 0.16)
+		animation_player.play(name, 0.24 if preserve_step else blend)
 		if preserve_step:
 			animation_player.seek(phase * animation_player.get_animation(name).length, false)
 
@@ -71,7 +71,16 @@ func _ground_locomotion(delta: float, speed: float) -> void:
 
 func _attack(clip: String, duration: float) -> void:
 	locked = duration
-	play(clip, 1, true)
+	var speed := 1.0
+	var blend := .16
+	if clip.begins_with("grab_"):
+		if clip.ends_with("_bite"):
+			speed = actor.grab.BITE_SPEED
+			blend = .035
+		elif clip.ends_with("_reach"):
+			speed = .6 / actor.grab.REACH_DURATION
+			blend = .06
+	play(clip, speed, true, blend)
 
 func _reaction() -> void:
 	locked = .3

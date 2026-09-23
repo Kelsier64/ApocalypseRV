@@ -32,7 +32,7 @@ func reset() -> void:
 func capture(count: int) -> void:
 	reset()
 	actor.grab.victim = player
-	check(actor.grab.valid_contact(false), "Unobstructed shoulder contact is reachable")
+	check(actor.grab.valid_contact(false), "Unobstructed head contact is reachable")
 	check(player.begin_grab(actor, count), "Capture succeeds")
 	actor.grab._change(Grab.Phase.HOLD)
 	actor.grab.had_support = false
@@ -92,7 +92,10 @@ func run() -> void:
 	check(actor.grab.phase==Grab.Phase.BITE and actor.grab.outcome==1,"Exactly 80 percent locks wounded result")
 	key(true)
 	check(player.grab_control.presses==8,"Deadline rejects new presses")
-	actor.grab.tick(.38)
+	check(is_equal_approx(animation.speed_scale, Grab.BITE_SPEED), "Bite animation accelerates with damage timing")
+	actor.grab.tick(.20)
+	check(player.current_player_health==100 and player.is_grabbed(), "Contact approach does not damage early")
+	actor.grab.tick(.021)
 	check(player.current_player_health==50,"Bite bypasses ordinary hurt cooldown")
 	check(not player.is_grabbed() and not player.grab_control.hud.visible and player.grab_control.camera == null,"Bite contact immediately releases input, camera and HUD")
 	check(actor.grab.phase == Grab.Phase.RELEASE and actor.grab.victim == null,"Only monster recovery continues after biting")
@@ -131,7 +134,7 @@ func run() -> void:
 		player.current_player_health = 40 if low_health else 100
 		player.grab_control.presses = 8 if low_health else 7
 		actor.grab.tick(2)
-		actor.grab.tick(.38)
+		actor.grab.tick(Grab.BITE_CONTACT)
 		check(player.is_player_dead and player.current_player_health==0 and not player.is_grabbed(),"Fatal/sub-50 HP bite follows death cleanup")
 	capture(6)
 	actor.take_damage(8)

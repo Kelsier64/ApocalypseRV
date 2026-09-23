@@ -16,6 +16,9 @@ var camera_start := Quaternion.IDENTITY
 var camera_elapsed := 0.0
 var seated_camera_rotation := Vector3.ZERO
 var camera_rest_position := Vector3.ZERO
+var camera_rest_near := .05
+var bite_pull_offset := Vector3.ZERO
+var bite_pull_ready := false
 var hud: CanvasLayer
 var label: Label
 var bar: ProgressBar
@@ -91,7 +94,11 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	camera_start = camera.global_basis.get_rotation_quaternion()
 	seated_camera_rotation = camera.rotation
 	camera_rest_position = camera.position
+	camera_rest_near = camera.near
+	camera.near = minf(camera.near, .012)
 	camera_elapsed = 0
+	bite_pull_ready = false
+	bite_pull_offset = Vector3.ZERO
 	if is_instance_valid(player.held_item_node): player.held_item_node.hide()
 	hud.show()
 	update_progress(remaining)
@@ -148,12 +155,17 @@ func _update_bite_pull() -> void:
 	var anchor := parent.to_global(camera_rest_position)
 	var weight := 0.0
 	if captor.grab.phase == captor.grab.Phase.BITE:
+		if not bite_pull_ready:
+			var toward: Vector3 = (captor.global_position-anchor).slide(Vector3.UP).normalized()
+			var pull := toward * .18
+			if is_instance_valid(player.seated_in): pull -= Vector3.UP * .14
+			bite_pull_offset = parent.global_basis.inverse() * pull
+			bite_pull_ready = true
 		weight = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed)
-	var mouth: Vector3 = captor.get_node("BodyMesh").bone_world_position("mouth")
-	var toward := mouth - anchor
 	# Hands pull the victim's head forward during the bite. Keep body/seat fixed,
-	# limit head travel to 28 cm, and sweep a head-sized volume against walls.
-	var motion := toward.normalized() * clampf(toward.length() - .10, 0, .28) * weight
+	# and latch the direction once so camera/mouth solvers never chase each other.
+	# Seat-local offset follows moving RVs; a sphere sweep prevents wall clipping.
+	var motion := parent.global_basis * bite_pull_offset * weight
 	if motion.length_squared() > .000001:
 		var shape := SphereShape3D.new()
 		shape.radius = .09
@@ -172,15 +184,19 @@ func _process(delta: float) -> void:
 	impact.color.a = .78 * pow(impact_remaining / .22, 2)
 	if not active() or not is_instance_valid(camera): return
 	camera_elapsed += delta
-	var direction: Vector3 = captor.grab_face_position() - camera.global_position
+	var focus: Vector3 = captor.grab_face_position()
+	if captor.grab.phase == captor.grab.Phase.BITE:
+		var mouth: Vector3 = captor.get_node("BodyMesh").bone_world_position("mouth")
+		focus = focus.lerp(mouth, preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed))
+	var direction := focus - camera.global_position
 	if direction.length_squared() < .0001: return
 	var target := Basis.looking_at(direction.normalized(), Vector3.UP).get_rotation_quaternion()
 	camera.global_basis = Basis(camera_start.slerp(target, clampf(camera_elapsed / .15, 0, 1)))
 	if captor.grab.phase == captor.grab.Phase.BITE:
 		var time: float = captor.grab.elapsed
-		var snap := smoothstep(.29, .37, time) * (1.0 - smoothstep(.38, .52, time))
-		camera.rotate_object_local(Vector3.RIGHT, deg_to_rad(-5) * snap)
-		camera.rotate_object_local(Vector3.BACK, deg_to_rad(3) * snap)
+		var snap := smoothstep(.16, .21, time)
+		camera.rotate_object_local(Vector3.RIGHT, deg_to_rad(-8) * snap)
+		camera.rotate_object_local(Vector3.BACK, deg_to_rad(4) * snap)
 
 func bite_impact() -> void:
 	# Brief crush flash survives fatal-grab cleanup, then clears independently.
@@ -200,7 +216,9 @@ func end(reason: String = "cancelled") -> void:
 		if previous.grab.victim == player: previous.grab.cancel(reason)
 	if is_instance_valid(player.held_item_node): player.held_item_node.show()
 	# Keep the final viewing direction; restore ordinary yaw/pitch ownership.
-	if is_instance_valid(camera): camera.position = camera_rest_position
+	if is_instance_valid(camera):
+		camera.position = camera_rest_position
+		camera.near = camera_rest_near
 	if is_instance_valid(camera) and camera == player.camera:
 		var view := camera.global_basis.get_euler()
 		player.global_rotation.y = view.y

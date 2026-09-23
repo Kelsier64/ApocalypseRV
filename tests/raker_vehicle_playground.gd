@@ -158,6 +158,10 @@ func _input(event: InputEvent) -> void:
 			rv.handbrake = true
 		KEY_F4:
 			camera_mode = (camera_mode + 1) % 3
+			if bite_review_frozen and is_instance_valid(monster):
+				var focus: Vector3 = player.grab_contact_origin()
+				observer.global_position = focus + monster.global_basis * (Vector3(1.4,.35,-.5) if camera_mode != 2 else Vector3(1.4,.1,0))
+				observer.look_at(focus)
 			observer.current = true
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		KEY_F5: foot_test()
@@ -217,7 +221,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if bite_review_frozen: return
 	if not is_instance_valid(observer) or not is_instance_valid(rv): return
-	if "--bite-review" in OS.get_cmdline_user_args() and not bite_review_seen and is_instance_valid(monster) and monster.grab.phase == monster.grab.Phase.BITE and monster.grab.elapsed >= .32:
+	if "--bite-review" in OS.get_cmdline_user_args() and not bite_review_seen and is_instance_valid(monster) and monster.grab.phase == monster.grab.Phase.BITE and monster.grab.elapsed >= monster.grab.BITE_CONTACT - .04:
 		bite_review_seen = true
 		bite_review_frozen = true
 		process_mode = Node.PROCESS_MODE_ALWAYS
