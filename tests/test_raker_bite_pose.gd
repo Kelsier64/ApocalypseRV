@@ -80,8 +80,17 @@ func run() -> void:
 	for mode in [0,1,2]:
 		playground.setup_grab(mode)
 		var reached := false
+		var held_view := Quaternion.IDENTITY
+		var view_locked := false
 		for i in 1200:
 			await physics_frame
+			var grab: Node = playground.player.grab_control
+			if grab.active() and grab.camera_elapsed >= .2:
+				var current: Quaternion = grab.camera.basis.get_rotation_quaternion()
+				if not view_locked:
+					held_view = current
+					view_locked = true
+				check(current.angle_to(held_view) < .001, "View stays fixed through hold and bite: %d" % mode)
 			if playground.monster.grab.phase == playground.monster.grab.Phase.BITE and playground.monster.grab.elapsed >= .18:
 				await process_frame
 				var view: Camera3D = playground.player.seated_in.seat_camera if mode == 2 else playground.player.camera
@@ -91,16 +100,19 @@ func run() -> void:
 				var face_axis: Vector3 = playground.monster.get_node("BodyMesh").bone_world_position("face_forward")-face_center
 				var alignment := face_axis.normalized().dot((view.global_position-face_center).normalized())
 				print("LIVE_FACE_ALIGNMENT ",mode," dot=",alignment)
-				check(alignment > .97,"Live face aims at player, not just mouth proximity: %d" % mode)
+				var mouth_in_view := (-view.global_basis.z).dot((mouth-view.global_position).normalized())
+				print("LIVE_MOUTH_IN_VIEW ",mode," dot=",mouth_in_view)
+				check(mouth_in_view > cos(deg_to_rad(view.fov * .4)),"Mouth stays inside the fixed view with a screen-edge margin: %d" % mode)
 				print("LIVE_BITE_REACH ",mode," distance=",distance," mouth=",mouth," face=",view.global_position)
 				check(distance < .10,"Live mouth contacts player in every scenario: %d" % mode)
 				var rest: Vector3 = playground.player.grab_control.camera_rest_position
-				check(view.position.distance_to(rest) <= .241,"Head pull stays within 24 cm")
+				check(view.position.distance_to(rest) <= .251,"Head pull stays within 25 cm")
 				playground.monster.grab.cancel("test_release")
 				check(view.position.distance_to(rest) < .00001,"Camera returns to body/seat anchor on release")
 				reached = true
 				break
 		check(reached,"Bite stays valid until contact: %d" % mode)
+		check(view_locked,"Captured view settled before bite: %d" % mode)
 		if not reached: print("BITE_FAILED gate=",playground.monster.grab.contact_failure)
 	# Let the audio server retire playback before the accelerated test exits.
 	playground.process_mode = Node.PROCESS_MODE_DISABLED

@@ -13,6 +13,7 @@ var space_down := false
 var jump_release_required := false
 var camera: Camera3D
 var camera_start := Quaternion.IDENTITY
+var camera_target := Quaternion.IDENTITY
 var camera_elapsed := 0.0
 var seated_camera_rotation := Vector3.ZERO
 var camera_rest_position := Vector3.ZERO
@@ -91,7 +92,12 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	space_down = Input.is_physical_key_pressed(KEY_SPACE)
 	jump_release_required = space_down
 	camera = player.seated_in.seat_camera if is_instance_valid(player.seated_in) else player.camera
-	camera_start = camera.global_basis.get_rotation_quaternion()
+	camera_start = camera.basis.get_rotation_quaternion()
+	var direction: Vector3 = captor.grab_face_position() - camera.global_position
+	var parent := camera.get_parent() as Node3D
+	camera_target = camera_start
+	if direction.length_squared() > .0001:
+		camera_target = (parent.global_basis.inverse() * Basis.looking_at(direction.normalized(), Vector3.UP)).get_rotation_quaternion()
 	seated_camera_rotation = camera.rotation
 	camera_rest_position = camera.position
 	camera_rest_near = camera.near
@@ -158,7 +164,7 @@ func _update_bite_pull() -> void:
 		if not bite_pull_ready:
 			var toward: Vector3 = (captor.global_position-anchor).slide(Vector3.UP).normalized()
 			var pull := toward * .18
-			if is_instance_valid(player.seated_in): pull -= Vector3.UP * .14
+			if is_instance_valid(player.seated_in): pull -= Vector3.UP * .17
 			bite_pull_offset = parent.global_basis.inverse() * pull
 			bite_pull_ready = true
 		weight = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed)
@@ -184,19 +190,9 @@ func _process(delta: float) -> void:
 	impact.color.a = .78 * pow(impact_remaining / .22, 2)
 	if not active() or not is_instance_valid(camera): return
 	camera_elapsed += delta
-	var focus: Vector3 = captor.grab_face_position()
-	if captor.grab.phase == captor.grab.Phase.BITE:
-		var mouth: Vector3 = captor.get_node("BodyMesh").bone_world_position("mouth")
-		focus = focus.lerp(mouth, preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed))
-	var direction := focus - camera.global_position
-	if direction.length_squared() < .0001: return
-	var target := Basis.looking_at(direction.normalized(), Vector3.UP).get_rotation_quaternion()
-	camera.global_basis = Basis(camera_start.slerp(target, clampf(camera_elapsed / .15, 0, 1)))
-	if captor.grab.phase == captor.grab.Phase.BITE:
-		var time: float = captor.grab.elapsed
-		var snap := smoothstep(.16, .21, time)
-		camera.rotate_object_local(Vector3.RIGHT, deg_to_rad(-8) * snap)
-		camera.rotate_object_local(Vector3.BACK, deg_to_rad(4) * snap)
+	# Lift toward the face once, then hold that parent-local view through bite.
+	# Following the lunging mouth caused a downward whip at contact.
+	camera.basis = Basis(camera_start.slerp(camera_target, clampf(camera_elapsed / .15, 0, 1)))
 
 func bite_impact() -> void:
 	# Brief crush flash survives fatal-grab cleanup, then clears independently.

@@ -123,8 +123,18 @@ func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearanc
 	# Contact the cheek just below eye level so the muzzle stays in front of
 	# the near plane; aiming the eye center at point-blank range folds the neck.
 	var goal := sk.to_local(view.global_position + toward * clearance - Vector3.UP * .04)
+	var contact_facing := -toward
+	if actor.grab.victim.is_grabbed():
+		# The victim keeps the captured look-up angle. Bring the mouth into that
+		# fixed view instead of forcing the camera to chase a lower contact point.
+		var view_forward := -view.global_basis.z
+		goal = sk.to_local(view.global_position + view_forward * .075)
+		var facing := actor.global_basis.inverse() * -view_forward
+		var aim_yaw := clampf(atan2(-facing.x,-facing.z), -PI/2, PI/2)
+		var aim_pitch := clampf(asin(clampf(facing.y,-1,1)), deg_to_rad(-25 if actor.crouched else -65), deg_to_rad(40 if actor.crouched else 30))
+		contact_facing = actor.global_basis * Vector3(-sin(aim_yaw)*cos(aim_pitch),sin(aim_pitch),-cos(aim_yaw)*cos(aim_pitch))
 	var target := mouth_position(sk).lerp(goal, weight)
-	var bite_facing := face_direction(sk).slerp(-toward, weight).normalized()
+	var bite_facing := face_direction(sk).slerp(contact_facing, weight).normalized()
 	var chain := ["spine_01", "spine_02", "spine_03"]
 	var original: Array[Quaternion] = []
 	for name in chain: original.append(sk.get_bone_pose_rotation(sk.find_bone(name)))

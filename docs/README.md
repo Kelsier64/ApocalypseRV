@@ -44,6 +44,7 @@
 
 ## 驗收紀錄
 
+- [Raker 固定抓咬視角](validation/2026-09-24-raker-fixed-grab-view.md) — 抓住時抬頭並固定角度，移除向下追嘴與頓挫，嘴部改對準固定視線。
 - [Raker 抱頭與快速貼臉咬擊](validation/2026-09-24-raker-bite-contact.md) — 加快伸手與咬合、雙手抓頭、三姿勢嘴部接觸與近距離鏡頭修正。
 - [Raker v021 整隻手重建](validation/2026-09-23-raker-v021.md) — 移除舊手、重建掌部與指縫、三節四指、權重、手部 UV 與 41 動畫，整合正式遊戲。
 - [Raker v020 四指關節反折](validation/2026-09-23-raker-v020.md) — 修正 Blender bind 網格／骨架及全動畫，保留拇指；6,520 個遊戲手指取樣與 15 組怪物回歸通過。
