@@ -28,12 +28,9 @@ These open the editor, launch gameplay, and run validation. The runner imports a
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
-## Architecture and Collaboration
+## Collaboration
 
-- When you discover an architecture problem, report it to the user with the evidence, likely impact, and a proposed direction. Do not silently expand the task to address it.
-- Before making a major architecture change, explain the proposed design, affected areas, and validation plan, then ask the user to approve it. Routine changes within the existing architecture can proceed without approval.
-- Handle routine Git work yourself when practical. Inspect the working tree, stage and commit only changes for the current task, and preserve unrelated user changes.
-- When the user needs to inspect a result or make a decision, present the concrete result and ask a focused question. Continue once the required input is available.
+Report architecture issues; ask before major architecture changes. Handle Git when possible; ask the user when review is needed.
 
 ## Computer Use: Game Testing
 
