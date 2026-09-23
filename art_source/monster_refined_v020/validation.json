@@ -1,0 +1,458 @@
+{
+  "clips": [
+    {
+      "clip": "attack_left",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "attack_right",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_idle",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_walk",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_attack",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "climb_loop",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "hang_idle",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "attack_door",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "mantle",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "roof_settle",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "attack_down",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "slip_loop",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "fall_loop",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "land",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "hit_react",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "death",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_hit_react",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_land",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "crouch_death",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "idle",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "walk",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "chase",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "sprint",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_stand_reach",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_stand_hold",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_stand_bite",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 26.99994610983009
+    },
+    {
+      "clip": "grab_stand_release",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_stand_escape",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_stand_miss",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_low_reach",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_low_hold",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_low_bite",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 26.99994610983009
+    },
+    {
+      "clip": "grab_low_release",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_low_escape",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_low_miss",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_seat_reach",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_seat_hold",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_seat_bite",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 26.99994610983009
+    },
+    {
+      "clip": "grab_seat_release",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_seat_escape",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    },
+    {
+      "clip": "grab_seat_miss",
+      "body_collision_frames": [],
+      "tooth_collision_frames": [],
+      "max_root_translation": 0,
+      "max_jaw_degrees": 0
+    }
+  ],
+  "tooth_visibility": [
+    {
+      "frame": 0,
+      "view": [
+        0,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 0,
+      "view": [
+        -30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 0,
+      "view": [
+        30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 0,
+      "view": [
+        0,
+        15
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 0,
+      "view": [
+        0,
+        -15
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 14,
+      "view": [
+        0,
+        0
+      ],
+      "visible_teeth": 12
+    },
+    {
+      "frame": 14,
+      "view": [
+        -30,
+        0
+      ],
+      "visible_teeth": 12
+    },
+    {
+      "frame": 14,
+      "view": [
+        30,
+        0
+      ],
+      "visible_teeth": 12
+    },
+    {
+      "frame": 14,
+      "view": [
+        0,
+        15
+      ],
+      "visible_teeth": 17
+    },
+    {
+      "frame": 14,
+      "view": [
+        0,
+        -15
+      ],
+      "visible_teeth": 17
+    },
+    {
+      "frame": 23,
+      "view": [
+        0,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 23,
+      "view": [
+        -30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 23,
+      "view": [
+        30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 23,
+      "view": [
+        0,
+        15
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 23,
+      "view": [
+        0,
+        -15
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 39,
+      "view": [
+        0,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 39,
+      "view": [
+        -30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 39,
+      "view": [
+        30,
+        0
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 39,
+      "view": [
+        0,
+        15
+      ],
+      "visible_teeth": 0
+    },
+    {
+      "frame": 39,
+      "view": [
+        0,
+        -15
+      ],
+      "visible_teeth": 0
+    }
+  ],
+  "mouth_contact_region_excluded_from_body_collision_audit": true,
+  "neutral_height": 2.1799998434764056,
+  "source_vertices": 9129,
+  "triangles": 18182,
+  "materials": 4
+}

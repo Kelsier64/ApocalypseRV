@@ -1,0 +1,338 @@
+[
+  {
+    "clip": "REST",
+    "minimum_mcp": 3.0006101316372633,
+    "minimum_pip": 20.224994411480658,
+    "maximum_pip": 23.58607152333841,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "attack_left",
+    "minimum_mcp": 3.0005007712826166,
+    "minimum_pip": 20.224918925805493,
+    "maximum_pip": 23.586118544661396,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "attack_right",
+    "minimum_mcp": 3.0005322340379377,
+    "minimum_pip": 20.22491957014239,
+    "maximum_pip": 23.586115296620527,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_idle",
+    "minimum_mcp": 3.0005536097020036,
+    "minimum_pip": 20.224929833336077,
+    "maximum_pip": 23.58608614944794,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_walk",
+    "minimum_mcp": 3.0005501702745763,
+    "minimum_pip": 20.224918778230254,
+    "maximum_pip": 23.586079957222417,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_attack",
+    "minimum_mcp": 3.000556193890047,
+    "minimum_pip": 20.224896757623934,
+    "maximum_pip": 23.586135015488544,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "climb_loop",
+    "minimum_mcp": 17.718205144175908,
+    "minimum_pip": 54.07487347437301,
+    "maximum_pip": 55.913948914820686,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "hang_idle",
+    "minimum_mcp": 17.71817885188872,
+    "minimum_pip": 54.07486358946438,
+    "maximum_pip": 55.91396133149117,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "attack_door",
+    "minimum_mcp": 17.718139894566274,
+    "minimum_pip": 54.07492998157755,
+    "maximum_pip": 55.91394015855414,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "mantle",
+    "minimum_mcp": 17.718114609273957,
+    "minimum_pip": 54.074900537236154,
+    "maximum_pip": 55.91394797380348,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "roof_settle",
+    "minimum_mcp": 3.0005504354393433,
+    "minimum_pip": 20.224943249675782,
+    "maximum_pip": 23.586087949004348,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "attack_down",
+    "minimum_mcp": 3.000540212563713,
+    "minimum_pip": 20.22491307543197,
+    "maximum_pip": 23.586123564119813,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "slip_loop",
+    "minimum_mcp": 17.718164575267394,
+    "minimum_pip": 54.074882752767024,
+    "maximum_pip": 55.91394336174566,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "fall_loop",
+    "minimum_mcp": 3.000633352386074,
+    "minimum_pip": 20.22501007046972,
+    "maximum_pip": 23.586067372776927,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "land",
+    "minimum_mcp": 3.0005554806503456,
+    "minimum_pip": 20.22496302499532,
+    "maximum_pip": 23.586084862825413,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "hit_react",
+    "minimum_mcp": 3.0005576166695827,
+    "minimum_pip": 20.224977121235614,
+    "maximum_pip": 23.586086574005275,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "death",
+    "minimum_mcp": 3.000556475696245,
+    "minimum_pip": 20.224949781275903,
+    "maximum_pip": 23.586080953374694,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_hit_react",
+    "minimum_mcp": 3.0005743567950622,
+    "minimum_pip": 20.224944725449273,
+    "maximum_pip": 23.586072444887396,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_land",
+    "minimum_mcp": 3.000526823929398,
+    "minimum_pip": 20.224940503684515,
+    "maximum_pip": 23.586084874447163,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "crouch_death",
+    "minimum_mcp": 3.00050575483647,
+    "minimum_pip": 20.224920021435192,
+    "maximum_pip": 23.58611943836326,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "idle",
+    "minimum_mcp": 3.000576587069603,
+    "minimum_pip": 20.22496760073774,
+    "maximum_pip": 23.586094904019138,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "walk",
+    "minimum_mcp": 3.000568808136902,
+    "minimum_pip": 20.2249737246151,
+    "maximum_pip": 23.58609979287247,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "chase",
+    "minimum_mcp": 3.0005791692671555,
+    "minimum_pip": 20.224979478556588,
+    "maximum_pip": 23.586085306041774,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "sprint",
+    "minimum_mcp": 3.0005805219321093,
+    "minimum_pip": 20.224975105072318,
+    "maximum_pip": 23.586079140120383,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_reach",
+    "minimum_mcp": 3.000513128394042,
+    "minimum_pip": 11.999953512856411,
+    "maximum_pip": 49.95681839591267,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_hold",
+    "minimum_mcp": 3.0005498106441255,
+    "minimum_pip": 47.53360804203601,
+    "maximum_pip": 49.956883743655894,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_bite",
+    "minimum_mcp": 3.0006269715778338,
+    "minimum_pip": 47.533625303354434,
+    "maximum_pip": 49.95681839591267,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_release",
+    "minimum_mcp": 3.0005372797199015,
+    "minimum_pip": 11.999970932081961,
+    "maximum_pip": 49.95681839591267,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_escape",
+    "minimum_mcp": 3.0005472554872585,
+    "minimum_pip": 11.999958099230062,
+    "maximum_pip": 49.95681839591267,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_stand_miss",
+    "minimum_mcp": 3.000513128394042,
+    "minimum_pip": 11.999953348264173,
+    "maximum_pip": 49.95681839591267,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_reach",
+    "minimum_mcp": 3.000536635393984,
+    "minimum_pip": 11.999962537018396,
+    "maximum_pip": 49.95675312333507,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_hold",
+    "minimum_mcp": 3.0005053743269547,
+    "minimum_pip": 47.53359488772686,
+    "maximum_pip": 49.95681450101004,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_bite",
+    "minimum_mcp": 3.0005739067115385,
+    "minimum_pip": 47.533638752754314,
+    "maximum_pip": 49.95675312333507,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_release",
+    "minimum_mcp": 3.000546042486082,
+    "minimum_pip": 11.999959258143843,
+    "maximum_pip": 49.95675312333507,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_escape",
+    "minimum_mcp": 3.000546042486082,
+    "minimum_pip": 11.999958574297404,
+    "maximum_pip": 49.95675312333507,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_low_miss",
+    "minimum_mcp": 3.000546042486082,
+    "minimum_pip": 11.999959214772945,
+    "maximum_pip": 49.95675312333507,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_reach",
+    "minimum_mcp": 3.0004815583244646,
+    "minimum_pip": 11.999961076604102,
+    "maximum_pip": 49.956797768704355,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_hold",
+    "minimum_mcp": 3.0005138360880754,
+    "minimum_pip": 47.53360424905708,
+    "maximum_pip": 49.95688871691377,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_bite",
+    "minimum_mcp": 3.000614499056101,
+    "minimum_pip": 47.53362009896532,
+    "maximum_pip": 49.956797768704355,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_release",
+    "minimum_mcp": 3.0005309186938485,
+    "minimum_pip": 11.99996029092081,
+    "maximum_pip": 49.956797768704355,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_escape",
+    "minimum_mcp": 3.000504572099414,
+    "minimum_pip": 11.999967872147566,
+    "maximum_pip": 49.956797768704355,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  },
+  {
+    "clip": "grab_seat_miss",
+    "minimum_mcp": 3.0004815583244646,
+    "minimum_pip": 11.99996967081672,
+    "maximum_pip": 49.956797768704355,
+    "maximum_preserved_bone_error": 0,
+    "failures": []
+  }
+]

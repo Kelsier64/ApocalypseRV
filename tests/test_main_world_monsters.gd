@@ -37,9 +37,15 @@ func _run() -> void:
 			continue
 		for surface in model.mesh.get_surface_count():
 			var material := model.get_active_material(surface) as StandardMaterial3D
-			if material == null or material.albedo_texture == null:
+			var oral_lining := material != null and material.resource_name == "Raker018_OralCavity" and material.albedo_color.get_luminance() < .2
+			var nail_surface := material != null and material.resource_name == "Raker021_WornNails" and material.roughness >= .7
+			if material == null or (material.albedo_texture == null and not oral_lining and not nail_surface):
 				push_error("FAIL: main world Raker lost its refined skin texture")
 				valid = false
+		var skeleton: Skeleton3D = child.get_node("BodyMesh/Model").find_child("Skeleton3D",true,false)
+		if skeleton.get_bone_count() != 54 or skeleton.find_bone("middle_03_L") < 0 or skeleton.find_bone("middle_03_R") < 0:
+			push_error("FAIL: main world did not load the rebuilt three-phalange hands")
+			valid = false
 	if count == 0:
 		push_error("FAIL: main world test did not encounter any generated monsters")
 		valid = false

@@ -57,13 +57,26 @@ func _run() -> void:
 	var model: Node3D=actor.get_node("BodyMesh/Model")
 	var skeleton: Skeleton3D=model.find_child("Skeleton3D",true,false)
 	var mesh: MeshInstance3D=model.find_child("Raker_Mesh",true,false)
-	check(skeleton.get_bone_count()==46,"46 deform bones including jaw imported")
+	check(skeleton.get_bone_count()==54,"54 deform bones including jaw and eight new distal finger joints imported")
 	check(absf(mesh.get_aabb().size.y-2.18)<.001 and model.scale==Vector3.ONE,"Full 2.18 m source imported without shrinking")
 	check(absf(actor.body_collision_shape.shape.height-2.18)<.001,"Standing collider is 2.18 m")
 	check(not mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV].is_empty(),"v007 UV survives export")
+	var rebuilt_skin := false
+	var rebuilt_nails := false
 	for surface in mesh.mesh.get_surface_count():
 		var skin := mesh.get_active_material(surface) as StandardMaterial3D
-		check(skin != null and skin.albedo_texture != null,"Refined skin and eye textures survive production import")
+		check(skin != null,"Every imported surface has its material")
+		if skin == null: continue
+		if skin.resource_name == "Raker018_OralCavity":
+			check(skin.albedo_color.get_luminance() < .2,"Rebuilt oral cavity retains its dark lining")
+		elif skin.resource_name == "Raker021_WornNails":
+			rebuilt_nails = true
+			check(is_equal_approx(skin.roughness,.78) and skin.albedo_color.is_equal_approx(Color(.18,.165,.125).linear_to_srgb()),"New nail faces retain authored roughness and linear-to-sRGB keratin color")
+		else:
+			check(skin.albedo_texture != null,"Skin, eyes and internal tooth textures survive production import")
+			if skin.resource_name == "Raker021_RebuiltHandSkin":
+				rebuilt_skin = skin.albedo_texture != null and skin.albedo_texture.get_width() >= 1024
+	check(rebuilt_skin and rebuilt_nails,"New hand UV atlas and sculpted nail surfaces imported")
 	var anim: AnimationPlayer=model.get_node("AnimationPlayer")
 	anim.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	for clip in ["idle","walk","chase","sprint","attack_left","attack_right","crouch_idle","crouch_walk","crouch_attack","climb_loop","hang_idle","attack_door","mantle","roof_settle","attack_down","slip_loop","fall_loop","land","hit_react","death","crouch_hit_react","crouch_land","crouch_death"]:

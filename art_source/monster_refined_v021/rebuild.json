@@ -1,0 +1,10 @@
+{
+  "removed_old_hand_vertices": 392,
+  "new_hand_vertices": {
+    "L": 3211,
+    "R": 3211
+  },
+  "deform_bones": 54,
+  "source_vertices": 15159,
+  "triangles": 30242
+}

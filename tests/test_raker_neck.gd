@@ -37,6 +37,34 @@ func run() -> void:
 	visual.animation_player.advance(0)
 	visual.animation_player.pause()
 	var sk: Skeleton3D = visual.skeleton
+	var modifier := visual.pose_modifier as SkeletonModifier3D
+	modifier.active = false
+	visual.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	for clip in ["idle", "crouch_idle", "crouch_walk", "crouch_attack", "grab_low_reach", "grab_low_hold", "grab_low_bite", "grab_seat_bite"]:
+		actor.crouched = clip != "idle"
+		for aim in [Vector3.FORWARD, Vector3.UP, Vector3.DOWN, Vector3.LEFT, Vector3.RIGHT]:
+			visual.animation_player.play("game/"+clip,0)
+			visual.animation_player.seek(.2,true)
+			visual.animation_player.advance(0)
+			var at: Vector3 = sk.global_transform * modifier.face_position(sk)
+			target.position = at + aim*4 - Vector3.UP
+			modifier.yaw = 0
+			modifier.pitch = 0
+			modifier.tracking_weight = 1
+			modifier._process_modification_with_delta(2.0)
+			var face: Vector3 = modifier.face_direction(sk)
+			var expected: Vector3 = aim
+			if aim == Vector3.UP or aim == Vector3.DOWN:
+				var angle := deg_to_rad((40 if actor.crouched else 30) if aim == Vector3.UP else -25)
+				expected = Vector3(0,sin(angle),-cos(angle))
+			if face.dot(expected)<.995: failures.append("Evaluated face aim: "+clip+" target="+str(aim)+" actual="+str(face))
+		print("FACE_AIM ",clip," forward/up/down/left/right checked")
+	modifier.active = true
+	actor.crouched = false
+	target.position = Vector3(-10,1.7,0)
+	visual.animation_player.play("game/idle",0)
+	visual.animation_player.advance(0)
+	visual.animation_player.pause()
 	var original: Array[Vector3] = []
 	for name in Modifier.BONES: original.append(sk.get_bone_pose_position(sk.find_bone(name)))
 	for i in 90: await process_frame

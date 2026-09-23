@@ -57,6 +57,8 @@ func _ready() -> void:
 	player = preload("res://player/player.tscn").instantiate()
 	player.position = Vector3(4, -.25, 0)
 	add_child(player)
+	player.grab_control.released.connect(func(reason: String):
+		print("GRAB_RELEASE reason=",reason," contact=",monster.grab.contact_failure if is_instance_valid(monster) else "removed"))
 	player.max_player_health = 10000
 	player.current_player_health = 10000
 	player._update_health_bar()
@@ -186,6 +188,10 @@ func _input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not ready_to_drive or bite_review_frozen: return
+	# Review-only deterministic survivor: exercise bite release without dying.
+	if "--grab-wounded" in OS.get_cmdline_user_args() and player.is_grabbed() and player.grab_control.accepting:
+		while player.grab_control.presses * 5 < player.grab_control.required * 4:
+			player.submit_struggle()
 	if grab_delay >= 0:
 		grab_delay -= delta
 		if grab_delay < 0:

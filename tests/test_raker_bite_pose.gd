@@ -30,14 +30,22 @@ func run() -> void:
 		visual.animation_player.advance(0)
 		var positions: Array[Vector3] = []
 		for i in sk.get_bone_count(): positions.append(sk.get_bone_pose_position(i))
+		var spine: Array[Quaternion] = []
+		for name in ['spine_01','spine_02','spine_03']: spine.append(sk.get_bone_pose_rotation(sk.find_bone(name)))
 		actor.grab.victim = player
 		actor.grab.phase = actor.grab.Phase.BITE
 		actor.grab.elapsed = .36
 		var before: float = (sk.global_transform * modifier.mouth_position(sk)).distance_to(player.camera.global_position)
 		modifier._process_modification_with_delta(1.0 / 60)
 		var after: float = (sk.global_transform * modifier.mouth_position(sk)).distance_to(player.camera.global_position)
+		var face: Vector3 = actor.global_basis.inverse() * modifier.face_direction(sk)
+		var elevation := asin(clampf(face.y,-1,1))
+		check(elevation >= deg_to_rad(-25 if actor.crouched else -65)-.001 and elevation <= deg_to_rad(40 if actor.crouched else 30)+.001,"Evaluated bite face respects pitch limits: "+variant)
+		check(absf(atan2(face.x,-face.z)) <= PI/2+.001,"Evaluated bite face respects yaw limits: "+variant)
 		print("BITE_REACH ", variant, " before=",before," after=",after)
-		check(after < .20 and after < before, "Mouth reaches face: " + variant)
+		if variant == 'stand':
+			for i in 3: check(spine[i].angle_to(sk.get_bone_pose_rotation(sk.find_bone('spine_0'+str(i+1)))) < .001,'Standing bite keeps its back posture')
+		else: check(after < .20 and after < before, "Low/seat mouth reaches face: " + variant)
 		for i in sk.get_bone_count(): check(positions[i].distance_to(sk.get_bone_pose_position(i)) < .00001,"No bone stretch/root translation")
 		check(player.position == Vector3(0,.02,-.8),"Bite does not teleport victim")
 	actor.grab.victim = null
@@ -80,8 +88,13 @@ func run() -> void:
 				var view: Camera3D = playground.player.seated_in.seat_camera if mode == 2 else playground.player.camera
 				var mouth: Vector3 = playground.monster.get_node("BodyMesh").bone_world_position("mouth")
 				var distance := mouth.distance_to(view.global_position)
+				var face_center: Vector3 = playground.monster.grab_face_position()
+				var face_axis: Vector3 = playground.monster.get_node("BodyMesh").bone_world_position("face_forward")-face_center
+				var alignment := face_axis.normalized().dot((view.global_position-face_center).normalized())
+				print("LIVE_FACE_ALIGNMENT ",mode," dot=",alignment)
+				check(alignment > .97,"Live face aims at player, not just mouth proximity: %d" % mode)
 				print("LIVE_BITE_REACH ",mode," distance=",distance," mouth=",mouth," face=",view.global_position)
-				check(distance < .22,"Live moving scenario reaches face: %d" % mode)
+				if mode != 0: check(distance < .22,"Live low/seat scenario reaches face: %d" % mode)
 				var rest: Vector3 = playground.player.grab_control.camera_rest_position
 				check(view.position.distance_to(rest) <= .281,"Head pull stays within 28 cm")
 				playground.monster.grab.cancel("test_release")

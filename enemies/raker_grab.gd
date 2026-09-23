@@ -14,7 +14,7 @@ var had_support := false
 var was_seated := false
 var contact_failure := ""
 var rng := RandomNumberGenerator.new()
-const DURATIONS := {Phase.REACH: .6, Phase.HOLD: 2.0, Phase.BITE: .65, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
+const DURATIONS := {Phase.REACH: .6, Phase.HOLD: 2.0, Phase.BITE: .38, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
 const CLIPS := {Phase.REACH: "reach", Phase.HOLD: "hold", Phase.BITE: "bite", Phase.RELEASE: "release", Phase.ESCAPE: "escape", Phase.MISS: "miss"}
 const BITE_CONTACT := .38
 
@@ -71,9 +71,11 @@ func tick(delta: float) -> void:
 			if not resolved and elapsed >= BITE_CONTACT:
 				resolved = true
 				victim.apply_grab_bite(actor, outcome == 2)
-			if phase == Phase.BITE and elapsed >= .65:
-				_release("bitten")
-				_change(Phase.RELEASE)
+				# Damage can re-enter cleanup through player death. Survivors regain
+				# control on this same contact tick; only the monster recovers.
+				if phase == Phase.BITE:
+					_release("bitten")
+					_change(Phase.RELEASE)
 		_:
 			if elapsed >= DURATIONS[phase]: _change(Phase.NONE)
 

@@ -287,7 +287,9 @@ func die() -> void:
 	$HitBox.set_deferred("monitoring", false)
 
 func grab_face_position() -> Vector3:
-	return $BodyMesh.bone_world_position("head")
+	var visual := $BodyMesh
+	if visual.pose_modifier.world_positions.has("face"): return visual.bone_world_position("face")
+	return visual.skeleton.to_global(visual.pose_modifier.face_position(visual.skeleton))
 
 func grab_shoulder_position(side: int) -> Vector3:
 	return $BodyMesh.bone_world_position("upper_arm_R" if side > 0 else "upper_arm_L")

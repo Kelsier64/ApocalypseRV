@@ -9,7 +9,8 @@ func run() -> void:
 	root.add_child(scene)
 	current_scene = scene
 	for i in 75: await physics_frame
-	for mode in [0, 1, 2]:
+	for scenario in [0, 1, 2, 3]:
+		var mode := mini(scenario,2)
 		scene.setup_grab(mode)
 		var captured := false
 		for i in 1200:
@@ -48,8 +49,15 @@ func run() -> void:
 			Input.action_release("move_forward")
 			check(player.is_grabbed(),"Capture persists on common moving support")
 			check(scene.rv.throttle_input<.01 and not scene.rv.handbrake,"Throttle releases to coast")
-			seat.exit_seat(true)
-			check(not player.is_grabbed() and not scene.rv.driver_controls_locked(),"Forced seat exit releases driver and monster")
+			if scenario == 3:
+				while player.grab_control.presses*5 < player.grab_control.required*4: player.submit_struggle()
+				scene.monster.grab.tick(2)
+				scene.monster.grab.tick(.38)
+				check(player.current_player_health==50 and not player.is_grabbed(),"Surviving driver is released at bite contact")
+				check(player.seated_in==seat and not scene.rv.driver_controls_locked(),"Seat and driving controls resume on contact tick")
+			else:
+				seat.exit_seat(true)
+				check(not player.is_grabbed() and not scene.rv.driver_controls_locked(),"Forced seat exit releases driver and monster")
 		else:
 			check(player.camera.transform==before,"Ground/cabin mouse input blocked")
 			var count: int = player.grab_control.required

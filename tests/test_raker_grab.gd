@@ -94,6 +94,8 @@ func run() -> void:
 	check(player.grab_control.presses==8,"Deadline rejects new presses")
 	actor.grab.tick(.38)
 	check(player.current_player_health==50,"Bite bypasses ordinary hurt cooldown")
+	check(not player.is_grabbed() and not player.grab_control.hud.visible and player.grab_control.camera == null,"Bite contact immediately releases input, camera and HUD")
+	check(actor.grab.phase == Grab.Phase.RELEASE and actor.grab.victim == null,"Only monster recovery continues after biting")
 	actor.grab.tick(.02)
 	check(player.current_player_health==50,"One damage at bite contact")
 	actor.grab.tick(.25)

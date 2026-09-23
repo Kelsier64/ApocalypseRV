@@ -44,6 +44,13 @@
 
 ## 驗收紀錄
 
+- [Raker v021 整隻手重建](validation/2026-09-23-raker-v021.md) — 移除舊手、重建掌部與指縫、三節四指、權重、手部 UV 與 41 動畫，整合正式遊戲。
+- [Raker v020 四指關節反折](validation/2026-09-23-raker-v020.md) — 修正 Blender bind 網格／骨架及全動畫，保留拇指；6,520 個遊戲手指取樣與 15 組怪物回歸通過。
+- [Raker v019 Blender 來源掌向](validation/2026-09-23-raker-v019.md) — 修正來源動畫拇指朝後／掌心外翻，重新烘焙、匯出及關閉執行期修正的來源驗證。
+- [Raker 只低頭、掌向與咬後輸入](validation/2026-09-23-raker-neck-hands-input.md) — 取消站立俯身、執行期抓握及真實輸入驗證；來源步態掌向問題由後續 v019 修正。
+- [Raker 站立抓咬與即時解除（前次）](validation/2026-09-23-raker-attack-alignment.md) — 前次俯身與掌向方案已由上方修正取代；保留歷史驗收。
+- [Raker v018 蹲姿臉向與內藏牙齒](validation/2026-09-23-raker-v018.md) — 實際臉向補償、原生嘴縫、閉嘴藏齒及咬合動畫。
+
 - [Raker v017 貼臉咬擊與口腔](validation/2026-09-23-raker-v017.md) — 30／40° 上抬、前探抓頭、碰撞掃掠、牙齒與咬合衝擊。
 
 - [Raker v016 可動頸部與抓咬掙脫](validation/2026-09-22-raker-v016.md) — 限角追視、三組抓咬動畫、硬控、駕駛滑行與固定種子驗證。

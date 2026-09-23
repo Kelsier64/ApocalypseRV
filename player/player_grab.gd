@@ -188,6 +188,7 @@ func bite_impact() -> void:
 
 func end(reason: String = "cancelled") -> void:
 	var previous := captor
+	var owned_view := is_instance_valid(camera) and camera.current
 	captor = null
 	accepting = false
 	remaining = 0
@@ -207,6 +208,14 @@ func end(reason: String = "cancelled") -> void:
 	elif is_instance_valid(camera):
 		camera.rotation = seated_camera_rotation
 	camera = null
+	# Release the real input path as well as the ownership flag. A visible
+	# pointer (e.g. focus/UI changes during capture) otherwise leaves mouse look
+	# gated even though GRABBED and its HUD have already disappeared.
+	if owned_view and reason not in ["world_transition", "world_changed", "player_removed", "death"]:
+		player.in_ui_mode = false
+		player.set_physics_process(true)
+		player.set_process_unhandled_input(not is_instance_valid(player.seated_in))
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	released.emit(reason)
 
 func _exit_tree() -> void:
