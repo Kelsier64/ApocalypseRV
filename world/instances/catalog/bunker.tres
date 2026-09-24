@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="InteriorProfile" format=3]
+
+[ext_resource type="Script" path="res://world/instances/interior_profile.gd" id="1"]
+
+[ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room_script"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/passage_01.tres" id="passage_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/passage_02.tres" id="passage_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/corridor_01.tres" id="corridor_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/corridor_02.tres" id="corridor_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/small_01.tres" id="small_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/small_02.tres" id="small_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/small_03.tres" id="small_03"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/medium_01.tres" id="medium_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/medium_02.tres" id="medium_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/large_01.tres" id="large_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/large_02.tres" id="large_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/hall_01.tres" id="hall_01"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/hall_02.tres" id="hall_02"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/hall_03.tres" id="hall_03"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/entry.tres" id="entry"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/stairs.tres" id="stairs"]
+
+[resource]
+script = ExtResource("1")
+rooms = Array[ExtResource("room_script")]([ExtResource("passage_01"), ExtResource("passage_02"), ExtResource("corridor_01"), ExtResource("corridor_02"), ExtResource("small_01"), ExtResource("small_02"), ExtResource("small_03"), ExtResource("medium_01"), ExtResource("medium_02"), ExtResource("large_01"), ExtResource("large_02"), ExtResource("hall_01"), ExtResource("hall_02"), ExtResource("hall_03"), ExtResource("entry"), ExtResource("stairs")])

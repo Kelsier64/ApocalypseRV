@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://world/poi_kit/poi_door_socket.gd" id="6_y3nva"]
 [ext_resource type="Script" path="res://world/poi_kit/poi_entrance.gd" id="7_i87l8"]
 
+[ext_resource type="Script" path="res://world/poi_kit/exteriors/exterior_style.gd" id="bunker_style"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_jult0"]
 size = Vector3(10, 0.25, 10)
 
@@ -162,6 +164,7 @@ size = Vector3(2, 0.8, 1.7)
 size = Vector3(3, 3.5, 0.15)
 
 [node name="ServiceEntrance" type="Node3D" unique_id=78447567]
+script = ExtResource("bunker_style")
 
 [node name="Visuals" type="Node3D" parent="." unique_id=1973363064]
 
