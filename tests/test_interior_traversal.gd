@@ -1,44 +1,34 @@
 extends SceneTree
 var failures: Array[String] = []
-
-func _init() -> void:
-	_run.call_deferred()
-
-func check(ok: bool, detail: String) -> void:
+func _init() -> void: _run.call_deferred()
+func check(ok: bool, message: String) -> void:
 	if not ok:
-		failures.append(detail)
-		push_error("FAIL: " + detail)
-
+		failures.append(message)
+		push_error("FAIL: " + message)
 func _run() -> void:
-	var inside := MaintenanceInterior.new()
+	var inside := PoiInterior.new()
 	inside.room_count = 12
+	inside.target_floors = 3
 	root.add_child(inside)
 	current_scene = inside
-	check(await inside.build(42),"Build two-level fixture")
+	check(await inside.build(42),"Build three-floor fixture")
+	if inside.rooms.is_empty(): quit(1); return
 	var player: CharacterBody3D = preload("res://player/player.tscn").instantiate()
 	inside.add_child(player)
-	player.position = Vector3(0,0.05,2.8)
-	var replay = preload("res://tests/interior_v2_replay.gd").new()
-	check(await replay.run(inside,player),"Continuous-input gameplay route")
+	player.transform = inside.spawn_transform()
+	var replay = preload("res://tests/bunker_replay.gd").new()
+	check(await replay.run(inside, player),"Real continuous-input player/cargo route")
 	var saved := inside.snapshot()
-	check(CheckpointSchema.poi_error({"v2":saved}).is_empty(),"Gameplay snapshot validates")
-	var encoded := var_to_bytes(saved)
-	player.queue_free()
-	await process_frame
+	check(CheckpointSchema.poi_error({"bunker": saved}).is_empty(),"Gameplay save validates")
+	check(inside.explored.size() == inside.rooms.size(),"Every visited room explored")
 	inside.free()
 	await process_frame
-	var restored := MaintenanceInterior.new()
+	var restored := PoiInterior.new()
 	root.add_child(restored)
 	current_scene = restored
-	check(await restored.build(999,bytes_to_var(encoded)),"Restore persisted manifest rather than caller seed")
-	check(restored.layout == saved.layout,"Exact geometry survives serialization")
-	check(restored.objective_claimed and restored.shortcut_open,"Objective and hatch survive reload")
-	check(restored.explored == saved.explored,"Exploration survives reload")
-	check(restored.entities.get_child_count() == saved.actors.size(),"No reward duplication on reload")
-	var path := NavigationServer3D.map_get_path(restored.get_world_3d().navigation_map,Vector3.ZERO,Vector3(27,0,0),true)
-	var length := 0.0
-	for i in range(1,path.size()): length += path[i].distance_to(path[i-1])
-	check(path.size() > 1 and length < 35,"Reloaded open hatch has short navigation route: %s length=%f" % [path,length])
+	check(await restored.build(999, bytes_to_var(var_to_bytes(saved))),"Restore serialized manifest with a different caller seed")
+	check(restored.layout == saved.layout and restored.explored == saved.explored,"Exact layout and exploration preserved")
+	check(restored.entities.get_child_count() == 1,"Player cargo persists without automatic spawning")
 	restored.free()
-	if failures.is_empty(): print("PASS: actual player/cargo/zombie stairs, E objective/hatch, serialized geometry/progress and open navigation")
+	if failures.is_empty(): print("PASS: continuous all-room player/cargo traversal and serialized layout/exploration/drop restore")
 	quit(0 if failures.is_empty() else 1)

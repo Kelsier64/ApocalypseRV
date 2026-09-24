@@ -112,7 +112,7 @@ func _refresh_assets() -> void:
 				var tint: Color = source.albedo_color
 				var kind := "concrete" if str(mesh.name).begins_with("Wall") else "panel"
 				surface_overrides.append({"node": mesh, "base": mesh.material_override, "sample": SampleMaterials.surface(kind, tint.lightened(0.10))})
-		var entry := {"base": building.get_node("Silhouette"), "sample": detail, "surfaces": surface_overrides}
+		var entry := {"base": building.get_node("Visuals/BunkerFacade"), "sample": detail, "surfaces": surface_overrides}
 		buildings.append(entry)
 		_apply_building(entry)
 

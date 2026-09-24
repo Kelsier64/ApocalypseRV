@@ -3,7 +3,6 @@ extends SceneTree
 ## The saved PackedScenes are the deliverables; this is not a runtime generator.
 
 const BASE := "res://world/poi_kit/"
-const ROOM = preload("res://world/poi_kit/poi_room.gd")
 const SOCKET = preload("res://world/poi_kit/poi_door_socket.gd")
 const FURNITURE = preload("res://world/poi_kit/poi_furniture.gd")
 const LOOT = preload("res://world/poi_kit/poi_loot_point.gd")
@@ -14,7 +13,6 @@ var steel: StandardMaterial3D
 var orange: StandardMaterial3D
 var floor_mat: StandardMaterial3D
 var wood: StandardMaterial3D
-var glow: StandardMaterial3D
 var failures: int = 0
 
 func _init() -> void:
@@ -32,9 +30,7 @@ func _run() -> void:
 	orange = _material(Color("dc8b42"))
 	floor_mat = _material(Color("626b68"))
 	wood = _material(Color("897156"))
-	glow = _material(Color("dbedd9"))
-	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	for entry in [["concrete", concrete], ["paint", paint], ["steel", steel], ["orange", orange], ["floor", floor_mat], ["wood", wood], ["light", glow]]:
+	for entry in [["concrete", concrete], ["paint", paint], ["steel", steel], ["orange", orange], ["floor", floor_mat], ["wood", wood]]:
 		var path: String = BASE + "materials/" + entry[0] + ".tres"
 		if ResourceLoader.exists(path):
 			push_error("Refusing to overwrite material: " + path)
@@ -45,9 +41,6 @@ func _run() -> void:
 	_save(_shelf(), "furniture/shelf.tscn")
 	_save(_table(), "furniture/workbench.tscn")
 	_save(_cabinet(), "furniture/cabinet.tscn")
-	_save(_room("utility_small", Vector2i(1, 1), 4.5, ["north", "south"], "01 / STORES"), "rooms/utility_small.tscn")
-	_save(_room("service_corridor", Vector2i(1, 1), 4.5, ["north", "south"], "02 / TRANSIT"), "rooms/service_corridor.tscn")
-	_save(_room("maintenance_hall", Vector2i(2, 2), 6.0, ["south", "east"], "03 / WORKSHOP"), "rooms/maintenance_hall.tscn")
 	_save(_exterior(), "exteriors/service_entrance.tscn")
 	if failures == 0:
 		print("PASS: created editable POI kit scenes; generator will refuse overwriting them")
@@ -197,72 +190,6 @@ func _wall(asset: Node3D, width: float, height: float, depth: float, side: Strin
 	socket.position = Vector3(center.x, 0, center.z)
 	socket.rotation.y = {"north": 0.0, "south": PI, "east": -PI / 2.0, "west": PI / 2.0}[side]
 	asset.get_node("DoorSockets").add_child(socket)
-
-func _lamp(asset: Node3D, pos: Vector3) -> void:
-	var count := str(asset.get_node("Visuals").get_child_count())
-	_box(asset, "LampHousing" + count, Vector3(2.2, 0.14, 0.42), pos, steel, false)
-	_box(asset, "LampTube" + count, Vector3(1.9, 0.04, 0.22), pos + Vector3(0, -0.09, 0), glow, false)
-	var light := OmniLight3D.new()
-	light.name = "LampLight" + count
-	light.position = pos + Vector3(0, -0.5, 0)
-	light.light_color = Color("dce9da")
-	light.light_energy = 2.0
-	light.omni_range = 9.0
-	asset.get_node("Visuals").add_child(light)
-
-func _furnish(asset: Node3D, scene: String, label: String, pos: Vector3, yaw: float = 0.0) -> void:
-	var item: Node3D = load(BASE + "furniture/" + scene + ".tscn").instantiate()
-	item.name = label
-	item.position = pos
-	item.rotation.y = yaw
-	asset.get_node("Furnishings").add_child(item)
-
-func _room(id: String, cells: Vector2i, height: float, doors: Array, title: String) -> Node3D:
-	var asset := ROOM.new()
-	asset.name = id.to_pascal_case()
-	asset.room_id = StringName(id)
-	asset.size_cells = cells
-	asset.clear_height = height
-	asset.category = &"corridor" if id.contains("corridor") else &"utility"
-	_layers(asset)
-	var w := float(cells.x) * 9.0
-	var d := float(cells.y) * 9.0
-	_box(asset, "Floor", Vector3(w, 0.25, d), Vector3(0, -0.125, 0), floor_mat)
-	_box(asset, "Ceiling", Vector3(w + 0.24, 0.24, d + 0.24), Vector3(0, height + 0.12, 0), concrete)
-	for side in ["north", "south", "east", "west"]:
-		_wall(asset, w, height, d, side, doors.has(side))
-	for x in [-1.15, 1.15]:
-		_box(asset, "Lane" + str(x), Vector3(0.055, 0.008, d), Vector3(x, 0.008, 0), orange, false)
-	for z in [-d / 3.0, 0.0, d / 3.0]:
-		_box(asset, "Beam" + str(z), Vector3(w, 0.22, 0.18), Vector3(0, height - 0.11, z), steel, false)
-		_lamp(asset, Vector3(0, height - 0.4, z))
-	_label(asset.get_node("Visuals"), title, Vector3(-w * 0.32, 2.4, -d * 0.5 + 0.16), 48)
-	for i in range(3):
-		var point := Marker3D.new()
-		point.name = ["South", "Center", "North"][i]
-		point.position = Vector3(0, 0, d * 0.5 - 0.6 - i * (d - 1.2) / 2.0)
-		asset.get_node("Walkway").add_child(point)
-	if id == "utility_small":
-		_furnish(asset, "shelf", "ShelfWest", Vector3(-3.4, 0, -2.7), PI / 2.0)
-		_furnish(asset, "workbench", "BenchEast", Vector3(3.2, 0, 0.5), -PI / 2.0)
-		_furnish(asset, "cabinet", "CabinetNorth", Vector3(2.8, 0, -3.95))
-	elif id == "maintenance_hall":
-		for x in [-6.8, 6.8]:
-			for z in [-5.5, -1.5, 3.5]:
-				var rack_z: float = -3.0 if x > 0 and z == -1.5 else z
-				_furnish(asset, "shelf", "Rack" + str(asset.get_node("Furnishings").get_child_count()), Vector3(x, 0, rack_z), PI / 2 if x < 0 else -PI / 2)
-		_furnish(asset, "workbench", "Workbench", Vector3(-3.3, 0, -6.7))
-		_furnish(asset, "cabinet", "Cabinet", Vector3(4.5, 0, -8.3))
-		var spawn := Marker3D.new()
-		spawn.name = "EnemyCandidate01"
-		spawn.position = Vector3(-4, 0.05, 2)
-		asset.get_node("EnemySpawns").add_child(spawn)
-	else:
-		# 9m footprint, but partitions make the actual corridor 3m wide.
-		for x in [-3.05, 3.05]:
-			_box(asset, "ServiceCore" + str(x), Vector3(2.9, height, d), Vector3(x, height / 2, 0), paint)
-		_label(asset.get_node("Visuals"), "WORKSHOP  >", Vector3(0, 3.85, -d / 2 + 0.2), 40, Color("dc8b42"))
-	return asset
 
 func _exterior() -> Node3D:
 	var asset := Node3D.new()

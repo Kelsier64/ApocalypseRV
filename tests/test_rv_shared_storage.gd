@@ -129,7 +129,7 @@ func _run() -> void:
 	check(not upgraded.is_empty(), "Legacy disk checkpoint upgrades")
 	if not upgraded.is_empty():
 		check(upgraded.vehicles[0].fuel == 33.0 and upgraded.vehicles[0].materials["Metal Parts"] == 9, "Legacy fuel and inventory/POI bundles credited once")
-		check(upgraded.player.items.is_empty() and upgraded.poi.visited.actors.is_empty(), "Converted material models removed")
+		check(upgraded.player.items.is_empty() and not upgraded.poi.has("visited"), "Converted inventory models and obsolete POI record removed")
 		check(VehicleSnapshot.apply(rv, upgraded.vehicles[0]) and rv.energy.battery.id == "old-installed" and rv.current_power == 28.0, "Old installed battery becomes a socket battery")
 		check(checkpoint.read_checkpoint(path).vehicles[0].materials["Metal Parts"] == 9, "Repeated loading never double-credits migration")
 	world.queue_free()

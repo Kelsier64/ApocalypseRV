@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-文件核對：2026-09-22。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：POI 地堡更新 2026-09-24，其餘章節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
@@ -125,8 +125,8 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 | 場址計畫 | [exploration_site.gd](world/terrain/exploration_site.gd) | v3／v4 路線、平台、鏡像、窄口、圍牆分段及邊界，共用於整地／生成／導航／串流 |
 | 室外顯示 | [outdoor_presentation.gd](world/outdoor_presentation.gd) | 主 viewport 的 3D 縮放、輕微對比、F8 偏好與室內切換；Canvas UI 不縮放 |
 | POI 外部 | [poi_config.gd](world/poi_config.gd)、[poi_spawner.gd](world/poi_spawner.gd) | v3 四種外觀、v2 原入口、穩定 ID／返回點與註冊 |
-| 副本轉場與相容 | [poi_instance_manager.gd](world/instances/poi_instance_manager.gd)、[poi_interior.gd](world/instances/poi_interior.gd)、[maze_layout.gd](world/instances/maze_layout.gd) | 轉場、隔離世界、actor 保存及 v1 舊副本重建；無 layout 的已訪副本繼續使用 v1 |
-| 副本 v2 | [maintenance_interior.gd](world/instances/maintenance_interior.gd)、[interior_layout.gd](world/instances/interior_layout.gd)、[interior_profile.gd](world/instances/interior_profile.gd) | 新訪副本的兩層布局、房型目錄、目標／捷徑、探索與版本化 manifest |
+| 副本轉場 | [poi_instance_manager.gd](world/instances/poi_instance_manager.gd)、[poi_interior.gd](world/instances/poi_interior.gd) | 獨立世界、導航、返回、探索與玩家掉落物保存 |
+| 隨機地堡 | [interior_layout.gd](world/instances/interior_layout.gd)、[interior_profile.gd](world/instances/interior_profile.gd) | 可擴充房型、隨機 1–3 層、10–30 模組目標、manifest 版本 3 |
 | 怪物 | [monster.gd](enemies/monster.gd) | AI、導航、接觸觀測、攀爬、攻擊、車撞傷害、掉落 |
 | 選敵 | [combat_targeting.gd](enemies/combat_targeting.gd) | 候選排序，使用 actor 提供的接觸判斷 |
 
@@ -185,7 +185,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 | 設備 | Equipment | 穩定 ID、EquipmentDefinition、啟用、車輛與支撐、預覽快照、耐久及工作清理 |
 | 生產工作 | 各工作站 | 配方 ID、預留材料、剩餘電費／時間、輸入物件所有權、待出料結果 |
 | 串流 | WorldGenerator | active_chunks 的 node/index/start_z/end_z、next_band、building、WorldField 和 profile |
-| 副本 | PoiInstanceManager／MazeLayout | active_id、saved_instances actor 快照、rooms／edges、局部 RNG |
+| 副本 | PoiInstanceManager／InteriorLayout | active_id、saved_instances actor 快照、rooms／edges、局部 RNG |
 
 地形、入口和路旁靜態模組由 chunk 擁有。動態敵人、搜刮物、玩家丟棄品、合成品和死亡掉落使用所屬世界的 WorldEntities。室內與主場景根節點都以 entity_domain metadata 指定自己的容器，避免初始 ready 時 current_scene 尚未設定而落到 SceneTree 根。WorldGenerator 只清理同一 World3D、錨點後方超過 450 m 的動態物件。玩家進副本後，錨點固定在進入前位置。
 
@@ -212,11 +212,11 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／�
 
 室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。OutdoorPresentation 僅設定主 viewport.scaling_3d_scale（目標高度 540，最高 1），CanvasLayer 0 只套輕微對比，不再進行像素格量化或抖色，遊戲 UI 在較高 layer。F8 偏好寫入 user://display_preferences.cfg，不進角色／車輛快照。偵測 viewport 尺寸與副本 active_id 變化，室內停用、返回恢復。
 
-新訪非 legacy 副本使用 `MaintenanceInterior extends PoiInterior`，由 `InteriorLayout` 產生釘選 version=2／content_version=1 manifest。`InteriorProfile`／`InteriorRoomDefinition` Resource 登錄 11 種預製房間；門 transform 和占用尺寸從場景讀取。固定 12 房必要路線加 seed 支路擴展為兩層 50–100 房，完整接口對齊、三維 AABB 排斥與有界重試；一般高度 5.5 m／層距 6 m，樓梯及挑高占兩層。導航發布 immutable mesh 並等 region／map 同步，捷徑打開後重烘焙。物資與敵人各用獨立 RNG，總預算取代依房數堆量。
+`InteriorLayout` 生成版本 3 manifest，隨機目標 10–30 模組、1–3 層，透過完整 socket transform 接合與三維 AABB 排斥擴展；候選／接口耗盡可提早停止。樓梯與新層首房原子安置，普通分類按 Profile 權重抽選，各層共用。`InteriorRoomDefinition` 以 ID＋內容版本解析，場景提供 footprint／clear_height／socket，新增普通尺寸／分類不改生成器。
 
-`PoiInstanceManager` 以入口 profile 和保存資料選擇生成器；無 layout 的既有快照永遠交回 v1。新版快照在 actors 外增加 layout、objective_claimed、shortcut_open、explored；CheckpointSchema 驗證確定性布局及互動欄位，不相容資料保留來源並復原控制。新版進度透過現有室外檢查點寫入磁碟。`InteriorInteraction` 只送出一次性互動，`MaintenanceInterior` 擁有獎勵／門狀態，`interior_map.gd` 僅畫已探索資訊。詳見 [v2 契約](docs/guides/interior-v2.md)。
+`PoiInterior` 統一組裝、封牆、導航、探索、出生／出口與玩家掉落物保存。未接通 socket 的門框移除，牆板留在自身占地內，避免共享可見面閃爍。導航發布 immutable mesh 並等待 region／map 同步。現在不生成物資、怪物、目標或捷徑；地圖按實際占用及保存層距繪製 B1–B3。
 
-舊版 MazeLayout 使用 10 欄、27 m 中心間距，建立 50–100 個 9 m／18 m 房間。隨機 DFS 產生連通樹，再增加少量鄰接邊形成環路。PoiInterior 放置四門預製場景、封閉閒置門、連接走廊，依實際靜態碰撞（含家具）非同步 bake 導航；動態物資與敵人在 bake 後建立。各房物資點獨立隨機排序，最多成功抽取 4 件。
+保存實際布局而非依 seed 重抽；`CheckpointSchema` 驗證逐房版本、接口對齊、占用與連通。新增目錄／修改權重不改變舊布局，缺失版本拒絕。`Checkpoint` 在記憶體丟棄已識別的 pre-bunker v1／v2 POI，保留其他世界資料，不在讀取時覆寫來源。原生成器／專用資產已移除。詳見 [地堡契約](docs/guides/bunker-interior.md)。
 
 PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。退出先保存室內 Prop 的場景、位置、回收資料及活怪生命／位置，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同房間與剩餘 actors；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。轉場有明確狀態與操作序號，建立失敗、逾時、取消或玩家死亡會恢復控制並清理暫建 viewport。
 
@@ -331,7 +331,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 - 配方出料使用產物根層的實際碰撞形狀檢查；新增產品需驗證碰撞配置與出料淨空。
 - 簡化載重只加總底盤、已安裝引擎與有效的已安裝設備，並依位置計算重心；電池本體、抽象材料、庫存道具、燃油與鬆散貨物不納入車體質量。插槽與倉庫設備本體仍計重；游離道具保留既有剛體行為。BatteryState.weight 保留供道具物理與舊存檔相容使用，VehicleSnapshot 載入後以同一 update_load 重算車重，無需存檔遷移。首版檔位不模擬離合器／轉速。
 - 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；v2–v4 仍單向串流；v5 可回程載入。
-- 副本 v2 有 11 種灰盒房型；室外四款入口暫時共用 v2，已訪舊副本仍使用兩種 v1 四門房型，內容多樣性與長局效能仍需擴充驗收。
+- 隨機地堡有 16 個首批模組及基本外觀；完整地表設施、細緻破損、物資／敵人／目標及長局平衡仍未製作。
 - 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
 
 
@@ -347,11 +347,11 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 `world/poi_kit/buildings/gas_station.tscn` 是同世界可步行進出的靜態建築資產，分離 Visuals、Collision、Furnishings、LootSpawns、AccessPoints 與 Lights。資產不自行產生物資，也不持有副本管理器；`tests/gas_station_playground.gd` 負責測試地面、導航烘焙、正式玩家／RV 及一次性固定 seed 物資生成，道具進入 WorldEntities。生成 v5 已接入正式串流、場址與檢查點；`test_gas_station.gd` 驗證同世界通行、導航、E 拾取及替換外觀後碰撞仍存在。
 
-`world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。v1 相容副本使用 maze_utility、maze_hall 四門變體；新訪非 legacy 副本使用 InteriorProfile 登錄的 11 種 v2 房型。展示保留原始房型。
+`world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。所有副本使用 InteriorProfile 登錄的 16 個地堡模組；舊副本專用資產與展示場已移除。
 
-物資點只提供使用呼叫者 RNG 的 `roll_scene()`，不在 `_ready` 生成。入口只發出 `entry_requested(player, destination_id)`，主遊戲交由 PoiInstanceManager 管理。獨立資產展示仍只傳送到樣板區。`.tscn` 可直接編輯，既有 POI kit 首次建立腳本拒絕覆蓋既有輸出；`build_interior_v2.py` 的 catalog 尚缺整批防覆寫保護，見 [審查 A08](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)。詳見 [製作規格](world/poi_kit/README.md)。
+物資標記只提供 caller RNG 的抽選契約，地堡本輪不生成內容。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。首批來源 `build_bunker_kit.py` 拒絕覆蓋既有 kit。詳見 [製作規格](world/poi_kit/README.md)。
 
-`test_poi_asset_kit.gd` 驗證接點旋轉、物資物理支撐、正式玩家穿越與互動射線入口。`test_poi_instances.gd` 驗證 100 個 seed 的連通性／環路／重現、正式主場景入口、隔離、外部電量、錨點、拾取／掉落／死亡／重返與實際跨房導航。`poi_instance_playground.tscn` 的 F6 回放正式場景入口、連接走廊步行及返回；實機觀察與自動檢查分開記錄。
+`test_poi_asset_kit.gd` 驗證房型接口與玩家跨接縫；`test_interior_*.gd` 驗證 1000 seeds、扩充、逐門掃掠、三層大型搬運、導航與 manifest 保存；`test_poi_instances.gd` 驗證正式入口、世界隔離、外部電量、掉落／重返。實機觀察與自動檢查分開記錄。
 
 ### 統一驗證
 

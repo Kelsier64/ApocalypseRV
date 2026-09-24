@@ -14,22 +14,6 @@ func frames(count: int) -> void:
 		await physics_frame
 
 func _run() -> void:
-	for seed_value in range(100):
-		var layout := MazeLayout.generate(seed_value)
-		check(layout == MazeLayout.generate(seed_value), "Layout seed must replay exactly")
-		check(layout.rooms.size() >= 50 and layout.rooms.size() <= 100, "Room budget")
-		var reached := {0: true}
-		for i in range(layout.rooms.size()):
-			for edge: Vector2i in layout.edges:
-				if reached.has(edge.x) or reached.has(edge.y):
-					reached[edge.x] = true
-					reached[edge.y] = true
-		check(reached.size() == layout.rooms.size(), "Every room reachable")
-		check(layout.edges.size() >= layout.rooms.size() + 2, "Maze has loops")
-	for path in ["res://world/poi_kit/rooms/maze_utility.tscn", "res://world/poi_kit/rooms/maze_hall.tscn"]:
-		var room: PoiRoom = load(path).instantiate()
-		check(room.validate().is_empty(), "Authored maze room contracts: " + path)
-		room.free()
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
 	main.get_node("WorldGenerator").world_seed = 42
 	# The production sandbox may omit its debug enemy; this test owns its AI fixture.
@@ -72,6 +56,15 @@ func _run() -> void:
 		quit(1)
 		return
 	var inside := manager.interior
+	await frames(20)
+	check(inside.explored.has("r000") and not inside._hud.text.is_empty(), "Production entry updates exploration and floor HUD")
+	var map_key := InputEventKey.new()
+	map_key.keycode = KEY_M
+	map_key.pressed = true
+	manager._input(map_key)
+	await process_frame
+	check(inside._map.visible, "Main viewport forwards explored-map input")
+	manager._input(map_key)
 	var clock: WorldClock = main.get_node("WorldClock")
 	clock.weather.set_weather(Vector3(0, 2, 2), true)
 	var weather_before := clock.weather.remaining
@@ -94,8 +87,10 @@ func _run() -> void:
 	await frames(5)
 	check(main.get_node("WorldGenerator").active_chunks.size() == chunks, "Indoor coordinates do not drive outdoor streaming")
 	player.position = Vector3(0, 0.05, 2.5)
-	var initial_count := inside.entities.get_child_count()
-	var loot := inside.entities.get_child(0) as Prop
+	check(inside.entities.get_child_count() == 0, "Bunker starts without loot or monsters")
+	var loot: Prop = preload("res://props/scrap.tscn").instantiate()
+	inside.entities.add_child(loot)
+	loot.position = player.position + Vector3(1,0.5,0)
 	loot.scrap_yields = {"Metal Parts": Vector2(7, 7)}
 	loot.interact(player)
 	await frames(2)
@@ -104,15 +99,6 @@ func _run() -> void:
 	await frames(2)
 	var dropped := inside.entities.get_child(-1) as Prop
 	check(dropped.scrap_yields == {"Metal Parts": Vector2(7, 7)}, "Dropped loot preserves rolled yield")
-	var indoor_enemy: Monster
-	for actor in inside.entities.get_children():
-		if actor is Monster:
-			indoor_enemy = actor
-			break
-	check(indoor_enemy != null, "Indoor enemies spawned")
-	indoor_enemy.take_damage(10000)
-	await frames(5)
-	check(inside.entities.get_child(-1) is Prop, "Dead indoor enemy drops in its own world")
 	var expected := inside.snapshot()
 	var id := manager.active_id
 	await manager.leave()
@@ -127,7 +113,7 @@ func _run() -> void:
 		quit(1)
 		return
 	check(manager.interior.entities.get_child_count() == expected.actors.size(), "Reentry preserves deaths, pickups and drops")
-	check(manager.interior.entities.get_child_count() == initial_count, "Killed enemy replaced only by its loot")
+	check(manager.interior.entities.get_child_count() == 1, "Only the player drop remains")
 	var restored_custom := false
 	for actor in manager.interior.entities.get_children():
 		if actor is Prop and actor.scrap_yields == {"Metal Parts": Vector2(7, 7)}:
@@ -143,7 +129,27 @@ func _run() -> void:
 		check(path.size() >= 2 and path[-1].distance_to(b) < 1, "Baked navigation connects furnished rooms %s" % edge)
 	await manager.leave()
 	await process_frame
-	main.free()
+	var checkpoint := root.get_node("Checkpoint")
+	var disk_path := "res://.godot/bunker-checkpoint.save"
+	var save_deadline := Time.get_ticks_msec() + 60000
+	while not main._terrain_ready(main.get_node("WorldGenerator")) and Time.get_ticks_msec() < save_deadline:
+		await process_frame
+	check(checkpoint.save_world(main, disk_path), "Save actual main-world checkpoint after bunker visit")
+	var disk: Dictionary = checkpoint.read_checkpoint(disk_path)
+	check(not disk.is_empty() and disk.poi[id].layout == expected.layout and disk.poi[id].actors.size() == 1, "Disk checkpoint preserves bunker manifest and player drop")
+	if not disk.is_empty():
+		disk.poi["old_v1"] = {"actors": []}
+		disk.poi["old_v2"] = {"actors": [], "layout": {"version": 2, "profile": "maintenance_v2"}}
+		var file := FileAccess.open(disk_path, FileAccess.WRITE)
+		file.store_var(disk)
+		file.close()
+		var bytes := FileAccess.get_file_as_bytes(disk_path)
+		var migrated: Dictionary = checkpoint.read_checkpoint(disk_path)
+		check(not migrated.is_empty() and not migrated.poi.has("old_v1") and not migrated.poi.has("old_v2"), "Disk load discards both known pre-bunker formats")
+		check(not migrated.is_empty() and migrated.player == disk.player and migrated.vehicles == disk.vehicles and migrated.actors == disk.actors and migrated.poi[id] == disk.poi[id], "Migration preserves player, RV, outdoors and current bunker exactly")
+		check(FileAccess.get_file_as_bytes(disk_path) == bytes, "Reading migration never overwrites source file")
+	# SceneTree shutdown retires the world without resuming pending terrain
+	# publication coroutines against manually freed chunk instances.
 	if failures.is_empty():
-		print("PASS: 100 maze seeds; production entry, world isolation, power, persistence and navigation")
+		print("PASS: bunker production entry, world isolation, power, persistence and navigation")
 	quit(0 if failures.is_empty() else 1)

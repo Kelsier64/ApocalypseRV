@@ -1,9 +1,10 @@
-extends Node3D
+extends "res://world/test_world.gd"
 ## Production scene replay. F6: exterior -> real E -> walk connector -> real E exit.
 var running := false
 var status: Label
 
 func _ready() -> void:
+	super._ready()
 	var layer := CanvasLayer.new()
 	layer.layer = 30
 	add_child(layer)
@@ -18,6 +19,22 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F6 and not running:
 		_replay()
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F7 and not running:
+		_inspect_entrance()
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F8:
+		get_viewport().get_texture().get_image().save_png("res://.godot/bunker-exterior.png")
+
+func _inspect_entrance() -> void:
+	if not $PoiInstances.active_id.is_empty(): return
+	await wait_for_play()
+	for building in get_tree().get_nodes_in_group("poi_entrances"):
+		if absf(building.global_position.z + 45) >= 1: continue
+		var player := get_node("Player") as Node3D
+		player.complete_world_transition(building.global_transform * Transform3D(Basis.IDENTITY, Vector3(6,0.05,14)))
+		player.look_at(Vector3(building.global_position.x, player.global_position.y, building.global_position.z))
+		player.camera.look_at(building.global_position + Vector3.UP * 2.5)
+		status.text = "BUNKER exterior / F6 round trip / F8 capture"
+		return
 
 func _frames(count: int) -> void:
 	for i in range(count):
@@ -29,21 +46,12 @@ func _press_e() -> void:
 	await _frames(15)
 	Input.action_release("interact")
 
-func _walk_to(target: Vector3) -> bool:
-	var player = $PoiInstances._player
-	var deadline := Time.get_ticks_msec() + 18000
-	while Vector2(player.position.x - target.x, player.position.z - target.z).length() > 0.4 and Time.get_ticks_msec() < deadline:
-		player.look_at(Vector3(target.x, player.position.y, target.z))
-		Input.action_press("move_forward")
-		await get_tree().physics_frame
-	Input.action_release("move_forward")
-	return player.position.distance_to(target) < 1.0
-
 func _replay() -> void:
 	if running or not $PoiInstances.active_id.is_empty():
 		return
 	running = true
 	var player = get_node("Player")
+	await wait_for_play()
 	var entrances := get_tree().get_nodes_in_group("poi_entrances")
 	var building: Node3D
 	for candidate in entrances:
@@ -65,11 +73,12 @@ func _replay() -> void:
 		return
 	status.text = "REPLAY / walking authored room + connector"
 	var inside: PoiInterior = $PoiInstances.interior
+	var walker = preload("res://tests/bunker_replay.gd").new()
+	walker.interior = inside
+	walker.player = player
 	var neighbor: int = inside.layout.edges[0].y
-	var okay := await _walk_to(Vector3.ZERO)
-	okay = await _walk_to(inside.rooms[neighbor].position) and okay
-	okay = await _walk_to(Vector3.ZERO) and okay
-	okay = await _walk_to(Vector3(0, 0, 2.6)) and okay
+	var okay: bool = await walker.route(inside.navigation_anchor(neighbor))
+	okay = await walker.route(inside.spawn_transform().origin) and okay
 	player.rotation.y = PI
 	status.text = "REPLAY / exit door"
 	await _press_e()

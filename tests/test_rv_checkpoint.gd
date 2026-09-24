@@ -41,7 +41,8 @@ func _run() -> void:
 	var scrap_id := prop.persistent_id
 	var fuel := rv.current_fuel
 	var saved_materials := rv.get_all_items()
-	world.get_node("PoiInstances").saved_instances["visited"] = {"actors": []}
+	var visited := {"actors": [], "layout": InteriorLayout.generate(42), "explored": ["r000"]}
+	world.get_node("PoiInstances").saved_instances["visited"] = visited
 	var spare: Prop = world.get_node("SpareBattery")
 	var spare_ref: WeakRef = weakref(spare.battery)
 	spare.battery.charge = 17.0
@@ -147,7 +148,7 @@ func _run() -> void:
 			loose_matches += 1
 			expect(actor.engine.health == 91.0 and actor.engine.model_id == "upgraded", "Ground engine keeps model and durability")
 	expect(loose_matches == 1, "Ground engine restores exactly once")
-	expect(world.get_node("PoiInstances").saved_instances.has("visited"), "POI memory survives checkpoint")
+	expect(world.get_node("PoiInstances").saved_instances.get("visited") == visited, "Exact bunker manifest and exploration survive checkpoint")
 	var restored_station: CraftingStation
 	var restored_scrapper: Equipment
 	for device in restored.get_equipment():

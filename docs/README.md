@@ -11,7 +11,7 @@
 | 修改程式、查所有權與資料流 | [architecture](../architecture.md) | 現行實作與限制 |
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
-| 開發約定 | [AGENTS](../AGENTS.md)、[CLAUDE](../CLAUDE.md) | 協作與工具指引 |
+| 開發約定 | [AGENTS](../AGENTS.md) | 協作與工具指引 |
 | 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt)、[GDD_add](../GDD_add.md) | 保留原項目、POI 方向與補充提案；實作狀態見 GDD 及計畫總覽 |
 
 ## 文件維護規則
@@ -28,7 +28,7 @@
 
 ## 指南
 
-- [副本室內 v2 製作與保存契約](guides/interior-v2.md) — 11 種房型、接口、布局 manifest 與相容規則。
+- [隨機地堡製作與保存契約](guides/bunker-interior.md) — 16 模組、自由尺寸擴充、接口與 manifest 保存。
 
 - [Blender 角色與怪物製作規格](guides/character-modeling.md) — 美術方向、尺寸、低模預算、骨架、動畫與 GLB 交付；含玩家全身分件、布娃娃及肢解製作需求，與現有試接限制分開標示。
 
@@ -43,6 +43,8 @@
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [隨機軍事地堡](validation/2026-09-24-random-bunker.md) — 16 模組、自由尺寸擴充、三層通行、主世界進出與保存。
 
 - [Raker 固定抓咬視角](validation/2026-09-24-raker-fixed-grab-view.md) — 抓住時抬頭並固定角度，移除向下追嘴與頓挫，嘴部改對準固定視線。
 - [Raker 抱頭與快速貼臉咬擊](validation/2026-09-24-raker-bite-contact.md) — 加快伸手與咬合、雙手抓頭、三姿勢嘴部接觸與近距離鏡頭修正。

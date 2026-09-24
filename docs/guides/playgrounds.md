@@ -101,21 +101,14 @@ F1/F2/F3 預覽草原／林地／岩丘，F6 執行固定 seed 的 5 km 輪驅�
 
 ## POI 資產與副本
 
-入口建築、小房（9×9 m）、大房（18×18 m）、走廊及貨架／工作桌／櫃子已提供可編輯 `.tscn`。外觀、碰撞、門口與物資點分層，正式模型可以逐步替換灰盒。[製作規格與場景索引](../../world/poi_kit/README.md)。
+16 個地堡模組、六種首批尺寸、隨機 1–3 層。外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
 
 ```powershell
-godot --path . --log-file .godot/poi-asset-workshop.log res://tests/poi_asset_workshop.tscn
+godot --path . --log-file .godot/bunker.log res://tests/bunker_playground.tscn -- --rooms=12 --floors=3 --seed=42
+godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playground.tscn -- --replay
 ```
 
-F1–F4 查看建築／房間／掀頂，F5 步行並以 E 使用入口，F6 自動測試入口與穿越，M 顯示標記。這個場景保留作資產檢查。主遊戲已使用新入口、四門小房／大廳及獨立副本，舊 POI 已刪除。
-
-正式場景進出與連接走廊的操作回放：
-
-```powershell
-godot --path . --log-file .godot/poi-replay.log res://tests/poi_instance_playground.tscn
-```
-
-按 F6 開始，或命令加 `-- --replay`。回放只在測試場提供起點傳送與自動步行；其餘使用正式主場景、玩家和副本流程。2026-09-15 使用本機 Godot 4.7.2 驗證，該次紀錄的 CI 為 4.6.1；目前基線與 CI 統一為 `.godot-version` 的 4.7.2。副本目前兩種房型；室外檢查點包含已訪副本狀態，暫不支援在副本內直接保存。
+地堡測試場 F1 步行、F2 總覽、F3 掀頂、F5 連續搬運回放、R 重建、F8 截圖；M／Page Up／Down 是正式探索地圖。主世界回放 F6 或 --replay 從入口以 E 進出；F7 查看入口外觀、F8 截圖至 `.godot/bunker-exterior.png`。回放的測試引擎不屬於正式生成。舊資產 workshop／v2 playground 已移除。
 
 <a id="section-6"></a>
 
@@ -280,7 +273,6 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 
 ## 多樓層室內 v2
 
-`tests/interior_v2_playground.tscn` 使用正式 v2 生成器，預設 12 房，支援 `-- --rooms=100 --seed=1800`。F1 步行、F2 總覽、F3 掀頂、F5 持續輸入回放，M 已探索地圖、Page Up／Down 換層。完整命令與限制見 [v2 指南](interior-v2.md)。
 
 ## 輪胎爆胎與釘帶
 

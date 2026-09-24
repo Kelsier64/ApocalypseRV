@@ -26,7 +26,7 @@
 | `site_bounds` | 本地 AABB，包含建築及需要淨空的入口、後院、維修動線；包住 building_bounds |
 | `entrance_path`／`return_path` | 副本入口專用，本地 PoiEntrance／Marker3D 路徑 |
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
-| `interior_profile` | 副本入口專用；支援 `maintenance_maze_v1` 與 `maintenance_v2`；新室內見 [v2 規格](interior-v2.md) |
+| `interior_profile` | 副本入口專用；支援 `bunker`；室內見 [地堡規格](bunker-interior.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
 
 場址實例 `site.id` 與 `site.seed` 由世界規劃提供。`definition_id` 識別資產種類，**不是某一棟建築的保存 ID**；同種建築可有許多不同場址 ID。未知明確定義不能默默退回維修站。
@@ -40,8 +40,8 @@ Resource 為共用唯讀設定；執行時不得把拾取、門狀態、敵人�
 - 1 unit = 1 m，Y 向上。建築根節點單位縮放，原點在約定的地面位置；新建築主要正面朝 +Z。
 - 房間採地板占地中心；自由形狀室外建築可自訂原點，但必須記錄本地占地和入口位置。
 - `AccessPoints` 的 local -Z 指向建築外側；`DoorSockets` 仍沿用 local -Z 朝房外的接口契約。
-- 不將 9／18 m 房型尺寸套用到所有室外建築；這些尺寸是既有室內生成器契約。
-- 9 m 格網、3 × 3.5 m 門洞及既有室內樓高仍依房型規格。新自由室外門洞需以正式玩家、預期大型物品及敵人膠囊驗證；不以外觀門寬代替碰撞淨空。
+- 不將地堡首批六種尺寸套用到所有室外建築或後續房型。
+- 地堡尺寸自由、初始 2.4×2.8 m 門洞及 4.5 m 層距依地堡規格。新自由室外門洞需以正式玩家、預期大型物品及敵人膠囊驗證；不以外觀門寬代替碰撞淨空。
 
 ```text
 Building
@@ -65,7 +65,7 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 
 新資產加入正式世界前，必須讓共享場址計畫決定完整 transform、整平範圍、接近路線、避讓與串流保護範圍；地形、視覺放置及導航讀相同計畫。所有入口、後門、棚架、招牌、RV 轉彎和搬運路線都要納入驗收。
 
-直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。目前四款非 legacy 入口的新訪指向 `maintenance_v2`；已保存的舊副本保留 v1 幾何；新增 profile 必須先實作生成及保存支援，未知 profile 在生成時拒絕。
+直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。所有既有入口指向 `bunker`；本次清除已識別的舊 v1／v2 副本資料；新增 profile 必須先實作生成及保存支援，未知 profile 在生成時拒絕。
 
 既有 ReturnPoint 的返回朝向仍由 PoiInstanceManager 依建築朝向計算，以保持舊行為；新 AccessPoints 的朝向規格不倒改既有轉場朝向。
 
@@ -101,6 +101,6 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 | maintenance／warehouse／pump／research | 副本入口，v3／v4 既有生成池 | 路徑、顯示名稱及順序集中；同一室內 profile |
 | gas_station | v5 正式公路及獨立測試場 | 占地整地、回程串流、剩餘物資及檢查點保存 |
 
-四款舊入口仍由 exterior_style.gd 建立 Silhouette，部分附加碰撞嵌於其視覺量體；透過 `legacy_visual_layout` 明確列為例外，這輪不宣稱已完成外觀／碰撞結構重建。新資產不得沿用這個例外。逐棟改成編輯器組裝場景時，須另做視覺、碰撞、導航及舊世界相容驗收後才能移除旗標。
+既有入口由 exterior_style.gd 在 Visuals/BunkerFacade 建立簡單軍事立面，沿用 service_entrance 的入口／返回點與原占地；外观附加量體不帶碰撞。既有定義的 legacy_visual_layout 旗標暫保留，尚未全面改成編輯器組裝資產；新資產不得沿用此例外。
 
 戶外正式整合另由 `test_outdoor_gas_station.gd` 驗證；加油站保存 content_version，若需更動佈局，必須保留舊版資產或提供遷移，不能只增加版本就宣稱相容。

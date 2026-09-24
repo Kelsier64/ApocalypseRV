@@ -24,8 +24,8 @@ func _run() -> void:
 	var player: CharacterBody3D = preload("res://player/player.tscn").instantiate()
 	capsule = player.get_node("CollisionShape3D").shape
 	player.free()
-	for fixture in [[42,50],[1775,75],[1800,100],[4026586570,0]]:
-		var inside := MaintenanceInterior.new()
+	for fixture in [[42,10],[1775,20],[1800,30],[4026586570,0]]:
+		var inside := PoiInterior.new()
 		inside.room_count = fixture[1]
 		root.add_child(inside)
 		check(await inside.build(fixture[0]),"Doorway fixture builds")
@@ -34,10 +34,9 @@ func _run() -> void:
 		await physics_frame
 		var space := inside.get_world_3d().direct_space_state
 		for link: Dictionary in inside.layout.links:
-			if not link.gate.is_empty(): continue
 			var socket := inside.rooms[link.a].get_socket(link.sa)
 			for side in [-1,1]:
-				for offset in [-0.8,0.0,0.8]:
+				for offset in [-0.65,0.0,0.65]:
 					sweeps += 1
 					check(clear_opening(space,socket.global_transform,side,offset),"Direct door crossing seed=%d rooms=%d/%d socket=%s side=%d offset=%f" % [fixture[0],link.a,link.b,link.sa,side,offset])
 		var visuals: Array[MeshInstance3D] = []
@@ -54,17 +53,15 @@ func _run() -> void:
 				var pose: Transform3D = holder.global_transform.affine_inverse()
 				var own_bounds: AABB = pose * panel.global_transform * panel.mesh.get_aabb()
 				for mesh in visuals:
-					if mesh == panel: continue
+					if holder.is_ancestor_of(mesh): continue
 					var box: AABB = pose * mesh.global_transform * mesh.mesh.get_aabb()
 					# At eye height in this door, the own-room face must be in front
 					# of the adjacent panel/wall, never coplanar or behind it.
 					if box.position.x > -0.01 or box.end.x < 0.01 or box.position.y > 1.0 or box.end.y < 1.0: continue
 					if box.end.z < -0.5 or box.end.z > 0.5: continue
 					check(own_bounds.end.z > box.end.z+0.005,"No competing door face seed=%d seal=%s other=%s" % [fixture[0],holder.get_path(),mesh.get_path()])
-		var gate_pose := inside.gate.global_transform
-		check(not clear_opening(space,gate_pose,1,0),"Locked hatch blocks direct traversal")
 		# A deliberately blocked edge must fail even though the global graph has loops.
-		var socket := inside.rooms[0].get_socket(&"north")
+		var socket := inside.rooms[inside.layout.links[0].a].get_socket(inside.layout.links[0].sa)
 		var obstruction := StaticBody3D.new()
 		var shape := CollisionShape3D.new()
 		var box := BoxShape3D.new()
@@ -77,14 +74,7 @@ func _run() -> void:
 		await physics_frame
 		check(not clear_opening(space,socket.global_transform,1,0),"Direct sweep detects blocked edge instead of accepting a detour")
 		obstruction.free()
-		inside.shortcut_open = true
-		inside.gate.completed = true
-		inside._open_gate_geometry()
-		await physics_frame
-		await physics_frame
-		for side in [-1,1]:
-			check(clear_opening(space,gate_pose,side,0),"Released hatch is physically open on both sides")
 		inside.free()
 		await process_frame
-	if failures.is_empty(): print("PASS: %d direct player-capsule door sweeps, non-overlapping door faces, blocked-edge detection and released hatch" % sweeps)
+	if failures.is_empty(): print("PASS: %d direct player-capsule door sweeps, non-overlapping door faces, blocked-edge detection" % sweeps)
 	quit(0 if failures.is_empty() else 1)
