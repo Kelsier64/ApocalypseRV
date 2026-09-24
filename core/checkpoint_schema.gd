@@ -60,7 +60,7 @@ static func poi_error(value: Variant, path := "poi") -> String:
 		if entry.has("layout"):
 			var layout_error := InteriorLayout.validate(entry.layout)
 			if not layout_error.is_empty(): return prefix + "." + layout_error
-			if not entry.get("objective_claimed") is bool or not entry.get("shortcut_open") is bool or not entry.get("explored") is Array: return prefix + ".progress"
+			if not entry.get("explored") is Array: return prefix + ".progress"
 			var seen: Array[String] = []
 			for room_id in entry.explored:
 				if not room_id is String or room_id in seen: return prefix + ".explored"
@@ -69,7 +69,7 @@ static func poi_error(value: Variant, path := "poi") -> String:
 					if room.id == room_id: found = true
 				if not found: return prefix + ".explored"
 				seen.append(room_id)
-		elif entry.has("objective_claimed") or entry.has("shortcut_open") or entry.has("explored"):
+		else:
 			return prefix + ".missing_layout"
 		for i in range(entry.actors.size()):
 			var actor: Variant = entry.actors[i]
@@ -88,3 +88,15 @@ static func yields_valid(value: Variant) -> bool:
 	for key in value:
 		if not key is String or not value[key] is Vector2 or not value[key].is_finite() or value[key].x < 0 or value[key].y < value[key].x: return false
 	return true
+
+static func legacy_poi(entry: Variant) -> bool:
+	if not entry is Dictionary or not entry.get("actors") is Array: return false
+	if not entry.has("layout"):
+		return entry.size() == 1
+	var layout: Variant = entry.layout
+	return layout is Dictionary and layout.get("version") == 2 and layout.get("profile") == "maintenance_v2"
+
+static func discard_legacy_poi(data: Dictionary) -> void:
+	if not data.get("poi") is Dictionary: return
+	for id in data.poi.keys():
+		if legacy_poi(data.poi[id]): data.poi.erase(id)

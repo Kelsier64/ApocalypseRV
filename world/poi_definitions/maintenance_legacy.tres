@@ -10,3 +10,5 @@ scene_path = "res://world/poi_kit/exteriors/service_entrance.tscn"
 legacy_visual_layout = false
 access_paths = Array[NodePath]([NodePath("ReturnPoint")])
 
+
+interior_profile = &"bunker"

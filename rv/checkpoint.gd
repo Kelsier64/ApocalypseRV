@@ -324,6 +324,7 @@ func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
 		for index in range(upgraded.vehicles.size()):
 			if not upgraded.vehicles[index] is Dictionary: return {}
 			upgraded.vehicles[index] = VehicleSnapshot.upgrade(upgraded.vehicles[index])
+		CheckpointSchema.discard_legacy_poi(upgraded)
 		return upgraded
 	if source.get("version", 0) != 1 or not source.get("vehicles") is Array or not source.get("actors") is Array or not source.get("player") is Dictionary or not source.player.get("items") is Array or not source.get("poi") is Dictionary: return {}
 	var data := source.duplicate(true)
@@ -350,6 +351,7 @@ func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
 		for device in vehicle.equipment:
 			if not _convert_legacy_entries(device.service.get("inputs", []), rv): return {}
 	data.version = VERSION
+	CheckpointSchema.discard_legacy_poi(data)
 	return data
 
 func _convert_legacy_entries(entries: Array, rv: Dictionary) -> bool:

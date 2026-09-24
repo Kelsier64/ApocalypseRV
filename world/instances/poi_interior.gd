@@ -1,13 +1,8 @@
 extends Node3D
 class_name PoiInterior
-## One active interior. Geometry is regenerated from seed; only actors are saved.
-const SMALL = preload("res://world/poi_kit/rooms/maze_utility.tscn")
-const HALL = preload("res://world/poi_kit/rooms/maze_hall.tscn")
-const FLOOR = preload("res://world/poi_kit/materials/floor.tres")
-const WALL = preload("res://world/poi_kit/materials/concrete.tres")
-const SEAL = preload("res://world/poi_kit/materials/paint.tres")
-const ZOMBIE = preload("res://enemies/zombie.tscn")
-const SIDES := [&"north", &"east", &"south", &"west"]
+## Bunker assembler. Geometry comes from the saved manifest; actors belong to this World3D.
+const PROFILE: InteriorProfile = preload("res://world/instances/catalog/bunker.tres")
+const WALL = preload("res://world/poi_kit/materials/bunker/concrete.tres")
 var layout: Dictionary
 var rooms: Array[PoiRoom] = []
 var entities: Node3D
@@ -15,70 +10,157 @@ var exit_door: PoiEntrance
 var navigation: NavigationRegion3D
 var cancelled := false
 var build_timeout_ms := 60000
+var room_count := 0
+var target_floors := 0
+var explored: Array[String] = []
+var build_msec := 0
+var navigation_msec := 0
+var rebaking := false
+var current_room := 0
+var current_floor := 0
+var _sample_time := 0.0
+var _hud: Label
+var _map: Control
 
 func build(seed_value: int, saved: Dictionary = {}) -> bool:
+	var started := Time.get_ticks_msec()
 	if not saved.is_empty() and not CheckpointSchema.poi_error({"interior": saved}).is_empty(): return false
-	var deadline := Time.get_ticks_msec() + build_timeout_ms
+	if not PROFILE.validate().is_empty(): return false
+	layout = saved.layout.duplicate(true) if saved.has("layout") else InteriorLayout.generate(seed_value, room_count, PROFILE, target_floors)
+	if layout.is_empty() or not InteriorLayout.validate(layout).is_empty(): return false
+	if saved.has("explored"): explored.assign(saved.explored)
 	set_meta("entity_domain", true)
 	entities = Node3D.new()
 	entities.name = "WorldEntities"
 	add_child(entities)
-	layout = MazeLayout.generate(seed_value)
 	var environment := WorldEnvironment.new()
 	environment.environment = Environment.new()
 	environment.environment.background_mode = Environment.BG_COLOR
-	environment.environment.background_color = Color("151d1d")
+	environment.environment.background_color = Color("111511")
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.environment.ambient_light_color = Color("adbbb0")
-	environment.environment.ambient_light_energy = 0.65
+	environment.environment.ambient_light_color = Color("afb9a3")
+	environment.environment.ambient_light_energy = 0.22
 	add_child(environment)
 	navigation = NavigationRegion3D.new()
-	navigation.name = "MazeGeometry"
+	navigation.name = "BunkerGeometry"
 	add_child(navigation)
-	for i in range(layout.rooms.size()):
+	for i in layout.rooms.size():
 		var data: Dictionary = layout.rooms[i]
-		var room: PoiRoom = (HALL if data.large else SMALL).instantiate()
-		room.name = "Room%03d" % i
-		room.position = Vector3(data.cell.x, 0, data.cell.y) * MazeLayout.SPACING
+		var room := InteriorLayout.definition(layout, i).scene.instantiate() as PoiRoom
+		room.name = data.id
+		room.transform = data.transform
 		navigation.add_child(room)
 		rooms.append(room)
-		for d in range(4):
-			if not data.doors.has(d):
-				var socket := room.get_socket(SIDES[d])
-				var size := Vector3(3, 3.5, 0.24) if d % 2 == 0 else Vector3(0.24, 3.5, 3)
-				_box(room, size, socket.position + Vector3.UP * 1.75, SEAL)
-		var sign := Label3D.new()
-		sign.text = "R%03d" % (i + 1)
-		sign.position = Vector3(0, 3.1, 1.5)
-		sign.font_size = 64
-		sign.pixel_size = 0.01
-		sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		room.add_child(sign)
-		if i % 8 == 7:
+		for socket in room.get_node("DoorSockets").get_children():
+			if not InteriorLayout.used(layout, i, str(socket.socket_id)): _seal(room, socket)
+		if i % 4 == 3:
 			await get_tree().process_frame
-			if cancelled or Time.get_ticks_msec() >= deadline: return false
-	for edge: Vector2i in layout.edges:
-		_connect(rooms[edge.x], rooms[edge.y])
+			if cancelled or Time.get_ticks_msec() - started > build_timeout_ms: return false
 	_add_exit()
-	# Bake actual static geometry, including furniture, before adding dynamic actors.
 	var mesh := NavigationMesh.new()
 	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	mesh.agent_radius = 0.5
 	mesh.agent_height = 2.0
 	mesh.agent_max_climb = 0.25
+	mesh.agent_max_slope = 40.0
 	mesh.cell_size = 0.25
 	mesh.cell_height = 0.25
 	navigation.navigation_mesh = mesh
+	if not await _bake(): return false
+	if saved.has("actors"): _restore(saved.actors)
+	_add_hud()
+	build_msec = Time.get_ticks_msec() - started
+	print("BUNKER_READY seed=%d rooms=%d/%d floors=%d/%d build_ms=%d nav_ms=%d" % [seed_value, rooms.size(), layout.target_rooms, InteriorLayout.floor_count(layout), layout.target_floors, build_msec, navigation_msec])
+	return true
+
+func spawn_transform() -> Transform3D:
+	return rooms[0].get_node("Walkway/Spawn").global_transform
+
+func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
+	var holder := Node3D.new()
+	holder.name = "Sealed_" + str(socket.socket_id)
+	holder.transform = room.get_node("Collision").transform.affine_inverse() * room.socket_transform(socket)
+	room.get_node("Collision").add_child(holder)
+	# +Z faces inward. The whole wall slab stays in its own room.
+	_box(holder, Vector3(socket.opening.x, socket.opening.y, 0.24), Vector3(0, socket.opening.y/2, 0.12), WALL)
+	for path in socket.frame_nodes:
+		var frame := socket.get_node_or_null(path)
+		if frame != null: frame.queue_free()
+	var paint := MeshInstance3D.new()
+	var panel := BoxMesh.new()
+	panel.size = Vector3(socket.opening.x, 1.1, 0.012)
+	paint.mesh = panel
+	paint.material_override = preload("res://world/poi_kit/materials/bunker/olive.tres")
+	paint.position = Vector3(0, 0.7, 0.247)
+	holder.add_child(paint)
+
+func _add_exit() -> void:
+	var marker: Marker3D = rooms[0].get_node("Walkway/Exit")
+	exit_door = PoiEntrance.new()
+	exit_door.name = "Exit"
+	exit_door.transform = marker.global_transform
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(2.35, 2.8, 0.1)
+	shape.shape = box
+	shape.position.y = 1.4
+	exit_door.add_child(shape)
+	add_child(exit_door)
+	var sign := Label3D.new()
+	sign.text = "[E] EXIT / SURFACE"
+	sign.position = Vector3(0, 2.4, 0.10)
+	sign.font_size = 40
+	sign.pixel_size = 0.006
+	exit_door.add_child(sign)
+
+func navigation_anchor(index: int) -> Vector3:
+	var route := rooms[index].get_node("Walkway").get_child(0) as Marker3D
+	return route.global_position
+
+func _bake() -> bool:
+	if rebaking: return false
+	rebaking = true
+	var started := Time.get_ticks_msec()
+	await get_tree().process_frame
+	if cancelled:
+		rebaking = false
+		return false
 	navigation.bake_navigation_mesh(true)
-	while NavigationServer3D.is_baking_navigation_mesh(mesh):
+	while NavigationServer3D.is_baking_navigation_mesh(navigation.navigation_mesh):
 		await get_tree().process_frame
-		if cancelled or Time.get_ticks_msec() >= deadline: return false
-	await get_tree().physics_frame
-	if cancelled: return false
-	if saved.has("actors"):
-		_restore(saved.actors)
-	else:
-		_populate(seed_value)
+		if cancelled or Time.get_ticks_msec() - started > build_timeout_ms:
+			rebaking = false
+			return false
+	var region := navigation.get_region_rid()
+	var before := NavigationServer3D.region_get_iteration_id(region)
+	# Publish an immutable mesh, then wait for region AND map synchronization.
+	navigation.navigation_mesh = navigation.navigation_mesh.duplicate()
+	while NavigationServer3D.region_get_iteration_id(region) <= before or NavigationServer3D.region_get_bounds(region).size == Vector3.ZERO:
+		await get_tree().physics_frame
+		if cancelled or Time.get_ticks_msec() - started > build_timeout_ms:
+			rebaking = false
+			return false
+	var probe := rooms[0].global_position
+	while true:
+		var map := navigation.get_navigation_map()
+		if NavigationServer3D.map_get_iteration_id(map) > 0 and NavigationServer3D.map_get_closest_point_owner(map,probe) == region and NavigationServer3D.map_get_closest_point(map,probe).distance_to(probe) < 1.0: break
+		await get_tree().physics_frame
+		if cancelled or Time.get_ticks_msec() - started > build_timeout_ms:
+			rebaking = false
+			return false
+	navigation_msec = Time.get_ticks_msec() - started
+	rebaking = false
+	return _navigation_connected()
+
+func _navigation_connected() -> bool:
+	var map := navigation.get_navigation_map()
+	var start := navigation_anchor(0)
+	for i in rooms.size():
+		var target := navigation_anchor(i)
+		if NavigationServer3D.map_get_closest_point(map, target).distance_to(target) >= 1.0: return false
+		if i == 0: continue
+		var path := NavigationServer3D.map_get_path(map, start, target, true)
+		if path.size() < 2 or path[-1].distance_to(target) >= 1.0: return false
 	return true
 
 func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> void:
@@ -97,81 +179,6 @@ func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> voi
 	body.add_child(shape)
 	parent.add_child(body)
 
-func _connect(a: PoiRoom, b: PoiRoom) -> void:
-	var delta := (b.position - a.position).normalized()
-	var door_side := 1 if delta.x > 0.5 else (3 if delta.x < -0.5 else (2 if delta.z > 0.5 else 0))
-	var socket_a := a.get_socket(SIDES[door_side])
-	var socket_b := b.get_socket(SIDES[(door_side + 2) % 4])
-	if not socket_a.can_connect(socket_b):
-		push_error("Incompatible maze door interfaces")
-		return
-	var start := to_local(socket_a.global_position)
-	var end := to_local(socket_b.global_position)
-	var length := start.distance_to(end)
-	var center := (start + end) * 0.5
-	var along_x := absf(delta.x) > 0.5
-	_box(navigation, Vector3(length, 0.25, 3) if along_x else Vector3(3, 0.25, length), center + Vector3.DOWN * 0.125, FLOOR)
-	_box(navigation, Vector3(length, 0.24, 3.24) if along_x else Vector3(3.24, 0.24, length), center + Vector3.UP * 3.62, WALL)
-	for side in [-1, 1]:
-		var offset := Vector3(0, 1.75, side * 1.62) if along_x else Vector3(side * 1.62, 1.75, 0)
-		_box(navigation, Vector3(length, 3.5, 0.24) if along_x else Vector3(0.24, 3.5, length), center + offset, WALL)
-	var lamp := OmniLight3D.new()
-	lamp.position = center + Vector3.UP * 2.9
-	lamp.light_energy = 1.1
-	lamp.omni_range = 11
-	navigation.add_child(lamp)
-
-func _add_exit() -> void:
-	exit_door = PoiEntrance.new()
-	exit_door.name = "Exit"
-	exit_door.position = Vector3(0, 0, 4.32)
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(2.8, 3.5, 0.1)
-	shape.shape = box
-	shape.position.y = 1.75
-	exit_door.add_child(shape)
-	add_child(exit_door)
-	var sign := Label3D.new()
-	sign.text = "[E] EXIT / HIGHWAY"
-	sign.position = Vector3(0, 2.5, 4.2)
-	sign.rotation.y = PI
-	sign.font_size = 52
-	sign.pixel_size = 0.008
-	add_child(sign)
-
-func _populate(seed_value: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_value ^ 0x4c4f4f54
-	for i in range(rooms.size()):
-		var points := rooms[i].find_children("*", "Marker3D", true, false)
-		for j in range(points.size() - 1, 0, -1):
-			var k := rng.randi_range(0, j)
-			var swap: Node = points[j]
-			points[j] = points[k]
-			points[k] = swap
-		var spawned := 0
-		for point in points:
-			if not point is PoiLootPoint or spawned >= 4:
-				continue
-			var scene: PackedScene = point.roll_scene(rng)
-			if scene == null:
-				continue
-			var item := scene.instantiate() as Prop
-			entities.add_child(item)
-			item.global_transform = point.global_transform
-			# Authored shelf loot stays put until picked up; player drops use physics.
-			item.freeze = true
-			spawned += 1
-		var enemy_points := rooms[i].get_node("EnemySpawns").get_children()
-		if i > 2 and i % 7 == 0 and not enemy_points.is_empty():
-			var enemy := ZOMBIE.instantiate() as Monster
-			entities.add_child(enemy)
-			enemy.global_position = enemy_points[rng.randi_range(0, enemy_points.size() - 1)].global_position
-
-func navigation_anchor(index: int) -> Vector3:
-	return rooms[index].global_position
-
 func snapshot() -> Dictionary:
 	var actors: Array[Dictionary] = []
 	for actor in entities.get_children():
@@ -189,7 +196,7 @@ func snapshot() -> Dictionary:
 			data["large"] = actor.is_large
 			data["frozen"] = actor.freeze
 		actors.append(data)
-	return {"actors": actors}
+	return {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate()}
 
 func _restore(actors: Array) -> void:
 	for data: Dictionary in actors:
@@ -204,3 +211,48 @@ func _restore(actors: Array) -> void:
 			actor.item_name = data.name
 			actor.is_large = data.large
 			actor.freeze = data.frozen
+
+func _add_hud() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 3
+	add_child(layer)
+	_hud = Label.new()
+	_hud.position = Vector2(24,80)
+	_hud.add_theme_font_size_override("font_size", 20)
+	layer.add_child(_hud)
+	_map = preload("res://world/instances/interior_map.gd").new()
+	_map.interior = self
+	_map.position = Vector2(24,180)
+	_map.size = Vector2(600,440)
+	_map.hide()
+	layer.add_child(_map)
+
+func _process(delta: float) -> void:
+	if _hud == null: return
+	_sample_time += delta
+	if _sample_time < 0.2: return
+	_sample_time = 0
+	var player := get_node_or_null("Player") as Node3D
+	if player == null: return
+	current_floor = clampi(roundi(-player.position.y/layout.floor_spacing),0,InteriorLayout.floor_count(layout)-1)
+	for i in rooms.size():
+		var local := rooms[i].to_local(player.global_position)
+		var bounds: AABB = InteriorLayout.definition(layout, i).describe().bounds
+		# Sample feet, not the below-floor origin; do not expand into another level.
+		if bounds.has_point(local + Vector3.UP * 0.3):
+			current_room = i
+			var id: String = layout.rooms[i].id
+			if id not in explored: explored.append(id)
+			break
+	_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]
+	if _map.visible: _map.queue_redraw()
+
+func _input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo or _map == null: return
+	if event.keycode == KEY_M:
+		_map.visible = not _map.visible
+		_map.floor_index = current_floor
+		_map.queue_redraw()
+	if event.keycode in [KEY_PAGEUP, KEY_PAGEDOWN]:
+		_map.floor_index = clampi(_map.floor_index + (-1 if event.keycode == KEY_PAGEUP else 1), 0, InteriorLayout.floor_count(layout)-1)
+		_map.queue_redraw()

@@ -14,7 +14,7 @@ enum Kind { INSTANCE_ENTRANCE, WALK_IN }
 @export var entrance_path: NodePath = ^"Entrance"
 @export var return_path: NodePath = ^"ReturnPoint"
 @export var access_paths: Array[NodePath] = []
-@export var interior_profile: StringName = &"maintenance_maze_v1"
+@export var interior_profile: StringName = &"bunker"
 ## Existing procedural silhouettes are explicitly grandfathered, not strict assets.
 @export var legacy_visual_layout := false
 

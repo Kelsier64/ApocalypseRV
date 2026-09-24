@@ -80,13 +80,14 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	var saved: Dictionary = saved_instances.get(id, {})
-	var profile: StringName = building.get_meta("poi_interior_profile", &"maintenance_maze_v1")
+	var profile: StringName = building.get_meta("poi_interior_profile", &"bunker")
 	if not POIConfig.supported_interior(profile):
 		cancel_transition("Unsupported interior profile")
 		return
-	# Actor-only snapshots predate v2 and always keep their original geometry.
-	var use_v2 := saved.has("layout") or (saved.is_empty() and profile == &"maintenance_v2")
-	interior = interior_factory.call() if interior_factory.is_valid() else (MaintenanceInterior.new() if use_v2 else PoiInterior.new())
+	# Only explicitly identified pre-bunker snapshots are discarded.
+	if CheckpointSchema.legacy_poi(saved):
+		saved_instances.erase(id)
+	interior = interior_factory.call() if interior_factory.is_valid() else PoiInterior.new()
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
 	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
@@ -99,13 +100,13 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	interior.exit_door.entry_requested.connect(func(_actor: Node3D, _destination: StringName) -> void:
 		leave.call_deferred())
 	_player.reparent(interior)
-	_reset_player(Transform3D(Basis.IDENTITY, Vector3(0, 0.05, 2.8)))
+	_reset_player(interior.spawn_transform())
 	_display.texture = viewport.get_texture()
 	_display.show()
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
-	_status.text = "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), "Return to RECEPTION to exit" if use_v2 else "Return to R001 to exit"]
+	_status.text = "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), "Return to B1 ENTRY to exit"]
 	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
 
 func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
