@@ -32,6 +32,8 @@
 
 - [Blender 角色與怪物製作規格](guides/character-modeling.md) — 美術方向、尺寸、低模預算、骨架、動畫與 GLB 交付；含玩家全身分件、布娃娃及肢解製作需求，與現有試接限制分開標示。
 
+- [玩家角色建模 AI 委託書](guides/player-model-ai-brief.md) — 依使用者參考圖指定可換色工作服、純白可替換面具、全身骨架、布娃娃及活體斷肢資產的 Blender 交付條件。
+
 - [POI 共用製作與接入規範](guides/poi-authoring.md) — 類型、Resource、場景層級、素材替換及生成／保存責任。
 
 - [遊玩與測試場指南](guides/playgrounds.md) — `guides/playgrounds.md`

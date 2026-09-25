@@ -1,0 +1,92 @@
+[
+  {
+    "cut": "neck",
+    "body": "body_torso",
+    "limb": "body_head",
+    "bone": "neck",
+    "caps": [
+      "cap_neck_body",
+      "cap_neck_limb"
+    ]
+  },
+  {
+    "cut": "shoulder.L",
+    "body": "body_torso",
+    "limb": "body_upper_arm.L",
+    "bone": "upper_arm.L",
+    "caps": [
+      "cap_shoulder.L_body",
+      "cap_shoulder.L_limb"
+    ]
+  },
+  {
+    "cut": "elbow.L",
+    "body": "body_upper_arm.L",
+    "limb": "body_forearm.L",
+    "bone": "forearm.L",
+    "caps": [
+      "cap_elbow.L_body",
+      "cap_elbow.L_limb"
+    ]
+  },
+  {
+    "cut": "shoulder.R",
+    "body": "body_torso",
+    "limb": "body_upper_arm.R",
+    "bone": "upper_arm.R",
+    "caps": [
+      "cap_shoulder.R_body",
+      "cap_shoulder.R_limb"
+    ]
+  },
+  {
+    "cut": "elbow.R",
+    "body": "body_upper_arm.R",
+    "limb": "body_forearm.R",
+    "bone": "forearm.R",
+    "caps": [
+      "cap_elbow.R_body",
+      "cap_elbow.R_limb"
+    ]
+  },
+  {
+    "cut": "hip.L",
+    "body": "body_torso",
+    "limb": "body_thigh.L",
+    "bone": "thigh.L",
+    "caps": [
+      "cap_hip.L_body",
+      "cap_hip.L_limb"
+    ]
+  },
+  {
+    "cut": "knee.L",
+    "body": "body_thigh.L",
+    "limb": "body_shin.L",
+    "bone": "shin.L",
+    "caps": [
+      "cap_knee.L_body",
+      "cap_knee.L_limb"
+    ]
+  },
+  {
+    "cut": "hip.R",
+    "body": "body_torso",
+    "limb": "body_thigh.R",
+    "bone": "thigh.R",
+    "caps": [
+      "cap_hip.R_body",
+      "cap_hip.R_limb"
+    ]
+  },
+  {
+    "cut": "knee.R",
+    "body": "body_thigh.R",
+    "limb": "body_shin.R",
+    "bone": "shin.R",
+    "caps": [
+      "cap_knee.R_body",
+      "cap_knee.R_limb"
+    ]
+  }
+]

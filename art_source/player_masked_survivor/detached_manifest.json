@@ -1,0 +1,222 @@
+[
+  {
+    "cut": "neck",
+    "file": "detached/detached_neck.glb",
+    "bones": [
+      "head",
+      "neck",
+      "root"
+    ],
+    "meshes": [
+      "body_head",
+      "cap_neck_limb",
+      "mask_default"
+    ],
+    "removed_ancestor_weights": "reassigned to neck",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "shoulder.L",
+    "file": "detached/detached_shoulder_L.glb",
+    "bones": [
+      "forearm.L",
+      "hand.L",
+      "index_01.L",
+      "index_02.L",
+      "index_03.L",
+      "middle_01.L",
+      "middle_02.L",
+      "middle_03.L",
+      "pinky_01.L",
+      "pinky_02.L",
+      "pinky_03.L",
+      "ring_01.L",
+      "ring_02.L",
+      "ring_03.L",
+      "root",
+      "thumb_01.L",
+      "thumb_02.L",
+      "thumb_03.L",
+      "thumb_metacarpal.L",
+      "upper_arm.L"
+    ],
+    "meshes": [
+      "body_forearm.L",
+      "body_upper_arm.L",
+      "cap_elbow.L_body",
+      "cap_elbow.L_limb",
+      "cap_shoulder.L_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to upper_arm.L",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "elbow.L",
+    "file": "detached/detached_elbow_L.glb",
+    "bones": [
+      "forearm.L",
+      "hand.L",
+      "index_01.L",
+      "index_02.L",
+      "index_03.L",
+      "middle_01.L",
+      "middle_02.L",
+      "middle_03.L",
+      "pinky_01.L",
+      "pinky_02.L",
+      "pinky_03.L",
+      "ring_01.L",
+      "ring_02.L",
+      "ring_03.L",
+      "root",
+      "thumb_01.L",
+      "thumb_02.L",
+      "thumb_03.L",
+      "thumb_metacarpal.L"
+    ],
+    "meshes": [
+      "body_forearm.L",
+      "cap_elbow.L_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to forearm.L",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "shoulder.R",
+    "file": "detached/detached_shoulder_R.glb",
+    "bones": [
+      "forearm.R",
+      "hand.R",
+      "index_01.R",
+      "index_02.R",
+      "index_03.R",
+      "middle_01.R",
+      "middle_02.R",
+      "middle_03.R",
+      "pinky_01.R",
+      "pinky_02.R",
+      "pinky_03.R",
+      "ring_01.R",
+      "ring_02.R",
+      "ring_03.R",
+      "root",
+      "thumb_01.R",
+      "thumb_02.R",
+      "thumb_03.R",
+      "thumb_metacarpal.R",
+      "upper_arm.R"
+    ],
+    "meshes": [
+      "body_forearm.R",
+      "body_upper_arm.R",
+      "cap_elbow.R_body",
+      "cap_elbow.R_limb",
+      "cap_shoulder.R_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to upper_arm.R",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "elbow.R",
+    "file": "detached/detached_elbow_R.glb",
+    "bones": [
+      "forearm.R",
+      "hand.R",
+      "index_01.R",
+      "index_02.R",
+      "index_03.R",
+      "middle_01.R",
+      "middle_02.R",
+      "middle_03.R",
+      "pinky_01.R",
+      "pinky_02.R",
+      "pinky_03.R",
+      "ring_01.R",
+      "ring_02.R",
+      "ring_03.R",
+      "root",
+      "thumb_01.R",
+      "thumb_02.R",
+      "thumb_03.R",
+      "thumb_metacarpal.R"
+    ],
+    "meshes": [
+      "body_forearm.R",
+      "cap_elbow.R_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to forearm.R",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "hip.L",
+    "file": "detached/detached_hip_L.glb",
+    "bones": [
+      "foot.L",
+      "root",
+      "shin.L",
+      "thigh.L",
+      "toe.L"
+    ],
+    "meshes": [
+      "body_shin.L",
+      "body_thigh.L",
+      "cap_hip.L_limb",
+      "cap_knee.L_body",
+      "cap_knee.L_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to thigh.L",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "knee.L",
+    "file": "detached/detached_knee_L.glb",
+    "bones": [
+      "foot.L",
+      "root",
+      "shin.L",
+      "toe.L"
+    ],
+    "meshes": [
+      "body_shin.L",
+      "cap_knee.L_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to shin.L",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "hip.R",
+    "file": "detached/detached_hip_R.glb",
+    "bones": [
+      "foot.R",
+      "root",
+      "shin.R",
+      "thigh.R",
+      "toe.R"
+    ],
+    "meshes": [
+      "body_shin.R",
+      "body_thigh.R",
+      "cap_hip.R_limb",
+      "cap_knee.R_body",
+      "cap_knee.R_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to thigh.R",
+    "origin": "unchanged, full-character ground origin"
+  },
+  {
+    "cut": "knee.R",
+    "file": "detached/detached_knee_R.glb",
+    "bones": [
+      "foot.R",
+      "root",
+      "shin.R",
+      "toe.R"
+    ],
+    "meshes": [
+      "body_shin.R",
+      "cap_knee.R_limb"
+    ],
+    "removed_ancestor_weights": "reassigned to shin.R",
+    "origin": "unchanged, full-character ground origin"
+  }
+]

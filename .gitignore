@@ -2,3 +2,12 @@
 .godot/
 /android/
 .worktrees/
+
+# Player art authoring history and generated review/bake output
+/art_source/player_masked_survivor/history/
+/art_source/player_masked_survivor/revisions/
+/art_source/player_masked_survivor/work/
+/art_source/player_masked_survivor/previews/
+/art_source/player_masked_survivor/godot_review*/
+/art_source/player_masked_survivor/review/
+/art_source/player_masked_survivor/*.blend[0-9]
