@@ -1,5 +1,5 @@
 extends Node3D
-## v5 streams both directions; indoor coordinates retain the outdoor anchor.
+## v5+ streams both directions; indoor coordinates retain the outdoor anchor.
 var outdoor_sites: Dictionary = {}
 var generated_bands: Array[int] = []
 var restore_bands: Array[int] = []
@@ -86,9 +86,7 @@ func _process(delta: float) -> void:
 func protected_bands(anchor: Vector3) -> Array[int]:
 	var result: Array[int] = []
 	if profile.generation_version < 3: return result
-	var nearest := maxi(0, roundi(-anchor.z / profile.stop_spacing))
-	for i in range(maxi(0, nearest - 1), nearest + 2):
-		var site := field.stop(i)
+	for site in field.sites_near_z(anchor.z, 400):
 		if not site.has("bounds") or not site.bounds.has_point(anchor): continue
 		var box: AABB = site.bounds
 		for index in range(floori(-box.end.z / 150.0) - 1, floori(-box.position.z / 150.0) + 2):

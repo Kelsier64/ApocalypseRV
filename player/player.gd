@@ -1,7 +1,14 @@
 extends CharacterBody3D
 
 const SPEED = 5.0
+const SPRINT_SPEED = 8.0
 const JUMP_VELOCITY = 4.5
+const MAX_STAMINA = 100.0
+const SPRINT_STAMINA_PER_SECOND = 20.0
+const JUMP_STAMINA_COST = 15.0
+const STAMINA_RECOVERY_PER_SECOND = 18.0
+const STAMINA_RECOVERY_DELAY = 1.0
+const STAMINA_EXHAUSTION_RECOVERY = 20.0
 const MOUSE_SENSITIVITY = 0.002
 const CLIMB_WALL_MIN_DOT = 0.0
 const CLIMB_WALL_MAX_DOT = 0.85
@@ -69,6 +76,11 @@ var max_player_health: float = 100.0
 var current_player_health: float = 100.0
 var damage_cooldown: float = 0.0
 var is_player_dead: bool = false
+
+# Stamina is spent only by normal movement, not RV climbing or driving.
+var current_stamina: float = MAX_STAMINA
+var stamina_recovery_delay_remaining: float = 0.0
+var stamina_exhausted: bool = false
 
 @onready var inventory_ui = $InventoryUI
 @onready var health_bar = $HealthBarUI
@@ -154,6 +166,7 @@ func _ready():
 	add_to_group(Groups.PLAYER)
 	current_player_health = max_player_health
 	_update_health_bar()
+	_update_stamina_bar()
 
 func is_placing_equipment() -> bool:
 	return is_instance_valid(placement.placing_equipment)
@@ -216,9 +229,13 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	inventory.items.assign(state.items.duplicate(true))
 	inventory.active_slot = state.slot
 	current_player_health = state.health
+	current_stamina = clampf(float(state.get("stamina", MAX_STAMINA)), 0.0, MAX_STAMINA)
+	stamina_recovery_delay_remaining = 0.0
+	stamina_exhausted = bool(state.get("stamina_exhausted", current_stamina <= 0.0))
 	complete_world_transition(state.transform)
 	refresh_inventory()
 	_update_health_bar()
+	_update_stamina_bar()
 
 ## Seat flow: the player owns its own state mutation; the seat only decides
 ## where the player reappears and which camera takes over.
@@ -420,6 +437,37 @@ func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
 func _find_rv_ancestor(node: Node) -> Node3D:
 	return ClimbMath.find_rv_ancestor(node)
 
+func _can_sprint(moving: bool) -> bool:
+	return moving and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
+		and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
+
+func _spend_stamina(amount: float) -> bool:
+	if current_stamina < amount:
+		return false
+	current_stamina = maxf(0.0, current_stamina - amount)
+	stamina_recovery_delay_remaining = STAMINA_RECOVERY_DELAY
+	if current_stamina <= 0.0:
+		stamina_exhausted = true
+	_update_stamina_bar()
+	return true
+
+func _update_stamina(delta: float, sprinting: bool) -> void:
+	if sprinting:
+		_spend_stamina(minf(current_stamina, SPRINT_STAMINA_PER_SECOND * delta))
+		return
+	if stamina_recovery_delay_remaining > 0.0:
+		stamina_recovery_delay_remaining = maxf(0.0, stamina_recovery_delay_remaining - delta)
+		return
+	if current_stamina < MAX_STAMINA:
+		current_stamina = minf(MAX_STAMINA, current_stamina + STAMINA_RECOVERY_PER_SECOND * delta)
+		if stamina_exhausted and current_stamina >= STAMINA_EXHAUSTION_RECOVERY:
+			stamina_exhausted = false
+		_update_stamina_bar()
+
+func _update_stamina_bar() -> void:
+	if health_bar and health_bar.has_method("set_stamina"):
+		health_bar.set_stamina(current_stamina, MAX_STAMINA)
+
 func _process_normal_movement(delta: float) -> void:
 	var had_support := is_instance_valid(rv_support.rv)
 	var last_support_velocity := rv_support.carrier_velocity
@@ -433,7 +481,7 @@ func _process_normal_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if not is_grabbed() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor():
+	if not is_grabbed() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
@@ -449,10 +497,13 @@ func _process_normal_movement(delta: float) -> void:
 	if input_dir.length_squared() > 0.0:
 		input_dir = input_dir.normalized()
 
+	var sprinting := _can_sprint(input_dir != Vector2.ZERO)
+	_update_stamina(delta, sprinting)
+	var movement_speed := SPRINT_SPEED if sprinting else SPEED
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	if direction:
-		velocity.x = direction.x * SPEED
-		velocity.z = direction.z * SPEED
+		velocity.x = direction.x * movement_speed
+		velocity.z = direction.z * movement_speed
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -675,6 +726,8 @@ func _exit_climb_to_normal() -> void:
 func _physics_process(delta):
 	if is_player_dead:
 		return
+	if is_instance_valid(seated_in) or in_ui_mode or locomotion_state == LocomotionState.CLIMBING:
+		_update_stamina(delta, false)
 	# UI/seat lock movement, not the lifetime of damage invulnerability.
 	if damage_cooldown > 0.0:
 		damage_cooldown = maxf(0.0, damage_cooldown - delta)
@@ -736,7 +789,11 @@ func _player_die():
 func _respawn():
 	is_player_dead = false
 	current_player_health = max_player_health
+	current_stamina = MAX_STAMINA
+	stamina_exhausted = false
+	stamina_recovery_delay_remaining = 0.0
 	_update_health_bar()
+	_update_stamina_bar()
 	print("Player respawned!")
 
 func refresh_inventory() -> void:

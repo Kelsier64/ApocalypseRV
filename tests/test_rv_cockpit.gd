@@ -71,9 +71,10 @@ func _run() -> void:
 	socket.installed_battery = battery
 	var bounds := seat.get_placement_bounds()
 	check(bounds.size.z > 1.8 and bounds.size.x >= 1.44, "Placement measures console and chair as one equipment item")
+	rv.set_handbrake(false)
 	seat.exit_seat()
 	player.set_physics_process(false)
-	check(player.seated_in == null and rv.handbrake, "Exit restores player control and engages parking brake")
+	check(player.seated_in == null and not rv.is_player_driving and not rv.handbrake, "Exit restores player control without engaging parking brake")
 	mirrors._process(0.1)
 	for mirror in mirrors.mirrors: check(mirror.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Leaving the seat stops mirror rendering")
 	var left_panel: Equipment = rv.get_node("LeftFront")

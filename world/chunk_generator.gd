@@ -183,9 +183,8 @@ func _build_road() -> void:
 				_place_module("rail", point, rail.basis)
 
 func _near_site(point: Vector3) -> bool:
-	var nearest := maxi(0, roundi(-point.z / field.profile.stop_spacing))
-	for i in range(maxi(0, nearest - 1), nearest + 2):
-		if field.court_distance(point.x, point.z, field.stop(i)) < 20:
+	for site in field.sites_near_z(point.z):
+		if field.court_distance(point.x, point.z, site) < 20:
 			return true
 	return false
 
@@ -202,7 +201,10 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		_place_module(site.kind, site.building.origin, site.building.basis)
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
 	var sign_node := _place_module("sign", sign_pos, site.road.basis)
-	RoadsideKit.label(sign_node, str(site.get("title", "SERVICE")) + "\nFOOT ACCESS" if site.kind == "entrance" else ("NORTHLINE\nGAS / SERVICE" if site.kind == "walk_in" else "LAY-BY"), Vector3(0, 3.4, 0.08), 24)
+	var title := str(site.get("title", "SERVICE" if site.kind == "entrance" else "LAY-BY"))
+	if site.kind == "entrance": title += "\nFOOT ACCESS"
+	if site.get("definition_id", "") == "gas_station": title = "NORTHLINE\nGAS / SERVICE"
+	RoadsideKit.label(sign_node, title, Vector3(0, 3.4, 0.08), 24)
 	for side in [-1.0, 1.0]:
 		var point: Vector3 = site.frame * Vector3(side * 6.2, 0.05, 0)
 		var stripe := RoadsideKit.part(self, Vector3(0.15, 0.03, 24), point, Color(0.72, 0.64, 0.43))
@@ -213,9 +215,7 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		stripe.basis = site.building.basis
 
 func _build_exploration_scenery(gradual: bool = false) -> void:
-	var first := maxi(0, floori(band * 150.0 / field.profile.stop_spacing) - 1)
-	for index in range(first, first + 4):
-		var site := field.stop(index)
+	for site in field.sites_near_z(-(band + 0.5) * 150, 400):
 		if not site.has("route"): continue
 		# A rotated deep site can touch a band far from its road anchor.
 		if site.bounds.position.z > -band * 150.0 + 4 or site.bounds.end.z < -(band + 1) * 150.0 - 4: continue
@@ -238,7 +238,7 @@ func _build_exploration_scenery(gradual: bool = false) -> void:
 			marker.basis = site.road.basis
 		# Authored groves supplement sparse biome scenery, away from travel lanes.
 		if field.profile.generation_version >= 4: continue
-		var grove_rng := field.rng_for(index, "groves")
+		var grove_rng := field.rng_for(int(site.index), "groves")
 		for i in range(70):
 			if gradual and i % 20 == 0: await _pause()
 			var u := grove_rng.randf_range(47, 148)
@@ -366,15 +366,14 @@ func _build_navigation(gradual: bool = false) -> void:
 func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> void:
 	# Query the shared plan, not loaded neighbours: bake order must not change
 	# walls at a seam. Physical segments still have exactly one owning chunk.
-	var first := maxi(0, floori(band * 150.0 / field.profile.stop_spacing) - 1)
-	for index in range(first, first + 4):
-		var site := field.stop(index)
+	for site in field.sites_near_z(-(band + 0.5) * 150, 400):
 		if not site.has("walls"): continue
 		for part: Dictionary in ExplorationSite.wall_parts(site):
 			if floori(-part.base.z / 150.0) == band: continue
 			if part.base.z > -band * 150.0 + 5 or part.base.z < -(band + 1) * 150.0 - 5: continue
 			_append_box_faces(source, part.size, part.transform)
-		if floori(float(site.s) / 150.0) == band or absf(site.building.origin.z + band * 150.0 + 75) > 95: continue
+		if floori(float(site.s) / 150.0) == band: continue
+		if site.has("bounds") and (site.bounds.position.z > -band * 150.0 + 5 or site.bounds.end.z < -(band + 1) * 150.0 - 5): continue
 		# Exterior collision boxes are read without registering a second POI.
 		var model: Node3D = POIConfig.scene_for_site(site).instantiate()
 		if model.has_method("_ready"): model._ready()

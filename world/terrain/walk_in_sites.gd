@@ -1,11 +1,11 @@
 extends RefCounted
 class_name WalkInSites
-## Generation v5: roadside forecourt, authored footprint and dormant loose actors.
-static func configure(site: Dictionary) -> void:
+## Generation v5+: roadside forecourt, authored footprint and dormant loose actors.
+static func configure(site: Dictionary, definition_id: String = "gas_station") -> void:
 	for key in ["route", "deep_forest", "mirror", "exterior"]: site.erase(key)
 	site.kind = "walk_in"
-	site.definition_id = "gas_station"
-	var definition := POIConfig.definition("gas_station")
+	site.definition_id = definition_id
+	var definition := POIConfig.definition(StringName(definition_id))
 	site.title = definition.display_name
 	var side: float = site.side
 	# Front (+Z) faces the road. The RV parks across the open forecourt.
@@ -42,7 +42,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
-	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "walk_in_loot")
+	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
 	for point in building.find_children("*", "Marker3D", true, false):
 		if not point is PoiLootPoint: continue
 		var scene: PackedScene = point.roll_scene(rng)
@@ -50,6 +50,16 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		var item: Prop = scene.instantiate()
 		container.add_child(item)
 		item.global_transform = point.global_transform
+	if definition.enemy_count_range.y > 0:
+		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_enemies")
+		var points := building.get_node("EnemySpawns").get_children()
+		var count := enemies.randi_range(definition.enemy_count_range.x, definition.enemy_count_range.y)
+		for i in range(count):
+			var selected := enemies.randi_range(0, points.size() - 1)
+			var point: Marker3D = points.pop_at(selected)
+			var monster: Node3D = preload("res://enemies/raker.tscn").instantiate()
+			container.add_child(monster)
+			monster.global_transform = point.global_transform
 	generator.outdoor_sites[site.id] = {"definition_id": str(definition.definition_id), "content_version": definition.content_version, "loaded": true, "actors": []}
 
 static func deactivate(generator: Node, site: Dictionary) -> void:

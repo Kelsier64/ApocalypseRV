@@ -9,7 +9,10 @@ func _run() -> void:
 	generator.world_seed = 1
 	# The starting bands contain an entrance and a peaceful walk-in site.
 	# Load the real v5 outdoor encounter at stop 2, as streaming would do.
-	var field := WorldField.new(1)
+	var legacy := WorldProfile.new()
+	legacy.generation_version = 5
+	generator.profile = legacy
+	var field := WorldField.new(1, legacy)
 	var encounter := field.stop(2)
 	var band := floori(float(encounter.s) / field.profile.chunk_length)
 	generator.restore_bands.assign(range(band - field.profile.chunks_behind, band + field.profile.chunks_ahead + 1))

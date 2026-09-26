@@ -112,8 +112,9 @@ func run() -> void:
 			var return_error := absf((rv.global_position - dock_start).dot(forward))
 			check(return_error < 0.7 and rv.road_speed() < 0.2, "Reverse returns from bay to road without repositioning body")
 			print("PARKING dock_error=%.3f return_error=%.3f" % [dock_error, return_error])
+		var handbrake_before_exit: bool = rv.handbrake
 		seat.exit_seat()
-		check(player.seated_in == null and rv.handbrake, "%s allows supported exit even with degraded vehicle condition" % config.id)
+		check(player.seated_in == null and rv.handbrake == handbrake_before_exit, "%s allows supported exit without changing parking brake" % config.id)
 		world.queue_free()
 		await process_frame
 		await process_frame

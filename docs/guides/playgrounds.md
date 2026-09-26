@@ -13,6 +13,22 @@
 - [正式美術與獨立樣板](#section-7)
 - [攀爬與怪物測試場](#section-8)
 - [加油站室外探索](#gas-station)
+- [路邊小 POI](#minor-pois)
+
+<a id="minor-pois"></a>
+
+## 路邊小 POI
+
+```powershell
+godot --path . --log-file .godot/minor-gallery.log res://tests/minor_poi_playground.tscn
+godot --path . --log-file .godot/minor-production.log res://tests/production_minor_poi_playground.tscn -- --seed=0 --cell=0 --replay
+```
+
+展示場：左右方向鍵切換 18 套佈局、N 換 seed、F1 玩家步行、F2 近景總覽、F7 截圖。WASD／E／G 使用正式玩家操作；怪物暫停 AI 以便檢查。`--capture-all` 逐套輸出 `.godot/minor-captures/00.png` 到 `17.png`，仍保留測試視窗。
+
+正式道路測試場：指定 v6 世界 seed 和小 POI 區間 cell，若該區間留空則尋找下一處。F2 總覽、F3 步行、F5 用正式輪胎物理駛入、倒回公路並換前進檔離場、F7 截圖。沿用正式串流、道路坡度和物資，測試場移除敵人避免干擾車輛測量。回放不代表所有地形或手動操控情境已驗收。
+
+自動檢查：`test_minor_site_generation.gd` 為 1,000 seeds；`test_outdoor_minor_assets.gd` 逐套驗證正式玩家與物資；`test_outdoor_minor_persistence.gd` 驗證正式串流及磁碟保存；`test_outdoor_minor_navigation.gd` 驗證跨區塊公路至搜刮點的導航和步行。效能抽樣：`godot --headless --path . -s res://scripts/profile_minor_streaming.gd`。
 
 <a id="section-1"></a>
 

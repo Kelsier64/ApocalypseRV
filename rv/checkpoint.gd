@@ -81,7 +81,8 @@ func save_world(world: Node, path: String) -> bool:
 	var data := {"generation_version": generator.profile.generation_version, "profile": profile_data, "version": VERSION, "seed": generator.world_seed, "bands": bands, "vehicles": vehicles,
 		"actors": actors, "poi": manager.saved_instances.duplicate(true),
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
-		"slot": player.inventory.active_slot, "health": player.current_player_health}}
+		"slot": player.inventory.active_slot, "health": player.current_player_health,
+		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["generated_bands"] = generator.generated_bands.duplicate()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
@@ -148,7 +149,7 @@ func validation_error(data: Dictionary) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6]: return "generation_version"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
 	var player: Dictionary = data.player
@@ -156,6 +157,8 @@ func validation_error(data: Dictionary) -> String:
 	# Selection is a hotbar index, including empty slots, not an item index.
 	if not player.get("slot") is int or player.slot < 0 or player.slot >= PlayerInventory.MAX_SLOTS: return "player.slot"
 	if not VehicleSnapshot._number(player.get("health")) or player.health < 0 or player.health > 100: return "player.health"
+	if player.has("stamina") and (not VehicleSnapshot._number(player.stamina) or player.stamina < 0 or player.stamina > 100): return "player.stamina"
+	if player.has("stamina_exhausted") and not player.stamina_exhausted is bool: return "player.stamina_exhausted"
 	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"
 	for i in range(player.items.size()):
 		if not VehicleSnapshot.valid_item(player.items[i]): return "player.items[%d]" % i

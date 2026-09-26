@@ -89,7 +89,6 @@ func exit_seat(forced: bool = false) -> void:
 	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"):
 		rv.set_driving_state(false)
-		rv.handbrake = true
 
 	seat_camera.rotation = REST_CAMERA_ROTATION
 

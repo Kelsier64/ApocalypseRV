@@ -22,9 +22,7 @@ static func plans(field: WorldField, band: int) -> Array[Dictionary]:
 			result.append({"position": Vector3(x, low + 4.0, z), "size": Vector3(100, 14, 96)})
 	# Authored raised trails can sit well above neighboring natural valleys.
 	# Anchor their own pockets to route heights, once in the center's owning band.
-	var first := maxi(0, floori(band * field.profile.chunk_length / field.profile.stop_spacing) - 2)
-	for index in range(first, first + 5):
-		var site := field.stop(index)
+	for site in field.sites_near_z(-(band + 0.5) * field.profile.chunk_length, 400):
 		if not site.has("route"): continue
 		for i in range(2, site.route.size() - 2, 2):
 			var point: Vector3 = site.route[i]

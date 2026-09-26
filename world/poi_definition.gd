@@ -17,6 +17,8 @@ enum Kind { INSTANCE_ENTRANCE, WALK_IN }
 @export var interior_profile: StringName = &"bunker"
 ## Existing procedural silhouettes are explicitly grandfathered, not strict assets.
 @export var legacy_visual_layout := false
+## Optional outdoor encounters. Zero preserves existing peaceful walk-in assets.
+@export var enemy_count_range := Vector2i.ZERO
 
 func validate() -> PackedStringArray:
 	var errors := PackedStringArray()
@@ -24,6 +26,10 @@ func validate() -> PackedStringArray:
 	if display_name.is_empty(): errors.append("Missing display name")
 	if kind not in [Kind.INSTANCE_ENTRANCE, Kind.WALK_IN]: errors.append("Unknown POI kind")
 	if content_version < 1: errors.append("Content version must be positive")
+	if enemy_count_range.x < 0 or enemy_count_range.y < enemy_count_range.x or enemy_count_range.y > 2:
+		errors.append("Invalid outdoor enemy range")
+	if kind != Kind.WALK_IN and enemy_count_range != Vector2i.ZERO:
+		errors.append("Only walk-in assets may declare outdoor enemies")
 	if not scene_path.begins_with("res://") or not ResourceLoader.exists(scene_path, "PackedScene"):
 		errors.append("Missing scene: " + scene_path)
 	for bounds in [building_bounds, site_bounds]:
@@ -54,6 +60,14 @@ func validate_scene(building: Node3D) -> PackedStringArray:
 		errors.append("Missing building instance")
 		return errors
 	if not building.scale.is_equal_approx(Vector3.ONE): errors.append("Building root scale must be one")
+	if enemy_count_range.y > 0:
+		var spawns := building.get_node_or_null("EnemySpawns")
+		if spawns == null or spawns.get_child_count() < enemy_count_range.y:
+			errors.append("Missing outdoor enemy markers")
+		else:
+			for marker in spawns.get_children():
+				if not marker is Marker3D or not site_bounds.has_point(_local_position(building, marker)):
+					errors.append("Invalid outdoor enemy marker")
 	for layer in ["Visuals", "Collision", "Furnishings", "LootSpawns"]:
 		if not building.get_node_or_null(layer) is Node3D: errors.append("Missing layer: " + layer)
 	if kind == Kind.INSTANCE_ENTRANCE:

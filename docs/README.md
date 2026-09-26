@@ -44,6 +44,8 @@
 
 ## 驗收紀錄
 
+- [2026-09-26 路邊小 POI](validation/2026-09-26-minor-pois.md) — v6 獨立分布、18 套 WALK_IN、搜刮／怪物保存及測試場。
+
 - [隨機軍事地堡](validation/2026-09-24-random-bunker.md) — 16 模組、自由尺寸擴充、三層通行、主世界進出與保存。
 
 - [Raker 固定抓咬視角](validation/2026-09-24-raker-fixed-grab-view.md) — 抓住時抬頭並固定角度，移除向下追嘴與頓挫，嘴部改對準固定視線。

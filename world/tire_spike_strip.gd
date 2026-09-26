@@ -85,7 +85,8 @@ static func placement(field: WorldField, band: int) -> Dictionary:
 	var rng := field.rng_for(band, "tire_spike_strip")
 	if rng.randf() >= SPAWN_CHANCE: return {}
 	var distance := band * field.profile.chunk_length + rng.randf_range(25.0, 125.0)
-	for site in field.stops_in_band(band):
+	var nearby := field.sites_near_z(-distance, 90) if field.profile.generation_version >= 6 else field.stops_in_band(band)
+	for site in nearby:
 		if absf(-site.road.origin.z - distance) < 45.0: return {}
 	var frame := field.road_frame(distance)
 	var side := -1.0 if rng.randf() < 0.5 else 1.0

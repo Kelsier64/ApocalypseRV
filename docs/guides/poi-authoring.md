@@ -28,10 +28,13 @@
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
 | `interior_profile` | 副本入口專用；支援 `bunker`；室內見 [地堡規格](bunker-interior.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
+| `enemy_count_range` | WALK_IN 首訪敵人數量範圍，預設 (0,0)；本輪上限 2，需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D |
 
 場址實例 `site.id` 與 `site.seed` 由世界規劃提供。`definition_id` 識別資產種類，**不是某一棟建築的保存 ID**；同種建築可有許多不同場址 ID。未知明確定義不能默默退回維修站。
 
 Resource 為共用唯讀設定；執行時不得把拾取、門狀態、敵人生命或個別場址 seed 寫回 Resource。驗證工具需要改值時先 duplicate。
+
+生成 v6 的六類小 POI 共 18 個 WALK_IN 定義，獨立於既有地堡／加油站排程。`MinorSites` 使用每 1,200 m 一個候選區間、四次有界嘗試；位置／主題／佈局／美術／物資／怪物使用獨立 RNG。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
 
 **登錄不等於加入生成。** `GENERATION_IDS` 保留既有 v3／v4 的四款抽樣順序，生成 v5 透過 WalkInSites 的獨立場址排程加入加油站，不改舊池順序。v2 沒有 exterior 的既有場址繼續解析到 `maintenance_legacy`。新增或重排世界抽樣池須另做生成版本、場址安置及保存驗收。
 

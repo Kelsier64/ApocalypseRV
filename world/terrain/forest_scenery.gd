@@ -28,9 +28,7 @@ static func prepare(chunk: ChunkGenerator, band: int, gradual: bool) -> void:
 		field.forest_cache.erase(field.forest_cache.keys()[0])
 
 static func landmark_slit(field: WorldField, point: Vector3) -> bool:
-	var nearest := maxi(0, roundi(-point.z / field.profile.stop_spacing))
-	for index in range(maxi(0, nearest - 1), nearest + 2):
-		var site := field.stop(index)
+	for site in field.sites_near_z(point.z):
 		if not site.has("route"): continue
 		var p: Vector3 = site.road.affine_inverse() * point
 		var u: float = p.x * float(site.side)

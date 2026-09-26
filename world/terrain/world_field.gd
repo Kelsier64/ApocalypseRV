@@ -1,7 +1,7 @@
 extends RefCounted
 class_name WorldField
 ## Pure world-coordinate queries. Never depends on global RNG or loaded nodes.
-const VERSION := 5
+const VERSION := 6
 var world_seed: int
 var profile: WorldProfile
 var macro := FastNoiseLite.new()
@@ -11,6 +11,8 @@ var clusters := FastNoiseLite.new()
 var _phase: float
 var _heights: Dictionary = {0: 0.0, 1: 0.0}
 var _stops: Dictionary = {}
+var _minor_sites: Dictionary = {}
+var _site_queries: Dictionary = {}
 var forest_cache: Dictionary = {}
 
 func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
@@ -100,6 +102,8 @@ func road_query(x: float, z: float) -> Dictionary:
 func stop(index: int) -> Dictionary:
 	if index < 0:
 		return {}
+	if profile.generation_version >= 6 and index % 3 == 2:
+		return {}
 	if _stops.has(index):
 		return _stops[index]
 	var rng := rng_for(index, "stop")
@@ -123,12 +127,38 @@ func stop(index: int) -> Dictionary:
 
 func stops_in_band(index: int) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
-	var first := maxi(0, floori(index * profile.chunk_length / profile.stop_spacing) - 1)
-	for i in range(first, first + 4):
-		var candidate := stop(i)
+	for candidate in sites_near_z(-(index + 0.5) * profile.chunk_length, profile.chunk_length):
 		if floori(float(candidate.s) / profile.chunk_length) == index:
 			found.append(candidate)
 	return found
+
+## Includes independent minor sites; callers must not infer sites from stop spacing.
+func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
+	# Terrain rows repeatedly ask the same longitudinal question for different X.
+	# Results are read-only, like stop(); bound the cache during long drives.
+	var key := Vector2(z, radius)
+	if _site_queries.has(key): return _site_queries[key]
+	var found: Array[Dictionary] = []
+	var first := maxi(0, floori((-z - radius - profile.stop_jitter) / profile.stop_spacing))
+	var last := maxi(0, ceili((-z + radius + profile.stop_jitter) / profile.stop_spacing))
+	for index in range(first, last + 1):
+		var site := stop(index)
+		if not site.is_empty() and absf(float(site.s) + z) <= radius:
+			found.append(site)
+	if profile.generation_version >= 6:
+		for cell in range(maxi(0, floori((-z - radius) / MinorSites.CELL_LENGTH)), maxi(0, floori((-z + radius) / MinorSites.CELL_LENGTH)) + 1):
+			var site := minor_site(cell)
+			if not site.is_empty() and absf(float(site.s) + z) <= radius:
+				found.append(site)
+	found.sort_custom(func(a, b): return a.s < b.s)
+	if _site_queries.size() >= 256: _site_queries.clear()
+	_site_queries[key] = found
+	return found
+
+func minor_site(cell: int) -> Dictionary:
+	if cell < 0 or profile.generation_version < 6: return {}
+	if not _minor_sites.has(cell): _minor_sites[cell] = MinorSites.plan(self, cell)
+	return _minor_sites[cell]
 
 func court_distance(x: float, z: float, site: Dictionary) -> float:
 	var local: Vector3 = site.frame.affine_inverse() * Vector3(x, site.frame.origin.y, z)
@@ -149,9 +179,7 @@ func surface(x: float, z: float) -> Dictionary:
 	var height := raw_height(x, z)
 	var reserved: bool = road.distance < road.width * 0.5 + 4.0
 	var gravel := 0.0
-	var nearest := maxi(0, roundi(-z / profile.stop_spacing))
-	for i in range(maxi(0, nearest - 1), nearest + 2):
-		var site := stop(i)
+	for site in sites_near_z(z):
 		if absf(-z - float(site.s)) > (180.0 if profile.generation_version >= 4 else 100.0):
 			continue
 		if site.has("route"):

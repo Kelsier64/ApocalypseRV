@@ -2,6 +2,8 @@ extends CanvasLayer
 
 var health_bar: ProgressBar
 var health_label: Label
+var stamina_bar: ProgressBar
+var stamina_label: Label
 var damage_flash: ColorRect
 
 func _ready():
@@ -41,6 +43,24 @@ func _ready():
 	health_bar.add_theme_stylebox_override("background", bg_style)
 	
 	vbox.add_child(health_bar)
+
+	stamina_label = Label.new()
+	stamina_label.text = "STA: 100 / 100"
+	stamina_label.add_theme_font_size_override("font_size", 18)
+	stamina_label.add_theme_color_override("font_color", IndustrialTheme.INK)
+	vbox.add_child(stamina_label)
+
+	stamina_bar = ProgressBar.new()
+	stamina_bar.min_value = 0
+	stamina_bar.max_value = 100
+	stamina_bar.value = 100
+	stamina_bar.custom_minimum_size = Vector2(200, 14)
+	stamina_bar.show_percentage = false
+	var stamina_fill = StyleBoxFlat.new()
+	stamina_fill.bg_color = IndustrialTheme.AMBER
+	stamina_bar.add_theme_stylebox_override("fill", stamina_fill)
+	stamina_bar.add_theme_stylebox_override("background", bg_style)
+	vbox.add_child(stamina_bar)
 	
 	# Damage flash (full-screen red overlay)
 	damage_flash = ColorRect.new()
@@ -61,3 +81,10 @@ func set_health(current: float, maximum: float):
 		damage_flash.color = Color(0.8, 0.0, 0.0, 0.3)
 		var tween = create_tween()
 		tween.tween_property(damage_flash, "color:a", 0.0, 0.3)
+
+func set_stamina(current: float, maximum: float) -> void:
+	if stamina_bar:
+		stamina_bar.max_value = maximum
+		stamina_bar.value = current
+	if stamina_label:
+		stamina_label.text = "STA: %d / %d" % [ceili(current), int(maximum)]
