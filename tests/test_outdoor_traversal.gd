@@ -15,7 +15,7 @@ func _walk(points: PackedVector3Array) -> float:
 	var ticks := 0
 	for target in points:
 		var reached := false
-		for i in range(1300):
+		for i in range(ceili(1300 * Engine.physics_ticks_per_second / 60.0)):
 			if Vector2(player.global_position.x - target.x, player.global_position.z - target.z).length() < 0.3:
 				reached = true
 				break
@@ -27,7 +27,7 @@ func _walk(points: PackedVector3Array) -> float:
 		Input.action_release("move_forward")
 		check(reached, "Actual player reaches waypoint %s from %s" % [target, player.global_position])
 		if not reached: break
-	return ticks / 60.0
+	return float(ticks) / Engine.physics_ticks_per_second
 
 func _run() -> void:
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()

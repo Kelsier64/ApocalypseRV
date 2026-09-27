@@ -1,0 +1,31 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.3.289 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+PLAYER_DEATH_PHYSICS_HZ 60
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+RESPAWN_MOUSE yaw=-0.18000000715256 pitch=-0.05000000074506
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+PLAYER_DEATH_METRICS [{"camera_drop_m":1.37542071938515,"case":"standing_from_ui","max_joint_gap_m":0.00727690290659666,"max_speed_m_s":4.3526816368103,"peak_frame":21,"peak_joint":"foot_R","recovery_move_m":2.49999952316284},{"camera_drop_m":3.42778086662292,"case":"airborne","max_joint_gap_m":0.0196184627711773,"max_speed_m_s":6.12894868850708,"peak_frame":42,"peak_joint":"foot_R","recovery_move_m":2.49999952316284},{"camera_drop_m":3.4229484796524,"case":"airborne_carrier","max_joint_gap_m":0.0155879659578204,"max_speed_m_s":6.60201597213745,"peak_frame":33,"peak_joint":"foot_R","recovery_move_m":2.5},{"camera_drop_m":1.37432985007763,"case":"independent_world","max_joint_gap_m":0.00752460211515427,"max_speed_m_s":4.39052104949951,"peak_frame":21,"peak_joint":"foot_R","recovery_move_m":2.49999928474426}]
+PASS: production player death, fixed first-person view, collision-safe recovery, seat and World3D lifecycle

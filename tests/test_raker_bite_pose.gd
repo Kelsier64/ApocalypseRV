@@ -24,7 +24,9 @@ func run() -> void:
 		actor.set_crouched(variant != "stand")
 		actor.position = Vector3(0, -.23, 0)
 		player.position = Vector3(0, .02, -.8)
-		player.camera.position.y = 1.4146 if variant == "stand" else 1.05
+		# These authored solver fixtures use the legacy camera anchor in full.
+		# The live scenarios below exercise the production full-body eye offset.
+		player.camera.position = Vector3(0, 1.4146 if variant == "stand" else 1.05, 0)
 		visual.animation_player.play("game/grab_" + variant + "_bite", 0)
 		visual.animation_player.seek(.20 * actor.grab.BITE_SPEED, true)
 		visual.animation_player.advance(0)
@@ -64,7 +66,15 @@ func run() -> void:
 	actor.grab.elapsed = .20
 	modifier.world_positions["mouth"] = sk.to_local(anchor + Vector3.FORWARD * .4)
 	player.grab_control._update_bite_pull()
-	check(player.camera.position.distance_to(rest_position) < .065,"Head sweep stops before a wall")
+	var toward_wall := (wall.global_position - anchor).slide(Vector3.UP).normalized()
+	check((player.camera.global_position - anchor).dot(toward_wall) < .065,"Head sweep stops before the wall plane while allowing downward pull")
+	var head_query := PhysicsShapeQueryParameters3D.new()
+	var head_shape := SphereShape3D.new()
+	head_shape.radius = .09
+	head_query.shape = head_shape
+	head_query.transform.origin = player.camera.global_position
+	head_query.exclude = [player.get_rid(), actor.get_rid()]
+	check(world.get_world_3d().direct_space_state.intersect_shape(head_query).is_empty(), "Pulled camera sphere does not overlap the wall")
 	player.grab_control.end("test_wall")
 	check(player.camera.position == rest_position,"Interrupted pull restores camera position")
 	check(is_equal_approx(player.camera.near, original_near), "Interrupted grab restores the camera near plane")

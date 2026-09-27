@@ -1,0 +1,9 @@
+{
+	"godot": "4.7.2-stable (official)",
+	"jump_off_floor": true,
+	"physics_hz": 60,
+	"renderer": "forward_plus",
+	"seat_entered": true,
+	"seat_exited": true,
+	"walk_distance_m": 3.66665267944336
+}

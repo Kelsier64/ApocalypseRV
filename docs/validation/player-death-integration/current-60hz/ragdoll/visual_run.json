@@ -1,0 +1,76 @@
+{
+	"cases": [
+		{
+			"case": "stand_forward",
+			"control_distance_m": 1.22500109672546,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "stand_back",
+			"control_distance_m": 1.20000076293945,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "stand_left",
+			"control_distance_m": 1.20000171661377,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "drop_face",
+			"control_distance_m": 1.20000052452087,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "drop_back",
+			"control_distance_m": 1.22500050067902,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "drop_right",
+			"control_distance_m": 1.22500097751617,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "slope",
+			"control_distance_m": 1.20064902305603,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "stairs",
+			"control_distance_m": 1.22499620914459,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "animation_transition",
+			"control_distance_m": 1.2000013589859,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		},
+		{
+			"case": "crouch_transition",
+			"control_distance_m": 1.22500097751617,
+			"recovered": true,
+			"settled_speed_m_s": 0.0
+		}
+	],
+	"driver": "vulkan",
+	"godot": "4.7.2-stable (official)",
+	"gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+	"physics": "Jolt Physics",
+	"physics_hz": 60,
+	"renderer": "forward_plus",
+	"test_world_settings": {
+		"physics/jolt_physics_3d/simulation/continuous_cd_max_penetration": 0.1,
+		"physics/jolt_physics_3d/simulation/penetration_slop": 0.003,
+		"physics/jolt_physics_3d/simulation/position_steps": 32,
+		"physics/jolt_physics_3d/simulation/velocity_steps": 32
+	}
+}

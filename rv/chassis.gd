@@ -443,7 +443,10 @@ func _physics_process(delta: float) -> void:
 	steering_limit = minf(steering_limit, atan(wheelbase * steering_lateral_acceleration / maxf(1.0, longitudinal_speed * longitudinal_speed)))
 	steering = lerpf(steering, clampf(turn, -1.0, 1.0) * steering_limit, 1.0 - exp(-response * delta))
 	engine_force = 0.0
-	brake = parking_braking_force if handbrake or drive_blocked() else brake_input * max_braking_force
+	# VehicleBody3D treats brake as a per-step impulse (engine force already
+	# includes its timestep). Preserve our authored 60 Hz braking strength.
+	var braking_strength := parking_braking_force if handbrake or drive_blocked() else brake_input * max_braking_force
+	brake = braking_strength * 60.0 * delta
 	if can_drive and drive > 0.0 and brake_input == 0.0:
 		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():

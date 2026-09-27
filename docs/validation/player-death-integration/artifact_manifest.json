@@ -1,0 +1,608 @@
+{
+  "assets": [
+    {
+      "path": "C:\\Users\\evan4\\Projects\\3d\\player_textured_v019.blend",
+      "bytes": 1459667,
+      "sha256": "dc5062e81b10e6a6e849d8915e5d7b6eb85607e48f602e59aa7bb45f6c06c421"
+    },
+    {
+      "path": "C:\\Users\\evan4\\Projects\\3d\\player_godot_export_v020.blend",
+      "bytes": 1511670,
+      "sha256": "a4613ad6ef8ab1192762a2fdcfadc8a46297c6418b645c551d7754d2a2bbca43"
+    },
+    {
+      "path": "C:\\Users\\evan4\\Projects\\3d\\exports\\godot\\player_export_test_v020.glb",
+      "bytes": 1246620,
+      "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568"
+    },
+    {
+      "path": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\assets\\models\\player_test_v020\\player_export_test_v020.glb",
+      "bytes": 1246620,
+      "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568"
+    }
+  ],
+  "preservation": "Source assets unchanged; no rig/weight/UV/material edits",
+  "death_camera": "first person, translation follows head, fixed world viewing direction",
+  "images": [
+    {
+      "file": "airborne_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "airborne_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "airborne_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "airborne_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "airborne_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "death_first_person_desktop.jpg",
+      "width": 642,
+      "height": 467,
+      "source": "computer-use desktop capture"
+    },
+    {
+      "file": "driver_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "driver_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "driver_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "driver_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "driver_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "roof_destroyed_desktop.jpg",
+      "width": 1042,
+      "height": 737,
+      "source": "computer-use desktop capture"
+    },
+    {
+      "file": "standing_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "standing_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "standing_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "standing_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    },
+    {
+      "file": "standing_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG"
+    }
+  ],
+  "current_project_physics": {
+    "hz": 60,
+    "velocity_steps": 32,
+    "position_steps": 32,
+    "penetration_slop": 0.003,
+    "continuous_cd_max_penetration": 0.1
+  },
+  "evidence_scope": "Top-level replay images and physics_audit_120hz.json are historical 120 Hz evidence. physics_audit_60hz.json and current-60hz/ contain current 60 Hz evidence. rollback_60hz.json documents the previous failing configuration.",
+  "historical_120hz_profile": {
+    "hz": 120,
+    "velocity_steps": 32,
+    "position_steps": 32,
+    "penetration_slop": 0.003,
+    "continuous_cd_max_penetration": 0.1
+  },
+  "user_requested_physics_hz": 60,
+  "current_ragdoll_config": {
+    "mass_kg": 67,
+    "body_count": 14,
+    "inertia": "bounding-box uniform mass inertia, factor 3; feet factor 4",
+    "angular_damping": {
+      "forearm_and_foot": 2.4,
+      "other": 1.2
+    },
+    "linear_damping": 0.15,
+    "collision_shapes_and_joint_limits": "unchanged"
+  },
+  "current_evidence_directory": "current-60hz/",
+  "current_images": [
+    {
+      "file": "current-60hz/airborne_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "bc60f3211ef4c02ef784264e7dbd1a749322415bc94d037581080b43813cae60"
+    },
+    {
+      "file": "current-60hz/airborne_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "47714a7caf15611722216e3f902258f2bbaef5af0649ea80bda384dff3a66922"
+    },
+    {
+      "file": "current-60hz/airborne_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "419913b6fe88250c5330e5e0ae8a8a7b04ef400d909aa16be9612be55acc0739"
+    },
+    {
+      "file": "current-60hz/airborne_ground_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "7186c134fecd529588808124eb9e7ccf4f0c089b0b0df250bb78e8ec286a6c46"
+    },
+    {
+      "file": "current-60hz/airborne_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "75ace63adcd3cc12ae042e940b8c216de8ea0ef223815c56b9ed7b7a7acff620"
+    },
+    {
+      "file": "current-60hz/airborne_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "ce850e9d78b2e3d68e4a1b82bdd18899c8ff0a98438ebb859f43fe97751d1fbe"
+    },
+    {
+      "file": "current-60hz/climb_roof_desktop.jpg",
+      "width": 1042,
+      "height": 737,
+      "source": "computer-use desktop capture",
+      "sha256": "f41c3f0869bb9c3b93edfae1ad28f1dd44890574aaec89bde0cedf7832d754d6"
+    },
+    {
+      "file": "current-60hz/climbing_desktop.jpg",
+      "width": 1042,
+      "height": 737,
+      "source": "computer-use desktop capture",
+      "sha256": "2ff60965d1d8975458f540eee1380f50f2092ef66cacadef5060efc48c64e97f"
+    },
+    {
+      "file": "current-60hz/death_event_desktop.jpg",
+      "width": 642,
+      "height": 467,
+      "source": "computer-use desktop capture",
+      "sha256": "8cdda2b314b8c51e930e7759c5890a6691260d8c289aab807f08db22352a7753"
+    },
+    {
+      "file": "current-60hz/driver_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "5b44d2c28e12f26d14a342825af1ebbea98dd661c9208369188f0b7fe1c59879"
+    },
+    {
+      "file": "current-60hz/driver_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "e47b8da6a282dd959ad951184698045e7223566233017bba901e856ecd404e95"
+    },
+    {
+      "file": "current-60hz/driver_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "35651410232360bb0ce349da486c5cb605030a0bebd631b7a6a276951d69d13e"
+    },
+    {
+      "file": "current-60hz/driver_ground_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "d907407b118ef873328015f43bc91cd4aae2ff553086c9b1f2188bc1eecb9a6d"
+    },
+    {
+      "file": "current-60hz/driver_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "662449e0d823f086975f70bab195f8dc833a4d3ee36a25fcb1a64c47b80ff7af"
+    },
+    {
+      "file": "current-60hz/driver_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "31b385ed189e103d17f92ac5536334087537b39a2cadf2923a0a633e9d0b0f6c"
+    },
+    {
+      "file": "current-60hz/ragdoll/animation_transition_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "9a47e01c4140db1cb2c32ab65d1b6d27faadc6dc5e9f257a0d8b1decbe0f951d"
+    },
+    {
+      "file": "current-60hz/ragdoll/animation_transition_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "aa35533fd9d37103a603aadec78152d65489151cdeb6600118a256f293a68193"
+    },
+    {
+      "file": "current-60hz/ragdoll/animation_transition_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "bed3d8b1c1e234b2cee3831ef973d0c16bd930580561bb7584b2920bcef6a146"
+    },
+    {
+      "file": "current-60hz/ragdoll/animation_transition_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "0fd73bacdff86f50d4475592178c0141306f73dbe26013f39447d98808079186"
+    },
+    {
+      "file": "current-60hz/ragdoll/collision_configuration.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "c888249c62484457a4f82506b912682c248e4b9a8b15ff10a1aeefeb8d81aff7"
+    },
+    {
+      "file": "current-60hz/ragdoll/crouch_transition_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "3e742a88d0f78e714aac511d1b54f747646563d886211dbd9119872db673bb92"
+    },
+    {
+      "file": "current-60hz/ragdoll/crouch_transition_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "00950e63125521f7bb288d5a088ed177cc32b65e84fe13b816c1a783fa1d718e"
+    },
+    {
+      "file": "current-60hz/ragdoll/crouch_transition_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "3ba3ec65d1769190d5375e71305f3614ad760219e125906d161b897550893c4c"
+    },
+    {
+      "file": "current-60hz/ragdoll/crouch_transition_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "3abce8caf97f8906fa7ea41bc4a6b541d45d67b1e399c16543cac7caf08efcf0"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_back_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "a5eae41dac3309b9cbcb0fb8d1d1f48178dafb6b33814fba25b942271e0d53be"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_back_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "763d8b5af74231861e9f4b10a222bfd7c933145964d1f3a9bac75a26d2a4cb01"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_back_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "7073c1fcf33aa34f634600b61018cb65ab5bf380bde155d4222a39a5eb549c05"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_back_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "a28f50703d134a26ba411da958fa9a9fe0fd63862319acd25bd2695a09082b68"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_face_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "f34bdbcceb0201f266987b54c809994571de2c2daa8de34e00c9021181927f30"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_face_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "459ce7cdbcd8977fc827a0fcb93ee1191d92fefb185658a51209343337e25d7b"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_face_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "b1da154a4a0c49aeb0b54057027bc6ff3ded46975f458d27289823c09ffddb7e"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_face_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "5a8283615f9791245a0b82d17529c46da8f1729704c7b6d02a314e7d4a8728c6"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_right_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "775ff78d0b4425c8c0a797b6a8b6366219b7de141f25af280cf13bcca25a0da7"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_right_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "6bed669fa9ac49fae3351076888d0f9d0ee899cf63d1291d818b404a7fe87dfc"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_right_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "64b0d845cf92411a4e47b5c1844a54b3234fe7801adc4b0682aa1a08056c6606"
+    },
+    {
+      "file": "current-60hz/ragdoll/drop_right_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "4add0911e3fe725adfb70614c82c9910dd8e5ad7c5076e273d7fc9f70c049d69"
+    },
+    {
+      "file": "current-60hz/ragdoll/slope_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "04e26e0ec2d268922adc8c03254205721ecfacdfe01d08880dabdd97fa37e884"
+    },
+    {
+      "file": "current-60hz/ragdoll/slope_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "08ede2e38d9464f99f33ed9f2357c3d51a76983ed107ed25f08fc9cee19660e6"
+    },
+    {
+      "file": "current-60hz/ragdoll/slope_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "b2810a429944b64036b2d6b97029045d2f836db39dcdb5e2796d72b3249d5f80"
+    },
+    {
+      "file": "current-60hz/ragdoll/slope_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "220370a7d04b8495a4dd6081deb1f06034e8c8ed6dd846dbf5f0803e97eba1e9"
+    },
+    {
+      "file": "current-60hz/ragdoll/stairs_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "8a889b5fd0055a7ef7c9aaea1ce4db4831d6c62f4f38e152b494d99672716bba"
+    },
+    {
+      "file": "current-60hz/ragdoll/stairs_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "1346df7641145fca471f3d1ea17922ded24aab57e6cf0e5a1e4ba8ad3159de03"
+    },
+    {
+      "file": "current-60hz/ragdoll/stairs_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "a95e7ce1c18da9dc689c23f2c088b3c4bc0b23facfde733ace7fbad73d322577"
+    },
+    {
+      "file": "current-60hz/ragdoll/stairs_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "fb3b1e6cc955b43b76bc3f0f07321bf0e42388d8af4eb912accd9330dda1032e"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_back_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "fb201af19f00eca612d8b0e1dfd87f515e64090bd92de4cebbecbf9c58b84511"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_back_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "33a08d9f2901d1ccb486de4670cb4ff5aae2694ec3df99554ac53a4ef08624f9"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_back_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "546b9d10df2de842fa2aaa05b2c09cd49e2bbe4cb1b5507bc7162c56cc7da8cb"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_back_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "ec5480339b9cb18df73e63ac97d6f3488442951a8f6f3a27a03b453124d74fc5"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_forward_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "ee010ef8512eddaa71ca1034b42664d5247c38837a06c3a62fe8584bd6850ad2"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_forward_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "14ec5de110d62ac7b234041deacc9c5c6aef8c2a326b0079e8788cb0adf2bf9d"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_forward_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "5dacdd4942744a0be60ff41324c5cd7e08d7599530e15c9ebb1508dc34a070d7"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_forward_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "3b2a4e92154a9c1bf7a46819eaeaee677bba72b834925dd1046d1870db560978"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_left_impact.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "412f3952cde21b5039393dda478dbdc11899a8c2cef768e3ef02036c2618a01f"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_left_recovered.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "3fea41d53b1eb8b84945dc42c033978b094d455f9592eafe6fb4e7196049c6b1"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_left_settled.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "ff298cd21c72dc82182268b00b1f9291098d48aabdb61d3221ce2c9971c7b6ac"
+    },
+    {
+      "file": "current-60hz/ragdoll/stand_left_start.png",
+      "width": 1120,
+      "height": 840,
+      "source": "Godot viewport PNG",
+      "sha256": "7af69791ffd5450eb3d9518887461ea407ed13a9bda7399f4b3d8e7949824ca2"
+    },
+    {
+      "file": "current-60hz/roof_destroyed_desktop.jpg",
+      "width": 1042,
+      "height": 737,
+      "source": "computer-use desktop capture",
+      "sha256": "8a0af3aaad124cc8956535bcd1043d7c76a58672940375aeefef53e46d55431f"
+    },
+    {
+      "file": "current-60hz/stairs_desktop.jpg",
+      "width": 562,
+      "height": 437,
+      "source": "computer-use desktop capture",
+      "sha256": "dd4e65a55e74a15e4f253218f466d9d18cc3640e799e552f9cc6f42cca777f4c"
+    },
+    {
+      "file": "current-60hz/standing_before.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "89dc41edde66414c51baf7d118e6b28f459ece3ddb25a495b123cd44df68f8fb"
+    },
+    {
+      "file": "current-60hz/standing_fall_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "c546b9ed7e14a93a943350cbdd6e58f32f348e17814a00b3b0534d258cc72e83"
+    },
+    {
+      "file": "current-60hz/standing_fall_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "912fc16fba79beda63c38195893009f875c130eb605515a7634a750fa6b7b5f7"
+    },
+    {
+      "file": "current-60hz/standing_ground_external.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "1a8035c3fa5c7fe095bc668461bdd3bc15e176379d53d02940031f695071beee"
+    },
+    {
+      "file": "current-60hz/standing_ground_first_person.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "8b404e073391d7f958bf11e356570545485a9628d03fd4b4f73527ef907188f6"
+    },
+    {
+      "file": "current-60hz/standing_recovered.png",
+      "width": 1280,
+      "height": 900,
+      "source": "Godot viewport PNG",
+      "sha256": "232ce614475fa47fb13c349c26866e8965bab1a2b2d20416eeb017e6f68ce055"
+    }
+  ]
+}

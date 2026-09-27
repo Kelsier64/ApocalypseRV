@@ -1,6 +1,7 @@
 extends SceneTree
 
 var failures: Array[String] = []
+var step_delta := 1.0 / Engine.physics_ticks_per_second
 var world: Node3D
 var rv: Node3D
 var player: CharacterBody3D
@@ -15,6 +16,10 @@ func _tick() -> void:
 	# Keep manual actor steps in the fixed physics phase, not variable render frames.
 	await physics_frame
 
+# Legacy loop counts describe 60 Hz durations; retain their real-time budget.
+func _frames(count: int) -> int:
+	return ceili(count / (60.0 * step_delta))
+
 func _run() -> void:
 	world = Node3D.new()
 	root.add_child(world)
@@ -28,18 +33,22 @@ func _run() -> void:
 	player = load("res://player/player.tscn").instantiate()
 	world.add_child(player)
 	player.set_physics_process(false)
+	# This suite tests carrying and roof destruction, not lethal grab outcomes.
+	player.max_player_health = 10000.0
+	player.current_player_health = 10000.0
+	player.grab_control.immunity = 1000.0
 	player.position = Vector3(2.65, 1.0, 0)
 	player.rotation.y = PI / 2.0
 	await _tick()
 	Input.action_press("move_forward")
 	var climbed := false
 	var reached_roof := false
-	for i in range(240):
+	for i in _frames(240):
 		if climbed:
-			rv.position.z -= 0.08
-			rv.rotate_y(0.003)
+			rv.position.z -= 4.8 * step_delta
+			rv.rotate_y(0.18 * step_delta)
 		await _tick()
-		player._physics_process(1.0 / 60.0)
+		player._physics_process(step_delta)
 		climbed = climbed or player.locomotion_state == player.LocomotionState.CLIMBING
 		if climbed and player.locomotion_state == player.LocomotionState.NORMAL:
 			var local: Vector3 = rv.to_local(player.global_position)
@@ -50,15 +59,15 @@ func _run() -> void:
 	_expect(climbed, "Player enters climbing against actual RV wall.")
 	_expect(reached_roof, "Player reaches the actual RV roof with collisions enabled.")
 	_expect(not player.body_collision_shape.disabled, "Player capsule remains active after top-out.")
-	for i in range(5):
+	for i in _frames(5):
 		await _tick()
-		player._physics_process(1.0 / 60.0)
+		player._physics_process(step_delta)
 	var roof_anchor: Vector3 = rv.to_local(player.global_position)
-	for i in range(60):
-		rv.position.z -= 0.12
-		rv.rotate_y(0.005)
+	for i in _frames(60):
+		rv.position.z -= 7.2 * step_delta
+		rv.rotate_y(0.3 * step_delta)
 		await _tick()
-		player._physics_process(1.0 / 60.0)
+		player._physics_process(step_delta)
 	_expect(rv.to_local(player.global_position).distance_to(roof_anchor) < 0.12, "Idle player stays on the roof through driving and steering.")
 	# Exercise actual VehicleBody integration as well as scripted transforms.
 	rv.freeze = false
@@ -66,9 +75,9 @@ func _run() -> void:
 	rv.linear_velocity = Vector3(0, 0, -6)
 	rv.angular_velocity = Vector3(0, 0.12, 0)
 	roof_anchor = rv.to_local(player.global_position)
-	for i in range(60):
+	for i in _frames(60):
 		await _tick()
-		player._physics_process(1.0 / 60.0)
+		player._physics_process(step_delta)
 	_expect(rv.to_local(player.global_position).distance_to(roof_anchor) < 0.2, "Player also follows a physics-driven VehicleBody without double platform motion.")
 	rv.freeze = true
 	rv.linear_velocity = Vector3.ZERO
@@ -84,13 +93,13 @@ func _run() -> void:
 	monster.rotation.y = PI / 2.0
 	climbed = false
 	reached_roof = false
-	for i in range(300):
+	for i in _frames(300):
 		if climbed:
-			rv.position.z -= 0.08
-			rv.rotate_y(0.003)
+			rv.position.z -= 4.8 * step_delta
+			rv.rotate_y(0.18 * step_delta)
 			player.global_position = rv.to_global(Vector3(0, 2.5, 0))
 		await _tick()
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(step_delta)
 		climbed = climbed or monster.locomotion_state == monster.LocomotionState.CLIMBING
 		if climbed and monster.locomotion_state == monster.LocomotionState.NORMAL:
 			var local: Vector3 = rv.to_local(monster.global_position)
@@ -102,24 +111,24 @@ func _run() -> void:
 	# Floor snapping can omit slide collisions while an actor is already standing.
 	# A roof actor must retain the carrier even when it has no walking input.
 	monster.move_speed = 0.0
-	for i in range(60):
+	for i in _frames(60):
 		await _tick()
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(step_delta)
 	# Ramp the speed gently so this tests support, not an intentional jerk-induced slide.
-	for i in range(60):
-		var ramp := float(i + 1) / 60.0
-		rv.position += -rv.basis.z * (4.0 / 60.0) * ramp
-		rv.rotate_y(0.002 * ramp)
+	for i in _frames(60):
+		var ramp := float(i + 1) / _frames(60)
+		rv.position += -rv.basis.z * (4.0 * step_delta) * ramp
+		rv.rotate_y(0.12 * step_delta * ramp)
 		player.global_position = rv.to_global(Vector3(0, 2.5, 0))
 		await _tick()
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(step_delta)
 	var monster_anchor: Vector3 = rv.to_local(monster.global_position)
-	for i in range(180):
-		rv.position += -rv.basis.z * (4.0 / 60.0)
-		rv.rotate_y(0.002)
+	for i in _frames(180):
+		rv.position += -rv.basis.z * (4.0 * step_delta)
+		rv.rotate_y(0.12 * step_delta)
 		player.global_position = rv.to_global(Vector3(0, 2.5, 0))
 		await _tick()
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(step_delta)
 	_expect(rv.to_local(monster.global_position).distance_to(monster_anchor) < 0.2, "Monster retains real roof support through sustained translation and turns.")
 	monster.move_speed = 2.5
 	player.position = Vector3(20, 10, 0)
@@ -134,9 +143,9 @@ func _run() -> void:
 		actor.active_wall_normal = Vector3.RIGHT
 		actor._sync_body_collision_to_locomotion()
 		var anchor: Vector3 = rv.to_local(actor.global_position)
-		for i in range(60):
-			rv.position.z -= 0.12
-			rv.rotate_y(0.005)
+		for i in _frames(60):
+			rv.position.z -= 7.2 * step_delta
+			rv.rotate_y(0.3 * step_delta)
 			await _tick()
 			actor._apply_rv_delta_compensation()
 		_expect(rv.to_local(actor.global_position).distance_to(anchor) < 0.08, "%s follows a turning RV without drifting." % actor.name)
@@ -149,7 +158,7 @@ func _run() -> void:
 	var seat: Node3D = rv.get_node("DriverSeat")
 	player.enter_seat_mode(seat)
 	rv.position += Vector3(3, 0, 4)
-	player._physics_process(1.0 / 60.0)
+	player._physics_process(step_delta)
 	_expect(player.global_position.is_equal_approx(seat.global_position), "Seated target follows the moving driver's seat.")
 	player.exit_seat_mode(Vector3(20, 10, 0))
 	# Full-body sweeps must stop at overhead obstacles while climbing.
@@ -195,19 +204,19 @@ func _run() -> void:
 	monster.attack_timer = 0.0
 	var ceiling: Node3D = rv.get_node("Ceiling")
 	var initial_health: float = ceiling.current_health
-	for i in range(900):
-		rv.position.z -= 0.04
-		rv.rotate_y(0.001)
+	for i in _frames(900):
+		rv.position.z -= 2.4 * step_delta
+		rv.rotate_y(0.06 * step_delta)
 		await _tick()
-		player._physics_process(1.0 / 60.0)
-		monster._physics_process(1.0 / 60.0)
+		player._physics_process(step_delta)
+		monster._physics_process(step_delta)
 		if not is_instance_valid(ceiling):
 			break
 	_expect(not is_instance_valid(ceiling) or ceiling.current_health < initial_health, "Monster damages roof above a seated driver.")
 	_expect(not is_instance_valid(ceiling), "Repeated attacks destroy the actual supporting roof panel.")
-	for i in range(45):
+	for i in _frames(45):
 		await _tick()
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(step_delta)
 	_expect(rv.to_local(monster.global_position).y < 2.0, "Monster falls when its supporting roof is destroyed.")
 	world.queue_free()
 	await _tick()

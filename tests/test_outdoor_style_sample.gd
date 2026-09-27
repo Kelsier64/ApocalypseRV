@@ -47,7 +47,7 @@ func _run() -> void:
 	event.pressed = true
 	study._unhandled_input(event)
 	var engine_id: String = study.player.inventory.active_item().state.engine.id
-	for i in range(7800):
+	for i in range(130 * Engine.physics_ticks_per_second):
 		await physics_frame
 		if not study.walking: break
 	check(not study.walking, "Actual engine carrier completes sample route")

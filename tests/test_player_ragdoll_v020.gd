@@ -1,7 +1,7 @@
 extends SceneTree
-## Actual Jolt simulation, sampled at 120 Hz; independent of production Player.
+## Actual Jolt simulation at the unchanged production tick; independent of production Player.
 const STAGE = preload("res://tests/player_ragdoll_v020/playground.tscn")
-const OUTPUT := "res://docs/validation/player-v020-ragdoll/physics_audit.json"
+const OUTPUT := "res://docs/validation/player-death-integration/physics_audit_60hz.json"
 var failures: Array[String] = []
 var results: Array = []
 
@@ -17,6 +17,9 @@ func steps(count: int) -> void:
 		await physics_frame
 		await process_frame
 
+func ticks(original_120hz_count: int) -> int:
+	return ceili(original_120hz_count * Engine.physics_ticks_per_second / 120.0)
+
 func _run() -> void:
 	var original_hz := Engine.physics_ticks_per_second
 	var original_world := root.world_3d
@@ -30,7 +33,8 @@ func _run() -> void:
 	var actor: CharacterBody3D = stage.actor
 	await steps(4)
 	for key: String in original_settings:
-		check(ProjectSettings.get_setting(key) == original_settings[key], "Global Jolt settings restored after isolated space creation")
+		check(ProjectSettings.get_setting(key) == original_settings[key], "Production Jolt settings unchanged by isolated space creation")
+	check(Engine.physics_ticks_per_second == original_hz, "Stage must not override the production tick")
 	check(actor.bodies.size() == 14, "14 simple physical bodies")
 	check(actor.skeleton.get_bone_count() == 41, "Imported 41-bone hierarchy retained")
 	var total_mass := 0.0
@@ -40,6 +44,7 @@ func _run() -> void:
 		check(body.get_child(0).shape is CapsuleShape3D or body.get_child(0).shape is BoxShape3D, "Only primitive convex shapes")
 	for link: Dictionary in actor.links:
 		check(link.parent in link.child.get_collision_exceptions(), "Adjacent physical bodies cannot collide")
+	await compare_production_configuration(actor)
 	var config: Array = actor.configuration()
 	for index in stage.CASES.size():
 		stage.reset_case(index)
@@ -47,18 +52,18 @@ func _run() -> void:
 		if index == 8:
 			actor.animate = true
 			actor.set_physics_process(true)
-			await steps(12)
+			await steps(ticks(12))
 		if index == 2:
 			actor.move_request = Vector3.RIGHT
 			actor.set_physics_process(true)
-			await steps(36)
+			await steps(ticks(36))
 		var start_pelvis: Vector3 = actor.bodies["pelvis"].global_position
 		var root_before := actor.global_transform
 		stage.start_case()
 		check(actor.controller_shape.disabled and actor.simulator.is_simulating_physics(), "Ragdoll owns motion and disables character capsule")
 		var metrics := {"case": stage.CASES[index], "max_joint_gap_m": 0.0, "max_speed_m_s": 0.0, "min_collider_y_m": INF, "max_skin_binding_error_m": 0.0, "max_scale_error": 0.0, "late_speed_m_s": 0.0, "late_angular_speed_rad_s": 0.0, "hinges": {}, "max_cone_excess_deg": 0.0, "max_twist_excess_deg": 0.0, "late_twist_excess_deg": 0.0, "max_hinge_excess_deg": 0.0, "max_terrain_penetration_m": 0.0, "terrain_contacts": {}}
 		# The body spans three stair treads and takes longer to settle there.
-		var sample_count := 1440 if index == 7 else 960
+		var sample_count := ticks(1440 if index == 7 else 960)
 		metrics.samples = sample_count
 		for frame in sample_count:
 			await steps(1)
@@ -67,18 +72,26 @@ func _run() -> void:
 				check(body.global_transform.is_finite(), stage.CASES[index] + " finite transforms")
 				metrics.max_speed_m_s = maxf(metrics.max_speed_m_s, body.linear_velocity.length())
 				metrics.max_scale_error = maxf(metrics.max_scale_error, body.global_basis.get_scale().distance_to(Vector3.ONE))
-				metrics.min_collider_y_m = minf(metrics.min_collider_y_m, shape_min_y(body))
-				if frame % 4 == 0:
-					var query := PhysicsShapeQueryParameters3D.new()
-					query.shape = body.get_child(0).shape
-					query.transform = body.global_transform
-					query.collision_mask = 1
-					var contacts := stage.get_world_3d().direct_space_state.collide_shape(query, 8)
-					for contact in range(0, contacts.size(), 2):
-						metrics.max_terrain_penetration_m = maxf(metrics.max_terrain_penetration_m, contacts[contact].distance_to(contacts[contact + 1]))
-					for hit in stage.get_world_3d().direct_space_state.intersect_shape(query, 8):
-						metrics.terrain_contacts[String(hit.collider.name)] = true
-				if frame >= sample_count - 240:
+				var lowest := shape_min_y(body)
+				if lowest < metrics.min_collider_y_m:
+					metrics.floor_peak_bone = bone_name
+					metrics.floor_peak_frame = frame
+				metrics.min_collider_y_m = minf(metrics.min_collider_y_m, lowest)
+				# Query every physics sample, including brief stair contacts.
+				var query := PhysicsShapeQueryParameters3D.new()
+				query.shape = body.get_child(0).shape
+				query.transform = body.global_transform
+				query.collision_mask = 1
+				var contacts := stage.get_world_3d().direct_space_state.collide_shape(query, 8)
+				for contact in range(0, contacts.size(), 2):
+					var penetration := contacts[contact].distance_to(contacts[contact + 1])
+					if penetration > metrics.max_terrain_penetration_m:
+						metrics.penetration_peak_bone = bone_name
+						metrics.penetration_peak_frame = frame
+					metrics.max_terrain_penetration_m = maxf(metrics.max_terrain_penetration_m, penetration)
+				for hit in stage.get_world_3d().direct_space_state.intersect_shape(query, 8):
+					metrics.terrain_contacts[String(hit.collider.name)] = true
+				if frame >= sample_count - ticks(240):
 					if body.linear_velocity.length() > metrics.late_speed_m_s:
 						metrics.late_peak_bone = bone_name
 					metrics.late_speed_m_s = maxf(metrics.late_speed_m_s, body.linear_velocity.length())
@@ -90,7 +103,11 @@ func _run() -> void:
 			for link: Dictionary in actor.links:
 				var parent: Transform3D = link.parent.global_transform * link.parent_frame
 				var child: Transform3D = link.child.global_transform * link.child.joint_offset
-				metrics.max_joint_gap_m = maxf(metrics.max_joint_gap_m, parent.origin.distance_to(child.origin))
+				var gap := parent.origin.distance_to(child.origin)
+				if gap > metrics.max_joint_gap_m:
+					metrics.gap_peak_bone = link.child.get("bone_name")
+					metrics.gap_peak_frame = frame
+				metrics.max_joint_gap_m = maxf(metrics.max_joint_gap_m, gap)
 				var relative := parent.basis.orthonormalized().inverse() * child.basis.orthonormalized()
 				var joint: PhysicalBone3D = link.child
 				if joint.joint_type == PhysicalBone3D.JOINT_TYPE_HINGE:
@@ -109,7 +126,7 @@ func _run() -> void:
 						metrics.twist_peak_bone = joint.get("bone_name")
 						metrics.twist_peak_frame = frame
 					metrics.max_twist_excess_deg = maxf(metrics.max_twist_excess_deg, twist - float(joint.get("joint_constraints/twist_span")))
-					if frame >= sample_count - 240:
+					if frame >= sample_count - ticks(240):
 						metrics.late_twist_excess_deg = maxf(metrics.late_twist_excess_deg, twist - float(joint.get("joint_constraints/twist_span")))
 					if swing - float(joint.get("joint_constraints/swing_span")) > metrics.max_cone_excess_deg:
 						metrics.cone_peak_bone = joint.get("bone_name")
@@ -125,7 +142,7 @@ func _run() -> void:
 			# A small 3 N.s impulse must wake a settled body and remain stable.
 			actor.bodies["spine_02"].apply_central_impulse(Vector3(3, 0, 0))
 			var response := 0.0
-			for frame in 240:
+			for frame in ticks(240):
 				await steps(1)
 				response = maxf(response, actor.bodies["spine_02"].linear_velocity.length())
 			metrics.small_impulse_peak_speed_m_s = response
@@ -133,17 +150,17 @@ func _run() -> void:
 		metrics.pelvis_drop_m = start_pelvis.y - end_pelvis.y
 		metrics.final_pelvis = [end_pelvis.x, end_pelvis.y, end_pelvis.z]
 		metrics.recovered = stage.recover_control()
-		await steps(60)
+		await steps(ticks(60))
 		var recover_start := actor.global_position
 		actor.move_request = Vector3.RIGHT
-		await steps(60)
+		await steps(ticks(60))
 		actor.move_request = Vector3.ZERO
 		metrics.control_distance_m = actor.global_position.distance_to(recover_start)
 		metrics.physics_stopped = not actor.simulator.is_simulating_physics()
 		metrics.control_capsule_enabled = not actor.controller_shape.disabled
 		actor.animate = true
 		var pose_before: Quaternion = actor.skeleton.get_bone_pose_rotation(actor.skeleton.find_bone("upper_arm_L"))
-		await steps(40)
+		await steps(ticks(40))
 		var pose_after: Quaternion = actor.skeleton.get_bone_pose_rotation(actor.skeleton.find_bone("upper_arm_L"))
 		metrics.animation_resumed = pose_before.angle_to(pose_after) > 0.05
 		actor.animate = false
@@ -177,3 +194,23 @@ func shape_min_y(body: PhysicalBone3D) -> float:
 		var half: Vector3 = shape.size * 0.5
 		return body.global_position.y - absf(basis.x.y) * half.x - absf(basis.y.y) * half.y - absf(basis.z.y) * half.z
 	return body.global_position.y - absf(basis.y.y) * (shape.height * 0.5 - shape.radius) - shape.radius
+
+func compare_production_configuration(fixture: CharacterBody3D) -> void:
+	var production: CharacterBody3D = preload("res://player/player.tscn").instantiate()
+	root.add_child(production)
+	production.position = Vector3(100, 0, 100)
+	production.take_damage(1000)
+	await steps(2)
+	var control: Node = production.ragdoll_control
+	check(control.bodies.size() == fixture.bodies.size(), "Production and acceptance body counts match")
+	for bone_name: String in fixture.bodies:
+		var expected: PhysicalBone3D = fixture.bodies[bone_name]
+		var actual: PhysicalBone3D = control.bodies[bone_name]
+		check(expected.body_offset.is_equal_approx(actual.body_offset) and expected.joint_offset.is_equal_approx(actual.joint_offset), bone_name + " production collision and joint frames match the audit")
+		check(expected.mass == actual.mass and expected.angular_damp == actual.angular_damp and expected.linear_damp == actual.linear_damp, bone_name + " production mass and damping match the audit")
+		check(PhysicsServer3D.body_get_param(expected.get_rid(), PhysicsServer3D.BODY_PARAM_INERTIA).is_equal_approx(PhysicsServer3D.body_get_param(actual.get_rid(), PhysicsServer3D.BODY_PARAM_INERTIA)), bone_name + " production inertia matches the audit")
+		for property in expected.get_property_list():
+			if String(property.name).begins_with("joint_constraints/"):
+				check(expected.get(property.name) == actual.get(property.name), bone_name + " production joint limits match the audit")
+	production.queue_free()
+	await steps(2)

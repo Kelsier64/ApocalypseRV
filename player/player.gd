@@ -51,6 +51,8 @@ var in_ui_mode: bool = false
 # place instead of ad-hoc at each call site.
 signal grab_started
 var grab_control: Node
+var ragdoll_control: Node
+var death_velocity := Vector3.ZERO
 enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED }
 var seated_in: Node3D = null
 
@@ -150,6 +152,8 @@ func _equip_active_slot():
 func _ready():
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
+	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
+	add_child(ragdoll_control)
 	# Frozen RV panels need explicit support motion; avoid applying it twice.
 	platform_floor_layers = 0
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
@@ -214,6 +218,8 @@ func exit_ui_mode():
 
 func complete_world_transition(at: Transform3D) -> void:
 	if is_grabbed(): grab_control.end("world_transition")
+	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
+	if restart_death: ragdoll_control.stop()
 	global_transform = at
 	velocity = Vector3.ZERO
 	locomotion_state = LocomotionState.NORMAL
@@ -224,6 +230,11 @@ func complete_world_transition(at: Transform3D) -> void:
 	camera.rotation = Vector3.ZERO
 	camera.current = true
 	reset_physics_interpolation()
+	if restart_death:
+		# A cancelled POI transition may return a dead actor to its home world.
+		# Rebind physics at that location instead of keeping the old-space pose.
+		death_velocity = Vector3.ZERO
+		_begin_death_physics.call_deferred()
 
 func restore_checkpoint_state(state: Dictionary) -> void:
 	inventory.items.assign(state.items.duplicate(true))
@@ -348,10 +359,13 @@ func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
 	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
 
 func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
-	return seated_in != null
+	return seated_in != null or is_player_dead
 
 func _sync_body_collision_to_locomotion() -> void:
 	if body_collision_shape == null:
+		return
+	if is_player_dead:
+		body_collision_shape.set_deferred("disabled", true)
 		return
 	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
 
@@ -758,7 +772,7 @@ func take_damage(amount: float):
 	if is_player_dead: return
 	if damage_cooldown > 0.0: return
 	
-	current_player_health -= amount
+	current_player_health = maxf(0.0, current_player_health - amount)
 	damage_cooldown = 0.5  # Half second invincibility after hit
 	
 	print("Player took ", amount, " damage! HP: ", current_player_health, "/", max_player_health)
@@ -775,19 +789,63 @@ func _update_health_bar():
 		health_bar.set_health(current_player_health, max_player_health)
 
 func _player_die():
+	if is_player_dead: return
+	var was_seated := is_instance_valid(seated_in)
+	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
+	is_player_dead = true
 	if is_grabbed(): grab_control.end("death")
 	if is_placing_equipment():
 		placement.placing_equipment.cancel_placement()
 		placement.placing_equipment = null
-	is_player_dead = true
+		placement._clear_marker()
+	if is_instance_valid(seated_in): seated_in.exit_seat(true)
+	death_velocity = velocity
+	if locomotion_state == LocomotionState.CLIMBING:
+		death_velocity = climb_carrier_velocity
+	elif is_instance_valid(rv_support.rv):
+		death_velocity += rv_support.carrier_velocity
+	elif not was_seated:
+		# Airborne locomotion stores released horizontal platform motion outside
+		# velocity. Seat exit already supplies the full world velocity itself.
+		death_velocity += Vector3(released_carrier_velocity.x, 0, released_carrier_velocity.z)
+	_exit_climb_to_normal()
+	rv_support.clear()
+	released_carrier_velocity = Vector3.ZERO
+	velocity = Vector3.ZERO
+	# Seat/grab cleanup relinquishes its camera. Keep that final world view
+	# while restoring ordinary controller yaw and local pitch ownership.
+	global_rotation.y = death_view.y
+	camera.rotation = Vector3(clampf(death_view.x, deg_to_rad(-80), deg_to_rad(80)), 0, 0)
+	exit_ui_mode()
+	if is_instance_valid(held_item_node): held_item_node.hide()
 	print(">>> PLAYER DIED! <<<")
-	# For now just respawn with full health after 2 seconds
-	var tween = create_tween()
-	tween.tween_interval(2.0)
-	tween.tween_callback(_respawn)
+	# A hit may arrive while physics queries are being flushed.
+	_begin_death_physics.call_deferred()
+
+func _begin_death_physics() -> void:
+	if not is_player_dead: return
+	_sync_body_collision_to_locomotion()
+	visible = true
+	camera.make_current()
+	ragdoll_control.start(death_velocity)
 
 func _respawn():
+	if not is_player_dead: return
+	if ragdoll_control.active:
+		var standing: Vector3 = ragdoll_control.recovery_position()
+		if not standing.is_finite(): return
+		ragdoll_control.stop()
+		global_position = standing
 	is_player_dead = false
+	velocity = Vector3.ZERO
+	released_carrier_velocity = Vector3.ZERO
+	rv_support.clear()
+	_sync_body_collision_to_locomotion()
+	set_process_unhandled_input(true)
+	camera.make_current()
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if is_instance_valid(held_item_node): held_item_node.show()
+	reset_physics_interpolation()
 	current_player_health = max_player_health
 	current_stamina = MAX_STAMINA
 	stamina_exhausted = false

@@ -1,0 +1,135 @@
+[
+  {
+    "profile": "default_60",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.102702908217907,
+    "max_angular_excess_deg": 19.6924978084666,
+    "failures": [
+      "stand_forward joints stay connected",
+      "stand_forward no floor tunnelling",
+      "stand_forward limited contact overlap on actual terrain",
+      "stand_forward anatomical joint limits hold",
+      "stand_forward no persistent twist beyond limits",
+      "stand_back joints stay connected",
+      "stand_back no floor tunnelling",
+      "stand_back limited contact overlap on actual terrain",
+      "stand_back anatomical joint limits hold",
+      "stand_back no persistent twist beyond limits",
+      "stand_left anatomical joint limits hold",
+      "drop_face anatomical joint limits hold",
+      "drop_back anatomical joint limits hold",
+      "drop_right joints stay connected",
+      "drop_right no floor tunnelling",
+      "drop_right limited contact overlap on actual terrain",
+      "drop_right anatomical joint limits hold",
+      "slope joints stay connected",
+      "slope limited contact overlap on actual terrain",
+      "slope anatomical joint limits hold",
+      "stairs anatomical joint limits hold",
+      "animation_transition joints stay connected",
+      "animation_transition no floor tunnelling",
+      "animation_transition limited contact overlap on actual terrain",
+      "animation_transition anatomical joint limits hold",
+      "crouch_transition joints stay connected",
+      "crouch_transition no floor tunnelling",
+      "crouch_transition limited contact overlap on actual terrain",
+      "crouch_transition anatomical joint limits hold",
+      "crouch_transition no persistent twist beyond limits"
+    ]
+  },
+  {
+    "profile": "solver_16_8",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.0378273688256741,
+    "max_angular_excess_deg": 17.8342712137716,
+    "failures": [
+      "stand_forward joints stay connected",
+      "stand_forward settles without persistent jitter",
+      "stand_forward anatomical joint limits hold",
+      "stand_back anatomical joint limits hold",
+      "stand_left anatomical joint limits hold",
+      "drop_face no floor tunnelling",
+      "drop_face anatomical joint limits hold",
+      "drop_right joints stay connected",
+      "drop_right settles without persistent jitter",
+      "drop_right anatomical joint limits hold",
+      "drop_right no persistent twist beyond limits",
+      "slope joints stay connected",
+      "slope anatomical joint limits hold",
+      "stairs anatomical joint limits hold",
+      "animation_transition anatomical joint limits hold",
+      "crouch_transition anatomical joint limits hold",
+      "crouch_transition no persistent twist beyond limits"
+    ]
+  },
+  {
+    "profile": "solver_32_32",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.0307017154991627,
+    "max_angular_excess_deg": 7.25070945170972,
+    "failures": [
+      "stand_forward anatomical joint limits hold",
+      "stand_back settles without persistent jitter",
+      "drop_face no floor tunnelling",
+      "drop_right joints stay connected",
+      "slope anatomical joint limits hold",
+      "crouch_transition anatomical joint limits hold"
+    ]
+  },
+  {
+    "profile": "solver_64_64",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.0217540133744478,
+    "max_angular_excess_deg": 4.77613654078755,
+    "failures": [
+      "drop_face no floor tunnelling",
+      "slope settles without persistent jitter",
+      "slope no persistent twist beyond limits",
+      "animation_transition no floor tunnelling",
+      "animation_transition settles without persistent jitter"
+    ]
+  },
+  {
+    "profile": "mass_damping_only",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.0472981818020344,
+    "max_angular_excess_deg": 26.5589809167783,
+    "failures": [
+      "stand_forward anatomical joint limits hold",
+      "stand_back no floor tunnelling",
+      "stand_back anatomical joint limits hold",
+      "stand_back no persistent twist beyond limits",
+      "stand_left anatomical joint limits hold",
+      "drop_face joints stay connected",
+      "drop_face anatomical joint limits hold",
+      "drop_back joints stay connected",
+      "drop_back anatomical joint limits hold",
+      "drop_right joints stay connected",
+      "drop_right anatomical joint limits hold",
+      "slope joints stay connected",
+      "slope anatomical joint limits hold",
+      "stairs anatomical joint limits hold",
+      "animation_transition anatomical joint limits hold",
+      "crouch_transition joints stay connected",
+      "crouch_transition no floor tunnelling",
+      "crouch_transition limited contact overlap on actual terrain",
+      "crouch_transition anatomical joint limits hold"
+    ]
+  },
+  {
+    "profile": "solver_64_64_foot_damping",
+    "physics_hz": 60,
+    "case_count": 10,
+    "max_joint_gap_m": 0.021325271576643,
+    "max_angular_excess_deg": 4.78053223339748,
+    "failures": [
+      "stand_back settles without persistent jitter",
+      "drop_face no floor tunnelling"
+    ]
+  }
+]

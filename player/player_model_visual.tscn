@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://player/player_model_visual.gd" id="1_visual"]
+[ext_resource type="PackedScene" path="res://assets/models/player_test_v020/player_export_test_v020.glb" id="2_model"]
+
+[node name="Visuals" type="Node3D"]
+script = ExtResource("1_visual")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]

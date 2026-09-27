@@ -1,0 +1,15 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.3.289 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+RAGDOLL_VISUAL_ENV {"driver":"vulkan","godot":"4.7.2-stable (official)","gpu":"NVIDIA GeForce RTX 4060 Laptop GPU","physics":"Jolt Physics","renderer":"forward_plus"}
+REPLAY_CASE stand_forward recovered=true
+REPLAY_CASE stand_back recovered=true
+REPLAY_CASE stand_left recovered=true
+REPLAY_CASE drop_face recovered=true
+REPLAY_CASE drop_back recovered=true
+REPLAY_CASE drop_right recovered=true
+REPLAY_CASE slope recovered=true
+REPLAY_CASE stairs recovered=true
+REPLAY_CASE animation_transition recovered=true
+REPLAY_CASE crouch_transition recovered=true
+PASS: ragdoll visual replay complete

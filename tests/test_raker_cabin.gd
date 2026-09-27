@@ -9,10 +9,15 @@ func _init() -> void: run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
 func ticks(count: int) -> void:
-	for i in count:
+	for i in ceili(count * Engine.physics_ticks_per_second / 60.0):
 		await physics_frame
-		player._physics_process(1.0/60.0)
-		actor._physics_process(1.0/60.0)
+		player._physics_process(1.0 / Engine.physics_ticks_per_second)
+		actor._physics_process(1.0 / Engine.physics_ticks_per_second)
+		# Pursuit needs a surviving target across breach cases. Take the actual
+		# wounded bite outcome; fatal cleanup is covered by the death/grab suites.
+		if player.is_grabbed() and player.grab_control.accepting:
+			while player.grab_control.presses * 5 < player.grab_control.required * 4:
+				player.submit_struggle()
 		trace_tick += 1
 		if "--trace" in OS.get_cmdline_user_args() and trace_tick % 60 == 0:
 			print("CABIN ",trace_tick," ",rv.to_local(actor.global_position)," climb=",actor.locomotion_state," low=",actor.crouched," route=",actor.boarding.cabin.active," vel=",actor.velocity," target=",actor.current_combat_target.get("target_type")," strike=",actor.strike_elapsed," grab=",actor.grab.phase," gate=",actor.grab.contact_failure)

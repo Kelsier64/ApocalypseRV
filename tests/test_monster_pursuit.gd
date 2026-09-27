@@ -9,10 +9,10 @@ func _init() -> void: _run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
 func ticks(count: int) -> void:
-	for i in range(count):
+	for i in ceili(count * Engine.physics_ticks_per_second / 60.0):
 		await physics_frame
-		player._physics_process(1.0 / 60.0)
-		monster._physics_process(1.0 / 60.0)
+		player._physics_process(1.0 / Engine.physics_ticks_per_second)
+		monster._physics_process(1.0 / Engine.physics_ticks_per_second)
 func spawn(point: Vector3) -> void:
 	if is_instance_valid(monster): monster.free()
 	monster = load("res://enemies/zombie.tscn").instantiate()
@@ -114,9 +114,9 @@ func _run() -> void:
 	player.damage_cooldown = 0.0
 	player.take_damage(10.0)
 	var after_hit: float = player.current_player_health
-	for i in range(40):
+	for i in range(ceili(40 * Engine.physics_ticks_per_second / 60.0)):
 		await physics_frame
-		player._physics_process(1.0 / 60.0)
+		player._physics_process(1.0 / Engine.physics_ticks_per_second)
 	player.take_damage(10.0)
 	check(player.current_player_health == after_hit - 10.0, "Seated player's hit cooldown expires while seat movement is locked")
 

@@ -4,6 +4,8 @@ var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
+func duration_ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
 func run() -> void:
 	var distances: Array[float] = []
 	for scenario in [{"speed": 5.0, "pedal": 1.0, "min": 1.5, "max": 5.0}, {"speed": 10.0, "pedal": 1.0, "min": 6.0, "max": 13.0}, {"speed": 20.0, "pedal": 1.0, "min": 22.0, "max": 42.0}, {"speed": -6.0, "pedal": 1.0, "min": 2.0, "max": 6.0}, {"speed": 10.0, "pedal": 0.5, "min": 10.0, "max": 25.0}]:
@@ -23,34 +25,35 @@ func run() -> void:
 		world.add_child(shell)
 		var rv: Chassis = shell.get_node("Chassis")
 		rv.allow_test_controls = true
-		for i in range(120): await physics_frame
+		for i in duration_ticks(120): await physics_frame
 		rv.handbrake = false
 		rv.control_override = {"brake": 0.0}
-		for i in range(30): await physics_frame
+		for i in duration_ticks(30): await physics_frame
 		rv.linear_velocity = -rv.global_basis.z * float(scenario.speed)
 		await physics_frame
 		var start := rv.global_position
 		var initial_speed := absf(rv.linear_velocity.dot(rv.global_basis.z))
 		rv.control_override = {"brake": scenario.pedal}
 		var ticks := 0
-		while ticks < 600:
+		while ticks < duration_ticks(600):
 			await physics_frame
 			ticks += 1
 			if ticks == 2: check(rv.brake_input > 0.0 and rv.brake_input < scenario.pedal, "Pedal builds pressure over multiple physics ticks")
 			if absf(rv.linear_velocity.dot(rv.global_basis.z)) < 0.1: break
 		var distance := Vector2(rv.global_position.x - start.x, rv.global_position.z - start.z).length()
 		distances.append(distance)
-		print("BRAKE speed=%.2f pedal=%.1f time=%.3f distance=%.3f" % [initial_speed, scenario.pedal, ticks / 60.0, distance])
-		check(ticks < 600 and distance >= scenario.min and distance <= scenario.max, "Service brake stops progressively at speed %.0f" % scenario.speed)
+		print("BRAKE speed=%.2f pedal=%.1f time=%.3f distance=%.3f" % [initial_speed, scenario.pedal, float(ticks) / Engine.physics_ticks_per_second, distance])
+		check(ticks < duration_ticks(600) and distance >= scenario.min and distance <= scenario.max, "Service brake stops progressively at speed %.0f" % scenario.speed)
 		check(not rv.energy.engine_running, "Service braking works with the engine off")
 		rv.control_override = {"brake": 0.0}
-		for i in range(15): await physics_frame
+		for i in duration_ticks(15): await physics_frame
 		check(rv.brake_input == 0.0 and rv.brake == 0.0, "Releasing the pedal fully releases service braking")
 		rv.handbrake = true
 		for i in range(2): await physics_frame
-		check(rv.brake == rv.parking_braking_force and rv.brake > rv.max_braking_force, "Parking brake retains independent holding force")
+		var impulse_scale := 60.0 / Engine.physics_ticks_per_second
+		check(is_equal_approx(rv.brake, rv.parking_braking_force * impulse_scale) and rv.brake > rv.max_braking_force * impulse_scale, "Parking brake retains independent holding force per second")
 		var parked := rv.global_position
-		for i in range(60): await physics_frame
+		for i in duration_ticks(60): await physics_frame
 		check(Vector2(rv.global_position.x - parked.x, rv.global_position.z - parked.z).length() < 0.1, "Parking brake holds the stopped RV")
 		world.free()
 		await process_frame

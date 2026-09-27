@@ -14,12 +14,14 @@ func key(down: bool, echo: bool = false) -> void:
 	event.echo = echo
 	player.grab_control._input(event)
 func reset() -> void:
+	player.ragdoll_control.stop()
 	actor.grab.cancel()
 	actor.grab.phase = Grab.Phase.NONE
 	actor.attack_timer = 0
 	actor.reaction_remaining = 0
 	player.grab_control.immunity = 0
 	player.is_player_dead = false
+	player._sync_body_collision_to_locomotion()
 	player.current_player_health = 100
 	player.damage_cooldown = .5
 	player.position = Vector3(0, .02, -.80)

@@ -4,18 +4,22 @@ var actor: Raker
 var player: CharacterBody3D
 var rv: Chassis
 var world: Node3D
+var step_delta := 1.0 / Engine.physics_ticks_per_second
 
 func _init() -> void: run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
 
 func tick(speed: float) -> void:
-	rv.position.z -= speed / 60.0
+	rv.position.z -= speed * step_delta
 	rv._road_speed = speed
 	rv.linear_velocity = Vector3(0, 0, -speed)
 	player.position = rv.to_global(Vector3(0, 2.5, 0))
 	await physics_frame
-	actor._physics_process(1.0 / 60.0)
+	actor._physics_process(step_delta)
+
+func ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
 
 func run() -> void:
 	world = Node3D.new()
@@ -48,7 +52,7 @@ func run() -> void:
 	await tick(10)
 	check(actor.pursuit_gait == Raker.PursuitGait.VEHICLE_SPRINT, "Real roof target starts vehicle sprint")
 	check(actor.velocity.length() < 1.0, "Sprint accelerates instead of snapping to car speed")
-	for i in 90: await tick(10)
+	for i in ticks(90): await tick(10)
 	check(absf(Vector2(actor.velocity.x, actor.velocity.z).length() - 11.2) < .05, "10 m/s vehicle chased at 11.2 m/s")
 	var visual := actor.get_node("BodyMesh")
 	visual.locked = 0.0
@@ -60,12 +64,12 @@ func run() -> void:
 	check(not actor.crouched, "Approaching moving RV does not slow to crouch before contact")
 	actor.position = saved_position
 	var gap := actor.position.z - rv.position.z
-	for i in 60: await tick(10)
+	for i in ticks(60): await tick(10)
 	check(actor.position.z - rv.position.z < gap - 1.0, "Actual ground motion closes the vehicle gap")
-	for i in 60: await tick(17)
+	for i in ticks(60): await tick(17)
 	check(absf(Vector2(actor.velocity.x, actor.velocity.z).length() - 18.0) < .05, "Sprint reaches its 18 m/s cap")
 	gap = actor.position.z - rv.position.z
-	for i in 30: await tick(25)
+	for i in ticks(30): await tick(25)
 	check(actor.position.z - rv.position.z > gap + 3.0, "Faster vehicle opens the gap beyond the cap")
 	check(Vector2(actor.velocity.x, actor.velocity.z).length() <= 18.001, "Vehicle acceleration never raises the cap")
 	await tick(5)

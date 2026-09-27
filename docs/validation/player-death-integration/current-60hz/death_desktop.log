@@ -1,0 +1,34 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.3.289 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+WORLD v6 seed=42
+FOREST band=-2 trees=1634 shrubs=4569
+TERRAIN band=-2 build_ms=698.6 max_slice_ms=698.6 active=1
+FOREST band=-1 trees=1640 shrubs=4541
+TERRAIN band=-1 build_ms=839.2 max_slice_ms=839.2 active=2
+FOREST band=0 trees=1455 shrubs=4088
+TERRAIN band=0 build_ms=857.6 max_slice_ms=857.6 active=3
+FOREST band=1 trees=1648 shrubs=4578
+TERRAIN band=1 build_ms=716.9 max_slice_ms=716.9 active=4
+FOREST band=2 trees=1629 shrubs=4564
+TERRAIN band=2 build_ms=661.3 max_slice_ms=661.3 active=5
+FOREST band=3 trees=1596 shrubs=4444
+TERRAIN band=3 build_ms=701.6 max_slice_ms=701.6 active=6
+FOREST band=-3 trees=1622 shrubs=4565
+TERRAIN band=-3 build_ms=528.7 max_slice_ms=44.4 active=7
+PLAYER_DEATH_READY
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+FOREST band=3 trees=1596 shrubs=4444
+TERRAIN band=3 build_ms=642.7 max_slice_ms=51.3 active=6
+PLAYER_DEATH_REPLAY {"cases":[{"alive":true,"case":"standing","movement_m":2.41665744781494,"physics_stopped":true},{"alive":true,"case":"airborne","movement_m":2.41665744781494,"physics_stopped":true},{"alive":true,"case":"driver","movement_m":0.353875011205673,"physics_stopped":true}],"godot":"4.7.2-stable (official)","physics_hz":60,"renderer":"forward_plus"}

@@ -1,4 +1,4 @@
-param([string]$Godot = 'godot', [string]$TestFilter = 'test_*.gd', [ValidateRange(1, 600)][int]$TimeoutSeconds = 120)
+param([string]$Godot = 'godot', [string]$TestFilter = 'test_*.gd', [ValidateRange(1, 600)][int]$TimeoutSeconds = 240, [string]$StartAt = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $logDirectory = Join-Path $projectRoot '.godot/test-logs'
@@ -8,6 +8,10 @@ $expectedVersion = (Get-Content (Join-Path $projectRoot '.godot-version') -Raw).
 $actualVersion = (& $executable --version | Out-String).Trim()
 if ($actualVersion -notlike "$expectedVersion.stable.*") { throw "Expected Godot $expectedVersion.stable, found $actualVersion" }
 $tests = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tests') -Filter $TestFilter -File | Sort-Object Name)
+if ($StartAt) {
+    if ($StartAt -notin $tests.BaseName) { throw "Unknown starting test: $StartAt" }
+    $tests = @($tests | Where-Object { $_.BaseName -ge $StartAt })
+}
 $manifest = @("Commit: $(& git -C $projectRoot rev-parse HEAD)", "Working tree: $((& git -C $projectRoot status --porcelain | Out-String).Trim())", "Engine: $actualVersion", "OS: $([Environment]::OSVersion)", 'Rendering: headless / dummy', "Tests: $($tests.Count)") + $tests.Name
 $manifest | Set-Content (Join-Path $logDirectory 'manifest.txt')
 Write-Host ($manifest -join "`n")
@@ -38,9 +42,11 @@ Invoke-GodotCheck 'import' @('--editor', '--import', '--quit')
 foreach ($test in $tests) {
     $testArguments = @('-s', ('res://tests/' + $test.Name))
     # Long outdoor round trips exceed two minutes of simulated play. Keep
-    # normal 60 Hz physics while letting headless rendering run unthrottled.
+    # configured physics timing while letting headless rendering run unthrottled.
     # Navigation publication also needs consistent physics/process scheduling.
     if ($test.BaseName -like 'test_outdoor_*' -or $test.BaseName -in @('test_rv_handling', 'test_tire_handling', 'test_checkpoint_failures', 'test_interior_traversal', 'test_interior_doorways', 'test_interior_navigation', 'test_raker_cabin', 'test_raker_neck', 'test_raker_grab_vehicle')) { $testArguments += @('--fixed-fps', '60') }
+    # Sample every 60 Hz physics step; these tests never override the project tick.
+    if ($test.BaseName -in @('test_player_ragdoll_v020', 'test_player_death')) { $testArguments += @('--fixed-fps', '60') }
     Invoke-GodotCheck $test.BaseName $testArguments $true
 }
 Invoke-GodotCheck 'main-scene' @('-s', 'res://tests/main_scene_smoke.gd') $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'

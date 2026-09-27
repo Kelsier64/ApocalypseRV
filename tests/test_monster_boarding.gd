@@ -10,9 +10,10 @@ func _init() -> void: _run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
 func ticks(count: int) -> void:
-	for i in range(count):
+	# Historical counts express 60 Hz durations; step the real engine clock.
+	for i in ceili(count * Engine.physics_ticks_per_second / 60.0):
 		await physics_frame
-		monster._physics_process(1.0 / 60.0)
+		monster._physics_process(1.0 / Engine.physics_ticks_per_second)
 
 func spawn(point: Vector3, facing: float) -> void:
 	if is_instance_valid(monster): monster.free()
@@ -152,7 +153,7 @@ func _run() -> void:
 	rv.get_node("RearDoor").restore_angles([-deg_to_rad(100), deg_to_rad(100)])
 	await physics_frame
 	rv.rear_ramp.interact(player)
-	for i in range(200): await physics_frame
+	for i in ceili(200.0 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(rv.rear_ramp.deployed, "Open-entry scenario deploys production rear ramp")
 	var hung_on_open_door := false
 	for i in range(300):

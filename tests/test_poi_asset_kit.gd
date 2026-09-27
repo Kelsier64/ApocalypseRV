@@ -40,7 +40,7 @@ func _run() -> void:
 	world.add_child(player)
 	player.position = Vector3(0,0.05,1.5)
 	Input.action_press("move_forward")
-	for i in 420:
+	for i in 7 * Engine.physics_ticks_per_second:
 		await physics_frame
 		if player.position.z < -27: break
 	Input.action_release("move_forward")

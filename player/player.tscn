@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://brg6kmofswawj" path="res://player/player_interact.gd" id="2_g1dw6"]
 [ext_resource type="Script" uid="uid://jcwd7ew7poyc" path="res://player/inventory_ui.gd" id="3_invui"]
 [ext_resource type="Script" uid="uid://dcsuxb3bwj3k2" path="res://player/health_bar_ui.gd" id="4_hpbar"]
+[ext_resource type="PackedScene" path="res://player/player_model_visual.tscn" id="5_visual"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yw30f"]
 radius = 0.4
@@ -16,8 +17,13 @@ script = ExtResource("1_rkbax")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_yw30f")
 
+[node name="Visuals" parent="." instance=ExtResource("5_visual")]
+position = Vector3(0, 0.25, 0)
+rotation = Vector3(0, 3.1415927, 0)
+
 [node name="Camera3D" type="Camera3D" parent="." unique_id=401068625]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4146006, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.78, -0.2)
+near = 0.025
 
 [node name="InteractRay" type="RayCast3D" parent="Camera3D" unique_id=691259209]
 target_position = Vector3(0, 0, -2)

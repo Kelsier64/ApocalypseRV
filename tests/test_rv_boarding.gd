@@ -3,6 +3,8 @@ var failures: Array[String] = []
 func _init() -> void: _run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
+func ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
 func crate(world: Node3D, point: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	var collider := CollisionShape3D.new()
@@ -42,7 +44,7 @@ func _run() -> void:
 	await physics_frame
 	var result := ramp.interact(player)
 	check(ramp.moving and rv.drive_blocked() and VehicleSnapshot.capture(rv).is_empty(), "Moving ramp locks driving and saving")
-	for i in range(200): await physics_frame
+	for i in ticks(200): await physics_frame
 	check(ramp.deployed, "Ramp deploys on level ground: " + result)
 	if not ramp.deployed:
 		for failure in failures: push_error(failure)
@@ -74,11 +76,11 @@ func _run() -> void:
 	player.rotation = Vector3.ZERO
 	player.set_physics_process(true)
 	Input.action_press("move_forward")
-	for i in range(150): await physics_frame
+	for i in ticks(150): await physics_frame
 	Input.action_release("move_forward")
 	check(player.global_position.z < rv.global_position.z + 5.6 and player.global_position.y > 0.7, "Player carrying engine walks up ramp and through rear doors: " + str(player.global_position))
 	check(player.inventory.active_item().state.engine.id == incoming.id, "Boarding keeps held engine")
-	for i in range(180):
+	for i in ticks(180):
 		Input.action_press("move_forward")
 		await physics_frame
 	Input.action_release("move_forward")
@@ -90,7 +92,7 @@ func _run() -> void:
 	player.position = Vector3(12, 0, 0)
 	await physics_frame
 	check(ramp.interact(player).contains("收起中") and rv.drive_blocked(), "Empty ramp starts retracting with driving locked")
-	for i in range(200): await physics_frame
+	for i in ticks(200): await physics_frame
 	check(not ramp.deployed and not rv.drive_blocked(), "Fully stowed ramp unlocks driving")
 	var steep := crate(world, Vector3(0, 0.4, 9.54), Vector3(3, 0.2, 2))
 	steep.rotation.x = deg_to_rad(40)

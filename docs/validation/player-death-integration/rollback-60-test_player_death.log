@@ -1,0 +1,35 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+PLAYER_DEATH_PHYSICS_HZ 60
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+PLAYER_DEATH_METRICS [{"camera_drop_m":1.38106885552406,"case":"standing_from_ui","max_joint_gap_m":0.0142315058037639,"max_speed_m_s":4.30987119674683,"recovery_move_m":2.49999928474426},{"camera_drop_m":3.43084609508514,"case":"airborne","max_joint_gap_m":0.0424857847392559,"max_speed_m_s":6.38455629348755,"recovery_move_m":2.49999976158142},{"camera_drop_m":3.41087019443512,"case":"airborne_carrier","max_joint_gap_m":0.0228012725710869,"max_speed_m_s":6.85755681991577,"recovery_move_m":2.50000023841858},{"camera_drop_m":1.37437437474728,"case":"independent_world","max_joint_gap_m":0.0155950430780649,"max_speed_m_s":4.5986180305481,"recovery_move_m":2.49999952316284}]
+ERROR: airborne no disconnected joints or explosive velocity
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] run (res://tests/test_player_death.gd:191)
+       [1] steps (res://tests/test_player_death.gd:14)

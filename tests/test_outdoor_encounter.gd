@@ -6,7 +6,10 @@ func check(okay: bool, message: String) -> void:
 		failures.append(message)
 		push_error("FAIL: " + message)
 func frames(count: int) -> void:
-	for i in range(count): await physics_frame
+	for i in duration_ticks(count): await physics_frame
+
+func duration_ticks(original_ticks: int) -> int:
+	return ceili(original_ticks * Engine.physics_ticks_per_second / 60.0)
 
 func _run() -> void:
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
@@ -38,7 +41,7 @@ func _run() -> void:
 		player.global_position = site.route[index] + Vector3.UP * 0.1
 		player.velocity = Vector3.ZERO
 		var reached := false
-		for tick in range(2700):
+		for tick in duration_ticks(2700):
 			await physics_frame
 			if monster.global_position.distance_to(player.global_position) < 2.5:
 				reached = true
@@ -54,7 +57,7 @@ func _run() -> void:
 	player.global_position = remote.route[3] + Vector3.UP * 0.1
 	player.velocity = Vector3.ZERO
 	var crossed := false
-	for tick in range(1500):
+	for tick in duration_ticks(1500):
 		await physics_frame
 		if monster.global_position.distance_to(player.global_position) < 2.5:
 			crossed = true
@@ -71,7 +74,7 @@ func _run() -> void:
 	rv.handbrake = false
 	rv.set_engine_running(true)
 	var entered := false
-	for tick in range(900):
+	for tick in duration_ticks(900):
 		await physics_frame
 		var p: Vector3 = site.road.affine_inverse() * rv.global_position
 		if p.x * float(site.side) > 27:

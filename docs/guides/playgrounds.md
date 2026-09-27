@@ -154,7 +154,25 @@ godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playgr
 
 ## 攀爬與怪物測試場
 
-移動 RV 攀爬展示：
+### 正式玩家模型
+
+```powershell
+godot --path . --log-file .godot/player-model.log res://tests/player_model_playground.tscn
+godot --path . --log-file .godot/player-model-replay.log res://tests/player_model_playground.tscn -- --replay --quit-replay
+```
+
+載入正式主世界、固定 seed 42 與上午 10 點，使用正式 Player。F1 平視、F2 低頭、F3 外部觀察、F4 連續移動／跳躍／持物／上下車回放、Esc 關閉此測試視窗。第一人稱捕捉滑鼠，外部觀察釋放滑鼠；WASD／Space 使用正式控制器，TEST 骨架動畫不會播放。自動回放截圖輸出 `docs/validation/player-model-integration/`。獨立物理配置仍可使用 `tests/player_ragdoll_v020/playground.tscn`，正式死亡另見下方測試場。見 [整合驗收](../validation/2026-09-27-player-model-integration.md)。
+
+### 正式死亡布娃娃
+
+```powershell
+godot --path . --log-file .godot/player-death.log res://tests/player_death_playground.tscn
+godot --path . --log-file .godot/player-death-replay.log res://tests/player_death_playground.tscn -- --replay --quit-replay
+```
+
+使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。第一人稱隨倒地下移、不翻滾，兩秒後找到安全站位才恢復；被堵住時等待淨空。本輪截圖與 replay.json 存在 `docs/validation/player-death-integration/current-60hz/`，見 [驗收報告](../validation/2026-09-27-player-death-integration.md)。
+
+### 移動 RV 攀爬
 
 ```powershell
 godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playground.tscn -- --replay

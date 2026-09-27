@@ -1,0 +1,272 @@
+{
+  "date": "2026-09-27",
+  "godot": "4.7.2-stable (official)",
+  "physics_hz": 60,
+  "physics_tick_changed_this_turn": false,
+  "global_solver_changed_this_turn": false,
+  "solver_velocity_position": [
+    32,
+    32
+  ],
+  "runner": "single full scripts/test.ps1 run; no StartAt or TestFilter",
+  "suite_count": 77,
+  "passed": [
+    "test_art_presentation",
+    "test_cabin_light_equipment",
+    "test_checkpoint_failures",
+    "test_combat_targeting",
+    "test_equipment_lifecycle",
+    "test_forest_fog",
+    "test_gas_station",
+    "test_interior_compatibility",
+    "test_interior_doorways",
+    "test_interior_layout",
+    "test_interior_navigation",
+    "test_interior_traversal",
+    "test_main_world_monsters",
+    "test_minor_site_generation",
+    "test_monster_boarding",
+    "test_monster_cabin",
+    "test_monster_model",
+    "test_monster_navigation",
+    "test_monster_pursuit",
+    "test_moving_rv_climbing",
+    "test_outdoor_encounter",
+    "test_outdoor_gas_station",
+    "test_outdoor_horror",
+    "test_outdoor_minor_assets",
+    "test_outdoor_minor_navigation",
+    "test_outdoor_minor_persistence",
+    "test_outdoor_style_sample",
+    "test_outdoor_traversal",
+    "test_player_climbing_runtime",
+    "test_player_climbing",
+    "test_player_death",
+    "test_player_import_v020",
+    "test_player_inventory",
+    "test_player_model",
+    "test_player_ragdoll_v020",
+    "test_player_stamina",
+    "test_poi_asset_kit",
+    "test_poi_definitions",
+    "test_poi_instances",
+    "test_poi_resources",
+    "test_raker_attack_alignment",
+    "test_raker_bite_pose",
+    "test_raker_boarding",
+    "test_raker_cabin",
+    "test_raker_finger_flexion",
+    "test_raker_gaits",
+    "test_raker_grab_vehicle",
+    "test_raker_grab",
+    "test_raker_neck",
+    "test_raker_playground",
+    "test_raker_release_input",
+    "test_raker_source_hands",
+    "test_raker_sprint",
+    "test_raker_turning",
+    "test_raker",
+    "test_roadside_exploration",
+    "test_rv_boarding",
+    "test_rv_braking",
+    "test_rv_checkpoint",
+    "test_rv_cockpit",
+    "test_rv_engine",
+    "test_rv_experience",
+    "test_rv_extended",
+    "test_rv_handling",
+    "test_rv_interactions",
+    "test_rv_physics_regression",
+    "test_rv_resource_cycle",
+    "test_rv_shared_storage",
+    "test_rv_structure_modules",
+    "test_rv_systems",
+    "test_streaming_generation",
+    "test_tire_handling",
+    "test_tire_puncture",
+    "test_world_clock",
+    "test_world_entities",
+    "test_world_generation",
+    "test_world_weather"
+  ],
+  "import": "PASS",
+  "main_scene": "PASS: WORLD_READY_FOR_PLAY and production movement",
+  "ragdoll_cases": 10,
+  "death_metrics": [
+    {
+      "camera_drop_m": 1.37542071938515,
+      "case": "standing_from_ui",
+      "max_joint_gap_m": 0.00727690290659666,
+      "max_speed_m_s": 4.3526816368103,
+      "peak_frame": 21,
+      "peak_joint": "foot_R",
+      "recovery_move_m": 2.49999952316284
+    },
+    {
+      "camera_drop_m": 3.42778086662292,
+      "case": "airborne",
+      "max_joint_gap_m": 0.0196184627711773,
+      "max_speed_m_s": 6.12894868850708,
+      "peak_frame": 42,
+      "peak_joint": "foot_R",
+      "recovery_move_m": 2.49999952316284
+    },
+    {
+      "camera_drop_m": 3.4229484796524,
+      "case": "airborne_carrier",
+      "max_joint_gap_m": 0.0155879659578204,
+      "max_speed_m_s": 6.60201597213745,
+      "peak_frame": 33,
+      "peak_joint": "foot_R",
+      "recovery_move_m": 2.5
+    },
+    {
+      "camera_drop_m": 1.37432985007763,
+      "case": "independent_world",
+      "max_joint_gap_m": 0.00752460211515427,
+      "max_speed_m_s": 4.39052104949951,
+      "peak_frame": 21,
+      "peak_joint": "foot_R",
+      "recovery_move_m": 2.49999928474426
+    }
+  ],
+  "desktop_death": {
+    "cases": [
+      {
+        "alive": true,
+        "case": "standing",
+        "movement_m": 2.41665744781494,
+        "physics_stopped": true
+      },
+      {
+        "alive": true,
+        "case": "airborne",
+        "movement_m": 2.41665744781494,
+        "physics_stopped": true
+      },
+      {
+        "alive": true,
+        "case": "driver",
+        "movement_m": 0.386128932237625,
+        "physics_stopped": true
+      }
+    ],
+    "godot": "4.7.2-stable (official)",
+    "physics_hz": 60,
+    "renderer": "forward_plus"
+  },
+  "desktop_ragdoll": {
+    "cases": [
+      {
+        "case": "stand_forward",
+        "control_distance_m": 1.22500109672546,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "stand_back",
+        "control_distance_m": 1.20000076293945,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "stand_left",
+        "control_distance_m": 1.20000171661377,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "drop_face",
+        "control_distance_m": 1.20000052452087,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "drop_back",
+        "control_distance_m": 1.22500050067902,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "drop_right",
+        "control_distance_m": 1.22500097751617,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "slope",
+        "control_distance_m": 1.20064902305603,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "stairs",
+        "control_distance_m": 1.22499620914459,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "animation_transition",
+        "control_distance_m": 1.2000013589859,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      },
+      {
+        "case": "crouch_transition",
+        "control_distance_m": 1.22500097751617,
+        "recovered": true,
+        "settled_speed_m_s": 0.0
+      }
+    ],
+    "driver": "vulkan",
+    "godot": "4.7.2-stable (official)",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "physics": "Jolt Physics",
+    "physics_hz": 60,
+    "renderer": "forward_plus",
+    "test_world_settings": {
+      "physics/jolt_physics_3d/simulation/continuous_cd_max_penetration": 0.1,
+      "physics/jolt_physics_3d/simulation/penetration_slop": 0.003,
+      "physics/jolt_physics_3d/simulation/position_steps": 32,
+      "physics/jolt_physics_3d/simulation/velocity_steps": 32
+    }
+  },
+  "rendered_mouse_input": "PASS: yaw -0.18 rad, pitch -0.05 rad after recovery",
+  "desktop_climbing": "Both climb and remain supported while turning; F5 destroys roof; monster falls from local y 2.45 to chassis y 0.25",
+  "warnings": {
+    "test_interior_traversal": [
+      "WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available..."
+    ],
+    "test_player_ragdoll_v020": [
+      "WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available..."
+    ]
+  },
+  "ignored_environment_diagnostic": "Restricted Windows root certificate store diagnostic only",
+  "source_sha256": {
+    "project.godot": "ce02c5bc8cef318a6650898ab2044f00706245e9769f8ecedac0aaf64b20b0c5",
+    "scripts/test.ps1": "6dd3661256a14893fd32c785a48493145ea52e7df0ee5502d18baa0cbb61dab5",
+    "player/player.gd": "875bfb682d8a0161b2cdcf214bc4bdea893fae2d543fb4bd0ba542001cc16072",
+    "player/player_ragdoll.gd": "1b13b6d9ec2559d0ea60ad90367998135029e747c8dba56e27ebed784797779b",
+    "player/ragdoll_mass_properties.gd": "35f8ddb52818e0691566f4c7d2adbf402447898b601863016dbb9652ed7e4684",
+    "player/player_model_visual.gd": "f1bf87f0b855c6490d73d1e78f88c1f9ffbbaf021000f8d5e0792f92f7977912",
+    "rv/chassis.gd": "cd81c171aadfe0b4c84462a8f815622e21db6b7b59f7f464d8520fb43b89d332",
+    "tests/test_player_death.gd": "19c39da16b94d763e60f2b8f2846b3c53e6d3b28c50fc43e54cca35e19e467b0",
+    "tests/test_player_ragdoll_v020.gd": "386b81fe822704ac51a82cf5a1ea3f716fdb1643e6821176d1bf04bc532c3257",
+    "tests/player_ragdoll_v020/actor.gd": "9b6a9eabc0120ee496f44a71e9086347d211d29e1b3347ee222b24fb2ecae2d1",
+    "tests/player_ragdoll_v020/playground.gd": "68977fa9af653ae0d7d430f02964fecc8aacd0206630209de7170571ced1c844",
+    "tests/player_death_playground.gd": "770c7f37abec437c84f81b9f408a7a42eabca07a1f137ca19a0f040b1e4816e3"
+  },
+  "head": "9a4227cc58022f31ccb93aa065f3468d774a3a77",
+  "working_tree": "uncommitted; unrelated todo and texture import settings preserved",
+  "warning_recheck": {
+    "interior_traversal": {
+      "exit_code": 0,
+      "warnings": []
+    },
+    "ragdoll": {
+      "exit_code": 0,
+      "warnings": []
+    },
+    "conclusion": "Both isolated reruns passed without warnings; intermittent job pool warnings remain in full-run logs. Root cause not established; tick and job pool settings unchanged."
+  }
+}

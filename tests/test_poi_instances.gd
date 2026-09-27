@@ -10,7 +10,7 @@ func check(ok: bool, message: String) -> void:
 		push_error("FAIL: " + message)
 
 func frames(count: int) -> void:
-	for i in range(count):
+	for i in range(ceili(count * Engine.physics_ticks_per_second / 60.0)):
 		await physics_frame
 
 func _run() -> void:

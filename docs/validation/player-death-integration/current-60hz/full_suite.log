@@ -1,0 +1,223 @@
+Commit: 9a4227cc58022f31ccb93aa065f3468d774a3a77
+Working tree: M .github/workflows/tests.yml
+ M GDD.md
+ M README.md
+ M architecture.md
+ M assets/models/player_test_v020/README.md
+ M assets/models/player_test_v020/player_export_test_v020_PLAYER_BaseColor_512.png.import
+ M docs/README.md
+ M docs/guides/character-modeling.md
+ M docs/guides/playgrounds.md
+ M player/player.gd
+ M player/player.tscn
+ M player/player_grab.gd
+ M player/player_interact.gd
+ M project.godot
+ M rv/chassis.gd
+ M scripts/test.ps1
+ M tests/player_ragdoll_v020/actor.gd
+ M tests/player_ragdoll_v020/playground.gd
+ M tests/raker_vehicle_playground.gd
+ M tests/test_monster_boarding.gd
+ M tests/test_monster_cabin.gd
+ M tests/test_monster_pursuit.gd
+ M tests/test_moving_rv_climbing.gd
+ M tests/test_outdoor_encounter.gd
+ M tests/test_outdoor_style_sample.gd
+ M tests/test_outdoor_traversal.gd
+ M tests/test_player_ragdoll_v020.gd
+ M tests/test_poi_asset_kit.gd
+ M tests/test_poi_instances.gd
+ M tests/test_raker_attack_alignment.gd
+ M tests/test_raker_bite_pose.gd
+ M tests/test_raker_cabin.gd
+ M tests/test_raker_grab.gd
+ M tests/test_raker_grab_vehicle.gd
+ M tests/test_raker_sprint.gd
+ M tests/test_rv_boarding.gd
+ M tests/test_rv_braking.gd
+ M tests/test_rv_experience.gd
+ M tests/test_rv_handling.gd
+ M tests/test_rv_structure_modules.gd
+ M tests/test_tire_handling.gd
+ M todo
+?? docs/validation/2026-09-27-player-death-integration.md
+?? docs/validation/2026-09-27-player-model-integration.md
+?? docs/validation/player-death-integration/
+?? docs/validation/player-model-integration/
+?? player/player_model_visual.gd
+?? player/player_model_visual.gd.uid
+?? player/player_model_visual.tscn
+?? player/player_ragdoll.gd
+?? player/player_ragdoll.gd.uid
+?? player/ragdoll_mass_properties.gd
+?? tests/player_death_playground.gd
+?? tests/player_death_playground.gd.uid
+?? tests/player_death_playground.tscn
+?? tests/player_model_playground.gd
+?? tests/player_model_playground.gd.uid
+?? tests/player_model_playground.tscn
+?? tests/test_player_death.gd
+?? tests/test_player_death.gd.uid
+?? tests/test_player_model.gd
+?? tests/test_player_model.gd.uid
+Engine: 4.7.2.stable.official.ed1daf0bf
+OS: Microsoft Windows NT 10.0.26200.0
+Rendering: headless / dummy
+Tests: 77
+test_art_presentation.gd
+test_cabin_light_equipment.gd
+test_checkpoint_failures.gd
+test_combat_targeting.gd
+test_equipment_lifecycle.gd
+test_forest_fog.gd
+test_gas_station.gd
+test_interior_compatibility.gd
+test_interior_doorways.gd
+test_interior_layout.gd
+test_interior_navigation.gd
+test_interior_traversal.gd
+test_main_world_monsters.gd
+test_minor_site_generation.gd
+test_monster_boarding.gd
+test_monster_cabin.gd
+test_monster_model.gd
+test_monster_navigation.gd
+test_monster_pursuit.gd
+test_moving_rv_climbing.gd
+test_outdoor_encounter.gd
+test_outdoor_gas_station.gd
+test_outdoor_horror.gd
+test_outdoor_minor_assets.gd
+test_outdoor_minor_navigation.gd
+test_outdoor_minor_persistence.gd
+test_outdoor_style_sample.gd
+test_outdoor_traversal.gd
+test_player_climbing_runtime.gd
+test_player_climbing.gd
+test_player_death.gd
+test_player_import_v020.gd
+test_player_inventory.gd
+test_player_model.gd
+test_player_ragdoll_v020.gd
+test_player_stamina.gd
+test_poi_asset_kit.gd
+test_poi_definitions.gd
+test_poi_instances.gd
+test_poi_resources.gd
+test_raker_attack_alignment.gd
+test_raker_bite_pose.gd
+test_raker_boarding.gd
+test_raker_cabin.gd
+test_raker_finger_flexion.gd
+test_raker_gaits.gd
+test_raker_grab_vehicle.gd
+test_raker_grab.gd
+test_raker_neck.gd
+test_raker_playground.gd
+test_raker_release_input.gd
+test_raker_source_hands.gd
+test_raker_sprint.gd
+test_raker_turning.gd
+test_raker.gd
+test_roadside_exploration.gd
+test_rv_boarding.gd
+test_rv_braking.gd
+test_rv_checkpoint.gd
+test_rv_cockpit.gd
+test_rv_engine.gd
+test_rv_experience.gd
+test_rv_extended.gd
+test_rv_handling.gd
+test_rv_interactions.gd
+test_rv_physics_regression.gd
+test_rv_resource_cycle.gd
+test_rv_shared_storage.gd
+test_rv_structure_modules.gd
+test_rv_systems.gd
+test_streaming_generation.gd
+test_tire_handling.gd
+test_tire_puncture.gd
+test_world_clock.gd
+test_world_entities.gd
+test_world_generation.gd
+test_world_weather.gd
+PASS: import
+PASS: test_art_presentation
+PASS: test_cabin_light_equipment
+PASS: test_checkpoint_failures
+PASS: test_combat_targeting
+PASS: test_equipment_lifecycle
+PASS: test_forest_fog
+PASS: test_gas_station
+PASS: test_interior_compatibility
+PASS: test_interior_doorways
+PASS: test_interior_layout
+PASS: test_interior_navigation
+PASS: test_interior_traversal
+PASS: test_main_world_monsters
+PASS: test_minor_site_generation
+PASS: test_monster_boarding
+PASS: test_monster_cabin
+PASS: test_monster_model
+PASS: test_monster_navigation
+PASS: test_monster_pursuit
+PASS: test_moving_rv_climbing
+PASS: test_outdoor_encounter
+PASS: test_outdoor_gas_station
+PASS: test_outdoor_horror
+PASS: test_outdoor_minor_assets
+PASS: test_outdoor_minor_navigation
+PASS: test_outdoor_minor_persistence
+PASS: test_outdoor_style_sample
+PASS: test_outdoor_traversal
+PASS: test_player_climbing_runtime
+PASS: test_player_climbing
+PASS: test_player_death
+PASS: test_player_import_v020
+PASS: test_player_inventory
+PASS: test_player_model
+PASS: test_player_ragdoll_v020
+PASS: test_player_stamina
+PASS: test_poi_asset_kit
+PASS: test_poi_definitions
+PASS: test_poi_instances
+PASS: test_poi_resources
+PASS: test_raker_attack_alignment
+PASS: test_raker_bite_pose
+PASS: test_raker_boarding
+PASS: test_raker_cabin
+PASS: test_raker_finger_flexion
+PASS: test_raker_gaits
+PASS: test_raker_grab_vehicle
+PASS: test_raker_grab
+PASS: test_raker_neck
+PASS: test_raker_playground
+PASS: test_raker_release_input
+PASS: test_raker_source_hands
+PASS: test_raker_sprint
+PASS: test_raker_turning
+PASS: test_raker
+PASS: test_roadside_exploration
+PASS: test_rv_boarding
+PASS: test_rv_braking
+PASS: test_rv_checkpoint
+PASS: test_rv_cockpit
+PASS: test_rv_engine
+PASS: test_rv_experience
+PASS: test_rv_extended
+PASS: test_rv_handling
+PASS: test_rv_interactions
+PASS: test_rv_physics_regression
+PASS: test_rv_resource_cycle
+PASS: test_rv_shared_storage
+PASS: test_rv_structure_modules
+PASS: test_rv_systems
+PASS: test_streaming_generation
+PASS: test_tire_handling
+PASS: test_tire_puncture
+PASS: test_world_clock
+PASS: test_world_entities
+PASS: test_world_generation
+PASS: test_world_weather
+PASS: main-scene

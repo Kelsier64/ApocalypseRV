@@ -1,0 +1,10 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+BRAKE speed=4.99 pedal=1.0 time=0.967 distance=2.746
+BRAKE speed=9.98 pedal=1.0 time=1.700 distance=8.960
+BRAKE speed=19.97 pedal=1.0 time=3.017 distance=29.927
+BRAKE speed=5.99 pedal=1.0 time=1.117 distance=3.727
+BRAKE speed=9.98 pedal=0.5 time=2.933 distance=14.326
+PASS: progressive wheel braking, reverse, engine-off braking and parking hold

@@ -18,7 +18,7 @@
 
 ## 1. 執行環境與場景
 
-目標開發／CI 版本 Godot 4.7.2（由 `.godot-version` 固定，runner 強制核對），Jolt Physics、桌面 Forward+／Vulkan（Compatibility 可降級）。[project.godot](project.godot) 的入口為 [world/test_world.tscn](world/test_world.tscn)。目前沒有網路同步或任務／進度管理器；Checkpoint autoload 提供主世界檢查點。
+目標開發／CI 版本 Godot 4.7.2（由 `.godot-version` 固定，runner 強制核對），60 Hz／Jolt Physics（velocity/position steps 各 32）、桌面 Forward+／Vulkan（Compatibility 可降級）。[project.godot](project.godot) 的入口為 [world/test_world.tscn](world/test_world.tscn)。目前沒有網路同步或任務／進度管理器；Checkpoint autoload 提供主世界檢查點。
 
 專案功能標記為 4.7；開發與 CI 使用 4.7.2 stable。舊驗收紀錄中的 4.6.1 CI 是歷史資訊，不代表目前支援第二個引擎版本。
 
@@ -129,6 +129,14 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 | 隨機地堡 | [interior_layout.gd](world/instances/interior_layout.gd)、[interior_profile.gd](world/instances/interior_profile.gd) | 可擴充房型、隨機 1–3 層、10–30 模組目標、manifest 版本 3 |
 | 怪物 | [monster.gd](enemies/monster.gd) | AI、導航、接觸觀測、攀爬、攻擊、車撞傷害、掉落 |
 | 選敵 | [combat_targeting.gd](enemies/combat_targeting.gd) | 候選排序，使用 actor 提供的接觸判斷 |
+
+玩家外觀由 `player.tscn/Visuals/Model` 實例化已驗收 v020 GLB，11 Mesh、41 變形骨、原尺寸 1.60 m。`PlayerModelVisual` 只管理顯示，不持有移動、生命或存檔狀態。Visuals 的 Y=0.25 對齊既有膠囊底部，繞 Y 180° 對齊控制器 -Z；攝影機位於根座標 (0, 1.78, -0.20)，實際眼高約 1.53 m。碰撞膠囊、玩家 root 與攀爬探針不變。
+
+InteractRay 明確排除自己的玩家碰撞體，避免從較高相機往下看時命中自身膠囊。PlayerGrab 對蹲姿抓取者沿用駕駛座的 0.17 m 下拉分量，加上原 0.18 m 前拉仍在 0.25 m 上限內，保留球體掃掠與固定視角；怪物模型、骨長與原動作不變。
+
+本地攝影機排除第 18 顯示層的完整身體／頭套，納入腳本專用第 21 層的去頭顯示副本與六個完整陰影副本。其餘五個配件沿用第 1 層；預設外部／後照鏡攝影機看完整模型，不納入第 21 層。新建副本只過濾頭部三角形索引，原 Mesh、Skin、材質與權重不改。鏡面仍使用第 20 層；自訂燈若縮限 light_cull_mask，需納入第 21 層。本地副本關閉 GI，避免重複烘焙。此契約支援現有單人及跨 World3D 轉場；多人需要按攝影機所有權擴充，尚未實作。正式玩家不播放 TEST 動作，仍是中性靜態姿勢；入座沿用整個玩家隱藏、離座恢復。正式死亡已接入 PlayerRagdoll，固定 60 Hz，保留 Jolt 32／32；布娃娃以局部轉動慣量及角阻尼穩定關節，落地／恢復及 77 組完整回歸已通過。見 [角色整合驗收](docs/validation/2026-09-27-player-model-integration.md)與[死亡布娃娃驗收](docs/validation/2026-09-27-player-death-integration.md)。
+
+PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡頭，生命／模式仍由 Player 管理。首次死亡建立 14 個物理骨，沿用 v020 碰撞、67 kg 質量與關節配置；第 8 碰撞層與環境接觸，排除自身膠囊。死亡解除抓取、座位、攀爬、UI 和放置，繼承世界速度並停用控制膠囊。第一人稱固定死亡起始方向、平移跟隨頭部，球體掃掠限制鏡頭偏移；本地身體和配件在死亡期間不遮住鏡頭，完整外部模型與陰影仍存在。兩秒後以真實站立膠囊檢查附近地面與淨空；受阻則每 0.25 秒重試。恢復後關閉 simulator 與碰撞、重設中性姿勢、恢復控制；不留持久屍體、不改存檔格式。跨 World3D 的死亡轉場取消會在返回位置重新綁定物理。
 
 怪物外觀由 `zombie.tscn` 的 `BodyMesh/Model` 實例化 GLB；`monster_model_visual.gd` 管理原地測試動畫與各實例獨立的受傷 overlay。來源 2.18 m 等比例縮成既有 1.5 m 膠囊高度，腳底與朝向在場景層修正，不改 AI、碰撞或保存契約。掛車音效保留，舊假手臂只在沒有模型的 actor 上產生；正式動作與 root motion 尚未接入。[資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。
 
@@ -355,11 +363,11 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### 統一驗證
 
-底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300，避免調整腳煞車時削弱駐車。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
+底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
 
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 
-[scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
+[scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。runner 的每項執行期限為 240 秒，CI 總期限 30 分鐘；可用 `-StartAt test_name` 從指定 suite 接續，報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
 
 | 測試 | 關注範圍 |
 |---|---|

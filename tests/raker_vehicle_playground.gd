@@ -261,7 +261,9 @@ func setup_grab(mode: int) -> void:
 	cruise_index = -1
 	rv.handbrake = true
 	if is_instance_valid(player.seated_in): player.seated_in.exit_seat(true)
+	player.ragdoll_control.stop()
 	player.is_player_dead = false
+	player._sync_body_collision_to_locomotion()
 	player.max_player_health = 100
 	player.current_player_health = 100
 	player.grab_control.immunity = 0

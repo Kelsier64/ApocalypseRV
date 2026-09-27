@@ -5,6 +5,10 @@ func _init() -> void: run.call_deferred()
 func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 
+# Preserve the original 60 Hz scenario durations at the configured rate.
+func frames(count: int) -> int:
+	return ceili(count * Engine.physics_ticks_per_second / 60.0)
+
 func run() -> void:
 	var results := {}
 	var configs := [{"id": "standard"}, {"id": "reinforced", "engine": "upgraded"}, {"id": "equipment", "load": 600.0}, {"id": "worn", "wear": 20.0}, {"id": "missing", "missing": 0}, {"id": "failed", "failed": true}, {"id": "slope", "slope": 5.0}, {"id": "turn", "turn": 0.7}, {"id": "reverse", "gear": -1}, {"id": "fast_turn", "turn": 0.7, "gear": 4, "initial_speed": 20.0}]
@@ -39,7 +43,7 @@ func run() -> void:
 			for i in range(4): rv.wheel_health[i] = config.wear
 		if config.has("missing"): rv.remove_wheel(config.missing)
 		if config.has("failed"): rv.get_engine().health = 0.0
-		for i in range(120): await physics_frame
+		for i in frames(120): await physics_frame
 		var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
 		player.position = Vector3(30, 1, 30)
 		world.add_child(player)
@@ -48,7 +52,7 @@ func run() -> void:
 		seat.interact_hold(player)
 		check(seat.current_driver == player, "%s allows driver entry" % config.id)
 		var parked := rv.global_position
-		for i in range(60): await physics_frame
+		for i in frames(60): await physics_frame
 		var parking_drift := Vector2(rv.global_position.x - parked.x, rv.global_position.z - parked.z).length()
 		check(parking_drift < 0.15, "%s parking holds" % config.id)
 		rv.set_engine_running(true)
@@ -60,15 +64,15 @@ func run() -> void:
 		var peak := 0.0
 		var seconds_to_three := -1.0
 		rv.control_override = {"throttle": 1.0, "steering": config.get("turn", 0.0)}
-		for i in range(360):
+		for i in frames(360):
 			await physics_frame
 			peak = maxf(peak, Vector2(rv.linear_velocity.x, rv.linear_velocity.z).length())
-			if seconds_to_three < 0.0 and peak >= 3.0: seconds_to_three = i / 60.0
+			if seconds_to_three < 0.0 and peak >= 3.0: seconds_to_three = float(i) / Engine.physics_ticks_per_second
 			if i == 2: check(rv.throttle_input > 0.0 and rv.throttle_input < 0.5, "Throttle builds progressively")
 		var travelled := rv.global_position - start
 		var yaw := absf(rv.global_basis.z.signed_angle_to(-forward, Vector3.UP))
 		rv.control_override = {"brake": 1.0}
-		for i in range(180): await physics_frame
+		for i in frames(180): await physics_frame
 		check(rv.linear_velocity.length() < 0.3, "%s brakes stop vehicle" % config.id)
 		check(absf(rv.steering) < 0.01, "%s steering recentres" % config.id)
 		check(rv.global_basis.y.dot(Vector3.UP) > 0.65, "%s stays upright" % config.id)
@@ -87,7 +91,7 @@ func run() -> void:
 			var dock_target := dock_start + forward * 14.0
 			rv.handbrake = false
 			rv.set_gear(1)
-			for i in range(1200):
+			for i in frames(1200):
 				var remaining := (dock_target - rv.global_position).dot(forward)
 				var speed := maxf(0.0, rv.linear_velocity.dot(forward))
 				var stopping := speed * speed / 5.0 + speed * 0.35 + 0.2
@@ -98,11 +102,11 @@ func run() -> void:
 			check(dock_error < 0.7 and rv.road_speed() < 0.2, "Wheel controls stop inside marked parking bay")
 			rv.set_handbrake(true)
 			var parked_at := rv.global_position
-			for i in range(120): await physics_frame
+			for i in frames(120): await physics_frame
 			check(Vector2(rv.global_position.x - parked_at.x, rv.global_position.z - parked_at.z).length() < 0.15, "Parking bay hold is stable")
 			rv.set_gear(-1)
 			rv.set_handbrake(false)
-			for i in range(1200):
+			for i in frames(1200):
 				var remaining := (rv.global_position - dock_start).dot(forward)
 				var speed := maxf(0.0, -rv.linear_velocity.dot(forward))
 				var stopping := speed * speed / 5.0 + speed * 0.35 + 0.2

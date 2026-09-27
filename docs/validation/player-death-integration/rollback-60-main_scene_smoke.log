@@ -1,0 +1,20 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+WORLD v6 seed=1788968521
+FOREST band=-2 trees=1637 shrubs=4566
+TERRAIN band=-2 build_ms=636.3 max_slice_ms=636.3 active=1
+FOREST band=-1 trees=1623 shrubs=4561
+TERRAIN band=-1 build_ms=860.5 max_slice_ms=860.5 active=2
+FOREST band=0 trees=1447 shrubs=4114
+TERRAIN band=0 build_ms=836.8 max_slice_ms=836.8 active=3
+FOREST band=1 trees=1650 shrubs=4573
+TERRAIN band=1 build_ms=722.1 max_slice_ms=722.1 active=4
+FOREST band=2 trees=1651 shrubs=4587
+TERRAIN band=2 build_ms=706.5 max_slice_ms=706.5 active=5
+FOREST band=3 trees=1579 shrubs=4465
+TERRAIN band=3 build_ms=699.1 max_slice_ms=699.1 active=6
+FOREST band=-3 trees=1651 shrubs=4579
+TERRAIN band=-3 build_ms=525.2 max_slice_ms=49.3 active=7
+PASS: WORLD_READY_FOR_PLAY and production player movement

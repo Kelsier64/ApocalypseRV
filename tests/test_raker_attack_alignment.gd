@@ -26,7 +26,9 @@ func run() -> void:
 			for turn in [-.5,0,.5]:
 				actor.rotation.y = turn
 				player.position = actor.global_basis*Vector3(0,0,-.8)
-				player.camera.position.y = height
+				# This solver grid specifies eye height at the body origin. Keep
+				# its authored horizontal anchor independent of production eyes.
+				player.camera.position = Vector3(0, height, 0)
 				sk.reset_bone_poses()
 				visual.animation_player.play('game/'+clip,0)
 				visual.animation_player.seek(.20 * actor.grab.BITE_SPEED if clip.ends_with('bite') else .32,true)

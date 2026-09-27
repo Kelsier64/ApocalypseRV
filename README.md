@@ -2,6 +2,8 @@
 
 Godot 4.7.2 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、搬運物資、分解製作汽油，並應對會攀車與拆車的殭屍。**目前是單人沙盒**，提供室外檢查點保存，尚無多人、任務、正式勝敗或長局進度；合作生存屬後續願景。
 
+玩家已接入完整 1.60 m 角色模型，低頭可見身體並保留完整影子。死亡會切換布娃娃，第一人稱鏡頭隨倒地下移而不翻滾，兩秒後在附近安全站位恢復控制；固定 60 Hz，布娃娃落地與恢復控制、77 組完整回歸已通過；正式走跑動畫仍未製作。見 [模型整合](docs/validation/2026-09-27-player-model-integration.md)與[死亡布娃娃驗收](docs/validation/2026-09-27-player-death-integration.md)。
+
 ## 文件
 
 - [GDD.md](GDD.md)：遊戲設計、完整玩法、資源數值、目標與未實作願景。
@@ -20,7 +22,7 @@ godot --editor --path .
 godot --path .
 ```
 
-主場景為 `world/test_world.tscn`，使用 Jolt Physics，桌面預設 Forward+／Vulkan。開局有完整組裝的 RV、測試物資及殭屍，並生成公路。
+主場景為 `world/test_world.tscn`，使用 60 Hz／Jolt Physics（32／32 次求解），桌面預設 Forward+／Vulkan。開局有完整組裝的 RV、測試物資及殭屍，並生成公路。
 
 戶外已改用林間局部體積霧，會接受太陽與車燈照明；遠處另外保留淡距離霧。更新後須重新啟動遊戲，編輯器需重新載入專案。若顯示卡不支援，可用 `godot --path . --rendering-method gl_compatibility --rendering-driver opengl3`，降級為原距離霧。畫面與測試見 [局部體積霧驗收](docs/validation/2026-09-17-volumetric-fog.md)。
 

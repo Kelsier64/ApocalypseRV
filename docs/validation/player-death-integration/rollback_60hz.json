@@ -1,0 +1,27 @@
+{
+  "physics_hz": 60,
+  "jolt_velocity_steps": 32,
+  "jolt_position_steps": 32,
+  "checks": [
+    {
+      "check": "test_rv_braking",
+      "exit_code": 0,
+      "log": "rollback-60-test_rv_braking.log",
+      "sha256": "2c8c99a37f269e0a2e2342a4c23f2b5ffe9542153725e8722a8c2d06c40f1bbc"
+    },
+    {
+      "check": "test_player_death",
+      "exit_code": 1,
+      "log": "rollback-60-test_player_death.log",
+      "sha256": "c52af7a982d8adad7486c1f29d6135923f1d06bbb5cbf7ffdf11a09a394645a0"
+    },
+    {
+      "check": "main_scene_smoke",
+      "exit_code": 0,
+      "log": "rollback-60-main_scene_smoke.log",
+      "sha256": "dc903ba06efe6935a149c03a061bc47a486e71be5b2f89553898bf23ffbda375"
+    }
+  ],
+  "ragdoll_status": "needs correction: airborne peak joint gap 0.0424858 m exceeds unchanged 0.025 m limit; this is not a passing acceptance",
+  "full_regression": "120 Hz run interrupted at user request; full 60 Hz regression not run"
+}

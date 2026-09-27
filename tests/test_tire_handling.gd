@@ -4,6 +4,9 @@ func _init() -> void: run.call_deferred()
 func check(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 
+func ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
+
 func fixture() -> Chassis:
 	var world := Node3D.new()
 	root.add_child(world)
@@ -27,7 +30,7 @@ func run() -> void:
 	var results := {}
 	for mask in range(16):
 		var rv := fixture()
-		for i in range(90): await physics_frame
+		for i in ticks(90): await physics_frame
 		for slot in range(4):
 			if mask & (1 << slot): rv.puncture_wheel(slot)
 		rv.handbrake = false
@@ -36,7 +39,7 @@ func run() -> void:
 		rv.linear_velocity = -rv.global_basis.z * 8.0
 		rv.control_override = {"throttle": 1.0}
 		var start := rv.global_position
-		for i in range(180): await physics_frame
+		for i in ticks(180): await physics_frame
 		var yaw := rv.rotation.y
 		var speed := rv.linear_velocity.length()
 		var distance := rv.global_position.distance_to(start)
@@ -45,7 +48,7 @@ func run() -> void:
 		results[mask] = {"yaw": yaw, "speed": speed, "distance": distance}
 		print("TIRES mask=%d yaw=%.4f speed=%.3f distance=%.3f" % [mask, yaw, speed, distance])
 		rv.control_override = {"brake": 1.0}
-		for i in range(240): await physics_frame
+		for i in ticks(240): await physics_frame
 		check(rv.linear_velocity.length() < 0.4, "mask %d brakes to rest" % mask)
 		current_scene.queue_free()
 		await process_frame
@@ -59,7 +62,7 @@ func run() -> void:
 	check(results[12].speed < results[3].speed, "Rear flats lose drive compared with front flats")
 	for variant in ["countersteer", "reverse", "fast"]:
 		var car := fixture()
-		for i in range(90): await physics_frame
+		for i in ticks(90): await physics_frame
 		car.puncture_wheel(0)
 		car.handbrake = false
 		car.set_engine_running(true)
@@ -67,7 +70,7 @@ func run() -> void:
 		car.linear_velocity = Vector3(0, 0, 5 if variant == "reverse" else (-22 if variant == "fast" else -8))
 		car.control_override = {"throttle": 1.0, "steering": 0.27 if variant == "countersteer" else 0.0}
 		var start := car.global_position
-		for i in range(180): await physics_frame
+		for i in ticks(180): await physics_frame
 		check(car.global_basis.y.dot(Vector3.UP) > 0.8, "%s with a flat stays upright" % variant)
 		if variant == "countersteer": check(absf(car.rotation.y) < absf(results[1].yaw), "Driver can countersteer against flat pull")
 		if variant == "reverse": check(car.global_position.z > start.z + 1, "Flat tire still allows reverse")
@@ -78,7 +81,7 @@ func run() -> void:
 	# Real Area overlap + grounded wheel sweeps. A chassis overlapping the
 	# sensor must not puncture all tires at once; front and rear arrive in order.
 	var rv := fixture()
-	for i in range(90): await physics_frame
+	for i in ticks(90): await physics_frame
 	var spike := TireSpikeStrip.new()
 	current_scene.add_child(spike)
 	spike.position = Vector3(1.5, 0.02, -12)
@@ -88,7 +91,7 @@ func run() -> void:
 	rv.linear_velocity = Vector3(0, 0, -30)
 	rv.control_override = {"throttle": 1.0}
 	var front_first := false
-	for i in range(180):
+	for i in ticks(180):
 		await physics_frame
 		if rv.wheel_health[0] == 0 and rv.wheel_health[2] > 0: front_first = true
 	check(front_first, "Actual strip punctures front before rear")

@@ -1,0 +1,25 @@
+{
+	"cases": [
+		{
+			"alive": true,
+			"case": "standing",
+			"movement_m": 2.45835208892822,
+			"physics_stopped": true
+		},
+		{
+			"alive": true,
+			"case": "airborne",
+			"movement_m": 2.45835304260254,
+			"physics_stopped": true
+		},
+		{
+			"alive": true,
+			"case": "driver",
+			"movement_m": 0.495346814393997,
+			"physics_stopped": true
+		}
+	],
+	"godot": "4.7.2-stable (official)",
+	"physics_hz": 120,
+	"renderer": "forward_plus"
+}

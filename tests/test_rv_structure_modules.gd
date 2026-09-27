@@ -59,7 +59,7 @@ func _run() -> void:
 	check(ray.get_collider() == side, "Closed side door is ray reachable")
 	ray._step_buttons(side, true, false, 0.016)
 	ray._step_buttons(side, false, false, 0.016)
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(side.angles[0] < -1.6, "Short E opens side door outward")
 	var open_angle: float = side.angles[0]
 	# F workflow returns to the persistent socket, independent of a surface ray hit.
@@ -107,13 +107,13 @@ func _run() -> void:
 	check(rear.aimed_leaf(player) == 0, "Left rear leaf selected by its actual shape")
 	check(rear.interact(player) == "開門中", "Left rear leaf begins opening")
 	player.position = Vector3(10, 0, 0)
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(rear.angles[0] < -1.6 and rear.angles[1] == 0.0, "Opening left rear leaf leaves right leaf closed")
 	aim(rear.to_global(Vector3(0.7, 0, 0)), Vector3(0, 0, 2.1))
 	check(rear.aimed_leaf(player) == 1, "Right rear leaf selected independently")
 	rear.interact(player)
 	player.position = Vector3(10, 0, 0)
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(rear.angles[1] > 1.6, "Right rear leaf opens outward")
 	# Check the whole swept path, not only its final pose.
 	crate = obstacle(side.to_global(Vector3(0, -0.1, 0.55)))
@@ -123,23 +123,23 @@ func _run() -> void:
 	crate.free()
 	await physics_frame
 	side.toggle_leaf(0)
-	for frame in range(8): await physics_frame
+	for frame in ceili(8 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	crate = obstacle(side.to_global(Vector3(0, -0.1, 0.55)))
 	await physics_frame
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(absf(side.angles[0]) < 1.6 and side.blocked_message.contains("BlockingCrate"), "New obstacle during animation stops the moving leaf")
 	crate.free()
 	# A person entering the closing path stops the leaf; the next E can reopen it.
 	side.restore_angles([-deg_to_rad(100.0)])
 	side.toggle_leaf(0)
-	for frame in range(8): await physics_frame
+	for frame in ceili(8 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	player.global_position = side.to_global(Vector3(0, -1.0, 0.55))
 	await physics_frame
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(absf(side.angles[0]) > 0.2 and side.blocked_message.contains("角色"), "Closing leaf stops for a character entering the sweep")
 	check(side.toggle_leaf(0) == "開門中", "A blocked closing leaf can reverse safely")
 	player.position = Vector3(10, 0, 0)
-	for frame in range(75): await physics_frame
+	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	# A closed door rejects equipment attachment to its moving leaf, but permits fixed jamb contact.
 	side.restore_angles([0.0])
 	var item: Equipment = rv.get_node("ItemBox")

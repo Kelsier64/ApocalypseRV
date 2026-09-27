@@ -18,6 +18,9 @@ var _f_done := false
 var _input_edges: Array[Dictionary] = []
 
 func _ready() -> void:
+	# The camera can sit outside the controller capsule and look back through
+	# its shoulder. RayCast excludes its Camera3D parent, not the player body.
+	add_exception(player)
 	var layer := CanvasLayer.new()
 	layer.layer = 5
 	add_child(layer)

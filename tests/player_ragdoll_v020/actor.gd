@@ -133,7 +133,7 @@ func add_body(bone_name: String, shape_rest: Transform3D, shape: Shape3D, mass_k
 	body.friction = 0.8
 	body.bounce = 0.0
 	body.linear_damp = 0.15
-	body.angular_damp = 1.6 if bone_name.begins_with("foot") or bone_name.begins_with("forearm") else 0.8
+	body.angular_damp = 2.4 if bone_name.begins_with("foot") or bone_name.begins_with("forearm") else 1.2
 	body.collision_layer = BODY_LAYER
 	body.collision_mask = 1 | BODY_LAYER
 	shape.margin = 0.005
@@ -142,6 +142,7 @@ func add_body(bone_name: String, shape_rest: Transform3D, shape: Shape3D, mass_k
 	body.add_child(collision)
 	simulator.add_child(body)
 	PhysicsServer3D.body_set_enable_continuous_collision_detection(body.get_rid(), true)
+	preload("res://player/ragdoll_mass_properties.gd").configure(body, shape)
 	bodies[bone_name] = body
 	# Joint limits on PhysicalBone3D are DEGREES, unlike Joint3D properties.
 	if bone_name != "pelvis":
@@ -238,5 +239,5 @@ func configuration() -> Array:
 		for prop in body.get_property_list():
 			if String(prop.name).begins_with("joint_constraints/"):
 				limits[prop.name] = body.get(prop.name)
-		result.append({"bone": bone_name, "mass_kg": body.mass, "shape": shape.get_class(), "size": str(shape.size) if shape is BoxShape3D else [shape.radius, shape.height], "joint_type": body.joint_type, "joint_rotation_rad": str(body.joint_rotation), "limits_degrees": limits, "excluded": body.get_collision_exceptions().map(func(b): return b.name)})
+		result.append({"bone": bone_name, "mass_kg": body.mass, "inertia_kg_m2": str(PhysicsServer3D.body_get_param(body.get_rid(), PhysicsServer3D.BODY_PARAM_INERTIA)), "angular_damp": body.angular_damp, "linear_damp": body.linear_damp, "shape": shape.get_class(), "size": str(shape.size) if shape is BoxShape3D else [shape.radius, shape.height], "joint_type": body.joint_type, "joint_rotation_rad": str(body.joint_rotation), "limits_degrees": limits, "excluded": body.get_collision_exceptions().map(func(b): return b.name)})
 	return result

@@ -3,6 +3,8 @@ var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
+func ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
 func obstacle(world: Node3D, at: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	var shape := CollisionShape3D.new()
@@ -33,35 +35,35 @@ func run() -> void:
 	var hatch := rv.engine_bay.get_node("Hatch")
 	check(hatch.interact(player).contains("打開中") and not rv.engine_bay.hatch_open, "Service hatch starts motion without granting engine access")
 	check(VehicleSnapshot.capture(rv).is_empty(), "Moving hatch cannot be saved")
-	for i in range(10): await physics_frame
+	for i in ticks(10): await physics_frame
 	var block := obstacle(world, rv.engine_bay.to_global(hatch.CLOSED.lerp(hatch.OPEN, 0.75)), Vector3(0.25, 0.25, 0.25))
-	for i in range(80): await physics_frame
+	for i in ticks(80): await physics_frame
 	check(not hatch.moving and not hatch.stable() and not rv.engine_bay.hatch_open, "New obstacle stops hatch at an intermediate pose and keeps engine locked")
 	check(VehicleSnapshot.capture(rv).is_empty(), "Blocked hatch also refuses saving")
 	block.free()
 	await physics_frame
 	hatch.interact(player)
-	for i in range(80): await physics_frame
+	for i in ticks(80): await physics_frame
 	check(hatch.stable() and not hatch.opened, "Stopped hatch can reverse to closed")
 	hatch.interact(player)
-	for i in range(80): await physics_frame
+	for i in ticks(80): await physics_frame
 	check(hatch.opened and rv.engine_bay.hatch_open, "Full opening grants engine service")
 	hatch.interact(player)
-	for i in range(80): await physics_frame
+	for i in ticks(80): await physics_frame
 	var ramp: RearRamp = rv.rear_ramp
 	rv.get_node("RearDoor").restore_angles([-deg_to_rad(100), deg_to_rad(100)])
 	await physics_frame
 	var started := ramp.interact(player)
 	check(ramp.moving, "Ramp begins animation: " + started)
-	for i in range(25): await physics_frame
+	for i in ticks(25): await physics_frame
 	block = obstacle(world, ramp.to_global(Vector3(0, 1.0, 2.1)), Vector3(0.4, 0.5, 0.4))
-	for i in range(200): await physics_frame
+	for i in ticks(200): await physics_frame
 	check(not ramp.moving and ramp.progress > 0 and ramp.progress < 1 and rv.drive_blocked(), "Mid-animation obstacle leaves ramp safely stopped and driving locked")
 	check(VehicleSnapshot.capture(rv).is_empty(), "Partly folded ramp refuses saving")
 	block.free()
 	await physics_frame
 	ramp.interact(player)
-	for i in range(200): await physics_frame
+	for i in ticks(200): await physics_frame
 	check(ramp.stable() and ramp.progress == 0 and not rv.drive_blocked(), "Blocked ramp reverses and fully stows")
 	# Independent light loads, supply loss, equipment availability, and old saves.
 	rv.interior_requested = {"cabin": false, "work": false, "service": false}

@@ -1,7 +1,7 @@
 extends Node3D
 ## Independent ragdoll acceptance stage; all geometry and control are test-owned.
 const ACTOR = preload("res://tests/player_ragdoll_v020/actor.gd")
-const OUTPUT := "res://docs/validation/player-v020-ragdoll/"
+const OUTPUT := "res://docs/validation/player-death-integration/current-60hz/ragdoll/"
 const CASES := ["stand_forward", "stand_back", "stand_left", "drop_face", "drop_back", "drop_right", "slope", "stairs", "animation_transition", "crouch_transition"]
 var actor: CharacterBody3D
 var camera: Camera3D
@@ -11,39 +11,21 @@ var running := false
 var replaying := false
 var elapsed := 0.0
 var terrain: Array[StaticBody3D] = []
-var previous_physics_hz := 60
 var previous_world: World3D
 var test_world: World3D
-const JOLT_TEST_SETTINGS := {
-	"physics/jolt_physics_3d/simulation/velocity_steps": 32,
-	"physics/jolt_physics_3d/simulation/position_steps": 32,
-	"physics/jolt_physics_3d/simulation/penetration_slop": 0.003,
-	"physics/jolt_physics_3d/simulation/continuous_cd_max_penetration": 0.10,
-}
+var JOLT_TEST_SETTINGS: Dictionary = {}
 
 func _enter_tree() -> void:
-	# This small, articulated test uses 120 Hz. Restore on exit; never save a
-	# project setting or alter the production scene's simulation rate.
-	previous_physics_hz = Engine.physics_ticks_per_second
-	Engine.physics_ticks_per_second = 120
-	# Jolt snapshots solver/contact settings when a physics space is created.
-	# Construct a dedicated test World3D, then immediately restore global values.
-	# Emit synchronously so native Jolt's cached settings see both transactions.
-	var previous: Dictionary = {}
-	for key: String in JOLT_TEST_SETTINGS:
-		previous[key] = ProjectSettings.get_setting(key)
-		ProjectSettings.set_setting(key, JOLT_TEST_SETTINGS[key])
-	ProjectSettings.settings_changed.emit()
+	# Isolate geometry while using the exact production tick and solver settings.
+	for key: String in ["velocity_steps", "position_steps", "penetration_slop", "continuous_cd_max_penetration"]:
+		var setting := "physics/jolt_physics_3d/simulation/" + key
+		JOLT_TEST_SETTINGS[setting] = ProjectSettings.get_setting(setting)
 	previous_world = get_viewport().world_3d
 	test_world = World3D.new()
 	test_world.space # Force the isolated physics space to be created now.
 	get_viewport().world_3d = test_world
-	for key: String in previous:
-		ProjectSettings.set_setting(key, previous[key])
-	ProjectSettings.settings_changed.emit()
 
 func _exit_tree() -> void:
-	Engine.physics_ticks_per_second = previous_physics_hz
 	get_viewport().world_3d = previous_world
 
 func _ready() -> void:
@@ -212,7 +194,7 @@ func frame_camera() -> void:
 
 func update_label() -> void:
 	if label:
-		label.text = "PLAYER v020 | " + CASES[selected_case] + (" | PHYSICS %.1fs" % elapsed if running else " | CONTROL / READY") + "\nF1-F10 scenarios | Space fall | R recover | C colliders | T TEST clip | WASD move | Esc close\n14 bodies / 67.0 kg / 120 Hz / 41 unchanged deform bones / independent test only"
+		label.text = "PLAYER v020 | " + CASES[selected_case] + (" | PHYSICS %.1fs" % elapsed if running else " | CONTROL / READY") + "\nF1-F10 scenarios | Space fall | R recover | C colliders | T TEST clip | WASD move | Esc close\n14 bodies / 67.0 kg / %d Hz / 41 unchanged deform bones / independent test only" % Engine.physics_ticks_per_second
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if replaying or not event.is_pressed() or event.is_echo():
@@ -242,6 +224,7 @@ func capture(filename: String) -> void:
 
 func run_replay() -> void:
 	replaying = true
+	DirAccess.make_dir_recursive_absolute(OUTPUT)
 	var visual_cases: Array = []
 	reset_case(0)
 	actor.set_debug(true)

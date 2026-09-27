@@ -164,7 +164,10 @@ func _update_bite_pull() -> void:
 		if not bite_pull_ready:
 			var toward: Vector3 = (captor.global_position-anchor).slide(Vector3.UP).normalized()
 			var pull := toward * .18
-			if is_instance_valid(player.seated_in): pull -= Vector3.UP * .17
+			# A crouched captor pulls a standing head down too. The full-body
+			# player's eyes are higher than the old capsule-only camera.
+			if is_instance_valid(player.seated_in) or captor.get("crouched") == true:
+				pull -= Vector3.UP * .17
 			bite_pull_offset = parent.global_basis.inverse() * pull
 			bite_pull_ready = true
 		weight = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed)

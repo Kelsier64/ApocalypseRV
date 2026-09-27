@@ -3,17 +3,19 @@ var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(value: bool, note: String) -> void:
 	if not value: failures.append(note)
+func ticks(original_count: int) -> int:
+	return ceili(original_count * Engine.physics_ticks_per_second / 60.0)
 func run() -> void:
 	root.size = Vector2i(1280,720)
 	var scene: Node3D = load("res://tests/raker_vehicle_playground.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
-	for i in 75: await physics_frame
+	for i in ticks(75): await physics_frame
 	for scenario in [0, 1, 2, 3]:
 		var mode := mini(scenario,2)
 		scene.setup_grab(mode)
 		var captured := false
-		for i in 1200:
+		for i in ticks(1200):
 			await physics_frame
 			if scene.player.is_grabbed():
 				captured = true
@@ -45,7 +47,7 @@ func run() -> void:
 			check(scene.rv.handbrake==handbrake,"Struggle Space never toggles handbrake")
 			check(scene.rv.driver_controls_locked(),"Driver polling controls locked")
 			Input.action_press("move_forward")
-			for i in 20: await physics_frame
+			for i in ticks(20): await physics_frame
 			Input.action_release("move_forward")
 			check(player.is_grabbed(),"Capture persists on common moving support")
 			check(scene.rv.throttle_input<.01 and not scene.rv.handbrake,"Throttle releases to coast")
