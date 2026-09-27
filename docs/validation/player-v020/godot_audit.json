@@ -1,0 +1,385 @@
+{
+	"animation_samples": 481,
+	"bones": [
+		"root",
+		"pelvis",
+		"spine_01",
+		"spine_02",
+		"clavicle_L",
+		"upper_arm_L",
+		"forearm_L",
+		"hand_L",
+		"index_01_L",
+		"index_02_L",
+		"middle_01_L",
+		"middle_02_L",
+		"pinky_01_L",
+		"pinky_02_L",
+		"ring_01_L",
+		"ring_02_L",
+		"thumb_01_L",
+		"thumb_02_L",
+		"clavicle_R",
+		"upper_arm_R",
+		"forearm_R",
+		"hand_R",
+		"index_01_R",
+		"index_02_R",
+		"middle_01_R",
+		"middle_02_R",
+		"pinky_01_R",
+		"pinky_02_R",
+		"ring_01_R",
+		"ring_02_R",
+		"thumb_01_R",
+		"thumb_02_R",
+		"neck_01",
+		"neck_02",
+		"head",
+		"thigh_L",
+		"shin_L",
+		"foot_L",
+		"thigh_R",
+		"shin_R",
+		"foot_R"
+	],
+	"configured_renderer": "forward_plus",
+	"display_server": "headless",
+	"failures": [],
+	"godot": "4.7.2-stable (official)",
+	"hierarchy": {
+		"clavicle_L": 3,
+		"clavicle_R": 3,
+		"foot_L": 36,
+		"foot_R": 39,
+		"forearm_L": 5,
+		"forearm_R": 19,
+		"hand_L": 6,
+		"hand_R": 20,
+		"head": 33,
+		"index_01_L": 7,
+		"index_01_R": 21,
+		"index_02_L": 8,
+		"index_02_R": 22,
+		"middle_01_L": 7,
+		"middle_01_R": 21,
+		"middle_02_L": 10,
+		"middle_02_R": 24,
+		"neck_01": 3,
+		"neck_02": 32,
+		"pelvis": 0,
+		"pinky_01_L": 7,
+		"pinky_01_R": 21,
+		"pinky_02_L": 12,
+		"pinky_02_R": 26,
+		"ring_01_L": 7,
+		"ring_01_R": 21,
+		"ring_02_L": 14,
+		"ring_02_R": 28,
+		"root": -1,
+		"shin_L": 35,
+		"shin_R": 38,
+		"spine_01": 1,
+		"spine_02": 2,
+		"thigh_L": 1,
+		"thigh_R": 1,
+		"thumb_01_L": 7,
+		"thumb_01_R": 21,
+		"thumb_02_L": 16,
+		"thumb_02_R": 30,
+		"upper_arm_L": 4,
+		"upper_arm_R": 18
+	},
+	"local_view": {
+		"local_hidden_head_triangles": 224,
+		"local_shadow_proxies": 6,
+		"local_visible_body_triangles": 11078,
+		"original_mesh_retained": true,
+		"original_shadow_retained": true
+	},
+	"materials": {
+		"PLAYER_Cloth_512_v019": {
+			"ao_map": false,
+			"base_color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"cull_mode": 2,
+			"metallic": 0.0,
+			"normal_map": false,
+			"roughness": 0.939999997615814,
+			"texture_filter": 3,
+			"texture_size": [
+				512,
+				512
+			],
+			"transparency": 0
+		},
+		"PLAYER_Hardware_512_v019": {
+			"ao_map": false,
+			"base_color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"cull_mode": 2,
+			"metallic": 0.0,
+			"normal_map": false,
+			"roughness": 0.779999971389771,
+			"texture_filter": 3,
+			"texture_size": [
+				512,
+				512
+			],
+			"transparency": 0
+		},
+		"PLAYER_Leather_512_v019": {
+			"ao_map": false,
+			"base_color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"cull_mode": 2,
+			"metallic": 0.0,
+			"normal_map": false,
+			"roughness": 0.819999992847443,
+			"texture_filter": 3,
+			"texture_size": [
+				512,
+				512
+			],
+			"transparency": 0
+		},
+		"PLAYER_Mask_PureWhite_v019": {
+			"ao_map": false,
+			"base_color": [
+				0.954687118530273,
+				0.954687118530273,
+				0.954687118530273,
+				1.0
+			],
+			"cull_mode": 2,
+			"metallic": 0.0,
+			"normal_map": false,
+			"roughness": 0.800000011920929,
+			"texture_filter": 3,
+			"texture_size": [],
+			"transparency": 0
+		},
+		"PLAYER_Rubber_512_v019": {
+			"ao_map": false,
+			"base_color": [
+				1.0,
+				1.0,
+				1.0,
+				1.0
+			],
+			"cull_mode": 2,
+			"metallic": 0.0,
+			"normal_map": false,
+			"roughness": 0.910000026226044,
+			"texture_filter": 3,
+			"texture_size": [
+				512,
+				512
+			],
+			"transparency": 0
+		}
+	},
+	"max_bone_scale_error": 0.0000402739096898586,
+	"max_bone_step_m_at_60hz": 0.0132187558338046,
+	"meshes": [
+		{
+			"name": "PLAYER_Mesh",
+			"skin_binds": 41,
+			"surfaces": 8
+		},
+		{
+			"name": "PLAYER_Skin_BootLaces",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Collar",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Fasteners",
+			"skin_binds": 41,
+			"surfaces": 3
+		},
+		{
+			"name": "PLAYER_Skin_Hood",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Hood_Lining",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Hood_Seams",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Mask",
+			"skin_binds": 41,
+			"surfaces": 2
+		},
+		{
+			"name": "PLAYER_Skin_MaskStrap",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Pockets",
+			"skin_binds": 41,
+			"surfaces": 1
+		},
+		{
+			"name": "PLAYER_Skin_Undershirt",
+			"skin_binds": 41,
+			"surfaces": 1
+		}
+	],
+	"physics_backend": "Jolt Physics",
+	"poses": [
+		{
+			"bounds_max": [
+				0.485020309686661,
+				1.59999990463257,
+				0.145994067192078
+			],
+			"bounds_min": [
+				-0.485020369291306,
+				-0.00000144948558045144,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304149648400198,
+			"name": "NEUTRAL"
+		},
+		{
+			"bounds_max": [
+				0.738393902778625,
+				1.59999990463257,
+				0.145999759435654
+			],
+			"bounds_min": [
+				-0.738394021987915,
+				-0.000000310589797436478,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304221134683758,
+			"name": "SIDE_60"
+		},
+		{
+			"bounds_max": [
+				0.357520252466202,
+				1.59999990463257,
+				0.580414533615112
+			],
+			"bounds_min": [
+				-0.357520073652267,
+				-0.000000310589797436478,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304221134683758,
+			"name": "FORWARD_70"
+		},
+		{
+			"bounds_max": [
+				0.485020309686661,
+				1.59999990463257,
+				0.330638378858566
+			],
+			"bounds_min": [
+				-0.485020250082016,
+				-0.000000310584596263652,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304118930216646,
+			"name": "ELBOW_90"
+		},
+		{
+			"bounds_max": [
+				0.485020607709885,
+				1.44159519672394,
+				0.224259182810783
+			],
+			"bounds_min": [
+				-0.48502042889595,
+				-0.0000245003539021127,
+				-0.192928239703178
+			],
+			"max_bound_error_m": 0.00000289221543425811,
+			"name": "CROUCH_IK"
+		},
+		{
+			"bounds_max": [
+				0.485020309686661,
+				1.59999990463257,
+				0.145999759435654
+			],
+			"bounds_min": [
+				-0.485020369291306,
+				-0.000000310589797436478,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304118930216646,
+			"name": "HEAD_TURN"
+		},
+		{
+			"bounds_max": [
+				0.477798759937286,
+				1.59999990463257,
+				0.145999759435654
+			],
+			"bounds_min": [
+				-0.477798759937286,
+				-0.000000310589797436478,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304045920529461,
+			"name": "FINGERS"
+		},
+		{
+			"bounds_max": [
+				0.333323776721954,
+				1.59999990463257,
+				0.563900113105774
+			],
+			"bounds_min": [
+				-0.333323776721954,
+				-0.000000310589797436478,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000601093415752985,
+			"name": "FP_HANDS"
+		},
+		{
+			"bounds_max": [
+				0.485020369291306,
+				1.59999990463257,
+				0.145994067192078
+			],
+			"bounds_min": [
+				-0.48502042889595,
+				-0.00000144948558045144,
+				-0.199044853448868
+			],
+			"max_bound_error_m": 0.00000304383183902246,
+			"name": "NEUTRAL_END"
+		}
+	],
+	"surfaces": 21,
+	"triangles": 16222,
+	"vertices": 10930
+}

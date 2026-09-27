@@ -1,0 +1,32 @@
+{
+  "source_blend": {
+    "path": "C:\\Users\\evan4\\Projects\\3d\\player_textured_v019.blend",
+    "bytes": 1459667,
+    "sha256": "dc5062e81b10e6a6e849d8915e5d7b6eb85607e48f602e59aa7bb45f6c06c421",
+    "unchanged_since_import_acceptance": true
+  },
+  "work_blend": {
+    "path": "C:\\Users\\evan4\\Projects\\3d\\player_godot_export_v020.blend",
+    "bytes": 1511670,
+    "sha256": "a4613ad6ef8ab1192762a2fdcfadc8a46297c6418b645c551d7754d2a2bbca43",
+    "unchanged_since_import_acceptance": true
+  },
+  "delivery_glb": {
+    "path": "C:\\Users\\evan4\\Projects\\3d\\exports\\godot\\player_export_test_v020.glb",
+    "bytes": 1246620,
+    "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568",
+    "unchanged_since_import_acceptance": true
+  },
+  "project_glb": {
+    "path": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\assets\\models\\player_test_v020\\player_export_test_v020.glb",
+    "bytes": 1246620,
+    "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568",
+    "unchanged_since_import_acceptance": true
+  },
+  "relative_links_verified": true,
+  "mask_linear_rgb": [
+    0.9,
+    0.9,
+    0.9
+  ]
+}

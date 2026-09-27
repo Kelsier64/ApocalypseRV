@@ -28,10 +28,6 @@ These open the editor, launch gameplay, and run validation. The runner imports a
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
-## Collaboration
-
-Report architecture issues to user; ask before major architecture changes. Handle Git when possible; ask the user when review is needed.
-
 ## Computer Use: Game Testing
 
 Read the installed `computer-use` skill and its guidance/API before desktop interaction. Use `node_repl` with `@oai/sky`; initialize `sky`, then call `list_windows()`. Select exactly one returned game window, obtain it with `get_window`, activate it, and inspect `get_window_state`. Never target the Godot editor by mistake or invent window IDs.

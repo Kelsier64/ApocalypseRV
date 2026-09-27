@@ -1,0 +1,10 @@
+{
+  "shadow_comparison_region_pixels": [
+    300,
+    480,
+    770,
+    730
+  ],
+  "observer_and_local_shadow_pixels_identical": true,
+  "changed_pixel_bbox": null
+}

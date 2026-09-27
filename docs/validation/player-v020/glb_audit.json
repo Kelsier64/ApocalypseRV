@@ -1,0 +1,168 @@
+{
+  "glb_sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568",
+  "bytes": 1246620,
+  "meshes": [
+    "PLAYER_Mesh",
+    "PLAYER_Skin_BootLaces",
+    "PLAYER_Skin_Collar",
+    "PLAYER_Skin_Fasteners",
+    "PLAYER_Skin_Hood",
+    "PLAYER_Skin_Hood_Lining",
+    "PLAYER_Skin_Hood_Seams",
+    "PLAYER_Skin_Mask",
+    "PLAYER_Skin_MaskStrap",
+    "PLAYER_Skin_Pockets",
+    "PLAYER_Skin_Undershirt"
+  ],
+  "bones": [
+    "root",
+    "pelvis",
+    "spine_01",
+    "spine_02",
+    "clavicle_L",
+    "upper_arm_L",
+    "forearm_L",
+    "hand_L",
+    "index_01_L",
+    "index_02_L",
+    "middle_01_L",
+    "middle_02_L",
+    "pinky_01_L",
+    "pinky_02_L",
+    "ring_01_L",
+    "ring_02_L",
+    "thumb_01_L",
+    "thumb_02_L",
+    "clavicle_R",
+    "upper_arm_R",
+    "forearm_R",
+    "hand_R",
+    "index_01_R",
+    "index_02_R",
+    "middle_01_R",
+    "middle_02_R",
+    "pinky_01_R",
+    "pinky_02_R",
+    "ring_01_R",
+    "ring_02_R",
+    "thumb_01_R",
+    "thumb_02_R",
+    "neck_01",
+    "neck_02",
+    "head",
+    "thigh_L",
+    "shin_L",
+    "foot_L",
+    "thigh_R",
+    "shin_R",
+    "foot_R"
+  ],
+  "skins": 1,
+  "vertices_after_splitting": 10930,
+  "triangles": 16222,
+  "primitives": 21,
+  "image_count": 1,
+  "texture_dimensions": [
+    512,
+    512
+  ],
+  "embedded_texture_sha256": "9e7dd3a56fe27e8140b8bb212d5b970701d58b1da77eb881b2a086c28ed31c71",
+  "materials": [
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularFactor": 0.46000000834465027
+        }
+      },
+      "name": "PLAYER_Cloth_512_v019",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.9399999976158142
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularFactor": 0.46000000834465027
+        }
+      },
+      "name": "PLAYER_Leather_512_v019",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.8199999928474426
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularFactor": 0.46000000834465027
+        }
+      },
+      "name": "PLAYER_Rubber_512_v019",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 2
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.9100000262260437
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularFactor": 0.46000000834465027
+        }
+      },
+      "name": "PLAYER_Hardware_512_v019",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7799999713897705
+      }
+    },
+    {
+      "doubleSided": true,
+      "extensions": {
+        "KHR_materials_specular": {
+          "specularFactor": 0.46000000834465027
+        }
+      },
+      "name": "PLAYER_Mask_PureWhite_v019",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.8999999761581421,
+          0.8999999761581421,
+          0.8999999761581421,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.800000011920929
+      }
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987
+    }
+  ],
+  "animation": {
+    "name": "TEST_v020_POSE_SAMPLES",
+    "seconds": 8,
+    "channels": 123
+  },
+  "note": "Source mask factor is 0.9 linear RGB; retained exactly. Runtime converts it to sRGB 0.954687.",
+  "pass": true
+}

@@ -1,0 +1,779 @@
+{
+  "export": {
+    "geometry_weights_uv_rest_unchanged": true,
+    "settings": {
+      "filepath": "C:/Users/evan4/Projects/3d/exports/godot/player_export_test_v020.glb",
+      "export_format": "GLB",
+      "use_selection": true,
+      "use_active_scene": true,
+      "export_yup": true,
+      "export_apply": false,
+      "export_texcoords": true,
+      "export_normals": true,
+      "export_materials": "EXPORT",
+      "export_image_format": "AUTO",
+      "export_cameras": false,
+      "export_lights": false,
+      "export_skins": true,
+      "export_def_bones": true,
+      "export_leaf_bone": false,
+      "export_influence_nb": 4,
+      "export_all_influences": false,
+      "export_animations": true,
+      "export_animation_mode": "ACTIVE_ACTIONS",
+      "export_anim_single_armature": false,
+      "export_force_sampling": true,
+      "export_frame_range": true,
+      "export_frame_step": 1,
+      "export_rest_position_armature": true,
+      "export_current_frame": false,
+      "export_optimize_animation_size": false,
+      "export_morph": false,
+      "export_nla_strips_merged_animation_name": "TEST_v020_POSE_SAMPLES",
+      "export_anim_slide_to_zero": true
+    },
+    "poses": [
+      {
+        "name": "NEUTRAL",
+        "source_frame": 1,
+        "test_time_seconds": 0
+      },
+      {
+        "name": "SIDE_60",
+        "source_frame": 11,
+        "test_time_seconds": 1
+      },
+      {
+        "name": "FORWARD_70",
+        "source_frame": 231,
+        "test_time_seconds": 2
+      },
+      {
+        "name": "ELBOW_90",
+        "source_frame": 31,
+        "test_time_seconds": 3
+      },
+      {
+        "name": "CROUCH_IK",
+        "source_frame": 271,
+        "test_time_seconds": 4
+      },
+      {
+        "name": "HEAD_TURN",
+        "source_frame": 131,
+        "test_time_seconds": 5
+      },
+      {
+        "name": "FINGERS",
+        "source_frame": 71,
+        "test_time_seconds": 6
+      },
+      {
+        "name": "FP_HANDS",
+        "source_frame": 291,
+        "test_time_seconds": 7
+      },
+      {
+        "name": "NEUTRAL_END",
+        "source_frame": 1,
+        "test_time_seconds": 8
+      }
+    ]
+  },
+  "roundtrip": {
+    "pose_comparison": [
+      {
+        "pose": "NEUTRAL",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.000008135819371091202
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 0.000004913639713777229
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4038948254201387e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.4850202798843384,
+            0.4850202798843384
+          ],
+          [
+            -0.14599399268627167,
+            0.19904789328575134
+          ],
+          [
+            -0.0000014036676247997093,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "SIDE_60",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.00002250041870865971
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.389999451679614e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.7383939027786255,
+            0.7383939027786255
+          ],
+          [
+            -0.14599977433681488,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "FORWARD_70",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.00004049486597068608
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.389999451679614e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.3575199544429779,
+            0.357520192861557
+          ],
+          [
+            -0.5804145336151123,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "ELBOW_90",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.00002602945824037306
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4038948254201387e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.48502016067504883,
+            0.4850202202796936
+          ],
+          [
+            -0.3306383490562439,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "CROUCH_IK",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.000014955186998122372
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 0.000012953515579283703
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.477808038747753e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 9.72379439190263e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.8154914843980805e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 3.6893541732752055e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.738377418154414e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.4620757699267415e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.0322474370004784e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4260194209091424e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.4588629798927286e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.48502033948898315,
+            0.4850205183029175
+          ],
+          [
+            -0.2242615520954132,
+            0.19293113052845
+          ],
+          [
+            -0.000024493594537489116,
+            1.4415953159332275
+          ]
+        ]
+      },
+      {
+        "pose": "HEAD_TURN",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.000002255036406495492
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.431447683193255e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.4677061105649045e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.428306515867007e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.4211522031691857e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.4677061105649045e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.4620757699267415e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4038948254201387e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.423443845600559e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.4850202798843384,
+            0.4850202798843384
+          ],
+          [
+            -0.14599977433681488,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "FINGERS",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.000002255036406495492
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4038948254201387e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.4777987003326416,
+            0.4777987599372864
+          ],
+          [
+            -0.14599977433681488,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "FP_HANDS",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.00004602089393301867
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 8.393310508836294e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.389999451679614e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.3333289623260498,
+            0.3333289325237274
+          ],
+          [
+            -0.5639002323150635,
+            0.19904789328575134
+          ],
+          [
+            -2.953974558295158e-7,
+            1.5999999046325684
+          ]
+        ]
+      },
+      {
+        "pose": "NEUTRAL_END",
+        "errors": [
+          {
+            "mesh": "PLAYER_Mesh.001",
+            "max_nearest_distance_m": 0.000008135819371091202
+          },
+          {
+            "mesh": "PLAYER_Skin_BootLaces.001",
+            "max_nearest_distance_m": 0.000004913639713777229
+          },
+          {
+            "mesh": "PLAYER_Skin_Collar.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Fasteners.001",
+            "max_nearest_distance_m": 1.1920928955078125e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Lining.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Hood_Seams.001",
+            "max_nearest_distance_m": 2.384185791015625e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Mask.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_MaskStrap.001",
+            "max_nearest_distance_m": 2.3853496600168e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Pockets.001",
+            "max_nearest_distance_m": 2.4038948254201387e-7
+          },
+          {
+            "mesh": "PLAYER_Skin_Undershirt.001",
+            "max_nearest_distance_m": 2.3844768293201923e-7
+          }
+        ],
+        "bounds": [
+          [
+            -0.4850202798843384,
+            0.4850202798843384
+          ],
+          [
+            -0.14599399268627167,
+            0.19904789328575134
+          ],
+          [
+            -0.0000014036676247997093,
+            1.5999999046325684
+          ]
+        ]
+      }
+    ],
+    "bones": [
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "clavicle_L",
+      "upper_arm_L",
+      "forearm_L",
+      "hand_L",
+      "index_01_L",
+      "index_02_L",
+      "middle_01_L",
+      "middle_02_L",
+      "pinky_01_L",
+      "pinky_02_L",
+      "ring_01_L",
+      "ring_02_L",
+      "thumb_01_L",
+      "thumb_02_L",
+      "clavicle_R",
+      "upper_arm_R",
+      "forearm_R",
+      "hand_R",
+      "index_01_R",
+      "index_02_R",
+      "middle_01_R",
+      "middle_02_R",
+      "pinky_01_R",
+      "pinky_02_R",
+      "ring_01_R",
+      "ring_02_R",
+      "thumb_01_R",
+      "thumb_02_R",
+      "neck_01",
+      "neck_02",
+      "head",
+      "thigh_L",
+      "shin_L",
+      "foot_L",
+      "thigh_R",
+      "shin_R",
+      "foot_R"
+    ],
+    "control_bones": [],
+    "mesh_vertices": 10930,
+    "triangles": 16222,
+    "scales": {
+      "PLAYER_Rig.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Mesh.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_BootLaces.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Collar.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Fasteners.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Hood.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Hood_Lining.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Hood_Seams.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Mask.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_MaskStrap.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Pockets.001": [
+        1,
+        1,
+        1
+      ],
+      "PLAYER_Skin_Undershirt.001": [
+        1,
+        1,
+        1
+      ]
+    },
+    "head_weights": {
+      "PLAYER_Skin_Hood.001": [
+        "head"
+      ],
+      "PLAYER_Skin_Hood_Lining.001": [
+        "head"
+      ],
+      "PLAYER_Skin_Hood_Seams.001": [
+        "head"
+      ],
+      "PLAYER_Skin_Mask.001": [
+        "head"
+      ],
+      "PLAYER_Skin_MaskStrap.001": [
+        "head"
+      ]
+    }
+  }
+}
