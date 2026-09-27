@@ -28,6 +28,9 @@ func _ready() -> void:
 	skeleton.reset_bone_poses()
 	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
 		source_meshes.append(mesh)
+	var locomotion := preload("res://player/player_locomotion_visual.gd").new()
+	locomotion.name = "Locomotion"
+	add_child(locomotion)
 	var camera := get_node_or_null(local_camera_path) as Camera3D if not local_camera_path.is_empty() else null
 	if camera == null:
 		return # Complete model for a future observer-only actor.

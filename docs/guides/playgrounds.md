@@ -329,3 +329,27 @@ v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與�
 加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 80% 次數，方便檢查非致命咬擊：100 HP 玩家在咬合時降至 50 HP，立即恢復操作、關閉掙扎 HUD；駕駛仍留在座位並恢復控制。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
 
 `godot --path . --log-file .godot/release-input-visible.log --script res://tests/test_raker_release_input.gd` 使用真實視窗自動驗證地面／車內／駕駛咬後控制。測試經正式輸入事件送入鍵盤與滑鼠，確認身體位移、水平及垂直轉向、油門恢復；也覆蓋抓取中滑鼠捕捉遺失。Headless runner 只驗證位移和駕駛，無法驗證作業系統滑鼠捕捉。未達 80% 或剩餘 HP 不足時仍按原規則死亡，等待重生期間不是抓取狀態。
+
+
+## 玩家正式動作 v021
+
+```powershell
+godot --path . --log-file .godot/player-animation.log res://tests/player_animation_playground.tscn -- --replay
+```
+
+使用正式玩家與實際輸入回放待機、四方向慢跑／快跑、動作中死亡與重生。去掉 `-- --replay` 可手動 WASD／Shift；F1 低頭第一人稱、F2 外部視角、F3 完整回放、Esc 關閉。相機只屬測試場，沒有寫入正式玩家系統。物理固定沿用專案 60 Hz。證據寫入 `docs/validation/player-animations-v021/`，驗收與限制見 [本輪報告](../validation/2026-09-27-player-animations-v021.md)。
+
+加入 `-- --jump` 使用較近的跳躍觀察鏡頭，Space 手動跳躍；F3 回放站立、慢跑、快跑跳躍並保存上升／下降／落地及低頭畫面至 `docs/validation/player-animations-v021/jump/`。使用 `-- --jump --replay` 自動回放並結束。跳躍高度、速度、耐力及物理 tick 均沿用正式控制器。
+
+
+### 玩家攀爬動作近照
+
+```powershell
+godot --path . --log-file .godot/player-climb-desktop.log res://tests/player_climb_animation_playground.tscn -- --animation-review
+```
+
+使用正式玩家與 RV，回放抓牆、攀升、左右橫移、車輛轉彎中的停留與登頂收手。F1 第一人稱、F2 外部視角、F3 重播、Esc 關閉；截圖存到 `docs/validation/player-animations-v021/climb/`。登頂仍由現有控制器直接轉移站位，動畫不改路徑或速度。
+
+雙角色回歸仍用 `rv_climb_playground.tscn -- --replay`，加 `--animation-review` 隱藏藍色標記以觀看正式模型。此測試車體凍結於抬高位置，回放起點設在車壁旁，與 `test_moving_rv_climbing.gd` 一致；手動起點與正式玩家控制器不變。
+
+鏡頭同步複驗可加 `--camera-review`：保存攀爬低頭／平視畫面到 `docs/validation/player-animations-v021/climb-camera/`，保留上一版圖片。

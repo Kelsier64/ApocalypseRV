@@ -1,0 +1,31 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+PLAYER_DEATH_PHYSICS_HZ 60
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+PLAYER_DEATH_METRICS [{"camera_drop_m":1.36479523777962,"case":"standing_from_ui","max_joint_gap_m":0.00718231173232198,"max_speed_m_s":4.42717885971069,"peak_frame":18,"peak_joint":"foot_R","recovery_move_m":2.49999952316284},{"camera_drop_m":3.35891175270081,"case":"airborne","max_joint_gap_m":0.0165491998195648,"max_speed_m_s":6.29758930206299,"peak_frame":39,"peak_joint":"foot_R","recovery_move_m":2.50000023841858},{"camera_drop_m":3.35177159309387,"case":"airborne_carrier","max_joint_gap_m":0.0156251024454832,"max_speed_m_s":6.74959516525269,"peak_frame":38,"peak_joint":"shin_R","recovery_move_m":2.50000047683716},{"camera_drop_m":1.36497451364994,"case":"independent_world","max_joint_gap_m":0.0134523194283247,"max_speed_m_s":3.40635585784912,"peak_frame":17,"peak_joint":"foot_L","recovery_move_m":2.49999952316284}]
+PASS: production player death, fixed first-person view, collision-safe recovery, seat and World3D lifecycle

@@ -1,0 +1,11 @@
+{
+  "nine_ground_clips_preserved": true,
+  "max_component_difference": 0,
+  "new_clips": [
+    "jump_rise",
+    "jump_fall",
+    "jump_land"
+  ],
+  "before_sha256": "1cda40c88b6de1e5b95398ca213299546e23c3f8711e9e79976efcc3b2328dbd",
+  "after_sha256": "2f0c415116e43d242a7149038c6d634d4918822cddb244f266e870d5f1a22fb0"
+}

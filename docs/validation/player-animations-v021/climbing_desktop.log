@@ -1,0 +1,352 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.3.289 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+REPLAY 0.01666666666667 player=(2.65, -1.15, 0.0) monster=(-2.65, -1.15, 0.0) mode=0 locomotion=0 grip=100.0 strain=0.0 support=<null>
+>>> Zombie [touching] attacks chassis for 15.0 damage!
+[CLIMB_DEBUG][monster][Zombie][start_ok] entered climbing side=rv_left wall_n=(-1.00, 0.00, 0.00) hit_y=1.05
+REPLAY 1.01666666666667 player=(2.483336, 1.355165, 0.0) monster=(-2.384487, -1.153699, 0.0) mode=2 locomotion=1 grip=93.4952429676057 strain=3.18563222885132 support=<null>
+REPLAY 2.03333333333333 player=(1.533341, 2.451069, -0.001901) monster=(-2.400114, -0.850847, -0.000091) mode=2 locomotion=1 grip=90.4286393263937 strain=0.44487592577934 support=<null>
+REPLAY 3.04999999999999 player=(1.533343, 2.451069, -0.001901) monster=(-2.400163, 1.18248, -0.000396) mode=2 locomotion=1 grip=87.7615174196165 strain=0.44541400671005 support=<null>
+[CLIMB_DEBUG][monster][Zombie][contact_fallback] side=rv_left wall_n=(-0.96, 0.00, 0.29)
+[CLIMB_DEBUG][monster][Zombie][start_cooldown] blocked by reenter cooldown: 0.18
+[CLIMB_DEBUG][monster][Zombie][start_probe_miss] wall probe has no hit
+REPLAY 4.06666666666666 player=(1.533345, 2.451069, -0.001892) monster=(-0.576777, 2.450589, -0.026385) mode=2 locomotion=0 grip=86.0125141468646 strain=0.41095659136772 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9985.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 5.08333333333332 player=(1.533347, 2.451069, -0.001894) monster=(-0.452562, 2.450589, -0.040411) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47307711839676 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9970.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 6.09999999999998 player=(1.533354, 2.451069, -0.001881) monster=(-0.45256, 2.450589, -0.040407) mode=2 locomotion=0 grip=86.0125141468646 strain=0.473552942276 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 7.11666666666665 player=(1.533352, 2.451069, -0.001886) monster=(-0.452553, 2.450589, -0.040415) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47334823012352 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9955.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 8.11666666666665 player=(1.533355, 2.451069, -0.001888) monster=(-0.452555, 2.450589, -0.040415) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47306618094444 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9940.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 9.1166666666667 player=(1.533364, 2.451069, -0.001892) monster=(-0.452532, 2.450589, -0.040443) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47335836291313 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 10.1166666666667 player=(1.533367, 2.451069, -0.001888) monster=(-0.452534, 2.450589, -0.040432) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47326084971428 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9925.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 11.1166666666668 player=(1.533377, 2.451069, -0.001877) monster=(-0.452539, 2.450589, -0.040424) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47371491789818 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9910.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 12.1166666666668 player=(1.533381, 2.451069, -0.001873) monster=(-0.452539, 2.450589, -0.040436) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47320130467415 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 13.1166666666669 player=(1.533405, 2.451069, -0.001884) monster=(-0.452541, 2.450589, -0.040436) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47386667132378 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9895.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 14.1166666666669 player=(1.533398, 2.451069, -0.001907) monster=(-0.452568, 2.450589, -0.040462) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47345304489136 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9880.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 15.116666666667 player=(1.53344, 2.451069, -0.001884) monster=(-0.452518, 2.450589, -0.040447) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47360381484032 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 16.116666666667 player=(1.533455, 2.451069, -0.001915) monster=(-0.452522, 2.450589, -0.040489) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47387018799782 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9865.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 17.1333333333336 player=(1.533451, 2.451069, -0.0019) monster=(-0.452526, 2.450589, -0.040508) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47316032648087 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9850.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 18.1500000000003 player=(1.533417, 2.451069, -0.001904) monster=(-0.452564, 2.450589, -0.040525) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47350585460663 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 19.1666666666669 player=(1.533421, 2.451069, -0.001879) monster=(-0.452564, 2.450589, -0.040524) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47347518801689 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9835.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 20.1833333333335 player=(1.533432, 2.451069, -0.001886) monster=(-0.45256, 2.450589, -0.040554) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47350865602493 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9820.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 21.2000000000001 player=(1.533451, 2.451069, -0.001894) monster=(-0.452549, 2.450589, -0.040573) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47353088855743 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 22.2166666666667 player=(1.533482, 2.451069, -0.00193) monster=(-0.452553, 2.450589, -0.040569) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47385665774345 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9805.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 23.2333333333333 player=(1.533463, 2.451069, -0.001929) monster=(-0.452545, 2.450589, -0.040587) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47342124581337 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9790.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 24.2499999999999 player=(1.533432, 2.451069, -0.001941) monster=(-0.452568, 2.450589, -0.04059) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47243276238441 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 25.2666666666665 player=(1.533455, 2.451069, -0.001947) monster=(-0.452545, 2.450589, -0.040597) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47385281324387 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9775.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 26.2833333333331 player=(1.533379, 2.451069, -0.001946) monster=(-0.452568, 2.450589, -0.040592) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47474753856659 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9760.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 27.2999999999997 player=(1.533363, 2.451069, -0.001948) monster=(-0.452644, 2.450589, -0.040593) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47396633028984 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 28.3166666666663 player=(1.533417, 2.451069, -0.001945) monster=(-0.452736, 2.450589, -0.040598) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47384348511696 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9745.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 29.3333333333329 player=(1.533463, 2.451069, -0.001938) monster=(-0.452751, 2.450589, -0.040592) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47431612014771 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9730.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 30.3499999999996 player=(1.533409, 2.451069, -0.00195) monster=(-0.452728, 2.450589, -0.040603) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47286078333855 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 31.3666666666662 player=(1.533352, 2.451069, -0.001949) monster=(-0.452732, 2.450589, -0.040609) mode=2 locomotion=0 grip=86.0125141468646 strain=0.4735249876976 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9715.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 32.3833333333328 player=(1.533379, 2.451069, -0.001944) monster=(-0.45274, 2.450589, -0.040617) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47281005978584 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9700.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 33.3999999999994 player=(1.533375, 2.451069, -0.001909) monster=(-0.452763, 2.450589, -0.040594) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47335729002953 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 34.416666666666 player=(1.533382, 2.451069, -0.00194) monster=(-0.452732, 2.450589, -0.040609) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47316354513168 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9685.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 35.4333333333326 player=(1.533325, 2.451069, -0.001928) monster=(-0.452763, 2.450589, -0.040615) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47367641329765 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9670.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 36.4499999999992 player=(1.53331, 2.451069, -0.001938) monster=(-0.452782, 2.450589, -0.040621) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47357431054115 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 37.4666666666658 player=(1.533318, 2.451069, -0.001934) monster=(-0.45277, 2.450589, -0.040604) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47337958216667 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9655.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 38.4833333333324 player=(1.533295, 2.451069, -0.001942) monster=(-0.45277, 2.450589, -0.040569) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47394615411758 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9640.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 39.499999999999 player=(1.533298, 2.451069, -0.001949) monster=(-0.452797, 2.450589, -0.040585) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47302785515785 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 40.5166666666657 player=(1.533289, 2.451069, -0.001942) monster=(-0.452808, 2.450589, -0.0406) mode=2 locomotion=0 grip=86.0125141468646 strain=0.4737015068531 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9625.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 41.5333333333323 player=(1.533329, 2.451069, -0.001949) monster=(-0.452803, 2.450589, -0.040611) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47341525554657 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9610.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 42.5499999999989 player=(1.533295, 2.451069, -0.001949) monster=(-0.452814, 2.450589, -0.040604) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47326332330704 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 43.5666666666655 player=(1.533316, 2.451069, -0.001949) monster=(-0.452803, 2.450589, -0.040607) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47315281629562 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9595.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 44.5833333333321 player=(1.533306, 2.451069, -0.001953) monster=(-0.452793, 2.450589, -0.040592) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47359400987625 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9580.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 45.5999999999987 player=(1.5333, 2.451069, -0.001959) monster=(-0.452787, 2.450589, -0.040598) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47322526574135 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 46.6166666666653 player=(1.5333, 2.451069, -0.001959) monster=(-0.452788, 2.450589, -0.0406) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47331187129021 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9565.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 47.6333333333319 player=(1.53331, 2.451069, -0.001961) monster=(-0.452777, 2.450589, -0.040596) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47311934828758 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9550.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 48.6499999999985 player=(1.533314, 2.451069, -0.001966) monster=(-0.452775, 2.450589, -0.040606) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47343531250954 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 49.6666666666651 player=(1.533309, 2.451069, -0.001966) monster=(-0.452776, 2.450589, -0.040601) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47341573238373 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9535.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 50.6833333333317 player=(1.533308, 2.451069, -0.001962) monster=(-0.452776, 2.450589, -0.040601) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47330558300018 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9520.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 51.6999999999983 player=(1.53331, 2.451069, -0.001963) monster=(-0.452776, 2.450589, -0.040598) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47334998846054 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 52.716666666665 player=(1.533309, 2.451069, -0.001963) monster=(-0.452776, 2.450589, -0.040598) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47336024045944 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9505.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 53.7333333333316 player=(1.533309, 2.451069, -0.001963) monster=(-0.452776, 2.450589, -0.040597) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47336065769196 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9490.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 54.7499999999982 player=(1.533309, 2.451069, -0.001964) monster=(-0.452775, 2.450589, -0.040599) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47335413098335 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 55.7666666666648 player=(1.533306, 2.451069, -0.00197) monster=(-0.452775, 2.450589, -0.0406) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47333618998528 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9475.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 56.7833333333314 player=(1.533303, 2.451069, -0.001964) monster=(-0.452778, 2.450589, -0.040596) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47334185242653 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9460.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 57.799999999998 player=(1.533297, 2.451069, -0.001968) monster=(-0.452778, 2.450589, -0.0406) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47322222590446 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 58.8166666666646 player=(1.533298, 2.451069, -0.001974) monster=(-0.452776, 2.450589, -0.040611) mode=2 locomotion=0 grip=86.0125141468646 strain=0.4732831120491 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9445.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 59.8333333333312 player=(1.533299, 2.451069, -0.001965) monster=(-0.452766, 2.450589, -0.040615) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47332382202148 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9430.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 60.8499999999978 player=(1.533287, 2.451069, -0.001972) monster=(-0.45277, 2.450589, -0.040615) mode=2 locomotion=0 grip=86.0125141468646 strain=0.4732301235199 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 61.8666666666644 player=(1.533297, 2.451069, -0.001972) monster=(-0.45277, 2.450589, -0.040613) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47371497750282 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9415.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 62.883333333331 player=(1.533283, 2.451069, -0.001995) monster=(-0.452772, 2.450589, -0.040619) mode=2 locomotion=0 grip=86.0125141468646 strain=0.473080098629 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9400.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 63.8999999999977 player=(1.533281, 2.451069, -0.001976) monster=(-0.452765, 2.450589, -0.040596) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47385510802269 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 64.9166666666643 player=(1.533278, 2.451069, -0.001976) monster=(-0.452766, 2.450589, -0.040619) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47345885634422 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9385.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 65.9333333333309 player=(1.533276, 2.451069, -0.001957) monster=(-0.452785, 2.450589, -0.040607) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47333505749702 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9370.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 66.9499999999975 player=(1.53326, 2.451069, -0.001976) monster=(-0.452812, 2.450589, -0.040623) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47264093160629 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 67.9666666666641 player=(1.533298, 2.451069, -0.001976) monster=(-0.452812, 2.450589, -0.040672) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47281369566917 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9355.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 68.9833333333307 player=(1.533314, 2.451069, -0.001987) monster=(-0.452827, 2.450589, -0.040674) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47384428977966 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9340.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 69.9999999999973 player=(1.533318, 2.451069, -0.001993) monster=(-0.45282, 2.450589, -0.040678) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47325682640076 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 71.0166666666639 player=(1.533298, 2.451069, -0.001989) monster=(-0.452831, 2.450589, -0.040688) mode=2 locomotion=0 grip=86.0125141468646 strain=0.4736490547657 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9325.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 72.0333333333305 player=(1.533287, 2.451069, -0.002008) monster=(-0.45285, 2.450589, -0.04071) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47329020500183 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9310.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 73.0499999999971 player=(1.533291, 2.451069, -0.002012) monster=(-0.452873, 2.450589, -0.040714) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47331559658051 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 74.0666666666638 player=(1.533287, 2.451069, -0.002026) monster=(-0.452866, 2.450589, -0.040726) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47275060415268 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9295.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 75.0833333333304 player=(1.533283, 2.451069, -0.002008) monster=(-0.452839, 2.450589, -0.040695) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47396564483643 support=Ceiling:<RigidBody3D#137355070742>
+Player took 15.0 damage! HP: 9280.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 76.099999999997 player=(1.533279, 2.451069, -0.001999) monster=(-0.452839, 2.450589, -0.04069) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47286579012871 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 77.1166666666636 player=(-0.580002, 0.49605, -4.020001) monster=(-0.452866, 2.450589, -0.040696) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47307339310646 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 105.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 78.1333333333302 player=(-0.580002, 0.49605, -4.02) monster=(-0.452873, 2.450589, -0.040693) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47335878014565 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 90.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 79.1499999999968 player=(-0.580002, 0.49605, -4.02) monster=(-0.452858, 2.450589, -0.040692) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47234845161438 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 80.1666666666634 player=(-0.580002, 0.49605, -4.02) monster=(-0.452911, 2.450589, -0.040695) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47234424948692 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 75.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 81.18333333333 player=(-0.579994, 0.49605, -4.02) monster=(-0.452896, 2.450589, -0.040696) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47284007072449 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 60.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 82.1999999999966 player=(-0.579998, 0.49605, -4.02) monster=(-0.452873, 2.450589, -0.040704) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47263288497925 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 83.2166666666632 player=(-0.579998, 0.49605, -4.019999) monster=(-0.452888, 2.450589, -0.040719) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47339609265327 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 45.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 84.2333333333298 player=(-0.580002, 0.49605, -4.02) monster=(-0.452873, 2.450589, -0.040728) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47326737642288 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 30.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 85.2499999999964 player=(-0.580002, 0.49605, -4.02) monster=(-0.452866, 2.450589, -0.040737) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47351962327957 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 15.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+REPLAY 86.2666666666631 player=(-0.579998, 0.49605, -4.019999) monster=(-0.452866, 2.450589, -0.040718) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47351729869843 support=Ceiling:<RigidBody3D#137355070742>
+REPLAY 87.2833333333297 player=(-0.579998, 0.49605, -4.02) monster=(-0.452843, 2.450589, -0.040712) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47358340024948 support=Ceiling:<RigidBody3D#137355070742>
+RV Ceiling Panel took 15.0 damage. HP: 0.0/120.0
+>>> Zombie [underfoot] attacks equipment for 15.0 damage!
+[CLIMB_DEBUG][monster][Zombie][start_probe_miss] wall probe has no hit
+REPLAY 88.2999999999963 player=(-0.579998, 0.49605, -4.020002) monster=(-0.385101, 0.250019, -0.709499) mode=0 locomotion=0 grip=86.0125141468646 strain=0.04916897416115 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 89.3166666666629 player=(-0.579998, 0.49605, -4.019999) monster=(0.025211, 0.251055, -2.403967) mode=0 locomotion=0 grip=86.0125141468646 strain=0.47639095783234 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9265.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 90.3333333333295 player=(-0.579998, 0.49605, -4.02) monster=(0.381832, 0.251055, -3.124912) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48761624097824 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9250.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 91.3499999999961 player=(-0.580006, 0.49605, -4.02) monster=(0.381821, 0.251055, -3.12488) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48780387639999 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 92.3666666666627 player=(-0.580006, 0.49605, -4.02) monster=(0.381821, 0.251055, -3.124868) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48664078116417 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9235.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 93.3833333333293 player=(-0.579998, 0.49605, -4.020002) monster=(0.38183, 0.251055, -3.124884) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4879769384861 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9220.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 94.3999999999959 player=(-0.58, 0.49605, -4.02) monster=(0.381828, 0.251055, -3.124868) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48646473884583 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 95.4166666666625 player=(-0.58, 0.49605, -4.02) monster=(0.381811, 0.251055, -3.124855) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48728835582733 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9205.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 96.4333333333291 player=(-0.579998, 0.49605, -4.02) monster=(0.3818, 0.251055, -3.124865) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4871469438076 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9190.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 97.4499999999958 player=(-0.58, 0.49605, -4.02) monster=(0.381798, 0.251055, -3.124861) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48710805177689 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 98.4666666666624 player=(-0.579998, 0.49605, -4.02) monster=(0.381804, 0.251055, -3.124855) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48730179667473 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9175.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 99.483333333329 player=(-0.58, 0.49605, -4.02) monster=(0.381817, 0.251055, -3.124853) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48708355426788 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9160.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 100.499999999996 player=(-0.58, 0.49605, -4.02) monster=(0.38181, 0.251055, -3.124861) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4871831536293 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 101.516666666662 player=(-0.58, 0.49605, -4.02) monster=(0.381812, 0.251055, -3.12485) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48732382059097 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9145.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 102.533333333329 player=(-0.58, 0.49605, -4.02) monster=(0.381811, 0.251055, -3.12485) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48726147413254 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9130.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 103.549999999995 player=(-0.58, 0.49605, -4.02) monster=(0.381809, 0.251055, -3.124847) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48730078339577 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 104.566666666662 player=(-0.58, 0.49605, -4.02) monster=(0.38181, 0.251055, -3.124852) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48729011416435 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9115.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 105.583333333329 player=(-0.58, 0.49605, -4.02) monster=(0.38181, 0.251055, -3.124856) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48728212714195 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9100.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 106.599999999995 player=(-0.58, 0.49605, -4.019999) monster=(0.381811, 0.251055, -3.12486) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48727759718895 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 107.616666666662 player=(-0.58, 0.49605, -4.02) monster=(0.381812, 0.251055, -3.124866) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48722726106644 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9085.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 108.633333333328 player=(-0.58, 0.49605, -4.019999) monster=(0.38181, 0.251055, -3.124866) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48737555742264 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9070.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 109.649999999995 player=(-0.579999, 0.49605, -4.02) monster=(0.381811, 0.251055, -3.124872) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4874655008316 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 110.666666666662 player=(-0.58, 0.49605, -4.019999) monster=(0.38181, 0.251055, -3.124872) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48728460073471 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9055.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 111.683333333328 player=(-0.58, 0.49605, -4.02) monster=(0.381802, 0.251055, -3.124874) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48750120401382 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9040.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 112.699999999995 player=(-0.58, 0.49605, -4.02) monster=(0.381803, 0.251055, -3.124878) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48715674877167 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 113.716666666662 player=(-0.58, 0.49605, -4.02) monster=(0.381799, 0.251055, -3.124866) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48746234178543 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9025.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 114.733333333328 player=(-0.580004, 0.49605, -4.019999) monster=(0.381811, 0.251055, -3.124865) mode=0 locomotion=0 grip=86.0125141468646 strain=0.487020611763 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 9010.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 115.749999999995 player=(-0.579998, 0.49605, -4.019999) monster=(0.381805, 0.251055, -3.124872) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48704329133034 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 116.766666666661 player=(-0.58, 0.49605, -4.02) monster=(0.381788, 0.251055, -3.124859) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48776724934578 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8995.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 117.783333333328 player=(-0.58, 0.49605, -4.02) monster=(0.381769, 0.251055, -3.124851) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4872345328331 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8980.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 118.799999999995 player=(-0.579998, 0.49605, -4.02) monster=(0.381779, 0.251055, -3.124844) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4878748357296 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 119.816666666661 player=(-0.579998, 0.49605, -4.019997) monster=(0.38179, 0.251055, -3.124828) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48791339993477 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8965.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 120.833333333328 player=(-0.580002, 0.49605, -4.02) monster=(0.381786, 0.251055, -3.124832) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48678892850876 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8950.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 121.849999999994 player=(-0.580002, 0.49605, -4.02) monster=(0.381813, 0.251055, -3.124825) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48765480518341 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 122.866666666661 player=(-0.580002, 0.49605, -4.019997) monster=(0.381783, 0.251055, -3.124821) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48718589544296 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8935.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 123.883333333328 player=(-0.579998, 0.49605, -4.019999) monster=(0.38179, 0.251055, -3.124815) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48761624097824 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8920.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 124.899999999994 player=(-0.579998, 0.49605, -4.019999) monster=(0.381802, 0.251055, -3.124784) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48796308040619 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 125.916666666661 player=(-0.580002, 0.49605, -4.019999) monster=(0.381824, 0.251055, -3.124771) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48758599162102 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8905.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 126.933333333327 player=(-0.579998, 0.49605, -4.019999) monster=(0.381813, 0.251055, -3.124773) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48759269714355 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8890.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 127.949999999994 player=(-0.579998, 0.49605, -4.020001) monster=(0.381817, 0.251055, -3.124778) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4867507815361 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 128.949999999995 player=(-0.579994, 0.49605, -4.019999) monster=(0.381805, 0.251055, -3.124803) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48694235086441 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8875.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 129.949999999996 player=(-0.580002, 0.49605, -4.02) monster=(0.381844, 0.251055, -3.124796) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48806726932526 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8860.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 130.949999999996 player=(-0.580002, 0.49605, -4.02) monster=(0.381859, 0.251055, -3.124799) mode=0 locomotion=0 grip=86.0125141468646 strain=0.4866544008255 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 131.949999999997 player=(-0.580002, 0.49605, -4.02) monster=(0.381866, 0.251055, -3.124807) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48836052417755 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8845.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 132.949999999998 player=(-0.579994, 0.49605, -4.019999) monster=(0.381927, 0.251055, -3.124814) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48683774471283 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8830.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 133.949999999999 player=(-0.579994, 0.49605, -4.02) monster=(0.38195, 0.251055, -3.12481) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48818787932396 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 134.95 player=(-0.579998, 0.49605, -4.019999) monster=(0.381973, 0.251055, -3.12482) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48652982711792 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8815.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 135.95 player=(-0.580002, 0.49605, -4.02) monster=(0.381981, 0.251055, -3.124826) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48700174689293 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8800.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 136.950000000001 player=(-0.580002, 0.49605, -4.02) monster=(0.381996, 0.251055, -3.124802) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48736143112183 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 137.950000000002 player=(-0.579998, 0.49605, -4.02) monster=(0.382023, 0.251055, -3.12479) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48687338829041 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8785.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 138.950000000003 player=(-0.580002, 0.49605, -4.020002) monster=(0.382057, 0.251055, -3.124783) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48726025223732 support=Chassis:<VehicleBody3D#134368725948>
+Player took 15.0 damage! HP: 8770.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 139.950000000004 player=(-0.579998, 0.49605, -4.02) monster=(0.38205, 0.251055, -3.124796) mode=0 locomotion=0 grip=86.0125141468646 strain=0.48775029182434 support=Chassis:<VehicleBody3D#134368725948>
+REPLAY 0.01666666666667 player=(2.65, -1.15, 0.0) monster=(-2.65, -1.15, 0.0) mode=0 locomotion=0 grip=100.0 strain=0.0 support=<null>
+>>> Zombie [touching] attacks chassis for 15.0 damage!
+[CLIMB_DEBUG][monster][Zombie][start_ok] entered climbing side=rv_left wall_n=(-1.00, 0.00, 0.00) hit_y=1.05
+REPLAY 1.01666666666667 player=(2.483336, 1.355165, 0.0) monster=(-2.384487, -1.153699, 0.0) mode=2 locomotion=1 grip=93.4952429676057 strain=3.18563222885132 support=<null>
+REPLAY 2.03333333333333 player=(1.533341, 2.451069, -0.001901) monster=(-2.400114, -0.850847, -0.000091) mode=2 locomotion=1 grip=90.4286393263937 strain=0.44487592577934 support=<null>
+REPLAY 3.04999999999999 player=(1.533343, 2.451069, -0.001901) monster=(-2.400163, 1.18248, -0.000396) mode=2 locomotion=1 grip=87.7615174196165 strain=0.44541400671005 support=<null>
+[CLIMB_DEBUG][monster][Zombie][contact_fallback] side=rv_left wall_n=(-0.96, 0.00, 0.29)
+[CLIMB_DEBUG][monster][Zombie][start_cooldown] blocked by reenter cooldown: 0.18
+[CLIMB_DEBUG][monster][Zombie][start_probe_miss] wall probe has no hit
+REPLAY 4.06666666666666 player=(1.533345, 2.451069, -0.001892) monster=(-0.578705, 2.450589, 0.078343) mode=2 locomotion=0 grip=86.0125141468646 strain=0.41094133257866 support=Ceiling:<RigidBody3D#2048649071879>
+Player took 15.0 damage! HP: 9985.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 5.08333333333332 player=(1.533347, 2.451069, -0.001894) monster=(-0.453919, 2.450589, 0.085632) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47306588292122 support=Ceiling:<RigidBody3D#2048649071879>
+Player took 15.0 damage! HP: 9970.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 6.09999999999998 player=(1.533354, 2.451069, -0.001881) monster=(-0.453919, 2.450589, 0.085634) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47353962063789 support=Ceiling:<RigidBody3D#2048649071879>
+REPLAY 7.11666666666665 player=(1.533352, 2.451069, -0.001886) monster=(-0.45392, 2.450589, 0.08563) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47333899140358 support=Ceiling:<RigidBody3D#2048649071879>
+Player took 15.0 damage! HP: 9955.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 8.11666666666665 player=(1.533355, 2.451069, -0.001888) monster=(-0.453932, 2.450589, 0.085629) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47305327653885 support=Ceiling:<RigidBody3D#2048649071879>
+Player took 15.0 damage! HP: 9940.0/10000.0
+>>> Zombie [state_attack] attacks player for 15.0 damage!
+REPLAY 9.1166666666667 player=(1.533364, 2.451069, -0.001892) monster=(-0.453929, 2.450589, 0.085621) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47334405779839 support=Ceiling:<RigidBody3D#2048649071879>
+REPLAY 10.1166666666667 player=(1.533367, 2.451069, -0.001888) monster=(-0.45393, 2.450589, 0.085617) mode=2 locomotion=0 grip=86.0125141468646 strain=0.47324520349503 support=Ceiling:<RigidBody3D#2048649071879>

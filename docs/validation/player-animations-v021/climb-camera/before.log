@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+PLAYER_CLIMB_TRACES [{"case":"hold","clip":"climb_hold","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(2.566667, -0.589667, 0.0)"},{"case":"moving_car_hold","clip":"climb_hold","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(2.56667, -0.589667, 0.0)"},{"case":"left","clip":"climb_left","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(2.56627, -0.589667, 0.200001)"},{"case":"right","clip":"climb_right","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(2.566673, -0.589667, -0.0)"},{"case":"roof_transfer","clip":"climb_exit","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(1.61667, 2.450963, 0.0)"},{"case":"fractional_roof_-0.2","clip":"climb_exit","controller_velocity":"(0.0, -0.1, 0.0)","position_in_rv":"(1.616664, 2.451514, 0.0)"},{"case":"fractional_roof_0.017","clip":"climb_exit","controller_velocity":"(0.0, 0.0, 0.0)","position_in_rv":"(1.533331, 2.450706, 0.0)"},{"case":"jump_detach","clip":"jump_fall","controller_velocity":"(0.0, -0.163333, 0.0)","position_in_rv":"(2.566667, -0.592389, 0.000001)"},{"case":"move_back_detach","clip":"jump_fall","controller_velocity":"(4.942351, -0.163333, -0.757077)","position_in_rv":"(2.650001, -0.592389, 0.0)"}]
+PLAYER_CLIMB_HANDOFFS [{"clip":"climb_up","delay_frames":0,"peak_bone":"foot_R","peak_gap_m":0.0209780931472778,"stability_pass":true},{"clip":"climb_up","delay_frames":6,"peak_bone":"foot_R","peak_gap_m":0.0134696634486318,"stability_pass":true},{"clip":"climb_up","delay_frames":12,"peak_bone":"foot_L","peak_gap_m":0.016325332224369,"stability_pass":true}]
+PLAYER_CLIMB_MAX_VIEW_SEPARATION_M 0.22166682779789
+ERROR: Camera follows the rendered body through climb and recovery without separation
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] run (res://tests/test_player_climb_animation.gd:171)
+       [1] steps (res://tests/test_player_climb_animation.gd:25)

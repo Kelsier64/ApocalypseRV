@@ -1,0 +1,103 @@
+{
+  "scope": "Five climb clips; 12 player suites plus import/main scene, and moving-RV climbing integration. Other suites not rerun.",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "renderer": "Forward+ / Vulkan / NVIDIA RTX 4060 Laptop GPU",
+  "physics": "Jolt",
+  "physics_hz": 60,
+  "solver_steps": [
+    32,
+    32
+  ],
+  "runner_filter": "test_player*.gd",
+  "runner_exit_code": 0,
+  "passed_tests": [
+    "import",
+    "test_player_animation_skin",
+    "test_player_animation",
+    "test_player_climb_animation",
+    "test_player_climbing_runtime",
+    "test_player_climbing",
+    "test_player_death",
+    "test_player_import_v020",
+    "test_player_inventory",
+    "test_player_jump_animation",
+    "test_player_model",
+    "test_player_ragdoll_v020",
+    "test_player_stamina",
+    "main-scene",
+    "test_moving_rv_climbing"
+  ],
+  "suite_count": 13,
+  "warnings": [
+    {
+      "test": "test_player_death",
+      "line": "WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available..."
+    }
+  ],
+  "ground_deaths": 20,
+  "jump_deaths": 15,
+  "climb_deaths": 3,
+  "maximum_climb_gap_m": 0.0209780931472778,
+  "skin_samples": 605,
+  "minimum_skin_y_m": -0.000384265324100852,
+  "maximum_skin_y_m": 1.6068286895752,
+  "accepted_original_assets_unchanged": true,
+  "previous_12_clip_values_unchanged": true,
+  "desktop": {
+    "near_camera_replay": true,
+    "first_person_hands_visible": true,
+    "both_actors_climb_and_remain_aboard_turning_rv": true,
+    "F5_roof_destroyed_monster_falls_into_cabin": true,
+    "motion": "scripted RV transform; wheel-driven handling not visually retested"
+  },
+  "known_limitations": [
+    "Controller roof transfer remains instantaneous; clip is arm recovery, not root-driven mantle.",
+    "No per-hand/per-foot contact IK; planted limbs can slide. Oblique walls and corners not validated.",
+    "Three earlier synthetic high-drop jump death failures remain recorded in ../jump/high_drop_initial.json; no physics changes to address them.",
+    "Animation appearance awaits user confirmation."
+  ],
+  "source_sha256": {
+    "scripts/build_player_animations.py": "66cfd25b8fb7a962190f9531b1068b12537647bcb403909812bf400606934b1f",
+    "scripts/render_player_animation_review.py": "e2bffb8920212d8b5c21245b913e8389b5c448ef8d142b92f4f6e344d26ea557",
+    "scripts/test.ps1": "93d6d922f4b9fe16576ea9f752e3106e3e1e236ae04329cbc2df57807d7696e1",
+    "tests/player_climb_animation_playground.gd": "98f646ea212937fc07a9d37685eb500edae1ef41f689f0bfd47d98af47214e0f",
+    "tests/player_climb_animation_playground.tscn": "6a29ae9b69adf0a97696c5c51e8fa0ea408487f9e2ee497b5f366c3b9bc78de1",
+    "tests/rv_climb_playground.gd": "8f3c1a77e9df8067084960c4aeec256e1815e4acc836e9c6ef494ebb48a14868",
+    "tests/test_player_animation.gd": "dec0a8926a38981dd6ee246dfa1b0d68199693fd3ebebf690d9673c58ec54a0e",
+    "tests/test_player_animation_skin.gd": "c15686745d21667b6d71c8d0cd850aaae5191a95f01ce355e363e85930fdbf40",
+    "tests/test_player_jump_animation.gd": "de481ccba4fc2605275734c528fc2e82e17859bd3ba281c2ff13f6ffe221f2f9",
+    "tests/test_player_climb_animation.gd": "da938caee3a59020183dc812e5c0d1258fb753a9011f68fc0045c995f15b30ed",
+    "player/player_locomotion_visual.gd": "85ca360cbaf95012445c5bd4f553c38e8ed9fac2d10731c5fb897d4b401e207c",
+    "player/player_model_visual.gd": "c4059fe37e2a4e7f54d30601d44a4c37ce850904534b40bc07cbef476e1856d3",
+    "player/player_ragdoll.gd": "3d4a75ee4e523fc2edfc19f07707870cf9e53993e7d806cbb33f9da71332f4c3",
+    "project.godot": "ce02c5bc8cef318a6650898ab2044f00706245e9769f8ecedac0aaf64b20b0c5",
+    "player/player.gd": "875bfb682d8a0161b2cdcf214bc4bdea893fae2d543fb4bd0ba542001cc16072",
+    "world/test_world.tscn": "01b8e5d9b1015c09cc510ff7941c234247516f92c90d4dce5922093628a52076",
+    "art_source/player_animations_v021/player_animations_v021.blend": "0de03c0c6584c23c59faf39bf3077481e539dda75a871a88ac2a05d37413511c",
+    "assets/models/player_animations_v021/player_animations_v021.glb": "6a466f259085f31cd3504747c84176386a1ec47c6da5560ad8fb2dff3d75ee52",
+    "assets/models/player_animations_v021/player_animations_v021.glb.import": "c68d46bd488a5d98cc2950942f948e95991327f7fe2de8e4167203016451948c"
+  },
+  "images_sha256": {
+    "blender_climb_exit_9.png": "b05af28ada71390ffa5c48fb7f1f0c5349147d4c32e776427cdd43c4cc0ef404",
+    "blender_climb_exit_9_side.png": "98cc636686f9fd071e7d33e0942675106931fa896dc414d05bacdce7107f5ad2",
+    "blender_climb_hold_0.png": "2b1ee74d94e080eea9acb2e248ad39dfcdb7ae308d9f4b7c47fd2031d9ebf858",
+    "blender_climb_hold_0_side.png": "203baa6df6f441e55a937bbc588de5b89d10cead695ac829f371120f5ae017c6",
+    "blender_climb_left_8.png": "d372cd4602ab61e0aac7a344d9eaa31f06705dc3bbe3c5c3c65f9083f3004293",
+    "blender_climb_left_8_side.png": "4eb45b791cf47b0e0ecdeeaf3e90b1c7f143b5280b46a3d9e462ac9c2cb43b83",
+    "blender_climb_up_0.png": "6cc92301aae11c44dce27ae88ce6a2cdfbdc3874e6e5663dd85869741f33b646",
+    "blender_climb_up_0_side.png": "553a6bf54748cbfc0c6ed6fc2cb1490d5e44478c43a7ad6334bf6bae24d4c723",
+    "blender_climb_up_12.png": "5423ec32a2b916af866b98deedf8f53fbd36f9dfc29606306967df6873e111ca",
+    "blender_climb_up_12_side.png": "6755dabb0e0f9e2cee3e45c739245d62d8a22e387c0276a7e0c165a27591a472",
+    "godot_carrier_hold.png": "d329cdd120eb318cf6fc938d0e5f05ab44aa0d5aa7a32d54b14f6ef4febde1f1",
+    "godot_hold_first_person.png": "3631dbc3fa44fe0b48772fcf46f47365676a6c1c35cd0c3d544104da191d524f",
+    "godot_hold_side.png": "51b359abcec06725adc431adf5664ba823ffeabebe29ee124301c6be4a0c14aa",
+    "godot_left.png": "4215932e609c55a8a72f70fb4c707ffbee99496b563de121a090b4ad9629e53a",
+    "godot_right.png": "29e53c0ffca82f21abab0eb97b0e1665d8a98846141d735bdd88663524da274b",
+    "godot_roof_exit.png": "14a12c200858910c6cd04fe501a3b454f0b8ef638006b842f55a3d33e5b30166",
+    "godot_roof_idle.png": "f09d18d84886444e799af6c804dc6fa53bba1d8e92d5b3540a9904d000496c7d",
+    "godot_up.png": "ee079ed0eb32ecca44a676b2002a7153cd18a48b820a297cd0a6b5ef6ad6a5b4",
+    "rv_both_aboard.png": "edc79821f69e3cdef1fab9b1ace87a355c2e09a192246889235c2cfd53dafcfb",
+    "rv_climbing.png": "2bd8138ed695191c571b25a25d483f3bfc9c8a822b51277367854204339581ec",
+    "rv_roof_destroyed.png": "8d0844bc31c25ba40f6d62afbc9cf27a48215a316afe9b79e9ed8e0cf7e659ae"
+  }
+}

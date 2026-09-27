@@ -1,0 +1,243 @@
+{
+  "completed_at": "2026-09-27T21:22:30.468447+08:00",
+  "base_commit": "73e1b9728504907f09469e5e87e3396a2c637a19",
+  "runner_exit_code": 0,
+  "test_count": 79,
+  "passed": [
+    "test_art_presentation",
+    "test_cabin_light_equipment",
+    "test_checkpoint_failures",
+    "test_combat_targeting",
+    "test_equipment_lifecycle",
+    "test_forest_fog",
+    "test_gas_station",
+    "test_interior_compatibility",
+    "test_interior_doorways",
+    "test_interior_layout",
+    "test_interior_navigation",
+    "test_interior_traversal",
+    "test_main_world_monsters",
+    "test_minor_site_generation",
+    "test_monster_boarding",
+    "test_monster_cabin",
+    "test_monster_model",
+    "test_monster_navigation",
+    "test_monster_pursuit",
+    "test_moving_rv_climbing",
+    "test_outdoor_encounter",
+    "test_outdoor_gas_station",
+    "test_outdoor_horror",
+    "test_outdoor_minor_assets",
+    "test_outdoor_minor_navigation",
+    "test_outdoor_minor_persistence",
+    "test_outdoor_style_sample",
+    "test_outdoor_traversal",
+    "test_player_animation_skin",
+    "test_player_animation",
+    "test_player_climbing_runtime",
+    "test_player_climbing",
+    "test_player_death",
+    "test_player_import_v020",
+    "test_player_inventory",
+    "test_player_model",
+    "test_player_ragdoll_v020",
+    "test_player_stamina",
+    "test_poi_asset_kit",
+    "test_poi_definitions",
+    "test_poi_instances",
+    "test_poi_resources",
+    "test_raker_attack_alignment",
+    "test_raker_bite_pose",
+    "test_raker_boarding",
+    "test_raker_cabin",
+    "test_raker_finger_flexion",
+    "test_raker_gaits",
+    "test_raker_grab_vehicle",
+    "test_raker_grab",
+    "test_raker_neck",
+    "test_raker_playground",
+    "test_raker_release_input",
+    "test_raker_source_hands",
+    "test_raker_sprint",
+    "test_raker_turning",
+    "test_raker",
+    "test_roadside_exploration",
+    "test_rv_boarding",
+    "test_rv_braking",
+    "test_rv_checkpoint",
+    "test_rv_cockpit",
+    "test_rv_engine",
+    "test_rv_experience",
+    "test_rv_extended",
+    "test_rv_handling",
+    "test_rv_interactions",
+    "test_rv_physics_regression",
+    "test_rv_resource_cycle",
+    "test_rv_shared_storage",
+    "test_rv_structure_modules",
+    "test_rv_systems",
+    "test_streaming_generation",
+    "test_tire_handling",
+    "test_tire_puncture",
+    "test_world_clock",
+    "test_world_entities",
+    "test_world_generation",
+    "test_world_weather"
+  ],
+  "import_pass": true,
+  "main_scene_pass": true,
+  "warnings": {
+    "test_interior_traversal": [
+      "WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available..."
+    ],
+    "test_rv_handling": [
+      "WARNING: Jolt Physics job system exceeded the maximum number of jobs. This should not happen. Please report this. Waiting for jobs to become available..."
+    ]
+  },
+  "interior_isolated_recheck": "PASS, no warnings",
+  "physics_hz": 60,
+  "jolt_steps": [
+    32,
+    32
+  ],
+  "ragdoll_mass_kg": 69.5,
+  "animation_death_cases": 20,
+  "peak_handoff_gap_m": 0.0227286890149117,
+  "source_sha256": {
+    "player/player_model_visual.gd": "c4059fe37e2a4e7f54d30601d44a4c37ce850904534b40bc07cbef476e1856d3",
+    "player/player_locomotion_visual.gd": "34b9451cbcbf6643b86b0f5b35409eb3696db2ec2fc07742b2027c84cd3ced19",
+    "player/player_ragdoll.gd": "3d4a75ee4e523fc2edfc19f07707870cf9e53993e7d806cbb33f9da71332f4c3",
+    "player/ragdoll_mass_properties.gd": "35f8ddb52818e0691566f4c7d2adbf402447898b601863016dbb9652ed7e4684",
+    "tests/player_ragdoll_v020/actor.gd": "f87af906cdc5e5cadac80bd686f81fb42914a667c017fe5569246b5fbc2c5a65",
+    "tests/test_player_animation.gd": "a99437b175238c8effb57bfde06400f61ed91855ad0caf3d478be25465a93642",
+    "tests/test_player_animation_skin.gd": "c15686745d21667b6d71c8d0cd850aaae5191a95f01ce355e363e85930fdbf40",
+    "tests/test_player_death.gd": "19c39da16b94d763e60f2b8f2846b3c53e6d3b28c50fc43e54cca35e19e467b0",
+    "tests/player_animation_playground.gd": "c08ad66381e460b9c892a2af06404fa87717439b4253671800003d15c9ea778f",
+    "scripts/build_player_animations.py": "31f9c88b2c0e8bcb02728312e817b2448d38f810750dbd3f233eeb799a50f706",
+    "assets/models/player_animations_v021/player_animations_v021.glb": "71724826030ff9627173cb5487de0f64c772038f9d179be23fa8377c3dca83eb",
+    "assets/models/player_animations_v021/player_animations_v021.glb.import": "c68d46bd488a5d98cc2950942f948e95991327f7fe2de8e4167203016451948c",
+    "art_source/player_animations_v021/player_animations_v021.blend": "f53b93a4441287cb5e43971224852e5ce06ae6194d87906487da0387a486ca14",
+    "project.godot": "ce02c5bc8cef318a6650898ab2044f00706245e9769f8ecedac0aaf64b20b0c5",
+    "tests/player_ragdoll_v020/playground.gd": "27ac4c8a30dd34f37f746782edc5e0e0f0c0401cb43078fa7986639fa4a0b161"
+  },
+  "images": [
+    {
+      "path": "blender_idle.png",
+      "sha256": "b9259ff005f2412a4fd091208743dd03fb1495f8bc7aca8551df3312302d6986",
+      "bytes": 663419
+    },
+    {
+      "path": "blender_jog_forward.png",
+      "sha256": "ef85c29c039fbffa3ea5318da173f2b74cb524c9b41fd0f57fb2aa4e0875b29d",
+      "bytes": 672028
+    },
+    {
+      "path": "blender_run_forward.png",
+      "sha256": "d110ee6b1621747eb0317c0a3c8375fa6a0fdfa24d5111c607d5ec9cfb28694c",
+      "bytes": 671051
+    },
+    {
+      "path": "climb_roof.jpg",
+      "sha256": "0dea1a5c85901b1377967f1240ccd30aefe9a1e71f0f201ca7d0cdd2643d22e2",
+      "bytes": 40065
+    },
+    {
+      "path": "climbing.jpg",
+      "sha256": "12b013be4e439be16f433007708b5ac7e731f2e5d9408d19878f28525956d80f",
+      "bytes": 44832
+    },
+    {
+      "path": "idle.png",
+      "sha256": "9a2c2eb3661c774c60026c7a6b29090bf610e8d129c8e4cf1289b3c39543828e",
+      "bytes": 68049
+    },
+    {
+      "path": "jog_back.png",
+      "sha256": "98e6120df6af4fb3017283bc896c542329e66576219e67611c613d64c5eef664",
+      "bytes": 71060
+    },
+    {
+      "path": "jog_desktop.jpg",
+      "sha256": "4de94c106f0fa739e442f70875450dda2d20c1d0c34ee8ad539e14d5fa71f42d",
+      "bytes": 19271
+    },
+    {
+      "path": "jog_first_person.png",
+      "sha256": "44c8c0294af69beb484357966beb73d353799d8ae10e3afd1c407b484a2b9678",
+      "bytes": 170045
+    },
+    {
+      "path": "jog_forward.png",
+      "sha256": "bcc21fc2271585ff8ca6227ef45ea6e5ffd6454ab3e331185621163f1ae896c7",
+      "bytes": 67742
+    },
+    {
+      "path": "jog_left.png",
+      "sha256": "a485a3613bfc76f5f759b1d4f0a5d424097442c17e496603bb33284d7ed3f7fb",
+      "bytes": 67732
+    },
+    {
+      "path": "jog_right.png",
+      "sha256": "18af4cd489f2da02e99d3d84a6f86ec8df2804e6e2f45098e0373c49689cce8e",
+      "bytes": 69717
+    },
+    {
+      "path": "recovered_desktop.jpg",
+      "sha256": "d549f26aaea02519435728e8ffa24891db2490cd9e02fb8a481e6c7a7a0c148d",
+      "bytes": 18737
+    },
+    {
+      "path": "recovered_idle.png",
+      "sha256": "2363db1c45f4e1a58b0bc73132443be4702c02d2e03bbcf59e2d808213cbad89",
+      "bytes": 155264
+    },
+    {
+      "path": "roof_destroyed.jpg",
+      "sha256": "20b749c52adbb1c30020aff0df360f1212ed9ee8fdea6def7ce8f5d154a32ccd",
+      "bytes": 41040
+    },
+    {
+      "path": "run_back.png",
+      "sha256": "25baf5a7d933be0eedd3a0218a84a0bd9e51bf167a68fd5f538927ed0f80066d",
+      "bytes": 71346
+    },
+    {
+      "path": "run_death.png",
+      "sha256": "fa8f968e0233e972648ef72127c88b57e0017c73ad72e546c3d0f833789038d2",
+      "bytes": 266702
+    },
+    {
+      "path": "run_death_external.png",
+      "sha256": "aac35d071696a289fa49047bc609305d4adc58f0e9ca742a58e82da07ff1f221",
+      "bytes": 56250
+    },
+    {
+      "path": "run_desktop.jpg",
+      "sha256": "cc748dd0db03100945a315fbd3d3d3f15e6f3b55182f8c477183cb55b20e16eb",
+      "bytes": 19399
+    },
+    {
+      "path": "run_first_person.png",
+      "sha256": "b173c29165030ac89aa6ae50881349966a5b015ecbdf3fa6f576a973375eed9d",
+      "bytes": 187660
+    },
+    {
+      "path": "run_forward.png",
+      "sha256": "baf734e1396b5b5611983f6f16501bb930bd1a4d989eeeda66bd308fe01d124e",
+      "bytes": 68893
+    },
+    {
+      "path": "run_left.png",
+      "sha256": "67b4802707d91af8204e56bb641d3db84b5dba85f80f4bfd9950e2e30f882dcd",
+      "bytes": 67960
+    },
+    {
+      "path": "run_right.png",
+      "sha256": "ad46877c2633e2a82384029f18867463e3f32dcf2c84636da1b5524ad66a8ba8",
+      "bytes": 70294
+    }
+  ],
+  "handling_isolated_recheck": "PASS, exit 0, no warnings",
+  "desktop_replay_exit_code": 0,
+  "post_suite_display_changes": "Independent playground mass label 69.5 kg and output path moved to v021 evidence; no physics behavior changed."
+}

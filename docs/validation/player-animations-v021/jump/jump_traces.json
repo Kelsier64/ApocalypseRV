@@ -1,0 +1,32 @@
+[
+  {
+    "case": "standing",
+    "clips": [
+      "jump_rise",
+      "jump_fall",
+      "jump_land",
+      "idle"
+    ],
+    "peak_height_m": 1.07118330895901
+  },
+  {
+    "case": "jogging",
+    "clips": [
+      "jump_rise",
+      "jump_fall",
+      "jump_land",
+      "jog_forward"
+    ],
+    "peak_height_m": 1.07128049433231
+  },
+  {
+    "case": "sprinting",
+    "clips": [
+      "jump_rise",
+      "jump_fall",
+      "jump_land",
+      "run_forward"
+    ],
+    "peak_height_m": 1.0710111707449
+  }
+]

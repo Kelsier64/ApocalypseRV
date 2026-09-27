@@ -1,0 +1,142 @@
+[
+  {
+    "clip": "jog_forward",
+    "peak_bone": "forearm_L",
+    "peak_gap_m": 0.00497998343780637,
+    "peak_speed": 6.54650926589966,
+    "phase": 0.0
+  },
+  {
+    "clip": "jog_forward",
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.00731235230341554,
+    "peak_speed": 6.55175447463989,
+    "phase": 0.25
+  },
+  {
+    "clip": "jog_forward",
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.00218202732503414,
+    "peak_speed": 6.54909944534302,
+    "phase": 0.5
+  },
+  {
+    "clip": "jog_forward",
+    "peak_bone": "shin_L",
+    "peak_gap_m": 0.00675414735451341,
+    "peak_speed": 6.51875638961792,
+    "phase": 0.75
+  },
+  {
+    "clip": "run_forward",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.00997723359614611,
+    "peak_speed": 8.70674610137939,
+    "phase": 0.0
+  },
+  {
+    "clip": "run_forward",
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0139277810230851,
+    "peak_speed": 8.77053737640381,
+    "phase": 0.25
+  },
+  {
+    "clip": "run_forward",
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0106718316674232,
+    "peak_speed": 8.75811862945557,
+    "phase": 0.5
+  },
+  {
+    "clip": "run_forward",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.0132332071661949,
+    "peak_speed": 8.78401851654053,
+    "phase": 0.75
+  },
+  {
+    "clip": "jog_left",
+    "peak_bone": "forearm_R",
+    "peak_gap_m": 0.00432094512507319,
+    "peak_speed": 6.17251825332642,
+    "phase": 0.0
+  },
+  {
+    "clip": "jog_left",
+    "peak_bone": "spine_01",
+    "peak_gap_m": 0.00487232906743884,
+    "peak_speed": 6.1540584564209,
+    "phase": 0.25
+  },
+  {
+    "clip": "jog_left",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.00431044632568955,
+    "peak_speed": 5.92280626296997,
+    "phase": 0.5
+  },
+  {
+    "clip": "jog_left",
+    "peak_bone": "spine_01",
+    "peak_gap_m": 0.00285966112278402,
+    "peak_speed": 5.81267070770264,
+    "phase": 0.75
+  },
+  {
+    "clip": "run_back",
+    "peak_bone": "forearm_R",
+    "peak_gap_m": 0.00959823653101921,
+    "peak_speed": 8.46882343292236,
+    "phase": 0.0
+  },
+  {
+    "clip": "run_back",
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.00394321419298649,
+    "peak_speed": 9.36440849304199,
+    "phase": 0.25
+  },
+  {
+    "clip": "run_back",
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.00656107673421502,
+    "peak_speed": 8.48431491851807,
+    "phase": 0.5
+  },
+  {
+    "clip": "run_back",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.00393176358193159,
+    "peak_speed": 9.35776519775391,
+    "phase": 0.75
+  },
+  {
+    "clip": "jog_back_air",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.0227314196527004,
+    "peak_speed": 7.45420551300049,
+    "phase": 0.0
+  },
+  {
+    "clip": "jog_back_air",
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.011913456954062,
+    "peak_speed": 7.50414133071899,
+    "phase": 0.25
+  },
+  {
+    "clip": "jog_back_air",
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0226793065667152,
+    "peak_speed": 7.45762777328491,
+    "phase": 0.5
+  },
+  {
+    "clip": "jog_back_air",
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.011975952424109,
+    "peak_speed": 7.50689363479614,
+    "phase": 0.75
+  }
+]

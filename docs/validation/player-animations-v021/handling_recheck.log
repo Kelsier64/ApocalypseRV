@@ -1,0 +1,21 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+HANDLING standard distance=22.154 peak=5.516 to3=1.800 yaw=0.000 radius=22154.312 hold=0.024
+PARKING dock_error=0.246 return_error=0.233
+HANDLING reinforced distance=24.915 peak=5.990 to3=1.467 yaw=0.001 radius=24914.736 hold=0.033
+HANDLING equipment distance=19.939 peak=5.164 to3=2.150 yaw=0.011 radius=1762.287 hold=0.056
+HANDLING worn distance=21.435 peak=5.489 to3=1.917 yaw=0.000 radius=21435.123 hold=0.020
+HANDLING missing distance=9.138 peak=2.376 to3=-1.000 yaw=0.061 radius=149.586 hold=0.051
+HANDLING failed distance=0.495 peak=0.112 to3=-1.000 yaw=0.001 radius=495.183 hold=0.024
+HANDLING slope distance=13.350 peak=3.562 to3=3.867 yaw=0.004 radius=3786.702 hold=0.036
+HANDLING turn distance=18.978 peak=5.154 to3=2.083 yaw=1.144 radius=16.588 hold=0.024
+HANDLING reverse distance=9.286 peak=2.634 to3=-1.000 yaw=0.001 radius=8698.769 hold=0.024
+HANDLING fast_turn distance=102.644 peak=19.967 to3=0.000 yaw=0.890 radius=115.305 hold=0.024
+HANDLING reinforced_slope distance=16.893 peak=4.284 to3=2.567 yaw=0.005 radius=3751.568 hold=0.031
+HANDLING equipment_slope distance=11.884 peak=3.104 to3=5.383 yaw=0.006 radius=2012.525 hold=0.067
+HANDLING worn_slope distance=13.376 peak=3.563 to3=3.867 yaw=0.003 radius=3886.898 hold=0.032
+HANDLING missing_slope distance=1.733 peak=0.486 to3=-1.000 yaw=0.047 radius=36.705 hold=0.124
+HANDLING failed_slope distance=13.504 peak=3.933 to3=4.133 yaw=0.002 radius=6217.386 hold=0.036
+PASS: wheel-driven handling, condition, load, slope, reverse and steering return

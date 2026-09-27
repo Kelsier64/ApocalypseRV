@@ -1,0 +1,225 @@
+{
+  "changed_channels": [
+    {
+      "clip": "idle",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.4766022488474846
+    },
+    {
+      "clip": "idle",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107567247003317
+    },
+    {
+      "clip": "idle",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.4766022488474846
+    },
+    {
+      "clip": "idle",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.2710756715387106
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107566595077515
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107569901272655
+    },
+    {
+      "clip": "jog_back",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_back",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107566595077515
+    },
+    {
+      "clip": "jog_back",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_back",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107569901272655
+    },
+    {
+      "clip": "jog_left",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_left",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107566595077515
+    },
+    {
+      "clip": "jog_left",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_left",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107569901272655
+    },
+    {
+      "clip": "jog_right",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_right",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107566595077515
+    },
+    {
+      "clip": "jog_right",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.42125195264816284
+    },
+    {
+      "clip": "jog_right",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107569901272655
+    },
+    {
+      "clip": "run_forward",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.3697015196084976
+    },
+    {
+      "clip": "run_forward",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107571018859744
+    },
+    {
+      "clip": "run_forward",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.36970148980617523
+    },
+    {
+      "clip": "run_forward",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107571065425873
+    },
+    {
+      "clip": "run_back",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.3697015196084976
+    },
+    {
+      "clip": "run_back",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107571018859744
+    },
+    {
+      "clip": "run_back",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.36970148980617523
+    },
+    {
+      "clip": "run_back",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107571065425873
+    },
+    {
+      "clip": "run_left",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.3697015196084976
+    },
+    {
+      "clip": "run_left",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107571018859744
+    },
+    {
+      "clip": "run_left",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.36970148980617523
+    },
+    {
+      "clip": "run_left",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107571065425873
+    },
+    {
+      "clip": "run_right",
+      "bone": "forearm_L",
+      "path": "rotation",
+      "max_component_difference": 0.3697015196084976
+    },
+    {
+      "clip": "run_right",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.27107571018859744
+    },
+    {
+      "clip": "run_right",
+      "bone": "forearm_R",
+      "path": "rotation",
+      "max_component_difference": 0.36970148980617523
+    },
+    {
+      "clip": "run_right",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.27107571065425873
+    }
+  ],
+  "unchanged_other_channels_tolerance": 1e-05,
+  "max_other_channel_difference": 4.172325134277344e-07,
+  "changed_only_forearm_and_hand_rotation": true,
+  "before_glb_sha256": "71724826030ff9627173cb5487de0f64c772038f9d179be23fa8377c3dca83eb",
+  "after_glb_sha256": "d2f0ac76c8957f9bc53b369c237fc9442de810cc63654e63dad47f93262669b2"
+}

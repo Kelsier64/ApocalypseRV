@@ -1,0 +1,23 @@
+[
+  {
+    "clip": "climb_up",
+    "delay_frames": 0,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0209780931472778,
+    "stability_pass": true
+  },
+  {
+    "clip": "climb_up",
+    "delay_frames": 6,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0134696634486318,
+    "stability_pass": true
+  },
+  {
+    "clip": "climb_up",
+    "delay_frames": 12,
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.016325332224369,
+    "stability_pass": true
+  }
+]

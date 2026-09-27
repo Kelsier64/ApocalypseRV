@@ -1,7 +1,7 @@
 extends Node3D
 ## Independent ragdoll acceptance stage; all geometry and control are test-owned.
 const ACTOR = preload("res://tests/player_ragdoll_v020/actor.gd")
-const OUTPUT := "res://docs/validation/player-death-integration/current-60hz/ragdoll/"
+const OUTPUT := "res://docs/validation/player-animations-v021/ragdoll/"
 const CASES := ["stand_forward", "stand_back", "stand_left", "drop_face", "drop_back", "drop_right", "slope", "stairs", "animation_transition", "crouch_transition"]
 var actor: CharacterBody3D
 var camera: Camera3D
@@ -194,7 +194,7 @@ func frame_camera() -> void:
 
 func update_label() -> void:
 	if label:
-		label.text = "PLAYER v020 | " + CASES[selected_case] + (" | PHYSICS %.1fs" % elapsed if running else " | CONTROL / READY") + "\nF1-F10 scenarios | Space fall | R recover | C colliders | T TEST clip | WASD move | Esc close\n14 bodies / 67.0 kg / %d Hz / 41 unchanged deform bones / independent test only" % Engine.physics_ticks_per_second
+		label.text = "PLAYER v020 | " + CASES[selected_case] + (" | PHYSICS %.1fs" % elapsed if running else " | CONTROL / READY") + "\nF1-F10 scenarios | Space fall | R recover | C colliders | T TEST clip | WASD move | Esc close\n14 bodies / 69.5 kg / %d Hz / 41 unchanged deform bones / independent test only" % Engine.physics_ticks_per_second
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if replaying or not event.is_pressed() or event.is_echo():
