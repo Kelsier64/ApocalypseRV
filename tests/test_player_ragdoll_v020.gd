@@ -1,7 +1,7 @@
 extends SceneTree
 ## Actual Jolt simulation at the unchanged production tick; independent of production Player.
 const STAGE = preload("res://tests/player_ragdoll_v020/playground.tscn")
-const OUTPUT := "res://docs/validation/player-death-integration/physics_audit_60hz.json"
+const OUTPUT := "res://docs/validation/player-animations-v021/physics_audit_60hz.json"
 var failures: Array[String] = []
 var results: Array = []
 

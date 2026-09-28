@@ -1,6 +1,5 @@
 extends StaticBody3D
 
-var hold_timer: float = 0.0
 var slot_index: int = -1
 
 func get_interaction_prompt(_player: Node3D) -> String:

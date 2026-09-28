@@ -1,0 +1,114 @@
+{
+  "scope": "Jump pose addition; 11 player suites plus import/main scene. Synthetic elevated death probe retains 3 failures separately; global physics and ragdoll configuration unchanged.",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "physics_hz": 60,
+  "runner_filter": "test_player*.gd",
+  "runner_exit_code": 0,
+  "passed_tests": [
+    "import",
+    "test_player_animation",
+    "test_player_animation_skin",
+    "test_player_climbing",
+    "test_player_climbing_runtime",
+    "test_player_death",
+    "test_player_import_v020",
+    "test_player_inventory",
+    "test_player_jump_animation",
+    "test_player_model",
+    "test_player_ragdoll_v020",
+    "test_player_stamina",
+    "main-scene"
+  ],
+  "suite_count": 11,
+  "warnings": [],
+  "actual_jump_death_cases": 15,
+  "maximum_actual_jump_gap_m": 0.0216493923217058,
+  "ground_handoff_cases": 20,
+  "skin_samples": 436,
+  "minimum_skin_y_m": -0.000384265324100852,
+  "maximum_jump_height_m": 1.07128049433231,
+  "high_drop_probe": {
+    "root_height_m": 1.8,
+    "horizontal_speed_m_s": 3,
+    "vertical_speed_m_s": {
+      "jump_rise_air": 4,
+      "jump_fall_air": -4
+    },
+    "phases": [
+      0,
+      0.25,
+      0.5,
+      0.75
+    ],
+    "gap_limit_m": 0.025,
+    "failed_cases": [
+      {
+        "clip": "jump_rise_air",
+        "peak_bone": "shin_R",
+        "peak_gap_m": 0.0258001126348972,
+        "peak_speed": 7.32664585113525,
+        "phase": 0.5
+      },
+      {
+        "clip": "jump_fall_air",
+        "peak_bone": "foot_L",
+        "peak_gap_m": 0.0291204489767551,
+        "peak_speed": 7.76353979110718,
+        "phase": 0.5
+      },
+      {
+        "clip": "jump_fall_air",
+        "peak_bone": "foot_L",
+        "peak_gap_m": 0.0256863385438919,
+        "peak_speed": 7.64404201507568,
+        "phase": 0.75
+      }
+    ],
+    "status": "needs correction; not part of the passing actual-jump cases"
+  },
+  "desktop_replay_completed": true,
+  "source_sha256": {
+    "scripts/build_player_animations.py": "dcab80c6a96a65ed8d05c2425d39d71079d1b8646359f84fa78e65c47988191a",
+    "scripts/render_player_animation_review.py": "0fa6ae951f844af53a29ae3c93ab80ecc6951677483406a57277ef8126628af0",
+    "scripts/test.ps1": "e7448a2bc6ffe96f80f82f871ab2809e4bbc5a2eadf09cb83f46e893e5e2444f",
+    "tests/player_animation_playground.gd": "9e68dd1cba4e0d804c255242e4bf5af5476bbdc7f2dc891aef3000d61e58f23a",
+    "tests/test_player_animation.gd": "18f090b713e7cf0ee5053346d05b1441252e37b4e727fe9ea7a6ef0c261d9397",
+    "tests/test_player_animation_skin.gd": "c15686745d21667b6d71c8d0cd850aaae5191a95f01ce355e363e85930fdbf40",
+    "tests/test_player_jump_animation.gd": "de481ccba4fc2605275734c528fc2e82e17859bd3ba281c2ff13f6ffe221f2f9",
+    "player/player_locomotion_visual.gd": "9c893e5c5f3742cf794f7ff4f4befafae72c1e1cea508c478463f68459d017b5",
+    "player/player_model_visual.gd": "c4059fe37e2a4e7f54d30601d44a4c37ce850904534b40bc07cbef476e1856d3",
+    "player/player_ragdoll.gd": "3d4a75ee4e523fc2edfc19f07707870cf9e53993e7d806cbb33f9da71332f4c3",
+    "project.godot": "ce02c5bc8cef318a6650898ab2044f00706245e9769f8ecedac0aaf64b20b0c5",
+    "player/player.gd": "875bfb682d8a0161b2cdcf214bc4bdea893fae2d543fb4bd0ba542001cc16072",
+    "world/test_world.tscn": "612cd560e1820728f61a005352d8378870c160c0b3aa779c3d254ac28727b604",
+    "art_source/player_animations_v021/player_animations_v021.blend": "059e8f6e71a7a9d4a8296b3c27eb516404436ed40422bcf31901493206b8b231",
+    "assets/models/player_animations_v021/player_animations_v021.glb": "2f0c415116e43d242a7149038c6d634d4918822cddb244f266e870d5f1a22fb0",
+    "assets/models/player_animations_v021/player_animations_v021.glb.import": "c68d46bd488a5d98cc2950942f948e95991327f7fe2de8e4167203016451948c"
+  },
+  "images_sha256": {
+    "blender_jump_fall.png": "36560d0d18edc20e9421c73e9c9af2821ac62c8fefd3e542783ffa345928870e",
+    "blender_jump_fall_side.png": "0130d6a9a1e3244f5c334d7977f6a081e67eb9fb5c692dc52b557dff87bda746",
+    "blender_jump_land.png": "aad7dad7a36ad62543a0509814c533186138430ae96edbb2215921cb937dd67d",
+    "blender_jump_land_side.png": "e34d3e4389b1a50a512013d98ad0bba49d0bb3953d4c3be89865833f1dac7e00",
+    "blender_jump_rise.png": "ae91eb0534061d4530950e7d11be2c1deb0ce6b789556501f91b0d88a206f62b",
+    "blender_jump_rise_side.png": "59dd92ba3927ab0cddd7602d14bb0cbf01c2071357725d03cdd3aa960eb79640",
+    "jog_jump_fall.png": "6ac5f10ab5786678491d2d42388aadc05f0a2d4eef896688c31739cb17fa66c5",
+    "jog_jump_fall_first_person.png": "b5711cc7bda7f635e4915c1ae26af4731bf577d2f31864b7efd0a86f0d2d49dc",
+    "jog_jump_land.png": "880530129d89855fc04de98c899c32bc0481320a94cd1d63dc2a8dd827cb2d17",
+    "jog_jump_rise.png": "47d2ca3d0574ef79f34dfc29dbb4e4a01e5f74e4b0b7fc6e60f20c0d68054f69",
+    "jog_jump_rise_first_person.png": "70e5c860ad0ac7362d21d76fa09e1ea47f42fc353d10a68144f0c2980bfdd590",
+    "jog_recovered.png": "033494f5d3d0b713513ddc4f470d44e7a94f31fc9efc6db6f68bd34307137159",
+    "run_jump_fall.png": "295185f07a9ce99637e862b7c8a129aa1ce43985a4e3b5fe08029888eabfab88",
+    "run_jump_fall_first_person.png": "66ab82710d1bd6b559c6775a0bbe9a7e04c299d0ed8e24a3121b49bae12057ed",
+    "run_jump_land.png": "cd7793f0979376649c0bed3a533fa0f22951f25e3c80ebe3c2581c48427f16d9",
+    "run_jump_rise.png": "14b9e54faf8ddae1314fbc5a0759f183272a2131943896a5bf4d37f8778a066a",
+    "run_jump_rise_first_person.png": "849022624d1e1fd0e5a39e4ad269e30dea776405a2aaaa656a5730b369410acc",
+    "run_recovered.png": "9fac50b4a766bbedca2269d4b47662d777e2cce82d808fd148016e87b26023ec",
+    "standing_jump_fall.png": "f8024bc98d823eb4ac09e2feb8856cc11d305c48de879ae8a4729b8be9008225",
+    "standing_jump_fall_first_person.png": "bc638f1666555147bf210af147bd6b7e79f667d6a23f09c40e8b6fde53c80186",
+    "standing_jump_land.png": "c60aa9553c05f28ec2a328cd09930abce7e38bd37601427fa03f54004a9b0764",
+    "standing_jump_rise.png": "6b8ab8a6bc9a6e8020a2c17f9edde2aa892218098e06e631bade31dd6e438cc3",
+    "standing_jump_rise_first_person.png": "fa31b1efa274729762874e3ad2bba610f7552307693e51e71272fcf454654be9",
+    "standing_recovered.png": "56a48a297cf8ce10b8df72997a9871105785afd66539e7fcf8285e482f728bd9"
+  }
+}

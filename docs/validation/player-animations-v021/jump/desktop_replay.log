@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.3.289 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+JUMP_REPLAY standing ["jump_rise", "jump_fall", "jump_land"]
+JUMP_REPLAY jog ["jump_rise", "jump_fall", "jump_land"]
+JUMP_REPLAY run ["jump_rise", "jump_fall", "jump_land"]
+PASS: rendered standing, jogging and sprinting jumps completed at 60 Hz

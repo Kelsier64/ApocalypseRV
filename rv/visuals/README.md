@@ -9,7 +9,7 @@
 - `cockpit.tscn`：座椅、儀表台、方向盤、排檔桿、手煞車、踏板，一起掛在 DriverSeat 下。
 - `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔、手煞車、三個指針及讀數；沒有另一套引擎或電力狀態。
 - `wheel.tscn`：胎面、輪圈和螺帽；由底盤依原輪胎尺寸縮放，跟隨 VehicleWheel3D。
-- `chassis_trim.tscn`、`roof.tscn`：裝飾與結構設備的視覺子場景。
+- `roof.tscn`：車頂結構設備的視覺子場景。底盤地板、接縫與保險桿已直接製作在 `rv/chassis.tscn`。
 - 其餘同名場景：現有設備的外觀細節，不取代設備腳本。
 
 ## 模型規則
@@ -35,7 +35,7 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 - 正式 rv/chassis.tscn 已用 MeshInstance3D 重新製作；Deck、Rail、Cross、Arch、Bumper 與各簡單 Collider 保留原 4 × 12 m、地板和輪槽座標。舊 CSG 只留 legacy 對照。
 - rv/engine_bay.tscn 是前方固定服務槽；Hatch 為獨立 E 互動蓋，EngineVisual 顯示已裝引擎；空槽保留托架與提示。引擎道具場景在 props/engine_standard.tscn／engine_upgraded.tscn，原創原生網格，可直接編輯。
-- rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。姿態即時切換，不含展開動畫。
+- rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。展開與收起有逐步動畫及障礙掃掠。
 - assets/rv_status 的 SVG 是本專案原創車用符號；rv/vehicle_status.gd 決定顏色和原因，實體 Sprite3D／HUD 共用。VehicleLights 使用原生燈罩與 SpotLight3D；原有裝飾 light.tres 不常亮。
 - EngineAppearance 與 PanelWear 複製材質實現低耐久／故障或三級損壞；玻璃裂紋不影響碰撞，不添加獨立玻璃 HP。
 - 預裝工作台左中、平板附在工作台；分解機右前、發電機左後、道具箱右後。中央走道至少 1 m，後門前方淨空。

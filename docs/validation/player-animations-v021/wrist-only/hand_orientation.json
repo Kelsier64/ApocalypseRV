@@ -1,0 +1,137 @@
+[
+  {
+    "clip": "PLAYER_idle",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.9921976923942566,
+        "minimum_thumb_side_forward_dot": 0.9350696802139282,
+        "samples": 145
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.9921976923942566,
+        "minimum_thumb_side_forward_dot": 0.9350693225860596,
+        "samples": 145
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_jog_back",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.9254378080368042,
+        "minimum_thumb_side_forward_dot": 0.29654017090797424,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.9254374504089355,
+        "minimum_thumb_side_forward_dot": 0.2965408265590668,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_jog_forward",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.9254378080368042,
+        "minimum_thumb_side_forward_dot": 0.29654017090797424,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.9254374504089355,
+        "minimum_thumb_side_forward_dot": 0.2965408265590668,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_jog_left",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.925437867641449,
+        "minimum_thumb_side_forward_dot": 0.2965404987335205,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.9254375100135803,
+        "minimum_thumb_side_forward_dot": 0.29654067754745483,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_jog_right",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.925437867641449,
+        "minimum_thumb_side_forward_dot": 0.2965404987335205,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.9254375100135803,
+        "minimum_thumb_side_forward_dot": 0.29654067754745483,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_run_back",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.8551343679428101,
+        "minimum_thumb_side_forward_dot": -0.11729255318641663,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.8551346659660339,
+        "minimum_thumb_side_forward_dot": -0.11729113012552261,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_run_forward",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.8551343679428101,
+        "minimum_thumb_side_forward_dot": -0.11729255318641663,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.8551346659660339,
+        "minimum_thumb_side_forward_dot": -0.11729113012552261,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_run_left",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.8551344275474548,
+        "minimum_thumb_side_forward_dot": -0.11729244142770767,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.8551347255706787,
+        "minimum_thumb_side_forward_dot": -0.11729220300912857,
+        "samples": 31
+      }
+    }
+  },
+  {
+    "clip": "PLAYER_run_right",
+    "sides": {
+      "L": {
+        "minimum_palm_inward_dot": 0.8551344275474548,
+        "minimum_thumb_side_forward_dot": -0.11729244142770767,
+        "samples": 31
+      },
+      "R": {
+        "minimum_palm_inward_dot": 0.8551347255706787,
+        "minimum_thumb_side_forward_dot": -0.11729220300912857,
+        "samples": 31
+      }
+    }
+  }
+]

@@ -1,0 +1,137 @@
+[
+  {
+    "clip": "jump_rise",
+    "delay_frames": 4,
+    "gait": "standing",
+    "height_m": 0.0987504497170448,
+    "peak_bone": "shin_L",
+    "peak_gap_m": 0.0130956331267953,
+    "vertical_speed": 3.84666633605957
+  },
+  {
+    "clip": "jump_rise",
+    "delay_frames": 15,
+    "gait": "standing",
+    "height_m": 0.624305903911591,
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.0138023514300585,
+    "vertical_speed": 2.04999876022339
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 30,
+    "gait": "standing",
+    "height_m": 0.810139000415802,
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.0164441373199224,
+    "vertical_speed": -0.40000107884407
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 45,
+    "gait": "standing",
+    "height_m": 0.383471995592117,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.00626597227528691,
+    "vertical_speed": -2.85000133514404
+  },
+  {
+    "clip": "jump_land",
+    "delay_frames": 56,
+    "gait": "standing",
+    "height_m": -0.249721065163612,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.00617951806634665,
+    "vertical_speed": 0.0
+  },
+  {
+    "clip": "jump_rise",
+    "delay_frames": 4,
+    "gait": "jog",
+    "height_m": 0.0986489951610565,
+    "peak_bone": "shin_L",
+    "peak_gap_m": 0.0137022016569972,
+    "vertical_speed": 3.84666633605957
+  },
+  {
+    "clip": "jump_rise",
+    "delay_frames": 15,
+    "gait": "jog",
+    "height_m": 0.624204456806183,
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.0216493923217058,
+    "vertical_speed": 2.04999876022339
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 30,
+    "gait": "jog",
+    "height_m": 0.810037553310394,
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.0183309204876423,
+    "vertical_speed": -0.40000107884407
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 45,
+    "gait": "jog",
+    "height_m": 0.38337054848671,
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.0105622727423906,
+    "vertical_speed": -2.85000133514404
+  },
+  {
+    "clip": "jump_land",
+    "delay_frames": 56,
+    "gait": "jog",
+    "height_m": -0.249101117253304,
+    "peak_bone": "upper_arm_L",
+    "peak_gap_m": 0.00383994332514703,
+    "vertical_speed": 0.0
+  },
+  {
+    "clip": "jump_rise",
+    "delay_frames": 4,
+    "gait": "run",
+    "height_m": 0.0986109599471092,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.0128427296876907,
+    "vertical_speed": 3.84666633605957
+  },
+  {
+    "clip": "jump_rise",
+    "delay_frames": 15,
+    "gait": "run",
+    "height_m": 0.624166429042816,
+    "peak_bone": "foot_L",
+    "peak_gap_m": 0.0170016158372164,
+    "vertical_speed": 2.04999876022339
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 30,
+    "gait": "run",
+    "height_m": 0.809999525547028,
+    "peak_bone": "foot_R",
+    "peak_gap_m": 0.017473392188549,
+    "vertical_speed": -0.40000107884407
+  },
+  {
+    "clip": "jump_fall",
+    "delay_frames": 45,
+    "gait": "run",
+    "height_m": 0.383332520723343,
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.0124834114685655,
+    "vertical_speed": -2.85000133514404
+  },
+  {
+    "clip": "jump_land",
+    "delay_frames": 56,
+    "gait": "run",
+    "height_m": -0.249127879738808,
+    "peak_bone": "shin_R",
+    "peak_gap_m": 0.00553938513621688,
+    "vertical_speed": 0.0
+  }
+]

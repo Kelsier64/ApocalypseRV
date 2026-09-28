@@ -1,0 +1,971 @@
+{
+	"cases": [
+		{
+			"animation_resumed": true,
+			"case": "stand_forward",
+			"cone_peak_bone": "spine_01",
+			"cone_peak_frame": 26,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000298023224,
+			"final_pelvis": [
+				0.0142191024497151,
+				0.100000590085983,
+				-0.539860546588898
+			],
+			"floor_peak_bone": "head",
+			"floor_peak_frame": 81,
+			"gap_peak_bone": "shin_R",
+			"gap_peak_frame": 23,
+			"hinges": {
+				"forearm_L": [
+					-3.06339092262222,
+					25.1991713754362
+				],
+				"forearm_R": [
+					-3.06552029140411,
+					29.1183360949405
+				],
+				"shin_L": [
+					-0.270832062763756,
+					127.166699416618
+				],
+				"shin_R": [
+					-0.270699249086664,
+					127.223013206567
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.000289409572914678,
+			"max_cone_excess_deg": 2.46884961033502,
+			"max_hinge_excess_deg": 2.22302083596121,
+			"max_joint_gap_m": 0.0081445062533021,
+			"max_scale_error": 0.000000347551804225077,
+			"max_skin_binding_error_m": 0.00000192709876500885,
+			"max_speed_m_s": 4.20030879974365,
+			"max_terrain_penetration_m": 0.00585734844207764,
+			"max_twist_excess_deg": 0.291591278627507,
+			"min_collider_y_m": -0.00913926734748838,
+			"pelvis_drop_m": 0.799999386072159,
+			"penetration_peak_bone": "spine_02",
+			"penetration_peak_frame": 66,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"small_impulse_peak_speed_m_s": 0.0554854795336723,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "foot_R",
+			"twist_peak_frame": 34
+		},
+		{
+			"animation_resumed": true,
+			"case": "stand_back",
+			"cone_peak_bone": "spine_01",
+			"cone_peak_frame": 30,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000774860382,
+			"final_pelvis": [
+				0.00880187097936869,
+				0.100011751055717,
+				-0.597549021244049
+			],
+			"floor_peak_bone": "foot_L",
+			"floor_peak_frame": 23,
+			"gap_peak_bone": "foot_L",
+			"gap_peak_frame": 23,
+			"hinges": {
+				"forearm_L": [
+					-3.05300715367615,
+					135.546138055114
+				],
+				"forearm_R": [
+					-3.05924789008971,
+					135.391436100873
+				],
+				"shin_L": [
+					-0.000000853773646251594,
+					125.7019965267
+				],
+				"shin_R": [
+					-0.000000426938958781243,
+					125.700843259444
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.0812369030460403,
+			"max_cone_excess_deg": 2.39864421884412,
+			"max_hinge_excess_deg": 0.702004156094816,
+			"max_joint_gap_m": 0.00378350028768182,
+			"max_scale_error": 0.000000347551804225077,
+			"max_skin_binding_error_m": 0.00000192709876500885,
+			"max_speed_m_s": 3.66792011260986,
+			"max_terrain_penetration_m": 0.00415810197591782,
+			"max_twist_excess_deg": 0.27975441298593,
+			"min_collider_y_m": -0.00415807462371161,
+			"pelvis_drop_m": 0.799988225102425,
+			"penetration_peak_bone": "foot_L",
+			"penetration_peak_frame": 23,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "upper_arm_L",
+			"twist_peak_frame": 60
+		},
+		{
+			"animation_resumed": true,
+			"case": "stand_left",
+			"cone_peak_bone": "spine_02",
+			"cone_peak_frame": 28,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750001966953278,
+			"final_pelvis": [
+				1.37727570533752,
+				0.112093277275562,
+				0.0704198405146599
+			],
+			"floor_peak_bone": "forearm_L",
+			"floor_peak_frame": 26,
+			"gap_peak_bone": "shin_L",
+			"gap_peak_frame": 26,
+			"hinges": {
+				"forearm_L": [
+					-3.00051687661986,
+					135.310413014756
+				],
+				"forearm_R": [
+					-3.07171212542266,
+					55.3763163766122
+				],
+				"shin_L": [
+					-0.000000853773646251594,
+					113.843875504161
+				],
+				"shin_R": [
+					-3.09052534633371,
+					77.7379047701155
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.144808371678728,
+			"max_cone_excess_deg": 0.724968896849749,
+			"max_hinge_excess_deg": 0.310413014755852,
+			"max_joint_gap_m": 0.00309629528783262,
+			"max_scale_error": 0.000000487885017719236,
+			"max_skin_binding_error_m": 0.00000192819311450876,
+			"max_speed_m_s": 3.9283242225647,
+			"max_terrain_penetration_m": 0.0252782106399536,
+			"max_twist_excess_deg": 1.17560094571333,
+			"min_collider_y_m": -0.0252780637712995,
+			"pelvis_drop_m": 0.763784162700176,
+			"penetration_peak_bone": "forearm_L",
+			"penetration_peak_frame": 26,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "thigh_L",
+			"twist_peak_frame": 26
+		},
+		{
+			"animation_resumed": true,
+			"case": "drop_face",
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000596046448,
+			"final_pelvis": [
+				0.000311398995108902,
+				0.0999658554792404,
+				0.03525685146451
+			],
+			"floor_peak_bone": "spine_02",
+			"floor_peak_frame": 34,
+			"gap_peak_bone": "upper_arm_R",
+			"gap_peak_frame": 34,
+			"hinges": {
+				"forearm_L": [
+					-3.36759844688049,
+					0.138226753914553
+				],
+				"forearm_R": [
+					-3.36743592064176,
+					0.138452559922607
+				],
+				"shin_L": [
+					-0.0000102452825336862,
+					31.1344695666595
+				],
+				"shin_R": [
+					0.0,
+					30.6748093157704
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.000289836132076005,
+			"max_cone_excess_deg": 0.0,
+			"max_hinge_excess_deg": 0.367598446880495,
+			"max_joint_gap_m": 0.000876086938660592,
+			"max_scale_error": 0.000000266560078898692,
+			"max_skin_binding_error_m": 0.00000195705069927499,
+			"max_speed_m_s": 5.04617309570313,
+			"max_terrain_penetration_m": 0.0133959203958511,
+			"max_twist_excess_deg": 0.0161551502415804,
+			"min_collider_y_m": -0.013395971494537,
+			"pelvis_drop_m": 1.48484189808369,
+			"penetration_peak_bone": "spine_02",
+			"penetration_peak_frame": 34,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "upper_arm_L",
+			"twist_peak_frame": 52
+		},
+		{
+			"animation_resumed": true,
+			"case": "drop_back",
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000536441803,
+			"final_pelvis": [
+				0.0000157406666403404,
+				0.0985441133379936,
+				-0.0296302828937769
+			],
+			"floor_peak_bone": "pelvis",
+			"floor_peak_frame": 34,
+			"gap_peak_bone": "foot_R",
+			"gap_peak_frame": 35,
+			"hinges": {
+				"forearm_L": [
+					-3.0509743673493,
+					12.6162305144215
+				],
+				"forearm_R": [
+					-3.04928942036884,
+					12.858136134005
+				],
+				"shin_L": [
+					-3.1451793551182,
+					-0.000000426886772236928
+				],
+				"shin_R": [
+					-3.1558579766947,
+					0.00000341509458500637
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.000348105067981663,
+			"max_cone_excess_deg": 0.0,
+			"max_hinge_excess_deg": 0.155857976694703,
+			"max_joint_gap_m": 0.000691707071382552,
+			"max_scale_error": 0.000000252881079632061,
+			"max_skin_binding_error_m": 0.00000203884701477364,
+			"max_speed_m_s": 5.24841690063477,
+			"max_terrain_penetration_m": 0.0107903555035591,
+			"max_twist_excess_deg": 0.0175756983318287,
+			"min_collider_y_m": -0.0107903581197159,
+			"pelvis_drop_m": 1.52013433724642,
+			"penetration_peak_bone": "pelvis",
+			"penetration_peak_frame": 34,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "thigh_R",
+			"twist_peak_frame": 52
+		},
+		{
+			"animation_resumed": true,
+			"case": "drop_right",
+			"cone_peak_bone": "head",
+			"cone_peak_frame": 35,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000655651093,
+			"final_pelvis": [
+				0.030791824683547,
+				0.191801473498344,
+				-0.0371073596179485
+			],
+			"floor_peak_bone": "foot_L",
+			"floor_peak_frame": 32,
+			"gap_peak_bone": "forearm_L",
+			"gap_peak_frame": 34,
+			"hinges": {
+				"forearm_L": [
+					-0.00000256132063342157,
+					28.0144083116793
+				],
+				"forearm_R": [
+					-3.01746617878783,
+					3.66958137178011
+				],
+				"shin_L": [
+					-3.0389951190891,
+					-0.00000085361731562789
+				],
+				"shin_R": [
+					-1.23431041149516,
+					45.0835268042903
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.00175378465709386,
+			"max_cone_excess_deg": 0.143043458036885,
+			"max_hinge_excess_deg": 0.0389951190891025,
+			"max_joint_gap_m": 0.0118747483938932,
+			"max_scale_error": 0.000000309714806689954,
+			"max_skin_binding_error_m": 0.00000192219567907159,
+			"max_speed_m_s": 5.56584501266479,
+			"max_terrain_penetration_m": 0.0151589065790176,
+			"max_twist_excess_deg": 0.0849160348849018,
+			"min_collider_y_m": -0.0151588888337433,
+			"pelvis_drop_m": 1.40994162857533,
+			"penetration_peak_bone": "foot_L",
+			"penetration_peak_frame": 32,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "thigh_R",
+			"twist_peak_frame": 50
+		},
+		{
+			"animation_resumed": true,
+			"case": "slope",
+			"cone_peak_bone": "spine_01",
+			"cone_peak_frame": 28,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750405490398407,
+			"final_pelvis": [
+				4.05936098098755,
+				1.03698456287384,
+				-0.137800991535187
+			],
+			"floor_peak_bone": "head",
+			"floor_peak_frame": 112,
+			"gap_peak_bone": "foot_R",
+			"gap_peak_frame": 26,
+			"hinges": {
+				"forearm_L": [
+					-3.06315982059976,
+					102.641747609286
+				],
+				"forearm_R": [
+					-3.23443211012416,
+					90.686235294578
+				],
+				"shin_L": [
+					-0.482897989357687,
+					126.997049901822
+				],
+				"shin_R": [
+					-0.441500163487281,
+					127.017908009958
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.0358064773813425,
+			"max_cone_excess_deg": 1.35584237253169,
+			"max_hinge_excess_deg": 2.01791563935291,
+			"max_joint_gap_m": 0.00842949561774731,
+			"max_scale_error": 0.000000337174782316652,
+			"max_skin_binding_error_m": 0.00000193692176253535,
+			"max_speed_m_s": 3.66209983825684,
+			"max_terrain_penetration_m": 0.0273297876119614,
+			"max_twist_excess_deg": 1.68917590666111,
+			"min_collider_y_m": 0.729580596703387,
+			"pelvis_drop_m": 1.23801553249359,
+			"penetration_peak_bone": "head",
+			"penetration_peak_frame": 86,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Slope20deg": true
+			},
+			"twist_peak_bone": "upper_arm_L",
+			"twist_peak_frame": 100
+		},
+		{
+			"animation_resumed": true,
+			"case": "stairs",
+			"cone_peak_bone": "foot_R",
+			"cone_peak_frame": 39,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.749997198581696,
+			"final_pelvis": [
+				-3.91570329666138,
+				0.663690984249115,
+				-0.362099081277847
+			],
+			"floor_peak_bone": "head",
+			"floor_peak_frame": 42,
+			"gap_peak_bone": "shin_L",
+			"gap_peak_frame": 31,
+			"hinges": {
+				"forearm_L": [
+					-3.49272692434436,
+					0.937520464719652
+				],
+				"forearm_R": [
+					-3.49232514775361,
+					0.937649153855293
+				],
+				"shin_L": [
+					-3.35732981954983,
+					44.9620918944954
+				],
+				"shin_R": [
+					-3.33213140686913,
+					45.0325326776624
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.00522109428469975,
+			"max_cone_excess_deg": 0.323058010322029,
+			"max_hinge_excess_deg": 0.492726924344355,
+			"max_joint_gap_m": 0.00147520715836436,
+			"max_scale_error": 0.000000342402614705861,
+			"max_skin_binding_error_m": 0.00000194058657143614,
+			"max_speed_m_s": 4.18427991867065,
+			"max_terrain_penetration_m": 0.0105828642845154,
+			"max_twist_excess_deg": 0.0833568955362232,
+			"min_collider_y_m": 0.419852004711548,
+			"pelvis_drop_m": 0.971116721630096,
+			"penetration_peak_bone": "thigh_L",
+			"penetration_peak_frame": 25,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 720,
+			"terrain_contacts": {
+				"Step1": true,
+				"Step2": true
+			},
+			"twist_peak_bone": "thigh_R",
+			"twist_peak_frame": 524
+		},
+		{
+			"animation_resumed": true,
+			"case": "animation_transition",
+			"cone_peak_bone": "spine_01",
+			"cone_peak_frame": 25,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000417232513,
+			"final_pelvis": [
+				0.00316510628908873,
+				0.100000314414501,
+				-0.556084096431732
+			],
+			"floor_peak_bone": "spine_02",
+			"floor_peak_frame": 71,
+			"gap_peak_bone": "upper_arm_R",
+			"gap_peak_frame": 0,
+			"hinges": {
+				"forearm_L": [
+					-3.15565077406541,
+					70.2360498024001
+				],
+				"forearm_R": [
+					-3.16289185088786,
+					70.2373569390614
+				],
+				"shin_L": [
+					-0.061815359283501,
+					126.650913048265
+				],
+				"shin_R": [
+					-0.0618746824720108,
+					126.69914399226
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.00061161989467351,
+			"max_cone_excess_deg": 2.43558507321845,
+			"max_hinge_excess_deg": 1.69915162165452,
+			"max_joint_gap_m": 0.0116718700155616,
+			"max_scale_error": 0.00000038165595128703,
+			"max_skin_binding_error_m": 0.000000240735630541167,
+			"max_speed_m_s": 4.28813219070435,
+			"max_terrain_penetration_m": 0.00845997035503387,
+			"max_twist_excess_deg": 0.198125724326687,
+			"min_collider_y_m": -0.00845997599724793,
+			"pelvis_drop_m": 0.775093443691731,
+			"penetration_peak_bone": "spine_02",
+			"penetration_peak_frame": 71,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "foot_R",
+			"twist_peak_frame": 35
+		},
+		{
+			"animation_resumed": true,
+			"case": "crouch_transition",
+			"cone_peak_bone": "spine_01",
+			"cone_peak_frame": 19,
+			"control_capsule_enabled": true,
+			"control_distance_m": 0.750000715255737,
+			"final_pelvis": [
+				0.0175403822213411,
+				0.155870452523232,
+				-0.614891946315765
+			],
+			"floor_peak_bone": "head",
+			"floor_peak_frame": 74,
+			"gap_peak_bone": "foot_R",
+			"gap_peak_frame": 16,
+			"hinges": {
+				"forearm_L": [
+					-3.06131148926332,
+					31.8575733051894
+				],
+				"forearm_R": [
+					-3.06111260215767,
+					38.5829026275919
+				],
+				"shin_L": [
+					68.8749607017448,
+					125.536721029898
+				],
+				"shin_R": [
+					68.8751173750372,
+					125.556898783802
+				]
+			},
+			"late_angular_speed_rad_s": 0.0,
+			"late_speed_m_s": 0.0,
+			"late_twist_excess_deg": 0.00109965018789637,
+			"max_cone_excess_deg": 2.24686260045421,
+			"max_hinge_excess_deg": 0.556906413196842,
+			"max_joint_gap_m": 0.00510589871555567,
+			"max_scale_error": 0.000000342402614705861,
+			"max_skin_binding_error_m": 0.0000016166386558325,
+			"max_speed_m_s": 4.2906813621521,
+			"max_terrain_penetration_m": 0.00524987280368805,
+			"max_twist_excess_deg": 1.42446745846066,
+			"min_collider_y_m": -0.0132928607101368,
+			"pelvis_drop_m": 0.594129547476768,
+			"penetration_peak_bone": "foot_R",
+			"penetration_peak_frame": 98,
+			"physics_stopped": true,
+			"recovered": true,
+			"samples": 480,
+			"terrain_contacts": {
+				"Floor": true
+			},
+			"twist_peak_bone": "foot_R",
+			"twist_peak_frame": 98
+		}
+	],
+	"configuration": [
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "pelvis",
+			"excluded": [
+				"TEST_Physical_spine_01",
+				"TEST_Physical_thigh_L",
+				"TEST_Physical_thigh_R",
+				"TEST_Physical_spine_02",
+				"TEST_Physical_shin_L",
+				"TEST_Physical_shin_R",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.2172, 0.3387, 0.3159)",
+			"joint_rotation_rad": "(0.0, 0.0, 0.0)",
+			"joint_type": 0,
+			"limits_degrees": {},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 12.0,
+			"shape": "BoxShape3D",
+			"size": "(0.27, 0.18, 0.2)"
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "spine_01",
+			"excluded": [
+				"TEST_Physical_pelvis",
+				"TEST_Physical_spine_02",
+				"TEST_Physical_head",
+				"TEST_Physical_upper_arm_L",
+				"TEST_Physical_upper_arm_R",
+				"TEST_Physical_thigh_L",
+				"TEST_Physical_thigh_R",
+				"TEST_Physical_upper_arm_L",
+				"TEST_Physical_upper_arm_R",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.104, 0.1898, 0.1642)",
+			"joint_rotation_rad": "(0.0, -3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 19.9999980926514,
+				"joint_constraints/twist_span": 15.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 8.0,
+			"shape": "BoxShape3D",
+			"size": "(0.25, 0.14, 0.18)"
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "spine_02",
+			"excluded": [
+				"TEST_Physical_spine_01",
+				"TEST_Physical_head",
+				"TEST_Physical_upper_arm_L",
+				"TEST_Physical_upper_arm_R",
+				"TEST_Physical_pelvis",
+				"TEST_Physical_forearm_L",
+				"TEST_Physical_forearm_R",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.28, 0.52115, 0.52115)",
+			"joint_rotation_rad": "(0.033321, -3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 24.9999980926514,
+				"joint_constraints/twist_span": 19.9999980926514
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 14.0,
+			"shape": "BoxShape3D",
+			"size": "(0.33, 0.2, 0.2)"
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "head",
+			"excluded": [
+				"TEST_Physical_spine_02",
+				"TEST_Physical_spine_01",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.119925, 0.099225, 0.119925)",
+			"joint_rotation_rad": "(0.0, -3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 34.9999961853027,
+				"joint_constraints/twist_span": 45.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 4.5,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.104999996721745,
+				0.25
+			]
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "upper_arm_L",
+			"excluded": [
+				"TEST_Physical_spine_02",
+				"TEST_Physical_forearm_L",
+				"TEST_Physical_spine_01",
+				"TEST_Physical_spine_01",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.039054, 0.012996, 0.039054)",
+			"joint_rotation_rad": "(0.0, -3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 74.9999923706055,
+				"joint_constraints/twist_span": 45.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 2.0,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0570000000298023,
+				0.255169004201889
+			]
+		},
+		{
+			"angular_damp": 2.40000009536743,
+			"bone": "forearm_L",
+			"excluded": [
+				"TEST_Physical_upper_arm_L",
+				"TEST_Physical_spine_02",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.043023, 0.006075, 0.043023)",
+			"joint_rotation_rad": "(-0.0, 1.713029, -1.231292)",
+			"joint_type": 3,
+			"limits_degrees": {
+				"joint_constraints/angular_limit_bias": 0.300000011920929,
+				"joint_constraints/angular_limit_enabled": true,
+				"joint_constraints/angular_limit_lower": -3.0,
+				"joint_constraints/angular_limit_relaxation": 1.0,
+				"joint_constraints/angular_limit_softness": 0.899999976158142,
+				"joint_constraints/angular_limit_upper": 135.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 1.5,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0450000017881393,
+				0.326540023088455
+			]
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "thigh_L",
+			"excluded": [
+				"TEST_Physical_pelvis",
+				"TEST_Physical_shin_L",
+				"TEST_Physical_foot_L",
+				"TEST_Physical_thigh_R",
+				"TEST_Physical_spine_01",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.230249, 0.073008, 0.230249)",
+			"joint_rotation_rad": "(0.0, 3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 79.9999923706055,
+				"joint_constraints/twist_span": 30.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 6.0,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0780000016093254,
+				0.359392583370209
+			]
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "shin_L",
+			"excluded": [
+				"TEST_Physical_thigh_L",
+				"TEST_Physical_foot_L",
+				"TEST_Physical_pelvis",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.088964, 0.021175, 0.088964)",
+			"joint_rotation_rad": "(0.0, -1.574152, -1.487167)",
+			"joint_type": 3,
+			"limits_degrees": {
+				"joint_constraints/angular_limit_bias": 0.300000011920929,
+				"joint_constraints/angular_limit_enabled": true,
+				"joint_constraints/angular_limit_lower": -3.0,
+				"joint_constraints/angular_limit_relaxation": 1.0,
+				"joint_constraints/angular_limit_softness": 0.899999976158142,
+				"joint_constraints/angular_limit_upper": 124.999992370605
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 3.5,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0549999997019768,
+				0.299287617206573
+			]
+		},
+		{
+			"angular_damp": 2.40000009536743,
+			"bone": "foot_L",
+			"excluded": [
+				"TEST_Physical_shin_L",
+				"TEST_Physical_thigh_L",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.085271, 0.084167, 0.029271)",
+			"joint_rotation_rad": "(-1.036202, 0.0, -1.570803)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 39.9999961853027,
+				"joint_constraints/twist_span": 19.9999980926514
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 2.5,
+			"shape": "BoxShape3D",
+			"size": "(0.13, 0.135, 0.29)"
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "upper_arm_R",
+			"excluded": [
+				"TEST_Physical_spine_02",
+				"TEST_Physical_forearm_R",
+				"TEST_Physical_spine_01",
+				"TEST_Physical_spine_01",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.039054, 0.012996, 0.039054)",
+			"joint_rotation_rad": "(0.0, 3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 74.9999923706055,
+				"joint_constraints/twist_span": 45.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 2.0,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0570000000298023,
+				0.255169004201889
+			]
+		},
+		{
+			"angular_damp": 2.40000009536743,
+			"bone": "forearm_R",
+			"excluded": [
+				"TEST_Physical_upper_arm_R",
+				"TEST_Physical_spine_02",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.043023, 0.006075, 0.043023)",
+			"joint_rotation_rad": "(0.0, 1.428564, -1.231292)",
+			"joint_type": 3,
+			"limits_degrees": {
+				"joint_constraints/angular_limit_bias": 0.300000011920929,
+				"joint_constraints/angular_limit_enabled": true,
+				"joint_constraints/angular_limit_lower": -3.0,
+				"joint_constraints/angular_limit_relaxation": 1.0,
+				"joint_constraints/angular_limit_softness": 0.899999976158142,
+				"joint_constraints/angular_limit_upper": 135.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 1.5,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0450000017881393,
+				0.326540023088455
+			]
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "thigh_R",
+			"excluded": [
+				"TEST_Physical_pelvis",
+				"TEST_Physical_shin_R",
+				"TEST_Physical_foot_R",
+				"TEST_Physical_thigh_L",
+				"TEST_Physical_spine_01",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.230249, 0.073008, 0.230249)",
+			"joint_rotation_rad": "(0.0, -3.141593, 1.570796)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 79.9999923706055,
+				"joint_constraints/twist_span": 30.0
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 6.0,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0780000016093254,
+				0.359392642974854
+			]
+		},
+		{
+			"angular_damp": 1.20000004768372,
+			"bone": "shin_R",
+			"excluded": [
+				"TEST_Physical_thigh_R",
+				"TEST_Physical_foot_R",
+				"TEST_Physical_pelvis",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.088964, 0.021175, 0.088964)",
+			"joint_rotation_rad": "(-0.0, -1.567441, -1.487167)",
+			"joint_type": 3,
+			"limits_degrees": {
+				"joint_constraints/angular_limit_bias": 0.300000011920929,
+				"joint_constraints/angular_limit_enabled": true,
+				"joint_constraints/angular_limit_lower": -3.0,
+				"joint_constraints/angular_limit_relaxation": 1.0,
+				"joint_constraints/angular_limit_softness": 0.899999976158142,
+				"joint_constraints/angular_limit_upper": 124.999992370605
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 3.5,
+			"shape": "CapsuleShape3D",
+			"size": [
+				0.0549999997019768,
+				0.299287557601929
+			]
+		},
+		{
+			"angular_damp": 2.40000009536743,
+			"bone": "foot_R",
+			"excluded": [
+				"TEST_Physical_shin_R",
+				"TEST_Physical_thigh_R",
+				"TEST_AcceptanceActor"
+			],
+			"inertia_kg_m2": "(0.085271, 0.084167, 0.029271)",
+			"joint_rotation_rad": "(-1.036202, 0.0, -1.57079)",
+			"joint_type": 2,
+			"limits_degrees": {
+				"joint_constraints/bias": 0.300000011920929,
+				"joint_constraints/relaxation": 1.0,
+				"joint_constraints/softness": 0.800000011920929,
+				"joint_constraints/swing_span": 39.9999961853027,
+				"joint_constraints/twist_span": 19.9999980926514
+			},
+			"linear_damp": 0.150000005960464,
+			"mass_kg": 2.5,
+			"shape": "BoxShape3D",
+			"size": "(0.13, 0.135, 0.29)"
+		}
+	],
+	"display_server": "headless",
+	"failures": [],
+	"godot": "4.7.2-stable (official)",
+	"mass_kg": 69.5,
+	"physics": "Jolt Physics",
+	"physics_hz": 60,
+	"test_world_settings": {
+		"physics/jolt_physics_3d/simulation/continuous_cd_max_penetration": 0.1,
+		"physics/jolt_physics_3d/simulation/penetration_slop": 0.003,
+		"physics/jolt_physics_3d/simulation/position_steps": 32,
+		"physics/jolt_physics_3d/simulation/velocity_steps": 32
+	}
+}

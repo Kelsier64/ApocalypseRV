@@ -37,8 +37,6 @@ const WHEEL_SLOTS: Array[Dictionary] = [
 ]
 const WHEEL_HITBOX_SCRIPT: String = "res://rv/wheel_hitbox.gd"
 const WHEEL_PROP_SCENE: String = "res://props/wheel.tscn"
-const EMPTY_GAS_CAN_SCENE: String = "res://props/gas_can_empty.tscn"
-const EMPTY_GAS_CAN_ITEM_NAME: String = ItemNames.GAS_CAN_EMPTY
 const WHEEL_RADIUS: float = 0.7
 const WHEEL_WIDTH: float = 0.5
 
@@ -382,20 +380,6 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	feedback("complete", socket.position)
 	power_changed.emit(0.0, 0.0)
 	return true
-
-func _set_fuel(value: float) -> void:
-	var next := clampf(value, 0.0, max_fuel)
-	if absf(next - current_fuel) <= 0.0001:
-		return
-	current_fuel = next
-	fuel_changed.emit(current_fuel, max_fuel)
-
-func _set_power(value: float) -> void:
-	var next := clampf(value, 0.0, max_power)
-	if absf(next - current_power) <= 0.0001:
-		return
-	current_power = next
-	power_changed.emit(current_power, max_power)
 
 func _physics_process(delta: float) -> void:
 	if _last_road_position.is_finite() and delta > 0:

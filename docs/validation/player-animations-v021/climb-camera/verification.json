@@ -1,0 +1,81 @@
+{
+  "scope": "Climb camera/body approach synchronization and neutral eye restoration; 12 player suites, import and main scene.",
+  "physics_hz": 60,
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "renderer": "Forward+ Vulkan RTX 4060 Laptop GPU",
+  "passed_tests": [
+    "import",
+    "test_player_animation_skin",
+    "test_player_animation",
+    "test_player_climb_animation",
+    "test_player_climbing_runtime",
+    "test_player_climbing",
+    "test_player_death",
+    "test_player_import_v020",
+    "test_player_inventory",
+    "test_player_jump_animation",
+    "test_player_model",
+    "test_player_ragdoll_v020",
+    "test_player_stamina",
+    "main-scene"
+  ],
+  "runner_exit_code": 0,
+  "warnings": [],
+  "camera_body_approach_error_before_m": 0.22166682779789,
+  "camera_body_approach_error_after_m": 3.9925399e-07,
+  "limit_m": 0.001,
+  "tests_cover": [
+    "climb hold/up/left/right",
+    "moving and turning RV",
+    "free-look pitch and yaw",
+    "wall clearance",
+    "UI freeze",
+    "roof transfer at fractional heights",
+    "Space/S detach",
+    "death camera continuity",
+    "neutral eye on respawn"
+  ],
+  "desktop": [
+    "look down: torso and arms visible",
+    "level: facing wall without seeing through it",
+    "roof recovery returns to idle"
+  ],
+  "unchanged": [
+    "project.godot",
+    "player/player.gd",
+    "world/test_world.tscn",
+    "art_source/player_animations_v021/player_animations_v021.blend",
+    "assets/models/player_animations_v021/player_animations_v021.glb"
+  ],
+  "source_sha256": {
+    "project.godot": "ce02c5bc8cef318a6650898ab2044f00706245e9769f8ecedac0aaf64b20b0c5",
+    "player/player.gd": "875bfb682d8a0161b2cdcf214bc4bdea893fae2d543fb4bd0ba542001cc16072",
+    "world/test_world.tscn": "01b8e5d9b1015c09cc510ff7941c234247516f92c90d4dce5922093628a52076",
+    "art_source/player_animations_v021/player_animations_v021.blend": "0de03c0c6584c23c59faf39bf3077481e539dda75a871a88ac2a05d37413511c",
+    "assets/models/player_animations_v021/player_animations_v021.glb": "6a466f259085f31cd3504747c84176386a1ec47c6da5560ad8fb2dff3d75ee52",
+    "player/player_locomotion_visual.gd": "830e80b768092bbd21cccee751f1adc6052c89814158ec15b54f3f460da09127",
+    "player/player_ragdoll.gd": "6b78a47ff8984a79f4239b0882280264a32eec48b7b761ddb55f6ffbaac0026f",
+    "tests/test_player_climb_animation.gd": "0e9eb7fdebe12223a1df994cc73d94b9782a8bf8095dd3fdb0869271390c7480",
+    "tests/player_climb_animation_playground.gd": "89198a5ed826cac110453604b804b317bc73161bbb8e7efa75473aef58e20773"
+  },
+  "images_sha256": {
+    "godot_carrier_hold.png": "92d1fb8783260b075f5019e542e9c723db2a8022fab5d682249a0b8620a331dd",
+    "godot_hold_first_person.png": "db603466db2c4107be2fc493a9a9eb18fef6f435c9afdaa0ca780ef01569d1d4",
+    "godot_hold_look_down.png": "cfa4c75e22b814012193f6ab046f0575c63a0fd8d65143e9a46672d622dcd0f9",
+    "godot_hold_look_level.png": "e818d34259623bf023e72e468bb7d08292531b22f9a5014e09c95eb2b0c590f7",
+    "godot_hold_side.png": "51b359abcec06725adc431adf5664ba823ffeabebe29ee124301c6be4a0c14aa",
+    "godot_left.png": "f298215622251002aa7b1156a5728de8e1325bcb7804ace27cf97687ceaf1d55",
+    "godot_right.png": "695090422a5392cbad24e2341e4c63a9840fdb0936545daadf52c1817a63b743",
+    "godot_roof_exit.png": "62adf2b38afe272026b7affb7e40bede4b615aedd6acfa83da34d555bfa11e58",
+    "godot_roof_idle.png": "6de34207cbd1b7c46526a3f3b4007f5b329b7e910a81c3c80acc4182d7c07e49",
+    "godot_up.png": "ee079ed0eb32ecca44a676b2002a7153cd18a48b820a297cd0a6b5ef6ad6a5b4"
+  },
+  "not_rerun": [
+    "non-player suites",
+    "wheel-driven handling",
+    "two-actor roof destruction desktop replay"
+  ],
+  "remaining_limitations": [
+    "Per-hand/per-foot IK and three earlier high-drop ragdoll stress failures remain outside this camera fix."
+  ]
+}

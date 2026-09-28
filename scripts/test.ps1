@@ -46,7 +46,7 @@ foreach ($test in $tests) {
     # Navigation publication also needs consistent physics/process scheduling.
     if ($test.BaseName -like 'test_outdoor_*' -or $test.BaseName -in @('test_rv_handling', 'test_tire_handling', 'test_checkpoint_failures', 'test_interior_traversal', 'test_interior_doorways', 'test_interior_navigation', 'test_raker_cabin', 'test_raker_neck', 'test_raker_grab_vehicle')) { $testArguments += @('--fixed-fps', '60') }
     # Sample every 60 Hz physics step; these tests never override the project tick.
-    if ($test.BaseName -in @('test_player_ragdoll_v020', 'test_player_death')) { $testArguments += @('--fixed-fps', '60') }
+    if ($test.BaseName -in @('test_player_ragdoll_v020', 'test_player_death', 'test_player_animation', 'test_player_jump_animation', 'test_player_climb_animation')) { $testArguments += @('--fixed-fps', '60') }
     Invoke-GodotCheck $test.BaseName $testArguments $true
 }
 Invoke-GodotCheck 'main-scene' @('-s', 'res://tests/main_scene_smoke.gd') $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'

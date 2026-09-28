@@ -74,7 +74,7 @@ func build_bodies() -> void:
 		add_segment(thigh, shin, 0.078, 6.0, 80.0, 30.0)
 		add_segment(shin, foot, 0.055, 3.5, 0.0, 0.0)
 		var x := rest(foot).origin.x
-		add_box(foot, Vector3(x, 0.074, 0.035), Vector3(0.13, 0.135, 0.29), 1.25, 40.0, 20.0)
+		add_box(foot, Vector3(x, 0.074, 0.035), Vector3(0.13, 0.135, 0.29), 2.5, 40.0, 20.0)
 	# The engine connects a bone to its nearest physical ancestor, skipping
 	# clavicles/neck without changing the 41-bone imported skeleton.
 	for key: String in bodies:

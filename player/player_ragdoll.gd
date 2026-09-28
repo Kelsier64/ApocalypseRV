@@ -23,16 +23,28 @@ func _ready() -> void:
 
 func start(inherited_velocity: Vector3) -> void:
 	if active: return
+	player.get_node("Visuals/Locomotion").suspend()
 	if simulator == null:
+		# Build joint reference frames from the immutable bind pose, not the
+		# arbitrary animation frame at the first death. Restore before simulating.
+		var visible_pose: Array[Transform3D] = []
+		for bone in skeleton.get_bone_count(): visible_pose.append(skeleton.get_bone_pose(bone))
+		skeleton.reset_bone_poses()
+		skeleton.force_update_all_bone_transforms()
 		skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
 		simulator = PhysicalBoneSimulator3D.new()
 		simulator.name = "PhysicalBoneSimulator"
 		skeleton.add_child(simulator)
 		build_bodies()
+		for bone in skeleton.get_bone_count(): skeleton.set_bone_pose(bone, visible_pose[bone])
+		skeleton.force_update_all_bone_transforms()
 	active = true
 	player.get_node("Visuals").set_death_view(true)
 	remaining = RESPAWN_DELAY
 	camera_rest = player.camera.transform
+	# Keep the current climbed eye position for the physical handoff below,
+	# but recovery must restore the standing eye, without the approach offset.
+	camera_rest.origin = player.get_node("Visuals/Locomotion").camera_rest_position
 	camera_basis = player.camera.global_basis.orthonormalized()
 	skeleton.force_update_all_bone_transforms()
 	# Explicit placement is also necessary after a respawn or World3D transfer.
@@ -126,7 +138,7 @@ func build_bodies() -> void:
 		add_segment(thigh, shin, 0.078, 6.0, 80.0, 30.0)
 		add_segment(shin, foot, 0.055, 3.5, 0.0, 0.0)
 		var x := rest(foot).origin.x
-		add_box(foot, Vector3(x, 0.074, 0.035), Vector3(0.13, 0.135, 0.29), 1.25, 40.0, 20.0)
+		add_box(foot, Vector3(x, 0.074, 0.035), Vector3(0.13, 0.135, 0.29), 2.5, 40.0, 20.0)
 	# The engine connects a bone to its nearest physical ancestor, skipping
 	# clavicles/neck without changing the 41-bone imported skeleton.
 	for key: String in bodies:

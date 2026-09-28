@@ -2,7 +2,7 @@
 
 Godot 4.7.2 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、搬運物資、分解製作汽油，並應對會攀車與拆車的殭屍。**目前是單人沙盒**，提供室外檢查點保存，尚無多人、任務、正式勝敗或長局進度；合作生存屬後續願景。
 
-玩家已接入完整 1.60 m 角色模型，低頭可見身體並保留完整影子。死亡會切換布娃娃，第一人稱鏡頭隨倒地下移而不翻滾，兩秒後在附近安全站位恢復控制；固定 60 Hz，布娃娃落地與恢復控制、77 組完整回歸已通過；正式走跑動畫仍未製作。見 [模型整合](docs/validation/2026-09-27-player-model-integration.md)與[死亡布娃娃驗收](docs/validation/2026-09-27-player-death-integration.md)。
+玩家已接入完整 1.60 m 角色模型，低頭可見身體並保留完整影子。死亡會切換布娃娃，第一人稱鏡頭隨倒地下移而不翻滾，兩秒後在附近安全站位恢復控制；固定 60 Hz，布娃娃落地與恢復控制、79 組完整回歸已通過；已加入待機、5 m/s 慢跑與 8 m/s 快跑，含四方向動作與布娃娃交接；跳躍使用上升、下降與落地姿勢；攀爬有抓牆停留、交替攀升、左右橫移與登頂收手，沿用既有移動與登頂操作。最新動作見 [v021 驗收](docs/validation/2026-09-27-player-animations-v021.md)。前階段見 [模型整合](docs/validation/2026-09-27-player-model-integration.md)與[死亡布娃娃驗收](docs/validation/2026-09-27-player-death-integration.md)。
 
 ## 文件
 
@@ -12,6 +12,7 @@ Godot 4.7.2 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、�
 - [AGENTS.md](AGENTS.md)：開發約定；[todo](todo) 保留原項目並標記狀態，[todo_prompt](todo_prompt) 保留 POI 規劃方向。
 - [遊玩與測試場指南](docs/guides/playgrounds.md)：RV 維護、各展示場命令與快捷鍵。
 - [開發計畫總覽](docs/plans/README.md)：各計畫狀態、剩餘工作與驗收依據。
+- [程式與資產目錄指南](docs/guides/codebase.md)：目錄責任、資源引用、存檔相容及清理流程。
 
 ## 啟動
 
@@ -70,7 +71,7 @@ Runner 先核對 `.godot-version`，列出頂層 `tests/test_*.gd`（零測試�
 
 ## 程式位置
 
-`player/` 玩家與互動、`enemies/` AI／選敵、`props/` 可撿物、`rv/` 底盤輪胎、`equipment/` 設備、`world/` 串流／POI／建築、`core/` 共用契約、`tests/` 行為測試及展示。完整對照見 [架構](architecture.md)。
+`player/` 玩家與互動、`enemies/` AI／選敵、`props/` 可撿物、`rv/` 底盤輪胎、`equipment/` 設備、`world/` 串流／POI／建築、`core/` 共用契約、`tests/` 行為測試及展示。目錄與資產來源見 [程式與資產目錄指南](docs/guides/codebase.md)；執行期契約見 [架構](architecture.md)。
 
 ## 室外加油站測試
 

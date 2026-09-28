@@ -22,10 +22,6 @@ signal removing
 @export var can_be_destroyed: bool = true
 @export var destroy_on_zero_health: bool = true
 
-## Returns the half-extents of the first BoxShape3D collision child, or mesh AABB fallback.
-func get_half_extents() -> Vector3:
-	return get_placement_bounds().size / 2.0
-
 func get_placement_bounds() -> AABB:
 	var bounds := AABB()
 	var found := false
@@ -58,7 +54,6 @@ var original_local_transform: Transform3D
 var original_parent: Node
 var is_being_placed: bool = false
 var original_materials: Dictionary = {} # GeometryInstance3D -> Material
-var hold_timer: float = 0.0
 var current_health: float = 0.0
 var is_destroyed: bool = false
 var _collision_exception_objects: Array = [] # CollisionObject3D exceptions we added

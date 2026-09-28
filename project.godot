@@ -109,7 +109,6 @@ hotbar_6={
 
 [physics]
 
-common/physics_ticks_per_second=60
 3d/physics_engine="Jolt Physics"
 jolt_physics_3d/simulation/velocity_steps=32
 jolt_physics_3d/simulation/position_steps=32

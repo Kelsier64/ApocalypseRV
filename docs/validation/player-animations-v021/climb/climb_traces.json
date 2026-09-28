@@ -1,0 +1,56 @@
+[
+  {
+    "case": "hold",
+    "clip": "climb_hold",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(2.566667, -0.589667, 0.0)"
+  },
+  {
+    "case": "moving_car_hold",
+    "clip": "climb_hold",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(2.56667, -0.589667, 0.0)"
+  },
+  {
+    "case": "left",
+    "clip": "climb_left",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(2.56627, -0.589667, 0.200001)"
+  },
+  {
+    "case": "right",
+    "clip": "climb_right",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(2.566673, -0.589667, -0.0)"
+  },
+  {
+    "case": "roof_transfer",
+    "clip": "climb_exit",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(1.61667, 2.450963, 0.0)"
+  },
+  {
+    "case": "fractional_roof_-0.2",
+    "clip": "climb_exit",
+    "controller_velocity": "(0.0, -0.1, 0.0)",
+    "position_in_rv": "(1.616664, 2.451514, 0.0)"
+  },
+  {
+    "case": "fractional_roof_0.017",
+    "clip": "climb_exit",
+    "controller_velocity": "(0.0, 0.0, 0.0)",
+    "position_in_rv": "(1.533331, 2.450706, 0.0)"
+  },
+  {
+    "case": "jump_detach",
+    "clip": "jump_fall",
+    "controller_velocity": "(0.0, -0.163333, 0.0)",
+    "position_in_rv": "(2.566667, -0.592389, 0.000001)"
+  },
+  {
+    "case": "move_back_detach",
+    "clip": "jump_fall",
+    "controller_velocity": "(4.942351, -0.163333, -0.757077)",
+    "position_in_rv": "(2.650001, -0.592389, 0.0)"
+  }
+]

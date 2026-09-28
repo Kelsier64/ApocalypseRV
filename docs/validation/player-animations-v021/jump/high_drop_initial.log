@@ -1,0 +1,116 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+Player took 1000.0 damage! HP: 0.0/100.0
+>>> PLAYER DIED! <<<
+Player respawned!
+PLAYER_ANIMATION_METRICS [{"clip":"jog_forward","peak_bone":"head","peak_gap_m":0.00224179401993752,"peak_speed":6.54490423202515,"phase":0.0},{"clip":"jog_forward","peak_bone":"shin_R","peak_gap_m":0.00730027863755822,"peak_speed":6.55021619796753,"phase":0.25},{"clip":"jog_forward","peak_bone":"forearm_L","peak_gap_m":0.00290363095700741,"peak_speed":6.54822444915771,"phase":0.5},{"clip":"jog_forward","peak_bone":"shin_L","peak_gap_m":0.00674325367435813,"peak_speed":6.51749658584595,"phase":0.75},{"clip":"run_forward","peak_bone":"foot_L","peak_gap_m":0.00995281897485256,"peak_speed":8.70580291748047,"phase":0.0},{"clip":"run_forward","peak_bone":"foot_R","peak_gap_m":0.0138965472579002,"peak_speed":8.77480125427246,"phase":0.25},{"clip":"run_forward","peak_bone":"foot_R","peak_gap_m":0.0106501970440149,"peak_speed":8.75685024261475,"phase":0.5},{"clip":"run_forward","peak_bone":"foot_L","peak_gap_m":0.0132018718868494,"peak_speed":8.78654479980469,"phase":0.75},{"clip":"jog_left","peak_bone":"head","peak_gap_m":0.00268758973106742,"peak_speed":6.25431156158447,"phase":0.0},{"clip":"jog_left","peak_bone":"forearm_L","peak_gap_m":0.00891580991446972,"peak_speed":6.07891702651978,"phase":0.25},{"clip":"jog_left","peak_bone":"foot_L","peak_gap_m":0.00431031594052911,"peak_speed":5.92716503143311,"phase":0.5},{"clip":"jog_left","peak_bone":"spine_01","peak_gap_m":0.00281079183332622,"peak_speed":5.78584241867065,"phase":0.75},{"clip":"run_back","peak_bone":"upper_arm_R","peak_gap_m":0.00901278387755156,"peak_speed":8.48835754394531,"phase":0.0},{"clip":"run_back","peak_bone":"foot_R","peak_gap_m":0.00392489973455668,"peak_speed":9.35299396514893,"phase":0.25},{"clip":"run_back","peak_bone":"upper_arm_L","peak_gap_m":0.0106825847178698,"peak_speed":8.49344825744629,"phase":0.5},{"clip":"run_back","peak_bone":"foot_L","peak_gap_m":0.00391358509659767,"peak_speed":9.34635639190674,"phase":0.75},{"clip":"jog_back_air","peak_bone":"foot_L","peak_gap_m":0.0227286890149117,"peak_speed":7.45413017272949,"phase":0.0},{"clip":"jog_back_air","peak_bone":"foot_R","peak_gap_m":0.0119182048365474,"peak_speed":7.50403738021851,"phase":0.25},{"clip":"jog_back_air","peak_bone":"foot_R","peak_gap_m":0.0226772241294384,"peak_speed":7.45755577087402,"phase":0.5},{"clip":"jog_back_air","peak_bone":"foot_L","peak_gap_m":0.0119659546762705,"peak_speed":7.50678157806396,"phase":0.75},{"clip":"jump_rise_air","peak_bone":"shin_R","peak_gap_m":0.00917884148657322,"peak_speed":7.32905387878418,"phase":0.0},{"clip":"jump_rise_air","peak_bone":"shin_R","peak_gap_m":0.0174644608050585,"peak_speed":7.32695913314819,"phase":0.25},{"clip":"jump_rise_air","peak_bone":"shin_R","peak_gap_m":0.0258001126348972,"peak_speed":7.32664585113525,"phase":0.5},{"clip":"jump_rise_air","peak_bone":"foot_L","peak_gap_m":0.0224825851619244,"peak_speed":7.45114850997925,"phase":0.75},{"clip":"jump_fall_air","peak_bone":"shin_R","peak_gap_m":0.0237066093832254,"peak_speed":7.7627100944519,"phase":0.0},{"clip":"jump_fall_air","peak_bone":"foot_L","peak_gap_m":0.0219776052981615,"peak_speed":7.76295518875122,"phase":0.25},{"clip":"jump_fall_air","peak_bone":"foot_L","peak_gap_m":0.0291204489767551,"peak_speed":7.76353979110718,"phase":0.5},{"clip":"jump_fall_air","peak_bone":"foot_L","peak_gap_m":0.0256863385438919,"peak_speed":7.64404201507568,"phase":0.75},{"clip":"jump_land","peak_bone":"shin_R","peak_gap_m":0.00433437945321202,"peak_speed":5.15218210220337,"phase":0.0},{"clip":"jump_land","peak_bone":"foot_L","peak_gap_m":0.00378099409863353,"peak_speed":5.75497007369995,"phase":0.25},{"clip":"jump_land","peak_bone":"foot_R","peak_gap_m":0.00157851679250598,"peak_speed":5.33571863174438,"phase":0.5},{"clip":"jump_land","peak_bone":"shin_L","peak_gap_m":0.0019044924993068,"peak_speed":5.54409503936768,"phase":0.75}]
+ERROR: jump_rise_air 0.50 physical handoff stays connected
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] run (res://tests/test_player_animation.gd:102)
+       [1] steps (res://tests/test_player_animation.gd:13)
+ERROR: jump_fall_air 0.50 physical handoff stays connected
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] run (res://tests/test_player_animation.gd:102)
+       [1] steps (res://tests/test_player_animation.gd:13)
+ERROR: jump_fall_air 0.75 physical handoff stays connected
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] run (res://tests/test_player_animation.gd:102)
+       [1] steps (res://tests/test_player_animation.gd:13)

@@ -59,6 +59,7 @@ func _ready() -> void:
 	material.albedo_color = Color(0.2, 0.55, 1.0)
 	marker.material_override = material
 	player.add_child(marker)
+	marker.visible = "--animation-review" not in OS.get_cmdline_user_args()
 	var monster_scene: PackedScene = load("res://enemies/raker.tscn" if "--raker" in OS.get_cmdline_user_args() else "res://enemies/zombie.tscn")
 	monster = monster_scene.instantiate()
 	monster.position = Vector3(-2.65, 0.05, 0)
@@ -81,6 +82,12 @@ func _ready() -> void:
 func _start_replay() -> void:
 	replay = true
 	elapsed = 0.0
+	# The frozen carrier is elevated above normal suspension height. Match the
+	# behavior suite's wall-side start so the replay probes a wall, not its floor.
+	for actor: CharacterBody3D in [player, monster]:
+		if rv.to_local(actor.global_position).y < 0.0:
+			actor.global_position.y = rv.global_position.y - .2
+			actor.velocity = Vector3.ZERO
 	# Keep the target alive long enough to inspect support and then press F5.
 	player.max_player_health = 10000.0
 	player.current_player_health = 10000.0

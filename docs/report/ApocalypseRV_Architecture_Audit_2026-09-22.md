@@ -83,11 +83,11 @@ v5 在窗口兩端都卸載地形，`_despawn_entities_behind()` 卻仍只比較
 
 ### A05：正常離場缺少導航重烘的釋放保護
 
-來源：[捷徑重烘](../../world/instances/maintenance_interior.gd) 173–176、217–219；[離場／取消](../../world/instances/poi_instance_manager.gd) 132、196–204。
+來源：當時的 `world/instances/maintenance_interior.gd` 173–176、217–219（現已移除）；[離場／取消](../../world/instances/poi_instance_manager.gd) 132、196–204。
 
 開啟捷徑可啟動非同步導航重烘。取消轉場已有 `_retire_viewport()` 等待 native bake 完成，正常 `leave()` 卻直接 `queue_free()` viewport。兩條清理路徑的生命週期保護不一致，慢機或重烘中離場可能觸發失效 continuation／資源生命週期錯誤。
 
-目前僅確認缺少保護，**未重現崩潰**。[室內回放](../../tests/interior_v2_replay.gd) 104 主動等待 `rebaking` 完成，迴避了此競態。建議共用取消與安全釋放流程，針對重烘進行中離場／重進測試。
+目前僅確認缺少保護，**未重現崩潰**。當時的 `tests/interior_v2_replay.gd` 104（現已移除）主動等待 `rebaking` 完成，迴避了此競態。建議共用取消與安全釋放流程，針對重烘進行中離場／重進測試。
 
 ### A06：車內導航的群怪成本沒有預算
 
@@ -107,7 +107,7 @@ smoke 直接載入 `res://world/test_world.tscn`，未從 `application/run/main_
 
 ### A08：室內產生工具防覆寫不完整
 
-來源：[build_interior_v2.py](../../scripts/build_interior_v2.py) 98–110。
+來源：當時的 `scripts/build_interior_v2.py` 98–110（現已移除）。
 
 工具逐項檢查房間 `.tscn`，但相應 room `.tres` 及 `maintenance_v2.tres` 直接寫入。部分輸出被移走後重建，可能先覆寫已手動維護的 catalog，再遇到後面的既有場景而中止。建議一次預檢全部輸出，再執行寫入；需要更新資產時另設明確模式。本輪未執行此生成器，也未改動資產。
 
@@ -183,11 +183,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -Godot 'C:/
 
 | 項目 | 判斷與證據 | 建議 |
 |---|---|---|
-| [test_player_climbing_runtime.gd](../../tests/test_player_climbing_runtime.gd) | 8–30 行只有腳本載入、new、`_abort_climb` 存在與兩個舊 mantle 方法不存在的檢查；沒有 runtime 場景或物理。已被 [test_player_climbing.gd](../../tests/test_player_climbing.gd) 19–25、107–125 涵蓋。 | 可移除這個 suite 與 `.uid`，或改為尚缺的 UI／支撐 runtime 案例。清理後同步架構測試表。 |
+| `test_player_climbing_runtime.gd`（已淘汰） | 8–30 行只有腳本載入、new、`_abort_climb` 存在與兩個舊 mantle 方法不存在的檢查；沒有 runtime 場景或物理。已被 [test_player_climbing.gd](../../tests/test_player_climbing.gd) 19–25、107–125 涵蓋。 | 可移除這個 suite 與 `.uid`，或改為尚缺的 UI／支撐 runtime 案例。清理後同步架構測試表。 |
 | Raker 登車繼承整套玩家案例 | [test_raker_boarding.gd](../../tests/test_raker_boarding.gd) 1–5 只替換 monster_scene 後呼叫父類；[test_moving_rv_climbing.gd](../../tests/test_moving_rv_climbing.gd) 31–72 的玩家登頂／隨車、127–145 的玩家分支、147–167 的座位／頭頂碰撞因此跑兩次。第一段甚至尚未建立怪物。 | 拆分玩家案例與按怪物種類執行的案例，玩家部分只跑一次；保留兩種怪物登車／拆頂／掉落。需明確初始化與重置 RV，不能直接跳過造成隱藏相依。 |
-| [test_poi_resources.gd](../../tests/test_poi_resources.gd) 與 [test_poi_definitions.gd](../../tests/test_poi_definitions.gd) | 兩者均驗目前六個 POI 的載入／實例化／場景契約；definitions 經 POISpawner 執行 validate／載入／validate_scene。resources 獨有完整 catalog 遍歷與重複 ID 檢查，不能直接丟棄。 | 先將 definitions 的寫死 ID 陣列改成遍歷 DEFINITIONS，保留 ID 唯一性，再移除 resources suite；可省一個程序及一輪六場景實例化。同步 POI 製作指南入口。 |
+| `test_poi_resources.gd`（已淘汰）與 [test_poi_definitions.gd](../../tests/test_poi_definitions.gd) | 兩者均驗目前六個 POI 的載入／實例化／場景契約；definitions 經 POISpawner 執行 validate／載入／validate_scene。resources 獨有完整 catalog 遍歷與重複 ID 檢查，不能直接丟棄。 | 先將 definitions 的寫死 ID 陣列改成遍歷 DEFINITIONS，保留 ID 唯一性，再移除 resources suite；可省一個程序及一輪六場景實例化。同步 POI 製作指南入口。 |
 | 每次 filter 都做 import＋smoke | runner 37、45 行不受 TestFilter 影響。連續分批呼叫會重複這兩步，即使只測背包。 | 優先支援多組 filter 合併去重，單次匯入／smoke；本機快速模式可選擇略過已確認不需重做的階段，但完整 CI 保留。 |
 | `.godot` 的 runner 副本 | `run-model-remaining.ps1`、`poi-v2-integration/scripts/test.ps1`、`architecture-audit-20260922/isolated-test.ps1` 都不在正式 discovery 中，也未受 Git 追蹤。舊續跑副本已漏新 Raker fixed-fps 名單。 | 加正式 LogDirectory／多 filter 或續跑選項後停止複製。它們可作暫存清理候選，但刪除不會加速正式 runner；仍需保留本輪證據時先不刪。 |
+
+2026-09-28 更新：上述兩個已淘汰套件及其 `.uid` 已移除；完整 POI 目錄、ID 唯一性、資源與場景契約檢查已併入 `test_poi_definitions.gd`。本表其餘判斷與下方數量仍記錄 2026-09-22 當時狀態。
 
 不能按名稱相似刪除：Zombie／Raker cabin 分別驗障礙繞路／移動車內追擊，以及低姿態入艙／離艙站立；世界生成、分幀一致性、場址規格及實際玩家搬運各有獨有斷言。RV 煞車、操控、掛載物理與完整資源循環也不是同一案例。`main_scene_smoke` 保留正式 profile 的就緒與移動檢查；版本核對、零測試拒絕、timeout、退出碼、錯誤掃描、PASS 和 manifest 各自防止不同的假通過。
 

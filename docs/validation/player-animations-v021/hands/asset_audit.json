@@ -1,0 +1,35 @@
+{
+  "sources": {
+    "source_blend": {
+      "path": "C:/Users/evan4/Projects/3d/player_textured_v019.blend",
+      "sha256": "dc5062e81b10e6a6e849d8915e5d7b6eb85607e48f602e59aa7bb45f6c06c421",
+      "unchanged": true
+    },
+    "export_blend": {
+      "path": "C:/Users/evan4/Projects/3d/player_godot_export_v020.blend",
+      "sha256": "a4613ad6ef8ab1192762a2fdcfadc8a46297c6418b645c551d7754d2a2bbca43",
+      "unchanged": true
+    },
+    "source_glb": {
+      "path": "C:/Users/evan4/Projects/3d/exports/godot/player_export_test_v020.glb",
+      "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568",
+      "unchanged": true
+    },
+    "production_mesh": {
+      "path": "assets/models/player_test_v020/player_export_test_v020.glb",
+      "sha256": "fe5c56ca9e6f5203ca51f914843d5db34ff1eba5adfdcc4c702e79164baa3568",
+      "unchanged": true
+    }
+  },
+  "glb_scenes": 1,
+  "mesh_count": 11,
+  "deform_bones": 41,
+  "rest_transforms_equal": true,
+  "physics_tick": 60,
+  "velocity_steps": 32,
+  "position_steps": 32,
+  "source_bake_fps": 60,
+  "animation_import_fps": 60,
+  "optimizer": false,
+  "animation_asset_sha256": "d2f0ac76c8957f9bc53b369c237fc9442de810cc63654e63dad47f93262669b2"
+}

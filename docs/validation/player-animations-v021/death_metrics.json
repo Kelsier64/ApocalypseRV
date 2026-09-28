@@ -1,0 +1,38 @@
+[
+  {
+    "camera_drop_m": 1.36193311214447,
+    "case": "standing_from_ui",
+    "max_joint_gap_m": 0.00676338234916329,
+    "max_speed_m_s": 4.35411214828491,
+    "peak_frame": 18,
+    "peak_joint": "foot_R",
+    "recovery_move_m": 2.49999928474426
+  },
+  {
+    "camera_drop_m": 3.35890531539917,
+    "case": "airborne",
+    "max_joint_gap_m": 0.0165487006306648,
+    "max_speed_m_s": 6.29758787155151,
+    "peak_frame": 39,
+    "peak_joint": "foot_R",
+    "recovery_move_m": 2.50000047683716
+  },
+  {
+    "camera_drop_m": 3.35173153877258,
+    "case": "airborne_carrier",
+    "max_joint_gap_m": 0.0156253296881914,
+    "max_speed_m_s": 6.74959516525269,
+    "peak_frame": 38,
+    "peak_joint": "shin_R",
+    "recovery_move_m": 2.50000023841858
+  },
+  {
+    "camera_drop_m": 1.36471442878246,
+    "case": "independent_world",
+    "max_joint_gap_m": 0.0130330305546522,
+    "max_speed_m_s": 3.40588855743408,
+    "peak_frame": 17,
+    "peak_joint": "foot_L",
+    "recovery_move_m": 2.49999976158142
+  }
+]

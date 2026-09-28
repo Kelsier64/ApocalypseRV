@@ -1,0 +1,117 @@
+{
+  "changed_channels": [
+    {
+      "clip": "idle",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363361224532
+    },
+    {
+      "clip": "idle",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363351911306
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363296031952
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363328628242
+    },
+    {
+      "clip": "jog_back",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363296031952
+    },
+    {
+      "clip": "jog_back",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363328628242
+    },
+    {
+      "clip": "jog_left",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363296031952
+    },
+    {
+      "clip": "jog_left",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363328628242
+    },
+    {
+      "clip": "jog_right",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363296031952
+    },
+    {
+      "clip": "jog_right",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363328628242
+    },
+    {
+      "clip": "run_forward",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363440386951
+    },
+    {
+      "clip": "run_forward",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363445043564
+    },
+    {
+      "clip": "run_back",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363440386951
+    },
+    {
+      "clip": "run_back",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363445043564
+    },
+    {
+      "clip": "run_left",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363440386951
+    },
+    {
+      "clip": "run_left",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363445043564
+    },
+    {
+      "clip": "run_right",
+      "bone": "hand_L",
+      "path": "rotation",
+      "max_component_difference": 0.7069363440386951
+    },
+    {
+      "clip": "run_right",
+      "bone": "hand_R",
+      "path": "rotation",
+      "max_component_difference": 0.7069363445043564
+    }
+  ],
+  "unchanged_other_channels_tolerance": 1e-05,
+  "max_other_channel_difference": 4.76837158203125e-07,
+  "changed_only_hand_rotation": true,
+  "before_glb_sha256": "71724826030ff9627173cb5487de0f64c772038f9d179be23fa8377c3dca83eb",
+  "after_glb_sha256": "a8570adb72efe9f9fedb43d04271343f42ee5c19472eb5681308ac50a91f49ba"
+}

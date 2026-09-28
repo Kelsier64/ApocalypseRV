@@ -66,7 +66,7 @@ func run() -> void:
 		local_triangles += local_arrays[Mesh.ARRAY_INDEX].size() / 3
 	check(local_triangles == 11078, "Only 224 head triangles omitted from local view")
 	var animation: AnimationPlayer = visual.model.get_node("AnimationPlayer")
-	check(animation.get_animation_list().is_empty() and not animation.active, "TEST clip cannot autoplay in production")
+	check(not animation.has_animation("TEST_v020_POSE_SAMPLES") and animation.has_animation("locomotion/idle"), "Production uses authored locomotion instead of TEST clip")
 	var untouched: Node3D = MODEL.instantiate()
 	check(untouched.get_node("AnimationPlayer").has_animation("TEST_v020_POSE_SAMPLES"), "Imported animation library remains intact for QA")
 	untouched.free()

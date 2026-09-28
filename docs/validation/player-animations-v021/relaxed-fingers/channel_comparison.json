@@ -1,0 +1,1089 @@
+{
+  "changed_channels": [
+    {
+      "clip": "idle",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317420737817883
+    },
+    {
+      "clip": "idle",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.26706957444548607
+    },
+    {
+      "clip": "idle",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727458521724
+    },
+    {
+      "clip": "idle",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025646741501987
+    },
+    {
+      "clip": "idle",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012496680021286
+    },
+    {
+      "clip": "idle",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.33479295298457146
+    },
+    {
+      "clip": "idle",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862076298333704
+    },
+    {
+      "clip": "idle",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.31940160039812326
+    },
+    {
+      "clip": "idle",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "idle",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619656041264534
+    },
+    {
+      "clip": "idle",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317425580695271
+    },
+    {
+      "clip": "idle",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.26706954510882497
+    },
+    {
+      "clip": "idle",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.25157279008999467
+    },
+    {
+      "clip": "idle",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.2902564525138587
+    },
+    {
+      "clip": "idle",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497052550316
+    },
+    {
+      "clip": "idle",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.3347930610179901
+    },
+    {
+      "clip": "idle",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786208151374012
+    },
+    {
+      "clip": "idle",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940160878002644
+    },
+    {
+      "clip": "idle",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "idle",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619651198387146
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317422507330775
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.26706954510882497
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025651374831796
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497313320637
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.33479299396276474
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862078533507884
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3194016385823488
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.05164865404367447
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619655668735504
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317425534129143
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.26706958189606667
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.25157279008999467
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025643039494753
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479298278689384
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786208151374012
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940163811668754
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "jog_forward",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619654178619385
+    },
+    {
+      "clip": "jog_back",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317422507330775
+    },
+    {
+      "clip": "jog_back",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.26706954510882497
+    },
+    {
+      "clip": "jog_back",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "jog_back",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025651374831796
+    },
+    {
+      "clip": "jog_back",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497313320637
+    },
+    {
+      "clip": "jog_back",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.33479299396276474
+    },
+    {
+      "clip": "jog_back",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862078533507884
+    },
+    {
+      "clip": "jog_back",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3194016385823488
+    },
+    {
+      "clip": "jog_back",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.05164865404367447
+    },
+    {
+      "clip": "jog_back",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619655668735504
+    },
+    {
+      "clip": "jog_back",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317425534129143
+    },
+    {
+      "clip": "jog_back",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.26706958189606667
+    },
+    {
+      "clip": "jog_back",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.25157279008999467
+    },
+    {
+      "clip": "jog_back",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025643039494753
+    },
+    {
+      "clip": "jog_back",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "jog_back",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479298278689384
+    },
+    {
+      "clip": "jog_back",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786208151374012
+    },
+    {
+      "clip": "jog_back",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940163811668754
+    },
+    {
+      "clip": "jog_back",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "jog_back",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619654178619385
+    },
+    {
+      "clip": "jog_left",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317422507330775
+    },
+    {
+      "clip": "jog_left",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.26706954510882497
+    },
+    {
+      "clip": "jog_left",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "jog_left",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025651374831796
+    },
+    {
+      "clip": "jog_left",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497313320637
+    },
+    {
+      "clip": "jog_left",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.33479299396276474
+    },
+    {
+      "clip": "jog_left",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862078533507884
+    },
+    {
+      "clip": "jog_left",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3194016385823488
+    },
+    {
+      "clip": "jog_left",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.05164865404367447
+    },
+    {
+      "clip": "jog_left",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619655668735504
+    },
+    {
+      "clip": "jog_left",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317425534129143
+    },
+    {
+      "clip": "jog_left",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.26706958189606667
+    },
+    {
+      "clip": "jog_left",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.25157279008999467
+    },
+    {
+      "clip": "jog_left",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025643039494753
+    },
+    {
+      "clip": "jog_left",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "jog_left",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479298278689384
+    },
+    {
+      "clip": "jog_left",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786208151374012
+    },
+    {
+      "clip": "jog_left",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940163811668754
+    },
+    {
+      "clip": "jog_left",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "jog_left",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619654178619385
+    },
+    {
+      "clip": "jog_right",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317422507330775
+    },
+    {
+      "clip": "jog_right",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.26706954510882497
+    },
+    {
+      "clip": "jog_right",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "jog_right",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025651374831796
+    },
+    {
+      "clip": "jog_right",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497313320637
+    },
+    {
+      "clip": "jog_right",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.33479299396276474
+    },
+    {
+      "clip": "jog_right",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862078533507884
+    },
+    {
+      "clip": "jog_right",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3194016385823488
+    },
+    {
+      "clip": "jog_right",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.05164865404367447
+    },
+    {
+      "clip": "jog_right",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619655668735504
+    },
+    {
+      "clip": "jog_right",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317425534129143
+    },
+    {
+      "clip": "jog_right",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.26706958189606667
+    },
+    {
+      "clip": "jog_right",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.25157279008999467
+    },
+    {
+      "clip": "jog_right",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025643039494753
+    },
+    {
+      "clip": "jog_right",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "jog_right",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479298278689384
+    },
+    {
+      "clip": "jog_right",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786208151374012
+    },
+    {
+      "clip": "jog_right",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940163811668754
+    },
+    {
+      "clip": "jog_right",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "jog_right",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619654178619385
+    },
+    {
+      "clip": "run_forward",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317428141832352
+    },
+    {
+      "clip": "run_forward",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.2670695884153247
+    },
+    {
+      "clip": "run_forward",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727602876723
+    },
+    {
+      "clip": "run_forward",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025646788068116
+    },
+    {
+      "clip": "run_forward",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "run_forward",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3347930498421192
+    },
+    {
+      "clip": "run_forward",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862075599841774
+    },
+    {
+      "clip": "run_forward",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.31940160132944584
+    },
+    {
+      "clip": "run_forward",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "run_forward",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619654551148415
+    },
+    {
+      "clip": "run_forward",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317420737817883
+    },
+    {
+      "clip": "run_forward",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.2670695302076638
+    },
+    {
+      "clip": "run_forward",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "run_forward",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025645391084254
+    },
+    {
+      "clip": "run_forward",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497257441282
+    },
+    {
+      "clip": "run_forward",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479301258921623
+    },
+    {
+      "clip": "run_forward",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786207783501595
+    },
+    {
+      "clip": "run_forward",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940160878002644
+    },
+    {
+      "clip": "run_forward",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.05164864659309387
+    },
+    {
+      "clip": "run_forward",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619652688503265
+    },
+    {
+      "clip": "run_back",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317428141832352
+    },
+    {
+      "clip": "run_back",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.2670695884153247
+    },
+    {
+      "clip": "run_back",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727602876723
+    },
+    {
+      "clip": "run_back",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025646788068116
+    },
+    {
+      "clip": "run_back",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "run_back",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3347930498421192
+    },
+    {
+      "clip": "run_back",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862075599841774
+    },
+    {
+      "clip": "run_back",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.31940160132944584
+    },
+    {
+      "clip": "run_back",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "run_back",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619654551148415
+    },
+    {
+      "clip": "run_back",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317420737817883
+    },
+    {
+      "clip": "run_back",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.2670695302076638
+    },
+    {
+      "clip": "run_back",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "run_back",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025645391084254
+    },
+    {
+      "clip": "run_back",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497257441282
+    },
+    {
+      "clip": "run_back",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479301258921623
+    },
+    {
+      "clip": "run_back",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786207783501595
+    },
+    {
+      "clip": "run_back",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940160878002644
+    },
+    {
+      "clip": "run_back",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.05164864659309387
+    },
+    {
+      "clip": "run_back",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619652688503265
+    },
+    {
+      "clip": "run_left",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317428141832352
+    },
+    {
+      "clip": "run_left",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.2670695884153247
+    },
+    {
+      "clip": "run_left",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727602876723
+    },
+    {
+      "clip": "run_left",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025646788068116
+    },
+    {
+      "clip": "run_left",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "run_left",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3347930498421192
+    },
+    {
+      "clip": "run_left",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862075599841774
+    },
+    {
+      "clip": "run_left",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.31940160132944584
+    },
+    {
+      "clip": "run_left",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "run_left",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619654551148415
+    },
+    {
+      "clip": "run_left",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317420737817883
+    },
+    {
+      "clip": "run_left",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.2670695302076638
+    },
+    {
+      "clip": "run_left",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "run_left",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025645391084254
+    },
+    {
+      "clip": "run_left",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497257441282
+    },
+    {
+      "clip": "run_left",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479301258921623
+    },
+    {
+      "clip": "run_left",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786207783501595
+    },
+    {
+      "clip": "run_left",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940160878002644
+    },
+    {
+      "clip": "run_left",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.05164864659309387
+    },
+    {
+      "clip": "run_left",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619652688503265
+    },
+    {
+      "clip": "run_right",
+      "bone": "index_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.22317428141832352
+    },
+    {
+      "clip": "run_right",
+      "bone": "index_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.2670695884153247
+    },
+    {
+      "clip": "run_right",
+      "bone": "middle_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.2515727602876723
+    },
+    {
+      "clip": "run_right",
+      "bone": "middle_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.29025646788068116
+    },
+    {
+      "clip": "run_right",
+      "bone": "pinky_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.3012497201561928
+    },
+    {
+      "clip": "run_right",
+      "bone": "pinky_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.3347930498421192
+    },
+    {
+      "clip": "run_right",
+      "bone": "ring_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.27862075599841774
+    },
+    {
+      "clip": "run_right",
+      "bone": "ring_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.31940160132944584
+    },
+    {
+      "clip": "run_right",
+      "bone": "thumb_01_L",
+      "path": "rotation",
+      "max_component_difference": 0.051648661494255066
+    },
+    {
+      "clip": "run_right",
+      "bone": "thumb_02_L",
+      "path": "rotation",
+      "max_component_difference": 0.08619654551148415
+    },
+    {
+      "clip": "run_right",
+      "bone": "index_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.22317420737817883
+    },
+    {
+      "clip": "run_right",
+      "bone": "index_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.2670695302076638
+    },
+    {
+      "clip": "run_right",
+      "bone": "middle_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2515727155841887
+    },
+    {
+      "clip": "run_right",
+      "bone": "middle_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.29025645391084254
+    },
+    {
+      "clip": "run_right",
+      "bone": "pinky_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.3012497257441282
+    },
+    {
+      "clip": "run_right",
+      "bone": "pinky_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.33479301258921623
+    },
+    {
+      "clip": "run_right",
+      "bone": "ring_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.2786207783501595
+    },
+    {
+      "clip": "run_right",
+      "bone": "ring_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.31940160878002644
+    },
+    {
+      "clip": "run_right",
+      "bone": "thumb_01_R",
+      "path": "rotation",
+      "max_component_difference": 0.05164864659309387
+    },
+    {
+      "clip": "run_right",
+      "bone": "thumb_02_R",
+      "path": "rotation",
+      "max_component_difference": 0.08619652688503265
+    }
+  ],
+  "unchanged_other_channels_tolerance": 1e-05,
+  "max_other_channel_difference": 3.5762786865234375e-07,
+  "changed_only_finger_rotation": true,
+  "before_glb_sha256": "a8570adb72efe9f9fedb43d04271343f42ee5c19472eb5681308ac50a91f49ba",
+  "after_glb_sha256": "1cda40c88b6de1e5b95398ca213299546e23c3f8711e9e79976efcc3b2328dbd"
+}

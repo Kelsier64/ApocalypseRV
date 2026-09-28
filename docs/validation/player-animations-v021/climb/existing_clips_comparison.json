@@ -1,0 +1,13 @@
+{
+  "twelve_previous_clips_preserved": true,
+  "max_component_difference": 0,
+  "new_clips": [
+    "climb_hold",
+    "climb_up",
+    "climb_left",
+    "climb_right",
+    "climb_exit"
+  ],
+  "before_sha256": "2f0c415116e43d242a7149038c6d634d4918822cddb244f266e870d5f1a22fb0",
+  "after_sha256": "6a466f259085f31cd3504747c84176386a1ec47c6da5560ad8fb2dff3d75ee52"
+}
