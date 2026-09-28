@@ -1,6 +1,6 @@
 # ApocalypseRV 遊戲設計文件
 
-文件核對：2026-09-22。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪 headless 檢查與尚未修正問題另見 [架構審查](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：2026-09-28。新世界使用生成 v6，玩家死亡布娃娃與隨機地堡內容依各自驗收紀錄記載；已實作不等於全部情境已驗收。2026-09-22 headless 檢查與尚未修正問題見 [架構審查](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 

@@ -12,6 +12,7 @@ Godot 4.7.2 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、�
 - [AGENTS.md](AGENTS.md)：開發約定；[todo](todo) 保留原項目並標記狀態，[todo_prompt](todo_prompt) 保留 POI 規劃方向。
 - [遊玩與測試場指南](docs/guides/playgrounds.md)：RV 維護、各展示場命令與快捷鍵。
 - [開發計畫總覽](docs/plans/README.md)：各計畫狀態、剩餘工作與驗收依據。
+- [程式與資產目錄指南](docs/guides/codebase.md)：目錄責任、資源引用、存檔相容及清理流程。
 
 ## 啟動
 
@@ -70,7 +71,7 @@ Runner 先核對 `.godot-version`，列出頂層 `tests/test_*.gd`（零測試�
 
 ## 程式位置
 
-`player/` 玩家與互動、`enemies/` AI／選敵、`props/` 可撿物、`rv/` 底盤輪胎、`equipment/` 設備、`world/` 串流／POI／建築、`core/` 共用契約、`tests/` 行為測試及展示。完整對照見 [架構](architecture.md)。
+`player/` 玩家與互動、`enemies/` AI／選敵、`props/` 可撿物、`rv/` 底盤輪胎、`equipment/` 設備、`world/` 串流／POI／建築、`core/` 共用契約、`tests/` 行為測試及展示。目錄與資產來源見 [程式與資產目錄指南](docs/guides/codebase.md)；執行期契約見 [架構](architecture.md)。
 
 ## 室外加油站測試
 
