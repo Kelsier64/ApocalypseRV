@@ -92,9 +92,9 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 5. 登錄素材目錄後，再獨立完成場址生成、串流、保存與回訪，才加入正式生成池。
 6. 更新規格、現況與驗收紀錄。自動檢查、可見觀察、效能和未驗收項目分開記錄。
 
-現有檢查入口：`test_poi_resources.gd` 驗證所有登錄定義及場景；`test_poi_definitions.gd` 驗證類型分流、轉場接線、ID 與 v2／v3／v4 資料相容；加油站行為由 `test_gas_station.gd` 驗證。程式變更依專案規則執行完整 `scripts/test.ps1`。
+現有檢查入口：`test_poi_definitions.gd` 驗證所有登錄定義與場景、ID 唯一性、類型分流、轉場接線及 v2／v3／v4 資料相容；加油站行為由 `test_gas_station.gd` 驗證。程式變更依專案規則執行完整 `scripts/test.ps1`。
 
-新增資產後，可先從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_resources.gd`。此入口會先匯入資源，再檢查所有登錄定義；新增定義也須加入 POIConfig.DEFINITIONS。
+新增資產後，可先從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_definitions.gd`。此入口會先匯入資源，再檢查所有登錄定義；新增定義也須加入 POIConfig.DEFINITIONS。
 
 ## 7. 現有資產狀態
 

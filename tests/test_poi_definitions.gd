@@ -12,6 +12,28 @@ func _run() -> void:
 	manager.name = "PoiInstances"
 	world.add_child(manager)
 	var spawner := POISpawner.new()
+	# Check the full catalog; the cases below exercise representative spawn routes.
+	var ids: Array[StringName] = []
+	for entry: PoiDefinition in POIConfig.DEFINITIONS:
+		check(not entry.definition_id in ids, "Duplicate POI definition ID: " + str(entry.definition_id))
+		ids.append(entry.definition_id)
+		for error in entry.validate():
+			failures.append(str(entry.definition_id) + ": " + error)
+		if entry.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE:
+			check(POIConfig.supported_interior(entry.interior_profile), "Unsupported interior profile: " + str(entry.definition_id))
+		if not ResourceLoader.exists(entry.scene_path, "PackedScene"):
+			failures.append("Missing configured POI scene: " + entry.scene_path)
+			continue
+		var scene := load(entry.scene_path) as PackedScene
+		if scene == null:
+			failures.append("Invalid configured POI scene: " + entry.scene_path)
+			continue
+		var instance := scene.instantiate()
+		check(instance is Node3D, "POI scene root must be Node3D: " + entry.scene_path)
+		if instance is Node3D:
+			for error in entry.validate_scene(instance as Node3D):
+				failures.append(str(entry.definition_id) + ": " + error)
+		instance.free()
 	for id in ["maintenance_legacy", "maintenance", "warehouse", "pump", "research", "gas_station"]:
 		var definition := POIConfig.definition(id)
 		var site := {"definition_id": id, "id": "test:" + id, "seed": 42, "building": Transform3D(Basis.IDENTITY, Vector3(60 * world.get_child_count(), 0, 0))}

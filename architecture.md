@@ -376,7 +376,6 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | [test_combat_targeting](tests/test_combat_targeting.gd) | 獨立選敵策略 |
 | [test_monster_navigation](tests/test_monster_navigation.gd) | 導航、高度、碰撞、攀爬和攻擊 gates，尤其腳下射線授權 |
 | [test_player_climbing](tests/test_player_climbing.gd) | 攀爬幾何與 helper 契約 |
-| [test_player_climbing_runtime](tests/test_player_climbing_runtime.gd) | 玩家腳本載入與方法存在性；目前與 test_player_climbing 重複，沒有場景樹／物理執行 |
 | [test_moving_rv_climbing](tests/test_moving_rv_climbing.gd) | 生產場景、移動 RV 攀爬／支撐／拆頂，含物理驅動情境 |
 | [test_world_entities](tests/test_world_entities.gd) | chunk 刪除後容器存活、場景重建 |
 | [test_rv_systems](tests/test_rv_systems.gd) | 電池交易、能源、正式設備工作／清理、失效授權 |
@@ -388,7 +387,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
 | [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |
 | [test_rv_physics_regression](tests/test_rv_physics_regression.gd) | 正式 RV 裝載設備穩定性 |
-| [test_poi_resources](tests/test_poi_resources.gd) | 完整 POI 定義目錄、ID 唯一性、資源載入及場景契約；可在保留獨有斷言後併入 test_poi_definitions |
+| [test_poi_definitions](tests/test_poi_definitions.gd) | 完整 POI 目錄、ID 唯一性、資源與場景契約、類型分流及舊版場址相容 |
 
 本次改版見 [共用儲存驗收](docs/validation/2026-09-16-rv-shared-storage.md)。先前執行結果見 [RV 驗收紀錄](docs/validation/2026-09-15-rv-systems.md)。文件更動檢查連結與來源；程式更動執行適用測試及統一 runner。物理更動另須依 [AGENTS.md](AGENTS.md) 做互動視覺檢查。資源交易、能源與保存已有正式場景回歸；長途經濟、極端翻車和怪物群仍需擴大驗收。
 
