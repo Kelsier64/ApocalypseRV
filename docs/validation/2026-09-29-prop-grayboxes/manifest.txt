@@ -1,0 +1,117 @@
+Commit: e877cc799d5079d9208252ac671d3c5efd6efe42
+Working tree: M AGENTS.md
+ D assets/gas_can.glb
+ D assets/gas_can.glb.import
+ D assets/gas_can_0.webp
+ D assets/gas_can_0.webp.import
+ D assets/gas_can_1.webp
+ D assets/gas_can_1.webp.import
+ M assets/materials/style_sample/README.md
+ M assets/models/raker/README.md
+ D assets/oil_barrel.glb
+ D assets/oil_barrel.glb.import
+ D assets/oil_barrel_0.webp
+ D assets/oil_barrel_0.webp.import
+ D assets/oil_barrel_1.webp
+ D assets/oil_barrel_1.webp.import
+ M docs/README.md
+ M docs/guides/codebase.md
+ M docs/guides/poi-authoring.md
+ M props/gas_can.tscn
+ M props/gas_can_empty.tscn
+ M props/oil_barrel.tscn
+ M scripts/build_raker_animations.py
+ M world/poi_kit/buildings/README.md
+?? .agents/
+?? art_source/retired_props/
+?? assets/models/README.md
+?? docs/guides/asset-builds.md
+?? docs/modeling/
+?? docs/validation/2026-09-28-3d-skill-forward-test.md
+?? scripts/__pycache__/
+?? scripts/raker_build_paths.py
+?? tests/__pycache__/
+?? tests/test_raker_build_paths.py
+Engine: 4.7.2.stable.official.ed1daf0bf
+OS: Microsoft Windows NT 10.0.26200.0
+Rendering: headless / dummy
+Tests: 79
+test_art_presentation.gd
+test_cabin_light_equipment.gd
+test_checkpoint_failures.gd
+test_combat_targeting.gd
+test_equipment_lifecycle.gd
+test_forest_fog.gd
+test_gas_station.gd
+test_interior_compatibility.gd
+test_interior_doorways.gd
+test_interior_layout.gd
+test_interior_navigation.gd
+test_interior_traversal.gd
+test_main_world_monsters.gd
+test_minor_site_generation.gd
+test_monster_boarding.gd
+test_monster_cabin.gd
+test_monster_model.gd
+test_monster_navigation.gd
+test_monster_pursuit.gd
+test_moving_rv_climbing.gd
+test_outdoor_encounter.gd
+test_outdoor_gas_station.gd
+test_outdoor_horror.gd
+test_outdoor_minor_assets.gd
+test_outdoor_minor_navigation.gd
+test_outdoor_minor_persistence.gd
+test_outdoor_style_sample.gd
+test_outdoor_traversal.gd
+test_player_animation.gd
+test_player_animation_skin.gd
+test_player_climb_animation.gd
+test_player_climbing.gd
+test_player_death.gd
+test_player_import_v020.gd
+test_player_inventory.gd
+test_player_jump_animation.gd
+test_player_model.gd
+test_player_ragdoll_v020.gd
+test_player_stamina.gd
+test_poi_asset_kit.gd
+test_poi_definitions.gd
+test_poi_instances.gd
+test_raker.gd
+test_raker_attack_alignment.gd
+test_raker_bite_pose.gd
+test_raker_boarding.gd
+test_raker_cabin.gd
+test_raker_finger_flexion.gd
+test_raker_gaits.gd
+test_raker_grab.gd
+test_raker_grab_vehicle.gd
+test_raker_neck.gd
+test_raker_playground.gd
+test_raker_release_input.gd
+test_raker_source_hands.gd
+test_raker_sprint.gd
+test_raker_turning.gd
+test_roadside_exploration.gd
+test_rv_boarding.gd
+test_rv_braking.gd
+test_rv_checkpoint.gd
+test_rv_cockpit.gd
+test_rv_engine.gd
+test_rv_experience.gd
+test_rv_extended.gd
+test_rv_handling.gd
+test_rv_interactions.gd
+test_rv_physics_regression.gd
+test_rv_resource_cycle.gd
+test_rv_shared_storage.gd
+test_rv_structure_modules.gd
+test_rv_systems.gd
+test_streaming_generation.gd
+test_tire_handling.gd
+test_tire_puncture.gd
+test_world_clock.gd
+test_world_entities.gd
+test_world_generation.gd
+test_world_weather.gd

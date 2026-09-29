@@ -1,0 +1,59 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WORLD v6 seed=1790440711
+FOREST band=-2 trees=1625 shrubs=4575
+TERRAIN band=-2 build_ms=909.7 max_slice_ms=909.7 active=1
+FOREST band=-1 trees=1613 shrubs=4562
+TERRAIN band=-1 build_ms=1112.1 max_slice_ms=1112.1 active=2
+FOREST band=0 trees=1480 shrubs=4148
+TERRAIN band=0 build_ms=1108.5 max_slice_ms=1108.5 active=3
+FOREST band=1 trees=1633 shrubs=4572
+TERRAIN band=1 build_ms=815.5 max_slice_ms=815.5 active=4
+FOREST band=2 trees=1639 shrubs=4575
+TERRAIN band=2 build_ms=908.2 max_slice_ms=908.2 active=5
+FOREST band=3 trees=1592 shrubs=4469
+TERRAIN band=3 build_ms=888.3 max_slice_ms=888.3 active=6
+Crafting Station placed successfully.
+Recycling Scrapper placed successfully.
+CHECKPOINT written
+CHECKPOINT FAILURE: { "code": "data", "field": "clock", "detail": "" }
+CHECKPOINT FAILURE: { "code": "data", "field": "clock", "detail": "" }
+CHECKPOINT FAILURE: { "code": "data", "field": "engine.id.duplicate", "detail": "" }
+CHECKPOINT FAILURE: { "code": "data", "field": "engine.id.duplicate", "detail": "" }
+CHECKPOINT FAILURE: { "code": "version", "field": "version", "detail": "" }
+CHECKPOINT FAILURE: { "code": "version", "field": "version", "detail": "" }
+CHECKPOINT validated, freeing old world
+CHECKPOINT old world released
+WORLD v6 seed=1790440711
+FOREST band=-2 trees=1625 shrubs=4575
+TERRAIN band=-2 build_ms=805.5 max_slice_ms=805.5 active=1
+FOREST band=-1 trees=1613 shrubs=4562
+TERRAIN band=-1 build_ms=1018.4 max_slice_ms=1018.4 active=2
+FOREST band=0 trees=1480 shrubs=4148
+TERRAIN band=0 build_ms=1069.0 max_slice_ms=1069.0 active=3
+FOREST band=1 trees=1633 shrubs=4572
+TERRAIN band=1 build_ms=916.5 max_slice_ms=916.5 active=4
+FOREST band=2 trees=1639 shrubs=4575
+TERRAIN band=2 build_ms=871.4 max_slice_ms=871.4 active=5
+FOREST band=3 trees=1592 shrubs=4469
+TERRAIN band=3 build_ms=823.5 max_slice_ms=823.5 active=6
+電池插槽 placed successfully.
+RV Ceiling Panel placed successfully.
+RV Wall Front placed successfully.
+車內燈條 placed successfully.
+車內燈條 placed successfully.
+Driver Seat placed successfully.
+加油孔 placed successfully.
+道具箱 placed successfully.
+側牆板 placed successfully.
+側門模組 placed successfully.
+側牆板 placed successfully.
+側牆板 placed successfully.
+側牆板 placed successfully.
+側牆板 placed successfully.
+後方雙開門 placed successfully.
+Portable Generator placed successfully.
+Crafting Station placed successfully.
+Recycling Scrapper placed successfully.
+Tablet Screen placed successfully.
+PASS: disk checkpoint, world restore, battery and production ownership

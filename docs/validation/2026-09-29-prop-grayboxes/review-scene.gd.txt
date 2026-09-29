@@ -1,0 +1,101 @@
+extends SceneTree
+
+class ReviewInput extends Node:
+	var select_page: Callable
+	func _unhandled_input(event: InputEvent) -> void:
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode >= KEY_F1 and event.keycode <= KEY_F4:
+				select_page.call(event.keycode - KEY_F1)
+
+var camera: Camera3D
+var title: Label
+var page := -1
+var pages: Array[Node3D] = []
+
+func _init() -> void:
+	_run.call_deferred()
+
+func _run() -> void:
+	root.title = "ApocalypseRV - Asset Review 2026-09-29"
+	root.size = Vector2i(1280, 800)
+	Engine.max_fps = 20
+	var world := Node3D.new()
+	root.add_child(world)
+	current_scene = world
+	var keys := ReviewInput.new()
+	keys.select_page = _set_page
+	world.add_child(keys)
+	world.set_meta("entity_domain", true)
+	var environment := WorldEnvironment.new()
+	environment.environment = Environment.new()
+	environment.environment.background_mode = Environment.BG_COLOR
+	environment.environment.background_color = Color(0.10, 0.13, 0.17)
+	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.environment.ambient_light_color = Color(0.85, 0.89, 1.0)
+	environment.environment.ambient_light_energy = 0.65
+	world.add_child(environment)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-45, -35, 0)
+	sun.light_energy = 1.4
+	sun.shadow_enabled = true
+	world.add_child(sun)
+	var floor_mesh := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(18, 0.1, 14)
+	floor_mesh.mesh = box
+	floor_mesh.position.y = -0.05
+	var floor_mat := StandardMaterial3D.new()
+	floor_mat.albedo_color = Color(0.22, 0.25, 0.28)
+	floor_mesh.material_override = floor_mat
+	world.add_child(floor_mesh)
+	for i in range(4):
+		var group := Node3D.new()
+		world.add_child(group)
+		pages.append(group)
+	_item(0, "props/oil_barrel.tscn", Vector3(-2, 0.5, 0), "OIL BARREL / GRAYBOX")
+	_item(0, "props/gas_can.tscn", Vector3(0, 0.45166017, 0), "GAS CAN / GRAYBOX")
+	_item(0, "props/gas_can_empty.tscn", Vector3(2, 0.45166017, 0), "EMPTY CAN / GRAYBOX")
+	_item(1, "props/scrap.tscn", Vector3(-2, 0.15, 0), "SCRAP / EXISTING")
+	_item(1, "props/battery.tscn", Vector3(0, 0.15, 0), "BATTERY / EXISTING")
+	_item(1, "props/wheel.tscn", Vector3(2, 0, 0), "WHEEL / EXISTING")
+	_item(2, "props/engine_standard.tscn", Vector3(-1.3, 0.5, 0), "STANDARD ENGINE / EXISTING")
+	_item(2, "props/engine_upgraded.tscn", Vector3(1.3, 0.5, 0), "UPGRADED ENGINE / EXISTING")
+	_item(3, "equipment/driver_seat.tscn", Vector3.ZERO, "COCKPIT / EXISTING")
+	camera = Camera3D.new()
+	camera.fov = 48
+	world.add_child(camera)
+	camera.current = true
+	var canvas := CanvasLayer.new()
+	world.add_child(canvas)
+	title = Label.new()
+	title.position = Vector2(20, 20)
+	title.add_theme_font_size_override("font_size", 22)
+	canvas.add_child(title)
+	_set_page(0)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	print("ASSET_REVIEW_READY: isolated production resources; no gameplay validation")
+
+func _item(group: int, path: String, location: Vector3, label: String) -> void:
+	var node: Node3D = load("res://" + path).instantiate()
+	node.position = location
+	if node is RigidBody3D:
+		node.freeze = true
+	pages[group].add_child(node)
+	node.set_physics_process(false)
+	var caption := Label3D.new()
+	caption.text = label
+	caption.position = Vector3(location.x, 1.8 if group != 3 else 2.2, location.z)
+	caption.font_size = 36
+	caption.pixel_size = 0.004
+	caption.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	pages[group].add_child(caption)
+
+func _set_page(value: int) -> void:
+	page = value
+	for i in range(pages.size()):
+		pages[i].visible = i == page
+	camera.position = Vector3(3.8, 3.3, 7.8) if page < 3 else Vector3(1.8, 2.0, 2.2)
+	camera.look_at(Vector3(0, 0.65, 0) if page < 3 else Vector3(0, 0.9, -0.35))
+	title.text = "ASSET REVIEW | F1 Grayboxes / F2 Simple props / F3 Engines / F4 Cockpit\nIsolated visual inspection, frozen actors; no gameplay or performance claim."
+	print("ASSET_REVIEW_PAGE: ", page)
+

@@ -1,0 +1,18 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+WORLD v6 seed=1788466171
+FOREST band=-2 trees=1622 shrubs=4576
+TERRAIN band=-2 build_ms=668.4 max_slice_ms=668.4 active=1
+FOREST band=-1 trees=1622 shrubs=4559
+TERRAIN band=-1 build_ms=960.9 max_slice_ms=960.9 active=2
+FOREST band=0 trees=1450 shrubs=4147
+TERRAIN band=0 build_ms=1031.1 max_slice_ms=1031.1 active=3
+FOREST band=1 trees=1642 shrubs=4562
+TERRAIN band=1 build_ms=871.5 max_slice_ms=871.5 active=4
+FOREST band=2 trees=1598 shrubs=4450
+TERRAIN band=2 build_ms=819.5 max_slice_ms=819.5 active=5
+FOREST band=3 trees=1632 shrubs=4597
+TERRAIN band=3 build_ms=765.9 max_slice_ms=765.9 active=6
+FOREST band=-3 trees=1618 shrubs=4564
+TERRAIN band=-3 build_ms=630.1 max_slice_ms=58.9 active=7
+PASS: WORLD_READY_FOR_PLAY and production player movement

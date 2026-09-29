@@ -2,7 +2,7 @@
 
 獨立的新怪物；目前遊戲使用 v021 左右手完整重建、v019 掌向、v018 口腔與 v012 加密模型，共 41 段動畫。待機／走路／奔跑／狂奔共用駝背、前彎頸部、收肘、拇指朝前與掌心朝內，四指朝掌心彎曲，切換步態保留腳步相位。新掌部、拇指根部、指縫與三節四指在 Blender 重新建模、綁定和製作 41 段張合動畫；保留掌心向內的方向。[整手重建驗收](../../../docs/validation/2026-09-23-raker-v021.md)。
 
-主世界一般戶外站點新生成的敵人全部使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查實際生成模型。既有存檔保留已保存的物種，獨立室內副本仍使用 Zombie。
+主世界一般戶外站點新生成的敵人使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查其既有範圍內的實際生成模型。既有存檔保留已保存的物種。Zombie 場景仍供存檔還原、展示場與測試使用；目前未確認獨立室內副本有新生成 Zombie 的路徑。
 
 - 可編輯來源：[monster_refined_v021.blend](../../../art_source/monster_refined_v021/monster_refined_v021.blend)，細化場景 `MONSTER_REFINED_V021`；保留先前模型場景與動畫。原始動畫來源為 `C:/Users/evan4/Projects/3d/raker_animated_v008.blend`。
 - 匯出資產：[raker.glb](raker.glb)，Blender 5.2.2 LTS，glTF 2.0 Binary；只匯出目前場景所選骨架／網格，NLA track 分片、約束烘焙、54 變形骨、Y-up。
@@ -47,7 +47,7 @@ Godot 會消耗匯入名稱的 `_loop` 尾綴；外觀腳本的獨立 `game` lib
 
 新版綁定、動畫、匯出與來源要求見 [v021 說明](../../../art_source/monster_refined_v021/README.md)。沿用 v011 已烘焙贴圖；完成後將 `raker_refined_v021.glb` 複製到本目錄的 `raker.glb`，再執行 Raker 回歸與正式主世界模型測試。
 
-[build_raker_animations.py](../../../scripts/build_raker_animations.py) 是從 v007 重建 v008 基礎動畫的歷史工作流程，預設會寫入正式 raker.glb；直接執行會覆蓋新版外觀，需先改為暫存輸出，再套用後續細化流程。
+舊 v007→v008 建置及動畫掃描腳本已於 2026-09-29 移除；目前使用上述 v021 來源流程，不再提供早期版本的建置入口。
 
 [v021 動畫檢查](../../../art_source/monster_refined_v021/audit.py) 掃描每個烘焙影格；[結果](animation_audit.json) 保存本版身體自交、牙齒互穿與五方向閉嘴遮齒掃描結果（嘴縫接觸、口腔及牙根嵌合區域除外）。[手指檢查](../../../art_source/monster_refined_v021/audit_hands.py) 另檢查實際替換的手網格、三節骨、蒙皮權重、手部拓樸及逐幀朝掌心屈曲。排除共用頂點的三角形，不代表任意跨動畫混合也已全部窮舉驗證。
 

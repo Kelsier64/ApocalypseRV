@@ -1,0 +1,10 @@
+test_defaults_stage_outside_production_and_source (test_raker_build_paths.RakerBuildPathsTest.test_defaults_stage_outside_production_and_source) ... ok
+test_existing_outputs_require_explicit_overwrite (test_raker_build_paths.RakerBuildPathsTest.test_existing_outputs_require_explicit_overwrite) ... ok
+test_explicit_destinations_and_source_match (test_raker_build_paths.RakerBuildPathsTest.test_explicit_destinations_and_source_match) ... ok
+test_production_and_open_source_are_never_allowed (test_raker_build_paths.RakerBuildPathsTest.test_production_and_open_source_are_never_allowed) ... ok
+test_wrong_or_unsaved_source_rejected (test_raker_build_paths.RakerBuildPathsTest.test_wrong_or_unsaved_source_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.102s
+
+OK

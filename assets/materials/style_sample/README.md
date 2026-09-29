@@ -11,4 +11,4 @@
 
 樣板地面沿用上一輪生成的 `../industrial/forest_floor.png`，其來源與提示詞見該目錄 README。天空使用固定程序雲層，沒有動態天氣。
 
-僅由 `tests/industrial_style_playground.tscn` 及 `world/art_sample/` 使用，未替換正式世界資源。
+用途不只限於樣板：`bark.svg` 也由正式森林的 `world/terrain/forest_meshes.gd` 載入。`panel.svg` 和 `concrete.svg` 除樣板外，還在 `world/industrial_art.gd` 的 `dress_exterior()` 中被引用；目前未確認該函式有執行期呼叫者，不能據此認定兩者已顯示在正式場景。`needles.svg` 的已確認消費者仍是 `world/art_sample/sample_materials.gd`。

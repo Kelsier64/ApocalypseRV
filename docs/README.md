@@ -29,6 +29,8 @@
 
 ## 指南
 
+- [Raker 資產建置入口](guides/asset-builds.md) — 目前 v021 來源流程與舊腳本移除紀錄。
+
 - [程式與資產目錄指南](guides/codebase.md) — 進入專案、追查場景依賴、維護原始美術與安全清理。
 
 - [隨機地堡製作與保存契約](guides/bunker-interior.md) — 16 模組、自由尺寸擴充、接口與 manifest 保存。
@@ -46,6 +48,10 @@
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-09-29 油桶／汽油罐灰盒與資產來源整理](validation/2026-09-29-prop-grayboxes.md) — 原檔收存、來源 manifest、舊 Raker 建置保護與道具外觀初查。
+
+- [2026-09-28 3D 製作 skill 實測](validation/2026-09-28-3d-skill-forward-test.md) — 獨立 subagent 規劃與交接演練、格式驗證；未執行遊戲驗收。
 
 - [2026-09-28 程式庫與文件整理](validation/2026-09-28-codebase-cleanup.md) — 未使用資源清理、存檔相容邊界與本輪檢查。
 
@@ -158,6 +164,9 @@
 - [Monster Underfoot Attack Redesign (Raycast Single Path)](archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md) — `archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md`
 
 ## 資產與製作規格
+
+- [建模 prompt](modeling/README.md) — 簡單物件直接做；複雜物件用灰盒與一份 [短 prompt](modeling/TEMPLATE.md)，不另維護進度清單。
+- [2026-09-29 資產盤點與來源快照](archive/modeling-2026-09-29/inventory.md) — 歷史參考，不再日常更新；[來源說明](archive/modeling-2026-09-29/asset-provenance.md)。
 
 - [Original industrial horror materials](../assets/materials/industrial/README.md) — `assets/materials/industrial/README.md`
 - [正式戶外 D 風格素材](../assets/materials/outdoor/README.md) — `assets/materials/outdoor/README.md`

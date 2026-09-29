@@ -23,6 +23,8 @@
 
 `world/poi_kit/`、`world/roadside_kit/` 與 `world/roadside_pois/` 是內容製作層；場景可能由定義、生成器或測試場動態載入。`rv/legacy/`、`world/art_sample/` 與 `assets/materials/style_sample/` 是仍有展示或對照用途的資產。獨立的 `tests/*playground.tscn` 不會由主場景引用，但可直接執行，操作見 [展示場指南](playgrounds.md)。
 
+匯入模型用途見 [模型入口](../../assets/models/README.md)，來源與授權資訊有需要時記在各資產 README。建模需求使用 [短 prompt](../modeling/README.md)，不另維護全域清單；舊來源與使用關係可查 [2026-09-29 歷史盤點](../archive/modeling-2026-09-29/inventory.md)。
+
 ## 資源與存檔相容
 
 - `res://` 路徑和 Godot UID 都是引用入口；搬移或刪除場景、腳本時要檢查兩者。與仍在使用的腳本／資產成對的 `.gd.uid`／`.import` 檔應保留。

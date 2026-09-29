@@ -1,0 +1,332 @@
+{
+  "date": "2026-09-29",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "runner_exit_code": 0,
+  "test_suites": 79,
+  "results": [
+    {
+      "name": "import",
+      "status": "passed"
+    },
+    {
+      "name": "test_art_presentation",
+      "status": "passed"
+    },
+    {
+      "name": "test_cabin_light_equipment",
+      "status": "passed"
+    },
+    {
+      "name": "test_checkpoint_failures",
+      "status": "passed"
+    },
+    {
+      "name": "test_combat_targeting",
+      "status": "passed"
+    },
+    {
+      "name": "test_equipment_lifecycle",
+      "status": "passed"
+    },
+    {
+      "name": "test_forest_fog",
+      "status": "passed"
+    },
+    {
+      "name": "test_gas_station",
+      "status": "passed"
+    },
+    {
+      "name": "test_interior_compatibility",
+      "status": "passed"
+    },
+    {
+      "name": "test_interior_doorways",
+      "status": "passed"
+    },
+    {
+      "name": "test_interior_layout",
+      "status": "passed"
+    },
+    {
+      "name": "test_interior_navigation",
+      "status": "passed"
+    },
+    {
+      "name": "test_interior_traversal",
+      "status": "passed"
+    },
+    {
+      "name": "test_main_world_monsters",
+      "status": "passed"
+    },
+    {
+      "name": "test_minor_site_generation",
+      "status": "passed"
+    },
+    {
+      "name": "test_monster_boarding",
+      "status": "passed"
+    },
+    {
+      "name": "test_monster_cabin",
+      "status": "passed"
+    },
+    {
+      "name": "test_monster_model",
+      "status": "passed"
+    },
+    {
+      "name": "test_monster_navigation",
+      "status": "passed"
+    },
+    {
+      "name": "test_monster_pursuit",
+      "status": "passed"
+    },
+    {
+      "name": "test_moving_rv_climbing",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_encounter",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_gas_station",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_horror",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_minor_assets",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_minor_navigation",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_minor_persistence",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_style_sample",
+      "status": "passed"
+    },
+    {
+      "name": "test_outdoor_traversal",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_animation",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_animation_skin",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_climb_animation",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_climbing",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_death",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_import_v020",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_inventory",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_jump_animation",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_model",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_ragdoll_v020",
+      "status": "passed"
+    },
+    {
+      "name": "test_player_stamina",
+      "status": "passed"
+    },
+    {
+      "name": "test_poi_asset_kit",
+      "status": "passed"
+    },
+    {
+      "name": "test_poi_definitions",
+      "status": "passed"
+    },
+    {
+      "name": "test_poi_instances",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_attack_alignment",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_bite_pose",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_boarding",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_cabin",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_finger_flexion",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_gaits",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_grab",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_grab_vehicle",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_neck",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_playground",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_release_input",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_source_hands",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_sprint",
+      "status": "passed"
+    },
+    {
+      "name": "test_raker_turning",
+      "status": "passed"
+    },
+    {
+      "name": "test_roadside_exploration",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_boarding",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_braking",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_checkpoint",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_cockpit",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_engine",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_experience",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_extended",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_handling",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_interactions",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_physics_regression",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_resource_cycle",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_shared_storage",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_structure_modules",
+      "status": "passed"
+    },
+    {
+      "name": "test_rv_systems",
+      "status": "passed"
+    },
+    {
+      "name": "test_streaming_generation",
+      "status": "passed"
+    },
+    {
+      "name": "test_tire_handling",
+      "status": "passed"
+    },
+    {
+      "name": "test_tire_puncture",
+      "status": "passed"
+    },
+    {
+      "name": "test_world_clock",
+      "status": "passed"
+    },
+    {
+      "name": "test_world_entities",
+      "status": "passed"
+    },
+    {
+      "name": "test_world_generation",
+      "status": "passed"
+    },
+    {
+      "name": "test_world_weather",
+      "status": "passed"
+    },
+    {
+      "name": "main-scene",
+      "status": "passed"
+    }
+  ]
+}
