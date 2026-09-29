@@ -12,7 +12,7 @@ Prefer reusing existing models and materials. Keep finished visuals already in u
 
 ## Short Modeling Prompt
 
-Keep one file per requested model at `docs/modeling/requests/<name>.md`; the [short template](../../../docs/modeling/TEMPLATE.md) is available. State what to build, the scene or node it will replace, its dimensions and orientation, visual requirements, and delivery location. Use meters and specify the origin and facing direction. Label measured values, design values, and unconfirmed details accurately. Include the necessary interfaces only when the asset has moving parts, sockets, or skeletal animation; omit irrelevant fields.
+For each requested model, first create `docs/modeling/requests/<name>/`, then write its single prompt at `docs/modeling/requests/<name>/<name>.md`; the [short template](../../../docs/modeling/TEMPLATE.md) is available. Keep image-to-3D reference images generated for that request in the same folder. State what to build, the scene or node it will replace, its dimensions and orientation, visual requirements, and delivery location. Use meters and specify the origin and facing direction. Label measured values, design values, and unconfirmed details accurately. Include the necessary interfaces only when the asset has moving parts, sockets, or skeletal animation; omit irrelevant fields.
 
 Update the same prompt when requirements or completion status change; a one-sentence progress note is enough. Do not maintain a separate queue, specification versions, or global manifest, and do not automatically assign work to or wait for a modeling AI. Inventory, planning, or archiving work alone does not automatically create modeling requests.
 
