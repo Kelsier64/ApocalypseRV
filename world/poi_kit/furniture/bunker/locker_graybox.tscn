@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/paint.tres" id="paint"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(0.62, 1.9, 0.58)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.04, 0.16, 0.025)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.62, 1.9, 0.58)
+
+[node name="locker_graybox" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" type="Node3D" parent="Visuals"]
+
+[node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 0.95, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("paint")
+
+[node name="Handle" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0.22, 1.03, 0.3)
+mesh = SubResource("m1")
+material_override = ExtResource("steel")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.95, 0)
+shape = SubResource("collision")
+
+[node name="Stencil" type="Label3D" parent="Visuals/Model"]
+position = Vector3(0, 1.235, 0.305)
+text = "L-07"
+font_size = 32
+pixel_size = 0.003
+shaded = true
+double_sided = false
+modulate = Color(0.68, 0.67, 0.53, 1)

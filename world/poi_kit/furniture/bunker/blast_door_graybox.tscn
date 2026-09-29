@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/hazard.tres" id="hazard"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(2.15, 2.7, 0.12)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(1.75, 0.12, 0.015)
+
+[node name="blast_door_graybox" type="Node3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" type="Node3D" parent="Visuals"]
+
+[node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 1.35, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("steel")
+
+[node name="Warning" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 1.4, 0.068)
+mesh = SubResource("m1")
+material_override = ExtResource("hazard")
+
+[node name="Stencil" type="Label3D" parent="Visuals/Model"]
+position = Vector3(0, 1.755, 0.075)
+text = "EXIT"
+font_size = 32
+pixel_size = 0.003
+double_sided = false
+modulate = Color(0.68, 0.67, 0.53, 1)

@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="rust"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(0.07, 1.9, 0.55)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.07, 1.9, 0.55)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(1.18, 0.07, 0.58)
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(1.18, 0.07, 0.58)
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(1.18, 0.07, 0.58)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(1.2, 1.9, 0.58)
+
+[node name="wall_shelf" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="PostL" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.52, 0.95, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("steel")
+
+[node name="PostR" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.52, 0.95, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("steel")
+
+[node name="Bottom" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.18, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("rust")
+
+[node name="Mid" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.98, 0)
+mesh = SubResource("m3")
+material_override = ExtResource("steel")
+
+[node name="Top" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 1.78, 0)
+mesh = SubResource("m4")
+material_override = ExtResource("steel")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.95, 0)
+shape = SubResource("collision")

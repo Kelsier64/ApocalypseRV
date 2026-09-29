@@ -3,7 +3,7 @@ extends "res://tests/monster_pursuit_playground.gd"
 
 func _ready() -> void:
 	super._ready()
-	DisplayServer.window_set_title("Monster Model Preview")
+	DisplayServer.window_set_title("Raker Model Preview")
 	var camera := get_viewport().get_camera_3d()
 	camera.position = Vector3(4.5, 1.5, -2.5)
 	camera.fov = 50.0
@@ -21,4 +21,4 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	status.text += "\nGLB preview: TEST_InPlace only; walk/attack/climb clips pending.\nF6: damage flash | R: reset"
+	status.text += "\nRaker model and combat animation preview.\nF6: damage flash | R: reset"

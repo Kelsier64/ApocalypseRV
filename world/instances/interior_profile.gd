@@ -1,11 +1,12 @@
 @tool
 extends Resource
 class_name InteriorProfile
+const MAX_SUPPORTED_ROOMS := 60
 @export var profile_id: StringName = &"bunker"
 @export var rooms: Array[InteriorRoomDefinition] = []
 @export var group_weights: Dictionary = {"passage": 18.0, "corridor": 12.0, "small": 25.0, "medium": 22.0, "large": 15.0, "hall": 8.0}
-@export var min_rooms := 10
-@export var max_rooms := 30
+@export var min_rooms := 30
+@export var max_rooms := 60
 @export var floor_spacing := 4.5
 @export var max_floors := 3
 
@@ -38,6 +39,6 @@ func validate() -> PackedStringArray:
 			errors.append("Missing selection group: " + str(definition.selection_group))
 	for weight in group_weights.values():
 		if not (weight is float or weight is int) or not is_finite(weight) or weight < 0: errors.append("Invalid group weight")
-	if entry_count != 1 or min_rooms < 1 or max_rooms > 30 or min_rooms > max_rooms or not is_finite(floor_spacing) or floor_spacing <= 0 or max_floors < 1 or max_floors > 3:
+	if entry_count != 1 or min_rooms < 1 or max_rooms > MAX_SUPPORTED_ROOMS or min_rooms > max_rooms or not is_finite(floor_spacing) or floor_spacing <= 0 or max_floors < 1 or max_floors > 3:
 		errors.append("Invalid bunker entry/dimensions/budget")
 	return errors

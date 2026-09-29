@@ -1,5 +1,7 @@
 # Blender 角色與怪物製作規格 v2
 
+本文件的 Zombie 模型尺寸、面數、場景與新製路徑均為 2026-09-22 時的提案或歷史試接，不是現行敵人資產規格；Zombie 場景已移除。現行敵人模型見 [Raker](../../assets/models/raker/README.md)。
+
 規格日期：2026-09-22；現況核對：2026-09-27。依 GDD、角色場景及模型試接整理；v2 納入使用者明確要求的「玩家布娃娃、活著也會被怪物攻擊肢解，且影響行動與操作」。完整模型與死亡布娃娃已接入；活體肢解仍待實作。**具體切斷位置、面數、物理預算與能力規則仍是本文件建議，不是已量測的效能上限。** 原 2026-09-22 變更僅為規格整理；後續實作與驗收見下方連結。
 
 ## 1. 先製作什麼
@@ -199,6 +201,6 @@ Godot 以 `Skeleton3D` 下的 `PhysicalBoneSimulator3D` 管理 `PhysicalBone3D`�
 
 - [GDD](../../GDD.md)：第一人稱定位、美術方向、敵人與未實作範圍。
 - [技術架構](../../architecture.md)：現有所有權與驗證流程。
-- [玩家場景](../../player/player.tscn)、[Zombie 場景](../../enemies/zombie.tscn)：尺寸與節點變換。
+- [玩家場景](../../player/player.tscn)、舊 `enemies/zombie.tscn`：當時尺寸與節點變換；後者已移除。
 - [怪物模型試接說明](../../assets/models/monster/README.md)、[歷史驗收](../validation/2026-09-22-monster-model.md)：現有模型、限制及先前測試結果。
 - [外觀腳本](../../enemies/monster_model_visual.gd)、[模型測試](../../tests/test_monster_model.gd)：替換資產前必須處理的暫時契約。

@@ -37,6 +37,7 @@ const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
 var placement := EquipmentPlacement.new()
 var held_item_node: Node3D = null
+var _flashlight_display_signature := ""
 
 @export_group("Debug")
 @export var debug_climb_messages: bool = false
@@ -94,8 +95,11 @@ func add_prop_item(prop: Prop, path: String) -> bool:
 	return add_item(prop.item_name, prop.is_large, path, prop.capture_item_state())
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+	var previous_slot := inventory.active_slot
 	if not inventory.add_item(item_name, is_large, scene_path, state):
 		return false
+	if inventory.active_slot != previous_slot:
+		_set_flashlight_off_at(previous_slot)
 	_update_inventory_display()
 	if inventory.active_slot == inventory.items.size() - 1:
 		_equip_active_slot()
@@ -103,13 +107,73 @@ func add_item(item_name: String, is_large: bool, scene_path: String, state: Dict
 
 func _update_inventory_display():
 	if inventory_ui and inventory_ui.has_method("update_slots"):
-		inventory_ui.update_slots(inventory.items, inventory.active_slot)
+		inventory_ui.update_slots(inventory.items, inventory.active_slot, get_player_mode() == PlayerMode.NORMAL)
+
+func _active_flashlight_state() -> Dictionary:
+	var item := inventory.active_item()
+	if item.get("scene_path", "") != "res://props/flashlight.tscn": return {}
+	return item.get("state", {}).get("flashlight", {})
+
+func _set_flashlight_off_at(index: int) -> void:
+	if index < 0 or index >= inventory.items.size(): return
+	var item: Dictionary = inventory.items[index]
+	if item.get("scene_path", "") != "res://props/flashlight.tscn": return
+	var state: Dictionary = item.get("state", {})
+	var flashlight: Dictionary = state.get("flashlight", {})
+	flashlight["on"] = false
+	state["flashlight"] = flashlight
+	item["state"] = state
+	inventory.items[index] = item
+
+func _toggle_flashlight() -> void:
+	if get_player_mode() != PlayerMode.NORMAL: return
+	if not held_item_node is Flashlight: return
+	var item := inventory.active_item()
+	if item.get("scene_path", "") != "res://props/flashlight.tscn": return
+	var state: Dictionary = item.get("state", {})
+	var flashlight: Dictionary = state.get("flashlight", {})
+	if float(flashlight.get("charge", 0.0)) <= 0.0: return
+	flashlight["on"] = not bool(flashlight.get("on", false))
+	state["flashlight"] = flashlight
+	item["state"] = state
+	inventory.items[inventory.active_slot] = item
+	_advance_flashlight(0.0)
+
+func _advance_flashlight(delta: float) -> void:
+	var flashlight: Dictionary = _active_flashlight_state()
+	var active := get_player_mode() == PlayerMode.NORMAL and not flashlight.is_empty() and bool(flashlight.get("on", false)) and float(flashlight.get("charge", 0.0)) > 0.0
+	var held := held_item_node as Flashlight
+	if held:
+		held.switched_on = active
+		held.charge = float(flashlight.get("charge", 0.0)) if not flashlight.is_empty() else 0.0
+		held.set_held_active(active)
+		active = active and (held.get_node_or_null("Beam") as SpotLight3D).is_visible_in_tree()
+	else:
+		active = false
+	if active and delta > 0.0:
+		var item := inventory.active_item()
+		var state: Dictionary = item.get("state", {})
+		flashlight["charge"] = maxf(0.0, float(flashlight.charge) - delta * Flashlight.FULL_CHARGE / Flashlight.DRAIN_SECONDS)
+		if flashlight.charge <= 0.0:
+			flashlight["on"] = false
+			held.switched_on = false
+			held.set_held_active(false)
+		state["flashlight"] = flashlight
+		item["state"] = state
+		inventory.items[inventory.active_slot] = item
+	var signature := "%s:%d:%d" % [get_player_mode() == PlayerMode.NORMAL, ceili(float(flashlight.get("charge", 0.0))), int(bool(flashlight.get("on", false)))] if not flashlight.is_empty() else ""
+	if signature != _flashlight_display_signature:
+		_flashlight_display_signature = signature
+		_update_inventory_display()
 
 func _set_active_slot(index: int) -> void:
 	if is_grabbed(): return
+	var previous := inventory.active_slot
 	if inventory.select_slot(index):
+		_set_flashlight_off_at(previous)
 		_update_inventory_display()
 		_equip_active_slot()
+		_advance_flashlight(0.0)
 
 func _equip_active_slot():
 	var hand_marker = camera.get_node_or_null("HandMarker")
@@ -180,6 +244,7 @@ func get_active_item_name() -> String:
 
 func consume_active_item() -> void:
 	if is_grabbed(): return
+	_set_flashlight_off_at(inventory.active_slot)
 	if inventory.consume_active():
 		_update_inventory_display()
 		_equip_active_slot()
@@ -203,6 +268,7 @@ func enter_equipment_placement(equip: Node3D) -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	placement.begin(equip)
+	_advance_flashlight(0.0)
 	return true
 
 func enter_ui_mode() -> bool:
@@ -210,13 +276,17 @@ func enter_ui_mode() -> bool:
 		return false
 	in_ui_mode = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	_advance_flashlight(0.0)
 	return true
 
 func exit_ui_mode():
 	in_ui_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
+		(held_item_node as Flashlight).set_held_active(false)
 	if is_grabbed(): grab_control.end("world_transition")
 	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
 	if restart_death: ragdoll_control.stop()
@@ -258,6 +328,7 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	seated_in = seat
+	_advance_flashlight(0.0)
 	global_position = seat.global_position
 	set_process_unhandled_input(false)
 	body_collision_shape.disabled = true
@@ -272,6 +343,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	velocity = ClimbMath.point_velocity(rv, exit_position)
 	released_carrier_velocity = velocity
 	seated_in = null
+	_advance_flashlight(0.0)
 	set_physics_process(true)
 	set_process_unhandled_input(true)
 	body_collision_shape.disabled = false
@@ -282,6 +354,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 func drop_item():
 	if is_grabbed(): return
 	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
+		_set_flashlight_off_at(inventory.active_slot)
 		var item_data = inventory.items[inventory.active_slot]
 		
 		# Spawn it back into the world
@@ -316,6 +389,8 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 
 func _unhandled_input(event):
 	if in_ui_mode or is_player_dead or is_grabbed(): return
+	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
+		_toggle_flashlight()
 	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally
@@ -738,6 +813,7 @@ func _exit_climb_to_normal() -> void:
 	_sync_body_collision_to_locomotion()
 
 func _physics_process(delta):
+	_advance_flashlight(delta)
 	if is_player_dead:
 		return
 	if is_instance_valid(seated_in) or in_ui_mode or locomotion_state == LocomotionState.CLIMBING:
@@ -793,6 +869,7 @@ func _player_die():
 	var was_seated := is_instance_valid(seated_in)
 	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
 	is_player_dead = true
+	_advance_flashlight(0.0)
 	if is_grabbed(): grab_control.end("death")
 	if is_placing_equipment():
 		placement.placing_equipment.cancel_placement()

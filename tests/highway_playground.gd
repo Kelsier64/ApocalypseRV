@@ -22,7 +22,8 @@ var parking_points: Array[Vector3] = []
 var parking_recorded := false
 
 func _ready() -> void:
-	$Zombie.queue_free()
+	for monster in get_tree().get_nodes_in_group(Groups.MONSTERS):
+		monster.queue_free()
 	vehicle = $NewRv/Chassis
 	vehicle.contact_monitor = true
 	vehicle.max_contacts_reported = 32

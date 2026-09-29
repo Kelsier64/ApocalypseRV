@@ -288,6 +288,11 @@ func store_player_item(player: Node3D, index: int) -> bool:
 		return false
 	var item: Dictionary = player.inventory.items[index]
 	if item.get("state", {}).has("materials"): return false
+	if index <= player.inventory.active_slot:
+		player._set_flashlight_off_at(player.inventory.active_slot)
+	if item.get("scene_path", "") == "res://props/flashlight.tscn":
+		player._set_flashlight_off_at(index)
+		item = player.inventory.items[index]
 	stored_items.append(item.duplicate(true))
 	player.inventory.items.remove_at(index)
 	player.inventory.active_slot = mini(player.inventory.active_slot, maxi(0, player.inventory.items.size() - 1))

@@ -43,11 +43,17 @@
 
 ## 審查與修正
 
-- [2026-09-22 架構、潛在問題與遺產清理審查](report/ApocalypseRV_Architecture_Audit_2026-09-22.md) — 三個 subagent 分工、重現證據、清理候選、保留邊界及當次驗證；列出的程式問題尚未修正。
+- [2026-09-22 架構、潛在問題與遺產清理審查](report/ApocalypseRV_Architecture_Audit_2026-09-22.md) — 保留當時重現證據；A04 離場保存已由下方地堡內容更新修正，A01–A03 仍待處理。
 - [R01–R07 修正與驗收](report/ApocalypseRV_Fixes_2026-09-18.md) — `report/ApocalypseRV_Fixes_2026-09-18.md`
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-09-29 廢棄地堡場景與手電筒](validation/2026-09-29-bunker-art-flashlight.md) — v2 房間、60% 暗房、九份建模需求，以及初始世界手電筒與五分鐘電量。
+
+- [2026-09-29 地堡 Raker 遭遇與舊怪物移除](validation/2026-09-29-bunker-raker.md) — 每機會 30% 生成、舊存檔缺失怪物遷移及 81 套完整回歸。
+
+- [2026-09-29 地堡搜刮、遭遇與引擎回收](validation/2026-09-29-bunker-content.md) — 30–60 模組、補給箱、深處引擎、進出與回訪保存的歷史自動測試；當時的 Zombie 遭遇已由 Raker 生成規則取代。
 
 - [2026-09-29 油桶／汽油罐灰盒與資產來源整理](validation/2026-09-29-prop-grayboxes.md) — 原檔收存、來源 manifest、舊 Raker 建置保護與道具外觀初查。
 

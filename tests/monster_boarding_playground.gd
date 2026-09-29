@@ -13,7 +13,7 @@ func _ready() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	rv.get_node("Ceiling").current_health = 6000
 	rv.get_node("RightMiddle").current_health = 6000
-	hanger = preload("res://enemies/zombie.tscn").instantiate()
+	hanger = preload("res://enemies/raker.tscn").instantiate()
 	hanger.position = Vector3(2.65, 0.6, 0)
 	hanger.rotation.y = PI / 2.0
 	add_child(hanger)

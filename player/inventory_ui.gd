@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 var slots_container: HBoxContainer
+var flashlight_hint: Label
 
 func _ready():
 	var control = Control.new()
@@ -25,6 +26,16 @@ func _ready():
 	slots_container.offset_bottom = -20
 	
 	slots_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	flashlight_hint = Label.new()
+	flashlight_hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	flashlight_hint.offset_left = -260
+	flashlight_hint.offset_right = 260
+	flashlight_hint.offset_top = -130
+	flashlight_hint.offset_bottom = -104
+	flashlight_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	flashlight_hint.add_theme_color_override("font_color", IndustrialTheme.AMBER)
+	flashlight_hint.hide()
+	control.add_child(flashlight_hint)
 	
 	for i in range(6):
 		var panel = Panel.new()
@@ -42,9 +53,14 @@ func _ready():
 		
 		slots_container.add_child(panel)
 
-func update_slots(inventory: Array, active_slot: int = 0):
+func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: bool = true):
 	if not slots_container:
 		return
+	var selected: Dictionary = inventory[active_slot] if active_slot >= 0 and active_slot < inventory.size() else {}
+	var flashlight: Dictionary = selected.get("state", {}).get("flashlight", {}) if selected.get("scene_path", "") == "res://props/flashlight.tscn" else {}
+	flashlight_hint.visible = show_flashlight_hint and not flashlight.is_empty()
+	if flashlight_hint.visible:
+		flashlight_hint.text = "Flashlight %d%%  |  L: %s" % [ceili(float(flashlight.get("charge", 0.0))), "ON" if flashlight.get("on", false) else "OFF"]
 		
 	var children = slots_container.get_children()
 	for i in range(children.size()):

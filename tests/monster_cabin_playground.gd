@@ -21,7 +21,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.keycode == KEY_R: get_tree().reload_current_scene()
 	if event.keycode == KEY_F3 and rv.has_node("Ceiling"):
 		monster.free()
-		monster = preload("res://enemies/zombie.tscn").instantiate()
+		monster = preload("res://enemies/raker.tscn").instantiate()
 		add_child(monster)
 		monster.position = rv.to_global(Vector3(0, 2.55, 2.8))
 		rv.get_node("Ceiling").current_health = 15

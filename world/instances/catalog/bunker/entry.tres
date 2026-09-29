@@ -9,3 +9,4 @@ id = &"entry"
 scene = ExtResource("2")
 role = &"entry"
 selection_group = &"entry"
+enabled = false

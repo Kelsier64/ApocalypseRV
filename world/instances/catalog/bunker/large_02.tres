@@ -9,3 +9,4 @@ id = &"large_02"
 scene = ExtResource("2")
 role = &"ordinary"
 selection_group = &"large"
+enabled = false

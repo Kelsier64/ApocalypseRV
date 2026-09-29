@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/soot.tres" id="soot"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(1.2, 2.35, 0.72)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.93, 1.35, 0.03)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(1.2, 2.35, 0.72)
+
+[node name="switchgear_graybox" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" type="Node3D" parent="Visuals"]
+
+[node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 1.175, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("steel")
+
+[node name="Panel" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 1.35, 0.37)
+mesh = SubResource("m1")
+material_override = ExtResource("soot")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.175, 0)
+shape = SubResource("collision")
+
+[node name="Stencil" type="Label3D" parent="Visuals/Model"]
+position = Vector3(0, 1.5275, 0.375)
+text = "DANGER"
+font_size = 32
+pixel_size = 0.003
+shaded = true
+double_sided = false
+modulate = Color(0.68, 0.67, 0.53, 1)

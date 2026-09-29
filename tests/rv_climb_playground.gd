@@ -60,7 +60,7 @@ func _ready() -> void:
 	marker.material_override = material
 	player.add_child(marker)
 	marker.visible = "--animation-review" not in OS.get_cmdline_user_args()
-	var monster_scene: PackedScene = load("res://enemies/raker.tscn" if "--raker" in OS.get_cmdline_user_args() else "res://enemies/zombie.tscn")
+	var monster_scene: PackedScene = load("res://enemies/raker.tscn")
 	monster = monster_scene.instantiate()
 	monster.position = Vector3(-2.65, 0.05, 0)
 	monster.rotation.y = -PI / 2.0

@@ -1,0 +1,53 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://world/instances/bunker_cache.gd" id="1"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/olive.tres" id="2"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/steel.tres" id="3"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/stripe.tres" id="4"]
+
+[sub_resource type="BoxShape3D" id="body_shape"]
+size = Vector3(0.9, 0.75, 0.7)
+
+[sub_resource type="BoxMesh" id="body_mesh"]
+size = Vector3(0.88, 0.62, 0.68)
+
+[sub_resource type="BoxMesh" id="lid_mesh"]
+size = Vector3(0.92, 0.11, 0.72)
+
+[sub_resource type="BoxMesh" id="handle_mesh"]
+size = Vector3(0.15, 0.035, 0.05)
+
+[node name="BunkerCache" type="StaticBody3D"]
+script = ExtResource("1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.375, 0)
+shape = SubResource("body_shape")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.31, 0)
+mesh = SubResource("body_mesh")
+material_override = ExtResource("2")
+
+[node name="LidPivot" type="Node3D" parent="Visuals"]
+position = Vector3(0, 0.68, -0.3)
+
+[node name="Lid" type="MeshInstance3D" parent="Visuals/LidPivot"]
+position = Vector3(0, 0, 0.3)
+mesh = SubResource("lid_mesh")
+material_override = ExtResource("3")
+
+[node name="Stripe" type="MeshInstance3D" parent="Visuals/LidPivot"]
+position = Vector3(0, 0.059, 0.3)
+mesh = SubResource("handle_mesh")
+material_override = ExtResource("4")
+
+[node name="Status" type="Label3D" parent="Visuals"]
+position = Vector3(0, 0.36, 0.347)
+pixel_size = 0.002
+font_size = 42
+text = "SUPPLIES"
+outline_size = 6
+modulate = Color(0.98, 0.85, 0.38, 1)

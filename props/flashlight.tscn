@@ -1,0 +1,72 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://props/flashlight.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="shell"]
+albedo_color = Color(0.13, 0.17, 0.18, 1)
+metallic = 0.75
+roughness = 0.38
+
+[sub_resource type="StandardMaterial3D" id="grip"]
+albedo_color = Color(0.035, 0.045, 0.046, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="lens"]
+albedo_color = Color(0.91, 0.9, 0.72, 1)
+emission_enabled = true
+emission = Color(0.62, 0.59, 0.38, 1)
+emission_energy_multiplier = 0.25
+roughness = 0.2
+
+[sub_resource type="CylinderMesh" id="body"]
+top_radius = 0.048
+bottom_radius = 0.04
+height = 0.27
+material = SubResource("shell")
+
+[sub_resource type="CylinderMesh" id="grip_mesh"]
+top_radius = 0.042
+bottom_radius = 0.042
+height = 0.15
+material = SubResource("grip")
+
+[sub_resource type="CylinderMesh" id="lens_mesh"]
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.012
+material = SubResource("lens")
+
+[sub_resource type="CylinderShape3D" id="collision"]
+radius = 0.065
+height = 0.3
+
+[node name="Flashlight" type="RigidBody3D"]
+script = ExtResource("1_script")
+mass = 0.5
+item_name = "Flashlight"
+hold_position = Vector3(0.15, -0.03, -0.05)
+hold_rotation = Vector3(-90, 0, 0)
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("body")
+
+[node name="Grip" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.045, 0)
+mesh = SubResource("grip_mesh")
+
+[node name="Lens" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.14, 0)
+mesh = SubResource("lens_mesh")
+
+[node name="Beam" type="SpotLight3D" parent="."]
+position = Vector3(0, 0.16, 0)
+rotation_degrees = Vector3(90, 0, 0)
+light_color = Color(1, 0.94, 0.76, 1)
+light_energy = 2.4
+shadow_enabled = true
+spot_range = 24.0
+spot_angle = 32.0
+visible = false
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")

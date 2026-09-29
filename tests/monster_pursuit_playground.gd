@@ -1,5 +1,5 @@
 extends Node3D
-@export var monster_scene: PackedScene = preload("res://enemies/zombie.tscn")
+@export var monster_scene: PackedScene = preload("res://enemies/raker.tscn")
 ## Real actors and attack cooldowns; extra player health allows prolonged inspection.
 var player: CharacterBody3D
 var monster: Monster
@@ -92,4 +92,4 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_F4 and is_instance_valid(barrier): barrier.free()
 
 func _process(_delta: float) -> void:
-	status.text = "PRODUCTION ZOMBIE / PLAYER\nPlayer HP: %.0f | Device HP: %.0f\nAI: %s | Player damage cooldown: %.2f\nUI movement lock active; damage must keep ticking.\nF3: wall between actors (movement held) | F4: remove wall\nPlayer health boosted for inspection; attack damage/cooldowns unchanged." % [player.current_player_health, device.current_health, Monster.State.keys()[monster.ai_state], player.damage_cooldown]
+	status.text = "PRODUCTION RAKER / PLAYER\nPlayer HP: %.0f | Device HP: %.0f\nAI: %s | Player damage cooldown: %.2f\nUI movement lock active; damage must keep ticking.\nF3: wall between actors (movement held) | F4: remove wall\nPlayer health boosted for inspection; attack damage/cooldowns unchanged." % [player.current_player_health, device.current_health, Monster.State.keys()[monster.ai_state], player.damage_cooldown]

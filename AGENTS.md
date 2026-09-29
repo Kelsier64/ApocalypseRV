@@ -30,7 +30,7 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 
 ## Subagents
 
-Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6-sol` by default. Choose the subagent's reasoning effort based on the task's difficulty.
+Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6-sol` by default. Choose the subagent's reasoning effort based on the task's difficulty. When delegating any 3D scene editing or modeling task, always use `gpt-6-astra` with `high` reasoning effort.
 
 ## Computer Use: Game Testing
 

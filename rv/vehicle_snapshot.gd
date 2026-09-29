@@ -219,6 +219,7 @@ static func valid_item(value: Variant) -> bool:
 	if value.state.has("materials"): return false
 	if not valid_prop_state(value.scene_path, value.state): return false
 	if value.state.has("engine") and not value.is_large: return false
+	if value.scene_path == "res://props/flashlight.tscn" and (value.name != ItemNames.FLASHLIGHT or value.is_large): return false
 	return not value.state.has("battery") or valid_battery(value.state.battery)
 
 static func upgrade(source: Dictionary) -> Dictionary:
@@ -348,10 +349,15 @@ static func valid_prop_state(scene: String, state: Dictionary) -> bool:
 	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
 	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
 	if state.has("battery") and (scene not in ["res://props/battery.tscn", "res://props/battery_large.tscn"] or not valid_battery(state.battery)): return false
+	if state.has("flashlight") and scene != "res://props/flashlight.tscn": return false
+	if scene == "res://props/flashlight.tscn" and not valid_flashlight(state.get("flashlight")): return false
 	var is_engine := scene in ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]
 	if is_engine:
 		return EngineState.valid(state.get("engine"), false) and state.get("id") == state.engine.id and scene == "res://props/engine_" + state.engine.model + ".tscn"
 	return not state.has("engine")
+
+static func valid_flashlight(value: Variant) -> bool:
+	return value is Dictionary and value.size() == 2 and value.has_all(["charge", "on"]) and _number(value.charge) and value.charge >= 0.0 and value.charge <= Flashlight.FULL_CHARGE and value.on is bool and (value.charge > 0.0 or not value.on)
 
 static func valid_device(entry: Dictionary) -> bool:
 	if not entry.has_all(["scene", "id", "transform", "health", "enabled", "service"]): return false

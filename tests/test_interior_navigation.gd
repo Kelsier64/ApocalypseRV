@@ -14,12 +14,13 @@ func check(ok: bool, detail: String) -> void:
 		push_error("FAIL: " + detail)
 
 func _run() -> void:
-	for count in [10,20,30]:
+	for count in [30,45,60]:
 		var viewport := SubViewport.new()
 		viewport.own_world_3d = true
 		root.add_child(viewport)
 		var interior := PoiInterior.new()
 		interior.room_count = count
+		interior.populate_content = false
 		viewport.add_child(interior)
 		check(await interior.build(1700+count),"Build full size %d" % count)
 		var map := interior.get_world_3d().navigation_map
@@ -37,6 +38,7 @@ func _run() -> void:
 		viewport.own_world_3d = true
 		root.add_child(viewport)
 		interior = PoiInterior.new()
+		interior.populate_content = false
 		viewport.add_child(interior)
 		check(await interior.build(1700+count,saved),"Revisit full size %d" % count)
 		check(interior.layout == saved.layout and interior.entities.get_child_count() == saved.actors.size(),"Full-size revisit geometry/population")
@@ -45,8 +47,9 @@ func _run() -> void:
 		await process_frame
 	var invalid := InvalidAnchorInterior.new()
 	invalid.room_count = 10
+	invalid.populate_content = false
 	root.add_child(invalid)
 	check(not await invalid.build(1710), "Navigation failure cancels the build instead of accepting disconnected rooms")
 	invalid.free()
-	if failures.is_empty(): print("PASS: 10/20/30-room physical navigation for every link, empty population, full-size reentry and navigation failure rejection")
+	if failures.is_empty(): print("PASS: 30/45/60-room physical navigation for every link, empty population, full-size reentry and navigation failure rejection")
 	quit(0 if failures.is_empty() else 1)

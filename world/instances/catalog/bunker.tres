@@ -36,6 +36,40 @@
 
 [ext_resource type="Resource" path="res://world/instances/catalog/bunker/stairs.tres" id="stairs"]
 
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/entry.tres" id="entry_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/passage_01.tres" id="passage_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/passage_02.tres" id="passage_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/corridor_01.tres" id="corridor_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/corridor_02.tres" id="corridor_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/small_01.tres" id="small_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/small_02.tres" id="small_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/small_03.tres" id="small_03_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/medium_01.tres" id="medium_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/medium_02.tres" id="medium_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/large_01.tres" id="large_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/large_02.tres" id="large_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/hall_01.tres" id="hall_01_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/hall_02.tres" id="hall_02_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/hall_03.tres" id="hall_03_v2"]
+
+[ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/stairs.tres" id="stairs_v2"]
+
 [resource]
 script = ExtResource("1")
-rooms = Array[ExtResource("room_script")]([ExtResource("passage_01"), ExtResource("passage_02"), ExtResource("corridor_01"), ExtResource("corridor_02"), ExtResource("small_01"), ExtResource("small_02"), ExtResource("small_03"), ExtResource("medium_01"), ExtResource("medium_02"), ExtResource("large_01"), ExtResource("large_02"), ExtResource("hall_01"), ExtResource("hall_02"), ExtResource("hall_03"), ExtResource("entry"), ExtResource("stairs")])
+min_rooms = 30
+max_rooms = 60
+rooms = Array[ExtResource("room_script")]([ExtResource("passage_01_v2"), ExtResource("passage_02_v2"), ExtResource("corridor_01_v2"), ExtResource("corridor_02_v2"), ExtResource("small_01_v2"), ExtResource("small_02_v2"), ExtResource("small_03_v2"), ExtResource("medium_01_v2"), ExtResource("medium_02_v2"), ExtResource("large_01_v2"), ExtResource("large_02_v2"), ExtResource("hall_01_v2"), ExtResource("hall_02_v2"), ExtResource("hall_03_v2"), ExtResource("entry_v2"), ExtResource("stairs_v2"), ExtResource("passage_01"), ExtResource("passage_02"), ExtResource("corridor_01"), ExtResource("corridor_02"), ExtResource("small_01"), ExtResource("small_02"), ExtResource("small_03"), ExtResource("medium_01"), ExtResource("medium_02"), ExtResource("large_01"), ExtResource("large_02"), ExtResource("hall_01"), ExtResource("hall_02"), ExtResource("hall_03"), ExtResource("entry"), ExtResource("stairs")])

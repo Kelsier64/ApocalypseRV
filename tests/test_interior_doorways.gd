@@ -24,9 +24,10 @@ func _run() -> void:
 	var player: CharacterBody3D = preload("res://player/player.tscn").instantiate()
 	capsule = player.get_node("CollisionShape3D").shape
 	player.free()
-	for fixture in [[42,10],[1775,20],[1800,30],[4026586570,0]]:
+	for fixture in [[42,10],[1800,30],[1845,45],[1860,60],[4026586570,0]]:
 		var inside := PoiInterior.new()
 		inside.room_count = fixture[1]
+		inside.populate_content = false
 		root.add_child(inside)
 		check(await inside.build(fixture[0]),"Doorway fixture builds")
 		# Static access contract; wandering actors are tested in traversal suites.

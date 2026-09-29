@@ -56,6 +56,26 @@ func _run() -> void:
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	check(not saved.is_empty(), "Valid fixture reads")
 	if saved.is_empty(): quit(1); return
+	var retired := saved.duplicate(true)
+	var retired_scene := "res://enemies/retired_monster.tscn"
+	retired.actors.append({"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 40.0})
+	var old_layout := InteriorLayout.generate(42, 12)
+	var old_content := {"version": 1, "cargo_id": "", "cargo_room": ""}
+	retired.poi["retired-test"] = {"layout": old_layout, "actors": [{"id": "retired-poi", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 30.0}], "explored": [], "content": old_content, "caches": []}
+	var station: PoiDefinition = POIConfig.definition(&"gas_station")
+	retired.outdoor_sites["retired-test"] = {"definition_id": "gas_station", "content_version": station.content_version, "loaded": false,
+		"actors": [{"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 20.0}]}
+	check(checkpoint.write_checkpoint(PATH + ".retired", retired), "Retired-monster fixture writes")
+	var migrated: Dictionary = checkpoint.read_checkpoint(PATH + ".retired")
+	check(not migrated.is_empty(), "Checkpoint with retired monster scene remains readable")
+	if not migrated.is_empty():
+		check(migrated.actors == saved.actors, "Migration discards only retired outdoor monster and keeps props")
+		check(migrated.poi["retired-test"].actors.is_empty() and migrated.poi["retired-test"].content == old_content and migrated.poi["retired-test"].layout == old_layout, "Migration keeps POI layout and content")
+		check(migrated.outdoor_sites["retired-test"].actors.is_empty(), "Migration discards retired dormant monster")
+	var bad_missing_prop := saved.duplicate(true)
+	bad_missing_prop.actors[0].scene = "res://props/retired_prop.tscn"
+	check(checkpoint.write_checkpoint(PATH + ".missing-prop", bad_missing_prop), "Missing-prop fixture writes")
+	check(checkpoint.read_checkpoint(PATH + ".missing-prop").is_empty(), "Migration still rejects an unrelated missing prop")
 	for kind in ["non_scene", "wrong_kind", "device_type", "nan", "singular", "slot", "profile", "physics", "poi", "service"]:
 		var bad := saved.duplicate(true)
 		match kind:

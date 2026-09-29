@@ -36,10 +36,10 @@ func _run() -> void:
 	check(manager.interior != null,"Actor-only old instance replaced by bunker")
 	if manager.interior != null:
 		check(manager.interior.layout.version == 3,"Old geometry discarded")
-		check(manager.interior.entities.get_child_count() == 0,"Empty old instance does not restock")
+		check(not manager.interior.content.is_empty(),"Discarded pre-bunker instance gets new content")
 		await manager.leave()
 	await manager.enter(player,building,"fresh",43)
-	check(manager.interior is PoiInterior,"Fresh production profile selects v2")
+	check(manager.interior is PoiInterior,"Fresh production profile selects bunker")
 	if manager.interior != null:
 		await manager.leave()
 	var memory: Dictionary = manager.saved_instances.get("fresh",{})

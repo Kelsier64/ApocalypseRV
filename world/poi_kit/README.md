@@ -2,15 +2,15 @@
 
 現行室內是 16 模組隨機軍事地堡；尺寸、接口、版本、新增房型與預覽流程以 [地堡契約](../../docs/guides/bunker-interior.md) 為準。室外類型／場址以 [共用規範](../../docs/guides/poi-authoring.md) 為準。
 
-- 房間：`rooms/bunker/`，場景提供 footprint、clear_height 與完整接口。
+- 新房間：`rooms/bunker/v2/`，場景提供 footprint、clear_height 與完整接口；`rooms/bunker/` 原 16 個 content_version=1 場景保留供已訪地堡載入。
 - 房型資源：`world/instances/catalog/bunker/`，Profile：`world/instances/catalog/bunker.tres`。
 - 基本外觀：`materials/bunker/`，混凝土貼圖沿用 `assets/materials/poi_kit/` 原有素材。
 - 室外入口：`exteriors/service_entrance.tscn` 及四款繼承場景，沿用場址、入口、返回點，加入簡單軍事立面。
 - 共用家具：`furniture/shelf.tscn`、`workbench.tscn`、`cabinet.tscn` 與 fuel_pump 仍供加油站使用，不隨舊副本移除。
 
-房間保留 Visuals／Collision／DoorSockets／Furnishings／Walkway。家具保留 Visuals／Collision／LootSpawns，原點在底部占地中心；PoiLootPoint 只描述呼叫者 RNG 抽選，不能自行生成內容。地堡本輪不抽物資或敵人。
+房間保留 Visuals／Collision／DoorSockets／Furnishings／Walkway。家具原點在底部占地中心，碰撞不放入可替換模型；`furniture/bunker/` 為 v2 家具與複雜物件灰盒。PoiLootPoint 只描述呼叫者 RNG 抽選，不能自行生成內容。新地堡由 BunkerContent 獨立抽取物資、補給箱、Raker 與引擎；BunkerLighting 將普通模組的 60% 熄燈，入口與樓梯保留照明。
 
-原 v1／v2 房間與舊 workshop 已移除。新測試場為 `tests/bunker_playground.tscn`；當前驗收见 [地堡驗收](../../docs/validation/2026-09-24-random-bunker.md)。下方原始紀錄只代表當時版本，不代表新地堡的驗收結果。
+先前布局系統的舊房間與 workshop 已移除，現行 bunker content_version=1 則持續保留。測試場為 `tests/bunker_playground.tscn`；本次驗收見 [廢棄地堡與手電筒](../../docs/validation/2026-09-29-bunker-art-flashlight.md)。下方原始紀錄只代表當時版本。
 
 ## 本次驗證紀錄（2026-09-15）
 

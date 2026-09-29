@@ -31,7 +31,7 @@ func _run() -> void:
 	var player = main.get_node("Player")
 	player.in_ui_mode = true
 	player.current_player_health = 10000
-	var monster: Monster = load("res://enemies/zombie.tscn").instantiate()
+	var monster: Monster = load("res://enemies/raker.tscn").instantiate()
 	WorldEntities.get_container(main).add_child(monster)
 	monster.global_position = site.route[0] + Vector3.UP * 0.1
 	monster.detection_range = 90

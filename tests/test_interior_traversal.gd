@@ -7,6 +7,7 @@ func check(ok: bool, message: String) -> void:
 		push_error("FAIL: " + message)
 func _run() -> void:
 	var inside := PoiInterior.new()
+	inside.populate_content = false
 	inside.room_count = 12
 	inside.target_floors = 3
 	root.add_child(inside)

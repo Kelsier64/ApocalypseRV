@@ -3,7 +3,7 @@ extends RefCounted
 ## A small RV-local walking graph. Queries use the actor's actual capsule;
 ## waypoints follow the vehicle, and moving/removing equipment invalidates on refresh.
 const STEP := 0.2
-const ROOT_Y := 0.28 # Deck top 0.5; zombie capsule foot is root + 0.25.
+const ROOT_Y := 0.28 # Deck top 0.5; route offset is measured from the actor root.
 var active: bool = false
 var vehicle: Node3D
 var _timer: float = 0.0

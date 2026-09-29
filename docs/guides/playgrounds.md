@@ -117,7 +117,9 @@ F1/F2/F3 預覽草原／林地／岩丘，F6 執行固定 seed 的 5 km 輪驅�
 
 ## POI 資產與副本
 
-16 個地堡模組、六種首批尺寸、隨機 1–3 層。外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
+16 個啟用的 v2 廢棄地堡模組、保留 16 個 v1 定義供舊存檔解析，六種首批尺寸、隨機 1–3 層。普通模組 60% 暗房，外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
+
+美術檢查在地堡測試命令最後加 `--art-inspect`，可加 `--inspect-room=hall_03` 選起始房型（該 seed 未生成時回到入口）：測試專用手電筒自動拾取、怪物暫停；F4 轉向房內四角，F6／F7 切到下／上個房間，L 使用正式手電筒開關，F8 存當前房型和開關狀態截圖至 `.godot/bunker-art-*.png`。房間定位僅用於檢視，不能當成步行通過證據；F5 的連續搬運回放獨立驗證通行。正式遊戲仍須在初始世界地面 E 拾取手電筒。
 
 ```powershell
 godot --path . --log-file .godot/bunker.log res://tests/bunker_playground.tscn -- --rooms=12 --floors=3 --seed=42
@@ -197,9 +199,9 @@ godot --path . --log-file .godot/boarding-visible.log res://tests/monster_boardi
 godot --path . --log-file .godot/pursuit-visible.log res://tests/monster_pursuit_playground.tscn
 ```
 
-藍色方柱標記玩家，灰白模型為正式 Zombie，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，觀察怪物追近後是否持續扣血。F3 放入牆壁並固定怪物移速，F4 移除牆壁；牆存在時玩家不受傷，移除後恢復近戰。[修正與驗收](../../docs/validation/2026-09-16-monster-pursuit.md)。
+此追蹤／近戰場景現載入 Raker：藍色方柱標記玩家，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，可觀察怪物追近後的攻擊。F3 放入牆壁並固定怪物移速，F4 移除牆壁；正式 Raker 回歸以 `test_raker.gd` 為準。[舊追蹤驗收](../../docs/validation/2026-09-16-monster-pursuit.md)記錄的是當時場景。
 
-新怪物模型的近距離預覽沿用上述追擊行為，另有 F6 扣怪物 5 HP、R 重設。目前僅播放 `TEST_InPlace` 循環，正式行走／攻擊／攀爬動畫待補。[素材設定與限制](../../assets/models/monster/README.md)。
+以下模型預覽現使用 Raker；其他動作與抓咬流程可用下方專用 Raker 測試場。[舊素材設定](../../assets/models/monster/README.md)僅供追溯早期試接。
 
 ```powershell
 godot --path . --log-file .godot/monster-model-preview.log res://tests/monster_model_playground.tscn

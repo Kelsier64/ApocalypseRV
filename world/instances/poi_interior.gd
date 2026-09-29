@@ -12,6 +12,10 @@ var cancelled := false
 var build_timeout_ms := 60000
 var room_count := 0
 var target_floors := 0
+var instance_id := ""
+var populate_content := true
+var content: Dictionary = {}
+var caches: Array[Node3D] = []
 var explored: Array[String] = []
 var build_msec := 0
 var navigation_msec := 0
@@ -39,18 +43,22 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	environment.environment.background_color = Color("111511")
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color("afb9a3")
-	environment.environment.ambient_light_energy = 0.22
+	environment.environment.ambient_light_energy = BunkerLighting.AMBIENT_ENERGY if BunkerLighting.is_abandoned(layout) else BunkerLighting.LEGACY_AMBIENT_ENERGY
 	add_child(environment)
 	navigation = NavigationRegion3D.new()
 	navigation.name = "BunkerGeometry"
 	add_child(navigation)
+	var dark_rooms := BunkerLighting.dark_room_ids(layout)
 	for i in layout.rooms.size():
 		var data: Dictionary = layout.rooms[i]
-		var room := InteriorLayout.definition(layout, i).scene.instantiate() as PoiRoom
+		var definition := InteriorLayout.definition(layout, i)
+		var room := definition.scene.instantiate() as PoiRoom
 		room.name = data.id
 		room.transform = data.transform
 		navigation.add_child(room)
 		rooms.append(room)
+		BunkerLighting.apply(room, definition, str(data.id) in dark_rooms)
+		_set_floor_signs(room, definition)
 		for socket in room.get_node("DoorSockets").get_children():
 			if not InteriorLayout.used(layout, i, str(socket.socket_id)): _seal(room, socket)
 		if i % 4 == 3:
@@ -67,7 +75,23 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	mesh.cell_height = 0.25
 	navigation.navigation_mesh = mesh
 	if not await _bake(): return false
+	if saved.has("actors"):
+		# An existing empty bunker stays empty. Never populate on reentry.
+		content = saved.get("content", {}).duplicate(true)
+		for state: Dictionary in saved.get("caches", []):
+			var cache = preload("res://world/instances/bunker_cache.tscn").instantiate()
+			cache.restore_state(state)
+			navigation.add_child(cache)
+			caches.append(cache)
+	elif populate_content:
+		content = BunkerContent.populate(self)
+	if not caches.is_empty() and not await _bake(): return false
+	# Restore movable actors only after all async geometry work is complete.
+	# Otherwise a saved drop can fall/move while the player is still loading.
 	if saved.has("actors"): _restore(saved.actors)
+	if not content.is_empty() and not BunkerContent.reachable(self, saved.is_empty()): return false
+	for actor in entities.get_children():
+		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_INHERIT
 	_add_hud()
 	build_msec = Time.get_ticks_msec() - started
 	print("BUNKER_READY seed=%d rooms=%d/%d floors=%d/%d build_ms=%d nav_ms=%d" % [seed_value, rooms.size(), layout.target_rooms, InteriorLayout.floor_count(layout), layout.target_floors, build_msec, navigation_msec])
@@ -76,13 +100,21 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 func spawn_transform() -> Transform3D:
 	return rooms[0].get_node("Walkway/Spawn").global_transform
 
+func _set_floor_signs(room: PoiRoom, definition: InteriorRoomDefinition) -> void:
+	if definition.content_version < 2 or definition.role != &"stairs": return
+	var lower_floor := 1 + roundi(-room.position.y / float(layout.floor_spacing))
+	var upper := room.get_node_or_null("Visuals/UpperFloorSign") as Label3D
+	var lower := room.get_node_or_null("Visuals/LowerFloorSign") as Label3D
+	if upper: upper.text = "B%d\nDOWN TO B%d" % [lower_floor - 1, lower_floor]
+	if lower: lower.text = "B%d\nUP TO B%d" % [lower_floor, lower_floor - 1]
+
 func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
 	var holder := Node3D.new()
 	holder.name = "Sealed_" + str(socket.socket_id)
 	holder.transform = room.get_node("Collision").transform.affine_inverse() * room.socket_transform(socket)
 	room.get_node("Collision").add_child(holder)
 	# +Z faces inward. The whole wall slab stays in its own room.
-	_box(holder, Vector3(socket.opening.x, socket.opening.y, 0.24), Vector3(0, socket.opening.y/2, 0.12), WALL)
+	_box(holder, Vector3(socket.opening.x, socket.opening.y, 0.24), Vector3(0, socket.opening.y/2, 0.12), _room_material(room, "Wall", WALL))
 	for path in socket.frame_nodes:
 		var frame := socket.get_node_or_null(path)
 		if frame != null: frame.queue_free()
@@ -90,9 +122,16 @@ func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
 	var panel := BoxMesh.new()
 	panel.size = Vector3(socket.opening.x, 1.1, 0.012)
 	paint.mesh = panel
-	paint.material_override = preload("res://world/poi_kit/materials/bunker/olive.tres")
+	paint.material_override = _room_material(room, "Paint", preload("res://world/poi_kit/materials/bunker/olive.tres"))
 	paint.position = Vector3(0, 0.7, 0.247)
 	holder.add_child(paint)
+
+func _room_material(room: PoiRoom, prefix: String, fallback: Material) -> Material:
+	for node in room.get_node("Visuals").get_children():
+		if node is MeshInstance3D and str(node.name).begins_with(prefix):
+			var material: Material = node.get_active_material(0)
+			if material != null: return material
+	return fallback
 
 func _add_exit() -> void:
 	var marker: Marker3D = rooms[0].get_node("Walkway/Exit")
@@ -187,6 +226,7 @@ func snapshot() -> Dictionary:
 		if not actor is Prop and not actor is Monster:
 			continue
 		var data := {"scene": actor.scene_file_path, "transform": actor.transform}
+		if actor.has_meta("bunker_actor_id"): data["id"] = str(actor.get_meta("bunker_actor_id"))
 		if actor is Monster:
 			data["health"] = actor.current_health
 		else:
@@ -196,13 +236,21 @@ func snapshot() -> Dictionary:
 			data["large"] = actor.is_large
 			data["frozen"] = actor.freeze
 		actors.append(data)
-	return {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate()}
+	var result := {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate()}
+	if not content.is_empty(): result["content"] = content.duplicate(true)
+	if not caches.is_empty():
+		result["caches"] = []
+		for cache in caches: result.caches.append(cache.capture_state())
+	return result
 
 func _restore(actors: Array) -> void:
 	for data: Dictionary in actors:
 		var actor: Node3D = load(data.scene).instantiate()
-		entities.add_child(actor)
 		actor.transform = data.transform
+		if data.has("id"): actor.set_meta("bunker_actor_id", data.id)
+		if actor is Monster and data.has("id"): BunkerContent.configure_monster(actor)
+		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
+		entities.add_child(actor)
 		if actor is Monster:
 			actor.current_health = data.health
 		else:
@@ -245,6 +293,7 @@ func _process(delta: float) -> void:
 			if id not in explored: explored.append(id)
 			break
 	_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]
+	if not content.is_empty(): _hud.text += "\n" + BunkerContent.objective_text(self, player)
 	if _map.visible: _map.queue_redraw()
 
 func _input(event: InputEvent) -> void:

@@ -2,7 +2,7 @@
 
 獨立的新怪物；目前遊戲使用 v021 左右手完整重建、v019 掌向、v018 口腔與 v012 加密模型，共 41 段動畫。待機／走路／奔跑／狂奔共用駝背、前彎頸部、收肘、拇指朝前與掌心朝內，四指朝掌心彎曲，切換步態保留腳步相位。新掌部、拇指根部、指縫與三節四指在 Blender 重新建模、綁定和製作 41 段張合動畫；保留掌心向內的方向。[整手重建驗收](../../../docs/validation/2026-09-23-raker-v021.md)。
 
-主世界一般戶外站點新生成的敵人使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查其既有範圍內的實際生成模型。既有存檔保留已保存的物種。Zombie 場景仍供存檔還原、展示場與測試使用；目前未確認獨立室內副本有新生成 Zombie 的路徑。
+主世界一般戶外站點新生成的敵人使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查其既有範圍內的實際生成模型。新訪地堡的每個合格遭遇機會獨立以 30% 機率從可擴充敵人池生成，目前池中只有 Raker，一座地堡可有 0、1 或多隻。仍存在的 Raker 存檔照原狀還原；已移除場景的怪物在讀取舊檢查點時略過，保留其他世界資料。Zombie 不再是現行敵人或新訪地堡候選。
 
 - 可編輯來源：[monster_refined_v021.blend](../../../art_source/monster_refined_v021/monster_refined_v021.blend)，細化場景 `MONSTER_REFINED_V021`；保留先前模型場景與動畫。原始動畫來源為 `C:/Users/evan4/Projects/3d/raker_animated_v008.blend`。
 - 匯出資產：[raker.glb](raker.glb)，Blender 5.2.2 LTS，glTF 2.0 Binary；只匯出目前場景所選骨架／網格，NLA track 分片、約束烘焙、54 變形骨、Y-up。

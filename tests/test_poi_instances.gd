@@ -17,9 +17,9 @@ func _run() -> void:
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
 	main.get_node("WorldGenerator").world_seed = 42
 	# The production sandbox may omit its debug enemy; this test owns its AI fixture.
-	if not main.has_node("Zombie"):
-		var enemy: Monster = load("res://enemies/zombie.tscn").instantiate()
-		enemy.name = "Zombie"
+	if not main.has_node("OutdoorTestRaker"):
+		var enemy: Monster = load("res://enemies/raker.tscn").instantiate()
+		enemy.name = "OutdoorTestRaker"
 		enemy.position = Vector3(0, 1, 8)
 		main.add_child(enemy)
 	root.add_child(main)
@@ -56,6 +56,8 @@ func _run() -> void:
 		quit(1)
 		return
 	var inside := manager.interior
+	for actor in inside.entities.get_children():
+		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
 	await frames(20)
 	check(inside.explored.has("r000") and not inside._hud.text.is_empty(), "Production entry updates exploration and floor HUD")
 	var map_key := InputEventKey.new()
@@ -73,7 +75,7 @@ func _run() -> void:
 	check(clock.get_node("WeatherRain").visible_drops == 0, "Independent indoor world has no outdoor rain")
 	check(not WorldEntities.same_world(player, main), "Independent physics world")
 	check(WorldEntities.get_container(player) == inside.entities, "Indoor drops owned by indoor container")
-	var outdoor: Monster = main.get_node("Zombie")
+	var outdoor: Monster = main.get_node("OutdoorTestRaker")
 	outdoor.target_player = player
 	await frames(5)
 	check(outdoor.target_player == null, "Cached outdoor target cleared across worlds")
@@ -87,14 +89,31 @@ func _run() -> void:
 	await frames(5)
 	check(main.get_node("WorldGenerator").active_chunks.size() == chunks, "Indoor coordinates do not drive outdoor streaming")
 	player.position = Vector3(0, 0.05, 2.5)
-	check(inside.entities.get_child_count() == 0, "Bunker starts without loot or monsters")
+	check(not inside.content.cargo_id.is_empty() and inside.caches.size() > 0, "Production bunker contains cargo and searchable supplies")
+	check(inside.entities.get_children().filter(func(actor): return actor is Monster).size() <= 4, "Production bunker respects encounter opportunity cap")
+	# Use the real ray and held E gesture against the production cache collision.
+	var cache: BunkerCache = inside.caches[0]
+	var cache_item: String = cache.remaining[0].state.id
+	player.position = cache.position + Vector3(0, -0.2, 1.7)
+	player.velocity = Vector3.ZERO
+	player.look_at(Vector3(cache.position.x, player.position.y, cache.position.z))
+	player.camera.look_at(cache.global_position + Vector3.UP * 0.4)
+	await frames(10)
+	Input.action_press("interact")
+	await frames(90)
+	Input.action_release("interact")
+	await frames(2)
+	check(cache.searched and cache.remaining.size() == 1, "Production held E searches exactly one item")
+	check(player.inventory.items.any(func(item): return item.state.get("id", "") == cache_item), "Search places stable supply in player inventory")
+	player.position = Vector3(0, 0.05, 2.5)
 	var loot: Prop = preload("res://props/scrap.tscn").instantiate()
 	inside.entities.add_child(loot)
 	loot.position = player.position + Vector3(1,0.5,0)
 	loot.scrap_yields = {"Metal Parts": Vector2(7, 7)}
 	loot.interact(player)
 	await frames(2)
-	check(player.inventory.items.size() == 1, "Pickup keeps inventory")
+	check(player.inventory.items.size() == 2, "Pickup keeps inventory and searched supply")
+	player._set_active_slot(player.inventory.items.size() - 1)
 	player.drop_item()
 	await frames(2)
 	var dropped := inside.entities.get_child(-1) as Prop
@@ -112,8 +131,10 @@ func _run() -> void:
 		await process_frame
 		quit(1)
 		return
+	for actor in manager.interior.entities.get_children():
+		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
 	check(manager.interior.entities.get_child_count() == expected.actors.size(), "Reentry preserves deaths, pickups and drops")
-	check(manager.interior.entities.get_child_count() == 1, "Only the player drop remains")
+	check(manager.interior.caches[0].remaining.size() == 1 and manager.interior.caches[0].searched, "Searched container never refills on reentry")
 	var restored_custom := false
 	for actor in manager.interior.entities.get_children():
 		if actor is Prop and actor.scrap_yields == {"Metal Parts": Vector2(7, 7)}:
@@ -136,7 +157,8 @@ func _run() -> void:
 		await process_frame
 	check(checkpoint.save_world(main, disk_path), "Save actual main-world checkpoint after bunker visit")
 	var disk: Dictionary = checkpoint.read_checkpoint(disk_path)
-	check(not disk.is_empty() and disk.poi[id].layout == expected.layout and disk.poi[id].actors.size() == 1, "Disk checkpoint preserves bunker manifest and player drop")
+	check(not disk.is_empty() and disk.poi[id].layout == expected.layout and disk.poi[id].actors.size() == expected.actors.size(), "Disk checkpoint preserves bunker manifest and remaining actors")
+	check(not disk.is_empty() and disk.poi[id].caches == expected.caches and disk.poi[id].content == expected.content, "Disk checkpoint preserves searched caches and cargo identity")
 	if not disk.is_empty():
 		disk.poi["old_v1"] = {"actors": []}
 		disk.poi["old_v2"] = {"actors": [], "layout": {"version": 2, "profile": "maintenance_v2"}}

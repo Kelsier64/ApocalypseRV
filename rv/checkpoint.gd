@@ -328,6 +328,7 @@ func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
 			if not upgraded.vehicles[index] is Dictionary: return {}
 			upgraded.vehicles[index] = VehicleSnapshot.upgrade(upgraded.vehicles[index])
 		CheckpointSchema.discard_legacy_poi(upgraded)
+		_discard_retired_monsters(upgraded)
 		return upgraded
 	if source.get("version", 0) != 1 or not source.get("vehicles") is Array or not source.get("actors") is Array or not source.get("player") is Dictionary or not source.player.get("items") is Array or not source.get("poi") is Dictionary: return {}
 	var data := source.duplicate(true)
@@ -355,7 +356,31 @@ func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
 			if not _convert_legacy_entries(device.service.get("inputs", []), rv): return {}
 	data.version = VERSION
 	CheckpointSchema.discard_legacy_poi(data)
+	_discard_retired_monsters(data)
 	return data
+
+func _discard_retired_monsters(data: Dictionary) -> void:
+	# A removed enemy scene cannot be instantiated. Preserve the rest of an old
+	# checkpoint by dropping only well-formed monsters from a retired scene.
+	_discard_retired_monsters_from(data.get("actors"), true)
+	if data.get("poi") is Dictionary:
+		for entry in data.poi.values():
+			if entry is Dictionary: _discard_retired_monsters_from(entry.get("actors"), false)
+	if data.get("outdoor_sites") is Dictionary:
+		for entry in data.outdoor_sites.values():
+			if entry is Dictionary: _discard_retired_monsters_from(entry.get("actors"), true)
+
+func _discard_retired_monsters_from(actors: Variant, has_kind: bool) -> void:
+	if not actors is Array: return
+	for index in range(actors.size() - 1, -1, -1):
+		var actor: Variant = actors[index]
+		if not actor is Dictionary: continue
+		if has_kind and actor.get("kind") != "monster": continue
+		if not has_kind and not actor.has("health"): continue
+		var scene: Variant = actor.get("scene")
+		if not scene is String or not scene.begins_with("res://enemies/"): continue
+		if not CheckpointSchema.valid_transform(actor.get("transform")) or not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: continue
+		if SaveSceneCatalog.resolve(scene, "monster") == null and not ResourceLoader.exists(scene): actors.remove_at(index)
 
 func _convert_legacy_entries(entries: Array, rv: Dictionary) -> bool:
 	for index in range(entries.size() - 1, -1, -1):

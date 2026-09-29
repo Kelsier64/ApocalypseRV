@@ -184,7 +184,7 @@ func _ready():
 	boarding_visual.set_script(load("res://enemies/monster_boarding_visual.gd"))
 	add_child(boarding_visual)
 	
-	# Randomize initial sway so all zombies don't sync
+	# Randomize initial sway so nearby monsters do not move in sync.
 	sway_phase = randf_range(0, TAU)
 	stagger_amount = randf_range(0.3, 0.7)
 	

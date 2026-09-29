@@ -10,7 +10,7 @@
 |---|---|---|
 | `core/` | 共用契約、支撐、識別碼、存檔場景白名單 | `save_scene_catalog.gd`、`rv_support.gd` |
 | `player/` | 玩家移動、攀爬、互動、背包和外觀 | `player.tscn` |
-| `enemies/` | 殭屍、Raker、選敵、追擊及攻擊 | `zombie.tscn`、`raker.tscn` |
+| `enemies/` | Raker、共用怪物行為、選敵、追擊及攻擊 | `raker.tscn`、`monster.gd` |
 | `props/` | 地面與背包可搬運物件 | `prop.gd`、道具場景 |
 | `rv/` | 底盤、輪胎、車況、能源、檢查點及 RV 視覺 | `new_rv.tscn`、`chassis.tscn` |
 | `equipment/` | 可安裝設備、車殼、互動與定義 | `equipment.gd`、各設備場景 |

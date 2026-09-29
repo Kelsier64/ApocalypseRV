@@ -9,7 +9,9 @@ func check(ok: bool, message: String) -> void:
 func _run() -> void:
 	var profile: InteriorProfile = InteriorLayout.PROFILE
 	check(profile.validate().is_empty(), "Catalog validates: " + str(profile.validate()))
-	check(profile.rooms.size() == 16, "16 initial modules")
+	check(profile.min_rooms == 30 and profile.max_rooms == 60, "Default bunker budget is 30–60 rooms")
+	check(profile.rooms.filter(func(def): return def.enabled).size() == 16, "16 active room modules")
+	check(profile.rooms.filter(func(def): return def.content_version == 1 and not def.enabled).size() == 16, "16 legacy room versions retained")
 	var sizes: Dictionary = {}
 	for def in profile.rooms:
 		if def.role == &"ordinary": sizes[def.describe().bounds.size] = true
@@ -20,9 +22,17 @@ func _run() -> void:
 		check(layout == InteriorLayout.generate(seed_value), "Deterministic seed %d" % seed_value)
 		var error := InteriorLayout.validate(layout)
 		check(error.is_empty(), "Seed %d: %s" % [seed_value, error])
-		check(layout.target_rooms >= 10 and layout.target_rooms <= 30 and layout.rooms.size() <= layout.target_rooms, "Room budget")
+		check(layout.target_rooms >= 30 and layout.target_rooms <= 60 and layout.rooms.size() >= 30 and layout.rooms.size() <= layout.target_rooms, "Room budget")
 		levels[InteriorLayout.floor_count(layout)] = true
 	check(levels.size() == 3, "One, two and three floors occur")
+	for count in [30, 45, 60]:
+		for seed_value in [42, 1775, 1800, 4026586570]:
+			var layout := InteriorLayout.generate(seed_value, count)
+			check(layout.target_rooms == count and layout.rooms.size() == count, "Explicit %d-room layout reaches target for seed %d" % [count, seed_value])
+			check(InteriorLayout.validate(layout).is_empty(), "Explicit %d-room layout validates for seed %d" % [count, seed_value])
+	for count in [1, 10, 20, 30]:
+		var legacy := InteriorLayout.generate(1700 + count, count)
+		check(legacy.target_rooms == count and InteriorLayout.validate(legacy).is_empty(), "Saved %d-room budget remains valid" % count)
 	# Exhausted entry is valid below ten; no random retry or padding.
 	var exhausted := profile.duplicate() as InteriorProfile
 	exhausted.rooms = [profile.room("entry")]
@@ -95,5 +105,5 @@ func _run() -> void:
 	var memory := {"layout": saved, "actors": [], "explored": ["r000"]}
 	check(CheckpointSchema.poi_error({"bunker": memory}).is_empty(), "Bunker snapshot schema")
 	check(InteriorLayout.validate(bytes_to_var(var_to_bytes(saved))) == "", "Disk encoding round-trip")
-	if failures.is_empty(): print("PASS: 1000 bunker seeds, 1-3 floors, manifest validation, exhaustion, fractional size/category extension and stable saves")
+	if failures.is_empty(): print("PASS: 1000 bunker seeds at 30–60 rooms, 30/45/60-room stress, legacy budgets, 1-3 floors, manifest validation, exhaustion, fractional size/category extension and stable saves")
 	quit(0 if failures.is_empty() else 1)

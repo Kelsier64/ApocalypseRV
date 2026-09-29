@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/paint.tres" id="paint"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="rust"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(3.2, 1.7, 1.2)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(2.95, 0.09, 1.08)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(3.2, 1.7, 1.2)
+
+[node name="diesel_generator_graybox" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" type="Node3D" parent="Visuals"]
+
+[node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 0.85, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("paint")
+
+[node name="Cover" type="MeshInstance3D" parent="Visuals/Model"]
+position = Vector3(0, 1.65, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("rust")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.85, 0)
+shape = SubResource("collision")
+
+[node name="Stencil" type="Label3D" parent="Visuals/Model"]
+position = Vector3(0, 1.105, 0.615)
+text = "GENSET"
+font_size = 32
+pixel_size = 0.003
+shaded = true
+double_sided = false
+modulate = Color(0.68, 0.67, 0.53, 1)

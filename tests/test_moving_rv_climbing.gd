@@ -6,7 +6,7 @@ var world: Node3D
 var rv: Node3D
 var player: CharacterBody3D
 var monster: CharacterBody3D
-var monster_scene: PackedScene = preload("res://enemies/zombie.tscn")
+var monster_scene: PackedScene = preload("res://enemies/raker.tscn")
 
 func _init() -> void:
 	_run.call_deferred()

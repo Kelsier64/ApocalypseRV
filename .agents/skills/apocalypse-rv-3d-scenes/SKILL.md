@@ -7,7 +7,7 @@ description: Build or edit ApocalypseRV 3D scenes and replace visual assets. Fin
 
 Prefer reusing existing models and materials. Keep finished visuals already in use; do not replace them with grayboxes just to follow this workflow.
 
-- **Finish simple objects directly:** For walls, floors, straight pipes, and other objects that need only a few meshes and materials, complete their visuals and function without writing a modeling document.
+- **Finish simple objects directly:** For walls, floors and other objects that need only a few meshes and materials, complete their visuals and function without writing a modeling document.
 - **Use a graybox and short prompt for complex objects:** When an object needs a distinctive silhouette, dense mechanical detail, or rigging, first graybox the necessary volume, openings, and function. Do not assemble a finished asset from many small placeholder parts. Finish simple parts of the same scene as usual.
 
 ## Short Modeling Prompt

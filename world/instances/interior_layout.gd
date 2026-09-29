@@ -9,7 +9,7 @@ static func generate(seed_value: int, count := 0, profile: InteriorProfile = PRO
 	rng.seed = seed_value
 	var drawn_count := rng.randi_range(profile.min_rooms, profile.max_rooms)
 	var drawn_floors := rng.randi_range(1, profile.max_floors)
-	count = drawn_count if count == 0 else clampi(count, 1, 30)
+	count = drawn_count if count == 0 else clampi(count, 1, InteriorProfile.MAX_SUPPORTED_ROOMS)
 	floors = drawn_floors if floors == 0 else clampi(floors, 1, profile.max_floors)
 	var data := {"version": VERSION, "profile": str(profile.profile_id), "seed": seed_value, "target_rooms": count, "target_floors": floors, "floor_spacing": profile.floor_spacing, "rooms": [], "links": [], "edges": []}
 	for definition in profile.rooms:
@@ -189,7 +189,7 @@ static func distances(data: Dictionary, from := 0) -> Array[float]:
 static func validate(value: Variant, profile: InteriorProfile = PROFILE) -> String:
 	if not value is Dictionary or not value.has_all(["version", "profile", "seed", "target_rooms", "target_floors", "floor_spacing", "rooms", "links", "edges"]): return "layout fields"
 	if value.version != VERSION or value.profile != str(profile.profile_id) or not value.seed is int: return "layout version"
-	if not value.target_rooms is int or value.target_rooms < 1 or value.target_rooms > 30 or not value.target_floors is int or value.target_floors < 1 or value.target_floors > 3: return "layout budget"
+	if not value.target_rooms is int or value.target_rooms < 1 or value.target_rooms > InteriorProfile.MAX_SUPPORTED_ROOMS or not value.target_floors is int or value.target_floors < 1 or value.target_floors > 3: return "layout budget"
 	if not (value.floor_spacing is float or value.floor_spacing is int) or not is_finite(value.floor_spacing) or value.floor_spacing <= 0: return "floor spacing"
 	if not value.rooms is Array or value.rooms.is_empty() or value.rooms.size() > value.target_rooms or not value.links is Array or value.links.size() > 300 or not value.edges is Array: return "layout size"
 	var partial := {"rooms": []}

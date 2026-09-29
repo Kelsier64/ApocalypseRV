@@ -9,3 +9,4 @@ id = &"medium_01"
 scene = ExtResource("2")
 role = &"ordinary"
 selection_group = &"medium"
+enabled = false

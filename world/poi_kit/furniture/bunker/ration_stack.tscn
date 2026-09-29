@@ -1,0 +1,40 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/cloth.tres" id="cloth"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/pale.tres" id="pale"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(0.6, 0.42, 0.55)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.62, 0.04, 0.57)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.6, 0.42, 0.55)
+
+[node name="ration_stack" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.21, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("cloth")
+
+[node name="Lid" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.435, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("pale")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.21, 0)
+shape = SubResource("collision")
+
+[node name="Stencil" type="Label3D" parent="Visuals"]
+position = Vector3(0, 0.273, 0.29)
+text = "RATIONS"
+font_size = 32
+pixel_size = 0.003
+shaded = true
+double_sided = false
+modulate = Color(0.68, 0.67, 0.53, 1)

@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="rust"]
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(0.55, 0.92, 0.55)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.58, 0.05, 0.58)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.55, 0.92, 0.55)
+
+[node name="barrel" type="StaticBody3D"]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Drum" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.46, 0)
+mesh = SubResource("m0")
+material_override = ExtResource("rust")
+
+[node name="Rim" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.91, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("steel")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.46, 0)
+shape = SubResource("collision")

@@ -88,6 +88,7 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	if CheckpointSchema.legacy_poi(saved):
 		saved_instances.erase(id)
 	interior = interior_factory.call() if interior_factory.is_valid() else PoiInterior.new()
+	interior.instance_id = id
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
 	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
@@ -125,12 +126,12 @@ func leave() -> void:
 	# Capture after deferred deaths/pickups, so an exit cannot resurrect them.
 	await get_tree().process_frame
 	if not _valid_operation(token): return
-	saved_instances[active_id] = interior.snapshot()
+	_commit_interior_snapshot()
 	_player.reparent(_home)
 	_reset_player(_safe_return_transform())
 	_display.hide()
 	_display.texture = null
-	viewport.queue_free()
+	_retire_viewport(viewport, interior)
 	viewport = null
 	interior = null
 	print("POI EXIT: ", active_id)
@@ -178,6 +179,10 @@ func _valid_operation(token: int) -> bool:
 func cancel_transition(reason := "Transition cancelled") -> void:
 	operation += 1
 	last_error = reason
+	# Once the player has entered, inventory and interior changes must survive
+	# together even if death or a timeout interrupts the exit's deferred frame.
+	if state == State.INDOOR or state == State.LEAVING:
+		_commit_interior_snapshot()
 	if is_instance_valid(_player) and is_instance_valid(_home):
 		if _player.get_parent() != _home:
 			_player.reparent(_home)
@@ -193,6 +198,12 @@ func cancel_transition(reason := "Transition cancelled") -> void:
 	busy = false
 	state = State.FAILED
 	_status.text = reason
+
+func _commit_interior_snapshot() -> void:
+	# An entering build can be incomplete; keep its previous saved manifest.
+	if active_id.is_empty() or not is_instance_valid(interior) or not is_instance_valid(interior.entities) or interior.layout.is_empty():
+		return
+	saved_instances[active_id] = interior.snapshot()
 
 func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
 	retired.process_mode = Node.PROCESS_MODE_DISABLED

@@ -1,0 +1,517 @@
+{
+  "date": "2026-09-29",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "base_commit": "ebe31d5aba270b37ce8cb397bc7947b770754958",
+  "rendering": "headless / dummy",
+  "computer_use": false,
+  "test_suites": 84,
+  "import": "passed",
+  "main_scene": "passed",
+  "execution": "Segmented: initial runner art suite; resumed 81 suites via -StartAt test_bunker_cache and main-scene (exit 0); additional encounter/extraction suites and final strengthened content assertions passed in focused headless runs.",
+  "results": [
+    {
+      "name": "test_art_presentation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_art_presentation.log",
+      "test_sha256": "AA3E82ADA006522DC00EBD7AFEFB682EAF00C5C74D986B8E0CDA7C8D17C45034"
+    },
+    {
+      "name": "test_bunker_cache",
+      "status": "passed",
+      "log": ".godot/test-logs/test_bunker_cache.log",
+      "test_sha256": "428C1FB05AADAC8BD4842CFF2E1D4B8EF6118EE70D2CD36672C1F53364D20142"
+    },
+    {
+      "name": "test_bunker_content",
+      "status": "passed",
+      "log": ".godot/bunker-content-final-test.log",
+      "test_sha256": "716F7861BD0F08A706BBDAD07B98A6967F7457D55536CD7FD88BB1E919D3306C"
+    },
+    {
+      "name": "test_bunker_encounter",
+      "status": "passed",
+      "log": ".godot/bunker-encounter-test.log",
+      "test_sha256": "2AE9EB5574B68AA0DF243F54928710E29CBC8BD8AE7A6ECB25159665A4466E33"
+    },
+    {
+      "name": "test_bunker_extraction",
+      "status": "passed",
+      "log": ".godot/test-logs/agent-bunker-extraction.log",
+      "test_sha256": "9D1D24A30678D8FC44A694F5ACE6FB0EA75738DA51D9B6765B80692079FE0B33"
+    },
+    {
+      "name": "test_cabin_light_equipment",
+      "status": "passed",
+      "log": ".godot/test-logs/test_cabin_light_equipment.log",
+      "test_sha256": "EFAB566271F156C275E906002B4AFCB031184B96B45421CA1E7A94992D14DAF9"
+    },
+    {
+      "name": "test_checkpoint_failures",
+      "status": "passed",
+      "log": ".godot/test-logs/test_checkpoint_failures.log",
+      "test_sha256": "D64BCB0D82B4786EE61E4286D1F95DC11F9410578B0A61ED5B740EF2F2B45E25"
+    },
+    {
+      "name": "test_combat_targeting",
+      "status": "passed",
+      "log": ".godot/test-logs/test_combat_targeting.log",
+      "test_sha256": "4739E803E7373E2596F44D0CF92E4A38841FC2626BB874297CD583324170C285"
+    },
+    {
+      "name": "test_equipment_lifecycle",
+      "status": "passed",
+      "log": ".godot/test-logs/test_equipment_lifecycle.log",
+      "test_sha256": "3C18D2644B57BBB8615BD1D9967EBF47070F3C09665D283D2AA8C859F11AC948"
+    },
+    {
+      "name": "test_forest_fog",
+      "status": "passed",
+      "log": ".godot/test-logs/test_forest_fog.log",
+      "test_sha256": "5B2A8782301961313D2CCDAEC3AB903D6DE6E3926D0ADF8FE1738396FE777905"
+    },
+    {
+      "name": "test_gas_station",
+      "status": "passed",
+      "log": ".godot/test-logs/test_gas_station.log",
+      "test_sha256": "7192CEED7F7A2E9EC998F4C74059893B0575E91FE465979B677D8E558F7B0B43"
+    },
+    {
+      "name": "test_interior_compatibility",
+      "status": "passed",
+      "log": ".godot/test-logs/test_interior_compatibility.log",
+      "test_sha256": "CCF4443EFD77E805488D16DE7486331B7D857CACDEAA6D75BB24E74CA4E09D4E"
+    },
+    {
+      "name": "test_interior_doorways",
+      "status": "passed",
+      "log": ".godot/test-logs/test_interior_doorways.log",
+      "test_sha256": "2181640E27B2739E9AA1EF78D5E55EEB86568D16FE6080A78B4E0F431E7B4297"
+    },
+    {
+      "name": "test_interior_layout",
+      "status": "passed",
+      "log": ".godot/test-logs/test_interior_layout.log",
+      "test_sha256": "4A65A4E87EEECA46591D021199F97DD24DA6A0F0D317CC87635CA525118FB0AE"
+    },
+    {
+      "name": "test_interior_navigation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_interior_navigation.log",
+      "test_sha256": "3EA86C8CA51D6B602A13C41CB743B6E7947B33331EFDAB261BEFFC0168CC3301"
+    },
+    {
+      "name": "test_interior_traversal",
+      "status": "passed",
+      "log": ".godot/test-logs/test_interior_traversal.log",
+      "test_sha256": "043456DD7370127EA57EC97DC507ADA2587E2F0C41CB68CD462F372D2A957590"
+    },
+    {
+      "name": "test_main_world_monsters",
+      "status": "passed",
+      "log": ".godot/test-logs/test_main_world_monsters.log",
+      "test_sha256": "111E9E9DB0A3E6B8D6DB20A0F8F7736CC227F3BFE8DDD924791A3759874B7244"
+    },
+    {
+      "name": "test_minor_site_generation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_minor_site_generation.log",
+      "test_sha256": "242ADB8F2C93AB21159217BFEE0429F4D71B95407BE8A17BC7017180AAE674B7"
+    },
+    {
+      "name": "test_monster_boarding",
+      "status": "passed",
+      "log": ".godot/test-logs/test_monster_boarding.log",
+      "test_sha256": "AECD1DF3BCDDCA71C062A47B58EEF8ED426E8610F2DB75B97657B3F951C2EA1B"
+    },
+    {
+      "name": "test_monster_cabin",
+      "status": "passed",
+      "log": ".godot/test-logs/test_monster_cabin.log",
+      "test_sha256": "5CCF17C073E15626C382FDA28E5F573F7C9EFEE3A4E8434A7846B2A2453A63E7"
+    },
+    {
+      "name": "test_monster_model",
+      "status": "passed",
+      "log": ".godot/test-logs/test_monster_model.log",
+      "test_sha256": "9152A6048C8A506707CD8604612C3FE8173D50EAB3C9B9E06C68B3090C3C9BC0"
+    },
+    {
+      "name": "test_monster_navigation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_monster_navigation.log",
+      "test_sha256": "EC476000C4E526D9D56AA511EC30F99F892A6F99EF7C36E2AF156B558DFF94AF"
+    },
+    {
+      "name": "test_monster_pursuit",
+      "status": "passed",
+      "log": ".godot/test-logs/test_monster_pursuit.log",
+      "test_sha256": "2FD2384968BDEFDFD890F51780F9B7D28B0DBC054A8B64CDE581AC0113C0BD9D"
+    },
+    {
+      "name": "test_moving_rv_climbing",
+      "status": "passed",
+      "log": ".godot/test-logs/test_moving_rv_climbing.log",
+      "test_sha256": "C42FCBFAA2C53D3D5B54C197FC3152AB8302F6B572D17C6BA69662E5E25CAD9D"
+    },
+    {
+      "name": "test_outdoor_encounter",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_encounter.log",
+      "test_sha256": "453F591B9E922ED8D079B5626CE06F95B802AEDD14E5BE0164CCF9D638A243FE"
+    },
+    {
+      "name": "test_outdoor_gas_station",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_gas_station.log",
+      "test_sha256": "FFA5DEB13E979BC6FA3635FB5B5D7EB4103CD93B5FBD7558C4DDC4B0324ABA8F"
+    },
+    {
+      "name": "test_outdoor_horror",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_horror.log",
+      "test_sha256": "B670B0DA8121B39113CF1D8C168F762916CE8EFCC2A3D666A1E78286E5CB13B6"
+    },
+    {
+      "name": "test_outdoor_minor_assets",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_minor_assets.log",
+      "test_sha256": "36BB2039F333AF5560997739C898FCA64A029CBF062CEA19AB8839620589F27E"
+    },
+    {
+      "name": "test_outdoor_minor_navigation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_minor_navigation.log",
+      "test_sha256": "CE1CD1E595085FE0AA82A72BEE60A9D72F1EE24A1A80C35941573B79CEDD4DF6"
+    },
+    {
+      "name": "test_outdoor_minor_persistence",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_minor_persistence.log",
+      "test_sha256": "ABBB36747C89DD965B6175FE00F031CFD12AAF5B1A7D460F39520C11FC060B0D"
+    },
+    {
+      "name": "test_outdoor_style_sample",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_style_sample.log",
+      "test_sha256": "7D821BC2C4F3249D1C982552163761ACC40BD7DD93CDA79568BD69C1C6BB45BA"
+    },
+    {
+      "name": "test_outdoor_traversal",
+      "status": "passed",
+      "log": ".godot/test-logs/test_outdoor_traversal.log",
+      "test_sha256": "C6769564D52693743195050CC11CF9C548A5FE76957C0DB07609738F129CA614"
+    },
+    {
+      "name": "test_player_animation_skin",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_animation_skin.log",
+      "test_sha256": "FDC88A4ABD42218A84025E531BD0ADACE16FA002FEEF23BD68240122B886522F"
+    },
+    {
+      "name": "test_player_animation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_animation.log",
+      "test_sha256": "38876D8497222ABF8A525BE66D81BD8BD9BCA9BEA6765112103A3EA7D1A174A3"
+    },
+    {
+      "name": "test_player_climb_animation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_climb_animation.log",
+      "test_sha256": "0E9EB7FDEBE12223A1DF994CC73D94B9782A8BF8095DD3FDB0869271390C7480"
+    },
+    {
+      "name": "test_player_climbing",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_climbing.log",
+      "test_sha256": "527F840DE10BEEC22C26D818FB56F563169FC5989326F9EF892989F4A30C2987"
+    },
+    {
+      "name": "test_player_death",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_death.log",
+      "test_sha256": "19C39DA16B94D763E60F2B8F2846B3C53E6D3B28C50FC43E54CCA35E19E467B0"
+    },
+    {
+      "name": "test_player_import_v020",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_import_v020.log",
+      "test_sha256": "9F6BCEA8ADE49D938D76D9A3BF297461B3EF72E3250004AD8E5B909442D43D7F"
+    },
+    {
+      "name": "test_player_inventory",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_inventory.log",
+      "test_sha256": "B93AD88F14F578DB368F527001A27D5EA5E18393458361D3513E6F7F39AC81C3"
+    },
+    {
+      "name": "test_player_jump_animation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_jump_animation.log",
+      "test_sha256": "DE481CCBA4FC2605275734C528FC2E82E17859BD3BA281C2FF13F6FFE221F2F9"
+    },
+    {
+      "name": "test_player_model",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_model.log",
+      "test_sha256": "48E97E32422FE8CBAE69693E1F8C0B86DDAEACAB6ADBF16321C00D65AC91AF54"
+    },
+    {
+      "name": "test_player_ragdoll_v020",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_ragdoll_v020.log",
+      "test_sha256": "393029039ED9C3B03D54D392F7C758D4E670F4FDB11189B7FF8131E98AFA403D"
+    },
+    {
+      "name": "test_player_stamina",
+      "status": "passed",
+      "log": ".godot/test-logs/test_player_stamina.log",
+      "test_sha256": "24D816C1A10FE73B721EADCC0E89B66206C48A710652B4AFD3C873697C1E42AE"
+    },
+    {
+      "name": "test_poi_asset_kit",
+      "status": "passed",
+      "log": ".godot/test-logs/test_poi_asset_kit.log",
+      "test_sha256": "0DE02288210C83D256F9C7B306C1D0CA400ED5FE999488163910BC75E42DADBB"
+    },
+    {
+      "name": "test_poi_definitions",
+      "status": "passed",
+      "log": ".godot/test-logs/test_poi_definitions.log",
+      "test_sha256": "E3DD07991100BC59732CD4CB5237C8DDBF6C292B6354D46C1F886B887ED00F35"
+    },
+    {
+      "name": "test_poi_instances",
+      "status": "passed",
+      "log": ".godot/test-logs/test_poi_instances.log",
+      "test_sha256": "493873A27F4BF262CB1D9D8CE9DB9E5E67FFDF6060455C4BCD9872F7345F5974"
+    },
+    {
+      "name": "test_poi_transition_persistence",
+      "status": "passed",
+      "log": ".godot/test-logs/test_poi_transition_persistence.log",
+      "test_sha256": "52C3B370F260A57019438C6C3888456CB390FEAA01E7F93EE599E94B43736504"
+    },
+    {
+      "name": "test_raker_attack_alignment",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_attack_alignment.log",
+      "test_sha256": "D8BF4F553051A56970F90391660D90B4A5DDFC85382AF94C7C5BA0FF01CAA7CF"
+    },
+    {
+      "name": "test_raker_bite_pose",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_bite_pose.log",
+      "test_sha256": "75C1A106F152C4E1600031C7887773041740EC9FC7A04C231D7CD73FDFFC9EE6"
+    },
+    {
+      "name": "test_raker_boarding",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_boarding.log",
+      "test_sha256": "22A57FFC81A5FA24E71CA6D332D11C91C31D4653118313B2B68DA00FF5B2A9CF"
+    },
+    {
+      "name": "test_raker_cabin",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_cabin.log",
+      "test_sha256": "254E4B1746E1776306F072C80CE6E23C87375816ADD5C43FB33F834D227145DF"
+    },
+    {
+      "name": "test_raker_finger_flexion",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_finger_flexion.log",
+      "test_sha256": "6BFD25C06F5D854DFB68472D3C9B0316413C4A5849B3A8F833597A1AAF2CD661"
+    },
+    {
+      "name": "test_raker_gaits",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_gaits.log",
+      "test_sha256": "FD6EAEF22BC892C19B5A5FD23F7300FD752B5AE924B269E2BEAA54AD285ADFB9"
+    },
+    {
+      "name": "test_raker_grab_vehicle",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_grab_vehicle.log",
+      "test_sha256": "A6B80ADB1813F665BF6C8DCA72BA6F94835622E73D03E7FB72542478AB19B3CE"
+    },
+    {
+      "name": "test_raker_grab",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_grab.log",
+      "test_sha256": "410D87B5E11B2EFBF4F35E250842180E1336FA53CC7B86CF999D0C8138EC3CB0"
+    },
+    {
+      "name": "test_raker_neck",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_neck.log",
+      "test_sha256": "1A82950871A477FEEE2D45C6497A1F5E9C53E22BDB7B03037320EFA6F35858E4"
+    },
+    {
+      "name": "test_raker_playground",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_playground.log",
+      "test_sha256": "1F35CAC48309C0885854ADD51B81F2A62EA1AA22975D0BF092B1B7A8B6E53A4A"
+    },
+    {
+      "name": "test_raker_release_input",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_release_input.log",
+      "test_sha256": "610DAA5B09A3887D6D08110201159766B91612D1A625B44D22645ABA70D339C4"
+    },
+    {
+      "name": "test_raker_source_hands",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_source_hands.log",
+      "test_sha256": "BE5F59A76352922E8099EFEA45F4345F1077CC279F06D6D14652229F2F7125BD"
+    },
+    {
+      "name": "test_raker_sprint",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_sprint.log",
+      "test_sha256": "5D3FEF1F905E646FF7C3ED26443AA0721952293E366885B1BF1D26446C1B6F3B"
+    },
+    {
+      "name": "test_raker_turning",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker_turning.log",
+      "test_sha256": "288724971C2B8A4F592355BEDCC3A04748711D697E22FBEC7C227DF3A3532533"
+    },
+    {
+      "name": "test_raker",
+      "status": "passed",
+      "log": ".godot/test-logs/test_raker.log",
+      "test_sha256": "6C524B923EAB3B2FA182C8ECF9B43ADFA86F70B2EA7E6BF6051DEB3AD48BE332"
+    },
+    {
+      "name": "test_roadside_exploration",
+      "status": "passed",
+      "log": ".godot/test-logs/test_roadside_exploration.log",
+      "test_sha256": "9C35B1E9465F9E4A61D7BDCC6B8B544A0AAE6DE4E4B7F7CBAB0706D93CD045DB"
+    },
+    {
+      "name": "test_rv_boarding",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_boarding.log",
+      "test_sha256": "955FABD6CD88A648C6E3152ECAA934052313350A5162FD7F32CA8C1EB61D1F37"
+    },
+    {
+      "name": "test_rv_braking",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_braking.log",
+      "test_sha256": "AA64B4C9C6D1D1812D18B6A52D9BFDD30C2273367F3E54AB9B89AAA43EBBC5C8"
+    },
+    {
+      "name": "test_rv_checkpoint",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_checkpoint.log",
+      "test_sha256": "3791709A49887F0EADDE0189C964DEC0859A299C87CACD8B96DE4A0B0D375A15"
+    },
+    {
+      "name": "test_rv_cockpit",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_cockpit.log",
+      "test_sha256": "70646711E83FDCBB34A8E9E94526D91010D03FCDD3072F77EADEF417CD80BCF8"
+    },
+    {
+      "name": "test_rv_engine",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_engine.log",
+      "test_sha256": "339456ADC081CCD81642173149783C150CABBF191AFF90C0087F2A9FB5D43C13"
+    },
+    {
+      "name": "test_rv_experience",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_experience.log",
+      "test_sha256": "1061954608DEF08825AD4B9B9EE2D3F055E4DD17B69F1F438BB197E2594E603A"
+    },
+    {
+      "name": "test_rv_extended",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_extended.log",
+      "test_sha256": "8B9DFB31A9CB0150986B06868903BBF14EB61D20E2905B4D61DC777F2591D830"
+    },
+    {
+      "name": "test_rv_handling",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_handling.log",
+      "test_sha256": "76719706EE4EED2A014D1CB6CB3E52A2702C7950A4FC32239377AD464FF73191"
+    },
+    {
+      "name": "test_rv_interactions",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_interactions.log",
+      "test_sha256": "883DD10A6FAAD778816FBFC55098301CF45F29012990B1ED88129D7C05C9C3B4"
+    },
+    {
+      "name": "test_rv_physics_regression",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_physics_regression.log",
+      "test_sha256": "1160DC118A67E4F543496B7A55DC6381432F29A716AC6371E629AEE891D4D7D9"
+    },
+    {
+      "name": "test_rv_resource_cycle",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_resource_cycle.log",
+      "test_sha256": "A1E0DC6867AAACC35AF081C32F29651728DFBF1C9B5C730F6C8F7065F3B71195"
+    },
+    {
+      "name": "test_rv_shared_storage",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_shared_storage.log",
+      "test_sha256": "E587CD2D83A57AAC510FC02247C7A609A833B3A8965811815FD1A362DEAAF4E0"
+    },
+    {
+      "name": "test_rv_structure_modules",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_structure_modules.log",
+      "test_sha256": "321628EB9AA7C59BA06F5BAA000A178AADDC51A0722AD0E789F0EF9D2352D907"
+    },
+    {
+      "name": "test_rv_systems",
+      "status": "passed",
+      "log": ".godot/test-logs/test_rv_systems.log",
+      "test_sha256": "29B7C869C71DCAE6829A023775E64D7B64D3A9140C3CEC82CA16B509AB1803ED"
+    },
+    {
+      "name": "test_streaming_generation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_streaming_generation.log",
+      "test_sha256": "469C22696B4740997CCE869215AFED29A197FC46C4FA0A8BCF82188B71A2675D"
+    },
+    {
+      "name": "test_tire_handling",
+      "status": "passed",
+      "log": ".godot/test-logs/test_tire_handling.log",
+      "test_sha256": "ABEDD9731AC9DB0935FEB255045B61BDD10D7E396C0FEFBFC93E6DBB4558F5B3"
+    },
+    {
+      "name": "test_tire_puncture",
+      "status": "passed",
+      "log": ".godot/test-logs/test_tire_puncture.log",
+      "test_sha256": "7EFE556FABCAAEC1FF6E0A2E955D12A9F13F082BBBF554EB9AAAC5D9A2D1DDBD"
+    },
+    {
+      "name": "test_world_clock",
+      "status": "passed",
+      "log": ".godot/test-logs/test_world_clock.log",
+      "test_sha256": "01D97F0E79733A0D5B3CF2138288E4710B90BFB0CA7FE5097C0BB0D5CA7AB256"
+    },
+    {
+      "name": "test_world_entities",
+      "status": "passed",
+      "log": ".godot/test-logs/test_world_entities.log",
+      "test_sha256": "9CE8530F29955C01B4F5D37E7FF66C6CA00A3F8D06BF37A61179D58549CDDEAE"
+    },
+    {
+      "name": "test_world_generation",
+      "status": "passed",
+      "log": ".godot/test-logs/test_world_generation.log",
+      "test_sha256": "2C34C2BAA59D8343BD707F76A3E17B3AC063DFC7C3FE8E8F9CA0229F43A68B5F"
+    },
+    {
+      "name": "test_world_weather",
+      "status": "passed",
+      "log": ".godot/test-logs/test_world_weather.log",
+      "test_sha256": "6A131FAE6D9BF560520EFE88A93C9A43C627261A96362CFB5E88D0DF30F012EF"
+    }
+  ]
+}

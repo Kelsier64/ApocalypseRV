@@ -126,7 +126,7 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 | 室外顯示 | [outdoor_presentation.gd](world/outdoor_presentation.gd) | 主 viewport 的 3D 縮放、輕微對比、F8 偏好與室內切換；Canvas UI 不縮放 |
 | POI 外部 | [poi_config.gd](world/poi_config.gd)、[poi_spawner.gd](world/poi_spawner.gd) | v3 四種外觀、v2 原入口、穩定 ID／返回點與註冊 |
 | 副本轉場 | [poi_instance_manager.gd](world/instances/poi_instance_manager.gd)、[poi_interior.gd](world/instances/poi_interior.gd) | 獨立世界、導航、返回、探索與玩家掉落物保存 |
-| 隨機地堡 | [interior_layout.gd](world/instances/interior_layout.gd)、[interior_profile.gd](world/instances/interior_profile.gd) | 可擴充房型、隨機 1–3 層、10–30 模組目標、manifest 版本 3 |
+| 隨機地堡 | [interior_layout.gd](world/instances/interior_layout.gd)、[interior_profile.gd](world/instances/interior_profile.gd)、[bunker_content.gd](world/instances/bunker_content.gd) | 可擴充房型、隨機 1–3 層、新訪 30–60 模組目標、manifest 版本 3 與一次性內容生成 |
 | 怪物 | [monster.gd](enemies/monster.gd) | AI、導航、接觸觀測、攀爬、攻擊、車撞傷害、掉落 |
 | 選敵 | [combat_targeting.gd](enemies/combat_targeting.gd) | 候選排序，使用 actor 提供的接觸判斷 |
 
@@ -138,9 +138,9 @@ InteractRay 明確排除自己的玩家碰撞體，避免從較高相機往下�
 
 PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡頭，生命／模式仍由 Player 管理。首次死亡以不可變 rest pose 建立 14 個物理骨，再恢復當下動畫姿勢啟動物理，沿用 v020 碰撞與關節配置，腳部質量各 2.5 kg、合計 69.5 kg；第 8 碰撞層與環境接觸，排除自身膠囊。死亡解除抓取、座位、攀爬、UI 和放置，繼承世界速度並停用控制膠囊。第一人稱固定死亡起始方向、平移跟隨頭部，球體掃掠限制鏡頭偏移；本地身體和配件在死亡期間不遮住鏡頭，完整外部模型與陰影仍存在。兩秒後以真實站立膠囊檢查附近地面與淨空；受阻則每 0.25 秒重試。恢復後關閉 simulator 與碰撞、重設姿勢、恢復控制並續播正式移動動畫；不留持久屍體、不改存檔格式。跨 World3D 的死亡轉場取消會在返回位置重新綁定物理。新動作與關節交接細節見 [v021 動作驗收](docs/validation/2026-09-27-player-animations-v021.md)。
 
-怪物外觀由 `zombie.tscn` 的 `BodyMesh/Model` 實例化 GLB；`monster_model_visual.gd` 管理原地測試動畫與各實例獨立的受傷 overlay。來源 2.18 m 等比例縮成既有 1.5 m 膠囊高度，腳底與朝向在場景層修正，不改 AI、碰撞或保存契約。掛車音效保留，舊假手臂只在沒有模型的 actor 上產生；正式動作與 root motion 尚未接入。[資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。
+2026-09-22 的舊怪物 GLB 試接與 Zombie 場景已非現行敵人契約；當時的模型、膠囊縮放及原地測試動畫見[歷史資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。目前正式敵人外觀與動作由下述 Raker 場景負責。
 
-獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡動畫。低姿態膠囊 1.60 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點新生成的敵人全部使用 Raker，數量／位置／生成 RNG 不變；Zombie 場景保留供舊存檔、獨立室內副本與舊測試使用。SaveSceneCatalog 登錄新場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
+獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡動畫。低姿態膠囊 1.60 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點新生成的敵人全部使用 Raker，數量／位置／生成 RNG 不變；新訪地堡也使用 Raker 候選池。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
 
 RakerGrab 是怪物的暫態抓取狀態機，PlayerGrab 持有唯一抓取者、輸入、HUD 與鏡頭鎖。0.36 秒前搖後重新驗證雙臂可達性和遮擋，再開始固定 2 秒倒數；6–10 次需求只抽一次，80% 以整數比例判定。咬合第 0.22 秒獨立扣血一次，避開一般受傷冷卻，同一 tick 解除存活玩家的輸入、鏡頭和 HUD；怪物自行進入 0.35 秒 RELEASE，死亡回呼重入清理時不重啟流程。Blender 咬合原在 0.38 秒，以 BITE_SPEED（0.38／0.22）同步加速，咬擊混合縮至 0.035 秒；伸手動畫以 0.6／0.36 倍速播放。玩家模式 GRABBED 優先於 SEATED，save/load 沿用 NORMAL gate 拒絕，無存檔欄位變更。駕駛事件和 Chassis 輪詢輸入都封鎖，仍保留車輛物理與鬆油門回收。雙方 tree_exiting、轉場、受傷、死亡、失去接觸／支撐、強制離座共用解除入口。
 
@@ -220,15 +220,19 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／�
 
 室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。OutdoorPresentation 僅設定主 viewport.scaling_3d_scale（目標高度 540，最高 1），CanvasLayer 0 只套輕微對比，不再進行像素格量化或抖色，遊戲 UI 在較高 layer。F8 偏好寫入 user://display_preferences.cfg，不進角色／車輛快照。偵測 viewport 尺寸與副本 active_id 變化，室內停用、返回恢復。
 
-`InteriorLayout` 生成版本 3 manifest，隨機目標 10–30 模組、1–3 層，透過完整 socket transform 接合與三維 AABB 排斥擴展；候選／接口耗盡可提早停止。樓梯與新層首房原子安置，普通分類按 Profile 權重抽選，各層共用。`InteriorRoomDefinition` 以 ID＋內容版本解析，場景提供 footprint／clear_height／socket，新增普通尺寸／分類不改生成器。
+`InteriorLayout` 生成版本 3 manifest，新訪隨機目標 30–60 模組、1–3 層，透過完整 socket transform 接合與三維 AABB 排斥擴展；候選／接口耗盡可提早停止。樓梯與新層首房原子安置，普通分類按 Profile 權重抽選，各層共用。`InteriorRoomDefinition` 以 ID＋內容版本解析，場景提供 footprint／clear_height／socket，新增普通尺寸／分類不改生成器。已保存 v3 manifest 原樣讀取，不套新房數目標。
 
-`PoiInterior` 統一組裝、封牆、導航、探索、出生／出口與玩家掉落物保存。未接通 socket 的門框移除，牆板留在自身占地內，避免共享可見面閃爍。導航發布 immutable mesh 並等待 region／map 同步。現在不生成物資、怪物、目標或捷徑；地圖按實際占用及保存層距繪製 B1–B3。
+`PoiInterior` 統一組裝、封牆、導航、探索、出生／出口與玩家掉落物保存。未接通 socket 的門框移除，牆板留在自身占地內，避免共享可見面閃爍。導航發布 immutable mesh 並等待 region／map 同步。`BunkerContent` 在初訪用獨立 RNG 配置深處一具 70% 耐久強化引擎，以及上限 2–12 件散落物、1–5 個各含兩件小型物資的補給箱；合法位置不足時不強行達標。敵人生成最多嘗試 `clamp(房間數 / 15, 1, 4)` 個合格房間，每次獨立以 30% 機率從可擴充候選池選出 Raker，因此可沒有敵人，也可有多隻。合格房間避開入口 24 m 房間連接距離及 18 m 空間距離。`BunkerCache` 使用靜態碰撞與分離視覺；玩家長按 E 1 秒，一次領一件，背包拒收不刪物。地圖按實際占用及保存層距繪製 B1–B3，HUD 顯示引擎與返回提示。
 
-保存實際布局而非依 seed 重抽；`CheckpointSchema` 驗證逐房版本、接口對齊、占用與連通。新增目錄／修改權重不改變舊布局，缺失版本拒絕。`Checkpoint` 在記憶體丟棄已識別的 pre-bunker v1／v2 POI，保留其他世界資料，不在讀取時覆寫來源。原生成器／專用資產已移除。詳見 [地堡契約](docs/guides/bunker-interior.md)。
+保存實際布局與內容，不依 seed 重抽；`CheckpointSchema` 驗證逐房版本、接口對齊、占用、連通、內容與補給箱快照。剩餘補給品保留 Prop 完整狀態與 ID，活 actor 保留位置及生命；已訪舊 v3 地堡缺內容欄位時維持空內容，不補抽新物資。新增目錄／修改權重不改變舊布局，缺失版本拒絕。`Checkpoint` 在記憶體丟棄已識別的 pre-bunker v1／v2 POI，保留其他世界資料，不在讀取時覆寫來源。原生成器／專用資產已移除。詳見 [地堡契約](docs/guides/bunker-interior.md)。
 
-PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。退出先保存室內 Prop 的場景、位置、回收資料及活怪生命／位置，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同房間與剩餘 actors；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。轉場有明確狀態與操作序號，建立失敗、逾時、取消或玩家死亡會恢復控制並清理暫建 viewport。
+PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。正常退出先保存室內 Prop、活怪與補給箱的完整剩餘狀態，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同布局與內容；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。轉場有明確狀態與操作序號；離場取消沿共用安全收尾路徑保存室內狀態、恢復控制並清理暫建 viewport。
 
 WorldEntities.same_world 用於群組選敵、碰撞例外及串流清理；怪物每 physics tick 清掉跨世界的快取玩家目標。怪物與物品不穿越入口，只有原玩家與背包轉移。實例快照目前支援 Prop／Monster，未支援搬入副本的任意設備。
+
+地堡新增 16 個房間內容版本 2，舊版定義停用生成但保留解析，布局仍為 version 3。新版家具碰撞獨立於 Visuals/Model；封牆沿用所在房間的牆／塗裝材質。BunkerLighting 以保存 seed、room ID 與固定版本字串做 SHA-256 排序，選出四捨五入後 60% 的普通模組熄燈，排除 entry／stairs；不消耗布局或內容 RNG，不增加存檔欄位。舊房間內容版本 1 保留原照明。
+
+Flashlight 是小型 Prop，初始世界以場景實例放在地面。`state.flashlight={charge,on}` 使用獨立欄位，不能混用 RV 的 `state.battery`；VehicleSnapshot 驗證有限 0–100 電量和開關型別，SaveSceneCatalog 明確登錄場景。玩家背包狀態為耗电真值，手持節點只鏡射 Spotlight；只在 NORMAL、選取且可見照明時按 100/300 每秒扣電。切換、丟棄及倉庫移轉在序列化前關燈；模式暫停不耗電。讀檔用原 actor 替換流程清除初始地面實例，不另補發。
 
 ### 設備放置與支撐
 
@@ -274,7 +278,7 @@ MonsterCabinRoute 是目前 4 × 12 m RV 的局部 AStar3D 步行圖，20 cm 網
 
 CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊。腳下設備只能由 UnderfootProbe 實際命中選取，且需較低位置的追蹤玩家授權；同 physics tick 共用射線結果，其他攻擊路徑排除同一支撐目標，避免繞過授權。
 
-一般移動時，已在近戰距離／高度範圍且視線通暢的玩家優先於接觸設備與拆頂目標，直接進入 ATTACK；接觸攻擊不能先消耗其共用冷卻。攀車目標更新只選目標，不逐影格覆寫 CHASE，避免阻止攻擊狀態執行。待機取 detection_range、追擊／攻擊取 lose_interest_range。Player 的受傷無敵計時在座位／介面移動鎖之前更新，兩者不會延長無敵。正式場景回歸見 test_monster_pursuit.gd。
+一般移動時，已在近戰距離／高度範圍且視線通暢的玩家優先於接觸設備與拆頂目標，直接進入 ATTACK；接觸攻擊不能先消耗其共用冷卻。攀車目標更新只選目標，不逐影格覆寫 CHASE，避免阻止攻擊狀態執行。待機取 detection_range、追擊／攻擊取 lose_interest_range。Player 的受傷無敵計時在座位／介面移動鎖之前更新，兩者不會延長無敵。正式 Raker 場景回歸見 [test_raker.gd](tests/test_raker.gd)、[test_raker_cabin.gd](tests/test_raker_cabin.gd) 與 [test_raker_boarding.gd](tests/test_raker_boarding.gd)。
 
 ### RV 外觀與駕駛室原型
 
@@ -332,14 +336,14 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ## 6. 已知限制
 
-- 2026-09-22 審查確認、尚未修正：一般 Equipment 搬移未通知依附物；玩家 UI 模式停止重力／RVSupport 更新；v5 普通動態物件清理仍只判斷正 Z 遠距；POI 離場等待期間取消可能未保存室內進度而保留背包。四項均以最小 headless probe 重現狀態缺口，非實機完整遊玩驗收。證據、修正建議與測試缺口見 [架構審查 A01–A04](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)。
-- 正常 POI 離場未共用等待導航重烘的清理流程；車內路徑由每隻怪物同步重建，群體成本未量測。兩者為待驗證風險，不代表已重現崩潰或卡頓。
+- 2026-09-22 審查確認的 A01–A03 仍待修正：一般 Equipment 搬移未通知依附物；玩家 UI 模式停止重力／RVSupport 更新；v5 普通動態物件清理仍只判斷正 Z 遠距。A04 的 POI 離場取消及正常安全清理路徑已在本輪修正；歷史重現證據仍見 [架構審查 A01–A04](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，本輪結果見[地堡驗證](docs/validation/2026-09-29-bunker-content.md)。
+- POI 導航生命週期及車內每隻怪物同步重建路徑的群體成本尚未量測；不代表已重現崩潰或卡頓。
 - 設備仍是獨立凍結剛體。重量／重心已彙總，但側撞與大型外掛的碰撞力矩未合併到車體；翻車、偏載、怪物群需專項實測。
 - 控制、輪槽與登錄仍共用 Chassis；能源、材料、保存已抽離，後續可按需求再拆控制／掛載服務。
 - 配方出料使用產物根層的實際碰撞形狀檢查；新增產品需驗證碰撞配置與出料淨空。
 - 簡化載重只加總底盤、已安裝引擎與有效的已安裝設備，並依位置計算重心；電池本體、抽象材料、庫存道具、燃油與鬆散貨物不納入車體質量。插槽與倉庫設備本體仍計重；游離道具保留既有剛體行為。BatteryState.weight 保留供道具物理與舊存檔相容使用，VehicleSnapshot 載入後以同一 update_load 重算車重，無需存檔遷移。首版檔位不模擬離合器／轉速。
 - 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；v2–v4 仍單向串流；v5 可回程載入。
-- 隨機地堡有 16 個首批模組及基本外觀；完整地表設施、細緻破損、物資／敵人／目標及長局平衡仍未製作。
+- 隨機地堡有 16 個啟用的廢棄房型與保留的 16 個舊版定義，已增加家具、表面破損及暗房；九類複雜設備仍以灰盒等待建模交付。完整地表設施、更多物資／敵人變化與長局平衡仍未製作。本次驗收見 [場景與手電筒](docs/validation/2026-09-29-bunker-art-flashlight.md)。
 - 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
 
 
@@ -357,7 +361,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 `world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。所有副本使用 InteriorProfile 登錄的 16 個地堡模組；舊副本專用資產與展示場已移除。
 
-物資標記只提供 caller RNG 的抽選契約，地堡本輪不生成內容。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。首批來源 `build_bunker_kit.py` 拒絕覆蓋既有 kit。詳見 [製作規格](world/poi_kit/README.md)。
+物資標記只提供 caller RNG 的抽選契約；初訪地堡由 BunkerContent 使用獨立 RNG 安置內容，BunkerCache 保管未領取物件。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。首批來源 `build_bunker_kit.py` 拒絕覆蓋既有 kit。詳見 [製作規格](world/poi_kit/README.md)。
 
 `test_poi_asset_kit.gd` 驗證房型接口與玩家跨接縫；`test_interior_*.gd` 驗證 1000 seeds、扩充、逐門掃掠、三層大型搬運、導航與 manifest 保存；`test_poi_instances.gd` 驗證正式入口、世界隔離、外部電量、掉落／重返。實機觀察與自動檢查分開記錄。
 
@@ -367,7 +371,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 
-[scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。runner 的每項執行期限為 240 秒，CI 總期限 30 分鐘；可用 `-StartAt test_name` 從指定 suite 接續，報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
+[scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行預設的全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。`-TestFilter` 可指定單一檔名樣式或以逗號分隔多個樣式，合併去重後執行；`-StartAt test_name` 從選取清單中的指定 suite 接續。runner 的每項執行期限為 240 秒，CI 總期限 30 分鐘；報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
 
 | 測試 | 關注範圍 |
 |---|---|
