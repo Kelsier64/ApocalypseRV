@@ -62,11 +62,12 @@ func _ground_locomotion(delta: float, speed: float) -> void:
 	else: ground_clip = "walk"
 	if actor.crouched and ground_clip == "idle": ground_clip = "crouch_idle"
 	var rate := 1.0
+	var stride_scale: float = $Model.scale.z
 	match ground_clip:
-		"walk": rate = clampf(filtered_speed / 1.13, .4, 1.8)
-		"chase": rate = clampf(filtered_speed / 2.3, .6, 1.8)
-		"sprint": rate = clampf(filtered_speed / 6.0, .8, 2.5)
-		"crouch_walk": rate = clampf(filtered_speed / .4, .4, 1.8)
+		"walk": rate = clampf(filtered_speed / (1.13 * stride_scale), .4, 1.8)
+		"chase": rate = clampf(filtered_speed / (2.3 * stride_scale), .6, 1.8)
+		"sprint": rate = clampf(filtered_speed / (6.0 * stride_scale), .8, 2.5)
+		"crouch_walk": rate = clampf(filtered_speed / (.4 * stride_scale), .4, 1.8)
 	play(ground_clip, rate)
 
 func _attack(clip: String, duration: float) -> void:
@@ -124,4 +125,7 @@ func bone_world_position(bone_name: String) -> Vector3:
 
 func arm_lengths(side: int) -> Vector2:
 	var suffix := "_R" if side > 0 else "_L"
-	return Vector2(skeleton.get_bone_rest(skeleton.find_bone("forearm" + suffix)).origin.length(), skeleton.get_bone_rest(skeleton.find_bone("hand" + suffix)).origin.length())
+	# Reach checks operate in world space, while the retained GLB bones are in
+	# source metres. The visual model has a uniform presentation scale.
+	var model_scale := skeleton.global_basis.get_scale().x
+	return Vector2(skeleton.get_bone_rest(skeleton.find_bone("forearm" + suffix)).origin.length(), skeleton.get_bone_rest(skeleton.find_bone("hand" + suffix)).origin.length()) * model_scale

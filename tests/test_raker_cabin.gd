@@ -66,7 +66,7 @@ func run() -> void:
 	await ticks(1500)
 	print("Raker door pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health," posture ",actor.crouched," shoulder ",actor.to_local(actor.grab_shoulder_position(1))," gate ",actor.grab.contact_failure," clip ",actor.get_node("BodyMesh").animation_player.current_animation)
 	check(not is_instance_valid(door),"New species destroys side door")
-	check(actor.crouched and actor.boarding.cabin.inside(actor,rv),"2.18 m monster enters cabin in low posture")
+	check(actor.crouched and actor.boarding.cabin.inside(actor,rv),"Enlarged monster enters cabin in low posture")
 	check(player.current_player_health<10000,"Low attack reaches seated driver after door breach")
 	roof.current_health=24
 	spawn(Vector3(0,2.55,2.8))
@@ -83,7 +83,7 @@ func run() -> void:
 	await ticks(1500)
 	print("Raker exit pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health)
 	check(rv.to_local(actor.global_position).x>3.5,"Exits through the real breach")
-	check(not actor.crouched,"Returns to full 2.18 m outside")
+	check(not actor.crouched,"Returns to full standing height outside")
 	check(player.current_player_health<10000,"Resumes ground sweep after exit")
 	world.free()
 	if failures.is_empty(): print("PASS: Raker side-door breach, roof breach, low cabin pursuit and standing exit")

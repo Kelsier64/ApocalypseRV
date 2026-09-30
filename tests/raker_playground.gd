@@ -6,7 +6,7 @@ var clips: Array[String] = ["idle","walk","chase","sprint","attack_left","attack
 func _ready() -> void:
 	monster_scene = preload("res://enemies/raker.tscn")
 	super._ready()
-	DisplayServer.window_set_title("Raker 2.18m — Behavior & Animation")
+	DisplayServer.window_set_title("Raker 2.62m — Behavior & Animation")
 	var camera := get_viewport().get_camera_3d()
 	camera.position = Vector3(6,3,6)
 	camera.look_at(Vector3(2,1,0))
@@ -42,4 +42,4 @@ func _process(_delta: float) -> void:
 		status.text="Raker defeated — R: restart"
 		return
 	var raker := monster as Raker
-	status.text="RAKER | standing 2.18 m | HP %.0f | Player HP %.0f\nAnimation: %s | attack time %.2f | crouched %s\nF6 hit reaction / cancel attack | F7 death | Space evade\nF8 next animation preview | R restart live AI" % [monster.current_health,player.current_player_health,monster.get_node("BodyMesh").animation_player.current_animation,raker.strike_elapsed,str(raker.crouched)]
+	status.text="RAKER | standing 2.62 m | HP %.0f | Player HP %.0f\nAnimation: %s | attack time %.2f | crouched %s\nF6 hit reaction / cancel attack | F7 death | Space evade\nF8 next animation preview | R restart live AI" % [monster.current_health,player.current_player_health,monster.get_node("BodyMesh").animation_player.current_animation,raker.strike_elapsed,str(raker.crouched)]

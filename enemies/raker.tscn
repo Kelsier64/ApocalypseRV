@@ -6,11 +6,11 @@
 
 [sub_resource type="CapsuleShape3D" id="body"]
 radius = 0.4
-height = 2.18
+height = 2.616
 
 [sub_resource type="CapsuleShape3D" id="hit"]
 radius = 0.4
-height = 2.18
+height = 2.616
 
 [node name="Raker" type="CharacterBody3D"]
 script = ExtResource("1")
@@ -31,13 +31,14 @@ script = ExtResource("3")
 
 [node name="Model" parent="BodyMesh" instance=ExtResource("2")]
 rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1.2, 1.2, 1.2)
 
 [node name="CollisionShape" type="CollisionShape3D" parent="."]
-position = Vector3(0, 1.34, 0)
+position = Vector3(0, 1.558, 0)
 shape = SubResource("body")
 
 [node name="HitBox" type="Area3D" parent="."]
-position = Vector3(0, 1.34, 0)
+position = Vector3(0, 1.558, 0)
 collision_layer = 0
 monitorable = false
 
@@ -48,7 +49,7 @@ shape = SubResource("hit")
 path_desired_distance = 0.6
 target_desired_distance = 1.2
 radius = 0.4
-height = 2.18
+height = 2.616
 
 [node name="ClimbWallProbe" type="RayCast3D" parent="."]
 position = Vector3(0, 1.05, 0)

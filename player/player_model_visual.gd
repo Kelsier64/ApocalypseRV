@@ -31,6 +31,9 @@ func _ready() -> void:
 	var locomotion := preload("res://player/player_locomotion_visual.gd").new()
 	locomotion.name = "Locomotion"
 	add_child(locomotion)
+	var carry := preload("res://player/player_carry_visual.gd").new()
+	carry.name = "Carry"
+	add_child(carry)
 	var camera := get_node_or_null(local_camera_path) as Camera3D if not local_camera_path.is_empty() else null
 	if camera == null:
 		return # Complete model for a future observer-only actor.

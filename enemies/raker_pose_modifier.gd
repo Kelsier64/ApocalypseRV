@@ -42,7 +42,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		direction = _standing_gaze_direction(sk, view)
 	# Reach/hold keep the authored back posture; bite contact is solved below.
 	# The neck looks down to a nearby player; locomotion retains its old cap.
-	step_angles(direction, delta, tracking, actor.crouched, 65.0 if standing_grab else 25.0)
+	step_angles(direction, delta, tracking, actor.crouched, 70.0 if standing_grab else 25.0)
 	tracking_weight = move_toward(tracking_weight, 1.0 if tracking else 0.0, delta * 6.0)
 	var biting: bool = is_instance_valid(actor.grab) and actor.grab.phase == actor.grab.Phase.BITE
 	var desired := actor.global_basis * Vector3(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch))
@@ -70,7 +70,7 @@ func _standing_gaze_direction(sk: Skeleton3D, target: Vector3) -> Vector3:
 	var direction := actor.global_basis.inverse() * (target-sk.to_global(face_position(sk)))
 	for iteration in 10:
 		var y := clampf(atan2(-direction.x,-direction.z),-PI/2,PI/2)
-		var p := clampf(atan2(direction.y,Vector2(direction.x,direction.z).length()),deg_to_rad(-65),deg_to_rad(30))
+		var p := clampf(atan2(direction.y,Vector2(direction.x,direction.z).length()),deg_to_rad(-70),deg_to_rad(30))
 		var desired := Vector3(-sin(y)*cos(p),sin(p),-cos(y)*cos(p))
 		_align_face(sk,actor.global_basis*desired,1)
 		var next := (actor.global_basis.inverse()*(target-sk.to_global(face_position(sk)))).normalized()
@@ -122,7 +122,8 @@ func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearanc
 	var toward := (actor.global_position-view.global_position).slide(Vector3.UP).normalized()
 	# Contact the cheek just below eye level so the muzzle stays in front of
 	# the near plane; aiming the eye center at point-blank range folds the neck.
-	var goal := sk.to_local(view.global_position + toward * clearance - Vector3.UP * .04)
+	var model_scale := sk.global_basis.get_scale().x
+	var goal := sk.to_local(view.global_position + (toward * clearance - Vector3.UP * .04) * model_scale)
 	var contact_facing := -toward
 	if actor.grab.victim.is_grabbed():
 		# The victim keeps the captured look-up angle. Bring the mouth into that
@@ -186,7 +187,7 @@ func _solve_arm(sk: Skeleton3D, side: int, contact: Vector3, weight: float) -> v
 	var along := (length_a * length_a - length_b * length_b + distance * distance) / (2 * distance)
 	var height := sqrt(maxf(0, length_a * length_a - along * along))
 	var up := is_instance_valid(actor.grab.victim) and is_instance_valid(actor.grab.victim.seated_in)
-	var down := sk.global_basis.inverse() * ((Vector3.UP if up else Vector3.DOWN) + actor.global_basis.x * float(side) * .25)
+	var down := sk.global_basis.inverse() * ((Vector3.UP if up else Vector3.DOWN) + actor.global_basis.x * float(side) * (.75 if up else .25))
 	var bend := down.slide(direction).normalized()
 	_aim(sk, upper, fore, shoulder + direction * along + bend * height)
 	_aim(sk, fore, hand, shoulder + direction * distance)
@@ -207,8 +208,8 @@ func _hand_frame(sk: Skeleton3D, side: int, rest: bool) -> Basis:
 	return Basis(fingers.cross(palm).normalized(), fingers, palm)
 
 func _orient_grip(sk: Skeleton3D, side: int, fore: int, hand: int, weight: float) -> void:
-	var palm := sk.global_basis.inverse() * (-actor.global_basis.x * float(side))
-	var fingers := sk.global_basis.inverse() * (Vector3.UP*.8-actor.global_basis.z*.6).normalized()
+	var palm := (sk.global_basis.inverse() * (-actor.global_basis.x * float(side))).normalized()
+	var fingers := (sk.global_basis.inverse() * (Vector3.UP*.8-actor.global_basis.z*.6)).normalized()
 	var fore_pose := sk.get_bone_global_pose(fore)
 	var axis := (sk.get_bone_global_pose(hand).origin-fore_pose.origin).normalized()
 	var current := _hand_frame(sk,side,false).z.slide(axis).normalized()

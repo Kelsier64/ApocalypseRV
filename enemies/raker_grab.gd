@@ -166,7 +166,10 @@ func reach_clear_from(origin: Vector3, facing: Basis, target: CharacterBody3D) -
 		if start.distance_to(contact) > lengths.x + lengths.y - .005:
 			contact_failure = "arm_reach"
 			return false
-		var pole := (Vector3.UP if is_instance_valid(target.seated_in) else Vector3.DOWN) + facing.x * float(side) * .25
+		var seated := is_instance_valid(target.seated_in)
+		# The enlarged arms clear the seatback with elbows angled outward,
+		# keeping the same corridor used by the visual IK below the cabin roof.
+		var pole := (Vector3.UP if seated else Vector3.DOWN) + facing.x * float(side) * (.75 if seated else .25)
 		var elbow := solve_elbow(start, contact, lengths, pole)
 		for segment in [[start, elbow], [elbow, contact]]:
 			var query := PhysicsRayQueryParameters3D.create(segment[0], segment[1], 1, [actor.get_rid(), target.get_rid()])

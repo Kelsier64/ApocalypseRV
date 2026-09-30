@@ -118,6 +118,7 @@ func stop() -> void:
 		body.collision_mask = 0
 	skeleton.reset_bone_poses()
 	player.camera.transform = camera_rest
+	player.get_node("Visuals/Carry").reset()
 	player.get_node("Visuals").set_death_view(false)
 	active = false
 	remaining = 0.0

@@ -58,8 +58,8 @@ func _run() -> void:
 	var skeleton: Skeleton3D=model.find_child("Skeleton3D",true,false)
 	var mesh: MeshInstance3D=model.find_child("Raker_Mesh",true,false)
 	check(skeleton.get_bone_count()==54,"54 deform bones including jaw and eight new distal finger joints imported")
-	check(absf(mesh.get_aabb().size.y-2.18)<.001 and model.scale==Vector3.ONE,"Full 2.18 m source imported without shrinking")
-	check(absf(actor.body_collision_shape.shape.height-2.18)<.001,"Standing collider is 2.18 m")
+	check(absf(mesh.get_aabb().size.y-2.18)<.001 and model.scale.is_equal_approx(Vector3.ONE*1.2),"Original 2.18 m source presented at 120 percent")
+	check(absf(actor.body_collision_shape.shape.height-2.616)<.001,"Standing collider matches enlarged 2.616 m visual")
 	check(not mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_TEX_UV].is_empty(),"v007 UV survives export")
 	var rebuilt_skin := false
 	var rebuilt_nails := false
@@ -137,11 +137,11 @@ func _run() -> void:
 	actor.set_crouched(true)
 	actor.take_damage(10)
 	check(anim.current_animation=="game/crouch_hit_react","Low hit reaction preserves low posture")
-	var ceiling:=box(Vector3(0,1.8,0),Vector3(4,.2,4))
+	var ceiling:=box(Vector3(0,2.1,0),Vector3(4,.2,4))
 	await physics_frame
 	check(not actor.can_stand(),"Low ceiling blocks standing capsule")
 	actor._update_posture()
-	check(actor.crouched and absf(actor.body_collision_shape.shape.height-1.6)<.001,"Low posture retains actual smaller collider")
+	check(actor.crouched and absf(actor.body_collision_shape.shape.height-1.85)<.001,"Low posture retains actual smaller collider")
 	ceiling.free()
 	await physics_frame
 	actor._update_posture()

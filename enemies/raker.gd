@@ -5,8 +5,8 @@ signal attack_started(clip: String, duration: float)
 signal reaction_started
 signal death_started
 
-const STANDING_HEIGHT := 2.18
-const CROUCH_HEIGHT := 1.6
+const STANDING_HEIGHT := 2.616
+const CROUCH_HEIGHT := 1.85
 const FOOT_OFFSET := 0.25
 const SWEEP_CONTACT := 0.72
 enum PursuitGait { STALK, RUN, VEHICLE_SPRINT }

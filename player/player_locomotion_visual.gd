@@ -49,6 +49,7 @@ func _physics_process(delta: float) -> void:
 	if actor.is_player_dead:
 		suspend()
 		return
+	get_parent().get_node("Carry").clear_pose()
 	# Seat is currently hidden; grabbed poses remain separate future work.
 	if actor.seated_in != null or actor.is_grabbed():
 		if actor.seated_in != null and not actor.is_grabbed():
