@@ -32,6 +32,7 @@ func _run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
+	check(generator.profile.generation_version == 8 and generator.profile.chunks_ahead == 2, "Production streaming window fits the 450 m monster lifetime")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
 	generator.profile.chunks_ahead = 0
