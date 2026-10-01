@@ -13,7 +13,6 @@
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
 generation_version = 8
-# Two forward bands plus the current band fit the 450 m actor window.
 chunks_ahead = 2
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
