@@ -122,6 +122,8 @@ func stop(index: int) -> Dictionary:
 		ExplorationSite.configure(result, self)
 	if profile.generation_version >= 5 and index % 3 == 1:
 		WalkInSites.configure(result)
+	if profile.generation_version >= 7 and index == 0:
+		WalkInSites.configure(result, "starting_shelter")
 	_stops[index] = result
 	return result
 
@@ -220,7 +222,50 @@ func surface(x: float, z: float) -> Dictionary:
 	var spawn_distance := Vector2(maxf(absf(x) - 14.0, 0.0), maxf(absf(z) - 14.0, 0.0)).length()
 	height = lerpf(height, 0.0, 1.0 - smoothstep(0.0, 20.0, spawn_distance))
 	reserved = reserved or spawn_distance < 8.0
+	if profile.generation_version >= 7 and z >= -100.0 and z <= 40.0:
+		var start_surface := _starting_shelter_surface(x, z, height)
+		height = start_surface.height
+		reserved = reserved or start_surface.reserved
 	return {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z)}
+
+## Authored opening area: a level garage/forecourt with earth against its sides
+## and rear. Applied after the shared road/spawn blending to keep its floor exact.
+func _starting_shelter_surface(x: float, z: float, height: float) -> Dictionary:
+	var site := stop(0)
+	var point := Vector3(x, 0, z)
+	var local: Vector3 = site.building.affine_inverse() * point
+	var distance := WalkInSites.court_distance(point, site)
+	var reserved := distance < 4.0
+	if distance <= 0.0:
+		height = 0.0
+	else:
+		# The garage is recessed into low banks; the open +Z frontage stays clear.
+		var bounds: AABB = POIConfig.definition(&"starting_shelter").building_bounds
+		var half_width := bounds.size.x * 0.5
+		var half_depth := bounds.size.z * 0.5
+		var side_bank := (1.0 - smoothstep(4.0, 14.0, absf(absf(local.x - bounds.get_center().x) - half_width - 12.0))) * (1.0 - smoothstep(half_depth - 3.0, half_depth + 11.0, absf(local.z - bounds.get_center().z)))
+		var rear_bank := (1.0 - smoothstep(4.0, 15.0, absf(local.z - bounds.position.z + 10.0))) * (1.0 - smoothstep(half_width + 4.0, half_width + 20.0, absf(local.x - bounds.get_center().x)))
+		var bank := maxf(side_bank, rear_bank) * smoothstep(0.0, 6.0, distance)
+		height = lerpf(height, 5.0, bank)
+	# Concrete tops are authored at zero. Every grid vertex supporting a slab
+	# edge triangle must stay below it, including vertices outside its footprint.
+	# Keep a full grid cell of recessed backing, then blend over another cell.
+	var garage_edge := maxf(absf(local.x) - 10.4, absf(local.z + 0.2) - 14.2)
+	var apron_edge := maxf(absf(local.x) - 16.0, maxf(14.0 - local.z, local.z - 44.0))
+	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(garage_edge, apron_edge))
+	height = lerpf(height, -0.08, slab_recess)
+	reserved = reserved or slab_recess > 0.0
+	# Rear boundary supports the roadblock's retaining wings. Its collision is
+	# authored in the first rear chunk; keep the central wreck pad on road level.
+	var ridge := 1.0 - smoothstep(3.0, 16.0, absf(z - 20.0))
+	var wing := smoothstep(25.0, 34.0, absf(x))
+	if ridge > 0.0:
+		height = lerpf(height, 8.0, ridge * wing)
+		reserved = true
+	if absf(x) <= 25.0 and z >= 14.0 and z <= 29.0:
+		height = 0.0
+		reserved = true
+	return {"height": height, "reserved": reserved}
 
 func height_at(x: float, z: float) -> float:
 	return float(surface(x, z).height)

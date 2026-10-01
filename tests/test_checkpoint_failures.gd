@@ -1,6 +1,7 @@
 extends SceneTree
 var failures: Array[String] = []
 const PATH := "res://.godot/test-checkpoint-failures.save"
+const WAIT = preload("res://tests/support/test_wait.gd")
 
 class FaultFiles extends CheckpointFiles:
 	var fault := ""
@@ -192,19 +193,20 @@ func _run() -> void:
 	check(FileAccess.get_file_as_bytes(PATH) == bytes, "Loading never rewrites source")
 	# Finish navigation work before destroying the restored procedural world.
 	# A successful behavior check must also be able to shut down cleanly.
-	var retire_deadline := Time.get_ticks_msec() + 60000
-	while checkpoint.get_children().any(func(child): return child is SubViewport) and Time.get_ticks_msec() < retire_deadline:
-		await process_frame
-	check(not checkpoint.get_children().any(func(child): return child is SubViewport), "Failed checkpoint staging finishes retirement before shutdown")
+	if not await WAIT.retired_candidates(self, checkpoint):
+		check(false, "Failed checkpoint staging retirement timed out within 60 seconds")
+		quit(1)
+		return
 	var generator: Node = current_scene.get_node("WorldGenerator")
 	generator.set_process(false)
-	while generator.building:
-		await process_frame
-	for chunk in generator.active_chunks:
-		var navigation: NavigationRegion3D = chunk.node.navigation
-		if navigation:
-			while NavigationServer3D.is_baking_navigation_mesh(navigation.navigation_mesh):
-				await process_frame
+	if not await WAIT.until(self, func() -> bool: return not generator.building):
+		check(false, "Restored checkpoint terrain build timed out within 60 seconds")
+		quit(1)
+		return
+	if not await WAIT.navigation_bakes_finished(self, current_scene):
+		check(false, "Restored checkpoint navigation bake timed out within 60 seconds")
+		quit(1)
+		return
 	await physics_frame
 	await process_frame
 	current_scene.free()

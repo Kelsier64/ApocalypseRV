@@ -90,7 +90,7 @@ func _run() -> void:
 	player.seated_in = null
 	player.grab_control.captor = placing
 	player._advance_flashlight(100.0)
-	_expect(is_equal_approx(player.inventory.active_item().state.flashlight.charge, 50.0), "Grab pauses drain")
+	_expect(is_equal_approx(player.inventory.active_item().state.flashlight.charge, 50.0), "Grab without previously visible light pauses drain")
 	player.grab_control.captor = null
 	player.is_player_dead = true
 	player._advance_flashlight(100.0)

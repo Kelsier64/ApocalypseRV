@@ -1,0 +1,1162 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://world/starting_shelter/exterior_extension.tscn" id="exterior_extension"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/formed_concrete.tres" id="concrete"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/floor.tres" id="floor"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/paint.tres" id="paint"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="rust"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/soot.tres" id="soot"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/pale.tres" id="pale"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/hazard.tres" id="hazard"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rubber.tres" id="rubber"]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/damaged_concrete.tres" id="damaged_concrete"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="shelf"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/workbench.tscn" id="workbench"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/bunker/cargo_crate.tscn" id="cargo_crate"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/bunker/utility_table.tscn" id="utility_table"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/bunker/ration_stack.tscn" id="ration_stack"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="rack0"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="rack1"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="rack2"]
+
+[ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="rack3"]
+
+[sub_resource type="StandardMaterial3D" id="lamp"]
+albedo_color = Color(0.8, 0.72, 0.48, 1)
+emission_enabled = true
+emission = Color(0.94, 0.79, 0.46, 1)
+emission_energy_multiplier = 1.3
+
+[sub_resource type="StandardMaterial3D" id="green"]
+albedo_color = Color(0.2, 0.48, 0.3, 1)
+emission_enabled = true
+emission = Color(0.15, 0.65, 0.28, 1)
+emission_energy_multiplier = 0.5
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(20.8, 0.4, 28.4)
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(20.8, 0.4, 28.4)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(32, 0.35, 30)
+
+[sub_resource type="BoxShape3D" id="r4"]
+size = Vector3(32, 0.35, 30)
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(20.8, 6.8, 0.4)
+
+[sub_resource type="BoxShape3D" id="r6"]
+size = Vector3(20.8, 6.8, 0.4)
+
+[sub_resource type="BoxMesh" id="r7"]
+size = Vector3(0.4, 6.8, 28)
+
+[sub_resource type="BoxShape3D" id="r8"]
+size = Vector3(0.4, 6.8, 28)
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(0.012, 1.7, 28)
+
+[sub_resource type="BoxMesh" id="r10"]
+size = Vector3(0.016, 0.075, 28)
+
+[sub_resource type="BoxMesh" id="r11"]
+size = Vector3(6.9, 6.8, 0.3)
+
+[sub_resource type="BoxShape3D" id="r12"]
+size = Vector3(6.9, 6.8, 0.3)
+
+[sub_resource type="BoxMesh" id="r13"]
+size = Vector3(6.9, 1.7, 0.016)
+
+[sub_resource type="BoxMesh" id="r14"]
+size = Vector3(0.26, 5.16, 0.36)
+
+[sub_resource type="BoxMesh" id="r15"]
+size = Vector3(0.42, 0.55, 28.8)
+
+[sub_resource type="BoxShape3D" id="r16"]
+size = Vector3(0.42, 0.55, 28.8)
+
+[sub_resource type="BoxMesh" id="r17"]
+size = Vector3(0.22, 0.16, 17)
+
+[sub_resource type="BoxShape3D" id="r18"]
+size = Vector3(0.22, 0.16, 17)
+
+[sub_resource type="BoxMesh" id="r19"]
+size = Vector3(0.3, 6.8, 0.6)
+
+[sub_resource type="BoxMesh" id="r20"]
+size = Vector3(0.018, 0.8, 1.8)
+
+[sub_resource type="BoxMesh" id="r21"]
+size = Vector3(0.018, 0.94, 1.8)
+
+[sub_resource type="BoxMesh" id="r22"]
+size = Vector3(0.018, 1.08, 1.8)
+
+[sub_resource type="BoxMesh" id="r23"]
+size = Vector3(0.09, 0.09, 26)
+
+[sub_resource type="BoxMesh" id="r24"]
+size = Vector3(0.26, 0.12, 26)
+
+[sub_resource type="BoxMesh" id="r25"]
+size = Vector3(20, 1.7, 0.014)
+
+[sub_resource type="BoxMesh" id="r26"]
+size = Vector3(20, 0.075, 0.018)
+
+[sub_resource type="BoxMesh" id="r27"]
+size = Vector3(20.8, 0.45, 28.8)
+
+[sub_resource type="BoxShape3D" id="r28"]
+size = Vector3(20.8, 0.45, 28.8)
+
+[sub_resource type="BoxMesh" id="r29"]
+size = Vector3(7, 1.8, 0.3)
+
+[sub_resource type="BoxShape3D" id="r30"]
+size = Vector3(7, 1.8, 0.3)
+
+[sub_resource type="BoxMesh" id="r31"]
+size = Vector3(15.4, 0.22, 0.24)
+
+[sub_resource type="BoxMesh" id="r32"]
+size = Vector3(20, 0.38, 0.32)
+
+[sub_resource type="BoxMesh" id="r33"]
+size = Vector3(20, 0.08, 0.62)
+
+[sub_resource type="BoxMesh" id="r34"]
+size = Vector3(0.09, 0.006, 24)
+
+[sub_resource type="BoxMesh" id="r35"]
+size = Vector3(0.06, 0.008, 2.7)
+
+[sub_resource type="BoxMesh" id="r36"]
+size = Vector3(2.76, 0.008, 0.06)
+
+[sub_resource type="BoxMesh" id="r37"]
+size = Vector3(1.8, 0.15, 0.28)
+
+[sub_resource type="BoxMesh" id="r38"]
+size = Vector3(1.58, 0.06, 0.18)
+
+[sub_resource type="BoxMesh" id="r39"]
+size = Vector3(1.2, 0.14, 0.3)
+
+[sub_resource type="BoxShape3D" id="r40"]
+size = Vector3(3.5, 5, 0.3)
+
+[sub_resource type="BoxMesh" id="r41"]
+size = Vector3(3.5, 5, 0.3)
+
+[sub_resource type="BoxMesh" id="r42"]
+size = Vector3(0.075, 4.85, 0.08)
+
+[sub_resource type="BoxMesh" id="r43"]
+size = Vector3(3.4, 0.12, 0.08)
+
+[sub_resource type="BoxMesh" id="r44"]
+size = Vector3(3.5, 0.2, 0.018)
+
+[sub_resource type="BoxMesh" id="r45"]
+size = Vector3(0.12, 0.5, 0.16)
+
+[sub_resource type="BoxShape3D" id="r46"]
+size = Vector3(0.36, 0.5, 0.25)
+
+[sub_resource type="BoxMesh" id="r47"]
+size = Vector3(0.36, 0.5, 0.25)
+
+[sub_resource type="BoxMesh" id="r48"]
+size = Vector3(0.27, 0.36, 0.02)
+
+[sub_resource type="BoxMesh" id="r49"]
+size = Vector3(0.13, 0.13, 0.065)
+
+[sub_resource type="BoxMesh" id="r50"]
+size = Vector3(0.07, 0.045, 0.022)
+
+[sub_resource type="BoxMesh" id="r51"]
+size = Vector3(0.13, 1, 0.13)
+
+[sub_resource type="BoxShape3D" id="r52"]
+size = Vector3(0.13, 1, 0.13)
+
+[node name="StartingShelter" type="Node3D"]
+metadata/layout_version = 2
+metadata/building_bounds = AABB(-25, -0.4, -30.5, 50, 14.4, 45)
+metadata/site_bounds = AABB(-27, -0.5, -33, 54, 15, 79)
+
+[node name="ExteriorExtension" parent="." instance=ExtResource("exterior_extension")]
+
+[node name="Visuals" type="Node3D" parent="."]
+
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+
+[node name="Furnishings" type="Node3D" parent="."]
+
+
+[node name="Lights" type="Node3D" parent="."]
+
+
+[node name="LootSpawns" type="Node3D" parent="."]
+
+
+[node name="EnemySpawns" type="Node3D" parent="."]
+
+
+[node name="AccessPoints" type="Node3D" parent="."]
+
+
+[node name="StarterEquipment" type="Node3D" parent="."]
+
+
+[node name="StarterLoot" type="Node3D" parent="."]
+
+
+[node name="Floor" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.2, -0.2)
+mesh = SubResource("r1")
+material_override = ExtResource("floor")
+
+[node name="Floor" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, -0.2, -0.2)
+shape = SubResource("r2")
+
+[node name="Forecourt" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.175, 29)
+mesh = SubResource("r3")
+material_override = ExtResource("floor")
+
+[node name="Forecourt" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, -0.175, 29)
+shape = SubResource("r4")
+
+[node name="RearWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 3.4, -14.2)
+mesh = SubResource("r5")
+material_override = ExtResource("concrete")
+
+[node name="RearWall" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 3.4, -14.2)
+shape = SubResource("r6")
+
+[node name="LeftWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-10.2, 3.4, 0)
+mesh = SubResource("r7")
+material_override = ExtResource("concrete")
+
+[node name="LeftWall" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-10.2, 3.4, 0)
+shape = SubResource("r8")
+
+[node name="LeftPaint" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.994, 0.9, 0)
+mesh = SubResource("r9")
+material_override = ExtResource("paint")
+
+[node name="LeftStripe" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.988, 1.8, 0)
+mesh = SubResource("r10")
+material_override = ExtResource("pale")
+
+[node name="LeftFrontWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.95, 3.4, 14.35)
+mesh = SubResource("r11")
+material_override = ExtResource("concrete")
+
+[node name="LeftFrontWall" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-6.95, 3.4, 14.35)
+shape = SubResource("r12")
+
+[node name="LeftFrontPaint" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-6.95, 0.9, 14.512)
+mesh = SubResource("r13")
+material_override = ExtResource("paint")
+
+[node name="LeftDoorJamb" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.63, 2.58, 14)
+mesh = SubResource("r14")
+material_override = ExtResource("steel")
+
+[node name="LeftParapet" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-10.2, 7.07, 0)
+mesh = SubResource("r15")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftParapet" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-10.2, 7.07, 0)
+shape = SubResource("r16")
+
+[node name="LeftApronCurb" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-15.8, 0.08, 23)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="LeftApronCurb" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-15.8, 0.08, 23)
+shape = SubResource("r18")
+
+[node name="LeftPier0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.84, 3.4, -11)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="LeftWear0" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.985, 0.45, -10.2)
+mesh = SubResource("r20")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftPier1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.84, 3.4, -5)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="LeftWear1" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.985, 0.75, -4.2)
+mesh = SubResource("r21")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftPier2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.84, 3.4, 1)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="LeftWear2" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.985, 0.45, 1.8)
+mesh = SubResource("r22")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftPier3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.84, 3.4, 7)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="LeftWear3" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.985, 0.75, 7.8)
+mesh = SubResource("r20")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftPier4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.84, 3.4, 12)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="LeftWear4" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-9.985, 0.45, 12.8)
+mesh = SubResource("r21")
+material_override = ExtResource("damaged_concrete")
+
+[node name="LeftConduit" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 4.25, 0)
+mesh = SubResource("r23")
+material_override = ExtResource("rust")
+
+[node name="LeftCableTray" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.6, 4.42, 0)
+mesh = SubResource("r24")
+material_override = ExtResource("steel")
+
+[node name="RightWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(10.2, 3.4, 0)
+mesh = SubResource("r7")
+material_override = ExtResource("concrete")
+
+[node name="RightWall" type="CollisionShape3D" parent="Collision"]
+position = Vector3(10.2, 3.4, 0)
+shape = SubResource("r8")
+
+[node name="RightPaint" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.994, 0.9, 0)
+mesh = SubResource("r9")
+material_override = ExtResource("paint")
+
+[node name="RightStripe" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.988, 1.8, 0)
+mesh = SubResource("r10")
+material_override = ExtResource("pale")
+
+[node name="RightFrontWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.95, 3.4, 14.35)
+mesh = SubResource("r11")
+material_override = ExtResource("concrete")
+
+[node name="RightFrontWall" type="CollisionShape3D" parent="Collision"]
+position = Vector3(6.95, 3.4, 14.35)
+shape = SubResource("r12")
+
+[node name="RightFrontPaint" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(6.95, 0.9, 14.512)
+mesh = SubResource("r13")
+material_override = ExtResource("paint")
+
+[node name="RightDoorJamb" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.63, 2.58, 14)
+mesh = SubResource("r14")
+material_override = ExtResource("steel")
+
+[node name="RightParapet" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(10.2, 7.07, 0)
+mesh = SubResource("r15")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightParapet" type="CollisionShape3D" parent="Collision"]
+position = Vector3(10.2, 7.07, 0)
+shape = SubResource("r16")
+
+[node name="RightApronCurb" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(15.8, 0.08, 23)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="RightApronCurb" type="CollisionShape3D" parent="Collision"]
+position = Vector3(15.8, 0.08, 23)
+shape = SubResource("r18")
+
+[node name="RightPier0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.84, 3.4, -11)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="RightWear0" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.985, 0.45, -10.2)
+mesh = SubResource("r20")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightPier1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.84, 3.4, -5)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="RightWear1" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.985, 0.75, -4.2)
+mesh = SubResource("r21")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightPier2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.84, 3.4, 1)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="RightWear2" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.985, 0.45, 1.8)
+mesh = SubResource("r22")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightPier3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.84, 3.4, 7)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="RightWear3" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.985, 0.75, 7.8)
+mesh = SubResource("r20")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightPier4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.84, 3.4, 12)
+mesh = SubResource("r19")
+material_override = ExtResource("concrete")
+
+[node name="RightWear4" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(9.985, 0.45, 12.8)
+mesh = SubResource("r21")
+material_override = ExtResource("damaged_concrete")
+
+[node name="RightConduit" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 4.25, 0)
+mesh = SubResource("r23")
+material_override = ExtResource("rust")
+
+[node name="RightCableTray" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.6, 4.42, 0)
+mesh = SubResource("r24")
+material_override = ExtResource("steel")
+
+[node name="RearPaint" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(0, 0.9, -13.993)
+mesh = SubResource("r25")
+material_override = ExtResource("paint")
+
+[node name="RearStripe" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(0, 1.8, -13.987)
+mesh = SubResource("r26")
+material_override = ExtResource("pale")
+
+[node name="Roof" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 7.025, 0)
+mesh = SubResource("r27")
+material_override = ExtResource("concrete")
+
+[node name="Roof" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 7.025, 0)
+shape = SubResource("r28")
+
+[node name="FrontLintel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.9, 14.35)
+mesh = SubResource("r29")
+material_override = ExtResource("concrete")
+
+[node name="FrontLintel" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 5.9, 14.35)
+shape = SubResource("r30")
+
+[node name="GateRail" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.15, 13.96)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="RoofBeam0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.5, -11)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="RoofBeamFoot0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.28, -11)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="RoofBeam1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.5, -5)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="RoofBeamFoot1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.28, -5)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="RoofBeam2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.5, 1)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="RoofBeamFoot2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.28, 1)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="RoofBeam3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.5, 7)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="RoofBeamFoot3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.28, 7)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="RoofBeam4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.5, 12)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="RoofBeamFoot4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.28, 12)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="LaneEdge-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.2, 0.005, 0)
+mesh = SubResource("r34")
+material_override = ExtResource("pale")
+
+[node name="LaneEdge1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.2, 0.005, 0)
+mesh = SubResource("r34")
+material_override = ExtResource("pale")
+
+[node name="EquipmentBay0_-8.85" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.85, 0.009, -5)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBay0_-6.15" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.15, 0.009, -5)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd0_-1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, -6.35)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd0_1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, -3.65)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="BayNumber0" type="Label3D" parent="Visuals"]
+position = Vector3(-9.94, 2.15, -6.4)
+text = "01"
+font_size = 64
+pixel_size = 0.007
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="EquipmentBay1_-8.85" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.85, 0.009, -1)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBay1_-6.15" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.15, 0.009, -1)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd1_-1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, -2.35)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd1_1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, 0.35)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="BayNumber1" type="Label3D" parent="Visuals"]
+position = Vector3(-9.94, 2.15, -1)
+text = "02"
+font_size = 64
+pixel_size = 0.007
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="EquipmentBay2_-8.85" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.85, 0.009, 3)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBay2_-6.15" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.15, 0.009, 3)
+mesh = SubResource("r35")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd2_-1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, 1.65)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="EquipmentBayEnd2_1.35" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.5, 0.009, 4.35)
+mesh = SubResource("r36")
+material_override = ExtResource("hazard")
+
+[node name="BayNumber2" type="Label3D" parent="Visuals"]
+position = Vector3(-9.94, 2.15, 3)
+text = "03"
+font_size = 64
+pixel_size = 0.007
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="SupplyRack1" parent="Furnishings" instance=ExtResource("rack0")]
+position = Vector3(8.9, 0, -9)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="SupplyRack2" parent="Furnishings" instance=ExtResource("rack1")]
+position = Vector3(8.9, 0, -5)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="SupplyRack3" parent="Furnishings" instance=ExtResource("rack2")]
+position = Vector3(8.9, 0, -1)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="SupplyRack4" parent="Furnishings" instance=ExtResource("rack3")]
+position = Vector3(8.9, 0, 3)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="SupplyBench" parent="Furnishings" instance=ExtResource("workbench")]
+position = Vector3(8.85, 0, 8)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="RearTable" parent="Furnishings" instance=ExtResource("utility_table")]
+position = Vector3(6, 0, -12.7)
+
+[node name="StorageCrate0" parent="Furnishings" instance=ExtResource("cargo_crate")]
+position = Vector3(8.8, 0, -12.6)
+
+[node name="StorageCrate1" parent="Furnishings" instance=ExtResource("cargo_crate")]
+position = Vector3(7.4, 0, -12.6)
+
+[node name="StorageCrate2" parent="Furnishings" instance=ExtResource("cargo_crate")]
+position = Vector3(-8.8, 0, -12.5)
+
+[node name="Rations" parent="Furnishings" instance=ExtResource("ration_stack")]
+position = Vector3(6, 0.87, -12.7)
+
+[node name="InteriorTitle" type="Label3D" parent="Visuals"]
+position = Vector3(0, 4.55, -13.97)
+text = "CIVIL DEFENCE  /  MOTOR POOL"
+font_size = 64
+pixel_size = 0.012
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+
+[node name="LoadingSign" type="Label3D" parent="Visuals"]
+position = Vector3(-9.96, 3.2, -2)
+text = "OPTIONAL LOADOUT"
+font_size = 64
+pixel_size = 0.0065
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="SupplySign" type="Label3D" parent="Visuals"]
+position = Vector3(9.96, 3.2, -2)
+text = "RESERVE SUPPLIES"
+font_size = 64
+pixel_size = 0.0065
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="BaySign" type="Label3D" parent="Visuals"]
+visible = false
+position = Vector3(0, 5.85, 14.53)
+text = "SERVICE BAY  01"
+font_size = 64
+pixel_size = 0.01
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+
+[node name="ExteriorTitle" type="Label3D" parent="Visuals"]
+position = Vector3(-6.8, 3.75, 14.54)
+text = "SHELTER  /  07"
+font_size = 64
+pixel_size = 0.012
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+
+[node name="ExteriorWarning" type="Label3D" parent="Visuals"]
+position = Vector3(6.8, 2.8, 14.54)
+text = "KEEP APPROACH CLEAR"
+font_size = 64
+pixel_size = 0.0055
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+
+[node name="InteriorExit" type="Label3D" parent="Visuals"]
+position = Vector3(0, 5.66, 14.17)
+text = "DEPARTURE"
+font_size = 64
+pixel_size = 0.009
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 3.14159, 0)
+
+[node name="LoadingInstruction" type="Label3D" parent="Visuals"]
+position = Vector3(-9.955, 2.6, -2)
+text = "LOAD EQUIPMENT BEFORE DEPARTURE"
+font_size = 64
+pixel_size = 0.0036
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 1.5708, 0)
+
+[node name="LampHousing0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6, 6.05, -8)
+mesh = SubResource("r37")
+material_override = ExtResource("steel")
+
+[node name="LampTube0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6, 5.965, -8)
+mesh = SubResource("r38")
+material_override = SubResource("lamp")
+
+[node name="WorkLight0" type="OmniLight3D" parent="Lights"]
+position = Vector3(-6, 5.55, -8)
+light_color = Color(0.87, 0.81, 0.66, 1)
+light_energy = 2.2
+omni_range = 15.0
+omni_attenuation = 1.3
+shadow_enabled = true
+
+[node name="LampHousing1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6, 6.05, -8)
+mesh = SubResource("r37")
+material_override = ExtResource("steel")
+
+[node name="LampTube1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6, 5.965, -8)
+mesh = SubResource("r38")
+material_override = SubResource("lamp")
+
+[node name="WorkLight1" type="OmniLight3D" parent="Lights"]
+position = Vector3(6, 5.55, -8)
+light_color = Color(0.87, 0.81, 0.66, 1)
+light_energy = 2.2
+omni_range = 15.0
+omni_attenuation = 1.3
+shadow_enabled = true
+
+[node name="LampHousing2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6, 6.05, 6)
+mesh = SubResource("r37")
+material_override = ExtResource("steel")
+
+[node name="LampTube2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6, 5.965, 6)
+mesh = SubResource("r38")
+material_override = SubResource("lamp")
+
+[node name="WorkLight2" type="OmniLight3D" parent="Lights"]
+position = Vector3(-6, 5.55, 6)
+light_color = Color(0.87, 0.81, 0.66, 1)
+light_energy = 2.2
+omni_range = 15.0
+omni_attenuation = 1.3
+shadow_enabled = true
+
+[node name="LampHousing3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6, 6.05, 6)
+mesh = SubResource("r37")
+material_override = ExtResource("steel")
+
+[node name="LampTube3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6, 5.965, 6)
+mesh = SubResource("r38")
+material_override = SubResource("lamp")
+
+[node name="WorkLight3" type="OmniLight3D" parent="Lights"]
+position = Vector3(6, 5.55, 6)
+light_color = Color(0.87, 0.81, 0.66, 1)
+light_energy = 2.2
+omni_range = 15.0
+omni_attenuation = 1.3
+shadow_enabled = true
+
+[node name="ApronLight" type="OmniLight3D" parent="Lights"]
+position = Vector3(0, 5.4, 16)
+light_color = Color(0.88, 0.78, 0.58, 1)
+light_energy = 1.5
+omni_range = 14.0
+shadow_enabled = true
+
+[node name="PorchLamp" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.5, 14.7)
+mesh = SubResource("r39")
+material_override = SubResource("lamp")
+
+[node name="GarageGate" type="Node3D" parent="."]
+position = Vector3(0, 0, 14)
+
+[node name="LeftLeaf" type="AnimatableBody3D" parent="GarageGate"]
+position = Vector3(-1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = true
+
+[node name="Collision" type="CollisionShape3D" parent="GarageGate/LeftLeaf"]
+shape = SubResource("r40")
+
+[node name="Visuals" type="Node3D" parent="GarageGate/LeftLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r41")
+material_override = ExtResource("steel")
+
+[node name="Rib0" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Brace-1" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="Brace1" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="WarningBand" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0, -1.75, -0.208)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="ExteriorWarningBand" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(0, -1.75, 0.16)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="Handle" type="MeshInstance3D" parent="GarageGate/LeftLeaf/Visuals"]
+position = Vector3(1.45, -0.55, -0.25)
+mesh = SubResource("r45")
+material_override = ExtResource("steel")
+
+[node name="RightLeaf" type="AnimatableBody3D" parent="GarageGate"]
+position = Vector3(1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = true
+
+[node name="Collision" type="CollisionShape3D" parent="GarageGate/RightLeaf"]
+shape = SubResource("r40")
+
+[node name="Visuals" type="Node3D" parent="GarageGate/RightLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r41")
+material_override = ExtResource("steel")
+
+[node name="Rib0" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Brace-1" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="Brace1" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="WarningBand" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0, -1.75, -0.208)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="ExteriorWarningBand" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(0, -1.75, 0.16)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="Handle" type="MeshInstance3D" parent="GarageGate/RightLeaf/Visuals"]
+position = Vector3(-1.45, -0.55, -0.25)
+mesh = SubResource("r45")
+material_override = ExtResource("steel")
+
+[node name="GarageButton" type="StaticBody3D" parent="."]
+position = Vector3(-4.2, 1.2, 12.8)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Collision" type="CollisionShape3D" parent="GarageButton"]
+shape = SubResource("r46")
+
+[node name="Visuals" type="Node3D" parent="GarageButton"]
+
+
+[node name="Case" type="MeshInstance3D" parent="GarageButton/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r47")
+material_override = ExtResource("steel")
+
+[node name="Plate" type="MeshInstance3D" parent="GarageButton/Visuals"]
+position = Vector3(0, 0, -0.137)
+mesh = SubResource("r48")
+material_override = ExtResource("hazard")
+
+[node name="Button" type="MeshInstance3D" parent="GarageButton/Visuals"]
+position = Vector3(0, -0.03, -0.174)
+mesh = SubResource("r49")
+material_override = SubResource("green")
+
+[node name="StatusLamp" type="MeshInstance3D" parent="GarageButton/Visuals"]
+position = Vector3(0, 0.14, -0.163)
+mesh = SubResource("r50")
+material_override = SubResource("lamp")
+
+[node name="Prompt" type="Label3D" parent="Visuals"]
+position = Vector3(-4.2, 1.67, 12.64)
+text = "OPEN GARAGE"
+font_size = 64
+pixel_size = 0.0024
+modulate = Color(0.73, 0.73, 0.61, 1)
+outline_size = 0
+no_depth_test = false
+double_sided = false
+rotation = Vector3(0, 3.14159, 0)
+
+[node name="ButtonPost" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4.2, 0.5, 12.8)
+mesh = SubResource("r51")
+material_override = ExtResource("steel")
+
+[node name="ButtonPost" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-4.2, 0.5, 12.8)
+shape = SubResource("r52")
+
+[node name="RVSpawn" type="Marker3D" parent="."]
+position = Vector3(0, 1.8, -1)
+rotation = Vector3(0, 3.14159, 0)
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+position = Vector3(-4, 1.5, -1)
+rotation = Vector3(0, -1.5708, 0)
+
+[node name="ExteriorExit" type="Marker3D" parent="."]
+position = Vector3(0, 0, 24)
+
+[node name="Front" type="Marker3D" parent="AccessPoints"]
+position = Vector3(0, 0, 15)
+rotation = Vector3(0, 3.14159, 0)
+
+[node name="Apron" type="Marker3D" parent="AccessPoints"]
+position = Vector3(0, 0, 40)
+rotation = Vector3(0, 3.14159, 0)
+
+[node name="Generator" type="Marker3D" parent="StarterEquipment"]
+position = Vector3(-7.5, 0.34, -5)
+
+[node name="CraftingStation" type="Marker3D" parent="StarterEquipment"]
+position = Vector3(-7.5, 0.04, -1)
+
+[node name="Scrapper" type="Marker3D" parent="StarterEquipment"]
+position = Vector3(-7.5, 0.04, 3)
+
+[node name="Flashlight" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.25, 8)
+
+[node name="Battery" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.2, 6.7)
+
+[node name="GasCan1" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.48, 3)
+
+[node name="GasCan2" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.48, 1.7)
+
+[node name="OilBarrel" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.62, -9)
+
+[node name="Wheel" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.2, 0.06, -11)
+
+[node name="Scrap1" type="Marker3D" parent="StarterLoot"]
+position = Vector3(6.6, 0.22, -2)
+
+[node name="Scrap2" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.4, 0.22, -2)
+
+[node name="Scrap3" type="Marker3D" parent="StarterLoot"]
+position = Vector3(6.6, 0.22, -3.15)
+
+[node name="Scrap4" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.4, 0.22, -3.15)
+
+[node name="Scrap5" type="Marker3D" parent="StarterLoot"]
+position = Vector3(6.6, 0.22, -4.3)
+
+[node name="Scrap6" type="Marker3D" parent="StarterLoot"]
+position = Vector3(7.4, 0.22, -4.3)

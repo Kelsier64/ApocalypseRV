@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-文件核對：2026-09-28 更新新世界 v6 預設與檔案清理；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：2026-09-30 加入正式 v7 車庫開場；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
@@ -18,12 +18,12 @@
 
 ## 1. 執行環境與場景
 
-目標開發／CI 版本 Godot 4.7.2（由 `.godot-version` 固定，runner 強制核對），60 Hz／Jolt Physics（velocity/position steps 各 32）、桌面 Forward+／Vulkan（Compatibility 可降級）。[project.godot](project.godot) 的入口為 [world/test_world.tscn](world/test_world.tscn)。目前沒有網路同步或任務／進度管理器；Checkpoint autoload 提供主世界檢查點。
+目標開發／CI 版本 Godot 4.7.2（由 `.godot-version` 固定，runner 強制核對），60 Hz／Jolt Physics（velocity/position steps 各 32）、桌面 Forward+／Vulkan（Compatibility 可降級）。[project.godot](project.godot) 的入口為 [world/main_world.tscn](world/main_world.tscn)，[world/test_world.tscn](world/test_world.tscn) 保留舊存檔及測試配置。目前沒有網路同步或任務系統；Checkpoint autoload 提供主世界檢查點。
 
 專案功能標記為 4.7；開發與 CI 使用 4.7.2 stable。舊驗收紀錄中的 4.6.1 CI 是歷史資訊，不代表目前支援第二個引擎版本。
 
 ```text
-TestWorld
+MainWorld
 ├── Player                  玩家、Camera、互動射線、UI
 ├── WorldEntities           共用動態物件容器
 ├── WorldGenerator
@@ -35,10 +35,18 @@ TestWorld
 │   └── Chassis             VehicleBody3D、油電、材料、耐久
 │       ├── Wheel_*         VehicleWheel3D；獨立輪槽 hitbox 常駐底盤
 │       └── 座椅／車板／插槽／加油孔／道具箱   已安裝的 Equipment
-└── 地面物品、殭屍      主場景測試實例
+└── StartRun                車庫門、整備／出發／封閉狀態
 ```
 
-正式 RV 預裝發電機、工作台、分解機、平板與完整駕駛室；引擎、電池和兩包維修包一併備妥，地面不重複散放同款服務設備。
+正式 RV 使用獨立 starter_rv 配置，保留引擎、電池、兩包維修包、平板與完整駕駛室；發電機、工作台、分解機由起始車庫提供。new_rv 保留完整測試配置。
+
+### 起始避難所與世界識別
+
+起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
+
+正式主場景明確選擇生成 v7；共用 WorldProfile 預設及測試世界保持 v6。v7 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+
+Checkpoint v3 增加 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。缺少 world_id 的舊檔使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
 ### 輪胎與爆胎路障
 
@@ -233,7 +241,7 @@ WorldEntities.same_world 用於群組選敵、碰撞例外及串流清理；怪�
 
 地堡新增 16 個房間內容版本 2，舊版定義停用生成但保留解析，布局仍為 version 3。新版家具碰撞獨立於 Visuals/Model；封牆沿用所在房間的牆／塗裝材質。BunkerLighting 以保存 seed、room ID 與固定版本字串做 SHA-256 排序，選出四捨五入後 60% 的普通模組熄燈，排除 entry／stairs；不消耗布局或內容 RNG，不增加存檔欄位。舊房間內容版本 1 保留原照明。
 
-Flashlight 是小型 Prop，初始世界以場景實例放在地面。`state.flashlight={charge,on}` 使用獨立欄位，不能混用 RV 的 `state.battery`；VehicleSnapshot 驗證有限 0–100 電量和開關型別，SaveSceneCatalog 明確登錄場景。玩家背包狀態為耗电真值，手持節點只鏡射 Spotlight；只在 NORMAL、選取且可見照明時按 100/300 每秒扣電。切換、丟棄及倉庫移轉在序列化前關燈；模式暫停不耗電。讀檔用原 actor 替換流程清除初始地面實例，不另補發。
+Flashlight 是小型 Prop，初始世界以場景實例放在地面。`state.flashlight={charge,on}` 使用獨立欄位，不能混用 RV 的 `state.battery`；VehicleSnapshot 驗證有限 0–100 電量和開關型別，SaveSceneCatalog 明確登錄場景。玩家背包狀態為耗电真值，手持節點只鏡射 Spotlight；在 NORMAL、選取且可見照明時按 100/300 每秒扣電。PlayerGrab 在抓取開始前記錄實際亮燈狀態；原本亮著的手電筒在 GRABBED 期間保持可見、正常耗電，由持物姿勢將燈頭朝向抓取者臉部，解除後恢復一般朝向。切換、丟棄及倉庫移轉在序列化前關燈；模式暫停不耗電。讀檔用原 actor 替換流程清除初始地面實例，不另補發。
 
 ### 設備放置與支撐
 
@@ -368,11 +376,13 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### 統一驗證
 
+測試入口為 `scripts/test.ps1`，預設 `quick`；`integration`、`slow`、`assets`、`smoke` 分組供開發選擇，`full` 執行全部有效測試與正式主世界驗證。`tests/suites.json` 必須覆蓋每個頂層測試，未分類、重複或缺檔即失敗。CI 在各 job 的獨立 checkout 分組跑全部覆蓋；本機保留逐支獨立程序，避免共享存檔與 autoload 狀態污染。固定 60 fps 模擬排程不修改物理 Hz、time_scale 或求解器；`-RealTime` 提供實時對照。等待導航及 checkpoint 背景工作的測試使用 `tests/support/test_wait.gd` 的條件與期限；有效物理採樣時段仍保留。命令、維護與證據位置見 [測試指南](tests/README.md)。
+
 底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
 
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 
-[scripts/test.ps1](scripts/test.ps1) 先 headless import，再執行預設的全部 `tests/test_*.gd`，最後等待主場景 ready_for_play 並驗證玩家移動；等待實際 Godot process，檢查退出碼、錯誤日誌，測試需有 `PASS:`，主場景需專屬 WORLD_READY_FOR_PLAY 標記。入口核對 .godot-version，零測試失敗，manifest 記錄版本／commit／工作目錄狀態與清單。`-TestFilter` 可指定單一檔名樣式或以逗號分隔多個樣式，合併去重後執行；`-StartAt test_name` 從選取清單中的指定 suite 接續。runner 的每項執行期限為 240 秒，CI 總期限 30 分鐘；報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，日誌在 `.godot/test-logs/`。
+[scripts/test.ps1](scripts/test.ps1) 檢查實際 Godot process 的退出碼、錯誤日誌與 `PASS:`；smoke 需專屬 WORLD_READY_FOR_PLAY 標記。`-TestFilter` 可指定檔名或逗號分隔的多個樣式，合併去重後只跑選取項目；`-Smoke` 額外檢查正式主場景，`-StartAt test_name` 從指定測試接續。每項預設期限 240 秒，CI 每個分組 job 期限 30 分鐘；報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，版本／commit／工作樹、選取清單、結果及耗時保存於 `.godot/test-logs/` 的各次執行目錄。
 
 | 測試 | 關注範圍 |
 |---|---|
@@ -402,7 +412,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### v6 路邊小 POI
 
-新世界預設 v6；v2–v5 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v6:seed:minor:cell`。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
+正式主場景選擇 v7，沿用 v6 小 POI 規則；共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
 
 `WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 

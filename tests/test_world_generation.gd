@@ -1,5 +1,6 @@
 extends SceneTree
 const ROADSIDE_CACHE = preload("res://world/terrain/roadside_kit.gd")
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 func check(ok: bool, message: String) -> void:
 	if not ok and failures.size() < 25:
@@ -72,8 +73,10 @@ func _run() -> void:
 	for i in range(151):
 		check(a[Mesh.ARRAY_VERTEX][50 * 151 + i] == b[Mesh.ARRAY_VERTEX][i], "Shared mesh edge")
 		check(a[Mesh.ARRAY_NORMAL][50 * 151 + i].is_equal_approx(b[Mesh.ARRAY_NORMAL][i]), "Shared mesh normal")
-	for i in range(90):
-		await physics_frame
+	if not await WAIT.navigation_ready(self, chunks):
+		push_error("FAIL: neighbouring terrain navigation bake/publication timed out")
+		quit(1)
+		return
 	var query := PhysicsRayQueryParameters3D.create(Vector3(0, 20, -150), Vector3(0, -20, -150))
 	check(not world.get_world_3d().direct_space_state.intersect_ray(query).is_empty(), "Seam has real collision")
 	var map := world.get_world_3d().navigation_map

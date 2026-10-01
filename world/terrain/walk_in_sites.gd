@@ -42,8 +42,11 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
+	if definition.definition_id == &"starting_shelter":
+		_spawn_starter_actors(building, container)
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
 	for point in building.find_children("*", "Marker3D", true, false):
+		if definition.definition_id == &"starting_shelter": continue
 		if not point is PoiLootPoint: continue
 		var scene: PackedScene = point.roll_scene(rng)
 		if scene == null: continue
@@ -61,6 +64,33 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 			container.add_child(monster)
 			monster.global_transform = point.global_transform
 	generator.outdoor_sites[site.id] = {"definition_id": str(definition.definition_id), "content_version": definition.content_version, "loaded": true, "actors": []}
+
+## The authored opening has a fixed inventory. Markers carry placement only;
+## loose actors use the same owner/snapshot lifecycle as every other walk-in.
+static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
+	var scenes := {
+		"StarterEquipment/Generator": "res://equipment/generator.tscn",
+		"StarterEquipment/CraftingStation": "res://equipment/crafting_station.tscn",
+		"StarterEquipment/Scrapper": "res://equipment/scrapper.tscn",
+		"StarterLoot/Flashlight": "res://props/flashlight.tscn",
+		"StarterLoot/Battery": "res://props/battery.tscn",
+		"StarterLoot/GasCan1": "res://props/gas_can.tscn",
+		"StarterLoot/GasCan2": "res://props/gas_can.tscn",
+		"StarterLoot/OilBarrel": "res://props/oil_barrel.tscn",
+		"StarterLoot/Wheel": "res://props/wheel.tscn",
+	}
+	for i in range(1, 7): scenes["StarterLoot/Scrap%d" % i] = "res://props/scrap.tscn"
+	for path in scenes:
+		var point := building.get_node_or_null(NodePath(path)) as Marker3D
+		if point == null:
+			push_error("Starting shelter is missing marker: " + path)
+			continue
+		var actor: Node3D = load(scenes[path]).instantiate()
+		container.add_child(actor)
+		actor.global_transform = point.global_transform
+		if actor is Equipment:
+			actor.freeze = true
+			actor.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 
 static func deactivate(generator: Node, site: Dictionary) -> void:
 	if not generator.outdoor_sites.has(site.id): return

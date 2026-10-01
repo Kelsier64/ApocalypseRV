@@ -1,7 +1,7 @@
 extends SceneTree
 ## Actual Jolt simulation at the unchanged production tick; independent of production Player.
 const STAGE = preload("res://tests/player_ragdoll_v020/playground.tscn")
-const OUTPUT := "res://docs/validation/player-animations-v021/physics_audit_60hz.json"
+const OUTPUT := "res://.godot/test-logs/player_ragdoll_v020/physics_audit_60hz.json"
 var failures: Array[String] = []
 var results: Array = []
 
@@ -179,7 +179,13 @@ func _run() -> void:
 	var report := {"godot": Engine.get_version_info().string, "physics": ProjectSettings.get_setting("physics/3d/physics_engine"), "display_server": DisplayServer.get_name(), "physics_hz": Engine.physics_ticks_per_second, "test_world_settings": stage.JOLT_TEST_SETTINGS, "mass_kg": total_mass, "configuration": config, "cases": results, "failures": failures}
 	stage.free()
 	check(Engine.physics_ticks_per_second == original_hz and root.world_3d == original_world, "Test simulation context restored on scene exit")
-	FileAccess.open(OUTPUT, FileAccess.WRITE).store_string(JSON.stringify(report, "\t"))
+	var directory_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT.get_base_dir()))
+	check(directory_error == OK, "Physics audit output directory can be created")
+	var output := FileAccess.open(OUTPUT, FileAccess.WRITE) if directory_error == OK else null
+	check(output != null, "Physics audit output can be written")
+	if output != null:
+		output.store_string(JSON.stringify(report, "\t"))
+		output.close()
 	if failures.is_empty():
 		print("PASS: player v020 ragdoll simulation and recovery")
 	else:

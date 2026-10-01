@@ -38,13 +38,14 @@ func _physics_process(delta: float) -> void:
 	if actor.is_player_dead: return # Preserve the evaluated pose for ragdoll handoff.
 	var held: Node3D = actor.held_item_node
 	var driver: Node = get_parent().get_node("Locomotion")
-	var blocked: bool = actor.seated_in != null or actor.is_grabbed() or actor.is_placing_equipment() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+	var grab_flashlight: bool = actor.is_grabbed() and actor.grab_control.keep_flashlight and held is Flashlight
+	var blocked: bool = actor.seated_in != null or (actor.is_grabbed() and not grab_flashlight) or actor.is_placing_equipment() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
 	if is_instance_valid(held): held.visible = not blocked
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
 	right_weight = move_toward(right_weight, 1.0 if carrying else 0.0, delta * 7.0)
 	left_weight = move_toward(left_weight, 1.0 if large else 0.0, delta * 7.0)
-	# Climbing/grabs immediately own both arms; do not fade over their poses.
+	# Climbing/grabs own both arms unless the victim keeps a lit flashlight.
 	if blocked:
 		right_weight = 0.0
 		left_weight = 0.0
@@ -106,7 +107,11 @@ func _align_flashlight() -> void:
 	var frame: Basis = delta * hand_frames["R"]
 	var grip := item.get_node("GripRight") as Node3D
 	var forward := actor.global_basis * Basis(Vector3.RIGHT, clampf(actor.camera.rotation.x, -.45, .45) * .65) * Vector3.FORWARD
+	if actor.is_grabbed() and actor.grab_control.keep_flashlight:
+		forward = (actor.grab_control.captor.grab_face_position() - grip_right).normalized()
 	var outward := (-frame.z - forward * (-frame.z).dot(forward)).normalized()
+	if outward.length_squared() < .001:
+		outward = Basis.looking_at(forward).x
 	var rotation := Basis(outward, forward, outward.cross(forward))
 	var fitted := rotation * Basis.from_scale(item_hold_transform.basis.get_scale())
 	item.global_transform = Transform3D(fitted, grip_right - fitted * grip.position)

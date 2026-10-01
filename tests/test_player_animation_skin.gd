@@ -1,5 +1,6 @@
 extends SceneTree
 ## Evaluates real v020 skin with v021 clips; catches destructive curve reduction.
+const OUTPUT := "res://.godot/test-logs/player_animation_skin/skinned_bounds.json"
 func _init(): run.call_deferred()
 func run():
 	var actor = load("res://player/player.tscn").instantiate()
@@ -44,7 +45,14 @@ func run():
 		failed = failed or minimum < -.002 or maximum > 1.8 or max_width > 1.3
 		results.append({"clip":clip_name,"samples":samples+1,"min_skinned_y":minimum,"max_skinned_y":maximum,"max_width":max_width})
 	print(JSON.stringify(results))
-	FileAccess.open("res://docs/validation/player-animations-v021/skinned_bounds.json",FileAccess.WRITE).store_string(JSON.stringify(results,"\t"))
+	var directory_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT.get_base_dir()))
+	var output := FileAccess.open(OUTPUT, FileAccess.WRITE) if directory_error == OK else null
+	if output == null:
+		failed = true
+		push_error("Animated skin audit output could not be written: " + OUTPUT)
+	else:
+		output.store_string(JSON.stringify(results, "\t"))
+		output.close()
 	actor.queue_free()
 	await process_frame
 	if failed: push_error("Animated skin bounds or grounded boot soles failed")

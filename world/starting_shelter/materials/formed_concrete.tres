@@ -1,0 +1,8 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://world/starting_shelter/materials/formed_concrete.gdshader" id="shader"]
+[ext_resource type="Texture2D" path="res://assets/materials/poi_kit/concrete_albedo.png" id="concrete"]
+
+[resource]
+shader = ExtResource("shader")
+shader_parameter/concrete_texture = ExtResource("concrete")

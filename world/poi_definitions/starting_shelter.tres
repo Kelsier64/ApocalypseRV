@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PoiDefinition" format=3]
+
+[ext_resource type="Script" path="res://world/poi_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+definition_id = &"starting_shelter"
+display_name = "起始避難所"
+scene_path = "res://world/starting_shelter/starting_shelter.tscn"
+kind = 1
+building_bounds = AABB(-25, -0.4, -30.5, 50, 14.4, 45)
+site_bounds = AABB(-27, -0.5, -33, 54, 15, 79)
+entrance_path = NodePath("")
+return_path = NodePath("")
+interior_profile = &""
+access_paths = Array[NodePath]([NodePath("AccessPoints/Front"), NodePath("AccessPoints/Apron")])

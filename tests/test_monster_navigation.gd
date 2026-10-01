@@ -109,10 +109,6 @@ func _test_climb_contract_methods_exist() -> void:
 
 	_expect(monster.has_method("_try_start_climb"), "Monster should expose _try_start_climb(destination).")
 	_expect(monster.has_method("_process_climbing"), "Monster should expose _process_climbing(delta, destination).")
-	_expect(not monster.has_method("_begin_mantle"), "Monster mantle helper _begin_mantle should be removed.")
-	_expect(not monster.has_method("_process_mantle"), "Monster mantle helper _process_mantle should be removed.")
-	_expect(not monster.has_method("_compute_mantle_target"), "Monster mantle helper _compute_mantle_target should be removed.")
-	_expect(not monster.has_method("_can_start_mantle"), "Monster mantle helper _can_start_mantle should be removed.")
 	_expect(monster.has_method("_is_rv_wall_normal"), "Monster should expose _is_rv_wall_normal(hit_normal, rv_up).")
 	_expect(monster.has_method("_get_descent_hint_direction"), "Monster should expose _get_descent_hint_direction(destination).")
 

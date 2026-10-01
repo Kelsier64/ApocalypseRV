@@ -23,13 +23,13 @@ godot --editor --path .
 godot --path .
 ```
 
-主場景為 `world/test_world.tscn`，使用 60 Hz／Jolt Physics（32／32 次求解），桌面預設 Forward+／Vulkan。開局有完整組裝的 RV、測試物資及殭屍，並生成公路。
+主場景為 `world/main_world.tscn`，使用 60 Hz／Jolt Physics（32／32 次求解），桌面預設 Forward+／Vulkan。玩家出生於半地下避難所車庫，RV 已可駕駛，發電機、工作台及分解機須自行搬上車。整備時時間與敵人停止，門旁 E 按鈕開門並開始旅程；RV 與玩家離開後車庫永久關閉，未帶走物資無法再取回。公路後方由廢棄車陣封死。原 `world/test_world.tscn` 保留為測試場與舊存檔入口。
 
 戶外已改用林間局部體積霧，會接受太陽與車燈照明；遠處另外保留淡距離霧。更新後須重新啟動遊戲，編輯器需重新載入專案。若顯示卡不支援，可用 `godot --path . --rendering-method gl_compatibility --rendering-driver opengl3`，降級為原距離霧。畫面與測試見 [局部體積霧驗收](docs/validation/2026-09-17-volumetric-fog.md)。
 
 ## 怎麼玩
 
-車上已裝齊發電機、分解機、平板與工作台。撿物並丟入分解機，從平板製作汽油罐，到工作台取貨並補油。沿公路路標與步道前往混凝土地堡入口，面向鋼門 E 進入。新訪軍事地堡以 16 個房型模組為池，目標 30–60 個模組、隨機 1–3 層；接口耗盡可能提早停止，樓梯放不下時保留較少樓層。探索時可短按 E 拾取散落零件、長按 E 1 秒從補給箱每次取出一件物資，並留意深處可能出現的 Raker：每個合格生成機會獨立以 30% 機率抽取，因此一座地堡可能沒有、只有一隻或有多隻。深入地堡可帶回一具耐久 70% 的強化引擎；HUD 會提示所在房間與返程。返回 B1 ENTRY 的 EXIT 門 E 回地面；M 顯示已探索地圖，Page Up／Down 切層。室外世界與 RV 油電持續運作，剩餘物資、補給箱、存活怪物及探索會保留，回室外 F6 保存。已訪舊 v3 地堡維持原布局與內容，不會補抽新物資；舊 v1／v2 副本紀錄會清除，其餘世界資料保留。見 [地堡指南](docs/guides/bunker-interior.md)與[先前內容驗證](docs/validation/2026-09-29-bunker-content.md)。
+先在車庫把需要的發電機、分解機與工作台搬上車，平板已預裝。撿物並丟入分解機，從平板製作汽油罐，到工作台取貨並補油。沿公路路標與步道前往混凝土地堡入口，面向鋼門 E 進入。新訪軍事地堡以 16 個房型模組為池，目標 30–60 個模組、隨機 1–3 層；接口耗盡可能提早停止，樓梯放不下時保留較少樓層。探索時可短按 E 拾取散落零件、長按 E 1 秒從補給箱每次取出一件物資，並留意深處可能出現的 Raker：每個合格生成機會獨立以 30% 機率抽取，因此一座地堡可能沒有、只有一隻或有多隻。深入地堡可帶回一具耐久 70% 的強化引擎；HUD 會提示所在房間與返程。返回 B1 ENTRY 的 EXIT 門 E 回地面；M 顯示已探索地圖，Page Up／Down 切層。室外世界與 RV 油電持續運作，剩餘物資、補給箱、存活怪物及探索會保留，回室外 F6 保存。已訪舊 v3 地堡維持原布局與內容，不會補抽新物資；舊 v1／v2 副本紀錄會清除，其餘世界資料保留。見 [地堡指南](docs/guides/bunker-interior.md)與[先前內容驗證](docs/validation/2026-09-29-bunker-content.md)。
 
 | 操作 | 按鍵 |
 |---|---|
@@ -66,11 +66,15 @@ godot --path .
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
-# 開發中只跑相關測試；多個樣式合併成一次匯入與主場景檢查
+# 完整回歸，包含正式主世界啟動
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -Suite full
+# 開發中只跑相關測試；不額外建立主世界
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter 'test_bunker_*.gd,test_interior_*.gd'
 ```
 
-Runner 先核對 `.godot-version`，預設列出頂層全部 `tests/test_*.gd`（零測試即失敗）；`-TestFilter` 可給單一檔名或以逗號分隔多個萬用字元樣式，合併、去重後按檔名排序。選出的測試共用一次資源匯入與主場景檢查。`-StartAt test_name` 則從選取清單中的指定測試接續到結尾。Runner 會等待正式主場景地形、導航與玩家就緒並驗證移動，檢查退出碼、錯誤日誌與測試 `PASS:`。版本、commit、OS 和測試清單保存於 `manifest.txt`。日誌在 `.godot/test-logs/`，可用 `-Godot 'C:/path/to/godot.exe'` 指定執行檔。GitHub Actions 使用同一入口執行完整測試。
+預設執行 `quick` 快速行為集；`-Suite integration`、`slow`、`assets` 分別執行整合、長情境與資產驗收，`smoke` 只驗證正式世界就緒及移動，`full` 執行全部有效測試與 smoke。CI 分組執行全部覆蓋。`-TestFilter` 覆蓋分組選擇，支援逗號分隔樣式、去重與排序；需要同時啟動主世界時加 `-Smoke`。
+
+Runner 核對 `.godot-version`，共用一次匯入，使用固定 60 fps 模擬時間解除 headless 的實時節流，保留專案 60 Hz 物理與求解器設定。`-List` 不啟動引擎；`-SkipImport` 適用於已匯入且資產沒有變更的工作樹；`-RealTime` 可對照實時排程；`-StartAt test_name` 從指定測試接續。每次執行獨立保存 `manifest.txt`、`results.json`、`timings.csv` 與日誌到 `.godot/test-logs/`，失敗後繼續收集結果（`-FailFast` 可提前停止）。完整說明與新增測試規則見 [測試指南](tests/README.md)；可用 `-Godot 'C:/path/to/godot.exe'` 指定引擎。
 
 測試場操作見 [指南](docs/guides/playgrounds.md)，歷次結果見 [文件索引](docs/README.md)。Headless 通過不代替實機手感、GPU 畫面、翻車、怪物群或長途經濟驗收。
 

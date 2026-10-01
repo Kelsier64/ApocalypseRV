@@ -2,6 +2,7 @@ extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
 const VERSION := 3
 const PATH := "user://rv_checkpoint.save"
+const WORLD_SCENES := {"legacy": "res://world/test_world.tscn", "shelter": "res://world/main_world.tscn"}
 var pending: Dictionary = {}
 var message: String = ""
 var label: Label
@@ -42,7 +43,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
 	var world := get_tree().current_scene
-	if world == null or world.scene_file_path != "res://world/test_world.tscn":
+	if world == null or world.scene_file_path not in WORLD_SCENES.values():
 		return
 	if loading: return
 	if event.physical_keycode == KEY_F6:
@@ -55,6 +56,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func save_world(world: Node, path: String) -> bool:
 	last_error = {}
 	if loading: return _fail("state")
+	var start_run := world.get_node_or_null("StartRun")
+	if start_run != null and not start_run.save_block_reason().is_empty():
+		return _fail("motion", "start_state", start_run.save_block_reason())
 	var manager: Node = world.get_node_or_null("PoiInstances")
 	var generator: Node = world.get_node_or_null("WorldGenerator")
 	var player: Node = world.get_node_or_null("Player")
@@ -85,6 +89,8 @@ func save_world(world: Node, path: String) -> bool:
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["generated_bands"] = generator.generated_bands.duplicate()
+	data["world_id"] = "shelter" if start_run != null else "legacy"
+	if start_run != null: data["start_state"] = start_run.capture()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null:
 		data["clock"] = clock.capture()
@@ -149,7 +155,16 @@ func validation_error(data: Dictionary) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7]: return "generation_version"
+	var world_id: Variant = data.get("world_id", "legacy")
+	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
+	if world_id == "shelter":
+		if data.get("generation_version") != 7: return "world_id.generation_version"
+		var start_state: Variant = data.get("start_state")
+		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
+		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
+	elif data.has("start_state") or data.get("generation_version", 2) == 7:
+		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
 	var player: Dictionary = data.player
@@ -180,6 +195,8 @@ func validation_error(data: Dictionary) -> String:
 
 func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
+	var start_run := world.get_node_or_null("StartRun")
+	if start_run != null and pending.has("start_state"): start_run.restore(pending.start_state)
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null and pending.has("clock"): clock.restore(pending.clock)
 	if clock != null and pending.has("weather"): clock.weather.restore(pending.weather)
@@ -236,6 +253,8 @@ func restore_world(world: Node) -> Dictionary:
 	world.get_node("PoiInstances").saved_instances = data.poi.duplicate(true)
 	world.get_node("Player").restore_checkpoint_state(data.player)
 	world.get_node("WorldGenerator").restoring_entities = false
+	var start_run := world.get_node_or_null("StartRun")
+	if start_run != null: start_run.apply_actor_state()
 	message = "Checkpoint restored"
 	label.text = message
 	return {"ok": true}
@@ -263,7 +282,7 @@ func load_world(old_world: Node, path: String) -> bool:
 	staging.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(staging)
 	PhysicsServer3D.space_set_active(staging.find_world_3d().space, false)
-	var candidate: Node3D = load("res://world/test_world.tscn").instantiate()
+	var candidate: Node3D = load(WORLD_SCENES[data.get("world_id", "legacy")]).instantiate()
 	candidate.set_meta("checkpoint_staging", true)
 	candidate.set_meta("entity_domain", true)
 	pending = data

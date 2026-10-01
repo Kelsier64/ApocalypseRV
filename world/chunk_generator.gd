@@ -331,7 +331,25 @@ func _build_navigation(gradual: bool = false) -> void:
 	# creates duplicate raster edges; use the ground once for navigation.
 	var road_body := get_node("Road").get_child(0) as StaticBody3D
 	road_body.collision_layer = 0
+	# A movable start gate must not permanently erase the doorway from this
+	# static bake. Its physical leaves still block the closed/sealed entrance.
+	var gate_layers: Dictionary = {}
+	for building in get_children():
+		if building.get_meta("poi_definition_id", "") != &"starting_shelter": continue
+		for leaf_name in ["GarageGate/LeftLeaf", "GarageGate/RightLeaf"]:
+			var leaf := building.get_node_or_null(NodePath(leaf_name)) as CollisionObject3D
+			if leaf != null:
+				gate_layers[leaf] = leaf.collision_layer
+				leaf.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
+	# Closed mesh shells alone can leave terrain navigation underneath them.
+	# Authored solid decorative volumes explicitly remove that interior space.
+	for building in get_children():
+		if building.get_meta("poi_definition_id", "") != &"starting_shelter": continue
+		for shape in building.find_children("*", "CollisionShape3D", true, false):
+			if shape.get_meta("navigation_solid", false) and shape.shape is BoxShape3D and not shape.disabled:
+				_append_solid_box_obstruction(source, shape.shape.size, global_transform.affine_inverse() * shape.global_transform)
+	for leaf in gate_layers: leaf.collision_layer = gate_layers[leaf]
 	road_body.collision_layer = 1
 	if gradual: await _pause()
 	# Neighbour ground halo prevents agent-radius erosion from leaving a gap
@@ -383,8 +401,18 @@ func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> 
 func _append_collision_boxes(source: NavigationMeshSourceGeometryData3D, node: Node, pose: Transform3D) -> void:
 	if node is CollisionShape3D and node.shape is BoxShape3D and not node.disabled:
 		_append_box_faces(source, node.shape.size, pose)
+		if node.get_meta("navigation_solid", false):
+			_append_solid_box_obstruction(source, node.shape.size, pose)
 	for child in node.get_children():
 		_append_collision_boxes(source, child, pose * child.transform if child is Node3D else pose)
+
+func _append_solid_box_obstruction(source: NavigationMeshSourceGeometryData3D, size: Vector3, pose: Transform3D) -> void:
+	# These authored volumes are upright boxes; rotation around Y is supported.
+	var outline := PackedVector3Array()
+	for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, 1)]:
+		outline.append(pose * (corner * size * 0.5))
+	var bounds := pose * AABB(-size * 0.5, size)
+	source.add_projected_obstruction(outline, bounds.position.y - 0.5, bounds.size.y + 1.0, false)
 
 func _append_box_faces(source: NavigationMeshSourceGeometryData3D, size: Vector3, pose: Transform3D) -> void:
 	var corners := [Vector3(-1,-1,-1), Vector3(1,-1,-1), Vector3(1,1,-1), Vector3(-1,1,-1), Vector3(-1,-1,1), Vector3(1,-1,1), Vector3(1,1,1), Vector3(-1,1,1)]

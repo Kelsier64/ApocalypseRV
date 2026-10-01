@@ -20,6 +20,7 @@ var camera_rest_position := Vector3.ZERO
 var camera_rest_near := .05
 var bite_pull_offset := Vector3.ZERO
 var bite_pull_ready := false
+var keep_flashlight := false
 var hud: CanvasLayer
 var label: Label
 var bar: ProgressBar
@@ -77,6 +78,9 @@ func can_begin() -> bool:
 
 func begin(owner_node: Node3D, count: int) -> bool:
 	if not can_begin() or not is_instance_valid(owner_node): return false
+	# Snapshot actual illumination before UI cleanup can reactivate a stowed light.
+	var held := player.held_item_node as Flashlight
+	keep_flashlight = held != null and held.get_node("Beam").is_visible_in_tree()
 	player.grab_started.emit()
 	if player.is_placing_equipment():
 		player.placement.placing_equipment.cancel_placement()
@@ -105,7 +109,8 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	camera_elapsed = 0
 	bite_pull_ready = false
 	bite_pull_offset = Vector3.ZERO
-	if is_instance_valid(player.held_item_node): player.held_item_node.hide()
+	if is_instance_valid(player.held_item_node): player.held_item_node.visible = keep_flashlight
+	player._advance_flashlight(0.0)
 	hud.show()
 	update_progress(remaining)
 	return true
@@ -205,6 +210,7 @@ func end(reason: String = "cancelled") -> void:
 	var previous := captor
 	var owned_view := is_instance_valid(camera) and camera.current
 	captor = null
+	keep_flashlight = false
 	accepting = false
 	remaining = 0
 	hud.hide()

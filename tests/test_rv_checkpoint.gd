@@ -1,6 +1,7 @@
 extends SceneTree
 var failures: Array[String] = []
 const PATH := "res://.godot/test-rv-checkpoint.save"
+const WAIT = preload("res://tests/support/test_wait.gd")
 
 func _init() -> void:
 	_run.call_deferred()
@@ -33,7 +34,9 @@ func _run() -> void:
 	prop.global_position = scrapper.global_position + Vector3.UP
 	scrapper.recycle_prop(prop)
 	scrapper.step_work(0.4)
-	await _finish_navigation(world)
+	if not await _finish_navigation(world):
+		quit(1)
+		return
 	var charge := rv.current_power
 	var installed_ref: WeakRef = weakref(rv.energy.battery)
 	var battery_id := rv.energy.battery.id
@@ -144,7 +147,9 @@ func _run() -> void:
 	player.set_physics_process(false)
 	expect(player.current_stamina == 12.0 and player.stamina_exhausted, "Checkpoint restores stamina and exhaustion.")
 	var restored_ref: WeakRef = weakref(restored.energy.battery)
-	await _finish_navigation(world)
+	if not await _finish_navigation(world):
+		quit(1)
+		return
 	expect(restored.persistent_id == rv_id and restored.energy.battery.id == battery_id, "Vehicle and battery identity restored")
 	expect(is_equal_approx(restored.current_power, charge) and is_equal_approx(restored.current_fuel, fuel), "Charge and fuel not reset by scene loading")
 	expect(restored.get_all_items() == saved_materials and restored.energy.engine_running, "Materials and running engine restored")
@@ -186,15 +191,15 @@ func _run() -> void:
 
 # This short test rebuilds then destroys a whole procedural world. Await its
 # background work instead of shutting down NavigationServer during a bake.
-func _finish_navigation(world: Node3D) -> void:
+func _finish_navigation(world: Node3D) -> bool:
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.set_process(false)
-	while generator.building:
-		await process_frame
-	for chunk in generator.active_chunks:
-		var navigation: NavigationRegion3D = chunk.node.navigation
-		if navigation:
-			while NavigationServer3D.is_baking_navigation_mesh(navigation.navigation_mesh):
-				await process_frame
+	if not await WAIT.until(self, func() -> bool: return not generator.building):
+		push_error("FAIL: checkpoint terrain build did not finish within 60 seconds")
+		return false
+	if not await WAIT.navigation_bakes_finished(self, world):
+		push_error("FAIL: checkpoint navigation bake did not finish within 60 seconds")
+		return false
 	await physics_frame
 	await process_frame
+	return true

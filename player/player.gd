@@ -141,7 +141,8 @@ func _toggle_flashlight() -> void:
 
 func _advance_flashlight(delta: float) -> void:
 	var flashlight: Dictionary = _active_flashlight_state()
-	var active := get_player_mode() == PlayerMode.NORMAL and not flashlight.is_empty() and bool(flashlight.get("on", false)) and float(flashlight.get("charge", 0.0)) > 0.0
+	var mode_allows_light: bool = get_player_mode() == PlayerMode.NORMAL or (get_player_mode() == PlayerMode.GRABBED and grab_control.keep_flashlight)
+	var active := mode_allows_light and not flashlight.is_empty() and bool(flashlight.get("on", false)) and float(flashlight.get("charge", 0.0)) > 0.0
 	var held := held_item_node as Flashlight
 	if held:
 		held.switched_on = active

@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+最新場景驗收：[避難所老化與去除綠色牆帶](validation/2026-10-01-shelter-weathering.md)；先前紀錄見 [牆體重做](validation/2026-10-01-shelter-walls.md)、[原生建築與部件修正](validation/2026-10-01-shelter-native-art.md)、[外觀擴建](validation/2026-10-01-shelter-expansion.md) 與 [正式世界開場](validation/2026-09-30-starting-shelter.md)。
+
 | 需求 | 文件 | 責任 |
 |---|---|---|
 | 啟動遊戲、查按鍵 | [README](../README.md) | 快速開始與統一驗證入口 |
@@ -12,6 +14,7 @@
 | 找程式、資產來源與清理邊界 | [程式與資產目錄指南](guides/codebase.md) | 目錄責任、引用、存檔相容及驗證 |
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
+| 執行與維護自動測試 | [測試指南](../tests/README.md) | 快速集、完整回歸、耗時與分類規則 |
 | 開發約定 | [AGENTS](../AGENTS.md) | 協作與工具指引 |
 | 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt)、[GDD_add](../GDD_add.md) | 保留原項目、POI 方向與補充提案；實作狀態見 GDD 及計畫總覽 |
 

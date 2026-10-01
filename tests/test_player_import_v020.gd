@@ -2,6 +2,7 @@ extends SceneTree
 ## Isolated import contract; never instantiates the production player.
 const MODEL = preload("res://assets/models/player_test_v020/player_export_test_v020.glb")
 const CLIP := &"TEST_v020_POSE_SAMPLES"
+const OUTPUT := "res://.godot/test-logs/player_import_v020/godot_audit.json"
 var failures: Array[String] = []
 var report: Dictionary = {}
 
@@ -129,9 +130,13 @@ func _run() -> void:
 		"surfaces": surfaces, "materials": materials, "poses": pose_results,
 		"animation_samples": 481, "max_bone_scale_error": max_scale_error,
 		"max_bone_step_m_at_60hz": max_step, "local_view": local_result, "failures": failures}
-	var file := FileAccess.open("res://docs/validation/player-v020/godot_audit.json", FileAccess.WRITE)
-	file.store_string(JSON.stringify(report, "\t"))
-	file.close()
+	var directory_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT.get_base_dir()))
+	check(directory_error == OK, "Audit output directory can be created")
+	var file := FileAccess.open(OUTPUT, FileAccess.WRITE) if directory_error == OK else null
+	check(file != null, "Audit output can be written")
+	if file != null:
+		file.store_string(JSON.stringify(report, "\t"))
+		file.close()
 	model.free()
 	if failures.is_empty():
 		print("PASS: player v020 import, materials, skin, pose bounds and 481 animation samples")

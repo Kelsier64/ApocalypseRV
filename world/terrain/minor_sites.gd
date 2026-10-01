@@ -19,7 +19,7 @@ static func plan(field: WorldField, cell: int) -> Dictionary:
 		var s := cell * CELL_LENGTH + placement.randf_range(150, 1050)
 		var side := -1.0 if placement.randf() < 0.5 else 1.0
 		if s < 450: continue
-		var site := {"index": cell, "id": "v6:%d:minor:%d" % [field.world_seed, cell], "s": s, "side": side,
+		var site := {"index": cell, "id": "v%d:%d:minor:%d" % [field.profile.generation_version, field.world_seed, cell], "s": s, "side": side,
 			"road": field.road_frame(s), "seed": field.seed_for(cell, "minor_art"), "minor": true}
 		WalkInSites.configure(site, id)
 		var blocked := false

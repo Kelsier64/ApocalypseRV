@@ -5,10 +5,19 @@ permissions:
 
 jobs:
   tests:
+    name: Godot / ${{ matrix.suite }}
     runs-on: windows-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [quick, integration, slow, assets, smoke]
     steps:
       - uses: actions/checkout@v4
+      - name: Check runner contracts
+        if: matrix.suite == 'quick'
+        shell: powershell
+        run: ./scripts/test-runner.tests.ps1
       - name: Install pinned Godot
         shell: pwsh
         run: |
@@ -18,13 +27,13 @@ jobs:
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_win64.exe.zip" -OutFile $archive
           Expand-Archive -LiteralPath $archive -DestinationPath $destination
           "GODOT_EXE=$destination/Godot_v$version-stable_win64.exe" >> $env:GITHUB_ENV
-      - name: Import, test, and smoke-test main scene
+      - name: Import and run selected suite
         shell: pwsh
-        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE
+        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE -Suite ${{ matrix.suite }}
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-test-logs
+          name: godot-test-logs-${{ matrix.suite }}
           path: .godot/test-logs/
           include-hidden-files: true

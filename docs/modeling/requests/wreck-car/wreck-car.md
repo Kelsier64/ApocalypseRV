@@ -7,4 +7,8 @@
 
 整合要點：`minor_appearance.gd` 讀取 `MeshInstance3D.material_override` 的 `resource_name == "RoadsidePaint"`，GLB 材質名稱本身不足；整合時為獨立烤漆 mesh 接上同名 override。翻覆沿用 car() 的偏航、Z 軸翻轉與 Y+2.1 擺放；同一模型支援各場景，不移動既有碰撞來遷就新外觀。
 
-完成情況：各場址已有可用原生幾何外觀，尚待共用模型製作與正放／雙車／翻覆場景的外觀及通路檢查。
+起始封路也使用同一份 request：替換 [reused_wreck.tscn](../../../../world/starting_shelter/reused_wreck.tscn) 的 `Visuals` 車體；[roadblock.tscn](../../../../world/starting_shelter/roadblock.tscn) 引用它組成 28 輛廢車（14 輛底層、14 輛上層，其中 4 輛翻覆）。沿用 wrapper 內的實際車體偏移，模型地面中心與 +Z 車頭規範不變；不得直接替換或移動 wrapper 根節點。底盤在翻覆與堆疊時必須完整，保留車身金屬、烤漆、玻璃和輪胎的清楚區分。封路堆疊屬遊戲場景配置，不烘成一個大型廢車堆模型；保留每輛車的碰撞、擺位及後方低矮支撐。接入後檢查路中央及兩侧輪驅接近、車體間隙、翻覆底盤和約 3.5 m 高的車堆輪廓。
+
+起始 wrapper 的實測接入轉換：`Visuals.position = (5,0,5)`，現有車體中心在該節點下 `(-5,0,-5)`、偏航 Y=-0.2 rad。以地面中心為原點的新 `Model` 應沿用此位置與偏航，不直接放在 `Visuals` 的零點。碰撞保留於獨立的 `Collision` 層。
+
+完成情況：路旁及起始封路仍使用原生簡化車體，尚待共用模型製作；本次補齊起始封路替換位置與堆疊要求，未將其列為完成模型。

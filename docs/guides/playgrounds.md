@@ -4,6 +4,7 @@
 
 ## 目錄
 
+- [起始避難所車庫](#starting-shelter)
 - [RV 能源與維護](#section-1)
 - [RV 車殼、駕駛室與門](#section-2)
 - [完整 RV 與可替換引擎](#section-3)
@@ -15,6 +16,21 @@
 - [加油站室外探索](#gas-station)
 - [路邊小 POI](#minor-pois)
 - [玩家持物動作](#player-carry)
+
+<a id="starting-shelter"></a>
+
+## 起始避難所車庫
+
+```powershell
+godot --path . --log-file .godot/shelter-playground.log res://tests/starting_shelter_playground.tscn
+godot --path . --log-file .godot/shelter-replay.log res://tests/starting_shelter_playground.tscn -- --replay
+```
+
+使用正式主場景、RV、物資、地形與開場控制器。F2 從原停車位開始輪驅出發，F3 查看外觀，F4 切換室內全景／玩家視角，F5 查看廢車封路。`--replay` 自動開門、入座並以油門／煞車／轉向駛出車庫、轉入公路，確認門封閉後退出；加上 `--keep-open` 保留結果畫面。`--inspect-exterior` 或 `--inspect-roadblock` 僅選擇初始觀察鏡頭。
+
+回放只在入座時切換玩家模式，行駛期間不設定車輛 transform 或速度、不停用正常油耗。它驗證空載基本 RV 的出發；裝載三種設備與門防夾由 `test_starting_shelter.gd` 驗證，保存、讀檔與舊場景相容由 `test_starting_checkpoint.gd` 驗證。這些不是翻車、超載或大量敵人追車的驗收。
+
+牆體近景：F6 查看入口與側翼窗洞，F7 查看玩家高度的內牆。`--inspect-facade` 以近景開始；另加 `--art-daylight` 只在這個測試場把時間設為 15:00，便於檢查立面光影，不改正式開場時間或天氣。
 
 <a id="player-carry"></a>
 

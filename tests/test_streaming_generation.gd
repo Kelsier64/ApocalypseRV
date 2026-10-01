@@ -1,5 +1,6 @@
 extends SceneTree
 ## Slicing must preserve geometry and collision, including every forest trunk.
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 
 func _init() -> void:
@@ -32,10 +33,10 @@ func run() -> void:
 			check(snapshot == reference, "Sliced and immediate generation produce identical ground and forest")
 		else:
 			reference = snapshot
-		while NavigationServer3D.is_baking_navigation_mesh(chunk.navigation.navigation_mesh):
-			await process_frame
-		# Let the bake callback publish before releasing the chunk.
-		for i in range(4): await physics_frame
+		if not await WAIT.navigation_ready(self, [chunk]):
+			check(false, "Navigation bake/publication timed out (gradual=%s)" % gradual)
+			quit(1)
+			return
 		chunk.queue_free()
 		await process_frame
 	world.queue_free()

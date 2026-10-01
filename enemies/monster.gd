@@ -219,6 +219,14 @@ func _ready():
 	has_last_flat_position = true
 	
 	_pick_new_wander_direction()
+	# Each staged/production world owns its preparation state. Do not use a
+	# global first-node lookup, which can pick the old checkpoint world.
+	var domain: Node = get_parent()
+	while domain != null and not domain.has_meta("entity_domain"):
+		domain = domain.get_parent()
+	if domain != null:
+		var start := domain.get_node_or_null("StartRun")
+		if start != null: start.register_actor(self)
 
 func _physics_process(delta: float):
 	if is_dead: return

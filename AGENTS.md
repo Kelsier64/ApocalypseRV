@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-Godot 4.7.2 survival prototype; `world/test_world.tscn` is the main scene.
+Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene. `world/test_world.tscn` remains the legacy test fixture.
 
 - `player/`, `enemies/`, `props/`: actors, interaction, AI, and items.
 - `rv/`, `equipment/`: vehicle physics and mounted devices.
@@ -22,7 +22,7 @@ godot --path .
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-These open the editor, launch gameplay, and run validation. The runner imports assets, executes every `tests/test_*.gd`, and checks main-scene startup. Logs: `.godot/test-logs/`. GitHub Actions uses the same runner.
+These open the editor, launch gameplay, and run the quick behavior suite. Use `scripts/test.ps1 -Suite full` for all active tests and main-scene startup; `-TestFilter` selects only matching tests, with optional `-Smoke`. Classify every new `test_*.gd` in `tests/suites.json`. See `tests/README.md` for profiles, timings and runner self-tests. Logs: `.godot/test-logs/`. GitHub Actions runs all profiles through the same runner.
 
 ## Coding and Testing
 
@@ -30,7 +30,8 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 
 ## Subagents
 
-Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` by default. Choose the subagent's reasoning effort based on the task's difficulty. For assigned 3D tasks, use the project `three_d_builder` subagent. This includes Godot 3D scenes and Blender modeling; keep its file ownership explicit. Creating a modeling request alone does not dispatch the subagent.
+Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks. Choose the subagent's reasoning effort based on the task's difficulty.
+Do 3d tasks yourself.
 
 ## Computer Use: Game Testing
 

@@ -99,7 +99,20 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	add_child(chunk)
 	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
 	chunk.set_meta("skip_walk_in", restoring_entities)
+	if profile.generation_version >= 7 and index == -1:
+		# The rear barrier is static chunk geometry, parsed by the same nav bake.
+		var roadblock: Node3D = load("res://world/starting_shelter/roadblock.tscn").instantiate()
+		chunk.add_child(roadblock)
+		roadblock.position = Vector3(0, 0, 20)
 	await chunk.generate(field, index, poi_spawner, gradual)
+	if profile.generation_version >= 7 and index == 0:
+		var start_run := get_parent().get_node_or_null("StartRun")
+		if start_run != null and start_run.has_method("bind_shelter"):
+			var site := field.stop(0)
+			for child in chunk.get_children():
+				if child is Node3D and child.get_meta("poi_id", "") == site.id:
+					start_run.bind_shelter(child, site)
+					break
 	if index not in generated_bands: generated_bands.append(index)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
 	active_chunks.sort_custom(func(a, b): return int(a.index) < int(b.index))

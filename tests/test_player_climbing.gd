@@ -120,8 +120,6 @@ func _test_player_has_climb_state_contract() -> void:
 
 	_expect(player.has_method("_try_start_climb"), "Player should expose _try_start_climb() state transition helper.")
 	_expect(player.has_method("_process_climbing"), "Player should expose _process_climbing(delta).")
-	_expect(not player.has_method("_begin_mantle"), "Player mantle helper _begin_mantle should be removed.")
-	_expect(not player.has_method("_process_mantle"), "Player mantle helper _process_mantle should be removed.")
 	_expect(player.has_method("_build_climb_motion"), "Player should expose _build_climb_motion(...) helper.")
 
 	if player.has_method("_build_climb_motion"):

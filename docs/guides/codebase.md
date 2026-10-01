@@ -4,7 +4,7 @@
 
 ## 從入口追程式
 
-`project.godot` 指向 `world/test_world.tscn`，並註冊 `rv/checkpoint.gd` 為 Checkpoint autoload。場景中的 `ext_resource` 連結腳本、子場景和資源；GDScript 也會以 `load`／`preload` 或場景路徑載入資源。修改路徑前，先查場景引用與程式中的路徑字串。
+`project.godot` 指向 `world/main_world.tscn`（`test_world.tscn` 保留為舊檔與測試場），並註冊 `rv/checkpoint.gd` 為 Checkpoint autoload。場景中的 `ext_resource` 連結腳本、子場景和資源；GDScript 也會以 `load`／`preload` 或場景路徑載入資源。修改路徑前，先查場景引用與程式中的路徑字串。
 
 | 目錄 | 主要責任 | 入口例子 |
 |---|---|---|
@@ -14,7 +14,7 @@
 | `props/` | 地面與背包可搬運物件 | `prop.gd`、道具場景 |
 | `rv/` | 底盤、輪胎、車況、能源、檢查點及 RV 視覺 | `new_rv.tscn`、`chassis.tscn` |
 | `equipment/` | 可安裝設備、車殼、互動與定義 | `equipment.gd`、各設備場景 |
-| `world/` | 主世界、地形串流、POI、建築與室內生成 | `test_world.tscn`、`terrain/`、`instances/` |
+| `world/` | 主世界、地形串流、POI、建築與室內生成 | `main_world.tscn`、`starting_shelter/`、`terrain/`、`instances/` |
 | `assets/` | 執行期貼圖、模型、圖示與材質 | 模型旁的 README 與匯入設定 |
 | `art_source/` | 可重建資產的 Blender 來源、製作腳本和審核圖 | Raker 各版與玩家動畫來源 |
 | `scripts/` | 資產建置、效能量測、回放及統一測試入口 | `test.ps1` |
@@ -39,7 +39,7 @@
 刪除候選先查 `res://` 路徑、UID、`class_name`、場景的 `ext_resource`、程式中的動態組字路徑、存檔白名單、測試與製作腳本。確認舊存檔會先轉換，再移除已無消費者的檔案。完成後從乾淨匯入開始執行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -Suite full
 ```
 
-Runner 會匯入資源、執行根層 `tests/test_*.gd` 並檢查主場景啟動；Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [AGENTS](../../AGENTS.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。
+Runner 的 `full` 會匯入資源、執行全部有效的根層測試並檢查正式主場景啟動；預設命令只跑快速行為集，詳細選擇與分類見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [AGENTS](../../AGENTS.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。

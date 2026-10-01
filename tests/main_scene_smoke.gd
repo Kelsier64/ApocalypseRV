@@ -4,7 +4,8 @@ func _init() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	var world: Node3D = load("res://world/test_world.tscn").instantiate()
+	var world: Node3D = load(ProjectSettings.get_setting("application/run/main_scene")).instantiate()
+	world.get_node("WorldGenerator").world_seed = 42
 	root.add_child(world)
 	current_scene = world
 	if await world.wait_for_play(0):
