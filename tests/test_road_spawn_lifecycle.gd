@@ -42,6 +42,13 @@ func run() -> void:
 	var poses: Array[Transform3D] = []
 	for child in chunk.get_children():
 		if child is Node3D: poses.append(child.global_transform)
+		if str(child.name).begins_with("RoadWreck"):
+			var aligned: Transform3D = child.global_transform * Transform3D(Basis(Vector3.UP, RoadSpawns.WRECK_MODEL_YAW), Vector3.ZERO)
+			for mesh: MeshInstance3D in child.find_children("*", "MeshInstance3D", true, false):
+				if mesh.mesh == null: continue
+				for index in range(8):
+					var point := aligned.affine_inverse() * (mesh.global_transform * mesh.mesh.get_aabb().get_endpoint(index))
+					check(RoadSpawns.WRECK_BOUNDS.grow(0.01).has_point(point), "Planner bounds contain reused wreck visuals")
 	for monster: Monster in container.get_children():
 		monster.set_physics_process(false)
 		var saved := WorldActorSnapshot.capture(monster)
@@ -80,10 +87,18 @@ func run() -> void:
 	world.add_child(site_chunk)
 	site_chunk.sites = [{"kind": "walk_in", "bounds": AABB(Vector3(-10, -10, anchor - 620), Vector3(20, 30, 40))}]
 	generator.active_chunks = [{"node": site_chunk, "index": band}]
+	var other_viewport := SubViewport.new()
+	other_viewport.own_world_3d = true
+	world.add_child(other_viewport)
+	var other_world := Node3D.new()
+	other_world.set_meta("entity_domain", true)
+	other_viewport.add_child(other_world)
+	var foreign := make_monster(WorldEntities.get_container(other_world), Vector3(0, 0, anchor + 1000))
 	generator._despawn_entities_behind(anchor)
 	await process_frame
 	check(is_instance_valid(near), "Monster within 450 m survives even with a remote birth band")
 	check(not is_instance_valid(behind) and not is_instance_valid(ahead), "v8 removes monsters beyond 450 m in both directions")
+	check(is_instance_valid(foreign), "Cleanup does not remove another World3D actor")
 	check(is_instance_valid(protected), "Loaded walk-in protection is retained")
 	generator.profile = profile.duplicate()
 	generator.profile.generation_version = 7
@@ -101,6 +116,8 @@ func run() -> void:
 	if not await WAIT.navigation_ready(self, [baked]):
 		check(false, "Road encounter navigation did not publish before timeout")
 	else:
+		for point: Vector3 in plan.monsters:
+			check(NavigationServer3D.map_get_closest_point(baked.get_world_3d().navigation_map, point).distance_to(point) < 2.0, "Road spawn candidate is reachable on published navigation")
 		check(baked.navigation_ready and baked._road_monsters_spawned, "Real navigation publication triggers road monsters")
 		var road_monsters := container.get_children().filter(func(n): return n is Monster and n.global_position.distance_to(plan.monsters[0]) < 40)
 		check(road_monsters.size() == plan.monsters.size(), "Actual chunk generation creates one planned group")

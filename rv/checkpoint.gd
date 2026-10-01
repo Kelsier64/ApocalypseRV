@@ -64,6 +64,10 @@ func save_world(world: Node, path: String) -> bool:
 	var player: Node = world.get_node_or_null("Player")
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
 		return _fail("state")
+	# v8 actors are committed by navigation publication, after terrain building.
+	# Saving in that interval would persist generated_bands without its Rakers.
+	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
+		return _fail("state")
 	if player.get_player_mode() != player.PlayerMode.NORMAL:
 		return _fail("state")
 	var vehicles: Array[Dictionary] = []

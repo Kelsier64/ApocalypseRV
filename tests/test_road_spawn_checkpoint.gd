@@ -12,7 +12,7 @@ func settle(world: Node) -> bool:
 	return await WAIT.generator_idle(self, world.get_node("WorldGenerator")) and await WAIT.retired_candidates(self, root.get_node("Checkpoint"))
 
 func monsters(world: Node3D) -> Array:
-	return get_nodes_in_group(Groups.MONSTERS).filter(func(n): return n is Monster and WorldEntities.same_world(world, n) and not n.is_queued_for_deletion())
+	return get_nodes_in_group(Groups.MONSTERS).filter(func(n): return n is Monster and WorldEntities.same_world(world, n) and not n.is_queued_for_deletion() and not n.is_dead)
 
 func run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
