@@ -158,11 +158,13 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 func _despawn_entities_behind(player_z: float) -> void:
 	var distance := (profile.chunks_behind + 1) * profile.chunk_length
 	for node in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if node is Node3D and WorldEntities.same_world(self, node) and node.global_position.z - player_z > distance and not _in_loaded_walk_in(node.global_position):
+		if node is Node3D and WorldEntities.same_world(self, node) and (absf(node.global_position.z - player_z) > RoadSpawns.SAFE_DISTANCE if profile.generation_version >= 8 else node.global_position.z - player_z > distance) and not _in_loaded_walk_in(node.global_position):
 			node.queue_free()
 	var container := WorldEntities.get_container(self)
 	if container != null and container.is_inside_tree():
 		for child in container.get_children():
+			# v8 monsters already use the symmetric current-position policy above.
+			if profile.generation_version >= 8 and child is Monster: continue
 			if child is Node3D and child.global_position.z - player_z > distance and not _in_loaded_walk_in(child.global_position):
 				child.queue_free()
 

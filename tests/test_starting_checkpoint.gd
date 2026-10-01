@@ -54,6 +54,7 @@ func _run() -> void:
 	check(checkpoint.save_world(world, SAVE_PATH), "Preparation checkpoint writes")
 	var prepared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	if prepared.is_empty(): quit(1); return
+	check(prepared.generation_version == 8, "New production checkpoint records v8")
 	check(prepared.world_id == "shelter" and prepared.start_state.phase == "preparing", "Checkpoint identifies production and preparation")
 	check(prepared.player.items.size() == 1, "Picked item belongs only to player inventory")
 	for invalid in ["opening", "closing", "unknown"]:
@@ -126,6 +127,33 @@ func _run() -> void:
 	check(run.phase == "sealed", "Reload preserves irreversible closure")
 	run.shelter.get_node("GarageButton").interact(world.get_node("Player"))
 	check(run.phase == "sealed", "Reloaded button cannot reopen sealed garage")
+	# Capture a real v7 world, including versioned site IDs and terrain seeds.
+	var previous: Node3D = load("res://world/main_world.tscn").instantiate()
+	var previous_generator: Node = previous.get_node("WorldGenerator")
+	previous_generator.world_seed = 42
+	previous_generator.profile = previous_generator.profile.duplicate()
+	previous_generator.profile.generation_version = 7
+	previous_generator.profile.chunks_ahead = 0
+	previous_generator.profile.chunks_behind = 1
+	root.add_child(previous)
+	if not await previous.wait_for_play() or not await settle(previous):
+		check(false, "Pinned v7 shelter fixture becomes ready")
+		quit(1)
+		return
+	check(checkpoint.save_world(previous, SAVE_PATH + ".v7"), "Existing v7 shelter checkpoint writes")
+	previous.free()
+	if not await checkpoint.load_world(world, SAVE_PATH + ".v7"):
+		check(false, "v7 shelter checkpoint reload transaction succeeds")
+		quit(1)
+		return
+	world = current_scene
+	if not await settle(world):
+		quit(1)
+		return
+	var restored_generator: Node = world.get_node("WorldGenerator")
+	check(restored_generator.profile.generation_version == 7 and restored_generator.field.stop(0).id.begins_with("v7:"), "v7 reload retains original generation and site IDs")
+	for entry in restored_generator.active_chunks:
+		check(entry.node.road_spawns.is_empty(), "v7 reload does not add v8 road content")
 	# A real legacy fixture yields an old checkpoint without the new optional fields.
 	var legacy: Node3D = load("res://world/test_world.tscn").instantiate()
 	legacy.get_node("WorldGenerator").profile = WorldProfile.new()
