@@ -9,10 +9,10 @@ const ATTEMPTS := 4
 const SAFE_DISTANCE := 450.0
 const SEAM_MARGIN := 5.0
 const PASSAGE_WIDTH := 5.0
-# Includes wheels, bumpers and the authored model's intrinsic -0.2 rad yaw.
+# Includes wheels, bumpers and the authored model's intrinsic +0.2 rad yaw.
 const WRECK_SIZE := Vector3(4.0, 2.3, 5.3)
 const WRECK_BOUNDS := AABB(Vector3(-2.0, -0.1, -2.4), WRECK_SIZE)
-const WRECK_MODEL_YAW := -0.2
+const WRECK_MODEL_YAW := 0.2
 const MONSTER_SIZE := Vector3(2.0, 2.5, 2.0)
 
 static func plan(field: WorldField, band: int) -> Dictionary:
