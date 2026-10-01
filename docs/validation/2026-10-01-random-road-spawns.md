@@ -16,7 +16,19 @@ RoadSpawns 純規劃道路釘帶、一般／封路廢車及 Raker；候選率為
 
 本次雲端執行環境在 executor registration 時失敗，未執行本機 Godot；改由既有 GitHub Actions Windows runner / Godot 4.7.2 分組驗證。
 
-首輪 commit `1c8119e57ec23d9181c982c4185f9192f08e3ceb`：[push run](https://github.com/Kelsier64/ApocalypseRV/actions/runs/36905268212)、[PR run](https://github.com/Kelsier64/ApocalypseRV/actions/runs/36905273625)。quick 17 支測試（含新規劃測試）及正式世界 smoke 已通過；其餘組待核對。後續修正增加導航前保存拒絕、v7 fixture 世界隔離、死亡測試只統計活怪及跨 World3D 清理檢查，需以最後程式提交的 CI 為準。
+最後程式提交 `081d48c3ce5662828ad267349dfe3d9c19e9ff55` 的 [PR run](https://github.com/Kelsier64/ApocalypseRV/actions/runs/36908288510) 與 [push run](https://github.com/Kelsier64/ApocalypseRV/actions/runs/36908279903) 均成功；五組共 92 支自動測試及正式世界 smoke 全部通過。
+
+| 分組 | 檢查數 | 結果 |
+|---|---:|---|
+| quick | 17 | 全通過，含 `test_road_spawns`；runner 自我測試也成功 |
+| integration | 33 | 全通過，含道路生命週期、串流生成與爆胎 |
+| slow | 28 | 全通過，含道路檢查點、v7／v6 相容、开場與輪胎操控 |
+| assets | 14 | 全通過 |
+| smoke | 1 | 正式主世界就緒與移動通過 |
+
+早期 CI 的新增完整模型檢查揭露廢車內建朝向補償算反，已修正並由引擎檢查所有模型 AABB 角點。道路檢查點回歸也揭露主世界轉移時重做出生配置，已加入初始化重入 guard 及保存位置斷言。另已修正測試 fixture 的世界隔離及死亡動畫中只統計活怪；以上結果均以最後程式提交為準，早期失敗不當作通過紀錄。
+
+本次記錄更新只修改文件；程式與測試來源保持上述已驗證提交。相對文件連結已核對。
 
 新增覆蓋：
 

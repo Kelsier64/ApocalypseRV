@@ -6,7 +6,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
-| [公路隨機刷新](random_spawn.md) | v8 首版已實作，CI／實機驗收追蹤中 | 三類獨立候選、安全區與通道、導航後生成、清理與 v2–v7 相容 | [本輪紀錄](../validation/2026-10-01-random-road-spawns.md) |
+| [公路隨機刷新](random_spawn.md) | v8 首版已實作，CI 全通過；實機待驗收 | 三類獨立候選、安全區與通道、導航後生成、清理與 v2–v7 相容 | [本輪紀錄](../validation/2026-10-01-random-road-spawns.md) |
 | [裂爪 Raker](2026-09-22-raker.md) | 獨立怪物首版已完成並驗收 | 2.18 m、22 段動畫、新追擊／蓄力攻擊、低姿態進出 RV、正式生成與保存；地形腳掌 IK、極端翻車及群怪效能仍屬擴充 | [本次驗收](../validation/2026-09-22-raker.md)、[模型與動畫說明](../../assets/models/raker/README.md) |
 | [隨機地堡重作](2026-09-24-random-bunker.md) | 結構已驗收；初版內容與 A04 修正已接入 | 16 模組、新訪 30–60 目標、1–3 層；散落物、補給箱、每次合格機會 30% 的 Raker 遭遇、強化引擎與完整快照；長局平衡、自由遊玩和效能仍待驗收 | [契約](../guides/bunker-interior.md)、[結構驗收](../validation/2026-09-24-random-bunker.md)、[先前內容驗證](../validation/2026-09-29-bunker-content.md) |
 | [RV 系統路線圖](2026-09-15-rv-systems-roadmap.md) | 首版實作，部分驗收待補 | 長途經濟、極端載重／翻車／外掛力矩與怪物群；舊油箱／材料架規則已由共用儲存修訂取代 | [RV 系統](../validation/2026-09-15-rv-systems.md)、[共用儲存](../validation/2026-09-16-rv-shared-storage.md) |
