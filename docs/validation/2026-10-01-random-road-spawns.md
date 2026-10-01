@@ -10,6 +10,8 @@ RoadSpawns 純規劃道路釘帶、一般／封路廢車及 Raker；候選率為
 
 道路完成後建立 chunk 靜態內容並參與導航烘焙；導航 map／region 發布後才建立 WorldEntities 怪物。skip_actors 與 generated_bands 防止回訪及重載補怪。v8 保存增加導航等待檢查；檢查點格式仍 v3，shelter 接受 v7／v8，legacy 保留 v2–v6。共用 WorldProfile 預設仍為 v6。
 
+公路檢查點測試也發現並修正 main_world 的初始化重入：candidate 從 staging World3D 轉回主場景時，不再被誤判為新局而重設玩家到車庫；保存位置與 encounter band 現有明確回歸斷言。
+
 ## 自動驗證
 
 本次雲端執行環境在 executor registration 時失敗，未執行本機 Godot；改由既有 GitHub Actions Windows runner / Godot 4.7.2 分組驗證。

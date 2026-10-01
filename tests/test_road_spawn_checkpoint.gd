@@ -21,7 +21,7 @@ func run() -> void:
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
 	generator.profile.chunks_ahead = 0
-	generator.profile.chunks_behind = 1
+	generator.profile.chunks_behind = 0
 	root.add_child(world)
 	current_scene = world
 	if not await world.wait_for_play() or not await settle(world):
@@ -66,6 +66,8 @@ func run() -> void:
 		quit(1)
 		return
 	world = current_scene
+	check(world.get_node("Player").global_transform.is_equal_approx(before.player.transform), "F9 world transfer preserves saved road player pose")
+	check(floori(-world.get_node("Player").global_position.z / 150.0) == band, "F9 keeps player in the saved encounter band")
 	if not await settle(world):
 		check(false, "Restored road encounter settles")
 		quit(1)
@@ -79,11 +81,13 @@ func run() -> void:
 	await process_frame
 	check(monsters(world).is_empty(), "Killed road encounter has no live actors")
 	check(checkpoint.save_world(world, SAVE_PATH), "Cleared encounter checkpoint writes")
+	var cleared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	if not await checkpoint.load_world(world, SAVE_PATH):
 		check(false, "Cleared encounter checkpoint reload succeeds")
 		quit(1)
 		return
 	world = current_scene
+	check(world.get_node("Player").global_transform.is_equal_approx(cleared.player.transform), "Cleared checkpoint retains player road pose after transfer")
 	if not await settle(world):
 		check(false, "Cleared restored terrain settles")
 		quit(1)
