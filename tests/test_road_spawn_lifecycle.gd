@@ -48,7 +48,7 @@ func run() -> void:
 				if mesh.mesh == null: continue
 				for index in range(8):
 					var point := aligned.affine_inverse() * (mesh.global_transform * mesh.mesh.get_aabb().get_endpoint(index))
-					check(RoadSpawns.WRECK_BOUNDS.grow(0.01).has_point(point), "Planner bounds contain reused wreck visuals")
+					check(RoadSpawns.WRECK_BOUNDS.grow(0.01).has_point(point), "Planner bounds contain reused wreck visual %s at %s" % [mesh.name, point])
 	for monster: Monster in container.get_children():
 		monster.set_physics_process(false)
 		var saved := WorldActorSnapshot.capture(monster)
