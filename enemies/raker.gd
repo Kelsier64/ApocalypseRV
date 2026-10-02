@@ -30,13 +30,17 @@ var strike_resolved := false
 var strike_clip := ""
 var next_left := true
 var reaction_remaining := 0.0
-var death_remaining := 2.0
+var death_remaining := 18.0
 var grab: Node
+var ragdoll: Node
+var impact_stagger_remaining := 0.0
 
 func _ready() -> void:
 	super._ready()
 	grab = preload("res://enemies/raker_grab.gd").new()
 	add_child(grab)
+	ragdoll = preload("res://enemies/raker_ragdoll.gd").new()
+	add_child(ragdoll)
 	stagger_amount = 0.0
 	body_collision_shape.shape = body_collision_shape.shape.duplicate()
 	$HitBox/HitBoxShape.shape = $HitBox/HitBoxShape.shape.duplicate()
@@ -46,14 +50,20 @@ func _physics_process(delta: float) -> void:
 	# Re-entered only by actual ground chase; attacks, climbing and loss of
 	# target cannot leave the sprint animation latched on.
 	pursuit_gait = PursuitGait.STALK
+	if ragdoll.is_busy():
+		vehicle_impact_cooldown = maxf(0.0, vehicle_impact_cooldown - delta)
+		ragdoll.tick(delta)
+		if is_dead:
+			death_remaining -= delta
+			if death_remaining <= 0: queue_free()
+		return
 	if is_dead:
-		# Corpses still fall when their supporting roof disappears.
-		if not is_on_floor(): velocity.y -= gravity * delta
-		velocity.x = 0
-		velocity.z = 0
+		return
+	if impact_stagger_remaining > 0.0:
+		impact_stagger_remaining -= delta
+		vehicle_impact_cooldown = maxf(0.0, vehicle_impact_cooldown - delta)
+		velocity.y -= gravity * delta
 		move_and_slide()
-		death_remaining -= delta
-		if death_remaining <= 0: queue_free()
 		return
 	reaction_remaining = maxf(0, reaction_remaining - delta)
 	if not grab.busy(): _update_posture()
@@ -265,7 +275,7 @@ func take_damage(amount: float) -> void:
 	if is_dead: return
 	if amount >= 8: grab.cancel("damaged")
 	super.take_damage(amount)
-	if not is_dead and amount >= 8:
+	if not is_dead and amount >= 8 and not ragdoll.is_busy():
 		pursuit_gait = PursuitGait.STALK
 		vehicle_sprint_speed = 0.0
 		strike_elapsed = -1
@@ -281,10 +291,29 @@ func die() -> void:
 	vehicle_sprint_speed = 0.0
 	strike_elapsed = -1
 	strike_target = {}
+	var inherited := velocity + released_carrier_velocity.slide(Vector3.UP)
+	if locomotion_state == LocomotionState.CLIMBING:
+		inherited += climb_carrier_velocity
+	elif is_instance_valid(rv_support.rv):
+		inherited += rv_support.carrier_velocity
 	if locomotion_state == LocomotionState.CLIMBING: _abort_climb("death")
 	_spawn_loot()
 	death_started.emit()
 	$HitBox.set_deferred("monitoring", false)
+	ragdoll.request(inherited)
+
+func _vehicle_hit_reaction(_rv: Node3D, normal: Vector3, point: Vector3, approach: float) -> void:
+	# Called only for a newly accepted contact, after lethal damage AND kick.
+	# A pending death handoff receives the vehicle velocity before it starts.
+	preload("res://enemies/raker_impact_effect.gd").spawn(self, point, normal, approach)
+	if is_dead or approach >= 6.0:
+		ragdoll.request(velocity, normal, point, approach)
+	else:
+		impact_stagger_remaining = 0.55
+
+func _apply_vehicle_contact(rv: Node3D, normal: Vector3, point: Vector3) -> bool:
+	if ragdoll != null and ragdoll.is_busy(): return false
+	return super._apply_vehicle_contact(rv, normal, point)
 
 func grab_face_position() -> Vector3:
 	var visual := $BodyMesh

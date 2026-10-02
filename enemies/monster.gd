@@ -1926,15 +1926,22 @@ func _contact_world_velocity() -> Vector3:
 func _apply_vehicle_contact(rv: Node3D, normal: Vector3, point: Vector3) -> bool:
 	if is_dead or vehicle_impact_cooldown > 0.0: return vehicle_impact_cooldown > 0.0
 	if locomotion_state == LocomotionState.CLIMBING or rv_support.rv == rv: return false
-	var relative := ClimbMath.point_velocity(rv, point) - _contact_world_velocity()
+	var vehicle_velocity: Vector3 = rv.vehicle_impact_point_velocity(point) if rv.has_method("vehicle_impact_point_velocity") else ClimbMath.point_velocity(rv, point)
+	var relative := vehicle_velocity - _contact_world_velocity()
 	if not _should_apply_vehicle_damage(relative, normal): return false
 	var approach := maxf(0.0, relative.dot(normal))
 	vehicle_impact_cooldown = grab_retry_delay
 	boarding.recovery = grab_retry_delay
 	climb_reenter_cooldown_remaining = grab_retry_delay
+	if rv.has_method("queue_monster_impact"):
+		rv.queue_monster_impact(self, normal, point, approach)
 	take_damage(approach * 5.0)
 	velocity = normal * minf(approach * 1.5, 18.0) + Vector3.UP * 3.0
+	_vehicle_hit_reaction(rv, normal, point, approach)
 	return true
+
+func _vehicle_hit_reaction(_rv: Node3D, _normal: Vector3, _point: Vector3, _approach: float) -> void:
+	pass
 
 func _on_hitbox_body_entered(body: Node3D):
 	if is_dead or locomotion_state == LocomotionState.CLIMBING: return

@@ -4,6 +4,7 @@
 
 ## 目錄
 
+- [Raker 車撞與布娃娃](#raker-impact)
 - [起始避難所車庫](#starting-shelter)
 - [RV 能源與維護](#section-1)
 - [RV 車殼、駕駛室與門](#section-2)
@@ -365,6 +366,16 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 F6 自動油門駛過單側釘帶，7 秒後漸進煞車；也可加 `-- --replay` 自動開始。1–4 分別讓左前／右前／左後／右後爆胎，R 重設。Space 啟動引擎並切換手煞車，W/S 油門／煞車、A/D 修正、Z 倒車、X 前進。使用正式輪驅與爆胎邏輯，畫面顯示各輪耐久和故障位置。這裡的 F6 是測試快捷鍵，正式世界仍為保存。
 
 自動化 `test_tire_handling.gd` 檢查 16 種組合、左右偏移、成對抵銷、前後驅動差異、停車、倒車、反打、高速和真實釘帶先後接觸；`test_tire_puncture.gd` 驗證維修／換胎／保存與確定性生成。驗收及尚未完成的目視檢查見 [爆胎紀錄](../validation/2026-09-22-tire-puncture.md)。
+
+<a id="raker-impact"></a>
+
+## Raker 車撞與布娃娃
+
+```powershell
+godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playground.tscn -- --replay
+```
+
+使用正式輪驅 RV 與 Raker，不預設車速或直接呼叫撞擊。1–4 切換正面存活、受傷目標致命、偏側、輕撞四例；R 重播、Space 開始、F4 近景／全景、F9 暫停／繼續。可加 `--review` 在撞擊後 0.3 秒暫停檢視、`--case=0` 至 `--case=3` 選初始案例。畫面標示目標巡航速度，實際撞擊速度由儀表與日誌回報；致命案例的 Raker 初始為 60 HP。存活起身後暫停該測試目標的 AI，便於檢查；正式遊戲仍恢復追逐。輪驅測試、碰撞層與限制見 [驗收](../validation/2026-10-02-raker-impact-ragdoll.md)。
 
 ## Raker 抓咬測試（v016）
 

@@ -148,12 +148,33 @@ func _run() -> void:
 	check(not actor.crouched,"Stands when headroom returns")
 	var snapshot:=WorldActorSnapshot.capture(actor)
 	check(WorldActorSnapshot.validation_error(snapshot,"raker").is_empty(),"New species accepted by save validation")
+	check(not snapshot.has("ragdoll"),"Ordinary monster snapshots retain the legacy format")
+	var invalid_snapshot := snapshot.duplicate(true)
+	invalid_snapshot["ragdoll"] = true
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker")=="raker.ragdoll","Ragdoll state rejects a non-dictionary saved value")
+	var valid_poses: Array[Transform3D] = []
+	for bone in range(54): valid_poses.append(Transform3D.IDENTITY)
+	invalid_snapshot["ragdoll"] = {"visual_transform": Transform3D.IDENTITY, "poses": valid_poses, "linear": Vector3.ZERO}
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker").is_empty(),"Complete physical pose is accepted for a living Raker")
+	invalid_snapshot.ragdoll.poses = [Transform3D.IDENTITY]
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker")=="raker.ragdoll.poses","Ragdoll state rejects an incomplete skeleton pose")
+	invalid_snapshot.ragdoll.poses = valid_poses
+	invalid_snapshot.ragdoll.visual_transform = Transform3D(Basis.IDENTITY, Vector3(NAN, 0, 0))
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker")=="raker.ragdoll.visual_transform","Ragdoll state rejects a non-finite visual frame")
+	invalid_snapshot.ragdoll.visual_transform = Transform3D.IDENTITY
+	var invalid_poses := valid_poses.duplicate()
+	invalid_poses[10] = Transform3D(Basis.IDENTITY, Vector3(0, INF, 0))
+	invalid_snapshot.ragdoll.poses = invalid_poses
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker")=="raker.ragdoll.poses","Ragdoll state rejects a non-finite bone pose")
+	invalid_snapshot.ragdoll.poses = valid_poses
+	invalid_snapshot.ragdoll.linear = Vector3(NAN, 0, 0)
+	check(WorldActorSnapshot.validation_error(invalid_snapshot,"raker")=="raker.ragdoll.linear","Ragdoll state rejects non-finite saved movement")
 	var restored: Raker=WorldActorSnapshot.restore(snapshot,world)
 	check(restored is Raker and restored.current_health==actor.current_health,"Save restores species and health")
 	restored.loot_drops={}
 	restored.set_crouched(true)
 	restored.take_damage(10000)
-	check(restored.get_node("BodyMesh").animation_player.current_animation=="game/crouch_death","Low death never starts from standing pose")
+	check(restored.is_dead and restored.crouched and restored.ragdoll.is_busy(),"Low death requests ragdoll while retaining the low posture")
 	restored.free()
 	reset_combat()
 	var disposable:=TargetDummy.new()
@@ -195,12 +216,13 @@ func _run() -> void:
 	check(actor.position.z< -2,"New AI actually pursues real player")
 	reset_combat()
 	request_attack()
+	actor.death_remaining = .35
 	actor.take_damage(10000)
 	actor._tick_strike(1)
 	check(actor.is_dead and player.current_player_health==1000,"Death cancels pending attack")
-	check(actor.get_node("BodyMesh").animation_player.current_animation=="game/death","Death animation replaces shrink")
-	await step(130)
-	check(not is_instance_valid(actor),"Death cleans up after animation")
+	check(actor.ragdoll.is_busy(),"Death requests a physical ragdoll")
+	await step(45)
+	check(not is_instance_valid(actor),"Death cleans up after its configured corpse lifetime")
 	world.free()
 	if failures.is_empty(): print("PASS: Raker dimensions, 23 clips, root, combat, posture, pursuit, save and death")
 	else:

@@ -44,6 +44,7 @@
       "test_raker",
       "test_raker_grab",
       "test_raker_playground",
+      "test_raker_ragdoll",
       "test_raker_sprint",
       "test_road_spawn_lifecycle",
       "test_rv_cockpit",
@@ -54,6 +55,8 @@
       "test_streaming_generation",
       "test_tire_puncture",
       "test_tree_impact",
+      "test_vehicle_impact",
+      "test_vehicle_monster_impact",
       "test_world_weather"
     ],
     "slow": [

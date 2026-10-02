@@ -126,7 +126,9 @@ func _physics_process(delta: float) -> void:
 	if not is_instance_valid(monster):
 		status.text = "RV CLIMB PLAYGROUND | Monster defeated after release. R: reset"
 		return
-	if replay and not driver_demo and elapsed > 6.0 and "--seat-after-climb" in OS.get_cmdline_user_args():
+	# Seat once both have reached the roof, before Raker's grab can kill the
+	# player and prevent this optional roof-destruction review from starting.
+	if replay and not driver_demo and player_climbed and monster_climbed and player.locomotion_state == player.LocomotionState.NORMAL and monster.locomotion_state == Monster.LocomotionState.NORMAL and "--seat-after-climb" in OS.get_cmdline_user_args():
 		driver_demo = true
 		player.enter_seat_mode(rv.get_node("DriverSeat"))
 	if "--climb-debug" in OS.get_cmdline_user_args() and elapsed >= debug_next_sample:

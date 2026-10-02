@@ -15,7 +15,11 @@ static func capture(child: Node) -> Dictionary:
 		data["frozen"] = child.freeze
 		return data
 	if child is Monster and not child.is_dead:
-		return {"kind": "monster", "scene": child.scene_file_path, "transform": child.global_transform, "health": child.current_health}
+		var data := {"kind": "monster", "scene": child.scene_file_path, "transform": child.global_transform, "health": child.current_health}
+		if child is Raker:
+			var ragdoll: Dictionary = child.ragdoll.capture_snapshot()
+			if not ragdoll.is_empty(): data["ragdoll"] = ragdoll
+		return data
 	return {}
 
 static func validation_error(actor: Variant, field: String) -> String:
@@ -33,6 +37,14 @@ static func validation_error(actor: Variant, field: String) -> String:
 			if not actor.get("frozen") is bool: return field + ".frozen"
 		"monster":
 			if not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: return field + ".health"
+			if actor.has("ragdoll"):
+				if actor.scene != "res://enemies/raker.tscn" or not actor.ragdoll is Dictionary: return field + ".ragdoll"
+				var ragdoll: Dictionary = actor.ragdoll
+				if not CheckpointSchema.valid_transform(ragdoll.get("visual_transform")): return field + ".ragdoll.visual_transform"
+				if not ragdoll.get("poses") is Array or ragdoll.poses.size() != 54: return field + ".ragdoll.poses"
+				for pose in ragdoll.poses:
+					if not CheckpointSchema.valid_transform(pose): return field + ".ragdoll.poses"
+				if not CheckpointSchema.vector(ragdoll.get("linear")): return field + ".ragdoll.linear"
 	return ""
 
 static func restore(saved: Dictionary, container: Node) -> Node3D:
@@ -55,4 +67,6 @@ static func restore(saved: Dictionary, container: Node) -> Node3D:
 			actor.angular_velocity = saved.physics.angular
 	elif actor is Monster:
 		actor.current_health = saved.health
+		if actor is Raker and saved.has("ragdoll"):
+			actor.ragdoll.restore_snapshot(saved.ragdoll)
 	return actor

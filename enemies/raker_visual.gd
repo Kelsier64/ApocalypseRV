@@ -89,10 +89,10 @@ func _reaction() -> void:
 
 func _death() -> void:
 	locked = 100
-	play("crouch_death" if actor.crouched else "death", 1, true)
+	animation_player.pause()
 
 func _process(delta: float) -> void:
-	if actor.is_dead: return
+	if actor.is_dead or (actor.ragdoll != null and actor.ragdoll.is_busy()): return
 	if is_instance_valid(actor.grab) and actor.grab.busy(): return
 	locked = maxf(0, locked-delta)
 	var climbing := actor.locomotion_state == Monster.LocomotionState.CLIMBING
