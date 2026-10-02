@@ -13,8 +13,12 @@ func _run() -> void:
 	var study: Node3D = load("res://tests/industrial_style_playground.tscn").instantiate()
 	root.add_child(study)
 	current_scene = study
+	# Keep the initial window stable while comparing A/B collision counts.
+	var generator: Node = study.main.get_node("WorldGenerator")
+	generator.set_process(false)
+	var initial_count: int = generator.profile.chunks_ahead + generator.profile.chunks_behind + 1
 	# Production forest preparation and the comparison refresh are asynchronous.
-	if not await WAIT.until(self, func() -> bool: return study.dressing_ready and study.forest.size() >= 27 and study.buildings.size() == 1):
+	if not await WAIT.until(self, func() -> bool: return generator.active_chunks.size() == initial_count and generator.active_chunks.all(func(entry): return is_instance_valid(entry.node) and entry.node.navigation_ready) and study.dressing_ready and study.forest.size() >= 27 and study.buildings.size() == 1):
 		check(false, "Style sample finishes dressing its production world before timeout")
 		quit(1)
 		return

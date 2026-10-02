@@ -31,7 +31,7 @@ func _run() -> void:
 	var generator: Node = main.get_node("WorldGenerator")
 	# Forest preparation can suspend initial generation across process frames.
 	# Select the intended band after publication, independent of completion order.
-	if not await WAIT.until(self, func() -> bool: return generator.active_chunks.any(func(entry): return entry.index == 0 and entry.node.navigation_ready)):
+	if not await WAIT.until(self, func() -> bool: return generator.active_chunks.any(func(entry): return entry.index == 0 and is_instance_valid(entry.node) and entry.node.navigation_ready)):
 		check(false, "Starting entrance band publishes before timeout")
 		quit(1)
 		return
