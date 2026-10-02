@@ -1,4 +1,5 @@
 extends SceneTree
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 
 func _init() -> void:
@@ -27,7 +28,14 @@ func _run() -> void:
 	# Registration occurs during ready; current_scene is set after adding in SceneTree tests.
 	var manager := main.get_node("PoiInstances") as PoiInstanceManager
 	var player = main.get_node("Player")
-	var first_chunk: Node = main.get_node("WorldGenerator").active_chunks[2].node
+	var generator: Node = main.get_node("WorldGenerator")
+	# Forest preparation can suspend initial generation across process frames.
+	# Select the intended band after publication, independent of completion order.
+	if not await WAIT.until(self, func() -> bool: return generator.active_chunks.any(func(entry): return entry.index == 0 and entry.node.navigation_ready)):
+		check(false, "Starting entrance band publishes before timeout")
+		quit(1)
+		return
+	var first_chunk: Node = generator.active_chunks.filter(func(entry): return entry.index == 0)[0].node
 	var building: Node3D
 	for child in first_chunk.get_children():
 		if child.has_node("Entrance"):

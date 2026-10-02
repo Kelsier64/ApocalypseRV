@@ -1,4 +1,5 @@
 extends SceneTree
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 
 func _init() -> void: _run.call_deferred()
@@ -12,7 +13,11 @@ func _run() -> void:
 	var study: Node3D = load("res://tests/industrial_style_playground.tscn").instantiate()
 	root.add_child(study)
 	current_scene = study
-	for i in range(20): await physics_frame
+	# Production forest preparation and the comparison refresh are asynchronous.
+	if not await WAIT.until(self, func() -> bool: return study.dressing_ready and study.forest.size() >= 27 and study.buildings.size() == 1):
+		check(false, "Style sample finishes dressing its production world before timeout")
+		quit(1)
+		return
 	check(study.dressing_ready and study.forest.size() >= 27, "Sample decorates the production world")
 	var buildings: Array = study.buildings
 	check(buildings.size() == 1, "Only the reference maintenance entrance receives facade study")
