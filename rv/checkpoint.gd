@@ -64,6 +64,10 @@ func save_world(world: Node, path: String) -> bool:
 	var player: Node = world.get_node_or_null("Player")
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
 		return _fail("state")
+	# v8 actors are committed by navigation publication, after terrain building.
+	# Saving in that interval would persist generated_bands without its Rakers.
+	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
+		return _fail("state")
 	if player.get_player_mode() != player.PlayerMode.NORMAL:
 		return _fail("state")
 	var vehicles: Array[Dictionary] = []
@@ -156,15 +160,15 @@ func validation_error(data: Dictionary) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8]: return "generation_version"
 	var world_id: Variant = data.get("world_id", "legacy")
 	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
 	if world_id == "shelter":
-		if data.get("generation_version") != 7: return "world_id.generation_version"
+		if data.get("generation_version") not in [7, 8]: return "world_id.generation_version"
 		var start_state: Variant = data.get("start_state")
 		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
 		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
-	elif data.has("start_state") or data.get("generation_version", 2) == 7:
+	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8]:
 		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"

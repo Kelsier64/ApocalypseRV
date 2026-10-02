@@ -15,6 +15,8 @@ var _slice_start: int
 var navigation: NavigationRegion3D
 var navigation_ready := false
 var _terrain: MeshInstance3D
+var road_spawns: Dictionary = {}
+var _road_monsters_spawned := false
 var _navigation_dirty := false
 var _navigation_rebuild_timer: Timer
 
@@ -28,7 +30,11 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	if gradual:
 		await _pause()
 	_build_road()
-	TireSpikeStrip.build(self, field, band)
+	if field.profile.generation_version >= 8:
+		road_spawns = RoadSpawns.plan(field, band)
+		RoadSpawns.build_static(self, road_spawns)
+	else:
+		TireSpikeStrip.build(self, field, band)
 	for site in sites:
 		_build_site(site, spawner)
 	if field.profile.generation_version >= 3:
@@ -486,6 +492,7 @@ func _navigation_baked(nav: NavigationMesh) -> void:
 			await get_tree().physics_frame
 		if not is_inside_tree(): return
 	navigation_ready = true
+	_spawn_road_monsters()
 	if _navigation_dirty: request_navigation_rebuild()
 
 func _spawn_actors() -> void:
@@ -512,3 +519,14 @@ func _spawn_actors() -> void:
 			point.y = field.height_at(point.x, point.z) + 0.5
 			monster.position = point
 			container.add_child(monster)
+
+func _spawn_road_monsters() -> void:
+	if not navigation_ready or _road_monsters_spawned or road_spawns.is_empty(): return
+	_road_monsters_spawned = true
+	if get_meta("skip_actors", false): return
+	var container := WorldEntities.get_container(self)
+	if container == null: return
+	for point: Vector3 in road_spawns.monsters:
+		var monster: Node3D = RAKER_SCENE.instantiate()
+		container.add_child(monster)
+		monster.global_position = point

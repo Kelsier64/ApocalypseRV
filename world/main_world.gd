@@ -1,9 +1,14 @@
 extends "res://world/test_world.gd"
 ## Production world keeps the shared checkpoint/readiness contract.
 var fresh_start := true
+var _initial_placement_done := false
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	# Checkpoint commit reparents this prepared world and re-enters the tree.
+	# Initial placement belongs only to the first entry, never to a transfer.
+	if _initial_placement_done: return
+	_initial_placement_done = true
 	var generator := get_node("WorldGenerator")
 	fresh_start = not generator.restoring_entities
 	if not fresh_start: return
