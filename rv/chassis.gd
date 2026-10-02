@@ -24,6 +24,8 @@ var interior_requested := {"cabin": true, "work": false, "service": false}
 var interior_powered := {"cabin": false, "work": false, "service": false}
 var _last_road_position := Vector3.INF
 var _road_speed := 0.0
+var _impact_velocity := Vector3.ZERO
+var _impact_angular_velocity := Vector3.ZERO
 @export var is_player_driving: bool = false
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
 
@@ -111,6 +113,8 @@ func get_equipment() -> Array[Node]:
 	return result
 
 func _ready() -> void:
+	contact_monitor = true
+	max_contacts_reported = maxi(max_contacts_reported, 128)
 	var mirrors := Node3D.new()
 	mirrors.name = "Mirrors"
 	mirrors.set_script(load("res://rv/vehicle_mirrors.gd"))
@@ -308,6 +312,47 @@ func take_stored_item(player: Node3D, index: int) -> bool:
 	return true
 
 # --- DRIVING ---
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	var pass_through := false
+	var new_trunks := {}
+	var solid_normals: Array[Vector3] = []
+	var contacts: Array[Dictionary] = []
+	for contact in range(state.get_contact_count()):
+		var collider := state.get_contact_collider_object(contact) as Node
+		if collider == null: continue
+		var normal := state.get_contact_local_normal(contact)
+		var offset := state.get_contact_local_position(contact) - state.transform.origin - state.center_of_mass
+		# Keep the incoming speed: the contact solver may already have stopped us.
+		var incoming := _impact_velocity + _impact_angular_velocity.cross(offset)
+		var current := state.get_contact_local_velocity_at_position(contact)
+		var velocity := incoming if incoming.dot(normal) < current.dot(normal) else current
+		var shape_index := state.get_contact_collider_shape(contact)
+		var target := TreeImpact.target_for(collider)
+		var hit := TreeImpact.hit(self, collider, shape_index, velocity, normal)
+		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = true
+		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit})
+	# One trunk can report a glancing contact before its frontal hit. Classify
+	# blocking normals only after every shape has had a chance to break.
+	for contact in contacts:
+		var collider: Node = contact.collider
+		var normal: Vector3 = contact.normal
+		if contact.hit or (contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape)):
+			pass_through = true
+		elif absf(normal.y) < 0.65 and not (collider is RigidBody3D and collider.get_parent() is TreeFall):
+			solid_normals.append(normal)
+	# The solver has already applied a hard trunk collision. Restore only lost
+	# horizontal motion after a trunk yields, retaining a 15% cost per new tree.
+	# Other walls/rocks and incomplete contact reports still block the vehicle.
+	var incoming_horizontal := _impact_velocity.slide(Vector3.UP)
+	if pass_through and state.get_contact_count() < max_contacts_reported and incoming_horizontal.length() > 0.1:
+		var direction := incoming_horizontal.normalized()
+		var desired := incoming_horizontal.length() * pow(TreeImpact.SPEED_RETAINED, new_trunks.size())
+		var correction := direction * maxf(0.0, desired - state.linear_velocity.dot(direction))
+		if not solid_normals.any(func(normal: Vector3) -> bool: return correction.dot(normal) < -0.05):
+			state.linear_velocity += correction
+	_impact_velocity = state.linear_velocity
+	_impact_angular_velocity = state.angular_velocity
+
 func set_driving_state(state: bool) -> void:
 	is_player_driving = state
 

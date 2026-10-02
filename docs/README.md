@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+樹木撞毀與車輛受傷：[首次停頓、減速與木材清理（目前）](validation/2026-10-02-tree-impact-preparation.md)；歷史結果：[落葉保留與輕量斷木](validation/2026-10-02-tree-leaves.md)、[初版驗收](validation/2026-10-02-tree-impact.md)、[保留動量與倒塌效果](validation/2026-10-02-tree-impact-momentum.md)、[倒樹實體碰撞修正](validation/2026-10-02-tree-impact-collision.md)。
+
 最新場景驗收：[避難所老化與去除綠色牆帶](validation/2026-10-01-shelter-weathering.md)；先前紀錄見 [牆體重做](validation/2026-10-01-shelter-walls.md)、[原生建築與部件修正](validation/2026-10-01-shelter-native-art.md)、[外觀擴建](validation/2026-10-01-shelter-expansion.md) 與 [正式世界開場](validation/2026-09-30-starting-shelter.md)。
 
 | 需求 | 文件 | 責任 |

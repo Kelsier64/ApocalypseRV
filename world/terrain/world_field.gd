@@ -14,6 +14,7 @@ var _stops: Dictionary = {}
 var _minor_sites: Dictionary = {}
 var _site_queries: Dictionary = {}
 var forest_cache: Dictionary = {}
+var destroyed_trees: Dictionary = {}
 
 func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	world_seed = seed_value

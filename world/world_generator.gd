@@ -1,6 +1,7 @@
 extends Node3D
 ## v5+ streams both directions; indoor coordinates retain the outdoor anchor.
 var outdoor_sites: Dictionary = {}
+var destroyed_trees: Dictionary = {}
 var generated_bands: Array[int] = []
 var restore_bands: Array[int] = []
 var restoring_entities: bool = false
@@ -24,6 +25,7 @@ func _ready() -> void:
 	if world_seed < 0:
 		world_seed = int(Time.get_unix_time_from_system()) ^ int(Time.get_ticks_usec())
 	field = WorldField.new(world_seed, profile)
+	field.destroyed_trees = destroyed_trees
 	# Thin scenery and independently baked tile edges must not quantize into
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(get_world_3d().navigation_map, 0.1)
@@ -38,6 +40,13 @@ func _ready() -> void:
 		var presentation := OutdoorPresentation.new()
 		presentation.name = "OutdoorPresentation"
 		get_parent().add_child.call_deferred(presentation)
+
+func tree_navigation_changed(source: ChunkGenerator, point: Vector3) -> void:
+	for entry in active_chunks:
+		var chunk: ChunkGenerator = entry.node
+		if chunk == source: continue
+		if point.z <= -chunk.band * 150.0 + 5 and point.z >= -(chunk.band + 1) * 150.0 - 5:
+			chunk.request_navigation_rebuild()
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(player):

@@ -51,6 +51,7 @@
       "test_rv_structure_modules",
       "test_streaming_generation",
       "test_tire_puncture",
+      "test_tree_impact",
       "test_world_weather"
     ],
     "slow": [

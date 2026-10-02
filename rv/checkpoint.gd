@@ -88,6 +88,7 @@ func save_world(world: Node, path: String) -> bool:
 		"slot": player.inventory.active_slot, "health": player.current_player_health,
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
+	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
 	data["world_id"] = "shelter" if start_run != null else "legacy"
 	if start_run != null: data["start_state"] = start_run.capture()
@@ -187,6 +188,7 @@ func validation_error(data: Dictionary) -> String:
 		var actor_error := WorldActorSnapshot.validation_error(data.actors[i], "actors[%d]" % i)
 		if not actor_error.is_empty(): return actor_error
 	var outdoor_error := WalkInSites.validation_error(data)
+	if not TreeImpact.valid_ledger(data.get("destroyed_trees", {})): return "destroyed_trees"
 	if not outdoor_error.is_empty(): return outdoor_error
 	var poi_error := CheckpointSchema.poi_error(data.poi)
 	if not poi_error.is_empty(): return poi_error
@@ -210,6 +212,7 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
 	world.get_node("WorldGenerator").outdoor_sites = pending.get("outdoor_sites", {}).duplicate(true)
+	world.get_node("WorldGenerator").destroyed_trees = pending.get("destroyed_trees", {}).duplicate()
 	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
 
 func restore_world(world: Node) -> Dictionary:

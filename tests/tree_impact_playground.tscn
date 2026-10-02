@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/tree_impact_playground.gd" id="script"]
+
+[node name="TreeImpactPlayground" type="Node3D"]
+script = ExtResource("script")

@@ -15,6 +15,8 @@ var _slice_start: int
 var navigation: NavigationRegion3D
 var navigation_ready := false
 var _terrain: MeshInstance3D
+var _navigation_dirty := false
+var _navigation_rebuild_timer: Timer
 
 func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool = false) -> void:
 	_slice_start = Time.get_ticks_usec()
@@ -307,7 +309,27 @@ func _decorate(gradual: bool) -> void:
 		node.visibility_range_end = 190.0
 		add_child(node)
 
+func request_navigation_rebuild() -> void:
+	_navigation_dirty = true
+	if _navigation_rebuild_timer == null:
+		_navigation_rebuild_timer = Timer.new()
+		_navigation_rebuild_timer.one_shot = true
+		_navigation_rebuild_timer.timeout.connect(_rebuild_navigation)
+		add_child(_navigation_rebuild_timer)
+	_navigation_rebuild_timer.start(0.35)
+
+func _rebuild_navigation() -> void:
+	if not navigation_ready: return # The current bake will schedule pending edits.
+	_navigation_dirty = false
+	navigation_ready = false
+	_build_navigation()
+
 func _build_navigation(gradual: bool = false) -> void:
+	# A runtime rebake can outlive the 16-band placement cache. Recreate the
+	# same neighbour plans before capturing seam obstacles, just as at startup.
+	if field.profile.generation_version >= 4:
+		for neighbour in [band - 1, band + 1]:
+			await ForestScenery.prepare(self, neighbour, gradual)
 	var nav := NavigationMesh.new()
 	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nav.agent_height = 2.0
@@ -322,10 +344,11 @@ func _build_navigation(gradual: bool = false) -> void:
 	nav.border_size = 1.0
 	var nav_half := field.profile.terrain_half_width if field.profile.generation_version >= 3 else 120.0
 	nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 151), Vector3(nav_half * 2, 250, 152))
-	navigation = NavigationRegion3D.new()
-	navigation.name = "ChunkNavigationRegion"
-	navigation.navigation_mesh = nav
-	add_child(navigation)
+	if navigation == null:
+		navigation = NavigationRegion3D.new()
+		navigation.name = "ChunkNavigationRegion"
+		navigation.navigation_mesh = nav
+		add_child(navigation)
 	var source := NavigationMeshSourceGeometryData3D.new()
 	# The asphalt is only 7cm above the sculpted ground. Voxelizing both
 	# creates duplicate raster edges; use the ground once for navigation.
@@ -376,7 +399,10 @@ func _build_navigation(gradual: bool = false) -> void:
 		_append_neighbour_obstacles(source)
 	if field.profile.generation_version >= 4:
 		for neighbour in [band - 1, band + 1]:
-			for tree: Dictionary in ForestScenery.trees(field, neighbour):
+			var planned := ForestScenery.trees(field, neighbour)
+			for i in range(planned.size()):
+				if field.destroyed_trees.has(TreeImpact.forest_id(neighbour, i)): continue
+				var tree: Dictionary = planned[i]
 				if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
 				_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
 	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, _navigation_baked.bind(nav))
@@ -460,6 +486,7 @@ func _navigation_baked(nav: NavigationMesh) -> void:
 			await get_tree().physics_frame
 		if not is_inside_tree(): return
 	navigation_ready = true
+	if _navigation_dirty: request_navigation_rebuild()
 
 func _spawn_actors() -> void:
 	var container := WorldEntities.get_container(self)
