@@ -4,9 +4,6 @@ class_name TreeImpact
 const MIN_SPEED := 3.0
 const SPEED_RETAINED := 0.85
 
-static func damage(speed: float) -> float:
-	return clampf(speed * speed * 0.25, 3.0, 80.0)
-
 static func forest_id(band: int, index: int) -> String:
 	return "forest:%d:%d" % [band, index]
 
@@ -43,8 +40,9 @@ static func hit(rv: Chassis, collider: Node, shape_index: int, velocity: Vector3
 	if speed < MIN_SPEED or -velocity.dot(normal.normalized()) < 0.1: return false
 	var target := target_for(collider)
 	if target == null or not target.vehicle_tree_impact(shape_index, velocity, rv.global_position): return false
-	rv.take_damage(damage(speed))
-	rv.service_message = "撞毀樹木｜引擎耐久 -%.0f" % damage(speed)
+	# Durability is settled by Chassis after its final yielding velocity, so a
+	# solver's temporary hard stop cannot be mistaken for a heavy impact.
+	rv.service_message = "撞毀樹木"
 	rv.feedback("blocked")
 	return true
 

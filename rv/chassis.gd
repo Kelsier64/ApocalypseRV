@@ -26,6 +26,16 @@ var _last_road_position := Vector3.INF
 var _road_speed := 0.0
 var _impact_velocity := Vector3.ZERO
 var _impact_angular_velocity := Vector3.ZERO
+signal vehicle_impact(kind: String, speed_loss: float, damage: float)
+var _vehicle_impacts := VehicleImpact.new()
+var _impact_age := 0.0
+var _impact_position := Vector3.INF
+var _suspension_before := Vector3.ZERO
+var _suspension_angular_before := Vector3.ZERO
+var _suspension_pending := false
+var _was_impact_frozen := false
+var _monster_impacts: Dictionary = {}
+var _monster_impact_times: Dictionary = {}
 @export var is_player_driving: bool = false
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
 
@@ -312,7 +322,46 @@ func take_stored_item(player: Node3D, index: int) -> bool:
 	return true
 
 # --- DRIVING ---
+func vehicle_impact_point_velocity(point: Vector3) -> Vector3:
+	if _impact_age <= 0.0: return ClimbMath.point_velocity(self, point)
+	var centre := global_transform * center_of_mass
+	return _impact_velocity + _impact_angular_velocity.cross(point - centre)
+
+func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, approach: float) -> void:
+	if not is_instance_valid(monster) or not normal.is_finite() or not point.is_finite() or not is_finite(approach): return
+	if approach <= 0.1 or normal.is_zero_approx(): return
+	var id := monster.get_instance_id()
+	if _vehicle_impacts.clock - _monster_impact_times.get(id, -10.0) < 1.0: return
+	_monster_impacts[id] = weakref(monster)
+	_monster_impact_times[id] = _vehicle_impacts.clock
+
+func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF) -> void:
+	if _impact_age < 0.75: return
+	var paid := VehicleImpact.damage(loss, kind)
+	var effective_loss := loss
+	if not key.is_empty():
+		var result := _vehicle_impacts.record(key, loss, kind, incoming_limit)
+		if result.is_empty(): return
+		paid = result.damage
+		effective_loss = result.loss
+	if paid <= 0.0: return
+	take_damage(paid)
+	var title: String = {"tree": "撞樹", "monster": "撞擊怪物", "ground": "地面衝擊", "body": "碰撞"}.get(kind, "碰撞")
+	service_message = "%s｜引擎耐久 -%.1f" % [title, paid]
+	feedback("blocked")
+	vehicle_impact.emit(kind, effective_loss, paid)
+
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	_vehicle_impacts.advance(state.step)
+	if _impact_position.is_finite() and state.transform.origin.distance_to(_impact_position) > maxf(10.0, _impact_velocity.length() * state.step * 4.0):
+		_vehicle_impacts.reset()
+		_impact_age = 0.0
+		_impact_velocity = state.linear_velocity
+		_impact_angular_velocity = state.angular_velocity
+	_impact_position = state.transform.origin
+	_impact_age += state.step
+	for id in _monster_impact_times.keys():
+		if _vehicle_impacts.clock - _monster_impact_times[id] > 2.0: _monster_impact_times.erase(id)
 	var pass_through := false
 	var new_trunks := {}
 	var solid_normals: Array[Vector3] = []
@@ -330,7 +379,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var target := TreeImpact.target_for(collider)
 		var hit := TreeImpact.hit(self, collider, shape_index, velocity, normal)
 		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = true
-		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit})
+		if collider is Monster:
+			collider._apply_vehicle_contact(self, -normal, state.get_contact_local_position(contact))
+		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit, "offset": offset, "incoming": incoming})
 	# One trunk can report a glancing contact before its frontal hit. Classify
 	# blocking normals only after every shape has had a chance to break.
 	for contact in contacts:
@@ -338,18 +389,101 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var normal: Vector3 = contact.normal
 		if contact.hit or (contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape)):
 			pass_through = true
+		elif collider is Monster:
+			if collider.vehicle_impact_cooldown > 0.0 and absf(normal.y) < 0.65 and _impact_velocity.slide(Vector3.UP).dot(normal) < -0.1:
+				pass_through = true
 		elif absf(normal.y) < 0.65 and not (collider is RigidBody3D and collider.get_parent() is TreeFall):
 			solid_normals.append(normal)
 	# The solver has already applied a hard trunk collision. Restore only lost
 	# horizontal motion after a trunk yields, retaining a 15% cost per new tree.
 	# Other walls/rocks and incomplete contact reports still block the vehicle.
 	var incoming_horizontal := _impact_velocity.slide(Vector3.UP)
+	var new_monsters := 0
+	for pending: WeakRef in _monster_impacts.values():
+		if is_instance_valid(pending.get_ref()): new_monsters += 1
+	if new_monsters > 0: pass_through = true
+	_monster_impacts.clear()
+	var yielding_blocked := false
 	if pass_through and state.get_contact_count() < max_contacts_reported and incoming_horizontal.length() > 0.1:
 		var direction := incoming_horizontal.normalized()
-		var desired := incoming_horizontal.length() * pow(TreeImpact.SPEED_RETAINED, new_trunks.size())
-		var correction := direction * maxf(0.0, desired - state.linear_velocity.dot(direction))
-		if not solid_normals.any(func(normal: Vector3) -> bool: return correction.dot(normal) < -0.05):
-			state.linear_velocity += correction
+		var desired := incoming_horizontal.length() * pow(TreeImpact.SPEED_RETAINED, new_trunks.size()) * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters)
+		var correction := direction * (desired - state.linear_velocity.dot(direction))
+		yielding_blocked = solid_normals.any(func(normal: Vector3) -> bool: return correction.dot(normal) < -0.05)
+		if not yielding_blocked:
+			# A probe may notify us before rigid contact; still apply its small
+			# impact loss once, while restoring a solver's artificial hard stop.
+			if new_monsters > 0 or correction.dot(direction) > 0.0: state.linear_velocity += correction
+	elif pass_through:
+		yielding_blocked = true
+	if not yielding_blocked and incoming_horizontal.length() > 0.1:
+		var remaining_loss := maxf(0.0, incoming_horizontal.length() - state.linear_velocity.dot(incoming_horizontal.normalized()))
+		var expected_loss := incoming_horizontal.length() * (1.0 - pow(TreeImpact.SPEED_RETAINED, new_trunks.size()) * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters))
+		var scale_loss := minf(1.0, remaining_loss / expected_loss) if expected_loss > 0.0 else 0.0
+		var speed := incoming_horizontal.length()
+		for key in new_trunks:
+			_settle_vehicle_impact("tree", speed * (1.0 - TreeImpact.SPEED_RETAINED) * scale_loss)
+			speed *= TreeImpact.SPEED_RETAINED
+		for i in range(new_monsters):
+			_settle_vehicle_impact("monster", speed * (1.0 - VehicleImpact.MONSTER_SPEED_RETAINED) * scale_loss)
+			speed *= VehicleImpact.MONSTER_SPEED_RETAINED
+	# Use only true collision normals, after all soft-obstacle restoration.
+	# Brake/steering losses tangent to the ground are not impact damage.
+	var losses: Dictionary = {}
+	for contact in contacts:
+		var collider: Node = contact.collider
+		if collider is Monster: continue
+		if contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape): continue
+		if is_ancestor_of(collider) or (collider is Equipment and collider.get_connected_rv() == self): continue
+		var normal: Vector3 = contact.normal.normalized()
+		var closing: float = -contact.incoming.dot(normal)
+		var ground := normal.y > 0.5
+		var key := "ground" if ground else "body:%d" % collider.get_instance_id()
+		if not ground: _vehicle_impacts.touch(key)
+		if closing < (1.5 if ground else 0.75): continue
+		var after := state.linear_velocity + state.angular_velocity.cross(contact.offset)
+		var loss: float = maxf(0.0, (after - contact.incoming).dot(normal))
+		if ground:
+			# Load transfer pitches the chassis during acceleration/braking. A
+			# flat-floor contact needs real downward translation, not that pitch.
+			if normal.y > 0.98 and -_impact_velocity.dot(normal) < 1.5: continue
+			loss = maxf(0.0, loss + state.total_gravity.dot(normal) * state.step)
+		if ground and loss < 0.15: continue
+		var incoming_limit := maxf(0.0, -_impact_velocity.dot(normal)) if ground else closing
+		if not losses.has(key) or losses[key].loss < loss: losses[key] = {"loss": loss, "kind": "ground" if ground else "body", "limit": incoming_limit}
+	for key: String in losses: _settle_vehicle_impact(losses[key].kind, losses[key].loss, key, losses[key].limit)
+	_impact_velocity = state.linear_velocity
+	_impact_angular_velocity = state.angular_velocity
+	_suspension_before = state.linear_velocity
+	_suspension_angular_before = state.angular_velocity
+	_suspension_pending = true
+
+func _sample_suspension_impact() -> void:
+	if freeze != _was_impact_frozen:
+		_was_impact_frozen = freeze
+		_impact_age = 0.0
+		_vehicle_impacts.reset()
+		_suspension_pending = false
+	if freeze or not _suspension_pending: return
+	_suspension_pending = false
+	var state := PhysicsServer3D.body_get_direct_state(get_rid())
+	if state == null: return
+	var loss := 0.0
+	var incoming_limit := 0.0
+	for wheel: VehicleWheel3D in installed_wheels:
+		if wheel == null or not wheel.is_in_contact(): continue
+		var normal := wheel.get_contact_normal().normalized()
+		if normal.y < 0.5: continue
+		var offset := wheel.get_contact_point() - state.transform.origin - state.center_of_mass
+		var before := _suspension_before + _suspension_angular_before.cross(offset)
+		if -before.dot(normal) < 1.5: continue
+		if normal.y > 0.98 and -_suspension_before.dot(normal) < 1.5: continue
+		var after := state.linear_velocity + state.angular_velocity.cross(offset)
+		var shock := (after - before).dot(normal) + state.total_gravity.dot(normal) * state.step
+		loss = maxf(loss, shock)
+		incoming_limit = maxf(incoming_limit, -_suspension_before.dot(normal))
+	if loss >= 0.15: _settle_vehicle_impact("ground", loss, "ground", incoming_limit)
+	# Incoming velocity for the next solver callback must include suspension
+	# and wheel traction impulses applied after _integrate_forces.
 	_impact_velocity = state.linear_velocity
 	_impact_angular_velocity = state.angular_velocity
 
@@ -432,6 +566,7 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	return true
 
 func _physics_process(delta: float) -> void:
+	_sample_suspension_impact()
 	if _last_road_position.is_finite() and delta > 0:
 		var displacement := global_position - _last_road_position
 		var speed := displacement.slide(global_basis.y).length() / delta

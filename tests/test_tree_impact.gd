@@ -19,7 +19,6 @@ func run() -> void:
 	await continuous_chain_scenario(false)
 	await continuous_chain_scenario()
 	await persistence_scenario()
-	check(TreeImpact.damage(15) > TreeImpact.damage(6), "Faster impacts cost more engine durability")
 	for invalid in [[], {"forest:0:0": false}, {"forest:0:-1": true}, {"forest:0:2128": true}, {"other:0:0": true}, {"roadside:nan:0": true}]:
 		check(not TreeImpact.valid_ledger(invalid), "Invalid destruction ledgers are rejected")
 	if failures.is_empty(): print("PASS: actual RV tree contacts, per-tree damage, low-speed safety, navigation and checkpoint persistence")
@@ -169,8 +168,7 @@ func collision_scenario(heading: float, wall: bool = false, paired: bool = false
 	var glancing_normal := Vector3(1.0, 0, 0.125).normalized()
 	var glancing_health := rv.get_engine().health
 	check(TreeImpact.hit(rv, glancing_body, 0, Vector3.FORWARD * 8, glancing_normal), "Fast oblique impact yields even when normal closing speed is below three metres per second")
-	check(rv.get_engine().health < glancing_health, "Fast oblique impact inflicts one engine durability cost")
-	glancing_health = rv.get_engine().health
+	check(rv.get_engine().health == glancing_health, "Direct tree destruction does not bypass unified physical impact damage")
 	check(not TreeImpact.hit(rv, glancing_body, 0, Vector3.FORWARD * 8, glancing_normal) and rv.get_engine().health == glancing_health, "Fast oblique contact cannot charge twice")
 	world.queue_free()
 	await process_frame
@@ -364,6 +362,9 @@ func continuous_chain_scenario(with_trees := true) -> void:
 	world.add_child(shell)
 	var rv: Chassis = shell.get_node("Chassis")
 	rv.allow_test_controls = true
+	var impact_events: Array[Dictionary] = []
+	rv.vehicle_impact.connect(func(kind: String, loss: float, damage: float) -> void:
+		impact_events.append({"kind": kind, "loss": loss, "damage": damage}))
 	for i in range(90): await physics_frame
 	check(rv.get_engine().health == 450, "Continuous chain starts with the standard healthy engine")
 	check(rv.set_engine_running(true), "Wheel-driven fixture successfully starts its engine")
@@ -396,6 +397,9 @@ func continuous_chain_scenario(with_trees := true) -> void:
 	check(rv.global_position.z < -65.0, "Wheel-driven RV passes the last tree row within thirty seconds")
 	check(minimum_speed >= minimum_chain_speed, "Continuous ramming stays at least one metre per second above the tree-breaking speed threshold")
 	check(rv.get_engine().health > 0, "Continuous ramming preserves a working engine without durability resets")
+	if not with_trees:
+		check(rv.get_engine().health == 450, "The smooth no-tree driving baseline creates no impact damage")
+		if not impact_events.is_empty(): print("TREE_BASELINE_IMPACTS %s" % impact_events)
 	check(rv.saturated_callbacks == 0, "Dense chain keeps complete physical contact reports")
 	if with_trees and minimum_speed < minimum_chain_speed:
 		print("TREE_CHAIN_DEBRIS_LOSS frames=%d sum=%.2f" % [rv.debris_slowdown_frames, rv.debris_solver_speed_loss])
@@ -432,6 +436,8 @@ func physical_short_log_scenario() -> void:
 	world.add_child(shell)
 	var rv: Chassis = shell.get_node("Chassis")
 	rv.allow_test_controls = true
+	var impact_kinds: Array[String] = []
+	rv.vehicle_impact.connect(func(kind: String, _loss: float, _damage: float) -> void: impact_kinds.append(kind))
 	for i in range(90): await physics_frame
 	check(rv.set_engine_running(true), "Loose-wood fixture starts its engine")
 	rv.gear = 2
@@ -447,7 +453,7 @@ func physical_short_log_scenario() -> void:
 	print("TREE_LOOSE_WOOD contact=%s impulse=%.2f speed=%.2f displacement=%.2f" % [sample.contacted, sample.max_impulse, sample.max_forward_speed, displacement])
 	check(sample.contacted and sample.max_impulse > 0.01, "RV makes a real solver contact and exchanges impulse with generated short wood")
 	check(sample.max_forward_speed > 0.5 and displacement > 0.5, "Physical short wood is pushed onward after RV contact")
-	check(rv.get_engine().health == 450, "Loose broken wood cannot repeatedly charge standing-tree engine damage")
+	check(not impact_kinds.has("tree"), "Loose broken wood cannot charge standing-tree impact damage")
 	world.queue_free()
 	await process_frame
 	await physics_frame
