@@ -85,7 +85,11 @@ func request(inherited: Vector3, direction := Vector3.ZERO, point := Vector3.ZER
 	_start.call_deferred()
 
 func _start() -> void:
-	if not is_inside_tree() or actor.is_queued_for_deletion(): return
+	if not pending or not is_inside_tree() or actor.is_queued_for_deletion(): return
+	# Disabled actors (including staged/retiring worlds) have no Jolt space.
+	# Keep the request until processing resumes instead of applying an impulse
+	# to removed bodies or letting a deferred call bypass scene suspension.
+	if not actor.can_process(): return
 	if simulator == null: _build()
 	pending = false
 	active = true
@@ -146,7 +150,9 @@ func _start() -> void:
 	restored_state = {}
 
 func tick(delta: float) -> void:
-	if pending: return
+	if pending:
+		_start.call_deferred()
+		return
 	if recovering > 0.0:
 		recovering = maxf(0.0, recovering - delta)
 		recovery_pose.weight = smoothstep(0.0, RECOVERY_BLEND, recovering)

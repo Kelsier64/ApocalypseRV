@@ -92,6 +92,13 @@ func run() -> void:
 	actor.death_remaining = .1
 	await step(15)
 	check(not is_instance_valid(actor), "Corpse timer removes every physical body with actor")
+	await disabled_death(false)
+	await disabled_death(true)
+	actor = spawn_at(Vector3(25, 2, 0))
+	actor.die()
+	actor.queue_free()
+	await step(2)
+	check(not is_instance_valid(actor), "Queued deletion cancels a deferred death handoff")
 	# Save/load a living physical pose without embedding a standing capsule.
 	actor = spawn_at(Vector3(15, -.25, 0))
 	await step(4)
@@ -101,7 +108,11 @@ func run() -> void:
 	var before: Vector3 = actor.ragdoll.bodies["pelvis"].global_position
 	check(saved.has("ragdoll") and WorldActorSnapshot.validation_error(saved, "actor").is_empty(), "Living knockdown snapshot validates")
 	actor.free()
+	world.process_mode = Node.PROCESS_MODE_DISABLED
 	actor = WorldActorSnapshot.restore(saved, world)
+	await step(3)
+	check(actor.ragdoll.pending and not actor.ragdoll.active, "Staged world keeps restored ragdoll pending")
+	world.process_mode = Node.PROCESS_MODE_INHERIT
 	await step(2)
 	check(actor.ragdoll.active and actor.ragdoll.bodies["pelvis"].global_position.distance_to(before) < .3, "Saved physical pose resumes at actual fallen position")
 	var ceiling := StaticBody3D.new()
@@ -141,6 +152,39 @@ func run() -> void:
 	for scenario in 4: await actual_vehicle_contact(scenario)
 	if failures.is_empty(): print("PASS: Raker vehicle knockdown, ragdoll, physics stability, recovery, death and snapshots")
 	quit(0 if failures.is_empty() else 1)
+
+func disabled_death(disable_parent: bool) -> void:
+	var holder := Node3D.new()
+	world.add_child(holder)
+	var actor := spawn_at(Vector3(30, 3, 0))
+	actor.reparent(holder)
+	await step(2)
+	var suspended: Node = holder if disable_parent else actor
+	suspended.process_mode = Node.PROCESS_MODE_DISABLED
+	actor.velocity = Vector3(4, 0, 0)
+	actor.die()
+	var lifetime := actor.death_remaining
+	await step(3)
+	check(actor.is_dead and actor.ragdoll.pending and not actor.ragdoll.active, "Disabled actor or ancestor defers death physics")
+	check(actor.death_remaining == lifetime, "Suspension preserves corpse lifetime")
+	check(WorldActorSnapshot.capture(actor).is_empty(), "Pending dead actor remains excluded from saves")
+	suspended.process_mode = Node.PROCESS_MODE_INHERIT
+	await step(3)
+	check(actor.ragdoll.active and not actor.ragdoll.pending and actor.body_collision_shape.disabled, "Resuming starts pending corpse physics")
+	var pelvis: PhysicalBone3D = actor.ragdoll.bodies["pelvis"]
+	var start := pelvis.global_position
+	await step(12)
+	check(pelvis.global_position.x > start.x + .2 and pelvis.global_position.y < start.y, "Resumed corpse retains launch momentum and falls")
+	holder.queue_free()
+	await step(2)
+	check(not is_instance_valid(actor), "Removing resumed holder cleans up corpse")
+	actor = spawn_at(Vector3(30, 3, 0))
+	actor.process_mode = Node.PROCESS_MODE_DISABLED
+	actor.die()
+	await step(2)
+	actor.queue_free()
+	await step(2)
+	check(not is_instance_valid(actor), "Disabled pending corpse can be removed without starting physics")
 
 func actual_vehicle_contact(scenario: int) -> void:
 	load("res://tests/raker_impact_playground.gd").selected = scenario

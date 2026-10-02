@@ -60,3 +60,13 @@ godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playg
 - 最新 main：`test_road_spawns`、`test_road_spawn_lifecycle`、`test_road_spawn_checkpoint`，另加 main-scene smoke（22.26 秒）。
 
 推送前再次 fetch 確認 main 未變，`git diff --check` 通過。上面的實機觀察與截圖仍屬整合前功能驗收；本節是整合後自動回歸，不代表重做實機或執行 full suite。
+
+## PR #14 CI：停用場景生命週期修正
+
+首輪 [PR CI](https://github.com/Kelsier64/ApocalypseRV/actions/runs/37024514999) 的 integration／slow 分別在 `test_bunker_encounter`／`test_outdoor_minor_persistence` 失敗：測試停用 Raker 後觸發死亡，延後的布娃娃啟動仍向已離開 Jolt 物理空間的胸骨施加衝量。其餘測試通過；push workflow 也有相同兩個失敗，不是平台偶發或測試超時。本機修正前於 `.godot/test-logs/20261002-232521-379-selected-23368/` 重現相同錯誤。
+
+`_start()` 現在保留停用中的 pending 請求，直到角色可處理時由 `tick()` 重新延後啟動；重複排入的啟動會檢查 pending，避免再次重設物理。保留父場景停用、候選世界載入與刪除流程，不改測試停用方式或略過錯誤檢查。
+
+擴充既有 `test_raker_ragdoll`，檢查角色本身／父節點停用後死亡、恢復時承接速度並落下、停用期間屍體計時不變、pending 死亡不入存檔、立即與延後刪除，以及停用世界讀入存活布娃娃後恢復。
+
+修正後 `.godot/test-logs/20261002-232720-600-selected-3276/`：上述兩個失敗案例、`test_raker_ragdoll`、`test_checkpoint_failures`、`test_road_spawn_checkpoint` 五項全部 PASS，122.27 秒；同批資產未變，使用 `-SkipImport`。`git diff --check` 通過。本段記錄本機檢查，遠端 CI 重跑結果以 PR checks 為準。
