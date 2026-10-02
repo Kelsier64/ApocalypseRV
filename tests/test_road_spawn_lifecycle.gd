@@ -121,6 +121,18 @@ func run() -> void:
 		check(baked.navigation_ready and baked._road_monsters_spawned, "Real navigation publication triggers road monsters")
 		var road_monsters := container.get_children().filter(func(n): return n is Monster and n.global_position.distance_to(plan.monsters[0]) < 40)
 		check(road_monsters.size() == plan.monsters.size(), "Actual chunk generation creates one planned group")
+		# Tree destruction rebakes the same region after the initial publication.
+		# Removed road actors must remain absent when that callback runs again.
+		for monster in road_monsters: monster.free()
+		var remaining := container.get_child_count()
+		var region := baked.navigation
+		baked.request_navigation_rebuild()
+		await baked._navigation_rebuild_timer.timeout
+		if not await WAIT.navigation_ready(self, [baked]):
+			check(false, "Tree-triggered navigation rebake publishes before timeout")
+		else:
+			check(baked.navigation == region, "Runtime rebake reuses the original navigation region")
+			check(container.get_child_count() == remaining, "Tree-triggered rebake does not resurrect removed road Rakers")
 	world.free()
 	await process_frame
 	if failures.is_empty(): print("PASS: road navigation readiness, deterministic rebuilding, actor lifetime and v8 cleanup")

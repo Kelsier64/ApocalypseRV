@@ -47,6 +47,8 @@ func run() -> void:
 	var chassis: Chassis = world.get_node("NewRv/Chassis")
 	chassis.freeze = true
 	chassis.global_position = anchor + Vector3(0, 2, 20)
+	var destroyed_id := TreeImpact.forest_id(band, 0)
+	generator.destroyed_trees[destroyed_id] = true
 	await generator._spawn_band(band, true)
 	if not await settle(world):
 		check(false, "Road encounter navigation settles")
@@ -61,6 +63,7 @@ func run() -> void:
 	var before: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	check(before.get("version") == 3 and before.get("generation_version") == 8, "Checkpoint remains v3 and records v8 generation")
 	check(band in before.get("generated_bands", []), "Road band is marked generated")
+	check(before.get("destroyed_trees", {}).get(destroyed_id, false), "v8 road checkpoint preserves the destroyed-tree ledger")
 	if not await checkpoint.load_world(world, SAVE_PATH):
 		check(false, "v8 road checkpoint reload succeeds")
 		quit(1)
@@ -76,6 +79,7 @@ func run() -> void:
 	generator.set_process(false)
 	world.get_node("Player").set_physics_process(false)
 	check(monsters(world).size() == plan.monsters.size(), "F9 restores living Rakers without duplicate rolls")
+	check(generator.destroyed_trees.get(destroyed_id, false) and generator.field.destroyed_trees.get(destroyed_id, false), "F9 restores the shared destroyed-tree ledger before chunk generation")
 	for monster: Monster in monsters(world):
 		monster.take_damage(monster.current_health + 1.0)
 	await process_frame

@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-文件核對：2026-10-01 加入正式 v8 公路隨機內容；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：2026-10-02 整合正式 v8 公路隨機內容與樹木撞毀；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
@@ -61,6 +61,20 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，提供靜態姿態與 Raker 位置；前 450 m、安全據點與所有物件的 5 m 接縫距離受保護。一般車陣保留至少 5 m 中央通道，少量車陣橫置封路。靜態內容屬 chunk，加入導航烘焙；v8 改用這條釘帶流程，舊版保留 TireSpikeStrip.build。
 
 導航 map／region 同步完成後建立道路 Raker，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v8 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。實作、測試與未驗證範圍見 [本輪紀錄](docs/validation/2026-10-01-random-road-spawns.md)。
+
+### 樹木撞毀
+
+Chassis 讀取實際物理接觸，以至少 3 m/s 的水平速度、朝接觸法線內至少 0.1 m/s 的接近速度判定撞樹，高速斜擦也能折斷；離開樹幹、低速及垂直落地不觸發。每棵樹只結算一次，傷害沿用 take_damage 扣引擎耐久，數值為水平速度平方 × 0.25，限制 3–80 HP。引擎歸零沿用現有停機／維修流程。
+
+底盤快取前一物理步的線／角速度，避免 Jolt 已解算的硬碰撞讓撞擊速度歸零。先處理全部樹木撞擊，再依最後的破壞狀態判定實體阻擋，避免同 shape 的早期擦碰法線留下錯誤阻擋。只補回沿原水平行進方向損失的速度，每棵新毀樹保留 85%；同棵樹的多個接觸只計一次。接觸上限至少 128；已毀 shape 的延後停用期間不重扣傷害，有反向實體阻擋法線或接觸報告達上限時不補速，垂直與角速度仍由物理解算。
+
+ForestTrunks 保留一個共用靜態碰撞體，shape owner 識別單棵樹，延後停用其碰撞並隱藏對應 MultiMesh instance。TreeFall 在 0.75 m 斷裂面留下斷樁，依材質分離木質與葉面，完整木質網格按世界高度切成最長 3.2 m 的 RigidBody3D 斷木，每段 2–4 kg；圓柱碰撞跟隨網格，layer／mask 1、CCD、摩擦 0.08，不排除 RV。斷木起始外觀承接原樹，依車身位置向外側散開並由物理解算傾倒，不留 HingeJoint 或樹冠碰撞。葉面依高度／方位分成實際網格小簇，保留貼圖與頂點色，重力／旋轉落到取樣地面後壓成薄層；預估落點先取樣，接觸時再確認地形，不逐葉逐幀射線。地面射線排除動態物件／角色。原樹接觸尚未清除時，輕量斷木不作為硬牆補速 veto；只剩斷木接觸後不再補速。斷木的真實地面接觸觸發塵土。木材與葉片獨立清理：木材含斷樁在 20–22 秒淡出後移除全部碰撞體，也可存在至少 8 秒、連續離開視野 2 秒後提前回收；葉簇保持不透明，存在至少 6 秒且全部落地後，連續離開視野 2 秒才釋放。逐組網格世界 AABB 檢查目前 Camera3D 六個 frustum 平面，回望各自重設计時，缺相機只阻止視野清理，木材定時回收仍有效；兩組均釋放後移除效果父節點。碎片隨 chunk 卸載釋放，不進 actor 或存檔。舊版路邊活樹／枯樹使用相同撞擊契約。
+
+ForestScenery.build 首次建立森林前 await TreeFall.prepare：獨立 32×32 SubViewport 先建立一棵實際落葉／斷木／粉塵效果，停止處理、凍結剛體並停用碰撞，渲染兩幀後釋放，不播放音效、不寫破壞帳本或觸發導航。共用 Shader、頂點格式及陰影 pipeline 在載入期準備，blocked PCM 音效也預先合成；一次旗標避免串流重複準備。不可變原 mesh 的 surface arrays 快取最多 32 資源；切木只計算世界高度並在原局部座標裁切，葉面共用變換／法線矩陣，減少首次與每次撞擊的網格計算。
+
+WorldGenerator／WorldField 共用 destroyed_trees 帳本，獨立於可淘汰的 forest_cache；森林 ID 使用 band／確定性生成索引，路邊樹使用原始位置。重建前仍消耗原外觀 RNG，存活樹位置與型號不漂移。Checkpoint v3 新增可選帳本，先驗證再恢復，舊檔缺欄位視為空帳本，不改生成版本。
+
+破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。自動回歸為 test_tree_impact.gd，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
 
 ### 世界時間與太陽
 
@@ -225,9 +239,9 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 ### 世界
 
-WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 初始後 2／目前 1／前 3 個固定網格帶 → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
+WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v8 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z；v2–v4 只向 −Z 推進，v5／v6 維護前後窗口並可回頭載入。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v3 另存 generation_version（2／3／4／5／6），缺省為 2；新 WorldProfile 預設 6。舊檔不改地形與 POI ID。
+串流比較室外玩家或副本錨點 Z；v2–v4 只向 −Z 推進，v5+ 維護前後窗口並可回頭載入。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v3 另存 generation_version（2–8），缺省為 2；新 WorldProfile 預設 6。舊檔不改地形與 POI ID。
 
 外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 

@@ -36,13 +36,14 @@ static func landmark_slit(field: WorldField, point: Vector3) -> bool:
 	return false
 
 static func build(chunk: ChunkGenerator, gradual: bool) -> void:
+	await TreeFall.prepare(chunk)
 	# Warm both seam halos in slices before the synchronous nav source parse.
 	for band in [chunk.band, chunk.band - 1, chunk.band + 1]:
 		await prepare(chunk, band, gradual)
 	var tree_poses: Array = [[], [], [], [], [], []]
 	var variants := chunk.field.rng_for(chunk.band, "forest_art_variants")
 	var shrubs: Array = [[], [], []]
-	var body := StaticBody3D.new()
+	var body := ForestTrunks.new()
 	body.name = "ForestTrunks"
 	# Assemble off-tree so each added trunk does not rebuild a live compound body.
 	var trunk_shape := BoxShape3D.new()
@@ -52,15 +53,18 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		var tree: Dictionary = planned[i]
 		var basis := Basis(Vector3.UP, tree.angle)
 		var kind := variants.randi_range(0, 3) if variants.randf() > 0.16 else variants.randi_range(4, 5)
+		# Consume appearance RNG even for tombstones, preserving all later trees.
+		if chunk.field.destroyed_trees.has(TreeImpact.forest_id(chunk.band, i)): continue
 		tree_poses[kind].append(Transform3D(basis.scaled(Vector3(tree.width, tree.height, tree.width)), tree.point))
 		var shape := CollisionShape3D.new()
 		# Shared geometry; box height is represented by its transform.
 		shape.shape = trunk_shape
 		shape.position = tree.point + Vector3.UP * tree.height * 0.5
 		shape.scale.y = tree.height
+		shape.set_meta("tree_id", TreeImpact.forest_id(chunk.band, i))
+		shape.set_meta("tree_point", tree.point)
 		body.add_child(shape)
 		chunk.decoration_positions.append(tree.point)
-	chunk.add_child(body)
 	if gradual: await chunk._pause()
 	# Dense waist/head-high undergrowth; no physical snagging on leaves.
 	var rng := chunk.field.rng_for(chunk.band, "undergrowth")
@@ -76,15 +80,19 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		var radius := rng.randf_range(1.0, 2.0)
 		shrubs[i % 3].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(radius, height, radius)), point))
 	for kind in range(6):
-		batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind])
+		body.visuals.merge(batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind]))
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	for kind in range(3):
 		batch(chunk, "ForestBrush%d" % kind, ForestMeshes.shrub(kind), shrubs[kind])
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
+	# Contacts may begin immediately when inserted, so every visual mapping must
+	# already exist, including while this chunk is being built over many frames.
+	chunk.add_child(body)
 	print("FOREST band=%d trees=%d shrubs=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size()])
 
-static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> void:
-	if poses.is_empty(): return
+static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> Dictionary:
+	var instances := {}
+	if poses.is_empty(): return instances
 	# Cull local cells rather than rendering the entire 900 m band at once.
 	var cells: Dictionary = {}
 	for pose: Transform3D in poses:
@@ -93,9 +101,10 @@ static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> vo
 		cells[cell].append(pose)
 	for cell: Vector2i in cells:
 		var origin := Vector3(cell.x * 48.0 + 24, 0, cell.y * 48.0 + 24)
-		_cell(parent, title, mesh, cells[cell], origin, cell)
+		instances.merge(_cell(parent, title, mesh, cells[cell], origin, cell))
+	return instances
 
-static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origin: Vector3, cell: Vector2i) -> void:
+static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origin: Vector3, cell: Vector2i) -> Dictionary:
 	var multi := MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = mesh
@@ -117,3 +126,9 @@ static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origi
 	node.visibility_range_end = 160 if title.begins_with("ForestBrush") else 340
 	node.visibility_range_end_margin = 16
 	parent.add_child(node)
+	var instances := {}
+	for i in range(poses.size()):
+		var pose: Transform3D = poses[i]
+		pose.origin -= origin
+		instances[poses[i].origin] = {"node": node, "index": i, "pose": pose}
+	return instances

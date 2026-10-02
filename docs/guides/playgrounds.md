@@ -16,6 +16,19 @@
 - [加油站室外探索](#gas-station)
 - [路邊小 POI](#minor-pois)
 - [玩家持物動作](#player-carry)
+- [樹木撞毀](#tree-impact)
+
+<a id="tree-impact"></a>
+
+## 樹木撞毀
+
+```powershell
+godot --path . --log-file .godot/tree-impact-playground.log res://tests/tree_impact_playground.tscn
+godot --path . --log-file .godot/tree-impact-playground.log res://tests/tree_impact_playground.tscn -- --replay
+godot --path . --log-file .godot/tree-impact-chain.log res://tests/tree_impact_playground.tscn -- --chain
+```
+
+F6 自動輪驅撞向前方樹木，撞後繼續供油 2 秒再煞車；F7 重載為 8 排、共 16 棵的連續撞樹回放，R 重設目前模式。W/S 油門／煞車、A/D 轉向、Space 發動並切換手煞車。畫面顯示引擎耐久、撞毀棵數及連撞最低速度；確認車頭推開帶實際碰撞的輕量斷木、撞擊後繼續前進，葉簇落地形成薄層，留在視野內不消失，並有碎木、塵土及斷樁。斷木和斷樁在撞後 20 秒開始淡出，22 秒連同碰撞移除，落葉仍保留；視野外木材可提早回收。旁邊的樹保留外觀及碰撞。日誌 TREE_REPLAY 記錄真實輪驅撞擊速度，TREE_VISUAL 記錄批次實例移除與鄰樹碰撞，TREE_CHAIN_REPLAY 記錄 16 棵連撞結果。回放抵達 65 m 後主動煞車，最後顯示零速屬回放結束。此測試場不包含導航與串流；保存、重建、導航及相機視野清理回歸由 test_tree_impact.gd 驗證。最新結果見 [首次停頓與木材清理](../validation/2026-10-02-tree-impact-preparation.md)，前階段結果見 [落葉與連撞驗證](../validation/2026-10-02-tree-leaves.md)。
 
 <a id="starting-shelter"></a>
 
