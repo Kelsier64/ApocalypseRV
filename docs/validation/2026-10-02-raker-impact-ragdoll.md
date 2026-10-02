@@ -1,6 +1,6 @@
 # Raker 車撞效果與布娃娃
 
-2026-10-02，Godot 4.7.2 stable／Jolt／原專案 60 Hz，Windows、Forward+／RTX 4060 Laptop。保留開始時已有的 VehicleImpact、Chassis、樹木撞擊及文件修改；本輪接續怪物受撞表現，沒有提交 Git commit。
+2026-10-02，Godot 4.7.2 stable／Jolt／原專案 60 Hz，Windows、Forward+／RTX 4060 Laptop。保留開始時已有的 VehicleImpact、Chassis、樹木撞擊及文件修改；功能驗收階段接續怪物受撞表現，當時尚未提交 Git commit。後續 Git 整合與重新驗證見末節。
 
 ## 行為
 
@@ -48,3 +48,15 @@ godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playg
 1–4 切案例、R 重播、Space 開始、F4 鏡頭、F9 暫停；`--review` 在碰撞後 0.3 秒暫停，`--case=0` 至 `--case=3` 指定初始案例。存活測試目標完成起身後停用 AI 供觀察，正式遊戲恢復 AI。致命案例刻意使用已受傷的 60 HP 目標，不代表 140 HP Raker 以此車速必死。
 
 目前不做肢解、肢體自碰撞或布娃娃彼此碰撞；倒地期間車體能物理推動身體，但不重啟角色的車撞傷害事件。起身是從物理姿勢混合回待機，未新增手撑地起身動畫。存檔不保留每條肢體角速度或已經過的倒地時間。未驗收大量屍體、極端翻車、懸崖、高速連續輾壓或任意地形；不是 full suite 結果。
+
+## 最新 main 整合後檢查
+
+2026-10-02 23:00，在 `codex/raker-impact-ragdoll` 將功能提交接到 `main` 的 `852b06e`（v8 道路遭遇 PR #5），功能 commit 為 `80baaae`。Rebase 無衝突，保留雙方架構文件與測試分類；本機 main 同步快轉至該基底。匯入新 main 時產生的五份道路腳本 `.gd.uid` 一併保存，避免後續重新分配資源識別。
+
+整合後獨立執行統一 runner，日誌 `.godot/test-logs/20261002-230033-598-selected-29680/`：資產匯入、16 項測試及正式主世界 smoke 全部 PASS，共 151.29 秒。Godot 4.7.2 stable、headless、固定 60 fps；工作樹在測試開始時乾淨。
+
+- Raker／角色：`test_monster_navigation`、`test_moving_rv_climbing`、`test_player_death`、`test_raker`、`test_raker_cabin`、`test_raker_gaits`、`test_raker_grab`、`test_raker_ragdoll`、`test_raker_sprint`、`test_raker_turning`。
+- 撞擊：`test_tree_impact`、`test_vehicle_impact`、`test_vehicle_monster_impact`。
+- 最新 main：`test_road_spawns`、`test_road_spawn_lifecycle`、`test_road_spawn_checkpoint`，另加 main-scene smoke（22.26 秒）。
+
+推送前再次 fetch 確認 main 未變，`git diff --check` 通過。上面的實機觀察與截圖仍屬整合前功能驗收；本節是整合後自動回歸，不代表重做實機或執行 full suite。
