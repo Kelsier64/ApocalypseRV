@@ -1,8 +1,10 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+[gd_resource type="ShaderMaterial" load_steps=4 format=3]
 
 [ext_resource type="Shader" path="res://world/starting_shelter/materials/formed_concrete.gdshader" id="shader"]
-[ext_resource type="Texture2D" path="res://assets/materials/poi_kit/concrete_albedo.png" id="concrete"]
+[ext_resource type="Texture2D" path="res://assets/materials/poi_kit/concrete_albedo.png" id="cement"]
+[ext_resource type="Texture2D" path="res://assets/materials/ruined_wall/aggregate_albedo.png" id="aggregate"]
 
 [resource]
 shader = ExtResource("shader")
-shader_parameter/concrete_texture = ExtResource("concrete")
+shader_parameter/cement_texture = ExtResource("cement")
+shader_parameter/aggregate_texture = ExtResource("aggregate")

@@ -44,7 +44,7 @@ godot --path . --log-file .godot/shelter-replay.log res://tests/starting_shelter
 
 回放只在入座時切換玩家模式，行駛期間不設定車輛 transform 或速度、不停用正常油耗。它驗證空載基本 RV 的出發；裝載三種設備與門防夾由 `test_starting_shelter.gd` 驗證，保存、讀檔與舊場景相容由 `test_starting_checkpoint.gd` 驗證。這些不是翻車、超載或大量敵人追車的驗收。
 
-牆體近景：F6 查看入口與側翼窗洞，F7 查看玩家高度的內牆。`--inspect-facade` 以近景開始；另加 `--art-daylight` 只在這個測試場把時間設為 15:00，便於檢查立面光影，不改正式開場時間或天氣。
+牆體近景：F6 查看入口與側翼窗洞，F7 查看玩家高度的內牆，F9 查看牆腳凹陷與斷面。`--inspect-facade` 以近景開始；另加 `--art-daylight` 只在這個測試場把時間設為 15:00，便於檢查立面光影，不改正式開場時間或天氣。
 
 <a id="player-carry"></a>
 

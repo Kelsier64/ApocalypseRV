@@ -27,7 +27,7 @@ func _setup_replay() -> void:
 	status.add_theme_constant_override("shadow_offset_x", 2)
 	status.add_theme_constant_override("shadow_offset_y", 2)
 	layer.add_child(status)
-	status.text = "F2 drive | F3 exterior | F4 interior / player | F5 roadblock | F6 facade | F7 wall"
+	status.text = "F2 drive | F3 exterior | F4 interior / player | F5 roadblock | F6 facade | F7 wall | F9 damage"
 	overview = Camera3D.new()
 	overview.fov = 82
 	add_child(overview)
@@ -48,6 +48,7 @@ func _input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_F5 or event.keycode == KEY_F5: _roadblock_camera()
 		if event.physical_keycode == KEY_F6 or event.keycode == KEY_F6: _facade_camera()
 		if event.physical_keycode == KEY_F7 or event.keycode == KEY_F7: _wall_camera()
+		if event.physical_keycode == KEY_F9 or event.keycode == KEY_F9: _damage_camera()
 		if (event.physical_keycode == KEY_F4 or event.keycode == KEY_F4) and is_instance_valid(overview):
 			if overview.current: get_node("Player").camera.make_current()
 			else: _interior_camera()
@@ -82,6 +83,13 @@ func _wall_camera() -> void:
 	var shelter: Node3D = get_node("StartRun").shelter
 	overview.global_position = shelter.to_global(Vector3(-6, 1.8, 6))
 	overview.look_at(shelter.to_global(Vector3(-9.9, 2.6, -2)))
+	overview.make_current()
+
+func _damage_camera() -> void:
+	if not is_instance_valid(overview): return
+	var shelter: Node3D = get_node("StartRun").shelter
+	overview.global_position = shelter.to_global(Vector3(-8.6, 1.35, 4.5))
+	overview.look_at(shelter.to_global(Vector3(-10, 0.85, 3)))
 	overview.make_current()
 
 func _start_replay() -> void:
