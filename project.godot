@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameSettings="*res://core/game_settings.gd"
 Checkpoint="*res://rv/checkpoint.gd"
 
 [display]

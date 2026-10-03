@@ -4,6 +4,7 @@ const MOUSE_SENSITIVITY: float = 0.002
 const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 
 @onready var seat_camera: Camera3D = $Camera3D
+@onready var game_settings = get_node("/root/GameSettings")
 
 var current_driver: Node3D = null
 var exit_message: String = ""
@@ -11,12 +12,17 @@ var exit_message: String = ""
 func _ready() -> void:
 	super._ready()
 	seat_camera.rotation = REST_CAMERA_ROTATION
+	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))
+	game_settings.setting_changed.connect(_on_setting_changed)
 	var dashboard := CanvasLayer.new()
 	dashboard.set_script(load("res://rv/vehicle_dashboard.gd"))
 	add_child(dashboard)
 	# Defer setup so the RV parent's _ready() (which calls add_to_group("rv"))
 	# has already run before we walk up the tree looking for it.
 	call_deferred("_setup_if_on_rv")
+
+func _on_setting_changed(key: StringName, value: Variant) -> void:
+	if key == &"drive_fov": seat_camera.fov = float(value)
 
 func _setup_if_on_rv() -> void:
 	var rv := get_connected_rv()
@@ -47,12 +53,14 @@ func interact_hold(player: Node3D) -> void:
 		rv.set_driving_state(true)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not current_driver or current_driver.is_grabbed() or current_driver.is_player_dead:
+	if not current_driver or current_driver.is_grabbed() or current_driver.is_player_dead or current_driver.is_gameplay_input_blocked():
 		return
 
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		seat_camera.rotation.y -= event.relative.x * MOUSE_SENSITIVITY
-		seat_camera.rotation.x -= event.relative.y * MOUSE_SENSITIVITY
+		var sensitivity := MOUSE_SENSITIVITY * float(game_settings.get_setting(&"sensitivity"))
+		var y_direction := -1.0 if bool(game_settings.get_setting(&"invert_y")) else 1.0
+		seat_camera.rotation.y -= event.relative.x * sensitivity
+		seat_camera.rotation.x -= event.relative.y * sensitivity * y_direction
 		seat_camera.rotation.x = clamp(seat_camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 		seat_camera.rotation.y = clamp(seat_camera.rotation.y, deg_to_rad(-120), deg_to_rad(120))
 
@@ -77,6 +85,7 @@ func exit_seat(forced: bool = false) -> void:
 		return
 
 	var player := current_driver
+	if forced: player.close_settings()
 	var exit_position := _find_clear_exit_position(forced)
 	if not exit_position.is_finite():
 		exit_message = "離座位置被擋住，請先清出走道"

@@ -10,6 +10,14 @@ func check(okay: bool, message: String) -> void:
 		push_error("FAIL: " + message)
 
 func _run() -> void:
+	var settings := root.get_node("GameSettings")
+	var original_path: String = settings.storage_path
+	var preferences := {}
+	for key: String in ["render_mode", "render_scale", "retro", "brightness", "contrast", "saturation"]: preferences[key] = settings.get_setting(key)
+	var isolated_path := "res://.godot/test-logs/outdoor-horror-settings/preferences.cfg"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(isolated_path.get_base_dir()))
+	settings.storage_path = isolated_path
+	for key: String in ["brightness", "contrast", "saturation"]: settings.set_setting(key, 1.0)
 	var legacy_profile := WorldProfile.new()
 	legacy_profile.generation_version = 3
 	var legacy := WorldField.new(42, legacy_profile)
@@ -101,6 +109,7 @@ func _run() -> void:
 	path = NavigationServer3D.map_get_path(map, site.route[-1], next_road, true)
 	check(not path.is_empty() and path[-1].distance_to(next_road) < 2, "Remote site navigation crosses a streaming boundary")
 	var present := main.get_node("OutdoorPresentation") as OutdoorPresentation
+	settings.set_setting("render_mode", 0)
 	present.set_retro(true)
 	check(present.effect.visible, "Outdoor retro enabled")
 	main.get_node("PoiInstances").active_id = "test"
@@ -110,7 +119,17 @@ func _run() -> void:
 	present.apply()
 	check(present.effect.visible, "Return restores retro")
 	present.set_retro(false)
-	check(not present.effect.visible, "Native display available")
+	check(not present.effect.visible, "Retro color can be disabled independently")
+	var legacy_scale: float = main.get_viewport().scaling_3d_scale
+	settings.set_setting("render_mode", 1)
+	settings.set_setting("render_scale", 1.0)
+	present.apply()
+	check(main.get_viewport().scaling_3d_scale == 1.0, "Manual native display available")
+	present.set_retro(true)
+	check(present.effect.visible and main.get_viewport().scaling_3d_scale == 1.0, "Retro color leaves manual native resolution unchanged")
+	settings.set_setting("render_mode", 0)
+	present.apply()
+	check(is_equal_approx(main.get_viewport().scaling_3d_scale, legacy_scale), "Legacy resolution returns independently from color")
 	var original_size := root.size
 	root.size = Vector2i(1280, 800)
 	await process_frame
@@ -135,5 +154,8 @@ func _run() -> void:
 	check(not path.is_empty() and path[-1].distance_to(remote.route[-1]) < 2, "Streamed remote site remains navigable")
 	main.queue_free()
 	await process_frame
+	for key: String in preferences: settings.set_setting(key, preferences[key])
+	settings.flush()
+	settings.storage_path = original_path
 	if failures.is_empty(): print("PASS: 100 horror worlds, routes, foundations, sightlines, navigation, display and streaming")
 	quit(0 if failures.is_empty() else 1)

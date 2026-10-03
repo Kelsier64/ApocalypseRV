@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+Esc 設定選單：[不暫停遊戲、視訊效果與移除 F8](validation/2026-10-03-settings-menu.md)，含偏好遷移、輸入回歸與桌面驗收；[Esc 無反應回報重測](validation/2026-10-03-settings-esc-recheck.md) 補上正式啟動路徑檢查；[開關與解析度介面改進](validation/2026-10-03-settings-ui.md) 記錄新版呈現。
+
 Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-raker-impact-ragdoll.md)，含輪驅重播、姿勢保存及物理回歸。
 
 樹木撞毀與車輛受傷：[依減速結算碰撞與地面傷害（目前）](validation/2026-10-02-vehicle-impact.md)、[首次停頓、減速與木材清理](validation/2026-10-02-tree-impact-preparation.md)；歷史結果：[落葉保留與輕量斷木](validation/2026-10-02-tree-leaves.md)、[初版驗收](validation/2026-10-02-tree-impact.md)、[保留動量與倒塌效果](validation/2026-10-02-tree-impact-momentum.md)、[倒樹實體碰撞修正](validation/2026-10-02-tree-impact-collision.md)。
@@ -55,6 +57,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。
 
 - [2026-09-30 玩家單手／雙手持物](validation/2026-09-30-player-carry.md) — 手臂 IK、五指握合、狀態切換與第一人稱／外部視角。
 

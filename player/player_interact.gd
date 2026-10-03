@@ -15,6 +15,7 @@ var _e_time := 0.0
 var _f_time := 0.0
 var _e_done := false
 var _f_done := false
+var _repair_release_required := false
 var _input_edges: Array[Dictionary] = []
 
 func _ready() -> void:
@@ -61,17 +62,12 @@ func _label(parent: Node, font_size: int) -> Label:
 func _physics_process(delta: float) -> void:
 	var e_pressed := Input.is_action_pressed("interact")
 	var f_pressed := Input.is_action_pressed("place_equipment")
+	var repair_pressed := Input.is_physical_key_pressed(KEY_H)
+	if not repair_pressed: _repair_release_required = false
 	var panel: Control = prompt_label.get_parent().get_parent()
-	if player.get_player_mode() != player.PlayerMode.NORMAL:
-		repair.step(player, null, false, delta)
-		_input_edges.clear()
-		_e_target = null
-		_f_target = null
-		_e_time = 0.0
-		_f_time = 0.0
-		_e_was_pressed = e_pressed
-		_f_was_pressed = f_pressed
-		aim_marker.visible = player.get_player_mode() == player.PlayerMode.PLACING
+	if player.is_gameplay_input_blocked() or player.get_player_mode() != player.PlayerMode.NORMAL:
+		cancel_input_gestures()
+		aim_marker.visible = not player.is_gameplay_input_blocked() and player.get_player_mode() == player.PlayerMode.PLACING
 		panel.visible = aim_marker.visible
 		prompt_label.text = player.placement.message if panel.visible else ""
 		repair_label.text = ""
@@ -84,7 +80,7 @@ func _physics_process(delta: float) -> void:
 	feedback_time = maxf(0.0, feedback_time - delta)
 	if feedback_time == 0.0: feedback_label.text = ""
 	prompt_label.text = get_prompt(obj)
-	repair.step(player, obj, Input.is_physical_key_pressed(KEY_H), delta)
+	repair.step(player, obj, repair_pressed and not _repair_release_required, delta)
 	repair_label.text = repair.message
 	var edges := _input_edges.duplicate()
 	_input_edges.clear()
@@ -97,12 +93,30 @@ func _physics_process(delta: float) -> void:
 	panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (not prompt_label.text.is_empty() or not feedback_label.text.is_empty() or not repair_label.text.is_empty())
 
 func _unhandled_input(event: InputEvent) -> void:
+	if player.is_gameplay_input_blocked():
+		cancel_input_gestures()
+		return
 	if event.is_echo() or player.get_player_mode() != player.PlayerMode.NORMAL: return
 	var key := "e" if event.is_action("interact") else ("f" if event.is_action("place_equipment") else "")
 	if key.is_empty(): return
 	force_raycast_update()
 	var target: Node = get_collider() if is_colliding() else null
 	_input_edges.append({"key": key, "pressed": event.is_pressed(), "target": weakref(target) if is_instance_valid(target) else null})
+
+func cancel_input_gestures() -> void:
+	repair.step(player, null, false, 0.0)
+	# A repair press made during any input block must be released too, including
+	# one begun after closing settings while another held key keeps the latch.
+	_repair_release_required = Input.is_physical_key_pressed(KEY_H)
+	_input_edges.clear()
+	_e_target = null
+	_f_target = null
+	_e_time = 0.0
+	_f_time = 0.0
+	_e_done = true
+	_f_done = true
+	_e_was_pressed = Input.is_action_pressed("interact")
+	_f_was_pressed = Input.is_action_pressed("place_equipment")
 
 func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) -> void:
 	if obj != _e_target: _e_target = null
