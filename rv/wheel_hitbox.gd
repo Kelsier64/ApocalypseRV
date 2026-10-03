@@ -11,6 +11,7 @@ func get_interaction_prompt(_player: Node3D) -> String:
 	return "%s輪胎｜%s\n長按 E 拆裝｜停穩熄火後，長按 H 維修（2 金屬零件）" % [TireDynamics.NAMES[slot_index], state]
 
 func interact_hold(player: Node3D) -> void:
+	if not player.can_use_hands(): return
 	var rv := RVConnection.resolve(get_parent())
 	if rv == null:
 		return

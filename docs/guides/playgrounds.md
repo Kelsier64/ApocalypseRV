@@ -17,6 +17,7 @@
 - [加油站室外探索](#gas-station)
 - [路邊小 POI](#minor-pois)
 - [玩家持物動作](#player-carry)
+- [玩家斷肢與受傷爬行](#player-dismemberment)
 - [樹木撞毀](#tree-impact)
 
 <a id="tree-impact"></a>
@@ -214,6 +215,40 @@ godot --path . --log-file .godot/player-model-replay.log res://tests/player_mode
 
 載入正式主世界、固定 seed 42 與上午 10 點，使用正式 Player。F1 平視、F2 低頭、F3 外部觀察、F4 連續移動／跳躍／持物／上下車回放、Esc 關閉此測試視窗。第一人稱捕捉滑鼠，外部觀察釋放滑鼠；WASD／Space 使用正式控制器，TEST 骨架動畫不會播放。自動回放截圖輸出 `docs/validation/player-model-integration/`。獨立物理配置仍可使用 `tests/player_ragdoll_v020/playground.tscn`，正式死亡另見下方測試場。見 [整合驗收](../validation/2026-09-27-player-model-integration.md)。
 
+<a id="player-dismemberment"></a>
+
+### 玩家斷肢與受傷爬行
+
+```powershell
+godot --path . --log-file .godot/player-dismemberment.log res://tests/player_dismemberment_playground.tscn
+godot --path . --log-file .godot/player-dismemberment-replay.log res://tests/player_dismemberment_playground.tscn -- --replay
+godot --path . --log-file .godot/player-gore-review.log res://tests/player_dismemberment_playground.tscn -- --replay --gore-review
+godot --path . --log-file .godot/player-arm-pov.log res://tests/player_dismemberment_playground.tscn -- --replay --arm-pov
+godot --path . --log-file .godot/player-head-pov.log res://tests/player_dismemberment_playground.tscn -- --replay --head-pov
+```
+
+載入正式 Player、五切口、受傷爬行與 Raker 咬合流程；`--replay` 自動回放並結束，截圖輸出 `docs/validation/player-dismemberment/`。這裡列的是操作入口，不代表本次已完成目視驗收。
+
+`--gore-review` 另拍頭顱落地後的正反近景，以及三個血泊在明亮／昏暗照明下的畫面，輸出至 `gore-review/after/`；不改變正式遊戲流程。
+
+`--head-pov` 使用正式第一人稱記錄致命咬頭、銜住、落下、地面視角及復活，輸出至 `head-pov/after/`；`--before` 只改用 `before/` 輸出目錄，供在修正前版本建立對照，不會還原舊邏輯。畫面先保留於記憶體，回放完成才寫檔。
+
+`--arm-pov` 記錄第一人稱掙扎、咬合前、斷臂、向外撕扯、掉落與恢復視角，輸出至 `arm-pov/`；初始先看怪物臉部（`00_face`），再於 1.5 秒拍攝掙扎中的 `01_struggle`，咬合前拍攝仍看著怪物臉部的 `01b_before_bite`；接觸後的 `04`／`05` 顯示鏡頭轉向咬手，`07` 顯示恢復視角。加 `--arm-observer` 改拍旁觀對照；加 `--grab-prop` 預先持有廢料，檢查持物時只抬空手，結果存於對應的 `held-prop/` 子目錄。畫面先存在記憶體、結束才寫 PNG，避免寫檔延遲跳過接觸瞬間。
+
+`--replay --prone-review` 從低側面記錄缺左腿、缺右腿、無腿、僅左／右臂可用的匍匐待機與連續移動，每個版本保存五個循環時點，另保存第一人稱眼位，輸出至 `prone/`。此模式清除遮擋接觸點的離體件，先緩存畫面再寫 PNG，用於檢查胸腹、前臂與靴子接地。
+
+| 按鍵 | 功能 |
+| --- | --- |
+| 1／2／3／4／5 | 依序切頭、左臂、右臂、左腿、右腿；重複切斷拒絕 |
+| F1 | 第一人稱／外部觀察 |
+| F6 | 80% 掙扎結果的左臂咬擊；左臂已缺失時升級為頭部致死咬擊 |
+| F7 | 頭部致死咬擊 |
+| F8 | 持續向前移動 3 秒，觀察爬行循環；先切腿才會爬行 |
+| R | 重設完整玩家並清除本場斷肢，供下一次檢查 |
+| Esc | 關閉此測試視窗 |
+
+WASD／滑鼠沿用正式控制器；缺腿後不能跳躍、衝刺、攀爬或駕駛。請分別檢查一腿／無腿／單臂爬行、兩端封口、第一人稱缺肢同步、斷肢獨立物理、左臂咬後 50 HP 與第二次咬擊升級，以及死亡後安全完整重生。數字切斷是測試快捷鍵；正式 Raker 咬擊只授權左臂與頭部，其他切口不由普通傷害自動觸發。規則與資產契約見 [角色製作規格](character-modeling.md#player-five-cuts)。
+
 ### 正式死亡布娃娃
 
 ```powershell
@@ -387,7 +422,7 @@ godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playg
 
 v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與雙臂接觸；F9 繼續，F12 重試，F11 換情境。正式遊戲不受這個檢查選項影響。
 
-加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 80% 次數，方便檢查非致命咬擊：100 HP 玩家在咬合時降至 50 HP，立即恢復操作、關閉掙扎 HUD；駕駛仍留在座位並恢復控制。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
+加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 80% 次數，方便檢查左臂咬擊：完整的 100 HP 玩家在咬合時降至 50 HP 並失去左臂，立即恢復操作、關閉掙扎 HUD；鏡頭在接觸前持續看著怪物，接觸後才短暫轉向手臂再淡回，雙腿仍完整的駕駛留在座位並恢復單臂控制。左臂已缺失時升級為頭部致死咬擊。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
 
 `godot --path . --log-file .godot/release-input-visible.log --script res://tests/test_raker_release_input.gd` 使用真實視窗自動驗證地面／車內／駕駛咬後控制。測試經正式輸入事件送入鍵盤與滑鼠，確認身體位移、水平及垂直轉向、油門恢復；也覆蓋抓取中滑鼠捕捉遺失。Headless runner 只驗證位移和駕駛，無法驗證作業系統滑鼠捕捉。未達 80% 或剩餘 HP 不足時仍按原規則死亡，等待重生期間不是抓取狀態。
 

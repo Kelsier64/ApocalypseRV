@@ -144,11 +144,12 @@ func leave() -> void:
 func _safe_return_transform() -> Transform3D:
 	var result := _return_transform
 	var space := (_home as Node3D).get_world_3d().direct_space_state
-	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.4
-	capsule.height = 1.5
+	var collider := _player.get_node("CollisionShape3D") as CollisionShape3D
+	# Crawling and standing use different volumes and offsets. Carry the actual
+	# collision pose into the destination query instead of assuming standing.
+	var local_collision := _player.global_transform.affine_inverse() * collider.global_transform
 	var query := PhysicsShapeQueryParameters3D.new()
-	query.shape = capsule
+	query.shape = collider.shape
 	query.exclude = [_player.get_rid()]
 	for distance in [0.0, 1.5, 3.0, 4.5]:
 		var candidate: Vector3 = _return_transform.origin - _return_transform.basis.z * distance
@@ -158,7 +159,7 @@ func _safe_return_transform() -> Transform3D:
 		if hit.is_empty():
 			continue
 		candidate.y = hit.position.y + 0.05
-		query.transform = Transform3D(Basis.IDENTITY, candidate + Vector3.UP)
+		query.transform = Transform3D(_return_transform.basis, candidate) * local_collision
 		if space.intersect_shape(query, 1).is_empty():
 			result.origin = candidate
 			return result

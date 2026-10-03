@@ -51,7 +51,14 @@ func capture(body: CharacterBody3D) -> bool:
 		# every other tick while walking across a flat moving roof.
 		var shape := body.get("body_collision_shape") as CollisionShape3D
 		if shape != null and shape.shape is CapsuleShape3D:
-			var foot: Vector3 = shape.global_position - body.up_direction * (shape.shape.height * 0.5)
+			var capsule: CapsuleShape3D = shape.shape
+			# Project the transformed capsule segment onto up. Crawling rotates
+			# its long axis horizontally, leaving only the radius below its center.
+			var basis := shape.global_basis
+			var axis_projection := absf(basis.y.dot(body.up_direction))
+			var radius_projection := Vector3(basis.x.dot(body.up_direction), basis.y.dot(body.up_direction), basis.z.dot(body.up_direction)).length()
+			var extent := maxf(0.0, capsule.height * 0.5 - capsule.radius) * axis_projection + capsule.radius * radius_projection
+			var foot: Vector3 = shape.global_position - body.up_direction * extent
 			var query := PhysicsRayQueryParameters3D.create(foot + body.up_direction * 0.04, foot - body.up_direction * 0.12, body.collision_mask, [body.get_rid()])
 			var hit := body.get_world_3d().direct_space_state.intersect_ray(query)
 			if not hit.is_empty() and hit.normal.dot(body.up_direction) >= 0.85:

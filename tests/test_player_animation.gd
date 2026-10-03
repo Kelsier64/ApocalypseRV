@@ -28,7 +28,8 @@ func run() -> void:
 	var driver: Node = visual.get_node("Locomotion")
 	var animation: AnimationPlayer = driver.animation
 	check(driver.current_clip == "idle", "Grounded actor starts idle")
-	check(animation.get_animation_list().size() == 17, "Nine ground, three jump and five climb clips are installed")
+	check(animation.get_animation_library("locomotion").get_animation_list().size() == 17, "Nine ground, three jump and five climb clips are preserved")
+	check(animation.get_animation_library("injury").get_animation_list().size() == 6, "Six authored prone and crawl cycles are installed")
 	for name in animation.get_animation_list():
 		var clip := animation.get_animation(name)
 		var one_shot := String(name).get_file().begins_with("jump_") or String(name).get_file() == "climb_exit"

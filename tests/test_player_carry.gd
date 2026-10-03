@@ -70,6 +70,68 @@ func palm_position(skeleton: Skeleton3D, side: String) -> Vector3:
 	var center := rest.origin.lerp(middle, .72) + palm * .014
 	return skeleton.global_transform * skeleton.get_bone_global_pose(hand) * (rest.affine_inverse() * center)
 
+func check_grab_palm(actor: Node3D, skeleton: Skeleton3D, side: String, note: String) -> void:
+	var target := actor.to_global(Vector3(.28 if side == "R" else -.28, 1.53, -.49))
+	var error := palm_position(skeleton, side).distance_to(target)
+	check(error < .035, "%s %s palm reaches original grab height (%.3fm)" % [note, side, error])
+
+func capture_for_pose(actor: CharacterBody3D, raker: Raker) -> void:
+	actor.grab_control.immunity = 0.0
+	raker.position = actor.position + actor.basis * Vector3(0, 0, -1)
+	raker.grab.victim = actor
+	raker.grab._change(raker.grab.Phase.HOLD)
+	check(actor.begin_grab(raker, 10), "Carry pose fixture enters actual player grab")
+	await steps(24)
+
+func release_pose(actor: CharacterBody3D, raker: Raker) -> void:
+	raker.grab.cancel()
+	actor.set_physics_process(false)
+	actor.camera.rotation = Vector3.ZERO
+	await steps(20)
+
+func check_grab_hand_selection(arena: Node3D, actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node) -> void:
+	# Freeze actor motion and the Raker's grab clock; keep real pose overlays running.
+	actor.set_physics_process(false)
+	actor.velocity = Vector3.ZERO
+	var raker := preload("res://enemies/raker.tscn").instantiate()
+	arena.add_child(raker)
+	raker.set_physics_process(false)
+	await capture_for_pose(actor, raker)
+	check_grab_palm(actor, skeleton, "L", "Empty hands")
+	check_grab_palm(actor, skeleton, "R", "Empty hands")
+	await release_pose(actor, raker)
+	for key in ["scrap", "flashlight", "oil_barrel"]:
+		actor.inventory.items.clear()
+		actor.inventory.active_slot = 0
+		var large: bool = key == "oil_barrel"
+		var state := {"flashlight": {"charge": 100.0, "on": false}} if key == "flashlight" else {}
+		actor.add_item(key, large, "res://props/" + key + ".tscn", state)
+		await steps(20)
+		await capture_for_pose(actor, raker)
+		check(actor.held_item_node.is_visible_in_tree(), key + " remains visible during grab")
+		check(carry.right_weight == 1.0 and carry.left_weight == 0.0, key + " keeps holding arm and frees only left arm")
+		check(palm_position(skeleton, "R").distance_to(carry.grip_right) < .035, key + " holding palm keeps contacting prop during grab")
+		check_grab_palm(actor, skeleton, "L", key + " free hand")
+		if key == "flashlight":
+			check(not actor.grab_control.keep_flashlight and not actor.held_item_node.get_node("Beam").is_visible_in_tree(), "Unlit flashlight still occupies holding hand without activating beam")
+		await release_pose(actor, raker)
+		if large:
+			check(carry.right_weight == 1.0 and carry.left_weight == 1.0, "Release restores ordinary two-arm large carry")
+			check(palm_position(skeleton, "L").distance_to(carry.grip_left) < .035, "Released left palm returns to large prop grip")
+	actor.inventory.items.clear()
+	actor.inventory.active_slot = 0
+	actor.body_state.sever(&"right_arm")
+	actor._apply_body_capabilities()
+	actor.add_item("scrap", false, "res://props/scrap.tscn")
+	await steps(20)
+	await capture_for_pose(actor, raker)
+	check(actor.held_item_node.is_visible_in_tree() and carry.active_hand == "L", "Missing right arm keeps prop in surviving left hand")
+	check(carry.left_weight == 1.0 and carry.right_weight == 0.0, "Missing right arm has no free hand to raise")
+	check(palm_position(skeleton, "L").distance_to(carry.grip_left) < .035, "Surviving holding hand keeps contacting prop during grab")
+	check(not carry.base_rotations.has(skeleton.find_bone("upper_arm_R")), "Grab never poses nonexistent right arm")
+	await release_pose(actor, raker)
+	raker.queue_free()
+
 func run() -> void:
 	var arena := Node3D.new()
 	root.add_child(arena)
@@ -163,8 +225,9 @@ func run() -> void:
 	actor.consume_active_item()
 	await steps(30)
 	check(carry.right_weight == 0 and carry.left_weight == 0 and carry.base_rotations.is_empty(), "Empty hands restore clean locomotion")
+	await check_grab_hand_selection(arena, actor, skeleton, carry)
 	arena.queue_free()
 	await steps(2)
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: one/two hand carry, grip reach, locomotion, UI, climbing, death and empty hands")
+	if failures.is_empty(): print("PASS: one/two hand carry, grip reach, locomotion, UI, climbing, death, empty hands and grabbed hand selection")
 	quit(0 if failures.is_empty() else 1)

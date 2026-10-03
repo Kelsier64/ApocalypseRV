@@ -154,6 +154,7 @@ func consume_rv_power(amount: float) -> bool:
 # Called when the player successfully holds F for 2 seconds
 func start_placement(player: Node3D):
 	if is_being_placed or is_destroyed: return
+	if not player.can_use_hands(2): return
 	# The player is the mode authority: refuse when it is seated/in UI/etc.
 	if not player.enter_equipment_placement(self):
 		return
