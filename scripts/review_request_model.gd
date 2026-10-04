@@ -31,37 +31,43 @@ func geometry_stats(node: Node, result: Dictionary) -> void:
 
 func run() -> void:
 	var args := OS.get_cmdline_user_args()
-	if args.size() == 1 and args[0] == "--validate-imports":
-		validate_imports()
+	var variant := args[1] if args.size() == 2 and args[0].begins_with("--") else ""
+	if args.size() >= 1 and args[0] == "--validate-imports":
+		validate_imports(variant)
 		return
-	if args.size() == 1 and args[0] == "--all":
+	if args.size() >= 1 and args[0] == "--all":
 		var folders := DirAccess.get_directories_at("res://assets/models")
 		for folder in folders:
 			for filename in DirAccess.get_files_at("res://assets/models/" + folder):
 				if not filename.ends_with("_candidate.glb"):
+					continue
+				if not variant.is_empty() and not filename.ends_with("_" + variant + "_candidate.glb"):
 					continue
 				var input := "res://assets/models/" + folder + "/" + filename
 				var output := "res://art_source/" + folder + "/review_" + filename.trim_suffix("_candidate.glb")
 				var old_report_path := output.path_join("godot_review.json")
 				if FileAccess.file_exists(old_report_path):
 					var old_report: Variant = JSON.parse_string(FileAccess.get_file_as_string(old_report_path))
-					if old_report is Dictionary and old_report.get("sha256", "") == FileAccess.get_sha256(input):
+					if old_report is Dictionary and old_report.get("sha256", "") == FileAccess.get_sha256(input) and old_report.get("level_front_side_back", false):
 						continue
-				await render_model(input, output)
+				if not await render_model(input, output):
+					quit(1)
+					return
 		quit()
 		return
 	if args.size() != 2:
 		push_error("Expected GLB path and output directory")
 		quit(1)
 		return
-	await render_model(args[0], args[1])
-	quit()
+	quit(0 if await render_model(args[0], args[1]) else 1)
 
-func validate_imports() -> void:
+func validate_imports(variant: String = "") -> void:
 	var count := 0
 	for folder in DirAccess.get_directories_at("res://assets/models"):
 		for filename in DirAccess.get_files_at("res://assets/models/" + folder):
 			if not filename.ends_with("_candidate.glb"):
+				continue
+			if not variant.is_empty() and not filename.ends_with("_" + variant + "_candidate.glb"):
 				continue
 			var input := "res://assets/models/" + folder + "/" + filename
 			var scene: PackedScene = load(input)
@@ -72,6 +78,11 @@ func validate_imports() -> void:
 			var instance := scene.instantiate()
 			var bounds := bounds_of(instance)
 			var preparation_path := "res://art_source/" + folder + "/" + filename.trim_suffix("_candidate.glb") + "_preparation.json"
+			var source_variant := variant
+			if source_variant.is_empty() and filename.ends_with("_threeview_candidate.glb"):
+				source_variant = "threeview"
+			if not source_variant.is_empty():
+				preparation_path = "res://art_source/" + folder + "/" + source_variant + "/" + filename.trim_suffix("_" + source_variant + "_candidate.glb") + "_preparation.json"
 			var preparation: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(preparation_path))
 			var expected: Array = preparation.candidate_aabb_size
 			var expected_min: Array = preparation.candidate_aabb_min
@@ -85,7 +96,7 @@ func validate_imports() -> void:
 	print("IMPORTED_CANDIDATES_OK count=" + str(count))
 	quit(0 if count > 0 else 1)
 
-func render_model(input_path: String, output_path: String) -> void:
+func render_model(input_path: String, output_path: String) -> bool:
 	var output_dir := ProjectSettings.globalize_path(output_path)
 	DirAccess.make_dir_recursive_absolute(output_dir)
 	root.size = Vector2i(720, 720)
@@ -94,15 +105,13 @@ func render_model(input_path: String, output_path: String) -> void:
 	var error := document.append_from_file(ProjectSettings.globalize_path(input_path), state)
 	if error != OK:
 		push_error("GLB import failed: %s" % error)
-		quit(1)
-		return
+		return false
 	var model: Node3D = document.generate_scene(state)
 	if model == null:
 		push_error("GLB scene generation failed")
-		quit(1)
-		return
+		return false
 	var bounds := bounds_of(model)
-	var stats := {"input": input_path, "sha256": FileAccess.get_sha256(input_path), "mesh_instances": 0, "vertices": 0, "triangles": 0,
+	var stats := {"input": input_path, "sha256": FileAccess.get_sha256(input_path), "mesh_instances": 0, "vertices": 0, "triangles": 0, "level_front_side_back": true,
 		"aabb_min": [bounds.position.x, bounds.position.y, bounds.position.z],
 		"aabb_size": [bounds.size.x, bounds.size.y, bounds.size.z], "godot_version": Engine.get_version_info().string}
 	geometry_stats(model, stats)
@@ -136,8 +145,8 @@ func render_model(input_path: String, output_path: String) -> void:
 	camera.far = extent * 20.0
 	camera.current = true
 	world.add_child(camera)
-	var views := {"front": Vector3(0, 0.12, 1), "oblique": Vector3(1, 0.65, 1),
-		"back": Vector3(0, 0.12, -1), "side": Vector3(1, 0.12, 0),
+	var views := {"front": Vector3(0, 0, 1), "oblique": Vector3(1, 0.65, 1),
+		"back": Vector3(0, 0, -1), "side": Vector3(1, 0, 0),
 		"top": Vector3(0, 1, 0.01), "bottom": Vector3(0, -1, 0.01)}
 	for view in views:
 		camera.position = views[view].normalized() * extent * 3.0
@@ -148,10 +157,10 @@ func render_model(input_path: String, output_path: String) -> void:
 		var save_error := root.get_texture().get_image().save_png(output_dir.path_join(view + ".png"))
 		if save_error != OK:
 			push_error("Render save failed: %s" % save_error)
-			quit(1)
-			return
+			return false
 	var report := FileAccess.open(output_dir.path_join("godot_review.json"), FileAccess.WRITE)
 	report.store_string(JSON.stringify(stats, "\t") + "\n")
 	print(JSON.stringify(stats))
 	world.queue_free()
 	await process_frame
+	return true

@@ -1,0 +1,19 @@
+{
+	"aabb_min": [
+		-0.32958984375,
+		-0.45107638835907,
+		-0.328240066766739
+	],
+	"aabb_size": [
+		0.6591796875,
+		0.90215277671814,
+		0.656480133533478
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/oil_barrel/oil_barrel_threeview_candidate.glb",
+	"level_front_side_back": true,
+	"mesh_instances": 1,
+	"sha256": "20edd82467ef2f243db9c3f68d70b4f575b0863c3b2df93e8f3dd82ebe928990",
+	"triangles": 9966,
+	"vertices": 7283
+}

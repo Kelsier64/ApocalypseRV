@@ -1,0 +1,67 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/oil-barrel/oil-barrel.md",
+  "reference": "docs/modeling/requests/oil-barrel/oil-barrel-threeview-reference.png",
+  "reference_sha256": "45bc2917789b40b74ff04215226f67ee48e433aa0ebc1d3435785f3e06143959",
+  "asset_id": "oil_barrel",
+  "preset": "threeview1024",
+  "variant": "threeview",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-oil_barrel-threeview1024-seed42-45bc2917789b40b7",
+  "job_id": "f57b5d4c-4f8b-47e3-955a-d42249e0f726",
+  "submitted_result": {
+    "job_id": "f57b5d4c-4f8b-47e3-955a-d42249e0f726",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "f57b5d4c-4f8b-47e3-955a-d42249e0f726",
+    "asset_id": "oil_barrel",
+    "preset": "threeview1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791127088.3359063,
+    "idempotency_key": "apocalypse-rv-oil_barrel-threeview1024-seed42-45bc2917789b40b7",
+    "request_hash": "c14729f4207d9606838d9f937aadb1d5c480faee4b2d4648e8595efbbfd3e37c",
+    "num_views": 3,
+    "reference_layout": [
+      "front",
+      "left",
+      "back"
+    ],
+    "fov": 20.0,
+    "started_at": 1791127088.4224792,
+    "updated_at": 1791127162.6468382,
+    "prompt_id": "d4616b40-e5df-4cb7-81f2-455195e6db07",
+    "client_id": "e870d243-ff3f-453a-b429-3b9887149ddc",
+    "finished_at": 1791127162.6468382,
+    "elapsed_seconds": 74.22435903549194,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3893648,
+      "sha256": "b8f8c2dd6275ccf987032eaaa2d15233b2feaae235f4a6dfe933ecfd41f67cf8",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "f57b5d4c-4f8b-47e3-955a-d42249e0f726",
+    "download_url": "/jobs/f57b5d4c-4f8b-47e3-955a-d42249e0f726/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3893648,
+      "sha256": "b8f8c2dd6275ccf987032eaaa2d15233b2feaae235f4a6dfe933ecfd41f67cf8",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

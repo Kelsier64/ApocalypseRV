@@ -62,6 +62,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 驗收紀錄
 
+- [2026-10-04 Pixal3D 三視圖五件重測](validation/2026-10-04-pixal3d-threeview.md) — 保留來源軸向與等比縮放；5 件匯入成功，盆體與事故車幾何不合格，含對照及 API 前處理限制。
+
 - [2026-10-04 Pixal3D API 模型試作](validation/2026-10-04-pixal3d-requests.md) — 16 份需求、18 個候選 GLB，含 Godot 匯入／尺寸檢查、預覽及未完成的遊戲接口。
 
 - [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。

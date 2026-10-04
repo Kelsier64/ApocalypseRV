@@ -14,7 +14,7 @@
 - job `0a6a5149-ea17-4102-a634-e1366bd674cd`；原始 SHA256 `b9ea443d34d8274e5ef4aee490d43faa4650545e383f315861e364957f618bc3`。
 
 ```powershell
-python scripts/prepare_request_model.py bunker_supply_chest_body --folder bunker_supply_chest --size 0.88 0.62 0.68000001 --origin bottom
+python scripts/prepare_request_model.py bunker_supply_chest_body --folder bunker_supply_chest --size 0.88 0.62 0.68000001 --origin bottom --alignment estimated --fit stretch
 ```
 
 ## bunker_supply_chest_lid
@@ -25,12 +25,12 @@ python scripts/prepare_request_model.py bunker_supply_chest_body --folder bunker
 - job `15f1c946-80b1-411d-b83a-cb2dd47ad929`；原始 SHA256 `a8b3b639563a2f5b5a34e52cf619530508bb8e5d3014e7586b751f2667b94013`。
 
 ```powershell
-python scripts/prepare_request_model.py bunker_supply_chest_lid --folder bunker_supply_chest --size 0.92000002 0.11 0.72000003 --origin center
+python scripts/prepare_request_model.py bunker_supply_chest_lid --folder bunker_supply_chest --size 0.92000002 0.11 0.72000003 --origin center --alignment estimated --fit stretch
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py bunker-supply-chest --part body --image bunker-supply-chest-body-image-to-3d-reference.png --idempotency-key apocalypse-rv-bunker_supply_chest_body-standard1024-seed42-32da312ce7edf76f

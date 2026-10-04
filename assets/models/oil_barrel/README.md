@@ -7,3 +7,7 @@
 原始輸出傾斜，已整理為 Y 向上的中心原點候選；桶箍、封閉蓋及鏽蝕可讀。未驗收拾取與回收。
 
 - [oil_barrel_candidate.glb](oil_barrel_candidate.glb)：0.65917969 × 1 × 0.65917969 m，9,934 三角形；[六方向預覽](../../../art_source/oil_barrel/review_oil_barrel/views.png)。
+
+## 三視圖重測（5 件試作範圍）
+
+[新候選、來源、等比縮放及預覽](../../../art_source/oil_barrel/threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。

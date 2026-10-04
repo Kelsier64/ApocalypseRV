@@ -1,0 +1,67 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/wreck-car/wreck-car.md",
+  "reference": "docs/modeling/requests/wreck-car/wreck-car-threeview-reference.png",
+  "reference_sha256": "d2d5cd8912def5b1489c1ad4f0315d53837e280a8e629521567d885a76f85a50",
+  "asset_id": "wreck_car",
+  "preset": "threeview1024",
+  "variant": "threeview",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-wreck_car-threeview1024-seed42-d2d5cd8912def5b1",
+  "job_id": "331960ec-ee2e-40ba-a8cc-43b5afe0bd67",
+  "submitted_result": {
+    "job_id": "331960ec-ee2e-40ba-a8cc-43b5afe0bd67",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "331960ec-ee2e-40ba-a8cc-43b5afe0bd67",
+    "asset_id": "wreck_car",
+    "preset": "threeview1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791127954.7596643,
+    "idempotency_key": "apocalypse-rv-wreck_car-threeview1024-seed42-d2d5cd8912def5b1",
+    "request_hash": "3e1d04a76529f368b389bcd6e5ea7316ba5eadd97b9f7180991850cca1cef969",
+    "num_views": 3,
+    "reference_layout": [
+      "front",
+      "left",
+      "back"
+    ],
+    "fov": 20.0,
+    "started_at": 1791128158.2140577,
+    "updated_at": 1791128246.5723374,
+    "prompt_id": "9f020282-15a4-46ac-8dbd-509c475a0a7c",
+    "client_id": "9175e8d5-6df6-4980-b6d4-82b50a931f0d",
+    "finished_at": 1791128246.5723374,
+    "elapsed_seconds": 88.35827970504761,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 2728188,
+      "sha256": "979220312192ceb3f6d125333c0a2082dcae67c081e39554f2311f25fd8d0e29",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "331960ec-ee2e-40ba-a8cc-43b5afe0bd67",
+    "download_url": "/jobs/331960ec-ee2e-40ba-a8cc-43b5afe0bd67/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 2728188,
+      "sha256": "979220312192ceb3f6d125333c0a2082dcae67c081e39554f2311f25fd8d0e29",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

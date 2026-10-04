@@ -1,4 +1,6 @@
-# Pixal3D API — modeling requests 試作
+# Pixal3D API — modeling requests 試作（歷史單視圖試作）
+
+本報告記錄 2026-10-04 的歷史單視圖試作。當時的匯入與包圍盒尺寸／原點檢查只證明 GLB 可匯入且尺寸符合紀錄，不能證明幾何筆直、方向正確或美術品質；後續三視圖試作及其觀察請見[三視圖報告](2026-10-04-pixal3d-threeview.md)。
 
 2026-10-04：先抓取遠端並將當前 RV 分支快轉至 `origin/main` 的 `25c69a3`，再執行本輪。原本兩個未追蹤的 settings PNG `.import` 原樣備份於 `.godot/sync-backup-20261004-pixal3d/`，SHA256 與同步後的遠端版本一致。
 
@@ -14,7 +16,7 @@
 
 每份 request 直接更新完成情況與來源連結，沒有另建進度 queue 或模型狀態 manifest。各 `art_source/<name>/` 保留原始 GLB、generation JSON、SHA256、候選變換資料與六方向渲染；`.gdignore` 避免將來源副本重複匯入。`assets/models/<name>/*_candidate.glb` 是尺寸／原點整理後的候選，保留 Godot 產生的貼圖與 `.import` 設定。
 
-- [API 提交／收取腳本](../../scripts/generate_request_model.py)：multipart POST、idempotency key、保存各資產 metadata、收取並核對 SHA256；使用 Python 標準函式庫。現有 job 重送會復用，失敗後若要新版本須先保存舊 metadata。
+- [API 提交／收取腳本](../../scripts/generate_request_model.py)：multipart POST、idempotency key、保存各資產 metadata、收取並核對 SHA256；單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow。現有 job 重送會復用，失敗後若要新版本須先保存舊 metadata。
 - [候選整理腳本](../../scripts/prepare_request_model.py)：使用 NumPy，僅接受單節點、單靜態 triangle primitive；估計軸向、依 request 非等比縮放並烘入頂點，同步轉換 normal／tangent。保留 UV 和貼圖，不做拓撲修補、rig 或動畫。
 - [Godot 檢查腳本](../../scripts/review_request_model.gd)：六方向渲染及讀取正式匯入 PackedScene，核對包圍盒尺寸／原點。各資產 README 有實際參數與參考圖。
 

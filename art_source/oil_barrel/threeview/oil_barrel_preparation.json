@@ -1,0 +1,76 @@
+{
+  "raw": "art_source/oil_barrel/threeview/oil_barrel_raw.glb",
+  "candidate": "assets/models/oil_barrel/oil_barrel_threeview_candidate.glb",
+  "raw_sha256": "b8f8c2dd6275ccf987032eaaa2d15233b2feaae235f4a6dfe933ecfd41f67cf8",
+  "candidate_sha256": "20edd82467ef2f243db9c3f68d70b4f575b0863c3b2df93e8f3dd82ebe928990",
+  "triangles": 9966,
+  "vertices": 7283,
+  "raw_aabb_size": [
+    0.6739691495895386,
+    0.9223936200141907,
+    0.6712090075016022
+  ],
+  "aligned_extent": [
+    0.6739691495895386,
+    0.9223936200141907,
+    0.6712090075016022
+  ],
+  "rotation_rows": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "scale": [
+    0.9780561623650791,
+    0.9780561623650791,
+    0.9780561623650791
+  ],
+  "pivot": [
+    0.0002787747721928191,
+    0.010912761463504284,
+    -0.0009249498597458106
+  ],
+  "candidate_aabb_min": [
+    -0.32958984375,
+    -0.4510763883590698,
+    -0.3282400667667389
+  ],
+  "candidate_aabb_size": [
+    0.6591796875,
+    0.9021527767181396,
+    0.6564801335334778
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "offset": [
+    0,
+    0,
+    0
+  ],
+  "variant": "threeview",
+  "alignment": "source",
+  "fit": "uniform",
+  "requested_aabb_size": [
+    0.65917968,
+    1.0,
+    0.65917968
+  ],
+  "size_fraction": [
+    1.0000000113777778,
+    0.9021527767181396,
+    0.9959046879804877
+  ],
+  "orientation_method": "source +Y up / +Z front"
+}

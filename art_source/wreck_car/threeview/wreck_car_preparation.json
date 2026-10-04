@@ -1,0 +1,76 @@
+{
+  "raw": "art_source/wreck_car/threeview/wreck_car_raw.glb",
+  "candidate": "assets/models/wreck_car/wreck_car_threeview_candidate.glb",
+  "raw_sha256": "979220312192ceb3f6d125333c0a2082dcae67c081e39554f2311f25fd8d0e29",
+  "candidate_sha256": "70b187dde07858d257c061e89cba43fdb7faddbf83f03016582d20b93c20a4da",
+  "triangles": 9986,
+  "vertices": 7852,
+  "raw_aabb_size": [
+    0.9967874884605408,
+    0.5548799633979797,
+    0.90691938996315
+  ],
+  "aligned_extent": [
+    0.9967874884605408,
+    0.5548799633979797,
+    0.90691938996315
+  ],
+  "rotation_rows": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "scale": [
+    2.4478637906745666,
+    2.4478637906745666,
+    2.4478637906745666
+  ],
+  "pivot": [
+    0.011340757178643801,
+    -0.3955747731655421,
+    0.019410090186045115
+  ],
+  "candidate_aabb_min": [
+    -1.2200000286102295,
+    0.0,
+    -1.0850075483322144
+  ],
+  "candidate_aabb_size": [
+    2.440000057220459,
+    1.358270525932312,
+    2.220015048980713
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "offset": [
+    0.0,
+    0.0,
+    0.025
+  ],
+  "variant": "threeview",
+  "alignment": "source",
+  "fit": "uniform",
+  "requested_aabb_size": [
+    2.44,
+    2.0,
+    4.73
+  ],
+  "size_fraction": [
+    1.0000000234510078,
+    0.679135262966156,
+    0.4693477904821803
+  ],
+  "orientation_method": "source +Y up / +Z front"
+}

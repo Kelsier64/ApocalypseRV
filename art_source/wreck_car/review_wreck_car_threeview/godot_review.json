@@ -1,0 +1,19 @@
+{
+	"aabb_min": [
+		-1.22000002861023,
+		0.0,
+		-1.08500754833221
+	],
+	"aabb_size": [
+		2.44000005722046,
+		1.35827052593231,
+		2.22001504898071
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/wreck_car/wreck_car_threeview_candidate.glb",
+	"level_front_side_back": true,
+	"mesh_instances": 1,
+	"sha256": "70b187dde07858d257c061e89cba43fdb7faddbf83f03016582d20b93c20a4da",
+	"triangles": 9986,
+	"vertices": 7852
+}

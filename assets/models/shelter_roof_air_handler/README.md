@@ -7,3 +7,7 @@
 正面百葉、兩個排風罩及側面蓋可讀；保持靜態裝飾用途，屋頂碰撞與導航尚待接入檢查。
 
 - [shelter_roof_air_handler_candidate.glb](shelter_roof_air_handler_candidate.glb)：6 × 2 × 4 m，9,978 三角形；[六方向預覽](../../../art_source/shelter_roof_air_handler/review_shelter_roof_air_handler/views.png)。
+
+## 三視圖重測（5 件試作範圍）
+
+[新候選、來源、等比縮放及預覽](../../../art_source/shelter_roof_air_handler/threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。

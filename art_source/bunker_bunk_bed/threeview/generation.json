@@ -1,0 +1,67 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed.md",
+  "reference": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed-threeview-reference.png",
+  "reference_sha256": "525087549a990fae068936d9c287596e60c1f3a129f42e0275e48db740388be7",
+  "asset_id": "bunker_bunk_bed",
+  "preset": "threeview1024",
+  "variant": "threeview",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-bunker_bunk_bed-threeview1024-seed42-525087549a990fae",
+  "job_id": "56651a5d-b8c6-44ce-8eec-6e4c0848fdb7",
+  "submitted_result": {
+    "job_id": "56651a5d-b8c6-44ce-8eec-6e4c0848fdb7",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "56651a5d-b8c6-44ce-8eec-6e4c0848fdb7",
+    "asset_id": "bunker_bunk_bed",
+    "preset": "threeview1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791127922.729906,
+    "idempotency_key": "apocalypse-rv-bunker_bunk_bed-threeview1024-seed42-525087549a990fae",
+    "request_hash": "502a767512fea73c9c71b8f04985e4c2731d4066674b344667f61e68d6f4df95",
+    "num_views": 3,
+    "reference_layout": [
+      "front",
+      "left",
+      "back"
+    ],
+    "fov": 20.0,
+    "started_at": 1791127922.893552,
+    "updated_at": 1791128019.477656,
+    "prompt_id": "999de703-1354-43d9-b12c-90529fa7583b",
+    "client_id": "47eac576-03a3-42f6-86d3-7f57f8bbd7ce",
+    "finished_at": 1791128019.477656,
+    "elapsed_seconds": 96.58410382270813,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3542908,
+      "sha256": "1cc115479d0254729d07496534c0a4000ffe38e602ac1d5cbbaae05cde626d53",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "56651a5d-b8c6-44ce-8eec-6e4c0848fdb7",
+    "download_url": "/jobs/56651a5d-b8c6-44ce-8eec-6e4c0848fdb7/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3542908,
+      "sha256": "1cc115479d0254729d07496534c0a4000ffe38e602ac1d5cbbaae05cde626d53",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

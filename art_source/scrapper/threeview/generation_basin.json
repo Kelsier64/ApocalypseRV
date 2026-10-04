@@ -1,0 +1,67 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/scrapper/scrapper.md",
+  "reference": "docs/modeling/requests/scrapper/scrapper-basin-threeview-reference.png",
+  "reference_sha256": "e7bdcdfb235ab208629a81d333f57a32c999b4a6a2703297906935d84e76327a",
+  "asset_id": "scrapper_basin",
+  "preset": "threeview1024",
+  "variant": "threeview",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-scrapper_basin-threeview1024-seed42-e7bdcdfb235ab208",
+  "job_id": "f60b09af-876c-4375-a441-544d7eeaf548",
+  "submitted_result": {
+    "job_id": "f60b09af-876c-4375-a441-544d7eeaf548",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "f60b09af-876c-4375-a441-544d7eeaf548",
+    "asset_id": "scrapper_basin",
+    "preset": "threeview1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791127923.0935783,
+    "idempotency_key": "apocalypse-rv-scrapper_basin-threeview1024-seed42-e7bdcdfb235ab208",
+    "request_hash": "4aa8d4610e0318e497b158cff946a9eec1c76aa6976ccd6e09ebd015e897a062",
+    "num_views": 3,
+    "reference_layout": [
+      "front",
+      "left",
+      "back"
+    ],
+    "fov": 20.0,
+    "started_at": 1791128019.480787,
+    "updated_at": 1791128081.9241765,
+    "prompt_id": "8ccf7a94-4891-4249-870a-3a34182b329d",
+    "client_id": "121c6fc1-9967-40d6-be62-d116edfeb9b9",
+    "finished_at": 1791128081.9241765,
+    "elapsed_seconds": 62.44338941574097,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 2144096,
+      "sha256": "b7482fb6ab20616f49052d11b71ec14a15414856671c87429055d4f6ddd7392f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "f60b09af-876c-4375-a441-544d7eeaf548",
+    "download_url": "/jobs/f60b09af-876c-4375-a441-544d7eeaf548/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 2144096,
+      "sha256": "b7482fb6ab20616f49052d11b71ec14a15414856671c87429055d4f6ddd7392f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

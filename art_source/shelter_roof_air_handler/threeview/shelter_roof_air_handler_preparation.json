@@ -1,0 +1,76 @@
+{
+  "raw": "art_source/shelter_roof_air_handler/threeview/shelter_roof_air_handler_raw.glb",
+  "candidate": "assets/models/shelter_roof_air_handler/shelter_roof_air_handler_threeview_candidate.glb",
+  "raw_sha256": "36394ebc85be71d569d41f86a96ee6753a09e41f2e05563b3dea046bc78b2d5b",
+  "candidate_sha256": "e0c28f9829afa97a94b1bb5b10273d6d21a4eda05c47f9f41a471fff4f05366d",
+  "triangles": 9996,
+  "vertices": 7059,
+  "raw_aabb_size": [
+    0.9306114017963409,
+    0.47177091240882874,
+    0.622694730758667
+  ],
+  "aligned_extent": [
+    0.9306114017963409,
+    0.47177091240882874,
+    0.622694730758667
+  ],
+  "rotation_rows": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "scale": [
+    4.239345723516828,
+    4.239345723516828,
+    4.239345723516828
+  ],
+  "pivot": [
+    0.00233853368966086,
+    0.0037109906156062578,
+    -0.013639919886317187
+  ],
+  "candidate_aabb_min": [
+    -1.972591757774353,
+    -1.0,
+    -1.3199090957641602
+  ],
+  "candidate_aabb_size": [
+    3.945183515548706,
+    2.0,
+    2.6398181915283203
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "offset": [
+    0,
+    0,
+    0
+  ],
+  "variant": "threeview",
+  "alignment": "source",
+  "fit": "uniform",
+  "requested_aabb_size": [
+    6.0,
+    2.0,
+    4.0
+  ],
+  "size_fraction": [
+    0.6575305859247843,
+    1.0,
+    0.6599545478820801
+  ],
+  "orientation_method": "source +Y up / +Z front"
+}
