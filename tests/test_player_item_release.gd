@@ -39,7 +39,7 @@ func run() -> void:
 	await steps(2)
 	for key in ["flashlight", "scrap", "battery", "oil_barrel", "engine_standard", "engine_upgraded", "engine_repair_kit", "wheel"]:
 		for release_pitch in [-.8, 0.0, .8]:
-			var scene_path := "res://props/" + key + ".tscn"
+			var scene_path: String = "res://props/" + key + ".tscn"
 			var source: Prop = load(scene_path).instantiate()
 			source.freeze = true
 			source.position = Vector3(100, 3, 100)
