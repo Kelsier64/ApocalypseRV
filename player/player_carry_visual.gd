@@ -101,9 +101,13 @@ func _update_item(delta: float, large: bool) -> void:
 	var speed := Vector2(actor.velocity.x, actor.velocity.z).length() if not actor.in_ui_mode else 0.0
 	phase += delta * (8.0 if speed > .1 else 2.0)
 	var sway := Vector3(sin(phase * .5) * .006, sin(phase) * .006, 0) * minf(speed, 1.0)
-	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else 1.60, -.55 if large else -.48)
+	# One-handed props sit at chest height, below the shoulder even while
+	# looking up. Full-size meshes must not lift the wrists toward the face.
+	var shoulder := skeleton.find_bone("upper_arm_" + active_hand)
+	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
+	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else shoulder_height - .19, -.55 if large else -.48)
 	if item.has_method("held_support_center"): center = item.held_support_center()
-	if grip_kind == "round": center = Vector3(.10, 1.69, -.46)
+	if grip_kind == "round": center = Vector3(.10, shoulder_height - .21, -.46)
 	if active_hand == "L" and not large: center.x = -center.x
 	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
 	center = Vector3(0, 1.45, 0) + carry_basis * (center - Vector3(0, 1.45, 0))
@@ -155,9 +159,11 @@ func _pose_flashlight_fingers(weight: float) -> void:
 	var cylinder := body.mesh as CylinderMesh
 	var barrel_radius := maxf(cylinder.top_radius, cylinder.bottom_radius)
 	var radius := barrel_radius + .012
-	# Curl the distal segment around the tube, with its chord clearing the
-	# barrel by 1 mm rather than flattening the little finger at a fixed arc.
-	var distal_arc := 2.0 * acos(clampf((barrel_radius + .001) / radius, 0.0, 1.0))
+	var hand := skeleton.find_bone("hand_" + active_hand)
+	var hand_delta := skeleton.get_bone_global_pose(hand).basis * skeleton.get_bone_global_rest(hand).basis.inverse()
+	var frame: Basis = skeleton.global_basis * hand_delta * hand_frames[active_hand]
+	var palm := frame.y.cross(frame.x) * (1.0 if active_hand == "L" else -1.0)
+	var natural_curl := frame.y * cos(.6) + palm * sin(.6)
 	for finger in ["index", "middle", "ring", "pinky"]:
 		var first := skeleton.find_bone(finger + "_01_" + active_hand)
 		var second := skeleton.find_bone(finger + "_02_" + active_hand)
@@ -167,11 +173,42 @@ func _pose_flashlight_fingers(weight: float) -> void:
 		var radial := Vector2(start.x, start.z)
 		var distance := maxf(radial.length(), .001)
 		var along := (distance * distance + radius * radius - length * length) / (2.0 * distance)
-		var angle := radial.angle() + acos(clampf(along / radius, -1.0, 1.0))
-		var contact := Vector3(cos(angle) * radius, start.y, sin(angle) * radius)
-		var tip := Vector3(cos(angle + distal_arc) * radius, start.y, sin(angle + distal_arc) * radius)
+		var offset := acos(clampf(along / radius, -1.0, 1.0))
+		# A lowered forearm makes the finger plane oblique to the tube. Allow
+		# contact to slide along its axis instead of forcing both joints to the
+		# same tube height, which can fold the proximal joint through the palm.
+		var contact := Vector3(cos(radial.angle() + offset) * radius, start.y, sin(radial.angle() + offset) * radius)
+		var best_alignment := -INF
+		for sample in 17:
+			var angle := radial.angle() + lerpf(-offset, offset, sample / 16.0)
+			var candidate := Vector3(cos(angle) * radius, start.y, sin(angle) * radius)
+			var axial := sqrt(maxf(0.0, length * length - start.distance_squared_to(candidate)))
+			for sign_y in [-1.0, 1.0]:
+				candidate.y = start.y + axial * sign_y
+				var alignment := (item.global_basis * (candidate - start)).normalized().dot(natural_curl)
+				if alignment > best_alignment:
+					best_alignment = alignment
+					contact = candidate
 		_finger_world_direction(first, item.global_basis * (contact - start), weight)
-		_finger_world_direction(second, item.global_basis * (tip - contact), weight)
+		# The tube tangent can reverse the distal curl when the arm is lowered.
+		# Continue bending in the natural hand plane from the solved knuckle.
+		var proximal := skeleton.global_basis * skeleton.get_bone_global_pose(first).basis.y.normalized()
+		var flex := atan2(proximal.dot(palm), proximal.dot(frame.y)) + .6
+		var direction := item.global_basis.inverse() * (frame.y * cos(flex) + palm * sin(flex))
+		var second_start := item.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(second).origin)
+		var radial_axis := Vector2(second_start.x, second_start.z).normalized()
+		var transverse := Vector2(direction.x, direction.z)
+		var clearance := maxf(Vector2(second_start.x, second_start.z).length(), .001)
+		var inward_limit := sqrt(maxf(0.0, 1.0 - pow((barrel_radius + .001) / clearance, 2.0)))
+		if transverse.length_squared() > .000001 and transverse.normalized().dot(radial_axis) < -inward_limit:
+			# Keep the entire distal direction outside the solid tube. Preserve
+			# its axial component and choose the nearest safe barrel tangent.
+			var tangent := Vector2(-radial_axis.y, radial_axis.x)
+			var tangent_sign := 1.0 if transverse.dot(tangent) >= 0.0 else -1.0
+			transverse = (-radial_axis * inward_limit + tangent * tangent_sign * sqrt(1.0 - inward_limit * inward_limit)) * transverse.length()
+			direction.x = transverse.x
+			direction.z = transverse.y
+		_finger_world_direction(second, item.global_basis * direction, weight)
 	var thumb_axis := item.global_basis.orthonormalized()
 	_finger_world_direction(skeleton.find_bone("thumb_01_" + active_hand), thumb_axis.y - thumb_axis.x * .25 + thumb_axis.z * .15, weight)
 	_finger_world_direction(skeleton.find_bone("thumb_02_" + active_hand), thumb_axis.y - thumb_axis.x * .15 + thumb_axis.z * .1, weight)
