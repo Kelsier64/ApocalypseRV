@@ -243,7 +243,8 @@ func _equip_active_slot():
 			if held_item_node is PropScript:
 				held_item_node.position = held_item_node.hold_position
 				held_item_node.rotation_degrees = held_item_node.hold_rotation
-				held_item_node.scale = held_item_node.hold_scale
+				# Preserve the scene-authored world scale, including model sizing.
+				# Held props may obstruct the view; never shrink them to fit.
 			else:
 				held_item_node.transform = Transform3D.IDENTITY
 
@@ -470,12 +471,12 @@ func drop_item():
 		var item_data = inventory.items[inventory.active_slot]
 		
 		# Spawn it back into the world
-		var corpse_frame := Transform3D.IDENTITY
+		var held_frame := held_item_node.global_transform if is_instance_valid(held_item_node) else Transform3D.IDENTITY
+		var dropping_held_item := is_instance_valid(held_item_node)
 		var dropping_corpse := is_instance_valid(held_item_node) and held_item_node is CorpseProp
 		if dropping_corpse:
 			item_data = item_data.duplicate(true)
 			item_data.state = held_item_node.capture_item_state()
-			corpse_frame = held_item_node.global_transform
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			var dropped_item = scene.instantiate()
@@ -491,7 +492,9 @@ func drop_item():
 			drop_transform.origin -= transform.basis.z * 1.5
 			# Move it up slightly so it doesn't clip into floor
 			drop_transform.origin.y += 1.0
-			if dropping_corpse: drop_transform = corpse_frame
+			# Release at the visible hand-held pose, without a jump to a fixed
+			# point ahead. Keep the existing toss direction and speed below.
+			if dropping_held_item: drop_transform = held_frame
 			dropped_item.global_transform = drop_transform
 			
 			# If it's a rigid body, give it a tiny toss forward
@@ -1219,3 +1222,4 @@ func _standing_volume_clear(at: Vector3) -> bool:
 	query.collision_mask = collision_mask
 	query.exclude = [get_rid()]
 	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+

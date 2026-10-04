@@ -24,6 +24,7 @@ func restore_item_state(state: Dictionary) -> void:
 @export_group("Held Visuals")
 @export var hold_position: Vector3 = Vector3.ZERO
 @export var hold_rotation: Vector3 = Vector3.ZERO
+# Legacy scene metadata; held previews now preserve their world scale.
 @export var hold_scale: Vector3 = Vector3.ONE
 
 # This function is called by the player_interact RayCast3D
@@ -43,3 +44,4 @@ func interact(player: Node3D) -> String:
 	var slot: int = player.inventory.items.size()
 	queue_free()
 	return "已拾取 %s，放入背包第 %d 格（按 %d 選取）" % [item_name, slot, slot]
+
