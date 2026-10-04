@@ -76,4 +76,4 @@ godot --path . --resolution 1280x720 --rendering-method gl_compatibility --log-f
 ./scripts/test.ps1 -TestFilter 'test_player_climbing.gd,test_player_inventory.gd,test_player_large_item_climbing.gd,test_moving_rv_climbing.gd,test_player_carry.gd,test_rv_shared_storage.gd' -Smoke
 ```
 
-2026-10-04 這批新增程式及回歸尚未執行引擎、headless、正式世界 smoke 或實機操作；上述為待執行命令，不是通過紀錄。實機需依 AGENTS 驗證持大型物品貼牆 W 的提示節制、丟棄／存入後攀爬恢復，以及移動／轉彎車身上拾取大型物品時不瞬移且物品仍可丟棄。原有登頂、拆頂與怪物攀爬仍須回歸。
+2026-10-04 `855a17e` 的相關 quick／integration 回歸及正式世界 smoke 已在 CI 通過；整體 CI 仍有既存失敗與戶外測試不一致，不能宣稱 full suite 通過。上述命令可供重跑，完整證據見 [本輪紀錄](../docs/validation/2026-10-04-issues-8-17.md)。本輪沒有本機引擎執行或原生視窗／實機觀察。實機需依 AGENTS 驗證持大型物品貼牆 W 的提示節制、丟棄／存入後攀爬恢復，以及移動／轉彎車身上拾取大型物品時不瞬移且物品仍可丟棄。原有登頂、拆頂與怪物攀爬仍須回歸。
