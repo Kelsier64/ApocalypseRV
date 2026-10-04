@@ -55,9 +55,10 @@ func run() -> void:
 	check(not actor.get_node("BodyMesh").animation_player.is_playing(), "Animation stops overwriting physical pose")
 	check(actor.ragdoll.bodies.size() == 15, "Fifteen mapped major physical bones")
 	var pelvis: PhysicalBone3D = actor.ragdoll.bodies["pelvis"]
+	var measured_skeleton: Skeleton3D = actor.ragdoll.skeleton
 	actor.ragdoll.simulator.modification_processed.connect(func():
 		modified_poses.clear()
-		for bone in actor.ragdoll.skeleton.get_bone_count(): modified_poses.append(actor.ragdoll.skeleton.get_bone_global_pose(bone)))
+		for bone in measured_skeleton.get_bone_count(): modified_poses.append(measured_skeleton.get_bone_global_pose(bone)))
 	check(pelvis.linear_velocity.z < -8 and pelvis.linear_velocity.y > 1, "Momentum survives lethal-order handoff and launches forward/up")
 	var start := pelvis.global_position
 	var max_gap := 0.0

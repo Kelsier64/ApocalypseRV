@@ -27,6 +27,7 @@
       "test_bunker_encounter",
       "test_bunker_lighting",
       "test_checkpoint_failures",
+      "test_corpse",
       "test_flashlight_grab",
       "test_interior_compatibility",
       "test_interior_doorways",

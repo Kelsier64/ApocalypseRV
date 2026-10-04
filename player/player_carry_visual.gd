@@ -65,13 +65,16 @@ func _physics_process(delta: float) -> void:
 		if item != held:
 			item = held
 			bounds = _held_bounds(item)
+			if item.has_method("set_held"):
+				# The corpse grip is full size; never scale its live physical skeleton.
+				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
 			# Held previews already use hold_scale. Cap unusually bulky silhouettes
 			# so world-sized barrels/blocks do not intersect the eye or hide both hands.
 			var limit := .5 if large else .18
 			var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
 			var fit := minf(1.0, limit / maxf(longest, .001))
 			if large: fit = minf(fit, .4 / maxf(bounds.size.x, .001))
-			if fit < 1.0:
+			if fit < 1.0 and not item.has_method("set_held"):
 				item.scale *= fit
 				bounds = _held_bounds(item)
 			item_hold_transform = item.transform
@@ -107,6 +110,7 @@ func _update_item(delta: float, large: bool) -> void:
 	phase += delta * (8.0 if speed > .1 else 2.0)
 	var sway := Vector3(sin(phase * .5) * .006, sin(phase) * .006, 0) * minf(speed, 1.0)
 	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else 1.60, -.55 if large else -.48)
+	if item.has_method("held_support_center"): center = item.held_support_center()
 	if grip_kind == "round": center = Vector3(.10, 1.69, -.46)
 	if active_hand == "L" and not large: center.x = -center.x
 	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
@@ -114,6 +118,7 @@ func _update_item(delta: float, large: bool) -> void:
 	if actor.is_crawling(): center += Vector3(0, -1.0, -.12)
 	var marker: Node3D = item.get_parent()
 	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())
+	if item.has_method("update_held_grips"): item.update_held_grips()
 	# Bounds are in marker space, including the prop's authored rotation/scale.
 	# Cup the sides at mid-height instead of reaching over the top edge.
 	var right := Vector3(bounds.end.x + .016, bounds.get_center().y, bounds.end.z - .02)

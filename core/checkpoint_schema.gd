@@ -93,6 +93,7 @@ static func poi_error(value: Variant, path := "poi") -> String:
 			else:
 				if SaveSceneCatalog.resolve(actor.get("scene"), "prop") == null: return field + ".scene"
 				if not actor.get("name") is String or not actor.get("large") is bool or not actor.get("frozen") is bool or not yields_valid(actor.get("yields")): return field
+				if actor.scene == "res://props/corpse.tscn" and not actor.large: return field + ".large"
 				if not actor.get("state", {}) is Dictionary or not VehicleSnapshot.valid_prop_state(actor.scene, actor.get("state", {})): return field + ".state"
 			var identity: String = actor.get("id", "")
 			if not actor.has("health"): identity = actor.get("state", {}).get("id", identity)

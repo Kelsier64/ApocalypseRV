@@ -223,6 +223,7 @@ func _equip_active_slot():
 		if scene:
 			held_item_node = scene.instantiate()
 			_restore_prop_state(held_item_node, item_data)
+			if held_item_node.has_method("set_held"): held_item_node.set_held(true)
 			# Disable physics so it's just visual while held
 			if held_item_node is RigidBody3D:
 				held_item_node.freeze = true
@@ -396,6 +397,9 @@ func complete_world_transition(at: Transform3D) -> void:
 	camera.rotation = Vector3.ZERO
 	camera.current = true
 	reset_physics_interpolation()
+	# Held articulated bodies belong to the destination World3D and grip frame.
+	if is_instance_valid(held_item_node) and held_item_node.has_method("set_held"):
+		_equip_active_slot()
 	if restart_death:
 		# A cancelled POI transition may return a dead actor to its home world.
 		# Rebind physics at that location instead of keeping the old-space pose.
@@ -430,10 +434,10 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	released_carrier_velocity = Vector3.ZERO
 	seated_in = seat
 	_advance_flashlight(0.0)
-	global_position = seat.global_position
+	global_transform = seat.global_transform.orthonormalized()
 	set_process_unhandled_input(false)
 	body_collision_shape.disabled = true
-	visible = false
+	visible = true
 	return true
 
 func exit_seat_mode(exit_position: Vector3) -> void:
@@ -451,6 +455,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	body_collision_shape.disabled = false
 	visible = true
 	global_position = exit_position
+	global_rotation = Vector3(0, global_rotation.y, 0)
 	camera.current = true
 
 func drop_item():
@@ -460,6 +465,12 @@ func drop_item():
 		var item_data = inventory.items[inventory.active_slot]
 		
 		# Spawn it back into the world
+		var corpse_frame := Transform3D.IDENTITY
+		var dropping_corpse := is_instance_valid(held_item_node) and held_item_node is CorpseProp
+		if dropping_corpse:
+			item_data = item_data.duplicate(true)
+			item_data.state = held_item_node.capture_item_state()
+			corpse_frame = held_item_node.global_transform
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			var dropped_item = scene.instantiate()
@@ -475,11 +486,13 @@ func drop_item():
 			drop_transform.origin -= transform.basis.z * 1.5
 			# Move it up slightly so it doesn't clip into floor
 			drop_transform.origin.y += 1.0
+			if dropping_corpse: drop_transform = corpse_frame
 			dropped_item.global_transform = drop_transform
 			
 			# If it's a rigid body, give it a tiny toss forward
 			if dropped_item is RigidBody3D:
 				dropped_item.linear_velocity = -transform.basis.z * 3.0
+				if dropping_corpse: dropped_item.linear_velocity += velocity
 			
 		consume_active_item()
 
@@ -930,7 +943,7 @@ func _physics_process(delta):
 		damage_cooldown = maxf(0.0, damage_cooldown - delta)
 	_sync_body_collision_to_locomotion()
 	if is_instance_valid(seated_in):
-		global_position = seated_in.global_position
+		global_transform = seated_in.global_transform.orthonormalized()
 		return
 	if in_ui_mode:
 		return
@@ -1017,6 +1030,7 @@ func _respawn():
 	if ragdoll_control.active:
 		var standing: Vector3 = ragdoll_control.recovery_position()
 		if not standing.is_finite(): return
+		load("res://props/corpse.gd").leave_player(self)
 		ragdoll_control.stop()
 		global_position = standing
 	elif not _standing_volume_clear(global_position):

@@ -16,11 +16,14 @@ func _ready():
 	
 	var hopper = get_node_or_null("HopperArea")
 	if hopper:
+		hopper.collision_mask |= 2
 		hopper.body_entered.connect(_on_hopper_body_entered)
 	else:
 		push_error("Scrapper has no HopperArea!")
 
 func step_work(delta: float):
+	for index in range(props_being_crushed.size() - 1, -1, -1):
+		if not is_instance_valid(props_being_crushed[index].prop): props_being_crushed.remove_at(index)
 	if not can_operate():
 		return
 	if props_being_crushed.size() > 0:
@@ -69,7 +72,7 @@ func _on_hopper_body_entered(body: Node3D):
 		recycle_prop(body)
 
 func recycle_prop(prop: Prop):
-	if not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() >= queue_capacity:
+	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() >= queue_capacity:
 		return
 	var rv = get_connected_rv()
 	if not rv:
@@ -96,6 +99,7 @@ func recycle_prop(prop: Prop):
 	# Disable collision so it doesn't float on rollers
 	prop.collision_layer = 0
 	prop.collision_mask = 0
+	if prop.has_method("set_processing"): prop.call_deferred("set_processing", true)
 	
 	props_being_crushed.append({
 		"prop": prop,
@@ -111,9 +115,9 @@ func _physics_process(_delta: float) -> void:
 
 func _on_service_stopped() -> void:
 	for data in props_being_crushed:
-		var prop: Prop = data.prop
-		if not is_instance_valid(prop):
+		if not is_instance_valid(data.prop):
 			continue
+		var prop: Prop = data.prop
 		prop.processing_owner = null
 		prop.freeze = data.physics.freeze
 		prop.freeze_mode = data.physics.mode
@@ -121,6 +125,7 @@ func _on_service_stopped() -> void:
 		prop.collision_mask = data.physics.mask
 		prop.linear_velocity = data.physics.linear
 		prop.angular_velocity = data.physics.angular
+		if prop.has_method("set_processing"): prop.call_deferred("set_processing", false)
 	props_being_crushed.clear()
 
 func _finish_recycle(prop: Prop) -> bool:

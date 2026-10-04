@@ -24,6 +24,7 @@ var view_camera: Camera3D
 var camera_rest_position := Vector3.ZERO
 var was_crawling := false
 var crawl_eye := Vector3(0, .58, -.48)
+var driving := preload("res://player/player_driving_visual.gd").new()
 
 func _ready() -> void:
 	process_physics_priority = 1 # Observe Player after movement, before pose modifiers.
@@ -55,11 +56,16 @@ func _physics_process(delta: float) -> void:
 	if actor.is_player_dead:
 		suspend()
 		return
-	get_parent().get_node("Carry").clear_pose()
-	# Seat is currently hidden; grabbed poses remain separate future work.
-	if actor.seated_in != null or actor.is_grabbed():
-		if actor.seated_in != null and not actor.is_grabbed():
-			view_camera.position = camera_rest_position
+	var carry := get_parent().get_node("Carry")
+	carry.clear_pose()
+	if actor.seated_in != null:
+		suspend()
+		current_clip = "drive"
+		view_camera.position = camera_rest_position
+		driving.update(actor, skeleton, carry, delta)
+		return
+	driving.clear(skeleton)
+	if actor.is_grabbed():
 		suspend()
 		return
 	if suspended:

@@ -82,7 +82,7 @@ material = ExtResource("metal")
 [sub_resource type="CylinderMesh" id="m17"]
 top_radius = 0.045
 bottom_radius = 0.045
-height = 0.34
+height = 0.62
 radial_segments = 24
 material = ExtResource("dark")
 
@@ -346,7 +346,7 @@ mesh = SubResource("m11")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="SteeringTilt" type="Node3D" parent="."]
-position = Vector3(-0.22, 1.01, -0.94)
+position = Vector3(0, 1.01, -0.43)
 rotation_degrees = Vector3(68, 0, 0)
 
 [node name="SteeringWheel" type="Node3D" parent="SteeringTilt"]
@@ -379,9 +379,9 @@ mesh = SubResource("m16")
 rotation_degrees = Vector3(0, 240, 0)
 
 [node name="SteeringColumn" type="MeshInstance3D" parent="."]
-position = Vector3(-0.22, 0.76, -0.94)
+position = Vector3(0, 0.855, -0.685)
 mesh = SubResource("m17")
-rotation_degrees = Vector3(40, 0, 0)
+rotation_degrees = Vector3(59, 0, 0)
 
 [node name="SideConsole" type="MeshInstance3D" parent="."]
 position = Vector3(0.48, 0.37, -0.28)
@@ -431,12 +431,12 @@ mesh = SubResource("m23")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="PedalBrake" type="MeshInstance3D" parent="."]
-position = Vector3(-0.18, 0.12, -0.88)
+position = Vector3(-0.18, 0.12, -0.53)
 mesh = SubResource("m24")
 rotation_degrees = Vector3(-25, 0, 0)
 
 [node name="PedalThrottle" type="MeshInstance3D" parent="."]
-position = Vector3(0.13, 0.1, -0.91)
+position = Vector3(0.13, 0.1, -0.55)
 mesh = SubResource("m25")
 rotation_degrees = Vector3(-25, 0, 0)
 

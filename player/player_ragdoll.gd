@@ -215,7 +215,7 @@ func build_bodies() -> void:
 		bodies[pair[0]].add_collision_exception_with(bodies[pair[1]])
 		bodies[pair[1]].add_collision_exception_with(bodies[pair[0]])
 	# Isolated control capsule never participates in ragdoll collisions.
-	simulator.physical_bones_add_collision_exception(player.get_rid())
+	if is_instance_valid(player): simulator.physical_bones_add_collision_exception(player.get_rid())
 
 func rest(bone_name: String) -> Transform3D:
 	return skeleton.get_bone_global_rest(skeleton.find_bone(bone_name))

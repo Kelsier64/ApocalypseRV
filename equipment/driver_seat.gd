@@ -12,6 +12,7 @@ var exit_message: String = ""
 func _ready() -> void:
 	super._ready()
 	seat_camera.rotation = REST_CAMERA_ROTATION
+	seat_camera.cull_mask = (seat_camera.cull_mask & ~PlayerModelVisual.FULL_BODY_LAYER) | PlayerModelVisual.LOCAL_VIEW_LAYER
 	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))
 	game_settings.setting_changed.connect(_on_setting_changed)
 	var dashboard := CanvasLayer.new()

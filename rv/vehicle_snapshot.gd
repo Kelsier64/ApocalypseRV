@@ -141,6 +141,7 @@ static func restore_device(device: Equipment, data: Dictionary, rv: Node3D) -> v
 			prop.freeze = true
 			prop.collision_layer = 0
 			prop.collision_mask = 0
+			if prop.has_method("set_processing"): prop.call_deferred("set_processing", true)
 			device.props_being_crushed.append({"prop": prop, "timer": saved.timer,
 				"local_position": saved.local_position, "physics": saved.physics})
 
@@ -218,6 +219,7 @@ static func valid_item(value: Variant) -> bool:
 	if not value.name is String or not value.is_large is bool or not value.scene_path is String or not value.state is Dictionary or not ResourceLoader.exists(value.scene_path): return false
 	if value.state.has("materials"): return false
 	if not valid_prop_state(value.scene_path, value.state): return false
+	if value.scene_path == "res://props/corpse.tscn" and not value.is_large: return false
 	if value.state.has("engine") and not value.is_large: return false
 	if value.scene_path == "res://props/flashlight.tscn" and (value.name != ItemNames.FLASHLIGHT or value.is_large): return false
 	return not value.state.has("battery") or valid_battery(value.state.battery)
@@ -344,6 +346,10 @@ static func _upgrade_engine(data: Dictionary) -> Dictionary:
 
 static func valid_prop_state(scene: String, state: Dictionary) -> bool:
 	if SaveSceneCatalog.resolve(scene, "prop") == null: return false
+	if scene == "res://props/corpse.tscn":
+		if not load("res://props/corpse.gd").valid_state(state.get("corpse")): return false
+	elif state.has("corpse"):
+		return false
 	if state.has("id") and not state.id is String: return false
 	if state.has("condition") and (not _number(state.condition) or state.condition < 0 or state.condition > 100): return false
 	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false

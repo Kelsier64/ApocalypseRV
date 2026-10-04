@@ -17,8 +17,19 @@
 - [加油站室外探索](#gas-station)
 - [路邊小 POI](#minor-pois)
 - [玩家持物動作](#player-carry)
+- [屍體搬運與分解](#corpse-carry)
 - [玩家斷肢與受傷爬行](#player-dismemberment)
 - [樹木撞毀](#tree-impact)
+
+<a id="corpse-carry"></a>
+
+## 屍體搬運與分解
+
+```powershell
+godot --path . --log-file .godot/corpse-playground.log res://tests/corpse_playground.tscn
+```
+
+E 拾取軀幹、G 丟棄、WASD 移動。F1 第一人稱、F2 拾取附近屍體（測試捷徑）、F3 旁觀、F4 持續行走轉彎、F5 玩家死亡、F6 分解手持屍體（測試捷徑）、Esc 關閉。加 `-- --replay` 自動開始重播。沿用正式玩家、怪物、屍體物理及分解機；[本輪結果與限制](../validation/2026-10-04-corpse-props.md) 分開記錄自動測試與桌面觀察。
 
 <a id="tree-impact"></a>
 
@@ -449,3 +460,11 @@ godot --path . --log-file .godot/player-climb-desktop.log res://tests/player_cli
 雙角色回歸仍用 `rv_climb_playground.tscn -- --replay`，加 `--animation-review` 隱藏藍色標記以觀看正式模型。此測試車體凍結於抬高位置，回放起點設在車壁旁，與 `test_moving_rv_climbing.gd` 一致；手動起點與正式玩家控制器不變。
 
 鏡頭同步複驗可加 `--camera-review`：保存攀爬低頭／平視畫面到 `docs/validation/player-animations-v021/climb-camera/`，保留上一版圖片。
+
+### 玩家駕駛動作
+
+```powershell
+godot --path . --log-file .godot/player-driving.log res://tests/player_driving_playground.tscn
+```
+
+使用正式玩家與駕駛座，隱藏車殼、凍結車體，檢查坐姿與控制件接觸。F1 回正、F2 左轉、F3 右轉、F4 切換外部／第一人稱／側面、F5 切換踩踏、F6 顯示／隱藏完整車殼。這是姿勢觀察場，不代表已驗證輪驅行駛。自動回歸 `test_rv_cockpit.gd` 檢查方向盤方向與回正、骨架接觸、跟車姿態及座位生命週期。

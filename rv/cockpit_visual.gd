@@ -1,5 +1,6 @@
 extends Node3D
 ## Presentation only; every instrument reads the chassis owned by this seat.
+const MAX_STEERING_ANGLE := 1.25 # Match the existing driving hand travel.
 var warning_lamps: Dictionary = {}
 var instrument_materials: Array[StandardMaterial3D] = []
 func _ready() -> void:
@@ -41,7 +42,8 @@ func _process(delta: float) -> void:
 	var gear := rv.gear if connected else 0
 	var parked := rv.handbrake if connected else true
 	var running := connected and rv.energy.engine_running
-	var steer := -rv.steering * 3.5 if connected else 0.0
+	# Tilted local +Y points toward the driver: positive rotation is left.
+	var steer := clampf(rv.steering * 3.5, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) if connected else 0.0
 	steering_wheel.rotation.y = lerp_angle(steering_wheel.rotation.y, steer, minf(delta * 12.0, 1.0))
 	gear_lever.rotation.x = lerp_angle(gear_lever.rotation.x, -0.28 if gear < 0 else (0.0 if gear == 0 else 0.23), minf(delta * 12.0, 1.0))
 	gear_lever.rotation.z = lerp_angle(gear_lever.rotation.z, float(gear - 2) * 0.08 if gear > 0 else 0.0, minf(delta * 12.0, 1.0))

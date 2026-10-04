@@ -148,6 +148,7 @@ func _start() -> void:
 	var lever := (impact_point - chest.global_position).limit_length(0.45) if impact_speed > 0.0 else Vector3.ZERO
 	if restored_state.is_empty(): chest.apply_impulse(kick, lever)
 	restored_state = {}
+	if actor.is_dead: actor._ensure_corpse.call_deferred()
 
 func tick(delta: float) -> void:
 	if pending:
@@ -259,6 +260,12 @@ func _build() -> void:
 	simulator.name = "RakerPhysicalBones"
 	simulator.active = false
 	skeleton.add_child(simulator)
+	build_bodies()
+	if is_instance_valid(actor): simulator.physical_bones_add_collision_exception(actor.get_rid())
+	for bone in poses.size(): skeleton.set_bone_pose(bone, poses[bone])
+	skeleton.force_update_all_bone_transforms()
+
+func build_bodies() -> void:
 	_box("pelvis", Vector3(0,1.10,-.09), Vector3(.31,.22,.23), 15.0)
 	_segment("spine_01", "spine_02", .135, 9.0, 18.0, 12.0)
 	_segment("spine_02", "spine_03", .16, 12.0, 20.0, 15.0)
@@ -276,9 +283,6 @@ func _build() -> void:
 		if parent < 0: continue
 		var other: PhysicalBone3D = bodies[String(skeleton.get_bone_name(parent))]
 		links.append({"child": body, "parent": other, "parent_frame": other.global_transform.affine_inverse() * body.global_transform * body.joint_offset})
-	simulator.physical_bones_add_collision_exception(actor.get_rid())
-	for bone in poses.size(): skeleton.set_bone_pose(bone, poses[bone])
-	skeleton.force_update_all_bone_transforms()
 
 func _rest(bone: String) -> Transform3D:
 	return skeleton.get_bone_global_rest(skeleton.find_bone(bone))

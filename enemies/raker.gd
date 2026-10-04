@@ -31,6 +31,7 @@ var strike_clip := ""
 var next_left := true
 var reaction_remaining := 0.0
 var death_remaining := 18.0
+var corpse_prop: Prop
 var grab: Node
 var ragdoll: Node
 var impact_stagger_remaining := 0.0
@@ -47,6 +48,9 @@ func _ready() -> void:
 	nav_agent.height = STANDING_HEIGHT
 
 func _physics_process(delta: float) -> void:
+	if is_dead and is_instance_valid(corpse_prop) and corpse_prop.is_queued_for_deletion():
+		queue_free()
+		return
 	# Re-entered only by actual ground chase; attacks, climbing and loss of
 	# target cannot leave the sprint animation latched on.
 	pursuit_gait = PursuitGait.STALK
@@ -304,6 +308,15 @@ func die() -> void:
 	death_started.emit()
 	$HitBox.set_deferred("monitoring", false)
 	ragdoll.request(inherited)
+	_ensure_corpse.call_deferred()
+
+func _ensure_corpse() -> void:
+	if not is_dead or not ragdoll.active or is_instance_valid(corpse_prop) or is_queued_for_deletion(): return
+	corpse_prop = load("res://props/corpse.tscn").instantiate()
+	var container := WorldEntities.get_container(self)
+	if not WorldEntities.same_world(self, container): container = get_parent()
+	container.add_child(corpse_prop)
+	corpse_prop.adopt_raker(self)
 
 func _vehicle_hit_reaction(_rv: Node3D, normal: Vector3, point: Vector3, approach: float) -> void:
 	# Called only for a newly accepted contact, after lethal damage AND kick.

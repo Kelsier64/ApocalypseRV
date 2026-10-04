@@ -144,7 +144,7 @@ func run() -> void:
 	var seat := Node3D.new()
 	arena.add_child(seat)
 	check(actor.enter_seat_mode(seat), "Existing seat transition succeeds")
-	check(not visual.is_visible_in_tree() and not visual.local_body.is_visible_in_tree(), "Seat hides complete model and local proxies together")
+	check(visual.is_visible_in_tree() and visual.local_body.is_visible_in_tree(), "Seat preserves complete observer model and local body presentation")
 	actor.exit_seat_mode(Vector3(2, 0, 2))
 	check(visual.is_visible_in_tree() and visual.local_body.is_visible_in_tree(), "Exit seat restores all presentation")
 	actor.restore_checkpoint_state({"items": [], "slot": 0, "health": 100.0, "transform": Transform3D(Basis(Vector3.UP, .7), Vector3(4, 0, 3))})

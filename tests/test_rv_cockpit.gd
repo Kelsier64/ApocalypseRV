@@ -9,6 +9,35 @@ func press(seat: Node, key: Key) -> void:
 	event.pressed = true
 	seat._unhandled_input(event)
 
+func pose_steps() -> void:
+	for frame in 24:
+		await physics_frame
+		await process_frame
+
+func palm_position(skeleton: Skeleton3D, side: String) -> Vector3:
+	var hand := skeleton.find_bone("hand_" + side)
+	var rest := skeleton.get_bone_global_rest(hand)
+	var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+	var index := skeleton.get_bone_global_rest(skeleton.find_bone("index_01_" + side)).origin
+	var pinky := skeleton.get_bone_global_rest(skeleton.find_bone("pinky_01_" + side)).origin
+	var palm := (middle - rest.origin).normalized().cross((index - pinky).normalized()).normalized() * (1.0 if side == "L" else -1.0)
+	var center := rest.origin.lerp(middle, .72) + palm * .014
+	return skeleton.global_transform * skeleton.get_bone_global_pose(hand) * (rest.affine_inverse() * center)
+
+func check_driving_pose(player: CharacterBody3D, wheel: Node3D, note: String) -> void:
+	var skeleton: Skeleton3D = player.get_node("Visuals").skeleton
+	var rim: TorusMesh = wheel.get_node("Rim").mesh
+	for side in ["L", "R"]:
+		var hip := skeleton.get_bone_global_pose(skeleton.find_bone("thigh_" + side)).origin
+		var knee := skeleton.get_bone_global_pose(skeleton.find_bone("shin_" + side)).origin
+		var ankle := skeleton.get_bone_global_pose(skeleton.find_bone("foot_" + side)).origin
+		var knee_dot := (knee - hip).normalized().dot((ankle - knee).normalized())
+		check(knee_dot < cos(PI / 4.0), note + " " + side + " knee bends at least 45 degrees into a seated posture (%.3f alignment)" % knee_dot)
+		if not player.body_state.has_part(&"left_arm" if side == "L" else &"right_arm"): continue
+		var palm := wheel.to_local(palm_position(skeleton, side))
+		var radius := Vector2(palm.x, palm.z).length()
+		check(absf(palm.y) < .09 and radius > rim.inner_radius - .045 and radius < rim.outer_radius + .05, note + " " + side + " hand contacts the steering rim (%.3f plane, %.3f radius)" % [palm.y, radius])
+
 func _run() -> void:
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -33,6 +62,37 @@ func _run() -> void:
 	check(console_hit.get("collider") == seat, "Gear and brake console targets the same seat equipment")
 	seat.interact_hold(player)
 	check(seat.current_driver == player and rv.is_player_driving, "Production cockpit grants driving through the actual seat")
+	check(player.is_visible_in_tree(), "Seated driver remains visible to vehicle observers and mirrors")
+	var player_visual: PlayerModelVisual = player.get_node("Visuals")
+	check(player_visual.local_body.is_visible_in_tree(), "Driving camera can display the seated player's local body")
+	check((seat.seat_camera.cull_mask & PlayerModelVisual.LOCAL_VIEW_LAYER) != 0 and (seat.seat_camera.cull_mask & PlayerModelVisual.FULL_BODY_LAYER) == 0, "Driving camera sees the local body without the complete head mesh")
+	await pose_steps()
+	check_driving_pose(player, visual.get_node("SteeringTilt/SteeringWheel"), "Centered steering")
+	var skeleton := player_visual.skeleton
+	var root_bone := skeleton.find_bone("root")
+	var seated_root := skeleton.get_bone_pose_position(root_bone)
+	for side in ["R", "L"]:
+		var input_field := "throttle_input" if side == "R" else "brake_input"
+		var foot := skeleton.find_bone("foot_" + side)
+		var other_foot := skeleton.find_bone("foot_L" if side == "R" else "foot_R")
+		var rest_foot := skeleton.get_bone_global_pose(foot).basis.get_rotation_quaternion()
+		var rest_other_foot := skeleton.get_bone_global_pose(other_foot).basis.get_rotation_quaternion()
+		rv.set(input_field, 1.0)
+		await pose_steps()
+		check(rest_foot.angle_to(skeleton.get_bone_global_pose(foot).basis.get_rotation_quaternion()) > .1, input_field + " presses its corresponding driver's foot")
+		check(rest_other_foot.is_equal_approx(skeleton.get_bone_global_pose(other_foot).basis.get_rotation_quaternion()), input_field + " leaves the other pedal foot at rest")
+		check_driving_pose(player, visual.get_node("SteeringTilt/SteeringWheel"), input_field + " pressed")
+		rv.set(input_field, 0.0)
+		await pose_steps()
+		check(rest_foot.is_equal_approx(skeleton.get_bone_global_pose(foot).basis.get_rotation_quaternion()), input_field + " release returns the foot to its original orientation")
+		check_driving_pose(player, visual.get_node("SteeringTilt/SteeringWheel"), input_field + " released")
+	check(player.global_basis.is_equal_approx(seat.global_basis), "Entering the seat aligns driver orientation with cockpit")
+	var parked_transform := rv.global_transform
+	rv.global_transform = Transform3D(Basis.from_euler(Vector3(0.08, 0.65, -0.06)), Vector3(3, 1, 2)) * parked_transform
+	player._physics_process(1.0 / 60.0)
+	check(player.global_basis.is_equal_approx(seat.global_basis) and player.global_position.is_equal_approx(seat.global_position), "Driver follows seat orientation and position during vehicle turns and tilt")
+	rv.global_transform = parked_transform
+	player._physics_process(1.0 / 60.0)
 	var mirrors := rv.get_node("Mirrors")
 	mirrors._process(0.1)
 	check(mirrors.mirrors.size() == 2, "Exactly two mirrors belong to this RV")
@@ -60,7 +120,25 @@ func _run() -> void:
 	visual._process(1.0)
 	check(visual.get_node("Readout").text.ends_with("R"), "Physical gear readout follows reverse")
 	check(not visual.get_node("GearLever").rotation.is_equal_approx(forward_pose), "Gear lever moves between forward and reverse")
-	check(absf(visual.get_node("SteeringTilt/SteeringWheel").rotation.y) > 0.5, "Steering wheel follows actual chassis steering")
+	var wheel: Node3D = visual.get_node("SteeringTilt/SteeringWheel")
+	var wheel_center_x := seat.to_local(wheel.global_position).x
+	var left_angle := wheel.rotation.y
+	check(left_angle > 0.5, "Positive chassis steering turns the cockpit wheel left")
+	# Its highest rim point is local -Z after the wheel's fixed tilt.
+	check(seat.to_local(wheel.to_global(Vector3(0, 0, -0.23))).x < wheel_center_x - 0.1, "Left steering moves the top of the wheel toward the driver's left")
+	await pose_steps()
+	check_driving_pose(player, wheel, "Left steering")
+	rv.steering = -0.3
+	visual._process(1.0)
+	check(wheel.rotation.y < -0.5 and is_equal_approx(absf(wheel.rotation.y), left_angle), "Right steering turns the wheel right with symmetric travel")
+	check(seat.to_local(wheel.to_global(Vector3(0, 0, -0.23))).x > wheel_center_x + 0.1, "Right steering moves the top of the wheel toward the driver's right")
+	await pose_steps()
+	check_driving_pose(player, wheel, "Right steering")
+	rv.steering = 0.0
+	visual._process(1.0)
+	check(absf(wheel.rotation.y) < 0.001, "Releasing steering returns the cockpit wheel to center")
+	await pose_steps()
+	check_driving_pose(player, wheel, "Released steering")
 	check(visual.get_node("ParkingLever").rotation.x > 0.4 and visual.get_node("BrakeStatus").text == "PARK", "Handbrake handle and lamp agree with actual brake")
 	check(visual.get_node("FuelNeedle").rotation.z > 0 and visual.get_node("BatteryNeedle").rotation.z < 0, "Fuel and battery needles use independent live quantities")
 	var socket: BatterySocket = rv.get_node("BatterySocket")
@@ -75,6 +153,24 @@ func _run() -> void:
 	seat.exit_seat()
 	player.set_physics_process(false)
 	check(player.seated_in == null and not rv.is_player_driving and not rv.handbrake, "Exit restores player control without engaging parking brake")
+	var locomotion: Node = player_visual.get_node("Locomotion")
+	locomotion._physics_process(1.0 / 60.0)
+	check(not locomotion.driving.active and skeleton.get_bone_pose_position(root_bone).is_equal_approx(Vector3.ZERO), "First locomotion tick clears driving pose and restores skeleton root after exit")
+	for missing_arm in [&"left_arm", &"right_arm"]:
+		seat.interact_hold(player)
+		await pose_steps()
+		check(locomotion.driving.active and skeleton.get_bone_pose_position(root_bone).is_equal_approx(seated_root), "Reentering the cockpit does not accumulate seated root offsets")
+		check(player.body_state.sever(missing_arm), "Single-arm driving fixture removes one arm through body state")
+		player._apply_body_capabilities()
+		await pose_steps()
+		check(seat.current_driver == player and player.can_drive(), "Driver remains capable with one surviving arm")
+		check_driving_pose(player, wheel, "Driving without " + String(missing_arm))
+		player.body_state.reset()
+		player._apply_body_capabilities()
+		seat.exit_seat()
+		player.set_physics_process(false)
+		locomotion._physics_process(1.0 / 60.0)
+		check(not locomotion.driving.active and skeleton.get_bone_pose_position(root_bone).is_equal_approx(Vector3.ZERO), "Repeated seat exit clears driving root pose")
 	mirrors._process(0.1)
 	for mirror in mirrors.mirrors: check(mirror.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Leaving the seat stops mirror rendering")
 	var left_panel: Equipment = rv.get_node("LeftFront")
@@ -115,6 +211,6 @@ func _run() -> void:
 	check(not rv.get_world_3d().direct_space_state.intersect_ray(query).is_empty(), "Rear wall remains solid beside entrance")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: cockpit controls, instruments, whole-assembly placement, aisle exit and checkpoint")
+	if failures.is_empty(): print("PASS: visible seated driving pose, steering direction, cockpit controls, instruments, whole-assembly placement, aisle exit and checkpoint")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
