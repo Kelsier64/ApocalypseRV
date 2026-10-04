@@ -1,0 +1,14 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		0.8878453373909,
+		0.721897065639496,
+		0.472757816314697
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "art_source/bunker_bunk_bed/straightness_trials/level_fov20_1024/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "afeb44aa6449acfd2ff9b88e6c561eb4aab6158f3d82aec585996f8480a90264",
+	"triangles": 9846,
+	"vertices": 8407
+}

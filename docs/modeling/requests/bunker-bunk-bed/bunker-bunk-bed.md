@@ -7,3 +7,5 @@
 - **Delivery:** `assets/models/bunker_bunk_bed/` for GLB and textures; `art_source/bunker_bunk_bed/` for editable source. Replace only the stated visuals and preserve scene node names, collisions and interactions.
 
 完成情況：2026-10-04 已透過本機 Pixal3D API 生成候選（[bunker_bunk_bed](../../../../assets/models/bunker_bunk_bed/bunker_bunk_bed_candidate.glb)），並通過 Godot 4.7.2 匯入與尺寸／原點檢查；[來源、預覽與待整理事項](../../../../art_source/bunker_bunk_bed/README.md)。只完成 API 試作，正式場景仍沿用既有外觀，接口與遊戲行為尚未驗收。
+
+平直度後續：已完成 [單圖角度、FOV、解析度、三視圖倍率與 seed 的床模型對照](../../../research/pixal3d-bed-straightness.md)。平視三視圖減少全局傾斜；API 的逐格裁切有倍率不一致問題。新候選仍需局部修形、床腳共平面、框架／柱向及接口尺寸驗收，不以包圍盒通過當作完成建模。

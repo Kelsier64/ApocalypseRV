@@ -1,0 +1,13 @@
+{
+  "valid_new_generations": 7,
+  "invalid_input_generation_excluded": "mv_api_1024",
+  "new_generation_sha256_matches": 8,
+  "godot_4_7_2_rendered_models": 9,
+  "rendered_views_per_model": 5,
+  "godot_exit_code": 0,
+  "godot_log_errors": 0,
+  "python_ast": "passed",
+  "relative_links": "independent documentation check passed",
+  "geometry_modified_in_new_trials": false,
+  "gameplay_or_blender_validation": false
+}

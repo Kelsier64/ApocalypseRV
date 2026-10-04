@@ -1,0 +1,43 @@
+{
+  "case": "level_fov20_1024",
+  "backend": "http://127.0.0.1:8188",
+  "prompt_id": "bd1fce9c-3d8b-4fdc-8d1f-a7d3b3e5c3c5",
+  "number": 33,
+  "node_errors": {},
+  "output_sha256": "afeb44aa6449acfd2ff9b88e6c561eb4aab6158f3d82aec585996f8480a90264",
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "bd1fce9c-3d8b-4fdc-8d1f-a7d3b3e5c3c5",
+          "timestamp": 1791132425679
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "118",
+            "15",
+            "288",
+            "117",
+            "193",
+            "87"
+          ],
+          "prompt_id": "bd1fce9c-3d8b-4fdc-8d1f-a7d3b3e5c3c5",
+          "timestamp": 1791132425696
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "bd1fce9c-3d8b-4fdc-8d1f-a7d3b3e5c3c5",
+          "timestamp": 1791132492308
+        }
+      ]
+    ]
+  }
+}

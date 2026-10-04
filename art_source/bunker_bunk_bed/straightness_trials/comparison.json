@@ -1,0 +1,555 @@
+[
+  {
+    "case": "original_fitted",
+    "label": "Original reference + old fit",
+    "measurements": {
+      "case": "original_fitted",
+      "pose_method": "Existing candidate, previous nonuniform fit already baked",
+      "extent": [
+        2.0,
+        1.850000023841858,
+        0.8999999761581421
+      ],
+      "height_per_length": 0.925000011920929,
+      "depth_per_length": 0.44999998807907104,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 2188,
+          "bands": 8,
+          "axis": [
+            0.026054733172971793,
+            0.9996603929416742,
+            0.000499662869305802
+          ],
+          "tilt_degrees": 1.4932697786547144
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 2115,
+          "bands": 8,
+          "axis": [
+            0.02311994007085783,
+            0.9993347613475905,
+            -0.02820466510125775
+          ],
+          "tilt_degrees": 2.0900200217068705
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 2179,
+          "bands": 8,
+          "axis": [
+            -0.04024079793085932,
+            0.999189803271097,
+            -0.0006443764074524015
+          ],
+          "tilt_degrees": 2.306546419773359
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2097,
+          "bands": 8,
+          "axis": [
+            -0.036234301366397464,
+            0.9991897909591658,
+            -0.017516764754580333
+          ],
+          "tilt_degrees": 2.3065639474722697
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 0.7650140846609108,
+      "max_post_deviation_from_mean_degrees": 2.0129145536910644,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        2.0,
+        1.85000002384186,
+        0.899999976158142
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/original_fitted/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "4894f3ca0d866277bf5c2f7f94cef27ec2d0b46e2db9ae5e782b4a850d23a3e0",
+      "triangles": 9900,
+      "vertices": 8505
+    }
+  },
+  {
+    "case": "level_1024",
+    "label": "Level single view / auto FOV / 1024",
+    "measurements": {
+      "case": "level_1024",
+      "pose_method": "Yaw-only minimum XZ footprint (-36.6 degrees); preserves source up",
+      "extent": [
+        0.9103664642832583,
+        0.7148099839687347,
+        0.5082871773614597
+      ],
+      "height_per_length": 0.7851892748833984,
+      "depth_per_length": 0.5583324927963377,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 1338,
+          "bands": 8,
+          "axis": [
+            0.07274931194525834,
+            0.9928556660609558,
+            0.09457887704000018
+          ],
+          "tilt_degrees": 6.8529474991073185
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 1314,
+          "bands": 8,
+          "axis": [
+            0.07655705038303515,
+            0.9931783218736582,
+            0.08795361844104868
+          ],
+          "tilt_degrees": 6.696231141201676
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 1242,
+          "bands": 8,
+          "axis": [
+            0.04731071410943286,
+            0.9952658059280656,
+            0.08489800869757431
+          ],
+          "tilt_degrees": 5.577404515886554
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 1982,
+          "bands": 8,
+          "axis": [
+            0.08304080815023235,
+            0.9953037688848368,
+            0.049745671423709364
+          ],
+          "tilt_degrees": 5.554979618922787
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 6.069827911962926,
+      "max_post_deviation_from_mean_degrees": 1.8539621426117947,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.910369277000427,
+        0.714810013771057,
+        0.508289039134979
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/level_1024/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "b25902a91e0670d76f09bc20d8da28b580e6653b9ff9c4d03da285bf25695a5b",
+      "triangles": 9952,
+      "vertices": 8604
+    }
+  },
+  {
+    "case": "level_fov20_1024",
+    "label": "Level single view / FOV 20 / 1024",
+    "measurements": {
+      "case": "level_fov20_1024",
+      "pose_method": "Yaw-only minimum XZ footprint (-36.8 degrees); preserves source up",
+      "extent": [
+        0.887848970598952,
+        0.7218970656394958,
+        0.4727525584937945
+      ],
+      "height_per_length": 0.8130854340603636,
+      "depth_per_length": 0.532469568754324,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 1280,
+          "bands": 8,
+          "axis": [
+            0.10600737289479535,
+            0.9898810702224895,
+            0.09432870033623192
+          ],
+          "tilt_degrees": 8.157776802796786
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 1138,
+          "bands": 8,
+          "axis": [
+            0.08389387475464848,
+            0.9953302232931016,
+            0.047744783777456945
+          ],
+          "tilt_degrees": 5.539299371715881
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 1344,
+          "bands": 8,
+          "axis": [
+            0.053487270146049336,
+            0.9951829505447995,
+            0.0821584254794985
+          ],
+          "tilt_degrees": 5.626038137245553
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2065,
+          "bands": 8,
+          "axis": [
+            0.09339161346241334,
+            0.9949725810089463,
+            0.036160331515112894
+          ],
+          "tilt_degrees": 5.747676112546748
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 6.112270549950979,
+      "max_post_deviation_from_mean_degrees": 2.1024198471382696,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.8878453373909,
+        0.721897065639496,
+        0.472757816314697
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/level_fov20_1024/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "afeb44aa6449acfd2ff9b88e6c561eb4aab6158f3d82aec585996f8480a90264",
+      "triangles": 9846,
+      "vertices": 8407
+    }
+  },
+  {
+    "case": "mv_api_v2_1024",
+    "label": "3 views / API individual crops / 1024",
+    "measurements": {
+      "case": "mv_api_v2_1024",
+      "pose_method": "Yaw-only minimum XZ footprint (-0.8 degrees); preserves source up",
+      "extent": [
+        0.9585004113759276,
+        0.8196919858455658,
+        0.49442504598415526
+      ],
+      "height_per_length": 0.8551816734944305,
+      "depth_per_length": 0.5158318557990058,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 2238,
+          "bands": 8,
+          "axis": [
+            0.01043474776357397,
+            0.9997948466788293,
+            0.01736031663209661
+          ],
+          "tilt_degrees": 1.1606047169078462
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 2412,
+          "bands": 8,
+          "axis": [
+            -0.005515909384210214,
+            0.9998906070558714,
+            0.013724017819371112
+          ],
+          "tilt_degrees": 0.8474932439607425
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 2233,
+          "bands": 8,
+          "axis": [
+            0.010710847330972939,
+            0.999835934210189,
+            0.014607614846066605
+          ],
+          "tilt_degrees": 1.0378930048817006
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2733,
+          "bands": 8,
+          "axis": [
+            0.012379953055497243,
+            0.9998540899797186,
+            0.011770111009365591
+          ],
+          "tilt_degrees": 0.9787808640437262
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 0.9157257164395699,
+      "max_post_deviation_from_mean_degrees": 0.718206037198615,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.958508133888245,
+        0.819692015647888,
+        0.494418144226074
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/mv_api_v2_1024/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "2495a69c5ecf9eb74a22cf6faba2af74741197868bbc493fa2555bbd052173a2",
+      "triangles": 9946,
+      "vertices": 8167
+    }
+  },
+  {
+    "case": "mv_fixed_512",
+    "label": "3 views / shared canvas / 512",
+    "measurements": {
+      "case": "mv_fixed_512",
+      "pose_method": "Yaw-only minimum XZ footprint (-0.2 degrees); preserves source up",
+      "extent": [
+        0.9438822481853572,
+        0.8233344852924347,
+        0.4917155700249226
+      ],
+      "height_per_length": 0.8722851678536393,
+      "depth_per_length": 0.5209501195411409,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 2646,
+          "bands": 8,
+          "axis": [
+            0.014633106754947379,
+            0.9990894678999676,
+            0.04007626876417197
+          ],
+          "tilt_degrees": 2.4452215777106296
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 2659,
+          "bands": 8,
+          "axis": [
+            -0.008020012493730546,
+            0.9999535795244016,
+            -0.005340243059689854
+          ],
+          "tilt_degrees": 0.552069943173944
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 1876,
+          "bands": 8,
+          "axis": [
+            0.027441990790090298,
+            0.99928261854933,
+            -0.02609952885917581
+          ],
+          "tilt_degrees": 2.17039443910684
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2397,
+          "bands": 8,
+          "axis": [
+            0.027767425660614797,
+            0.9995430562355053,
+            -0.011943567455662035
+          ],
+          "tilt_degrees": 1.732150193230262
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 0.887210162794923,
+      "max_post_deviation_from_mean_degrees": 2.3446733892319713,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.943881273269653,
+        0.823334455490112,
+        0.491715550422668
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/mv_fixed_512/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "11d2a9c62ca1870a494a1edb0637ce305328b60fb7a5136b7e1a5dfd44879fbf",
+      "triangles": 9980,
+      "vertices": 8168
+    }
+  },
+  {
+    "case": "mv_fixed_1024",
+    "label": "3 views / shared canvas / 1024 / seed 42",
+    "measurements": {
+      "case": "mv_fixed_1024",
+      "pose_method": "Yaw-only minimum XZ footprint (0.8 degrees); preserves source up",
+      "extent": [
+        0.9391055106760556,
+        0.8110190033912659,
+        0.48659844288209836
+      ],
+      "height_per_length": 0.8636079696810839,
+      "depth_per_length": 0.5181509823446776,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 2481,
+          "bands": 8,
+          "axis": [
+            0.026955675158926568,
+            0.999618785537158,
+            0.005972870159625998
+          ],
+          "tilt_degrees": 1.5821079479173865
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 2443,
+          "bands": 8,
+          "axis": [
+            -0.02349638529562025,
+            0.999712504143498,
+            -0.00477796370603504
+          ],
+          "tilt_degrees": 1.3739275450821415
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 1199,
+          "bands": 8,
+          "axis": [
+            -0.013716482190365965,
+            0.9998255146065844,
+            0.012680633186093419
+          ],
+          "tilt_degrees": 1.0703442585019791
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2867,
+          "bands": 8,
+          "axis": [
+            -0.005605502850651554,
+            0.9999342777232884,
+            0.010000928546738347
+          ],
+          "tilt_degrees": 0.6568955330485741
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 0.41068931583849305,
+      "max_post_deviation_from_mean_degrees": 1.7718963075189347,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.939105629920959,
+        0.811019003391266,
+        0.486598372459412
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/mv_fixed_1024/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "c076ebd2995f79bb0e6fed14adeed637f7a9c56a3c7ad7d6b3fbfe902b02df96",
+      "triangles": 9958,
+      "vertices": 8112
+    }
+  },
+  {
+    "case": "mv_fixed_1024_seed43",
+    "label": "3 views / shared canvas / 1024 / seed 43",
+    "measurements": {
+      "case": "mv_fixed_1024_seed43",
+      "pose_method": "Yaw-only minimum XZ footprint (0.9 degrees); preserves source up",
+      "extent": [
+        0.9391553249612334,
+        0.810222715139389,
+        0.4775097169822279
+      ],
+      "height_per_length": 0.8627142854914159,
+      "depth_per_length": 0.5084459452987061,
+      "corner_gap_post_fits": [
+        {
+          "corner": "left_near",
+          "surface_samples_in_roi": 2070,
+          "bands": 8,
+          "axis": [
+            -0.0057808615650392185,
+            0.999924544203251,
+            -0.010839166918481026
+          ],
+          "tilt_degrees": 0.7038606167804148
+        },
+        {
+          "corner": "left_far",
+          "surface_samples_in_roi": 1976,
+          "bands": 8,
+          "axis": [
+            -0.02087218091233217,
+            0.9997146065186576,
+            0.011621427503036175
+          ],
+          "tilt_degrees": 1.36889451747307
+        },
+        {
+          "corner": "right_near",
+          "surface_samples_in_roi": 931,
+          "bands": 8,
+          "axis": [
+            0.028518750973999474,
+            0.9993661511085958,
+            -0.021306732768630786
+          ],
+          "tilt_degrees": 2.040109321552285
+        },
+        {
+          "corner": "right_far",
+          "surface_samples_in_roi": 2223,
+          "bands": 8,
+          "axis": [
+            -0.0031257932651252104,
+            0.9999889587423652,
+            0.003508818864547933
+          ],
+          "tilt_degrees": 0.26924478593576473
+        }
+      ],
+      "mean_post_tilt_from_up_degrees": 0.24445866745577752,
+      "max_post_deviation_from_mean_degrees": 1.9197503388097652,
+      "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+      "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+    },
+    "render": {
+      "axis_scaling": false,
+      "display_aabb_size": [
+        0.939143776893616,
+        0.810222744941711,
+        0.477509737014771
+      ],
+      "godot_version": "4.7.2-stable (official)",
+      "input": "art_source/bunker_bunk_bed/straightness_trials/mv_fixed_1024_seed43/raw.glb",
+      "mesh_instances": 1,
+      "sha256": "d6ec73168fa2fb6cf391990bd190da764a253fe6625efc3dc8a9749b782f9fd0",
+      "triangles": 9909,
+      "vertices": 8458
+    }
+  }
+]

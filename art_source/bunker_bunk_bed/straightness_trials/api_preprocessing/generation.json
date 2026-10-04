@@ -1,0 +1,42 @@
+{
+  "case": "api_preprocessing",
+  "backend": "http://127.0.0.1:8188",
+  "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+  "number": 35,
+  "node_errors": {},
+  "output_sha256": "abed37d9ce6b99cc1b03140bbbb8b4a7a3b74a31e9876c4efc40fd0a44bfbcc4",
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132795314
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "122",
+            "193",
+            "front_crop",
+            "left_crop",
+            "back_crop"
+          ],
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132795320
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132797506
+        }
+      ]
+    ]
+  }
+}

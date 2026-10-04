@@ -1,0 +1,55 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "case": "level_1024",
+  "reference": "art_source/bunker_bunk_bed/straightness_trials/level_reference.png",
+  "reference_sha256": "4032c756723ce082b65fa1acd132a4aac040fee413b3993155c67a2181b6afd1",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "bed-straightness-level_1024-standard1024-42-4032c756723ce082",
+  "job_id": "d199d3c3-e833-4eb6-a05a-238d36123e87",
+  "state": "queued",
+  "status": {
+    "job_id": "d199d3c3-e833-4eb6-a05a-238d36123e87",
+    "asset_id": "bed_level_1024",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791131430.9628706,
+    "idempotency_key": "bed-straightness-level_1024-standard1024-42-4032c756723ce082",
+    "request_hash": "2331fe171148371ca77932c10fbfda313590f4a4553507fbfa1c5d253b0f4416",
+    "started_at": 1791131431.1292677,
+    "updated_at": 1791131495.3427904,
+    "prompt_id": "73c9e638-c722-49c8-a180-58f3dd335bec",
+    "client_id": "a57d4881-07fb-4a9f-980a-dd40e6344184",
+    "finished_at": 1791131495.3427904,
+    "elapsed_seconds": 64.2135226726532,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3960932,
+      "sha256": "b25902a91e0670d76f09bc20d8da28b580e6653b9ff9c4d03da285bf25695a5b",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "d199d3c3-e833-4eb6-a05a-238d36123e87",
+    "download_url": "/jobs/d199d3c3-e833-4eb6-a05a-238d36123e87/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3960932,
+      "sha256": "b25902a91e0670d76f09bc20d8da28b580e6653b9ff9c4d03da285bf25695a5b",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

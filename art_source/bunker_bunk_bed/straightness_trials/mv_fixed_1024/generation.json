@@ -1,0 +1,49 @@
+{
+  "case": "mv_fixed_1024",
+  "backend": "http://127.0.0.1:8188",
+  "prompt_id": "f728c8a6-7b49-4c7b-96a3-ec9d7cbb5621",
+  "number": 31,
+  "node_errors": {},
+  "output_sha256": "c076ebd2995f79bb0e6fed14adeed637f7a9c56a3c7ad7d6b3fbfe902b02df96",
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "f728c8a6-7b49-4c7b-96a3-ec9d7cbb5621",
+          "timestamp": 1791132219292
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "118",
+            "15",
+            "288",
+            "279",
+            "126",
+            "125",
+            "199",
+            "108",
+            "117",
+            "193",
+            "87",
+            "319"
+          ],
+          "prompt_id": "f728c8a6-7b49-4c7b-96a3-ec9d7cbb5621",
+          "timestamp": 1791132219311
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "f728c8a6-7b49-4c7b-96a3-ec9d7cbb5621",
+          "timestamp": 1791132299485
+        }
+      ]
+    ]
+  }
+}

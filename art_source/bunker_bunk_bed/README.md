@@ -1,5 +1,7 @@
 # bunker-bunk-bed — Pixal3D 試作來源
 
+後續：[床平直度研究](../../docs/research/pixal3d-bed-straightness.md)、[單圖／三視圖對照](straightness_trials/comparison.png)。原試作的尺寸／匯入檢查不代表床柱與床架平直；新試驗保留在 [straightness_trials](straightness_trials/README.md)，仍未完成正式美術驗收。
+
 2026-10-04 使用現有 request 參考圖呼叫 `http://127.0.0.1:8000`；全部使用 `standard1024`、seed 42。原始 GLB 原樣保留，候選經軸向估計、尺寸／原點整理及 Godot 4.7.2 渲染。沒有 Blender 編輯或遊戲場景整合。
 
 需求：[原 request](../../docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed.md)。雙層床、梯架與床墊可讀；細支架、床腳支撐及走道間隙尚待裝入 wrapper 後檢查。

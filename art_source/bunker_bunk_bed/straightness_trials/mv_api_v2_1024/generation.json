@@ -1,0 +1,62 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "case": "mv_api_v2_1024",
+  "reference": "art_source/bunker_bunk_bed/straightness_trials/framed_v2/framed_reference.png",
+  "reference_sha256": "bd9ab1657bc80809a95d6f7fe8d686a53a67cf9cf388298352d682679e80ec2e",
+  "preset": "threeview1024",
+  "seed": 42,
+  "idempotency_key": "bed-straightness-mv_api_v2_1024-threeview1024-42-bd9ab1657bc80809",
+  "job_id": "17fcb7b0-a9ad-46ec-b0f8-7bdf44e8d355",
+  "state": "queued",
+  "status": {
+    "job_id": "17fcb7b0-a9ad-46ec-b0f8-7bdf44e8d355",
+    "asset_id": "bed_mv_api_v2_1024",
+    "preset": "threeview1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791132090.831434,
+    "idempotency_key": "bed-straightness-mv_api_v2_1024-threeview1024-42-bd9ab1657bc80809",
+    "request_hash": "a86ad042eb474b2c2c71eda5a8e8d592c8a1733364218338465a6e761c297fe2",
+    "num_views": 3,
+    "reference_layout": [
+      "front",
+      "left",
+      "back"
+    ],
+    "fov": 20.0,
+    "started_at": 1791132090.8966832,
+    "updated_at": 1791132183.2525458,
+    "prompt_id": "810891bf-d6f6-4582-99fc-9a717e23fa9e",
+    "client_id": "790d8d59-6bd8-4ee8-9dea-fde34505f2d3",
+    "finished_at": 1791132183.2525458,
+    "elapsed_seconds": 92.35586261749268,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3773264,
+      "sha256": "2495a69c5ecf9eb74a22cf6faba2af74741197868bbc493fa2555bbd052173a2",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "17fcb7b0-a9ad-46ec-b0f8-7bdf44e8d355",
+    "download_url": "/jobs/17fcb7b0-a9ad-46ec-b0f8-7bdf44e8d355/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3773264,
+      "sha256": "2495a69c5ecf9eb74a22cf6faba2af74741197868bbc493fa2555bbd052173a2",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

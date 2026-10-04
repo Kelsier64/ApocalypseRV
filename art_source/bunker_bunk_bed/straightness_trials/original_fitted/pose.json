@@ -1,0 +1,20 @@
+{
+  "rotation_rows": [
+    [
+      1.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "method": "Existing candidate, previous nonuniform fit already baked"
+}

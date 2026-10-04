@@ -1,0 +1,213 @@
+{
+  "prompt": [
+    29,
+    "4139d32a-2e8a-4cbe-a05c-adbb3d449005",
+    {
+      "input": {
+        "class_type": "LoadImage",
+        "inputs": {
+          "image": "threeview_reference.png"
+        }
+      },
+      "black": {
+        "class_type": "EmptyImage",
+        "inputs": {
+          "width": 2171,
+          "height": 724,
+          "batch_size": 1,
+          "color": 0
+        }
+      },
+      "alpha": {
+        "class_type": "InvertMask",
+        "inputs": {
+          "mask": [
+            "input",
+            1
+          ]
+        }
+      },
+      "composite": {
+        "class_type": "ImageCompositeMasked",
+        "inputs": {
+          "destination": [
+            "black",
+            0
+          ],
+          "source": [
+            "input",
+            0
+          ],
+          "mask": [
+            "alpha",
+            0
+          ],
+          "x": 0,
+          "y": 0,
+          "resize_source": false
+        }
+      },
+      "front": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "composite",
+            0
+          ],
+          "width": 724,
+          "height": 724,
+          "x": 60,
+          "y": 0
+        }
+      },
+      "back": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "composite",
+            0
+          ],
+          "width": 724,
+          "height": 724,
+          "x": 1387,
+          "y": 0
+        }
+      },
+      "left_isolate": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "composite",
+            0
+          ],
+          "width": 550,
+          "height": 724,
+          "x": 810,
+          "y": 0
+        }
+      },
+      "square_black": {
+        "class_type": "EmptyImage",
+        "inputs": {
+          "width": 724,
+          "height": 724,
+          "batch_size": 1,
+          "color": 0
+        }
+      },
+      "left": {
+        "class_type": "ImageCompositeMasked",
+        "inputs": {
+          "destination": [
+            "square_black",
+            0
+          ],
+          "source": [
+            "left_isolate",
+            0
+          ],
+          "x": 87,
+          "y": 0,
+          "resize_source": false
+        }
+      },
+      "pair": {
+        "class_type": "ImageStitch",
+        "inputs": {
+          "image1": [
+            "front",
+            0
+          ],
+          "image2": [
+            "left",
+            0
+          ],
+          "direction": "right",
+          "match_image_size": false,
+          "spacing_width": 0,
+          "spacing_color": "black"
+        }
+      },
+      "sheet": {
+        "class_type": "ImageStitch",
+        "inputs": {
+          "image1": [
+            "pair",
+            0
+          ],
+          "image2": [
+            "back",
+            0
+          ],
+          "direction": "right",
+          "match_image_size": false,
+          "spacing_width": 0,
+          "spacing_color": "black"
+        }
+      },
+      "save": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "images": [
+            "sheet",
+            0
+          ],
+          "filename_prefix": "bed_straightness/framed_v2"
+        }
+      }
+    },
+    {
+      "create_time": 1791132068738
+    },
+    [
+      "save"
+    ]
+  ],
+  "outputs": {
+    "save": {
+      "images": [
+        {
+          "filename": "framed_v2_00001_.png",
+          "subfolder": "bed_straightness",
+          "type": "output"
+        }
+      ]
+    }
+  },
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "4139d32a-2e8a-4cbe-a05c-adbb3d449005",
+          "timestamp": 1791132068739
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [],
+          "prompt_id": "4139d32a-2e8a-4cbe-a05c-adbb3d449005",
+          "timestamp": 1791132068747
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "4139d32a-2e8a-4cbe-a05c-adbb3d449005",
+          "timestamp": 1791132069670
+        }
+      ]
+    ]
+  },
+  "meta": {
+    "save": {
+      "node_id": "save",
+      "display_node": "save",
+      "parent_node": null,
+      "real_node_id": "save"
+    }
+  }
+}

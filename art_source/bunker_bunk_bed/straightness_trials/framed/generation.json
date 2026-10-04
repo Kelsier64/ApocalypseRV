@@ -1,0 +1,36 @@
+{
+  "case": "framed",
+  "backend": "http://127.0.0.1:8188",
+  "prompt_id": "bd003730-5a57-4f64-82ce-50fb23a52adc",
+  "number": 27,
+  "node_errors": {},
+  "output_sha256": "1b2bcf83ba539d910d264cd33db8fae5a904d079b140559c3b1197a45a690bb5",
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "bd003730-5a57-4f64-82ce-50fb23a52adc",
+          "timestamp": 1791131866894
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [],
+          "prompt_id": "bd003730-5a57-4f64-82ce-50fb23a52adc",
+          "timestamp": 1791131866904
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "bd003730-5a57-4f64-82ce-50fb23a52adc",
+          "timestamp": 1791131867525
+        }
+      ]
+    ]
+  }
+}

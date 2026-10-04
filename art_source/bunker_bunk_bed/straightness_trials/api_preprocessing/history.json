@@ -1,0 +1,273 @@
+{
+  "prompt": [
+    35,
+    "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+    {
+      "122": {
+        "class_type": "LoadImage",
+        "inputs": {
+          "image": "framed_reference.png"
+        }
+      },
+      "193": {
+        "class_type": "LoadBackgroundRemovalModel",
+        "inputs": {
+          "bg_removal_name": "birefnet.safetensors"
+        }
+      },
+      "front_crop": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "122",
+            0
+          ],
+          "width": 724,
+          "height": 724,
+          "x": 0,
+          "y": 0
+        }
+      },
+      "front_mask": {
+        "class_type": "RemoveBackground",
+        "inputs": {
+          "bg_removal_model": [
+            "193",
+            0
+          ],
+          "image": [
+            "front_crop",
+            0
+          ]
+        }
+      },
+      "front_frame": {
+        "class_type": "ImageCropToMask",
+        "inputs": {
+          "images": [
+            "front_crop",
+            0
+          ],
+          "masks": [
+            "front_mask",
+            0
+          ],
+          "width": 1024,
+          "height": 1024,
+          "pad_factor": 1.1,
+          "grow_mask": 0,
+          "background": "#000000"
+        }
+      },
+      "left_crop": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "122",
+            0
+          ],
+          "width": 724,
+          "height": 724,
+          "x": 724,
+          "y": 0
+        }
+      },
+      "left_mask": {
+        "class_type": "RemoveBackground",
+        "inputs": {
+          "bg_removal_model": [
+            "193",
+            0
+          ],
+          "image": [
+            "left_crop",
+            0
+          ]
+        }
+      },
+      "left_frame": {
+        "class_type": "ImageCropToMask",
+        "inputs": {
+          "images": [
+            "left_crop",
+            0
+          ],
+          "masks": [
+            "left_mask",
+            0
+          ],
+          "width": 1024,
+          "height": 1024,
+          "pad_factor": 1.1,
+          "grow_mask": 0,
+          "background": "#000000"
+        }
+      },
+      "back_crop": {
+        "class_type": "ImageCrop",
+        "inputs": {
+          "image": [
+            "122",
+            0
+          ],
+          "width": 724,
+          "height": 724,
+          "x": 1448,
+          "y": 0
+        }
+      },
+      "back_mask": {
+        "class_type": "RemoveBackground",
+        "inputs": {
+          "bg_removal_model": [
+            "193",
+            0
+          ],
+          "image": [
+            "back_crop",
+            0
+          ]
+        }
+      },
+      "back_frame": {
+        "class_type": "ImageCropToMask",
+        "inputs": {
+          "images": [
+            "back_crop",
+            0
+          ],
+          "masks": [
+            "back_mask",
+            0
+          ],
+          "width": 1024,
+          "height": 1024,
+          "pad_factor": 1.1,
+          "grow_mask": 0,
+          "background": "#000000"
+        }
+      },
+      "save_front": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "images": [
+            "front_frame",
+            0
+          ],
+          "filename_prefix": "bed_straightness/api_preprocessing/front"
+        }
+      },
+      "save_left": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "images": [
+            "left_frame",
+            0
+          ],
+          "filename_prefix": "bed_straightness/api_preprocessing/left"
+        }
+      },
+      "save_back": {
+        "class_type": "SaveImage",
+        "inputs": {
+          "images": [
+            "back_frame",
+            0
+          ],
+          "filename_prefix": "bed_straightness/api_preprocessing/back"
+        }
+      }
+    },
+    {
+      "create_time": 1791132795314
+    },
+    [
+      "save_left",
+      "save_front",
+      "save_back"
+    ]
+  ],
+  "outputs": {
+    "save_left": {
+      "images": [
+        {
+          "filename": "left_00001_.png",
+          "subfolder": "bed_straightness\\api_preprocessing",
+          "type": "output"
+        }
+      ]
+    },
+    "save_front": {
+      "images": [
+        {
+          "filename": "front_00001_.png",
+          "subfolder": "bed_straightness\\api_preprocessing",
+          "type": "output"
+        }
+      ]
+    },
+    "save_back": {
+      "images": [
+        {
+          "filename": "back_00001_.png",
+          "subfolder": "bed_straightness\\api_preprocessing",
+          "type": "output"
+        }
+      ]
+    }
+  },
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132795314
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "122",
+            "193",
+            "front_crop",
+            "left_crop",
+            "back_crop"
+          ],
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132795320
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "d3adeb71-0086-48ce-8be6-67b3cd4506bb",
+          "timestamp": 1791132797506
+        }
+      ]
+    ]
+  },
+  "meta": {
+    "save_left": {
+      "node_id": "save_left",
+      "display_node": "save_left",
+      "parent_node": null,
+      "real_node_id": "save_left"
+    },
+    "save_front": {
+      "node_id": "save_front",
+      "display_node": "save_front",
+      "parent_node": null,
+      "real_node_id": "save_front"
+    },
+    "save_back": {
+      "node_id": "save_back",
+      "display_node": "save_back",
+      "parent_node": null,
+      "real_node_id": "save_back"
+    }
+  }
+}

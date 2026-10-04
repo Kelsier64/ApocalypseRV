@@ -1,0 +1,176 @@
+{
+  "122": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "framed_reference.png"
+    }
+  },
+  "193": {
+    "class_type": "LoadBackgroundRemovalModel",
+    "inputs": {
+      "bg_removal_name": "birefnet.safetensors"
+    }
+  },
+  "front_crop": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "image": [
+        "122",
+        0
+      ],
+      "width": 724,
+      "height": 724,
+      "x": 0,
+      "y": 0
+    }
+  },
+  "front_mask": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "193",
+        0
+      ],
+      "image": [
+        "front_crop",
+        0
+      ]
+    }
+  },
+  "front_frame": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "front_crop",
+        0
+      ],
+      "masks": [
+        "front_mask",
+        0
+      ],
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.1,
+      "grow_mask": 0,
+      "background": "#000000"
+    }
+  },
+  "left_crop": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "image": [
+        "122",
+        0
+      ],
+      "width": 724,
+      "height": 724,
+      "x": 724,
+      "y": 0
+    }
+  },
+  "left_mask": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "193",
+        0
+      ],
+      "image": [
+        "left_crop",
+        0
+      ]
+    }
+  },
+  "left_frame": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "left_crop",
+        0
+      ],
+      "masks": [
+        "left_mask",
+        0
+      ],
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.1,
+      "grow_mask": 0,
+      "background": "#000000"
+    }
+  },
+  "back_crop": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "image": [
+        "122",
+        0
+      ],
+      "width": 724,
+      "height": 724,
+      "x": 1448,
+      "y": 0
+    }
+  },
+  "back_mask": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "193",
+        0
+      ],
+      "image": [
+        "back_crop",
+        0
+      ]
+    }
+  },
+  "back_frame": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "back_crop",
+        0
+      ],
+      "masks": [
+        "back_mask",
+        0
+      ],
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.1,
+      "grow_mask": 0,
+      "background": "#000000"
+    }
+  },
+  "save_front": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "front_frame",
+        0
+      ],
+      "filename_prefix": "bed_straightness/api_preprocessing/front"
+    }
+  },
+  "save_left": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "left_frame",
+        0
+      ],
+      "filename_prefix": "bed_straightness/api_preprocessing/left"
+    }
+  },
+  "save_back": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "back_frame",
+        0
+      ],
+      "filename_prefix": "bed_straightness/api_preprocessing/back"
+    }
+  }
+}

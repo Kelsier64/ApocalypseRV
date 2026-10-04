@@ -1,0 +1,10 @@
+{
+  "mask_measurement": "RGB max channel > 20 on saved conditioning PNG; inclusive bounds",
+  "front_height_px": 813,
+  "left_height_px": 931,
+  "back_height_px": 813,
+  "left_scale_relative_to_front": 1.1451414514145142,
+  "moge_single_fov_degrees": 26.155370352758343,
+  "preprocessing_history": "api_preprocessing/history.json",
+  "moge_history": "single_fov_diagnostic/history.json"
+}

@@ -1,0 +1,61 @@
+{
+  "case": "mv_fixed_1024_seed43",
+  "pose_method": "Yaw-only minimum XZ footprint (0.9 degrees); preserves source up",
+  "extent": [
+    0.9391553249612334,
+    0.810222715139389,
+    0.4775097169822279
+  ],
+  "height_per_length": 0.8627142854914159,
+  "depth_per_length": 0.5084459452987061,
+  "corner_gap_post_fits": [
+    {
+      "corner": "left_near",
+      "surface_samples_in_roi": 2070,
+      "bands": 8,
+      "axis": [
+        -0.0057808615650392185,
+        0.999924544203251,
+        -0.010839166918481026
+      ],
+      "tilt_degrees": 0.7038606167804148
+    },
+    {
+      "corner": "left_far",
+      "surface_samples_in_roi": 1976,
+      "bands": 8,
+      "axis": [
+        -0.02087218091233217,
+        0.9997146065186576,
+        0.011621427503036175
+      ],
+      "tilt_degrees": 1.36889451747307
+    },
+    {
+      "corner": "right_near",
+      "surface_samples_in_roi": 931,
+      "bands": 8,
+      "axis": [
+        0.028518750973999474,
+        0.9993661511085958,
+        -0.021306732768630786
+      ],
+      "tilt_degrees": 2.040109321552285
+    },
+    {
+      "corner": "right_far",
+      "surface_samples_in_roi": 2223,
+      "bands": 8,
+      "axis": [
+        -0.0031257932651252104,
+        0.9999889587423652,
+        0.003508818864547933
+      ],
+      "tilt_degrees": 0.26924478593576473
+    }
+  ],
+  "mean_post_tilt_from_up_degrees": 0.24445866745577752,
+  "max_post_deviation_from_mean_degrees": 1.9197503388097652,
+  "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+  "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+}

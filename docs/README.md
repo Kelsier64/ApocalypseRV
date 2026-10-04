@@ -164,6 +164,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 設計研究
 
+- [Pixal3D 床模型平直度](research/pixal3d-bed-straightness.md) — 平視參考圖、FOV、512／1024、三視圖共同倍率、seed 對照及 Godot 渲染證據。
+
 - [Lethal Company 視覺風格與 ApocalypseRV 差距研究](research/2026-09-17-lethal-company-visual-direction.md) — `research/2026-09-17-lethal-company-visual-direction.md`
 - [《Lethal Company》恐怖氛圍設計研究](research/lethal-company-horror-atmosphere.md) — `research/lethal-company-horror-atmosphere.md`
 

@@ -1,0 +1,37 @@
+{
+  "case": "single_fov_diagnostic",
+  "backend": "http://127.0.0.1:8188",
+  "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+  "number": 36,
+  "node_errors": {},
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132813503
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "193"
+          ],
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132813509
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132815024
+        }
+      ]
+    ]
+  }
+}

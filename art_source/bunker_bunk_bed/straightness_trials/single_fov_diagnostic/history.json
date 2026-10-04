@@ -1,0 +1,147 @@
+{
+  "prompt": [
+    36,
+    "ede3363e-dd9b-4f17-883d-c680a37004d4",
+    {
+      "56": {
+        "class_type": "MoGeInference",
+        "inputs": {
+          "moge_model": [
+            "55",
+            0
+          ],
+          "image": [
+            "312",
+            0
+          ],
+          "resolution_level": 9,
+          "fov_x_degrees": 0.0,
+          "batch_size": 4,
+          "force_projection": true,
+          "apply_mask": true,
+          "refine_steps": 3
+        }
+      },
+      "122": {
+        "class_type": "LoadImage",
+        "inputs": {
+          "image": "level_reference.png"
+        }
+      },
+      "312": {
+        "class_type": "ImageCropToMask",
+        "inputs": {
+          "images": [
+            "122",
+            0
+          ],
+          "masks": [
+            "192",
+            0
+          ],
+          "width": 1024,
+          "height": 1024,
+          "pad_factor": 1.1,
+          "grow_mask": 0,
+          "background": "#000000"
+        }
+      },
+      "193": {
+        "class_type": "LoadBackgroundRemovalModel",
+        "inputs": {
+          "bg_removal_name": "birefnet.safetensors"
+        }
+      },
+      "242": {
+        "class_type": "MoGeGeometryToFOV",
+        "inputs": {
+          "moge_geometry": [
+            "56",
+            0
+          ],
+          "axis": "horizontal",
+          "unit": "degrees"
+        }
+      },
+      "192": {
+        "class_type": "RemoveBackground",
+        "inputs": {
+          "bg_removal_model": [
+            "193",
+            0
+          ],
+          "image": [
+            "122",
+            0
+          ]
+        }
+      },
+      "55": {
+        "class_type": "LoadMoGeModel",
+        "inputs": {
+          "model_name": "moge_2_vitl_normal_fp16.safetensors"
+        }
+      },
+      "preview": {
+        "class_type": "PreviewAny",
+        "inputs": {
+          "source": [
+            "242",
+            0
+          ]
+        }
+      }
+    },
+    {
+      "create_time": 1791132813502
+    },
+    [
+      "preview"
+    ]
+  ],
+  "outputs": {
+    "preview": {
+      "text": [
+        "26.155370352758343"
+      ]
+    }
+  },
+  "status": {
+    "status_str": "success",
+    "completed": true,
+    "messages": [
+      [
+        "execution_start",
+        {
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132813503
+        }
+      ],
+      [
+        "execution_cached",
+        {
+          "nodes": [
+            "193"
+          ],
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132813509
+        }
+      ],
+      [
+        "execution_success",
+        {
+          "prompt_id": "ede3363e-dd9b-4f17-883d-c680a37004d4",
+          "timestamp": 1791132815024
+        }
+      ]
+    ]
+  },
+  "meta": {
+    "preview": {
+      "node_id": "preview",
+      "display_node": "preview",
+      "parent_node": null,
+      "real_node_id": "preview"
+    }
+  }
+}
