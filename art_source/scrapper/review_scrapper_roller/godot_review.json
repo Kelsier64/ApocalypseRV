@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.200000002980232,
+		-0.5,
+		-0.200000002980232
+	],
+	"aabb_size": [
+		0.400000005960464,
+		1.0,
+		0.400000005960464
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/scrapper/scrapper_roller_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "5ca2c10070d4fd887980ef34138c86d64b3248cb41e6241b7939b021f2946606",
+	"triangles": 9996,
+	"vertices": 7047
+}

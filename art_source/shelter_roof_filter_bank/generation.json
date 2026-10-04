@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/shelter-roof-filter-bank/shelter-roof-filter-bank.md",
+  "reference": "docs/modeling/requests/shelter-roof-filter-bank/shelter-roof-filter-bank-image-to-3d-reference.png",
+  "reference_sha256": "289eb414f538524cf1c834ab692a3a14c81101f53e3c077434b893256a3e01ff",
+  "asset_id": "shelter_roof_filter_bank",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-shelter_roof_filter_bank-standard1024-seed42-289eb414f538524c",
+  "job_id": "1056d9e6-a18c-4d18-91c3-e1382ee5665a",
+  "submitted_result": {
+    "job_id": "1056d9e6-a18c-4d18-91c3-e1382ee5665a",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "1056d9e6-a18c-4d18-91c3-e1382ee5665a",
+    "asset_id": "shelter_roof_filter_bank",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123485.4500842,
+    "idempotency_key": "apocalypse-rv-shelter_roof_filter_bank-standard1024-seed42-289eb414f538524c",
+    "request_hash": "5c790247ac08b0d87a7e14a9d5c9b8b77d1877d461a445a33ed6466d473c43f2",
+    "started_at": 1791124207.5389342,
+    "updated_at": 1791124251.7214863,
+    "prompt_id": "5cc7783e-cdba-4d9a-a71e-78f9a1880cb8",
+    "client_id": "4e49b249-4e23-4e66-b521-4b88a4720b36",
+    "finished_at": 1791124251.7214863,
+    "elapsed_seconds": 44.182552099227905,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3868924,
+      "sha256": "2b4cb0c387263600cc11b83cf471777fb547e6f6453ca2972f511ad5f8fa39da",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "1056d9e6-a18c-4d18-91c3-e1382ee5665a",
+    "download_url": "/jobs/1056d9e6-a18c-4d18-91c3-e1382ee5665a/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3868924,
+      "sha256": "2b4cb0c387263600cc11b83cf471777fb547e6f6453ca2972f511ad5f8fa39da",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

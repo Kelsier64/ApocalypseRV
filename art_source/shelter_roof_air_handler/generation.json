@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/shelter-roof-air-handler/shelter-roof-air-handler.md",
+  "reference": "docs/modeling/requests/shelter-roof-air-handler/shelter-roof-air-handler-image-to-3d-reference.png",
+  "reference_sha256": "b5b7c3c266efe929af6a3a9b9d293bfda695acdd77e4cf33344a790859f1de89",
+  "asset_id": "shelter_roof_air_handler",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-shelter_roof_air_handler-standard1024-seed42-b5b7c3c266efe929",
+  "job_id": "9c62100d-2f66-4361-ab19-733ba883f1d4",
+  "submitted_result": {
+    "job_id": "9c62100d-2f66-4361-ab19-733ba883f1d4",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "9c62100d-2f66-4361-ab19-733ba883f1d4",
+    "asset_id": "shelter_roof_air_handler",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123485.0757658,
+    "idempotency_key": "apocalypse-rv-shelter_roof_air_handler-standard1024-seed42-b5b7c3c266efe929",
+    "request_hash": "4c5cd8d8083e15830f49875b0fe82d1a718d107e578cc53abbc49f36f695660a",
+    "started_at": 1791124151.181633,
+    "updated_at": 1791124207.5266242,
+    "prompt_id": "4913986d-ff76-4e4d-bcc8-d1620c27e9a2",
+    "client_id": "ed84da2c-3126-4130-a7f0-6d0ddc0d1e05",
+    "finished_at": 1791124207.5266242,
+    "elapsed_seconds": 56.3449912071228,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3208212,
+      "sha256": "d47c1b59a1775654a1bbd807b75b02b9befb281c4bbeb3e0fac8f95f2e514ca7",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "9c62100d-2f66-4361-ab19-733ba883f1d4",
+    "download_url": "/jobs/9c62100d-2f66-4361-ab19-733ba883f1d4/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3208212,
+      "sha256": "d47c1b59a1775654a1bbd807b75b02b9befb281c4bbeb3e0fac8f95f2e514ca7",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

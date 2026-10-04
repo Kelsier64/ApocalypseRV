@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.198797613382339,
+		-0.422924816608429,
+		-0.411767572164536
+	],
+	"aabb_size": [
+		0.397595226764679,
+		0.845849633216858,
+		0.823535144329071
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/gas_can/gas_can_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "760387fda79586313a9f2f15ffe63ceeff3c29307589e4239b0f8959d0bee6b3",
+	"triangles": 9986,
+	"vertices": 7008
+}

@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.699999988079071,
+		0.0,
+		-0.400000005960464
+	],
+	"aabb_size": [
+		1.39999997615814,
+		1.39999997615814,
+		0.800000011920929
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_filtration_pump/bunker_filtration_pump_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "e6fc243e6f90d893efb50c66c9707c6d00939dddebc9608d7640c7afc8507812",
+	"triangles": 9869,
+	"vertices": 8692
+}

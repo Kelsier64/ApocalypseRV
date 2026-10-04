@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-1.07500004768372,
+		0.0,
+		-0.0599999986588955
+	],
+	"aabb_size": [
+		2.15000009536743,
+		2.70000004768372,
+		0.119999997317791
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_blast_door/bunker_blast_door_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "6d53b86121a174d401b9e1c7d2ed56922347e88ab75471fa43795d8e160eebd5",
+	"triangles": 9998,
+	"vertices": 7438
+}

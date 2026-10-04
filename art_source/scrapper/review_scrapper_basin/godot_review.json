@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.524999976158142,
+		0.0,
+		-0.524999976158142
+	],
+	"aabb_size": [
+		1.04999995231628,
+		0.699999988079071,
+		1.04999995231628
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/scrapper/scrapper_basin_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "abdd80cdfaaf4d49fdd7cb245b60694fea50300ab9d11a14a9514eac587bb2cb",
+	"triangles": 9992,
+	"vertices": 6840
+}

@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_filtration_pump/bunker_filtration_pump_raw.glb",
+  "candidate": "assets/models/bunker_filtration_pump/bunker_filtration_pump_candidate.glb",
+  "raw_sha256": "6c82844c0f8b71821aaa46d623df60957df5ddf083b41efa7f74f22e7ad8fbce",
+  "candidate_sha256": "e6fc243e6f90d893efb50c66c9707c6d00939dddebc9608d7640c7afc8507812",
+  "triangles": 9869,
+  "vertices": 8692,
+  "raw_aabb_size": [
+    0.8697732090950012,
+    0.8466492891311646,
+    0.6982774138450623
+  ],
+  "aligned_extent": [
+    0.956100111527689,
+    0.8048038496692984,
+    0.4443745688337046
+  ],
+  "rotation_rows": [
+    [
+      0.8731826326399843,
+      -0.061089251367552375,
+      0.4835495770065964
+    ],
+    [
+      0.003114076248000066,
+      0.9927930158999365,
+      0.11980121080118543
+    ],
+    [
+      -0.4873832091742882,
+      -0.10310252638835009,
+      0.8670798558767882
+    ]
+  ],
+  "scale": [
+    1.4642818080661373,
+    1.7395543032942415,
+    1.8002830407231942
+  ],
+  "pivot": [
+    0.0036116917111962965,
+    -0.6203951305680515,
+    0.08392647478191981
+  ],
+  "candidate_aabb_min": [
+    -0.699999988079071,
+    0.0,
+    -0.4000000059604645
+  ],
+  "candidate_aabb_size": [
+    1.399999976158142,
+    1.399999976158142,
+    0.800000011920929
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

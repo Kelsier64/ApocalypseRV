@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_diesel_generator/bunker_diesel_generator_raw.glb",
+  "candidate": "assets/models/bunker_diesel_generator/bunker_diesel_generator_candidate.glb",
+  "raw_sha256": "ee62fa36446d8504ed21f8f7edb3b128514dbd79b4024867f6c5e334a719f6f4",
+  "candidate_sha256": "92abc98e67afbc1996a9fbae760b039039085595350382805ffaccfcb216afec",
+  "triangles": 9680,
+  "vertices": 8328,
+  "raw_aabb_size": [
+    0.9136793911457062,
+    0.5131054818630219,
+    0.8204184770584106
+  ],
+  "aligned_extent": [
+    0.9248132295086233,
+    0.4951407805819057,
+    0.35824061474503865
+  ],
+  "rotation_rows": [
+    [
+      0.8015144064275909,
+      -0.12864906782310057,
+      0.5839726651456163
+    ],
+    [
+      -0.011482411236977805,
+      0.9730917341575239,
+      0.23013176909433367
+    ],
+    [
+      -0.5978652109976058,
+      -0.19115934259813216,
+      0.7784698422008641
+    ]
+  ],
+  "scale": [
+    3.4601581139796638,
+    3.4333669668697135,
+    3.3497039436861313
+  ],
+  "pivot": [
+    -0.07761940346957508,
+    -0.6189871630602771,
+    0.0007000922392233488
+  ],
+  "candidate_aabb_min": [
+    -1.600000023841858,
+    0.0,
+    -0.6000000238418579
+  ],
+  "candidate_aabb_size": [
+    3.200000047683716,
+    1.7000000476837158,
+    1.2000000476837158
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

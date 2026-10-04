@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.310000002384186,
+		0.0,
+		-0.28999999165535
+	],
+	"aabb_size": [
+		0.620000004768372,
+		1.89999997615814,
+		0.579999983310699
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_locker/bunker_locker_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "f3fdf4ff9c4377b0d2344898f5e2dde729e9ca1286d6cf42aee93e4c2686779b",
+	"triangles": 9980,
+	"vertices": 6576
+}

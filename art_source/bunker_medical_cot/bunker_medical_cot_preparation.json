@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_medical_cot/bunker_medical_cot_raw.glb",
+  "candidate": "assets/models/bunker_medical_cot/bunker_medical_cot_candidate.glb",
+  "raw_sha256": "afd7b91e54ff3c8d3702bc6a754ca72b9d5c9c44e36fb2ad22828696dcf00378",
+  "candidate_sha256": "b78efce1d0003a1eadf3be9cfaf71215eb812ff82ed5163d637f7b1034e67455",
+  "triangles": 9852,
+  "vertices": 7982,
+  "raw_aabb_size": [
+    0.8774433135986328,
+    0.5271921008825302,
+    0.8369788527488708
+  ],
+  "aligned_extent": [
+    0.8643815767004688,
+    0.30833134756363867,
+    0.36037818766330837
+  ],
+  "rotation_rows": [
+    [
+      0.779861626676474,
+      -0.20136292410927506,
+      0.5926793534717457
+    ],
+    [
+      -0.003103842401185768,
+      0.9455891836240612,
+      0.32534821649354423
+    ],
+    [
+      -0.6259442542270619,
+      -0.2555661726585579,
+      0.7368037201268622
+    ]
+  ],
+  "scale": [
+    2.429482599590049,
+    2.7567745113057716,
+    2.636119589145499
+  ],
+  "pivot": [
+    0.05704957865178151,
+    -0.24415977695203211,
+    0.18688687860638034
+  ],
+  "candidate_aabb_min": [
+    -1.0499999523162842,
+    0.0,
+    -0.4749999940395355
+  ],
+  "candidate_aabb_size": [
+    2.0999999046325684,
+    0.8500000238418579,
+    0.949999988079071
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

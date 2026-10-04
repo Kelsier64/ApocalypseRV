@@ -6,4 +6,4 @@
 - **Origin, facing, interface:** Keep wrapper collision. Origin bottom center; inspection panel faces local +Z. No gameplay pipe sockets exist yet.
 - **Delivery:** `assets/models/bunker_filtration_pump/` for GLB and textures; `art_source/bunker_filtration_pump/` for editable source. Replace only the stated visuals and preserve scene node names, collisions and interactions.
 
-Status: Graybox is in the bunker v2 kit; finished model has not been delivered.
+完成情況：2026-10-04 已透過本機 Pixal3D API 生成候選（[bunker_filtration_pump](../../../../assets/models/bunker_filtration_pump/bunker_filtration_pump_candidate.glb)），並通過 Godot 4.7.2 匯入與尺寸／原點檢查；[來源、預覽與待整理事項](../../../../art_source/bunker_filtration_pump/README.md)。只完成 API 試作，正式場景仍沿用既有外觀，接口與遊戲行為尚未驗收。

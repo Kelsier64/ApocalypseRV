@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_switchgear/bunker_switchgear_raw.glb",
+  "candidate": "assets/models/bunker_switchgear/bunker_switchgear_candidate.glb",
+  "raw_sha256": "dccc3ec7d4b1d451664abf1fa46e327e2b685314edf91d8ef0d2db2e7e723491",
+  "candidate_sha256": "83d13216fd7beeb0bbebf6e0d9f37e9a2c523f0196e739438c9a0b8beb6c658f",
+  "triangles": 9980,
+  "vertices": 7597,
+  "raw_aabb_size": [
+    0.49184830486774445,
+    0.903462290763855,
+    0.5562016367912292
+  ],
+  "aligned_extent": [
+    0.43755890479211484,
+    0.8688970376408726,
+    0.26735719942302405
+  ],
+  "rotation_rows": [
+    [
+      0.8856805722387706,
+      -0.08891752307447133,
+      0.4557012157643478
+    ],
+    [
+      -0.007709814400406689,
+      0.9785386106005672,
+      0.2059192713803715
+    ],
+    [
+      -0.4642310660874767,
+      -0.18589206990674093,
+      0.8659870989945938
+    ]
+  ],
+  "scale": [
+    2.742487895590018,
+    2.7045782160570426,
+    2.6930264139279267
+  ],
+  "pivot": [
+    -0.08573944474187445,
+    -1.1510188669073413,
+    -0.1300949902190986
+  ],
+  "candidate_aabb_min": [
+    -0.6000000238418579,
+    0.0,
+    -0.36000001430511475
+  ],
+  "candidate_aabb_size": [
+    1.2000000476837158,
+    2.3499999046325684,
+    0.7200000286102295
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

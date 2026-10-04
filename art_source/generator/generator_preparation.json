@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/generator/generator_raw.glb",
+  "candidate": "assets/models/generator/generator_candidate.glb",
+  "raw_sha256": "3d87a71648d6be474a6c0ccae23b33e5e6923a1f52255cb3d51a1259d33b6a85",
+  "candidate_sha256": "65a420771dc9f2eddc1dd0a35b8017f954efd41b8c5b8b6c8ff059855433cfb6",
+  "triangles": 9910,
+  "vertices": 9534,
+  "raw_aabb_size": [
+    0.9080078899860382,
+    0.6839034259319305,
+    0.9448451399803162
+  ],
+  "aligned_extent": [
+    0.7626878595242996,
+    0.5481229070881475,
+    0.58927514711802
+  ],
+  "rotation_rows": [
+    [
+      0.8418208370251945,
+      0.1725305654870781,
+      -0.5114400085277941
+    ],
+    [
+      0.004653877879747546,
+      0.9451821150644308,
+      0.32651050638993145
+    ],
+    [
+      0.5397369912937982,
+      -0.2772435271291976,
+      0.7948710630624822
+    ]
+  ],
+  "scale": [
+    1.0489219016793745,
+    1.0946450006759338,
+    2.036400153423854
+  ],
+  "pivot": [
+    0.006530715014317456,
+    0.011423381711666208,
+    -0.031134110185664865
+  ],
+  "candidate_aabb_min": [
+    -0.4000000059604645,
+    -0.30000001192092896,
+    -0.6000000238418579
+  ],
+  "candidate_aabb_size": [
+    0.800000011920929,
+    0.6000000238418579,
+    1.2000000476837158
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": -90.0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/gas_can/gas_can_raw.glb",
+  "candidate": "assets/models/gas_can/gas_can_candidate.glb",
+  "raw_sha256": "545cf486ec7df934cb574fb745c2591355dc6c0e3778b534af52d3e25c6f5b0d",
+  "candidate_sha256": "760387fda79586313a9f2f15ffe63ceeff3c29307589e4239b0f8959d0bee6b3",
+  "triangles": 9986,
+  "vertices": 7008,
+  "raw_aabb_size": [
+    0.7228614687919617,
+    0.8901870250701904,
+    0.6978362202644348
+  ],
+  "aligned_extent": [
+    0.27589094081652554,
+    0.8416832169109448,
+    0.7279382741948293
+  ],
+  "rotation_rows": [
+    [
+      0.4498197467133411,
+      0.32834010734777425,
+      -0.8305750835256244
+    ],
+    [
+      0.030024326931134993,
+      0.9238860760040115,
+      0.38148795309713546
+    ],
+    [
+      0.8926145502169892,
+      -0.1965382722849725,
+      0.4057240099724936
+    ]
+  ],
+  "scale": [
+    1.4411318792247365,
+    1.0049500964321783,
+    1.131325510958893
+  ],
+  "pivot": [
+    -0.0016152522122419855,
+    0.0015148369777931159,
+    0.0007903240269172551
+  ],
+  "candidate_aabb_min": [
+    -0.19879761338233948,
+    -0.42292481660842896,
+    -0.4117675721645355
+  ],
+  "candidate_aabb_size": [
+    0.39759522676467896,
+    0.8458496332168579,
+    0.823535144329071
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

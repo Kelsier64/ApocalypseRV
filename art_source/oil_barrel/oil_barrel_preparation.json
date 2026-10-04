@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/oil_barrel/oil_barrel_raw.glb",
+  "candidate": "assets/models/oil_barrel/oil_barrel_candidate.glb",
+  "raw_sha256": "ce765c0823406e99c2a27dbfe3a6cbc4489305adcb78ee0459e1b671bfaee958",
+  "candidate_sha256": "50dca87006fcddb8b288b96c53412c7e8e374bd7e3bcde81c95e0e79fafee611",
+  "triangles": 9934,
+  "vertices": 6584,
+  "raw_aabb_size": [
+    0.5038979649543762,
+    0.903513491153717,
+    0.7470330595970154
+  ],
+  "aligned_extent": [
+    0.5038496062653164,
+    0.8102650674340828,
+    0.45056148626027603
+  ],
+  "rotation_rows": [
+    [
+      0.9999931796906051,
+      0.002255602375261921,
+      0.0029245222170318805
+    ],
+    [
+      -0.0033140702032217586,
+      0.8975204753013508,
+      0.44096033081619185
+    ],
+    [
+      -0.0016301874006745105,
+      -0.4409670154022429,
+      0.8975218291586432
+    ]
+  ],
+  "scale": [
+    1.3082865835423323,
+    1.2341640287748832,
+    1.4630182563345226
+  ],
+  "pivot": [
+    -0.0015882400028874866,
+    0.0017452974036296365,
+    -4.689260054013822e-05
+  ],
+  "candidate_aabb_min": [
+    -0.32958984375,
+    -0.5,
+    -0.32958984375
+  ],
+  "candidate_aabb_size": [
+    0.6591796875,
+    1.0,
+    0.6591796875
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

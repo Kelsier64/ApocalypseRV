@@ -11,4 +11,4 @@
 
 起始 wrapper 的實測接入轉換：`Visuals.position = (5,0,5)`，現有車體中心在該節點下 `(-5,0,-5)`、偏航 Y=-0.2 rad。以地面中心為原點的新 `Model` 應沿用此位置與偏航，不直接放在 `Visuals` 的零點。碰撞保留於獨立的 `Collision` 層。
 
-完成情況：路旁及起始封路仍使用原生簡化車體，尚待共用模型製作；本次補齊起始封路替換位置與堆疊要求，未將其列為完成模型。
+完成情況：2026-10-04 已透過本機 Pixal3D API 生成候選（[wreck_car](../../../../assets/models/wreck_car/wreck_car_candidate.glb)），並通過 Godot 4.7.2 匯入與尺寸／原點檢查；[來源、預覽與待整理事項](../../../../art_source/wreck_car/README.md)。只完成 API 試作，正式場景仍沿用既有外觀，接口與遊戲行為尚未驗收。

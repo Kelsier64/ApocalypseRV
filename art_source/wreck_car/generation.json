@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/wreck-car/wreck-car.md",
+  "reference": "docs/modeling/requests/wreck-car/wreck-car-image-to-3d-reference.png",
+  "reference_sha256": "ef7d03429d74dd5597741e27008ae406151f0e1a7158135812c5d1d00e6805e6",
+  "asset_id": "wreck_car",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-wreck_car-standard1024-seed42-ef7d03429d74dd55",
+  "job_id": "a9bf2de4-3d7d-4f0a-9862-8831f83d9002",
+  "submitted_result": {
+    "job_id": "a9bf2de4-3d7d-4f0a-9862-8831f83d9002",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "a9bf2de4-3d7d-4f0a-9862-8831f83d9002",
+    "asset_id": "wreck_car",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123485.7580776,
+    "idempotency_key": "apocalypse-rv-wreck_car-standard1024-seed42-ef7d03429d74dd55",
+    "request_hash": "6f83ad0ab1d1c900a1278a9df19c799a445bf7b0efd57cbf16249ca41923e2db",
+    "started_at": 1791124251.7338142,
+    "updated_at": 1791124330.0325377,
+    "prompt_id": "4cac6f2f-3991-4271-8149-53ea8c4eac64",
+    "client_id": "8dcd2108-dd83-495e-8981-c137dab26f53",
+    "finished_at": 1791124330.0325377,
+    "elapsed_seconds": 78.29872345924377,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3143188,
+      "sha256": "7dbc9659128d923a7fd1524a08588cdddd723bf2f4c23a13ca30adbfbd763020",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "a9bf2de4-3d7d-4f0a-9862-8831f83d9002",
+    "download_url": "/jobs/a9bf2de4-3d7d-4f0a-9862-8831f83d9002/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3143188,
+      "sha256": "7dbc9659128d923a7fd1524a08588cdddd723bf2f4c23a13ca30adbfbd763020",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

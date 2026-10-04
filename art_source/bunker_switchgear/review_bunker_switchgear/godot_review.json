@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.600000023841858,
+		0.0,
+		-0.360000014305115
+	],
+	"aabb_size": [
+		1.20000004768372,
+		2.34999990463257,
+		0.720000028610229
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_switchgear/bunker_switchgear_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "83d13216fd7beeb0bbebf6e0d9f37e9a2c523f0196e739438c9a0b8beb6c658f",
+	"triangles": 9980,
+	"vertices": 7597
+}

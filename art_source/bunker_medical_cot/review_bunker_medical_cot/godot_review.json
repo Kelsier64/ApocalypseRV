@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-1.04999995231628,
+		0.0,
+		-0.474999994039536
+	],
+	"aabb_size": [
+		2.09999990463257,
+		0.850000023841858,
+		0.949999988079071
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_medical_cot/bunker_medical_cot_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "b78efce1d0003a1eadf3be9cfaf71215eb812ff82ed5163d637f7b1034e67455",
+	"triangles": 9852,
+	"vertices": 7982
+}

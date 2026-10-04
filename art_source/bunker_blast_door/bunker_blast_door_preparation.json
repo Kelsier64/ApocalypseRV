@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_blast_door/bunker_blast_door_raw.glb",
+  "candidate": "assets/models/bunker_blast_door/bunker_blast_door_candidate.glb",
+  "raw_sha256": "d6f8f21424e37147bd02edc9fdd2c4f6e7494592ad56ce43702eabbb0ba4716f",
+  "candidate_sha256": "6d53b86121a174d401b9e1c7d2ed56922347e88ab75471fa43795d8e160eebd5",
+  "triangles": 9998,
+  "vertices": 7438,
+  "raw_aabb_size": [
+    0.5699961185455322,
+    0.8600183427333832,
+    0.4101097881793976
+  ],
+  "aligned_extent": [
+    0.620525402159158,
+    0.8414475487220742,
+    0.20398448730010613
+  ],
+  "rotation_rows": [
+    [
+      0.9114672914287163,
+      0.03506730404476162,
+      0.4098751771486436
+    ],
+    [
+      -0.00022676512694544564,
+      0.996402730006171,
+      -0.08474401579950477
+    ],
+    [
+      -0.41137248964068673,
+      0.07714845314898906,
+      0.9081964495325565
+    ]
+  ],
+  "scale": [
+    3.464805779938963,
+    3.2087561537264593,
+    0.588280028487919
+  ],
+  "pivot": [
+    -0.020687626132718684,
+    -1.364808025102078,
+    0.014973734984411034
+  ],
+  "candidate_aabb_min": [
+    -1.0750000476837158,
+    0.0,
+    -0.05999999865889549
+  ],
+  "candidate_aabb_size": [
+    2.1500000953674316,
+    2.700000047683716,
+    0.11999999731779099
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

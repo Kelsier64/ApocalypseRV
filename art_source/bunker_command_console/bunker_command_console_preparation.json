@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/bunker_command_console/bunker_command_console_raw.glb",
+  "candidate": "assets/models/bunker_command_console/bunker_command_console_candidate.glb",
+  "raw_sha256": "8092428feca4b14a69dd3092e441229adc6de0473aac9805095b2ef32a366bc1",
+  "candidate_sha256": "3b4a56768969b475143a5824eecfb1351b7c6af528d9e0705e66f700e1c62953",
+  "triangles": 9738,
+  "vertices": 9173,
+  "raw_aabb_size": [
+    0.9023948013782501,
+    0.6891283988952637,
+    0.881824254989624
+  ],
+  "aligned_extent": [
+    0.8687684982601498,
+    0.636889093947469,
+    0.4064720631805594
+  ],
+  "rotation_rows": [
+    [
+      0.8391815442575853,
+      -0.13782428768185873,
+      0.5260977109838467
+    ],
+    [
+      -0.09062912548498293,
+      0.9183897508328567,
+      0.38515792498531176
+    ],
+    [
+      -0.5362468623603144,
+      -0.3708971977383383,
+      0.7582048346710578
+    ]
+  ],
+  "scale": [
+    2.0718983291921758,
+    1.8841585001280878,
+    1.7713394479466797
+  ],
+  "pivot": [
+    -0.01964589675451195,
+    -0.6136934695246925,
+    0.00025373680939175247
+  ],
+  "candidate_aabb_min": [
+    -0.8999999761581421,
+    0.0,
+    -0.36000001430511475
+  ],
+  "candidate_aabb_size": [
+    1.7999999523162842,
+    1.2000000476837158,
+    0.7200000286102295
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

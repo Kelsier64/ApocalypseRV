@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.899999976158142,
+		0.0,
+		-0.360000014305115
+	],
+	"aabb_size": [
+		1.79999995231628,
+		1.20000004768372,
+		0.720000028610229
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_command_console/bunker_command_console_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "3b4a56768969b475143a5824eecfb1351b7c6af528d9e0705e66f700e1c62953",
+	"triangles": 9738,
+	"vertices": 9173
+}

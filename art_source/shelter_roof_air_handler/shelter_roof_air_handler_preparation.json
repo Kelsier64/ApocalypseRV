@@ -1,0 +1,58 @@
+{
+  "raw": "art_source/shelter_roof_air_handler/shelter_roof_air_handler_raw.glb",
+  "candidate": "assets/models/shelter_roof_air_handler/shelter_roof_air_handler_candidate.glb",
+  "raw_sha256": "d47c1b59a1775654a1bbd807b75b02b9befb281c4bbeb3e0fac8f95f2e514ca7",
+  "candidate_sha256": "f68375524abf136692b2376a7f442c9e1a7d23e307b82d348b3a3f3c93497bf8",
+  "triangles": 9978,
+  "vertices": 7841,
+  "raw_aabb_size": [
+    0.9150966703891754,
+    0.42322178184986115,
+    0.8972072601318359
+  ],
+  "aligned_extent": [
+    0.7966840484423852,
+    0.3912691436189869,
+    0.6081960231445529
+  ],
+  "rotation_rows": [
+    [
+      0.8690086999210509,
+      -0.05603599828717225,
+      0.4916135131965811
+    ],
+    [
+      0.047988265184028406,
+      0.9984274831577519,
+      0.02897735805597745
+    ],
+    [
+      -0.4924642178535943,
+      -0.0015898966120423393,
+      0.8703312394500216
+    ]
+  ],
+  "scale": [
+    7.531216436089984,
+    5.111570980275346,
+    6.57682695674138
+  ],
+  "pivot": [
+    -0.02723534682843698,
+    0.14915541673248317,
+    -0.31257228404952764
+  ],
+  "candidate_aabb_min": [
+    -3.0,
+    -1.0,
+    -2.0
+  ],
+  "candidate_aabb_size": [
+    6.0,
+    2.0,
+    4.0
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.400000005960464,
+		-0.300000011920929,
+		-0.600000023841858
+	],
+	"aabb_size": [
+		0.800000011920929,
+		0.600000023841858,
+		1.20000004768372
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/generator/generator_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "65a420771dc9f2eddc1dd0a35b8017f954efd41b8c5b8b6c8ff059855433cfb6",
+	"triangles": 9910,
+	"vertices": 9534
+}

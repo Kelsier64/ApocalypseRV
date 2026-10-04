@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-1.22000002861023,
+		0.0,
+		-2.33999991416931
+	],
+	"aabb_size": [
+		2.44000005722046,
+		2.0,
+		4.73000001907349
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/wreck_car/wreck_car_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "861585672273e298b53220a8e90314406233a8d717301adb5e9423545937d069",
+	"triangles": 9940,
+	"vertices": 8348
+}

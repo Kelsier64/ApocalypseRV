@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/scrapper/scrapper.md",
+  "reference": "docs/modeling/requests/scrapper/scrapper-static-basin-reference.png",
+  "reference_sha256": "7ba3f9885145085f924994aea051e4fcbaf3d586c520a97e090412dcb83a8c90",
+  "asset_id": "scrapper_basin",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-scrapper_basin-standard1024-seed42-7ba3f9885145085f",
+  "job_id": "d1120bdc-88fd-4daf-a54b-3f57dceb29ac",
+  "submitted_result": {
+    "job_id": "d1120bdc-88fd-4daf-a54b-3f57dceb29ac",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "d1120bdc-88fd-4daf-a54b-3f57dceb29ac",
+    "asset_id": "scrapper_basin",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123486.8804417,
+    "idempotency_key": "apocalypse-rv-scrapper_basin-standard1024-seed42-7ba3f9885145085f",
+    "request_hash": "421f86891d334d982dde34b60a015afe9582af217f61671a00ea2570a19e44d9",
+    "started_at": 1791124464.5963962,
+    "updated_at": 1791124536.873958,
+    "prompt_id": "71f20255-e57c-4541-8666-16a16014f70a",
+    "client_id": "90a582cd-fcc3-4ef6-82bc-b2f31685e5bc",
+    "finished_at": 1791124536.873958,
+    "elapsed_seconds": 72.27756190299988,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 1966828,
+      "sha256": "1d0fbe2ddf1fc1e1b0c86a491b8203eb016f130e701a8e23197fcf0ccd5025dc",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "d1120bdc-88fd-4daf-a54b-3f57dceb29ac",
+    "download_url": "/jobs/d1120bdc-88fd-4daf-a54b-3f57dceb29ac/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 1966828,
+      "sha256": "1d0fbe2ddf1fc1e1b0c86a491b8203eb016f130e701a8e23197fcf0ccd5025dc",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

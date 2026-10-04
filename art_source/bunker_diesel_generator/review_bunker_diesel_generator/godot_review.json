@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-1.60000002384186,
+		0.0,
+		-0.600000023841858
+	],
+	"aabb_size": [
+		3.20000004768372,
+		1.70000004768372,
+		1.20000004768372
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_diesel_generator/bunker_diesel_generator_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "92abc98e67afbc1996a9fbae760b039039085595350382805ffaccfcb216afec",
+	"triangles": 9680,
+	"vertices": 8328
+}

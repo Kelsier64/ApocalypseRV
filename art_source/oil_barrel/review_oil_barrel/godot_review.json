@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.32958984375,
+		-0.5,
+		-0.32958984375
+	],
+	"aabb_size": [
+		0.6591796875,
+		1.0,
+		0.6591796875
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/oil_barrel/oil_barrel_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "50dca87006fcddb8b288b96c53412c7e8e374bd7e3bcde81c95e0e79fafee611",
+	"triangles": 9934,
+	"vertices": 6584
+}

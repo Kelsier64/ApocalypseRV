@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/gas-can/gas-can.md",
+  "reference": "docs/modeling/requests/gas-can/gas-can-diffuser-reference.png",
+  "reference_sha256": "b8fe9998060dd3dfc0cb346a69fc2d294861203ab76a8af49f7b57f7f941b629",
+  "asset_id": "gas_can",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-gas_can-standard1024-seed42-b8fe9998060dd3df",
+  "job_id": "9e1f78b7-481b-44d1-b0ba-66ca914469bc",
+  "submitted_result": {
+    "job_id": "9e1f78b7-481b-44d1-b0ba-66ca914469bc",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "9e1f78b7-481b-44d1-b0ba-66ca914469bc",
+    "asset_id": "gas_can",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123484.299446,
+    "idempotency_key": "apocalypse-rv-gas_can-standard1024-seed42-b8fe9998060dd3df",
+    "request_hash": "dfcf056af5fc6f4e7dd674a54314fa933f24a1b60d811f7a1ed2495c6b405821",
+    "started_at": 1791123961.8693278,
+    "updated_at": 1791124020.0875626,
+    "prompt_id": "6ddf3c67-849f-4045-ae22-48bcc17dff14",
+    "client_id": "47014f81-e892-42f1-9ed3-3eeb831a90bd",
+    "finished_at": 1791124020.0875626,
+    "elapsed_seconds": 58.21823477745056,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3429900,
+      "sha256": "545cf486ec7df934cb574fb745c2591355dc6c0e3778b534af52d3e25c6f5b0d",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "9e1f78b7-481b-44d1-b0ba-66ca914469bc",
+    "download_url": "/jobs/9e1f78b7-481b-44d1-b0ba-66ca914469bc/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3429900,
+      "sha256": "545cf486ec7df934cb574fb745c2591355dc6c0e3778b534af52d3e25c6f5b0d",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

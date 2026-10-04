@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/bunker-supply-chest/bunker-supply-chest.md",
+  "reference": "docs/modeling/requests/bunker-supply-chest/bunker-supply-chest-body-image-to-3d-reference.png",
+  "reference_sha256": "32da312ce7edf76fea7c8c6bb4c268bbaeffc31adcd9594fc13838f6b95fa94f",
+  "asset_id": "bunker_supply_chest_body",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-bunker_supply_chest_body-standard1024-seed42-32da312ce7edf76f",
+  "job_id": "0a6a5149-ea17-4102-a634-e1366bd674cd",
+  "submitted_result": {
+    "job_id": "0a6a5149-ea17-4102-a634-e1366bd674cd",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "0a6a5149-ea17-4102-a634-e1366bd674cd",
+    "asset_id": "bunker_supply_chest_body",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123486.1787446,
+    "idempotency_key": "apocalypse-rv-bunker_supply_chest_body-standard1024-seed42-32da312ce7edf76f",
+    "request_hash": "f5c4dd5911637449c0d72a3d2ae2adfd32bd11fbb97e6215268ca5dc2f5b58c6",
+    "started_at": 1791124330.0357237,
+    "updated_at": 1791124408.3290732,
+    "prompt_id": "936742fd-5aa2-43f3-a883-4584f9198ace",
+    "client_id": "148ff7fd-f32d-482b-9c8f-e33fa47f0e76",
+    "finished_at": 1791124408.3290732,
+    "elapsed_seconds": 78.29334950447083,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4150336,
+      "sha256": "b9ea443d34d8274e5ef4aee490d43faa4650545e383f315861e364957f618bc3",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "0a6a5149-ea17-4102-a634-e1366bd674cd",
+    "download_url": "/jobs/0a6a5149-ea17-4102-a634-e1366bd674cd/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4150336,
+      "sha256": "b9ea443d34d8274e5ef4aee490d43faa4650545e383f315861e364957f618bc3",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

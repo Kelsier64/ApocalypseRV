@@ -62,6 +62,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 驗收紀錄
 
+- [2026-10-04 Pixal3D API 模型試作](validation/2026-10-04-pixal3d-requests.md) — 16 份需求、18 個候選 GLB，含 Godot 匯入／尺寸檢查、預覽及未完成的遊戲接口。
+
 - [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。
 
 - [2026-10-03 咬手第一人稱與轉向修正](validation/2026-10-03-player-arm-bite-pov.md) — 保留玩家朝向、抬臂與嘴部撕扯、接觸後即時輸入與第一人稱回放。

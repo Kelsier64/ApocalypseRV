@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-0.439999997615814,
+		0.0,
+		-0.340000003576279
+	],
+	"aabb_size": [
+		0.879999995231628,
+		0.620000004768372,
+		0.680000007152557
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/bunker_supply_chest/bunker_supply_chest_body_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "a2da4eb53f069e4801b4eea8388f3172b15041fc9e3e340879cee2237d595850",
+	"triangles": 9914,
+	"vertices": 8008
+}

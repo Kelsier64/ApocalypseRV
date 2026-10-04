@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed.md",
+  "reference": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed-image-to-3d-reference.png",
+  "reference_sha256": "f9b2a8a584b4b5d37cd6f0b011d492d346bfacf90652e45d5bba91b40aab336c",
+  "asset_id": "bunker_bunk_bed",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-bunker_bunk_bed-standard1024-seed42-f9b2a8a584b4b5d3",
+  "job_id": "caf7f356-6147-427c-84c6-1c8fc21e669c",
+  "submitted_result": {
+    "job_id": "caf7f356-6147-427c-84c6-1c8fc21e669c",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "caf7f356-6147-427c-84c6-1c8fc21e669c",
+    "asset_id": "bunker_bunk_bed",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123481.7842605,
+    "idempotency_key": "apocalypse-rv-bunker_bunk_bed-standard1024-seed42-f9b2a8a584b4b5d3",
+    "request_hash": "f40dc2cc8261aa060b9282e0cdfbb78b0629285f1e84f85031ff52717c621b6e",
+    "started_at": 1791123537.8331378,
+    "updated_at": 1791123616.2157423,
+    "prompt_id": "843d0d84-de08-4d6f-89b3-84f90975e091",
+    "client_id": "ead28c13-9a59-499e-8ecd-c56349b8f666",
+    "finished_at": 1791123616.2157423,
+    "elapsed_seconds": 78.38260459899902,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4204308,
+      "sha256": "71b974646695ea6c2ffe4cf9ed3d7cbf2b79d7b8a74e264eee13c03866aa4e1f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "caf7f356-6147-427c-84c6-1c8fc21e669c",
+    "download_url": "/jobs/caf7f356-6147-427c-84c6-1c8fc21e669c/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4204308,
+      "sha256": "71b974646695ea6c2ffe4cf9ed3d7cbf2b79d7b8a74e264eee13c03866aa4e1f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

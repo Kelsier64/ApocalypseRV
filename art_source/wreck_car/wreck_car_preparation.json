@@ -1,0 +1,63 @@
+{
+  "raw": "art_source/wreck_car/wreck_car_raw.glb",
+  "candidate": "assets/models/wreck_car/wreck_car_candidate.glb",
+  "raw_sha256": "7dbc9659128d923a7fd1524a08588cdddd723bf2f4c23a13ca30adbfbd763020",
+  "candidate_sha256": "861585672273e298b53220a8e90314406233a8d717301adb5e9423545937d069",
+  "triangles": 9940,
+  "vertices": 8348,
+  "raw_aabb_size": [
+    0.9034173786640167,
+    0.49656257033348083,
+    0.9233973324298859
+  ],
+  "aligned_extent": [
+    0.4905764309364189,
+    0.42234543696008864,
+    0.9538213480126851
+  ],
+  "rotation_rows": [
+    [
+      0.7768597567407871,
+      0.12098163027292053,
+      -0.6179420389430965
+    ],
+    [
+      0.07009992958312332,
+      0.9586514829960586,
+      0.275813948200411
+    ],
+    [
+      0.6257594731437043,
+      -0.2575864501210501,
+      0.7362569541165297
+    ]
+  ],
+  "scale": [
+    4.9737407794795505,
+    4.735460182535365,
+    4.958999932068091
+  ],
+  "pivot": [
+    -0.0478645273551892,
+    -0.9433330706730927,
+    -0.09442912601906883
+  ],
+  "candidate_aabb_min": [
+    -1.2200000286102295,
+    0.0,
+    -2.3399999141693115
+  ],
+  "candidate_aabb_size": [
+    2.440000057220459,
+    2.0,
+    4.730000019073486
+  ],
+  "origin": "bottom",
+  "manual_yaw_degrees": 0,
+  "offset": [
+    0.0,
+    0.0,
+    0.025
+  ],
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

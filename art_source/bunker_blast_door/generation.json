@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/bunker-blast-door/bunker-blast-door.md",
+  "reference": "docs/modeling/requests/bunker-blast-door/bunker-blast-door-image-to-3d-reference.png",
+  "reference_sha256": "0ffe31f1313cfe311012d46c7131c883bc7c9e1fb08deb586d3153e1abf0e4c2",
+  "asset_id": "bunker_blast_door",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-bunker_blast_door-standard1024-seed42-0ffe31f1313cfe31",
+  "job_id": "d11a8ac6-1600-4c59-b36a-1dab5708180e",
+  "submitted_result": {
+    "job_id": "d11a8ac6-1600-4c59-b36a-1dab5708180e",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "d11a8ac6-1600-4c59-b36a-1dab5708180e",
+    "asset_id": "bunker_blast_door",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123481.4918098,
+    "idempotency_key": "apocalypse-rv-bunker_blast_door-standard1024-seed42-0ffe31f1313cfe31",
+    "request_hash": "53a9fad4b71ea2018b6e48647a377bc101b7a47bfc574b655df25174ca89e379",
+    "started_at": 1791123481.5837398,
+    "updated_at": 1791123537.8208191,
+    "prompt_id": "e50bcf0f-8628-418a-a8df-47462e23bf05",
+    "client_id": "34a8b073-4022-4c16-b15d-d13da0c83560",
+    "finished_at": 1791123537.8208191,
+    "elapsed_seconds": 56.23707938194275,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3933132,
+      "sha256": "d6f8f21424e37147bd02edc9fdd2c4f6e7494592ad56ce43702eabbb0ba4716f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "d11a8ac6-1600-4c59-b36a-1dab5708180e",
+    "download_url": "/jobs/d11a8ac6-1600-4c59-b36a-1dab5708180e/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3933132,
+      "sha256": "d6f8f21424e37147bd02edc9fdd2c4f6e7494592ad56ce43702eabbb0ba4716f",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

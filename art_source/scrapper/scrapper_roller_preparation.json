@@ -1,0 +1,63 @@
+{
+  "raw": "art_source/scrapper/scrapper_roller_raw.glb",
+  "candidate": "assets/models/scrapper/scrapper_roller_candidate.glb",
+  "raw_sha256": "944b859acb24a1095d2c5ec592bbc08f9c3938a0f1d082082de4f9f4e1ecab26",
+  "candidate_sha256": "5ca2c10070d4fd887980ef34138c86d64b3248cb41e6241b7939b021f2946606",
+  "triangles": 9996,
+  "vertices": 7047,
+  "raw_aabb_size": [
+    0.9002118706703186,
+    0.5543562173843384,
+    0.8777848780155182
+  ],
+  "aligned_extent": [
+    0.3949011628563096,
+    0.9317347002352923,
+    0.4345673335679148
+  ],
+  "rotation_rows": [
+    [
+      0.3743169878545788,
+      -0.9184321672651755,
+      0.1279419662818561
+    ],
+    [
+      0.715493721486153,
+      0.19828859630688322,
+      -0.6698883243411108
+    ],
+    [
+      0.5898775526474713,
+      0.34229225335557684,
+      0.7313552393846585
+    ]
+  ],
+  "scale": [
+    1.0129116792333825,
+    1.073266885678368,
+    0.9204557478259866
+  ],
+  "pivot": [
+    0.010619308798452215,
+    5.041384249249159e-05,
+    0.028918169362733018
+  ],
+  "candidate_aabb_min": [
+    -0.20000000298023224,
+    -0.5,
+    -0.20000000298023224
+  ],
+  "candidate_aabb_size": [
+    0.4000000059604645,
+    1.0,
+    0.4000000059604645
+  ],
+  "origin": "center",
+  "manual_yaw_degrees": 0,
+  "offset": [
+    0,
+    0,
+    0
+  ],
+  "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review"
+}

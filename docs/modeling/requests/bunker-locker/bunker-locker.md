@@ -6,4 +6,4 @@
 - **Origin, facing, interface:** The existing StaticBody3D and CollisionShape3D remain in the wrapper. The model origin is the bottom center; its front and handle face local +Z.
 - **Delivery:** `assets/models/bunker_locker/` for GLB and textures; `art_source/bunker_locker/` for editable source. Replace only the stated visuals and preserve scene node names, collisions and interactions.
 
-Status: Graybox is in the bunker v2 kit; finished model has not been delivered.
+完成情況：2026-10-04 已透過本機 Pixal3D API 生成候選（[bunker_locker](../../../../assets/models/bunker_locker/bunker_locker_candidate.glb)），並通過 Godot 4.7.2 匯入與尺寸／原點檢查；[來源、預覽與待整理事項](../../../../art_source/bunker_locker/README.md)。只完成 API 試作，正式場景仍沿用既有外觀，接口與遊戲行為尚未驗收。

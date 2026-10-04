@@ -1,0 +1,59 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/generator/generator.md",
+  "reference": "docs/modeling/requests/generator/generator-front-left-reference.png",
+  "reference_sha256": "f8ce486884182cc71d84431b89ea2691a3d622dccf187928ce6def66d97e3f50",
+  "asset_id": "generator",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-generator-standard1024-seed42-f8ce486884182cc7",
+  "job_id": "0aed0040-f18d-49d5-ab8d-b8eab2615463",
+  "submitted_result": {
+    "job_id": "0aed0040-f18d-49d5-ab8d-b8eab2615463",
+    "state": "queued"
+  },
+  "status": {
+    "job_id": "0aed0040-f18d-49d5-ab8d-b8eab2615463",
+    "asset_id": "generator",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123484.6535313,
+    "idempotency_key": "apocalypse-rv-generator-standard1024-seed42-f8ce486884182cc7",
+    "request_hash": "a6dc90ec02c407a860ea7dc20cf460ce2e0210d002dc210103e82de7d8338037",
+    "started_at": 1791124020.0999367,
+    "updated_at": 1791124151.168243,
+    "prompt_id": "f4b7aa5a-8e71-49a9-9e81-58e059d92b26",
+    "client_id": "adf1c1f6-b728-4f6a-bbcf-5ebd1254c098",
+    "finished_at": 1791124151.168243,
+    "elapsed_seconds": 131.06830620765686,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4698348,
+      "sha256": "3d87a71648d6be474a6c0ccae23b33e5e6923a1f52255cb3d51a1259d33b6a85",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "0aed0040-f18d-49d5-ab8d-b8eab2615463",
+    "download_url": "/jobs/0aed0040-f18d-49d5-ab8d-b8eab2615463/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 4698348,
+      "sha256": "3d87a71648d6be474a6c0ccae23b33e5e6923a1f52255cb3d51a1259d33b6a85",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+	"aabb_min": [
+		-4.5,
+		-0.75,
+		-2.5
+	],
+	"aabb_size": [
+		9.0,
+		1.5,
+		5.0
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank_candidate.glb",
+	"mesh_instances": 1,
+	"sha256": "d953e94fd6bba72692bb62ee8cd2ca4ac077b4e4bb6c41204169c6d2ac531a93",
+	"triangles": 9980,
+	"vertices": 8522
+}

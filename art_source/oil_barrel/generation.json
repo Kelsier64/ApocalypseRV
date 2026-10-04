@@ -1,0 +1,60 @@
+{
+  "api": "http://127.0.0.1:8000",
+  "request": "docs/modeling/requests/oil-barrel/oil-barrel.md",
+  "reference": "docs/modeling/requests/oil-barrel/oil-barrel-image-to-3d-reference.png",
+  "reference_sha256": "44a9820bf4398e25ccd4eb17e37a3ec32886a4401ab95e9f73d49ae0aea0ac2d",
+  "asset_id": "oil_barrel",
+  "preset": "standard1024",
+  "seed": 42,
+  "idempotency_key": "apocalypse-rv-oil-barrel-standard1024-seed42-20261004-v1",
+  "job_id": "1ef3e623-82a7-4627-8228-5b059972a498",
+  "submitted_result": {
+    "job_id": "1ef3e623-82a7-4627-8228-5b059972a498",
+    "state": "succeeded",
+    "reused": true
+  },
+  "status": {
+    "job_id": "1ef3e623-82a7-4627-8228-5b059972a498",
+    "asset_id": "oil_barrel",
+    "preset": "standard1024",
+    "seed": 42,
+    "state": "succeeded",
+    "created_at": 1791123291.341743,
+    "idempotency_key": "apocalypse-rv-oil-barrel-standard1024-seed42-20261004-v1",
+    "request_hash": "5ec25545b60c572f0412100a6c5781de8182a2772c39d2d8a05c8289f531c977",
+    "started_at": 1791123291.5451927,
+    "updated_at": 1791123347.927212,
+    "prompt_id": "bcb3123d-febf-47a5-bdf9-680b560f28db",
+    "client_id": "6546912d-0ce6-40d2-a295-f0d7b7068012",
+    "finished_at": 1791123347.927212,
+    "elapsed_seconds": 56.38201928138733,
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3133700,
+      "sha256": "ce765c0823406e99c2a27dbfe3a6cbc4489305adcb78ee0459e1b671bfaee958",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true
+  },
+  "result": {
+    "job_id": "1ef3e623-82a7-4627-8228-5b059972a498",
+    "download_url": "/jobs/1ef3e623-82a7-4627-8228-5b059972a498/result.glb",
+    "validation": {
+      "format": "glTF 2.0",
+      "bytes": 3133700,
+      "sha256": "ce765c0823406e99c2a27dbfe3a6cbc4489305adcb78ee0459e1b671bfaee958",
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "godot_tested": false,
+      "blender_tested": false
+    },
+    "needs_art_review": true,
+    "godot_tested": false,
+    "blender_tested": false
+  }
+}
