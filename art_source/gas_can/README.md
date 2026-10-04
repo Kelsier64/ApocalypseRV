@@ -14,12 +14,12 @@
 - job `9e1f78b7-481b-44d1-b0ba-66ca914469bc`；原始 SHA256 `545cf486ec7df934cb574fb745c2591355dc6c0e3778b534af52d3e25c6f5b0d`。
 
 ```powershell
-python scripts/prepare_request_model.py gas_can --size 0.39759523 0.84584963 0.82353514 --origin center --alignment estimated --fit stretch
+python scripts/prepare_request_model.py gas_can --size 0.39759523 0.84584963 0.82353514 --origin center
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py gas-can --image gas-can-diffuser-reference.png --idempotency-key apocalypse-rv-gas_can-standard1024-seed42-b8fe9998060dd3df

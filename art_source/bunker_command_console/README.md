@@ -14,12 +14,12 @@
 - job `7e8b90ea-e7c9-459f-963b-5140c05940f5`；原始 SHA256 `8092428feca4b14a69dd3092e441229adc6de0473aac9805095b2ef32a366bc1`。
 
 ```powershell
-python scripts/prepare_request_model.py bunker_command_console --size 1.8 1.2 0.72000003 --origin bottom --alignment estimated --fit stretch
+python scripts/prepare_request_model.py bunker_command_console --size 1.8 1.2 0.72000003 --origin bottom
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py bunker-command-console --image bunker-command-console-image-to-3d-reference.png --idempotency-key apocalypse-rv-bunker_command_console-standard1024-seed42-df7c09e272adc846

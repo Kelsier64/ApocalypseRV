@@ -8,7 +8,3 @@
 
 - [scrapper_basin_candidate.glb](scrapper_basin_candidate.glb)：1.05 × 0.69999999 × 1.05 m，9,992 三角形；[六方向預覽](../../../art_source/scrapper/review_scrapper_basin/views.png)。
 - [scrapper_roller_candidate.glb](scrapper_roller_candidate.glb)：0.40000001 × 1 × 0.40000001 m，9,996 三角形；[六方向預覽](../../../art_source/scrapper/review_scrapper_roller/views.png)。
-
-## 三視圖重測（5 件試作範圍）
-
-[新候選、來源、等比縮放及預覽](../../../art_source/scrapper/threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。

@@ -14,12 +14,12 @@
 - job `0aed0040-f18d-49d5-ab8d-b8eab2615463`；原始 SHA256 `3d87a71648d6be474a6c0ccae23b33e5e6923a1f52255cb3d51a1259d33b6a85`。
 
 ```powershell
-python scripts/prepare_request_model.py generator --size 0.80000001 0.60000002 1.2 --origin center --yaw -90 --alignment estimated --fit stretch
+python scripts/prepare_request_model.py generator --size 0.80000001 0.60000002 1.2 --origin center --yaw -90
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py generator --image generator-front-left-reference.png --idempotency-key apocalypse-rv-generator-standard1024-seed42-f8ce486884182cc7

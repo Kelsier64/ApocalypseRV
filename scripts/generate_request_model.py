@@ -28,8 +28,7 @@ def main():
     parser.add_argument("request", help="Folder in docs/modeling/requests")
     parser.add_argument("--image", help="Reference filename inside the request folder")
     parser.add_argument("--part", default="", help="Independent moving part, e.g. body/lid")
-    parser.add_argument("--preset", choices=["preview512", "standard1024", "threeview512", "threeview1024"], default="standard1024")
-    parser.add_argument("--variant", default="", help="Storage namespace, e.g. threeview; identical inputs still reuse the API job")
+    parser.add_argument("--preset", choices=["preview512", "standard1024"], default="standard1024")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--api", default="http://127.0.0.1:8000")
     parser.add_argument("--idempotency-key", help="Resume a key used for an earlier manual submission")
@@ -39,12 +38,10 @@ def main():
     if request_dir.parent != ROOT / "docs/modeling/requests" or not request_dir.is_dir():
         parser.error("Unknown request folder")
     asset_name = args.request.replace("-", "_")
-    if any(value and not value.replace("_", "").isalnum() for value in [args.part, args.variant]):
-        parser.error("Part/variant must contain only letters, digits or underscores")
+    if args.part and not args.part.replace("_", "").isalnum():
+        parser.error("Part must contain only letters, digits or underscores")
     asset_id = asset_name + ("_" + args.part if args.part else "")
     source_dir = ROOT / "art_source" / asset_name
-    if args.variant:
-        source_dir /= args.variant
     metadata_path = source_dir / ("generation" + ("_" + args.part if args.part else "") + ".json")
     if args.collect:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -67,12 +64,6 @@ def main():
     if image_path.parent != request_dir or not image_path.is_file():
         parser.error("Image must be a file inside the request folder")
     raw = image_path.read_bytes()
-    if args.preset.startswith("threeview"):
-        from PIL import Image
-        with Image.open(image_path) as image:
-            width, height = image.size
-        if width < 3 or height < 1 or abs(width / height - 3) > 0.06:
-            parser.error("Threeview input must be a horizontal 3:1 front/left/back sheet; review equal-width panel contents before submission")
     image_hash = hashlib.sha256(raw).hexdigest()
     key = args.idempotency_key or f"apocalypse-rv-{asset_id}-{args.preset}-seed{args.seed}-{image_hash[:16]}"
     boundary = "pixal3d-" + image_hash[:24]
@@ -98,7 +89,6 @@ def main():
         "api": args.api, "request": str((request_dir / (args.request + ".md")).relative_to(ROOT)).replace("\\", "/"),
         "reference": str(image_path.relative_to(ROOT)).replace("\\", "/"),
         "reference_sha256": image_hash, "asset_id": asset_id, "preset": args.preset,
-        "variant": args.variant,
         "seed": args.seed, "idempotency_key": key, "job_id": job["job_id"],
         "submitted_result": job,
     }

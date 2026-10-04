@@ -14,18 +14,14 @@
 - job `caf7f356-6147-427c-84c6-1c8fc21e669c`；原始 SHA256 `71b974646695ea6c2ffe4cf9ed3d7cbf2b79d7b8a74e264eee13c03866aa4e1f`。
 
 ```powershell
-python scripts/prepare_request_model.py bunker_bunk_bed --size 2 1.85 0.89999998 --origin bottom --alignment estimated --fit stretch
+python scripts/prepare_request_model.py bunker_bunk_bed --size 2 1.85 0.89999998 --origin bottom
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py bunker-bunk-bed --image bunker-bunk-bed-image-to-3d-reference.png --idempotency-key apocalypse-rv-bunker_bunk_bed-standard1024-seed42-f9b2a8a584b4b5d3
 python scripts/generate_request_model.py bunker-bunk-bed --collect
 ```
-
-## 三視圖重測（5 件試作範圍）
-
-[新候選、來源、等比縮放及預覽](threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。

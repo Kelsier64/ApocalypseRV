@@ -1,6 +1,6 @@
 """Fit a static Pixal3D candidate to a request; preserve the unchanged raw GLB.
 
-Uses NumPy. Default preparation preserves source axes and proportions.
+Uses NumPy. Orientation is estimated from mesh bounds and requires art review.
 This intentionally rejects rigs, morph targets and transformed/multiple nodes.
 """
 import argparse
@@ -101,28 +101,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("asset_id")
     parser.add_argument("--folder", help="Parent asset folder for separate parts")
-    parser.add_argument("--variant", default="", help="Preserved trial subfolder, e.g. threeview")
-    parser.add_argument("--alignment", choices=["source", "estimated"], default="source",
-                        help="Source uses the API's +Y up / +Z front; estimated is the legacy heuristic")
-    parser.add_argument("--fit", choices=["uniform", "stretch"], default="uniform",
-                        help="Uniform contains the mesh in requested dimensions without distortion")
     parser.add_argument("--size", nargs=3, type=float, required=True, metavar=("X", "Y", "Z"))
     parser.add_argument("--origin", choices=["center", "bottom"], default="bottom")
     parser.add_argument("--yaw", type=float, default=0, help="Manual adjustment after reviewing views, degrees")
     parser.add_argument("--offset", nargs=3, type=float, default=[0, 0, 0], help="Requested asymmetric bounds relative to the origin")
     args = parser.parse_args()
     folder = args.folder or args.asset_id
-    if not all(name.replace("_", "").isalnum() for name in [folder, args.asset_id]) or (args.variant and not args.variant.replace("_", "").isalnum()):
+    if not all(name.replace("_", "").isalnum() for name in [folder, args.asset_id]):
         parser.error("Use simple asset names")
     target = np.array(args.size)
     if not np.all(np.isfinite(target)) or np.min(target) <= 0:
         parser.error("Sizes must be finite positive numbers")
-    if not np.isfinite(args.yaw) or not np.all(np.isfinite(args.offset)):
-        parser.error("Yaw and offset must be finite numbers")
     source_dir = ROOT / "art_source" / folder
-    if args.variant:
-        source_dir /= args.variant
-    output_name = args.asset_id + ("_" + args.variant if args.variant else "")
     source = source_dir / (args.asset_id + "_raw.glb")
     document, binary = load_glb(source)
     nodes = document["nodes"]
@@ -136,17 +126,13 @@ def main():
     positions = accessor(document, binary, attributes["POSITION"])
     points = positions.astype(np.float64)
     triangles = accessor(document, binary, primitive["indices"]).reshape(-1, 3)
-    frame = estimate_frame(points, triangles, target) if args.alignment == "estimated" else np.eye(3)
+    frame = estimate_frame(points, triangles, target)
     yaw = np.deg2rad(args.yaw)
     yaw_matrix = np.array([[np.cos(yaw), 0, np.sin(yaw)], [0, 1, 0], [-np.sin(yaw), 0, np.cos(yaw)]])
     frame = yaw_matrix @ frame
     aligned = points @ frame.T
     extent = np.ptp(aligned, axis=0)
-    if not np.all(np.isfinite(extent)) or np.min(extent) <= 0:
-        raise ValueError("Mesh bounds must be finite and nonzero")
     scale = target / extent
-    if args.fit == "uniform":
-        scale[:] = np.min(scale)
     matrix = np.diag(scale) @ frame
     transformed = points @ matrix.T
     lower, upper = transformed.min(axis=0), transformed.max(axis=0)
@@ -171,7 +157,7 @@ def main():
         adjusted /= np.maximum(np.linalg.norm(adjusted, axis=1, keepdims=True), 1e-12)
         tangents[:, :3] = adjusted
     node = document["nodes"][0]
-    node["name"] = output_name + "_candidate"
+    node["name"] = args.asset_id + "_candidate"
     document["asset"]["generator"] = "Pixal3D / ApocalypseRV candidate preparation"
     # Full API workflow is preserved with the raw GLB; omit duplicate metadata.
     document["asset"].pop("extras", None)
@@ -181,7 +167,7 @@ def main():
     output_bytes = (struct.pack("<4sII", b"glTF", 2, 28 + len(json_bytes) + len(binary))
                     + struct.pack("<II", len(json_bytes), 0x4E4F534A) + json_bytes
                     + struct.pack("<II", len(binary), 0x004E4942) + binary)
-    destination = ROOT / "assets/models" / folder / (output_name + "_candidate.glb")
+    destination = ROOT / "assets/models" / folder / (args.asset_id + "_candidate.glb")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(output_bytes)
     report = {
@@ -196,10 +182,7 @@ def main():
         "candidate_aabb_size": np.ptp(positions, axis=0).tolist(),
         "origin": args.origin, "manual_yaw_degrees": args.yaw,
         "offset": args.offset,
-        "variant": args.variant, "alignment": args.alignment, "fit": args.fit,
-        "requested_aabb_size": target.tolist(),
-        "size_fraction": (np.ptp(positions, axis=0) / target).tolist(),
-        "orientation_method": "source +Y up / +Z front" if args.alignment == "source" else "legacy estimated oriented bounds; requires art review",
+        "orientation_method": "estimated oriented bounds; front direction and detailed interfaces require art review",
     }
     (source_dir / (args.asset_id + "_preparation.json")).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report))

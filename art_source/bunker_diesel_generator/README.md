@@ -14,12 +14,12 @@
 - job `eb5d606e-421c-481e-b81e-283ee3cc7a9c`；原始 SHA256 `ee62fa36446d8504ed21f8f7edb3b128514dbd79b4024867f6c5e334a719f6f4`。
 
 ```powershell
-python scripts/prepare_request_model.py bunker_diesel_generator --size 3.2 1.7 1.2 --origin bottom --alignment estimated --fit stretch
+python scripts/prepare_request_model.py bunker_diesel_generator --size 3.2 1.7 1.2 --origin bottom
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py bunker-diesel-generator --image bunker-diesel-generator-image-to-3d-reference.png --idempotency-key apocalypse-rv-bunker_diesel_generator-standard1024-seed42-2dd23d34a285ca2d

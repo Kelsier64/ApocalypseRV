@@ -14,12 +14,12 @@
 - job `1056d9e6-a18c-4d18-91c3-e1382ee5665a`；原始 SHA256 `2b4cb0c387263600cc11b83cf471777fb547e6f6453ca2972f511ad5f8fa39da`。
 
 ```powershell
-python scripts/prepare_request_model.py shelter_roof_filter_bank --size 9 1.5 5 --origin center --alignment estimated --fit stretch
+python scripts/prepare_request_model.py shelter_roof_filter_bank --size 9 1.5 5 --origin center
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py shelter-roof-filter-bank --image shelter-roof-filter-bank-image-to-3d-reference.png --idempotency-key apocalypse-rv-shelter_roof_filter_bank-standard1024-seed42-289eb414f538524c

@@ -8,5 +8,3 @@
 **活動零件接口**：另交付兩支獨立、以各自中心為原點的滾輪外觀；現有 `CSGCylinder3D` 與 `CSGCylinder3D2` 的中心分別在 X=+0.20／−0.20、Y=0.50、Z=0 公尺，圓柱直徑 0.40、公稱長 1.00 公尺，交付滾輪長軸沿模型本地 Y，直接以單位變換掛載；既有節點本地 Y 軸為滾輪轉軸（指向場景 −Z）。`scrapper.gd` 以明確的 `CSGCylinder3D` 型別取得這兩個節點並呼叫 `rotate_object_local(Vector3.UP, ...)`；不得直接以 GLB 節點取代。整合時將各滾輪外觀掛為對應 CSG 節點的子節點，並以透明材質隱藏原 CSG 外觀，保留節點型別、轉動及現有碰撞功能。
 
 完成情況：2026-10-04 已透過本機 Pixal3D API 生成候選（[scrapper_basin](../../../../assets/models/scrapper/scrapper_basin_candidate.glb)、[scrapper_roller](../../../../assets/models/scrapper/scrapper_roller_candidate.glb)），並通過 Godot 4.7.2 匯入與尺寸／原點檢查；[來源、預覽與待整理事項](../../../../art_source/scrapper/README.md)。只完成 API 試作，正式場景仍沿用既有外觀，接口與遊戲行為尚未驗收。
-
-三視圖重測：2026-10-04 僅挑選五件中的本件（碎料機只測靜態盆體），以 [front／left／back 輸入](scrapper-basin-threeview-reference.png) 及 `threeview1024` 重新生成；保留來源軸向與等比縮放。[新候選與六方向檢查](../../../../art_source/scrapper/threeview/README.md)；實際尺寸 1.0500 × 0.5242 × 1.0461 m。匯入檢查通過，幾何品質與未完成接口見 [本輪報告](../../../validation/2026-10-04-pixal3d-threeview.md)。

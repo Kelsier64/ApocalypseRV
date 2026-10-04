@@ -7,7 +7,3 @@
 車頭與底盤可讀，但側面多出參考圖沒有的懸垂幾何，需要清理；只有單一 mesh／材質，尚未分離烤漆、玻璃、金屬及輪胎，不符合 RoadsidePaint 接口，未接入道路或封路。
 
 - [wreck_car_candidate.glb](wreck_car_candidate.glb)：2.4400001 × 2 × 4.73 m，9,940 三角形；[六方向預覽](../../../art_source/wreck_car/review_wreck_car/views.png)。
-
-## 三視圖重測（5 件試作範圍）
-
-[新候選、來源、等比縮放及預覽](../../../art_source/wreck_car/threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。

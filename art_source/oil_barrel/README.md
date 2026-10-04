@@ -14,18 +14,14 @@
 - job `1ef3e623-82a7-4627-8228-5b059972a498`；原始 SHA256 `ce765c0823406e99c2a27dbfe3a6cbc4489305adcb78ee0459e1b671bfaee958`。
 
 ```powershell
-python scripts/prepare_request_model.py oil_barrel --size 0.65917969 1 0.65917969 --origin center --alignment estimated --fit stretch
+python scripts/prepare_request_model.py oil_barrel --size 0.65917969 1 0.65917969 --origin center
 ```
 
 ## 重現 API 呼叫
 
-[提交／收取腳本](../../scripts/generate_request_model.py) 的單視圖流程使用 Python 標準函式庫，三視圖輸入檢查另需 Pillow；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
+[提交／收取腳本](../../scripts/generate_request_model.py) 使用 Python 標準函式庫；[候選整理腳本](../../scripts/prepare_request_model.py) 另需 NumPy。候選整理採包圍盒方向估計及非等比縮放，不能代替接口與美術驗收；變換矩陣、縮放與偏移均保存在各 preparation JSON。
 
 ```powershell
 python scripts/generate_request_model.py oil-barrel --image oil-barrel-image-to-3d-reference.png --idempotency-key apocalypse-rv-oil-barrel-standard1024-seed42-20261004-v1
 python scripts/generate_request_model.py oil-barrel --collect
 ```
-
-## 三視圖重測（5 件試作範圍）
-
-[新候選、來源、等比縮放及預覽](threeview/README.md)。舊單視圖模型是歷史比較結果；包圍盒符合不等於幾何筆直。
