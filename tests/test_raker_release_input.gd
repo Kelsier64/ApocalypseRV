@@ -1,4 +1,5 @@
 extends SceneTree
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 ## Exercise real event routing and physics, not just cleared ownership flags.
 var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
@@ -27,7 +28,7 @@ func run() -> void:
 			if player.is_grabbed(): break
 		check(player.is_grabbed(),'Production capture %d' % mode)
 		if not player.is_grabbed(): continue
-		while player.grab_control.presses*5 < player.grab_control.required*4: player.submit_struggle()
+		while player.grab_control.presses < GrabRules.minimum_wounded_presses(player.grab_control.required): player.submit_struggle()
 		var view: Camera3D = player.seated_in.seat_camera if mode == 2 else player.camera
 		var captured_body_yaw: float = player.rotation.y
 		# Reproduce focus/UI input capture being lost during a grab. Old end()

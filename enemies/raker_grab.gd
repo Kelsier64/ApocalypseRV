@@ -1,4 +1,5 @@
 extends Node
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 ## Authoritative grab clock and outcome. Player owns only input/camera lock.
 enum Phase { NONE, REACH, HOLD, BITE, RELEASE, ESCAPE, MISS }
 var actor: Raker
@@ -19,7 +20,7 @@ const REACH_DURATION := .36
 const BITE_CONTACT := .22
 const BITE_SOURCE_CONTACT := .38
 const BITE_SPEED := BITE_SOURCE_CONTACT / BITE_CONTACT
-const DURATIONS := {Phase.REACH: REACH_DURATION, Phase.HOLD: 2.0, Phase.BITE: BITE_CONTACT, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
+const DURATIONS := {Phase.REACH: REACH_DURATION, Phase.HOLD: GrabRules.HOLD_DURATION, Phase.BITE: BITE_CONTACT, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
 const CLIPS := {Phase.REACH: "reach", Phase.HOLD: "hold", Phase.BITE: "bite", Phase.RELEASE: "release", Phase.ESCAPE: "escape", Phase.MISS: "miss"}
 
 func _ready() -> void:
@@ -48,7 +49,7 @@ func _change(next: Phase) -> void:
 
 static func classify(presses: int, required: int) -> int:
 	if presses >= required: return 0
-	return 1 if presses * 5 >= required * 4 else 2
+	return 1 if GrabRules.reaches_wounded_threshold(presses, required) else 2
 
 func tick(delta: float) -> void:
 	if not busy(): return
@@ -59,7 +60,7 @@ func tick(delta: float) -> void:
 	match phase:
 		Phase.REACH:
 			if elapsed >= REACH_DURATION:
-				if not valid_contact(false) or not victim.begin_grab(actor, rng.randi_range(6, 10)):
+				if not valid_contact(false) or not victim.begin_grab(actor, rng.randi_range(GrabRules.MIN_PRESSES, GrabRules.MAX_PRESSES)):
 					victim = null
 					_change(Phase.MISS)
 					return
@@ -69,8 +70,8 @@ func tick(delta: float) -> void:
 				was_seated = is_instance_valid(seat)
 				_change(Phase.HOLD)
 		Phase.HOLD:
-			victim.grab_control.update_progress(2.0 - elapsed)
-			if elapsed >= 2.0:
+			victim.grab_control.update_progress(GrabRules.HOLD_DURATION - elapsed)
+			if elapsed >= GrabRules.HOLD_DURATION:
 				victim.grab_control.accepting = false
 				outcome = classify(victim.grab_control.presses, victim.grab_control.required)
 				if outcome == 0:

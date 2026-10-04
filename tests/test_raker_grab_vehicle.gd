@@ -1,4 +1,5 @@
 extends SceneTree
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(value: bool, note: String) -> void:
@@ -52,8 +53,8 @@ func run() -> void:
 			check(player.is_grabbed(),"Capture persists on common moving support")
 			check(scene.rv.throttle_input<.01 and not scene.rv.handbrake,"Throttle releases to coast")
 			if scenario == 3:
-				while player.grab_control.presses*5 < player.grab_control.required*4: player.submit_struggle()
-				scene.monster.grab.tick(2)
+				while player.grab_control.presses < GrabRules.minimum_wounded_presses(player.grab_control.required): player.submit_struggle()
+				scene.monster.grab.tick(GrabRules.HOLD_DURATION)
 				scene.monster.grab.tick(.38)
 				check(player.current_player_health==50 and not player.is_grabbed(),"Surviving driver is released at bite contact")
 				check(not player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head"),"Driver wounded bite removes the left arm only")

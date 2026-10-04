@@ -7,6 +7,7 @@ func _init() -> void:
 
 func _run() -> void:
 	_test_wall_gate_requires_jump_and_w_and_rv()
+	_test_active_large_item_gate()
 	_test_wall_normal_gate_accepts_vertical_rejects_floor()
 	_test_wall_gate_rejects_undercarriage_like_hits()
 	_test_collision_disabled_during_climb_states()
@@ -42,6 +43,30 @@ func _test_wall_gate_requires_jump_and_w_and_rv() -> void:
 		_expect(not player._can_begin_climb(false, true, true, true, false), "Hit-height gate should block climb start for undercarriage-like hits.")
 		_expect(player._can_begin_climb(true, true, true, true, true), "All gates should allow climb start.")
 
+	player.free()
+
+func _test_active_large_item_gate() -> void:
+	var player := _new_player()
+	if player == null:
+		return
+	_expect(player._can_begin_climb(false, true, true, true, true), "Empty hands retain the climb gate.")
+	player.inventory.add_item("Small cargo", false, "unused")
+	_expect(player._can_begin_climb(false, true, true, true, true), "Small cargo retains the climb gate.")
+	player.inventory.add_item("Custom large cargo", true, "unused", {"id": "cargo-identity", "condition": 37.0})
+	_expect(player.held_item_node == null, "Fixture has no held visual; inventory remains the source of truth.")
+	var original: Dictionary = player.inventory.active_item().duplicate(true)
+	for jump_pressed in [false, true]:
+		_expect(not player._can_begin_climb(jump_pressed, true, true, true, true), "Active large cargo blocks climbing regardless of jump input.")
+	_expect(player.inventory.items.size() == 2 and player.inventory.active_item() == original, "Rejected climb leaves item identity, state and count unchanged.")
+	# Restored inventories can retain a large item in an inactive slot.
+	player.inventory.active_slot = 0
+	_expect(player._can_begin_climb(false, true, true, true, true), "Inactive large cargo does not override the active small-item contract.")
+	player.inventory.active_slot = 1
+	player.inventory.consume_active()
+	_expect(player._can_begin_climb(false, true, true, true, true), "Removing large cargo immediately restores the ordinary gate.")
+	_expect(not player._can_begin_climb(false, false, true, true, true), "Removing large cargo does not bypass W.")
+	_expect(not player._can_begin_climb(false, true, true, false, true), "Removing large cargo does not bypass wall normals.")
+	_expect(not player._can_begin_climb(false, true, true, true, false), "Removing large cargo does not bypass hit height.")
 	player.free()
 
 func _test_wall_normal_gate_accepts_vertical_rejects_floor() -> void:

@@ -31,6 +31,9 @@ func active_item() -> Dictionary:
 		return {}
 	return items[active_slot]
 
+func is_holding_large_item() -> bool:
+	return bool(active_item().get("is_large", false))
+
 func consume_active() -> bool:
 	if active_item().is_empty():
 		return false

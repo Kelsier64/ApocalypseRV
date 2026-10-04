@@ -1,4 +1,5 @@
 extends SceneTree
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 var failures: Array[String]=[]
 var world: Node3D
 var rv: Chassis
@@ -17,7 +18,7 @@ func ticks(count: int) -> void:
 		# Keep one real wounded bite per breach case, then use normal escapes.
 		# A second wounded bite after losing the left arm is fatal at any HP.
 		if player.is_grabbed() and player.grab_control.accepting:
-			var goal: int = ceili(player.grab_control.required * .8) if player.body_state.has_part(&"left_arm") else player.grab_control.required
+			var goal: int = GrabRules.minimum_wounded_presses(player.grab_control.required) if player.body_state.has_part(&"left_arm") else player.grab_control.required
 			while player.is_grabbed() and player.grab_control.presses < goal:
 				player.submit_struggle()
 		# Surviving release restores automatic physics; this fixture advances it
