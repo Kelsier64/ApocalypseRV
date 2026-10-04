@@ -105,9 +105,12 @@ func _update_item(delta: float, large: bool) -> void:
 	# looking up. Full-size meshes must not lift the wrists toward the face.
 	var shoulder := skeleton.find_bone("upper_arm_" + active_hand)
 	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
-	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else shoulder_height - .19, -.55 if large else -.48)
+	# Prone clips already lower the skeleton; retain their existing hold
+	# profile before the crawl downshift rather than lowering it twice.
+	var small_height := 1.60 if actor.is_crawling() else shoulder_height - .19
+	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else small_height, -.55 if large else -.48)
 	if item.has_method("held_support_center"): center = item.held_support_center()
-	if grip_kind == "round": center = Vector3(.10, shoulder_height - .21, -.46)
+	if grip_kind == "round": center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
 	if active_hand == "L" and not large: center.x = -center.x
 	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
 	center = Vector3(0, 1.45, 0) + carry_basis * (center - Vector3(0, 1.45, 0))

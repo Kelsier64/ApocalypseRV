@@ -101,6 +101,26 @@ func release_pose(actor: CharacterBody3D, raker: Raker) -> void:
 	actor.camera.rotation = Vector3.ZERO
 	await steps(20)
 
+func check_prone_hold_height(arena: Node3D) -> void:
+	var prone_actor = preload("res://player/player.tscn").instantiate()
+	arena.add_child(prone_actor)
+	prone_actor.body_state.sever(&"left_leg")
+	prone_actor._apply_body_capabilities()
+	await steps(40)
+	check(prone_actor.is_crawling(), "Prone hold fixture uses production injury state")
+	for key in ["flashlight", "scrap", "battery", "engine_repair_kit"]:
+		prone_actor.inventory.items.clear()
+		prone_actor.inventory.active_slot = 0
+		prone_actor.add_item(key, false, "res://props/" + key + ".tscn")
+		await steps(20)
+		var held: Node3D = prone_actor.held_item_node
+		var carry: Node = prone_actor.get_node("Visuals/Carry")
+		var world_bounds: AABB = held.get_parent().global_transform * carry.bounds
+		check(held.is_visible_in_tree(), key + " remains held while prone and stationary")
+		check(world_bounds.position.y > 0.0, key + " prone hold keeps the full-sized prop above the floor")
+	prone_actor.queue_free()
+	await steps(2)
+
 func check_grab_hand_selection(arena: Node3D, actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node) -> void:
 	# Freeze actor motion and the Raker's grab clock; keep real pose overlays running.
 	actor.set_physics_process(false)
@@ -240,6 +260,7 @@ func run() -> void:
 	await steps(30)
 	check(carry.right_weight == 0 and carry.left_weight == 0 and carry.base_rotations.is_empty(), "Empty hands restore clean locomotion")
 	await check_grab_hand_selection(arena, actor, skeleton, carry)
+	await check_prone_hold_height(arena)
 	arena.queue_free()
 	await steps(2)
 	for failure in failures: push_error(failure)

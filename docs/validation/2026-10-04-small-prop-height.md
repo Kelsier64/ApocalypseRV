@@ -4,7 +4,7 @@
 
 PR21 retained full-sized props, but the carry overlay still positioned ordinary one-handed props at 1.60 m and the flashlight at 1.69 m. The imported character's shoulder is approximately 1.51 m high at idle. Those targets put the wrists above the shoulder and the raised-look poses next to the face.
 
-The one-handed hold now follows the animated holding shoulder, with the ordinary prop center 0.19 m below it and the flashlight center 0.21 m below it. This follows the torso's jogging bob as well as idle posture. Two-handed and corpse support placement retain their existing rules. Authored mesh/root sizes, release from the actual held world transform, and the existing toss velocity are preserved.
+The standing one-handed hold now follows the animated holding shoulder, with the ordinary prop center 0.19 m below it and the flashlight center 0.21 m below it. This follows the torso's jogging bob as well as idle posture. Stationary prone holds retain their original height profile so the existing crawl downshift does not lower the item twice. Two-handed and corpse support placement retain their existing rules. Authored mesh/root sizes, release from the actual held world transform, and the existing toss velocity are preserved.
 
 At the lower arm angle, a flashlight finger cannot always wrap in a plane perpendicular to the tube. Proximal contacts now use the reachable cylinder surface, including movement along its axis, choosing the contact closest to the natural finger curl. Distal directions continue that curl while clearing the solid barrel by a 1 mm geometric margin. The flashlight palm marker is centered across the tube. The authored wrist rotation remains untouched.
 
@@ -37,8 +37,8 @@ For interactive inspection, `tests/player_carry_playground.tscn` now cycles all 
 
 ## Automated verification
 
-The original carry contact, natural wrist, finger curl, thumb direction, flashlight aim and release assertions remain intact. Carry coverage now includes the engine repair kit, checks wrist/elbow height against the actual shoulder during idle and moving look angles, and checks that distal flashlight directions clear the solid barrel.
+The original carry contact, natural wrist, finger curl, thumb direction, flashlight aim and release assertions remain intact. Carry coverage now includes the engine repair kit, checks wrist/elbow height against the actual shoulder during idle and moving look angles, checks that distal flashlight directions clear the solid barrel, and verifies that the four full-sized compact props remain visible and above the floor while prone and stationary.
 
-The relevant local run completed 8/8 checks successfully with the pinned Godot version and separate test saves: `test_player_carry`, `test_flashlight_grab`, `test_flashlight`, `test_player_inventory`, `test_player_item_release`, `test_corpse`, `test_player_large_item_climbing`, and main-scene smoke. Local logs: `.godot/test-logs/20261005-000336-493-selected-28004/`.
+The relevant local run completed 9/9 checks successfully with the pinned Godot version and separate test saves: `test_player_carry`, `test_flashlight_grab`, `test_flashlight`, `test_player_inventory`, `test_player_item_release`, `test_corpse`, `test_player_large_item_climbing`, `test_player_prone`, and main-scene smoke. Local logs: `.godot/test-logs/20261005-002301-185-selected-29328/`.
 
 All five CI profiles are required on the published exact head. Their terminal status is recorded in the draft PR description. The existing animation handoff, driver bite/release and intermittent outdoor encounter failures documented in [PR21 CI 37206953747](https://github.com/Kelsier64/ApocalypseRV/actions/runs/37206953747) are outside this correction.
