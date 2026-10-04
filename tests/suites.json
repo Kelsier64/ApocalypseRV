@@ -37,6 +37,7 @@
       "test_moving_rv_climbing",
       "test_player_animation",
       "test_player_carry",
+      "test_player_item_release",
       "test_player_climb_animation",
       "test_player_death",
       "test_player_dismemberment",
@@ -119,3 +120,4 @@
     "test_raker_boarding": "Identical to test_moving_rv_climbing with its default raker fixture; retained for direct invocation."
   }
 }
+

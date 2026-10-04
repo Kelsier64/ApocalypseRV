@@ -68,15 +68,7 @@ func _physics_process(delta: float) -> void:
 			if item.has_method("set_held"):
 				# The corpse grip is full size; never scale its live physical skeleton.
 				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
-			# Held previews already use hold_scale. Cap unusually bulky silhouettes
-			# so world-sized barrels/blocks do not intersect the eye or hide both hands.
-			var limit := .5 if large else .18
-			var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
-			var fit := minf(1.0, limit / maxf(longest, .001))
-			if large: fit = minf(fit, .4 / maxf(bounds.size.x, .001))
-			if fit < 1.0 and not item.has_method("set_held"):
-				item.scale *= fit
-				bounds = _held_bounds(item)
+			# Keep world dimensions, even when the held silhouette blocks the view.
 			item_hold_transform = item.transform
 		_update_item(delta, large)
 	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight)
@@ -278,3 +270,4 @@ func _held_bounds(prop: Node3D) -> AABB:
 		result = box if first else result.merge(box)
 		first = false
 	return result if not first else AABB(Vector3(-.06, -.06, -.06), Vector3.ONE * .12)
+
