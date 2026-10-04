@@ -1053,7 +1053,7 @@ func _execute_attack_on_target(target_data: Dictionary) -> void:
 		return
 
 	var target_variant = target_data.get("node", null)
-	if not (target_variant is Node3D):
+	if not is_instance_valid(target_variant) or not (target_variant is Node3D):
 		return
 
 	var target_node := target_variant as Node3D
@@ -1452,7 +1452,8 @@ func _refresh_combat_target(is_climbing: bool, max_distance: float = INF) -> voi
 
 func _get_current_combat_target_node() -> Node3D:
 	var target_variant = current_combat_target.get("node", null)
-	if not (target_variant is Node3D):
+	# Destroyed equipment can remain cached until the next targeting refresh.
+	if not is_instance_valid(target_variant) or not (target_variant is Node3D):
 		return null
 	var target_node := target_variant as Node3D
 	if target_node == null or not is_instance_valid(target_node):
@@ -1558,7 +1559,7 @@ func _get_attack_range_for_target(target_data: Dictionary) -> float:
 
 func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool = true) -> bool:
 	var target_variant = target_data.get("node", null)
-	if not (target_variant is Node3D):
+	if not is_instance_valid(target_variant) or not (target_variant is Node3D):
 		return false
 	var target_node := target_variant as Node3D
 	if target_node == null or not is_instance_valid(target_node):

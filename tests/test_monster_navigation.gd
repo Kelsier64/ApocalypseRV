@@ -69,6 +69,7 @@ func _run() -> void:
 	_test_climbing_touch_attack_can_ignore_los_gate()
 	_test_attack_source_label_resolver()
 	_test_attack_executor_damages_non_player_target()
+	_test_freed_combat_target_is_discarded()
 	_test_chassis_attack_uses_extended_range()
 	_finish()
 
@@ -1100,6 +1101,28 @@ func _test_attack_executor_damages_non_player_target() -> void:
 		_expect(structure.damage_received >= 12.5, "Attack executor should damage non-player targets.")
 
 		structure.free()
+
+	monster.free()
+
+func _test_freed_combat_target_is_discarded() -> void:
+	var monster := _new_monster()
+	if monster == null:
+		return
+
+	var equipment := _DummyDamageable.new()
+	monster.current_combat_target = monster._build_combat_target(equipment, "equipment")
+	monster.attack_timer = 0.0
+	_expect(monster._get_current_combat_target_node() == equipment, "A live cached combat target should remain available.")
+
+	# Destruction frees equipment while the combat dictionary still retains it.
+	equipment.free()
+	_expect(monster._get_current_combat_target_node() == null, "A freed cached combat target should be discarded safely.")
+	_expect(monster._resolve_underfoot_tracking_target() == null, "Freed equipment must not authorize underfoot tracking.")
+	_expect(not monster._can_attack_combat_target(monster.current_combat_target), "A freed cached combat target must not be attackable.")
+	monster._execute_attack_on_target(monster.current_combat_target)
+	_expect(is_zero_approx(monster.attack_timer), "Discarding a freed target must not consume the attack cooldown.")
+	monster._refresh_combat_target(false)
+	_expect(monster.current_combat_target.is_empty(), "Targeting refresh should clear a freed target when no candidates remain.")
 
 	monster.free()
 

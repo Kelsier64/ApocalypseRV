@@ -23,6 +23,10 @@ func _run() -> void:
 		enemy.name = "OutdoorTestRaker"
 		enemy.position = Vector3(0, 1, 8)
 		main.add_child(enemy)
+	# This actor exercises cross-world targeting below. Do not let it destroy
+	# the unrelated RV or acquire the player while the entrance fixture settles.
+	var outdoor: Monster = main.get_node("OutdoorTestRaker")
+	outdoor.process_mode = Node.PROCESS_MODE_DISABLED
 	root.add_child(main)
 	current_scene = main
 	# Registration occurs during ready; current_scene is set after adding in SceneTree tests.
@@ -46,20 +50,39 @@ func _run() -> void:
 		return
 	if not building.has_meta("poi_id"):
 		manager.register_entrance(building, 42)
-	await frames(15)
+	if not await WAIT.generator_idle(self, generator):
+		check(false, "Outdoor terrain and navigation settle before entrance interaction")
+		quit(1)
+		return
 	player.global_transform = building.get_node("ReturnPoint").global_transform
 	player.global_basis = building.global_basis
 	player.velocity = Vector3.ZERO
 	player.camera.rotation = Vector3.ZERO
 	await frames(15)
+	var entrance_ray: RayCast3D = player.camera.get_node("InteractRay")
+	var entrance: PoiEntrance = building.get_node("Entrance")
+	Input.action_release("interact")
+	# Polling-only input acquires its target on the press edge. A fixed frame
+	# delay must not consume that edge against a stale or missing ray collider.
+	if not await WAIT.until(self, func() -> bool:
+		entrance_ray.force_raycast_update()
+		return player.is_on_floor() and player.get_player_mode() == player.PlayerMode.NORMAL and not player.is_gameplay_input_blocked() and entrance_ray.get_collider() == entrance, 5000, true):
+		check(false, "Entrance interaction is ready: player=%s collider=%s mode=%s" % [player.global_position, entrance_ray.get_collider(), player.get_player_mode()])
+		quit(1)
+		return
+	await frames(1)
 	Input.action_press("interact")
 	await frames(10)
 	Input.action_release("interact")
 	# Main scene tests intentionally use real interaction, not a direct enter call.
+	if not await WAIT.until(self, func() -> bool: return manager.state != PoiInstanceManager.State.OUTDOOR, 5000):
+		check(false, "Real entrance press starts the POI transition")
+		quit(1)
+		return
 	var deadline := Time.get_ticks_msec() + 60000
 	while (manager.busy or manager.interior == null) and Time.get_ticks_msec() < deadline:
 		await process_frame
-	check(manager.interior != null and not manager.busy, "Main entrance ray enters instance")
+	check(manager.interior != null and not manager.busy, "Main entrance ray enters instance: " + manager.last_error)
 	if manager.interior == null or manager.busy:
 		quit(1)
 		return
@@ -83,11 +106,12 @@ func _run() -> void:
 	check(clock.get_node("WeatherRain").visible_drops == 0, "Independent indoor world has no outdoor rain")
 	check(not WorldEntities.same_world(player, main), "Independent physics world")
 	check(WorldEntities.get_container(player) == inside.entities, "Indoor drops owned by indoor container")
-	var outdoor: Monster = main.get_node("OutdoorTestRaker")
+	outdoor.process_mode = Node.PROCESS_MODE_INHERIT
 	outdoor.target_player = player
 	await frames(5)
 	check(outdoor.target_player == null, "Cached outdoor target cleared across worlds")
 	check(outdoor._collect_player_candidates().is_empty(), "Outdoor AI cannot select indoor player")
+	outdoor.process_mode = Node.PROCESS_MODE_DISABLED
 	var chassis = main.get_node("NewRv/Chassis")
 	var power_before: float = chassis.current_power
 	await frames(60)
