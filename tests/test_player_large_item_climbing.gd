@@ -22,8 +22,11 @@ func _run() -> void:
 	rv.freeze = true
 	rv.set_physics_process(false)
 	player = load("res://player/player.tscn").instantiate()
-	player.set_physics_process(false)
 	world.add_child(player)
+	# Entering the tree enables overridden physics callbacks before _ready.
+	# Disable afterward so only this fixture consumes each carrier delta.
+	player.set_physics_process(false)
+	_expect(not player.is_physics_processing(), "Fixture owns player physics stepping.")
 	interaction = player.get_node("Camera3D/InteractRay")
 	interaction.set_physics_process(false)
 	await _reset_at_wall()
