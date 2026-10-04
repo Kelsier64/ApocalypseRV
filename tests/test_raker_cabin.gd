@@ -5,6 +5,7 @@ var rv: Chassis
 var player: CharacterBody3D
 var actor: Raker
 var trace_tick := 0
+var target_survived := true
 func _init() -> void: run.call_deferred()
 func check(ok: bool, note: String) -> void:
 	if not ok: failures.append(note)
@@ -13,11 +14,16 @@ func ticks(count: int) -> void:
 		await physics_frame
 		player._physics_process(1.0 / Engine.physics_ticks_per_second)
 		actor._physics_process(1.0 / Engine.physics_ticks_per_second)
-		# Pursuit needs a surviving target across breach cases. Take the actual
-		# wounded bite outcome; fatal cleanup is covered by the death/grab suites.
+		# Keep one real wounded bite per breach case, then use normal escapes.
+		# A second wounded bite after losing the left arm is fatal at any HP.
 		if player.is_grabbed() and player.grab_control.accepting:
-			while player.grab_control.presses * 5 < player.grab_control.required * 4:
+			var goal: int = ceili(player.grab_control.required * .8) if player.body_state.has_part(&"left_arm") else player.grab_control.required
+			while player.is_grabbed() and player.grab_control.presses < goal:
 				player.submit_struggle()
+		# Surviving release restores automatic physics; this fixture advances it
+		# explicitly above, so never let a capture add a second update per tick.
+		player.set_physics_process(false)
+		target_survived = target_survived and not player.is_player_dead
 		trace_tick += 1
 		if "--trace" in OS.get_cmdline_user_args() and trace_tick % 60 == 0:
 			print("CABIN ",trace_tick," ",rv.to_local(actor.global_position)," climb=",actor.locomotion_state," low=",actor.crouched," route=",actor.boarding.cabin.active," vel=",actor.velocity," target=",actor.current_combat_target.get("target_type")," strike=",actor.strike_elapsed," grab=",actor.grab.phase," gate=",actor.grab.contact_failure)
@@ -33,6 +39,9 @@ func spawn(point: Vector3) -> void:
 	actor.ai_state=Monster.State.CHASE
 	actor.boarding.rng.seed=7
 	actor.loot_drops={}
+	player.body_state.reset()
+	player._apply_body_capabilities()
+	player.grab_control.immunity=0
 	player.current_player_health=10000
 	player.damage_cooldown=0
 func run() -> void:
@@ -68,6 +77,7 @@ func run() -> void:
 	check(not is_instance_valid(door),"New species destroys side door")
 	check(actor.crouched and actor.boarding.cabin.inside(actor,rv),"Enlarged monster enters cabin in low posture")
 	check(player.current_player_health<10000,"Low attack reaches seated driver after door breach")
+	check(target_survived and player.body_state.has_part(&"head") and player.seated_in==rv.get_node("DriverSeat"),"Door pursuit retains a living seated target")
 	roof.current_health=24
 	spawn(Vector3(0,2.55,2.8))
 	await ticks(1300)
@@ -75,6 +85,7 @@ func run() -> void:
 	check(not is_instance_valid(roof),"New species breaks supporting roof")
 	check(actor.crouched and actor.boarding.mode==MonsterBoarding.Mode.NONE,"Drops into cabin and acquires low locomotion")
 	check(player.current_player_health<10000,"Roof breaker pursues driver inside")
+	check(target_survived and player.body_state.has_part(&"head") and player.seated_in==rv.get_node("DriverSeat"),"Roof pursuit retains a living seated target")
 	check(rv.get_node("CraftingStation").current_health==rv.get_node("CraftingStation").max_health,"Leaves cabin equipment intact")
 	player.seated_in=null
 	player.in_ui_mode=true
@@ -85,6 +96,7 @@ func run() -> void:
 	check(rv.to_local(actor.global_position).x>3.5,"Exits through the real breach")
 	check(not actor.crouched,"Returns to full standing height outside")
 	check(player.current_player_health<10000,"Resumes ground sweep after exit")
+	check(target_survived,"Cabin and exit pursuit never invoke death or respawn")
 	world.free()
 	if failures.is_empty(): print("PASS: Raker side-door breach, roof breach, low cabin pursuit and standing exit")
 	else:

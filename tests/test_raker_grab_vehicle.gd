@@ -56,6 +56,7 @@ func run() -> void:
 				scene.monster.grab.tick(2)
 				scene.monster.grab.tick(.38)
 				check(player.current_player_health==50 and not player.is_grabbed(),"Surviving driver is released at bite contact")
+				check(not player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head"),"Driver wounded bite removes the left arm only")
 				check(player.seated_in==seat and not scene.rv.driver_controls_locked(),"Seat and driving controls resume on contact tick")
 			else:
 				seat.exit_seat(true)

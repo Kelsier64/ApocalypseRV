@@ -14,6 +14,7 @@ var grip_right := Vector3.ZERO
 var grip_left := Vector3.ZERO
 var hand_frames: Dictionary = {}
 var grip_kind := "small"
+var active_hand := "R"
 
 func _ready() -> void:
 	process_physics_priority = 2
@@ -38,14 +39,23 @@ func _physics_process(delta: float) -> void:
 	if actor.is_player_dead: return # Preserve the evaluated pose for ragdoll handoff.
 	var held: Node3D = actor.held_item_node
 	var driver: Node = get_parent().get_node("Locomotion")
-	var grab_flashlight: bool = actor.is_grabbed() and actor.grab_control.keep_flashlight and held is Flashlight
-	var blocked: bool = actor.seated_in != null or (actor.is_grabbed() and not grab_flashlight) or actor.is_placing_equipment() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+	var grabbed: bool = actor.is_grabbed()
+	var blocked: bool = actor.seated_in != null or actor.is_placing_equipment() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+	blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
 	if is_instance_valid(held): held.visible = not blocked
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
-	right_weight = move_toward(right_weight, 1.0 if carrying else 0.0, delta * 7.0)
-	left_weight = move_toward(left_weight, 1.0 if large else 0.0, delta * 7.0)
-	# Climbing/grabs own both arms unless the victim keeps a lit flashlight.
+	if large and not actor.can_use_hands(2): carrying = false
+	active_hand = "R" if actor.body_state.has_part(&"right_arm") else "L"
+	if grabbed:
+		_grab_arms(is_instance_valid(held))
+		# Free hands belong entirely to the grab pose, with no stale carry blend
+		# overriding it (including the support hand of a normally two-hand prop).
+		if not carrying or active_hand != "R": right_weight = 0.0
+		if not carrying or active_hand != "L": left_weight = 0.0
+	right_weight = move_toward(right_weight, 1.0 if carrying and active_hand == "R" else 0.0, delta * 7.0)
+	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L") else 0.0, delta * 7.0)
+	# Climbing/placement/seat presentation still hides held previews.
 	if blocked:
 		right_weight = 0.0
 		left_weight = 0.0
@@ -66,11 +76,26 @@ func _physics_process(delta: float) -> void:
 				bounds = _held_bounds(item)
 			item_hold_transform = item.transform
 		_update_item(delta, large)
-	if right_weight > 0.0: _arm("R", grip_right, right_weight)
-	if left_weight > 0.0: _arm("L", grip_left, left_weight)
+	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight)
+	if left_weight > 0.0 and actor.body_state.has_part(&"left_arm"): _arm("L", grip_left, left_weight)
 	if carrying and grip_kind == "round":
 		_align_flashlight()
-		_pose_flashlight_fingers(right_weight)
+		_pose_flashlight_fingers(right_weight if active_hand == "R" else left_weight)
+
+func _grab_arms(holding_item: bool) -> void:
+	# The same skinned arms are visible to the victim and external cameras.
+	# Keep the original restrained-arm height, mirrored by the other hand.
+	var grab: Node = actor.grab_control
+	var weight := smoothstep(0.0, .28, grab.camera_elapsed)
+	var bite := 0.0
+	if grab.captor.grab.phase == grab.captor.grab.Phase.BITE and grab.captor.grab.bite_part == &"left_arm":
+		bite = preload("res://enemies/raker_pose_modifier.gd").bite_weight(grab.captor.grab.elapsed)
+	var left := Vector3(-.28, 1.53, -.49).lerp(Vector3(-.38, 1.48, -.55), bite)
+	grip_kind = "small"
+	if actor.body_state.has_part(&"left_arm") and not (holding_item and active_hand == "L"):
+		_arm("L", actor.to_global(left), weight)
+	if actor.body_state.has_part(&"right_arm") and not (holding_item and active_hand == "R"):
+		_arm("R", actor.to_global(Vector3(.28, 1.53, -.49)), weight)
 
 func _update_item(delta: float, large: bool) -> void:
 	if grip_kind == "round": item.transform = item_hold_transform
@@ -83,8 +108,10 @@ func _update_item(delta: float, large: bool) -> void:
 	var sway := Vector3(sin(phase * .5) * .006, sin(phase) * .006, 0) * minf(speed, 1.0)
 	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else 1.60, -.55 if large else -.48)
 	if grip_kind == "round": center = Vector3(.10, 1.69, -.46)
+	if active_hand == "L" and not large: center.x = -center.x
 	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
 	center = Vector3(0, 1.45, 0) + carry_basis * (center - Vector3(0, 1.45, 0))
+	if actor.is_crawling(): center += Vector3(0, -1.0, -.12)
 	var marker: Node3D = item.get_parent()
 	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())
 	# Bounds are in marker space, including the prop's authored rotation/scale.
@@ -98,13 +125,14 @@ func _update_item(delta: float, large: bool) -> void:
 		if grip != null:
 			if side == "Right": grip_right = grip.global_position
 			else: grip_left = grip.global_position
+	if active_hand == "L" and grip_kind == "round": grip_left = grip_right
 
 func _align_flashlight() -> void:
 	# Keep the lens aimed forward, and seat the handle against the natural palm.
 	# Move the prop, never roll the wrist to force it onto the cylinder.
-	var hand := skeleton.find_bone("hand_R")
+	var hand := skeleton.find_bone("hand_" + active_hand)
 	var delta := skeleton.global_basis * skeleton.get_bone_global_pose(hand).basis * skeleton.get_bone_global_rest(hand).basis.inverse()
-	var frame: Basis = delta * hand_frames["R"]
+	var frame: Basis = delta * hand_frames[active_hand]
 	var grip := item.get_node("GripRight") as Node3D
 	var forward := actor.global_basis * Basis(Vector3.RIGHT, clampf(actor.camera.rotation.x, -.45, .45) * .65) * Vector3.FORWARD
 	if actor.is_grabbed() and actor.grab_control.keep_flashlight:
@@ -123,8 +151,8 @@ func _pose_flashlight_fingers(weight: float) -> void:
 	var cylinder := body.mesh as CylinderMesh
 	var radius := maxf(cylinder.top_radius, cylinder.bottom_radius) + .012
 	for finger in ["index", "middle", "ring", "pinky"]:
-		var first := skeleton.find_bone(finger + "_01_R")
-		var second := skeleton.find_bone(finger + "_02_R")
+		var first := skeleton.find_bone(finger + "_01_" + active_hand)
+		var second := skeleton.find_bone(finger + "_02_" + active_hand)
 		var start := item.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(first).origin)
 		var joint := item.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(second).origin)
 		var length := start.distance_to(joint)
@@ -137,11 +165,11 @@ func _pose_flashlight_fingers(weight: float) -> void:
 		_finger_world_direction(first, item.global_basis * (contact - start), weight)
 		_finger_world_direction(second, item.global_basis * (tip - contact), weight)
 	var thumb_axis := item.global_basis.orthonormalized()
-	_finger_world_direction(skeleton.find_bone("thumb_01_R"), thumb_axis.y - thumb_axis.x * .25 + thumb_axis.z * .15, weight)
-	_finger_world_direction(skeleton.find_bone("thumb_02_R"), thumb_axis.y - thumb_axis.x * .15 + thumb_axis.z * .1, weight)
+	_finger_world_direction(skeleton.find_bone("thumb_01_" + active_hand), thumb_axis.y - thumb_axis.x * .25 + thumb_axis.z * .15, weight)
+	_finger_world_direction(skeleton.find_bone("thumb_02_" + active_hand), thumb_axis.y - thumb_axis.x * .15 + thumb_axis.z * .1, weight)
 
 func _finger_world_direction(bone: int, direction: Vector3, weight: float) -> void:
-	var hand := skeleton.find_bone("hand_R")
+	var hand := skeleton.find_bone("hand_" + active_hand)
 	var hand_delta := skeleton.get_bone_global_pose(hand).basis * skeleton.get_bone_global_rest(hand).basis.inverse()
 	var rest_direction := (skeleton.global_basis * hand_delta).inverse() * direction
 	_finger_direction(bone, rest_direction, hand_delta, weight)

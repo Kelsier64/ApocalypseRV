@@ -57,6 +57,29 @@ func _run() -> void:
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	check(not saved.is_empty(), "Valid fixture reads")
 	if saved.is_empty(): quit(1); return
+	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
+	var wounded := saved.duplicate(true)
+	wounded.player.body.present.left_leg = false
+	wounded.player.body.present.right_arm = false
+	check(checkpoint.write_checkpoint(PATH + ".body", wounded), "Dismembered checkpoint fixture writes")
+	var wounded_roundtrip: Dictionary = checkpoint.read_checkpoint(PATH + ".body")
+	check(not wounded_roundtrip.is_empty() and wounded_roundtrip.player.body == wounded.player.body, "Player limb state survives checkpoint serialization")
+	var legacy_body := saved.duplicate(true)
+	legacy_body.player.erase("body")
+	check(checkpoint.validation_error(legacy_body).is_empty(), "Legacy checkpoint without body remains valid")
+	for kind in ["missing_part", "unknown_part", "part_type", "body_version", "headless_alive"]:
+		var bad_body := saved.duplicate(true)
+		match kind:
+			"missing_part": bad_body.player.body.present.erase("right_leg")
+			"unknown_part": bad_body.player.body.present["tail"] = true
+			"part_type": bad_body.player.body.present.left_arm = 1
+			"body_version": bad_body.player.body.version = 2
+			"headless_alive": bad_body.player.body.present.head = false
+		check(checkpoint.validation_error(bad_body).begins_with("player.body"), "Reject malformed body " + kind + " before mutation")
+	var headless_dead := saved.duplicate(true)
+	headless_dead.player.health = 0.0
+	headless_dead.player.body.present.head = false
+	check(checkpoint.validation_error(headless_dead).is_empty(), "Dead headless player body is valid")
 	var retired := saved.duplicate(true)
 	var retired_scene := "res://enemies/retired_monster.tscn"
 	retired.actors.append({"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 40.0})

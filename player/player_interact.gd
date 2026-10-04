@@ -105,6 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	_input_edges.append({"key": key, "pressed": event.is_pressed(), "target": weakref(target) if is_instance_valid(target) else null})
 
 func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) -> void:
+	if is_instance_valid(obj) and not _can_interact(obj): obj = null
 	if obj != _e_target: _e_target = null
 	if obj != _f_target: _f_target = null
 	if e_pressed and not _e_was_pressed:
@@ -131,7 +132,7 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 		_e_target = null
 		_e_time = 0.0
 	if f_pressed and not _f_was_pressed and not e_pressed:
-		_f_target = obj if obj is Equipment else null
+		_f_target = obj if obj is Equipment and player.can_use_hands(2) else null
 		_f_time = 0.0
 		_f_done = false
 	if e_pressed: _f_target = null
@@ -156,6 +157,7 @@ func _uses_hold(obj: Node) -> bool:
 
 func _invoke(obj: Node, method: String) -> void:
 	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not obj.has_method(method): return
+	if not _can_interact(obj): return
 	var result: Variant = obj.call(method, player)
 	if result is String and not result.is_empty(): show_feedback(result)
 
@@ -165,6 +167,9 @@ func show_feedback(message: String) -> void:
 
 func get_prompt(obj: Node) -> String:
 	if not is_instance_valid(obj): return ""
+	if not _can_interact(obj):
+		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂"
+		return "缺少可用手臂，無法使用或拾取"
 	var text := ""
 	if obj.has_method("get_interaction_prompt"):
 		text = obj.get_interaction_prompt(player)
@@ -178,7 +183,29 @@ func get_prompt(obj: Node) -> String:
 	elif obj.has_method("interact"):
 		text = "E 使用"
 	if _wheel_install(obj): text += "\n長按 E 1 秒安裝手持輪胎"
-	if obj is Equipment: text += "\n長按 F 2 秒搬移"
+	if obj is Equipment:
+		text += "\n長按 F 2 秒搬移" if player.can_use_hands(2) else "\n搬移需要兩隻手臂"
 	if obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
 		text += "\n長按 H 維修：2 秒／2 Metal Parts（需熄火停穩）"
 	return text
+
+func _can_interact(obj: Node) -> bool:
+	# Existing inventory may still be stored with no arms; withdrawal is
+	# gated separately by add_prop_item / the RV storage transaction.
+	if obj.get_script() == preload("res://equipment/item_box.gd"): return true
+	if obj.get_script() == preload("res://equipment/driver_seat.gd"): return player.can_drive()
+	return player.can_use_hands(2 if obj is Prop and obj.is_large else 1)
+
+func cancel_body_operations() -> void:
+	if not player.can_use_hands(): repair.cancel()
+	_input_edges = _input_edges.filter(func(edge: Dictionary):
+		var target: Node = edge.target.get_ref() if edge.target else null
+		return is_instance_valid(target) and _can_interact(target))
+	if is_instance_valid(_e_target) and not _can_interact(_e_target):
+		_e_target = null
+		_e_time = 0.0
+		_e_done = true
+	if not player.can_use_hands(2):
+		_f_target = null
+		_f_time = 0.0
+		_f_done = true

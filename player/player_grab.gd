@@ -2,6 +2,7 @@ extends Node
 ## Transient control ownership. Physics remains in Player; no state is serialized.
 signal changed(presses: int, required: int, remaining: float)
 signal released(reason: String)
+const ARM_GRIP_LEAD_TIME := .35
 var player: CharacterBody3D
 var captor: Node3D
 var required := 0
@@ -26,6 +27,16 @@ var label: Label
 var bar: ProgressBar
 var impact: ColorRect
 var impact_remaining := 0.0
+var impact_strength := .78
+var arm_grip_weight := 0.0
+var recovery_camera: Camera3D
+var recovery_rotation := Vector3.ZERO
+var recovery_position := Vector3.ZERO
+var recovery_start_rotation := Vector3.ZERO
+var recovery_target_rotation := Vector3.ZERO
+var recovery_target_position := Vector3.ZERO
+var recovery_elapsed := 0.0
+var recovery_anchor := Vector3.ZERO
 
 func _ready() -> void:
 	player = get_parent()
@@ -78,6 +89,7 @@ func can_begin() -> bool:
 
 func begin(owner_node: Node3D, count: int) -> bool:
 	if not can_begin() or not is_instance_valid(owner_node): return false
+	clear_view_recovery()
 	# Snapshot actual illumination before UI cleanup can reactivate a stowed light.
 	var held := player.held_item_node as Flashlight
 	keep_flashlight = held != null and held.get_node("Beam").is_visible_in_tree()
@@ -107,9 +119,10 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	camera_rest_near = camera.near
 	camera.near = minf(camera.near, .012)
 	camera_elapsed = 0
+	arm_grip_weight = 0.0
 	bite_pull_ready = false
 	bite_pull_offset = Vector3.ZERO
-	if is_instance_valid(player.held_item_node): player.held_item_node.visible = keep_flashlight
+	if is_instance_valid(player.held_item_node): player.held_item_node.show()
 	player._advance_flashlight(0.0)
 	hud.show()
 	update_progress(remaining)
@@ -158,13 +171,18 @@ func _physics_process(delta: float) -> void:
 	if captor.is_queued_for_deletion() or not WorldEntities.same_world(player, captor):
 		end("world_changed")
 		return
-	_update_bite_pull()
+	_update_bite_pull(delta)
 
-func _update_bite_pull() -> void:
+func _update_bite_pull(delta: float = 1.0 / 60.0) -> void:
 	if not is_instance_valid(camera): return
 	var parent := camera.get_parent() as Node3D
 	var anchor := parent.to_global(camera_rest_position)
 	var weight := 0.0
+	# The monster can restrain the arm before biting, but the camera keeps its
+	# face view until actual damage contact releases the survivor.
+	var preparing_arm: bool = captor.grab.phase == captor.grab.Phase.HOLD and remaining <= ARM_GRIP_LEAD_TIME and player.body_state.has_part(&"left_arm") and presses * 5 >= required * 4
+	var arm_bite: bool = captor.grab.bite_part == &"left_arm" or preparing_arm
+	arm_grip_weight = move_toward(arm_grip_weight, 1.0 if arm_bite else 0.0, delta / .18)
 	if captor.grab.phase == captor.grab.Phase.BITE:
 		if not bite_pull_ready:
 			var toward: Vector3 = (captor.global_position-anchor).slide(Vector3.UP).normalized()
@@ -176,10 +194,16 @@ func _update_bite_pull() -> void:
 			bite_pull_offset = parent.global_basis.inverse() * pull
 			bite_pull_ready = true
 		weight = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed)
+		if captor.grab.bite_part == &"left_arm": weight *= .15
 	# Hands pull the victim's head forward during the bite. Keep body/seat fixed,
 	# and latch the direction once so camera/mouth solvers never chase each other.
 	# Seat-local offset follows moving RVs; a sphere sweep prevents wall clipping.
-	var motion := parent.global_basis * bite_pull_offset * weight
+	var motion := _safe_camera_motion(camera, parent.global_basis * bite_pull_offset * weight, captor)
+	camera.position = parent.to_local(anchor + motion)
+
+func _safe_camera_motion(view: Camera3D, motion: Vector3, owner_node: Node3D = null) -> Vector3:
+	var parent := view.get_parent() as Node3D
+	var anchor := parent.to_global(camera_rest_position)
 	if motion.length_squared() > .000001:
 		var shape := SphereShape3D.new()
 		shape.radius = .09
@@ -188,15 +212,18 @@ func _update_bite_pull() -> void:
 		query.transform = Transform3D(Basis.IDENTITY, anchor)
 		query.motion = motion
 		query.collision_mask = 1
-		query.exclude = [player.get_rid(), captor.get_rid()]
+		query.exclude = [player.get_rid()]
+		if is_instance_valid(owner_node): query.exclude.append(owner_node.get_rid())
 		var safe := player.get_world_3d().direct_space_state.cast_motion(query)
 		motion *= safe[0]
-	camera.position = parent.to_local(anchor + motion)
+	return motion
 
 func _process(delta: float) -> void:
 	impact_remaining = maxf(0, impact_remaining - delta)
-	impact.color.a = .78 * pow(impact_remaining / .22, 2)
-	if not active() or not is_instance_valid(camera): return
+	impact.color.a = impact_strength * pow(impact_remaining / .22, 2)
+	if not active() or not is_instance_valid(camera):
+		_recover_view(delta)
+		return
 	camera_elapsed += delta
 	# Lift toward the face once, then hold that parent-local view through bite.
 	# Following the lunging mouth caused a downward whip at contact.
@@ -205,9 +232,11 @@ func _process(delta: float) -> void:
 func bite_impact() -> void:
 	# Brief crush flash survives fatal-grab cleanup, then clears independently.
 	impact_remaining = .22
+	impact_strength = .28 if active() and captor.grab.bite_part == &"left_arm" else .78
 
 func end(reason: String = "cancelled") -> void:
 	var previous := captor
+	var arm_release: bool = is_instance_valid(previous) and reason == "bitten" and previous.grab.bite_part == &"left_arm" and not player.is_player_dead
 	var owned_view := is_instance_valid(camera) and camera.current
 	captor = null
 	keep_flashlight = false
@@ -220,15 +249,32 @@ func end(reason: String = "cancelled") -> void:
 		jump_release_required = space_down
 		if previous.grab.victim == player: previous.grab.cancel(reason)
 	if is_instance_valid(player.held_item_node): player.held_item_node.show()
-	# Keep the final viewing direction; restore ordinary yaw/pitch ownership.
+	# Arm framing is temporary; it must never become the controller's body yaw.
+	# Other outcomes retain their existing final-view handoff.
 	if is_instance_valid(camera):
-		camera.position = camera_rest_position
+		if arm_release:
+			recovery_camera = camera
+			recovery_rotation = camera.rotation - seated_camera_rotation
+			for axis in 3: recovery_rotation[axis] = wrapf(recovery_rotation[axis], -PI, PI)
+			recovery_start_rotation = recovery_rotation
+			recovery_position = camera.position - camera_rest_position
+			var parent := camera.get_parent() as Node3D
+			var motion := _safe_camera_motion(camera, player.global_basis * Vector3(-.13, .06, .12), previous)
+			recovery_target_position = parent.global_basis.inverse() * motion
+			var eye := parent.to_global(camera_rest_position + recovery_target_position)
+			var look := player.to_global(Vector3(-.34, 1.32, -.34)) - eye
+			recovery_target_rotation = (parent.global_basis.inverse() * Basis.looking_at(look.normalized(), Vector3.UP)).get_euler() - seated_camera_rotation
+			for axis in 3: recovery_target_rotation[axis] = recovery_rotation[axis] + wrapf(recovery_target_rotation[axis] - recovery_rotation[axis], -PI, PI)
+			recovery_elapsed = 0.0
+			recovery_anchor = player.global_position
+		else:
+			camera.position = camera_rest_position
 		camera.near = camera_rest_near
-	if is_instance_valid(camera) and camera == player.camera:
+	if is_instance_valid(camera) and camera == player.camera and not arm_release:
 		var view := camera.global_basis.get_euler()
 		player.global_rotation.y = view.y
 		camera.rotation = Vector3(clampf(view.x, deg_to_rad(-80), deg_to_rad(80)), 0, 0)
-	elif is_instance_valid(camera):
+	elif is_instance_valid(camera) and camera != player.camera and not arm_release:
 		camera.rotation = seated_camera_rotation
 	camera = null
 	# Release the real input path as well as the ownership flag. A visible
@@ -240,6 +286,38 @@ func end(reason: String = "cancelled") -> void:
 		player.set_process_unhandled_input(not is_instance_valid(player.seated_in))
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	released.emit(reason)
+
+func _recover_view(delta: float) -> void:
+	if not is_instance_valid(recovery_camera): return
+	if not recovery_camera.current or player.is_player_dead or player.is_crawling() or player.locomotion_state != player.LocomotionState.NORMAL or (not is_instance_valid(player.seated_in) and player.global_position.distance_to(recovery_anchor) > 2.0):
+		clear_view_recovery()
+		return
+	# Input is already free. Only after contact, turn toward the torn arm, then
+	# remove our offset. Apply deltas so new mouse input is never overwritten.
+	var base_rotation := _limit_free_view(recovery_camera.rotation - recovery_rotation)
+	recovery_elapsed += delta
+	var turn := smoothstep(0.0, .16, recovery_elapsed)
+	var after := 1.0 - smoothstep(.32, .85, recovery_elapsed)
+	var offset := recovery_start_rotation.lerp(recovery_target_rotation, turn) * after
+	recovery_camera.rotation = _limit_free_view(base_rotation + offset)
+	recovery_rotation = recovery_camera.rotation - base_rotation
+	var parent := recovery_camera.get_parent() as Node3D
+	var motion := parent.global_basis * recovery_position.lerp(recovery_target_position, turn) * after
+	recovery_camera.position = camera_rest_position + parent.global_basis.inverse() * _safe_camera_motion(recovery_camera, motion)
+	if after <= 0.0: clear_view_recovery()
+
+func _limit_free_view(rotation: Vector3) -> Vector3:
+	rotation.x = clampf(rotation.x, deg_to_rad(-80), deg_to_rad(80))
+	if recovery_camera != player.camera:
+		rotation.y = clampf(rotation.y, deg_to_rad(-120), deg_to_rad(120))
+	return rotation
+
+func clear_view_recovery() -> void:
+	if is_instance_valid(recovery_camera):
+		recovery_camera.rotation = _limit_free_view(recovery_camera.rotation - recovery_rotation)
+		recovery_camera.position = camera_rest_position
+	recovery_camera = null
+	recovery_rotation = Vector3.ZERO
 
 func _exit_tree() -> void:
 	if active(): end("player_removed")

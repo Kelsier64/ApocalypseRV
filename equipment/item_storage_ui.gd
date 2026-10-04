@@ -75,7 +75,7 @@ func _process(delta: float) -> void:
 
 func _refresh() -> void:
 	title.text = "本車道具倉庫｜%d / %d　背包｜%d / %d" % [rv.stored_items.size(), rv.item_capacity, user.inventory.items.size(), PlayerInventory.MAX_SLOTS]
-	var signature := str(rv.stored_items) + str(user.inventory.items)
+	var signature := str(rv.stored_items) + str(user.inventory.items) + str(user.usable_arms())
 	if signature == _signature: return
 	_signature = signature
 	for child in rows.get_children():
@@ -105,6 +105,9 @@ func _add_item_button(item: Dictionary, index: int, deposit: bool) -> void:
 		detail = "｜耐久 %.0f" % item.state.condition
 	button.text = "%s %s%s" % ["存入" if deposit else "取出", item.name, detail]
 	button.disabled = rv.stored_items.size() >= rv.item_capacity if deposit else user.inventory.items.size() >= PlayerInventory.MAX_SLOTS
+	if not deposit and not user.can_use_hands(2 if item.is_large else 1):
+		button.disabled = true
+		button.text += "｜缺少可用手臂"
 	# Bind a snapshot too: a stale button must never transfer a different item.
 	var expected := item.duplicate(true)
 	button.pressed.connect(func():
