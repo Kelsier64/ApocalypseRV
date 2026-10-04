@@ -16,6 +16,7 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
+@onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
 	# Inherit the owning world's pause/staging state; an explicit PAUSABLE
@@ -36,11 +37,11 @@ func _ready() -> void:
 		environment.fog_sun_scatter = 0.0
 		environment.fog_sky_affect = 0.0
 		environment.fog_light_energy = 1.0
-		if ForestFog.supported():
+		if game_settings.supports_volumetric_fog():
 			environment.fog_depth_begin = 160.0
 			environment.fog_depth_end = 420.0
 			environment.fog_depth_curve = 1.8
-			environment.volumetric_fog_enabled = true
+			environment.volumetric_fog_enabled = game_settings.volumetric_fog_enabled()
 			environment.volumetric_fog_density = 0.0015
 			environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30)
 			environment.volumetric_fog_length = 160.0
@@ -92,6 +93,10 @@ func _ready() -> void:
 	apply_time()
 	_last_minute = -1
 	_notify_minute()
+	game_settings.setting_changed.connect(_on_video_setting_changed)
+
+func _on_video_setting_changed(key: StringName, _value: Variant) -> void:
+	if key == &"fog_quality": apply_time()
 
 func _process(delta: float) -> void:
 	if running: advance(delta)
@@ -148,6 +153,8 @@ func sun_direction() -> Vector3:
 
 func apply_time() -> void:
 	if environment == null or not is_instance_valid(sun): return
+	var volumetric: bool = game_settings.volumetric_fog_enabled()
+	environment.volumetric_fog_enabled = volumetric
 	var conditions := weather.sample()
 	var clear := conditions.x
 	var rain := conditions.y / 2.0
@@ -162,10 +169,10 @@ func apply_time() -> void:
 	# Overcast keeps its long view; even light mist must erase distant silhouettes.
 	var light_mist := minf(mist * 2.0, 1.0)
 	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
-	environment.fog_depth_begin = lerpf(lerpf(160.0 if ForestFog.supported() else 18.0, 240.0, clear), 8.0, light_mist)
-	var far_distance := lerpf(420.0 if ForestFog.supported() else 380.0, 700.0, clear)
+	environment.fog_depth_begin = lerpf(lerpf(160.0 if volumetric else 18.0, 240.0, clear), 8.0, light_mist)
+	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
 	environment.fog_depth_end = lerpf(lerpf(far_distance, 110.0, light_mist), 38.0, heavy_mist)
-	environment.fog_depth_curve = lerpf(1.8 if ForestFog.supported() else 0.65, 1.0, light_mist)
+	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
 	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)

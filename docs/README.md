@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+Esc 設定選單：[不暫停遊戲、視訊效果與移除 F8](validation/2026-10-03-settings-menu.md)，含偏好遷移、輸入回歸與桌面驗收；[Esc 無反應回報重測](validation/2026-10-03-settings-esc-recheck.md) 補上正式啟動路徑檢查；[開關與解析度介面改進](validation/2026-10-03-settings-ui.md) 記錄新版呈現。
+
 獨立美術樣品：[破損混凝土牆近景](../world/art_samples/README.md)，包含 Godot 場景、實機渲染和材質來源；尚未替換正式避難所牆體。
 
 Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-raker-impact-ragdoll.md)，含輪驅重播、姿勢保存及物理回歸。
@@ -57,6 +59,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。
 
 - [2026-10-03 咬手第一人稱與轉向修正](validation/2026-10-03-player-arm-bite-pov.md) — 保留玩家朝向、抬臂與嘴部撕扯、接觸後即時輸入與第一人稱回放。
 

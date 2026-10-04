@@ -790,6 +790,8 @@ func set_gear(next: int) -> bool:
 
 func driver_controls_locked() -> bool:
 	for player in get_tree().get_nodes_in_group(Groups.PLAYER):
-		if player.has_method("is_grabbed") and (player.is_grabbed() or player.is_player_dead or (player.has_method("can_drive") and not player.can_drive())) and is_instance_valid(player.seated_in) and ClimbMath.find_rv_ancestor(player.seated_in) == self:
+		if not player.has_method("is_grabbed"): continue
+		if not is_instance_valid(player.seated_in) or ClimbMath.find_rv_ancestor(player.seated_in) != self: continue
+		if player.is_grabbed() or player.is_player_dead or (player.has_method("can_drive") and not player.can_drive()) or (player.has_method("is_gameplay_input_blocked") and player.is_gameplay_input_blocked()):
 			return true
 	return false

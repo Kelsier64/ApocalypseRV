@@ -31,7 +31,7 @@ func begin(equipment: Node3D) -> void:
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
-	if not player.can_use_hands(2): return
+	if player.is_gameplay_input_blocked() or not player.can_use_hands(2): return
 	# Equipment Placement confirmation
 	if is_instance_valid(placing_equipment):
 		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_V:
@@ -62,10 +62,18 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 					_hide_slots(player)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				_clear_marker()
-				placing_equipment.cancel_placement()
-				placing_equipment = null
-				_hide_slots(player)
+				cancel(player)
+
+func cancel(player: Node) -> void:
+	if is_instance_valid(placing_equipment): placing_equipment.cancel_placement()
+	placing_equipment = null
+	can_place_equipment = false
+	target_support = null
+	previous_support = null
+	previous_normal = Vector3.ZERO
+	message = ""
+	_clear_marker()
+	_hide_slots(player)
 
 func update_ghost(player: CharacterBody3D) -> void:
 	if not is_instance_valid(placing_equipment):

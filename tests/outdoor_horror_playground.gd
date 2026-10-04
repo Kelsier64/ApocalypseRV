@@ -132,7 +132,7 @@ func _view() -> void:
 	if stage == 6: target = rv.to_global(Vector3(-0.45, 1.3, -5))
 	if stage == 7: target = rv.to_global(Vector3(-0.7, 1.0, 0))
 	camera.look_at(target)
-	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | F8 retro\nF6 RV/cabin/equipment | F7 battery | F9 panel damage | R reset" % [ExplorationSite.NAMES[variant], ["HIGHWAY", "PARKING", "OCCLUDED TRAIL", "ENTRANCE", "RETURN VIEW", "RV", "CABIN", "EQUIPMENT"][stage]]
+	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | Esc settings\nF6 RV/cabin/equipment | F7 battery | F9 panel damage | R reset" % [ExplorationSite.NAMES[variant], ["HIGHWAY", "PARKING", "OCCLUDED TRAIL", "ENTRANCE", "RETURN VIEW", "RV", "CABIN", "EQUIPMENT"][stage]]
 
 func _physics_process(delta: float) -> void:
 	if interact_ticks > 0:
@@ -150,13 +150,13 @@ func _physics_process(delta: float) -> void:
 			if not samples.is_empty():
 				samples.sort()
 				print("HORROR FRAME median_ms=", samples[samples.size() / 2], " p95_ms=", samples[int(samples.size() * 0.95)])
-			label.text = "Walk complete: %.1f seconds | F2 views | F8 retro" % walk_time
+			label.text = "Walk complete: %.1f seconds | F2 views | Esc settings" % walk_time
 			return
 		target = site.route[route_index]
 	player.look_at(Vector3(target.x, player.global_position.y, target.z))
 	player.camera.rotation = Vector3.ZERO
 	Input.action_press("move_forward")
-	label.text = "CARRY ENGINE | %.1f s | waypoint %d/%d\nF2 stop | F8 retro" % [walk_time, route_index, site.route.size() - 1]
+	label.text = "CARRY ENGINE | %.1f s | waypoint %d/%d\nF2 stop | Esc settings" % [walk_time, route_index, site.route.size() - 1]
 
 func _process(delta: float) -> void:
 	# Keep validation instructions out of the real terminal's controls.

@@ -35,6 +35,7 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 const PropScript = preload("res://props/interactable_item.gd")
 
 @onready var camera = $Camera3D
+@onready var game_settings = get_node("/root/GameSettings")
 
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -54,6 +55,13 @@ var _flashlight_display_signature := ""
 
 # UI State
 var in_ui_mode: bool = false
+var settings_open: bool = false
+# Closing settings waits for held controls to be released before gameplay resumes.
+const SETTINGS_GAMEPLAY_KEYS = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_E, KEY_F, KEY_H, KEY_B, KEY_L, KEY_Z, KEY_X, KEY_C, KEY_R, KEY_T, KEY_Q, KEY_V, KEY_G, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
+const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
+var _settings_release_keys: Array[int] = []
+var _settings_release_buttons: Array[int] = []
+var _settings_release_actions: Array[StringName] = []
 
 # Top-level mode. The individual flags (in_ui_mode, placement state,
 # seated_in, is_player_dead) remain the storage, but every transition must go
@@ -138,7 +146,7 @@ func _set_flashlight_off_at(index: int) -> void:
 	inventory.items[index] = item
 
 func _toggle_flashlight() -> void:
-	if get_player_mode() != PlayerMode.NORMAL or not can_use_hands(): return
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_use_hands(): return
 	if not held_item_node is Flashlight: return
 	var item := inventory.active_item()
 	if item.get("scene_path", "") != "res://props/flashlight.tscn": return
@@ -180,7 +188,7 @@ func _advance_flashlight(delta: float) -> void:
 		_update_inventory_display()
 
 func _set_active_slot(index: int) -> void:
-	if is_grabbed(): return
+	if is_grabbed() or is_gameplay_input_blocked(): return
 	var previous := inventory.active_slot
 	# A now unusable large item stays in the bag but must not lock slot selection.
 	var changed := false
@@ -239,6 +247,7 @@ func _ready():
 	standing_collision_transform = body_collision_shape.transform
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
+	grab_started.connect(close_settings)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
 	add_child(ragdoll_control)
 	# Frozen RV panels need explicit support motion; avoid applying it twice.
@@ -258,6 +267,66 @@ func _ready():
 	current_player_health = max_player_health
 	_update_health_bar()
 	_update_stamina_bar()
+	camera.fov = float(game_settings.get_setting(&"walk_fov"))
+	game_settings.setting_changed.connect(_on_setting_changed)
+
+func _on_setting_changed(key: StringName, value: Variant) -> void:
+	if key == &"walk_fov": camera.fov = float(value)
+
+func can_open_settings() -> bool:
+	if in_ui_mode or is_player_dead or is_grabbed(): return false
+	var world := get_tree().current_scene
+	if world != null:
+		var ready: Variant = world.get("play_ready")
+		if ready is bool and not ready: return false
+		var manager := world.get_node_or_null("PoiInstances")
+		if manager != null and manager.get("busy") == true: return false
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	return checkpoint == null or checkpoint.get("loading") != true
+
+func set_settings_open(value: bool) -> void:
+	if settings_open == value: return
+	if value:
+		cancel_equipment_placement()
+	settings_open = value
+	if not value:
+		_capture_settings_release_latch()
+	var interaction := camera.get_node_or_null("InteractRay")
+	if interaction != null and interaction.has_method("cancel_input_gestures"):
+		interaction.cancel_input_gestures()
+
+func close_settings() -> void:
+	var menu := get_node_or_null("SettingsMenu")
+	if menu != null and menu.has_method("close_menu"):
+		menu.close_menu()
+	# Lifecycle callers also clean up programmatic input gates when the menu
+	# has already hidden or is not present in a small behavior fixture.
+	set_settings_open(false)
+
+func cancel_equipment_placement() -> void:
+	placement.cancel(self)
+	_advance_flashlight(0.0)
+
+func _capture_settings_release_latch() -> void:
+	_settings_release_keys.clear()
+	_settings_release_buttons.clear()
+	_settings_release_actions.clear()
+	for key: int in SETTINGS_GAMEPLAY_KEYS:
+		if Input.is_physical_key_pressed(key): _settings_release_keys.append(key)
+	for button: int in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_XBUTTON1, MOUSE_BUTTON_XBUTTON2]:
+		if Input.is_mouse_button_pressed(button): _settings_release_buttons.append(button)
+	for action: StringName in SETTINGS_GAMEPLAY_ACTIONS:
+		if Input.is_action_pressed(action): _settings_release_actions.append(action)
+
+func is_gameplay_input_blocked() -> bool:
+	if settings_open: return true
+	for index in range(_settings_release_keys.size() - 1, -1, -1):
+		if not Input.is_physical_key_pressed(_settings_release_keys[index]): _settings_release_keys.remove_at(index)
+	for index in range(_settings_release_buttons.size() - 1, -1, -1):
+		if not Input.is_mouse_button_pressed(_settings_release_buttons[index]): _settings_release_buttons.remove_at(index)
+	for index in range(_settings_release_actions.size() - 1, -1, -1):
+		if not Input.is_action_pressed(_settings_release_actions[index]): _settings_release_actions.remove_at(index)
+	return not _settings_release_keys.is_empty() or not _settings_release_buttons.is_empty() or not _settings_release_actions.is_empty()
 
 func is_placing_equipment() -> bool:
 	return is_instance_valid(placement.placing_equipment)
@@ -289,13 +358,14 @@ func get_player_mode() -> PlayerMode:
 ## and returns whether the transition happened, so callers must not proceed
 ## with their side of the flow on a refusal.
 func enter_equipment_placement(equip: Node3D) -> bool:
-	if get_player_mode() != PlayerMode.NORMAL or not can_use_hands(2):
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_use_hands(2):
 		return false
 	placement.begin(equip)
 	_advance_flashlight(0.0)
 	return true
 
 func enter_ui_mode() -> bool:
+	close_settings()
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
@@ -309,6 +379,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	close_settings()
 	grab_control.clear_view_recovery()
 	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
 		(held_item_node as Flashlight).set_held_active(false)
@@ -350,7 +421,7 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 ## Seat flow: the player owns its own state mutation; the seat only decides
 ## where the player reappears and which camera takes over.
 func enter_seat_mode(seat: Node3D) -> bool:
-	if get_player_mode() != PlayerMode.NORMAL or not can_drive():
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_drive():
 		return false
 	grab_control.clear_view_recovery()
 	_exit_climb_to_normal()
@@ -383,7 +454,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	camera.current = true
 
 func drop_item():
-	if is_grabbed(): return
+	if is_grabbed() or is_gameplay_input_blocked(): return
 	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
 		_set_flashlight_off_at(inventory.active_slot)
 		var item_data = inventory.items[inventory.active_slot]
@@ -419,21 +490,20 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 		node.restore_item_state(data.get("state", {}))
 
 func _unhandled_input(event):
-	if in_ui_mode or is_player_dead or is_grabbed(): return
+	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
 	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
 		_toggle_flashlight()
 	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally
-		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
+		var sensitivity := MOUSE_SENSITIVITY * float(game_settings.get_setting(&"sensitivity"))
+		var y_direction := -1.0 if bool(game_settings.get_setting(&"invert_y")) else 1.0
+		rotate_y(-event.relative.x * sensitivity)
 		# Rotate vertical (camera)
-		camera.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
+		camera.rotate_x(-event.relative.y * sensitivity * y_direction)
 		# Clamp vertical rotation to avoid flipping backward
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 	
-	if event.is_action_pressed("ui_cancel"):
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-
 	# Mouse wheel to change slots
 	if event is InputEventMouseButton and event.is_pressed():
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -558,7 +628,7 @@ func _find_rv_ancestor(node: Node) -> Node3D:
 	return ClimbMath.find_rv_ancestor(node)
 
 func _can_sprint(moving: bool) -> bool:
-	return moving and not is_crawling() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
+	return moving and not is_gameplay_input_blocked() and not is_crawling() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
 		and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
 
 func _spend_stamina(amount: float) -> bool:
@@ -589,6 +659,7 @@ func _update_stamina_bar() -> void:
 		health_bar.set_stamina(current_stamina, MAX_STAMINA)
 
 func _process_normal_movement(delta: float) -> void:
+	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
 	var had_support := is_instance_valid(rv_support.rv)
 	var last_support_velocity := rv_support.carrier_velocity
 	var was_supported := rv_support.follow(self, delta)
@@ -601,17 +672,17 @@ func _process_normal_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if not is_crawling() and not is_grabbed() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
+	if input_allowed and not is_crawling() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
-	if not is_grabbed() and Input.is_action_pressed("move_left"):
+	if input_allowed and Input.is_action_pressed("move_left"):
 		input_dir.x -= 1
-	if not is_grabbed() and Input.is_action_pressed("move_right"):
+	if input_allowed and Input.is_action_pressed("move_right"):
 		input_dir.x += 1
-	if not is_grabbed() and Input.is_action_pressed("move_forward"):
+	if input_allowed and Input.is_action_pressed("move_forward"):
 		input_dir.y -= 1
-	if not is_grabbed() and Input.is_action_pressed("move_back"):
+	if input_allowed and Input.is_action_pressed("move_back"):
 		input_dir.y += 1
 
 	if input_dir.length_squared() > 0.0:
@@ -640,6 +711,7 @@ func _process_normal_movement(delta: float) -> void:
 		velocity.y += support_velocity.y
 
 func _try_start_climb() -> void:
+	if is_gameplay_input_blocked(): return
 	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2):
 		return
 	if climb_reenter_cooldown_remaining > 0.0:
@@ -733,12 +805,13 @@ func _apply_rv_delta_compensation() -> void:
 	climb_wall_probe.force_raycast_update()
 
 func _process_climbing(delta: float) -> void:
+	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
 	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
 		_abort_climb("rv invalid")
 		return
 
 	# Manual detach: pressing back or jump while climbing exits immediately to avoid floor-intersection stick cases.
-	if Input.is_action_pressed("move_back") or Input.is_action_just_pressed("jump"):
+	if input_allowed and (Input.is_action_pressed("move_back") or Input.is_action_just_pressed("jump")):
 		_abort_climb("manual detach")
 		return
 
@@ -748,7 +821,7 @@ func _process_climbing(delta: float) -> void:
 			return
 
 	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
-	if Input.is_action_pressed("move_forward") and ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
+	if input_allowed and Input.is_action_pressed("move_forward") and ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
 		_exit_climb_to_normal()
 		released_carrier_velocity = Vector3.ZERO
 		velocity = Vector3.DOWN * 0.1
@@ -774,9 +847,9 @@ func _process_climbing(delta: float) -> void:
 			pending_abort_lost_contact = true
 
 	var vertical_input := 0.0
-	if not is_grabbed() and Input.is_action_pressed("move_forward"):
+	if input_allowed and Input.is_action_pressed("move_forward"):
 		vertical_input += 1.0
-	if not is_grabbed() and Input.is_action_pressed("move_back"):
+	if input_allowed and Input.is_action_pressed("move_back"):
 		vertical_input -= 1.0
 
 	if vertical_input > 0.0:
@@ -802,9 +875,9 @@ func _process_climbing(delta: float) -> void:
 			vertical_input *= allowed_upward_distance / desired_upward_distance
 
 	var horizontal_input := 0.0
-	if not is_grabbed() and Input.is_action_pressed("move_right"):
+	if input_allowed and Input.is_action_pressed("move_right"):
 		horizontal_input += 1.0
-	if not is_grabbed() and Input.is_action_pressed("move_left"):
+	if input_allowed and Input.is_action_pressed("move_left"):
 		horizontal_input -= 1.0
 
 	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
@@ -900,16 +973,14 @@ func _update_health_bar():
 
 func _player_die():
 	if is_player_dead: return
+	close_settings()
 	var was_seated := is_instance_valid(seated_in)
 	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
 	grab_control.clear_view_recovery()
 	is_player_dead = true
 	_advance_flashlight(0.0)
 	if is_grabbed(): grab_control.end("death")
-	if is_placing_equipment():
-		placement.placing_equipment.cancel_placement()
-		placement.placing_equipment = null
-		placement._clear_marker()
+	cancel_equipment_placement()
 	if is_instance_valid(seated_in): seated_in.exit_seat(true)
 	death_velocity = velocity
 	if locomotion_state == LocomotionState.CLIMBING:

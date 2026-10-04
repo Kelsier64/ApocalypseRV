@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://jcwd7ew7poyc" path="res://player/inventory_ui.gd" id="3_invui"]
 [ext_resource type="Script" uid="uid://dcsuxb3bwj3k2" path="res://player/health_bar_ui.gd" id="4_hpbar"]
 [ext_resource type="PackedScene" path="res://player/player_model_visual.tscn" id="5_visual"]
+[ext_resource type="PackedScene" path="res://player/settings_menu.tscn" id="6_settings"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_yw30f"]
 radius = 0.4
@@ -45,3 +46,5 @@ script = ExtResource("3_invui")
 [node name="HealthBarUI" type="CanvasLayer" parent="." unique_id=1209202164]
 layer = 2
 script = ExtResource("4_hpbar")
+
+[node name="SettingsMenu" parent="." instance=ExtResource("6_settings")]

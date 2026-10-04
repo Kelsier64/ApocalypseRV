@@ -53,3 +53,16 @@ Runner 核對引擎版本，先匯入一次，再用 `--fixed-fps 60` 執行 hea
 等待非同步導航、生成或候選世界回收時，使用 [support/test_wait.gd](support/test_wait.gd) 的條件與期限，失敗要說明未就緒的工作。真實移動、穩定性、耗電或傷害情境仍保留原本模擬時段；不要把有意義的物理採樣全部改成「成功就提早停止」。純資料檢查不要建立完整主世界。
 
 Headless 與實機觀察分開記錄；車輛或攀爬行為變更仍遵循 [AGENTS.md](../AGENTS.md) 的互動驗收要求。歷次結果見 [文件索引](../docs/README.md)，本輪改版與耗時見 [2026-10-01 驗證紀錄](../docs/validation/2026-10-01-test-runner.md)。
+
+## 設定與原生顯示驗證
+
+`test_game_settings.gd` 屬 quick，驗證偏好遷移、範圍、畫質預設、viewport 套用與保存；`test_settings_menu.gd` 屬 integration，驗證真實輸入、持續物理、傷害、入座、攀爬支撐及室內路由。
+
+GPU 後製與視窗尺寸另用有期限的原生驗證腳本，不列入 headless suites。腳本使用隔離偏好檔，結束時恢復視窗與設定；輸出放在 `.godot/test-logs/settings-display/`。
+
+```powershell
+godot --path . --resolution 1280x720 --log-file .godot/test-logs/settings-display/native.log --script res://scripts/validate_settings_display.gd
+godot --path . --resolution 1280x720 --rendering-method gl_compatibility --log-file .godot/test-logs/settings-display/compatibility.log --script res://scripts/validate_settings_display.gd
+```
+
+加上 `-- --manual-interior` 可開啟採用正式 PoiInstanceManager 的小型室內 fixture，提供 180 秒手動 Esc／GUI 驗收。此模式不宣告自動檢查通過；自動 GPU 證據、桌面操作與未驗證情境分別見 [設定選單驗收](../docs/validation/2026-10-03-settings-menu.md)。

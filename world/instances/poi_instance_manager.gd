@@ -21,6 +21,7 @@ var _return_transform := Transform3D.IDENTITY
 var _layer: CanvasLayer
 var _display: TextureRect
 var _status: Label
+@onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
 	_layer = CanvasLayer.new()
@@ -79,6 +80,7 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	viewport.size = Vector2i(get_viewport().get_visible_rect().size)
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
+	game_settings.register_viewport(viewport, true)
 	var saved: Dictionary = saved_instances.get(id, {})
 	var profile: StringName = building.get_meta("poi_interior_profile", &"bunker")
 	if not POIConfig.supported_interior(profile):
@@ -221,6 +223,7 @@ func _exit_tree() -> void:
 	if is_instance_valid(interior): interior.cancelled = true
 
 func _process(_delta: float) -> void:
+	_sync_settings_overlay()
 	if busy:
 		if Time.get_ticks_msec() >= _deadline:
 			cancel_transition("Transition timed out; retry the entrance")
@@ -234,3 +237,12 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if is_instance_valid(viewport) and not busy:
 		viewport.push_input(event, true)
+		_sync_settings_overlay()
+		if viewport.is_input_handled(): get_viewport().set_input_as_handled()
+
+func _sync_settings_overlay() -> void:
+	# The inner CanvasLayer 60 is composited through this root layer. Raise
+	# the composite too, so outdoor HUD and the POI title cannot cover it.
+	var settings_active: bool = is_instance_valid(viewport) and is_instance_valid(_player) and _player.get("settings_open") == true
+	_layer.layer = 60 if settings_active else 20
+	_status.visible = not settings_active

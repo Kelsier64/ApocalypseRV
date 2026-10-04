@@ -297,6 +297,8 @@ func _process(delta: float) -> void:
 	if _map.visible: _map.queue_redraw()
 
 func _input(event: InputEvent) -> void:
+	for actor in get_tree().get_nodes_in_group(Groups.PLAYER):
+		if actor.get_viewport() == get_viewport() and actor.has_method("is_gameplay_input_blocked") and actor.is_gameplay_input_blocked(): return
 	if not event is InputEventKey or not event.pressed or event.echo or _map == null: return
 	if event.keycode == KEY_M:
 		_map.visible = not _map.visible

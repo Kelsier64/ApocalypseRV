@@ -42,6 +42,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
+	if get_tree().get_nodes_in_group(Groups.PLAYER).any(func(player): return player.get("settings_open") == true):
+		return
 	var world := get_tree().current_scene
 	if world == null or world.scene_file_path not in WORLD_SCENES.values():
 		return
