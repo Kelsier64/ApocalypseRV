@@ -66,3 +66,14 @@ godot --path . --resolution 1280x720 --rendering-method gl_compatibility --log-f
 ```
 
 加上 `-- --manual-interior` 可開啟採用正式 PoiInstanceManager 的小型室內 fixture，提供 180 秒手動 Esc／GUI 驗收。此模式不宣告自動檢查通過；自動 GPU 證據、桌面操作與未驗證情境分別見 [設定選單驗收](../docs/validation/2026-10-03-settings-menu.md)。
+
+
+## 大型物品與攀爬
+
+`test_player_climbing.gd` 與 `test_player_inventory.gd`（quick）覆蓋 active_item.is_large、空手／小物、移除後恢復及既有 W／壁面／高度 gate。`test_player_large_item_climbing.gd`（integration）使用正式玩家與 RV，覆蓋 HUD 不重刷、世界拾取／倉庫取出時安全脫離、消耗／存入／丟棄後恢復、拒收不影響既有攀爬、物品 ID／狀態與平台速度交接。
+
+```powershell
+./scripts/test.ps1 -TestFilter 'test_player_climbing.gd,test_player_inventory.gd,test_player_large_item_climbing.gd,test_moving_rv_climbing.gd,test_player_carry.gd,test_rv_shared_storage.gd' -Smoke
+```
+
+2026-10-04 這批新增程式及回歸尚未執行引擎、headless、正式世界 smoke 或實機操作；上述為待執行命令，不是通過紀錄。實機需依 AGENTS 驗證持大型物品貼牆 W 的提示節制、丟棄／存入後攀爬恢復，以及移動／轉彎車身上拾取大型物品時不瞬移且物品仍可丟棄。原有登頂、拆頂與怪物攀爬仍須回歸。

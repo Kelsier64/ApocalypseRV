@@ -1,4 +1,5 @@
 extends "res://tests/player_animation_playground.gd"
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 ## Production player and bite clock, with explicit isolated inspection controls.
 var raker: Raker
 var bite_result := 1
@@ -42,7 +43,7 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if is_instance_valid(raker) and raker.grab.busy():
 		if raker.grab.phase == raker.grab.Phase.HOLD and bite_result == 1:
-			actor.grab_control.presses = ceili(actor.grab_control.required * .8)
+			actor.grab_control.presses = GrabRules.minimum_wounded_presses(actor.grab_control.required)
 		raker.grab.tick(delta)
 	if replay_motion > 0:
 		replay_motion -= delta
@@ -208,10 +209,10 @@ func replay_arm_pov() -> void:
 	setup_bite(1)
 	await wait_seconds(.85)
 	await capture("00_face")
-	await wait_seconds(.65)
+	await wait_seconds(.20)
 	print("ARM_ACTORS ", actor.global_transform, " monster ", raker.global_transform)
 	await capture("01_struggle")
-	while raker.grab.phase == raker.grab.Phase.HOLD and raker.grab.elapsed < 1.9: await get_tree().physics_frame
+	while raker.grab.phase == raker.grab.Phase.HOLD and raker.grab.elapsed < GrabRules.HOLD_DURATION - .1: await get_tree().physics_frame
 	await capture("01b_before_bite")
 	while raker.grab.phase != raker.grab.Phase.BITE: await get_tree().physics_frame
 	await wait_seconds(.05)
@@ -240,7 +241,7 @@ func replay_head_pov() -> void:
 	actor.camera.make_current()
 	label.hide()
 	setup_bite(2)
-	await wait_seconds(1.4)
+	await wait_seconds(.7)
 	await capture("00_face")
 	while raker.grab.phase != raker.grab.Phase.BITE: await get_tree().physics_frame
 	await wait_seconds(.17)

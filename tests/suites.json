@@ -41,6 +41,7 @@
       "test_player_dismemberment",
       "test_player_head_camera",
       "test_player_jump_animation",
+      "test_player_large_item_climbing",
       "test_player_model",
       "test_player_prone",
       "test_poi_asset_kit",

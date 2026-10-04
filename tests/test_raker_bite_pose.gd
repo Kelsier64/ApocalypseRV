@@ -1,4 +1,5 @@
 extends SceneTree
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(value: bool, note: String) -> void:
@@ -140,7 +141,7 @@ func run() -> void:
 			await physics_frame
 			if playground.player.is_grabbed():
 				var grab: Node = playground.player.grab_control
-				grab.presses = ceili(grab.required * .8)
+				grab.presses = GrabRules.minimum_wounded_presses(grab.required)
 				if grab.camera_elapsed >= .3:
 					if opening_face_samples == 0: held_arm_view = grab.camera.quaternion
 					opening_face_samples += 1

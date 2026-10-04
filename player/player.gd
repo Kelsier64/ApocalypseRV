@@ -32,6 +32,7 @@ const CLIMB_REENTER_COOLDOWN = 0.2
 const CLIMB_WALL_ALIGN_OFFSET = 0.22
 const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
 const CLIMB_DEBUG_LOG_ABORTS = false
+const LARGE_ITEM_CLIMB_MESSAGE := "手持大型物品時無法攀爬，請先丟棄、消耗或存入"
 const PropScript = preload("res://props/interactable_item.gd")
 
 @onready var camera = $Camera3D
@@ -86,6 +87,7 @@ var released_carrier_velocity := Vector3.ZERO
 var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
+var _large_item_climb_feedback_shown := false
 var crawl_transition_remaining: float = 0.0
 var debug_last_ceiling_hit_distance: float = INF
 var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
@@ -118,6 +120,7 @@ func add_item(item_name: String, is_large: bool, scene_path: String, state: Dict
 	var previous_slot := inventory.active_slot
 	if not inventory.add_item(item_name, is_large, scene_path, state):
 		return false
+	_abort_climb_if_holding_large_item()
 	if inventory.active_slot != previous_slot:
 		_set_flashlight_off_at(previous_slot)
 	_update_inventory_display()
@@ -198,6 +201,7 @@ func _set_active_slot(index: int) -> void:
 	else:
 		changed = inventory.select_slot(index)
 	if changed:
+		_abort_climb_if_holding_large_item()
 		_set_flashlight_off_at(previous)
 		_update_inventory_display()
 		_equip_active_slot()
@@ -340,6 +344,7 @@ func consume_active_item() -> void:
 	if is_grabbed(): return
 	_set_flashlight_off_at(inventory.active_slot)
 	if inventory.consume_active():
+		_abort_climb_if_holding_large_item()
 		_update_inventory_display()
 		_equip_active_slot()
 
@@ -537,9 +542,28 @@ func _unhandled_input(event):
 	placement.handle_input(self, event)
 
 ## Pure climb-start gate (test contract): W + RV hit + wall-like normal +
-## valid hit height are all required; jump state must not matter.
+## valid hit height and no active large item are required; jump state must not matter.
 func _can_begin_climb(_jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
-	return not is_crawling() and can_use_hands(2) and w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
+	return not is_crawling() and can_use_hands(2) and not inventory.is_holding_large_item() and w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
+
+func _show_large_item_climb_feedback() -> void:
+	if _large_item_climb_feedback_shown:
+		return
+	var interaction := get_node_or_null("Camera3D/InteractRay")
+	if interaction != null and interaction.has_method("show_feedback"):
+		interaction.show_feedback(LARGE_ITEM_CLIMB_MESSAGE)
+		_large_item_climb_feedback_shown = true
+
+func _abort_climb_if_holding_large_item() -> bool:
+	if not inventory.is_holding_large_item():
+		_large_item_climb_feedback_shown = false
+		return false
+	if locomotion_state != LocomotionState.CLIMBING:
+		return false
+	_show_large_item_climb_feedback()
+	# Preserve the carrier velocity and collision cleanup of every other detach.
+	_abort_climb("carrying large item")
+	return true
 
 func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
 	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
@@ -724,6 +748,9 @@ func _process_normal_movement(delta: float) -> void:
 		velocity.y += support_velocity.y
 
 func _try_start_climb() -> void:
+	# A held W gesture gets one reason, not a refreshed toast every physics tick.
+	if not Input.is_action_pressed("move_forward") or not inventory.is_holding_large_item():
+		_large_item_climb_feedback_shown = false
 	if is_gameplay_input_blocked(): return
 	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2):
 		return
@@ -764,6 +791,9 @@ func _try_start_climb() -> void:
 		return
 	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
 	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
+	if wall_normal_ok and hit_height_ok and inventory.is_holding_large_item():
+		_show_large_item_climb_feedback()
+		return
 	# W-pressed and RV-hit are already guaranteed by the early returns above.
 	if not _can_begin_climb(false, true, true, wall_normal_ok, hit_height_ok):
 		_debug_climb_log(
@@ -818,6 +848,8 @@ func _apply_rv_delta_compensation() -> void:
 	climb_wall_probe.force_raycast_update()
 
 func _process_climbing(delta: float) -> void:
+	if _abort_climb_if_holding_large_item():
+		return
 	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
 	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
 		_abort_climb("rv invalid")
@@ -932,6 +964,10 @@ func _exit_climb_to_normal() -> void:
 	_sync_body_collision_to_locomotion()
 
 func _physics_process(delta):
+	# Cover restored/direct inventory changes before applying any carrier motion.
+	_abort_climb_if_holding_large_item()
+	if not Input.is_action_pressed("move_forward"):
+		_large_item_climb_feedback_shown = false
 	_advance_flashlight(delta)
 	if is_player_dead:
 		return
@@ -1058,6 +1094,7 @@ func _respawn():
 	print("Player respawned!")
 
 func refresh_inventory() -> void:
+	_abort_climb_if_holding_large_item()
 	_update_inventory_display()
 	_equip_active_slot()
 

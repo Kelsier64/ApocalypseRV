@@ -1,4 +1,5 @@
 extends Node3D
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 ## Production wheel-driven RV and Raker, with repeatable speed presets.
 var rv: Chassis
 var player: CharacterBody3D
@@ -194,7 +195,7 @@ func _physics_process(delta: float) -> void:
 	if not ready_to_drive or bite_review_frozen: return
 	# Review-only deterministic survivor: exercise bite release without dying.
 	if "--grab-wounded" in OS.get_cmdline_user_args() and player.is_grabbed() and player.grab_control.accepting:
-		while player.grab_control.presses * 5 < player.grab_control.required * 4:
+		while player.grab_control.presses < GrabRules.minimum_wounded_presses(player.grab_control.required):
 			player.submit_struggle()
 	if grab_delay >= 0:
 		grab_delay -= delta

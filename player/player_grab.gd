@@ -1,4 +1,5 @@
 extends Node
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 ## Transient control ownership. Physics remains in Player; no state is serialized.
 signal changed(presses: int, required: int, remaining: float)
 signal released(reason: String)
@@ -25,6 +26,7 @@ var keep_flashlight := false
 var hud: CanvasLayer
 var label: Label
 var bar: ProgressBar
+var threshold_mark: ColorRect
 var impact: ColorRect
 var impact_remaining := 0.0
 var impact_strength := .78
@@ -66,11 +68,11 @@ func _ready() -> void:
 	bar.show_percentage = false
 	track.add_child(bar)
 	bar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var mark := ColorRect.new()
-	mark.color = Color.ORANGE
-	mark.position = Vector2(352, 0)
-	mark.size = Vector2(3, 24)
-	track.add_child(mark)
+	threshold_mark = ColorRect.new()
+	threshold_mark.color = Color.ORANGE
+	threshold_mark.position = Vector2(440.0 * GrabRules.WOUNDED_PERCENT / 100.0, 0)
+	threshold_mark.size = Vector2(3, 24)
+	track.add_child(threshold_mark)
 	var impact_layer := CanvasLayer.new()
 	impact_layer.layer = 29
 	add_child(impact_layer)
@@ -101,9 +103,9 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	player.exit_ui_mode()
 	captor = owner_node
 	captor.tree_exiting.connect(_owner_exiting, CONNECT_ONE_SHOT)
-	required = clampi(count, 6, 10)
+	required = clampi(count, GrabRules.MIN_PRESSES, GrabRules.MAX_PRESSES)
 	presses = 0
-	remaining = 2.0
+	remaining = GrabRules.HOLD_DURATION
 	accepting = true
 	space_down = Input.is_physical_key_pressed(KEY_SPACE)
 	jump_release_required = space_down
@@ -133,7 +135,7 @@ func _owner_exiting() -> void:
 
 func update_progress(seconds: float) -> void:
 	remaining = maxf(0, seconds)
-	label.text = "連按 SPACE 掙脫  %d / %d\n%.1f 秒  ·  80%% 可避免致命咬擊" % [presses, required, remaining]
+	label.text = "連按 SPACE 掙脫  %d / %d\n%.1f 秒  ·  %d%% 可避免致命咬擊" % [presses, required, remaining, GrabRules.WOUNDED_PERCENT]
 	bar.value = 100.0 * presses / maxi(1, required)
 	changed.emit(presses, required, remaining)
 
@@ -145,7 +147,7 @@ func submit_struggle() -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
-	# Explicit playground-only controls stay usable during a two-second capture.
+	# Explicit playground-only controls stay usable during a one-second capture.
 	var playground := get_tree().current_scene
 	if active() and is_instance_valid(playground) and playground.has_method("setup_grab") and event is InputEventKey and event.pressed and not event.echo and (event.keycode in [KEY_F7, KEY_F11, KEY_F12] or (event.keycode == KEY_F9 and "--bite-review" in OS.get_cmdline_user_args())):
 		playground._input(event)
@@ -180,7 +182,7 @@ func _update_bite_pull(delta: float = 1.0 / 60.0) -> void:
 	var weight := 0.0
 	# The monster can restrain the arm before biting, but the camera keeps its
 	# face view until actual damage contact releases the survivor.
-	var preparing_arm: bool = captor.grab.phase == captor.grab.Phase.HOLD and remaining <= ARM_GRIP_LEAD_TIME and player.body_state.has_part(&"left_arm") and presses * 5 >= required * 4
+	var preparing_arm: bool = captor.grab.phase == captor.grab.Phase.HOLD and remaining <= ARM_GRIP_LEAD_TIME and player.body_state.has_part(&"left_arm") and GrabRules.reaches_wounded_threshold(presses, required)
 	var arm_bite: bool = captor.grab.bite_part == &"left_arm" or preparing_arm
 	arm_grip_weight = move_toward(arm_grip_weight, 1.0 if arm_bite else 0.0, delta / .18)
 	if captor.grab.phase == captor.grab.Phase.BITE:

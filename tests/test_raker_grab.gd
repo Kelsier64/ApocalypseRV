@@ -1,4 +1,5 @@
 extends SceneTree
+const GrabRules = preload("res://core/raker_grab_rules.gd")
 const Grab = preload("res://enemies/raker_grab.gd")
 var failures: Array[String] = []
 var world: Node3D
@@ -77,9 +78,14 @@ func run() -> void:
 	check(draws.size()==5,"RNG covers all five struggle counts")
 	for required in range(6,11):
 		for presses in range(required+1):
-			var expected := 0 if presses==required else (1 if presses*5>=required*4 else 2)
+			var expected := 0 if presses==required else (1 if presses*5>=required*3 else 2)
 			check(Grab.classify(presses,required)==expected,"Integer outcome %d/%d" % [presses,required])
+		var threshold := ceili(required * .6)
+		check(GrabRules.minimum_wounded_presses(required) == threshold, "Rounded 60 percent boundary %d" % required)
 		capture(required)
+		check(player.grab_control.required == required and player.grab_control.remaining == 1.0, "Capture preserves count and starts one-second HUD")
+		check(player.grab_control.label.text.contains("60%"), "HUD displays the 60 percent threshold")
+		check(is_equal_approx(player.grab_control.threshold_mark.position.x, 264.0), "HUD marker is at 60 percent")
 		for i in required:
 			key(true)
 			key(true,true)
@@ -91,21 +97,45 @@ func run() -> void:
 		check(player.grab_control.jump_release_required,"Final press cannot jump")
 		key(false)
 		check(not player.grab_control.jump_release_required,"Release re-arms jump")
+	for count in [0, 5, 11, 99]:
+		capture(count)
+		check(player.grab_control.required == clampi(count, 6, 10), "Player clamps external capture counts to 6–10")
+	# Exercise the actual REACH draw, not just the RNG in isolation.
+	for seed_value in 20:
+		reset()
+		actor.grab.rng.seed = seed_value
+		actor.grab.start(player)
+		actor.grab.tick(Grab.REACH_DURATION)
+		check(player.is_grabbed() and player.grab_control.required >= 6 and player.grab_control.required <= 10, "Production draw stays within unchanged 6–10 range")
+		var drawn: int = player.grab_control.required
+		actor.grab.tick(.5)
+		check(player.grab_control.required == drawn, "Capture count is immutable during the hold")
+	# Every integer rounding boundary chooses the same pose and bite outcome.
+	for required in range(6, 11):
+		var threshold := ceili(required * .6)
+		for presses in [threshold - 1, threshold]:
+			capture(required)
+			player.grab_control.presses = presses
+			actor.grab.tick(.7)
+			player.grab_control._update_bite_pull(.18)
+			check((player.grab_control.arm_grip_weight > 0) == (presses == threshold), "Arm preparation agrees with 60 percent boundary %d/%d" % [presses, required])
+			actor.grab.tick(.3)
+			check(actor.grab.phase == Grab.Phase.BITE and actor.grab.outcome == (1 if presses == threshold else 2), "Deadline resolves rounded threshold %d/%d" % [presses, required])
 	capture(10)
 	key(true)
 	for i in 20: key(true,true)
 	check(player.grab_control.presses==1,"Held/echo Space counts once")
 	key(false)
-	for i in 7:
+	for i in 5:
 		key(true)
 		key(false)
-	actor.grab.tick(1.99)
-	check(actor.grab.phase==Grab.Phase.HOLD and player.body_state.has_part(&"left_arm"),"Two-second hold completes before biting")
+	actor.grab.tick(.99)
+	check(actor.grab.phase==Grab.Phase.HOLD and player.body_state.has_part(&"left_arm"),"One-second hold completes before biting")
 	actor.grab.tick(.01)
-	check(actor.grab.phase==Grab.Phase.BITE and actor.grab.outcome==1,"Exactly 80 percent locks wounded result")
+	check(actor.grab.phase==Grab.Phase.BITE and actor.grab.outcome==1,"Exactly 60 percent locks wounded result")
 	check(actor.grab.bite_part==&"left_arm","Wounded bite locks the left-arm target")
 	key(true)
-	check(player.grab_control.presses==8,"Deadline rejects new presses")
+	check(player.grab_control.presses==6,"Deadline rejects new presses")
 	check(is_equal_approx(animation.speed_scale, Grab.BITE_SPEED), "Bite animation accelerates with damage timing")
 	actor.grab.tick(.20)
 	check(player.current_player_health==100 and player.is_grabbed(), "Contact approach does not damage early")
@@ -126,8 +156,8 @@ func run() -> void:
 		var body_yaw: float = player.global_rotation.y
 		player.grab_control._process(.2)
 		check(absf(angle_difference(player.global_rotation.y, body_yaw)) < .0001,"Capture camera aim preserves body yaw %.2f" % facing)
-		player.grab_control.presses = 8
-		actor.grab.tick(2.0)
+		player.grab_control.presses = 6
+		actor.grab.tick(GrabRules.HOLD_DURATION)
 		var face_view: Quaternion = player.camera.quaternion
 		actor.grab.tick(.20)
 		player.grab_control._update_bite_pull()
@@ -149,8 +179,8 @@ func run() -> void:
 	for cancel_view in [false, true]:
 		capture(10)
 		player.grab_control._process(.2)
-		player.grab_control.presses = 8
-		actor.grab.tick(2.0)
+		player.grab_control.presses = 6
+		actor.grab.tick(GrabRules.HOLD_DURATION)
 		actor.grab.tick(Grab.BITE_CONTACT)
 		player.grab_control._process(.16)
 		# Large mouse motion reaches the visible pitch limit while the effect
@@ -161,8 +191,8 @@ func run() -> void:
 		check(absf(player.camera.rotation.x) <= deg_to_rad(80) + .0001,"Post-bite view respects pitch limits on completion/cancel %s" % cancel_view)
 	capture(10, .4, .75)
 	player.grab_control._process(.2)
-	player.grab_control.presses = 8
-	actor.grab.tick(2.0)
+	player.grab_control.presses = 6
+	actor.grab.tick(GrabRules.HOLD_DURATION)
 	player.camera.rotation = Vector3(-.5, .9, 0)
 	actor.grab.tick(Grab.BITE_CONTACT)
 	check(player.current_player_health == 50 and not player.is_grabbed(),"World-transition fixture survives the arm bite")
@@ -174,14 +204,14 @@ func run() -> void:
 	capture(10)
 	player.body_state.sever(&"left_arm")
 	player._apply_body_capabilities()
-	player.grab_control.presses = 8
-	actor.grab.tick(2)
+	player.grab_control.presses = 6
+	actor.grab.tick(GrabRules.HOLD_DURATION)
 	check(actor.grab.outcome==2 and actor.grab.bite_part==&"head","Missing left arm promotes wounded result to fatal head bite")
 	actor.grab.tick(Grab.BITE_CONTACT)
 	check(player.is_player_dead and not player.body_state.has_part(&"head"),"Promoted bite severs the head and follows death cleanup")
 	capture(6)
 	player.grab_control.presses = 6
-	actor.grab.tick(2)
+	actor.grab.tick(GrabRules.HOLD_DURATION)
 	check(actor.grab.phase==Grab.Phase.ESCAPE and not player.is_grabbed() and player.current_player_health==100,"Deadline classification of full struggle also escapes harmlessly")
 	check(player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head"),"Deadline escape has no bite target or severance")
 	capture(6)
@@ -213,8 +243,8 @@ func run() -> void:
 	for low_health in [false,true]:
 		capture(10)
 		player.current_player_health = 40 if low_health else 100
-		player.grab_control.presses = 8 if low_health else 7
-		actor.grab.tick(2)
+		player.grab_control.presses = 6 if low_health else 5
+		actor.grab.tick(GrabRules.HOLD_DURATION)
 		check(actor.grab.bite_part==(&"left_arm" if low_health else &"head"),"Fatal versus wounded result selects the actual bitten part")
 		actor.grab.tick(Grab.BITE_CONTACT)
 		check(player.is_player_dead and player.current_player_health==0 and not player.is_grabbed(),"Fatal/sub-50 HP bite follows death cleanup")
