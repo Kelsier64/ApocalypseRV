@@ -16,7 +16,7 @@ func _ready():
 	
 	var hopper = get_node_or_null("HopperArea")
 	if hopper:
-		hopper.collision_mask |= 2
+		hopper.collision_mask |= 2 | 128 # Pickup proxies and articulated corpse bones.
 		hopper.body_entered.connect(_on_hopper_body_entered)
 	else:
 		push_error("Scrapper has no HopperArea!")
@@ -26,6 +26,12 @@ func step_work(delta: float):
 		if not is_instance_valid(props_being_crushed[index].prop): props_being_crushed.remove_at(index)
 	if not can_operate():
 		return
+	# Retry overlapping inputs after power/queue readiness changes, or after a
+	# dying actor transfers already-overlapping physical bones to a corpse.
+	var source := get_connected_rv()
+	if props_being_crushed.size() < queue_capacity and (not source.has_method("has_usable_power") or source.has_usable_power()):
+		for body in $HopperArea.get_overlapping_bodies():
+			_on_hopper_body_entered(body)
 	if props_being_crushed.size() > 0:
 		if props_being_crushed[0].timer <= 0.0:
 			if _finish_recycle(props_being_crushed[0].prop):
@@ -70,8 +76,18 @@ func _on_hopper_body_entered(body: Node3D):
 	# Assume Prop extends RigidBody3D
 	if body is Prop:
 		recycle_prop(body)
+	elif body is PhysicalBone3D:
+		# A limb may enter while the pelvis pickup proxy remains outside the bin.
+		# Resolve only corpse-owned bones; living actors and loose limbs are not inputs.
+		var ancestor: Node = body.get_parent()
+		while ancestor != null:
+			if ancestor is CorpseProp:
+				if not ancestor.held: recycle_prop(ancestor)
+				return
+			ancestor = ancestor.get_parent()
 
 func recycle_prop(prop: Prop):
+	if prop is CorpseProp and prop.held: return
 	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() >= queue_capacity:
 		return
 	var rv = get_connected_rv()

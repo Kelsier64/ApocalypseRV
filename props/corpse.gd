@@ -196,15 +196,16 @@ func _initialize() -> void:
 	if is_instance_valid(processing_owner): set_processing(true)
 
 func held_support_center() -> Vector3:
-	return Vector3(0, 1.52, -.42)
+	return Vector3(0, 1.52, -.37)
 
 func update_held_grips() -> void:
 	if not initialized or not held: return
 	# Support the actual hip and chest from below, on either side of the torso
 	# midpoint. Both palms follow the live ragdoll instead of an empty proxy.
+	# Seat the body 5 cm deeper into the palms while retaining the hand reach.
 	var chest: PhysicalBone3D = bodies["spine_03" if kind == "raker" else "spine_02"]
-	$GripLeft.global_position = bodies["pelvis"].global_position + global_basis * Vector3(0, -.14, .09)
-	$GripRight.global_position = chest.global_position + global_basis * Vector3(0, -.16, .10)
+	$GripLeft.global_position = bodies["pelvis"].global_position + global_basis * Vector3(0, -.14, .04)
+	$GripRight.global_position = chest.global_position + global_basis * Vector3(0, -.16, .05)
 
 func _follow_hand(delta: float) -> void:
 	previous_hold_target = _follow_support(bodies["pelvis"], held_pelvis_rest, previous_hold_target, delta)

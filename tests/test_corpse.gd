@@ -31,6 +31,40 @@ func palm_position(sk: Skeleton3D, side: String) -> Vector3:
 	var center := rest.origin.lerp(middle, .72) + palm * .014
 	return sk.global_transform * sk.get_bone_global_pose(hand) * (rest.affine_inverse() * center)
 
+func check_limb_feed(recycler: Equipment, kind: String, restore_power := false) -> void:
+	var rv := recycler.get_connected_rv()
+	var saved_power: float = rv.current_power
+	if restore_power: rv.current_power = 0
+	var corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()
+	corpse.kind = kind
+	corpse.position = Vector3(60, 4, 0)
+	corpse.rotation.z = PI * .5
+	WorldEntities.get_container(world).add_child(corpse)
+	corpse._initialize()
+	# Feed an extremity first, with the pelvis pickup sphere outside the opening.
+	var extremity: PhysicalBone3D = corpse.bodies["head" if kind == "raker" else "foot_L"]
+	var shift: Vector3 = recycler.to_global(Vector3(0, .85, 0)) - extremity.global_position
+	for body: PhysicalBone3D in corpse.bodies.values(): body.global_position += shift
+	corpse.global_position += shift
+	var pelvis_local := recycler.to_local(corpse.bodies.pelvis.global_position)
+	check(absf(pelvis_local.x) > .8, kind + " limb-feed fixture keeps the pickup proxy outside the hopper")
+	corpse.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(3, 3)}
+	var material_before: int = rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
+	await step(24)
+	if restore_power:
+		check(not is_instance_valid(corpse.processing_owner), "Unpowered scrapper leaves the corpse unclaimed")
+		check(recycler.get_node("HopperArea").get_overlapping_bodies().has(extremity), "Limb remains inside the hopper while power is unavailable")
+		rv.current_power = saved_power
+		recycler.step_work(0)
+		await step(2)
+	check(corpse.processing_owner == recycler and corpse.processing, kind + " extremity-first contact accepts the entire corpse")
+	check(recycler.props_being_crushed.size() == 1, kind + " simultaneous limb contacts enqueue only one corpse")
+	recycler.step_work(2.0)
+	await step(2)
+	check(not is_instance_valid(corpse) and rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == material_before + 3, kind + " limb-fed corpse produces one yield")
+	if is_instance_valid(corpse): corpse.queue_free()
+	await step(2)
+
 func run() -> void:
 	world = Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -198,6 +232,11 @@ func run() -> void:
 	recycler._on_service_stopped()
 	await step(3)
 	hopper_corpse.queue_free()
+	await step(2)
+	recycler.step_work(0)
+	await check_limb_feed(recycler, "raker")
+	await check_limb_feed(recycler, "player")
+	await check_limb_feed(recycler, "player", true)
 	# Player recovery leaves a separate corpse, preserving absent limbs.
 	player.global_position = Vector3(-8, 0, 0)
 	player.body_state.sever(&"left_arm")

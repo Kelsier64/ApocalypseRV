@@ -65,6 +65,10 @@ func _ready() -> void:
 	print("CORPSE_PLAYGROUND_READY")
 	if "--replay" in OS.get_cmdline_user_args(): _replay()
 
+func _physics_process(delta: float) -> void:
+	# The parked RV skips driving physics, but its devices still need power/work ticks.
+	if is_instance_valid(rv): rv.step_energy_system(0, 0, 0, delta)
+
 func _process(_delta: float) -> void:
 	if player == null: return
 	if observing:
@@ -102,7 +106,6 @@ func _recycle() -> void:
 			var recycler: Equipment = rv.get_node("Scrapper")
 			recycler.recycle_prop(child)
 			for frame in 100:
-				rv.step_energy_system(0, 0, 0, 1.0 / 60.0)
 				await get_tree().physics_frame
 			print("CORPSE_RECYCLED materials=", rv.get_item_count(ItemNames.UNKNOWN_MATERIAL))
 
