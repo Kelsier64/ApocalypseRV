@@ -18,9 +18,13 @@ func reset() -> void:
 	actor.grab.cancel()
 	actor.grab.phase = Grab.Phase.NONE
 	actor.attack_timer = 0
+	actor.strike_elapsed = -1
+	actor.strike_target = {}
 	actor.reaction_remaining = 0
 	player.grab_control.immunity = 0
 	player.is_player_dead = false
+	player.body_state.reset()
+	player._apply_body_capabilities()
 	player._sync_body_collision_to_locomotion()
 	player.current_player_health = 100
 	player.damage_cooldown = .5
@@ -31,8 +35,11 @@ func reset() -> void:
 	player.camera.rotation = Vector3.ZERO
 	actor.get_node("BodyMesh").pose_modifier.world_positions.clear()
 	key(false)
-func capture(count: int) -> void:
+func capture(count: int, facing: float = 0.0, player_yaw: float = 0.0) -> void:
 	reset()
+	actor.rotation.y = facing
+	player.position = actor.position + Basis(Vector3.UP, facing) * Vector3(0, .25, -.80)
+	player.rotation.y = player_yaw
 	actor.grab.victim = player
 	check(actor.grab.valid_contact(false), "Unobstructed head contact is reachable")
 	check(player.begin_grab(actor, count), "Capture succeeds")
@@ -78,6 +85,8 @@ func run() -> void:
 			key(true,true)
 			if i < required-1: key(false)
 		check(not player.is_grabbed() and player.current_player_health==100,"Immediate harmless escape %d" % required)
+		for part: StringName in PlayerBodyState.PARTS:
+			check(player.body_state.has_part(part),"Escape preserves %s" % part)
 		check(actor.reaction_remaining==1 and player.grab_control.immunity==3,"Stagger and release immunity")
 		check(player.grab_control.jump_release_required,"Final press cannot jump")
 		key(false)
@@ -90,8 +99,11 @@ func run() -> void:
 	for i in 7:
 		key(true)
 		key(false)
-	actor.grab.tick(2)
+	actor.grab.tick(1.99)
+	check(actor.grab.phase==Grab.Phase.HOLD and player.body_state.has_part(&"left_arm"),"Two-second hold completes before biting")
+	actor.grab.tick(.01)
 	check(actor.grab.phase==Grab.Phase.BITE and actor.grab.outcome==1,"Exactly 80 percent locks wounded result")
+	check(actor.grab.bite_part==&"left_arm","Wounded bite locks the left-arm target")
 	key(true)
 	check(player.grab_control.presses==8,"Deadline rejects new presses")
 	check(is_equal_approx(animation.speed_scale, Grab.BITE_SPEED), "Bite animation accelerates with damage timing")
@@ -99,12 +111,79 @@ func run() -> void:
 	check(player.current_player_health==100 and player.is_grabbed(), "Contact approach does not damage early")
 	actor.grab.tick(.021)
 	check(player.current_player_health==50,"Bite bypasses ordinary hurt cooldown")
+	check(not player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head") and player.body_state.has_part(&"right_arm"),"Wounded contact severs only the left arm")
+	check(player.body_state.has_part(&"left_leg") and player.body_state.has_part(&"right_leg"),"Grab bites never remove legs")
 	check(not player.is_grabbed() and not player.grab_control.hud.visible and player.grab_control.camera == null,"Bite contact immediately releases input, camera and HUD")
 	check(actor.grab.phase == Grab.Phase.RELEASE and actor.grab.victim == null,"Only monster recovery continues after biting")
 	actor.grab.tick(.02)
 	check(player.current_player_health==50,"One damage at bite contact")
 	actor.grab.tick(.25)
 	check(not player.is_grabbed(),"Bite releases control")
+	# A temporary shoulder-facing POV must never become movement/body yaw.
+	# Exercise different world headings so this cannot pass by resetting to zero.
+	for facing in [0.0, .65, -1.1]:
+		capture(10, facing, facing + .35)
+		var body_yaw: float = player.global_rotation.y
+		player.grab_control._process(.2)
+		check(absf(angle_difference(player.global_rotation.y, body_yaw)) < .0001,"Capture camera aim preserves body yaw %.2f" % facing)
+		player.grab_control.presses = 8
+		actor.grab.tick(2.0)
+		var face_view: Quaternion = player.camera.quaternion
+		actor.grab.tick(.20)
+		player.grab_control._update_bite_pull()
+		player.grab_control._process(.01)
+		check(player.camera.quaternion.angle_to(face_view) < .001,"Arm approach keeps the face view until damage %.2f" % facing)
+		actor.grab.tick(Grab.BITE_CONTACT)
+		check(player.current_player_health == 50 and not player.is_grabbed(),"Turned POV arm bite survives and releases %.2f" % facing)
+		check(not player.grab_control.hud.visible and player.grab_control.camera == null,"Turned POV releases camera and HUD at contact %.2f" % facing)
+		check(absf(angle_difference(player.global_rotation.y, body_yaw)) < .0001,"Arm bite release preserves body yaw %.2f" % facing)
+		check(player.camera.quaternion.angle_to(face_view) < .001,"Contact schedules the turn without snapping the camera %.2f" % facing)
+		player.grab_control._process(.16)
+		check(player.camera.quaternion.angle_to(face_view) > .2,"Only post-contact processing turns toward the arm %.2f" % facing)
+		player.camera.rotation.x -= .07
+		player.rotation.y -= .18
+		player.grab_control._process(1.0)
+		check(absf(angle_difference(player.global_rotation.y, body_yaw - .18)) < .0001,"Released view recovery preserves mouse yaw %.2f" % facing)
+		check(absf(player.camera.rotation.x + .07) < .0001,"Released view recovery preserves mouse pitch %.2f" % facing)
+		check(not player.is_grabbed() and player.grab_control.camera == null,"Released view recovery does not reacquire ownership %.2f" % facing)
+	for cancel_view in [false, true]:
+		capture(10)
+		player.grab_control._process(.2)
+		player.grab_control.presses = 8
+		actor.grab.tick(2.0)
+		actor.grab.tick(Grab.BITE_CONTACT)
+		player.grab_control._process(.16)
+		# Large mouse motion reaches the visible pitch limit while the effect
+		# still points down; removing it must not reveal a base above 80 degrees.
+		player.camera.rotation.x = deg_to_rad(80)
+		if cancel_view: player.grab_control.clear_view_recovery()
+		else: player.grab_control._process(1.0)
+		check(absf(player.camera.rotation.x) <= deg_to_rad(80) + .0001,"Post-bite view respects pitch limits on completion/cancel %s" % cancel_view)
+	capture(10, .4, .75)
+	player.grab_control._process(.2)
+	player.grab_control.presses = 8
+	actor.grab.tick(2.0)
+	player.camera.rotation = Vector3(-.5, .9, 0)
+	actor.grab.tick(Grab.BITE_CONTACT)
+	check(player.current_player_health == 50 and not player.is_grabbed(),"World-transition fixture survives the arm bite")
+	var destination := Transform3D(Basis(Vector3.UP, -1.25), Vector3(3, .02, -2))
+	player.complete_world_transition(destination)
+	player.grab_control._process(1.0)
+	check(player.camera.rotation.is_equal_approx(Vector3.ZERO),"Old bite recovery cannot rotate a new world's reset camera")
+	check(player.global_transform.is_equal_approx(destination),"Old bite recovery preserves the world-transition body transform")
+	capture(10)
+	player.body_state.sever(&"left_arm")
+	player._apply_body_capabilities()
+	player.grab_control.presses = 8
+	actor.grab.tick(2)
+	check(actor.grab.outcome==2 and actor.grab.bite_part==&"head","Missing left arm promotes wounded result to fatal head bite")
+	actor.grab.tick(Grab.BITE_CONTACT)
+	check(player.is_player_dead and not player.body_state.has_part(&"head"),"Promoted bite severs the head and follows death cleanup")
+	capture(6)
+	player.grab_control.presses = 6
+	actor.grab.tick(2)
+	check(actor.grab.phase==Grab.Phase.ESCAPE and not player.is_grabbed() and player.current_player_health==100,"Deadline classification of full struggle also escapes harmlessly")
+	check(player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head"),"Deadline escape has no bite target or severance")
 	capture(6)
 	var second: Raker = load("res://enemies/raker.tscn").instantiate()
 	world.add_child(second)
@@ -136,8 +215,22 @@ func run() -> void:
 		player.current_player_health = 40 if low_health else 100
 		player.grab_control.presses = 8 if low_health else 7
 		actor.grab.tick(2)
+		check(actor.grab.bite_part==(&"left_arm" if low_health else &"head"),"Fatal versus wounded result selects the actual bitten part")
 		actor.grab.tick(Grab.BITE_CONTACT)
 		check(player.is_player_dead and player.current_player_health==0 and not player.is_grabbed(),"Fatal/sub-50 HP bite follows death cleanup")
+		check(player.grab_control.recovery_camera == null,"Fatal bite does not start a survivor arm turn")
+		check(player.body_state.has_part(&"head")==low_health,"Only a fatal head result removes the head")
+	reset()
+	player.body_state.sever(&"left_leg")
+	player.body_state.sever(&"right_leg")
+	player._apply_body_capabilities()
+	player.damage_cooldown = 0
+	var crawler_target := {"node": player, "attack_source": "state_attack"}
+	check(not player.can_be_grabbed() and actor._can_attack_combat_target(crawler_target),"Crawler remains a valid ordinary claw target")
+	actor._execute_attack_on_target(crawler_target)
+	check(not actor.grab.busy() and actor.strike_elapsed==0,"Unavailable crawler grab falls back to timed claw strike")
+	actor._tick_strike(actor.strike_contact)
+	check(player.current_player_health<100 and player.body_state.has_part(&"left_arm"),"Crawler claw contact deals ordinary damage without severing an arm")
 	capture(6)
 	actor.take_damage(8)
 	check(not player.is_grabbed() and actor.grab.phase==Grab.Phase.NONE,"8 damage interrupts")

@@ -14,6 +14,7 @@ var local_body: MeshInstance3D
 var local_shadows: Array[MeshInstance3D] = []
 var death_shadows: Array[MeshInstance3D] = []
 var death_accessory_layers: Dictionary = {}
+var dismemberment: Node
 @onready var model: Node3D = $Model
 @onready var skeleton: Skeleton3D = $Model/PLAYER_Rig/Skeleton3D
 
@@ -50,6 +51,24 @@ func _ready() -> void:
 	local_body = _copy_instance(original, "LocalBody")
 	local_body.mesh = _local_body_mesh
 	local_body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	dismemberment = preload("res://player/player_dismemberment_visual.gd").new()
+	dismemberment.name = "Dismemberment"
+	add_child(dismemberment)
+
+func detach_part(part: StringName, context: Dictionary = {}) -> Node3D:
+	return dismemberment.detach_part(part, context) if dismemberment != null else null
+
+func apply_body_state() -> void:
+	if dismemberment != null: dismemberment.apply_body_state()
+
+func bite_contact(part: StringName) -> Transform3D:
+	var roots := {"left_arm": "upper_arm_L", "right_arm": "upper_arm_R", "left_leg": "thigh_L", "right_leg": "thigh_R", "head": "head"}
+	var bone := skeleton.find_bone(roots.get(String(part), "head"))
+	var pose := skeleton.global_transform * skeleton.get_bone_global_pose(bone)
+	# The surface lies forward of the bone axis, under the collar/shoulder cloth.
+	pose.origin += -get_parent().global_basis.z * .065
+	if part == &"head": pose.origin -= Vector3.UP * .025
+	return pose
 
 func set_death_view(enabled: bool) -> void:
 	if local_body == null: return
@@ -66,6 +85,7 @@ func set_death_view(enabled: bool) -> void:
 	for mesh: MeshInstance3D in death_accessory_layers:
 		mesh.layers = FULL_BODY_LAYER if enabled else death_accessory_layers[mesh]
 	for shadow in death_shadows: shadow.visible = enabled
+	apply_body_state()
 
 func _copy_instance(source: MeshInstance3D, node_name: String) -> MeshInstance3D:
 	var copy := MeshInstance3D.new()

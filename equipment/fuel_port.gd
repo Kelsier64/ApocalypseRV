@@ -9,6 +9,7 @@ func get_interaction_prompt(player: Node3D) -> String:
 	return text + ("\nE：加入手持汽油罐" if player.get_active_item_name() == ItemNames.GAS_CAN else "\n請手持汽油罐，再按 E 加油")
 
 func interact(player: Node3D) -> String:
+	if not player.can_use_hands(): return "加油需要可用手臂"
 	if not can_operate(): return "加油孔尚未接入或無法使用，請先安裝／維修"
 	var rv := get_connected_rv()
 	if player.get_active_item_name() != ItemNames.GAS_CAN: return "需要手持汽油罐"

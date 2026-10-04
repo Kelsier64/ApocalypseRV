@@ -2,6 +2,12 @@ extends CharacterBody3D
 
 const SPEED = 5.0
 const SPRINT_SPEED = 8.0
+const CRAWL_ONE_LEG_SPEED := 0.8
+const CRAWL_NO_LEGS_SPEED := 0.55
+const CRAWL_ONE_ARM_SPEED := 0.35
+const CRAWL_RADIUS := 0.24
+const CRAWL_ONE_LEG_LENGTH := 1.4
+const CRAWL_NO_LEGS_LENGTH := 0.95
 const JUMP_VELOCITY = 4.5
 const MAX_STAMINA = 100.0
 const SPRINT_STAMINA_PER_SECOND = 20.0
@@ -36,6 +42,9 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
+var body_state := PlayerBodyState.new()
+var standing_collision_shape: Shape3D
+var standing_collision_transform := Transform3D.IDENTITY
 var placement := EquipmentPlacement.new()
 var held_item_node: Node3D = null
 var _flashlight_display_signature := ""
@@ -59,6 +68,7 @@ var _settings_release_actions: Array[StringName] = []
 # through the enter_/exit_ helpers below so exclusivity is enforced in one
 # place instead of ad-hoc at each call site.
 signal grab_started
+signal body_state_changed
 var grab_control: Node
 var ragdoll_control: Node
 var death_velocity := Vector3.ZERO
@@ -76,6 +86,7 @@ var released_carrier_velocity := Vector3.ZERO
 var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
+var crawl_transition_remaining: float = 0.0
 var debug_last_ceiling_hit_distance: float = INF
 var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
 var debug_last_ceiling_hit_source: String = ""
@@ -100,6 +111,7 @@ var stamina_exhausted: bool = false
 @onready var climb_upward_probe = $ClimbUpwardProbe
 
 func add_prop_item(prop: Prop, path: String) -> bool:
+	if not can_use_hands(2 if prop.is_large else 1): return false
 	return add_item(prop.item_name, prop.is_large, path, prop.capture_item_state())
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
@@ -115,7 +127,7 @@ func add_item(item_name: String, is_large: bool, scene_path: String, state: Dict
 
 func _update_inventory_display():
 	if inventory_ui and inventory_ui.has_method("update_slots"):
-		inventory_ui.update_slots(inventory.items, inventory.active_slot, get_player_mode() == PlayerMode.NORMAL)
+		inventory_ui.update_slots(inventory.items, inventory.active_slot, get_player_mode() == PlayerMode.NORMAL and can_use_hands())
 
 func _active_flashlight_state() -> Dictionary:
 	var item := inventory.active_item()
@@ -134,7 +146,7 @@ func _set_flashlight_off_at(index: int) -> void:
 	inventory.items[index] = item
 
 func _toggle_flashlight() -> void:
-	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL: return
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_use_hands(): return
 	if not held_item_node is Flashlight: return
 	var item := inventory.active_item()
 	if item.get("scene_path", "") != "res://props/flashlight.tscn": return
@@ -149,7 +161,7 @@ func _toggle_flashlight() -> void:
 
 func _advance_flashlight(delta: float) -> void:
 	var flashlight: Dictionary = _active_flashlight_state()
-	var mode_allows_light: bool = get_player_mode() == PlayerMode.NORMAL or (get_player_mode() == PlayerMode.GRABBED and grab_control.keep_flashlight)
+	var mode_allows_light: bool = can_use_hands() and (get_player_mode() == PlayerMode.NORMAL or (get_player_mode() == PlayerMode.GRABBED and grab_control.keep_flashlight))
 	var active := mode_allows_light and not flashlight.is_empty() and bool(flashlight.get("on", false)) and float(flashlight.get("charge", 0.0)) > 0.0
 	var held := held_item_node as Flashlight
 	if held:
@@ -178,7 +190,14 @@ func _advance_flashlight(delta: float) -> void:
 func _set_active_slot(index: int) -> void:
 	if is_grabbed() or is_gameplay_input_blocked(): return
 	var previous := inventory.active_slot
-	if inventory.select_slot(index):
+	# A now unusable large item stays in the bag but must not lock slot selection.
+	var changed := false
+	if not can_use_hands(2) and inventory.active_item().get("is_large", false):
+		changed = index >= 0 and index < MAX_SLOTS and index != previous
+		if changed: inventory.active_slot = index
+	else:
+		changed = inventory.select_slot(index)
+	if changed:
 		_set_flashlight_off_at(previous)
 		_update_inventory_display()
 		_equip_active_slot()
@@ -196,6 +215,7 @@ func _equip_active_slot():
 	if is_instance_valid(held_item_node):
 		held_item_node.queue_free()
 		held_item_node = null
+	if not can_use_hands(2 if inventory.active_item().get("is_large", false) else 1): return
 		
 	if inventory.active_slot < inventory.items.size() and inventory.active_slot >= 0:
 		var item_data = inventory.items[inventory.active_slot]
@@ -223,6 +243,8 @@ func _equip_active_slot():
 				held_item_node.transform = Transform3D.IDENTITY
 
 func _ready():
+	standing_collision_shape = body_collision_shape.shape.duplicate()
+	standing_collision_transform = body_collision_shape.transform
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
@@ -310,6 +332,7 @@ func is_placing_equipment() -> bool:
 	return is_instance_valid(placement.placing_equipment)
 
 func get_active_item_name() -> String:
+	if not can_use_hands(2 if inventory.active_item().get("is_large", false) else 1): return ""
 	return inventory.active_item().get("name", "")
 
 func consume_active_item() -> void:
@@ -335,7 +358,7 @@ func get_player_mode() -> PlayerMode:
 ## and returns whether the transition happened, so callers must not proceed
 ## with their side of the flow on a refusal.
 func enter_equipment_placement(equip: Node3D) -> bool:
-	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL:
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_use_hands(2):
 		return false
 	placement.begin(equip)
 	_advance_flashlight(0.0)
@@ -357,11 +380,12 @@ func exit_ui_mode():
 
 func complete_world_transition(at: Transform3D) -> void:
 	close_settings()
+	grab_control.clear_view_recovery()
 	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
 		(held_item_node as Flashlight).set_held_active(false)
 	if is_grabbed(): grab_control.end("world_transition")
 	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
-	if restart_death: ragdoll_control.stop()
+	if restart_death or ragdoll_control.following_detached_head: ragdoll_control.stop()
 	global_transform = at
 	velocity = Vector3.ZERO
 	locomotion_state = LocomotionState.NORMAL
@@ -379,6 +403,8 @@ func complete_world_transition(at: Transform3D) -> void:
 		_begin_death_physics.call_deferred()
 
 func restore_checkpoint_state(state: Dictionary) -> void:
+	crawl_transition_remaining = 0.0
+	body_state.restore(state.get("body", {}))
 	inventory.items.assign(state.items.duplicate(true))
 	inventory.active_slot = state.slot
 	current_player_health = state.health
@@ -386,15 +412,18 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	stamina_recovery_delay_remaining = 0.0
 	stamina_exhausted = bool(state.get("stamina_exhausted", current_stamina <= 0.0))
 	complete_world_transition(state.transform)
+	_apply_body_capabilities()
 	refresh_inventory()
 	_update_health_bar()
 	_update_stamina_bar()
+	if current_player_health <= 0.0: _player_die()
 
 ## Seat flow: the player owns its own state mutation; the seat only decides
 ## where the player reappears and which camera takes over.
 func enter_seat_mode(seat: Node3D) -> bool:
-	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL:
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_drive():
 		return false
+	grab_control.clear_view_recovery()
 	_exit_climb_to_normal()
 	rv_support.clear()
 	velocity = Vector3.ZERO
@@ -409,6 +438,7 @@ func enter_seat_mode(seat: Node3D) -> bool:
 
 func exit_seat_mode(exit_position: Vector3) -> void:
 	if is_grabbed(): grab_control.end("seat_lost")
+	grab_control.clear_view_recovery()
 	if seated_in == null:
 		return
 	var rv := _find_rv_ancestor(seated_in)
@@ -496,7 +526,7 @@ func _unhandled_input(event):
 ## Pure climb-start gate (test contract): W + RV hit + wall-like normal +
 ## valid hit height are all required; jump state must not matter.
 func _can_begin_climb(_jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
-	return w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
+	return not is_crawling() and can_use_hands(2) and w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
 
 func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
 	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
@@ -598,7 +628,7 @@ func _find_rv_ancestor(node: Node) -> Node3D:
 	return ClimbMath.find_rv_ancestor(node)
 
 func _can_sprint(moving: bool) -> bool:
-	return moving and not is_gameplay_input_blocked() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
+	return moving and not is_gameplay_input_blocked() and not is_crawling() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
 		and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
 
 func _spend_stamina(amount: float) -> bool:
@@ -642,7 +672,7 @@ func _process_normal_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if input_allowed and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
+	if input_allowed and not is_crawling() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
@@ -661,6 +691,8 @@ func _process_normal_movement(delta: float) -> void:
 	var sprinting := _can_sprint(input_dir != Vector2.ZERO)
 	_update_stamina(delta, sprinting)
 	var movement_speed := SPRINT_SPEED if sprinting else SPEED
+	if is_crawling(): movement_speed = crawl_speed()
+	if crawl_transition_remaining > 0.0: movement_speed = 0.0
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	if direction:
 		velocity.x = direction.x * movement_speed
@@ -680,7 +712,7 @@ func _process_normal_movement(delta: float) -> void:
 
 func _try_start_climb() -> void:
 	if is_gameplay_input_blocked(): return
-	if locomotion_state != LocomotionState.NORMAL:
+	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2):
 		return
 	if climb_reenter_cooldown_remaining > 0.0:
 		_debug_climb_log("start_cooldown", "blocked by reenter cooldown: %.2f" % climb_reenter_cooldown_remaining)
@@ -890,6 +922,7 @@ func _physics_process(delta):
 	_advance_flashlight(delta)
 	if is_player_dead:
 		return
+	crawl_transition_remaining = maxf(0.0, crawl_transition_remaining - delta)
 	if is_instance_valid(seated_in) or in_ui_mode or locomotion_state == LocomotionState.CLIMBING:
 		_update_stamina(delta, false)
 	# UI/seat lock movement, not the lifetime of damage invulnerability.
@@ -943,6 +976,7 @@ func _player_die():
 	close_settings()
 	var was_seated := is_instance_valid(seated_in)
 	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
+	grab_control.clear_view_recovery()
 	is_player_dead = true
 	_advance_flashlight(0.0)
 	if is_grabbed(): grab_control.end("death")
@@ -985,7 +1019,13 @@ func _respawn():
 		if not standing.is_finite(): return
 		ragdoll_control.stop()
 		global_position = standing
+	elif not _standing_volume_clear(global_position):
+		return
+	# Recovery checked the original upright volume before restoring any limb.
+	body_state.reset()
+	crawl_transition_remaining = 0.0
 	is_player_dead = false
+	_apply_body_capabilities()
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	rv_support.clear()
@@ -993,7 +1033,7 @@ func _respawn():
 	set_process_unhandled_input(true)
 	camera.make_current()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	if is_instance_valid(held_item_node): held_item_node.show()
+	_equip_active_slot()
 	reset_physics_interpolation()
 	current_player_health = max_player_health
 	current_stamina = MAX_STAMINA
@@ -1011,9 +1051,10 @@ func is_grabbed() -> bool:
 	return is_instance_valid(grab_control) and grab_control.active()
 
 func can_be_grabbed() -> bool:
-	return is_instance_valid(grab_control) and grab_control.can_begin()
+	return not is_crawling() and is_instance_valid(grab_control) and grab_control.can_begin()
 
 func begin_grab(captor: Node3D, required: int) -> bool:
+	if not can_be_grabbed(): return false
 	return grab_control.begin(captor, required)
 
 func end_grab(captor: Node3D, reason: String) -> void:
@@ -1036,7 +1077,94 @@ func grab_contact_origin() -> Vector3:
 func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
 	if not is_grabbed() or grab_control.captor != captor or is_player_dead: return
 	grab_control.bite_impact()
-	current_player_health = 0.0 if fatal else maxf(0, current_player_health - 50.0)
+	var head_bite := fatal or not body_state.has_part(&"left_arm")
+	if head_bite:
+		current_player_health = 0.0
+		sever_part(&"head", {"captor": captor})
+		_update_health_bar()
+		return
+	current_player_health = maxf(0, current_player_health - 50.0)
 	damage_cooldown = .5
+	sever_part(&"left_arm", {"captor": captor})
 	_update_health_bar()
 	if current_player_health <= 0: _player_die()
+
+func is_crawling() -> bool:
+	return not body_state.has_part(&"left_leg") or not body_state.has_part(&"right_leg")
+
+func usable_arms() -> int:
+	return int(body_state.has_part(&"left_arm")) + int(body_state.has_part(&"right_arm"))
+
+func can_use_hands(required: int = 1) -> bool:
+	return not is_player_dead and body_state.has_part(&"head") and usable_arms() >= required
+
+func can_drive() -> bool:
+	return not is_crawling() and can_use_hands()
+
+func crawl_speed() -> float:
+	if usable_arms() == 0: return 0.0
+	if usable_arms() == 1: return CRAWL_ONE_ARM_SPEED
+	return CRAWL_ONE_LEG_SPEED if body_state.has_part(&"left_leg") or body_state.has_part(&"right_leg") else CRAWL_NO_LEGS_SPEED
+
+func sever_part(part: StringName, context: Dictionary = {}) -> bool:
+	if is_player_dead or not PlayerBodyState.PARTS.has(part) or not body_state.has_part(part): return false
+	var was_crawling := is_crawling()
+	var visuals := get_node_or_null("Visuals")
+	# Capture the current animated limb before hiding its mesh and bone branch.
+	if visuals and visuals.has_method("detach_part"):
+		var detached: Node3D = visuals.detach_part(part, context)
+		if part == &"head" and is_instance_valid(detached):
+			var view: Camera3D = seated_in.seat_camera if is_instance_valid(seated_in) else camera
+			ragdoll_control.follow_detached_head(detached, view.global_transform)
+	body_state.sever(part)
+	if not was_crawling and is_crawling(): crawl_transition_remaining = 0.45
+	_apply_body_capabilities()
+	if part == &"head":
+		current_player_health = 0.0
+		_update_health_bar()
+		_player_die()
+	return true
+
+func _apply_body_capabilities() -> void:
+	if is_crawling(): grab_control.clear_view_recovery()
+	if locomotion_state == LocomotionState.CLIMBING and (is_crawling() or not can_use_hands(2)):
+		_abort_climb("limb lost")
+	if is_placing_equipment() and not can_use_hands(2):
+		placement.placing_equipment.cancel_placement()
+		placement.placing_equipment = null
+		placement._clear_marker()
+		placement._hide_slots(self)
+	if body_state.has_part(&"head") and is_instance_valid(seated_in) and not can_drive(): seated_in.exit_seat(true)
+	var interact := camera.get_node_or_null("InteractRay") if is_instance_valid(camera) else null
+	if interact and interact.has_method("cancel_body_operations"): interact.cancel_body_operations()
+	_apply_body_collision.call_deferred()
+	var visuals := get_node_or_null("Visuals")
+	if visuals and visuals.has_method("apply_body_state"): visuals.apply_body_state()
+	_equip_active_slot()
+	_update_inventory_display()
+	_advance_flashlight(0.0)
+	body_state_changed.emit()
+
+func _apply_body_collision() -> void:
+	if not is_instance_valid(body_collision_shape) or standing_collision_shape == null: return
+	if is_crawling():
+		var capsule := CapsuleShape3D.new()
+		capsule.radius = CRAWL_RADIUS
+		capsule.height = CRAWL_ONE_LEG_LENGTH if body_state.has_part(&"left_leg") or body_state.has_part(&"right_leg") else CRAWL_NO_LEGS_LENGTH
+		body_collision_shape.shape = capsule
+		var standing_capsule := standing_collision_shape as CapsuleShape3D
+		var sole_y := standing_collision_transform.origin.y - standing_capsule.height * 0.5
+		body_collision_shape.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, sole_y + capsule.radius, 0))
+	else:
+		body_collision_shape.shape = standing_collision_shape
+		body_collision_shape.transform = standing_collision_transform
+	_sync_body_collision_to_locomotion()
+
+func _standing_volume_clear(at: Vector3) -> bool:
+	if not is_inside_tree() or standing_collision_shape == null: return false
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = standing_collision_shape
+	query.transform = Transform3D(global_basis, at) * standing_collision_transform
+	query.collision_mask = collision_mask
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()

@@ -92,7 +92,8 @@ func save_world(world: Node, path: String) -> bool:
 		"actors": actors, "poi": manager.saved_instances.duplicate(true),
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health,
-		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted}}
+		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted,
+		"body": player.body_state.capture()}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
@@ -179,6 +180,8 @@ func validation_error(data: Dictionary) -> String:
 	# Selection is a hotbar index, including empty slots, not an item index.
 	if not player.get("slot") is int or player.slot < 0 or player.slot >= PlayerInventory.MAX_SLOTS: return "player.slot"
 	if not VehicleSnapshot._number(player.get("health")) or player.health < 0 or player.health > 100: return "player.health"
+	var body_error := CheckpointSchema.player_body_error(player)
+	if not body_error.is_empty(): return body_error
 	if player.has("stamina") and (not VehicleSnapshot._number(player.stamina) or player.stamina < 0 or player.stamina > 100): return "player.stamina"
 	if player.has("stamina_exhausted") and not player.stamina_exhausted is bool: return "player.stamina_exhausted"
 	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"

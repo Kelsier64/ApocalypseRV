@@ -17,7 +17,7 @@ func _ready():
 
 # Called by player_interact when E is held for 1 second
 func interact_hold(player: Node3D):
-	if not can_operate() or not is_instance_valid(ui_instance) or ui_instance.visible:
+	if not player.can_use_hands() or not can_operate() or not is_instance_valid(ui_instance) or ui_instance.visible:
 		return
 	if not player.enter_ui_mode():
 		return
@@ -26,6 +26,7 @@ func interact_hold(player: Node3D):
 		return
 	current_user = player
 	player.grab_started.connect(_close_ui)
+	player.body_state_changed.connect(_on_body_state_changed)
 	ui_instance.on_open()
 	ui_instance.visible = true
 
@@ -34,11 +35,15 @@ func _close_ui() -> void:
 		ui_instance.visible = false
 	if is_instance_valid(current_user):
 		if current_user.grab_started.is_connected(_close_ui): current_user.grab_started.disconnect(_close_ui)
+		if current_user.body_state_changed.is_connected(_on_body_state_changed): current_user.body_state_changed.disconnect(_on_body_state_changed)
 		current_user.exit_ui_mode()
 	current_user = null
 
 func _on_service_stopped() -> void:
 	_close_ui()
+
+func _on_body_state_changed() -> void:
+	if is_instance_valid(current_user) and not current_user.can_use_hands(): _close_ui()
 
 func _physics_process(_delta: float) -> void:
 	if is_instance_valid(current_user):

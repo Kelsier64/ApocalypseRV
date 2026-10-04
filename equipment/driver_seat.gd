@@ -35,7 +35,7 @@ func _setup_if_on_rv() -> void:
 	_add_collision_exceptions_with_ancestors(get_parent())
 
 func interact_hold(player: Node3D) -> void:
-	if not can_operate() or current_driver:
+	if not can_operate() or current_driver or not player.can_drive():
 		return
 
 	var rv := get_connected_rv()
@@ -53,7 +53,7 @@ func interact_hold(player: Node3D) -> void:
 		rv.set_driving_state(true)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not current_driver or current_driver.is_grabbed() or current_driver.is_player_dead or current_driver.is_gameplay_input_blocked():
+	if not current_driver or current_driver.is_grabbed() or not current_driver.can_drive() or current_driver.is_gameplay_input_blocked():
 		return
 
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -151,9 +151,10 @@ func _on_service_stopped() -> void:
 func _physics_process(_delta: float) -> void:
 	if is_instance_valid(current_driver):
 		var rv := get_connected_rv()
-		if not rv or current_driver.is_player_dead:
+		if not rv or not current_driver.can_drive():
 			exit_seat(true)
 
-func get_interaction_prompt(_player: Node3D) -> String:
+func get_interaction_prompt(player: Node3D) -> String:
 	if not can_operate(): return "駕駛座｜尚未接入或已損壞"
+	if not player.can_drive(): return "駕駛需要雙腿及至少一隻手臂"
 	return "駕駛座／控制台｜長按 E 1 秒：入座；長按 F：搬移整組\nB 引擎／L 頭燈／Space 手煞車／Z X C 排檔；需燃油"

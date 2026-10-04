@@ -11,6 +11,10 @@ const DURATION := 2.0
 const COST := {"Metal Parts": 2}
 
 func step(player: Node3D, candidate: Node, held: bool, delta: float) -> void:
+	if player.has_method("can_use_hands") and not player.can_use_hands():
+		cancel()
+		message = "Repair requires a usable arm" if held else ""
+		return
 	if not held or not is_instance_valid(candidate) or not candidate.has_method("repair_health") or player.get_player_mode() != player.PlayerMode.NORMAL:
 		target = null
 		progress = 0.0
@@ -42,6 +46,13 @@ func step(player: Node3D, candidate: Node, held: bool, delta: float) -> void:
 			candidate.repair_health(60.0)
 			rv.feedback("complete", rv.to_local(candidate.global_position))
 		progress = 0.0
+
+func cancel() -> void:
+	target = null
+	progress = 0.0
+	repair_item_id = ""
+	repaired_engine_id = ""
+	message = ""
 
 func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
 	var reason: String = candidate.repair_requirement(player)

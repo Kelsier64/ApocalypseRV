@@ -3,6 +3,7 @@ extends Node
 ## Imported rest frames stay unchanged; local inertia/damping supports 60 Hz.
 const BODY_LAYER := 128
 const RESPAWN_DELAY := 2.0
+const HEAD_CENTER := Vector3(0, 1.475, -0.042)
 var player: CharacterBody3D
 var skeleton: Skeleton3D
 var simulator: PhysicalBoneSimulator3D
@@ -14,6 +15,11 @@ var camera_rest := Transform3D.IDENTITY
 var camera_basis := Basis.IDENTITY
 var eye_offset := Vector3.ZERO
 var camera_shape := SphereShape3D.new()
+var allowed_bones: Array[String] = []
+var presence_signature := ""
+var detached_head: Node3D
+var following_detached_head := false
+var last_head_anchor := Vector3.ZERO
 
 func _ready() -> void:
 	player = get_parent()
@@ -21,8 +27,32 @@ func _ready() -> void:
 	camera_shape.radius = 0.06
 	set_physics_process(false)
 
+func follow_detached_head(head: Node3D, view: Transform3D) -> void:
+	# Capture before grab cleanup restores the eye or seat exit moves the body.
+	detached_head = head
+	following_detached_head = true
+	last_head_anchor = head.camera_anchor_position()
+	eye_offset = view.origin - last_head_anchor
+	camera_basis = view.basis.orthonormalized()
+	head.set_camera_hidden(true)
+	# Held heads update their mouth attachment before the death camera follows.
+	process_physics_priority = 100
+
 func start(inherited_velocity: Vector3) -> void:
 	if active: return
+	var signature := str(player.body_state.capture())
+	if simulator != null and signature != presence_signature:
+		simulator.free()
+		simulator = null
+		bodies.clear()
+		links.clear()
+	presence_signature = signature
+	allowed_bones.assign(["pelvis", "spine_01", "spine_02"])
+	if player.body_state.has_part(&"head"): allowed_bones.append("head")
+	for side in ["L", "R"]:
+		var prefix := "left" if side == "L" else "right"
+		if player.body_state.has_part(prefix + "_arm"): allowed_bones.append_array(["upper_arm_" + side, "forearm_" + side])
+		if player.body_state.has_part(prefix + "_leg"): allowed_bones.append_array(["thigh_" + side, "shin_" + side, "foot_" + side])
 	player.get_node("Visuals/Locomotion").suspend()
 	if simulator == null:
 		# Build joint reference frames from the immutable bind pose, not the
@@ -45,14 +75,16 @@ func start(inherited_velocity: Vector3) -> void:
 	# Keep the current climbed eye position for the physical handoff below,
 	# but recovery must restore the standing eye, without the approach offset.
 	camera_rest.origin = player.get_node("Visuals/Locomotion").camera_rest_position
-	camera_basis = player.camera.global_basis.orthonormalized()
+	if not following_detached_head:
+		camera_basis = player.camera.global_basis.orthonormalized()
 	skeleton.force_update_all_bone_transforms()
 	# Explicit placement is also necessary after a respawn or World3D transfer.
 	for body: PhysicalBone3D in bodies.values():
 		body.global_transform = skeleton.global_transform * skeleton.get_bone_global_pose(body.get_bone_id()) * body.body_offset
 		body.collision_layer = BODY_LAYER
 		body.collision_mask = 1 | BODY_LAYER
-	eye_offset = player.camera.global_position - bodies["head"].global_position
+	if not following_detached_head:
+		eye_offset = player.camera.global_position - bodies.get("head", bodies["spine_02"]).global_position
 	simulator.active = true
 	simulator.physical_bones_start_simulation()
 	for body: PhysicalBone3D in bodies.values():
@@ -60,6 +92,7 @@ func start(inherited_velocity: Vector3) -> void:
 		body.angular_velocity = Vector3.ZERO
 	# A small forward loss of balance lets a motionless neutral pose collapse.
 	bodies["spine_02"].apply_central_impulse(-player.global_basis.z * 3.0)
+	if following_detached_head: _update_camera()
 	set_physics_process(true)
 
 func _physics_process(delta: float) -> void:
@@ -71,8 +104,17 @@ func _physics_process(delta: float) -> void:
 		player._respawn.call_deferred()
 
 func _update_camera() -> void:
-	# Translation follows the physical head; the last view basis never rolls.
-	var origin: Vector3 = bodies["head"].global_position
+	# Translation follows the physical head; its tumbling never rotates the view.
+	var origin: Vector3 = bodies.get("head", bodies["spine_02"]).global_position
+	if following_detached_head:
+		if is_instance_valid(detached_head) and not detached_head.is_queued_for_deletion() and WorldEntities.same_world(player, detached_head):
+			last_head_anchor = detached_head.camera_anchor_position()
+		else:
+			# A culled or transferred cosmetic head must not teleport the dying
+			# player's view back to a distant corpse. Hold the last valid anchor.
+			if is_instance_valid(detached_head): detached_head.set_camera_hidden(false)
+			detached_head = null
+		origin = last_head_anchor
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = camera_shape
 	query.transform = Transform3D(Basis.IDENTITY, origin)
@@ -89,8 +131,9 @@ func recovery_position() -> Vector3:
 		for i in 12:
 			candidates.append(center + Vector3(cos(i * TAU / 12.0), 0, sin(i * TAU / 12.0)) * radius)
 	var collider: CollisionShape3D = player.body_collision_shape
-	var capsule: CapsuleShape3D = collider.shape
-	var sole_y := collider.position.y - capsule.height * 0.5
+	var capsule: CapsuleShape3D = player.standing_collision_shape
+	var upright: Transform3D = player.standing_collision_transform
+	var sole_y := upright.origin.y - capsule.height * 0.5
 	var space := player.get_world_3d().direct_space_state
 	for candidate in candidates:
 		# Search below the body; a low ceiling must not become a roof teleport.
@@ -100,13 +143,17 @@ func recovery_position() -> Vector3:
 		var standing: Vector3 = hit.position + Vector3.UP * (0.035 - sole_y)
 		var query := PhysicsShapeQueryParameters3D.new()
 		query.shape = capsule
-		query.transform = Transform3D(player.global_basis, standing) * collider.transform
+		query.transform = Transform3D(player.global_basis, standing) * upright
 		query.collision_mask = player.collision_mask
 		query.exclude = [player.get_rid()]
 		if space.intersect_shape(query, 1).is_empty(): return standing
 	return Vector3.INF
 
 func stop() -> void:
+	if is_instance_valid(detached_head): detached_head.set_camera_hidden(false)
+	detached_head = null
+	following_detached_head = false
+	process_physics_priority = 0
 	if not active: return
 	set_physics_process(false)
 	simulator.physical_bones_stop_simulation()
@@ -123,11 +170,14 @@ func stop() -> void:
 	active = false
 	remaining = 0.0
 
+func _exit_tree() -> void:
+	if is_instance_valid(detached_head): detached_head.set_camera_hidden(false)
+
 func build_bodies() -> void:
 	add_box("pelvis", Vector3(0, 0.875, -0.035), Vector3(0.27, 0.18, 0.20), 12.0)
 	add_box("spine_01", Vector3(0, 1.055, -0.045), Vector3(0.25, 0.14, 0.18), 8.0, 20.0, 15.0)
 	add_box("spine_02", Vector3(0, 1.235, -0.040), Vector3(0.33, 0.20, 0.20), 14.0, 25.0, 20.0)
-	add_capsule("head", Vector3(0, 1.475, -0.042), Vector3.UP, 0.105, 0.25, 4.5, 35.0, 45.0)
+	add_capsule("head", HEAD_CENTER, Vector3.UP, 0.105, 0.25, 4.5, 35.0, 45.0)
 	for side: String in ["L", "R"]:
 		var upper := "upper_arm_" + side
 		var forearm := "forearm_" + side
@@ -161,6 +211,7 @@ func build_bodies() -> void:
 				link.child.add_collision_exception_with(ancestor.parent)
 				ancestor.parent.add_collision_exception_with(link.child)
 	for pair in [["thigh_L", "thigh_R"], ["spine_01", "thigh_L"], ["spine_01", "thigh_R"], ["spine_01", "upper_arm_L"], ["spine_01", "upper_arm_R"]]:
+		if not bodies.has(pair[0]) or not bodies.has(pair[1]): continue
 		bodies[pair[0]].add_collision_exception_with(bodies[pair[1]])
 		bodies[pair[1]].add_collision_exception_with(bodies[pair[0]])
 	# Isolated control capsule never participates in ragdoll collisions.
@@ -190,6 +241,7 @@ func add_capsule(bone_name: String, center: Vector3, direction: Vector3, radius:
 	add_body(bone_name, Transform3D(Basis(x, direction, z), center), shape, mass_kg, swing, twist)
 
 func add_body(bone_name: String, shape_rest: Transform3D, shape: Shape3D, mass_kg: float, swing: float, twist: float) -> void:
+	if not allowed_bones.is_empty() and bone_name not in allowed_bones: return
 	var body := PhysicalBone3D.new()
 	body.name = "Physical_" + bone_name
 	body.set("bone_name", bone_name)

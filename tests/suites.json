@@ -37,8 +37,11 @@
       "test_player_carry",
       "test_player_climb_animation",
       "test_player_death",
+      "test_player_dismemberment",
+      "test_player_head_camera",
       "test_player_jump_animation",
       "test_player_model",
+      "test_player_prone",
       "test_poi_asset_kit",
       "test_poi_instances",
       "test_poi_transition_persistence",
@@ -92,6 +95,7 @@
       "test_world_generation"
     ],
     "assets": [
+      "test_player_dismemberment_assets",
       "test_art_presentation",
       "test_forest_fog",
       "test_outdoor_horror",

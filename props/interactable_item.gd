@@ -29,11 +29,13 @@ func restore_item_state(state: Dictionary) -> void:
 # This function is called by the player_interact RayCast3D
 func get_interaction_prompt(player: Node3D) -> String:
 	var text := item_name + "｜E 拾取"
+	if not player.can_use_hands(2 if is_large else 1): return item_name + "｜拾取需要" + ("兩隻手臂" if is_large else "可用手臂")
 	if is_instance_valid(processing_owner): return item_name + "｜正在分解，暫時無法拾取"
 	if player.inventory.items.size() >= PlayerInventory.MAX_SLOTS: text += "\n背包已滿，請先空出一格"
 	return text
 
 func interact(player: Node3D) -> String:
+	if not player.can_use_hands(2 if is_large else 1): return "缺少可用手臂，無法拾取"
 	if is_instance_valid(processing_owner) or is_queued_for_deletion(): return "物品正在處理，無法拾取"
 	var path := scene_file_path
 	if path.is_empty(): path = "res://props/oil_barrel.tscn" if is_large else "res://props/scrap.tscn"

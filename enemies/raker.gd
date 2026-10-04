@@ -174,8 +174,11 @@ func _execute_attack_on_target(data: Dictionary) -> void:
 	if not is_instance_valid(victim) or not victim.has_method("take_damage"): return
 	if not boarding.can_attack(self, victim): return
 	if victim.has_method("can_be_grabbed") and victim.locomotion_state == victim.LocomotionState.NORMAL:
-		if locomotion_state == LocomotionState.NORMAL and grab.start(victim): attack_timer = attack_cooldown
-		return
+		if locomotion_state == LocomotionState.NORMAL and grab.start(victim):
+			attack_timer = attack_cooldown
+			return
+		# Crawling or otherwise unavailable grab targets still receive the
+		# ordinary timed claw strike and its existing damage cooldown checks.
 	strike_target = data.duplicate()
 	strike_elapsed = 0
 	strike_resolved = false
@@ -325,6 +328,7 @@ func grab_shoulder_position(side: int) -> Vector3:
 
 func can_grab_from(origin: Vector3, victim: Node3D) -> bool:
 	if not victim.has_method("can_be_grabbed"): return true
+	if not victim.can_be_grabbed(): return true
 	return grab.approach_clear(origin, victim)
 
 func _can_attack_combat_target(data: Dictionary, has_line_of_sight: bool = true) -> bool:

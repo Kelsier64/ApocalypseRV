@@ -6,6 +6,8 @@ var pitch := 0.0
 var rear_side := 0.0
 var tracking_weight := 0.0
 var world_positions: Dictionary = {}
+var arm_contact_pose: Array[Transform3D] = []
+var arm_contact_mouth := Vector3.ZERO
 const WEIGHTS := [.35, .35, .30]
 const BONES := ["neck_01", "neck_02", "head"]
 
@@ -28,6 +30,17 @@ func step_angles(direction: Vector3, delta: float, tracking: bool = true, crouch
 func _process_modification_with_delta(delta: float) -> void:
 	if not is_instance_valid(actor) or not actor.is_node_ready(): return
 	var sk := get_skeleton()
+	if actor.grab.phase == actor.grab.Phase.RELEASE and actor.grab.bite_part == &"left_arm" and arm_contact_pose.size() == sk.get_bone_count():
+		# The gameplay victim is released on contact. Retain the last evaluated
+		# bite for the visual recoil so the held arm cannot jump to the idle mouth.
+		var retained := 1.0 - smoothstep(.18, actor.grab.DURATIONS[actor.grab.Phase.RELEASE], actor.grab.elapsed)
+		for bone in sk.get_bone_count():
+			sk.set_bone_pose(bone, sk.get_bone_pose(bone).interpolate_with(arm_contact_pose[bone], retained))
+		var tear := smoothstep(0.0, .16, actor.grab.elapsed) * retained
+		var pull := sk.global_basis.inverse() * actor.global_basis * Vector3(.10, .015, .14)
+		_position_mouth(sk, mouth_position(sk).lerp(arm_contact_mouth + pull, tear), face_direction(sk))
+		_cache_contacts(sk)
+		return
 	var target: Node3D = actor.target_player
 	var tracking := is_instance_valid(target) and WorldEntities.same_world(actor, target) and not actor.is_dead
 	var direction := Vector3.ZERO
@@ -53,7 +66,24 @@ func _process_modification_with_delta(delta: float) -> void:
 		var weight := 1.0
 		if actor.grab.phase == actor.grab.Phase.REACH: weight = smoothstep(0, actor.grab.REACH_DURATION, actor.grab.elapsed)
 		for side in [-1, 1]:
-			_solve_arm(sk, side, actor.grab.victim.grab_contact_position(side, actor), weight)
+			var grip: Vector3 = actor.grab.victim.grab_contact_position(side, actor)
+			var victim_grab: Node = actor.grab.victim.grab_control
+			var arm_weight: float = victim_grab.arm_grip_weight if actor.grab.victim.is_grabbed() else 0.0
+			if arm_weight > 0.0:
+				var target_sk: Skeleton3D = actor.grab.victim.get_node("Visuals").skeleton
+				var bone := target_sk.find_bone("hand_L" if side > 0 else "spine_02")
+				var at := target_sk.global_transform * target_sk.get_bone_global_pose(bone).origin
+				grip = grip.lerp(at, arm_weight)
+			_solve_arm(sk, side, grip, weight)
+	if biting and actor.grab.bite_part == &"left_arm":
+		arm_contact_pose.clear()
+		for bone in sk.get_bone_count(): arm_contact_pose.append(sk.get_bone_pose(bone))
+		arm_contact_mouth = mouth_position(sk)
+	elif actor.grab.phase != actor.grab.Phase.RELEASE:
+		arm_contact_pose.clear()
+	_cache_contacts(sk)
+
+func _cache_contacts(sk: Skeleton3D) -> void:
 	for name in ["head", "upper_arm_L", "upper_arm_R", "hand_L", "hand_R"]:
 		# Cache in skeleton space: physics can move the RV/actor between renders.
 		world_positions[name] = sk.get_bone_global_pose(sk.find_bone(name)).origin
@@ -113,9 +143,12 @@ func face_position(sk: Skeleton3D) -> Vector3:
 func _solve_bite(sk: Skeleton3D) -> void:
 	var victim: Node3D = actor.grab.victim
 	var view: Camera3D = victim.seated_in.seat_camera if is_instance_valid(victim.seated_in) else victim.camera
-	_solve_face_contact(sk, view, bite_weight(actor.grab.elapsed), .055)
+	var wound := Vector3.INF
+	if actor.grab.bite_part == &"left_arm":
+		wound = victim.get_node("Visuals").bite_contact(&"left_arm").origin
+	_solve_face_contact(sk, view, bite_weight(actor.grab.elapsed), .055, wound)
 
-func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearance: float) -> void:
+func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearance: float, wound := Vector3.INF) -> void:
 	# Lower the torso to the victim's eye height instead of forcing a neck past
 	# its downward limit. Aim/position the visible face, so close-up parallax
 	# between the head joint and the front of the skull cannot misdirect it.
@@ -134,8 +167,16 @@ func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearanc
 		var aim_yaw := clampf(atan2(-facing.x,-facing.z), -PI/2, PI/2)
 		var aim_pitch := clampf(asin(clampf(facing.y,-1,1)), deg_to_rad(-25 if actor.crouched else -65), deg_to_rad(40 if actor.crouched else 30))
 		contact_facing = actor.global_basis * Vector3(-sin(aim_yaw)*cos(aim_pitch),sin(aim_pitch),-cos(aim_yaw)*cos(aim_pitch))
+	if wound.is_finite():
+		goal = sk.to_local(wound)
+		# Approach the shoulder from its front, rather than plunging vertically
+		# through the victim's eye with the back of the skull and neck.
+		contact_facing = ((wound - actor.global_position).slide(Vector3.UP).normalized() - Vector3.UP * .12).normalized()
 	var target := mouth_position(sk).lerp(goal, weight)
 	var bite_facing := face_direction(sk).slerp(contact_facing, weight).normalized()
+	_position_mouth(sk, target, bite_facing)
+
+func _position_mouth(sk: Skeleton3D, target: Vector3, bite_facing: Vector3) -> void:
 	var chain := ["spine_01", "spine_02", "spine_03"]
 	var original: Array[Quaternion] = []
 	for name in chain: original.append(sk.get_bone_pose_rotation(sk.find_bone(name)))

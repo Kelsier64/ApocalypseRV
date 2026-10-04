@@ -6,11 +6,13 @@
 
 Esc 設定選單：[不暫停遊戲、視訊效果與移除 F8](validation/2026-10-03-settings-menu.md)，含偏好遷移、輸入回歸與桌面驗收；[Esc 無反應回報重測](validation/2026-10-03-settings-esc-recheck.md) 補上正式啟動路徑檢查；[開關與解析度介面改進](validation/2026-10-03-settings-ui.md) 記錄新版呈現。
 
+獨立美術樣品：[破損混凝土牆近景](../world/art_samples/README.md)，包含 Godot 場景、實機渲染和材質來源；尚未替換正式避難所牆體。
+
 Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-raker-impact-ragdoll.md)，含輪驅重播、姿勢保存及物理回歸。
 
 樹木撞毀與車輛受傷：[依減速結算碰撞與地面傷害（目前）](validation/2026-10-02-vehicle-impact.md)、[首次停頓、減速與木材清理](validation/2026-10-02-tree-impact-preparation.md)；歷史結果：[落葉保留與輕量斷木](validation/2026-10-02-tree-leaves.md)、[初版驗收](validation/2026-10-02-tree-impact.md)、[保留動量與倒塌效果](validation/2026-10-02-tree-impact-momentum.md)、[倒樹實體碰撞修正](validation/2026-10-02-tree-impact-collision.md)。
 
-最新場景驗收：[避難所老化與去除綠色牆帶](validation/2026-10-01-shelter-weathering.md)；先前紀錄見 [牆體重做](validation/2026-10-01-shelter-walls.md)、[原生建築與部件修正](validation/2026-10-01-shelter-native-art.md)、[外觀擴建](validation/2026-10-01-shelter-expansion.md) 與 [正式世界開場](validation/2026-09-30-starting-shelter.md)。
+最新場景驗收：[避難所破損分布修正](validation/2026-10-03-shelter-spall-distribution.md)；先前紀錄見 [牆體構造重做](validation/2026-10-03-shelter-wall-rebuild.md)、[材質與風格修整](validation/2026-10-03-shelter-wall-style.md)、[加深與老化](validation/2026-10-03-shelter-dark-walls.md)、[去除綠色牆帶](validation/2026-10-01-shelter-weathering.md)、[牆體重做](validation/2026-10-01-shelter-walls.md)、[原生建築與部件修正](validation/2026-10-01-shelter-native-art.md)、[外觀擴建](validation/2026-10-01-shelter-expansion.md) 與 [正式世界開場](validation/2026-09-30-starting-shelter.md)。
 
 | 需求 | 文件 | 責任 |
 |---|---|---|
@@ -59,6 +61,12 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 ## 驗收紀錄
 
 - [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。
+
+- [2026-10-03 咬手第一人稱與轉向修正](validation/2026-10-03-player-arm-bite-pov.md) — 保留玩家朝向、抬臂與嘴部撕扯、接觸後即時輸入與第一人稱回放。
+
+- [2026-10-03 落地頭顱與血泊修正](validation/2026-10-03-player-gore-refinement.md) — 頸口重切、清除交疊碎面、自然紅色血泊與明暗近景對照。
+
+- [2026-10-03 玩家斷肢與爬行](validation/2026-10-03-player-dismemberment.md) — Blender 五切口、六組受傷動畫、Raker 左臂／頭部咬斷、能力與保存、相關自動測試及實機畫面；含 10 月 4 日斷頭第一人稱追蹤修正。
 
 - [2026-09-30 玩家單手／雙手持物](validation/2026-09-30-player-carry.md) — 手臂 IK、五指握合、狀態切換與第一人稱／外部視角。
 

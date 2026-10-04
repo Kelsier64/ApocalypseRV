@@ -216,6 +216,7 @@ func run() -> void:
 	check(settings.get_setting("retro") == retro_before, "F8 has no display-preference shortcut")
 	await test_seat_and_carrier(settings)
 	await test_interior_routing(settings)
+	await test_limb_settings()
 	await test_lifecycle()
 	for name: String in original: settings.set_setting(name, original[name])
 	settings.flush()
@@ -302,6 +303,43 @@ func test_seat_and_carrier(settings: Node) -> void:
 	menu.close_menu()
 	player.global_position = Vector3(20, 0.05, 0)
 	player.velocity = Vector3.ZERO
+	await frames(3)
+
+func test_limb_settings() -> void:
+	var intact := {"items": player.inventory.items.duplicate(true), "slot": player.inventory.active_slot, "health": player.current_player_health, "transform": player.global_transform, "body": player.body_state.capture()}
+	var seat: Equipment = rv_shell.get_node("Chassis/DriverSeat")
+	seat.interact_hold(player)
+	check(player.seated_in == seat and menu.open_menu(), "Intact driver opens settings before injury")
+	player.sever_part(&"left_arm", {})
+	await frames(3)
+	check(player.seated_in == seat and player.settings_open, "Losing one arm preserves the capable driver's seat and open settings")
+	player.sever_part(&"right_arm", {})
+	await frames(3)
+	check(player.seated_in == null and seat.current_driver == null and not player.settings_open, "Losing the final arm forces seat release and closes settings")
+	seat.interact_hold(player)
+	check(player.seated_in == null, "Closing settings does not restore an armless actor's driving capability")
+	player.restore_checkpoint_state(intact)
+	player.sever_part(&"left_leg", {})
+	await frames(35)
+	check(player.is_crawling() and player.is_on_floor() and menu.open_menu(), "Crawling actor retains settings access")
+	var crawl_origin := player.global_position
+	var crawl_stamina: float = player.current_stamina
+	for action: StringName in [&"move_forward", &"jump", &"sprint"]: Input.action_press(action)
+	await frames(12)
+	check(player.global_position.distance_to(crawl_origin) < 0.05 and player.velocity.y <= 0.01, "Settings block crawling movement and jumping")
+	menu.close_menu()
+	await frames(12)
+	check(player.is_gameplay_input_blocked() and player.global_position.distance_to(crawl_origin) < 0.05, "Crawling remains blocked until held menu controls are released")
+	for action: StringName in [&"move_forward", &"jump", &"sprint"]: Input.action_release(action)
+	await frames(3)
+	check(not player.is_gameplay_input_blocked(), "Releasing controls restores crawling input")
+	for action: StringName in [&"move_forward", &"jump", &"sprint"]: Input.action_press(action)
+	await frames(20)
+	var crawl_speed := Vector2(player.velocity.x, player.velocity.z).length()
+	check(player.global_position.distance_to(crawl_origin) > 0.1 and crawl_speed < player.SPEED and player.velocity.y <= 0.01, "Fresh input resumes crawling without restoring sprint or jump")
+	check(player.current_stamina >= crawl_stamina, "Crawling with sprint held does not consume sprint stamina after closing settings")
+	for action: StringName in [&"move_forward", &"jump", &"sprint"]: Input.action_release(action)
+	player.restore_checkpoint_state(intact)
 	await frames(3)
 
 func test_lifecycle() -> void:

@@ -7,6 +7,7 @@ var phase := Phase.NONE
 var elapsed := 0.0
 var variant := "stand"
 var outcome := 0 # 0 escaped, 1 wounded, 2 fatal
+var bite_part: StringName = &"" # Locked at the HOLD deadline; shared with the bite pose.
 var resolved := false
 var support: Node3D
 var seat: Node3D
@@ -31,6 +32,9 @@ func busy() -> bool:
 func start(target: CharacterBody3D) -> bool:
 	if busy() or not target.can_be_grabbed(): return false
 	victim = target
+	bite_part = &""
+	outcome = 0
+	resolved = false
 	variant = "seat" if is_instance_valid(target.seated_in) else ("low" if actor.crouched else "stand")
 	_change(Phase.REACH)
 	return true
@@ -38,6 +42,7 @@ func start(target: CharacterBody3D) -> bool:
 func _change(next: Phase) -> void:
 	phase = next
 	elapsed = 0
+	if next == Phase.NONE: bite_part = &""
 	if next != Phase.NONE:
 		actor.attack_started.emit("grab_" + variant + "_" + CLIPS[next], DURATIONS[next])
 
@@ -68,6 +73,14 @@ func tick(delta: float) -> void:
 			if elapsed >= 2.0:
 				victim.grab_control.accepting = false
 				outcome = classify(victim.grab_control.presses, victim.grab_control.required)
+				if outcome == 0:
+					escape()
+					return
+				# A wounded result always tears the left arm. Once it is absent,
+				# the same result becomes a fatal head bite, never another limb.
+				if outcome == 1 and not victim.body_state.has_part(&"left_arm"):
+					outcome = 2
+				bite_part = &"head" if outcome == 2 else &"left_arm"
 				resolved = false
 				_change(Phase.BITE)
 		Phase.BITE:

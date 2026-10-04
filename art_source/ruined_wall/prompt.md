@@ -1,0 +1,7 @@
+# Aggregate texture generation
+
+Built-in imagegen, 2026-10-03; one new opaque image, no input/reference image. Final selected image: [aggregate_albedo.png](../../assets/materials/ruined_wall/aggregate_albedo.png).
+
+Exact prompt:
+
+> Create a production game material texture, a single 2048x2048 square diffuse/base-color texture covering about 2 by 2 metres of severely weathered exposed concrete. Orthographic perfectly straight-on surface scan, edge to edge material only, flat uniform diffuse lighting with NO directional shadows, NO perspective, NO objects, NO framing, NO text. Hyperrealistic tactile cement with densely embedded irregular broken grey stones, tiny pores, heavily eroded sandy cement, broken mortar grains, dense microfractures, a few hairline cracks, subtle brown mineral dirt in crevices and blackened age. Neutral dark warm grey, charcoal and dusty brown, desaturated, absolutely no green paint or moss, no white plaster, no shiny surfaces. Variation from centimetre chips to millimetre sand, visually believable abandoned military bunker concrete after decades of neglect. Do not depict a whole wall, wall edges, rebar, a scene, a hole or rubble: this is a seamless-looking tileable physically based base-color texture for authored 3D damaged concrete geometry. Keep macro illumination uniform and mid-dark, rich fine photographic detail throughout. Save the generated asset for integration into the game project.

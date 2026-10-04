@@ -1,7 +1,9 @@
 extends Node
 ## Presentation of controller-relative velocity. No controller root motion.
 const CLIPS = preload("res://assets/models/player_animations_v021/player_animations_v021.glb")
+const INJURY_CLIPS = preload("res://assets/models/player_dismemberment/player_injury_animations.glb")
 static var library: AnimationLibrary
+static var injury_library: AnimationLibrary
 var actor: CharacterBody3D
 var animation: AnimationPlayer
 var current_clip := ""
@@ -20,6 +22,8 @@ var root_bone := -1
 var applied_root_offset := Vector3.ZERO
 var view_camera: Camera3D
 var camera_rest_position := Vector3.ZERO
+var was_crawling := false
+var crawl_eye := Vector3(0, .58, -.48)
 
 func _ready() -> void:
 	process_physics_priority = 1 # Observe Player after movement, before pose modifiers.
@@ -39,6 +43,8 @@ func _ready() -> void:
 			library.add_animation(clip, resource)
 		source.free()
 	animation.add_animation_library("locomotion", library)
+	if injury_library == null: injury_library = _injury_library()
+	animation.add_animation_library("injury", injury_library)
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	animation.active = true
 	_select("idle")
@@ -59,6 +65,10 @@ func _physics_process(delta: float) -> void:
 	if suspended:
 		current_clip = ""
 		suspended = false
+	if actor.is_crawling():
+		_update_crawl(delta)
+		return
+	was_crawling = false
 	if actor.locomotion_state == actor.LocomotionState.CLIMBING:
 		_update_climb(delta)
 		return
@@ -165,6 +175,96 @@ func _select(clip: String, blend: float = .16) -> void:
 	_clear_pose_offset()
 	animation.play("locomotion/" + clip, blend if not current_clip.is_empty() else 0.0)
 	current_clip = clip
+
+func _update_crawl(delta: float) -> void:
+	climb_rv = null
+	climb_exit_remaining = 0
+	climb_pose_target = Vector3.ZERO
+	climb_pose_offset = Vector3.ZERO
+	air_time = 0
+	landing_remaining = 0
+	var local: Vector3 = actor.global_basis.inverse() * actor.velocity
+	var speed := 0.0 if actor.in_ui_mode else Vector2(local.x, local.z).length()
+	var clip := "prone_idle"
+	if speed > .06 and actor.usable_arms() > 0:
+		if actor.usable_arms() == 1: clip = "crawl_onearm_L" if actor.body_state.has_part(&"left_arm") else "crawl_onearm_R"
+		elif not actor.body_state.has_part(&"left_leg") and not actor.body_state.has_part(&"right_leg"): clip = "crawl_no_legs"
+		else: clip = "crawl_missing_right_leg" if actor.body_state.has_part(&"left_leg") else "crawl_missing_left_leg"
+	var name := "injury/" + clip
+	if current_clip != name:
+		_clear_pose_offset()
+		animation.play(name, .45 if not was_crawling else .18)
+		current_clip = name
+	was_crawling = true
+	if not actor.in_ui_mode:
+		# Authored palms pull back 34 cm during 67% of each cycle. Match the
+		# controller's travel while planted, including the slower one-arm drag.
+		var rate := 1.0 if clip == "prone_idle" else clampf(speed * animation.get_animation(name).length * .67 / .34, .0, 2.2)
+		animation.advance(delta * rate)
+	view_camera.position = view_camera.position.move_toward(crawl_eye, delta * 2.8)
+
+func _injury_library() -> AnimationLibrary:
+	var result := AnimationLibrary.new()
+	var source := INJURY_CLIPS.instantiate()
+	var source_skeleton := source.find_child("Skeleton3D", true, false) as Skeleton3D
+	var clips := source.get_node("AnimationPlayer") as AnimationPlayer
+	for name in clips.get_animation_list():
+		if name == "RESET": continue
+		var imported := clips.get_animation(name)
+		var converted := Animation.new()
+		converted.length = imported.length
+		converted.loop_mode = Animation.LOOP_LINEAR
+		var channels: Array[Dictionary] = []
+		for bone in skeleton.get_bone_count():
+			var bone_name := skeleton.get_bone_name(bone)
+			var donor_bone := source_skeleton.find_bone(bone_name)
+			if donor_bone < 0: continue
+			var path := NodePath("PLAYER_Rig/Skeleton3D:" + bone_name)
+			var p := imported.find_track(path, Animation.TYPE_POSITION_3D)
+			var r := imported.find_track(path, Animation.TYPE_ROTATION_3D)
+			var s := imported.find_track(path, Animation.TYPE_SCALE_3D)
+			var out_p := converted.add_track(Animation.TYPE_POSITION_3D)
+			var out_r := converted.add_track(Animation.TYPE_ROTATION_3D)
+			var out_s := converted.add_track(Animation.TYPE_SCALE_3D)
+			for track in [out_p, out_r, out_s]: converted.track_set_path(track, path)
+			channels.append({"bone": bone, "donor": donor_bone, "p": p, "r": r, "s": s, "out_p": out_p, "out_r": out_r, "out_s": out_s})
+		for frame in ceili(imported.length * 60) + 1:
+			var t := minf(float(frame) / 60, imported.length)
+			var donor_locals: Dictionary = {}
+			for channel in channels:
+				# glTF omits constant channels. Their values remain the donor's
+				# local rest transform, including the length of each limb segment.
+				var rest := source_skeleton.get_bone_rest(channel.donor)
+				var position := imported.position_track_interpolate(channel.p, t) if channel.p >= 0 else rest.origin
+				var rotation := imported.rotation_track_interpolate(channel.r, t) if channel.r >= 0 else rest.basis.get_rotation_quaternion()
+				var scale := imported.scale_track_interpolate(channel.s, t) if channel.s >= 0 else rest.basis.get_scale()
+				donor_locals[channel.donor] = Transform3D(Basis(rotation).scaled(scale), position)
+			# This import helper is outside the SceneTree. Evaluate parent chains
+			# directly rather than depending on deferred Skeleton3D pose caches.
+			var donor_globals: Dictionary = {}
+			for bone in source_skeleton.get_bone_count():
+				var parent := source_skeleton.get_bone_parent(bone)
+				donor_globals[bone] = donor_globals.get(parent, Transform3D.IDENTITY) * donor_locals.get(bone, source_skeleton.get_bone_rest(bone))
+			var world_poses: Dictionary = {}
+			for channel in channels:
+				# Blender's glTF import can realign bone axes. Retarget deformation
+				# relative to GLOBAL rest, not raw local rotations: the latter folds
+				# wrists/elbows even when the bone names and joint positions match.
+				world_poses[channel.bone] = donor_globals[channel.donor] * source_skeleton.get_bone_global_rest(channel.donor).affine_inverse() * skeleton.get_bone_global_rest(channel.bone)
+			for channel in channels:
+				var parent := skeleton.get_bone_parent(channel.bone)
+				var parent_pose: Transform3D = world_poses.get(parent, Transform3D.IDENTITY)
+				# Godot animation tracks store the complete parent-relative bone
+				# transform, not an additive offset from that bone's rest matrix.
+				var pose: Transform3D = parent_pose.affine_inverse() * world_poses[channel.bone]
+				converted.position_track_insert_key(channel.out_p, t, pose.origin)
+				converted.rotation_track_insert_key(channel.out_r, t, pose.basis.orthonormalized().get_rotation_quaternion())
+				converted.scale_track_insert_key(channel.out_s, t, pose.basis.get_scale())
+		for track in converted.get_track_count():
+			converted.track_set_key_value(track, converted.track_get_key_count(track) - 1, converted.track_get_key_value(track, 0))
+		result.add_animation(name, converted)
+	source.free()
+	return result
 
 func suspend() -> void:
 	if suspended: return

@@ -214,6 +214,7 @@ func take_damage(amount: float) -> void:
 		engine_force = 0.0
 
 func exchange_engine(player: Node3D) -> String:
+	if not player.can_use_hands(2): return "更換大型引擎需要兩隻手臂"
 	var reason: String = engine_bay.service_reason()
 	if not reason.is_empty(): return reason
 	var active: Dictionary = player.inventory.active_item()
@@ -233,6 +234,7 @@ func exchange_engine(player: Node3D) -> String:
 	return "已裝入 " + incoming.definition().display_name
 
 func remove_engine(player: Node3D) -> String:
+	if not player.can_use_hands(2): return "取出大型引擎需要兩隻手臂"
 	var reason: String = engine_bay.service_reason()
 	if not reason.is_empty(): return reason
 	var engine := get_engine()
@@ -316,6 +318,7 @@ func store_player_item(player: Node3D, index: int) -> bool:
 func take_stored_item(player: Node3D, index: int) -> bool:
 	if index < 0 or index >= stored_items.size(): return false
 	var item: Dictionary = stored_items[index]
+	if not player.can_use_hands(2 if item.is_large else 1): return false
 	if not player.add_item(item.name, item.is_large, item.scene_path, item.state): return false
 	stored_items.remove_at(index)
 	player.refresh_inventory()
@@ -554,6 +557,7 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	return true
 
 func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> bool:
+	if not player.can_use_hands(): return false
 	if socket == null: socket = get_battery_socket()
 	if socket == null or socket.get_connected_rv() != self or not socket.can_operate() or linear_velocity.length() > 0.5 or socket.installed_battery == null:
 		return false
@@ -694,6 +698,7 @@ func _create_wheel_socket(slot_index: int) -> void:
 	add_child(hitbox)
 
 func install_wheel_from_player(player: Node3D, slot: int = -1) -> bool:
+	if not player.can_use_hands(): return false
 	if linear_velocity.length() > 0.5 or energy.engine_running or player.get_active_item_name() != ItemNames.WHEEL:
 		return false
 	if slot < 0:
@@ -787,6 +792,6 @@ func driver_controls_locked() -> bool:
 	for player in get_tree().get_nodes_in_group(Groups.PLAYER):
 		if not player.has_method("is_grabbed"): continue
 		if not is_instance_valid(player.seated_in) or ClimbMath.find_rv_ancestor(player.seated_in) != self: continue
-		if player.is_grabbed() or player.is_player_dead or (player.has_method("is_gameplay_input_blocked") and player.is_gameplay_input_blocked()):
+		if player.is_grabbed() or player.is_player_dead or (player.has_method("can_drive") and not player.can_drive()) or (player.has_method("is_gameplay_input_blocked") and player.is_gameplay_input_blocked()):
 			return true
 	return false

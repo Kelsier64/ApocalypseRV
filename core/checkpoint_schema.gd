@@ -10,6 +10,14 @@ static func valid_transform(value: Variant) -> bool:
 static func vector(value: Variant) -> bool:
 	return value is Vector3 and value.is_finite()
 
+static func player_body_error(player: Dictionary) -> String:
+	# Older v1/v2/v3 checkpoints have an intact body when this field is absent.
+	if not player.has("body"): return ""
+	if not PlayerBodyState.valid_state(player.body): return "player.body"
+	if player.get("health", 0.0) > 0.0 and not player.body.present[&"head"]:
+		return "player.body.head"
+	return ""
+
 static func physics(value: Variant, require_freeze := false) -> bool:
 	if not value is Dictionary or not value.has_all(["mode", "layer", "mask", "linear", "angular"]): return false
 	return value.mode is int and value.mode in [0, 1] and value.layer is int and value.layer >= 0 and value.layer <= 0xffffffff and value.mask is int and value.mask >= 0 and value.mask <= 0xffffffff and vector(value.linear) and vector(value.angular) and (not require_freeze or value.get("freeze") is bool)

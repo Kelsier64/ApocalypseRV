@@ -31,7 +31,7 @@ func begin(equipment: Node3D) -> void:
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
-	if player.is_gameplay_input_blocked(): return
+	if player.is_gameplay_input_blocked() or not player.can_use_hands(2): return
 	# Equipment Placement confirmation
 	if is_instance_valid(placing_equipment):
 		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_V:
@@ -77,6 +77,9 @@ func cancel(player: Node) -> void:
 
 func update_ghost(player: CharacterBody3D) -> void:
 	if not is_instance_valid(placing_equipment):
+		return
+	if not player.can_use_hands(2):
+		can_place_equipment = false
 		return
 
 	var space_state = player.get_world_3d().direct_space_state
