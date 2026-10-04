@@ -68,7 +68,7 @@ godot --path . --log-file .godot/carry-playground.log res://tests/player_carry_p
 
 F1 切換外部／第一人稱、F2 輪換手電筒／廢鐵／電池／油桶／引擎／空手、F3 原地播放步行、F4 切換抬頭／低頭、F5 手部近景、F6 旋轉近景角度。F3 只供固定機位觀察動畫；正式移動由 `test_player_carry.gd` 使用真實輸入驗證。
 
-一般小物使用右手，大物依背包 `is_large` 使用雙手；持物與移動共用全身骨架。手持副本保留原 hold_rotation／hold_scale，並將最長邊限制在小物 0.18 m、大物 0.50 m（大物寬度另限 0.40 m）；不改地面物品或碰撞。預設抓點從持物網格包圍盒計算，可在 Prop 根節點下加入 `GripRight`／`GripLeft` Marker3D 指定接觸點；手電筒已指定右手握柄位置。既有 hold_position 隨整體包圍盒置中，不再決定鏡頭內的持物位置。
+一般小物使用右手，大物依背包 `is_large` 使用雙手；持物與移動共用全身骨架。手持副本保留場景原尺寸與 hold_rotation，不再使用舊 hold_scale 或尺寸上限縮小，允許遮擋視線；不改地面物品或碰撞。G 從當下手持道具的世界位置與姿態放出，沿用原本朝角色前方的輕拋方向與速度；沒有手持顯示節點時仍使用原本的安全退路。預設抓點從持物網格包圍盒計算，可在 Prop 根節點下加入 `GripRight`／`GripLeft` Marker3D 指定接觸點；手電筒已指定右手握柄位置。既有 hold_position 隨整體包圍盒置中，不再決定鏡頭內的持物位置。
 
 攀爬／攀頂、被抓、就座及設備放置時收起持物，讓原狀態接管手臂。詳細驗收與限制見 [持物驗收](../validation/2026-09-30-player-carry.md)。
 
@@ -468,3 +468,4 @@ godot --path . --log-file .godot/player-driving.log res://tests/player_driving_p
 ```
 
 使用正式玩家與駕駛座，隱藏車殼、凍結車體，檢查坐姿與控制件接觸。F1 回正、F2 左轉、F3 右轉、F4 切換外部／第一人稱／側面、F5 切換踩踏、F6 顯示／隱藏完整車殼。這是姿勢觀察場，不代表已驗證輪驅行駛。自動回歸 `test_rv_cockpit.gd` 檢查方向盤方向與回正、骨架接觸、跟車姿態及座位生命週期。
+

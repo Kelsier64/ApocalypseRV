@@ -68,15 +68,7 @@ func _physics_process(delta: float) -> void:
 			if item.has_method("set_held"):
 				# The corpse grip is full size; never scale its live physical skeleton.
 				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
-			# Held previews already use hold_scale. Cap unusually bulky silhouettes
-			# so world-sized barrels/blocks do not intersect the eye or hide both hands.
-			var limit := .5 if large else .18
-			var longest := maxf(bounds.size.x, maxf(bounds.size.y, bounds.size.z))
-			var fit := minf(1.0, limit / maxf(longest, .001))
-			if large: fit = minf(fit, .4 / maxf(bounds.size.x, .001))
-			if fit < 1.0 and not item.has_method("set_held"):
-				item.scale *= fit
-				bounds = _held_bounds(item)
+			# Keep world dimensions, even when the held silhouette blocks the view.
 			item_hold_transform = item.transform
 		_update_item(delta, large)
 	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight)
@@ -120,9 +112,10 @@ func _update_item(delta: float, large: bool) -> void:
 	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())
 	if item.has_method("update_held_grips"): item.update_held_grips()
 	# Bounds are in marker space, including the prop's authored rotation/scale.
-	# Cup the sides at mid-height instead of reaching over the top edge.
-	var right := Vector3(bounds.end.x + .016, bounds.get_center().y, bounds.end.z - .02)
-	var left := Vector3(bounds.position.x - .016, right.y, right.z)
+	# Cup the sides at mid-height. Leave room for the proximal finger joints
+	# and seat the palm along the near edge of a full-sized box.
+	var right := Vector3(bounds.end.x + .035, bounds.get_center().y, bounds.end.z - .04)
+	var left := Vector3(bounds.position.x - .035, right.y, right.z)
 	grip_right = marker.to_global(right)
 	grip_left = marker.to_global(left)
 	for side in ["Right", "Left"]:
@@ -140,21 +133,31 @@ func _align_flashlight() -> void:
 	var frame: Basis = delta * hand_frames[active_hand]
 	var grip := item.get_node("GripRight") as Node3D
 	var forward := actor.global_basis * Basis(Vector3.RIGHT, clampf(actor.camera.rotation.x, -.45, .45) * .65) * Vector3.FORWARD
-	if actor.is_grabbed() and actor.grab_control.keep_flashlight:
-		forward = (actor.grab_control.captor.grab_face_position() - grip_right).normalized()
-	var outward := (-frame.z - forward * (-frame.z).dot(forward)).normalized()
-	if outward.length_squared() < .001:
-		outward = Basis.looking_at(forward).x
-	var rotation := Basis(outward, forward, outward.cross(forward))
-	var fitted := rotation * Basis.from_scale(item_hold_transform.basis.get_scale())
-	item.global_transform = Transform3D(fitted, grip_right - fitted * grip.position)
+	var aiming_at_face: bool = actor.is_grabbed() and actor.grab_control.keep_flashlight
+	var target: Vector3 = actor.grab_control.captor.grab_face_position() if aiming_at_face else Vector3.ZERO
+	if aiming_at_face: forward = (target - grip_right).normalized()
+	# At close range the lens is offset from the palm. Refit its direction from
+	# the actual light origin, keeping the grip anchored on every iteration.
+	for iteration in (8 if aiming_at_face else 1):
+		var outward := (-frame.z - forward * (-frame.z).dot(forward)).normalized()
+		if outward.length_squared() < .001:
+			outward = Basis.looking_at(forward).x
+		var rotation := Basis(outward, forward, outward.cross(forward))
+		var fitted := rotation * Basis.from_scale(item_hold_transform.basis.get_scale())
+		item.global_transform = Transform3D(fitted, grip_right - fitted * grip.position)
+		if aiming_at_face:
+			forward = (target - (item.get_node("Beam") as Node3D).global_position).normalized()
 
 func _pose_flashlight_fingers(weight: float) -> void:
 	# Solve each knuckle around the actual barrel cross-section. The index and
 	# little finger start at different heights; a shared fist angle clips the tube.
 	var body := item.get_node("Body") as MeshInstance3D
 	var cylinder := body.mesh as CylinderMesh
-	var radius := maxf(cylinder.top_radius, cylinder.bottom_radius) + .012
+	var barrel_radius := maxf(cylinder.top_radius, cylinder.bottom_radius)
+	var radius := barrel_radius + .012
+	# Curl the distal segment around the tube, with its chord clearing the
+	# barrel by 1 mm rather than flattening the little finger at a fixed arc.
+	var distal_arc := 2.0 * acos(clampf((barrel_radius + .001) / radius, 0.0, 1.0))
 	for finger in ["index", "middle", "ring", "pinky"]:
 		var first := skeleton.find_bone(finger + "_01_" + active_hand)
 		var second := skeleton.find_bone(finger + "_02_" + active_hand)
@@ -166,7 +169,7 @@ func _pose_flashlight_fingers(weight: float) -> void:
 		var along := (distance * distance + radius * radius - length * length) / (2.0 * distance)
 		var angle := radial.angle() + acos(clampf(along / radius, -1.0, 1.0))
 		var contact := Vector3(cos(angle) * radius, start.y, sin(angle) * radius)
-		var tip := Vector3(cos(angle + PI / 3.0) * radius, start.y, sin(angle + PI / 3.0) * radius)
+		var tip := Vector3(cos(angle + distal_arc) * radius, start.y, sin(angle + distal_arc) * radius)
 		_finger_world_direction(first, item.global_basis * (contact - start), weight)
 		_finger_world_direction(second, item.global_basis * (tip - contact), weight)
 	var thumb_axis := item.global_basis.orthonormalized()
