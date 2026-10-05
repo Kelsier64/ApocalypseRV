@@ -1,5 +1,5 @@
 extends Node3D
-const ITEMS := ["flashlight", "scrap", "battery", "oil_barrel", "engine_standard", ""]
+const ITEMS := ["flashlight", "scrap", "battery", "engine_repair_kit", "gas_can", "gas_can_empty", "wheel", "oil_barrel", "engine_standard", ""]
 var actor: CharacterBody3D
 var observer: Camera3D
 var label: Label
