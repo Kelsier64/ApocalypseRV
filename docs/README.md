@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+玩家動畫與 Raker 咬擊：[玩家跑步與 Raker 咬擊姿勢修正驗收](validation/2026-10-05-ci-player-raker.md)，記錄三項 CI 失敗的修正、14 項相關回歸及原生輸入驗證。
+
 屍體道具：[怪物／玩家屍體拾取、手持晃動、分解與保存](validation/2026-10-04-corpse-props.md)，含專用測試場與本輪回歸結果。
 
 Esc 設定選單：[不暫停遊戲、視訊效果與移除 F8](validation/2026-10-03-settings-menu.md)，含偏好遷移、輸入回歸與桌面驗收；[Esc 無反應回報重測](validation/2026-10-03-settings-esc-recheck.md) 補上正式啟動路徑檢查；[開關與解析度介面改進](validation/2026-10-03-settings-ui.md) 記錄新版呈現。

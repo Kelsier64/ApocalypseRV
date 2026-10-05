@@ -230,7 +230,28 @@ func _solve_arm(sk: Skeleton3D, side: int, contact: Vector3, weight: float) -> v
 	var up := is_instance_valid(actor.grab.victim) and is_instance_valid(actor.grab.victim.seated_in)
 	var down := sk.global_basis.inverse() * ((Vector3.UP if up else Vector3.DOWN) + actor.global_basis.x * float(side) * (.75 if up else .25))
 	var bend := down.slide(direction).normalized()
-	_aim(sk, upper, fore, shoulder + direction * along + bend * height)
+	var elbow_target := shoulder + direction * along + bend * height
+	if up:
+		var model_scale := sk.global_basis.get_scale().x
+		var path: Dictionary = actor.grab.arm_path(sk.to_global(shoulder), sk.to_global(target), Vector2(length_a, length_b) * model_scale, actor.global_basis, side, actor.grab.victim)
+		if not path.blocked.is_empty():
+			var clavicle := sk.get_bone_parent(upper)
+			var original := sk.get_bone_pose_rotation(clavicle)
+			var seat: Node3D = actor.grab.victim.seated_in
+			var outward: Vector3 = seat.global_basis.x * (-1.0 if seat.to_local(sk.to_global(shoulder)).x < 0.0 else 1.0)
+			# At the deepest shoulder bite the upper arm starts just behind the
+			# seatback. Rotate the clavicle to lift/clear that corner; moving only
+			# the elbow cannot clear it. Bone lengths and the torso stay intact.
+			_aim(sk, clavicle, upper, shoulder + sk.global_basis.inverse() * (outward * .08 + Vector3.UP * .08))
+			var rotation := sk.get_bone_pose_rotation(clavicle)
+			var angle := original.angle_to(rotation)
+			if angle > deg_to_rad(25): sk.set_bone_pose_rotation(clavicle, original.slerp(rotation, deg_to_rad(25) / angle))
+			shoulder = sk.get_bone_global_pose(upper).origin
+			direction = (target - shoulder).normalized()
+			distance = clampf(target.distance_to(shoulder), .02, length_a + length_b - .001)
+			path = actor.grab.arm_path(sk.to_global(shoulder), sk.to_global(target), Vector2(length_a, length_b) * model_scale, actor.global_basis, side, actor.grab.victim)
+		elbow_target = sk.to_local(path.elbow)
+	_aim(sk, upper, fore, elbow_target)
 	_aim(sk, fore, hand, shoulder + direction * distance)
 	# Cup both sides of the head with fingers wrapping toward its back.
 	_orient_grip(sk, side, fore, hand, weight)

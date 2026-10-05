@@ -4,7 +4,7 @@ const GrabRules = preload("res://core/raker_grab_rules.gd")
 var failures: Array[String] = []
 func _init() -> void: run.call_deferred()
 func check(value: bool, note: String) -> void:
-	if not value: failures.append(note)
+	if not value and note not in failures: failures.append(note)
 func key(code: Key, pressed: bool) -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = code
@@ -28,8 +28,32 @@ func run() -> void:
 			if player.is_grabbed(): break
 		check(player.is_grabbed(),'Production capture %d' % mode)
 		if not player.is_grabbed(): continue
-		while player.grab_control.presses < GrabRules.minimum_wounded_presses(player.grab_control.required): player.submit_struggle()
+		for attempt in player.grab_control.required:
+			if player.grab_control.presses >= GrabRules.minimum_wounded_presses(player.grab_control.required): break
+			if not player.submit_struggle(): break
+		check(GrabRules.reaches_wounded_threshold(player.grab_control.presses, player.grab_control.required), "Struggle reaches the wounded threshold before the deadline %d" % mode)
+		if mode == 2 and not is_instance_valid(player.seated_in):
+			check(false, "Driver remains seated after capture")
+			continue
 		var view: Camera3D = player.seated_in.seat_camera if mode == 2 else player.camera
+		var arm_samples := {"count": 0}
+		if mode == 2:
+			var visual: Node3D = scene.monster.get_node("BodyMesh")
+			var captured_monster: Raker = scene.monster
+			# Inspect the evaluated IK, before Skeleton3D restores the input pose.
+			visual.pose_modifier.modification_processed.connect(func():
+				if captured_monster.grab.phase != captured_monster.grab.Phase.BITE or captured_monster.grab.elapsed < .08: return
+				arm_samples.count += 1
+				var skeleton: Skeleton3D = visual.skeleton
+				for suffix in ["_L", "_R"]:
+					var points: Array[Vector3] = []
+					for bone in ["upper_arm", "forearm", "hand"]:
+						points.append(skeleton.to_global(skeleton.get_bone_global_pose(skeleton.find_bone(bone + suffix)).origin))
+					for segment in [[points[0], points[1]], [points[1], points[2]]]:
+						var query := PhysicsRayQueryParameters3D.create(segment[0], segment[1], 1, [player.get_rid(), captured_monster.get_rid()])
+						var hit := scene.get_world_3d().direct_space_state.intersect_ray(query)
+						check(hit.is_empty(), "Rendered driver bite arms clear the seatback and cabin: " + suffix)
+			)
 		var captured_body_yaw: float = player.rotation.y
 		# Reproduce focus/UI input capture being lost during a grab. Old end()
 		# hid the HUD but left mouse look gated by MOUSE_MODE_VISIBLE.
@@ -44,6 +68,9 @@ func run() -> void:
 		check(contact_seen and player.current_player_health == 50,'Survivor released on natural bite clock %d' % mode)
 		if not contact_seen: continue
 		check(scene.monster.grab.phase == scene.monster.grab.Phase.RELEASE,'Player released before monster recovery %d' % mode)
+		if mode == 2:
+			check(arm_samples.count >= 5, "Driver arm clearance sampled through the bite approach")
+			print("DRIVER_ARM_CLEARANCE_SAMPLES ", arm_samples.count)
 		check(not player.grab_control.hud.visible and player.grab_control.camera == null,'Natural bite contact releases HUD and camera ownership %d' % mode)
 		if mode != 2:
 			check(absf(angle_difference(player.rotation.y, captured_body_yaw)) < .001,'Natural arm bite preserves body yaw %d' % mode)
@@ -103,6 +130,7 @@ func run() -> void:
 			check(player.seated_in == null and player.grab_control.recovery_camera == null,'Seat exit cancels pending arm view %d' % mode)
 			player.grab_control._process(.5)
 			check(view.rotation.is_equal_approx(seat.REST_CAMERA_ROTATION),'Old arm view cannot change the reset seat camera %d' % mode)
+	await verify_driver_barrier(scene)
 	if DisplayServer.get_name() == 'headless': print('NOTE: Dummy display cannot capture mouse; run this suite with a real display for look verification.')
 	scene.queue_free()
 	for i in 4: await process_frame
@@ -110,3 +138,34 @@ func run() -> void:
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func verify_driver_barrier(scene: Node3D) -> void:
+	scene.player.body_state.reset()
+	scene.player._apply_body_capabilities()
+	scene.setup_grab(2)
+	for i in 1200:
+		await physics_frame
+		if scene.player.is_grabbed(): break
+	check(scene.player.is_grabbed(), "Driver captured before introducing a blocking wall")
+	if not scene.player.is_grabbed(): return
+	scene.monster.set_physics_process(false)
+	scene.rv.freeze = true
+	await process_frame
+	var shoulder: Vector3 = scene.monster.grab_shoulder_position(1)
+	var wrist: Vector3 = scene.monster.grab.head_grip(scene.player.grab_contact_origin(), scene.monster.global_basis, 1)
+	var lengths: Vector2 = scene.monster.get_node("BodyMesh").arm_lengths(1)
+	check(scene.monster.grab.arm_path(shoulder, wrist, lengths, scene.monster.global_basis, 1, scene.player).blocked.is_empty(), "Seated elbow route is clear before introducing the wall")
+	var wall := StaticBody3D.new()
+	wall.name = "GrabBarrier"
+	var collision := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(6, 4, .1)
+	collision.shape = box
+	wall.add_child(collision)
+	scene.add_child(wall)
+	wall.global_basis = Basis.looking_at((wrist - shoulder).normalized())
+	wall.global_position = shoulder.lerp(wrist, .5)
+	await physics_frame
+	check(not scene.monster.grab.arm_path(shoulder, wrist, lengths, scene.monster.global_basis, 1, scene.player).blocked.is_empty(), "A solid wall blocks every seated elbow route")
+	scene.monster.grab.tick(1.0 / 60.0)
+	check(not scene.player.is_grabbed() and not scene.monster.grab.busy(), "Blocked driver capture releases both owners")

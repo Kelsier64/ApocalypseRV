@@ -180,18 +180,36 @@ func reach_clear_from(origin: Vector3, facing: Basis, target: CharacterBody3D) -
 		if start.distance_to(contact) > lengths.x + lengths.y - .005:
 			contact_failure = "arm_reach"
 			return false
-		var seated := is_instance_valid(target.seated_in)
-		# The enlarged arms clear the seatback with elbows angled outward,
-		# keeping the same corridor used by the visual IK below the cabin roof.
-		var pole := (Vector3.UP if seated else Vector3.DOWN) + facing.x * float(side) * (.75 if seated else .25)
-		var elbow := solve_elbow(start, contact, lengths, pole)
-		for segment in [[start, elbow], [elbow, contact]]:
+		var path := arm_path(start, contact, lengths, facing, side, target)
+		if not path.blocked.is_empty():
+			contact_failure = "blocked:" + path.blocked
+			return false
+	return true
+
+func arm_path(shoulder: Vector3, wrist: Vector3, lengths: Vector2, facing: Basis, side: int, target: Node3D) -> Dictionary:
+	var outward := facing.x * float(side)
+	var seated := is_instance_valid(target.seated_in)
+	var poles: Array[Vector3] = [(Vector3.UP if seated else Vector3.DOWN) + outward * (.75 if seated else .25)]
+	if seated:
+		# The bite lowers the shoulders. The initial outward elbow can then
+		# cross the seatback; try a higher bend before a wider route. Both
+		# gameplay and the rendered arm use these same collision-checked paths.
+		poles.append_array([Vector3.UP, Vector3.UP + outward * 1.5])
+		var seat_outward: Vector3 = target.seated_in.global_basis.x * (-1.0 if target.seated_in.to_local(shoulder).x < 0.0 else 1.0)
+		poles.append_array([Vector3.UP + seat_outward * 1.5, seat_outward])
+	var result := {"elbow": solve_elbow(shoulder, wrist, lengths, poles[0]), "blocked": ""}
+	for pole in poles:
+		var elbow := solve_elbow(shoulder, wrist, lengths, pole)
+		var blocked := ""
+		for segment in [[shoulder, elbow], [elbow, wrist]]:
 			var query := PhysicsRayQueryParameters3D.create(segment[0], segment[1], 1, [actor.get_rid(), target.get_rid()])
 			var hit := actor.get_world_3d().direct_space_state.intersect_ray(query)
 			if not hit.is_empty():
-				contact_failure = "blocked:" + str(hit.collider.name)
-				return false
-	return true
+				blocked = str(hit.collider.name)
+				break
+		if blocked.is_empty(): return {"elbow": elbow, "blocked": ""}
+		result.blocked = blocked
+	return result
 
 static func solve_elbow(shoulder: Vector3, wrist: Vector3, lengths: Vector2, pole: Vector3) -> Vector3:
 	var direction := (wrist - shoulder).normalized()

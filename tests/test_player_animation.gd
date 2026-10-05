@@ -81,6 +81,7 @@ func run() -> void:
 			await steps(2)
 			var peak := 0.0
 			var peak_bone := ""
+			var peak_frame := -1
 			var speed := 0.0
 			for frame in 90:
 				await steps(1)
@@ -89,10 +90,11 @@ func run() -> void:
 					if gap > peak:
 						peak = gap
 						peak_bone = link.child.get("bone_name")
+						peak_frame = frame
 				for body: PhysicalBone3D in actor.ragdoll_control.bodies.values():
 					speed = maxf(speed, body.linear_velocity.length())
 			check(peak < .025 and speed < 12, "%s %.2f physical handoff stays connected" % [clip, phase])
-			metrics.append({"clip": clip, "phase": phase, "peak_gap_m": peak, "peak_bone": peak_bone, "peak_speed": speed})
+			metrics.append({"clip": clip, "phase": phase, "peak_gap_m": peak, "peak_bone": peak_bone, "peak_frame": peak_frame, "peak_speed": speed})
 			await steps(60)
 			check(not actor.is_player_dead and driver.current_clip == "idle" and animation.is_playing(), "Respawn resumes locomotion")
 			actor.queue_free()
