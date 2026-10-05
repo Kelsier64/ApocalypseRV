@@ -1,0 +1,45 @@
+{
+  "url": "http://127.0.0.1:8000",
+  "health": {
+    "status": "ready",
+    "service": "pixal3d-api-v2",
+    "version": "0.2.0",
+    "active": 0,
+    "queued": 0,
+    "backend": {
+      "url": "http://127.0.0.1:8188",
+      "available": true
+    }
+  },
+  "docs_http": 200,
+  "openapi_version": "0.2.0",
+  "v2_jobs": [
+    {
+      "job_id": "89805b1b-24ff-4d51-b5e7-04fd805ded0f",
+      "download_sha256": "df64d240be90fa9ca011a8ae30374f7a4274d34a9997390d18099badaa2d4751",
+      "all_conditioning_preserved": true
+    },
+    {
+      "job_id": "721baa97-28d6-4fb5-8a45-484ff78e2578",
+      "download_sha256": "1b6e373fa673e5d5810c101370ec83cabbe9447978d2b818acec7fd535090ca7",
+      "all_conditioning_preserved": true
+    },
+    {
+      "job_id": "c2be2f67-d537-4ff7-be05-f5edda99eb87",
+      "download_sha256": "448f40a6049d7153fcfa27ca3abaf01b58d88b241eb109dd77b03e7fb77ac01e",
+      "all_conditioning_preserved": true
+    },
+    {
+      "job_id": "0712505c-9766-4ab3-84a0-9e99baedd3ec",
+      "download_sha256": "13dfde4a57d11a28fe0a402d08a6d57bb4c40e246dc3663b85670966b893314a",
+      "all_conditioning_preserved": true
+    }
+  ],
+  "legacy": {
+    "job_id": "56651a5d-b8c6-44ce-8eec-6e4c0848fdb7",
+    "download_sha256": "1cc115479d0254729d07496534c0a4000ffe38e602ac1d5cbbaae05cde626d53",
+    "metadata_unchanged": true,
+    "input_endpoints_http": 404
+  },
+  "backend_queue_empty": true
+}

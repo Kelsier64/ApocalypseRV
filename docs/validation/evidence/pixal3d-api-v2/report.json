@@ -1,0 +1,848 @@
+{
+  "date": "2026-10-05",
+  "service_version": "0.2.0",
+  "backend_url": "http://127.0.0.1:8188",
+  "backend_commit": "f1072eb",
+  "python": "3.12.10",
+  "godot": "4.7.2",
+  "source_sha256": {
+    "app.py": "29de4d2b8e1807f556394bc3f459897a79dadec9d319712e1a772e108d08bc30",
+    "deployment/bed_smoke.py": "a551edb264c73ccb356e99e0aa29182e15a304b3acfe34d37411d8e297cebcf8",
+    "deployment/recover_completed.py": "c4ff609be250d88e013c5d11510875d59bae5fc6c759d3338ef422d572d703c3",
+    "deployment/stop_api.py": "bb240f7809895f6f8e81917e53ca15ccfad8df6f170831d2ec8fa79c2e363166",
+    "pipeline.py": "90ba853cb3cdfd40ba118689a8c514bd0d00963a09cec4641799359e5e592239",
+    "service.py": "2433b0c50a18c5dd98a2985f14d1b5be7b08a33693fb74034f4e08efc2dc25eb",
+    "start.ps1": "abe2295fabe2fc4d343c8120c2aaf0e326b574fc5e00430263e9e5844f6afb24",
+    "stop.ps1": "df1d446d96a28494c6a71c9eac22028f0424f1e35fc159284c3c220f393d5e8a",
+    "tests/test_pipeline.py": "da8c130850c8d53e944f2ff2ba3b6961d88d778b998670f296b280c785540c1f",
+    "tests/test_service.py": "1d7c37c6c4a5c0c159bd4cfa8a67c694ee7e487c372353bfef97df2a3173ed87",
+    "workflows/preview512.json": "a147c46960fffe0ba1b10d42ea0679842946e5aa8b72d8c81b83caf547ee2281",
+    "workflows/standard1024.json": "73c18c5e1285b8e9f8e0e135b636238e3bdc2f6f6d425f3954e376bdb0afa955",
+    "workflows/threeview1024.json": "023b898612e7c9811a1df30264d39e0c3ff4abb5acfe471884e178a138f85539",
+    "workflows/threeview512.json": "d87eb1070c30e793160fb2433615e83c0226dd074f7fcc8455aea71451589310"
+  },
+  "cases": [
+    {
+      "case": "sheet_512",
+      "request": {
+        "endpoint": "/jobs",
+        "image": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\bunker_bunk_bed\\straightness_trials\\framed_v2\\framed_reference.png",
+        "options": {
+          "asset_id": "bunker_bunk_bed",
+          "preset": "threeview512",
+          "seed": "42",
+          "background": "auto",
+          "fov": "20.0"
+        },
+        "idempotency_key": "v2-bed-smoke-sheet_512"
+      },
+      "job_id": "89805b1b-24ff-4d51-b5e7-04fd805ded0f",
+      "prompt_id": "96eedfa7-56d6-412b-a26e-8f292b4cb543",
+      "state": "succeeded",
+      "needs_art_review": true,
+      "download": {
+        "glb_sha256": "df64d240be90fa9ca011a8ae30374f7a4274d34a9997390d18099badaa2d4751",
+        "conditioning": {
+          "front": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              43,
+              109,
+              983,
+              931
+            ],
+            "sha256": "a5452d182e161570e079ada8fcfd66e26ab3e948fedc7c74b3b19acbfeac2eaf"
+          },
+          "left": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              275,
+              102,
+              748,
+              930
+            ],
+            "sha256": "42ae2529c080f406a20f65c0a7eb8bc67b51ef31663f7d229e9dcdf17ab98e24"
+          },
+          "back": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              43,
+              110,
+              983,
+              928
+            ],
+            "sha256": "2bde062ae652fa3fa0d6898ef442ae71a6dae7fcebd8d95eb5b6459146ba8764"
+          }
+        }
+      },
+      "inputs": {
+        "background_modes": {
+          "back": "black",
+          "front": "black",
+          "left": "black"
+        },
+        "fov": 20.0,
+        "framing": "shared_square_canvas",
+        "input_sha256": {
+          "image": "bd9ab1657bc80809a95d6f7fe8d686a53a67cf9cf388298352d682679e80ec2e"
+        },
+        "mode": "multiview",
+        "original_background_modes": {
+          "back": "black",
+          "front": "black",
+          "left": "black"
+        },
+        "prepared_dimensions": {
+          "back": [
+            1024,
+            1024
+          ],
+          "front": [
+            1024,
+            1024
+          ],
+          "left": [
+            1024,
+            1024
+          ]
+        },
+        "prepared_rgb_bounds": {
+          "back": [
+            43,
+            110,
+            983,
+            928
+          ],
+          "front": [
+            43,
+            109,
+            983,
+            931
+          ],
+          "left": [
+            275,
+            102,
+            748,
+            930
+          ]
+        },
+        "preset": "threeview512",
+        "source_dimensions": {
+          "image": [
+            2172,
+            724
+          ]
+        },
+        "workflow_revision": "shared-frame-v2:b50da2dc09482af7ef147c6b1f7589e82fafe37745716a00c4200b1b1af7e721"
+      },
+      "godot_review": {
+        "axis_scaling": false,
+        "display_aabb_size": [
+          0.94382244348526,
+          0.823292255401611,
+          0.49247670173645
+        ],
+        "godot_version": "4.7.2-stable (official)",
+        "input": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\pixal3d-api-v2\\validation\\sheet_512/raw.glb",
+        "mesh_instances": 1,
+        "sha256": "df64d240be90fa9ca011a8ae30374f7a4274d34a9997390d18099badaa2d4751",
+        "triangles": 9981,
+        "vertices": 8199
+      },
+      "measurements": {
+        "case": "sheet_512",
+        "pose_method": "Yaw-only minimum XZ footprint (-0.1 degrees); preserves source up",
+        "extent": [
+          0.9438226955127812,
+          0.8232922852039337,
+          0.49247670241693353
+        ],
+        "height_per_length": 0.8722954948192224,
+        "depth_per_length": 0.5217894258723772,
+        "corner_gap_post_fits": [
+          {
+            "corner": "left_near",
+            "surface_samples_in_roi": 2667,
+            "bands": 8,
+            "axis": [
+              0.017253338215914935,
+              0.9993619471325802,
+              0.03127332639463298
+            ],
+            "tilt_degrees": 2.0468643274032776
+          },
+          {
+            "corner": "left_far",
+            "surface_samples_in_roi": 2598,
+            "bands": 8,
+            "axis": [
+              0.016118464682333605,
+              0.9998126028728662,
+              -0.01072167117890592
+            ],
+            "tilt_degrees": 1.1092409061887663
+          },
+          {
+            "corner": "right_near",
+            "surface_samples_in_roi": 1730,
+            "bands": 8,
+            "axis": [
+              -0.020688492273152923,
+              0.999177465741252,
+              0.034876614548329216
+            ],
+            "tilt_degrees": 2.3240442937285395
+          },
+          {
+            "corner": "right_far",
+            "surface_samples_in_roi": 2550,
+            "bands": 8,
+            "axis": [
+              -0.024731755678932946,
+              0.9994203755395005,
+              -0.02339344390040209
+            ],
+            "tilt_degrees": 1.9508863143238242
+          }
+        ],
+        "mean_post_tilt_from_up_degrees": 0.4905075073911536,
+        "max_post_deviation_from_mean_degrees": 2.1881466161491776,
+        "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+        "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+      },
+      "idempotency": {
+        "same_job_id": true,
+        "duplicate": {
+          "job_id": "89805b1b-24ff-4d51-b5e7-04fd805ded0f",
+          "state": "running",
+          "reused": true
+        }
+      },
+      "recovery": {
+        "at": 1791169602.9266396,
+        "previous_error": "Invalid backend artifact folder",
+        "same_prompt_id": "96eedfa7-56d6-412b-a26e-8f292b4cb543"
+      },
+      "restart": {
+        "after_state": "running",
+        "backend_interrupted": false,
+        "before_state": "running",
+        "prompt_id": "96eedfa7-56d6-412b-a26e-8f292b4cb543",
+        "same_prompt_id": true
+      }
+    },
+    {
+      "case": "separate_1024",
+      "request": {
+        "endpoint": "/jobs/multiview",
+        "image": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\bunker_bunk_bed\\straightness_trials\\framed_v2\\framed_reference.png",
+        "options": {
+          "asset_id": "bunker_bunk_bed",
+          "preset": "threeview1024",
+          "seed": "42",
+          "background": "auto",
+          "fov": "20.0"
+        },
+        "idempotency_key": "v2-bed-smoke-separate_1024"
+      },
+      "job_id": "721baa97-28d6-4fb5-8a45-484ff78e2578",
+      "prompt_id": "d73dc52d-87fb-4d52-9b6d-318c8e2baf76",
+      "state": "succeeded",
+      "needs_art_review": true,
+      "download": {
+        "glb_sha256": "1b6e373fa673e5d5810c101370ec83cabbe9447978d2b818acec7fd535090ca7",
+        "conditioning": {
+          "front": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              43,
+              109,
+              983,
+              931
+            ],
+            "sha256": "01fe198f9ec3c46539aaca50d0f804600eb53138814238254dd85dc01d499119"
+          },
+          "left": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              275,
+              102,
+              748,
+              930
+            ],
+            "sha256": "e1733f9f2cfae91af6ff9eade7021260e5af07a19fb270bf4af86ace34170f4f"
+          },
+          "back": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              43,
+              110,
+              983,
+              928
+            ],
+            "sha256": "1e4f56eb1ecb4a1ee7f8ad8fe8bb8976b4064f48d163e098b26098137daed6a4"
+          }
+        }
+      },
+      "inputs": {
+        "mode": "multiview",
+        "preset": "threeview1024",
+        "fov": 20.0,
+        "framing": "shared_square_canvas",
+        "source_dimensions": {
+          "front": [
+            724,
+            724
+          ],
+          "left": [
+            724,
+            724
+          ],
+          "back": [
+            724,
+            724
+          ]
+        },
+        "prepared_dimensions": {
+          "front": [
+            1024,
+            1024
+          ],
+          "left": [
+            1024,
+            1024
+          ],
+          "back": [
+            1024,
+            1024
+          ]
+        },
+        "input_sha256": {
+          "front": "8ac7cddef44fcd29d916d4fb96a65a0ec4840f292fb3b02413c0b79c339e84d3",
+          "left": "e6b3e6aebdacc5648b1f7e0a1fa70ddefe16b1bc6bdf47219455113ee615d13f",
+          "back": "093b957e527fefb9b8f93c0bd935f1fbb68714d3275db15447dce785885e5abc"
+        },
+        "original_background_modes": {
+          "front": "black",
+          "left": "black",
+          "back": "black"
+        },
+        "background_modes": {
+          "front": "black",
+          "left": "black",
+          "back": "black"
+        },
+        "prepared_rgb_bounds": {
+          "front": [
+            43,
+            109,
+            983,
+            931
+          ],
+          "left": [
+            275,
+            102,
+            748,
+            930
+          ],
+          "back": [
+            43,
+            110,
+            983,
+            928
+          ]
+        },
+        "workflow_revision": "shared-frame-v2:92e910b181e1aea49e7f9ba2e982cda34e70cc218cf245d09003a0b9a15e234c"
+      },
+      "godot_review": {
+        "axis_scaling": false,
+        "display_aabb_size": [
+          0.938619136810303,
+          0.810740947723389,
+          0.48471537232399
+        ],
+        "godot_version": "4.7.2-stable (official)",
+        "input": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\pixal3d-api-v2\\validation\\separate_1024/raw.glb",
+        "mesh_instances": 1,
+        "sha256": "1b6e373fa673e5d5810c101370ec83cabbe9447978d2b818acec7fd535090ca7",
+        "triangles": 9936,
+        "vertices": 8152
+      },
+      "measurements": {
+        "case": "separate_1024",
+        "pose_method": "Yaw-only minimum XZ footprint (0.8 degrees); preserves source up",
+        "extent": [
+          0.9386199921714913,
+          0.8107409775257111,
+          0.48471531577409505
+        ],
+        "height_per_length": 0.8637584797763225,
+        "depth_per_length": 0.5164127333924662,
+        "corner_gap_post_fits": [
+          {
+            "corner": "left_near",
+            "surface_samples_in_roi": 2395,
+            "bands": 8,
+            "axis": [
+              0.01204722636618205,
+              0.9997939391716524,
+              0.016338406669931735
+            ],
+            "tilt_degrees": 1.163168972225337
+          },
+          {
+            "corner": "left_far",
+            "surface_samples_in_roi": 2483,
+            "bands": 8,
+            "axis": [
+              0.006479550845372589,
+              0.999872314159263,
+              -0.014607217347671059
+            ],
+            "tilt_degrees": 0.9156165238595994
+          },
+          {
+            "corner": "right_near",
+            "surface_samples_in_roi": 1266,
+            "bands": 8,
+            "axis": [
+              -0.010379373467084218,
+              0.9998727044415552,
+              0.01211790077370282
+            ],
+            "tilt_degrees": 0.9142160945254604
+          },
+          {
+            "corner": "right_far",
+            "surface_samples_in_roi": 2782,
+            "bands": 8,
+            "axis": [
+              0.024918978177180615,
+              0.999541244897469,
+              -0.017214652927754644
+            ],
+            "tilt_degrees": 1.735580205940856
+          }
+        ],
+        "mean_post_tilt_from_up_degrees": 0.47618660836492743,
+        "max_post_deviation_from_mean_degrees": 1.3382350544640114,
+        "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+        "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+      },
+      "idempotency": {
+        "same_job_id": true,
+        "duplicate": {
+          "job_id": "721baa97-28d6-4fb5-8a45-484ff78e2578",
+          "state": "running",
+          "reused": true
+        }
+      },
+      "recovery": null
+    },
+    {
+      "case": "single_alpha_512",
+      "request": {
+        "endpoint": "/jobs",
+        "image": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\bunker_bunk_bed\\straightness_trials\\level_reference.png",
+        "options": {
+          "asset_id": "bunker_bunk_bed",
+          "preset": "preview512",
+          "seed": "42",
+          "background": "alpha",
+          "fov": "20.0"
+        },
+        "idempotency_key": "v2-bed-smoke-single_alpha_512"
+      },
+      "job_id": "c2be2f67-d537-4ff7-be05-f5edda99eb87",
+      "prompt_id": "486b6801-a22e-4360-a930-7235ffb9080c",
+      "state": "succeeded",
+      "needs_art_review": true,
+      "download": {
+        "glb_sha256": "448f40a6049d7153fcfa27ca3abaf01b58d88b241eb109dd77b03e7fb77ac01e",
+        "conditioning": {
+          "image": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              46,
+              116,
+              979,
+              906
+            ],
+            "sha256": "576c10ff7de71c81238199d2ac0e2de0bbbc57aef54bb6419f3c09404e108a06"
+          }
+        }
+      },
+      "inputs": {
+        "mode": "single",
+        "preset": "preview512",
+        "fov": 20.0,
+        "framing": "single_object_crop",
+        "source_dimensions": {
+          "image": [
+            1536,
+            1024
+          ]
+        },
+        "prepared_dimensions": {
+          "image": [
+            1536,
+            1024
+          ]
+        },
+        "input_sha256": {
+          "image": "4032c756723ce082b65fa1acd132a4aac040fee413b3993155c67a2181b6afd1"
+        },
+        "original_background_modes": {
+          "image": "alpha"
+        },
+        "background_modes": {
+          "image": "alpha"
+        },
+        "prepared_rgb_bounds": {
+          "image": [
+            0,
+            0,
+            1536,
+            1024
+          ]
+        },
+        "workflow_revision": "shared-frame-v2:2d2380b89f7774c0707806ab37d4f7127050799f6b720078040618068a008f25"
+      },
+      "godot_review": {
+        "axis_scaling": false,
+        "display_aabb_size": [
+          0.909873604774475,
+          0.73204493522644,
+          0.480011254549026
+        ],
+        "godot_version": "4.7.2-stable (official)",
+        "input": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\pixal3d-api-v2\\validation\\single_alpha_512/raw.glb",
+        "mesh_instances": 1,
+        "sha256": "448f40a6049d7153fcfa27ca3abaf01b58d88b241eb109dd77b03e7fb77ac01e",
+        "triangles": 9832,
+        "vertices": 8253
+      },
+      "measurements": {
+        "case": "single_alpha_512",
+        "pose_method": "Yaw-only minimum XZ footprint (-36.7 degrees); preserves source up",
+        "extent": [
+          0.9098708013319521,
+          0.7320449352264404,
+          0.48001894770432835
+        ],
+        "height_per_length": 0.8045592123132275,
+        "depth_per_length": 0.5275682514502419,
+        "corner_gap_post_fits": [
+          {
+            "corner": "left_near",
+            "surface_samples_in_roi": 1054,
+            "bands": 8,
+            "axis": [
+              0.05449254853456018,
+              0.996982748409699,
+              0.05528075187306455
+            ],
+            "tilt_degrees": 4.451974325583087
+          },
+          {
+            "corner": "left_far",
+            "surface_samples_in_roi": 870,
+            "bands": 8,
+            "axis": [
+              0.001872893956111918,
+              0.9998909021867725,
+              0.014651825563774529
+            ],
+            "tilt_degrees": 0.8463492262664177
+          },
+          {
+            "corner": "right_near",
+            "surface_samples_in_roi": 1388,
+            "bands": 8,
+            "axis": [
+              0.04458812088433718,
+              0.995853775914309,
+              0.07929159144081253
+            ],
+            "tilt_degrees": 5.219323146402241
+          },
+          {
+            "corner": "right_far",
+            "surface_samples_in_roi": 1990,
+            "bands": 8,
+            "axis": [
+              0.11124037327599162,
+              0.9930506710245918,
+              0.0384180183120668
+            ],
+            "tilt_degrees": 6.758664545605678
+          }
+        ],
+        "mean_post_tilt_from_up_degrees": 4.065034273259883,
+        "max_post_deviation_from_mean_degrees": 3.4735196825164296,
+        "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+        "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+      },
+      "idempotency": {
+        "same_job_id": true,
+        "duplicate": {
+          "job_id": "c2be2f67-d537-4ff7-be05-f5edda99eb87",
+          "state": "queued",
+          "reused": true
+        }
+      },
+      "recovery": null
+    },
+    {
+      "case": "auto_remove_512",
+      "request": {
+        "endpoint": "/jobs/multiview",
+        "image": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\pixal3d-api-v2\\validation\\white_background_fixture.png",
+        "options": {
+          "asset_id": "bunker_bunk_bed",
+          "preset": "threeview512",
+          "seed": "42",
+          "background": "auto"
+        },
+        "idempotency_key": "v2-bed-smoke-auto_remove_512"
+      },
+      "job_id": "0712505c-9766-4ab3-84a0-9e99baedd3ec",
+      "prompt_id": "0ee11121-078d-46d4-bdf5-584f9a56fdb0",
+      "state": "succeeded",
+      "needs_art_review": true,
+      "download": {
+        "glb_sha256": "13dfde4a57d11a28fe0a402d08a6d57bb4c40e246dc3663b85670966b893314a",
+        "conditioning": {
+          "front": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              44,
+              110,
+              983,
+              929
+            ],
+            "sha256": "f7831fd2dbd8fb1e995b1dbc39c5ffe75f53be39061a5c4077c87dfd0320973c"
+          },
+          "left": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              276,
+              101,
+              749,
+              931
+            ],
+            "sha256": "c1e7ef5fc71d4b6d52bc001143b646939b03a95d656c590842d39a25be5dac06"
+          },
+          "back": {
+            "size": [
+              1024,
+              1024
+            ],
+            "rgb_bounds": [
+              43,
+              110,
+              982,
+              930
+            ],
+            "sha256": "17cbcf13ddb4993a977ea65ccdc763e3ba5f1008b990b1cb3ad86fe4241293ad"
+          }
+        }
+      },
+      "inputs": {
+        "mode": "multiview",
+        "preset": "threeview512",
+        "fov": 20.0,
+        "framing": "shared_square_canvas",
+        "source_dimensions": {
+          "front": [
+            724,
+            724
+          ],
+          "left": [
+            724,
+            724
+          ],
+          "back": [
+            724,
+            724
+          ]
+        },
+        "prepared_dimensions": {
+          "front": [
+            1024,
+            1024
+          ],
+          "left": [
+            1024,
+            1024
+          ],
+          "back": [
+            1024,
+            1024
+          ]
+        },
+        "input_sha256": {
+          "front": "7c266d7743d1c74ab6a083f57977af31ca7edee6d9c0fd072f4c13c66051fe69",
+          "left": "dfa20fbc80b1672ca9f905cb9598f34a58fced75814b078f539901706e61647d",
+          "back": "ed71121fd87a5ff0b452278f707683a9c6751bb2f37ec215676789d7e71a2f0f"
+        },
+        "original_background_modes": {
+          "front": "remove",
+          "left": "remove",
+          "back": "remove"
+        },
+        "background_modes": {
+          "front": "remove",
+          "left": "remove",
+          "back": "remove"
+        },
+        "prepared_rgb_bounds": {
+          "front": [
+            0,
+            0,
+            1024,
+            1024
+          ],
+          "left": [
+            0,
+            0,
+            1024,
+            1024
+          ],
+          "back": [
+            0,
+            0,
+            1024,
+            1024
+          ]
+        },
+        "workflow_revision": "shared-frame-v2:b50da2dc09482af7ef147c6b1f7589e82fafe37745716a00c4200b1b1af7e721"
+      },
+      "godot_review": {
+        "axis_scaling": false,
+        "display_aabb_size": [
+          0.947596311569214,
+          0.823233246803284,
+          0.482199251651764
+        ],
+        "godot_version": "4.7.2-stable (official)",
+        "input": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\pixal3d-api-v2\\validation\\auto_remove_512/raw.glb",
+        "mesh_instances": 1,
+        "sha256": "13dfde4a57d11a28fe0a402d08a6d57bb4c40e246dc3663b85670966b893314a",
+        "triangles": 9988,
+        "vertices": 8423
+      },
+      "measurements": {
+        "case": "auto_remove_512",
+        "pose_method": "Yaw-only minimum XZ footprint (0.4 degrees); preserves source up",
+        "extent": [
+          0.9475963043982484,
+          0.8232332170009613,
+          0.4821992259119603
+        ],
+        "height_per_length": 0.8687594212640357,
+        "depth_per_length": 0.5088656674512582,
+        "corner_gap_post_fits": [
+          {
+            "corner": "left_near",
+            "surface_samples_in_roi": 2030,
+            "bands": 8,
+            "axis": [
+              0.008064744195051012,
+              0.9999541054226032,
+              0.005171745309811403
+            ],
+            "tilt_degrees": 0.5489338075929517
+          },
+          {
+            "corner": "left_far",
+            "surface_samples_in_roi": 2006,
+            "bands": 8,
+            "axis": [
+              0.0017981281358875612,
+              0.9999935450470758,
+              -0.0031107232902943824
+            ],
+            "tilt_degrees": 0.20586589443456327
+          },
+          {
+            "corner": "right_near",
+            "surface_samples_in_roi": 1262,
+            "bands": 8,
+            "axis": [
+              0.027121876001705313,
+              0.999266450777839,
+              0.027036349457882986
+            ],
+            "tilt_degrees": 2.1947184385000114
+          },
+          {
+            "corner": "right_far",
+            "surface_samples_in_roi": 2068,
+            "bands": 8,
+            "axis": [
+              0.011473674639577044,
+              0.999317168673232,
+              0.0351219473432226
+            ],
+            "tilt_degrees": 2.117478768767242
+          }
+        ],
+        "mean_post_tilt_from_up_degrees": 1.1526413433231233,
+        "max_post_deviation_from_mean_degrees": 1.2473488971840276,
+        "sampling": "200000 area-weighted surface points, fixed diagnostic RNG 7",
+        "limitations": "Approximate median fits in 40-65% height corner regions only; not a full-post or rail-straightness guarantee. ROI may overlap ladder or rails. No geometry edits."
+      },
+      "idempotency": {
+        "same_job_id": true,
+        "duplicate": {
+          "job_id": "0712505c-9766-4ab3-84a0-9e99baedd3ec",
+          "state": "running",
+          "reused": true
+        }
+      },
+      "recovery": null
+    }
+  ],
+  "sheet_and_separate_conditioning_pixels_identical": true,
+  "invalid_sheet": {
+    "status_code": 422,
+    "response": {
+      "detail": "Three-view sheet must be exactly 3:1: three equal square panels, front / left / back. Use /jobs/multiview for separate square views."
+    },
+    "queue_unchanged": true
+  },
+  "limits": [
+    "Bed only; no world integration, collision or gameplay validation.",
+    "Tilt is an approximate median fit in the open 40-65% height corner region, not a full geometry guarantee.",
+    "First 512 job required Windows-path artifact recovery; same prompt was reused, not generated again.",
+    "Timing of recovered first job includes the API repair interval and is not a speed benchmark."
+  ]
+}

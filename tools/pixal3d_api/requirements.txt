@@ -1,0 +1,7 @@
+# Versions verified with the existing Pixal3D-API Python 3.12 environment.
+fastapi==0.142.2
+uvicorn==0.54.0
+python-multipart==0.0.32
+Pillow==12.3.0
+requests==2.34.2
+psutil==7.2.2

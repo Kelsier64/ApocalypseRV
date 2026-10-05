@@ -1,5 +1,7 @@
 # Pixal3D 床模型平直度研究
 
+此文件保存 API V2 實作前的研究與當時結果。後續已把共同畫布流程實作為新服務，見 [2026-10-05 API V2 與床測試](../validation/2026-10-05-pixal3d-api-v2.md)；原批次及下列研究數據維持原樣。
+
 本輪只測試 [上下舖床 request](../modeling/requests/bunker-bunk-bed/bunker-bunk-bed.md)。先將 `origin/main` 合併到模型試作分支；使用本機 `127.0.0.1:8000` API 與同一個 `8188` ComfyUI 後端，保留每次原始 GLB、參考圖、prompt、seed、SHA256 與 Godot 預覽。正式場景仍使用既有 graybox。
 
 ## 結論與操作建議

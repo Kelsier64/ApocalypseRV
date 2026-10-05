@@ -42,6 +42,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 指南
 
+- [Pixal3D API V2 使用說明](../tools/pixal3d_api/README.md) — 單圖／共同畫布多視圖、FOV、conditioning 下載與工作恢復。
+
 - [Raker 資產建置入口](guides/asset-builds.md) — 目前 v021 來源流程與舊腳本移除紀錄。
 
 - [程式與資產目錄指南](guides/codebase.md) — 進入專案、追查場景依賴、維護原始美術與安全清理。
@@ -61,6 +63,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-10-05 Pixal3D API V2](validation/2026-10-05-pixal3d-api-v2.md) — 新 API 部署、24 個 Python／HTTP 測試、4 個床實測與 20 張 Godot 預覽、舊模型下載相容性。
 
 - [2026-10-04 Pixal3D API 模型試作](validation/2026-10-04-pixal3d-requests.md) — 16 份需求、18 個候選 GLB，含 Godot 匯入／尺寸檢查、預覽及未完成的遊戲接口。
 

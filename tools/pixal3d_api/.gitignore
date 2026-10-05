@@ -1,0 +1,7 @@
+__pycache__/
+jobs/
+inputs/
+validation/
+deployment/*.pid
+deployment/*.log
+.venv/
