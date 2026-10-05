@@ -35,6 +35,13 @@ func check_thumb_forward(actor: Node3D, skeleton: Skeleton3D, side: String, note
 		var thumb := skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone("thumb_" + segment + "_" + side)).basis.y.normalized()
 		check(thumb.dot(front) > .1, note + " thumb " + segment + " points forward, not toward the player (%.3f)" % thumb.dot(front))
 
+func check_small_hold_height(actor: Node3D, skeleton: Skeleton3D, note: String) -> void:
+	var shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("upper_arm_R")).origin)
+	var wrist := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_R")).origin)
+	var elbow := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_R")).origin)
+	check(wrist.y < shoulder.y, note + " keeps the holding wrist below the shoulder")
+	check(elbow.y < shoulder.y, note + " keeps the holding elbow below the shoulder")
+
 func check_box_contact(actor: Node3D, skeleton: Skeleton3D, side: String, note: String) -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var box: AABB = carry.bounds.grow(-.006)
@@ -58,7 +65,12 @@ func check_flashlight_grip(actor: Node3D, skeleton: Skeleton3D) -> void:
 			var joint := body.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(bone).origin)
 			var distance := Vector2(joint.x, joint.z).length()
 			check(distance >= radius, "Flashlight " + finger + segment + " stays outside the barrel")
-			if segment == "02": check(distance < radius + .025, "Flashlight " + finger + " wraps close to the barrel")
+			if segment == "02":
+				check(distance < radius + .025, "Flashlight " + finger + " wraps close to the barrel")
+				var direction := body.global_basis.inverse() * skeleton.global_basis * skeleton.get_bone_global_pose(bone).basis.y
+				var radial_direction := Vector2(direction.x, direction.z)
+				var closest := maxf(0.0, -Vector2(joint.x, joint.z).dot(radial_direction) / maxf(radial_direction.length_squared(), .000001))
+				check((Vector2(joint.x, joint.z) + radial_direction * closest).length() >= radius, "Flashlight " + finger + " distal direction clears the solid barrel")
 
 func palm_position(skeleton: Skeleton3D, side: String) -> Vector3:
 	var hand := skeleton.find_bone("hand_" + side)
@@ -88,6 +100,26 @@ func release_pose(actor: CharacterBody3D, raker: Raker) -> void:
 	actor.set_physics_process(false)
 	actor.camera.rotation = Vector3.ZERO
 	await steps(20)
+
+func check_prone_hold_height(arena: Node3D) -> void:
+	var prone_actor = preload("res://player/player.tscn").instantiate()
+	arena.add_child(prone_actor)
+	prone_actor.body_state.sever(&"left_leg")
+	prone_actor._apply_body_capabilities()
+	await steps(40)
+	check(prone_actor.is_crawling(), "Prone hold fixture uses production injury state")
+	for key in ["flashlight", "scrap", "battery", "engine_repair_kit"]:
+		prone_actor.inventory.items.clear()
+		prone_actor.inventory.active_slot = 0
+		prone_actor.add_item(key, false, "res://props/" + key + ".tscn")
+		await steps(20)
+		var held: Node3D = prone_actor.held_item_node
+		var carry: Node = prone_actor.get_node("Visuals/Carry")
+		var world_bounds: AABB = held.get_parent().global_transform * carry.bounds
+		check(held.is_visible_in_tree(), key + " remains held while prone and stationary")
+		check(world_bounds.position.y > 0.0, key + " prone hold keeps the full-sized prop above the floor")
+	prone_actor.queue_free()
+	await steps(2)
 
 func check_grab_hand_selection(arena: Node3D, actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node) -> void:
 	# Freeze actor motion and the Raker's grab clock; keep real pose overlays running.
@@ -146,7 +178,7 @@ func run() -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
 	var driver: Node = actor.get_node("Visuals/Locomotion")
-	for key in ["flashlight", "scrap", "battery", "oil_barrel", "engine_standard"]:
+	for key in ["flashlight", "scrap", "battery", "engine_repair_kit", "oil_barrel", "engine_standard"]:
 		actor.inventory.items.clear()
 		actor.inventory.active_slot = 0
 		var large: bool = key in ["oil_barrel", "engine_standard"]
@@ -168,13 +200,15 @@ func run() -> void:
 		for side in (["R", "L"] if large else ["R"]):
 			check_fingers(skeleton, side, key + " " + side)
 			check_thumb_forward(actor, skeleton, side, key + " idle " + side)
-			if key in ["scrap", "battery"]: check_box_contact(actor, skeleton, side, key)
+			if key in ["scrap", "battery", "engine_repair_kit"]: check_box_contact(actor, skeleton, side, key)
+		if not large: check_small_hold_height(actor, skeleton, key + " idle")
 		if key == "flashlight": check_flashlight_grip(actor, skeleton)
 		for pitch in [-.45, 0.0, .45]:
 			actor.camera.rotation.x = pitch
 			Input.action_press("move_forward")
 			await steps(20)
 			check(driver.current_clip == "jog_forward", "Holding preserves locomotion")
+			if not large: check_small_hold_height(actor, skeleton, key + " moving at pitch " + str(pitch))
 			if key == "flashlight": check_flashlight_grip(actor, skeleton)
 			for side in (["R", "L"] if large else ["R"]):
 				check_thumb_forward(actor, skeleton, side, key + " moving " + side)
@@ -226,6 +260,7 @@ func run() -> void:
 	await steps(30)
 	check(carry.right_weight == 0 and carry.left_weight == 0 and carry.base_rotations.is_empty(), "Empty hands restore clean locomotion")
 	await check_grab_hand_selection(arena, actor, skeleton, carry)
+	await check_prone_hold_height(arena)
 	arena.queue_free()
 	await steps(2)
 	for failure in failures: push_error(failure)

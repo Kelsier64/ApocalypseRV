@@ -51,7 +51,7 @@ hold_rotation = Vector3(-90, 0, 0)
 mesh = SubResource("body")
 
 [node name="GripRight" type="Marker3D" parent="."]
-position = Vector3(0.060, -0.045, -0.025)
+position = Vector3(0.060, -0.045, 0)
 
 [node name="Grip" type="MeshInstance3D" parent="."]
 position = Vector3(0, -0.045, 0)
