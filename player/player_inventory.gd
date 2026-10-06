@@ -6,13 +6,18 @@ const MAX_SLOTS := 6
 var items: Array[Dictionary] = []
 var active_slot: int = 0
 
-func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+func can_add_item(is_large: bool) -> bool:
 	if items.size() >= MAX_SLOTS:
 		return false
 	if is_large:
 		for item in items:
 			if item.get("is_large", false):
 				return false
+	return true
+
+func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+	if not can_add_item(is_large):
+		return false
 	items.append({"name": item_name, "is_large": is_large, "scene_path": scene_path, "state": state.duplicate(true)})
 	if is_large:
 		active_slot = items.size() - 1

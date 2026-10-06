@@ -12,8 +12,8 @@ material = SubResource("mat")
 [sub_resource type="BoxShape3D" id="shape"]
 size = Vector3(1, 0.6, 0.7)
 [node name="ItemBox" type="RigidBody3D"]
-definition = ExtResource("def")
 script = ExtResource("1")
+definition = ExtResource("def")
 equipment_name = "道具箱"
 destroy_on_zero_health = false
 mass = 30.0

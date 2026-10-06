@@ -46,7 +46,7 @@ func _run() -> void:
 	if not await settle(world):
 		quit(1)
 		return
-	var flashlight: Prop
+	var flashlight: Item
 	for actor in world.get_node("WorldEntities").get_children():
 		if actor.scene_file_path == "res://props/flashlight.tscn": flashlight = actor
 	check(is_instance_valid(flashlight), "Fresh shelter provides a flashlight")

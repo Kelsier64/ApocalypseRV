@@ -1,6 +1,6 @@
 extends RefCounted
 class_name RVConnection
-## Shared equipment-to-RV contract. Avoid a Chassis/Equipment preload cycle.
+## Shared equipment-to-RV contract. Avoid a Chassis/Item preload cycle.
 
 static func is_rv(node: Node) -> bool:
 	return is_instance_valid(node) and node is Node3D and node.is_in_group(Groups.RV) \

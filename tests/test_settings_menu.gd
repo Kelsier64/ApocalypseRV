@@ -164,7 +164,7 @@ func run() -> void:
 	await tap(KEY_1)
 	await tap(KEY_G)
 	check(player.inventory.active_slot == before_slot and player.inventory.items.size() == before_items, "Menu consumes hotbar and drop events")
-	var scrap: Prop = load("res://props/scrap.tscn").instantiate()
+	var scrap: Item = load("res://props/scrap.tscn").instantiate()
 	scrap.position = player.position + Vector3(0, 1.6, -1.5)
 	scrap.freeze = true
 	arena.add_child(scrap)
@@ -240,7 +240,7 @@ func test_seat_and_carrier(settings: Node) -> void:
 	rv.position.y = 1.2
 	rv.set_physics_process(false)
 	await frames(3)
-	var seat: Equipment = rv.get_node("DriverSeat")
+	var seat: Item = rv.get_node("DriverSeat")
 	seat.interact_hold(player)
 	check(player.seated_in == seat, "Production mounted seat accepts the test driver")
 	settings.set_setting("drive_fov", 96.0)
@@ -307,7 +307,7 @@ func test_seat_and_carrier(settings: Node) -> void:
 
 func test_limb_settings() -> void:
 	var intact := {"items": player.inventory.items.duplicate(true), "slot": player.inventory.active_slot, "health": player.current_player_health, "transform": player.global_transform, "body": player.body_state.capture()}
-	var seat: Equipment = rv_shell.get_node("Chassis/DriverSeat")
+	var seat: Item = rv_shell.get_node("Chassis/DriverSeat")
 	seat.interact_hold(player)
 	check(player.seated_in == seat and menu.open_menu(), "Intact driver opens settings before injury")
 	player.sever_part(&"left_arm", {})
@@ -343,17 +343,19 @@ func test_limb_settings() -> void:
 	await frames(3)
 
 func test_lifecycle() -> void:
-	var tablet: Equipment = rv_shell.get_node("Chassis/TabletScreen")
+	var tablet: Item = rv_shell.get_node("Chassis/TabletScreen")
 	tablet.interact_hold(player)
 	check(player.in_ui_mode and tablet.current_user == player, "Production mounted tablet owns player input")
 	check(not menu.open_menu(), "Tablet ownership refuses settings entry")
 	await tap(KEY_ESCAPE)
 	check(not player.in_ui_mode and not player.settings_open, "Tablet Escape closes tablet without opening settings")
-	var equipment: Equipment = rv_shell.get_node("Chassis/Generator")
-	equipment.start_placement(player)
-	check(player.is_placing_equipment(), "Production equipment begins a placement preview")
+	var equipment: Item = rv_shell.get_node("Chassis/Generator")
+	var equipment_id := equipment.persistent_id
+	check(equipment.pickup(player).begins_with("已拾取"), "Production equipment enters inventory before placement")
+	check(player.enter_equipment_placement(), "Production Item begins inventory-backed placement preview")
 	await tap(KEY_ESCAPE)
 	check(not player.is_placing_equipment() and not player.settings_open, "Placement Escape cancels preview without opening settings")
+	check(player.inventory.active_item().state.id == equipment_id, "Escape cancellation keeps held Item ownership")
 	await tap(KEY_ESCAPE)
 	check(player.settings_open, "Next Escape opens settings after tablet is closed")
 	var monster: Raker = load("res://enemies/raker.tscn").instantiate()

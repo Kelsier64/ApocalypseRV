@@ -31,7 +31,7 @@ var strike_clip := ""
 var next_left := true
 var reaction_remaining := 0.0
 var death_remaining := 18.0
-var corpse_prop: Prop
+var corpse_prop: Item
 var grab: Node
 var ragdoll: Node
 var impact_stagger_remaining := 0.0

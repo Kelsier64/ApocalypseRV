@@ -111,7 +111,6 @@ size = Vector3(1.545, 1.8, 0.2)
 script = ExtResource("script")
 definition = ExtResource("def")
 structure_kind = "rear"
-bottom_face = 3
 leaf_count = 2
 leaf_width = 1.545
 hinge_span = 3.12

@@ -1,6 +1,6 @@
 extends "res://tests/rv_climb_playground.gd"
 ## Close-up presentation review; the separate two-actor replay remains available.
-const OUT := "res://docs/validation/player-animations-v021/climb/"
+const OUT := "res://docs/validation/rv-ladders-20261005/"
 var capture_directory := OUT
 var reviewing := false
 var side_view := false
@@ -16,7 +16,7 @@ func _ready() -> void:
 	observer.make_current()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if "--camera-review" in OS.get_cmdline_user_args():
-		capture_directory = "res://docs/validation/player-animations-v021/climb-camera/"
+		capture_directory = OUT + "camera/"
 	DirAccess.make_dir_recursive_absolute(capture_directory)
 	if "--animation-review" in OS.get_cmdline_user_args(): review.call_deferred()
 
@@ -56,20 +56,21 @@ func capture(label: String) -> void:
 func review() -> void:
 	reviewing = true
 	driving = false
-	player.global_position = rv.to_global(Vector3(2.65, -.8, 0))
-	player.rotation.y = rv.rotation.y + PI / 2
+	player._exit_climb_to_normal()
+	var ladder: RVLadder = rv.get_node("RoofLadder")
+	player.global_position = ladder.climb_point(0.0) - Vector3.UP * .24
+	player.rotation.y = ladder.global_rotation.y
 	player.velocity = Vector3.ZERO
 	await frames(45)
-	# This fixture freezes the RV above its suspension height. Start beside its
-	# wall, as the moving-RV behavior suite does, rather than below the chassis.
-	player.global_position = rv.to_global(Vector3(2.65, -.2, 0))
+	# Match the cabin ladder lane and actual capsule feet.
+	player.global_position = ladder.climb_point(0.0) - Vector3.UP * .24
 	player.velocity = Vector3.ZERO
 	Input.action_press("move_forward")
 	for frame in 90:
 		await frames(1)
 		if player.get_node("Visuals/Locomotion").current_clip == "climb_up": break
 	if player.get_node("Visuals/Locomotion").current_clip != "climb_up":
-		push_error("Climb review did not reach the wall")
+		push_error("Climb review did not reach the ladder")
 		Input.action_release("move_forward")
 		reviewing = false
 		return
@@ -89,12 +90,11 @@ func review() -> void:
 		await capture("hold_look_level")
 	observer.make_current()
 	side_view = false
-	for direction in ["left", "right"]:
-		Input.action_press("move_" + direction)
-		await frames(14)
-		await capture(direction)
-		Input.action_release("move_" + direction)
-		await frames(15)
+	Input.action_press("move_back")
+	await frames(6)
+	await capture("down")
+	Input.action_release("move_back")
+	await frames(15)
 	driving = true
 	await frames(45)
 	await capture("carrier_hold")
@@ -102,18 +102,29 @@ func review() -> void:
 	Input.action_press("move_forward")
 	for frame in 180:
 		await frames(1)
-		if player.get_node("Visuals/Locomotion").current_clip == "climb_exit": break
+		if player.ladder_transition == player.LadderTransition.TOP: break
+	await frames(30)
+	await capture("roof_top_hold")
 	Input.action_release("move_forward")
-	if player.get_node("Visuals/Locomotion").current_clip != "climb_exit":
-		push_error("Climb review did not reach roof recovery")
+	if player.ladder_transition != player.LadderTransition.TOP:
+		push_error("Climb review did not reach the top hold")
 		reviewing = false
 		return
-	await frames(6)
+	await frames(15)
+	Input.action_press("move_back")
+	for frame in 120:
+		await frames(1)
+		if player.locomotion_state == player.LocomotionState.NORMAL: break
+	Input.action_release("move_back")
+	if player.locomotion_state != player.LocomotionState.NORMAL:
+		push_error("Manual walking did not reach the roof")
+		reviewing = false
+		return
 	await capture("roof_exit")
 	await frames(30)
 	await capture("roof_idle")
-	print("PASS: rendered climb up, hold, lateral movement, moving carrier, first person and roof recovery at ", Engine.physics_ticks_per_second, " Hz")
+	print("PASS: rendered ladder up, hold, down, moving carrier, first person, top hold and manual roof exit at ", Engine.physics_ticks_per_second, " Hz")
 	reviewing = false
 
 func _exit_tree() -> void:
-	for action in ["move_forward", "move_left", "move_right"]: Input.action_release(action)
+	for action in ["move_forward", "move_back", "move_left", "move_right"]: Input.action_release(action)

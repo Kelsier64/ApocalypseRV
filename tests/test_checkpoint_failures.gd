@@ -90,29 +90,24 @@ func _run() -> void:
 	retired.outdoor_sites["retired-test"] = {"definition_id": "gas_station", "content_version": station.content_version, "loaded": false,
 		"actors": [{"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 20.0}]}
 	check(checkpoint.write_checkpoint(PATH + ".retired", retired), "Retired-monster fixture writes")
-	var migrated: Dictionary = checkpoint.read_checkpoint(PATH + ".retired")
-	check(not migrated.is_empty(), "Checkpoint with retired monster scene remains readable")
-	if not migrated.is_empty():
-		check(migrated.actors == saved.actors, "Migration discards only retired outdoor monster and keeps props")
-		check(migrated.poi["retired-test"].actors.is_empty() and migrated.poi["retired-test"].content == old_content and migrated.poi["retired-test"].layout == old_layout, "Migration keeps POI layout and content")
-		check(migrated.outdoor_sites["retired-test"].actors.is_empty(), "Migration discards retired dormant monster")
+	check(checkpoint.read_checkpoint(PATH + ".retired").is_empty(), "Unknown retired scenes are rejected in v5 without migration")
 	var bad_missing_prop := saved.duplicate(true)
 	bad_missing_prop.actors[0].scene = "res://props/retired_prop.tscn"
 	check(checkpoint.write_checkpoint(PATH + ".missing-prop", bad_missing_prop), "Missing-prop fixture writes")
-	check(checkpoint.read_checkpoint(PATH + ".missing-prop").is_empty(), "Migration still rejects an unrelated missing prop")
+	check(checkpoint.read_checkpoint(PATH + ".missing-prop").is_empty(), "Current schema rejects an unrelated missing Item")
 	for kind in ["non_scene", "wrong_kind", "device_type", "nan", "singular", "slot", "profile", "physics", "poi", "service"]:
 		var bad := saved.duplicate(true)
 		match kind:
 			"non_scene": bad.actors[0].scene = "res://project.godot"
 			"wrong_kind": bad.actors[0].kind = "monster"
-			"device_type": bad.vehicles[0].equipment[0].scene = "res://props/scrap.tscn"
+			"device_type": bad.vehicles[0].mounted_items[0].scene = "res://equipment/rv_side_panel.tscn"
 			"nan": bad.player.transform.origin.x = NAN
 			"singular": bad.player.transform.basis = Basis(Vector3.ZERO, Vector3.ZERO, Vector3.ZERO)
 			"slot": bad.player.slot = 6
 			"profile": bad.profile.stop_spacing = "broken"
-			"physics": bad.vehicles[0].equipment[0].physics = {"mode": 0}
+			"physics": bad.vehicles[0].mounted_items[0].physics = {"mode": 0}
 			"poi": bad.poi = {"visited": {"actors": [42]}}
-			"service": bad.vehicles[0].equipment[0].service["charging"] = 42
+			"service": bad.vehicles[0].mounted_items[0].state.service["charging"] = 42
 		check(not checkpoint.validation_error(bad).is_empty(), "Reject " + kind + " before mutation")
 	var overflow := saved.duplicate(true)
 	overflow.vehicles[0].materials[ItemNames.METAL_PARTS] = 10000
@@ -125,7 +120,7 @@ func _run() -> void:
 	malformed_legacy.version = 1
 	malformed_legacy.vehicles = [{"version": 3}]
 	check(checkpoint.write_checkpoint(PATH + ".legacy", malformed_legacy), "Malformed legacy fixture writes")
-	check(checkpoint.read_checkpoint(PATH + ".legacy").is_empty(), "Malformed migration rejected without script error")
+	check(checkpoint.read_checkpoint(PATH + ".legacy").is_empty(), "Older checkpoint rejected without attempting migration")
 	var bytes := FileAccess.get_file_as_bytes(PATH)
 	var files := FaultFiles.new()
 	checkpoint.file_operations = files
@@ -143,6 +138,15 @@ func _run() -> void:
 	extra.id += "-second"
 	extra.engine_item = {}
 	extra.items = []
+	var replacements := {}
+	for device in extra.mounted_items:
+		replacements[device.state.id] = device.state.id + "-second"
+	for device in extra.mounted_items:
+		device.state.id = replacements[device.state.id]
+		if device.support.kind == "item": device.support.id = replacements.get(device.support.id, device.support.id)
+		elif device.support.kind in ["chassis", "structure"]: device.support.rv = extra.id
+		if device.state.service.has("battery") and not device.state.service.battery.is_empty(): device.state.service.battery.id += "-second"
+	for wheel in extra.wheels: wheel.id += "-second"
 	second.vehicles.append(extra)
 	var original: Chassis = world.get_node("NewRv/Chassis")
 	var player: Node = world.get_node("Player")
@@ -209,10 +213,10 @@ func _run() -> void:
 		if not current_scene.is_ancestor_of(vehicle): continue
 		var restored := VehicleSnapshot.capture(vehicle)
 		check(restored.materials == saved.vehicles[0].materials, "World transfer does not refund materials")
-		check(restored.equipment.size() == saved.vehicles[0].equipment.size(), "World transfer retains equipment registry")
-		for device in restored.equipment:
-			var source: Array = saved.vehicles[0].equipment.filter(func(entry): return entry.id == device.id)
-			check(source.size() == 1 and device.service == source[0].service, "World transfer preserves device service " + device.id)
+		check(restored.mounted_items.size() == saved.vehicles[0].mounted_items.size(), "World transfer retains equipment registry")
+		for device in restored.mounted_items:
+			var source: Array = saved.vehicles[0].mounted_items.filter(func(entry): return entry.state.id == device.state.id)
+			check(source.size() == 1 and device.state.service == source[0].state.service, "World transfer preserves device service " + device.state.id)
 	check(FileAccess.get_file_as_bytes(PATH) == bytes, "Loading never rewrites source")
 	# Finish navigation work before destroying the restored procedural world.
 	# A successful behavior check must also be able to shut down cleanly.

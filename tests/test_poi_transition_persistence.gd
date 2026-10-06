@@ -23,8 +23,8 @@ func check(ok: bool, detail: String) -> void:
 		failures.append(detail)
 		push_error("FAIL: " + detail)
 
-func _add_scrap(label: String) -> Prop:
-	var item := SCRAP.instantiate() as Prop
+func _add_scrap(label: String) -> Item:
+	var item := SCRAP.instantiate() as Item
 	item.item_name = label
 	item.freeze = true
 	manager.interior.entities.add_child(item)
@@ -81,8 +81,8 @@ func _case(mode: String) -> void:
 	if not await _enter(id): return
 	room = manager.interior
 	check(room.entities.get_child_count() == 1, id + " revisit does not duplicate picked prop")
-	var restored: Prop
-	if room.entities.get_child_count() == 1: restored = room.entities.get_child(0) as Prop
+	var restored: Item
+	if room.entities.get_child_count() == 1: restored = room.entities.get_child(0) as Item
 	check(restored != null and restored.persistent_id == remaining_id, id + " revisit restores surviving prop identity")
 	if restored != null:
 		check(restored.interact(player).begins_with("已拾取"), id + " revisit picks up the restored prop")

@@ -8,15 +8,15 @@
 albedo_color = Color(0.75, 0.77, 0.8, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_mesh"]
-size = Vector3(4, 0.2, 12)
+size = Vector3(4, 0.2, 4)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_col"]
-size = Vector3(4, 0.2, 12)
+size = Vector3(4, 0.2, 4)
 
 [node name="RvCeiling" type="RigidBody3D" unique_id=1616185533]
-definition = ExtResource("def")
-mass = 150.0
 script = ExtResource("1_script")
+definition = ExtResource("def")
+mass = 50.0
 equipment_name = "RV Ceiling Panel"
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=23741853]

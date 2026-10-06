@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="RVStructureDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://rv/structure_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+type_id = "rv_ceiling_hatch"
+display_name = "左側開孔屋頂"
+weight = 50.0
+health = 120.0
+scene_path = "res://equipment/rv_ceiling_hatch.tscn"
+slot_kind = "roof"
+allowed_conversions = Array[String](["rv_ceiling"])

@@ -11,7 +11,8 @@ func _ready() -> void:
 	player.enter_seat_mode(rv.get_node("DriverSeat"))
 	observer.current = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	rv.get_node("Ceiling").current_health = 6000
+	for panel in rv.get_structures():
+		if panel.structure_kind == "roof": panel.current_health = 6000
 	rv.get_node("RightMiddle").current_health = 6000
 	hanger = preload("res://enemies/raker.tscn").instantiate()
 	hanger.position = Vector3(2.65, 0.6, 0)
@@ -28,7 +29,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if rv.has_node("RightMiddle"): rv.get_node("RightMiddle").current_health = 15
 			return
 		if event.keycode == KEY_F5:
-			if rv.has_node("Ceiling"): rv.get_node("Ceiling").current_health = 15
+			for panel in rv.get_structures():
+				if panel.structure_kind == "roof": panel.current_health = 15
 		if event.keycode == KEY_F7:
 			hanger.boarding.grip = 0.1
 			return

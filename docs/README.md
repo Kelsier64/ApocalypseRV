@@ -4,6 +4,14 @@
 
 ## 從哪裡開始
 
+統一物品：[Item、固定放置與支撐掉落](validation/2026-10-06-unified-items.md)，含大型設備背包、服務停機、怪物免疫、v5 保存與本輪自動／實機驗收。
+
+三片屋頂：[前／中／後獨立結構與左側梯子洞口](validation/2026-10-06-rv-split-roof.md)，含平板型態、逐片破壞、碰撞與本轮自動／實機驗證。
+
+玩家登車：[梯頂停止與手動離梯](validation/2026-10-06-ladder-manual-exit.md)移除登頂自動推送，放開按鍵後由 WASD 自行走出；[接梯手感修正](validation/2026-10-06-ladder-transitions.md)記錄縮小觸發距離、放慢攀爬及鏡頭靠近；[貼牆梯子重做](validation/2026-10-05-rv-wall-ladders.md)記錄自由放置與移除入口固定梯位；[初版紀錄](validation/2026-10-05-rv-ladders.md)保留當時測試，初版配置已被取代。
+
+RV 車體：[固定結構與平板施工驗證](validation/2026-10-05-rv-structure-construction.md)，含獨立車板、十個固定槽位、施工交易、v4 存檔及原生拆牆／拆頂／拆地板觀察。
+
 玩家動畫與 Raker 咬擊：[玩家跑步與 Raker 咬擊姿勢修正驗收](validation/2026-10-05-ci-player-raker.md)，記錄三項 CI 失敗的修正、14 項相關回歸及原生輸入驗證。
 
 屍體道具：[怪物／玩家屍體拾取、手持晃動、分解與保存](validation/2026-10-04-corpse-props.md)，含專用測試場與本輪回歸結果。

@@ -18,9 +18,9 @@ func freeze_enemies(inside: PoiInterior) -> void:
 	for actor in inside.entities.get_children():
 		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
 
-func find_cargo(inside: PoiInterior, identity: String) -> Prop:
+func find_cargo(inside: PoiInterior, identity: String) -> Item:
 	for actor in inside.entities.get_children():
-		if actor is Prop and actor.persistent_id == identity: return actor
+		if actor is Item and actor.persistent_id == identity: return actor
 	return null
 
 func carried_engine(player: Node3D, identity: String) -> Dictionary:

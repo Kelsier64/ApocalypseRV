@@ -1,5 +1,5 @@
 class_name CorpseProp
-extends Prop
+extends Item
 ## Frozen interaction proxy; the existing anatomical bones own loose/held physics.
 const PLAYER_MODEL = preload("res://assets/models/player_test_v020/player_export_test_v020.glb")
 const RAKER_MODEL = preload("res://assets/models/raker/raker.glb")
@@ -23,6 +23,7 @@ var held_chest_rest := Transform3D.IDENTITY
 var previous_chest_target := Transform3D.IDENTITY
 
 func _ready() -> void:
+	super._ready()
 	process_physics_priority = 4
 	_initialize.call_deferred()
 
@@ -55,6 +56,14 @@ func restore_item_state(state: Dictionary) -> void:
 
 func set_held(value: bool) -> void:
 	held = value
+
+func confirm_placement(pose: Transform3D, parent: Node3D, support: Node3D = null) -> void:
+	super.confirm_placement(pose, parent, support)
+	if is_fixed: set_processing(true)
+
+func detach_from_support() -> void:
+	super.detach_from_support()
+	if initialized and processing and not is_instance_valid(processing_owner): set_processing(false)
 
 func _capture_pose() -> Dictionary:
 	var world_poses: Array[Transform3D] = []
@@ -193,7 +202,8 @@ func _initialize() -> void:
 	simulator.physical_bones_start_simulation()
 	for body: PhysicalBone3D in bodies.values(): body.linear_velocity = linear_velocity
 	initialized = true
-	if is_instance_valid(processing_owner): set_processing(true)
+	if is_instance_valid(processing_owner) or is_fixed or (presentation_only and not held): set_processing(true)
+	if presentation_only and is_being_placed: _apply_ghost_material(visual)
 
 func held_support_center() -> Vector3:
 	return Vector3(0, 1.52, -.37)
@@ -283,6 +293,8 @@ func _physics_process(delta: float) -> void:
 		angular_velocity = pelvis.angular_velocity
 
 func _exit_tree() -> void:
+	if _world_transfer: return
+	super._exit_tree()
 	if is_instance_valid(builder): builder.free()
 	_retire_source()
 

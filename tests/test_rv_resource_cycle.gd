@@ -19,20 +19,20 @@ func _run() -> void:
 	player.set_physics_process(false)
 	# Use the installed production devices. The old extra workstation floated
 	# above the floor, leaving too little roof clearance for a correctly raised can.
-	var recycler: Equipment = rv.get_node("Scrapper")
+	var recycler: Item = rv.get_node("Scrapper")
 	var station: CraftingStation = rv.get_node("CraftingStation")
 	await physics_frame
 	# Fix the loot roll, not the production result: exercise pickup/drop and the real recycler.
-	var loot: Prop = load("res://props/oil_barrel.tscn").instantiate()
+	var loot: Item = load("res://props/oil_barrel.tscn").instantiate()
 	world.add_child(loot)
 	loot.scrap_yields = {ItemNames.METAL_PARTS: Vector2(4, 4), ItemNames.UNREFINED_FUEL: Vector2(10, 10)}
 	loot.interact(player)
 	await process_frame
 	check(player.inventory.items.size() == 1, "Loot enters inventory")
 	player.drop_item()
-	var dropped: Prop
+	var dropped: Item
 	for child in WorldEntities.get_container(world).get_children():
-		if child is Prop and child.item_name == "Oil Barrel": dropped = child
+		if child is Item and child.item_name == "Oil Barrel": dropped = child
 	check(dropped != null and player.inventory.items.is_empty(), "Dropped loot retains one world owner")
 	dropped.global_position = recycler.global_position + Vector3.UP
 	recycler.recycle_prop(dropped)
@@ -42,9 +42,9 @@ func _run() -> void:
 	check(rv.get_item_count(ItemNames.UNREFINED_FUEL) == 10 and rv.get_item_count(ItemNames.METAL_PARTS) == 4, "Loot becomes usable materials")
 	check(station.request_craft("gasoline"), "Recycled materials fund fuel recipe")
 	rv.step_energy_system(0.0, 0.0, 0.0, 2.0)
-	var gasoline: Prop
+	var gasoline: Item
 	for child in WorldEntities.get_container(world).get_children():
-		if child is Prop and child.item_name == ItemNames.GAS_CAN: gasoline = child
+		if child is Item and child.item_name == ItemNames.GAS_CAN: gasoline = child
 	check(gasoline != null and station.jobs.is_empty(), "Production creates physical fuel once")
 	if gasoline == null:
 		push_error("FAIL: Production creates physical fuel once: " + station.last_error)

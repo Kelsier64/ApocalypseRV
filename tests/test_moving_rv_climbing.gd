@@ -37,12 +37,15 @@ func _run() -> void:
 	player.max_player_health = 10000.0
 	player.current_player_health = 10000.0
 	player.grab_control.immunity = 1000.0
-	player.position = Vector3(2.65, 1.0, 0)
-	player.rotation.y = PI / 2.0
+	var roof_ladder: Node3D = rv.get_node("RoofLadder")
+	player.global_position = roof_ladder.climb_point(0.0) - Vector3.UP * 0.25
+	player.rotation.y = roof_ladder.global_rotation.y
 	await _tick()
 	Input.action_press("move_forward")
 	var climbed := false
 	var reached_roof := false
+	var top_released := false
+	var top_steered := false
 	for i in _frames(240):
 		if climbed:
 			rv.position.z -= 4.8 * step_delta
@@ -50,13 +53,20 @@ func _run() -> void:
 		await _tick()
 		player._physics_process(step_delta)
 		climbed = climbed or player.locomotion_state == player.LocomotionState.CLIMBING
+		if player.ladder_transition == player.LadderTransition.TOP:
+			if not top_released:
+				Input.action_release("move_forward")
+				top_released = true
+			elif player.ladder_top_input_ready and not top_steered:
+				Input.action_press("move_back")
+				top_steered = true
 		if climbed and player.locomotion_state == player.LocomotionState.NORMAL:
-			var local: Vector3 = rv.to_local(player.global_position)
-			reached_roof = local.y > 2.1 and local.x < 2.0
+			reached_roof = top_steered and player.is_on_floor() and absf(roof_ladder.to_local(player._climb_feet()).y - roof_ladder.climb_height) < .15
 			print("Player top-out: ", player.position)
 			break
 	Input.action_release("move_forward")
-	_expect(climbed, "Player enters climbing against actual RV wall.")
+	Input.action_release("move_back")
+	_expect(climbed, "Player enters climbing at the actual interior roof ladder.")
 	_expect(reached_roof, "Player reaches the actual RV roof with collisions enabled.")
 	_expect(not player.body_collision_shape.disabled, "Player capsule remains active after top-out.")
 	for i in _frames(5):
@@ -135,12 +145,19 @@ func _run() -> void:
 	monster.position = Vector3(25, 10, 0)
 	for actor in [player, monster]:
 		rv.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1.2, 0))
-		actor.position = Vector3(2.65, 2.0, 0)
-		actor.rotation.y = PI / 2.0
-		actor.locomotion_state = actor.LocomotionState.CLIMBING
-		actor.active_climb_rv = rv
-		actor.previous_climb_rv_transform = rv.global_transform
-		actor.active_wall_normal = Vector3.RIGHT
+		if actor == player:
+			actor._exit_climb_to_normal()
+			actor.climb_reenter_cooldown_remaining = 0.0
+			actor.global_position = roof_ladder.climb_point(0.0) - Vector3.UP * 0.25
+			actor.rotation.y = roof_ladder.global_rotation.y
+			_expect(actor.begin_ladder_climb(roof_ladder), "Carrier release fixture attaches to an actual production ladder.")
+		else:
+			actor.position = Vector3(2.65, 2.0, 0)
+			actor.rotation.y = PI / 2.0
+			actor.locomotion_state = actor.LocomotionState.CLIMBING
+			actor.active_climb_rv = rv
+			actor.previous_climb_rv_transform = rv.global_transform
+			actor.active_wall_normal = Vector3.RIGHT
 		actor._sync_body_collision_to_locomotion()
 		var anchor: Vector3 = rv.to_local(actor.global_position)
 		for i in _frames(60):
@@ -178,7 +195,7 @@ func _run() -> void:
 	player.position = Vector3(20, 10, 0)
 	# Nearby equipment behind a wall cannot be damaged via chassis ancestry.
 	rv.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1.2, 0))
-	var hidden := Equipment.new()
+	var hidden := Item.new()
 	hidden.freeze = true
 	var hidden_shape := CollisionShape3D.new()
 	var small := SphereShape3D.new()
@@ -202,7 +219,7 @@ func _run() -> void:
 	monster.released_carrier_velocity = Vector3.ZERO
 	monster.rv_support.clear()
 	monster.attack_timer = 0.0
-	var ceiling: Node3D = rv.get_node("Ceiling")
+	var ceiling: RVStructurePanel = rv.get_node("RoofFront")
 	var initial_health: float = ceiling.current_health
 	for i in _frames(900):
 		rv.position.z -= 2.4 * step_delta
@@ -210,10 +227,10 @@ func _run() -> void:
 		await _tick()
 		player._physics_process(step_delta)
 		monster._physics_process(step_delta)
-		if not is_instance_valid(ceiling):
+		if ceiling.is_destroyed:
 			break
-	_expect(not is_instance_valid(ceiling) or ceiling.current_health < initial_health, "Monster damages roof above a seated driver.")
-	_expect(not is_instance_valid(ceiling), "Repeated attacks destroy the actual supporting roof panel.")
+	_expect(ceiling.current_health < initial_health, "Monster damages roof above a seated driver.")
+	_expect(ceiling.is_destroyed, "Repeated attacks destroy the actual supporting roof panel.")
 	for i in _frames(45):
 		await _tick()
 		monster._physics_process(step_delta)

@@ -11,8 +11,8 @@ size = Vector3(0.6, 0.8, 0.6)
 size = Vector3(0.6, 0.8, 0.6)
 
 [node name="DriverSeat" type="RigidBody3D" unique_id=269340115]
-definition = ExtResource("def")
 script = ExtResource("1_2l2ci")
+definition = ExtResource("def")
 equipment_name = "Driver Seat"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2015620646]

@@ -31,6 +31,8 @@ func _run() -> void:
 	var clock: WorldClock = world.get_node("WorldClock")
 	var player: CharacterBody3D = world.get_node("Player")
 	var rv: Chassis = world.get_node("NewRv/Chassis")
+	var floor_panel: RVStructurePanel = rv.get_node("StructureSlots").occupant("floor")
+	check(is_instance_valid(floor_panel) and floor_panel.can_operate(), "Starter RV has a live independent floor support")
 	# Decorative wings must be real obstacles, without walkable rooms inside.
 	var extension: Node3D = run.shelter.get_node("ExteriorExtension")
 	for local_point in [Vector3(-17, 1, 0), Vector3(17, 1, 0), Vector3(0, 1, -22)]:
@@ -46,35 +48,40 @@ func _run() -> void:
 	check(run.phase == "preparing" and not clock.running and not clock.weather_running, "Preparation pauses time and weather")
 	check(run.gate.progress == 0.0 and run.gate.stable(), "New garage starts physically closed")
 	check(rv.has_working_engine() and rv.energy.battery != null and rv.current_fuel > 0.0, "Starter RV is driveable without loading optional services")
-	var mounted_tablet: Equipment = rv.get_node("TabletScreen")
+	var mounted_tablet: Item = rv.get_node("TabletScreen")
 	check(mounted_tablet.mount_support == rv.get_node("RightFront") and mounted_tablet.global_basis.y.dot(-rv.global_basis.x) > 0.99, "Starter tablet is visibly attached to the inside front panel")
-	var floor_devices: Array[Equipment] = []
+	var floor_devices: Array[Item] = []
 	for name in ["Generator", "CraftingStation", "Scrapper"]:
 		check(not rv.has_node(name), "Starter RV omits optional " + name)
 		var scene := "res://equipment/%s.tscn" % {"Generator": "generator", "CraftingStation": "crafting_station", "Scrapper": "scrapper"}[name]
 		var found := false
 		for actor in WorldEntities.get_container(world).get_children():
-			if actor is Equipment and actor.scene_file_path == scene and actor.get_connected_rv() == null:
+			if actor is Item and actor.scene_file_path == scene and actor.get_connected_rv() == null:
 				found = true
 				floor_devices.append(actor)
 		check(found, "Garage supplies loose optional " + name)
 	var targets := [Vector3(-1.15, 0.5, 3), Vector3(-1.15, 0.5, 0.5), Vector3(1.1, 0.5, -2.2)]
 	for index in range(floor_devices.size()):
 		var device := floor_devices[index]
-		var events := [0]
-		device.availability_changed.connect(func(): events[0] += 1)
+		var item_name := device.item_name
+		var identity := device.persistent_id
+		var removals := [0]
+		device.removing.connect(func(): removals[0] += 1)
 		player.enter_ui_mode()
-		device.start_placement(player)
-		check(not device.is_being_placed, "UI mode prevents lifting " + device.equipment_name)
+		check(not device.pickup(player).contains("已拾取") and not device.is_queued_for_deletion() and player.inventory.items.is_empty(), "UI mode prevents lifting " + item_name)
 		player.exit_ui_mode()
-		device.start_placement(player)
-		check(player.is_placing_equipment() and device.is_being_placed, "Player authorizes lifting " + device.equipment_name)
+		check(device.pickup(player).contains("已拾取") and player.inventory.active_item().state.id == identity, "Player picks up optional " + item_name + " with its identity")
+		check(player.enter_equipment_placement(), "Held optional Item starts independent preview: " + item_name)
+		var ghost := player.placement.placing_equipment as Item
+		check(ghost.presentation_only and ghost.is_being_placed and not player.held_item_node.visible and player.inventory.active_item().state.id == identity, "Preview hides held model while retaining the inventory Item: " + item_name)
 		var target: Vector3 = targets[index]
 		player.global_position = rv.to_global(Vector3(0, 0.65, target.z + 0.8))
 		player.camera.global_position = rv.to_global(Vector3(target.x, 2, target.z + 0.8))
 		player.camera.look_at(rv.to_global(target))
+		await physics_frame
+		await process_frame
 		player.placement.update_ghost(player)
-		check(player.placement.can_place_equipment and player.placement.target_support == rv, "Real floor ray validates " + device.equipment_name + ": " + player.placement.message)
+		check(player.placement.can_place_equipment and player.placement.target_support == floor_panel, "Real floor ray validates " + item_name + ": " + player.placement.message)
 		if not player.placement.can_place_equipment:
 			var cancel := InputEventMouseButton.new()
 			cancel.button_index = MOUSE_BUTTON_RIGHT
@@ -85,9 +92,18 @@ func _run() -> void:
 		click.button_index = MOUSE_BUTTON_LEFT
 		click.pressed = true
 		player.placement.handle_input(player, click)
-		check(not player.is_placing_equipment() and not device.is_being_placed, "Left click completes placing " + device.equipment_name)
-		check(device.get_connected_rv() == rv and device.mount_support == rv and device.get_parent() == rv, "Placed device preserves real RV/support ownership: " + device.equipment_name)
-		check(device.can_operate() and events[0] >= 2, "Placement notifies availability and powers " + device.equipment_name)
+		check(not player.is_placing_equipment() and player.inventory.items.is_empty(), "Left click transfers held ownership to fixed Item: " + item_name)
+		device = null
+		for mounted in rv.get_equipment():
+			if mounted.persistent_id == identity: device = mounted
+		check(device != null and device.get_connected_rv() == rv and device.mount_support == floor_panel and device.get_parent() == rv, "Placed device preserves real RV/independent floor ownership: " + item_name)
+		check(device != null and device.can_operate() and removals[0] == 1, "One pickup and validated fixation powers " + item_name)
+		if device:
+			var events := [0]
+			device.availability_changed.connect(func(): events[0] += 1)
+			device.set_enabled(false)
+			device.set_enabled(true)
+			check(events[0] == 2 and device.can_operate(), "Fixed Item availability changes remain observable: " + item_name)
 		await physics_frame
 	var before := clock.elapsed_seconds
 	for frame in range(15): await physics_frame
@@ -114,7 +130,7 @@ func _run() -> void:
 	rv.global_transform = run.gate.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 1.8, 10))
 	check(not run.departure_clear(), "Vehicle rear must clear the door before sealing")
 	rv.global_transform = run.gate.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 1.8, 32))
-	var tablet: Equipment = rv.get_node("TabletScreen")
+	var tablet: Item = rv.get_node("TabletScreen")
 	var tablet_pose := tablet.transform
 	tablet.position = Vector3(0, 1, -30)
 	check(not run.vehicle_clear(rv), "Clearance includes protruding mounted equipment")
@@ -125,7 +141,7 @@ func _run() -> void:
 	check(run.departure_clear(), "Complete RV and player departure is recognized")
 	check(await wait_phase(run, "closing", 90), "Departure starts permanent closing")
 	check(not run.save_block_reason().is_empty(), "Closing refuses transitional saves")
-	var obstruction: Prop = load("res://props/scrap.tscn").instantiate()
+	var obstruction: Item = load("res://props/scrap.tscn").instantiate()
 	obstruction.freeze = true
 	WorldEntities.get_container(world).add_child(obstruction)
 	obstruction.global_position = run.gate.global_transform * Vector3(-1.75, 1, 0)

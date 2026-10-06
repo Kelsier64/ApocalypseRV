@@ -90,9 +90,9 @@ func _exercise(inside: PoiInterior, initial: Dictionary) -> void:
 		enemies[0].take_damage(10)
 		enemies[1].take_damage(10000)
 	await frames(2)
-	var cargo: Prop
+	var cargo: Item
 	for actor in inside.entities.get_children():
-		if actor is Prop and actor.persistent_id == inside.content.cargo_id: cargo = actor
+		if actor is Item and actor.persistent_id == inside.content.cargo_id: cargo = actor
 	check(cargo != null, "Objective identifies existing cargo")
 	if cargo == null: return
 	# Walk the actual baked route, then carry the real generated engine back.

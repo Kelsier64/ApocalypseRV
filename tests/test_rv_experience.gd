@@ -33,7 +33,8 @@ func run() -> void:
 	player.set_physics_process(false)
 	for i in range(3): await physics_frame
 	var hatch := rv.engine_bay.get_node("Hatch")
-	check(hatch.interact(player).contains("打開中") and not rv.engine_bay.hatch_open, "Service hatch starts motion without granting engine access")
+	var hatch_result: String = hatch.interact(player)
+	check(hatch_result.contains("打開中") and not rv.engine_bay.hatch_open, "Service hatch starts motion without granting engine access: " + hatch_result)
 	check(VehicleSnapshot.capture(rv).is_empty(), "Moving hatch cannot be saved")
 	for i in ticks(10): await physics_frame
 	var block := obstacle(world, rv.engine_bay.to_global(hatch.CLOSED.lerp(hatch.OPEN, 0.75)), Vector3(0.25, 0.25, 0.25))
@@ -65,7 +66,7 @@ func run() -> void:
 	ramp.interact(player)
 	for i in ticks(200): await physics_frame
 	check(ramp.stable() and ramp.progress == 0 and not rv.drive_blocked(), "Blocked ramp reverses and fully stows")
-	# Independent light loads, supply loss, equipment availability, and old saves.
+	# Independent light loads, supply loss, Item availability, and optional settings.
 	rv.interior_requested = {"cabin": false, "work": false, "service": false}
 	rv.current_power = 50
 	rv.energy.step(rv, 0, 1)
@@ -90,15 +91,15 @@ func run() -> void:
 	rv.instrument_brightness = 0.2
 	rv.vibration_strength = 0.0
 	var saved := VehicleSnapshot.capture(rv)
-	check(VehicleSnapshot.validate(saved), "Lighting settings are valid optional v3 state")
+	check(VehicleSnapshot.validate(saved), "Lighting settings are valid optional v4 state")
 	check(await VehicleSnapshot.apply(rv, saved), "Lighting settings round trip")
 	check(rv.instrument_brightness == 0.2 and rv.vibration_strength == 0.0 and rv.interior_requested.service, "Switches, dimmer and vibration restored exactly")
 	var bad := saved.duplicate(true)
 	bad.comfort.brightness = NAN
 	check(not VehicleSnapshot.validate(bad), "Invalid lighting settings rejected before restore")
 	saved.erase("comfort")
-	check(await VehicleSnapshot.apply(rv, saved), "Existing v3 saves without comfort settings still load")
-	check(rv.interior_requested.cabin and not rv.interior_requested.work and rv.instrument_brightness == 0.65, "Legacy save defaults are explicit")
+	check(await VehicleSnapshot.apply(rv, saved), "V4 snapshots without optional comfort settings load")
+	check(rv.interior_requested.cabin and not rv.interior_requested.work and rv.instrument_brightness == 0.65, "Missing comfort settings use explicit defaults")
 	# Playback follows real engine success/failure; vibration never moves physics.
 	var sound := rv.get_node("Audio")
 	var before := rv.transform

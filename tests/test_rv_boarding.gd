@@ -105,7 +105,7 @@ func _run() -> void:
 	rv.position.y = 0.95
 	await physics_frame
 	# Use actual seat and collider. Completely blocked exits must keep seat ownership.
-	var seat: Equipment = rv.get_node("DriverSeat")
+	var seat: Item = rv.get_node("DriverSeat")
 	player.inventory.items.clear()
 	player.refresh_inventory()
 	seat.interact_hold(player)
@@ -126,28 +126,32 @@ func _run() -> void:
 	check(player.seated_in == null, "Destroyed seat forces release even with aisle blocked")
 	block.free()
 	player.set_physics_process(false)
-	var device: Equipment = rv.get_node("Generator")
+	var device: Item = rv.get_node("Generator")
 	player.position = Vector3(0, 1, 2)
 	player.camera.global_position = rv.to_global(Vector3(0, 2, 2))
 	player.camera.look_at(rv.to_global(Vector3(0, 0.5, 1.5)))
-	device.start_placement(player)
+	var device_id := device.persistent_id
+	check(device.pickup(player).begins_with("已拾取"), "Equipment is picked up before entering placement")
+	check(player.enter_equipment_placement(), "Inventory-backed placement starts")
+	var preview: Item = player.placement.placing_equipment
 	player.placement.update_ghost(player)
-	var before := device.global_basis
+	var before := preview.global_basis
 	var event := InputEventKey.new()
 	event.pressed = true
 	event.physical_keycode = KEY_E
 	player.placement.handle_input(player, event)
 	player.placement.update_ghost(player)
-	check(not before.is_equal_approx(device.global_basis), "E rotates free equipment preview")
+	check(not before.is_equal_approx(preview.global_basis), "E rotates independent Item preview")
 	event.physical_keycode = KEY_RIGHT
-	var before_position := device.global_position
+	var before_position := preview.global_position
 	player.placement.handle_input(player, event)
 	player.placement.update_ghost(player)
-	check(is_equal_approx(device.global_position.distance_to(before_position), 0.05), "Arrow nudges 5cm on surface")
+	check(is_equal_approx(preview.global_position.distance_to(before_position), 0.05), "Arrow nudges 5cm on surface")
 	var cancel := InputEventMouseButton.new()
 	cancel.pressed = true
 	cancel.button_index = MOUSE_BUTTON_RIGHT
 	player.placement.handle_input(player, cancel)
+	check(not player.is_placing_equipment() and player.inventory.active_item().state.id == device_id, "Cancelling placement keeps the original Item in inventory")
 	world.queue_free()
 	await process_frame
 	if failures.is_empty(): print("PASS: rear ramp safety, actual engine boarding, aisle, supported exits and placement adjustments")

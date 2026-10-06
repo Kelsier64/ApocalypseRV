@@ -11,8 +11,8 @@
 size = Vector3(4, 1, 12)
 
 [node name="Chassis" type="VehicleBody3D" unique_id=292402977]
-mass = 3000.0
 script = ExtResource("1_chassis")
+mass = 3000.0
 
 [node name="BodyCollision" type="CollisionShape3D" parent="." unique_id=1956655371]
 shape = SubResource("BoxShape3D_body")

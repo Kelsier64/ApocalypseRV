@@ -50,7 +50,6 @@ material = ExtResource("glass")
 script = ExtResource("script")
 definition = ExtResource("def")
 structure_kind = "side"
-bottom_face = 3
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0, 0)

@@ -59,7 +59,7 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func _entry(scene_path: String, id: String, condition: float) -> Dictionary:
-	var prop: Prop = load(scene_path).instantiate()
+	var prop: Item = load(scene_path).instantiate()
 	prop.persistent_id = id
 	prop.condition = condition
 	var data := {"scene": scene_path, "state": prop.capture_item_state(), "name": prop.item_name, "large": prop.is_large}

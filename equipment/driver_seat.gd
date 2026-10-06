@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 
 const MOUSE_SENSITIVITY: float = 0.002
 const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
@@ -11,6 +11,7 @@ var exit_message: String = ""
 
 func _ready() -> void:
 	super._ready()
+	if presentation_only: return
 	seat_camera.rotation = REST_CAMERA_ROTATION
 	seat_camera.cull_mask = (seat_camera.cull_mask & ~PlayerModelVisual.FULL_BODY_LAYER) | PlayerModelVisual.LOCAL_VIEW_LAYER
 	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))

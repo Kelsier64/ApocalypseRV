@@ -16,26 +16,29 @@ func _run() -> void:
 	rv.freeze = true
 	await physics_frame
 	await physics_frame
-	var roof: Equipment = rv.get_node("Ceiling")
+	var roof: RVStructurePanel = rv.get_node("RoofFront")
 	var cabin: Node3D = rv.get_node("CabinLightFront/CabinLighting")
 	var air: Node3D = roof.get_node("CabinAir")
+	var rear_air: Node3D = rv.get_node("RoofRear/CabinAir")
 	rv.current_power = 50
 	await physics_frame
 	await process_frame
 	check(cabin.lamps.all(func(lamp): return lamp.visible), "Powered installed light strip illuminates cabin")
-	if ForestFog.supported(): check(air.clear_air.visible, "Mounted roof keeps fog outside the cabin")
+	check(air.shelters(Vector3(0, -1, 0)) and not air.shelters(Vector3(0, -1, 4)), "Each roof clears fog only beneath its own four metre segment")
+	if ForestFog.supported(): check(air.clear_air.visible, "Mounted roof keeps fog outside its own cabin segment")
 	rv.current_power = 0
 	await physics_frame
 	await process_frame
 	await process_frame
 	check(cabin.lamps.all(func(lamp): return not lamp.visible), "Empty battery extinguishes cabin lamps")
 	rv.current_power = 50
-	roof.detach_from_support()
+	roof.take_damage(100000.0)
 	await physics_frame
 	await process_frame
 	check(cabin.lamps.all(func(lamp): return not lamp.visible), "Detached ceiling never keeps powered lights")
-	if ForestFog.supported(): check(not air.clear_air.visible, "Detached roof cannot carry a fog-free bubble")
-	var panel: Equipment = rv.get_node("RightFront")
+	check(not air.shelters(Vector3(0, -1, 0)) and rear_air.shelters(Vector3(0, -1, 0)), "One roof breach admits fog locally while its neighbour still shelters the cabin")
+	if ForestFog.supported(): check(not air.clear_air.visible and rear_air.clear_air.visible, "Broken roof removes only its own fog exclusion")
+	var panel: RVStructurePanel = rv.get_node("RightFront")
 	var mesh: MeshInstance3D = panel.get_node("Lower")
 	panel.current_health = panel.max_health
 	await process_frame

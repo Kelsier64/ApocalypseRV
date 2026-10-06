@@ -88,7 +88,6 @@ size = Vector3(1.18, 1.8, 0.2)
 script = ExtResource("script")
 definition = ExtResource("def")
 structure_kind = "side"
-bottom_face = 3
 leaf_count = 1
 leaf_width = 1.18
 hinge_span = 1.2

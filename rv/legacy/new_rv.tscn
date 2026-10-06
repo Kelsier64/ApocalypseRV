@@ -15,8 +15,17 @@
 
 [node name="Chassis" parent="." unique_id=604864203 instance=ExtResource("1_ip3wq")]
 
-[node name="Ceiling" parent="Chassis" unique_id=998136955 instance=ExtResource("4_ceil")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
+[node name="RoofFront" parent="Chassis" instance=ExtResource("4_ceil")]
+position = Vector3(0, 2.6005738, -4)
+mount_slot = "roof_0"
+
+[node name="RoofMiddle" parent="Chassis" instance=ExtResource("4_ceil")]
+position = Vector3(0, 2.6005738, 0)
+mount_slot = "roof_1"
+
+[node name="RoofRear" parent="Chassis" instance=ExtResource("4_ceil")]
+position = Vector3(0, 2.6005738, 4)
+mount_slot = "roof_2"
 
 [node name="WallLeft" parent="Chassis" unique_id=1938252214 instance=ExtResource("5_wl")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9, 1.4999999, 0)

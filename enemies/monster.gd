@@ -149,6 +149,7 @@ var current_combat_target: Dictionary = {}
 var nav_agent: NavigationAgent3D = null
 var nav_target_position: Vector3 = Vector3.ZERO
 var nav_has_target: bool = false
+var item_detour := preload("res://enemies/item_detour.gd").new()
 var nav_repath_timer: float = 0.0
 var fallback_steer_timer: float = 0.0
 var stuck_timer: float = 0.0
@@ -425,6 +426,11 @@ func _process_wander(delta: float) -> bool:
 	# Slow shambling speed when wandering
 	var wander_speed = move_speed * 0.4
 	var move_dir = _get_navigation_direction(wander_target_position)
+	move_dir = item_detour.direction(self, wander_target_position, move_dir)
+	if item_detour.active and move_dir.is_zero_approx():
+		velocity.x = 0.0
+		velocity.z = 0.0
+		return false
 	if move_dir.length_squared() <= 0.0001:
 		move_dir = wander_direction
 	
@@ -453,6 +459,8 @@ func _process_chase(_delta: float, destination: Vector3) -> bool:
 	var vertical_gap := absf(destination.y - global_position.y)
 	var nav_active = _should_use_navigation_for_chase(can_nav, on_rv_surface, vertical_gap, post_separation_nav_block_remaining)
 	var dir := _resolve_chase_direction(destination, on_rv_surface, nav_active)
+	if not boarding.cabin.active and not on_rv_surface:
+		dir = item_detour.direction(self, destination, dir)
 	_debug_nav_log(
 		"chase_state",
 		"nav_active=%s on_rv=%s can_nav=%s vgap=%.2f nav_block=%.2f dir=%s dist=%.2f sep=%s" % [
@@ -1059,6 +1067,7 @@ func _execute_attack_on_target(target_data: Dictionary) -> void:
 	var target_node := target_variant as Node3D
 	if target_node == null or not is_instance_valid(target_node):
 		return
+	if not CombatTargeting.is_live_target(target_node): return
 	if not target_node.has_method("take_damage"):
 		return
 	if not boarding.can_attack(self, target_node): return
@@ -1083,15 +1092,16 @@ func _build_combat_target(target_node: Node3D, target_type: String, attack_sourc
 	return CombatTargeting.build_target(target_node, target_type, attack_source)
 
 func _is_structure_tagged(node: Node3D) -> bool:
-	return node.is_in_group(Groups.CHASSIS) or node.is_in_group(Groups.EQUIPMENT)
+	return not node is Item and (node.is_in_group(Groups.CHASSIS) or node is RVStructurePanel)
 
 func _is_damageable_structure(node: Node3D) -> bool:
-	return node.is_in_group(Groups.MONSTER_DAMAGEABLE) \
+	return CombatTargeting.is_live_target(node) and node.is_in_group(Groups.MONSTER_DAMAGEABLE) \
 		and node.has_method("take_damage") \
 		and not node.is_in_group(Groups.PLAYER)
 
-# Underfoot attacks may only hit non-chassis damageable structure (equipment).
+# Underfoot attacks may hit live vehicle structures; Items remain immune.
 func _is_underfoot_damageable(node: Node3D) -> bool:
+	if not CombatTargeting.is_live_target(node): return false
 	if node.is_in_group(Groups.PLAYER) or node.is_in_group(Groups.CHASSIS):
 		return false
 	if not node.is_in_group(Groups.MONSTER_DAMAGEABLE):
@@ -1154,7 +1164,7 @@ func _is_node_touching_monster(node: Node3D, touch_range: float) -> bool:
 	return _get_self_position().distance_to(_get_node_target_position(node)) <= radius
 
 func _is_touching_attack_candidate(node: Node3D) -> bool:
-	if node == null or not is_instance_valid(node):
+	if not CombatTargeting.is_live_target(node):
 		return false
 	if not node.has_method("take_damage"):
 		return false
@@ -1206,7 +1216,7 @@ func _resolve_underfoot_probe() -> RayCast3D:
 func _resolve_underfoot_damageable_from_collider(collider: Node) -> Node3D:
 	var current: Node = collider
 	while current != null:
-		if current == self:
+		if current == self or current is Item:
 			break
 		if current is Node3D:
 			var candidate := current as Node3D
@@ -1407,6 +1417,8 @@ func _collect_structure_candidates(max_distance: float = INF) -> Array:
 			continue
 		if not structure_node.has_method("take_damage"):
 			continue
+		if not CombatTargeting.is_live_target(structure_node):
+			continue
 		if origin.distance_to(_get_node_target_position(structure_node)) > max_distance:
 			continue
 		candidates.append(structure_node)
@@ -1458,7 +1470,7 @@ func _get_current_combat_target_node() -> Node3D:
 	var target_node := target_variant as Node3D
 	if target_node == null or not is_instance_valid(target_node):
 		return null
-	return target_node
+	return target_node if CombatTargeting.is_live_target(target_node) else null
 
 func _pick_new_wander_direction():
 	var angle = randf_range(0, TAU)
@@ -1562,7 +1574,7 @@ func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool 
 	if not is_instance_valid(target_variant) or not (target_variant is Node3D):
 		return false
 	var target_node := target_variant as Node3D
-	if target_node == null or not is_instance_valid(target_node):
+	if not CombatTargeting.is_live_target(target_node):
 		return false
 	if _is_probe_hit_underfoot_target(target_node):
 		var source := str(target_data.get("attack_source", "state_attack"))
@@ -1580,7 +1592,7 @@ func _can_attack_combat_target(target_data: Dictionary, has_line_of_sight: bool 
 	return _can_attack_target_position_with_range(target_position, allowed_range, has_line_of_sight)
 
 func _has_attack_line_of_sight_to_target(target: Node3D) -> bool:
-	if target == null or not is_instance_valid(target):
+	if target == null or not CombatTargeting.is_live_target(target):
 		return false
 	if not is_inside_tree():
 		return true
@@ -1597,6 +1609,11 @@ func _has_attack_line_of_sight_to_target(target: Node3D) -> bool:
 		return false
 	if collider == target:
 		return true
+	# Portable cargo blocks a ray even when its scene owner is the target RV.
+	var owner := collider
+	while owner != null and owner != target:
+		if owner is Item: return false
+		owner = owner.get_parent()
 	if target.is_ancestor_of(collider):
 		return true
 	return false

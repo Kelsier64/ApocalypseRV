@@ -75,7 +75,7 @@ func _ready() -> void:
 		if not point is PoiLootPoint: continue
 		var scene: PackedScene = point.roll_scene(rng)
 		if scene == null: continue
-		var item: Prop = scene.instantiate()
+		var item: Item = scene.instantiate()
 		entities.add_child(item)
 		item.global_transform = point.global_transform
 	var rv: Node3D = preload("res://rv/new_rv.tscn").instantiate()

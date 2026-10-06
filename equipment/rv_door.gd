@@ -1,12 +1,11 @@
 extends "res://equipment/rv_panel.gd"
-## Hinged collision shapes stay owned by the frame Equipment, including damage and F gestures.
+## Door leaf collision and damage belong to the fixed structure frame.
 @export var leaf_count: int = 1
 @export var leaf_width: float = 1.18
 @export var hinge_span: float = 1.2
 var angles: Array[float] = []
 var targets: Array[float] = []
 var open_requested: Array[bool] = []
-var before_move: Array[float] = []
 var blocked_message: String = ""
 
 ## Boarding uses the real leaf bounds; the surrounding frame is a roof climb route.
@@ -111,7 +110,7 @@ func get_interaction_prompt(player: Node3D) -> String:
 	if not can_operate(): return equipment_name + "｜尚未接入或已損壞"
 	var index := aimed_leaf(player)
 	var action := "關門" if open_requested[index] else "開門"
-	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n搬移整組門框；" + dependent_summary() + "\n" + blocked_message
+	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n改裝請使用車載平板；" + dependent_summary() + "\n" + blocked_message
 
 func allows_mount_at(point: Vector3) -> bool:
 	for index in range(leaf_count):
@@ -122,21 +121,6 @@ func allows_mount_at(point: Vector3) -> bool:
 
 func _on_service_stopped() -> void:
 	targets.assign(angles)
-	if is_being_placed:
-		before_move.assign(angles)
-		angles.fill(0.0)
-		targets.fill(0.0)
-		open_requested.fill(false)
-		_sync_leaves()
-
-func cancel_placement() -> void:
-	var restore := is_being_placed
-	super.cancel_placement()
-	if restore and before_move.size() == leaf_count:
-		angles.assign(before_move)
-		targets.assign(angles)
-		for index in range(leaf_count): open_requested[index] = absf(angles[index]) > 0.02
-		_sync_leaves()
 
 func restore_angles(saved: Array) -> void:
 	angles.clear()

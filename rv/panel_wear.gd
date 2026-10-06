@@ -1,6 +1,6 @@
 extends Node
 ## Presentation only: damage never adds new collision holes or HP owners.
-var panel: Equipment
+var panel: RVStructurePanel
 var level: int = -1
 var surfaces: Array[Dictionary] = []
 func _ready() -> void:
@@ -11,7 +11,7 @@ func _ready() -> void:
 		if source is StandardMaterial3D:
 			surfaces.append({"mesh": node, "source": source, "glass": "window" in str(node.name).to_lower() or "glass" in str(node.name).to_lower()})
 func _process(_delta: float) -> void:
-	if panel.is_being_placed: return
+	if panel.is_destroyed: return
 	var ratio := panel.current_health / maxf(panel.max_health, 1.0)
 	var next := 2 if ratio < 0.3 else (1 if ratio < 0.7 else 0)
 	if next == level: return

@@ -40,9 +40,9 @@ func _physics_process(delta: float) -> void:
 	var held: Node3D = actor.held_item_node
 	var driver: Node = get_parent().get_node("Locomotion")
 	var grabbed: bool = actor.is_grabbed()
-	var blocked: bool = actor.seated_in != null or actor.is_placing_equipment() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+	var blocked: bool = actor.seated_in != null or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
 	blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
-	if is_instance_valid(held): held.visible = not blocked
+	if is_instance_valid(held): held.visible = not blocked and not actor.is_placing_equipment()
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
 	if large and not actor.can_use_hands(2): carrying = false
@@ -55,7 +55,7 @@ func _physics_process(delta: float) -> void:
 		if not carrying or active_hand != "L": left_weight = 0.0
 	right_weight = move_toward(right_weight, 1.0 if carrying and active_hand == "R" else 0.0, delta * 7.0)
 	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L") else 0.0, delta * 7.0)
-	# Climbing/placement/seat presentation still hides held previews.
+	# Keep grip pose and held simulation while placement hides the real model.
 	if blocked:
 		right_weight = 0.0
 		left_weight = 0.0
@@ -109,6 +109,10 @@ func _update_item(delta: float, large: bool) -> void:
 	# profile before the crawl downshift rather than lowering it twice.
 	var small_height := 1.60 if actor.is_crawling() else shoulder_height - .19
 	var center := Vector3(0.0 if large else .04, 1.70 - bounds.size.y * .5 if large else small_height, -.55 if large else -.48)
+	if large and item is Item and item.definition != null and item.definition.requires_rv_connection:
+		# Full-sized machines sit below eye level, with their nearest face outside
+		# the chest. Their near-side grips remain within the arms' reach.
+		center = Vector3(0, 1.30 - bounds.size.y * .5, -maxf(.70, bounds.size.z * .5 + .35))
 	if item.has_method("held_support_center"): center = item.held_support_center()
 	if grip_kind == "round": center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
 	if active_hand == "L" and not large: center.x = -center.x

@@ -36,7 +36,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				clock.running = clock.weather_running
 				return
 			KEY_BACKSPACE:
-				var roof := main.get_node_or_null("NewRv/Chassis/Ceiling")
+				var roof := main.get_node_or_null("NewRv/Chassis/RoofMiddle")
 				if roof != null: roof.take_damage(100000)
 				return
 			_:

@@ -103,7 +103,7 @@ func _recycle() -> void:
 	await get_tree().physics_frame
 	for child in WorldEntities.get_container(self).get_children():
 		if child is CorpseProp and child.persistent_id == identity:
-			var recycler: Equipment = rv.get_node("Scrapper")
+			var recycler: Item = rv.get_node("Scrapper")
 			recycler.recycle_prop(child)
 			for frame in 100:
 				await get_tree().physics_frame

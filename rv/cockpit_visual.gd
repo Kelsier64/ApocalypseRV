@@ -28,7 +28,7 @@ func _ready() -> void:
 		add_child(lamp)
 		warning_lamps[id] = lamp
 
-@onready var seat: Equipment = get_parent()
+@onready var seat: Item = get_parent()
 @onready var steering_wheel: Node3D = $SteeringTilt/SteeringWheel
 @onready var gear_lever: Node3D = $GearLever
 @onready var parking_lever: Node3D = $ParkingLever

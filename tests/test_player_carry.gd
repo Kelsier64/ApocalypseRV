@@ -249,7 +249,7 @@ func run() -> void:
 	actor.placement.placing_equipment = equipment
 	actor.set_physics_process(false)
 	await steps(3)
-	check(carry.right_weight == 0 and not actor.held_item_node.visible, "Placement releases held arms")
+	check(carry.right_weight == 1 and carry.left_weight == 1 and not actor.held_item_node.visible, "Placement preserves the grip pose while hiding the real Item model")
 	actor.placement.placing_equipment = null
 	actor.set_physics_process(true)
 	await steps(20)

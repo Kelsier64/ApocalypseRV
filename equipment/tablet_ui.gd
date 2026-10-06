@@ -11,6 +11,11 @@ var _refresh_time := 0.0
 var _signature := ""
 var recipe_buttons: Dictionary = {}
 var device_labels: Dictionary = {}
+var structure_box: VBoxContainer
+var structure_status: Label
+var structure_rows: Dictionary = {}
+var structure_buttons: Array[Dictionary] = []
+var service_tabs: TabContainer
 
 func _ready() -> void:
 	layer = 30
@@ -41,6 +46,14 @@ func _ready() -> void:
 	close.text = "Close [Esc]"
 	close.pressed.connect(func(): close_requested.emit())
 	box.add_child(close)
+	service_tabs = TabContainer.new()
+	service_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(service_tabs)
+	var service := VBoxContainer.new()
+	service.name = "設備與資源"
+	service.add_theme_constant_override("separation", 12)
+	service_tabs.add_child(service)
+	box = service
 	status_label = Label.new()
 	status_label.add_theme_font_size_override("font_size", 22)
 	box.add_child(status_label)
@@ -75,6 +88,17 @@ func _ready() -> void:
 	box.add_child(vibration)
 	message = Label.new()
 	box.add_child(message)
+	structure_box = VBoxContainer.new()
+	structure_box.name = "車體結構"
+	structure_box.add_theme_constant_override("separation", 16)
+	service_tabs.add_child(structure_box)
+	var structure_title := Label.new()
+	structure_title.text = "車體結構｜維修、重建與型態配置"
+	structure_title.add_theme_color_override("font_color", IndustrialTheme.AMBER)
+	structure_box.add_child(structure_title)
+	structure_status = Label.new()
+	structure_box.add_child(structure_status)
+	_build_structure_rows()
 	device_box = VBoxContainer.new()
 	material_box = VBoxContainer.new()
 	recipe_box = VBoxContainer.new()
@@ -151,6 +175,81 @@ func _refresh() -> void:
 	for recipe in RecipeCatalog.all():
 		if recipe_buttons.has(recipe.recipe_id):
 			recipe_buttons[recipe.recipe_id].disabled = station == null or not connected_rv.has_materials(recipe.costs) or not connected_rv.has_usable_power(recipe.power_cost) or station.jobs.size() >= station.queue_capacity
+	_refresh_structures()
+
+func _construction() -> Node:
+	if not is_instance_valid(connected_rv): return null
+	var slots := connected_rv.get_node_or_null("StructureSlots")
+	return slots.construction if slots and is_instance_valid(slots.get("construction")) else null
+
+func _build_structure_rows() -> void:
+	for slot in RVStructureSlots.layout():
+		var row := VBoxContainer.new()
+		structure_box.add_child(row)
+		var label := Label.new()
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.add_child(label)
+		var selector := OptionButton.new()
+		for type in RVStructureSlots.types_for_slot(slot.id):
+			var definition: Resource = RVStructureSlots.definition_for(type)
+			selector.add_item(definition.display_name)
+			selector.set_item_metadata(selector.item_count - 1, type)
+		row.add_child(selector)
+		selector.item_selected.connect(func(_index: int): _refresh_structures())
+		structure_rows[slot.id] = {"label": label, "title": slot.label, "selector": selector}
+		var actions := HFlowContainer.new()
+		actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(actions)
+		_add_structure_button(actions, row, slot.id, "repair", "維修")
+		_add_structure_button(actions, row, slot.id, "rebuild", "重建選定型態")
+		if RVStructureSlots.types_for_slot(slot.id).size() > 1:
+			_add_structure_button(actions, row, slot.id, "convert", "變更選定型態")
+
+func _selected_type(slot: String) -> String:
+	var selector: OptionButton = structure_rows[slot].selector
+	return str(selector.get_item_metadata(selector.selected))
+
+func _add_structure_button(actions: Container, row: VBoxContainer, slot: String, operation: String, label: String) -> void:
+	var button := Button.new()
+	var explanation := Label.new()
+	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	explanation.add_theme_font_size_override("font_size", 20)
+	row.add_child(explanation)
+	button.pressed.connect(func():
+		var controller := _construction()
+		if controller:
+			var type := "" if operation == "repair" else _selected_type(slot)
+			var reason: String = controller.begin(get_parent(), slot, operation, type)
+			message.text = reason if not reason.is_empty() else "施工開始"
+			_refresh_structures())
+	actions.add_child(button)
+	structure_buttons.append({"button": button, "reason": explanation, "slot": slot, "operation": operation, "label": label})
+
+func _refresh_structures() -> void:
+	var controller := _construction()
+	if not controller: return
+	structure_status.text = controller.status_message()
+	var slots := connected_rv.get_node("StructureSlots")
+	for slot in structure_rows:
+		var target: Node = slots.panel(slot)
+		if not is_instance_valid(target): continue
+		var attached: PackedStringArray = target.dependent_names()
+		structure_rows[slot].label.text = "%s｜%s｜HP %.0f / %.0f｜%s\n附掛設備：%s" % [structure_rows[slot].title, target.equipment_name,
+			target.current_health, target.max_health, "已毀壞（空槽）" if target.is_destroyed else "完整" if target.current_health >= target.max_health else "受損",
+			"無" if attached.is_empty() else ", ".join(attached)]
+	for entry in structure_buttons:
+		var target: Node = slots.panel(entry.slot)
+		if not is_instance_valid(target):
+			entry.button.disabled = true
+			continue
+		var type: String = str(target.definition.type_id) if entry.operation == "repair" else _selected_type(entry.slot)
+		var definition: Resource = RVStructureSlots.definition_for(type)
+		var reason: String = controller.rejection_reason(get_parent(), entry.slot, entry.operation, "" if entry.operation == "repair" else type)
+		entry.button.text = "%s｜%d Metal Parts｜%.0f 秒" % [entry.label, controller.operation_cost(entry.operation, definition), controller.operation_seconds(entry.operation, definition)]
+		entry.reason.text = entry.label + "：" + reason
+		entry.reason.visible = not reason.is_empty()
+		entry.button.tooltip_text = reason
+		entry.button.disabled = not reason.is_empty()
 
 func _rebuild(devices: Array[Node]) -> void:
 	for box in [device_box, material_box, recipe_box]:

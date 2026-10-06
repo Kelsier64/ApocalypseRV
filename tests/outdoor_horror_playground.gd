@@ -108,7 +108,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var rv: Chassis = main.get_node("NewRv/Chassis")
 		rv.current_power = 80.0 if rv.current_power < 1 else 0.0
 	elif event.keycode == KEY_F9:
-		var panel: Equipment = main.get_node("NewRv/Chassis/RightFront")
+		var panel: RVStructurePanel = main.get_node("NewRv/Chassis/RightFront")
 		panel.current_health = panel.max_health if panel.current_health < panel.max_health * 0.3 else panel.max_health * 0.2
 	elif event.keycode == KEY_F10:
 		player.in_ui_mode = false

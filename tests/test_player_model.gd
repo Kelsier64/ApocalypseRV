@@ -115,7 +115,7 @@ func run() -> void:
 	check(absf(visual.global_position.y + model_sole_y) < .01, "Imported boot soles align with the actual floor")
 	check(absf(camera.global_position.y - 1.53) < .01, "Eye height is 1.53 m above ground")
 	# Looking down sideways from the eye used to hit our own capsule first.
-	var prop: Prop = load("res://props/scrap.tscn").instantiate()
+	var prop: Item = load("res://props/scrap.tscn").instantiate()
 	prop.freeze = true
 	prop.position = Vector3(1.2, .4, 0)
 	arena.add_child(prop)

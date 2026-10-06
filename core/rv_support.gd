@@ -17,6 +17,9 @@ func follow(body: CharacterBody3D, delta: float) -> bool:
 	if not is_instance_valid(surface) or not is_instance_valid(rv) or not surface.is_inside_tree():
 		clear()
 		return false
+	if surface is RVStructurePanel and surface.is_destroyed:
+		clear()
+		return false
 	if ClimbMath.find_rv_ancestor(surface) != rv:
 		clear()
 		return false

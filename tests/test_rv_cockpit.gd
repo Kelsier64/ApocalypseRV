@@ -48,7 +48,7 @@ func _run() -> void:
 	var rv: Chassis = shell.get_node("Chassis")
 	rv.freeze = true
 	rv.set_physics_process(false)
-	var seat: Equipment = rv.get_node("DriverSeat")
+	var seat: Item = rv.get_node("DriverSeat")
 	var visual: Node3D = seat.get_node("CockpitVisual")
 	visual.set_process(false)
 	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
@@ -57,6 +57,14 @@ func _run() -> void:
 	player.set_physics_process(false)
 	await physics_frame
 	await physics_frame
+	var side_door: RVStructurePanel = rv.get_node("RightMiddle")
+	check(VehicleStatus.read(rv).filter(func(row): return row.id == "door")[0].level == 0, "Closed vehicle structures leave door warning off")
+	side_door.restore_angles([-PI / 2])
+	check(VehicleStatus.read(rv).filter(func(row): return row.id == "door")[0].level == 3, "Open independent side door activates cockpit warning")
+	side_door.set_health(0.0)
+	check(VehicleStatus.read(rv).filter(func(row): return row.id == "door")[0].level == 0, "Broken door state does not leave a stale open-door warning")
+	side_door.set_health(side_door.max_health)
+	side_door.restore_angles([0.0])
 	var console_ray := PhysicsRayQueryParameters3D.create(seat.to_global(Vector3(1.3, 1.1, 0)), seat.to_global(Vector3(0.48, 0.7, -0.5)))
 	var console_hit := rv.get_world_3d().direct_space_state.intersect_ray(console_ray)
 	check(console_hit.get("collider") == seat, "Gear and brake console targets the same seat equipment")
@@ -173,27 +181,37 @@ func _run() -> void:
 		check(not locomotion.driving.active and skeleton.get_bone_pose_position(root_bone).is_equal_approx(Vector3.ZERO), "Repeated seat exit clears driving root pose")
 	mirrors._process(0.1)
 	for mirror in mirrors.mirrors: check(mirror.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Leaving the seat stops mirror rendering")
-	var left_panel: Equipment = rv.get_node("LeftFront")
-	left_panel.enabled = false
+	var left_panel: RVStructurePanel = rv.get_node("LeftFront")
+	left_panel.take_damage(100000.0)
 	mirrors._process(0.1)
-	check(not mirrors.mirrors[0].rig.visible and mirrors.mirrors[1].rig.visible, "Disabling a mirror's side panel removes only that mirror")
-	left_panel.enabled = true
+	check(not mirrors.mirrors[0].rig.visible and mirrors.mirrors[1].rig.visible, "Destroying a mirror's side panel removes only that mirror")
+	left_panel.set_health(left_panel.max_health)
 	var exit_local := rv.to_local(player.global_position)
 	check(exit_local.x > 0.5 and exit_local.x < 1.4 and exit_local.y < 0.7, "Default cockpit exits into the aisle instead of above the roof")
-	var original := seat.transform
-	seat.start_placement(player)
-	check(seat.is_being_placed and not seat.can_operate(), "Moving the whole cockpit stops its service")
-	var rim: GeometryInstance3D = visual.get_node("SteeringTilt/SteeringWheel/Rim")
-	check(rim.material_override == seat.ghost_material, "Nested steering wheel participates in placement preview")
-	seat.cancel_placement()
-	player.placement.placing_equipment = null
-	check(seat.transform.is_equal_approx(original) and rim.material_override == null, "Cancel restores cockpit placement and original material")
-	var moved := Transform3D(Basis(Vector3.UP, 0.3), Vector3(0.0, 0.5, -2.0))
-	seat.confirm_placement(rv.global_transform * moved, rv)
+	var cockpit_id := seat.persistent_id
+	check(seat.pickup(player).contains("已拾取") and not seat.is_fixed and not seat.can_operate(), "Picking up the whole cockpit stops its service")
+	check(player.inventory.active_item().state.id == cockpit_id and player.inventory.active_item().is_large, "Cockpit inventory owns the same large Item identity")
+	check(player.enter_equipment_placement(), "Held cockpit starts an independent placement preview")
+	var ghost := player.placement.placing_equipment as Item
+	var rim: GeometryInstance3D = ghost.get_node("CockpitVisual/SteeringTilt/SteeringWheel/Rim")
+	check(ghost.presentation_only and not ghost.can_operate() and rim.material_override == ghost.ghost_material, "Nested steering wheel participates in an inactive placement preview")
+	player.cancel_equipment_placement()
+	var held_rim: GeometryInstance3D = player.held_item_node.get_node("CockpitVisual/SteeringTilt/SteeringWheel/Rim")
+	check(player.inventory.active_item().state.id == cockpit_id and held_rim.material_override == null and player.held_item_node.visible, "Cancel retains the complete held cockpit and its original material")
+	player.global_position = rv.to_global(Vector3(0, 0.5, 0))
+	await physics_frame
+	await physics_frame
+	check(player.enter_equipment_placement(), "Cockpit preview can reopen after cancellation")
+	var moved := Transform3D(Basis(Vector3.UP, 0.15), Vector3(-0.7, 0.49605, -3.0))
+	player.placement.placing_equipment.global_transform = rv.global_transform * moved
+	player.placement.target_support = rv.get_node("Floor")
+	player.placement.can_place_equipment = true
+	check(player.placement.commit(player), "Held cockpit fixes at the validated new pose")
+	check(player.inventory.items.is_empty() and not player.is_placing_equipment(), "Cockpit fixation transfers inventory ownership once")
 	var snapshot := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.validate(snapshot), "Cockpit assembly keeps existing snapshot schema")
 	check(await VehicleSnapshot.apply(rv, snapshot), "Snapshot restores moved cockpit")
-	var restored: Equipment
+	var restored: Item
 	for device in rv.get_equipment():
 		if device.scene_file_path == "res://equipment/driver_seat.tscn": restored = device
 	check(restored != null and restored.transform.is_equal_approx(moved), "Saved cockpit position is preserved")
@@ -201,8 +219,9 @@ func _run() -> void:
 	mirrors._process(0.1)
 	check(mirrors.mirrors.size() == 2 and mirrors.mirrors[0].rig.visible, "Loading reconnects the existing mirror pair without orphan cameras")
 	# Open the new rear leaves before checking the passage and fixed jambs.
-	for device in rv.get_equipment():
+	for device in rv.get_structures():
 		if device.scene_file_path == "res://equipment/rv_rear_door.tscn": device.restore_angles([-PI / 2, PI / 2])
+	check(VehicleStatus.read(rv).filter(func(row): return row.id == "door")[0].level == 3, "Open independent rear door activates cockpit warning")
 	await physics_frame
 	var query := PhysicsRayQueryParameters3D.create(rv.to_global(Vector3(0, 1.4, 7)), rv.to_global(Vector3(0, 1.4, 5)))
 	check(rv.get_world_3d().direct_space_state.intersect_ray(query).is_empty(), "Rear entrance has no invisible wall")

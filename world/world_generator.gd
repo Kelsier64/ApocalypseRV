@@ -1,6 +1,7 @@
 extends Node3D
 ## v5+ streams both directions; indoor coordinates retain the outdoor anchor.
 var outdoor_sites: Dictionary = {}
+var dormant_items: Dictionary = {}
 var destroyed_trees: Dictionary = {}
 var generated_bands: Array[int] = []
 var restore_bands: Array[int] = []
@@ -105,6 +106,7 @@ func protected_bands(anchor: Vector3) -> Array[int]:
 func _spawn_band(index: int, gradual: bool = false) -> void:
 	building = true
 	var chunk := ChunkGenerator.new()
+	chunk.name = "Band_%d" % index
 	add_child(chunk)
 	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
 	chunk.set_meta("skip_walk_in", restoring_entities)
@@ -122,6 +124,8 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 				if child is Node3D and child.get_meta("poi_id", "") == site.id:
 					start_run.bind_shelter(child, site)
 					break
+	_stabilize_support_names(chunk)
+	if not restoring_entities: restore_dormant_items(index)
 	if index not in generated_bands: generated_bands.append(index)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
 	active_chunks.sort_custom(func(a, b): return int(a.index) < int(b.index))
@@ -175,7 +179,9 @@ func _despawn_entities_behind(player_z: float) -> void:
 			# v8 monsters already use the symmetric current-position policy above.
 			if profile.generation_version >= 8 and child is Monster: continue
 			if child is Node3D and child.global_position.z - player_z > distance and not _in_loaded_walk_in(child.global_position):
-				child.queue_free()
+				if child is Item:
+					_store_items([child])
+				else: child.queue_free()
 
 func _in_loaded_walk_in(point: Vector3) -> bool:
 	for entry in active_chunks:
@@ -191,5 +197,55 @@ func retire_band(entry: Dictionary) -> void:
 	if not entry.node.navigation_ready: return
 	for site in entry.node.sites:
 		if site.kind == "walk_in": WalkInSites.deactivate(self, site)
+	var retiring: Array = []
+	var container := WorldEntities.get_container(self)
+	for actor in container.get_children():
+		if not actor is Item or _in_loaded_walk_in(actor.global_position): continue
+		if floori(-actor.global_position.z / profile.chunk_length) == entry.index or _supported_by_chunk(actor, entry.node): retiring.append(actor)
+	_store_items(retiring)
 	active_chunks.erase(entry)
 	entry.node.queue_free()
+
+func _supported_by_chunk(item: Item, chunk: Node) -> bool:
+	var support: Node = item.mount_support
+	var visited := {}
+	while is_instance_valid(support):
+		if chunk.is_ancestor_of(support): return true
+		if not support is Item or visited.has(support): return false
+		visited[support] = true
+		support = support.mount_support
+	return false
+
+func _store_items(actors: Array) -> void:
+	var accepted: Array[Item] = []
+	for actor: Item in actors:
+		var saved := WorldActorSnapshot.capture(actor)
+		if saved.is_empty(): continue
+		var owner_position: Vector3 = actor.global_position
+		var support := actor.mount_support
+		var visited := {}
+		while is_instance_valid(support) and support is Item and not visited.has(support):
+			visited[support] = true
+			support = support.mount_support
+		if actor.is_fixed and support is StaticBody3D: owner_position = support.global_position
+		var band := floori(-owner_position.z / profile.chunk_length)
+		if not dormant_items.has(band): dormant_items[band] = []
+		dormant_items[band].append(saved)
+		accepted.append(actor)
+	for actor in accepted: actor.begin_world_transfer()
+	for actor in accepted: actor.free()
+
+func restore_dormant_items(index: int) -> void:
+	if not dormant_items.has(index): return
+	var records: Array = dormant_items[index]
+	var actors: Array = []
+	var container := WorldEntities.get_container(self)
+	for saved: Dictionary in records: actors.append(WorldActorSnapshot.restore(saved, container))
+	dormant_items.erase(index)
+	WorldActorSnapshot.restore_supports(records, actors, WorldActorSnapshot.domain(self))
+
+func _stabilize_support_names(node: Node) -> void:
+	for index in range(node.get_child_count()):
+		var child := node.get_child(index)
+		if str(child.name).begins_with("@"): child.name = "Anchor_%d" % index
+		_stabilize_support_names(child)

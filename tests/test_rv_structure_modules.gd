@@ -48,12 +48,48 @@ func _run() -> void:
 	await physics_frame
 	await physics_frame
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
-	var side: Equipment = rv.get_node("RightMiddle")
-	var rear: Equipment = rv.get_node("RearDoor")
-	check(rv.get_equipment().filter(func(d): return d.get("structure_kind") == "side").size() == 6, "Six independently owned side modules")
+	var side: RVStructurePanel = rv.get_node("RightMiddle")
+	var ladder_wall: RVStructurePanel = rv.get_node("LeftMiddle")
+	var rear: RVStructurePanel = rv.get_node("RearDoor")
+	check(rv.get_structures().filter(func(d): return d.structure_kind == "side").size() == 6, "Six independently owned side modules")
 	check(side.has_method("toggle_leaf") and not rv.get_node("LeftMiddle").has_method("toggle_leaf"), "Right wall-door-wall and left wall-wall-wall")
 	for slot in RVStructureSlots.layout():
 		check(slots.occupant(slot.id) != null, "Default socket occupied: " + slot.id)
+	check(RVStructureSlots.layout().size() == 12, "Six side, front, rear, three roof and one floor slots")
+	var roofs := rv.get_structures().filter(func(part): return part.structure_kind == "roof")
+	check(roofs.size() == 3, "Three independently owned roof panels")
+	var roof_weight := 0.0
+	for index in range(3):
+		var roof_panel := slots.occupant("roof_" + str(index))
+		check(roof_panel != null and roof_panel.mass == 50.0 and roof_panel.get_placement_bounds().size.is_equal_approx(Vector3(4, 0.2, 4)), "Four metre roof segment weighs 50 kg: " + str(index))
+		if roof_panel != null: roof_weight += roof_panel.mass
+	check(roof_weight == 150.0, "Segmenting the roof preserves its total 150 kg")
+	# Preserve the original chassis load and moment, whose 3000 kg included
+	# the deck, while adding installed shell, engine and Item as before.
+	var expected_intact_mass := 3000.0 + rv.get_engine().definition().weight
+	var expected_intact_moment := Vector3(0.0, -2400.0, 0.0) + rv.engine_bay.position * rv.get_engine().definition().weight
+	for part in rv.get_structures():
+		if part.mount_slot != "floor":
+			expected_intact_mass += part.mass
+			expected_intact_moment += part.position * part.mass
+	for device in rv.get_equipment():
+		expected_intact_mass += device.mass
+		expected_intact_moment += device.position * device.mass
+	rv.update_load()
+	check(is_equal_approx(rv.mass, expected_intact_mass), "Intact independent floor preserves the original total vehicle weight")
+	check(rv.center_of_mass.is_equal_approx(expected_intact_moment / expected_intact_mass), "Floor separation preserves the intact vehicle center of mass")
+	var middle_roof: RVStructurePanel = slots.occupant("roof_1")
+	var roof_mass_before := rv.mass
+	var roof_moment_before := rv.center_of_mass * rv.mass
+	middle_roof.take_damage(999.0)
+	await physics_frame
+	check(slots.occupant("roof_1") == null and slots.occupant("roof_0") != null and slots.occupant("roof_2") != null, "Destroying the middle roof leaves both neighbouring segments intact")
+	check(rv.get_node("CabinLightFront").can_operate() and rv.get_node("CabinLightRear").can_operate(), "An unsupported middle roof breach leaves the other roof lamps mounted")
+	rv.update_load()
+	check(is_equal_approx(rv.mass, roof_mass_before - 50.0), "One roof breach removes exactly one 50 kg segment")
+	check(rv.center_of_mass.is_equal_approx((roof_moment_before - middle_roof.position * 50.0) / rv.mass), "One roof breach updates the centre of mass independently")
+	middle_roof.set_health(middle_roof.max_health)
+	await physics_frame
 	# Real short E opens the aimed leaf.
 	aim(side.global_position, Vector3(2.5, 0, 0))
 	check(ray.get_collider() == side, "Closed side door is ray reachable")
@@ -61,48 +97,24 @@ func _run() -> void:
 	ray._step_buttons(side, false, false, 0.016)
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(side.angles[0] < -1.6, "Short E opens side door outward")
-	var open_angle: float = side.angles[0]
-	# F workflow returns to the persistent socket, independent of a surface ray hit.
-	side.start_placement(player)
-	check(side.angles[0] == 0.0, "Door folds for whole-frame placement")
-	player.placement.update_ghost(player)
-	check(player.placement.can_place_equipment, "Removed side door can return to its exact original slot: " + player.placement.message)
-	check(player.placement.target_support == rv, "Socket support is chassis, not neighbouring panel")
-	click(MOUSE_BUTTON_RIGHT)
-	check(is_equal_approx(side.angles[0], open_angle), "Cancel restores previous open angle")
-	side.start_placement(player)
-	player.placement.update_ghost(player)
-	click(MOUSE_BUTTON_LEFT)
-	check(side.mount_slot == "right_1" and not side.is_being_placed and side.angles[0] == 0.0, "Reinstall commits one closed door to original slot")
-	# Occupied socket and actual obstruction give distinct explanations.
-	side.start_placement(player)
-	aim(rv.to_global(Vector3(1.9, 1.5, 4)), Vector3(2.5, 0, 0))
-	player.placement.update_ghost(player)
-	check(not player.placement.can_place_equipment and player.placement.message.contains("槽位已有"), "Occupied socket explains refusal")
-	aim(rv.to_global(Vector3(1.9, 1.5, 0)), Vector3(2.5, 0, 0))
-	var crate := obstacle(rv.to_global(Vector3(1.9, 1.5, 0)))
-	await physics_frame
-	player.placement.update_ghost(player)
-	check(not player.placement.can_place_equipment and player.placement.message.contains("BlockingCrate"), "Blocked installation identifies obstacle")
-	crate.free()
-	await physics_frame
-	player.placement.update_ghost(player)
-	check(player.placement.can_place_equipment, "Removing obstacle immediately restores valid placement")
-	click(MOUSE_BUTTON_LEFT)
-	var wheel_panel: Equipment = rv.get_node("RightFront")
-	# Slots continue to follow tilted vehicles and do not allow installation through walls.
-	rv.rotation = Vector3(0.08, 0.3, -0.06)
-	await physics_frame
-	aim(wheel_panel.global_position, rv.global_basis.x * 2.5)
-	wheel_panel.start_placement(player)
-	player.placement.update_ghost(player)
-	check(player.placement.can_place_equipment, "Slot reinstall works on a tilted RV: " + player.placement.message)
-	click(MOUSE_BUTTON_LEFT)
-	check(wheel_panel.mount_slot == "right_0", "Tilted reinstall retains socket identity")
-	rv.rotation = Vector3.ZERO
+	# Structures expose door use, but never the movable Item lifecycle.
+	check(not (side as Node) is Item and not (rear as Node) is Item, "Door frames are independent vehicle structures")
+	for device in rv.get_structures():
+		check(not device.has_method("start_placement") and not device.has_method("repair_health"), "Structure has no F/H Item entry point: " + device.mount_slot)
+		check(not rv.get_equipment().has(device), "Structure is excluded from Item registry: " + device.mount_slot)
+		var prompt: String = ray.get_prompt(device)
+		check(not prompt.contains("長按 F") and not prompt.contains("長按 H"), "Structure prompt never offers field movement or repair")
+	ray._step_buttons(side, false, true, 2.1)
+	check(not player.is_placing_equipment(), "Holding F on a door cannot start placement")
+	ray._step_buttons(side, false, false, 0.0)
+	var previous_health := side.current_health
+	var field_repair := RepairOperation.new()
+	field_repair.step(player, side, true, 3.0)
+	check(side.current_health == previous_health and field_repair.progress == 0.0, "Holding H cannot repair a vehicle structure")
+	side.restore_angles([0.0])
 	player.position = Vector3(10, 0, 0)
 	await physics_frame
-	# Both rear leaves are separate E targets while F still owns the frame.
+	# Both rear leaves remain separate E targets on the fixed frame.
 	aim(rear.to_global(Vector3(-0.7, 0, 0)), Vector3(0, 0, 2.1))
 	check(rear.aimed_leaf(player) == 0, "Left rear leaf selected by its actual shape")
 	check(rear.interact(player) == "開門中", "Left rear leaf begins opening")
@@ -116,7 +128,7 @@ func _run() -> void:
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(rear.angles[1] > 1.6, "Right rear leaf opens outward")
 	# Check the whole swept path, not only its final pose.
-	crate = obstacle(side.to_global(Vector3(0, -0.1, 0.55)))
+	var crate := obstacle(side.to_global(Vector3(0, -0.1, 0.55)))
 	await physics_frame
 	var result: String = side.toggle_leaf(0)
 	check(result.contains("BlockingCrate") and side.targets[0] == 0.0, "Obstacle midway through swing prevents opening")
@@ -142,64 +154,88 @@ func _run() -> void:
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	# A closed door rejects equipment attachment to its moving leaf, but permits fixed jamb contact.
 	side.restore_angles([0.0])
-	var item: Equipment = rv.get_node("ItemBox")
+	var item: Item = rv.get_node("ItemBox")
 	check(PlacementRules.rejection_reason(item, side, Transform3D.IDENTITY, side.to_global(Vector3(0, 0, 0.05))).contains("活動門扇"), "Cannot mount equipment on moving door leaf")
 	check(side.allows_mount_at(side.to_global(Vector3(1.5, 0, 0.1))), "Fixed side jamb remains an attachment surface")
-	# Save actual angles, slot ownership, and validate corrupted structures before mutation.
-	var snapshot := VehicleSnapshot.capture(rv)
-	check(VehicleSnapshot.validate(snapshot), "New socket and leaf state validates")
-	var invalid := snapshot.duplicate(true)
-	for entry in invalid.equipment:
-		if entry.scene == "res://equipment/rv_rear_door.tscn": entry.service.door_angles = [INF, 0.0]
-	check(not VehicleSnapshot.validate(invalid), "Non-finite door angles are rejected")
-	var side_id := side.persistent_id
-	var rear_id := rear.persistent_id
-	check(await VehicleSnapshot.apply(rv, snapshot), "Snapshot reconstructs structure assemblies")
-	for d in rv.get_equipment():
-		if d.persistent_id == rear_id: rear = d
-		if d.persistent_id == side_id: side = d
-	check(rear.angles[0] < -1.6 and rear.angles[1] > 1.6 and rear.mount_slot == "rear", "Both rear angles and socket survive reload")
-	check(side.mount_slot == "right_1", "Side slot survives reload")
-	# Moving and reinstalling the large rear assembly also works when open.
-	aim(rear.global_position, Vector3(0, 0, 2.5))
-	rear.start_placement(player)
-	player.placement.update_ghost(player)
-	check(player.placement.can_place_equipment, "Large rear door returns to its slot: " + player.placement.message)
-	click(MOUSE_BUTTON_LEFT)
-	# A panel's dependencies detach, while other chassis sockets remain independent.
-	var support_panel: Equipment = slots.occupant("right_0")
-	var neighbour: Equipment = slots.occupant("right_2")
-	var mounted: Equipment = load("res://equipment/tablet_screen.tscn").instantiate()
+	# A destroyed slot keeps its state node while only its dependents drop.
+	var support_panel: RVStructurePanel = slots.occupant("right_0")
+	var neighbour: RVStructurePanel = slots.occupant("right_2")
+	var mounted: Item = load("res://equipment/tablet_screen.tscn").instantiate()
 	world.add_child(mounted)
 	mounted.confirm_placement(support_panel.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.3)), rv, support_panel)
-	support_panel.start_placement(player)
+	check(PlacementRules.valid_target(mounted, support_panel), "Live wall can support general Item")
+	check(not mounted.is_in_group(Groups.MONSTER_DAMAGEABLE), "Tablet is excluded from monster attack discovery")
+	var tablet_health := mounted.current_health
+	mounted.take_damage(100000.0)
+	check(mounted.current_health == tablet_health and not mounted.is_destroyed, "Tablet ignores all damage")
+	var indirect := Item.new()
+	indirect.equipment_name = "Indirect dependent"
+	world.add_child(indirect)
+	indirect.confirm_placement(mounted.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 0.5, 0)), rv, mounted)
+	check(support_panel.dependent_names().has(indirect.equipment_name), "Structure reports indirect supported Item")
+	rv.linear_velocity = Vector3(2.0, 0.0, 0.0)
+	rv.angular_velocity = Vector3(0.0, 0.4, 0.0)
+	var expected_velocity := ClimbMath.point_velocity(rv, mounted.global_position)
+	var released_velocities: Array[Vector3] = []
+	mounted.availability_changed.connect(func():
+		if mounted.get_connected_rv() == null: released_velocities.append(mounted.linear_velocity))
+	var neighbour_health := neighbour.current_health
+	support_panel.take_damage(100000.0)
 	await physics_frame
 	await physics_frame
-	check(mounted.get_connected_rv() == null and not mounted.freeze, "Moving one panel drops only its mounted equipment")
-	check(neighbour.get_connected_rv() == rv and slots.occupant("roof") != null, "Neighbours and roof remain supported by chassis")
-	click(MOUSE_BUTTON_RIGHT)
-	support_panel.take_damage(1000)
+	check(mounted.get_connected_rv() == null and not mounted.freeze, "Destroyed wall drops its mounted tablet")
+	check(indirect.get_connected_rv() == null and not indirect.freeze, "Wall removal cascades through indirect Item support")
+	check(not released_velocities.is_empty() and released_velocities[0].is_equal_approx(expected_velocity), "Dropped device inherits the vehicle point velocity")
+	rv.linear_velocity = Vector3.ZERO
+	rv.angular_velocity = Vector3.ZERO
+	check(slots.panel("right_0") == support_panel and slots.occupant("right_0") == null, "Broken wall retains a persistent empty slot")
+	check(support_panel.is_destroyed and not support_panel.visible and support_panel.collision_layer == 0, "Broken structure removes visuals and collision")
+	check(not support_panel.is_in_group(Groups.MONSTER_DAMAGEABLE), "Broken structure is no longer monster attackable")
+	check(not PlacementRules.valid_target(mounted, support_panel), "Destroyed wall cannot support placement")
+	check(neighbour.current_health == neighbour_health and neighbour.get_connected_rv() == rv, "Neighbour damage and support are independent")
+	check(CombatTargeting.build_target(support_panel, "Item").is_empty(), "Stale destroyed state node never becomes a combat target")
+	var remembered := RVSupport.new()
+	remembered.surface = support_panel
+	remembered.rv = rv
+	check(not remembered.follow(player, 1.0 / 60.0), "Remembered destroyed surface cannot carry an actor")
+	var ramp: RearRamp = rv.get_node("RearRamp")
+	rear.restore_angles([-deg_to_rad(100.0), deg_to_rad(100.0)])
+	check(ramp.doors_open(), "Ramp reads open rear door from structure slots")
+	rear.restore_angles([0.0, 0.0])
+	check(not ramp.doors_open(), "Closed rear structure blocks ramp deployment")
+	rear.take_damage(100000.0)
+	check(ramp.doors_open(), "Destroyed rear structure leaves clear ramp access")
+	var floor: RVStructurePanel = slots.occupant("floor")
+	check(floor != null and floor.max_health == 120.0 and floor.mass == 200.0, "One floor panel owns its health and weight")
+	var through_floor := PhysicsRayQueryParameters3D.create(rv.to_global(Vector3(0, 1.0, 2.6)), rv.to_global(Vector3(0, -0.4, 2.6)), 1)
+	var hit := world.get_world_3d().direct_space_state.intersect_ray(through_floor)
+	check(hit.get("collider") == floor, "Deck collision belongs to the floor structure")
+	var floor_dependents: Array[Node] = []
+	var removed_mass := floor.mass
+	var removed_moment := floor.position * floor.mass
+	for node_name in ["DriverSeat", "ItemBox", "Generator", "CraftingStation", "Scrapper", "TabletScreen"]:
+		var preset: Item = rv.get_node(node_name)
+		floor_dependents.append(preset)
+		removed_mass += preset.mass
+		removed_moment += preset.position * preset.mass
+		check(floor.dependent_names().has(preset.equipment_name), "Floor tracks stock direct or indirect support: " + node_name)
+	rv.update_load()
+	var mass_before_floor := rv.mass
+	var moment_before_floor := rv.center_of_mass * rv.mass
+	floor.take_damage(100000.0)
 	await physics_frame
 	await physics_frame
-	check(slots.occupant("right_0") == null and is_instance_valid(neighbour), "Destroying one segment frees only its own socket")
-	# Legacy stock shell upgrades once, preserves IDs/health and leaves custom transforms alone.
-	var legacy_shell: Node3D = load("res://rv/legacy/new_rv.tscn").instantiate()
-	legacy_shell.position.x = 20
-	world.add_child(legacy_shell)
-	var old_rv: Chassis = legacy_shell.get_node("Chassis")
-	old_rv.freeze = true
-	await physics_frame
-	var old_snapshot := VehicleSnapshot.capture(old_rv)
-	old_snapshot.version = 2
-	old_snapshot.health = old_rv.get_engine().health
-	for entry in old_snapshot.equipment:
-		entry.scene = entry.scene.replace("res://rv/legacy/", "res://equipment/")
-	var upgraded := VehicleSnapshot.upgrade(old_snapshot)
-	check(VehicleSnapshot.validate(upgraded), "Legacy standard body upgrades to valid modules")
-	check(upgraded.equipment.filter(func(e): return e.scene in ["res://equipment/rv_side_panel.tscn", "res://equipment/rv_side_door.tscn"]).size() == 6, "Legacy long sides split into six modules")
-	check(VehicleSnapshot.upgrade(upgraded) == upgraded, "Structural migration is idempotent")
+	for preset in floor_dependents:
+		check(preset.get_connected_rv() == null and not preset.freeze, "Floor breach drops stock preset Item: " + preset.equipment_name)
+	var roof_ladder: Item = rv.get_node("RoofLadder")
+	check(roof_ladder.get_connected_rv() == rv and roof_ladder.freeze and roof_ladder.mount_support == ladder_wall, "Floor breach retains the independently wall-mounted roof ladder")
+	rv.update_load()
+	check(is_equal_approx(rv.mass, mass_before_floor - removed_mass), "Floor breach removes exactly 200 kg of deck plus its dropped Item")
+	check(rv.center_of_mass.is_equal_approx((moment_before_floor - removed_moment) / rv.mass), "Floor and dependent removal update the vehicle center of mass")
+	hit = world.get_world_3d().direct_space_state.intersect_ray(through_floor)
+	check(hit.is_empty(), "Destroyed floor leaves no invisible deck collider in the frame gap")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: module layout, remove/reinstall, obstruction feedback, moving doors and persistence")
+	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop and floor breach")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

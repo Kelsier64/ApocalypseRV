@@ -60,12 +60,12 @@ func _run() -> void:
 	Input.action_release("interact")
 	player.set_physics_process(false)
 	expect(player.inventory.items.size() == 1, "Real roadside pickup enters inventory")
-	var moved: Prop = props_at_site()[0]
+	var moved: Item = props_at_site()[0]
 	moved.global_position = site.building * Vector3(-8, 0.6, 5)
 	moved.freeze = true
 	var moved_id := moved.persistent_id
 	var moved_pose := moved.global_transform
-	var brought: Prop = world.get_node("Scrap")
+	var brought: Item = world.get_node("Scrap")
 	brought.global_position = site.building * Vector3(8, 0.6, 5)
 	brought.freeze = true
 	var ids: Array[String] = []
@@ -83,11 +83,12 @@ func _run() -> void:
 	expect(not generator.outdoor_sites[site.id].loaded, "Minor owner unloads")
 	var dormant: Array = generator.outdoor_sites[site.id].actors
 	expect(dormant.filter(func(a): return a.kind == "monster").size() == 1, "Dead enemy excluded from dormant state")
-	expect(dormant.filter(func(a): return a.kind == "prop").size() == ids.size(), "Remaining and brought loot saved once")
+	expect(dormant.filter(func(a): return a.kind == "item").size() == ids.size(), "Remaining and brought loot saved once")
 	var checkpoint := root.get_node("Checkpoint")
 	expect(checkpoint.save_world(world, MINOR_SAVE), "Write v6 dormant checkpoint")
 	var saved: Dictionary = checkpoint.read_checkpoint(MINOR_SAVE)
-	expect(saved.get("generation_version") == 6 and saved.get("version") == 3, "v6 uses existing checkpoint format")
+	expect(saved.get("version") == 5, "Minor-site checkpoint uses the current v5 Item format")
+	expect(saved.get("generation_version") == 6, "Checkpoint format change retains v6 world generation")
 	expect(await checkpoint.load_world(world, MINOR_SAVE), "Disk restore succeeds")
 	world = current_scene
 	generator = world.get_node("WorldGenerator")

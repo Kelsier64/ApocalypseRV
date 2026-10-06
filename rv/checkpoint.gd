@@ -1,7 +1,8 @@
 extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
-const VERSION := 3
-const PATH := "user://rv_checkpoint.save"
+const VERSION := 5
+const PATH := "user://rv_checkpoint_v5.save"
+const LEGACY_PATH := "user://rv_checkpoint_v4.save"
 const WORLD_SCENES := {"legacy": "res://world/test_world.tscn", "shelter": "res://world/main_world.tscn"}
 var pending: Dictionary = {}
 var message: String = ""
@@ -22,10 +23,11 @@ func error_message() -> String:
 	if last_error.get("code", "") == "motion": return last_error.get("detail", "")
 	match last_error.get("code", ""):
 		"state": return "Cannot save/load: return outdoors, finish interaction and wait for terrain"
+		"preview": return "Confirm or cancel Item placement before saving"
 		"open": return "Cannot open checkpoint; check the save folder permissions"
 		"write": return "Cannot write checkpoint; check free disk space and permissions"
 		"rename", "backup": return "Cannot replace checkpoint; close programs locking the save file and retry"
-		"version": return "Unsupported checkpoint version"
+		"version": return "This checkpoint uses an incompatible Item format; start a new run"
 		"timeout": return "World preparation timed out; current world retained"
 		_: return "Checkpoint rejected at %s; current world retained" % last_error.get("field", "data")
 
@@ -70,15 +72,25 @@ func save_world(world: Node, path: String) -> bool:
 	# Saving in that interval would persist generated_bands without its Rakers.
 	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
 		return _fail("state")
-	if player.get_player_mode() != player.PlayerMode.NORMAL:
-		return _fail("state")
-	var vehicles: Array[Dictionary] = []
+	# An open construction terminal puts the operator in UI mode. Report the
+	# vehicle's concrete blocker before the generic player interaction gate.
+	var matching_vehicles: Array[Node] = []
 	for rv in get_tree().get_nodes_in_group(Groups.CHASSIS):
 		if WorldEntities.same_world(player, rv):
-			if not rv.save_block_reason().is_empty(): return _fail("motion", "vehicle", rv.save_block_reason())
-			var state := VehicleSnapshot.capture(rv)
-			if state.is_empty(): return _fail("state")
-			vehicles.append(state)
+			var reason: String = rv.save_block_reason()
+			if not reason.is_empty(): return _fail("motion", "vehicle", reason)
+			matching_vehicles.append(rv)
+	if player.has_method("is_placing_equipment") and player.is_placing_equipment(): return _fail("preview")
+	if player.get_player_mode() != player.PlayerMode.NORMAL:
+		return _fail("state")
+	# A carried articulated body may have advanced since the previous frame.
+	# Commit its live pose to its single inventory owner before serialization.
+	if player.has_method("_sync_held_item_state"): player._sync_held_item_state()
+	var vehicles: Array[Dictionary] = []
+	for rv in matching_vehicles:
+		var state := VehicleSnapshot.capture(rv)
+		if state.is_empty(): return _fail("state")
+		vehicles.append(state)
 	var actors: Array[Dictionary] = []
 	_collect_actors(world, actors)
 	var bands: Array[int] = []
@@ -95,6 +107,7 @@ func save_world(world: Node, path: String) -> bool:
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted,
 		"body": player.body_state.capture()}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
+	data["dormant_items"] = generator.dormant_items.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
 	data["world_id"] = "shelter" if start_run != null else "legacy"
@@ -112,7 +125,7 @@ func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
 		if child.is_queued_for_deletion() or child.is_in_group(Groups.CHASSIS) or child.is_in_group(Groups.PLAYER): continue
 		var saved := WorldActorSnapshot.capture(child)
 		if not saved.is_empty(): result.append(saved)
-		elif not (child is Prop or child is Equipment or child is Monster): _collect_actors(child, result)
+		elif not (child is Item or child is Monster): _collect_actors(child, result)
 
 func write_checkpoint(path: String, data: Dictionary) -> bool:
 	last_error = {}
@@ -120,6 +133,14 @@ func write_checkpoint(path: String, data: Dictionary) -> bool:
 	if not result.ok: return _fail(result.code, path, str(result.get("error", "")))
 	last_error = {}
 	return true
+
+func read_default_checkpoint(current_path: String = PATH, legacy_path: String = LEGACY_PATH) -> Dictionary:
+	# F9 must explain the new-run requirement when only the previous save exists.
+	# Detect its presence without decoding, migrating or modifying that file.
+	if not FileAccess.file_exists(current_path) and (FileAccess.file_exists(legacy_path) or (current_path == PATH and legacy_path == LEGACY_PATH and FileAccess.file_exists("user://rv_checkpoint.save"))):
+		_fail("version", "version")
+		return {}
+	return read_checkpoint(current_path)
 
 func read_checkpoint(path: String) -> Dictionary:
 	last_error = {}
@@ -137,7 +158,7 @@ func read_checkpoint(path: String) -> Dictionary:
 	if read_error != OK or not data is Dictionary or not CheckpointSchema.bounded(data, 0, [CheckpointSchema.MAX_ENTRIES]):
 		_fail("data", "file", str(read_error))
 		return {}
-	if not data.get("version") is int or data.version not in [1, 2, VERSION]:
+	if not data.get("version") is int or data.version != VERSION:
 		_fail("version", "version")
 		return {}
 	data = _upgrade_checkpoint(data)
@@ -196,12 +217,23 @@ func validation_error(data: Dictionary) -> String:
 	for i in range(data.actors.size()):
 		var actor_error := WorldActorSnapshot.validation_error(data.actors[i], "actors[%d]" % i)
 		if not actor_error.is_empty(): return actor_error
+	var dormant: Variant = data.get("dormant_items", {})
+	if not dormant is Dictionary: return "dormant_items"
+	var outdoor_graph: Array = data.actors.duplicate()
+	for vehicle in data.vehicles: outdoor_graph.append_array(vehicle.mounted_items)
+	for band in dormant:
+		if not band is int or not dormant[band] is Array: return "dormant_items.band"
+		for actor in dormant[band]:
+			if not WorldActorSnapshot.validation_error(actor, "dormant_items.actor").is_empty() or actor.kind != "item": return "dormant_items.actor"
+		outdoor_graph.append_array(dormant[band])
+	var graph_error := WorldActorSnapshot.graph_error(outdoor_graph)
+	if not graph_error.is_empty(): return graph_error
 	var outdoor_error := WalkInSites.validation_error(data)
 	if not TreeImpact.valid_ledger(data.get("destroyed_trees", {})): return "destroyed_trees"
 	if not outdoor_error.is_empty(): return outdoor_error
 	var poi_error := CheckpointSchema.poi_error(data.poi)
 	if not poi_error.is_empty(): return poi_error
-	if not _unique_engine_ids(data): return "engine.id.duplicate"
+	if not ItemState.unique_ids(data, {}): return "item.id.duplicate"
 	return ""
 
 func prepare_world(world: Node) -> void:
@@ -221,6 +253,7 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
 	world.get_node("WorldGenerator").outdoor_sites = pending.get("outdoor_sites", {}).duplicate(true)
+	world.get_node("WorldGenerator").dormant_items = pending.get("dormant_items", {}).duplicate(true)
 	world.get_node("WorldGenerator").destroyed_trees = pending.get("destroyed_trees", {}).duplicate()
 	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
 
@@ -251,8 +284,9 @@ func restore_world(world: Node) -> Dictionary:
 			staging.free()
 			_fail("apply", "vehicles[%d]" % i, saved.id)
 			return {"ok": false, "error": last_error}
+	var restored_actors: Array = []
 	for saved in data.actors:
-		WorldActorSnapshot.restore(saved, container)
+		restored_actors.append(WorldActorSnapshot.restore(saved, container))
 	var old: Array[Node] = []
 	_collect_removable(world, old)
 	for actor in old:
@@ -262,6 +296,8 @@ func restore_world(world: Node) -> Dictionary:
 	for rv in domain.get_children():
 		if rv != container: WorldEntities.transfer(rv, world)
 	staging.free()
+	WorldActorSnapshot.restore_supports(data.actors, restored_actors, world)
+	for chunk in world.get_node("WorldGenerator").active_chunks: world.get_node("WorldGenerator").restore_dormant_items(chunk.index)
 	world.get_node("PoiInstances").saved_instances = data.poi.duplicate(true)
 	world.get_node("Player").restore_checkpoint_state(data.player)
 	world.get_node("WorldGenerator").restoring_entities = false
@@ -280,7 +316,7 @@ func load_world(old_world: Node, path: String) -> bool:
 		message = error_message()
 		label.text = message
 		return false
-	var data := read_checkpoint(path)
+	var data := read_default_checkpoint() if path == PATH else read_checkpoint(path)
 	if data.is_empty():
 		message = error_message()
 		label.text = message
@@ -344,101 +380,14 @@ func _remove_gameplay_groups(node: Node) -> void:
 func _collect_removable(node: Node, result: Array[Node]) -> void:
 	for child in node.get_children():
 		if child.is_in_group(Groups.PLAYER): continue
-		if child is Prop or child is Equipment or child is Monster or child.is_in_group(Groups.CHASSIS):
+		if child is Item or child is Monster or child.is_in_group(Groups.CHASSIS):
 			result.append(child)
 		else:
 			_collect_removable(child, result)
 
-# Convert only recognized v1 structures, in memory. Original save stays untouched.
+# No legacy migration: v5 unifies Item data and support references.
 func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) in [2, VERSION]:
-		if not source.get("vehicles") is Array: return {}
-		var upgraded := source.duplicate(true)
-		upgraded.version = VERSION
-		for index in range(upgraded.vehicles.size()):
-			if not upgraded.vehicles[index] is Dictionary: return {}
-			upgraded.vehicles[index] = VehicleSnapshot.upgrade(upgraded.vehicles[index])
-		CheckpointSchema.discard_legacy_poi(upgraded)
-		_discard_retired_monsters(upgraded)
-		return upgraded
-	if source.get("version", 0) != 1 or not source.get("vehicles") is Array or not source.get("actors") is Array or not source.get("player") is Dictionary or not source.player.get("items") is Array or not source.get("poi") is Dictionary: return {}
-	var data := source.duplicate(true)
-	for index in range(data.vehicles.size()):
-		if not data.vehicles[index] is Dictionary: return {}
-		data.vehicles[index] = VehicleSnapshot.upgrade(data.vehicles[index])
-		if data.vehicles[index].is_empty(): return {}
-		var vehicle: Dictionary = data.vehicles[index]
-		# Migration consumes these fields before the final current-schema validation.
-		if not vehicle.get("materials") is Dictionary or not MaterialStorage.new().valid_amounts(vehicle.materials) or not VehicleSnapshot._number(vehicle.get("fuel")) or not VehicleSnapshot._number(vehicle.get("fuel_capacity")) or not vehicle.get("equipment") is Array: return {}
-		for device in vehicle.equipment:
-			if not device is Dictionary or not device.get("service") is Dictionary: return {}
-	if data.vehicles.is_empty(): return {}
-	var rv: Dictionary = data.vehicles[0]
-	# Legacy material bundles (inventory, loose actors, POIs, recycler inputs)
-	# are credited once to the first saved chassis, even if it exceeds capacity.
-	if not _convert_legacy_entries(data.player.items, rv): return {}
-	if not _convert_legacy_entries(data.actors, rv): return {}
-	data.player.slot = mini(int(data.player.get("slot", 0)), maxi(0, data.player.items.size() - 1))
-	for poi in data.poi.values():
-		if not poi is Dictionary or not poi.get("actors", []) is Array: return {}
-		if not _convert_legacy_entries(poi.get("actors", []), rv): return {}
-	for vehicle in data.vehicles:
-		for device in vehicle.equipment:
-			if not _convert_legacy_entries(device.service.get("inputs", []), rv): return {}
-	data.version = VERSION
-	CheckpointSchema.discard_legacy_poi(data)
-	_discard_retired_monsters(data)
-	return data
-
-func _discard_retired_monsters(data: Dictionary) -> void:
-	# A removed enemy scene cannot be instantiated. Preserve the rest of an old
-	# checkpoint by dropping only well-formed monsters from a retired scene.
-	_discard_retired_monsters_from(data.get("actors"), true)
-	if data.get("poi") is Dictionary:
-		for entry in data.poi.values():
-			if entry is Dictionary: _discard_retired_monsters_from(entry.get("actors"), false)
-	if data.get("outdoor_sites") is Dictionary:
-		for entry in data.outdoor_sites.values():
-			if entry is Dictionary: _discard_retired_monsters_from(entry.get("actors"), true)
-
-func _discard_retired_monsters_from(actors: Variant, has_kind: bool) -> void:
-	if not actors is Array: return
-	for index in range(actors.size() - 1, -1, -1):
-		var actor: Variant = actors[index]
-		if not actor is Dictionary: continue
-		if has_kind and actor.get("kind") != "monster": continue
-		if not has_kind and not actor.has("health"): continue
-		var scene: Variant = actor.get("scene")
-		if not scene is String or not scene.begins_with("res://enemies/"): continue
-		if not CheckpointSchema.valid_transform(actor.get("transform")) or not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: continue
-		if SaveSceneCatalog.resolve(scene, "monster") == null and not ResourceLoader.exists(scene): actors.remove_at(index)
-
-func _convert_legacy_entries(entries: Array, rv: Dictionary) -> bool:
-	for index in range(entries.size() - 1, -1, -1):
-		var entry: Variant = entries[index]
-		if not entry is Dictionary: return false
-		var scene: Variant = entry.get("scene", entry.get("scene_path", ""))
-		var state: Variant = entry.get("state", {})
-		if scene == "res://props/material_bundle.tscn":
-			if not state is Dictionary or not state.get("materials") is Dictionary or not MaterialStorage.new().valid_amounts(state.materials): return false
-			for material in state.materials:
-				rv.materials[material] = int(rv.materials.get(material, 0)) + state.materials[material]
-			entries.remove_at(index)
-		elif scene == "res://equipment/fuel_tank.tscn":
-			var service: Variant = entry.get("service", {})
-			if not service is Dictionary or not VehicleSnapshot._number(service.get("fuel", 0.0)): return false
-			rv.fuel += maxf(0.0, service.get("fuel", 0.0))
-			rv.fuel_capacity = maxf(rv.fuel_capacity, rv.fuel)
-			entry.scene = "res://equipment/fuel_port.tscn"
-			service.erase("fuel")
-			service.erase("capacity")
-		elif scene == "res://equipment/material_rack.tscn":
-			entry.scene = "res://equipment/item_box.tscn"
-			if entry.get("service", {}) is Dictionary: entry.get("service", {}).erase("capacity")
-		if entry.get("service", {}) is Dictionary:
-			var inputs: Variant = entry.get("service", {}).get("inputs", [])
-			if not inputs is Array or not _convert_legacy_entries(inputs, rv): return false
-	return true
+	return source.duplicate(true) if source.get("version", 0) == VERSION else {}
 
 func _unique_engine_ids(data: Dictionary) -> bool:
 	return EngineState.unique_ids(data)

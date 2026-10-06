@@ -81,29 +81,12 @@ static func poi_error(value: Variant, path := "poi") -> String:
 			return prefix + ".missing_layout"
 		var content_error := _bunker_content_error(entry)
 		if not content_error.is_empty(): return prefix + "." + content_error
-		var actor_ids: Dictionary = {}
 		for i in range(entry.actors.size()):
-			var actor: Variant = entry.actors[i]
-			var field := prefix + ".actors[%d]" % i
-			if not actor is Dictionary or not valid_transform(actor.get("transform")): return field + ".transform"
-			if actor.has("id") and (not actor.id is String or actor.id.is_empty()): return field + ".id"
-			if actor.has("health"):
-				if SaveSceneCatalog.resolve(actor.get("scene"), "monster") == null or not VehicleSnapshot._number(actor.health) or actor.health < 0: return field + ".health/scene"
-				if actor.has("state"): return field + ".unexpected_item_state"
-			else:
-				if SaveSceneCatalog.resolve(actor.get("scene"), "prop") == null: return field + ".scene"
-				if not actor.get("name") is String or not actor.get("large") is bool or not actor.get("frozen") is bool or not yields_valid(actor.get("yields")): return field
-				if actor.scene == "res://props/corpse.tscn" and not actor.large: return field + ".large"
-				if not actor.get("state", {}) is Dictionary or not VehicleSnapshot.valid_prop_state(actor.scene, actor.get("state", {})): return field + ".state"
-			var identity: String = actor.get("id", "")
-			if not actor.has("health"): identity = actor.get("state", {}).get("id", identity)
-			if not identity.is_empty():
-				if actor_ids.has(identity): return field + ".duplicate_id"
-				actor_ids[identity] = true
-		for cache: Dictionary in entry.get("caches", []):
-			for item: Dictionary in cache.remaining:
-				if actor_ids.has(item.state.id): return prefix + ".duplicate_cache_item"
-				actor_ids[item.state.id] = true
+			var actor_error := WorldActorSnapshot.validation_error(entry.actors[i], prefix + ".actors[%d]" % i)
+			if not actor_error.is_empty(): return actor_error
+		var graph_error := WorldActorSnapshot.graph_error(entry.actors)
+		if not graph_error.is_empty(): return prefix + "." + graph_error
+		if not ItemState.unique_ids(entry, {}): return prefix + ".duplicate_id"
 	return ""
 
 static func _bunker_content_error(entry: Dictionary) -> String:
@@ -125,7 +108,7 @@ static func _bunker_content_error(entry: Dictionary) -> String:
 		seen[cache.id] = true
 		if not valid_transform(cache.get("transform")) or not cache.get("searched") is bool or not cache.get("remaining") is Array or cache.remaining.size() > PlayerInventory.MAX_SLOTS: return "cache.state"
 		for item in cache.remaining:
-			if not item is Dictionary or SaveSceneCatalog.resolve(item.get("scene"), "prop") == null or not item.get("name") is String or not item.get("large") is bool: return "cache.item"
+			if not item is Dictionary or SaveSceneCatalog.resolve(item.get("scene"), "item") == null or not item.get("name") is String or not item.get("large") is bool: return "cache.item"
 			if not item.get("state") is Dictionary or not VehicleSnapshot.valid_prop_state(item.scene, item.state): return "cache.item_state"
 			if not item.state.get("id") is String or item.state.id.is_empty(): return "cache.item_id"
 	return ""

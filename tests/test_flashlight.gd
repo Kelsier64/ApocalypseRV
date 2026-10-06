@@ -55,7 +55,7 @@ func _run() -> void:
 	world.add_child(flashlight)
 	flashlight.freeze = true
 	_expect(flashlight.charge == 100.0 and not flashlight.switched_on and not flashlight.get_node("Beam").visible, "Ground flashlight starts full and off")
-	_expect(not flashlight.is_large and SaveSceneCatalog.resolve(SCENE, "prop") != null, "Flashlight is a whitelisted small Prop")
+	_expect(not flashlight.is_large and SaveSceneCatalog.resolve(SCENE, "item") != null, "Flashlight is a whitelisted small Item")
 	for i in PlayerInventory.MAX_SLOTS:
 		_expect(player.add_item("Scrap", false, "res://props/scrap.tscn"), "Fill inventory slot")
 	_expect(flashlight.interact(player).begins_with("無法拾取"), "Full inventory refuses pickup")
@@ -66,8 +66,8 @@ func _run() -> void:
 	var id := flashlight.persistent_id
 	_expect(flashlight.interact(player).begins_with("已拾取"), "Flashlight pickup succeeds")
 	await process_frame
-	_expect(player.inventory.items.size() == 1 and player.inventory.active_item().state.id == id, "Pickup preserves Prop identity in inventory")
-	_expect(not is_instance_valid(flashlight), "Picked-up world Prop is removed")
+	_expect(player.inventory.items.size() == 1 and player.inventory.active_item().state.id == id, "Pickup preserves Item identity in inventory")
+	_expect(not is_instance_valid(flashlight), "Picked-up world Item is removed")
 	player._toggle_flashlight()
 	_expect(player.inventory.active_item().state.flashlight.on and player.held_item_node.get_node("Beam").visible, "L toggle lights selected held flashlight")
 	player._advance_flashlight(150.0)

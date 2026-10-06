@@ -68,14 +68,14 @@ func run() -> void:
 	player.set_physics_process(false)
 	player.enter_seat_mode(rv.get_node("DriverSeat"))
 	await physics_frame
-	var door: Equipment=rv.get_node("RightMiddle")
+	var door: RVStructurePanel=rv.get_node("RightMiddle")
 	door.current_health=24
-	var roof: Equipment=rv.get_node("Ceiling")
+	var roof: RVStructurePanel=rv.get_node("RoofRear")
 	roof.current_health=10000
 	spawn(Vector3(2.65,-.35,0))
 	await ticks(1500)
 	print("Raker door pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health," posture ",actor.crouched," shoulder ",actor.to_local(actor.grab_shoulder_position(1))," gate ",actor.grab.contact_failure," clip ",actor.get_node("BodyMesh").animation_player.current_animation)
-	check(not is_instance_valid(door),"New species destroys side door")
+	check(door.is_destroyed,"New species destroys side door")
 	check(actor.crouched and actor.boarding.cabin.inside(actor,rv),"Enlarged monster enters cabin in low posture")
 	check(player.current_player_health<10000,"Low attack reaches seated driver after door breach")
 	check(target_survived and player.body_state.has_part(&"head") and player.seated_in==rv.get_node("DriverSeat"),"Door pursuit retains a living seated target")
@@ -83,7 +83,7 @@ func run() -> void:
 	spawn(Vector3(0,2.55,2.8))
 	await ticks(1300)
 	print("Raker roof pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health)
-	check(not is_instance_valid(roof),"New species breaks supporting roof")
+	check(roof.is_destroyed,"New species breaks supporting roof")
 	check(actor.crouched and actor.boarding.mode==MonsterBoarding.Mode.NONE,"Drops into cabin and acquires low locomotion")
 	check(player.current_player_health<10000,"Roof breaker pursues driver inside")
 	check(target_survived and player.body_state.has_part(&"head") and player.seated_in==rv.get_node("DriverSeat"),"Roof pursuit retains a living seated target")
@@ -92,7 +92,9 @@ func run() -> void:
 	player.in_ui_mode=true
 	player.position=rv.to_global(Vector3(6,-1.2,1.5))
 	player.current_player_health=10000
-	await ticks(1500)
+	# The newly damageable floor is a valid intermediate breach target when
+	# the quarry moves below deck height. Allow the real breach and exit to finish.
+	await ticks(2400)
 	print("Raker exit pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health)
 	check(rv.to_local(actor.global_position).x>3.5,"Exits through the real breach")
 	check(not actor.crouched,"Returns to full standing height outside")

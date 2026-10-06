@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 var storage_ui: CanvasLayer
 
 func get_interaction_prompt(_player: Node3D) -> String:

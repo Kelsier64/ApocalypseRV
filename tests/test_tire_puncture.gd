@@ -32,7 +32,7 @@ func run() -> void:
 	rv.linear_velocity = Vector3.ZERO
 	var old_id := rv.wheel_ids[0]
 	check(rv.remove_wheel_to_world(0), "Flat wheel can be removed")
-	var props := WorldEntities.get_container(rv).get_children().filter(func(n): return n is Prop and n.item_name == ItemNames.WHEEL)
+	var props := WorldEntities.get_container(rv).get_children().filter(func(n): return n is Item and n.item_name == ItemNames.WHEEL)
 	check(props.size() == 1 and props[0].condition == 0 and props[0].persistent_id == old_id, "Removed flat preserves condition and identity")
 	var player: Node3D = load("res://player/player.tscn").instantiate()
 	world.add_child(player)

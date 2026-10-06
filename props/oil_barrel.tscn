@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://6sdbg58ph7q0"]
 
-[ext_resource type="Script" uid="uid://jt4vevnifveb" path="res://props/interactable_item.gd" id="1_jc5bg"]
+[ext_resource type="Script" uid="uid://lmov80j6lmki" path="res://props/item.gd" id="1_jc5bg"]
 
 [sub_resource type="StandardMaterial3D" id="Material_graybox"]
 albedo_color = Color(0.48, 0.48, 0.48, 1)
@@ -19,8 +19,8 @@ height = 1.0
 radius = 0.32958984
 
 [node name="OilBarrel" type="RigidBody3D" unique_id=71407304]
-mass = 20.0
 script = ExtResource("1_jc5bg")
+mass = 20.0
 item_name = "Oil Barrel"
 is_large = true
 scrap_yields = {

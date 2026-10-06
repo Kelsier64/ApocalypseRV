@@ -21,7 +21,9 @@ const CLIMB_WALL_MAX_DOT = 0.85
 const CLIMB_MIN_HIT_Y = 0.1
 const CLIMB_MAX_HIT_Y = 1.4
 const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
-const CLIMB_VERTICAL_SPEED = 2.6
+const CLIMB_VERTICAL_SPEED = 1.6
+const LADDER_TRANSITION_SPEED = 1.4
+const LADDER_ENTRY_FACING_DOT = 0.8
 const CLIMB_SIDE_SPEED = 1.2
 const CLIMB_WALL_STICK_SPEED = 0.0
 const CLIMB_CONTACT_GRACE_TIME = 0.6
@@ -33,7 +35,6 @@ const CLIMB_WALL_ALIGN_OFFSET = 0.22
 const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
 const CLIMB_DEBUG_LOG_ABORTS = false
 const LARGE_ITEM_CLIMB_MESSAGE := "手持大型物品時無法攀爬，請先丟棄、消耗或存入"
-const PropScript = preload("res://props/interactable_item.gd")
 
 @onready var camera = $Camera3D
 @onready var game_settings = get_node("/root/GameSettings")
@@ -80,6 +81,16 @@ var seated_in: Node3D = null
 enum LocomotionState { NORMAL, CLIMBING }
 var locomotion_state: LocomotionState = LocomotionState.NORMAL
 var active_climb_rv: Node3D = null
+var active_climb_ladder: RVLadder = null
+enum LadderTransition { NONE, ENTRY, LANDING, TOP }
+var ladder_transition := LadderTransition.NONE
+var ladder_top_input_ready := false
+var ladder_transition_direction := 0.0
+var ladder_transition_points: Array[Vector3] = []
+var ladder_landing_support: Node3D
+var ladder_landing_at_top := false
+var ladder_landed := false
+var previous_climb_ladder_transform := Transform3D.IDENTITY
 var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
 var active_wall_normal: Vector3 = Vector3.ZERO
 var climb_carrier_velocity := Vector3.ZERO
@@ -112,13 +123,20 @@ var stamina_exhausted: bool = false
 @onready var climb_wall_probe = $ClimbWallProbe
 @onready var climb_upward_probe = $ClimbUpwardProbe
 
-func add_prop_item(prop: Prop, path: String) -> bool:
-	if not can_use_hands(2 if prop.is_large else 1): return false
-	return add_item(prop.item_name, prop.is_large, path, prop.capture_item_state())
+func add_prop_item(item: Item, path: String) -> bool:
+	# Validate every refusal before detaching supports or stopping services.
+	if not can_use_hands(2 if item.is_large else 1) or not inventory.can_add_item(item.is_large): return false
+	if not item.can_pickup(self): return false
+	if not ItemState.valid(path, item.capture_item_state()): return false
+	item.prepare_pickup()
+	return add_item(item.item_name, item.is_large, path, item.capture_item_state())
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
+	if not inventory.can_add_item(is_large): return false
+	var canonical := _create_granted_item_state(scene_path, state)
+	if canonical.is_empty(): return false
 	var previous_slot := inventory.active_slot
-	if not inventory.add_item(item_name, is_large, scene_path, state):
+	if not inventory.add_item(item_name, is_large, scene_path, canonical):
 		return false
 	_abort_climb_if_holding_large_item()
 	if inventory.active_slot != previous_slot:
@@ -127,6 +145,40 @@ func add_item(item_name: String, is_large: bool, scene_path: String, state: Dict
 	if inventory.active_slot == inventory.items.size() - 1:
 		_equip_active_slot()
 	return true
+
+func _create_granted_item_state(scene_path: String, state: Dictionary) -> Dictionary:
+	# This boundary creates newly granted Items, never repairs saved records.
+	if state.has_all(["id", "condition"]):
+		return state.duplicate(true) if ItemState.valid(scene_path, state) else {}
+	if state.has("id") and (not state.id is String or state.id.is_empty()): return {}
+	if state.has("condition") and (not VehicleSnapshot._number(state.condition) or state.condition < 0 or state.condition > 100): return {}
+	var scene := SaveSceneCatalog.resolve(scene_path, "item")
+	if scene == null: return {}
+	var item := scene.instantiate() as Item
+	item.presentation_only = true
+	item.visible = false
+	var seed := state.duplicate(true)
+	if seed.get("battery") is Dictionary:
+		if not seed.battery.has("condition"): seed.battery["condition"] = seed.get("condition", 100.0)
+		if not seed.battery.has("scene_path"): seed.battery["scene_path"] = scene_path
+		if not VehicleSnapshot.valid_battery(seed.battery):
+			item.free()
+			return {}
+		if (seed.has("id") and seed.id != seed.battery.id) or (seed.has("condition") and not is_equal_approx(float(seed.condition), float(seed.battery.condition))):
+			item.free()
+			return {}
+		if not seed.has("id"): seed["id"] = seed.battery.id
+		if not seed.has("condition"): seed["condition"] = seed.battery.condition
+	if seed.has("engine") and (not EngineState.valid(seed.engine, false) or (seed.has("id") and seed.id != seed.engine.id)):
+		item.free()
+		return {}
+	item.restore_item_state(seed)
+	# Ready initializes authored defaults (for example large battery capacity),
+	# while presentation_only prevents service, physics and RV registration.
+	add_child(item)
+	var canonical := item.capture_item_state()
+	item.free()
+	return canonical if ItemState.valid(scene_path, canonical) else {}
 
 func _update_inventory_display():
 	if inventory_ui and inventory_ui.has_method("update_slots"):
@@ -191,7 +243,7 @@ func _advance_flashlight(delta: float) -> void:
 		_update_inventory_display()
 
 func _set_active_slot(index: int) -> void:
-	if is_grabbed() or is_gameplay_input_blocked(): return
+	if is_grabbed() or is_gameplay_input_blocked() or is_placing_equipment(): return
 	var previous := inventory.active_slot
 	# A now unusable large item stays in the bag but must not lock slot selection.
 	var changed := false
@@ -226,6 +278,7 @@ func _equip_active_slot():
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			held_item_node = scene.instantiate()
+			if held_item_node is Item: held_item_node.presentation_only = true
 			_restore_prop_state(held_item_node, item_data)
 			if held_item_node.has_method("set_held"): held_item_node.set_held(true)
 			# Disable physics so it's just visual while held
@@ -239,8 +292,8 @@ func _equip_active_slot():
 			for label in held_item_node.find_children("*", "Label3D", true, false):
 				label.hide()
 			
-			# Apply visual holding offsets if it's our new Prop class
-			if held_item_node is PropScript:
+			# Apply visual holding offsets if it's our new Item class
+			if held_item_node is Item:
 				held_item_node.position = held_item_node.hold_position
 				held_item_node.rotation_degrees = held_item_node.hold_rotation
 				# Preserve the scene-authored world scale, including model sizing.
@@ -364,10 +417,14 @@ func get_player_mode() -> PlayerMode:
 ## Modes are mutually exclusive: each enter_* helper only succeeds from NORMAL
 ## and returns whether the transition happened, so callers must not proceed
 ## with their side of the flow on a refusal.
-func enter_equipment_placement(equip: Node3D) -> bool:
-	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_use_hands(2):
+func enter_equipment_placement(_equip: Node3D = null) -> bool:
+	var data := inventory.active_item()
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or data.is_empty() or not can_use_hands(2 if data.get("is_large", false) else 1):
 		return false
-	placement.begin(equip)
+	if locomotion_state == LocomotionState.CLIMBING:
+		_abort_climb("Item placement")
+	_sync_held_item_state()
+	if not placement.begin_from_inventory(self): return false
 	_advance_flashlight(0.0)
 	return true
 
@@ -386,6 +443,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	cancel_equipment_placement()
 	close_settings()
 	grab_control.clear_view_recovery()
 	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
@@ -393,6 +451,7 @@ func complete_world_transition(at: Transform3D) -> void:
 	if is_grabbed(): grab_control.end("world_transition")
 	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
 	if restart_death or ragdoll_control.following_detached_head: ragdoll_control.stop()
+	_exit_climb_to_normal()
 	global_transform = at
 	velocity = Vector3.ZERO
 	locomotion_state = LocomotionState.NORMAL
@@ -466,7 +525,9 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 
 func drop_item():
 	if is_grabbed() or is_gameplay_input_blocked(): return
+	if is_placing_equipment(): cancel_equipment_placement()
 	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
+		_sync_held_item_state()
 		_set_flashlight_off_at(inventory.active_slot)
 		var item_data = inventory.items[inventory.active_slot]
 		
@@ -502,10 +563,16 @@ func drop_item():
 				dropped_item.linear_velocity = -transform.basis.z * 3.0
 				if dropping_corpse: dropped_item.linear_velocity += velocity
 			
-		consume_active_item()
+			consume_active_item()
+
+func _sync_held_item_state() -> void:
+	# Articulated corpses evolve while carried. Flashlight charge/on is owned
+	# by inventory and synchronized separately, rather than overwritten here.
+	if held_item_node is CorpseProp and not inventory.active_item().is_empty():
+		inventory.items[inventory.active_slot]["state"] = held_item_node.capture_item_state()
 
 func _restore_prop_state(node: Node, data: Dictionary) -> void:
-	if node is Prop:
+	if node is Item:
 		node.item_name = data["name"]
 		node.is_large = data["is_large"]
 		node.restore_item_state(data.get("state", {}))
@@ -544,10 +611,9 @@ func _unhandled_input(event):
 
 	placement.handle_input(self, event)
 
-## Pure climb-start gate (test contract): W + RV hit + wall-like normal +
-## valid hit height and no active large item are required; jump state must not matter.
-func _can_begin_climb(_jump_pressed: bool, w_pressed: bool, is_rv_hit: bool, wall_normal_ok: bool, hit_height_ok: bool) -> bool:
-	return not is_crawling() and can_use_hands(2) and not inventory.is_holding_large_item() and w_pressed and is_rv_hit and wall_normal_ok and hit_height_ok
+## Capability gate shared by the real ladder entry and behavior tests.
+func _can_use_ladder() -> bool:
+	return not is_crawling() and can_use_hands(2) and not inventory.is_holding_large_item()
 
 func _show_large_item_climb_feedback() -> void:
 	if _large_item_climb_feedback_shown:
@@ -568,6 +634,8 @@ func _abort_climb_if_holding_large_item() -> bool:
 	_abort_climb("carrying large item")
 	return true
 
+## Shared geometry wrappers retained for math checks. Player entry is
+## authorized exclusively by begin_ladder_climb and an available RVLadder.
 func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
 	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
 
@@ -750,192 +818,258 @@ func _process_normal_movement(delta: float) -> void:
 		released_carrier_velocity = support_velocity
 		velocity.y += support_velocity.y
 
+func _climb_feet() -> Vector3:
+	var capsule := body_collision_shape.shape as CapsuleShape3D
+	return body_collision_shape.global_position - Vector3.UP * capsule.height * 0.5
+
+func _ladder_body_position(feet: Vector3) -> Vector3:
+	return feet + global_position - _climb_feet()
+
 func _try_start_climb() -> void:
-	# A held W gesture gets one reason, not a refreshed toast every physics tick.
-	if not Input.is_action_pressed("move_forward") or not inventory.is_holding_large_item():
+	var ascending := Input.is_action_pressed("move_forward")
+	var descending := Input.is_action_pressed("move_back")
+	if not (ascending or descending) or not inventory.is_holding_large_item():
 		_large_item_climb_feedback_shown = false
-	if is_gameplay_input_blocked(): return
-	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2):
-		return
-	if climb_reenter_cooldown_remaining > 0.0:
-		_debug_climb_log("start_cooldown", "blocked by reenter cooldown: %.2f" % climb_reenter_cooldown_remaining)
-		return
-	if not Input.is_action_pressed("move_forward"):
-		return
-	if climb_wall_probe == null or not climb_wall_probe.is_colliding():
-		_debug_climb_log("start_probe_miss", "wall probe has no hit")
-		return
+	if ascending == descending: return
+	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL: return
+	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2): return
+	if climb_reenter_cooldown_remaining > 0.0: return
+	var nearest: RVLadder
+	var nearest_distance := INF
+	for node in get_tree().get_nodes_in_group(RVLadder.GROUP):
+		if not node is RVLadder: continue
+		var ladder := node as RVLadder
+		if ladder.get_world_3d() != get_world_3d(): continue
+		if not ladder.can_enter_from(_climb_feet(), descending): continue
+		if (-global_basis.z).dot(-ladder.global_basis.z.normalized()) < LADDER_ENTRY_FACING_DOT: continue
+		var distance := _climb_feet().distance_squared_to(ladder.climb_point(ladder.climb_height if descending else 0.0))
+		if distance < nearest_distance:
+			nearest = ladder
+			nearest_distance = distance
+	if nearest != null:
+		begin_ladder_climb(nearest, descending)
 
-	var hit_node := climb_wall_probe.get_collider() as Node
-	var rv := _find_rv_ancestor(hit_node)
-	if rv == null:
-		return
-
-	var hit_normal: Vector3 = climb_wall_probe.get_collision_normal()
-	var hit_point: Vector3 = climb_wall_probe.get_collision_point()
-	var local_hit_y: float = to_local(hit_point).y
-	var rv_up: Vector3 = rv.global_transform.basis.y.normalized()
-	var start_allowed_upward := _clamp_upward_climb_distance(rv_up, CLIMB_START_CEILING_CHECK_DISTANCE)
-	if start_allowed_upward < CLIMB_START_CEILING_CHECK_DISTANCE:
-		# Ceiling detected overhead: block entering climb state.
-		_debug_climb_log(
-			"start_ceiling_block",
-			"side=%s allowed=%.2f wanted=%.2f hit_dist=%.2f src=%s hit_node=%s hit_pos=%s wall_n=%s" % [
-				_debug_climb_side_label(rv, hit_normal),
-				start_allowed_upward,
-				CLIMB_START_CEILING_CHECK_DISTANCE,
-				debug_last_ceiling_hit_distance,
-				debug_last_ceiling_hit_source,
-				debug_last_ceiling_hit_node,
-				_debug_v3(debug_last_ceiling_hit_position),
-				_debug_v3(hit_normal.normalized())
-			]
-		)
-		return
-	var wall_normal_ok := _is_rv_wall_normal(hit_normal, rv_up)
-	var hit_height_ok := _is_valid_climb_hit_height(local_hit_y)
-	if wall_normal_ok and hit_height_ok and inventory.is_holding_large_item():
+## Shared production/test entry: no RV wall hit can authorize climbing.
+func begin_ladder_climb(ladder: RVLadder, descending: bool = false) -> bool:
+	if locomotion_state != LocomotionState.NORMAL or get_player_mode() != PlayerMode.NORMAL \
+		or is_gameplay_input_blocked() \
+		or climb_reenter_cooldown_remaining > 0.0: return false
+	if not is_instance_valid(ladder) or ladder.get_world_3d() != get_world_3d(): return false
+	if not ladder.can_enter_from(_climb_feet(), descending): return false
+	if (-global_basis.z).dot(-ladder.global_basis.z.normalized()) < LADDER_ENTRY_FACING_DOT: return false
+	if inventory.is_holding_large_item():
 		_show_large_item_climb_feedback()
-		return
-	# W-pressed and RV-hit are already guaranteed by the early returns above.
-	if not _can_begin_climb(false, true, true, wall_normal_ok, hit_height_ok):
-		_debug_climb_log(
-			"start_gate_reject",
-			"side=%s wall_ok=%s hit_y=%.2f range=[%.2f, %.2f] wall_dot_up=%.2f" % [
-				_debug_climb_side_label(rv, hit_normal),
-				str(wall_normal_ok),
-				local_hit_y,
-				CLIMB_MIN_HIT_Y,
-				CLIMB_MAX_HIT_Y,
-				absf(hit_normal.normalized().dot(rv_up))
-			]
-		)
-		return
-
-	locomotion_state = LocomotionState.CLIMBING
-	rv_support.clear()
-	active_climb_rv = rv
-	previous_climb_rv_transform = rv.global_transform
-	active_wall_normal = hit_normal.normalized()
-	climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
-	climb_carrier_velocity = ClimbMath.point_velocity(rv, global_position)
+		return false
+	if not _can_use_ladder(): return false
+	add_collision_exception_with(ladder)
+	if not _queue_ladder_alignment(ladder, descending):
+		remove_collision_exception_with(ladder)
+		return false
+	ladder_landed = false
+	active_climb_ladder = ladder
+	active_climb_rv = ladder.get_connected_rv()
+	if active_climb_rv == null: active_climb_rv = ladder
+	previous_climb_rv_transform = active_climb_rv.global_transform
+	previous_climb_ladder_transform = ladder.global_transform
+	active_wall_normal = ladder.global_basis.z.normalized()
+	climb_carrier_velocity = ClimbMath.point_velocity(active_climb_rv, global_position)
 	released_carrier_velocity = Vector3.ZERO
 	velocity = Vector3.ZERO
-	_debug_climb_log(
-		"start_ok",
-		"entered climbing side=%s wall_n=%s hit_y=%.2f" % [
-			_debug_climb_side_label(rv, hit_normal),
-			_debug_v3(active_wall_normal),
-			local_hit_y
-		],
-		true
-	)
+	rv_support.clear()
+	locomotion_state = LocomotionState.CLIMBING
+	ladder.availability_changed.connect(_validate_active_ladder)
+	ladder.tree_exiting.connect(_active_ladder_removed)
+	_debug_climb_log("start_ok", "entered ladder %s" % ladder.name, true)
+	return true
+
+func _queue_ladder_alignment(ladder: RVLadder, descending: bool) -> bool:
+	# Validate the full path, then walk it over physics frames. Keep the lift
+	# separate from alignment so the capsule clears the floor/roof lip.
+	var up := ladder.global_basis.y.normalized()
+	var height := ladder.climb_height if descending else clampf(ladder.to_local(_climb_feet()).y, 0.0, ladder.climb_height)
+	var destination := _ladder_body_position(ladder.climb_point(height) + up * 0.05)
+	var raise := up * maxf(0.0, (destination - global_position).dot(up))
+	var align := destination - global_position - raise
+	if test_move(global_transform, raise) or test_move(Transform3D(global_basis, global_position + raise), align): return false
+	ladder_transition_points.assign([ladder.to_local(_climb_feet() + raise), ladder.to_local(ladder.climb_point(height) + up * 0.05)])
+	ladder_transition = LadderTransition.ENTRY
+	ladder_transition_direction = -1.0 if descending else 1.0
+	ladder_landing_support = null
+	return true
+
+func _process_ladder_transition(delta: float, direction: float) -> void:
+	velocity = Vector3.ZERO
+	if direction == 0.0: return
+	if direction != ladder_transition_direction:
+		# Reversing at the roof lip walks back along the transfer, rather than
+		# dropping the player into the opening or forcing the original motion.
+		if ladder_transition == LadderTransition.LANDING:
+			_queue_ladder_alignment(active_climb_ladder, ladder_landing_at_top)
+		elif ladder_transition_direction < 0.0:
+			_try_ladder_landing(true)
+		else:
+			_abort_climb("backed away from ladder")
+		return
+	if ladder_transition == LadderTransition.LANDING:
+		if not is_instance_valid(ladder_landing_support) or ladder_landing_support.is_queued_for_deletion() \
+			or ((ladder_landing_support is Item or ladder_landing_support is RVStructurePanel) and ladder_landing_support.is_destroyed):
+			_abort_climb("landing support lost")
+			return
+	var remaining := LADDER_TRANSITION_SPEED * delta
+	while not ladder_transition_points.is_empty() and remaining > 0.00001:
+		var target := _ladder_body_position(active_climb_ladder.to_global(ladder_transition_points[0]))
+		var motion := target - global_position
+		if motion.length() < 0.001:
+			ladder_transition_points.pop_front()
+			continue
+		var step := motion.limit_length(remaining)
+		var collision := move_and_collide(step)
+		remaining -= step.length()
+		if collision != null:
+			_abort_climb("ladder transition blocked")
+			return
+		if global_position.distance_to(target) < 0.001: ladder_transition_points.pop_front()
+	if ladder_transition_points.is_empty():
+		if ladder_transition == LadderTransition.LANDING:
+			_finish_ladder_landing()
+		else:
+			ladder_transition = LadderTransition.NONE
+
+func _active_ladder_removed() -> void:
+	_abort_climb("ladder removed")
+
+func _validate_active_ladder() -> void:
+	if not is_instance_valid(active_climb_ladder) or not active_climb_ladder.can_climb():
+		_abort_climb("ladder unavailable")
 
 func _apply_rv_delta_compensation() -> void:
-	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
+	_validate_active_ladder()
+	if locomotion_state != LocomotionState.CLIMBING: return
+	if not is_instance_valid(active_climb_rv):
+		_abort_climb("carrier invalid")
+		return
+	var carrier := active_climb_ladder.get_connected_rv()
+	if carrier == null: carrier = active_climb_ladder
+	if carrier != active_climb_rv:
+		_abort_climb("ladder detached")
 		return
 	var next_transform := active_climb_rv.global_transform
+	var expected_ladder := next_transform * previous_climb_rv_transform.affine_inverse() * previous_climb_ladder_transform
+	if not expected_ladder.is_equal_approx(active_climb_ladder.global_transform):
+		_abort_climb("ladder moved")
+		return
 	var delta_pos := ClimbMath.attachment_delta(previous_climb_rv_transform, next_transform, global_position)
 	if delta_pos.length() > CLIMB_MAX_FRAME_DELTA:
 		climb_carrier_velocity = Vector3.ZERO
 		_abort_climb("rv teleported")
 		return
 	var rotation_delta := next_transform.basis * previous_climb_rv_transform.basis.inverse()
-	active_wall_normal = (rotation_delta * active_wall_normal).normalized()
+	active_wall_normal = active_climb_ladder.global_basis.z.normalized()
 	rotate_y(rotation_delta.get_euler().y)
-	climb_carrier_velocity = delta_pos / get_physics_process_delta_time()
-	var collision := _move_with_climb_collision(delta_pos)
-	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
-		active_wall_normal = collision.get_normal().normalized()
+	climb_carrier_velocity = delta_pos / maxf(get_physics_process_delta_time(), 0.0001)
+	var destination := global_position + delta_pos
+	_move_with_climb_collision(delta_pos)
 	previous_climb_rv_transform = next_transform
-	climb_wall_probe.force_raycast_update()
+	previous_climb_ladder_transform = active_climb_ladder.global_transform
+	if global_position.distance_to(destination) > 0.15:
+		_abort_climb("carrier motion blocked")
 
 func _process_climbing(delta: float) -> void:
-	if _abort_climb_if_holding_large_item():
-		return
+	if _abort_climb_if_holding_large_item(): return
+	_validate_active_ladder()
+	if locomotion_state != LocomotionState.CLIMBING: return
 	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
-	if active_climb_rv == null or not is_instance_valid(active_climb_rv):
-		_abort_climb("rv invalid")
-		return
-
-	# Manual detach: pressing back or jump while climbing exits immediately to avoid floor-intersection stick cases.
-	if input_allowed and (Input.is_action_pressed("move_back") or Input.is_action_just_pressed("jump")):
+	if input_allowed and Input.is_action_just_pressed("jump"):
 		_abort_climb("manual detach")
 		return
-
-	if active_climb_rv is RigidBody3D:
-		if (active_climb_rv as RigidBody3D).angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
-			_abort_climb("rv angular speed too high")
-			return
-
-	var rv_up := active_climb_rv.global_transform.basis.y.normalized()
-	if input_allowed and Input.is_action_pressed("move_forward") and ClimbMath.try_roof_transfer(self, body_collision_shape, active_climb_rv, active_wall_normal):
-		_exit_climb_to_normal()
-		released_carrier_velocity = Vector3.ZERO
-		velocity = Vector3.DOWN * 0.1
-		move_and_slide()
-		rv_support.capture(self)
+	if active_climb_rv is RigidBody3D and active_climb_rv.angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
+		_abort_climb("rv angular speed too high")
 		return
-	_apply_wall_outward_alignment(rv_up)
-	var has_valid_wall_contact := false
-	var pending_abort_lost_contact := false
-
-	if climb_wall_probe and climb_wall_probe.is_colliding():
-		var wall_node := climb_wall_probe.get_collider() as Node
-		if _find_rv_ancestor(wall_node) == active_climb_rv:
-			var hit_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
-			has_valid_wall_contact = true
-			active_wall_normal = hit_normal
-
-	if has_valid_wall_contact:
-		climb_contact_grace_remaining = CLIMB_CONTACT_GRACE_TIME
-	else:
-		climb_contact_grace_remaining -= delta
-		if climb_contact_grace_remaining <= 0.0:
-			pending_abort_lost_contact = true
-
-	var vertical_input := 0.0
-	if input_allowed and Input.is_action_pressed("move_forward"):
-		vertical_input += 1.0
-	if input_allowed and Input.is_action_pressed("move_back"):
-		vertical_input -= 1.0
-
-	if vertical_input > 0.0:
-		var desired_upward_distance := vertical_input * CLIMB_VERTICAL_SPEED * delta
-		var allowed_upward_distance := _clamp_upward_climb_distance(rv_up, desired_upward_distance)
-		if allowed_upward_distance < desired_upward_distance:
-			_debug_climb_log(
-				"climb_ceiling_block",
-				"side=%s wanted=%.3f allowed=%.3f hit_dist=%.3f src=%s hit_node=%s hit_pos=%s" % [
-					_debug_climb_side_label(active_climb_rv, active_wall_normal),
-					desired_upward_distance,
-					allowed_upward_distance,
-					debug_last_ceiling_hit_distance,
-					debug_last_ceiling_hit_source,
-					debug_last_ceiling_hit_node,
-					_debug_v3(debug_last_ceiling_hit_position)
-				],
-				true
-			)
-			_abort_climb("ceiling detected")
-			return
+	var direction := 0.0
+	if input_allowed and Input.is_action_pressed("move_forward"): direction += 1.0
+	if input_allowed and Input.is_action_pressed("move_back"): direction -= 1.0
+	if ladder_transition == LadderTransition.TOP:
+		_process_ladder_top(delta, input_allowed)
+		return
+	if ladder_transition != LadderTransition.NONE:
+		# After a manual top exit only a small vertical settling step remains;
+		# gravity should not depend on which walking key reached the floor.
+		if ladder_transition == LadderTransition.LANDING and ladder_landing_at_top:
+			_process_ladder_transition(delta, 1.0 if input_allowed else 0.0)
 		else:
-			vertical_input *= allowed_upward_distance / desired_upward_distance
-
-	var horizontal_input := 0.0
-	if input_allowed and Input.is_action_pressed("move_right"):
-		horizontal_input += 1.0
-	if input_allowed and Input.is_action_pressed("move_left"):
-		horizontal_input -= 1.0
-
-	var motion := _build_climb_motion(rv_up, active_wall_normal, vertical_input, horizontal_input, delta)
-	var collision := _move_with_climb_collision(motion)
-	if collision and _find_rv_ancestor(collision.get_collider()) == active_climb_rv:
-		active_wall_normal = collision.get_normal().normalized()
+			_process_ladder_transition(delta, direction)
+		return
+	var ladder := active_climb_ladder
+	var up := ladder.global_basis.y.normalized()
+	var local_feet := ladder.to_local(_climb_feet())
+	if absf(local_feet.x) > 0.3 or absf(local_feet.z - ladder.climb_offset) > 0.3:
+		_abort_climb("lost ladder lane")
+		return
+	var height := clampf(local_feet.y - 0.05, 0.0, ladder.climb_height)
+	var next_height := clampf(height + direction * CLIMB_VERTICAL_SPEED * delta, 0.0, ladder.climb_height)
+	var target := _ladder_body_position(ladder.climb_point(next_height) + up * 0.05)
+	_move_with_climb_collision(target - global_position)
 	velocity = Vector3.ZERO
+	var actual_height := ladder.to_local(_climb_feet()).y - 0.05
+	if direction > 0.0 and actual_height >= ladder.climb_height - 0.015:
+		ladder_transition = LadderTransition.TOP
+		ladder_top_input_ready = false
+		var interaction := get_node_or_null("Camera3D/InteractRay")
+		if interaction != null: interaction.show_feedback("已到梯頂：放開移動鍵，再用 WASD 自行走出")
+	elif direction < 0.0 and actual_height <= 0.015:
+		_try_ladder_landing(false)
 
-	if pending_abort_lost_contact:
-		_abort_climb("lost wall contact")
+func _try_ladder_landing(at_top: bool) -> bool:
+	var ladder := active_climb_ladder
+	if not is_instance_valid(ladder): return false
+	var up := Vector3.UP
+	# Only settle onto the surface actually beneath the player. In particular,
+	# never choose a distant authored landing and move the body towards it.
+	var feet := _climb_feet()
+	var query := PhysicsRayQueryParameters3D.create(feet + up * 0.1, feet - up * 0.7, collision_mask, [get_rid(), ladder.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty() or hit.normal.dot(up) < 0.85: return false
+	var support := hit.collider as Node3D
+	if at_top and ladder.get_connected_rv() != null and _find_rv_ancestor(support) != ladder.get_connected_rv(): return false
+	if support is Item and (support.is_being_placed or support.is_destroyed or not support.freeze): return false
+	var destination := _ladder_body_position(hit.position + up * 0.005)
+	var lateral := (destination - global_position).slide(up)
+	if test_move(global_transform, lateral) or test_move(Transform3D(global_basis, global_position + lateral), destination - global_position - lateral): return false
+	ladder_transition_points.assign([ladder.to_local(_climb_feet() + lateral), ladder.to_local(hit.position + up * 0.005)])
+	ladder_transition = LadderTransition.LANDING
+	ladder_transition_direction = 1.0 if at_top else -1.0
+	ladder_landing_support = support
+	ladder_landing_at_top = at_top
+	return true
+
+func _process_ladder_top(delta: float, input_allowed: bool) -> void:
+	velocity = Vector3.ZERO
+	if not input_allowed: return
+	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if not ladder_top_input_ready:
+		# Held ascent input must not become a walk-off command at the last rung.
+		if input.is_zero_approx(): ladder_top_input_ready = true
+		return
+	var motion := (global_basis * Vector3(input.x, 0.0, input.y)).slide(Vector3.UP) * SPEED * delta
+	var collision := _move_with_climb_collision(motion)
+	if collision != null:
+		_move_with_climb_collision(collision.get_remainder().slide(collision.get_normal()).slide(Vector3.UP))
+	if _try_ladder_landing(true): return
+	# The ladder carries the player only while leaving its top within reach.
+	# Walking into empty space beyond that reach releases to real gravity.
+	var ladder := active_climb_ladder
+	var distance := (_climb_feet() - ladder.climb_point(ladder.climb_height)).slide(Vector3.UP).length()
+	if distance > ladder.top_exit_distance + 0.4:
+		_abort_climb("walked beyond ladder top")
+
+func _finish_ladder_landing() -> void:
+	_exit_climb_to_normal()
+	ladder_landed = true
+	released_carrier_velocity = Vector3.ZERO
+	velocity = Vector3.DOWN * 0.1
+	move_and_slide()
+	apply_floor_snap()
+	rv_support.capture(self)
 
 func _abort_climb(reason: String = "") -> void:
 	if CLIMB_DEBUG_LOG_ABORTS and not reason.is_empty():
@@ -954,6 +1088,20 @@ func _abort_climb(reason: String = "") -> void:
 	_exit_climb_to_normal()
 
 func _exit_climb_to_normal() -> void:
+	ladder_transition = LadderTransition.NONE
+	ladder_top_input_ready = false
+	ladder_transition_direction = 0.0
+	ladder_transition_points.clear()
+	ladder_landing_support = null
+	ladder_landed = false
+	if is_instance_valid(active_climb_ladder):
+		remove_collision_exception_with(active_climb_ladder)
+		if active_climb_ladder.availability_changed.is_connected(_validate_active_ladder):
+			active_climb_ladder.availability_changed.disconnect(_validate_active_ladder)
+		if active_climb_ladder.tree_exiting.is_connected(_active_ladder_removed):
+			active_climb_ladder.tree_exiting.disconnect(_active_ladder_removed)
+	active_climb_ladder = null
+	previous_climb_ladder_transform = Transform3D.IDENTITY
 	if locomotion_state == LocomotionState.CLIMBING:
 		released_carrier_velocity = climb_carrier_velocity
 		velocity = climb_carrier_velocity
@@ -969,7 +1117,7 @@ func _exit_climb_to_normal() -> void:
 func _physics_process(delta):
 	# Cover restored/direct inventory changes before applying any carrier motion.
 	_abort_climb_if_holding_large_item()
-	if not Input.is_action_pressed("move_forward"):
+	if not Input.is_action_pressed("move_forward") and not Input.is_action_pressed("move_back"):
 		_large_item_climb_feedback_shown = false
 	_advance_flashlight(delta)
 	if is_player_dead:
@@ -992,8 +1140,12 @@ func _physics_process(delta):
 
 	match locomotion_state:
 		LocomotionState.NORMAL:
-			_process_normal_movement(delta)
 			if not is_grabbed(): _try_start_climb()
+			# If already within reach, catch before the walking step overshoots
+			# the lane and the alignment has to pull the player backwards.
+			if locomotion_state == LocomotionState.NORMAL:
+				_process_normal_movement(delta)
+				if not is_grabbed(): _try_start_climb()
 		LocomotionState.CLIMBING:
 			_apply_rv_delta_compensation()
 			if locomotion_state == LocomotionState.CLIMBING:
@@ -1153,7 +1305,7 @@ func can_use_hands(required: int = 1) -> bool:
 	return not is_player_dead and body_state.has_part(&"head") and usable_arms() >= required
 
 func can_drive() -> bool:
-	return not is_crawling() and can_use_hands()
+	return not is_crawling() and can_use_hands() and not inventory.is_holding_large_item()
 
 func crawl_speed() -> float:
 	if usable_arms() == 0: return 0.0
@@ -1183,11 +1335,8 @@ func _apply_body_capabilities() -> void:
 	if is_crawling(): grab_control.clear_view_recovery()
 	if locomotion_state == LocomotionState.CLIMBING and (is_crawling() or not can_use_hands(2)):
 		_abort_climb("limb lost")
-	if is_placing_equipment() and not can_use_hands(2):
-		placement.placing_equipment.cancel_placement()
-		placement.placing_equipment = null
-		placement._clear_marker()
-		placement._hide_slots(self)
+	if is_placing_equipment() and not can_use_hands(2 if inventory.active_item().get("is_large", false) else 1):
+		cancel_equipment_placement()
 	if body_state.has_part(&"head") and is_instance_valid(seated_in) and not can_drive(): seated_in.exit_seat(true)
 	var interact := camera.get_node_or_null("InteractRay") if is_instance_valid(camera) else null
 	if interact and interact.has_method("cancel_body_operations"): interact.cancel_body_operations()

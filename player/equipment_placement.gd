@@ -2,12 +2,10 @@ extends RefCounted
 class_name EquipmentPlacement
 ## Owns preview state and placement input; the player authorizes mode entry.
 
-const EquipmentScript = preload("res://equipment/equipment.gd")
 enum PlacementMode { SURFACE, UPRIGHT }
 var placing_equipment: Node3D = null
 var max_place_distance: float = 4.0
 var can_place_equipment: bool = false
-var snap_enabled: bool = true
 var target_support: Node3D = null
 var message: String = ""
 var preview_scale: Vector3 = Vector3.ONE
@@ -17,6 +15,45 @@ var surface_offset := Vector2.ZERO
 var surface_marker: MeshInstance3D
 var previous_support: WeakRef
 var previous_normal := Vector3.ZERO
+var inventory_slot := -1
+var inventory_id := ""
+var hidden_held_item: WeakRef
+var held_was_visible := false
+
+func begin_from_inventory(player: Node) -> bool:
+	var data: Dictionary = player.inventory.active_item()
+	if data.is_empty(): return false
+	var scene := load(str(data.get("scene_path", ""))) as PackedScene
+	if scene == null: return false
+	var instance := scene.instantiate()
+	if not instance is Item:
+		instance.free()
+		return false
+	var ghost := instance as Item
+	ghost.presentation_only = true
+	ghost.restore_item_state(data.get("state", {}))
+	ghost.is_being_placed = true
+	ghost.freeze = true
+	ghost.collision_layer = 0
+	ghost.collision_mask = 0
+	var container := WorldEntities.get_container(player)
+	if container == null: container = player.get_tree().current_scene
+	container.add_child(ghost)
+	ghost.global_transform = Transform3D(player.global_basis.scaled_local(ghost.basis.get_scale()), player.global_position)
+	for node in ghost.find_children("*", "CollisionObject3D", true, false):
+		node.collision_layer = 0
+		node.collision_mask = 0
+	for mesh in ghost.find_children("*", "GeometryInstance3D", true, false):
+		mesh.material_override = ghost.ghost_material
+	for label in ghost.find_children("*", "Label3D", true, false): label.hide()
+	begin(ghost)
+	inventory_slot = player.inventory.active_slot
+	inventory_id = str(data.get("state", {}).get("id", ""))
+	if is_instance_valid(player.held_item_node):
+		hidden_held_item = weakref(player.held_item_node)
+		held_was_visible = player.held_item_node.visible
+		player.held_item_node.hide()
+	return true
 
 func begin(equipment: Node3D) -> void:
 	rotation_offset = 0.0
@@ -25,19 +62,18 @@ func begin(equipment: Node3D) -> void:
 	_clear_marker()
 	placing_equipment = equipment
 	preview_scale = equipment.global_basis.get_scale()
-	if equipment.get("structure_kind") is String and not equipment.structure_kind.is_empty(): snap_enabled = true
 	can_place_equipment = false
 	message = "瞄準安裝位置"
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
-	if player.is_gameplay_input_blocked() or not player.can_use_hands(2): return
-	# Equipment Placement confirmation
+	if player.is_gameplay_input_blocked() or not player.can_use_hands(2 if player.inventory.active_item().get("is_large", false) else 1): return
+	# Item Placement confirmation
 	if is_instance_valid(placing_equipment):
-		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_V:
-			snap_enabled = not snap_enabled
-		var fixed_slot: bool = snap_enabled and placing_equipment.get("structure_kind") is String and not placing_equipment.structure_kind.is_empty()
-		if not fixed_slot and event is InputEventKey and event.pressed:
+		if event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE:
+			cancel(player)
+			return
+		if event is InputEventKey and event.pressed:
 			var increment := deg_to_rad(5.0 if event.shift_pressed else 15.0)
 			match event.physical_keycode:
 				KEY_Q: rotation_offset -= increment
@@ -55,30 +91,64 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				update_ghost(player)
 				if can_place_equipment and is_instance_valid(target_support):
-					var rv := RVConnection.resolve(target_support)
-					placing_equipment.confirm_placement(placing_equipment.global_transform, rv if rv else target_support, target_support)
-					_clear_marker()
-					placing_equipment = null
-					_hide_slots(player)
+					commit(player)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				cancel(player)
 
-func cancel(player: Node) -> void:
-	if is_instance_valid(placing_equipment): placing_equipment.cancel_placement()
+func commit(player: Node) -> bool:
+	if not is_instance_valid(placing_equipment) or not can_place_equipment or not is_instance_valid(target_support): return false
+	var data: Dictionary = player.inventory.active_item()
+	if player.inventory.active_slot != inventory_slot or str(data.get("state", {}).get("id", "")) != inventory_id or data.is_empty():
+		cancel(player)
+		return false
+	if not player.can_use_hands(2 if data.get("is_large", false) else 1): return false
+	var bounds: AABB = placing_equipment.get_placement_bounds()
+	if player.camera.global_position.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * .5: return false
+	if not PlacementRules.rejection_reason(placing_equipment, target_support, placing_equipment.global_transform).is_empty(): return false
+	player._sync_held_item_state()
+	data = player.inventory.active_item()
+	var scene := load(str(data.get("scene_path", ""))) as PackedScene
+	if scene == null: return false
+	var instance := scene.instantiate()
+	if not instance is Item:
+		instance.free()
+		return false
+	var item := instance as Item
+	player._restore_prop_state(item, data)
+	var container := WorldEntities.get_container(player)
+	if container == null: container = player.get_tree().current_scene
+	container.add_child(item)
+	item.global_transform = placing_equipment.global_transform
+	var rv := RVConnection.resolve(target_support)
+	item.confirm_placement(item.global_transform, rv if rv else container, target_support)
+	if not item.is_fixed:
+		item.queue_free()
+		return false
+	cancel(player)
+	player.consume_active_item()
+	return true
+
+func cancel(_player: Node) -> void:
+	if is_instance_valid(placing_equipment): placing_equipment.queue_free()
+	var held := hidden_held_item.get_ref() as Node3D if hidden_held_item != null else null
+	if is_instance_valid(held): held.visible = held_was_visible
+	hidden_held_item = null
+	held_was_visible = false
 	placing_equipment = null
 	can_place_equipment = false
 	target_support = null
 	previous_support = null
 	previous_normal = Vector3.ZERO
 	message = ""
+	inventory_slot = -1
+	inventory_id = ""
 	_clear_marker()
-	_hide_slots(player)
 
 func update_ghost(player: CharacterBody3D) -> void:
 	if not is_instance_valid(placing_equipment):
 		return
-	if not player.can_use_hands(2):
+	if not player.can_use_hands(2 if player.inventory.active_item().get("is_large", false) else 1):
 		can_place_equipment = false
 		return
 
@@ -89,12 +159,6 @@ func update_ghost(player: CharacterBody3D) -> void:
 	# Ignore ourselves and the equipment
 	var query = PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid(), placing_equipment.get_rid()])
 	var result = space_state.intersect_ray(query)
-	var kind: String = placing_equipment.get("structure_kind") if placing_equipment.get("structure_kind") is String else ""
-	if snap_enabled and not kind.is_empty():
-		_clear_marker()
-		_update_structure_preview(player, from, (to - from).normalized(), kind, result)
-		return
-	_hide_slots(player)
 
 	if result and PlacementRules.valid_target(placing_equipment, result.collider):
 		target_support = result.collider
@@ -118,7 +182,14 @@ func update_ghost(player: CharacterBody3D) -> void:
 				break
 			hit_node = hit_node.get_parent()
 
-		if placement_mode == PlacementMode.SURFACE:
+		if equip is RVLadder:
+			# Both modes keep the ladder plane parallel to the actual wall.
+			# Local -Z mounts against it, and +Z faces the climber.
+			if absf(normal.dot(up_ref)) < 0.95:
+				base_basis = Basis.looking_at(-normal, up_ref)
+			else:
+				base_basis = Basis.IDENTITY
+		elif placement_mode == PlacementMode.SURFACE:
 			# Mode 1: bottom_face sticks to the placement surface
 			if abs(normal.dot(up_ref)) > 0.5:
 				var cam_dir = -player.camera.global_transform.basis.z
@@ -134,7 +205,7 @@ func update_ghost(player: CharacterBody3D) -> void:
 					tangent = Vector3.FORWARD
 				base_basis = Basis.looking_at(tangent, normal)
 
-			if equip and equip is EquipmentScript:
+			if equip and equip is Item:
 				base_basis = base_basis * equip.get_bottom_face_correction()
 		else:
 			# Mode 2: bottom faces up_ref-down, closest face contacts surface
@@ -157,11 +228,6 @@ func update_ghost(player: CharacterBody3D) -> void:
 		base_basis = (Basis(normal, rotation_offset) * base_basis).scaled_local(preview_scale)
 		placing_equipment.global_transform.basis = base_basis
 
-		if snap_enabled and target_support.has_method("get_mount_snap_points"):
-			for point in target_support.get_mount_snap_points():
-				if point.distance_to(result.position) < 0.3:
-					result.position = point
-					break
 		var tangent: Vector3 = player.camera.global_basis.x.slide(normal).normalized()
 		if tangent.length_squared() < 0.01: tangent = normal.cross(Vector3.FORWARD).normalized()
 		var other := normal.cross(tangent).normalized()
@@ -173,57 +239,26 @@ func update_ghost(player: CharacterBody3D) -> void:
 		for axis in range(3):
 			offset += absf(normal.dot(base_basis[axis])) * scaled_half[axis]
 		placing_equipment.global_position = result.position + normal * (offset + 0.012) - base_basis * bounds.get_center()
-		var reason := PlacementRules.rejection_reason(equip, target_support, placing_equipment.global_transform, result.position)
+		var reason := PlacementRules.rejection_reason(equip, target_support, placing_equipment.global_transform, result.position, normal)
 		var contact_check := space_state.intersect_ray(PhysicsRayQueryParameters3D.create(result.position + normal * 0.1, result.position - normal * 0.15, 0xFFFFFFFF, [equip.get_rid(), player.get_rid()]))
 		if contact_check.get("collider") != target_support: reason = "細調位置已離開安裝面"
 		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "超過安裝距離"
 		can_place_equipment = reason.is_empty()
-		message = ("左鍵安裝｜右鍵取消｜R 貼面／直立｜V 槽位／自由\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm" if can_place_equipment else "無法安裝：" + reason)
+		message = ("左鍵安裝｜右鍵取消｜R 貼面／直立\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm" if can_place_equipment else "無法安裝：" + reason)
+		if can_place_equipment and equip is RVLadder: message = "左鍵貼牆安裝｜右鍵取消\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm"
 		if equip.ghost_material is StandardMaterial3D:
 			equip.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
 	else:
 		can_place_equipment = false
 		target_support = null
-		message = "請瞄準有效支撐｜右鍵取消｜V 槽位／自由"
+		message = "請瞄準牆面｜右鍵／Esc 取消" if placing_equipment is RVLadder else "請瞄準有效支撐｜右鍵／Esc 取消"
 		_clear_marker()
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false
 
 
 
-
-func _hide_slots(player: Node) -> void:
-	for slots in player.get_tree().get_nodes_in_group(RVStructureSlots.GROUP):
-		slots.hide_outlines()
-
-func _update_structure_preview(player: Node3D, from: Vector3, direction: Vector3, kind: String, ray_hit: Dictionary) -> void:
-	var best: Dictionary = {}
-	for slots in player.get_tree().get_nodes_in_group(RVStructureSlots.GROUP):
-		slots.show_empty(kind, placing_equipment)
-		var candidate: Dictionary = slots.pick(from, direction, max_place_distance, kind)
-		if not candidate.is_empty() and (best.is_empty() or candidate.distance < best.distance):
-			best = candidate
-	can_place_equipment = false
-	target_support = null
-	if best.is_empty():
-		placing_equipment.visible = false
-		message = "瞄準車體上的相容槽位（4 公尺內）｜右鍵取消｜V 自由放置"
-		return
-	target_support = best.manager.get_parent()
-	placing_equipment.visible = true
-	placing_equipment.global_transform = best.pose
-	var occupied: Equipment = best.manager.occupant(best.id, placing_equipment)
-	var reason := ""
-	if occupied:
-		reason = "槽位已有 " + occupied.equipment_name
-	elif not ray_hit.is_empty() and from.distance_to(ray_hit.position) + 0.16 < best.distance:
-		reason = "視線被 " + PlacementRules.object_name(ray_hit.collider) + " 擋住"
-	else:
-		reason = PlacementRules.rejection_reason(placing_equipment, target_support, best.pose)
-	can_place_equipment = reason.is_empty()
-	message = best.label + "｜" + ("左鍵安裝｜右鍵取消｜V 自由放置" if can_place_equipment else "無法安裝：" + reason)
-	placing_equipment.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
 func _clear_marker() -> void:
 	if is_instance_valid(surface_marker): surface_marker.queue_free()

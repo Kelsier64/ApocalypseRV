@@ -21,6 +21,10 @@
 
 ## 分組與覆蓋
 
+Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背包／手臂拒收不拆支撐、F 長按拾取與短按抑制、獨立預覽、取消／G、確認後消耗、角色重疊及失效支撐鏈拒絕、拆牆掉落後重新拾取，以及新物品／空油桶的完整狀態與 ID 保存。目前預覽操作會暫時隱藏手持模型，物品保留在背包，取消後恢復顯示；觀察與測試須分別檢查顯示和所有權。`test_item_services.gd` 覆蓋共用物品、服務／回收與怪物免傷；`test_item_persistence.gd`（integration）覆蓋 v5 與跨領域狀態；`test_item_navigation.gd`（integration）以實際怪物碰撞驗證多件固定 Item 的繞行、移除後恢復直路，以及封閉障礙無路時等待。實機入口 `item_playground.tscn` 見 [Item 測試場](../docs/guides/playgrounds.md#unified-item)。完整套件、smoke 與實機結果見 [本輪驗證紀錄](../docs/validation/2026-10-06-unified-items.md)，各階段結果保留當時的顯示行為。
+
+車體改版由 `test_rv_structure_modules`、`test_structure_construction`、`test_rv_structure_snapshot` 與既有車輛、支撐、登車及存檔測試共同覆蓋。平板滑鼠操作與拆穿地板的原生觀察見 [2026-10-05 驗證紀錄](../docs/validation/2026-10-05-rv-structure-construction.md)；互動場景為 `rv_structure_playground.tscn`，操作見 [測試場指南](../docs/guides/playgrounds.md)。
+
 [suites.json](suites.json) 是完整清單，每支頂層 `test_*.gd` 必須恰好分類一次。新增測試、遺漏分類、重複分類或不存在的檔案都會讓 runner 在引擎啟動前失敗。
 
 | 分組 | 範圍 |
@@ -32,7 +36,7 @@
 | `smoke` | [main_scene_smoke.gd](main_scene_smoke.gd) 的正式世界就緒與移動 |
 | `full` | 所有有效分組及 smoke；排除有原因記錄的重複項 |
 
-`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形、存檔與 legacy 世界測試仍屬相容性回歸；`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v7 主世界由 smoke 與 starting 系列涵蓋。
+`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v8 主世界由 smoke 與 starting 系列涵蓋。
 
 每支測試仍使用獨立 Godot 程序。本機不平行跑會共享磁碟 checkpoint 或全域服務的測試。GitHub Actions 以五個獨立 job 跑 quick、integration、slow、assets、smoke，涵蓋與 full 相同的有效測試；一組失敗不取消其他組。
 
@@ -70,10 +74,14 @@ godot --path . --resolution 1280x720 --rendering-method gl_compatibility --log-f
 
 ## 大型物品與攀爬
 
-`test_player_climbing.gd` 與 `test_player_inventory.gd`（quick）覆蓋 active_item.is_large、空手／小物、移除後恢復及既有 W／壁面／高度 gate。`test_player_large_item_climbing.gd`（integration）使用正式玩家與 RV，覆蓋 HUD 不重刷、世界拾取／倉庫取出時安全脫離、消耗／存入／丟棄後恢復、拒收不影響既有攀爬、物品 ID／狀態與平台速度交接。
+`test_player_climbing.gd` 與 `test_player_inventory.gd`（quick）覆蓋 active_item.is_large、空手／小物、移除後恢復及玩家拒絕車壁的 gate。`test_player_large_item_climbing.gd`（integration）使用正式玩家與 RV，覆蓋 HUD 不重刷、世界拾取／倉庫取出時安全脫離、消耗／存入／丟棄後恢復、拒收不影響既有攀爬、物品 ID／狀態與平台速度交接。
 
 ```powershell
 ./scripts/test.ps1 -TestFilter 'test_player_climbing.gd,test_player_inventory.gd,test_player_large_item_climbing.gd,test_moving_rv_climbing.gd,test_player_carry.gd,test_rv_shared_storage.gd' -Smoke
 ```
 
-2026-10-04 `855a17e` 的相關 quick／integration 回歸及正式世界 smoke 已在 CI 通過；整體 CI 仍有既存失敗與戶外測試不一致，不能宣稱 full suite 通過。上述命令可供重跑，完整證據見 [本輪紀錄](../docs/validation/2026-10-04-issues-8-17.md)。本輪沒有本機引擎執行或原生視窗／實機觀察。實機需依 AGENTS 驗證持大型物品貼牆 W 的提示節制、丟棄／存入後攀爬恢復，以及移動／轉彎車身上拾取大型物品時不瞬移且物品仍可丟棄。原有登頂、拆頂與怪物攀爬仍須回歸。
+2026-10-04 `855a17e` 的相關 quick／integration 回歸及正式世界 smoke 已在 CI 通過；整體 CI 仍有既存失敗與戶外測試不一致，不能宣稱 full suite 通過。上述命令可供重跑，完整證據見 [本輪紀錄](../docs/validation/2026-10-04-issues-8-17.md)。2026-10-04 該輪沒有本機引擎執行或原生視窗／實機觀察。實機需依 AGENTS 驗證持大型物品貼牆 W 的提示節制、丟棄／存入後攀爬恢復，以及移動／轉彎車身上拾取大型物品時不瞬移且物品仍可丟棄。原有登頂、拆頂與怪物攀爬仍須回歸。
+
+## 可搬移 RV 梯子
+
+`test_rv_ladders.gd`（quick）使用正式側門梯、車內梯及三片屋頂碰撞，覆蓋兩種模式的自由貼牆放置、連續瞄準與 5 cm 細移、地板／天花板／活動門扇拒絕、上下梯、關門阻擋、封住開口、移動車輛、搬移／取消、毀壞、實際牆面支撐失效與 v5 保存。大型物品與動畫測試使用真實梯子，怪物仍沿用車壁。當次執行結果與原生觀察見 [貼牆梯子重做驗收](../docs/validation/2026-10-05-rv-wall-ladders.md)。

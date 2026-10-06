@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 class_name CraftingStation
 
 @onready var spawn_marker: Marker3D = $SpawnMarker
@@ -10,6 +10,7 @@ var jobs: Array[Dictionary] = []
 
 func _ready() -> void:
 	super._ready()
+	if presentation_only: return
 	add_to_group(Groups.CRAFTING_STATIONS)
 
 func request_craft(recipe_id: String) -> bool:
@@ -67,7 +68,7 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		last_error = "Output unavailable"
 		return false
 	var instance := scene.instantiate()
-	var item := instance as Prop
+	var item := instance as Item
 	if item == null:
 		instance.free()
 		last_error = "Invalid output"
@@ -126,3 +127,16 @@ func cancel_jobs() -> void:
 
 func _on_service_stopped() -> void:
 	cancel_jobs()
+
+func capture_service_state() -> Dictionary:
+	var saved_jobs: Array[Dictionary] = []
+	for job in jobs:
+		var saved: Dictionary = job.duplicate(true)
+		saved.erase("rv")
+		saved_jobs.append(saved)
+	return {"jobs": saved_jobs}
+
+func restore_service_state(state: Dictionary) -> void:
+	jobs.assign(state.get("jobs", []).duplicate(true))
+	for job in jobs:
+		job["rv"] = get_connected_rv()

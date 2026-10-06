@@ -1,6 +1,6 @@
 extends Node3D
 ## Real wheel-driven frontal/offset contact with the production Raker and RV.
-const CASES := ["目標 36 km/h · 存活起身", "目標 61 km/h · 受傷目標 60 HP", "目標 36 km/h · 偏側撞擊", "目標 14 km/h · 輕撞擊退"]
+const CASES := ["目標 36 km/h · 存活起身", "目標 61 km/h · 受傷目標 40 HP", "目標 36 km/h · 偏側撞擊", "目標 14 km/h · 輕撞擊退"]
 const SPEEDS := [10.0, 17.0, 10.0, 4.0]
 static var selected := 0
 static var read_args := false
@@ -63,7 +63,8 @@ func _ready() -> void:
 	# continue normally; it is never teleported into the vehicle.
 	monster.idle_timer = 1000.0
 	monster.is_idle = true
-	if selected == 1: monster.current_health = 60.0
+	# Leave a clear lethal margin as cargo mass changes the actual wheel-driven speed.
+	if selected == 1: monster.current_health = 40.0
 	initial_health = monster.current_health
 	camera = Camera3D.new()
 	camera.fov = 55

@@ -45,8 +45,8 @@ func openings(rv: Node3D) -> Array[Dictionary]:
 	var slots := rv.get_node_or_null("StructureSlots")
 	if slots == null: return result
 	for slot in RVStructureSlots.layout():
-		if slot.kind == "roof" or slot.kind == "front": continue
-		var device: Equipment = slots.occupant(slot.id)
+		if slot.kind in ["roof", "front", "floor"]: continue
+		var device: RVStructurePanel = slots.occupant(slot.id)
 		var normal: Vector3 = slot.pose.basis.z
 		if device == null:
 			var point: Vector3 = slot.pose.origin

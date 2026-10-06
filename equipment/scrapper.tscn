@@ -28,9 +28,9 @@ size = Vector3(0.07, 0.63, 0.91)
 size = Vector3(0.6, 0.53623044, 0.6)
 
 [node name="Scrapper" type="RigidBody3D" unique_id=1514036190]
+script = ExtResource("1_sut5x")
 definition = ExtResource("def")
 mass = 80.0
-script = ExtResource("1_sut5x")
 equipment_name = "Recycling Scrapper"
 
 [node name="BasinVisual" type="CSGBox3D" parent="." unique_id=2131142470]

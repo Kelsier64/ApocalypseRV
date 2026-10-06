@@ -11,6 +11,7 @@ const COVER_FAR_BUDGET := 128
 const SPLASH_QUERIES := 8
 const MAX_RAYS := COVER_NEAR_BUDGET + COVER_FAR_BUDGET + SPLASH_QUERIES + 1
 const MAX_SPLASHES := 64
+const MAX_ROOF_SHAPES := 32
 const SPLASH_LIFETIME := 0.18
 var clock: WorldClock
 var rng := RandomNumberGenerator.new()
@@ -142,18 +143,19 @@ func _update_roofs(center: Vector3) -> void:
 	roof_sizes.clear()
 	cover_exclusions.clear()
 	var candidates: Array[Node] = []
-	for group in [Groups.CHASSIS, Groups.EQUIPMENT, Groups.PLAYER, Groups.MONSTERS]:
+	for group in [Groups.CHASSIS, Groups.ITEMS, Groups.MONSTER_DAMAGEABLE, Groups.PLAYER, Groups.MONSTERS]:
 		for node in get_tree().get_nodes_in_group(group):
 			if not node is CollisionObject3D or node.get_world_3d() != get_world_3d(): continue
-			cover_exclusions.append(node.get_rid())
-			if group == Groups.EQUIPMENT and node.get("structure_kind") == "roof": candidates.append(node)
+			if not cover_exclusions.has(node.get_rid()): cover_exclusions.append(node.get_rid())
+			if node is RVStructurePanel and node.structure_kind == "roof" and not node.is_destroyed:
+				candidates.append(node)
 	candidates.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_squared_to(center) < b.global_position.distance_squared_to(center))
 	for body in candidates:
 		if body.is_queued_for_deletion() or (body.collision_layer & 1) == 0: continue
 		if body.global_position.distance_to(center) > FAR_RADIUS + 16: continue
 		for shape in body.get_children():
 			if shape is CollisionShape3D and not shape.disabled and shape.shape is BoxShape3D:
-				if roof_transforms.size() >= 8: break
+				if roof_transforms.size() >= MAX_ROOF_SHAPES: break
 				roof_transforms.append(shape.global_transform.affine_inverse())
 				roof_sizes.append(shape.shape.size * 0.5)
 	var origins := PackedVector3Array()
@@ -161,13 +163,13 @@ func _update_roofs(center: Vector3) -> void:
 	var rows_y := PackedVector3Array()
 	var rows_z := PackedVector3Array()
 	var sizes := roof_sizes.duplicate()
-	for i in range(8):
+	for i in range(MAX_ROOF_SHAPES):
 		var transform := roof_transforms[i] if i < roof_transforms.size() else Transform3D.IDENTITY
 		origins.append(transform.origin)
 		rows_x.append(Vector3(transform.basis.x.x, transform.basis.y.x, transform.basis.z.x))
 		rows_y.append(Vector3(transform.basis.x.y, transform.basis.y.y, transform.basis.z.y))
 		rows_z.append(Vector3(transform.basis.x.z, transform.basis.y.z, transform.basis.z.z))
-		if sizes.size() < 8: sizes.append(Vector3.ZERO)
+		if sizes.size() < MAX_ROOF_SHAPES: sizes.append(Vector3.ZERO)
 	for material in materials:
 		material.set_shader_parameter("roof_count", roof_transforms.size())
 		material.set_shader_parameter("roof_origin", origins)

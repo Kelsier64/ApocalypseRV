@@ -430,8 +430,8 @@ shape = SubResource("BoxShape3D_2avxi")
 [node name="DoorSockets" type="Node3D" parent="." unique_id=1261518629]
 
 [node name="South" type="Marker3D" parent="DoorSockets" unique_id=1336992053]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 4.5)
 script = ExtResource("6_y3nva")
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 4.5)
 socket_id = &"south"
 
 [node name="Furnishings" type="Node3D" parent="." unique_id=2101797984]
@@ -441,8 +441,8 @@ socket_id = &"south"
 [node name="Walkway" type="Node3D" parent="." unique_id=1874435256]
 
 [node name="Entrance" type="StaticBody3D" parent="." unique_id=1665093089]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.5)
 script = ExtResource("7_i87l8")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.5)
 
 [node name="DoorCollision" type="CollisionShape3D" parent="Entrance" unique_id=1649235701]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)

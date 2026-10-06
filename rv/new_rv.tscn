@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://bgu1l4isw02ca" path="res://rv/chassis.tscn" id="1_ip3wq"]
 [ext_resource type="PackedScene" uid="uid://vl4wqm5kw8xj" path="res://equipment/driver_seat.tscn" id="2_hjrs7"]
 [ext_resource type="PackedScene" uid="uid://dticosvadsqs8" path="res://equipment/rv_ceiling.tscn" id="4_ceil"]
+[ext_resource type="PackedScene" path="res://equipment/rv_ceiling_hatch.tscn" id="roof_hatch"]
 [ext_resource type="PackedScene" uid="uid://b2hnoxxrv0jps" path="res://equipment/rv_wall_front.tscn" id="7_wf"]
 
 [ext_resource type="PackedScene" path="res://equipment/fuel_port.tscn" id="9_tank"]
@@ -18,30 +19,43 @@
 [ext_resource type="PackedScene" path="res://equipment/tablet_screen.tscn" id="preset_tablet_screen"]
 [ext_resource type="PackedScene" path="res://equipment/cabin_light_strip.tscn" id="cabin_strip"]
 
+[ext_resource type="PackedScene" path="res://equipment/side_door_ladder.tscn" id="side_ladder"]
+[ext_resource type="PackedScene" path="res://equipment/roof_ladder.tscn" id="roof_ladder"]
+
 [node name="NewRv" type="Node3D" unique_id=2120729524]
 
 [node name="Chassis" parent="." unique_id=604864203 instance=ExtResource("1_ip3wq")]
 starter_kits = true
 
-[node name="Ceiling" parent="Chassis" unique_id=998136955 instance=ExtResource("4_ceil")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
+[node name="RoofFront" parent="Chassis" instance=ExtResource("4_ceil")]
+position = Vector3(0, 2.6005738, -4)
+mount_slot = "roof_0"
+
+[node name="RoofMiddle" parent="Chassis" instance=ExtResource("roof_hatch")]
+position = Vector3(0, 2.6005738, 0)
+mount_slot = "roof_1"
+
+[node name="RoofRear" parent="Chassis" instance=ExtResource("4_ceil")]
+position = Vector3(0, 2.6005738, 4)
+mount_slot = "roof_2"
 
 [node name="WallFront" parent="Chassis" unique_id=1457687698 instance=ExtResource("7_wf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.9)
 
 [node name="CabinLightFront" parent="Chassis" instance=ExtResource("cabin_strip")]
 position = Vector3(0, 2.4405738, -3.2)
-initial_support = NodePath("../Ceiling")
+initial_support = NodePath("../RoofFront")
 freeze = true
 collision_mask = 0
 
 [node name="CabinLightRear" parent="Chassis" instance=ExtResource("cabin_strip")]
 position = Vector3(0, 2.4405738, 2.2)
-initial_support = NodePath("../Ceiling")
+initial_support = NodePath("../RoofRear")
 freeze = true
 collision_mask = 0
 
 [node name="DriverSeat" parent="Chassis" unique_id=1370501954 instance=ExtResource("2_hjrs7")]
+initial_support = NodePath("../Floor")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.49605, -4.02)
 
 [node name="FuelPort" parent="Chassis" instance=ExtResource("9_tank")]
@@ -50,6 +64,7 @@ rotation_degrees = Vector3(0, 0, -90)
 freeze = true
 collision_mask = 0
 [node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
+initial_support = NodePath("../Floor")
 position = Vector3(1.25, 0.8, 3.7)
 freeze = true
 collision_mask = 0
@@ -89,16 +104,19 @@ position = Vector3(0, 1.5, 5.9)
 mount_slot = "rear"
 
 [node name="Generator" parent="Chassis" instance=ExtResource("preset_generator")]
+initial_support = NodePath("../Floor")
 position = Vector3(-1.25, 0.81, 3.7)
 freeze = true
 collision_mask = 0
 
 [node name="CraftingStation" parent="Chassis" instance=ExtResource("preset_crafting_station")]
+initial_support = NodePath("../Floor")
 position = Vector3(-1.15, 0.5, 1)
 freeze = true
 collision_mask = 0
 
 [node name="Scrapper" parent="Chassis" instance=ExtResource("preset_scrapper")]
+initial_support = NodePath("../Floor")
 position = Vector3(1.25, 0.5, -2.2)
 freeze = true
 collision_mask = 0
@@ -106,5 +124,19 @@ collision_mask = 0
 [node name="TabletScreen" parent="Chassis" instance=ExtResource("preset_tablet_screen")]
 initial_support = NodePath("../CraftingStation")
 position = Vector3(-1.15, 1.03, 1.15)
+freeze = true
+collision_mask = 0
+
+[node name="SideDoorLadder" parent="Chassis" instance=ExtResource("side_ladder")]
+position = Vector3(2.142, -0.8, 0)
+rotation_degrees = Vector3(0, 90, 0)
+initial_support = NodePath("..")
+freeze = true
+collision_mask = 0
+
+[node name="RoofLadder" parent="Chassis" instance=ExtResource("roof_ladder")]
+position = Vector3(-1.638, 0.5, 0)
+rotation_degrees = Vector3(0, 90, 0)
+initial_support = NodePath("../LeftMiddle")
 freeze = true
 collision_mask = 0

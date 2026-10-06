@@ -22,7 +22,7 @@ func _run() -> void:
 	player.set_physics_process(false)
 	var station: CraftingStation = rv.get_node("CraftingStation")
 	station.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 1, 2)), rv)
-	var scrapper: Equipment = rv.get_node("Scrapper")
+	var scrapper: Item = rv.get_node("Scrapper")
 	scrapper.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 1, -2)), rv)
 	rv.add_item(ItemNames.METAL_PARTS, 10)
 	rv.add_item(ItemNames.UNREFINED_FUEL, 10)
@@ -30,13 +30,32 @@ func _run() -> void:
 	rv.set_engine_running(true)
 	station.request_craft("gasoline")
 	station.step_work(0.5)
-	var prop: Prop = world.get_node("Scrap")
+	var prop: Item = world.get_node("Scrap")
 	prop.global_position = scrapper.global_position + Vector3.UP
 	scrapper.recycle_prop(prop)
 	scrapper.step_work(0.4)
 	if not await _finish_navigation(world):
 		quit(1)
 		return
+	# Real terminal construction must give F6 a useful reason while its operator
+	# is in UI mode, rather than failing through the generic interaction gate.
+	var construction_slots: Node = rv.get_node("StructureSlots")
+	var construction: Node = construction_slots.construction
+	var terminal: Node = rv.get_node("TabletScreen")
+	var checkpoint_gate: Node = root.get_node("Checkpoint")
+	rv.set_engine_running(false)
+	construction_slots.panel("front").set_health(60.0)
+	terminal.interact_hold(player)
+	expect(player.get_player_mode() == player.PlayerMode.UI and terminal.ui_instance.visible, "Real tablet puts the save operator in UI mode")
+	var blocked_path := PATH + ".construction-" + InstanceIds.create()
+	expect(not checkpoint_gate.save_world(world, blocked_path) and checkpoint_gate.last_error.code == "state", "Ordinary tablet UI still prevents saving when no construction job exists")
+	expect(construction.begin(terminal, "front", "repair").is_empty(), "Real tablet starts construction for save gate fixture")
+	expect(not checkpoint_gate.save_world(world, blocked_path) and checkpoint_gate.last_error.code == "motion" and checkpoint_gate.error_message().contains("車體施工中"), "Saving during actual tablet construction reports the specific construction reason before UI mode")
+	expect(not FileAccess.file_exists(blocked_path), "Blocked construction save creates no file")
+	terminal._close_ui()
+	expect(not construction.is_building() and player.get_player_mode() == player.PlayerMode.NORMAL, "Closing tablet cancels construction and restores normal player mode")
+	construction_slots.panel("front").set_health(120.0)
+	rv.set_engine_running(true)
 	var charge := rv.current_power
 	var installed_ref: WeakRef = weakref(rv.energy.battery)
 	var battery_id := rv.energy.battery.id
@@ -46,7 +65,7 @@ func _run() -> void:
 	var saved_materials := rv.get_all_items()
 	var visited := {"actors": [], "layout": InteriorLayout.generate(42), "explored": ["r000"]}
 	world.get_node("PoiInstances").saved_instances["visited"] = visited
-	var spare: Prop = world.get_node("SpareBattery")
+	var spare: Item = world.get_node("SpareBattery")
 	var spare_ref: WeakRef = weakref(spare.battery)
 	spare.battery.charge = 17.0
 	player.add_prop_item(spare, spare.scene_file_path)
@@ -60,7 +79,7 @@ func _run() -> void:
 	player.add_item(carried_item.name, true, carried_item.scene_path, carried_item.state)
 	var stored := EngineState.new({"health": 0.0})
 	rv.stored_items.append(stored.item())
-	var loose: Prop = load("res://props/engine_upgraded.tscn").instantiate()
+	var loose: Item = load("res://props/engine_upgraded.tscn").instantiate()
 	loose.restore_item_state(EngineState.new({"model": "upgraded", "health": 91.0}).item().state)
 	WorldEntities.get_container(world).add_child(loose)
 	loose.global_position = rv.global_position + Vector3(9, 1, 0)
@@ -76,10 +95,31 @@ func _run() -> void:
 	clock.weather.advance(360)
 	player.current_stamina = 12.0
 	player.stamina_exhausted = true
+	var structure_slots: Node = rv.get_node("StructureSlots")
+	structure_slots.panel("front").set_health(37.0)
+	structure_slots.panel("left_2").take_damage(999.0)
+	structure_slots.panel("rear").restore_angles([-0.2, 0.4])
+	structure_slots.panel("roof_0").set_health(37.0)
+	structure_slots.panel("roof_1").set_health(40.0)
+	expect(structure_slots.panel("roof_1").definition.type_id == "rv_ceiling_hatch", "Default middle roof retains the left hatch variant")
+	structure_slots.panel("roof_2").take_damage(999.0)
+	await process_frame # Commit supported Item drops before capturing the graph.
+	var preview_path := PATH + ".preview-" + InstanceIds.create()
+	expect(player.enter_equipment_placement(), "Held engine enters the real Item placement preview")
+	expect(not checkpoint.save_world(world, preview_path) and checkpoint.last_error.code == "preview", "Placement preview blocks saving with a concrete reason")
+	expect(not FileAccess.file_exists(preview_path), "Rejected placement preview creates no checkpoint")
+	player.cancel_equipment_placement()
+	expect(player.get_player_mode() == player.PlayerMode.NORMAL and player.inventory.active_item().state.id == carried.id, "Cancelling save-blocking preview retains the same carried Item")
 	expect(checkpoint.save_world(world, PATH), "Checkpoint writes main-world snapshot")
 	print("CHECKPOINT written")
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	expect(not saved.is_empty(), "Checkpoint validates from disk without objects")
+	if saved.is_empty():
+		world.queue_free()
+		await process_frame
+		quit(1)
+		return
+	expect(saved.version == 5 and saved.vehicles[0].structures.size() == 12, "Disk checkpoint keeps a separate twelve-slot structure snapshot")
 	expect(saved.clock == clock.capture(), "Checkpoint captures day, fractional time and day duration")
 	expect(saved.weather == clock.weather.capture(), "Checkpoint captures weather transition and RNG")
 	expect(saved.get("generation_version") == 6, "Generation version independent of checkpoint version")
@@ -158,15 +198,19 @@ func _run() -> void:
 	expect(player.inventory.items[1].state.engine.id == carried.id and player.inventory.items[1].state.engine.health == 273.0, "Carried upgraded engine keeps ID and durability")
 	expect(restored.stored_items.size() == 3 and restored.stored_items[2].state.engine.id == stored.id and restored.stored_items[2].state.engine.health == 0.0, "Stored broken engine persists without starter kit duplication")
 	expect(restored.headlights_requested and restored.engine_bay.hatch_open, "Headlight request and service hatch persist")
+	expect(restored.get_node("StructureSlots").snapshot() == saved.vehicles[0].structures, "Disk restore preserves structure damage, destroyed gap and door angles")
+	expect(restored.get_node("StructureSlots").occupant("left_2") == null, "Disk load never automatically fills a destroyed wall slot")
+	expect(restored.get_node("StructureSlots").occupant("roof_2") == null and restored.get_node("StructureSlots").occupant("roof_0") != null, "Disk load preserves the rear roof gap without removing the surviving front roof")
+	expect(restored.get_node("StructureSlots").panel("roof_1").definition.type_id == "rv_ceiling_hatch", "Disk load retains the hatch roof type independently of neighbouring segments")
 	var loose_matches := 0
 	for actor in WorldEntities.get_container(world).get_children():
-		if actor is Prop and actor.persistent_id == loose_id:
+		if actor is Item and actor.persistent_id == loose_id:
 			loose_matches += 1
 			expect(actor.engine.health == 91.0 and actor.engine.model_id == "upgraded", "Ground engine keeps model and durability")
 	expect(loose_matches == 1, "Ground engine restores exactly once")
 	expect(world.get_node("PoiInstances").saved_instances.get("visited") == visited, "Exact bunker manifest and exploration survive checkpoint")
 	var restored_station: CraftingStation
-	var restored_scrapper: Equipment
+	var restored_scrapper: Item
 	for device in restored.get_equipment():
 		if device is CraftingStation: restored_station = device
 		if "props_being_crushed" in device: restored_scrapper = device
@@ -176,7 +220,7 @@ func _run() -> void:
 	expect(is_equal_approx(restored_scrapper.props_being_crushed[0].timer, 1.1), "Scrapper progress retained")
 	var matches := 0
 	for actor in WorldEntities.get_container(world).get_children():
-		if actor is Prop and actor.persistent_id == scrap_id: matches += 1
+		if actor is Item and actor.persistent_id == scrap_id: matches += 1
 	expect(matches == 1, "Processing input is not duplicated into world actors")
 	world.queue_free()
 	await process_frame

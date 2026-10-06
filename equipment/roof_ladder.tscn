@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/rv_ladder.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/roof_ladder_definition.tres" id="def"]
+[ext_resource type="PackedScene" path="res://assets/models/rv_ladders/roof_ladder.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.98, 2.59, 0.27)
+
+[node name="roof_ladder" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("def")
+hold_rotation = Vector3(0, 0, 90)
+climb_height = 2.21
+bottom_face = 2
+top_exit_side = 1
+
+[node name="Visuals" parent="." instance=ExtResource("model")]
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.295, -0.015)
+shape = SubResource("shape")

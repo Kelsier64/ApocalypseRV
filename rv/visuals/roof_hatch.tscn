@@ -1,0 +1,104 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
+[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
+[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
+
+[sub_resource type="BoxMesh" id="Right"]
+size = Vector3(2.35, 0.2, 4)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="Left"]
+size = Vector3(0.2, 0.2, 4)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="Front"]
+size = Vector3(1.45, 0.2, 1.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="Rear"]
+size = Vector3(1.45, 0.2, 1.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="RibFront"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="RibRear"]
+size = Vector3(3.9, 0.025, 0.065)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="GutterLeft"]
+size = Vector3(0.09, 0.07, 3.95)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="GutterRight"]
+size = Vector3(0.09, 0.07, 3.95)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="TrimLeft"]
+size = Vector3(0.06, 0.01, 1.72)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="TrimRight"]
+size = Vector3(0.06, 0.01, 1.72)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="TrimFront"]
+size = Vector3(1.45, 0.01, 0.06)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="TrimRear"]
+size = Vector3(1.45, 0.01, 0.06)
+material = ExtResource("orange")
+
+[node name="RoofVisual" type="Node3D"]
+
+[node name="Right" type="MeshInstance3D" parent="."]
+position = Vector3(0.825, 0, 0)
+mesh = SubResource("Right")
+
+[node name="Left" type="MeshInstance3D" parent="."]
+position = Vector3(-1.9, 0, 0)
+mesh = SubResource("Left")
+
+[node name="Front" type="MeshInstance3D" parent="."]
+position = Vector3(-1.075, 0, -1.4)
+mesh = SubResource("Front")
+
+[node name="Rear" type="MeshInstance3D" parent="."]
+position = Vector3(-1.075, 0, 1.4)
+mesh = SubResource("Rear")
+
+[node name="RibFront" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, -1.8)
+mesh = SubResource("RibFront")
+
+[node name="RibRear" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.11, 1.8)
+mesh = SubResource("RibRear")
+
+[node name="GutterLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-1.94, -0.02, 0)
+mesh = SubResource("GutterLeft")
+
+[node name="GutterRight" type="MeshInstance3D" parent="."]
+position = Vector3(1.94, -0.02, 0)
+mesh = SubResource("GutterRight")
+
+[node name="TrimLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-1.83, 0.105, 0)
+mesh = SubResource("TrimLeft")
+
+[node name="TrimRight" type="MeshInstance3D" parent="."]
+position = Vector3(-0.32, 0.105, 0)
+mesh = SubResource("TrimRight")
+
+[node name="TrimFront" type="MeshInstance3D" parent="."]
+position = Vector3(-1.075, 0.105, -0.83)
+mesh = SubResource("TrimFront")
+
+[node name="TrimRear" type="MeshInstance3D" parent="."]
+position = Vector3(-1.075, 0.105, 0.83)
+mesh = SubResource("TrimRear")

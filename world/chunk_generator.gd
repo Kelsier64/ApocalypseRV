@@ -508,7 +508,7 @@ func _spawn_actors() -> void:
 			continue
 		var loot := field.loot_plan(int(site.index))
 		for i in range(loot.size()):
-			var prop: Prop = load(loot[i]).instantiate()
+			var prop: Item = load(loot[i]).instantiate()
 			var point: Vector3 = site.building * Vector3(-2.0 + i * 2.0, 0, 4.5)
 			point.y = field.height_at(point.x, point.z) + 0.8
 			prop.position = point

@@ -17,8 +17,8 @@ func run() -> void:
 	await process_frame
 	var front: CabinLightStrip = rv.get_node("CabinLightFront")
 	var rear: CabinLightStrip = rv.get_node("CabinLightRear")
-	check(front.can_operate() and rear.can_operate() and front.mount_support == rv.get_node("Ceiling"), "Preset strips are equipment mounted to the roof")
-	check(front.mass == 1.5 and front.bottom_face == Equipment.BottomFace.UP, "Light equipment has weight and mounts by its upper face")
+	check(front.can_operate() and rear.can_operate() and front.mount_support == rv.get_node("RoofFront") and rear.mount_support == rv.get_node("RoofRear"), "Preset strips are Item mounted to the roof")
+	check(front.mass == 1.5 and front.bottom_face == Item.BottomFace.UP, "Light equipment has weight and mounts by its upper face")
 	rv.current_power = 80
 	rv.interior_requested = {"cabin": false, "work": false, "service": false}
 	rv.energy.step(rv, 0, 1)
@@ -44,28 +44,33 @@ func run() -> void:
 	rv.energy.step(rv, 0, 1)
 	await process_frame
 	check(not rv.interior_powered.cabin and is_equal_approx(rv.energy.load_rate, baseline), "No operational strips means no hidden cabin light or draw")
-	front.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0.5, 2.44, 0)), rv, rv.get_node("Ceiling"))
+	front.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0.5, 2.44, 0)), rv, rv.get_node("RoofMiddle"))
 	front.set_enabled(true)
+	rear.current_health = rear.max_health
 	var saved := VehicleSnapshot.capture(rv)
 	var id := front.persistent_id
-	check(VehicleSnapshot.validate(saved) and VehicleSnapshot.apply(rv, saved), "Equipment save restores strips through trusted scene catalog")
+	check(VehicleSnapshot.validate(saved) and VehicleSnapshot.apply(rv, saved), "Item save restores strips through trusted scene catalog")
 	var strips := rv.get_equipment().filter(func(device): return device is CabinLightStrip)
-	check(strips.size() == 2 and strips.any(func(device): return device.persistent_id == id and device.position.is_equal_approx(Vector3(0.5, 2.44, 0)) and device.mount_support is Equipment), "Moved strip identity, position and support survive reload")
+	check(strips.size() == 2 and strips.any(func(device): return device.persistent_id == id and device.position.is_equal_approx(Vector3(0.5, 2.44, 0)) and device.mount_support == rv.get_node("RoofMiddle")), "Moved strip identity, position and support survive reload")
 	var removed := saved.duplicate(true)
-	removed.equipment = removed.equipment.filter(func(entry): return entry.scene != "res://equipment/cabin_light_strip.tscn")
+	removed.mounted_items = removed.mounted_items.filter(func(entry): return entry.scene != "res://equipment/cabin_light_strip.tscn")
 	check(VehicleSnapshot.apply(rv, removed) and not rv.get_equipment().any(func(device): return device is CabinLightStrip), "Saving removed strips never respawns them")
 	var legacy := removed.duplicate(true)
-	legacy.erase("cabin_light_devices")
-	var migrated := VehicleSnapshot.upgrade(legacy)
-	check(VehicleSnapshot.validate(migrated) and migrated.equipment.size() == legacy.equipment.size() + 2, "Legacy roof lights convert once to two supported devices")
-	check(VehicleSnapshot.upgrade(migrated) == migrated and legacy.equipment.size() == removed.equipment.size(), "Migration is idempotent and does not mutate source")
-	check(VehicleSnapshot.apply(rv, migrated), "Legacy converted lights load")
-	rv.get_equipment().filter(func(device): return device.get("structure_kind") == "roof")[0].detach_from_support()
+	legacy.version = 3
+	check(VehicleSnapshot.upgrade(legacy).is_empty(), "Legacy roof lights are not migrated into the new structure system")
+	check(VehicleSnapshot.apply(rv, saved), "Restore supported light Item before destructive check")
+	rv.get_node("StructureSlots").panel("roof_1").take_damage(999.0)
 	await process_frame
 	await process_frame
-	check(not rv.get_equipment().any(func(device): return device is CabinLightStrip), "Removing supporting roof detaches the actual light equipment")
+	var remaining := rv.get_equipment().filter(func(device): return device is CabinLightStrip)
+	check(remaining.size() == 1 and remaining[0].mount_support == rv.get_node("RoofRear") and remaining[0].can_operate(), "Middle roof breach drops only its relocated strip and preserves the rear light")
+	check(not rv.get_node("RoofFront").is_destroyed, "Other roof panels remain intact after one lamp support breaks")
+	rv.get_node("StructureSlots").panel("roof_2").take_damage(999.0)
+	await process_frame
+	await process_frame
+	check(not rv.get_equipment().any(func(device): return device is CabinLightStrip), "Destroying the rear roof drops the remaining strip without hidden lights")
 	world.queue_free()
 	await process_frame
 	for failure in failures: push_error("FAIL: " + failure)
-	if failures.is_empty(): print("PASS: console-controlled light equipment, power, detach, persistence and legacy conversion")
+	if failures.is_empty(): print("PASS: console-controlled light Item, power, detach, persistence and legacy rejection")
 	quit(0 if failures.is_empty() else 1)

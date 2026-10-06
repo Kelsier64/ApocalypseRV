@@ -12,8 +12,8 @@ material = SubResource("mat")
 [sub_resource type="BoxShape3D" id="shape"]
 size = Vector3(0.6, 0.3, 0.4)
 [node name="FuelPort" type="RigidBody3D"]
-definition = ExtResource("def")
 script = ExtResource("1")
+definition = ExtResource("def")
 equipment_name = "加油孔"
 destroy_on_zero_health = false
 mass = 8.0

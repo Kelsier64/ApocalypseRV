@@ -22,16 +22,15 @@ func _run() -> void:
 	var socket: BatterySocket = rv.get_node("BatterySocket")
 	var battery_id := socket.installed_battery.id
 	rv.current_power = 37.0
-	socket.start_placement(player)
+	socket.prepare_pickup()
 	var container := WorldEntities.get_container(world)
-	var drops: Array[Prop] = []
+	var drops: Array[Item] = []
 	for child in container.get_children():
-		if child is Prop and child.item_name == ItemNames.BATTERY: drops.append(child)
+		if child is Item and child.item_name == ItemNames.BATTERY: drops.append(child)
 	check(drops.size() == 1 and rv.current_power == 0.0, "Moving socket drops exactly one battery and disconnects power")
 	check(drops[0].battery.id == battery_id and drops[0].battery.charge == 37.0, "Dropped battery preserves identity and charge")
 	check(absf(rv.to_local(drops[0].global_position).x) > 2.5, "Dropped battery clears chassis collision")
-	socket.cancel_placement()
-	player.placement.placing_equipment = null
+	socket.confirm_placement(socket.global_transform, rv)
 	check(socket.installed_battery == null, "Cancelling move does not recreate dropped battery")
 	drops[0].interact(player)
 	await process_frame
@@ -40,9 +39,9 @@ func _run() -> void:
 	socket.take_damage(999.0)
 	check(socket.installed_battery == null and rv.current_power == 0.0, "Damaged socket ejects its battery")
 	var count := 0
-	var recovered: Prop
+	var recovered: Item
 	for child in container.get_children():
-		if child is Prop and child.item_name == ItemNames.BATTERY and not child.is_queued_for_deletion():
+		if child is Item and child.item_name == ItemNames.BATTERY and not child.is_queued_for_deletion():
 			count += 1
 			recovered = child
 	check(count == 1, "Repeated service cleanup does not duplicate battery")
@@ -61,7 +60,7 @@ func _run() -> void:
 	check(socket.installed_battery == null and second.installed_battery != null and rv.current_power == 19.0, "Any empty installed socket can accept the only vehicle battery")
 	second.interact(player)
 	check(rv.current_power == 37.0 and player.inventory.active_item().state.battery.charge == 19.0, "Explicit target socket swaps its own battery")
-	var box: Equipment = rv.get_node("ItemBox")
+	var box: Item = rv.get_node("ItemBox")
 	rv.stored_items.clear() # Isolate the one-slot storage transaction from starter supplies.
 	rv.item_capacity = 1
 	check(rv.store_player_item(player, 0), "Battery enters chassis warehouse")
@@ -73,7 +72,7 @@ func _run() -> void:
 	var power := rv.current_power
 	rv.step_energy_system(0.0, 0.0, 0.0, 2.0)
 	check(rv.stored_items[0].state.battery.charge == 19.0 and rv.current_power < power, "Warehouse battery does not drain or supply power")
-	var second_box: Equipment = load("res://equipment/item_box.tscn").instantiate()
+	var second_box: Item = load("res://equipment/item_box.tscn").instantiate()
 	rv.add_child(second_box)
 	second_box.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 4, 0)), rv)
 	rv.current_power = 0.0
@@ -86,13 +85,13 @@ func _run() -> void:
 	check(rv.take_stored_item(player, 0) and player.inventory.items[0].state.battery.charge == 19.0, "Recovered warehouse battery retains its state")
 	rv.store_player_item(player, 0)
 	rv.current_fuel = 43.0
-	var port: Equipment = rv.get_node("FuelPort")
+	var port: Item = rv.get_node("FuelPort")
 	port.detach_from_support()
 	check(rv.current_fuel == 43.0 and rv.max_fuel == 100.0, "Removing filler leaves chassis fuel")
 	player.add_item(ItemNames.GAS_CAN, false, "res://props/gas_can.tscn")
 	check(port.interact(player).contains("尚未接入") and player.get_active_item_name() == ItemNames.GAS_CAN, "Detached port refuses refueling without consuming can")
 	rv.current_power = 0.0
-	var seat: Equipment = rv.get_node("DriverSeat")
+	var seat: Item = rv.get_node("DriverSeat")
 	seat.interact_hold(player)
 	var event := InputEventKey.new()
 	event.physical_keycode = KEY_B
@@ -105,18 +104,18 @@ func _run() -> void:
 	var saved := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.validate(saved), "New storage snapshot validates")
 	var before := container.get_child_count()
-	check(VehicleSnapshot.apply(rv, saved), "Storage snapshot applies")
+	check(await VehicleSnapshot.apply(rv, saved), "Storage snapshot applies")
 	check(rv.current_fuel == 43.0 and rv.stored_items[0].state.battery.charge == 19.0 and rv.item_capacity == 1, "Fuel, warehouse states and capacities restored")
 	check(container.get_child_count() == before, "Restoring vehicle does not eject or duplicate old installed battery")
-	# Convert representative v1 data through the disk checkpoint entry point.
+	# Reject representative v1 data through the disk checkpoint entry point.
 	var legacy := saved.duplicate(true)
 	legacy.version = 1
 	legacy.health = 450.0
 	legacy.battery = {"id": "old-installed", "charge": 28.0, "capacity": 100.0, "weight": 15.0}
-	for index in range(legacy.equipment.size() - 1, -1, -1):
-		if legacy.equipment[index].scene == "res://rv/battery_socket.tscn": legacy.equipment.remove_at(index)
-	legacy.equipment.append({"scene": "res://equipment/fuel_tank.tscn", "id": "old-tank", "transform": Transform3D.IDENTITY, "health": 120.0, "enabled": true, "support": "chassis", "service": {"fuel": 33.0, "capacity": 100.0}})
-	legacy.equipment.append({"scene": "res://equipment/material_rack.tscn", "id": "old-rack", "transform": Transform3D.IDENTITY, "health": 120.0, "enabled": true, "support": "chassis", "service": {"capacity": 300}})
+	for index in range(legacy.mounted_items.size() - 1, -1, -1):
+		if legacy.mounted_items[index].scene == "res://rv/battery_socket.tscn": legacy.mounted_items.remove_at(index)
+	legacy.mounted_items.append({"scene": "res://equipment/fuel_tank.tscn", "id": "old-tank", "transform": Transform3D.IDENTITY, "health": 120.0, "enabled": true, "support": "chassis", "service": {"fuel": 33.0, "capacity": 100.0}})
+	legacy.mounted_items.append({"scene": "res://equipment/material_rack.tscn", "id": "old-rack", "transform": Transform3D.IDENTITY, "health": 120.0, "enabled": true, "support": "chassis", "service": {"capacity": 300}})
 	for field in ["items", "fuel", "fuel_capacity", "material_capacity", "item_capacity"]: legacy.erase(field)
 	var bundle := {"name": "Material Bundle", "is_large": false, "scene_path": "res://props/material_bundle.tscn", "state": {"materials": {"Metal Parts": 7}}}
 	var old := {"version": 1, "vehicles": [legacy], "actors": [],
@@ -125,15 +124,12 @@ func _run() -> void:
 	var checkpoint := root.get_node("Checkpoint")
 	var path := "res://.godot/rv-storage-legacy.save"
 	checkpoint.write_checkpoint(path, old)
-	var upgraded: Dictionary = checkpoint.read_checkpoint(path)
-	check(not upgraded.is_empty(), "Legacy disk checkpoint upgrades")
-	if not upgraded.is_empty():
-		check(upgraded.vehicles[0].fuel == 33.0 and upgraded.vehicles[0].materials["Metal Parts"] == 9, "Legacy fuel and inventory/POI bundles credited once")
-		check(upgraded.player.items.is_empty() and not upgraded.poi.has("visited"), "Converted inventory models and obsolete POI record removed")
-		check(VehicleSnapshot.apply(rv, upgraded.vehicles[0]) and rv.energy.battery.id == "old-installed" and rv.current_power == 28.0, "Old installed battery becomes a socket battery")
-		check(checkpoint.read_checkpoint(path).vehicles[0].materials["Metal Parts"] == 9, "Repeated loading never double-credits migration")
+	var original_bytes := FileAccess.get_file_as_bytes(path)
+	check(checkpoint.read_checkpoint(path).is_empty() and checkpoint.last_error.code == "version", "Legacy disk checkpoint requires a new run")
+	check(FileAccess.get_file_as_bytes(path) == original_bytes, "Rejected legacy checkpoint remains unchanged on disk")
+	check(rv.current_fuel == 43.0 and rv.stored_items[0].state.battery.charge == 19.0, "Legacy rejection does not mutate current vehicle")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: shared warehouse, battery ejection, fuel ownership, powerless driver and save migration")
+	if failures.is_empty(): print("PASS: shared warehouse, battery ejection, fuel ownership, powerless driver and preserved legacy save rejection")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

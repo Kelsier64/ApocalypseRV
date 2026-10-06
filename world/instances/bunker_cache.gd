@@ -44,7 +44,7 @@ func interact_hold(player: Node3D) -> String:
 	var scene_path := str(entry.get("scene", ""))
 	var scene := load(scene_path) as PackedScene
 	if scene == null: return "補給品無法讀取"
-	var item := scene.instantiate() as Prop
+	var item := scene.instantiate() as Item
 	if item == null: return "補給品無法使用"
 	# Some props initialize model state in _ready. Restore after initialization so
 	# the inventory receives their exact saved identity and condition.

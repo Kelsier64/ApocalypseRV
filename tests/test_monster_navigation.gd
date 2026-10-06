@@ -467,7 +467,7 @@ func _test_select_combat_target_excludes_player_while_climbing() -> void:
 		player.position = Vector3(0.3, 0.0, 0.0)
 		var structure := _DummyDamageable.new()
 		structure.position = Vector3(0.8, 0.0, 0.0)
-		structure.add_to_group("equipment")
+		structure.add_to_group(Groups.MONSTER_DAMAGEABLE)
 
 		var chosen: Dictionary = monster._select_combat_target([player], [structure], true)
 		_expect(chosen.get("node", null) == structure, "Climbing should exclude player targets and choose structures.")
@@ -487,7 +487,7 @@ func _test_select_combat_target_climbing_prefers_nearest_touching_structure() ->
 		monster.position = Vector3.ZERO
 		monster.climbing_touch_attack_range = 1.2
 
-		var near_equipment := Node3D.new()
+		var near_equipment := RVStructurePanel.new()
 		near_equipment.position = Vector3(0.6, 0.0, 0.0)
 		near_equipment.add_to_group("equipment")
 
@@ -700,7 +700,7 @@ func _test_underfoot_probe_resolver_accepts_same_height_damageable_equipment() -
 		monster.position = Vector3(0.0, 1.0, 0.0)
 		var equipment := _DummyDamageable.new()
 		equipment.add_to_group("monster_damageable")
-		# Equipment center may be near monster center while still being underfoot via downward probe hit.
+		# Item center may be near monster center while still being underfoot via downward probe hit.
 		equipment.position = Vector3(0.0, 1.0, 0.0)
 
 		var resolved = monster._resolve_underfoot_damageable_from_collider(equipment)

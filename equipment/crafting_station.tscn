@@ -21,9 +21,9 @@ size = Vector3(1.2, 0.2, 0.8)
 size = Vector3(0.1, 0.3, 0.1)
 
 [node name="CraftingStation" type="RigidBody3D" unique_id=544239755]
+script = ExtResource("1_2d3jp")
 definition = ExtResource("def")
 mass = 25.0
-script = ExtResource("1_2d3jp")
 equipment_name = "Crafting Station"
 
 [node name="@MeshInstance3D@2" type="MeshInstance3D" parent="." unique_id=1758072986]

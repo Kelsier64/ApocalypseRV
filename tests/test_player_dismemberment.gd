@@ -66,7 +66,7 @@ func test_cuts() -> void:
 func test_capabilities() -> void:
 	restore_fresh()
 	check(actor.usable_arms() == 2 and actor.can_use_hands(2) and actor.can_drive(), "Intact player has all hand and driving capabilities")
-	var large_prop: Prop = load("res://props/engine_standard.tscn").instantiate()
+	var large_prop: Item = load("res://props/engine_standard.tscn").instantiate()
 	arena.add_child(large_prop)
 	large_prop.freeze = true
 	check(actor.add_prop_item(large_prop, "res://props/engine_standard.tscn"), "Intact player can pick up a large prop")
@@ -78,8 +78,8 @@ func test_capabilities() -> void:
 	check(actor.inventory.items == retained_items and actor.held_item_node == null, "Arm loss preserves large item identity/state and removes its unusable held preview")
 	actor._set_active_slot(1)
 	check(actor.inventory.active_slot == 1 and actor.held_item_node != null, "An unusable large item does not lock selection of a small item")
-	check(not actor._can_begin_climb(false, true, true, true, true), "One arm cannot begin a climb")
-	var prop: Prop = load("res://props/scrap.tscn").instantiate()
+	check(not actor._can_use_ladder(), "One arm cannot use a ladder")
+	var prop: Item = load("res://props/scrap.tscn").instantiate()
 	arena.add_child(prop)
 	prop.freeze = true
 	check(actor.add_prop_item(prop, "res://props/scrap.tscn"), "One arm can pick up a small prop")
@@ -109,7 +109,7 @@ func test_capabilities() -> void:
 	await steps(2)
 	check(actor.is_crawling() and not actor.can_drive(), "One missing leg forces crawling and blocks driving")
 	check(not actor.can_be_grabbed(), "Crawling posture cannot enter the standing head grab")
-	check(not actor._can_begin_climb(false, true, true, true, true), "Crawling cannot begin a climb")
+	check(not actor._can_use_ladder(), "Crawling cannot use a ladder")
 	check(actor.body_collision_shape.shape.height < standing_height and actor.camera.position.y < standing_camera, "Crawling lowers collision volume and view")
 	actor.position.x = 10.0
 	actor.set_physics_process(true)

@@ -17,6 +17,29 @@ func _run() -> void:
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
 	current_scene = world
+	for model in ["standard", "upgraded"]:
+		var loose: Item = load("res://props/engine_" + model + ".tscn").instantiate()
+		var identity := loose.persistent_id
+		loose.condition = 25.0
+		world.add_child(loose)
+		var maximum: float = loose.engine.definition().max_health
+		check(loose.persistent_id == identity and loose.engine.id == identity, "Fresh engine preserves its Item identity through initialization")
+		check(is_equal_approx(loose.engine.health, maximum * 0.25) and is_equal_approx(loose.current_health, loose.engine.health), "Pre-ready condition becomes the single durable engine health")
+		loose.take_damage(10.0)
+		check(is_equal_approx(loose.engine.health, maximum * 0.25 - 10.0), "Generic Item damage updates engine health")
+		loose.repair_health(7.0)
+		check(is_equal_approx(loose.engine.health, maximum * 0.25 - 3.0), "Generic Item repair updates engine health")
+		loose.engine.health = 21.0
+		var record := loose.capture_item_state()
+		check(record.id == record.engine.id and is_equal_approx(record.condition, 2100.0 / maximum), "Capture derives condition and identity from EngineState")
+		check(ItemState.valid(loose.scene_file_path, record), "Engine Item snapshot satisfies scene and identity validation")
+		record.condition = 100.0
+		var restored: Item = load(loose.scene_file_path).instantiate()
+		restored.restore_item_state(record)
+		world.add_child(restored)
+		check(restored.engine.health == 21.0 and restored.current_health == 21.0 and restored.persistent_id == identity, "Restore keeps durable engine health authoritative over derived condition")
+		loose.free()
+		restored.free()
 	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	world.add_child(shell)
 	var rv: Chassis = shell.get_node("Chassis")
@@ -62,7 +85,7 @@ func _run() -> void:
 	check(rv.exchange_engine(player).contains("已裝入") and rv.get_engine().health == 257, "Warehouse roundtrip keeps engine condition")
 	rv.take_damage(999)
 	check(rv.get_engine().health == 0 and not rv.energy.engine_running, "Engine destruction stops only drivetrain")
-	var seat: Equipment = rv.get_node("DriverSeat")
+	var seat: Item = rv.get_node("DriverSeat")
 	seat.interact_hold(player)
 	check(seat.current_driver == player, "Broken engine still permits driving controls and seat access")
 	seat.exit_seat()
@@ -157,7 +180,7 @@ func _run() -> void:
 	for lamp in lights.lamps.values(): check(not lamp.light.visible, "All exterior lamps extinguish without power")
 	rv.current_power = 100
 	var saved := VehicleSnapshot.capture(rv)
-	check(VehicleSnapshot.validate(saved), "V3 engine snapshot valid")
+	check(VehicleSnapshot.validate(saved), "V4 engine snapshot valid")
 	check(VehicleSnapshot.apply(rv, saved) and rv.get_engine().id == incoming.id and rv.get_engine().health == 150, "Engine save restores identity and condition")
 	var bad := saved.duplicate(true)
 	bad.engine_item.health = INF
@@ -169,9 +192,7 @@ func _run() -> void:
 	old.version = 2
 	old.health = 0.0
 	old.erase("engine_item")
-	var upgraded := VehicleSnapshot.upgrade(old)
-	check(VehicleSnapshot.validate(upgraded) and upgraded.engine_item.health == 0, "Legacy destroyed chassis becomes broken standard engine")
-	check(VehicleSnapshot.upgrade(upgraded) == upgraded, "V3 migration is idempotent")
+	check(VehicleSnapshot.upgrade(old).is_empty() and not VehicleSnapshot.apply(rv, old), "Older engine snapshots require a new run and leave vehicle unchanged")
 	rv.engine_bay.installed_engine = null
 	var empty := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.apply(rv, empty) and rv.get_engine() == null, "Empty slot stays empty after loading")
@@ -184,12 +205,12 @@ func _run() -> void:
 	check(station.request_craft("engine_upgraded"), "Engine recipe queues")
 	station.step_work(30.0)
 	check(station.jobs.is_empty(), "Large engine output has actual collider clearance: " + station.last_error)
-	var product: Prop
+	var product: Item
 	for node in WorldEntities.get_container(world).get_children():
-		if node is Prop and node.scene_file_path == "res://props/engine_upgraded.tscn": product = node
+		if node is Item and node.scene_file_path == "res://props/engine_upgraded.tscn": product = node
 	check(product != null and EngineState.valid(product.capture_item_state().engine, false), "Crafted engine has valid durable state")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: default assembly, engine ownership, repair, upgrades, lights, migration and crafting")
+	if failures.is_empty(): print("PASS: default assembly, engine ownership, repair, upgrades, lights, legacy rejection and crafting")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

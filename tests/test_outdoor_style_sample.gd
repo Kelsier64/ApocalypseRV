@@ -42,7 +42,7 @@ func _run() -> void:
 	await process_frame
 	check(study.find_children("*", "CollisionShape3D", true, false).size() == shape_count, "A/B never changes physical geometry")
 	check(study.site.building == site_pose, "Entrance transform remains stable")
-	var panel: Equipment = study.main.get_node("NewRv/Chassis/RightFront")
+	var panel: RVStructurePanel = study.main.get_node("NewRv/Chassis/RightFront")
 	panel.current_health = panel.max_health * 0.2
 	await process_frame
 	await process_frame

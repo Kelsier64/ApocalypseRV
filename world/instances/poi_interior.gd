@@ -204,6 +204,7 @@ func _navigation_connected() -> bool:
 
 func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> void:
 	var body := StaticBody3D.new()
+	body.name = "Support_%d" % parent.get_child_count()
 	body.position = at
 	var visual := MeshInstance3D.new()
 	var mesh := BoxMesh.new()
@@ -221,21 +222,8 @@ func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> voi
 func snapshot() -> Dictionary:
 	var actors: Array[Dictionary] = []
 	for actor in entities.get_children():
-		if actor.is_queued_for_deletion() or (actor is Monster and actor.is_dead):
-			continue
-		if not actor is Prop and not actor is Monster:
-			continue
-		var data := {"scene": actor.scene_file_path, "transform": actor.transform}
-		if actor.has_meta("bunker_actor_id"): data["id"] = str(actor.get_meta("bunker_actor_id"))
-		if actor is Monster:
-			data["health"] = actor.current_health
-		else:
-			data["yields"] = actor.scrap_yields.duplicate(true)
-			data["state"] = actor.capture_item_state()
-			data["name"] = actor.item_name
-			data["large"] = actor.is_large
-			data["frozen"] = actor.freeze
-		actors.append(data)
+		var saved := WorldActorSnapshot.capture(actor)
+		if not saved.is_empty(): actors.append(saved)
 	var result := {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate()}
 	if not content.is_empty(): result["content"] = content.duplicate(true)
 	if not caches.is_empty():
@@ -244,22 +232,12 @@ func snapshot() -> Dictionary:
 	return result
 
 func _restore(actors: Array) -> void:
+	var restored: Array = []
 	for data: Dictionary in actors:
-		var actor: Node3D = load(data.scene).instantiate()
-		actor.transform = data.transform
-		if data.has("id"): actor.set_meta("bunker_actor_id", data.id)
-		if actor is Monster and data.has("id"): BunkerContent.configure_monster(actor)
+		var actor := WorldActorSnapshot.restore(data, entities)
 		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
-		entities.add_child(actor)
-		if actor is Monster:
-			actor.current_health = data.health
-		else:
-			actor.scrap_yields = data.yields.duplicate(true)
-			actor.restore_item_state(data.get("state", {"scrap_yields": data.yields}))
-			actor.item_name = data.name
-			actor.is_large = data.large
-			actor.freeze = data.frozen
-
+		restored.append(actor)
+	WorldActorSnapshot.restore_supports(actors, restored, self)
 func _add_hud() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 3

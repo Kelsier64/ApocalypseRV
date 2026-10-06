@@ -97,9 +97,7 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	keep_flashlight = held != null and held.get_node("Beam").is_visible_in_tree()
 	player.grab_started.emit()
 	if player.is_placing_equipment():
-		player.placement.placing_equipment.cancel_placement()
-		player.placement.placing_equipment = null
-		player.placement._clear_marker()
+		player.cancel_equipment_placement()
 	player.exit_ui_mode()
 	captor = owner_node
 	captor.tree_exiting.connect(_owner_exiting, CONNECT_ONE_SHOT)

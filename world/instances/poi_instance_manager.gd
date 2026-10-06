@@ -209,6 +209,8 @@ func _commit_interior_snapshot() -> void:
 	saved_instances[active_id] = interior.snapshot()
 
 func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
+	for actor in retired.find_children("*", "RigidBody3D", true, false):
+		if actor is Item: actor.begin_world_transfer()
 	retired.process_mode = Node.PROCESS_MODE_DISABLED
 	retired.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	# Let an in-flight native bake finish before releasing its geometry.

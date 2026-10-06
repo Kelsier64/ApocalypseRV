@@ -1,4 +1,4 @@
-extends Prop
+extends Item
 class_name Flashlight
 
 const FULL_CHARGE := 100.0
@@ -20,6 +20,7 @@ func restore_item_state(state: Dictionary) -> void:
 	set_held_active(false)
 
 func _ready() -> void:
+	super._ready()
 	set_held_active(false)
 
 func set_held_active(active: bool) -> void:

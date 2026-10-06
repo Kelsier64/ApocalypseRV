@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://props/interactable_item.gd" id="1_kfnut"]
+[ext_resource type="Script" path="res://props/item.gd" id="1_kfnut"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_cxucu"]
 size = Vector3(0.3, 0.3, 0.3)

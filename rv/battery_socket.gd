@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 class_name BatterySocket
 
 @export var preinstalled_battery: bool = false
@@ -6,7 +6,8 @@ var installed_battery: BatteryState
 
 func _ready() -> void:
 	super._ready()
-	if preinstalled_battery: installed_battery = BatteryState.new()
+	if presentation_only: return
+	if preinstalled_battery and installed_battery == null: installed_battery = BatteryState.new()
 var _visual_state := ""
 
 func get_interaction_prompt(player: Node3D) -> String:
@@ -63,7 +64,7 @@ func _on_service_stopped() -> void:
 		drop_battery()
 
 func confirm_placement(pose: Transform3D, parent: Node3D, support: Node3D = null):
-	if installed_battery and get_connected_rv() != RVConnection.resolve(parent):
+	if installed_battery and is_fixed and get_connected_rv() != RVConnection.resolve(parent):
 		drop_battery()
 	super.confirm_placement(pose, parent, support)
 
@@ -79,8 +80,8 @@ func drop_battery() -> void:
 	if rv and (not rv.is_inside_tree() or rv.is_queued_for_deletion()): return
 	var battery := installed_battery
 	installed_battery = null
-	var prop: Prop = load("res://props/battery.tscn").instantiate()
-	prop.restore_item_state({"id": battery.id, "battery": battery.snapshot()})
+	var prop: Item = load(battery.scene_path).instantiate()
+	prop.restore_item_state(battery.item_state())
 	# Put the loose battery outside the chassis collision, with point velocity.
 	var drop_position := global_position + Vector3.UP * 0.6
 	if rv:
@@ -99,3 +100,9 @@ func has_other_battery() -> bool:
 		if device != self and device is BatterySocket and device.installed_battery:
 			return true
 	return false
+
+func capture_service_state() -> Dictionary:
+	return {"battery": installed_battery.snapshot() if installed_battery else {}}
+
+func restore_service_state(state: Dictionary) -> void:
+	installed_battery = BatteryState.new(state.battery) if not state.get("battery", {}).is_empty() else null

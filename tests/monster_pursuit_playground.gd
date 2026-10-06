@@ -3,7 +3,7 @@ extends Node3D
 ## Real actors and attack cooldowns; extra player health allows prolonged inspection.
 var player: CharacterBody3D
 var monster: Monster
-var device: Equipment
+var device: Item
 var barrier: StaticBody3D
 var status: Label
 
@@ -56,7 +56,7 @@ func _ready() -> void:
 	monster.position = Vector3(-4, -0.25, 0)
 	monster.is_idle = true
 	monster.idle_timer = 30
-	device = Equipment.new()
+	device = Item.new()
 	device.freeze = true
 	var shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()

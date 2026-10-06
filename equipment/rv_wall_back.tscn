@@ -64,7 +64,6 @@ size = Vector3(1.32, 0.1, 0.2)
 [node name="RvWallBack" type="RigidBody3D"]
 script = ExtResource("script")
 definition = ExtResource("def")
-bottom_face = 3
 
 [node name="Panel-1.23" type="MeshInstance3D" parent="."]
 position = Vector3(-1.23, 0, 0)

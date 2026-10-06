@@ -1,11 +1,13 @@
-extends Equipment
+extends Item
 
 var ui_instance: Node = null
 var current_user: Node3D = null
 @export var power_cost_per_open: float = 0.2
 
 func _ready():
+	can_be_destroyed = false
 	super._ready()
+	if presentation_only: return
 	
 	# Pre-create the UI instance but keep it hidden
 	var ui_scene = load("res://equipment/tablet_ui.tscn")
@@ -27,10 +29,15 @@ func interact_hold(player: Node3D):
 	current_user = player
 	player.grab_started.connect(_close_ui)
 	player.body_state_changed.connect(_on_body_state_changed)
-	ui_instance.on_open()
 	ui_instance.visible = true
+	ui_instance.on_open()
 
 func _close_ui() -> void:
+	var rv := get_connected_rv()
+	if is_instance_valid(rv):
+		var slots := rv.get_node_or_null("StructureSlots")
+		if slots and is_instance_valid(slots.get("construction")):
+			slots.construction.cancel_for(self)
 	if is_instance_valid(ui_instance):
 		ui_instance.visible = false
 	if is_instance_valid(current_user):
@@ -38,6 +45,9 @@ func _close_ui() -> void:
 		if current_user.body_state_changed.is_connected(_on_body_state_changed): current_user.body_state_changed.disconnect(_on_body_state_changed)
 		current_user.exit_ui_mode()
 	current_user = null
+
+func take_damage(_amount: float) -> void:
+	pass
 
 func _on_service_stopped() -> void:
 	_close_ui()

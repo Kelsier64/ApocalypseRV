@@ -53,7 +53,7 @@ func _run() -> void:
 	check(ray.prompt_label.text.contains("電池插槽"), "Aimed socket explains its purpose")
 	tap()
 	check(ray.feedback_label.text.contains("選取電池"), "Empty-hand battery tap explains prerequisite")
-	var battery: Prop = load("res://props/battery.tscn").instantiate()
+	var battery: Item = load("res://props/battery.tscn").instantiate()
 	battery.position = Vector3(8, 1, 0)
 	world.add_child(battery)
 	battery.freeze = true
@@ -91,7 +91,7 @@ func _run() -> void:
 	key(true, 0.7)
 	key(false)
 	check(rv.energy.battery != null and not player.in_ui_mode, "Looking away cancels hold without opening another device")
-	var tank: Equipment = rv.get_node("FuelPort")
+	var tank: Item = rv.get_node("FuelPort")
 	rv.current_fuel = 0.0
 	await physics_frame
 	aim(tank, Vector3(1.8, 0.45, 0))
@@ -102,7 +102,7 @@ func _run() -> void:
 	player.inventory.active_slot = 0
 	tap()
 	check(rv.current_fuel == 30.0 and player.get_active_item_name() == ItemNames.GAS_CAN_EMPTY, "Fuel port fills chassis and returns empty can")
-	var rack: Equipment = rv.get_node("ItemBox")
+	var rack: Item = rv.get_node("ItemBox")
 	rv.stored_items.clear()
 	rack.position = Vector3(0, 4, 0)
 	player.inventory.items.clear()

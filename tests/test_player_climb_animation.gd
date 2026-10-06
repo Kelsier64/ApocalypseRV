@@ -1,5 +1,5 @@
 extends SceneTree
-## Real production wall/input test: animation observes relative carrier movement.
+## Production ladder/input test: animation observes relative carrier movement.
 const PLAYER = preload("res://player/player.tscn")
 var failures: Array[String] = []
 var arena: Node3D
@@ -34,8 +34,9 @@ func steps(count: int) -> void:
 				check(separation < .001, "Camera follows the rendered body through climb and recovery without separation")
 func spawn_actor() -> void:
 	actor = PLAYER.instantiate()
-	actor.position = rv.to_global(Vector3(2.65, -.8, 0))
-	actor.rotation.y = rv.rotation.y + PI / 2
+	var ladder: Node3D = rv.get_node("RoofLadder")
+	actor.position = ladder.climb_point(0.0) - Vector3.UP * .25
+	actor.rotation.y = ladder.global_rotation.y
 	arena.add_child(actor)
 	driver = actor.get_node("Visuals/Locomotion")
 	neutral_eye = actor.camera.position
@@ -44,12 +45,14 @@ func start_climb() -> void:
 	Input.action_press("move_forward")
 	for frame in 90:
 		await steps(1)
-		if driver.current_clip == "climb_up": break
-	check(driver.current_clip == "climb_up", "Actual RV wall and W select upward climbing")
+		if actor.ladder_transition == actor.LadderTransition.ENTRY:
+			check(driver.current_clip == "climb_hold", "Entry alignment holds the hands instead of cycling upward")
+		if driver.current_clip == "climb_up" and actor.ladder_transition == actor.LadderTransition.NONE: break
+	check(driver.current_clip == "climb_up", "Actual roof ladder and W select upward climbing")
 	await steps(8)
 	Input.action_release("move_forward")
 	await steps(10)
-	check(driver.current_clip == "climb_hold", "Releasing W holds wall without cycling")
+	check(driver.current_clip == "climb_hold", "Releasing W holds ladder without cycling")
 func record(label: String) -> void:
 	traces.append({"case": label, "clip": driver.current_clip, "position_in_rv": str(rv.to_local(actor.global_position)), "controller_velocity": str(actor.velocity)})
 
@@ -72,8 +75,8 @@ func run() -> void:
 	var camera_pose: Transform3D = actor.camera.transform
 	await start_climb()
 	record("hold")
-	var wall_point: Vector3 = actor.climb_wall_probe.get_collision_point()
-	check((actor.camera.global_position - wall_point).dot(actor.active_wall_normal) > .08, "Aligned eye remains outside the wall")
+	var ladder: Node3D = rv.get_node("RoofLadder")
+	check((actor.camera.global_position - ladder.global_position).dot(actor.active_wall_normal) > .08, "Aligned eye remains on the ladder's approach side")
 	for pitch in [-60.0, 30.0]:
 		actor.camera.rotation.x = deg_to_rad(pitch)
 		actor.rotate_y(.15)
@@ -90,27 +93,57 @@ func run() -> void:
 	for direction in ["left", "right"]:
 		Input.action_press("move_" + direction)
 		await steps(10)
-		check(driver.current_clip == "climb_" + direction, "Actual lateral motion selects " + direction)
-		check(actor.velocity.is_zero_approx(), "Climb animation works while controller velocity remains zero")
+		check(driver.current_clip == "climb_hold", "Lateral input keeps the player holding the ladder")
+		check(rv.to_local(actor.global_position).distance_to(anchor) < .03, "Lateral input cannot leave the ladder lane")
+		check(actor.velocity.is_zero_approx(), "Holding animation works while controller velocity remains zero")
 		record(direction)
 		Input.action_release("move_" + direction)
 		await steps(8)
 		check(driver.current_clip == "climb_hold", "Lateral stop returns to holding")
 	driving = false
+	var before_descent: Vector3 = rv.to_local(actor.global_position)
+	Input.action_press("move_back")
+	await steps(2)
+	var descent_time: float = driver.animation.current_animation_position
+	await steps(2)
+	check(driver.current_clip == "climb_up" and driver.animation.current_animation_position < descent_time, "Actual S descent plays the climb cycle backwards")
+	check(actor.locomotion_state == actor.LocomotionState.CLIMBING and rv.to_local(actor.global_position).y < before_descent.y, "Descending stays attached to the ladder")
+	record("descend")
+	Input.action_release("move_back")
+	await steps(8)
+	check(driver.current_clip == "climb_hold", "Stopping descent returns to holding")
 	actor.enter_ui_mode()
 	var time: float = driver.animation.current_animation_position
 	await steps(15)
 	check(is_equal_approx(time, driver.animation.current_animation_position), "UI freezes held pose")
 	actor.exit_ui_mode()
 	Input.action_press("move_forward")
-	var seen_exit := false
-	for frame in 180:
+	var seen_top := false
+	var seen_manual_motion := false
+	var seen_settling := false
+	for frame in 240:
+		var before_step: Vector3 = actor.global_position
 		await steps(1)
-		if driver.current_clip == "climb_exit":
-			seen_exit = true
-			break
+		if not seen_top and actor.ladder_transition == actor.LadderTransition.TOP:
+			seen_top = true
+			var top: Vector3 = actor.global_position
+			await steps(35)
+			check(actor.global_position.distance_to(top) < .001 and driver.current_clip == "climb_hold", "Held ascent W keeps both controller and animation still at the top")
+			Input.action_release("move_forward")
+			await steps(2)
+			Input.action_press("move_back")
+		if actor.ladder_transition == actor.LadderTransition.TOP and actor.ladder_top_input_ready:
+			seen_manual_motion = seen_manual_motion or (actor.global_position - before_step).slide(Vector3.UP).length() > .03
+			check(driver.current_clip != "climb_exit", "Manual roof walking never plays a forward-shove recovery clip")
+		if actor.ladder_transition == actor.LadderTransition.LANDING:
+			seen_settling = true
+			Input.action_release("move_back")
+			check(driver.current_clip != "climb_exit", "Vertical-only roof settling never plays forward recovery")
+		if seen_top and actor.locomotion_state == actor.LocomotionState.NORMAL: break
 	Input.action_release("move_forward")
-	check(seen_exit and actor.is_on_floor(), "Actual roof transfer starts arm recovery")
+	Input.action_release("move_back")
+	check(seen_top and seen_manual_motion and seen_settling and actor.locomotion_state == actor.LocomotionState.NORMAL and actor.is_on_floor(), "Neutral input followed by manual S walking reaches the real roof floor")
+	check(driver.current_clip != "climb_exit", "Manual roof exit never replays authored forward recovery after completion")
 	record("roof_transfer")
 	await steps(30)
 	check(driver.current_clip == "idle", "Roof recovery returns to ground locomotion")
@@ -119,25 +152,36 @@ func run() -> void:
 	actor.queue_free()
 	await steps(2)
 	# Fractional contact heights cover a roof transfer whose floor flag is
-	# published on the following frame; presentation must not miss recovery.
+	# published on the following frame; manual exit must still settle correctly.
 	for height in [-.2, .017]:
 		await spawn_actor()
-		actor.global_position = rv.to_global(Vector3(2.65, height, 0))
+		actor.global_position = ladder.climb_point(0.0) + Vector3.UP * height
 		actor.velocity = Vector3.ZERO
 		Input.action_press("move_forward")
 		var entered := false
+		var manually_steered := false
 		for frame in 150:
 			await steps(1)
 			entered = entered or actor.locomotion_state == actor.LocomotionState.CLIMBING
+			if not manually_steered and actor.ladder_transition == actor.LadderTransition.TOP:
+				Input.action_release("move_forward")
+				await steps(2)
+				Input.action_press("move_back")
+				manually_steered = true
+			if manually_steered:
+				check(driver.current_clip != "climb_exit", "Fractional-height manual exit has no forward-shove clip")
+			if actor.ladder_transition == actor.LadderTransition.LANDING: Input.action_release("move_back")
 			if entered and actor.locomotion_state == actor.LocomotionState.NORMAL: break
 		Input.action_release("move_forward")
-		check(entered and driver.current_clip == "climb_exit", "Fractional-height roof transfer retains recovery before floor flags settle")
+		Input.action_release("move_back")
+		check(entered and manually_steered and actor.locomotion_state == actor.LocomotionState.NORMAL, "Fractional-height roof exit finishes after deliberate steering")
 		record("fractional_roof_" + str(height))
 		await steps(30)
 		check(driver.current_clip == "idle", "Fractional-height recovery settles to idle")
 		actor.queue_free()
 		await steps(2)
-	for release_action in ["jump", "move_back"]:
+	# S is ladder descent; jump is the deliberate release action.
+	for release_action in ["jump"]:
 		await spawn_actor()
 		await start_climb()
 		Input.action_press(release_action)
@@ -147,7 +191,7 @@ func run() -> void:
 		record(release_action + "_detach")
 		actor.queue_free()
 		await steps(2)
-	# These actual wall trajectories retain the 25 mm gate. The separate jump
+	# These actual ladder trajectories retain the 25 mm gate. The separate jump
 	# high-drop failures remain documented; these cases do not supersede them.
 	for delay in [0, 6, 12]:
 		await spawn_actor()
@@ -183,5 +227,5 @@ func run() -> void:
 	for failure in failures: push_error(failure)
 	arena.queue_free()
 	await steps(2)
-	if failures.is_empty(): print("PASS: real wall climb, hold, carrier motion, traversal, roof recovery, detach, UI and three death/respawn handoffs below 25 mm")
+	if failures.is_empty(): print("PASS: ladder climb, hold, carrier motion, lateral restriction, roof recovery, detach, UI and three death/respawn handoffs below 25 mm")
 	quit(0 if failures.is_empty() else 1)

@@ -1,7 +1,7 @@
 extends Node3D
 ## Production assets, optional wheel-driven demonstration, no changes to game input.
 var rv: Chassis
-var seat: Equipment
+var seat: Item
 var player: CharacterBody3D
 var observer: Camera3D
 var view := 0

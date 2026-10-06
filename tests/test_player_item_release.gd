@@ -21,9 +21,9 @@ func check_size(held: Node3D, source: Node3D, note: String) -> void:
 		check(preview.transform.is_equal_approx(mesh.transform), note + " preserves authored mesh transform")
 		check(preview.mesh.get_aabb().is_equal_approx(mesh.mesh.get_aabb()), note + " preserves mesh dimensions")
 
-func find_prop(container: Node, persistent_id: String) -> Prop:
+func find_prop(container: Node, persistent_id: String) -> Item:
 	for child in container.get_children():
-		if child is Prop and child.persistent_id == persistent_id and not child.is_queued_for_deletion(): return child
+		if child is Item and child.persistent_id == persistent_id and not child.is_queued_for_deletion(): return child
 	return null
 
 func run() -> void:
@@ -40,7 +40,7 @@ func run() -> void:
 	for key in ["flashlight", "scrap", "battery", "oil_barrel", "engine_standard", "engine_upgraded", "engine_repair_kit", "wheel"]:
 		for release_pitch in [-.8, 0.0, .8]:
 			var scene_path: String = "res://props/" + key + ".tscn"
-			var source: Prop = load(scene_path).instantiate()
+			var source: Item = load(scene_path).instantiate()
 			source.freeze = true
 			source.position = Vector3(100, 3, 100)
 			world.add_child(source) # Run production state initialization (battery/engine IDs).

@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 class_name CabinLightStrip
 
 func get_status() -> String:

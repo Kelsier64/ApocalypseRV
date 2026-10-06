@@ -11,11 +11,11 @@ uniform float density = 1.0;
 uniform sampler2D near_cover : filter_nearest, repeat_disable;
 uniform sampler2D far_cover : filter_nearest, repeat_disable;
 uniform int roof_count = 0;
-uniform vec3 roof_origin[8];
-uniform vec3 roof_row_x[8];
-uniform vec3 roof_row_y[8];
-uniform vec3 roof_row_z[8];
-uniform vec3 roof_extents[8];
+uniform vec3 roof_origin[32];
+uniform vec3 roof_row_x[32];
+uniform vec3 roof_row_y[32];
+uniform vec3 roof_row_z[32];
+uniform vec3 roof_extents[32];
 varying float visibility;
 varying float opacity;
 
@@ -66,7 +66,7 @@ void vertex() {
 	if (distant) visibility *= smoothstep(14.0, 23.0, distance_to_camera);
 	visibility *= 1.0 - smoothstep(field_height * 0.38, field_height * 0.5, abs(point.y - camera_center.y));
 	visibility *= smoothstep(height_limit + streak_length * 0.5, height_limit + streak_length, point.y);
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 32; i++) {
 		if (i >= roof_count) break;
 		if (roof_blocks(point - vec3(0.0, streak_length * 0.5, 0.0), i)) visibility = 0.0;
 	}

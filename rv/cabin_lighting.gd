@@ -25,7 +25,7 @@ func _ready() -> void:
 	lenses.append(mat)
 
 func _process(_delta: float) -> void:
-	var strip := get_parent() as Equipment
+	var strip := get_parent() as Item
 	var rv := strip.get_connected_rv() as Chassis
 	var powered: bool = rv != null and strip.can_operate() and rv.has_usable_power() and rv.interior_powered.cabin
 	for lamp in lamps: lamp.visible = powered

@@ -15,8 +15,8 @@ func _run() -> void:
 	var source := {"version": 3, "vehicles": [], "player": {"sentinel": 19}, "actors": [], "poi": {"v1": {"actors": []}, "v2": {"actors": [], "layout": {"version": 2, "profile": "maintenance_v2"}}, "fresh": fresh}}
 	var original := source.duplicate(true)
 	var upgraded: Dictionary = checkpoint._upgrade_checkpoint(source)
-	check(source == original, "Migration does not mutate source checkpoint")
-	check(upgraded.poi.size() == 1 and upgraded.poi.fresh == fresh and upgraded.player == source.player and upgraded.vehicles == source.vehicles, "Migration removes only known old POIs and preserves new/world state")
+	check(source == original, "Legacy rejection does not mutate source checkpoint")
+	check(upgraded.is_empty(), "Older checkpoints are rejected rather than rewriting POI or vehicle state")
 	var outdoor := Node3D.new()
 	root.add_child(outdoor)
 	current_scene = outdoor

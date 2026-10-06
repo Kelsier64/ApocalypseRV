@@ -173,7 +173,7 @@ func can_attack(actor, target: Node3D) -> bool:
 	return true
 
 func valid_door(actor) -> bool:
-	return is_instance_valid(door) and door.get_connected_rv() == actor.active_climb_rv and door.boarding_leaf_closed(leaf)
+	return is_instance_valid(door) and not door.is_destroyed and door.get_connected_rv() == actor.active_climb_rv and door.boarding_leaf_closed(leaf)
 
 func hang_at_door(actor, delta: float) -> void:
 	if not valid_door(actor):
@@ -215,10 +215,11 @@ func chase_destination(actor, destination: Vector3) -> Vector3:
 	if not is_instance_valid(target_vehicle) or actor._is_on_rv_surface(): return destination
 	var rv := target_vehicle
 	# Stay on the approaching side; never steer straight across the vehicle to a far door.
-	if not is_instance_valid(_route_door) or _route_door.get_connected_rv() != rv:
+	if not is_instance_valid(_route_door) or _route_door.is_destroyed or _route_door.get_connected_rv() != rv:
 		_route_door = null
 		var best := 5.0
-		for device in rv.get_equipment():
+		for device in rv.get_structures():
+			if device.is_destroyed: continue
 			if not device.has_method("boarding_leaf_closed"): continue
 			var outward: Vector3 = device.global_basis.z
 			if (actor.global_position - device.global_position).dot(outward) < 0.0: continue

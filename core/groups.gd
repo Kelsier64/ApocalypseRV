@@ -6,7 +6,7 @@ class_name Groups
 
 const RV := "rv"
 const CHASSIS := "chassis"
-const EQUIPMENT := "equipment"
+const ITEMS := "items"
 const MONSTER_DAMAGEABLE := "monster_damageable"
 const RV_POWER_GENERATORS := "rv_power_generators"
 const CRAFTING_STATIONS := "crafting_stations"

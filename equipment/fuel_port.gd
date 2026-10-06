@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 
 func get_interaction_prompt(player: Node3D) -> String:
 	var rv := get_connected_rv()

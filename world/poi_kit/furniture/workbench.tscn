@@ -108,14 +108,14 @@ shape = SubResource("BoxShape3D_bbxga")
 [node name="LootSpawns" type="Node3D" parent="." unique_id=1098316599]
 
 [node name="WorktopLeft" type="Marker3D" parent="LootSpawns" unique_id=2131119412]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 1.18, 0)
 script = ExtResource("4_lovjr")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 1.18, 0)
 point_id = &"worktop_left"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("5_v6nb6")])
 
 [node name="WorktopRight" type="Marker3D" parent="LootSpawns" unique_id=2067494774]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 1.18, 0)
 script = ExtResource("4_lovjr")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 1.18, 0)
 point_id = &"worktop_right"
 candidates = Array[PackedScene]([ExtResource("5_v6nb6")])

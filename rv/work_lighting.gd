@@ -34,7 +34,7 @@ func _process(_delta: float) -> void:
 				station_lights.append({"root": fixture, "device": weakref(device), "lamp": light})
 		dirty = false
 	for entry in station_lights:
-		var device: Equipment = entry.device.get_ref()
+		var device: Item = entry.device.get_ref()
 		if is_instance_valid(device) and is_instance_valid(entry.lamp):
 			entry.lamp.visible = device.can_operate() and device.get_connected_rv() == rv and rv.interior_powered.work and rv.has_usable_power()
 	service_lamp.visible = rv.interior_powered.service and rv.engine_bay.hatch_open and rv.has_usable_power()

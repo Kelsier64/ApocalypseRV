@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://bkfm4o6gc5rw7"]
 
-[ext_resource type="Script" uid="uid://jt4vevnifveb" path="res://props/interactable_item.gd" id="1_u7m75"]
+[ext_resource type="Script" uid="uid://lmov80j6lmki" path="res://props/item.gd" id="1_u7m75"]
 
 [sub_resource type="StandardMaterial3D" id="Material_graybox"]
 albedo_color = Color(0.48, 0.48, 0.48, 1)
@@ -14,8 +14,8 @@ size = Vector3(0.39759523, 0.84584963, 0.82353514)
 size = Vector3(0.39759523, 0.84584963, 0.82353514)
 
 [node name="GasolineCan" type="RigidBody3D" unique_id=710085464]
-mass = 5.0
 script = ExtResource("1_u7m75")
+mass = 5.0
 item_name = "Gasoline Can"
 scrap_yields = {
 "Metal Parts": Vector2(0, 1),

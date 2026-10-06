@@ -62,7 +62,7 @@ func run() -> void:
 			await walk(Vector3(0, 0, local.z))
 			await walk(local)
 		# Test a real fuel can in both fuel themes, regardless of this seed's draw.
-		var item: Prop = props[0]
+		var item: Item = props[0]
 		if variant / 3 == 0 or variant / 3 == 4:
 			var pose := item.global_transform
 			item.free()

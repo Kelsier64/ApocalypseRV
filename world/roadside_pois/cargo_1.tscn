@@ -816,29 +816,29 @@ shape = SubResource("BoxShape3D_lpdkp")
 [node name="LootSpawns" type="Node3D" parent="." unique_id=606171470]
 
 [node name="Supply0" type="Marker3D" parent="LootSpawns" unique_id=1713822600]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.85, 4)
 script = ExtResource("2_nsfeh")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.85, 4)
 point_id = &"supply_0"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("3_o4vjo"), ExtResource("4_1xcxq")])
 
 [node name="Supply1" type="Marker3D" parent="LootSpawns" unique_id=647629676]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.85, 4)
 script = ExtResource("2_nsfeh")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.85, 4)
 point_id = &"supply_1"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("3_o4vjo"), ExtResource("4_1xcxq")])
 
 [node name="Supply2" type="Marker3D" parent="LootSpawns" unique_id=994116817]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.85, 0)
 script = ExtResource("2_nsfeh")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.85, 0)
 point_id = &"supply_2"
 spawn_chance = 0.5
 candidates = Array[PackedScene]([ExtResource("3_o4vjo"), ExtResource("4_1xcxq")])
 
 [node name="Supply3" type="Marker3D" parent="LootSpawns" unique_id=915173347]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.85, 0)
 script = ExtResource("2_nsfeh")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.85, 0)
 point_id = &"supply_3"
 spawn_chance = 0.5
 candidates = Array[PackedScene]([ExtResource("3_o4vjo"), ExtResource("4_1xcxq")])

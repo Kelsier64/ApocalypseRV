@@ -1,11 +1,11 @@
 extends Node3D
 var rv: Chassis
 var player: CharacterBody3D
-var tablet: Equipment
+var tablet: Item
 var status: Label
 var observer: Camera3D
 var station: CraftingStation
-var generator: Equipment
+var generator: Item
 var original_charge: float
 var telemetry_time := 0.0
 var seconds := 0.0
@@ -53,7 +53,7 @@ func _ready() -> void:
 	rv.current_power = 20.0
 	rv.add_item(ItemNames.METAL_PARTS, 20)
 	rv.add_item(ItemNames.UNREFINED_FUEL, 20)
-	var battery: Prop = load("res://props/battery.tscn").instantiate()
+	var battery: Item = load("res://props/battery.tscn").instantiate()
 	add_child(battery)
 	battery.battery.charge = 75.0
 	player.add_prop_item(battery, battery.scene_file_path)
@@ -73,8 +73,8 @@ func _ready() -> void:
 	layer.add_child(status)
 	replay = "--replay" in OS.get_cmdline_user_args()
 
-func _mount(path: String, local_position: Vector3) -> Equipment:
-	var device: Equipment = load(path).instantiate()
+func _mount(path: String, local_position: Vector3) -> Item:
+	var device: Item = load(path).instantiate()
 	add_child(device)
 	device.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, local_position), rv, rv)
 	return device

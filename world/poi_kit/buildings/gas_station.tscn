@@ -1119,36 +1119,36 @@ position = Vector3(6.5,0,-3)
 position = Vector3(0,0.05,21)
 
 [node name="FuelCounter" type="Marker3D" parent="LootSpawns"]
-position = Vector3(-5.5,1.5,-6.1)
 script = ExtResource("loot")
+position = Vector3(-5.5,1.5,-6.1)
 point_id = &"gas_station_FuelCounter"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("gas")])
 
 [node name="WorkshopFuel" type="Marker3D" parent="LootSpawns"]
-position = Vector3(6,0.45,-12)
 script = ExtResource("loot")
+position = Vector3(6,0.45,-12)
 point_id = &"gas_station_WorkshopFuel"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("gas")])
 
 [node name="WorkshopOil" type="Marker3D" parent="LootSpawns"]
-position = Vector3(8,0.75,-12)
 script = ExtResource("loot")
+position = Vector3(8,0.75,-12)
 point_id = &"gas_station_WorkshopOil"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("oil")])
 
 [node name="RepairSupply" type="Marker3D" parent="LootSpawns"]
-position = Vector3(7,1.5,-14.5)
 script = ExtResource("loot")
+position = Vector3(7,1.5,-14.5)
 point_id = &"gas_station_RepairSupply"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("repair")])
 
 [node name="RearScrap" type="Marker3D" parent="LootSpawns"]
-position = Vector3(-2,0.35,-14)
 script = ExtResource("loot")
+position = Vector3(-2,0.35,-14)
 point_id = &"gas_station_RearScrap"
 spawn_chance = 1.0
 candidates = Array[PackedScene]([ExtResource("scrap")])

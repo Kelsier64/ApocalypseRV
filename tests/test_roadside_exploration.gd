@@ -25,9 +25,9 @@ func _run() -> void:
 	player.global_position = site.frame.origin + Vector3.UP * 0.3
 	player.velocity = Vector3.ZERO
 	await _frames(60)
-	var loot: Prop
+	var loot: Item
 	for actor in main.get_node("WorldEntities").get_children():
-		if actor is Prop and actor.global_position.distance_to(site.building.origin) < 12:
+		if actor is Item and actor.global_position.distance_to(site.building.origin) < 12:
 			loot = actor
 			break
 	check(loot != null, "Small roadside stop contains physical loot")

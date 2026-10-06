@@ -6,10 +6,10 @@ func _init() -> void:
 	_run.call_deferred()
 
 func _run() -> void:
-	_test_wall_gate_requires_jump_and_w_and_rv()
+	_test_ladder_capability_gate()
 	_test_active_large_item_gate()
-	_test_wall_normal_gate_accepts_vertical_rejects_floor()
-	_test_wall_gate_rejects_undercarriage_like_hits()
+	_test_wall_normal_geometry()
+	_test_wall_hit_height_geometry()
 	_test_collision_disabled_during_climb_states()
 	_test_rv_delta_compensation_math()
 	_test_climb_exit_velocity_sanitized()
@@ -26,68 +26,65 @@ func _new_player() -> Node:
 	_expect(p != null, "Player should instantiate.")
 	return p
 
-func _test_wall_gate_requires_jump_and_w_and_rv() -> void:
+func _test_ladder_capability_gate() -> void:
+	# Route and input authorization use production ladders in test_rv_ladders.
 	var player := _new_player()
 	if player == null:
 		return
-
-	_expect(player.has_method("_is_rv_wall_normal"), "Player should expose _is_rv_wall_normal(normal, rv_up).")
-	_expect(player.has_method("_is_valid_climb_hit_height"), "Player should expose _is_valid_climb_hit_height(local_hit_y).")
-	_expect(player.has_method("_can_begin_climb"), "Player should expose _can_begin_climb(jump_pressed, w_pressed, is_rv_hit, wall_normal_ok, hit_height_ok).")
-
-	if player.has_method("_can_begin_climb"):
-		_expect(player._can_begin_climb(false, true, true, true, true), "Climb should be able to start with W+wall hit even when jump is not pressed.")
-		_expect(not player._can_begin_climb(true, false, true, true, true), "W is required to start climb.")
-		_expect(not player._can_begin_climb(true, true, false, true, true), "RV hit is required to start climb.")
-		_expect(not player._can_begin_climb(false, true, true, false, true), "Wall normal gate should block climb start when hit surface is not wall-like.")
-		_expect(not player._can_begin_climb(false, true, true, true, false), "Hit-height gate should block climb start for undercarriage-like hits.")
-		_expect(player._can_begin_climb(true, true, true, true, true), "All gates should allow climb start.")
-
+	_expect(player.has_method("_can_use_ladder"), "Player exposes the ladder capability gate.")
+	if player.has_method("_can_use_ladder"):
+		_expect(player._can_use_ladder(), "Healthy empty-handed player can use a ladder.")
+		player.body_state.sever(&"left_arm")
+		_expect(not player._can_use_ladder(), "A ladder requires both arms.")
+		player.body_state.reset()
+		player.body_state.sever(&"right_leg")
+		_expect(not player._can_use_ladder(), "Crawling cannot use a ladder.")
+		player.body_state.reset()
+		player.is_player_dead = true
+		_expect(not player._can_use_ladder(), "Dead players cannot use a ladder.")
 	player.free()
 
 func _test_active_large_item_gate() -> void:
 	var player := _new_player()
 	if player == null:
 		return
-	_expect(player._can_begin_climb(false, true, true, true, true), "Empty hands retain the climb gate.")
+	_expect(player._can_use_ladder(), "Empty hands retain ladder capability.")
 	player.inventory.add_item("Small cargo", false, "unused")
-	_expect(player._can_begin_climb(false, true, true, true, true), "Small cargo retains the climb gate.")
+	_expect(player._can_use_ladder(), "Small cargo retains ladder capability.")
 	player.inventory.add_item("Custom large cargo", true, "unused", {"id": "cargo-identity", "condition": 37.0})
 	_expect(player.held_item_node == null, "Fixture has no held visual; inventory remains the source of truth.")
 	var original: Dictionary = player.inventory.active_item().duplicate(true)
-	for jump_pressed in [false, true]:
-		_expect(not player._can_begin_climb(jump_pressed, true, true, true, true), "Active large cargo blocks climbing regardless of jump input.")
+	for attempt in range(3):
+		_expect(not player._can_use_ladder(), "Active large cargo blocks ladder capability on repeated attempts.")
 	_expect(player.inventory.items.size() == 2 and player.inventory.active_item() == original, "Rejected climb leaves item identity, state and count unchanged.")
 	# Restored inventories can retain a large item in an inactive slot.
 	player.inventory.active_slot = 0
-	_expect(player._can_begin_climb(false, true, true, true, true), "Inactive large cargo does not override the active small-item contract.")
+	_expect(player._can_use_ladder(), "Inactive large cargo does not override the active small-item contract.")
 	player.inventory.active_slot = 1
 	player.inventory.consume_active()
-	_expect(player._can_begin_climb(false, true, true, true, true), "Removing large cargo immediately restores the ordinary gate.")
-	_expect(not player._can_begin_climb(false, false, true, true, true), "Removing large cargo does not bypass W.")
-	_expect(not player._can_begin_climb(false, true, true, false, true), "Removing large cargo does not bypass wall normals.")
-	_expect(not player._can_begin_climb(false, true, true, true, false), "Removing large cargo does not bypass hit height.")
+	_expect(player._can_use_ladder(), "Removing large cargo immediately restores ladder capability.")
 	player.free()
 
-func _test_wall_normal_gate_accepts_vertical_rejects_floor() -> void:
+func _test_wall_normal_geometry() -> void:
+	# Retained geometry utilities do not authorize player wall climbing.
 	var player := _new_player()
 	if player == null:
 		return
 
 	if player.has_method("_is_rv_wall_normal"):
-		_expect(player._is_rv_wall_normal(Vector3.FORWARD, Vector3.UP), "Vertical RV wall normal should be climbable.")
-		_expect(not player._is_rv_wall_normal(Vector3.UP, Vector3.UP), "Floor-like normal should not be climbable.")
+		_expect(player._is_rv_wall_normal(Vector3.FORWARD, Vector3.UP), "Wall geometry identifies a vertical normal.")
+		_expect(not player._is_rv_wall_normal(Vector3.UP, Vector3.UP), "Wall geometry excludes a floor normal.")
 
 	player.free()
 
-func _test_wall_gate_rejects_undercarriage_like_hits() -> void:
+func _test_wall_hit_height_geometry() -> void:
 	var player := _new_player()
 	if player == null:
 		return
 
 	if player.has_method("_is_valid_climb_hit_height"):
-		_expect(not player._is_valid_climb_hit_height(-0.9), "Undercarriage-like low hit should be rejected.")
-		_expect(player._is_valid_climb_hit_height(0.7), "Chest-height wall hit should be accepted.")
+		_expect(not player._is_valid_climb_hit_height(-0.9), "Hit-height geometry excludes an undercarriage hit.")
+		_expect(player._is_valid_climb_hit_height(0.7), "Hit-height geometry includes a chest-height hit.")
 
 	player.free()
 

@@ -76,5 +76,5 @@ func _unhandled_input(event: InputEvent) -> void:
 			if socket: socket.detach_from_support()
 			var container := WorldEntities.get_container(self)
 			for child in container.get_children():
-				if child is Prop and child.item_name == ItemNames.BATTERY:
+				if child is Item and child.item_name == ItemNames.BATTERY:
 					focus(child, Vector3(2, 1, 0))

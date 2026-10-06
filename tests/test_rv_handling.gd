@@ -48,7 +48,7 @@ func run() -> void:
 		player.position = Vector3(30, 1, 30)
 		world.add_child(player)
 		player.set_physics_process(false)
-		var seat: Equipment = rv.get_node("DriverSeat")
+		var seat: Item = rv.get_node("DriverSeat")
 		seat.interact_hold(player)
 		check(seat.current_driver == player, "%s allows driver entry" % config.id)
 		var parked := rv.global_position
@@ -97,8 +97,13 @@ func run() -> void:
 				var stopping := speed * speed / 5.0 + speed * 0.35 + 0.2
 				rv.control_override = {"brake": 1.0} if remaining <= stopping else {"throttle": 0.3}
 				await physics_frame
-				if remaining < 0.5 and speed < 0.1: break
+				# Velocity and the instrument's filtered movement settle at different
+				# rates. Test the refreshed samples, including the speed we assert.
+				var dock_remaining := (dock_target - rv.global_position).dot(forward)
+				var dock_velocity := maxf(0.0, rv.linear_velocity.dot(forward))
+				if dock_remaining < 0.5 and dock_velocity < 0.1 and rv.road_speed() < 0.2: break
 			var dock_error := absf((dock_target - rv.global_position).dot(forward))
+			var dock_road_speed := rv.road_speed()
 			check(dock_error < 0.7 and rv.road_speed() < 0.2, "Wheel controls stop inside marked parking bay")
 			rv.set_handbrake(true)
 			var parked_at := rv.global_position
@@ -112,10 +117,12 @@ func run() -> void:
 				var stopping := speed * speed / 5.0 + speed * 0.35 + 0.2
 				rv.control_override = {"brake": 1.0} if remaining <= stopping else {"throttle": 0.55}
 				await physics_frame
-				if remaining < 0.5 and speed < 0.1: break
+				var return_remaining := (rv.global_position - dock_start).dot(forward)
+				var return_velocity := maxf(0.0, -rv.linear_velocity.dot(forward))
+				if return_remaining < 0.5 and return_velocity < 0.1 and rv.road_speed() < 0.2: break
 			var return_error := absf((rv.global_position - dock_start).dot(forward))
 			check(return_error < 0.7 and rv.road_speed() < 0.2, "Reverse returns from bay to road without repositioning body")
-			print("PARKING dock_error=%.3f return_error=%.3f" % [dock_error, return_error])
+			print("PARKING dock_error=%.3f dock_road_speed=%.3f return_error=%.3f return_road_speed=%.3f" % [dock_error, dock_road_speed, return_error, rv.road_speed()])
 		var handbrake_before_exit: bool = rv.handbrake
 		seat.exit_seat()
 		check(player.seated_in == null and rv.handbrake == handbrake_before_exit, "%s allows supported exit without changing parking brake" % config.id)

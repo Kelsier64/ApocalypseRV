@@ -17,7 +17,7 @@ func report(detail: String) -> void:
 	if message.is_valid(): message.call(detail)
 func frames(count: int) -> void:
 	for i in count: await interior.get_tree().physics_frame
-func clear_blocking_prop(prop: Prop) -> bool:
+func clear_blocking_prop(prop: Item) -> bool:
 	Input.action_release("move_forward")
 	if not check(player.inventory.items.size() < PlayerInventory.MAX_SLOTS, "Blocked by %s but inventory is full" % prop.persistent_id): return false
 	var identity := prop.persistent_id
@@ -31,13 +31,13 @@ func clear_blocking_prop(prop: Prop) -> bool:
 	await frames(2)
 	Input.action_release("interact")
 	await frames(2)
-	if not check(not is_instance_valid(prop) and player.inventory.items.any(func(item: Dictionary) -> bool: return item.get("state", {}).get("id", "") == identity), "Failed to pick up blocking small Prop %s" % identity): return false
+	if not check(not is_instance_valid(prop) and player.inventory.items.any(func(item: Dictionary) -> bool: return item.get("state", {}).get("id", "") == identity), "Failed to pick up blocking small Item %s" % identity): return false
 	if not check(player.inventory.active_item().get("state", {}).get("id", "") == cargo_id, "Picking up obstruction switched away from carried engine"): return false
 	collected_loose_props += 1
-	report("Picked up blocking loose Prop %s" % identity)
+	report("Picked up blocking loose Item %s" % identity)
 	return true
 func walk(target: Vector3) -> bool:
-	var stuck_prop: Prop = null
+	var stuck_prop: Item = null
 	var stuck_frames := 0
 	for frame in 1200:
 		if Vector2(player.position.x-target.x, player.position.z-target.z).length() < 0.22:
@@ -50,11 +50,11 @@ func walk(target: Vector3) -> bool:
 		Input.action_press("move_forward")
 		await frames(1)
 		travelled += before.distance_to(player.position)
-		var blocking: Prop = null
+		var blocking: Item = null
 		if before.distance_to(player.position) < 0.01:
 			for collision_index in player.get_slide_collision_count():
 				var collider := player.get_slide_collision(collision_index).get_collider()
-				if collider is Prop and not collider.is_large:
+				if collider is Item and not collider.is_large:
 					blocking = collider
 					break
 		if blocking == null:
@@ -84,7 +84,7 @@ func run(inside: PoiInterior, actor: CharacterBody3D, callback := Callable()) ->
 	message = callback
 	await frames(15)
 	var initial_count := interior.entities.get_child_count()
-	var cargo: Prop = preload("res://props/engine_standard.tscn").instantiate()
+	var cargo: Item = preload("res://props/engine_standard.tscn").instantiate()
 	interior.entities.add_child(cargo)
 	cargo.position = player.position + Vector3(1,0.6,0)
 	cargo.freeze = true

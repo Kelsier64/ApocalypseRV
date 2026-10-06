@@ -24,7 +24,7 @@ func _run() -> void:
 	world.add_child(player)
 	player.position = Vector3(20, 1, 0)
 	player.set_physics_process(false)
-	var generator: Equipment = rv.get_node("Generator")
+	var generator: Item = rv.get_node("Generator")
 	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, 0)), rv)
 	await physics_frame
 	expect(rv.get_equipment().has(generator), "Installed generator registers with this RV")
@@ -41,13 +41,12 @@ func _run() -> void:
 	rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
 	expect(rv.current_power < before, "No enabled generator: engine does not provide hidden charge")
 	generator.set_enabled(true)
-	generator.start_placement(player)
+	generator.prepare_pickup()
 	before = rv.current_power
 	rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
 	expect(rv.current_power < before, "Generator cannot run in placement preview")
-	generator.cancel_placement()
-	player.placement.placing_equipment = null
-	var battery: Prop = load("res://props/battery.tscn").instantiate()
+	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, 0)), rv)
+	var battery: Item = load("res://props/battery.tscn").instantiate()
 	world.add_child(battery)
 	battery.battery.charge = 23.0
 	var battery_id: String = battery.battery.id
@@ -77,17 +76,19 @@ func _run() -> void:
 	station.step_work(2.0)
 	expect(station.jobs.is_empty(), "Production completes and emits an item")
 	expect(rv.get_item_count(ItemNames.METAL_PARTS) == 8 and is_equal_approx(rv.current_power, 19.4), "Production charges exactly once")
-	var tablet: Equipment = load("res://equipment/tablet_screen.tscn").instantiate()
+	var tablet: Item = load("res://equipment/tablet_screen.tscn").instantiate()
 	rv.add_child(tablet)
 	tablet.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(1, 1, 2)), rv)
 	tablet.interact_hold(player)
 	expect(player.in_ui_mode, "Tablet opens")
 	tablet.take_damage(1000.0)
-	expect(not player.in_ui_mode, "Destroyed tablet releases player UI mode")
-	var scrapper: Equipment = load("res://equipment/scrapper.tscn").instantiate()
+	expect(player.in_ui_mode and not tablet.is_destroyed, "Immune tablet remains usable after damage")
+	tablet.detach_from_support()
+	expect(not player.in_ui_mode, "Losing tablet support releases player UI mode")
+	var scrapper: Item = load("res://equipment/scrapper.tscn").instantiate()
 	rv.add_child(scrapper)
 	scrapper.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, -2)), rv)
-	var scrap: Prop = load("res://props/scrap.tscn").instantiate()
+	var scrap: Item = load("res://props/scrap.tscn").instantiate()
 	world.add_child(scrap)
 	scrap.global_position = scrapper.global_position + Vector3.UP
 	var original_mask := scrap.collision_mask
@@ -96,15 +97,12 @@ func _run() -> void:
 	scrapper.take_damage(1000.0)
 	expect(not scrap.freeze and scrap.processing_owner == null and scrap.collision_mask == original_mask, "Destroyed scrapper releases original physics")
 	expect(not PlacementRules.valid_target(generator, scrap) and not PlacementRules.valid_target(generator, player), "Props and actors reject placement")
-	var loose: Equipment = load("res://equipment/generator.tscn").instantiate()
+	var loose: Item = load("res://equipment/generator.tscn").instantiate()
 	world.add_child(loose)
 	loose.freeze = false
 	loose.collision_mask = 3
-	loose.start_placement(player)
-	loose.cancel_placement()
-	player.placement.placing_equipment = null
-	expect(not loose.freeze and loose.collision_mask == 3, "Cancel restores a loose rigid body")
-	var support: Equipment = rv.get_node("Ceiling")
+	expect(not loose.can_operate() and not loose.freeze and loose.collision_mask == 3, "Loose device retains physics and does not operate")
+	var support: RVStructurePanel = rv.get_node("RoofMiddle")
 	generator.set_mount_support(support)
 	support.take_damage(1000.0)
 	await process_frame

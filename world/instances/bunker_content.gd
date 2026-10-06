@@ -30,7 +30,7 @@ static func populate(inside: Node3D) -> Dictionary:
 	for i in eligible:
 		var position := _position(inside, i, rng, reserved)
 		if position.is_empty(): continue
-		var cargo := CARGO.instantiate() as Prop
+		var cargo := CARGO.instantiate() as Item
 		var identity := prefix + "cargo"
 		cargo.restore_item_state({"id": identity, "engine": {"id": identity, "model": "upgraded", "health": EngineState.definition_for("upgraded").max_health * 0.7}})
 		cargo.position = position.point + Vector3.UP * 0.45
@@ -71,7 +71,7 @@ static func populate(inside: Node3D) -> Dictionary:
 			var location := _position(inside, i, rng, reserved)
 			if not location.is_empty():
 				var item := _supply(rng, prefix + "supply:%d" % loose_count, false)
-				var prop := SCRAP.instantiate() as Prop
+				var prop := SCRAP.instantiate() as Item
 				prop.restore_item_state(item.state)
 				prop.item_name = item.name
 				prop.position = location.point + Vector3.UP * 0.35
@@ -170,7 +170,7 @@ static func reachable(inside: Node3D, check_cargo := true) -> bool:
 	for cache in inside.caches: targets.append(cache.global_position)
 	if check_cargo:
 		for actor in inside.entities.get_children():
-			if actor is Prop and actor.persistent_id == inside.content.get("cargo_id", ""): targets.append(actor.global_position)
+			if actor is Item and actor.persistent_id == inside.content.get("cargo_id", ""): targets.append(actor.global_position)
 	for target in targets:
 		var nearest := NavigationServer3D.map_get_closest_point(map, target)
 		if nearest.distance_to(target) > 1.5: return false
@@ -184,7 +184,7 @@ static func objective_text(inside: Node3D, player: Node3D) -> String:
 	for item: Dictionary in player.inventory.items:
 		if item.get("state", {}).get("id", "") == identity: return "已攜帶強化引擎：返回 B1 ENTRY 帶回 RV"
 	for actor in inside.entities.get_children():
-		if actor is Prop and not actor.is_queued_for_deletion() and actor.persistent_id == identity:
+		if actor is Item and not actor.is_queued_for_deletion() and actor.persistent_id == identity:
 			var floor_number := 1
 			for room: Dictionary in inside.layout.rooms:
 				if room.id == inside.content.cargo_room: floor_number = 1 + roundi(-room.transform.origin.y / inside.layout.floor_spacing)

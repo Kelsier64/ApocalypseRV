@@ -4,6 +4,8 @@
 
 [ext_resource type="Resource" path="res://equipment/rv_floor_definition.tres" id="def"]
 
+[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="deck_material"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mat"]
 albedo_color = Color(0.45, 0.47, 0.5, 1)
 
@@ -14,13 +16,15 @@ size = Vector3(4, 0.2, 12)
 size = Vector3(4, 0.2, 12)
 
 [node name="RvFloor" type="RigidBody3D" unique_id=332602999]
-definition = ExtResource("def")
-mass = 200.0
 script = ExtResource("1_script")
+mass = 200.0
+definition = ExtResource("def")
 equipment_name = "RV Floor Panel"
+structure_kind = "floor"
+mount_slot = "floor"
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1768083926]
-material_override = SubResource("StandardMaterial3D_mat")
+material_override = ExtResource("deck_material")
 mesh = SubResource("BoxMesh_mesh")
 
 [node name="Collision" type="CollisionShape3D" parent="." unique_id=284330102]

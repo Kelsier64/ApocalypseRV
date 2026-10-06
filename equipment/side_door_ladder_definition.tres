@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://core/item_definition.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+type_id = "side_door_ladder"
+display_name = "側門登車梯"
+weight = 12.0
+health = 120.0
+requires_upright = true

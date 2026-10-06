@@ -1,37 +1,11 @@
 extends RefCounted
 class_name VehicleSnapshot
-const VERSION := 3
+const VERSION := 5
 
-static func device_state(device: Equipment) -> Dictionary:
-	var support_id := "chassis"
-	if is_instance_valid(device.mount_support) and device.mount_support is Equipment:
-		support_id = device.mount_support.persistent_id
-	var data := {"scene": device.scene_file_path, "id": device.persistent_id, "transform": device.transform,
-		"health": device.current_health, "enabled": device.enabled, "support": support_id, "physics": {"mode": device.freeze_mode, "layer": device.collision_layer, "mask": device.collision_mask, "linear": device.linear_velocity, "angular": device.angular_velocity}, "service": {}}
-	if device.get("structure_kind") is String and not device.structure_kind.is_empty():
-		data.service["mount_slot"] = device.mount_slot
-	if device.has_method("restore_angles"):
-		data.service["door_angles"] = device.angles.duplicate()
-	if device is BatterySocket:
-		data.service["battery"] = device.installed_battery.snapshot() if device.installed_battery else {}
-	for key in ["charging", "fuel_reserve", "recharge_below"]:
-		if key in device: data.service[key] = device.get(key)
-	if device is CraftingStation:
-		var jobs: Array[Dictionary] = []
-		for job in device.jobs:
-			var saved: Dictionary = job.duplicate(true)
-			saved.erase("rv")
-			jobs.append(saved)
-		data.service["jobs"] = jobs
-	if "props_being_crushed" in device:
-		var inputs: Array[Dictionary] = []
-		for entry in device.props_being_crushed:
-			if is_instance_valid(entry.prop):
-				inputs.append({"scene": entry.prop.scene_file_path, "state": entry.prop.capture_item_state(),
-					"timer": entry.timer, "local_position": entry.local_position, "physics": entry.physics})
-		data.service["inputs"] = inputs
+static func device_state(device: Item) -> Dictionary:
+	var data := WorldActorSnapshot.capture(device)
+	data["transform"] = device.transform
 	return data
-
 static func capture(rv: Node3D) -> Dictionary:
 	if not rv.save_block_reason().is_empty(): return {}
 	var devices: Array[Dictionary] = []
@@ -41,7 +15,7 @@ static func capture(rv: Node3D) -> Dictionary:
 		devices.append(device_state(device))
 	var wheels: Array[Dictionary] = []
 	for index in range(4):
-		wheels.append({"installed": rv.installed_wheels[index] != null, "health": rv.wheel_health[index], "id": rv.wheel_ids[index]})
+		wheels.append({"installed": rv.installed_wheels[index] != null, "health": rv.wheel_health[index], "id": rv.wheel_ids[index], "item_data": rv.wheel_item_data[index].duplicate(true)})
 	return {"version": VERSION, "id": rv.persistent_id, "transform": rv.global_transform,
 		"cabin_light_devices": true,
 		"linear": rv.linear_velocity, "angular": rv.angular_velocity,
@@ -50,7 +24,7 @@ static func capture(rv: Node3D) -> Dictionary:
 		"engine": rv.energy.engine_running, "gear": rv.gear, "handbrake": rv.handbrake,
 		"materials": rv.get_all_items(), "items": rv.stored_items.duplicate(true),
 		"fuel": rv.current_fuel, "fuel_capacity": rv.max_fuel, "material_capacity": rv.material_capacity, "item_capacity": rv.item_capacity,
-		"equipment": devices, "wheels": wheels}
+		"mounted_items": devices, "structures": rv.get_node("StructureSlots").snapshot(), "wheels": wheels}
 
 static func valid_comfort(data: Variant) -> bool:
 	if not data is Dictionary or not data.has_all(["lights", "brightness", "vibration"]): return false
@@ -60,11 +34,13 @@ static func valid_comfort(data: Variant) -> bool:
 	return _number(data.brightness) and data.brightness >= 0.2 and data.brightness <= 1.0 and _number(data.vibration) and data.vibration >= 0.0 and data.vibration <= 1.0
 
 static func validate(data: Dictionary) -> bool:
+	if not data.get("version") is int: return false
 	if data.has("cabin_light_devices") and (not data.cabin_light_devices is bool or not data.cabin_light_devices): return false
 	if data.has("comfort") and not valid_comfort(data.comfort): return false
-	if data.get("version", 0) != VERSION or not data.has_all(["equipment", "wheels", "transform", "materials", "items", "fuel", "fuel_capacity", "material_capacity", "item_capacity", "id", "engine_item", "headlights", "hatch_open", "ramp", "engine", "gear", "handbrake", "linear", "angular"]):
+	if data.get("version", 0) != VERSION or not data.has_all(["structures", "mounted_items", "wheels", "transform", "materials", "items", "fuel", "fuel_capacity", "material_capacity", "item_capacity", "id", "engine_item", "headlights", "hatch_open", "ramp", "engine", "gear", "handbrake", "linear", "angular"]):
 		return false
-	if not data.equipment is Array or not data.wheels is Array or not data.materials is Dictionary or not data.items is Array:
+	if not RVStructureSlots.validate_snapshot(data.structures): return false
+	if not data.mounted_items is Array or not data.wheels is Array or not data.materials is Dictionary or not data.items is Array:
 		return false
 	if not CheckpointSchema.valid_transform(data.transform) or not CheckpointSchema.vector(data.linear) or not CheckpointSchema.vector(data.angular) or data.wheels.size() != 4:
 		return false
@@ -74,110 +50,61 @@ static func validate(data: Dictionary) -> bool:
 	if not data.material_capacity is int or data.material_capacity < 0 or not data.item_capacity is int or data.item_capacity < 0: return false
 	for item in data.items:
 		if not valid_item(item): return false
-	var ids := {}
-	var occupied_slots := {}
-	for entry in data.equipment:
-		if not entry is Dictionary or not entry.has_all(["scene", "id", "transform", "health", "enabled", "support", "service"]) or ids.has(entry.id):
-			return false
-		if not entry.scene is String or not entry.id is String or not entry.support is String or not entry.service is Dictionary or not entry.enabled is bool or not _number(entry.health) or not ResourceLoader.exists(entry.scene) or not entry.transform is Transform3D:
-			return false
-		if not valid_device(entry): return false
-		if entry.service.has("battery") and not valid_battery(entry.service.battery): return false
-		if not valid_structure_service(entry.scene, entry.service): return false
-		var slot_id: String = entry.service.get("mount_slot", "")
-		if not slot_id.is_empty():
-			if occupied_slots.has(slot_id): return false
-			occupied_slots[slot_id] = true
-			for slot in RVStructureSlots.layout():
-				if slot.id == slot_id and (entry.transform.origin.distance_to(slot.pose.origin) > 0.03 or not entry.transform.basis.is_equal_approx(slot.pose.basis)): return false
-		ids[entry.id] = entry.support
-	for entry in data.equipment:
-		if entry.support != "chassis" and not ids.has(entry.support):
-			return false
-	for entry in data.equipment:
-		var visited := {}
-		var cursor: String = entry.id
-		while cursor != "chassis":
-			if visited.has(cursor) or not ids.has(cursor): return false
-			visited[cursor] = true
-			cursor = ids[cursor]
-		if not entry.service.get("jobs", []) is Array or not entry.service.get("inputs", []) is Array: return false
-		for job in entry.service.get("jobs", []):
-			if not job is Dictionary or not job.has_all(["recipe", "remaining", "power", "costs"]) or not job.recipe is String or not _number(job.remaining) or not _number(job.power) or not job.costs is Dictionary or not MaterialStorage.new().valid_amounts(job.costs) or RecipeCatalog.find(job.recipe) == null: return false
-		for input in entry.service.get("inputs", []):
-			if not input is Dictionary or not input.has_all(["scene", "state", "timer", "local_position", "physics"]) or not input.scene is String or not input.state is Dictionary or not _number(input.timer) or not input.local_position is Vector3 or not input.physics is Dictionary or not input.physics.has_all(["freeze", "mode", "layer", "mask", "linear", "angular"]) or not ResourceLoader.exists(input.scene) or not valid_prop_state(input.scene, input.state): return false
+	for entry in data.mounted_items:
+		if not WorldActorSnapshot.validation_error(entry, "mounted_items").is_empty() or entry.kind != "item" or not entry.fixed: return false
+	if not WorldActorSnapshot.graph_error(data.mounted_items).is_empty(): return false
 	for wheel in data.wheels:
-		if not wheel is Dictionary or not wheel.has_all(["installed", "health", "id"]) or not wheel.installed is bool or not _number(wheel.health) or not wheel.id is String: return false
-	return MaterialStorage.new().valid_amounts(data.materials) and EngineState.unique_ids(data)
+		if not wheel is Dictionary or not wheel.has_all(["installed", "health", "id"]) or not wheel.installed is bool or not _number(wheel.health) or not wheel.id is String or (wheel.installed and wheel.id.is_empty()): return false
+		if not ItemState.valid_slot_data(wheel.get("item_data", {})): return false
+	return MaterialStorage.new().valid_amounts(data.materials) and ItemState.unique_ids(data, {})
 
-static func restore_device(device: Equipment, data: Dictionary, rv: Node3D) -> void:
-	device.persistent_id = data.id
-	device.current_health = clampf(data.health, 0.0, device.max_health)
-	if device.current_health <= 0.0:
-		device.remove_from_group(Groups.MONSTER_DAMAGEABLE)
-	device.enabled = data.enabled
-	if device.get("structure_kind") is String:
-		device.mount_slot = data.service.get("mount_slot", device.mount_slot) if rv else ""
-	if device.has_method("restore_angles"):
-		device.restore_angles(data.service.get("door_angles", [0.0, 0.0] if device.leaf_count == 2 else [0.0]))
-	if device is BatterySocket:
-		var battery: Dictionary = data.service.get("battery", {})
-		device.installed_battery = null if battery.is_empty() else BatteryState.new(battery)
-	for key in ["charging", "fuel_reserve", "recharge_below"]:
-		if key in device and data.service.has(key): device.set(key, data.service[key])
-	if device is CraftingStation:
-		device.jobs.clear()
-		for saved in data.service.get("jobs", []):
-			var job: Dictionary = saved.duplicate(true)
-			job["rv"] = rv
-			device.jobs.append(job)
-	if "props_being_crushed" in device:
-		for saved in data.service.get("inputs", []):
-			var prop: Prop = load(saved.scene).instantiate()
-			prop.restore_item_state(saved.state)
-			WorldEntities.get_container(device).add_child(prop)
-			prop.global_position = device.to_global(saved.local_position)
-			prop.processing_owner = device
-			prop.freeze = true
-			prop.collision_layer = 0
-			prop.collision_mask = 0
-			if prop.has_method("set_processing"): prop.call_deferred("set_processing", true)
-			device.props_being_crushed.append({"prop": prop, "timer": saved.timer,
-				"local_position": saved.local_position, "physics": saved.physics})
-
+static func restore_device(device: Item, data: Dictionary, _rv: Node3D) -> void:
+	device.restore_item_state(data.state)
 static func apply(rv: Node3D, data: Dictionary) -> bool:
 	data = upgrade(data)
 	if not validate(data):
 		return false
-	var staged: Array[Equipment] = []
-	for entry in data.equipment:
+	var staged: Array[Item] = []
+	for entry in data.mounted_items:
 		var scene := load(entry.scene) as PackedScene
 		var instance := scene.instantiate() if scene else null
-		var device := instance as Equipment
+		var device := instance as Item
 		if device == null:
 			if instance: instance.free()
 			for allocated in staged: allocated.free()
 			return false
 		staged.append(device)
 	var old_devices: Array[Node] = rv.get_equipment()
+	# Processing actors are owned by queues but parented to the world container.
+	# Replace them atomically; transfer suppression must not strand old inputs.
+	var old_container := WorldEntities.get_container(rv)
+	for actor in old_container.get_children():
+		if actor is Item and old_devices.has(actor.processing_owner):
+			actor.begin_world_transfer()
+			actor.free()
 	for device in old_devices:
 		if device is BatterySocket: device.installed_battery = null
+		device.begin_world_transfer()
 		device.set_mount_support(null)
 	for device in old_devices:
 		device.free()
 	rv.persistent_id = data.id
 	rv.global_transform = data.transform
-	var by_id := {}
+	rv.get_node("StructureSlots").restore(data.structures)
+	var restored: Array = []
+	var records: Array = []
 	for index in range(staged.size()):
 		var device := staged[index]
-		var entry: Dictionary = data.equipment[index]
-		device.transform = entry.transform
+		var entry: Dictionary = data.mounted_items[index].duplicate(true)
+		entry.transform = rv.global_transform * entry.transform
+		device.transform = data.mounted_items[index].transform
 		rv.add_child(device)
-		device.confirm_placement(rv.global_transform * entry.transform, rv)
-		restore_device(device, entry, rv)
-		by_id[entry.id] = device
-	for entry in data.equipment:
-		by_id[entry.id].set_mount_support(by_id[entry.support] if by_id.has(entry.support) else rv)
+		device.is_fixed = false
+		var initial: Dictionary = entry.state.duplicate(true)
+		initial["service"] = {}
+		device.restore_item_state(initial)
+		restored.append(device)
+		records.append(entry)
 	rv.inventory = data.materials
 	rv.stored_items.assign(data.items.duplicate(true))
 	rv.material_capacity = data.material_capacity
@@ -199,9 +126,11 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 		var wheel: Dictionary = data.wheels[index]
 		rv.wheel_health[index] = wheel.health
 		rv.wheel_ids[index] = wheel.id
+		rv.wheel_item_data[index] = wheel.get("item_data", {}).duplicate(true)
 		if wheel.installed:
 			rv._create_wheel_at(index)
 			rv._update_wheel_condition(index)
+	WorldActorSnapshot.restore_supports(records, restored, rv.get_parent())
 	rv.update_load()
 	rv.update_storage_capacity()
 	return true
@@ -212,11 +141,14 @@ static func _number(value: Variant) -> bool:
 static func valid_battery(value: Variant) -> bool:
 	if not value is Dictionary: return false
 	if value.is_empty(): return true
-	return value.has_all(["id", "charge", "capacity", "weight"]) and value.id is String and _number(value.charge) and _number(value.capacity) and _number(value.weight) and value.charge >= 0 and value.charge <= value.capacity and value.capacity > 0 and value.weight > 0
+	if not ItemState.valid_slot_data(value.get("item_data", {})): return false
+	return value.has_all(["id", "condition", "charge", "capacity", "weight", "scene_path"]) and value.id is String and not value.id.is_empty() and _number(value.condition) and value.condition >= 0 and value.condition <= 100 and _number(value.charge) and _number(value.capacity) and _number(value.weight) and value.charge >= 0 and value.charge <= value.capacity and value.capacity >= 1 and value.capacity <= 1000 and value.weight >= 1 and value.weight <= 200 and value.scene_path is String and value.scene_path in ["res://props/battery.tscn", "res://props/battery_large.tscn"]
 
 static func valid_item(value: Variant) -> bool:
 	if not value is Dictionary or not value.has_all(["name", "is_large", "scene_path", "state"]): return false
 	if not value.name is String or not value.is_large is bool or not value.scene_path is String or not value.state is Dictionary or not ResourceLoader.exists(value.scene_path): return false
+	if not value.state.get("id") is String or value.state.id.is_empty(): return false
+	if (value.scene_path.begins_with("res://equipment/") or value.scene_path == "res://rv/battery_socket.tscn") and not value.is_large: return false
 	if value.state.has("materials"): return false
 	if not valid_prop_state(value.scene_path, value.state): return false
 	if value.scene_path == "res://props/corpse.tscn" and not value.is_large: return false
@@ -225,173 +157,17 @@ static func valid_item(value: Variant) -> bool:
 	return not value.state.has("battery") or valid_battery(value.state.battery)
 
 static func upgrade(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) == VERSION: return _upgrade_cabin_lights(source.duplicate(true))
-	if source.get("version", 0) == 2: return _upgrade_cabin_lights(_upgrade_engine(_upgrade_structure(source)))
-	if source.get("version", 0) != 1 or not source.get("equipment") is Array or not valid_battery(source.get("battery")): return {}
-	var data := source.duplicate(true)
-	var fuel := 0.0
-	var fuel_capacity := 0.0
-	var material_capacity := 0
-	for device in data.equipment:
-		if not device is Dictionary or not device.get("service") is Dictionary: return {}
-		if device.get("scene") == "res://equipment/fuel_tank.tscn":
-			if not _number(device.service.get("fuel")) or not _number(device.service.get("capacity")): return {}
-			fuel += maxf(0.0, device.service.fuel)
-			fuel_capacity += maxf(0.0, device.service.capacity)
-			device.scene = "res://equipment/fuel_port.tscn"
-		elif device.get("scene") == "res://equipment/material_rack.tscn":
-			if not device.service.get("capacity") is int: return {}
-			material_capacity += maxi(0, device.service.capacity)
-			device.scene = "res://equipment/item_box.tscn"
-		device.service.erase("fuel")
-		device.service.erase("capacity")
-	data.equipment.append({"scene": "res://rv/battery_socket.tscn", "id": InstanceIds.create(),
-		"transform": Transform3D(Basis.IDENTITY, Vector3(2.16, 0.16, 1.5)),
-		"health": 120.0, "enabled": true, "support": "chassis", "service": {"battery": data.battery}})
-	data.erase("battery")
-	data.version = VERSION
-	data.fuel = fuel
-	data.fuel_capacity = maxf(100.0, maxf(fuel, fuel_capacity))
-	data.material_capacity = maxi(300, material_capacity)
-	data.item_capacity = 24
-	data.items = []
-	return _upgrade_cabin_lights(_upgrade_engine(_upgrade_structure(data)))
+	# Unified Item ownership in v5 requires a new run.
+	return source.duplicate(true) if source.get("version", 0) == VERSION else {}
 
-static func _upgrade_cabin_lights(data: Dictionary) -> Dictionary:
-	# A one-time conversion of the old roof's two built-in lamps, not a refill.
-	if data.has("cabin_light_devices") or not validate(data): return data
-	for roof in data.equipment.duplicate():
-		if roof.scene != "res://equipment/rv_ceiling.tscn" or roof.health <= 0: continue
-		for index in range(2):
-			data.equipment.append({"scene": "res://equipment/cabin_light_strip.tscn",
-				"id": roof.id + "::cabin-light-" + str(index),
-				"transform": roof.transform * Transform3D(Basis.IDENTITY, Vector3(0, -0.16, -3.2 if index == 0 else 2.2)),
-				"health": minf(120.0, roof.health), "enabled": roof.enabled,
-				"support": roof.id, "service": {},
-				"physics": {"mode": RigidBody3D.FREEZE_MODE_STATIC, "layer": 1, "mask": 0, "linear": Vector3.ZERO, "angular": Vector3.ZERO}})
-	data.cabin_light_devices = true
-	return data
-
-static func valid_structure_service(scene: String, service: Dictionary) -> bool:
-	var kind := ""
-	if scene in ["res://equipment/rv_side_panel.tscn", "res://equipment/rv_side_door.tscn"]: kind = "side"
-	elif scene == "res://equipment/rv_rear_door.tscn": kind = "rear"
-	elif scene == "res://equipment/rv_wall_front.tscn": kind = "front"
-	elif scene == "res://equipment/rv_ceiling.tscn": kind = "roof"
-	if service.has("mount_slot"):
-		if not service.mount_slot is String: return false
-		if not service.mount_slot.is_empty():
-			var found := false
-			for slot in RVStructureSlots.layout():
-				if slot.id == service.mount_slot and slot.kind == kind: found = true
-			if not found: return false
-	if service.has("door_angles"):
-		var count := 2 if scene == "res://equipment/rv_rear_door.tscn" else (1 if scene == "res://equipment/rv_side_door.tscn" else 0)
-		if not service.door_angles is Array or service.door_angles.size() != count or count == 0: return false
-		for index in range(count):
-			var angle: Variant = service.door_angles[index]
-			if not _number(angle) or absf(angle) > deg_to_rad(100.0) + 0.0001: return false
-			if (index == 0 and angle > 0.0) or (index == 1 and angle < 0.0): return false
-	return true
-
-static func _upgrade_structure(source: Dictionary) -> Dictionary:
-	if not source.get("equipment") is Array: return source
-	var data := source.duplicate(true)
-	var updated: Array = []
-	var replacements := {}
-	for entry in data.equipment:
-		if not entry is Dictionary or not entry.get("transform") is Transform3D or not entry.get("service") is Dictionary or not entry.get("id") is String:
-			return {}
-		var side := "right" if entry.get("scene") == "res://equipment/rv_wall_left.tscn" else ("left" if entry.get("scene") == "res://equipment/rv_wall_right.tscn" else "")
-		var original := Transform3D(Basis(Vector3.UP, PI / 2.0), Vector3(1.9 if side == "right" else -1.9, 1.5, 0))
-		if not side.is_empty() and entry.transform.is_equal_approx(original):
-			var pieces: Array = []
-			for i in range(3):
-				var piece: Dictionary = entry.duplicate(true)
-				piece.id = entry.id if i == 1 else entry.id + "-segment-" + str(i)
-				piece.scene = "res://equipment/rv_side_door.tscn" if side == "right" and i == 1 else "res://equipment/rv_side_panel.tscn"
-				piece.support = "chassis"
-				piece.service = {"mount_slot": side + "_" + str(i)}
-				for slot in RVStructureSlots.layout():
-					if slot.id == piece.service.mount_slot: piece.transform = slot.pose
-				pieces.append(piece)
-				updated.append(piece)
-			replacements[entry.id] = pieces
-		elif entry.get("scene") == "res://equipment/rv_wall_back.tscn" and entry.transform.is_equal_approx(Transform3D(Basis.IDENTITY, Vector3(0, 1.5, 5.9))):
-			entry.scene = "res://equipment/rv_rear_door.tscn"
-			entry.service["mount_slot"] = "rear"
-			entry.support = "chassis"
-			updated.append(entry)
-		else:
-			updated.append(entry)
-	for entry in updated:
-		if replacements.has(entry.get("support", "")):
-			var nearest: Dictionary = replacements[entry.support][0]
-			for piece in replacements[entry.support]:
-				if piece.transform.origin.distance_to(entry.transform.origin) < nearest.transform.origin.distance_to(entry.transform.origin):
-					nearest = piece
-			entry.support = nearest.id
-	data.equipment = updated
-	return data
-
-static func _upgrade_engine(data: Dictionary) -> Dictionary:
-	if data.is_empty() or not _number(data.get("health")) or not data.get("id") is String: return {}
-	data.version = VERSION
-	data.engine_item = {"id": data.id + "-legacy-engine", "model": "standard", "health": clampf(data.health, 0.0, 450.0)}
-	data.erase("health")
-	data.headlights = false
-	data.hatch_open = false
-	data.ramp = {"deployed": false, "angle": 0.0, "length": 3.6}
-	return data
+static func valid_support(value: Variant) -> bool:
+	return WorldActorSnapshot.valid_support(value)
 
 static func valid_prop_state(scene: String, state: Dictionary) -> bool:
-	if SaveSceneCatalog.resolve(scene, "prop") == null: return false
-	if scene == "res://props/corpse.tscn":
-		if not load("res://props/corpse.gd").valid_state(state.get("corpse")): return false
-	elif state.has("corpse"):
-		return false
-	if state.has("id") and not state.id is String: return false
-	if state.has("condition") and (not _number(state.condition) or state.condition < 0 or state.condition > 100): return false
-	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
-	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
-	if state.has("battery") and (scene not in ["res://props/battery.tscn", "res://props/battery_large.tscn"] or not valid_battery(state.battery)): return false
-	if state.has("flashlight") and scene != "res://props/flashlight.tscn": return false
-	if scene == "res://props/flashlight.tscn" and not valid_flashlight(state.get("flashlight")): return false
-	var is_engine := scene in ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]
-	if is_engine:
-		return EngineState.valid(state.get("engine"), false) and state.get("id") == state.engine.id and scene == "res://props/engine_" + state.engine.model + ".tscn"
-	return not state.has("engine")
+	return ItemState.valid(scene, state)
 
 static func valid_flashlight(value: Variant) -> bool:
 	return value is Dictionary and value.size() == 2 and value.has_all(["charge", "on"]) and _number(value.charge) and value.charge >= 0.0 and value.charge <= Flashlight.FULL_CHARGE and value.on is bool and (value.charge > 0.0 or not value.on)
 
 static func valid_device(entry: Dictionary) -> bool:
-	if not entry.has_all(["scene", "id", "transform", "health", "enabled", "service"]): return false
-	if SaveSceneCatalog.resolve(entry.scene, "equipment") == null or not entry.id is String or entry.id.is_empty() or entry.id == "chassis" or not entry.enabled is bool or not _number(entry.health) or entry.health < 0 or not CheckpointSchema.valid_transform(entry.transform) or not entry.service is Dictionary: return false
-	if entry.has("physics") and not CheckpointSchema.physics(entry.physics): return false
-	var service: Dictionary = entry.service
-	for key in service:
-		match key:
-			"battery":
-				if entry.scene != "res://rv/battery_socket.tscn": return false
-			"jobs":
-				if entry.scene != "res://equipment/crafting_station.tscn": return false
-			"inputs":
-				if entry.scene != "res://equipment/scrapper.tscn": return false
-			"charging", "fuel_reserve", "recharge_below":
-				if entry.scene != "res://equipment/generator.tscn": return false
-			"mount_slot", "door_angles": pass
-			_: return false
-	if not valid_structure_service(entry.scene, service): return false
-	if service.has("battery") and not valid_battery(service.battery): return false
-	if service.has("charging") and not service.charging is bool: return false
-	if service.has("fuel_reserve") and (not _number(service.fuel_reserve) or service.fuel_reserve < 0): return false
-	if service.has("recharge_below") and (not _number(service.recharge_below) or service.recharge_below < 0 or service.recharge_below > 1): return false
-	if not service.get("jobs", []) is Array or not service.get("inputs", []) is Array: return false
-	for job in service.get("jobs", []):
-		if not job is Dictionary or not job.has_all(["recipe", "remaining", "power", "costs"]): return false
-		if not job.recipe is String or RecipeCatalog.find(job.recipe) == null or not _number(job.remaining) or job.remaining < 0 or not _number(job.power) or job.power < 0 or not job.costs is Dictionary or not MaterialStorage.new().valid_amounts(job.costs): return false
-	for input in service.get("inputs", []):
-		if not input is Dictionary or not input.has_all(["scene", "state", "timer", "local_position", "physics"]): return false
-		if not input.scene is String or not input.state is Dictionary or not valid_prop_state(input.scene, input.state) or not _number(input.timer) or input.timer < 0 or not CheckpointSchema.vector(input.local_position) or not CheckpointSchema.physics(input.physics, true): return false
-	return true
+	return WorldActorSnapshot.validation_error(entry, "item").is_empty()

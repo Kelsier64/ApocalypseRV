@@ -1,4 +1,4 @@
-extends Equipment
+extends Item
 
 @export var fuel_consumption_per_second: float = 0.6
 @export var power_generation_per_second: float = 1.8
@@ -9,6 +9,7 @@ var charging: bool = false
 
 func _ready() -> void:
 	super._ready()
+	if presentation_only: return
 	add_to_group(Groups.RV_POWER_GENERATORS)
 
 func generate_power(rv: Node, delta: float) -> void:
@@ -59,3 +60,14 @@ func get_status() -> String:
 	if rv.current_fuel <= fuel_reserve: return "Fuel reserve reached; engine still burns idle fuel"
 	if not charging: return "Waiting for charge threshold"
 	return "Charging: up to +%.1f power/s" % power_generation_per_second
+
+func capture_service_state() -> Dictionary:
+	return {"charging": charging, "fuel_reserve": fuel_reserve, "recharge_below": recharge_below}
+
+func restore_service_state(state: Dictionary) -> void:
+	charging = state.get("charging", false)
+	fuel_reserve = state.get("fuel_reserve", fuel_reserve)
+	recharge_below = state.get("recharge_below", recharge_below)
+
+func _on_service_stopped() -> void:
+	charging = false

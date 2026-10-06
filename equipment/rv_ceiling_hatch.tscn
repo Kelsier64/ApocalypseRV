@@ -1,0 +1,41 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/rv_panel.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/rv_ceiling_hatch_definition.tres" id="def"]
+[ext_resource type="PackedScene" path="res://rv/visuals/roof_hatch.tscn" id="visual"]
+
+[sub_resource type="BoxShape3D" id="Right"]
+size = Vector3(2.35, 0.2, 4)
+
+[sub_resource type="BoxShape3D" id="Left"]
+size = Vector3(0.2, 0.2, 4)
+
+[sub_resource type="BoxShape3D" id="Front"]
+size = Vector3(1.45, 0.2, 1.2)
+
+[sub_resource type="BoxShape3D" id="Rear"]
+size = Vector3(1.45, 0.2, 1.2)
+
+[node name="RoofPanel" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("def")
+mass = 50.0
+structure_kind = "roof"
+
+[node name="Visual" parent="." instance=ExtResource("visual")]
+
+[node name="CollisionRight" type="CollisionShape3D" parent="."]
+position = Vector3(0.825, 0, 0)
+shape = SubResource("Right")
+
+[node name="CollisionLeft" type="CollisionShape3D" parent="."]
+position = Vector3(-1.9, 0, 0)
+shape = SubResource("Left")
+
+[node name="CollisionFront" type="CollisionShape3D" parent="."]
+position = Vector3(-1.075, 0, -1.4)
+shape = SubResource("Front")
+
+[node name="CollisionRear" type="CollisionShape3D" parent="."]
+position = Vector3(-1.075, 0, 1.4)
+shape = SubResource("Rear")

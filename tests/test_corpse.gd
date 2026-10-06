@@ -31,7 +31,7 @@ func palm_position(sk: Skeleton3D, side: String) -> Vector3:
 	var center := rest.origin.lerp(middle, .72) + palm * .014
 	return sk.global_transform * sk.get_bone_global_pose(hand) * (rest.affine_inverse() * center)
 
-func check_limb_feed(recycler: Equipment, kind: String, restore_power := false) -> void:
+func check_limb_feed(recycler: Item, kind: String, restore_power := false) -> void:
 	var rv := recycler.get_connected_rv()
 	var saved_power: float = rv.current_power
 	if restore_power: rv.current_power = 0
@@ -186,7 +186,7 @@ func run() -> void:
 	rv.freeze = true
 	rv.set_physics_process(false)
 	rv.current_power = 20
-	var recycler: Equipment = rv.get_node("Scrapper")
+	var recycler: Item = rv.get_node("Scrapper")
 	await step(2)
 	restored.global_position = recycler.global_position + Vector3.UP
 	recycler.recycle_prop(restored)
@@ -198,7 +198,7 @@ func run() -> void:
 	check(restored.processing and not restored.simulator.is_simulating_physics(), "Restoring an existing recycler input keeps every bone stopped")
 	var device_snapshot := VehicleSnapshot.device_state(recycler)
 	check(VehicleSnapshot.valid_device(device_snapshot), "Recycler snapshot validates a corpse input")
-	var restored_recycler: Equipment = load("res://equipment/scrapper.tscn").instantiate()
+	var restored_recycler: Item = load("res://equipment/scrapper.tscn").instantiate()
 	world.add_child(restored_recycler)
 	restored_recycler.position = Vector3(40, 1, 0)
 	VehicleSnapshot.restore_device(restored_recycler, device_snapshot, rv)

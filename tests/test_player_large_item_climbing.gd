@@ -29,13 +29,13 @@ func _run() -> void:
 	_expect(not player.is_physics_processing(), "Fixture owns player physics stepping.")
 	interaction = player.get_node("Camera3D/InteractRay")
 	interaction.set_physics_process(false)
-	await _reset_at_wall()
+	await _reset_at_ladder()
 	Input.action_press("move_forward")
 	_expect(player.add_item("Unfamiliar cargo", true, LARGE_PATH, {"id": "blocked-cargo", "condition": 37.0}), "Large cargo is accepted.")
 	var original: Dictionary = player.inventory.active_item().duplicate(true)
 	var before: Transform3D = player.global_transform
 	player._try_start_climb()
-	_expect(player.locomotion_state == player.LocomotionState.NORMAL, "A real RV wall cannot start climbing with active large cargo.")
+	_expect(player.locomotion_state == player.LocomotionState.NORMAL, "A production RV ladder cannot start climbing with active large cargo.")
 	_expect(player.global_transform.is_equal_approx(before), "Refused climb does not teleport the player.")
 	_expect(interaction.feedback_label.text == player.LARGE_ITEM_CLIMB_MESSAGE, "HUD explains the large-item restriction.")
 	interaction.feedback_time = 1.25
@@ -54,7 +54,7 @@ func _run() -> void:
 
 	player.consume_active_item()
 	player._try_start_climb()
-	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Consuming large cargo restores real-wall climbing.")
+	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Consuming large cargo restores ladder climbing.")
 	# Sample the same translating and turning carrier path as ordinary climbing.
 	rv.position.z -= 4.8 * step_delta
 	rv.rotate_y(0.18 * step_delta)
@@ -62,7 +62,7 @@ func _run() -> void:
 	player._apply_rv_delta_compensation()
 	var carrier: Vector3 = player.climb_carrier_velocity
 	_expect(carrier.length() > 0.1, "Moving RV fixture supplies a nonzero carrier velocity.")
-	var pickup: Prop = load(LARGE_PATH).instantiate()
+	var pickup: Item = load(LARGE_PATH).instantiate()
 	pickup.persistent_id = "picked-up-cargo"
 	pickup.condition = 43.0
 	pickup.freeze = true
@@ -78,7 +78,7 @@ func _run() -> void:
 
 	_expect(rv.store_player_item(player, player.inventory.active_slot), "Large cargo can be stored after detaching.")
 	_expect(player.inventory.items.is_empty() and rv.stored_items.back().state == pickup_state, "Storage transfers the original record without loss or duplication.")
-	await _reset_at_wall()
+	await _reset_at_ladder()
 	player._try_start_climb()
 	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Storage releases the large-item climb gate.")
 	carrier = Vector3(2.0, 0.5, -6.0)
@@ -94,14 +94,14 @@ func _run() -> void:
 	_expect(player.inventory.items.is_empty(), "Dropping removes the large item from the inventory.")
 	var dropped_count := 0
 	for node in world.find_children("*", "RigidBody3D", true, false):
-		if node is Prop and not node.is_queued_for_deletion() and not player.is_ancestor_of(node) and node.persistent_id == "picked-up-cargo":
+		if node is Item and not node.is_queued_for_deletion() and not player.is_ancestor_of(node) and node.persistent_id == "picked-up-cargo":
 			dropped_count += 1
 			_expect(is_equal_approx(node.condition, 43.0), "Dropped cargo retains its condition.")
 			node.queue_free()
 	_expect(dropped_count == 1, "Drop creates exactly one world item with the same identity.")
-	await _reset_at_wall()
+	await _reset_at_ladder()
 	player._try_start_climb()
-	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Drop restores real-wall climbing after the ordinary reentry cooldown.")
+	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Drop restores ladder climbing after the ordinary reentry cooldown.")
 	_expect(player.add_item("Small cargo", false, SMALL_PATH), "Small pickup succeeds during climbing.")
 	_expect(player.locomotion_state == player.LocomotionState.CLIMBING, "Small pickup does not detach the climber.")
 	for index in range(PlayerInventory.MAX_SLOTS - 1):
@@ -130,7 +130,7 @@ func _run() -> void:
 		print("PASS: large-item climbing, feedback, pickup, storage, drop and carrier handoff")
 	quit(0 if failures.is_empty() else 1)
 
-func _reset_at_wall() -> void:
+func _reset_at_ladder() -> void:
 	# Reset fixture position and model expiry of the existing reentry cooldown.
 	player._exit_climb_to_normal()
 	player.climb_reenter_cooldown_remaining = 0.0
@@ -138,11 +138,11 @@ func _reset_at_wall() -> void:
 	player.velocity = Vector3.ZERO
 	player.rv_support.clear()
 	rv.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1.2, 0))
-	player.position = Vector3(2.65, 1.0, 0)
-	player.rotation = Vector3(0, PI / 2.0, 0)
+	var ladder: Node3D = rv.get_node("RoofLadder")
+	player.global_position = ladder.climb_point(0.0) - Vector3.UP * 0.25
+	player.rotation = Vector3(0, ladder.global_rotation.y, 0)
 	await physics_frame
-	player.climb_wall_probe.force_raycast_update()
-	_expect(player.climb_wall_probe.is_colliding(), "Fixture ray must hit the actual RV wall.")
+	_expect(ladder.can_enter_from(player._climb_feet(), false), "Fixture must stand at the production roof ladder's lower entry.")
 
 func _expect_detached(before: Transform3D, carrier: Vector3, context: String) -> void:
 	_expect(player.locomotion_state == player.LocomotionState.NORMAL, context + " safely exits climbing.")

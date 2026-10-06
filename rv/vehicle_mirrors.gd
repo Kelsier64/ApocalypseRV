@@ -11,7 +11,7 @@ var next_mirror := 0
 @onready var rv: Chassis = get_parent()
 
 func _ready() -> void:
-	rv.equipment_changed.connect(func(): dirty = true)
+	rv.structure_changed.connect(func(): dirty = true)
 	for side in [-1.0, 1.0]:
 		var rig := Node3D.new()
 		rig.name = "LeftMirror" if side < 0 else "RightMirror"
@@ -55,7 +55,7 @@ func _process(delta: float) -> void:
 	if dirty:
 		for mirror in mirrors:
 			mirror.panel = null
-			for device in rv.get_equipment():
+			for device in rv.get_structures():
 				if device.get("mount_slot") == ("left_0" if mirror.side < 0 else "right_0"):
 					mirror.panel = weakref(device)
 		dirty = false
@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 	if refresh: elapsed = 0.0
 	for i in range(mirrors.size()):
 		var mirror := mirrors[i]
-		var panel: Equipment = mirror.panel.get_ref() if mirror.panel else null
+		var panel: RVStructurePanel = mirror.panel.get_ref() if mirror.panel else null
 		var mounted := is_instance_valid(panel) and panel.can_operate() and panel.get_connected_rv() == rv
 		mirror.rig.visible = mounted
 		if not mounted or not driving:

@@ -98,7 +98,7 @@ func _run() -> void:
 	check(rain.near_cover.height_at(Vector3.ZERO) == RainCover.EMPTY_HEIGHT, "Roof removal refreshes cached surface")
 	check(rain.splashes.is_empty(), "Splash owners expire after roof removal")
 	check(rain.shelter == 0.0, "Open sky restores rain audio")
-	var ceiling: Equipment = load("res://equipment/rv_ceiling.tscn").instantiate()
+	var ceiling: RVStructurePanel = load("res://equipment/rv_ceiling.tscn").instantiate()
 	ceiling.position.y = 3
 	ceiling.freeze = true
 	world.add_child(ceiling)
@@ -117,6 +117,42 @@ func _run() -> void:
 	await physics_frame
 	await physics_frame
 	check(not rain.roof_blocks(Vector3(12, 0, 0)), "Destroyed roof stops masking rain immediately")
+	# Three opening panels contribute twelve solid rectangles. The physical
+	# opening must stay exposed in both rain masks and cabin fog exclusions.
+	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
+	shell.position.x = 24.0
+	world.add_child(shell)
+	var rv: Chassis = shell.get_node("Chassis")
+	rv.freeze = true
+	rv.set_physics_process(false)
+	await physics_frame
+	await physics_frame
+	var slots: RVStructureSlots = rv.get_node("StructureSlots")
+	for index in range(3):
+		slots.replace_panel("roof_" + str(index), "rv_ceiling_hatch", 120.0)
+	await physics_frame
+	await physics_frame
+	rain._update_roofs(camera.global_position)
+	check(rain.roof_transforms.size() == 12, "Three roof openings retain all twelve solid rain-mask rectangles")
+	for index in range(3):
+		var hatch: RVStructurePanel = slots.occupant("roof_" + str(index))
+		var hole := hatch.to_global(Vector3(-1.075, -1.0, 0))
+		var solid := hatch.to_global(Vector3(1.0, -1.0, 0))
+		check(not rain.roof_blocks(hole) and rain.roof_blocks(solid), "Rain passes only through the left opening: " + str(index))
+		check(rain.ray_hit(hole + Vector3.UP * 2, hole).is_empty(), "No invisible collision closes the opening: " + str(index))
+		var air: Node3D = hatch.get_node("CabinAir")
+		check(not air.shelters(Vector3(-1.075, -1, 0)) and air.shelters(Vector3(1, -1, 0)), "Fog exclusion follows solid material and leaves the opening exposed: " + str(index))
+	var middle: RVStructurePanel = slots.occupant("roof_1")
+	middle.take_damage(999.0)
+	await physics_frame
+	rain._update_roofs(camera.global_position)
+	check(not rain.roof_blocks(rv.to_global(Vector3(1, 1.6, 0))) and rain.roof_blocks(rv.to_global(Vector3(1, 1.6, -4))) and rain.roof_blocks(rv.to_global(Vector3(1, 1.6, 4))), "A destroyed roof segment admits rain without removing neighbouring shelter")
+	rv.position.x += 8
+	rv.rotation.y = PI * 0.5
+	await physics_frame
+	rain._update_roofs(camera.global_position)
+	var moved: RVStructurePanel = slots.occupant("roof_0")
+	check(not rain.roof_blocks(moved.to_global(Vector3(-1.075, -1, 0))) and rain.roof_blocks(moved.to_global(Vector3(1, -1, 0))), "Roof opening and solid shelter follow vehicle translation and rotation")
 	var cache := RainCover.new(0.75)
 	var query := func(from: Vector3, _to: Vector3) -> Dictionary: return {"position": Vector3(from.x, 5, from.z)}
 	check(is_inf(cache.height_at(Vector3.ZERO)), "Unknown cache cells hide rain instead of leaking through roofs")

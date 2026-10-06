@@ -1,7 +1,20 @@
 extends Node3D
 class_name RVStructureSlots
-## Removing a panel never removes its chassis-owned socket.
+## Fixed sockets and their state survive destruction; all geometry is slot-owned.
 const GROUP := "rv_structure_slots"
+const TYPES := {
+	"rv_side_panel": "res://equipment/rv_side_panel_definition.tres",
+	"rv_side_door": "res://equipment/rv_side_door_definition.tres",
+	"rv_rear_door": "res://equipment/rv_rear_door_definition.tres",
+	"rv_wall_front": "res://equipment/rv_wall_front_definition.tres",
+	"rv_ceiling": "res://equipment/rv_ceiling_definition.tres",
+	"rv_ceiling_hatch": "res://equipment/rv_ceiling_hatch_definition.tres",
+	"rv_floor": "res://equipment/rv_floor_definition.tres",
+}
+var construction: Node
+var revision: int = 0
+var _panels: Dictionary = {}
+
 static func layout() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
 	for side in ["right", "left"]:
@@ -11,73 +24,126 @@ static func layout() -> Array[Dictionary]:
 				"size": Vector3(3.96, 1.98, 0.2), "center": Vector3.ZERO})
 	slots.append({"id": "rear", "kind": "rear", "label": "後方大門", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1.5, 5.9)), "size": Vector3(3.6, 1.98, 0.2), "center": Vector3.ZERO})
 	slots.append({"id": "front", "kind": "front", "label": "車頭", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1, -5.9)), "size": Vector3(3.6, 2, 0.2), "center": Vector3(0, 0.5, 0)})
-	slots.append({"id": "roof", "kind": "roof", "label": "屋頂", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 2.6005738, 0)), "size": Vector3(4, 0.2, 12), "center": Vector3.ZERO})
+	for i in range(3):
+		slots.append({"id": "roof_" + str(i), "kind": "roof", "label": "屋頂" + ["前段", "中段", "後段"][i],
+			"pose": Transform3D(Basis.IDENTITY, Vector3(0, 2.6005738, -4.0 + i * 4.0)),
+			"size": Vector3(4, 0.2, 4), "center": Vector3.ZERO})
+	slots.append({"id": "floor", "kind": "floor", "label": "地板", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 0.4, 0)), "size": Vector3(4, 0.2, 12), "center": Vector3.ZERO})
 	return slots
 
-var outlines: Dictionary = {}
-var preview: WeakRef
+static func definition_for(type_id: String) -> RVStructureDefinition:
+	return load(TYPES[type_id]) as RVStructureDefinition if TYPES.has(type_id) else null
 
-func _process(_delta: float) -> void:
-	var device: Object = preview.get_ref() if preview else null
-	if device == null or not device.is_being_placed: hide_outlines()
+static func slot_info(slot_id: String) -> Dictionary:
+	for slot in layout():
+		if slot.id == slot_id: return slot
+	return {}
+
+static func types_for_slot(slot_id: String) -> Array[String]:
+	var slot := slot_info(slot_id)
+	var result: Array[String] = []
+	if slot.is_empty(): return result
+	for type_id in TYPES:
+		if definition_for(type_id).slot_kind == slot.kind: result.append(type_id)
+	return result
 
 func _ready() -> void:
 	add_to_group(GROUP)
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(0.25, 0.85, 0.9)
-	for slot in layout():
-		var mesh := ImmediateMesh.new()
-		mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
-		var half: Vector3 = slot.size * 0.5
-		var corners: Array[Vector3] = []
-		for i in range(8):
-			corners.append(slot.center + Vector3(half.x if i & 1 else -half.x, half.y if i & 2 else -half.y, half.z if i & 4 else -half.z))
-		for i in range(8):
-			for bit in [1, 2, 4]:
-				if (i & bit) == 0:
-					mesh.surface_add_vertex(corners[i])
-					mesh.surface_add_vertex(corners[i | bit])
-		mesh.surface_end()
-		var outline := MeshInstance3D.new()
-		outline.mesh = mesh
-		outline.transform = slot.pose
-		outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		outline.visible = false
-		add_child(outline)
-		outlines[slot.id] = outline
+	construction = load("res://rv/structure_construction.gd").new()
+	construction.name = "Construction"
+	add_child(construction)
+	call_deferred("_initialize_panels")
 
-func show_empty(kind: String, ignored: Equipment) -> void:
-	preview = weakref(ignored)
+func _initialize_panels() -> void:
+	for child in get_parent().get_children():
+		if child is RVStructurePanel: register_panel(child)
 	for slot in layout():
-		outlines[slot.id].visible = slot.kind == kind and occupant(slot.id, ignored) == null
-func hide_outlines() -> void:
-	for outline in outlines.values(): outline.hide()
-func occupant(slot_id: String, ignored: Equipment = null) -> Equipment:
-	for device in get_parent().get_equipment():
-		if device == ignored or device.is_destroyed or device.is_being_placed: continue
-		if device.get("mount_slot") == slot_id: return device
+		if panel(slot.id) == null:
+			replace_panel(slot.id, types_for_slot(slot.id)[0], 0.0)
+
+func register_panel(part: RVStructurePanel) -> void:
+	if part.mount_slot.is_empty(): part.mount_slot = identify(part.transform, part.structure_kind)
+	var slot := slot_info(part.mount_slot)
+	if slot.is_empty() or part.definition == null or not part.definition.type_id in types_for_slot(part.mount_slot): return
+	var previous: RVStructurePanel = _panels.get(part.mount_slot)
+	if is_instance_valid(previous) and previous != part: return
+	_panels[part.mount_slot] = part
+	if not part.availability_changed.is_connected(_changed): part.availability_changed.connect(_changed)
+	_changed()
+
+func _changed() -> void:
+	revision += 1
+	if get_parent().has_signal("structure_changed"): get_parent().structure_changed.emit()
+
+func panel(slot_id: String) -> RVStructurePanel:
+	var result: RVStructurePanel = _panels.get(slot_id)
+	if is_instance_valid(result) and not result.is_queued_for_deletion(): return result
+	for child in get_parent().get_children():
+		if child is RVStructurePanel and child.mount_slot == slot_id and not child.is_queued_for_deletion(): return child
 	return null
+
+func occupant(slot_id: String) -> RVStructurePanel:
+	var part := panel(slot_id)
+	return part if is_instance_valid(part) and not part.is_destroyed else null
+
 func identify(pose: Transform3D, kind: String) -> String:
 	for slot in layout():
-		if slot.kind == kind and slot.pose.origin.distance_to(pose.origin) < 0.03 and slot.pose.basis.is_equal_approx(pose.basis):
-			return slot.id
+		if slot.kind == kind and slot.pose.origin.distance_to(pose.origin) < 0.03 and slot.pose.basis.is_equal_approx(pose.basis): return slot.id
 	return ""
-func pick(from: Vector3, direction: Vector3, reach: float, kind: String) -> Dictionary:
-	var best: Dictionary = {}
+
+func replace_panel(slot_id: String, type_id: String, health: float) -> RVStructurePanel:
+	if not type_id in types_for_slot(slot_id): return null
+	var definition := definition_for(type_id)
+	var next := load(definition.scene_path).instantiate() as RVStructurePanel
+	if next == null: return null
+	var previous := panel(slot_id)
+	var part_name: String = str(previous.name) if previous else "Structure_" + slot_id
+	if previous:
+		previous.removing.emit()
+		_panels.erase(slot_id)
+		previous.free()
+	next.name = part_name
+	next.mount_slot = slot_id
+	next.transform = slot_info(slot_id).pose
+	get_parent().add_child(next)
+	next.set_health(health)
+	register_panel(next)
+	return next
+
+func is_building() -> bool:
+	return is_instance_valid(construction) and construction.is_building()
+
+func snapshot() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
 	for slot in layout():
-		if slot.kind != kind: continue
-		var pose: Transform3D = global_transform * slot.pose
-		var inverse := pose.affine_inverse()
-		var origin := inverse * from
-		var ray := inverse.basis * direction
-		var axis := 1 if slot.kind == "roof" else 2
-		if absf(ray[axis]) < 0.0001: continue
-		var distance: float = (slot.center[axis] - origin[axis]) / ray[axis]
-		if distance < 0.0 or distance > reach: continue
-		var hit: Vector3 = origin + ray * distance - slot.center
-		var half: Vector3 = slot.size * 0.5 + Vector3.ONE * 0.12
-		if absf(hit.x) > half.x or absf(hit.y) > half.y or absf(hit.z) > half.z: continue
-		if best.is_empty() or distance < best.distance:
-			best = {"id": slot.id, "label": slot.label, "pose": pose, "distance": distance, "manager": self}
-	return best
+		var part := panel(slot.id)
+		var type_id: String = part.definition.type_id if part else types_for_slot(slot.id)[0]
+		var angles: Array = part.angles.duplicate() if part and part.has_method("restore_angles") else []
+		if part == null and type_id == "rv_rear_door": angles = [0.0, 0.0]
+		result.append({"slot": slot.id, "type": type_id, "health": part.current_health if part else 0.0, "door_angles": angles})
+	return result
+
+static func validate_snapshot(data: Variant) -> bool:
+	if not data is Array or data.size() != layout().size(): return false
+	var seen := {}
+	for entry in data:
+		if not entry is Dictionary or not entry.has_all(["slot", "type", "health", "door_angles"]): return false
+		if not entry.slot is String or not entry.type is String or seen.has(entry.slot): return false
+		if not entry.type in types_for_slot(entry.slot): return false
+		var definition := definition_for(entry.type)
+		if not (entry.health is float or entry.health is int) or not is_finite(float(entry.health)) or entry.health < 0.0 or entry.health > definition.health: return false
+		var count := 2 if entry.type == "rv_rear_door" else (1 if entry.type == "rv_side_door" else 0)
+		if not entry.door_angles is Array or entry.door_angles.size() != count: return false
+		for index in range(entry.door_angles.size()):
+			var angle: Variant = entry.door_angles[index]
+			if not (angle is float or angle is int) or not is_finite(float(angle)) or absf(float(angle)) > deg_to_rad(100.0) + 0.001: return false
+			if (index == 0 and angle > 0.0) or (index == 1 and angle < 0.0): return false
+		seen[entry.slot] = true
+	return true
+
+func restore(data: Array) -> void:
+	if not validate_snapshot(data): return
+	if is_instance_valid(construction): construction.cancel("載入車體狀態")
+	for entry in data:
+		var part := replace_panel(entry.slot, entry.type, entry.health)
+		if part.has_method("restore_angles"): part.restore_angles(entry.door_angles)

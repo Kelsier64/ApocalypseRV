@@ -52,7 +52,7 @@ func _ready() -> void:
 		# Isolated inspection fixture; production only supplies the loose world prop.
 		for actor in inside.entities.get_children():
 			if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
-		var torch := preload("res://props/flashlight.tscn").instantiate() as Prop
+		var torch := preload("res://props/flashlight.tscn").instantiate() as Item
 		inside.entities.add_child(torch)
 		torch.interact(player)
 		var first_room := 0

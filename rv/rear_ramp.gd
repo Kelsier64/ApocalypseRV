@@ -50,7 +50,7 @@ func motion_blocker(from: float, to: float) -> String:
 	var end := to_global(Basis(Vector3.RIGHT, angle) * Vector3(0, 0, length))
 	var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(end + Vector3.UP * 0.08, end - Vector3.UP * 0.15, 1, exclusions()))
 	var support := RID()
-	if not hit.is_empty() and hit.collider is StaticBody3D and not hit.collider is Equipment and hit.position.y <= end.y and hit.normal.dot(Vector3.UP) >= cos(deg_to_rad(30)):
+	if not hit.is_empty() and hit.collider is StaticBody3D and not hit.collider is Item and hit.position.y <= end.y and hit.normal.dot(Vector3.UP) >= cos(deg_to_rad(30)):
 		support = hit.rid
 	for step in range(1, steps + 1):
 		var value := lerpf(from, to, float(step) / steps)
@@ -80,12 +80,21 @@ func _physics_process(delta: float) -> void:
 		rv.feedback("mechanical", position)
 	_sync()
 func doors_open() -> bool:
-	for device in rv.get_equipment():
-		if device.get("structure_kind") == "rear" and device.has_method("restore_angles"):
-			return device.angles.size() == 2 and absf(device.angles[0]) >= deg_to_rad(85) and absf(device.angles[1]) >= deg_to_rad(85)
+	var slots := rv.get_node_or_null("StructureSlots")
+	var device: Node = slots.occupant("rear") if slots else null
+	# A breached rear slot is already clear; a live door needs both leaves open.
+	if slots and device == null: return true
+	if device and device.has_method("restore_angles"):
+		return device.angles.size() == 2 and absf(device.angles[0]) >= deg_to_rad(85) and absf(device.angles[1]) >= deg_to_rad(85)
 	return false
 func exclusions() -> Array[RID]:
-	return [get_rid(), rv.get_rid(), $Control.get_rid()]
+	var result: Array[RID] = [get_rid(), rv.get_rid(), $Control.get_rid()]
+	# The stowed ramp telescopes underneath its own deck. This deck used to
+	# share the chassis RID; exclude only that fixed structural floor now.
+	var slots := rv.get_node_or_null("StructureSlots")
+	var floor_panel: RVStructurePanel = slots.occupant("floor") if slots else null
+	if is_instance_valid(floor_panel): result.append(floor_panel.get_rid())
+	return result
 func blockage(pose: Transform3D, size: Vector3, support: RID = RID()) -> String:
 	var query := PhysicsShapeQueryParameters3D.new()
 	var box := BoxShape3D.new()

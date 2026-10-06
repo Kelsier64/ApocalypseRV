@@ -61,7 +61,7 @@ func run() -> void:
 	check(monsters(world).size() == plan.monsters.size(), "Production road encounter spawns exactly its planned Rakers")
 	check(checkpoint.save_world(world, SAVE_PATH), "v8 road checkpoint writes")
 	var before: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
-	check(before.get("version") == 3 and before.get("generation_version") == 8, "Checkpoint remains v3 and records v8 generation")
+	check(before.get("version") == 5 and before.get("generation_version") == 8, "Checkpoint uses v5 while retaining v8 generation")
 	check(band in before.get("generated_bands", []), "Road band is marked generated")
 	check(before.get("destroyed_trees", {}).get(destroyed_id, false), "v8 road checkpoint preserves the destroyed-tree ledger")
 	if not await checkpoint.load_world(world, SAVE_PATH):

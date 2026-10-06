@@ -58,6 +58,7 @@ const WHEEL_WIDTH: float = 0.5
 var installed_wheels: Array = [null, null, null, null]
 var wheel_health: Array[float] = [100.0, 100.0, 100.0, 100.0]
 var wheel_ids: Array[String] = [InstanceIds.create(), InstanceIds.create(), InstanceIds.create(), InstanceIds.create()]
+var wheel_item_data: Array[Dictionary] = [{}, {}, {}, {}]
 
 # --- INVENTORY & POWER ---
 signal inventory_changed(item_name: String, new_amount: int)
@@ -104,9 +105,11 @@ var service_message: String = ""
 var engine_bay: Node3D
 var rear_ramp: Node3D
 signal equipment_changed
+signal structure_changed
 var equipment_registry: Array[Node] = []
 
 func register_equipment(equipment: Node) -> void:
+	if not equipment is Item or equipment.presentation_only or not equipment.is_fixed: return
 	if not equipment_registry.has(equipment):
 		equipment_registry.append(equipment)
 		equipment_changed.emit()
@@ -118,8 +121,14 @@ func unregister_equipment(equipment: Node) -> void:
 func get_equipment() -> Array[Node]:
 	var result: Array[Node] = []
 	for equipment in equipment_registry:
-		if is_instance_valid(equipment) and not equipment.is_queued_for_deletion() and is_ancestor_of(equipment):
+		if is_instance_valid(equipment) and not equipment.is_queued_for_deletion() and is_ancestor_of(equipment) and equipment.is_fixed and not equipment.presentation_only:
 			result.append(equipment)
+	return result
+
+func get_structures() -> Array[Node]:
+	var result: Array[Node] = []
+	for child in get_children():
+		if child is RVStructurePanel and not child.is_queued_for_deletion(): result.append(child)
 	return result
 
 func _ready() -> void:
@@ -145,12 +154,18 @@ func _ready() -> void:
 		add_collision_exception_with(body)
 		body.add_collision_exception_with(self)
 	base_mass = mass
+	# The deck used to be included in the chassis mass/moment. Transfer its share
+	# to the damageable floor without changing the intact vehicle's load or COM.
+	var floor_panel := get_node_or_null("Floor") as RVStructurePanel
+	if floor_panel:
+		base_mass -= floor_panel.mass
+		center_of_mass_offset = (center_of_mass_offset * mass - floor_panel.position * floor_panel.mass) / base_mass
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
 	add_to_group(Groups.RV)
 	add_to_group(Groups.CHASSIS)
 	add_to_group(Groups.MONSTER_DAMAGEABLE)
-	for child in find_children("*", "Equipment", true, false):
+	for child in find_children("*", "Item", true, false):
 		register_equipment(child)
 	current_fuel = clampf(current_fuel, 0.0, max_fuel)
 	current_power = clampf(current_power, 0.0, max_power)
@@ -222,6 +237,7 @@ func exchange_engine(player: Node3D) -> String:
 	if not EngineState.valid(state, false): return "請先選取大型引擎道具"
 	if active.get("scene_path", "") != "res://props/engine_" + state.model + ".tscn" or not active.get("is_large", false): return "引擎道具資料不符"
 	var incoming := EngineState.new(state)
+	incoming.item_data = ItemState.slot_data(active.state)
 	var old := get_engine()
 	if old:
 		player.inventory.items[player.inventory.active_slot] = old.item()
@@ -251,6 +267,8 @@ func drive_blocked() -> bool:
 	return rear_ramp != null and rear_ramp.blocks_driving()
 
 func save_block_reason() -> String:
+	var structures := get_node_or_null("StructureSlots")
+	if structures and structures.is_building(): return "車體施工中，暫時無法保存"
 	if not engine_bay.get_node("Hatch").stable(): return "維修蓋尚未開妥／關妥，暫時無法保存"
 	if rear_ramp and not rear_ramp.stable(): return "坡板尚在移動或受阻，暫時無法保存"
 	return ""
@@ -304,6 +322,10 @@ func store_player_item(player: Node3D, index: int) -> bool:
 		return false
 	var item: Dictionary = player.inventory.items[index]
 	if item.get("state", {}).has("materials"): return false
+	if index == player.inventory.active_slot and player.has_method("_sync_held_item_state"):
+		player._sync_held_item_state()
+		item = player.inventory.items[index]
+	if not VehicleSnapshot.valid_item(item): return false
 	if index <= player.inventory.active_slot:
 		player._set_flashlight_off_at(player.inventory.active_slot)
 	if item.get("scene_path", "") == "res://props/flashlight.tscn":
@@ -318,6 +340,7 @@ func store_player_item(player: Node3D, index: int) -> bool:
 func take_stored_item(player: Node3D, index: int) -> bool:
 	if index < 0 or index >= stored_items.size(): return false
 	var item: Dictionary = stored_items[index]
+	if not VehicleSnapshot.valid_item(item): return false
 	if not player.can_use_hands(2 if item.is_large else 1): return false
 	if not player.add_item(item.name, item.is_large, item.scene_path, item.state): return false
 	stored_items.remove_at(index)
@@ -436,7 +459,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var collider: Node = contact.collider
 		if collider is Monster: continue
 		if contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape): continue
-		if is_ancestor_of(collider) or (collider is Equipment and collider.get_connected_rv() == self): continue
+		if is_ancestor_of(collider) or (collider is Item and collider.get_connected_rv() == self): continue
 		var normal: Vector3 = contact.normal.normalized()
 		var closing: float = -contact.incoming.dot(normal)
 		var ground := normal.y > 0.5
@@ -544,10 +567,12 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	if not active.get("state", {}).has("battery"):
 		return false
 	var next := BatteryState.new(active.state.battery)
+	next.condition = clampf(float(active.state.get("condition", next.condition)), 0.0, 100.0)
+	next.scene_path = active.scene_path
+	next.item_data = ItemState.slot_data(active.state)
 	var old := socket.installed_battery
 	if old:
-		player.inventory.items[player.inventory.active_slot] = {"name": ItemNames.BATTERY, "is_large": false,
-			"scene_path": "res://props/battery.tscn", "state": {"id": old.id, "battery": old.snapshot()}}
+		player.inventory.items[player.inventory.active_slot] = old.item()
 	else:
 		player.inventory.consume_active()
 	socket.installed_battery = next
@@ -562,7 +587,7 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	if socket == null or socket.get_connected_rv() != self or not socket.can_operate() or linear_velocity.length() > 0.5 or socket.installed_battery == null:
 		return false
 	var old := socket.installed_battery
-	if not player.add_item(ItemNames.BATTERY, false, "res://props/battery.tscn", {"id": old.id, "battery": old.snapshot()}):
+	if not player.add_item(ItemNames.BATTERY, false, old.scene_path, old.item_state()):
 		return false
 	socket.installed_battery = null
 	feedback("complete", socket.position)
@@ -632,6 +657,7 @@ func install_wheel() -> bool:
 		if installed_wheels[i] == null:
 			wheel_health[i] = 100.0
 			wheel_ids[i] = InstanceIds.create()
+			wheel_item_data[i] = {}
 			_create_wheel_at(i)
 			return true
 	return false
@@ -708,6 +734,7 @@ func install_wheel_from_player(player: Node3D, slot: int = -1) -> bool:
 	var state: Dictionary = player.inventory.active_item().get("state", {})
 	wheel_health[slot] = clampf(float(state.get("condition", 100.0)), 0.0, 100.0)
 	wheel_ids[slot] = state.get("id", InstanceIds.create())
+	wheel_item_data[slot] = ItemState.slot_data(state)
 	_create_wheel_at(slot)
 	_update_wheel_condition(slot)
 	player.consume_active_item()
@@ -720,8 +747,10 @@ func remove_wheel_to_world(slot: int) -> bool:
 	var container := WorldEntities.get_container(self)
 	if scene == null or container == null:
 		return false
-	var prop := scene.instantiate() as Prop
-	prop.restore_item_state({"id": wheel_ids[slot], "condition": wheel_health[slot]})
+	var prop := scene.instantiate() as Item
+	var state := wheel_item_data[slot].duplicate(true)
+	state.merge({"id": wheel_ids[slot], "condition": wheel_health[slot]}, true)
+	prop.restore_item_state(state)
 	var outward: Vector3 = global_basis.x * signf(WHEEL_SLOTS[slot].position.x)
 	var output: Vector3 = to_global(WHEEL_SLOTS[slot].position) + outward * 1.1 + Vector3.UP
 	container.add_child(prop)
@@ -764,6 +793,10 @@ func update_load() -> void:
 		if not device.is_being_placed and not device.is_destroyed:
 			total += device.mass
 			weighted += _installed_position(device) * device.mass
+	for part in get_structures():
+		if not part.is_destroyed:
+			total += part.mass
+			weighted += _installed_position(part) * part.mass
 	if not is_equal_approx(mass, total): mass = total
 	var next_center := weighted / total
 	if not center_of_mass.is_equal_approx(next_center): center_of_mass = next_center

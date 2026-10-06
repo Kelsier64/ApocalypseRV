@@ -371,18 +371,18 @@ mesh = SubResource("b22m")
 material_override = ExtResource("olive")
 
 [node name="north" type="Marker3D" parent="DoorSockets"]
+script = ExtResource("socket")
 position = Vector3(0.000000, 0.000000, -6.000000)
 rotation = Vector3(0, 0, 0)
-script = ExtResource("socket")
 socket_id = &"north"
 interface_type = &"bunker_240"
 opening = Vector2(2.4, 2.8)
 frame_nodes = Array[NodePath]([NodePath("../../Visuals/Jamb6"), NodePath("../../Visuals/Jamb7"), NodePath("../../Visuals/Header8")])
 
 [node name="south" type="Marker3D" parent="DoorSockets"]
+script = ExtResource("socket")
 position = Vector3(0.000000, 0.000000, 6.000000)
 rotation = Vector3(0, 3.141592653589793, 0)
-script = ExtResource("socket")
 socket_id = &"south"
 interface_type = &"bunker_240"
 opening = Vector2(2.4, 2.8)

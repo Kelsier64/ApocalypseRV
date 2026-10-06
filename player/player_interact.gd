@@ -80,7 +80,7 @@ func _physics_process(delta: float) -> void:
 	feedback_time = maxf(0.0, feedback_time - delta)
 	if feedback_time == 0.0: feedback_label.text = ""
 	prompt_label.text = get_prompt(obj)
-	repair.step(player, obj, repair_pressed and not _repair_release_required, delta)
+	repair.step(player, null if obj is RVStructurePanel else obj, repair_pressed and not _repair_release_required, delta)
 	repair_label.text = repair.message
 	var edges := _input_edges.duplicate()
 	_input_edges.clear()
@@ -121,7 +121,9 @@ func cancel_input_gestures() -> void:
 func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) -> void:
 	if is_instance_valid(obj) and not _can_interact(obj): obj = null
 	if obj != _e_target: _e_target = null
-	if obj != _f_target: _f_target = null
+	if is_instance_valid(_f_target) and obj != _f_target:
+		_f_target = null
+		_f_done = true
 	if e_pressed and not _e_was_pressed:
 		_e_target = obj
 		_e_time = 0.0
@@ -133,7 +135,9 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 		_e_time += delta
 		if _e_time >= 1.0:
 			_e_done = true
-			if _wheel_install(_e_target):
+			if _held_delivery(_e_target):
+				_invoke(_e_target, "accept_held_item")
+			elif _wheel_install(_e_target):
 				var installed: bool = _e_target.install_wheel_from_player(player)
 				show_feedback("輪胎已安裝" if installed else "無法安裝：請熄火停穩，並確認有空輪槽")
 			else:
@@ -146,18 +150,22 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 		_e_target = null
 		_e_time = 0.0
 	if f_pressed and not _f_was_pressed and not e_pressed:
-		_f_target = obj if obj is Equipment and player.can_use_hands(2) else null
+		_f_target = obj if obj is Item and obj.is_fixed else null
 		_f_time = 0.0
 		_f_done = false
-	if e_pressed: _f_target = null
-	if f_pressed and is_instance_valid(_f_target) and not _f_done:
+	if e_pressed:
+		_f_target = null
+		_f_done = true
+	if f_pressed and not _f_done:
 		_f_time += delta
-		if _f_time >= 2.0:
+		if _f_time >= 2.0 and is_instance_valid(_f_target):
 			_f_done = true
-			_f_target.start_placement(player)
-		else:
-			prompt_label.text += "\n長按 F 搬移：%d%%" % mini(100, int(_f_time * 50.0))
+			show_feedback(_f_target.pickup(player))
+		elif is_instance_valid(_f_target):
+			prompt_label.text += "\n長按 F 拆下拾取：%d%%" % mini(100, int(_f_time * 50.0))
 	if not f_pressed:
+		if _f_was_pressed and not _f_done and _f_time < 2.0 and not player.inventory.active_item().is_empty():
+			player.enter_equipment_placement()
 		_f_target = null
 		_f_time = 0.0
 	_e_was_pressed = e_pressed
@@ -167,11 +175,19 @@ func _wheel_install(obj: Node) -> bool:
 	return obj.has_method("install_wheel") and player.get_active_item_name() == ItemNames.WHEEL
 
 func _uses_hold(obj: Node) -> bool:
-	return obj.has_method("interact_hold") or _wheel_install(obj)
+	if obj is Item and not obj.is_fixed: return false
+	return obj.has_method("interact_hold") or _wheel_install(obj) or _held_delivery(obj)
+
+func _held_delivery(obj: Node) -> bool:
+	return obj.has_method("accept_held_item") and obj is Item and obj.is_fixed and player.inventory.is_holding_large_item()
 
 func _invoke(obj: Node, method: String) -> void:
-	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not obj.has_method(method): return
+	if not is_instance_valid(obj) or obj.is_queued_for_deletion(): return
 	if not _can_interact(obj): return
+	if obj is Item and not obj.is_fixed:
+		show_feedback(obj.pickup(player))
+		return
+	if not obj.has_method(method): return
 	var result: Variant = obj.call(method, player)
 	if result is String and not result.is_empty(): show_feedback(result)
 
@@ -180,14 +196,17 @@ func show_feedback(message: String) -> void:
 	feedback_time = 3.0
 
 func get_prompt(obj: Node) -> String:
-	if not is_instance_valid(obj): return ""
+	var held_hint := "F 放置手持物品｜G 丟棄" if not player.inventory.active_item().is_empty() else ""
+	if not is_instance_valid(obj): return held_hint
 	if not _can_interact(obj):
-		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂"
+		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂，並先放下大型物品"
 		return "缺少可用手臂，無法使用或拾取"
 	var text := ""
-	if obj.has_method("get_interaction_prompt"):
+	if obj is Item and not obj.is_fixed:
+		text = obj.item_name + "\nE 拾取"
+	elif obj.has_method("get_interaction_prompt"):
 		text = obj.get_interaction_prompt(player)
-	elif obj is Equipment:
+	elif obj is Item:
 		text = obj.equipment_name
 		if obj.has_method("interact_hold"): text += "\n長按 E 1 秒使用"
 		elif obj.has_method("interact"): text += "\nE 使用"
@@ -197,18 +216,23 @@ func get_prompt(obj: Node) -> String:
 	elif obj.has_method("interact"):
 		text = "E 使用"
 	if _wheel_install(obj): text += "\n長按 E 1 秒安裝手持輪胎"
-	if obj is Equipment:
-		text += "\n長按 F 2 秒搬移" if player.can_use_hands(2) else "\n搬移需要兩隻手臂"
-	if obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
+	if _held_delivery(obj): text += "\n長按 E 1 秒投入手持大型物品"
+	if obj is Item and obj.is_fixed:
+		text += "\n長按 F 2 秒拆下拾取" if player.can_use_hands(2 if obj.is_large else 1) else "\n缺少搬運所需手臂"
+	if not obj is RVStructurePanel and obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
 		text += "\n長按 H 維修：2 秒／2 Metal Parts（需熄火停穩）"
+	if not held_hint.is_empty(): text += "\n" + held_hint
 	return text
 
 func _can_interact(obj: Node) -> bool:
 	# Existing inventory may still be stored with no arms; withdrawal is
 	# gated separately by add_prop_item / the RV storage transaction.
+	if obj is Item and not obj.is_fixed: return player.can_use_hands(2 if obj.is_large else 1)
 	if obj.get_script() == preload("res://equipment/item_box.gd"): return true
 	if obj.get_script() == preload("res://equipment/driver_seat.gd"): return player.can_drive()
-	return player.can_use_hands(2 if obj is Prop and obj.is_large else 1)
+	# A fixed control needs one hand; lifting its large body still preflights
+	# both hands in Item.pickup, independently of whether E can use it.
+	return player.can_use_hands()
 
 func cancel_body_operations() -> void:
 	if not player.can_use_hands(): repair.cancel()
@@ -219,7 +243,8 @@ func cancel_body_operations() -> void:
 		_e_target = null
 		_e_time = 0.0
 		_e_done = true
-	if not player.can_use_hands(2):
+	var needed_hands := 2 if (is_instance_valid(_f_target) and _f_target is Item and _f_target.is_large) or player.inventory.active_item().get("is_large", false) else 1
+	if not player.can_use_hands(needed_hands):
 		_f_target = null
 		_f_time = 0.0
 		_f_done = true

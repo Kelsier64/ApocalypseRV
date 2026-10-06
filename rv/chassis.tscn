@@ -22,6 +22,8 @@
 
 [ext_resource type="Script" path="res://rv/vehicle_lights.gd" id="lights"]
 
+[ext_resource type="PackedScene" path="res://equipment/rv_floor.tscn" id="structure_floor"]
+
 [sub_resource type="BoxMesh" id="r1"]
 size = Vector3(4, 0.2, 12)
 
@@ -296,14 +298,9 @@ size = Vector3(1.5, 0.12, 0.2)
 script = ExtResource("script")
 mass = 3000.0
 
-[node name="Deck" type="MeshInstance3D" parent="."]
+[node name="Floor" parent="." instance=ExtResource("structure_floor")]
 position = Vector3(0, 0.4, 0)
-mesh = SubResource("r1")
-material_override = ExtResource("dark")
-
-[node name="DeckCollision" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.4, 0)
-shape = SubResource("r2")
+mount_slot = "floor"
 
 [node name="LeftFrame" type="MeshInstance3D" parent="."]
 position = Vector3(-1.35, -0.06, 0)

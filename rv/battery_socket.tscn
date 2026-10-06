@@ -21,9 +21,9 @@ material = SubResource("rail_mat")
 size = Vector3(0.2, 0.32, 0.62)
 material = SubResource("cell_mat")
 [node name="BatterySocket" type="RigidBody3D"]
+script = ExtResource("1")
 collision_layer = 2
 collision_mask = 0
-script = ExtResource("1")
 definition = ExtResource("def")
 equipment_name = "電池插槽"
 mass = 10.0

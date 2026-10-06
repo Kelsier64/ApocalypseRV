@@ -14,7 +14,7 @@ func check(ok: bool, note: String) -> void:
 func actor_ids(container: Node) -> Array[String]:
 	var ids: Array[String] = []
 	for actor in container.get_children():
-		if actor is Prop or actor is Equipment: ids.append(actor.persistent_id)
+		if actor is Item: ids.append(actor.persistent_id)
 	ids.sort()
 	return ids
 
@@ -84,11 +84,20 @@ func run() -> void:
 		WalkInSites.activate(owner, site, chunk)
 		var container := WorldEntities.get_container(owner)
 		check(container.get_child_count() == 15, "First visit has three devices and twelve props")
-		check(container.get_children().filter(func(actor): return actor is Equipment).size() == 3, "Three movable ground devices")
+		check(container.get_children().filter(func(actor): return actor is Item).size() == 15, "All starter devices and loot share the Item lifecycle")
+		var device_scenes: Array[String] = ["res://equipment/generator.tscn", "res://equipment/crafting_station.tscn", "res://equipment/scrapper.tscn"]
+		var found_devices: Array[String] = []
+		for actor in container.get_children():
+			if actor is Item and actor.scene_file_path in device_scenes:
+				found_devices.append(actor.scene_file_path)
+				check(not actor.is_fixed and actor.is_large and actor.get_connected_rv() == null, "Starter device remains movable large ground cargo: " + actor.scene_file_path)
+		found_devices.sort()
+		device_scenes.sort()
+		check(found_devices == device_scenes, "Three movable ground devices, exactly one of each service type")
 		var picked_id := ""
 		for actor in container.get_children():
 			check(site.bounds.has_point(actor.global_position), "Starter marker within managed bounds")
-			if actor is Prop and actor.scene_file_path == "res://props/flashlight.tscn":
+			if actor is Item and actor.scene_file_path == "res://props/flashlight.tscn":
 				picked_id = actor.persistent_id
 				actor.free()
 		WalkInSites.activate(owner, site, chunk)

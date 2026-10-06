@@ -33,7 +33,9 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	if generator.outdoor_sites.has(site.id):
 		var saved: Dictionary = generator.outdoor_sites[site.id]
 		if saved.loaded: return
-		for actor in saved.actors: WorldActorSnapshot.restore(actor, container)
+		var restored: Array = []
+		for actor in saved.actors: restored.append(WorldActorSnapshot.restore(actor, container))
+		WorldActorSnapshot.restore_supports(saved.actors, restored, WorldActorSnapshot.domain(generator))
 		saved.actors = []
 		saved.loaded = true
 		return
@@ -50,7 +52,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		if not point is PoiLootPoint: continue
 		var scene: PackedScene = point.roll_scene(rng)
 		if scene == null: continue
-		var item: Prop = scene.instantiate()
+		var item: Item = scene.instantiate()
 		container.add_child(item)
 		item.global_transform = point.global_transform
 	if definition.enemy_count_range.y > 0:
@@ -88,7 +90,7 @@ static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
 		var actor: Node3D = load(scenes[path]).instantiate()
 		container.add_child(actor)
 		actor.global_transform = point.global_transform
-		if actor is Equipment:
+		if actor is Item:
 			actor.freeze = true
 			actor.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 
@@ -100,12 +102,16 @@ static func deactivate(generator: Node, site: Dictionary) -> void:
 	# Spatial ownership includes items brought here and dropped by the player.
 	# Mounted equipment/vehicle cargo remain owned by their vehicle.
 	var container := WorldEntities.get_container(generator)
+	var retiring: Array[Node] = []
 	for actor in container.get_children() + generator.get_parent().get_children():
 		if not actor is Node3D or not site.bounds.has_point(actor.global_position): continue
 		var snapshot := WorldActorSnapshot.capture(actor)
 		if snapshot.is_empty(): continue
 		saved.actors.append(snapshot)
-		actor.free()
+		retiring.append(actor)
+	for actor in retiring:
+		if actor is Item: actor.begin_world_transfer()
+	for actor in retiring: actor.free()
 	saved.loaded = false
 
 static func validation_error(data: Dictionary) -> String:
@@ -130,4 +136,6 @@ static func validation_error(data: Dictionary) -> String:
 		for actor in entry.actors:
 			var error := WorldActorSnapshot.validation_error(actor, "outdoor_sites.actor")
 			if not error.is_empty(): return error
+		var graph_error := WorldActorSnapshot.graph_error(entry.actors)
+		if not graph_error.is_empty(): return "outdoor_sites." + graph_error
 	return ""

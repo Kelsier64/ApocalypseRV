@@ -35,7 +35,7 @@ func settle() -> void:
 func props_at_site() -> Array[Node]:
 	var result: Array[Node] = []
 	for actor in WorldEntities.get_container(world).get_children():
-		if actor is Prop and site.bounds.has_point(actor.global_position) and not actor.is_queued_for_deletion(): result.append(actor)
+		if actor is Item and site.bounds.has_point(actor.global_position) and not actor.is_queued_for_deletion(): result.append(actor)
 	return result
 
 func walk(player: CharacterBody3D, local: Vector3) -> void:
@@ -123,7 +123,7 @@ func _run() -> void:
 	await walk(player, Vector3(0,0,17))
 	expect(rv.store_player_item(player, player.inventory.items.size() - 1), "Station fuel carried back into RV storage")
 	# A loose item brought from elsewhere must be owned by the dormant site too.
-	var brought: Prop = world.get_node("Scrap")
+	var brought: Item = world.get_node("Scrap")
 	brought.global_position = site.building * Vector3(2, 0.4, -8)
 	brought.linear_velocity = Vector3.ZERO
 	brought.freeze = true

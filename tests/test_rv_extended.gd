@@ -21,14 +21,14 @@ func _run() -> void:
 	check_simplified_load(rv, player)
 	check(not rv.add_item(ItemNames.METAL_PARTS, -1) and not rv.deduct_materials({ItemNames.METAL_PARTS: -2}), "Negative material transactions rejected")
 	rv.add_item(ItemNames.METAL_PARTS, 10)
-	var rack: Equipment = rv.get_node("ItemBox")
+	var rack: Item = rv.get_node("ItemBox")
 	rack.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(12, 1, 2)), world)
 	rv.update_storage_capacity()
 	check(rv.storage.capacity == 300 and rv.get_item_count(ItemNames.METAL_PARTS) == 10, "Removing item box preserves chassis material capacity")
 	check(rv.add_item(ItemNames.METAL_PARTS, 1), "Material deposits do not require a box")
 	rv.deduct_materials({ItemNames.METAL_PARTS: 1})
 	rack.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(-0.9, 0.8, 4.5)), rv)
-	var tank: Equipment = rv.get_node("FuelPort")
+	var tank: Item = rv.get_node("FuelPort")
 	rv.current_fuel = 31.0
 	tank.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(12, 1, 4)), world)
 	check(rv.current_fuel == 31.0 and rv.set_engine_running(true), "Detached fuel port leaves fuel and engine available")
@@ -51,9 +51,9 @@ func _run() -> void:
 	rv.energy.battery = BatteryState.new()
 	rv.energy.battery.charge = 12.0
 	check(rv.remove_wheel_to_world(0), "Targeted wheel removal")
-	var found: Prop
+	var found: Item
 	for item in WorldEntities.get_container(world).get_children():
-		if item is Prop and item.item_name == ItemNames.WHEEL: found = item
+		if item is Item and item.item_name == ItemNames.WHEEL: found = item
 	found.condition = 27.0
 	player.add_prop_item(found, found.scene_file_path)
 	found.queue_free()
@@ -65,9 +65,9 @@ func _run() -> void:
 	check(is_equal_approx(mass_before - rv.mass, tank.mass), "Detached module removes exactly its installed weight")
 	tank.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0.9, 0.8, 4.5)), rv)
 	var snapshot := VehicleSnapshot.capture(rv)
-	snapshot.equipment[0].support = snapshot.equipment[0].id
+	snapshot.mounted_items[0].support = {"kind": "item", "id": snapshot.mounted_items[0].state.id}
 	check(not VehicleSnapshot.validate(snapshot), "Cyclic supports rejected before restore")
-	var gen: Equipment = load("res://equipment/generator.tscn").instantiate()
+	var gen: Item = load("res://equipment/generator.tscn").instantiate()
 	rv.add_child(gen)
 	gen.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 0.8, 0)), rv)
 	rv.current_power = 0.0
@@ -134,11 +134,11 @@ func check_simplified_load(rv: Chassis, player: Node3D) -> void:
 	check(rv.exchange_engine(player).contains("已裝入"), "Engine reinstalls from inventory")
 	check(is_equal_approx(rv.mass, initial_mass) and rv.center_of_mass.is_equal_approx(initial_center), "Reinstalling engine restores weight and center of mass")
 	rv.engine_bay.get_node("Hatch").set_open(false)
-	# Existing v3 saves retain positive battery weight as item physics data.
+	# Current saves retain positive battery weight as item physics data.
 	var saved := VehicleSnapshot.capture(rv)
-	for entry in saved.equipment:
-		if entry.service.has("battery") and not entry.service.battery.is_empty():
-			entry.service.battery.weight = 200.0
+	for entry in saved.mounted_items:
+		if entry.state.service.has("battery") and not entry.state.service.battery.is_empty():
+			entry.state.service.battery.weight = 200.0
 	check(VehicleSnapshot.apply(rv, saved), "Existing save with battery weight still loads")
 	check(is_equal_approx(rv.mass, initial_mass) and rv.center_of_mass.is_equal_approx(initial_center), "Restored battery weight does not re-enter vehicle load")
 	check(rv.energy.battery.id == original_battery.id and rv.max_power == original_battery.capacity and rv.current_power == original_battery.charge, "Restore preserves battery identity and energy")

@@ -18,7 +18,7 @@ func run() -> void:
 	current_scene = stage
 	await step(12)
 	var rv: Chassis = stage.rv
-	var recycler: Equipment = rv.get_node("Scrapper")
+	var recycler: Item = rv.get_node("Scrapper")
 	var parked_position := rv.global_position
 	var before: int = rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
 	var corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()

@@ -138,7 +138,7 @@ func _run() -> void:
 	check(cache.searched and cache.remaining.size() == 1, "Production held E searches exactly one item")
 	check(player.inventory.items.any(func(item): return item.state.get("id", "") == cache_item), "Search places stable supply in player inventory")
 	player.position = Vector3(0, 0.05, 2.5)
-	var loot: Prop = preload("res://props/scrap.tscn").instantiate()
+	var loot: Item = preload("res://props/scrap.tscn").instantiate()
 	inside.entities.add_child(loot)
 	loot.position = player.position + Vector3(1,0.5,0)
 	loot.scrap_yields = {"Metal Parts": Vector2(7, 7)}
@@ -148,7 +148,7 @@ func _run() -> void:
 	player._set_active_slot(player.inventory.items.size() - 1)
 	player.drop_item()
 	await frames(2)
-	var dropped := inside.entities.get_child(-1) as Prop
+	var dropped := inside.entities.get_child(-1) as Item
 	check(dropped.scrap_yields == {"Metal Parts": Vector2(7, 7)}, "Dropped loot preserves rolled yield")
 	var expected := inside.snapshot()
 	var id := manager.active_id
@@ -169,7 +169,7 @@ func _run() -> void:
 	check(manager.interior.caches[0].remaining.size() == 1 and manager.interior.caches[0].searched, "Searched container never refills on reentry")
 	var restored_custom := false
 	for actor in manager.interior.entities.get_children():
-		if actor is Prop and actor.scrap_yields == {"Metal Parts": Vector2(7, 7)}:
+		if actor is Item and actor.scrap_yields == {"Metal Parts": Vector2(7, 7)}:
 			restored_custom = true
 	check(restored_custom, "Reentry retains per-instance loot data")
 	# Every link must be traversable in the baked geometry, including mixed sizes.
@@ -198,10 +198,9 @@ func _run() -> void:
 		file.store_var(disk)
 		file.close()
 		var bytes := FileAccess.get_file_as_bytes(disk_path)
-		var migrated: Dictionary = checkpoint.read_checkpoint(disk_path)
-		check(not migrated.is_empty() and not migrated.poi.has("old_v1") and not migrated.poi.has("old_v2"), "Disk load discards both known pre-bunker formats")
-		check(not migrated.is_empty() and migrated.player == disk.player and migrated.vehicles == disk.vehicles and migrated.actors == disk.actors and migrated.poi[id] == disk.poi[id], "Migration preserves player, RV, outdoors and current bunker exactly")
-		check(FileAccess.get_file_as_bytes(disk_path) == bytes, "Reading migration never overwrites source file")
+		var rejected: Dictionary = checkpoint.read_checkpoint(disk_path)
+		check(rejected.is_empty() and checkpoint.last_error.code == "data", "V4 rejects incompatible pre-bunker records without migration")
+		check(FileAccess.get_file_as_bytes(disk_path) == bytes, "Rejected POI checkpoint remains unchanged on disk")
 	# SceneTree shutdown retires the world without resuming pending terrain
 	# publication coroutines against manually freed chunk instances.
 	if failures.is_empty():

@@ -186,7 +186,7 @@ func observe_crowns(debris: Node, rv: Chassis, forward: Vector3, samples: Dictio
 		if state == null: continue
 		for contact in range(state.get_contact_count()):
 			var collider := state.get_contact_collider_object(contact)
-			if collider != rv and not (collider is Equipment and collider.get_connected_rv() == rv): continue
+			if collider != rv and not ((collider is Item or collider is RVStructurePanel) and collider.get_connected_rv() == rv): continue
 			if not sample.contacted:
 				sample.contacted = true
 				sample.first_position = crown.global_position
