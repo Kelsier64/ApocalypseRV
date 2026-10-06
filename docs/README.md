@@ -58,7 +58,7 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 - [隨機地堡製作與保存契約](guides/bunker-interior.md) — 16 模組、自由尺寸擴充、接口與 manifest 保存。
 
-- [Blender 角色與怪物製作規格](guides/character-modeling.md) — 美術方向、尺寸、低模預算、骨架、動畫與 GLB 交付；含玩家全身分件、布娃娃及肢解製作需求，與現有試接限制分開標示。
+- [可動 3D 角色製作與接入規格](guides/character-modeling.md) — 現行共通契約、玩家／Raker 個別尺寸、骨架、動畫、匯入與布娃娃配置，以及玩家五切口接口；舊 Zombie、面數預算與擴充提案另存 [v2 歷史快照](archive/modeling-2026-10-05/character-modeling-v2.md)。
 
 - [POI 共用製作與接入規範](guides/poi-authoring.md) — 類型、Resource、場景層級、素材替換及生成／保存責任。
 
