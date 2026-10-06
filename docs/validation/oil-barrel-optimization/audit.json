@@ -1,0 +1,107 @@
+{
+  "original": {
+    "path": "art_source/retired_props/2026-09-29/oil_barrel.glb",
+    "sha256": "58326447acdfb7d8ba9fc90c8efc345fd9b8e365d93393f287aba8b192646694",
+    "bytes": 16769764,
+    "scenes": 1,
+    "nodes": 2,
+    "meshes": 1,
+    "materials": 1,
+    "vertices": 324320,
+    "unique_positions": 249597,
+    "triangles": 499846,
+    "bounds_min": [
+      -0.3421424627304077,
+      -0.502027153968811,
+      -0.34244823455810547
+    ],
+    "bounds_max": [
+      0.3419504761695862,
+      0.5020655393600464,
+      0.34202176332473755
+    ],
+    "dimensions": [
+      0.6840929388999939,
+      1.0040926933288574,
+      0.684469997882843
+    ],
+    "max_horizontal_radius": 0.3429923355579376,
+    "geometric_boundary_edges": 16,
+    "geometric_nonmanifold_edges": 381,
+    "degenerate_triangles": 1,
+    "images": [
+      {
+        "mime_type": "image/webp",
+        "size": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "mime_type": "image/webp",
+        "size": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "extensions_required": [
+      "EXT_texture_webp"
+    ]
+  },
+  "optimized": {
+    "path": "assets/models/oil_barrel/oil_barrel.glb",
+    "sha256": "3efba222beaab8d1223d457372a8cf8eb46a40419718443e3a38ff248d6267e5",
+    "bytes": 2948012,
+    "scenes": 1,
+    "nodes": 1,
+    "meshes": 1,
+    "materials": 1,
+    "vertices": 2558,
+    "unique_positions": 1502,
+    "triangles": 3000,
+    "bounds_min": [
+      -0.3295748829841614,
+      -0.5,
+      -0.3294593393802643
+    ],
+    "bounds_max": [
+      0.3286958634853363,
+      0.4999997317790985,
+      0.3292492926120758
+    ],
+    "dimensions": [
+      0.6582707166671753,
+      0.9999997615814209,
+      0.6587086319923401
+    ],
+    "max_horizontal_radius": 0.32958984375,
+    "geometric_boundary_edges": 0,
+    "geometric_nonmanifold_edges": 0,
+    "degenerate_triangles": 0,
+    "images": [
+      {
+        "mime_type": "image/png",
+        "size": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "mime_type": "image/png",
+        "size": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "mime_type": "image/png",
+        "size": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "extensions_required": []
+  }
+}
