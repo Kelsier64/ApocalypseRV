@@ -54,6 +54,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 指南
 
+- [單圖 3D 生成、減面與驗收](guides/image-to-3d-workflow.md) — 工具安裝、參考圖／3D 子代理交接、固定生成、先驗 raw、減面對照及遇錯停止。
+
 - [Raker 資產建置入口](guides/asset-builds.md) — 目前 v021 來源流程與舊腳本移除紀錄。
 
 - [程式與資產目錄指南](guides/codebase.md) — 進入專案、追查場景依賴、維護原始美術與安全清理。

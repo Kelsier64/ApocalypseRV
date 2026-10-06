@@ -1,0 +1,4 @@
+interface:
+  display_name: "單圖 3D 工作流"
+  short_description: "固定单圖生成、後期降面與五視角檢查；保留原風格，第一個問題即停止"
+  default_prompt: "使用 $comfyui-image-to-3d 由參考圖及 3D subagent 依固定流程生成、降面及檢查，遇到問題立即停止並回報。"
