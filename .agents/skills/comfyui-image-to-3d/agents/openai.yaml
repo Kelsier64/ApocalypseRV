@@ -1,4 +1,4 @@
 interface:
-  display_name: "單圖 3D 工作流"
-  short_description: "固定单圖生成、後期降面與五視角檢查；保留原風格，第一個問題即停止"
-  default_prompt: "使用 $comfyui-image-to-3d 由參考圖及 3D subagent 依固定流程生成、降面及檢查，遇到問題立即停止並回報。"
+  display_name: "Image to 3D 直接製作"
+  short_description: "從參考圖直接生成、檢查、修整並接入；由主 agent 按用途彈性處理"
+  default_prompt: "使用 $comfyui-image-to-3d 直接製作需要的 3D 資產，檢查並修整後接入專案，簡短說明結果。"

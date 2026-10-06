@@ -35,7 +35,7 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 ## Subagents
 
 Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks. Choose the subagent's reasoning effort based on the task's difficulty.
-Do scene modeling and general 3D tasks yourself. For the user-authorized image-to-3D pipeline only, delegate sequentially to `image_to_3d_reference` (reference image) then `image_to_3d_model` (generation, decimation, and validation). Process one job at a time; stop on the first problem, preserve evidence, and ask the user before retrying, changing inputs, forcing decimation, or continuing the batch. See [image-to-3D operations guide](docs/guides/image-to-3d-workflow.md).
+Do scene modeling and general 3D tasks yourself. For suitable visual assets, use [comfyui-image-to-3d](.agents/skills/comfyui-image-to-3d/SKILL.md) directly: the main agent chooses reference creation, generation, inspection, edits and integration as the task needs. Modeling requests and specialized subagents are optional when a handoff is useful. Keep the raw model, verify the result in context, and report unresolved problems accurately.
 
 ## Computer Use: Game Testing
 
