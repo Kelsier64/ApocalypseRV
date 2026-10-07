@@ -1,0 +1,8 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+ERROR: Can't create shader cache folder, no shader caching will happen: user://
+   at: RasterizerGLES3 (drivers/gles3/rasterizer_gles3.cpp:345)
+OpenGL API 3.3.0 NVIDIA 610.62 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5070 Ti
+
+ERROR: Failed to read the root certificate store.
+   at: get_system_ca_certificates (platform/windows/os_windows.cpp:2582)
+{"axis_scaling":false,"display_aabb_size":[0.403472721576691,0.583014965057373,1.00900328159332],"godot_version":"4.7.2-stable (official)","input":"C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_diesel_generator/run_01/raw.glb","mesh_instances":1,"sha256":"34a0f1f5cfa865acfa07970ceda8199ff77e2264662350cb108fd04887007b8c","shared_baseline_camera":true,"triangles":49923,"vertices":41803}

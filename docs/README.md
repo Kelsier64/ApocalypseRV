@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。
+
 油桶模型：[原 GLB 減面與貼圖烘焙試作](validation/2026-10-06-oil-barrel-optimization.md)，含 3,000 三角形候選、Godot 匯入與渲染比較；正式道具仍維持灰盒。
 
 統一物品：[Item、固定放置與支撐掉落](validation/2026-10-06-unified-items.md)，含大型設備背包、服務停機、怪物免疫、v5 保存與本輪自動／實機驗收。
@@ -54,7 +56,7 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 指南
 
-- [單圖 3D 生成、減面與驗收](guides/image-to-3d-workflow.md) — 工具安裝、參考圖／3D 子代理交接、固定生成、先驗 raw、減面對照及遇錯停止。
+- [單圖 3D 生成、減面與驗收](guides/image-to-3d-workflow.md) — 工具、主 agent 直接生成／修整、raw 檢查、可選減面與場景接入。
 
 - [Raker 資產建置入口](guides/asset-builds.md) — 目前 v021 來源流程與舊腳本移除紀錄。
 

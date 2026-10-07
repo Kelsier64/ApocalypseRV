@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_diesel_generator/review_reduced_final",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/assets/models/bunker_diesel_generator/bunker_diesel_generator.glb",
+      "sha256": "d56287c965afa510a022fcbc5041bb0d079cbca7d4b6dfa6b5abe7b897ea799d"
+    }
+  ]
+}

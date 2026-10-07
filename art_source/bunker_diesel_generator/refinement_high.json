@@ -1,0 +1,37 @@
+{
+  "source_sha256": "34a0f1f5cfa865acfa07970ceda8199ff77e2264662350cb108fd04887007b8c",
+  "source": "run_01/raw.glb",
+  "final_sha256": "2466a3e847a9429229ff63c0970bf01d410afe0e74d94fcb7abebaa56912c91d",
+  "rotation_y_degrees": -90,
+  "source_rotated_size": [
+    1.0090032815933228,
+    0.5830149948596954,
+    0.4034727215766907
+  ],
+  "fit_scale_xyz": [
+    3.171446573441131,
+    2.915876975701304,
+    2.974178763091195
+  ],
+  "target_size_m": [
+    3.2,
+    1.7,
+    1.2
+  ],
+  "origin": "bottom center",
+  "crankshaft": "+/-X",
+  "service_face": "+Z",
+  "texture_sha256": {
+    "basecolor": "8604dcb967922c2af76a1d5f0807aaee77a0be0b28b65da93ea2c8395905aeae",
+    "orm": "2935484cb7db691d466d7322f45db0bbcefdca6968e60aa09c8d2f5701307719",
+    "normal": "067d29966006489955d8e128347ff420735174f6f4e6612efdc21cbc50c0473e"
+  },
+  "geometry_edits": "rotation, per-axis scale and translation baked; inverse-transpose normals; orthogonalized tangents",
+  "topology_changed_in_this_fit": false,
+  "textures_changed": false,
+  "raw_to_delivery_topology_changed": false,
+  "limitations": [
+    "Generated belt-cage perforations are mostly texture relief, not open mesh holes.",
+    "Generated underside/back detail is approximate; no mechanical animation or precision interface."
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "commit": "a21cbac23010e078eccd74e3aff754cdd2f1b015",
+  "source_path": "world/poi_kit/furniture/bunker/diesel_generator_graybox.tscn",
+  "sha256": "726fc3d6a544cc44ae09e4ef1ea7a348b62a3d6af3af2dfb6013a0b1a46eca73",
+  "purpose": "Original wrapper before this visual replacement; stable baseline for later delivery audits."
+}

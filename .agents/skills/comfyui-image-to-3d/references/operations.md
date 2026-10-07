@@ -1,6 +1,6 @@
 # 本機操作
 
-專案根目錄執行，Python 需 Pillow。安裝見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。生成、降面與檢查各用新資料夾，保留原檔。
+專案根目錄執行，Python 需 Pillow。PATH 沒有 Python 時可用 Codex `load_workspace_dependencies` 找內建 runtime，改以完整路徑執行；工具說明見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。生成、降面與檢查各用新資料夾，保留原檔。
 
 ## 生成與收檔
 
@@ -49,7 +49,11 @@ python "$skill/scripts/review.py" --source '<generation-folder>/raw.glb' --outpu
 比較時加 `--candidate '<reduced-folder>/raw.glb'`。
 
 - viewer 使用臨時 Godot project，Windows 隱藏啟動，結束後關閉；日誌保存在輸出資料夾。
-- 產生 textured／clay 的 front、side、back、oblique、top 五視角及 review JSON；比較共用 source 的鏡頭、光照與 framing。
+- 產生 textured／受光灰色 clay 的 front、side、back、oblique、top、underside 六視角及 review JSON；比較共用 source 的鏡頭、光照與 framing。
 - 預設來源 up、front 為 +Z，不自動讀 pose。正位明確加 `--pose '<pose.json>'`，只接受右手正交 `rotation_rows` 3×3 旋轉，並保留來源 up 檢查；遊戲朝向／原點另確認。
 - 看完全部圖再填 `review.json` 的 views_inspected、checks、defects、limitations、state；測量附方法、單位與容差，觀察不冒充精度。
 - 技術 PASS 不等於外觀合格。面數／SHA／保全錯誤停止，渲染錯誤標 UNKNOWN；缺件、歪斜、預算未達或必要 UNKNOWN 時修整或回報。
+
+## 離線工具回歸
+
+`python "$skill/scripts/test_client.py" -v` 不連服務、不提交 GPU 工作；檢查忙碌拒收、提交 timeout 不重送、輸入綁定、唯讀重收、錯誤 history、原檔保全與剛體姿態限制。實際生成、渲染與美術驗收另做。
