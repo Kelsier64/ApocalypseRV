@@ -1,5 +1,7 @@
 # 單圖 → 3D → 減面 → 驗收操作指南
 
+目前日常入口是 [精簡 image-to-3D skill](../../.agents/skills/comfyui-image-to-3d/SKILL.md)：主 agent 按需要生成、檢查、修整並直接接入。以下保留完整工具操作與原有交接範例，供需要時查閱；子代理、request、固定後期降面和完整驗收包均為可選流程。
+
 ## 1. 安裝與確認工具
 
 需要 [Python 3.11 以上](https://www.python.org/downloads/windows/)及 Pillow、[Node.js 24 LTS](https://nodejs.org/en/download)（Windows x64 安裝程式包含 npm）、固定版本 meshoptimizer，以及 [Godot 4.7.2](https://godotengine.org/download/archive/)。用官方安裝程式裝好後重新開啟 PowerShell；Python 安裝時選擇加入 PATH。已有相容工具就沿用；Codex 可先用 `load_workspace_dependencies` 找內建 Python／Node 執行檔，以完整路徑執行，不必重複安裝。
