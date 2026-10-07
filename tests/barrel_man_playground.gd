@@ -401,7 +401,7 @@ func _process(delta: float) -> void:
 		if not exploded and mode in [2,3,4,5,8] and capture_clock >= .15:
 			capture_clock = 0.0
 			_capture.call_deferred("buffer", true)
-		var blast_offsets := [.1,.35,.8]
+		var blast_offsets := [.05,.15,.35,.65,1.1,2.0,3.4,4.0]
 		if blast_capture_time >= 0.0 and blast_capture_index < blast_offsets.size() and elapsed - blast_capture_time >= blast_offsets[blast_capture_index]:
 			_capture.call_deferred("blast+%03d" % roundi(blast_offsets[blast_capture_index] * 1000))
 			blast_capture_index += 1

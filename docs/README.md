@@ -8,6 +8,8 @@
 
 油桶人引爆更新：[1.5 m 近距離範圍、0.5 秒倒數及接觸立即引爆](validation/2026-10-07-barrel-man-proximity.md)，含倒數保存、F8 重播及本輪測試。
 
+油桶人特效：[火球、翻捲黑煙、塵浪與飛散火星](validation/2026-10-07-barrel-man-vfx.md)，含實機逐格畫面與效果生命週期回歸；保留目前已調整的 3 m／2 秒設定。
+
 油桶模型：[原 GLB 減面與貼圖烘焙試作](validation/2026-10-06-oil-barrel-optimization.md)，含 3,000 三角形版本；[meshoptimizer 直接減面實測](validation/2026-10-07-oil-barrel-meshoptimizer.md) 比較六組設定與 Godot 渲染。正式道具現已接入原 Blender 烘焙版本。
 
 統一物品：[Item、固定放置與支撐掉落](validation/2026-10-06-unified-items.md)，含大型設備背包、服務停機、怪物免疫、v5 保存與本輪自動／實機驗收。

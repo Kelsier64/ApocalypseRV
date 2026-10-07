@@ -73,6 +73,8 @@ RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，�
 
 v8 道路、貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 增加可選 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；已啟動倒數以可選 `proximity_fuse_remaining` 保存，舊記錄缺少此欄時視為未啟動，死亡來源不保存。檢查點維持 v5、地形 v8，v2–v7 戶外生成、舊活怪與已清空區域保持原資料。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
 
+`barrel_explosion_effect.gd` 負責獨立 3.8 秒特效生命週期：短閃光與單盞有陰影點光、翻捲火球、上升黑煙、貼近地面的塵浪、沿速度延伸的火星及桶身碎片。火煙 shader 使用預載的共用噪聲貼圖、深度柔化及每次爆炸獨立的材質時間；音效預先烘焙，避免首次爆炸即時合成。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；塵浪只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物。所有視覺節點不含碰撞或傷害，結束後一起釋放。特效圖像及本輪驗證見 [爆炸特效](docs/validation/2026-10-07-barrel-man-vfx.md)。
+
 行為、爆炸、保存與真 RV 接觸自動檢查及目前尚未完成的模型／畫面驗收見 [油桶人紀錄](docs/validation/2026-10-07-barrel-man.md)。
 
 ### 樹木撞毀

@@ -60,8 +60,9 @@ static func explode(source: Node3D, origin: Vector3, contacted_rv: Node3D = null
 	var container := WorldEntities.get_container(source)
 	if container != null:
 		var effect := preload("res://enemies/barrel_explosion_effect.gd").new()
+		# _ready starts world-space particles and samples the nearby floor.
+		effect.position = container.to_local(origin)
 		container.add_child(effect)
-		effect.global_position = origin
 
 static func falloff(distance: float, full_radius: float, radius: float, amount: float) -> float:
 	if distance >= radius: return 0.0
