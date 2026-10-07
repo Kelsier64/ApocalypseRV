@@ -38,7 +38,7 @@ func shape_for(node: Node3D, size: Vector3, center: Vector3, name := "CollisionS
 	collision.position = center
 	node.add_child(collision)
 
-func fixture() -> Dictionary:
+func fixture(use_default_proximity := false) -> Dictionary:
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -46,6 +46,11 @@ func fixture() -> Dictionary:
 	shape_for(floor_body, Vector3(100, 0.2, 100), Vector3(0, -0.1, 0))
 	world.add_child(floor_body)
 	var barrel := ProbeBarrel.new()
+	# Keep the exact 1.5 m boundary and thirty-tick countdown regression even
+	# when gameplay tuning changes. Fractional settings must remain supported.
+	if not use_default_proximity:
+		barrel.settings.proximity_trigger_radius = 1.5
+		barrel.settings.proximity_fuse_duration = 0.5
 	shape_for(barrel, Vector3.ONE, Vector3.UP * 0.5)
 	world.add_child(barrel)
 	return {"world": world, "barrel": barrel}
@@ -82,6 +87,7 @@ func run() -> void:
 	await proximity_boundary_and_countdown()
 	await proximity_fixed_step_timing()
 	await proximity_automatic_processing()
+	await proximity_default_processing()
 	await proximity_keeps_pursuing()
 	await proximity_contact_short_circuits()
 	await proximity_occlusion_and_immunity()
@@ -184,7 +190,7 @@ func proximity_boundary_and_countdown() -> void:
 	var data := fixture()
 	var barrel: ProbeBarrel = data.barrel
 	barrel.set_physics_process(false)
-	check(is_equal_approx(barrel.settings.proximity_trigger_radius, 1.5) and is_equal_approx(barrel.settings.proximity_fuse_duration, 0.5), "Default proximity radius is 1.5 m with a 0.5 s fuse")
+	check(is_equal_approx(barrel.settings.proximity_trigger_radius, 1.5) and is_equal_approx(barrel.settings.proximity_fuse_duration, 0.5), "Boundary fixture accepts a fractional 1.5 m radius and 0.5 s fuse")
 	# Player's real box extends 0.25 m toward the barrel. Its root stays
 	# outside 1.5 m in both cases so a centre-distance shortcut cannot pass.
 	var player := player_at(data.world, Vector3(1.76, 0, 0))
@@ -229,6 +235,24 @@ func proximity_automatic_processing() -> void:
 	for index in 35: await physics_frame
 	await process_frame
 	check(barrel.explosions == 1 and barrel.position.slide(Vector3.UP).length() < 0.01, "Normal physics processing ticks the fuse to detonation while stationary")
+	await retire(data)
+
+func proximity_default_processing() -> void:
+	var data := fixture(true)
+	var barrel: ProbeBarrel = data.barrel
+	check(is_equal_approx(barrel.settings.proximity_trigger_radius, 3.0) and is_equal_approx(barrel.settings.proximity_fuse_duration, 2.0), "Gameplay defaults retain a 3 m proximity radius and a 2 s fuse")
+	barrel.settings.chase_speed = 0.0
+	barrel.settings.acceleration = 0.0
+	# The real player surface is 2.99 m away, inside the current gameplay
+	# radius but outside the fractional boundary fixture used above.
+	player_at(data.world, Vector3(3.24, 0, 0))
+	for index in 5: await physics_frame
+	check(barrel.proximity_fuse_remaining > 0.0 and not barrel.is_dead, "Normal physics processing arms the current gameplay proximity radius")
+	for index in 35: await physics_frame
+	check(barrel.proximity_fuse_remaining > 0.0 and not barrel.is_dead, "Current gameplay fuse remains alive past the fractional half-second fixture duration")
+	for index in 90: await physics_frame
+	await process_frame
+	check(barrel.explosions == 1 and barrel.position.slide(Vector3.UP).length() < 0.01, "Normal physics processing detonates the current two-second gameplay fuse while stationary")
 	await retire(data)
 
 func proximity_fixed_step_timing() -> void:

@@ -357,6 +357,11 @@ func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, appr
 	_monster_impact_times[id] = _vehicle_impacts.clock
 	if not charges_damage: _monster_explosion_impacts[id] = true
 
+func queue_explosive_item_impact(item: Item, normal: Vector3, point: Vector3, approach: float) -> void:
+	# Exploding cargo uses the same once-only yielding motion as a mimic. Its
+	# shared blast resolver owns engine damage, never the ordinary body budget.
+	queue_monster_impact(item, normal, point, approach, false)
+
 func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF) -> void:
 	if _impact_age < 0.75: return
 	var paid := VehicleImpact.damage(loss, kind)
@@ -401,7 +406,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var target := TreeImpact.target_for(collider)
 		var hit := TreeImpact.hit(self, collider, shape_index, velocity, normal)
 		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = true
-		if collider is Monster:
+		if collider is Monster or collider is OilBarrel:
 			collider.receive_vehicle_body_contact(self, -normal, state.get_contact_local_position(contact))
 		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit, "offset": offset, "incoming": incoming})
 	# One trunk can report a glancing contact before its frontal hit. Classify
@@ -414,6 +419,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		elif collider is Monster:
 			if collider.vehicle_impact_cooldown > 0.0 and absf(normal.y) < 0.65 and _impact_velocity.slide(Vector3.UP).dot(normal) < -0.1:
 				pass_through = true
+		elif collider is OilBarrel and collider._explosion_queued:
+			pass_through = true
 		elif absf(normal.y) < 0.65 and not (collider is RigidBody3D and collider.get_parent() is TreeFall):
 			solid_normals.append(normal)
 	# The solver has already applied a hard trunk collision. Restore only lost
@@ -459,6 +466,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	for contact in contacts:
 		var collider: Node = contact.collider
 		if collider is Monster: continue
+		if collider is OilBarrel and collider._explosion_queued: continue
 		if contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape): continue
 		if is_ancestor_of(collider) or (collider is Item and collider.get_connected_rv() == self): continue
 		var normal: Vector3 = contact.normal.normalized()

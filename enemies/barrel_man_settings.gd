@@ -18,8 +18,8 @@ const BUNKER_CHANCE := 0.20
 @export var lose_interest_time := 5.0
 @export var max_health := 60.0
 @export_group("Explosion")
-@export_range(0.0, 10.0, 0.05) var proximity_trigger_radius := 3
-@export_range(0.0, 60.0, 0.01) var proximity_fuse_duration := 2
+@export_range(0.0, 10.0, 0.05) var proximity_trigger_radius := 3.0
+@export_range(0.0, 60.0, 0.01) var proximity_fuse_duration := 2.0
 @export var blast_radius := 4.0
 @export var player_full_damage_radius := 1.5
 @export var player_damage := 70.0

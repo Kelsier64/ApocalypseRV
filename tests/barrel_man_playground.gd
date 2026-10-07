@@ -10,6 +10,7 @@ var hud: Label
 var player: CharacterBody3D
 var rv: Chassis
 var monster: BarrelMan
+var oil_barrel: OilBarrel
 var gallery: Array[BarrelMan] = []
 var mode := 1
 var elapsed := 0.0
@@ -106,7 +107,7 @@ func _ready() -> void:
 	var arguments := OS.get_cmdline_user_args()
 	requested_capture = "--capture" in arguments
 	headless_check = "--headless-check" in arguments
-	await _select_mode(8 if "--proximity-replay" in arguments else (7 if "--terrain-replay" in arguments else (4 if "--vehicle-replay" in arguments else (3 if "--replay" in arguments else (5 if "--chase-replay" in arguments else 1)))))
+	await _select_mode(10 if "--oil-barrel-replay" in arguments else (8 if "--proximity-replay" in arguments else (7 if "--terrain-replay" in arguments else (4 if "--vehicle-replay" in arguments else (3 if "--replay" in arguments else (5 if "--chase-replay" in arguments else 1))))))
 
 func _solid(point: Vector3, size: Vector3, color: Color) -> StaticBody3D:
 	var body := StaticBody3D.new()
@@ -135,6 +136,7 @@ func _select_mode(next: int) -> void:
 	player = null
 	rv = null
 	monster = null
+	oil_barrel = null
 	route_target = null
 	gallery.clear()
 	for child in actors.get_children(): child.queue_free()
@@ -242,7 +244,12 @@ func _select_mode(next: int) -> void:
 			await get_tree().physics_frame
 			if generation != mode_generation: return
 		health_before = rv.get_engine().health
-		monster = _spawn_barrel(Vector3(5,0,-8) if mode == 4 else Vector3(8,0,22))
+		if mode == 10:
+			oil_barrel = NORMAL_BARREL.instantiate() as OilBarrel
+			oil_barrel.position = Vector3(5,.5,-8)
+			actors.add_child(oil_barrel)
+		else:
+			monster = _spawn_barrel(Vector3(5,0,-8) if mode == 4 else Vector3(8,0,22))
 		if mode == 4:
 			# Isolate ramming a disguised barrel; the real chassis contact hook
 			# remains live even when perception/movement are paused in this fixture.
@@ -289,16 +296,18 @@ func _physics_process(delta: float) -> void:
 		else: Input.action_release("move_forward")
 	elif mode == 7 and is_instance_valid(monster):
 		_terrain_step(delta)
-	elif mode in [4,5] and is_instance_valid(rv):
+	elif mode in [4,5,10] and is_instance_valid(rv):
 		var driving := elapsed < (20.0 if mode == 5 else 15.0) and not exploded
-		var throttle := 1.0 if mode == 4 else clampf(.5 + (6.0-rv.road_speed())*.45, 0.0, 1.0)
+		var throttle := 1.0 if mode in [4,10] else clampf(.5 + (6.0-rv.road_speed())*.45, 0.0, 1.0)
 		rv.control_override = {"throttle": throttle, "steering": 0.0} if driving else {"brake": 1.0}
 		if not driving and rv.road_speed()<.2: rv.handbrake = true
 		var focus := rv.global_position
 		if is_instance_valid(monster): focus = focus.lerp(monster.global_position, .5)
+		elif is_instance_valid(oil_barrel): focus = focus.lerp(oil_barrel.global_position, .5)
 		camera.global_position = focus + Vector3(17,10,20)
 		camera.look_at(focus + Vector3.UP)
-	if mode != 1 and not exploded and (not is_instance_valid(monster) or monster.is_dead):
+	var source_exploded := (not is_instance_valid(oil_barrel) or oil_barrel.is_destroyed) if mode == 10 else (not is_instance_valid(monster) or monster.is_dead)
+	if mode != 1 and not exploded and source_exploded:
 		exploded = true
 		if proximity_arm_time >= 0.0:
 			proximity_blast_delay = elapsed - proximity_arm_time
@@ -353,7 +362,7 @@ func _finish_headless_check() -> void:
 	if mode == 3: valid = valid and player_distance > 1.0 and is_instance_valid(player) and player.current_player_health < player.max_player_health
 	elif mode == 8:
 		valid = valid and proximity_arm_time >= 0.0 and proximity_blast_delay >= .499 and proximity_blast_delay <= .54 and player_distance > .5 and is_instance_valid(player) and player.current_player_health < player.max_player_health
-	elif mode in [4,5]:
+	elif mode in [4,5,10]:
 		valid = valid and vehicle_distance > 1.0 and is_instance_valid(rv) and rv.get_engine().health <= health_before - 59.99 and _broken_panels() > 0
 		if mode == 5: valid = valid and chase_seen and monster_distance > 1.0 and fastest_monster <= 10.05
 	elif mode == 7:
@@ -383,8 +392,9 @@ func _broken_panels() -> int:
 
 func _process(delta: float) -> void:
 	if hud == null: return
-	var titles := {1:"外觀與動畫｜普通油桶 / 偽裝 / 起身收腿 / 6m/s / 10m/s",2:"手動步行接近",3:"連續步行輸入重播",4:"輪驅撞擊偽裝桶（固定偽裝以隔離碰撞）",5:"追車與輪驅行駛",7:"坡面／左右轉向／落地：無碰撞路線目標，直線引導",8:"近距離倒數：走進 1.5 m 後停步，等待 0.5 秒"}
+	var titles := {1:"外觀與動畫｜普通油桶 / 偽裝 / 起身收腿 / 6m/s / 10m/s",2:"手動步行接近",3:"連續步行輸入重播",4:"輪驅撞擊偽裝桶（固定偽裝以隔離碰撞）",5:"追車與輪驅行駛",7:"坡面／左右轉向／落地：無碰撞路線目標，直線引導",8:"近距離倒數：走進 1.5 m 後停步，等待 0.5 秒",10:"輪驅撞擊一般油桶（正式 Item）"}
 	hud.text = "油桶人驗收場 — %s\nF1 外觀 · F2 步行 · F3 徒步重播 · F4 撞桶 · F5 追車\nF6 保存 · F7 坡面 · F8 倒數 · F9 恢復 · P 暫停 · R 重設 · Esc 滑鼠\n" % titles.get(mode,"")
+	hud.text += "F10 車撞一般油桶\n"
 	if is_instance_valid(monster): hud.text += "狀態 %s｜速度 %.2f m/s\n" % [BarrelMan.Phase.keys()[monster.phase],monster.horizontal_speed]
 	if is_instance_valid(monster) and monster.proximity_fuse_remaining >= 0.0: hud.text += "爆炸倒數 %.2f 秒（接觸即爆）\n" % monster.proximity_fuse_remaining
 	if proximity_blast_delay >= 0.0: hud.text += "啟動至爆炸 %.3f 秒\n" % proximity_blast_delay
@@ -398,7 +408,7 @@ func _process(delta: float) -> void:
 		if milestone_index < milestones.size() and elapsed >= milestones[milestone_index]:
 			_capture.call_deferred("milestone-%.1f" % milestones[milestone_index])
 			milestone_index += 1
-		if not exploded and mode in [2,3,4,5,8] and capture_clock >= .15:
+		if not exploded and mode in [2,3,4,5,8,10] and capture_clock >= .15:
 			capture_clock = 0.0
 			_capture.call_deferred("buffer", true)
 		var blast_offsets := [.05,.15,.35,.65,1.1,2.0,3.4,4.0]
@@ -468,6 +478,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F7: _select_mode.call_deferred(7)
 	elif event.keycode == KEY_F8: _select_mode.call_deferred(8)
 	elif event.keycode == KEY_F9: _load_monsters.call_deferred()
+	elif event.keycode == KEY_F10: _select_mode.call_deferred(10)
 	elif event.keycode == KEY_P:
 		paused = not paused
 		get_tree().paused = paused

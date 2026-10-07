@@ -4,7 +4,7 @@ class_name WorldActorSnapshot
 static func capture(child: Node) -> Dictionary:
 	if child.is_queued_for_deletion(): return {}
 	if child is Item:
-		if is_instance_valid(child.processing_owner) or child.is_being_placed or child.presentation_only: return {}
+		if child.is_destroyed or is_instance_valid(child.processing_owner) or child.is_being_placed or child.presentation_only: return {}
 		return {"kind": "item", "scene": child.scene_file_path, "transform": child.global_transform,
 			"state": child.capture_item_state(), "fixed": child.is_fixed, "support": support_state(child),
 			"name": child.item_name, "large": child.is_large,
