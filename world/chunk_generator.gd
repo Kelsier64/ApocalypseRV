@@ -521,6 +521,8 @@ func _spawn_actors() -> void:
 			container.add_child(monster)
 
 func _spawn_road_monsters() -> void:
+	# The shared once-only latch also owns v9 loose barrels. They must not be
+	# rebuilt with static chunk geometry after pickup, explosion or a rebake.
 	if not navigation_ready or _road_monsters_spawned or road_spawns.is_empty(): return
 	_road_monsters_spawned = true
 	if get_meta("skip_actors", false): return
@@ -533,3 +535,12 @@ func _spawn_road_monsters() -> void:
 		var monster: Node3D = load(path).instantiate()
 		container.add_child(monster)
 		monster.global_position = point - Vector3.UP * 0.5 if monster is BarrelMan else point
+		var yaws: Array = road_spawns.get("monster_yaws", [])
+		if index < yaws.size(): monster.global_rotation.y = float(yaws[index])
+	var barrels: Array = road_spawns.get("barrels", [])
+	for index in range(barrels.size()):
+		var placement: Dictionary = barrels[index]
+		var barrel: Item = load(placement.scene).instantiate()
+		barrel.restore_item_state({"id": "road:%d:%d:%d:barrel:%d" % [field.profile.generation_version, field.world_seed, band, index]})
+		container.add_child(barrel)
+		barrel.global_transform = placement.transform

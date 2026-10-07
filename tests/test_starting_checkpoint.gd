@@ -32,7 +32,7 @@ func _run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
-	check(generator.profile.generation_version == 8 and generator.profile.chunks_ahead == 2, "Production streaming window fits the 450 m monster lifetime")
+	check(generator.profile.generation_version == 9 and generator.profile.chunks_ahead == 2, "Production v9 streaming window fits the 450 m monster lifetime")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
 	generator.profile.chunks_ahead = 0
@@ -55,8 +55,20 @@ func _run() -> void:
 	check(checkpoint.save_world(world, SAVE_PATH), "Preparation checkpoint writes")
 	var prepared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	if prepared.is_empty(): quit(1); return
-	check(prepared.generation_version == 8, "New production checkpoint records v8")
+	check(prepared.generation_version == 9, "New production checkpoint records v9")
 	check(prepared.world_id == "shelter" and prepared.start_state.phase == "preparing", "Checkpoint identifies production and preparation")
+	for version in [7, 8, 9]:
+		var supported := prepared.duplicate(true)
+		supported.generation_version = version
+		supported.profile.generation_version = version
+		check(checkpoint.validation_error(supported).is_empty(), "Shelter checkpoint accepts generation v%d" % version)
+		var wrong_world := supported.duplicate(true)
+		wrong_world.world_id = "legacy"
+		wrong_world.erase("start_state")
+		check(checkpoint.validation_error(wrong_world) == "world_id.start_state", "Shelter generation cannot use legacy identity v%d" % version)
+	var future := prepared.duplicate(true)
+	future.generation_version = 10
+	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v10 remains rejected")
 	check(prepared.player.items.size() == 1, "Picked item belongs only to player inventory")
 	for invalid in ["opening", "closing", "unknown"]:
 		var bad := prepared.duplicate(true)

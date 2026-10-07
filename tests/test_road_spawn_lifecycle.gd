@@ -8,23 +8,29 @@ func check(ok: bool, detail: String) -> void:
 		push_error("FAIL: " + detail)
 
 func run() -> void:
+	for version in [8, 9]: await run_version(version)
+	if failures.is_empty(): print("PASS: v8/v9 road readiness, deterministic rebuilding, actor lifetime and cleanup")
+	quit(0 if failures.is_empty() else 1)
+
+func run_version(version: int) -> void:
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
 	current_scene = world
 	var profile := WorldProfile.new()
-	profile.generation_version = 8
+	profile.generation_version = version
 	var field := WorldField.new(42, profile)
 	var band := -1
 	var plan: Dictionary
-	for candidate in range(3, 100):
+	for candidate in range(3, 1500):
 		var data := RoadSpawns.plan(field, candidate)
-		if not data.monsters.is_empty() and not (data.wrecks.is_empty() and data.strips.is_empty()):
+		if not data.monsters.is_empty() and field.stops_in_band(candidate).is_empty() and not (data.wrecks.is_empty() and data.strips.is_empty()) and (version == 8 or (RoadSpawns.BARREL_MAN_SCENE in data.monster_scenes and RoadSpawns.RAKER_SCENE in data.monster_scenes and not data.get("barrels", []).is_empty())):
 			band = candidate
 			plan = data
 			break
 	check(band >= 3, "Fixture finds a seeded mixed road encounter")
-	if band < 3: quit(1); return
+	if band < 3: world.free(); return
+	var actor_count: int = plan.monsters.size() + plan.get("barrels", []).size()
 	var container := WorldEntities.get_container(world)
 	var chunk := ChunkGenerator.new()
 	world.add_child(chunk)
@@ -36,14 +42,29 @@ func run() -> void:
 	check(container.get_child_count() == 0, "No road monster is created before navigation readiness")
 	chunk.navigation_ready = true
 	chunk._spawn_road_monsters()
-	check(container.get_child_count() == plan.monsters.size(), "Ready navigation creates the planned Rakers")
-	for index in range(container.get_child_count()):
+	check(container.get_child_count() == actor_count, "Ready navigation creates the planned Rakers")
+	for index in range(plan.monsters.size()):
 		var enemy := container.get_child(index) as Monster
 		check(enemy != null and enemy.scene_file_path == plan.monster_scenes[index], "Published road actor uses the planned species")
 		var expected_point: Vector3 = plan.monsters[index] - Vector3.UP * 0.5 if enemy is BarrelMan else plan.monsters[index]
 		check(enemy.global_position.is_equal_approx(expected_point), "Road root offset puts barrel feet on ground without shifting Rakers")
+		if version >= 9:
+			check(enemy.global_basis.is_equal_approx(Basis(Vector3.UP, plan.monster_yaws[index])), "Road monster uses its independent planned yaw")
+		enemy.process_mode = Node.PROCESS_MODE_DISABLED
+	for index in range(plan.get("barrels", []).size()):
+		var barrel := container.get_child(plan.monsters.size() + index) as OilBarrel
+		check(barrel != null, "Ordinary road barrel is an Item independent of monster species")
+		if barrel == null: continue
+		barrel.freeze = true
+		barrel.process_mode = Node.PROCESS_MODE_DISABLED
+		check(barrel.persistent_id == "road:%d:42:%d:barrel:%d" % [version, band, index], "Road barrel has stable per-band identity")
+		var pose: Transform3D = plan.barrels[index].transform
+		check(barrel.global_transform.is_equal_approx(pose), "Ordinary barrel uses its planned root pose")
+		var bottom: Vector3 = barrel.global_transform * Vector3(0, -0.5, 0)
+		check(is_equal_approx(bottom.y, RoadSpawns._surface_height(field, bottom)), "Tilted ordinary barrel bottom sits on the terrain or raised road surface")
+		check(WorldActorSnapshot.validation_error(WorldActorSnapshot.capture(barrel), "road_barrel").is_empty(), "Road barrel uses the Item snapshot schema")
 	chunk._spawn_road_monsters()
-	check(container.get_child_count() == plan.monsters.size(), "Readiness notification is idempotent")
+	check(container.get_child_count() == actor_count, "Readiness notification is idempotent")
 	var poses: Array[Transform3D] = []
 	for child in chunk.get_children():
 		if child is Node3D: poses.append(child.global_transform)
@@ -54,12 +75,12 @@ func run() -> void:
 				for index in range(8):
 					var point := aligned.affine_inverse() * (mesh.global_transform * mesh.mesh.get_aabb().get_endpoint(index))
 					check(RoadSpawns.WRECK_BOUNDS.grow(0.01).has_point(point), "Planner bounds contain reused wreck visual %s at %s" % [mesh.name, point])
-	for monster: Monster in container.get_children():
-		monster.set_physics_process(false)
+	for monster: Monster in container.get_children().filter(func(n): return n is Monster):
+		monster.process_mode = Node.PROCESS_MODE_DISABLED
 		var saved := WorldActorSnapshot.capture(monster)
 		check(WorldActorSnapshot.validation_error(saved, "road_monster").is_empty(), "Road Raker uses existing actor snapshot schema")
 	chunk.free()
-	check(container.get_child_count() == plan.monsters.size(), "Birth chunk unloading leaves pursuing/RV riders alive")
+	check(container.get_child_count() == actor_count, "Birth chunk unloading leaves pursuing/RV riders alive")
 	chunk = ChunkGenerator.new()
 	chunk.set_meta("skip_actors", true)
 	world.add_child(chunk)
@@ -73,7 +94,7 @@ func run() -> void:
 	check(poses == rebuilt, "Static road obstacles rebuild at identical poses")
 	chunk.navigation_ready = true
 	chunk._spawn_road_monsters()
-	check(container.get_child_count() == plan.monsters.size(), "Generated-band reentry cannot duplicate live Rakers")
+	check(container.get_child_count() == actor_count, "Generated-band reentry cannot duplicate live Rakers")
 	for monster in container.get_children(): monster.free()
 	chunk._spawn_road_monsters()
 	check(container.get_child_count() == 0, "Killed/removed road monsters do not refill")
@@ -113,19 +134,58 @@ func run() -> void:
 	check(is_instance_valid(old_ahead), "v7 preserves its original forward cleanup behavior")
 	generator.free()
 	chunk.free()
+	for actor in container.get_children(): actor.free()
 	# Full ChunkGenerator bake proves automatic spawn happens after actual
 	# server readiness, and static wreck collision participates in that bake.
+	container.child_entered_tree.connect(freeze_actor)
 	var baked := ChunkGenerator.new()
 	world.add_child(baked)
 	await baked.generate(field, band, POISpawner.new(), true)
 	if not await WAIT.navigation_ready(self, [baked]):
 		check(false, "Road encounter navigation did not publish before timeout")
 	else:
-		for point: Vector3 in plan.monsters:
-			check(NavigationServer3D.map_get_closest_point(baked.get_world_3d().navigation_map, point).distance_to(point) < 2.0, "Road spawn candidate is reachable on published navigation")
+		var nav_map := baked.get_world_3d().navigation_map
+		var excluded: Array[RID] = []
+		for actor in container.get_children():
+			if actor is CollisionObject3D: excluded.append(actor.get_rid())
+			for body in actor.find_children("*", "CollisionObject3D", true, false): excluded.append(body.get_rid())
+		for index in range(plan.monsters.size()):
+			var point: Vector3 = plan.monsters[index]
+			var closest := NavigationServer3D.map_get_closest_point(nav_map, point)
+			var distance := closest.distance_to(point)
+			if version == 8:
+				check(distance < 2.0, "Legacy road spawn is reachable on published navigation point=%s closest=%s distance=%.3f" % [point, closest, distance])
+				continue
+			# Outdoor navigation simplifies terrain height. Monsters follow the XZ
+			# path while physics grounds them; verify both contracts independently.
+			var planar_distance := Vector2(point.x, point.z).distance_to(Vector2(closest.x, closest.z))
+			check(planar_distance < 2.0, "v9 road spawn reaches XZ navigation band=%d point=%s closest=%s planar=%.3f" % [band, point, closest, planar_distance])
+			var root_point: Vector3 = point - Vector3.UP * 0.5 if plan.monster_scenes[index] == RoadSpawns.BARREL_MAN_SCENE else point
+			var query := PhysicsRayQueryParameters3D.create(root_point + Vector3.UP * 2.0, root_point - Vector3.UP * 4.0, 1)
+			query.exclude = excluded
+			var hit := baked.get_world_3d().direct_space_state.intersect_ray(query)
+			check(not hit.is_empty() and absf(root_point.y - hit.position.y) < 0.75, "v9 road actor has physical ground support root=%s hit=%s" % [root_point, hit])
+			var road := field.road_query(point.x, point.z)
+			var connected := false
+			var path_details: Array[String] = []
+			for offset in [-10.0, 10.0]:
+				var target: Vector3 = field.road_frame(float(road.s) + offset).origin
+				if floori(-target.z / field.profile.chunk_length) != band: continue
+				var path := NavigationServer3D.map_get_path(nav_map, point, target, true)
+				if path.is_empty():
+					path_details.append("target=%s empty" % target)
+					continue
+				var endpoint: Vector3 = path[path.size() - 1]
+				var endpoint_gap := Vector2(endpoint.x, endpoint.z).distance_to(Vector2(target.x, target.z))
+				path_details.append("target=%s endpoint=%s planar_gap=%.3f" % [target, endpoint, endpoint_gap])
+				if endpoint_gap < 2.0: connected = true
+			check(connected, "v9 road spawn has a connected path to nearby road point=%s paths=%s" % [point, path_details])
 		check(baked.navigation_ready and baked._road_monsters_spawned, "Real navigation publication triggers road monsters")
-		var road_monsters := container.get_children().filter(func(n): return n is Monster and n.global_position.distance_to(plan.monsters[0]) < 40)
-		check(road_monsters.size() == plan.monsters.size(), "Actual chunk generation creates one planned group")
+		var road_monsters := container.get_children().filter(func(n): return n is Monster)
+		check(road_monsters.size() == plan.monsters.size(), "Actual generation creates all independent planned monsters regardless of distance")
+		var road_barrels := container.get_children().filter(func(n): return n is OilBarrel)
+		check(road_barrels.size() == plan.get("barrels", []).size(), "Actual navigation publication also creates ordinary road barrels")
+		for barrel in road_barrels: barrel.free()
 		# Tree destruction rebakes the same region after the initial publication.
 		# Removed road actors must remain absent when that callback runs again.
 		for monster in road_monsters: monster.free()
@@ -140,8 +200,6 @@ func run() -> void:
 			check(container.get_child_count() == remaining, "Tree-triggered rebake does not resurrect removed road Rakers")
 	world.free()
 	await process_frame
-	if failures.is_empty(): print("PASS: road navigation readiness, deterministic rebuilding, actor lifetime and v8 cleanup")
-	quit(0 if failures.is_empty() else 1)
 
 func make_monster(container: Node3D, point: Vector3) -> Monster:
 	var monster: Monster = load("res://enemies/raker.tscn").instantiate()
@@ -149,3 +207,9 @@ func make_monster(container: Node3D, point: Vector3) -> Monster:
 	monster.global_position = point
 	monster.set_physics_process(false)
 	return monster
+
+func freeze_actor(actor: Node) -> void:
+	if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
+	elif actor is OilBarrel:
+		actor.freeze = true
+		actor.process_mode = Node.PROCESS_MODE_DISABLED

@@ -46,7 +46,7 @@ static func profile_error(data: Dictionary) -> String:
 			# Historical captures include this derived, read-only field.
 			if not VehicleSnapshot._number(value) or value not in [225.0, 450.0]: return "profile." + key
 		elif key == "generation_version":
-			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8]: return "profile." + key
+			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9]: return "profile." + key
 		elif key in constants:
 			if value != defaults.get(key): return "profile." + key
 		elif key in ["chunks_ahead", "chunks_behind"]:

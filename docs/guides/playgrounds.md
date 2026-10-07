@@ -18,9 +18,10 @@ godot --path . --log-file .godot/barrel-playground.log res://tests/barrel_man_pl
 | F4 | 正式 RV 輪驅撞偽裝桶；此模式停用該怪物 AI，隔離實際車體接觸 |
 | F5 | 怪物從車後追上正在輪驅前進的 RV，接觸自爆 |
 | F7 | 坡面／轉向路線：正式怪物追逐標示的無碰撞目標，上下坡、左右轉向、落下及落地 |
-| F8 | 正式玩家走進 1.5 m 後停步；顯示 0.5 秒倒數與實測引爆時間 |
+| F8 | 正式玩家走進目前設定範圍後停步；顯示倒數與實測引爆時間，接觸可提前引爆 |
 | F6 / F9 | 保存／恢復本展示場怪物；使用獨立檔案，不是完整世界 checkpoint |
 | F10 | 正式 RV 輪驅撞一般油桶 Item，接觸立即引爆；前側鏡頭檢查爆點及車殼損傷 |
+| F11 | 同 F10 輪驅流程，正式玩家入座，以駕駛 POV 檢查爆炸 |
 | P / R / Esc | 暫停／重設當前情境／釋放滑鼠 |
 
 命令末尾加 `-- --replay`、`-- --vehicle-replay`、`-- --chase-replay`、`-- --terrain-replay` 或 `-- --proximity-replay` 可直接啟動 F3／F4／F5／F7／F8。另加 `--headless-check` 在有限模擬時段後檢查實際位移、碰撞／傷害、坡面路線或倒數並退出；可搭配 `--headless --fixed-fps 60`。`--capture` 只在有渲染器時記錄有限時間點、爆炸前緩存及爆炸後畫面，路徑寫入日誌。
@@ -28,6 +29,8 @@ godot --path . --log-file .godot/barrel-playground.log res://tests/barrel_man_pl
 F7 為觀察腳掌與動作而關閉該實例的導航代理，讓它依既定目標跨越平台邊緣；加速、重力、碰撞與動畫仍使用正式實作。F1 是原地動畫展示，不代表角色實際移動。F5 是短距離追車，不代表任意高速、翻車或密集群怪均已驗收。具體觀察與自動測試分開記錄於 [本版驗收](../validation/2026-10-07-barrel-man.md)。
 
 `-- --oil-barrel-replay` 直接啟動 F10，可再加 `--headless-check --capture` 自動檢查 18 秒輪驅重播、保存渲染畫面並退出。油桶使用正式 Item 場景，RV 只送入油門與煞車，沒有直接設定移動或呼叫爆炸。結果見 [一般油桶車撞驗收](../validation/2026-10-07-oil-barrel-vehicle-explosion.md)。
+
+在油桶／撞怪／追車重播加 `--driver-pov` 使用正式駕駛座相機；擷取畫面建議引擎參數 `--fixed-fps 60 --resolution 1280x720`，避免 PNG 寫檔延遲跳過早期火焰。此模式保留正式玩家受傷與車殼遮蔽，檢查爆炸當下的相機所有權。駕駛畫面與原生渲染回歸見 [POV 修正紀錄](../validation/2026-10-08-barrel-driver-explosion.md)。
 
 ## 目錄
 

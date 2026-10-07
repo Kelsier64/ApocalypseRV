@@ -273,6 +273,17 @@ func cosmetic_lifecycle() -> void:
 	floor_body.add_child(floor_collision)
 	floor_body.position = Vector3(2, -.1, -3)
 	domain.add_child(floor_body)
+	# A separate entity domain can share World3D; its floor is not this blast's
+	# support even when the ray sees it first.
+	var foreign_domain := Node3D.new()
+	foreign_domain.set_meta("entity_domain", true)
+	domain.add_child(foreign_domain)
+	var foreign_floor := StaticBody3D.new()
+	var foreign_collision := CollisionShape3D.new()
+	foreign_collision.shape = floor_shape
+	foreign_floor.add_child(foreign_collision)
+	foreign_floor.position = Vector3(2, .65, -3)
+	foreign_domain.add_child(foreign_floor)
 	await steps()
 	var origin := domain.to_global(Vector3(2, 1.3, -3))
 	var source := Node3D.new()
@@ -286,11 +297,26 @@ func cosmetic_lifecycle() -> void:
 		return
 	var first = container.get_child(0)
 	first.set_process(false)
+	first.set_physics_process(false)
 	check(first.global_position.is_equal_approx(origin), "Effect retains the blast's world origin under a translated WorldEntities")
-	check(first.ring != null, "Ready-time ground wave finds the floor below the actual blast origin")
-	if first.ring != null:
-		check(first.ring.global_position.is_equal_approx(domain.to_global(Vector3(2, .045, -3))), "Ground wave lies just above the sampled floor")
+	check(first.ground_anchor != null, "Ready-time surface dust finds the floor below the actual blast origin")
+	if first.ground_anchor != null:
+		check(first.ground_anchor.global_position.is_equal_approx(domain.to_global(Vector3(2, .045, -3))), "Surface dust skips unrelated entity-domain bodies and lies above its own floor")
 	check(first.find_children("*", "CollisionObject3D", true, false).is_empty(), "Explosion visuals have no collision bodies or trigger Areas")
+	check(first.find_children("*", "Item", true, false).is_empty(), "Metal fragments have no pickup or Item identity")
+	check(WorldActorSnapshot.capture(first).is_empty(), "Cosmetic blast has no actor save record")
+	check(first.fragments.size() == 8, "Blast instantiates the lid and seven bent barrel fragments")
+	var fragment_mesh: MeshInstance3D
+	if not first.fragments.is_empty():
+		var fragment: Dictionary = first.fragments[0]
+		fragment_mesh = fragment.mesh
+		check(WorldActorSnapshot.capture(fragment_mesh).is_empty(), "Cosmetic barrel fragment has no actor save record")
+		fragment_mesh.global_position = origin + Vector3.UP * .4
+		fragment.velocity = Vector3.DOWN * 6.0
+		for tick in 240: first._physics_process(1.0 / 60.0)
+		check(fragment.bounces > 0 and fragment.settled, "Cosmetic fragment swept rays bounce and settle within four simulated seconds")
+		check(fragment_mesh.global_position.y >= domain.global_position.y and fragment_mesh.global_position.y <= domain.global_position.y + .3, "Settled fragment stays above the translated support surface")
+		check(first.landing_sound_count <= 5 and first.landing_voices.size() <= first.MAX_LANDING_VOICES, "Cosmetic metal landings bound both events and simultaneous audio voices")
 	first._process(.75)
 	var first_age: float = first.age
 	var fire_age: float = first.fire_material.get_shader_parameter("age")
@@ -303,6 +329,7 @@ func cosmetic_lifecycle() -> void:
 	if container.get_child_count() == 2:
 		var second = container.get_child(1)
 		second.set_process(false)
+		second.set_physics_process(false)
 		check(first.fire_material != second.fire_material and first.smoke_material != second.smoke_material, "Overlapping bursts keep separate animated fire and smoke materials")
 		second._process(.2)
 		check(is_equal_approx(first.age, first_age) and is_equal_approx(first.fire_material.get_shader_parameter("age"), fire_age) and is_equal_approx(first.smoke_material.get_shader_parameter("age"), smoke_age), "Starting and advancing another burst does not reset the first burst's age or materials")
@@ -312,6 +339,7 @@ func cosmetic_lifecycle() -> void:
 	check(first.is_queued_for_deletion(), "Completed effect queues its particles, light and sound for cleanup")
 	await steps()
 	check(not is_instance_valid(first), "Completed effect is released without wall-clock waiting")
+	if fragment_mesh != null: check(not is_instance_valid(fragment_mesh), "Cosmetic fragment meshes are released with the completed effect")
 	domain.queue_free()
 	await steps()
 

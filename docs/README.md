@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+公路獨立生成：[v9 數量、逐隻選點與廢車朝向](validation/2026-10-07-independent-road-spawns.md)，包含獨立油桶人／普通 Item 油桶、v8 相容與不補發生命週期；本輪測試狀態以該紀錄為準。
+
 地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。
 
 油桶人：[Blender 雙腿、偽裝追逐、接觸自爆與保存驗收](validation/2026-10-07-barrel-man.md)，含正式玩家／RV 展示場、輪驅重播及模型來源；[腳踝、腳掌與五趾細修](validation/2026-10-07-barrel-man-feet.md)補上新版近景與蒙皮檢查。普通油桶與地堡裝飾桶共用相同藍色桶身。
@@ -11,6 +13,10 @@
 油桶人引爆更新：[1.5 m 近距離範圍、0.5 秒倒數及接觸立即引爆](validation/2026-10-07-barrel-man-proximity.md)，含倒數保存、F8 重播及本輪測試。
 
 油桶人特效：[火球、翻捲黑煙、塵浪與飛散火星](validation/2026-10-07-barrel-man-vfx.md)，含實機逐格畫面與效果生命週期回歸；保留目前已調整的 3 m／2 秒設定。
+
+新版爆炸：[Blender 流體圖集、金屬碎片與厚重音效](validation/2026-10-08-barrel-blast-realism.md)，包含原生玩家／輪驅重播、相容模式與成本限制。
+
+駕駛爆炸視角：[火煙體積與正式駕駛相機修正](validation/2026-10-08-barrel-driver-explosion.md)，含一般油桶／油桶人輪驅 POV、Forward+／Compatibility 像素回歸及完整牆遮蔽。
 
 一般油桶：[車輛接觸立即爆炸](validation/2026-10-07-oil-barrel-vehicle-explosion.md)，共用爆炸傷害與特效，包含固定車外設備碰撞、自車載運保護及 F10 輪驅重播。
 

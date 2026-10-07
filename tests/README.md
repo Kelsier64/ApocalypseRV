@@ -21,7 +21,13 @@
 
 ## 分組與覆蓋
 
+`test_road_spawns_v9` 屬 quick：4,096 seeds 的數量與獨立油桶／油桶人抽選、逐件位置／朝向、近距離及連續區段、實際廢車碰撞、安全區與舊版本隔離。道路生命週期及檢查點測試同時保留 v8 回歸，新增 v9 混合怪物與普通油桶的導航發布、休眠／移動保存、爆炸與回訪不補發。結果與畫面見 [v9 公路驗證](../docs/validation/2026-10-07-independent-road-spawns.md)。
+
 `test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
+
+一般油桶駕駛視角重播：`godot --path . --fixed-fps 60 --resolution 1280x720 --log-file .godot/oil-barrel-driver-pov.log res://tests/barrel_man_playground.tscn -- --oil-barrel-replay --driver-pov --capture --headless-check`。`--driver-pov` 也適用 `--vehicle-replay`／`--chase-replay`，以正式玩家操作正式駕駛座入座，保留車殼遮蔽與玩家正常傷害；額外檢查爆炸時駕駛相機仍為目前相機。`--headless-check` 令重播在 18 秒後完成行為檢查並退出；只有實際顯示模式會保存畫面，真正 `--headless` 執行不驗證渲染。爆炸後含 0.05、0.12、0.2、0.4、0.8、1.5 秒的早期畫面，並記錄目前相機路徑、位置及火／煙體積中心的視角 Z（負值在相機前方）。畫面位於 `.godot/barrel-playground-captures/`。互動場景 F11 啟動駕駛視角撞一般桶；F10 回到外部視角重播，R 重設目前模式。
+
+`test_barrel_blast_render` 屬 integration。日常 headless runner 檢查正式駕駛座／相機所有權、三維特效邊界及無遊戲碰撞；原生執行 `godot --path . --fixed-fps 60 --log-file .godot/barrel-blast-render-native.log -s res://tests/test_barrel_blast_render.gd` 額外比較 1280×720 的實際畫面，驗證早期駕駛火焰、進入煙火體積、反向／側面視角與完整不透明牆遮蔽。可加 `--rendering-method gl_compatibility` 驗證 Compatibility。測試會保存特效開／關畫面至 `.godot/barrel-blast-render/`，排除閃光燈、火花與碎片以免它們代替真正火／煙通過檢查；headless 的 `SKIP` 不代表像素檢查通過。
 
 油桶人 `test_barrel_man`、`test_barrel_explosion`、`test_barrel_vehicle_contact`、`test_barrel_man_persistence` 屬 integration，覆蓋感知、偽裝、真實接觸、爆炸遮蔽／斷肢／車殼、生成與保存。`test_barrel_man_assets` 屬 assets，逐幀驗證匯入蒙皮、十組動畫、桶內折腿、桶壁交界與地面。另有 [油桶人展示場](../docs/guides/playgrounds.md#barrel-man) 的真實輪驅、連續玩家輸入及坡面重播；畫面與本次結果見 [驗收](../docs/validation/2026-10-07-barrel-man.md)。
 
@@ -40,7 +46,7 @@ Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背
 | `smoke` | [main_scene_smoke.gd](main_scene_smoke.gd) 的正式世界就緒與移動 |
 | `full` | 所有有效分組及 smoke；排除有原因記錄的重複項 |
 
-`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v8 主世界由 smoke 與 starting 系列涵蓋。
+`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v9 主世界由 smoke 與 starting 系列涵蓋。
 
 每支測試仍使用獨立 Godot 程序。本機不平行跑會共享磁碟 checkpoint 或全域服務的測試。GitHub Actions 以五個獨立 job 跑 quick、integration、slow、assets、smoke，涵蓋與 full 相同的有效測試；一組失敗不取消其他組。
 

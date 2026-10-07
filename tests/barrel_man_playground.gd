@@ -22,6 +22,9 @@ var requested_capture := false
 var capture_clock := 0.0
 var mode_generation := 0
 var headless_check := false
+var driver_pov := false
+var driver_camera: Camera3D
+var driver_camera_current_at_blast := false
 var check_completed := false
 var player_start := Vector3.ZERO
 var rv_start := Vector3.ZERO
@@ -51,6 +54,8 @@ var capture_folder := ""
 var pre_blast_image: Image
 var proximity_arm_time := -1.0
 var proximity_blast_delay := -1.0
+var proximity_expected_delay := -1.0
+var proximity_last_remaining := -1.0
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Barrel Man"
@@ -107,6 +112,7 @@ func _ready() -> void:
 	var arguments := OS.get_cmdline_user_args()
 	requested_capture = "--capture" in arguments
 	headless_check = "--headless-check" in arguments
+	driver_pov = "--driver-pov" in arguments
 	await _select_mode(10 if "--oil-barrel-replay" in arguments else (8 if "--proximity-replay" in arguments else (7 if "--terrain-replay" in arguments else (4 if "--vehicle-replay" in arguments else (3 if "--replay" in arguments else (5 if "--chase-replay" in arguments else 1))))))
 
 func _solid(point: Vector3, size: Vector3, color: Color) -> StaticBody3D:
@@ -134,6 +140,8 @@ func _select_mode(next: int) -> void:
 	get_tree().paused = false
 	for action in ["move_forward", "sprint"]: Input.action_release(action)
 	player = null
+	driver_camera = null
+	driver_camera_current_at_blast = false
 	rv = null
 	monster = null
 	oil_barrel = null
@@ -170,6 +178,8 @@ func _select_mode(next: int) -> void:
 	pre_blast_image = null
 	proximity_arm_time = -1.0
 	proximity_blast_delay = -1.0
+	proximity_expected_delay = -1.0
+	proximity_last_remaining = -1.0
 	capture_folder = "res://.godot/barrel-playground-captures/mode-%d-%d-%d" % [mode,roundi(Time.get_unix_time_from_system() * 1000),generation]
 	if requested_capture and DisplayServer.get_name() != "headless": DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(capture_folder))
 	camera.current = true
@@ -244,6 +254,17 @@ func _select_mode(next: int) -> void:
 			await get_tree().physics_frame
 			if generation != mode_generation: return
 		health_before = rv.get_engine().health
+		if driver_pov and mode in [4,5,10]:
+			# Enter the production seat with a real player; the existing shell is
+			# their only blast protection, and all damage/camera reactions stay live.
+			var seat := rv.get_node("DriverSeat")
+			player = PLAYER.instantiate() as CharacterBody3D
+			actors.add_child(player)
+			player.global_position = rv.to_global(Vector3(0,.55,-3.0))
+			seat.interact_hold(player)
+			driver_camera = seat.seat_camera
+			if seat.current_driver != player or get_viewport().get_camera_3d() != driver_camera:
+				push_error("BARREL_PLAYGROUND production driver seat entry failed")
 		if mode == 10:
 			oil_barrel = NORMAL_BARREL.instantiate() as OilBarrel
 			oil_barrel.position = Vector3(5,.5,-8)
@@ -263,7 +284,7 @@ func _select_mode(next: int) -> void:
 	if is_instance_valid(rv): rv_start = rv.global_position
 	if is_instance_valid(monster): monster_start = monster.global_position
 	ready_to_run = true
-	print("BARREL_PLAYGROUND mode=%d ready" % mode)
+	print("BARREL_PLAYGROUND mode=%d ready driver_pov=%s" % [mode,driver_pov and mode in [4,5,10]])
 
 func _physics_process(delta: float) -> void:
 	if not ready_to_run or paused: return
@@ -276,7 +297,9 @@ func _physics_process(delta: float) -> void:
 		fastest_monster = maxf(fastest_monster, monster.horizontal_speed)
 		if proximity_arm_time < 0.0 and monster.proximity_fuse_remaining >= 0.0:
 			proximity_arm_time = elapsed
+			proximity_expected_delay = monster.settings.proximity_fuse_duration
 			print("BARREL_PLAYGROUND fuse_armed mode=%d t=%.3f remaining=%.3f" % [mode,elapsed,monster.proximity_fuse_remaining])
+		proximity_last_remaining = monster.proximity_fuse_remaining
 	if mode == 1:
 		for index in gallery.size():
 			var visual = gallery[index].get_node("BodyMesh")
@@ -309,9 +332,12 @@ func _physics_process(delta: float) -> void:
 	var source_exploded := (not is_instance_valid(oil_barrel) or oil_barrel.is_destroyed) if mode == 10 else (not is_instance_valid(monster) or monster.is_dead)
 	if mode != 1 and not exploded and source_exploded:
 		exploded = true
+		if driver_pov and mode in [4,5,10]:
+			driver_camera_current_at_blast = is_instance_valid(driver_camera) and get_viewport().get_camera_3d() == driver_camera
+			print("BARREL_PLAYGROUND driver_camera_current_at_blast=%s" % driver_camera_current_at_blast)
 		if proximity_arm_time >= 0.0:
 			proximity_blast_delay = elapsed - proximity_arm_time
-			print("BARREL_PLAYGROUND fuse_result delay=%.3f" % proximity_blast_delay)
+			print("BARREL_PLAYGROUND fuse_result delay=%.3f last_remaining=%.3f configured=%.3f" % [proximity_blast_delay,proximity_last_remaining,proximity_expected_delay])
 		if requested_capture and DisplayServer.get_name() != "headless":
 			blast_capture_time = elapsed
 			if pre_blast_image != null: pre_blast_image.save_png(capture_folder + "/blast-before.png")
@@ -361,9 +387,15 @@ func _finish_headless_check() -> void:
 	var valid := exploded
 	if mode == 3: valid = valid and player_distance > 1.0 and is_instance_valid(player) and player.current_player_health < player.max_player_health
 	elif mode == 8:
-		valid = valid and proximity_arm_time >= 0.0 and proximity_blast_delay >= .499 and proximity_blast_delay <= .54 and player_distance > .5 and is_instance_valid(player) and player.current_player_health < player.max_player_health
+		var tolerance := 2.5 / float(Engine.physics_ticks_per_second)
+		var full_countdown := absf(proximity_blast_delay - proximity_expected_delay) <= tolerance
+		# Production pursuit can make true contact before a long fuse expires.
+		# The last live sample still verifies elapsed + remaining = configured fuse.
+		var contact_interrupt := proximity_blast_delay < proximity_expected_delay and proximity_last_remaining > 0.0 and absf(proximity_blast_delay + proximity_last_remaining - proximity_expected_delay) <= tolerance
+		valid = valid and proximity_arm_time >= 0.0 and (full_countdown or contact_interrupt) and player_distance > .05 and is_instance_valid(player) and player.current_player_health < player.max_player_health
 	elif mode in [4,5,10]:
 		valid = valid and vehicle_distance > 1.0 and is_instance_valid(rv) and rv.get_engine().health <= health_before - 59.99 and _broken_panels() > 0
+		if driver_pov: valid = valid and driver_camera_current_at_blast
 		if mode == 5: valid = valid and chase_seen and monster_distance > 1.0 and fastest_monster <= 10.05
 	elif mode == 7:
 		valid = not exploded and monster_distance > 20.0 and fastest_monster >= 5.5 and fastest_monster <= 6.05 and uphill_seen and downhill_seen and falling_seen and landing_seen and left_turn > .4 and right_turn > .4
@@ -392,9 +424,10 @@ func _broken_panels() -> int:
 
 func _process(delta: float) -> void:
 	if hud == null: return
-	var titles := {1:"外觀與動畫｜普通油桶 / 偽裝 / 起身收腿 / 6m/s / 10m/s",2:"手動步行接近",3:"連續步行輸入重播",4:"輪驅撞擊偽裝桶（固定偽裝以隔離碰撞）",5:"追車與輪驅行駛",7:"坡面／左右轉向／落地：無碰撞路線目標，直線引導",8:"近距離倒數：走進 1.5 m 後停步，等待 0.5 秒",10:"輪驅撞擊一般油桶（正式 Item）"}
+	var titles := {1:"外觀與動畫｜普通油桶 / 偽裝 / 起身收腿 / 6m/s / 10m/s",2:"手動步行接近",3:"連續步行輸入重播",4:"輪驅撞擊偽裝桶（固定偽裝以隔離碰撞）",5:"追車與輪驅行駛",7:"坡面／左右轉向／落地：無碰撞路線目標，直線引導",8:"近距離倒數：接近後停步，接觸或倒數結束即爆",10:"輪驅撞擊一般油桶（正式 Item）"}
 	hud.text = "油桶人驗收場 — %s\nF1 外觀 · F2 步行 · F3 徒步重播 · F4 撞桶 · F5 追車\nF6 保存 · F7 坡面 · F8 倒數 · F9 恢復 · P 暫停 · R 重設 · Esc 滑鼠\n" % titles.get(mode,"")
-	hud.text += "F10 車撞一般油桶\n"
+	hud.text += "F10 車撞一般油桶 · F11 駕駛視角撞一般油桶\n"
+	if driver_pov and mode in [4,5,10]: hud.text += "正式駕駛座視角；玩家受車殼正常遮蔽\n"
 	if is_instance_valid(monster): hud.text += "狀態 %s｜速度 %.2f m/s\n" % [BarrelMan.Phase.keys()[monster.phase],monster.horizontal_speed]
 	if is_instance_valid(monster) and monster.proximity_fuse_remaining >= 0.0: hud.text += "爆炸倒數 %.2f 秒（接觸即爆）\n" % monster.proximity_fuse_remaining
 	if proximity_blast_delay >= 0.0: hud.text += "啟動至爆炸 %.3f 秒\n" % proximity_blast_delay
@@ -411,7 +444,7 @@ func _process(delta: float) -> void:
 		if not exploded and mode in [2,3,4,5,8,10] and capture_clock >= .15:
 			capture_clock = 0.0
 			_capture.call_deferred("buffer", true)
-		var blast_offsets := [.05,.15,.35,.65,1.1,2.0,3.4,4.0]
+		var blast_offsets := [.05,.12,.15,.2,.35,.4,.65,.8,1.1,1.5,2.0,3.4,4.0,6.0,7.8]
 		if blast_capture_time >= 0.0 and blast_capture_index < blast_offsets.size() and elapsed - blast_capture_time >= blast_offsets[blast_capture_index]:
 			_capture.call_deferred("blast+%03d" % roundi(blast_offsets[blast_capture_index] * 1000))
 			blast_capture_index += 1
@@ -430,6 +463,19 @@ func _capture(label: String, buffer_only := false) -> void:
 		var path := "%s/%02d-t%.3f-%s.png" % [capture_folder,sequence,capture_elapsed,label]
 		image.save_png(path)
 		print("BARREL_PLAYGROUND capture=%s" % path)
+		_log_capture_camera(label)
+
+func _log_capture_camera(label: String) -> void:
+	var active := get_viewport().get_camera_3d()
+	if active == null: return
+	var plumes: Array[Dictionary] = []
+	for effect: Node in get_tree().get_nodes_in_group("barrel_explosion_effects"):
+		if not effect is Node3D or not WorldEntities.same_world(self,effect): continue
+		for volume_name in ["FuelFire","RollingSoot"]:
+			var volume := effect.get_node_or_null(volume_name) as Node3D
+			if volume == null: continue
+			plumes.append({"volume":volume_name,"age":effect.get("age"),"position":str(volume.global_position),"view_z":active.to_local(volume.global_position).z})
+	print("BARREL_PLAYGROUND capture_view ",JSON.stringify({"label":label,"camera":str(active.get_path()),"position":str(active.global_position),"driver_camera_current":is_instance_valid(driver_camera) and active == driver_camera,"plumes":plumes}))
 
 func _save_monsters() -> void:
 	if not ready_to_run: return
@@ -478,7 +524,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode == KEY_F7: _select_mode.call_deferred(7)
 	elif event.keycode == KEY_F8: _select_mode.call_deferred(8)
 	elif event.keycode == KEY_F9: _load_monsters.call_deferred()
-	elif event.keycode == KEY_F10: _select_mode.call_deferred(10)
+	elif event.keycode == KEY_F10:
+		driver_pov = false
+		_select_mode.call_deferred(10)
+	elif event.keycode == KEY_F11:
+		driver_pov = true
+		_select_mode.call_deferred(10)
 	elif event.keycode == KEY_P:
 		paused = not paused
 		get_tree().paused = paused

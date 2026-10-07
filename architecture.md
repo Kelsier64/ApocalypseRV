@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-文件核對：2026-10-02 整合正式 v8 公路隨機內容與樹木撞毀；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對：2026-10-07 正式 v9 公路獨立生成與 v5 Item 保存；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
@@ -47,9 +47,9 @@ MainWorld
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-正式主場景明確選擇生成 v8；共用 WorldProfile 預設及測試世界保持 v6。v7／v8 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+正式主場景明確選擇生成 v9；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
-Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
+Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
 ### 輪胎與爆胎路障
 
@@ -57,13 +57,13 @@ Chassis 四個輪槽的 wheel_health 為唯一耐久來源，0 表示爆胎；pu
 
 v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") 獨立種子流，在 ChunkGenerator 建立道路後生成，不消耗既有物資／敵人 RNG。路障屬 chunk，隨串流釋放與確定性重建；以該生成版本建立或從 v5 還原時會產生此障礙，地形生成版本不變。Area3D 只選取附近 Chassis，沒有車時停用 physics_process；附近每台車最多檢查四個接地點的跨幀線段與釘帶局部 AABB。輪寬計入邊界、離地與傳送跨距不觸發，無每幀全世界掃描或額外物理射線。釘帶不是可攀／可拆設備，不進 SaveSceneCatalog。回歸與限制見 [爆胎驗收](docs/validation/2026-09-22-tire-puncture.md)。
 
-### v8 公路隨機內容
+### v9 公路獨立生成與 v8 相容
 
-正式 main_world 新局選擇 v8，沿用避難所開場及小 POI；共用 WorldProfile 預設與 legacy fixture 保留 v6，生成 v2–v7 分支保留原規則，僅接受 v5 檢查點。檢查點為 v5，shelter 接受 v7／v8，legacy 禁止這兩版開場身份。
+正式 main_world 新局選擇 v9，沿用避難所開場及小 POI；共用 WorldProfile 預設與 legacy fixture 保留 v6，生成 v2–v7 分支保留原規則，僅接受 v5 檢查點。檢查點為 v5，shelter 接受 v7／v8／v9，legacy 禁止這三版開場身份。
 
-RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，提供靜態姿態與怪物位置；前 450 m、安全據點與所有物件的 5 m 接縫距離受保護。一般車陣保留至少 5 m 中央通道，少量車陣橫置封路。靜態內容屬 chunk，加入導航烘焙；v8 改用這條釘帶流程，舊版保留 TireSpikeStrip.build。
+RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種子流、一般 5 m 中央通道及封路車陣，v9 分離釘帶、Raker、油桶人、普通油桶及廢車的數量／位置 RNG。Raker 0–3 隻機率為 65／20／10／5%，逐隻以路面／路邊 40／60% 選點，沒有最小間距；油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。v2–v7 保留 TireSpikeStrip.build。
 
-導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v8 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。實作、測試與未驗證範圍見 [本輪紀錄](docs/validation/2026-10-01-random-road-spawns.md)。
+導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8／v9 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v9 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。普通油桶沿用 Item／WorldActorSnapshot 保存及 generated_bands 防補發；重烘焙、拾取、爆炸、清理或重載皆不重新抽取。實作、測試與未驗證範圍見 [v9 本輪紀錄](docs/validation/2026-10-07-independent-road-spawns.md)，[v8 初版紀錄](docs/validation/2026-10-01-random-road-spawns.md)保留當時結果。
 
 ### 油桶人與接觸自爆
 
@@ -73,9 +73,9 @@ RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，�
 
 `BarrelExplosion.explode` 先收集同 World3D 全部受害者、真實碰撞形狀表面距離及 LOS，再依玩家、車板、引擎各自去重結算。完整車殼當次仍遮蔽乘員，已存在破口能曝露玩家；Item 完全免傷，也不能藉父節點轉交引擎傷害，但車板毀損仍觸發既有支撐掉落。爆炸半徑 4 m；玩家 1.5 m 內 70 HP／一肢，0.8 m 內最多兩肢；車板 2 m 內 120 HP，引擎 60 HP，外圈線性衰減。實際接觸 RV 直接授權引擎傷害，避免車尾漏傷。`Player.apply_explosion_hit` 共享一次傷害冷卻，從尚存四肢無重複抽取、先斷肢再死亡，斷肢共用切斷前速度及爆風。特效無拾取或保存身份，沒有持續燃燒或怪物連鎖爆炸。
 
-v8 道路、貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 增加可選 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；已啟動倒數以可選 `proximity_fuse_remaining` 保存，舊記錄缺少此欄時視為未啟動，死亡來源不保存。檢查點維持 v5、地形 v8，v2–v7 戶外生成、舊活怪與已清空區域保持原資料。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
+既有 v8 道路、v8／v9 貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 增加可選 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；已啟動倒數以可選 `proximity_fuse_remaining` 保存，舊記錄缺少此欄時視為未啟動，死亡來源不保存。檢查點維持 v5、新局生成 v9，v2–v7 戶外生成、舊活怪與已清空區域保持原資料。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
 
-`barrel_explosion_effect.gd` 負責獨立 3.8 秒特效生命週期：短閃光與單盞有陰影點光、翻捲火球、上升黑煙、貼近地面的塵浪、沿速度延伸的火星及桶身碎片。火煙 shader 使用預載的共用噪聲貼圖、深度柔化及每次爆炸獨立的材質時間；音效預先烘焙，避免首次爆炸即時合成。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；塵浪只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物。所有視覺節點不含碰撞或傷害，結束後一起釋放。特效圖像及本輪驗證見 [爆炸特效](docs/validation/2026-10-07-barrel-man-vfx.md)。
+`barrel_explosion_effect.gd` 負責獨立 8 秒特效生命週期：短閃光與單盞有陰影點光、Blender 預烘焙火煙、貼地揚塵、少量火星及八片彎曲桶身金屬。共用兩張火煙圖集，每次爆炸有獨立材質時間；火煙 shader 在 BoxMesh 邊界內沿視線積分 12 個密度樣本，以不透明場景深度截斷，避免駕駛鏡頭穿過中央平面時特效消失。火焰快速膨脹上升，煙霧缓升至消散；沒有即時流體求解。碎片以掃掠射線反彈／停落，落地聲最多三個同時播放、每次爆炸最多五次；音效預先烘焙。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；揚塵只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物及其他 entity domain。所有視覺節點不含碰撞、傷害或保存身份，結束後一起釋放。資產及驗證見 [火煙與碎片](docs/validation/2026-10-08-barrel-blast-realism.md)、[駕駛 POV 修正](docs/validation/2026-10-08-barrel-driver-explosion.md)。
 
 行為、爆炸、保存與真 RV 接觸自動檢查及目前尚未完成的模型／畫面驗收見 [油桶人紀錄](docs/validation/2026-10-07-barrel-man.md)。
 
@@ -204,7 +204,7 @@ PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡�
 
 2026-09-22 的舊怪物 GLB 試接與 Zombie 場景已非現行敵人契約；當時的模型、膠囊縮放及原地測試動畫見[歷史資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。Raker 外觀與動作由下述場景負責，油桶人使用獨立場景。
 
-獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點沿用 Raker 名額，v8 道路與貨物／棚屋依上述油桶人比例替換；敵人數量、選點與原生成 RNG 不變。新訪地堡依上述獨立種類 RNG 選擇 Raker 或油桶人。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
+獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點沿用 Raker 名額，v9 道路油桶人獨立抽取；既有 v8 道路與 v8／v9 貨物／棚屋依上述油桶人比例替換；敵人數量、選點與原生成 RNG 不變。新訪地堡依上述獨立種類 RNG 選擇 Raker 或油桶人。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
 
 Raker 車撞效果只由 Monster 新接受撞擊後的 hook 觸發，沿用共用傷害／冷卻及 RV 結算。接近速度 ≥6 m/s 或死亡切入 15 個 PhysicalBone3D；較輕撞擊保留 0.55 秒擊退。切換延後至碰撞查詢結束，停用控制膠囊、動畫、頭手 IK、抓咬及 AI；物理骨承接當下姿態和撞擊速度。原始 GLB／54 骨／1.2 倍外觀不改，碰撞尺寸烘入放大倍率並抵銷 body_offset basis，保持物理 scale=1。碰撞層 128／mask 1，只與環境及車體接觸，不做布娃娃肢體互撞；CCD、關節限角及局部慣量維持原專案 60 Hz／Jolt 設定。初始手腳穿過車頭接觸面時，全姿態沿法線最多推出 1.2 m；撞擊點另有短粒子與程序音效。
 
@@ -282,9 +282,9 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 ### 世界
 
-WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v8 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
+WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z；v2–v4 只向 −Z 推進，v5+ 維護前後窗口並可回頭載入。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v5 另存 generation_version（2–8），缺省為 2；新 WorldProfile 預設 6。v5 還原不改地形與 POI ID。
+串流比較室外玩家或副本錨點 Z；v2–v4 只向 −Z 推進，v5+ 維護前後窗口並可回頭載入。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v5 另存 generation_version（2–9），缺省為 2；新 WorldProfile 預設 6。v5 還原不改地形與 POI ID。
 
 外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 
@@ -499,7 +499,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### v6 路邊小 POI
 
-正式主場景選擇 v8，v7／v8 沿用 v6 小 POI 規則；共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
+正式主場景選擇 v9，v7／v8／v9 沿用 v6 小 POI 規則；共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
 
 `WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 
