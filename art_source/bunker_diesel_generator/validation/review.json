@@ -1,0 +1,75 @@
+{
+  "state": "ACCEPTED_WITH_LIMITATIONS",
+  "scope": "Static bunker visual replacement: reviewed six directions, metric placement and original collision",
+  "source": {
+    "vertices": 20921,
+    "triangles": 19968,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "d56287c965afa510a022fcbc5041bb0d079cbca7d4b6dfa6b5abe7b897ea799d",
+    "bytes": 5086944
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "textured/front",
+    "textured/side",
+    "textured/back",
+    "textured/oblique",
+    "textured/top",
+    "textured/underside",
+    "clay/front",
+    "clay/side",
+    "clay/back",
+    "clay/oblique",
+    "clay/top",
+    "clay/underside"
+  ],
+  "checks": {
+    "long_low_silhouette": true,
+    "crankshaft": "X",
+    "service_face": "+Z",
+    "origin": "bottom center",
+    "metric_dimensions": "3.20 x 1.70 x 1.20 m; native all-vertex AABB tolerance 0.002 m",
+    "embedded_image_bytes_unchanged": true,
+    "raw_topology_uv_unchanged": false,
+    "native_power_hall_close_wide_flashlight_capture_inspected": true,
+    "wrapper_validation": "context.json"
+  },
+  "defects": [
+    "Belt-cage holes are primarily texture/normal relief.",
+    "Some small parts fused or rounded, approximate/repeated back detail, simplified underside.",
+    "Minor silhouette simplification of the exhaust and fine edges versus 49k baseline."
+  ],
+  "limitations": [
+    "No mechanical animation or precision interface.",
+    "No full gameplay traversal or many-instance FPS measurement.",
+    "Final context check used native Forward+ capture; manual F2/Esc observation was on the earlier 49k model."
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  },
+  "full_review_images_committed": false,
+  "representative_images": [
+    "power_hall_flashlight.png",
+    "reduction_comparison.png"
+  ],
+  "full_views_local_archive": ".godot/art-work/bunker_diesel_generator/pr28-original/review_reduced_final"
+}

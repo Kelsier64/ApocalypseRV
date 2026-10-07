@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。
+
 油桶人：[Blender 雙腿、偽裝追逐、接觸自爆與保存驗收](validation/2026-10-07-barrel-man.md)，含正式玩家／RV 展示場、輪驅重播及模型來源；[腳踝、腳掌與五趾細修](validation/2026-10-07-barrel-man-feet.md)補上新版近景與蒙皮檢查。普通油桶與地堡裝飾桶共用相同藍色桶身。
 
 油桶人引爆更新：[1.5 m 近距離範圍、0.5 秒倒數及接觸立即引爆](validation/2026-10-07-barrel-man-proximity.md)，含倒數保存、F8 重播及本輪測試。
@@ -60,7 +62,7 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 指南
 
-- [單圖 3D 生成、減面與驗收](guides/image-to-3d-workflow.md) — 工具安裝、參考圖／3D 子代理交接、固定生成、先驗 raw、減面對照及遇錯停止。
+- [單圖 3D 生成、減面與驗收](guides/image-to-3d-workflow.md) — 工具、主 agent 直接生成／修整、raw 檢查、可選減面與場景接入。
 
 - [Raker 資產建置入口](guides/asset-builds.md) — 目前 v021 來源流程與舊腳本移除紀錄。
 

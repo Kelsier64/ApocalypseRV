@@ -1,0 +1,28 @@
+{
+	"collision_size_m": [
+		3.20000004768372,
+		1.70000004768372,
+		1.20000004768372
+	],
+	"environment": "PoiInterior v2 ambient + BunkerLighting.apply(lit hall); third view adds production flashlight Beam",
+	"failures": [],
+	"godot_version": "4.7.2-stable (official)",
+	"measured_visual_aabb_position_m": [
+		-1.60000002384186,
+		0.0,
+		-0.600000023841858
+	],
+	"measured_visual_size_m": [
+		3.20000004768372,
+		1.70000004768372,
+		1.20000004768372
+	],
+	"rendering_method": "forward_plus",
+	"service_face_world_direction": [
+		1.0,
+		0.0,
+		-0.00000361999013875902
+	],
+	"state": "PASS",
+	"tolerance_m": 0.002
+}

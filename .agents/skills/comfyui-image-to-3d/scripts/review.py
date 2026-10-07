@@ -11,7 +11,7 @@ from pathlib import Path
 
 from generate import inspect_glb, read, save, sha
 
-VIEWS = ("front", "side", "back", "oblique", "top")
+VIEWS = ("front", "side", "back", "oblique", "top", "underside")
 SEMANTICS = {"POSITION": "VEC3", "NORMAL": "VEC3", "TEXCOORD_0": "VEC2", "TANGENT": "VEC4"}
 
 

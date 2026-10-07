@@ -105,12 +105,12 @@ func run() -> void:
 		environment.environment.background_color = Color(0.12, 0.14, 0.17)
 		environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		environment.environment.ambient_light_color = Color.WHITE
-		environment.environment.ambient_light_energy = 0.8
+		environment.environment.ambient_light_energy = 0.4
 		world.add_child(environment)
-		for rot in [Vector3(-45, -35, 0), Vector3(-20, 135, 0)]:
+		for lighting in [{"rotation": Vector3(-45, -35, 0), "energy": 0.95}, {"rotation": Vector3(-20, 135, 0), "energy": 0.6}, {"rotation": Vector3(70, 45, 0), "energy": 0.5}]:
 			var light := DirectionalLight3D.new()
-			light.rotation_degrees = rot
-			light.light_energy = 1.2
+			light.rotation_degrees = lighting.rotation
+			light.light_energy = lighting.energy
 			world.add_child(light)
 		var camera := Camera3D.new()
 		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
@@ -119,7 +119,7 @@ func run() -> void:
 		camera.far = extent * 20.0
 		camera.current = true
 		world.add_child(camera)
-		var views := {"front": Vector3(0, 0, 1), "side": Vector3(1, 0, 0), "back": Vector3(0, 0, -1), "oblique": Vector3(1, 0.65, 1), "top": Vector3(0, 1, 0.001)}
+		var views := {"front": Vector3(0, 0, 1), "side": Vector3(1, 0, 0), "back": Vector3(0, 0, -1), "oblique": Vector3(1, 0.65, 1), "top": Vector3(0, 1, 0.001), "underside": Vector3(0, -1, 0.001)}
 		var output: String = manifest.output.path_join(entry.name)
 		for mode in ["textured", "clay"]:
 			var out := output.path_join(mode)
@@ -128,8 +128,8 @@ func run() -> void:
 				return
 			if mode == "clay":
 				var clay := StandardMaterial3D.new()
-				clay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-				clay.albedo_color = Color.WHITE
+				clay.albedo_color = Color(0.48, 0.48, 0.48)
+				clay.roughness = 1.0
 				clay.cull_mode = BaseMaterial3D.CULL_DISABLED
 				apply_clay(model, clay)
 			for view in views:

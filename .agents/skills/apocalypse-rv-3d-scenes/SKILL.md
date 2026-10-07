@@ -8,12 +8,15 @@ description: Always read this skill first before building or editing ApocalypseR
 - **Finish simple objects directly:** Complete walls, floors and other objects that need only a few meshes and materials, including their visuals and function.
 - **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decor and equipment. The main agent handles reference creation, generation, inspection, refinement and integration directly. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
 - **Split large buildings into components where useful:** Generate or model facade sections, entrance assemblies, roof equipment and interior fittings separately. Keep the building layout and assembly in Godot, with each component independently replaceable. Track the target node, local placement, orientation and adjoining dimensions or openings needed for a fit. Repeated instances share one asset; finish simple structural parts directly.
+- **Verify visual replacements in context:** Check local axes, origin, design dimensions and placement in the target scene. Preserve the existing wrapper tree, collision and gameplay behavior when replacing visuals. Graybox placement alone does not establish a finished visual result; inspect the actual integrated asset.
+- **Evaluate rendering cost before delivery:** Choose a triangle budget for the object's size, viewing distance and expected instance count. Try reduction when the generated mesh is unnecessarily dense; compare the result visually and explain the choice if keeping a higher count. Generation defaults and automatic LOD do not establish an asset budget.
+- **Keep Git deliveries focused:** Put generation jobs, intermediate candidates, batch review images, failures, logs and temporary dependencies in an ignored workspace such as `.godot/art-work/<asset>/<run>/`. Commit the runtime asset, necessary original/editable sources and rebuild parameters, plus a concise validation report and selected representative images. Perform the full review locally without committing every output. Before committing, inspect staged paths, file count and sizes; stage only needed files. Preserve local working evidence and user files; do not broadly ignore `art_source/` or asset extensions.
 
 ## Blender MCP
 
 Blender MCP can be used for modeling, editing, inspecting, and exporting assets when the required tools are available and connected.
 
-If Blender MCP is unavailable or cannot connect, ask the user to open Blender and enable its Blender MCP connection, explaining the observed limitation.
+If Blender MCP is unavailable, use existing offline CLI, glTF or Godot tools when they can complete the task. Ask the user to open Blender and enable its MCP connection only when the task requires Blender and available alternatives cannot complete it; explain the observed limitation.
 
 ## Image-to-3D Workflow
 

@@ -1,0 +1,37 @@
+{
+  "source_sha256": "2d0267dda6918fb41c47a18940267ca7f9767fbe55f0a03aba7df883dbe115f3",
+  "source": ".godot/art-work/bunker_diesel_generator/rebuild/gltfpack_20k/candidate.glb",
+  "final_sha256": "d56287c965afa510a022fcbc5041bb0d079cbca7d4b6dfa6b5abe7b897ea799d",
+  "rotation_y_degrees": 0,
+  "source_rotated_size": [
+    3.1982905864715576,
+    1.693620682170149,
+    1.1969546675682068
+  ],
+  "fit_scale_xyz": [
+    1.000534477240959,
+    1.0037666744962495,
+    1.0025442337243902
+  ],
+  "target_size_m": [
+    3.2,
+    1.7,
+    1.2
+  ],
+  "origin": "bottom center",
+  "crankshaft": "+/-X",
+  "service_face": "+Z",
+  "texture_sha256": {
+    "basecolor": "8604dcb967922c2af76a1d5f0807aaee77a0be0b28b65da93ea2c8395905aeae",
+    "orm": "2935484cb7db691d466d7322f45db0bbcefdca6968e60aa09c8d2f5701307719",
+    "normal": "067d29966006489955d8e128347ff420735174f6f4e6612efdc21cbc50c0473e"
+  },
+  "geometry_edits": "rotation, per-axis scale and translation baked; inverse-transpose normals; orthogonalized tangents",
+  "topology_changed_in_this_fit": false,
+  "textures_changed": false,
+  "raw_to_delivery_topology_changed": true,
+  "limitations": [
+    "Generated belt-cage perforations are mostly texture relief, not open mesh holes.",
+    "Generated underside/back detail is approximate; no mechanical animation or precision interface."
+  ]
+}
