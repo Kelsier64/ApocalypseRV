@@ -4,23 +4,28 @@
 
 ## 1. 安裝與確認工具
 
-需要 [Python 3.11 以上](https://www.python.org/downloads/windows/)及 Pillow、[Node.js 24 LTS](https://nodejs.org/en/download)（Windows x64 安裝程式包含 npm）、固定版本 meshoptimizer，以及 [Godot 4.7.2](https://godotengine.org/download/archive/)。用官方安裝程式裝好後重新開啟 PowerShell；Python 安裝時選擇加入 PATH。已有相容工具就沿用；Codex 可先用 `load_workspace_dependencies` 找內建 Python／Node 執行檔，以完整路徑執行，不必重複安裝。
+需要 [Python 3.11 以上](https://www.python.org/downloads/windows/)及 Pillow、[Node.js 24 LTS](https://nodejs.org/en/download)（Windows x64 安裝程式包含 npm）、固定版本 meshoptimizer，以及 [Godot 4.7.2](https://godotengine.org/download/archive/)。用官方安裝程式裝好後重新開啟 PowerShell；Python 安裝時選擇加入 PATH。已有相容工具就沿用；Codex 可先用 `load_workspace_dependencies` 找內建 Python／Node 執行檔，以完整路徑執行，不必重複安裝。缺少 Pillow 時，裝到本 run 的 `deps/python` 並在執行時加入 `PYTHONPATH`，不要全域安裝。
 
 以下 PowerShell 命令從 repository root 執行：
 
 ```powershell
+$work = '.godot/art-work/example-asset/run-001'
 python --version
-python -m pip install Pillow
 node --version
 npm.cmd --version
-npm.cmd install --prefix .godot/mesh-decimation --no-save --ignore-scripts meshoptimizer@1.3.0
+npm.cmd install --prefix "$work/deps/meshoptimizer" --no-save --ignore-scripts meshoptimizer@1.3.0
+# 只有缺少 Pillow 時執行：
+python -m pip install --target "$work/deps/python" Pillow
+$env:PYTHONPATH = "$work/deps/python"
 $godot = (Get-Command godot -ErrorAction SilentlyContinue).Source
 if (-not $godot) { $godot = 'C:/Program Files/godot/godot.exe' } # 範例 fallback；先確認此路徑存在，否則換成實際執行檔
 & $godot --version
 $skill = '.agents/skills/comfyui-image-to-3d'
 ```
 
-`.godot/mesh-decimation` 是忽略的本機依賴，不提交 node_modules 或產物。缺工具時停止並向使用者說明需要安裝什麼；不要偷偷改全域環境。
+每次工作建立新的 `.godot/art-work/<asset>/<run>/`；把依賴放在該 run 的 `deps/`，不提交 node_modules 或其他產物。缺工具時停止並向使用者說明需要安裝什麼；不要偷偷改全域環境。
+
+生成 job 與完整 history、各輪候選、批次渲染圖、失敗輸出、臨時 logs 和依賴預設都留在這個忽略的本機工作目錄。技術檢查與目視驗收仍完整執行，檢查證據留在本機供除錯。提交時選入必要原始來源、editable／重建腳本、精簡參數與來源摘要、正式模型／貼圖，以及少量最終代表圖和報告；不要求整套驗收檔都進 Git，也不預設清理原始或使用者檔案。
 
 本機生成服務及權重已由使用者裝在 `C:/Users/evan4/Apps`。本流程只檢查及使用現有服務，不自動更新、下載權重、啟停或改服務。8000 的 `/health` 用於發現 8188 ComfyUI 後端；生成使用固定 TRELLIS.2 原生 graph 直接提交到後端，並非 8000 的 API preset。
 
@@ -44,7 +49,8 @@ $skill = '.agents/skills/comfyui-image-to-3d'
 
 ```powershell
 $reference = 'docs/modeling/requests/example/example-reference.png'
-$job = '.godot/image-to-3d/example-job-001'
+$work = '.godot/art-work/example-asset/run-001'
+$job = "$work/generation"
 python "$skill/scripts/generate.py" preflight
 python "$skill/scripts/generate.py" submit --image $reference --asset-id example --output $job
 python "$skill/scripts/generate.py" status --output $job
@@ -63,7 +69,7 @@ python "$skill/scripts/generate.py" inspect --glb "$job/raw.glb"
 先在獨立 Godot 檢視專案渲染 raw，避免遊戲 autoload 影響結果：
 
 ```powershell
-python "$skill/scripts/review.py" --source "$job/raw.glb" --output "$job/raw-review" --godot $godot
+python "$skill/scripts/review.py" --source "$job/raw.glb" --output "$work/reviews/raw" --godot $godot
 ```
 
 檢視工具建立並釋放獨立臨時 Godot project；此例的圖片位於忽略的 `.godot` 工作區。工具對每個 GLB 輸出 front、side、back、oblique、top、underside 各一張材質圖與受光灰色 clay 圖，共十二張。逐張看實際圖像，對照需求檢查直柱／橫桿、缺件、腳底支撐、比例、朝向、原風格、材質及接口。缺少必要幾何、歪斜、錯誤比例或風格改變時，先修整；減面不會拉直模型。
@@ -77,11 +83,12 @@ python "$skill/scripts/review.py" --source "$job/raw.glb" --output "$job/raw-rev
 接入前依尺寸、觀看距離及同屏數量評估面數預算；成本偏高先試降面，保留較高面數時說明理由。以下以 20,000 三角面示範，不要求每個資產都固定降到 20k：
 
 ```powershell
-$reduced = "$job/reduced-20k"
-node "$skill/scripts/simplify.mjs" "$job/raw.glb" $reduced 20000 '.godot/mesh-decimation/node_modules/meshoptimizer/meshopt_simplifier.js'
+$reduced = "$work/candidates/reduced-20k"
+$meshopt = "$work/deps/meshoptimizer/node_modules/meshoptimizer/meshopt_simplifier.js"
+node "$skill/scripts/simplify.mjs" "$job/raw.glb" $reduced 20000 $meshopt
 if ($LASTEXITCODE -ne 0) { throw "減面停止：檢查錯誤與 simplification.json，再回報使用者" }
 python "$skill/scripts/generate.py" inspect --glb "$reduced/raw.glb"
-python "$skill/scripts/review.py" --source "$job/raw.glb" --candidate "$reduced/raw.glb" --output "$job/reduced-review" --godot $godot
+python "$skill/scripts/review.py" --source "$job/raw.glb" --candidate "$reduced/raw.glb" --output "$work/reviews/reduced-20k" --godot $godot
 ```
 
 減面保留原始頂點屬性組（含材質相關 normal／UV）及內嵌 PNG，使用 LockBorder、normal 權重 1、UV 權重 10，組合誤差上限 0.002。來源已不超過目標時保留原檔，作為不需減面的結果。
@@ -94,6 +101,21 @@ python "$skill/scripts/review.py" --source "$job/raw.glb" --candidate "$reduced/
 
 ## 7. 交付與問題回報
 
-交付原圖、原始／減面 GLB、生成摘要與 prompt ID、三角面數、渲染圖、review.json，以及必要尺寸／軸向／接口、未測項目與限制。可交付研究候選，但不可把 UNKNOWN 宣告為可整合或把生成成功宣告為美術 PASS。正式資產位置按原需求；本機 `.godot` 產物不提交。
+交付需要的原始來源、editable／重建資料、精簡參數／來源摘要、正式資產和少量最終代表圖／報告。完整生成 history、各輪候選、批次渲染圖和檢查細節留在 `.godot/art-work/<asset>/<run>/` 供本機除錯，不要求整套驗收檔進 Git。可交付研究候選，但不可把 UNKNOWN 宣告為可整合或把生成成功宣告為美術 PASS。正式資產位置按原需求；工作目錄產物不提交。
+
+提交前明確檢查 staged 清單、檔案數與總大小，再逐項挑選必要檔案：
+
+```powershell
+$staged = @(git diff --cached --name-only)
+$totalBytes = 0L
+foreach ($path in $staged) {
+    $blobSize = git cat-file -s ":$path" 2>$null
+    if ($LASTEXITCODE -eq 0) { $totalBytes += [long]$blobSize }
+}
+"Staged files: $($staged.Count); bytes: $totalBytes"
+git diff --cached --stat
+```
+
+`.gitignore` 的忽略規則不會移出已追蹤檔案；不要全域忽略 `art_source/` 或 `*.glb`／`*.png`／`*.gd`，也不要為精簡提交而預設刪除本機原始、使用者或除錯產物。
 
 問題回報附物件名稱、失敗階段、路徑／圖像證據、目前狀態與剩餘問題。保留原圖／raw GLB，修改另存，修完重新檢查；必要 UNKNOWN 不當作合格。本指南的文件檢查不等於實際模型或遊戲驗收。

@@ -9,11 +9,15 @@ import copy
 import hashlib
 import json
 import math
+import shutil
 import struct
+import subprocess
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+WORK = ROOT / ".godot/art-work/bunker_diesel_generator/rebuild"
 TARGET = (3.20, 1.70, 1.20)
 
 
@@ -26,12 +30,28 @@ def normalized(v):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--high", action="store_true", help="Rebuild fitted_49k/source.glb from raw; do not change game delivery")
+    parser.add_argument("--high", action="store_true", help="Build the high baseline in the ignored workspace; do not change game delivery")
+    parser.add_argument("--gltfpack", help="Path to official gltfpack 1.3, required when rebuilding the reduction")
     args = parser.parse_args()
-    source = HERE / ("run_01/raw.glb" if args.high else "gltfpack_20k/candidate.glb")
-    dest = HERE / "fitted_49k" if args.high else ROOT / "assets/models/bunker_diesel_generator"
+    source = HERE / "raw.glb" if args.high else WORK / "gltfpack_20k/candidate.glb"
+    dest = WORK / "fitted_49k" if args.high else ROOT / "assets/models/bunker_diesel_generator"
+    if not args.high and not source.is_file():
+        tool = args.gltfpack or shutil.which("gltfpack") or ROOT / ".godot/gltfpack-1.3/bin/gltfpack.exe"
+        if not Path(tool).is_file():
+            raise SystemExit("Rebuild requires gltfpack 1.3; supply --gltfpack <executable>. No tool is installed automatically.")
+        help_result = subprocess.run([str(tool), "-h"], capture_output=True, text=True)
+        if not (help_result.stdout + help_result.stderr).startswith("gltfpack 1.3\n"):
+            raise SystemExit("This recorded reduction requires gltfpack 1.3")
+        subprocess.run([sys.executable, "-B", str(Path(__file__).resolve()), "--high"], check=True)
+        source.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([str(tool), "-i", str(WORK / "fitted_49k/source.glb"), "-o", str(source),
+                        "-si", "0.4", "-se", "0.01", "-sp", "-sv", "-noq", "-kn", "-km",
+                        "-r", str(source.parent / "report.json")], check=True)
     editable_dir = dest / "editable" if args.high else HERE / "editable"
     original = source.read_bytes()
+    expected_source = ("34a0f1f5cfa865acfa07970ceda8199ff77e2264662350cb108fd04887007b8c" if args.high
+                       else "2d0267dda6918fb41c47a18940267ca7f9767fbe55f0a03aba7df883dbe115f3")
+    assert hashlib.sha256(original).hexdigest() == expected_source, "Rebuild input differs from the recorded source"
     assert struct.unpack_from("<4sII", original) == (b"glTF", 2, len(original))
     length = struct.unpack_from("<I", original, 12)[0]
     doc = json.loads(original[20:20 + length])
@@ -116,7 +136,7 @@ def main():
         entry["uri"] = "bunker_diesel_generator_" + name + ".png"
     (editable_dir / "bunker_diesel_generator.gltf").write_text(json.dumps(editable, indent=2) + "\n", encoding="utf-8")
     metadata = {"source_sha256": hashlib.sha256(original).hexdigest(),
-                "source": source.relative_to(HERE).as_posix(),
+                "source": source.relative_to(ROOT).as_posix(),
                 "final_sha256": hashlib.sha256(final).hexdigest(),
                 "rotation_y_degrees": -90 if args.high else 0, "source_rotated_size": source_size,
                 "fit_scale_xyz": scale, "target_size_m": TARGET,
@@ -127,7 +147,7 @@ def main():
                 "raw_to_delivery_topology_changed": not args.high,
                 "limitations": ["Generated belt-cage perforations are mostly texture relief, not open mesh holes.",
                                 "Generated underside/back detail is approximate; no mechanical animation or precision interface."]}
-    (HERE / ("refinement_high.json" if args.high else "refinement.json")).write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+    (dest / "refinement.json" if args.high else HERE / "refinement.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
     assert source.read_bytes() == original
     print(json.dumps(metadata))
 

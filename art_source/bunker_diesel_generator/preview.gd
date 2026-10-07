@@ -2,7 +2,7 @@ extends SceneTree
 ## One-off source review: real power hall, existing lighting and wrapper collision.
 ## -- --capture saves three authored views and exits; otherwise F2 switches view, Esc exits.
 
-const OUTPUT := "res://art_source/bunker_diesel_generator/in_context"
+var output: String
 var camera: Camera3D
 var flashlight: SpotLight3D
 var view_index := 0
@@ -69,12 +69,14 @@ func capture(name: String) -> void:
 	for frame in 12:
 		await process_frame
 	await RenderingServer.frame_post_draw
-	check(root.get_texture().get_image().save_png(OUTPUT.path_join(name + ".png")) == OK, "Save " + name)
+	check(root.get_texture().get_image().save_png(output.path_join(name + ".png")) == OK, "Save " + name)
 
 func run() -> void:
 	manual = "--capture" not in OS.get_cmdline_user_args()
 	deadline = Time.get_ticks_msec() + 300000
-	DirAccess.make_dir_recursive_absolute(OUTPUT)
+	output = "res://.godot/art-work/bunker_diesel_generator/capture_" + str(Time.get_unix_time_from_system()).replace(".", "_")
+	DirAccess.make_dir_recursive_absolute(output)
+	print("Generator capture output: ", output)
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -137,7 +139,7 @@ func run() -> void:
 		"service_face_world_direction": [service_direction.x, service_direction.y, service_direction.z],
 		"environment": "PoiInterior v2 ambient + BunkerLighting.apply(lit hall); third view adds production flashlight Beam",
 		"godot_version": Engine.get_version_info().string, "rendering_method": RenderingServer.get_current_rendering_method()}
-	var file := FileAccess.open(OUTPUT.path_join("validation.json"), FileAccess.WRITE)
+	var file := FileAccess.open(output.path_join("validation.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify(result, "\t") + "\n")
 	file.close()
 	print("GENERATOR_REVIEW " + JSON.stringify(result))

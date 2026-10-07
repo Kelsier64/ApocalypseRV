@@ -37,7 +37,7 @@
     "embedded_image_bytes_unchanged": true,
     "raw_topology_uv_unchanged": false,
     "native_power_hall_close_wide_flashlight_capture_inspected": true,
-    "wrapper_validation": "../in_context/validation.json"
+    "wrapper_validation": "context.json"
   },
   "defects": [
     "Belt-cage holes are primarily texture/normal relief.",
@@ -65,5 +65,11 @@
       "clay"
     ],
     "shared_baseline_camera": true
-  }
+  },
+  "full_review_images_committed": false,
+  "representative_images": [
+    "power_hall_flashlight.png",
+    "reduction_comparison.png"
+  ],
+  "full_views_local_archive": ".godot/art-work/bunker_diesel_generator/pr28-original/review_reduced_final"
 }

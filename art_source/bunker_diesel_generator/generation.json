@@ -1,0 +1,25 @@
+{
+  "prompt_id": "f32e14f8-54ef-44cc-95f6-c3bd2320904e",
+  "profile": "trellis-single-1024-50k",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "prompt_sha256": "dd71fa4ae9755c7a87a016c34754d995f8fda60ee9c7a4fcf7e4112254b01f60",
+  "reference_sha256": "51ffecfdbb3cf8838a202415b0eadcf48ec9a3b4c301bfabf01a638c00bd223e",
+  "generator": "ComfyUI 0.38.0 / TRELLIS.2 INT8",
+  "origin": "AI-generated reference and model; no third-party model used",
+  "raw_sha256": "34a0f1f5cfa865acfa07970ceda8199ff77e2264662350cb108fd04887007b8c",
+  "conditioning_sha256": "2fbc344753988b55399f9cb868f07df930954e6871abbf68d3026194a44097df",
+  "source_axes": {
+    "up": "Y",
+    "crankshaft": "Z",
+    "service_face": "+X"
+  },
+  "high_fit_rotation_y_degrees": -90,
+  "high_fit_scale_xyz": [
+    3.171446573441131,
+    2.915876975701304,
+    2.974178763091195
+  ]
+}

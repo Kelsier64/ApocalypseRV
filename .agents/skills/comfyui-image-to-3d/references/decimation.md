@@ -1,6 +1,6 @@
 # 降面
 
-依模型尺寸、觀看距離、同屏數量、輪廓與接口判斷遊戲面數預算，合適時試降面；若保留高面數，簡述其依據。模型已夠輕就不降。保留原 GLB，候選另存，修完重看貼圖／素色視圖並確認 Godot 效果。降面不能修直歪斜或補回缺件。
+依模型尺寸、觀看距離、同屏數量、輪廓與接口判斷遊戲面數預算，合適時試降面；若保留高面數，簡述其依據。模型已夠輕就不降。完整執行技術檢查與目視比較，保留原 GLB 和各候選供本機除錯；新建 `.godot/art-work/<asset>/<run>/candidates/` 存放候選、reports 與臨時檢查輸出。提交時只挑必要來源、正式資產和少量代表圖／摘要，不要求整套驗收產物入 Git，也不預設刪除本機工作資料。降面不能修直歪斜或補回缺件。
 
 ## 選方法
 
@@ -13,7 +13,9 @@
 用[官方工具](https://github.com/zeux/meshoptimizer/tree/v1.3/gltf)並記錄版本，無需新增全域安裝或遊戲依賴。v1.3 起點：
 
 ```powershell
-gltfpack -i '<source.glb>' -o '<new-folder/candidate.glb>' -si 0.1 -se 0.01 -sp -sv -noq -kn -km
+$work = '.godot/art-work/example-asset/run-001'
+New-Item -ItemType Directory -Force "$work/candidates/gltfpack-10-percent" | Out-Null
+gltfpack -i "$work/generation/raw.glb" -o "$work/candidates/gltfpack-10-percent/candidate.glb" -si 0.1 -se 0.01 -sp -sv -noq -kn -km -r "$work/candidates/gltfpack-10-percent/report.json"
 ```
 
 `-si` 是保留面數比例，`-se` 是演算法誤差上限。`-sp` 允許跨屬性切縫減面，`-sv` 更新頂點／屬性，可與不加兩者比較。`-noq` 關閉量化，`-kn -km` 保留命名節點／材質；壓縮支援另驗證。

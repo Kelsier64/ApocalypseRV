@@ -18,30 +18,26 @@ def load(path):
 
 
 def main():
-    raw = decode(HERE / "run_01/raw.glb")
-    high = decode(HERE / "fitted_49k/source.glb")
-    candidate = decode(HERE / "gltfpack_20k/candidate.glb")
+    raw = decode(HERE / "raw.glb")
     doc, binary, stats = decode(ASSETS / "bunker_diesel_generator.glb")
     meta = load(HERE / "refinement.json")
     assert raw[2]["sha256"] == "34a0f1f5cfa865acfa07970ceda8199ff77e2264662350cb108fd04887007b8c"
-    assert high[2]["sha256"] == "2466a3e847a9429229ff63c0970bf01d410afe0e74d94fcb7abebaa56912c91d"
-    assert candidate[2]["sha256"] == meta["source_sha256"]
+    generation = load(HERE / "generation.json")
+    assert hashlib.sha256((HERE / "prompt.json").read_bytes()).hexdigest() == generation["prompt_sha256"]
+    assert hashlib.sha256((HERE / "reference.png").read_bytes()).hexdigest() == generation["reference_sha256"]
+    assert hashlib.sha256((HERE / "conditioning.png").read_bytes()).hexdigest() == generation["conditioning_sha256"]
+    assert meta["source_sha256"] == "2d0267dda6918fb41c47a18940267ca7f9767fbe55f0a03aba7df883dbe115f3"
     assert stats["sha256"] == meta["final_sha256"]
-    assert raw[2]["triangles"] == high[2]["triangles"] == 49923
-    assert candidate[2]["triangles"] == stats["triangles"] == 19968
-    assert images(doc, binary) == images(*raw[:2]) == images(*high[:2]) == images(*candidate[:2])
+    assert raw[2]["triangles"] == 49923 and stats["triangles"] == 19968
+    assert images(doc, binary) == images(*raw[:2])
     assert not doc.get("extensionsRequired") and not doc.get("animations") and not doc.get("skins")
     primitive = doc["meshes"][0]["primitives"][0]
-    cp = candidate[0]["meshes"][0]["primitives"][0]
     assert set(primitive["attributes"]) == {"POSITION", "NORMAL", "TEXCOORD_0", "TANGENT"}
-    # Metric refit must not alter the reduced candidate's topology or UVs.
-    assert tuples(doc, binary, primitive["attributes"]["TEXCOORD_0"]) == tuples(*candidate[:2], cp["attributes"]["TEXCOORD_0"])
-    def index_bytes(d, b, p):
-        acc = d["accessors"][p["indices"]]
-        view = d["bufferViews"][acc["bufferView"]]
-        start = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
-        return acc["componentType"], b[start:start + acc["count"] * {5123: 2, 5125: 4}[acc["componentType"]]]
-    assert index_bytes(doc, binary, primitive) == index_bytes(*candidate[:2], cp)
+    points = [struct.unpack("<fff", x) for x in tuples(doc, binary, primitive["attributes"]["POSITION"])]
+    low = [min(p[i] for p in points) for i in range(3)]
+    high = [max(p[i] for p in points) for i in range(3)]
+    assert all(abs(high[i] - low[i] - (3.2, 1.7, 1.2)[i]) < 0.002 for i in range(3))
+    assert all(abs(low[i] - (-1.6, 0, -0.6)[i]) < 0.002 for i in range(3))
     normals = [struct.unpack("<fff", x) for x in tuples(doc, binary, primitive["attributes"]["NORMAL"])]
     tangents = [struct.unpack("<ffff", x) for x in tuples(doc, binary, primitive["attributes"]["TANGENT"])]
     assert all(abs(sum(x*x for x in n) - 1) < 1e-5 for n in normals)
@@ -49,9 +45,10 @@ def main():
     assert all(abs(sum(n[i]*t[i] for i in range(3))) < 1e-5 for n, t in zip(normals, tangents))
     for semantic in primitive["attributes"]:
         tuples(doc, binary, primitive["attributes"][semantic])  # all finite
-    assert doc["materials"] == candidate[0]["materials"]
     editable = load(HERE / "editable/bunker_diesel_generator.gltf")
     assert (HERE / "editable" / editable["buffers"][0]["uri"]).read_bytes() == binary
+    for key in ("accessors", "bufferViews", "meshes", "nodes", "materials", "textures", "samplers"):
+        assert editable.get(key) == doc.get(key), key
     for name, entry in zip(("basecolor", "orm", "normal"), editable["images"]):
         texture = HERE / "editable" / entry["uri"]
         assert hashlib.sha256(texture.read_bytes()).hexdigest() == meta["texture_sha256"][name]
@@ -71,23 +68,22 @@ def main():
         if any('name="' + name + '"' in header for name in ("Blockout", "Cover", "Stencil")):
             actual = actual.replace("visible = false\n", "")
         assert actual == body, header
-    review = load(HERE / "review_reduced_final/review.json")
+    review = load(validation / "review.json")
     assert review["source"]["sha256"] == stats["sha256"] and review["state"] == "ACCEPTED_WITH_LIMITATIONS"
-    assert load(HERE / "in_context/validation.json")["state"] == "PASS"
+    assert load(validation / "context.json")["state"] == "PASS"
     # Check the saved historical evidence, without depending on a local cache or current Git HEAD.
     # Fresh behavior tests are run separately through scripts/test.ps1.
-    runner = load(validation / "runner-reduced-results.json")
+    runner = load(validation / "runner-results.json")
     assert all(item["status"] == "PASS" for item in runner["results"])
-    capture = validation / "capture-reduced.log"
-    assert "ERROR:" not in capture.read_text(encoding="utf-8")
     checks = {"state": "PASS", "raw_sha256": raw[2]["sha256"], "final_sha256": stats["sha256"],
               "input_triangles": raw[2]["triangles"], "final_triangles": stats["triangles"],
               "reduction_percent": (1 - stats["triangles"] / raw[2]["triangles"]) * 100,
               "original_scene_sections_preserved": True, "embedded_texture_bytes_preserved": True,
-              "raw_indices_uv_preserved": False, "reduced_candidate_indices_uv_preserved_during_refit": True,
+              "raw_indices_uv_preserved": False, "editable_vertex_index_material_data_matches_glb": True,
+              "dimensions_bottom_center": True, "generation_hashes_preserved": True,
               "finite_attributes_unit_normals_orthogonal_tangents": True,
               "editable_external_files_verified": True, "fps_measured": False}
-    (validation / "delivery-reduced-checks.json").write_text(json.dumps(checks, indent=2) + "\n")
+    (validation / "delivery-checks.json").write_text(json.dumps(checks, indent=2) + "\n")
     print(json.dumps(checks))
 
 

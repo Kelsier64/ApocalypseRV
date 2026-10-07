@@ -2,7 +2,7 @@
   "suite": "selected",
   "engine": "4.7.2.stable.official.ed1daf0bf",
   "real_time": false,
-  "elapsed_seconds": 24.329,
+  "elapsed_seconds": 24.703,
   "selected": [
     {
       "Name": "test_bunker_lighting",
@@ -25,42 +25,42 @@
     {
       "name": "import",
       "status": "PASS",
-      "seconds": 4.318,
+      "seconds": 4.781,
       "exit_code": 0,
       "detail": "",
-      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141705-442-selected-39824\\import.log"
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-150202-179-selected-44900\\import.log"
     },
     {
       "name": "test_bunker_lighting",
       "status": "PASS",
-      "seconds": 1.381,
+      "seconds": 1.382,
       "exit_code": 0,
       "detail": "",
-      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141705-442-selected-39824\\test_bunker_lighting.log"
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-150202-179-selected-44900\\test_bunker_lighting.log"
     },
     {
       "name": "test_poi_asset_kit",
       "status": "PASS",
-      "seconds": 1.564,
+      "seconds": 1.565,
       "exit_code": 0,
       "detail": "",
-      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141705-442-selected-39824\\test_poi_asset_kit.log"
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-150202-179-selected-44900\\test_poi_asset_kit.log"
     },
     {
       "name": "test_poi_definitions",
       "status": "PASS",
-      "seconds": 1.474,
+      "seconds": 1.47,
       "exit_code": 0,
       "detail": "",
-      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141705-442-selected-39824\\test_poi_definitions.log"
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-150202-179-selected-44900\\test_poi_definitions.log"
     },
     {
       "name": "main-scene",
       "status": "PASS",
-      "seconds": 15.557,
+      "seconds": 15.468,
       "exit_code": 0,
       "detail": "",
-      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141705-442-selected-39824\\main-scene.log"
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-150202-179-selected-44900\\main-scene.log"
     }
   ]
 }
