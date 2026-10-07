@@ -304,7 +304,7 @@ func _physics_process(delta: float) -> void:
 		var focus := rv.global_position
 		if is_instance_valid(monster): focus = focus.lerp(monster.global_position, .5)
 		elif is_instance_valid(oil_barrel): focus = focus.lerp(oil_barrel.global_position, .5)
-		camera.global_position = focus + Vector3(17,10,20)
+		camera.global_position = focus + (Vector3(13,5,-14) if mode == 10 else Vector3(17,10,20))
 		camera.look_at(focus + Vector3.UP)
 	var source_exploded := (not is_instance_valid(oil_barrel) or oil_barrel.is_destroyed) if mode == 10 else (not is_instance_valid(monster) or monster.is_dead)
 	if mode != 1 and not exploded and source_exploded:
