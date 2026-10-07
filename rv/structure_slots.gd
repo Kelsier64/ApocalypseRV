@@ -9,7 +9,6 @@ const TYPES := {
 	"rv_wall_front": "res://equipment/rv_wall_front_definition.tres",
 	"rv_ceiling": "res://equipment/rv_ceiling_definition.tres",
 	"rv_ceiling_hatch": "res://equipment/rv_ceiling_hatch_definition.tres",
-	"rv_floor": "res://equipment/rv_floor_definition.tres",
 }
 var construction: Node
 var revision: int = 0
@@ -28,7 +27,6 @@ static func layout() -> Array[Dictionary]:
 		slots.append({"id": "roof_" + str(i), "kind": "roof", "label": "屋頂" + ["前段", "中段", "後段"][i],
 			"pose": Transform3D(Basis.IDENTITY, Vector3(0, 2.6005738, -4.0 + i * 4.0)),
 			"size": Vector3(4, 0.2, 4), "center": Vector3.ZERO})
-	slots.append({"id": "floor", "kind": "floor", "label": "地板", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 0.4, 0)), "size": Vector3(4, 0.2, 12), "center": Vector3.ZERO})
 	return slots
 
 static func definition_for(type_id: String) -> RVStructureDefinition:

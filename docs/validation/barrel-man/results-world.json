@@ -1,0 +1,58 @@
+{
+  "suite": "selected",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "real_time": false,
+  "elapsed_seconds": 38.923,
+  "selected": [
+    {
+      "Name": "test_bunker_cache",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_outdoor_minor_persistence",
+      "Suite": "slow"
+    },
+    {
+      "Name": "test_poi_transition_persistence",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_streaming_generation",
+      "Suite": "integration"
+    }
+  ],
+  "results": [
+    {
+      "name": "test_bunker_cache",
+      "status": "PASS",
+      "seconds": 1.612,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141038-768-selected-6832\\test_bunker_cache.log"
+    },
+    {
+      "name": "test_outdoor_minor_persistence",
+      "status": "PASS",
+      "seconds": 30.838,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141038-768-selected-6832\\test_outdoor_minor_persistence.log"
+    },
+    {
+      "name": "test_poi_transition_persistence",
+      "status": "PASS",
+      "seconds": 2.375,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141038-768-selected-6832\\test_poi_transition_persistence.log"
+    },
+    {
+      "name": "test_streaming_generation",
+      "status": "PASS",
+      "seconds": 4.048,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-141038-768-selected-6832\\test_streaming_generation.log"
+    }
+  ]
+}

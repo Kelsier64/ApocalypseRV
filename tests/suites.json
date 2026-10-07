@@ -27,6 +27,10 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_barrel_explosion",
+      "test_barrel_man",
+      "test_barrel_man_persistence",
+      "test_barrel_vehicle_contact",
       "test_bunker_cache",
       "test_bunker_content",
       "test_bunker_encounter",
@@ -106,6 +110,7 @@
       "test_world_generation"
     ],
     "assets": [
+      "test_barrel_man_assets",
       "test_player_dismemberment_assets",
       "test_art_presentation",
       "test_forest_fog",

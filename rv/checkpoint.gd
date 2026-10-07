@@ -385,9 +385,18 @@ func _collect_removable(node: Node, result: Array[Node]) -> void:
 		else:
 			_collect_removable(child, result)
 
-# No legacy migration: v5 unifies Item data and support references.
+# Earlier Item formats remain incompatible. The current format only normalizes
+# the former damageable deck, retaining all other saved vehicle state.
 func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
-	return source.duplicate(true) if source.get("version", 0) == VERSION else {}
+	if source.get("version", 0) != VERSION: return {}
+	var data := source.duplicate(true)
+	if not data.get("vehicles") is Array: return data
+	for index in range(data.vehicles.size()):
+		if not data.vehicles[index] is Dictionary: return data
+		var vehicle := VehicleSnapshot.upgrade(data.vehicles[index])
+		if vehicle.is_empty(): return {}
+		data.vehicles[index] = vehicle
+	return data
 
 func _unique_engine_ids(data: Dictionary) -> bool:
 	return EngineState.unique_ids(data)

@@ -15,15 +15,7 @@ func blocker(from: float, to: float) -> String:
 	var shape: BoxShape3D = $Collision.shape.duplicate()
 	shape.size += Vector3.ONE * 0.02
 	query.shape = shape
-	var excluded: Array[RID] = [get_rid(), bay().get_rid(), bay().get_parent().get_rid()]
-	# The deck was previously part of the chassis RID. Its new independent
-	# floor body must not obstruct this pre-existing mechanical travel path.
-	var slots := bay().get_parent().get_node_or_null("StructureSlots")
-	if slots:
-		var floor_panel: RVStructurePanel = slots.occupant("floor")
-		if floor_panel: excluded.append(floor_panel.get_rid())
-	# Physics query array getters return copies; assign only after collecting RIDs.
-	query.exclude = excluded
+	query.exclude = [get_rid(), bay().get_rid(), bay().get_parent().get_rid()]
 	query.collision_mask = 1
 	var steps := maxi(1, ceili(absf(to - from) / 0.02))
 	for i in range(1, steps + 1):

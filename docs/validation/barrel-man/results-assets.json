@@ -1,0 +1,22 @@
+{
+  "suite": "selected",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "real_time": false,
+  "elapsed_seconds": 15.375,
+  "selected": [
+    {
+      "Name": "test_barrel_man_assets",
+      "Suite": "assets"
+    }
+  ],
+  "results": [
+    {
+      "name": "test_barrel_man_assets",
+      "status": "PASS",
+      "seconds": 15.337,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-142500-905-selected-21792\\test_barrel_man_assets.log"
+    }
+  ]
+}

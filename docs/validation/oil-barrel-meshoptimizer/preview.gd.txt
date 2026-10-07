@@ -1,0 +1,95 @@
+extends SceneTree
+
+func _initialize() -> void:
+	call_deferred("_audit")
+
+func _audit() -> void:
+	var args := OS.get_cmdline_user_args()
+	var source_path := args[0] if args.size() > 0 else "C:/Users/evan4/Downloads/oil_barrel.glb"
+	var output_path := args[1] if args.size() > 1 else "res://.godot/oil_barrel_preview.png"
+	var state := GLTFState.new()
+	var document := GLTFDocument.new()
+	var model: Node3D
+	if source_path.begins_with("res://"):
+		var packed := load(source_path) as PackedScene
+		if packed == null:
+			quit(1)
+			return
+		model = packed.instantiate()
+		print("BARREL_PACKED_SCENE_LOAD=OK")
+	else:
+		var error := document.append_from_file(source_path, state)
+		print("BARREL_LOAD_ERROR=", error)
+		if error != OK:
+			quit(1)
+			return
+		model = document.generate_scene(state)
+	if model == null:
+		quit(2)
+		return
+	var world := Node3D.new()
+	root.add_child(world)
+	world.add_child(model)
+	var bounds := AABB()
+	var has_bounds := false
+	var pending: Array[Node] = [model]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back()
+		pending.append_array(node.get_children())
+		if node is MeshInstance3D:
+			var mesh: Mesh = node.mesh
+			var world_bounds: AABB = node.global_transform * mesh.get_aabb()
+			bounds = bounds.merge(world_bounds) if has_bounds else world_bounds
+			has_bounds = true
+			print("BARREL_MESH=", node.name, " surfaces=", mesh.get_surface_count(), " bounds=", mesh.get_aabb())
+			for i in mesh.get_surface_count():
+				var arrays := mesh.surface_get_arrays(i)
+				print("BARREL_GEOMETRY=", arrays[Mesh.ARRAY_VERTEX].size(), " vertices; ", arrays[Mesh.ARRAY_INDEX].size() / 3, " triangles")
+				var material: StandardMaterial3D = mesh.surface_get_material(i)
+				if material != null:
+					print("BARREL_MATERIAL=", "albedo:", material.albedo_texture.get_size() if material.albedo_texture else Vector2.ZERO, " roughness:", material.roughness_texture.get_size() if material.roughness_texture else Vector2.ZERO, " metallic:", material.metallic_texture.get_size() if material.metallic_texture else Vector2.ZERO, " normal:", material.normal_enabled)
+	if has_bounds:
+		model.scale = Vector3(0.65917968, 1.0, 0.65917968) / bounds.size
+		model.position = -bounds.get_center() * model.scale
+	if DisplayServer.get_name() == "headless":
+		quit()
+		return
+	root.size = Vector2i(1000, 850)
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_COLOR
+	environment.background_color = Color(0.075, 0.09, 0.11)
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color(0.8, 0.85, 0.9)
+	environment.ambient_light_energy = 0.65
+	var world_environment := WorldEnvironment.new()
+	world_environment.environment = environment
+	world.add_child(world_environment)
+	var light := DirectionalLight3D.new()
+	world.add_child(light)
+	light.rotation_degrees = Vector3(-45, -30, 0)
+	light.light_energy = 2.0
+	light.shadow_enabled = true
+	var floor_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(200, 200)
+	floor_mesh.mesh = plane
+	floor_mesh.position.y = -0.503
+	var floor_material := StandardMaterial3D.new()
+	floor_material.albedo_color = Color(0.16, 0.18, 0.2)
+	floor_material.roughness = 1.0
+	floor_mesh.material_override = floor_material
+	world.add_child(floor_mesh)
+	var camera := Camera3D.new()
+	world.add_child(camera)
+	camera.position = Vector3(1.5, 1.05, 2.8)
+	camera.look_at(Vector3.ZERO)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 1.65
+	camera.current = true
+	for frame in 12:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	var save_error := root.get_texture().get_image().save_png(output_path)
+	print("BARREL_PREVIEW_SAVE=", save_error)
+	quit(save_error)
+

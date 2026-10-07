@@ -1,0 +1,234 @@
+{
+  "suite": "selected",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "real_time": false,
+  "elapsed_seconds": 115.604,
+  "selected": [
+    {
+      "Name": "test_barrel_explosion",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_barrel_man_assets",
+      "Suite": "assets"
+    },
+    {
+      "Name": "test_barrel_man_persistence",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_barrel_man",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_barrel_vehicle_contact",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_bunker_content",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_bunker_encounter",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_item_navigation",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_item_services",
+      "Suite": "quick"
+    },
+    {
+      "Name": "test_monster_navigation",
+      "Suite": "quick"
+    },
+    {
+      "Name": "test_player_dismemberment",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_poi_asset_kit",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_road_spawn_checkpoint",
+      "Suite": "slow"
+    },
+    {
+      "Name": "test_road_spawn_lifecycle",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_road_spawns",
+      "Suite": "quick"
+    },
+    {
+      "Name": "test_vehicle_impact",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_vehicle_monster_impact",
+      "Suite": "integration"
+    },
+    {
+      "Name": "main-scene",
+      "Suite": "smoke"
+    }
+  ],
+  "results": [
+    {
+      "name": "import",
+      "status": "PASS",
+      "seconds": 6.087,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\import.log"
+    },
+    {
+      "name": "test_barrel_explosion",
+      "status": "PASS",
+      "seconds": 2.103,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_barrel_explosion.log"
+    },
+    {
+      "name": "test_barrel_man_assets",
+      "status": "PASS",
+      "seconds": 13.929,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_barrel_man_assets.log"
+    },
+    {
+      "name": "test_barrel_man_persistence",
+      "status": "PASS",
+      "seconds": 1.807,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_barrel_man_persistence.log"
+    },
+    {
+      "name": "test_barrel_man",
+      "status": "PASS",
+      "seconds": 1.355,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_barrel_man.log"
+    },
+    {
+      "name": "test_barrel_vehicle_contact",
+      "status": "PASS",
+      "seconds": 3.568,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_barrel_vehicle_contact.log"
+    },
+    {
+      "name": "test_bunker_content",
+      "status": "PASS",
+      "seconds": 12.185,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_bunker_content.log"
+    },
+    {
+      "name": "test_bunker_encounter",
+      "status": "PASS",
+      "seconds": 10.141,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_bunker_encounter.log"
+    },
+    {
+      "name": "test_item_navigation",
+      "status": "PASS",
+      "seconds": 1.157,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_item_navigation.log"
+    },
+    {
+      "name": "test_item_services",
+      "status": "PASS",
+      "seconds": 1.918,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_item_services.log"
+    },
+    {
+      "name": "test_monster_navigation",
+      "status": "PASS",
+      "seconds": 1.198,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_monster_navigation.log"
+    },
+    {
+      "name": "test_player_dismemberment",
+      "status": "PASS",
+      "seconds": 2.128,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_player_dismemberment.log"
+    },
+    {
+      "name": "test_poi_asset_kit",
+      "status": "PASS",
+      "seconds": 1.843,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_poi_asset_kit.log"
+    },
+    {
+      "name": "test_road_spawn_checkpoint",
+      "status": "PASS",
+      "seconds": 22.494,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_road_spawn_checkpoint.log"
+    },
+    {
+      "name": "test_road_spawn_lifecycle",
+      "status": "PASS",
+      "seconds": 3.665,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_road_spawn_lifecycle.log"
+    },
+    {
+      "name": "test_road_spawns",
+      "status": "PASS",
+      "seconds": 3.053,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_road_spawns.log"
+    },
+    {
+      "name": "test_vehicle_impact",
+      "status": "PASS",
+      "seconds": 8.946,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_vehicle_impact.log"
+    },
+    {
+      "name": "test_vehicle_monster_impact",
+      "status": "PASS",
+      "seconds": 2.463,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\test_vehicle_monster_impact.log"
+    },
+    {
+      "name": "main-scene",
+      "status": "PASS",
+      "seconds": 15.443,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261007-140624-589-selected-15412\\main-scene.log"
+    }
+  ]
+}

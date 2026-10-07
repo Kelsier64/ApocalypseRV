@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpgivf2lrqt6f"
-path="res://.godot/imported/oil_barrel_oil_barrel_basecolor.png-dff0ae532f6dc46f98b2a1a54d3f3934.ctex"
+path.s3tc="res://.godot/imported/oil_barrel_oil_barrel_basecolor.png-dff0ae532f6dc46f98b2a1a54d3f3934.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "b6e42acfa9a7e24076b3265f79a107bd"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/oil_barrel/oil_barrel_oil_barrel_basecolor.png"
-dest_files=["res://.godot/imported/oil_barrel_oil_barrel_basecolor.png-dff0ae532f6dc46f98b2a1a54d3f3934.ctex"]
+dest_files=["res://.godot/imported/oil_barrel_oil_barrel_basecolor.png-dff0ae532f6dc46f98b2a1a54d3f3934.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

@@ -5,7 +5,8 @@
 - [可編輯 Blender 來源](oil_barrel_optimized.blend)：`OilBarrel_Optimization_20261006` 場景保留隱藏的高模 `OilBarrel_Source_High` 與低模 `oil_barrel`。原先開啟的 Blender Scene 保留；以 save-copy 儲存，沒有覆寫使用者原檔。
 - [顏色](oil_barrel_basecolor.png)、[法線](oil_barrel_normal.png)、[金屬／粗糙度](oil_barrel_metalrough.png)：皆為 1024×1024，亦已 packed 到 Blend。金屬／粗糙度圖的 G 為粗糙度、B 為金屬度；R 沿用來源，不作 AO 使用。
 - [遊戲用 GLB](../../assets/models/oil_barrel/oil_barrel.glb)：只含選取的低模、單一材質與三張內嵌 PNG。
-- [本輪檢查與比較](../../docs/validation/2026-10-06-oil-barrel-optimization.md)。尚未替換正式道具灰盒。
+- [當時檢查與比較](../../docs/validation/2026-10-06-oil-barrel-optimization.md)。2026-10-07 [油桶人實作](../../docs/validation/2026-10-07-barrel-man.md) 將此 GLB 接入普通道具、地堡裝飾桶與怪物骨架掛點；GLB 本身未修改。
+- 2026-10-07 [meshoptimizer 直接減面比較](meshoptimizer-v1.3/README.md) 另存於子目錄；沒有替換這份 Blender 候選。
 
 ## 製作參數
 

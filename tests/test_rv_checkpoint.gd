@@ -119,7 +119,9 @@ func _run() -> void:
 		await process_frame
 		quit(1)
 		return
-	expect(saved.version == 5 and saved.vehicles[0].structures.size() == 12, "Disk checkpoint keeps a separate twelve-slot structure snapshot")
+	expect(saved.version == 5 and saved.vehicles[0].structures.size() == 11, "Disk checkpoint keeps eleven damageable structures separate from the fixed chassis deck")
+	for item in saved.vehicles[0].mounted_items:
+		expect(item.support.get("slot", "") != "floor", "Installed Item never references a removed floor structure")
 	expect(saved.clock == clock.capture(), "Checkpoint captures day, fractional time and day duration")
 	expect(saved.weather == clock.weather.capture(), "Checkpoint captures weather transition and RNG")
 	expect(saved.get("generation_version") == 6, "Generation version independent of checkpoint version")

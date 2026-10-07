@@ -15,6 +15,8 @@ static func capture(child: Node) -> Dictionary:
 		if child is Raker:
 			var ragdoll: Dictionary = child.ragdoll.capture_snapshot()
 			if not ragdoll.is_empty(): data["ragdoll"] = ragdoll
+		elif child is BarrelMan:
+			data["barrel"] = child.capture_barrel_state()
 		return data
 	return {}
 
@@ -64,6 +66,8 @@ static func validation_error(actor: Variant, field: String) -> String:
 	else:
 		if actor.has("state"): return field + ".unexpected_item_state"
 		if not VehicleSnapshot._number(actor.get("health")) or actor.health < 0: return field + ".health"
+		if actor.has("barrel"):
+			if actor.scene != "res://enemies/barrel_man.tscn" or not BarrelMan.validate_barrel_state(actor.barrel): return field + ".barrel"
 		if actor.has("ragdoll"):
 			if actor.scene != "res://enemies/raker.tscn" or not actor.ragdoll is Dictionary: return field + ".ragdoll"
 			var ragdoll: Dictionary = actor.ragdoll
@@ -115,6 +119,7 @@ static func restore(saved: Dictionary, container: Node) -> Node3D:
 			actor.set_meta("bunker_actor_id", saved.id)
 			BunkerContent.configure_monster(actor)
 		if actor is Raker and saved.has("ragdoll"): actor.ragdoll.restore_snapshot(saved.ragdoll)
+		elif actor is BarrelMan: actor.restore_barrel_state(saved.get("barrel", {}))
 	return actor
 
 static func restore_supports(records: Array, actors: Array, anchor: Node) -> void:

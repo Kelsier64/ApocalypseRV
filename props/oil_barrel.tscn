@@ -1,18 +1,7 @@
 [gd_scene format=3 uid="uid://6sdbg58ph7q0"]
 
 [ext_resource type="Script" uid="uid://lmov80j6lmki" path="res://props/item.gd" id="1_jc5bg"]
-
-[sub_resource type="StandardMaterial3D" id="Material_graybox"]
-albedo_color = Color(0.48, 0.48, 0.48, 1)
-roughness = 0.9
-
-[sub_resource type="CylinderMesh" id="Mesh_graybox"]
-material = SubResource("Material_graybox")
-top_radius = 0.32958984
-bottom_radius = 0.32958984
-height = 1.0
-radial_segments = 16
-rings = 1
+[ext_resource type="PackedScene" path="res://assets/models/oil_barrel/oil_barrel.glb" id="model"]
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_vagdt"]
 height = 1.0
@@ -32,8 +21,7 @@ scrap_yields = {
 [node name="@CollisionShape3D@5" type="CollisionShape3D" parent="." unique_id=1224918941]
 shape = SubResource("CylinderShape3D_vagdt")
 
-[node name="oil_barrel" type="MeshInstance3D" parent="." unique_id=1958575358]
-mesh = SubResource("Mesh_graybox")
+[node name="oil_barrel" parent="." instance=ExtResource("model")]
 
 [node name="GripRight" type="Marker3D" parent="."]
 position = Vector3(0.22, 0, 0.246)

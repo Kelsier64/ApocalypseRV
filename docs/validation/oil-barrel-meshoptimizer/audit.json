@@ -1,0 +1,387 @@
+{
+  "tool": "gltfpack 1.3",
+  "target_triangles": 3000,
+  "quantization": false,
+  "mesh_compression": false,
+  "results": {
+    "original": {
+      "path": "art_source/retired_props/2026-09-29/oil_barrel.glb",
+      "sha256": "58326447acdfb7d8ba9fc90c8efc345fd9b8e365d93393f287aba8b192646694",
+      "bytes": 16769764,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 324320,
+      "unique_positions": 249597,
+      "triangles": 499846,
+      "bounds_min": [
+        -0.3421424627304077,
+        -0.502027153968811,
+        -0.34244823455810547
+      ],
+      "bounds_max": [
+        0.3419504761695862,
+        0.5020655393600464,
+        0.34202176332473755
+      ],
+      "dimensions": [
+        0.6840929388999939,
+        1.0040926933288574,
+        0.684469997882843
+      ],
+      "max_horizontal_radius": 0.3429923355579376,
+      "geometric_boundary_edges": 16,
+      "geometric_nonmanifold_edges": 381,
+      "degenerate_triangles": 1,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "blender": {
+      "path": "assets/models/oil_barrel/oil_barrel.glb",
+      "sha256": "3efba222beaab8d1223d457372a8cf8eb46a40419718443e3a38ff248d6267e5",
+      "bytes": 2948012,
+      "scenes": 1,
+      "nodes": 1,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 2558,
+      "unique_positions": 1502,
+      "triangles": 3000,
+      "bounds_min": [
+        -0.3295748829841614,
+        -0.5,
+        -0.3294593393802643
+      ],
+      "bounds_max": [
+        0.3286958634853363,
+        0.4999997317790985,
+        0.3292492926120758
+      ],
+      "dimensions": [
+        0.6582707166671753,
+        0.9999997615814209,
+        0.6587086319923401
+      ],
+      "max_horizontal_radius": 0.32958984375,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 0,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/png",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "b2e03bae61cc20cb8ab2bb3fe546894d9a453676b74248d947c66a4b620e47d2"
+        },
+        {
+          "mime_type": "image/png",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "b043eccffb09d4416afd02c8d2b58a94bbc702ca5f852519e67c77ad37a38379"
+        },
+        {
+          "mime_type": "image/png",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "4d8dbe35560212e0e6892a7df83e3326bb8dbbc2652373bdacddaf50d4caeb7e"
+        }
+      ],
+      "extensions_required": []
+    },
+    "strict": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/strict.glb",
+      "sha256": "12cf577957e4376088a3f3a1b276a12c9e260be4265bb7a3d3adb179d5b7e4d6",
+      "bytes": 1217468,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 21615,
+      "unique_positions": 10708,
+      "triangles": 22114,
+      "bounds_min": [
+        -0.3417373299598694,
+        -0.5019021034240723,
+        -0.34188908338546753
+      ],
+      "bounds_max": [
+        0.34178662300109863,
+        0.5020250678062439,
+        0.3415944576263428
+      ],
+      "dimensions": [
+        0.683523952960968,
+        1.003927230834961,
+        0.6834835410118103
+      ],
+      "max_horizontal_radius": 0.34293681383132935,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 480,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "permissive": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/permissive.glb",
+      "sha256": "d2a04cbb0b3282a1b146d831d23ece979eac8e90fd708b85668c04280f1b4f04",
+      "bytes": 1217728,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 21622,
+      "unique_positions": 10711,
+      "triangles": 22120,
+      "bounds_min": [
+        -0.3417373299598694,
+        -0.5019021034240723,
+        -0.34188908338546753
+      ],
+      "bounds_max": [
+        0.34178662300109863,
+        0.5020250678062439,
+        0.3415944576263428
+      ],
+      "dimensions": [
+        0.683523952960968,
+        1.003927230834961,
+        0.6834835410118103
+      ],
+      "max_horizontal_radius": 0.34293681383132935,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 480,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "permissive-update": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/permissive-update.glb",
+      "sha256": "9bc174fd9841af665f56f6968a5a429e006158b59d5858cc1e0719c93250e301",
+      "bytes": 1219660,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 21676,
+      "unique_positions": 10728,
+      "triangles": 22154,
+      "bounds_min": [
+        -0.3417373299598694,
+        -0.501960039138794,
+        -0.34188908338546753
+      ],
+      "bounds_max": [
+        0.34178662300109863,
+        0.5020250678062439,
+        0.3415944576263428
+      ],
+      "dimensions": [
+        0.683523952960968,
+        1.0039851665496826,
+        0.6834835410118103
+      ],
+      "max_horizontal_radius": 0.34293681383132935,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 476,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "permissive-5pct": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/permissive-5pct.glb",
+      "sha256": "ba16567d89e1135df16c17a19e1c23fef19001a332f0531a2b62a2bc6beec9b3",
+      "bytes": 1108776,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 18824,
+      "unique_positions": 9091,
+      "triangles": 18884,
+      "bounds_min": [
+        -0.3417373299598694,
+        -0.5019021034240723,
+        -0.34188908338546753
+      ],
+      "bounds_max": [
+        0.34178662300109863,
+        0.5020250678062439,
+        0.3415944576263428
+      ],
+      "dimensions": [
+        0.683523952960968,
+        1.003927230834961,
+        0.6834835410118103
+      ],
+      "max_horizontal_radius": 0.34293681383132935,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 479,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "aggressive": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/aggressive.glb",
+      "sha256": "6150af49b4869865f854cde197511c6d49bae7f92cef0a10ddd7e2e069b1adc8",
+      "bytes": 435144,
+      "scenes": 1,
+      "nodes": 2,
+      "meshes": 1,
+      "materials": 1,
+      "vertices": 796,
+      "unique_positions": 796,
+      "triangles": 2763,
+      "bounds_min": [
+        -0.3366786241531372,
+        -0.49580812454223633,
+        -0.33646148443222046
+      ],
+      "bounds_max": [
+        0.34145331382751465,
+        0.4941505193710327,
+        0.34142306447029114
+      ],
+      "dimensions": [
+        0.6781319379806519,
+        0.989958643913269,
+        0.677884578704834
+      ],
+      "max_horizontal_radius": 0.3428926169872284,
+      "geometric_boundary_edges": 0,
+      "geometric_nonmanifold_edges": 956,
+      "degenerate_triangles": 0,
+      "images": [
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "5b6c2a18057aa33af6fdc9ff57f0e9960ce8c248d4d65d9e2a899b1f511ddb66"
+        },
+        {
+          "mime_type": "image/webp",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "360090229b0b89f865c5a559e5f06fad8baea426004dd2dbbe9cf7a2760117bb"
+        }
+      ],
+      "extensions_required": [
+        "EXT_texture_webp"
+      ]
+    },
+    "permissive-maxerror": {
+      "path": "art_source/oil_barrel/meshoptimizer-v1.3/permissive-maxerror.glb",
+      "bytes": 392236,
+      "triangles": 0,
+      "vertices": 0,
+      "meshes": 0,
+      "usable_geometry": false,
+      "sha256": "c04316ec1e512a62b3b0c06a062afb8d9f76f3505c1328ed819a5b6f9ac19f20"
+    }
+  }
+}

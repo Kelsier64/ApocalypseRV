@@ -21,9 +21,11 @@
 
 ## 分組與覆蓋
 
+油桶人 `test_barrel_man`、`test_barrel_explosion`、`test_barrel_vehicle_contact`、`test_barrel_man_persistence` 屬 integration，覆蓋感知、偽裝、真實接觸、爆炸遮蔽／斷肢／車殼、生成與保存。`test_barrel_man_assets` 屬 assets，逐幀驗證匯入蒙皮、十組動畫、桶內折腿、桶壁交界與地面。另有 [油桶人展示場](../docs/guides/playgrounds.md#barrel-man) 的真實輪驅、連續玩家輸入及坡面重播；畫面與本次結果見 [驗收](../docs/validation/2026-10-07-barrel-man.md)。
+
 Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背包／手臂拒收不拆支撐、F 長按拾取與短按抑制、獨立預覽、取消／G、確認後消耗、角色重疊及失效支撐鏈拒絕、拆牆掉落後重新拾取，以及新物品／空油桶的完整狀態與 ID 保存。目前預覽操作會暫時隱藏手持模型，物品保留在背包，取消後恢復顯示；觀察與測試須分別檢查顯示和所有權。`test_item_services.gd` 覆蓋共用物品、服務／回收與怪物免傷；`test_item_persistence.gd`（integration）覆蓋 v5 與跨領域狀態；`test_item_navigation.gd`（integration）以實際怪物碰撞驗證多件固定 Item 的繞行、移除後恢復直路，以及封閉障礙無路時等待。實機入口 `item_playground.tscn` 見 [Item 測試場](../docs/guides/playgrounds.md#unified-item)。完整套件、smoke 與實機結果見 [本輪驗證紀錄](../docs/validation/2026-10-06-unified-items.md)，各階段結果保留當時的顯示行為。
 
-車體改版由 `test_rv_structure_modules`、`test_structure_construction`、`test_rv_structure_snapshot` 與既有車輛、支撐、登車及存檔測試共同覆蓋。平板滑鼠操作與拆穿地板的原生觀察見 [2026-10-05 驗證紀錄](../docs/validation/2026-10-05-rv-structure-construction.md)；互動場景為 `rv_structure_playground.tscn`，操作見 [測試場指南](../docs/guides/playgrounds.md)。
+車體改版由 `test_rv_structure_modules`、`test_structure_construction`、`test_rv_structure_snapshot` 與既有車輛、支撐、登車及存檔測試共同覆蓋。平板滑鼠操作與拆穿地板的原生觀察見 [2026-10-05 驗證紀錄](../docs/validation/2026-10-05-rv-structure-construction.md)，拆地板為當時功能；現行地板固定屬於底盤，沒有獨立破壞或平板施工操作。互動場景為 `rv_structure_playground.tscn`，操作見 [測試場指南](../docs/guides/playgrounds.md)。
 
 [suites.json](suites.json) 是完整清單，每支頂層 `test_*.gd` 必須恰好分類一次。新增測試、遺漏分類、重複分類或不存在的檔案都會讓 runner 在引擎啟動前失敗。
 

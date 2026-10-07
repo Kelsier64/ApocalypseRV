@@ -55,7 +55,7 @@ func _run() -> void:
 	check(side.has_method("toggle_leaf") and not rv.get_node("LeftMiddle").has_method("toggle_leaf"), "Right wall-door-wall and left wall-wall-wall")
 	for slot in RVStructureSlots.layout():
 		check(slots.occupant(slot.id) != null, "Default socket occupied: " + slot.id)
-	check(RVStructureSlots.layout().size() == 12, "Six side, front, rear, three roof and one floor slots")
+	check(RVStructureSlots.layout().size() == 11, "Six side, front, rear and three roof slots; floor remains in the chassis")
 	var roofs := rv.get_structures().filter(func(part): return part.structure_kind == "roof")
 	check(roofs.size() == 3, "Three independently owned roof panels")
 	var roof_weight := 0.0
@@ -69,15 +69,14 @@ func _run() -> void:
 	var expected_intact_mass := 3000.0 + rv.get_engine().definition().weight
 	var expected_intact_moment := Vector3(0.0, -2400.0, 0.0) + rv.engine_bay.position * rv.get_engine().definition().weight
 	for part in rv.get_structures():
-		if part.mount_slot != "floor":
-			expected_intact_mass += part.mass
-			expected_intact_moment += part.position * part.mass
+		expected_intact_mass += part.mass
+		expected_intact_moment += part.position * part.mass
 	for device in rv.get_equipment():
 		expected_intact_mass += device.mass
 		expected_intact_moment += device.position * device.mass
 	rv.update_load()
-	check(is_equal_approx(rv.mass, expected_intact_mass), "Intact independent floor preserves the original total vehicle weight")
-	check(rv.center_of_mass.is_equal_approx(expected_intact_moment / expected_intact_mass), "Floor separation preserves the intact vehicle center of mass")
+	check(is_equal_approx(rv.mass, expected_intact_mass), "Fixed chassis floor preserves the original 3000 kg base vehicle weight")
+	check(rv.center_of_mass.is_equal_approx(expected_intact_moment / expected_intact_mass), "Fixed chassis floor preserves the intact vehicle center of mass")
 	var middle_roof: RVStructurePanel = slots.occupant("roof_1")
 	var roof_mass_before := rv.mass
 	var roof_moment_before := rv.center_of_mass * rv.mass
@@ -205,37 +204,31 @@ func _run() -> void:
 	check(not ramp.doors_open(), "Closed rear structure blocks ramp deployment")
 	rear.take_damage(100000.0)
 	check(ramp.doors_open(), "Destroyed rear structure leaves clear ramp access")
-	var floor: RVStructurePanel = slots.occupant("floor")
-	check(floor != null and floor.max_health == 120.0 and floor.mass == 200.0, "One floor panel owns its health and weight")
+	var deck: CollisionShape3D = rv.get_node("DeckCollision")
+	check(not rv.has_node("Floor") and RVStructureSlots.slot_info("floor").is_empty() and not rv.get_structures().any(func(part): return part.structure_kind == "floor"), "Fixed floor has no damageable structure state or construction slot")
+	check(deck.get_parent() == rv and not deck.disabled and deck.position.is_equal_approx(Vector3(0, .4, 0)) and deck.shape is BoxShape3D and deck.shape.size.is_equal_approx(Vector3(4, .2, 12)), "Original continuous deck collision belongs directly to the chassis")
+	check(rv.get_node("Deck").visible, "Original fixed deck remains visible after side and rear breaches")
 	var through_floor := PhysicsRayQueryParameters3D.create(rv.to_global(Vector3(0, 1.0, 2.6)), rv.to_global(Vector3(0, -0.4, 2.6)), 1)
 	var hit := world.get_world_3d().direct_space_state.intersect_ray(through_floor)
-	check(hit.get("collider") == floor, "Deck collision belongs to the floor structure")
-	var floor_dependents: Array[Node] = []
-	var removed_mass := floor.mass
-	var removed_moment := floor.position * floor.mass
-	for node_name in ["DriverSeat", "ItemBox", "Generator", "CraftingStation", "Scrapper", "TabletScreen"]:
+	check(hit.get("collider") == rv, "Deck ray hits the chassis rather than a separate structure body")
+	for node_name in ["DriverSeat", "ItemBox", "Generator", "CraftingStation", "Scrapper"]:
 		var preset: Item = rv.get_node(node_name)
-		floor_dependents.append(preset)
-		removed_mass += preset.mass
-		removed_moment += preset.position * preset.mass
-		check(floor.dependent_names().has(preset.equipment_name), "Floor tracks stock direct or indirect support: " + node_name)
-	rv.update_load()
-	var mass_before_floor := rv.mass
-	var moment_before_floor := rv.center_of_mass * rv.mass
-	floor.take_damage(100000.0)
-	await physics_frame
-	await physics_frame
-	for preset in floor_dependents:
-		check(preset.get_connected_rv() == null and not preset.freeze, "Floor breach drops stock preset Item: " + preset.equipment_name)
+		check(preset.get_connected_rv() == rv and preset.freeze and preset.mount_support == rv, "Shell breaches retain stock equipment on fixed chassis support: " + node_name)
+	var tablet: Item = rv.get_node("TabletScreen")
+	check(tablet.get_connected_rv() == rv and tablet.freeze and tablet.mount_support == rv.get_node("CraftingStation"), "Fixed floor retains indirect workstation tablet support")
 	var roof_ladder: Item = rv.get_node("RoofLadder")
-	check(roof_ladder.get_connected_rv() == rv and roof_ladder.freeze and roof_ladder.mount_support == ladder_wall, "Floor breach retains the independently wall-mounted roof ladder")
+	check(roof_ladder.get_connected_rv() == rv and roof_ladder.freeze and roof_ladder.mount_support == ladder_wall, "Shell breaches retain the separately wall-mounted roof ladder")
 	rv.update_load()
-	check(is_equal_approx(rv.mass, mass_before_floor - removed_mass), "Floor breach removes exactly 200 kg of deck plus its dropped Item")
-	check(rv.center_of_mass.is_equal_approx((moment_before_floor - removed_moment) / rv.mass), "Floor and dependent removal update the vehicle center of mass")
+	var mass_before_chassis_damage := rv.mass
+	var moment_before_chassis_damage := rv.center_of_mass * rv.mass
+	rv.take_damage(1.0)
+	await physics_frame
+	rv.update_load()
 	hit = world.get_world_3d().direct_space_state.intersect_ray(through_floor)
-	check(hit.is_empty(), "Destroyed floor leaves no invisible deck collider in the frame gap")
+	check(hit.get("collider") == rv and not deck.disabled and rv.get_node("Deck").visible, "Chassis damage does not destroy or remove the fixed floor")
+	check(is_equal_approx(rv.mass, mass_before_chassis_damage) and (rv.center_of_mass * rv.mass).is_equal_approx(moment_before_chassis_damage), "Damage keeps fixed deck weight and centre of mass unchanged")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop and floor breach")
+	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop and persistent chassis floor")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

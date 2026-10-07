@@ -46,6 +46,8 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	if building == null: return
 	if definition.definition_id == &"starting_shelter":
 		_spawn_starter_actors(building, container)
+	var barrel_site: bool = generator.field.profile.generation_version >= 8 and _barrel_site(definition)
+	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
 	for point in building.find_children("*", "Marker3D", true, false):
 		if definition.definition_id == &"starting_shelter": continue
@@ -57,15 +59,40 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		item.global_transform = point.global_transform
 	if definition.enemy_count_range.y > 0:
 		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_enemies")
+		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_enemy_species")
 		var points := building.get_node("EnemySpawns").get_children()
 		var count := enemies.randi_range(definition.enemy_count_range.x, definition.enemy_count_range.y)
 		for i in range(count):
 			var selected := enemies.randi_range(0, points.size() - 1)
 			var point: Marker3D = points.pop_at(selected)
-			var monster: Node3D = preload("res://enemies/raker.tscn").instantiate()
+			var path := RoadSpawns.BARREL_MAN_SCENE if barrel_site and species.randf() < BarrelManSettings.MINOR_CHANCE else RoadSpawns.RAKER_SCENE
+			var monster: Node3D = load(path).instantiate()
 			container.add_child(monster)
 			monster.global_transform = point.global_transform
+			if monster is BarrelMan: monster.global_position = _ground_position(building, point.global_position, monster as CollisionObject3D)
 	generator.outdoor_sites[site.id] = {"definition_id": str(definition.definition_id), "content_version": definition.content_version, "loaded": true, "actors": []}
+
+static func _barrel_site(definition: PoiDefinition) -> bool:
+	var id := str(definition.definition_id)
+	return id.begins_with("roadside_cargo_") or id.begins_with("roadside_shed_")
+
+static func _ground_position(building: Node3D, point: Vector3, actor: CollisionObject3D = null) -> Vector3:
+	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point - Vector3.UP * 4.0, 1)
+	# The freshly added actor must never mistake its own top for the floor.
+	if actor != null: query.exclude = [actor.get_rid()]
+	var hit := building.get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.position if not hit.is_empty() else point
+
+static func _spawn_barrel_decoy(building: Node3D, container: Node, site_id: String) -> void:
+	var point := building.get_node_or_null("BarrelDecoy") as Marker3D
+	if point == null:
+		push_error("Barrel disguise site is missing its authored BarrelDecoy marker: " + str(building.scene_file_path))
+		return
+	var barrel: Item = load("res://props/oil_barrel.tscn").instantiate()
+	barrel.restore_item_state({"id": "outdoor:%s:barrel_decoy" % site_id})
+	container.add_child(barrel)
+	barrel.global_transform = point.global_transform
+	barrel.global_position = _ground_position(building, point.global_position, barrel) + Vector3.UP * 0.5
 
 ## The authored opening has a fixed inventory. Markers carry placement only;
 ## loose actors use the same owner/snapshot lifecycle as every other walk-in.

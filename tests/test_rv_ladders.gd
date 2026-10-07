@@ -410,7 +410,7 @@ func _run() -> void:
 	for index in range(2):
 		var ladder: Node3D = side if index == 0 else roof
 		ladder = await reject_preview(ladder, rv.to_global(Vector3(2.0, 1.5, 0)), rv.global_basis.x, rv.get_node("RightMiddle"))
-		ladder = await reject_preview(ladder, rv.to_global(Vector3(0, .5, 3)), Vector3.UP, rv.get_node("Floor"))
+		ladder = await reject_preview(ladder, rv.to_global(Vector3(0, .5, 3)), Vector3.UP, rv)
 		if not ceiling_hit.is_empty():
 			ladder = await reject_preview(ladder, ceiling_hit.position, Vector3.DOWN, ceiling_hit.collider)
 		if index == 0: side = ladder
@@ -533,12 +533,10 @@ func _run() -> void:
 	Input.action_press("move_forward")
 	await tick(5)
 	release_inputs()
-	var floor_support: Node3D = rv.get_node("Floor")
 	var wall_support: Node3D = roof.mount_support
-	floor_support.take_damage(floor_support.max_health)
-	await process_frame
+	var deck: CollisionShape3D = rv.get_node("DeckCollision")
 	await tick()
-	check(player.active_climb_ladder == roof and roof.can_climb() and roof.mount_support == wall_support, "Floor removal retains the wall-mounted ladder and its active climber")
+	check(not deck.disabled and deck.get_parent() == rv and player.active_climb_ladder == roof and roof.can_climb() and roof.mount_support == wall_support, "Fixed chassis floor remains solid while the independent wall ladder carries its climber")
 	roof.take_damage(roof.max_health)
 	await tick()
 	check(player.active_climb_ladder == null and player.locomotion_state == player.LocomotionState.NORMAL, "Destroyed ladder clears the active climb safely")

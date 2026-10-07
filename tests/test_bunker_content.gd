@@ -43,7 +43,7 @@ func _run() -> void:
 		var enemies := freeze_enemies(inside)
 		check(enemies.size() <= 4, "Indoor encounters stay within four opportunities")
 		for enemy in enemies:
-			check(enemy is Raker, "Generated bunker enemy uses Raker")
+			check((enemy is Raker and enemy.scene_file_path == RoadSpawns.RAKER_SCENE) or (enemy is BarrelMan and enemy.scene_file_path == RoadSpawns.BARREL_MAN_SCENE), "Generated bunker enemy uses exactly an approved species")
 			check(enemy.position.distance_to(inside.spawn_transform().origin) >= 18, "No enemy at entrance")
 		check(BunkerContent.reachable(inside), "Cargo and every cache accessible")
 		var map := inside.get_world_3d().navigation_map
@@ -57,15 +57,18 @@ func _run() -> void:
 			await process_frame
 	# Independent encounter rolls must support empty, single and multiple outcomes.
 	var observed_counts: Dictionary = {}
+	var observed_species: Dictionary = {}
 	for seed_value in range(1, 81):
 		var variant := await build_inside(seed_value, 60)
 		var variant_enemies := freeze_enemies(variant)
 		check(variant_enemies.size() <= 4, "Encounter opportunities never exceed four")
 		observed_counts[mini(variant_enemies.size(), 2)] = true
+		for enemy in variant_enemies: observed_species[enemy.scene_file_path] = true
 		variant.free()
 		await process_frame
-		if observed_counts.size() == 3: break
-	check(observed_counts.has(0) and observed_counts.has(1) and observed_counts.has(2), "Encounter seeds demonstrate zero, one and many Rakers")
+		if observed_counts.size() == 3 and observed_species.size() == 2: break
+	check(observed_counts.has(0) and observed_counts.has(1) and observed_counts.has(2), "Encounter seeds demonstrate zero, one and many enemies")
+	check(observed_species.has(RoadSpawns.RAKER_SCENE) and observed_species.has(RoadSpawns.BARREL_MAN_SCENE), "Bunker species stream exercises both approved enemies")
 	# Pre-content v3 layouts are authoritative, including completely empty actors.
 	var old := {"layout": InteriorLayout.generate(42, 12), "actors": [], "explored": []}
 	var legacy := await build_inside(42, 60, old)

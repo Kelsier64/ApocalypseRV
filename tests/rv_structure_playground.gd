@@ -77,7 +77,6 @@ func _input(event: InputEvent) -> void:
 		KEY_F3: slots.panel("left_1").take_damage(40)
 		KEY_F4: slots.panel("right_0").take_damage(999)
 		KEY_F5: slots.panel("roof_1").take_damage(999)
-		KEY_F6: slots.panel("floor").take_damage(999)
 		KEY_R: get_tree().reload_current_scene()
 		_: return
 	get_viewport().set_input_as_handled()
@@ -86,8 +85,6 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(rv) or not is_instance_valid(status): return
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
 	var roof := slots.panel("roof_1")
-	var floor_panel := slots.panel("floor")
-	status.text = "F2 平板｜F3 左中部件受擊｜F4 拆右前牆（平板掉落）\nF5 拆中段屋頂｜F6 拆地板｜R 重設\n地板：%s｜中段屋頂：%s｜玩家車內高度 %.2f｜材料 %d" % [
-		"DESTROYED" if floor_panel and floor_panel.is_destroyed else "完整",
+	status.text = "F2 平板｜F3 左中部件受擊｜F4 拆右前牆（平板掉落）\nF5 拆中段屋頂｜R 重設\n地板：固定底盤｜中段屋頂：%s｜玩家車內高度 %.2f｜材料 %d" % [
 		"DESTROYED" if roof and roof.is_destroyed else "完整",
 		rv.to_local(player.global_position).y, rv.get_item_count("Metal Parts")]

@@ -37,6 +37,11 @@ func run() -> void:
 	chunk.navigation_ready = true
 	chunk._spawn_road_monsters()
 	check(container.get_child_count() == plan.monsters.size(), "Ready navigation creates the planned Rakers")
+	for index in range(container.get_child_count()):
+		var enemy := container.get_child(index) as Monster
+		check(enemy != null and enemy.scene_file_path == plan.monster_scenes[index], "Published road actor uses the planned species")
+		var expected_point: Vector3 = plan.monsters[index] - Vector3.UP * 0.5 if enemy is BarrelMan else plan.monsters[index]
+		check(enemy.global_position.is_equal_approx(expected_point), "Road root offset puts barrel feet on ground without shifting Rakers")
 	chunk._spawn_road_monsters()
 	check(container.get_child_count() == plan.monsters.size(), "Readiness notification is idempotent")
 	var poses: Array[Transform3D] = []
