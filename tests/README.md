@@ -21,6 +21,8 @@
 
 ## 分組與覆蓋
 
+`test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
+
 油桶人 `test_barrel_man`、`test_barrel_explosion`、`test_barrel_vehicle_contact`、`test_barrel_man_persistence` 屬 integration，覆蓋感知、偽裝、真實接觸、爆炸遮蔽／斷肢／車殼、生成與保存。`test_barrel_man_assets` 屬 assets，逐幀驗證匯入蒙皮、十組動畫、桶內折腿、桶壁交界與地面。另有 [油桶人展示場](../docs/guides/playgrounds.md#barrel-man) 的真實輪驅、連續玩家輸入及坡面重播；畫面與本次結果見 [驗收](../docs/validation/2026-10-07-barrel-man.md)。
 
 Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背包／手臂拒收不拆支撐、F 長按拾取與短按抑制、獨立預覽、取消／G、確認後消耗、角色重疊及失效支撐鏈拒絕、拆牆掉落後重新拾取，以及新物品／空油桶的完整狀態與 ID 保存。目前預覽操作會暫時隱藏手持模型，物品保留在背包，取消後恢復顯示；觀察與測試須分別檢查顯示和所有權。`test_item_services.gd` 覆蓋共用物品、服務／回收與怪物免傷；`test_item_persistence.gd`（integration）覆蓋 v5 與跨領域狀態；`test_item_navigation.gd`（integration）以實際怪物碰撞驗證多件固定 Item 的繞行、移除後恢復直路，以及封閉障礙無路時等待。實機入口 `item_playground.tscn` 見 [Item 測試場](../docs/guides/playgrounds.md#unified-item)。完整套件、smoke 與實機結果見 [本輪驗證紀錄](../docs/validation/2026-10-06-unified-items.md)，各階段結果保留當時的顯示行為。
