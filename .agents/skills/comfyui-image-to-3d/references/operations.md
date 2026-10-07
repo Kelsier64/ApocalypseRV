@@ -1,48 +1,55 @@
-# 提交、降面與驗收協議
+# 本機操作
 
-從 repo 根目錄執行；`$skill = '.agents/skills/comfyui-image-to-3d'`。安裝見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。Python 需 Pillow；HTTP 用標準函式庫。以下資料夾均應為本次專用新路徑，不能覆蓋已有輸出。
+專案根目錄執行，Python 需 Pillow。安裝見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。生成、降面與檢查各用新資料夾，保留原檔。
+
+## 生成與收檔
 
 ```powershell
+$skill = '.agents/skills/comfyui-image-to-3d'
 python "$skill/scripts/generate.py" preflight
 python "$skill/scripts/generate.py" submit --image '<reference.png>' --asset-id '<asset_id>' --output '<generation-folder>'
 python "$skill/scripts/generate.py" status --output '<generation-folder>'
 python "$skill/scripts/generate.py" collect --output '<generation-folder>'
 python "$skill/scripts/generate.py" inspect --glb '<generation-folder>/raw.glb'
-python "$skill/scripts/review.py" --source '<generation-folder>/raw.glb' --output '<raw-review-folder>' --godot '<Godot.exe>'
 ```
 
-每個命令只提交／查詢一次。未完成時做其他獨立工作後再查。只用 ComfyUI 時 `preflight`／`submit` 明確加 `--backend http://127.0.0.1:8188`，會略過 8000；一般由 8000 `/health` 發現後端並確認 API／Comfy queue 都空閒。不是跨程序鎖，其他 client 仍可能同時提交。工具不啟停服務、不下載權重、不改 preset。固定 graph／seed 不提供臨時調參入口。
+預設由 8000 `/health` 找後端；只用 ComfyUI 時，preflight／submit 加 `--backend http://127.0.0.1:8188`。會檢查 API／Comfy queue 空閒，但沒有跨程序鎖；腳本不啟停服務、下載權重或改 preset。
 
-`submit` 必須新資料夾。檔案包含 `job.json`（client ID、backend、prompt ID、SHA／狀態）、原 bytes `reference.png`、`prompt.json`／`submission.json`／`history.json`、真正 1024 conditioning.png、raw.glb 及 result.json。`READY` 只表示生成必要資源可用；`ART_REVIEW_REQUIRED` 只表示收檔／技術檢查成功。
+每次命令只操作一次，未完成稍後再查。沿用自動保存的 job、原圖、conditioning、prompt／history 與結果。`READY` 表示資源可用，`ART_REVIEW_REQUIRED` 表示技術檢查成功，仍需看模型。
 
 ## 提交結果不明
 
-`SUBMISSION_INTENT`／`SUBMISSION_UNKNOWN` 不刪除、不重送。讀相同 backend `/queue` 或 `/history?max_items=100`，查確切 client ID＋graph。找到既有 prompt ID 才執行：
+`SUBMISSION_INTENT`／`SUBMISSION_UNKNOWN` 不刪除、不重送。查同一 backend 的 `/queue` 或 `/history?max_items=100`，以確切 client ID＋graph 找既有 prompt ID：
 
 ```powershell
 python "$skill/scripts/generate.py" reconcile --output '<generation-folder>' --prompt-id '<existing-prompt-id>'
 python "$skill/scripts/generate.py" collect --output '<generation-folder>'
 ```
 
-`reconcile` 只核對並記錄既有 ID，沒有 POST。找不到就保持 UNKNOWN 並停止回報。`NOT_SUBMITTED` 表示 POST 前失敗，也停止批次。收檔失敗可對同一 prompt 再 collect；相同 SHA 舊檔沿用，內容不同立刻停止。
+reconcile 不提交新工作。找不到就保留 UNKNOWN 並回報；`NOT_SUBMITTED` 也停止批次。collect 可對同一工作重試；同 SHA 舊檔沿用，內容不同則停止。
 
-## Raw 通過後降面
+## 降面
+
+先讀[方法與限制](decimation.md)。固定 profile 腳本範例：
 
 ```powershell
 $module = '.godot/mesh-decimation/node_modules/meshoptimizer/meshopt_simplifier.js'
 node "$skill/scripts/simplify.mjs" '<generation-folder>/raw.glb' '<reduced-folder>' 20000 $module
-if ($LASTEXITCODE -ne 0) { throw '減面停止：檢查錯誤與 simplification.json，回報使用者' }
-python "$skill/scripts/review.py" --source '<generation-folder>/raw.glb' --candidate '<reduced-folder>/raw.glb' --output '<comparison-folder>' --godot '<Godot.exe>'
+if ($LASTEXITCODE -ne 0) { throw '降面未通過，查看 simplification.json' }
 ```
 
-目標沿用 request，否則 20k；誤差上限 0.002。讀 `simplification.json` 的 requested／actual／target_reached；未達時保存 `TARGET_NOT_REACHED` 摘要且 exit 2，立即停止報告。源模型已 <=目標則保存原 bytes、不降面。只有人明確授權本工作放棄誤差上限才在 node 命令最後加 `--force-target`。該模式仍保留 LockBorder／tuple 等限制，拓樸阻止達標會 exit 非零；不自動改 flags。輸出新 raw.glb、vertex_mapping.json、simplification.json，`acceptance` 保持 false。詳見[方法](decimation.md)。
+查摘要的 requested／actual／target_reached；未達標 exit 2，不能當作通過，可另用副本修整。只有使用者明確授權放棄誤差上限才加 `--force-target`，勿暗改 flags。輸出 GLB、頂點 mapping 與摘要，`acceptance` 仍為 false。
 
-## 五視角與 review.json
+## 檢查圖
 
-`review.py` 使用獨立臨時 Godot project，完成或失敗後釋放 viewer；Windows 隱藏啟動並保存 stdout.log／stderr.log／godot.log。不開／操作 editor。面數／SHA／保全錯誤停止；渲染錯誤保持 UNKNOWN，查看日誌。
+```powershell
+python "$skill/scripts/review.py" --source '<generation-folder>/raw.glb' --output '<review-folder>' --godot '<Godot.exe>'
+```
 
-- 新 review 資料夾包含 manifest.json、framing.json、review.json，以及 source／candidate 下各自 godot_review.json、textured 與 clay 的 front.png、side.png、back.png、oblique.png、top.png。raw-only 沒有 candidate。
-- 相機／光線／framing 取 source，各版本完全相同；預設來源 up。不讀模型旁的 pose.json 暗中正位。確定需要剛體正位時明確傳 `--pose '<pose.json>'`；其內容只有 `rotation_rows` 的右手正交 3×3旋轉，不能分軸縮放、鏡射或 shear，並保留另一組來源 up 檢查。
-- front 為顯示座標 +Z；遊戲指定 front／origin 仍需依 request 確認。檔案／畫面產生 PASS 不等於外觀 PASS。
-- 3D agent 看完每個模型 textured＋clay 的全部五視角後，補寫 review.json 的 views_inspected、checks、defects、limitations 和最終 state。checks 記錄方法、測量值、單位、需求容差與 PASS／FAIL／UNKNOWN；沒有數值證據時使用明確觀察，不編造精度。
-- 任何歪斜、缺件、風格變化、預算未達或必要 UNKNOWN 都停止，不繼續下一件。整合由主 agent 依任務與通過結果處理。
+比較時加 `--candidate '<reduced-folder>/raw.glb'`。
+
+- viewer 使用臨時 Godot project，Windows 隱藏啟動，結束後關閉；日誌保存在輸出資料夾。
+- 產生 textured／clay 的 front、side、back、oblique、top 五視角及 review JSON；比較共用 source 的鏡頭、光照與 framing。
+- 預設來源 up、front 為 +Z，不自動讀 pose。正位明確加 `--pose '<pose.json>'`，只接受右手正交 `rotation_rows` 3×3 旋轉，並保留來源 up 檢查；遊戲朝向／原點另確認。
+- 看完全部圖再填 `review.json` 的 views_inspected、checks、defects、limitations、state；測量附方法、單位與容差，觀察不冒充精度。
+- 技術 PASS 不等於外觀合格。面數／SHA／保全錯誤停止，渲染錯誤標 UNKNOWN；缺件、歪斜、預算未達或必要 UNKNOWN 時修整或回報。

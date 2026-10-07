@@ -5,16 +5,16 @@ description: Always read this skill first before building or editing ApocalypseR
 
 # 3D Scene Creation
 
-- **Finish simple objects directly:** For walls, floors and other objects that need only a few meshes and materials, complete their visuals and function without writing a modeling document.
-- **Create suitable complex visuals directly:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for static props, decor and equipment that benefit from image-to-3D. The main agent can generate, inspect, edit and integrate the result without a modeling handoff. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
-- **Split large buildings into modelable components where useful:** Complex facade sections, entrance assemblies, roof equipment, and interior fittings can be generated or modeled separately; create requests only when a handoff is useful. Choose boundaries that allow each component to be generated and replaced independently, while keeping the building layout and assembly in the Godot scene. Record the parent building, target node, local placement and orientation, and any adjoining dimensions or openings needed for a fit. Use building-and-component names such as `shelter-entrance` for request folders. Repeated instances of the same component share one asset; simple structural parts still follow the direct-completion rule.
+- **Finish simple objects directly:** Complete walls, floors and other objects that need only a few meshes and materials, including their visuals and function.
+- **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decor and equipment. The main agent handles reference creation, generation, inspection, refinement and integration directly. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
+- **Split large buildings into components where useful:** Generate or model facade sections, entrance assemblies, roof equipment and interior fittings separately. Keep the building layout and assembly in Godot, with each component independently replaceable. Track the target node, local placement, orientation and adjoining dimensions or openings needed for a fit. Repeated instances share one asset; finish simple structural parts directly.
 
 ## Blender MCP
 
 Blender MCP can be used for modeling, editing, inspecting, and exporting assets when the required tools are available and connected.
 
-If Blender MCP is unavailable or cannot connect, ask the user to open Blender and enable its Blender MCP connection, explaining the observed limitation. 
+If Blender MCP is unavailable or cannot connect, ask the user to open Blender and enable its Blender MCP connection, explaining the observed limitation.
 
-## Image-to-3D Modeling Request
+## Image-to-3D Workflow
 
-When a modeling request or handoff is useful, use [apocalypse-rv-image-to-3d-request](../apocalypse-rv-image-to-3d-request/SKILL.md). That skill defines the request format, reference-image handoff, model interfaces, delivery locations, and status updates.
+Follow [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) directly for image-to-3D work. Preserve the raw model, inspect and refine the result, then verify it in the target scene. Report remaining problems briefly. Do not require a modeling request document before starting; prepare a handoff only when the task needs one.

@@ -1,35 +1,42 @@
-# 後期降面方法與限制
+# 降面
 
-工具固定使用 [meshoptimizer v1.3 JavaScript simplifier](https://github.com/zeux/meshoptimizer/blob/v1.3/js/README.md#simplifier) 的 `simplifyWithAttributes`。以索引的 edge collapse 降低三角面數，成本包括幾何與 normal／UV 属性；這是近似混合誤差，不是精確毫米距離、表面 Hausdorff bound 或外觀變化百分比。
+依觀看距離、同屏數量、輪廓與接口決定預算；模型已夠輕就不降。保留原 GLB，候選另存，修完重看貼圖／素色視圖並確認 Godot 效果。降面不能修直歪斜或補回缺件。
 
-## 固定參數
+## 選方法
 
-| 參數 | 值／行為 |
-|---|---|
-| 版本 | meshoptimizer 1.3.0，輸出记录 module SHA |
-| 目標 | 預設 20,000 三角面；request 指定時覆蓋 |
-| relative error cap | 0.002；明確 `--force-target` 才用 Infinity |
-| normal weights | 1、1、1 |
-| UV weights | 10、10 |
-| flags | LockBorder |
-| vertex_lock | null；沒有語義柱腳或接點鎖 |
-| Permissive／Prune／vertex update | 全部關閉 |
-| texture rebake／axis scaling | 不執行 |
+- **gltfpack／meshoptimizer**：先快速試減面，沿用 UV、法線與貼圖；切縫、拓樸與誤差限制可能阻止達標。
+- **Blender 修整＋烘焙**：直接降面折疊、UV 碎裂或降不下去時，在副本修網格、減面、展 UV，再從高模烘焙材質。
+- **重整結構**：voxel remesh 可處理部分封閉道具，但會柔化薄片、小孔與接口；必要時局部重建或改圖生成。
 
-讀 GLB → 檢查固定 profile 格式 → 只 weld 完整相同 POSITION＋NORMAL＋UV＋TANGENT bytes → 一次屬性感知化簡 → compact 仍使用的原頂點 → 拷貝原 tuple／嵌入圖片 → 重排 bufferViews、accessors 與索引 → 新 GLB／mapping／摘要。每個輸出頂點可回溯原頂點索引；原檔 SHA 必須不變。原面數已符合預算時直接保留 GLB bytes。
+## gltfpack
 
-[官方屬性感知化簡說明](https://github.com/zeux/meshoptimizer/blob/v1.3/README.md#attribute-aware-simplification)與[原始碼](https://github.com/zeux/meshoptimizer/blob/v1.3/src/simplifier.cpp)說明幾何／屬性成本及 flip 等約束。LockBorder 保留拓樸边界，並不是辨識／鎖住直柱、直角或語義接點。UV／法線 seams 仍會限制化簡。
+用[官方工具](https://github.com/zeux/meshoptimizer/tree/v1.3/gltf)並記錄版本，無需新增全域安裝或遊戲依賴。v1.3 起點：
 
-## 強制模式
+```powershell
+gltfpack -i '<source.glb>' -o '<new-folder/candidate.glb>' -si 0.1 -se 0.01 -sp -sv -noq -kn -km
+```
 
-Infinity 只移除停止用的誤差上限，成本仍用于選擇 edge collapse。拓樸仍可阻止達標；腳本不再開 Permissive、不截掉 triangles 假達標。預設受限模式若沒達標會寫 `state:TARGET_NOT_REACHED`／`target_reached:false` 並 exit 2，呼叫 agent 必須停止；強制模式仍沒達標则停止且不輸出候選。
+`-si` 是保留面數比例，`-se` 是演算法誤差上限。`-sp` 允許跨屬性切縫減面，`-sv` 更新頂點／屬性，可與不加兩者比較。`-noq` 關閉量化，`-kn -km` 保留命名節點／材質；壓縮支援另驗證。
 
-原頂點座標不移動，但連接關係減少，輪廓、薄桿、布料摺痕、UV插值與陰影仍可能變差。切線／法線是保留下來的原 tuple，沒有重計算，所以必須看實際 textured 視圖。降面不是矯正歪斜的方法。
+查非空 mesh、有效索引／有限座標、實際面數、材質／貼圖及必要擴充，視需要查開放邊／非流形邊。宣稱貼圖完整保留時核對圖片 bytes／hash。退出碼 0 或檔案變小不代表合格或 FPS 提升；提高誤差或用 `-sa` 可能破壞貼圖、甚至移除全部幾何。
 
-## 格式邊界
+## simplify.mjs
 
-只接受一個沒有 transform 的 mesh node、一個 TRIANGLES primitive、float32 POSITION／NORMAL／TEXCOORD_0／TANGENT、uint16／uint32 索引、嵌入圖片，無 animation／skin／morph／extensions／額外 accessor。這是固定 ComfyUI profile 的保守範圍。其他 GLB 停止並報告，不由 agent 自動轉檔改拓樸。
+指令見[操作](operations.md)。限制只適用這支腳本：
 
-## 床樣本（歷史證據）
+- meshoptimizer 1.3.0；CLI 必填面數，常用範例 20k。誤差上限 0.002，明確授權的 `--force-target` 改為 Infinity。
+- normal 權重 1／1／1、UV 10／10、LockBorder；無語義接點鎖，Permissive／Prune／vertex update 關閉。
+- 只接受單一無 transform mesh node、單一 TRIANGLES primitive、float32 POSITION／NORMAL／TEXCOORD_0／TANGENT、uint16／uint32 索引與內嵌圖片；不接受 animation、skin、morph、extensions 或額外 accessor。其他 GLB 換工具。
+- 完整 tuple weld → 屬性感知化簡 → compact／重排 buffers；保留原 tuple、圖片 bytes、頂點 mapping 與來源 SHA，不移動頂點、重算法線或烘焙。原面數已達預算則保留原 bytes。
+- 未達標寫 `TARGET_NOT_REACHED`／`target_reached:false` 並 exit 2。強制模式也可能被拓樸擋下，失敗不輸出候選；不當作通過，可另用副本修整。
 
-2026-10-06，原圖 TRELLIS 50k raw 為 49,916 三角面、37,823 vertices。預設 0.002 上限僅到 42,786 面；20k 目標不能達成。使用者指定不管誤差強制 20k 後得到 20,000 面、17,946 vertices，混合誤差 0.0095652，圖片 bytes／原 tuple 保持，但中段柱向近似最差約 3.01°。五視角輪廓變化約 0.245%～0.757%，仍可見局部光影及細節变化。柱向量測只涵蓋中段取樣，不能當完整柱直度證明。該床比例／橫桿尚有原始問題，保持未驗收；此流程不附帶或自動整合該實驗模型。
+LockBorder 只鎖拓樸邊界，不能辨識直柱或接點；輪廓、細桿與光影仍可能變差。誤差值不等於精確距離或外觀變化百分比。
+
+## 歷史樣本
+
+- **油桶（2026-10-06／07）**：499,846 面直接大幅減面造成折疊／UV 碎裂。Blender remesh＋烘焙得到接近原外觀的 3,000 面候選；gltfpack 保留外觀的候選約 22k 面，仍有非流形邊。激進設定曾造成貼圖錯亂或 0 面。此結果不代表所有模型。
+- **床（2026-10-06）**：49,916 面在 0.002 上限只降到 42,786；授權強制後達 20,000，但仍有細節變化，原比例／橫桿問題未驗收。
+
+油桶 Blender 起點：voxel 0.0035 m、Smart UV 66°／margin 0.012、Cycles selected-to-active、cage 0.015 m、ray 0.06 m、padding 12 px、三張 1024 圖。顏色用 DIFFUSE color-only，金屬粗糙度可用 emission 轉移（G roughness、B metallic）。數值隨尺寸調整，勿直接套薄片／細孔。
+
+油桶只檢查過 Godot 單體顯示，尚未替換正式道具或驗證互動、多桶 FPS、主世界。詳見 [Blender 紀錄](../../../../docs/validation/2026-10-06-oil-barrel-optimization.md)、[六組 gltfpack 實測](../../../../docs/validation/2026-10-07-oil-barrel-meshoptimizer.md)與[樣本指令](../../../../art_source/oil_barrel/meshoptimizer-v1.3/run.ps1)。
