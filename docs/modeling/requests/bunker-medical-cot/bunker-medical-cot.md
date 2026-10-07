@@ -6,4 +6,4 @@
 - **Origin, facing, interface:** Keep the wrapper collision unchanged. Origin bottom center, long axis local X, patient access at local +Z.
 - **Delivery:** `assets/models/bunker_medical_cot/` for GLB and textures; `art_source/bunker_medical_cot/` for editable source. Replace only the stated visuals and preserve scene node names, collisions and interactions.
 
-Status: Graybox is in the bunker v2 kit; finished model has not been delivered.
+Status: 2026-10-07 TRELLIS.2／1024／seed 42／50k 參數已生成 1 個原始候選：[whole](../../../../assets/models/bunker_medical_cot/trellis_50k_20261007/bunker_medical_cot.glb)；未做後期降面，檢查 FAIL（含必要未驗項），未替換正式外觀。詳見 [逐件分析](../../../research/2026-10-07-trellis-50k-requests.md)。

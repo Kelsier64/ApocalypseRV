@@ -1,0 +1,11 @@
+{
+  "state": "FAIL",
+  "visual_assessment": "單床、兩端欄杆、四腳與髒白床墊／血污保留；整體比雙層床簡單且穩定。",
+  "issues": [
+    "正／背視可見長邊床框有弧形起伏，腳柱略外撇。",
+    "床墊偏厚／拱起，金屬框與床墊接合圓化。",
+    "尺寸與四腳共面未驗證。"
+  ],
+  "severity": "geometry",
+  "interface": "long X, up Y, side access +Z; no scene replacement"
+}

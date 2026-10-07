@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "59b08461-cb80-4ed0-a406-f89e55227534",
+  "glb_sha256": "db7a71581d5f9af02723a69d50ccec5378b034adcca0aba69b30d5ec0be74faa",
+  "conditioning_sha256": "0d4a08721b736f0cdf5cfeaabfd22486db7ca58b19765eacb6de857eb32dbf8e",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\bunker_switchgear\\d49e312c36b24d9a93d66312d799fbf2",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\bunker_switchgear\\d49e312c36b24d9a93d66312d799fbf2",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 35430,
+    "triangles": 49883,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

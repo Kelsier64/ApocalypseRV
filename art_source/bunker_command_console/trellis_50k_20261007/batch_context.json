@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-command-console/bunker-command-console.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-command-console/bunker-command-console-image-to-3d-reference.png",
+  "request_sha256": "df64d636d849edb6daebb984892eaf7b99fec9e67cc5fb53dcda87fbd70b5add",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

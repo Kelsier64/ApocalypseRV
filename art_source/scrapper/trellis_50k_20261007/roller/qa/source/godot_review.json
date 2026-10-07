@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		1.01064229011536,
+		0.483028650283813,
+		0.474066853523254
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/scrapper/trellis_50k_20261007/roller/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "2ef26e26cb09cb3b12bc8d2f135837c7f50ecaf56cecaffd86ef2bbdab3fab3a",
+	"shared_baseline_camera": true,
+	"triangles": 50000,
+	"vertices": 30197
+}

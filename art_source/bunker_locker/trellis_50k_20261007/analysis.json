@@ -1,0 +1,10 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "這批較穩定的候選：窄高輪廓、單門、把手、上下通風口保留，正側頂視沒有明顯整體歪斜。",
+  "issues": [
+    "板件邊緣與通風口較原圖圓滑，缺少需求中的數字模板。",
+    "米制尺寸、底部原點、腳底平面未作正式驗收。"
+  ],
+  "severity": "followup",
+  "interface": "raw +Z front visually confirmed, up Y; static; no scene replacement"
+}

@@ -1,0 +1,65 @@
+{
+  "state": "FAIL",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 37674,
+    "triangles": 49918,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "3e42f122b89b2ae8ff0ceaac057de4a12cc2ba632466b6b4fadb19fb79d9afd8",
+    "bytes": 5996724
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "兩層床、四角主柱、梯子與床被保留，沒有塌成單層；材質配色接近原圖。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "long X; up Y; static; no scene replacement"
+  },
+  "defects": [
+    "橫桿與接點局部起伏、圓化；五視角仍可見框架非完全筆直。",
+    "高度／長度為 0.758，需求 0.925，相差約 -18.1%；深度／長度為 0.514，需求 0.450，約 +14.2%。這是包含床被的軸向包圍盒診斷，並非工程公差。",
+    "腳底共面與米制尺寸未驗證。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

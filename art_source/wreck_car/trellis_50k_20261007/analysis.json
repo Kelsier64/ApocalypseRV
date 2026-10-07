@@ -1,0 +1,11 @@
+{
+  "state": "FAIL",
+  "visual_assessment": "轎車輪廓、四輪、車窗、燈組與鏽蝕磨損保留，未見明顯車體塌陷，整體外觀比控制台穩定。",
+  "issues": [
+    "GLB 一個 mesh／primitive／material，沒有 request 要求的獨立車漆接口；直接 material_override 會同時改輪胎、玻璃與金屬。",
+    "輪胎、窗框與車體部分邊緣融合／圓化；底盤翻覆視角未檢查。",
+    "2.44 × 2.00 × 4.73 m、底部原點、RoadsidePaint 與既有 Visuals 偏移／yaw 接入未完成。"
+  ],
+  "severity": "interface",
+  "interface": "single material cannot satisfy independent paint recolor; no scene replacement"
+}

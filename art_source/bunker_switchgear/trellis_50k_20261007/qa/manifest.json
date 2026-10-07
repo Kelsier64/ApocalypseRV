@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_switchgear/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_switchgear/trellis_50k_20261007/raw.glb",
+      "sha256": "db7a71581d5f9af02723a69d50ccec5378b034adcca0aba69b30d5ec0be74faa"
+    }
+  ]
+}

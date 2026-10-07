@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		1.00807332992554,
+		0.333234667778015,
+		0.433128207921982
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_medical_cot/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "917a68863b916eef246a0a0bff309e0ca103ff8c3efd0126d2bdbac8a25ce47a",
+	"shared_baseline_camera": true,
+	"triangles": 49998,
+	"vertices": 35935
+}

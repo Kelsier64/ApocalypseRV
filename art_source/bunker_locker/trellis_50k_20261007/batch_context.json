@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-locker/bunker-locker.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-locker/bunker-locker-image-to-3d-reference.png",
+  "request_sha256": "0aaa3a52ffe940465a0faa0a7e299d85b6bbde320647b95b490b05960d59394f",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_blast_door",
+  "client_id": "9ba99e60-a5b8-4a84-bd80-1ea3a406e6c5",
+  "reference_sha256": "0ffe31f1313cfe311012d46c7131c883bc7c9e1fb08deb586d3153e1abf0e4c2",
+  "reference_dimensions": [
+    1222,
+    1287
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "a150b2788be9470833d270c9a3bf6b700045fbd7b2580ea98f389f0c68348cec",
+  "prompt_id": "f94937da-b1b4-45f5-910d-8b9c61fe7b1c"
+}

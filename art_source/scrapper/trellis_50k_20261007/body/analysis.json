@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "敞口盆體、內壁、底板、橙色厚邊與暗青綠外殼保留，仍維持原圖較平面／多邊形的風格，沒有添加滾輪到盆體。",
+  "issues": [
+    "正側視的上沿有輕微斜度／起伏；尚未分離整體姿態與局部變形量測。",
+    "內腔雖可見，但需求開口 0.91 m、內高 0.63 m、底厚 0.07 m 尚未驗證，不能認定 HopperArea 暢通。",
+    "底部原點、米制尺寸與原 BasinVisual 位移尚未處理。"
+  ],
+  "severity": "followup",
+  "interface": "independent static basin with open top; no scene replacement"
+}

@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "shelter_roof_filter_bank",
+  "client_id": "7d5b3774-dba5-48c6-8c4c-97c4b2414c45",
+  "reference_sha256": "289eb414f538524cf1c834ab692a3a14c81101f53e3c077434b893256a3e01ff",
+  "reference_dimensions": [
+    1774,
+    887
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "35e99bbdd9ed1ba56051577c75be0b21858c03823f576bde6d0d66eba9ec5db8",
+  "prompt_id": "ea7eef36-1c75-4091-a6c3-8563d40e62d2"
+}

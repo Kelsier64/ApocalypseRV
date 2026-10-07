@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-bunk-bed/bunker-bunk-bed-image-to-3d-reference.png",
+  "request_sha256": "dd1ca32a49145fedf05b36c9eb914feee3d85c7481ea799c641a143fd5d58bba",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

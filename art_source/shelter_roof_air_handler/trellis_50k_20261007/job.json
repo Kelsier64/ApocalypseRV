@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "shelter_roof_air_handler",
+  "client_id": "92aa41b7-fc1a-451a-b8c5-6e3b39e862a8",
+  "reference_sha256": "b5b7c3c266efe929af6a3a9b9d293bfda695acdd77e4cf33344a790859f1de89",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "0ed49720b0d9375fc3722501b1049738d556ccbcac08179d5d372c7ce31ad058",
+  "prompt_id": "fef99781-30ad-4405-acbd-2d555846c4b2"
+}

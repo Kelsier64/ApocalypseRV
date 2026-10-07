@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "f94937da-b1b4-45f5-910d-8b9c61fe7b1c",
+  "glb_sha256": "eca0725448339520a5c31464084c1a628115ebf9ccce37b3ff930531a3ada181",
+  "conditioning_sha256": "ebbdb8c6cdb6be93d96ecad4bb11ed9d4a6c87162abd8f1263363bea9c62faaa",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\bunker_blast_door\\9ba99e60a5b84a84bd801ea3a406e6c5",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\bunker_blast_door\\9ba99e60a5b84a84bd801ea3a406e6c5",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 31026,
+    "triangles": 49962,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

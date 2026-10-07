@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_medical_cot",
+  "client_id": "da189dcd-f077-4c9d-837c-33bf13b193b1",
+  "reference_sha256": "73e4f3a070f9ecb721afbde5a0914b11d29fa9c384bf20cc2cdc8c79f7c97422",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "a4a9e35169171124b458b599aa0349baccf63e451657e47092c75e8592e416ce",
+  "prompt_id": "2d8db18b-7f9c-43d6-8dcb-3b3ce94d3f34"
+}

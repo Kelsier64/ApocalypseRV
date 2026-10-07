@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "fef99781-30ad-4405-acbd-2d555846c4b2",
+  "glb_sha256": "e8f6536541e64a077ae04619af851703360eb3d7ea07fd9b4240daeed86d57d6",
+  "conditioning_sha256": "adadf12aba619cc0774f6c2ef5e2b49315b0769650dbbd15018f5d32c8bbc37d",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\shelter_roof_air_handler\\92aa41b7fc1a451ab8c56e3b39e862a8",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\shelter_roof_air_handler\\92aa41b7fc1a451ab8c56e3b39e862a8",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 32341,
+    "triangles": 49956,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

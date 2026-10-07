@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "桶身、兩圈桶箍與封閉桶蓋保留；直立轮廓穩定，低多邊形圓周與原圖相近，維持暗漆鏽蝕風格。",
+  "issues": [
+    "桶箍與蓋緣略不規則，色澤受不同原圖／渲染光照影響，未做色度量測。",
+    "未帶標籤，無法確認需求的標籤 +Z 朝向。",
+    "直徑 0.65917968 m、高 1 m、中心原點與功能仍待接入驗收；本候選不覆蓋既有 3,000 面版本。"
+  ],
+  "severity": "followup",
+  "interface": "source up Y; static closed lid visible; no scene replacement"
+}

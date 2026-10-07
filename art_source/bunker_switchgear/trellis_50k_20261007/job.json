@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_switchgear",
+  "client_id": "d49e312c-36b2-4d9a-93d6-6312d799fbf2",
+  "reference_sha256": "0dbf3b0e96de5d9831be38c35b63a83cb178bf79c7930d529f3d0ad45c51592c",
+  "reference_dimensions": [
+    1024,
+    1536
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "efd407818c6041e2f7b7dcc79f93c2401881baa41cc7200689cdc239c25205b1",
+  "prompt_id": "59b08461-cb80-4ed0-a406-f89e55227534"
+}

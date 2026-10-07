@@ -1,2 +1,5 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Preserve the recorded SHA-256 of original ComfyUI experiment JSON.
+art_source/**/trellis_50k_20261007/**/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

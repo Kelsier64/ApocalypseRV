@@ -1,0 +1,65 @@
+{
+  "state": "UNKNOWN",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 34261,
+    "triangles": 50000,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "56f39e82e47223d717601f685c5bcb88efe4b3853e8ebb282188ce1d74436d91",
+    "bytes": 5488860
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "箱體有開口與內腔，角鐵、把手、扣件和橄欖色舊金屬保留，沒有與箱蓋融合。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "independent body mesh; no lid; no scene replacement"
+  },
+  "defects": [
+    "來源長軸為 Z，前扣件在側向；需與箱蓋共同確認剛體朝向。",
+    "內腔底部與邊厚可見但尚未量測；箱口略不規則。",
+    "箱體 0.88 × 0.62 × 0.68 m 與箱蓋配合、原點和碰撞接口未驗證。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "candidate": "assets/models/gas_can/trellis_50k_20261007/gas_can.glb",
+  "raw_sha256": "db11e93f983fc509bc964c4ba604f37e4f4f3a09c33e9f0e40eac4a48875f645",
+  "byte_identical_to_raw": true,
+  "post_decimation": false,
+  "review_state": "UNKNOWN",
+  "integrated": false
+}

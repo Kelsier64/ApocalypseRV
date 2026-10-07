@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		0.628162026405334,
+		1.00934791564941,
+		0.628205060958862
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/oil_barrel/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "23b3bb65f37aee5c69929fd36467ea5b3a15f638b8613ee29b3a5eaa645625ca",
+	"shared_baseline_camera": true,
+	"triangles": 50000,
+	"vertices": 32276
+}

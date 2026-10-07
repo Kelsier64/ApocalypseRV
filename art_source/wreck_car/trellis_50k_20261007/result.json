@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "95be9511-f3c0-4a9b-aedf-70647539b63a",
+  "glb_sha256": "518d8deea5511f47984bdbe75c21f7a30220214512e4bb213254d36f6ac6a44a",
+  "conditioning_sha256": "9d9793450e0f6345a7c8ffe6f581fd09148bca05c13bf6fc63b1b3b5188725f8",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\wreck_car\\a1d060fdd061402ca437d036812d49f8",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\wreck_car\\a1d060fdd061402ca437d036812d49f8",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 34839,
+    "triangles": 49804,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

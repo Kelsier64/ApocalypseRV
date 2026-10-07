@@ -1,0 +1,65 @@
+{
+  "state": "UNKNOWN",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 35430,
+    "triangles": 49883,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "db7a71581d5f9af02723a69d50ccec5378b034adcca0aba69b30d5ec0be74faa",
+    "bytes": 5625204
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "高櫃輪廓、操作區、底部通風與頂部吊環保留，板面整体較穩定。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "raw +Z front visually recognizable but back duplicates panel; up Y; no scene replacement"
+  },
+  "defects": [
+    "小型開關與線材被融合／圓化；背面自行補出相似的斷路器區。",
+    "吊環開孔與細電線是否完整需近距離檢查。",
+    "米制尺寸、底部原點與腳底平面未作正式驗收。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

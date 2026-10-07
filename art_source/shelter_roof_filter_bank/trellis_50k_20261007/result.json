@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "ea7eef36-1c75-4091-a6c3-8563d40e62d2",
+  "glb_sha256": "6bbf26bdbb60fb674af0fae1c4709440459d1ebe56835c78b5a767319da8eba3",
+  "conditioning_sha256": "6cbcf65b2123a96c02c8b1f88e92f0b3bbd08210070e76a99a17b505e32b02a9",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\shelter_roof_filter_bank\\7d5b3774dba548c68c4c97c4b2414c45",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\shelter_roof_filter_bank\\7d5b3774dba548c68c4c97c4b2414c45",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 33685,
+    "triangles": 49962,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

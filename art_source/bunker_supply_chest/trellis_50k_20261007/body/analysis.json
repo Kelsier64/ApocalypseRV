@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "箱體有開口與內腔，角鐵、把手、扣件和橄欖色舊金屬保留，沒有與箱蓋融合。",
+  "issues": [
+    "來源長軸為 Z，前扣件在側向；需與箱蓋共同確認剛體朝向。",
+    "內腔底部與邊厚可見但尚未量測；箱口略不規則。",
+    "箱體 0.88 × 0.62 × 0.68 m 與箱蓋配合、原點和碰撞接口未驗證。"
+  ],
+  "severity": "followup",
+  "interface": "independent body mesh; no lid; no scene replacement"
+}

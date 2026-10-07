@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_filtration_pump/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_filtration_pump/trellis_50k_20261007/raw.glb",
+      "sha256": "ea97992fb9727a9da4403b289d762a34c7dc9da8c4a0c23897477b7e367e6ce3"
+    }
+  ]
+}

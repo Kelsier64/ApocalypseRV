@@ -1,0 +1,65 @@
+{
+  "state": "FAIL",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 36325,
+    "triangles": 49880,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "24cc6f91797914116a1cad1f4494ce5ca3a7eb6fab276c9492ffda91d2fdaa16",
+    "bytes": 5791988
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "色系與按鈕風格接近原圖，但整體結構錯誤。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "operator-facing +Z ambiguous because four duplicated fronts; do not integrate"
+  },
+  "defects": [
+    "生成四向重複控制台，頂視十字形；原圖要求單台三螢幕控制台。",
+    "側／背視角可見不合理的螢幕開口與相交板件。",
+    "剛體旋轉與縮放不能消除重複結構。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

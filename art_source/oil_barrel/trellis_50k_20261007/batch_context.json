@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/oil-barrel/oil-barrel.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/oil-barrel/oil-barrel-image-to-3d-reference.png",
+  "request_sha256": "0a3f9a6b19859cc3abe3f3635a31c19fa1d024561bdc054bfa0a3c2f29a9c766",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-blast-door/bunker-blast-door.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-blast-door/bunker-blast-door-image-to-3d-reference.png",
+  "request_sha256": "595ec08040cd4148850c6cd07c9cb2db3152e93adf7cd4b2b313b31cff7fd02b",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

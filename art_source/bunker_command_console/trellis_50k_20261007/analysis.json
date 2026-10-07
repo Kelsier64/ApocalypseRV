@@ -1,0 +1,11 @@
+{
+  "state": "FAIL",
+  "visual_assessment": "色系與按鈕風格接近原圖，但整體結構錯誤。",
+  "issues": [
+    "生成四向重複控制台，頂視十字形；原圖要求單台三螢幕控制台。",
+    "側／背視角可見不合理的螢幕開口與相交板件。",
+    "剛體旋轉與縮放不能消除重複結構。"
+  ],
+  "severity": "structural",
+  "interface": "operator-facing +Z ambiguous because four duplicated fronts; do not integrate"
+}

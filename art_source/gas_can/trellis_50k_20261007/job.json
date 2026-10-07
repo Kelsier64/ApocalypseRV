@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "gas_can",
+  "client_id": "10f55460-25d3-4539-bd38-7cc573858e74",
+  "reference_sha256": "b8fe9998060dd3dfc0cb346a69fc2d294861203ab76a8af49f7b57f7f941b629",
+  "reference_dimensions": [
+    1230,
+    1278
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "efb3950ef003278b7fe74efa7cfd03a61cb0611d160e3daa119185c4c5fc73b9",
+  "prompt_id": "f9ca8a4b-7dc9-4376-8155-99a85c9a9ad2"
+}

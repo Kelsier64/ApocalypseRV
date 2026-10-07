@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "獨立薄蓋、四角護角、扣件保留，正侧視大致平直；材質配色符合箱體。",
+  "issues": [
+    "蓋面與四邊略圓滑／起伏。",
+    "與箱體生成的長軸不同；分別 normalized 的來源不能直接用同一縮放值組裝。",
+    "需求 0.92 × 0.11 × 0.72 m，後方 X 軸鉸鏈與 LidPivot(0,0.68,-0.30) 尚未設定或測試。"
+  ],
+  "severity": "followup",
+  "interface": "independent lid mesh; hinge/closure animation not tested; no scene replacement"
+}

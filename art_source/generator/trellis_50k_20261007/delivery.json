@@ -1,0 +1,8 @@
+{
+  "candidate": "assets/models/generator/trellis_50k_20261007/generator.glb",
+  "raw_sha256": "33fdeffc5e617280545fe9293273c0c1f04e098ad064924391bdcfd6ec104c54",
+  "byte_identical_to_raw": true,
+  "post_decimation": false,
+  "review_state": "UNKNOWN",
+  "integrated": false
+}

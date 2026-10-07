@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_command_console/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_command_console/trellis_50k_20261007/raw.glb",
+      "sha256": "24cc6f91797914116a1cad1f4494ce5ca3a7eb6fab276c9492ffda91d2fdaa16"
+    }
+  ]
+}

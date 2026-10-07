@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/scrapper/scrapper.md",
+  "component": "body",
+  "reference_path": "docs/modeling/requests/scrapper/scrapper-static-basin-reference.png",
+  "request_sha256": "5a1fa5e508089c9900b8ba1c89d28fcc170c19fe2b53ecb756d913ca2673c88f",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/gas-can/gas-can.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/gas-can/gas-can-diffuser-reference.png",
+  "request_sha256": "c8c35a938ddaa2a69463e3e8a5023d47f53ebdf55a0ae0a583182bb06de1a4d9",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

@@ -7,4 +7,4 @@
 
 **活動零件接口**：另交付兩支獨立、以各自中心為原點的滾輪外觀；現有 `CSGCylinder3D` 與 `CSGCylinder3D2` 的中心分別在 X=+0.20／−0.20、Y=0.50、Z=0 公尺，圓柱直徑 0.40、公稱長 1.00 公尺，交付滾輪長軸沿模型本地 Y，直接以單位變換掛載；既有節點本地 Y 軸為滾輪轉軸（指向場景 −Z）。`scrapper.gd` 以明確的 `CSGCylinder3D` 型別取得這兩個節點並呼叫 `rotate_object_local(Vector3.UP, ...)`；不得直接以 GLB 節點取代。整合時將各滾輪外觀掛為對應 CSG 節點的子節點，並以透明材質隱藏原 CSG 外觀，保留節點型別、轉動及現有碰撞功能。
 
-完成情況：建模需求已整理；模型尚待製作與接入。
+完成情況：2026-10-07 TRELLIS.2／1024／seed 42／50k 參數已生成 2 個原始候選：[body](../../../../assets/models/scrapper/trellis_50k_20261007/body.glb)、[roller](../../../../assets/models/scrapper/trellis_50k_20261007/roller.glb)；未做後期降面，檢查 UNKNOWN（含必要未驗項），未替換正式外觀。詳見 [逐件分析](../../../research/2026-10-07-trellis-50k-requests.md)。

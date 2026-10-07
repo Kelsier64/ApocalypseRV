@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "機架、橙色油箱、蓋子、風扇與通風柵都可辨識；維持原圖青綠／橙色風格，沒有控制台那類重複結構。",
+  "issues": [
+    "風扇葉片與機架接點圓化，部分框桿、背面格柵有起伏。",
+    "來源風扇在 +Z、格柵在 +X；需求風扇 −X／格柵 +Z，可用已確認方向的 −90° Y 剛體轉向。",
+    "米制尺寸與中心原點未套用，拾取／運轉功能未測試。"
+  ],
+  "severity": "followup",
+  "interface": "rigid yaw -90 degrees indicated by front and side views; fan static as request; no scene replacement"
+}

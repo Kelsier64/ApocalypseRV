@@ -1,0 +1,65 @@
+{
+  "state": "FAIL",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 36873,
+    "triangles": 49572,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "69fa6776c0bafc1b5d8f7b4d596e3e55205012fbcba468133043d534ee8652d6",
+    "bytes": 6154516
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "長條機殼、排氣管、皮帶輪與底座保留，整體外形比控制台穩定，色系符合原圖。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "raw long Z, service side +X; desired long X/service +Z needs rigid yaw; no scene replacement"
+  },
+  "defects": [
+    "皮帶防護網格被壓成封閉浮雕／薄板，原圖的網孔沒有保留。",
+    "來源長軸為 Z，需求為 X，需要確認正面後作剛體轉向。",
+    "通風柵格與邊緣細節變軟；尺寸與底部原點未校正。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

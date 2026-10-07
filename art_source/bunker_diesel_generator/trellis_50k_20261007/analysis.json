@@ -1,0 +1,11 @@
+{
+  "state": "FAIL",
+  "visual_assessment": "長條機殼、排氣管、皮帶輪與底座保留，整體外形比控制台穩定，色系符合原圖。",
+  "issues": [
+    "皮帶防護網格被壓成封閉浮雕／薄板，原圖的網孔沒有保留。",
+    "來源長軸為 Z，需求為 X，需要確認正面後作剛體轉向。",
+    "通風柵格與邊緣細節變軟；尺寸與底部原點未校正。"
+  ],
+  "severity": "detail",
+  "interface": "raw long Z, service side +X; desired long X/service +Z needs rigid yaw; no scene replacement"
+}

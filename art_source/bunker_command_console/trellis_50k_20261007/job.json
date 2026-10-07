@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_command_console",
+  "client_id": "19bee268-c5b2-46c6-a15b-d91e52da2e6a",
+  "reference_sha256": "df7c09e272adc8465ba87084475e9af802b85bf26bb1557760eae62c0eaa6b18",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "5610a5b88746d12d761700f871cba7320f49d491c7da57889b3abf18cba6f396",
+  "prompt_id": "8e02ab58-f58c-4092-9f4e-3d57861bc7ed"
+}

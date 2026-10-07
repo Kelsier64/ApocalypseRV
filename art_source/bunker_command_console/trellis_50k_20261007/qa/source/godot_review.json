@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		1.00982809066772,
+		0.617979764938354,
+		1.00860738754272
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_command_console/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "24cc6f91797914116a1cad1f4494ce5ca3a7eb6fab276c9492ffda91d2fdaa16",
+	"shared_baseline_camera": true,
+	"triangles": 49880,
+	"vertices": 36325
+}

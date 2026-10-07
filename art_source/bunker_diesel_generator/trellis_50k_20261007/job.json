@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_diesel_generator",
+  "client_id": "d88d03b0-6049-4745-b89f-62c944a942ae",
+  "reference_sha256": "2dd23d34a285ca2d776046f3f672d2af200773ca4e49da523119905935ed04c4",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "f4f2afac734e9ec9f06cb6b7c887e0774aeecd86c8041a73b4c523af34604d30",
+  "prompt_id": "78872ce7-60be-493d-80c9-1f6426735adc"
+}

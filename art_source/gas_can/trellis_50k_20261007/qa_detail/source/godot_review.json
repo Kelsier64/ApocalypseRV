@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		0.888363242149353,
+		1.00960755348206,
+		0.28761488199234
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/gas_can/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "db11e93f983fc509bc964c4ba604f37e4f4f3a09c33e9f0e40eac4a48875f645",
+	"shared_baseline_camera": true,
+	"triangles": 49998,
+	"vertices": 29689
+}

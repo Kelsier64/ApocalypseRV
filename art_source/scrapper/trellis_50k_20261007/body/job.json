@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "scrapper_body",
+  "client_id": "7817e9a6-811d-48fb-a5e4-32dbd15d6607",
+  "reference_sha256": "7ba3f9885145085f924994aea051e4fcbaf3d586c520a97e090412dcb83a8c90",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "ed3b2326dd275fff0ca427d8453446ff1bc6743fd48382c210c9a96b489e28b7",
+  "prompt_id": "3cb161a6-4f1c-4fe7-8b57-a8e4a471c827"
+}

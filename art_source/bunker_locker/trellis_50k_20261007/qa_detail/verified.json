@@ -1,0 +1,9 @@
+{
+  "rendering": "PASS",
+  "source_sha256": "1850d116491bbbee981727c50d12b788f4ee9f7de085115540be7bc345661caa",
+  "source_triangles": 50000,
+  "source_up": true,
+  "geometry_changed": false,
+  "clay_lit": true,
+  "visual_acceptance": false
+}

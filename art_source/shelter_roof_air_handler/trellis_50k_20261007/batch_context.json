@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/shelter-roof-air-handler/shelter-roof-air-handler.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/shelter-roof-air-handler/shelter-roof-air-handler-image-to-3d-reference.png",
+  "request_sha256": "3b0fd17f33de5394649bd55c27c0697800c63c679bc743ccb2c94f7d407fc611",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

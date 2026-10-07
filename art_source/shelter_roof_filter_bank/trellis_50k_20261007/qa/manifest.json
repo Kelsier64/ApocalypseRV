@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/shelter_roof_filter_bank/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/shelter_roof_filter_bank/trellis_50k_20261007/raw.glb",
+      "sha256": "6bbf26bdbb60fb674af0fae1c4709440459d1ebe56835c78b5a767319da8eba3"
+    }
+  ]
+}

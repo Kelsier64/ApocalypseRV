@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "oil_barrel",
+  "client_id": "0cb06b5d-66e1-4b44-a625-d99c8366e838",
+  "reference_sha256": "44a9820bf4398e25ccd4eb17e37a3ec32886a4401ab95e9f73d49ae0aea0ac2d",
+  "reference_dimensions": [
+    1024,
+    1536
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "fc2012e07438d53063c74927b2151a1b2997c6f732e1b70d6ae6b151eed3240a",
+  "prompt_id": "cfd09c64-3369-4e36-ad47-f8d7e184047a"
+}

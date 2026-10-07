@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_bunk_bed",
+  "client_id": "2a5a999e-33e2-4258-a14c-b4c339ba0e2e",
+  "reference_sha256": "f9b2a8a584b4b5d37cd6f0b011d492d346bfacf90652e45d5bba91b40aab336c",
+  "reference_dimensions": [
+    1312,
+    1199
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "bf1eb392f54594037170a7cd6b4459f624f254385d3a5c5258f8db59ceba279b",
+  "prompt_id": "54b34a3a-dbe5-4c24-9649-cb9d777d6a22"
+}

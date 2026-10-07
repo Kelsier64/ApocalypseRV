@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/scrapper/trellis_50k_20261007/roller/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/scrapper/trellis_50k_20261007/roller/raw.glb",
+      "sha256": "2ef26e26cb09cb3b12bc8d2f135837c7f50ecaf56cecaffd86ef2bbdab3fab3a"
+    }
+  ]
+}

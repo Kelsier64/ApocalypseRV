@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_medical_cot/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_medical_cot/trellis_50k_20261007/raw.glb",
+      "sha256": "917a68863b916eef246a0a0bff309e0ca103ff8c3efd0126d2bdbac8a25ce47a"
+    }
+  ]
+}

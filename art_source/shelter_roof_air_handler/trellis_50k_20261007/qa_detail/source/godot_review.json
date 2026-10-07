@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		0.705661773681641,
+		0.4831383228302,
+		1.00913071632385
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/shelter_roof_air_handler/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "e8f6536541e64a077ae04619af851703360eb3d7ea07fd9b4240daeed86d57d6",
+	"shared_baseline_camera": true,
+	"triangles": 49956,
+	"vertices": 32341
+}

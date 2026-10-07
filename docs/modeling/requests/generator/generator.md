@@ -5,4 +5,4 @@
 - **外觀要求**：低彩度工業恐怖風格；暗青綠機殼、褪色橙色燃料箱、深色引擎與磨損金屬框架。清楚呈現正面通風、側面風扇及可搬動的緊湊輪廓。
 - **交付位置**：GLB／貼圖規劃放 `assets/models/generator/`，可編輯來源規劃放 `art_source/generator/`。整合時只替換外觀，保留 `equipment/generator.tscn` 的 `RigidBody3D`、`Collision` 和設備功能；現有風扇沒有腳本驅動接口。
 
-完成情況：建模需求已整理；模型尚待製作與接入。
+完成情況：2026-10-07 TRELLIS.2／1024／seed 42／50k 參數已生成 1 個原始候選：[whole](../../../../assets/models/generator/trellis_50k_20261007/generator.glb)；未做後期降面，檢查 UNKNOWN（含必要未驗項），未替換正式外觀。詳見 [逐件分析](../../../research/2026-10-07-trellis-50k-requests.md)。

@@ -176,6 +176,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 
 ## 設計研究
 
+- [TRELLIS.2 50k 全批生成與分析](research/2026-10-07-trellis-50k-requests.md) — 16 份需求、18 個原始候選，含原圖對照、逐件缺陷與接入前未驗項；未做後期降面。
+
 - [Lethal Company 視覺風格與 ApocalypseRV 差距研究](research/2026-09-17-lethal-company-visual-direction.md) — `research/2026-09-17-lethal-company-visual-direction.md`
 - [《Lethal Company》恐怖氛圍設計研究](research/lethal-company-horror-atmosphere.md) — `research/lethal-company-horror-atmosphere.md`
 

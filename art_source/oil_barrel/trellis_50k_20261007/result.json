@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "cfd09c64-3369-4e36-ad47-f8d7e184047a",
+  "glb_sha256": "23b3bb65f37aee5c69929fd36467ea5b3a15f638b8613ee29b3a5eaa645625ca",
+  "conditioning_sha256": "52517450fda9d3945cb0fbecd76dcb9f8acbdfe6766136d71c7a569606f5b254",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\oil_barrel\\0cb06b5d66e14b44a625d99c8366e838",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\oil_barrel\\0cb06b5d66e14b44a625d99c8366e838",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 32276,
+    "triangles": 50000,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

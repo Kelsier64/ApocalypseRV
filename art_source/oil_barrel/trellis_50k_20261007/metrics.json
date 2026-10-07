@@ -1,0 +1,70 @@
+{
+  "vertices": 32276,
+  "triangles": 50000,
+  "embedded_images": 3,
+  "finite_positions": true,
+  "container_valid": true,
+  "geometry_straightness_checked": false,
+  "sha256": "23b3bb65f37aee5c69929fd36467ea5b3a15f638b8613ee29b3a5eaa645625ca",
+  "bytes": 5121624,
+  "aabb_min": [
+    -0.3140798807144165,
+    -0.5045313239097595,
+    -0.3141012191772461
+  ],
+  "aabb_max": [
+    0.3140821158885956,
+    0.5048165917396545,
+    0.3141038119792938
+  ],
+  "aabb_size": [
+    0.6281619966030121,
+    1.009347915649414,
+    0.6282050311565399
+  ],
+  "normalized_axis_ratios": [
+    0.6223443738909917,
+    1.0,
+    0.6223870098868268
+  ],
+  "mesh_count": 1,
+  "primitive_count": 1,
+  "material_count": 1,
+  "material_assignments": [
+    0
+  ],
+  "embedded_texture_details": [
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mime": "image/png",
+      "sha256": "7c2f03da448b5d0bcb6c23b84d48e962f52704713b6899ae5b46add7e1a84f51"
+    },
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mime": "image/png",
+      "sha256": "578491c59cecdcfafa8868c95684e3fd2bdb47d7409411e6fac2db4210248266"
+    },
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mime": "image/png",
+      "sha256": "f7194f477bf7c3f43360114d353072e2d9de048de7fc6871c6b388db9c1d25f5"
+    }
+  ],
+  "near_zero_area_triangles": 0,
+  "backend_seconds": 53.731,
+  "nodes": [
+    {
+      "mesh": 0
+    }
+  ],
+  "method": "Untransformed source POSITION AABB, index validation and area cross product; not semantic dimensions or mechanical tolerances."
+}

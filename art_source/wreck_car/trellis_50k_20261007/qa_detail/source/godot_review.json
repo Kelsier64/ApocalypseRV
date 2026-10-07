@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		0.484468817710876,
+		0.359464526176453,
+		1.00636303424835
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/wreck_car/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "518d8deea5511f47984bdbe75c21f7a30220214512e4bb213254d36f6ac6a44a",
+	"shared_baseline_camera": true,
+	"triangles": 49804,
+	"vertices": 34839
+}

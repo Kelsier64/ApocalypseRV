@@ -1,0 +1,8 @@
+{
+  "candidate": "assets/models/bunker_medical_cot/trellis_50k_20261007/bunker_medical_cot.glb",
+  "raw_sha256": "917a68863b916eef246a0a0bff309e0ca103ff8c3efd0126d2bdbac8a25ce47a",
+  "byte_identical_to_raw": true,
+  "post_decimation": false,
+  "review_state": "FAIL",
+  "integrated": false
+}

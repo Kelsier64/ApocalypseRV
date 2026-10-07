@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "generator",
+  "client_id": "cedb2984-16fa-40f3-937f-e9c592cab447",
+  "reference_sha256": "f8ce486884182cc71d84431b89ea2691a3d622dccf187928ce6def66d97e3f50",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "1ea4c73d676a5c2a2bf2aabe5356a3b546d04a4ebfb6b80a03cad69044b145df",
+  "prompt_id": "e5c5c51f-f628-4af9-a207-a6e425c8d1c9"
+}

@@ -1,0 +1,8 @@
+{
+  "candidate": "assets/models/shelter_roof_filter_bank/trellis_50k_20261007/shelter_roof_filter_bank.glb",
+  "raw_sha256": "6bbf26bdbb60fb674af0fae1c4709440459d1ebe56835c78b5a767319da8eba3",
+  "byte_identical_to_raw": true,
+  "post_decimation": false,
+  "review_state": "FAIL",
+  "integrated": false
+}

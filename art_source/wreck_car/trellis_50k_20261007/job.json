@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "wreck_car",
+  "client_id": "a1d060fd-d061-402c-a437-d036812d49f8",
+  "reference_sha256": "ef7d03429d74dd5597741e27008ae406151f0e1a7158135812c5d1d00e6805e6",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "2128edc82197cd920fd7351dd628f47ede8328628a43df96191f882ab24e134e",
+  "prompt_id": "95be9511-f3c0-4a9b-aedf-70647539b63a"
+}

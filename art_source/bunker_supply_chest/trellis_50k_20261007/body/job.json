@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_supply_chest_body",
+  "client_id": "d148625c-c4ff-4095-a300-d3d11bde86b0",
+  "reference_sha256": "32da312ce7edf76fea7c8c6bb4c268bbaeffc31adcd9594fc13838f6b95fa94f",
+  "reference_dimensions": [
+    1374,
+    1145
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "25bea774e8e29f58f793279dcb04ed891d5e4af8433a47339cb6d5ee045b73d7",
+  "prompt_id": "944d44a0-11e8-48e0-b71f-a2c1343b5c55"
+}

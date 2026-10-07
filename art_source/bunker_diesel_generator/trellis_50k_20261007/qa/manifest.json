@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_diesel_generator/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_diesel_generator/trellis_50k_20261007/raw.glb",
+      "sha256": "69fa6776c0bafc1b5d8f7b4d596e3e55205012fbcba468133043d534ee8652d6"
+    }
+  ]
+}

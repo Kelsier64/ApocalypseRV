@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "78872ce7-60be-493d-80c9-1f6426735adc",
+  "glb_sha256": "69fa6776c0bafc1b5d8f7b4d596e3e55205012fbcba468133043d534ee8652d6",
+  "conditioning_sha256": "233f647f7263a89ff0d25a4202e90d5b24e8e6c2eefd2447e2eef9ce5f7231b5",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\bunker_diesel_generator\\d88d03b060494745b89f62c944a942ae",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\bunker_diesel_generator\\d88d03b060494745b89f62c944a942ae",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 36873,
+    "triangles": 49572,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

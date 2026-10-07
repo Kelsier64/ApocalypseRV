@@ -1,0 +1,15 @@
+{
+	"axis_scaling": false,
+	"display_aabb_size": [
+		1.00695753097534,
+		0.83520919084549,
+		0.495327442884445
+	],
+	"godot_version": "4.7.2-stable (official)",
+	"input": "C:/Users/evan4/Projects/ApocalypseRV/art_source/bunker_filtration_pump/trellis_50k_20261007/raw.glb",
+	"mesh_instances": 1,
+	"sha256": "ea97992fb9727a9da4403b289d762a34c7dc9da8c4a0c23897477b7e367e6ce3",
+	"shared_baseline_camera": true,
+	"triangles": 49900,
+	"vertices": 39277
+}

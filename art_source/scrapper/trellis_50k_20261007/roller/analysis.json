@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "較穩定的簡單候選：柱體、端面與縱向凸肋保留，五視角未見斷裂或與盆體融合，維持原圖灰色多邊形風格。",
+  "issues": [
+    "端面與凸肋略不規則／圓滑；來源長軸 X，需求滾輪長軸本地 Y，需剛體轉向。",
+    "直徑 0.40 m、長 1.00 m、中心原點尚未校正；齒與盆體間隙未測。",
+    "交付一個 unique GLB 供兩支獨立節點各自實例化；CSGCylinder3D 型別、局部 Y 轉軸、雙滾輪運轉接口未實機驗證。"
+  ],
+  "severity": "followup",
+  "interface": "instantiate same roller mesh twice; preserve both CSG nodes; no scene replacement"
+}

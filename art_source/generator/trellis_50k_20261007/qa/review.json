@@ -1,0 +1,65 @@
+{
+  "state": "UNKNOWN",
+  "scope": "Root-agent raw review; no post-decimation or scene integration",
+  "source": {
+    "vertices": 37986,
+    "triangles": 49800,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "sha256": "33fdeffc5e617280545fe9293273c0c1f04e098ad064924391bdcfd6ec104c54",
+    "bytes": 6047292
+  },
+  "candidate": null,
+  "integrity": null,
+  "pose": "source up",
+  "views_inspected": [
+    "../qa_detail/source/textured/front.png",
+    "../qa_detail/source/textured/side.png",
+    "../qa_detail/source/textured/back.png",
+    "../qa_detail/source/textured/oblique.png",
+    "../qa_detail/source/textured/top.png",
+    "../qa_detail/source/clay/front.png",
+    "../qa_detail/source/clay/side.png",
+    "../qa_detail/source/clay/back.png",
+    "../qa_detail/source/clay/oblique.png",
+    "../qa_detail/source/clay/top.png"
+  ],
+  "checks": {
+    "container": "PASS",
+    "finite_positions": "PASS",
+    "source_preserved": "PASS",
+    "rendering": "PASS",
+    "post_decimation": "SKIPPED_BY_USER",
+    "visual_assessment": "機架、橙色油箱、蓋子、風扇與通風柵都可辨識；維持原圖青綠／橙色風格，沒有控制台那類重複結構。",
+    "dimensions_origin_support_plane": "UNKNOWN",
+    "required_interface": "rigid yaw -90 degrees indicated by front and side views; fan static as request; no scene replacement"
+  },
+  "defects": [
+    "風扇葉片與機架接點圓化，部分框桿、背面格柵有起伏。",
+    "來源風扇在 +Z、格柵在 +X；需求風扇 −X／格柵 +Z，可用已確認方向的 −90° Y 剛體轉向。",
+    "米制尺寸與中心原點未套用，拾取／運轉功能未測試。"
+  ],
+  "limitations": [
+    "五視角人工觀察不等於水密、尺寸公差或功能驗收。",
+    "所有原 GLB 未進行剛體轉向、米制校正、分軸拉伸或網格修形。",
+    "FAIL 是已見缺陷；UNKNOWN 是必要驗收未完成，不等於合格。"
+  ],
+  "rendering": {
+    "state": "PASS",
+    "scope": "files rendered, not visually accepted",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "shared_baseline_camera": true
+  }
+}

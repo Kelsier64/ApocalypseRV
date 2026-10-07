@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/gas_can/trellis_50k_20261007/qa_detail",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/gas_can/trellis_50k_20261007/raw.glb",
+      "sha256": "db11e93f983fc509bc964c4ba604f37e4f4f3a09c33e9f0e40eac4a48875f645"
+    }
+  ]
+}

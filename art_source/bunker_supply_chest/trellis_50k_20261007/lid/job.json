@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_supply_chest_lid",
+  "client_id": "87bb1066-0fee-41e2-ac4f-3b8455e5241f",
+  "reference_sha256": "3fbe68fc5de0c54a98331a51cd82485bd2a02b4422b8a73267df5e62c85afd78",
+  "reference_dimensions": [
+    1536,
+    1024
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "df125fc48b30e8f20fa6df3287aa8ef3a6d83e72682d27db3253750bcc9e354b",
+  "prompt_id": "02e30ed7-059c-4737-8469-09138e46c9fd"
+}

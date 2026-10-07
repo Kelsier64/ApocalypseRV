@@ -1,0 +1,11 @@
+{
+  "output": "C:/Users/evan4/Projects/ApocalypseRV/art_source/shelter_roof_air_handler/trellis_50k_20261007/qa",
+  "rotation_rows": null,
+  "models": [
+    {
+      "name": "source",
+      "path": "C:/Users/evan4/Projects/ApocalypseRV/art_source/shelter_roof_air_handler/trellis_50k_20261007/raw.glb",
+      "sha256": "e8f6536541e64a077ae04619af851703360eb3d7ea07fd9b4240daeed86d57d6"
+    }
+  ]
+}

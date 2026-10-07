@@ -6,4 +6,4 @@
 - **Origin, facing, interface:** Measured from the current cache scene. Keep root StaticBody3D, Collision, Status and script untouched. Origin bottom center; front is local +Z. Preserve the measured Visuals/LidPivot position (0, 0.68, -0.30) m and its rear hinge along local X; the measured Lid mesh offset from the pivot is (0, 0, 0.30) m. A standalone supply_chest_graybox.tscn is a dimensional reference, but the runtime cache scene is the replacement target.
 - **Delivery:** `assets/models/bunker_supply_chest/` for GLB and textures; `art_source/bunker_supply_chest/` for editable source. Replace only the stated visuals and preserve scene node names, collisions and interactions.
 
-Status: Graybox is in the bunker v2 kit; finished model has not been delivered.
+Status: 2026-10-07 TRELLIS.2／1024／seed 42／50k 參數已生成 2 個原始候選：[body](../../../../assets/models/bunker_supply_chest/trellis_50k_20261007/body.glb)、[lid](../../../../assets/models/bunker_supply_chest/trellis_50k_20261007/lid.glb)；未做後期降面，檢查 UNKNOWN（含必要未驗項），未替換正式外觀。詳見 [逐件分析](../../../research/2026-10-07-trellis-50k-requests.md)。

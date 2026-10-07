@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "f9ca8a4b-7dc9-4376-8155-99a85c9a9ad2",
+  "glb_sha256": "db11e93f983fc509bc964c4ba604f37e4f4f3a09c33e9f0e40eac4a48875f645",
+  "conditioning_sha256": "2a6d45d19b0d9086aebd9ddfe5b74b8e277923bdd1ed6b30d093a3c5d8a7fbd6",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\gas_can\\10f5546025d34539bd387cc573858e74",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\gas_can\\10f5546025d34539bd387cc573858e74",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 29689,
+    "triangles": 49998,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

@@ -1,0 +1,8 @@
+{
+  "candidate": "assets/models/bunker_command_console/trellis_50k_20261007/bunker_command_console.glb",
+  "raw_sha256": "24cc6f91797914116a1cad1f4494ce5ca3a7eb6fab276c9492ffda91d2fdaa16",
+  "byte_identical_to_raw": true,
+  "post_decimation": false,
+  "review_state": "FAIL",
+  "integrated": false
+}

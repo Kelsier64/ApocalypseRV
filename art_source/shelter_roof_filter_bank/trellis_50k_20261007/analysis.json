@@ -1,0 +1,11 @@
+{
+  "state": "FAIL",
+  "visual_assessment": "三個前箱、同一前方底座與一條長風管都生成了，但風管脫離前方組件。",
+  "issues": [
+    "頂／側視風管與前箱組分離；exact POSITION welding 後有 13 個連通片，所有片可分成前方 9 片與後管 4 片。两组 Z 包圍盒之間存在 0.026266 source-unit 空隙（總長約 2.6%），沒有任何片跨越，因此不是僅貼圖假象。",
+    "不符合一體共用底座、連續後方封閉風管的需求，剛體旋轉無法接回。",
+    "米制尺寸、中心原點和支座未驗收。"
+  ],
+  "severity": "structural",
+  "interface": "rear duct detached; do not integrate"
+}

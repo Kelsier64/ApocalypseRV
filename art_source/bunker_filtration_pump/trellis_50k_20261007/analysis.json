@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "濾筒、馬達、兩侧管線、底箱與腳座均可辨識，五視角沒有像控制台的四向複製。",
+  "issues": [
+    "筒前自行生成兩個圓形端口；原圖未提供這個設計。",
+    "法蘭、螺栓與散熱片圓化，細節較原圖柔軟。",
+    "面板朝向、腳底共面與 1.40 × 1.40 × 0.80 m 配比待校正；封閉管路內部未驗證。"
+  ],
+  "severity": "followup",
+  "interface": "source up Y; mirrored-looking motor placement requires semantic front confirmation; no scene replacement"
+}

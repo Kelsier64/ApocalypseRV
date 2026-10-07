@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "3cb161a6-4f1c-4fe7-8b57-a8e4a471c827",
+  "glb_sha256": "193022ded543cc4a5135536ab409043437dd6d005eee94f6369c53448c1bf250",
+  "conditioning_sha256": "7b5a12b27aeaba9f1889ff53791bcf992246ffc617aaeddb20e6e1024b2ccd9b",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\scrapper_body\\7817e9a6811d48fba5e432dbd15d6607",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\scrapper_body\\7817e9a6811d48fba5e432dbd15d6607",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 29583,
+    "triangles": 49998,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

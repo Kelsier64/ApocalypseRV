@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-supply-chest/bunker-supply-chest.md",
+  "component": "lid",
+  "reference_path": "docs/modeling/requests/bunker-supply-chest/bunker-supply-chest-lid-image-to-3d-reference.png",
+  "request_sha256": "4f3afea5436ca973b4efd81daf92e35cf9b6a4844016b4edd42034f19010c4d2",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

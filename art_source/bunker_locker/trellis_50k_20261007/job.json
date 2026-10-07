@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_locker",
+  "client_id": "c3ef4024-9a99-48bc-b10d-ea4e92217ffc",
+  "reference_sha256": "5d89d001646f176635ec83aedd0b7ec43683cbb09c4e17d289c4cd4a2d539d3b",
+  "reference_dimensions": [
+    1024,
+    1536
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "70c707f0a0975f80dcb6ed9f7feb1bf17105bf1613f78849de59878d5b869de8",
+  "prompt_id": "10b5fac4-6e88-4646-85ec-4bc84c97ce8e"
+}

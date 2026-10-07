@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "02e30ed7-059c-4737-8469-09138e46c9fd",
+  "glb_sha256": "8adc59be6d52a8057b8b8ecbe2d5ab72d0d94c0ac6388da11340afbf83589252",
+  "conditioning_sha256": "f6e1d272319e2bcf2bfe381a2d207ba4d4ec98944b818e57c1207a4fe637d478",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\bunker_supply_chest_lid\\87bb10660fee41e2ac4f3b8455e5241f",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\bunker_supply_chest_lid\\87bb10660fee41e2ac4f3b8455e5241f",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 36584,
+    "triangles": 50000,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

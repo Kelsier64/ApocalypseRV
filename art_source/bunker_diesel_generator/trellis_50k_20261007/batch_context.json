@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-diesel-generator/bunker-diesel-generator.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-diesel-generator/bunker-diesel-generator-image-to-3d-reference.png",
+  "request_sha256": "bcf88736bb300b96118ae707d3d086eaf46d8eb01626294d9b0a70ddc9cc6cd7",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

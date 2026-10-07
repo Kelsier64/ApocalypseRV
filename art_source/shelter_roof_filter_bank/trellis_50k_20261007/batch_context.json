@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/shelter-roof-filter-bank/shelter-roof-filter-bank.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/shelter-roof-filter-bank/shelter-roof-filter-bank-image-to-3d-reference.png",
+  "request_sha256": "9ff301461cf83c47b20142a3046e5ad8c961326b27cb69fd695b6251896ff2e9",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

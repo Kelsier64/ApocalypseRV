@@ -1,0 +1,20 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "backend": "http://127.0.0.1:8188",
+  "api": "http://127.0.0.1:8000",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "generation_ready_only": true,
+  "asset_id": "bunker_filtration_pump",
+  "client_id": "50598251-dce0-4de4-8a34-bdb7e1a6ed36",
+  "reference_sha256": "a4b8f79f35f2a56072e386228052f7b3f2c065f492caf7db8be14da49d066467",
+  "reference_dimensions": [
+    1225,
+    1284
+  ],
+  "profile": "trellis-single-1024-50k",
+  "prompt_sha256": "116366e7fa98d30afa607332f9eb70084cd86b3e826fc1b6e64ddeeba925fde7",
+  "prompt_id": "4586dcff-2242-40b4-81cf-066ea2bc0283"
+}

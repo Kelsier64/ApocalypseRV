@@ -1,0 +1,13 @@
+{
+  "request": "docs/modeling/requests/bunker-filtration-pump/bunker-filtration-pump.md",
+  "component": "whole",
+  "reference_path": "docs/modeling/requests/bunker-filtration-pump/bunker-filtration-pump-image-to-3d-reference.png",
+  "request_sha256": "be38709b1ddffdf64c66744dd93011cebae905f1fce11636568515f468a904aa",
+  "no_subagents": true,
+  "post_decimation": false,
+  "model": "TRELLIS.2 INT8",
+  "resolution": 1024,
+  "seed": 42,
+  "generation_target_triangles": 50000,
+  "continue_visual_findings_for_final_analysis": true
+}

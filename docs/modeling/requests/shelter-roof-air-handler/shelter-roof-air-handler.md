@@ -6,7 +6,7 @@
 - **參考圖**：[透明背景 PNG](shelter-roof-air-handler-image-to-3d-reference.png)。單一完整物件的正面三分之四視角，呈現大型防雨百葉、兩個頂部排風罩及側面維修蓋；僅供 diffuser 外觀輸入，尺寸、原點與朝向仍以上述文字為準。
 - **交付位置**：`assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb` 與必要貼圖；可編輯來源放 `art_source/shelter_roof_air_handler/`。只替換外觀，保留碰撞及導航標記。後續由使用者以參考圖透過 diffuser 建模。
 
-完成情況：2026-10-01 已由 `image_to_3d_reference` subagent 製作並檢查參考圖；模型尚待生成與接入，屋頂獨立機組保留灰盒，建築本體不在本 request 範圍。
+完成情況：2026-10-07 TRELLIS.2／1024／seed 42／50k 參數已生成 1 個原始候選：[whole](../../../../assets/models/shelter_roof_air_handler/trellis_50k_20261007/shelter_roof_air_handler.glb)；未做後期降面，檢查 UNKNOWN（含必要未驗項），未替換正式外觀。詳見 [逐件分析](../../../research/2026-10-07-trellis-50k-requests.md)。
 
 - **生成來源**：內建 `image_gen`，依 [GDD 美術方向](../../../../GDD.md#正式戶外低模與低解析度) 與 [D 修正版](../../../art_targets/outdoor/2026-09-17-d-revision.md)。排風罩形狀與維修蓋細節為可替換的外觀假設，無新增接口或活動機構。
 

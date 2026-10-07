@@ -1,0 +1,27 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "4586dcff-2242-40b4-81cf-066ea2bc0283",
+  "glb_sha256": "ea97992fb9727a9da4403b289d762a34c7dc9da8c4a0c23897477b7e367e6ce3",
+  "conditioning_sha256": "915ef669fd10365880d833fdc90b04b483ba9863276d1bd259d68826e1cb58f0",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\bunker_filtration_pump\\50598251dce04de48a34bdb7e1a6ed36",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\bunker_filtration_pump\\50598251dce04de48a34bdb7e1a6ed36",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 39277,
+    "triangles": 49900,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "container_valid": true,
+    "geometry_straightness_checked": false
+  },
+  "art_review_passed": false
+}

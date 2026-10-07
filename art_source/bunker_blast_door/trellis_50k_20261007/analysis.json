@@ -1,0 +1,11 @@
+{
+  "state": "UNKNOWN",
+  "visual_assessment": "主輪廓與手輪可辨識，五視角沒有明顯整體側傾；裝甲、鏽蝕配色保留，細節更圓滑。",
+  "issues": [
+    "背面自行補出圓盤與裝甲；不等於參考圖證實的背面。",
+    "尚無可讀 EXIT 標示與警戒條紋。",
+    "門體厚度、米制尺寸與底部原點尚未校正。"
+  ],
+  "severity": "followup",
+  "interface": "static; +Z front visually confirmed; no scene replacement"
+}
