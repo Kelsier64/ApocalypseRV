@@ -24,7 +24,9 @@ func _run() -> void:
 			if actor is Monster:
 				actor.process_mode = Node.PROCESS_MODE_DISABLED
 				enemies.append(actor)
-		if enemies.size() >= 2:
+		# This suite specifically exercises Raker melee and surviving combat;
+		# barrel contact self-destruction is covered by its own behavior suite.
+		if enemies.size() >= 2 and enemies[0] is Raker and enemies[1] is Raker:
 			encounter_seed = seed_value
 			break
 		inside.free()

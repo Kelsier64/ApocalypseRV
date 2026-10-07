@@ -1,4 +1,5 @@
 extends SceneTree
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 func _init() -> void: _run.call_deferred()
 func check(okay: bool, message: String) -> void:
@@ -11,7 +12,22 @@ func frames(count: int) -> void:
 func duration_ticks(original_ticks: int) -> int:
 	return ceili(original_ticks * Engine.physics_ticks_per_second / 60.0)
 
+func wait_for_bands(generator: Node, minimum_count: int, phase: String) -> bool:
+	var ready := await WAIT.until(self, func() -> bool:
+		return not generator.building and generator.active_chunks.size() >= minimum_count and generator.active_chunks.all(func(c): return c.node.navigation_ready), 60000, true)
+	check(ready, "%s terrain and navigation become ready" % phase)
+	return ready
+
+func remove_ambient_monsters(keep: Monster = null) -> void:
+	for actor in get_nodes_in_group(Groups.MONSTERS):
+		if actor != keep: actor.queue_free()
+	await process_frame
+
 func _run() -> void:
+	# Actor creation can finish after a navigation await. Freeze every authored
+	# monster as it enters the tree, then enable only the measured pursuer.
+	node_added.connect(func(node):
+		if node is Monster: node.process_mode = Node.PROCESS_MODE_DISABLED)
 	var main: Node3D = load("res://world/test_world.tscn").instantiate()
 	var generator = main.get_node("WorldGenerator")
 	generator.world_seed = 42
@@ -19,23 +35,28 @@ func _run() -> void:
 	generator.profile.generation_version = 4 # This fixture exercises the two forest entrances.
 	generator.profile.chunks_ahead = 1
 	generator.profile.chunks_behind = 1
+	var player = main.get_node("Player")
+	player.process_mode = Node.PROCESS_MODE_DISABLED
 	root.add_child(main)
 	current_scene = main
 	# This test explicitly schedules bands and revisits the starting vehicle.
 	# Suspend the monotonic streaming controller during those test teleports.
 	generator.set_process(false)
-	for actor in get_nodes_in_group(Groups.MONSTERS): actor.queue_free()
-	while not generator.active_chunks.all(func(c): return c.node.navigation_ready): await process_frame
+	if not await wait_for_bands(generator, 3, "Initial"):
+		quit(1)
+		return
+	await remove_ambient_monsters()
 	await frames(10)
 	var site: Dictionary = generator.field.stop(0)
-	var player = main.get_node("Player")
 	player.in_ui_mode = true
 	player.current_player_health = 10000
+	player.process_mode = Node.PROCESS_MODE_INHERIT
 	var monster: Monster = load("res://enemies/raker.tscn").instantiate()
 	WorldEntities.get_container(main).add_child(monster)
 	monster.global_position = site.route[0] + Vector3.UP * 0.1
 	monster.detection_range = 90
 	monster.lose_interest_range = 110
+	monster.process_mode = Node.PROCESS_MODE_INHERIT
 	# Each target forces a real turn through a staggered gate, no teleporting AI.
 	for index in [3, 5, 7, 9, 11]:
 		player.global_position = site.route[index] + Vector3.UP * 0.1
@@ -48,21 +69,33 @@ func _run() -> void:
 				break
 		check(reached, "Monster traverses gate toward %d, actual %s" % [index, monster.global_position])
 		if not reached: break
+	# The background bake has a wall-clock duration, while fixed-fps keeps
+	# simulating. Do not let this unmeasured setup turn into a fatal grab.
+	monster.process_mode = Node.PROCESS_MODE_DISABLED
+	player.process_mode = Node.PROCESS_MODE_DISABLED
 	var remote: Dictionary = generator.field.stop(1)
-	for band in generator.protected_bands(remote.route[4]):
+	var remote_bands: Array[int] = generator.protected_bands(remote.route[4])
+	for band in remote_bands:
 		if not generator.active_chunks.any(func(c): return c.index == band): await generator._spawn_band(band, true)
-	while not generator.active_chunks.all(func(c): return c.node.navigation_ready): await process_frame
+	if not await wait_for_bands(generator, 3, "Remote"):
+		quit(1)
+		return
+	check(remote_bands.all(func(band): return generator.active_chunks.any(func(c): return c.index == band)), "Remote approach bands are loaded")
+	await remove_ambient_monsters(monster)
+	check(not player.is_player_dead and not player.is_grabbed(), "Navigation setup leaves the chase target alive and ungrabbed")
 	monster.global_position = remote.route[2] + Vector3.UP * 0.1
 	monster.velocity = Vector3.ZERO
 	player.global_position = remote.route[3] + Vector3.UP * 0.1
 	player.velocity = Vector3.ZERO
+	player.process_mode = Node.PROCESS_MODE_INHERIT
+	monster.process_mode = Node.PROCESS_MODE_INHERIT
 	var crossed := false
 	for tick in duration_ticks(1500):
 		await physics_frame
 		if monster.global_position.distance_to(player.global_position) < 2.5:
 			crossed = true
 			break
-	check(crossed, "Production monster crosses streamed seam and rotated gate")
+	check(crossed, "Production monster crosses streamed seam and rotated gate, monster=%s player=%s dead=%s grabbed=%s" % [monster.global_position, player.global_position, player.is_player_dead, player.is_grabbed()])
 	monster.queue_free()
 	player.global_position = site.road.origin + Vector3(0, 1, 30)
 	var rv: Chassis = main.get_node("NewRv/Chassis")

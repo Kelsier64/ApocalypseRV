@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/barrel_man.gd" id="ai"]
+[ext_resource type="Script" path="res://enemies/barrel_man_visual.gd" id="visual"]
+[ext_resource type="PackedScene" path="res://assets/models/barrel_man/barrel_man.glb" id="model"]
+
+[sub_resource type="CylinderShape3D" id="body"]
+radius = 0.32959
+height = 1.0
+
+[node name="BarrelMan" type="CharacterBody3D"]
+script = ExtResource("ai")
+monster_name = "油桶人"
+max_health = 60.0
+enable_boarding_visual = false
+floor_snap_length = 0.3
+
+[node name="BodyMesh" type="Node3D" parent="."]
+script = ExtResource("visual")
+
+[node name="Model" parent="BodyMesh" instance=ExtResource("model")]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.5, 0)
+shape = SubResource("body")
+
+[node name="HitBox" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="CollisionShape" type="CollisionShape3D" parent="HitBox"]
+position = Vector3(0, 0.5, 0)
+shape = SubResource("body")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.35
+target_desired_distance = 0.15
+radius = 0.32959
+height = 1.9
+
+[node name="BlastOrigin" type="Marker3D" parent="."]
+position = Vector3(0, 0.5, 0)

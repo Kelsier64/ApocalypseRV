@@ -45,6 +45,11 @@ func setup(actor: CharacterBody3D, source: Skeleton3D, root_bone: String, templa
 		if rv is RigidBody3D: launch_velocity = rv.linear_velocity + rv.angular_velocity.cross(global_position - rv.global_position)
 	elif is_instance_valid(actor.rv_support.rv): launch_velocity += actor.rv_support.carrier_velocity
 	else: launch_velocity += Vector3(actor.released_carrier_velocity.x, 0, actor.released_carrier_velocity.z)
+	# A multi-cut blast captures motion once before any cut changes seat/support.
+	if context.get("launch_velocity") is Vector3 and context.launch_velocity.is_finite():
+		launch_velocity = context.launch_velocity
+	if context.get("blast_impulse") is Vector3 and context.blast_impulse.is_finite():
+		launch_velocity += context.blast_impulse
 	captor = context.get("captor")
 	held = .25 if is_instance_valid(captor) else 0.0
 	# Defer physical-body mutation if the bite arrived during physics queries.

@@ -3,6 +3,7 @@ class_name RoadSpawns
 ## Pure v8 road encounters. Each category owns its RNG; no loaded-node queries.
 const WRECK_SCENE := "res://world/starting_shelter/reused_wreck.tscn"
 const RAKER_SCENE := "res://enemies/raker.tscn"
+const BARREL_MAN_SCENE := "res://enemies/barrel_man.tscn"
 const CHANCES := {"strips": 0.15, "wrecks": 0.25, "monsters": 0.35}
 const BLOCK_CHANCE := 0.15
 const ATTEMPTS := 4
@@ -16,7 +17,7 @@ const WRECK_MODEL_YAW := 0.2
 const MONSTER_SIZE := Vector3(2.0, 2.5, 2.0)
 
 static func plan(field: WorldField, band: int) -> Dictionary:
-	var result := {"strips": [], "wrecks": [], "monsters": [], "blocked": false}
+	var result := {"strips": [], "wrecks": [], "monsters": [], "monster_scenes": [], "blocked": false}
 	if field.profile.generation_version < 8 or band * field.profile.chunk_length < SAFE_DISTANCE:
 		return result
 	var occupied: Array[AABB] = []
@@ -79,6 +80,10 @@ static func plan(field: WorldField, band: int) -> Dictionary:
 			if not _valid_group(field, band, boxes, occupied): continue
 			result.monsters = points
 			break
+	# Species selection never consumes candidate/count/position RNG draws.
+	var species_rng := field.rng_for(band, "road_monster_species")
+	for point in result.monsters:
+		result.monster_scenes.append(BARREL_MAN_SCENE if species_rng.randf() < BarrelManSettings.ROAD_CHANCE else RAKER_SCENE)
 	return result
 
 static func _distance(field: WorldField, band: int, rng: RandomNumberGenerator) -> float:

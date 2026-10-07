@@ -92,14 +92,17 @@ func run() -> void:
 	player.in_ui_mode=true
 	player.position=rv.to_global(Vector3(6,-1.2,1.5))
 	player.current_player_health=10000
-	# The newly damageable floor is a valid intermediate breach target when
-	# the quarry moves below deck height. Allow the real breach and exit to finish.
+	# The fixed chassis deck stays intact when the quarry moves below it;
+	# pursuit must leave through the existing side breach.
 	await ticks(2400)
 	print("Raker exit pursuit ",rv.to_local(actor.global_position)," health ",player.current_player_health)
 	check(rv.to_local(actor.global_position).x>3.5,"Exits through the real breach")
 	check(not actor.crouched,"Returns to full standing height outside")
 	check(player.current_player_health<10000,"Resumes ground sweep after exit")
 	check(target_survived,"Cabin and exit pursuit never invoke death or respawn")
+	var deck_ray := PhysicsRayQueryParameters3D.create(rv.to_global(Vector3(0, 1, 2.6)), rv.to_global(Vector3(0, -.4, 2.6)), 1)
+	var deck_hit := world.get_world_3d().direct_space_state.intersect_ray(deck_ray)
+	check(deck_hit.get("collider") == rv and not rv.get_node("DeckCollision").disabled, "Fixed chassis floor survives monster side and roof breaches")
 	world.free()
 	if failures.is_empty(): print("PASS: Raker side-door breach, roof breach, low cabin pursuit and standing exit")
 	else:

@@ -6,7 +6,13 @@
 
 地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。
 
-油桶模型：[原 GLB 減面與貼圖烘焙試作](validation/2026-10-06-oil-barrel-optimization.md)，含 3,000 三角形候選、Godot 匯入與渲染比較；正式道具仍維持灰盒。
+油桶人：[Blender 雙腿、偽裝追逐、接觸自爆與保存驗收](validation/2026-10-07-barrel-man.md)，含正式玩家／RV 展示場、輪驅重播及模型來源；[腳踝、腳掌與五趾細修](validation/2026-10-07-barrel-man-feet.md)補上新版近景與蒙皮檢查。普通油桶與地堡裝飾桶共用相同藍色桶身。
+
+油桶人引爆更新：[1.5 m 近距離範圍、0.5 秒倒數及接觸立即引爆](validation/2026-10-07-barrel-man-proximity.md)，含倒數保存、F8 重播及本輪測試。
+
+油桶人特效：[火球、翻捲黑煙、塵浪與飛散火星](validation/2026-10-07-barrel-man-vfx.md)，含實機逐格畫面與效果生命週期回歸；保留目前已調整的 3 m／2 秒設定。
+
+油桶模型：[原 GLB 減面與貼圖烘焙試作](validation/2026-10-06-oil-barrel-optimization.md)，含 3,000 三角形版本；[meshoptimizer 直接減面實測](validation/2026-10-07-oil-barrel-meshoptimizer.md) 比較六組設定與 Godot 渲染。正式道具現已接入原 Blender 烘焙版本。
 
 統一物品：[Item、固定放置與支撐掉落](validation/2026-10-06-unified-items.md)，含大型設備背包、服務停機、怪物免疫、v5 保存與本輪自動／實機驗收。
 
@@ -14,7 +20,7 @@
 
 玩家登車：[梯頂停止與手動離梯](validation/2026-10-06-ladder-manual-exit.md)移除登頂自動推送，放開按鍵後由 WASD 自行走出；[接梯手感修正](validation/2026-10-06-ladder-transitions.md)記錄縮小觸發距離、放慢攀爬及鏡頭靠近；[貼牆梯子重做](validation/2026-10-05-rv-wall-ladders.md)記錄自由放置與移除入口固定梯位；[初版紀錄](validation/2026-10-05-rv-ladders.md)保留當時測試，初版配置已被取代。
 
-RV 車體：[固定結構與平板施工驗證](validation/2026-10-05-rv-structure-construction.md)，含獨立車板、十個固定槽位、施工交易、v4 存檔及原生拆牆／拆頂／拆地板觀察。
+RV 車體：[固定地板恢復驗證](validation/2026-10-07-rv-fixed-floor.md)，含十一槽、底盤地板碰撞／支撐、v5 存檔相容及原生平板觀察。歷史 [固定結構與平板施工驗證](validation/2026-10-05-rv-structure-construction.md) 保留當時十槽、v4 及拆地板結果；現行地板不可獨立破壞。
 
 玩家動畫與 Raker 咬擊：[玩家跑步與 Raker 咬擊姿勢修正驗收](validation/2026-10-05-ci-player-raker.md)，記錄三項 CI 失敗的修正、14 項相關回歸及原生輸入驗證。
 
@@ -77,6 +83,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-10-07 CI 不穩定測試修正](validation/2026-10-07-ci-flakiness.md) — 戶外追逐的非同步準備隔離、油桶人倒數 fixture／現行預設，以及屍體測試原生退出追查。
 
 - [2026-10-03 Esc 設定與視訊效果](validation/2026-10-03-settings-menu.md) — 即時設定、輸入釋放、室內合成、獨立保存與原生視窗確認。
 

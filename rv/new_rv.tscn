@@ -55,7 +55,7 @@ freeze = true
 collision_mask = 0
 
 [node name="DriverSeat" parent="Chassis" unique_id=1370501954 instance=ExtResource("2_hjrs7")]
-initial_support = NodePath("../Floor")
+initial_support = NodePath("..")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.58, 0.49605, -4.02)
 
 [node name="FuelPort" parent="Chassis" instance=ExtResource("9_tank")]
@@ -64,7 +64,7 @@ rotation_degrees = Vector3(0, 0, -90)
 freeze = true
 collision_mask = 0
 [node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
-initial_support = NodePath("../Floor")
+initial_support = NodePath("..")
 position = Vector3(1.25, 0.8, 3.7)
 freeze = true
 collision_mask = 0
@@ -104,19 +104,19 @@ position = Vector3(0, 1.5, 5.9)
 mount_slot = "rear"
 
 [node name="Generator" parent="Chassis" instance=ExtResource("preset_generator")]
-initial_support = NodePath("../Floor")
+initial_support = NodePath("..")
 position = Vector3(-1.25, 0.81, 3.7)
 freeze = true
 collision_mask = 0
 
 [node name="CraftingStation" parent="Chassis" instance=ExtResource("preset_crafting_station")]
-initial_support = NodePath("../Floor")
+initial_support = NodePath("..")
 position = Vector3(-1.15, 0.5, 1)
 freeze = true
 collision_mask = 0
 
 [node name="Scrapper" parent="Chassis" instance=ExtResource("preset_scrapper")]
-initial_support = NodePath("../Floor")
+initial_support = NodePath("..")
 position = Vector3(1.25, 0.5, -2.2)
 freeze = true
 collision_mask = 0

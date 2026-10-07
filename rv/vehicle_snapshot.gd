@@ -52,11 +52,31 @@ static func validate(data: Dictionary) -> bool:
 		if not valid_item(item): return false
 	for entry in data.mounted_items:
 		if not WorldActorSnapshot.validation_error(entry, "mounted_items").is_empty() or entry.kind != "item" or not entry.fixed: return false
+	if not _valid_mounted_supports(data): return false
 	if not WorldActorSnapshot.graph_error(data.mounted_items).is_empty(): return false
 	for wheel in data.wheels:
 		if not wheel is Dictionary or not wheel.has_all(["installed", "health", "id"]) or not wheel.installed is bool or not _number(wheel.health) or not wheel.id is String or (wheel.installed and wheel.id.is_empty()): return false
 		if not ItemState.valid_slot_data(wheel.get("item_data", {})): return false
 	return MaterialStorage.new().valid_amounts(data.materials) and ItemState.unique_ids(data, {})
+
+static func _valid_mounted_supports(data: Dictionary) -> bool:
+	var slots := {}
+	for structure in data.structures: slots[structure.slot] = true
+	var identities := {}
+	for entry in data.mounted_items: identities[entry.state.id] = true
+	for entry in data.mounted_items:
+		var support: Dictionary = entry.support
+		match support.kind:
+			"chassis":
+				if support.rv != data.id: return false
+			"structure":
+				if support.rv != data.id or not slots.has(support.slot): return false
+				# A known destroyed socket is an intentional Item fallback record:
+				# restoration drops the item and stops/refunds its service once.
+			"item":
+				if not identities.has(support.id): return false
+			_: return false
+	return true
 
 static func restore_device(device: Item, data: Dictionary, _rv: Node3D) -> void:
 	device.restore_item_state(data.state)
@@ -157,8 +177,32 @@ static func valid_item(value: Variant) -> bool:
 	return not value.state.has("battery") or valid_battery(value.state.battery)
 
 static func upgrade(source: Dictionary) -> Dictionary:
-	# Unified Item ownership in v5 requires a new run.
-	return source.duplicate(true) if source.get("version", 0) == VERSION else {}
+	# Item ownership still requires v5. Only the fixed-deck reversion is compatible:
+	# preserve the eleven remaining sockets and move former deck mounts to chassis.
+	if source.get("version", 0) != VERSION: return {}
+	var data := source.duplicate(true)
+	if not data.get("structures") is Array or data.structures.size() != 12: return data
+	var floor_index := -1
+	for index in range(data.structures.size()):
+		var entry: Variant = data.structures[index]
+		if not entry is Dictionary: return {}
+		if entry.get("slot") == "floor":
+			if floor_index != -1 or entry.size() != 4 or not entry.has_all(["slot", "type", "health", "door_angles"]): return {}
+			if not entry.slot is String or not entry.type is String: return {}
+			if entry.type != "rv_floor" or not _number(entry.health) or entry.health < 0.0 or entry.health > 120.0: return {}
+			if not entry.door_angles is Array or not entry.door_angles.is_empty(): return {}
+			floor_index = index
+	if floor_index == -1 or not data.get("mounted_items") is Array: return {}
+	var floor_health: float = data.structures[floor_index].health
+	data.structures.remove_at(floor_index)
+	if not RVStructureSlots.validate_snapshot(data.structures): return {}
+	for entry in data.mounted_items:
+		if not entry is Dictionary or not valid_support(entry.get("support")): return {}
+		var support: Dictionary = entry.support
+		if support.kind == "structure" and support.slot == "floor":
+			if floor_health <= 0.0 or support.rv != data.get("id"): return {}
+			entry.support = {"kind": "chassis", "rv": support.rv}
+	return data if validate(data) else {}
 
 static func valid_support(value: Variant) -> bool:
 	return WorldActorSnapshot.valid_support(value)

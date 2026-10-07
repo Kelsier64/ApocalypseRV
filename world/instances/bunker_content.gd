@@ -15,6 +15,8 @@ const ENEMY_TYPES := [
 static func populate(inside: Node3D) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(inside.layout.seed) ^ 0x4b554e4b
+	var species := RandomNumberGenerator.new()
+	species.seed = int(inside.layout.seed) ^ 0x42415252
 	var scope: String = inside.instance_id if not inside.instance_id.is_empty() else "seed:%d" % inside.layout.seed
 	var prefix := "bunker:%s:" % scope
 	var distances := InteriorLayout.distances(inside.layout)
@@ -86,7 +88,10 @@ static func populate(inside: Node3D) -> Dictionary:
 			if rng.randf() < ENCOUNTER_CHANCE:
 				var location := _position(inside, i, rng, reserved)
 				if not location.is_empty() and location.point.distance_to(inside.spawn_transform().origin) >= 18.0:
+					# Preserve the original selector's RNG draw so later loot and
+					# positions stay identical; species uses a separate stream.
 					var scene := _choose_enemy_scene(rng)
+					if species.randf() < BarrelManSettings.BUNKER_CHANCE: scene = load(RoadSpawns.BARREL_MAN_SCENE)
 					if scene != null:
 						var enemy := scene.instantiate() as Monster
 						configure_monster(enemy)
@@ -116,6 +121,7 @@ static func _supply(rng: RandomNumberGenerator, identity: String, rich: bool) ->
 		"state": {"id": identity, "condition": 100.0, "scrap_yields": yields, "recycle_result": {}}}
 
 static func configure_monster(enemy: Monster) -> void:
+	if enemy is BarrelMan: return
 	enemy.detection_range = 10.0
 	enemy.lose_interest_range = 16.0
 	enemy.wander_min_distance = 2.0

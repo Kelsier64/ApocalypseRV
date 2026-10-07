@@ -88,13 +88,7 @@ func doors_open() -> bool:
 		return device.angles.size() == 2 and absf(device.angles[0]) >= deg_to_rad(85) and absf(device.angles[1]) >= deg_to_rad(85)
 	return false
 func exclusions() -> Array[RID]:
-	var result: Array[RID] = [get_rid(), rv.get_rid(), $Control.get_rid()]
-	# The stowed ramp telescopes underneath its own deck. This deck used to
-	# share the chassis RID; exclude only that fixed structural floor now.
-	var slots := rv.get_node_or_null("StructureSlots")
-	var floor_panel: RVStructurePanel = slots.occupant("floor") if slots else null
-	if is_instance_valid(floor_panel): result.append(floor_panel.get_rid())
-	return result
+	return [get_rid(), rv.get_rid(), $Control.get_rid()]
 func blockage(pose: Transform3D, size: Vector3, support: RID = RID()) -> String:
 	var query := PhysicsShapeQueryParameters3D.new()
 	var box := BoxShape3D.new()

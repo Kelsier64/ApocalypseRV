@@ -14,6 +14,22 @@ func pose_steps() -> void:
 		await physics_frame
 		await process_frame
 
+func check_road_visibility(rv: Chassis, seat: Item) -> void:
+	var camera: Camera3D = seat.get_node("Camera3D")
+	var blockers: Array[Node] = seat.get_node("CockpitVisual").find_children("*", "MeshInstance3D", true, false)
+	blockers.append_array(rv.get_node("StructureSlots").occupant("front").find_children("*", "MeshInstance3D", true, false))
+	# Sample actual road sight lines beyond the nose, with the chassis 1.2 m
+	# above level ground. Transparent windshield glass is intentionally visible through.
+	for distance in [15.0, 25.0, 40.0]:
+		var road := rv.to_global(Vector3(seat.position.x, -1.2, -6.0 - distance))
+		var screen := camera.unproject_position(road)
+		check(not camera.is_position_behind(road) and Rect2(Vector2.ZERO, root.size).has_point(screen), "Default driving view includes road %d m beyond the nose" % distance)
+		for candidate in blockers:
+			var mesh := candidate as MeshInstance3D
+			if mesh.name == "Windshield" or not mesh.mesh is BoxMesh or not mesh.is_visible_in_tree(): continue
+			var intersection: Variant = mesh.get_aabb().intersects_segment(mesh.to_local(camera.global_position), mesh.to_local(road))
+			check(intersection == null, "Road %d m ahead is not hidden by %s" % [distance, mesh.name])
+
 func palm_position(skeleton: Skeleton3D, side: String) -> Vector3:
 	var hand := skeleton.find_bone("hand_" + side)
 	var rest := skeleton.get_bone_global_rest(hand)
@@ -71,6 +87,7 @@ func _run() -> void:
 	seat.interact_hold(player)
 	check(seat.current_driver == player and rv.is_player_driving, "Production cockpit grants driving through the actual seat")
 	check(player.is_visible_in_tree(), "Seated driver remains visible to vehicle observers and mirrors")
+	check_road_visibility(rv, seat)
 	var player_visual: PlayerModelVisual = player.get_node("Visuals")
 	check(player_visual.local_body.is_visible_in_tree(), "Driving camera can display the seated player's local body")
 	check((seat.seat_camera.cull_mask & PlayerModelVisual.LOCAL_VIEW_LAYER) != 0 and (seat.seat_camera.cull_mask & PlayerModelVisual.FULL_BODY_LAYER) == 0, "Driving camera sees the local body without the complete head mesh")
@@ -204,7 +221,7 @@ func _run() -> void:
 	check(player.enter_equipment_placement(), "Cockpit preview can reopen after cancellation")
 	var moved := Transform3D(Basis(Vector3.UP, 0.15), Vector3(-0.7, 0.49605, -3.0))
 	player.placement.placing_equipment.global_transform = rv.global_transform * moved
-	player.placement.target_support = rv.get_node("Floor")
+	player.placement.target_support = rv
 	player.placement.can_place_equipment = true
 	check(player.placement.commit(player), "Held cockpit fixes at the validated new pose")
 	check(player.inventory.items.is_empty() and not player.is_placing_equipment(), "Cockpit fixation transfers inventory ownership once")

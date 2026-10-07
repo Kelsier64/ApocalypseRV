@@ -45,6 +45,11 @@ func _run() -> void:
 	rv.current_power = rv.max_power
 	rv.energy.engine_running = false
 	rv.storage.items["Metal Parts"] = 100
+	check(RVStructureSlots.layout().size() == 11 and slots.panel("floor") == null, "Fixed chassis floor is not one of the eleven structure slots")
+	check(RVStructureSlots.types_for_slot("floor").is_empty(), "Fixed floor has no selectable construction type")
+	for operation in ["repair", "rebuild", "convert"]:
+		check(controller.begin(terminal, "floor", operation, "rv_floor").contains("不存在"), "Fixed floor rejects construction operation: " + operation)
+	check(not controller.is_building() and rv.get_item_count("Metal Parts") == 100, "Rejected floor actions cannot start construction or spend materials")
 	var panel: Node = slots.panel("left_1")
 	panel.set_health(30.0)
 	check(controller.begin(terminal, "left_1", "repair").is_empty(), "Repair starts from open powered terminal")
@@ -219,7 +224,8 @@ func _run() -> void:
 	panel.set_health(40.0)
 	tablet.interact_hold(player)
 	var ui: Node = tablet.ui_instance
-	check(ui.visible and ui.service_tabs.get_tab_count() == 2 and ui.structure_rows.size() == 12, "Real tablet opens with a dedicated structure page and all twelve slots")
+	check(ui.visible and ui.service_tabs.get_tab_count() == 2 and ui.structure_rows.size() == 11, "Real tablet opens with a dedicated structure page and all eleven slots")
+	check(not ui.structure_rows.has("floor") and ui.structure_buttons.filter(func(entry): return entry.slot == "floor").is_empty(), "Real tablet has no floor row or floor construction actions")
 	check(ui.structure_buttons.filter(func(entry): return entry.slot == "roof_1" and entry.operation == "convert").size() == 1, "Roof row exposes the same variant conversion action as side rows")
 	ui.service_tabs.current_tab = 1
 	ui._refresh_structures()

@@ -12,6 +12,7 @@ func empty(data: Dictionary) -> bool:
 
 func run() -> void:
 	var totals := {"strips": 0, "wrecks": 0, "monsters": 0, "blocked": 0}
+	var species := {}
 	for version in range(2, 8):
 		var profile := WorldProfile.new()
 		profile.generation_version = version
@@ -53,6 +54,10 @@ func run() -> void:
 				var box := AABB(point - Vector3(1, 0.5, 1), RoadSpawns.MONSTER_SIZE)
 				check(box.position.z >= -(band + 1) * 150.0 + 5 and box.end.z <= -band * 150.0 - 5, "Monster footprint clears seams")
 				for obstacle in static_boxes: check(not overlaps(box, obstacle), "Monster avoids static road obstacles")
+			check(data.monster_scenes.size() == data.monsters.size(), "Every existing monster slot has exactly one species")
+			for path in data.monster_scenes:
+				check(path in [RoadSpawns.RAKER_SCENE, RoadSpawns.BARREL_MAN_SCENE], "Road species is an approved enemy scene")
+				species[path] = true
 			if data.blocked:
 				totals.blocked += 1
 				check(data.wrecks.size() in [3, 4], "Blockades contain three or four wrecks")
@@ -67,9 +72,11 @@ func run() -> void:
 			field.rng_for(band, "road_spawn_strips").randf()
 			field.rng_for(band, "road_spawn_wrecks").randf()
 			field.rng_for(band, "road_spawn_monsters").randf()
+			field.rng_for(band, "road_monster_species").randf()
 			field.loot_plan(band)
 			check(data == RoadSpawns.plan(field, band), "Category and loot RNG calls do not perturb planner")
 	for category in totals: check(totals[category] > 0, "Seed scan exercises " + category)
+	check(species.has(RoadSpawns.RAKER_SCENE) and species.has(RoadSpawns.BARREL_MAN_SCENE), "Independent species stream generates both approved enemies")
 	check(totals.strips < 150 and totals.wrecks < 220 and totals.monsters < 300, "Density stays below candidate chances plus sampling tolerance")
 	check(CheckpointSchema.profile_error({"generation_version": 8}).is_empty(), "Checkpoint profile accepts v8")
 	check(not CheckpointSchema.profile_error({"generation_version": 9}).is_empty(), "Unknown generation version remains rejected")

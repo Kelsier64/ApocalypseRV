@@ -1,0 +1,86 @@
+{
+	"clips": [
+		{
+			"clip": "disguised",
+			"frames": 61,
+			"hidden_radius": 0.231917500495911,
+			"max_y": 0.52610844373703,
+			"min_y": 0.0299904383718967,
+			"shell_radius": 0.231917500495911
+		},
+		{
+			"clip": "rise",
+			"frames": 50,
+			"hidden_radius": 0.0,
+			"max_y": 0.976742565631866,
+			"min_y": -0.000868348928634077,
+			"shell_radius": 0.313153684139252
+		},
+		{
+			"clip": "idle",
+			"frames": 121,
+			"hidden_radius": 0.0,
+			"max_y": 0.981104671955109,
+			"min_y": -0.000000398271936319361,
+			"shell_radius": 0.254556804895401
+		},
+		{
+			"clip": "run",
+			"frames": 35,
+			"hidden_radius": 0.0,
+			"max_y": 0.951636791229248,
+			"min_y": -0.0032592723146081,
+			"shell_radius": 0.284092992544174
+		},
+		{
+			"clip": "sprint",
+			"frames": 30,
+			"hidden_radius": 0.0,
+			"max_y": 0.953229129314423,
+			"min_y": -0.00591733912006021,
+			"shell_radius": 0.290104806423187
+		},
+		{
+			"clip": "turn_left",
+			"frames": 35,
+			"hidden_radius": 0.0,
+			"max_y": 0.951655805110931,
+			"min_y": -0.00325936730951071,
+			"shell_radius": 0.288753837347031
+		},
+		{
+			"clip": "turn_right",
+			"frames": 35,
+			"hidden_radius": 0.0,
+			"max_y": 0.951654255390167,
+			"min_y": -0.00325936451554298,
+			"shell_radius": 0.286442190408707
+		},
+		{
+			"clip": "retract",
+			"frames": 50,
+			"hidden_radius": 0.0,
+			"max_y": 0.976742565631866,
+			"min_y": -0.000868258706759661,
+			"shell_radius": 0.313153654336929
+		},
+		{
+			"clip": "fall",
+			"frames": 61,
+			"hidden_radius": 0.0,
+			"max_y": 0.921294033527374,
+			"min_y": 0.0514437034726143,
+			"shell_radius": 0.26367124915123
+		},
+		{
+			"clip": "land",
+			"frames": 26,
+			"hidden_radius": 0.0,
+			"max_y": 0.976742565631866,
+			"min_y": -0.00443535298109055,
+			"shell_radius": 0.254542738199234
+		}
+	],
+	"failures": [],
+	"triangles": 42846
+}

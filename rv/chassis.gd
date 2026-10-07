@@ -36,6 +36,7 @@ var _suspension_pending := false
 var _was_impact_frozen := false
 var _monster_impacts: Dictionary = {}
 var _monster_impact_times: Dictionary = {}
+var _monster_explosion_impacts: Dictionary = {}
 @export var is_player_driving: bool = false
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
 
@@ -154,12 +155,6 @@ func _ready() -> void:
 		add_collision_exception_with(body)
 		body.add_collision_exception_with(self)
 	base_mass = mass
-	# The deck used to be included in the chassis mass/moment. Transfer its share
-	# to the damageable floor without changing the intact vehicle's load or COM.
-	var floor_panel := get_node_or_null("Floor") as RVStructurePanel
-	if floor_panel:
-		base_mass -= floor_panel.mass
-		center_of_mass_offset = (center_of_mass_offset * mass - floor_panel.position * floor_panel.mass) / base_mass
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 	center_of_mass = center_of_mass_offset
 	add_to_group(Groups.RV)
@@ -353,13 +348,19 @@ func vehicle_impact_point_velocity(point: Vector3) -> Vector3:
 	var centre := global_transform * center_of_mass
 	return _impact_velocity + _impact_angular_velocity.cross(point - centre)
 
-func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, approach: float) -> void:
+func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, approach: float, charges_damage: bool = true) -> void:
 	if not is_instance_valid(monster) or not normal.is_finite() or not point.is_finite() or not is_finite(approach): return
 	if approach <= 0.1 or normal.is_zero_approx(): return
 	var id := monster.get_instance_id()
 	if _vehicle_impacts.clock - _monster_impact_times.get(id, -10.0) < 1.0: return
 	_monster_impacts[id] = weakref(monster)
 	_monster_impact_times[id] = _vehicle_impacts.clock
+	if not charges_damage: _monster_explosion_impacts[id] = true
+
+func queue_explosive_item_impact(item: Item, normal: Vector3, point: Vector3, approach: float) -> void:
+	# Exploding cargo uses the same once-only yielding motion as a mimic. Its
+	# shared blast resolver owns engine damage, never the ordinary body budget.
+	queue_monster_impact(item, normal, point, approach, false)
 
 func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF) -> void:
 	if _impact_age < 0.75: return
@@ -405,8 +406,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var target := TreeImpact.target_for(collider)
 		var hit := TreeImpact.hit(self, collider, shape_index, velocity, normal)
 		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = true
-		if collider is Monster:
-			collider._apply_vehicle_contact(self, -normal, state.get_contact_local_position(contact))
+		if collider is Monster or collider is OilBarrel:
+			collider.receive_vehicle_body_contact(self, -normal, state.get_contact_local_position(contact))
 		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit, "offset": offset, "incoming": incoming})
 	# One trunk can report a glancing contact before its frontal hit. Classify
 	# blocking normals only after every shape has had a chance to break.
@@ -418,6 +419,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		elif collider is Monster:
 			if collider.vehicle_impact_cooldown > 0.0 and absf(normal.y) < 0.65 and _impact_velocity.slide(Vector3.UP).dot(normal) < -0.1:
 				pass_through = true
+		elif collider is OilBarrel and collider._explosion_queued:
+			pass_through = true
 		elif absf(normal.y) < 0.65 and not (collider is RigidBody3D and collider.get_parent() is TreeFall):
 			solid_normals.append(normal)
 	# The solver has already applied a hard trunk collision. Restore only lost
@@ -425,10 +428,15 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	# Other walls/rocks and incomplete contact reports still block the vehicle.
 	var incoming_horizontal := _impact_velocity.slide(Vector3.UP)
 	var new_monsters := 0
-	for pending: WeakRef in _monster_impacts.values():
-		if is_instance_valid(pending.get_ref()): new_monsters += 1
+	var charged_monsters := 0
+	for id in _monster_impacts:
+		var pending: WeakRef = _monster_impacts[id]
+		if is_instance_valid(pending.get_ref()) or _monster_explosion_impacts.has(id):
+			new_monsters += 1
+			if not _monster_explosion_impacts.has(id): charged_monsters += 1
 	if new_monsters > 0: pass_through = true
 	_monster_impacts.clear()
+	_monster_explosion_impacts.clear()
 	var yielding_blocked := false
 	if pass_through and state.get_contact_count() < max_contacts_reported and incoming_horizontal.length() > 0.1:
 		var direction := incoming_horizontal.normalized()
@@ -449,7 +457,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		for key in new_trunks:
 			_settle_vehicle_impact("tree", speed * (1.0 - TreeImpact.SPEED_RETAINED) * scale_loss)
 			speed *= TreeImpact.SPEED_RETAINED
-		for i in range(new_monsters):
+		for i in range(charged_monsters):
 			_settle_vehicle_impact("monster", speed * (1.0 - VehicleImpact.MONSTER_SPEED_RETAINED) * scale_loss)
 			speed *= VehicleImpact.MONSTER_SPEED_RETAINED
 	# Use only true collision normals, after all soft-obstacle restoration.
@@ -458,6 +466,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	for contact in contacts:
 		var collider: Node = contact.collider
 		if collider is Monster: continue
+		if collider is OilBarrel and collider._explosion_queued: continue
 		if contact.target != null and contact.target.vehicle_tree_is_broken(contact.shape): continue
 		if is_ancestor_of(collider) or (collider is Item and collider.get_connected_rv() == self): continue
 		var normal: Vector3 = contact.normal.normalized()

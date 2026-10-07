@@ -77,6 +77,7 @@ const CLIMB_DEBUG_LOG_ABORTS = false
 @export var vehicle_damage_min_approach_dot: float = 0.35
 
 @export_group("Boarding")
+@export var enable_boarding_visual: bool = true
 @export var grab_speed_tolerance: float = 10.0
 @export var grab_retry_delay: float = 1.2
 @export var grip_capacity: float = 100.0
@@ -181,9 +182,10 @@ func _ready():
 	platform_floor_layers = 0
 	current_health = max_health
 	add_to_group(Groups.MONSTERS)
-	var boarding_visual := Node3D.new()
-	boarding_visual.set_script(load("res://enemies/monster_boarding_visual.gd"))
-	add_child(boarding_visual)
+	if enable_boarding_visual:
+		var boarding_visual := Node3D.new()
+		boarding_visual.set_script(load("res://enemies/monster_boarding_visual.gd"))
+		add_child(boarding_visual)
 	
 	# Randomize initial sway so nearby monsters do not move in sync.
 	sway_phase = randf_range(0, TAU)
@@ -1957,6 +1959,10 @@ func _apply_vehicle_contact(rv: Node3D, normal: Vector3, point: Vector3) -> bool
 	velocity = normal * minf(approach * 1.5, 18.0) + Vector3.UP * 3.0
 	_vehicle_hit_reaction(rv, normal, point, approach)
 	return true
+
+## Rigid contact only; predictive climbing probes keep using _apply_vehicle_contact.
+func receive_vehicle_body_contact(rv: Node3D, normal: Vector3, point: Vector3) -> bool:
+	return _apply_vehicle_contact(rv, normal, point)
 
 func _vehicle_hit_reaction(_rv: Node3D, _normal: Vector3, _point: Vector3, _approach: float) -> void:
 	pass

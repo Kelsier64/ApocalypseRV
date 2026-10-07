@@ -9,7 +9,7 @@
 - `cockpit.tscn`：座椅、儀表台、方向盤、排檔桿、手煞車、踏板，一起掛在 DriverSeat 下。
 - `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔、手煞車、三個指針及讀數；沒有另一套引擎或電力狀態。
 - `wheel.tscn`：胎面、輪圈和螺帽；由底盤依原輪胎尺寸縮放，跟隨 VehicleWheel3D。
-- `roof.tscn`／`roof_hatch.tscn`：4 × 4 m 普通／左側開孔屋頂片視覺，分別由 `equipment/rv_ceiling.tscn`／`rv_ceiling_hatch.tscn` 持有碰撞。地板網格與碰撞由 `equipment/rv_floor.tscn` 持有；車架、接縫與保險桿仍在 `rv/chassis.tscn`。
+- `roof.tscn`／`roof_hatch.tscn`：4 × 4 m 普通／左側開孔屋頂片視覺，分別由 `equipment/rv_ceiling.tscn`／`rv_ceiling_hatch.tscn` 持有碰撞。固定地板網格與碰撞、車架、接縫與保險桿都在 `rv/chassis.tscn`。
 - 其餘同名場景：現有設備的外觀細節，不取代設備腳本。
 
 ## 模型規則
@@ -18,7 +18,7 @@
 碰撞形狀在 Equipment 或 RVStructurePanel 根節點下，視覺可以任意分層；一般設備放置範圍由根層碰撞合併計算，車殼姿態由固定槽位決定。
 駕駛座的椅身、前控制台與側控制台共三組碰撞，一次搬移、一次保存。
 側牆窗戶有碰撞；側門及後門具可轉動的門扇，開啟才可通行。
-六片側牆／門、後門整組、前窗、屋頂與地板是獨立 RVStructurePanel，均不繼承 Equipment，共十二個底盤永久槽位。車頭朝 -Z，+X 為右側（牆／門／牆），-X 為左側（牆／牆／牆）；屋頂為三片，地板為一整片。每槽獨立耐久、重量及碰撞，毀壞後只留下空槽供平板重建。
+六片側牆／門、後門整組、前窗與三片屋頂是獨立 RVStructurePanel，均不繼承 Item，共十一個底盤永久槽位。車頭朝 -Z，+X 為右側（牆／門／牆），-X 為左側（牆／牆／牆）。每槽獨立耐久、重量及碰撞，毀壞後只留下空槽供平板重建。地板網格與碰撞固定屬於底盤，重量計入底盤，不提供獨立破壞、維修或更換。
 `equipment/rv_side_panel.tscn`、`rv_side_door.tscn`、`rv_rear_door.tscn` 可直接編輯。門扇視覺在 Leaf0／Leaf1 下，CollisionShape3D 留在結構根層，由 rv_door.gd 同步旋轉。門扇厚度與門框齊平，避免攀爬撞到凸出的上緣。
 後門整組寬 3.6 m，淨開口約 3.12 m；側門單扇淨開口約 1.2 m。門扇向外開至 100°，兩扇各別操作；不可在可動葉片上裝設備。
 外觀子節點不可加入自己的獨立設備登錄或保存狀態。
@@ -33,7 +33,7 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 ## 新底盤、引擎與燈號
 
-- 正式 rv/chassis.tscn 已用 MeshInstance3D 重新製作；Rail、Cross、Arch、Bumper 與各簡單 Collider 保留原 4 × 12 m 及輪槽座標。Deck 網格與地板 Collider 已移至獨立地板結構，毀壞後不留下隱形地板；底盤框架與輪組碰撞保留。舊 CSG 只留 legacy 對照。
+- 正式 rv/chassis.tscn 已用 MeshInstance3D 重新製作；Rail、Cross、Arch、Bumper 與各簡單 Collider 保留原 4 × 12 m 及輪槽座標。Deck 網格與地板 Collider 固定屬於底盤，與框架、輪組共同保留。舊 CSG 只留 legacy 對照。
 - rv/engine_bay.tscn 是前方固定服務槽；Hatch 為獨立 E 互動蓋，EngineVisual 顯示已裝引擎；空槽保留托架與提示。引擎道具場景在 props/engine_standard.tscn／engine_upgraded.tscn，原創原生網格，可直接編輯。
 - rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。展開與收起有逐步動畫及障礙掃掠。
 - assets/rv_status 的 SVG 是本專案原創車用符號；rv/vehicle_status.gd 決定顏色和原因，實體 Sprite3D／HUD 共用。VehicleLights 使用原生燈罩與 SpotLight3D；原有裝飾 light.tres 不常亮。

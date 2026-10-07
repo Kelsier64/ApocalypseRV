@@ -1,0 +1,6 @@
+input: 2 nodes, 1 meshes (1 primitives), 1 materials, 0 skins, 0 animations, 2 images
+input: 1 mesh primitives (499846 triangles, 324320 vertices); 1 draw calls (1 instances, 499846 triangles)
+output: 1 mesh primitives (2763 triangles, 796 vertices); 1 draw calls (1 instances, 2763 triangles)
+output: 2 nodes, 1 meshes (1 primitives), 1 materials
+output: JSON 1518 bytes, buffers 433560 bytes
+output: buffers: vertex 25472 bytes, index 16578 bytes, skin 0 bytes, time 0 bytes, keyframe 0 bytes, instance 0 bytes, image 391508 bytes

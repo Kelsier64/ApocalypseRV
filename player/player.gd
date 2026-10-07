@@ -1171,6 +1171,36 @@ func take_damage(amount: float):
 		current_player_health = 0.0
 		_player_die()
 
+## One explosion owns one hurt-cooldown decision, including all of its cuts.
+## Capture platform motion before a leg cut can force the player out of a seat.
+func apply_explosion_hit(amount: float, limb_count: int = 0, blast_impulse: Vector3 = Vector3.ZERO) -> bool:
+	if is_player_dead or damage_cooldown > 0.0 or not is_finite(amount) or amount <= 0.0 or not blast_impulse.is_finite(): return false
+	var inherited := velocity
+	if locomotion_state == LocomotionState.CLIMBING:
+		inherited = climb_carrier_velocity
+	elif is_instance_valid(seated_in):
+		inherited = ClimbMath.point_velocity(_find_rv_ancestor(seated_in), global_position)
+	elif is_instance_valid(rv_support.rv):
+		inherited += rv_support.carrier_velocity
+	else:
+		inherited += Vector3(released_carrier_velocity.x, 0, released_carrier_velocity.z)
+	damage_cooldown = 0.5
+	var remaining: Array[StringName] = []
+	for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg"]:
+		if body_state.has_part(part): remaining.append(part)
+	# Uniform draws without replacement. The head is never a blast-cut target.
+	for cut in mini(clampi(limb_count, 0, 2), remaining.size()):
+		var index := randi_range(0, remaining.size() - 1)
+		sever_part(remaining[index], {"launch_velocity": inherited, "blast_impulse": blast_impulse})
+		remaining.remove_at(index)
+	current_player_health = maxf(0.0, current_player_health - amount)
+	_update_health_bar()
+	if current_player_health <= 0.0:
+		_player_die()
+		# Deferred ragdoll start consumes the completed explosion velocity.
+		death_velocity = inherited + blast_impulse
+	return true
+
 func _update_health_bar():
 	if health_bar and health_bar.has_method("set_health"):
 		health_bar.set_health(current_player_health, max_player_health)

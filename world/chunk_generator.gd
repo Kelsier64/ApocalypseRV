@@ -526,7 +526,10 @@ func _spawn_road_monsters() -> void:
 	if get_meta("skip_actors", false): return
 	var container := WorldEntities.get_container(self)
 	if container == null: return
-	for point: Vector3 in road_spawns.monsters:
-		var monster: Node3D = RAKER_SCENE.instantiate()
+	for index in range(road_spawns.monsters.size()):
+		var point: Vector3 = road_spawns.monsters[index]
+		var scenes: Array = road_spawns.get("monster_scenes", [])
+		var path: String = scenes[index] if index < scenes.size() else RoadSpawns.RAKER_SCENE
+		var monster: Node3D = load(path).instantiate()
 		container.add_child(monster)
-		monster.global_position = point
+		monster.global_position = point - Vector3.UP * 0.5 if monster is BarrelMan else point

@@ -1,0 +1,142 @@
+[
+  {
+    "name": "strict",
+    "elapsed_seconds": 0.3994736,
+    "triangles": 22114,
+    "bytes": 1217468,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\strict.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "0.01",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\strict-report.json",
+      "-v"
+    ]
+  },
+  {
+    "name": "permissive",
+    "elapsed_seconds": 0.416083,
+    "triangles": 22120,
+    "bytes": 1217728,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "0.01",
+      "-sp",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-report.json",
+      "-v"
+    ]
+  },
+  {
+    "name": "permissive-update",
+    "elapsed_seconds": 0.4567911,
+    "triangles": 22154,
+    "bytes": 1219660,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-update.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "0.01",
+      "-sp",
+      "-sv",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-update-report.json",
+      "-v"
+    ]
+  },
+  {
+    "name": "permissive-5pct",
+    "elapsed_seconds": 0.4533287,
+    "triangles": 18884,
+    "bytes": 1108776,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-5pct.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "0.05",
+      "-sp",
+      "-sv",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-5pct-report.json",
+      "-v"
+    ]
+  },
+  {
+    "name": "aggressive",
+    "elapsed_seconds": 0.3839342,
+    "triangles": 2763,
+    "bytes": 435144,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\aggressive.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "0.05",
+      "-sa",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\aggressive-report.json",
+      "-v"
+    ]
+  },
+  {
+    "name": "permissive-maxerror",
+    "elapsed_seconds": 0.4430819,
+    "triangles": 0,
+    "bytes": 392236,
+    "arguments": [
+      "-i",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\retired_props\\2026-09-29\\oil_barrel.glb",
+      "-o",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-maxerror.glb",
+      "-si",
+      "0.006001848",
+      "-se",
+      "1",
+      "-sp",
+      "-sv",
+      "-noq",
+      "-kn",
+      "-km",
+      "-r",
+      "C:\\Users\\evan4\\Projects\\ApocalypseRV\\art_source\\oil_barrel\\meshoptimizer-v1.3\\permissive-maxerror-report.json",
+      "-v"
+    ]
+  }
+]

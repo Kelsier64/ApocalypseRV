@@ -31,8 +31,8 @@ func _run() -> void:
 	var clock: WorldClock = world.get_node("WorldClock")
 	var player: CharacterBody3D = world.get_node("Player")
 	var rv: Chassis = world.get_node("NewRv/Chassis")
-	var floor_panel: RVStructurePanel = rv.get_node("StructureSlots").occupant("floor")
-	check(is_instance_valid(floor_panel) and floor_panel.can_operate(), "Starter RV has a live independent floor support")
+	var deck: CollisionShape3D = rv.get_node("DeckCollision")
+	check(not deck.disabled and deck.get_parent() == rv and deck.shape is BoxShape3D, "Starter RV has a solid fixed chassis floor")
 	# Decorative wings must be real obstacles, without walkable rooms inside.
 	var extension: Node3D = run.shelter.get_node("ExteriorExtension")
 	for local_point in [Vector3(-17, 1, 0), Vector3(17, 1, 0), Vector3(0, 1, -22)]:
@@ -81,7 +81,7 @@ func _run() -> void:
 		await physics_frame
 		await process_frame
 		player.placement.update_ghost(player)
-		check(player.placement.can_place_equipment and player.placement.target_support == floor_panel, "Real floor ray validates " + item_name + ": " + player.placement.message)
+		check(player.placement.can_place_equipment and player.placement.target_support == rv, "Real fixed floor ray validates " + item_name + ": " + player.placement.message)
 		if not player.placement.can_place_equipment:
 			var cancel := InputEventMouseButton.new()
 			cancel.button_index = MOUSE_BUTTON_RIGHT
@@ -96,7 +96,7 @@ func _run() -> void:
 		device = null
 		for mounted in rv.get_equipment():
 			if mounted.persistent_id == identity: device = mounted
-		check(device != null and device.get_connected_rv() == rv and device.mount_support == floor_panel and device.get_parent() == rv, "Placed device preserves real RV/independent floor ownership: " + item_name)
+		check(device != null and device.get_connected_rv() == rv and device.mount_support == rv and device.get_parent() == rv, "Placed device preserves real RV/chassis support ownership: " + item_name)
 		check(device != null and device.can_operate() and removals[0] == 1, "One pickup and validated fixation powers " + item_name)
 		if device:
 			var events := [0]

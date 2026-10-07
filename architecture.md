@@ -61,9 +61,21 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 
 正式 main_world 新局選擇 v8，沿用避難所開場及小 POI；共用 WorldProfile 預設與 legacy fixture 保留 v6，生成 v2–v7 分支保留原規則，僅接受 v5 檢查點。檢查點為 v5，shelter 接受 v7／v8，legacy 禁止這兩版開場身份。
 
-RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，提供靜態姿態與 Raker 位置；前 450 m、安全據點與所有物件的 5 m 接縫距離受保護。一般車陣保留至少 5 m 中央通道，少量車陣橫置封路。靜態內容屬 chunk，加入導航烘焙；v8 改用這條釘帶流程，舊版保留 TireSpikeStrip.build。
+RoadSpawns.plan(field, band) 使用獨立道路釘帶／廢車／怪物 RNG，提供靜態姿態與怪物位置；前 450 m、安全據點與所有物件的 5 m 接縫距離受保護。一般車陣保留至少 5 m 中央通道，少量車陣橫置封路。靜態內容屬 chunk，加入導航烘焙；v8 改用這條釘帶流程，舊版保留 TireSpikeStrip.build。
 
-導航 map／region 同步完成後建立道路 Raker，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v8 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。實作、測試與未驗證範圍見 [本輪紀錄](docs/validation/2026-10-01-random-road-spawns.md)。
+導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v8 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。實作、測試與未驗證範圍見 [本輪紀錄](docs/validation/2026-10-01-random-road-spawns.md)。
+
+### 油桶人與接觸自爆
+
+`BarrelMan` 繼承 Monster 的導航、群組及 WorldEntities 生命週期，獨立處理偽裝、起身、追逐、收腿與自爆，不呼叫一般抓咬、攀車或近戰。玩家優先，入座改追該車外表面；速度 6 m/s，追車上限 10 m/s。低頂下不強行伸展。桶身中心 3 m 球形查詢找到玩家／車體真實碰撞表面且通過 LOS 後，啟動 2 秒倒數；倒數不因目標離開而取消，追逐仍持續。每幀先處理真接觸，再推進倒數；實際玩家／車體接觸和致命傷立即鎖定死亡，延後安全結算爆炸。`receive_vehicle_body_contact` 明確區別真實物理接觸與前方探針。近距離判定排除 Area、Item 及其子碰撞，使用同 World3D 的啟用碰撞表面，車尾與車板不依底盤中心距離判斷。Chassis 與怪物自己的 shape 重疊／滑動接觸共同覆蓋車體、車板與輪槽。車輛讓路保留速度修正，自爆來源的 pending impact 以獨立標記保留至結算，即使來源已釋放仍不重扣一般撞怪傷害。
+
+`BarrelExplosion.explode` 先收集同 World3D 全部受害者、真實碰撞形狀表面距離及 LOS，再依玩家、車板、引擎各自去重結算。完整車殼當次仍遮蔽乘員，已存在破口能曝露玩家；Item 完全免傷，也不能藉父節點轉交引擎傷害，但車板毀損仍觸發既有支撐掉落。爆炸半徑 4 m；玩家 1.5 m 內 70 HP／一肢，0.8 m 內最多兩肢；車板 2 m 內 120 HP，引擎 60 HP，外圈線性衰減。實際接觸 RV 直接授權引擎傷害，避免車尾漏傷。`Player.apply_explosion_hit` 共享一次傷害冷卻，從尚存四肢無重複抽取、先斷肢再死亡，斷肢共用切斷前速度及爆風。特效無拾取或保存身份，沒有持續燃燒或怪物連鎖爆炸。
+
+v8 道路、貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 增加可選 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；已啟動倒數以可選 `proximity_fuse_remaining` 保存，舊記錄缺少此欄時視為未啟動，死亡來源不保存。檢查點維持 v5、地形 v8，v2–v7 戶外生成、舊活怪與已清空區域保持原資料。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
+
+`barrel_explosion_effect.gd` 負責獨立 3.8 秒特效生命週期：短閃光與單盞有陰影點光、翻捲火球、上升黑煙、貼近地面的塵浪、沿速度延伸的火星及桶身碎片。火煙 shader 使用預載的共用噪聲貼圖、深度柔化及每次爆炸獨立的材質時間；音效預先烘焙，避免首次爆炸即時合成。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；塵浪只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物。所有視覺節點不含碰撞或傷害，結束後一起釋放。特效圖像及本輪驗證見 [爆炸特效](docs/validation/2026-10-07-barrel-man-vfx.md)。
+
+行為、爆炸、保存與真 RV 接觸自動檢查及目前尚未完成的模型／畫面驗收見 [油桶人紀錄](docs/validation/2026-10-07-barrel-man.md)。
 
 ### 樹木撞毀
 
@@ -176,7 +188,7 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 
 玩家外觀由 `player.tscn/Visuals/Model` 實例化 v020 GLB，原有 11 Mesh、41 變形骨、rest pose、1.60 m 尺寸與 v021 的 17 段正式動作保留。`PlayerModelVisual` 只管理顯示，不持有移動、生命或存檔狀態。Visuals 的 Y=0.25 對齊站立膠囊底部，繞 Y 180° 對齊控制器 -Z；站立攝影機位於根座標 (0, 1.78, -0.20)，實際眼高約 1.53 m。受傷時由 [player_dismemberment.glb](assets/models/player_dismemberment/player_dismemberment.glb) 提供分件與封口網格，依原 Skin 的骨名重映射；[player_injury_animations.glb](assets/models/player_dismemberment/player_injury_animations.glb) 的六段爬行／俯臥循環重定向到同一骨架。
 
-`PlayerBodyState` 支援五個固定切口：`head`、`left_arm`、`right_arm`、`left_leg`、`right_leg`；每個切口有身體端及斷肢端封口。`sever_part` 先擷取當下姿態，再更新部位與能力；重複或未知切口拒絕。普通 `take_damage(amount)` 保留純扣血契約；正式 Raker 咬擊只授權左臂與頭部，其餘切口由測試場明確觸發。斷肢複製當下姿態及世界速度，以獨立骨架模擬：每條整臂 2 個物理骨、整腿 3 個、頭 1 個；原角色對應物理骨停用。場內最多保留 16 組斷肢、24 秒後清理；短血噴與撕裂聲伴隨切斷，血跡最多 32 個、48 秒內清理。這些是實作的清理預算，非已量測的效能上限。
+`PlayerBodyState` 支援五個固定切口：`head`、`left_arm`、`right_arm`、`left_leg`、`right_leg`；每個切口有身體端及斷肢端封口。`sever_part` 先擷取當下姿態，再更新部位與能力；重複或未知切口拒絕。普通 `take_damage(amount)` 保留純扣血契約；正式 Raker 咬擊只授權左臂與頭部，油桶人 `apply_explosion_hit` 可從尚存四肢抽最多兩肢，不抽頭；其餘切口亦有獨立測試場。斷肢複製當下姿態及世界速度，以獨立骨架模擬：每條整臂 2 個物理骨、整腿 3 個、頭 1 個；原角色對應物理骨停用。場內最多保留 16 組斷肢、24 秒後清理；短血噴與撕裂聲伴隨切斷，血跡最多 32 個、48 秒內清理。這些是實作的清理預算，非已量測的效能上限。
 
 缺任一腿就改為低姿態水平膠囊（半徑 0.24 m，一腿長 1.4 m、無腿長 0.95 m）與匍匐動畫，胸腹低貼地面、前臂交替拉動、剩餘腿向後拖行。第一人稱眼位為根座標 (0, 0.58, -0.48)，平地實際眼高約 0.33 m，不繼承動畫搖擺；播放速率依每循環 0.34 m 手掌拉動、67% 支撐期及實際移速換算。初次由站立切入時以 0.45 秒倒地混合暫停主動位移，重力及 RV 支撐仍作用。雙臂可用時，一腿爬行 0.8 m/s、無腿 0.55 m/s；只剩一臂為 0.35 m/s，無臂為 0。缺腿禁止衝刺、跳躍、攀爬及駕駛；缺一臂禁止攀爬、大物持握及設備搬移，保留小物、維修與雙腿完整時的駕駛。雙臂缺失禁止拾取、使用、維修及駕駛，仍可看周圍、查看背包、丟棄及存入已有物品。失效中的操作取消，背包物品及 ID 保留；不追加失血扣血。
 
@@ -188,9 +200,9 @@ InteractRay 明確排除自己的玩家碰撞體，避免從較高相機往下�
 
 PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡頭，生命／模式仍由 Player 管理。完整身體以不可變 rest pose 建立 14 個物理骨，再恢復當下動畫姿勢啟動物理，沿用 v020 碰撞與關節配置，腳部質量各 2.5 kg、完整身體合計 69.5 kg；腳部局部轉動慣量使用盒體公式的 6 倍，減少空中落地時的腳踝瞬間分離，關節限制及 60 Hz／Jolt 求解器設定不變；缺失部位的物理骨停用。第 8 碰撞層與環境接觸，排除自身膠囊。死亡解除抓取、座位、攀爬、UI 和放置，繼承世界速度並停用控制膠囊。第一人稱固定死亡起始方向、平移跟隨物理頭部；斷頭時在抓取／座位清理前保存世界視點，接續跟隨獨立頭顱被銜住及落地的位置，不繼承頭顱翻滾。物理初始化前後共用同一頭部碰撞中心，球體掃掠限制鏡頭偏移。被追蹤頭顱暫用本地相機排除的第 18 顯示層，另保留本地陰影，停止死亡或移除玩家時恢復一般顯示；頭顱被清除或移往別的 World3D 時暫留最後有效位置。只有沒有獨立頭顱來源的舊無頭狀態才以軀幹為錨點。本地身體和配件在死亡期間不遮住鏡頭，外部模型與陰影按部位狀態顯示。兩秒後以原站立膠囊檢查附近地面與淨空；受阻則每 0.25 秒重試。恢復後關閉 simulator 與碰撞、重設姿勢與全部部位、恢復控制並續播正式移動動畫；恢復前將當下物理姿勢及缺肢狀態複製成獨立 CorpseProp。跨 World3D 的死亡轉場取消會清除舊頭顱追蹤，在返回位置重新綁定物理。斷頭鏡頭驗證見 [斷肢驗收補記](docs/validation/2026-10-03-player-dismemberment.md#head-camera-20261004)；既有動作與關節交接歷史驗收見 [v021 動作驗收](docs/validation/2026-09-27-player-animations-v021.md)。
 
-2026-09-22 的舊怪物 GLB 試接與 Zombie 場景已非現行敵人契約；當時的模型、膠囊縮放及原地測試動畫見[歷史資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。目前正式敵人外觀與動作由下述 Raker 場景負責。
+2026-09-22 的舊怪物 GLB 試接與 Zombie 場景已非現行敵人契約；當時的模型、膠囊縮放及原地測試動畫見[歷史資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。Raker 外觀與動作由下述場景負責，油桶人使用獨立場景。
 
-獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點新生成的敵人全部使用 Raker，數量／位置／生成 RNG 不變；新訪地堡也使用 Raker 候選池。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
+獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，增加慢速逼近、短促追擊與獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點沿用 Raker 名額，v8 道路與貨物／棚屋依上述油桶人比例替換；敵人數量、選點與原生成 RNG 不變。新訪地堡依上述獨立種類 RNG 選擇 Raker 或油桶人。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
 
 Raker 車撞效果只由 Monster 新接受撞擊後的 hook 觸發，沿用共用傷害／冷卻及 RV 結算。接近速度 ≥6 m/s 或死亡切入 15 個 PhysicalBone3D；較輕撞擊保留 0.55 秒擊退。切換延後至碰撞查詢結束，停用控制膠囊、動畫、頭手 IK、抓咬及 AI；物理骨承接當下姿態和撞擊速度。原始 GLB／54 骨／1.2 倍外觀不改，碰撞尺寸烘入放大倍率並抵銷 body_offset basis，保持物理 scale=1。碰撞層 128／mask 1，只與環境及車體接觸，不做布娃娃肢體互撞；CCD、關節限角及局部慣量維持原專案 60 Hz／Jolt 設定。初始手腳穿過車頭接觸面時，全姿態沿法線最多推出 1.2 m；撞擊點另有短粒子與程序音效。
 
@@ -328,7 +340,7 @@ MaterialStorage 保存底盤數字材料，material_capacity 預設 300；容量
 
 控制仍由 Chassis 集中協調，未另做 VehicleController 類別。引擎狀態與入座分離，方向鍵遙控只可由測試明確啟用。輪槽常駐，即使沒有輪胎仍可射線互動；輪胎 ID／condition 在拆裝間保留。RepairOperation 累計持續瞄準時間，一般設備／輪胎完成才扣 2 Metal Parts 並補 60 HP；引擎另用專用維修包；切換目標、移動車輛、發動引擎或中斷免費取消。
 
-Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects，Checkpoint／VehicleSnapshot 版本均為 5；先寫 .tmp、flush 並讀回比對，將上次有效檔備份為 .bak，再 rename 至 user://rv_checkpoint_v5.save。只接受 v5，v1–v4 拒絕並提示重新開局；不遷移或修改舊檔／備份。讀取透過 CheckpointSchema 與 SaveSceneCatalog 驗證格式、值域、巢狀 POI、場景根類別、結構槽位及支撐引用與循環；磁碟錯誤按階段回報。
+Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects，Checkpoint／VehicleSnapshot 版本均為 5；先寫 .tmp、flush 並讀回比對，將上次有效檔備份為 .bak，再 rename 至 user://rv_checkpoint_v5.save。只接受 v5，v1–v4 拒絕並提示重新開局；不遷移這些版本或修改來源檔／備份。讀取透過 CheckpointSchema 與 SaveSceneCatalog 驗證格式、值域、巢狀 POI、場景根類別、結構槽位及支撐引用與循環；磁碟錯誤按階段回報。
 
 F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等待地形與導航就緒，再套用 actors；原世界直到提交成功才釋放。WorldEntities.transfer 保留設備的支撐、電池和工作生命週期。失敗或逾時恢復原世界，來源存檔不變。
 
@@ -360,7 +372,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 
 ### RV 外觀與駕駛室原型
 
-預設 RV 更新為 WAYFARER 工業露營車：深綠車殼、奶油白窗框／屋頂、橘色標示、透明有碰撞的玻璃、前後燈與輪圈。側牆分成六片：面向車頭時，右側由前到後為牆／門／牆，左側為牆／牆／牆；後方是一組向外開啟的雙扇大門。每片側牆、側門整組、後門整組固定於槽位並可獨立破壞，屋頂分前／中／後三片，地板仍為一整片；配置及維修從平板施工。
+預設 RV 更新為 WAYFARER 工業露營車：深綠車殼、奶油白窗框／屋頂、橘色標示、透明有碰撞的玻璃、前後燈與輪圈。側牆分成六片：面向車頭時，右側由前到後為牆／門／牆，左側為牆／牆／牆；後方是一組向外開啟的雙扇大門。每片側牆、側門整組、後門整組固定於槽位並可獨立破壞，屋頂分前／中／後三片；結構配置及維修從平板施工。地板是底盤固定部分，不參與結構施工。
 
 駕駛座綁定座椅、方向盤、儀表台、排檔桿、手煞車與踏板，F 搬移整組。方向盤跟隨底盤轉向，排檔桿／手煞車位置與速度、油電儀表同步車況；操控沿用 B、Space、Z/X/C、R/T。駕駛時背包欄隱藏，底部顯示車況與操作提示，離座恢復。加油孔與電池插槽位於車外維護側。
 
@@ -368,14 +380,14 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 
 #### 分片結構、槽位與門扇
 
-- `RVStructureSlots` 由底盤持有十二個永久槽：六側面、前、後、三片屋頂、地板，保存各槽設定型態與毀壞狀態，並持有本車唯一施工控制器。`get_equipment()` 只列一般設備，`get_structures()` 與 `structure_changed` 提供結構查詢、重量、介面及外觀刷新。
-- 屋頂型態共用同一施工交易與比例耐久；平板按槽可選型態數量提供變更按鈕，不限制側牆。三片總屋頂重量 150 kg，破壞與附掛釋放獨立；地板保持一片。v5 快照須包含十二槽，舊十槽／單一 roof 資料不相容且不遷移。
+- `RVStructureSlots` 由底盤持有十一個永久槽：六側面、前、後、三片屋頂，保存各槽設定型態與毀壞狀態，並持有本車唯一施工控制器。`get_equipment()` 只列一般設備，`get_structures()` 與 `structure_changed` 提供結構查詢、重量、介面及外觀刷新。地板沒有結構槽位或平板操作。
+- 屋頂型態共用同一施工交易與比例耐久；平板按槽可選型態數量提供變更按鈕，不限制側牆。三片總屋頂重量 150 kg，破壞與附掛釋放獨立；地板固定於底盤，不參與施工。現行 v5 保存十一槽；既有 v5 十二槽快照經驗證後，載入時移除舊 floor 狀態並將該地板上的固定 Item 支撐轉為底盤，其他牆、屋頂及門狀態保留，轉換使用深拷貝，來源資料與檔案不改寫。舊 floor 及支撐仍須完整驗證；已毀壞的舊地板若仍有固定物品依附、地板或支撐資料畸形，則拒絕載入。v1–v4 與十槽／單一 roof 資料仍拒絕。
 - `RVStructurePanel`（`equipment/rv_panel.gd`）直接繼承凍結 `RigidBody3D`；`RVStructureDefinition` 是獨立 Resource，提供穩定型態 ID、槽型、場景、耐久、重量、施工參數及允許轉換。均不繼承設備類別。沒有 F 放置或 H 維修契約；`take_damage()` 逐片受傷，歸零移除外觀／碰撞／攻擊資格但保留空槽。
 - `rv_door.gd` 繼承結構類別；門框和可旋轉門扇碰撞同屬根剛體，共用耐久。E 開關與各葉角度保留，開關預檢完整掃掠路徑，動畫中逐步複查阻擋。怪物門框選敵使用結構契約。
-- 設備支撐可為 Item 或 RVStructurePanel；板件毀壞發送 removing，附掛設備停機並以車輛點速度連鎖掉落。地板獨立持有網格與碰撞，底盤保留框架／輪組；200 kg 地板重量自固定底盤分離，維持完整新車總重與重心。
+- 設備支撐可為底盤、Item 或 RVStructurePanel；板件毀壞發送 removing，附掛設備停機並以車輛點速度連鎖掉落。地板網格與碰撞屬底盤固定部分，重量包含在固定底盤中，不提供獨立耐久或施工；安裝在地板的物品直接引用底盤支撐。
 - `RVStructureConstruction` 提供 begin／rejection_reason／cancel／is_building，平板兩分頁為設備與資源、車體結構；每槽顯示耐久、附掛設備、型態選單與操作原因。維修 2 Metal Parts／2 秒補 60 HP，重建 6／6 秒滿血，側牆門及普通／左側開孔屋頂互換 2／4 秒保留比例，新門關閉。一車一項，熄火、速度 ≤ 0.5 m/s、有電且平板服務有效；受擊、關閉、掉落、斷電、發動／超速中止。完成前重驗材料、目標、依附與碰撞，通過才扣料提交；不提供主動拆除空槽、施工保存或進度還原。
 - 變型須清空直接／間接依附，維修不用；重建／變型以快取候選碰撞檢查全部物理層，排除舊部件與底盤，避免包住角色或物件。平板在 `_ready` 關閉可摧毀旗標並覆寫傷害，不加入怪物可攻擊群組；仍是可搬移、掉落與需供電的設備。
-- `test_rv_structure_modules.gd` 覆蓋固定槽、E 門扇、阻擋、獨立破壞、設備掉落、地板與保存；`test_structure_construction.gd` 驗證扣料時機、全部中止條件、比例、重建、依附與碰撞及真實平板按鈕／關閉。可見場景為 `rv_structure_playground.tscn`，歷史門測試場保留 E 開關與破壞捷徑。
+- `test_rv_structure_modules.gd` 覆蓋固定槽、E 門扇、阻擋、獨立破壞、設備掉落、固定地板與保存；`test_structure_construction.gd` 驗證扣料時機、全部中止條件、比例、重建、依附與碰撞及真實平板按鈕／關閉，並確認地板沒有施工槽位或按鈕。可見場景為 `rv_structure_playground.tscn`，歷史門測試場保留 E 開關與破壞捷徑。
 
 實測及限制見 [分片牆與門驗收](docs/validation/2026-09-16-rv-structure-doors.md)。
 
@@ -389,6 +401,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
+- DriverSeat 鏡頭局部高度 1.62 m，高於儀表台上緣 1.33 m；調整駕駛姿勢時須保留前方路面視線。`test_rv_cockpit` 檢查預設視角中車頭前 15／25／40 m 路面落在畫面內，且不被儀表台或車頭不透明方盒網格遮擋；原生畫面另行確認。
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear／EngineAppearance 只讀耐久，複製材質實現磨損／玻璃裂紋，不改變碰撞或狀態所有權。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
