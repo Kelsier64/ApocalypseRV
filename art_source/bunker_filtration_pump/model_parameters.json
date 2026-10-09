@@ -1,0 +1,50 @@
+{
+  "asset": "bunker_filtration_pump",
+  "reference_sha256": "11ca14eb175205db8612b3f8a4102f8823f03464b179b66248a15b482784502a",
+  "generation_profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "2b4688d8-eaf2-4171-9a4f-b62e82716fce",
+  "raw_sha256": "34d40454800a6609ba4d68ca90f2a8063703aa2305e8a11707f279a19f177fe5",
+  "final_sha256": "2ac8ed71241125219f5b5ab1d01f0249843b78c9efc4c9bdea830f8cbc903322",
+  "dimensions_m": [
+    1.4,
+    1.4,
+    0.8
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "inspection_front": "+Z",
+  "triangles": 7530,
+  "vertices": 9417,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    1.3859795397786725,
+    1.714368304235985,
+    1.947736492564515
+  ],
+  "texture_sha256": [
+    "7721c367ca908adb02dd54f506619d75a4739b608f54f28425453b7e6c30feb0",
+    "714d68cce882c1eaa80179793543d1d7784ac2bce1a050d0f641aa7aadfc389d",
+    "24cabff6d4132d40c1ee97518946e0a2346d88a7ede7c99b88e0d63008c058a7"
+  ],
+  "topology": {
+    "zero_area_triangles": 0,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 115,
+    "duplicate_triangles": 38,
+    "weld_m": 1e-06
+  },
+  "raw_evidence": ".godot/art-work/bunker_filtration_pump/20261010-01"
+}
