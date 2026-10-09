@@ -34,6 +34,7 @@ F7 為觀察腳掌與動作而關閉該實例的導航代理，讓它依既定�
 
 ## 目錄
 
+- [Slender Speaker 實際行為](#slender-speaker-runtime)
 - [油桶人](#barrel-man)
 - [Raker 車撞與布娃娃](#raker-impact)
 - [起始避難所車庫](#starting-shelter)
@@ -53,6 +54,18 @@ F7 為觀察腳掌與動作而關閉該實例的導航代理，讓它依既定�
 - [玩家斷肢與受傷爬行](#player-dismemberment)
 - [樹木撞毀](#tree-impact)
 - [Item 固定、掉落與拾取](#unified-item)
+
+<a id="slender-speaker-runtime"></a>
+
+## Slender Speaker 實際行為
+
+`godot --path . --log-file .godot/slender-runtime-review.log res://tests/slender_speaker_playground.tscn`。
+
+F1 第一人稱抓取／處刑、F2 輪驅直路追車、F3 輪驅彎道追車、F4 停車拆殼、F5 跟車移動拆殼；F6 切換相機、F7 暫停、F8 擷取、R 重設、Esc 結束。此場使用正式巨人、玩家及 RV，真正結算接觸、車板破壞與死亡；RV 重播只輸入油門／轉向，沒有直接搬動車輛。
+
+命令末尾加 `-- --mode=1 --capture --quit-after-review` 自動擷取並退出，模式可選 1–6，F9／模式 6 為定速跟車步態檢查。錄製建議引擎參數 `--fixed-fps 30 --resolution 1440x900`；輸出 `.godot/slender-runtime-captures/`，manifest 記錄逐幀時間、行為、模型與程式開始／結束雜湊。`--headless-check` 執行行為重播而不擷取畫面。獨立場的森林用碰撞樹幹驗證追蹤／遮擋，不代表正式世界生成。
+
+正式森林生成、獨立導航與保存的自動回歸由 `test_slender_speaker_world.gd` 涵蓋；範圍與限制見[PR 驗證](../validation/2026-10-09-slender-speaker-pr.md)。
 
 <a id="unified-item"></a>
 

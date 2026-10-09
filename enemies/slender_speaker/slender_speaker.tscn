@@ -1,0 +1,56 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://enemies/slender_speaker/slender_speaker.gd" id="1"]
+[ext_resource type="PackedScene" path="res://enemies/slender_speaker/slender_speaker_visual.tscn" id="2"]
+
+[sub_resource type="CapsuleShape3D" id="body"]
+radius = 1.1
+height = 15.0
+
+[sub_resource type="CapsuleShape3D" id="impact"]
+radius = 1.15
+height = 15.0
+
+[node name="SlenderSpeaker" type="CharacterBody3D" groups=["slender_speaker"]]
+script = ExtResource("1")
+monster_name = "Slender Speaker"
+max_health = 1000.0
+contact_damage = 0.0
+enable_boarding_visual = false
+floor_snap_length = 0.8
+
+[node name="BodyMesh" parent="." instance=ExtResource("2")]
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+position = Vector3(0, 7.5, 0)
+shape = SubResource("body")
+
+[node name="HitBox" type="Area3D" parent="."]
+position = Vector3(0, 7.5, 0)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+
+[node name="Shape" type="CollisionShape3D" parent="HitBox"]
+shape = SubResource("impact")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 1.5
+target_desired_distance = 1.5
+radius = 1.1
+height = 15.0
+avoidance_enabled = false
+
+[node name="ExecutionAnchor" type="Node3D" parent="."]
+
+[node name="ExecutionFocus" type="Node3D" parent="."]
+
+[node name="PatrolMusic" type="AudioStreamPlayer3D" parent="."]
+unit_size = 30.0
+max_distance = 240.0
+volume_db = -8.0
+
+[node name="ExecutionMusic" type="AudioStreamPlayer3D" parent="."]
+unit_size = 30.0
+max_distance = 240.0
+volume_db = -6.0

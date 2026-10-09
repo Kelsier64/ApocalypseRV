@@ -4,6 +4,9 @@ var outdoor_sites: Dictionary = {}
 var dormant_items: Dictionary = {}
 var destroyed_trees: Dictionary = {}
 var generated_bands: Array[int] = []
+var generated_giant_segments: Array[int] = []
+var giant_navigation_map := RID()
+var _giant_plans: Dictionary = {}
 var restore_bands: Array[int] = []
 var restoring_entities: bool = false
 var active_chunks: Array = []
@@ -18,6 +21,19 @@ var _cleanup_timer := 0.0
 @export var world_seed: int = -1
 @export var profile: WorldProfile
 
+func _enter_tree() -> void:
+	if giant_navigation_map.is_valid():
+		NavigationServer3D.map_set_active(giant_navigation_map, true)
+		_bind_giants.call_deferred()
+
+func _exit_tree() -> void:
+	if giant_navigation_map.is_valid(): NavigationServer3D.map_set_active(giant_navigation_map, false)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and giant_navigation_map.is_valid():
+		NavigationServer3D.free_rid(giant_navigation_map)
+		giant_navigation_map = RID()
+
 func _ready() -> void:
 	if player == null:
 		player = get_tree().get_first_node_in_group(Groups.PLAYER)
@@ -26,6 +42,13 @@ func _ready() -> void:
 	if world_seed < 0:
 		world_seed = int(Time.get_unix_time_from_system()) ^ int(Time.get_ticks_usec())
 	field = WorldField.new(world_seed, profile)
+	if profile.generation_version >= 10:
+		giant_navigation_map = NavigationServer3D.map_create()
+		NavigationServer3D.map_set_cell_size(giant_navigation_map, 0.275)
+		NavigationServer3D.map_set_cell_height(giant_navigation_map, 0.25)
+		NavigationServer3D.map_set_merge_rasterizer_cell_scale(giant_navigation_map, 0.1)
+		NavigationServer3D.map_set_edge_connection_margin(giant_navigation_map, 0.8)
+		NavigationServer3D.map_set_active(giant_navigation_map, true)
 	field.destroyed_trees = destroyed_trees
 	# Thin scenery and independently baked tile edges must not quantize into
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
@@ -57,6 +80,9 @@ func _process(delta: float) -> void:
 	if instances != null and not instances.active_id.is_empty():
 		anchor = instances.stream_anchor
 	var current := floori(-anchor.z / profile.chunk_length)
+	if profile.generation_version >= 10:
+		_bind_giants()
+		if not restoring_entities: _spawn_giant_segments(anchor)
 	var pinned := protected_bands(anchor)
 	if not building:
 		for index in pinned:
@@ -249,3 +275,45 @@ func _stabilize_support_names(node: Node) -> void:
 		var child := node.get_child(index)
 		if str(child.name).begins_with("@"): child.name = "Anchor_%d" % index
 		_stabilize_support_names(child)
+
+func _bind_giants() -> void:
+	if not giant_navigation_map.is_valid(): return
+	for giant in get_tree().get_nodes_in_group("slender_speaker"):
+		if WorldEntities.same_world(self, giant) and giant.has_method("set_giant_navigation_map"):
+			giant.set_giant_navigation_map(giant_navigation_map)
+
+func _spawn_giant_segments(anchor: Vector3) -> void:
+	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) == 0: return
+	for entry in active_chunks:
+		var segment := floori(int(entry.index) * profile.chunk_length / SlenderSpeakerSpawns.SEGMENT_LENGTH)
+		if segment < 1 or segment in generated_giant_segments: continue
+		if not _giant_plans.has(segment): _giant_plans[segment] = SlenderSpeakerSpawns.plan(field, segment)
+		var plan: Dictionary = _giant_plans[segment]
+		if int(plan.get("band", -1)) != int(entry.index) or not entry.node.giant_navigation_ready: continue
+		# Commit the encounter before choosing a location. Every failure is final
+		# for this segment, including an active giant or a too-close player.
+		generated_giant_segments.append(segment)
+		_giant_plans.erase(segment)
+		if get_tree().get_nodes_in_group("slender_speaker").any(func(n): return WorldEntities.same_world(self, n) and not n.is_queued_for_deletion()): continue
+		for candidate: Vector3 in plan.get("candidates", []):
+			if candidate.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE or not SlenderSpeakerSpawns.forest_valid(field, candidate): continue
+			var nav_point := NavigationServer3D.map_get_closest_point(giant_navigation_map, candidate)
+			if nav_point.distance_to(candidate) > 1.5: continue
+			var spawn_point := nav_point + Vector3.UP * 0.1
+			if spawn_point.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE or not SlenderSpeakerSpawns.static_valid(field, nav_point) or not SlenderSpeakerSpawns.forest_valid(field, nav_point): continue
+			var shape := CapsuleShape3D.new()
+			shape.height = SlenderSpeakerSpawns.HEIGHT
+			shape.radius = SlenderSpeakerSpawns.RADIUS
+			var query := PhysicsShapeQueryParameters3D.new()
+			query.shape = shape
+			query.transform.origin = nav_point + Vector3.UP * (SlenderSpeakerSpawns.HEIGHT * 0.5 + 0.12)
+			query.collision_mask = 1
+			if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty(): continue
+			var container := WorldEntities.get_container(self)
+			if container == null: break
+			var giant: Node3D = load(SlenderSpeakerSpawns.SCENE).instantiate()
+			giant.position = container.to_local(spawn_point)
+			giant.set_giant_navigation_map(giant_navigation_map)
+			container.add_child(giant)
+			print("SLENDER_SPAWN segment=%d band=%d point=%s" % [segment, entry.index, giant.global_position])
+			break

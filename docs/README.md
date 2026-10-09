@@ -4,6 +4,8 @@
 
 ## 從哪裡開始
 
+Slender Speaker：[v10 森林巨人整合與 PR 驗證](validation/2026-10-09-slender-speaker-pr.md)，包含正式行為、模型、生成／保存、測試命令與限制。
+
 公路獨立生成：[v9 數量、逐隻選點與廢車朝向](validation/2026-10-07-independent-road-spawns.md)，包含獨立油桶人／普通 Item 油桶、v8 相容與不補發生命週期；本輪測試狀態以該紀錄為準。
 
 地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。

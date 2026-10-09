@@ -1,6 +1,8 @@
 # ApocalypseRV 遊戲設計文件
 
-文件核對：2026-10-07 公路獨立生成與 v5 Item 保存；正式新局使用生成 v9，legacy fixture 保留生成 v6。玩家死亡布娃娃與隨機地堡內容依各自驗收紀錄記載；已實作不等於全部情境已驗收。2026-09-22 headless 檢查與後續修正見 [架構審查](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)及[當時地堡驗證](docs/validation/2026-09-29-bunker-content.md)。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+2026-10-09：新局已切換生成 v10，Slender Speaker 已完成本輪整合驗證。15 m 的三音箱巨人在前 1500 m 以外，每 1500 m 獨立 25% 機率規劃森林候選，離道路邊緣 40–100 m、離玩家至少 160 m，同時最多一隻；沒有合法位置便略過，回訪與讀檔不補刷。僅靠音箱朝向的視線感知，追車上限 60 km/h（16.667 m/s）、加速度 2.5 m/s²，轉彎減速、出彎逐步提速。接近 RV 後保持約 4 公尺的身體中心至車尾距離並提早漸減至相近車速（跟車一般減速上限 2 m/s²），砸擊及收手時持續走跑；每擊最多摧毀第一片實際命中車殼。抓取採雙手，成功後切換原創處刑音樂，1.4 秒舉起、0.6 秒停留、0.4 秒合攏，以共用斷肢／死亡流程結算。首版不可擊殺；正式處刑外可受高速迎面車撞短暫失衡。驗證範圍與限制見[本輪紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)，後述 v9 規則仍適用舊存檔。
+
+文件核對：2026-10-09 森林巨人整合、v10 新局與 v5 Item 保存；legacy fixture 保留生成 v6。玩家死亡布娃娃與隨機地堡內容依各自驗收紀錄記載；已實作不等於全部情境已驗收。2026-09-22 headless 檢查與後續修正見 [架構審查](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)及[當時地堡驗證](docs/validation/2026-09-29-bunker-content.md)。歷次測試結果保留在 [文件索引](docs/README.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 

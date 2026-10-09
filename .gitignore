@@ -2,3 +2,18 @@
 .godot/
 /android/
 .worktrees/
+
+# Local Slender Speaker authoring and review outputs
+/art_source/slender_speaker/
+/docs/validation/images/slender-speaker-*/
+/docs/validation/2026-10-08-slender-speaker-*.md
+/docs/validation/2026-10-09-slender-speaker-*.md
+!/docs/validation/2026-10-09-slender-speaker-pr.md
+/assets/models/slender_speaker/slender_speaker.glb*
+/assets/models/slender_speaker/slender_speaker_ss_*
+/assets/models/slender_speaker/asset_audit.json
+/assets/audio/slender_speaker/manifest.json
+/tests/slender_speaker_workshop.*
+/tests/slender_speaker_animation_workshop.*
+/tests/slender_speaker_world_review.*
+/tests/test_slender_speaker_asset.*

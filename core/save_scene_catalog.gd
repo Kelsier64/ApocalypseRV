@@ -11,7 +11,7 @@ static func resolve(path: Variant, kind: String) -> PackedScene:
 	match kind:
 		"item", "Item":
 			allowed = path == "res://rv/battery_socket.tscn" or path in PROPS.map(func(id): return "res://props/" + id + ".tscn") or path in DEVICES.map(func(id): return "res://equipment/" + id + ".tscn")
-		"monster": allowed = path in ["res://enemies/raker.tscn", "res://enemies/barrel_man.tscn"]
+		"monster": allowed = path in ["res://enemies/raker.tscn", "res://enemies/barrel_man.tscn", "res://enemies/slender_speaker/slender_speaker.tscn"]
 		"vehicle": allowed = path == "res://rv/chassis.tscn"
 	if not allowed: return null
 	var key: String = kind + ":" + path

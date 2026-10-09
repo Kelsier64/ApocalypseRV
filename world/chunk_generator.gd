@@ -14,6 +14,9 @@ var max_slice_ms: float = 0.0
 var _slice_start: int
 var navigation: NavigationRegion3D
 var navigation_ready := false
+var giant_navigation: NavigationRegion3D
+var giant_navigation_ready := true
+var _regular_navigation_ready := false
 var _terrain: MeshInstance3D
 var road_spawns: Dictionary = {}
 var _road_monsters_spawned := false
@@ -331,6 +334,9 @@ func _rebuild_navigation() -> void:
 	_build_navigation()
 
 func _build_navigation(gradual: bool = false) -> void:
+	navigation_ready = false
+	_regular_navigation_ready = false
+	giant_navigation_ready = field.profile.generation_version < 10
 	# A runtime rebake can outlive the 16-band placement cache. Recreate the
 	# same neighbour plans before capturing seam obstacles, just as at startup.
 	if field.profile.generation_version >= 4:
@@ -411,6 +417,24 @@ func _build_navigation(gradual: bool = false) -> void:
 				var tree: Dictionary = planned[i]
 				if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
 				_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
+	if field.profile.generation_version >= 10:
+		var giant_nav: NavigationMesh = nav.duplicate()
+		giant_nav.agent_height = SlenderSpeakerSpawns.HEIGHT
+		giant_nav.agent_radius = SlenderSpeakerSpawns.RADIUS
+		# Four voxels represent the requested 1.1m radius exactly; 0.5m cells
+		# silently round it up to 1.5m and reject otherwise legal forest gaps.
+		giant_nav.cell_size = 0.275
+		giant_nav.border_size = 2.2
+		# Match the extra border on both seam sides. Keeping the humanoid's
+		# +/-1m AABB with this larger border cuts a gap between giant regions.
+		giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 152.2), Vector3(nav_half * 2, 250, 154.4))
+		if giant_navigation == null:
+			giant_navigation = NavigationRegion3D.new()
+			giant_navigation.name = "GiantNavigationRegion"
+			giant_navigation.navigation_mesh = giant_nav
+			add_child(giant_navigation)
+		giant_navigation.set_navigation_map(get_parent().giant_navigation_map)
+		NavigationServer3D.bake_from_source_geometry_data_async(giant_nav, source, _giant_navigation_baked.bind(giant_nav))
 	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, _navigation_baked.bind(nav))
 
 func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> void:
@@ -491,6 +515,39 @@ func _navigation_baked(nav: NavigationMesh) -> void:
 				if NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
 			await get_tree().physics_frame
 		if not is_inside_tree(): return
+	_regular_navigation_ready = true
+	_finish_navigation()
+
+func _giant_navigation_baked(nav: NavigationMesh) -> void:
+	if not is_instance_valid(giant_navigation) or not is_inside_tree(): return
+	var rid := giant_navigation.get_region_rid()
+	var before := NavigationServer3D.region_get_iteration_id(rid)
+	giant_navigation.navigation_mesh = nav.duplicate()
+	while is_inside_tree() and NavigationServer3D.region_get_iteration_id(rid) <= before:
+		await get_tree().physics_frame
+	if not is_inside_tree(): return
+	var map := giant_navigation.get_navigation_map()
+	var before_map := NavigationServer3D.map_get_iteration_id(map)
+	# A region publishes before map edge connectivity. Require a subsequent
+	# map synchronization before either spawning or permitting a checkpoint.
+	await get_tree().physics_frame
+	if not is_inside_tree(): return
+	if nav.get_polygon_count() > 0:
+		var vertices := nav.get_vertices()
+		var polygon := nav.get_polygon(0)
+		var probe := Vector3.ZERO
+		for index in polygon: probe += vertices[index]
+		probe /= polygon.size()
+		while is_inside_tree():
+			map = giant_navigation.get_navigation_map()
+			if NavigationServer3D.map_get_iteration_id(map) >= before_map and NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
+			await get_tree().physics_frame
+		if not is_inside_tree(): return
+	giant_navigation_ready = true
+	_finish_navigation()
+
+func _finish_navigation() -> void:
+	if not _regular_navigation_ready or not giant_navigation_ready: return
 	navigation_ready = true
 	_spawn_road_monsters()
 	if _navigation_dirty: request_navigation_rebuild()

@@ -4,6 +4,13 @@ const GrabRules = preload("res://core/raker_grab_rules.gd")
 signal changed(presses: int, required: int, remaining: float)
 signal released(reason: String)
 const ARM_GRIP_LEAD_TIME := .35
+enum Mode { RAKER, EXECUTION }
+var mode := Mode.RAKER
+var execution_anchor: Node3D
+var execution_look_target: Node3D
+var execution_body_offset := Vector3.ZERO
+var execution_finished := false
+var execution_seat_rid: RID
 var player: CharacterBody3D
 var captor: Node3D
 var required := 0
@@ -91,6 +98,7 @@ func can_begin() -> bool:
 
 func begin(owner_node: Node3D, count: int) -> bool:
 	if not can_begin() or not is_instance_valid(owner_node): return false
+	mode = Mode.RAKER
 	clear_view_recovery()
 	# Snapshot actual illumination before UI cleanup can reactivate a stowed light.
 	var held := player.held_item_node as Flashlight
@@ -127,6 +135,99 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	hud.show()
 	update_progress(remaining)
 	return true
+
+func can_begin_execution() -> bool:
+	# Giant hands can reach crawling, roof-supported and climbing survivors.
+	return not active() and immunity <= 0 and not player.is_player_dead
+
+func begin_execution(owner_node: Node3D, anchor: Node3D, look_target: Node3D) -> bool:
+	if not can_begin_execution() or not is_instance_valid(owner_node) or not is_instance_valid(anchor) or not is_instance_valid(look_target): return false
+	if not WorldEntities.same_world(player, owner_node) or not WorldEntities.same_world(player, anchor) or not WorldEntities.same_world(player, look_target): return false
+	# cast_motion ignores shapes overlapping the starting pose. Refuse that
+	# invalid volume before releasing seat/ladder ownership, rather than
+	# extracting a disabled seated capsule through an already-overlapping roof.
+	if not _execution_volume_clear(owner_node, player.seated_in): return false
+	clear_view_recovery()
+	player.grab_started.emit()
+	player.cancel_equipment_placement()
+	player.exit_ui_mode()
+	# Release the driver at the actual contact location. Ordinary seat exits
+	# search/teleport to an aisle; that would bypass the giant's swept lift.
+	if is_instance_valid(player.seated_in):
+		var seat: Node3D = player.seated_in
+		if not seat.has_method("release_for_execution") or not seat.release_for_execution(player): return false
+		execution_seat_rid = seat.get_rid() if seat is CollisionObject3D else RID()
+	player._exit_climb_to_normal()
+	player.rv_support.clear()
+	player.released_carrier_velocity = Vector3.ZERO
+	player.velocity = Vector3.ZERO
+	captor = owner_node
+	mode = Mode.EXECUTION
+	execution_anchor = anchor
+	execution_look_target = look_target
+	# The chest anchor moves the body without snapping the initial contact.
+	execution_body_offset = player.global_position - anchor.global_position
+	execution_finished = false
+	captor.tree_exiting.connect(_owner_exiting, CONNECT_ONE_SHOT)
+	accepting = false
+	presses = 0
+	required = 0
+	remaining = 0.0
+	keep_flashlight = false
+	space_down = Input.is_physical_key_pressed(KEY_SPACE)
+	jump_release_required = space_down
+	camera = player.camera
+	camera_rest_position = camera.position
+	camera_rest_near = camera.near
+	camera.near = minf(camera.near, .012)
+	camera_elapsed = 0.0
+	arm_grip_weight = 0.0
+	camera.make_current()
+	hud.hide()
+	return true
+
+func is_executing() -> bool:
+	return active() and mode == Mode.EXECUTION
+
+func advance_execution(_delta: float) -> void:
+	if not is_executing(): return
+	if not is_instance_valid(execution_anchor) or not is_instance_valid(execution_look_target) or not WorldEntities.same_world(player, execution_anchor) or not WorldEntities.same_world(player, execution_look_target):
+		end("execution_anchor_removed")
+		return
+	if not _execution_volume_clear(captor):
+		end("execution_path_blocked")
+		return
+	var motion: Vector3 = execution_anchor.global_position + execution_body_offset - player.global_position
+	if motion.length_squared() > .000001:
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = player.body_collision_shape.shape
+		query.transform = player.global_transform * player.body_collision_shape.transform
+		query.motion = motion
+		query.margin = .001
+		query.collision_mask = player.collision_mask
+		var exclusions: Array[RID] = [player.get_rid()]
+		if captor is CollisionObject3D: exclusions.append(captor.get_rid())
+		if execution_seat_rid.is_valid(): exclusions.append(execution_seat_rid)
+		query.exclude = exclusions
+		var safe := player.get_world_3d().direct_space_state.cast_motion(query)
+		player.global_position += motion * safe[0]
+		if safe[0] < .999:
+			end("execution_path_blocked")
+			return
+	player.velocity = Vector3.ZERO
+
+func _execution_volume_clear(owner_node: Node3D, seat: Node3D = null) -> bool:
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = player.body_collision_shape.shape
+	query.transform = player.global_transform * player.body_collision_shape.transform
+	query.margin = 0.0
+	query.collision_mask = player.collision_mask
+	var exclusions: Array[RID] = [player.get_rid()]
+	if owner_node is CollisionObject3D: exclusions.append(owner_node.get_rid())
+	if seat is CollisionObject3D: exclusions.append(seat.get_rid())
+	if execution_seat_rid.is_valid(): exclusions.append(execution_seat_rid)
+	query.exclude = exclusions
+	return player.get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
 
 func _owner_exiting() -> void:
 	end("owner_removed")
@@ -171,6 +272,7 @@ func _physics_process(delta: float) -> void:
 	if captor.is_queued_for_deletion() or not WorldEntities.same_world(player, captor):
 		end("world_changed")
 		return
+	if mode == Mode.EXECUTION: return
 	_update_bite_pull(delta)
 
 func _update_bite_pull(delta: float = 1.0 / 60.0) -> void:
@@ -225,6 +327,12 @@ func _process(delta: float) -> void:
 		_recover_view(delta)
 		return
 	camera_elapsed += delta
+	if mode == Mode.EXECUTION:
+		if is_instance_valid(execution_look_target):
+			var direction := execution_look_target.global_position - camera.global_position
+			if direction.length_squared() > .0001:
+				camera.global_basis = Basis.looking_at(direction.normalized(), Vector3.UP)
+		return
 	# Lift toward the face once, then hold that parent-local view through bite.
 	# Following the lunging mouth caused a downward whip at contact.
 	camera.basis = Basis(camera_start.slerp(camera_target, clampf(camera_elapsed / .15, 0, 1)))
@@ -236,9 +344,14 @@ func bite_impact() -> void:
 
 func end(reason: String = "cancelled") -> void:
 	var previous := captor
-	var arm_release: bool = is_instance_valid(previous) and reason == "bitten" and previous.grab.bite_part == &"left_arm" and not player.is_player_dead
+	var was_execution := mode == Mode.EXECUTION
+	var arm_release: bool = not was_execution and is_instance_valid(previous) and reason == "bitten" and previous.grab.bite_part == &"left_arm" and not player.is_player_dead
 	var owned_view := is_instance_valid(camera) and camera.current
 	captor = null
+	execution_anchor = null
+	execution_look_target = null
+	execution_body_offset = Vector3.ZERO
+	execution_seat_rid = RID()
 	keep_flashlight = false
 	accepting = false
 	remaining = 0
@@ -247,7 +360,7 @@ func end(reason: String = "cancelled") -> void:
 		if previous.tree_exiting.is_connected(_owner_exiting): previous.tree_exiting.disconnect(_owner_exiting)
 		immunity = 3.0
 		jump_release_required = space_down
-		if previous.grab.victim == player: previous.grab.cancel(reason)
+		if not was_execution and previous.grab.victim == player: previous.grab.cancel(reason)
 	if is_instance_valid(player.held_item_node): player.held_item_node.show()
 	# Arm framing is temporary; it must never become the controller's body yaw.
 	# Other outcomes retain their existing final-view handoff.
@@ -277,6 +390,7 @@ func end(reason: String = "cancelled") -> void:
 	elif is_instance_valid(camera) and camera != player.camera and not arm_release:
 		camera.rotation = seated_camera_rotation
 	camera = null
+	mode = Mode.RAKER
 	# Release the real input path as well as the ownership flag. A visible
 	# pointer (e.g. focus/UI changes during capture) otherwise leaves mouse look
 	# gated even though GRABBED and its HUD have already disappeared.

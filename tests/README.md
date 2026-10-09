@@ -21,6 +21,8 @@
 
 ## 分組與覆蓋
 
+Slender Speaker：`test_slender_speaker_spawns` 屬 quick，驗證 v10 獨立森林規劃；`test_slender_speaker_animation` 屬 assets，核對正式模型、材質、骨架、掌向、步態接續與手臂擠壓；`behavior`／`acquisition`／`execution`／`moving_attack`／`world` 屬 integration，分別覆蓋視覺與攻擊、正式玩家／RV 接觸、共用玩家所有權與死亡、跟車攻擊／急停／步態，以及正式森林導航／checkpoint／回訪。測試範圍與結果見 [整合驗證](../docs/validation/2026-10-09-slender-speaker-pr.md)，重播操作見 [行為測試場](../docs/guides/playgrounds.md#slender-speaker-runtime)。
+
 `test_road_spawns_v9` 屬 quick：4,096 seeds 的數量與獨立油桶／油桶人抽選、逐件位置／朝向、近距離及連續區段、實際廢車碰撞、安全區與舊版本隔離。道路生命週期及檢查點測試同時保留 v8 回歸，新增 v9 混合怪物與普通油桶的導航發布、休眠／移動保存、爆炸與回訪不補發。結果與畫面見 [v9 公路驗證](../docs/validation/2026-10-07-independent-road-spawns.md)。
 
 `test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
@@ -46,7 +48,7 @@ Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背
 | `smoke` | [main_scene_smoke.gd](main_scene_smoke.gd) 的正式世界就緒與移動 |
 | `full` | 所有有效分組及 smoke；排除有原因記錄的重複項 |
 
-`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v9 主世界由 smoke 與 starting 系列涵蓋。
+`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v10 主世界由 smoke 與 starting 系列涵蓋。
 
 每支測試仍使用獨立 Godot 程序。本機不平行跑會共享磁碟 checkpoint 或全域服務的測試。GitHub Actions 以五個獨立 job 跑 quick、integration、slow、assets、smoke，涵蓋與 full 相同的有效測試；一組失敗不取消其他組。
 

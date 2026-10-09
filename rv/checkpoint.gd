@@ -68,10 +68,16 @@ func save_world(world: Node, path: String) -> bool:
 	var player: Node = world.get_node_or_null("Player")
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
 		return _fail("state")
+	if player.has_method("is_grabbed") and player.is_grabbed(): return _fail("motion", "player", "Player is grabbed")
+	for monster in get_tree().get_nodes_in_group(Groups.MONSTERS):
+		if WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
+			return _fail("motion", "monster", "Monster grab or execution is active")
 	# v8 actors are committed by navigation publication, after terrain building.
 	# Saving in that interval would persist generated_bands without its Rakers.
 	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
 		return _fail("state")
+	if generator.profile.generation_version >= 10:
+		generator._spawn_giant_segments(player.global_position)
 	# An open construction terminal puts the operator in UI mode. Report the
 	# vehicle's concrete blocker before the generic player interaction gate.
 	var matching_vehicles: Array[Node] = []
@@ -110,6 +116,7 @@ func save_world(world: Node, path: String) -> bool:
 	data["dormant_items"] = generator.dormant_items.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
+	if generator.profile.generation_version >= 10: data["generated_giant_segments"] = generator.generated_giant_segments.duplicate()
 	data["world_id"] = "shelter" if start_run != null else "legacy"
 	if start_run != null: data["start_state"] = start_run.capture()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
@@ -184,15 +191,16 @@ func validation_error(data: Dictionary) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10]: return "generation_version"
+	if data.get("generation_version", 2) >= 10 and not SlenderSpeakerSpawns.valid_ledger(data.get("generated_giant_segments")): return "generated_giant_segments"
 	var world_id: Variant = data.get("world_id", "legacy")
 	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
 	if world_id == "shelter":
-		if data.get("generation_version") not in [7, 8, 9]: return "world_id.generation_version"
+		if data.get("generation_version") not in [7, 8, 9, 10]: return "world_id.generation_version"
 		var start_state: Variant = data.get("start_state")
 		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
 		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
-	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9]:
+	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10]:
 		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
@@ -256,6 +264,7 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").dormant_items = pending.get("dormant_items", {}).duplicate(true)
 	world.get_node("WorldGenerator").destroyed_trees = pending.get("destroyed_trees", {}).duplicate()
 	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
+	world.get_node("WorldGenerator").generated_giant_segments.assign(pending.get("generated_giant_segments", []))
 
 func restore_world(world: Node) -> Dictionary:
 	if pending.is_empty(): return {"ok": true}
@@ -301,6 +310,7 @@ func restore_world(world: Node) -> Dictionary:
 	world.get_node("PoiInstances").saved_instances = data.poi.duplicate(true)
 	world.get_node("Player").restore_checkpoint_state(data.player)
 	world.get_node("WorldGenerator").restoring_entities = false
+	world.get_node("WorldGenerator")._bind_giants()
 	var start_run := world.get_node_or_null("StartRun")
 	if start_run != null: start_run.apply_actor_state()
 	message = "Checkpoint restored"
