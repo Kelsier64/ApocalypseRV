@@ -53,6 +53,15 @@ Observe, send one action with `sky.press_key`, then refresh the screenshot. Shor
 
 Close only your test window afterward. Report observed results separately from automated checks and untested scenarios. Replay uses scripted vehicle motion; wheel-driven handling, rollovers, and crowds need additional testing.
 
+## Git Workflow and Ignored Outputs
+
+- Start every new feature, fix, or documentation task on a separate `codex/<short-description>` branch before editing. Base independent work on the latest `origin/main`; continue the same branch for follow-up work on an existing task or PR. Preserve unrelated local changes and use a separate worktree when needed.
+- Finish the work and run the appropriate validation, then commit, push the branch, and create a PR. Do not deliver completed work only as local changes or commits, and do not merge the PR unless the user asks.
+- Before generating any intermediate output, add or verify narrow `.gitignore` rules for its location. Keep those rules in effect throughout implementation, validation, and PR delivery. Prefer an already ignored workspace such as `.godot/art-work/<task>/` or `.godot/test-logs/`.
+- Keep build/export artifacts, modeling and generation scripts, intermediate asset candidates, raw intermediate authoring files and backups, screenshots, recordings, logs, caches, and temporary dependencies out of Git unless the user explicitly requests them. Preserve these files locally; do not delete user files to clean up a PR.
+- Commit the final game assets, required Godot runtime/import scripts, maintained tests, and concise documentation. Generated runtime models, textures, and audio are deliverables, not intermediate outputs. Do not blanket-ignore asset extensions or whole source/test directories, and do not force-add intermediate outputs.
+- Before committing or creating the PR, inspect the staged paths, file count, sizes, and diff; verify ignore rules with `git check-ignore`. Stage only the intended deliverables, with no screenshots, generation tools, or other incidental files added by a broad `git add .`.
+
 ## Commits and Preservation
 
-Use existing `feat:`, `test:`, `chore:`, or `spec:` prefixes. PRs describe behavior, validation, related issues, and visual evidence. Preserve unrelated edits, original `todo` files, and historical `docs/archive/superpowers/` records. Exclude `.godot/` caches from commits.
+Use existing `feat:`, `test:`, `chore:`, or `spec:` prefixes. PRs describe behavior, validation, and related issues. Keep visual capture evidence local unless the user explicitly requests it in Git. Preserve unrelated edits, original `todo` files, and historical `docs/archive/superpowers/` records. Exclude `.godot/` caches from commits.
