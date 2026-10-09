@@ -9,6 +9,7 @@ agent:
 自動模型系統
 文件合理的複雜
 model subagent
+發現架構問題先記錄起來
 
 大方向:
 raker 撞飛域值

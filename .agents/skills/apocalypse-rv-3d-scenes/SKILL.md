@@ -5,7 +5,7 @@ description: Always read this skill first before building or editing ApocalypseR
 
 # 3D Scene Creation
 
-預設採「必要製作 → 一次情境檢查 → 相關驗證 → 精簡回報」。小修改只做局部檢查；有新變更、失敗或未解疑慮才擴大或重跑。優先沿用現有工具，僅在必要或使用者要求時新增腳本、委派、長報告或交付包。
+By default, follow “necessary production → one contextual review → relevant validation → concise report.” For small changes, perform only localized checks; expand or rerun checks only when there are new changes, failures, or unresolved concerns. Add scripts, delegation, lengthy reports, or delivery packages only when necessary or requested by the user.
 
 - **Finish simple objects directly:** Complete walls, floors and other objects that need only a few meshes and materials, including their visuals and function.
 - **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decor and equipment. The main agent handles reference creation, generation, inspection, refinement and integration directly. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
