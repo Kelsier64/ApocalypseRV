@@ -1,0 +1,53 @@
+{
+  "asset": "bunker_bunk_bed",
+  "reference_sha256": "4ea96c22bd9feb60a0670f48745a9f824bcbb080325ce704ad192888cad73b80",
+  "generation_profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "53df34e4-f985-4edb-a281-5812b54d07da",
+  "raw_sha256": "ce140a020335a6e562df0a68d1c057a6e79b561611a7d828890f40a60ed91aec",
+  "final_sha256": "392d1351671ec2ae0830f3714c05b80751cc91e42ca79142fac9ce985d4e12d0",
+  "dimensions_m": [
+    2.0,
+    1.85,
+    0.9
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "triangles": 5982,
+  "vertices": 6459,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    1.9837474797762817,
+    2.942444267438935,
+    1.6192595821687814
+  ],
+  "texture_sha256": [
+    "c6b6b5cb2581809fcc008a113c4987611205ba9d4bc51e79645f999a680dfd2b",
+    "bc88d1f6adde1eaf50e9a6f76e6c866a90c86d4cd25d4f7811528c3dbb16b8ef",
+    "4bfdf2589854ea81b0b680218f6d24fb84c8dd05a4fc7a6b121914e47ce062fc"
+  ],
+  "topology": {
+    "zero_area_triangles": 0,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 45,
+    "duplicate_triangles": 12,
+    "weld_m": 1e-06
+  },
+  "raw_evidence": ".godot/art-work/bunker_bunk_bed/20261010-01",
+  "raw_triangles": 49872,
+  "rotation_y_degrees": 90.0,
+  "long_axis": "X",
+  "access_front": "+Z"
+}
