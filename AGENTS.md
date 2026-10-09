@@ -53,6 +53,8 @@ Observe, send one action with `sky.press_key`, then refresh the screenshot. Shor
 
 Close only your test window afterward. Report observed results separately from automated checks and untested scenarios. Replay uses scripted vehicle motion; wheel-driven handling, rollovers, and crowds need additional testing.
 
-## Commits and Preservation
+## Git
 
-Use existing `feat:`, `test:`, `chore:`, or `spec:` prefixes. PRs describe behavior, validation, related issues, and visual evidence. Preserve unrelated edits, original `todo` files, and historical `docs/archive/superpowers/` records. Exclude `.godot/` caches from commits.
+- Start new work on a separate branch; use the same branch for follow-ups.
+- Complete the work and validation, then ask the user for approval before pushing or creating/updating a PR.
+- Keep intermediate outputs gitignored from start to finish, including build/generation tools, screenshots, recordings, logs and backups. Deliver only necessary game assets, code, tests and concise docs; preserve unrelated local files.
