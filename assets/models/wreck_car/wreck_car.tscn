@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/wreck_car/wreck_car.glb" id="model"]
+[ext_resource type="Material" path="res://assets/models/wreck_car/roadside_paint.tres" id="paint"]
+
+[node name="WreckCar" instance=ExtResource("model")]
+
+[node name="BodyPaint" parent="WreckCar" index="0"]
+material_override = ExtResource("paint")

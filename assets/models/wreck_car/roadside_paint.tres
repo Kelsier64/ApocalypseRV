@@ -1,0 +1,21 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/models/wreck_car/wreck_car_0.png" id="1_3tyby"]
+[ext_resource type="Texture2D" path="res://assets/models/wreck_car/wreck_car_1.png" id="2_gxiw7"]
+[ext_resource type="Texture2D" path="res://assets/models/wreck_car/wreck_car_2.png" id="3_qirsn"]
+
+[resource]
+resource_name = "RoadsidePaint"
+cull_mode = 2
+albedo_texture = ExtResource("1_3tyby")
+metallic = 0.1
+metallic_texture_channel = 2
+roughness = 0.92
+roughness_texture_channel = 1
+normal_enabled = true
+normal_texture = ExtResource("3_qirsn")
+ao_enabled = true
+ao_texture = ExtResource("2_gxiw7")
+texture_filter = 1
+texture_repeat = false
+metadata/_gltf_primary_texture_coord = 0

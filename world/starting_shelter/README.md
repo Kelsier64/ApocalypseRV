@@ -42,3 +42,5 @@ The subsequent native facade completion and restriction to component-only reques
 The current thick wall/recessed window construction and player-height visual review are recorded in [the wall rebuild validation](../../docs/validation/2026-10-01-shelter-walls.md).
 
 The later removal of green paint and localized concrete/steel weathering are recorded in [the weathering validation](../../docs/validation/2026-10-01-shelter-weathering.md).
+
+The starting wreck pile now shares `assets/models/wreck_car/wreck_car.tscn` with roadside wrecks. Only reused_wreck Visuals car parts changed; its wrapper offset, car pose, separate collisions and original lifted panel remain. The 28-car layout and rear backing are unchanged; actual model silhouette reaches 3.5408 m. See the [shared wreck validation](../../docs/validation/2026-10-09-wreck-car.md).
