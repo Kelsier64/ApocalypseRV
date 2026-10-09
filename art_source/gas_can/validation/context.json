@@ -1,0 +1,38 @@
+{
+	"dimension_tolerance_m": 0.00001,
+	"failures": [],
+	"godot_version": "4.7.2-stable (official)",
+	"renderer": "forward_plus",
+	"scenes": [
+		{
+			"center_m": [
+				0.00225219130516052,
+				-0.028735339641571,
+				-0.00454103946685791
+			],
+			"scene": "res://props/gas_can.tscn",
+			"size_m": [
+				0.397595226764679,
+				0.845849633216858,
+				0.823535144329071
+			],
+			"visual_scene": "res://assets/models/gas_can/gas_can.glb"
+		},
+		{
+			"center_m": [
+				0.00225219130516052,
+				-0.028735339641571,
+				-0.00454103946685791
+			],
+			"scene": "res://props/gas_can_empty.tscn",
+			"size_m": [
+				0.397595226764679,
+				0.845849633216858,
+				0.823535144329071
+			],
+			"visual_scene": "res://assets/models/gas_can/gas_can.glb"
+		}
+	],
+	"scope": "Actual gameplay scenes, imported geometry, original box collision/rays, native render and production held visual; gameplay transitions separately tested.",
+	"state": "PASS"
+}

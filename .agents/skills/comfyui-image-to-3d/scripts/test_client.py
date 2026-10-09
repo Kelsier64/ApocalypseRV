@@ -21,7 +21,7 @@ def png(size=64):
     return stream.getvalue()
 
 
-def textured_triangle():
+def textured_triangle(attributes=None):
     texture = png()
     binary = struct.pack("<9f3H", 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 2) + b"\0\0" + texture
     doc = {
@@ -34,6 +34,16 @@ def textured_triangle():
         "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1, "material": 0}]}],
         "materials": [{}], "images": [{"bufferView": 2, "mimeType": "image/png"}],
     }
+    for semantic, rows in (attributes or {}).items():
+        kind, width = {"NORMAL": ("VEC3", 3), "TEXCOORD_0": ("VEC2", 2), "TANGENT": ("VEC4", 4)}[semantic]
+        binary += b"\0" * (-len(binary) % 4)
+        packed = struct.pack("<" + "f" * width * len(rows), *(v for row in rows for v in row))
+        view = len(doc["bufferViews"])
+        doc["bufferViews"].append({"buffer": 0, "byteOffset": len(binary), "byteLength": len(packed)})
+        doc["meshes"][0]["primitives"][0]["attributes"][semantic] = len(doc["accessors"])
+        doc["accessors"].append({"bufferView": view, "componentType": 5126, "type": kind, "count": len(rows)})
+        binary += packed
+    doc["buffers"][0]["byteLength"] = len(binary)
     encoded = json.dumps(doc).encode()
     encoded += b" " * (-len(encoded) % 4)
     binary += b"\0" * (-len(binary) % 4)
@@ -170,6 +180,41 @@ class ClientTests(unittest.TestCase):
             generate.save(pose, {"rotation_rows": rows})
             with self.assertRaises(ValueError):
                 review.rigid_pose(pose)
+
+    def test_collect_reports_zero_tangent_without_losing_raw_or_resubmitting(self):
+        backend, _ = self.completed_job()
+        glb = textured_triangle({"NORMAL": [(0, 0, 1)] * 3,
+                                "TEXCOORD_0": [(0, 0), (1, 0), (0, 1)],
+                                "TANGENT": [(0, 0, 0, 1), (1, 0, 0, 1), (1, 0, 0, 1)]})
+        with patch.object(backend, "request", side_effect=lambda base, path: glb if ".glb" in path else png(1024)):
+            with patch.object(generate, "Client", return_value=backend):
+                result = generate.collect(self.output)
+        self.assertEqual((self.output / "raw.glb").read_bytes(), glb)
+        self.assertEqual(result["technical_checks"]["attribute_issues"]["zero_tangents"], 1)
+        self.assertEqual(result["state"], "ART_REVIEW_REQUIRED")
+        self.assertFalse(result["art_review_passed"])
+        self.assertFalse(result["technical_checks"]["topology_checked"])
+        self.assertEqual(backend.posts, [])
+
+    def test_inspect_rejects_nonfinite_vertex_attributes(self):
+        for semantic, bad in (("NORMAL", (float("nan"), 0, 1)),
+                              ("TEXCOORD_0", (0, float("inf"))),
+                              ("TANGENT", (1, 0, 0, float("nan")))):
+            with self.subTest(semantic=semantic):
+                with self.assertRaisesRegex(ValueError, "Non-finite.*" + semantic):
+                    generate.inspect_glb(textured_triangle({semantic: [bad] * 3}))
+
+    def test_inspect_rejects_mismatched_attribute_count(self):
+        with self.assertRaisesRegex(ValueError, "mismatched.*NORMAL"):
+            generate.inspect_glb(textured_triangle({"NORMAL": [(0, 0, 1)] * 2}))
+
+    def test_inspect_reports_invalid_normal_tangent_frames(self):
+        result = generate.inspect_glb(textured_triangle({
+            "NORMAL": [(0, 0, 0), (0, 0, 2), (0, 0, 1)],
+            "TANGENT": [(0, 0, 0, 1), (0, 0, 1, 0), (2, 0, 0, -1)]}))
+        self.assertEqual(result["attribute_issues"], {
+            "zero_normals": 1, "non_unit_normals": 2, "zero_tangents": 1,
+            "non_unit_tangents": 2, "non_orthogonal_tangents": 1, "invalid_tangent_handedness": 1})
 
 
 if __name__ == "__main__":

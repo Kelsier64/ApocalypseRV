@@ -1,0 +1,69 @@
+{
+  "sha256": "5763771e41607947addf2eabfc7a949d7904e40b1c13ec59fd5ae285b33f802a",
+  "triangles": 8280,
+  "vertices": 8777,
+  "size_m": [
+    0.39759522676467896,
+    0.8458496332168579,
+    0.823535144329071
+  ],
+  "center_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "max_dimension_error_m": 4.329070990571893e-09,
+  "finite_attributes": true,
+  "zero_area_triangles": 0,
+  "zero_tangents": 0,
+  "normal_unit_max_error": 5.960464477539063e-08,
+  "tangent_unit_max_error": 5.960464477539063e-08,
+  "normal_tangent_dot_max": 8.940696716308594e-08,
+  "boundary_edges_welded_1um": 0,
+  "nonmanifold_edges_welded_1um": 1234,
+  "embedded_texture_sha256": [
+    "995857695fa7c292e848eeefce81406ec27d0ebc24ff69778d58b56e88992717",
+    "b6e995a7c99dac0043a485141041a5bb96636e393484239fbfd329b789913fd1",
+    "8f988528c5f02afa4cec2b7c949a168d53017c4a9a9a7c1065187fbed17a20a3"
+  ],
+  "animations": 0,
+  "skins": 0,
+  "required_extensions": [],
+  "handle_ray_checks": [
+    {
+      "yz_m": [
+        0.37,
+        -0.12
+      ],
+      "mesh_hit": false
+    },
+    {
+      "yz_m": [
+        0.37,
+        0
+      ],
+      "mesh_hit": false
+    },
+    {
+      "yz_m": [
+        0.37,
+        0.12
+      ],
+      "mesh_hit": false
+    },
+    {
+      "yz_m": [
+        0,
+        0
+      ],
+      "mesh_hit": true
+    },
+    {
+      "yz_m": [
+        0.412,
+        0
+      ],
+      "mesh_hit": false
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "sha256": "d2e8541aa89cd074dd743b55e261db1ec9ae76f30b8ab7d64a5e7645a19e7118",
+  "triangles": 5998,
+  "vertices": 5166,
+  "size_m": [
+    6.0,
+    2.0,
+    4.0
+  ],
+  "center_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "max_dimension_error_m": 0.0,
+  "finite_attributes": true,
+  "zero_area_triangles": 0,
+  "zero_tangents": 0,
+  "normal_unit_max_error": 5.960464477539063e-08,
+  "tangent_unit_max_error": 5.960464477539063e-08,
+  "normal_tangent_dot_max": 8.940696716308594e-08,
+  "duplicate_triangles_welded_1um": 2,
+  "boundary_edges_welded_1um": 0,
+  "nonmanifold_edges_welded_1um": 11,
+  "embedded_texture_sha256": [
+    "3abf99ca574f0b7b6e5fc61952af596809383f7b26678eff55a7ab155a284c5a",
+    "ce3560e6f61197422730a9c392ab153ba7d1a4c21af90c274a6ac1f793b719b0",
+    "46fbbd5711405e6c8d1695e6e7b0f99b0f6e45c7186fffedc69ee2229483baac"
+  ],
+  "animations": 0,
+  "skins": 0,
+  "required_extensions": []
+}

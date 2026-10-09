@@ -1,0 +1,43 @@
+{
+  "state": "ART_REVIEW_REQUIRED",
+  "prompt_id": "3a88d0fb-99be-4c98-8188-e152ca770599",
+  "glb_sha256": "c17d1ee5f39292895df68104c6583930a05877dd1be3f26dac565bef0cba4ee2",
+  "conditioning_sha256": "ea43f85ae24a8e3eff0043a2b366e219d42bb07d8d4d8a209cd5b4b00c5b1db9",
+  "backend_files": {
+    "glb": {
+      "filename": "model_00001_.glb",
+      "subfolder": "skill-3d\\shelter_roof_air_handler\\398296730049458f905949b9a0a0d894",
+      "type": "output"
+    },
+    "conditioning": {
+      "filename": "conditioning_00001_.png",
+      "subfolder": "skill-3d\\shelter_roof_air_handler\\398296730049458f905949b9a0a0d894",
+      "type": "output"
+    }
+  },
+  "technical_checks": {
+    "vertices": 32239,
+    "triangles": 49998,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  },
+  "art_review_passed": false
+}

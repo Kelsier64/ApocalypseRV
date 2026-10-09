@@ -1,0 +1,102 @@
+{
+  "suite": "selected",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "real_time": false,
+  "elapsed_seconds": 33.91,
+  "selected": [
+    {
+      "Name": "test_item_persistence",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_item_player",
+      "Suite": "quick"
+    },
+    {
+      "Name": "test_player_item_release",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_rv_experience",
+      "Suite": "integration"
+    },
+    {
+      "Name": "test_rv_interactions",
+      "Suite": "quick"
+    },
+    {
+      "Name": "test_rv_resource_cycle",
+      "Suite": "quick"
+    },
+    {
+      "Name": "main-scene",
+      "Suite": "smoke"
+    }
+  ],
+  "results": [
+    {
+      "name": "import",
+      "status": "PASS",
+      "seconds": 4.243,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\import.log"
+    },
+    {
+      "name": "test_item_persistence",
+      "status": "PASS",
+      "seconds": 2.211,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_item_persistence.log"
+    },
+    {
+      "name": "test_item_player",
+      "status": "PASS",
+      "seconds": 1.837,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_item_player.log"
+    },
+    {
+      "name": "test_player_item_release",
+      "status": "PASS",
+      "seconds": 2.116,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_player_item_release.log"
+    },
+    {
+      "name": "test_rv_experience",
+      "status": "PASS",
+      "seconds": 2.869,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_rv_experience.log"
+    },
+    {
+      "name": "test_rv_interactions",
+      "status": "PASS",
+      "seconds": 1.844,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_rv_interactions.log"
+    },
+    {
+      "name": "test_rv_resource_cycle",
+      "status": "PASS",
+      "seconds": 1.839,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\test_rv_resource_cycle.log"
+    },
+    {
+      "name": "main-scene",
+      "status": "PASS",
+      "seconds": 16.901,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-125724-747-selected-39500\\main-scene.log"
+    }
+  ]
+}
