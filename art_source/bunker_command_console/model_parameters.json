@@ -1,0 +1,50 @@
+{
+  "asset": "bunker_command_console",
+  "reference_sha256": "56f93a49e7e92001117e7607499ed88bb14a2770e9c9c4116b8cbf34ce96bfdc",
+  "profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "bf3e3680-8a23-4354-8d9c-f887fbdea701",
+  "raw_sha256": "bb13253d4063b130c98868377ed19ac890f37d299cc07d2d656210619912ee53",
+  "final_sha256": "ff6714c40b16314222a70662da506c5aad3d06a5c645739d6cd0dda9063e7abe",
+  "dimensions_m": [
+    1.8,
+    1.2,
+    0.72
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "operator_side": "+Z",
+  "raw_triangles": 49950,
+  "final_triangles": 5992,
+  "vertices": 6326,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    1.78694789671261,
+    2.1095933266438824,
+    1.2070668656994719
+  ],
+  "texture_sha256": [
+    "dcde77041296c0187c2cbfbc8cdb2756e9a43128ef6eb48a69d225ebe6a73e3b",
+    "681cf785a53d348710ecbdbd7391ea290b3e1b558bf430ef77f4239ad8adeae4",
+    "243e44b1df0485cd06421745e28ec03b42a017aef4aa4d4d83099fb7451c810a"
+  ],
+  "zero_area_triangles": 0,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 84,
+  "duplicate_triangles": 22,
+  "topology_weld_m": 1e-06,
+  "intermittent_indicators": "Godot shader TIME, amber atlas lenses only; inactive CRTs are not emissive",
+  "raw_evidence": ".godot/art-work/bunker_command_console/20261009-01/"
+}

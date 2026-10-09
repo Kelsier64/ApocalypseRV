@@ -1,0 +1,14 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://assets/models/bunker_command_console/console.gdshader" id="1_shkdp"]
+[ext_resource type="Texture2D" path="res://assets/models/bunker_command_console/bunker_command_console_0.png" id="2_1yshe"]
+[ext_resource type="Texture2D" path="res://assets/models/bunker_command_console/bunker_command_console_2.png" id="3_xrhs1"]
+[ext_resource type="Texture2D" path="res://assets/models/bunker_command_console/bunker_command_console_1.png" id="4_8vyut"]
+
+[resource]
+resource_name = "BunkerCommandConsole"
+render_priority = 0
+shader = ExtResource("1_shkdp")
+shader_parameter/base_color = ExtResource("2_1yshe")
+shader_parameter/normal_map = ExtResource("3_xrhs1")
+shader_parameter/orm_map = ExtResource("4_8vyut")

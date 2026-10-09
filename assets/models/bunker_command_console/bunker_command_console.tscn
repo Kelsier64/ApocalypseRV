@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/bunker_command_console/bunker_command_console.glb" id="model"]
+[ext_resource type="Material" path="res://assets/models/bunker_command_console/console.tres" id="material"]
+
+[node name="CommandConsole" instance=ExtResource("model")]
+
+[node name="CommandConsole" parent="." index="0"]
+material_override = ExtResource("material")
