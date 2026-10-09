@@ -202,10 +202,6 @@ position = Vector3(5, 0, 5)
 transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5, 0, -5)
 metadata/modeling_request = "wreck-car"
 
-[node name="Part018" type="MeshInstance3D" parent="Visuals"]
-transform = Transform3D(1, 0, 0, 0, 0.62161, 0.7833269, 0, -0.7833269, 0.62161, -5, 1.7, -2.7)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_a0kus")
 
 [node name="@CollisionShape3D@4" type="CollisionShape3D" parent="Collision"]
 transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5, 0.78, -5)
