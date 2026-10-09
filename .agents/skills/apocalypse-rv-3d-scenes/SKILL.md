@@ -5,6 +5,8 @@ description: Always read this skill first before building or editing ApocalypseR
 
 # 3D Scene Creation
 
+預設採「必要製作 → 一次情境檢查 → 相關驗證 → 精簡回報」。小修改只做局部檢查；有新變更、失敗或未解疑慮才擴大或重跑。優先沿用現有工具，僅在必要或使用者要求時新增腳本、委派、長報告或交付包。
+
 - **Finish simple objects directly:** Complete walls, floors and other objects that need only a few meshes and materials, including their visuals and function.
 - **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decor and equipment. The main agent handles reference creation, generation, inspection, refinement and integration directly. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
 - **Split large buildings into components where useful:** Generate or model facade sections, entrance assemblies, roof equipment and interior fittings separately. Keep the building layout and assembly in Godot, with each component independently replaceable. Track the target node, local placement, orientation and adjoining dimensions or openings needed for a fit. Repeated instances share one asset; finish simple structural parts directly.
