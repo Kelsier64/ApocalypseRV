@@ -1,0 +1,36 @@
+{
+  "state": "ACCEPTED_FOR_STATIC_GAME_VISUAL",
+  "reviewer": "Codex main agent",
+  "final_sha256": "5763771e41607947addf2eabfc7a949d7904e40b1c13ec59fd5ae285b33f802a",
+  "inspected_views": [
+    "front",
+    "side",
+    "back",
+    "oblique",
+    "top",
+    "underside"
+  ],
+  "modes": [
+    "textured",
+    "lit clay"
+  ],
+  "raw_source_up_reviewed": true,
+  "final_source_up_reviewed": true,
+  "final_review_rotation": "-90 degrees around Y maps game +X to viewer +Z; geometry not rotated for this display",
+  "checks": {
+    "open_handle": "visually open and three X rays through aperture clear",
+    "closed_cap": true,
+    "front_X_ribs": true,
+    "dimensions_center_and_scene_offset": "native Godot PASS",
+    "selected_triangles": 8280,
+    "textures_preserved": true,
+    "rebuild_identical": true
+  },
+  "known_limitations": [
+    "Nonmanifold topology retained; independent box collider used.",
+    "Single-image back and underside approximate.",
+    "Existing held placement retained and close to camera.",
+    "No multi-instance FPS measurement or manual full-world exploration."
+  ],
+  "acceptance_scope": "Static prop visual in existing gameplay wrappers, not manifold topology or manufacturing approval"
+}

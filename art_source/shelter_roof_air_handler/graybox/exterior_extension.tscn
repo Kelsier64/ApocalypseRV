@@ -1,0 +1,101 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/concrete.tres" id="concrete"]
+[ext_resource type="PackedScene" path="res://world/starting_shelter/facade.tscn" id="facade"]
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="WestWingMesh"]
+size = Vector3(14.6, 9.4, 27)
+
+[sub_resource type="BoxShape3D" id="WestWingShape"]
+size = Vector3(14.6, 9.4, 27)
+
+[sub_resource type="BoxMesh" id="EastWingMesh"]
+size = Vector3(14.6, 11.4, 27)
+
+[sub_resource type="BoxShape3D" id="EastWingShape"]
+size = Vector3(14.6, 11.4, 27)
+
+[sub_resource type="BoxMesh" id="RearBlockMesh"]
+size = Vector3(50, 12.4, 16.15)
+
+[sub_resource type="BoxShape3D" id="RearBlockShape"]
+size = Vector3(50, 12.4, 16.15)
+
+[sub_resource type="BoxMesh" id="RoofPlantAMesh"]
+size = Vector3(6, 2, 4)
+
+[sub_resource type="BoxShape3D" id="RoofPlantAShape"]
+size = Vector3(6, 2, 4)
+
+[sub_resource type="BoxMesh" id="RoofPlantBMesh"]
+size = Vector3(9, 1.5, 5)
+
+[sub_resource type="BoxShape3D" id="RoofPlantBShape"]
+size = Vector3(9, 1.5, 5)
+
+[node name="ExteriorExtension" type="Node3D"]
+metadata/art_status = "native building complete; rooftop equipment grayboxes only"
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Facade" parent="Visuals" instance=ExtResource("facade")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="WestWing" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(-17.7, 4.3, -1)
+mesh = SubResource("WestWingMesh")
+material_override = ExtResource("concrete")
+
+[node name="WestWing" type="CollisionShape3D" parent="Collision"]
+metadata/navigation_solid = true
+position = Vector3(-17.7, 4.3, -1)
+shape = SubResource("WestWingShape")
+
+[node name="EastWing" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(17.7, 5.3, -1)
+mesh = SubResource("EastWingMesh")
+material_override = ExtResource("concrete")
+
+[node name="EastWing" type="CollisionShape3D" parent="Collision"]
+metadata/navigation_solid = true
+position = Vector3(17.7, 5.3, -1)
+shape = SubResource("EastWingShape")
+
+[node name="RearBlock" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(0, 5.8, -22.425)
+mesh = SubResource("RearBlockMesh")
+material_override = ExtResource("concrete")
+
+[node name="RearBlock" type="CollisionShape3D" parent="Collision"]
+metadata/navigation_solid = true
+position = Vector3(0, 5.8, -22.425)
+shape = SubResource("RearBlockShape")
+
+[node name="RoofPlantA" type="MeshInstance3D" parent="Visuals"]
+metadata/modeling_request = "shelter-roof-air-handler"
+position = Vector3(-14, 13, -22)
+mesh = SubResource("RoofPlantAMesh")
+material_override = ExtResource("steel")
+
+[node name="RoofPlantA" type="CollisionShape3D" parent="Collision"]
+metadata/navigation_solid = true
+position = Vector3(-14, 13, -22)
+shape = SubResource("RoofPlantAShape")
+
+[node name="RoofPlantB" type="MeshInstance3D" parent="Visuals"]
+metadata/modeling_request = "shelter-roof-filter-bank"
+position = Vector3(11, 12.75, -23)
+mesh = SubResource("RoofPlantBMesh")
+material_override = ExtResource("steel")
+
+[node name="RoofPlantB" type="CollisionShape3D" parent="Collision"]
+metadata/navigation_solid = true
+position = Vector3(11, 12.75, -23)
+shape = SubResource("RoofPlantBShape")

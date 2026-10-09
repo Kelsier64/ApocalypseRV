@@ -1,0 +1,30 @@
+{
+  "suite": "selected",
+  "engine": "4.7.2.stable.official.ed1daf0bf",
+  "real_time": false,
+  "elapsed_seconds": 23.906,
+  "selected": [
+    {
+      "Name": "test_rv_checkpoint",
+      "Suite": "slow"
+    }
+  ],
+  "results": [
+    {
+      "name": "import",
+      "status": "PASS",
+      "seconds": 4.335,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-130253-161-selected-19908\\import.log"
+    },
+    {
+      "name": "test_rv_checkpoint",
+      "status": "PASS",
+      "seconds": 19.542,
+      "exit_code": 0,
+      "detail": "",
+      "log": "C:\\Users\\evan4\\Projects\\ApocalypseRV\\.godot\\test-logs\\20261009-130253-161-selected-19908\\test_rv_checkpoint.log"
+    }
+  ]
+}

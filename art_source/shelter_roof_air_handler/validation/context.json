@@ -1,0 +1,17 @@
+{
+	"center_m": [
+		-17.7000007629395,
+		10.0,
+		9.80000019073486
+	],
+	"failures": [],
+	"godot_version": "4.7.2-stable (official)",
+	"renderer": "forward_plus",
+	"scope": "Actual extension, imported bounds, retained box collision/navigation marker and +Z ray; native daylight renders.",
+	"size_m": [
+		6.0,
+		2.0,
+		4.0
+	],
+	"state": "PASS"
+}

@@ -193,7 +193,7 @@ def inspect_glb(data):
         if acc.get("sparse") or acc["type"] != wanted_type or acc["componentType"] not in wanted_components:
             raise ValueError("Unsupported mesh accessor for fixed profile")
         fmt, scalar_bytes = {5126: ("f", 4), 5125: ("I", 4), 5123: ("H", 2), 5121: ("B", 1)}[acc["componentType"]]
-        count = {"VEC3": 3, "SCALAR": 1}[wanted_type]
+        count = {"VEC2": 2, "VEC3": 3, "VEC4": 4, "SCALAR": 1}[wanted_type]
         view = doc["bufferViews"][acc["bufferView"]]
         offset = view.get("byteOffset", 0) + acc.get("byteOffset", 0)
         stride = view.get("byteStride", count * scalar_bytes)
@@ -205,6 +205,10 @@ def inspect_glb(data):
         return [struct.unpack_from("<" + fmt * count, binary, offset + i * stride) for i in range(acc["count"])]
 
     total_vertices, total_faces = 0, 0
+    attribute_issues = {"zero_normals": 0, "non_unit_normals": 0, "zero_tangents": 0,
+                        "non_unit_tangents": 0, "non_orthogonal_tangents": 0,
+                        "invalid_tangent_handedness": 0}
+    checked_attributes = {"POSITION"}
     for mesh in doc["meshes"]:
         for primitive in mesh["primitives"]:
             if primitive.get("mode", 4) != 4:
@@ -215,6 +219,23 @@ def inspect_glb(data):
                 raise ValueError("Non-finite geometry or invalid triangle count")
             if not all(0 <= index[0] < len(pts) for index in ids):
                 raise ValueError("Triangle index outside positions")
+            attributes = {}
+            for semantic, kind in (("NORMAL", "VEC3"), ("TEXCOORD_0", "VEC2"), ("TANGENT", "VEC4")):
+                if semantic not in primitive["attributes"]:
+                    continue
+                rows = values(primitive["attributes"][semantic], kind, (5126,))
+                if len(rows) != len(pts) or not all(math.isfinite(v) for row in rows for v in row):
+                    raise ValueError("Non-finite or mismatched vertex attribute: " + semantic)
+                attributes[semantic] = rows
+                checked_attributes.add(semantic)
+            for semantic, prefix in (("NORMAL", "normals"), ("TANGENT", "tangents")):
+                for row in attributes.get(semantic, []):
+                    length = math.sqrt(sum(v * v for v in row[:3]))
+                    attribute_issues["zero_" + prefix] += length <= 1e-6
+                    attribute_issues["non_unit_" + prefix] += abs(length - 1.0) > 1e-3
+            for normal, tangent in zip(attributes.get("NORMAL", []), attributes.get("TANGENT", [])):
+                attribute_issues["non_orthogonal_tangents"] += abs(sum(normal[i] * tangent[i] for i in range(3))) > 1e-3
+            attribute_issues["invalid_tangent_handedness"] += sum(abs(abs(row[3]) - 1.0) > 1e-3 for row in attributes.get("TANGENT", []))
             total_vertices += len(pts)
             total_faces += len(ids) // 3
     if not total_faces or len(doc.get("images", [])) < 1 or not doc.get("materials"):
@@ -227,7 +248,9 @@ def inspect_glb(data):
         with Image.open(io.BytesIO(binary[offset:offset + length])) as im:
             im.verify()
     return {"vertices": total_vertices, "triangles": total_faces, "embedded_images": len(doc["images"]),
-            "finite_positions": True, "container_valid": True, "geometry_straightness_checked": False}
+            "finite_positions": True, "finite_vertex_attributes": True,
+            "checked_attributes": sorted(checked_attributes), "attribute_issues": attribute_issues,
+            "container_valid": True, "geometry_straightness_checked": False, "topology_checked": False}
 
 
 def status(folder):

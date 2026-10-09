@@ -1,0 +1,137 @@
+{
+  "initial_fit": {
+    "source_sha256": "817dfcc86fe89190d80df2bc8f5437bd91483adb63273fb1bddee962e5999976",
+    "output_sha256": "a8330b7df44be81659a552a25e8197a404898f81fa99225d306dbc1e4f3da2fe",
+    "rotation_y_degrees": 90.0,
+    "source_rotated_size_m": [
+      0.3888751417398453,
+      1.0058652758598328,
+      0.9313704073429108
+    ],
+    "fit_scale_xyz": [
+      1.0224238767773652,
+      0.8409174173717764,
+      0.8842187098787561
+    ],
+    "target_size_m": [
+      0.39759523,
+      0.84584963,
+      0.82353514
+    ],
+    "actual_size_m": [
+      0.39759522676467896,
+      0.8458496332168579,
+      0.823535144329071
+    ],
+    "actual_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "origin": "bounding box center",
+    "up": "+Y",
+    "broad_front": "+X",
+    "thickness": "X",
+    "handle_length": "Z",
+    "scene_offset_baked": false,
+    "triangles": 48849,
+    "vertices": 34677,
+    "texture_sha256": [
+      "995857695fa7c292e848eeefce81406ec27d0ebc24ff69778d58b56e88992717",
+      "b6e995a7c99dac0043a485141041a5bb96636e393484239fbfd329b789913fd1",
+      "8f988528c5f02afa4cec2b7c949a168d53017c4a9a9a7c1065187fbed17a20a3"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 4,
+    "finite_geometry": true
+  },
+  "final_fit": {
+    "source_sha256": "75a6eceb61347ed9fa9f87b6de701cf3bd4208a56799c5d90103414a1fdf23cb",
+    "output_sha256": "5763771e41607947addf2eabfc7a949d7904e40b1c13ec59fd5ae285b33f802a",
+    "rotation_y_degrees": 0,
+    "source_rotated_size_m": [
+      0.39551685750484467,
+      0.8456869125366211,
+      0.8220759332180023
+    ],
+    "fit_scale_xyz": [
+      1.005254826578738,
+      1.0001924086336997,
+      1.00177502676217
+    ],
+    "target_size_m": [
+      0.39759523,
+      0.84584963,
+      0.82353514
+    ],
+    "actual_size_m": [
+      0.39759522676467896,
+      0.8458496332168579,
+      0.823535144329071
+    ],
+    "actual_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "origin": "bounding box center",
+    "up": "+Y",
+    "broad_front": "+X",
+    "thickness": "X",
+    "handle_length": "Z",
+    "scene_offset_baked": false,
+    "triangles": 8280,
+    "vertices": 8777,
+    "texture_sha256": [
+      "995857695fa7c292e848eeefce81406ec27d0ebc24ff69778d58b56e88992717",
+      "b6e995a7c99dac0043a485141041a5bb96636e393484239fbfd329b789913fd1",
+      "8f988528c5f02afa4cec2b7c949a168d53017c4a9a9a7c1065187fbed17a20a3"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 0,
+    "finite_geometry": true
+  },
+  "reduction": {
+    "tool": "gltfpack 1.3",
+    "flags": [
+      "-si",
+      "0.12",
+      "-se",
+      "0.02",
+      "-sp",
+      "-sv",
+      "-noq",
+      "-kn",
+      "-km"
+    ],
+    "requested_ratio": 0.12,
+    "actual_triangles": 8280,
+    "candidate_sha256": "75a6eceb61347ed9fa9f87b6de701cf3bd4208a56799c5d90103414a1fdf23cb",
+    "budget": "About 8k, ceiling 10k for a .85 m near-view prop; no FPS claim"
+  },
+  "candidates": [
+    {
+      "ratio": 0.16,
+      "error_cap": 0.01,
+      "triangles": 11104
+    },
+    {
+      "ratio": 0.08,
+      "error_cap": 0.01,
+      "triangles": 11118
+    },
+    {
+      "ratio": 0.12,
+      "error_cap": 0.02,
+      "triangles": 8280,
+      "selected": true
+    }
+  ],
+  "limitations": [
+    "Generated mesh has nonmanifold welded edges; use preserved BoxShape3D collision.",
+    "Back and underside are inferred; no animation, no liquid or mechanisms.",
+    "No multi-instance FPS measurement."
+  ]
+}

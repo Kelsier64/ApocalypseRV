@@ -3,3 +3,4 @@
 
 # ComfyUI provenance hashes cover the original collected JSON bytes, including EOL.
 art_source/bunker_diesel_generator/prompt.json -text whitespace=cr-at-eol
+art_source/gas_can/prompt.json -text whitespace=cr-at-eol

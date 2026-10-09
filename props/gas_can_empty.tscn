@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://props/item.gd" id="1_u7m75"]
 
+[ext_resource type="PackedScene" path="res://assets/models/gas_can/gas_can.glb" id="model"]
+
 [sub_resource type="StandardMaterial3D" id="Material_graybox"]
 albedo_color = Color(0.48, 0.48, 0.48, 1)
 roughness = 0.9
@@ -25,6 +27,10 @@ scrap_yields = {
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0022521876, -0.028735355, -0.0045410395)
 shape = SubResource("BoxShape3D_31uht")
 
-[node name="gas_can" type="MeshInstance3D" parent="."]
+[node name="gas_can" parent="." instance=ExtResource("model")]
+position = Vector3(0.0022521876, -0.028735355, -0.0045410395)
+
+[node name="GasCanGraybox" type="MeshInstance3D" parent="."]
+visible = false
 position = Vector3(0.0022521876, -0.028735355, -0.0045410395)
 mesh = SubResource("Mesh_graybox")
