@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/bunker_switchgear/bunker_switchgear.glb" id="generated_model"]
+
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/soot.tres" id="soot"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
 
@@ -18,12 +20,16 @@ size = Vector3(1.2, 2.35, 0.72)
 
 [node name="Model" type="Node3D" parent="Visuals"]
 
+[node name="Asset" parent="Visuals/Model" instance=ExtResource("generated_model")]
+
 [node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 1.175, 0)
 mesh = SubResource("m0")
 material_override = ExtResource("steel")
 
 [node name="Panel" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 1.35, 0.37)
 mesh = SubResource("m1")
 material_override = ExtResource("soot")
@@ -33,6 +39,7 @@ position = Vector3(0, 1.175, 0)
 shape = SubResource("collision")
 
 [node name="Stencil" type="Label3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 1.5275, 0.375)
 text = "DANGER"
 font_size = 32

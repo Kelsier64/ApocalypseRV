@@ -1,0 +1,52 @@
+{
+  "asset": "bunker_switchgear",
+  "reference_sha256": "0e1dec31ea8532f5c0903c70760497f14825f71a69bae0f78c7334507c34c79e",
+  "generation_profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "7f6739a9-f233-4613-8179-f8296a7283b1",
+  "raw_sha256": "57a85ee55e17e238bc9ad4faf6de5181c5ce11b97ddaf1598848d1d17bb10f15",
+  "final_sha256": "0302d87577262cc33ff4d08908384e43f27ee4e668bc6c0b61a6d532fec2bda0",
+  "dimensions_m": [
+    1.2,
+    2.35,
+    0.72
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "inspection_front": "+Z",
+  "triangles": 3995,
+  "vertices": 4427,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.08",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    2.3278005404339486,
+    2.3319334127354168,
+    1.9129836504893514
+  ],
+  "texture_sha256": [
+    "a6244c85a189e5d34f7fb72d1c8ba1486875b5c0e7fbca177f19ce7253985843",
+    "ec55f3c995f5b8ca5abe0d030d09d7f567596349d98004aebd2760b21b4e76da",
+    "35008ae83e68b6947735decf850eb5a7be6c7420bbd16c0cf79fff811f9b2af0"
+  ],
+  "topology": {
+    "zero_area_triangles": 0,
+    "boundary_edges": 3,
+    "nonmanifold_edges": 57,
+    "duplicate_triangles": 17,
+    "weld_m": 1e-06
+  },
+  "raw_evidence": ".godot/art-work/bunker_switchgear/20261010-01",
+  "raw_triangles": 49938,
+  "rotation_y_degrees": 0
+}
