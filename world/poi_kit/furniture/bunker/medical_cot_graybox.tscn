@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/bunker_medical_cot/bunker_medical_cot.glb" id="generated_model"]
+
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/pale.tres" id="pale"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
 
@@ -18,12 +20,16 @@ size = Vector3(2.1, 0.85, 0.95)
 
 [node name="Model" type="Node3D" parent="Visuals"]
 
+[node name="Asset" parent="Visuals/Model" instance=ExtResource("generated_model")]
+
 [node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 0.43, 0)
 mesh = SubResource("m0")
 material_override = ExtResource("steel")
 
 [node name="Mattress" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 0.82, 0)
 mesh = SubResource("m1")
 material_override = ExtResource("pale")
