@@ -40,20 +40,20 @@ func _run() -> void:
 	if ForestFog.supported(): check(not air.clear_air.visible and rear_air.clear_air.visible, "Broken roof removes only its own fog exclusion")
 	var panel: RVStructurePanel = rv.get_node("RightFront")
 	var mesh: MeshInstance3D = panel.get_node("Lower")
-	panel.current_health = panel.max_health
+	panel.set_health(panel.max_health)
 	await process_frame
 	await process_frame
 	var healthy: StandardMaterial3D = mesh.get_active_material(0)
 	check(healthy.albedo_texture != null, "Healthy RV retains original worn paint texture")
-	panel.current_health = panel.max_health * 0.2
+	panel.set_health(panel.max_health * 0.2)
 	await process_frame
 	await process_frame
 	var damaged: StandardMaterial3D = mesh.get_active_material(0)
-	check(damaged.detail_enabled and damaged.albedo_texture == healthy.albedo_texture and damaged.albedo_color != healthy.albedo_color, "Damage adds scuffs and darkening without erasing base paint")
-	panel.current_health = panel.max_health
+	check(damaged.next_pass is ShaderMaterial and damaged.albedo_texture == healthy.albedo_texture and damaged.albedo_color != healthy.albedo_color, "Damage adds scuffs and darkening without erasing base paint")
+	panel.set_health(panel.max_health)
 	await process_frame
 	await process_frame
-	check(not mesh.get_active_material(0).detail_enabled, "Repair restores healthy aged appearance")
+	check(mesh.get_active_material(0) == healthy and mesh.get_active_material(0).next_pass == healthy.next_pass, "Repair restores healthy aged appearance")
 	var indoor: StandardMaterial3D = load("res://world/poi_kit/materials/concrete.tres")
 	var tint := indoor.albedo_color
 	var texture := indoor.albedo_texture

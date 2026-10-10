@@ -109,7 +109,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		rv.current_power = 80.0 if rv.current_power < 1 else 0.0
 	elif event.keycode == KEY_F9:
 		var panel: RVStructurePanel = main.get_node("NewRv/Chassis/RightFront")
-		panel.current_health = panel.max_health if panel.current_health < panel.max_health * 0.3 else panel.max_health * 0.2
+		panel.set_health(panel.max_health if panel.current_health < panel.max_health * 0.3 else panel.max_health * 0.2)
 	elif event.keycode == KEY_F10:
 		player.in_ui_mode = false
 		main.get_node("NewRv/Chassis/TabletScreen").interact_hold(player)

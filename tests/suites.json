@@ -20,6 +20,7 @@
       "test_slender_speaker_encounter",
       "test_rv_engine",
       "test_rv_interactions",
+      "test_rv_panel_damage",
       "test_rv_ladders",
       "test_rv_resource_cycle",
       "test_rv_shared_storage",

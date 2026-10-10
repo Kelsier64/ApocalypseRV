@@ -10,6 +10,7 @@ var max_health: float = 120.0
 var is_destroyed: bool = false
 signal removing
 signal damaged
+signal damage_applied(amount: float)
 signal availability_changed
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _ready() -> void:
 	collision_mask = 0
 	add_to_group(Groups.MONSTER_DAMAGEABLE)
 	var wear := Node.new()
+	wear.name = "PanelWear"
 	wear.set_script(load("res://rv/panel_wear.gd"))
 	add_child(wear)
 	if structure_kind == "roof":
@@ -50,7 +52,9 @@ func can_operate() -> bool:
 func take_damage(amount: float) -> void:
 	if amount <= 0.0 or not is_finite(amount) or is_destroyed: return
 	damaged.emit()
+	var previous_health := current_health
 	set_health(maxf(0.0, current_health - amount))
+	damage_applied.emit(previous_health - current_health)
 
 ## Construction/snapshot API; deliberately no repair_health method for H input.
 func set_health(value: float) -> void:
