@@ -23,3 +23,5 @@ If Blender MCP is unavailable, use existing offline CLI, glTF or Godot tools whe
 ## Image-to-3D Workflow
 
 Follow [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) directly for image-to-3D work. Preserve the raw model, inspect and refine the result, then verify it in the target scene. Report remaining problems briefly. Do not require a modeling request document before starting; prepare a handoff only when the task needs one.
+
+For supported single-mesh static props, reuse its [parameterized preparation and integration tool](../comfyui-image-to-3d/references/static-props.md) instead of copying asset-specific scripts. Try one suitable reduction budget, compare the result and perform one contextual review; expand work only when a defect or new change requires it.
