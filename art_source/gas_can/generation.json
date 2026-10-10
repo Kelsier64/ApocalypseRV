@@ -1,0 +1,14 @@
+{
+  "prompt_id": "2743e998-597f-441d-9c64-d41bcba75a62",
+  "reference_sha256": "87d066de89f19f82db8ea0cd8a5cda5aaca03cfaae7cb63e37fba22fcce9a52b",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "target_faces": 50000,
+  "prompt_sha256": "443d4581a19743cc90147ca2cfc783a8746d7d55b44184636e62f3e0a32133fa",
+  "raw_sha256": "817dfcc86fe89190d80df2bc8f5437bd91483adb63273fb1bddee962e5999976",
+  "conditioning_sha256": "d28bd5fa73949ab44fd67a9e5c2c155d2b579fdf14c5243f705e538b3cc9c8b5",
+  "source": "New imagegen reference + local TRELLIS.2; retired model not used",
+  "execution_seconds": 98.41,
+  "comfyui_version": "0.38.0"
+}

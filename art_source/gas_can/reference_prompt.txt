@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: single reference image for image-to-3D modeling of a static game prop.
+Primary request: One closed industrial metal gasoline jerry can, full and empty versions share exactly the same exterior. Low saturation industrial horror style: dull dark olive-gray painted steel, restrained scratches and paint chips in the texture, aged but structurally straight.
+Geometry and proportions: narrow thickness 0.39759523 m, total height 0.84584963 m, broad face width 0.82353514 m. The body is a rounded rectangular pressed-steel can. Its broad front face has clear embossed X-shaped reinforcing ribs and a subtle perimeter pressed contour. A single clearly open elongated carry-handle hole sits above the shoulder; handle length runs across the broad face width. A CLOSED metal screw cap is beside the handle on the top shoulder. Include handle and cap within total dimensions. No liquid, no open neck, no movable pieces, no animation, no tubes, no separate objects.
+Composition: entire one can centered with margin, weak-perspective three-quarter view showing the broad face, narrow side and top. Camera only slightly above the shoulder so the handle opening is clearly visible. Broad face faces toward viewer, with thickness visibly about half the face width. Upright, symmetrical, straight base.
+Lighting: even soft studio lighting to reveal the geometry without strong baked shadows or floor shadow.
+Backdrop: genuine transparent alpha, no floor, no environment.
+Constraints: original unbranded design, no labels, no letters, no logo, no watermark, no exploded view or multiple views. Recognizable open handle hole, sealed cap and stamped ribs. Do not make perforated ribs or extra holes in the body.

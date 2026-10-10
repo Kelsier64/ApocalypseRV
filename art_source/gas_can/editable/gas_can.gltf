@@ -1,0 +1,200 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "TRELLIS.2; gas_can/refine.py metric center fit",
+    "extras": {
+      "prompt": "{\"108\": {\"class_type\": \"ModelSamplingSD3\", \"inputs\": {\"model\": [\"125\", 0], \"shift\": 5.0}}, \"117\": {\"class_type\": \"VAELoader\", \"inputs\": {\"vae_name\": \"trellis_2_shape_vae_bf16.safetensors\"}}, \"118\": {\"class_type\": \"VAELoader\", \"inputs\": {\"vae_name\": \"trellis_2_texture_vae_bf16.safetensors\"}}, \"119\": {\"class_type\": \"VaeDecodeStructureTrellis2\", \"inputs\": {\"resolution\": \"32\", \"samples\": [\"3\", 0], \"vae\": [\"117\", 0]}}, \"12\": {\"class_type\": \"KSampler\", \"inputs\": {\"cfg\": 1.0, \"denoise\": 1.0, \"latent_image\": [\"98\", 2], \"model\": [\"319\", 0], \"negative\": [\"98\", 1], \"positive\": [\"98\", 0], \"sampler_name\": \"euler\", \"scheduler\": \"normal\", \"seed\": 42, \"steps\": 12}}, \"122\": {\"class_type\": \"LoadImage\", \"inputs\": {\"image\": \"gas_can-87d066de89f19f82-76147014.png\"}, \"is_changed\": [\"87d066de89f19f82db8ea0cd8a5cda5aaca03cfaae7cb63e37fba22fcce9a52b\"]}, \"125\": {\"class_type\": \"RescaleCFG\", \"inputs\": {\"model\": [\"199\", 0], \"multiplier\": 0.7}}, \"126\": {\"class_type\": \"RescaleCFG\", \"inputs\": {\"model\": [\"279\", 0], \"multiplier\": 0.5}}, \"147\": {\"class_type\": \"BakeTextureFromVoxel\", \"inputs\": {\"mesh\": [\"196\", 0], \"reference_mesh\": [\"92\", 0], \"texture_size\": [\"288\", 0], \"voxel_colors\": [\"93\", 0]}}, \"15\": {\"class_type\": \"CLIPVisionLoader\", \"inputs\": {\"clip_name\": \"dino_v3_L_naf_fp32.safetensors\"}}, \"18\": {\"class_type\": \"KSampler\", \"inputs\": {\"cfg\": 7.5, \"denoise\": 1.0, \"latent_image\": [\"91\", 2], \"model\": [\"126\", 0], \"negative\": [\"91\", 1], \"positive\": [\"91\", 0], \"sampler_name\": \"euler\", \"scheduler\": \"normal\", \"seed\": 42, \"steps\": 20}}, \"186\": {\"class_type\": \"DecimateMesh\", \"inputs\": {\"mesh\": [\"241\", 0], \"placement_mode\": \"midpoint\", \"target_face_count\": 50000}}, \"196\": {\"class_type\": \"UnwrapMesh\", \"inputs\": {\"mesh\": [\"238\", 0], \"padding\": 1, \"resolution\": [\"288\", 0], \"segmenter\": \"pec\", \"weld_distance\": 0.0002}}, \"199\": {\"class_type\": \"CFGOverride\", \"inputs\": {\"cfg\": 1.0, \"end_percent\": 1.0, \"model\": [\"319\", 0], \"start_percent\": 0.667}}, \"202\": {\"class_type\": \"GetMeshInfo\", \"inputs\": {\"mesh\": [\"92\", 0]}}, \"210\": {\"class_type\": \"ApplyTextureToMesh\", \"inputs\": {\"base_color\": [\"147\", 0], \"mesh\": [\"196\", 0], \"metallic\": [\"147\", 1], \"normal_map\": [\"224\", 0], \"occlusion\": [\"233\", 0], \"roughness\": [\"147\", 2]}}, \"224\": {\"class_type\": \"BakeNormalMapFromMesh\", \"inputs\": {\"cage_distance\": 0.05, \"high_poly\": [\"241\", 0], \"ignore_backfaces\": true, \"low_poly\": [\"196\", 0], \"resolution\": 1024}}, \"23\": {\"class_type\": \"KSampler\", \"inputs\": {\"cfg\": 7.5, \"denoise\": 1.0, \"latent_image\": [\"94\", 2], \"model\": [\"126\", 0], \"negative\": [\"94\", 1], \"positive\": [\"94\", 0], \"sampler_name\": \"euler\", \"scheduler\": \"simple\", \"seed\": 42, \"steps\": 12}}, \"233\": {\"class_type\": \"BakeAmbientOcclusion\", \"inputs\": {\"bias\": 0.01, \"high_poly\": [\"241\", 0], \"low_poly\": [\"196\", 0], \"max_distance\": 0.71, \"resolution\": 512, \"samples\": 64, \"strength\": 1.0}}, \"238\": {\"class_type\": \"MeshSmoothNormals\", \"inputs\": {\"crease_angle\": 180.0, \"mesh\": [\"186\", 0]}}, \"241\": {\"class_type\": \"RemeshMesh\", \"inputs\": {\"band\": 1.0, \"drop_small_components\": 0.01, \"fix_poles\": false, \"mesh\": [\"202\", 0], \"precluster_max_verts\": 1000000, \"project_back\": 0.0, \"resolution\": 192, \"sign_mode\": \"udf\", \"sign_mode.drop_enclosed_components\": false, \"sign_mode.drop_inverted_components\": false, \"sign_mode.qef\": false, \"smooth_iters\": 2}}, \"260\": {\"class_type\": \"MeshSmoothNormals\", \"inputs\": {\"crease_angle\": 180.0, \"mesh\": [\"210\", 0]}}, \"279\": {\"class_type\": \"CFGOverride\", \"inputs\": {\"cfg\": 1.0, \"end_percent\": 1.0, \"model\": [\"319\", 0], \"start_percent\": 0.769}}, \"288\": {\"class_type\": \"PrimitiveInt\", \"inputs\": {\"value\": 1024}}, \"298\": {\"class_type\": \"Trellis2Conditioning\", \"inputs\": {\"clip_vision_model\": [\"15\", 0], \"image\": [\"312\", 0]}}, \"3\": {\"class_type\": \"KSampler\", \"inputs\": {\"cfg\": 7.5, \"denoise\": 1.0, \"latent_image\": [\"87\", 0], \"model\": [\"108\", 0], \"negative\": [\"298\", 1], \"positive\": [\"298\", 0], \"sampler_name\": \"euler\", \"scheduler\": \"normal\", \"seed\": 42, \"steps\": 12}}, \"312\": {\"class_type\": \"ImageCropToMask\", \"inputs\": {\"background\": \"#000000\", \"grow_mask\": 0, \"height\": 1024, \"images\": [\"122\", 0], \"masks\": [\"v2_alpha\", 0], \"pad_factor\": 1.0, \"width\": 1024}}, \"319\": {\"class_type\": \"UNETLoader\", \"inputs\": {\"unet_name\": \"trellis_2_int8_convrot.safetensors\", \"weight_dtype\": \"default\"}}, \"87\": {\"class_type\": \"EmptyTrellis2LatentStructure\", \"inputs\": {\"batch_size\": 1}}, \"91\": {\"class_type\": \"Trellis2ShapeStage\", \"inputs\": {\"negative\": [\"298\", 1], \"positive\": [\"298\", 0], \"voxel\": [\"119\", 0]}}, \"92\": {\"class_type\": \"VaeDecodeShapeTrellis\", \"inputs\": {\"samples\": [\"23\", 0], \"vae\": [\"117\", 0]}}, \"93\": {\"class_type\": \"VaeDecodeTextureTrellis\", \"inputs\": {\"samples\": [\"12\", 0], \"shape_subdivides\": [\"92\", 1], \"vae\": [\"118\", 0]}}, \"94\": {\"class_type\": \"Trellis2UpsampleStage\", \"inputs\": {\"negative\": [\"91\", 1], \"positive\": [\"91\", 0], \"shape_latent\": [\"18\", 0], \"target_resolution\": 1024, \"vae\": [\"117\", 0]}}, \"98\": {\"class_type\": \"Trellis2TextureStage\", \"inputs\": {\"negative\": [\"94\", 1], \"positive\": [\"94\", 0], \"shape_latent\": [\"23\", 0]}}, \"conditioning_image\": {\"class_type\": \"SaveImage\", \"inputs\": {\"filename_prefix\": \"skill-3d/gas_can/76147014e399457dbf6f6920ad70945a/conditioning\", \"images\": [\"312\", 0]}}, \"save\": {\"class_type\": \"SaveGLB\", \"inputs\": {\"filename_prefix\": \"skill-3d/gas_can/76147014e399457dbf6f6920ad70945a/model\", \"mesh\": [\"260\", 0]}}, \"v2_alpha\": {\"class_type\": \"InvertMask\", \"inputs\": {\"mask\": [\"122\", 1]}}}"
+    }
+  },
+  "buffers": [
+    {
+      "byteLength": 3491152,
+      "uri": "gas_can.bin"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 1022801
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 1022804,
+      "byteLength": 1334168
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 2356972,
+      "byteLength": 663203
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 3020176,
+      "byteLength": 105324,
+      "byteStride": 12,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 3125500,
+      "byteLength": 70216,
+      "byteStride": 8,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 3195716,
+      "byteLength": 105324,
+      "byteStride": 12,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 3301040,
+      "byteLength": 140432,
+      "byteStride": 16,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 3441472,
+      "byteLength": 49680,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 3,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 8777,
+      "type": "VEC3",
+      "min": [
+        -0.19879761338233948,
+        -0.42292481660842896,
+        -0.4117675721645355
+      ],
+      "max": [
+        0.19879761338233948,
+        0.42292481660842896,
+        0.4117675721645355
+      ]
+    },
+    {
+      "bufferView": 4,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 8777,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 5,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 8777,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 6,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 8777,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 7,
+      "byteOffset": 0,
+      "componentType": 5123,
+      "count": 24840,
+      "type": "SCALAR"
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9729,
+      "wrapS": 33071,
+      "wrapT": 33071
+    }
+  ],
+  "images": [
+    {
+      "mimeType": "image/png",
+      "uri": "gas_can_texture_0.png"
+    },
+    {
+      "mimeType": "image/png",
+      "uri": "gas_can_texture_1.png"
+    },
+    {
+      "mimeType": "image/png",
+      "uri": "gas_can_texture_2.png"
+    }
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    },
+    {
+      "sampler": 0,
+      "source": 1
+    },
+    {
+      "sampler": 0,
+      "source": 2
+    }
+  ],
+  "materials": [
+    {
+      "name": "WornIndustrialSteel",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
+      },
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 1
+      },
+      "doubleSided": true
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "TEXCOORD_0": 1,
+            "NORMAL": 2,
+            "TANGENT": 3
+          },
+          "indices": 4,
+          "material": 0
+        }
+      ],
+      "name": "GasCanMesh"
+    }
+  ],
+  "nodes": [
+    {
+      "name": "GasCan",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0
+}

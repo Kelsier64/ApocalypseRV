@@ -1,0 +1,39 @@
+{
+  "state": "ACCEPTED_WITH_LIMITATIONS",
+  "views_inspected": [
+    "front",
+    "side",
+    "back",
+    "oblique",
+    "top",
+    "underside"
+  ],
+  "modes": [
+    "textured",
+    "clay"
+  ],
+  "models": [
+    "raw",
+    "fitted source",
+    "9998-face candidate",
+    "5998-face candidate",
+    "final"
+  ],
+  "selected_triangles": 5998,
+  "budget_rationale": "One 6m rooftop decoration; 6k budget preserves louver/hood silhouette in roof close-up and overview.",
+  "front_axis": "+Z",
+  "size_m": [
+    6,
+    2,
+    4
+  ],
+  "origin": "bounds center",
+  "texture_bytes_preserved": true,
+  "limits": [
+    "Back louvers and underside are single-image inferred.",
+    "Hood openings/louvers are static shallow exterior approximations, no internal mechanics.",
+    "Final topology has 11 nonmanifold edges and 2 duplicate triangles after 1um position weld; no boundary or zero-area triangles.",
+    "No multi-instance FPS benchmark or manual gameplay tour performed."
+  ],
+  "repair": "gltfpack -sv produced 4130 non-orthogonal tangent frames; orthogonalized final working copy, final attribute issue counts all zero."
+}

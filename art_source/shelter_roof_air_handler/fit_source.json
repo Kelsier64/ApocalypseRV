@@ -1,0 +1,45 @@
+{
+  "source_sha256": "c17d1ee5f39292895df68104c6583930a05877dd1be3f26dac565bef0cba4ee2",
+  "output_sha256": "f85b0f1a3b266255ea4a86a71b587eb4851df3df3253bec8be5afbddaa5fcf72",
+  "rotation_y_degrees": -90.0,
+  "source_rotated_size_m": [
+    1.0086941123008728,
+    0.4818554222583771,
+    0.7038431167602539
+  ],
+  "fit_scale_xyz": [
+    5.948284942710484,
+    4.150622588465081,
+    5.68308463171701
+  ],
+  "target_size_m": [
+    6.0,
+    2.0,
+    4.0
+  ],
+  "actual_size_m": [
+    6.0,
+    2.0,
+    4.0
+  ],
+  "actual_center_m": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "origin": "bounding box center",
+  "up": "+Y",
+  "intake_front": "+Z",
+  "scene_offset_baked": false,
+  "triangles": 49998,
+  "vertices": 32239,
+  "texture_sha256": [
+    "3abf99ca574f0b7b6e5fc61952af596809383f7b26678eff55a7ab155a284c5a",
+    "ce3560e6f61197422730a9c392ab153ba7d1a4c21af90c274a6ac1f793b719b0",
+    "46fbbd5711405e6c8d1695e6e7b0f99b0f6e45c7186fffedc69ee2229483baac"
+  ],
+  "topology_changed_in_fit": false,
+  "normal_handling": "inverse transpose; tangent orthogonalization",
+  "zero_tangents_repaired": 0,
+  "finite_geometry": true
+}

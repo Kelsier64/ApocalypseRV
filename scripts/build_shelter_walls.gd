@@ -352,7 +352,7 @@ func build() -> void:
 	for x in [-17.7, 17.7]:
 		box(Vector3(0.5, 8.1 if x < 0 else 10.1, 0.64), Vector3(x, 4.05 if x < 0 else 5.05, 12.4), "trim", 0.04)
 	# Existing roof machinery is still separate; concrete plinths meet its bases.
-	box(Vector3(6.3,0.5,4.3), Vector3(-14,11.75,-22), "trim", 0.04)
+	box(Vector3(6.3,0.5,4.3), Vector3(-17.7,8.75,9.8), "trim", 0.04)
 	box(Vector3(9.3,0.5,5.3), Vector3(11,11.75,-23), "trim", 0.04)
 	# New garage entrance surround remains outside the physical 7x5m aperture.
 	for x in [-3.9, 3.9]: box(Vector3(0.65,5.65,0.32), Vector3(x,2.825,14.52), "trim", 0.06)

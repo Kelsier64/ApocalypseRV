@@ -18,6 +18,8 @@
 
 ## 從哪裡開始
 
+屋頂通風機組：[3D／ComfyUI skill 實測與正式整合](validation/2026-10-09-roof-air-handler-skills.md)，含六視角、降面、碰撞與導航保留檢查。
+
 Slender Speaker 持續遭遇：[單一 owner、觀測與提交動作、搜尋期限及實際輪驅驗證](validation/2026-10-09-slender-speaker-encounter.md)。本輪結果與限制由該紀錄列出；下方各歷史驗收保留當時範圍。
 
 Slender Speaker 未拉手煞車：[拆頂車內發呆、慢滑站位與可見目標切換修正](validation/2026-10-09-slender-speaker-open-roof.md)。
@@ -51,6 +53,8 @@ Slender Speaker：[v10 森林巨人整合與 PR 驗證](validation/2026-10-09-sl
 公路獨立生成：[v9 數量、逐隻選點與廢車朝向](validation/2026-10-07-independent-road-spawns.md)，包含獨立油桶人／普通 Item 油桶、v8 相容與不補發生命週期；本輪測試狀態以該紀錄為準。
 
 地堡柴油發電機：[ComfyUI／3D scene skill 實測與修正](validation/2026-10-07-bunker-diesel-generator-skills.md)，含正式電力廳視覺替換、可編輯 glTF、六視角／素色檢查、尺寸與碰撞驗證。
+
+汽油罐：[滿／空共用模型與 3D／ComfyUI skill 實測](validation/2026-10-09-gas-can-skills.md)，含尺寸／灰盒保留、拾取、加油回空罐、檢查點保存與已知拓樸問題。
 
 油桶人：[Blender 雙腿、偽裝追逐、接觸自爆與保存驗收](validation/2026-10-07-barrel-man.md)，含正式玩家／RV 展示場、輪驅重播及模型來源；[腳踝、腳掌與五趾細修](validation/2026-10-07-barrel-man-feet.md)補上新版近景與蒙皮檢查。普通油桶與地堡裝飾桶共用相同藍色桶身。
 

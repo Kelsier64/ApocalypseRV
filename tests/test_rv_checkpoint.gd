@@ -85,6 +85,15 @@ func _run() -> void:
 	loose.global_position = rv.global_position + Vector3(9, 1, 0)
 	loose.freeze = true
 	var loose_id: String = loose.engine.id
+	# Shared visuals must remain under their canonical gameplay save paths.
+	var gas_can_ids := {}
+	for key in ["gas_can", "gas_can_empty"]:
+		var can: Item = load("res://props/" + key + ".tscn").instantiate()
+		WorldEntities.get_container(world).add_child(can)
+		can.global_position = rv.global_position + Vector3(12, 1, 2 if key == "gas_can" else -2)
+		can.freeze = true
+		can.condition = 37.0
+		gas_can_ids[key] = can.persistent_id
 	rv.headlights_requested = true
 	rv.engine_bay.get_node("Hatch").set_open(true)
 	var checkpoint := root.get_node("Checkpoint")
@@ -210,6 +219,14 @@ func _run() -> void:
 			loose_matches += 1
 			expect(actor.engine.health == 91.0 and actor.engine.model_id == "upgraded", "Ground engine keeps model and durability")
 	expect(loose_matches == 1, "Ground engine restores exactly once")
+	for key in gas_can_ids:
+		var can_matches := 0
+		for actor in WorldEntities.get_container(world).get_children():
+			if actor is Item and actor.persistent_id == gas_can_ids[key]:
+				can_matches += 1
+				expect(actor.scene_file_path == "res://props/" + key + ".tscn" and actor.condition == 37.0, key + " checkpoint restores its gameplay path, identity and condition")
+				expect(actor.get_node("gas_can").scene_file_path == "res://assets/models/gas_can/gas_can.glb", key + " checkpoint instantiates the shared visual")
+		expect(can_matches == 1, key + " checkpoint restores exactly one world can")
 	expect(world.get_node("PoiInstances").saved_instances.get("visited") == visited, "Exact bunker manifest and exploration survive checkpoint")
 	var restored_station: CraftingStation
 	var restored_scrapper: Item

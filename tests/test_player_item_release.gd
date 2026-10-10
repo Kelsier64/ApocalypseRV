@@ -37,7 +37,7 @@ func run() -> void:
 	actor.position = Vector3(4, 3, 7)
 	var entities := WorldEntities.get_container(actor)
 	await steps(2)
-	for key in ["flashlight", "scrap", "battery", "oil_barrel", "engine_standard", "engine_upgraded", "engine_repair_kit", "wheel"]:
+	for key in ["flashlight", "scrap", "battery", "oil_barrel", "gas_can", "gas_can_empty", "engine_standard", "engine_upgraded", "engine_repair_kit", "wheel"]:
 		for release_pitch in [-.8, 0.0, .8]:
 			var scene_path: String = "res://props/" + key + ".tscn"
 			var source: Item = load(scene_path).instantiate()
