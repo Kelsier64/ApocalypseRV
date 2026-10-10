@@ -13,6 +13,7 @@ var power_draw_per_second: float = 0.8
 # A signal reserves the actor/slot before deferred deaths mutate Jolt bodies.
 const LIVING_OWNER := &"scrapper_living_owner"
 var _pending_living: Dictionary = {}
+var crush_effect: Node3D
 
 func _ready():
 	# Allow Item logic to initialize
@@ -25,11 +26,15 @@ func _ready():
 		hopper.body_entered.connect(_on_hopper_body_entered)
 	else:
 		push_error("Scrapper has no HopperArea!")
+	crush_effect = preload("res://equipment/scrapper_crush_effect.gd").new()
+	crush_effect.name = "CrushEffect"
+	add_child(crush_effect)
 
 func step_work(delta: float):
 	for index in range(props_being_crushed.size() - 1, -1, -1):
 		if not is_instance_valid(props_being_crushed[index].prop): props_being_crushed.remove_at(index)
 	if not can_operate():
+		_stop_crush_effect()
 		return
 	# Retry overlapping inputs after power/queue readiness changes, or after a
 	# dying actor transfers already-overlapping physical bones to a corpse.
@@ -39,14 +44,17 @@ func step_work(delta: float):
 			_on_hopper_body_entered(body)
 	if props_being_crushed.size() > 0:
 		if props_being_crushed[0].timer <= 0.0:
+			_stop_crush_effect()
 			if _finish_recycle(props_being_crushed[0].prop):
 				props_being_crushed.pop_front()
 			return
 		var rv = get_connected_rv()
 		if not rv:
+			_stop_crush_effect()
 			return
 		if rv and rv.has_method("consume_power"):
 			if not rv.consume_power(power_draw_per_second * minf(delta, props_being_crushed[0].timer)):
+				_stop_crush_effect()
 				return
 
 		# Rotate rollers around their local Y axis (which is the cylinder's length)
@@ -66,6 +74,8 @@ func step_work(delta: float):
 				data["local_position"].y -= crush_speed * delta
 				p.global_position = to_global(data["local_position"])
 				data["timer"] -= delta
+				if is_instance_valid(crush_effect):
+					crush_effect.advance_work(delta, p is CorpseProp, _crush_contact(data.local_position), clampf(1.0 - data.timer / maxf(crush_time, .001), 0, 1), p.get_instance_id())
 				
 				if data["timer"] <= 0:
 					if _finish_recycle(p):
@@ -73,6 +83,15 @@ func step_work(delta: float):
 			else:
 				# Item was destroyed elsewhere
 				props_being_crushed.remove_at(i)
+
+	else:
+		_stop_crush_effect()
+
+func _crush_contact(local_input: Vector3) -> Vector3:
+	return Vector3(clampf(local_input.x, -.12, .12), .72, clampf(local_input.z, -.18, .18))
+
+func _stop_crush_effect(clear_particles := false) -> void:
+	if is_instance_valid(crush_effect): crush_effect.stop(clear_particles)
 
 func _on_hopper_body_entered(body: Node3D):
 	# If we are currently being moved/placed, don't recycle things
@@ -208,6 +227,7 @@ func recycle_prop(prop: Item):
 	})
 
 func _physics_process(_delta: float) -> void:
+	if not is_powered_feed() or props_being_crushed.is_empty() or props_being_crushed[0].timer <= 0: _stop_crush_effect()
 	for id: int in _pending_living.keys():
 		_finish_living_input(id)
 	for data in props_being_crushed:
@@ -215,6 +235,7 @@ func _physics_process(_delta: float) -> void:
 			data.prop.global_position = to_global(data.local_position)
 
 func _on_service_stopped() -> void:
+	_stop_crush_effect(true)
 	for id: int in _pending_living.keys(): _release_living_input(id)
 	for data in props_being_crushed:
 		if not is_instance_valid(data.prop):
@@ -244,6 +265,7 @@ func _finish_recycle(prop: Item) -> bool:
 		prop.set_meta("recycle_result", amounts)
 	if not rv.deposit_materials(prop.get_meta("recycle_result")):
 		return false
+	if is_instance_valid(crush_effect): crush_effect.impact(prop is CorpseProp, _crush_contact(to_local(prop.global_position)))
 	prop.queue_free()
 	return true
 

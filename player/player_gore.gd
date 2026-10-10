@@ -15,23 +15,24 @@ static func spawn(actor: CharacterBody3D, at: Vector3, context: Dictionary) -> v
 	root._stain.call_deferred(actor)
 
 func _burst(actor: CharacterBody3D, context: Dictionary) -> void:
+	var at_rollers: bool = context.get("source", "") == "scrapper"
 	var droplets := CPUParticles3D.new()
-	droplets.amount = 65
-	droplets.lifetime = .7
+	droplets.amount = 22 if at_rollers else 65
+	droplets.lifetime = .45 if at_rollers else .7
 	droplets.one_shot = true
 	droplets.explosiveness = .96
 	droplets.spread = 42
 	droplets.direction = Vector3.UP + actor.global_basis.x * .4
 	var captor: Node3D = context.get("captor")
 	if is_instance_valid(captor): droplets.direction = (captor.global_position - global_position).normalized() + Vector3.UP * .6
-	droplets.initial_velocity_min = 1.2
-	droplets.initial_velocity_max = 3.8
+	droplets.initial_velocity_min = .7 if at_rollers else 1.2
+	droplets.initial_velocity_max = 2.2 if at_rollers else 3.8
 	droplets.gravity = Vector3(0, -9.8, 0)
 	droplets.scale_amount_min = .5
 	droplets.scale_amount_max = 1.5
 	var mesh := SphereMesh.new()
-	mesh.radius = .012
-	mesh.height = .045
+	mesh.radius = .004 if at_rollers else .012
+	mesh.height = .014 if at_rollers else .045
 	mesh.radial_segments = 6
 	mesh.rings = 3
 	var material := StandardMaterial3D.new()
@@ -59,7 +60,7 @@ func _burst(actor: CharacterBody3D, context: Dictionary) -> void:
 		tear_sound.data = data
 	var sound := AudioStreamPlayer3D.new()
 	sound.stream = tear_sound
-	sound.volume_db = -2
+	sound.volume_db = -15 if at_rollers else -2
 	sound.max_distance = 20
 	add_child(sound)
 	sound.play()
