@@ -541,6 +541,8 @@ func drop_item():
 		item_data.state = held_item_node.capture_item_state()
 	var scene: PackedScene = load(item_data["scene_path"])
 	if scene == null: return
+	# Restore the world prop only after finalizing the carried light state.
+	_set_flashlight_off_at(inventory.active_slot)
 	var dropped_item = scene.instantiate()
 	_restore_prop_state(dropped_item, item_data)
 	var drop_transform := global_transform
@@ -557,7 +559,6 @@ func drop_item():
 		drop_transform = release.transform
 	var entity_parent: Node = WorldEntities.get_container(self)
 	if entity_parent == null: entity_parent = get_tree().current_scene
-	_set_flashlight_off_at(inventory.active_slot)
 	entity_parent.add_child(dropped_item)
 	dropped_item.global_transform = drop_transform
 	if dropped_item is RigidBody3D:
