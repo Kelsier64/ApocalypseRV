@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cuaq8d8ag3et"
-path="res://.godot/imported/bunker_command_console_1.png-0f7cc6e77c29afe1d0fdfd4610b8d99f.ctex"
+path.s3tc="res://.godot/imported/bunker_command_console_1.png-0f7cc6e77c29afe1d0fdfd4610b8d99f.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "382fc3532b31e03ae2c743c4457d025f"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/bunker_command_console/bunker_command_console_1.png"
-dest_files=["res://.godot/imported/bunker_command_console_1.png-0f7cc6e77c29afe1d0fdfd4610b8d99f.ctex"]
+dest_files=["res://.godot/imported/bunker_command_console_1.png-0f7cc6e77c29afe1d0fdfd4610b8d99f.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
