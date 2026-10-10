@@ -8,7 +8,7 @@
 - `rv/legacy/new_rv.tscn`：改造前的車殼／座椅對照，沿用目前系統和道具設備。
 - `cockpit.tscn`：座椅、儀表台、方向盤、排檔桿、手煞車、踏板，一起掛在 DriverSeat 下。
 - `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔、手煞車、三個指針及讀數；沒有另一套引擎或電力狀態。
-- `wheel.tscn`：胎面、輪圈和螺帽；由底盤依原輪胎尺寸縮放，跟隨 VehicleWheel3D。
+- `wheel.tscn`：胎面、輪圈和螺帽；底盤與 `props/wheel.tscn` 共用同一外觀及尺寸，物品僅轉向原本的 Z 軸並保留底部原點。`TireDynamics.visual_scale` 共用縮放規則；爆胎時裝車、散落、手持及放置預覽同步縮徑與加寬，物品碰撞隨之調整。
 - `roof.tscn`／`roof_hatch.tscn`：4 × 4 m 普通／左側開孔屋頂片視覺，分別由 `equipment/rv_ceiling.tscn`／`rv_ceiling_hatch.tscn` 持有碰撞。固定地板網格與碰撞、車架、接縫與保險桿都在 `rv/chassis.tscn`。
 - `scrapper.tscn`／`scrapper_roller.tscn`：回收粉碎機的中空機殼、金屬內襯與兩組交錯七齒切削盤；GLB 位於 `assets/models/scrapper/`，可重建來源與尺寸／材質／驗證紀錄見 [scrapper 作者來源](../../art_source/scrapper/README.md)。保留設備五個碰撞、投料區域與原 CSG 轉軸，活動外觀跟隨原回收供電動畫。
 - 其餘同名場景：現有設備的外觀細節，不取代設備腳本。
