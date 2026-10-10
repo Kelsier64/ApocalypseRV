@@ -10,6 +10,7 @@
 - `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔、手煞車、三個指針及讀數；沒有另一套引擎或電力狀態。
 - `wheel.tscn`：胎面、輪圈和螺帽；由底盤依原輪胎尺寸縮放，跟隨 VehicleWheel3D。
 - `roof.tscn`／`roof_hatch.tscn`：4 × 4 m 普通／左側開孔屋頂片視覺，分別由 `equipment/rv_ceiling.tscn`／`rv_ceiling_hatch.tscn` 持有碰撞。固定地板網格與碰撞、車架、接縫與保險桿都在 `rv/chassis.tscn`。
+- `scrapper.tscn`／`scrapper_roller.tscn`：回收粉碎機的中空機殼、金屬內襯與兩組交錯七齒切削盤；GLB 位於 `assets/models/scrapper/`，可重建來源與尺寸／材質／驗證紀錄見 [scrapper 作者來源](../../art_source/scrapper/README.md)。保留設備五個碰撞、投料區域與原 CSG 轉軸，活動外觀跟隨原回收供電動畫。
 - 其餘同名場景：現有設備的外觀細節，不取代設備腳本。
 
 ## 模型規則

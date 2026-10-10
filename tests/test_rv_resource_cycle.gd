@@ -37,8 +37,24 @@ func _run() -> void:
 	dropped.global_position = recycler.global_position + Vector3.UP
 	recycler.recycle_prop(dropped)
 	rv.current_fuel = 0.0
+	# Observe actual upper surface displacement through the production pivots.
+	# A paired shredder must feed both sides inward, and stop when unpowered.
+	rv.current_power = 0.0
+	var stopped1: Basis = recycler.roller1.basis
+	var stopped2: Basis = recycler.roller2.basis
+	var remaining: float = recycler.props_being_crushed[0].timer
+	recycler.step_work(.02)
+	check(recycler.roller1.basis.is_equal_approx(stopped1) and recycler.roller2.basis.is_equal_approx(stopped2) and is_equal_approx(recycler.props_being_crushed[0].timer, remaining), "Unpowered cutter stacks retain pose and input progress")
 	rv.current_power = 10.0
-	rv.step_energy_system(0.0, 0.0, 0.0, 1.5)
+	var surface1: Vector3 = recycler.roller1.to_local(recycler.to_global(recycler.roller1.position + Vector3.UP * .19))
+	var upper1: Vector3 = recycler.to_local(recycler.roller1.to_global(surface1))
+	var surface2: Vector3 = recycler.roller2.to_local(recycler.to_global(recycler.roller2.position + Vector3.UP * .19))
+	var upper2: Vector3 = recycler.to_local(recycler.roller2.to_global(surface2))
+	rv.step_energy_system(0.0, 0.0, 0.0, .02)
+	var moved1: Vector3 = recycler.to_local(recycler.roller1.to_global(surface1))
+	var moved2: Vector3 = recycler.to_local(recycler.roller2.to_global(surface2))
+	check(moved1.x < upper1.x and moved2.x > upper2.x and moved1.y < upper1.y and moved2.y < upper2.y, "Both powered roller surfaces move inward and down toward the cutting nip")
+	rv.step_energy_system(0.0, 0.0, 0.0, 1.48)
 	check(rv.get_item_count(ItemNames.UNREFINED_FUEL) == 10 and rv.get_item_count(ItemNames.METAL_PARTS) == 4, "Loot becomes usable materials")
 	check(station.request_craft("gasoline"), "Recycled materials fund fuel recipe")
 	rv.step_energy_system(0.0, 0.0, 0.0, 2.0)
