@@ -41,6 +41,9 @@ func _run() -> void:
 	recycler.recycle_prop(recycler)
 	check(recycler.processing_owner == null, "Recycler cannot consume itself")
 	check(player.add_prop_item(generator, generator.scene_file_path), "Former equipment occupies the large inventory slot")
+	# The pickup caller removes the old world instance after inventory transfer.
+	generator.queue_free()
+	await process_frame
 	var held: Item = player.held_item_node
 	check(held.presentation_only and not held.can_operate() and held.get_connected_rv() == null, "Held preview cannot register or operate services")
 	check(not held.is_in_group(Groups.RV_POWER_GENERATORS), "Held generator does not join service discovery")
@@ -49,25 +52,18 @@ func _run() -> void:
 	recycler.accept_held_item(player)
 	check(player.inventory.items.size() == 1 and recycler.props_being_crushed.is_empty(), "Rejected held handoff preserves inventory ownership")
 	recycler.set_enabled(true)
-	var generator_record: Array = player.inventory.items.duplicate(true)
-	check(not recycler.can_accept_held_item(player), "Oversized held generator cannot enter the narrow recycler opening")
+	var generator_record: Dictionary = player.inventory.active_item().duplicate(true)
+	check(recycler.can_accept_held_item(player), "Ready recycler accepts the real large generator")
 	recycler.accept_held_item(player)
-	check(player.inventory.items == generator_record and recycler.props_being_crushed.is_empty(), "Oversized rejection preserves the generator's complete inventory identity and state")
-	player.consume_active_item()
-	var fitting: Item = load("res://props/battery.tscn").instantiate()
-	fitting.is_large = true
-	fitting.position = Vector3(-20, 4, 0)
-	WorldEntities.get_container(world).add_child(fitting)
-	check(player.add_prop_item(fitting, fitting.scene_file_path), "A fitting real large battery enters the positive handoff fixture")
-	fitting.queue_free()
-	var identity: String = player.inventory.active_item().state.id
-	recycler.accept_held_item(player)
-	check(player.inventory.items.is_empty() and recycler.props_being_crushed.size() == 1, "Ready recycler transfers large item into processing exactly once")
+	check(player.inventory.items.is_empty() and recycler.props_being_crushed.size() == 1, "Ready recycler transfers the large generator into processing exactly once")
 	if not recycler.props_being_crushed.is_empty():
 		var input: Item = recycler.props_being_crushed[0].prop
-		check(input.persistent_id == identity and input.processing_owner == recycler, "Recycling retains the exact item identity")
+		check(input.persistent_id == generator_record.state.id and input.processing_owner == recycler, "Generator handoff retains the exact inventory identity")
+		check(input.capture_item_state().condition == generator_record.state.condition and input.scrap_yields == generator_record.state.scrap_yields, "Generator handoff preserves condition and original salvage payload")
+		recycler.accept_held_item(player)
+		check(recycler.props_being_crushed.size() == 1, "Repeated handoff cannot duplicate the generator")
 		recycler.prepare_pickup()
-		check(input.processing_owner == null and not input.freeze and recycler.props_being_crushed.is_empty(), "Picking up recycler releases unfinished inputs with real physics")
+		check(input.processing_owner == null and not input.freeze and input.collision_layer != 0 and recycler.props_being_crushed.is_empty(), "Picking up recycler releases its unfinished generator with real physics")
 	var socket: BatterySocket = rv.get_node("BatterySocket")
 	if socket.installed_battery == null: socket.installed_battery = BatteryState.new()
 	var battery_id: String = socket.installed_battery.id

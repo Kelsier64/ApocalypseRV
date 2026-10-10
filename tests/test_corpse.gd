@@ -4,7 +4,7 @@ var world: Node3D
 
 func _init() -> void: run.call_deferred()
 func check(ok: bool, message: String) -> void:
-	if not ok: failures.append(message); push_error("FAIL: " + message)
+	if not ok and message not in failures: failures.append(message); push_error("FAIL: " + message)
 func step(count: int) -> void:
 	for i in count:
 		await physics_frame
@@ -80,6 +80,96 @@ func check_limb_feed(recycler: Item, kind: String, restore_power := false) -> vo
 		recycler._on_service_stopped()
 		corpse.queue_free()
 	await step(2)
+
+func check_normal_player_throw(recycler: Item) -> void:
+	var rv := recycler.get_connected_rv()
+	rv.current_power = 40.0
+	var carrier: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	carrier.position = Vector3(-8, 0, 0)
+	world.add_child(carrier)
+	carrier.take_damage(1000)
+	await step(180)
+	var loose: CorpseProp
+	for child in WorldEntities.get_container(world).get_children():
+		if child is CorpseProp and child.kind == "player": loose = child
+	check(loose != null and not carrier.is_player_dead, "Normal throw fixture obtains the actual player recovery corpse")
+	if loose == null:
+		carrier.queue_free()
+		return
+	var identity := loose.persistent_id
+	var original := loose.capture_item_state()
+	loose.interact(carrier)
+	await step(45)
+	check(carrier.held_item_node is CorpseProp and carrier.inventory.active_item().state.id == identity, "Normal throw carries the original player corpse")
+	carrier.set_physics_process(false)
+	# Aim the normal 3m/s G throw. Keep the actual held anatomy and drop velocity.
+	carrier.global_position = recycler.to_global(Vector3(0, .45, 1.37))
+	carrier.global_rotation = recycler.global_rotation
+	carrier.velocity = Vector3.ZERO
+	await step(60)
+	carrier.drop_item()
+	await step(2)
+	for child in WorldEntities.get_container(world).get_children():
+		if child is CorpseProp and child.persistent_id == identity: loose = child
+	check(loose != null and carrier.inventory.items.is_empty(), "G throw transfers one untouched physical corpse out of inventory")
+	var before: Dictionary = rv.get_all_items().duplicate(true)
+	var admitted := false
+	var partial_save := false
+	var minimum_bones := 14
+	var maximum_distance := 0.0
+	for frame in 600:
+		recycler.step_work(1.0 / 60.0)
+		await step(1)
+		if not is_instance_valid(loose): break
+		if loose.processing_owner != recycler: continue
+		admitted = true
+		check(loose.persistent_id == identity and recycler.props_being_crushed.size() == 1, "Normal thrown corpse retains exactly one original processing owner")
+		if not partial_save and loose.physical_feed:
+			partial_save = true
+			var saved := recycler.capture_service_state()
+			check(ItemState.valid_service(recycler.scene_file_path, saved) and WorldActorSnapshot.capture(loose).is_empty(), "Normally thrown in-flight corpse retains one valid persistence owner")
+			var timer_before: float = recycler.props_being_crushed[0].timer
+			var power_before: float = rv.current_power
+			rv.current_power = 0
+			recycler.step_work(.25)
+			check(recycler.props_being_crushed[0].timer == timer_before and rv.get_all_items() == before, "Unpowered normal corpse ingestion preserves progress and grants no yield")
+			rv.current_power = power_before
+		minimum_bones = mini(minimum_bones, loose.bodies.size())
+		var retired_count := 0
+		for retired: PhysicalBone3D in loose.visual.find_children("*", "PhysicalBone3D", true, false):
+			if not loose.fed_bones.has(String(retired.bone_name)): continue
+			retired_count += 1
+			check(not retired.is_simulating_physics() and retired.collision_layer == 0 and retired.collision_mask == 0 and retired.joint_type == PhysicalBone3D.JOINT_TYPE_NONE, "Swallowed registered bones retain no simulation, collisions or active joint")
+		check(retired_count == loose.fed_bones.size(), "Every swallowed bone remains retained for safe retirement until the entire rig is removed")
+		for bone: PhysicalBone3D in loose.bodies.values():
+			var local := recycler.to_local(bone.global_position)
+			maximum_distance = maxf(maximum_distance, local.length())
+			check(local.is_finite() and local.length() < 5.0, "Normal thrown corpse joints remain finite and near the hopper throughout ingestion")
+			if bone.collision_mask != 0 or not loose.physical_feed: continue
+			for collider: CollisionShape3D in bone.find_children("*", "CollisionShape3D", true, false):
+				var box := collider.shape.get_debug_mesh().get_aabb()
+				for corner in 8:
+					var point := recycler.to_local(collider.to_global(box.get_endpoint(corner)))
+					check(absf(point.x) <= recycler.FEED.HALF_OPENING + .02 and absf(point.z) <= recycler.FEED.HALF_OPENING + .02, "A normally thrown collisionless bone cannot cross the hopper frame")
+	check(admitted and partial_save, "An untouched normal player G throw is automatically captured and physically fed")
+	check(minimum_bones < 14, "Normal throw consumes actual anatomical segments")
+	check(not is_instance_valid(loose) and recycler.props_being_crushed.is_empty(), "Normal full player corpse completes instead of jamming or exploding its joints")
+	for material: String in original.scrap_yields:
+		var range_: Vector2 = original.scrap_yields[material]
+		var earned: int = rv.get_item_count(material) - int(before.get(material, 0))
+		check(earned >= int(range_.x) and earned <= int(range_.y), "Normal thrown player corpse grants its original " + material + " payload once")
+	var after: Dictionary = rv.get_all_items().duplicate(true)
+	recycler.step_work(1.0)
+	check(rv.get_all_items() == after, "Completed normal throw cannot grant duplicate material")
+	print("CORPSE_NORMAL_THROW max_distance=", maximum_distance, " minimum_bones=", minimum_bones)
+	if is_instance_valid(loose):
+		recycler.enabled = false
+		recycler._on_service_stopped()
+		loose.queue_free()
+		await step(3)
+		recycler.enabled = true
+	carrier.queue_free()
+	await step(3)
 
 func run() -> void:
 	world = Node3D.new()
@@ -252,8 +342,13 @@ func run() -> void:
 	check(not restored.processing and restored.simulator.is_simulating_physics() and restored.collision_layer == 2, "Cancelled recycling restores articulated loose corpse")
 	restored.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(3, 3)}
 	recycler.enabled = true
+	check(restored.initialized and not restored.processing, "Callback-order fixture starts with the actual initialized loose corpse")
 	recycler.recycle_prop(restored)
+	# Service work may run in this frame before the deferred claim callback.
+	# Deliberately do not yield between claiming this real corpse and feeding it.
+	recycler.step_work(1.0 / 60.0)
 	await step(2)
+	check(restored.processing and restored.physical_feed and restored.simulator.is_simulating_physics(), "Deferred claim after immediate paid work cannot stop active corpse physics")
 	var material_before := rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
 	await finish_physical_input(recycler, restored)
 	check(not is_instance_valid(restored) and rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == material_before + 3, "Completed recycling grants one fixed yield and removes all corpse physics")
@@ -278,6 +373,8 @@ func run() -> void:
 	await check_limb_feed(recycler, "raker")
 	await check_limb_feed(recycler, "player")
 	await check_limb_feed(recycler, "player", true)
+	for repetition in 3:
+		await check_normal_player_throw(recycler)
 	# Player recovery leaves a separate corpse, preserving absent limbs.
 	player.global_position = Vector3(-8, 0, 0)
 	player.body_state.sever(&"left_arm")

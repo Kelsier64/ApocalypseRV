@@ -9,6 +9,8 @@ var surfaces: Array[Dictionary] = []
 var ready := false
 var physical := false
 var complete := true
+var pieces: Array[Dictionary] = []
+var section_feed: RefCounted
 var initial_bones: Dictionary = {}
 var initial_offsets: Dictionary = {}
 
@@ -42,8 +44,11 @@ static func rotated_box(box: AABB, basis: Basis) -> AABB:
 static func admissible(prop: Node3D, owner: Node3D) -> bool:
 	var box := rotated_box(geometry_bounds(prop),owner.global_basis.inverse()*prop.global_basis)
 	box.position += owner.to_local(prop.global_position)
-	# Wait for physics to clear the rim before taking control of rigid objects.
-	return box.position.x >= -HALF_OPENING and box.end.x <= HALF_OPENING and box.position.z >= -HALF_OPENING and box.end.z <= HALF_OPENING
+	var center := box.get_center()
+	if absf(center.x) > .30 or absf(center.z) > .30: return false
+	var contained := box.position.x >= -HALF_OPENING and box.end.x <= HALF_OPENING and box.position.z >= -HALF_OPENING and box.end.z <= HALF_OPENING
+	# An oversized object must approach from above; wall grazes keep physics.
+	return contained or box.position.y >= .68
 
 static func fits(prop: Node3D, owner: Node3D) -> bool:
 	var box := geometry_bounds(prop)
@@ -65,12 +70,23 @@ func setup(prop: Node3D, owner: Node3D, saved: Dictionary = {}) -> bool:
 			initial_offsets[key] = prop.bodies[key].body_offset.affine_inverse()
 	else:
 		var size := rotated_box(bounds, start_pose.basis).size
-		if size.x > HALF_OPENING * 2 or size.z > HALF_OPENING * 2: return false
-	surfaces = apply_cut(prop, owner)
+		if size.x > HALF_OPENING * 2 or size.z > HALF_OPENING * 2:
+			var box := rotated_box(bounds,start_pose.basis)
+			start_pose.origin.y += maxf(0,.87-start_pose.origin.y-box.position.y)
+			pose = start_pose
+			prop.global_transform = owner.global_transform*pose
+			section_feed = load("res://equipment/scrapper_section_feed.gd").new()
+			section_feed.setup(prop,owner,bounds,start_pose)
+			pieces = section_feed.pieces
+			section_feed.advance(owner,float(saved.get("progress",0)))
+	if section_feed == null: surfaces = apply_cut(prop, owner)
 	ready = true
 	return true
 
 func advance(prop: Node3D, owner: Node3D, progress: float, delta: float = 0.0) -> void:
+	if section_feed != null:
+		section_feed.advance(owner,progress)
+		return
 	if physical:
 		if delta <= 0: return
 		prop.begin_physical_feed()
@@ -90,12 +106,23 @@ func advance(prop: Node3D, owner: Node3D, progress: float, delta: float = 0.0) -
 					top = maxf(top,point.y)
 					bottom = minf(bottom,point.y)
 			# Only a bone fully inside the opening may pass through the teeth.
-			if contained and bottom < .84:
+			if contained and bottom < .79:
 				bone.collision_mask = 0
 				bone.collision_layer = 0
+				prop.sever_feed_segment.call_deferred(String(bone.bone_name))
+			elif not contained:
+				bone.collision_mask = 1
+				bone.collision_layer = 128
 			if contained and top < .705: swallowed.append(String(bone.bone_name))
 			var target := owner.to_global(Vector3(0,.12,0) if contained else Vector3(0,1.55,0))
-			bone.apply_central_impulse(((target-bone.global_position).limit_length(.8)*bone.mass*22-bone.linear_velocity*bone.mass*4)*delta)
+			var desired := ((target-bone.global_position)*4.0).limit_length(2.0)
+			bone.linear_velocity = bone.linear_velocity.lerp(desired,1.0-exp(-12.0*delta))
+			# Once the teeth sever a segment, turn its long collider axis down the
+			# throat. A sideways shin otherwise balances across both rim edges.
+			if bone.joint_type == PhysicalBone3D.JOINT_TYPE_NONE:
+				var rotation := (owner.global_basis.orthonormalized()*bone.global_basis.orthonormalized().inverse()).get_rotation_quaternion().normalized()
+				if rotation.w < 0: rotation = -rotation
+				bone.angular_velocity = bone.angular_velocity.lerp(rotation.get_axis()*minf(rotation.get_angle()*5.0,4.0),1.0-exp(-10.0*delta))
 		if not swallowed.is_empty(): prop.consume_feed_bones.call_deferred(swallowed)
 		pose = owner.global_transform.affine_inverse()*prop.global_transform
 		update_cut(surfaces,owner)
@@ -133,10 +160,20 @@ func release(prop: Node3D, owner: Node3D) -> void:
 			if prop.bodies.has(key): prop.bodies[key].global_transform = owner.global_transform*initial_bones[key]
 			else: prop.fed_bones[key] = owner.global_transform*initial_bones[key]*initial_offsets[key]
 	else: prop.global_transform = owner.global_transform * start_pose
+	dispose()
+
+func sync(owner: Node3D) -> void:
+	if section_feed != null: section_feed.sync(owner)
+	else: update_cut(surfaces,owner)
+
+func dispose() -> void:
 	restore_cut(surfaces)
+	if section_feed != null: section_feed.dispose()
 
 func capture() -> Dictionary:
-	return {"start":start_pose,"pose":pose}
+	var result := {"start":start_pose,"pose":pose}
+	if section_feed != null: result.progress = section_feed.progress
+	return result
 
 static func apply_cut(node: Node3D, owner: Node3D) -> Array[Dictionary]:
 	var records: Array[Dictionary] = []

@@ -270,6 +270,9 @@ func _apply_missing_parts() -> void:
 
 func begin_physical_feed() -> void:
 	if not initialized or physical_feed: return
+	# A service tick may precede the deferred queue-freeze callback.
+	# Establish the waiting phase first so it cannot stop an active feed.
+	if not processing: set_processing(true)
 	physical_feed = true
 	var frame := skeleton.global_transform
 	skeleton.top_level = true
@@ -285,18 +288,85 @@ func begin_physical_feed() -> void:
 		body.linear_velocity = Vector3.ZERO
 		body.angular_velocity = Vector3.ZERO
 
+static func _clear_feed_joint(body: PhysicalBone3D) -> void:
+	if body.joint_type == PhysicalBone3D.JOINT_TYPE_NONE: return
+	var frame := body.global_transform
+	var linear := body.linear_velocity
+	var angular := body.angular_velocity
+	var parent := body.get_parent()
+	body.joint_type = PhysicalBone3D.JOINT_TYPE_NONE
+	# NONE alone does not clear an existing server joint in Godot 4.7.2.
+	# Leaving the tree clears it through the bone registration lifecycle.
+	parent.remove_child(body)
+	parent.add_child(body)
+	body.global_transform = frame
+	body.linear_velocity = linear
+	body.angular_velocity = angular
+
+func sever_feed_segment(key: String) -> void:
+	if not physical_feed or not bodies.has(key): return
+	var caught: PhysicalBone3D = bodies[key]
+	_clear_feed_joint(caught)
+	for body: PhysicalBone3D in bodies.values():
+		var parent := skeleton.get_bone_parent(body.get_bone_id())
+		while parent >= 0:
+			var parent_key := String(skeleton.get_bone_name(parent))
+			if bodies.has(parent_key):
+				if parent_key == key: _clear_feed_joint(body)
+				break
+			parent = skeleton.get_bone_parent(parent)
+
 func consume_feed_bones(keys: Array[String]) -> void:
-	if not physical_feed: return
+	if not physical_feed or keys.is_empty(): return
 	var data := _capture_pose()
+	var frames: Dictionary = {}
+	var motion: Dictionary = {}
+	# Removing a simulated parent lets the engine reconnect its child to a
+	# different ancestor. Stop the solver and detach those orphan joints first.
+	for key: String in bodies:
+		var body: PhysicalBone3D = bodies[key]
+		frames[key] = body.global_transform
+		motion[key] = [body.linear_velocity,body.angular_velocity,body.collision_layer,body.collision_mask]
+		if key in keys: continue
+		var parent := skeleton.get_bone_parent(body.get_bone_id())
+		while parent >= 0:
+			var parent_key := String(skeleton.get_bone_name(parent))
+			if bodies.has(parent_key):
+				if parent_key in keys: _clear_feed_joint(body)
+				break
+			parent = skeleton.get_bone_parent(parent)
+	simulator.physical_bones_stop_simulation()
 	for key in keys:
 		if not bodies.has(key): continue
 		var body: PhysicalBone3D = bodies[key]
-		fed_bones[key] = body.global_transform*body.body_offset.affine_inverse()
-		body.free()
+		fed_bones[key] = frames[key]*body.body_offset.affine_inverse()
+		# Retain the node until the whole rig is retired. Deleting a
+		# parent PhysicalBone leaves cached parent pointers in surviving children.
+		body.collision_layer = 0
+		body.collision_mask = 0
+		_clear_feed_joint(body)
+		var retired: Node3D = visual.get_node_or_null("ConsumedBones")
+		if retired == null:
+			retired = Node3D.new()
+			retired.name = "ConsumedBones"
+			visual.add_child(retired)
+		# Leave the simulator while the node is still alive so parent caches
+		# update safely; retained nodes can never be restarted as descendants.
+		body.reparent(retired,true)
 		bodies.erase(key)
-	# Keep swallowed skin at its world pose while unconsumed joints stay physical.
+	# Preserve both the swallowed skin and every remaining solver frame.
 	for i in skeleton.get_bone_count(): skeleton.set_bone_pose(i,data.poses[i])
 	skeleton.force_update_all_bone_transforms()
+	var remaining: Array[StringName] = []
+	for key: String in bodies: remaining.append(StringName(key))
+	if not remaining.is_empty(): simulator.physical_bones_start_simulation(remaining)
+	for key: String in bodies:
+		var body: PhysicalBone3D = bodies[key]
+		body.global_transform = frames[key]
+		body.linear_velocity = motion[key][0]
+		body.angular_velocity = motion[key][1]
+		body.collision_layer = motion[key][2]
+		body.collision_mask = motion[key][3]
 
 func set_processing(value: bool) -> void:
 	if not initialized or value == processing: return
@@ -321,8 +391,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if processing and not physical_feed: return
 	if physical_feed and not fed_bones.is_empty():
-		var frame := _capture_pose()
-		for i in skeleton.get_bone_count(): skeleton.set_bone_pose(i,frame.poses[i])
+		for key: String in fed_bones:
+			skeleton.set_bone_global_pose(skeleton.find_bone(key),skeleton.global_transform.affine_inverse()*fed_bones[key])
 		skeleton.force_update_all_bone_transforms()
 	if held:
 		_follow_hand(delta)

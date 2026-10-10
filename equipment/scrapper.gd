@@ -32,7 +32,9 @@ func _ready():
 
 func step_work(delta: float):
 	for index in range(props_being_crushed.size() - 1, -1, -1):
-		if not is_instance_valid(props_being_crushed[index].prop): props_being_crushed.remove_at(index)
+		if not is_instance_valid(props_being_crushed[index].prop):
+			if props_being_crushed[index].feed != null: props_being_crushed[index].feed.dispose()
+			props_being_crushed.remove_at(index)
 	if not can_operate():
 		_stop_crush_effect()
 		return
@@ -249,7 +251,6 @@ func recycle_prop(prop: Item):
 	if prop == self or prop.is_ancestor_of(self) or is_ancestor_of(prop): return
 	if prop.presentation_only or prop.is_fixed or prop.is_being_placed: return
 	if prop is CorpseProp and prop.held: return
-	if not prop is CorpseProp and not FEED.fits(prop,self): return
 	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() + _pending_living.size() >= queue_capacity:
 		return
 	var rv = get_connected_rv()
@@ -295,7 +296,12 @@ func _physics_process(_delta: float) -> void:
 	for data in props_being_crushed:
 		if is_instance_valid(data.prop):
 			if data.feed != null and data.feed.physical: continue
-			if data.feed != null: data.prop.global_transform = global_transform * data.feed.pose
+			if data.feed == null and not data.get("saved_feed",{}).is_empty() and not data.prop is CorpseProp:
+				var motion := FEED.new()
+				if motion.setup(data.prop,self,data.saved_feed): data.feed = motion
+			if data.feed != null:
+				data.prop.global_transform = global_transform * data.feed.pose
+				data.feed.sync(self)
 			elif not data.get("saved_feed",{}).is_empty(): data.prop.global_transform = global_transform*data.saved_feed.pose
 			else: data.prop.global_position = to_global(data.local_position)
 
@@ -304,6 +310,7 @@ func _on_service_stopped() -> void:
 	for id: int in _pending_living.keys(): _release_living_input(id)
 	for data in props_being_crushed:
 		if not is_instance_valid(data.prop):
+			if data.feed != null: data.feed.dispose()
 			continue
 		var prop: Item = data.prop
 		if data.feed != null: data.feed.release(prop,self)
@@ -333,7 +340,7 @@ func _finish_recycle(prop: Item) -> bool:
 		return false
 	if is_instance_valid(crush_effect): crush_effect.impact(prop is CorpseProp, _crush_contact(to_local(prop.global_position)))
 	for entry: Dictionary in props_being_crushed:
-		if entry.prop == prop and entry.feed != null: FEED.restore_cut(entry.feed.surfaces)
+		if entry.prop == prop and entry.feed != null: entry.feed.dispose()
 	prop.queue_free()
 	return true
 
@@ -344,6 +351,7 @@ func capture_service_state() -> Dictionary:
 			var input := {"scene": entry.prop.scene_file_path, "state": entry.prop.capture_item_state(),
 				"timer": maxf(0,entry.timer), "local_position": entry.local_position, "physics": entry.physics.duplicate(true)}
 			if entry.feed != null: input.feed = entry.feed.capture()
+			elif not entry.get("saved_feed",{}).is_empty(): input.feed = entry.saved_feed.duplicate(true)
 			inputs.append(input)
 	return {"inputs": inputs}
 
@@ -377,14 +385,10 @@ func can_accept_held_item(player: Node3D) -> bool:
 	var record: Dictionary = player.inventory.active_item()
 	var scene := SaveSceneCatalog.resolve(record.get("scene_path", ""), "item")
 	if scene == null: return false
-	if scene.resource_path == "res://props/corpse.tscn": return true
-	var probe: Node3D = scene.instantiate()
-	var size: Vector3 = FEED.rotated_box(FEED.geometry_bounds(probe),probe.basis).size
-	probe.free()
-	return size.x <= FEED.HALF_OPENING*2 and size.z <= FEED.HALF_OPENING*2
+	return true
 
 func accept_held_item(player: Node3D) -> String:
-	if not can_accept_held_item(player): return "無法投入：分解機未就緒、佇列已滿、物品尺寸超過入口，或需要雙手大型物品"
+	if not can_accept_held_item(player): return "無法投入：分解機未就緒、佇列已滿，或需要雙手大型物品"
 	var record: Dictionary = player.inventory.active_item().duplicate(true)
 	var scene := SaveSceneCatalog.resolve(record.scene_path, "item")
 	var input: Item = scene.instantiate()
