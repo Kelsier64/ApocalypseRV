@@ -32,7 +32,7 @@ func _run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
-	check(generator.profile.generation_version == 9 and generator.profile.chunks_ahead == 2, "Production v9 streaming window fits the 450 m monster lifetime")
+	check(generator.profile.generation_version == 10 and generator.profile.chunks_ahead == 2, "Production v10 streaming window fits the 450 m monster lifetime")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
 	generator.profile.chunks_ahead = 0
@@ -55,7 +55,7 @@ func _run() -> void:
 	check(checkpoint.save_world(world, SAVE_PATH), "Preparation checkpoint writes")
 	var prepared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	if prepared.is_empty(): quit(1); return
-	check(prepared.generation_version == 9, "New production checkpoint records v9")
+	check(prepared.generation_version == 10, "New production checkpoint records v10")
 	check(prepared.world_id == "shelter" and prepared.start_state.phase == "preparing", "Checkpoint identifies production and preparation")
 	for version in [7, 8, 9]:
 		var supported := prepared.duplicate(true)
@@ -67,8 +67,8 @@ func _run() -> void:
 		wrong_world.erase("start_state")
 		check(checkpoint.validation_error(wrong_world) == "world_id.start_state", "Shelter generation cannot use legacy identity v%d" % version)
 	var future := prepared.duplicate(true)
-	future.generation_version = 10
-	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v10 remains rejected")
+	future.generation_version = 11
+	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v11 remains rejected")
 	check(prepared.player.items.size() == 1, "Picked item belongs only to player inventory")
 	for invalid in ["opening", "closing", "unknown"]:
 		var bad := prepared.duplicate(true)

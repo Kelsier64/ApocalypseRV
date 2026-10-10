@@ -72,6 +72,7 @@ var _settings_release_actions: Array[StringName] = []
 signal grab_started
 signal body_state_changed
 var grab_control: Node
+var _execution_crush_in_progress := false
 var ragdoll_control: Node
 var death_velocity := Vector3.ZERO
 enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED }
@@ -449,6 +450,7 @@ func complete_world_transition(at: Transform3D) -> void:
 	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
 		(held_item_node as Flashlight).set_held_active(false)
 	if is_grabbed(): grab_control.end("world_transition")
+	grab_control.clear_execution_observer()
 	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
 	if restart_death or ragdoll_control.following_detached_head: ragdoll_control.stop()
 	_exit_climb_to_normal()
@@ -1129,6 +1131,10 @@ func _physics_process(delta):
 	if damage_cooldown > 0.0:
 		damage_cooldown = maxf(0.0, damage_cooldown - delta)
 	_sync_body_collision_to_locomotion()
+	if is_executing():
+		_update_stamina(delta, false)
+		grab_control.advance_execution(delta)
+		return
 	if is_instance_valid(seated_in):
 		global_transform = seated_in.global_transform.orthonormalized()
 		return
@@ -1243,7 +1249,7 @@ func _begin_death_physics() -> void:
 	if not is_player_dead: return
 	_sync_body_collision_to_locomotion()
 	visible = true
-	camera.make_current()
+	if not grab_control.has_execution_death_view(): camera.make_current()
 	ragdoll_control.start(death_velocity)
 
 func _respawn():
@@ -1256,6 +1262,7 @@ func _respawn():
 		global_position = standing
 	elif not _standing_volume_clear(global_position):
 		return
+	grab_control.clear_execution_observer()
 	# Recovery checked the original upright volume before restoring any limb.
 	body_state.reset()
 	crawl_transition_remaining = 0.0
@@ -1292,6 +1299,44 @@ func can_be_grabbed() -> bool:
 func begin_grab(captor: Node3D, required: int) -> bool:
 	if not can_be_grabbed(): return false
 	return grab_control.begin(captor, required)
+
+func can_be_executed() -> bool:
+	return is_instance_valid(grab_control) and grab_control.can_begin_execution()
+
+func is_executing() -> bool:
+	return is_instance_valid(grab_control) and grab_control.is_executing()
+
+func execution_contact_position() -> Vector3:
+	# Use the real torso rather than camera/root height for seated, climbing
+	# and prone poses. The geometry remains the production player's skin.
+	var visuals := get_node_or_null("Visuals")
+	if visuals != null and visuals.get("skeleton") is Skeleton3D:
+		var skeleton: Skeleton3D = visuals.skeleton
+		for name in ["spine_02", "chest", "spine_01"]:
+			var bone := skeleton.find_bone(name)
+			if bone >= 0: return (skeleton.global_transform * skeleton.get_bone_global_pose(bone)).origin
+	return to_global(Vector3(0, .42 if is_crawling() else 1.25, 0))
+
+func begin_execution(owner: Node3D, anchor: Node3D, look_target: Node3D) -> bool:
+	return grab_control.begin_execution(owner, anchor, look_target)
+
+func cancel_execution(owner: Node3D, reason: String = "cancelled") -> void:
+	if is_executing() and grab_control.captor == owner: grab_control.end(reason)
+
+func complete_execution(owner: Node3D) -> bool:
+	if not is_executing() or grab_control.captor != owner or grab_control.execution_finished or is_player_dead: return false
+	grab_control.execution_finished = true
+	# Batch all surviving parts before capabilities/death are evaluated. Head
+	# remains last for detached-head camera/ragdoll handoff, exactly once.
+	_execution_crush_in_progress = true
+	for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg", &"head"]:
+		sever_part(part, {"captor": owner, "source": "slender_speaker_execution", "hold_in_mouth": false})
+	_execution_crush_in_progress = false
+	current_player_health = 0.0
+	_apply_body_capabilities()
+	_update_health_bar()
+	_player_die()
+	return true
 
 func end_grab(captor: Node3D, reason: String) -> void:
 	if grab_control.captor == captor: grab_control.end(reason)
@@ -1354,8 +1399,8 @@ func sever_part(part: StringName, context: Dictionary = {}) -> bool:
 			ragdoll_control.follow_detached_head(detached, view.global_transform)
 	body_state.sever(part)
 	if not was_crawling and is_crawling(): crawl_transition_remaining = 0.45
-	_apply_body_capabilities()
-	if part == &"head":
+	if not _execution_crush_in_progress: _apply_body_capabilities()
+	if part == &"head" and not _execution_crush_in_progress:
 		current_player_health = 0.0
 		_update_health_bar()
 		_player_die()

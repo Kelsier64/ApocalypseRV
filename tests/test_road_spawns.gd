@@ -80,7 +80,7 @@ func run() -> void:
 	check(totals.strips < 150 and totals.wrecks < 220 and totals.monsters < 300, "Density stays below candidate chances plus sampling tolerance")
 	check(CheckpointSchema.profile_error({"generation_version": 8}).is_empty(), "Checkpoint profile accepts v8")
 	check(CheckpointSchema.profile_error({"generation_version": 9}).is_empty(), "Checkpoint profile accepts v9")
-	check(not CheckpointSchema.profile_error({"generation_version": 10}).is_empty(), "Unknown generation version remains rejected")
+	check(not CheckpointSchema.profile_error({"generation_version": 11}).is_empty(), "Unknown generation version remains rejected")
 	print("ROAD_SPAWN_COUNTS ", totals)
 	if failures.is_empty(): print("PASS: v8 deterministic road planning, safety, clearance and legacy isolation")
 	quit(0 if failures.is_empty() else 1)

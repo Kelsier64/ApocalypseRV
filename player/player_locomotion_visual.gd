@@ -69,6 +69,11 @@ func _physics_process(delta: float) -> void:
 		view_camera.position = camera_rest_position
 		driving.update(actor, skeleton, carry, delta)
 		return
+	# Extraction keeps the contact pose, including seated/prone torso height,
+	# so the grabbed chest cannot jump when seat ownership is relinquished.
+	if actor.is_executing():
+		suspend()
+		return
 	driving.clear(skeleton)
 	if actor.is_grabbed():
 		suspend()

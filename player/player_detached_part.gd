@@ -51,7 +51,9 @@ func setup(actor: CharacterBody3D, source: Skeleton3D, root_bone: String, templa
 	if context.get("blast_impulse") is Vector3 and context.blast_impulse.is_finite():
 		launch_velocity += context.blast_impulse
 	captor = context.get("captor")
-	held = .25 if is_instance_valid(captor) else 0.0
+	# Raker retains its brief mouth grip; crushing releases independent parts
+	# directly at their posed location instead of using a Raker mouth solver.
+	held = .25 if is_instance_valid(captor) and bool(context.get("hold_in_mouth", true)) else 0.0
 	# Defer physical-body mutation if the bite arrived during physics queries.
 	_prepare_physics.call_deferred(actor, root_bone)
 

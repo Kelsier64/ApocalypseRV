@@ -8,8 +8,15 @@ const TRANSITION := 720.0
 const CLEAR_CHANCE := 0.05
 const NO_RAIN_CHANCE := 0.5
 const LIGHT_RAIN_THRESHOLD := 0.8
-const NO_FOG_CHANCE := 0.6
-const LIGHT_FOG_THRESHOLD := 0.85
+const NO_FOG_CHANCE := 0.2
+const LIGHT_FOG_THRESHOLD := 0.6
+const MEDIUM_FOG_THRESHOLD := 0.85
+# Keep legacy saved strengths: old light fog becomes medium, heavy stays heavy.
+const FOG_NONE := 0.0
+const FOG_LIGHT := 0.5
+const FOG_MEDIUM := 1.0
+const FOG_HEAVY := 2.0
+const FOG_LEVELS := [FOG_NONE, FOG_LIGHT, FOG_MEDIUM, FOG_HEAVY]
 var rng := RandomNumberGenerator.new()
 var source := Vector3.ZERO # clear, rain, fog
 var target := Vector3.ZERO
@@ -25,7 +32,11 @@ func initialize(world_seed: int) -> void:
 
 static func choose(clear_roll: float, rain_roll: float, fog_roll: float) -> Vector3:
 	if clear_roll < CLEAR_CHANCE: return Vector3(1, 0, 0)
-	return Vector3(0, 0 if rain_roll < NO_RAIN_CHANCE else (1 if rain_roll < LIGHT_RAIN_THRESHOLD else 2), 0 if fog_roll < NO_FOG_CHANCE else (1 if fog_roll < LIGHT_FOG_THRESHOLD else 2))
+	var fog := FOG_NONE
+	if fog_roll >= MEDIUM_FOG_THRESHOLD: fog = FOG_HEAVY
+	elif fog_roll >= LIGHT_FOG_THRESHOLD: fog = FOG_MEDIUM
+	elif fog_roll >= NO_FOG_CHANCE: fog = FOG_LIGHT
+	return Vector3(0, 0 if rain_roll < NO_RAIN_CHANCE else (1 if rain_roll < LIGHT_RAIN_THRESHOLD else 2), fog)
 
 func sample() -> Vector3:
 	return source.lerp(target, smoothstep(0.0, TRANSITION, transition_elapsed))
@@ -51,7 +62,7 @@ func description() -> String:
 	if target.x > 0.5: return "晴天"
 	var result := "陰天"
 	if target.y > 0: result += "・" + ("小雨" if target.y == 1 else "大雨")
-	if target.z > 0: result += "・" + ("小霧" if target.z == 1 else "大霧")
+	if target.z > 0: result += "・" + ("小霧" if target.z == FOG_LIGHT else ("中霧" if target.z == FOG_MEDIUM else "大霧"))
 	return result
 
 func capture() -> Dictionary:
@@ -64,7 +75,8 @@ static func valid_state(data: Variant) -> bool:
 		var v: Vector3 = data[key]
 		if not v.is_finite() or v.x < 0 or v.x > 1 or v.y < 0 or v.y > 2 or v.z < 0 or v.z > 2: return false
 	var t: Vector3 = data.target
-	if t != t.round() or (t.x == 1 and (t.y != 0 or t.z != 0)): return false
+	if t.x != roundf(t.x) or t.y != roundf(t.y) or t.z not in FOG_LEVELS: return false
+	if t.x == 1 and (t.y != 0 or t.z != 0): return false
 	for key in ["transition_elapsed", "remaining"]:
 		if not (data[key] is int or data[key] is float) or not is_finite(float(data[key])): return false
 	return data.transition_elapsed >= 0 and data.transition_elapsed <= TRANSITION and data.remaining > 0 and data.remaining <= MAX_DURATION and data.rng_state is int

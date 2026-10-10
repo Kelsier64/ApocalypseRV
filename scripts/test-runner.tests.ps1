@@ -176,7 +176,7 @@ if "%test%"=="res://tests/test_04_nomarker.gd" (
 if "%test%"=="res://tests/test_05_timeout.gd" (
   echo Waiting > "%log%"
   start "" /b "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%mockroot%timeout-child.ps1" "%mockroot%timeout-child.pid" "%mockroot%timeout-child.finished"
-  ping 127.0.0.1 -n 20 > nul
+  "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Start-Sleep -Seconds 20"
   exit /b 0
 )
 if "%test%"=="res://tests/test_06_certificate.gd" (

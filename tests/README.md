@@ -21,6 +21,44 @@
 
 ## 分組與覆蓋
 
+`test_slender_speaker_fog_spawn` 屬 quick，驗證生成器只讀所屬世界實際霧量、小霧 0.5 的含邊界門檻、起霧／散霧過渡、單純下雨及缺少時鐘的拒絕。`test_slender_speaker_world` 屬 integration，以正式森林與導航驗證無霧略過不補刷、已有巨人在無霧 checkpoint 中還原，以及讀檔後起霧回訪仍不補刷。[本輪紀錄](../docs/validation/2026-10-10-slender-speaker-fog-spawn.md)。
+
+`test_slender_speaker_encounter` 屬 quick，以觀測資料測試單一 encounter owner：車上／車外身分、低於 6 km/h 持續 0.5 秒及高於 10 km/h 持續 0.75 秒的模式切換、動作提交與延後變更、8 秒搜尋、可見屋頂初次檢查、已知乘員搜尋逾時後轉為未知乘員拆頂，以及未知檢查過期抑制，另驗證真正拆頂進展延續搜尋、同身分緩存期限合併及下車期限隔離。`test_slender_speaker_encounter_drive` 屬 integration，使用自由 playground 的同一名正式 Player 與同一台未固定 RV，經正常車內移動、駕駛座互動、輪胎加速及服務煞車，驗證落空後重新接近、追車與停車再接近；不以設定角色位置、車速、AI 階段或目標代替執行中的操作。`grab_tracking` 另驗證真實遮擋下不讀取隱藏姿勢、伸手末段鎖定及觀測路線卡住後實際向外走。這些覆蓋描述不代表本輪原生畫面或 full suite 已完成；目前結果及限制見[持續遭遇驗證](../docs/validation/2026-10-09-slender-speaker-encounter.md)。
+
+`test_slender_speaker_playground_equipment`、`test_slender_speaker_playground_tracking` 屬 integration，直接載入自由 playground、正式 new_rv 與引擎物理回呼，不固定底盤、不強制攻擊階段：驗證屋頂設備拆除到駕駛抬升，以及後艙換位／持續走動後自主拆頂抓取。`test_slender_speaker_execution_floor_contact` 驗證微小地板／側面接觸、世界座標精度、完整形狀掃掠及頂板／深層重疊阻擋。[本輪結果](../docs/validation/2026-10-09-slender-speaker-live-playground.md)。
+
+`test_slender_speaker_chassis_smash` 另驗證已知乘員搜尋逾時後轉為未知乘員拆頂：正式玩家先被看見，再由碰撞幾何遮擋，經過完整 8 秒物理步倒數後，自主拆除舊觀測區域外的剩餘屋頂。要求兩次實際 60 傷害接觸、玩家持續不可見、沒有盲抓或底盤傷害；固定車身與玩家隔離該轉換，倒數後使用完整導航與攻擊控制器。[本次回歸結果](../docs/validation/2026-10-10-slender-speaker-lost-survivor-roof.md)。
+
+`test_slender_speaker_playground_corners` 屬 integration，直接載入 mode 0 的正式車輛，涵蓋四個車艙角落與拆頂後持續橫越後艙的正式輸入。測試保留輪胎與懸吊物理、自主感知及手部接觸，要求抓取持續完成抬升到 HOLD；第一幀抓取成功後立即取消不能通過。後艙 tracking 也已延長至完整抬升；[本輪結果](../docs/validation/2026-10-09-slender-speaker-corner-lift.md)。
+
+`test_slender_speaker_open_roof_attack` 屬 integration，覆蓋部分／全部拆頂、未拉手煞車自然慢滑、車內正常走動後停下，前四組要求第一次抓住後完整抬升且沒有放開。未穩定懸吊的第五組只要求自主出手與真接觸；另檢查記憶轉向不受 1.15 m 導航邊界干擾，也不能直接攻擊。`target_switch` 增加車外另一側與貼近裸底盤的繞行抓取。[驗證與限制](../docs/validation/2026-10-09-slender-speaker-open-roof.md)。
+
+`test_slender_speaker_turning`、`test_slender_speaker_head_look` 屬 integration，驗證 90°／135° 轉角的前進、轉身步態及到位，與真實頸骨轉角／速度限制、手臂隔離、音箱視野、牆遮擋及回到原抓取姿勢。[本輪結果](../docs/validation/2026-10-09-slender-speaker-head-look.md)。
+
+`test_slender_speaker_patrol` 屬 integration，使用正式 RV、實際感知與正常 8 秒期限，驗證空車遭遇過期後在未烘焙車殼的導航網格上繞行、兩個連續巡邏點到達、兩種車身朝向、轉角不中斷及車內巡邏點跳過。巨人保持真實碰撞與自主階段，不以傳送或強制目標推進。`turning` 另以 30／60／120 Hz 實際物理步測量左右連續轉彎的位移／身體側向分量，並檢查倒退先煞停、再以正常加速度起步。
+
+`test_slender_speaker_cabin_movement`、`test_slender_speaker_grab_tracking` 屬 integration：正式 Player 輸入／碰撞下持續前後和左右走動、固定站位及朝向、實體遮擋與無即時 RV 目標的記憶防撞、伸手前段有限追蹤／末段鎖定，以及撞上實體障礙後向外走的恢復。車內移動使用獨立 60 秒自主拆頂準備、8 秒連續移動及 20 秒靜止恢復期限；真實接觸抓到玩家才可提前結束移動，不讓拆頂耗盡移動與恢復預算。[初次驗證](../docs/validation/2026-10-09-slender-speaker-cabin-movement.md) · [後續期限及右後角修正](../docs/validation/2026-10-10-slender-speaker-cabin-corner-fix.md)。
+
+`test_slender_speaker_grab_reliability` 屬 integration：手掌實際接觸拆除、指尖擦碰容許、4 m/s 逃離，以及左右車側十個實際站位偏移；`acquisition` 使用正式站姿、攀爬、屋頂與駕駛座姿勢驗證接觸、抬升及手肘連續性。[本輪結果](../docs/validation/2026-10-09-slender-speaker-palm-demolition.md)。
+
+車內持續移動另有 `--native-physics` 模式，由引擎物理回呼驅動兩個角色，以不同渲染時序檢查相同情境；此模式不指定 `--fixed-fps`，也不執行需要手動控制位置的局部速度探針：
+
+```powershell
+godot --headless --path . --log-file .godot/cabin-movement-native-physics.log --script res://tests/test_slender_speaker_cabin_movement.gd -- --native-physics
+```
+
+`test_slender_speaker_cross_cabin_reach` 屬 integration：正式玩家以實際輸入橫越 2.33 m，巨人保持原側，透過真實手部接觸與完整抬升到 HOLD 驗證 4.47 m 伸手；另一案例檢查超出 5.5 m 後重新定位。`grab_reliability` 與 `playground_equipment` 驗證抓取保留設備並受其阻擋、移開設備後正常抓取，以及砸擊設備每拳扣 60 耐久、同拳不重扣、未歸零保留碰撞與服務，後續砸擊歸零才摧毀。`test_slender_speaker_foot_player` 屬 integration，驗證正式骨架腳部掃掠造成 40 HP、持續接觸不重扣、分開後再次接觸、既有受傷冷卻、實體遮擋與死亡流程。見[本輪驗證](../docs/validation/2026-10-10-slender-speaker-cross-cabin.md)。
+
+`test_slender_speaker_roof_approach` 屬 integration：自由 playground 三片屋頂完整、未拉手煞車、正式玩家在後艙左右兩側，驗證巨人進入可達區域後 3 秒內開始拆頂，實際掃掠拆除選定屋頂且其他屋頂／底盤完整。另檢查伸距、側向間距、縱向偏差、繞行及未就緒導航的拒絕邊界。見[完整屋頂接近驗證](../docs/validation/2026-10-10-slender-speaker-roof-approach.md)。
+
+`test_slender_speaker_continuous_roof_encounter` 屬 integration：完整屋頂、真實輪胎懸吊與未拉手煞車，分別測中艙／後艙初始站位，以及正常離開駕駛座後步行到中艙／後艙。四案均須由實際拆頂、手部接觸，一路到完整抬升 HOLD，並逐步排除車體攻擊／底盤傷害；每片 120 耐久屋頂至少收到兩次 60 傷害，第一拳後不得丟失尚未拆完的屋頂遭遇。另驗證開孔屋頂兩側實體落點、屋頂乘員保護、同一規劃器在 0.5–3° 側傾時落點仍位於實體表面。`test_slender_speaker_encounter` 檢查可見移動的搜尋前推、隱藏資料拒絕、8 秒乘員搜尋及逾時後未知乘員拆頂轉換。見[中後艙驗證](../docs/validation/2026-10-10-slender-speaker-hatch-and-rear.md)。
+
+`test_slender_speaker_target_switch` 與 `test_slender_speaker_standing_attack` 屬 integration：前者以正式 playground、離座／步行輸入、真實感知與手部接觸檢查下車後目標切換、遮擋與伸手期間的目標穩定；後者檢查站立乘員的拆頂、跨艙同側抓取與完整處刑流程。此次結果及物理阻擋限制見[車內外鎖敵驗證](../docs/validation/2026-10-09-slender-speaker-target-switch.md)。
+
+`test_slender_speaker_free_play` 屬 integration，載入正式 playground，透過正常輸入事件驗證輪驅起步、煞停／再起步、R 升檔、離座步行、重新入座、37 秒以上自由操作、巨人切換、暫停／重設及離開重播。`test_slender_speaker_parked_attack` 另涵蓋車後／右侧追車轉停車時的實際感知、車側導航與屋頂命中，並保留音箱視角／牆遮擋測試。
+
+Slender Speaker：`test_slender_speaker_spawns` 屬 quick，驗證 v10 獨立森林規劃；`test_slender_speaker_animation` 屬 assets，核對正式模型、材質、骨架、掌向、步態接續與手臂擠壓；`behavior`／`acquisition`／`execution`／`moving_attack`／`world` 屬 integration，分別覆蓋視覺與攻擊、正式玩家／RV 接觸、共用玩家所有權與死亡、跟車攻擊／急停／步態，以及正式森林導航／checkpoint／回訪。測試範圍與結果見 [整合驗證](../docs/validation/2026-10-09-slender-speaker-pr.md)，重播操作見 [行為測試場](../docs/guides/playgrounds.md#slender-speaker-runtime)。
+
 `test_road_spawns_v9` 屬 quick：4,096 seeds 的數量與獨立油桶／油桶人抽選、逐件位置／朝向、近距離及連續區段、實際廢車碰撞、安全區與舊版本隔離。道路生命週期及檢查點測試同時保留 v8 回歸，新增 v9 混合怪物與普通油桶的導航發布、休眠／移動保存、爆炸與回訪不補發。結果與畫面見 [v9 公路驗證](../docs/validation/2026-10-07-independent-road-spawns.md)。
 
 `test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
@@ -46,9 +84,11 @@ Item 統一流程新增 `test_item_player.gd`（quick）：正式玩家驗證背
 | `smoke` | [main_scene_smoke.gd](main_scene_smoke.gd) 的正式世界就緒與移動 |
 | `full` | 所有有效分組及 smoke；排除有原因記錄的重複項 |
 
-`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v9 主世界由 smoke 與 starting 系列涵蓋。
+`test_raker_boarding` 與 `test_moving_rv_climbing` 的預設 Raker 情境完全相同，因此清單記錄為 retired，保留檔案供舊命令直接執行，也可明確以 `-TestFilter` 選取。舊 v2–v6 地形與 legacy 世界 fixture 仍保留回歸；其保存改用 v5 檢查點，不代表接受舊版檢查點。`test_main_world_monsters` 的名稱保留，但其內容明確標示 legacy v5 fixture。正式 v10 主世界由 smoke 與 starting 系列涵蓋。
 
 每支測試仍使用獨立 Godot 程序。本機不平行跑會共享磁碟 checkpoint 或全域服務的測試。GitHub Actions 以五個獨立 job 跑 quick、integration、slow、assets、smoke，涵蓋與 full 相同的有效測試；一組失敗不取消其他組。
+
+CI 的 quick job 同時以 Windows PowerShell 5.1 與 PowerShell Core 執行 runner 自測。v10 巨人導航發布、啟動取消與受限工作池回歸見 [CI 修正紀錄](../docs/validation/2026-10-09-ci-navigation.md)。
 
 ## 執行與診斷
 

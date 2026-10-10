@@ -234,7 +234,7 @@ func check_legacy_versions() -> void:
 			var data := RoadSpawns.plan(field, band)
 			check(data.get("barrels", []).is_empty() and data.get("monster_yaws", []).is_empty(), "v8 does not acquire v9 barrels or randomized monster headings")
 	check(CheckpointSchema.profile_error({"generation_version": 9}).is_empty(), "Checkpoint profile accepts generation v9")
-	check(not CheckpointSchema.profile_error({"generation_version": 10}).is_empty(), "Unsupported future generation versions remain rejected")
+	check(not CheckpointSchema.profile_error({"generation_version": 11}).is_empty(), "Unsupported future generation versions remain rejected")
 
 func read_wreck_collisions() -> void:
 	var wreck: Node3D = load(RoadSpawns.WRECK_SCENE).instantiate()

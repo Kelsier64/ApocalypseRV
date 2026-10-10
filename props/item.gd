@@ -262,6 +262,21 @@ func _destroy_equipment() -> void:
 	_on_before_destroy()
 	queue_free()
 
+## Explicit smash damage, separate from ordinary monster damage immunity.
+## Return true only when destruction clears the hand's collision path.
+func damage_from_giant_smash(amount: float) -> bool:
+	if presentation_only or is_being_placed or is_destroyed or is_queued_for_deletion() or is_instance_valid(processing_owner): return false
+	if amount <= 0.0 or not is_finite(amount): return false
+	current_health = maxf(0.0, current_health - amount)
+	availability_changed.emit()
+	if current_health > 0.0: return false
+	# Physics queries in this same smash must see the opening before queue_free.
+	collision_layer = 0
+	collision_mask = 0
+	hide()
+	_destroy_equipment()
+	return true
+
 func _on_before_destroy() -> void:
 	pass
 
