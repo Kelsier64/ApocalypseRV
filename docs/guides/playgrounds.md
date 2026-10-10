@@ -61,9 +61,11 @@ F7 為觀察腳掌與動作而關閉該實例的導航代理，讓它依既定�
 
 `godot --path . --log-file .godot/slender-runtime-review.log res://tests/slender_speaker_playground.tscn`。
 
-F1 第一人稱抓取／處刑、F2 輪驅直路追車、F3 輪驅彎道追車、F4 停車拆殼、F5 跟車移動拆殼；F6 切換相機、F7 暫停、F8 擷取、R 重設、Esc 結束。此場使用正式巨人、玩家及 RV，真正結算接觸、車板破壞與死亡；RV 重播只輸入油門／轉向，沒有直接搬動車輛。
+直接執行預設為 **自由模式（mode 0）**：玩家坐在正式駕駛座，引擎啟動、一檔、手煞車拉起。Space 放手煞車後用 WASD 駕駛，B 切換引擎，R／T 升降檔，E 離座；走動、滑鼠視角及長按 E 入座均使用正常操作。巨人起初暫停，準備好後按 F2 啟用／暫停巨人。F6 觀察鏡頭、F7 暫停／繼續整個模擬、F11 重設全部、Esc 正常設定、Ctrl+F12 結束測試。自由模式沒有自動油門／煞車、定時結束或 R 重設；停車、下車、重新發動都由玩家決定。
 
-命令末尾加 `-- --mode=1 --capture --quit-after-review` 自動擷取並退出，模式可選 1–6，F9／模式 6 為定速跟車步態檢查。錄製建議引擎參數 `--fixed-fps 30 --resolution 1440x900`；輸出 `.godot/slender-runtime-captures/`，manifest 記錄逐幀時間、行為、模型與程式開始／結束雜湊。`--headless-check` 執行行為重播而不擷取畫面。獨立場的森林用碰撞樹幹驗證追蹤／遮擋，不代表正式世界生成。
+只有明確傳入 `-- --mode=1` 至 `--mode=8` 才啟用重播。重播中 F1 第一人稱抓取／處刑、F2 輪驅直路追車、F3 輪驅彎道追車、F4 停車拆殼、F5 跟車移動拆殼；F6 切換相機、F7 暫停、F8 擷取、F11 重設、F12 返回自由模式、Esc 結束。此場使用正式巨人、玩家及 RV，真正結算接觸、車板破壞與死亡；RV 重播只輸入油門／轉向，沒有直接搬動車輛。
+
+命令末尾加 `-- --mode=1 --capture --quit-after-review` 自動擷取並退出，模式可選 1–8。F9／模式 6 為定速跟車步態檢查，模式 7 為局部破口露出底盤，F10／模式 8 為停車拆屋頂後抓出駕駛；模式 8 加 `--pov` 使用駕駛視角，加 `--review-wait` 在開始前暫停，F7 開始。錄製建議引擎參數 `--fixed-fps 30 --resolution 1440x900`；輸出 `.godot/slender-runtime-captures/`，manifest 記錄逐幀時間、行為、模型與程式開始／結束雜湊。`--headless-check` 執行行為重播而不擷取畫面。獨立場的森林用碰撞樹幹驗證追蹤／遮擋，不代表正式世界生成。
 
 正式森林生成、獨立導航與保存的自動回歸由 `test_slender_speaker_world.gd` 涵蓋；範圍與限制見[PR 驗證](../validation/2026-10-09-slender-speaker-pr.md)。
 
@@ -431,7 +433,7 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 
 執行 `godot --path . --log-file .godot/weather-visual.log res://tests/weather_playground.tscn`。
 
-- `6` 依序切換陰天、小雨、大雨、小霧、大霧、晴天、大雨加大霧；預設立即切換方便比較。
+- `6` 依序切換陰天、小雨、大雨、小霧、中霧、大霧、晴天、大雨加大霧；預設立即切換方便比較。
 - `7` 雨勢、`8` 霧量、`9` 晴陰；晴天清空雨霧，增加雨霧會切回陰天。
 - `0` 切換自動天氣和時間推進；`F12` 一分鐘一天，`Home` 暫停／恢復時間；自然天氣使用平滑過渡。
 - `F1` 黎明／正午／黃昏／夜晚；`F2` 場址視角；`F6` RV／車內／設備；`Backspace` 破壞車頂；`R` 重置。

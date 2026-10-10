@@ -1,6 +1,8 @@
 # Slender Speaker runtime asset
 
-The production [enemy scene](../../../enemies/slender_speaker/slender_speaker.tscn) uses [slender_speaker_rigged.glb](slender_speaker_rigged.glb): 15 m tall, 35,682 triangles, 55 bones, six materials and six 2048 × 2048 PBR maps. The model faces +Z; the Godot visual wrapper rotates it by 180 degrees.
+The production [enemy scene](../../../enemies/slender_speaker/slender_speaker.tscn) uses [slender_speaker_rigged.glb](slender_speaker_rigged.glb): 15 m tall, 38,966 triangles, 55 bones, six materials and six 2048 × 2048 PBR maps. The model faces +Z; the Godot visual wrapper rotates it by 180 degrees.
+
+The 2026-10-10 foot revision adds connected ankles, arches, heels, five distinct toes per foot and dorsal toenails. Existing animation samples and inverse bind matrices remain byte-identical; only the reserved foot patch in the body atlas changes. [Foot-model validation and native previews](../../../docs/validation/2026-10-10-slender-speaker-feet.md).
 
 The GLB contains in-place idle, scan, walk, run, turn, smash, grab, lift, hold, crush and retract clips. The controller blends locomotion with moving attacks and follows actual vehicle contact. Hand-review clips remain embedded in the same model.
 

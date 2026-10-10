@@ -1,8 +1,50 @@
 # 開發文件索引
 
+- [2026-10-10 Slender Speaker 車內移動及右後角修正](validation/2026-10-10-slender-speaker-cabin-corner-fix.md)：修正拆頂轉向邊界晃動，分開移動測試的準備及動作期限，含原失敗重現與原生物理回歸。
+
+- [2026-10-10 Slender Speaker 正式世界霧天生成](validation/2026-10-10-slender-speaker-fog-spawn.md)：只在小霧以上生成、無霧區段不補刷，含保存及正式森林驗證。
+
+- [2026-10-10 Slender Speaker 抓取視角與兩秒停留](validation/2026-10-10-slender-speaker-pov.md)：第三人稱觀看完整玩家、雙手與音箱、小幅滑鼠環繞及完整兩秒 HOLD，含相關回歸與車外／駕駛原生處決重播。
+
+
+- [2026-10-10 Slender Speaker 丟失乘員後繼續拆頂](validation/2026-10-10-slender-speaker-lost-survivor-roof.md)：已知乘員搜尋逾時後改用未知乘員檢查，涵蓋剩餘屋頂實際接觸與八項回歸。
+- [2026-10-10 Slender Speaker 遊蕩與轉彎修正](validation/2026-10-10-slender-speaker-patrol-turning.md)：繞過 RV 車殼、跳過被占用巡邏點，分開轉向與速度漸變，含物理回歸與原生輪驅畫面。
+- [2026-10-10 Slender Speaker 腳部模型](validation/2026-10-10-slender-speaker-feet.md)：重做五趾、腳踝、足弓與趾甲，含 Godot 近照及走跑預覽。
+- [2026-10-10 Slender Speaker 中後艙完整遭遇修正](validation/2026-10-10-slender-speaker-hatch-and-rear.md)：修正開孔屋頂的不可達落點及後艙搜尋，驗證離座走動、拆頂、抓取至完整抬升。
+- [2026-10-10 Slender Speaker 完整屋頂接近修正](validation/2026-10-10-slender-speaker-roof-approach.md)：修正慢滑時反覆追逐幾公分站位，驗證首次拆頂與底盤保護；後續中後艙問題見上方紀錄。
+- [2026-10-10 Slender Speaker 同側跨車艙抓取與設備阻擋](validation/2026-10-10-slender-speaker-cross-cabin.md)：優先調整手部落點，移除抓取直接拆設備，含原生畫面與自動回歸。
+
 整理日期：2026-09-28。`docs/` 包含現行指南、計畫、驗收、研究與美術目標；只有 `docs/archive/` 是歷史封存區。驗收紀錄保留當時結果；本次檔案整理另有獨立紀錄。
 
 ## 從哪裡開始
+
+Slender Speaker 持續遭遇：[單一 owner、觀測與提交動作、搜尋期限及實際輪驅驗證](validation/2026-10-09-slender-speaker-encounter.md)。本輪結果與限制由該紀錄列出；下方各歷史驗收保留當時範圍。
+
+Slender Speaker 未拉手煞車：[拆頂車內發呆、慢滑站位與可見目標切換修正](validation/2026-10-09-slender-speaker-open-roof.md)。
+
+Slender Speaker 自由 playground：[設備擋手、後艙換位轉圈與車底接觸修正](validation/2026-10-09-slender-speaker-live-playground.md)；後續[角落轉向與抓取後完整抬升](validation/2026-10-09-slender-speaker-corner-lift.md)。
+
+Slender Speaker 抓取：[手掌直接拆除車板與設備、連續伸手抓人](validation/2026-10-09-slender-speaker-palm-demolition.md)。前次[手指擦碰與抬升修正](validation/2026-10-09-slender-speaker-grab-reliability.md)保留當時結果。
+
+Slender Speaker 車內移動：[固定攻擊區域、短暫遮擋與卡住恢復](validation/2026-10-09-slender-speaker-cabin-movement.md)。
+
+Slender Speaker 轉身／轉頭：[連續轉彎、頸部追視與音箱視線](validation/2026-10-09-slender-speaker-head-look.md)。
+
+Slender Speaker 停車步態：[取消持續側移、前進繞車與到位轉身](validation/2026-10-09-slender-speaker-forward-approach.md)。
+
+Slender Speaker 車內外鎖敵：[站立乘員、離座下車與繞車抓取修正](validation/2026-10-09-slender-speaker-target-switch.md)。
+
+Slender Speaker 自由測試：[正常駕駛／步行操作與停車鎖敵修正](validation/2026-10-09-slender-speaker-free-play.md)。
+
+Slender Speaker 停車攻擊：[拆屋頂、任一手接觸抓取、砸擊玩家與實機影片](validation/2026-10-09-slender-speaker-parked-attack.md)。
+
+Slender Speaker 抓取動畫：[抬升肩肘翻轉修正與半速近景](validation/2026-10-09-slender-speaker-lift-joints.md)；[車內外共用彎腰動作，忽略被抓駕駛的椅背](validation/2026-10-09-slender-speaker-shared-grab.md)；[上一版彎腰與鏡頭驗證](validation/2026-10-09-slender-speaker-bend-grab.md)保留當時結果。
+
+Slender Speaker 一檔／停車：[低速底盤命中、靜止選敵與煞停退步](validation/2026-10-09-slender-speaker-low-speed-parked.md)。
+
+Slender Speaker 處決動畫：[雙臂小幅內收與實機驗證](validation/2026-10-09-slender-speaker-crush-arms.md)。
+
+Slender Speaker 局部破口更新：[底盤實際接觸傷害與驗證](validation/2026-10-09-slender-speaker-chassis-smash.md)。
 
 Slender Speaker：[v10 森林巨人整合與 PR 驗證](validation/2026-10-09-slender-speaker-pr.md)，包含正式行為、模型、生成／保存、測試命令與限制。
 
@@ -93,6 +135,8 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
 
 ## 驗收紀錄
+
+- [2026-10-09 v10 CI 導航發布修正](validation/2026-10-09-ci-navigation.md) — 受限工作池重現、巨人導航發布與啟動取消、PowerShell runner 自測及本輪回歸。
 
 - [2026-10-07 CI 不穩定測試修正](validation/2026-10-07-ci-flakiness.md) — 戶外追逐的非同步準備隔離、油桶人倒數 fixture／現行預設，以及屍體測試原生退出追查。
 

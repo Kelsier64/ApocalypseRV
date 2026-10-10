@@ -377,7 +377,8 @@ func _retire_world(staging: SubViewport, candidate: Node) -> void:
 	if candidate != null:
 		_remove_gameplay_groups(candidate)
 		for region in candidate.find_children("*", "NavigationRegion3D", true, false):
-			var mesh: NavigationMesh = region.navigation_mesh
+			# Outdoor bakes are detached from the live region until publication.
+			var mesh: NavigationMesh = region.get_meta("pending_navigation_bake", region.navigation_mesh)
 			while mesh != null and NavigationServer3D.is_baking_navigation_mesh(mesh):
 				await get_tree().process_frame
 	if is_instance_valid(staging): staging.queue_free()

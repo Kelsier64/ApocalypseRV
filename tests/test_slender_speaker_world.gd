@@ -2,6 +2,10 @@ extends SceneTree
 const WAIT = preload("res://tests/support/test_wait.gd")
 const SAVE_PATH := "res://.godot/test-slender-world.save"
 var failures: Array[String] = []
+class PendingGenerator extends Node:
+	var building := true
+	var active_chunks: Array = []
+
 func _init() -> void: run.call_deferred()
 func check(ok: bool, detail: String) -> void:
 	if not ok:
@@ -12,6 +16,31 @@ func giants(world: Node) -> Array:
 func freeze_actor(actor: Node) -> void:
 	if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
 func run() -> void:
+	# Cancellation during loading must not leave an awaited SceneTree signal
+	# that later tries to resume a freed world (also used by checkpoint staging).
+	var cancelled: Node3D = load("res://world/test_world.gd").new()
+	cancelled.set_meta("checkpoint_staging", true)
+	var pending := PendingGenerator.new()
+	pending.name = "WorldGenerator"
+	cancelled.add_child(pending)
+	root.add_child(cancelled)
+	await process_frame
+	await process_frame
+	check(not cancelled.play_ready, "Pending world does not publish readiness")
+	root.remove_child(cancelled)
+	await process_frame
+	await physics_frame
+	check(not process_frame.is_connected(Callable(cancelled, "_poll_ready")), "Detached startup world stops readiness polling")
+	root.add_child(cancelled)
+	await process_frame
+	await process_frame
+	check(process_frame.is_connected(Callable(cancelled, "_poll_ready")), "Reentered startup world resumes readiness polling")
+	var cancelled_id := cancelled.get_instance_id()
+	cancelled.free()
+	await process_frame
+	await physics_frame
+	await process_frame
+	check(not is_instance_id_valid(cancelled_id), "Cancelled startup world releases its readiness observer")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.world_seed = 42
@@ -28,6 +57,9 @@ func run() -> void:
 		return
 	generator.set_process(false)
 	world.get_node("Player").set_physics_process(false)
+	var clock: WorldClock = world.get_node("WorldClock")
+	clock.weather_running = false
+	clock.weather.set_weather(Vector3(1, 0, 0), true)
 	WorldEntities.get_container(world).child_entered_tree.connect(freeze_actor)
 	check(generator.giant_navigation_map.is_valid(), "Giant has its own navigation map")
 	check(generator.giant_navigation_map != world.get_world_3d().navigation_map, "Giant map cannot change normal Raker clearance")
@@ -47,6 +79,9 @@ func run() -> void:
 	var spawned := false
 	var chosen_segment := -1
 	var chosen_band := -1
+	var clear_segment := -1
+	var clear_band := -1
+	var clear_anchor := Vector3.ZERO
 	for segment in range(1, 25):
 		var plan := SlenderSpeakerSpawns.plan(generator.field, segment)
 		if plan.candidates.is_empty(): continue
@@ -59,6 +94,15 @@ func run() -> void:
 			break
 		generator._spawn_giant_segments(anchor)
 		check(segment in generator.generated_giant_segments, "Once-ready candidate segment committed exactly once")
+		if clear_segment < 0:
+			clear_segment = segment
+			clear_band = band
+			clear_anchor = anchor
+			check(giants(world).is_empty(), "Clear weather consumes the ready encounter without spawning a giant")
+			clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT), true)
+			generator._spawn_giant_segments(anchor)
+			check(giants(world).is_empty(), "Fog starting later cannot defer the clear-weather skipped encounter")
+			continue
 		if not giants(world).is_empty():
 			spawned = true
 			chosen_segment = segment
@@ -88,15 +132,26 @@ func run() -> void:
 		giant._execution_player = world.get_node("Player")
 		check(not checkpoint.save_world(world, SAVE_PATH), "Checkpoint refuses active giant execution")
 		giant._execution_player = null
+		clock.weather.set_weather(Vector3(1, 0, 0), true)
+		generator._spawn_giant_segments(world.get_node("Player").global_position)
+		check(is_instance_valid(giant) and giants(world).size() == 1, "Clearing fog preserves an existing giant")
 		check(checkpoint.save_world(world, SAVE_PATH), "Living giant v5 checkpoint writes")
-		check(await checkpoint.load_world(world, SAVE_PATH), "Living giant checkpoint actually reloads")
+		var loaded: bool = await checkpoint.load_world(world, SAVE_PATH)
+		check(loaded, "Living giant checkpoint actually reloads")
+		if not loaded:
+			quit(1)
+			return
 		world = current_scene
 		generator = world.get_node("WorldGenerator")
+		clock = world.get_node("WorldClock")
+		clock.weather_running = false
 		generator.set_process(false)
 		world.get_node("Player").set_physics_process(false)
 		check(await WAIT.generator_idle(self, generator) and await WAIT.retired_candidates(self, checkpoint), "Restored v10 navigation and old-world retirement settle")
 		var restored := giants(world)
 		check(restored.size() == 1, "Checkpoint restores exactly one living giant")
+		check(clock.weather.sample().z < WorldWeather.FOG_LIGHT, "Living giant checkpoint restores under weather without fog")
+		check(clear_segment in generator.generated_giant_segments, "Checkpoint restores the clear-weather skipped segment ledger")
 		if restored.size() != 1:
 			world.free()
 			quit(1)
@@ -107,6 +162,7 @@ func run() -> void:
 		check(giant.giant_navigation_map == generator.giant_navigation_map and giant.nav_agent.get_navigation_map() == generator.giant_navigation_map, "Actual reload rebinds giant and navigation agent to restored dedicated map")
 		check(giant.phase == giant.Phase.PATROL and giant.target_player == null, "Reload starts fresh visual perception without saved target")
 		check(chosen_segment in generator.generated_giant_segments, "Actual reload keeps spent segment")
+		clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT), true)
 		WorldEntities.get_container(world).child_entered_tree.connect(freeze_actor)
 		await generator._spawn_band(chosen_band + 1)
 		check(await WAIT.generator_idle(self, generator), "Neighbour giant region publishes on same map")
@@ -114,6 +170,24 @@ func run() -> void:
 		var road_end: Vector3 = generator.field.road_frame(chosen_band * 150.0 + 155.0).origin
 		var path := NavigationServer3D.map_get_path(generator.giant_navigation_map, road_start, road_end, true)
 		check(path.size() >= 2 and path[-1].distance_to(road_end) < 2.0, "Giant navigation crosses streaming seam without an eroded gap")
+		var seam_z := -(chosen_band + 1) * 150.0
+		var seam_road: Vector3 = generator.field.road_frame(-seam_z).origin
+		var forest_seams := 0
+		for side in [-1.0, 1.0]:
+			for offset in [50.0, 60.0, 70.0, 80.0, 90.0]:
+				var forest_start := Vector3(seam_road.x + side * offset, 0, seam_z + 5.0)
+				var forest_end := Vector3(forest_start.x, 0, seam_z - 5.0)
+				forest_start.y = generator.field.height_at(forest_start.x, forest_start.z)
+				forest_end.y = generator.field.height_at(forest_end.x, forest_end.z)
+				if not SlenderSpeakerSpawns.forest_valid(generator.field, forest_start) or not SlenderSpeakerSpawns.forest_valid(generator.field, forest_end): continue
+				var nav_start := NavigationServer3D.map_get_closest_point(generator.giant_navigation_map, forest_start)
+				var nav_end := NavigationServer3D.map_get_closest_point(generator.giant_navigation_map, forest_end)
+				if nav_start.distance_to(forest_start) > 1.5 or nav_end.distance_to(forest_end) > 1.5: continue
+				forest_seams += 1
+				path = NavigationServer3D.map_get_path(generator.giant_navigation_map, nav_start, nav_end, true)
+				check(path.size() >= 2 and path[-1].distance_to(nav_end) < 1.0, "Giant path crosses a legal forest seam at offset %.0f" % (side * offset))
+		check(forest_seams >= 4, "Seam coverage includes multiple forest routes outside the road")
+		print("GIANT_FOREST_SEAMS checked=%d" % forest_seams)
 		var skipped_segment := -1
 		for segment in range(chosen_segment + 1, chosen_segment + 30):
 			var plan := SlenderSpeakerSpawns.plan(generator.field, segment)
@@ -130,6 +204,16 @@ func run() -> void:
 		generator._spawn_giant_segments(world.get_node("Player").global_position)
 		check(giants(world).is_empty(), "Cleanup cannot respawn the same segment")
 		check(skipped_segment > 0 and skipped_segment in generator.generated_giant_segments, "Active-giant skip remains spent after old giant removed")
+		var clear_entry: Dictionary = {}
+		for entry in generator.active_chunks:
+			if entry.index == clear_band: clear_entry = entry
+		if not clear_entry.is_empty():
+			generator.retire_band(clear_entry)
+			await process_frame
+		await generator._spawn_band(clear_band, true)
+		check(await WAIT.generator_idle(self, generator), "Returning clear-weather skipped band rebuilds navigation after checkpoint load")
+		generator._spawn_giant_segments(clear_anchor)
+		check(giants(world).is_empty() and clear_segment in generator.generated_giant_segments, "Fog revisit after checkpoint load cannot replenish a clear-weather skipped giant")
 		for segment in range(skipped_segment + 1, skipped_segment + 30):
 			var plan := SlenderSpeakerSpawns.plan(generator.field, segment)
 			if plan.candidates.is_empty(): continue

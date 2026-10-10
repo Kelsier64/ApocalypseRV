@@ -59,6 +59,25 @@ func settle() -> void:
 	await physics_frame
 	await physics_frame
 
+func observe_search_point(giant: SlenderSpeaker, survivor: Survivor, point: Vector3) -> void:
+	# Establish memory through the real speaker cone/ray before hiding this
+	# fixture survivor; SEARCH consumes the owner's observed contact point.
+	giant.reset_after_restore()
+	survivor.global_position = point
+	var direction := (survivor.execution_contact_position() - giant.global_position).slide(Vector3.UP).normalized()
+	giant.rotation.y = atan2(-direction.x, -direction.z)
+	giant._sample("idle_play", 0.0)
+	giant._refresh_sight()
+	check(giant._observation.get("player") == survivor, "Search fixture records the real visible survivor before occlusion")
+	giant._update_encounter(1.0 / 60.0)
+	survivor.global_position = Vector3(1000, 0, 1000)
+	giant.rotation.y = 0.0
+	giant._sample("idle_play", 0.0)
+	giant._refresh_sight()
+	giant._update_encounter(1.0 / 60.0)
+	giant._sense_remaining = 100.0
+	giant._set_phase(SlenderSpeaker.Phase.SEARCH)
+
 func gait_foot(giant: SlenderSpeaker, side: String) -> Vector3:
 	return (giant.global_transform.affine_inverse() * giant.visual.bone_world("foot." + side)).origin
 
@@ -70,7 +89,7 @@ func check_steady_gait(giant: SlenderSpeaker) -> void:
 	for hz in [30, 60, 120]:
 		var delta := 1.0 / float(hz)
 		var cycles: Array[float] = []
-		for speed in [3.5, 7.9, 8.0, 8.2, 60.0 / 3.6]:
+		for speed in [3.5, 7.9, 8.0, 8.2, giant.settings.chase_speed]:
 			giant._gait_phase = .36
 			giant._locomotion_clip = "walk"
 			giant._gait_blend = 0.0
@@ -112,7 +131,7 @@ func check_steady_gait(giant: SlenderSpeaker) -> void:
 				check(absf(cycles[index] - reference_cycles[index]) < .01, "Constant-speed stride cadence is consistent at 30/60/120 Hz")
 
 func check_chase_motion(giant: SlenderSpeaker) -> void:
-	check(absf(giant.settings.chase_speed * 3.6 - 60.0) < .0001, "Default chase maximum is 60 km/h")
+	check(absf(giant.settings.chase_speed * 3.6 - 45.0) < .0001, "Default chase maximum is 45 km/h")
 	check(is_equal_approx(giant.settings.acceleration, 2.5), "Default acceleration is 2.5 m/s²")
 	check(is_equal_approx(giant.settings.braking, 6.0), "Default braking is 6 m/s²")
 	var cap := giant.settings.chase_speed
@@ -124,9 +143,9 @@ func check_chase_motion(giant: SlenderSpeaker) -> void:
 			giant.position = parked
 			giant._move_swept(Vector3(0, 0, -32), delta)
 			var expected := minf(cap, 2.5 * float(tick + 1) * delta)
-			check(absf(giant.velocity.slide(Vector3.UP).length() - expected) < .001, "Straight acceleration and 60 km/h cap at %d Hz, tick %d" % [hz, tick])
-			if tick == hz * 6 - 1:
-				check(giant.velocity.slide(Vector3.UP).length() < cap - 1.0, "Chase still accelerating at six seconds at %d Hz" % hz)
+			check(absf(giant.velocity.slide(Vector3.UP).length() - expected) < .001, "Straight acceleration and 45 km/h cap at %d Hz, tick %d" % [hz, tick])
+			if tick == hz * 4 - 1:
+				check(giant.velocity.slide(Vector3.UP).length() < cap - 1.0, "Chase still accelerating at four seconds at %d Hz" % hz)
 		giant.position = parked
 		giant.velocity = Vector3(24, 5, -24)
 		giant._move_swept(Vector3(32, 20, -32), delta)
@@ -154,21 +173,27 @@ func check_chase_turns(giant: SlenderSpeaker) -> void:
 				# Let NavigationAgent refresh its real path on each simulated step.
 				await physics_frame
 				var previous_angle := giant.rotation.y
+				var yaw_limit := giant.settings.fast_turn_degrees if giant.velocity.slide(Vector3.UP).length() > 7.0 else giant.settings.near_turn_degrees
 				var desired := giant._navigate(parked + target_direction * 30.0, cap, delta)
-				check(absf(rad_to_deg(angle_difference(previous_angle, giant.rotation.y))) <= 45.0 * delta + .001, "Sustained chase turn retains yaw cap at %d Hz" % hz)
+				check(absf(rad_to_deg(angle_difference(previous_angle, giant.rotation.y))) <= yaw_limit * delta + .001, "Sustained chase turn retains speed-dependent yaw cap at %d Hz" % hz)
 				giant._move_swept(desired, delta)
-				check(giant.velocity.slide(Vector3.UP).length() <= cap + .001, "Turning chase stays below 60 km/h at %d Hz" % hz)
+				check(giant.velocity.slide(Vector3.UP).length() <= cap + .001, "Turning chase stays below 45 km/h at %d Hz" % hz)
+				check(absf(giant.velocity.dot(giant.global_basis.x)) < .02, "Open-ground turning movement stays aligned with the body at %d Hz" % hz)
 			var turn_speed := giant.velocity.slide(Vector3.UP).length()
 			print("Chase turn direction=", sign_value, " hz=", hz, " speed=", turn_speed)
 			final_speeds.append(turn_speed)
-			check(turn_speed > 5.0 and turn_speed < cap * .55, "Sustained %s turn slows actual body speed at %d Hz" % ["left" if sign_value > 0 else "right", hz])
+			check(turn_speed > cap * .3 and turn_speed < cap * .55, "Sustained %s turn slows actual body speed at %d Hz" % ["left" if sign_value > 0 else "right", hz])
 			giant.position = parked
 			var straight_direction := -giant.global_basis.z
-			await physics_frame
-			var desired := giant._navigate(parked + straight_direction * 30.0, cap, delta)
-			giant._move_swept(desired, delta)
+			# Fix the exit heading while this fixture pins the actor's position;
+			# a cached navigation waypoint would keep requesting another turn.
+			for tick in hz:
+				await physics_frame
+				var previous_speed := giant.velocity.slide(Vector3.UP).length()
+				giant._move_swept(straight_direction * cap, delta)
+				check(giant.velocity.slide(Vector3.UP).length() <= previous_speed + 2.5 * delta + .001, "Straight exit acceleration remains gradual at %d Hz" % hz)
 			var resumed_speed := giant.velocity.slide(Vector3.UP).length()
-			check(resumed_speed > turn_speed and resumed_speed <= turn_speed + 2.5 * delta + .001, "Straight exit resumes gradually at %d Hz" % hz)
+			check(resumed_speed > turn_speed and resumed_speed <= cap + .001, "Straight exit resumes within the speed cap at %d Hz" % hz)
 			for tick in hz * 7:
 				giant.position = parked
 				giant._move_swept(straight_direction * cap, delta)
@@ -203,14 +228,14 @@ func run() -> void:
 	world.add_child(tree)
 	await settle()
 	giant._refresh_sight()
-	check(not giant._visible_target, "Actual forest trunk blocks visual confirmation")
+	check(giant._observation.get("player") == null, "Actual forest trunk blocks visual confirmation")
 	# Arbitrarily loud sources cannot call a hearing detector or change sight.
 	giant._refresh_sight()
-	check(giant.target_player == null, "Occluded player remains unacquired independent of sound")
+	check(giant._observation.get("player") == null, "Occluded player remains unobserved independent of sound")
 	tree.queue_free()
 	await settle()
 	giant._refresh_sight()
-	check(giant.target_player == survivor, "Cleared sight reacquires real player")
+	check(giant._observation.get("player") == survivor, "Cleared sight observes real player")
 	giant.take_damage(100000.0)
 	giant.die()
 	check(not giant.is_dead and giant.current_health == giant.max_health, "First release is invincible")
@@ -232,9 +257,19 @@ func run() -> void:
 	var hit := giant.sweep_hand(Vector3(10, 2, 0), Vector3(10, 2, -6), .2)
 	check(hit.get("collider") == first, "Swept hand reports first panel, not panel behind it")
 	giant._strike_resolved = false
-	check(giant.resolve_smash_hit(hit.get("collider")), "Actual first panel is destroyed")
-	check(first.is_destroyed and not second.is_destroyed, "Exactly one car shell panel removed")
-	check(not giant.resolve_smash_hit(second) and not second.is_destroyed, "Duplicate smash callback cannot remove another panel")
+	check(giant.resolve_smash_hit(hit.get("collider")), "Actual first wall receives smash damage")
+	check(first.current_health == 60.0 and second.current_health == 120.0, "One swing deals 60 damage only to the first wall")
+	check(not giant.resolve_smash_hit(first) and first.current_health == 60.0, "Duplicate smash callback cannot damage the wall twice")
+	check(not giant.resolve_smash_hit(second) and second.current_health == 120.0, "Duplicate smash callback cannot damage another panel")
+	giant._strike_resolved = false
+	check(giant.resolve_smash_hit(first) and first.is_destroyed, "A second swing destroys a 120-health wall")
+	second.structure_kind = "roof"
+	giant._strike_resolved = false
+	check(giant.resolve_smash_hit(second) and second.current_health == 60.0 and not second.is_destroyed, "Roof panels also take 60 damage per swing")
+	giant._strike_resolved = false
+	check(giant.resolve_smash_hit(second) and second.is_destroyed, "A second swing destroys a 120-health roof")
+	second.structure_kind = ""
+	second.set_health(second.max_health)
 	giant._strike_resolved = false
 	check(not giant.resolve_smash_hit(floor_body), "Miss/environment cannot proxy damage to nearest panel")
 	giant.velocity = Vector3.ZERO
@@ -269,10 +304,20 @@ func run() -> void:
 	if giant.phase == SlenderSpeaker.Phase.LIFT:
 		giant.phase_elapsed = 1.4
 		giant._advance_execution()
-		giant.phase_elapsed = .6
-		giant._advance_execution()
-		giant.phase_elapsed = .4
-		giant._advance_execution()
+		check(giant.phase == SlenderSpeaker.Phase.HOLD, "Completed lift enters the real execution HOLD")
+		check(is_equal_approx(giant.settings.hold_seconds, 2.0), "Default execution HOLD lasts two seconds")
+		# Advance the production phase clock rather than assigning HOLD/CRUSH.
+		# The former 0.6-second delay must not crush a still-held survivor.
+		for tick in 119:
+			giant._physics_process(1.0 / 60.0)
+			check(giant.phase == SlenderSpeaker.Phase.HOLD and survivor.deaths == 0 and survivor.grab_control.captor == giant, "HOLD retains the living survivor before two seconds, tick %d" % tick)
+		check(not giant.can_save(), "Saving remains refused during the two-second HOLD")
+		giant._physics_process(1.0 / 60.0)
+		check(giant.phase == SlenderSpeaker.Phase.CRUSH and survivor.deaths == 0, "HOLD transitions to CRUSH at two seconds without premature death")
+		giant._physics_process(giant.settings.crush_seconds - .001)
+		check(giant.phase == SlenderSpeaker.Phase.CRUSH and survivor.deaths == 0, "Survivor remains alive until crush animation finishes")
+		giant._physics_process(.001)
+		check(giant.phase == SlenderSpeaker.Phase.RECOVER and not survivor.is_executing(), "Completed crush releases ownership and enters recovery")
 	check(survivor.deaths == 1 and giant._music_tail, "Crush commits death once and retains execution tail")
 	giant._on_execution_music_finished()
 	check(giant.patrol_music.playing and not giant._music_tail, "After execution tail patrol loop resumes")
@@ -374,37 +419,41 @@ func run() -> void:
 	check(absf(rad_to_deg(angle_difference(before_angle, giant.rotation.y))) <= 9.001, "Near-speed navigation turns at most90degrees/second")
 	for search_speed in [32.0, 0.0]:
 		giant.position = Vector3(-40, 0, 0)
-		giant.rotation.y = 0.0
+		observe_search_point(giant, survivor, giant.global_position + Vector3(-2, 0, 0))
 		giant.velocity = Vector3(0, 0, -search_speed)
-		giant.last_seen_position = giant.global_position + Vector3(-2, 0, 0)
-		giant._sense_remaining = 100.0
-		giant._visible_target = false
-		giant._set_phase(SlenderSpeaker.Phase.SEARCH)
 		giant._physics_process(.1)
 		var limit := 4.5 if search_speed > 7.0 else 9.0
 		check(absf(rad_to_deg(giant.rotation.y) - limit) < .001, "Search scan uses one total speed-dependent yaw budget at " + str(search_speed) + "m/s")
 	giant.position = Vector3(-40, 0, 0)
-	giant.rotation.y = 0.0
+	observe_search_point(giant, survivor, giant.global_position + Vector3(2, 4, 0))
 	giant.velocity = Vector3.ZERO
-	giant.last_seen_position = giant.global_position + Vector3(2, 4, 0)
-	giant._set_phase(SlenderSpeaker.Phase.SEARCH)
 	giant._physics_process(.1)
 	check(absf(rad_to_deg(giant.rotation.y) - 9.0) < .001, "Search scans beneath elevated last-seen torso using planar arrival distance")
 	NavigationServer3D.free_rid(map)
 	giant.set_giant_navigation_map(RID())
 	giant.position = Vector3(-40, 0, 0)
-	giant.target_vehicle = rv
-	giant.target_player = null
-	giant._begin_smash()
+	giant.reset_after_restore()
+	giant.rotation.y = -PI * .5
+	giant._sample("idle_play", 0.0)
+	giant._refresh_sight()
+	giant._update_encounter(1.0 / 60.0)
+	check(giant._observation.get("vehicle") == rv, "Moving smash fixture observes the real remaining vehicle panel")
+	giant._begin_smash("vehicle_assault")
 	giant.phase_elapsed = 1.29
 	giant._advance_smash()
 	var prelock := giant._strike_point
 	rv.position.x += 5.0
+	await settle()
+	giant._refresh_sight()
+	giant._update_encounter(1.0 / 60.0)
 	giant.phase_elapsed = 1.3
 	giant._advance_smash()
 	var locked := giant._strike_point
 	check(giant._strike_locked and locked.distance_to(prelock) > 4.9, "Smash tracks actual moving vehicle until lock at 1.3 seconds")
 	rv.position.x += 5.0
+	await settle()
+	giant._refresh_sight()
+	giant._update_encounter(1.0 / 60.0)
 	giant.phase_elapsed = 1.799
 	giant._advance_smash()
 	check(giant._strike_point.is_equal_approx(locked) and not second.is_destroyed, "Last .5 second keeps fixed landing point with no early panel damage")

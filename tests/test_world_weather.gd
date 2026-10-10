@@ -8,9 +8,16 @@ func check(ok: bool, detail: String) -> void:
 
 func _run() -> void:
 	check(WorldWeather.choose(0.049, 0.99, 0.99) == Vector3(1, 0, 0), "Clear excludes rain and fog")
-	check(WorldWeather.choose(0.05, 0.5, 0.6) == Vector3(0, 1, 1), "Light thresholds inclusive")
+	check(WorldWeather.choose(0.05, 0.5, 0.2) == Vector3(0, 1, 0.5), "Light rain and new light fog thresholds inclusive")
 	check(WorldWeather.choose(0.9, 0.8, 0.85) == Vector3(0, 2, 2), "Heavy rain and fog coexist")
-	check(WorldWeather.choose(0.9, 0.49, 0.59) == Vector3.ZERO, "Overcast without rain or added fog")
+	check(WorldWeather.choose(0.9, 0.49, 0.199) == Vector3.ZERO, "Overcast without rain or added fog")
+	for boundary in [[0.199, 0.0], [0.2, 0.5], [0.599, 0.5], [0.6, 1.0], [0.849, 1.0], [0.85, 2.0]]:
+		check(WorldWeather.choose(0.05, 0.0, boundary[0]).z == boundary[1], "Fog threshold at " + str(boundary[0]))
+	var fog_counts := {0.0: 0, 0.5: 0, 1.0: 0, 2.0: 0}
+	for index in range(100):
+		var selected := WorldWeather.choose(0.5, 0.0, (index + 0.5) / 100.0).z
+		fog_counts[selected] += 1
+	check(fog_counts == {0.0: 20, 0.5: 40, 1.0: 25, 2.0: 15}, "Non-clear fog distribution is exactly 20/40/25/15 percent")
 	var a := WorldWeather.new()
 	var b := WorldWeather.new()
 	a.initialize(42)
@@ -38,6 +45,40 @@ func _run() -> void:
 	bad = saved.duplicate()
 	bad.remaining = NAN
 	check(not WorldWeather.valid_state(bad), "Reject NaN time")
+	for tier in [0.0, 0.5, 1.0, 2.0]:
+		var state := saved.duplicate()
+		state.target = Vector3(0, 1, tier)
+		check(WorldWeather.valid_state(state), "Accept discrete fog target " + str(tier))
+	for invalid_fog in [-0.1, 0.25, 0.75, 1.5, 2.1, NAN, INF]:
+		var state := saved.duplicate()
+		state.target = Vector3(0, 0, invalid_fog)
+		check(not WorldWeather.valid_state(state), "Reject non-tier fog target " + str(invalid_fog))
+	for fractional_axis in [Vector3(0.5, 0, 0.5), Vector3(0, 0.5, 0.5)]:
+		var state := saved.duplicate()
+		state.target = fractional_axis
+		check(not WorldWeather.valid_state(state), "New half-tier fog does not permit fractional clear or rain targets")
+	for source_fog in [0.0, 0.25, 0.5, 0.75, 1.5, 2.0]:
+		var state := saved.duplicate()
+		state.source = Vector3(0.25, 0.5, source_fog)
+		state.target = Vector3(0, 0, 0.5)
+		check(WorldWeather.valid_state(state), "Interpolated fog source remains valid " + str(source_fog))
+	for invalid_source in [-0.1, 2.1, NAN, INF]:
+		var state := saved.duplicate()
+		state.source = Vector3(0, 0, invalid_source)
+		check(not WorldWeather.valid_state(state), "Reject invalid fog source " + str(invalid_source))
+	var light_transition := WorldWeather.new()
+	light_transition.initialize(42)
+	light_transition.set_weather(Vector3(0, 0, 0.5))
+	light_transition.advance(WorldWeather.TRANSITION / 2.0)
+	check(light_transition.sample().is_equal_approx(Vector3(0, 0, 0.25)), "New light fog transition midpoint remains fractional")
+	var interrupted_light := light_transition.capture()
+	light_transition.set_weather(Vector3(0, 0, 1))
+	check(light_transition.sample().is_equal_approx(Vector3(0, 0, 0.25)), "Interrupting a light fog transition preserves current appearance")
+	check(WorldWeather.valid_state(light_transition.capture()), "Interrupted fractional fog source can be saved")
+	var restored_light := WorldWeather.new()
+	check(restored_light.restore(interrupted_light), "New half-tier target restores without schema version")
+	restored_light.advance(WorldWeather.TRANSITION / 2.0)
+	check(restored_light.sample() == Vector3(0, 0, 0.5), "Restored light fog transition completes at half-tier")
 	# Real production clock, environment, rain pool and physical roof fixture.
 	var world := Node3D.new()
 	var bus_count := AudioServer.bus_count
@@ -65,6 +106,37 @@ func _run() -> void:
 	clock.weather.set_weather(Vector3(1, 0, 0), true)
 	clock.apply_time()
 	check(material.get_shader_parameter("density") == 0.0, "Clear removes existing forest fog")
+	clock.set_time(1, 12.0)
+	clock.weather.set_weather(Vector3.ZERO, true)
+	clock.apply_time()
+	check(is_equal_approx(material.get_shader_parameter("density"), 0.14), "Overcast retains baseline local fog")
+	clock.weather.set_weather(Vector3(0, 0, 0.5))
+	clock.weather.advance(WorldWeather.TRANSITION / 2.0)
+	clock.apply_time()
+	check(is_equal_approx(material.get_shader_parameter("density"), 0.07), "Local volumetric fog fades halfway at light transition midpoint")
+	check(is_equal_approx(holder.environment.volumetric_fog_density, 0.00075), "Global volumetric fog shares the light transition fade")
+	var streamed_material := material.duplicate() as ShaderMaterial
+	streamed_material.set_shader_parameter("density", 1.0)
+	clock.register_fog(streamed_material)
+	check(is_equal_approx(streamed_material.get_shader_parameter("density"), material.get_shader_parameter("density")), "New chunk material immediately matches current fractional fog density")
+	clock.apply_time()
+	check(is_equal_approx(streamed_material.get_shader_parameter("density"), material.get_shader_parameter("density")), "Applying time preserves newly registered fog density")
+	clock.unregister_fog(streamed_material)
+	for tier in [[0.5, 220.0, "小霧"], [1.0, 110.0, "中霧"], [2.0, 38.0, "大霧"]]:
+		clock.weather.set_weather(Vector3(0, 0, tier[0]), true)
+		clock.apply_time()
+		check(is_equal_approx(holder.environment.fog_depth_begin, 8.0) and is_equal_approx(holder.environment.fog_depth_end, tier[1]), "Fog tier has correct depth range: " + tier[2])
+		check(clock.weather.description() == "陰天・" + tier[2] and clock.weather_label.text == clock.weather.description(), "Fog tier description reaches HUD: " + tier[2])
+		check(holder.environment.volumetric_fog_density == 0.0 and material.get_shader_parameter("density") == 0.0, "Light and denser weather fog fully remove global and local volumetric fog: " + tier[2])
+	for legacy_tier in [1.0, 2.0]:
+		# Existing checkpoint weather has no schema version. Numeric 1 retains
+		# its old 110 m appearance, now named medium; numeric 2 stays heavy.
+		var legacy := {"source": Vector3(0, 0, legacy_tier), "target": Vector3(0, 0, legacy_tier), "transition_elapsed": WorldWeather.TRANSITION, "remaining": 10000.0, "rng_state": saved.rng_state}
+		check(clock.weather.restore(legacy), "Accept legacy unversioned fog state " + str(legacy_tier))
+		clock.apply_time()
+		check(clock.weather.sample().z == legacy_tier and is_equal_approx(holder.environment.fog_depth_end, 110.0 if legacy_tier == 1 else 38.0), "Legacy numeric fog keeps its original depth appearance")
+		var original_color := Color("a4aca9").lerp(Color("535c5b"), legacy_tier / 2.0)
+		check(holder.environment.fog_light_color.is_equal_approx(original_color), "Legacy numeric fog keeps its original mist color")
 	clock.weather.set_weather(Vector3(0, 2, 2), true)
 	clock.apply_time()
 	check(holder.environment.fog_depth_end <= 40.0, "Heavy fog fully hides geometry beyond 40 metres")

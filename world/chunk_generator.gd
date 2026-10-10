@@ -22,6 +22,15 @@ var road_spawns: Dictionary = {}
 var _road_monsters_spawned := false
 var _navigation_dirty := false
 var _navigation_rebuild_timer: Timer
+var _navigation_publications: Array[Dictionary] = []
+
+func _enter_tree() -> void:
+	if not _navigation_publications.is_empty() and not get_tree().process_frame.is_connected(_poll_navigation_publications):
+		get_tree().process_frame.connect(_poll_navigation_publications)
+
+func _exit_tree() -> void:
+	if get_tree().process_frame.is_connected(_poll_navigation_publications):
+		get_tree().process_frame.disconnect(_poll_navigation_publications)
 
 func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool = false) -> void:
 	_slice_start = Time.get_ticks_usec()
@@ -359,7 +368,12 @@ func _build_navigation(gradual: bool = false) -> void:
 	if navigation == null:
 		navigation = NavigationRegion3D.new()
 		navigation.name = "ChunkNavigationRegion"
-		navigation.navigation_mesh = nav
+		# Exact grid-aligned seam edges merge through the map's edge hash.
+		# Margin matching otherwise compares every forest-hole edge pair.
+		navigation.use_edge_connections = false
+		# Keep the mutable background bake detached from the live region. Its
+		# changed signal must not race the immutable publication in the callback.
+		navigation.navigation_mesh = nav.duplicate()
 		add_child(navigation)
 	var source := NavigationMeshSourceGeometryData3D.new()
 	# The asphalt is only 7cm above the sculpted ground. Voxelizing both
@@ -427,14 +441,21 @@ func _build_navigation(gradual: bool = false) -> void:
 		giant_nav.border_size = 2.2
 		# Match the extra border on both seam sides. Keeping the humanoid's
 		# +/-1m AABB with this larger border cuts a gap between giant regions.
-		giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 152.2), Vector3(nav_half * 2, 250, 154.4))
+		var north := snappedf(-band * 150.0, giant_nav.cell_size)
+		var south := snappedf(-(band + 1) * 150.0, giant_nav.cell_size)
+		# 150m does not divide by 0.275m. Anchor both clipped seam boundaries
+		# to one global voxel lattice so neighbours retain identical edges.
+		giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, south - giant_nav.border_size), Vector3(nav_half * 2, 250, north - south + 2.0 * giant_nav.border_size))
 		if giant_navigation == null:
 			giant_navigation = NavigationRegion3D.new()
 			giant_navigation.name = "GiantNavigationRegion"
-			giant_navigation.navigation_mesh = giant_nav
+			giant_navigation.use_edge_connections = false
+			giant_navigation.navigation_mesh = giant_nav.duplicate()
 			add_child(giant_navigation)
 		giant_navigation.set_navigation_map(get_parent().giant_navigation_map)
+		giant_navigation.set_meta("pending_navigation_bake", giant_nav)
 		NavigationServer3D.bake_from_source_geometry_data_async(giant_nav, source, _giant_navigation_baked.bind(giant_nav))
+	navigation.set_meta("pending_navigation_bake", nav)
 	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, _navigation_baked.bind(nav))
 
 func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> void:
@@ -478,73 +499,54 @@ func _append_box_faces(source: NavigationMeshSourceGeometryData3D, size: Vector3
 	source.add_faces(faces, pose)
 
 func _navigation_baked(nav: NavigationMesh) -> void:
-	if not is_instance_valid(navigation): return
-	await get_tree().process_frame
-	var rid := navigation.get_region_rid()
-	var before := NavigationServer3D.region_get_iteration_id(rid)
-	# Publish an immutable result after entering the tree. Mutating a resource
-	# already attached during async bake can leave the server with empty data.
-	navigation.navigation_mesh = nav.duplicate()
-	# Baking and server synchronization finish separately. In fast headless
-	# runs, a fixed number of physics frames can still query an empty region.
-	while is_inside_tree() and (NavigationServer3D.region_get_iteration_id(rid) <= before or NavigationServer3D.region_get_bounds(rid).size == Vector3.ZERO):
-		await get_tree().physics_frame
-	if not is_inside_tree(): return
-	# Region data can publish before the complete map's async synchronization.
-	# Shared seam points can belong to either neighbour; require proximity,
-	# not exclusive ownership of that point by this region.
-	if nav.get_polygon_count() > 0:
-		var probe := Vector3.ZERO
-		var polygon := nav.get_polygon(0)
-		var vertices := nav.get_vertices()
-		for index in polygon: probe += vertices[index]
-		probe /= polygon.size()
-		var checked_map := RID()
-		var checked_iteration := -1
-		while is_inside_tree():
-			# Checkpoint staging can transfer this node to another World3D.
-			# Never retain that old map RID across an await.
-			var map := navigation.get_navigation_map()
-			var iteration := NavigationServer3D.map_get_iteration_id(map) if map.is_valid() else 0
-			# Closest-point queries scan the large outdoor map. A pending region
-			# cannot appear until synchronization publishes another map iteration;
-			# retrying the same search every physics tick only stalls gameplay.
-			if iteration > 0 and (map != checked_map or iteration != checked_iteration):
-				checked_map = map
-				checked_iteration = iteration
-				if NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
-			await get_tree().physics_frame
-		if not is_inside_tree(): return
-	_regular_navigation_ready = true
-	_finish_navigation()
+	_queue_navigation_publication(navigation, nav, false)
 
 func _giant_navigation_baked(nav: NavigationMesh) -> void:
-	if not is_instance_valid(giant_navigation) or not is_inside_tree(): return
-	var rid := giant_navigation.get_region_rid()
-	var before := NavigationServer3D.region_get_iteration_id(rid)
-	giant_navigation.navigation_mesh = nav.duplicate()
-	while is_inside_tree() and NavigationServer3D.region_get_iteration_id(rid) <= before:
-		await get_tree().physics_frame
-	if not is_inside_tree(): return
-	var map := giant_navigation.get_navigation_map()
-	var before_map := NavigationServer3D.map_get_iteration_id(map)
-	# A region publishes before map edge connectivity. Require a subsequent
-	# map synchronization before either spawning or permitting a checkpoint.
-	await get_tree().physics_frame
-	if not is_inside_tree(): return
+	_queue_navigation_publication(giant_navigation, nav, true)
+
+func _queue_navigation_publication(region: NavigationRegion3D, nav: NavigationMesh, giant: bool) -> void:
+	if not is_instance_valid(region): return
+	region.remove_meta("pending_navigation_bake")
+	var probe := Vector3.ZERO
 	if nav.get_polygon_count() > 0:
-		var vertices := nav.get_vertices()
 		var polygon := nav.get_polygon(0)
-		var probe := Vector3.ZERO
+		var vertices := nav.get_vertices()
 		for index in polygon: probe += vertices[index]
 		probe /= polygon.size()
-		while is_inside_tree():
-			map = giant_navigation.get_navigation_map()
-			if NavigationServer3D.map_get_iteration_id(map) >= before_map and NavigationServer3D.map_get_closest_point_owner(map, probe).is_valid() and NavigationServer3D.map_get_closest_point(map, probe).distance_to(probe) <= 2.0: break
-			await get_tree().physics_frame
-		if not is_inside_tree(): return
-	giant_navigation_ready = true
-	_finish_navigation()
+	_navigation_publications.append({"region": region, "mesh": nav, "giant": giant, "before": -1, "probe": probe, "map": RID(), "iteration": -1})
+	if is_inside_tree() and not get_tree().process_frame.is_connected(_poll_navigation_publications):
+		get_tree().process_frame.connect(_poll_navigation_publications)
+
+func _poll_navigation_publications() -> void:
+	for pending: Dictionary in _navigation_publications.duplicate():
+		var region: NavigationRegion3D = pending.region
+		var rid := region.get_region_rid()
+		var region_iteration := NavigationServer3D.region_get_iteration_id(rid)
+		if pending.before < 0:
+			# Godot can lose a mesh edit made while the initial empty region's
+			# async upload is still building. Finish that upload before editing it.
+			if region_iteration == 0: continue
+			pending.before = region_iteration
+			region.navigation_mesh = pending.mesh.duplicate()
+			continue
+		if region_iteration <= pending.before: continue
+		if pending.mesh.get_polygon_count() > 0:
+			if NavigationServer3D.region_get_bounds(rid).size == Vector3.ZERO: continue
+			# Checkpoint transfer can replace the normal World3D map. Check the
+			# current RID, and scan each published map iteration only once.
+			var map := region.get_navigation_map()
+			var iteration := NavigationServer3D.map_get_iteration_id(map) if map.is_valid() else 0
+			if iteration == 0 or (map == pending.map and iteration == pending.iteration): continue
+			pending.map = map
+			pending.iteration = iteration
+			if not NavigationServer3D.map_get_closest_point_owner(map, pending.probe).is_valid(): continue
+			if NavigationServer3D.map_get_closest_point(map, pending.probe).distance_to(pending.probe) > 2.0: continue
+		if pending.giant: giant_navigation_ready = true
+		else: _regular_navigation_ready = true
+		_navigation_publications.erase(pending)
+		_finish_navigation()
+	if _navigation_publications.is_empty():
+		get_tree().process_frame.disconnect(_poll_navigation_publications)
 
 func _finish_navigation() -> void:
 	if not _regular_navigation_ready or not giant_navigation_ready: return

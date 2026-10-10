@@ -450,6 +450,7 @@ func complete_world_transition(at: Transform3D) -> void:
 	if is_instance_valid(held_item_node) and held_item_node is Flashlight:
 		(held_item_node as Flashlight).set_held_active(false)
 	if is_grabbed(): grab_control.end("world_transition")
+	grab_control.clear_execution_observer()
 	var restart_death: bool = is_instance_valid(ragdoll_control) and ragdoll_control.active
 	if restart_death or ragdoll_control.following_detached_head: ragdoll_control.stop()
 	_exit_climb_to_normal()
@@ -1248,7 +1249,7 @@ func _begin_death_physics() -> void:
 	if not is_player_dead: return
 	_sync_body_collision_to_locomotion()
 	visible = true
-	camera.make_current()
+	if not grab_control.has_execution_death_view(): camera.make_current()
 	ragdoll_control.start(death_velocity)
 
 func _respawn():
@@ -1261,6 +1262,7 @@ func _respawn():
 		global_position = standing
 	elif not _standing_volume_clear(global_position):
 		return
+	grab_control.clear_execution_observer()
 	# Recovery checked the original upright volume before restoring any limb.
 	body_state.reset()
 	crawl_transition_remaining = 0.0

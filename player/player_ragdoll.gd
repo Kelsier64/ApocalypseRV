@@ -103,6 +103,15 @@ func _physics_process(delta: float) -> void:
 		remaining = 0.25 # Retry only if the standing volume is still obstructed.
 		player._respawn.call_deferred()
 
+func third_person_anchor_position() -> Vector3:
+	# PhysicalBoneSimulator applies a skeleton modifier; the animation pose
+	# queried by execution_contact_position can still remain at capture height.
+	# Read the falling physical torso and undo its collider's local offset.
+	var torso := bodies.get("spine_02") as PhysicalBone3D
+	if active and is_instance_valid(torso):
+		return (torso.global_transform * torso.body_offset.affine_inverse()).origin
+	return player.execution_contact_position()
+
 func _update_camera() -> void:
 	# Translation follows the physical head; its tumbling never rotates the view.
 	var origin: Vector3 = bodies.get("head", bodies["spine_02"]).global_position

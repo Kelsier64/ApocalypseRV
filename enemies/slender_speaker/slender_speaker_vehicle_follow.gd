@@ -24,7 +24,7 @@ func reset() -> void:
 	_panel_shapes.clear()
 	_travel_direction = Vector3.ZERO
 
-func constrain_velocity(actor: SlenderSpeaker, vehicle: Node3D, proposed_horizontal: Vector3, delta: float) -> Vector3:
+func constrain_velocity(actor: SlenderSpeaker, vehicle: Node3D, proposed_horizontal: Vector3, delta: float, body_margin := BODY_MARGIN) -> Vector3:
 	# Navigation can steer differently from the plan, and an RV can abruptly
 	# stop against a tree. Check the actual post-acceleration velocity against
 	# the current physical edge before the CharacterBody performs its sweep.
@@ -40,6 +40,14 @@ func constrain_velocity(actor: SlenderSpeaker, vehicle: Node3D, proposed_horizon
 	var frame := Transform3D(Basis(right, Vector3.UP, right.cross(Vector3.UP)), vehicle.global_position)
 	var footprint := _footprint(frame, true)
 	if footprint.size.x <= 0.0 or footprint.size.z <= 0.0: return proposed_horizontal
+	return _constrain_footprint(actor, frame, footprint, proposed_horizontal, delta, body_margin, vehicle)
+
+func constrain_observed_velocity(actor: SlenderSpeaker, frame: Transform3D, footprint: AABB, proposed_horizontal: Vector3, delta: float, body_margin: float) -> Vector3:
+	# Occluded parked approaches own an observed geometry snapshot, not a live
+	# target transform. Preserve the same reserve even if sight clears the RV.
+	return _constrain_footprint(actor, frame, footprint, proposed_horizontal, delta, body_margin)
+
+func _constrain_footprint(actor: SlenderSpeaker, frame: Transform3D, footprint: AABB, proposed_horizontal: Vector3, delta: float, body_margin: float, vehicle: Node3D = null) -> Vector3:
 	var local_actor := frame.affine_inverse() * actor.global_position
 	local_actor.y = 0.0
 	var near := _nearest_footprint(local_actor, footprint)
@@ -47,16 +55,16 @@ func constrain_velocity(actor: SlenderSpeaker, vehicle: Node3D, proposed_horizon
 	var inward := (edge - actor.global_position).slide(Vector3.UP).normalized()
 	if float(near.clearance) < 0.0: inward = -inward
 	if inward.length_squared() < 0.5: return proposed_horizontal
-	var edge_velocity := ClimbMath.point_velocity(vehicle, edge).slide(Vector3.UP)
+	var edge_velocity := ClimbMath.point_velocity(vehicle, edge).slide(Vector3.UP) if is_instance_valid(vehicle) else Vector3.ZERO
 	var closing := (proposed_horizontal - edge_velocity).dot(inward)
 	if closing <= 0.0: return proposed_horizontal
-	var available := maxf(0.0, float(near.clearance) - BODY_MARGIN - 0.08 - closing * maxf(delta, 0.0))
+	var available := maxf(0.0, float(near.clearance) - maxf(1.1, body_margin) - 0.08 - closing * maxf(delta, 0.0))
 	var safe_closing := sqrt(2.0 * actor.settings.braking * available)
 	if closing <= safe_closing: return proposed_horizontal
 	return proposed_horizontal - inward * (closing - safe_closing)
 
 func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float) -> Dictionary:
-	var stopped := {"navigation_point": actor.global_position, "speed": 0.0, "surface_point": actor.global_position, "gap": INF, "can_attack": false}
+	var stopped := {"status": "invalid", "navigation_point": actor.global_position, "speed": 0.0, "surface_point": actor.global_position, "gap": INF, "can_attack": false}
 	if not is_instance_valid(vehicle) or not vehicle.is_inside_tree() or not WorldEntities.same_world(actor, vehicle):
 		reset()
 		return stopped
@@ -87,10 +95,19 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float) -> Dictionary:
 	var bumper := frame * (center + outward * extent)
 	var slot := bumper - _travel_direction * ROOT_CLEARANCE
 	slot.y = actor.global_position.y
-	var slot_velocity := ClimbMath.point_velocity(vehicle, slot).slide(Vector3.UP)
 	var local_actor := frame.affine_inverse() * actor.global_position
-	var local_slot := frame.affine_inverse() * slot
 	local_actor.y = 0.0
+	if vehicle_velocity.length() <= .25:
+		# A parked RV has no travel wake to follow. Approach the visible side
+		# directly instead of circling to a rear slot and losing it from view.
+		var parked_edge := _nearest_footprint(local_actor, footprint)
+		var parked_outward: Vector3 = (local_actor - parked_edge.point).normalized()
+		if float(parked_edge.clearance) <= 0.0: parked_outward = -parked_outward
+		if parked_outward.length_squared() < .5: parked_outward = frame.basis.inverse() * -actor.global_basis.z
+		slot = frame * (parked_edge.point + parked_outward * ROOT_CLEARANCE)
+		slot.y = actor.global_position.y
+	var slot_velocity := ClimbMath.point_velocity(vehicle, slot).slide(Vector3.UP)
+	var local_slot := frame.affine_inverse() * slot
 	local_slot.y = 0.0
 	var route := _route_point(local_actor, local_slot, footprint)
 	var routing: bool = route.distance_squared_to(local_slot) > 0.01
@@ -127,14 +144,19 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float) -> Dictionary:
 	var gap := actor.global_position.slide(Vector3.UP).distance_to(surface_point.slide(Vector3.UP))
 	var surface_velocity := ClimbMath.point_velocity(vehicle, surface_point).slide(Vector3.UP)
 	var relative_speed := (actor.velocity.slide(Vector3.UP) - surface_velocity).length()
+	# A low deck needs a shorter horizontal reach than a tall shell. Do not
+	# start an unreachable stationary swing at the old universal 5.5m limit.
+	var attack_gap := ROOT_CLEARANCE + .3 if surface.collider is Chassis else 5.5
 	var map_ready := actor.giant_navigation_map.is_valid() and actor.nav_agent != null
 	if map_ready: map_ready = NavigationServer3D.map_get_iteration_id(actor.giant_navigation_map) > 0
+	var ready: bool = map_ready and surface.valid and not routing and clearance >= BODY_MARGIN + .08 and gap <= attack_gap and relative_speed <= 2.5
 	return {
+		"status": "ready" if ready else ("approach" if map_ready else "waiting"),
 		"navigation_point": navigation_point,
 		"speed": desired_speed if map_ready else 0.0,
 		"surface_point": surface_point,
 		"gap": gap,
-		"can_attack": map_ready and surface.valid and not routing and clearance >= BODY_MARGIN + .08 and gap <= 5.5 and relative_speed <= 2.5,
+		"can_attack": map_ready and surface.valid and not routing and clearance >= BODY_MARGIN + .08 and gap <= attack_gap and relative_speed <= 2.5,
 		"standoff_point": slot,
 		"clearance": clearance,
 		"relative_speed": relative_speed,
@@ -232,6 +254,7 @@ func _nearest_panel_surface(actor: SlenderSpeaker, vehicle: Node3D) -> Dictionar
 	var nearest := actor._vehicle_surface(vehicle)
 	var best := INF
 	var valid := false
+	var collider: CollisionObject3D
 	for node in _panel_shapes:
 		if not is_instance_valid(node) or node.disabled or node.shape == null: continue
 		var panel := node.get_parent()
@@ -246,4 +269,18 @@ func _nearest_panel_surface(actor: SlenderSpeaker, vehicle: Node3D) -> Dictionar
 			best = distance
 			nearest = point
 			valid = true
-	return {"point": nearest, "valid": valid}
+			collider = panel
+	# A local opening exposes the chassis even while other panels survive.
+	# The actual hand sweep still stops at the first shell or obstacle it meets.
+	if vehicle is Chassis:
+		for node in _chassis_shapes:
+			if not is_instance_valid(node) or node.disabled or node.shape == null: continue
+			var box := _shape_box(node.shape)
+			var point := node.to_global(node.to_local(reference).clamp(box.position, box.end))
+			var distance := reference.distance_squared_to(point)
+			if distance < best:
+				best = distance
+				nearest = point
+				valid = true
+				collider = vehicle
+	return {"point": nearest, "valid": valid, "collider": collider}

@@ -2,6 +2,8 @@ extends SceneTree
 ## Runtime import contract for the Slender Speaker rig.
 
 const RIGGED_PATH := "res://assets/models/slender_speaker/slender_speaker_rigged.glb"
+const ARM_IK := preload("res://enemies/slender_speaker/slender_speaker_arm_ik.gd")
+const ARM_POSE_METRICS := preload("res://tests/support/slender_speaker_arm_pose_metrics.gd")
 const PLAYER_CHEST_HEIGHT := 1.3596
 const PLAYER_HOLD_HEIGHT := 12.48
 const CLIP_CONTRACT := {
@@ -239,7 +241,10 @@ func _run() -> void:
 			if pair[0] == "grab":
 				_print_hand_transition_metrics(animation_player, skeleton, animations, bone_indices, pair[0], pair[1])
 		_validate_hand_orientation_continuity(animation_player, skeleton, animations, bone_indices,
-			["lift", "crush", "retract"])
+			["grab", "lift", "crush", "retract"])
+		_validate_grab_waist_and_lift(model, animation_player, skeleton, animations, bone_indices)
+		_validate_grasp_joint_alignment(animation_player, skeleton, animations)
+		_validate_palm_follow(animation_player, skeleton, animations, bone_indices)
 		_print_smash_orientation_metrics(animation_player, skeleton, animations, bone_indices)
 		_validate_locomotion_planting(model, animation_player, skeleton, animations, bone_indices,
 			"walk", 2.4, 4.0, 0.60)
@@ -299,11 +304,12 @@ func _run() -> void:
 			_sample_pose(animation_player, skeleton, animations.crush, crush_animation.length)
 			var closed_wrists := _world_bone_origin(skeleton, bone_indices["hand.R"]).distance_to(_world_bone_origin(skeleton, bone_indices["hand.L"]))
 			var closed_elbows := _world_bone_origin(skeleton, bone_indices["forearm.R"]).distance_to(_world_bone_origin(skeleton, bone_indices["forearm.L"]))
-			check(open_wrists - closed_wrists > 0.08 and open_wrists - closed_wrists < 0.18,
+			check(open_wrists - closed_wrists >= 0.16 and open_wrists - closed_wrists <= 0.24,
 				"Crush adds modest arm compression beyond finger flexion")
 			check(open_elbows - closed_elbows > 0.02,
 				"Both elbows close inward with the crushing hands")
 			print("SLENDER_CRUSH_COMPRESSION " + JSON.stringify({"wrist_closure_m": open_wrists - closed_wrists, "elbow_closure_m": open_elbows - closed_elbows}))
+			_validate_crush_arm_motion(animation_player, skeleton, animations.crush, bone_indices)
 			var left_hand_bone: int = bone_indices.get("hand.L", -1)
 			var grip_position := _world_bone_origin(skeleton, bone_indices["socket_grip_R"])
 			if left_hand_bone >= 0:
@@ -566,15 +572,18 @@ func _check_left_hand_anatomy(model: Node3D, skeleton: Skeleton3D, bone_indices:
 		"radial_up_dot": radial_up, "thumb_up_dot": thumb_up, "wrist_roll_degrees": roll_degrees}))
 
 func _left_wrist_roll_degrees(skeleton: Skeleton3D, bone_indices: Dictionary) -> float:
-	var forearm_index: int = bone_indices["forearm.L"]
-	var hand_index: int = bone_indices["hand.L"]
+	return _wrist_roll_degrees(skeleton, bone_indices, "L")
+
+func _wrist_roll_degrees(skeleton: Skeleton3D, bone_indices: Dictionary, side: String) -> float:
+	var forearm_index: int = bone_indices["forearm." + side]
+	var hand_index: int = bone_indices["hand." + side]
 	var forearm_rest := skeleton.get_bone_global_rest(forearm_index)
 	var hand_rest := skeleton.get_bone_global_rest(hand_index)
 	var forearm_pose := skeleton.get_bone_global_pose(forearm_index)
 	var hand_pose := skeleton.get_bone_global_pose(hand_index)
-	var index_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_index_01.L"]).origin
-	var middle_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_middle_01.L"]).origin
-	var little_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_little_01.L"]).origin
+	var index_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_index_01." + side]).origin
+	var middle_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_middle_01." + side]).origin
+	var little_mcp_rest := skeleton.get_bone_global_rest(bone_indices["finger_little_01." + side]).origin
 	var wrist_rest := hand_rest.origin
 	var rest_hand_axis := (middle_mcp_rest - wrist_rest).normalized()
 	var rest_radial := (index_mcp_rest - little_mcp_rest).slide(rest_hand_axis).normalized()
@@ -585,14 +594,162 @@ func _left_wrist_roll_degrees(skeleton: Skeleton3D, bone_indices: Dictionary) ->
 	var forearm_radial_local := forearm_rest.basis.inverse() * (rest_transport * rest_radial)
 	var posed_forearm_radial := (forearm_pose.basis * forearm_radial_local).normalized()
 	var posed_forearm_axis := (hand_pose.origin - forearm_pose.origin).normalized()
-	var posed_middle := skeleton.get_bone_global_pose(bone_indices["finger_middle_01.L"]).origin
+	var posed_middle := skeleton.get_bone_global_pose(bone_indices["finger_middle_01." + side]).origin
 	var posed_hand_axis := (posed_middle - hand_pose.origin).normalized()
 	var wrist_bend := Basis(Quaternion(posed_forearm_axis, posed_hand_axis))
 	var transported_radial := (wrist_bend * posed_forearm_radial).slide(posed_hand_axis).normalized()
-	var posed_index := skeleton.get_bone_global_pose(bone_indices["finger_index_01.L"]).origin
-	var posed_little := skeleton.get_bone_global_pose(bone_indices["finger_little_01.L"]).origin
+	var posed_index := skeleton.get_bone_global_pose(bone_indices["finger_index_01." + side]).origin
+	var posed_little := skeleton.get_bone_global_pose(bone_indices["finger_little_01." + side]).origin
 	var measured_radial := (posed_index - posed_little).slide(posed_hand_axis).normalized()
 	return rad_to_deg(acos(clampf(transported_radial.dot(measured_radial), -1.0, 1.0)))
+
+func _arm_frame_roll_degrees(skeleton: Skeleton3D, bone_indices: Dictionary, side: String) -> float:
+	var upper_rest := skeleton.get_bone_global_rest(bone_indices["upper_arm." + side])
+	var lower_rest := skeleton.get_bone_global_rest(bone_indices["forearm." + side])
+	var hand_rest := skeleton.get_bone_global_rest(bone_indices["hand." + side])
+	var rest_hand_axis := (skeleton.get_bone_global_rest(bone_indices["finger_middle_01." + side]).origin - hand_rest.origin).normalized()
+	var rest_radial := (skeleton.get_bone_global_rest(bone_indices["finger_index_01." + side]).origin
+		- skeleton.get_bone_global_rest(bone_indices["finger_little_01." + side]).origin).slide(rest_hand_axis).normalized()
+	var rest_lower_axis := (hand_rest.origin - lower_rest.origin).normalized()
+	var rest_upper_axis := (lower_rest.origin - upper_rest.origin).normalized()
+	var lower_reference := Basis(Quaternion(rest_hand_axis, rest_lower_axis)) * rest_radial
+	var upper_reference := Basis(Quaternion(rest_lower_axis, rest_upper_axis)) * lower_reference
+	var upper := skeleton.get_bone_global_pose(bone_indices["upper_arm." + side])
+	var lower := skeleton.get_bone_global_pose(bone_indices["forearm." + side])
+	var hand := skeleton.get_bone_global_pose(bone_indices["hand." + side])
+	var upper_axis := (lower.origin - upper.origin).normalized()
+	var lower_axis := (hand.origin - lower.origin).normalized()
+	var upper_radial := (upper.basis * (upper_rest.basis.inverse() * upper_reference)).slide(upper_axis).normalized()
+	var lower_radial := (lower.basis * (lower_rest.basis.inverse() * lower_reference)).slide(lower_axis).normalized()
+	var transported := (Basis(Quaternion(upper_axis, lower_axis)) * upper_radial).slide(lower_axis).normalized()
+	return rad_to_deg(acos(clampf(transported.dot(lower_radial), -1.0, 1.0)))
+
+func _validate_grasp_joint_alignment(player: AnimationPlayer, skeleton: Skeleton3D,
+		animations: Dictionary) -> void:
+	for clip_name in ["grab", "lift", "hold", "crush", "retract"]:
+		if not animations.has(clip_name): continue
+		var animation: Animation = player.get_animation(animations[clip_name])
+		var samples := maxi(1, ceili(animation.length * 60.0))
+		var metrics := ARM_POSE_METRICS.new_metrics()
+		for tick in samples + 1:
+			_sample_pose(player, skeleton, animations[clip_name], animation.length * float(tick) / samples)
+			ARM_POSE_METRICS.observe(metrics, skeleton)
+		check(metrics.upper_roll_degrees <= 110.0,
+			clip_name + " avoids a shoulder half turn relative to the clavicle throughout the clip")
+		check(metrics.elbow_plane_degrees <= 35.0,
+			clip_name + " bends both elbows within their authored hinge planes throughout the clip")
+		check(metrics.wrist_roll_degrees <= 30.0,
+			clip_name + " keeps palm and forearm radial frames within 30 degrees throughout the clip")
+		print("SLENDER_GRASP_JOINT_ALIGNMENT ", JSON.stringify({"clip": clip_name, "sample_rate_hz": 60, "maxima": metrics}))
+
+func _validate_palm_follow(player: AnimationPlayer, skeleton: Skeleton3D,
+		animations: Dictionary, bone_indices: Dictionary) -> void:
+	if not animations.has("grab"): return
+	var grab: Animation = player.get_animation(animations.grab)
+	for side in ["L", "R"]:
+		_sample_pose(player, skeleton, animations.grab, grab.length)
+		var hand_index: int = bone_indices["hand." + side]
+		var hand_world := skeleton.global_transform * skeleton.get_bone_global_pose(hand_index)
+		hand_world.basis = Basis(Vector3.UP, PI * .5) * hand_world.basis
+		var hand_pose := skeleton.global_transform.affine_inverse() * hand_world
+		var parent_pose := skeleton.get_bone_global_pose(skeleton.get_bone_parent(hand_index))
+		var hand_local := parent_pose.affine_inverse() * hand_pose
+		skeleton.set_bone_pose_position(hand_index, hand_local.origin)
+		skeleton.set_bone_pose_rotation(hand_index, hand_local.basis.get_rotation_quaternion())
+		skeleton.force_update_all_bone_transforms()
+		var roll_before := _wrist_roll_degrees(skeleton, bone_indices, side)
+		check(roll_before > 45.0, side + " seated palm-follow fixture exercises a substantial wrist twist")
+		var snapshot: Dictionary = {}
+		for bone_name in bone_indices:
+			if bone_name == "hand." + side or (String(bone_name).begins_with("finger_") and String(bone_name).ends_with("." + side)):
+				snapshot[bone_name] = skeleton.global_transform * skeleton.get_bone_global_pose(bone_indices[bone_name])
+		var shoulder := _world_bone_origin(skeleton, bone_indices["upper_arm." + side])
+		var elbow := _world_bone_origin(skeleton, bone_indices["forearm." + side])
+		var wrist := _world_bone_origin(skeleton, hand_index)
+		var segment_lengths := Vector2(shoulder.distance_to(elbow), elbow.distance_to(wrist))
+		ARM_IK.follow_palm(skeleton, side)
+		var roll_after := _wrist_roll_degrees(skeleton, bone_indices, side)
+		var arm_roll := _arm_frame_roll_degrees(skeleton, bone_indices, side)
+		check(roll_after < 1.0 and arm_roll < 1.0,
+			side + " palm follow carries the radial frame through wrist, forearm, and upper arm within one degree")
+		var maximum_origin_change := 0.0
+		var maximum_basis_change := 0.0
+		for bone_name in snapshot:
+			var before: Transform3D = snapshot[bone_name]
+			var after := skeleton.global_transform * skeleton.get_bone_global_pose(bone_indices[bone_name])
+			maximum_origin_change = maxf(maximum_origin_change, before.origin.distance_to(after.origin))
+			for axis in 3: maximum_basis_change = maxf(maximum_basis_change, before.basis[axis].distance_to(after.basis[axis]))
+		check(snapshot.size() >= 16 and maximum_origin_change <= .00002 and maximum_basis_change <= .00002,
+			side + " palm follow preserves the hand and every finger world position and basis")
+		var after_shoulder := _world_bone_origin(skeleton, bone_indices["upper_arm." + side])
+		var after_elbow := _world_bone_origin(skeleton, bone_indices["forearm." + side])
+		var after_wrist := _world_bone_origin(skeleton, hand_index)
+		var after_lengths := Vector2(after_shoulder.distance_to(after_elbow), after_elbow.distance_to(after_wrist))
+		check(shoulder.distance_to(after_shoulder) <= .00002 and elbow.distance_to(after_elbow) <= .00002
+			and wrist.distance_to(after_wrist) <= .00002 and segment_lengths.distance_to(after_lengths) <= .00002,
+			side + " palm follow rolls around the existing arm joints without changing segment lengths")
+		for bone_name in ["upper_arm." + side, "forearm." + side, "hand." + side]:
+			var pose := skeleton.get_bone_global_pose(bone_indices[bone_name])
+			var scale := pose.basis.get_scale()
+			check(_transform_is_finite(pose) and pose.basis.determinant() > 0.0 and scale.x > 0.0 and scale.y > 0.0 and scale.z > 0.0,
+				side + " palm follow keeps finite positive arm scales without reflecting the anatomy")
+		print("SLENDER_PALM_FOLLOW_METRICS " + JSON.stringify({"side": side, "hand_yaw_degrees": 90,
+			"wrist_roll_before_degrees": roll_before, "wrist_roll_after_degrees": roll_after,
+			"upper_forearm_roll_degrees": arm_roll, "preserved_hand_and_finger_bones": snapshot.size(),
+			"maximum_origin_change_m": maximum_origin_change, "maximum_basis_column_change": maximum_basis_change,
+			"maximum_segment_length_change_m": segment_lengths.distance_to(after_lengths)}))
+
+func _validate_crush_arm_motion(player: AnimationPlayer, skeleton: Skeleton3D,
+		animation_name: String, bone_indices: Dictionary) -> void:
+	var animation := player.get_animation(animation_name)
+	var samples := maxi(1, ceili(animation.length * 60.0))
+	var first_positions: Dictionary = {}
+	var previous_positions: Dictionary = {}
+	var previous_rotations: Dictionary = {}
+	var closures: Dictionary = {}
+	var maximum_outward_step := 0.0
+	var maximum_position_step := 0.0
+	var maximum_rotation_step := 0.0
+	var minimum_wrist_gap := INF
+	for sample_index in samples + 1:
+		_sample_pose(player, skeleton, animation_name, animation.length * float(sample_index) / samples)
+		for side in ["R", "L"]:
+			var inward_sign := 1.0 if side == "R" else -1.0
+			for part in ["upper_arm", "forearm", "hand"]:
+				var bone_name: String = part + "." + side
+				var pose := skeleton.get_bone_global_pose(bone_indices[bone_name])
+				var position := pose.origin
+				var rotation := pose.basis.get_rotation_quaternion().normalized()
+				if sample_index == 0:
+					first_positions[bone_name] = position
+				else:
+					maximum_rotation_step = maxf(maximum_rotation_step,
+						rad_to_deg(previous_rotations[bone_name].angle_to(rotation)))
+					if part != "upper_arm":
+						var movement: Vector3 = position - previous_positions[bone_name]
+						maximum_outward_step = maxf(maximum_outward_step, -movement.x * inward_sign)
+						maximum_position_step = maxf(maximum_position_step, movement.length())
+				previous_positions[bone_name] = position
+				previous_rotations[bone_name] = rotation
+				closures[bone_name] = (position.x - first_positions[bone_name].x) * inward_sign
+		minimum_wrist_gap = minf(minimum_wrist_gap,
+			previous_positions["hand.L"].x - previous_positions["hand.R"].x)
+	check(maximum_outward_step <= 0.001,
+		"Both crush wrists and elbows contract monotonically instead of recoiling before impact")
+	for side in ["R", "L"]:
+		check(closures["hand." + side] >= 0.08 and closures["hand." + side] <= 0.12,
+			"Crush moves the " + side + " wrist inward by a modest visible amount")
+		check(closures["forearm." + side] > 0.02,
+			"Crush brings the " + side + " elbow inward with the palm")
+	check(absf(closures["hand.R"] - closures["hand.L"]) < 0.01,
+		"Crush uses balanced bilateral wrist pressure")
+	check(minimum_wrist_gap > 0.5, "Crush hands remain on opposite sides of the held torso")
+	check(maximum_position_step < 0.06 and maximum_rotation_step < 10.0,
+		"Crush arm compression stays smooth without an elbow or shoulder flip")
+	print("SLENDER_CRUSH_ARM_MOTION " + JSON.stringify({"sample_rate_hz": 60,
+		"inward_closure_m": closures, "maximum_outward_step_m": maximum_outward_step,
+		"maximum_position_step_m": maximum_position_step, "maximum_rotation_step_degrees": maximum_rotation_step,
+		"minimum_wrist_gap_m": minimum_wrist_gap}))
 
 func _validate_hand_orientation_continuity(player: AnimationPlayer, skeleton: Skeleton3D,
 		animations: Dictionary, bone_indices: Dictionary, clip_names: Array[String]) -> void:
@@ -604,12 +761,15 @@ func _validate_hand_orientation_continuity(player: AnimationPlayer, skeleton: Sk
 		var sample_count := maxi(1, ceili(animation.length * 60.0))
 		var max_step := 0.0
 		var finite := true
-		for side_bone in ["forearm.L", "hand.L"]:
+		var bone_steps: Dictionary = {}
+		for side_bone in ["forearm.L", "hand.L", "forearm.R", "hand.R"]:
 			var bone_index: int = bone_indices.get(side_bone, -1)
 			if bone_index < 0:
 				continue
 			var previous_rotation: Quaternion
 			var has_previous := false
+			var bone_max_step := 0.0
+			var bone_max_step_time := 0.0
 			for sample_index in sample_count + 1:
 				var time := animation.length * float(sample_index) / float(sample_count)
 				_sample_pose(player, skeleton, animations[clip_name], time)
@@ -627,13 +787,18 @@ func _validate_hand_orientation_continuity(player: AnimationPlayer, skeleton: Sk
 						finite = false
 					else:
 						max_step = maxf(max_step, step)
+						if step > bone_max_step:
+							bone_max_step = step
+							bone_max_step_time = time
 				previous_rotation = rotation
 				has_previous = true
-		check(finite, "Left hand and forearm transforms stay finite across " + clip_name)
+			bone_steps[side_bone] = {"maximum_step_degrees": bone_max_step,
+				"maximum_step_time_s": bone_max_step_time}
+		check(finite, "Both hand and forearm transforms stay finite across " + clip_name)
 		check(max_step < MAX_STEP_DEGREES,
-			"Left hand and forearm avoid abrupt orientation jumps across " + clip_name)
+			"Both hand and forearm avoid abrupt orientation jumps across " + clip_name)
 		print("SLENDER_HAND_CONTINUITY_METRICS " + JSON.stringify({"clip": clip_name,
-			"sample_rate_hz": 60, "max_step_degrees": max_step}))
+			"sample_rate_hz": 60, "max_step_degrees": max_step, "bones": bone_steps}))
 
 func _print_smash_orientation_metrics(player: AnimationPlayer, skeleton: Skeleton3D,
 		animations: Dictionary, bone_indices: Dictionary) -> void:
@@ -864,6 +1029,130 @@ func _sample_bone_origin(player: AnimationPlayer, skeleton: Skeleton3D, animatio
 		bone_index: int, time: float) -> Vector3:
 	_sample_pose(player, skeleton, animation_name, time)
 	return _world_bone_origin(skeleton, bone_index)
+
+func _grab_body_angles(model: Node3D, skeleton: Skeleton3D, bone_indices: Dictionary) -> Dictionary:
+	var up := model.global_basis.y.normalized()
+	var forward := model.global_basis.z.normalized()
+	var torso := (_world_bone_origin(skeleton, bone_indices["neck"])
+		- _world_bone_origin(skeleton, bone_indices["chest"])).normalized()
+	var result := {"torso_forward_degrees": rad_to_deg(atan2(torso.dot(forward), torso.dot(up)))}
+	for side in ["L", "R"]:
+		var hip := _world_bone_origin(skeleton, bone_indices["thigh." + side])
+		var knee := _world_bone_origin(skeleton, bone_indices["shin." + side])
+		var ankle := _world_bone_origin(skeleton, bone_indices["foot." + side])
+		result["knee_" + side] = rad_to_deg((knee - hip).angle_to(ankle - knee))
+		result["hip_" + side] = rad_to_deg(torso.angle_to((hip - knee).normalized()))
+	return result
+
+func _validate_grab_waist_and_lift(model: Node3D, player: AnimationPlayer, skeleton: Skeleton3D,
+		animations: Dictionary, bone_indices: Dictionary) -> void:
+	if not animations.has("grab") or not animations.has("lift") or not animations.has("idle_play"):
+		return
+	var grab: Animation = player.get_animation(animations.grab)
+	var lift: Animation = player.get_animation(animations.lift)
+	_sample_pose(player, skeleton, animations.idle_play, 0.0)
+	var idle_pelvis := skeleton.get_bone_pose_rotation(bone_indices["pelvis"])
+	var idle_spine := skeleton.get_bone_pose_rotation(bone_indices["spine"])
+	var idle_wrists := {"L": _world_bone_origin(skeleton, bone_indices["hand.L"]),
+		"R": _world_bone_origin(skeleton, bone_indices["hand.R"])}
+	_sample_pose(player, skeleton, animations.grab, grab.length)
+	var bent := _grab_body_angles(model, skeleton, bone_indices)
+	var pelvis_bend := rad_to_deg(idle_pelvis.angle_to(skeleton.get_bone_pose_rotation(bone_indices["pelvis"])))
+	var spine_bend := rad_to_deg(idle_spine.angle_to(skeleton.get_bone_pose_rotation(bone_indices["spine"])))
+	check(bent.torso_forward_degrees >= 45.0 and bent.torso_forward_degrees <= 90.0,
+		"Ground grab bends the torso forward at the waist without inverting it")
+	check(pelvis_bend >= 35.0 and spine_bend >= 10.0,
+		"Ground grab uses both a visible hip hinge and a supporting spine bend")
+	for side in ["L", "R"]:
+		check(bent["knee_" + side] >= 5.0 and bent["knee_" + side] <= 45.0,
+			"Ground grab keeps the " + side + " knee bend modest")
+		check(bent["hip_" + side] >= 35.0 and bent["hip_" + side] > bent["knee_" + side],
+			"Ground grab bends more at the " + side + " hip than the knee")
+		var wrist := _world_bone_origin(skeleton, bone_indices["hand." + side])
+		var elbow := _world_bone_origin(skeleton, bone_indices["forearm." + side])
+		check((idle_wrists[side] - wrist).dot(model.global_basis.y.normalized()) > 1.0
+			and (elbow - wrist).dot(model.global_basis.y.normalized()) > 0.5,
+			"Ground grab reaches down with the " + side + " wrist below its elbow")
+	var planted_feet: Dictionary = {}
+	var maximum_foot_drift := 0.0
+	var maximum_foot_rotation := 0.0
+	var maximum_position_step := 0.0
+	var maximum_rotation_step := 0.0
+	var maximum_socket_downstep := 0.0
+	var maximum_straightening_backstep := 0.0
+	var previous_positions: Dictionary = {}
+	var previous_rotations: Dictionary = {}
+	var previous_socket_height := 0.0
+	var previous_torso_lean := 0.0
+	var sampled_angles: Array[Dictionary] = []
+	var observed_bones := ["pelvis", "spine", "chest", "neck", "forearm.L", "forearm.R", "hand.L", "hand.R", "socket_grip_R"]
+	for clip_name in ["grab", "lift"]:
+		var animation: Animation = player.get_animation(animations[clip_name])
+		var sample_count := maxi(1, ceili(animation.length * 60.0))
+		for sample_index in sample_count + 1:
+			var fraction := float(sample_index) / sample_count
+			_sample_pose(player, skeleton, animations[clip_name], animation.length * fraction)
+			for side in ["L", "R"]:
+				var foot := skeleton.global_transform * skeleton.get_bone_global_pose(bone_indices["foot." + side])
+				if not planted_feet.has(side):
+					planted_feet[side] = foot
+				var planted: Transform3D = planted_feet[side]
+				maximum_foot_drift = maxf(maximum_foot_drift, planted.origin.distance_to(foot.origin))
+				maximum_foot_rotation = maxf(maximum_foot_rotation, rad_to_deg(
+					planted.basis.get_rotation_quaternion().angle_to(foot.basis.get_rotation_quaternion())))
+			for bone_name in observed_bones:
+				var pose := skeleton.global_transform * skeleton.get_bone_global_pose(bone_indices[bone_name])
+				var rotation := pose.basis.get_rotation_quaternion().normalized()
+				if previous_positions.has(bone_name):
+					maximum_position_step = maxf(maximum_position_step, pose.origin.distance_to(previous_positions[bone_name]))
+					maximum_rotation_step = maxf(maximum_rotation_step,
+						rad_to_deg(previous_rotations[bone_name].angle_to(rotation)))
+				previous_positions[bone_name] = pose.origin
+				previous_rotations[bone_name] = rotation
+			var angles := _grab_body_angles(model, skeleton, bone_indices)
+			var socket_height: float = (previous_positions["socket_grip_R"] - model.global_position).dot(
+				model.global_basis.y.normalized())
+			if clip_name == "lift" and sample_index > 0:
+				maximum_socket_downstep = maxf(maximum_socket_downstep, previous_socket_height - socket_height)
+				maximum_straightening_backstep = maxf(maximum_straightening_backstep,
+					angles.torso_forward_degrees - previous_torso_lean)
+			previous_socket_height = socket_height
+			previous_torso_lean = angles.torso_forward_degrees
+			if sample_index in [0, sample_count / 2, sample_count]:
+				angles["clip"] = clip_name
+				angles["fraction"] = fraction
+				angles["socket_height_m"] = socket_height
+				sampled_angles.append(angles)
+				_check_mirrored_hand_flex(skeleton, bone_indices, "%s@%.2f" % [clip_name, fraction])
+	check(maximum_foot_drift <= 0.04 and maximum_foot_rotation <= 3.0,
+		"Both feet stay planted and level throughout the waist bend and lift")
+	check(maximum_position_step <= 0.40 and maximum_rotation_step <= 10.0,
+		"Grab and lift avoid abrupt torso, wrist, or grip motion at 60 Hz")
+	check(maximum_socket_downstep <= 0.015,
+		"Lift raises the held chest continuously without dropping it between frames")
+	check(maximum_straightening_backstep <= 1.0 and absf(previous_torso_lean) <= 15.0,
+		"Lift gradually straightens the torso to the raised hold pose")
+	var maximum_join_velocity_jump := 0.0
+	var join_velocity_jumps: Dictionary = {}
+	const VELOCITY_INTERVAL := 0.03
+	for bone_name in observed_bones:
+		var index: int = bone_indices[bone_name]
+		var before := _sample_bone_origin(player, skeleton, animations.grab, index, grab.length - VELOCITY_INTERVAL)
+		var contact := _sample_bone_origin(player, skeleton, animations.grab, index, grab.length)
+		var after := _sample_bone_origin(player, skeleton, animations.lift, index, VELOCITY_INTERVAL)
+		var jump := ((contact - before) / VELOCITY_INTERVAL).distance_to((after - contact) / VELOCITY_INTERVAL)
+		join_velocity_jumps[bone_name] = jump
+		maximum_join_velocity_jump = maxf(maximum_join_velocity_jump, jump)
+	check(maximum_join_velocity_jump <= 1.0,
+		"Waist bend and lift join with continuous torso and hand velocity")
+	print("SLENDER_WAIST_LIFT_METRICS " + JSON.stringify({"sample_rate_hz": 60,
+		"contact_angles_degrees": bent, "pelvis_bend_degrees": pelvis_bend, "spine_bend_degrees": spine_bend,
+		"maximum_foot_drift_m": maximum_foot_drift, "maximum_foot_rotation_degrees": maximum_foot_rotation,
+		"maximum_position_step_m": maximum_position_step, "maximum_rotation_step_degrees": maximum_rotation_step,
+		"maximum_socket_downstep_m": maximum_socket_downstep,
+		"maximum_straightening_backstep_degrees": maximum_straightening_backstep,
+		"maximum_join_velocity_jump_mps": maximum_join_velocity_jump,
+		"join_velocity_jumps_mps": join_velocity_jumps, "samples": sampled_angles}))
 
 func _print_grab_approach_metrics(model: Node3D, player: AnimationPlayer, skeleton: Skeleton3D,
 		animations: Dictionary, bone_indices: Dictionary) -> void:

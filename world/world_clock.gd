@@ -166,12 +166,13 @@ func apply_time() -> void:
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
-	# Overcast keeps its long view; even light mist must erase distant silhouettes.
-	var light_mist := minf(mist * 2.0, 1.0)
+	# The new light tier takes over at strength 0.5; legacy strength 1 is medium.
+	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
+	var medium_mist := clampf((conditions.z - WorldWeather.FOG_LIGHT) / (WorldWeather.FOG_MEDIUM - WorldWeather.FOG_LIGHT), 0.0, 1.0)
 	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
 	environment.fog_depth_begin = lerpf(lerpf(160.0 if volumetric else 18.0, 240.0, clear), 8.0, light_mist)
 	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
-	environment.fog_depth_end = lerpf(lerpf(far_distance, 110.0, light_mist), 38.0, heavy_mist)
+	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
 	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
 	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
@@ -201,7 +202,7 @@ func apply_time() -> void:
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := weather.sample()
-	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z, 1.0)))
+	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)))
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)

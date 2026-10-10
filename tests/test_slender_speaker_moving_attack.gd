@@ -9,6 +9,8 @@ var map: RID
 class Vehicle extends RigidBody3D:
 	func add_item(_item): pass
 	func deduct_materials(_cost): pass
+	func road_speed() -> float:
+		return linear_velocity.slide(Vector3.UP).length()
 	func vehicle_impact_point_velocity(point: Vector3) -> Vector3:
 		return linear_velocity + angular_velocity.cross(point - global_position)
 
@@ -58,12 +60,13 @@ func local_bone(name: String) -> Transform3D:
 func prepare(rv: Vehicle, speed: float) -> void:
 	giant.position = rv.position + Vector3(0, 0, 6.5)
 	giant.rotation = Vector3.ZERO
+	giant.reset_after_restore()
 	giant.velocity = Vector3(0, 0, -speed)
-	giant.target_player = null
-	giant.target_vehicle = rv
 	giant._follow_plan.clear()
-	giant._sense_remaining = 100.0
-	giant._visible_target = true
+	giant._refresh_sight()
+	giant._update_encounter(0.0)
+	giant._sense_remaining = 0.0
+	check(giant.target_vehicle == rv and giant._vehicle_is_observed(rv), "Frozen moving fixture is acquired through actual sight")
 	giant._set_phase(SlenderSpeaker.Phase.CHASE)
 	giant._sample("idle_play", 0.0)
 
@@ -78,6 +81,7 @@ func check_follow() -> void:
 		step_vehicle(rv, 1.0 / 60.0)
 		await physics_frame
 		# Test follow control in isolation so shell destruction cannot remove its target.
+		giant._refresh_sight()
 		var desired: Vector3 = giant._follow_vehicle(1.0 / 60.0)
 		giant._move_swept(desired, 1.0 / 60.0)
 		var gap := giant.position.z - rv.position.z - 2.5
@@ -85,7 +89,7 @@ func check_follow() -> void:
 		maximum_gap = maxf(maximum_gap, gap)
 		for collision in giant.get_slide_collision_count():
 			check(RVConnection.resolve(giant.get_slide_collision(collision).get_collider()) != rv, "Matched-speed follow never rams physical RV shell")
-		check(giant.velocity.slide(Vector3.UP).length() <= 60.0 / 3.6 + .001, "Following stays capped at 60 km/h")
+		check(giant.velocity.slide(Vector3.UP).length() <= 45.0 / 3.6 + .001, "Following stays capped at 45 km/h")
 		if tick > 60:
 			check((giant.velocity - rv.linear_velocity).slide(Vector3.UP).length() < .5, "Close follow matches 8 m/s RV with low relative velocity")
 	check(minimum_gap > 3.7 and maximum_gap < 4.3, "Six-second matched-speed chase retains four metres of nominal RV root clearance")
@@ -99,6 +103,7 @@ func check_follow() -> void:
 	# braking near the shell; retain collision checks throughout that retreat.
 	for tick in 480:
 		await physics_frame
+		giant._refresh_sight()
 		var desired: Vector3 = giant._follow_vehicle(1.0 / 60.0)
 		giant._move_swept(desired, 1.0 / 60.0)
 		var clearance := giant.position.z - rv.position.z - 2.5
@@ -128,6 +133,7 @@ func check_comfortable_approach() -> void:
 		step_vehicle(rv, 1.0 / 60.0)
 		await physics_frame
 		var gap_before := giant.position.z - rv.position.z - 2.5
+		giant._refresh_sight()
 		var desired := giant._follow_vehicle(1.0 / 60.0)
 		giant._move_swept(desired, 1.0 / 60.0)
 		var speed := giant.velocity.slide(Vector3.UP).length()
@@ -135,7 +141,7 @@ func check_comfortable_approach() -> void:
 		if deceleration > .01 and is_inf(first_braking_gap): first_braking_gap = gap_before
 		if tick > 1:
 			maximum_deceleration = maxf(maximum_deceleration, deceleration)
-			check(deceleration <= 2.01, "Ordinary 60 km/h catch-up sheds at most 2 m/s² while matching the RV")
+			check(deceleration <= 2.01, "Ordinary 45 km/h catch-up sheds at most 2 m/s² while matching the RV")
 		previous_speed = speed
 		var gap := giant.position.z - rv.position.z - 2.5
 		minimum_gap = minf(minimum_gap, gap)
@@ -276,6 +282,40 @@ func check_attack_gait() -> void:
 		print("ATTACK_GAIT speed=", speed, " cycles_2s=", phase_travel, " min_foot_motion_250ms=", minimum_motion)
 	check(absf(cadence[1] / cadence[0] - 1.0) < .2 and absf(cadence[2] / cadence[0] - 1.0) < .2, "Moving attack stride cadence stays continuous across 8 m/s")
 
+func check_occluded_smash_lock() -> void:
+	var rv := make_vehicle(Vector3(0, 0, 40), 8.0)
+	panel(rv, Vector3(0, 2.0, 2.6))
+	prepare(rv, 8.0)
+	await frames()
+	giant._follow_vehicle(1.0 / 60.0)
+	giant._begin_smash("vehicle_assault")
+	giant.phase_elapsed = .5
+	giant._advance_smash(1.0 / 60.0)
+	var wall := StaticBody3D.new()
+	shape(wall, Vector3(20, 8, .2))
+	wall.position = rv.position + Vector3(0, 8, 4.5)
+	world.add_child(wall)
+	await frames()
+	giant._refresh_sight()
+	check(not giant._vehicle_is_observed(rv), "Real elevated wall hides the RV before the smash aim-lock deadline")
+	giant.phase_elapsed = giant.settings.smash_windup - giant.settings.smash_lock_seconds
+	giant._advance_smash(1.0 / 60.0)
+	check(giant._strike_locked, "Smash landing point locks on time even when the RV is occluded")
+	var locked := giant._strike_point
+	wall.queue_free()
+	rv.position.x += 1.5
+	await frames()
+	giant._refresh_sight()
+	check(giant._vehicle_is_observed(rv), "Removing the real wall reveals the shifted RV during the final downswing")
+	giant._update_encounter(0.0)
+	giant._follow_vehicle(1.0 / 60.0)
+	giant.phase_elapsed = giant.settings.smash_windup - .1
+	giant._advance_smash(1.0 / 60.0)
+	check(giant._strike_point.is_equal_approx(locked), "Reappearing RV cannot retarget the already locked final downswing")
+	giant.reset_after_restore()
+	rv.queue_free()
+	await frames()
+
 func check_attack(speed: float, escape := false, block := false) -> void:
 	var rv := make_vehicle(Vector3(0, 0, 40), speed)
 	# The chassis carries the floor; independent panels own the upper shell.
@@ -284,9 +324,12 @@ func check_attack(speed: float, escape := false, block := false) -> void:
 	var first := panel(rv, Vector3(0, 2.0, 2.6))
 	var second := panel(rv, Vector3(0, 2.0, 2.3))
 	var roof := panel(rv, Vector3(0, 2.45, 0), Vector3(2.6, .15, 5.2))
+	roof.structure_kind = "roof"
 	prepare(rv, speed)
 	await frames()
-	giant._begin_smash()
+	# Explicitly committed hand-path unit: even zero speed exercises an
+	# assault already authorized before slowdown, rather than autonomous AI.
+	giant._begin_smash("vehicle_assault")
 	check(absf(giant.velocity.z + speed) < .001, "Smash phase entry preserves world velocity at %s m/s" % speed)
 	var previous_foot := local_bone("foot.R")
 	var previous_gait := giant._gait_phase
@@ -329,9 +372,10 @@ func check_attack(speed: float, escape := false, block := false) -> void:
 		check(not first.is_destroyed and not second.is_destroyed and not roof.is_destroyed, "Post-lock escape or real wall prevents proximity shell damage")
 		if block: check(giant._strike_contact_collider == blocker, "Intervening wall is the actual swept first collider")
 	else:
-		var removed := int(first.is_destroyed) + int(second.is_destroyed) + int(roof.is_destroyed)
-		check(removed == 1, "Actual swept strike destroys exactly one first shell panel at impact")
-		check(giant._strike_contact_collider is RVStructurePanel and giant._strike_contact_collider.is_destroyed, "Destroyed shell is the actual first swept collider")
+		var damaged := int(first.current_health < first.max_health) + int(second.current_health < second.max_health) + int(roof.current_health < roof.max_health)
+		check(damaged == 1, "Actual swept strike damages exactly one first shell panel at impact")
+		var contact := giant._strike_contact_collider as RVStructurePanel
+		check(contact != null and contact.current_health == 60.0, "Actual first swept collider receives 60 wall or roof damage")
 	if speed > 0.0 and not escape:
 		var before_position := giant.position
 		var before_foot := local_bone("foot.R")
@@ -382,6 +426,7 @@ func run() -> void:
 	await check_follow()
 	await check_comfortable_approach()
 	await check_moving_windup()
+	await check_occluded_smash_lock()
 	await check_attack(0.0)
 	await check_attack(8.0)
 	await check_attack(8.0, true)

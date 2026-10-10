@@ -14,9 +14,13 @@ jobs:
         suite: [quick, integration, slow, assets, smoke]
     steps:
       - uses: actions/checkout@v4
-      - name: Check runner contracts
+      - name: Check runner contracts (Windows PowerShell)
         if: matrix.suite == 'quick'
         shell: powershell
+        run: ./scripts/test-runner.tests.ps1
+      - name: Check runner contracts (PowerShell Core)
+        if: matrix.suite == 'quick'
+        shell: pwsh
         run: ./scripts/test-runner.tests.ps1
       - name: Install pinned Godot
         shell: pwsh

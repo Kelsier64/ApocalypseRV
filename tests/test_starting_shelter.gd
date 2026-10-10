@@ -21,7 +21,14 @@ func _run() -> void:
 	world.get_node("WorldGenerator").world_seed = 42
 	root.add_child(world)
 	current_scene = world
-	check(await world.wait_for_play(), "Production world becomes usable while preparing")
+	var ready: bool = await world.wait_for_play()
+	check(ready, "Production world becomes usable while preparing")
+	# All gate scenarios require a usable production world. A readiness failure
+	# must remain the cause instead of cascading through journey assertions.
+	if not ready:
+		world.free()
+		quit(1)
+		return
 	var run: StartRun = world.get_node("StartRun")
 	if not is_instance_valid(run.gate):
 		check(false, "Generated starting shelter binds its physical gate")

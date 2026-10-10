@@ -282,6 +282,12 @@ func _bind_giants() -> void:
 		if WorldEntities.same_world(self, giant) and giant.has_method("set_giant_navigation_map"):
 			giant.set_giant_navigation_map(giant_navigation_map)
 
+func _giant_weather_allows_spawn() -> bool:
+	# Read this outdoor world's simulated weather, not render-quality fog or
+	# the target of a transition that has not yet produced visible mist.
+	var clock := get_parent().get_node_or_null("WorldClock") as WorldClock
+	return clock != null and clock.weather.sample().z >= WorldWeather.FOG_LIGHT
+
 func _spawn_giant_segments(anchor: Vector3) -> void:
 	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) == 0: return
 	for entry in active_chunks:
@@ -294,6 +300,9 @@ func _spawn_giant_segments(anchor: Vector3) -> void:
 		# for this segment, including an active giant or a too-close player.
 		generated_giant_segments.append(segment)
 		_giant_plans.erase(segment)
+		# A dry-weather encounter is spent too: fog arriving later must not
+		# replenish a visited segment. Existing/restored actors are unaffected.
+		if not _giant_weather_allows_spawn(): continue
 		if get_tree().get_nodes_in_group("slender_speaker").any(func(n): return WorldEntities.same_world(self, n) and not n.is_queued_for_deletion()): continue
 		for candidate: Vector3 in plan.get("candidates", []):
 			if candidate.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE or not SlenderSpeakerSpawns.forest_valid(field, candidate): continue
