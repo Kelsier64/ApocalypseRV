@@ -1,0 +1,423 @@
+{
+  "asset": "wreck_car",
+  "reference": "9f14bb5ba700a0f02224bf9068d3458e9eb175571e5bd1ba6500d33bb830a62a",
+  "reference_path": "docs/modeling/requests/wreck-car/wreck-car-image-to-3d-reference.png",
+  "generation_profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "9fbcf52d-8191-4671-ac73-6cf569a84ef9",
+  "raw_sha256": "9dd5c71ddfef7be3ac7e33477aa39fca0a4669ec1580f32cf85b878ea4dd5139",
+  "final_sha256": "07f62feffe9f8cc6ec4f093140d0509c8a7cce6a41d71954fda9cd4fd64dada6",
+  "origin": "ground body center",
+  "up": "+Y",
+  "front": "+Z",
+  "bbox_min_m": [
+    -1.2200000286102295,
+    0.0,
+    -2.3399999141693115
+  ],
+  "bbox_max_m": [
+    1.2200000286102295,
+    2.0,
+    2.390000104904175
+  ],
+  "triangles": 5366,
+  "vertices_across_meshes": 8193,
+  "triangles_by_mesh": {
+    "BodyPaint": 1506,
+    "Metal": 3104,
+    "Glass": 210,
+    "Rubber": 546
+  },
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.08",
+    "-se",
+    "0.04",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "selected_5366_vs_candidates": [
+    7352,
+    7946
+  ],
+  "metric_fit": {
+    "source_sha256": "9dd5c71ddfef7be3ac7e33477aa39fca0a4669ec1580f32cf85b878ea4dd5139",
+    "output_sha256": "27089137545b5a9de11e5efa85b229ef243222cb4eb4df95a2353198e8d190c3",
+    "rotation_y_degrees": 0,
+    "source_rotated_size_m": [
+      0.48898574709892273,
+      0.3651200830936432,
+      1.0090071558952332
+    ],
+    "fit_scale_xyz": [
+      4.989920492521806,
+      5.47764993657458,
+      4.6877764665636565
+    ],
+    "target_size_m": [
+      2.44,
+      2.0,
+      4.73
+    ],
+    "actual_size_m": [
+      2.440000057220459,
+      2.0,
+      4.730000019073486
+    ],
+    "actual_center_m": [
+      0.0,
+      1.0,
+      0.02500009536743164
+    ],
+    "origin": "ground body center; bbox center (0,1,.025)",
+    "up": "+Y",
+    "vehicle_front": "+Z",
+    "scene_offset_baked": false,
+    "triangles": 49682,
+    "vertices": 37659,
+    "texture_sha256": [
+      "30c076dfe5f356b961e51c3fd2b89ad55c14957db7fce7b6b69e8243ecce769a",
+      "b0dc961b5ea25928107517697b98ef55eab8f476750a8d6061cd28b1e19f8cbe",
+      "78983a7011cfc456ca7379bfa8f59fc74b9fc4e4d08d5d0fea16006d4db46a86"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 0,
+    "finite_geometry": true
+  },
+  "reduced_fit": {
+    "source_sha256": "7fc76b7a9b2454605fb00296bf5799f228eeb0d9e41d9ab8d73ea836cbb320be",
+    "output_sha256": "2dac72565778d3b1f4f7acee5da2882be3ebcb861676858895b47927735a4453",
+    "rotation_y_degrees": 0,
+    "source_rotated_size_m": [
+      2.4124245643615723,
+      1.9404128575697541,
+      4.701732635498047
+    ],
+    "fit_scale_xyz": [
+      1.0114305898081937,
+      1.0307084867005443,
+      1.0060121165309432
+    ],
+    "target_size_m": [
+      2.44,
+      2.0,
+      4.73
+    ],
+    "actual_size_m": [
+      2.440000057220459,
+      2.0,
+      4.730000019073486
+    ],
+    "actual_center_m": [
+      0.0,
+      1.0,
+      0.02500009536743164
+    ],
+    "origin": "ground body center; bbox center (0,1,.025)",
+    "up": "+Y",
+    "vehicle_front": "+Z",
+    "scene_offset_baked": false,
+    "triangles": 5366,
+    "vertices": 6875,
+    "texture_sha256": [
+      "30c076dfe5f356b961e51c3fd2b89ad55c14957db7fce7b6b69e8243ecce769a",
+      "b0dc961b5ea25928107517697b98ef55eab8f476750a8d6061cd28b1e19f8cbe",
+      "78983a7011cfc456ca7379bfa8f59fc74b9fc4e4d08d5d0fea16006d4db46a86"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 0,
+    "finite_geometry": true
+  },
+  "material_split": "geometry regions + sampled basecolor; triangle partition and vertex compaction, geometry/UV/normals/tangents preserved",
+  "material_split_geometry_equal": true,
+  "paint_binding": "wreck_car.tscn -> WreckCar/BodyPaint.material_override = roadside_paint.tres, resource_name RoadsidePaint",
+  "glass_rubber_roughness": "ORM removed for glass/rubber; nonmetal matte. Three image bytes retained. Paint override uses matte roughness .92 and metallic .1.",
+  "texture_sha256": [
+    "30c076dfe5f356b961e51c3fd2b89ad55c14957db7fce7b6b69e8243ecce769a",
+    "b0dc961b5ea25928107517697b98ef55eab8f476750a8d6061cd28b1e19f8cbe",
+    "78983a7011cfc456ca7379bfa8f59fc74b9fc4e4d08d5d0fea16006d4db46a86"
+  ],
+  "topology_diagnostic_weld_m": 1e-06,
+  "zero_area_triangles": 0,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 199,
+  "duplicate_triangles": 88,
+  "skins": 0,
+  "animations": 0,
+  "required_extensions": [],
+  "scene_integration": {
+    "world/roadside_pois/wreck_0.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -5,
+          0,
+          -5
+        ],
+        "basis_serialized": "0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@6",
+          "@MeshInstance3D@7",
+          "@MeshInstance3D@8",
+          "@MeshInstance3D@9",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@10",
+          "@MeshInstance3D@11",
+          "@MeshInstance3D@12",
+          "@MeshInstance3D@13",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      }
+    ],
+    "world/roadside_pois/wreck_1.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -5,
+          0,
+          -5
+        ],
+        "basis_serialized": "0.87758255, 0, -0.47942555, 0, 1, 0, 0.47942555, 0, 0.87758255",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@21",
+          "@MeshInstance3D@22",
+          "@MeshInstance3D@23",
+          "@MeshInstance3D@24",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@25",
+          "@MeshInstance3D@26",
+          "@MeshInstance3D@27",
+          "@MeshInstance3D@28",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      },
+      {
+        "name": "Model2",
+        "origin": [
+          0,
+          0,
+          -6
+        ],
+        "basis_serialized": "0.5403023, 0, 0.84147096, 0, 1, 0, -0.84147096, 0, 0.5403023",
+        "removed_nodes": [
+          "Part018",
+          "Part019",
+          "Part020",
+          "Part021",
+          "Part022",
+          "Part023",
+          "Part024",
+          "Part025",
+          "@MeshInstance3D@31",
+          "@MeshInstance3D@32",
+          "@MeshInstance3D@33",
+          "@MeshInstance3D@34",
+          "Part026",
+          "Part027",
+          "Part028",
+          "Part029",
+          "@MeshInstance3D@35",
+          "@MeshInstance3D@36",
+          "@MeshInstance3D@37",
+          "@MeshInstance3D@38",
+          "Part030",
+          "Part031",
+          "Part032",
+          "Part033",
+          "Part034"
+        ]
+      }
+    ],
+    "world/roadside_pois/wreck_2.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -5,
+          2.1,
+          -5
+        ],
+        "basis_serialized": "-0.87758255, -7.67207e-08, -0.47942555, 8.742278e-08, -1, 0, -0.47942555, -4.1912713e-08, 0.87758255",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@46",
+          "@MeshInstance3D@47",
+          "@MeshInstance3D@48",
+          "@MeshInstance3D@49",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@50",
+          "@MeshInstance3D@51",
+          "@MeshInstance3D@52",
+          "@MeshInstance3D@53",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      }
+    ],
+    "world/roadside_pois/checkpoint_2.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -5,
+          0,
+          -6
+        ],
+        "basis_serialized": "0.921061, 0, 0.38941833, 0, 1, 0, -0.38941833, 0, 0.921061",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@211",
+          "@MeshInstance3D@212",
+          "@MeshInstance3D@213",
+          "@MeshInstance3D@214",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@215",
+          "@MeshInstance3D@216",
+          "@MeshInstance3D@217",
+          "@MeshInstance3D@218",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      }
+    ],
+    "world/roadside_pois/cargo_0.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -6,
+          0,
+          -6
+        ],
+        "basis_serialized": "-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@233",
+          "@MeshInstance3D@234",
+          "@MeshInstance3D@235",
+          "@MeshInstance3D@236",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@237",
+          "@MeshInstance3D@238",
+          "@MeshInstance3D@239",
+          "@MeshInstance3D@240",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      }
+    ],
+    "world/starting_shelter/reused_wreck.tscn": [
+      {
+        "name": "Model",
+        "origin": [
+          -5,
+          0,
+          -5
+        ],
+        "basis_serialized": "0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666",
+        "removed_nodes": [
+          "Part001",
+          "Part002",
+          "Part003",
+          "Part004",
+          "Part005",
+          "Part006",
+          "Part007",
+          "Part008",
+          "@MeshInstance3D@6",
+          "@MeshInstance3D@7",
+          "@MeshInstance3D@8",
+          "@MeshInstance3D@9",
+          "Part009",
+          "Part010",
+          "Part011",
+          "Part012",
+          "@MeshInstance3D@10",
+          "@MeshInstance3D@11",
+          "@MeshInstance3D@12",
+          "@MeshInstance3D@13",
+          "Part013",
+          "Part014",
+          "Part015",
+          "Part016",
+          "Part017"
+        ]
+      }
+    ]
+  },
+  "raw_preserved": true,
+  "work_evidence": ".godot/art-work/wreck_car/20261009-01/"
+}

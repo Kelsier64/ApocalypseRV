@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/bunker_filtration_pump/bunker_filtration_pump.glb" id="generated_model"]
+
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="rust"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
 
@@ -18,12 +20,16 @@ size = Vector3(1.4, 1.4, 0.8)
 
 [node name="Model" type="Node3D" parent="Visuals"]
 
+[node name="Asset" parent="Visuals/Model" instance=ExtResource("generated_model")]
+
 [node name="Blockout" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 0.7, 0)
 mesh = SubResource("m0")
 material_override = ExtResource("steel")
 
 [node name="Motor" type="MeshInstance3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 1.18, 0)
 mesh = SubResource("m1")
 material_override = ExtResource("rust")
@@ -33,6 +39,7 @@ position = Vector3(0, 0.7, 0)
 shape = SubResource("collision")
 
 [node name="Stencil" type="Label3D" parent="Visuals/Model"]
+visible = false
 position = Vector3(0, 0.91, 0.415)
 text = "FILTER"
 font_size = 32

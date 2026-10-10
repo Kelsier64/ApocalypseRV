@@ -1,0 +1,54 @@
+{
+  "asset": "bunker_medical_cot",
+  "reference_sha256": "8879bf4b364a0f2c9f94cd475e46c738dc50c52400ab38d707264a5cbb3083fe",
+  "generation_profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "72f7d517-b01f-44c2-a197-587444ff4188",
+  "raw_sha256": "1c571bd6f36d530eac54f55fda23cd77440342a4baceeb96e280bb9b82c86b1d",
+  "final_sha256": "abf1ab8d98457d89449b397587de3b7ab3b46fa6ef0061c2a0c4a448f07179a0",
+  "dimensions_m": [
+    2.1,
+    0.85,
+    0.95
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "triangles": 3999,
+  "vertices": 3820,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.08",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    2.079682911127825,
+    2.450933532596032,
+    2.3778008636902848
+  ],
+  "texture_sha256": [
+    "2d2412dd109173548fa3ee17f6e2625b510a581a686915e0d7131c3057deee0c",
+    "b8ecb707d79c64991f435491df1cfd4e3d78b167db32ab126212602e69d0081b",
+    "04219e1388361b44e6186c6ff98917193dbaea4a10a3108e5480898bb85c8a09"
+  ],
+  "topology": {
+    "zero_area_triangles": 0,
+    "boundary_edges": 3,
+    "nonmanifold_edges": 11,
+    "duplicate_triangles": 4,
+    "weld_m": 1e-06
+  },
+  "raw_evidence": ".godot/art-work/bunker_medical_cot/20261010-01",
+  "raw_triangles": 50000,
+  "rotation_y_degrees": 0,
+  "long_axis": "+X",
+  "patient_access": "+Z",
+  "existing_layout_issue": "medium_02 wall_shelf_2 overlaps the first cot design envelope by 0.30 m along room Z; original placements/collisions retained as requested"
+}

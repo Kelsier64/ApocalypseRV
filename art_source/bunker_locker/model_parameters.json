@@ -1,0 +1,51 @@
+{
+  "asset": "bunker_locker",
+  "number_stencil": false,
+  "reference_sha256": "0f5f4f7df1c888f3e756f60eef058be8296bb817e0ca343714f27fa5f4447709",
+  "profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "802e6c09-58ff-4b79-99a6-2fbc3d446711",
+  "raw_sha256": "b482fdac3a42f529723f33fa3ee09bacd246afd550adda930ea778b1f154024d",
+  "final_sha256": "5ed1166567ec68daec03ba9ab21d44acf5a63136f27b4349021cb945311266a2",
+  "dimensions_m": [
+    0.62,
+    1.9,
+    0.58
+  ],
+  "origin": "bottom center",
+  "up": "+Y",
+  "front_and_handle": "+Z",
+  "raw_triangles": 50000,
+  "final_triangles": 2998,
+  "vertices": 2186,
+  "gltfpack_version": "1.3",
+  "gltfpack_args": [
+    "-si",
+    "0.06",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "fit_scale_xyz": [
+    1.9332978005171941,
+    1.8852646278631122,
+    1.8802731315919279
+  ],
+  "normal_handling": "inverse transpose; tangent orthogonalization",
+  "texture_sha256": [
+    "4895ea5428d10b632d01f53d25bc423c793f06c656c0b15b71b9737237c118e0",
+    "0269d8dfa33ec34fd3c0f1e1f4ed953f36c81068bd6116483cbb59de99d5a331",
+    "1ef9cd334f21534c5ed0954b42f5935c31c23b87d3270acf8548fc4f65d6ae30"
+  ],
+  "zero_area_triangles": 0,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "duplicate_triangles": 0,
+  "topology_weld_m": 1e-06,
+  "raw_evidence": ".godot/art-work/bunker_locker/20261009-01/generation_unmarked/"
+}

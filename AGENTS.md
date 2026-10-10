@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene. `world/test_world.tscn` remains the legacy test fixture.
+Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene. 
 
 - `player/`, `enemies/`, `props/`: actors, interaction, AI, and items.
 - `rv/`, `equipment/`: vehicle physics and mounted devices.
@@ -55,6 +55,7 @@ Close only your test window afterward. Report observed results separately from a
 
 ## Git
 
-- Start new work on a separate branch; use the same branch for follow-ups.
+- Before starting new work, ask the user whether to create a new branch. Create one only if the user agrees; otherwise continue on the current branch. Use the same branch for follow-ups.
 - Complete the work and validation, then ask the user for approval before pushing or creating/updating a PR.
 - Keep intermediate outputs gitignored from start to finish, including build/generation tools, screenshots, recordings, logs and backups. Deliver only necessary game assets, code, tests and concise docs; preserve unrelated local files.
+- Review `git status` and the diff, clean up task-generated temporary files and accidental changes, and commit all validated task changes. Preserve and report unrelated or pre-existing user changes.

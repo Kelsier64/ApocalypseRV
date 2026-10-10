@@ -1,0 +1,142 @@
+{
+  "asset": "shelter_roof_filter_bank",
+  "target_size_m": [
+    9,
+    1.5,
+    5
+  ],
+  "origin": "bounds center",
+  "up": "+Y",
+  "service_front": "+Z",
+  "scene_node": "Visuals/RoofPlantB",
+  "local_position": [
+    17.7,
+    11.75,
+    9.8
+  ],
+  "reference": "docs/modeling/requests/shelter-roof-filter-bank/shelter-roof-filter-bank-image-to-3d-reference.png",
+  "profile": "trellis-single-1024-50k",
+  "seed": 42,
+  "resolution": 1024,
+  "generation_prompt_id": "3efcd07d-106f-420f-a811-d4c0186cc1d5",
+  "repair": {
+    "source_sha256": "a9f7a56dad779341bce25301722fd4fed1da575ee8788dc1e6e7909e2461d68f",
+    "output_sha256": "aeb985d017d9de0b8e155e45f4e15afa0e08516d70c73f0a1b226d4fc63c9e4e",
+    "moved_vertices": 6696,
+    "raw_translation_xyz": [
+      0,
+      0,
+      -0.05
+    ],
+    "reason": "Close generated gap between rear sealed duct and filter housings by rigid translation before metric fit.",
+    "raw_z_gap_before": 0.031072035431861877,
+    "raw_z_overlap_after": 0.018927965313196182,
+    "indices_normals_uv_tangents_images_unchanged": true,
+    "boolean_union_performed": false
+  },
+  "source_fit": {
+    "source_sha256": "aeb985d017d9de0b8e155e45f4e15afa0e08516d70c73f0a1b226d4fc63c9e4e",
+    "output_sha256": "82fe0e4a4e49e8aa342684c3c786a73c66a17cbbe75293e0fa0ad6bdc474ad8f",
+    "rotation_y_degrees": 180.0,
+    "source_rotated_size_m": [
+      1.0097328424453735,
+      0.21497684717178345,
+      0.41126637160778057
+    ],
+    "fit_scale_xyz": [
+      8.91324875419896,
+      6.977495575611367,
+      12.157570725885742
+    ],
+    "target_size_m": [
+      9.0,
+      1.5,
+      5.0
+    ],
+    "actual_size_m": [
+      9.0,
+      1.5,
+      5.0
+    ],
+    "actual_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "origin": "bounding box center",
+    "up": "+Y",
+    "service_front": "+Z",
+    "scene_offset_baked": false,
+    "triangles": 49998,
+    "vertices": 33163,
+    "texture_sha256": [
+      "6e896b194204f1d26133be00a3e7a33fe564ae51abee06b3474b0ccd153f6358",
+      "6cccbf1437cf76395ff08cffc96e1fbf25b86046516f009beea55790d81b851b",
+      "26d70db39880e31fab7cbdc3d5dd1b43e9dc6b675a0db2c9955b8103856ee036"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 0,
+    "finite_geometry": true
+  },
+  "reduction": {
+    "version": "gltfpack 1.3",
+    "arguments": [
+      "-si",
+      "0.12",
+      "-se",
+      "0.02",
+      "-sp",
+      "-sv",
+      "-noq",
+      "-kn",
+      "-km"
+    ]
+  },
+  "final_fit": {
+    "source_sha256": "54a7ad120256c96e9f5f9bca8ca58bd252d7e686da52fdf260674ab6ab61c138",
+    "output_sha256": "f61d95837f461af7c5a61c77e92949170520ebfee0eafc75a722936c8ca845b7",
+    "rotation_y_degrees": 0,
+    "source_rotated_size_m": [
+      8.995467185974121,
+      1.5028682947158813,
+      4.9982008934021
+    ],
+    "fit_scale_xyz": [
+      1.0005038997899904,
+      0.9980914530395203,
+      1.0003599508375653
+    ],
+    "target_size_m": [
+      9.0,
+      1.5,
+      5.0
+    ],
+    "actual_size_m": [
+      9.0,
+      1.5,
+      5.0
+    ],
+    "actual_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "origin": "bounding box center",
+    "up": "+Y",
+    "service_front": "+Z",
+    "scene_offset_baked": false,
+    "triangles": 5998,
+    "vertices": 5751,
+    "texture_sha256": [
+      "6e896b194204f1d26133be00a3e7a33fe564ae51abee06b3474b0ccd153f6358",
+      "6cccbf1437cf76395ff08cffc96e1fbf25b86046516f009beea55790d81b851b",
+      "26d70db39880e31fab7cbdc3d5dd1b43e9dc6b675a0db2c9955b8103856ee036"
+    ],
+    "topology_changed_in_fit": false,
+    "normal_handling": "inverse transpose; tangent orthogonalization",
+    "zero_tangents_repaired": 0,
+    "finite_geometry": true
+  },
+  "placement": "East-wing front roof edge, matching visual/collider/graybox and concrete plinth."
+}

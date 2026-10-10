@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/wreck_car/wreck_car.tscn" id="wreck_car_model"]
+
 [ext_resource type="Texture2D" path="res://assets/materials/industrial/worn_paint.png" id="worn_paint"]
 
 [ext_resource type="Script" path="res://world/roadside_pois/minor_appearance.gd" id="1_7xrjc"]
@@ -353,135 +355,10 @@ script = ExtResource("1_7xrjc")
 
 [node name="Visuals" type="Node3D" parent="." unique_id=441820797]
 
-[node name="Part001" type="MeshInstance3D" parent="Visuals" unique_id=1078653311]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5, 0.78, -5)
-material_override = SubResource("StandardMaterial3D_7sqs8")
-mesh = SubResource("BoxMesh_ci17e")
+[node name="Model" parent="Visuals" instance=ExtResource("wreck_car_model")]
+transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5, 0, -5)
+metadata/modeling_request = "wreck-car"
 
-[node name="Part002" type="MeshInstance3D" parent="Visuals" unique_id=2104790590]
-transform = Transform3D(0.9653389, -0.049522616, 0.25625834, 0.029899566, 0.9963532, 0.07991469, -0.2592814, -0.069482744, 0.9632992, -4.701996, 1.12, -3.5299)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_vhe6y")
-
-[node name="Part003" type="MeshInstance3D" parent="Visuals" unique_id=1579888091]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.039734, 1.47, -5.1960135)
-material_override = SubResource("StandardMaterial3D_34ms6")
-mesh = SubResource("BoxMesh_201uu")
-
-[node name="Part004" type="MeshInstance3D" parent="Visuals" unique_id=1034996018]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.039734, 1.93, -5.1960135)
-material_override = SubResource("StandardMaterial3D_7sqs8")
-mesh = SubResource("BoxMesh_81463")
-
-[node name="Part005" type="MeshInstance3D" parent="Visuals" unique_id=1938974754]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -6.100729, 1.48, -5.9502606)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_8vvvp")
-
-[node name="Part006" type="MeshInstance3D" parent="Visuals" unique_id=1730070272]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.7133236, 1.48, -4.039131)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_e6fnq")
-
-[node name="Part007" type="MeshInstance3D" parent="Visuals" unique_id=774919874]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.911993, 1.17, -5.0191975)
-material_override = SubResource("StandardMaterial3D_7sqs8")
-mesh = SubResource("BoxMesh_na0ov")
-
-[node name="Part008" type="MeshInstance3D" parent="Visuals" unique_id=1516443806]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.9020596, 1.48, -4.9701943)
-material_override = SubResource("StandardMaterial3D_7odm1")
-mesh = SubResource("BoxMesh_eoson")
-
-[node name="@MeshInstance3D@6" type="MeshInstance3D" parent="Visuals" unique_id=1617327296]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -6.344715, 0.46, -6.257921)
-material_override = SubResource("StandardMaterial3D_4dblb")
-mesh = SubResource("CylinderMesh_v040l")
-
-[node name="@MeshInstance3D@7" type="MeshInstance3D" parent="Visuals" unique_id=481448323]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -6.344715, 0.46, -6.257921)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("CylinderMesh_ha1vd")
-
-[node name="@MeshInstance3D@8" type="MeshInstance3D" parent="Visuals" unique_id=1419465904]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -5.7586403, 0.46, -3.3667245)
-material_override = SubResource("StandardMaterial3D_4dblb")
-mesh = SubResource("CylinderMesh_hbkbo")
-
-[node name="@MeshInstance3D@9" type="MeshInstance3D" parent="Visuals" unique_id=612338688]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -5.7586403, 0.46, -3.3667245)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("CylinderMesh_y36x0")
-
-[node name="Part009" type="MeshInstance3D" parent="Visuals" unique_id=1679865474]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -4.3562107, 1.48, -6.303892)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_ucodp")
-
-[node name="Part010" type="MeshInstance3D" parent="Visuals" unique_id=421740298]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -3.9688053, 1.48, -4.392762)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_4ctvf")
-
-[node name="Part011" type="MeshInstance3D" parent="Visuals" unique_id=893893739]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -4.1674747, 1.17, -5.372829)
-material_override = SubResource("StandardMaterial3D_7sqs8")
-mesh = SubResource("BoxMesh_l6wrx")
-
-[node name="Part012" type="MeshInstance3D" parent="Visuals" unique_id=903004550]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -4.1575413, 1.48, -5.323826)
-material_override = SubResource("StandardMaterial3D_7odm1")
-mesh = SubResource("BoxMesh_wsbse")
-
-[node name="@MeshInstance3D@10" type="MeshInstance3D" parent="Visuals" unique_id=15087015]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -4.251293, 0.46, -6.6822786)
-material_override = SubResource("StandardMaterial3D_4dblb")
-mesh = SubResource("CylinderMesh_yibe2")
-
-[node name="@MeshInstance3D@11" type="MeshInstance3D" parent="Visuals" unique_id=1939637122]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -4.251293, 0.46, -6.6822786)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("CylinderMesh_g5l76")
-
-[node name="@MeshInstance3D@12" type="MeshInstance3D" parent="Visuals" unique_id=216492115]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -3.6652184, 0.46, -3.7910824)
-material_override = SubResource("StandardMaterial3D_4dblb")
-mesh = SubResource("CylinderMesh_0e4p8")
-
-[node name="@MeshInstance3D@13" type="MeshInstance3D" parent="Visuals" unique_id=633274070]
-transform = Transform3D(-4.284007e-08, -0.9800666, 0.19866933, 1, -4.371139e-08, 0, 8.684112e-09, 0.19866933, 0.9800666, -3.6652184, 0.46, -3.7910824)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("CylinderMesh_d6b6d")
-
-[node name="Part013" type="MeshInstance3D" parent="Visuals" unique_id=2021351141]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.450979, 0.58, -7.2247515)
-material_override = SubResource("StandardMaterial3D_7odm1")
-mesh = SubResource("BoxMesh_v1fdk")
-
-[node name="Part014" type="MeshInstance3D" parent="Visuals" unique_id=424892847]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -4.549021, 0.58, -2.7752488)
-material_override = SubResource("StandardMaterial3D_7odm1")
-mesh = SubResource("BoxMesh_0pb4e")
-
-[node name="Part015" type="MeshInstance3D" parent="Visuals" unique_id=32494292]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -5.231094, 0.89, -2.6165788)
-material_override = SubResource("StandardMaterial3D_vwpom")
-mesh = SubResource("BoxMesh_x3ukl")
-
-[node name="Part016" type="MeshInstance3D" parent="Visuals" unique_id=148001622]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -3.8590007, 0.89, -2.894716)
-material_override = SubResource("StandardMaterial3D_vwpom")
-mesh = SubResource("BoxMesh_mjl00")
-
-[node name="Part017" type="MeshInstance3D" parent="Visuals" unique_id=145569001]
-transform = Transform3D(0.9800666, 0, 0.19866933, 0, 1, 0, -0.19866933, 0, 0.9800666, -4.5311403, 0.59, -2.687043)
-material_override = SubResource("StandardMaterial3D_irm8t")
-mesh = SubResource("BoxMesh_ukara")
-
-[node name="Part018" type="MeshInstance3D" parent="Visuals" unique_id=1808830613]
-transform = Transform3D(1, 0, 0, 0, 0.62161, 0.7833269, 0, -0.7833269, 0.62161, -5, 1.7, -2.7)
-material_override = SubResource("StandardMaterial3D_8glh0")
-mesh = SubResource("BoxMesh_a0kus")
 
 [node name="Part019" type="MeshInstance3D" parent="Visuals" unique_id=244561707]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.9, 0.55, -3)

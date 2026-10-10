@@ -18,6 +18,10 @@
 
 ## 從哪裡開始
 
+共用事故車：[路旁與 28 輛起始封路驗證](validation/2026-10-09-wreck-car.md)，含烤漆色差、翻覆底盤與輪驅接近檢查。
+
+屋頂過濾設備：[三箱模型與正式場景驗證](validation/2026-10-09-roof-filter-bank.md)，含尺寸／朝向、碰撞與導航保留檢查。
+
 屋頂通風機組：[3D／ComfyUI skill 實測與正式整合](validation/2026-10-09-roof-air-handler-skills.md)，含六視角、降面、碰撞與導航保留檢查。
 
 Slender Speaker 持續遭遇：[單一 owner、觀測與提交動作、搜尋期限及實際輪驅驗證](validation/2026-10-09-slender-speaker-encounter.md)。本輪結果與限制由該紀錄列出；下方各歷史驗收保留當時範圍。
