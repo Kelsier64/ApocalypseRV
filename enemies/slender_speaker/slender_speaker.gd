@@ -27,6 +27,7 @@ var _patrol_index := 0
 var _patrol_obstacle: Dictionary = {}
 var _patrol_route: Dictionary = {}
 var _navigation_stall_seconds := 0.0
+var _navigation_map_iteration := 0
 var _navigation_recovery_point := Vector3.INF
 var _navigation_recovery_seconds := 0.0
 var _animation_time := 0.0
@@ -142,6 +143,7 @@ func _resume_patrol_after_transfer() -> void:
 func set_giant_navigation_map(map: RID) -> void:
 	if map == giant_navigation_map: return
 	giant_navigation_map = map
+	_navigation_map_iteration = 0
 	if nav_agent: nav_agent.set_navigation_map(map)
 
 func reset_after_restore() -> void:
@@ -164,6 +166,7 @@ func reset_after_restore() -> void:
 	_patrol_obstacle.clear()
 	_patrol_route = {}
 	_navigation_stall_seconds = 0.0
+	_navigation_map_iteration = 0
 	_navigation_recovery_point = Vector3.INF
 	_navigation_recovery_seconds = 0.0
 	_parked_facing_waypoint = Vector3.INF
@@ -900,7 +903,11 @@ func _navigate_around_vehicles(point: Vector3, speed: float, delta: float) -> Ve
 	return _navigate(waypoint, speed, delta, .2 if nearest < INF else 1.5)
 
 func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1.5, facing_point := Vector3.INF) -> Vector3:
-	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) <= 0 or nav_agent == null: return Vector3.ZERO
+	if not giant_navigation_map.is_valid() or nav_agent == null: return Vector3.ZERO
+	var map_iteration := NavigationServer3D.map_get_iteration_id(giant_navigation_map)
+	if map_iteration <= 0: return Vector3.ZERO
+	var map_changed := map_iteration != _navigation_map_iteration
+	_navigation_map_iteration = map_iteration
 	if _navigation_recovery_point != Vector3.INF:
 		_navigation_recovery_seconds -= delta
 		if global_position.slide(Vector3.UP).distance_to(_navigation_recovery_point.slide(Vector3.UP)) > .3 and _navigation_recovery_seconds > 0.0:
@@ -912,9 +919,15 @@ func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1
 			_navigation_recovery_point = Vector3.INF
 			nav_agent.target_position = point
 	nav_agent.target_desired_distance = arrival_distance
-	var refresh_distance := .001 if not _parked_plan.is_empty() or not _parked_approach_memory.is_empty() else 1.0
+	# Only an actual final cabin approach needs centimetre precision. A stale
+	# cabin memory must not force a moving pursuit to requery every tiny drift.
+	var refresh_distance := .01 if _parked_move_goal != Vector3.INF else 1.0
 	var stalled := _navigation_stall_seconds >= .5
-	if nav_agent.target_position.distance_to(point) > refresh_distance or phase_elapsed < delta * 1.5 or stalled:
+	var target_shift := (nav_agent.target_position - point).slide(Vector3.UP).length()
+	# Finished partial paths stop listening for map changes. When streamed
+	# terrain arrives, resubmit an unmet goal instead of staying at that edge.
+	var retry_finished := map_changed and (point - global_position).slide(Vector3.UP).length() > arrival_distance and nav_agent.is_navigation_finished()
+	if target_shift > refresh_distance or phase_elapsed < delta * 1.5 or stalled or retry_finished:
 		nav_agent.target_position = point
 		# A moving RV may refresh this goal several times during one real stall.
 		if stalled: _navigation_stall_seconds = 0.0
@@ -922,13 +935,16 @@ func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1
 	# Advance a grounded waypoint at its actual foot height once its horizontal
 	# tolerance is met, retaining narrow clearance around trees and RV corners.
 	nav_agent.path_height_offset = 0.0
+	# Updating the target invalidates the old path. Build the current path
+	# before correcting its height, including on the very first chase step.
+	var next := nav_agent.get_next_path_position()
 	var path := nav_agent.get_current_navigation_path()
 	var path_index := nav_agent.get_current_navigation_path_index()
 	if is_on_floor() and path_index < path.size():
 		var waypoint := path[path_index]
 		if global_position.slide(Vector3.UP).distance_to(waypoint.slide(Vector3.UP)) < nav_agent.path_desired_distance:
 			nav_agent.path_height_offset = waypoint.y - global_position.y
-	var next := nav_agent.get_next_path_position()
+			next = nav_agent.get_next_path_position()
 	var direction := (next - global_position).slide(Vector3.UP).normalized()
 	if direction.length_squared() < 0.1: return Vector3.ZERO
 	var facing_direction := direction if facing_point == Vector3.INF else (facing_point - global_position).slide(Vector3.UP).normalized()
