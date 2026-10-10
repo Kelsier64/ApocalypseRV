@@ -71,11 +71,41 @@ func input_motion(item: Item) -> RefCounted:
 		if entry.prop == item: return entry.feed
 	return null
 
-func piece_bounds(piece: Dictionary) -> AABB:
-	var node: Node3D = piece.node
-	var result := AABB(machine.to_local(node.to_global(piece.bounds.get_endpoint(0))), Vector3.ZERO)
-	for corner in 8: result = result.expand(machine.to_local(node.to_global(piece.bounds.get_endpoint(corner))))
+func contact_points(contact: RefCounted) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	var stride := maxi(1, contact.source_points.size() / 320)
+	for index in range(0, contact.source_points.size(), stride):
+		result.append(contact.deform_point(contact.source_points[index]))
 	return result
+
+func same_points(first: PackedVector3Array, second: PackedVector3Array) -> bool:
+	if first.size() != second.size() or first.is_empty(): return false
+	for index in first.size():
+		if first[index].distance_to(second[index]) > .0001: return false
+	return true
+
+func check_contact(contact: RefCounted, note: String, every_point := false) -> int:
+	var half: float = machine.FEED.HALF_OPENING
+	var stride := 1 if every_point else maxi(1, contact.source_points.size() / 320)
+	var upper := 0
+	for index in range(0, contact.source_points.size(), stride):
+		var rest: Vector3 = contact.source_points[index]
+		var rigid: Vector3 = contact.body_pose * rest
+		var point: Vector3 = contact.deform_point(rest)
+		check(point.is_finite(), note + " keeps finite deformed mesh vertices")
+		for mesh: MeshInstance3D in contact.meshes:
+			check(mesh.custom_aabb.has_point(point), note + " keeps every rendered vertex inside its culling bounds while the connected body leans")
+		if contact.grip <= .00001:
+			check(point.distance_to(rigid) < .0001, note + " stays intact under one rigid transform before tooth contact")
+		if point.y < .84:
+			check(absf(point.x) <= half + .006 and absf(point.z) <= half + .006, note + " keeps actual descending mesh vertices clear of the hopper frame")
+		if rigid.y >= 1.08:
+			upper += 1
+			check(point.distance_to(rigid) < .0001, note + " preserves the intact upper surface under one shared rigid transform")
+	for material: ShaderMaterial in contact.surfaces:
+		var rendered_pose: Transform3D = material.get_shader_parameter("body_pose")
+		check(rendered_pose.is_equal_approx(contact.body_pose) and is_equal_approx(material.get_shader_parameter("grip"), contact.grip) and is_equal_approx(material.get_shader_parameter("tooth_phase"), contact.tooth_phase), note + " publishes the tested contact deformation to every rendered surface")
+	return upper
 
 func confined(item: Item, note: String) -> void:
 	var half: float = machine.FEED.HALF_OPENING
@@ -84,18 +114,11 @@ func confined(item: Item, note: String) -> void:
 		# A just-claimed input keeps its physical arrival pose until paid setup.
 		var bounds := visible_bounds(item)
 		check(item.global_transform.is_finite() and item.global_basis.get_scale().distance_to(Vector3.ONE) < .001, note + " retains its original finite full-size arrival pose")
-		check(bounds.position.y >= .705 or (bounds.position.x >= -half - .006 and bounds.end.x <= half + .006 and bounds.position.z >= -half - .006 and bounds.end.z <= half + .006), note + " keeps its intact arrival geometry above the frame until sectioned")
+		check(bounds.position.y >= .705 or (bounds.position.x >= -half - .006 and bounds.end.x <= half + .006 and bounds.position.z >= -half - .006 and bounds.end.z <= half + .006), note + " keeps its intact arrival geometry above the frame until tooth contact")
 		return
-	if not motion.pieces.is_empty():
-		for piece: Dictionary in motion.pieces:
-			if not is_instance_valid(piece.node): continue
-			var bounds := piece_bounds(piece)
-			check(bounds.position.is_finite() and bounds.size.is_finite(), note + " keeps finite section bounds")
-			# Sections may wait above the rim in the original full-size arrangement.
-			# Any section descending to the solid frame must fit the actual opening.
-			if bounds.position.y < .705:
-				check(bounds.position.x >= -half - .006 and bounds.end.x <= half + .006 and bounds.position.z >= -half - .006 and bounds.end.z <= half + .006, note + " keeps every descending section clear of the hopper frame")
-			check(piece.node.global_basis.get_scale().distance_to(Vector3.ONE) < .001, note + " never shrinks visual sections to fit")
+	if motion.contact_feed != null:
+		check(not motion.contact_feed.source_points.is_empty(), note + " uses connected original surfaces without airborne voxel contacts")
+		check_contact(motion.contact_feed, note)
 	else:
 		var bounds := visible_bounds(item)
 		check(bounds.position.is_finite() and bounds.size.is_finite(), note + " keeps finite visual bounds")
@@ -104,10 +127,40 @@ func confined(item: Item, note: String) -> void:
 
 func visually_turned(item: Item, start_basis: Basis) -> bool:
 	var motion := input_motion(item)
-	if motion != null and not motion.pieces.is_empty():
-		for piece: Dictionary in motion.pieces:
-			if is_instance_valid(piece.node) and not piece.node.global_basis.is_equal_approx(start_basis): return true
+	if motion != null and motion.contact_feed != null:
+		return not motion.contact_feed.body_pose.basis.is_equal_approx(Basis.IDENTITY)
 	return not item.global_basis.is_equal_approx(start_basis)
+
+func continuous_contact_deformation() -> void:
+	for scene: String in ["res://equipment/generator.tscn", "res://props/wheel.tscn", "res://equipment/roof_ladder.tscn"]:
+		var input := new_item(scene, true)
+		await steps(2)
+		var bounds: AABB = machine.FEED.geometry_bounds(input)
+		feed(input, Vector3(0, 1.15 - bounds.position.y, 0))
+		var root_pose := input.global_transform
+		var motion: RefCounted = machine.FEED.new()
+		check(motion.setup(input, machine), scene + " builds a production large-object intake")
+		var contact: RefCounted = motion.contact_feed
+		check(contact != null, scene + " exercises continuous contact deformation for an oversized input")
+		if contact != null:
+			check(contact.meshes.size() > 0 and not contact.source_points.is_empty(), scene + " uses the original mesh surfaces for local tooth deformation")
+			for point: Vector3 in contact.source_points:
+				check(contact.deform_point(point).distance_to(point) < .0001, scene + " begins as the exact intact object without a fragment lift or explosion")
+			var upper_samples := 0
+			var bent := false
+			for progress in [.02, .12, .25, .50, .75, .95]:
+				contact.advance(machine, progress)
+				upper_samples += check_contact(contact, scene + " contact sample " + str(progress), true)
+				for point: Vector3 in contact.source_points:
+					bent = bent or contact.deform_point(point).distance_to(contact.body_pose * point) > .005
+				check(input.global_transform.is_equal_approx(root_pose), scene + " leaves the full-size physical Item root unchanged while its contact surface yields")
+			contact.advance(machine, 1.0)
+			for point: Vector3 in contact.source_points:
+				check(contact.deform_point(point).y < .69, scene + " finishes with every rendered vertex swallowed below the teeth, without a final popup")
+			check(upper_samples > 0 and bent, scene + " retains connected upper geometry while the caught lower surface bends into the teeth")
+		motion.dispose()
+		input.queue_free()
+		await steps(2)
 
 func grazing_input_preserves_physics() -> void:
 	var edge := new_item("res://props/scrap.tscn", true)
@@ -182,17 +235,23 @@ func save_restore_and_cancel() -> void:
 	var identity := input.persistent_id
 	var pose_before := input.global_transform
 	var saved := machine.capture_service_state()
+	var saved_surface: RefCounted = input_motion(input).contact_feed
+	var saved_points := contact_points(saved_surface)
+	saved_surface.advance(machine, saved_surface.progress + .1 / machine.crush_time)
+	var expected_resume_points := contact_points(saved_surface)
+	saved_surface.advance(machine, saved.inputs[0].feed.progress)
 	check(saved.inputs.size() == 1 and ItemState.valid_service(machine.scene_file_path, saved), "Partly ingested large Item validates through the production service schema")
 	check(WorldActorSnapshot.capture(input).is_empty(), "Partly ingested large Item has a sole recycler save owner")
 	for invalid_progress in [NAN, INF, -.01, 1.01, "invalid"]:
 		var malformed := saved.duplicate(true)
 		malformed.inputs[0].feed.progress = invalid_progress
-		check(not ItemState.valid_service(machine.scene_file_path, malformed), "Saved section progress rejects nonfinite, out-of-range or nonnumeric values")
+		check(not ItemState.valid_service(machine.scene_file_path, malformed), "Saved contact progress rejects nonfinite, out-of-range or nonnumeric values")
 	var timer_before: float = machine.props_being_crushed[0].timer
 	var power_before := rv.current_power
 	rv.current_power = 0
 	machine.step_work(.5)
 	await steps(2)
+	check(same_points(saved_points, contact_points(saved_surface)), "An unpowered large Item preserves every sampled rendered vertex, including contact folds")
 	check(input.global_transform.is_equal_approx(pose_before) and machine.props_being_crushed[0].timer == timer_before, "An unpowered large Item retains its exact in-flight pose and progress")
 	rv.current_power = power_before
 	machine.enabled = false
@@ -205,26 +264,32 @@ func save_restore_and_cancel() -> void:
 	rv.current_power = 0
 	machine.restore_service_state(saved)
 	var immediate := machine.capture_service_state()
-	check(immediate.inputs[0].get("feed", {}) == saved.inputs[0].feed and ItemState.valid_service(machine.scene_file_path, immediate), "Immediate unpowered resave before helper setup preserves saved section feed state")
+	check(immediate.inputs[0].get("feed", {}) == saved.inputs[0].feed and ItemState.valid_service(machine.scene_file_path, immediate), "Immediate unpowered resave before helper setup preserves saved contact deformation state")
 	await steps(3)
 	check(machine.props_being_crushed.size() == 1, "Saved large Item motion restores one original input")
 	if machine.props_being_crushed.is_empty(): return
 	var restored: Item = machine.props_being_crushed[0].prop
 	check(restored.persistent_id == identity and restored.processing_owner == machine, "Restore retains the original large Item and sole owner")
+	var restored_surface: RefCounted = input_motion(restored).contact_feed
+	check(same_points(saved_points, contact_points(restored_surface)), "Paused restore reconstructs the same connected upper body and local tooth deformation")
 	check(restored.global_transform.is_equal_approx(pose_before), "Restored large feed resumes its full saved position and orientation")
 	check(ItemState.valid_service(machine.scene_file_path, machine.capture_service_state()), "Restored large feed still validates")
 	var resaved := machine.capture_service_state()
-	check(resaved.inputs[0].get("feed", {}) == saved.inputs[0].feed, "Resaving a paused restored large input preserves its original section progress and poses")
+	check(resaved.inputs[0].get("feed", {}) == saved.inputs[0].feed, "Resaving a paused restored large input preserves its original contact progress and pose")
 	machine.enabled = true
 	machine.step_work(0)
 	var zero_step := machine.capture_service_state()
-	check(zero_step.inputs[0].feed == saved.inputs[0].feed and zero_step.inputs[0].timer == saved.inputs[0].timer and rv.current_power == 0, "Unpowered zero-duration restore step retains feed pose, timer and section progress")
+	check(same_points(saved_points, contact_points(restored_surface)), "Zero-duration unpowered restore keeps every rendered vertex fixed")
+	machine.step_work(.3)
+	check(same_points(saved_points, contact_points(restored_surface)) and machine.capture_service_state().inputs[0].feed == saved.inputs[0].feed, "Positive unpowered work after restore leaves connected geometry and cutting state unchanged")
+	check(zero_step.inputs[0].feed == saved.inputs[0].feed and zero_step.inputs[0].timer == saved.inputs[0].timer and rv.current_power == 0, "Unpowered zero-duration restore step retains feed pose, timer and contact progress")
 	rv.current_power = power_before
 	machine.step_work(.1)
 	await steps(2)
 	confined(restored, "Restored large feed")
 	var resumed := machine.capture_service_state()
-	check(is_equal_approx(resumed.inputs[0].feed.progress, saved.inputs[0].feed.progress + .1 / machine.crush_time), "Restored sections advance from the saved cutting progress")
+	check(same_points(expected_resume_points, contact_points(restored_surface)), "Resumed large intake matches uninterrupted rendered vertices at the same paid progress")
+	check(is_equal_approx(resumed.inputs[0].feed.progress, saved.inputs[0].feed.progress + .1 / machine.crush_time), "Restored connected surfaces advance from the saved cutting progress")
 	machine.enabled = false
 	machine._on_service_stopped()
 	await steps(3)
@@ -272,6 +337,7 @@ func blocked_output_commits_once() -> void:
 
 func run() -> void:
 	await fixture()
+	await continuous_contact_deformation()
 	await grazing_input_preserves_physics()
 	await dropped_production_items()
 	await save_restore_and_cancel()

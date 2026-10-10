@@ -376,9 +376,9 @@ Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依本車穩定 ID �
 
 Item 或屍體所屬 PhysicalBone 進 HopperArea → Scrapper 解析整具屍體並取得唯一 processing_owner，保存物理快照 → 一個處理槽分步付費 → 固定一次回收結果 → MaterialStorage 接受後才刪物。缺電保留進度；滿庫保留完成結果；供電／佇列可用時重試料斗內尚未接收的重疊物；拆卸／摧毀恢復輸入物理。
 
-一般剛體由 ScrapperFeedMotion 收集實際 mesh／collider 的變換邊界。料斗感測包含邊框上方，中心對準入口且從上方抵達的大物品也可接收；側面擦框不接管。完整足跡可進入者限制每步旋轉，使全部角點位於保守的 0.87 m 開口。過大者由 ScrapperSectionFeed 分割原模型的三維格區，重用原 mesh 與 PBR 材質，以各段局部裁切材質呈現；只複製與格區相交的 mesh。各段保持原尺寸、先在邊框上方旋轉／移向中心，完整位於開口後才下移到刀面，不把整個大碰撞體拉穿邊框。碎段沒有 Item／碰撞／收益／保存身分，唯一原 Item 持有產量、耐久、ID 與 processing_owner。取消還原原物品姿勢、可見度、材質和碰撞，完成或輸入失效時清除全部效果節點。
+一般剛體由 ScrapperFeedMotion 收集實際 mesh／collider 的變換邊界。料斗感測包含邊框上方，中心對準入口且從上方抵達的大物品也可接收；側面擦框不接管。小物限制每步旋轉，使全部角點位於保守的 0.87 m 開口。大型或足跡過大的 Item 改由 ScrapperContactFeed 保留連續表面；建立時細分原三角形，保留 UV、StandardMaterial3D 基色／法線貼圖、UV 變換與主要 PBR 數值。上方共用完整剛體姿勢，實際旋轉後最低點碰到刀齒才建立咬合；七次短暫停頓／拉入搭配約 20° 傾倒，下方 1.08 m 以下局部折皺，0.84 m 以下完整收進保守開口，0.705 m 刀面不規則裁切。輪胎減少金屬折皺幅度；局部法線依變形重算。網格只建立一次，後續以進度驅動 shader，不再生成空中方塊。原 Item 保持尺度、產量、耐久、ID 與 processing_owner；視覺 helper 無碰撞或獨立收益。取消還原原物品姿勢、可見度、材質和碰撞，完成或輸入失效時清除全部效果節點。
 
-service.inputs 可選 feed.start／feed.pose 保存完整局部變換；分段輸入另存有限且介於 0–1 的 feed.progress。載入即重建分段外觀，停電或零時間工作不推進；尚未建立視覺 helper 時重新保存也保留 saved_feed。ItemState 驗證有限 Transform3D 與分段進度，兼容既有沒有 feed 的保存。
+service.inputs 可選 feed.start／feed.pose 保存完整局部變換；大型輸入另存有限且介於 0–1 的 feed.progress。載入以初始姿勢及進度確定性重建接觸變形，停電或零時間工作不推進；尚未建立視覺 helper 時重新保存也保留 saved_feed。ItemState 驗證有限 Transform3D 與進料進度，兼容既有沒有 feed 的保存。
 
 活體進 HopperArea 時先驗證實際重疊且身體中心進入口、同世界、供電與可用容量，同步以弱引用登記唯一 actor／佇列預留，再延後致死，避免在物理訊號中修改碰撞。執行前重驗條件；取消、轉移與失效會釋放預留。Player 先死亡並保留完整物理骨；成功付費的工作步施加咬入衝量，至少相隔 0.15 秒切離一個實際接觸滾輪的部位（頭最後）。切離前捕捉求值後的骨姿勢與線／角速度，移除原骨架的相應碰撞鏈，避免重複物理；全部部位切離後才複製 CorpseProp 軀幹；玩家停掉原骨架物理並隱藏，保留鏡頭、計時器與背包，復活不重留屍體。Raker 使用其既有 corpse_prop；BarrelMan／SlenderSpeaker 保留原特殊死亡語義。裝置快照仍只保存正式屍體輸入，暫態預留不存檔；斷肢為無收益效果，以獨立 PhysicalBone 與衝量吸入、缺電停止切割計時、停止時恢復原材質並釋放鬆散物理。安全復活查詢另排除有電 HopperArea。 ScrapperCrushEffect 由正式設備持有，重用七組 CPUParticles3D（總預算 286 粒）與共享合成 WAV；僅成功付費的正時間 step_work 推進特效，使用輸入 ID 切換首次噴濺，成功材料入庫才觸發完成噴濺。粒子採世界座標、沒有碰撞／收益／存檔；拆卸清除尾跡，沒有服務心跳或失去供電則停音停射。驗收見 [活體分解](docs/validation/2026-10-10-scrapper-living.md)。
 

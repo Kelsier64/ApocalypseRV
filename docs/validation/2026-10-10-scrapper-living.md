@@ -57,3 +57,14 @@ Forward+／Vulkan 另以正式設備與玩家渲染 60 FPS 進料序列，確認
 Godot 4.7.2 正式 runner：三項直接回歸 `test_corpse`、`test_scrapper_motion`、`test_item_services` 通過（日誌 `.godot/test-logs/20261010-195129-232-selected-13140/`，另以嚴格非空退休骨檢查與立即重存檢查於 `.godot/test-logs/20261010-195328-486-selected-20160/` 通過）。最終三項直接檢查（含細分碎段）通過於 `.godot/test-logs/20261010-195500-966-selected-18900/`。八項共享流程 `test_scrapper_living`、`test_scrapper_effect`、`test_item_persistence`、`test_checkpoint_failures`、`test_player_death`、`test_player_dismemberment`、`test_player_head_camera`、`test_rv_resource_cycle` 全部通過，日誌 `.godot/test-logs/20261010-195304-619-selected-24924/`；順序競態修正後，活體、特效及物品保存另於 `.godot/test-logs/20261010-200217-100-selected-28572/` 重驗通過。
 
 正式設備、發電機、輪胎與橫放油桶另以 Forward+／Vulkan 真實渲染 60 FPS 序列，確認原尺度分段、翻轉和清空，渲染腳本與錄製留在忽略位置。自動物理 fixture 使用有上方淨空且固定的正式料斗與 RV 供電；未做手動遊玩、高速移動或翻車進料驗收。
+
+
+## 大物件接觸粉碎動畫重做
+
+本段取代前次大物三維格區拆散動畫。正式發電機、輪胎、直立與橫放油桶保持連續原表面；建立暫態細分網格後，上半部共用單一傾倒姿勢，下半部才局部受壓。七次停頓／拉入節奏、約 20° 負載傾斜、金屬折皺與刀口撕裂取代各碎段同時浮空匯聚。輪胎折皺較柔和。保留原貼圖與 UV 變換、主要 PBR 參數、法線貼圖，變形後重算法線。原 Item 不縮放且仍是唯一所有權／保存／材料產出來源。
+
+實際傾斜後最低點決定咬合，修正測試發現的初始角落已到 y=0.830 m、整體 grip 卻僅 0.189 而擦入邊框的問題。檢查改用變形後真實細分頂點，在 y<0.84 m 時必須位於保守開口；進度零保持完整連續表面，y>=1.08 m 保持共同剛體姿勢。最後全部可見表面低於刀面才結束，沒有最後一塊突然消失。細分採共邊長度二分，避免相鄰三角形折彎後出現接縫；裁切盒隨共同姿勢更新，另以正式高梯子檢查傾斜後可見表面仍位於渲染邊界內。停電、讀檔與接續進料比對實際表面取樣及 shader 參數，並與未中斷參考進度一致。
+
+Godot 4.7.2 正式 runner 六項相關套件通過。`test_corpse`、`test_item_services`、`test_item_persistence`、`test_scrapper_effect`、`test_scrapper_living`：`.godot/test-logs/20261010-202402-670-selected-30904/`。最終接觸邊界、完整吞入及保存重建回歸 `test_scrapper_motion`：`.godot/test-logs/20261010-203057-506-selected-28236/`，含 import，無引擎／腳本錯誤。
+
+Forward+／Vulkan、固定 60 FPS 渲染正式四種投入姿勢共 232 張畫面，觀察傾倒、底部受壓、金屬折皺、刀口碎屑與清空。各輸入確認完成刪除，渲染日誌 `.godot/art-work/scrapper/review_contact_feed.log` 無引擎／腳本錯誤。GIF 與畫面位於聊天輸出位置，未加入版本控制。本次為程序化接觸變形動畫，非材料破壞或碎片剛體求解；未做手動遊玩及行車／翻覆進料驗收。

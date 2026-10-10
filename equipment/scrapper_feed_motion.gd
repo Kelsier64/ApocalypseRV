@@ -9,8 +9,7 @@ var surfaces: Array[Dictionary] = []
 var ready := false
 var physical := false
 var complete := true
-var pieces: Array[Dictionary] = []
-var section_feed: RefCounted
+var contact_feed: RefCounted
 var initial_bones: Dictionary = {}
 var initial_offsets: Dictionary = {}
 
@@ -70,22 +69,21 @@ func setup(prop: Node3D, owner: Node3D, saved: Dictionary = {}) -> bool:
 			initial_offsets[key] = prop.bodies[key].body_offset.affine_inverse()
 	else:
 		var size := rotated_box(bounds, start_pose.basis).size
-		if size.x > HALF_OPENING * 2 or size.z > HALF_OPENING * 2:
+		if prop.is_large or size.x > HALF_OPENING * 2 or size.z > HALF_OPENING * 2:
 			var box := rotated_box(bounds,start_pose.basis)
 			start_pose.origin.y += maxf(0,.87-start_pose.origin.y-box.position.y)
 			pose = start_pose
 			prop.global_transform = owner.global_transform*pose
-			section_feed = load("res://equipment/scrapper_section_feed.gd").new()
-			section_feed.setup(prop,owner,bounds,start_pose)
-			pieces = section_feed.pieces
-			section_feed.advance(owner,float(saved.get("progress",0)))
-	if section_feed == null: surfaces = apply_cut(prop, owner)
+			contact_feed = load("res://equipment/scrapper_contact_feed.gd").new()
+			contact_feed.setup(prop,owner,bounds,start_pose)
+			contact_feed.advance(owner,float(saved.get("progress",0)))
+	if contact_feed == null: surfaces = apply_cut(prop, owner)
 	ready = true
 	return true
 
 func advance(prop: Node3D, owner: Node3D, progress: float, delta: float = 0.0) -> void:
-	if section_feed != null:
-		section_feed.advance(owner,progress)
+	if contact_feed != null:
+		contact_feed.advance(owner,progress)
 		return
 	if physical:
 		if delta <= 0: return
@@ -163,16 +161,16 @@ func release(prop: Node3D, owner: Node3D) -> void:
 	dispose()
 
 func sync(owner: Node3D) -> void:
-	if section_feed != null: section_feed.sync(owner)
+	if contact_feed != null: contact_feed.sync(owner)
 	else: update_cut(surfaces,owner)
 
 func dispose() -> void:
 	restore_cut(surfaces)
-	if section_feed != null: section_feed.dispose()
+	if contact_feed != null: contact_feed.dispose()
 
 func capture() -> Dictionary:
 	var result := {"start":start_pose,"pose":pose}
-	if section_feed != null: result.progress = section_feed.progress
+	if contact_feed != null: result.progress = contact_feed.progress
 	return result
 
 static func apply_cut(node: Node3D, owner: Node3D) -> Array[Dictionary]:
