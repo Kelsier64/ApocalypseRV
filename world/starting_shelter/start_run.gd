@@ -25,6 +25,7 @@ func restore(data: Dictionary) -> void:
 	if is_inside_tree():
 		_apply_simulation()
 		_apply_gate()
+		if is_instance_valid(shelter): shelter.get_node("GarageButton").sync_phase()
 
 func save_block_reason() -> String:
 	if phase in ["opening", "closing"] or (is_instance_valid(gate) and not gate.stable()):
@@ -56,7 +57,7 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 	gate.obstructed.connect(_on_obstructed)
 	var button := building.get_node("GarageButton")
 	button.set_script(BUTTON_SCRIPT)
-	button.set("run", self)
+	button.configure(self)
 	_apply_gate()
 	var world := get_parent() as Node3D
 	if not _spawn_applied and world.get("fresh_start") == true:
