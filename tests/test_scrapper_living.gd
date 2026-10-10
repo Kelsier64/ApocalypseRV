@@ -1,5 +1,6 @@
 extends SceneTree
 ## Real hopper contacts, deferred actor ownership and persistent torso handoff.
+const DISMEMBERMENT = preload("res://player/player_dismemberment_visual.gd")
 var failures: Array[String] = []
 var world: Node3D
 
@@ -40,6 +41,8 @@ func fixture() -> Dictionary:
 	await steps(3)
 	rv.current_power = 20.0
 	var recycler: Item = rv.get_node("Scrapper")
+	recycler.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0,0,8)), rv, rv)
+	await steps(2)
 	check(recycler.can_operate(), "Fixture uses the production RV-mounted scrapper")
 	return {"rv": rv, "recycler": recycler, "hopper": recycler.get_node("HopperArea")}
 
@@ -79,6 +82,27 @@ func queued_corpse(recycler: Item) -> CorpseProp:
 	for entry: Dictionary in recycler.props_being_crushed:
 		if is_instance_valid(entry.prop) and entry.prop is CorpseProp: return entry.prop
 	return null
+
+func finish_physical_input(recycler: Item, corpse: CorpseProp) -> void:
+	for frame in 300:
+		if not is_instance_valid(corpse): break
+		recycler.step_work(1.0 / 60.0)
+		await steps(1)
+	await steps(2)
+	if is_instance_valid(corpse):
+		var remaining := {}
+		for key: String in corpse.bodies:
+			var bone: PhysicalBone3D = corpse.bodies[key]
+			var low := Vector3(INF, INF, INF)
+			var high := Vector3(-INF, -INF, -INF)
+			for shape: CollisionShape3D in bone.find_children("*", "CollisionShape3D", true, false):
+				var box := shape.shape.get_debug_mesh().get_aabb()
+				for corner in 8:
+					var point := recycler.to_local(shape.to_global(box.get_endpoint(corner)))
+					low = low.min(point)
+					high = high.max(point)
+			remaining[key] = {"local": recycler.to_local(bone.global_position), "mask": bone.collision_mask, "low": low, "high": high}
+		print("LIVING_FEED_TIMEOUT kind=", corpse.kind, " power=", recycler.get_connected_rv().current_power, " bones=", remaining)
 
 func player_contact_and_recovery() -> void:
 	var data := await fixture()
@@ -127,11 +151,47 @@ func player_contact_and_recovery() -> void:
 	var cuts_before := get_nodes_in_group("player_detached_parts").size()
 	actor.damage_cooldown = 20.0
 	feed(actor, recycler)
-	await steps(10)
+	await steps(6)
 	check(actor.is_player_dead and actor.current_player_health == 0.0, "Real hopper contact kills despite hurt invulnerability")
+	check(actor.body_state.has_part(&"head") and actor.body_state.has_part(&"right_arm") and actor.body_state.has_part(&"left_leg") and actor.body_state.has_part(&"right_leg"), "Lethal hopper entry preserves the surviving anatomy for physical feeding")
+	check(actor.ragdoll_control.active and actor.ragdoll_control.bodies.size() == 12 and actor.get_node("Visuals").visible, "Injured player's intact anatomical ragdoll owns the initial visible fall")
+	check(queued_corpse(recycler) == null and get_nodes_in_group("player_detached_parts").size() == cuts_before, "Entry cannot batch five instantaneous cuts or hand off an intact torso")
+	var cut_ids: Dictionary = {}
+	var cut_frames: Array[int] = []
+	var saw_partial := false
+	for frame in 180:
+		var present_before: Dictionary = actor.body_state.capture().present
+		var physical_roots := {}
+		for part: StringName in PlayerBodyState.PARTS:
+			var key: String = DISMEMBERMENT.ROOTS[String(part)]
+			if actor.ragdoll_control.bodies.has(key):
+				var bone: PhysicalBone3D = actor.ragdoll_control.bodies[key]
+				physical_roots[String(part)] = bone.global_transform * bone.body_offset.affine_inverse()
+		recycler.step_work(1.0 / 60.0)
+		await steps(1)
+		var cuts_in_frame := 0
+		var survivors := 0
+		for part: StringName in PlayerBodyState.PARTS:
+			if actor.body_state.has_part(part): survivors += 1
+		for part: StringName in PlayerBodyState.PARTS:
+			if not present_before[String(part)] or actor.body_state.has_part(part): continue
+			cuts_in_frame += 1
+			cut_frames.append(frame)
+			var key: String = DISMEMBERMENT.ROOTS[String(part)]
+			check(not actor.ragdoll_control.bodies.has(key), "Staged " + String(part) + " cut removes its original colliding physical branch")
+			if part == &"head": check(survivors == 0, "Head is cut only after the other surviving parts")
+			for piece: Node3D in get_nodes_in_group("player_detached_parts"):
+				if piece.get_meta("player_detached_part") != part or cut_ids.has(piece.get_instance_id()): continue
+				cut_ids[piece.get_instance_id()] = true
+				if physical_roots.has(String(part)):
+					var cut_pose: Transform3D = piece.skeleton.global_transform * piece.skeleton.get_bone_global_pose(piece.anchor_bone)
+					check(cut_pose.origin.distance_to(physical_roots[String(part)].origin) < .2, "Staged cut begins at the evaluated physical limb pose")
+		check(cuts_in_frame <= 1, "One paid physics tick cannot sever multiple anatomical parts")
+		if survivors > 0 and survivors < 4: saw_partial = true
+		if queued_corpse(recycler) != null: break
+	check(saw_partial and cut_frames.size() == 4 and cut_ids.size() == 4, "Already injured player is processed through four distinct physical cuts")
 	for part: StringName in PlayerBodyState.PARTS:
-		check(not actor.body_state.has_part(part), "Hopper severs surviving " + String(part) + " before death")
-	check(get_nodes_in_group("player_detached_parts").size() == cuts_before + 4, "Already missing arm creates only four additional detached parts")
+		check(not actor.body_state.has_part(part), "Hopper eventually severs surviving " + String(part) + " before torso recycling")
 	var corpse := queued_corpse(recycler)
 	check(corpse != null and recycler.props_being_crushed.size() == 1 and corpses().size() == 1, "Player handoff creates and claims exactly one persistent torso")
 	if corpse == null:
@@ -146,25 +206,27 @@ func player_contact_and_recovery() -> void:
 	var cosmetic_cuts: Array[Node3D] = []
 	for part: Node3D in get_nodes_in_group("player_detached_parts"):
 		if part.scrapper != null and part.scrapper.get_ref() == recycler: cosmetic_cuts.append(part)
-	check(cosmetic_cuts.size() == 4, "Only newly severed parts join cosmetic rotor ingestion")
+	check(not cosmetic_cuts.is_empty() and cosmetic_cuts.size() <= 4, "Surviving cosmetic cuts belong to the staged rotor ingestion")
 	if not cosmetic_cuts.is_empty():
-		var piece: Node3D = cosmetic_cuts[0]
-		var cut_before := piece.global_position
-		await steps(12)
-		check(piece.global_position.y < cut_before.y - .05 and not piece.simulated, "Powered cosmetic cuts descend toward the rollers without loose-body simulation")
+		var piece: Node3D = cosmetic_cuts.back()
+		check(piece.simulated and piece.builder != null and piece.builder.simulator.is_simulating_physics(), "Staged cosmetic cut retains its independent physical limb simulation")
 		data.rv.current_power = 0.0
-		var stopped_at := piece.global_position
 		var stopped_time: float = piece.crushed_time
 		await steps(6)
-		check(piece.global_position.is_equal_approx(stopped_at) and is_equal_approx(piece.crushed_time, stopped_time), "Cosmetic cutting progress pauses while RV power is unavailable")
+		check(is_instance_valid(piece) and is_equal_approx(piece.crushed_time, stopped_time), "Cosmetic cutting progress pauses while RV power is unavailable")
 		data.rv.current_power = 20.0
-		await steps(32)
-		check(piece.crushed_time > stopped_time and piece.meshes[0].transparency > 0.0, "Restored power resumes cosmetic pull and fade")
+		await steps(6)
+		check(is_instance_valid(piece) and piece.crushed_time > stopped_time and not piece.cut_surfaces.is_empty(), "Restored power resumes contact clipping of the physical cut")
+		if is_instance_valid(piece): check(piece.meshes[0].transparency == 0.0, "Rotor clipping does not fade an entire anatomical cut")
 		check(data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == 0, "Cosmetic cuts never deposit independent materials")
-	var torso_before := corpse.global_position
+	var torso_bones := {}
+	for key: String in corpse.bodies: torso_bones[key] = corpse.bodies[key].global_transform
 	recycler.step_work(.2)
 	await steps(2)
-	check(corpse.global_position.distance_to(torso_before) > .05, "Detached player torso visibly follows powered ingestion")
+	var physical_progress := corpse.bodies.size() < torso_bones.size()
+	for key: String in corpse.bodies:
+		physical_progress = physical_progress or not corpse.bodies[key].global_transform.is_equal_approx(torso_bones[key])
+	check(corpse.physical_feed and physical_progress, "Paid torso intake moves or consumes its real anatomical bones below the rollers")
 	recycler.enabled = false
 	recycler._on_service_stopped()
 	await steps(4)
@@ -177,8 +239,7 @@ func player_contact_and_recovery() -> void:
 	var amount_before: int = data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
 	recycler.recycle_prop(corpse)
 	await steps(3)
-	recycler.step_work(2.0)
-	await steps(3)
+	await finish_physical_input(recycler, corpse)
 	check(not is_instance_valid(corpse) and data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == amount_before + 3, "Resumed player torso produces exactly one fixed yield")
 	await steps(160)
 	check(is_instance_valid(actor) and actor.get_instance_id() == identity and not actor.is_player_dead, "Player safely respawns as the same controller instance")
@@ -191,6 +252,34 @@ func player_contact_and_recovery() -> void:
 	recycler.step_work(0.0)
 	await steps(4)
 	check(not actor.is_player_dead and data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == amount_before + 3, "Recovered player stays alive without a second material deposit")
+	await retire()
+
+func staged_power_pause_and_cancel() -> void:
+	var data := await fixture()
+	var recycler: Item = data.recycler
+	var actor := new_player()
+	await steps(3)
+	feed(actor, recycler)
+	await steps(5)
+	check(actor.is_player_dead and actor.ragdoll_control.active and actor.ragdoll_control.bodies.size() == 14, "Staged pause begins with real contact and the full anatomical death rig")
+	var anatomy: Dictionary = actor.body_state.capture()
+	data.rv.current_power = 0.0
+	recycler.step_work(.2)
+	await steps(6)
+	check(actor.body_state.capture() == anatomy and queued_corpse(recycler) == null, "An unpowered staged player neither severs nor hands off a torso")
+	check(recycler._pending_living.size() == 1 and actor.has_meta("scrapper_living_owner"), "Power loss pauses the existing staged actor reservation")
+	data.rv.current_power = 20.0
+	for frame in 15:
+		recycler.step_work(1.0 / 60.0)
+		await steps(1)
+	check(actor.body_state.capture() != anatomy and recycler._pending_living.size() == 1, "Restored power resumes physical anatomical intake on the existing claim")
+	recycler.enabled = false
+	recycler._on_service_stopped()
+	await steps(3)
+	check(recycler._pending_living.is_empty() and not actor.has_meta("scrapper_living_owner") and queued_corpse(recycler) == null, "Cancelling a partly severed living feed releases its claim without creating a second torso")
+	check(actor.is_player_dead and actor.ragdoll_control.active and actor.get_node("Visuals").visible, "Cancelled anatomical intake retains the original visible physical death rig")
+	await steps(140)
+	check(not actor.is_player_dead and corpses().size() == 1, "Cancelled staged player uses ordinary recovery with exactly one persistent death corpse")
 	await retire()
 
 func pending_cancellation_and_world_transfer() -> void:
@@ -253,8 +342,7 @@ func deferred_power_loss_and_retry() -> void:
 		check(VehicleSnapshot.valid_device(VehicleSnapshot.device_state(recycler)), "Raker handoff input validates in production device persistence")
 		corpse.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(2, 2)}
 		var amount_before: int = data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
-		recycler.step_work(2.0)
-		await steps(3)
+		await finish_physical_input(recycler, corpse)
 		recycler.step_work(2.0)
 		await steps(2)
 		check(data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == amount_before + 2 and corpses().is_empty(), "Raker recycling retires its original source and deposits only once")
@@ -310,6 +398,7 @@ func competing_recyclers() -> void:
 	if corpse != null:
 		corpse.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(4, 4)}
 		var amount_before: int = data.rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
+		await finish_physical_input(owner, corpse)
 		first.step_work(2.0)
 		second.step_work(2.0)
 		await steps(3)
@@ -352,6 +441,7 @@ func special_monster_deaths() -> void:
 
 func run() -> void:
 	await player_contact_and_recovery()
+	await staged_power_pause_and_cancel()
 	await deferred_power_loss_and_retry()
 	await pending_cancellation_and_world_transfer()
 	await one_slot_reservation()

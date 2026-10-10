@@ -1350,7 +1350,37 @@ func complete_execution(owner: Node3D) -> bool:
 
 func crush_in_scrapper(owner: Node3D) -> bool:
 	if is_player_dead or not is_instance_valid(owner) or not WorldEntities.same_world(self, owner) or not owner.has_method("is_powered_feed") or not owner.is_powered_feed(): return false
-	_crush_body({"source": "scrapper", "scrapper": owner, "hold_in_mouth": false})
+	current_player_health = 0.0
+	_update_health_bar()
+	_player_die() # Physical collapse first; rollers cut only contacting branches.
+	return true
+
+func scrapper_contact_part(owner: Node3D) -> StringName:
+	var nearest: StringName = &""
+	var height := INF
+	for part: StringName in PlayerBodyState.PARTS:
+		if not body_state.has_part(part): continue
+		if part == &"head" and (body_state.has_part(&"left_arm") or body_state.has_part(&"right_arm") or body_state.has_part(&"left_leg") or body_state.has_part(&"right_leg")): continue
+		for key: String in ragdoll_control.bodies:
+			if not ragdoll_control.part_contains_bone(part,key): continue
+			var point := owner.to_local(ragdoll_control.bodies[key].global_position)
+			if absf(point.x) < .40 and absf(point.z) < .40 and point.y < .82 and point.y < height:
+				height = point.y
+				nearest = part
+	return nearest
+
+func sever_scrapper_part(part: StringName, owner: Node3D) -> bool:
+	var claim: Variant = get_meta(&"scrapper_living_owner") if has_meta(&"scrapper_living_owner") else null
+	if not is_player_dead or not ragdoll_control.active or not claim is WeakRef or claim.get_ref() != owner or not body_state.has_part(part) or scrapper_contact_part(owner) != part: return false
+	ragdoll_control.capture_physical_pose()
+	var key: String = preload("res://player/player_dismemberment_visual.gd").ROOTS[String(part)]
+	var bone: PhysicalBone3D = ragdoll_control.bodies[key]
+	var detached: Node3D = get_node("Visuals").detach_part(part,{"source":"scrapper","scrapper":owner,"hold_in_mouth":false,"launch_velocity":bone.linear_velocity,"angular_velocity":bone.angular_velocity})
+	if part == &"head": ragdoll_control.follow_detached_head(detached,camera.global_transform)
+	body_state.sever(part)
+	ragdoll_control.remove_scrapper_branch(part)
+	get_node("Visuals").apply_body_state()
+	body_state_changed.emit()
 	return true
 
 func _crush_body(context: Dictionary) -> void:

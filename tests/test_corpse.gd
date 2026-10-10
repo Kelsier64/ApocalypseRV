@@ -10,6 +10,19 @@ func step(count: int) -> void:
 		await physics_frame
 		await process_frame
 
+func finish_physical_input(recycler: Item, corpse: CorpseProp) -> void:
+	for frame in 300:
+		if not is_instance_valid(corpse): break
+		recycler.step_work(1.0 / 60.0)
+		await step(1)
+	await step(2)
+	if is_instance_valid(corpse):
+		var remaining := {}
+		for key: String in corpse.bodies:
+			var bone: PhysicalBone3D = corpse.bodies[key]
+			remaining[key] = {"local": recycler.to_local(bone.global_position), "mask": bone.collision_mask}
+		print("CORPSE_FEED_TIMEOUT kind=", corpse.kind, " power=", recycler.get_connected_rv().current_power, " bones=", remaining)
+
 func held_bone(corpse: CorpseProp, key: String) -> Transform3D:
 	var data := corpse.capture_item_state().corpse as Dictionary
 	var sk := corpse.skeleton
@@ -33,6 +46,7 @@ func palm_position(sk: Skeleton3D, side: String) -> Vector3:
 
 func check_limb_feed(recycler: Item, kind: String, restore_power := false) -> void:
 	var rv := recycler.get_connected_rv()
+	rv.current_power = 20.0
 	var saved_power: float = rv.current_power
 	if restore_power: rv.current_power = 0
 	var corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()
@@ -57,12 +71,14 @@ func check_limb_feed(recycler: Item, kind: String, restore_power := false) -> vo
 		rv.current_power = saved_power
 		recycler.step_work(0)
 		await step(2)
+		check(corpse.processing and not corpse.physical_feed and not corpse.simulator.is_simulating_physics(), "A zero-duration retry reserves the corpse without restarting paid physical feed")
 	check(corpse.processing_owner == recycler and corpse.processing, kind + " extremity-first contact accepts the entire corpse")
 	check(recycler.props_being_crushed.size() == 1, kind + " simultaneous limb contacts enqueue only one corpse")
-	recycler.step_work(2.0)
-	await step(2)
+	await finish_physical_input(recycler, corpse)
 	check(not is_instance_valid(corpse) and rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == material_before + 3, kind + " limb-fed corpse produces one yield")
-	if is_instance_valid(corpse): corpse.queue_free()
+	if is_instance_valid(corpse):
+		recycler._on_service_stopped()
+		corpse.queue_free()
 	await step(2)
 
 func run() -> void:
@@ -188,7 +204,25 @@ func run() -> void:
 	rv.current_power = 20
 	var recycler: Item = rv.get_node("Scrapper")
 	await step(2)
-	restored.global_position = recycler.global_position + Vector3.UP
+	recycler.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0,0,8)), rv, rv)
+	await step(2)
+	recycler.enabled = false
+	var feed_shift := recycler.global_position + Vector3.UP - restored.global_position
+	for bone: PhysicalBone3D in restored.bodies.values(): bone.global_position += feed_shift
+	restored.global_position += feed_shift
+	var lowest := INF
+	for bone: PhysicalBone3D in restored.bodies.values():
+		for collider: CollisionShape3D in bone.find_children("*", "CollisionShape3D", true, false):
+			var box := collider.shape.get_debug_mesh().get_aabb()
+			for corner in 8:
+				lowest = minf(lowest, recycler.to_local(collider.to_global(box.get_endpoint(corner))).y)
+	var above_rim := recycler.global_basis * Vector3.UP * maxf(0.0,.9-lowest)
+	for bone: PhysicalBone3D in restored.bodies.values():
+		bone.global_position += above_rim
+		bone.linear_velocity = Vector3.ZERO
+		bone.angular_velocity = Vector3.ZERO
+	restored.global_position += above_rim
+	recycler.enabled = true
 	recycler.recycle_prop(restored)
 	await step(2)
 	check(restored.processing and not restored.simulator.is_simulating_physics(), "Recycler stops every physical bone")
@@ -212,16 +246,21 @@ func run() -> void:
 	await step(3)
 	restored.interact(player)
 	check(player.inventory.items.is_empty(), "Processing corpse rejects pickup")
+	recycler.enabled = false
 	recycler._on_service_stopped()
 	await step(3)
 	check(not restored.processing and restored.simulator.is_simulating_physics() and restored.collision_layer == 2, "Cancelled recycling restores articulated loose corpse")
 	restored.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(3, 3)}
+	recycler.enabled = true
 	recycler.recycle_prop(restored)
 	await step(2)
 	var material_before := rv.get_item_count(ItemNames.UNKNOWN_MATERIAL)
-	recycler.step_work(2.0)
-	await step(2)
+	await finish_physical_input(recycler, restored)
 	check(not is_instance_valid(restored) and rv.get_item_count(ItemNames.UNKNOWN_MATERIAL) == material_before + 3, "Completed recycling grants one fixed yield and removes all corpse physics")
+	if is_instance_valid(restored):
+		recycler._on_service_stopped()
+		restored.queue_free()
+		await step(2)
 	# Real Area3D contact must discover layer-2 proxy without a direct recycle call.
 	var hopper_corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()
 	hopper_corpse.restore_item_state(state)
@@ -229,10 +268,12 @@ func run() -> void:
 	hopper_corpse.global_position = recycler.global_position + Vector3.UP * .7
 	await step(12)
 	check(hopper_corpse.processing_owner == recycler and hopper_corpse.processing, "Hopper body_entered accepts the corpse automatically")
+	recycler.enabled = false
 	recycler._on_service_stopped()
 	await step(3)
 	hopper_corpse.queue_free()
 	await step(2)
+	recycler.enabled = true
 	recycler.step_work(0)
 	await check_limb_feed(recycler, "raker")
 	await check_limb_feed(recycler, "player")

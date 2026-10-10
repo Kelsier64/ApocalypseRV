@@ -15,6 +15,8 @@ var source_actor: WeakRef
 var saved_pose: Dictionary = {}
 var held := false
 var processing := false
+var physical_feed := false
+var fed_bones: Dictionary = {}
 var initialized := false
 const HOLD_FREQUENCY := 36.0
 var held_pelvis_rest := Transform3D.IDENTITY
@@ -72,7 +74,9 @@ func _capture_pose() -> Dictionary:
 		var parent := skeleton.get_bone_parent(bone)
 		var key := String(skeleton.get_bone_name(bone))
 		var pose: Transform3D
-		if bodies.has(key) and not processing:
+		if physical_feed and fed_bones.has(key):
+			pose = fed_bones[key]
+		elif bodies.has(key) and (not processing or physical_feed):
 			pose = bodies[key].global_transform * bodies[key].body_offset.affine_inverse()
 		else:
 			pose = (world_poses[parent] if parent >= 0 else skeleton.global_transform) * skeleton.get_bone_pose(bone)
@@ -128,6 +132,8 @@ func _rebuild() -> void:
 	bodies.clear()
 	initialized = false
 	processing = false
+	physical_feed = false
+	fed_bones.clear()
 	_initialize()
 
 func _initialize() -> void:
@@ -262,6 +268,36 @@ func _apply_missing_parts() -> void:
 		DISMEMBERMENT._instance(data, skeleton, label, 1)
 	donor.free()
 
+func begin_physical_feed() -> void:
+	if not initialized or physical_feed: return
+	physical_feed = true
+	var frame := skeleton.global_transform
+	skeleton.top_level = true
+	skeleton.global_transform = frame
+	skeleton.force_update_all_bone_transforms()
+	for body: PhysicalBone3D in bodies.values():
+		body.global_transform = skeleton.global_transform * skeleton.get_bone_global_pose(body.get_bone_id()) * body.body_offset
+		body.collision_layer = 128
+		body.collision_mask = 1
+	simulator.active = true
+	simulator.physical_bones_start_simulation()
+	for body: PhysicalBone3D in bodies.values():
+		body.linear_velocity = Vector3.ZERO
+		body.angular_velocity = Vector3.ZERO
+
+func consume_feed_bones(keys: Array[String]) -> void:
+	if not physical_feed: return
+	var data := _capture_pose()
+	for key in keys:
+		if not bodies.has(key): continue
+		var body: PhysicalBone3D = bodies[key]
+		fed_bones[key] = body.global_transform*body.body_offset.affine_inverse()
+		body.free()
+		bodies.erase(key)
+	# Keep swallowed skin at its world pose while unconsumed joints stay physical.
+	for i in skeleton.get_bone_count(): skeleton.set_bone_pose(i,data.poses[i])
+	skeleton.force_update_all_bone_transforms()
+
 func set_processing(value: bool) -> void:
 	if not initialized or value == processing: return
 	if value:
@@ -283,11 +319,16 @@ func _physics_process(delta: float) -> void:
 	if not initialized:
 		_initialize.call_deferred()
 		return
-	if processing: return
+	if processing and not physical_feed: return
+	if physical_feed and not fed_bones.is_empty():
+		var frame := _capture_pose()
+		for i in skeleton.get_bone_count(): skeleton.set_bone_pose(i,frame.poses[i])
+		skeleton.force_update_all_bone_transforms()
 	if held:
 		_follow_hand(delta)
 	else:
-		var pelvis: PhysicalBone3D = bodies["pelvis"]
+		if bodies.is_empty(): return
+		var pelvis: PhysicalBone3D = bodies["pelvis"] if bodies.has("pelvis") else bodies.values()[0]
 		global_position = pelvis.global_position
 		linear_velocity = pelvis.linear_velocity
 		angular_velocity = pelvis.angular_velocity

@@ -1,10 +1,10 @@
 extends Item
+const FEED = preload("res://equipment/scrapper_feed_motion.gd")
 
 @onready var roller1: CSGCylinder3D = $CSGCylinder3D
 @onready var roller2: CSGCylinder3D = $CSGCylinder3D2
 
 var props_being_crushed: Array[Dictionary] = []
-var crush_speed: float = 0.5 # Units per second to pull down
 var crush_time: float = 1.5 # Seconds to crush
 var roller_spin_speed: float = 5.0 # Radians per second
 var power_draw_per_second: float = 0.8
@@ -42,8 +42,20 @@ func step_work(delta: float):
 	if props_being_crushed.size() < queue_capacity and (not source.has_method("has_usable_power") or source.has_usable_power()):
 		for body in $HopperArea.get_overlapping_bodies():
 			_on_hopper_body_entered(body)
+	if delta <= 0:
+		_stop_crush_effect()
+		return
+	if props_being_crushed.is_empty() and _step_living_feed(delta): return
 	if props_being_crushed.size() > 0:
-		if props_being_crushed[0].timer <= 0.0:
+		var first: Dictionary = props_being_crushed[0]
+		if first.feed == null:
+			if first.prop is CorpseProp and not first.prop.initialized: return
+			var motion := FEED.new()
+			if not motion.setup(first.prop,self,first.get("saved_feed",{})):
+				_on_service_stopped()
+				return
+			first.feed = motion
+		if props_being_crushed[0].timer <= 0.0 and first.feed.complete:
 			_stop_crush_effect()
 			if _finish_recycle(props_being_crushed[0].prop):
 				props_being_crushed.pop_front()
@@ -53,7 +65,7 @@ func step_work(delta: float):
 			_stop_crush_effect()
 			return
 		if rv and rv.has_method("consume_power"):
-			if not rv.consume_power(power_draw_per_second * minf(delta, props_being_crushed[0].timer)):
+			if not rv.consume_power(power_draw_per_second * (delta if first.feed.physical else minf(delta, props_being_crushed[0].timer))):
 				_stop_crush_effect()
 				return
 
@@ -70,14 +82,13 @@ func step_work(delta: float):
 			var p: RigidBody3D = data["prop"]
 			
 			if is_instance_valid(p):
-				# Move item down slowly relative to the scrapper's orientation
-				data["local_position"].y -= crush_speed * delta
-				p.global_position = to_global(data["local_position"])
-				data["timer"] -= delta
+				data["timer"] = maxf(0.0,data["timer"] - delta)
+				data.feed.advance(p,self,clampf(1.0-data.timer/maxf(crush_time,.001),0,1),delta)
+				data.local_position = to_local(p.global_position)
 				if is_instance_valid(crush_effect):
 					crush_effect.advance_work(delta, p is CorpseProp, _crush_contact(data.local_position), clampf(1.0 - data.timer / maxf(crush_time, .001), 0, 1), p.get_instance_id())
 				
-				if data["timer"] <= 0:
+				if data["timer"] <= 0 and data.feed.complete:
 					if _finish_recycle(p):
 						props_being_crushed.remove_at(i)
 			else:
@@ -99,7 +110,8 @@ func _on_hopper_body_entered(body: Node3D):
 	
 	# Assume Item extends RigidBody3D
 	if body is Item:
-		recycle_prop(body)
+		var local := to_local(body.global_position)
+		if absf(local.x) <= .30 and absf(local.z) <= .30 and (body is CorpseProp or FEED.admissible(body,self)): recycle_prop(body)
 	elif body is PhysicalBone3D:
 		# Resolve the actual owner of a limb; cosmetic loose parts have no yield.
 		var ancestor: Node = body.get_parent()
@@ -161,6 +173,10 @@ func _start_living_input(id: int) -> void:
 	elif actor is Monster and not actor.is_dead:
 		actor.die() # Preserve special deaths (including the oil-barrel explosion).
 		killed = actor.is_dead # Invincible actors may reject death.
+	if killed and actor.has_method("sever_scrapper_part"):
+		_pending_living[id].elapsed = 0.0
+		_pending_living[id].cooldown = .12
+		_pending_living[id].cut_pending = false
 	if not killed:
 		_release_living_input(id)
 		return
@@ -170,12 +186,18 @@ func _start_living_input(id: int) -> void:
 func _finish_living_input(id: int) -> void:
 	if not _pending_living.has(id) or not _pending_living[id].killed: return
 	var actor: Node3D = _pending_living[id].actor.get_ref()
-	if not is_instance_valid(actor) or actor.is_queued_for_deletion() or not WorldEntities.same_world(self, actor) or not is_powered_feed():
+	if not is_instance_valid(actor) or actor.is_queued_for_deletion() or not WorldEntities.same_world(self, actor) or not can_operate():
 		_release_living_input(id)
 		return
+	if not is_powered_feed(): return
 	var corpse: CorpseProp
 	if actor.has_method("release_death_corpse"):
+		if not actor.is_player_dead:
+			_release_living_input(id)
+			return
 		if not actor.ragdoll_control.active: return
+		for part: StringName in PlayerBodyState.PARTS:
+			if actor.body_state.has_part(part): return
 		corpse = actor.release_death_corpse()
 	elif actor is Raker:
 		if not actor.ragdoll.active: return
@@ -184,10 +206,50 @@ func _finish_living_input(id: int) -> void:
 	_release_living_input(id)
 	if is_instance_valid(corpse): recycle_prop(corpse)
 
+func _step_living_feed(delta: float) -> bool:
+	for id: int in _pending_living.keys():
+		var entry: Dictionary = _pending_living[id]
+		var actor: Node3D = entry.actor.get_ref()
+		if not entry.killed or not is_instance_valid(actor) or not actor.has_method("sever_scrapper_part") or not actor.ragdoll_control.active: continue
+		if delta <= 0 or not is_powered_feed(): return true
+		if not get_connected_rv().consume_power(power_draw_per_second*delta): return true
+		if not entry.get("tipped",false):
+			actor.ragdoll_control.bodies.pelvis.angular_velocity += global_basis*Vector3(0,0,2.4)
+			entry.tipped = true
+		entry.elapsed += delta
+		entry.cooldown -= delta
+		if entry.elapsed > 3.0:
+			_release_living_input(id) # A genuinely jammed body returns to ordinary death.
+			return false
+		actor.ragdoll_control.remaining = maxf(actor.ragdoll_control.remaining,1.75)
+		for bone: PhysicalBone3D in actor.ragdoll_control.bodies.values():
+			var target := to_global(Vector3(0,.48,0))
+			var pull := (target-bone.global_position).limit_length(1.0)*bone.mass*16.0-bone.linear_velocity*bone.mass*3.0
+			bone.apply_central_impulse(pull*delta)
+		roller1.rotate_object_local(Vector3.UP,roller_spin_speed*delta)
+		roller2.rotate_object_local(Vector3.UP,-roller_spin_speed*delta)
+		crush_effect.advance_work(delta,true,Vector3(0,.72,0),entry.elapsed/3.0,id)
+		if entry.cut_pending or entry.cooldown > 0: return true
+		var contact: StringName = actor.scrapper_contact_part(self)
+		if contact != &"":
+			entry.cut_pending = true
+			_cut_living_part.call_deferred(id,contact)
+		return true
+	return false
+
+func _cut_living_part(id: int, part: StringName) -> void:
+	if not _pending_living.has(id): return
+	var actor: Node3D = _pending_living[id].actor.get_ref()
+	if is_instance_valid(actor) and is_powered_feed() and WorldEntities.same_world(self,actor): actor.sever_scrapper_part(part,self)
+	_pending_living[id].cut_pending = false
+	_pending_living[id].cooldown = .15
+	_finish_living_input(id)
+
 func recycle_prop(prop: Item):
 	if prop == self or prop.is_ancestor_of(self) or is_ancestor_of(prop): return
 	if prop.presentation_only or prop.is_fixed or prop.is_being_placed: return
 	if prop is CorpseProp and prop.held: return
+	if not prop is CorpseProp and not FEED.fits(prop,self): return
 	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() + _pending_living.size() >= queue_capacity:
 		return
 	var rv = get_connected_rv()
@@ -223,16 +285,19 @@ func recycle_prop(prop: Item):
 		"prop": prop,
 		"timer": crush_time,
 		"physics": physics,
-		"local_position": to_local(prop.global_position)
+		"local_position": to_local(prop.global_position), "feed": null
 	})
 
 func _physics_process(_delta: float) -> void:
-	if not is_powered_feed() or props_being_crushed.is_empty() or props_being_crushed[0].timer <= 0: _stop_crush_effect()
+	if not is_powered_feed() or (props_being_crushed.is_empty() and _pending_living.is_empty()) or (not props_being_crushed.is_empty() and props_being_crushed[0].timer <= 0 and (props_being_crushed[0].feed == null or props_being_crushed[0].feed.complete)): _stop_crush_effect()
 	for id: int in _pending_living.keys():
 		_finish_living_input(id)
 	for data in props_being_crushed:
 		if is_instance_valid(data.prop):
-			data.prop.global_position = to_global(data.local_position)
+			if data.feed != null and data.feed.physical: continue
+			if data.feed != null: data.prop.global_transform = global_transform * data.feed.pose
+			elif not data.get("saved_feed",{}).is_empty(): data.prop.global_transform = global_transform*data.saved_feed.pose
+			else: data.prop.global_position = to_global(data.local_position)
 
 func _on_service_stopped() -> void:
 	_stop_crush_effect(true)
@@ -241,6 +306,7 @@ func _on_service_stopped() -> void:
 		if not is_instance_valid(data.prop):
 			continue
 		var prop: Item = data.prop
+		if data.feed != null: data.feed.release(prop,self)
 		prop.processing_owner = null
 		prop.freeze = data.physics.freeze
 		prop.freeze_mode = data.physics.mode
@@ -266,6 +332,8 @@ func _finish_recycle(prop: Item) -> bool:
 	if not rv.deposit_materials(prop.get_meta("recycle_result")):
 		return false
 	if is_instance_valid(crush_effect): crush_effect.impact(prop is CorpseProp, _crush_contact(to_local(prop.global_position)))
+	for entry: Dictionary in props_being_crushed:
+		if entry.prop == prop and entry.feed != null: FEED.restore_cut(entry.feed.surfaces)
 	prop.queue_free()
 	return true
 
@@ -273,8 +341,10 @@ func capture_service_state() -> Dictionary:
 	var inputs: Array[Dictionary] = []
 	for entry in props_being_crushed:
 		if is_instance_valid(entry.prop):
-			inputs.append({"scene": entry.prop.scene_file_path, "state": entry.prop.capture_item_state(),
-				"timer": entry.timer, "local_position": entry.local_position, "physics": entry.physics.duplicate(true)})
+			var input := {"scene": entry.prop.scene_file_path, "state": entry.prop.capture_item_state(),
+				"timer": maxf(0,entry.timer), "local_position": entry.local_position, "physics": entry.physics.duplicate(true)}
+			if entry.feed != null: input.feed = entry.feed.capture()
+			inputs.append(input)
 	return {"inputs": inputs}
 
 func restore_service_state(state: Dictionary) -> void:
@@ -292,10 +362,11 @@ func restore_service_state(state: Dictionary) -> void:
 		input.freeze = true
 		input.collision_layer = 0
 		input.collision_mask = 0
-		input.global_position = to_global(saved.local_position)
+		if saved.has("feed"): input.global_transform = global_transform*saved.feed.pose
+		else: input.global_position = to_global(saved.local_position)
 		if input.has_method("set_processing"): input.set_processing(true)
 		props_being_crushed.append({"prop": input, "timer": saved.timer,
-			"local_position": saved.local_position, "physics": saved.physics.duplicate(true)})
+			"local_position": saved.local_position, "physics": saved.physics.duplicate(true), "feed": null, "saved_feed": saved.get("feed",{})})
 
 func can_accept_held_item(player: Node3D) -> bool:
 	if not can_operate() or props_being_crushed.size() + _pending_living.size() >= queue_capacity: return false
@@ -304,10 +375,16 @@ func can_accept_held_item(player: Node3D) -> bool:
 	var source := get_connected_rv()
 	if source == null or not source.has_usable_power(): return false
 	var record: Dictionary = player.inventory.active_item()
-	return SaveSceneCatalog.resolve(record.get("scene_path", ""), "item") != null
+	var scene := SaveSceneCatalog.resolve(record.get("scene_path", ""), "item")
+	if scene == null: return false
+	if scene.resource_path == "res://props/corpse.tscn": return true
+	var probe: Node3D = scene.instantiate()
+	var size: Vector3 = FEED.rotated_box(FEED.geometry_bounds(probe),probe.basis).size
+	probe.free()
+	return size.x <= FEED.HALF_OPENING*2 and size.z <= FEED.HALF_OPENING*2
 
 func accept_held_item(player: Node3D) -> String:
-	if not can_accept_held_item(player): return "無法投入：分解機未就緒、佇列已滿，或需要雙手大型物品"
+	if not can_accept_held_item(player): return "無法投入：分解機未就緒、佇列已滿、物品尺寸超過入口，或需要雙手大型物品"
 	var record: Dictionary = player.inventory.active_item().duplicate(true)
 	var scene := SaveSceneCatalog.resolve(record.scene_path, "item")
 	var input: Item = scene.instantiate()
@@ -320,7 +397,7 @@ func accept_held_item(player: Node3D) -> String:
 		input.free()
 		return "分解機所在世界無法接收物品"
 	container.add_child(input)
-	input.global_position = to_global(Vector3(0, 1.5, 0))
+	input.global_transform = global_transform * Transform3D(input.basis,Vector3(0,1.5,0))
 	recycle_prop(input)
 	if input.processing_owner != self:
 		input.queue_free()

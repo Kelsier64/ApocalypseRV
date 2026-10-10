@@ -49,6 +49,17 @@ func _run() -> void:
 	recycler.accept_held_item(player)
 	check(player.inventory.items.size() == 1 and recycler.props_being_crushed.is_empty(), "Rejected held handoff preserves inventory ownership")
 	recycler.set_enabled(true)
+	var generator_record: Array = player.inventory.items.duplicate(true)
+	check(not recycler.can_accept_held_item(player), "Oversized held generator cannot enter the narrow recycler opening")
+	recycler.accept_held_item(player)
+	check(player.inventory.items == generator_record and recycler.props_being_crushed.is_empty(), "Oversized rejection preserves the generator's complete inventory identity and state")
+	player.consume_active_item()
+	var fitting: Item = load("res://props/battery.tscn").instantiate()
+	fitting.is_large = true
+	fitting.position = Vector3(-20, 4, 0)
+	WorldEntities.get_container(world).add_child(fitting)
+	check(player.add_prop_item(fitting, fitting.scene_file_path), "A fitting real large battery enters the positive handoff fixture")
+	fitting.queue_free()
 	var identity: String = player.inventory.active_item().state.id
 	recycler.accept_held_item(player)
 	check(player.inventory.items.is_empty() and recycler.props_being_crushed.size() == 1, "Ready recycler transfers large item into processing exactly once")
