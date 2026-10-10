@@ -1,7 +1,6 @@
 extends StaticBody3D
 const READY_COLOR := Color(0.2, 0.65, 0.3)
 const MOVING_COLOR := Color(0.95, 0.56, 0.12)
-const STARTED_COLOR := Color(0.2, 0.55, 0.9)
 const SEALED_COLOR := Color(0.75, 0.16, 0.12)
 const PRESS_DEPTH := 0.026
 var run: Node
@@ -34,7 +33,7 @@ func _phase_color(phase: String) -> Color:
 	match phase:
 		"preparing": return READY_COLOR
 		"opening", "closing": return MOVING_COLOR
-		"started": return STARTED_COLOR
+		"started": return SEALED_COLOR
 		_: return SEALED_COLOR
 
 func _set_color(color: Color) -> void:
