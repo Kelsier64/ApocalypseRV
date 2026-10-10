@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene. `world/test_world.tscn` remains the legacy test fixture.
+Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene. 
 
 - `player/`, `enemies/`, `props/`: actors, interaction, AI, and items.
 - `rv/`, `equipment/`: vehicle physics and mounted devices.
