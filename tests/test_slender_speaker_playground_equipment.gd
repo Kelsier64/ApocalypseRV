@@ -26,7 +26,7 @@ func run() -> void:
 	var rv: Chassis = stage.rv
 	var giant: SlenderSpeaker = stage.giant
 	var player: CharacterBody3D = stage.player
-	var equipment: Item = rv.get_node("Generator")
+	var equipment: Item = rv.get_node("Scrapper")
 	var roof: RVStructurePanel = rv.get_node("StructureSlots").panel("roof_0")
 	var untouched: RVStructurePanel = rv.get_node("StructureSlots").panel("roof_2")
 	# A valid player-mounted roof item used to make every roof-removal strike

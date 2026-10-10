@@ -126,7 +126,7 @@ func _run() -> void:
 	check(player.seated_in == null, "Destroyed seat forces release even with aisle blocked")
 	block.free()
 	player.set_physics_process(false)
-	var device: Item = rv.get_node("Generator")
+	var device: Item = rv.get_node("Scrapper")
 	player.position = Vector3(0, 1, 2)
 	player.camera.global_position = rv.to_global(Vector3(0, 2, 2))
 	player.camera.look_at(rv.to_global(Vector3(0, 0.5, 1.5)))

@@ -22,7 +22,7 @@ func _run() -> void:
 		await physics_frame
 		if tick < 5: print("BASE ", tick, " ", rv.global_position, " ", rv.linear_velocity, " ", rv.get_colliding_bodies().map(func(n): return n.name))
 	if rv.global_position.distance_to(Vector3(0, 1.8, 0)) > 2.0: failures.append("Production RV must settle without self-collision propulsion")
-	for path in ["generator", "crafting_station", "scrapper", "tablet_screen"]:
+	for path in ["crafting_station", "scrapper", "tablet_screen"]:
 		var device: Item = load("res://equipment/" + path + ".tscn").instantiate()
 		world.add_child(device)
 		device.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, 0.7, 0)), rv)

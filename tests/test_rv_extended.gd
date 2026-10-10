@@ -67,9 +67,6 @@ func _run() -> void:
 	var snapshot := VehicleSnapshot.capture(rv)
 	snapshot.mounted_items[0].support = {"kind": "item", "id": snapshot.mounted_items[0].state.id}
 	check(not VehicleSnapshot.validate(snapshot), "Cyclic supports rejected before restore")
-	var gen: Item = load("res://equipment/generator.tscn").instantiate()
-	rv.add_child(gen)
-	gen.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 0.8, 0)), rv)
 	rv.current_power = 0.0
 	rv.current_fuel = 80.0
 	rv.set_engine_running(true)

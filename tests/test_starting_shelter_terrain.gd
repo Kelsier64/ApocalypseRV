@@ -83,9 +83,9 @@ func run() -> void:
 		check(building.find_children("*", "RigidBody3D", true, false).is_empty(), "Static asset owns no loot actors")
 		WalkInSites.activate(owner, site, chunk)
 		var container := WorldEntities.get_container(owner)
-		check(container.get_child_count() == 15, "First visit has three devices and twelve props")
-		check(container.get_children().filter(func(actor): return actor is Item).size() == 15, "All starter devices and loot share the Item lifecycle")
-		var device_scenes: Array[String] = ["res://equipment/generator.tscn", "res://equipment/crafting_station.tscn", "res://equipment/scrapper.tscn"]
+		check(container.get_child_count() == 14, "First visit has two devices and twelve props")
+		check(container.get_children().filter(func(actor): return actor is Item).size() == 14, "All starter devices and loot share the Item lifecycle")
+		var device_scenes: Array[String] = ["res://equipment/crafting_station.tscn", "res://equipment/scrapper.tscn"]
 		var found_devices: Array[String] = []
 		for actor in container.get_children():
 			if actor is Item and actor.scene_file_path in device_scenes:
@@ -93,7 +93,7 @@ func run() -> void:
 				check(not actor.is_fixed and actor.is_large and actor.get_connected_rv() == null, "Starter device remains movable large ground cargo: " + actor.scene_file_path)
 		found_devices.sort()
 		device_scenes.sort()
-		check(found_devices == device_scenes, "Three movable ground devices, exactly one of each service type")
+		check(found_devices == device_scenes, "Two movable ground devices, exactly one of each service type")
 		var picked_id := ""
 		for actor in container.get_children():
 			check(site.bounds.has_point(actor.global_position), "Starter marker within managed bounds")
@@ -101,11 +101,11 @@ func run() -> void:
 				picked_id = actor.persistent_id
 				actor.free()
 		WalkInSites.activate(owner, site, chunk)
-		check(container.get_child_count() == 14, "Repeated activation does not replace picked loot")
+		check(container.get_child_count() == 13, "Repeated activation does not replace picked loot")
 		var remaining_ids := actor_ids(container)
 		check(not picked_id.is_empty() and picked_id not in remaining_ids, "Picked flashlight excluded")
 		WalkInSites.deactivate(owner, site)
-		check(container.get_child_count() == 0 and owner.outdoor_sites[site.id].actors.size() == 14, "Props and ground devices snapshot together")
+		check(container.get_child_count() == 0 and owner.outdoor_sites[site.id].actors.size() == 13, "Props and ground devices snapshot together")
 		check(WalkInSites.validation_error({"generation_version": 7, "outdoor_sites": owner.outdoor_sites, "generated_bands": [0]}).is_empty(), "Dormant starter actor snapshots are valid")
 		chunk.free()
 		chunk = Node3D.new()

@@ -24,15 +24,15 @@ func _run() -> void:
 	container.add_child(shelf)
 	shelf.condition = 43.0
 	shelf.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 2, 0)), wall)
-	var generator := load("res://equipment/generator.tscn").instantiate() as Item
-	container.add_child(generator)
-	generator.condition = 61.0
-	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 3, 0)), shelf)
-	generator.fuel_reserve = 17.0
+	var scrapper := load("res://equipment/scrapper.tscn").instantiate() as Item
+	container.add_child(scrapper)
+	scrapper.condition = 61.0
+	scrapper.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 3, 0)), shelf)
+	scrapper.enabled = false
 	var shelf_id: String = shelf.persistent_id
-	var generator_id: String = generator.persistent_id
-	var records := [WorldActorSnapshot.capture(generator), WorldActorSnapshot.capture(shelf)]
-	check(WorldActorSnapshot.validation_error(records[0], "generator").is_empty(), "Former device uses canonical Item world schema")
+	var scrapper_id: String = scrapper.persistent_id
+	var records := [WorldActorSnapshot.capture(scrapper), WorldActorSnapshot.capture(shelf)]
+	check(WorldActorSnapshot.validation_error(records[0], "scrapper").is_empty(), "Former device uses canonical Item world schema")
 	check(WorldActorSnapshot.validation_error(records[1], "shelf").is_empty(), "Fixed ordinary Item uses same world schema")
 	check(WorldActorSnapshot.graph_error(records).is_empty(), "Valid dependency chain accepted")
 	check(records[1].support == {"kind": "static", "path": "Wall"}, "Static support is relative to world domain")
@@ -55,25 +55,25 @@ func _run() -> void:
 	var duplicate := {"actors": records, "inventory": [{"state": records[0].state}]}
 	check(not ItemState.unique_ids(duplicate, {}), "Cross-domain duplicated equipment ID rejected")
 	var cycle: Array = records.duplicate(true)
-	cycle[1].support = {"kind": "item", "id": generator_id}
+	cycle[1].support = {"kind": "item", "id": scrapper_id}
 	check(not WorldActorSnapshot.graph_error(cycle).is_empty(), "Support cycle rejected before restore")
-	generator.begin_world_transfer()
+	scrapper.begin_world_transfer()
 	shelf.begin_world_transfer()
-	generator.free()
+	scrapper.free()
 	shelf.free()
 	var restored: Array = []
 	for saved in records: restored.append(WorldActorSnapshot.restore(saved, container))
 	WorldActorSnapshot.restore_supports(records, restored, world)
-	generator = restored[0]
+	scrapper = restored[0]
 	shelf = restored[1]
-	check(generator.is_fixed and shelf.is_fixed and generator.mount_support == shelf and shelf.mount_support == wall, "Out-of-order records restore full support chain")
-	check(generator.persistent_id == generator_id and shelf.persistent_id == shelf_id and generator.condition == 61.0 and shelf.condition == 43.0, "Support restore preserves ID and durability")
-	check(generator.fuel_reserve == 17.0 and not generator.can_operate(), "Fixed indoor generator retains settings without RV service")
+	check(scrapper.is_fixed and shelf.is_fixed and scrapper.mount_support == shelf and shelf.mount_support == wall, "Out-of-order records restore full support chain")
+	check(scrapper.persistent_id == scrapper_id and shelf.persistent_id == shelf_id and scrapper.condition == 61.0 and shelf.condition == 43.0, "Support restore preserves ID and durability")
+	check(not scrapper.enabled and not scrapper.can_operate(), "Fixed indoor scrapper retains settings without RV service")
 	wall.queue_free()
 	await process_frame
 	await process_frame
-	check(not generator.is_fixed and not shelf.is_fixed and not generator.freeze and not shelf.freeze, "Removed wall releases the entire support chain")
-	check(generator.persistent_id == generator_id and generator.condition == 61.0, "Dropped former device retains canonical state")
+	check(not scrapper.is_fixed and not shelf.is_fixed and not scrapper.freeze and not shelf.freeze, "Removed wall releases the entire support chain")
+	check(scrapper.persistent_id == scrapper_id and scrapper.condition == 61.0, "Dropped former device retains canonical state")
 	var missing: Array = records.duplicate(true)
 	missing[1].support.path = "MissingWall"
 	for item in restored: item.begin_world_transfer(); item.free()
@@ -85,22 +85,22 @@ func _run() -> void:
 	wall.name = "Wall"
 	world.add_child(wall)
 	shelf = restored[1]
-	generator = restored[0]
+	scrapper = restored[0]
 	shelf.confirm_placement(records[1].transform, wall)
-	generator.confirm_placement(records[0].transform, shelf)
+	scrapper.confirm_placement(records[0].transform, shelf)
 	var streamer := StreamingFixture.new()
 	world.add_child(streamer)
-	streamer._store_items([shelf, generator])
+	streamer._store_items([shelf, scrapper])
 	check(streamer.dormant_items.size() == 1 and streamer.dormant_items[0].size() == 2 and container.get_child_count() == 0, "Outdoor retirement snapshots complete chain before freeing actors")
 	check(ItemState.unique_ids({"dormant_items": streamer.dormant_items}, {}), "Dormant outdoor ledger has unique item ownership")
 	streamer.restore_dormant_items(0)
 	check(streamer.dormant_items.is_empty() and container.get_child_count() == 2, "Revisiting terrain restores dormant Items exactly once")
-	var restored_generator: Item
+	var restored_scrapper: Item
 	var restored_shelf: Item
 	for item in container.get_children():
-		if item.persistent_id == generator_id: restored_generator = item
+		if item.persistent_id == scrapper_id: restored_scrapper = item
 		if item.persistent_id == shelf_id: restored_shelf = item
-	check(restored_generator != null and restored_shelf != null and restored_generator.mount_support == restored_shelf and restored_shelf.mount_support == wall, "Outdoor revisit retains fixed Item support chain")
+	check(restored_scrapper != null and restored_shelf != null and restored_scrapper.mount_support == restored_shelf and restored_shelf.mount_support == wall, "Outdoor revisit retains fixed Item support chain")
 	await _exercise_queue_replace(world)
 	world.free()
 	if failures.is_empty(): print("PASS: unified Item state, ownership, support graph and wall-loss persistence")

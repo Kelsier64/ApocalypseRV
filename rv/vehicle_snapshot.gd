@@ -21,7 +21,7 @@ static func capture(rv: Node3D) -> Dictionary:
 		"linear": rv.linear_velocity, "angular": rv.angular_velocity,
 		"engine_item": rv.get_engine().snapshot() if rv.get_engine() else {}, "headlights": rv.headlights_requested, "comfort": rv.comfort_snapshot(),
 		"hatch_open": rv.engine_bay.hatch_open, "ramp": rv.rear_ramp.snapshot() if rv.rear_ramp else {},
-		"engine": rv.energy.engine_running, "gear": rv.gear, "handbrake": rv.handbrake,
+		"engine": rv.energy.engine_running, "charging": rv.energy.charging_snapshot(), "gear": rv.gear, "handbrake": rv.handbrake,
 		"materials": rv.get_all_items(), "items": rv.stored_items.duplicate(true),
 		"fuel": rv.current_fuel, "fuel_capacity": rv.max_fuel, "material_capacity": rv.material_capacity, "item_capacity": rv.item_capacity,
 		"mounted_items": devices, "structures": rv.get_node("StructureSlots").snapshot(), "wheels": wheels}
@@ -37,6 +37,7 @@ static func validate(data: Dictionary) -> bool:
 	if not data.get("version") is int: return false
 	if data.has("cabin_light_devices") and (not data.cabin_light_devices is bool or not data.cabin_light_devices): return false
 	if data.has("comfort") and not valid_comfort(data.comfort): return false
+	if data.has("charging") and not valid_charging(data.charging): return false
 	if data.get("version", 0) != VERSION or not data.has_all(["structures", "mounted_items", "wheels", "transform", "materials", "items", "fuel", "fuel_capacity", "material_capacity", "item_capacity", "id", "engine_item", "headlights", "hatch_open", "ramp", "engine", "gear", "handbrake", "linear", "angular"]):
 		return false
 	if not RVStructureSlots.validate_snapshot(data.structures): return false
@@ -58,6 +59,10 @@ static func validate(data: Dictionary) -> bool:
 		if not wheel is Dictionary or not wheel.has_all(["installed", "health", "id"]) or not wheel.installed is bool or not _number(wheel.health) or not wheel.id is String or (wheel.installed and wheel.id.is_empty()): return false
 		if not ItemState.valid_slot_data(wheel.get("item_data", {})): return false
 	return MaterialStorage.new().valid_amounts(data.materials) and ItemState.unique_ids(data, {})
+
+static func valid_charging(data: Variant) -> bool:
+	if not data is Dictionary or data.size() != 4 or not data.has_all(["enabled", "charging", "fuel_reserve", "recharge_below"]): return false
+	return data.enabled is bool and data.charging is bool and _number(data.fuel_reserve) and data.fuel_reserve >= 0.0 and _number(data.recharge_below) and data.recharge_below >= 0.0 and data.recharge_below <= 1.0
 
 static func _valid_mounted_supports(data: Dictionary) -> bool:
 	var slots := {}
@@ -137,6 +142,7 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 	rv.engine_bay.get_node("Hatch").set_open(data.hatch_open)
 	if rv.rear_ramp: rv.rear_ramp.restore_state(data.ramp)
 	rv.energy.engine_running = data.engine and rv.has_working_engine() and rv.current_fuel > 0.0
+	rv.energy.restore_charging(data.get("charging", {}))
 	rv.gear = data.gear
 	rv.handbrake = data.handbrake
 	rv.linear_velocity = data.linear
