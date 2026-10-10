@@ -53,6 +53,7 @@
       "test_slender_speaker_target_switch",
       "test_slender_speaker_turning",
       "test_slender_speaker_patrol",
+      "test_slender_speaker_forest_tracking",
       "test_slender_speaker_head_look",
       "test_slender_speaker_acquisition",
       "test_slender_speaker_world",

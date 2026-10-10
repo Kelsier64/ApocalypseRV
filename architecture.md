@@ -61,6 +61,8 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 
 ### v10 森林 Slender Speaker
 
+2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤由 [forest_tracking 回歸](tests/test_slender_speaker_forest_tracking.gd) 涵蓋，範圍及本輪結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
+
 2026-10-10 天氣限制：正式生成只接受所屬世界 `WorldClock.weather.sample().z >= WorldWeather.FOG_LIGHT`（霧級 0.5，小霧以上）。依實際過渡後霧量判斷，不使用目標天氣、常駐遠景霧或畫質設定；晴天、單純下雨與缺少時鐘均不生成。無霧時同樣消耗候選區段，之後起霧、回訪或讀檔不補刷。天氣轉晴不移除已有巨人，存檔中已有巨人仍正常還原；機率、導航、同時一隻及安全距離沿用原規則。
 
 2026-10-09 encounter 更新：`slender_speaker_encounter.gd` 是唯一的持續遭遇與行為意圖 owner。`_refresh_sight()` 只發布觀測值，分開記錄可見玩家、其實際所屬 RV（`player_vehicle`），以及獨立可見 RV；可見車外玩家不能因旁邊另一台車也可見而被歸類成車內乘員。owner 保留同一名玩家／同一台 RV、最後觀測接觸點與 RV 局部座標；車上玩家丟失視線時，只能用重新看見的同一 RV 座標系搬移已記住的點，不能讀取隱藏玩家的即時位置、姿勢或座位。`target_player`／`target_vehicle` 是執行相容介面，遮擋不再等同清空目標；`reset_after_restore()` 才清除 owner、觀測與執行上下文。完整契約與本輪驗證見[持續遭遇與實際輪驅驗證](docs/validation/2026-10-09-slender-speaker-encounter.md)。

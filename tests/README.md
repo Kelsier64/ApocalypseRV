@@ -39,6 +39,8 @@
 
 `test_slender_speaker_patrol` 屬 integration，使用正式 RV、實際感知與正常 8 秒期限，驗證空車遭遇過期後在未烘焙車殼的導航網格上繞行、兩個連續巡邏點到達、兩種車身朝向、轉角不中斷及車內巡邏點跳過。巨人保持真實碰撞與自主階段，不以傳送或強制目標推進。`turning` 另以 30／60／120 Hz 實際物理步測量左右連續轉彎的位移／身體側向分量，並檢查倒退先煞停、再以正常加速度起步。
 
+`test_slender_speaker_forest_tracking` 屬 integration，使用正式 v10 seed 42、區段 11 的自然森林生成與相鄰地形，啟用巨人控制器驗證 60 秒連續徘徊、坡面追玩家、真實樹幹碰撞後脫困，以及道路上的 RV 輪驅追蹤。導航高度差必須超過原路徑容差；脫困保留樹木與連續碰撞移動。測試期間停止串流、凍結車外玩家，RV 使用測試輸入驅動真實輪胎；不代表所有 seed、串流中追擊或玩家自由移動已驗收。見[正式森林導航修正](../docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
+
 `test_slender_speaker_cabin_movement`、`test_slender_speaker_grab_tracking` 屬 integration：正式 Player 輸入／碰撞下持續前後和左右走動、固定站位及朝向、實體遮擋與無即時 RV 目標的記憶防撞、伸手前段有限追蹤／末段鎖定，以及撞上實體障礙後向外走的恢復。車內移動使用獨立 60 秒自主拆頂準備、8 秒連續移動及 20 秒靜止恢復期限；真實接觸抓到玩家才可提前結束移動，不讓拆頂耗盡移動與恢復預算。[初次驗證](../docs/validation/2026-10-09-slender-speaker-cabin-movement.md) · [後續期限及右後角修正](../docs/validation/2026-10-10-slender-speaker-cabin-corner-fix.md)。
 
 `test_slender_speaker_grab_reliability` 屬 integration：手掌實際接觸拆除、指尖擦碰容許、4 m/s 逃離，以及左右車側十個實際站位偏移；`acquisition` 使用正式站姿、攀爬、屋頂與駕駛座姿勢驗證接觸、抬升及手肘連續性。[本輪結果](../docs/validation/2026-10-09-slender-speaker-palm-demolition.md)。
