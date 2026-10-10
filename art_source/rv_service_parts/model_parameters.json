@@ -1,0 +1,60 @@
+{
+  "rv_service_battery": {
+    "triangles": 1598,
+    "vertices": 3244,
+    "surfaces": 7,
+    "bounds_min_m": [
+      -0.225,
+      -0.15,
+      -0.15
+    ],
+    "bounds_max_m": [
+      0.225,
+      0.15,
+      0.15
+    ],
+    "glb_sha256": "48b45d0e9b39e67d9dba41d9bba338c2cf82bc93ba0c64cb271f79cfe6f4e1f8",
+    "origin": "existing wrapper center",
+    "up": "+Y"
+  },
+  "rv_battery_bay": {
+    "triangles": 1586,
+    "vertices": 3084,
+    "surfaces": 6,
+    "bounds_min_m": [
+      -0.16,
+      -0.28,
+      -0.47500000000000003
+    ],
+    "bounds_max_m": [
+      0.161,
+      0.28,
+      0.47500000000000003
+    ],
+    "glb_sha256": "a322dc225dcea4178d77ad4c1d168d75e3efccf155fc2909f2bf90986ac0864a",
+    "origin": "existing wrapper center",
+    "up": "+Y"
+  },
+  "rv_fuel_inlet": {
+    "triangles": 1750,
+    "vertices": 3372,
+    "surfaces": 5,
+    "bounds_min_m": [
+      -0.3,
+      -0.15000000000000002,
+      -0.2
+    ],
+    "bounds_max_m": [
+      0.3,
+      0.23550000000000001,
+      0.2
+    ],
+    "glb_sha256": "b4229a20f9edc5a2c56cc75fbda42c142252be9fd158a844ff8a9a3d351933a8",
+    "origin": "existing wrapper center",
+    "up": "+Y"
+  },
+  "shared_texture": {
+    "path": "assets/materials/industrial/worn_paint.png",
+    "sha256": "ccddbad0596b85ff2a7e5f9fb9e68c1d135f5e033b0aa8249cc17e9cc87ecf52"
+  }
+}
