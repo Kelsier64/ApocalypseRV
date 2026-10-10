@@ -113,7 +113,7 @@ RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種
 
 ### 油桶人與接觸自爆
 
-`props/oil_barrel.gd` 的 `OilBarrel extends Item` 保留普通油桶的拾取、放置及 v5 Item 保存契約，增加車撞立即引爆。動態桶由 `body_entered` 接收實際剛體接觸，固定桶以自身碰撞形狀查詢補足移動中的 frozen 車板；Chassis 的物理接觸迴圈也直接通知油桶。可引爆來源為同 World3D 的 RV 車身／輪槽或已固定的 RV Item 設備；Area、角色、散落 Item、預覽、放置／回收處理中及跨世界接觸均排除，同車固定貨物忽略自車。首次接觸同步鎖定 `is_destroyed`，延後以桶身中心呼叫共用 `BarrelExplosion`，再移除 Item；WorldActorSnapshot 排除已毀損 Item，封住延後結算前的保存空窗。Chassis 使用既有讓路修正保留行駛，只收共用爆炸傷害，不再收同次一般 body/monster 撞擊傷害。
+`props/oil_barrel.gd` 的 `OilBarrel extends Item` 保留普通油桶的拾取、放置及 v5 Item 保存契約，車撞需接觸點法線相對接近速度至少 6 m/s。G 保留 3 m/s 拋出速度，疊加玩家相對移動及放手位置的 RV 點速度（含角速度）；離車後只另加已保存的水平載體速度，垂直分量已在玩家 velocity。剛離開駕駛座、尚未進入下一次正常移動時，velocity 仍含完整載體速度，油桶直接使用該值以免重複疊加。釋放前以完整桶碰撞形狀、從玩家一側的無重疊起點向持物位置掃掠，必要時縮短到障礙前方，空間不足則保留背包並提示。動態桶在 `_integrate_forces` 讀取真實接觸法線／接觸點，保留解算前一物理步的線／角速度以免 Jolt 解算後漏判；固定桶以自身碰撞形狀查詢補足移動中的 frozen 車板；Chassis 的物理接觸迴圈也直接通知油桶。可引爆來源為同 World3D 的 RV 車身／輪槽或已固定的 RV Item 設備；Area、角色、散落 Item、預覽、放置／回收處理中及跨世界接觸均排除，同車固定貨物忽略自車。合格撞擊或自空中最高位置下降至少 2 公尺後碰到向上支撐面時同步鎖定 `is_destroyed`，延後以桶身中心呼叫共用 `BarrelExplosion`，再移除 Item；掉落爆炸不授權任意 RV 接觸傷害，沿用真實距離及遮蔽。`ItemState.service.fall_height` 可選保存已下降距離，舊存檔缺欄位視為零，拾取／放置／世界轉移時重設；WorldActorSnapshot 排除已毀損 Item，封住延後結算前的保存空窗。Chassis 使用既有讓路修正保留行駛，只收共用爆炸傷害，不再收同次一般 body/monster 撞擊傷害。
 
 `BarrelMan` 繼承 Monster 的導航、群組及 WorldEntities 生命週期，獨立處理偽裝、起身、追逐、收腿與自爆，不呼叫一般抓咬、攀車或近戰。玩家優先，入座改追該車外表面；速度 6 m/s，追車上限 10 m/s。低頂下不強行伸展。桶身中心 3 m 球形查詢找到玩家／車體真實碰撞表面且通過 LOS 後，啟動 2 秒倒數；倒數不因目標離開而取消，追逐仍持續。每幀先處理真接觸，再推進倒數；實際玩家／車體接觸和致命傷立即鎖定死亡，延後安全結算爆炸。`receive_vehicle_body_contact` 明確區別真實物理接觸與前方探針。近距離判定排除 Area、Item 及其子碰撞，使用同 World3D 的啟用碰撞表面，車尾與車板不依底盤中心距離判斷。Chassis 與怪物自己的 shape 重疊／滑動接觸共同覆蓋車體、車板與輪槽。車輛讓路保留速度修正，自爆來源的 pending impact 以獨立標記保留至結算，即使來源已釋放仍不重扣一般撞怪傷害。
 
@@ -460,6 +460,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有兩個共享 World3D 的 SubViewport，相機裁掉鏡面專用第 20 層避免遞迴，192×256 並交錯 UPDATE_ONCE 更新；前側板弱參照由 structure_changed 刷新，離座停用、讀檔重連。
 
 EngineHatch／RearRamp 持有 progress、目標與 moving，動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動作中雙片碰撞、完成後連續斜面。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
+
+EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
 VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 的工作台燈隨設備釋放，CabinLighting 跟獨立燈條；照明只透過控制台控制；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
 

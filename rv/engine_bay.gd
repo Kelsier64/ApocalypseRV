@@ -38,6 +38,7 @@ func take_damage(amount: float) -> void:
 func _process(_delta: float) -> void:
 	$EngineVisual.visible = installed_engine != null
 	EngineAppearance.apply($EngineVisual, installed_engine)
+	$Label.visible = hatch_open
 	$Label.text = "ENGINE BAY\n" + ("EMPTY" if installed_engine == null else "%.0f / %.0f" % [installed_engine.health, installed_engine.definition().max_health])
 
 func allows_mount_at(_point: Vector3) -> bool: return false

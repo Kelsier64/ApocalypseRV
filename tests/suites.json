@@ -78,6 +78,8 @@
       "test_main_world_monsters",
       "test_monster_model",
       "test_moving_rv_climbing",
+      "test_oil_barrel_drop",
+      "test_oil_barrel_fall",
       "test_oil_barrel_vehicle_contact",
       "test_player_animation",
       "test_player_carry",

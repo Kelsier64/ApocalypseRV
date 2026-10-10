@@ -15,6 +15,16 @@ func obstacle(world: Node3D, at: Vector3, size: Vector3) -> StaticBody3D:
 	body.position = at
 	world.add_child(body)
 	return body
+func hatch_geometry(hatch: Node3D, hinge: Vector3) -> bool:
+	var cover: MeshInstance3D = hatch.get_node("Cover")
+	var collision: CollisionShape3D = hatch.get_node("Collision")
+	var mesh: BoxMesh = cover.mesh
+	var size := mesh.size
+	var top_rear := cover.to_global(Vector3(0, size.y * 0.5, size.z * 0.5))
+	return top_rear.distance_to(hinge) < 0.0001 \
+		and cover.global_basis.is_equal_approx(collision.global_basis) \
+		and collision.global_position.distance_to(hatch.to_global(Vector3(0, 0, -0.03))) < 0.0001 \
+		and is_equal_approx(cover.global_basis.y.length(), 1.0)
 func run() -> void:
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -33,12 +43,38 @@ func run() -> void:
 	player.set_physics_process(false)
 	for i in range(3): await physics_frame
 	var hatch := rv.engine_bay.get_node("Hatch")
+	var closed_pose: Transform3D = hatch.transform
+	var hinge: Vector3 = hatch.to_global(Vector3(0, 0.33, 0.05))
+	# A lower-edge obstacle lies on the rotation arc, clear of either endpoint.
+	var arc_basis := Basis(Vector3.RIGHT, deg_to_rad(52.5))
+	var arc_point := rv.engine_bay.to_global(Vector3(0, 0.28, -0.53) + arc_basis * Vector3(0, -0.61, -0.07))
+	var block := obstacle(world, arc_point, Vector3.ONE * 0.08)
+	await physics_frame
+	check(hatch.blocker(0.0, 0.0).is_empty() and hatch.blocker(1.0, 1.0).is_empty(), "Arc obstacle clears both stable hatch poses")
 	var hatch_result: String = hatch.interact(player)
+	check(hatch_result.contains("被擋住") and hatch.stable() and hatch.transform == closed_pose, "Opening checks the curved swept path before moving")
+	hatch.set_open(true)
+	var open_pose: Transform3D = hatch.transform
+	check(hatch_geometry(hatch, hinge), "Fully opened hatch keeps its top rear edge attached and collision aligned")
+	var open_lower_edge := rv.engine_bay.to_local(hatch.to_global(Vector3(0, -0.33, 0.05)))
+	check(open_lower_edge.y > 0.28 and open_lower_edge.z < -0.53, "Open hatch swings its lower edge upward and forward around the fixed hinge")
+	hatch_result = hatch.interact(player)
+	check(hatch_result.contains("被擋住") and hatch.opened and hatch.transform == open_pose, "Closing also checks the curved swept path")
+	block.free()
+	await physics_frame
+	hatch.set_open(false)
+	hatch_result = hatch.interact(player)
 	check(hatch_result.contains("打開中") and not rv.engine_bay.hatch_open, "Service hatch starts motion without granting engine access: " + hatch_result)
 	check(VehicleSnapshot.capture(rv).is_empty(), "Moving hatch cannot be saved")
-	for i in ticks(10): await physics_frame
-	var block := obstacle(world, rv.engine_bay.to_global(hatch.CLOSED.lerp(hatch.OPEN, 0.75)), Vector3(0.25, 0.25, 0.25))
-	for i in ticks(80): await physics_frame
+	var attached := true
+	for i in ticks(10):
+		await physics_frame
+		attached = attached and hatch_geometry(hatch, hinge)
+	block = obstacle(world, arc_point, Vector3.ONE * 0.08)
+	for i in ticks(80):
+		await physics_frame
+		attached = attached and hatch_geometry(hatch, hinge)
+	check(attached, "Opening and obstacle stop preserve the fixed hinge and rotating collision")
 	check(not hatch.moving and not hatch.stable() and not rv.engine_bay.hatch_open, "New obstacle stops hatch at an intermediate pose and keeps engine locked")
 	check(VehicleSnapshot.capture(rv).is_empty(), "Blocked hatch also refuses saving")
 	block.free()
@@ -46,9 +82,30 @@ func run() -> void:
 	hatch.interact(player)
 	for i in ticks(80): await physics_frame
 	check(hatch.stable() and not hatch.opened, "Stopped hatch can reverse to closed")
+	check(hatch.transform.is_equal_approx(closed_pose) and hatch_geometry(hatch, hinge), "Reversal returns the hatch to its exact attached closed pose")
+	var closed_saved := VehicleSnapshot.capture(rv)
+	hatch.set_open(true)
+	check(await VehicleSnapshot.apply(rv, closed_saved), "Stable closed hatch snapshot restores")
+	check(hatch.transform.is_equal_approx(closed_pose) and not hatch.opened and hatch_geometry(hatch, hinge), "Closed snapshot restores the panel and collision without floating")
+	hatch.interact(player)
+	for i in ticks(15): await physics_frame
+	var interrupted_pose: Transform3D = hatch.transform
+	var interrupted_progress: float = hatch.progress
+	rv.linear_velocity = Vector3(0, 0, 0.6)
+	await physics_frame
+	check(not hatch.moving and hatch.progress == interrupted_progress and hatch.transform == interrupted_pose and not rv.engine_bay.hatch_open, "Vehicle movement interrupts opening without jumping the panel or granting access")
+	check(VehicleSnapshot.capture(rv).is_empty(), "Vehicle-interrupted intermediate hatch refuses saving")
+	rv.linear_velocity = Vector3.ZERO
 	hatch.interact(player)
 	for i in ticks(80): await physics_frame
+	check(hatch.stable() and not hatch.opened and hatch.transform.is_equal_approx(closed_pose), "Vehicle-interrupted hatch reverses from its retained pose")
+	hatch.interact(player)
+	attached = true
+	for i in ticks(80):
+		await physics_frame
+		attached = attached and hatch_geometry(hatch, hinge)
 	check(hatch.opened and rv.engine_bay.hatch_open, "Full opening grants engine service")
+	check(attached and hatch.transform.is_equal_approx(open_pose), "Resumed opening remains hinged through its full travel")
 	hatch.interact(player)
 	for i in ticks(80): await physics_frame
 	var ramp: RearRamp = rv.rear_ramp
@@ -92,7 +149,9 @@ func run() -> void:
 	rv.vibration_strength = 0.0
 	var saved := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.validate(saved), "Lighting settings are valid optional v4 state")
+	hatch.set_open(false)
 	check(await VehicleSnapshot.apply(rv, saved), "Lighting settings round trip")
+	check(hatch.opened and rv.engine_bay.hatch_open and hatch.transform.is_equal_approx(open_pose) and hatch_geometry(hatch, hinge), "Stable open snapshot restores the hinged panel and rotating collision")
 	check(rv.instrument_brightness == 0.2 and rv.vibration_strength == 0.0 and rv.interior_requested.service, "Switches, dimmer and vibration restored exactly")
 	var bad := saved.duplicate(true)
 	bad.comfort.brightness = NAN

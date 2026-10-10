@@ -61,7 +61,7 @@ Slender Speaker：`test_slender_speaker_spawns` 屬 quick，驗證 v10 獨立森
 
 `test_road_spawns_v9` 屬 quick：4,096 seeds 的數量與獨立油桶／油桶人抽選、逐件位置／朝向、近距離及連續區段、實際廢車碰撞、安全區與舊版本隔離。道路生命週期及檢查點測試同時保留 v8 回歸，新增 v9 混合怪物與普通油桶的導航發布、休眠／移動保存、爆炸與回訪不補發。結果與畫面見 [v9 公路驗證](../docs/validation/2026-10-07-independent-road-spawns.md)。
 
-`test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
+`test_oil_barrel_vehicle_contact` 屬 integration：正式一般油桶與 RV 的低／高速、倒車、側面輪槽、車外固定梯架、固定桶與靜止接觸；低速／靜止接觸不爆，高速合格撞擊檢查單次爆炸、引擎 60 HP、沒有重複撞擊扣血、Item 保存、預覽／自車固定貨物保護及爆風不連鎖。`test_oil_barrel_drop` 驗證正式 G 拋出速度、停車／移動與轉彎車上拋桶、剛離座立即丟出不重複疊加車速、車壁重疊修正、空間不足保留物品及高處拋出爆炸。`test_oil_barrel_fall` 同屬 integration，涵蓋 1.9／2.1／4 公尺真實掉落、空中側碰、固定支撐釋放、低處世界轉移與空中保存還原。F10 輪驅重播另驗證持續油門下的實際撞桶與車殼損傷。
 
 一般油桶駕駛視角重播：`godot --path . --fixed-fps 60 --resolution 1280x720 --log-file .godot/oil-barrel-driver-pov.log res://tests/barrel_man_playground.tscn -- --oil-barrel-replay --driver-pov --capture --headless-check`。`--driver-pov` 也適用 `--vehicle-replay`／`--chase-replay`，以正式玩家操作正式駕駛座入座，保留車殼遮蔽與玩家正常傷害；額外檢查爆炸時駕駛相機仍為目前相機。`--headless-check` 令重播在 18 秒後完成行為檢查並退出；只有實際顯示模式會保存畫面，真正 `--headless` 執行不驗證渲染。爆炸後含 0.05、0.12、0.2、0.4、0.8、1.5 秒的早期畫面，並記錄目前相機路徑、位置及火／煙體積中心的視角 Z（負值在相機前方）。畫面位於 `.godot/barrel-playground-captures/`。互動場景 F11 啟動駕駛視角撞一般桶；F10 回到外部視角重播，R 重設目前模式。
 

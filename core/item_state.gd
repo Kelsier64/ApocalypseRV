@@ -46,6 +46,8 @@ static func valid(scene: String, state: Dictionary) -> bool:
 static func valid_service(scene: String, service: Dictionary) -> bool:
 	for key in service:
 		match key:
+			"fall_height":
+				if scene != "res://props/oil_barrel.tscn" or not VehicleSnapshot._number(service[key]) or service[key] < 0: return false
 			"battery":
 				if scene != "res://rv/battery_socket.tscn" or not VehicleSnapshot.valid_battery(service.battery): return false
 			"jobs":

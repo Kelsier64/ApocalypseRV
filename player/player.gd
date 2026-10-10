@@ -96,6 +96,7 @@ var previous_climb_rv_transform: Transform3D = Transform3D.IDENTITY
 var active_wall_normal: Vector3 = Vector3.ZERO
 var climb_carrier_velocity := Vector3.ZERO
 var released_carrier_velocity := Vector3.ZERO
+var _seat_exit_velocity_has_carrier := false
 var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
@@ -515,6 +516,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	var rv := _find_rv_ancestor(seated_in)
 	velocity = ClimbMath.point_velocity(rv, exit_position)
 	released_carrier_velocity = velocity
+	_seat_exit_velocity_has_carrier = true
 	seated_in = null
 	_advance_flashlight(0.0)
 	set_physics_process(true)
@@ -528,44 +530,53 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 func drop_item():
 	if is_grabbed() or is_gameplay_input_blocked(): return
 	if is_placing_equipment(): cancel_equipment_placement()
-	if inventory.active_slot >= 0 and inventory.active_slot < inventory.items.size():
-		_sync_held_item_state()
-		_set_flashlight_off_at(inventory.active_slot)
-		var item_data = inventory.items[inventory.active_slot]
-		
-		# Spawn it back into the world
-		var held_frame := held_item_node.global_transform if is_instance_valid(held_item_node) else Transform3D.IDENTITY
-		var dropping_held_item := is_instance_valid(held_item_node)
-		var dropping_corpse := is_instance_valid(held_item_node) and held_item_node is CorpseProp
-		if dropping_corpse:
-			item_data = item_data.duplicate(true)
-			item_data.state = held_item_node.capture_item_state()
-		var scene: PackedScene = load(item_data["scene_path"])
-		if scene:
-			var dropped_item = scene.instantiate()
-			_restore_prop_state(dropped_item, item_data)
-			var entity_parent: Node = WorldEntities.get_container(self)
-			if entity_parent == null:
-				entity_parent = get_tree().current_scene
-			entity_parent.add_child(dropped_item)
-			
-			# Position it in front of the player
-			var drop_transform = global_transform
-			# Move it forward by 1.5 meters
-			drop_transform.origin -= transform.basis.z * 1.5
-			# Move it up slightly so it doesn't clip into floor
-			drop_transform.origin.y += 1.0
-			# Release at the visible hand-held pose, without a jump to a fixed
-			# point ahead. Keep the existing toss direction and speed below.
-			if dropping_held_item: drop_transform = held_frame
-			dropped_item.global_transform = drop_transform
-			
-			# If it's a rigid body, give it a tiny toss forward
-			if dropped_item is RigidBody3D:
-				dropped_item.linear_velocity = -transform.basis.z * 3.0
-				if dropping_corpse: dropped_item.linear_velocity += velocity
-			
-			consume_active_item()
+	if inventory.active_slot < 0 or inventory.active_slot >= inventory.items.size(): return
+	_sync_held_item_state()
+	var item_data = inventory.items[inventory.active_slot]
+	var held_frame := held_item_node.global_transform if is_instance_valid(held_item_node) else Transform3D.IDENTITY
+	var dropping_held_item := is_instance_valid(held_item_node)
+	var dropping_corpse := dropping_held_item and held_item_node is CorpseProp
+	if dropping_corpse:
+		item_data = item_data.duplicate(true)
+		item_data.state = held_item_node.capture_item_state()
+	var scene: PackedScene = load(item_data["scene_path"])
+	if scene == null: return
+	# Restore the world prop only after finalizing the carried light state.
+	_set_flashlight_off_at(inventory.active_slot)
+	var dropped_item = scene.instantiate()
+	_restore_prop_state(dropped_item, item_data)
+	var drop_transform := global_transform
+	drop_transform.origin -= transform.basis.z * 1.5
+	drop_transform.origin.y += 1.0
+	if dropping_held_item: drop_transform = held_frame
+	if dropped_item is OilBarrel:
+		var release: Dictionary = dropped_item.find_release_pose(self, drop_transform)
+		if release.is_empty():
+			dropped_item.free()
+			var interaction := get_node_or_null("Camera3D/InteractRay")
+			if interaction != null: interaction.show_feedback("空間不足，請離車壁或障礙物遠一點再丟油桶")
+			return
+		drop_transform = release.transform
+	var entity_parent: Node = WorldEntities.get_container(self)
+	if entity_parent == null: entity_parent = get_tree().current_scene
+	entity_parent.add_child(dropped_item)
+	dropped_item.global_transform = drop_transform
+	if dropped_item is RigidBody3D:
+		# Keep the original 3 m/s toss; cargo also carries the release frame's
+		# world motion, including a moving/turning RV and a recent jump off it.
+		dropped_item.linear_velocity = -transform.basis.z * 3.0
+		if dropped_item is OilBarrel: dropped_item.linear_velocity += _barrel_release_velocity(drop_transform.origin)
+		elif dropping_corpse: dropped_item.linear_velocity += velocity
+	consume_active_item()
+
+func _barrel_release_velocity(point: Vector3) -> Vector3:
+	if is_instance_valid(seated_in): return ClimbMath.point_velocity(_find_rv_ancestor(seated_in), point)
+	if is_instance_valid(rv_support.rv): return velocity + ClimbMath.point_velocity(rv_support.rv, point)
+	# Seat exit supplies full world velocity until normal movement resumes.
+	if _seat_exit_velocity_has_carrier: return velocity
+	# Normal movement already includes inherited vertical speed after leaving
+	# a carrier; only its horizontal component is stored separately.
+	return velocity + Vector3(released_carrier_velocity.x, 0, released_carrier_velocity.z)
 
 func _sync_held_item_state() -> void:
 	# Articulated corpses evolve while carried. Flashlight charge/on is owned
@@ -769,6 +780,7 @@ func _update_stamina_bar() -> void:
 		health_bar.set_stamina(current_stamina, MAX_STAMINA)
 
 func _process_normal_movement(delta: float) -> void:
+	_seat_exit_velocity_has_carrier = false
 	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
 	var had_support := is_instance_valid(rv_support.rv)
 	var last_support_velocity := rv_support.carrier_velocity

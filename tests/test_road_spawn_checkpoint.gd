@@ -129,6 +129,7 @@ func run_version(version: int) -> void:
 	freeze_fixture(world)
 	check(monsters(world).size() == plan.monsters.size(), "F9 restores living road monsters without duplicate rolls")
 	check(species(world) == expected_species, "F9 preserves mixed road monster species")
+	var consumed_barrel_ids: Array[String] = []
 	if version >= 9:
 		var restored_barrels := road_barrels(world)
 		check(restored_barrels.size() == plan.barrels.size(), "F9 restores ordinary barrels exactly once")
@@ -147,14 +148,31 @@ func run_version(version: int) -> void:
 			freeze_fixture(world)
 			moved = road_barrels(world).filter(func(n): return n.persistent_id == barrel_id)
 			check(road_barrels(world).size() == plan.barrels.size() and moved.size() == 1 and moved[0].global_transform.is_equal_approx(moved_pose), "Reentry restores dormant moved barrel without rerolling its birth pose")
-		# Exercise real ignition; the barrel sits far from fixture player/vehicle.
+		# Exercise the production impact hook with a qualifying closing speed;
+		# frozen fixture bodies deliberately do not run wheel/contact dynamics.
+		# Keep the blast far from the fixture player and vehicle.
 		var restored_chassis := same_world_chassis(world)
 		check(restored_chassis != null, "Reloaded fixture owns a same-world Chassis")
-		for barrel: OilBarrel in road_barrels(world):
-			barrel.global_position = anchor + Vector3(60, 2, 0)
-			check(barrel.receive_vehicle_body_contact(restored_chassis, Vector3.RIGHT, barrel.global_position), "Road barrel accepts vehicle ignition")
+		if restored_chassis != null:
+			var saved_linear := restored_chassis.linear_velocity
+			var saved_angular := restored_chassis.angular_velocity
+			restored_chassis._impact_age = 0.0
+			restored_chassis.angular_velocity = Vector3.ZERO
+			for barrel: OilBarrel in road_barrels(world):
+				barrel.global_position = anchor + Vector3(60, 2, 0)
+				barrel.linear_velocity = Vector3.ZERO
+				barrel.angular_velocity = Vector3.ZERO
+				restored_chassis.linear_velocity = Vector3.RIGHT * 5.9
+				check(not barrel.receive_vehicle_body_contact(restored_chassis, Vector3.RIGHT, barrel.global_position), "Below-threshold road barrel contact remains live")
+				check(not WorldActorSnapshot.capture(barrel).is_empty(), "Unconsumed road barrel remains available to persistence")
+				restored_chassis.linear_velocity = Vector3.RIGHT * 7.0
+				check(barrel.receive_vehicle_body_contact(restored_chassis, Vector3.RIGHT, barrel.global_position), "Road barrel accepts a qualifying high-speed closing impact")
+				check(barrel.is_destroyed and WorldActorSnapshot.capture(barrel).is_empty(), "Qualified impact excludes consumed barrel from snapshots before deferred removal")
+				consumed_barrel_ids.append(barrel.persistent_id)
+			restored_chassis.linear_velocity = saved_linear
+			restored_chassis.angular_velocity = saved_angular
 		await process_frame
-		check(road_barrels(world).is_empty(), "Exploded ordinary road barrels are absent from actor snapshots")
+		check(road_barrels(world).is_empty(), "Exploded ordinary road barrels leave the live encounter")
 	check(generator.destroyed_trees.get(destroyed_id, false) and generator.field.destroyed_trees.get(destroyed_id, false), "F9 restores the shared destroyed-tree ledger before chunk generation")
 	for monster: Monster in monsters(world):
 		monster.take_damage(monster.current_health + 1.0)
@@ -162,6 +180,10 @@ func run_version(version: int) -> void:
 	check(monsters(world).is_empty(), "Killed road encounter has no live actors")
 	check(checkpoint.save_world(world, SAVE_PATH), "Cleared encounter checkpoint writes")
 	var cleared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
+	var saved_items: Array = cleared.get("actors", []).duplicate()
+	for records: Array in cleared.get("dormant_items", {}).values(): saved_items.append_array(records)
+	for consumed_id: String in consumed_barrel_ids:
+		check(not saved_items.any(func(record: Dictionary) -> bool: return record.get("state", {}).get("id", "") == consumed_id), "Cleared checkpoint excludes consumed barrel identity from active and dormant records")
 	if not await checkpoint.load_world(world, SAVE_PATH):
 		check(false, "Cleared encounter checkpoint reload succeeds")
 		if is_instance_valid(world): world.free()

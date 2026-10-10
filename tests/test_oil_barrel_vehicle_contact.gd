@@ -1,5 +1,5 @@
 extends SceneTree
-## Ordinary Item barrels ignite only on RV body contact and share the mimic blast.
+## Ordinary barrels require hard RV impacts; low-speed contacts remain cargo.
 const BARREL := preload("res://props/oil_barrel.tscn")
 const RV := preload("res://rv/new_rv.tscn")
 const EFFECT := preload("res://enemies/barrel_explosion_effect.gd")
@@ -94,12 +94,16 @@ func overlaps_vehicle(barrel: OilBarrel, rv: Chassis) -> bool:
 
 func run() -> void:
 	await production_contact(Vector3.FORWARD, 0.7, "slow front")
+	await production_contact(Vector3.BACK, 0.7, "slow reverse")
+	await production_contact(Vector3.FORWARD, 0.7, "slow fixed barrel", true)
 	await production_contact(Vector3.FORWARD, 12.0, "fast front")
-	await production_contact(Vector3.BACK, 6.0, "reverse rear")
-	await production_contact(Vector3.RIGHT, 6.0, "side")
-	await production_contact(Vector3.RIGHT, 6.0, "side mounted ladder")
+	await production_contact(Vector3.BACK, 12.0, "reverse rear")
+	await production_contact(Vector3.RIGHT, 8.0, "side")
+	await production_contact(Vector3.RIGHT, 8.0, "side mounted ladder")
 	await production_contact(Vector3.FORWARD, 12.0, "fixed world barrel", true)
+	await moving_barrel_contact()
 	await stationary_contact()
+	await threshold_contacts()
 	await rejected_contacts()
 	await ownership_and_world_guards()
 	await shared_blast_and_persistence()
@@ -116,8 +120,12 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 	# ending the wheel scenario's skid before body contact.
 	if label == "side": target.z = -3.0
 	var surface := nearest_vehicle_surface(rv, target)
-	var offset := 0.45 if label == "side" else 0.93
-	var barrel := barrel_at(data.world, Vector3(surface.x, 0.5, surface.z) + direction * offset)
+	var offset := 0.45 if label == "side" else (0.4 if fixed and speed < 6.0 else 0.93)
+	var barrel_position := Vector3(surface.x, 0.5, surface.z) + direction * offset
+	# The rear bumper sits above a floor-level cylinder; aim at its actual
+	# surface to exercise a frontal rear impact rather than an underside graze.
+	if direction == Vector3.BACK and speed >= 6.0: barrel_position.y = surface.y
+	var barrel := barrel_at(data.world, barrel_position)
 	if fixed: barrel.confirm_placement(barrel.global_transform, data.ground, data.ground)
 	var touched_bodies: Array[String] = []
 	barrel.body_entered.connect(func(body: Node) -> void: touched_bodies.append(str(body.name)))
@@ -132,11 +140,19 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 	check(not overlaps_vehicle(barrel, rv), "%s moving contact fixture begins with a real gap from RV bodies" % label)
 	rv.linear_velocity = direction * speed
 	var speed_after := -1.0
+	var touched_shape := false
 	for frame in 180:
 		await physics_frame
+		if is_instance_valid(barrel): touched_shape = touched_shape or overlaps_vehicle(barrel, rv)
 		if not effects.is_empty() and speed_after < 0.0: speed_after = rv.linear_velocity.dot(direction)
 	var impact_damage := 0.0
 	for event: Dictionary in impacts: impact_damage += event.damage
+	if speed < 6.0:
+		check(is_instance_valid(barrel) and not barrel.is_destroyed and effects.is_empty(), "%s gentle contact keeps barrel intact without a blast" % label)
+		check(not touched_bodies.is_empty() or touched_shape, "%s physically reaches the barrel" % label)
+		node_added.disconnect(observer)
+		await retire(data)
+		return
 	check(effects.size() == 1, "%s actual production RV contact emits one blast effect" % label)
 	check(not is_instance_valid(barrel), "%s blast consumes the ordinary Item barrel" % label)
 	check(is_equal_approx(health_before - rv.get_engine().health - impact_damage, 60.0), "%s engine pays one shared 60 HP blast hit in addition to subsequent recorded impacts" % label)
@@ -158,9 +174,10 @@ func stationary_contact() -> void:
 	var observer := observe_effects(effects)
 	var health_before: float = rv.get_engine().health
 	var barrel := barrel_at(data.world, Vector3(surface.x + 0.25, 0.5, surface.z))
+	check(overlaps_vehicle(barrel, rv), "Stationary fixture truly overlaps the vehicle")
 	await steps(30)
-	check(not is_instance_valid(barrel) and effects.size() == 1, "Stationary production RV touching a loose barrel detonates without a speed threshold")
-	check(is_equal_approx(health_before - rv.get_engine().health, 60.0), "Stationary true contact transfers the shared full engine hit once")
+	check(is_instance_valid(barrel) and not barrel.is_destroyed and effects.is_empty(), "Stationary production RV touching a loose barrel stays safe")
+	check(is_equal_approx(health_before, rv.get_engine().health), "Stationary contact causes no explosion damage")
 	node_added.disconnect(observer)
 	await retire(data)
 
@@ -243,6 +260,14 @@ func ownership_and_world_guards() -> void:
 	var health_before: float = other.get_engine().health
 	var effects: Array[int] = []
 	var observer := observe_effects(effects)
+	other._impact_age = 0.0
+	other.angular_velocity = Vector3.ZERO
+	other.linear_velocity = Vector3.LEFT * 6.0
+	rv._impact_age = 0.0
+	rv.angular_velocity = Vector3.ZERO
+	rv.linear_velocity = other.linear_velocity
+	check(not mounted.receive_vehicle_body_contact(other, Vector3.LEFT, mounted.global_position), "Cargo on a co-moving foreign RV has zero closing speed")
+	rv.linear_velocity = Vector3.ZERO
 	check(mounted.receive_vehicle_body_contact(other, Vector3.LEFT, mounted.global_position), "Mounted barrel accepts true body contact from a foreign RV in its world")
 	check(mounted.is_destroyed and WorldActorSnapshot.capture(mounted).is_empty(), "Contact latches consumption before deferred blast so snapshots cannot resurrect it")
 	mounted.receive_vehicle_body_contact(other, Vector3.LEFT, mounted.global_position)
@@ -281,6 +306,9 @@ func shared_blast_and_persistence() -> void:
 	var effects: Array[int] = []
 	var observer := observe_effects(effects)
 	await steps()
+	rv._impact_age = 0.0
+	rv.angular_velocity = Vector3.ZERO
+	rv.linear_velocity = Vector3.LEFT * 6.0
 	check(restored.receive_vehicle_body_contact(rv, Vector3.LEFT, restored.global_position), "Restored ordinary barrel retains contact-triggered explosion")
 	check(WorldActorSnapshot.capture(restored).is_empty(), "Consumed restored barrel is excluded even before queued removal")
 	restored.receive_vehicle_body_contact(rv, Vector3.LEFT, restored.global_position)
@@ -289,5 +317,55 @@ func shared_blast_and_persistence() -> void:
 	check(is_instance_valid(neighbor) and not neighbor.is_destroyed and neighbor.condition == neighbor_condition, "Neighboring ordinary oil barrel is blast immune and never chains")
 	check(is_instance_valid(cargo) and not cargo.is_destroyed and cargo.condition == cargo_condition, "Shared blast preserves ordinary Item health")
 	check(not WorldActorSnapshot.capture(neighbor).is_empty(), "Surviving neighboring barrel remains available to canonical Item snapshots")
+	node_added.disconnect(observer)
+	await retire(data)
+
+func threshold_contacts() -> void:
+	var data: Dictionary = await fixture()
+	var rv: Chassis = data.rv
+	rv.freeze = true
+	var barrel := barrel_at(data.world, Vector3(20, 0.5, 0))
+	barrel.freeze = true
+	# Test closing speed along the true normal, not total road speed.
+	rv._impact_age = 0.0
+	rv.angular_velocity = Vector3.ZERO
+	rv.linear_velocity = Vector3.LEFT * 5.99
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Below 6 m/s normal impact stays safe")
+	rv.linear_velocity = Vector3.LEFT * 3.0
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Original 3 m/s G toss cannot ignite on a parked vehicle")
+	rv.linear_velocity = Vector3(0.1, 0, -12)
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.BACK, barrel.global_position), "Fast vehicle moving away from normal cannot ignite barrel")
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Fast tangential graze stays safe")
+	barrel.freeze = false
+	barrel.linear_velocity = Vector3.LEFT * 12.0
+	rv.linear_velocity = barrel.linear_velocity
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Co-moving loose cargo has zero closing speed")
+	rv.linear_velocity = Vector3.ZERO
+	barrel.linear_velocity = Vector3.RIGHT * 6.0
+	check(barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Barrel striking parked RV at the 6 m/s boundary explodes")
+	check(barrel.is_destroyed and WorldActorSnapshot.capture(barrel).is_empty(), "Qualified impact latches destruction before deferred blast")
+	await steps()
+	await retire(data)
+
+func moving_barrel_contact() -> void:
+	var data: Dictionary = await fixture()
+	var rv: Chassis = data.rv
+	rv.freeze = true
+	rv._impact_age = 0.0
+	rv.linear_velocity = Vector3.ZERO
+	rv.angular_velocity = Vector3.ZERO
+	var panel := rv.get_node("RightFront") as Node3D
+	var collision := panel.find_children("*", "CollisionShape3D", true, false)[0] as CollisionShape3D
+	var direction := rv.global_basis.x.normalized()
+	var barrel := barrel_at(data.world, collision.global_position + direction * 1.0)
+	var touched: Array[Node] = []
+	barrel.body_entered.connect(func(body: Node) -> void: touched.append(body))
+	var effects: Array[int] = []
+	var observer := observe_effects(effects)
+	check(not overlaps_vehicle(barrel, rv), "Moving-barrel fixture begins outside the tall side panel")
+	barrel.linear_velocity = -direction * 8.0
+	await steps(180)
+	check(touched.has(panel), "Thrown barrel actually touches the parked RV side panel")
+	check(not is_instance_valid(barrel) and effects.size() == 1, "Moving loose barrel physically strikes parked RV and emits one blast")
 	node_added.disconnect(observer)
 	await retire(data)
