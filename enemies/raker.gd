@@ -13,6 +13,8 @@ enum PursuitGait { STALK, RUN, VEHICLE_SPRINT }
 @export var vehicle_sprint_margin := 1.2
 @export var vehicle_sprint_cap := 18.0
 @export var vehicle_sprint_acceleration := 10.0
+## Relative closing speed along the contact normal, in m/s.
+@export var vehicle_knockdown_min_approach_speed := 9.0
 @export var ground_turn_rate := 4.2 # radians / second
 var steering_delta := 1.0 / 60.0
 var reversal_side := 0.0
@@ -322,7 +324,7 @@ func _vehicle_hit_reaction(_rv: Node3D, normal: Vector3, point: Vector3, approac
 	# Called only for a newly accepted contact, after lethal damage AND kick.
 	# A pending death handoff receives the vehicle velocity before it starts.
 	preload("res://enemies/raker_impact_effect.gd").spawn(self, point, normal, approach)
-	if is_dead or approach >= 6.0:
+	if is_dead or approach >= vehicle_knockdown_min_approach_speed:
 		ragdoll.request(velocity, normal, point, approach)
 	else:
 		impact_stagger_remaining = 0.55

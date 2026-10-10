@@ -42,6 +42,7 @@ func run() -> void:
 	var rv := ImpactVehicle.new()
 	rv.freeze = true
 	world.add_child(rv)
+	await knockdown_thresholds(rv)
 	var actor := spawn_at(Vector3(0,-.25,0))
 	await step(5)
 	rv.linear_velocity = Vector3(0,0,-10)
@@ -150,9 +151,33 @@ func run() -> void:
 	check(actor.ragdoll.launch_velocity.is_equal_approx(Vector3(4,7,6)), "Death does not duplicate released carrier vertical velocity")
 	world.queue_free()
 	await step(2)
-	for scenario in 4: await actual_vehicle_contact(scenario)
+	for scenario in 5: await actual_vehicle_contact(scenario)
 	if failures.is_empty(): print("PASS: Raker vehicle knockdown, ragdoll, physics stability, recovery, death and snapshots")
 	quit(0 if failures.is_empty() else 1)
+
+func knockdown_thresholds(rv: ImpactVehicle) -> void:
+	# Normal running into a slow RV used to exceed the 6 m/s knockdown gate.
+	for approach in [6.4, 8.99, 9.0]:
+		var actor := spawn_at(Vector3(-25, -.25, 0))
+		actor.set_physics_process(false)
+		actor.velocity = Vector3.BACK * 3.4 if approach == 6.4 else Vector3.ZERO
+		rv.linear_velocity = Vector3.FORWARD * (3.0 if approach == 6.4 else approach)
+		var queued_before := rv.queued
+		check(actor._apply_vehicle_contact(rv, Vector3.FORWARD, actor.global_position + Vector3.UP), "Threshold probe accepts actual relative contact")
+		check(rv.queued == queued_before + 1 and is_equal_approx(actor.current_health, actor.max_health - approach * 5.0), "Threshold adjustment preserves one impact notification and relative damage")
+		check(actor.ragdoll.pending == (approach >= 9.0), "Only contact at or above 9 m/s requests a living knockdown")
+		if approach < 9.0:
+			check(actor.impact_stagger_remaining > 0.0 and not actor.is_dead, "Below-threshold survivor staggers without ragdoll")
+		actor.free()
+	# Death still requires a physical corpse, even below the living knockdown gate.
+	var injured := spawn_at(Vector3(-25, -.25, 0))
+	injured.set_physics_process(false)
+	injured.current_health = 10.0
+	rv.linear_velocity = Vector3.FORWARD * 3.5
+	injured._apply_vehicle_contact(rv, Vector3.FORWARD, injured.global_position + Vector3.UP)
+	check(injured.is_dead and injured.ragdoll.pending, "Below-threshold fatal impact still requests death ragdoll")
+	injured.free()
+	rv.queued = 0
 
 func disabled_death(disable_parent: bool) -> void:
 	var holder := Node3D.new()
@@ -197,11 +222,13 @@ func actual_vehicle_contact(scenario: int) -> void:
 	var max_forward := 0.0
 	var max_up := 0.0
 	var max_gap := 0.0
+	var knockdown_seen := false
 	for i in 960:
 		await step(1)
 		var actor: Raker = stage.monster
 		if stage.impact_seen and stage.since_impact < .1:
 			check(actor.is_dead == (scenario == 1), "Initial real impact has the scenario's lethal/nonlethal result")
+		knockdown_seen = knockdown_seen or actor.ragdoll.is_busy()
 		if not actor.ragdoll.active: continue
 		var pelvis: PhysicalBone3D = actor.ragdoll.bodies["pelvis"]
 		max_forward = maxf(max_forward, -pelvis.linear_velocity.z)
@@ -210,7 +237,8 @@ func actual_vehicle_contact(scenario: int) -> void:
 			max_gap = maxf(max_gap,(link.child.global_transform*link.child.joint_offset).origin.distance_to((link.parent.global_transform*link.parent_frame).origin))
 	print("RAKER_REAL_RV case=",scenario," hit=",stage.impact_seen," max_forward=",max_forward," max_up=",max_up," gap=",max_gap," busy=",stage.monster.ragdoll.is_busy()," root=",stage.monster.global_position," rv=",stage.rv.global_position)
 	check(stage.impact_seen, "Wheel-driven production RV actually hits production Raker")
-	if scenario != 3: check(max_forward > 7 and max_up > 1, "Actual RV contact launches the physical body forward and upward")
+	if scenario < 3: check(max_forward > 7 and max_up > 1, "Actual RV contact launches the physical body forward and upward")
+	else: check(not knockdown_seen, "Actual low and moderate-speed nonlethal contacts never request ragdoll")
 	check(max_gap < .25, "Actual RV contact preserves joint connections")
 	if scenario == 1: check(stage.monster.is_dead and stage.monster.ragdoll.active, "Actual fatal RV impact keeps corpse physics")
 	else: check(not stage.monster.ragdoll.is_busy(), "Actual wheel-driven nonlethal hit ends with survivor recovery")

@@ -1,7 +1,7 @@
 extends Node3D
 ## Real wheel-driven frontal/offset contact with the production Raker and RV.
-const CASES := ["目標 36 km/h · 存活起身", "目標 61 km/h · 受傷目標 40 HP", "目標 36 km/h · 偏側撞擊", "目標 14 km/h · 輕撞擊退"]
-const SPEEDS := [10.0, 17.0, 10.0, 4.0]
+const CASES := ["目標 43 km/h · 存活起身", "目標 61 km/h · 受傷目標 40 HP", "目標 43 km/h · 偏側撞擊", "目標 14 km/h · 輕撞擊退", "目標 29 km/h · 擊退不倒地"]
+const SPEEDS := [12.0, 17.0, 12.0, 4.0, 8.0]
 static var selected := 0
 static var read_args := false
 var rv: Chassis
@@ -24,7 +24,7 @@ func _ready() -> void:
 	if not read_args:
 		read_args = true
 		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--case="): selected = clampi(int(arg.trim_prefix("--case=")),0,3)
+			if arg.begins_with("--case="): selected = clampi(int(arg.trim_prefix("--case=")),0,CASES.size()-1)
 	var ground := StaticBody3D.new()
 	var collision := CollisionShape3D.new()
 	var floor_shape := WorldBoundaryShape3D.new()
@@ -48,7 +48,7 @@ func _ready() -> void:
 	environment.environment.ambient_light_energy = .65
 	add_child(environment)
 	var shell: Node3D = preload("res://rv/new_rv.tscn").instantiate()
-	shell.position = Vector3(0,1.8,100 if selected == 1 else 15)
+	shell.position = Vector3(0,1.8,100 if selected == 1 else (40 if selected < 3 else 15))
 	add_child(shell)
 	rv = shell.get_node("Chassis")
 	rv.allow_test_controls = true
@@ -128,7 +128,7 @@ func _process(delta: float) -> void:
 		state = "已起身" if is_instance_valid(monster) and not monster.ragdoll.is_busy() else "布娃娃"
 		if is_instance_valid(monster) and monster.is_dead: state = "死亡布娃娃"
 		if not is_instance_valid(monster): state = "屍體已回收"
-	label.text = "RAKER 車撞 / 布娃娃\n%s\n%s · 車速 %.1f km/h · HP %.0f\nSpace 開始 · 1–4 切換案例 · R 重播\nF4 近景 / 全景 · F9 暫停 / 繼續" % [CASES[selected],state,rv.road_speed()*3.6,monster.current_health if is_instance_valid(monster) else 0.0]
+	label.text = "RAKER 車撞 / 布娃娃\n%s\n%s · 車速 %.1f km/h · HP %.0f\nSpace 開始 · 1–5 切換案例 · R 重播\nF4 近景 / 全景 · F9 暫停 / 繼續" % [CASES[selected],state,rv.road_speed()*3.6,monster.current_health if is_instance_valid(monster) else 0.0]
 
 func _pause() -> void:
 	review_paused = not review_paused
@@ -143,7 +143,7 @@ func _input(event: InputEvent) -> void:
 		KEY_F4: close_view = not close_view
 		KEY_F9: _pause()
 		KEY_R: _reload()
-		KEY_1,KEY_2,KEY_3,KEY_4:
+		KEY_1,KEY_2,KEY_3,KEY_4,KEY_5:
 			selected = event.keycode-KEY_1
 			_reload()
 
