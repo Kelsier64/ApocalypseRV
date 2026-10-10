@@ -61,6 +61,8 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 
 ### v10 森林 Slender Speaker
 
+2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤由 [forest_tracking 回歸](tests/test_slender_speaker_forest_tracking.gd) 涵蓋，範圍及本輪結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
+
 2026-10-10 天氣限制：正式生成只接受所屬世界 `WorldClock.weather.sample().z >= WorldWeather.FOG_LIGHT`（霧級 0.5，小霧以上）。依實際過渡後霧量判斷，不使用目標天氣、常駐遠景霧或畫質設定；晴天、單純下雨與缺少時鐘均不生成。無霧時同樣消耗候選區段，之後起霧、回訪或讀檔不補刷。天氣轉晴不移除已有巨人，存檔中已有巨人仍正常還原；機率、導航、同時一隻及安全距離沿用原規則。
 
 2026-10-09 encounter 更新：`slender_speaker_encounter.gd` 是唯一的持續遭遇與行為意圖 owner。`_refresh_sight()` 只發布觀測值，分開記錄可見玩家、其實際所屬 RV（`player_vehicle`），以及獨立可見 RV；可見車外玩家不能因旁邊另一台車也可見而被歸類成車內乘員。owner 保留同一名玩家／同一台 RV、最後觀測接觸點與 RV 局部座標；車上玩家丟失視線時，只能用重新看見的同一 RV 座標系搬移已記住的點，不能讀取隱藏玩家的即時位置、姿勢或座位。`target_player`／`target_vehicle` 是執行相容介面，遮擋不再等同清空目標；`reset_after_restore()` 才清除 owner、觀測與執行上下文。完整契約與本輪驗證見[持續遭遇與實際輪驅驗證](docs/validation/2026-10-09-slender-speaker-encounter.md)。
@@ -457,7 +459,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
 - DriverSeat 鏡頭局部高度 1.62 m，高於儀表台上緣 1.33 m；調整駕駛姿勢時須保留前方路面視線。`test_rv_cockpit` 檢查預設視角中車頭前 15／25／40 m 路面落在畫面內，且不被儀表台或車頭不透明方盒網格遮擋；原生畫面另行確認。
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
-- RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear／EngineAppearance 只讀耐久，複製材質實現磨損／玻璃裂紋，不改變碰撞或狀態所有權。
+- RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
 - CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。
 

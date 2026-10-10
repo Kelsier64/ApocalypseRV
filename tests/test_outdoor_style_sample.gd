@@ -43,14 +43,14 @@ func _run() -> void:
 	check(study.find_children("*", "CollisionShape3D", true, false).size() == shape_count, "A/B never changes physical geometry")
 	check(study.site.building == site_pose, "Entrance transform remains stable")
 	var panel: RVStructurePanel = study.main.get_node("NewRv/Chassis/RightFront")
-	panel.current_health = panel.max_health * 0.2
+	panel.set_health(panel.max_health * 0.2)
 	await process_frame
 	await process_frame
-	check(panel.get_node("Lower").get_active_material(0).detail_enabled, "Sample retains real damage layer")
-	panel.current_health = panel.max_health
+	check(panel.get_node("Lower").get_active_material(0).next_pass is ShaderMaterial, "Sample retains real damage layer")
+	panel.set_health(panel.max_health)
 	await process_frame
 	await process_frame
-	check(not panel.get_node("Lower").get_active_material(0).detail_enabled, "Repair restores structured sample paint")
+	check(panel.get_node("Lower").get_active_material(0).next_pass == null, "Repair restores structured sample paint")
 	var event := InputEventKey.new()
 	event.keycode = KEY_F3
 	event.pressed = true

@@ -26,6 +26,9 @@ var _lost_seconds := 0.0
 var _patrol_index := 0
 var _patrol_obstacle: Dictionary = {}
 var _patrol_route: Dictionary = {}
+var _navigation_stall_seconds := 0.0
+var _navigation_recovery_point := Vector3.INF
+var _navigation_recovery_seconds := 0.0
 var _animation_time := 0.0
 var _animation_clip := ""
 var _stagger_remaining := 0.0
@@ -160,6 +163,9 @@ func reset_after_restore() -> void:
 	_parked_approach_remaining = 0.0
 	_patrol_obstacle.clear()
 	_patrol_route = {}
+	_navigation_stall_seconds = 0.0
+	_navigation_recovery_point = Vector3.INF
+	_navigation_recovery_seconds = 0.0
 	_parked_facing_waypoint = Vector3.INF
 	_parked_recovery_point = Vector3.INF
 	_parked_recovery_seconds = 0.0
@@ -357,6 +363,9 @@ func _update_head_look(delta: float) -> void:
 	_head_look.update(self, point, delta)
 
 func _set_phase(next: Phase) -> void:
+	_navigation_stall_seconds = 0.0
+	if next not in [Phase.PATROL, Phase.CHASE, Phase.SEARCH]:
+		_navigation_recovery_point = Vector3.INF
 	if next != Phase.PATROL:
 		_patrol_obstacle.clear()
 		_patrol_route.clear()
@@ -892,9 +901,33 @@ func _navigate_around_vehicles(point: Vector3, speed: float, delta: float) -> Ve
 
 func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1.5, facing_point := Vector3.INF) -> Vector3:
 	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) <= 0 or nav_agent == null: return Vector3.ZERO
+	if _navigation_recovery_point != Vector3.INF:
+		_navigation_recovery_seconds -= delta
+		if global_position.slide(Vector3.UP).distance_to(_navigation_recovery_point.slide(Vector3.UP)) > .3 and _navigation_recovery_seconds > 0.0:
+			point = _navigation_recovery_point
+			speed = minf(speed, 1.5)
+			arrival_distance = .2
+			facing_point = Vector3.INF
+		else:
+			_navigation_recovery_point = Vector3.INF
+			nav_agent.target_position = point
 	nav_agent.target_desired_distance = arrival_distance
 	var refresh_distance := .001 if not _parked_plan.is_empty() or not _parked_approach_memory.is_empty() else 1.0
-	if nav_agent.target_position.distance_to(point) > refresh_distance or phase_elapsed < delta * 1.5: nav_agent.target_position = point
+	var stalled := _navigation_stall_seconds >= .5
+	if nav_agent.target_position.distance_to(point) > refresh_distance or phase_elapsed < delta * 1.5 or stalled:
+		nav_agent.target_position = point
+		# A moving RV may refresh this goal several times during one real stall.
+		if stalled: _navigation_stall_seconds = 0.0
+	# Simplified terrain polygons can sit above or below the physical floor.
+	# Advance a grounded waypoint at its actual foot height once its horizontal
+	# tolerance is met, retaining narrow clearance around trees and RV corners.
+	nav_agent.path_height_offset = 0.0
+	var path := nav_agent.get_current_navigation_path()
+	var path_index := nav_agent.get_current_navigation_path_index()
+	if is_on_floor() and path_index < path.size():
+		var waypoint := path[path_index]
+		if global_position.slide(Vector3.UP).distance_to(waypoint.slide(Vector3.UP)) < nav_agent.path_desired_distance:
+			nav_agent.path_height_offset = waypoint.y - global_position.y
 	var next := nav_agent.get_next_path_position()
 	var direction := (next - global_position).slide(Vector3.UP).normalized()
 	if direction.length_squared() < 0.1: return Vector3.ZERO
@@ -957,11 +990,31 @@ func _move_swept(desired: Vector3, delta: float) -> void:
 	contact_approach_velocity = velocity
 	contact_sample_frame = Engine.get_physics_frames()
 	# CharacterBody motion uses a continuous shape sweep at the chase speed cap.
+	var starting_position := global_position
 	move_and_slide()
+	var wall_normal := Vector3.ZERO
 	for index in get_slide_collision_count():
 		var hit := get_slide_collision(index)
 		var rv := RVConnection.resolve(hit.get_collider())
 		if rv != null: receive_vehicle_body_contact(rv, hit.get_normal(), hit.get_position())
+		elif hit.get_collider() is StaticBody3D and absf(hit.get_normal().y) < .5:
+			wall_normal = hit.get_normal().slide(Vector3.UP).normalized()
+	# A fast corner can leave the swept body against a trunk while the cached
+	# path still begins on its other side. Requery from the actual body position
+	# after sustained blocked motion; never steer through or remove the solid.
+	var displacement := (global_position - starting_position).slide(Vector3.UP).length()
+	if not wall_normal.is_zero_approx() and desired.slide(Vector3.UP).length() > .5 and displacement < .2 * delta:
+		_navigation_stall_seconds += delta
+	else: _navigation_stall_seconds = 0.0
+	if _navigation_stall_seconds >= .5 and _navigation_recovery_point == Vector3.INF and giant_navigation_map.is_valid():
+		# Projecting a body pressed against a trunk can reproduce the same
+		# blocked first segment. Walk out along the real contact normal before
+		# resuming the route. Recovery still uses navigation, gravity and sweeps.
+		var escape := global_position + wall_normal * 2.0
+		var reachable := NavigationServer3D.map_get_closest_point(giant_navigation_map, escape)
+		if reachable.slide(Vector3.UP).distance_to(escape.slide(Vector3.UP)) < .75:
+			_navigation_recovery_point = reachable
+			_navigation_recovery_seconds = 3.0
 
 func _begin_smash(kind := "vehicle_assault") -> void:
 	_moving_smash = velocity.slide(Vector3.UP).length() > .25 or (is_instance_valid(target_vehicle) and ClimbMath.point_velocity(target_vehicle, target_vehicle.global_position).slide(Vector3.UP).length() > .25)

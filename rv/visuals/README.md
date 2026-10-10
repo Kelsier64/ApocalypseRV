@@ -38,10 +38,17 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 - rv/engine_bay.tscn 是前方固定服務槽；Hatch 為獨立 E 互動蓋，EngineVisual 顯示已裝引擎；空槽保留托架與提示。引擎道具場景在 props/engine_standard.tscn／engine_upgraded.tscn，原創原生網格，可直接編輯。
 - rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。展開與收起有逐步動畫及障礙掃掠。
 - assets/rv_status 的 SVG 是本專案原創車用符號；rv/vehicle_status.gd 決定顏色和原因，實體 Sprite3D／HUD 共用。VehicleLights 使用原生燈罩與 SpotLight3D；原有裝飾 light.tres 不常亮。
-- EngineAppearance 與 PanelWear 複製材質實現低耐久／故障或三級損壞；玻璃裂紋不影響碰撞，不添加獨立玻璃 HP。
+- EngineAppearance 顯示引擎低耐久／故障。PanelWear 由車板耐久事件更新獨立材質，以連續比例增加掉漆、露出金屬及玻璃裂紋，保留原漆面貼圖；滿血還原原始材質。裂紋不影響碰撞，不添加獨立玻璃 HP。
+- 車板真實受擊由 `panel_damage_effect.gd` 產生小碎屑、粉塵與原創合成撞擊聲。歸零由 `panel_fracture.gd` 分割實際 BoxMesh 區塊，保留原烤漆貼圖、薄玻璃、板片厚度、彎折及裸露斷面；不跨屋頂開孔，也不把未支援的匯入網格包圍盒當車板。屋頂主要向下崩落，側牆向外剝落，均繼承車輛接觸點速度。碎片只以射線查詢實體表面來彈跳、減速、停留與跟隨支撐，支撐消失則繼續掉落；不加入物理碰撞體、車重、物資或保存狀態。此為外觀近似，中心射線不保證捕捉寬板邊角擦碰。
+- 每車最多六組效果；單次破壞最多 48 片、768 個板片三角形及十張粉塵面片，停留後於末 1.2 秒淡出、7 秒內清理。一般受擊七片小碎屑、2.4 秒內清理，以 100 ms 節流；破壞不被節流。聲音包含分段撕裂及每組最多三次落地聲。讀檔、維修、拆換不播受擊效果。
+- `tests/rv_structure_playground.tscn`：F6 右後牆扣 25%、F7 修復右後牆與後屋頂、F8 後屋頂扣 30、F9 車牆近景、F10 屋頂視角；F11／F12 直接拆右後牆／後屋頂，F1 切換 0.25 倍慢動作。逐次受擊可比較完整、輕傷、重傷與破口。
 - 預裝工作台左中、平板附在工作台；分解機右前、發電機左後、道具箱右後。中央走道至少 1 m，後門前方淨空。
 
 引擎／坡板／夜間／輪驅展示：tests/rv_rebuild_playground.tscn。F8 引擎艙、F9 後門坡板、F10 警示燈、F11 夜間、F12 輪驅回放。
+
+2026-10-10 車殼效果驗證：Godot 4.7.2 統一 runner 的 `test_rv_panel_damage`、`test_rv_structure_modules`、`test_rv_structure_snapshot`、`test_structure_construction`、`test_art_presentation`、`test_outdoor_style_sample` 通過。原生 Forward+ 畫面另確認右後牆與後屋頂 100／75／50／25／0% 耐久、牆面修復還原、破口與碎片清理，日誌無腳本／shader 錯誤。本輪沒有重測輪驅攀車、翻車、怪物群或 full suite；碎片是短暫無碰撞特效，不是可回收物資。
+
+同日破壞寫實化後續：本輪重新通過 `test_rv_panel_damage`、`test_rv_structure_modules`、`test_rv_structure_snapshot`。新增真實開孔片分割、保留貼圖／UV／厚度、35 m/s 下墜落地不穿透、穩定停留、移動支撐跟隨及支撐移除測試。原生畫面以慢動作檢查車牆碎裂與玻璃散落、正常速度檢查屋頂下墜與清理，日誌無腳本錯誤。上述六項初版結果是歷史紀錄，不代表本輪重跑全套；未量測多車同時破壞／怪物群負載。
 
 ## 老舊工業材質（2026-09-17）
 
