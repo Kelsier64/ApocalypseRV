@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-10 RV 引擎蓋鉸鏈動畫](validation/2026-10-10-rv-engine-hatch.md)：固定轉軸、緩速開關、伸縮支撐與旋轉碰撞，含原生畫面及攀車重播驗證。
+
 - [2026-10-10 Slender Speaker 車內移動及右後角修正](validation/2026-10-10-slender-speaker-cabin-corner-fix.md)：修正拆頂轉向邊界晃動，分開移動測試的準備及動作期限，含原失敗重現與原生物理回歸。
 
 - [2026-10-10 Slender Speaker 正式世界霧天生成](validation/2026-10-10-slender-speaker-fog-spawn.md)：只在小霧以上生成、無霧區段不補刷，含保存及正式森林驗證。

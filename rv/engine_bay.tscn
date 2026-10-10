@@ -63,7 +63,7 @@ size = Vector3(0.32, 0.12, 0.012)
 size = Vector3(1.46, 0.66, 0.1)
 
 [sub_resource type="BoxShape3D" id="r15"]
-size = Vector3(1.46, 0.66, 0.1)
+size = Vector3(1.46, 0.66, 0.16)
 
 [sub_resource type="BoxMesh" id="r16"]
 size = Vector3(1.18, 0.024, 0.012)
@@ -85,6 +85,57 @@ size = Vector3(1.18, 0.024, 0.012)
 
 [sub_resource type="BoxMesh" id="r22"]
 size = Vector3(0.3, 0.04, 0.06)
+
+[sub_resource type="BoxMesh" id="frame_side"]
+size = Vector3(0.045, 0.7, 0.08)
+
+[sub_resource type="BoxMesh" id="frame_bottom"]
+size = Vector3(1.54, 0.045, 0.08)
+
+[sub_resource type="BoxMesh" id="cowl"]
+size = Vector3(1.54, 0.14, 0.18)
+
+[sub_resource type="BoxMesh" id="hinge_mount"]
+size = Vector3(0.18, 0.14, 0.065)
+
+[sub_resource type="CylinderMesh" id="hinge_pin"]
+top_radius = 0.026
+bottom_radius = 0.026
+height = 0.19
+radial_segments = 12
+rings = 1
+
+[sub_resource type="BoxMesh" id="hinge_leaf"]
+size = Vector3(0.13, 0.09, 0.025)
+
+[sub_resource type="CylinderMesh" id="stay_housing"]
+top_radius = 0.016
+bottom_radius = 0.016
+height = 1.0
+radial_segments = 10
+rings = 1
+
+[sub_resource type="CylinderMesh" id="stay_rod"]
+top_radius = 0.007
+bottom_radius = 0.007
+height = 1.0
+radial_segments = 8
+rings = 1
+
+[sub_resource type="SphereMesh" id="stay_socket"]
+radius = 0.022
+height = 0.044
+radial_segments = 8
+rings = 4
+
+[sub_resource type="BoxMesh" id="rim_side"]
+size = Vector3(0.022, 0.61, 0.012)
+
+[sub_resource type="BoxMesh" id="rim_horizontal"]
+size = Vector3(1.42, 0.022, 0.012)
+
+[sub_resource type="BoxMesh" id="vent_recess"]
+size = Vector3(1.25, 0.41, 0.008)
 
 [node name="EngineBay" type="StaticBody3D"]
 script = ExtResource("script")
@@ -178,39 +229,155 @@ mesh = SubResource("r14")
 material_override = ExtResource("teal")
 
 [node name="Collision" type="CollisionShape3D" parent="Hatch"]
+position = Vector3(0, 0, -0.03)
 shape = SubResource("r15")
 
 [node name="Grille0" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, -0.2, -0.055)
 mesh = SubResource("r16")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Grille1" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, -0.13, -0.055)
 mesh = SubResource("r17")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Grille2" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, -0.06, -0.055)
 mesh = SubResource("r18")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Grille3" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, 0.010000000000000009, -0.055)
 mesh = SubResource("r19")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Grille4" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, 0.08000000000000002, -0.055)
 mesh = SubResource("r20")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Grille5" type="MeshInstance3D" parent="Hatch"]
 position = Vector3(0, 0.15000000000000002, -0.055)
 mesh = SubResource("r21")
-material_override = ExtResource("dark")
+material_override = ExtResource("metal")
 
 [node name="Handle" type="MeshInstance3D" parent="Hatch"]
-position = Vector3(0, 0.25, -0.08)
+position = Vector3(0, -0.27, -0.08)
 mesh = SubResource("r22")
 material_override = ExtResource("orange")
+
+[node name="FrameLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.75, -0.05, -0.53)
+mesh = SubResource("frame_side")
+material_override = ExtResource("dark")
+
+[node name="FrameRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.75, -0.05, -0.53)
+mesh = SubResource("frame_side")
+material_override = ExtResource("dark")
+
+[node name="FrameBottom" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.4, -0.53)
+mesh = SubResource("frame_bottom")
+material_override = ExtResource("dark")
+
+[node name="Cowl" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.465, -0.51)
+mesh = SubResource("cowl")
+material_override = ExtResource("teal")
+
+[node name="HingeMountLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.55, 0.33, -0.49)
+mesh = SubResource("hinge_mount")
+material_override = ExtResource("metal")
+
+[node name="HingeMountRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.55, 0.33, -0.49)
+mesh = SubResource("hinge_mount")
+material_override = ExtResource("metal")
+
+[node name="HingePinLeft" type="MeshInstance3D" parent="."]
+position = Vector3(-0.55, 0.28, -0.53)
+rotation_degrees = Vector3(0, 0, 90)
+mesh = SubResource("hinge_pin")
+material_override = ExtResource("metal")
+
+[node name="HingePinRight" type="MeshInstance3D" parent="."]
+position = Vector3(0.55, 0.28, -0.53)
+rotation_degrees = Vector3(0, 0, 90)
+mesh = SubResource("hinge_pin")
+material_override = ExtResource("metal")
+
+[node name="StayLeft" type="Node3D" parent="."]
+
+[node name="Housing" type="MeshInstance3D" parent="StayLeft"]
+mesh = SubResource("stay_housing")
+material_override = ExtResource("dark")
+
+[node name="Rod" type="MeshInstance3D" parent="StayLeft"]
+mesh = SubResource("stay_rod")
+material_override = ExtResource("metal")
+
+[node name="Socket" type="MeshInstance3D" parent="StayLeft"]
+mesh = SubResource("stay_socket")
+material_override = ExtResource("metal")
+
+[node name="StayRight" type="Node3D" parent="."]
+
+[node name="Housing" type="MeshInstance3D" parent="StayRight"]
+mesh = SubResource("stay_housing")
+material_override = ExtResource("dark")
+
+[node name="Rod" type="MeshInstance3D" parent="StayRight"]
+mesh = SubResource("stay_rod")
+material_override = ExtResource("metal")
+
+[node name="Socket" type="MeshInstance3D" parent="StayRight"]
+mesh = SubResource("stay_socket")
+material_override = ExtResource("metal")
+
+[node name="HingeLeafLeft" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(-0.55, 0.3, 0.04)
+mesh = SubResource("hinge_leaf")
+material_override = ExtResource("metal")
+
+[node name="HingeLeafRight" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0.55, 0.3, 0.04)
+mesh = SubResource("hinge_leaf")
+material_override = ExtResource("metal")
+
+[node name="StaySocketLeft" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(-0.65, -0.2, 0.025)
+mesh = SubResource("stay_socket")
+material_override = ExtResource("metal")
+
+[node name="StaySocketRight" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0.65, -0.2, 0.025)
+mesh = SubResource("stay_socket")
+material_override = ExtResource("metal")
+
+[node name="RimLeft" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(-0.703, 0, -0.056)
+mesh = SubResource("rim_side")
+material_override = ExtResource("metal")
+
+[node name="RimRight" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0.703, 0, -0.056)
+mesh = SubResource("rim_side")
+material_override = ExtResource("metal")
+
+[node name="RimTop" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, 0.31, -0.056)
+mesh = SubResource("rim_horizontal")
+material_override = ExtResource("metal")
+
+[node name="RimBottom" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, -0.31, -0.056)
+mesh = SubResource("rim_horizontal")
+material_override = ExtResource("metal")
+
+[node name="VentRecess" type="MeshInstance3D" parent="Hatch"]
+position = Vector3(0, -0.025, -0.052)
+mesh = SubResource("vent_recess")
+material_override = ExtResource("dark")
