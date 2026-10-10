@@ -313,8 +313,8 @@ func _remember_cabin_plan() -> void:
 	_parked_approach_remaining = settings.search_seconds
 
 func _search_encounter(delta: float) -> Vector3:
-	# Search can clear an actually visible roof above the last observed cabin
-	# point. This never authorizes a blind grab or a vehicle/chassis assault.
+	# A retained cabin observation can aim a smash at its exact last seen
+	# point, clearing its visible roof first. Hidden players never aim a grab.
 	_parked_plan.clear()
 	if _parked_recovery_point != Vector3.INF:
 		_parked_recovery_seconds -= delta
@@ -322,9 +322,9 @@ func _search_encounter(delta: float) -> Vector3:
 			return _navigate(_parked_recovery_point, 1.5, delta, .2)
 		_parked_recovery_point = Vector3.INF
 		_parked_recovery_context.clear()
-	if _encounter_decision.get("roof_inspection", false) and _vehicle_is_observed(target_vehicle):
-		var inspection := _parked_attack.update(self, target_vehicle, delta, null, _encounter_decision.get("search_point", _encounter_decision.point))
-		if inspection.get("status") in ["approach", "ready"] and is_instance_valid(inspection.get("roof")):
+	if _encounter_decision.get("cabin_memory_attack", false) and _vehicle_is_observed(target_vehicle):
+		var inspection := _parked_attack.update(self, target_vehicle, delta, null, _encounter_decision.point)
+		if inspection.get("status") in ["approach", "ready"]:
 			_parked_plan = inspection
 			_remember_cabin_plan()
 			return _follow_parked_vehicle(delta)
@@ -520,15 +520,11 @@ func _refresh_sight() -> void:
 	_observation = {"player": seen_player, "player_vehicle": player_vehicle, "vehicle": seen_vehicle,
 		"sample_time": float(Engine.get_physics_frames()) / float(Engine.physics_ticks_per_second),
 		"player_point": player_point, "vehicle_point": vehicle_point,
+		"player_in_cabin": _parked_attack.player_in_cabin(seen_player, player_vehicle),
 		"vehicle_visible": vehicle_visible,
 		"roof_visible": _visible_roof(seen_vehicle) if vehicle_visible else false,
 		"vehicle_frame": seen_vehicle.global_transform if vehicle_visible else Transform3D.IDENTITY,
 		"road_speed": float(seen_vehicle.road_speed()) if vehicle_visible and seen_vehicle.has_method("road_speed") else 0.0}
-	if seen_player is CharacterBody3D and vehicle_visible and player_vehicle == seen_vehicle:
-		# Sample motion only with actual survivor sight. Player.velocity holds
-		# locomotion relative to its carrier; platform transport is separate.
-		var motion: Vector3 = Vector3.ZERO if is_instance_valid(seen_player.get("seated_in")) else seen_player.velocity
-		_observation.player_motion_local = seen_vehicle.global_basis.inverse() * motion
 
 func _vehicle_is_observed(vehicle: Node3D) -> bool:
 	return is_instance_valid(vehicle) and _observation.get("vehicle") == vehicle and _observation.get("vehicle_visible", false)
@@ -674,7 +670,7 @@ func _follow_parked_vehicle(delta: float) -> Vector3:
 		_begin_grab()
 		return Vector3.ZERO
 	if _parked_plan.action == "smash":
-		_begin_smash("roof")
+		_begin_smash(_parked_plan.get("smash_kind", "roof"))
 		return Vector3.ZERO
 	return _follow_parked_approach(_parked_plan, delta)
 
@@ -789,7 +785,7 @@ func _parked_body_margin() -> float:
 
 func _attack_surface() -> Vector3:
 	if not _action_context.is_empty():
-		if _action_context.kind == "roof":
+		if _action_context.kind in ["roof", "cabin_memory"]:
 			if _vehicle_is_observed(target_vehicle) and _action_context.has("local_point"):
 				return target_vehicle.to_global(_action_context.local_point)
 			return _action_context.point
@@ -969,8 +965,8 @@ func _move_swept(desired: Vector3, delta: float) -> void:
 
 func _begin_smash(kind := "vehicle_assault") -> void:
 	_moving_smash = velocity.slide(Vector3.UP).length() > .25 or (is_instance_valid(target_vehicle) and ClimbMath.point_velocity(target_vehicle, target_vehicle.global_position).slide(Vector3.UP).length() > .25)
-	if kind == "roof": _moving_smash = false
-	var point: Vector3 = _parked_plan.get("surface_point", _strike_point) if kind == "roof" else _follow_plan.get("surface_point", _vehicle_surface(target_vehicle) if is_instance_valid(target_vehicle) else _strike_point)
+	if kind in ["roof", "cabin_memory"]: _moving_smash = false
+	var point: Vector3 = _parked_plan.get("surface_point", _strike_point) if kind in ["roof", "cabin_memory"] else _follow_plan.get("surface_point", _vehicle_surface(target_vehicle) if is_instance_valid(target_vehicle) else _strike_point)
 	_action_context = {"kind": kind, "player": target_player, "vehicle": target_vehicle, "point": point, "moving": _moving_smash}
 	if kind == "roof": _action_context.roof = _parked_plan.get("roof")
 	if is_instance_valid(target_vehicle): _action_context.local_point = target_vehicle.to_local(point)

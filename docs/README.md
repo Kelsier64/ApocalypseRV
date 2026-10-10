@@ -10,6 +10,7 @@
 - [2026-10-10 Slender Speaker 丟失乘員後繼續拆頂](validation/2026-10-10-slender-speaker-lost-survivor-roof.md)：已知乘員搜尋逾時後改用未知乘員檢查，涵蓋剩餘屋頂實際接觸與八項回歸。
 - [2026-10-10 Slender Speaker 遊蕩與轉彎修正](validation/2026-10-10-slender-speaker-patrol-turning.md)：繞過 RV 車殼、跳過被占用巡邏點，分開轉向與速度漸變，含物理回歸與原生輪驅畫面。
 - [2026-10-10 Slender Speaker 腳部模型](validation/2026-10-10-slender-speaker-feet.md)：重做五趾、腳踝、足弓與趾甲，含 Godot 近照及走跑預覽。
+- [2026-10-10 Slender Speaker 最後看見位置與最近車頂](validation/2026-10-10-slender-speaker-last-seen-attack.md)：取消搜尋前推，依精確車內記憶砸擊，未知乘員從最近車頂開始檢查；本輪僅 headless 驗證。
 - [2026-10-10 Slender Speaker 中後艙完整遭遇修正](validation/2026-10-10-slender-speaker-hatch-and-rear.md)：修正開孔屋頂的不可達落點及後艙搜尋，驗證離座走動、拆頂、抓取至完整抬升。
 - [2026-10-10 Slender Speaker 完整屋頂接近修正](validation/2026-10-10-slender-speaker-roof-approach.md)：修正慢滑時反覆追逐幾公分站位，驗證首次拆頂與底盤保護；後續中後艙問題見上方紀錄。
 - [2026-10-10 Slender Speaker 同側跨車艙抓取與設備阻擋](validation/2026-10-10-slender-speaker-cross-cabin.md)：優先調整手部落點，移除抓取直接拆設備，含原生畫面與自動回歸。

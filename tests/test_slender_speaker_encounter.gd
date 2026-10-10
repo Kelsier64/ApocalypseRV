@@ -23,6 +23,7 @@ func actor(survivor := false) -> Node3D:
 
 func sight(player: Node3D, vehicle: Node3D, speed_kmh := 0.0, visible := true, point := Vector3(2, 1, 3), frame := Transform3D.IDENTITY) -> Dictionary:
 	return {"player": player, "vehicle": vehicle, "player_point": point,
+		"player_in_cabin": player != null and vehicle != null,
 		"vehicle_point": frame.origin, "vehicle_frame": frame,
 		"road_speed": speed_kmh / 3.6, "vehicle_visible": visible and vehicle != null}
 
@@ -37,8 +38,9 @@ func run() -> void:
 	_test_roof_fallback_visibility_gates()
 	_test_roof_damage_progress()
 	_test_observed_memory_and_disembark()
-	_test_observed_search_lead()
-	_test_single_sight_motion_lead()
+	_test_observed_search_point()
+	_test_single_sight_search_point()
+	_test_exterior_rv_survivor_memory()
 	_test_locks()
 	_test_suppression()
 	_test_invalid_targets()
@@ -218,8 +220,8 @@ func _test_expired_survivor_roof_fallback() -> void:
 	d = owner.update(hidden, .11, settings)
 	check(d.mode == "cabin" and d.intent == "cabin" and d.player == null and d.vehicle == vehicle and not d.player_visible and d.roof_inspection, "Expired hidden cabin survivor falls back to unknown inspection of the same observed RV")
 	check(d.generation > generation and is_equal_approx(owner._remaining, settings.search_seconds), "Forgetting survivor identity changes encounter generation and starts a full fresh inspection window")
-	check(d.vehicle_frame == inspect_frame and d.point.is_equal_approx(hidden.vehicle_point) and d.search_point.is_equal_approx(d.point), "Unknown inspection uses current visible RV evidence and discards the survivor's old point and motion lead")
-	check(owner._player_id == 0 and not owner._has_local and owner._player_local == Vector3.ZERO and owner._search_offset_local == Vector3.ZERO and owner._motion_sample_time < 0.0, "Fallback clears survivor ID, RV-local memory and observed locomotion samples")
+	check(d.vehicle_frame == inspect_frame and d.point.is_equal_approx(hidden.vehicle_point) and d.search_point.is_equal_approx(d.point), "Unknown inspection uses current visible RV evidence and discards the survivor's old point")
+	check(owner._player_id == 0 and not owner._has_local and owner._player_local == Vector3.ZERO, "Fallback clears survivor ID and RV-local memory")
 	d = owner.update(hidden, 20, settings)
 	check(d.mode == "cabin" and d.player == null and d.roof_inspection and d.intent == "cabin", "Actual roof visibility sustains fallback unknown inspection beyond eight seconds")
 	var moved_frame := Transform3D(Basis.IDENTITY, Vector3(40, 0, 0))
@@ -232,7 +234,7 @@ func _test_expired_survivor_roof_fallback() -> void:
 	d = owner.update(reacquired, 0, settings)
 	check(d.player == player and d.player_visible and d.intent == "cabin" and d.point.is_equal_approx(reacquired.player_point), "Actual survivor sight reacquires cabin identity after unknown inspection")
 	d = owner.update(hidden, 0, settings)
-	check(d.player == player and not d.player_visible and d.intent == "search" and d.search_point.is_equal_approx(reacquired.player_point), "First reacquisition sample cannot inherit the forgotten survivor's walking lead")
+	check(d.player == player and not d.player_visible and d.intent == "search" and d.search_point.is_equal_approx(reacquired.player_point), "Reacquisition searches the newly observed point rather than forgotten survivor memory")
 
 func _test_roof_fallback_visibility_gates() -> void:
 	var owner := Encounter.new()
@@ -330,7 +332,7 @@ func _test_observed_memory_and_disembark() -> void:
 	d = owner.update(sight(null, vehicle, 40), 1, settings)
 	check(d.mode == "ground" and d.vehicle == null and d.point == ground_point, "Visible old RV cannot alter disembarked survivor memory")
 
-func _test_observed_search_lead() -> void:
+func _test_observed_search_point() -> void:
 	var player := actor(true)
 	var vehicle := actor()
 	var owner := Encounter.new()
@@ -343,32 +345,36 @@ func _test_observed_search_lead() -> void:
 	var second := sight(player, vehicle, 0, true, frame * last, frame)
 	second.sample_time = 10.2
 	var d := owner.update(second, .2, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(d.point), "Visible survivor uses its actual observed point without a search lead")
-	# Reusing one sensory cache must retain the last real velocity sample rather
-	# than treating repeated owner ticks as fresh motion or stationary evidence.
+	check(d.search_point.is_equal_approx(frame * last) and d.point.is_equal_approx(d.search_point), "Moving visible survivor uses its actual observed point")
+	# Reusing one sensory cache cannot extrapolate its observed displacement.
 	for tick in 12: owner.update(second, 1.0 / 60.0, settings)
 	var hidden := sight(null, vehicle, 0, true, Vector3(900, 900, 900), frame)
 	hidden.sample_time = 1000.0
+	hidden.player_motion_local = Vector3(900, 900, 900)
 	hidden.roof_visible = true
 	d = owner.update(hidden, .1, settings)
-	var led := frame * Vector3(0, 1, 4.6)
-	check(d.point.is_equal_approx(frame * last), "Hidden motion prediction preserves the actual last sight-confirmed point")
-	check(d.get("search_point", Vector3.INF).is_equal_approx(led), "Search uses a half-second observed local motion lead capped to three metres")
-	check(not d.player_visible and d.intent == "search" and d.roof_inspection, "Predicted roof search never invents survivor visibility or a grab intent")
+	check(d.point.is_equal_approx(frame * last) and d.search_point.is_equal_approx(d.point), "Lost moving survivor is searched at its exact last sight-confirmed point")
+	check(not d.player_visible and d.intent == "search" and d.roof_inspection and d.cabin_memory_attack, "Remembered cabin search permits a memory strike without inventing survivor sight or a grab intent")
 	player.position = Vector3(-800, -800, -800)
 	d = owner.update(hidden, 1, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(led), "Hidden fake point, timestamp and live player transform cannot alter the observed search lead")
+	check(d.search_point.is_equal_approx(frame * last), "Forged hidden point, motion, timestamp and live player transform cannot alter the last observed point")
 	var turned := Transform3D(Basis(Vector3.UP, PI / 2), Vector3(20, 0, 0))
 	hidden.vehicle_frame = turned
 	d = owner.update(hidden, 0, settings)
-	check(d.point.is_equal_approx(turned * last) and d.get("search_point", Vector3.INF).is_equal_approx(turned * Vector3(0, 1, 4.6)), "Only a visible RV frame transports both actual local memory and bounded local search lead")
+	check(d.point.is_equal_approx(turned * last) and d.search_point.is_equal_approx(d.point), "Visible RV frame transports the exact remembered cabin point without adding observed motion")
+	var concealed := hidden.duplicate()
+	concealed.vehicle_visible = false
+	concealed.vehicle_frame = Transform3D(Basis.IDENTITY, Vector3(900, 900, 900))
+	vehicle.position = Vector3(800, 800, 800)
+	d = owner.update(concealed, 0, settings)
+	check(d.vehicle_frame == turned and d.search_point.is_equal_approx(turned * last) and not d.cabin_memory_attack, "Hidden RV cannot transport cabin memory or authorize its attack")
 	# All hidden ticks still spend the same eight-second deadline; seeing roofs
 	# does not refresh or lengthen the remembered survivor's search window.
 	d = owner.update(hidden, 6.89, settings)
-	check(d.mode == "cabin", "Bounded prediction retains the original encounter just before eight-second expiry")
+	check(d.mode == "cabin" and d.player == player and d.search_point.is_equal_approx(turned * last), "Exact cabin memory retains the original survivor just before eight-second expiry")
 	d = owner.update(hidden, .02, settings)
-	check(d.mode == "cabin" and d.player == null and d.roof_inspection and d.point.is_equal_approx(hidden.vehicle_point) and d.search_point.is_equal_approx(d.point), "Expired bounded prediction is forgotten when visible RV inspection starts")
-	# A slower measurement exercises the time horizon without reaching its cap.
+	check(d.mode == "cabin" and d.player == null and d.roof_inspection and not d.cabin_memory_attack and d.point.is_equal_approx(hidden.vehicle_point) and d.search_point.is_equal_approx(d.point), "Expired cabin memory is forgotten when visible RV inspection starts")
+	# Slow movement, standing and a gap between samples all remember only sight.
 	owner.reset()
 	first.sample_time = 20.0
 	owner.update(first, 0, settings)
@@ -377,17 +383,17 @@ func _test_observed_search_lead() -> void:
 	owner.update(second, .2, settings)
 	hidden.vehicle_frame = frame
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(frame * Vector3(0, 1, .7)), "Observed one-metre-per-second motion leads only half a metre")
+	check(d.search_point.is_equal_approx(second.player_point), "Slow observed movement searches its exact last point")
 	second.sample_time = 20.4
 	d = owner.update(second, .2, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(d.point), "Fresh visible standing observation immediately uses the actual point")
+	check(d.search_point.is_equal_approx(d.point), "Fresh visible standing observation uses the actual point")
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(d.point), "Fresh stationary sight clears the previous motion lead")
+	check(d.search_point.is_equal_approx(second.player_point), "Fresh stationary sight retains only its directly observed point")
 	second.sample_time = 21.0
 	second.player_point = frame * Vector3(0, 1, 2)
 	owner.update(second, .6, settings)
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(d.point), "Sight samples more than three tenths of a second apart cannot invent motion across an occlusion gap")
+	check(d.search_point.is_equal_approx(second.player_point), "Sight after an occlusion gap updates memory to the newly observed point")
 	# Visible chassis displacement alone cannot be mistaken for cabin walking.
 	owner.reset()
 	first.sample_time = 30.0
@@ -398,9 +404,9 @@ func _test_observed_search_lead() -> void:
 	owner.update(second, .2, settings)
 	hidden.vehicle_frame = turned
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(d.point), "Only survivor motion relative to the observed RV creates cabin search lead")
+	check(d.search_point.is_equal_approx(turned * initial), "Visible chassis displacement retains the same observed local survivor point")
 
-func _test_single_sight_motion_lead() -> void:
+func _test_single_sight_search_point() -> void:
 	var owner := Encounter.new()
 	var player := actor(true)
 	var vehicle := actor()
@@ -415,22 +421,47 @@ func _test_single_sight_motion_lead() -> void:
 	hidden.player_point = Vector3(800, 800, 800)
 	hidden.sample_time = 900.0
 	d = owner.update(hidden, .1, settings)
-	var expected := actual + Vector3(0, 0, 2.5)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(expected) and d.point.is_equal_approx(actual), "A single sight-confirmed walking vector supplies a bounded roof-search lead without changing memory")
+	check(d.search_point.is_equal_approx(actual) and d.point.is_equal_approx(actual), "Single sight-confirmed walking vector cannot move the remembered cabin point")
 	d = owner.update(hidden, 1, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(expected), "Forged hidden motion, point and timestamp cannot replace sight-confirmed locomotion")
+	check(d.search_point.is_equal_approx(actual), "Forged hidden motion, point and timestamp cannot replace the sight-confirmed point")
 	seen.sample_time = 10.2
 	seen.player_motion_local = Vector3.ZERO
 	owner.update(seen, .1, settings)
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(actual), "Fresh directly observed standing vector clears a previous one-sample walking lead")
+	check(d.search_point.is_equal_approx(actual), "Fresh directly observed standing vector preserves the observed point")
 	owner.reset()
 	seen.player_motion_local = Vector3(0, 20, 20)
 	owner.update(seen, 0, settings)
 	d = owner.update(hidden, 0, settings)
-	check(d.get("search_point", Vector3.INF).is_equal_approx(actual + Vector3(0, 0, 3)), "Directly observed motion is horizontal and capped to three metres")
+	check(d.search_point.is_equal_approx(actual), "Fast and vertical observed motion cannot extrapolate the remembered point")
 	d = owner.update(hidden, 8.1, settings)
-	check(d.mode == "cabin" and d.player == null and d.intent == "cabin" and d.search_point.is_equal_approx(hidden.vehicle_point), "One-sample locomotion expires and cannot carry into unknown RV inspection")
+	check(d.mode == "cabin" and d.player == null and d.intent == "cabin" and d.search_point.is_equal_approx(hidden.vehicle_point), "Single sight memory expires and cannot carry into unknown RV inspection")
+	seen.player_point = Vector3(-1, 1, 4)
+	seen.player_motion_local = Vector3(0, 0, -20)
+	d = owner.update(seen, 0, settings)
+	check(d.player_visible and d.player == player and d.search_point.is_equal_approx(seen.player_point), "Actual reacquisition replaces expired memory with the new directly observed point")
+	d = owner.update(hidden, 0, settings)
+	check(not d.player_visible and d.search_point.is_equal_approx(seen.player_point), "Loss after reacquisition retains the new exact point despite its observed walking vector")
+
+func _test_exterior_rv_survivor_memory() -> void:
+	var owner := Encounter.new()
+	var player := actor(true)
+	var vehicle := actor()
+	var seen := sight(player, vehicle)
+	seen.player_in_cabin = false
+	owner.update(seen, 0, settings)
+	var hidden := sight(null, vehicle)
+	hidden.player_in_cabin = true
+	var d := owner.update(hidden, .1, settings)
+	check(d.player == player and d.search_point.is_equal_approx(seen.player_point) and not d.cabin_memory_attack, "Lost roof walker or climber keeps observed search memory without a cabin strike; hidden flags cannot change classification")
+	seen.player_in_cabin = true
+	owner.update(seen, 0, settings)
+	d = owner.update(hidden, 0, settings)
+	check(d.cabin_memory_attack, "Actual sight-confirmed entry into the cabin permits a later memory strike")
+	seen.player_in_cabin = false
+	owner.update(seen, 0, settings)
+	d = owner.update(hidden, 0, settings)
+	check(not d.cabin_memory_attack, "Actual sight-confirmed climb or roof exit revokes cabin memory attacks")
 
 func _test_locks() -> void:
 	var owner := Encounter.new()

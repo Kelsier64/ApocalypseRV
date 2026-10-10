@@ -4,6 +4,7 @@ extends SceneTree
 const GIANT := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 const PLAYER := preload("res://player/player.tscn")
 const VEHICLE := preload("res://rv/new_rv.tscn")
+const ParkedAttack := preload("res://enemies/slender_speaker/slender_speaker_parked_attack.gd")
 var failures: Array[String] = []
 var world: Node3D
 var giant: SlenderSpeaker
@@ -118,7 +119,7 @@ func check_roof_selection() -> void:
 	var health_before: float = chassis.get_engine().health
 	var plan := parked_plan()
 	var slots: RVStructureSlots = chassis.get_node("StructureSlots")
-	check(plan.get("roof") == slots.panel("roof_0"), "Parked intact RV prefers cab roof over closer chassis or side shell")
+	check(plan.get("roof") == slots.panel("roof_0"), "Unknown parked RV inspection starts with the nearest front roof from the cab side")
 	check(plan.get("occupant") == null, "Hidden driver does not become an omniscient parked target")
 	check(chassis.get_engine().health == health_before and slots.panel("roof_1").can_operate() and slots.panel("roof_2").can_operate(),
 		"Planning preserves chassis and roofs outside the cab")
@@ -141,7 +142,7 @@ func check_roof_selection() -> void:
 	check(giant.target_player == player and giant.target_vehicle == chassis, "Actual sight associates visible moved driver with its RV without seeded player target")
 	plan = parked_plan()
 	check(plan.get("occupant") == player and plan.get("roof") == slots.panel("roof_1"),
-		"Roof above visible moved driver takes priority over front cab heuristic")
+		"Roof above visible moved driver takes priority over the giant's nearest unknown roof")
 	check(slots.panel("roof_0").can_operate() and slots.panel("roof_2").can_operate(), "Selecting occupant roof requires no blanket roof destruction")
 	# A walking interior survivor uses the same actual vertical roof bounds.
 	seat.exit_seat(true)
@@ -167,6 +168,8 @@ func check_roof_selection() -> void:
 	refresh_encounter()
 	check(player.rv_support.rv == chassis and giant.target_player == player and giant.target_vehicle == chassis,
 		"Real supported roof player is associated by fresh sight without seeded targets")
+	check(not giant._observation.get("player_in_cabin", true) and not giant._encounter_decision.get("cabin_memory_attack", true),
+		"Sight-confirmed roof walker does not authorize the new inside-cabin memory strike")
 	plan = parked_plan()
 	check(plan.get("occupant") == player and plan.get("roof") == null and slots.panel("roof_2").can_operate(),
 		"Visible roof player is grabbed without destroying its supporting roof")
@@ -178,6 +181,58 @@ func check_roof_selection() -> void:
 	refresh_encounter()
 	check(giant.can_see(player, player.execution_contact_position()) and giant.target_player == player
 		and giant.target_vehicle == null, "Visible nearby ground player stays an ordinary ground target outside actual RV bounds")
+
+func check_nearest_unknown_roofs() -> void:
+	for area in [{"label": "middle", "z": 0.0, "roof": "roof_1"}, {"label": "rear", "z": 4.0, "roof": "roof_2"}]:
+		await reset_fixture()
+		await seat_player()
+		var slots: RVStructureSlots = chassis.get_node("StructureSlots")
+		giant.global_position = chassis.to_global(Vector3(-9, -1.226, float(area.z)))
+		face(slots.panel(area.roof).global_position)
+		await frames(3)
+		check(not giant.can_see_player(player), "Nearest " + area.label + " roof fixture keeps the actual driver hidden behind intact shell")
+		var planner := ParkedAttack.new()
+		var plan: Dictionary = planner.update(giant, chassis, 0.0, player)
+		check(plan.get("roof") == slots.panel(area.roof) and plan.get("occupant") == null and plan.get("smash_kind") == "roof", "Unknown " + area.label + " inspection selects its nearest visible physical roof without using hidden driver position")
+		if not plan.has("surface_point"): continue
+		check(giant.can_see(plan.roof, plan.surface_point), "Nearest " + area.label + " roof target is actually visible")
+		var health: float = chassis.get_engine().health
+		# A hidden player's current transform cannot replace an observed panel.
+		player.global_position = Vector3(1000, 0, 1000)
+		giant.global_position = chassis.to_global(Vector3(-9, -1.226, -4))
+		face(slots.panel(area.roof).global_position)
+		await frames(3)
+		plan = planner.update(giant, chassis, .6, player)
+		check(plan.get("roof") == slots.panel(area.roof) and plan.get("occupant") == null, "Committed " + area.label + " roof remains selected despite a closer front roof and hidden player movement")
+		check(is_equal_approx(chassis.get_engine().health, health), "Nearest roof planning cannot damage chassis")
+		for id in ["roof_0", "roof_1", "roof_2"]:
+			check(slots.panel(id).can_operate(), "Nearest roof planning preserves intact " + id)
+		if area.label != "rear": continue
+		giant.global_position = chassis.to_global(Vector3(-9, -1.226, 4))
+		for step in [{"removed": "roof_2", "next": "roof_1"}, {"removed": "roof_1", "next": "roof_0"}]:
+			var removed := slots.panel(step.removed)
+			removed.take_damage(removed.current_health)
+			face(slots.panel(step.next).global_position)
+			await frames(3)
+			plan = planner.update(giant, chassis, .6)
+			check(plan.get("roof") == slots.panel(step.next) and plan.get("occupant") == null, "Removing " + step.removed + " selects nearest remaining " + step.next + " without survivor evidence")
+
+func check_remembered_open_cabin_plan() -> void:
+	await reset_fixture()
+	var slots: RVStructureSlots = chassis.get_node("StructureSlots")
+	for id in ["roof_0", "roof_1", "roof_2"]:
+		var roof := slots.panel(id)
+		roof.take_damage(roof.current_health)
+	giant.global_position = chassis.to_global(Vector3(-9, -1.226, 0))
+	var remembered := chassis.to_global(Vector3(-1, 1.2, 0))
+	face(remembered)
+	player.global_position = Vector3(1000, 0, 1000)
+	await frames(3)
+	var planner := ParkedAttack.new()
+	var plan: Dictionary = planner.update(giant, chassis, 0.0, player, remembered)
+	check(plan.get("smash_kind") == "cabin_memory" and plan.get("roof") == null and plan.get("occupant") == null and plan.get("surface_point", Vector3.INF).is_equal_approx(remembered), "An open cabin memory plan aims at the exact supplied last observed point without a hidden occupant")
+	check(plan.get("action") == "approach", "Distant cabin memory plan approaches before a physical strike")
+	check(ParkedAttack.new().update(giant, chassis, 0.0).get("status") == "waiting", "Unknown roofless inspection cannot use the vehicle centre as survivor attack evidence")
 
 func check_restart() -> void:
 	await reset_fixture()
@@ -430,6 +485,7 @@ func check_cached_occupant_cone_loss() -> void:
 	check(not remembered.is_empty() and remembered.get("occupant_id") == player.get_instance_id(),
 		"Observed survivor records a real parked grab approach")
 	if remembered.is_empty(): return
+	var last_observed: Vector3 = giant._encounter_decision.point
 	# Body turning changes the real cone immediately, between the controller's
 	# normal 0.1s perception samples. Its cached target is intentionally valid.
 	giant.rotation.y += PI
@@ -438,12 +494,12 @@ func check_cached_occupant_cone_loss() -> void:
 	check(giant._visible_target and giant.target_player == player and not giant.can_see_player(player),
 		"Body turn loses the survivor's actual cone while its previous sight sample is still cached")
 	giant._physics_process(1.0 / 60.0)
-	check(giant._parked_approach_memory.get("occupant_id") == player.get_instance_id()
-		and giant._parked_approach_memory.get("surface_point") == remembered.surface_point
-		and giant._parked_approach_memory.get("standoff_point") == remembered.standoff_point,
-		"Between sight samples, lost occupant cone preserves the observed grab stance instead of selecting another roof")
+	check(giant._parked_plan.get("smash_kind") == "cabin_memory" and giant._parked_plan.get("occupant") == null
+		and giant._parked_plan.get("roof") == null
+		and giant._parked_plan.get("surface_point", Vector3.INF).is_equal_approx(last_observed),
+		"Between sight samples, lost cabin occupant cone approaches its exact last observed point without selecting another roof or a hidden grab")
 	check(giant.phase == SlenderSpeaker.Phase.CHASE and not player.is_grabbed()
-		and slots.panel("roof_1").can_operate(), "Cached sight race continues approach without hidden attack")
+		and slots.panel("roof_1").can_operate(), "Cached sight race approaches cabin memory without blind capture or unrelated roof removal")
 
 func run() -> void:
 	world = Node3D.new()
@@ -473,6 +529,8 @@ func run() -> void:
 	await frames(3)
 	NavigationServer3D.map_force_update(map)
 	await check_roof_selection()
+	await check_nearest_unknown_roofs()
+	await check_remembered_open_cabin_plan()
 	await check_restart()
 	await check_fresh_physical_path()
 	await check_vehicle_sight_contract()
