@@ -8,11 +8,18 @@ var held := 0.0
 var lifetime := 0.0
 var launch_velocity := Vector3.ZERO
 var simulated := false
+var scrapper: WeakRef
+var scrapper_pose := Transform3D.IDENTITY
+var crushed_time := 0.0
 var meshes: Array[MeshInstance3D] = []
 var view_shadows: Array[MeshInstance3D] = []
 
 func setup(actor: CharacterBody3D, source: Skeleton3D, root_bone: String, templates: Array[Dictionary], context: Dictionary) -> void:
 	global_transform = source.global_transform
+	var processor: Variant = context.get("scrapper")
+	if is_instance_valid(processor) and processor.has_method("is_powered_feed"):
+		scrapper = weakref(processor)
+		scrapper_pose = processor.global_transform.affine_inverse() * global_transform
 	skeleton = Skeleton3D.new()
 	add_child(skeleton)
 	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_PHYSICS
@@ -103,11 +110,12 @@ func _prepare_physics(actor: CharacterBody3D, root_bone: String) -> void:
 	for body: PhysicalBone3D in builder.bodies.values(): body.collision_layer = 0; body.collision_mask = 0
 	for i in skeleton.get_bone_count(): skeleton.set_bone_pose(i, pose[i])
 	skeleton.force_update_all_bone_transforms()
-	if held <= 0: _release()
+	if held <= 0 and scrapper == null: _release()
 
 func _physics_process(delta: float) -> void:
 	lifetime += delta
 	if lifetime >= 24.0: queue_free(); return
+	if _process_scrapper(delta): return
 	if held > 0:
 		held -= delta
 		if is_instance_valid(captor) and WorldEntities.same_world(self, captor) and not captor.is_dead:
@@ -121,6 +129,29 @@ func _physics_process(delta: float) -> void:
 		if held <= 0 and builder != null: _release()
 	if lifetime > 22.0:
 		for mesh: MeshInstance3D in skeleton.find_children("*", "MeshInstance3D", true, false): mesh.transparency = (lifetime - 22.0) / 2.0
+
+func _process_scrapper(delta: float) -> bool:
+	if scrapper == null: return false
+	var processor: Node3D = scrapper.get_ref()
+	if not is_instance_valid(processor) or processor.is_queued_for_deletion() or not WorldEntities.same_world(self, processor) or not processor.can_operate():
+		scrapper = null
+		_release()
+		return false
+	if processor.is_powered_feed(): crushed_time += delta
+	var progress := clampf(crushed_time / maxf(processor.crush_time, .001), 0, 1)
+	# Pull each cut from its own anatomical pivot into the opening, turning it
+	# away from the source pose so severed parts visibly separate before fading.
+	var pivot := skeleton.get_bone_global_pose(anchor_bone).origin
+	var start := scrapper_pose * pivot
+	var target := Vector3(clampf(start.x, -.15, .15), .36, clampf(start.z, -.15, .15))
+	var side := -1.0 if start.x < 0 else 1.0
+	var pose := scrapper_pose
+	pose.basis = Basis(Vector3.FORWARD, side * .8 * progress) * Basis(Vector3.RIGHT, .45 * progress) * pose.basis
+	pose.origin = start.lerp(target, progress) - pose.basis * pivot
+	global_transform = processor.global_transform * pose
+	for mesh in meshes: mesh.transparency = maxf(0, (progress - .55) / .45)
+	if progress >= 1.0: queue_free()
+	return true
 
 func _release() -> void:
 	if simulated or builder == null: return

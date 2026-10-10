@@ -50,6 +50,8 @@ var standing_collision_transform := Transform3D.IDENTITY
 var placement := EquipmentPlacement.new()
 var held_item_node: Node3D = null
 var _flashlight_display_signature := ""
+# An early recycler handoff is still the same player death, not another corpse.
+var _death_corpse_released := false
 
 @export_group("Debug")
 @export var debug_climb_messages: bool = false
@@ -1213,6 +1215,7 @@ func _update_health_bar():
 
 func _player_die():
 	if is_player_dead: return
+	_death_corpse_released = false
 	close_settings()
 	var was_seated := is_instance_valid(seated_in)
 	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
@@ -1251,13 +1254,14 @@ func _begin_death_physics() -> void:
 	visible = true
 	if not grab_control.has_execution_death_view(): camera.make_current()
 	ragdoll_control.start(death_velocity)
+	if _death_corpse_released: ragdoll_control.release_body_for_recycling()
 
 func _respawn():
 	if not is_player_dead: return
 	if ragdoll_control.active:
 		var standing: Vector3 = ragdoll_control.recovery_position()
 		if not standing.is_finite(): return
-		load("res://props/corpse.gd").leave_player(self)
+		if not _death_corpse_released: load("res://props/corpse.gd").leave_player(self)
 		ragdoll_control.stop()
 		global_position = standing
 	elif not _standing_volume_clear(global_position):
@@ -1265,6 +1269,7 @@ func _respawn():
 	grab_control.clear_execution_observer()
 	# Recovery checked the original upright volume before restoring any limb.
 	body_state.reset()
+	_death_corpse_released = false
 	crawl_transition_remaining = 0.0
 	is_player_dead = false
 	_apply_body_capabilities()
@@ -1328,15 +1333,30 @@ func complete_execution(owner: Node3D) -> bool:
 	grab_control.execution_finished = true
 	# Batch all surviving parts before capabilities/death are evaluated. Head
 	# remains last for detached-head camera/ragdoll handoff, exactly once.
+	_crush_body({"captor": owner, "source": "slender_speaker_execution", "hold_in_mouth": false})
+	return true
+
+func crush_in_scrapper(owner: Node3D) -> bool:
+	if is_player_dead or not is_instance_valid(owner) or not WorldEntities.same_world(self, owner) or not owner.has_method("is_powered_feed") or not owner.is_powered_feed(): return false
+	_crush_body({"source": "scrapper", "scrapper": owner, "hold_in_mouth": false})
+	return true
+
+func _crush_body(context: Dictionary) -> void:
 	_execution_crush_in_progress = true
 	for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg", &"head"]:
-		sever_part(part, {"captor": owner, "source": "slender_speaker_execution", "hold_in_mouth": false})
+		sever_part(part, context)
 	_execution_crush_in_progress = false
 	current_player_health = 0.0
 	_apply_body_capabilities()
 	_update_health_bar()
 	_player_die()
-	return true
+
+func release_death_corpse() -> CorpseProp:
+	if not is_player_dead or not ragdoll_control.active or _death_corpse_released: return null
+	var corpse: CorpseProp = load("res://props/corpse.gd").leave_player(self)
+	_death_corpse_released = true
+	ragdoll_control.release_body_for_recycling()
+	return corpse
 
 func end_grab(captor: Node3D, reason: String) -> void:
 	if grab_control.captor == captor: grab_control.end(reason)
