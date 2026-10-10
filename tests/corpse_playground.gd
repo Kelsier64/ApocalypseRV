@@ -61,6 +61,10 @@ func _ready() -> void:
 	status.add_theme_font_size_override("font_size", 20)
 	canvas.add_child(status)
 	await get_tree().physics_frame
+	# Keep the powered production device, with a clear approach above its hopper.
+	# The cabin roof would catch a full falling corpse before it reaches the teeth.
+	var recycler: Item = rv.get_node("Scrapper")
+	recycler.confirm_placement(Transform3D(Basis.IDENTITY, rv.to_global(Vector3(0, 0, 8))), rv, rv)
 	monster.take_damage(1000)
 	print("CORPSE_PLAYGROUND_READY")
 	if "--replay" in OS.get_cmdline_user_args(): _replay()
@@ -98,16 +102,10 @@ func _pick_nearby() -> void:
 
 func _recycle() -> void:
 	if not player.held_item_node is CorpseProp: return
-	var identity: String = player.inventory.active_item().state.id
-	player.drop_item()
-	await get_tree().physics_frame
-	for child in WorldEntities.get_container(self).get_children():
-		if child is CorpseProp and child.persistent_id == identity:
-			var recycler: Item = rv.get_node("Scrapper")
-			recycler.recycle_prop(child)
-			for frame in 100:
-				await get_tree().physics_frame
-			print("CORPSE_RECYCLED materials=", rv.get_item_count(ItemNames.UNKNOWN_MATERIAL))
+	# Use the production handoff to place the saved anatomy above the intake.
+	# A remote claim after G-drop leaves the body dragging into the RV's wall.
+	var recycler: Item = rv.get_node("Scrapper")
+	print("CORPSE_FEED_RESULT ", recycler.accept_held_item(player))
 
 func _replay() -> void:
 	if replaying: return
