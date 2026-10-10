@@ -48,6 +48,7 @@ func _run() -> void:
 	await steps(3)
 	await _wear_and_restore()
 	await _damage_lifecycle()
+	await _realistic_debris()
 	world.free()
 	if failures.is_empty():
 		print("PASS: RV shell wear and damage effects preserve HP, collision and restoration")
@@ -178,3 +179,83 @@ func _damage_lifecycle() -> void:
 	check(get_nodes_in_group(group).is_empty(), "Checkpoint restoration never replays historical impact or destruction bursts")
 	var restored_wall := slots.panel("left_0")
 	check(is_equal_approx(restored_wall.current_health, expected_health), "Snapshot retains the original single panel health value")
+
+func _realistic_debris() -> void:
+	# Isolate cosmetic ground contact from the real RV and its collision contract.
+	var ground := StaticBody3D.new()
+	ground.position = Vector3(40.0, -0.25, 0.0)
+	ground.collision_layer = 1
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(40.0, 0.5, 40.0)
+	shape.shape = box
+	ground.add_child(shape)
+	world.add_child(ground)
+	var hatch: RVStructurePanel = load("res://equipment/rv_ceiling_hatch.tscn").instantiate()
+	hatch.position = Vector3(40.0, 4.0, 0.0)
+	world.add_child(hatch)
+	await steps()
+	var paint := hatch.get_node("Visual/Right").get_active_material(0) as StandardMaterial3D
+	var source_texture := paint.albedo_texture
+	var collision := geometry(hatch)
+	hatch.set_health(0.0)
+	await steps()
+	var effects_script: Script = load("res://rv/panel_damage_effect.gd")
+	var effect: Node3D = effects_script.spawn(hatch, true)
+	check(effect != null and not effect.fragments.is_empty(), "Destroyed hatch produces structural debris")
+	if effect == null: return
+	effect.set_process(false)
+	effect.set_physics_process(false)
+	cosmetic_tree(effect)
+	var painted_chunks := 0
+	var structural_chunks := 0
+	for fragment in effect.fragments:
+		if not fragment.structural: continue
+		structural_chunks += 1
+		var mesh: MeshInstance3D = fragment.node
+		var bounds := mesh.mesh.get_aabb()
+		check(bounds.size[bounds.size.min_axis_index()] > 0.005, "Structural debris retains finite panel thickness")
+		var point := hatch.to_local(mesh.global_position)
+		check(not (point.x > -1.78 and point.x < -0.37 and absf(point.z) < 0.78), "Hatch debris starts on authored solid pieces rather than filling the opening")
+		for surface in range(mesh.mesh.get_surface_count()):
+			var material := mesh.get_active_material(surface) as StandardMaterial3D
+			if material and material.albedo_texture == source_texture:
+				painted_chunks += 1
+				check(material.uv1_triplanar == paint.uv1_triplanar and material.uv1_scale == paint.uv1_scale, "Debris carries original paint texture projection")
+				var arrays := mesh.mesh.surface_get_arrays(surface)
+				check(not arrays[Mesh.ARRAY_TEX_UV].is_empty(), "Debris retains paint UV coordinates")
+	check(structural_chunks > 0 and painted_chunks > 0, "Destruction releases actual painted shell chunks")
+	# Use the production sweep against registered physics geometry, including a
+	# fast downward step that would tunnel straight through the slab without it.
+	for fragment in effect.fragments:
+		fragment.velocity = Vector3(0.0, -35.0, 0.0)
+		fragment.spin = Vector3.ZERO
+	for frame in range(300):
+		effect._physics_process(1.0 / 60.0)
+	var settled_positions: Array[Vector3] = []
+	for fragment in effect.fragments:
+		check(fragment.settled, "Structural debris settles after sweeping into solid ground")
+		var mesh: MeshInstance3D = fragment.node
+		var world_bounds: AABB = mesh.global_transform * mesh.mesh.get_aabb()
+		check(world_bounds.position.y >= -0.025, "Settled panel geometry remains above the ground surface")
+		settled_positions.append(mesh.global_position)
+	for frame in range(60):
+		effect._physics_process(1.0 / 60.0)
+	for index in range(effect.fragments.size()):
+		check(effect.fragments[index].node.global_position.is_equal_approx(settled_positions[index]), "Settled cosmetic panels remain stationary on stable support")
+	var support_motion := Vector3(0.4, 0.2, 0.0)
+	ground.position += support_motion
+	effect._physics_process(1.0 / 60.0)
+	for index in range(effect.fragments.size()):
+		check(effect.fragments[index].node.global_position.is_equal_approx(settled_positions[index] + support_motion), "Settled debris follows its actual moving support")
+	ground.collision_layer = 0
+	effect._physics_process(1.0 / 60.0)
+	for fragment in effect.fragments:
+		check(not fragment.settled and fragment.velocity.y < support_motion.y * 60.0, "Removing support releases debris with inherited movement and gravity")
+	same_geometry(hatch, collision, "Destroyed hatch")
+	check(hatch.is_destroyed and hatch.current_health == 0.0 and hatch.collision_layer == 0, "Cosmetic ground contact cannot revive or damage the original panel")
+	effect._process(effects_script.LIFETIME + 0.1)
+	await process_frame
+	check(not is_instance_valid(effect), "Settled debris is released at the bounded effect lifetime")
+	hatch.free()
+	ground.free()
