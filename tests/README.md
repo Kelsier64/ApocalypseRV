@@ -21,6 +21,8 @@
 
 ## 分組與覆蓋
 
+`test_slender_speaker_encounter`、`test_slender_speaker_parked_attack` 新增精確最後看見位置、最近可見屋頂及後艙→中艙→前艙的剩餘車頂順序。`test_slender_speaker_chassis_smash` 以正式玩家、RV 與手部動畫驗證玩家藏到另一處後，巨人自主砸向舊位置並落空；既有未知乘員檢查仍不能砸擊裸底盤。驗證紀錄見[最後看見位置與最近車頂](../docs/validation/2026-10-10-slender-speaker-last-seen-attack.md)。
+
 `test_slender_speaker_fog_spawn` 屬 quick，驗證生成器只讀所屬世界實際霧量、小霧 0.5 的含邊界門檻、起霧／散霧過渡、單純下雨及缺少時鐘的拒絕。`test_slender_speaker_world` 屬 integration，以正式森林與導航驗證無霧略過不補刷、已有巨人在無霧 checkpoint 中還原，以及讀檔後起霧回訪仍不補刷。[本輪紀錄](../docs/validation/2026-10-10-slender-speaker-fog-spawn.md)。
 
 `test_slender_speaker_encounter` 屬 quick，以觀測資料測試單一 encounter owner：車上／車外身分、低於 6 km/h 持續 0.5 秒及高於 10 km/h 持續 0.75 秒的模式切換、動作提交與延後變更、8 秒搜尋、可見屋頂初次檢查、已知乘員搜尋逾時後轉為未知乘員拆頂，以及未知檢查過期抑制，另驗證真正拆頂進展延續搜尋、同身分緩存期限合併及下車期限隔離。`test_slender_speaker_encounter_drive` 屬 integration，使用自由 playground 的同一名正式 Player 與同一台未固定 RV，經正常車內移動、駕駛座互動、輪胎加速及服務煞車，驗證落空後重新接近、追車與停車再接近；不以設定角色位置、車速、AI 階段或目標代替執行中的操作。`grab_tracking` 另驗證真實遮擋下不讀取隱藏姿勢、伸手末段鎖定及觀測路線卡住後實際向外走。這些覆蓋描述不代表本輪原生畫面或 full suite 已完成；目前結果及限制見[持續遭遇驗證](../docs/validation/2026-10-09-slender-speaker-encounter.md)。
@@ -51,7 +53,7 @@ godot --headless --path . --log-file .godot/cabin-movement-native-physics.log --
 
 `test_slender_speaker_roof_approach` 屬 integration：自由 playground 三片屋頂完整、未拉手煞車、正式玩家在後艙左右兩側，驗證巨人進入可達區域後 3 秒內開始拆頂，實際掃掠拆除選定屋頂且其他屋頂／底盤完整。另檢查伸距、側向間距、縱向偏差、繞行及未就緒導航的拒絕邊界。見[完整屋頂接近驗證](../docs/validation/2026-10-10-slender-speaker-roof-approach.md)。
 
-`test_slender_speaker_continuous_roof_encounter` 屬 integration：完整屋頂、真實輪胎懸吊與未拉手煞車，分別測中艙／後艙初始站位，以及正常離開駕駛座後步行到中艙／後艙。四案均須由實際拆頂、手部接觸，一路到完整抬升 HOLD，並逐步排除車體攻擊／底盤傷害；每片 120 耐久屋頂至少收到兩次 60 傷害，第一拳後不得丟失尚未拆完的屋頂遭遇。另驗證開孔屋頂兩側實體落點、屋頂乘員保護、同一規劃器在 0.5–3° 側傾時落點仍位於實體表面。`test_slender_speaker_encounter` 檢查可見移動的搜尋前推、隱藏資料拒絕、8 秒乘員搜尋及逾時後未知乘員拆頂轉換。見[中後艙驗證](../docs/validation/2026-10-10-slender-speaker-hatch-and-rear.md)。
+`test_slender_speaker_continuous_roof_encounter` 屬 integration：完整屋頂、真實輪胎懸吊與未拉手煞車，分別測中艙／後艙初始站位，以及正常離開駕駛座後步行到中艙／後艙。四案均須由實際拆頂、手部接觸，一路到完整抬升 HOLD，並逐步排除車體攻擊／底盤傷害；每片 120 耐久屋頂至少收到兩次 60 傷害，第一拳後不得丟失尚未拆完的屋頂遭遇。另驗證開孔屋頂兩側實體落點、屋頂乘員保護、同一規劃器在 0.5–3° 側傾時落點仍位於實體表面。`test_slender_speaker_encounter` 檢查移動玩家的精確最後看見位置、車內記憶砸擊授權及隱藏資料拒絕、8 秒乘員搜尋及逾時後未知乘員拆頂轉換。見[中後艙驗證](../docs/validation/2026-10-10-slender-speaker-hatch-and-rear.md)。
 
 `test_slender_speaker_target_switch` 與 `test_slender_speaker_standing_attack` 屬 integration：前者以正式 playground、離座／步行輸入、真實感知與手部接觸檢查下車後目標切換、遮擋與伸手期間的目標穩定；後者檢查站立乘員的拆頂、跨艙同側抓取與完整處刑流程。此次結果及物理阻擋限制見[車內外鎖敵驗證](../docs/validation/2026-10-09-slender-speaker-target-switch.md)。
 

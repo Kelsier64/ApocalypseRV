@@ -110,13 +110,22 @@ func encounter(label: String, x: float) -> void:
 		label + " preserves chassis engine health throughout its low-speed roof encounter")
 	stage.set_giant_enabled(false)
 
+func face_roofs(giant: SlenderSpeaker, rv: Chassis) -> void:
+	# Unknown inspection selects from actual visible roof geometry. Establish
+	# that sight before probing reach or intentionally turning away from it.
+	var direction := (rv.global_position - giant.global_position).slide(Vector3.UP).normalized()
+	giant.rotation.y = atan2(-direction.x, -direction.z)
+
 func planner_boundaries() -> void:
 	# Isolated geometry probes do not run AI, authorize attacks or alter panels.
 	var giant: SlenderSpeaker = stage.giant
 	var rv: Chassis = stage.rv
 	check(not giant.can_process(), "Planner boundary fixture keeps the giant disabled")
 	giant.global_position = rv.to_global(Vector3(-8, 0, -4))
+	face_roofs(giant, rv)
 	var seed := ParkedAttack.new().update(giant, rv, 0.0)
+	check(is_instance_valid(seed.get("roof")), "Boundary fixture starts with an actually visible roof")
+	if not seed.has("route_frame"): return
 	var frame: Transform3D = seed.route_frame
 	var shell: AABB = seed.route_shell
 	var stance: Vector3 = frame.affine_inverse() * Vector3(seed.standoff_point)
@@ -153,7 +162,9 @@ func planner_boundaries() -> void:
 	giant.global_position.y = actor_y
 	var original_map := giant.giant_navigation_map
 	giant.giant_navigation_map = RID()
+	face_roofs(giant, rv)
 	var unready := ParkedAttack.new().update(giant, rv, 0.0)
+	check(is_instance_valid(unready.get("roof")), "Navigation readiness probe selects an actually visible roof")
 	check(not unready.can_attack and unready.action == "approach", "An unready navigation map cannot authorize roof attack inside reach")
 	giant.giant_navigation_map = original_map
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
@@ -206,14 +217,19 @@ func roof_turn_hysteresis(giant: SlenderSpeaker, rv: Chassis, frame: Transform3D
 		else: planner.reset()
 		giant.global_position = frame * Vector3(shell.position.x - 2.54, 0, stance.z)
 		giant.global_position.y = actor_y
+		face_roofs(giant, rv)
 		plan = planner.update(giant, rv, 0.0)
-		check(not plan.get("turn_in_place", false), reset_kind + " clears the previously entered roof turn")
+		check(is_instance_valid(plan.get("roof")) and not plan.get("turn_in_place", false), reset_kind + " clears the previously entered roof turn while selecting a visible roof")
 	# Select a different, actually visible covering roof without damaging any
 	# panel. The new area must enter its own envelope before inheriting a turn.
 	planner = ParkedAttack.new()
 	giant.global_position = frame * stance
 	giant.global_position.y = actor_y
-	var previous_roof: RVStructurePanel = planner.update(giant, rv, 0.0).roof
+	face_roofs(giant, rv)
+	plan = planner.update(giant, rv, 0.0)
+	var previous_roof: RVStructurePanel = plan.get("roof")
+	check(is_instance_valid(previous_roof), "Roof-change probe starts with an actually visible roof")
+	if previous_roof == null: return
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
 	var next_roof: RVStructurePanel = slots.panel("roof_2")
 	var remembered := Vector3.INF

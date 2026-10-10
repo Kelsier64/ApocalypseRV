@@ -4,6 +4,7 @@ const Wait := preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 var removed_at := -1.0
 var removed_phase := -1
+var removed_by_damage := false
 var entered_grab := false
 var grab_equipment_removed := false
 var equipment_hits: Array[Dictionary] = []
@@ -30,8 +31,11 @@ func run() -> void:
 	var untouched: RVStructurePanel = rv.get_node("StructureSlots").panel("roof_2")
 	# A valid player-mounted roof item used to make every roof-removal strike
 	# stop harmlessly forever. Do not prebreak panels or force combat phases.
+	# Leave the front roof's solid approach surface visible, with the device
+	# on the hand arc. Covering that surface makes the autonomous planner
+	# choose another exposed roof; support loss would then drop an intact item.
 	var pose := rv.global_transform
-	pose.origin = rv.to_global(Vector3(-1.7, 3.03, -4))
+	pose.origin = rv.to_global(Vector3(-1.7, 3.03, -2.85))
 	equipment.confirm_placement(pose, rv, roof)
 	var initial_health := equipment.current_health
 	check(initial_health > 60.0, "Mounted roof equipment has enough health to survive a 60 HP strike")
@@ -43,6 +47,7 @@ func run() -> void:
 	equipment.removing.connect(func() -> void:
 		removed_at = stage.elapsed
 		removed_phase = giant.phase
+		removed_by_damage = equipment.is_destroyed and equipment.current_health == 0.0 and not equipment.support_lost
 	)
 	check(not rv.freeze and player.seated_in != null, "Live suspension and actual seated driver remain enabled")
 	stage.set_giant_enabled(true)
@@ -56,7 +61,7 @@ func run() -> void:
 		if player.is_executing():
 			captured_at = stage.elapsed
 			break
-	check(removed_at > 0 and removed_phase == SlenderSpeaker.Phase.SMASH, "Roof equipment is destroyed by actual roof-removal hand contact before grabbing")
+	check(removed_at > 0 and removed_phase == SlenderSpeaker.Phase.SMASH and removed_by_damage, "Roof equipment is destroyed by actual roof-removal hand contact before grabbing")
 	check(equipment_hits.size() == ceili(initial_health / 60.0) and equipment_hits[0].health == initial_health - 60.0 and equipment_hits[-1].health == 0.0,
 		"Autonomous roof strikes deal 60 HP each, preserving equipment after the first contact")
 	for index in equipment_hits.size():

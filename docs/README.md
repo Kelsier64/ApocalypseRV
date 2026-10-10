@@ -12,6 +12,7 @@
 - [2026-10-10 Slender Speaker 丟失乘員後繼續拆頂](validation/2026-10-10-slender-speaker-lost-survivor-roof.md)：已知乘員搜尋逾時後改用未知乘員檢查，涵蓋剩餘屋頂實際接觸與八項回歸。
 - [2026-10-10 Slender Speaker 遊蕩與轉彎修正](validation/2026-10-10-slender-speaker-patrol-turning.md)：繞過 RV 車殼、跳過被占用巡邏點，分開轉向與速度漸變，含物理回歸與原生輪驅畫面。
 - [2026-10-10 Slender Speaker 腳部模型](validation/2026-10-10-slender-speaker-feet.md)：重做五趾、腳踝、足弓與趾甲，含 Godot 近照及走跑預覽。
+- [2026-10-10 Slender Speaker 最後看見位置與最近車頂](validation/2026-10-10-slender-speaker-last-seen-attack.md)：取消搜尋前推，依精確車內記憶砸擊，未知乘員從最近車頂開始檢查；本輪僅 headless 驗證。
 - [2026-10-10 Slender Speaker 中後艙完整遭遇修正](validation/2026-10-10-slender-speaker-hatch-and-rear.md)：修正開孔屋頂的不可達落點及後艙搜尋，驗證離座走動、拆頂、抓取至完整抬升。
 - [2026-10-10 Slender Speaker 完整屋頂接近修正](validation/2026-10-10-slender-speaker-roof-approach.md)：修正慢滑時反覆追逐幾公分站位，驗證首次拆頂與底盤保護；後續中後艙問題見上方紀錄。
 - [2026-10-10 Slender Speaker 同側跨車艙抓取與設備阻擋](validation/2026-10-10-slender-speaker-cross-cabin.md)：優先調整手部落點，移除抓取直接拆設備，含原生畫面與自動回歸。
@@ -86,7 +87,7 @@ RV 車體：[固定地板恢復驗證](validation/2026-10-07-rv-fixed-floor.md)�
 
 玩家動畫與 Raker 咬擊：[玩家跑步與 Raker 咬擊姿勢修正驗收](validation/2026-10-05-ci-player-raker.md)，記錄三項 CI 失敗的修正、14 項相關回歸及原生輸入驗證。
 
-屍體道具：[怪物／玩家屍體拾取、手持晃動、分解與保存](validation/2026-10-04-corpse-props.md)，含專用測試場與本輪回歸結果。
+屍體道具：[怪物／玩家屍體拾取、手持晃動、分解與保存](validation/2026-10-04-corpse-props.md)，含專用測試場與本輪回歸結果；[分解機活體肢解與回收](validation/2026-10-10-scrapper-living.md) 記錄料斗接觸、唯一屍體移交及安全復活。
 
 Esc 設定選單：[不暫停遊戲、視訊效果與移除 F8](validation/2026-10-03-settings-menu.md)，含偏好遷移、輸入回歸與桌面驗收；[Esc 無反應回報重測](validation/2026-10-03-settings-esc-recheck.md) 補上正式啟動路徑檢查；[開關與解析度介面改進](validation/2026-10-03-settings-ui.md) 記錄新版呈現。
 

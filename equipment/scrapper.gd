@@ -10,6 +10,11 @@ var roller_spin_speed: float = 5.0 # Radians per second
 var power_draw_per_second: float = 0.8
 @export var queue_capacity: int = 4
 
+# A signal reserves the actor/slot before deferred deaths mutate Jolt bodies.
+const LIVING_OWNER := &"scrapper_living_owner"
+var _pending_living: Dictionary = {}
+var crush_effect: Node3D
+
 func _ready():
 	# Allow Item logic to initialize
 	super._ready()
@@ -17,15 +22,19 @@ func _ready():
 	
 	var hopper = get_node_or_null("HopperArea")
 	if hopper:
-		hopper.collision_mask |= 2 | 128 # Pickup proxies and articulated corpse bones.
+		hopper.collision_mask |= 1 | 2 | 128 # Actors, pickup proxies and articulated bones.
 		hopper.body_entered.connect(_on_hopper_body_entered)
 	else:
 		push_error("Scrapper has no HopperArea!")
+	crush_effect = preload("res://equipment/scrapper_crush_effect.gd").new()
+	crush_effect.name = "CrushEffect"
+	add_child(crush_effect)
 
 func step_work(delta: float):
 	for index in range(props_being_crushed.size() - 1, -1, -1):
 		if not is_instance_valid(props_being_crushed[index].prop): props_being_crushed.remove_at(index)
 	if not can_operate():
+		_stop_crush_effect()
 		return
 	# Retry overlapping inputs after power/queue readiness changes, or after a
 	# dying actor transfers already-overlapping physical bones to a corpse.
@@ -35,14 +44,17 @@ func step_work(delta: float):
 			_on_hopper_body_entered(body)
 	if props_being_crushed.size() > 0:
 		if props_being_crushed[0].timer <= 0.0:
+			_stop_crush_effect()
 			if _finish_recycle(props_being_crushed[0].prop):
 				props_being_crushed.pop_front()
 			return
 		var rv = get_connected_rv()
 		if not rv:
+			_stop_crush_effect()
 			return
 		if rv and rv.has_method("consume_power"):
 			if not rv.consume_power(power_draw_per_second * minf(delta, props_being_crushed[0].timer)):
+				_stop_crush_effect()
 				return
 
 		# Rotate rollers around their local Y axis (which is the cylinder's length)
@@ -62,6 +74,8 @@ func step_work(delta: float):
 				data["local_position"].y -= crush_speed * delta
 				p.global_position = to_global(data["local_position"])
 				data["timer"] -= delta
+				if is_instance_valid(crush_effect):
+					crush_effect.advance_work(delta, p is CorpseProp, _crush_contact(data.local_position), clampf(1.0 - data.timer / maxf(crush_time, .001), 0, 1), p.get_instance_id())
 				
 				if data["timer"] <= 0:
 					if _finish_recycle(p):
@@ -69,6 +83,15 @@ func step_work(delta: float):
 			else:
 				# Item was destroyed elsewhere
 				props_being_crushed.remove_at(i)
+
+	else:
+		_stop_crush_effect()
+
+func _crush_contact(local_input: Vector3) -> Vector3:
+	return Vector3(clampf(local_input.x, -.12, .12), .72, clampf(local_input.z, -.18, .18))
+
+func _stop_crush_effect(clear_particles := false) -> void:
+	if is_instance_valid(crush_effect): crush_effect.stop(clear_particles)
 
 func _on_hopper_body_entered(body: Node3D):
 	# If we are currently being moved/placed, don't recycle things
@@ -78,20 +101,94 @@ func _on_hopper_body_entered(body: Node3D):
 	if body is Item:
 		recycle_prop(body)
 	elif body is PhysicalBone3D:
-		# A limb may enter while the pelvis pickup proxy remains outside the bin.
-		# Resolve only corpse-owned bones; living actors and loose limbs are not inputs.
+		# Resolve the actual owner of a limb; cosmetic loose parts have no yield.
 		var ancestor: Node = body.get_parent()
 		while ancestor != null:
 			if ancestor is CorpseProp:
 				if not ancestor.held: recycle_prop(ancestor)
 				return
+			if ancestor is Monster or ancestor.is_in_group(Groups.PLAYER):
+				_queue_living_input(ancestor)
+				return
 			ancestor = ancestor.get_parent()
+	elif body is Monster or body.is_in_group(Groups.PLAYER):
+		_queue_living_input(body)
+
+func is_powered_feed() -> bool:
+	if is_being_placed or not can_operate(): return false
+	var source := get_connected_rv()
+	return is_instance_valid(source) and source.has_usable_power()
+
+func _living_overlaps_feed(actor: Node3D) -> bool:
+	if not is_instance_valid(actor) or actor.is_queued_for_deletion() or not WorldEntities.same_world(self, actor): return false
+	var shape_node: CollisionShape3D = $HopperArea.get_child(0)
+	var half_size: Vector3 = shape_node.shape.size * .5
+	for body in $HopperArea.get_overlapping_bodies():
+		if body != actor and not actor.is_ancestor_of(body): continue
+		# A capsule grazing the outside wall is not a jump into the opening.
+		var local: Vector3 = shape_node.to_local(body.global_position)
+		if absf(local.x) <= half_size.x and absf(local.z) <= half_size.z: return true
+	return false
+
+func _queue_living_input(actor: Node3D) -> void:
+	if not is_powered_feed() or not actor.can_process() or not _living_overlaps_feed(actor): return
+	if (actor is Monster and actor.is_dead) or (actor.is_in_group(Groups.PLAYER) and actor.is_player_dead): return
+	var id := actor.get_instance_id()
+	if _pending_living.has(id) or props_being_crushed.size() + _pending_living.size() >= queue_capacity: return
+	var claim: Variant = actor.get_meta(LIVING_OWNER) if actor.has_meta(LIVING_OWNER) else null
+	if claim is WeakRef and is_instance_valid(claim.get_ref()): return
+	actor.set_meta(LIVING_OWNER, weakref(self))
+	_pending_living[id] = {"actor": weakref(actor), "killed": false}
+	_start_living_input.call_deferred(id)
+
+func _release_living_input(id: int) -> void:
+	if not _pending_living.has(id): return
+	var actor: Node = _pending_living[id].actor.get_ref()
+	if is_instance_valid(actor):
+		var claim: Variant = actor.get_meta(LIVING_OWNER) if actor.has_meta(LIVING_OWNER) else null
+		if claim is WeakRef and claim.get_ref() == self: actor.remove_meta(LIVING_OWNER)
+	_pending_living.erase(id)
+
+func _start_living_input(id: int) -> void:
+	if not _pending_living.has(id): return
+	var actor: Node3D = _pending_living[id].actor.get_ref()
+	if not is_powered_feed() or props_being_crushed.size() + _pending_living.size() > queue_capacity or not _living_overlaps_feed(actor) or not actor.can_process():
+		_release_living_input(id)
+		return
+	var killed := false
+	if actor.is_in_group(Groups.PLAYER) and actor.has_method("crush_in_scrapper"):
+		killed = actor.crush_in_scrapper(self)
+	elif actor is Monster and not actor.is_dead:
+		actor.die() # Preserve special deaths (including the oil-barrel explosion).
+		killed = actor.is_dead # Invincible actors may reject death.
+	if not killed:
+		_release_living_input(id)
+		return
+	_pending_living[id].killed = true
+	_finish_living_input.call_deferred(id)
+
+func _finish_living_input(id: int) -> void:
+	if not _pending_living.has(id) or not _pending_living[id].killed: return
+	var actor: Node3D = _pending_living[id].actor.get_ref()
+	if not is_instance_valid(actor) or actor.is_queued_for_deletion() or not WorldEntities.same_world(self, actor) or not is_powered_feed():
+		_release_living_input(id)
+		return
+	var corpse: CorpseProp
+	if actor.has_method("release_death_corpse"):
+		if not actor.ragdoll_control.active: return
+		corpse = actor.release_death_corpse()
+	elif actor is Raker:
+		if not actor.ragdoll.active: return
+		actor._ensure_corpse()
+		corpse = actor.corpse_prop
+	_release_living_input(id)
+	if is_instance_valid(corpse): recycle_prop(corpse)
 
 func recycle_prop(prop: Item):
 	if prop == self or prop.is_ancestor_of(self) or is_ancestor_of(prop): return
 	if prop.presentation_only or prop.is_fixed or prop.is_being_placed: return
 	if prop is CorpseProp and prop.held: return
-	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() >= queue_capacity:
+	if prop.is_queued_for_deletion() or not can_operate() or is_instance_valid(prop.processing_owner) or props_being_crushed.size() + _pending_living.size() >= queue_capacity:
 		return
 	var rv = get_connected_rv()
 	if not rv:
@@ -130,11 +227,16 @@ func recycle_prop(prop: Item):
 	})
 
 func _physics_process(_delta: float) -> void:
+	if not is_powered_feed() or props_being_crushed.is_empty() or props_being_crushed[0].timer <= 0: _stop_crush_effect()
+	for id: int in _pending_living.keys():
+		_finish_living_input(id)
 	for data in props_being_crushed:
 		if is_instance_valid(data.prop):
 			data.prop.global_position = to_global(data.local_position)
 
 func _on_service_stopped() -> void:
+	_stop_crush_effect(true)
+	for id: int in _pending_living.keys(): _release_living_input(id)
 	for data in props_being_crushed:
 		if not is_instance_valid(data.prop):
 			continue
@@ -163,6 +265,7 @@ func _finish_recycle(prop: Item) -> bool:
 		prop.set_meta("recycle_result", amounts)
 	if not rv.deposit_materials(prop.get_meta("recycle_result")):
 		return false
+	if is_instance_valid(crush_effect): crush_effect.impact(prop is CorpseProp, _crush_contact(to_local(prop.global_position)))
 	prop.queue_free()
 	return true
 
@@ -195,7 +298,7 @@ func restore_service_state(state: Dictionary) -> void:
 			"local_position": saved.local_position, "physics": saved.physics.duplicate(true)})
 
 func can_accept_held_item(player: Node3D) -> bool:
-	if not can_operate() or props_being_crushed.size() >= queue_capacity: return false
+	if not can_operate() or props_being_crushed.size() + _pending_living.size() >= queue_capacity: return false
 	if not player.can_use_hands(2) or not player.inventory.is_holding_large_item(): return false
 	if player.is_gameplay_input_blocked() or player.get_player_mode() != player.PlayerMode.NORMAL: return false
 	var source := get_connected_rv()

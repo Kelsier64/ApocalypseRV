@@ -247,7 +247,7 @@ func transient_occlusion() -> void:
 	check(ready, "Wall fixture autonomously reaches the visible post-roof grab approach within bounded setup")
 	if not ready: return
 	var live_margin := float(giant._parked_plan.get("body_margin", -1.0))
-	var seen_stance: Vector3 = giant._parked_approach_memory.standoff_point
+	var seen_point: Vector3 = giant._encounter_decision.point
 	var contact: Vector3 = player.execution_contact_position()
 	var wall := StaticBody3D.new()
 	var collision := CollisionShape3D.new()
@@ -265,7 +265,9 @@ func transient_occlusion() -> void:
 	check(not giant.can_see_player(player), "A real transient wall occludes the cabin survivor")
 	var hidden_ticks := 0
 	var margin_preserved := true
-	var stance_preserved := true
+	var point_preserved := true
+	var memory_smash_planned := false
+	var hidden_capture := false
 	var before_hidden_move := player.global_position
 	for tick in 36:
 		movement("move_forward" if tick < 6 else "")
@@ -273,11 +275,18 @@ func transient_occlusion() -> void:
 		if not giant.can_see_player(player):
 			hidden_ticks += 1
 			margin_preserved = margin_preserved and is_equal_approx(float(giant._parked_approach_memory.get("body_margin", -2.0)), live_margin)
-			stance_preserved = stance_preserved and not giant._parked_approach_memory.is_empty() and Vector3(giant._parked_approach_memory.get("standoff_point", Vector3.INF)).distance_to(seen_stance) < .01
+			# Losing sight permits a new approach/turn for a last-seen smash.
+			# The observed contact, rather than the former grab stance, is fixed.
+			point_preserved = point_preserved and Vector3(giant._encounter_decision.point).distance_to(seen_point) < .01
+			if giant._parked_plan.get("smash_kind") == "cabin_memory":
+				memory_smash_planned = true
+				point_preserved = point_preserved and Vector3(giant._parked_plan.surface_point).distance_to(seen_point) < .01
+				check(giant._parked_plan.get("occupant") == null and giant._parked_plan.action != "grab", "Last-seen cabin strikes never substitute a hidden occupant for a live grab")
+			hidden_capture = hidden_capture or player.is_executing()
 	check(hidden_ticks >= 24 and margin_preserved and live_margin >= 1.1 and live_margin < 1.24, "Observed grab clearance survives real occlusion without switching to the incompatible follower margin")
-	check(stance_preserved, "Hidden physical movement cannot update the remembered stance")
+	check(point_preserved and memory_smash_planned, "Hidden physical movement cannot update the last-seen cabin strike point while its approach replans")
 	check(player.global_position.distance_to(before_hidden_move) > .35, "Wall-obscured survivor moves with real input before stopping")
-	check(not player.is_executing(), "Memory alone never captures the wall-obscured survivor")
+	check(not hidden_capture, "Memory alone never captures the wall-obscured survivor")
 	movement("")
 	wall.queue_free()
 	await frames(3)
@@ -289,7 +298,8 @@ func transient_occlusion() -> void:
 			capture = true
 			break
 	print("CABIN_OCCLUSION hidden_ticks=", hidden_ticks, " live_margin=", live_margin,
-		" margin_preserved=", margin_preserved, " stance_preserved=", stance_preserved,
+		" margin_preserved=", margin_preserved, " point_preserved=", point_preserved,
+		" memory_smash_planned=", memory_smash_planned,
 		" captured_after_wall=", capture, " giant=", giant.global_position)
 	check(capture, "Removing the real wall restores sight and physically captures the now-stationary survivor after movement")
 	if native_physics:
@@ -309,11 +319,15 @@ func remembered_boundary_sweep() -> void:
 	var eye_screen := StaticBody3D.new()
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(.2, .2, .2)
+	shape.size = Vector3(.02, 20, 20)
 	collision.shape = shape
 	eye_screen.add_child(collision)
 	world.add_child(eye_screen)
-	eye_screen.global_position = giant.visual.bone_world("socket_focus").origin
+	# The last-seen smash turns at a different pose from the former grab.
+	# A box on socket_focus can now overlap the tall body capsule and make
+	# move_and_slide depenetrate outwards, masking the velocity reserve.
+	# Screen the whole shell from its side, outside both probe positions.
+	eye_screen.global_position = frame * Vector3(shell.position.x - .04, 7.5, local_stance.z)
 	await frames(3)
 	giant._refresh_sight()
 	giant._update_encounter(STEP)

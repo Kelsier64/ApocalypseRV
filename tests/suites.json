@@ -70,6 +70,8 @@
       "test_checkpoint_failures",
       "test_corpse",
       "test_corpse_playground",
+      "test_scrapper_living",
+      "test_scrapper_effect",
       "test_flashlight_grab",
       "test_interior_compatibility",
       "test_interior_doorways",

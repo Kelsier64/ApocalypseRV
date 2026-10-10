@@ -103,7 +103,8 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float, occupant: Node
 	if _side == 0.0:
 		_side = 1.0 if absf(local_actor.x - shell.end.x) <= absf(local_actor.x - shell.position.x) else -1.0
 	if not is_instance_valid(occupant) or not actor.can_see_player(occupant): occupant = null
-	var contact := actor._player_contact(occupant) if occupant != null else Vector3.ZERO
+	var remembered_attack := search_point != Vector3.INF and occupant == null
+	var contact := actor._player_contact(occupant) if occupant != null else (search_point if remembered_attack else Vector3.ZERO)
 	var local_contact := frame.affine_inverse() * contact
 	if occupant != null and _roof_id == 0:
 		var current_edge := shell.end.x if _side > 0.0 else shell.position.x
@@ -142,37 +143,50 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float, occupant: Node
 			if _covers_horizontal(box, local_contact) and box.position.y > local_contact.y + 0.05:
 				if selected.is_empty() or box.position.y < selected.box.position.y: selected = entry
 	elif selected.is_empty():
-		# Vehicle geometry is observable even when its player is hidden. Never
-		# consult a remembered player's current location to find a roof.
+		# Inspect the closest reachable, visible solid roof surface first. The
+		# last observed cabin point already filters these candidates when known.
 		var nearest := INF
 		for entry in roofs:
-			if entry.panel.mount_slot == "roof_0":
-				selected = entry
-				break
-			var distance := local_actor.distance_squared_to(entry.box.get_center().slide(Vector3.UP))
+			var surface := _roof_surface(entry.panel, all_roofs, shell, local_contact.z if remembered_attack else local_actor.z)
+			if surface == Vector3.INF or not actor.can_see(entry.panel, frame * surface): continue
+			var distance := local_actor.distance_squared_to(surface.slide(Vector3.UP))
 			if distance < nearest:
 				nearest = distance
 				selected = entry
-	# An empty cabin plan only waits; the encounter owns any future intent.
-	if selected.is_empty() and occupant == null: return {"status": "waiting"}
+	# Only a last observed cabin point permits a strike with no covering roof.
+	# Unknown inspection never substitutes the vehicle's centre for a survivor.
+	if selected.is_empty() and occupant == null and not remembered_attack: return {"status": "waiting"}
 	var roof: RVStructurePanel = selected.get("panel")
-	var smash := roof != null
-	if smash: _roof_id = roof.get_instance_id()
+	var smash := roof != null or remembered_attack
+	if roof != null: _roof_id = roof.get_instance_id()
 	var local_surface := local_contact
-	if smash:
+	if roof != null:
 		# Coverage authorizes a panel, not just its one shape above the torso.
 		# A hatch is several disjoint shapes: the covering shape can be across
 		# its opening and unreachable from this side. Strike a reachable solid
 		# part of that SAME panel; never aim into the union's empty hatch hole.
 		# Keep the original longitudinal area fixed. Feeding the projected top
 		# face back into itself shifts the target on every tick of a pitched RV.
-		var preferred_z := _committed_stance.z - _recovery_offset if _committed_stance != Vector3.INF and _committed_smash \
-			else (local_contact.z if occupant != null else local_actor.z)
+		var preferred_z := local_contact.z if remembered_attack else (_committed_stance.z - _recovery_offset if _committed_stance != Vector3.INF and _committed_smash \
+			else (local_contact.z if occupant != null else local_actor.z))
 		local_surface = _roof_surface(roof, all_roofs, shell, preferred_z)
 		if local_surface == Vector3.INF:
 			return {"status": "waiting", "reason": "roof_surface_out_of_reach"}
+	var memory_smash := remembered_attack and roof == null
+	# A low cabin strike approaches within the real body margin. Roof strikes
+	# keep their wider authored stance; choose the other side only if needed.
+	if memory_smash:
+		var current_edge := shell.end.x if _side > 0.0 else shell.position.x
+		var other_edge := shell.position.x if _side > 0.0 else shell.end.x
+		if absf(current_edge + _side * GRAB_CLEARANCE - local_contact.x) > SMASH_CLEARANCE + .7 \
+			and absf(other_edge - _side * GRAB_CLEARANCE - local_contact.x) <= SMASH_CLEARANCE + .7:
+			_side = -_side
+			_committed_stance = Vector3.INF
 	var edge_x := shell.end.x if _side > 0.0 else shell.position.x
-	var clearance := SMASH_CLEARANCE if smash else GRAB_CLEARANCE
+	var clearance := SMASH_CLEARANCE if roof != null else GRAB_CLEARANCE
+	if remembered_attack and _committed_stance != Vector3.INF \
+		and local_contact.distance_to(_committed_contact) > CONTACT_DRIFT:
+		_committed_stance = Vector3.INF
 	if _committed_stance != Vector3.INF and _committed_smash != smash:
 		_committed_stance = Vector3.INF
 	# Replacement geometry may expand the live shell into an old stance.
@@ -239,7 +253,7 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float, occupant: Node
 	# band preserves the turn only while the same roof remains within reach.
 	var roof_turn_band := ROOF_TURN_RELEASE if _roof_turning else ROOF_TURN_ENTRY
 	var roof_reach := smash and not routing \
-		and absf(lateral_clearance - SMASH_CLEARANCE) <= roof_turn_band \
+		and absf(lateral_clearance - clearance) <= roof_turn_band \
 		and gap <= SMASH_CLEARANCE + 0.7 and absf(local_actor.z - local_surface.z) <= 1.0
 	_roof_turning = roof_reach
 	var turn_in_place := rolling_grab or roof_reach
@@ -267,11 +281,12 @@ func update(actor: SlenderSpeaker, vehicle: Node3D, delta: float, occupant: Node
 		"turn_in_place": turn_in_place,
 		"navigation_point": navigation_point, "standoff_point": standoff_point,
 		"route_frame": frame, "route_shell": shell,
-		"body_margin": VehicleFollow.BODY_MARGIN if smash else GRAB_BODY_MARGIN,
+		"body_margin": VehicleFollow.BODY_MARGIN if roof != null else GRAB_BODY_MARGIN,
 		"arrival_radius": STANCE_TOLERANCE, "release_radius": STANCE_RELEASE,
 		"arrival_longitudinal": STANCE_LONGITUDINAL, "release_longitudinal": STANCE_LONGITUDINAL_RELEASE,
 		"facing_dot": ATTACK_FACING, "plan_generation": _plan_generation,
-		"action": action, "can_attack": ready, "gap": gap, "clearance": lateral_clearance,
+		"action": action, "smash_kind": "roof" if roof != null else ("cabin_memory" if remembered_attack else ""),
+		"can_attack": ready, "gap": gap, "clearance": lateral_clearance,
 		"speed": minf(actor.settings.patrol_speed, stance_gap * 1.5) if map_ready else 0.0,
 	}
 
@@ -379,6 +394,22 @@ func vehicle_for_visible_player(actor: SlenderSpeaker, player: Node3D) -> Node3D
 		if not candidate is Node3D or not WorldEntities.same_world(actor, candidate): continue
 		if _player_belongs_to_vehicle(player, candidate): return candidate
 	return null
+
+func player_in_cabin(player: Node3D, vehicle: Node3D) -> bool:
+	# Called only for a sight-confirmed, associated survivor. Roof support and
+	# exterior climbing are not cabin evidence, even though they belong to RV.
+	if not is_instance_valid(player) or not is_instance_valid(vehicle): return false
+	if is_instance_valid(player.get("active_climb_rv")): return false
+	var support: RefCounted = player.get("rv_support")
+	var surface: Node3D = support.get("surface") if support != null else null
+	if surface is RVStructurePanel and surface.structure_kind == "roof": return false
+	if vehicle.get_node_or_null("StructureSlots") == null: return false
+	# Slot frames retain the observed cabin boundary after roof removal. Do
+	# not misclassify a survivor standing over an open roof as an occupant.
+	var local: Vector3 = vehicle.to_local(player.global_position)
+	for slot in RVStructureSlots.layout():
+		if slot.kind == "roof" and local.y >= slot.pose.origin.y - .05: return false
+	return true
 
 func _player_belongs_to_vehicle(player: Node3D, vehicle: Node3D) -> bool:
 	var seat: Node = player.get("seated_in")

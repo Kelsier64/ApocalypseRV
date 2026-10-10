@@ -10,6 +10,8 @@ var simulator: PhysicalBoneSimulator3D
 var bodies: Dictionary = {}
 var links: Array[Dictionary] = []
 var active := false
+var body_released := false
+var recovery_anchor := Vector3.INF
 var remaining := 0.0
 var camera_rest := Transform3D.IDENTITY
 var camera_basis := Basis.IDENTITY
@@ -133,8 +135,27 @@ func _update_camera() -> void:
 	var fraction := player.get_world_3d().direct_space_state.cast_motion(query)[0]
 	player.camera.global_transform = Transform3D(camera_basis, origin + eye_offset * maxf(0.0, fraction - 0.02))
 
+func release_body_for_recycling() -> void:
+	# The persistent corpse owns the visible torso. Keep only the controller's
+	# camera/timer and a recovery anchor; no invisible duplicate physics.
+	if not active or body_released: return
+	recovery_anchor = bodies["pelvis"].global_position
+	var poses: Dictionary = {}
+	for key: String in bodies: poses[key] = bodies[key].global_transform
+	simulator.physical_bones_stop_simulation()
+	simulator.active = false
+	for key: String in bodies:
+		var body: PhysicalBone3D = bodies[key]
+		body.collision_layer = 0
+		body.collision_mask = 0
+		body.linear_velocity = Vector3.ZERO
+		body.angular_velocity = Vector3.ZERO
+		body.global_transform = poses[key]
+	player.get_node("Visuals").hide()
+	body_released = true
+
 func recovery_position() -> Vector3:
-	var center: Vector3 = bodies["pelvis"].global_position
+	var center: Vector3 = recovery_anchor if body_released else bodies["pelvis"].global_position
 	var candidates: Array[Vector3] = [center]
 	for radius in [0.6, 1.2, 2.0, 3.0]:
 		for i in 12:
@@ -155,7 +176,18 @@ func recovery_position() -> Vector3:
 		query.transform = Transform3D(player.global_basis, standing) * upright
 		query.collision_mask = player.collision_mask
 		query.exclude = [player.get_rid()]
-		if space.intersect_shape(query, 1).is_empty(): return standing
+		if not space.intersect_shape(query, 1).is_empty(): continue
+		# A geometrically clear standing volume inside powered rollers is lethal.
+		query.collide_with_bodies = false
+		query.collide_with_areas = true
+		var hazardous := false
+		for area_hit: Dictionary in space.intersect_shape(query, 32):
+			var area: Node = area_hit.collider
+			var owner: Node = area.get_parent()
+			if area.name == "HopperArea" and owner.has_method("is_powered_feed") and owner.is_powered_feed():
+				hazardous = true
+				break
+		if not hazardous: return standing
 	return Vector3.INF
 
 func stop() -> void:
@@ -176,6 +208,9 @@ func stop() -> void:
 	player.camera.transform = camera_rest
 	player.get_node("Visuals/Carry").reset()
 	player.get_node("Visuals").set_death_view(false)
+	if body_released: player.get_node("Visuals").show()
+	body_released = false
+	recovery_anchor = Vector3.INF
 	active = false
 	remaining = 0.0
 

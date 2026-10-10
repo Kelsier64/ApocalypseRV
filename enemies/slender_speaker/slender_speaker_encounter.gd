@@ -10,9 +10,8 @@ var _vehicle_id := 0
 var _mode := "none"
 var _point := Vector3.ZERO
 var _player_local := Vector3.ZERO
-var _motion_sample_time := -1.0
-var _search_offset_local := Vector3.ZERO
 var _has_local := false
+var _player_in_cabin := false
 var _vehicle_frame := Transform3D.IDENTITY
 var _remaining := 0.0
 var _low_seconds := 0.0
@@ -34,9 +33,8 @@ func reset() -> void:
 	_vehicle_id = 0
 	_mode = "none"
 	_point = Vector3.ZERO
-	_motion_sample_time = -1.0
-	_search_offset_local = Vector3.ZERO
 	_has_local = false
+	_player_in_cabin = false
 	_vehicle_frame = Transform3D.IDENTITY
 	_remaining = 0.0
 	_low_seconds = 0.0
@@ -103,8 +101,7 @@ func _begin_unknown_roof_inspection(observation: Dictionary, settings: Resource)
 	_player_id = 0
 	_player_local = Vector3.ZERO
 	_has_local = false
-	_motion_sample_time = -1.0
-	_search_offset_local = Vector3.ZERO
+	_player_in_cabin = false
 	_point = observation.get("vehicle_point", _vehicle_frame.origin)
 	_remaining = settings.search_seconds
 	_pending_observation.clear()
@@ -134,6 +131,7 @@ func _observe(observation: Dictionary, settings: Resource) -> void:
 			_player_id = seen_player.get_instance_id()
 			_vehicle_id = associated.get_instance_id() if associated != null else 0
 			_has_local = false
+			_player_in_cabin = false
 			if not keep_vehicle_mode:
 				_low_seconds = 0.0
 				_high_seconds = 0.0
@@ -156,6 +154,7 @@ func _observe(observation: Dictionary, settings: Resource) -> void:
 		_player_id = 0
 		_vehicle_id = seen_vehicle.get_instance_id()
 		_has_local = false
+		_player_in_cabin = false
 		_generation += 1
 		_remaining = settings.search_seconds
 		_point = observation.get("vehicle_point", Vector3.ZERO)
@@ -183,31 +182,15 @@ func _remember_locked(observation: Dictionary, settings: Resource) -> void:
 		_remember_vehicle(observation)
 
 func _remember_player(observation: Dictionary) -> void:
+	_player_in_cabin = bool(observation.get("player_in_cabin", false))
 	_point = observation.get("player_point", _point)
 	if _vehicle != null and _observed_vehicle(observation) == _vehicle:
 		var frame: Transform3D = observation.get("vehicle_frame", Transform3D.IDENTITY)
-		var local_point := frame.affine_inverse() * _point
-		var sample_time := float(observation.get("sample_time", -1.0))
-		var sample_delta := sample_time - _motion_sample_time
-		if observation.get("player_motion_local") is Vector3:
-			# A survivor can be visible through a hatch for only one sensor sample.
-			# Its sight-confirmed locomotion is still usable motion evidence.
-			_search_offset_local = (Vector3(observation.player_motion_local).slide(Vector3.UP) * .5).limit_length(3.0)
-		elif not _has_local or sample_time < 0.0 or sample_delta > .3:
-			_search_offset_local = Vector3.ZERO
-		elif sample_delta > .000001:
-			# Use only successive visible positions in the observed RV frame.
-			# A short bounded lead searches the next cabin area when a walking
-			# survivor passes beneath its roof. It never becomes a grab target,
-			# refreshes the search deadline or reads the hidden survivor's state.
-			_search_offset_local = ((local_point - _player_local).slide(Vector3.UP) / sample_delta * .5).limit_length(3.0)
-		_motion_sample_time = sample_time
-		_player_local = local_point
+		_player_local = frame.affine_inverse() * _point
 		_has_local = true
 	else:
 		_has_local = false
-		_motion_sample_time = -1.0
-		_search_offset_local = Vector3.ZERO
+		_player_in_cabin = false
 
 func _remember_vehicle(observation: Dictionary) -> void:
 	_vehicle_frame = observation.get("vehicle_frame", Transform3D.IDENTITY)
@@ -250,6 +233,7 @@ func _cleanup_invalid() -> void:
 		_vehicle = null
 		_vehicle_id = 0
 		_has_local = false
+		_player_in_cabin = false
 		_generation += 1
 		if _player != null:
 			_set_mode("ground", "invalid_vehicle")
@@ -265,9 +249,8 @@ func _clear(reason: String) -> void:
 	_vehicle_id = 0
 	_mode = "none"
 	_has_local = false
+	_player_in_cabin = false
 	_remaining = 0.0
-	_motion_sample_time = -1.0
-	_search_offset_local = Vector3.ZERO
 	_low_seconds = 0.0
 	_high_seconds = 0.0
 	_pending_observation.clear()
@@ -283,7 +266,7 @@ func _set_mode(mode: String, reason: String) -> void:
 func _publish(observation: Dictionary, locked: bool) -> void:
 	var player_visible := _player != null and _observed_player(observation) == _player
 	var vehicle_visible := _vehicle != null and _observed_vehicle(observation) == _vehicle
-	var search_point := _vehicle_frame * (_player_local + _search_offset_local) if _has_local and not player_visible else _point
+	var search_point := _point
 	var intent := "none"
 	if _mode == "ground":
 		intent = "ground" if player_visible else "search"
@@ -293,6 +276,7 @@ func _publish(observation: Dictionary, locked: bool) -> void:
 		intent = "vehicle_assault" if vehicle_visible else "search"
 	decision = {"mode": _mode, "intent": intent, "player": _player, "vehicle": _vehicle,
 		"player_visible": player_visible, "vehicle_visible": vehicle_visible,
+		"cabin_memory_attack": _mode == "cabin" and _player != null and _has_local and _player_in_cabin and vehicle_visible and _remaining > 0.0,
 		"roof_inspection": _mode == "cabin" and vehicle_visible and observation.get("roof_visible", false) and _remaining > 0.0,
 		"point": _point, "search_point": search_point, "vehicle_frame": _vehicle_frame,
 		"reason": "action_locked" if locked and _mode != "none" else _reason,

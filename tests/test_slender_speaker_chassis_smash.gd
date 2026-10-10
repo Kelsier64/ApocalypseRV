@@ -144,6 +144,72 @@ func check_roof_progress_contract() -> void:
 	rv.queue_free()
 	await frames()
 
+func check_last_seen_cabin_smash() -> void:
+	var rv: Chassis = load("res://rv/chassis.tscn").instantiate()
+	rv.freeze = true
+	rv.position = Vector3(0, wheel_chassis_height, 35)
+	world.add_child(rv)
+	rv.set_physics_process(false)
+	await frames(3)
+	var slots: RVStructureSlots = rv.get_node("StructureSlots")
+	for id in ["roof_1", "roof_2"]:
+		var opened := slots.panel(id)
+		opened.take_damage(opened.current_health)
+	var survivor: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	world.add_child(survivor)
+	survivor.set_physics_process(false)
+	survivor.global_position = rv.to_global(Vector3(0, .3, 5.2))
+	survivor.velocity = Vector3(0, 0, -5)
+	giant.reset_after_restore()
+	giant.velocity = Vector3.ZERO
+	giant.global_position = rv.to_global(Vector3(-5, -wheel_chassis_height, 5.2))
+	giant.rotation.y = -PI / 2.0
+	giant._sample("idle_play", 0.0)
+	landed.clear()
+	await frames(5)
+	giant._refresh_sight()
+	giant._update_encounter(0.0)
+	check(giant.target_player == survivor and giant.target_vehicle == rv, "Memory smash observes a real walking survivor in the open rear cabin")
+	var last: Vector3 = giant._encounter_decision.point
+	# The survivor moves to another cabin area behind a real solid. The
+	# autonomous controller receives no injected target or visibility.
+	survivor.global_position = rv.to_global(Vector3(0, .3, -4.5))
+	var occluder := StaticBody3D.new()
+	shape(occluder, Vector3(2.0, 4.0, 2.0))
+	world.add_child(occluder)
+	occluder.global_position = survivor.global_position + Vector3(0, 1.5, 0)
+	await frames(3)
+	giant._refresh_sight()
+	giant._update_encounter(0.0)
+	check(not giant.can_see_player(survivor) and giant._vehicle_is_observed(rv), "A solid in the front cabin hides the moved survivor while its RV remains visible")
+	check(giant._encounter_decision.get("cabin_memory_attack", false) and giant._encounter_decision.point.is_equal_approx(last), "Lost walking target retains its exact rear point with no forward prediction")
+	var engine_health: float = rv.get_engine().health
+	var front_health: float = slots.panel("roof_0").current_health
+	var started := false
+	var completed := false
+	var blind_grab := false
+	var retargeted := false
+	for tick in 480:
+		await physics_frame
+		giant._physics_process(1.0 / 60.0)
+		blind_grab = blind_grab or giant.phase == SlenderSpeaker.Phase.GRAB or survivor.is_grabbed()
+		if giant.phase == SlenderSpeaker.Phase.SMASH:
+			started = true
+			retargeted = retargeted or giant._action_context.get("kind") != "cabin_memory" or not giant._action_context.point.is_equal_approx(last) or not giant._strike_point.is_equal_approx(last)
+		if started and giant.phase == SlenderSpeaker.Phase.RECOVER:
+			completed = true
+			break
+	check(started and completed and not retargeted, "Autonomous search completes an actual memory smash aimed only at the exact last seen rear point")
+	check(not blind_grab and not landed.has(survivor) and survivor.current_player_health == 100.0, "Moving away while hidden avoids the remembered hand sweep and cannot cause a blind grab")
+	check(is_equal_approx(rv.get_engine().health, engine_health) and is_equal_approx(slots.panel("roof_0").current_health, front_health), "Memory smash cannot damage chassis or switch to the roof over the hidden player's new position")
+	print("CABIN_MEMORY_SMASH started=", started, " completed=", completed, " retargeted=", retargeted,
+		" point=", last, " hidden_player=", survivor.execution_contact_position(), " collider=", giant._strike_contact_collider, " hp=", survivor.current_player_health)
+	giant.reset_after_restore()
+	occluder.queue_free()
+	survivor.queue_free()
+	rv.queue_free()
+	await frames()
+
 func check_expired_survivor_roof_inspection() -> void:
 	# The old observation is in an already open rear cabin. Only the front
 	# production roof remains, so retaining rear search memory cannot select it.
@@ -200,7 +266,7 @@ func check_expired_survivor_roof_inspection() -> void:
 		giant._refresh_sight()
 		giant._update_encounter(1.0 / 60.0)
 	check(giant.target_vehicle == rv and giant.target_player == null and giant._encounter_decision.get("intent") == "cabin", "Actual eight-second expiry retains the visibly observed RV and enters unknown-occupant cabin inspection")
-	check(not giant._encounter._has_local and giant._encounter._search_offset_local == Vector3.ZERO and giant._encounter._remaining >= giant.settings.search_seconds - .02, "Expiry discards survivor local and motion memory and gives unknown roof inspection its fresh eight seconds")
+	check(not giant._encounter._has_local and not giant._encounter_decision.get("cabin_memory_attack", false) and giant._encounter._remaining >= giant.settings.search_seconds - .02, "Expiry discards survivor local memory and cabin attack permission and gives unknown roof inspection its fresh eight seconds")
 	var planner_frame := rv.global_transform
 	var old_local := planner_frame.affine_inverse() * remembered
 	var old_area_covers_front := false
@@ -459,6 +525,7 @@ func run() -> void:
 	check(giant.visual.available, "Production rig and hand sockets loaded")
 	check(is_equal_approx(giant.settings.smash_chassis_damage, 60.0), "First-version chassis damage defaults to 60")
 	await measure_wheel_stance()
+	await check_last_seen_cabin_smash()
 	await check_expired_survivor_roof_inspection()
 	await check_contact_contract()
 	await check_roof_progress_contract()

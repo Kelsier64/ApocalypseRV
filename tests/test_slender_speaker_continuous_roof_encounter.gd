@@ -101,7 +101,7 @@ func encounter(label: String, z: float, normal_walk := false) -> void:
 		await frames()
 		if is_instance_valid(contacts.pending_roof) and not contacts.pending_roof.is_destroyed and giant.target_vehicle != rv:
 			contacts.lost_after_hit = true
-		if giant.phase == SlenderSpeaker.Phase.SMASH and giant._action_context.get("kind") != "roof": wrong_smash = true
+		if giant.phase == SlenderSpeaker.Phase.SMASH and giant._action_context.get("kind") not in ["roof", "cabin_memory"]: wrong_smash = true
 		if previous != giant.phase or (Engine.get_physics_frames() - start) % 300 == 0:
 			print("CONTINUOUS_ROOF ", label, " t=", float(Engine.get_physics_frames() - start) / 60.0, " ", JSON.stringify(observation()))
 		previous = giant.phase

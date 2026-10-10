@@ -125,6 +125,38 @@ func test_ownership_lift_cancel() -> void:
 	check(player.inventory.items == inventory_before and player.held_item_node == held_before, "Cancellation retains inventory and held Item identity")
 	stranger.queue_free()
 
+func test_speaker_default_view() -> void:
+	reset()
+	var giant: SlenderSpeaker = load("res://enemies/slender_speaker/slender_speaker.tscn").instantiate()
+	world.add_child(giant)
+	giant.set_physics_process(false)
+	giant._sample("hold", 0.0)
+	player.global_position = giant._focus_position() + Vector3(0, -1.0, -3.0)
+	var grip: Node3D = giant.execution_anchor
+	grip.global_position = player.execution_contact_position()
+	giant.execution_focus.global_position = giant._focus_position()
+	for yaw in [0.0, PI / 2.0, PI, -PI / 2.0]:
+		player.grab_control.immunity = 0.0
+		player.rotation.y = yaw
+		giant.phase = SlenderSpeaker.Phase.LIFT
+		check(player.begin_execution(giant, grip, giant.execution_focus), "Production speaker begins camera capture")
+		check(player.grab_control.execution_observer == null and player.camera.current, "Lift keeps the first-person view")
+		player.grab_control.execution_look_offset = Vector2(.2, -.1)
+		giant.phase = SlenderSpeaker.Phase.HOLD
+		player.grab_control._process(1.0 / 60.0)
+		var observer: Camera3D = player.grab_control.execution_observer
+		check(is_instance_valid(observer) and observer.current, "Hold switches to the production third-person observer")
+		if is_instance_valid(observer):
+			var direction := (giant._focus_position() - observer.global_position).normalized()
+			check((-observer.global_basis.z).dot(direction) > .999, "Default view points at the actual speaker regardless of survivor yaw")
+			check(player.grab_control.execution_look_offset == Vector2.ZERO, "Hold resets lift mouse offsets for the default speaker view")
+			var away: Vector3 = (player.execution_contact_position() - giant._focus_position()).slide(Vector3.UP).normalized()
+			check((observer.global_position - player.execution_contact_position()).dot(away) > 2.19, "Default observer stays on the survivor's side of the speaker")
+		player.cancel_execution(giant)
+	giant.queue_free()
+	await frames()
+	reset()
+
 func test_execution_framing_cleanup() -> void:
 	reset()
 	# Keep this custom eye baseline independent of ordinary idle locomotion.
@@ -178,11 +210,29 @@ func test_execution_framing_cleanup() -> void:
 	var orbit: Vector2 = player.grab_control.execution_look_offset
 	for tick in 60: player.grab_control._process(1.0 / 60.0)
 	check(player.grab_control.execution_look_offset.is_equal_approx(orbit), "Automatic framing retains the chosen orbit")
+	var sensitivity: float = player.MOUSE_SENSITIVITY * float(player.game_settings.get_setting(&"sensitivity"))
+	var invert_y: bool = player.game_settings.get_setting(&"invert_y")
+	# Cross the old limits, both poles and a complete turn through real mouse input.
+	for axis in [Vector2.RIGHT, Vector2.DOWN]:
+		for inverted in [false, true]:
+			player.game_settings.set_setting(&"invert_y", inverted, false)
+			player.grab_control.execution_look_offset = Vector2.ZERO
+			player.grab_control._update_execution_observer()
+			var start: Transform3D = observer.global_transform
+			for degrees in [45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 360.0]:
+				motion.relative = -axis * deg_to_rad(45.0) / sensitivity
+				if DisplayServer.get_name() == "headless": player.grab_control._execution_mouse_look(motion)
+				else: player.grab_control._input(motion)
+				var expected := wrapf(deg_to_rad(degrees) * (-1.0 if inverted and axis == Vector2.DOWN else 1.0), -PI, PI)
+				var actual: float = player.grab_control.execution_look_offset.x if axis == Vector2.RIGHT else player.grab_control.execution_look_offset.y
+				check(absf(wrapf(actual - expected, -PI, PI)) < .0001, "Third-person orbit passes %.0f degrees without a yaw/pitch cap" % degrees)
+				check(observer.global_transform.is_finite() and absf(observer.global_basis.determinant() - 1.0) < .001, "Unrestricted orbit keeps a valid camera basis across the poles")
+			check(observer.global_transform.is_equal_approx(start), "A complete mouse orbit returns to its starting view")
+	player.game_settings.set_setting(&"invert_y", invert_y, false)
 	motion.relative = Vector2(100000, -100000)
 	if DisplayServer.get_name() == "headless": player.grab_control._execution_mouse_look(motion)
 	else: player.grab_control._input(motion)
-	check(absf(rad_to_deg(player.grab_control.execution_look_offset.x)) <= 25.01
-		and absf(rad_to_deg(player.grab_control.execution_look_offset.y)) <= 18.01, "Third-person orbit obeys restrained yaw and pitch limits")
+	check(observer.global_transform.is_finite(), "Large mouse motion retains a valid unrestricted orbit")
 	check(player.global_transform.is_equal_approx(body_before) and player.camera.global_basis.is_equal_approx(eye_basis)
 		and player.camera.position.is_equal_approx(rest_position) and is_equal_approx(player.camera.fov, 68.0),
 		"Orbit changes neither restrained body nor first-person camera")
@@ -695,6 +745,7 @@ func run() -> void:
 	await frames()
 	test_ownership_lift_cancel()
 	test_execution_camera_overhead()
+	await test_speaker_default_view()
 	await test_execution_framing_cleanup()
 	await test_third_person_world_and_player_removal()
 	await test_save_guard()

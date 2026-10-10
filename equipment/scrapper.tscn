@@ -5,9 +5,11 @@
 [ext_resource type="Resource" path="res://equipment/scrapper_definition.tres" id="def"]
 
 [ext_resource type="PackedScene" path="res://rv/visuals/scrapper.tscn" id="detail_visual"]
+[ext_resource type="PackedScene" path="res://rv/visuals/scrapper_roller.tscn" id="roller_visual"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8ojfv"]
-albedo_color = Color(0.085, 0.22, 0.20, 1)
+transparency = 1
+albedo_color = Color(0, 0, 0, 0)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ja3vi"]
 size = Vector3(1.05, 0.07, 1.05)
@@ -34,6 +36,7 @@ mass = 80.0
 equipment_name = "Recycling Scrapper"
 
 [node name="BasinVisual" type="CSGBox3D" parent="." unique_id=2131142470]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
 material_override = SubResource("StandardMaterial3D_8ojfv")
 size = Vector3(1.05, 0.7, 1.05)
@@ -71,15 +74,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.95792866, 0)
 shape = SubResource("BoxShape3D_ekvep")
 
 [node name="CSGCylinder3D" type="CSGCylinder3D" parent="." unique_id=2089081524]
+material_override = SubResource("StandardMaterial3D_8ojfv")
+cast_shadow = 0
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.2, 0.5, 0)
 radius = 0.2
 height = 1.0
 sides = 10
 
 [node name="CSGCylinder3D2" type="CSGCylinder3D" parent="." unique_id=1335461225]
+material_override = SubResource("StandardMaterial3D_8ojfv")
+cast_shadow = 0
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.2, 0.5, 0)
 radius = 0.2
 height = 1.0
 sides = 10
 
 [node name="Details" parent="." instance=ExtResource("detail_visual")]
+
+[node name="CuttingStack" parent="CSGCylinder3D" instance=ExtResource("roller_visual")]
+position = Vector3(0, -0.02, 0)
+
+[node name="CuttingStack" parent="CSGCylinder3D2" instance=ExtResource("roller_visual")]
+position = Vector3(0, 0.02, 0)
+rotation = Vector3(0, 0.44879895, 0)
+scale = Vector3(-1, 1, 1)
