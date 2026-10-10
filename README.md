@@ -25,6 +25,14 @@ godot --path .
 
 主場景為 `world/main_world.tscn`，使用 60 Hz／Jolt Physics（32／32 次求解），桌面預設 Forward+／Vulkan。玩家出生於半地下避難所車庫，RV 已可駕駛，發電機、工作台及分解機須自行搬上車。整備時時間與敵人停止，門旁 E 按鈕開門並開始旅程；RV 與玩家離開後車庫永久關閉，未帶走物資無法再取回。公路後方由廢棄車陣封死。原 `world/test_world.tscn` 保留為 legacy 測試場。
 
+快速展示世界：在 Godot 編輯器開啟 `world/demo_world.tscn` 後按 F6，或執行：
+
+```powershell
+godot --path . res://world/demo_world.tscn
+```
+
+Demo 沿用主世界的起始車庫、整備物資與 RV 操作，固定種子 42 和小霧；啟程後駛上公路，從起始停靠點往前約 60 m，前方路肩會安排一隻 Slender Speaker，沿用正式追車、拆車與抓取行為。此場景只安排一次巨人遭遇，需重新啟動場景才能重置；不提供遊戲中的 F6／F9 檢查點保存／載入。正式入口仍為 `main_world.tscn`。
+
 戶外已改用林間局部體積霧，會接受太陽與車燈照明；遠處另外保留淡距離霧。更新後須重新啟動遊戲，編輯器需重新載入專案。若顯示卡不支援，可用 `godot --path . --rendering-method gl_compatibility --rendering-driver opengl3`，降級為原距離霧。畫面與測試見 [局部體積霧驗收](docs/validation/2026-09-17-volumetric-fog.md)。
 
 正式新局使用生成 v10，沿用 v9 的道路規則，每 150 m 獨立抽取釘帶、0–3 隻 Raker、0–4 台廢車、8% 一隻油桶人及 20% 一個普通油桶；起點前 450 m 保持安全。Raker 與廢車逐一選點，廢車各自隨機朝向，不保證中央通道；廢車尚無清除互動。普通油桶是可拾取、保存的動態 Item，回訪不補出；既有 v8 世界保留原規則；撞毀樹木沿用主分支功能，破壞狀態隨檢查點保存。靜態內容回訪按原位重建，怪物死亡或超出戶外前後約 450 m 後不補出。世界生成版本與檢查點版本分開；目前檢查點為 v5，舊版檢查點須重新開局。規則與歷次驗收見 [公路隨機刷新](docs/plans/random_spawn.md)。

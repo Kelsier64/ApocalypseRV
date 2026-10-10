@@ -180,10 +180,11 @@ func metal_work_and_output_retry() -> void:
 func organic_work_and_cancellation() -> void:
 	var corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()
 	corpse.kind = "player"
-	corpse.position = Vector3(-20, 6, 0)
+	for part: StringName in PlayerBodyState.PARTS: corpse.body_state.sever(part)
+	corpse.global_transform = machine.global_transform * Transform3D(Basis.IDENTITY, Vector3(0,.62,0))
 	WorldEntities.get_container(world).add_child(corpse)
 	await steps(3)
-	check(corpse.initialized and corpse.bodies.size() > 3, "Organic fixture uses a real articulated corpse")
+	check(corpse.initialized and corpse.bodies.size() == 3, "Organic fixture uses the real articulated player torso handed off by staged feeding")
 	corpse.scrap_yields = {ItemNames.UNKNOWN_MATERIAL: Vector2(2, 2)}
 	var materials_before := rv.get_all_items()
 	machine.recycle_prop(corpse)
@@ -191,7 +192,7 @@ func organic_work_and_cancellation() -> void:
 	machine.step_work(.1)
 	check(effect.working and effect.organic and sound().playing, "Actual powered corpse work switches the reused effect to organic mode")
 	check(particles("FleshChunks").emitting and particles("BloodSpray").emitting and not particles("MetalChips").emitting, "Corpse input activates organic channels and stops metal chips")
-	check(corpse.processing and not corpse.simulator.is_simulating_physics() and corpse.processing_owner == machine, "Organic effects preserve the recycler's sole ownership and frozen torso physics")
+	check(corpse.processing and corpse.physical_feed and corpse.simulator.is_simulating_physics() and corpse.processing_owner == machine, "Organic effects preserve the recycler's sole ownership and physical torso feed")
 	check(rv.get_all_items() == materials_before, "Organic particles do not create their own material yield")
 	saved_input_only(1)
 	reused("Organic transition")

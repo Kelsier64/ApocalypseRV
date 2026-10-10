@@ -135,6 +135,42 @@ func _update_camera() -> void:
 	var fraction := player.get_world_3d().direct_space_state.cast_motion(query)[0]
 	player.camera.global_transform = Transform3D(camera_basis, origin + eye_offset * maxf(0.0, fraction - 0.02))
 
+static func part_contains_bone(part: StringName, key: String) -> bool:
+	if part == &"head": return key == "head"
+	var side := "L" if String(part).begins_with("left") else "R"
+	return key in (["upper_arm_"+side,"forearm_"+side] if String(part).ends_with("arm") else ["thigh_"+side,"shin_"+side,"foot_"+side])
+
+func capture_physical_pose() -> void:
+	var frames: Array[Transform3D] = []
+	for i in skeleton.get_bone_count():
+		var parent := skeleton.get_bone_parent(i)
+		var key := String(skeleton.get_bone_name(i))
+		var parent_frame: Transform3D = frames[parent] if parent >= 0 else skeleton.global_transform
+		var frame: Transform3D = bodies[key].global_transform * bodies[key].body_offset.affine_inverse() if bodies.has(key) else parent_frame * skeleton.get_bone_pose(i)
+		frames.append(frame)
+		skeleton.set_bone_pose(i,parent_frame.affine_inverse()*frame)
+	skeleton.force_update_all_bone_transforms()
+
+func remove_scrapper_branch(part: StringName) -> void:
+	var poses: Dictionary = {}
+	var velocities: Dictionary = {}
+	for key: String in bodies:
+		poses[key] = bodies[key].global_transform
+		velocities[key] = [bodies[key].linear_velocity,bodies[key].angular_velocity]
+	simulator.physical_bones_stop_simulation()
+	for key: String in bodies.keys():
+		if part_contains_bone(part,key):
+			bodies[key].free()
+			bodies.erase(key)
+			allowed_bones.erase(key)
+	simulator.physical_bones_start_simulation()
+	for key: String in bodies:
+		bodies[key].global_transform = poses[key]
+		bodies[key].linear_velocity = velocities[key][0]
+		bodies[key].angular_velocity = velocities[key][1]
+	presence_signature = str(player.body_state.capture())
+	links.clear()
+
 func release_body_for_recycling() -> void:
 	# The persistent corpse owns the visible torso. Keep only the controller's
 	# camera/timer and a recovery anchor; no invisible duplicate physics.

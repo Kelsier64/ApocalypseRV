@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://world/main_world.tscn" id="1_world"]
+[ext_resource type="Script" path="res://world/demo_world.gd" id="2_demo"]
+[ext_resource type="Script" path="res://world/demo_world_generator.gd" id="3_generator"]
+
+[node name="DemoWorld" instance=ExtResource("1_world")]
+script = ExtResource("2_demo")
+metadata/checkpoint_staging = true
+
+[node name="WorldGenerator" parent="." index="6"]
+script = ExtResource("3_generator")
+world_seed = 42
