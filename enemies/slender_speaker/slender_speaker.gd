@@ -1574,12 +1574,14 @@ func execution_camera_ready() -> bool:
 	return phase in [Phase.HOLD, Phase.CRUSH]
 
 func execution_camera_frame(subject: Node3D) -> Dictionary:
-	# Follow the survivor's own facing and chest, independently of the giant.
+	# Start on the survivor's side of the speaker, regardless of body facing.
 	var chest: Vector3 = subject.execution_contact_position()
-	var behind := subject.global_basis.z.slide(Vector3.UP).normalized()
+	var speaker := _focus_position()
+	var behind := (chest - speaker).slide(Vector3.UP).normalized()
+	if behind.length_squared() < .0001: behind = global_basis.z.slide(Vector3.UP).normalized()
 	if behind.length_squared() < .0001: behind = Vector3.BACK
 	var side := Vector3.UP.cross(behind).normalized()
-	return {"pivot": chest, "focus": chest,
+	return {"pivot": chest, "focus": speaker,
 		"offset": behind * 2.2 + side * 1.2 + Vector3.UP * 1.0}
 
 func _bone_position(name: String) -> Vector3:

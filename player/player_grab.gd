@@ -409,13 +409,17 @@ func _execution_mouse_look(event: InputEventMouseMotion) -> void:
 	if not is_executing() or not is_instance_valid(view) or not view.current or player.in_ui_mode: return
 	var sensitivity: float = player.MOUSE_SENSITIVITY * float(player.game_settings.get_setting(&"sensitivity"))
 	var y_direction := -1.0 if bool(player.game_settings.get_setting(&"invert_y")) else 1.0
-	execution_look_offset.x = clampf(execution_look_offset.x - event.relative.x * sensitivity,
-		-deg_to_rad(EXECUTION_LOOK_YAW_LIMIT), deg_to_rad(EXECUTION_LOOK_YAW_LIMIT))
-	execution_look_offset.y = clampf(execution_look_offset.y - event.relative.y * sensitivity * y_direction,
-		-deg_to_rad(EXECUTION_LOOK_PITCH_LIMIT), deg_to_rad(EXECUTION_LOOK_PITCH_LIMIT))
+	execution_look_offset -= Vector2(event.relative.x, event.relative.y * y_direction) * sensitivity
 	if is_instance_valid(execution_observer):
+		# Complete turns stay continuous, including over the top and underneath.
+		execution_look_offset.x = wrapf(execution_look_offset.x, -PI, PI)
+		execution_look_offset.y = wrapf(execution_look_offset.y, -PI, PI)
 		_update_execution_observer()
 	else:
+		execution_look_offset.x = clampf(execution_look_offset.x,
+			-deg_to_rad(EXECUTION_LOOK_YAW_LIMIT), deg_to_rad(EXECUTION_LOOK_YAW_LIMIT))
+		execution_look_offset.y = clampf(execution_look_offset.y,
+			-deg_to_rad(EXECUTION_LOOK_PITCH_LIMIT), deg_to_rad(EXECUTION_LOOK_PITCH_LIMIT))
 		_apply_execution_view()
 
 func _try_start_execution_observer() -> void:
@@ -445,9 +449,10 @@ func _update_execution_observer() -> void:
 	offset = offset.rotated(Vector3.UP, execution_look_offset.x)
 	var right := Vector3.UP.cross(offset).normalized()
 	offset = offset.rotated(right, execution_look_offset.y)
-	_position_execution_observer(pivot, focus, offset, captor)
+	var up := Vector3.UP.rotated(right, execution_look_offset.y)
+	_position_execution_observer(pivot, focus, offset, captor, up)
 
-func _position_execution_observer(pivot: Vector3, focus: Vector3, offset: Vector3, owner_node: Node3D = null) -> void:
+func _position_execution_observer(pivot: Vector3, focus: Vector3, offset: Vector3, owner_node: Node3D = null, up := Vector3.UP) -> void:
 	var query := PhysicsShapeQueryParameters3D.new()
 	var sphere := SphereShape3D.new()
 	sphere.radius = .18
@@ -462,7 +467,10 @@ func _position_execution_observer(pivot: Vector3, focus: Vector3, offset: Vector
 	var safe := player.get_world_3d().direct_space_state.cast_motion(query)
 	execution_observer.global_position = pivot + offset * safe[0]
 	if execution_observer.global_position.distance_squared_to(focus) > .0001:
-		execution_observer.look_at(focus, Vector3.UP)
+		var direction := (focus - execution_observer.global_position).normalized()
+		if absf(direction.dot(up)) > .999:
+			up = Vector3.FORWARD if absf(direction.z) < .999 else Vector3.RIGHT
+		execution_observer.look_at(focus, up)
 
 func has_execution_death_view() -> bool:
 	return execution_death_view and is_instance_valid(execution_observer) and execution_observer.current
