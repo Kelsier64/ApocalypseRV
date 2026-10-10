@@ -1,5 +1,5 @@
 extends "res://tests/day_night_playground.gd"
-const PRESETS := [Vector3.ZERO, Vector3(0, 1, 0), Vector3(0, 2, 0), Vector3(0, 0, 1), Vector3(0, 0, 2), Vector3(1, 0, 0), Vector3(0, 2, 2)]
+const PRESETS := [Vector3.ZERO, Vector3(0, 1, 0), Vector3(0, 2, 0), Vector3(0, 0, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 0, WorldWeather.FOG_HEAVY), Vector3(1, 0, 0), Vector3(0, 2, WorldWeather.FOG_HEAVY)]
 var preset := 0
 var metrics_elapsed := 0.0
 var frame_samples := 0
@@ -29,7 +29,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				preset = (preset + 1) % PRESETS.size()
 				value = PRESETS[preset]
 			KEY_7: value = Vector3(0, fmod(value.y + 1, 3), value.z)
-			KEY_8: value = Vector3(0, value.y, fmod(value.z + 1, 3))
+			KEY_8:
+				var next_fog := (WorldWeather.FOG_LEVELS.find(value.z) + 1) % WorldWeather.FOG_LEVELS.size()
+				value = Vector3(0, value.y, WorldWeather.FOG_LEVELS[next_fog])
 			KEY_9: value = Vector3.ZERO if value.x > 0 else Vector3(1, 0, 0)
 			KEY_0:
 				clock.weather_running = not clock.weather_running

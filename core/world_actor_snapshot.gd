@@ -115,6 +115,7 @@ static func restore(saved: Dictionary, container: Node) -> Node3D:
 		actor.angular_velocity = saved.physics.angular
 	elif actor is Monster:
 		actor.current_health = saved.health
+		if actor.has_method("reset_after_restore"): actor.reset_after_restore()
 		if saved.has("id"):
 			actor.set_meta("bunker_actor_id", saved.id)
 			BunkerContent.configure_monster(actor)

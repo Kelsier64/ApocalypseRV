@@ -103,6 +103,17 @@ func exit_seat(forced: bool = false) -> void:
 
 	seat_camera.rotation = REST_CAMERA_ROTATION
 
+func release_for_execution(player: Node3D) -> bool:
+	if current_driver != player or player.seated_in != self: return false
+	current_driver = null
+	# The validated hand contact already chooses the release location. Keep
+	# the body there so subsequent extraction is collision-swept by Player.
+	player.exit_seat_mode(player.global_position)
+	var rv := get_connected_rv()
+	if rv and rv.has_method("set_driving_state"): rv.set_driving_state(false)
+	seat_camera.rotation = REST_CAMERA_ROTATION
+	return true
+
 # Use the real standing collider and supported floor points, never teleport into geometry.
 func _find_clear_exit_position(forced: bool = false) -> Vector3:
 	var candidates: Array[Vector3] = []

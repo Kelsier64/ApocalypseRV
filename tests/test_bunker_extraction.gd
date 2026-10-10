@@ -1,6 +1,7 @@
 extends SceneTree
 ## The generated reward must leave through the player-facing exit and survive disk restore.
 const SAVE_PATH := "res://.godot/test-bunker-extraction.save"
+const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 
 func _init() -> void:
@@ -101,8 +102,23 @@ func _run() -> void:
 	var saved_poi: Dictionary = manager.saved_instances.get(identity, {})
 	check(saved_poi.get("content", {}).get("cargo_id", "") == cargo_id and not saved_poi.get("actors", []).any(func(actor): return actor.get("state", {}).get("engine", {}).get("id", "") == cargo_id), "Exited bunker records cargo as removed from world")
 	check(saved_poi.get("caches", []).size() > 0 and saved_poi.caches[0].searched and saved_poi.caches[0].remaining.size() == 1, "Exited bunker records searched cache")
+	# Returning outdoors changes the streaming anchor. Let the generator observe
+	# that return, then wait for its terrain/navigation work before saving.
+	await process_frame
+	await physics_frame
+	var settled: bool = await WAIT.generator_idle(self, world.get_node("WorldGenerator"))
+	check(settled, "Outdoor terrain and navigation settle after bunker extraction")
+	if not settled:
+		world.free()
+		quit(1)
+		return
 	var checkpoint := root.get_node("Checkpoint")
-	check(checkpoint.save_world(world, SAVE_PATH), "Disk checkpoint saves extracted cargo")
+	var saved: bool = checkpoint.save_world(world, SAVE_PATH)
+	check(saved, "Disk checkpoint saves extracted cargo")
+	if not saved:
+		world.free()
+		quit(1)
+		return
 	var disk: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	check(not disk.is_empty() and disk.poi.get(identity, {}) == saved_poi, "Disk checkpoint preserves exact bunker state")
 	check(await checkpoint.load_world(world, SAVE_PATH), "Checkpoint loads into a fresh production world")

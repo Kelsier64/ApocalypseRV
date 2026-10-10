@@ -82,6 +82,14 @@ func _grab_arms(holding_item: bool) -> void:
 	# Keep the original restrained-arm height, mirrored by the other hand.
 	var grab: Node = actor.grab_control
 	var weight := smoothstep(0.0, .28, grab.camera_elapsed)
+	if grab.is_executing():
+		# Both real arms brace against the giant grip; the Raker arm-bite
+		# branch and its captor-specific fields never run for execution.
+		for side in ["L", "R"]:
+			var part: StringName = &"left_arm" if side == "L" else &"right_arm"
+			if actor.body_state.has_part(part) and not (holding_item and active_hand == side):
+				_arm(side, actor.to_global(Vector3(-.32 if side == "L" else .32, .62 if actor.is_crawling() else 1.26, -.38)), weight)
+		return
 	var bite := 0.0
 	if grab.captor.grab.phase == grab.captor.grab.Phase.BITE and grab.captor.grab.bite_part == &"left_arm":
 		bite = preload("res://enemies/raker_pose_modifier.gd").bite_weight(grab.captor.grab.elapsed)

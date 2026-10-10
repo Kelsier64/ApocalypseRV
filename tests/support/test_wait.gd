@@ -32,7 +32,8 @@ static func navigation_bakes_finished(tree: SceneTree, owner: Node, timeout_ms :
 	return await until(tree, func() -> bool:
 		if not is_instance_valid(owner): return true
 		for region in owner.find_children("*", "NavigationRegion3D", true, false):
-			if region.navigation_mesh != null and NavigationServer3D.is_baking_navigation_mesh(region.navigation_mesh):
+			var mesh: NavigationMesh = region.get_meta("pending_navigation_bake", region.navigation_mesh)
+			if mesh != null and NavigationServer3D.is_baking_navigation_mesh(mesh):
 				return false
 		return true, timeout_ms)
 
