@@ -1,12 +1,12 @@
 # 屋頂過濾設備組 — image-to-3D 建模 request
 
 - **要做什麼**：一組獨立的低矮工業空氣過濾設備，作為屋頂裝飾部件；不含建築外殼、屋頂或環境。
-- **替換位置與尺寸方向**：[exterior_extension.tscn](../../../../world/starting_shelter/exterior_extension.tscn) 的 `Visuals/RoofPlantB`。設計包圍盒寬 9 × 高 1.5 × 深 5 m；模型原點在包圍盒中心，Y 向上、主要維修面朝 +Z。沿用節點位置 `(11,12.75,-23)`、單位縮放，保留 `Collision/RoofPlantB`。
+- **替換位置與尺寸方向**：[exterior_extension.tscn](../../../../world/starting_shelter/exterior_extension.tscn) 的 `Visuals/RoofPlantB`。設計包圍盒寬 9 × 高 1.5 × 深 5 m；模型原點在包圍盒中心，Y 向上、主要維修面朝 +Z。原定節點位置 `(11,12.75,-23)`；依後續要求改為東翼屋頂前緣 `(17.7,11.75,9.8)`、單位縮放，`Collision/RoofPlantB` 同步移位並保留尺寸與導航標記。
 - **外觀描述／參考圖 prompt**：一組寬扁的老舊軍用空氣過濾設備，三個並排的灰綠金屬過濾箱連在共同底架上，正面可辨識濾網與維修面板，背面接短而寬的密閉風道；表面鏽蝕、積灰、掉漆，低彩度工業恐怖風格。單獨物件完整呈現，不含建築、人物、文字；無動畫與可開蓋機構。
 - **參考圖**：[透明背景 PNG](shelter-roof-filter-bank-image-to-3d-reference.png)。單一組裝物件的正面三分之四視角，呈現三個並排過濾箱、共同底架及後方連續密閉風道；僅供 diffuser 外觀輸入，尺寸、原點與朝向仍以上述文字為準。
-- **交付位置**：`assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb` 與必要貼圖；可編輯來源放 `art_source/shelter_roof_filter_bank/`。只替換外觀，保留碰撞及導航標記。後續由使用者以參考圖透過 diffuser 建模。
+- **交付位置**：`assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb` 與必要貼圖；可編輯來源放 `art_source/shelter_roof_filter_bank/`。以此參考圖完成生成與接入；保留獨立碰撞及導航標記，屋頂前緣移位依後續要求同步處理。
 
-完成情況：2026-10-01 已由 `image_to_3d_reference` subagent 製作並檢查參考圖；模型尚待生成與接入，獨立過濾設備組保留灰盒，建築本體不在本 request 範圍。
+完成情況：2026-10-09 已生成、整理並接入正式 main world，5,998 三角面；依使用者要求移到玩家從前庭可見的屋頂前緣，混凝土支座、碰撞及隱藏灰盒同步移位。實際玩家相機視線與相關 4/4 回歸通過。見 [驗證報告](../../../validation/2026-10-09-roof-filter-bank.md)。
 
 - **生成來源**：內建 `image_gen`，依 [GDD 美術方向](../../../../GDD.md#正式戶外低模與低解析度) 與 [D 修正版](../../../art_targets/outdoor/2026-09-17-d-revision.md)。風道外殼細節為可替換的外觀假設，無新增接口或活動機構。
 

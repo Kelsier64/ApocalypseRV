@@ -1,5 +1,6 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb" id="roof_filter_bank"]
 [ext_resource type="PackedScene" path="res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb" id="roof_air_handler"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/concrete.tres" id="concrete"]
 [ext_resource type="PackedScene" path="res://world/starting_shelter/facade.tscn" id="facade"]
@@ -36,7 +37,7 @@ size = Vector3(9, 1.5, 5)
 size = Vector3(9, 1.5, 5)
 
 [node name="ExteriorExtension" type="Node3D"]
-metadata/art_status = "native building complete; RoofPlantA modeled; RoofPlantB graybox"
+metadata/art_status = "native building complete; RoofPlantA and RoofPlantB modeled"
 
 [node name="Visuals" type="Node3D" parent="."]
 
@@ -94,13 +95,17 @@ metadata/navigation_solid = true
 position = Vector3(-17.7, 10, 9.8)
 shape = SubResource("RoofPlantAShape")
 
-[node name="RoofPlantB" type="MeshInstance3D" parent="Visuals"]
+[node name="RoofPlantB" parent="Visuals" instance=ExtResource("roof_filter_bank")]
 metadata/modeling_request = "shelter-roof-filter-bank"
-position = Vector3(11, 12.75, -23)
+position = Vector3(17.7, 11.75, 9.8)
+
+[node name="RoofPlantBGraybox" type="MeshInstance3D" parent="Visuals"]
+visible = false
+position = Vector3(17.7, 11.75, 9.8)
 mesh = SubResource("RoofPlantBMesh")
 material_override = ExtResource("steel")
 
 [node name="RoofPlantB" type="CollisionShape3D" parent="Collision"]
 metadata/navigation_solid = true
-position = Vector3(11, 12.75, -23)
+position = Vector3(17.7, 11.75, 9.8)
 shape = SubResource("RoofPlantBShape")
