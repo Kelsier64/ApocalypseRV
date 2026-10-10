@@ -1,0 +1,232 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="paint"]
+albedo_color = Color(0.08, 0.23, 0.21, 1)
+roughness = 0.72
+
+[sub_resource type="StandardMaterial3D" id="dark"]
+albedo_color = Color(0.025, 0.036, 0.04, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="steel"]
+albedo_color = Color(0.38, 0.44, 0.46, 1)
+metallic = 0.8
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="orange"]
+albedo_color = Color(0.92, 0.34, 0.06, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="lamp"]
+resource_local_to_scene = true
+albedo_color = Color(0.7, 0.76, 0.78, 1)
+emission_enabled = true
+emission = Color(0.7, 0.76, 0.78, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="BoxMesh" id="back"]
+size = Vector3(0.32, 0.39, 0.025)
+
+[sub_resource type="BoxMesh" id="case"]
+size = Vector3(0.29, 0.36, 0.075)
+
+[sub_resource type="BoxMesh" id="face"]
+size = Vector3(0.262, 0.326, 0.014)
+
+[sub_resource type="BoxMesh" id="collar"]
+size = Vector3(0.146, 0.158, 0.014)
+
+[sub_resource type="BoxMesh" id="rocker"]
+size = Vector3(0.112, 0.126, 0.032)
+
+[sub_resource type="BoxMesh" id="seam"]
+size = Vector3(0.108, 0.004, 0.001)
+
+[sub_resource type="CylinderMesh" id="guard"]
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.19
+radial_segments = 12
+rings = 1
+
+[sub_resource type="CylinderMesh" id="screw"]
+top_radius = 0.008
+bottom_radius = 0.008
+height = 0.006
+radial_segments = 12
+rings = 1
+
+[sub_resource type="BoxMesh" id="slot"]
+size = Vector3(0.01, 0.0018, 0.001)
+
+[sub_resource type="CylinderMesh" id="rim"]
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.008
+radial_segments = 16
+rings = 1
+
+[sub_resource type="SphereMesh" id="led"]
+radius = 0.008
+height = 0.016
+radial_segments = 12
+rings = 6
+
+[node name="RampControlVisuals" type="Node3D"]
+
+
+[node name="MountingPlate" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, -0.015)
+mesh = SubResource("back")
+material_override = SubResource("dark")
+
+[node name="Housing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.025)
+mesh = SubResource("case")
+material_override = SubResource("steel")
+
+[node name="Faceplate" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.069)
+mesh = SubResource("face")
+material_override = SubResource("paint")
+
+[node name="ButtonRecess" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.014, 0.083)
+mesh = SubResource("collar")
+material_override = SubResource("dark")
+
+[node name="Rocker" type="Node3D" parent="."]
+position = Vector3(0, -0.014, 0.093)
+
+[node name="Cap" type="MeshInstance3D" parent="Rocker"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("rocker")
+material_override = SubResource("orange")
+
+[node name="Division" type="MeshInstance3D" parent="Rocker"]
+position = Vector3(0, 0, 0.0166)
+mesh = SubResource("seam")
+material_override = SubResource("dark")
+
+[node name="GuardL" type="MeshInstance3D" parent="."]
+position = Vector3(-0.103, -0.014, 0.1)
+mesh = SubResource("guard")
+material_override = SubResource("steel")
+
+[node name="GuardR" type="MeshInstance3D" parent="."]
+position = Vector3(0.103, -0.014, 0.1)
+mesh = SubResource("guard")
+material_override = SubResource("steel")
+
+[node name="Screw0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.111, -0.139, 0.08)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+material_override = SubResource("steel")
+
+[node name="Slot0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.111, -0.139, 0.0835)
+rotation_degrees = Vector3(0, 0, 25)
+mesh = SubResource("slot")
+material_override = SubResource("dark")
+
+[node name="Screw1" type="MeshInstance3D" parent="."]
+position = Vector3(0.111, -0.139, 0.08)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+material_override = SubResource("steel")
+
+[node name="Slot1" type="MeshInstance3D" parent="."]
+position = Vector3(0.111, -0.139, 0.0835)
+rotation_degrees = Vector3(0, 0, 45)
+mesh = SubResource("slot")
+material_override = SubResource("dark")
+
+[node name="Screw2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.111, 0.139, 0.08)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+material_override = SubResource("steel")
+
+[node name="Slot2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.111, 0.139, 0.0835)
+rotation_degrees = Vector3(0, 0, 65)
+mesh = SubResource("slot")
+material_override = SubResource("dark")
+
+[node name="Screw3" type="MeshInstance3D" parent="."]
+position = Vector3(0.111, 0.139, 0.08)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+material_override = SubResource("steel")
+
+[node name="Slot3" type="MeshInstance3D" parent="."]
+position = Vector3(0.111, 0.139, 0.0835)
+rotation_degrees = Vector3(0, 0, 85)
+mesh = SubResource("slot")
+material_override = SubResource("dark")
+
+[node name="LampBezel" type="MeshInstance3D" parent="."]
+position = Vector3(-0.081, 0.095, 0.08)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("rim")
+material_override = SubResource("dark")
+
+[node name="Lamp" type="MeshInstance3D" parent="."]
+position = Vector3(-0.081, 0.095, 0.084)
+mesh = SubResource("led")
+material_override = SubResource("lamp")
+
+[node name="Title" type="Label3D" parent="."]
+position = Vector3(0, 0.135, 0.083)
+text = "RAMP"
+font_size = 36
+pixel_size = 0.00065
+modulate = Color(0.86, 0.89, 0.83, 1)
+outline_size = 0
+no_depth_test = false
+
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0.027, 0.095, 0.083)
+text = "STOWED"
+font_size = 24
+pixel_size = 0.00045
+modulate = Color(0.86, 0.89, 0.83, 1)
+outline_size = 0
+no_depth_test = false
+
+[node name="Deploy" type="Label3D" parent="Rocker"]
+position = Vector3(0, 0.032, 0.018)
+text = "▼"
+font_size = 30
+pixel_size = 0.00065
+modulate = Color(0.045, 0.045, 0.035, 1)
+outline_size = 0
+no_depth_test = false
+
+[node name="Stow" type="Label3D" parent="Rocker"]
+position = Vector3(0, -0.032, 0.018)
+text = "▲"
+font_size = 30
+pixel_size = 0.00065
+modulate = Color(0.045, 0.045, 0.035, 1)
+outline_size = 0
+no_depth_test = false
+
+[node name="Legend" type="Label3D" parent="."]
+position = Vector3(0, -0.114, 0.083)
+text = "DEPLOY / STOW"
+font_size = 24
+pixel_size = 0.0005
+modulate = Color(0.86, 0.89, 0.83, 1)
+outline_size = 0
+no_depth_test = false
+
+[node name="Instruction" type="Label3D" parent="."]
+position = Vector3(0, -0.146, 0.083)
+text = "E  /  REVERSE"
+font_size = 22
+pixel_size = 0.00042
+modulate = Color(0.86, 0.89, 0.83, 1)
+outline_size = 0
+no_depth_test = false

@@ -36,7 +36,7 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 - 正式 rv/chassis.tscn 已用 MeshInstance3D 重新製作；Rail、Cross、Arch、Bumper 與各簡單 Collider 保留原 4 × 12 m 及輪槽座標。Deck 網格與地板 Collider 固定屬於底盤，與框架、輪組共同保留。舊 CSG 只留 legacy 對照。
 - rv/engine_bay.tscn 是前方固定服務槽；Hatch 為獨立 E 互動蓋，EngineVisual 顯示已裝引擎；空槽保留托架與提示。引擎道具場景在 props/engine_standard.tscn／engine_upgraded.tscn，原創原生網格，可直接編輯。
-- rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。展開與收起有逐步動畫及障礙掃掠。
+- rv/rear_ramp.tscn 的 Stowed 是收納兩折板，Deck 是展開兩半板；一片連續斜面 Collider 供行走，斜度與長度依地面計算。展開與收起有逐步動畫，板面在動畫期間無碰撞，完成後才啟用行走碰撞；E 可中途反向。控制盒位於左後固定門框，原生模型包含金屬底座、面板、護框、搖臂按鈕、螺絲及狀態燈；不使用 ComfyUI。模型為 rv/visuals/ramp_control.tscn，以共享低面數基本網格組成，狀態文字及燈色由 ramp_control.gd 同步。單台 RV 控制盒的預算為 1,500 三角形，實測 816 三角形／18 個 MeshInstance，另有 6 個固定面板 Label3D。
 - assets/rv_status 的 SVG 是本專案原創車用符號；rv/vehicle_status.gd 決定顏色和原因，實體 Sprite3D／HUD 共用。VehicleLights 使用原生燈罩與 SpotLight3D；原有裝飾 light.tres 不常亮。
 - EngineAppearance 顯示引擎低耐久／故障。PanelWear 由車板耐久事件更新獨立材質，以連續比例增加掉漆、露出金屬及玻璃裂紋，保留原漆面貼圖；滿血還原原始材質。裂紋不影響碰撞，不添加獨立玻璃 HP。
 - 車板真實受擊由 `panel_damage_effect.gd` 產生小碎屑、粉塵與原創合成撞擊聲。歸零由 `panel_fracture.gd` 分割實際 BoxMesh 區塊，保留原烤漆貼圖、薄玻璃、板片厚度、彎折及裸露斷面；不跨屋頂開孔，也不把未支援的匯入網格包圍盒當車板。屋頂主要向下崩落，側牆向外剝落，均繼承車輛接觸點速度。碎片只以射線查詢實體表面來彈跳、減速、停留與跟隨支撐，支撐消失則繼續掉落；不加入物理碰撞體、車重、物資或保存狀態。此為外觀近似，中心射線不保證捕捉寬板邊角擦碰。

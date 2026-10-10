@@ -467,7 +467,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 
 駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有兩個共享 World3D 的 SubViewport，相機裁掉鏡面專用第 20 層避免遞迴，192×256 並交錯 UPDATE_ONCE 更新；前側板弱參照由 structure_changed 刷新，離座停用、讀檔重連。
 
-EngineHatch／RearRamp 持有 progress、目標與 moving，動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動作中雙片碰撞、完成後連續斜面。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
+EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動畫期間板面無碰撞，僅完全展開後啟用連續斜面；停穩並拉手煞車即可操作，不檢查後門開度、板上占用或折疊淨空，E 可從當下姿態反向。展開仍檢查中央接地與 30° 可行走坡度，不要求兩側角落支撐。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
@@ -476,7 +476,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | 測試 | 覆蓋 |
 |---|---|
 | test_rv_engine.gd | 預裝、引擎所有權、滿背包交換、大型道具、故障服務、維修、性能差、車燈、v5 往返、舊版拒絕與實際引擎製作 |
-| test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，展開阻擋／占用／坡度、驅動互鎖、安全離座與自由放置 |
+| test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，無碰撞動畫／占用操作／坡度、驅動互鎖、安全離座與自由放置 |
 | test_rv_checkpoint.gd | 磁碟往返：安裝／背包／倉庫／地面引擎 ID、型號、耐久，以及拒絕跨所有權重複 |
 | rv_rebuild_playground.tscn | 可見引擎艙／坡板／汽車儀表／夜間車燈／真實輪驅回放 |
 
@@ -540,7 +540,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
 | [test_rv_braking](tests/test_rv_braking.gd) | 漸進踏板、不同速度煞停距離、倒車、引擎熄火與獨立駐車 |
 | [test_rv_handling](tests/test_rv_handling.gd) | 正式輪驅起步、轉向、低速停靠倒出、平地／5° 坡車況與設備配重、支撐離座 |
-| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋／坡板中途阻擋與反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
+| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋中途阻擋、坡板無碰撞與即時反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
 | [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、v5 往返與舊版拒絕 |
 | [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
 | [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |

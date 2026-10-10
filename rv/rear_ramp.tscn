@@ -14,6 +14,8 @@
 
 [ext_resource type="Script" path="res://rv/ramp_control.gd" id="control"]
 
+[ext_resource type="PackedScene" path="res://rv/visuals/ramp_control.tscn" id="control_visuals"]
+
 [sub_resource type="BoxShape3D" id="r1"]
 resource_local_to_scene = true
 size = Vector3(1.4, 0.05, 3.6)
@@ -87,11 +89,8 @@ size = Vector3(1.4, 0.08, 1.65)
 [sub_resource type="BoxMesh" id="r24"]
 size = Vector3(1.4, 0.24, 0.06)
 
-[sub_resource type="BoxMesh" id="r25"]
-size = Vector3(0.25, 0.18, 0.09)
-
 [sub_resource type="BoxShape3D" id="r26"]
-size = Vector3(0.25, 0.18, 0.09)
+size = Vector3(0.32, 0.39, 0.14)
 
 [node name="RearRamp" type="StaticBody3D"]
 script = ExtResource("script")
@@ -225,22 +224,12 @@ material_override = ExtResource("teal")
 
 [node name="Control" type="StaticBody3D" parent="."]
 script = ExtResource("control")
-position = Vector3(-1.05, -0.04, 0.12)
+position = Vector3(-1.96, 0.3, 0.12)
 collision_layer = 2
 collision_mask = 0
 
-[node name="Button" type="MeshInstance3D" parent="Control"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r25")
-material_override = ExtResource("orange")
+[node name="Visuals" parent="Control" instance=ExtResource("control_visuals")]
 
 [node name="ButtonCollision" type="CollisionShape3D" parent="Control"]
-position = Vector3(0, 0, 0)
+position = Vector3(0, 0, 0.035)
 shape = SubResource("r26")
-
-[node name="Label" type="Label3D" parent="Control"]
-position = Vector3(0, 0.15, 0)
-text = "RAMP"
-font_size = 28
-pixel_size = 0.0025
-billboard = 1

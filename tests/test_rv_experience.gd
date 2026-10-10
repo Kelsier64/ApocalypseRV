@@ -25,6 +25,20 @@ func hatch_geometry(hatch: Node3D, hinge: Vector3) -> bool:
 		and cover.global_basis.is_equal_approx(collision.global_basis) \
 		and collision.global_position.distance_to(hatch.to_global(Vector3(0, 0, -0.03))) < 0.0001 \
 		and is_equal_approx(cover.global_basis.y.length(), 1.0)
+func ramp_has_collision(ramp: RearRamp) -> bool:
+	# Query the actual physics body at every deck/folding pose, not just disabled flags.
+	var poses: Array[Transform3D] = [ramp.deck.transform]
+	poses.append_array(ramp.folding_poses(ramp.progress))
+	var box := BoxShape3D.new()
+	box.size = Vector3(1.4, 0.06, ramp.length)
+	for pose in poses:
+		var query := PhysicsShapeQueryParameters3D.new()
+		query.shape = box
+		query.transform = ramp.global_transform * pose
+		query.collision_mask = 1
+		for hit in ramp.get_world_3d().direct_space_state.intersect_shape(query, 128):
+			if hit.rid == ramp.get_rid(): return true
+	return false
 func run() -> void:
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -109,20 +123,57 @@ func run() -> void:
 	hatch.interact(player)
 	for i in ticks(80): await physics_frame
 	var ramp: RearRamp = rv.rear_ramp
-	rv.get_node("RearDoor").restore_angles([-deg_to_rad(100), deg_to_rad(100)])
+	var rear_door := rv.get_node("RearDoor")
+	rear_door.restore_angles([0.0, 0.0])
 	await physics_frame
 	var started := ramp.interact(player)
-	check(ramp.moving, "Ramp begins animation: " + started)
-	for i in ticks(25): await physics_frame
+	check(ramp.moving, "Ramp begins animation with rear doors closed: " + started)
+	var ramp_shape_count := 0
+	for child in ramp.get_children():
+		if child is CollisionShape3D: ramp_shape_count += 1
+	check(ramp_shape_count == 1, "Ramp owns only its deployed deck collider and no moving folding colliders")
+	var motion_has_no_collision := true
+	for i in ticks(25):
+		await physics_frame
+		motion_has_no_collision = motion_has_no_collision and ramp.deck.disabled and not ramp_has_collision(ramp)
+	var reversal_progress := ramp.progress
+	var reversal_poses := ramp.folding_poses(reversal_progress)
+	check(ramp.interact(player).contains("收起中") and ramp.moving and not ramp.requested_deployed, "E reverses deployment before animation stops")
+	check(ramp.progress == reversal_progress and ramp.folding_poses(ramp.progress) == reversal_poses, "Reversal retains the exact progress and folding poses")
+	for i in ticks(5):
+		await physics_frame
+		motion_has_no_collision = motion_has_no_collision and ramp.deck.disabled and not ramp_has_collision(ramp)
+	check(ramp.progress < reversal_progress, "Reversed animation immediately moves toward stowed")
+	reversal_progress = ramp.progress
+	reversal_poses = ramp.folding_poses(reversal_progress)
+	check(ramp.interact(player).contains("展開中") and ramp.moving and ramp.requested_deployed, "E also reverses retraction toward deployed")
+	check(ramp.progress == reversal_progress and ramp.folding_poses(ramp.progress) == reversal_poses, "Second reversal keeps its current pose without jumping")
 	block = obstacle(world, ramp.to_global(Vector3(0, 1.0, 2.1)), Vector3(0.4, 0.5, 0.4))
-	for i in ticks(200): await physics_frame
-	check(not ramp.moving and ramp.progress > 0 and ramp.progress < 1 and rv.drive_blocked(), "Mid-animation obstacle leaves ramp safely stopped and driving locked")
-	check(VehicleSnapshot.capture(rv).is_empty(), "Partly folded ramp refuses saving")
+	rv.handbrake = false
+	rear_door.restore_angles([-deg_to_rad(100), deg_to_rad(100)])
+	for i in ticks(10): await physics_frame
+	check(ramp.moving and ramp.progress > reversal_progress and rv.drive_blocked(), "Props and changed handbrake/doors do not interrupt active animation")
+	check(VehicleSnapshot.capture(rv).is_empty(), "Moving ramp still refuses saving")
+	rear_door.restore_angles([0.0, 0.0])
+	for i in ticks(200):
+		await physics_frame
+		if ramp.moving:
+			motion_has_no_collision = motion_has_no_collision and ramp.deck.disabled and not ramp_has_collision(ramp)
+	check(ramp.deployed and ramp.stable() and not ramp.deck.disabled and ramp_has_collision(ramp), "Full deployment activates the actual deck collision despite props and closed doors")
+	check(motion_has_no_collision, "Actual ramp RID has no collision throughout deployment and both reversal directions")
 	block.free()
+	rv.handbrake = true
+	block = obstacle(world, ramp.to_global(Vector3(0, 0.2, 0.8)), Vector3(0.4, 0.4, 0.4))
 	await physics_frame
-	ramp.interact(player)
-	for i in ticks(200): await physics_frame
-	check(ramp.stable() and ramp.progress == 0 and not rv.drive_blocked(), "Blocked ramp reverses and fully stows")
+	check(ramp.interact(player).contains("收起中") and ramp.moving and rv.drive_blocked(), "Cargo on deployed deck does not prevent retraction")
+	check(ramp.deck.disabled, "Starting retraction immediately disables the deployed deck")
+	motion_has_no_collision = true
+	for i in ticks(200):
+		await physics_frame
+		motion_has_no_collision = motion_has_no_collision and ramp.deck.disabled and not ramp_has_collision(ramp)
+	check(motion_has_no_collision, "Deck and folding panels have no actual collision throughout retraction")
+	check(ramp.stable() and ramp.progress == 0 and not rv.drive_blocked(), "Retraction through cargo fully stows and unlocks driving")
+	block.free()
 	# Independent light loads, supply loss, Item availability, and optional settings.
 	rv.interior_requested = {"cabin": false, "work": false, "service": false}
 	rv.current_power = 50
