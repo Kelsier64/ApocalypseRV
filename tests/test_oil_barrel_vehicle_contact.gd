@@ -97,9 +97,9 @@ func run() -> void:
 	await production_contact(Vector3.BACK, 0.7, "slow reverse")
 	await production_contact(Vector3.FORWARD, 0.7, "slow fixed barrel", true)
 	await production_contact(Vector3.FORWARD, 12.0, "fast front")
-	await production_contact(Vector3.BACK, 6.0, "reverse rear")
-	await production_contact(Vector3.RIGHT, 6.0, "side")
-	await production_contact(Vector3.RIGHT, 6.0, "side mounted ladder")
+	await production_contact(Vector3.BACK, 12.0, "reverse rear")
+	await production_contact(Vector3.RIGHT, 8.0, "side")
+	await production_contact(Vector3.RIGHT, 8.0, "side mounted ladder")
 	await production_contact(Vector3.FORWARD, 12.0, "fixed world barrel", true)
 	await moving_barrel_contact()
 	await stationary_contact()
@@ -120,8 +120,12 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 	# ending the wheel scenario's skid before body contact.
 	if label == "side": target.z = -3.0
 	var surface := nearest_vehicle_surface(rv, target)
-	var offset := 0.45 if label == "side" else (0.4 if fixed and speed < 3.0 else 0.93)
-	var barrel := barrel_at(data.world, Vector3(surface.x, 0.5, surface.z) + direction * offset)
+	var offset := 0.45 if label == "side" else (0.4 if fixed and speed < 6.0 else 0.93)
+	var barrel_position := Vector3(surface.x, 0.5, surface.z) + direction * offset
+	# The rear bumper sits above a floor-level cylinder; aim at its actual
+	# surface to exercise a frontal rear impact rather than an underside graze.
+	if direction == Vector3.BACK and speed >= 6.0: barrel_position.y = surface.y
+	var barrel := barrel_at(data.world, barrel_position)
 	if fixed: barrel.confirm_placement(barrel.global_transform, data.ground, data.ground)
 	var touched_bodies: Array[String] = []
 	barrel.body_entered.connect(func(body: Node) -> void: touched_bodies.append(str(body.name)))
@@ -143,7 +147,7 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 		if not effects.is_empty() and speed_after < 0.0: speed_after = rv.linear_velocity.dot(direction)
 	var impact_damage := 0.0
 	for event: Dictionary in impacts: impact_damage += event.damage
-	if speed < 3.0:
+	if speed < 6.0:
 		check(is_instance_valid(barrel) and not barrel.is_destroyed and effects.is_empty(), "%s gentle contact keeps barrel intact without a blast" % label)
 		check(not touched_bodies.is_empty() or touched_shape, "%s physically reaches the barrel" % label)
 		node_added.disconnect(observer)
@@ -325,8 +329,10 @@ func threshold_contacts() -> void:
 	# Test closing speed along the true normal, not total road speed.
 	rv._impact_age = 0.0
 	rv.angular_velocity = Vector3.ZERO
-	rv.linear_velocity = Vector3.LEFT * 2.99
-	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Below 3 m/s normal impact stays safe")
+	rv.linear_velocity = Vector3.LEFT * 5.99
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Below 6 m/s normal impact stays safe")
+	rv.linear_velocity = Vector3.LEFT * 3.0
+	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Original 3 m/s G toss cannot ignite on a parked vehicle")
 	rv.linear_velocity = Vector3(0.1, 0, -12)
 	check(not barrel.receive_vehicle_body_contact(rv, Vector3.BACK, barrel.global_position), "Fast vehicle moving away from normal cannot ignite barrel")
 	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Fast tangential graze stays safe")
@@ -335,8 +341,8 @@ func threshold_contacts() -> void:
 	rv.linear_velocity = barrel.linear_velocity
 	check(not barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Co-moving loose cargo has zero closing speed")
 	rv.linear_velocity = Vector3.ZERO
-	barrel.linear_velocity = Vector3.RIGHT * 3.0
-	check(barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Barrel striking parked RV at the 3 m/s boundary explodes")
+	barrel.linear_velocity = Vector3.RIGHT * 6.0
+	check(barrel.receive_vehicle_body_contact(rv, Vector3.LEFT, barrel.global_position), "Barrel striking parked RV at the 6 m/s boundary explodes")
 	check(barrel.is_destroyed and WorldActorSnapshot.capture(barrel).is_empty(), "Qualified impact latches destruction before deferred blast")
 	await steps()
 	await retire(data)
@@ -357,7 +363,7 @@ func moving_barrel_contact() -> void:
 	var effects: Array[int] = []
 	var observer := observe_effects(effects)
 	check(not overlaps_vehicle(barrel, rv), "Moving-barrel fixture begins outside the tall side panel")
-	barrel.linear_velocity = -direction * 6.0
+	barrel.linear_velocity = -direction * 8.0
 	await steps(180)
 	check(touched.has(panel), "Thrown barrel actually touches the parked RV side panel")
 	check(not is_instance_valid(barrel) and effects.size() == 1, "Moving loose barrel physically strikes parked RV and emits one blast")

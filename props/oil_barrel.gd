@@ -1,7 +1,7 @@
 extends Item
 class_name OilBarrel
 ## Cargo ignites on a hard vehicle impact or landing after a two-metre fall.
-@export var vehicle_explosion_speed: float = 3.0
+@export var vehicle_explosion_speed: float = 6.0
 @export var fall_explosion_height: float = 2.0
 var _explosion_queued := false
 var _incoming_velocity := Vector3.ZERO
@@ -93,6 +93,44 @@ func _receive_body_contact(body: Node, normal: Vector3, point: Vector3) -> bool:
 	if owner == null: rv = RVConnection.resolve(body)
 	if rv == null: return false
 	return receive_vehicle_body_contact(rv, normal, point)
+
+## The held preview can clip through a wall. Sweep from the player's side
+## so the released physical barrel never starts inside or across that wall.
+func find_release_pose(player: CharacterBody3D, desired: Transform3D) -> Dictionary:
+	var anchor := desired
+	anchor.origin.x = player.global_position.x
+	anchor.origin.z = player.global_position.z
+	var exclusions: Array[RID] = [get_rid(), player.get_rid()]
+	var space := player.get_world_3d().direct_space_state
+	if not _release_pose_clear(space, anchor, exclusions): return {}
+	var motion := (desired.origin - anchor.origin).limit_length(1.5)
+	var fraction := 1.0
+	for child in get_children():
+		if not child is CollisionShape3D or child.disabled or child.shape == null: continue
+		var query := _release_query(child, anchor, exclusions)
+		query.motion = motion
+		fraction = minf(fraction, space.cast_motion(query)[0])
+	if fraction < 1.0 and not motion.is_zero_approx():
+		fraction = maxf(0.0, fraction - .01 / motion.length())
+	var pose := desired
+	pose.origin = anchor.origin + motion * fraction
+	return {"transform": pose} if _release_pose_clear(space, pose, exclusions) else {}
+
+func _release_query(child: CollisionShape3D, pose: Transform3D, exclusions: Array[RID]) -> PhysicsShapeQueryParameters3D:
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = child.shape
+	query.transform = pose * child.transform
+	query.collision_mask = collision_mask
+	query.collide_with_areas = false
+	query.exclude = exclusions
+	query.margin = .01
+	return query
+
+func _release_pose_clear(space: PhysicsDirectSpaceState3D, pose: Transform3D, exclusions: Array[RID]) -> bool:
+	for child in get_children():
+		if not child is CollisionShape3D or child.disabled or child.shape == null: continue
+		if not space.intersect_shape(_release_query(child, pose, exclusions), 1).is_empty(): return false
+	return true
 
 func _can_ignite() -> bool:
 	return is_inside_tree() and not is_queued_for_deletion() and not is_destroyed \

@@ -65,6 +65,7 @@ func run() -> void:
 			check_size(actor.held_item_node, source, key + " after refresh")
 			var held_frame: Transform3D = actor.held_item_node.global_transform
 			var expected_velocity: Vector3 = -actor.transform.basis.z * 3.0
+			if key == "oil_barrel": expected_velocity += actor.velocity
 			actor.drop_item()
 			var dropped := find_prop(entities, persistent_id)
 			check(dropped != null, key + " releases one world prop with the same ID")
