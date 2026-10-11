@@ -5,6 +5,8 @@ var dormant_items: Dictionary = {}
 var destroyed_trees: Dictionary = {}
 var generated_bands: Array[int] = []
 var generated_giant_segments: Array[int] = []
+var rear_wreck_layout: Dictionary = {}
+var rear_wreck_exclusions: Array[AABB] = []
 var giant_navigation_map := RID()
 var _giant_plans: Dictionary = {}
 var restore_bands: Array[int] = []
@@ -137,10 +139,18 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
 	chunk.set_meta("skip_walk_in", restoring_entities)
 	if profile.generation_version >= 7 and index == -1:
-		# The rear barrier is static chunk geometry, parsed by the same nav bake.
-		var roadblock: Node3D = load("res://world/starting_shelter/roadblock.tscn").instantiate()
-		chunk.add_child(roadblock)
-		roadblock.position = Vector3(0, 0, 20)
+		if profile.generation_version >= 10:
+			if rear_wreck_layout.is_empty():
+				chunk.field = field
+				for neighbour in [-2, -1, 0]: await ForestScenery.prepare(chunk, neighbour, gradual)
+				rear_wreck_layout = RearWreckLayout.plan(field, rear_wreck_exclusions)
+				rear_wreck_exclusions.clear()
+			RearWreckLayout.build(chunk, rear_wreck_layout)
+		else:
+			# Legacy rear barriers are parsed by the same navigation bake.
+			var roadblock: Node3D = load("res://world/starting_shelter/roadblock.tscn").instantiate()
+			chunk.add_child(roadblock)
+			roadblock.position = Vector3(0, 0, 20)
 	await chunk.generate(field, index, poi_spawner, gradual)
 	if profile.generation_version >= 7 and index == 0:
 		var start_run := get_parent().get_node_or_null("StartRun")

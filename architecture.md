@@ -35,6 +35,8 @@ MainWorld
 ├── PoiInstances            同局副本狀態、轉場、串流錨點
 │   └── InteriorViewport    獨立 World3D，僅探索時存在
 │       └── PoiInterior     房間／走廊／導航／WorldEntities／室內玩家
+├── WorldClock              自然天氣與顯示霧合成
+├── DeviationPressure       偏行判定、真實秒數事件與額外刷新
 ├── NewRv
 │   └── Chassis             VehicleBody3D、油電、材料、耐久
 │       ├── Wheel_*         VehicleWheel3D；獨立輪槽 hitbox 常駐底盤
@@ -106,6 +108,18 @@ owner 使用正式 `Chassis.road_speed()` 分類車輛模式：追車時低於 6
 轉角不再要求先對齊 37° 以內才前進，而是以低速前進弧線、剩餘轉彎半徑和煞停距離控速；低速實際轉向使用既有 `turn_left`／`turn_right`，避免原地旋轉時仍播待機。`slender_speaker_look.gd` 在原動畫／IK 後調整真實頸骨，三組音箱共同追視最後觀測點：左右 75°、上下 20°、水平速度上限 120°/s。身體沿導航前進，視野及音訊繼續使用實際 socket；抓取／處刑時追視層淡出至原動作。音箱射線起點位於實體內時也判定遮擋，避免轉頭伸入牆體後穿牆感知。驗證見[轉身與轉頭修正](docs/validation/2026-10-09-slender-speaker-head-look.md)。
 
 2026-10-10 遊蕩與轉彎補正：PATROL 依已觀測車殼繞過未烘焙進地形導航的 RV，轉角離開視野時保留最後觀測的碰撞幾何；重新看見車輛才更新位置，離開 PATROL 或還原時清除。被車身占用的巡邏點會跳過，不重新取得已過期的空車遭遇。水平移動以行進軸轉向，速度單獨按加減速率調整，避免朝向改變後速度向量仍保留大量側向分量；倒退前先煞到零，再按正常加速度起步，車殼防撞限制最後套用。回歸涵蓋兩種 RV 朝向、連續巡邏點與 30／60／120 Hz 左右轉彎及倒退煞車。
+
+### v10 偏行壓迫與後方車群
+
+`RoutePressureSample` 以有符號道路投影取進度，保留出生點後方負值；只在正常路線或據點實際占地／出入口／步道 12 m 範圍推進 highwater。探索通道使用所屬據點的道路入口進度，整片森林場址 AABB 不提供豁免。`RoutePressureState` 是獨立可保存的真實秒數狀態機：120／100 m 偏行門檻、3 秒確認、8 秒兩隻 Raker、30 秒一隻巨人及每 30 秒 Raker 波次；80／70 m 恢復遲滯、3 秒離場、12 秒退霧和 60 秒刷新冷卻。失敗每 2 秒重試，過期波次不累積，退霧重入保持濃度連續。
+
+`DeviationPressure` 隨主世界暫停／staging 停止；整備、死亡與抓取期間不計時。副本及轉場期間釋放戶外霧，返回重新取樣。`WorldClock.effective_visual_weather` 只改顯示用晴天／霧，取自然霧與偏行霧的較濃值；自然 RNG、雨量、原巨人天氣判定和保存不變。新串流霧材質立即同步，低畫質仍有距離霧。
+
+`PressureSpawns` 每名額最多 24 候選，使用已發布且連通的普通／巨人導航、實體地面、完整膠囊碰撞、據點／步道避讓及正常 AI 感知。Raker 20–24 m 且符合實際 3D 偵測距離；巨人 120–160 m，可出現在負區段與深林。合併整個視覺外形判定相機視錐或完整远霧遮蔽，面向玩家但不強制目標。每次插入重驗同世界 Raker 存活上限 8 和原刷新共用的巨人名額。怪物仍屬 `WorldEntities`，沿用原戰鬥、掉落、actor snapshot 及清理；退霧不釋放怪物。
+
+`RearWreckLayout` 在 rear band 導航烘焙前建立最多 28 台既有廢車，以獨立路徑／逐台 RNG 在 X±24、Z10–110 m 隨機位置及朝向，檢查完整旋轉占地、植被、據點、支撐與保存 actor 避讓；保留連續 1.5 m 步行通道。v10 移除車堆、碎石 backing、長翼牆與橫向土堤，避難所本體地形不變；保留原植被 reservation mask，避免改變毀樹 band:index。v7–v9 仍建立原 roadblock 與土堤。
+
+v5 checkpoint 在 v10 可選保存 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（穩定 ID、實際 transform、步行通道）；存在但不合法時拒絕。缺少偏行記錄在玩家實際還原後初始化，highwater 至少為出生入口 45 m；沒有離線時間。缺少後方配置先保留玩家／RV／道具碰撞占地再生成，新車根節點 `RearWrecks` 與舊 `Roadblock` 支撐路徑分離，消失的 Item 靜態支撐走原脫落流程。配置 ledger 跨卸載保留，回訪及重載不重抽。當次驗證見[偏行刷新紀錄](docs/validation/2026-10-11-deviation-pressure.md)。
 
 ### v9 公路獨立生成與 v8 相容
 
