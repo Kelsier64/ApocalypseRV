@@ -96,28 +96,60 @@ func _update_pistol(delta: float) -> void:
 	var side := 1.0 if active_hand == "R" else -1.0
 	phase += delta * 7.0
 	var speed := minf(Vector2(actor.velocity.x, actor.velocity.z).length(), 1.0)
-	var offset := Vector3(.10 * side, -.19, -.16).lerp(Vector3(0, -.077, -.19), aim)
+	var offset := Vector3(.10 * side, -.19, -.38).lerp(Vector3(0, -.077, -.42), aim)
 	# Above shoulder height, draw the elbows in. Retraction along the view
 	# axis preserves the sight line without stretching either real arm.
 	var raised: float = smoothstep(.35, 1.0, actor.camera.rotation.x)
 	offset.x *= 1.0 - raised * .85
-	offset.z += raised * .07
+	offset.z += raised * .23
 	offset.y += raised * .03 * (1.0 - aim)
 	offset += Vector3(sin(phase) * .003, cos(phase * 2.0) * .003, 0) * speed * (1.0 - aim)
 	offset += Vector3(0, -.055 * reload_arc, .024 * kick + .04 * reload_arc)
 	var pose: Transform3D = actor.camera.global_transform * Transform3D(Basis.from_euler(Vector3(kick * .10, 0, side * reload_arc * -.22)), offset)
+	pose = _fit_pistol_reach(pose, reload_arc)
 	item.get_parent().global_transform = pose
 	item.transform = Transform3D.IDENTITY
-	if active_hand == "R":
-		grip_right = item.to_global(Vector3(.025, -.023, .047))
-		grip_left = item.to_global(Vector3(-.028, -.023 - .055 * reload_arc, .027))
-	else:
-		grip_left = item.to_global(Vector3(-.025, -.023, .047))
-		grip_right = item.to_global(Vector3(.028, -.023 - .055 * reload_arc, .027))
+	grip_right = item.to_global(_pistol_grip("R", reload_arc))
+	grip_left = item.to_global(_pistol_grip("L", reload_arc))
+
+func _pistol_grip(side: String, reload_arc: float) -> Vector3:
+	var handed := 1.0 if side == "R" else -1.0
+	return Vector3(.025 * handed, -.023, .047) if side == active_hand else Vector3(.028 * handed, -.023 - .055 * reload_arc, .027)
+
+func _fit_pistol_reach(pose: Transform3D, reload_arc: float) -> Transform3D:
+	# Translate along the barrel within the intersection of both arm reaches.
+	# Clamping wrists inside IK alone would leave the palms behind the gun.
+	var local := skeleton.global_transform.affine_inverse() * pose
+	var direction := -local.basis.z.normalized()
+	var minimum := -INF
+	var maximum := INF
+	for side in ["R", "L"]:
+		if not actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"): continue
+		var upper := skeleton.find_bone("upper_arm_" + side)
+		var lower := skeleton.find_bone("forearm_" + side)
+		var hand := skeleton.find_bone("hand_" + side)
+		var rest := skeleton.get_bone_global_rest(hand)
+		var elbow := skeleton.get_bone_global_rest(lower).origin
+		var reach := skeleton.get_bone_global_rest(upper).origin.distance_to(elbow) + elbow.distance_to(rest.origin) - .015
+		var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+		var frame: Basis = hand_frames[side]
+		var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
+		var palm := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
+		var hand_basis := local.basis * Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT) * frame.inverse() * rest.basis
+		var wrist := local * _pistol_grip(side, reload_arc) - hand_basis * palm
+		var from_shoulder := wrist - skeleton.get_bone_global_pose(upper).origin
+		var along := from_shoulder.dot(direction)
+		var radius := sqrt(maxf(0.0, along * along + reach * reach - from_shoulder.length_squared()))
+		minimum = maxf(minimum, -along - radius)
+		maximum = minf(maximum, -along + radius)
+	if minimum <= maximum:
+		pose.origin -= pose.basis.z * clampf(0.0, minimum, maximum)
+	return pose
 
 func _pose_pistol_hand(side: String, weight: float) -> void:
 	var hand := skeleton.find_bone("hand_" + side)
 	var desired := _pistol_hand_basis(side)
+	_follow_pistol_palm(side, desired, weight)
 	_set_global_rotation(hand, desired.orthonormalized().get_rotation_quaternion(), weight)
 	var old_hand := active_hand
 	active_hand = side
@@ -131,6 +163,40 @@ func _pose_pistol_hand(side: String, weight: float) -> void:
 	_finger_world_direction(skeleton.find_bone("thumb_01_" + side), item.global_basis * Vector3(inward * .35, .15, -1), weight)
 	_finger_world_direction(skeleton.find_bone("thumb_02_" + side), item.global_basis * Vector3(0, 0, -1), weight)
 	active_hand = old_hand
+
+func _follow_pistol_palm(side: String, hand_basis: Basis, weight: float) -> void:
+	# Carry the palm's radial frame through the arm. A position-only IK solve
+	# leaves all pronation in the wrist when the camera changes pitch.
+	var upper := skeleton.find_bone("upper_arm_" + side)
+	var lower := skeleton.find_bone("forearm_" + side)
+	var hand := skeleton.find_bone("hand_" + side)
+	var upper_rest := skeleton.get_bone_global_rest(upper)
+	var lower_rest := skeleton.get_bone_global_rest(lower)
+	var hand_rest := skeleton.get_bone_global_rest(hand)
+	var frame: Basis = hand_frames[side]
+	var rest_lower_axis := (hand_rest.origin - lower_rest.origin).normalized()
+	var rest_upper_axis := (lower_rest.origin - upper_rest.origin).normalized()
+	var lower_reference := Basis(Quaternion(frame.y, rest_lower_axis)) * frame.x
+	var upper_reference := Basis(Quaternion(rest_lower_axis, rest_upper_axis)) * lower_reference
+	var upper_pose := skeleton.get_bone_global_pose(upper)
+	var lower_pose := skeleton.get_bone_global_pose(lower)
+	var hand_pose := skeleton.get_bone_global_pose(hand)
+	var palm_frame := hand_basis * hand_rest.basis.inverse() * frame
+	var lower_axis := (hand_pose.origin - lower_pose.origin).normalized()
+	var upper_axis := (lower_pose.origin - upper_pose.origin).normalized()
+	var lower_target := Basis(Quaternion(palm_frame.y, lower_axis)) * palm_frame.x
+	var upper_target := Basis(Quaternion(lower_axis, upper_axis)) * lower_target
+	# Rotating only around segment axes preserves elbow, wrist and grip points.
+	var upper_basis := _pistol_radial_basis(upper_pose.basis, upper_rest.basis.inverse() * upper_reference, upper_target, upper_axis, weight)
+	var lower_basis := _pistol_radial_basis(lower_pose.basis, lower_rest.basis.inverse() * lower_reference, lower_target, lower_axis, weight)
+	_set_global_rotation(upper, upper_basis.get_rotation_quaternion(), 1.0)
+	_set_global_rotation(lower, lower_basis.get_rotation_quaternion(), 1.0)
+
+func _pistol_radial_basis(posed: Basis, reference: Vector3, target: Vector3, axis: Vector3, weight: float) -> Basis:
+	var current := (posed * reference).slide(axis).normalized()
+	var wanted := target.slide(axis).normalized()
+	if current.length_squared() < .5 or wanted.length_squared() < .5: return posed
+	return Basis(axis, atan2(axis.dot(current.cross(wanted)), current.dot(wanted)) * weight) * posed
 
 func _pistol_hand_basis(side: String) -> Basis:
 	var hand := skeleton.find_bone("hand_" + side)
@@ -299,8 +365,8 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	var forearm := skeleton.find_bone("forearm_" + side)
 	var hand := skeleton.find_bone("hand_" + side)
 	var sign_x := 1.0 if side == "R" else -1.0
-	# Keep the locomotion wrist local rotation verbatim. The hand
-	# follows the forearm naturally; prop markers supply contact positions only.
+	# Ordinary props keep the locomotion wrist rotation; pistols additionally
+	# supply a palm orientation and a forward-facing elbow bend plane.
 	var source: Basis = hand_frames[side]
 	var rest := skeleton.get_bone_global_rest(hand)
 	var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
@@ -312,6 +378,10 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	var a := shoulder.distance_to(elbow)
 	var b := elbow.distance_to(old_wrist)
 	var pole := skeleton.global_basis.inverse() * actor.global_basis * Vector3(sign_x * .45, -1, .15)
+	if grip_kind == "pistol":
+		# Put the elbow behind the palm along the barrel, so looking down cannot
+		# leave the forearm pointing up into a backward-folded wrist.
+		pole = skeleton.global_basis.inverse() * (item.global_basis.z + actor.global_basis.x * sign_x * .45)
 	# The inherited hand orientation changes as the elbow bends. Re-evaluate
 	# the palm offset with a small fixed solve, without twisting the wrist.
 	for iteration in 4:
