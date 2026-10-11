@@ -82,9 +82,17 @@ func _toggle(parent: Node, id: String, text: String, action: Callable) -> CheckB
 	var button := CheckButton.new()
 	button.custom_minimum_size = Vector2(115, 40)
 	button.toggled.connect(action)
+	button.focus_entered.connect(_toggle_focus.bind(button, true))
+	button.focus_exited.connect(_toggle_focus.bind(button, false))
 	row.add_child(button)
 	controls[id] = button
 	return button
+
+func _toggle_focus(button: CheckButton, focused: bool) -> void:
+	# Godot uses pressed text colors ahead of focus colors for checked buttons.
+	for color in ["font_pressed_color", "font_hover_pressed_color"]:
+		if focused: button.add_theme_color_override(color, RVTerminalTheme.BACKGROUND)
+		else: button.remove_theme_color_override(color)
 
 func _number(parent: Node, id: String, text: String, maximum: float, step: float, action: Callable) -> void:
 	var row := HBoxContainer.new()
@@ -144,7 +152,6 @@ func _build_tui() -> void:
 	for index in PAGES.size():
 		var id: String = PAGES[index]
 		var button := _button(navigation, "page:" + id, "F%d %s" % [index + 1, PAGE_NAMES[index]], func(): select_page(id))
-		button.toggle_mode = true
 		_nav[id] = button
 	_build_overview(_page("overview"))
 	_build_energy(_page("energy"))
@@ -207,8 +214,7 @@ func _build_crafting(body: Node) -> void:
 	var recipes := _panel(grid, "Recipes")
 	for recipe in RecipeCatalog.all():
 		var id: String = recipe.recipe_id
-		var button := _button(recipes, "recipe:" + id, RVTerminalPresenter.recipe_name(recipe), func(): select_recipe(id))
-		button.toggle_mode = true
+		_button(recipes, "recipe:" + id, RVTerminalPresenter.recipe_name(recipe), func(): select_recipe(id))
 	var detail := _panel(grid, "Recipe & workstation")
 	var selector := OptionButton.new()
 	selector.custom_minimum_size.y = 40
@@ -252,7 +258,6 @@ func _build_structure(body: Node) -> void:
 
 func _slot_button(parent: Node, id: String) -> void:
 	var button := _button(parent, "slot:" + id, id, func(): select_slot(id))
-	button.toggle_mode = true
 	button.focus_entered.connect(func(): select_slot(id, false))
 	slot_controls[id] = button
 
@@ -303,7 +308,8 @@ func select_page(id: String, focus: bool = true) -> void:
 	current_page = id
 	for page in _pages:
 		_pages[page].visible = page == id
-		_nav[page].set_pressed_no_signal(page == id)
+		var index: int = PAGES.find(page)
+		_nav[page].text = "[ F%d %s%s ]" % [index + 1, PAGE_NAMES[index], " *" if page == id else ""]
 	_refresh()
 	if focus and mode == Mode.TUI:
 		var target: Control = {"overview": controls.engine, "energy": controls.charging_enabled,
@@ -531,7 +537,6 @@ func _refresh_devices() -> void:
 			button.clip_text = true
 			button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			button.tooltip_text = _device_title(device)
-			button.toggle_mode = true
 			device_selectors[id] = button
 			if device.has_method("step_work") or device is CabinLightStrip:
 				var toggle := _toggle(row, "device:" + id, "", func(value: bool):
@@ -544,7 +549,6 @@ func _refresh_devices() -> void:
 	var selected: Node = null
 	for device in _devices:
 		var id: String = device.persistent_id
-		device_selectors[id].set_pressed_no_signal(id == selected_device)
 		if controls.has("device:" + id): _pressed("device:" + id, device.enabled)
 		if id == selected_device: selected = device
 	if selected:
@@ -610,7 +614,6 @@ func _refresh_crafting() -> void:
 	var costs := PackedStringArray()
 	for key in recipe.costs: costs.append("%s: %d needed / %d owned" % [key, recipe.costs[key], connected_rv.get_item_count(key)])
 	_text("recipe:detail", "%s\n%s\nTime %.1fs   Power %.1f" % [RVTerminalPresenter.recipe_name(recipe), "\n".join(costs), recipe.duration, recipe.power_cost])
-	for entry in RecipeCatalog.all(): controls["recipe:" + entry.recipe_id].set_pressed_no_signal(entry.recipe_id == selected_recipe)
 	var station := _station()
 	var reason: String = station.craft_rejection_reason(selected_recipe) if station else "Workstation unavailable"
 	_text("craft:reason", reason if not reason.is_empty() else "Ready to queue")
@@ -641,7 +644,6 @@ func _refresh_structure() -> void:
 		elif part.current_health < part.max_health: damaged += 1
 		var short_name: String = {"front": "Front", "rear": "Rear"}.get(id, id.replace("left_", "L").replace("right_", "R").replace("roof_", "Roof "))
 		slot_controls[id].text = "[ %s %s ]" % [short_name, "X" if part.is_destroyed else "%.0f" % part.current_health]
-		slot_controls[id].set_pressed_no_signal(id == selected_slot)
 	_text("overview:structure", "%d ready   |   %d damaged   |   %d destroyed\nUse F5 to inspect, repair, rebuild or convert a part." % [11 - damaged - destroyed, damaged, destroyed])
 	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d\nConstruction needs a stopped engine and an active tablet." % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS)])
 	var target: Node = slots.panel(selected_slot)

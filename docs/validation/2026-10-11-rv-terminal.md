@@ -26,3 +26,9 @@ Both modes retain one player UI owner and one opening fee. Leaving management ca
 Used the installed computer-use skill and a uniquely selected RV Systems Validation game window. Observed readable character frames and reverse selection across all five pages, live Energy settings, distinct front/rear cabin lights, mouse queuing of a gasoline recipe with one material deduction and live queue progress, hidden Ctrl+C to a banner-free prompt, typed `rvctl` returning to TUI, and Esc returning directly to gameplay. The queued recipe finished while the terminal was open. Only review game windows were closed afterward; logs are under `.godot/rv-terminal-visual*.log`.
 
 Full integration/slow/assets profiles were not run. Native observations cover the existing desktop window configuration; automated pointer checks use 1280×720. Unrelated concurrent model/scene work was preserved and excluded from the console commit.
+
+## Follow-up: focus highlighting
+
+Removed latched pressed styling from page, recipe, device and structure selectors: selection stays in the existing model/detail panels, and the active page uses a text asterisk. Only interaction focus uses reverse highlighting. CheckButton ON values use a transparent background, including hovered ON state; focused checked text keeps readable contrast. Native observation confirmed Battery socket stays unhighlighted when another control owns focus, and Gasoline Can loses its highlight after Tab moves to Battery while its selected recipe detail remains intact.
+
+For this correction, `test_rv_tablet_ui` and `test_cabin_light_equipment` both PASS in `.godot/test-logs/20261011-210742-601-selected-38808`. The earlier 39-test result above belongs to the initial redesign; the correction reran these two affected suites. Review logs: `.godot/rv-terminal-highlight-review.log` and `.godot/rv-terminal-highlight-final.log`.

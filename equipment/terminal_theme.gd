@@ -31,6 +31,12 @@ static func make() -> Theme:
 		theme.set_color("font_focus_color", type, BACKGROUND)
 		theme.set_color("font_pressed_color", type, BACKGROUND)
 		theme.set_color("font_disabled_color", type, DIM)
+	# ON is a value, not an interaction highlight. Keep the focus style so
+	# keyboard users can still locate an enabled toggle when navigating.
+	theme.set_stylebox("pressed", "CheckButton", style(Color.TRANSPARENT))
+	theme.set_stylebox("hover_pressed", "CheckButton", style(Color("26333c")))
+	theme.set_color("font_pressed_color", "CheckButton", INK)
+	theme.set_color("font_hover_pressed_color", "CheckButton", INK)
 	var empty := PlaceholderTexture2D.new()
 	empty.size = Vector2.ZERO
 	for icon in ["checked", "unchecked", "checked_disabled", "unchecked_disabled"]:
