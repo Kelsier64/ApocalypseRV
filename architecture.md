@@ -49,7 +49,7 @@ MainWorld
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
 Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9／v10，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
@@ -287,6 +287,8 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 互動採 `interact(player)`／`interact_hold(player)` 方法契約，受傷目標提供 `take_damage(amount)`。群組與祖先階層錯誤可能造成離線或候選忽略，而非編譯錯誤。
 
 ### Item 統一規格
+
+手槍與盒裝彈藥沿用 Item；`PistolRules` 集中容量、傷害、射速、射程、換彈與瞄準參數。`PlayerWeapon` 只擁有冷卻／換彈／瞄準暫態，背包 `state.pistol.loaded_rounds`／`state.ammo.rounds` 為唯一彈量來源，手持副本不回寫。換彈完成一次交易，按背包順序扣盒內發數、移除空盒，再以手槍 ID 保持選取。`ItemState` 驗證限定場景的整數範圍（手槍 0–12、彈藥盒 1–24），v5 保存版本保持，換彈暫態不保存。射線使用玩家所在 World3D，由視線與槍口遮擋檢查結算首個碰撞體；僅 Monster 接收傷害，Item／車體／牆阻擋。持槍姿勢沿用同一套真實手臂，視覺滑套／彈匣和音效不持有遊戲彈量。
 
 新增或修改可搬運物件沿用下列共用契約。原設備的功能腳本直接繼承 Item；引擎／電池仍須裝入相容插槽才能工作。固定 EngineBay／RearRamp 及車體結構保留各自施工／互動契約，不作為可拾取 Item。
 

@@ -34,6 +34,7 @@ func reset() -> void:
 	right_weight = 0.0
 	left_weight = 0.0
 	item = null
+	grip_kind = "small"
 
 func _physics_process(delta: float) -> void:
 	if actor.is_player_dead: return # Preserve the evaluated pose for ragdoll handoff.
@@ -45,6 +46,10 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(held): held.visible = not blocked and not actor.is_placing_equipment()
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
+	var pistol: bool = carrying and held is Pistol and not grabbed
+	# Arm weights fade after unequipping, but the preview may already be freed.
+	# Only a currently carried pistol can own the special wrist orientation.
+	if not pistol and grip_kind == "pistol": grip_kind = "small"
 	if large and not actor.can_use_hands(2): carrying = false
 	active_hand = "R" if actor.body_state.has_part(&"right_arm") else "L"
 	if grabbed:
@@ -53,15 +58,15 @@ func _physics_process(delta: float) -> void:
 		# overriding it (including the support hand of a normally two-hand prop).
 		if not carrying or active_hand != "R": right_weight = 0.0
 		if not carrying or active_hand != "L": left_weight = 0.0
-	right_weight = move_toward(right_weight, 1.0 if carrying and active_hand == "R" else 0.0, delta * 7.0)
-	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L") else 0.0, delta * 7.0)
+	right_weight = move_toward(right_weight, 1.0 if carrying and (active_hand == "R" or pistol) else 0.0, delta * 7.0)
+	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L" or pistol) else 0.0, delta * 7.0)
 	# Keep grip pose and held simulation while placement hides the real model.
 	if blocked:
 		right_weight = 0.0
 		left_weight = 0.0
 		return
 	if carrying:
-		grip_kind = "round" if held is Flashlight else ("large" if large else "small")
+		grip_kind = "pistol" if pistol else ("round" if held is Flashlight else ("large" if large else "small"))
 		if item != held:
 			item = held
 			bounds = _held_bounds(item)
@@ -70,12 +75,67 @@ func _physics_process(delta: float) -> void:
 				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
 			# Keep world dimensions, even when the held silhouette blocks the view.
 			item_hold_transform = item.transform
-		_update_item(delta, large)
+		if pistol: _update_pistol(delta)
+		else: _update_item(delta, large)
 	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight)
 	if left_weight > 0.0 and actor.body_state.has_part(&"left_arm"): _arm("L", grip_left, left_weight)
+	if pistol:
+		for side in ["R", "L"]:
+			if actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"):
+				_pose_pistol_hand(side, right_weight if side == "R" else left_weight)
 	if carrying and grip_kind == "round":
 		_align_flashlight()
 		_pose_flashlight_fingers(right_weight if active_hand == "R" else left_weight)
+
+func _update_pistol(delta: float) -> void:
+	var weapon: Node = actor.weapon
+	var aim: float = weapon.aim_weight
+	var kick: float = weapon.recoil
+	var reload: float = 1.0 - weapon.reload_remaining / PistolRules.RELOAD_SECONDS if weapon.reload_remaining > 0.0 else 0.0
+	var reload_arc := sin(reload * PI)
+	var side := 1.0 if active_hand == "R" else -1.0
+	phase += delta * 7.0
+	var speed := minf(Vector2(actor.velocity.x, actor.velocity.z).length(), 1.0)
+	var offset := Vector3(.10 * side, -.19, -.16).lerp(Vector3(0, -.077, -.19), aim)
+	# Above shoulder height, draw the elbows in. Retraction along the view
+	# axis preserves the sight line without stretching either real arm.
+	var raised: float = smoothstep(.35, 1.0, actor.camera.rotation.x)
+	offset.x *= 1.0 - raised * .85
+	offset.z += raised * .07
+	offset.y += raised * .03 * (1.0 - aim)
+	offset += Vector3(sin(phase) * .003, cos(phase * 2.0) * .003, 0) * speed * (1.0 - aim)
+	offset += Vector3(0, -.055 * reload_arc, .024 * kick + .04 * reload_arc)
+	var pose: Transform3D = actor.camera.global_transform * Transform3D(Basis.from_euler(Vector3(kick * .10, 0, side * reload_arc * -.22)), offset)
+	item.get_parent().global_transform = pose
+	item.transform = Transform3D.IDENTITY
+	if active_hand == "R":
+		grip_right = item.to_global(Vector3(.025, -.023, .047))
+		grip_left = item.to_global(Vector3(-.028, -.023 - .055 * reload_arc, .027))
+	else:
+		grip_left = item.to_global(Vector3(-.025, -.023, .047))
+		grip_right = item.to_global(Vector3(.028, -.023 - .055 * reload_arc, .027))
+
+func _pose_pistol_hand(side: String, weight: float) -> void:
+	var hand := skeleton.find_bone("hand_" + side)
+	var desired := _pistol_hand_basis(side)
+	_set_global_rotation(hand, desired.orthonormalized().get_rotation_quaternion(), weight)
+	var old_hand := active_hand
+	active_hand = side
+	var inward := -1.0 if side == "R" else 1.0
+	for finger in ["index", "middle", "ring", "pinky"]:
+		var first := skeleton.find_bone(finger + "_01_" + side)
+		var second := skeleton.find_bone(finger + "_02_" + side)
+		var trigger: bool = finger == "index" and side == old_hand
+		_finger_world_direction(first, item.global_basis * Vector3(inward * .25, -.10, -1.0), weight)
+		_finger_world_direction(second, item.global_basis * Vector3(inward, -.1, -.20 if trigger else .20), weight)
+	_finger_world_direction(skeleton.find_bone("thumb_01_" + side), item.global_basis * Vector3(inward * .35, .15, -1), weight)
+	_finger_world_direction(skeleton.find_bone("thumb_02_" + side), item.global_basis * Vector3(0, 0, -1), weight)
+	active_hand = old_hand
+
+func _pistol_hand_basis(side: String) -> Basis:
+	var hand := skeleton.find_bone("hand_" + side)
+	var frame := Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT)
+	return skeleton.global_basis.inverse() * item.global_basis * frame * hand_frames[side].inverse() * skeleton.get_bone_global_rest(hand).basis
 
 func _grab_arms(holding_item: bool) -> void:
 	# The same skinned arms are visible to the victim and external cameras.
@@ -255,7 +315,10 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	# The inherited hand orientation changes as the elbow bends. Re-evaluate
 	# the palm offset with a small fixed solve, without twisting the wrist.
 	for iteration in 4:
-		var wrist := skeleton.to_local(contact) - skeleton.get_bone_global_pose(hand).basis * palm_center
+		# Pistol wrists have an authored grip orientation. Solve the arm against
+		# that final palm offset, so rotating the wrist cannot detach the grip.
+		var hand_basis := _pistol_hand_basis(side) if grip_kind == "pistol" else skeleton.get_bone_global_pose(hand).basis
+		var wrist := skeleton.to_local(contact) - hand_basis * palm_center
 		var axis := (wrist - shoulder).normalized()
 		var distance := clampf(shoulder.distance_to(wrist), absf(a - b) + .001, a + b - .003)
 		wrist = shoulder + axis * distance
@@ -279,7 +342,7 @@ func _rest_hand_frame(side: String) -> Basis:
 	return Basis(radial, forward, radial.cross(forward))
 
 func _pose_fingers(side: String, weight: float) -> void:
-	if grip_kind == "round": return # Cylinder contact is solved after fitting the prop.
+	if grip_kind in ["round", "pistol"]: return # Grip-specific fingers are solved after fitting the prop.
 	var frame: Basis = hand_frames[side]
 	var palm := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
 	var hand := skeleton.find_bone("hand_" + side)

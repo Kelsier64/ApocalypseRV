@@ -48,6 +48,7 @@ var body_state := PlayerBodyState.new()
 var standing_collision_shape: Shape3D
 var standing_collision_transform := Transform3D.IDENTITY
 var placement := EquipmentPlacement.new()
+var weapon: PlayerWeapon = preload("res://player/player_weapon.gd").new()
 var held_item_node: Node3D = null
 var _flashlight_display_signature := ""
 # An early recycler handoff is still the same player death, not another corpse.
@@ -62,7 +63,7 @@ var in_ui_mode: bool = false
 var settings_open: bool = false
 # Closing settings waits for held controls to be released before gameplay resumes.
 const SETTINGS_GAMEPLAY_KEYS = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_E, KEY_F, KEY_H, KEY_B, KEY_L, KEY_Z, KEY_X, KEY_C, KEY_R, KEY_T, KEY_Q, KEY_V, KEY_G, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
-const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
+const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"weapon_fire", &"weapon_aim", &"weapon_reload", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
 var _settings_release_keys: Array[int] = []
 var _settings_release_buttons: Array[int] = []
 var _settings_release_actions: Array[StringName] = []
@@ -152,6 +153,8 @@ func add_item(item_name: String, is_large: bool, scene_path: String, state: Dict
 
 func _create_granted_item_state(scene_path: String, state: Dictionary) -> Dictionary:
 	# This boundary creates newly granted Items, never repairs saved records.
+	if state.has("pistol") and (scene_path != PistolRules.PISTOL_SCENE or not ItemState.valid_rounds(state.pistol, "loaded_rounds", 0, PistolRules.MAGAZINE_CAPACITY)): return {}
+	if state.has("ammo") and (scene_path != PistolRules.AMMO_SCENE or not ItemState.valid_rounds(state.ammo, "rounds", 1, PistolRules.BOX_CAPACITY)): return {}
 	if state.has_all(["id", "condition"]):
 		return state.duplicate(true) if ItemState.valid(scene_path, state) else {}
 	if state.has("id") and (not state.id is String or state.id.is_empty()): return {}
@@ -186,7 +189,7 @@ func _create_granted_item_state(scene_path: String, state: Dictionary) -> Dictio
 
 func _update_inventory_display():
 	if inventory_ui and inventory_ui.has_method("update_slots"):
-		inventory_ui.update_slots(inventory.items, inventory.active_slot, get_player_mode() == PlayerMode.NORMAL and can_use_hands())
+		inventory_ui.update_slots(inventory.items, inventory.active_slot, get_player_mode() == PlayerMode.NORMAL and can_use_hands(), {"reload_remaining": weapon.reload_remaining, "reserve": weapon.reserve_rounds(), "can_use": weapon.can_use()})
 
 func _active_flashlight_state() -> Dictionary:
 	var item := inventory.active_item()
@@ -264,6 +267,7 @@ func _set_active_slot(index: int) -> void:
 		_advance_flashlight(0.0)
 
 func _equip_active_slot():
+	weapon.cancel_actions()
 	var hand_marker = camera.get_node_or_null("HandMarker")
 	if not hand_marker:
 		hand_marker = Marker3D.new()
@@ -311,6 +315,8 @@ func _ready():
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
+	add_child(weapon)
+	grab_started.connect(weapon.cancel_actions)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
 	add_child(ragdoll_control)
 	# Frozen RV panels need explicit support motion; avoid applying it twice.
@@ -334,7 +340,7 @@ func _ready():
 	game_settings.setting_changed.connect(_on_setting_changed)
 
 func _on_setting_changed(key: StringName, value: Variant) -> void:
-	if key == &"walk_fov": camera.fov = float(value)
+	if key == &"walk_fov": camera.fov = float(value) * lerpf(1.0, PistolRules.AIM_FOV_SCALE, weapon.aim_weight)
 
 func can_open_settings() -> bool:
 	if in_ui_mode or is_player_dead or is_grabbed(): return false
@@ -350,6 +356,7 @@ func can_open_settings() -> bool:
 func set_settings_open(value: bool) -> void:
 	if settings_open == value: return
 	if value:
+		weapon.cancel_actions()
 		cancel_equipment_placement()
 	settings_open = value
 	if not value:
@@ -400,6 +407,7 @@ func get_active_item_name() -> String:
 
 func consume_active_item() -> void:
 	if is_grabbed(): return
+	weapon.cancel_actions()
 	_set_flashlight_off_at(inventory.active_slot)
 	if inventory.consume_active():
 		_abort_climb_if_holding_large_item()
@@ -429,6 +437,7 @@ func enter_equipment_placement(_equip: Node3D = null) -> bool:
 		_abort_climb("Item placement")
 	_sync_held_item_state()
 	if not placement.begin_from_inventory(self): return false
+	weapon.cancel_actions()
 	_advance_flashlight(0.0)
 	return true
 
@@ -437,6 +446,7 @@ func enter_ui_mode() -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
+	weapon.cancel_actions()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_advance_flashlight(0.0)
 	return true
@@ -447,6 +457,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	weapon.cancel_actions()
 	cancel_equipment_placement()
 	close_settings()
 	grab_control.clear_view_recovery()
@@ -497,6 +508,7 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 func enter_seat_mode(seat: Node3D) -> bool:
 	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL or not can_drive():
 		return false
+	weapon.cancel_actions()
 	grab_control.clear_view_recovery()
 	_exit_climb_to_normal()
 	rv_support.clear()
@@ -533,6 +545,7 @@ func drop_item():
 	if is_grabbed() or is_gameplay_input_blocked(): return
 	if is_placing_equipment(): cancel_equipment_placement()
 	if inventory.active_slot < 0 or inventory.active_slot >= inventory.items.size(): return
+	weapon.cancel_actions()
 	_sync_held_item_state()
 	var item_data = inventory.items[inventory.active_slot]
 	var held_frame := held_item_node.global_transform if is_instance_valid(held_item_node) else Transform3D.IDENTITY
@@ -581,8 +594,8 @@ func _barrel_release_velocity(point: Vector3) -> Vector3:
 	return velocity + Vector3(released_carrier_velocity.x, 0, released_carrier_velocity.z)
 
 func _sync_held_item_state() -> void:
-	# Articulated corpses evolve while carried. Flashlight charge/on is owned
-	# by inventory and synchronized separately, rather than overwritten here.
+	# Articulated corpses evolve while carried. Flashlight charge and pistol
+	# rounds belong to inventory, rather than being overwritten by previews.
 	if held_item_node is CorpseProp and not inventory.active_item().is_empty():
 		inventory.items[inventory.active_slot]["state"] = held_item_node.capture_item_state()
 
@@ -593,6 +606,7 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 		node.restore_item_state(data.get("state", {}))
 
 func _unhandled_input(event):
+	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
 	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
 		_toggle_flashlight()
@@ -893,6 +907,7 @@ func begin_ladder_climb(ladder: RVLadder, descending: bool = false) -> bool:
 	velocity = Vector3.ZERO
 	rv_support.clear()
 	locomotion_state = LocomotionState.CLIMBING
+	weapon.cancel_actions()
 	ladder.availability_changed.connect(_validate_active_ladder)
 	ladder.tree_exiting.connect(_active_ladder_removed)
 	_debug_climb_log("start_ok", "entered ladder %s" % ladder.name, true)
@@ -1227,6 +1242,7 @@ func _update_health_bar():
 
 func _player_die():
 	if is_player_dead: return
+	weapon.cancel_actions()
 	_death_corpse_released = false
 	close_settings()
 	var was_seated := is_instance_valid(seated_in)
