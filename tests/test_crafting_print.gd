@@ -167,8 +167,31 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 	check(is_equal_approx(head.position.x, parked_x) and is_equal_approx(carriage.position.z, parked_z), "Completed print parks both horizontal stages regardless of elapsed time")
 	check(absf(parked_x) >= bounds.size.x * 0.5 and absf(parked_z) >= bounds.size.z * 0.5, "Completed print parks the head outside the product footprint")
 	station.get_node("PrintVisual").clear()
-	check(is_equal_approx(gantry.position.y, low_frame) and _visible_mast_count(masts) == low_count, "Clearing print returns frame and visible masts to compact ready height")
+	check(is_equal_approx(gantry.position.y, high_frame), "Clearing a finished print does not teleport the gantry down")
+	rig._physics_process(0.5)
+	check(is_equal_approx(gantry.position.y, high_frame - 0.225), "Return lowers slowly at 0.45 metres per second")
+	var returning_height := gantry.position.y
+	station.get_node("PrintVisual").clear()
+	check(is_equal_approx(gantry.position.y, returning_height), "Repeated idle sync does not reset or snap the return")
+	check(is_equal_approx(left.position.y + (left.shape as BoxShape3D).size.y * 0.5, returning_height), "Mast collision follows intermediate return height")
+	for step in 60:
+		var previous := gantry.position.y
+		rig._physics_process(0.25)
+		check(gantry.position.y <= previous and gantry.position.y >= low_frame, "Return is monotonic and never overshoots ready height")
+	check(is_equal_approx(gantry.position.y, low_frame) and _visible_mast_count(masts) == low_count, "Return eventually retracts visible mast sections to ready height")
 	check((left.shape as BoxShape3D).size.y < 1.0 and (right.shape as BoxShape3D).size.y < 1.0, "Clearing print also retracts root mast collision")
+	rig.set_print_pose(3.0, 0.0, bounds, true)
+	station.get_node("PrintVisual").clear()
+	rig._physics_process(0.5)
+	var before_next := gantry.position.y
+	rig.set_print_pose(0.75, 0.0, bounds, true)
+	check(is_equal_approx(gantry.position.y, before_next), "Next queued print cannot teleport a returning gantry downward")
+	rig.set_print_pose(4.0, 1.0, bounds, true)
+	rig._physics_process(1.0)
+	check(is_equal_approx(gantry.position.y, 4.22), "New higher print target replaces the old return target")
+	station.get_node("PrintVisual").clear()
+	rig._physics_process(20.0)
+
 
 func _visible_mast_count(masts: Node3D) -> int:
 	var count := 0
