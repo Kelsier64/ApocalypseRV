@@ -111,6 +111,7 @@ func save_world(world: Node, path: String) -> bool:
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health,
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted,
+		"crouching": player.is_crouching(),
 		"body": player.body_state.capture()}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["dormant_items"] = generator.dormant_items.duplicate(true)
@@ -213,6 +214,7 @@ func validation_error(data: Dictionary) -> String:
 	if not body_error.is_empty(): return body_error
 	if player.has("stamina") and (not VehicleSnapshot._number(player.stamina) or player.stamina < 0 or player.stamina > 100): return "player.stamina"
 	if player.has("stamina_exhausted") and not player.stamina_exhausted is bool: return "player.stamina_exhausted"
+	if player.has("crouching") and not player.crouching is bool: return "player.crouching"
 	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"
 	for i in range(player.items.size()):
 		if not VehicleSnapshot.valid_item(player.items[i]): return "player.items[%d]" % i

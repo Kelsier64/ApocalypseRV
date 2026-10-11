@@ -58,6 +58,7 @@ func _run() -> void:
 	check(not saved.is_empty(), "Valid fixture reads")
 	if saved.is_empty(): quit(1); return
 	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
+	await _test_crouch_checkpoint(checkpoint, world, saved)
 	var wounded := saved.duplicate(true)
 	wounded.player.body.present.left_leg = false
 	wounded.player.body.present.right_arm = false
@@ -240,3 +241,43 @@ func _run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: checkpoint schema, disk faults, second-vehicle rollback, full-world commit and POI failure recovery")
 	quit(0 if failures.is_empty() else 1)
+
+func _test_crouch_checkpoint(checkpoint: Node, world: Node3D, saved: Dictionary) -> void:
+	var actor: CharacterBody3D = world.get_node("Player")
+	actor.set_physics_process(false)
+	actor.crouching = true
+	actor._apply_body_collision()
+	check(checkpoint.save_world(world, PATH + ".crouch"), "Crouched production player checkpoint writes")
+	var crouched: Dictionary = checkpoint.read_checkpoint(PATH + ".crouch")
+	check(not crouched.is_empty() and crouched.player.get("crouching") == true, "Crouched posture survives disk serialization")
+	if not crouched.is_empty():
+		# Place the roof between the shortened and full controller heights.
+		var ceiling := StaticBody3D.new()
+		var collision := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(2, .15, 2)
+		collision.shape = box
+		ceiling.add_child(collision)
+		world.add_child(ceiling)
+		ceiling.global_position = crouched.player.transform.origin + Vector3.UP * 1.425
+		await physics_frame
+		actor.restore_checkpoint_state(crouched.player)
+		check(actor.is_crouching() and is_equal_approx(actor.body_collision_shape.shape.height, actor.CROUCH_HEIGHT), "Restore immediately installs saved crouch capsule under a low ceiling")
+		check(not actor._crouch_standing_volume_clear(), "Saved crouched location rejects standing through its ceiling")
+		ceiling.free()
+	var legacy := saved.duplicate(true)
+	legacy.player.erase("crouching")
+	check(checkpoint.validation_error(legacy).is_empty(), "Legacy checkpoint without crouching remains valid")
+	actor.restore_checkpoint_state(legacy.player)
+	check(not actor.is_crouching() and is_equal_approx(actor.body_collision_shape.shape.height, actor.standing_collision_shape.height), "Legacy checkpoint restores standing capsule")
+	var injured: Dictionary = saved.player.duplicate(true)
+	injured["crouching"] = true
+	injured.body.present.left_leg = false
+	actor.restore_checkpoint_state(injured)
+	check(actor.is_crawling() and not actor.is_crouching() and absf(actor.body_collision_shape.basis.y.dot(Vector3.UP)) < .001, "Saved crouching never overrides injury crawling")
+	for value: Variant in [1, "true", null]:
+		var malformed := saved.duplicate(true)
+		malformed.player["crouching"] = value
+		check(checkpoint.validation_error(malformed) == "player.crouching", "Checkpoint rejects nonboolean crouching before mutation")
+	actor.restore_checkpoint_state(saved.player)
+	actor.set_physics_process(true)

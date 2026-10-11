@@ -410,6 +410,8 @@ F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等�
 
 ### 攀爬與戰鬥
 
+玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v5 新增可選 bool `player.crouching`，舊檔缺欄位為站立，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，行為與存檔分別由 `test_player_crouch`／`test_checkpoint_failures` 覆蓋。
+
 玩家只能從 RVLadder 兩端進入攀爬；牆面命中不再授權玩家攀車。RVLadder 繼承 Item，side_door_ladder／roof_ladder 使用原設備搬移、取消、支撐依賴、耐久及 v5 保存，登錄獨立 rv_ladders 群組。W 上爬、S 下爬、Space 脫離，A/D 不橫移；起點以完整膠囊腳底校正，進出梯與每步移動使用實體掃掠。登頂必須有真實可站立支撐，關門及封住開口均會阻擋。攀爬按 RV transform 差追蹤平移與旋轉，梯子搬移／毀損／失去支撐即安全脫離並繼承平台速度。梯子在兩種放置模式均保持背面 -Z 貼牆、+Z 朝外；牆面原始射線命中及細移直接決定位置，不重寫接觸點、不提供預設錨點。只接受近乎垂直的真實牆面，地板、天花板和活動門扇拒絕安裝；靜態牆面安裝歸 WorldEntities，避免支撐卸載時連同梯子被釋放。
 
 接梯需面向梯子（dot ≥ 0.8），左右誤差不超過 0.25 m；下端向外接近範圍為攀爬線外 0.22 m，上端以實際落腳點前後 0.25 m 判斷。进入攀爬只建立狀態，不立即改位置；ENTRY 以 1.4 m/s 逐步抬腳、對齊，每步實體掃掠並跟隨車輛，鬆開 W/S 暫停。攀升／下降為 1.6 m/s。到頂進入 TOP，持續 W 不再跨出；先放開移動鍵，再以玩家面向和 WASD 控制水平移動。腳下真實支撐確認後，只做垂直 LANDING 落地，不朝 top_landing_point 推送，也不播放頂端前傾收手動畫。離開梯頂可觸及範圍而無支撐時恢復重力，Space 可隨時脫離。當前行為見 [手動離梯](docs/validation/2026-10-06-ladder-manual-exit.md)；先前接近手感驗收見 [接梯手感修正](docs/validation/2026-10-06-ladder-transitions.md)。

@@ -43,6 +43,8 @@ func run():
 			maximum=maxf(maximum,high.y)
 			max_width=maxf(max_width,high.x-low.x)
 		failed = failed or minimum < -.002 or maximum > 1.8 or max_width > 1.3
+		if String(clip_name).begins_with("crouch/"):
+			failed = failed or maximum > actor.CROUCH_HEIGHT + .001
 		results.append({"clip":clip_name,"samples":samples+1,"min_skinned_y":minimum,"max_skinned_y":maximum,"max_width":max_width})
 	print(JSON.stringify(results))
 	var directory_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT.get_base_dir()))

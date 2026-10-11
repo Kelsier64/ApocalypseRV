@@ -98,6 +98,7 @@
       "test_player_carry",
       "test_player_item_release",
       "test_player_climb_animation",
+      "test_player_crouch",
       "test_player_death",
       "test_player_dismemberment",
       "test_player_head_camera",
