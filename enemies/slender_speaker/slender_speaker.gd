@@ -604,8 +604,12 @@ func can_see(target: Node3D, point: Vector3) -> bool:
 	var forward := -global_basis.z
 	if visual != null and visual.get("available") == true:
 		forward = visual.bone_world("socket_focus").basis.y.normalized()
-	# Height alone must not take a nearby ground target out of the cone.
-	if forward.slide(Vector3.UP).normalized().dot(direction.slide(Vector3.UP).normalized()) < cos(deg_to_rad(settings.sight_half_angle_degrees)): return false
+	# Preserve the ground-height allowance, but also respect the real pitched
+	# cone: bending over a survivor must not hide them below/behind the eye's
+	# horizontal projection while the speaker is actually looking down at them.
+	var cone_cos := cos(deg_to_rad(settings.sight_half_angle_degrees))
+	var horizontal_dot := forward.slide(Vector3.UP).normalized().dot(direction.slide(Vector3.UP).normalized())
+	if horizontal_dot < cone_cos and forward.dot(direction.normalized()) < cone_cos: return false
 	var query := PhysicsRayQueryParameters3D.create(origin, point, collision_mask, [get_rid()])
 	# A turned speaker can overlap a wall beyond the body's capsule. Do not
 	# let an origin inside that solid skip it and reveal targets behind it.

@@ -43,6 +43,8 @@
 
 `test_slender_speaker_cabin_movement`、`test_slender_speaker_grab_tracking` 屬 integration：正式 Player 輸入／碰撞下持續前後和左右走動、固定站位及朝向、實體遮擋與無即時 RV 目標的記憶防撞、伸手前段有限追蹤／末段鎖定，以及撞上實體障礙後向外走的恢復。車內移動使用獨立 60 秒自主拆頂準備、8 秒連續移動及 20 秒靜止恢復期限；真實接觸抓到玩家才可提前結束移動，不讓拆頂耗盡移動與恢復預算。[初次驗證](../docs/validation/2026-10-09-slender-speaker-cabin-movement.md) · [後續期限及右後角修正](../docs/validation/2026-10-10-slender-speaker-cabin-corner-fix.md)。
 
+`test_slender_speaker_grab_tracking` 另以正式骨架與玩家碰撞體檢查彎腰時的地面橫移：玩家位於音箱朝下的立體視野內，即使超出水平投影視野，雙手仍須隨觀測位置修正。實體牆遮擋與最後 0.25 秒鎖定仍須停止更新；此測試隔離伸手姿勢，完整碰撞抓取由 acquisition／grab_reliability 覆蓋。
+
 `test_slender_speaker_grab_reliability` 屬 integration：手掌實際接觸拆除、指尖擦碰容許、4 m/s 逃離，以及左右車側十個實際站位偏移；`acquisition` 使用正式站姿、攀爬、屋頂與駕駛座姿勢驗證接觸、抬升及手肘連續性。[本輪結果](../docs/validation/2026-10-09-slender-speaker-palm-demolition.md)。
 
 車內持續移動另有 `--native-physics` 模式，由引擎物理回呼驅動兩個角色，以不同渲染時序檢查相同情境；此模式不指定 `--fixed-fps`，也不執行需要手動控制位置的局部速度探針：
