@@ -18,15 +18,18 @@ equipment_name = "道具箱"
 destroy_on_zero_health = false
 mass = 30.0
 [node name="Mesh" type="MeshInstance3D" parent="."]
+visible = false
 mesh = SubResource("mesh")
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("shape")
 [node name="Label" type="Label3D" parent="."]
+visible = false
 position = Vector3(0, 0.4, 0)
 billboard = 1
 text = "道具箱"
 
 [node name="Handle" type="CSGBox3D" parent="."]
+visible = false
 position = Vector3(0, 0, -0.38)
 size = Vector3(0.3, 0.07, 0.08)
 

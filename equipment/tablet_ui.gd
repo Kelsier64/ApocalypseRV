@@ -1,331 +1,923 @@
 extends CanvasLayer
 
 signal close_requested
+enum Mode { TUI, SHELL }
+const PAGES := ["overview", "energy", "equipment", "crafting", "structure"]
+const PAGE_NAMES := ["Overview", "Energy", "Equipment", "Crafting", "Structure"]
+const FRAME = preload("res://equipment/terminal_panel.gd")
+const HISTORY_LIMIT := 100
+const OUTPUT_LIMIT := 500
+
+var mode := Mode.TUI
+var current_page := "overview"
 var connected_rv: Node3D
-var status_label: Label
-var device_box: VBoxContainer
-var material_box: VBoxContainer
-var recipe_box: VBoxContainer
-var message: Label
+var controls: Dictionary = {}
+var slot_controls: Dictionary = {}
+var device_selectors: Dictionary = {}
+var selected_recipe := "gasoline"
+var selected_slot := "front"
+var selected_device := ""
+var terminal_lines := PackedStringArray()
+var command_history := PackedStringArray()
+var commands := RVTerminalCommands.new()
+var _pages: Dictionary = {}
+var _texts: Dictionary = {}
+var _grids: Array[GridContainer] = []
+var _nav: Dictionary = {}
+var _devices: Array = []
+var _device_ids := PackedStringArray()
+var _station_ids := PackedStringArray()
+var _station_id := ""
+var _type_slot := ""
 var _refresh_time := 0.0
-var _signature := ""
-var recipe_buttons: Dictionary = {}
-var device_labels: Dictionary = {}
-var structure_box: VBoxContainer
-var structure_status: Label
-var structure_rows: Dictionary = {}
-var structure_buttons: Array[Dictionary] = []
-var service_tabs: TabContainer
-var charging_toggle: CheckButton
-var charging_threshold: SpinBox
-var charging_reserve: SpinBox
+var _refreshing := false
+var _history_index := 0
+var _history_draft := ""
+var _message := ""
+var _last_construction_message := ""
+var _device_list: VBoxContainer
+var _construction_row: HBoxContainer
+@onready var _screen: Control = $Screen
+@onready var _tui: VBoxContainer = $Screen/Margin/TUI
+@onready var _shell: VBoxContainer = $Screen/Margin/Shell
+@onready var shell_input: LineEdit = $Screen/Margin/Shell/Prompt/Input
+@onready var shell_output: RichTextLabel = $Screen/Margin/Shell/Output
 
 func _ready() -> void:
-	layer = 30
-	for child in get_children():
-		child.queue_free()
-	var shade := ColorRect.new()
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.045, 0.055, 0.06, 0.96)
-	add_child(shade)
-	var panel := MarginContainer.new()
-	panel.theme = IndustrialTheme.make(24)
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "top", "right", "bottom"]:
-		panel.add_theme_constant_override("margin_" + side, 40)
-	add_child(panel)
+	_screen.theme = RVTerminalTheme.make()
+	shell_input.text_submitted.connect(submit_command)
+	shell_input.text_changed.connect(_sanitize_input)
+	_build_tui()
+	_screen.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	get_viewport().size_changed.connect(_resize_console)
+	_resize_console()
+	select_page("overview", false)
+
+func _label(parent: Node, id: String, text: String = "", color: Color = RVTerminalTheme.INK) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_color", color)
+	parent.add_child(label)
+	if not id.is_empty(): _texts[id] = label
+	return label
+
+func _button(parent: Node, id: String, text: String, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = "[ " + text + " ]"
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size.y = 40
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(action)
+	button.focus_entered.connect(_button_focus.bind(button, true))
+	button.focus_exited.connect(_button_focus.bind(button, false))
+	parent.add_child(button)
+	controls[id] = button
+	_button_focus(button, false)
+	return button
+
+func _toggle(parent: Node, id: String, text: String, action: Callable) -> CheckButton:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	_label(row, "", text)
+	var button := CheckButton.new()
+	button.custom_minimum_size = Vector2(115, 40)
+	button.toggled.connect(action)
+	button.focus_entered.connect(_button_focus.bind(button, true))
+	button.focus_exited.connect(_button_focus.bind(button, false))
+	row.add_child(button)
+	controls[id] = button
+	_button_focus(button, false)
+	return button
+
+func _button_focus(button: BaseButton, focused: bool) -> void:
+	# Hover/pressed draw states can override native focus colors. Keep focus
+	# contrast consistent during mouse/keyboard activation, including ON/OFF.
+	for color in ["font_color", "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+		button.add_theme_color_override(color, RVTerminalTheme.BACKGROUND if focused else RVTerminalTheme.INK)
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		var fill := RVTerminalTheme.AMBER if focused else (Color("26333c") if state in ["hover", "hover_pressed"] else Color.TRANSPARENT)
+		button.add_theme_stylebox_override(state, RVTerminalTheme.style(fill))
+
+func _number(parent: Node, id: String, text: String, maximum: float, step: float, action: Callable) -> void:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	_label(row, "", text)
+	var field := SpinBox.new()
+	field.custom_minimum_size = Vector2(145, 40)
+	field.max_value = maximum
+	field.step = step
+	field.value_changed.connect(action)
+	field.get_line_edit().context_menu_enabled = false
+	row.add_child(field)
+	controls[id] = field
+
+func _panel(parent: Node, heading: String) -> VBoxContainer:
+	var frame := PanelContainer.new()
+	frame.set_script(FRAME)
+	frame.heading = heading
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(frame)
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 8)
+	frame.add_child(content)
+	return content
+
+func _grid(parent: Node) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation", 16)
+	grid.add_theme_constant_override("v_separation", 12)
+	parent.add_child(grid)
+	_grids.append(grid)
+	return grid
+
+func _page(id: String) -> VBoxContainer:
 	var scroll := ScrollContainer.new()
-	panel.add_child(scroll)
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_theme_constant_override("separation", 12)
-	scroll.add_child(box)
-	var title := Label.new()
-	title.text = "RV SERVICE TERMINAL"
-	title.add_theme_color_override("font_color", IndustrialTheme.AMBER)
-	title.add_theme_font_size_override("font_size", 28)
-	box.add_child(title)
-	var close := Button.new()
-	close.text = "Close [Esc]"
-	close.pressed.connect(func(): close_requested.emit())
-	box.add_child(close)
-	service_tabs = TabContainer.new()
-	service_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(service_tabs)
-	var service := VBoxContainer.new()
-	service.name = "設備與資源"
-	service.add_theme_constant_override("separation", 12)
-	service_tabs.add_child(service)
-	box = service
-	status_label = Label.new()
-	status_label.add_theme_font_size_override("font_size", 22)
-	box.add_child(status_label)
-	var engine := Button.new()
-	engine.text = "Start / stop engine (stationary charging uses fuel)"
-	engine.pressed.connect(func():
-		if is_instance_valid(connected_rv):
-			var okay: bool = connected_rv.set_engine_running(not connected_rv.energy.engine_running)
-			message.text = ("引擎已發動" if connected_rv.energy.engine_running else "引擎已停止") if okay else connected_rv.engine_start_reason()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	_tui.add_child(scroll)
+	_pages[id] = scroll
+	var body := VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 12)
+	scroll.add_child(body)
+	return body
+
+func _build_tui() -> void:
+	var header := HBoxContainer.new()
+	_tui.add_child(header)
+	_label(header, "", "rvctl / VEHICLE CONTROL", RVTerminalTheme.CYAN)
+	_label(header, "telemetry", "", RVTerminalTheme.DIM)
+	var navigation := HFlowContainer.new()
+	_tui.add_child(navigation)
+	for index in PAGES.size():
+		var id: String = PAGES[index]
+		var button := _button(navigation, "page:" + id, "F%d %s" % [index + 1, PAGE_NAMES[index]], func(): select_page(id))
+		_nav[id] = button
+	_build_overview(_page("overview"))
+	_build_energy(_page("energy"))
+	_build_equipment(_page("equipment"))
+	_build_crafting(_page("crafting"))
+	_build_structure(_page("structure"))
+	_construction_row = HBoxContainer.new()
+	_tui.add_child(_construction_row)
+	_label(_construction_row, "construction")
+	_button(_construction_row, "structure:cancel", "Cancel construction", _cancel_construction)
+	_label(_tui, "message", "", RVTerminalTheme.AMBER)
+	var footer := _label(_tui, "", "F1-F5 Pages   Tab / Shift+Tab Focus   Arrows Select / Adjust   Enter Activate   Esc Close tablet", RVTerminalTheme.DIM)
+	footer.add_theme_font_size_override("font_size", 16)
+
+func _build_overview(body: Node) -> void:
+	_label(_panel(body, "Vehicle status"), "overview:status")
+	var grid := _grid(body)
+	var actions := _panel(grid, "Quick controls")
+	_button(actions, "engine", "Start engine", _toggle_engine)
+	_label(actions, "engine:reason", "", RVTerminalTheme.DIM)
+	_toggle(actions, "headlights", "Headlights", func(value: bool): _set_light("headlights", value))
+	_label(actions, "headlights:state", "", RVTerminalTheme.DIM)
+	var attention := _panel(grid, "Attention")
+	_label(attention, "warnings")
+	_button(attention, "inspect:equipment", "Inspect equipment", func(): select_page("equipment"))
+	_button(attention, "inspect:structure", "Inspect damaged parts", _inspect_structure)
+	_label(_panel(body, "Body condition"), "overview:structure")
+
+func _build_energy(body: Node) -> void:
+	var grid := _grid(body)
+	_label(_panel(grid, "Power & fuel"), "energy:flow")
+	var settings := _panel(grid, "Automatic charging")
+	_toggle(settings, "charging_enabled", "RV charging", func(value: bool):
+		if _can_write():
+			connected_rv.energy.charging_enabled = value
+			if not value: connected_rv.energy.charging = false
 			_refresh())
-	box.add_child(engine)
-	var charging_settings := HBoxContainer.new()
-	box.add_child(charging_settings)
-	charging_toggle = CheckButton.new()
-	charging_toggle.text = "RV 自帶充電"
-	charging_toggle.toggled.connect(func(enabled: bool):
-		if is_instance_valid(connected_rv):
-			connected_rv.energy.charging_enabled = enabled
-			if not enabled: connected_rv.energy.charging = false)
-	charging_settings.add_child(charging_toggle)
-	var charging_note := Label.new()
-	charging_note.text = "充電門檻 %／保留油量："
-	charging_settings.add_child(charging_note)
-	charging_threshold = SpinBox.new()
-	charging_threshold.max_value = 100.0
-	charging_threshold.step = 5.0
-	charging_threshold.value_changed.connect(func(value: float):
-		if is_instance_valid(connected_rv): connected_rv.energy.recharge_below = value / 100.0)
-	charging_settings.add_child(charging_threshold)
-	charging_reserve = SpinBox.new()
-	charging_reserve.value_changed.connect(func(value: float):
-		if is_instance_valid(connected_rv): connected_rv.energy.fuel_reserve = value)
-	charging_settings.add_child(charging_reserve)
-	var headlights := Button.new()
-	headlights.text = "頭燈開關"
-	headlights.pressed.connect(func():
-		if is_instance_valid(connected_rv): connected_rv.headlights_requested = not connected_rv.headlights_requested)
-	box.add_child(headlights)
-	for kind in ["cabin", "service"]:
-		var light_button := Button.new()
-		light_button.text = {"cabin": "車內照明開關", "service": "維修燈開關（開蓋後照明）"}[kind]
-		light_button.pressed.connect(func():
-			if is_instance_valid(connected_rv): connected_rv.toggle_interior_light(kind))
-		box.add_child(light_button)
-	var brightness := Button.new()
-	brightness.text = "調整儀表亮度：低 → 中 → 高"
-	brightness.pressed.connect(func():
-		if is_instance_valid(connected_rv): connected_rv.instrument_brightness = 0.2 if connected_rv.instrument_brightness > 0.9 else minf(1.0, connected_rv.instrument_brightness + 0.4))
-	box.add_child(brightness)
-	var vibration := Button.new()
-	vibration.text = "引擎視覺震動：關 → 低 → 高"
-	vibration.pressed.connect(func():
-		if is_instance_valid(connected_rv): connected_rv.vibration_strength = fmod(connected_rv.vibration_strength + 0.5, 1.5))
-	box.add_child(vibration)
-	message = Label.new()
-	box.add_child(message)
-	structure_box = VBoxContainer.new()
-	structure_box.name = "車體結構"
-	structure_box.add_theme_constant_override("separation", 16)
-	service_tabs.add_child(structure_box)
-	var structure_title := Label.new()
-	structure_title.text = "車體結構｜維修、重建與型態配置"
-	structure_title.add_theme_color_override("font_color", IndustrialTheme.AMBER)
-	structure_box.add_child(structure_title)
-	structure_status = Label.new()
-	structure_box.add_child(structure_status)
-	_build_structure_rows()
-	device_box = VBoxContainer.new()
-	material_box = VBoxContainer.new()
-	recipe_box = VBoxContainer.new()
-	box.add_child(device_box)
-	box.add_child(material_box)
-	box.add_child(recipe_box)
+	_number(settings, "charging_threshold", "Start below (%)", 100, 5, func(value: float):
+		if _can_write(): connected_rv.energy.recharge_below = value / 100.0)
+	_number(settings, "charging_reserve", "Fuel reserve", 100, 1, func(value: float):
+		if _can_write(): connected_rv.energy.fuel_reserve = value)
+	_label(settings, "", "Charging needs a running engine and an installed battery. The reserve stops charging; an idling engine still burns fuel.", RVTerminalTheme.DIM)
+	_label(settings, "charging:state")
+
+func _build_equipment(body: Node) -> void:
+	var lights := _panel(body, "Interior lighting")
+	_toggle(lights, "cabin", "Cabin light master", func(value: bool): _set_light("cabin", value))
+	_toggle(lights, "service", "Engine bay service lamp", func(value: bool): _set_light("service", value))
+	_label(lights, "interior:state", "", RVTerminalTheme.DIM)
+	var grid := _grid(body)
+	_device_list = _panel(grid, "Installed equipment")
+	var detail := _panel(grid, "Selected equipment")
+	_label(detail, "device:detail")
+	_label(detail, "", "Hold H while facing damaged hardware to repair it. Stop the engine first. Engine repairs require an Engine Repair Kit.", RVTerminalTheme.DIM)
+	_label(_panel(body, "Tires"), "tires")
+
+func _build_crafting(body: Node) -> void:
+	_label(_panel(body, "Materials"), "materials")
+	var grid := _grid(body)
+	var recipes := _panel(grid, "Recipes")
+	for recipe in RecipeCatalog.all():
+		var id: String = recipe.recipe_id
+		var button := _button(recipes, "recipe:" + id, RVTerminalPresenter.recipe_name(recipe), func(): select_recipe(id))
+		button.focus_entered.connect(func(): select_recipe(id))
+	var detail := _panel(grid, "Recipe & workstation")
+	var selector := OptionButton.new()
+	selector.custom_minimum_size.y = 40
+	detail.add_child(selector)
+	controls["craft:station"] = selector
+	selector.item_selected.connect(func(index: int):
+		_station_id = str(selector.get_item_metadata(index))
+		_refresh())
+	_wire_popup(selector)
+	_label(detail, "recipe:detail")
+	_label(detail, "craft:reason", "", RVTerminalTheme.DIM)
+	_button(detail, "craft:add", "Add to queue", _craft)
+	_label(detail, "queue")
+	_button(detail, "craft:cancel", "Cancel queue / refund materials", _cancel_crafting)
+
+func _build_structure(body: Node) -> void:
+	_label(body, "structure:conditions", "", RVTerminalTheme.DIM)
+	var grid := _grid(body)
+	var diagram := _panel(grid, "Body slots / front at top")
+	_centered_slot_button(diagram, "front")
+	var cells := GridContainer.new()
+	cells.columns = 3
+	cells.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	diagram.add_child(cells)
+	for index in 3:
+		for side in ["left", "roof", "right"]:
+			_slot_button(cells, "%s_%d" % [side, index])
+	_centered_slot_button(diagram, "rear")
+	_label(diagram, "", "LEFT          ROOF          RIGHT\nHP = durability   X = destroyed", RVTerminalTheme.DIM)
+	var detail := _panel(grid, "Selected part")
+	_label(detail, "structure:detail")
+	var selector := OptionButton.new()
+	selector.custom_minimum_size.y = 40
+	detail.add_child(selector)
+	controls["structure:type"] = selector
+	selector.item_selected.connect(func(_index: int): _refresh())
+	_wire_popup(selector)
+	for operation in ["repair", "rebuild", "convert"]:
+		_button(detail, "structure:" + operation, operation.capitalize(), func(): _begin_structure(operation))
+		_label(detail, "structure:reason:" + operation, "", RVTerminalTheme.DIM)
+
+func _slot_button(parent: Node, id: String) -> void:
+	var button := _button(parent, "slot:" + id, id, func(): select_slot(id))
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.focus_entered.connect(func(): select_slot(id, false))
+	slot_controls[id] = button
+
+func _centered_slot_button(parent: Node, id: String) -> void:
+	var center := CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(center)
+	_slot_button(center, id)
+	slot_controls[id].custom_minimum_size.x = 180
+
+func _wire_popup(selector: OptionButton) -> void:
+	selector.focus_entered.connect(_button_focus.bind(selector, true))
+	selector.focus_exited.connect(_button_focus.bind(selector, false))
+	_button_focus(selector, false)
+	# PopupMenu is a separate Window/Viewport, so it forwards the global chords.
+	selector.get_popup().window_input.connect(_input)
+
+func _resize_console() -> void:
+	# Keep readable character cells when the game scales its large base viewport.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var factor := maxf(1.0, viewport_size.x / 1280.0)
+	scale = Vector2.ONE * factor
+	_screen.size = viewport_size / factor
+	for grid in _grids: grid.columns = 1 if _screen.size.x < 1050 else 2
 
 func on_open() -> void:
 	connected_rv = get_parent().get_connected_rv()
-	if is_instance_valid(connected_rv):
-		charging_toggle.set_pressed_no_signal(connected_rv.energy.charging_enabled)
-		charging_threshold.set_value_no_signal(connected_rv.energy.recharge_below * 100.0)
-		charging_reserve.set_block_signals(true)
-		charging_reserve.max_value = maxf(connected_rv.max_fuel, connected_rv.energy.fuel_reserve)
-		charging_reserve.set_value_no_signal(connected_rv.energy.fuel_reserve)
-		charging_reserve.set_block_signals(false)
-	_signature = ""
+	_message = ""
+	_type_slot = ""
+	enter_tui()
+	select_page("overview")
+
+func is_management_active() -> bool:
+	return visible and mode == Mode.TUI
+
+func enter_shell() -> void:
+	dismiss_popups()
+	if mode == Mode.TUI and is_instance_valid(connected_rv):
+		var construction := _construction()
+		if construction: construction.cancel_for(get_parent())
+	mode = Mode.SHELL
+	_tui.hide()
+	_shell.show()
+	_history_index = command_history.size()
+	_history_draft = ""
+	shell_input.grab_focus()
+
+func enter_tui() -> void:
+	mode = Mode.TUI
+	_shell.hide()
+	_tui.show()
+	_refresh()
+	select_page(current_page)
+
+func select_page(id: String, focus: bool = true) -> void:
+	if not _pages.has(id): return
+	dismiss_popups()
+	current_page = id
+	for page in _pages:
+		_pages[page].visible = page == id
+		var index: int = PAGES.find(page)
+		_nav[page].text = "[ F%d %s%s ]" % [index + 1, PAGE_NAMES[index], " *" if page == id else ""]
+	_refresh()
+	if focus and mode == Mode.TUI:
+		var target: String = {"overview": "engine", "energy": "charging_enabled",
+			"equipment": "cabin", "crafting": "recipe:" + selected_recipe, "structure": "slot:" + selected_slot}[id]
+		if not _focus_id(target): _focus_first(_focus_order())
+
+func select_slot(id: String, focus: bool = true) -> void:
+	if not slot_controls.has(id): return
+	selected_slot = id
+	_refresh()
+	if focus: slot_controls[id].grab_focus()
+
+func select_device(id: String) -> void:
+	if not device_selectors.has(id): return
+	selected_device = id
 	_refresh()
 
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("ui_cancel"):
-		close_requested.emit()
-		get_viewport().set_input_as_handled()
+func select_recipe(id: String) -> void:
+	if not controls.has("recipe:" + id): return
+	selected_recipe = id
+	_refresh()
+
+func _input(event: InputEvent) -> void:
+	if not visible or not event is InputEventKey or not event.pressed: return
+	if event.keycode == KEY_ESCAPE:
+		_handle_event()
+		_close()
+		return
+	if event.ctrl_pressed and event.keycode in [KEY_C, KEY_D]:
+		_handle_event()
+		if mode == Mode.TUI:
+			enter_shell()
+		elif event.keycode == KEY_C:
+			shell_input.clear()
+		return
+	if mode == Mode.SHELL:
+		if event.keycode in [KEY_UP, KEY_DOWN]:
+			_history(-1 if event.keycode == KEY_UP else 1)
+			_handle_event()
+		elif event.keycode == KEY_TAB:
+			_complete()
+			_handle_event()
+		return
+	if event.keycode >= KEY_F1 and event.keycode <= KEY_F5:
+		_handle_event()
+		select_page(PAGES[event.keycode - KEY_F1])
+		return
+	# OptionButton menus own their arrows, Tab and activation keys. Their
+	# separate viewport forwards only the global shortcuts handled above.
+	if _popup_open(): return
+	if event.keycode == KEY_TAB:
+		_move_focus_order(-1 if event.shift_pressed else 1)
+		_handle_event()
+	elif event.keycode in [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]:
+		_move_focus(event.keycode)
+		_handle_event()
+
+func _unhandled_input(_event: InputEvent) -> void:
+	if visible: _handle_event()
+
+func _handle_event() -> void:
+	get_viewport().set_input_as_handled()
+	for id in ["craft:station", "structure:type"]:
+		var popup: PopupMenu = controls[id].get_popup()
+		if popup.visible: popup.get_viewport().set_input_as_handled()
+
+func _close() -> void:
+	dismiss_popups()
+	close_requested.emit()
+
+func dismiss_popups() -> void:
+	for id in ["craft:station", "structure:type"]: controls[id].get_popup().hide()
+
+func _popup_open() -> bool:
+	return controls["craft:station"].get_popup().visible or controls["structure:type"].get_popup().visible
+
+func _focus_control(id: String) -> Control:
+	var control: Control = controls.get(id)
+	if not is_instance_valid(control) or not control.is_visible_in_tree(): return null
+	if control is BaseButton and control.disabled: return null
+	return control.get_line_edit() if control is SpinBox else control
+
+func _focused_id() -> String:
+	var focused := get_viewport().gui_get_focus_owner()
+	for id in controls:
+		var control: Control = controls[id]
+		if focused == control or (control is SpinBox and focused == control.get_line_edit()): return id
+	return ""
+
+func _focus_id(id: String) -> bool:
+	var control := _focus_control(id)
+	if not control: return false
+	control.grab_focus()
+	# Scroll on the next layout pass, including when a newly selected recipe
+	# changes the height of its details or the viewport is narrow.
+	var scroll: ScrollContainer = _pages[current_page]
+	if scroll.is_ancestor_of(control): scroll.ensure_control_visible.call_deferred(control)
+	return true
+
+func _focus_first(ids: Array) -> bool:
+	for id in ids:
+		if _focus_id(id): return true
+	return false
+
+func _recipe_ids() -> Array:
+	var ids: Array = []
+	for recipe in RecipeCatalog.all(): ids.append("recipe:" + recipe.recipe_id)
+	return ids
+
+func _device_column(toggles: bool) -> Array:
+	var ids: Array = ["cabin", "service"]
+	for id in _device_ids:
+		var key := ("device:" if toggles else "select:") + id
+		if controls.has(key): ids.append(key)
+	return ids
+
+func _structure_actions() -> Array:
+	return ["structure:type", "structure:repair", "structure:rebuild", "structure:convert", "structure:cancel"]
+
+func _focus_order() -> Array:
+	# Tab uses reading order, independent of panel sizes, wrapped text, or
+	# disabled/hidden actions. Arrows additionally preserve logical columns.
+	var ids: Array = []
+	match current_page:
+		"overview": ids = ["engine", "headlights", "inspect:equipment", "inspect:structure"]
+		"energy": ids = ["charging_enabled", "charging_threshold", "charging_reserve"]
+		"equipment":
+			ids = ["cabin", "service"]
+			for id in _device_ids:
+				ids.append("select:" + id)
+				if controls.has("device:" + id): ids.append("device:" + id)
+		"crafting": ids = _recipe_ids() + ["craft:station", "craft:add", "craft:cancel"]
+		"structure":
+			for id in slot_controls: ids.append("slot:" + id)
+			ids.append_array(_structure_actions())
+	if current_page != "structure": ids.append("structure:cancel")
+	return ids
+
+func _move_in_list(ids: Array, id: String, direction: int, wrap: bool = false) -> void:
+	var available: Array = []
+	for candidate in ids:
+		if _focus_control(candidate): available.append(candidate)
+	if available.is_empty(): return
+	var index: int = available.find(id)
+	if index < 0:
+		_focus_id(available[0 if direction > 0 else -1])
+		return
+	var next := index + direction
+	if wrap: next = posmod(next, available.size())
+	if next >= 0 and next < available.size(): _focus_id(available[next])
+
+func _move_focus_order(direction: int) -> void:
+	var id := _focused_id()
+	if id.begins_with("page:"):
+		# Tab from the page bar always enters the visible page's controls.
+		_focus_first(_focus_order() if direction > 0 else _reversed(_focus_order()))
+	else: _move_in_list(_focus_order(), id, direction, true)
+
+func _reversed(ids: Array) -> Array:
+	var result := ids.duplicate()
+	result.reverse()
+	return result
+
+func _move_focus(key: Key) -> void:
+	var id := _focused_id()
+	var vertical := key in [KEY_UP, KEY_DOWN]
+	var direction := -1 if key in [KEY_UP, KEY_LEFT] else 1
+	if id.begins_with("page:"):
+		if vertical: _focus_first(_focus_order())
+		else:
+			var pages: Array = []
+			for page in PAGES: pages.append("page:" + page)
+			_move_in_list(pages, id, direction, true)
+		return
+	if id.is_empty():
+		_focus_first(_focus_order())
+		return
+	if id == "structure:cancel" and current_page != "structure":
+		if vertical: _focus_first(_reversed(_focus_order().slice(0, -1)))
+		return
+	match current_page:
+		"overview":
+			if vertical: _move_in_list(_focus_order(), id, direction)
+			else:
+				var pairs := {"engine": "inspect:equipment", "headlights": "inspect:structure", "inspect:equipment": "engine", "inspect:structure": "headlights"}
+				if (direction > 0 and id in ["engine", "headlights"]) or (direction < 0 and id.begins_with("inspect:")):
+					_focus_id(pairs[id])
+		"energy":
+			if vertical: _move_in_list(_focus_order(), id, direction)
+			elif controls.get(id) is SpinBox:
+				var field: SpinBox = controls[id]
+				field.apply()
+				field.value += direction * field.step
+		"equipment":
+			if vertical:
+				var column := _device_column(id.begins_with("device:"))
+				column.append("structure:cancel")
+				_move_in_list(column, id, direction)
+			elif direction > 0 and id.begins_with("select:"): _focus_id(id.replace("select:", "device:"))
+			elif direction < 0 and id.begins_with("device:"): _focus_id(id.replace("device:", "select:"))
+		"crafting":
+			var actions: Array = ["craft:station", "craft:add", "craft:cancel", "structure:cancel"]
+			if id.begins_with("recipe:"):
+				if vertical: _move_in_list(_recipe_ids(), id, direction)
+				elif direction > 0: _focus_first(["craft:add", "craft:station", "craft:cancel", "structure:cancel"])
+			elif vertical: _move_in_list(actions, id, direction)
+			elif direction < 0: _focus_id("recipe:" + selected_recipe)
+		"structure":
+			if id.begins_with("slot:"): _move_structure_slot(id.trim_prefix("slot:"), key)
+			elif vertical: _move_in_list(_structure_actions(), id, direction)
+			elif direction < 0: _focus_id("slot:" + selected_slot)
+
+func _move_structure_slot(id: String, key: Key) -> void:
+	if id in ["front", "rear"]:
+		if key == KEY_RIGHT: _focus_first(_structure_actions())
+		elif key == KEY_DOWN and id == "front": _focus_id("slot:roof_0")
+		elif key == KEY_UP and id == "rear": _focus_id("slot:roof_2")
+		return
+	var side := id.get_slice("_", 0)
+	var row := int(id.get_slice("_", 1))
+	var sides := ["left", "roof", "right"]
+	var column: int = sides.find(side)
+	match key:
+		KEY_UP: _focus_id("slot:front" if row == 0 else "slot:%s_%d" % [side, row - 1])
+		KEY_DOWN: _focus_id("slot:rear" if row == 2 else "slot:%s_%d" % [side, row + 1])
+		KEY_LEFT:
+			if column > 0: _focus_id("slot:%s_%d" % [sides[column - 1], row])
+		KEY_RIGHT:
+			if column < 2: _focus_id("slot:%s_%d" % [sides[column + 1], row])
+			else: _focus_first(_structure_actions())
+
+func _sanitize_input(text: String) -> void:
+	var clean := text.replace("\r", " ").replace("\n", " ")
+	if clean != text:
+		shell_input.text = clean
+		shell_input.caret_column = clean.length()
+
+func _command_context() -> Dictionary:
+	return {"rv": connected_rv, "terminal": get_parent(), "player": get_parent().current_user, "status_lines": _status_lines}
+
+func submit_command(line: String) -> void:
+	if not visible or mode != Mode.SHELL or not _owns_session(): return
+	var clean := line.strip_edges()
+	shell_input.clear()
+	if clean.is_empty(): return
+	command_history.append(clean)
+	while command_history.size() > HISTORY_LIMIT: command_history.remove_at(0)
+	_history_index = command_history.size()
+	_history_draft = ""
+	_append_output(PackedStringArray(["operator@rv:~$ " + clean]))
+	var result := commands.execute(clean, _command_context())
+	_append_output(result.lines)
+	match result.action:
+		"open_tui": enter_tui()
+		"close_tablet": _close()
+		"clear":
+			terminal_lines.clear()
+			shell_output.text = ""
+
+func _append_output(lines: PackedStringArray) -> void:
+	terminal_lines.append_array(lines)
+	while terminal_lines.size() > OUTPUT_LIMIT: terminal_lines.remove_at(0)
+	shell_output.text = "\n".join(terminal_lines)
+
+func _history(direction: int) -> void:
+	if _history_index == command_history.size(): _history_draft = shell_input.text
+	_history_index = clampi(_history_index + direction, 0, command_history.size())
+	shell_input.text = command_history[_history_index] if _history_index < command_history.size() else _history_draft
+	shell_input.caret_column = shell_input.text.length()
+
+func _complete() -> void:
+	var candidates := commands.completion_candidates(shell_input.text, _command_context())
+	if candidates.size() == 1:
+		shell_input.text = candidates[0]
+		shell_input.caret_column = shell_input.text.length()
+	elif not candidates.is_empty(): _append_output(PackedStringArray(["  ".join(candidates)]))
 
 func _process(delta: float) -> void:
-	if not visible:
-		return
+	if not visible or mode != Mode.TUI: return
 	_refresh_time -= delta
-	if _refresh_time <= 0.0:
+	if _refresh_time <= 0:
 		_refresh_time = 0.2
 		_refresh()
 
-func _station() -> Node:
-	if not is_instance_valid(connected_rv):
-		return null
-	for device in connected_rv.get_equipment():
-		if device is CraftingStation and device.can_operate():
-			return device
-	return null
+func _text(id: String, value: String) -> void:
+	_texts[id].text = value
+
+func _bar(value: float, maximum: float, width: int = 16) -> String:
+	var filled := clampi(int(round(value / maxf(maximum, 0.001) * width)), 0, width)
+	return "[" + "#".repeat(filled) + "-".repeat(width - filled) + "]"
+
+func _pressed(id: String, value: bool) -> void:
+	var button: CheckButton = controls[id]
+	button.set_pressed_no_signal(value)
+	button.text = "[ ON  ]" if value else "[ OFF ]"
+
+func _number_value(id: String, value: float, maximum: float) -> void:
+	var field: SpinBox = controls[id]
+	if field.get_line_edit().has_focus(): return
+	field.set_block_signals(true)
+	field.max_value = maxf(maximum, value)
+	field.set_value_no_signal(value)
+	field.set_block_signals(false)
 
 func _refresh() -> void:
-	if not is_instance_valid(connected_rv) or not is_instance_valid(status_label):
-		return
-	connected_rv.update_storage_capacity()
-	status_label.text = "ENGINE %s | FUEL %.1f / %.1f\nBATTERY %.1f / %.1f | CHARGE +%.2f / LOAD -%.2f per s\nMATERIALS %d / %d%s\nTIRES FL %.0f / FR %.0f / RL %.0f / RR %.0f\nStandby: -0.15 power/s | Hold H facing damaged hardware to repair (engine off)." % [
-		"RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.current_fuel, connected_rv.max_fuel,
-		connected_rv.current_power, connected_rv.max_power, connected_rv.energy.generated_rate, connected_rv.energy.load_rate,
-		connected_rv.storage.used(), connected_rv.storage.capacity, " — OVER CAPACITY: spend materials before recycling" if connected_rv.storage.used() > connected_rv.storage.capacity else "", connected_rv.wheel_health[0], connected_rv.wheel_health[1], connected_rv.wheel_health[2], connected_rv.wheel_health[3]]
-	if connected_rv.unlimited_materials:
-		status_label.text += "\n材料：無限（製作、施工及一般維修不扣材料）"
-	if connected_rv.unlimited_fuel:
-		status_label.text += "\n燃油：無限（駕駛及發電不耗油）"
-	if connected_rv.energy.battery == null:
-		status_label.text += "\nNO BATTERY: install a battery into an operational socket."
-	elif connected_rv.current_power <= 0.0:
-		status_label.text += "\nBATTERY EMPTY: swap it or start the engine for RV charging."
-	status_label.text += "\n" + connected_rv.energy.charging_status()
-	status_label.text += "\n" + VehicleStatus.messages(connected_rv)
-	for kind in ["cabin", "service"]: status_label.text += "\n" + connected_rv.interior_light_status(kind)
-	status_label.text += "\n儀表亮度 %.0f%%｜視覺震動 %.0f%%" % [connected_rv.instrument_brightness * 100, connected_rv.vibration_strength * 100]
-	var installed: EngineState = connected_rv.get_engine()
-	status_label.text += "\n" + ("引擎槽為空" if installed == null else "%s｜耐久 %.0f / %.0f" % [installed.definition().display_name, installed.health, installed.definition().max_health])
-	var devices: Array[Node] = connected_rv.get_equipment()
-	var signature := ""
-	for device in devices:
-		signature += device.persistent_id
-	signature += str(connected_rv.get_all_items())
-	if signature != _signature:
-		_signature = signature
-		_rebuild(devices)
-	for device in devices:
-		if device_labels.has(device.persistent_id):
-			var state := "ON" if device.can_operate() else "OFFLINE"
-			if device.has_method("get_status"):
-				state = device.get_status()
-			if device is CraftingStation:
-				state += " | %d jobs | %s" % [device.jobs.size(), device.last_error]
-				if not device.jobs.is_empty():
-					state += " | %.1fs remaining" % device.jobs[0].remaining
-			if "props_being_crushed" in device:
-				state += " | %d inputs | work %.1f power/s" % [device.props_being_crushed.size(), device.power_draw_per_second]
-				if not device.props_being_crushed.is_empty():
-					state += " | %.1fs%s" % [maxf(0.0, device.props_being_crushed[0].timer), " (battery empty)" if connected_rv.current_power <= 0.0 else ""]
-			device_labels[device.persistent_id].text = "%s | HP %.0f / %.0f | %s" % [device.equipment_name, device.current_health, device.max_health, state]
-	var station := _station()
-	for recipe in RecipeCatalog.all():
-		if recipe_buttons.has(recipe.recipe_id):
-			recipe_buttons[recipe.recipe_id].disabled = station == null or not connected_rv.has_materials(recipe.costs) or not connected_rv.has_usable_power(recipe.power_cost) or station.jobs.size() >= station.queue_capacity
-	_refresh_structures()
+	if not is_instance_valid(connected_rv) or _refreshing: return
+	var focused_id := _focused_id()
+	_refreshing = true
+	var rv := connected_rv
+	var energy: VehicleEnergy = rv.energy
+	var engine: EngineState = rv.get_engine()
+	var engine_info := "No engine installed"
+	if engine:
+		engine_info = "%s / HP %.0f / %.0f" % [RVTerminalPresenter.message(engine.definition().display_name), engine.health, engine.definition().max_health]
+	_text("telemetry", "FUEL %.1f   BATTERY %.1f" % [rv.current_fuel, rv.current_power])
+	_text("overview:status", "ENGINE  %s   %s\nFUEL    %s %5.1f / %.1f\nPOWER   %s %5.1f / %.1f\nSPEED   %.1f m/s   |   STORAGE %d / %d" % [
+		"RUNNING" if energy.engine_running else "STOPPED", engine_info, _bar(rv.current_fuel, rv.max_fuel), rv.current_fuel, rv.max_fuel,
+		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, rv.linear_velocity.length(), rv.storage.used(), rv.storage.capacity])
+	controls.engine.text = "[ Stop engine ]" if energy.engine_running else "[ Start engine ]"
+	var engine_reason: String = "" if energy.engine_running else RVTerminalPresenter.message(rv.engine_start_reason())
+	controls.engine.disabled = not engine_reason.is_empty()
+	_text("engine:reason", engine_reason)
+	_pressed("headlights", rv.headlights_requested)
+	_text("headlights:state", "Off" if not rv.headlights_requested else ("Powered" if rv.lamps_powered else "Waiting for power"))
+	var warnings := PackedStringArray()
+	for row in RVTerminalPresenter.warnings(rv):
+		if row.level > 0 and row.id != "headlight": warnings.append("%s: %s" % [row.label, row.message])
+	if rv.storage.used() > rv.storage.capacity: warnings.append("Storage full: spend materials before recycling")
+	_text("warnings", "\n".join(warnings) if not warnings.is_empty() else "All systems ready")
+	_refresh_structure()
+	_text("energy:flow", "BATTERY %s\n%.1f / %.1f charge\n\nGENERATION +%.2f /s\nLOAD       -%.2f /s\nNET        %+.2f /s\n\nFUEL %.1f / %.1f\nStandby load: 0.15 /s" % [
+		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, energy.generated_rate, energy.load_rate,
+		energy.generated_rate - energy.load_rate, rv.current_fuel, rv.max_fuel])
+	_pressed("charging_enabled", energy.charging_enabled)
+	_number_value("charging_threshold", energy.recharge_below * 100.0, 100)
+	_number_value("charging_reserve", energy.fuel_reserve, rv.max_fuel)
+	_text("charging:state", RVTerminalPresenter.message(energy.charging_status()))
+	for kind in ["cabin", "service"]: _pressed(kind, rv.interior_requested[kind])
+	_text("interior:state", "Cabin: %s   |   Service: %s\nService lamp lights an open engine bay." % [_light_state("cabin"), _light_state("service")])
+	_refresh_devices()
+	_refresh_crafting()
+	_text("message", _message)
+	_refreshing = false
+	# A completed job or equipment removal can hide/disable the focused
+	# action. Keep focus in this page instead of falling back to geometry.
+	if not focused_id.is_empty() and not focused_id.begins_with("page:") and not _focus_control(focused_id):
+		var order := _focus_order()
+		var index := order.find(focused_id)
+		if index >= 0: _focus_first(order.slice(index + 1) + _reversed(order.slice(0, index)))
 
-func _construction() -> Node:
+func _light_state(kind: String) -> String:
+	return "Powered" if connected_rv.interior_powered[kind] else ("Waiting for power / equipment" if connected_rv.interior_requested[kind] else "Off")
+
+func _refresh_devices() -> void:
+	_devices = connected_rv.get_equipment().duplicate()
+	_devices.sort_custom(func(a: Node, b: Node): return RVTerminalPresenter.display_name(a) < RVTerminalPresenter.display_name(b))
+	var ids := PackedStringArray()
+	for device in _devices: ids.append(device.persistent_id)
+	if ids != _device_ids:
+		var focus_id := _focused_id()
+		var old_index := _device_ids.find(focus_id.get_slice(":", 1))
+		for child in _device_list.get_children():
+			child.hide()
+			child.queue_free()
+		for id in _device_ids:
+			controls.erase("device:" + id)
+			controls.erase("select:" + id)
+		device_selectors.clear()
+		_device_ids = ids
+		for device in _devices:
+			var id: String = device.persistent_id
+			var row := HBoxContainer.new()
+			_device_list.add_child(row)
+			var button := _button(row, "select:" + id, _device_title(device), func(): select_device(id))
+			button.clip_text = true
+			button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			button.tooltip_text = _device_title(device)
+			device_selectors[id] = button
+			button.focus_entered.connect(func(): select_device(id))
+			if device.has_method("step_work") or device is CabinLightStrip:
+				var toggle := _toggle(row, "device:" + id, "", func(value: bool):
+					if _can_write() and is_instance_valid(device):
+						device.set_enabled(value)
+						_refresh())
+				toggle.custom_minimum_size.x = 100
+				toggle.focus_entered.connect(func(): select_device(id))
+		if not ids.has(selected_device): selected_device = ids[0] if not ids.is_empty() else ""
+		if focus_id.begins_with("select:") or focus_id.begins_with("device:"):
+			if not _focus_id(focus_id):
+				if ids.is_empty(): _focus_id("service")
+				else:
+					var nearest: String = ids[clampi(old_index, 0, ids.size() - 1)]
+					_focus_first(["device:" + nearest, "select:" + nearest] if focus_id.begins_with("device:") else ["select:" + nearest])
+	var selected: Node = null
+	for device in _devices:
+		var id: String = device.persistent_id
+		if controls.has("device:" + id): _pressed("device:" + id, device.enabled)
+		if id == selected_device: selected = device
+	if selected:
+		var state: String = "Ready" if selected.can_operate() else ("Disabled" if not selected.enabled else "Disconnected / damaged")
+		var activity := ""
+		if selected is CabinLightStrip: activity = "\nLighting: " + ("Powered" if selected.enabled and selected.can_operate() and connected_rv.interior_powered.cabin else "Off")
+		elif selected is BatterySocket: activity = "\nBattery %.1f / %.1f" % [connected_rv.current_power, connected_rv.max_power]
+		elif selected is CraftingStation: activity = "\nCraft queue %d / %d" % [selected.jobs.size(), selected.queue_capacity]
+		elif "props_being_crushed" in selected:
+			activity = "\nRecycling queue %d / %d" % [selected.props_being_crushed.size(), selected.queue_capacity]
+			if not selected.props_being_crushed.is_empty(): activity += "\n" + _bar(selected.crush_time - selected.props_being_crushed[0].timer, selected.crush_time)
+		_text("device:detail", "%s\n%s\nHP %s %.0f / %.0f\nMounted to: %s%s" % [_device_title(selected), state,
+			_bar(selected.current_health, selected.max_health), selected.current_health, selected.max_health, _mount_location(selected), activity])
+	else: _text("device:detail", "No installed equipment")
+	var tires := PackedStringArray()
+	var names := ["Front left", "Front right", "Rear left", "Rear right"]
+	for index in 4:
+		var state := "MISSING" if connected_rv.installed_wheels[index] == null else ("FLAT" if connected_rv.wheel_health[index] <= 0 else "%.0f HP" % connected_rv.wheel_health[index])
+		tires.append("%-12s %s %s" % [names[index], _bar(connected_rv.wheel_health[index], 100, 10), state])
+	_text("tires", "\n".join(tires) + "\nStop and face a damaged tire; hold H to repair or install a replacement wheel.")
+
+func _mount_location(device: Item) -> String:
+	var support: Node = device.mount_support
+	if support is RVStructurePanel: return RVTerminalPresenter.slot_name(support.mount_slot)
+	if support == connected_rv: return "Chassis"
+	return RVTerminalPresenter.display_name(support)
+
+func _device_title(device: Item) -> String:
+	var title := RVTerminalPresenter.display_name(device)
+	if device is CabinLightStrip and device.mount_support is RVStructurePanel:
+		var slot: String = device.mount_support.mount_slot
+		if slot.begins_with("roof_"): title += " / " + ["front", "middle", "rear"][int(slot.right(1))]
+	return title
+
+func _station() -> CraftingStation:
+	for device in _devices:
+		if is_instance_valid(device) and device is CraftingStation and device.persistent_id == _station_id: return device
+	return null
+
+func _refresh_crafting() -> void:
+	var items: Dictionary = connected_rv.get_all_items()
+	var lines := PackedStringArray()
+	var keys := items.keys()
+	keys.sort()
+	for key in keys: lines.append("%s: %d" % [RVTerminalPresenter.message(str(key)), items[key]])
+	_text("materials", "  |  ".join(lines) if not lines.is_empty() else "Storage empty")
+	var ids := PackedStringArray()
+	for device in _devices:
+		if device is CraftingStation: ids.append(device.persistent_id)
+	var selector: OptionButton = controls["craft:station"]
+	if ids != _station_ids or selector.item_count == 0:
+		_station_ids = ids
+		selector.clear()
+		for device in _devices:
+			if device is CraftingStation:
+				selector.add_item("%s %d / %s" % [RVTerminalPresenter.display_name(device), selector.item_count + 1, _mount_location(device)])
+				selector.set_item_metadata(selector.item_count - 1, device.persistent_id)
+		if not ids.has(_station_id): _station_id = ids[0] if not ids.is_empty() else ""
+		if ids.is_empty(): selector.add_item("No workstation installed")
+		else: selector.select(ids.find(_station_id))
+	selector.disabled = ids.is_empty()
+	var recipe := RecipeCatalog.find(selected_recipe)
+	var costs := PackedStringArray()
+	for key in recipe.costs: costs.append("%s: %d needed / %d owned" % [key, recipe.costs[key], connected_rv.get_item_count(key)])
+	_text("recipe:detail", "%s\n%s\nTime %.1fs   Power %.1f" % [RVTerminalPresenter.recipe_name(recipe), "\n".join(costs), recipe.duration, recipe.power_cost])
+	var station := _station()
+	var reason: String = station.craft_rejection_reason(selected_recipe) if station else "Workstation unavailable"
+	_text("craft:reason", reason if not reason.is_empty() else "Ready to queue")
+	controls["craft:add"].disabled = not reason.is_empty()
+	controls["craft:cancel"].disabled = station == null or station.jobs.is_empty()
+	var queue := PackedStringArray()
+	if station:
+		queue.append("QUEUE %d / %d" % [station.jobs.size(), station.queue_capacity])
+		for job in station.jobs:
+			var queued := RecipeCatalog.find(job.recipe)
+			queue.append("%s  %s %.1fs" % [RVTerminalPresenter.recipe_name(queued), _bar(queued.duration - job.remaining, queued.duration, 10), job.remaining])
+		if not station.last_error.is_empty(): queue.append(RVTerminalPresenter.message(station.last_error))
+	_text("queue", "\n".join(queue) if not queue.is_empty() else "Queue unavailable")
+
+func _construction() -> RVStructureConstruction:
 	if not is_instance_valid(connected_rv): return null
 	var slots := connected_rv.get_node_or_null("StructureSlots")
-	return slots.construction if slots and is_instance_valid(slots.get("construction")) else null
+	return slots.construction if slots else null
 
-func _build_structure_rows() -> void:
-	for slot in RVStructureSlots.layout():
-		var row := VBoxContainer.new()
-		structure_box.add_child(row)
-		var label := Label.new()
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(label)
-		var selector := OptionButton.new()
-		for type in RVStructureSlots.types_for_slot(slot.id):
-			var definition: Resource = RVStructureSlots.definition_for(type)
-			selector.add_item(definition.display_name)
+func _refresh_structure() -> void:
+	var slots := connected_rv.get_node_or_null("StructureSlots")
+	if not slots: return
+	var damaged := 0
+	var destroyed := 0
+	for id in slot_controls:
+		var part: Node = slots.panel(id)
+		if part.is_destroyed: destroyed += 1
+		elif part.current_health < part.max_health: damaged += 1
+		var short_name: String = {"front": "Front", "rear": "Rear"}.get(id, id.replace("left_", "L").replace("right_", "R").replace("roof_", "Roof "))
+		slot_controls[id].text = "[ %s %s ]" % [short_name, "X" if part.is_destroyed else "%.0f" % part.current_health]
+	_text("overview:structure", "%d ready   |   %d damaged   |   %d destroyed\nUse F5 to inspect, repair, rebuild or convert a part." % [11 - damaged - destroyed, damaged, destroyed])
+	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d\nConstruction needs a stopped engine and an active tablet." % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS)])
+	var target: Node = slots.panel(selected_slot)
+	var selector: OptionButton = controls["structure:type"]
+	if _type_slot != selected_slot:
+		_type_slot = selected_slot
+		selector.clear()
+		for type in RVStructureSlots.types_for_slot(selected_slot):
+			selector.add_item(RVTerminalPresenter.type_name(type))
 			selector.set_item_metadata(selector.item_count - 1, type)
-		row.add_child(selector)
-		selector.item_selected.connect(func(_index: int): _refresh_structures())
-		structure_rows[slot.id] = {"label": label, "title": slot.label, "selector": selector}
-		var actions := HFlowContainer.new()
-		actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(actions)
-		_add_structure_button(actions, row, slot.id, "repair", "維修")
-		_add_structure_button(actions, row, slot.id, "rebuild", "重建選定型態")
-		if RVStructureSlots.types_for_slot(slot.id).size() > 1:
-			_add_structure_button(actions, row, slot.id, "convert", "變更選定型態")
+			if type == target.definition.type_id: selector.select(selector.item_count - 1)
+	var type: String = str(selector.get_selected_metadata())
+	var dependents: PackedStringArray = target.dependent_names()
+	_text("structure:detail", "%s\n%s\nHP %s %.0f / %.0f\n%s" % [RVTerminalPresenter.slot_name(selected_slot), RVTerminalPresenter.type_name(target.definition.type_id),
+		_bar(target.current_health, target.max_health), target.current_health, target.max_health,
+		RVTerminalPresenter.message("Attached equipment: " + ", ".join(dependents)) if not dependents.is_empty() else "No attached equipment"])
+	var construction: RVStructureConstruction = slots.construction
+	for operation in ["repair", "rebuild", "convert"]:
+		var chosen: String = "" if operation == "repair" else type
+		var definition: Resource = target.definition if operation == "repair" else RVStructureSlots.definition_for(type)
+		var reason: String = construction.rejection_reason(get_parent(), selected_slot, operation, chosen)
+		var show_action: bool = (operation == "rebuild" and target.is_destroyed) or (operation == "repair" and not target.is_destroyed) or (operation == "convert" and not target.is_destroyed and selector.item_count > 1)
+		controls["structure:" + operation].visible = show_action
+		_texts["structure:reason:" + operation].visible = show_action
+		controls["structure:" + operation].text = "[ %s / %d Metal Parts / %.1fs ]" % [operation.capitalize(), construction.operation_cost(operation, definition), construction.operation_seconds(operation, definition)]
+		controls["structure:" + operation].disabled = not reason.is_empty()
+		_text("structure:reason:" + operation, RVTerminalPresenter.message(reason) if not reason.is_empty() else "Ready")
+	_construction_row.visible = construction.is_building()
+	if construction.is_building():
+		_text("construction", _bar(construction.progress(), 1, 12) + " " + RVTerminalPresenter.message(construction.status_message()))
+		controls["structure:cancel"].disabled = construction.job.terminal != get_parent()
+	elif construction.last_message != _last_construction_message:
+		_last_construction_message = construction.last_message
+		_message = RVTerminalPresenter.message(construction.last_message)
 
-func _selected_type(slot: String) -> String:
-	var selector: OptionButton = structure_rows[slot].selector
-	return str(selector.get_item_metadata(selector.selected))
+func _can_write() -> bool:
+	return not _refreshing and is_management_active() and _owns_session()
 
-func _add_structure_button(actions: Container, row: VBoxContainer, slot: String, operation: String, label: String) -> void:
-	var button := Button.new()
-	var explanation := Label.new()
-	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explanation.add_theme_font_size_override("font_size", 20)
-	row.add_child(explanation)
-	button.pressed.connect(func():
-		var controller := _construction()
-		if controller:
-			var type := "" if operation == "repair" else _selected_type(slot)
-			var reason: String = controller.begin(get_parent(), slot, operation, type)
-			message.text = reason if not reason.is_empty() else "施工開始"
-			_refresh_structures())
-	actions.add_child(button)
-	structure_buttons.append({"button": button, "reason": explanation, "slot": slot, "operation": operation, "label": label})
+func _owns_session() -> bool:
+	var terminal := get_parent()
+	if not is_instance_valid(connected_rv) or not is_instance_valid(terminal.current_user): return false
+	var user: Node = terminal.current_user
+	if user.get("is_player_dead") == true: return false
+	if user.has_method("can_use_hands") and not user.can_use_hands(): return false
+	if user.has_method("get_player_mode") and user.get_player_mode() != user.PlayerMode.UI: return false
+	return terminal.can_operate() and terminal.get_connected_rv() == connected_rv and connected_rv.has_usable_power()
 
-func _refresh_structures() -> void:
-	var controller := _construction()
-	if not controller: return
-	structure_status.text = controller.status_message()
+func _toggle_engine() -> void:
+	if not _can_write(): return
+	var okay: bool = connected_rv.set_engine_running(not connected_rv.energy.engine_running)
+	_message = ("Engine started" if connected_rv.energy.engine_running else "Engine stopped") if okay else RVTerminalPresenter.message(connected_rv.engine_start_reason())
+	_refresh()
+
+func _set_light(kind: String, value: bool) -> void:
+	if not _can_write(): return
+	if kind == "headlights": connected_rv.headlights_requested = value
+	elif bool(connected_rv.interior_requested[kind]) != value: connected_rv.toggle_interior_light(kind)
+	_refresh()
+
+func _craft() -> void:
+	var station := _station()
+	if not _can_write() or not station: return
+	_message = "Queued " + RVTerminalPresenter.recipe_name(RecipeCatalog.find(selected_recipe)) if station.request_craft(selected_recipe) else RVTerminalPresenter.message(station.last_error)
+	_refresh()
+
+func _cancel_crafting() -> void:
+	var station := _station()
+	if not _can_write() or not station: return
+	station.cancel_jobs()
+	_message = "Queue cancelled; reserved materials refunded"
+	_refresh()
+
+func _begin_structure(operation: String) -> void:
+	if not _can_write(): return
+	var type: String = "" if operation == "repair" else str(controls["structure:type"].get_selected_metadata())
+	var reason := _construction().begin(get_parent(), selected_slot, operation, type)
+	_message = RVTerminalPresenter.message(reason) if not reason.is_empty() else "Construction started"
+	_refresh()
+
+func _cancel_construction() -> void:
+	var construction := _construction()
+	if not _can_write() or not construction or not construction.is_building() or construction.job.terminal != get_parent(): return
+	construction.cancel()
+	_refresh()
+
+func _inspect_structure() -> void:
 	var slots := connected_rv.get_node("StructureSlots")
-	for slot in structure_rows:
-		var target: Node = slots.panel(slot)
-		if not is_instance_valid(target): continue
-		var attached: PackedStringArray = target.dependent_names()
-		structure_rows[slot].label.text = "%s｜%s｜HP %.0f / %.0f｜%s\n附掛設備：%s" % [structure_rows[slot].title, target.equipment_name,
-			target.current_health, target.max_health, "已毀壞（空槽）" if target.is_destroyed else "完整" if target.current_health >= target.max_health else "受損",
-			"無" if attached.is_empty() else ", ".join(attached)]
-	for entry in structure_buttons:
-		var target: Node = slots.panel(entry.slot)
-		if not is_instance_valid(target):
-			entry.button.disabled = true
-			continue
-		var type: String = str(target.definition.type_id) if entry.operation == "repair" else _selected_type(entry.slot)
-		var definition: Resource = RVStructureSlots.definition_for(type)
-		var reason: String = controller.rejection_reason(get_parent(), entry.slot, entry.operation, "" if entry.operation == "repair" else type)
-		entry.button.text = "%s｜%d Metal Parts｜%.0f 秒" % [entry.label, controller.operation_cost(entry.operation, definition), controller.operation_seconds(entry.operation, definition)]
-		entry.reason.text = entry.label + "：" + reason
-		entry.reason.visible = not reason.is_empty()
-		entry.button.tooltip_text = reason
-		entry.button.disabled = not reason.is_empty()
+	for id in slot_controls:
+		var panel: Node = slots.panel(id)
+		if panel.is_destroyed or panel.current_health < panel.max_health:
+			selected_slot = id
+			break
+	select_page("structure")
 
-func _rebuild(devices: Array[Node]) -> void:
-	for box in [device_box, material_box, recipe_box]:
-		for child in box.get_children():
-			box.remove_child(child)
-			child.queue_free()
-	device_labels.clear()
-	recipe_buttons.clear()
-	for device in devices:
-		var row := HBoxContainer.new()
-		device_box.add_child(row)
-		var label := Label.new()
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(label)
-		device_labels[device.persistent_id] = label
-		if device.has_method("step_work") or device is CabinLightStrip:
-			var toggle := Button.new()
-			toggle.text = "On / off"
-			toggle.pressed.connect(func():
-				if is_instance_valid(device): device.set_enabled(not device.enabled))
-			row.add_child(toggle)
-		if device is CraftingStation:
-			var cancel := Button.new()
-			cancel.text = "Cancel queued jobs"
-			cancel.pressed.connect(func():
-				if is_instance_valid(device): device.cancel_jobs())
-			row.add_child(cancel)
-	for material: String in connected_rv.get_all_items():
-		var label := Label.new()
-		label.text = "%s: %d" % [material, connected_rv.get_item_count(material)]
-		material_box.add_child(label)
-	for recipe in RecipeCatalog.all():
-		var button := Button.new()
-		button.text = "Queue %s | %s | %.1f power | %.1fs" % [recipe.display_name, str(recipe.costs), recipe.power_cost, recipe.duration]
-		button.pressed.connect(func():
-			var station := _station()
-			if station:
-				station.request_craft(recipe.recipe_id)
-				message.text = station.last_error)
-		recipe_box.add_child(button)
-		recipe_buttons[recipe.recipe_id] = button
+func _status_lines() -> PackedStringArray:
+	if not is_instance_valid(connected_rv): return PackedStringArray(["RV unavailable"])
+	var rv := connected_rv
+	return PackedStringArray(["ENGINE %s" % ("RUNNING" if rv.energy.engine_running else "STOPPED"),
+		"FUEL %.1f / %.1f" % [rv.current_fuel, rv.max_fuel], "BATTERY %.1f / %.1f" % [rv.current_power, rv.max_power],
+		"SPEED %.1f m/s" % rv.linear_velocity.length(), "STORAGE %d / %d" % [rv.storage.used(), rv.storage.capacity],
+		RVTerminalPresenter.message(rv.energy.charging_status())])

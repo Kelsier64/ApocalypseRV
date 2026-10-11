@@ -29,10 +29,17 @@ func _ready() -> void:
 		if role == "Cap": continue
 		var full := _instance(template, skeleton, label, 1 << 17)
 		var local := _instance(template, skeleton, "Local_" + label, 1 << 20)
+		if label == "Part_torso__PLAYER_Mesh":
+			# Use the intact body's head cutoff for the injured local torso too.
+			# Full donor geometry still drives observers, wounds and shadows.
+			var local_key := "Local_" + label
+			if not mesh_cache.has(local_key): mesh_cache[local_key] = visual._build_local_body(full)
+			local.mesh = mesh_cache[local_key]
 		local.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var shadow := _instance(template, skeleton, "Shadow_" + label, 1 << 20)
 		shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
-		pieces.append({"part": part, "role": role, "full": full, "local": local, "shadow": shadow})
+		var hide_local: bool = label.get_slice("__", 1) in visual.LOCAL_HIDDEN_MESHES
+		pieces.append({"part": part, "role": role, "full": full, "local": local, "shadow": shadow, "hide_local": hide_local})
 	donor.free()
 	apply_body_state()
 
@@ -73,7 +80,7 @@ func apply_body_state() -> void:
 		var exists: bool = piece.part == "torso" or actor.body_state.has_part(piece.part)
 		var show_piece: bool = injured and (exists if piece.role == "Part" else not exists)
 		piece.full.visible = show_piece
-		piece.local.visible = show_piece and piece.part != "head" and not actor.is_player_dead
+		piece.local.visible = show_piece and piece.part != "head" and not piece.hide_local and not actor.is_player_dead
 		piece.shadow.visible = show_piece
 
 func detach_part(part: StringName, context: Dictionary) -> Node3D:

@@ -23,21 +23,23 @@ func run() -> void:
 	rv.interior_requested = {"cabin": false, "work": false, "service": false}
 	rv.energy.step(rv, 0, 1)
 	var baseline := rv.energy.load_rate
-	var console: Node = rv.get_node("TabletScreen").ui_instance
-	console.on_open()
-	var cabin_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "車內照明開關")
-	check(cabin_buttons.size() == 1, "Console exposes the cabin lighting control")
-	var work_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "工作燈開關")
-	var service_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "維修燈開關（開蓋後照明）")
-	check(work_buttons.is_empty() and service_buttons.size() == 1, "Console removes retired work lamp switch and retains engine service lighting control")
-	if cabin_buttons.is_empty(): quit(1); return
-	cabin_buttons[0].pressed.emit()
+	var player: Node3D = load("res://player/player.tscn").instantiate()
+	world.add_child(player)
+	player.position = Vector3(20, 1, 0)
+	player.set_physics_process(false)
+	var tablet: Item = rv.get_node("TabletScreen")
+	tablet.interact_hold(player)
+	var console: Node = tablet.ui_instance
+	check(player.in_ui_mode and tablet.current_user == player, "Light controls have a real tablet operator")
+	console.select_page("equipment")
+	check(console.controls["cabin"] is CheckButton and console.controls["service"] is CheckButton, "Console exposes native cabin and engine service light controls")
+	console.controls["cabin"].button_pressed = true
 	rv.energy.step(rv, 0, 1)
 	check(is_equal_approx(rv.energy.load_rate - baseline, 0.06), "Console request powers exactly two strips")
-	var strip_controls: Array = console.device_labels[front.persistent_id].get_parent().find_children("*", "Button", true, false)
-	check(strip_controls.size() == 1, "Console also controls each light equipment item")
-	if strip_controls.is_empty(): quit(1); return
-	strip_controls[0].pressed.emit()
+	console.select_page("equipment")
+	var strip_control: CheckButton = console.controls["device:" + front.persistent_id]
+	check(strip_control.button_pressed, "Console also controls each installed light by persistent identity")
+	strip_control.button_pressed = false
 	rv.energy.step(rv, 0, 1)
 	await process_frame
 	check(is_equal_approx(rv.energy.load_rate - baseline, 0.03) and not front.get_node("CabinLighting").lamps[0].visible and rear.get_node("CabinLighting").lamps[0].visible, "Disabled strip goes dark and stops its own load")
@@ -47,6 +49,7 @@ func run() -> void:
 	rv.energy.step(rv, 0, 1)
 	await process_frame
 	check(not rv.interior_powered.cabin and is_equal_approx(rv.energy.load_rate, baseline), "No operational strips means no hidden cabin light or draw")
+	tablet._close_ui()
 	front.confirm_placement(rv.global_transform * Transform3D(Basis.IDENTITY, Vector3(0.5, 2.44, 0)), rv, rv.get_node("RoofMiddle"))
 	front.set_enabled(true)
 	rear.current_health = rear.max_health

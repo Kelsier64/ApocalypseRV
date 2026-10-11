@@ -110,23 +110,27 @@ func _run() -> void:
 	tablet.interact_hold(player)
 	expect(player.in_ui_mode, "Tablet opens")
 	var tablet_ui: Node = tablet.ui_instance
-	expect(tablet_ui.charging_toggle.button_pressed and tablet_ui.charging_threshold.value == 80.0 and tablet_ui.charging_reserve.value == 5.0, "Tablet displays the RV's charging defaults")
+	tablet_ui.select_page("energy")
+	var charging_toggle: CheckButton = tablet_ui.controls["charging_enabled"]
+	var charging_threshold: SpinBox = tablet_ui.controls["charging_threshold"]
+	var charging_reserve: SpinBox = tablet_ui.controls["charging_reserve"]
+	expect(charging_toggle.button_pressed and charging_threshold.value == 80.0 and charging_reserve.value == 5.0, "Tablet displays the RV's charging defaults")
 	rv.max_fuel = 160.0
 	rv.energy.fuel_reserve = 150.0
 	tablet_ui.on_open()
-	expect(tablet_ui.charging_reserve.value == 150.0, "Tablet supports saved reserve settings on a larger fuel tank")
+	expect(charging_reserve.value == 150.0 and rv.energy.fuel_reserve == 150.0, "Tablet supports saved reserve settings on a larger fuel tank without emitting changes")
 	rv.max_fuel = 100.0
 	rv.energy.fuel_reserve = 5.0
 	tablet_ui.on_open()
-	expect(rv.energy.fuel_reserve == 5.0 and tablet_ui.charging_reserve.value == 5.0, "Refreshing a tablet with a smaller fuel capacity cannot overwrite the RV reserve")
-	tablet_ui.charging_toggle.button_pressed = false
-	tablet_ui.charging_threshold.value = 65.0
-	tablet_ui.charging_reserve.value = 17.0
+	expect(rv.energy.fuel_reserve == 5.0 and charging_reserve.value == 5.0, "Refreshing a tablet with a smaller fuel capacity cannot overwrite the RV reserve")
+	charging_toggle.button_pressed = false
+	charging_threshold.value = 65.0
+	charging_reserve.value = 17.0
 	expect(not rv.energy.charging_enabled and not rv.energy.charging and rv.energy.recharge_below == 0.65 and rv.energy.fuel_reserve == 17.0, "Tablet controls update intrinsic charging settings on the connected RV")
 	expect(VehicleSnapshot.capture(rv).charging == {"enabled": false, "charging": false, "fuel_reserve": 17.0, "recharge_below": 0.65}, "Tablet charging choices enter the vehicle save payload")
-	tablet_ui.charging_toggle.button_pressed = true
-	tablet_ui.charging_threshold.value = 80.0
-	tablet_ui.charging_reserve.value = 5.0
+	charging_toggle.button_pressed = true
+	charging_threshold.value = 80.0
+	charging_reserve.value = 5.0
 	tablet.take_damage(1000.0)
 	expect(player.in_ui_mode and not tablet.is_destroyed, "Immune tablet remains usable after damage")
 	tablet.detach_from_support()

@@ -56,3 +56,13 @@ PrintedPlayerBody 在原出料位置沒有完整站立空間時，改尋找機�
 完成後身體在原製作台上，機架慢降；下一具需等台面清空。連蹲姿都塞不下或台面占用時維持已付款工作，提示清空台面與上方；不放在地板，不再扣款或重複生成。已更新 cabin 與 printed_player 測試，覆蓋台上蹲姿預覽／實體、真實 E、低頂維持蹲姿、離台站起、占床等待、局部低頂不改道、姿勢交換及舊／新身體快照。
 
 本輪最終統一 runner：test_fabricator_cabin、test_crafting_print、test_printed_player、test_player_crouch、test_player_carry、test_item_persistence、test_rv_checkpoint、test_rv_resource_cycle 八項與主場景 smoke 通過。原生 Forward+ 主世界兩次真實 20 秒列印回放通過：台上蹲姿生成、實際 E 切換維持蹲姿、屋頂阻止起立、實際 move_back 輸入走下台面後站起及第二具台上出料。
+
+## 水平回位與車內高物件
+
+水平 X／Z 改以 0.65m/s 平滑回位，抵達停靠位置後才以 0.45m/s 下降；完成、取消及接續較矮工作均不瞬移或提前下降。偏移列印的噴頭行程仍限制在實體滑軌範圍。移除製作台上的 Status Label3D 與其更新邏輯，必要操作文字留在既有英文介面。
+
+一般物品開始工作時依真正碰撞體選原姿、繞 X 或 Z 旋轉 90 度及有限台面偏移；保存整數 print_orientation／print_offset，預覽與交付共用同一姿態。正式房車中的原比例輪胎平放、中心右移 0.25m／前移 0.12m，避開完整車頂、牆、梯子及機柱。選姿忽略暫時占床的未固定物品／角色，交付仍檢查全部碰撞，因此連續兩個輪胎不會因第一件尚未取走而錯選直立姿態。固定障礙讓所有姿態都塞不下時，等待清空、不走時間、不耗電且不建立錯誤預覽；已選姿態的工作保持姿態，完成受阻仍等待且不重扣。舊 remaining=0 工作可首次選姿後恢復。
+
+本輪 Godot 4.7.2 runner：test_print_output_fit、test_crafting_print、test_fabricator_cabin、test_printed_player、test_rv_checkpoint、test_item_persistence、test_rv_resource_cycle、test_rv_engine、test_rv_tablet_ui 九項及主場景 smoke 通過。cabin 舊測試假設立即開始下降，已改為先等待水平回位，再檢查慢降；該項與 crafting_print 重跑通過。新測試涵蓋雙輪胎、拾取解除下一件阻塞、半程／完成存檔、初始全堵等待、清障重試、不重扣與不重複生成。
+
+原生 Forward+ 回放：兩軸每幀位移有速率上限，水平退開後才下降；正式 main_world seed 42 保留完整房車，兩次真實 5 秒輪胎製作、第一件占床等待、實際 interact 輸入拾取以及第二件平放交付全部通過。未驗收行車中列印或任意擺設下所有物件皆可容納。

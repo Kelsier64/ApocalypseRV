@@ -15,15 +15,45 @@ func _ready() -> void:
 	add_to_group(Groups.CRAFTING_STATIONS)
 	_sync_print_visual()
 
-func request_craft(recipe_id: String) -> bool:
+## Read-only eligibility used by both the terminal and the transaction.
+## Resolve ancestry without refreshing Item's connection cache or registry.
+func craft_rejection_reason(recipe_id: String) -> String:
 	var recipe := RecipeCatalog.find(recipe_id)
-	if recipe == null or not can_operate() or _committing:
+	if recipe == null or _committing or not _craft_service_ready(self):
+		return "Workstation unavailable"
+	var rv := RVConnection.resolve(get_parent())
+	if rv == null:
+		return "Workstation unavailable"
+	if jobs.size() >= queue_capacity:
+		return "Queue full"
+	# Chassis.current_power finds a socket through Item.can_operate(), which may
+	# refresh a connection and emit registry signals. Read the same first usable
+	# installed battery directly so this query never changes service ownership.
+	var charge := 0.0
+	for device: Node in rv.get_equipment():
+		if device is BatterySocket and _craft_service_ready(device) and device.installed_battery != null:
+			charge = device.installed_battery.charge
+			break
+	if charge < maxf(recipe.power_cost, 0.0):
+		return "Insufficient battery charge"
+	if not rv.has_materials(recipe.costs):
+		return "Insufficient materials"
+	return ""
+
+func _craft_service_ready(item: Item) -> bool:
+	return not item.presentation_only and item.is_fixed and item.enabled and not item.support_lost and not item.is_being_placed and not item.is_destroyed and item.current_health > 0.0 and RVConnection.resolve(item.get_parent()) != null
+
+func request_craft(recipe_id: String) -> bool:
+	var rejection := craft_rejection_reason(recipe_id)
+	if not rejection.is_empty():
+		last_error = rejection
+		return false
+	var recipe := RecipeCatalog.find(recipe_id)
+	var rv := get_connected_rv()
+	# Keep final service and power validation adjacent to the synchronous commit.
+	if not can_operate() or rv == null:
 		last_error = "Workstation unavailable"
 		return false
-	if jobs.size() >= queue_capacity:
-		last_error = "Queue full"
-		return false
-	var rv := get_connected_rv()
 	if not rv.has_usable_power(recipe.power_cost):
 		last_error = "Insufficient battery charge"
 		return false
@@ -44,6 +74,11 @@ func step_work(delta: float) -> void:
 	if recipe == null:
 		cancel_jobs()
 		return
+	if recipe.recipe_id != "printed_player" and not job.has("print_orientation"):
+		_sync_print_visual()
+		if not job.has("print_orientation"):
+			last_error = "Output blocked"
+			return
 	var elapsed := minf(delta, job.remaining)
 	var power_needed := minf(job.power, recipe.power_cost * elapsed / maxf(recipe.duration, 0.001))
 	if power_needed > 0.0 and not consume_rv_power(power_needed):
@@ -55,10 +90,10 @@ func step_work(delta: float) -> void:
 		# Show the finished height before clearing/changing jobs, even when the
 		# final work update consumes a large delta. The rig then retracts slowly.
 		_sync_print_visual()
-		if spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false))): jobs.pop_front()
+		if spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false)), int(job.get("print_orientation", 0)), int(job.get("print_offset", 0))): jobs.pop_front()
 	_sync_print_visual()
 
-func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false) -> bool:
+func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false, orientation: int = -1, offset_index: int = 0) -> bool:
 	if _committing or not can_operate():
 		last_error = "Workstation unavailable"
 		return false
@@ -81,11 +116,16 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		last_error = "Invalid output"
 		return false
 	if item is PrintedPlayerBody: item.set_crouching(crouching)
-	var output := spawn_marker.global_transform
-	# Position the bottom of the actual product above the output marker. A
-	# fixed centre offset put tall cans into the preinstalled tablet collider.
-	output.origin += global_basis.y * CraftingPrintVisual.output_lift(item)
-	if not CraftingOutputPlacement.is_clear(self, item, output, true) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output, crouching)):
+	if orientation < 0 and not item is PrintedPlayerBody:
+		var selected := CraftingOutputPlacement.select_pose(self, item)
+		if selected.is_empty():
+			last_error = "Output blocked"
+			item.free()
+			return false
+		orientation = selected.print_orientation
+		offset_index = selected.print_offset
+	var output := CraftingOutputPlacement.output_pose(item, spawn_marker.global_transform, maxi(orientation, 0), offset_index)
+	if not CraftingOutputPlacement.is_clear(self, item, output, false) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output, crouching)):
 		last_error = "Output blocked: clear print bed and overhead space" if item is PrintedPlayerBody else "Output blocked"
 		item.free()
 		return false
@@ -148,4 +188,13 @@ func _sync_print_visual() -> void:
 		var output := spawn_marker.global_transform
 		output.origin += global_basis.y * 0.06
 		jobs[0]["crouching"] = not CraftingOutputPlacement.body_can_stand(self, output)
+	if not jobs.is_empty() and jobs[0].recipe != "printed_player" and not jobs[0].has("print_orientation"):
+		var recipe := RecipeCatalog.find(jobs[0].recipe)
+		if recipe != null:
+			var item := (load(recipe.scene_path) as PackedScene).instantiate() as Item
+			jobs[0].merge(CraftingOutputPlacement.select_pose(self, item))
+			item.free()
+	if not jobs.is_empty() and jobs[0].recipe != "printed_player" and not jobs[0].has("print_orientation"):
+		print_visual.sync_job({}, spawn_marker.transform)
+		return
 	print_visual.sync_job(jobs[0] if not jobs.is_empty() else {}, spawn_marker.transform)

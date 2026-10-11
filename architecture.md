@@ -212,7 +212,7 @@ ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材�
 - `IndustrialArt` 快取室外 StandardMaterial3D 與 256px 程序材質；兩張原創生成紋理位於 `assets/materials/industrial/`，Godot 匯入限制為 512px、使用 mipmap。室外建築以 mesh override 改外觀，不能修改室內共用的 POI 材質資源。
 - RV 的共享掉漆材質維持 StandardMaterial3D；PanelWear／EngineAppearance 使用 detail multiply 疊加損傷，保留原本貼圖。健康狀態仍是老舊外觀，損傷／修復由原耐久資料驅動。
 - CabinLightStrip 是獨立 Item；新車兩條各依附車頂，CabinLighting 只管理本條燈光。VehicleEnergy 每有效燈條支付 0.03/s，控制台提供總開關及逐條停用。拆下、損壞、移動或無電時熄滅；車頂排霧仍由 CabinAir 負責。
-- IndustrialTheme 統一背包、生命、駕駛 HUD、平板及道具箱配色、方角框線、按鈕焦點。保留原字體與中文 fallback、資訊布局、互動及原生 UI 解析度。
+- IndustrialTheme 統一背包、生命、駕駛 HUD 及道具箱配色、方角框線與按鈕焦點，這些介面保留原字體與中文 fallback。平板另用 RVTerminalTheme 的英文等寬終端配色及字元框線；所有 Canvas UI 維持原生解析度。
 - 本輪不改生成版本、地形／導航／碰撞或存檔格式；副本的 3D 材質與照明不在範圍內。驗證見 `docs/validation/2026-09-17-industrial-art.md`。
 
 2026-10-11 玩家快捷欄使用六個方形格子，沒有共用背景托盤；持有物品時只在其選取格上方顯示名稱，空手時不顯示名稱。格內有物品圖示、數字鍵與選取框，大型物品標示 `2H`，選取手電筒時顯示電量及開關狀態；手槍與彈藥盒顯示格內彈量，手持手槍時顯示備彈、換彈與使用狀態。`InventoryItemIcons` 依物品 `scene_path` 對應 `assets/inventory/` 的透明 PNG 快照，快照取自遊戲實際 3D 模型；未知物品顯示通用 SVG 圖示，不將 Texture 寫入背包或存檔。快捷欄只讀取預載紋理，不在執行時渲染模型或建立 3D Viewport。所有快捷欄裝飾忽略滑鼠輸入，放置操作仍由 Player 處理；駕駛時隱藏、離座恢復。顯示契約由 [test_inventory_ui](tests/test_inventory_ui.gd) 覆蓋，放置預覽保留圖示由 [test_item_player](tests/test_item_player.gd) 覆蓋。
@@ -345,6 +345,8 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 玩家 `enter_*`／`exit_*` 授權 UI、座位與放置，呼叫方須尊重拒絕。DEAD 阻擋輸入／移動；平板和座位在玩家死亡或設備失效時釋放模式。
 
+TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟預設 TUI；英文管理頁為 Overview、Energy、Equipment、Crafting、Structure。隱藏 Ctrl+C／Ctrl+D 退出 TUI，q 無綁定，Esc 始終關閉整台平板；切換及關閉須清理獨立 PopupMenu，事件由目前與 popup viewport 消耗。退出 UI 捕捉仍按住的遊戲操作，放開後才恢復。shell 起始只有提示符，沒有 banner、提示或按鈕；歷史及輸出有上限，補全不派送命令。RVTerminalCommands 以明確登錄表解析純文字及回傳允許的 UI action，提供 help／status／rvctl／clear／exit；cheat 僅回報未實作，沒有作弊 handler，不執行 OS 命令或任意程式。RVTerminalPresenter 只做英文呈現，原始服務狀態及交易仍由既有 owner 管理。施工要求 TUI 開啟，退出只取消本終端授權的施工；製作工作屬 CraftingStation，退出或關閉平板仍繼續。
+
 
 <a id="section-5"></a>
 
@@ -465,7 +467,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - `RVStructurePanel`（`equipment/rv_panel.gd`）直接繼承凍結 `RigidBody3D`；`RVStructureDefinition` 是獨立 Resource，提供穩定型態 ID、槽型、場景、耐久、重量、施工參數及允許轉換。均不繼承設備類別。沒有 F 放置或 H 維修契約；`take_damage()` 逐片受傷，歸零移除外觀／碰撞／攻擊資格但保留空槽。
 - `rv_door.gd` 繼承結構類別；門框和可旋轉門扇碰撞同屬根剛體，共用耐久。E 開關與各葉角度保留，開關預檢完整掃掠路徑，動畫中逐步複查阻擋。怪物門框選敵使用結構契約。
 - 設備支撐可為底盤、Item 或 RVStructurePanel；板件毀壞發送 removing，附掛設備停機並以車輛點速度連鎖掉落。地板網格與碰撞屬底盤固定部分，重量包含在固定底盤中，不提供獨立耐久或施工；安裝在地板的物品直接引用底盤支撐。
-- `RVStructureConstruction` 提供 begin／rejection_reason／cancel／is_building，平板兩分頁為設備與資源、車體結構；每槽顯示耐久、附掛設備、型態選單與操作原因。維修 2 Metal Parts／2 秒補 60 HP，重建 6／6 秒滿血，側牆門及普通／左側開孔屋頂互換 2／4 秒保留比例，新門關閉。一車一項，熄火、速度 ≤ 0.5 m/s、有電且平板服務有效；受擊、關閉、掉落、斷電、發動／超速中止。完成前重驗材料、目標、依附與碰撞，通過才扣料提交；不提供主動拆除空槽、施工保存或進度還原。
+- `RVStructureConstruction` 提供 begin／rejection_reason／cancel／is_building，平板五頁為 Overview、Energy、Equipment、Crafting、Structure，施工位於 Structure；每槽顯示耐久、附掛設備、型態選單與操作原因。維修 2 Metal Parts／2 秒補 60 HP，重建 6／6 秒滿血，側牆門及普通／左側開孔屋頂互換 2／4 秒保留比例，新門關閉。一車一項，熄火、速度 ≤ 0.5 m/s、有電、操作者 UI 所有權及平板服務有效，且 is_management_active() 為真；受擊、退出 TUI、關閉、掉落、斷電、發動／超速中止該平板的施工，切換分頁不取消。完成前重驗材料、目標、依附與碰撞，通過才扣料提交；不提供主動拆除空槽、施工保存或進度還原。
 - 變型須清空直接／間接依附，維修不用；重建／變型以快取候選碰撞檢查全部物理層，排除舊部件與底盤，避免包住角色或物件。平板在 `_ready` 關閉可摧毀旗標並覆寫傷害，不加入怪物可攻擊群組；仍是可搬移、掉落與需供電的設備。
 - `test_rv_structure_modules.gd` 覆蓋固定槽、E 門扇、阻擋、獨立破壞、設備掉落、固定地板與保存；`test_structure_construction.gd` 驗證扣料時機、全部中止條件、比例、重建、依附與碰撞及真實平板按鈕／關閉，並確認地板沒有施工槽位或按鈕。可見場景為 `rv_structure_playground.tscn`，歷史門測試場保留 E 開關與破壞捷徑。
 
@@ -477,7 +479,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - 固定 EngineBay 持有唯一安裝狀態。Chassis.exchange_engine／remove_engine 原子轉移同格背包，service_reason 共用停穩／熄火／手煞車／開蓋條件。Chassis.take_damage 轉交引擎，has_working_engine 和 engine_start_reason 統一啟動條件；沒有底盤 HP 或整車毀損旗標。
 - RepairOperation 對引擎使用 repair_requirement 契約；鎖住目標、引擎 ID 與維修包 ID，連續 3 秒後再次驗證並消耗道具，+150 耐久。一般設備／輪胎沿用材料路徑。
 - VehicleEnergy 依引擎定義計算基礎油耗；只有有效引擎能運轉，並由底盤內建充電功能替插槽電池充電。處理充電、待機、工作後統一支付車燈負載，lamps_powered 為實際供電結果。
-- VehicleStatus.read 回傳 8 項圖示／等級／文字；CockpitVisual、VehicleDashboard、TabletUI 讀同一結果，沒有副本數值。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。
+- VehicleStatus.read 回傳 8 項圖示／等級／文字；CockpitVisual、VehicleDashboard、TabletUI 讀同一結果，沒有副本數值；RVTerminalPresenter 僅翻譯英文顯示名稱及訊息，不改 domain owner 的原始訊息、交易或狀態。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
@@ -485,8 +487,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
-- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
-- CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
+- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物旋轉後碰撞 AABB 底部計算出料高度。一般物品依空間嘗試原姿與兩軸 90 度平放，選擇有台面支撐的小幅偏移；工作保存固定姿態，預覽與實體共用變換，輪胎可在完整房車頂下平放交付。選姿保留牆頂與機台碰撞，暫時占床的未固定物品不改變下一件姿態；交付仍檢查全部碰撞。完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
+- CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。完成／取消時水平兩軸以 0.65m/s 平滑回位，停靠後才以 0.45m/s 下降；偏移成品的加工路徑仍限制在實體滑軌行程內。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
 
 #### 新增驗證入口
 
@@ -496,10 +498,13 @@ EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前�
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
-VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，舊 work 請求欄位僅保留存檔相容；照明只透過控制台控制；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
+VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，舊 work 請求欄位僅保留存檔相容；Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
 
 | 測試 | 覆蓋 |
 |---|---|
+| test_terminal_commands.gd | 純文字解析、明確派送、唯讀補全、保留 cheat、非法輸入／結果及輸出上限 |
+| test_rv_terminal_presenter.gd | 英文名稱與原因呈現、未知訊息處理及原始服務狀態保持 |
+| test_rv_tablet_ui.gd | 五頁鍵盤／滑鼠、shell／歷史／補全、隱藏退出鍵、Esc／popup 所有權、施工取消及製作佇列獨立生命週期 |
 | test_rv_engine.gd | 預裝、引擎所有權、滿背包交換、大型道具、故障服務、維修、性能差、車燈、v5 往返、舊版拒絕與實際引擎製作 |
 | test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，無碰撞動畫／占用操作／坡度、驅動互鎖、安全離座與自由放置 |
 | test_rv_checkpoint.gd | 磁碟往返：安裝／背包／倉庫／地面引擎 ID、型號、耐久，以及拒絕跨所有權重複 |

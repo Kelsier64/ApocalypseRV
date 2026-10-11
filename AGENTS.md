@@ -32,6 +32,10 @@ Godot: `C:\Users\evan4\AppData\Local\Programs\Godot\Godot.exe`. If the sandbox c
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
+## In-Game Text
+
+Use English for all in-game text. Keep it concise and necessary.
+
 ## Subagents
 
 Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks. Choose the subagent's reasoning effort based on the task's difficulty.
@@ -55,7 +59,7 @@ Close only your test window afterward. Report observed results separately from a
 
 ## Git
 
-- Before starting new work, ask the user whether to create a new branch. Create one only if the user agrees; otherwise continue on the current branch. Use the same branch for follow-ups.
+- Before starting new work, ask the user whether to create a new branch from origin/main. Create one only if the user agrees; otherwise continue on the current branch. Use the same branch for follow-ups.
 - Complete the work and validation, then ask the user for approval before pushing or creating/updating a PR.
 - Keep intermediate outputs gitignored from start to finish, including build/generation tools, screenshots, recordings, logs and backups. Deliver only necessary game assets, code, tests and concise docs; preserve unrelated local files.
 - Review `git status` and the diff, clean up task-generated temporary files and accidental changes, and commit all validated task changes. Preserve and report unrelated or pre-existing user changes.

@@ -5,84 +5,173 @@
 [ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
 [ext_resource type="Material" path="res://rv/visuals/cream.tres" id="cream"]
 [ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
-[ext_resource type="Material" path="res://rv/visuals/screen.tres" id="screen"]
+[ext_resource type="Material" path="res://rv/visuals/glass.tres" id="glass"]
 [ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
+[ext_resource type="Material" path="res://rv/visuals/rubber.tres" id="rubber"]
 
 [sub_resource type="BoxShape3D" id="c1"]
 size = Vector3(1.38, 1.98, 0.2)
 
-[sub_resource type="BoxMesh" id="m2"]
-size = Vector3(1.38, 1.98, 0.2)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m3"]
-size = Vector3(1.38, 0.72, 0.21)
-material = ExtResource("cream")
-
-[sub_resource type="BoxMesh" id="m4"]
-size = Vector3(1.38, 0.075, 0.215)
-material = ExtResource("orange")
-
-[sub_resource type="BoxMesh" id="m5"]
-size = Vector3(1.22, 0.57, 0.025)
-material = ExtResource("screen")
-
 [sub_resource type="BoxShape3D" id="c6"]
 size = Vector3(1.38, 1.98, 0.2)
-
-[sub_resource type="BoxMesh" id="m7"]
-size = Vector3(1.38, 1.98, 0.2)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m8"]
-size = Vector3(1.38, 0.72, 0.21)
-material = ExtResource("cream")
-
-[sub_resource type="BoxMesh" id="m9"]
-size = Vector3(1.38, 0.075, 0.215)
-material = ExtResource("orange")
-
-[sub_resource type="BoxMesh" id="m10"]
-size = Vector3(1.22, 0.57, 0.025)
-material = ExtResource("screen")
 
 [sub_resource type="BoxShape3D" id="c11"]
 size = Vector3(1.2, 0.12, 0.2)
 
-[sub_resource type="BoxMesh" id="m12"]
+[sub_resource type="BoxShape3D" id="c20"]
+size = Vector3(1.18, 1.8, 0.2)
+
+[sub_resource type="BoxMesh" id="detail_0"]
+size = Vector3(1.38, 0.67, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="detail_1"]
+size = Vector3(1.38, 0.08, 0.2)
+material = ExtResource("orange")
+
+[sub_resource type="BoxMesh" id="detail_2"]
+size = Vector3(1.38, 0.48, 0.2)
+material = ExtResource("teal")
+
+[sub_resource type="BoxMesh" id="detail_3"]
+size = Vector3(1.38, 0.12, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_4"]
+size = Vector3(1.38, 0.15, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_5"]
+size = Vector3(0.13, 0.48, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_6"]
+size = Vector3(0.028, 0.48, 0.19)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_7"]
+size = Vector3(1.064, 0.028, 0.19)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_8"]
+size = Vector3(1.064, 0.424, 0.012)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="detail_9"]
 size = Vector3(1.2, 0.12, 0.2)
 material = ExtResource("cream")
 
-[sub_resource type="BoxMesh" id="m13"]
-size = Vector3(1.18, 1.8, 0.2)
+[sub_resource type="BoxMesh" id="detail_10"]
+size = Vector3(0.006, 1.78, 0.18)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_11"]
+size = Vector3(1.176, 0.008, 0.18)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_12"]
+size = Vector3(1.18, 0.61, 0.2)
 material = ExtResource("teal")
 
-[sub_resource type="BoxMesh" id="m14"]
-size = Vector3(1.18, 0.1, 0.12)
-material = ExtResource("cream")
-
-[sub_resource type="BoxMesh" id="m15"]
-size = Vector3(1.18, 0.075, 0.212)
+[sub_resource type="BoxMesh" id="detail_13"]
+size = Vector3(1.18, 0.08, 0.2)
 material = ExtResource("orange")
 
-[sub_resource type="BoxMesh" id="m16"]
-size = Vector3(1.02, 0.48, 0.015)
-material = ExtResource("screen")
+[sub_resource type="BoxMesh" id="detail_14"]
+size = Vector3(1.18, 0.39, 0.2)
+material = ExtResource("teal")
 
-[sub_resource type="BoxMesh" id="m17"]
-size = Vector3(0.08, 0.22, 0.055)
+[sub_resource type="BoxMesh" id="detail_15"]
+size = Vector3(1.18, 0.08, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_16"]
+size = Vector3(1.18, 0.16, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_17"]
+size = Vector3(0.1, 0.48, 0.2)
+material = ExtResource("cream")
+
+[sub_resource type="BoxMesh" id="detail_18"]
+size = Vector3(0.924, 0.028, 0.19)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_19"]
+size = Vector3(0.924, 0.424, 0.012)
+material = ExtResource("glass")
+
+[sub_resource type="BoxMesh" id="detail_20"]
+size = Vector3(0.92, 0.22, 0.016)
 material = ExtResource("metal")
 
-[sub_resource type="BoxMesh" id="m18"]
-size = Vector3(1.02, 0.48, 0.015)
-material = ExtResource("screen")
+[sub_resource type="BoxMesh" id="detail_21"]
+size = Vector3(1.03, 0.022, 0.012)
+material = ExtResource("cream")
 
-[sub_resource type="BoxMesh" id="m19"]
-size = Vector3(0.08, 0.22, 0.055)
+[sub_resource type="BoxMesh" id="detail_22"]
+size = Vector3(0.14, 0.26, 0.012)
+material = ExtResource("rubber")
+
+[sub_resource type="BoxMesh" id="detail_23"]
+size = Vector3(0.12, 0.24, 0.012)
 material = ExtResource("metal")
 
-[sub_resource type="BoxShape3D" id="c20"]
-size = Vector3(1.18, 1.8, 0.2)
+[sub_resource type="BoxMesh" id="detail_24"]
+size = Vector3(0.045, 0.025, 0.033)
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="detail_25"]
+size = Vector3(0.039, 0.1, 0.022)
+material = ExtResource("rubber")
+
+[sub_resource type="CylinderMesh" id="detail_26"]
+top_radius = 0.016
+bottom_radius = 0.016
+height = 0.01
+radial_segments = 12
+rings = 1
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="detail_27"]
+size = Vector3(0.004, 0.013, 0.004)
+material = ExtResource("rubber")
+
+[sub_resource type="CylinderMesh" id="detail_28"]
+top_radius = 0.012
+bottom_radius = 0.012
+height = 0.006
+radial_segments = 6
+rings = 1
+material = ExtResource("metal")
+
+[sub_resource type="BoxMesh" id="detail_29"]
+size = Vector3(0.11, 0.115, 0.016)
+material = ExtResource("metal")
+
+[sub_resource type="CylinderMesh" id="detail_30"]
+top_radius = 0.022
+bottom_radius = 0.022
+height = 0.14
+radial_segments = 12
+rings = 1
+material = ExtResource("metal")
+
+[sub_resource type="CylinderMesh" id="detail_31"]
+top_radius = 0.01
+bottom_radius = 0.01
+height = 0.006
+radial_segments = 6
+rings = 1
+material = ExtResource("metal")
+
+[sub_resource type="CylinderMesh" id="detail_32"]
+top_radius = 0.026
+bottom_radius = 0.026
+height = 0.013
+radial_segments = 12
+rings = 1
+material = ExtResource("cream")
 
 [node name="rv_side_door" type="RigidBody3D"]
 script = ExtResource("script")
@@ -96,101 +185,360 @@ hinge_span = 1.2
 position = Vector3(-1.29, 0, 0)
 shape = SubResource("c1")
 
-[node name="Jamb-1" type="MeshInstance3D" parent="."]
-position = Vector3(-1.29, 0, 0)
-mesh = SubResource("m2")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="UpperJamb-1" type="MeshInstance3D" parent="."]
-position = Vector3(-1.29, 0.6, 0)
-mesh = SubResource("m3")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="Stripe-1" type="MeshInstance3D" parent="."]
-position = Vector3(-1.29, -0.28, 0)
-mesh = SubResource("m4")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="JambWindow-1" type="MeshInstance3D" parent="."]
-position = Vector3(-1.29, 0.6, 0.115)
-mesh = SubResource("m5")
-rotation_degrees = Vector3(0, 0, 0)
-
 [node name="JambCollision1" type="CollisionShape3D" parent="."]
 position = Vector3(1.29, 0, 0)
 shape = SubResource("c6")
-
-[node name="Jamb1" type="MeshInstance3D" parent="."]
-position = Vector3(1.29, 0, 0)
-mesh = SubResource("m7")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="UpperJamb1" type="MeshInstance3D" parent="."]
-position = Vector3(1.29, 0.6, 0)
-mesh = SubResource("m8")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="Stripe1" type="MeshInstance3D" parent="."]
-position = Vector3(1.29, -0.28, 0)
-mesh = SubResource("m9")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="JambWindow1" type="MeshInstance3D" parent="."]
-position = Vector3(1.29, 0.6, 0.115)
-mesh = SubResource("m10")
-rotation_degrees = Vector3(0, 0, 0)
 
 [node name="HeaderCollision" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.93, 0)
 shape = SubResource("c11")
 
+[node name="LeafCollision0" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.03, 0)
+shape = SubResource("c20")
+
+[node name="Jamb-1Lower" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, -0.655, 0)
+mesh = SubResource("detail_0")
+
+[node name="Jamb-1Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, -0.28, 0)
+mesh = SubResource("detail_1")
+
+[node name="Jamb-1Middle" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0, 0)
+mesh = SubResource("detail_2")
+
+[node name="Jamb-1Sill" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.3, 0)
+mesh = SubResource("detail_3")
+
+[node name="Jamb-1Top" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.915, 0)
+mesh = SubResource("detail_4")
+
+[node name="Jamb-1Post-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.915, 0.6, 0)
+mesh = SubResource("detail_5")
+
+[node name="Jamb-1Post1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.665, 0.6, 0)
+mesh = SubResource("detail_5")
+
+[node name="Jamb-1WindowSealSide-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.836, 0.6, 0)
+mesh = SubResource("detail_6")
+
+[node name="Jamb-1WindowSealRail-1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.374, 0)
+mesh = SubResource("detail_7")
+
+[node name="Jamb-1WindowSealSide1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.744, 0.6, 0)
+mesh = SubResource("detail_6")
+
+[node name="Jamb-1WindowSealRail1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.826, 0)
+mesh = SubResource("detail_7")
+
+[node name="Jamb-1WindowGlass" type="MeshInstance3D" parent="."]
+position = Vector3(-1.29, 0.6, 0)
+mesh = SubResource("detail_8")
+
+[node name="Jamb1Lower" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, -0.655, 0)
+mesh = SubResource("detail_0")
+
+[node name="Jamb1Stripe" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, -0.28, 0)
+mesh = SubResource("detail_1")
+
+[node name="Jamb1Middle" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0, 0)
+mesh = SubResource("detail_2")
+
+[node name="Jamb1Sill" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.3, 0)
+mesh = SubResource("detail_3")
+
+[node name="Jamb1Top" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.915, 0)
+mesh = SubResource("detail_4")
+
+[node name="Jamb1Post-1" type="MeshInstance3D" parent="."]
+position = Vector3(0.665, 0.6, 0)
+mesh = SubResource("detail_5")
+
+[node name="Jamb1Post1" type="MeshInstance3D" parent="."]
+position = Vector3(1.915, 0.6, 0)
+mesh = SubResource("detail_5")
+
+[node name="Jamb1WindowSealSide-1" type="MeshInstance3D" parent="."]
+position = Vector3(0.744, 0.6, 0)
+mesh = SubResource("detail_6")
+
+[node name="Jamb1WindowSealRail-1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.374, 0)
+mesh = SubResource("detail_7")
+
+[node name="Jamb1WindowSealSide1" type="MeshInstance3D" parent="."]
+position = Vector3(1.836, 0.6, 0)
+mesh = SubResource("detail_6")
+
+[node name="Jamb1WindowSealRail1" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.826, 0)
+mesh = SubResource("detail_7")
+
+[node name="Jamb1WindowGlass" type="MeshInstance3D" parent="."]
+position = Vector3(1.29, 0.6, 0)
+mesh = SubResource("detail_8")
+
 [node name="Header" type="MeshInstance3D" parent="."]
 position = Vector3(0, 0.93, 0)
-mesh = SubResource("m12")
-rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("detail_9")
+
+[node name="DoorSeal-1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.597, -0.03, 0)
+mesh = SubResource("detail_10")
+
+[node name="DoorSeal1" type="MeshInstance3D" parent="."]
+position = Vector3(0.597, -0.03, 0)
+mesh = SubResource("detail_10")
+
+[node name="HeaderSeal" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.865, 0)
+mesh = SubResource("detail_11")
 
 [node name="Leaf0" type="Node3D" parent="."]
 position = Vector3(-0.6, 0, 0)
 
-
 [node name="Skin" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(0.6, -0.03, 0)
-mesh = SubResource("m13")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="Top" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(0.6, 0.82, 0)
-mesh = SubResource("m14")
-rotation_degrees = Vector3(0, 0, 0)
+position = Vector3(0.6, -0.625, 0)
+mesh = SubResource("detail_12")
 
 [node name="Stripe" type="MeshInstance3D" parent="Leaf0"]
 position = Vector3(0.6, -0.28, 0)
-mesh = SubResource("m15")
-rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("detail_13")
 
-[node name="Window-1" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(0.6, 0.47, -0.111)
-mesh = SubResource("m16")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Waist" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.045, 0)
+mesh = SubResource("detail_14")
 
-[node name="Handle-1" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(1.0699999999999998, -0.18, -0.14)
-mesh = SubResource("m17")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="WindowSill" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.19, 0)
+mesh = SubResource("detail_15")
 
-[node name="Window1" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(0.6, 0.47, 0.111)
-mesh = SubResource("m18")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Top" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.79, 0)
+mesh = SubResource("detail_16")
 
-[node name="Handle1" type="MeshInstance3D" parent="Leaf0"]
-position = Vector3(1.0699999999999998, -0.18, 0.14)
-mesh = SubResource("m19")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="WindowPost-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.06, 0.47, 0)
+mesh = SubResource("detail_17")
 
-[node name="LeafCollision0" type="CollisionShape3D" parent="."]
-position = Vector3(0, -0.03, 0)
-shape = SubResource("c20")
+[node name="WindowPost1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.14, 0.47, 0)
+mesh = SubResource("detail_17")
+
+[node name="WindowSealSide-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.124, 0.47, 0)
+mesh = SubResource("detail_6")
+
+[node name="WindowSealRail-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.244, 0)
+mesh = SubResource("detail_18")
+
+[node name="WindowSealSide1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.076, 0.47, 0)
+mesh = SubResource("detail_6")
+
+[node name="WindowSealRail1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.696, 0)
+mesh = SubResource("detail_18")
+
+[node name="WindowGlass" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, 0.47, 0)
+mesh = SubResource("detail_19")
+
+[node name="KickPlate-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.76, -0.11)
+mesh = SubResource("detail_20")
+
+[node name="LowerBead-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.41, -0.109)
+mesh = SubResource("detail_21")
+
+[node name="LockGasket-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.11, -0.109)
+mesh = SubResource("detail_22")
+
+[node name="LockPlate-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.11, -0.121)
+mesh = SubResource("detail_23")
+
+[node name="HandleFoot-1-0.18" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.18, -0.143)
+mesh = SubResource("detail_24")
+
+[node name="HandleFoot-1-0.07" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.07, -0.143)
+mesh = SubResource("detail_24")
+
+[node name="PullGrip-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.125, -0.166)
+mesh = SubResource("detail_25")
+
+[node name="KeyBarrel-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.01, -0.137)
+mesh = SubResource("detail_26")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KeySlot-1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.01, -0.144)
+mesh = SubResource("detail_27")
+
+[node name="KickScrew-1-1-0.82" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.17, -0.82, -0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew-1-1-0.7" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.17, -0.7, -0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew-11-0.82" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.03, -0.82, -0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew-11-0.7" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.03, -0.7, -0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickPlate1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.76, 0.11)
+mesh = SubResource("detail_20")
+
+[node name="LowerBead1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.6, -0.41, 0.109)
+mesh = SubResource("detail_21")
+
+[node name="LockGasket1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.11, 0.109)
+mesh = SubResource("detail_22")
+
+[node name="LockPlate1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.11, 0.121)
+mesh = SubResource("detail_23")
+
+[node name="HandleFoot1-0.18" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.18, 0.143)
+mesh = SubResource("detail_24")
+
+[node name="HandleFoot1-0.07" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.07, 0.143)
+mesh = SubResource("detail_24")
+
+[node name="PullGrip1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.125, 0.166)
+mesh = SubResource("detail_25")
+
+[node name="KeyBarrel1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.01, 0.137)
+mesh = SubResource("detail_26")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KeySlot1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.04, -0.01, 0.144)
+mesh = SubResource("detail_27")
+
+[node name="KickScrew1-1-0.82" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.17, -0.82, 0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew1-1-0.7" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.17, -0.7, 0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew11-0.82" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.03, -0.82, 0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="KickScrew11-0.7" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(1.03, -0.7, 0.123)
+mesh = SubResource("detail_28")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingePlate0" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.069, -0.63, 0.11)
+mesh = SubResource("detail_29")
+
+[node name="HingeBarrel0" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, -0.63, 0.125)
+mesh = SubResource("detail_30")
+
+[node name="HingeScrew0-0.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, -0.666, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeScrew00.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, -0.594, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeCollar0" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, -0.575, 0.125)
+mesh = SubResource("detail_32")
+
+[node name="HingePlate1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.069, 0, 0.11)
+mesh = SubResource("detail_29")
+
+[node name="HingeBarrel1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, 0, 0.125)
+mesh = SubResource("detail_30")
+
+[node name="HingeScrew1-0.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, -0.036, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeScrew10.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, 0.036, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeCollar1" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, 0.055, 0.125)
+mesh = SubResource("detail_32")
+
+[node name="HingePlate2" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.069, 0.77, 0.11)
+mesh = SubResource("detail_29")
+
+[node name="HingeBarrel2" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, 0.77, 0.125)
+mesh = SubResource("detail_30")
+
+[node name="HingeScrew2-0.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, 0.734, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeScrew20.036" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.091, 0.806, 0.122)
+mesh = SubResource("detail_31")
+rotation_degrees = Vector3(90, 0, 0)
+
+[node name="HingeCollar2" type="MeshInstance3D" parent="Leaf0"]
+position = Vector3(0.035, 0.825, 0.125)
+mesh = SubResource("detail_32")
 
 [node name="HeaderSign" type="Label3D" parent="."]
 position = Vector3(0, 0.93, 0.115)

@@ -347,8 +347,17 @@ func test_lifecycle() -> void:
 	tablet.interact_hold(player)
 	check(player.in_ui_mode and tablet.current_user == player, "Production mounted tablet owns player input")
 	check(not menu.open_menu(), "Tablet ownership refuses settings entry")
+	var terminal_ui: Node = tablet.ui_instance
+	terminal_ui.select_page("energy")
+	terminal_ui.controls["charging_reserve"].get_line_edit().grab_focus()
 	await tap(KEY_ESCAPE)
-	check(not player.in_ui_mode and not player.settings_open, "Tablet Escape closes tablet without opening settings")
+	check(not player.in_ui_mode and not player.settings_open, "Tablet Escape closes a focused number field without opening settings")
+	tablet.interact_hold(player)
+	terminal_ui.enter_shell()
+	terminal_ui.shell_input.grab_focus()
+	check(player.in_ui_mode and not tablet.is_management_active() and not menu.open_menu(), "Shell retains tablet input ownership and refuses settings entry")
+	await tap(KEY_ESCAPE)
+	check(not player.in_ui_mode and not player.settings_open, "Shell Escape closes its focused input without opening settings")
 	var equipment: Item = rv_shell.get_node("Chassis/Scrapper")
 	var equipment_id := equipment.persistent_id
 	check(equipment.pickup(player).begins_with("已拾取"), "Production equipment enters inventory before placement")

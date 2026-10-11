@@ -33,6 +33,11 @@ func floor_box(at: Vector3, size: Vector3) -> StaticBody3D:
 func die_and_recover(label: String, expected_x := NAN) -> void:
 	var view: Basis = actor.camera.global_basis
 	var start_height: float = actor.camera.global_position.y
+	var visual: PlayerModelVisual = actor.get_node("Visuals")
+	var expected_death_shadows := 0
+	for mesh in visual.source_meshes:
+		if mesh.layers != PlayerModelVisual.FULL_BODY_LAYER:
+			expected_death_shadows += 1
 	actor.damage_cooldown = 0
 	actor.take_damage(1000)
 	actor._player_die() # Duplicate lethal calls must not restart or stack timers.
@@ -42,7 +47,7 @@ func die_and_recover(label: String, expected_x := NAN) -> void:
 	if is_finite(expected_x):
 		check(absf(actor.death_velocity.x - expected_x) < .001 and absf(control.bodies["pelvis"].linear_velocity.x - expected_x) < .2, label + " released platform velocity reaches the physical body once")
 	check(control.active and control.bodies.size() == 14 and actor.body_collision_shape.disabled, label + " physics replaces capsule")
-	check(not actor.get_node("Visuals").local_body.visible and actor.get_node("Visuals").death_shadows.size() == 5, label + " local tumbling torso is culled but shadows remain")
+	check(not visual.local_body.visible and visual.death_shadows.size() == expected_death_shadows, label + " local tumbling torso is culled but shadows remain")
 	check(actor.seated_in == null and not actor.in_ui_mode and not actor.is_grabbed(), label + " releases prior mode")
 	check(not actor.enter_ui_mode(), label + " dead actor cannot enter UI")
 	var anchor := actor.global_position

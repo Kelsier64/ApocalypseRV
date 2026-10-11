@@ -23,6 +23,8 @@ func _service_reason(terminal: Node) -> String:
 		return "平板未安裝或已失去服務"
 	if not is_instance_valid(terminal.current_user) or not is_instance_valid(terminal.ui_instance) or not terminal.ui_instance.visible:
 		return "請開啟平板介面"
+	if not terminal.has_method("is_management_active") or not terminal.is_management_active():
+		return "Open vehicle management before starting construction"
 	var user: Node = terminal.current_user
 	if user.get("is_player_dead") == true: return "操作者已死亡"
 	if user.has_method("can_use_hands") and not user.can_use_hands(): return "操作者無法使用平板"

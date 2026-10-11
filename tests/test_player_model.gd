@@ -72,6 +72,18 @@ func run() -> void:
 	for shadow in visual.local_shadows:
 		check(shadow.get_node(shadow.skeleton) == visual.skeleton, "Shadow proxy shares the production rig")
 		check(shadow.layers == PlayerModelVisual.LOCAL_VIEW_LAYER and shadow.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY, "Local proxy casts a complete shadow without visible geometry")
+	# These double-sided neck accessories can fill the downward crouch view.
+	# They must retain their complete observer geometry and local shadows.
+	for accessory_name: String in ["PLAYER_Skin_Collar", "PLAYER_Skin_Undershirt"]:
+		var accessory := visual.skeleton.get_node(accessory_name) as MeshInstance3D
+		check(accessory.visible and accessory.mesh.get_surface_count() > 0, "Complete neck accessory remains present: " + accessory_name)
+		check((camera.cull_mask & accessory.layers) == 0, "Local camera excludes neck accessory: " + accessory_name)
+		check((observer.cull_mask & accessory.layers) != 0, "Observer retains neck accessory: " + accessory_name)
+		var matching_shadows := 0
+		for shadow in visual.local_shadows:
+			if shadow.mesh == accessory.mesh and shadow.skin == accessory.skin and shadow.transform == accessory.transform:
+				matching_shadows += 1
+		check(matching_shadows == 1, "Neck accessory retains exactly one complete local shadow: " + accessory_name)
 	var original: MeshInstance3D = visual.skeleton.get_node("PLAYER_Mesh")
 	check(visual.local_body.skin == original.skin and visual.local_body.get_node(visual.local_body.skeleton) == visual.skeleton, "Local body shares the source skin and skeleton")
 	check(visual.local_body.layers == PlayerModelVisual.LOCAL_VIEW_LAYER and visual.local_body.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Local body is camera-specific without duplicate shadows")
@@ -147,7 +159,34 @@ func run() -> void:
 	check(visual.is_visible_in_tree() and visual.local_body.is_visible_in_tree(), "Seat preserves complete observer model and local body presentation")
 	actor.exit_seat_mode(Vector3(2, 0, 2))
 	check(visual.is_visible_in_tree() and visual.local_body.is_visible_in_tree(), "Exit seat restores all presentation")
+	check(actor.sever_part(&"left_arm", {}), "Arm-loss fixture activates the segmented body")
+	for accessory_name: String in ["PLAYER_Skin_Collar", "PLAYER_Skin_Undershirt"]:
+		var piece_count := 0
+		for piece: Dictionary in visual.dismemberment.pieces:
+			if String(piece.full.name) != "Part_torso__" + accessory_name: continue
+			piece_count += 1
+			check(not piece.local.visible, "Injured local view excludes neck accessory: " + accessory_name)
+			check(piece.full.visible and (observer.cull_mask & piece.full.layers) != 0, "Injured observer retains neck accessory: " + accessory_name)
+			check(piece.shadow.visible and piece.shadow.mesh == piece.full.mesh and piece.shadow.skin == piece.full.skin, "Injured neck accessory retains its complete shadow: " + accessory_name)
+		check(piece_count == 1, "Segmented body contains neck accessory: " + accessory_name)
+	var injured_torso_count := 0
+	for piece: Dictionary in visual.dismemberment.pieces:
+		if String(piece.full.name) != "Part_torso__PLAYER_Mesh": continue
+		injured_torso_count += 1
+		var full_count := 0
+		var view_count := 0
+		for surface in piece.full.mesh.get_surface_count():
+			full_count += piece.full.mesh.surface_get_array_index_len(surface) / 3
+		for surface in piece.local.mesh.get_surface_count():
+			view_count += piece.local.mesh.surface_get_array_index_len(surface) / 3
+		check(piece.local.visible and view_count > 0 and view_count < full_count, "Injured local torso retains body geometry while omitting its neck ring")
+		check(piece.local.skin == piece.full.skin and piece.shadow.mesh == piece.full.mesh, "Injured local torso preserves the source skin and complete shadow geometry")
+	check(injured_torso_count == 1, "Segmented body contains the complete main torso")
 	actor.restore_checkpoint_state({"items": [], "slot": 0, "health": 100.0, "transform": Transform3D(Basis(Vector3.UP, .7), Vector3(4, 0, 3))})
+	check(visual.local_body.visible and not visual.dismemberment.injured, "Intact checkpoint restores the original local body after arm loss")
+	for accessory_name: String in ["PLAYER_Skin_Collar", "PLAYER_Skin_Undershirt"]:
+		var accessory := visual.skeleton.get_node(accessory_name) as MeshInstance3D
+		check(accessory.visible and (camera.cull_mask & accessory.layers) == 0, "Restored neck accessory remains excluded only from the local camera: " + accessory_name)
 	check(visual.global_basis.z.dot(-actor.global_basis.z) > .999 and visual.local_shadows == local_shadows, "Checkpoint transform restores facing without duplicate proxies")
 	check(actor.camera.current and (actor.camera.cull_mask & PlayerModelVisual.LOCAL_VIEW_LAYER) != 0, "World transition keeps local camera contract")
 	var other_world := SubViewport.new()

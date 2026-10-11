@@ -68,6 +68,10 @@ static func valid_service(scene: String, service: Dictionary) -> bool:
 				for job in service.jobs:
 					if not job is Dictionary or not job.has_all(["recipe", "remaining", "power", "costs"]): return false
 					if job.has("crouching") and (not job.crouching is bool or job.recipe != "printed_player"): return false
+					if job.has("print_orientation") or job.has("print_offset"):
+						if job.recipe == "printed_player" or not job.has_all(["print_orientation", "print_offset"]): return false
+						if not job.print_orientation is int or job.print_orientation < 0 or job.print_orientation > 2: return false
+						if not job.print_offset is int or job.print_offset < 0 or job.print_offset >= CraftingOutputPlacement.OFFSETS.size(): return false
 					if not job.recipe is String or RecipeCatalog.find(job.recipe) == null or not VehicleSnapshot._number(job.remaining) or job.remaining < 0 or not VehicleSnapshot._number(job.power) or job.power < 0 or not job.costs is Dictionary or not MaterialStorage.new().valid_amounts(job.costs): return false
 			"inputs":
 				if scene != "res://equipment/scrapper.tscn" or not service.inputs is Array: return false
