@@ -1,80 +1,37 @@
 [gd_scene format=3]
-
-[ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
-[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
-[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
-
-[sub_resource type="BoxMesh" id="m1"]
-size = Vector3(0.1, 0.3, 0.1)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m2"]
-size = Vector3(0.1, 0.3, 0.1)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m3"]
-size = Vector3(0.1, 0.3, 0.1)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m4"]
-size = Vector3(0.1, 0.3, 0.1)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m5"]
-size = Vector3(1.15, 0.05, 0.06)
-material = ExtResource("orange")
-
-[sub_resource type="BoxMesh" id="m6"]
-size = Vector3(1.2, 0.1, 0.035)
-material = ExtResource("teal")
-
-[sub_resource type="BoxMesh" id="m7"]
-size = Vector3(0.48, 0.015, 0.4)
-material = ExtResource("dark")
+[ext_resource type="Script" path="res://equipment/fabricator_rig.gd" id="rig"]
+[ext_resource type="PackedScene" path="res://assets/models/fabricator/fabricator_base.glb" id="base"]
+[ext_resource type="PackedScene" path="res://assets/models/fabricator/fabricator_gantry.glb" id="gantry"]
+[ext_resource type="PackedScene" path="res://assets/models/fabricator/fabricator_carriage.glb" id="carriage"]
+[ext_resource type="PackedScene" path="res://assets/models/fabricator/fabricator_head.glb" id="head"]
 
 [node name="CraftingDetails" type="Node3D"]
+script = ExtResource("rig")
 
+[node name="Housing" parent="." instance=ExtResource("base")]
 
-[node name="Leg-0.48-0.29" type="MeshInstance3D" parent="."]
-position = Vector3(-0.48, 0.15, -0.29)
-mesh = SubResource("m1")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Masts" type="Node3D" parent="."]
 
-[node name="Leg-0.480.29" type="MeshInstance3D" parent="."]
-position = Vector3(-0.48, 0.15, 0.29)
-mesh = SubResource("m2")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Gantry" type="Node3D" parent="."]
+position = Vector3(0, 0.97, 0)
 
-[node name="Leg0.48-0.29" type="MeshInstance3D" parent="."]
-position = Vector3(0.48, 0.15, -0.29)
-mesh = SubResource("m3")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Frame" parent="Gantry" instance=ExtResource("gantry")]
 
-[node name="Leg0.480.29" type="MeshInstance3D" parent="."]
-position = Vector3(0.48, 0.15, 0.29)
-mesh = SubResource("m4")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Carriage" type="Node3D" parent="Gantry"]
+position = Vector3(0, 0, 0.55)
 
-[node name="BackRail" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.48, 0.35)
-mesh = SubResource("m5")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="CrossRail" parent="Gantry/Carriage" instance=ExtResource("carriage")]
 
-[node name="FrontEdge" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.4, -0.4)
-mesh = SubResource("m6")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="Head" type="Node3D" parent="Gantry/Carriage"]
+position = Vector3(0.54, 0, 0)
 
-[node name="Stencil" type="Label3D" parent="."]
-position = Vector3(0, 0.405, -0.422)
-text = "FABRICATOR"
-font_size = 48
-pixel_size = 0.0011
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
+[node name="Extruder" parent="Gantry/Carriage/Head" instance=ExtResource("head")]
+
+[node name="Status" type="Label3D" parent="."]
+position = Vector3(0, 0.42, -0.482)
 rotation_degrees = Vector3(0, 180, 0)
-
-[node name="OutputPad" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.507, 0)
-mesh = SubResource("m7")
-rotation_degrees = Vector3(0, 0, 0)
+text = "FAB / READY"
+font_size = 32
+pixel_size = 0.0005
+outline_size = 0
+modulate = Color(0.25, 0.85, 0.92, 1)

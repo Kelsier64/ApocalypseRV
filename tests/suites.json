@@ -4,6 +4,9 @@
     "quick": [
       "test_cabin_light_equipment",
       "test_combat_targeting",
+      "test_crafting_print",
+      "test_fabricator_cabin",
+      "test_printed_player",
       "test_equipment_lifecycle",
       "test_flashlight",
       "test_game_settings",
@@ -17,6 +20,8 @@
       "test_player_stamina",
       "test_road_spawns",
       "test_road_spawns_v9",
+      "test_route_pressure_state",
+      "test_rear_wreck_layout",
       "test_slender_speaker_spawns",
       "test_slender_speaker_fog_spawn",
       "test_slender_speaker_encounter",
@@ -88,6 +93,7 @@
       "test_pistol_combat",
       "test_pistol_persistence",
       "test_main_world_monsters",
+      "test_pressure_spawns",
       "test_monster_model",
       "test_moving_rv_climbing",
       "test_oil_barrel_drop",
@@ -97,6 +103,7 @@
       "test_player_carry",
       "test_player_item_release",
       "test_player_climb_animation",
+      "test_player_crouch",
       "test_player_death",
       "test_player_dismemberment",
       "test_player_head_camera",
@@ -146,6 +153,8 @@
       "test_raker_release_input",
       "test_road_spawn_checkpoint",
       "test_roadside_exploration",
+      "test_rear_wreck_traversal",
+      "test_deviation_pressure_checkpoint",
       "test_rv_boarding",
       "test_rv_braking",
       "test_rv_checkpoint",
@@ -181,4 +190,3 @@
     "test_raker_boarding": "Identical to test_moving_rv_climbing with its default raker fixture; retained for direct invocation."
   }
 }
-

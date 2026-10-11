@@ -7,11 +7,13 @@ var last_error: String = ""
 var _committing: bool = false
 var jobs: Array[Dictionary] = []
 @export var queue_capacity: int = 4
+@onready var print_visual: CraftingPrintVisual = $PrintVisual
 
 func _ready() -> void:
 	super._ready()
 	if presentation_only: return
 	add_to_group(Groups.CRAFTING_STATIONS)
+	_sync_print_visual()
 
 func request_craft(recipe_id: String) -> bool:
 	var recipe := RecipeCatalog.find(recipe_id)
@@ -31,6 +33,7 @@ func request_craft(recipe_id: String) -> bool:
 		jobs.append({"id": InstanceIds.create(), "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": recipe.costs.duplicate(true), "power": recipe.power_cost, "rv": rv})
 	_committing = false
 	last_error = "Queued" if accepted else "Insufficient materials"
+	_sync_print_visual()
 	return accepted
 
 func step_work(delta: float) -> void:
@@ -48,10 +51,14 @@ func step_work(delta: float) -> void:
 		return
 	job.power = maxf(0.0, job.power - power_needed)
 	job.remaining = maxf(0.0, job.remaining - elapsed)
-	if job.remaining <= 0.00001 and spawn_item(recipe.scene_path, {}, 0.0):
-		jobs.pop_front()
+	if job.remaining <= 0.00001:
+		# Show the finished height before clearing/changing jobs, even when the
+		# final work update consumes a large delta. The rig then retracts slowly.
+		_sync_print_visual()
+		if spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false))): jobs.pop_front()
+	_sync_print_visual()
 
-func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0) -> bool:
+func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false) -> bool:
 	if _committing or not can_operate():
 		last_error = "Workstation unavailable"
 		return false
@@ -73,26 +80,15 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		instance.free()
 		last_error = "Invalid output"
 		return false
+	if item is PrintedPlayerBody: item.set_crouching(crouching)
 	var output := spawn_marker.global_transform
 	# Position the bottom of the actual product above the output marker. A
 	# fixed centre offset put tall cans into the preinstalled tablet collider.
-	var bottom := 0.0
-	for collider in item.get_children():
-		if collider is CollisionShape3D and collider.shape:
-			var bounds: AABB = collider.transform * collider.shape.get_debug_mesh().get_aabb()
-			bottom = minf(bottom, bounds.position.y)
-	output.origin += global_basis.y * (-bottom + 0.06)
-	for collider in item.get_children():
-		if not collider is CollisionShape3D or collider.shape == null: continue
-		var query := PhysicsShapeQueryParameters3D.new()
-		query.shape = collider.shape
-		query.transform = output * collider.transform
-		query.collision_mask = 1
-		query.exclude = [get_rid()]
-		if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
-			item.free()
-			last_error = "Output blocked"
-			return false
+	output.origin += global_basis.y * CraftingPrintVisual.output_lift(item)
+	if not CraftingOutputPlacement.is_clear(self, item, output, true) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output, crouching)):
+		last_error = "Output blocked: clear print bed and overhead space" if item is PrintedPlayerBody else "Output blocked"
+		item.free()
+		return false
 	var container := WorldEntities.get_container(self)
 	if not is_instance_valid(container) or container.is_queued_for_deletion():
 		item.free()
@@ -121,6 +117,7 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 func cancel_jobs() -> void:
 	var cancelled := jobs.duplicate()
 	jobs.clear()
+	_sync_print_visual()
 	for job in cancelled:
 		if is_instance_valid(job.rv):
 			job.rv.deposit_materials(job.costs, true)
@@ -140,3 +137,15 @@ func restore_service_state(state: Dictionary) -> void:
 	jobs.assign(state.get("jobs", []).duplicate(true))
 	for job in jobs:
 		job["rv"] = get_connected_rv()
+
+	_sync_print_visual()
+
+func _sync_print_visual() -> void:
+	if not is_node_ready() or presentation_only: return
+	if not jobs.is_empty() and jobs[0].recipe == "printed_player" and not jobs[0].has("crouching"):
+		# Choose once when the job reaches the front. Restores preserve its pose;
+		# later obstructions block delivery rather than changing printed geometry.
+		var output := spawn_marker.global_transform
+		output.origin += global_basis.y * 0.06
+		jobs[0]["crouching"] = not CraftingOutputPlacement.body_can_stand(self, output)
+	print_visual.sync_job(jobs[0] if not jobs.is_empty() else {}, spawn_marker.transform)

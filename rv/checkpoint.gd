@@ -4,6 +4,8 @@ const VERSION := 5
 const PATH := "user://rv_checkpoint_v5.save"
 const LEGACY_PATH := "user://rv_checkpoint_v4.save"
 const WORLD_SCENES := {"legacy": "res://world/test_world.tscn", "shelter": "res://world/main_world.tscn"}
+const ROUTE_PRESSURE = preload("res://world/deviation_pressure.gd")
+const REAR_WRECK_LAYOUT = preload("res://world/starting_shelter/rear_wreck_layout.gd")
 var pending: Dictionary = {}
 var message: String = ""
 var label: Label
@@ -111,12 +113,19 @@ func save_world(world: Node, path: String) -> bool:
 		"player": {"transform": player.global_transform, "items": player.inventory.items.duplicate(true),
 		"slot": player.inventory.active_slot, "health": player.current_player_health,
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted,
+		"crouching": player.is_crouching(),
 		"body": player.body_state.capture()}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["dormant_items"] = generator.dormant_items.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
-	if generator.profile.generation_version >= 10: data["generated_giant_segments"] = generator.generated_giant_segments.duplicate()
+	if generator.profile.generation_version >= 10:
+		data["generated_giant_segments"] = generator.generated_giant_segments.duplicate()
+		# Keep the plan when its rear chunk is unloaded; returning must rebuild
+		# precisely the same wrecks rather than roll against a new actor footprint.
+		data["rear_wreck_layout"] = generator.rear_wreck_layout.duplicate(true)
+		var pressure := world.get_node_or_null("DeviationPressure")
+		if pressure != null: data["route_pressure"] = pressure.capture()
 	data["world_id"] = "shelter" if start_run != null else "legacy"
 	if start_run != null: data["start_state"] = start_run.capture()
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
@@ -193,6 +202,9 @@ func validation_error(data: Dictionary) -> String:
 	if not profile_error.is_empty(): return profile_error
 	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10]: return "generation_version"
 	if data.get("generation_version", 2) >= 10 and not SlenderSpeakerSpawns.valid_ledger(data.get("generated_giant_segments")): return "generated_giant_segments"
+	if data.get("generation_version", 2) >= 10:
+		if data.has("route_pressure") and not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"
+		if data.has("rear_wreck_layout") and not REAR_WRECK_LAYOUT.valid_checkpoint(data): return "rear_wreck_layout"
 	var world_id: Variant = data.get("world_id", "legacy")
 	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
 	if world_id == "shelter":
@@ -213,6 +225,7 @@ func validation_error(data: Dictionary) -> String:
 	if not body_error.is_empty(): return body_error
 	if player.has("stamina") and (not VehicleSnapshot._number(player.stamina) or player.stamina < 0 or player.stamina > 100): return "player.stamina"
 	if player.has("stamina_exhausted") and not player.stamina_exhausted is bool: return "player.stamina_exhausted"
+	if player.has("crouching") and not player.crouching is bool: return "player.crouching"
 	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"
 	for i in range(player.items.size()):
 		if not VehicleSnapshot.valid_item(player.items[i]): return "player.items[%d]" % i
@@ -265,6 +278,15 @@ func prepare_world(world: Node) -> void:
 	world.get_node("WorldGenerator").destroyed_trees = pending.get("destroyed_trees", {}).duplicate()
 	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
 	world.get_node("WorldGenerator").generated_giant_segments.assign(pending.get("generated_giant_segments", []))
+	if profile.generation_version >= 10:
+		var generator := world.get_node("WorldGenerator")
+		generator.rear_wreck_layout = pending.get("rear_wreck_layout", {}).duplicate(true)
+		generator.rear_wreck_exclusions.clear()
+		if generator.rear_wreck_layout.is_empty(): generator.rear_wreck_exclusions.assign(REAR_WRECK_LAYOUT.exclusions_for_checkpoint(pending))
+		var pressure := world.get_node_or_null("DeviationPressure")
+		# Missing optional state is an old v10 checkpoint. Initialization waits
+		# for actual restored placement and terrain, never a default scene pose.
+		if pressure != null: pressure.restore(pending.get("route_pressure", {}))
 
 func restore_world(world: Node) -> Dictionary:
 	if pending.is_empty(): return {"ok": true}

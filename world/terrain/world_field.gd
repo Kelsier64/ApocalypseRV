@@ -256,12 +256,12 @@ func _starting_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(garage_edge, apron_edge))
 	height = lerpf(height, -0.08, slab_recess)
 	reserved = reserved or slab_recess > 0.0
-	# Rear boundary supports the roadblock's retaining wings. Its collision is
-	# authored in the first rear chunk; keep the central wreck pad on road level.
+	# v7-v9 retain their rear berm. v10 keeps the exact vegetation mask so
+	# old band:index tree identities survive, while releasing the barrier height.
 	var ridge := 1.0 - smoothstep(3.0, 16.0, absf(z - 20.0))
 	var wing := smoothstep(25.0, 34.0, absf(x))
 	if ridge > 0.0:
-		height = lerpf(height, 8.0, ridge * wing)
+		if profile.generation_version < 10: height = lerpf(height, 8.0, ridge * wing)
 		reserved = true
 	if absf(x) <= 25.0 and z >= 14.0 and z <= 29.0:
 		height = 0.0
