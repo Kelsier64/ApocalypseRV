@@ -114,6 +114,7 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 	var masts := rig.get_node("Masts") as Node3D
 	var bounds := AABB(Vector3(-0.4, 0.7, -0.3), Vector3(0.8, 1.6, 0.6))
 	rig.set_print_pose(0.75, 0.0, bounds, true)
+	rig._physics_process(1.0)
 	var low_frame := gantry.position.y
 	var low_count := _visible_mast_count(masts)
 	var previous_x := head.position.x
@@ -122,6 +123,7 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 	var moved_z := false
 	for elapsed in [0.19, 0.57, 1.13, 2.07]:
 		rig.set_print_pose(0.75, elapsed, bounds, true)
+		rig._physics_process(1.0)
 		moved_x = moved_x or not is_equal_approx(head.position.x, previous_x)
 		moved_z = moved_z or not is_equal_approx(carriage.position.z, previous_z)
 		check(absf(head.position.x - bounds.get_center().x) <= bounds.size.x * 0.5, "Printing head samples stay within product X bounds")
@@ -134,10 +136,26 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 	# An X center crossing must not center Z, and vice versa; a shared diagonal
 	# motion driver would move both stages but would fail these samples.
 	rig.set_print_pose(0.75, PI / 5.1, bounds, true)
+	rig._physics_process(1.0)
 	check(absf(head.position.x - bounds.get_center().x) < 0.001 and absf(carriage.position.z - bounds.get_center().z) > 0.1, "X center crossing leaves Z travelling independently")
 	rig.set_print_pose(0.75, PI / 1.73, bounds, true)
+	rig._physics_process(1.0)
 	check(absf(carriage.position.z - bounds.get_center().z) < 0.001 and absf(head.position.x - bounds.get_center().x) > 0.05, "Z center crossing leaves X travelling independently")
 	rig.set_print_pose(6.0, 1.13, bounds, true)
+	rig._physics_process(1.0)
+	var offset_bounds := AABB(Vector3(-.45, .75, -.82), Vector3(1.4, .5, 1.4))
+	for elapsed in [0.31, 0.91, 1.9, 2.8]:
+		rig.set_print_pose(6.0, elapsed, offset_bounds, true)
+		rig._physics_process(1.0)
+		check(absf(head.position.x) <= .5401 and absf(carriage.position.z) <= .5501, "Offset full-size wheel does not move carriage beyond physical rails")
+	rig.set_print_pose(6.0, 1.13, bounds, true)
+	rig._physics_process(1.0)
+	var crossover_height := gantry.position.y
+	rig.set_print_pose(.75, 0.0, bounds, true)
+	rig._physics_process(.01)
+	check(is_equal_approx(gantry.position.y, crossover_height), "Next lower print parks horizontally before lowering past previous output")
+	rig.set_print_pose(6.0, 1.13, bounds, true)
+	rig._physics_process(1.0)
 	var high_frame := gantry.position.y
 	check(high_frame > 6.0 and high_frame > low_frame + 5.0, "Six metre print raises gantry above the surface without a fixed height clamp")
 	check(_visible_mast_count(masts) > low_count and _visible_mast_count(masts) >= 28, "Tall frame adds visible mast sections on both sides")
@@ -159,7 +177,24 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 		if shape == null: continue
 		check(is_equal_approx(collider.position.y + shape.size.y * 0.5, high_frame), "Tall mast collision reaches the raised gantry")
 		check(is_equal_approx(collider.position.y - shape.size.y * 0.5, 0.5), "Tall mast collision stays anchored to the machine base")
+	var end_horizontal := Vector2(head.position.x, carriage.position.z)
 	rig.set_print_pose(6.0, 9.0, bounds, false)
+	check(Vector2(head.position.x, carriage.position.z).is_equal_approx(end_horizontal), "Completion cannot teleport either horizontal stage")
+	rig._physics_process(.1)
+	var return_horizontal := Vector2(head.position.x, carriage.position.z)
+	check(return_horizontal.distance_to(end_horizontal) > .001 and return_horizontal.distance_to(end_horizontal) <= .0651, "Both horizontal stages return at bounded physical speed")
+	check(not return_horizontal.is_equal_approx(Vector2(.54, .55)), "A short return tick does not jump straight to park")
+	station.get_node("PrintVisual").clear()
+	check(Vector2(head.position.x, carriage.position.z).is_equal_approx(return_horizontal), "Clear cannot reset or teleport the horizontal return")
+	rig._physics_process(.1)
+	check(is_equal_approx(gantry.position.y, high_frame), "Nozzle parks clear of output before beginning downward return")
+	rig.set_print_pose(6.0, 9.0, bounds, false)
+	for tick in 40:
+		var before := Vector2(head.position.x, carriage.position.z)
+		rig._physics_process(.05)
+		var after := Vector2(head.position.x, carriage.position.z)
+		check(after.distance_to(before) <= .0326, "Horizontal return stays continuous through repeated updates")
+		check(after.distance_to(Vector2(.54, .55)) <= before.distance_to(Vector2(.54, .55)) + .0001, "Horizontal return approaches park without overshoot")
 	check(is_equal_approx(gantry.position.y, high_frame), "Completed print retains its high frame")
 	var parked_x := head.position.x
 	var parked_z := carriage.position.z
@@ -184,7 +219,9 @@ func _check_expanding_rig(station: CraftingStation) -> void:
 	station.get_node("PrintVisual").clear()
 	rig._physics_process(0.5)
 	var before_next := gantry.position.y
+	var before_next_horizontal := Vector2(head.position.x, carriage.position.z)
 	rig.set_print_pose(0.75, 0.0, bounds, true)
+	check(Vector2(head.position.x, carriage.position.z).is_equal_approx(before_next_horizontal), "Next queued print cannot teleport horizontal stages")
 	check(is_equal_approx(gantry.position.y, before_next), "Next queued print cannot teleport a returning gantry downward")
 	rig.set_print_pose(4.0, 1.0, bounds, true)
 	rig._physics_process(1.0)

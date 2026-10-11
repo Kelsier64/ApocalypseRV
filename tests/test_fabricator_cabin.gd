@@ -94,6 +94,10 @@ func _run() -> void:
 	check(station.jobs.is_empty() and _bodies(world).size() == 2, "Vacating bed resumes already-paid second body exactly once")
 	check(rv.current_power == occupied_power and is_equal_approx(power_before - rv.current_power, recipe.power_cost * 2), "Two bodies consume exactly two recipe power costs")
 	check(station.print_visual.preview == null, "Final delivery clears preview")
+	# Real return clears the product on X/Z before it starts lowering.
+	for tick in 40:
+		if Vector2(rig.get_node("Gantry/Carriage/Head").position.x, rig.get_node("Gantry/Carriage").position.z).is_equal_approx(Vector2(.54, .55)): break
+		rig._physics_process(.05)
 	var completed_height := gantry.position.y
 	rig._physics_process(.5)
 	check(gantry.position.y < completed_height and gantry.position.y > .9, "Completed frame lowers gradually without snapping")

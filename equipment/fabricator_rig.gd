@@ -6,12 +6,26 @@ var _sections: Array[Node3D] = []
 var _collision_ready := false
 const RETURN_SPEED := 0.45 # Metres per second; taller jobs take longer to retract.
 var _target_height := 0.97
+const HORIZONTAL_RETURN_SPEED := 0.65
+const HORIZONTAL_PRINT_SPEED := 3.0
+var _target_horizontal := Vector2(0.54, 0.55)
+var _printing := false
 
 func _ready() -> void:
 	_apply_height(0.97)
 	set_print_pose(0.75, 0.0, AABB(), false)
 
 func _physics_process(delta: float) -> void:
+	var current := Vector2($Gantry/Carriage/Head.position.x, $Gantry/Carriage.position.z)
+	var lowering: bool = $Gantry.position.y > _target_height + .00001
+	var parking := not _printing or lowering
+	var target := Vector2(.54, .55) if parking else _target_horizontal
+	var speed := HORIZONTAL_RETURN_SPEED if parking else HORIZONTAL_PRINT_SPEED
+	var next := current.move_toward(target, speed * delta)
+	$Gantry/Carriage/Head.position.x = next.x
+	$Gantry/Carriage.position.z = next.y
+	# Clear the product horizontally before lowering the nozzle past its height.
+	if parking and not next.is_equal_approx(target): return
 	if not is_equal_approx($Gantry.position.y, _target_height):
 		_apply_height(move_toward($Gantry.position.y, _target_height, RETURN_SPEED * delta))
 
@@ -22,8 +36,13 @@ func set_print_pose(surface_height: float, elapsed: float, bounds: AABB, printin
 	if Engine.is_editor_hint() or _target_height >= $Gantry.position.y:
 		_apply_height(_target_height)
 	var center := bounds.get_center()
-	$Gantry/Carriage.position.z = center.z + sin(elapsed * 1.73) * minf(bounds.size.z * 0.45, 0.49) if printing else 0.55
-	$Gantry/Carriage/Head.position.x = center.x + sin(elapsed * 5.1) * minf(bounds.size.x * 0.45, 0.53) if printing else 0.54
+	_printing = printing
+	_target_horizontal = Vector2(
+		clampf(center.x + sin(elapsed * 5.1) * minf(bounds.size.x * 0.45, 0.53), -0.54, 0.54) if printing else 0.54,
+		clampf(center.z + sin(elapsed * 1.73) * minf(bounds.size.z * 0.45, 0.49), -0.55, 0.55) if printing else 0.55)
+	if Engine.is_editor_hint():
+		$Gantry/Carriage/Head.position.x = _target_horizontal.x
+		$Gantry/Carriage.position.z = _target_horizontal.y
 
 func _apply_height(beam_y: float) -> void:
 	$Gantry.position.y = beam_y

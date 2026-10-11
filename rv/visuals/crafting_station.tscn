@@ -26,12 +26,3 @@ position = Vector3(0, 0, 0.55)
 position = Vector3(0.54, 0, 0)
 
 [node name="Extruder" parent="Gantry/Carriage/Head" instance=ExtResource("head")]
-
-[node name="Status" type="Label3D" parent="."]
-position = Vector3(0, 0.42, -0.482)
-rotation_degrees = Vector3(0, 180, 0)
-text = "FAB / READY"
-font_size = 32
-pixel_size = 0.0005
-outline_size = 0
-modulate = Color(0.25, 0.85, 0.92, 1)

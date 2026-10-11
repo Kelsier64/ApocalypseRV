@@ -6,6 +6,7 @@
       "test_combat_targeting",
       "test_crafting_print",
       "test_fabricator_cabin",
+      "test_print_output_fit",
       "test_printed_player",
       "test_equipment_lifecycle",
       "test_flashlight",

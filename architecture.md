@@ -487,8 +487,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
-- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
-- CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
+- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物旋轉後碰撞 AABB 底部計算出料高度。一般物品依空間嘗試原姿與兩軸 90 度平放，選擇有台面支撐的小幅偏移；工作保存固定姿態，預覽與實體共用變換，輪胎可在完整房車頂下平放交付。選姿保留牆頂與機台碰撞，暫時占床的未固定物品不改變下一件姿態；交付仍檢查全部碰撞。完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
+- CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。完成／取消時水平兩軸以 0.65m/s 平滑回位，停靠後才以 0.45m/s 下降；偏移成品的加工路徑仍限制在實體滑軌行程內。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
 
 #### 新增驗證入口
 
