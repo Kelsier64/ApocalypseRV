@@ -1220,6 +1220,12 @@ func _begin_grab() -> void:
 	_action_context = {"kind": "grab", "player": target_player, "vehicle": target_vehicle, "point": _player_contact(target_player), "moving": false}
 	_action_context.climbing = is_instance_valid(target_player.get("active_climb_rv"))
 	_action_context.crawling = target_player.has_method("is_crawling") and target_player.is_crawling()
+	var target_velocity: Vector3 = target_player.get("velocity") if target_player.get("velocity") is Vector3 else Vector3.ZERO
+	# Commit the observed runner's faster reach once; later speed or posture
+	# changes cannot jump the animation clock or change the attack profile.
+	_action_context.running_ground_grab = not is_instance_valid(target_vehicle) and not _action_context.climbing \
+		and not _action_context.crawling and target_velocity.slide(Vector3.UP).length() >= settings.ground_running_grab_min_speed
+	_action_context.grab_speed_scale = maxf(1.0, settings.ground_running_grab_speed_scale) if _action_context.running_ground_grab else 1.0
 	_set_phase(Phase.GRAB)
 	_grab_locked = false
 	_grab_touched = false
@@ -1302,7 +1308,7 @@ func _advance_grab(delta: float = 1.0 / 60.0) -> void:
 		_grab_capture_sweep = contact_probes[side]
 		_start_execution()
 		return
-	if phase_elapsed >= settings.grab_windup: _finish_grab()
+	if phase_elapsed * float(_action_context.get("grab_speed_scale", 1.0)) >= settings.grab_windup: _finish_grab()
 
 func _grab_palm_position(side: String) -> Vector3:
 	var knuckles := Vector3.ZERO
@@ -1384,29 +1390,36 @@ func _restore_grab_hand(side: String) -> void:
 
 func _pose_grab_reach(delta: float = 1.0 / 60.0) -> void:
 	# This samples the shared indoor/outdoor reach without ownership side effects.
+	var speed_scale := float(_action_context.get("grab_speed_scale", 1.0))
+	var reach_time := phase_elapsed * speed_scale
+	var running: bool = _action_context.get("running_ground_grab", false)
+	var tracking_distance := settings.ground_running_grab_tracking_distance if running else .75
+	var tracking_speed := settings.ground_running_grab_tracking_speed if running else 2.0
+	var lock_seconds := settings.ground_running_grab_lock_seconds if running else .25
+	var lock_time := settings.grab_windup / speed_scale - lock_seconds
 	if not _grab_locked:
 		# Track only genuinely visible movement, with a finite reach adjustment.
 		# A fleeing or occluded survivor must be able to evade the committed grab.
-		if phase_elapsed < settings.grab_windup - 0.25 and can_see_player(target_player):
+		if phase_elapsed < lock_time and can_see_player(target_player):
 			_action_context.climbing = is_instance_valid(target_player.get("active_climb_rv"))
 			_action_context.crawling = target_player.has_method("is_crawling") and target_player.is_crawling()
 			var observed := _player_contact(target_player)
-			_grab_contact = _grab_tracking_origin + (observed - _grab_tracking_origin).limit_length(.75)
+			_grab_contact = _grab_tracking_origin + (observed - _grab_tracking_origin).limit_length(tracking_distance)
 			_grab_hand_contact = _grab_contact
 			if _action_context.crawling:
 				_grab_hand_contact.y = maxf(_grab_contact.y, global_position.y + 0.75)
-			var corrected := _grab_correction.move_toward(_grab_hand_contact - _grab_authored_contact, 2.0 * maxf(delta, 0.0))
+			var corrected := _grab_correction.move_toward(_grab_hand_contact - _grab_authored_contact, tracking_speed * maxf(delta, 0.0))
 			for side in _grab_end_wrists: _grab_end_wrists[side] += corrected - _grab_correction
 			_grab_correction = corrected
-		if phase_elapsed >= settings.grab_windup - 0.25:
+		if phase_elapsed >= lock_time:
 			_grab_locked = true
-	_sample("grab", minf(phase_elapsed, settings.grab_windup))
-	var weight := smoothstep(0.0, settings.grab_windup, phase_elapsed)
-	var horizontal_weight := smoothstep(0.0, settings.grab_windup * .8, phase_elapsed)
+	_sample("grab", minf(reach_time, settings.grab_windup))
+	var weight := smoothstep(0.0, settings.grab_windup, reach_time)
+	var horizontal_weight := smoothstep(0.0, settings.grab_windup * .8, reach_time)
 	# Reach the target's height before the shared downward close. This applies
 	# equally to an elevated outdoor survivor and a seated one; no wrist turn
 	# or obstacle-dependent detour changes the authored palm/finger motion.
-	var height_weight := smoothstep(0.0, settings.grab_windup * .25, phase_elapsed) if _grab_correction.y > 0.0 else weight
+	var height_weight := smoothstep(0.0, settings.grab_windup * .25, reach_time) if _grab_correction.y > 0.0 else weight
 	var wrists := {"R": _bone_position("hand.R"), "L": _bone_position("hand.L")}
 	var desired_wrists: Dictionary = {}
 	for side in ["R", "L"]:
@@ -1415,11 +1428,11 @@ func _pose_grab_reach(delta: float = 1.0 / 60.0) -> void:
 		desired.y += _grab_correction.y * (height_weight - weight)
 		var forward := -global_basis.z
 		var end_distance: float = (_grab_end_wrists[side] - global_position).dot(forward)
-		var outside_distance := lerpf(0.34, -0.05, smoothstep(0.0, settings.grab_windup * 0.3, phase_elapsed))
-		var reach_distance := lerpf(outside_distance, end_distance, smoothstep(settings.grab_windup * 0.85, settings.grab_windup, phase_elapsed))
+		var outside_distance := lerpf(0.34, -0.05, smoothstep(0.0, settings.grab_windup * 0.3, reach_time))
+		var reach_distance := lerpf(outside_distance, end_distance, smoothstep(settings.grab_windup * .85, settings.grab_windup, reach_time))
 		if _action_context.get("climbing", false):
 			desired += forward * (reach_distance - (desired - global_position).dot(forward))
-		desired.y += minf(0.8, absf(_grab_correction.y) * 0.5) * pow(sin(PI * clampf(phase_elapsed / settings.grab_windup, 0.0, 1.0)), 2.0)
+		desired.y += minf(0.8, absf(_grab_correction.y) * 0.5) * pow(sin(PI * clampf(reach_time / settings.grab_windup, 0.0, 1.0)), 2.0)
 		if _action_context.get("crawling", false):
 			var lowest: float = wrists[side].y
 			for bone in _hand_contact_bones(side): lowest = minf(lowest, _bone_position(bone).y)

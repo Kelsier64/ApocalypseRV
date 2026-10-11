@@ -50,6 +50,7 @@
       "test_slender_speaker_encounter_drive",
       "test_slender_speaker_grab_tracking",
       "test_slender_speaker_grab_reliability",
+      "test_slender_speaker_ground_chase",
       "test_slender_speaker_target_switch",
       "test_slender_speaker_turning",
       "test_slender_speaker_patrol",
