@@ -39,9 +39,18 @@ static func valid(scene: String, state: Dictionary) -> bool:
 	if scene == "res://props/flashlight.tscn":
 		if not VehicleSnapshot.valid_flashlight(state.get("flashlight")): return false
 	elif state.has("flashlight"): return false
+	if scene == PistolRules.PISTOL_SCENE:
+		if not valid_rounds(state.get("pistol"), "loaded_rounds", 0, PistolRules.MAGAZINE_CAPACITY): return false
+	elif state.has("pistol"): return false
+	if scene == PistolRules.AMMO_SCENE:
+		if not valid_rounds(state.get("ammo"), "rounds", 1, PistolRules.BOX_CAPACITY): return false
+	elif state.has("ammo"): return false
 	if scene in ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]:
 		return EngineState.valid(state.get("engine"), false) and state.get("id") == state.engine.id and scene == "res://props/engine_" + state.engine.model + ".tscn" and is_equal_approx(float(state.condition), float(state.engine.health) * 100.0 / EngineState.definition_for(state.engine.model).max_health)
 	return not state.has("engine")
+
+static func valid_rounds(value: Variant, field: String, minimum: int, maximum: int) -> bool:
+	return value is Dictionary and value.size() == 1 and value.get(field) is int and value[field] >= minimum and value[field] <= maximum
 
 static func valid_service(scene: String, service: Dictionary) -> bool:
 	for key in service:

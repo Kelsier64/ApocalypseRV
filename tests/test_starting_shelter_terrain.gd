@@ -83,8 +83,12 @@ func run() -> void:
 		check(building.find_children("*", "RigidBody3D", true, false).is_empty(), "Static asset owns no loot actors")
 		WalkInSites.activate(owner, site, chunk)
 		var container := WorldEntities.get_container(owner)
-		check(container.get_child_count() == 14, "First visit has two devices and twelve props")
-		check(container.get_children().filter(func(actor): return actor is Item).size() == 14, "All starter devices and loot share the Item lifecycle")
+		check(container.get_child_count() == 17, "First visit has two devices and fifteen props")
+		check(container.get_children().filter(func(actor): return actor is Item).size() == 17, "All starter devices and loot share the Item lifecycle")
+		var pistols := container.get_children().filter(func(actor): return actor.scene_file_path == PistolRules.PISTOL_SCENE)
+		var ammo := container.get_children().filter(func(actor): return actor.scene_file_path == PistolRules.AMMO_SCENE)
+		check(pistols.size() == 1 and pistols[0].capture_item_state().pistol.loaded_rounds == 12, "Shelter has exactly one loaded twelve-round pistol")
+		check(ammo.size() == 2 and ammo.all(func(actor): return actor.capture_item_state().ammo.rounds == 24), "Shelter has exactly two twenty-four-round ammo boxes")
 		var device_scenes: Array[String] = ["res://equipment/crafting_station.tscn", "res://equipment/scrapper.tscn"]
 		var found_devices: Array[String] = []
 		for actor in container.get_children():
@@ -101,11 +105,11 @@ func run() -> void:
 				picked_id = actor.persistent_id
 				actor.free()
 		WalkInSites.activate(owner, site, chunk)
-		check(container.get_child_count() == 13, "Repeated activation does not replace picked loot")
+		check(container.get_child_count() == 16, "Repeated activation does not replace picked loot")
 		var remaining_ids := actor_ids(container)
 		check(not picked_id.is_empty() and picked_id not in remaining_ids, "Picked flashlight excluded")
 		WalkInSites.deactivate(owner, site)
-		check(container.get_child_count() == 0 and owner.outdoor_sites[site.id].actors.size() == 13, "Props and ground devices snapshot together")
+		check(container.get_child_count() == 0 and owner.outdoor_sites[site.id].actors.size() == 16, "Props and ground devices snapshot together")
 		check(WalkInSites.validation_error({"generation_version": 7, "outdoor_sites": owner.outdoor_sites, "generated_bands": [0]}).is_empty(), "Dormant starter actor snapshots are valid")
 		chunk.free()
 		chunk = Node3D.new()

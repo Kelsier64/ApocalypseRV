@@ -197,6 +197,9 @@ func show_feedback(message: String) -> void:
 
 func get_prompt(obj: Node) -> String:
 	var held_hint := "F 放置手持物品｜G 丟棄" if not player.inventory.active_item().is_empty() else ""
+	# Weapon controls already live above the hotbar; avoid a duplicate opaque
+	# panel covering the sights and hands when no interaction is targeted.
+	if player.inventory.active_item().get("scene_path", "") == PistolRules.PISTOL_SCENE: held_hint = ""
 	if not is_instance_valid(obj): return held_hint
 	if not _can_interact(obj):
 		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂，並先放下大型物品"

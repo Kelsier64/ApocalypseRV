@@ -2,6 +2,7 @@ extends CanvasLayer
 
 var slots_container: HBoxContainer
 var flashlight_hint: Label
+var pistol_hint: Label
 
 func _ready():
 	var control = Control.new()
@@ -36,6 +37,16 @@ func _ready():
 	flashlight_hint.add_theme_color_override("font_color", IndustrialTheme.AMBER)
 	flashlight_hint.hide()
 	control.add_child(flashlight_hint)
+	pistol_hint = Label.new()
+	pistol_hint.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	pistol_hint.offset_left = -360
+	pistol_hint.offset_right = 360
+	pistol_hint.offset_top = -158
+	pistol_hint.offset_bottom = -104
+	pistol_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pistol_hint.add_theme_color_override("font_color", IndustrialTheme.AMBER)
+	pistol_hint.hide()
+	control.add_child(pistol_hint)
 	
 	for i in range(6):
 		var panel = Panel.new()
@@ -53,7 +64,7 @@ func _ready():
 		
 		slots_container.add_child(panel)
 
-func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: bool = true):
+func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: bool = true, weapon_data: Dictionary = {}):
 	if not slots_container:
 		return
 	var selected: Dictionary = inventory[active_slot] if active_slot >= 0 and active_slot < inventory.size() else {}
@@ -61,6 +72,13 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 	flashlight_hint.visible = show_flashlight_hint and not flashlight.is_empty()
 	if flashlight_hint.visible:
 		flashlight_hint.text = "Flashlight %d%%  |  L: %s" % [ceili(float(flashlight.get("charge", 0.0))), "ON" if flashlight.get("on", false) else "OFF"]
+	pistol_hint.visible = show_flashlight_hint and selected.get("scene_path", "") == PistolRules.PISTOL_SCENE
+	if pistol_hint.visible:
+		var rounds := int(selected.get("state", {}).get("pistol", {}).get("loaded_rounds", 0))
+		var remaining := float(weapon_data.get("reload_remaining", 0.0))
+		var status := "  |  Reloading %.1fs" % remaining if remaining > 0.0 else ""
+		pistol_hint.text = "Pistol %d / %d  |  Reserve %d%s\n左鍵射擊｜右鍵瞄準｜R 換彈｜F 放置｜G 丟棄" % [rounds, PistolRules.MAGAZINE_CAPACITY, int(weapon_data.get("reserve", 0)), status]
+		if not weapon_data.get("can_use", true): pistol_hint.text += "  |  Unavailable"
 		
 	var children = slots_container.get_children()
 	for i in range(children.size()):
@@ -74,6 +92,10 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 			var item = inventory[i]
 			var prefix = "[L] " if item.get("is_large", false) else ""
 			slot_label.text = prefix + item.get("name", "Item")
+			if item.get("scene_path", "") == PistolRules.AMMO_SCENE:
+				slot_label.text += "\n%d rounds" % int(item.get("state", {}).get("ammo", {}).get("rounds", 0))
+			elif item.get("scene_path", "") == PistolRules.PISTOL_SCENE:
+				slot_label.text += "\n%d / %d" % [int(item.get("state", {}).get("pistol", {}).get("loaded_rounds", 0)), PistolRules.MAGAZINE_CAPACITY]
 			bg_color = Color("453b30") if item.get("is_large", false) else Color("252d2c")
 		else:
 			slot_label.text = "Empty"

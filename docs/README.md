@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-11 手槍與盒裝子彈](validation/2026-10-11-pistol.md)：原創 Blender 模型、射擊／瞄準／換彈、背包與 v5 保存，含自動測試及原生遊戲操作觀察。
+
 - [2026-10-11 Slender Speaker 撞毀樹木](validation/2026-10-11-slender-speaker-tree-impact.md)：實際身體碰撞接上既有倒塌與保存，含森林自主追蹤、路邊樹、牆面及原生回放檢查。
 
 - [2026-10-10 Raker 車撞倒地門檻](validation/2026-10-10-raker-impact-threshold.md)：相對接近速度門檻提高至 9 m/s，含慢車迎面跑動、輪驅輕重撞擊及原生攀車驗證。

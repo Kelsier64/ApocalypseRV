@@ -12,6 +12,7 @@
       "test_monster_navigation",
       "test_player_climbing",
       "test_player_inventory",
+      "test_pistol",
       "test_player_stamina",
       "test_road_spawns",
       "test_road_spawns_v9",
@@ -83,6 +84,8 @@
       "test_interior_doorways",
       "test_item_navigation",
       "test_item_persistence",
+      "test_pistol_combat",
+      "test_pistol_persistence",
       "test_main_world_monsters",
       "test_monster_model",
       "test_moving_rv_climbing",
@@ -153,6 +156,7 @@
       "test_world_generation"
     ],
     "assets": [
+      "test_pistol_visual",
       "test_barrel_man_assets",
       "test_slender_speaker_animation",
       "test_player_dismemberment_assets",

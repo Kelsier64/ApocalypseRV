@@ -34,6 +34,7 @@ func reset() -> void:
 	right_weight = 0.0
 	left_weight = 0.0
 	item = null
+	grip_kind = "small"
 
 func _physics_process(delta: float) -> void:
 	if actor.is_player_dead: return # Preserve the evaluated pose for ragdoll handoff.
@@ -45,6 +46,10 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(held): held.visible = not blocked and not actor.is_placing_equipment()
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
+	var pistol: bool = carrying and held is Pistol and not grabbed
+	# Arm weights fade after unequipping, but the preview may already be freed.
+	# Only a currently carried pistol can own the special wrist orientation.
+	if not pistol and grip_kind == "pistol": grip_kind = "small"
 	if large and not actor.can_use_hands(2): carrying = false
 	active_hand = "R" if actor.body_state.has_part(&"right_arm") else "L"
 	if grabbed:
@@ -53,15 +58,15 @@ func _physics_process(delta: float) -> void:
 		# overriding it (including the support hand of a normally two-hand prop).
 		if not carrying or active_hand != "R": right_weight = 0.0
 		if not carrying or active_hand != "L": left_weight = 0.0
-	right_weight = move_toward(right_weight, 1.0 if carrying and active_hand == "R" else 0.0, delta * 7.0)
-	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L") else 0.0, delta * 7.0)
+	right_weight = move_toward(right_weight, 1.0 if carrying and (active_hand == "R" or pistol) else 0.0, delta * 7.0)
+	left_weight = move_toward(left_weight, 1.0 if carrying and ((large and not grabbed) or active_hand == "L" or pistol) else 0.0, delta * 7.0)
 	# Keep grip pose and held simulation while placement hides the real model.
 	if blocked:
 		right_weight = 0.0
 		left_weight = 0.0
 		return
 	if carrying:
-		grip_kind = "round" if held is Flashlight else ("large" if large else "small")
+		grip_kind = "pistol" if pistol else ("round" if held is Flashlight else ("large" if large else "small"))
 		if item != held:
 			item = held
 			bounds = _held_bounds(item)
@@ -70,12 +75,136 @@ func _physics_process(delta: float) -> void:
 				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
 			# Keep world dimensions, even when the held silhouette blocks the view.
 			item_hold_transform = item.transform
-		_update_item(delta, large)
+		if pistol: _update_pistol(delta)
+		else: _update_item(delta, large)
 	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight)
 	if left_weight > 0.0 and actor.body_state.has_part(&"left_arm"): _arm("L", grip_left, left_weight)
+	if pistol:
+		for side in ["R", "L"]:
+			if actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"):
+				_pose_pistol_hand(side, right_weight if side == "R" else left_weight)
 	if carrying and grip_kind == "round":
 		_align_flashlight()
 		_pose_flashlight_fingers(right_weight if active_hand == "R" else left_weight)
+
+func _update_pistol(delta: float) -> void:
+	var weapon: Node = actor.weapon
+	var aim: float = weapon.aim_weight
+	var kick: float = weapon.recoil
+	var reload: float = 1.0 - weapon.reload_remaining / PistolRules.RELOAD_SECONDS if weapon.reload_remaining > 0.0 else 0.0
+	var reload_arc := sin(reload * PI)
+	var side := 1.0 if active_hand == "R" else -1.0
+	phase += delta * 7.0
+	var speed := minf(Vector2(actor.velocity.x, actor.velocity.z).length(), 1.0)
+	var offset := Vector3(.10 * side, -.19, -.38).lerp(Vector3(0, -.077, -.42), aim)
+	# Above shoulder height, draw the elbows in. Retraction along the view
+	# axis preserves the sight line without stretching either real arm.
+	var raised: float = smoothstep(.35, 1.0, actor.camera.rotation.x)
+	offset.x *= 1.0 - raised * .85
+	offset.z += raised * .23
+	offset.y += raised * .03 * (1.0 - aim)
+	# Looking down lowers the gun toward the waist instead of folding both
+	# elbows above the shoulders. Reach fitting still bounds this extension.
+	offset.z -= smoothstep(.15, 1.1, -actor.camera.rotation.x) * .35
+	offset += Vector3(sin(phase) * .003, cos(phase * 2.0) * .003, 0) * speed * (1.0 - aim)
+	offset += Vector3(0, -.055 * reload_arc, .024 * kick + .04 * reload_arc)
+	var pose: Transform3D = actor.camera.global_transform * Transform3D(Basis.from_euler(Vector3(kick * .10, 0, side * reload_arc * -.22)), offset)
+	pose = _fit_pistol_reach(pose, reload_arc)
+	item.get_parent().global_transform = pose
+	item.transform = Transform3D.IDENTITY
+	grip_right = item.to_global(_pistol_grip("R", reload_arc))
+	grip_left = item.to_global(_pistol_grip("L", reload_arc))
+
+func _pistol_grip(side: String, reload_arc: float) -> Vector3:
+	var handed := 1.0 if side == "R" else -1.0
+	return Vector3(.025 * handed, -.023, .047) if side == active_hand else Vector3(.028 * handed, -.023 - .055 * reload_arc, .027)
+
+func _fit_pistol_reach(pose: Transform3D, reload_arc: float) -> Transform3D:
+	# Translate along the barrel within the intersection of both arm reaches.
+	# Clamping wrists inside IK alone would leave the palms behind the gun.
+	var local := skeleton.global_transform.affine_inverse() * pose
+	var direction := -local.basis.z.normalized()
+	var minimum := -INF
+	var maximum := INF
+	for side in ["R", "L"]:
+		if not actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"): continue
+		var upper := skeleton.find_bone("upper_arm_" + side)
+		var lower := skeleton.find_bone("forearm_" + side)
+		var hand := skeleton.find_bone("hand_" + side)
+		var rest := skeleton.get_bone_global_rest(hand)
+		var elbow := skeleton.get_bone_global_rest(lower).origin
+		var reach := skeleton.get_bone_global_rest(upper).origin.distance_to(elbow) + elbow.distance_to(rest.origin) - .015
+		var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+		var frame: Basis = hand_frames[side]
+		var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
+		var palm := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
+		var hand_basis := local.basis * Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT) * frame.inverse() * rest.basis
+		var wrist := local * _pistol_grip(side, reload_arc) - hand_basis * palm
+		var from_shoulder := wrist - skeleton.get_bone_global_pose(upper).origin
+		var along := from_shoulder.dot(direction)
+		var radius := sqrt(maxf(0.0, along * along + reach * reach - from_shoulder.length_squared()))
+		minimum = maxf(minimum, -along - radius)
+		maximum = minf(maximum, -along + radius)
+	if minimum <= maximum:
+		pose.origin -= pose.basis.z * clampf(0.0, minimum, maximum)
+	return pose
+
+func _pose_pistol_hand(side: String, weight: float) -> void:
+	var hand := skeleton.find_bone("hand_" + side)
+	var desired := _pistol_hand_basis(side)
+	_align_pistol_elbow(side, weight)
+	_set_global_rotation(hand, desired.orthonormalized().get_rotation_quaternion(), weight)
+	var old_hand := active_hand
+	active_hand = side
+	var inward := -1.0 if side == "R" else 1.0
+	for finger in ["index", "middle", "ring", "pinky"]:
+		var first := skeleton.find_bone(finger + "_01_" + side)
+		var second := skeleton.find_bone(finger + "_02_" + side)
+		var trigger: bool = finger == "index" and side == old_hand
+		_finger_world_direction(first, item.global_basis * Vector3(inward * .25, -.10, -1.0), weight)
+		_finger_world_direction(second, item.global_basis * Vector3(inward, -.1, -.20 if trigger else .20), weight)
+	_finger_world_direction(skeleton.find_bone("thumb_01_" + side), item.global_basis * Vector3(inward * .35, .15, -1), weight)
+	_finger_world_direction(skeleton.find_bone("thumb_02_" + side), item.global_basis * Vector3(0, 0, -1), weight)
+	active_hand = old_hand
+
+func _align_pistol_elbow(side: String, weight: float) -> void:
+	# The elbow is a hinge. Orient the upper arm from its bend plane, never
+	# from the palm: copying palm roll into the humerus twists the whole sleeve.
+	var upper := skeleton.find_bone("upper_arm_" + side)
+	var lower := skeleton.find_bone("forearm_" + side)
+	var hand := skeleton.find_bone("hand_" + side)
+	var upper_rest := skeleton.get_bone_global_rest(upper)
+	var lower_rest := skeleton.get_bone_global_rest(lower)
+	var hand_rest := skeleton.get_bone_global_rest(hand)
+	var rest_lower_axis := (hand_rest.origin - lower_rest.origin).normalized()
+	var rest_upper_axis := (lower_rest.origin - upper_rest.origin).normalized()
+	var upper_pose := skeleton.get_bone_global_pose(upper)
+	var lower_pose := skeleton.get_bone_global_pose(lower)
+	var hand_pose := skeleton.get_bone_global_pose(hand)
+	var lower_axis := (hand_pose.origin - lower_pose.origin).normalized()
+	var upper_axis := (lower_pose.origin - upper_pose.origin).normalized()
+	var rest_bend := rest_lower_axis.slide(rest_upper_axis).normalized()
+	var bend := lower_axis.slide(upper_axis).normalized()
+	var upper_basis := _pistol_radial_basis(upper_pose.basis, upper_rest.basis.inverse() * rest_bend, bend, upper_axis, weight)
+	var upper_delta := upper_basis * upper_rest.basis.inverse()
+	var inherited_axis := upper_delta * rest_lower_axis
+	var natural_lower := Basis(Quaternion(inherited_axis, lower_axis)) * upper_delta * lower_rest.basis
+	# This rig has no forearm twist chain. Its authored wrist owns palm roll;
+	# keep the skinned forearm in the elbow's natural bending plane.
+	_set_global_rotation(upper, upper_basis.get_rotation_quaternion(), 1.0)
+	_set_global_rotation(lower, natural_lower.get_rotation_quaternion(), 1.0)
+
+func _pistol_radial_basis(posed: Basis, reference: Vector3, target: Vector3, axis: Vector3, weight: float) -> Basis:
+	var current := (posed * reference).slide(axis).normalized()
+	var wanted := target.slide(axis).normalized()
+	if current.length_squared() < .5 or wanted.length_squared() < .5: return posed
+	var angle := atan2(axis.dot(current.cross(wanted)), current.dot(wanted))
+	return Basis(axis, angle * weight) * posed
+
+func _pistol_hand_basis(side: String) -> Basis:
+	var hand := skeleton.find_bone("hand_" + side)
+	var frame := Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT)
+	return skeleton.global_basis.inverse() * item.global_basis * frame * hand_frames[side].inverse() * skeleton.get_bone_global_rest(hand).basis
 
 func _grab_arms(holding_item: bool) -> void:
 	# The same skinned arms are visible to the victim and external cameras.
@@ -239,8 +368,8 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	var forearm := skeleton.find_bone("forearm_" + side)
 	var hand := skeleton.find_bone("hand_" + side)
 	var sign_x := 1.0 if side == "R" else -1.0
-	# Keep the locomotion wrist local rotation verbatim. The hand
-	# follows the forearm naturally; prop markers supply contact positions only.
+	# Ordinary props keep the locomotion wrist rotation; pistols additionally
+	# supply a palm orientation and a forward-facing elbow bend plane.
 	var source: Basis = hand_frames[side]
 	var rest := skeleton.get_bone_global_rest(hand)
 	var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
@@ -255,13 +384,23 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	# The inherited hand orientation changes as the elbow bends. Re-evaluate
 	# the palm offset with a small fixed solve, without twisting the wrist.
 	for iteration in 4:
-		var wrist := skeleton.to_local(contact) - skeleton.get_bone_global_pose(hand).basis * palm_center
+		# Pistol wrists have an authored grip orientation. Solve the arm against
+		# that final palm offset, so rotating the wrist cannot detach the grip.
+		var hand_basis := _pistol_hand_basis(side) if grip_kind == "pistol" else skeleton.get_bone_global_pose(hand).basis
+		var wrist := skeleton.to_local(contact) - hand_basis * palm_center
 		var axis := (wrist - shoulder).normalized()
 		var distance := clampf(shoulder.distance_to(wrist), absf(a - b) + .001, a + b - .003)
 		wrist = shoulder + axis * distance
 		var bend := (pole - axis * pole.dot(axis)).normalized()
+		if grip_kind == "pistol":
+			var lateral := skeleton.global_basis.inverse() * actor.global_basis.x
+			# A shoulder-to-wrist frame stays continuous through vertical aim.
+			# Lower elbows at eye level; draw them outward/back when looking down.
+			var elbow_angle := lerpf(atan2(1.0, .45), -PI * .25, smoothstep(0.0, .85, -actor.camera.rotation.x))
+			bend = lateral.slide(axis).normalized() * sign_x * cos(elbow_angle) + axis.cross(lateral).normalized() * sin(elbow_angle)
 		var along := (a * a - b * b + distance * distance) / (2.0 * distance)
-		var target_elbow := shoulder + axis * along + bend * sqrt(maxf(0, a * a - along * along))
+		var height := sqrt(maxf(0, a * a - along * along))
+		var target_elbow := shoulder + axis * along + bend * height
 		_aim(upper, forearm, target_elbow, 1.0)
 		_aim(forearm, hand, wrist, 1.0)
 	for bone in [upper, forearm]:
@@ -279,7 +418,7 @@ func _rest_hand_frame(side: String) -> Basis:
 	return Basis(radial, forward, radial.cross(forward))
 
 func _pose_fingers(side: String, weight: float) -> void:
-	if grip_kind == "round": return # Cylinder contact is solved after fitting the prop.
+	if grip_kind in ["round", "pistol"]: return # Grip-specific fingers are solved after fitting the prop.
 	var frame: Basis = hand_frames[side]
 	var palm := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
 	var hand := skeleton.find_bone("hand_" + side)
