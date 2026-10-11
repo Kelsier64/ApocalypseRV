@@ -4,6 +4,7 @@
     "quick": [
       "test_cabin_light_equipment",
       "test_combat_targeting",
+      "test_crafting_print",
       "test_equipment_lifecycle",
       "test_flashlight",
       "test_game_settings",
@@ -179,4 +180,3 @@
     "test_raker_boarding": "Identical to test_moving_rv_climbing with its default raker fixture; retained for direct invocation."
   }
 }
-

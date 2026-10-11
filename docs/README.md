@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-11 製作台與逐層列印](validation/2026-10-11-fabricator-print.md)：工業製造機、七種配方逐層成形、停電／讀檔同步，含車內渲染與搬運回歸。
+
 - [2026-10-11 手槍與盒裝子彈](validation/2026-10-11-pistol.md)：原創 Blender 模型、射擊／瞄準／換彈、背包與 v5 保存，含自動測試及原生遊戲操作觀察。
 
 - [2026-10-11 Slender Speaker 撞毀樹木](validation/2026-10-11-slender-speaker-tree-impact.md)：實際身體碰撞接上既有倒塌與保存，含森林自主追蹤、路邊樹、牆面及原生回放檢查。

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/crafting_station_playground.gd" id="script"]
+
+[node name="CraftingStationPlayground" type="Node3D"]
+script = ExtResource("script")

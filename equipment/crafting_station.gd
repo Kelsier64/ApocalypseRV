@@ -7,11 +7,13 @@ var last_error: String = ""
 var _committing: bool = false
 var jobs: Array[Dictionary] = []
 @export var queue_capacity: int = 4
+@onready var print_visual: CraftingPrintVisual = $PrintVisual
 
 func _ready() -> void:
 	super._ready()
 	if presentation_only: return
 	add_to_group(Groups.CRAFTING_STATIONS)
+	_sync_print_visual()
 
 func request_craft(recipe_id: String) -> bool:
 	var recipe := RecipeCatalog.find(recipe_id)
@@ -31,6 +33,7 @@ func request_craft(recipe_id: String) -> bool:
 		jobs.append({"id": InstanceIds.create(), "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": recipe.costs.duplicate(true), "power": recipe.power_cost, "rv": rv})
 	_committing = false
 	last_error = "Queued" if accepted else "Insufficient materials"
+	_sync_print_visual()
 	return accepted
 
 func step_work(delta: float) -> void:
@@ -50,6 +53,7 @@ func step_work(delta: float) -> void:
 	job.remaining = maxf(0.0, job.remaining - elapsed)
 	if job.remaining <= 0.00001 and spawn_item(recipe.scene_path, {}, 0.0):
 		jobs.pop_front()
+	_sync_print_visual()
 
 func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0) -> bool:
 	if _committing or not can_operate():
@@ -76,12 +80,7 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 	var output := spawn_marker.global_transform
 	# Position the bottom of the actual product above the output marker. A
 	# fixed centre offset put tall cans into the preinstalled tablet collider.
-	var bottom := 0.0
-	for collider in item.get_children():
-		if collider is CollisionShape3D and collider.shape:
-			var bounds: AABB = collider.transform * collider.shape.get_debug_mesh().get_aabb()
-			bottom = minf(bottom, bounds.position.y)
-	output.origin += global_basis.y * (-bottom + 0.06)
+	output.origin += global_basis.y * CraftingPrintVisual.output_lift(item)
 	for collider in item.get_children():
 		if not collider is CollisionShape3D or collider.shape == null: continue
 		var query := PhysicsShapeQueryParameters3D.new()
@@ -121,6 +120,7 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 func cancel_jobs() -> void:
 	var cancelled := jobs.duplicate()
 	jobs.clear()
+	_sync_print_visual()
 	for job in cancelled:
 		if is_instance_valid(job.rv):
 			job.rv.deposit_materials(job.costs, true)
@@ -140,3 +140,9 @@ func restore_service_state(state: Dictionary) -> void:
 	jobs.assign(state.get("jobs", []).duplicate(true))
 	for job in jobs:
 		job["rv"] = get_connected_rv()
+
+	_sync_print_visual()
+
+func _sync_print_visual() -> void:
+	if not is_node_ready() or presentation_only: return
+	print_visual.sync_job(jobs[0] if not jobs.is_empty() else {}, spawn_marker.transform)

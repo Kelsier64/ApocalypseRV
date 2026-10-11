@@ -178,6 +178,16 @@ func run() -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
 	var driver: Node = actor.get_node("Visuals/Locomotion")
+	# Production equipment must form a valid held subtree before carry bounds sample it.
+	actor.inventory.items.clear()
+	actor.inventory.active_slot = 0
+	check(actor.add_item("Crafting Station", true, "res://equipment/crafting_station.tscn"), "Crafting station equips as a large held Item")
+	await steps(2)
+	var held_station: Item = actor.held_item_node
+	check(held_station.presentation_only and not held_station.can_operate(), "Held crafting station cannot operate services")
+	for mesh: MeshInstance3D in held_station.find_children("*", "MeshInstance3D", true, false):
+		check(mesh.is_inside_tree(), "Every authored crafting mesh joins the held subtree: " + str(mesh.name))
+	check(carry.bounds.size.y > 1.0 and carry.bounds.size.x > 1.0, "Held crafting bounds include the full gantry and bed")
 	for key in ["flashlight", "scrap", "battery", "engine_repair_kit", "oil_barrel", "engine_standard"]:
 		actor.inventory.items.clear()
 		actor.inventory.active_slot = 0
