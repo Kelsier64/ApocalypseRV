@@ -67,9 +67,16 @@ def box(center, size, mat, bevel=.012):
         face([low[i], high[i], high[j], low[j]], mat)
 
 
-def bolt(x, y, z):
-    ring = [(x+math.cos(i*math.tau/6)*.018, y+math.sin(i*math.tau/6)*.018, z) for i in range(6)]
-    face(ring, 2)
+def bolt(x, y, z, direction=1):
+    """Solid hex head, including sides; never a coplanar painted-on disc."""
+    back = [(x+math.cos(i*math.tau/6)*.014, y+math.sin(i*math.tau/6)*.014, z) for i in range(6)]
+    front = [(a, b, c+direction*.008) for a,b,c in back]
+    face(front if direction > 0 else front[::-1], 2)
+    face(back[::-1] if direction > 0 else back, 2)
+    for i in range(6):
+        j = (i+1)%6
+        quad = [back[i],back[j],front[j],front[i]]
+        face(quad if direction > 0 else quad[::-1], 2)
 
 
 def build(height, short):
@@ -78,30 +85,42 @@ def build(height, short):
     # The door ladder ends below the sill so the outward leaf clears it.
     rail_top = height if short else height+.37
     for x in (-.43,.43):
-        box((x,rail_top/2,0),(.085,rail_top,.14),0)
+        # Colored sleeves are actual rail sections. In particular the short
+        # ladder's ivory band no longer shares faces with its rubber grip.
+        ivory_low = height-(.40 if short else .20)
+        ivory_high = ivory_low+.10
+        grip_low = height-.26 if short else height+.06
+        sections = [(.07,.20,0),(.20,.315,4),(.315,ivory_low,0),
+                    (ivory_low,ivory_high,1),(ivory_high,grip_low,0),
+                    (grip_low,rail_top-.025,3),(rail_top-.025,rail_top,1)]
+        for low, high, mat in sections:
+            box((x,(low+high)/2,0),(.085,high-low,.14),mat)
         box((x,.035,0),(.095,.07,.15),3)
-        box((x,rail_top-.17,.004),(.09,.26,.15),3)
-        box((x,.26,.002),(.09,.115,.145),4)
-        box((x,height-.15,.002),(.09,.1,.145),1)
+        for y in (grip_low+.035,rail_top-.065):
+            box((x,y,.074),(.064,.014,.008),3,.002)
         # Flat rear standoffs share a -Z wall mounting plane, not floor feet
         # or a projecting hook. They have no placement/snap behavior.
         for mount_y in ([.65, height-.16] if short else [.45,height-.45]):
-            box((x,mount_y,-.095),(.07,.055,.11),2)
+            box((x,mount_y,-.09),(.07,.055,.10),2)
             box((x,mount_y,-.145),(.14,.14,.01),0,.002)
-            bolt(x,mount_y+.042,-.138)
-            bolt(x,mount_y-.042,-.138)
-        box((x,rail_top,.0),(.09,.025,.145),1)
+            # Front-facing fasteners sit beyond the mounting plate face.
+            bolt(x,mount_y+.042,-.137)
+            bolt(x,mount_y-.042,-.137)
+            box((x,mount_y-.028,-.085),(.026,.075,.085),2,.003)
     count = 5 if short else 9
     for i in range(count):
         y = .22+i*(height-.32)/(count-1)
         box((0,y,.015),(.8,.055,.18),2)
-        box((0,y+.031,.02),(.7,.01,.135),3)
-        for k in range(3):
-            box((0,y+.04,-.026+k*.045),(.69,.008,.012),2,.001)
+        # Separated raised tread strips and drain gaps read from above, without
+        # layered coplanar top faces. All detail stays within the Item collider.
+        for k in range(4):
+            box((0,y+.035,-.043+k*.038),(.70,.015,.022),3,.002)
+        box((0,y,.106),(.72,.038,.010),2,.002)
         for x in (-.43,.43):
-            bolt(x,y,.073)
+            box((x,y,.080),(.115,.084,.016),2,.003)
+            bolt(x,y,.091)
     # Orange identification tab fixed to the lower crossbar.
-    box((0,.22,.113),(.23,.055,.008),4,.001)
+    box((0,.22,.116),(.23,.033,.008),4,.001)
     write_glb('side_door_ladder' if short else 'roof_ladder')
 
 
