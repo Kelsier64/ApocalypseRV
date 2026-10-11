@@ -5,7 +5,9 @@ extends Node3D
 ## Default cameras (including mirrors) see the complete model, never the local copy.
 const FULL_BODY_LAYER := 1 << 17
 const LOCAL_VIEW_LAYER := 1 << 20
-const HEAD_MESHES := [&"PLAYER_Skin_Hood", &"PLAYER_Skin_Hood_Lining", &"PLAYER_Skin_Hood_Seams", &"PLAYER_Skin_Mask", &"PLAYER_Skin_MaskStrap"]
+# The local lens must not see the open neckline from inside a bent torso.
+# Keep these accessories on the complete observer/shadow model only.
+const LOCAL_HIDDEN_MESHES := [&"PLAYER_Skin_Hood", &"PLAYER_Skin_Hood_Lining", &"PLAYER_Skin_Hood_Seams", &"PLAYER_Skin_Mask", &"PLAYER_Skin_MaskStrap", &"PLAYER_Skin_Collar", &"PLAYER_Skin_Undershirt"]
 static var _local_body_mesh: ArrayMesh
 
 @export var local_camera_path := NodePath("../Camera3D")
@@ -40,7 +42,7 @@ func _ready() -> void:
 		return # Complete model for a future observer-only actor.
 	camera.cull_mask = (camera.cull_mask & ~FULL_BODY_LAYER) | LOCAL_VIEW_LAYER
 	for mesh in source_meshes:
-		if mesh.name == &"PLAYER_Mesh" or mesh.name in HEAD_MESHES:
+		if mesh.name == &"PLAYER_Mesh" or mesh.name in LOCAL_HIDDEN_MESHES:
 			mesh.layers = FULL_BODY_LAYER
 			var shadow := _copy_instance(mesh, "LocalShadow_" + mesh.name)
 			shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
