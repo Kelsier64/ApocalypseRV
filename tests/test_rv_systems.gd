@@ -28,6 +28,7 @@ func _run() -> void:
 	generator.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(0, 1, 0)), rv)
 	await physics_frame
 	expect(rv.get_equipment().has(generator), "Installed generator registers with this RV")
+	check_unlimited_resources(rv)
 	rv.current_power = 50.0
 	var fuel := rv.current_fuel
 	rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
@@ -125,3 +126,29 @@ func _run() -> void:
 		for failure in failures:
 			push_error(failure)
 		quit(1)
+
+func check_unlimited_resources(rv: Chassis) -> void:
+	expect(not rv.unlimited_materials and not rv.unlimited_fuel, "Production RV defaults to finite resources")
+	var stock := rv.get_all_items()
+	var fuel := rv.current_fuel
+	var power := rv.current_power
+	rv.unlimited_materials = true
+	rv.unlimited_fuel = true
+	var costs := {ItemNames.METAL_PARTS: 10000, ItemNames.UNREFINED_FUEL: 10000}
+	for index in range(10):
+		expect(rv.has_materials(costs) and rv.deduct_materials(costs), "Unlimited materials permit repeated unaffordable crafting and construction")
+	expect(rv.get_all_items() == stock, "Unlimited material use preserves real stock")
+	expect(rv.deposit_materials(costs, true) and rv.get_all_items() == stock, "Cancelling free work does not manufacture refunded stock")
+	expect(not rv.deduct_materials({ItemNames.METAL_PARTS: -1}) and not rv.has_materials({ItemNames.METAL_PARTS: 1.5}), "Unlimited mode still rejects invalid material costs")
+	expect(rv.consume_fuel(10000.0) and rv.current_fuel == fuel, "Unlimited fuel accepts costs exceeding the tank without draining it")
+	expect(not rv.consume_fuel(-1.0) and not rv.consume_fuel(INF) and not rv.consume_fuel(NAN), "Unlimited mode still rejects invalid fuel costs")
+	rv.current_power = 20.0
+	expect(rv.set_engine_running(true), "Demo fuel permits engine start")
+	for index in range(120):
+		rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
+	expect(rv.energy.engine_running and rv.current_fuel == fuel and rv.current_power > 20.0, "Driving and generator charging continue without burning fuel")
+	rv.set_engine_running(false)
+	rv.current_power = power
+	rv.unlimited_materials = false
+	rv.unlimited_fuel = false
+	expect(not rv.has_materials(costs) and not rv.consume_fuel(10000.0), "Finite resource limits resume when demo policy is disabled")

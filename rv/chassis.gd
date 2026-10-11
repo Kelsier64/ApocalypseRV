@@ -66,6 +66,9 @@ signal inventory_changed(item_name: String, new_amount: int)
 signal fuel_changed(current: float, max_value: float)
 signal power_changed(current: float, max_value: float)
 
+# Scene-local demo policy; production defaults and checkpoint data stay finite.
+var unlimited_materials := false
+var unlimited_fuel := false
 var storage := MaterialStorage.new()
 var inventory: Dictionary:
 	get: return storage.items
@@ -279,6 +282,9 @@ func add_item(item_name: String, amount: int) -> bool:
 	return deposit_materials({item_name: amount})
 
 func deposit_materials(amounts: Dictionary, refund: bool = false) -> bool:
+	# Demo jobs never paid materials, so cancellation must not create a refund.
+	if unlimited_materials and refund:
+		return storage.valid_amounts(amounts)
 	update_storage_capacity()
 	if not storage.deposit(amounts, refund):
 		return false
@@ -287,9 +293,11 @@ func deposit_materials(amounts: Dictionary, refund: bool = false) -> bool:
 	return true
 
 func has_materials(costs: Dictionary) -> bool:
-	return storage.has_materials(costs)
+	return storage.valid_amounts(costs) if unlimited_materials else storage.has_materials(costs)
 
 func deduct_materials(costs: Dictionary) -> bool:
+	if unlimited_materials:
+		return storage.valid_amounts(costs)
 	if not storage.deduct(costs):
 		return false
 	for key in costs:
@@ -526,7 +534,11 @@ func set_driving_state(state: bool) -> void:
 	is_player_driving = state
 
 func consume_fuel(amount: float) -> bool:
-	if amount < 0.0 or not is_finite(amount) or current_fuel + 0.000001 < amount:
+	if amount < 0.0 or not is_finite(amount):
+		return false
+	if unlimited_fuel:
+		return true
+	if current_fuel + 0.000001 < amount:
 		return false
 	current_fuel -= amount
 	fuel_changed.emit(current_fuel, max_fuel)

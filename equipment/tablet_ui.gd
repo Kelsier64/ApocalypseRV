@@ -140,6 +140,10 @@ func _refresh() -> void:
 		"RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.current_fuel, connected_rv.max_fuel,
 		connected_rv.current_power, connected_rv.max_power, connected_rv.energy.generated_rate, connected_rv.energy.load_rate,
 		connected_rv.storage.used(), connected_rv.storage.capacity, " — OVER CAPACITY: spend materials before recycling" if connected_rv.storage.used() > connected_rv.storage.capacity else "", connected_rv.wheel_health[0], connected_rv.wheel_health[1], connected_rv.wheel_health[2], connected_rv.wheel_health[3]]
+	if connected_rv.unlimited_materials:
+		status_label.text += "\n材料：無限（製作、施工及一般維修不扣材料）"
+	if connected_rv.unlimited_fuel:
+		status_label.text += "\n燃油：無限（駕駛及發電不耗油）"
 	if connected_rv.energy.battery == null:
 		status_label.text += "\nNO BATTERY: install a battery into an operational socket."
 	elif connected_rv.current_power <= 0.0:
