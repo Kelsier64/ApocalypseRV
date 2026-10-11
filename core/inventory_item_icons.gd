@@ -4,6 +4,8 @@ class_name InventoryItemIcons
 
 const FALLBACK: Texture2D = preload("res://assets/inventory/unknown.svg")
 const ICONS := {
+	"res://props/pistol.tscn": preload("res://assets/inventory/pistol.png"),
+	"res://props/pistol_ammo.tscn": preload("res://assets/inventory/pistol_ammo.png"),
 	"res://props/scrap.tscn": preload("res://assets/inventory/scrap.png"),
 	"res://props/oil_barrel.tscn": preload("res://assets/inventory/oil_barrel.png"),
 	"res://props/battery.tscn": preload("res://assets/inventory/battery.png"),

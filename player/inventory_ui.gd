@@ -9,6 +9,7 @@ const MUTED := Color("8c968e")
 var slots_container: HBoxContainer
 var selected_name: Label
 var flashlight_hint: Label
+var pistol_hint: Label
 
 func _ready() -> void:
 	var control := Control.new()
@@ -20,6 +21,11 @@ func _ready() -> void:
 	flashlight_hint = _label("FlashlightHint", "", 13, IndustrialTheme.AMBER)
 	control.add_child(flashlight_hint)
 	_above_slot(flashlight_hint, -54, -32)
+	pistol_hint = _label("PistolHint", "", 13, IndustrialTheme.AMBER)
+	control.add_child(pistol_hint)
+	_above_slot(pistol_hint, -54, -32)
+	pistol_hint.offset_left = -160
+	pistol_hint.offset_right = 160
 
 	slots_container = HBoxContainer.new()
 	slots_container.name = "Slots"
@@ -68,6 +74,14 @@ func _make_slot(index: int) -> void:
 	large.offset_top = 4
 	large.offset_bottom = 20
 	large.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var ammo_count := _label("AmmoCount", "", 11, IndustrialTheme.AMBER)
+	panel.add_child(ammo_count)
+	ammo_count.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	ammo_count.offset_left = -52
+	ammo_count.offset_right = -6
+	ammo_count.offset_top = 4
+	ammo_count.offset_bottom = 20
+	ammo_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	var empty_mark := Control.new()
 	empty_mark.name = "EmptyMark"
@@ -93,13 +107,23 @@ func _make_slot(index: int) -> void:
 	selection.offset_top = -3
 	selection.offset_bottom = -1
 
-func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: bool = true) -> void:
+func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: bool = true, weapon_data: Dictionary = {}) -> void:
 	if not slots_container:
 		return
 	var selected: Dictionary = inventory[active_slot] if active_slot >= 0 and active_slot < inventory.size() else {}
 	var flashlight: Dictionary = selected.get("state", {}).get("flashlight", {}) if selected.get("scene_path", "") == "res://props/flashlight.tscn" else {}
 	flashlight_hint.visible = show_flashlight_hint and not flashlight.is_empty()
 	flashlight_hint.text = "電量 %d%%  ·  L %s" % [ceili(float(flashlight.get("charge", 0.0))), "開啟" if flashlight.get("on", false) else "關閉"] if flashlight_hint.visible else ""
+	pistol_hint.visible = show_flashlight_hint and selected.get("scene_path", "") == PistolRules.PISTOL_SCENE
+	pistol_hint.text = ""
+	if pistol_hint.visible:
+		var rounds := int(selected.get("state", {}).get("pistol", {}).get("loaded_rounds", 0))
+		pistol_hint.text = "彈量 %d/%d · 備彈 %d" % [rounds, PistolRules.MAGAZINE_CAPACITY, int(weapon_data.get("reserve", 0))]
+		var remaining := float(weapon_data.get("reload_remaining", 0.0))
+		if remaining > 0.0:
+			pistol_hint.text += " · 換彈 %.1fs" % remaining
+		if not weapon_data.get("can_use", true):
+			pistol_hint.text += " · 無法使用"
 
 	for index in range(slots_container.get_child_count()):
 		var panel := slots_container.get_child(index) as Panel
@@ -114,9 +138,18 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 			selected_name = item_name
 			if flashlight_hint.get_parent() != panel:
 				flashlight_hint.reparent(panel, false)
+			if pistol_hint.get_parent() != panel:
+				pistol_hint.reparent(panel, false)
 		var icon := panel.get_node("ItemIcon") as TextureRect
 		icon.texture = InventoryItemIcons.texture_for(str(item.get("scene_path", "")), item.get("state", {})) if occupied else null
 		icon.visible = occupied
+		var ammo_count := panel.get_node("AmmoCount") as Label
+		ammo_count.text = ""
+		if item.get("scene_path", "") == PistolRules.AMMO_SCENE:
+			ammo_count.text = str(int(item.get("state", {}).get("ammo", {}).get("rounds", 0)))
+		elif item.get("scene_path", "") == PistolRules.PISTOL_SCENE:
+			ammo_count.text = "%d/%d" % [int(item.get("state", {}).get("pistol", {}).get("loaded_rounds", 0)), PistolRules.MAGAZINE_CAPACITY]
+		ammo_count.visible = not ammo_count.text.is_empty()
 		panel.get_node("EmptyMark").visible = not occupied
 		panel.get_node("LargeItem").visible = large
 		panel.get_node("Selection").visible = active

@@ -1,0 +1,29 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://props/pistol_ammo.gd" id="1"]
+[ext_resource type="Script" path="res://core/item_definition.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/pistol_ammo/pistol_ammo.glb" id="3"]
+
+[sub_resource type="Resource" id="Definition"]
+script = ExtResource("2")
+type_id = "pistol_ammo"
+display_name = "Pistol Ammo"
+weight = 0.32
+health = 60.0
+is_large = false
+requires_rv_connection = false
+scrap_yields = {"Metal Parts": Vector2(1, 1)}
+
+[sub_resource type="BoxShape3D" id="Collision"]
+size = Vector3(0.090, 0.047, 0.061)
+
+[node name="PistolAmmo" type="RigidBody3D"]
+script = ExtResource("1")
+definition = SubResource("Definition")
+mass = 0.32
+continuous_cd = true
+
+[node name="Visuals" parent="." instance=ExtResource("3")]
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("Collision")

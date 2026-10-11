@@ -28,6 +28,9 @@ func _run() -> void:
 		_expect(texture != null and texture.resource_path.ends_with(".png"), "Trusted item uses a model snapshot texture: " + path)
 	for pair in [["gas_can", "gas_can_empty"], ["battery", "battery_large"], ["engine_standard", "engine_upgraded"]]:
 		_expect(InventoryItemIcons.texture_for("res://props/" + pair[0] + ".tscn") != InventoryItemIcons.texture_for("res://props/" + pair[1] + ".tscn"), "Item variants retain per-scene snapshot resources: " + str(pair))
+	for pistol_icon in [[PistolRules.PISTOL_SCENE, "pistol.png"], [PistolRules.AMMO_SCENE, "pistol_ammo.png"]]:
+		var texture := InventoryItemIcons.texture_for(pistol_icon[0])
+		_expect(texture != null and texture.resource_path.ends_with(pistol_icon[1]), "Pistol items use their matching model snapshot: " + pistol_icon[1])
 	var player_corpse_state := {"corpse": {"kind": "player"}}
 	var player_corpse_snapshot := player_corpse_state.duplicate(true)
 	var player_corpse_texture := InventoryItemIcons.texture_for("res://props/corpse.tscn", player_corpse_state)
@@ -101,6 +104,7 @@ func _run() -> void:
 	_expect(not ui.flashlight_hint.visible, "Player modes can suppress the flashlight hint")
 	ui.update_slots(flashlight, 1, true)
 	_expect(not ui.flashlight_hint.visible, "Selecting empty hands clears the flashlight hint")
+	_check_pistol_presentation(ui)
 	_check_input_passthrough(ui)
 
 	var seat := Node.new()
@@ -115,12 +119,78 @@ func _run() -> void:
 	_expect(ui.visible, "Leaving a seat restores the hotbar")
 	host.free()
 	if failures.is_empty():
-		print("PASS: inventory icons, empty selection, large cargo, flashlight hints, input passthrough and seated visibility")
+		print("PASS: inventory icons, empty selection, large cargo, flashlight and pistol hints, ammo counts, input passthrough and seated visibility")
 		quit(0)
 	else:
 		for failure in failures:
 			push_error(failure)
 		quit(1)
+
+func _check_pistol_presentation(ui) -> void:
+	var items := [
+		{"name": "Pistol", "is_large": false, "scene_path": PistolRules.PISTOL_SCENE, "state": {"pistol": {"loaded_rounds": 7}}},
+		{"name": "Ammo", "is_large": false, "scene_path": PistolRules.AMMO_SCENE, "state": {"ammo": {"rounds": 19}}},
+		{"name": "Second pistol", "is_large": false, "scene_path": PistolRules.PISTOL_SCENE, "state": {"pistol": {"loaded_rounds": 2}}},
+	]
+	var weapon_data := {"reload_remaining": 0.0, "reserve": 19, "can_use": true}
+	var items_before := items.duplicate(true)
+	var weapon_before := weapon_data.duplicate(true)
+	ui.update_slots(items, 0, true, weapon_data)
+	var pistol_slot := ui.slots_container.get_child(0) as Panel
+	var ammo_slot := ui.slots_container.get_child(1) as Panel
+	var second_slot := ui.slots_container.get_child(2) as Panel
+	var pistol_count := pistol_slot.get_node("AmmoCount") as Label
+	var ammo_count := ammo_slot.get_node("AmmoCount") as Label
+	_expect(pistol_count.visible and pistol_count.text == "7/%d" % PistolRules.MAGAZINE_CAPACITY, "Pistol slot shows loaded rounds and magazine capacity")
+	_expect(ammo_count.visible and ammo_count.text == "19", "Unselected ammo box shows its remaining rounds")
+	_expect(ui.pistol_hint.visible and ui.pistol_hint.text.contains("7/%d" % PistolRules.MAGAZINE_CAPACITY) and ui.pistol_hint.text.contains("備彈 19"), "Selected pistol hint displays loaded ammunition and supplied reserve")
+	_expect(ui.pistol_hint.get_parent() == pistol_slot and not ui.flashlight_hint.visible, "Pistol hint belongs to the selected slot without a stale flashlight hint")
+	var ready_text: String = ui.pistol_hint.text
+	var pistol_style := pistol_slot.get_theme_stylebox("panel")
+	var ammo_style := ammo_slot.get_theme_stylebox("panel")
+	_expect(items == items_before and weapon_data == weapon_before, "Pistol presentation leaves inventory and weapon data unchanged")
+
+	items[0].state.pistol.loaded_rounds = 6
+	items[1].state.ammo.rounds = 18
+	weapon_data.reserve = 18
+	weapon_data.reload_remaining = PistolRules.RELOAD_SECONDS
+	items_before = items.duplicate(true)
+	weapon_before = weapon_data.duplicate(true)
+	ui.update_slots(items, 0, true, weapon_data)
+	_expect(pistol_count.text == "6/%d" % PistolRules.MAGAZINE_CAPACITY and ammo_count.text == "18", "Ammo counts refresh even when occupied slot appearance is unchanged")
+	_expect(ui.pistol_hint.text.contains("6/%d" % PistolRules.MAGAZINE_CAPACITY) and ui.pistol_hint.text.contains("備彈 18") and ui.pistol_hint.text.contains("換彈 %.1fs" % PistolRules.RELOAD_SECONDS), "Pistol hint refreshes ammunition, reserve and reload countdown")
+	_expect(pistol_slot.get_theme_stylebox("panel") == pistol_style and ammo_slot.get_theme_stylebox("panel") == ammo_style, "Ammunition refresh preserves both slot style resources")
+	_expect(items == items_before and weapon_data == weapon_before, "Reload presentation does not alter canonical state or weapon status")
+	weapon_data.reload_remaining = 0.0
+	weapon_data.can_use = false
+	ui.update_slots(items, 0, true, weapon_data)
+	_expect(ui.pistol_hint.visible and ui.pistol_hint.text.contains("無法使用") and not ui.pistol_hint.text.contains("換彈"), "Blocked pistol shows its usage restriction and clears a completed reload hint")
+	weapon_data.can_use = true
+	ui.update_slots(items, 0, true, weapon_data)
+	_expect(ui.pistol_hint.text != ready_text and not ui.pistol_hint.text.contains("無法使用"), "Restoring pistol use clears the restriction while retaining updated ammunition")
+	ui.update_slots(items, 0, false, weapon_data)
+	_expect(not ui.pistol_hint.visible and ui.pistol_hint.text.is_empty() and pistol_count.visible, "Player modes suppress and clear pistol hints while retaining slot ammunition")
+	ui.update_slots(items, 2, true, weapon_data)
+	_expect(ui.pistol_hint.visible and ui.pistol_hint.get_parent() == second_slot and ui.pistol_hint.text.contains("2/%d" % PistolRules.MAGAZINE_CAPACITY), "Switching pistols moves the hint and displays the selected magazine")
+	_expect(not (pistol_slot.get_node("ItemName") as Label).visible and (second_slot.get_node("ItemName") as Label).visible, "Only the newly selected pistol has a name caption")
+	ui.update_slots(items, 1, true, weapon_data)
+	_expect(not ui.pistol_hint.visible and ui.pistol_hint.text.is_empty(), "Selecting an ammunition box clears the pistol hint")
+	ui.update_slots(items, PlayerInventory.MAX_SLOTS - 1, true, weapon_data)
+	_expect(not ui.pistol_hint.visible and ui.pistol_hint.text.is_empty(), "Selecting empty hands clears the pistol hint")
+
+	# Replacing a small occupied pistol with another small item reuses its style.
+	ui.update_slots(items, 0, true, weapon_data)
+	pistol_style = pistol_slot.get_theme_stylebox("panel")
+	items[0] = {"name": "Flashlight", "is_large": false, "scene_path": "res://props/flashlight.tscn", "state": {"flashlight": {"charge": 50.0, "on": false}}}
+	ui.update_slots(items, 0, true, weapon_data)
+	_expect(not pistol_count.visible and pistol_count.text.is_empty(), "Replacing a pistol with a nonammo item clears stale slot ammunition")
+	_expect(pistol_slot.get_theme_stylebox("panel") == pistol_style, "Item identity refresh preserves an unchanged occupied slot style")
+	_expect(not ui.pistol_hint.visible and ui.pistol_hint.text.is_empty() and ui.flashlight_hint.visible, "Switching to flashlight clears pistol hint and restores flashlight hint")
+	ui.update_slots([], 0, true, weapon_data)
+	for panel in ui.slots_container.get_children():
+		var count := panel.get_node("AmmoCount") as Label
+		_expect(not count.visible and count.text.is_empty(), "Empty slots clear ammunition labels: " + str(panel.name))
+	_expect(not ui.pistol_hint.visible and ui.pistol_hint.text.is_empty(), "Removing inventory clears the selected pistol hint")
 
 func _check_input_passthrough(node: Node) -> void:
 	if node is Control:

@@ -21,6 +21,8 @@
 
 ## 分組與覆蓋
 
+`test_pistol` 屬 quick，涵蓋單發、冷卻、原子換彈、跨盒補彈、模式中斷及缺臂限制；`test_pistol_combat`／`test_pistol_persistence` 屬 integration，使用正式敵人、遮擋、獨立 World3D、RV 收納及磁碟存檔；`test_pistol_visual` 屬 assets，檢查三角面、尺寸、正式骨架手掌接觸與丟棄後收手。原生測試場見[手槍 playground](../docs/guides/playgrounds.md#pistol)，本輪結果見[驗證紀錄](../docs/validation/2026-10-11-pistol.md)。
+
 `test_slender_speaker_encounter`、`test_slender_speaker_parked_attack` 新增精確最後看見位置、最近可見屋頂及後艙→中艙→前艙的剩餘車頂順序。`test_slender_speaker_chassis_smash` 以正式玩家、RV 與手部動畫驗證玩家藏到另一處後，巨人自主砸向舊位置並落空；既有未知乘員檢查仍不能砸擊裸底盤。驗證紀錄見[最後看見位置與最近車頂](../docs/validation/2026-10-10-slender-speaker-last-seen-attack.md)。
 
 `test_slender_speaker_fog_spawn` 屬 quick，驗證生成器只讀所屬世界實際霧量、小霧 0.5 的含邊界門檻、起霧／散霧過渡、單純下雨及缺少時鐘的拒絕。`test_slender_speaker_world` 屬 integration，以正式森林與導航驗證無霧略過不補刷、已有巨人在無霧 checkpoint 中還原，以及讀檔後起霧回訪仍不補刷。[本輪紀錄](../docs/validation/2026-10-10-slender-speaker-fog-spawn.md)。
