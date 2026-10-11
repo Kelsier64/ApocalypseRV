@@ -40,7 +40,7 @@ func _run() -> void:
 	player.camera.look_at(control.global_position)
 	var control_ray: RayCast3D = player.camera.get_node("InteractRay")
 	control_ray.force_raycast_update()
-	check(control_ray.get_collider() == control, "Rear control remains reachable through the production interaction ray with doors closed")
+	check(control_ray.get_collider() == control, "Interior rear control is reachable from the cabin with doors closed")
 	rv.linear_velocity = Vector3(0, 0, 0.6)
 	check(ramp.interact(player).contains("停穩") and not ramp.moving, "Moving vehicle cannot start ramp deployment")
 	rv.linear_velocity = Vector3.ZERO
@@ -67,7 +67,7 @@ func _run() -> void:
 	player.camera.global_position = control.to_global(Vector3(-0.1, 0.25, 0.9))
 	player.camera.look_at(control.global_position)
 	control_ray.force_raycast_update()
-	check(control_ray.get_collider() == control, "Opening the rear doors leaves the fixed ramp control reachable")
+	check(control_ray.get_collider() == control, "Interior rear control remains reachable from the cabin with doors open")
 	player.camera.transform = camera_rest
 	rv.set_engine_running(true)
 	rv.is_player_driving = true

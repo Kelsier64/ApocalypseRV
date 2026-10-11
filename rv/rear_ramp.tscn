@@ -224,7 +224,8 @@ material_override = ExtResource("teal")
 
 [node name="Control" type="StaticBody3D" parent="."]
 script = ExtResource("control")
-position = Vector3(-1.96, 0.3, 0.12)
+position = Vector3(-1.77, 0.43, -0.9)
+rotation = Vector3(0, 1.5707964, 0)
 collision_layer = 2
 collision_mask = 0
 
