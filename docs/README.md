@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-11 Slender Speaker 撞毀樹木](validation/2026-10-11-slender-speaker-tree-impact.md)：實際身體碰撞接上既有倒塌與保存，含森林自主追蹤、路邊樹、牆面及原生回放檢查。
+
 - [2026-10-10 Raker 車撞倒地門檻](validation/2026-10-10-raker-impact-threshold.md)：相對接近速度門檻提高至 9 m/s，含慢車迎面跑動、輪驅輕重撞擊及原生攀車驗證。
 
 - [2026-10-10 Slender Speaker 正式森林導航修正](validation/2026-10-10-slender-speaker-forest-tracking.md)：坡面路徑高度判定、樹幹受阻後脫困，涵蓋實際森林徘徊、玩家追擊與 RV 輪驅追蹤。

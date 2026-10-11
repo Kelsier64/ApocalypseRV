@@ -1017,11 +1017,11 @@ func _move_swept(desired: Vector3, delta: float) -> void:
 		var hit := get_slide_collision(index)
 		var rv := RVConnection.resolve(hit.get_collider())
 		if rv != null: receive_vehicle_body_contact(rv, hit.get_normal(), hit.get_position())
+		elif _break_contact_tree(hit): continue
 		elif hit.get_collider() is StaticBody3D and absf(hit.get_normal().y) < .5:
 			wall_normal = hit.get_normal().slide(Vector3.UP).normalized()
-	# A fast corner can leave the swept body against a trunk while the cached
-	# path still begins on its other side. Requery from the actual body position
-	# after sustained blocked motion; never steer through or remove the solid.
+	# Trees yield through their deferred destruction contract. Other solids
+	# still require recovery from the actual blocked body position.
 	var displacement := (global_position - starting_position).slide(Vector3.UP).length()
 	if not wall_normal.is_zero_approx() and desired.slide(Vector3.UP).length() > .5 and displacement < .2 * delta:
 		_navigation_stall_seconds += delta
@@ -1035,6 +1035,20 @@ func _move_swept(desired: Vector3, delta: float) -> void:
 		if reachable.slide(Vector3.UP).distance_to(escape.slide(Vector3.UP)) < .75:
 			_navigation_recovery_point = reachable
 			_navigation_recovery_seconds = 3.0
+
+func _break_contact_tree(hit: KinematicCollision3D) -> bool:
+	# Use the incoming sweep velocity: the slide solver can already have
+	# removed its inward component by the time the contact is inspected.
+	var incoming := contact_approach_velocity.slide(Vector3.UP)
+	var normal := hit.get_normal()
+	if not incoming.is_finite() or not normal.is_finite() or absf(normal.y) > .65: return false
+	if -incoming.dot(normal.normalized()) < .1: return false
+	var tree := TreeImpact.target_for(hit.get_collider())
+	if tree == null: return false
+	if tree.vehicle_tree_is_broken(hit.get_collider_shape_index()): return true
+	# Shape ownership selects exactly one dense-forest trunk. Roadside trees
+	# resolve through their parent; both retain falls, navigation and tombstones.
+	return tree.vehicle_tree_impact(hit.get_collider_shape_index(), incoming, global_position)
 
 func _begin_smash(kind := "vehicle_assault") -> void:
 	_moving_smash = velocity.slide(Vector3.UP).length() > .25 or (is_instance_valid(target_vehicle) and ClimbMath.point_velocity(target_vehicle, target_vehicle.global_position).slide(Vector3.UP).length() > .25)
