@@ -71,8 +71,11 @@ func _button(parent: Node, id: String, text: String, action: Callable) -> Button
 	button.custom_minimum_size.y = 40
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(action)
+	button.focus_entered.connect(_button_focus.bind(button, true))
+	button.focus_exited.connect(_button_focus.bind(button, false))
 	parent.add_child(button)
 	controls[id] = button
+	_button_focus(button, false)
 	return button
 
 func _toggle(parent: Node, id: String, text: String, action: Callable) -> CheckButton:
@@ -82,17 +85,21 @@ func _toggle(parent: Node, id: String, text: String, action: Callable) -> CheckB
 	var button := CheckButton.new()
 	button.custom_minimum_size = Vector2(115, 40)
 	button.toggled.connect(action)
-	button.focus_entered.connect(_toggle_focus.bind(button, true))
-	button.focus_exited.connect(_toggle_focus.bind(button, false))
+	button.focus_entered.connect(_button_focus.bind(button, true))
+	button.focus_exited.connect(_button_focus.bind(button, false))
 	row.add_child(button)
 	controls[id] = button
+	_button_focus(button, false)
 	return button
 
-func _toggle_focus(button: CheckButton, focused: bool) -> void:
-	# Godot uses pressed text colors ahead of focus colors for checked buttons.
-	for color in ["font_pressed_color", "font_hover_pressed_color"]:
-		if focused: button.add_theme_color_override(color, RVTerminalTheme.BACKGROUND)
-		else: button.remove_theme_color_override(color)
+func _button_focus(button: BaseButton, focused: bool) -> void:
+	# Hover/pressed draw states can override native focus colors. Keep focus
+	# contrast consistent during mouse/keyboard activation, including ON/OFF.
+	for color in ["font_color", "font_focus_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+		button.add_theme_color_override(color, RVTerminalTheme.BACKGROUND if focused else RVTerminalTheme.INK)
+	for state in ["normal", "hover", "pressed", "hover_pressed"]:
+		var fill := RVTerminalTheme.AMBER if focused else (Color("26333c") if state in ["hover", "hover_pressed"] else Color.TRANSPARENT)
+		button.add_theme_stylebox_override(state, RVTerminalTheme.style(fill))
 
 func _number(parent: Node, id: String, text: String, maximum: float, step: float, action: Callable) -> void:
 	var row := HBoxContainer.new()
@@ -163,7 +170,7 @@ func _build_tui() -> void:
 	_label(_construction_row, "construction")
 	_button(_construction_row, "structure:cancel", "Cancel construction", _cancel_construction)
 	_label(_tui, "message", "", RVTerminalTheme.AMBER)
-	var footer := _label(_tui, "", "F1-F5 Pages   Tab Focus   Arrows Select / Adjust   Enter Activate   Esc Close tablet", RVTerminalTheme.DIM)
+	var footer := _label(_tui, "", "F1-F5 Pages   Tab / Shift+Tab Focus   Arrows Select / Adjust   Enter Activate   Esc Close tablet", RVTerminalTheme.DIM)
 	footer.add_theme_font_size_override("font_size", 16)
 
 func _build_overview(body: Node) -> void:
@@ -214,7 +221,8 @@ func _build_crafting(body: Node) -> void:
 	var recipes := _panel(grid, "Recipes")
 	for recipe in RecipeCatalog.all():
 		var id: String = recipe.recipe_id
-		_button(recipes, "recipe:" + id, RVTerminalPresenter.recipe_name(recipe), func(): select_recipe(id))
+		var button := _button(recipes, "recipe:" + id, RVTerminalPresenter.recipe_name(recipe), func(): select_recipe(id))
+		button.focus_entered.connect(func(): select_recipe(id))
 	var detail := _panel(grid, "Recipe & workstation")
 	var selector := OptionButton.new()
 	selector.custom_minimum_size.y = 40
@@ -234,7 +242,7 @@ func _build_structure(body: Node) -> void:
 	_label(body, "structure:conditions", "", RVTerminalTheme.DIM)
 	var grid := _grid(body)
 	var diagram := _panel(grid, "Body slots / front at top")
-	_slot_button(diagram, "front")
+	_centered_slot_button(diagram, "front")
 	var cells := GridContainer.new()
 	cells.columns = 3
 	cells.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -242,7 +250,7 @@ func _build_structure(body: Node) -> void:
 	for index in 3:
 		for side in ["left", "roof", "right"]:
 			_slot_button(cells, "%s_%d" % [side, index])
-	_slot_button(diagram, "rear")
+	_centered_slot_button(diagram, "rear")
 	_label(diagram, "", "LEFT          ROOF          RIGHT\nHP = durability   X = destroyed", RVTerminalTheme.DIM)
 	var detail := _panel(grid, "Selected part")
 	_label(detail, "structure:detail")
@@ -258,10 +266,21 @@ func _build_structure(body: Node) -> void:
 
 func _slot_button(parent: Node, id: String) -> void:
 	var button := _button(parent, "slot:" + id, id, func(): select_slot(id))
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.focus_entered.connect(func(): select_slot(id, false))
 	slot_controls[id] = button
 
+func _centered_slot_button(parent: Node, id: String) -> void:
+	var center := CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(center)
+	_slot_button(center, id)
+	slot_controls[id].custom_minimum_size.x = 180
+
 func _wire_popup(selector: OptionButton) -> void:
+	selector.focus_entered.connect(_button_focus.bind(selector, true))
+	selector.focus_exited.connect(_button_focus.bind(selector, false))
+	_button_focus(selector, false)
 	# PopupMenu is a separate Window/Viewport, so it forwards the global chords.
 	selector.get_popup().window_input.connect(_input)
 
@@ -312,9 +331,9 @@ func select_page(id: String, focus: bool = true) -> void:
 		_nav[page].text = "[ F%d %s%s ]" % [index + 1, PAGE_NAMES[index], " *" if page == id else ""]
 	_refresh()
 	if focus and mode == Mode.TUI:
-		var target: Control = {"overview": controls.engine, "energy": controls.charging_enabled,
-			"equipment": controls.cabin, "crafting": controls["recipe:" + selected_recipe], "structure": slot_controls[selected_slot]}[id]
-		target.grab_focus()
+		var target: String = {"overview": "engine", "energy": "charging_enabled",
+			"equipment": "cabin", "crafting": "recipe:" + selected_recipe, "structure": "slot:" + selected_slot}[id]
+		if not _focus_id(target): _focus_first(_focus_order())
 
 func select_slot(id: String, focus: bool = true) -> void:
 	if not slot_controls.has(id): return
@@ -357,12 +376,14 @@ func _input(event: InputEvent) -> void:
 		_handle_event()
 		select_page(PAGES[event.keycode - KEY_F1])
 		return
-	var focused := get_viewport().gui_get_focus_owner()
-	if current_page == "structure" and focused in slot_controls.values() and event.keycode in [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]:
-		_move_slot(event.keycode)
+	# OptionButton menus own their arrows, Tab and activation keys. Their
+	# separate viewport forwards only the global shortcuts handled above.
+	if _popup_open(): return
+	if event.keycode == KEY_TAB:
+		_move_focus_order(-1 if event.shift_pressed else 1)
 		_handle_event()
-	elif focused is CheckButton and event.keycode in [KEY_LEFT, KEY_RIGHT]:
-		focused.button_pressed = event.keycode == KEY_RIGHT
+	elif event.keycode in [KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]:
+		_move_focus(event.keycode)
 		_handle_event()
 
 func _unhandled_input(_event: InputEvent) -> void:
@@ -381,20 +402,163 @@ func _close() -> void:
 func dismiss_popups() -> void:
 	for id in ["craft:station", "structure:type"]: controls[id].get_popup().hide()
 
-func _move_slot(key: Key) -> void:
-	var rows := [["front", "front", "front"], ["left_0", "roof_0", "right_0"], ["left_1", "roof_1", "right_1"], ["left_2", "roof_2", "right_2"], ["rear", "rear", "rear"]]
-	var point := Vector2i(1, 0)
-	if selected_slot == "rear": point = Vector2i(1, 4)
-	elif selected_slot != "front":
-		for y in range(1, 4):
-			for x in 3:
-				if rows[y][x] == selected_slot: point = Vector2i(x, y)
+func _popup_open() -> bool:
+	return controls["craft:station"].get_popup().visible or controls["structure:type"].get_popup().visible
+
+func _focus_control(id: String) -> Control:
+	var control: Control = controls.get(id)
+	if not is_instance_valid(control) or not control.is_visible_in_tree(): return null
+	if control is BaseButton and control.disabled: return null
+	return control.get_line_edit() if control is SpinBox else control
+
+func _focused_id() -> String:
+	var focused := get_viewport().gui_get_focus_owner()
+	for id in controls:
+		var control: Control = controls[id]
+		if focused == control or (control is SpinBox and focused == control.get_line_edit()): return id
+	return ""
+
+func _focus_id(id: String) -> bool:
+	var control := _focus_control(id)
+	if not control: return false
+	control.grab_focus()
+	# Scroll on the next layout pass, including when a newly selected recipe
+	# changes the height of its details or the viewport is narrow.
+	var scroll: ScrollContainer = _pages[current_page]
+	if scroll.is_ancestor_of(control): scroll.ensure_control_visible.call_deferred(control)
+	return true
+
+func _focus_first(ids: Array) -> bool:
+	for id in ids:
+		if _focus_id(id): return true
+	return false
+
+func _recipe_ids() -> Array:
+	var ids: Array = []
+	for recipe in RecipeCatalog.all(): ids.append("recipe:" + recipe.recipe_id)
+	return ids
+
+func _device_column(toggles: bool) -> Array:
+	var ids: Array = ["cabin", "service"]
+	for id in _device_ids:
+		var key := ("device:" if toggles else "select:") + id
+		if controls.has(key): ids.append(key)
+	return ids
+
+func _structure_actions() -> Array:
+	return ["structure:type", "structure:repair", "structure:rebuild", "structure:convert", "structure:cancel"]
+
+func _focus_order() -> Array:
+	# Tab uses reading order, independent of panel sizes, wrapped text, or
+	# disabled/hidden actions. Arrows additionally preserve logical columns.
+	var ids: Array = []
+	match current_page:
+		"overview": ids = ["engine", "headlights", "inspect:equipment", "inspect:structure"]
+		"energy": ids = ["charging_enabled", "charging_threshold", "charging_reserve"]
+		"equipment":
+			ids = ["cabin", "service"]
+			for id in _device_ids:
+				ids.append("select:" + id)
+				if controls.has("device:" + id): ids.append("device:" + id)
+		"crafting": ids = _recipe_ids() + ["craft:station", "craft:add", "craft:cancel"]
+		"structure":
+			for id in slot_controls: ids.append("slot:" + id)
+			ids.append_array(_structure_actions())
+	if current_page != "structure": ids.append("structure:cancel")
+	return ids
+
+func _move_in_list(ids: Array, id: String, direction: int, wrap: bool = false) -> void:
+	var available: Array = []
+	for candidate in ids:
+		if _focus_control(candidate): available.append(candidate)
+	if available.is_empty(): return
+	var index: int = available.find(id)
+	if index < 0:
+		_focus_id(available[0 if direction > 0 else -1])
+		return
+	var next := index + direction
+	if wrap: next = posmod(next, available.size())
+	if next >= 0 and next < available.size(): _focus_id(available[next])
+
+func _move_focus_order(direction: int) -> void:
+	var id := _focused_id()
+	if id.begins_with("page:"):
+		# Tab from the page bar always enters the visible page's controls.
+		_focus_first(_focus_order() if direction > 0 else _reversed(_focus_order()))
+	else: _move_in_list(_focus_order(), id, direction, true)
+
+func _reversed(ids: Array) -> Array:
+	var result := ids.duplicate()
+	result.reverse()
+	return result
+
+func _move_focus(key: Key) -> void:
+	var id := _focused_id()
+	var vertical := key in [KEY_UP, KEY_DOWN]
+	var direction := -1 if key in [KEY_UP, KEY_LEFT] else 1
+	if id.begins_with("page:"):
+		if vertical: _focus_first(_focus_order())
+		else:
+			var pages: Array = []
+			for page in PAGES: pages.append("page:" + page)
+			_move_in_list(pages, id, direction, true)
+		return
+	if id.is_empty():
+		_focus_first(_focus_order())
+		return
+	if id == "structure:cancel" and current_page != "structure":
+		if vertical: _focus_first(_reversed(_focus_order().slice(0, -1)))
+		return
+	match current_page:
+		"overview":
+			if vertical: _move_in_list(_focus_order(), id, direction)
+			else:
+				var pairs := {"engine": "inspect:equipment", "headlights": "inspect:structure", "inspect:equipment": "engine", "inspect:structure": "headlights"}
+				if (direction > 0 and id in ["engine", "headlights"]) or (direction < 0 and id.begins_with("inspect:")):
+					_focus_id(pairs[id])
+		"energy":
+			if vertical: _move_in_list(_focus_order(), id, direction)
+			elif controls.get(id) is SpinBox:
+				var field: SpinBox = controls[id]
+				field.apply()
+				field.value += direction * field.step
+		"equipment":
+			if vertical:
+				var column := _device_column(id.begins_with("device:"))
+				column.append("structure:cancel")
+				_move_in_list(column, id, direction)
+			elif direction > 0 and id.begins_with("select:"): _focus_id(id.replace("select:", "device:"))
+			elif direction < 0 and id.begins_with("device:"): _focus_id(id.replace("device:", "select:"))
+		"crafting":
+			var actions: Array = ["craft:station", "craft:add", "craft:cancel", "structure:cancel"]
+			if id.begins_with("recipe:"):
+				if vertical: _move_in_list(_recipe_ids(), id, direction)
+				elif direction > 0: _focus_first(["craft:add", "craft:station", "craft:cancel", "structure:cancel"])
+			elif vertical: _move_in_list(actions, id, direction)
+			elif direction < 0: _focus_id("recipe:" + selected_recipe)
+		"structure":
+			if id.begins_with("slot:"): _move_structure_slot(id.trim_prefix("slot:"), key)
+			elif vertical: _move_in_list(_structure_actions(), id, direction)
+			elif direction < 0: _focus_id("slot:" + selected_slot)
+
+func _move_structure_slot(id: String, key: Key) -> void:
+	if id in ["front", "rear"]:
+		if key == KEY_RIGHT: _focus_first(_structure_actions())
+		elif key == KEY_DOWN and id == "front": _focus_id("slot:roof_0")
+		elif key == KEY_UP and id == "rear": _focus_id("slot:roof_2")
+		return
+	var side := id.get_slice("_", 0)
+	var row := int(id.get_slice("_", 1))
+	var sides := ["left", "roof", "right"]
+	var column: int = sides.find(side)
 	match key:
-		KEY_LEFT: point.x -= 1
-		KEY_RIGHT: point.x += 1
-		KEY_UP: point.y -= 1
-		KEY_DOWN: point.y += 1
-	select_slot(rows[clampi(point.y, 0, 4)][clampi(point.x, 0, 2)])
+		KEY_UP: _focus_id("slot:front" if row == 0 else "slot:%s_%d" % [side, row - 1])
+		KEY_DOWN: _focus_id("slot:rear" if row == 2 else "slot:%s_%d" % [side, row + 1])
+		KEY_LEFT:
+			if column > 0: _focus_id("slot:%s_%d" % [sides[column - 1], row])
+		KEY_RIGHT:
+			if column < 2: _focus_id("slot:%s_%d" % [sides[column + 1], row])
+			else: _focus_first(_structure_actions())
 
 func _sanitize_input(text: String) -> void:
 	var clean := text.replace("\r", " ").replace("\n", " ")
@@ -471,6 +635,7 @@ func _number_value(id: String, value: float, maximum: float) -> void:
 
 func _refresh() -> void:
 	if not is_instance_valid(connected_rv) or _refreshing: return
+	var focused_id := _focused_id()
 	_refreshing = true
 	var rv := connected_rv
 	var energy: VehicleEnergy = rv.energy
@@ -507,6 +672,12 @@ func _refresh() -> void:
 	_refresh_crafting()
 	_text("message", _message)
 	_refreshing = false
+	# A completed job or equipment removal can hide/disable the focused
+	# action. Keep focus in this page instead of falling back to geometry.
+	if not focused_id.is_empty() and not focused_id.begins_with("page:") and not _focus_control(focused_id):
+		var order := _focus_order()
+		var index := order.find(focused_id)
+		if index >= 0: _focus_first(order.slice(index + 1) + _reversed(order.slice(0, index)))
 
 func _light_state(kind: String) -> String:
 	return "Powered" if connected_rv.interior_powered[kind] else ("Waiting for power / equipment" if connected_rv.interior_requested[kind] else "Off")
@@ -517,10 +688,8 @@ func _refresh_devices() -> void:
 	var ids := PackedStringArray()
 	for device in _devices: ids.append(device.persistent_id)
 	if ids != _device_ids:
-		var focused := get_viewport().gui_get_focus_owner()
-		var focus_id := ""
-		for id in device_selectors:
-			if device_selectors[id] == focused: focus_id = id
+		var focus_id := _focused_id()
+		var old_index := _device_ids.find(focus_id.get_slice(":", 1))
 		for child in _device_list.get_children():
 			child.hide()
 			child.queue_free()
@@ -538,14 +707,21 @@ func _refresh_devices() -> void:
 			button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			button.tooltip_text = _device_title(device)
 			device_selectors[id] = button
+			button.focus_entered.connect(func(): select_device(id))
 			if device.has_method("step_work") or device is CabinLightStrip:
 				var toggle := _toggle(row, "device:" + id, "", func(value: bool):
 					if _can_write() and is_instance_valid(device):
 						device.set_enabled(value)
 						_refresh())
 				toggle.custom_minimum_size.x = 100
+				toggle.focus_entered.connect(func(): select_device(id))
 		if not ids.has(selected_device): selected_device = ids[0] if not ids.is_empty() else ""
-		if device_selectors.has(focus_id): device_selectors[focus_id].grab_focus()
+		if focus_id.begins_with("select:") or focus_id.begins_with("device:"):
+			if not _focus_id(focus_id):
+				if ids.is_empty(): _focus_id("service")
+				else:
+					var nearest: String = ids[clampi(old_index, 0, ids.size() - 1)]
+					_focus_first(["device:" + nearest, "select:" + nearest] if focus_id.begins_with("device:") else ["select:" + nearest])
 	var selected: Node = null
 	for device in _devices:
 		var id: String = device.persistent_id
