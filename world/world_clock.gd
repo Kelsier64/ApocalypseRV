@@ -8,6 +8,7 @@ const DEFAULT_TIME := 8.0 * 3600.0
 var elapsed_seconds := DEFAULT_TIME
 var running := true
 var weather := WorldWeather.new()
+var deviation_fog := 0.0
 var weather_running := true
 var weather_label: Label
 var fog_materials: Array[ShaderMaterial] = []
@@ -155,7 +156,7 @@ func apply_time() -> void:
 	if environment == null or not is_instance_valid(sun): return
 	var volumetric: bool = game_settings.volumetric_fog_enabled()
 	environment.volumetric_fog_enabled = volumetric
-	var conditions := weather.sample()
+	var conditions := effective_visual_weather()
 	var clear := conditions.x
 	var rain := conditions.y / 2.0
 	var mist := conditions.z / 2.0
@@ -201,8 +202,21 @@ func apply_time() -> void:
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
-	var conditions := weather.sample()
+	var conditions := effective_visual_weather()
 	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)))
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)
+
+func effective_visual_weather() -> Vector3:
+	var conditions := weather.sample()
+	conditions.x *= 1.0 - clampf(deviation_fog / WorldWeather.FOG_LIGHT, 0.0, 1.0)
+	conditions.z = maxf(conditions.z, deviation_fog)
+	return conditions
+
+func set_deviation_fog(strength: float) -> void:
+	if not is_finite(strength): return
+	strength = clampf(strength, 0.0, WorldWeather.FOG_MEDIUM)
+	if is_equal_approx(deviation_fog, strength): return
+	deviation_fog = strength
+	apply_time()
