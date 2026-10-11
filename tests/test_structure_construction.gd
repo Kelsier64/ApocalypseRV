@@ -11,6 +11,7 @@ class TerminalStub extends Node:
 	var online := true
 	func can_operate() -> bool: return online
 	func get_connected_rv() -> Node3D: return rv
+	func is_management_active() -> bool: return ui_instance.visible
 
 func _init() -> void: _run.call_deferred()
 func check(okay: bool, message: String) -> void:
@@ -229,15 +230,15 @@ func _run() -> void:
 	panel.set_health(40.0)
 	tablet.interact_hold(player)
 	var ui: Node = tablet.ui_instance
-	check(ui.visible and ui.service_tabs.get_tab_count() == 2 and ui.structure_rows.size() == 11, "Real tablet opens with a dedicated structure page and all eleven slots")
-	check(not ui.structure_rows.has("floor") and ui.structure_buttons.filter(func(entry): return entry.slot == "floor").is_empty(), "Real tablet has no floor row or floor construction actions")
-	check(ui.structure_buttons.filter(func(entry): return entry.slot == "roof_1" and entry.operation == "convert").size() == 1, "Roof row exposes the same variant conversion action as side rows")
-	ui.service_tabs.current_tab = 1
-	ui._refresh_structures()
-	for entry in ui.structure_buttons:
-		if entry.slot == "left_1" and entry.operation == "repair":
-			check(not entry.button.disabled and entry.button.text.contains("2 Metal Parts"), "Repair button shows fee and is enabled for damaged structure")
-			entry.button.pressed.emit()
+	check(ui.visible and ui.is_management_active() and ui.slot_controls.size() == 11, "Real tablet opens management with all eleven selectable structure slots")
+	check(not ui.slot_controls.has("floor"), "Real tablet has no floor selector or floor construction actions")
+	ui.select_page("structure")
+	ui.select_slot("roof_1")
+	check(ui.controls["structure:convert"] is Button, "Roof slot exposes the same variant conversion action as side slots")
+	ui.select_slot("left_1")
+	var repair_button: Button = ui.controls["structure:repair"]
+	check(not repair_button.disabled and repair_button.text.contains("2 Metal Parts"), "Selected damaged structure shows an enabled repair action and its fee")
+	repair_button.pressed.emit()
 	check(controller.is_building(), "Real UI repair button starts the vehicle construction job")
 	tablet._close_ui()
 	check(not controller.is_building() and rv.get_item_count("Metal Parts") == 92 and panel.current_health == 40, "Closing actual terminal cancels its job without charge or repair")

@@ -455,6 +455,8 @@ func enter_ui_mode() -> bool:
 	return true
 
 func exit_ui_mode():
+	if in_ui_mode:
+		_capture_settings_release_latch()
 	in_ui_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	_advance_flashlight(0.0)

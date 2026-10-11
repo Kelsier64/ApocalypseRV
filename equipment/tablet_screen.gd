@@ -32,6 +32,9 @@ func interact_hold(player: Node3D):
 	ui_instance.visible = true
 	ui_instance.on_open()
 
+func is_management_active() -> bool:
+	return is_instance_valid(ui_instance) and ui_instance.is_management_active()
+
 func _close_ui() -> void:
 	var rv := get_connected_rv()
 	if is_instance_valid(rv):
@@ -39,6 +42,7 @@ func _close_ui() -> void:
 		if slots and is_instance_valid(slots.get("construction")):
 			slots.construction.cancel_for(self)
 	if is_instance_valid(ui_instance):
+		ui_instance.dismiss_popups()
 		ui_instance.visible = false
 	if is_instance_valid(current_user):
 		if current_user.grab_started.is_connected(_close_ui): current_user.grab_started.disconnect(_close_ui)

@@ -15,15 +15,45 @@ func _ready() -> void:
 	add_to_group(Groups.CRAFTING_STATIONS)
 	_sync_print_visual()
 
-func request_craft(recipe_id: String) -> bool:
+## Read-only eligibility used by both the terminal and the transaction.
+## Resolve ancestry without refreshing Item's connection cache or registry.
+func craft_rejection_reason(recipe_id: String) -> String:
 	var recipe := RecipeCatalog.find(recipe_id)
-	if recipe == null or not can_operate() or _committing:
+	if recipe == null or _committing or not _craft_service_ready(self):
+		return "Workstation unavailable"
+	var rv := RVConnection.resolve(get_parent())
+	if rv == null:
+		return "Workstation unavailable"
+	if jobs.size() >= queue_capacity:
+		return "Queue full"
+	# Chassis.current_power finds a socket through Item.can_operate(), which may
+	# refresh a connection and emit registry signals. Read the same first usable
+	# installed battery directly so this query never changes service ownership.
+	var charge := 0.0
+	for device: Node in rv.get_equipment():
+		if device is BatterySocket and _craft_service_ready(device) and device.installed_battery != null:
+			charge = device.installed_battery.charge
+			break
+	if charge < maxf(recipe.power_cost, 0.0):
+		return "Insufficient battery charge"
+	if not rv.has_materials(recipe.costs):
+		return "Insufficient materials"
+	return ""
+
+func _craft_service_ready(item: Item) -> bool:
+	return not item.presentation_only and item.is_fixed and item.enabled and not item.support_lost and not item.is_being_placed and not item.is_destroyed and item.current_health > 0.0 and RVConnection.resolve(item.get_parent()) != null
+
+func request_craft(recipe_id: String) -> bool:
+	var rejection := craft_rejection_reason(recipe_id)
+	if not rejection.is_empty():
+		last_error = rejection
+		return false
+	var recipe := RecipeCatalog.find(recipe_id)
+	var rv := get_connected_rv()
+	# Keep final service and power validation adjacent to the synchronous commit.
+	if not can_operate() or rv == null:
 		last_error = "Workstation unavailable"
 		return false
-	if jobs.size() >= queue_capacity:
-		last_error = "Queue full"
-		return false
-	var rv := get_connected_rv()
 	if not rv.has_usable_power(recipe.power_cost):
 		last_error = "Insufficient battery charge"
 		return false
