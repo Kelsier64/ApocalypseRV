@@ -47,10 +47,25 @@ func _run() -> void:
 		quit(1)
 		return
 	var flashlight: Item
+	var pistol: Item
+	var ammo: Item
 	for actor in world.get_node("WorldEntities").get_children():
 		if actor.scene_file_path == "res://props/flashlight.tscn": flashlight = actor
+		if actor.scene_file_path == PistolRules.PISTOL_SCENE: pistol = actor
+		if actor.scene_file_path == PistolRules.AMMO_SCENE: ammo = actor
 	check(is_instance_valid(flashlight), "Fresh shelter provides a flashlight")
 	if is_instance_valid(flashlight): flashlight.interact(world.get_node("Player"))
+	check(is_instance_valid(pistol) and is_instance_valid(ammo), "Fresh shelter provides pistol and ammo for real checkpoint round trip")
+	var pistol_id := ""
+	var ammo_id := ""
+	if is_instance_valid(pistol) and is_instance_valid(ammo):
+		pistol_id = pistol.persistent_id
+		ammo_id = ammo.persistent_id
+		pistol.set("loaded_rounds", 5)
+		ammo.set("rounds", 9)
+		check(pistol.pickup(world.get_node("Player")).contains("已拾取"), "Checkpoint fixture picks up partial pistol")
+		check(ammo.pickup(world.get_node("Player")).contains("已拾取"), "Checkpoint fixture picks up partial ammo")
+		check(world.get_node("NewRv/Chassis").store_player_item(world.get_node("Player"), 2), "Checkpoint fixture stores partial ammo")
 	await process_frame
 	check(checkpoint.save_world(world, SAVE_PATH), "Preparation checkpoint writes")
 	var prepared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
@@ -69,7 +84,9 @@ func _run() -> void:
 	var future := prepared.duplicate(true)
 	future.generation_version = 11
 	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v11 remains rejected")
-	check(prepared.player.items.size() == 1, "Picked item belongs only to player inventory")
+	check(prepared.player.items.size() == 2, "Picked flashlight and pistol belong only to player inventory")
+	check(prepared.player.items.any(func(item): return item.state.id == pistol_id and item.state.get("pistol", {}).get("loaded_rounds") == 5), "Real save records carried pistol identity and partial magazine")
+	check(prepared.vehicles[0].items.any(func(item): return item.state.id == ammo_id and item.state.get("ammo", {}).get("rounds") == 9), "Real save records stored ammo identity and partial count")
 	for invalid in ["opening", "closing", "unknown"]:
 		var bad := prepared.duplicate(true)
 		bad.start_state.phase = invalid
@@ -93,6 +110,7 @@ func _run() -> void:
 	check(checkpoint.save_world(world, SAVE_PATH), "Reloaded preparation can save")
 	var again: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	check(again.player.items == prepared.player.items, "Inventory identities survive reload")
+	check(again.vehicles[0].items == prepared.vehicles[0].items, "Stored ammo identity and partial rounds survive full checkpoint reload")
 	check(again.actors.size() == prepared.actors.size(), "Reload does not duplicate remaining supplies or equipment")
 	var run: Node = world.get_node("StartRun")
 	var button: Node = run.shelter.get_node("GarageButton")

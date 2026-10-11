@@ -51,7 +51,7 @@ MainWorld
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；兩台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
 Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9／v10，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
@@ -62,6 +62,8 @@ Chassis 四個輪槽的 wheel_health 為唯一耐久來源，0 表示爆胎；pu
 v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") 獨立種子流，在 ChunkGenerator 建立道路後生成，不消耗既有物資／敵人 RNG。路障屬 chunk，隨串流釋放與確定性重建；以該生成版本建立或從 v5 還原時會產生此障礙，地形生成版本不變。Area3D 只選取附近 Chassis，沒有車時停用 physics_process；附近每台車最多檢查四個接地點的跨幀線段與釘帶局部 AABB。輪寬計入邊界、離地與傳送跨距不觸發，無每幀全世界掃描或額外物理射線。釘帶不是可攀／可拆設備，不進 SaveSceneCatalog。回歸與限制見 [爆胎驗收](docs/validation/2026-09-22-tire-puncture.md)。
 
 ### v10 森林 Slender Speaker
+
+2026-10-11 地面跑動抓取：出手時可見、沒有目標 RV、非攀爬／爬行且水平速度至少 4 m/s 的玩家，使用 2.2 倍伸手動畫、起點周圍 5 m 的有限追蹤及 12 m/s 手部落點修正，最後 0.05 秒以實際時間鎖定。倍率在動作提交時固定，後續減速或姿勢改變不重設動畫時鐘；靜止與車上目標沿用原節奏。視線、真實手部掃掠及抬升碰撞仍為必要條件。平地 5／8 m/s 持續直線移動的自主追擊、接觸及完整抬升由 `test_slender_speaker_ground_chase` 覆蓋；衝刺測試只補充耐力以維持速度，不代表坡地、急轉彎或障礙場景皆必抓。
 
 2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤由 [forest_tracking 回歸](tests/test_slender_speaker_forest_tracking.gd) 涵蓋，範圍及本輪結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
 
@@ -142,6 +144,8 @@ RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種
 行為、爆炸、保存與真 RV 接觸自動檢查及目前尚未完成的模型／畫面驗收見 [油桶人紀錄](docs/validation/2026-10-07-barrel-man.md)。
 
 ### 樹木撞毀
+
+SlenderSpeaker 由 `move_and_slide()` 的實際身體接觸撞毀樹木，使用掃掠前的水平速度及命中 shape index。朝接觸法線內至少 0.1 m/s 的走路／追擊接觸即可觸發；靜止、離開樹幹及垂直落地不觸發。共用 ForestTrunks／路邊樹的破壞、倒塌、導航更新及 destroyed_trees 帳本；已毀樹等待延後停用時不觸發牆面脫困，其他實體仍保留碰撞與脫困。見 [撞樹回歸](tests/test_slender_speaker_tree_impact.gd)。
 
 Chassis 讀取實際物理接觸，以至少 3 m/s 的水平速度、朝接觸法線內至少 0.1 m/s 的接近速度判定撞樹，高速斜擦也能折斷；離開樹幹、低速及垂直落地不觸發。TreeImpact 只處理破壞，Chassis 在補速後按每棵樹真正造成的速度損失結算一次傷害，沿用下方 VehicleImpact 契約及 take_damage 扣引擎耐久。引擎歸零沿用現有停機／維修流程。
 
@@ -297,6 +301,8 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 互動採 `interact(player)`／`interact_hold(player)` 方法契約，受傷目標提供 `take_damage(amount)`。群組與祖先階層錯誤可能造成離線或候選忽略，而非編譯錯誤。
 
 ### Item 統一規格
+
+手槍與盒裝彈藥沿用 Item；`PistolRules` 集中容量、傷害、射速、射程、換彈與瞄準參數。`PlayerWeapon` 只擁有冷卻／換彈／瞄準暫態，背包 `state.pistol.loaded_rounds`／`state.ammo.rounds` 為唯一彈量來源，手持副本不回寫。換彈完成一次交易，按背包順序扣盒內發數、移除空盒，再以手槍 ID 保持選取。`ItemState` 驗證限定場景的整數範圍（手槍 0–12、彈藥盒 1–24），v5 保存版本保持，換彈暫態不保存。射線使用玩家所在 World3D，由視線與槍口遮擋檢查結算首個碰撞體；僅 Monster 接收傷害，Item／車體／牆阻擋。持槍姿勢沿用同一套真實手臂，視覺滑套／彈匣和音效不持有遊戲彈量。
 
 新增或修改可搬運物件沿用下列共用契約。原設備的功能腳本直接繼承 Item；引擎／電池仍須裝入相容插槽才能工作。固定 EngineBay／RearRamp 及車體結構保留各自施工／互動契約，不作為可拾取 Item。
 

@@ -1,0 +1,75 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://props/pistol.gd" id="1"]
+[ext_resource type="Script" path="res://core/item_definition.gd" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/pistol/pistol.glb" id="3"]
+
+[sub_resource type="Resource" id="Definition"]
+script = ExtResource("2")
+type_id = "pistol"
+display_name = "Pistol"
+weight = 0.85
+health = 100.0
+is_large = false
+requires_rv_connection = false
+scrap_yields = {"Metal Parts": Vector2(2, 2)}
+
+[sub_resource type="BoxShape3D" id="SlideCollision"]
+size = Vector3(0.037, 0.052, 0.208)
+
+[sub_resource type="BoxShape3D" id="GripCollision"]
+size = Vector3(0.036, 0.088, 0.052)
+
+[sub_resource type="StandardMaterial3D" id="FlashMaterial"]
+shading_mode = 0
+albedo_color = Color(1, 0.73, 0.24, 1)
+
+[sub_resource type="SphereMesh" id="FlashMesh"]
+material = SubResource("FlashMaterial")
+radius = 0.016
+height = 0.070
+radial_segments = 8
+rings = 4
+
+[sub_resource type="PhysicsMaterial" id="Physics"]
+friction = 0.8
+bounce = 0.05
+
+[node name="Pistol" type="RigidBody3D"]
+script = ExtResource("1")
+definition = SubResource("Definition")
+mass = 0.85
+physics_material_override = SubResource("Physics")
+continuous_cd = true
+
+[node name="Visuals" parent="." instance=ExtResource("3")]
+
+[node name="SlideCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.046, -0.035)
+shape = SubResource("SlideCollision")
+
+[node name="GripCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, -0.036, 0.038)
+shape = SubResource("GripCollision")
+
+[node name="GripRight" type="Marker3D" parent="."]
+position = Vector3(0.025, -0.023, 0.047)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+position = Vector3(-0.028, -0.023, 0.027)
+
+[node name="Muzzle" type="Marker3D" parent="."]
+position = Vector3(0, 0.052, -0.141)
+
+[node name="Flash" type="MeshInstance3D" parent="Muzzle"]
+visible = false
+position = Vector3(0, 0, -0.03)
+rotation = Vector3(1.5707963, 0, 0)
+mesh = SubResource("FlashMesh")
+cast_shadow = 0
+
+[node name="Light" type="OmniLight3D" parent="Muzzle"]
+visible = false
+light_color = Color(1, 0.64, 0.22, 1)
+light_energy = 1.4
+omni_range = 2.5

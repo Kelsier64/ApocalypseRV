@@ -28,6 +28,11 @@ class_name SlenderSpeakerSettings
 @export var smash_player_damage := 40.0
 @export var foot_player_damage := 40.0
 @export var grab_windup := 1.0
+@export_range(1.0, 3.0, .1) var ground_running_grab_speed_scale := 2.2
+@export var ground_running_grab_min_speed := 4.0
+@export var ground_running_grab_tracking_distance := 5.0
+@export var ground_running_grab_tracking_speed := 12.0
+@export var ground_running_grab_lock_seconds := 0.05
 @export var lift_seconds := 1.4
 @export var hold_seconds := 2.0
 @export var crush_seconds := 0.4

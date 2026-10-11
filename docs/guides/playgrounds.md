@@ -2,6 +2,18 @@
 
 正式遊戲操作見 [README](../../README.md)，規則與數值見 [GDD](../../GDD.md)。以下保留各測試場命令、快捷鍵、測試設定與限制；測試場按鍵不等同主世界按鍵。
 
+<a id="pistol"></a>
+
+## 手槍與盒裝子彈
+
+```powershell
+godot --path . --log-file .godot/pistol-playground.log res://tests/pistol_playground.tscn
+```
+
+使用正式 Player、手槍、彈藥盒、Raker、油桶人與森林巨人。左鍵每按一次射擊、按住右鍵瞄準、R 換彈；E 拾取、F 放置、G 丟棄、1／2 切換物品。F2 移至牆前、F3 重設、F4 切換近距離外部鏡頭、F6 完整射擊回放、F7 巨人射線、F8 桌上拾取。外部鏡頭建議先 F7 移至空曠區，避免測試桌遮擋。
+
+加 `-- --replay --capture` 自動回放並將畫面寫入 `.godot/pistol-playground-captures/`；加 `--pickup` 直接朝向桌上手槍。回放檢查單發、空槍、換彈、Raker 死亡、油桶人爆炸、牆壁遮擋及巨人無敵，結束保留手動操作。加 `--headless-check` 會依結果退出，適合無畫面行為檢查；不能替代原生握姿、尺寸和效果觀察。此場敵人停用自主移動以隔離射擊。[本輪驗證及限制](../validation/2026-10-11-pistol.md)。
+
 <a id="barrel-man"></a>
 
 ## 油桶人
