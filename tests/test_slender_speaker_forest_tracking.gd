@@ -104,8 +104,8 @@ func ground_tracking() -> void:
 		if minimum_gap < 3.0: break
 	check(acquired and approach_ticks > 30, "Real forest sight acquires the on-foot production player and maintains ground pursuit")
 	check(initial_gap > 30.0 and minimum_gap < 3.0, "Ground pursuit physically crosses the forest slope and reaches the player")
-	check(trunk_contact_ticks > 0 and recovery_ticks > 0, "Ground pursuit recovers from an actual production trunk collision")
-	check(maximum_step < .3 and generator.destroyed_trees == destroyed_trees, "Trunk recovery uses continuous body motion and preserves forest obstacles")
+	check(trunk_contact_ticks > 0 and generator.destroyed_trees.size() > destroyed_trees.size(), "Ground pursuit breaks trees through actual production trunk collisions")
+	check(maximum_step < .3, "Tree demolition preserves continuous body motion through the forest")
 	print("FOREST_PLAYER initial_gap=", initial_gap, " minimum_gap=", minimum_gap, " approach_ticks=", approach_ticks, " trunk_contact_ticks=", trunk_contact_ticks, " recovery_ticks=", recovery_ticks, " maximum_step=", maximum_step, " reason=", giant._encounter_decision.get("reason"))
 	giant.set_physics_process(false)
 

@@ -61,6 +61,8 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 
 ### v10 森林 Slender Speaker
 
+2026-10-11 地面跑動抓取：出手時可見、沒有目標 RV、非攀爬／爬行且水平速度至少 4 m/s 的玩家，使用 2.2 倍伸手動畫、起點周圍 5 m 的有限追蹤及 12 m/s 手部落點修正，最後 0.05 秒以實際時間鎖定。倍率在動作提交時固定，後續減速或姿勢改變不重設動畫時鐘；靜止與車上目標沿用原節奏。視線、真實手部掃掠及抬升碰撞仍為必要條件。平地 5／8 m/s 持續直線移動的自主追擊、接觸及完整抬升由 `test_slender_speaker_ground_chase` 覆蓋；衝刺測試只補充耐力以維持速度，不代表坡地、急轉彎或障礙場景皆必抓。
+
 2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤由 [forest_tracking 回歸](tests/test_slender_speaker_forest_tracking.gd) 涵蓋，範圍及本輪結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
 
 2026-10-10 天氣限制：正式生成只接受所屬世界 `WorldClock.weather.sample().z >= WorldWeather.FOG_LIGHT`（霧級 0.5，小霧以上）。依實際過渡後霧量判斷，不使用目標天氣、常駐遠景霧或畫質設定；晴天、單純下雨與缺少時鐘均不生成。無霧時同樣消耗候選區段，之後起霧、回訪或讀檔不補刷。天氣轉晴不移除已有巨人，存檔中已有巨人仍正常還原；機率、導航、同時一隻及安全距離沿用原規則。
@@ -128,6 +130,8 @@ RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種
 行為、爆炸、保存與真 RV 接觸自動檢查及目前尚未完成的模型／畫面驗收見 [油桶人紀錄](docs/validation/2026-10-07-barrel-man.md)。
 
 ### 樹木撞毀
+
+SlenderSpeaker 由 `move_and_slide()` 的實際身體接觸撞毀樹木，使用掃掠前的水平速度及命中 shape index。朝接觸法線內至少 0.1 m/s 的走路／追擊接觸即可觸發；靜止、離開樹幹及垂直落地不觸發。共用 ForestTrunks／路邊樹的破壞、倒塌、導航更新及 destroyed_trees 帳本；已毀樹等待延後停用時不觸發牆面脫困，其他實體仍保留碰撞與脫困。見 [撞樹回歸](tests/test_slender_speaker_tree_impact.gd)。
 
 Chassis 讀取實際物理接觸，以至少 3 m/s 的水平速度、朝接觸法線內至少 0.1 m/s 的接近速度判定撞樹，高速斜擦也能折斷；離開樹幹、低速及垂直落地不觸發。TreeImpact 只處理破壞，Chassis 在補速後按每棵樹真正造成的速度損失結算一次傷害，沿用下方 VehicleImpact 契約及 take_damage 扣引擎耐久。引擎歸零沿用現有停機／維修流程。
 

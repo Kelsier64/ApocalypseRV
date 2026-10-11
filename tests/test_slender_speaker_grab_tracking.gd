@@ -76,6 +76,69 @@ func check(ok: bool, note: String) -> void:
 	if not ok:
 		failures.append(note)
 		push_error("FAIL: " + note)
+func ground_hand_tracking(giant: SlenderSpeaker, player: CharacterBody3D) -> void:
+	# The bent speaker passes above the survivor. Actual downward vision must
+	# keep tracking their lateral movement, even behind the eye's horizontal plane.
+	var stationary_wrists: Dictionary = {}
+	for moving in [false, true]:
+		giant.reset_after_restore()
+		giant.position = Vector3.ZERO
+		giant.rotation = Vector3.ZERO
+		player.position = Vector3(0, .05, -2.7)
+		giant.target_player = player
+		giant._sample("idle_play", 0.0)
+		giant._begin_grab()
+		for tick in 42:
+			if moving: player.move_and_collide(Vector3(.8 / 60.0, 0, 0))
+			await physics_frame
+			await process_frame
+			giant.phase_elapsed = float(tick + 1) / 60.0
+			giant._pose_grab_reach(1.0 / 60.0)
+		if not moving:
+			for side in ["R", "L"]: stationary_wrists[side] = giant._bone_position("hand." + side)
+			continue
+		var eye: Transform3D = giant.visual.bone_world("socket_focus")
+		var direction: Vector3 = player.execution_contact_position() - eye.origin
+		var cone_cos := cos(deg_to_rad(giant.settings.sight_half_angle_degrees))
+		check(eye.basis.y.slide(Vector3.UP).normalized().dot(direction.slide(Vector3.UP).normalized()) < cone_cos
+			and eye.basis.y.normalized().dot(direction.normalized()) > cone_cos,
+			"Moving ground survivor leaves only the horizontal projection, remaining inside the real downward speaker cone")
+		check(giant.can_see_player(player) and giant._grab_contact.distance_to(player.execution_contact_position()) < .02,
+			"Downward-looking grab continues observing the ground survivor before aim lock")
+		for side in ["R", "L"]:
+			check(giant._bone_position("hand." + side).x - stationary_wrists[side].x > .35,
+				side + " actual wrist follows the moving ground survivor during the bent reach")
+		var wall := StaticBody3D.new()
+		var collision := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(20, 30, .2)
+		collision.shape = box
+		wall.add_child(collision)
+		giant.get_parent().add_child(wall)
+		wall.global_position = eye.origin.lerp(player.execution_contact_position(), .5)
+		await physics_frame
+		await process_frame
+		var visible_aim := giant._grab_correction
+		player.move_and_collide(Vector3(.1, 0, 0))
+		giant.phase_elapsed = .72
+		check(not giant.can_see_player(player), "Real wall still blocks the downward speaker cone")
+		giant._pose_grab_reach(1.0 / 60.0)
+		check(giant._grab_correction.is_equal_approx(visible_aim), "Downward tracking cannot follow a survivor behind solid geometry")
+		wall.queue_free()
+		await physics_frame
+		await process_frame
+		giant.phase_elapsed = .8
+		giant._pose_grab_reach(1.0 / 60.0)
+		var locked_wrists := {"R": giant._bone_position("hand.R"), "L": giant._bone_position("hand.L")}
+		player.move_and_collide(Vector3(.2, 0, 0))
+		giant._pose_grab_reach(1.0 / 60.0)
+		check(giant._grab_locked and giant._grab_correction.is_equal_approx(visible_aim), "Downward ground tracking retains the final aim lock")
+		for side in ["R", "L"]:
+			check(giant._bone_position("hand." + side).is_equal_approx(locked_wrists[side]), side + " locked wrist ignores further ground movement")
+	giant.reset_after_restore()
+	giant.position = Vector3.ZERO
+	giant.rotation = Vector3.ZERO
+	giant._sample("idle_play", 0.0)
 func recovery(world: Node3D, giant: SlenderSpeaker) -> void:
 	var floor_body := StaticBody3D.new()
 	var floor_collision := CollisionShape3D.new()
@@ -163,6 +226,7 @@ func run() -> void:
 	var player: CharacterBody3D = PLAYER.instantiate()
 	world.add_child(player)
 	player.set_physics_process(false)
+	await ground_hand_tracking(giant, player)
 	player.global_position = Vector3(0, .05, -3)
 	player.grab_control.immunity = 0.0
 	await physics_frame
@@ -213,5 +277,5 @@ func run() -> void:
 	await recovery(world, giant)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: visible bounded early grab aim, real occlusion, late lock and physical stall recovery")
+	if failures.is_empty(): print("PASS: downward ground hand tracking, visible bounded early grab aim, real occlusion, late lock and physical stall recovery")
 	quit(0 if failures.is_empty() else 1)
