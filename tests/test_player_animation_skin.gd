@@ -22,6 +22,10 @@ func run():
 	var pelvis := skeleton.find_bone("pelvis")
 	var spine := skeleton.find_bone("spine_02")
 	var torso_bends := {}
+	var min_idle_shin := INF
+	var max_idle_shin := -INF
+	var min_idle_knee := INF
+	var max_idle_knee := -INF
 	for clip_name in ap.get_animation_list():
 		var clip = ap.get_animation(clip_name)
 		var minimum = INF
@@ -33,6 +37,17 @@ func run():
 			ap.play(clip_name,0)
 			ap.seek(clip.length * frame / samples,true)
 			skeleton.force_update_all_bone_transforms()
+			if clip_name == "crouch/idle":
+				for side in ["L", "R"]:
+					var hip := skeleton.get_bone_global_pose(skeleton.find_bone("thigh_" + side)).origin
+					var knee := skeleton.get_bone_global_pose(skeleton.find_bone("shin_" + side)).origin
+					var ankle := skeleton.get_bone_global_pose(skeleton.find_bone("foot_" + side)).origin
+					var shin_angle := rad_to_deg(atan2(knee.z - ankle.z, knee.y - ankle.y))
+					var knee_angle := rad_to_deg((hip - knee).angle_to(ankle - knee))
+					min_idle_shin = minf(min_idle_shin, shin_angle)
+					max_idle_shin = maxf(max_idle_shin, shin_angle)
+					min_idle_knee = minf(min_idle_knee, knee_angle)
+					max_idle_knee = maxf(max_idle_knee, knee_angle)
 			if String(clip_name).begins_with("crouch/") or String(clip_name).begins_with("crouch_original/"):
 				var torso := skeleton.get_bone_global_pose(spine).origin - skeleton.get_bone_global_pose(pelvis).origin
 				# Imported rig faces +Z; Visuals rotates it into player forward.
@@ -61,6 +76,12 @@ func run():
 			failed = failed or maximum > actor.CROUCH_HEIGHT + .001
 			torso_bends[clip_name] = torso_bend_sum / (samples + 1)
 		results.append({"clip":clip_name,"samples":samples+1,"min_skinned_y":minimum,"max_skinned_y":maximum,"max_width":max_width})
+	# A low head alone cannot validate a crouch: require forward knees over
+	# the ankles and genuinely folded knees instead of rigid vertical shins.
+	if min_idle_shin < 20.0 or max_idle_shin > 55.0 or min_idle_knee < 40.0 or max_idle_knee > 100.0:
+		failed = true
+		push_error("Bent crouch must keep flexed knees and forward shin inclination throughout idle")
+	results.append({"idle_shin_degrees": [min_idle_shin, max_idle_shin], "idle_knee_interior_degrees": [min_idle_knee, max_idle_knee]})
 	for clip_name in original_crouch.get_animation_list():
 		var bent_angle: float = torso_bends["crouch/" + clip_name]
 		var original_angle: float = torso_bends["crouch_original/" + clip_name]

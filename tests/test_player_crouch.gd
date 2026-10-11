@@ -1,6 +1,8 @@
 extends SceneTree
 ## Production input, collision movement, pose selection and ownership in a low tunnel.
 const PLAYER := preload("res://player/player.tscn")
+const STANDING_REFERENCE := preload("res://assets/models/player_animations_v021/player_animations_v021.glb")
+const CROUCH_VARIANTS := [preload("res://assets/animations/player/crouch_bent.res"), preload("res://assets/animations/player/crouch.res")]
 const ACTIONS := ["crouch", "sprint", "jump", "move_forward", "move_back", "move_left", "move_right"]
 var failures: Array[String] = []
 var arena: Node3D
@@ -125,6 +127,57 @@ func test_exertion_and_airborne_entry() -> void:
 	check(not actor.is_crouching(), "Ctrl does not change the collision shape in midair")
 	await steps(90)
 	check(actor.is_on_floor() and actor.is_crouching(), "Ctrl held during a jump begins crouch after landing")
+
+func test_standing_head_recovery() -> void:
+	# Evaluate the untouched imported standing clip on a separate rested rig.
+	# Checking only the selected clip name misses stale constant glTF channels.
+	var reference := STANDING_REFERENCE.instantiate()
+	arena.add_child(reference)
+	var reference_skeleton := reference.find_child("Skeleton3D", true, false) as Skeleton3D
+	var reference_animation := reference.get_node("AnimationPlayer") as AnimationPlayer
+	reference_animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
+	var neck := skeleton.find_bone("neck_01")
+	var original: AnimationLibrary = driver.crouch_clips
+	for variant: AnimationLibrary in CROUCH_VARIANTS:
+		driver.crouch_clips = variant
+		for direction: String in ["idle", "forward", "back", "left", "right"]:
+			await reset()
+			Input.action_press("crouch")
+			if direction != "idle": Input.action_press("move_" + direction)
+			await steps(40)
+			check(actor.is_crouching() and driver.current_clip == "crouch/" + direction, "Head recovery fixture enters real crouch " + direction)
+			var crouched_rotation := skeleton.get_bone_pose_rotation(neck)
+			var resting_rotation := reference_skeleton.get_bone_rest(reference_skeleton.find_bone("neck_01")).basis.get_rotation_quaternion()
+			check(crouched_rotation.angle_to(resting_rotation) > .08, "Crouch fixture actually changes neck posture")
+			Input.action_release("crouch")
+			await steps(1)
+			var first_rotation := skeleton.get_bone_pose_rotation(neck)
+			check(first_rotation.angle_to(crouched_rotation) < .15 and first_rotation.angle_to(resting_rotation) > .02, "Standing neck begins a smooth blend from crouch " + direction)
+			await steps(40)
+			var standing_clip := "idle" if direction == "idle" else "jog_" + direction
+			check(not actor.is_crouching() and driver.current_clip == standing_clip, "Ctrl release enters standing " + standing_clip)
+			reference_animation.stop()
+			reference_skeleton.reset_bone_poses()
+			reference_animation.play(standing_clip, 0.0)
+			reference_animation.seek(driver.animation.current_animation_position, true)
+			skeleton.force_update_all_bone_transforms()
+			reference_skeleton.force_update_all_bone_transforms()
+			for bone_name: String in ["neck_01", "head"]:
+				var bone := skeleton.find_bone(bone_name)
+				var reference_bone := reference_skeleton.find_bone(bone_name)
+				var local_error := skeleton.get_bone_pose_rotation(bone).angle_to(reference_skeleton.get_bone_pose_rotation(reference_bone))
+				var actual := skeleton.get_bone_global_pose(bone)
+				var expected := reference_skeleton.get_bone_global_pose(reference_bone)
+				var global_error := actual.basis.get_rotation_quaternion().angle_to(expected.basis.get_rotation_quaternion())
+				var position_error := actual.origin.distance_to(expected.origin)
+				check(local_error < .002 and global_error < .002 and position_error < .0001, "%s %s returns to fresh standing %s pose (local %.4f rad, global %.4f rad, %.5f m)" % [variant.resource_path.get_file(), bone_name, standing_clip, local_error, global_error, position_error])
+			metrics.append({"case": "head_recovery", "variant": variant.resource_path.get_file(), "standing_clip": standing_clip,
+				"neck_error": skeleton.get_bone_pose_rotation(neck).angle_to(resting_rotation)})
+			release_inputs()
+	driver.crouch_clips = original
+	reference.queue_free()
+	await steps(2)
 
 func test_low_ceiling() -> void:
 	await reset()
@@ -293,6 +346,7 @@ func run() -> void:
 	arena.add_child(actor)
 	driver = actor.get_node("Visuals/Locomotion")
 	await test_input_geometry_and_directions()
+	await test_standing_head_recovery()
 	await test_exertion_and_airborne_entry()
 	await test_low_ceiling()
 	await test_ui_settings_and_grab()
@@ -301,5 +355,5 @@ func run() -> void:
 	print("PLAYER_CROUCH_METRICS ", JSON.stringify(metrics))
 	arena.queue_free()
 	await steps(2)
-	if failures.is_empty(): print("PASS: crouch input, grounded directional movement, low ceiling safety, camera, exertion, UI/settings/grab ownership, injury and lifecycle resets")
+	if failures.is_empty(): print("PASS: crouch input, grounded directional movement, smooth head recovery into standing idle/jog for both variants, low ceiling safety, camera, exertion, UI/settings/grab ownership, injury and lifecycle resets")
 	quit(0 if failures.is_empty() else 1)

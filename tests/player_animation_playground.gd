@@ -163,6 +163,11 @@ func replay_crouch() -> void:
 	Input.action_press("crouch")
 	await wait_seconds(.7)
 	await capture("crouch_idle")
+	Input.action_release("crouch")
+	await wait_seconds(.6)
+	await capture("standing_after_crouch")
+	Input.action_press("crouch")
+	await wait_seconds(.6)
 	for direction in ["forward", "back", "left", "right"]:
 		Input.action_press("move_" + direction)
 		await wait_seconds(.45)

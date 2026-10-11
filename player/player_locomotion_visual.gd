@@ -52,8 +52,10 @@ func _ready() -> void:
 		library = AnimationLibrary.new()
 		var source := CLIPS.instantiate()
 		var imported: AnimationPlayer = source.get_node("AnimationPlayer")
+		var source_skeleton := source.find_child("Skeleton3D", true, false) as Skeleton3D
 		for clip in imported.get_animation_list():
 			var resource: Animation = imported.get_animation(clip).duplicate()
+			_complete_bone_channels(resource, source_skeleton)
 			resource.loop_mode = Animation.LOOP_NONE if clip.begins_with("jump_") or clip == "climb_exit" else Animation.LOOP_LINEAR
 			library.add_animation(clip, resource)
 		source.free()
@@ -66,6 +68,23 @@ func _ready() -> void:
 	_select("idle")
 	animation.advance(0)
 	set_physics_process(actor != null)
+
+func _complete_bone_channels(resource: Animation, source_skeleton: Skeleton3D) -> void:
+	# glTF omits constant channels. A full-body authored pose can change those
+	# bones, so every locomotion clip must explicitly restore their source rest
+	# values. AnimationPlayer then blends them normally instead of retaining
+	# the preceding crouch, injury or driving pose indefinitely.
+	for bone in source_skeleton.get_bone_count():
+		var path := NodePath("PLAYER_Rig/Skeleton3D:" + source_skeleton.get_bone_name(bone))
+		var rest := source_skeleton.get_bone_rest(bone)
+		for type in [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]:
+			if resource.find_track(path, type) >= 0: continue
+			var track := resource.add_track(type)
+			resource.track_set_path(track, path)
+			match type:
+				Animation.TYPE_POSITION_3D: resource.position_track_insert_key(track, 0.0, rest.origin)
+				Animation.TYPE_ROTATION_3D: resource.rotation_track_insert_key(track, 0.0, rest.basis.get_rotation_quaternion())
+				Animation.TYPE_SCALE_3D: resource.scale_track_insert_key(track, 0.0, rest.basis.get_scale())
 
 func _physics_process(delta: float) -> void:
 	if actor.is_player_dead:
@@ -303,8 +322,9 @@ func _update_crouch(delta: float) -> void:
 		clip = "forward" if local.z < 0 else "back"
 		if absf(local.x) > absf(local.z): clip = "right" if local.x > 0 else "left"
 	_select("crouch/" + clip, .22)
-	# Planted feet travel 42 cm over 60% of each 0.6 s cycle.
-	var rate := 1.0 if clip == "idle" else speed * .6 * .6 / .42
+	# Match controller travel to the authored planted portion of each cycle.
+	var planted_travel := float(crouch_clips.get_meta(&"planted_foot_travel", .42))
+	var rate := 1.0 if clip == "idle" else speed * .6 * .6 / planted_travel
 	_advance(delta * rate, 1.0, delta)
 
 func reset_posture() -> void:
