@@ -95,6 +95,11 @@ func _run() -> void:
 		if device.mount_support == panel:
 			device.set_mount_support(rv)
 			device.position.x = 20.0
+	# The production fabricator mast now intersects this wall's replacement
+	# volume. Keep it and its supported tablet in the cabin, clear of the
+	# controlled conversion fixture, without bypassing collision checks.
+	rv.get_node("CraftingStation").position.x = 0.0
+	rv.get_node("TabletScreen").position.x = 0.0
 	var door_type := ""
 	for type in RVStructureSlots.types_for_slot("left_1"):
 		if type != panel.definition.type_id: door_type = type
@@ -133,7 +138,7 @@ func _run() -> void:
 	controller._physics_process(4.0)
 	panel = slots.panel("left_1")
 	check(panel.definition.type_id == door_type and is_equal_approx(panel.current_health / panel.max_health, ratio), "Conversion preserves health percentage")
-	check(panel.angles[0] == 0 and rv.get_item_count("Metal Parts") == 98, "New door is closed and costs two parts")
+	check(panel.has_method("restore_angles") and panel.angles.size() == 1 and panel.angles[0] == 0 and rv.get_item_count("Metal Parts") == 98, "New door is closed and costs two parts")
 	panel.take_damage(panel.max_health)
 	check(slots.occupant("left_1") == null, "Destroyed panel leaves an empty slot")
 	# A late blocker must be checked again before the material commit.
