@@ -148,7 +148,7 @@ func shields_and_deduplication() -> void:
 	panel.add_child(duplicate_shape)
 	var damage_calls: Array[int] = []
 	panel.damaged.connect(func() -> void: damage_calls.append(1))
-	var cargo: Item = load("res://equipment/generator.tscn").instantiate()
+	var cargo: Item = load("res://equipment/scrapper.tscn").instantiate()
 	arena.add_child(cargo)
 	cargo.confirm_placement(Transform3D(Basis.IDENTITY, Vector3(1, 0.6, -0.3)), arena, panel)
 	var cargo_health: float = cargo.current_health
@@ -226,7 +226,7 @@ func production_rv_and_item() -> void:
 	BarrelExplosion.explode(source, rear, rv)
 	check(is_equal_approx(rv.get_engine().health, engine_before - 60), "Repeat callback cannot charge engine again")
 	source.queue_free()
-	var item: Item = load("res://equipment/generator.tscn").instantiate()
+	var item: Item = load("res://equipment/scrapper.tscn").instantiate()
 	item.position = Vector3(15, 1, 0)
 	arena.add_child(item)
 	item.freeze = true

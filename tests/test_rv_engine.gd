@@ -51,7 +51,8 @@ func _run() -> void:
 	player.set_physics_process(false)
 	await physics_frame
 	await physics_frame
-	for name in ["Generator", "CraftingStation", "Scrapper", "TabletScreen", "ItemBox", "FuelPort", "DriverSeat"]:
+	check(not rv.has_node("Generator"), "Charging needs no portable generator")
+	for name in ["CraftingStation", "Scrapper", "TabletScreen", "ItemBox", "FuelPort", "DriverSeat"]:
 		check(rv.get_node(name).can_operate(), "Default installed service: " + name)
 	check(rv.stored_items.size() == 2 and rv.stored_items[0].scene_path.ends_with("engine_repair_kit.tscn"), "Starter recovery kits")
 	check(rv.get_node("TabletScreen").mount_support == rv.get_node("CraftingStation"), "Tabletop tablet depends on workstation")
@@ -112,7 +113,7 @@ func _run() -> void:
 	player.refresh_inventory()
 	check(rv.set_engine_running(true), "Repaired engine restarts")
 	rv.handbrake = false
-	rv.get_node("Generator").set_enabled(false)
+	rv.energy.charging_enabled = false
 	rv.current_fuel = 100
 	rv.step_energy_system(1.0, 0, 0, 1.0)
 	var upgraded_burn := 100.0 - rv.current_fuel
@@ -133,7 +134,7 @@ func _run() -> void:
 	rv.control_override.clear()
 	rv.set_engine_running(false)
 	rv.handbrake = true
-	rv.get_node("Generator").set_enabled(true)
+	rv.energy.charging_enabled = true
 	rv.headlights_requested = true
 	rv.current_power = 100
 	rv.step_energy_system(0, 0, 0, 1)
@@ -143,7 +144,7 @@ func _run() -> void:
 	check(not rv.lamps_powered and level(rv, "battery") == 3, "No power extinguishes exterior lamps")
 	rv.current_power = 100
 	rv.set_engine_running(true)
-	rv.get_node("Generator").charging = false
+	rv.energy.charging = false
 	rv.step_energy_system(0, 0, 0, 0.1)
 	check(level(rv, "battery") == 0, "Charge threshold pause does not show fault")
 	rv.current_fuel = 4

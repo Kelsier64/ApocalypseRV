@@ -19,6 +19,11 @@ static func navigation_ready(tree: SceneTree, chunks: Array, timeout_ms := 60000
 				return false
 		return true, timeout_ms, true)
 
+static func playground_ready(tree: SceneTree, stage: Node, expected: Callable = Callable()) -> bool:
+	var finished := await until(tree, func() -> bool:
+		return not stage.setup_error.is_empty() or (stage.running and (not expected.is_valid() or expected.call())), 60000, true)
+	return finished and stage.running and stage.setup_error.is_empty()
+
 static func generator_idle(tree: SceneTree, generator: Node, timeout_ms := 60000) -> bool:
 	return await until(tree, func() -> bool:
 		if not is_instance_valid(generator) or generator.building:

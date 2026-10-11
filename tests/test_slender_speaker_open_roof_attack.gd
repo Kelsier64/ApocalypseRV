@@ -1,6 +1,6 @@
 extends SceneTree
 ## Real mode-0 AI, partial roof opening, normal RV suspension and free rolling.
-## The fixture never seeds phases, velocities, target locks or hand contacts.
+## The fixture never overwrites velocities or seeds phases, target locks or hand contacts.
 const Wait := preload("res://tests/support/test_wait.gd")
 var stage: Node3D
 var failures: Array[String] = []
@@ -42,6 +42,17 @@ func encounter(label: String, handbrake: bool, all_roofs: bool, walk: bool, requ
 		check(player.rv_support.rv == rv and rv.to_local(player.global_position).y > 2.0 and not front_roof.is_destroyed,
 			label + " starts physically supported by the intact production roof")
 	rv.set_handbrake(handbrake)
+	var spawn_bounce := label == "PARTIAL_ROLLING_SPAWN_BOUNCE"
+	var bounce_start_y := rv.global_position.y
+	var bounce_peak_y := bounce_start_y
+	var bounce_descended := false
+	if spawn_bounce:
+		# Readiness now consumes the original spawn transient. Recreate this
+		# case's low-speed suspension disturbance only after the settled start:
+		# mass-scaled momentum adds 0.5 m/s forward and 1 m/s upward, without
+		# assigning velocity, freezing the chassis or controlling its response.
+		var forward := (-rv.global_basis.z).slide(Vector3.UP).normalized()
+		rv.apply_central_impulse(rv.mass * (forward * .5 + Vector3.UP))
 	stage.set_giant_enabled(true)
 	var timeline := begin_timeline(giant, rv)
 	var previous_phase := giant.phase
@@ -84,6 +95,10 @@ func encounter(label: String, handbrake: bool, all_roofs: bool, walk: bool, requ
 			Input.action_press("move_back")
 		else: Input.action_release("move_back")
 		await frames()
+		if spawn_bounce:
+			bounce_peak_y = maxf(bounce_peak_y, rv.global_position.y)
+			if bounce_peak_y - bounce_start_y > .02 and bounce_peak_y - rv.global_position.y > .01:
+				bounce_descended = true
 		sample_timeline(giant, player, rv, timeline)
 		if moved and movement_ticks >= 12 and not measured_walk:
 			movement_distance = rv.to_local(player.global_position).distance_to(movement_start)
@@ -110,7 +125,8 @@ func encounter(label: String, handbrake: bool, all_roofs: bool, walk: bool, requ
 	Input.action_release("move_back")
 	print("OPEN_ROOF_RESULT ", label, " attempts=", attempts, " capture_s=", float(capture_tick) / 60.0,
 		" hold_s=", float(hold_tick) / 60.0, " near_visible_chase_s=", float(longest_near_visible_ticks) / 60.0,
-		" peak_rv_speed=", peak_rv_speed, " walk_m=", movement_distance, " releases=", releases,
+		" peak_rv_speed=", peak_rv_speed, " bounce_rise_m=", bounce_peak_y - bounce_start_y,
+		" bounce_descended=", bounce_descended, " walk_m=", movement_distance, " releases=", releases,
 		" release_contacts_1mm=", release_contacts)
 	check(attempts > 0 and capture_tick >= 0, label + " starts an autonomous grab and acquires the survivor through real hand contact")
 	if require_hold:
@@ -118,6 +134,7 @@ func encounter(label: String, handbrake: bool, all_roofs: bool, walk: bool, requ
 			and releases.is_empty(), label + " completes its first lift to HOLD without releasing")
 	check(longest_near_visible_ticks <= 300, label + " does not stare at a visible survivor within reach for over five seconds")
 	if not handbrake: check(not rv.handbrake and peak_rv_speed > .2, label + " exercises actual free rolling with the handbrake released")
+	if spawn_bounce: check(bounce_descended, label + " physically rises over 2 cm and descends over 1 cm after its settled start")
 	if walk: check(movement_ticks == 12 and movement_distance > .25, label + " walks with sustained normal input before stopping")
 	if placement == "driver": check(front_roof.is_destroyed, label + " autonomously opens the roof above its seated driver")
 	elif placement == "roof": check(not front_roof.is_destroyed, label + " grabs the roof survivor without smashing their supporting roof")
@@ -219,7 +236,7 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready and stage.mode == 0, "Actual free-play stage starts")
 	if not ready:
 		quit(1)
@@ -229,7 +246,10 @@ func run() -> void:
 		["PARTIAL_ROLLING_SPAWN_BOUNCE", false, false, false],
 		["DRIVER_PARKED", true, false, false], ["ROOF_SURVIVOR_PARKED", true, false, false]]
 	for index in cases.size():
-		if index > 0: await stage.select_mode(0)
+		if index > 0 and not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		var placement := "driver" if index == 5 else "roof" if index == 6 else "cabin"
 		await encounter(cases[index][0], cases[index][1], cases[index][2], cases[index][3], index != 4, placement)
 	check_remembered_turn()

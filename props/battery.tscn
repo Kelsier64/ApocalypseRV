@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://props/battery.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/rv_service_battery/rv_service_battery.glb" id="visual"]
 [sub_resource type="StandardMaterial3D" id="mat"]
 albedo_color = Color(0.12, 0.35, 0.25, 1)
 [sub_resource type="BoxMesh" id="mesh"]
@@ -16,7 +17,9 @@ hold_scale = Vector3(0.55, 0.55, 0.55)
 hold_position = Vector3(0.12, -0.1, 0)
 scrap_yields = {"Metal Parts": Vector2(1, 2), "Electronic Scrap": Vector2(1, 2)}
 [node name="Mesh" type="MeshInstance3D" parent="."]
+visible = false
 mesh = SubResource("mesh")
+[node name="Visuals" parent="." instance=ExtResource("visual")]
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("shape")
 [node name="Charge" type="Label3D" parent="."]

@@ -18,7 +18,7 @@ func _ready() -> void:
 	player.refresh_inventory()
 	for label in find_children("*", "Label", true, false):
 		if label.get_parent() is CanvasLayer and label.position == Vector2(24, 90): label.hide()
-	sample = rv.get_node("Generator") as Item
+	sample = rv.get_node("CraftingStation") as Item
 	support_wall = rv.get_node("StructureSlots").panel("right_0")
 	sample.confirm_placement(Transform3D(Basis.IDENTITY, rv.to_global(Vector3(2.42, 1.35, -4))), rv, support_wall)
 	sample.condition = 64.0
@@ -44,11 +44,11 @@ func focus_item(target: Node3D) -> void:
 func _process(_delta: float) -> void:
 	if item_status == null: return
 	var data: Dictionary = player.inventory.active_item()
-	var text := "ITEM: wall → fall → E pickup → F preview → place / G drop\nF2 destroy wall | F3 focus loose generator | F4 outside camera | F5 aim ground | F6 restore wall\n"
+	var text := "ITEM: wall → fall → E pickup → F preview → place / G drop\nF2 destroy wall | F3 focus loose workbench | F4 outside camera | F5 aim ground | F6 restore wall\n"
 	text += "F7 focus recycler | F8 replay hold E (1.2 s)\n"
 	text += "Inventory %d/6 | two hands: %s | preview: %s" % [player.inventory.items.size(), data.get("is_large", false), player.is_placing_equipment()]
 	text += " | metal: %d | queue: %d" % [rv.get_item_count(ItemNames.METAL_PARTS), rv.get_node("Scrapper").props_being_crushed.size()]
-	if is_instance_valid(sample): text += "\nGenerator fixed: %s | HP: %.1f | service: %s" % [sample.is_fixed, sample.current_health, sample.can_operate()]
+	if is_instance_valid(sample): text += "\nWorkbench fixed: %s | HP: %.1f | service: %s" % [sample.is_fixed, sample.current_health, sample.can_operate()]
 	elif not data.is_empty(): text += "\nHeld: %s | condition: %.1f%%" % [data.name, data.state.get("condition", 100.0)]
 	item_status.text = text
 
@@ -64,7 +64,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			print("ITEM_WALL_DESTROYED")
 		KEY_F3:
 			for child in WorldEntities.get_container(self).get_children():
-				if child is Item and child.definition != null and child.definition.type_id == "generator" and not child.presentation_only:
+				if child is Item and child.definition != null and child.definition.type_id == "crafting_station" and not child.presentation_only:
 					sample = child
 					focus_item(sample)
 		KEY_F4:

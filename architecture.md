@@ -43,13 +43,13 @@ MainWorld
 └── StartRun                車庫門、整備／出發／封閉狀態
 ```
 
-正式 RV 使用獨立 starter_rv 配置，保留引擎、電池、兩包維修包、平板與完整駕駛室；發電機、工作台、分解機由起始車庫提供。new_rv 保留完整測試配置。
+正式 RV 使用獨立 starter_rv 配置，保留引擎、電池、兩包維修包、平板與完整駕駛室；工作台與分解機由起始車庫提供。new_rv 保留測試配置，不再包含發電機。
 
 ### 起始避難所與世界識別
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；三台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+正式主場景明確選擇生成 v10；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；兩台設備及十二件物資只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
 Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9／v10，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
@@ -228,7 +228,7 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 | 保存 | [checkpoint.gd](rv/checkpoint.gd)、[vehicle_snapshot.gd](rv/vehicle_snapshot.gd) | 版本化磁碟檢查點、車輛／設備／輸入物件關係還原 |
 | RV 互動轉接 | [fuel_port.gd](equipment/fuel_port.gd)、[wheel_hitbox.gd](rv/wheel_hitbox.gd) | 加油入口、拆輪 |
 | 物品支撐與資料 | [item_mount.gd](core/item_mount.gd)、[item_definition.gd](core/item_definition.gd)、[item_state.gd](core/item_state.gd) | 固定／掉落、共用定義、物品狀態驗證及唯一所有權 |
-| 專用設備 | [equipment/](equipment/) | generator 供電、scrapper 回收、tablet_screen/UI 顯示製作、crafting_station 出料、driver_seat 駕駛 |
+| 專用設備 | [equipment/](equipment/) | scrapper 回收、tablet_screen/UI 顯示製作、crafting_station 出料、driver_seat 駕駛；VehicleEnergy 管理內建充電 |
 | 串流 | [world_generator.gd](world/world_generator.gd) | 固定座標區塊窗口、分幀建立、遠景與距離清理 |
 | 世界資料 | [world_field.gd](world/terrain/world_field.gd)、[world_profile.gd](world/terrain/world_profile.gd) | 獨立 RNG、三層噪音、區域權重、道路及停靠計畫、共用高度查詢 |
 | 地形道路 | [chunk_generator.gd](world/chunk_generator.gd) | 網格、碰撞、路面、停靠設施、裝飾、實際碰撞導航和物資／敵人 |
@@ -277,7 +277,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 ## 3. 共用契約
 
-- [groups.gd](core/groups.gd)：rv、chassis、items、monster_damageable、rv_power_generators、crafting_stations、player、monsters。Item 只加入 items，不加入 monster_damageable；正式程式用 `Groups.*`，部分測試用原字串釘住契約。
+- [groups.gd](core/groups.gd)：rv、chassis、items、monster_damageable、crafting_stations、player、monsters。Item 只加入 items，不加入 monster_damageable；正式程式用 `Groups.*`，部分測試用原字串釘住契約。
 - [item_names.gd](core/item_names.gd)：物品、背包、配方和材料庫名稱常數。
 - [rv_connection.gd](core/rv_connection.gd)：由父節點向祖先搜尋；RV 須為 Node3D、屬 rv 群組並提供 `add_item`／`deduct_materials`，避免 Item／Chassis 預載循環。
 - [climb_math.gd](core/climb_math.gd)：RV 辨識、壁面幾何、附著位移與屋頂轉移共用計算。
@@ -370,7 +370,7 @@ Flashlight 是小型 Item，初始世界以場景實例放在地面。`state.fla
 
 固定物品長 F 兩秒 → 檢查容量／雙手／使用狀態 → 停止服務並拾取；長按成功抑制同次 F 短按。手持短 F 在放開時進入 EquipmentPlacement，背包仍擁有物品，另建 presentation_only ghost；預覽期間暫時隱藏手持模型，只顯示目標輪廓，取消時恢復手持顯示。PlacementRules 檢查所有碰撞層、朝向、操作空間及支撐循環，允許靜態表面、固定結構與固定 Item，拒絕散落物、角色、活動門扇與坡板。左鍵重新檢查位置、距離、手臂及 inventory slot／ID，建立實物並成功固定後才消耗背包；右鍵／Esc 保留物品，G 取消後丟出。
 
-ItemMount 分開管理本車歸屬與 mount_support：固定於 RV 的物品登錄本車，靜態表面上的物品仍歸 WorldEntities。支撐 removing／tree_exiting 先停機，再延後解除固定，帶支撐點速度恢復物理。牆壁拆掉，上面的發電機／其他 Item 會掉落成可拾取物；ID、耐久及內容物保留。移除底層物品令其上物品分別掉落，不收進同一背包。工作台退未完成材料、分解機釋放投入物、電池插槽另行掉電池，道具箱移除不清空底盤倉庫；共用停止入口避免重複退料。
+ItemMount 分開管理本車歸屬與 mount_support：固定於 RV 的物品登錄本車，靜態表面上的物品仍歸 WorldEntities。支撐 removing／tree_exiting 先停機，再延後解除固定，帶支撐點速度恢復物理。牆壁拆掉，上面的設備／其他 Item 會掉落成可拾取物；ID、耐久及內容物保留。移除底層物品令其上物品分別掉落，不收進同一背包。工作台退未完成材料、分解機釋放投入物、電池插槽另行掉電池，道具箱移除不清空底盤倉庫；共用停止入口避免重複退料。
 
 ### 能源、道具與生產
 
@@ -378,7 +378,7 @@ BatterySocket 繼承 Item 並保存 installed_battery；VehicleEnergy 透過弱�
 
 底盤直接保存 current_fuel/max_fuel；FuelPort 只提供加油交易，拆除、損壞或多裝入口均不改變存量／容量。BatterySocket 交換先檢查新電池與舊電池去處，滿背包使用原槽位；沒有有效插槽就沒有隱藏電量。
 
-Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依本車穩定 ID 呼叫正常發電機 → 電池待機支出 → 工作站 step_work。發電需要引擎運轉；無油停止引擎。發電機開關／門檻不會自動點火；燃油保留只限制發電附加負載。玩家進副本時室外照常模擬。
+Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依平板設定執行內建充電 → 電池待機支出 → 工作站 step_work。充電預設啟用，門檻 80%、燃油保留 5；每秒最多發電 1.8、額外耗油 0.6，並另計引擎燃油。電量不高於門檻時開始充電，滿電或達到保留油量時停止額外充電；無油停止引擎。v5 檢查點以可選 charging 字典保存設定，缺少時採用新車預設；舊版便攜發電機記錄驗證拒絕，不遷移。玩家進副本時室外照常模擬。
 
 Item 或屍體所屬 PhysicalBone 進 HopperArea → Scrapper 解析整具屍體並取得唯一 processing_owner，保存物理快照 → 一個處理槽分步付費 → 固定一次回收結果 → MaterialStorage 接受後才刪物。缺電保留進度；滿庫保留完成結果；供電／佇列可用時重試料斗內尚未接收的重疊物；拆卸／摧毀恢復輸入物理。
 
@@ -456,7 +456,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - EngineDefinition（engine_standard／engine_upgraded.tres）集中 450／600 耐久、1.0／1.25 動力、1.0／1.15 引擎油耗及重量；EngineState 只保存 id／model／health，item() 轉為含同 ID 的大型道具記錄。
 - 固定 EngineBay 持有唯一安裝狀態。Chassis.exchange_engine／remove_engine 原子轉移同格背包，service_reason 共用停穩／熄火／手煞車／開蓋條件。Chassis.take_damage 轉交引擎，has_working_engine 和 engine_start_reason 統一啟動條件；沒有底盤 HP 或整車毀損旗標。
 - RepairOperation 對引擎使用 repair_requirement 契約；鎖住目標、引擎 ID 與維修包 ID，連續 3 秒後再次驗證並消耗道具，+150 耐久。一般設備／輪胎沿用材料路徑。
-- VehicleEnergy 依引擎定義計算基礎油耗；只有有效引擎能運轉，發電仍由獨立設備提供。處理充電、待機、工作後統一支付車燈負載，lamps_powered 為實際供電結果。
+- VehicleEnergy 依引擎定義計算基礎油耗；只有有效引擎能運轉，並由底盤內建充電功能替插槽電池充電。處理充電、待機、工作後統一支付車燈負載，lamps_powered 為實際供電結果。
 - VehicleStatus.read 回傳 8 項圖示／等級／文字；CockpitVisual、VehicleDashboard、TabletUI 讀同一結果，沒有副本數值。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
@@ -471,7 +471,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 
 駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有兩個共享 World3D 的 SubViewport，相機裁掉鏡面專用第 20 層避免遞迴，192×256 並交錯 UPDATE_ONCE 更新；前側板弱參照由 structure_changed 刷新，離座停用、讀檔重連。
 
-EngineHatch／RearRamp 持有 progress、目標與 moving，動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動作中雙片碰撞、完成後連續斜面。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
+EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動畫期間板面無碰撞，僅完全展開後啟用連續斜面；停穩並拉手煞車即可操作，不檢查後門開度、板上占用或折疊淨空，E 可從當下姿態反向。展開仍檢查中央接地與 30° 可行走坡度，不要求兩側角落支撐。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
@@ -480,7 +480,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | 測試 | 覆蓋 |
 |---|---|
 | test_rv_engine.gd | 預裝、引擎所有權、滿背包交換、大型道具、故障服務、維修、性能差、車燈、v5 往返、舊版拒絕與實際引擎製作 |
-| test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，展開阻擋／占用／坡度、驅動互鎖、安全離座與自由放置 |
+| test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，無碰撞動畫／占用操作／坡度、驅動互鎖、安全離座與自由放置 |
 | test_rv_checkpoint.gd | 磁碟往返：安裝／背包／倉庫／地面引擎 ID、型號、耐久，以及拒絕跨所有權重複 |
 | rv_rebuild_playground.tscn | 可見引擎艙／坡板／汽車儀表／夜間車燈／真實輪驅回放 |
 
@@ -544,7 +544,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 | [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
 | [test_rv_braking](tests/test_rv_braking.gd) | 漸進踏板、不同速度煞停距離、倒車、引擎熄火與獨立駐車 |
 | [test_rv_handling](tests/test_rv_handling.gd) | 正式輪驅起步、轉向、低速停靠倒出、平地／5° 坡車況與設備配重、支撐離座 |
-| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋／坡板中途阻擋與反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
+| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋中途阻擋、坡板無碰撞與即時反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
 | [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、v5 往返與舊版拒絕 |
 | [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
 | [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |

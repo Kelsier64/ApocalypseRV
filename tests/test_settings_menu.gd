@@ -349,7 +349,7 @@ func test_lifecycle() -> void:
 	check(not menu.open_menu(), "Tablet ownership refuses settings entry")
 	await tap(KEY_ESCAPE)
 	check(not player.in_ui_mode and not player.settings_open, "Tablet Escape closes tablet without opening settings")
-	var equipment: Item = rv_shell.get_node("Chassis/Generator")
+	var equipment: Item = rv_shell.get_node("Chassis/Scrapper")
 	var equipment_id := equipment.persistent_id
 	check(equipment.pickup(player).begins_with("已拾取"), "Production equipment enters inventory before placement")
 	check(player.enter_equipment_placement(), "Production Item begins inventory-backed placement preview")
