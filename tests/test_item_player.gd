@@ -129,31 +129,30 @@ func run() -> void:
 	await check_new_grants()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
-	var generator := make_item("res://equipment/generator.tscn", Vector3(2, 2, 0))
+	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))
 	await steps()
-	generator.confirm_placement(generator.global_transform, entities, wall)
-	check(generator.is_fixed and generator.mount_support == wall, "Generator fixes to wall")
-	generator.condition = 41.0
-	var generator_id := generator.persistent_id
+	scrapper.confirm_placement(scrapper.global_transform, entities, wall)
+	check(scrapper.is_fixed and scrapper.mount_support == wall, "Scrapper fixes to wall")
+	scrapper.condition = 41.0
+	var scrapper_id := scrapper.persistent_id
 	for index in PlayerInventory.MAX_SLOTS:
 		actor.inventory.add_item("Scrap", false, "res://props/scrap.tscn")
-	check(not actor.add_prop_item(generator, generator.scene_file_path), "Full inventory refuses fixed equipment")
-	check(generator.is_fixed and generator.mount_support == wall and is_equal_approx(generator.condition, 41), "Rejected pickup preserves support and durability")
+	check(not actor.add_prop_item(scrapper, scrapper.scene_file_path), "Full inventory refuses fixed equipment")
+	check(scrapper.is_fixed and scrapper.mount_support == wall and is_equal_approx(scrapper.condition, 41), "Rejected pickup preserves support and durability")
 	clear_bag()
 	actor.body_state.sever(&"left_arm")
-	check(not actor.add_prop_item(generator, generator.scene_file_path), "One arm cannot carry equipment")
-	check(generator.is_fixed, "Missing-arm refusal does not detach equipment")
+	check(not actor.add_prop_item(scrapper, scrapper.scene_file_path), "One arm cannot carry equipment")
+	check(scrapper.is_fixed, "Missing-arm refusal does not detach equipment")
 	actor.body_state.reset()
 	actor.refresh_inventory()
-	generator.charging = true
-	var service_before := generator.capture_service_state()
-	check(not actor.add_prop_item(generator, "res://equipment/not_registered.tscn"), "Unregistered Item scene fails pickup before service cleanup")
-	check(generator.is_fixed and generator.mount_support == wall and not generator._service_stopped and generator.capture_service_state() == service_before, "Invalid-scene pickup retains support and service state")
+	var service_before := scrapper.capture_service_state()
+	check(not actor.add_prop_item(scrapper, "res://equipment/not_registered.tscn"), "Unregistered Item scene fails pickup before service cleanup")
+	check(scrapper.is_fixed and scrapper.mount_support == wall and not scrapper._service_stopped and scrapper.capture_service_state() == service_before, "Invalid-scene pickup retains support and service state")
 
 	# F hold picks up; releasing that same gesture must not start a ghost.
-	ray._step_buttons(generator, false, true, 2.1)
+	ray._step_buttons(scrapper, false, true, 2.1)
 	check(actor.inventory.items.size() == 1 and actor.inventory.active_item().is_large, "F hold transfers equipment to large-item inventory")
-	check(actor.inventory.active_item().state.id == generator_id and is_equal_approx(float(actor.inventory.active_item().state.condition), 41), "F hold retains identity and condition")
+	check(actor.inventory.active_item().state.id == scrapper_id and is_equal_approx(float(actor.inventory.active_item().state.condition), 41), "F hold retains identity and condition")
 	ray._step_buttons(null, false, false, 0.0)
 	check(not actor.is_placing_equipment(), "Successful F hold suppresses placement tap")
 	check(actor.held_item_node is Item and actor.held_item_node.presentation_only, "Held equipment is presentation only")
@@ -180,10 +179,10 @@ func run() -> void:
 	escape.physical_keycode = KEY_ESCAPE
 	escape.pressed = true
 	actor.placement.handle_input(actor, escape)
-	check(not actor.is_placing_equipment() and held.visible and actor.inventory.active_item().state.id == generator_id, "Esc restores the held model without removing the inventory Item")
+	check(not actor.is_placing_equipment() and held.visible and actor.inventory.active_item().state.id == scrapper_id, "Esc restores the held model without removing the inventory Item")
 	check(actor.enter_equipment_placement(), "Preview can reopen")
 	actor.drop_item()
-	var dropped := find_item(generator_id)
+	var dropped := find_item(scrapper_id)
 	check(not actor.is_placing_equipment() and actor.inventory.items.is_empty(), "G cancels preview and consumes inventory once")
 	check(dropped != null and not dropped.is_fixed and not dropped.freeze, "G creates a loose pickup with physical motion")
 	if dropped:

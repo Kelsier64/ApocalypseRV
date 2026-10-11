@@ -9,11 +9,8 @@ static func read(rv: Node) -> Array[Dictionary]:
 	var bad_engine := engine == null or engine.health <= 0.0
 	rows.append({"id": "engine", "label": "引擎", "level": 3 if bad_engine else (2 if engine.health < engine.definition().max_health * 0.3 else 0), "message": rv.engine_start_reason() if bad_engine else "引擎低耐久：停穩後使用專用維修包"})
 	rows.append({"id": "fuel", "label": "燃油", "level": 3 if rv.current_fuel <= 0.0 else (2 if rv.current_fuel < rv.max_fuel * 0.15 else 0), "message": "燃油不足，請使用加油孔補充"})
-	var generator_ok := false
-	for device in rv.get_equipment():
-		if device.has_method("generate_power") and device.can_operate(): generator_ok = true
-	var electrical_fault: bool = rv.energy.battery == null or rv.current_power <= 0.0 or (rv.energy.engine_running and not generator_ok)
-	rows.append({"id": "battery", "label": "充電", "level": 3 if electrical_fault else (2 if rv.current_power < rv.max_power * 0.2 else 0), "message": "電池缺失／耗盡，或運轉中的引擎沒有可用發電機" if electrical_fault else "電池電量低"})
+	var electrical_fault: bool = rv.energy.battery == null or rv.current_power <= 0.0
+	rows.append({"id": "battery", "label": "充電", "level": 3 if electrical_fault else (2 if rv.current_power < rv.max_power * 0.2 else 0), "message": "電池缺失／耗盡，請更換電池或發動引擎充電" if electrical_fault else "電池電量低"})
 	var open_door: bool = rv.engine_bay.hatch_open or not rv.engine_bay.get_node("Hatch").stable()
 	for device in rv.get_structures():
 		if not device.is_destroyed and device.has_method("restore_angles"):

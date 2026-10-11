@@ -71,10 +71,6 @@ static func valid_service(scene: String, service: Dictionary) -> bool:
 					if input.has("feed") and (not input.feed is Dictionary or not CheckpointSchema.valid_transform(input.feed.get("start")) or not CheckpointSchema.valid_transform(input.feed.get("pose"))): return false
 					if input.has("feed") and input.feed.has("progress") and (not VehicleSnapshot._number(input.feed.progress) or input.feed.progress < 0 or input.feed.progress > 1): return false
 					if not input.scene is String or not input.state is Dictionary or not valid(input.scene, input.state) or not VehicleSnapshot._number(input.timer) or input.timer < 0 or not CheckpointSchema.vector(input.local_position) or not CheckpointSchema.physics(input.physics, true): return false
-			"charging":
-				if scene != "res://equipment/generator.tscn" or not service.charging is bool: return false
-			"fuel_reserve", "recharge_below":
-				if scene != "res://equipment/generator.tscn" or not VehicleSnapshot._number(service[key]) or service[key] < 0 or (key == "recharge_below" and service[key] > 1): return false
 			_: return false
 	return true
 

@@ -132,7 +132,7 @@ func visually_turned(item: Item, start_basis: Basis) -> bool:
 	return not item.global_basis.is_equal_approx(start_basis)
 
 func continuous_contact_deformation() -> void:
-	for scene: String in ["res://equipment/generator.tscn", "res://props/wheel.tscn", "res://equipment/roof_ladder.tscn"]:
+	for scene: String in ["res://equipment/scrapper.tscn", "res://props/wheel.tscn", "res://equipment/roof_ladder.tscn"]:
 		var input := new_item(scene, true)
 		await steps(2)
 		var bounds: AABB = machine.FEED.geometry_bounds(input)
@@ -175,7 +175,7 @@ func grazing_input_preserves_physics() -> void:
 	await steps(3)
 
 func dropped_production_items() -> void:
-	for case_: Dictionary in [{"scene": "res://props/oil_barrel.tscn", "roll": 0.0}, {"scene": "res://props/oil_barrel.tscn", "roll": PI * .5}, {"scene": "res://equipment/generator.tscn", "roll": 0.0}, {"scene": "res://props/wheel.tscn", "roll": 0.0}]:
+	for case_: Dictionary in [{"scene": "res://props/oil_barrel.tscn", "roll": 0.0}, {"scene": "res://props/oil_barrel.tscn", "roll": PI * .5}, {"scene": "res://equipment/scrapper.tscn", "roll": 0.0}, {"scene": "res://props/wheel.tscn", "roll": 0.0}]:
 		var scene: String = case_.scene
 		var input := new_item(scene)
 		await steps(2)
@@ -219,7 +219,7 @@ func dropped_production_items() -> void:
 			machine.enabled = true
 
 func save_restore_and_cancel() -> void:
-	var input := new_item("res://equipment/generator.tscn")
+	var input := new_item("res://equipment/scrapper.tscn")
 	await steps(2)
 	feed(input, Vector3(0, 1.25, 0))
 	for frame in 90:
@@ -301,7 +301,7 @@ func save_restore_and_cancel() -> void:
 		query.collision_mask = 1 | 2
 		query.exclude = [restored.get_rid()]
 		check(world.get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty(), "Cancellation places the original full-size large collider clear of the frame")
-	check(visible_bounds(restored).size.z > .9, "Cancellation restores the complete original generator visuals at their authored size")
+	check(visible_bounds(restored).size.z > .9, "Cancellation restores the complete original scrapper visuals at their authored size")
 	restored.queue_free()
 	await steps(2)
 	machine.enabled = true

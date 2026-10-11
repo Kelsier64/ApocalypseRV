@@ -211,7 +211,7 @@ func _run() -> void:
 	var through_floor := PhysicsRayQueryParameters3D.create(rv.to_global(Vector3(0, 1.0, 2.6)), rv.to_global(Vector3(0, -0.4, 2.6)), 1)
 	var hit := world.get_world_3d().direct_space_state.intersect_ray(through_floor)
 	check(hit.get("collider") == rv, "Deck ray hits the chassis rather than a separate structure body")
-	for node_name in ["DriverSeat", "ItemBox", "Generator", "CraftingStation", "Scrapper"]:
+	for node_name in ["DriverSeat", "ItemBox", "CraftingStation", "Scrapper"]:
 		var preset: Item = rv.get_node(node_name)
 		check(preset.get_connected_rv() == rv and preset.freeze and preset.mount_support == rv, "Shell breaches retain stock equipment on fixed chassis support: " + node_name)
 	var tablet: Item = rv.get_node("TabletScreen")

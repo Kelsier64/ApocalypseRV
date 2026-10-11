@@ -2,7 +2,7 @@ extends RefCounted
 class_name SaveSceneCatalog
 ## Save files can only instantiate trusted gameplay scenes.
 const PROPS := ["scrap", "oil_barrel", "battery", "battery_large", "wheel", "gas_can", "gas_can_empty", "engine_standard", "engine_upgraded", "engine_repair_kit", "flashlight", "corpse", "pistol", "pistol_ammo"]
-const DEVICES := ["side_door_ladder", "roof_ladder", "cabin_light_strip", "tablet_screen", "driver_seat", "crafting_station", "fuel_port", "generator", "item_box", "scrapper"]
+const DEVICES := ["side_door_ladder", "roof_ladder", "cabin_light_strip", "tablet_screen", "driver_seat", "crafting_station", "fuel_port", "item_box", "scrapper"]
 static var _verified: Dictionary = {}
 
 static func resolve(path: Variant, kind: String) -> PackedScene:

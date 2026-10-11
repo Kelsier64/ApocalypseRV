@@ -16,6 +16,9 @@ var structure_status: Label
 var structure_rows: Dictionary = {}
 var structure_buttons: Array[Dictionary] = []
 var service_tabs: TabContainer
+var charging_toggle: CheckButton
+var charging_threshold: SpinBox
+var charging_reserve: SpinBox
 
 func _ready() -> void:
 	layer = 30
@@ -65,6 +68,28 @@ func _ready() -> void:
 			message.text = ("引擎已發動" if connected_rv.energy.engine_running else "引擎已停止") if okay else connected_rv.engine_start_reason()
 			_refresh())
 	box.add_child(engine)
+	var charging_settings := HBoxContainer.new()
+	box.add_child(charging_settings)
+	charging_toggle = CheckButton.new()
+	charging_toggle.text = "RV 自帶充電"
+	charging_toggle.toggled.connect(func(enabled: bool):
+		if is_instance_valid(connected_rv):
+			connected_rv.energy.charging_enabled = enabled
+			if not enabled: connected_rv.energy.charging = false)
+	charging_settings.add_child(charging_toggle)
+	var charging_note := Label.new()
+	charging_note.text = "充電門檻 %／保留油量："
+	charging_settings.add_child(charging_note)
+	charging_threshold = SpinBox.new()
+	charging_threshold.max_value = 100.0
+	charging_threshold.step = 5.0
+	charging_threshold.value_changed.connect(func(value: float):
+		if is_instance_valid(connected_rv): connected_rv.energy.recharge_below = value / 100.0)
+	charging_settings.add_child(charging_threshold)
+	charging_reserve = SpinBox.new()
+	charging_reserve.value_changed.connect(func(value: float):
+		if is_instance_valid(connected_rv): connected_rv.energy.fuel_reserve = value)
+	charging_settings.add_child(charging_reserve)
 	var headlights := Button.new()
 	headlights.text = "頭燈開關"
 	headlights.pressed.connect(func():
@@ -108,6 +133,13 @@ func _ready() -> void:
 
 func on_open() -> void:
 	connected_rv = get_parent().get_connected_rv()
+	if is_instance_valid(connected_rv):
+		charging_toggle.set_pressed_no_signal(connected_rv.energy.charging_enabled)
+		charging_threshold.set_value_no_signal(connected_rv.energy.recharge_below * 100.0)
+		charging_reserve.set_block_signals(true)
+		charging_reserve.max_value = maxf(connected_rv.max_fuel, connected_rv.energy.fuel_reserve)
+		charging_reserve.set_value_no_signal(connected_rv.energy.fuel_reserve)
+		charging_reserve.set_block_signals(false)
 	_signature = ""
 	_refresh()
 
@@ -143,7 +175,8 @@ func _refresh() -> void:
 	if connected_rv.energy.battery == null:
 		status_label.text += "\nNO BATTERY: install a battery into an operational socket."
 	elif connected_rv.current_power <= 0.0:
-		status_label.text += "\nBATTERY EMPTY: swap it or start the engine with a generator installed."
+		status_label.text += "\nBATTERY EMPTY: swap it or start the engine for RV charging."
+	status_label.text += "\n" + connected_rv.energy.charging_status()
 	status_label.text += "\n" + VehicleStatus.messages(connected_rv)
 	for kind in ["cabin", "work", "service"]: status_label.text += "\n" + connected_rv.interior_light_status(kind)
 	status_label.text += "\n儀表亮度 %.0f%%｜視覺震動 %.0f%%" % [connected_rv.instrument_brightness * 100, connected_rv.vibration_strength * 100]
@@ -266,31 +299,12 @@ func _rebuild(devices: Array[Node]) -> void:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(label)
 		device_labels[device.persistent_id] = label
-		if device.has_method("step_work") or device.has_method("generate_power") or device is CabinLightStrip:
+		if device.has_method("step_work") or device is CabinLightStrip:
 			var toggle := Button.new()
 			toggle.text = "On / off"
 			toggle.pressed.connect(func():
 				if is_instance_valid(device): device.set_enabled(not device.enabled))
 			row.add_child(toggle)
-		if device.has_method("generate_power"):
-			var settings := HBoxContainer.new()
-			device_box.add_child(settings)
-			var note := Label.new()
-			note.text = "Recharge below % / fuel reserve:"
-			settings.add_child(note)
-			var threshold := SpinBox.new()
-			threshold.max_value = 100.0
-			threshold.step = 5.0
-			threshold.value = device.recharge_below * 100.0
-			threshold.value_changed.connect(func(value: float):
-				if is_instance_valid(device): device.recharge_below = value / 100.0)
-			settings.add_child(threshold)
-			var reserve := SpinBox.new()
-			reserve.max_value = connected_rv.max_fuel
-			reserve.value = device.fuel_reserve
-			reserve.value_changed.connect(func(value: float):
-				if is_instance_valid(device): device.fuel_reserve = value)
-			settings.add_child(reserve)
 		if device is CraftingStation:
 			var cancel := Button.new()
 			cancel.text = "Cancel queued jobs"
