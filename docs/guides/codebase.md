@@ -12,8 +12,8 @@
 | `player/` | 玩家移動、攀爬、互動、背包和外觀 | `player.tscn` |
 | `enemies/` | Raker、共用怪物行為、選敵、追擊及攻擊 | `raker.tscn`、`monster.gd` |
 | `props/` | 共用 Item 基類與地面／背包物品 | `item.gd`、道具場景 |
-| `rv/` | 底盤、輪胎、車況、能源、檢查點及 RV 視覺 | `new_rv.tscn`、`chassis.tscn` |
-| `equipment/` | 原設備的 Item 功能腳本、場景，以及獨立車殼結構 | `generator.gd`、`scrapper.gd`、各場景 |
+| `rv/` | 底盤、輪胎、車況、內建能源管理、檢查點及 RV 視覺 | `new_rv.tscn`、`chassis.tscn`、`vehicle_energy.gd` |
+| `equipment/` | Item 功能腳本與場景，以及獨立車殼結構 | `scrapper.gd`、`crafting_station.gd`、各場景 |
 | `world/` | 主世界、地形串流、POI、建築與室內生成 | `main_world.tscn`、`starting_shelter/`、`terrain/`、`instances/` |
 | `assets/` | 執行期貼圖、模型、圖示與材質 | 模型旁的 README 與匯入設定 |
 | `art_source/` | 可重建資產的 Blender 來源、製作腳本和審核圖 | Raker 各版與玩家動畫來源 |

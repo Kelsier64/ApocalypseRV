@@ -18,7 +18,7 @@ func run() -> void:
 	var stage: Node3D = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready, "Production free play is ready")
 	if not ready:
 		await finish(stage)
@@ -26,7 +26,7 @@ func run() -> void:
 	var rv: Chassis = stage.rv
 	var giant: SlenderSpeaker = stage.giant
 	var player: CharacterBody3D = stage.player
-	var equipment: Item = rv.get_node("Generator")
+	var equipment: Item = rv.get_node("Scrapper")
 	var roof: RVStructurePanel = rv.get_node("StructureSlots").panel("roof_0")
 	var untouched: RVStructurePanel = rv.get_node("StructureSlots").panel("roof_2")
 	# A valid player-mounted roof item used to make every roof-removal strike
@@ -87,7 +87,10 @@ func run() -> void:
 func grab_equipment_blocks(stage: Node3D) -> void:
 	# Restart the production encounter. The obstacle enters only after the
 	# autonomous roof smash has finished and an actual grab has begun.
-	await stage.select_mode(0)
+	if not await stage.select_mode(0):
+		stage.queue_free()
+		quit(1)
+		return
 	var giant: SlenderSpeaker = stage.giant
 	var player: CharacterBody3D = stage.player
 	var rv: Chassis = stage.rv

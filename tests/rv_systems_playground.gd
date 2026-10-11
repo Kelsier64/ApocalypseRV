@@ -5,7 +5,6 @@ var tablet: Item
 var status: Label
 var observer: Camera3D
 var station: CraftingStation
-var generator: Item
 var original_charge: float
 var telemetry_time := 0.0
 var seconds := 0.0
@@ -47,7 +46,6 @@ func _ready() -> void:
 	player = load("res://player/player.tscn").instantiate()
 	player.position = Vector3(7, 1, 0)
 	add_child(player)
-	generator = rv.get_node("Generator")
 	station = rv.get_node("CraftingStation")
 	tablet = rv.get_node("TabletScreen")
 	rv.current_power = 20.0

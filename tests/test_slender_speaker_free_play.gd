@@ -34,7 +34,7 @@ func run() -> void:
 		check(false, "Production playground script loads successfully")
 		await finish(stage)
 		return
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready, "Default playground finishes navigation and vehicle setup")
 	if not ready:
 		await finish(stage)
@@ -44,6 +44,7 @@ func run() -> void:
 		await finish(stage)
 		return
 	var rv: Chassis = stage.rv
+	check(stage.vehicle_settle.settled and stage.vehicle_settle.positions.size() == 60 and stage.vehicle_settle.ticks <= 900 and not rv.freeze, "Playground starts only after the complete grounded stable window with normal physics")
 	var player: CharacterBody3D = stage.player
 	var seat: Node3D = rv.get_node("DriverSeat")
 	check(player.seated_in == seat and seat.current_driver == player and rv.is_player_driving, "Manual start uses production seat ownership")
@@ -124,7 +125,7 @@ func run() -> void:
 	await tap(KEY_F7)
 	generation_before = stage.generation
 	await tap(KEY_F11)
-	ready = await Wait.until(self, func() -> bool: return stage.running and stage.generation > generation_before, 60000, true)
+	ready = await Wait.playground_ready(self, stage, func() -> bool: return stage.generation > generation_before)
 	check(ready and not paused and not stage.paused and stage.mode == 0, "F11 resets manual free play even while paused")
 	if ready:
 		check(stage.rv != rv and stage.player != player and is_instance_valid(stage.giant), "Reset rebuilds actors and restores the live giant")
@@ -132,11 +133,11 @@ func run() -> void:
 	# Returning from the parked replay must discard its permanent brake
 	# override and give the player the normal seat camera again.
 	stage.call_deferred("select_mode", 8)
-	ready = await Wait.until(self, func() -> bool: return stage.running and stage.mode == 8, 60000, true)
+	ready = await Wait.playground_ready(self, stage, func() -> bool: return stage.mode == 8)
 	check(ready and stage.rv.allow_test_controls and not stage.rv.control_override.is_empty(), "Explicit parked replay still selects scripted controls")
 	if ready:
 		await tap(KEY_F12)
-		ready = await Wait.until(self, func() -> bool: return stage.running and stage.mode == 0, 60000, true)
+		ready = await Wait.playground_ready(self, stage, func() -> bool: return stage.mode == 0)
 		check(ready and stage.rv.control_override.is_empty() and not stage.rv.allow_test_controls and not stage.observer_enabled, "F12 leaves parked replay and restores manual driving")
 		if ready: check(stage.player.seated_in.seat_camera.current, "Leaving replay restores the production driver camera")
 	await finish(stage)

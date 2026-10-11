@@ -17,6 +17,12 @@ func _init(vehicle: Node) -> void:
 	_vehicle = weakref(vehicle)
 
 var engine_running: bool = false
+var charging_enabled: bool = true
+var charging: bool = false
+var fuel_reserve: float = 5.0
+var recharge_below: float = 0.8
+var fuel_consumption_per_second: float = 0.6
+var power_generation_per_second: float = 1.8
 var generated_rate: float = 0.0
 var load_rate: float = 0.0
 var _consumed: float = 0.0
@@ -39,6 +45,45 @@ func add_power(amount: float) -> float:
 	battery.charge += accepted
 	return accepted
 
+func charging_snapshot() -> Dictionary:
+	return {"enabled": charging_enabled, "charging": charging, "fuel_reserve": fuel_reserve, "recharge_below": recharge_below}
+
+func restore_charging(data: Dictionary) -> void:
+	charging_enabled = data.get("enabled", true)
+	charging = data.get("charging", false) and charging_enabled
+	fuel_reserve = data.get("fuel_reserve", 5.0)
+	recharge_below = data.get("recharge_below", 0.8)
+	generated_rate = 0.0
+	load_rate = 0.0
+
+func charging_status() -> String:
+	var rv: Node = _vehicle.get_ref()
+	if not charging_enabled: return "RV 充電已關閉"
+	if not engine_running: return "引擎未運轉"
+	if battery == null: return "未安裝可用電池"
+	if rv.current_fuel <= fuel_reserve: return "已達保留油量；引擎仍消耗運轉燃油"
+	if battery.charge >= battery.capacity - 0.001: return "電池已充滿"
+	if not charging: return "等待充電門檻"
+	return "RV 充電中：最高 +%.1f 電量／秒" % power_generation_per_second
+
+func _charge(rv: Node, delta: float) -> void:
+	if not charging_enabled or not engine_running or battery == null:
+		charging = false
+		return
+	if battery.charge >= battery.capacity - 0.001:
+		charging = false
+	if battery.charge <= battery.capacity * recharge_below:
+		charging = true
+	if not charging: return
+	var full_power := power_generation_per_second * delta
+	var full_fuel := fuel_consumption_per_second * delta
+	if full_power <= 0.0 or full_fuel <= 0.0: return
+	var available_fuel: float = maxf(rv.current_fuel - fuel_reserve, 0.0)
+	var generated := minf(battery.capacity - battery.charge, full_power * clampf(available_fuel / full_fuel, 0.0, 1.0))
+	if generated <= 0.0: return
+	if rv.consume_fuel(full_fuel * generated / full_power):
+		generated_rate = add_power(generated) / delta
+
 func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 	if delta <= 0.0:
 		return engine_running
@@ -51,15 +96,10 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 		if not rv.consume_fuel(required):
 			rv.consume_fuel(rv.current_fuel)
 			engine_running = false
-	# Stable per-vehicle order: charging, standby, then registered work by ID.
+	# Built-in charging, standby, then registered work by stable per-vehicle ID.
+	_charge(rv, delta)
 	var equipment: Array[Node] = rv.get_equipment()
 	equipment.sort_custom(func(a: Node, b: Node) -> bool: return a.persistent_id < b.persistent_id)
-	if engine_running:
-		for device in equipment:
-			if device.can_operate() and device.has_method("generate_power"):
-				var before: float = rv.current_power
-				device.generate_power(rv, delta)
-				generated_rate += (rv.current_power - before) / delta
 	var standby: float = rv.power_parked_drain_per_second * delta
 	if not consume_power(standby) and battery:
 		_consumed += battery.charge

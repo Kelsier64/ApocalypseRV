@@ -196,7 +196,7 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready and stage.mode == 0, "Actual playground starts in free play")
 	if not ready:
 		quit(1)
@@ -209,7 +209,10 @@ func run() -> void:
 		["RIGHT_REAR_WALK", Vector3(1.4, .3, 5.2), true],
 	]
 	for index in cases.size():
-		if index > 0: await stage.select_mode(0)
+		if index > 0 and not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		await encounter(cases[index][0], cases[index][1], cases[index][2])
 	movement("")
 	stage.queue_free()

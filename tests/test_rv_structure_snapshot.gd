@@ -39,6 +39,11 @@ func _run() -> void:
 	for device in saved.mounted_items:
 		check(SaveSceneCatalog.resolve(device.scene, "Item") != null and not device.state.service.has("mount_slot"), "Item snapshot contains only portable devices")
 	check(SaveSceneCatalog.resolve("res://equipment/rv_side_panel.tscn", "Item") == null, "Structure cannot be injected into Item catalog")
+	check(SaveSceneCatalog.resolve("res://equipment/generator.tscn", "Item") == null, "Removed portable generator cannot resolve from a historical checkpoint")
+	var removed_generator := saved.duplicate(true)
+	removed_generator.mounted_items[0].scene = "res://equipment/generator.tscn"
+	check(not VehicleSnapshot.validate(removed_generator) and not VehicleSnapshot.apply(rv, removed_generator), "Historical mounted generator rejects before modifying the live vehicle")
+	check(VehicleSnapshot.capture(rv) == saved, "Rejected historical generator preserves the current vehicle snapshot")
 	var wall_type: String = slots.panel("left_0").definition.type_id
 	var door_type: String = slots.panel("right_1").definition.type_id
 	check(wall_type != door_type, "Side wall and side door have distinct stable type IDs")
@@ -59,7 +64,7 @@ func _run() -> void:
 	saved.mounted_items = saved.mounted_items.filter(func(entry): return entry.support != {"kind": "structure", "rv": rv.persistent_id, "slot": "roof_2"})
 	var light: Item = rv.get_node("CabinLightFront")
 	var light_id := light.persistent_id
-	var chained: Item = rv.get_node("Generator")
+	var chained: Item = rv.get_node("Scrapper")
 	chained.set_mount_support(light)
 	var chain_id := chained.persistent_id
 	for device in saved.mounted_items:

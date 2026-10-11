@@ -58,16 +58,17 @@ func _run() -> void:
 	var mounted_tablet: Item = rv.get_node("TabletScreen")
 	check(mounted_tablet.mount_support == rv.get_node("RightFront") and mounted_tablet.global_basis.y.dot(-rv.global_basis.x) > 0.99, "Starter tablet is visibly attached to the inside front panel")
 	var floor_devices: Array[Item] = []
-	for name in ["Generator", "CraftingStation", "Scrapper"]:
+	check(not rv.has_node("Generator"), "Starter RV has intrinsic charging without a generator")
+	for name in ["CraftingStation", "Scrapper"]:
 		check(not rv.has_node(name), "Starter RV omits optional " + name)
-		var scene := "res://equipment/%s.tscn" % {"Generator": "generator", "CraftingStation": "crafting_station", "Scrapper": "scrapper"}[name]
+		var scene := "res://equipment/%s.tscn" % {"CraftingStation": "crafting_station", "Scrapper": "scrapper"}[name]
 		var found := false
 		for actor in WorldEntities.get_container(world).get_children():
 			if actor is Item and actor.scene_file_path == scene and actor.get_connected_rv() == null:
 				found = true
 				floor_devices.append(actor)
 		check(found, "Garage supplies loose optional " + name)
-	var targets := [Vector3(-1.15, 0.5, 3), Vector3(-1.15, 0.5, 0.5), Vector3(1.1, 0.5, -2.2)]
+	var targets := [Vector3(-1.15, 0.5, 0.5), Vector3(1.1, 0.5, -2.2)]
 	for index in range(floor_devices.size()):
 		var device := floor_devices[index]
 		var item_name := device.item_name
