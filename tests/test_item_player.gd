@@ -167,8 +167,9 @@ func run() -> void:
 	check(actor.inventory.items.size() == 1, "Preview retains inventory ownership")
 	await steps()
 	check(not held.is_visible_in_tree(), "Carry updates cannot reveal the held model during preview")
-	var slot_label: Label = actor.inventory_ui.slots_container.get_child(0).get_child(0)
-	check(slot_label.is_visible_in_tree() and slot_label.text.contains(actor.inventory.active_item().name), "Preview keeps the Item visible in the inventory bar")
+	var slot_icon: TextureRect = actor.inventory_ui.slots_container.get_child(0).get_node("ItemIcon")
+	check(slot_icon.is_visible_in_tree() and slot_icon.texture == InventoryItemIcons.texture_for(actor.inventory.active_item().scene_path), "Preview keeps the Item icon visible in the inventory bar")
+	check(actor.inventory_ui.selected_name.text == actor.inventory.active_item().name, "Preview retains the selected Item name")
 	var cancel := InputEventMouseButton.new()
 	cancel.button_index = MOUSE_BUTTON_RIGHT
 	cancel.pressed = true
