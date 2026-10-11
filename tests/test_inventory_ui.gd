@@ -41,17 +41,35 @@ func _run() -> void:
 	root.add_child(host)
 	var ui = INVENTORY_UI.new()
 	host.add_child(ui)
+	await process_frame
 	_expect(ui.slots_container.get_child_count() == PlayerInventory.MAX_SLOTS, "Hotbar presents every selectable inventory slot")
-	var before := [{"name": "Renamed cargo", "is_large": true, "scene_path": "res://props/oil_barrel.tscn", "state": {"id": "ui-test", "condition": 37.0}}]
+	_expect(ui.slots_container.get_parent() == ui.get_child(0), "Six slots sit directly on the root UI control")
+	for child in ui.get_child(0).get_children():
+		_expect(not (child is Panel), "Root UI control has no common panel enclosing the slots")
+	for index in range(ui.slots_container.get_child_count()):
+		var panel := ui.slots_container.get_child(index) as Panel
+		_expect(is_equal_approx(panel.size.x, panel.size.y), "Hotbar slots are square")
+	var before := [
+		{"name": "Renamed cargo", "is_large": true, "scene_path": "res://props/oil_barrel.tscn", "state": {"id": "ui-test", "condition": 37.0}},
+		{"name": "Stored flashlight", "is_large": false, "scene_path": "res://props/flashlight.tscn", "state": {"flashlight": {"charge": 50.0, "on": false}}},
+	]
 	var items := before.duplicate(true)
 	ui.update_slots(items, 0)
 	var slot := ui.slots_container.get_child(0) as Panel
+	await process_frame
+	var item_name := slot.get_node("ItemName") as Label
 	var icon := slot.get_node("ItemIcon") as TextureRect
 	var large := slot.get_node("LargeItem") as Label
 	var empty := slot.get_node("EmptyMark") as Control
 	var selection := slot.get_node("Selection") as ColorRect
 	_expect(icon.visible and icon.texture == InventoryItemIcons.texture_for("res://props/oil_barrel.tscn"), "Icon follows scene identity despite a custom item name")
-	_expect(ui.selected_name.text.contains("Renamed cargo"), "Selected item remains identifiable by its custom name")
+	_expect(ui.selected_name == item_name and item_name.visible and item_name.text.contains("Renamed cargo"), "Selected item name is shown above its own slot")
+	_expect(item_name.get_parent() == slot, "Item name belongs to its slot")
+	var panel_rect := slot.get_global_rect()
+	var name_rect := item_name.get_global_rect()
+	_expect(absf(name_rect.get_center().x - panel_rect.get_center().x) < 2.0 and name_rect.end.y <= panel_rect.position.y + 1.0, "Item name is centered above its slot")
+	for index in range(1, ui.slots_container.get_child_count()):
+		_expect(not (ui.slots_container.get_child(index).get_node("ItemName") as Label).visible, "Nonactive slot names stay hidden")
 	_expect(large.visible and large.text == "2H", "Large item shows its carrying restriction in the slot")
 	_expect(not empty.visible and selection.visible, "Occupied active slot is selected without an empty marker")
 	var style := slot.get_theme_stylebox("panel")
@@ -62,7 +80,8 @@ func _run() -> void:
 	ui.update_slots([], 0)
 	_expect(icon.texture == null and not icon.visible, "Removing an item clears its stale icon")
 	_expect(not large.visible, "Removing large cargo clears its slot indicator")
-	_expect(not ui.selected_name.text.contains("Renamed cargo"), "Empty selection clears the previous item name")
+	_expect(not ui.selected_name.visible and not item_name.visible, "Empty selection hides the previous item name")
+	_expect(not ui.selected_name.text.contains("空手"), "Empty hands have no name caption")
 	_expect(empty.visible and selection.visible, "Empty slots remain visibly selectable")
 	ui.update_slots([], PlayerInventory.MAX_SLOTS - 1)
 	_expect(not selection.visible and (ui.slots_container.get_child(PlayerInventory.MAX_SLOTS - 1).get_node("Selection") as ColorRect).visible, "Selection can move to an empty final slot")
