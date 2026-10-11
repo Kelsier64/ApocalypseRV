@@ -27,6 +27,9 @@ func run() -> void:
 	console.on_open()
 	var cabin_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "車內照明開關")
 	check(cabin_buttons.size() == 1, "Console exposes the cabin lighting control")
+	var work_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "工作燈開關")
+	var service_buttons := console.find_children("*", "Button", true, false).filter(func(button): return button.text == "維修燈開關（開蓋後照明）")
+	check(work_buttons.is_empty() and service_buttons.size() == 1, "Console removes retired work lamp switch and retains engine service lighting control")
 	if cabin_buttons.is_empty(): quit(1); return
 	cabin_buttons[0].pressed.emit()
 	rv.energy.step(rv, 0, 1)

@@ -51,8 +51,11 @@ func step_work(delta: float) -> void:
 		return
 	job.power = maxf(0.0, job.power - power_needed)
 	job.remaining = maxf(0.0, job.remaining - elapsed)
-	if job.remaining <= 0.00001 and spawn_item(recipe.scene_path, {}, 0.0):
-		jobs.pop_front()
+	if job.remaining <= 0.00001:
+		# Show the finished height before clearing/changing jobs, even when the
+		# final work update consumes a large delta. The rig then retracts slowly.
+		_sync_print_visual()
+		if spawn_item(recipe.scene_path, {}, 0.0): jobs.pop_front()
 	_sync_print_visual()
 
 func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0) -> bool:
@@ -81,17 +84,13 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 	# Position the bottom of the actual product above the output marker. A
 	# fixed centre offset put tall cans into the preinstalled tablet collider.
 	output.origin += global_basis.y * CraftingPrintVisual.output_lift(item)
-	for collider in item.get_children():
-		if not collider is CollisionShape3D or collider.shape == null: continue
-		var query := PhysicsShapeQueryParameters3D.new()
-		query.shape = collider.shape
-		query.transform = output * collider.transform
-		query.collision_mask = 1
-		query.exclude = [get_rid()]
-		if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty():
+	if not CraftingOutputPlacement.is_clear(self, item, output, true) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output)):
+		var delivered := CraftingOutputPlacement.body_floor_output(self, item) if item is PrintedPlayerBody else {}
+		if delivered.is_empty():
+			last_error = "Output blocked: clear floor space beside printer" if item is PrintedPlayerBody else "Output blocked"
 			item.free()
-			last_error = "Output blocked"
 			return false
+		output = delivered.transform
 	var container := WorldEntities.get_container(self)
 	if not is_instance_valid(container) or container.is_queued_for_deletion():
 		item.free()

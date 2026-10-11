@@ -70,9 +70,9 @@ func _ready() -> void:
 	headlights.pressed.connect(func():
 		if is_instance_valid(connected_rv): connected_rv.headlights_requested = not connected_rv.headlights_requested)
 	box.add_child(headlights)
-	for kind in ["cabin", "work", "service"]:
+	for kind in ["cabin", "service"]:
 		var light_button := Button.new()
-		light_button.text = {"cabin": "車內照明開關", "work": "工作燈開關", "service": "維修燈開關（開蓋後照明）"}[kind]
+		light_button.text = {"cabin": "車內照明開關", "service": "維修燈開關（開蓋後照明）"}[kind]
 		light_button.pressed.connect(func():
 			if is_instance_valid(connected_rv): connected_rv.toggle_interior_light(kind))
 		box.add_child(light_button)
@@ -149,7 +149,7 @@ func _refresh() -> void:
 	elif connected_rv.current_power <= 0.0:
 		status_label.text += "\nBATTERY EMPTY: swap it or start the engine with a generator installed."
 	status_label.text += "\n" + VehicleStatus.messages(connected_rv)
-	for kind in ["cabin", "work", "service"]: status_label.text += "\n" + connected_rv.interior_light_status(kind)
+	for kind in ["cabin", "service"]: status_label.text += "\n" + connected_rv.interior_light_status(kind)
 	status_label.text += "\n儀表亮度 %.0f%%｜視覺震動 %.0f%%" % [connected_rv.instrument_brightness * 100, connected_rv.vibration_strength * 100]
 	var installed: EngineState = connected_rv.get_engine()
 	status_label.text += "\n" + ("引擎槽為空" if installed == null else "%s｜耐久 %.0f / %.0f" % [installed.definition().display_name, installed.health, installed.definition().max_health])

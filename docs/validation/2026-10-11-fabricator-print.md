@@ -34,3 +34,15 @@ Godot 4.7.2 統一 runner：13 項測試及 main-scene smoke 通過：`test_craf
 ## 回位動畫修正
 
 2026-10-11：三項相關測試（test_crafting_print、test_printed_player、test_equipment_lifecycle）重跑通過，驗證中途高度、下降速率、重複 clear、碰撞同步、連續工作改目標與到位不越界。原生 Forward+ 回放另驗證實際一秒後下降約 0.45m，最終停在 0.97m。
+
+## 房車內完成與互動修正
+
+2026-10-11 正式場景回報重現：房車內平台加上 1.6m 身體會與車頂（例如 RoofMiddle/CollisionRear）重疊；remaining 已為 0，但出料被拒絕，因此全身模型仍是沒有互動的預覽，機架與下一工作也一直等候。
+
+PrintedPlayerBody 在原出料位置沒有完整站立空間時，改尋找機台旁 0.95／1.25m 範圍內的安全地板。驗證地板法向、實體身體及正式玩家肩寬淨空，並以身體碰撞沿地板高度掃掠可通過路徑；不忽略牆、其他物品或其他身體。平台／側邊皆無空間時仍保留已付費工作，顯示清空機台旁地板的原因，清空後只出貨一次。一般物品沿用平台出料規則。完成前先同步最終列印高度，再交付真實身體、清除預覽並慢慢回位；後續工作可繼續。
+
+移除 WorkLighting 動態掛在製作台上的燈條與 SpotLight，同時移除該負載與平板工作燈開關。車內燈條與引擎維修燈保留；舊存檔 work 請求欄位保留相容，但不耗電、不產生燈。
+
+新增 test_fabricator_cabin，保留完整房車屋頂和原製作台座標，覆蓋真人尺寸出料、真實射線 E、第二件製作、下降、阻塞／恢復及不重複扣費。另覆蓋狹窄天窗的可操控玩家淨空；主世界 seed 42 探針確認原先卡住的側邊／後方位置可完成交付。
+
+本輪最終統一 runner：test_fabricator_cabin、test_crafting_print、test_printed_player、test_cabin_light_equipment、test_rv_experience、test_rv_checkpoint、test_rv_resource_cycle、test_rv_engine、test_item_persistence、test_equipment_lifecycle 及主場景 smoke 全部通過。薄牆外終點雖空但通路受阻，以及無地板場景均拒絕交付。原生 Forward+ 主世界 seed 42 保留完整房車，兩次真實 20 秒能源工作、實際 interact 輸入切換、完成後慢降與第二具身體生成全部通過；互動在交付身體旁無遮擋位置驗證。
