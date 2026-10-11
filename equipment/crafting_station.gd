@@ -55,10 +55,10 @@ func step_work(delta: float) -> void:
 		# Show the finished height before clearing/changing jobs, even when the
 		# final work update consumes a large delta. The rig then retracts slowly.
 		_sync_print_visual()
-		if spawn_item(recipe.scene_path, {}, 0.0): jobs.pop_front()
+		if spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false))): jobs.pop_front()
 	_sync_print_visual()
 
-func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0) -> bool:
+func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false) -> bool:
 	if _committing or not can_operate():
 		last_error = "Workstation unavailable"
 		return false
@@ -80,17 +80,15 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 		instance.free()
 		last_error = "Invalid output"
 		return false
+	if item is PrintedPlayerBody: item.set_crouching(crouching)
 	var output := spawn_marker.global_transform
 	# Position the bottom of the actual product above the output marker. A
 	# fixed centre offset put tall cans into the preinstalled tablet collider.
 	output.origin += global_basis.y * CraftingPrintVisual.output_lift(item)
-	if not CraftingOutputPlacement.is_clear(self, item, output, true) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output)):
-		var delivered := CraftingOutputPlacement.body_floor_output(self, item) if item is PrintedPlayerBody else {}
-		if delivered.is_empty():
-			last_error = "Output blocked: clear floor space beside printer" if item is PrintedPlayerBody else "Output blocked"
-			item.free()
-			return false
-		output = delivered.transform
+	if not CraftingOutputPlacement.is_clear(self, item, output, true) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output, crouching)):
+		last_error = "Output blocked: clear print bed and overhead space" if item is PrintedPlayerBody else "Output blocked"
+		item.free()
+		return false
 	var container := WorldEntities.get_container(self)
 	if not is_instance_valid(container) or container.is_queued_for_deletion():
 		item.free()
@@ -144,4 +142,10 @@ func restore_service_state(state: Dictionary) -> void:
 
 func _sync_print_visual() -> void:
 	if not is_node_ready() or presentation_only: return
+	if not jobs.is_empty() and jobs[0].recipe == "printed_player" and not jobs[0].has("crouching"):
+		# Choose once when the job reaches the front. Restores preserve its pose;
+		# later obstructions block delivery rather than changing printed geometry.
+		var output := spawn_marker.global_transform
+		output.origin += global_basis.y * 0.06
+		jobs[0]["crouching"] = not CraftingOutputPlacement.body_can_stand(self, output)
 	print_visual.sync_job(jobs[0] if not jobs.is_empty() else {}, spawn_marker.transform)

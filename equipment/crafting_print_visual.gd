@@ -27,7 +27,7 @@ func sync_job(job: Dictionary, marker_transform: Transform3D) -> void:
 	if _job_id != str(job.id):
 		clear()
 		_job_id = str(job.id)
-		_build_preview(recipe.scene_path, marker_transform)
+		_build_preview(recipe.scene_path, marker_transform, bool(job.get("crouching", false)))
 	progress = clampf(1.0 - float(job.remaining) / maxf(recipe.duration, 0.001), 0.0, 1.0)
 	var height := lerpf(_bounds.position.y, _bounds.end.y + 0.001, progress)
 	for material in _materials:
@@ -48,9 +48,10 @@ func clear() -> void:
 	var status := get_node_or_null("../Details/Status") as Label3D
 	if status: status.text = "FAB / READY"
 
-func _build_preview(scene_path: String, marker_transform: Transform3D) -> void:
+func _build_preview(scene_path: String, marker_transform: Transform3D, crouching: bool = false) -> void:
 	var source := (load(scene_path) as PackedScene).instantiate() as Node3D
 	if source == null: return
+	if source is PrintedPlayerBody: source.set_crouching(crouching)
 	preview = Node3D.new()
 	preview.name = "ProductPreview"
 	add_child(preview)

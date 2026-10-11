@@ -63,7 +63,7 @@ func _process(delta: float) -> void:
 
 func _show_progress(amount: float) -> void:
 	var recipe := RecipeCatalog.all()[mini(recipe_index, RecipeCatalog.all().size() - 1)]
-	station.print_visual.sync_job({"id": str(recipe_index), "recipe": recipe.recipe_id, "remaining": recipe.duration * (1.0 - amount)}, station.spawn_marker.transform)
+	station.print_visual.sync_job({"id": str(recipe_index), "recipe": recipe.recipe_id, "remaining": recipe.duration * (1.0 - amount), "crouching": recipe.recipe_id == "printed_player" and "--crouch" in OS.get_cmdline_user_args()}, station.spawn_marker.transform)
 	label.text = "FABRICATOR / %s   %d%%\nSpace: pause   R: replay   1-8: recipe   Left/Right: orbit" % [recipe.display_name, roundi(amount * 100.0)]
 
 func _update_camera() -> void:

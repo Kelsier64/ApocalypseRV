@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("1")
 recipe_id = "printed_player"
-display_name = "Standing Player Body"
+display_name = "Player Body"
 scene_path = "res://props/printed_player.tscn"
 costs = {"Metal Parts": 20, "Electronic Scrap": 10, "Unrefined Fuel": 10}
 duration = 20.0

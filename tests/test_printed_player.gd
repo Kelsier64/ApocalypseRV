@@ -120,6 +120,7 @@ func _run() -> void:
 	check(player.inventory.items == inventory_before and body.current_health == 100, "Switch-back preserves equipment and leaves the newer healthy body behind")
 	await _check_refusals(world, player, body)
 	await _check_carrier(world, rv, player, body)
+	await _check_crouching(world, player, body)
 	body.body_state.sever(&"left_leg")
 	body._apply_body_visual()
 	check(body.transfer_control(player), "Leg-injured stored body can receive control in clear space")
@@ -203,3 +204,99 @@ func _finish() -> void:
 	if failures.is_empty(): print("PASS: official full-size player fabrication, E control transfer, single actor ownership, physiology, persistence and safety")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func _check_crouching(world: Node3D, player: CharacterBody3D, body: PrintedPlayerBody) -> void:
+	var offline: PrintedPlayerBody = load(BODY_SCENE).instantiate()
+	var legacy := offline.capture_item_state()
+	legacy.printed_body.erase("crouching")
+	check(PrintedPlayerBody.valid_state(legacy.printed_body) and ItemState.valid(BODY_SCENE, legacy), "Legacy five-field printed bodies remain valid save data")
+	offline.set_crouching(true)
+	check(offline.crouching and is_equal_approx(offline.get_node("CollisionShape3D").shape.height, 1.05), "Crouching immediately updates collision before the scene enters the tree")
+	check(offline.get_node("Model").scene_file_path == PrintedPlayerBody.CROUCH_MODEL, "Off-tree crouching uses the authored complete crouching mesh")
+	var bounds := AABB()
+	var first := true
+	for mesh: MeshInstance3D in offline.get_node("Model").find_children("*", "MeshInstance3D", true, false):
+		var relative: Transform3D = offline.transform.affine_inverse() * mesh.transform
+		var part: AABB = relative * mesh.mesh.get_aabb()
+		bounds = part if first else bounds.merge(part)
+		first = false
+	check(not first and bounds.size.y < 1.12, "Off-tree preview copies real crouching geometry rather than a hidden standing pose")
+	offline.restore_item_state(legacy)
+	check(not offline.crouching and is_equal_approx(offline.get_node("CollisionShape3D").shape.height, 1.6), "Legacy restore resets a reused crouching body to standing")
+	offline.set_crouching(true)
+	var crouched_state := offline.capture_item_state()
+	check(crouched_state.printed_body.crouching and PrintedPlayerBody.valid_state(crouched_state.printed_body), "New body save captures posture as the optional sixth boolean")
+	var invalid: Dictionary = crouched_state.duplicate(true)
+	invalid.printed_body.crouching = 1
+	check(not ItemState.valid(BODY_SCENE, invalid), "Nonboolean stored crouching posture is rejected")
+	var restored: PrintedPlayerBody = load(BODY_SCENE).instantiate()
+	restored.restore_item_state(crouched_state)
+	check(restored.crouching and restored.get_node("Model").scene_file_path == PrintedPlayerBody.CROUCH_MODEL, "New crouching body restores posture and mesh before ready")
+	restored.body_state.sever(&"left_arm")
+	restored.set_crouching(true)
+	check(not restored.get_node("Model").visible, "Injured crouch body uses anatomical donor pieces")
+	var wounds := restored.find_children("Wound_left_arm*", "MeshInstance3D", true, false)
+	check(not wounds.is_empty() and wounds[0].visible, "Injured crouching body preserves its anatomical wound")
+	for piece in restored.find_children("Part_left_arm*", "MeshInstance3D", true, false):
+		check(not piece.visible, "Crouching posture does not restore missing limb geometry")
+	restored.body_state.sever(&"left_leg")
+	restored.body_state.sever(&"right_leg")
+	restored.set_crouching(true)
+	check(not restored.crouching and is_equal_approx(restored.get_node("CollisionShape3D").shape.height, 1.6) and restored.get_node("CollisionShape3D").basis.y.dot(Vector3.UP) > .99, "Missing-leg dormant bodies retain the upright baked silhouette and collision")
+	offline.free()
+	restored.free()
+	player.body_state.reset()
+	player.crouching = false
+	player._apply_body_capabilities()
+	player._apply_body_collision()
+	body.body_state.reset()
+	body.current_health = 100
+	body.set_crouching(false)
+	body.global_position = Vector3(30, 3, 0)
+	player.global_position = Vector3(32, 2.75, 0)
+	var old_ceiling := StaticBody3D.new()
+	var old_collision := CollisionShape3D.new()
+	var old_shape := BoxShape3D.new()
+	old_shape.size = Vector3(1.2, .2, 1.2)
+	old_collision.shape = old_shape
+	old_ceiling.add_child(old_collision)
+	world.add_child(old_ceiling)
+	old_ceiling.global_position = player.global_position + Vector3.UP * 1.9
+	await physics_frame
+	check(not body.transfer_control(player), "Source clearance checks the taller abandoned body rather than the active standing controller")
+	player.body_state.sever(&"left_leg")
+	player.body_state.sever(&"right_leg")
+	player._apply_body_capabilities()
+	player._apply_body_collision()
+	check(not body.transfer_control(player), "Crawling source cannot leave its upright dormant silhouette intersecting the roof")
+	player.body_state.reset()
+	player._apply_body_capabilities()
+	player._apply_body_collision()
+	old_ceiling.queue_free()
+	await physics_frame
+	var ceiling := StaticBody3D.new()
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(3, .2, 3)
+	collision.shape = shape
+	ceiling.add_child(collision)
+	world.add_child(ceiling)
+	ceiling.global_position = body.global_position + Vector3.UP * 1.35
+	await physics_frame
+	var target := Transform3D(Basis.IDENTITY, body.global_position - Vector3.UP * .25)
+	check(not body._destination_clear(player, target), "Low ceiling rejects standing destination")
+	body.set_crouching(true)
+	check(body._destination_clear(player, target), "Authored crouching destination fits beneath the same ceiling")
+	check(body.transfer_control(player), "E control transfers into the crouching body beneath a low ceiling")
+	check(player.is_crouching() and is_equal_approx(player.body_collision_shape.shape.height, player.CROUCH_HEIGHT) and not body.crouching, "Transfer swaps actual player crouch posture and stores old standing body posture")
+	player._update_crouch()
+	check(player.is_crouching(), "Releasing crouch beneath obstruction preserves the transferred contact posture")
+	ceiling.queue_free()
+	await physics_frame
+	# Still crouched at the source: switching back must leave the old body crouched.
+	check(body.transfer_control(player), "Crouched controller can switch back to the stored standing body")
+	check(not player.is_crouching() and body.crouching and is_equal_approx(body.get_node("CollisionShape3D").shape.height, 1.05), "Reverse transfer leaves the previously controlled crouching body in its exact posture")
+	check(body.transfer_control(player) and player.is_crouching(), "Crouching posture survives another control transfer")
+	player._update_crouch()
+	check(not player.is_crouching(), "Controller stands normally once overhead space becomes clear")
+	body.set_crouching(false)

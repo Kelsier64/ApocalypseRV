@@ -46,3 +46,13 @@ PrintedPlayerBody 在原出料位置沒有完整站立空間時，改尋找機�
 新增 test_fabricator_cabin，保留完整房車屋頂和原製作台座標，覆蓋真人尺寸出料、真實射線 E、第二件製作、下降、阻塞／恢復及不重複扣費。另覆蓋狹窄天窗的可操控玩家淨空；主世界 seed 42 探針確認原先卡住的側邊／後方位置可完成交付。
 
 本輪最終統一 runner：test_fabricator_cabin、test_crafting_print、test_printed_player、test_cabin_light_equipment、test_rv_experience、test_rv_checkpoint、test_rv_resource_cycle、test_rv_engine、test_item_persistence、test_equipment_lifecycle 及主場景 smoke 全部通過。薄牆外終點雖空但通路受阻，以及無地板場景均拒絕交付。原生 Forward+ 主世界 seed 42 保留完整房車，兩次真實 20 秒能源工作、實際 interact 輸入切換、完成後慢降與第二具身體生成全部通過；互動在交付身體旁無遮擋位置驗證。
+
+## 台上蹲姿製作與交付（取代前節地板交付）
+
+依後續需求，移除近旁地板交付。角色工作輪到第一筆時檢查台上站姿淨空；不足就選蹲姿並保存於 job.crouching，列印過程不因碰撞變化任意改姿勢。舊工作沒有該欄位時首次同步會選定，新欄位只接受角色配方的布林值。展示場可用 `-- --crouch` 檢視蹲姿列印。
+
+蹲姿模型沿用正式 crouch_bent idle 的十一組玩家網格，烘焙高度約 1.03m，保持等比例與原材質。PrintedPlayerBody 的姿勢、1.05m 蹲姿碰撞、模型與存檔一起保存；舊五欄身體資料仍以站姿載入。E 切換時交換雙方姿態，控制器以正式蹲姿相機與動作還原，屋頂下不能起身，離台到完整淨空後才站起。缺腿的休眠身體沿用原直立外觀／碰撞限制，切回玩家後仍使用爬行。
+
+完成後身體在原製作台上，機架慢降；下一具需等台面清空。連蹲姿都塞不下或台面占用時維持已付款工作，提示清空台面與上方；不放在地板，不再扣款或重複生成。已更新 cabin 與 printed_player 測試，覆蓋台上蹲姿預覽／實體、真實 E、低頂維持蹲姿、離台站起、占床等待、局部低頂不改道、姿勢交換及舊／新身體快照。
+
+本輪最終統一 runner：test_fabricator_cabin、test_crafting_print、test_printed_player、test_player_crouch、test_player_carry、test_item_persistence、test_rv_checkpoint、test_rv_resource_cycle 八項與主場景 smoke 通過。原生 Forward+ 主世界兩次真實 20 秒列印回放通過：台上蹲姿生成、實際 E 切換維持蹲姿、屋頂阻止起立、實際 move_back 輸入走下台面後站起及第二具台上出料。

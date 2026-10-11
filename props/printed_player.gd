@@ -7,15 +7,19 @@ var stamina := 100.0
 var stamina_exhausted := false
 var recovery_delay := 0.0
 var last_transfer_error := ""
-static var _injury_templates: Array[Dictionary] = []
+var crouching := false
+var _model_pose := "standing"
+const CROUCH_MODEL := "res://assets/models/fabricator/printed_player_crouching.glb"
+static var _injury_templates: Dictionary = {}
 var _injury_nodes: Array[Dictionary] = []
 
 func _ready() -> void:
 	super._ready()
-	_apply_body_visual()
+	set_crouching(crouching)
 
 static func valid_state(data: Variant) -> bool:
-	if not data is Dictionary or data.size() != 5 or data.get("version") != 1 or not data.version is int: return false
+	if not data is Dictionary or data.size() not in [5, 6] or data.get("version") != 1 or not data.version is int: return false
+	if data.size() == 6 and (not data.has("crouching") or not data.crouching is bool): return false
 	if not PlayerBodyState.valid_state(data.get("body")): return false
 	if not VehicleSnapshot._number(data.get("stamina")) or data.stamina < 0 or data.stamina > 100: return false
 	if not data.get("exhausted") is bool: return false
@@ -24,7 +28,7 @@ static func valid_state(data: Variant) -> bool:
 func capture_item_state() -> Dictionary:
 	var state := super.capture_item_state()
 	state["printed_body"] = {"version": 1, "body": body_state.capture(), "stamina": stamina,
-		"exhausted": stamina_exhausted, "recovery_delay": recovery_delay}
+		"exhausted": stamina_exhausted, "recovery_delay": recovery_delay, "crouching": crouching}
 	return state
 
 func restore_item_state(state: Dictionary) -> void:
@@ -35,7 +39,7 @@ func restore_item_state(state: Dictionary) -> void:
 	stamina = float(data.stamina)
 	stamina_exhausted = data.exhausted
 	recovery_delay = float(data.recovery_delay)
-	if is_node_ready(): _apply_body_visual()
+	set_crouching(bool(data.get("crouching", false)))
 
 func can_pickup(_player: Node3D) -> bool:
 	return false
@@ -69,6 +73,7 @@ func transfer_control(player: Node3D) -> bool:
 	var old_stamina: float = player.current_stamina
 	var old_exhausted: bool = player.stamina_exhausted
 	var old_delay: float = player.stamina_recovery_delay_remaining
+	var old_crouching: bool = player.is_crouching()
 	var old_velocity: Vector3 = player._barrel_release_velocity(old_body.origin)
 	var target_velocity := linear_velocity
 	var target_parts := body_state.capture()
@@ -76,6 +81,7 @@ func transfer_control(player: Node3D) -> bool:
 	var target_stamina := stamina
 	var target_exhausted := stamina_exhausted
 	var target_delay := recovery_delay
+	var target_crouching := crouching
 	# Flush held ammunition/charge before refreshing the same inventory ownership.
 	player._sync_held_item_state()
 	var items: Array = player.inventory.items.duplicate(true)
@@ -88,10 +94,10 @@ func transfer_control(player: Node3D) -> bool:
 	stamina = old_stamina
 	stamina_exhausted = old_exhausted
 	recovery_delay = old_delay
-	_apply_body_visual()
+	set_crouching(old_crouching)
 	reset_physics_interpolation()
 	player.restore_checkpoint_state({"items": items, "slot": slot, "health": target_health,
-		"body": target_parts, "stamina": target_stamina, "stamina_exhausted": target_exhausted, "transform": target})
+		"body": target_parts, "stamina": target_stamina, "stamina_exhausted": target_exhausted, "crouching": target_crouching, "transform": target})
 	player.stamina_recovery_delay_remaining = target_delay
 	player._apply_body_collision()
 	# Establish the destination carrier explicitly; old floor contacts refer to
@@ -124,11 +130,19 @@ func _destination_clear(player: CharacterBody3D, target: Transform3D) -> bool:
 		var sole: float = local.origin.y - standing.height * .5
 		local = Transform3D(Basis(Vector3.RIGHT, PI * .5), Vector3(0, sole + capsule.radius, 0))
 		shape = capsule
+	elif crouching:
+		var capsule := player.standing_collision_shape.duplicate() as CapsuleShape3D
+		var sole: float = local.origin.y - capsule.height * .5
+		capsule.height = player.CROUCH_HEIGHT
+		local.origin.y = sole + capsule.height * .5
+		shape = capsule
 	return _volume_clear(shape, target * local, player.collision_mask, player)
 
 func _old_body_clear(player: CharacterBody3D, at: Transform3D) -> bool:
-	var collider: CollisionShape3D = $CollisionShape3D
-	return _volume_clear(collider.shape, at * collider.transform, player.collision_mask, player)
+	# Dormant injury meshes remain upright. Check the actual dormant capsule,
+	# rather than the active controller's shorter standing or crawling shape.
+	var pose := _idle_collider(player.is_crouching())
+	return _volume_clear(pose.shape, at * pose.transform, player.collision_mask, player)
 
 func _volume_clear(shape: Shape3D, at: Transform3D, mask: int, player: CollisionObject3D) -> bool:
 	var query := PhysicsShapeQueryParameters3D.new()
@@ -148,10 +162,21 @@ func _volume_clear(shape: Shape3D, at: Transform3D, mask: int, player: Collision
 func _apply_body_visual() -> void:
 	var injured := false
 	for part in PlayerBodyState.PARTS: injured = injured or not body_state.has_part(part)
+	if not body_state.has_part(&"left_leg") or not body_state.has_part(&"right_leg"): crouching = false
+	var pose := "crouching" if crouching else "standing"
+	if _model_pose != pose:
+		$Model.free()
+		var model: Node3D = (load(CROUCH_MODEL if crouching else "res://assets/models/fabricator/printed_player.glb") as PackedScene).instantiate()
+		model.name = "Model"
+		model.rotation.y = PI
+		add_child(model)
+		_model_pose = pose
+		for piece in _injury_nodes: piece.node.free()
+		_injury_nodes.clear()
 	$Model.visible = not injured
 	if injured and _injury_nodes.is_empty():
-		if _injury_templates.is_empty(): _build_injury_templates()
-		for template in _injury_templates:
+		if not _injury_templates.has(pose): _build_injury_templates(pose)
+		for template in _injury_templates[pose]:
 			var mesh := MeshInstance3D.new()
 			mesh.name = template.name
 			mesh.mesh = template.mesh
@@ -162,15 +187,16 @@ func _apply_body_visual() -> void:
 		var exists: bool = piece.part == "torso" or body_state.has_part(piece.part)
 		piece.node.visible = injured and (exists if piece.role == "Part" else not exists)
 
-static func _build_injury_templates() -> void:
+static func _build_injury_templates(pose: String) -> void:
+	var templates: Array[Dictionary] = []
 	# Use the same accepted anatomical donor as the playable character, baked
-	# into independent meshes at its authored standing idle. No live rig remains.
+	# into independent meshes at the authored posture idle. No live rig remains.
 	var source: Node3D = load("res://assets/models/player_test_v020/player_export_test_v020.glb").instantiate()
 	var clips: Node3D = load("res://assets/models/player_animations_v021/player_animations_v021.glb").instantiate()
 	var donor: Node3D = load("res://assets/models/player_dismemberment/player_dismemberment.glb").instantiate()
 	var animation: AnimationPlayer = source.get_node("AnimationPlayer")
 	var library := AnimationLibrary.new()
-	library.add_animation("idle", clips.get_node("AnimationPlayer").get_animation("idle"))
+	library.add_animation("idle", (load("res://assets/animations/player/crouch_bent.res") as AnimationLibrary).get_animation("idle") if pose == "crouching" else clips.get_node("AnimationPlayer").get_animation("idle"))
 	animation.add_animation_library("print", library)
 	animation.play("print/idle")
 	animation.seek(0.0, true)
@@ -212,7 +238,26 @@ static func _build_injury_templates() -> void:
 			arrays[Mesh.ARRAY_TANGENT] = null
 			baked.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			baked.surface_set_material(surface, skinned.surface_get_material(surface))
-		_injury_templates.append({"name": label, "mesh": baked, "part": part, "role": role, "transform": Transform3D.IDENTITY})
+		templates.append({"name": label, "mesh": baked, "part": part, "role": role, "transform": Transform3D.IDENTITY})
+	_injury_templates[pose] = templates
 	source.free()
 	clips.free()
 	donor.free()
+
+func set_crouching(value: bool) -> void:
+	crouching = value and body_state.has_part(&"left_leg") and body_state.has_part(&"right_leg")
+	_apply_idle_collision()
+	_apply_body_visual()
+
+func _apply_idle_collision() -> void:
+	var pose := _idle_collider(crouching)
+	$CollisionShape3D.transform = pose.transform
+	$CollisionShape3D.shape = pose.shape
+
+static func _idle_collider(is_crouched: bool) -> Dictionary:
+	# Missing-leg dormant bodies keep their upright baked silhouette. The live
+	# controller restores its normal crawling collision upon receiving control.
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = .4 if is_crouched else .24
+	capsule.height = 1.05 if is_crouched else 1.6
+	return {"shape": capsule, "transform": Transform3D(Basis.IDENTITY, Vector3(0, capsule.height * .5, 0))}
