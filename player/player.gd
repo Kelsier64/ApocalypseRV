@@ -2,6 +2,8 @@ extends CharacterBody3D
 
 const SPEED = 5.0
 const SPRINT_SPEED = 8.0
+const CROUCH_SPEED := 2.0
+const CROUCH_HEIGHT := 1.05
 const CRAWL_ONE_LEG_SPEED := 0.8
 const CRAWL_NO_LEGS_SPEED := 0.55
 const CRAWL_ONE_ARM_SPEED := 0.35
@@ -62,8 +64,8 @@ var _death_corpse_released := false
 var in_ui_mode: bool = false
 var settings_open: bool = false
 # Closing settings waits for held controls to be released before gameplay resumes.
-const SETTINGS_GAMEPLAY_KEYS = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_E, KEY_F, KEY_H, KEY_B, KEY_L, KEY_Z, KEY_X, KEY_C, KEY_R, KEY_T, KEY_Q, KEY_V, KEY_G, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
-const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"weapon_fire", &"weapon_aim", &"weapon_reload", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
+const SETTINGS_GAMEPLAY_KEYS = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_CTRL, KEY_SPACE, KEY_E, KEY_F, KEY_H, KEY_B, KEY_L, KEY_Z, KEY_X, KEY_C, KEY_R, KEY_T, KEY_Q, KEY_V, KEY_G, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
+const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"crouch", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"weapon_fire", &"weapon_aim", &"weapon_reload", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
 var _settings_release_keys: Array[int] = []
 var _settings_release_buttons: Array[int] = []
 var _settings_release_actions: Array[StringName] = []
@@ -105,6 +107,7 @@ var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
 var _large_item_climb_feedback_shown := false
 var crawl_transition_remaining: float = 0.0
+var crouching := false
 var debug_last_ceiling_hit_distance: float = INF
 var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
 var debug_last_ceiling_hit_source: String = ""
@@ -490,6 +493,7 @@ func complete_world_transition(at: Transform3D) -> void:
 func restore_checkpoint_state(state: Dictionary) -> void:
 	crawl_transition_remaining = 0.0
 	body_state.restore(state.get("body", {}))
+	crouching = bool(state.get("crouching", false)) and not is_crawling()
 	inventory.items.assign(state.items.duplicate(true))
 	inventory.active_slot = state.slot
 	current_player_health = state.health
@@ -498,6 +502,9 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	stamina_exhausted = bool(state.get("stamina_exhausted", current_stamina <= 0.0))
 	complete_world_transition(state.transform)
 	_apply_body_capabilities()
+	get_node("Visuals/Locomotion").reset_posture()
+	# Commit the saved posture before the loaded actor can simulate in its world.
+	_apply_body_collision()
 	refresh_inventory()
 	_update_health_bar()
 	_update_stamina_bar()
@@ -515,6 +522,8 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	seated_in = seat
+	crouching = false
+	_apply_body_collision()
 	_advance_flashlight(0.0)
 	global_transform = seat.global_transform.orthonormalized()
 	set_process_unhandled_input(false)
@@ -642,7 +651,7 @@ func _unhandled_input(event):
 
 ## Capability gate shared by the real ladder entry and behavior tests.
 func _can_use_ladder() -> bool:
-	return not is_crawling() and can_use_hands(2) and not inventory.is_holding_large_item()
+	return not is_crawling() and not is_crouching() and can_use_hands(2) and not inventory.is_holding_large_item()
 
 func _show_large_item_climb_feedback() -> void:
 	if _large_item_climb_feedback_shown:
@@ -765,7 +774,7 @@ func _find_rv_ancestor(node: Node) -> Node3D:
 	return ClimbMath.find_rv_ancestor(node)
 
 func _can_sprint(moving: bool) -> bool:
-	return moving and not is_gameplay_input_blocked() and not is_crawling() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
+	return moving and not is_gameplay_input_blocked() and not is_crawling() and not is_crouching() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
 		and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
 
 func _spend_stamina(amount: float) -> bool:
@@ -810,7 +819,7 @@ func _process_normal_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	if input_allowed and not is_crawling() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
+	if input_allowed and not is_crawling() and not is_crouching() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
 		velocity.y = JUMP_VELOCITY
 
 	var input_dir := Vector2.ZERO
@@ -830,6 +839,7 @@ func _process_normal_movement(delta: float) -> void:
 	_update_stamina(delta, sprinting)
 	var movement_speed := SPRINT_SPEED if sprinting else SPEED
 	if is_crawling(): movement_speed = crawl_speed()
+	elif is_crouching(): movement_speed = CROUCH_SPEED
 	if crawl_transition_remaining > 0.0: movement_speed = 0.0
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
 	if direction:
@@ -862,7 +872,7 @@ func _try_start_climb() -> void:
 		_large_item_climb_feedback_shown = false
 	if ascending == descending: return
 	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL: return
-	if locomotion_state != LocomotionState.NORMAL or is_crawling() or not can_use_hands(2): return
+	if locomotion_state != LocomotionState.NORMAL or is_crawling() or is_crouching() or not can_use_hands(2): return
 	if climb_reenter_cooldown_remaining > 0.0: return
 	var nearest: RVLadder
 	var nearest_distance := INF
@@ -1169,6 +1179,7 @@ func _physics_process(delta):
 		return
 	if in_ui_mode:
 		return
+	_update_crouch()
 
 	if climb_reenter_cooldown_remaining > 0.0:
 		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
@@ -1299,8 +1310,10 @@ func _respawn():
 	body_state.reset()
 	_death_corpse_released = false
 	crawl_transition_remaining = 0.0
+	crouching = false
 	is_player_dead = false
 	_apply_body_capabilities()
+	get_node("Visuals/Locomotion").reset_posture()
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	rv_support.clear()
@@ -1451,6 +1464,36 @@ func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
 func is_crawling() -> bool:
 	return not body_state.has_part(&"left_leg") or not body_state.has_part(&"right_leg")
 
+func is_crouching() -> bool:
+	return crouching and not is_crawling()
+
+func _update_crouch() -> void:
+	# Ownership/input locks preserve the current contact volume and pose.
+	if is_gameplay_input_blocked() or is_grabbed() or get_player_mode() != PlayerMode.NORMAL: return
+	if locomotion_state != LocomotionState.NORMAL or is_crawling(): return
+	if Input.is_action_pressed("crouch"):
+		if not crouching and is_on_floor():
+			crouching = true
+			grab_control.clear_view_recovery()
+			_apply_body_collision()
+	elif crouching and _crouch_standing_volume_clear():
+		crouching = false
+		grab_control.clear_view_recovery()
+		_apply_body_collision()
+
+func _crouch_standing_volume_clear() -> bool:
+	if not is_inside_tree() or standing_collision_shape == null: return false
+	var query := PhysicsShapeQueryParameters3D.new()
+	# Ignore only the resting floor tolerance, as in printed-body transfers.
+	var capsule := standing_collision_shape.duplicate() as CapsuleShape3D
+	capsule.radius = maxf(.01, capsule.radius - .005)
+	capsule.height = maxf(capsule.radius * 2, capsule.height - .01)
+	query.shape = capsule
+	query.transform = global_transform * standing_collision_transform
+	query.collision_mask = collision_mask
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+
 func usable_arms() -> int:
 	return int(body_state.has_part(&"left_arm")) + int(body_state.has_part(&"right_arm"))
 
@@ -1485,7 +1528,9 @@ func sever_part(part: StringName, context: Dictionary = {}) -> bool:
 	return true
 
 func _apply_body_capabilities() -> void:
-	if is_crawling(): grab_control.clear_view_recovery()
+	if is_crawling():
+		crouching = false
+		grab_control.clear_view_recovery()
 	if locomotion_state == LocomotionState.CLIMBING and (is_crawling() or not can_use_hands(2)):
 		_abort_climb("limb lost")
 	if is_placing_equipment() and not can_use_hands(2 if inventory.active_item().get("is_large", false) else 1):
@@ -1511,6 +1556,13 @@ func _apply_body_collision() -> void:
 		var standing_capsule := standing_collision_shape as CapsuleShape3D
 		var sole_y := standing_collision_transform.origin.y - standing_capsule.height * 0.5
 		body_collision_shape.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, sole_y + capsule.radius, 0))
+	elif crouching:
+		var capsule := standing_collision_shape.duplicate() as CapsuleShape3D
+		var sole_y := standing_collision_transform.origin.y - capsule.height * .5
+		capsule.height = CROUCH_HEIGHT
+		body_collision_shape.shape = capsule
+		body_collision_shape.transform = standing_collision_transform
+		body_collision_shape.position.y = sole_y + capsule.height * .5
 	else:
 		body_collision_shape.shape = standing_collision_shape
 		body_collision_shape.transform = standing_collision_transform

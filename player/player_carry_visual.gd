@@ -242,6 +242,13 @@ func _update_item(delta: float, large: bool) -> void:
 	# looking up. Full-size meshes must not lift the wrists toward the face.
 	var shoulder := skeleton.find_bone("upper_arm_" + active_hand)
 	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
+	var crouch_drop := 0.0
+	var crouch_depth := 0.0
+	if get_parent().get_node("Locomotion").crouch_eye_drop > 0.0:
+		var rest_shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_rest(shoulder).origin)
+		var posed_shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin)
+		crouch_drop = clampf(rest_shoulder.y - shoulder_height, 0.0, .7)
+		crouch_depth = posed_shoulder.z - rest_shoulder.z
 	# Prone clips already lower the skeleton; retain their existing hold
 	# profile before the crawl downshift rather than lowering it twice.
 	var small_height := 1.60 if actor.is_crawling() else shoulder_height - .19
@@ -251,10 +258,14 @@ func _update_item(delta: float, large: bool) -> void:
 		# the chest. Their near-side grips remain within the arms' reach.
 		center = Vector3(0, 1.30 - bounds.size.y * .5, -maxf(.70, bounds.size.z * .5 + .35))
 	if item.has_method("held_support_center"): center = item.held_support_center()
+	if large or item.has_method("held_support_center"): center.y -= crouch_drop
 	if grip_kind == "round": center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
+	# Follow the crouched torso in depth too, keeping real grips in arm reach.
+	center.z += crouch_depth
 	if active_hand == "L" and not large: center.x = -center.x
 	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
-	center = Vector3(0, 1.45, 0) + carry_basis * (center - Vector3(0, 1.45, 0))
+	var pivot := Vector3(0, 1.45 - crouch_drop, 0)
+	center = pivot + carry_basis * (center - pivot)
 	if actor.is_crawling(): center += Vector3(0, -1.0, -.12)
 	var marker: Node3D = item.get_parent()
 	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())

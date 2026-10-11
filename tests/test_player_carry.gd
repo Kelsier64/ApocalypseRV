@@ -121,6 +121,51 @@ func check_prone_hold_height(arena: Node3D) -> void:
 	prone_actor.queue_free()
 	await steps(2)
 
+func check_crouched_carry(arena: Node3D) -> void:
+	var actor: CharacterBody3D = preload("res://player/player.tscn").instantiate()
+	arena.add_child(actor)
+	await steps(30)
+	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
+	var driver: Node = actor.get_node("Visuals/Locomotion")
+	for key: String in ["flashlight", "oil_barrel", "pistol"]:
+		actor.inventory.items.clear()
+		actor.inventory.active_slot = 0
+		check(actor.add_item(key, key == "oil_barrel", "res://props/" + key + ".tscn"), key + " equips for crouch carry")
+		await steps(30)
+		var held: Node3D = actor.held_item_node
+		var standing_height := actor.to_local(held.global_position).y
+		Input.action_press("crouch")
+		await steps(40)
+		check(actor.is_crouching() and driver.current_clip == "crouch/idle", key + " enters settled crouch through input")
+		check(actor.to_local(held.global_position).y < standing_height - .3, key + " held pose lowers with the crouched body")
+		for moving: bool in [false, true]:
+			if moving: Input.action_press("move_forward")
+			await steps(20)
+			var note: String = key + (" crouch moving" if moving else " crouch idle")
+			check(driver.current_clip == ("crouch/forward" if moving else "crouch/idle"), note + " retains production animation")
+			if moving: check(is_equal_approx(Vector2(actor.velocity.x, actor.velocity.z).length(), actor.CROUCH_SPEED), note + " retains controller speed")
+			for sample in 18:
+				await steps(1)
+				check(held.is_visible_in_tree(), note + " keeps the full held prop visible")
+				for side in (["R"] if key == "flashlight" else ["R", "L"]):
+					var grip: Node3D = held.get_node("GripRight" if side == "R" else "GripLeft")
+					var contact_error := palm_position(skeleton, side).distance_to(grip.global_position)
+					check(contact_error < .035, "%s %s palm contacts real prop grip (%.3fm)" % [note, side, contact_error])
+					for pair in [["upper_arm_", "forearm_"], ["forearm_", "hand_"]]:
+						var a := skeleton.find_bone(pair[0] + side)
+						var b := skeleton.find_bone(pair[1] + side)
+						var rest_length := skeleton.get_bone_global_rest(a).origin.distance_to(skeleton.get_bone_global_rest(b).origin)
+						var posed_length := skeleton.get_bone_global_pose(a).origin.distance_to(skeleton.get_bone_global_pose(b).origin)
+						check(absf(posed_length - rest_length) < .001, note + " " + side + " preserves " + pair[0] + " segment length")
+				if key == "flashlight": check_flashlight_grip(actor, skeleton)
+			Input.action_release("move_forward")
+			await steps(4)
+		Input.action_release("crouch")
+		await steps(40)
+		check(not actor.is_crouching() and actor.to_local(held.global_position).y > standing_height - .05, key + " held pose returns to standing height")
+	actor.queue_free()
+	await steps(2)
+
 func check_grab_hand_selection(arena: Node3D, actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node) -> void:
 	# Freeze actor motion and the Raker's grab clock; keep real pose overlays running.
 	actor.set_physics_process(false)
@@ -178,6 +223,16 @@ func run() -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
 	var driver: Node = actor.get_node("Visuals/Locomotion")
+	# Production equipment must form a valid held subtree before carry bounds sample it.
+	actor.inventory.items.clear()
+	actor.inventory.active_slot = 0
+	check(actor.add_item("Crafting Station", true, "res://equipment/crafting_station.tscn"), "Crafting station equips as a large held Item")
+	await steps(2)
+	var held_station: Item = actor.held_item_node
+	check(held_station.presentation_only and not held_station.can_operate(), "Held crafting station cannot operate services")
+	for mesh: MeshInstance3D in held_station.find_children("*", "MeshInstance3D", true, false):
+		check(mesh.is_inside_tree(), "Every authored crafting mesh joins the held subtree: " + str(mesh.name))
+	check(carry.bounds.size.y > 1.0 and carry.bounds.size.x > 1.0, "Held crafting bounds include the full gantry and bed")
 	for key in ["flashlight", "scrap", "battery", "engine_repair_kit", "oil_barrel", "engine_standard"]:
 		actor.inventory.items.clear()
 		actor.inventory.active_slot = 0
@@ -261,8 +316,9 @@ func run() -> void:
 	check(carry.right_weight == 0 and carry.left_weight == 0 and carry.base_rotations.is_empty(), "Empty hands restore clean locomotion")
 	await check_grab_hand_selection(arena, actor, skeleton, carry)
 	await check_prone_hold_height(arena)
+	await check_crouched_carry(arena)
 	arena.queue_free()
 	await steps(2)
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: one/two hand carry, grip reach, locomotion, UI, climbing, death, empty hands and grabbed hand selection")
+	if failures.is_empty(): print("PASS: one/two hand carry, grip reach, locomotion, UI, climbing, death, empty hands, grabbed hand selection and crouched flashlight/barrel/pistol carry")
 	quit(0 if failures.is_empty() else 1)

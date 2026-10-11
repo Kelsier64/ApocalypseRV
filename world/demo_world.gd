@@ -3,6 +3,10 @@ extends "res://world/main_world.gd"
 
 func _ready() -> void:
 	super._ready()
+	var rv: Chassis = get_node("NewRv/Chassis")
+	rv.unlimited_materials = true
+	rv.unlimited_fuel = true
+	rv.add_fuel(rv.max_fuel)
 	var clock: WorldClock = get_node("WorldClock")
 	clock.weather.set_weather(Vector3(0.0, 0.0, WorldWeather.FOG_LIGHT), true)
 	clock.weather_running = false

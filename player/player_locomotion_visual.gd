@@ -4,6 +4,14 @@ const CLIPS = preload("res://assets/models/player_animations_v021/player_animati
 const INJURY_CLIPS = preload("res://assets/models/player_dismemberment/player_injury_animations.glb")
 const AUTHORED_CLIMB_SPEED := 2.6
 const LADDER_TRANSITION_POSE_SPEED := 0.6
+@export var crouch_clips: AnimationLibrary = preload("res://assets/animations/player/crouch_bent.res"):
+	set(value):
+		crouch_clips = value
+		if is_node_ready():
+			animation.stop()
+			animation.remove_animation_library("crouch")
+			animation.add_animation_library("crouch", crouch_clips)
+			reset_posture()
 static var library: AnimationLibrary
 static var injury_library: AnimationLibrary
 var actor: CharacterBody3D
@@ -29,6 +37,7 @@ var view_camera: Camera3D
 var camera_rest_position := Vector3.ZERO
 var was_crawling := false
 var crawl_eye := Vector3(0, .58, -.48)
+var crouch_eye_drop := 0.0
 var driving := preload("res://player/player_driving_visual.gd").new()
 
 func _ready() -> void:
@@ -43,19 +52,39 @@ func _ready() -> void:
 		library = AnimationLibrary.new()
 		var source := CLIPS.instantiate()
 		var imported: AnimationPlayer = source.get_node("AnimationPlayer")
+		var source_skeleton := source.find_child("Skeleton3D", true, false) as Skeleton3D
 		for clip in imported.get_animation_list():
 			var resource: Animation = imported.get_animation(clip).duplicate()
+			_complete_bone_channels(resource, source_skeleton)
 			resource.loop_mode = Animation.LOOP_NONE if clip.begins_with("jump_") or clip == "climb_exit" else Animation.LOOP_LINEAR
 			library.add_animation(clip, resource)
 		source.free()
 	animation.add_animation_library("locomotion", library)
 	if injury_library == null: injury_library = _injury_library()
 	animation.add_animation_library("injury", injury_library)
+	animation.add_animation_library("crouch", crouch_clips)
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	animation.active = true
 	_select("idle")
 	animation.advance(0)
 	set_physics_process(actor != null)
+
+func _complete_bone_channels(resource: Animation, source_skeleton: Skeleton3D) -> void:
+	# glTF omits constant channels. A full-body authored pose can change those
+	# bones, so every locomotion clip must explicitly restore their source rest
+	# values. AnimationPlayer then blends them normally instead of retaining
+	# the preceding crouch, injury or driving pose indefinitely.
+	for bone in source_skeleton.get_bone_count():
+		var path := NodePath("PLAYER_Rig/Skeleton3D:" + source_skeleton.get_bone_name(bone))
+		var rest := source_skeleton.get_bone_rest(bone)
+		for type in [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]:
+			if resource.find_track(path, type) >= 0: continue
+			var track := resource.add_track(type)
+			resource.track_set_path(track, path)
+			match type:
+				Animation.TYPE_POSITION_3D: resource.position_track_insert_key(track, 0.0, rest.origin)
+				Animation.TYPE_ROTATION_3D: resource.rotation_track_insert_key(track, 0.0, rest.basis.get_rotation_quaternion())
+				Animation.TYPE_SCALE_3D: resource.scale_track_insert_key(track, 0.0, rest.basis.get_scale())
 
 func _physics_process(delta: float) -> void:
 	if actor.is_player_dead:
@@ -66,6 +95,7 @@ func _physics_process(delta: float) -> void:
 	if actor.seated_in != null:
 		suspend()
 		current_clip = "drive"
+		crouch_eye_drop = 0.0
 		view_camera.position = camera_rest_position
 		driving.update(actor, skeleton, carry, delta)
 		return
@@ -82,9 +112,13 @@ func _physics_process(delta: float) -> void:
 		current_clip = ""
 		suspended = false
 	if actor.is_crawling():
+		crouch_eye_drop = 0.0
 		_update_crawl(delta)
 		return
 	was_crawling = false
+	if actor.is_crouching():
+		_update_crouch(delta)
+		return
 	if actor.locomotion_state == actor.LocomotionState.CLIMBING:
 		_update_climb(delta)
 		return
@@ -260,7 +294,8 @@ func _advance(delta: float, playback_direction: float = 1.0, pose_delta: float =
 	skeleton.set_bone_pose_position(root_bone, skeleton.get_bone_pose_position(root_bone) + applied_root_offset)
 	# Move the eye by the same world-space approach as the visible body. Keep
 	# mouse pitch/yaw independent, and unwind both together after detaching.
-	view_camera.position = camera_rest_position + actor.global_basis.inverse() * climb_pose_offset
+	crouch_eye_drop = move_toward(crouch_eye_drop, .58 if actor.is_crouching() else 0.0, blend_delta * 2.8)
+	view_camera.position = camera_rest_position + Vector3.DOWN * crouch_eye_drop + actor.global_basis.inverse() * climb_pose_offset
 
 func _clear_pose_offset() -> void:
 	# Never let the transition blend capture last frame's procedural offset.
@@ -270,8 +305,56 @@ func _clear_pose_offset() -> void:
 func _select(clip: String, blend: float = .16) -> void:
 	if current_clip == clip: return
 	_clear_pose_offset()
-	animation.play("locomotion/" + clip, blend if not current_clip.is_empty() else 0.0)
+	animation.play(clip if clip.begins_with("crouch/") else "locomotion/" + clip, blend if not current_clip.is_empty() else 0.0)
 	current_clip = clip
+
+func _update_crouch(delta: float) -> void:
+	if actor.in_ui_mode: return
+	climb_exit_remaining = 0.0
+	climb_pose_target = Vector3.ZERO
+	air_time = 0.0
+	last_vertical_speed = 0.0
+	landing_remaining = 0.0
+	var local := actor.global_basis.orthonormalized().inverse() * actor.velocity
+	var speed := 0.0 if actor.is_gameplay_input_blocked() or not actor.is_on_floor() else Vector2(local.x, local.z).length()
+	var clip := "idle"
+	if speed > .12:
+		clip = "forward" if local.z < 0 else "back"
+		if absf(local.x) > absf(local.z): clip = "right" if local.x > 0 else "left"
+	_select("crouch/" + clip, .22)
+	# Match controller travel to the authored planted portion of each cycle.
+	var planted_travel := float(crouch_clips.get_meta(&"planted_foot_travel", .42))
+	var rate := 1.0 if clip == "idle" else speed * .6 * .6 / planted_travel
+	_advance(delta * rate, 1.0, delta)
+
+func reset_posture() -> void:
+	# Restores/respawns are discontinuous: do not blend an upright head through
+	# a low ceiling or reuse the crouch eye offset after ragdoll recovery.
+	get_parent().get_node("Carry").clear_pose()
+	driving.clear(skeleton)
+	_clear_pose_offset()
+	current_clip = ""
+	suspended = false
+	air_time = 0.0
+	last_vertical_speed = 0.0
+	landing_remaining = 0.0
+	climb_rv = null
+	climb_exit_remaining = 0.0
+	landing_animation_started = false
+	manual_top_departure = false
+	climb_pose_offset = Vector3.ZERO
+	climb_pose_target = Vector3.ZERO
+	crouch_eye_drop = .58 if actor.is_crouching() else 0.0
+	if actor.is_crawling():
+		was_crawling = true
+		current_clip = "injury/prone_idle"
+		animation.play(current_clip, 0.0)
+		animation.advance(0.0)
+		view_camera.position = crawl_eye
+	else:
+		was_crawling = false
+		_select("crouch/idle" if actor.is_crouching() else "idle", 0.0)
+		_advance(0.0)
 
 func _update_crawl(delta: float) -> void:
 	climb_rv = null

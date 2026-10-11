@@ -29,6 +29,10 @@ static func valid(scene: String, state: Dictionary) -> bool:
 	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
 	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
 	if state.has("service") and (not state.service is Dictionary or not valid_service(scene, state.service)): return false
+	if scene == "res://props/printed_player.tscn":
+		if not load("res://props/printed_player.gd").valid_state(state.get("printed_body")): return false
+		if state.condition > 0 and not state.printed_body.body.present["head"]: return false
+	elif state.has("printed_body"): return false
 	if scene == "res://props/corpse.tscn":
 		if not load("res://props/corpse.gd").valid_state(state.get("corpse")): return false
 	elif state.has("corpse"): return false
@@ -63,6 +67,7 @@ static func valid_service(scene: String, service: Dictionary) -> bool:
 				if scene != "res://equipment/crafting_station.tscn" or not service.jobs is Array: return false
 				for job in service.jobs:
 					if not job is Dictionary or not job.has_all(["recipe", "remaining", "power", "costs"]): return false
+					if job.has("crouching") and (not job.crouching is bool or job.recipe != "printed_player"): return false
 					if not job.recipe is String or RecipeCatalog.find(job.recipe) == null or not VehicleSnapshot._number(job.remaining) or job.remaining < 0 or not VehicleSnapshot._number(job.power) or job.power < 0 or not job.costs is Dictionary or not MaterialStorage.new().valid_amounts(job.costs): return false
 			"inputs":
 				if scene != "res://equipment/scrapper.tscn" or not service.inputs is Array: return false

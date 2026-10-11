@@ -424,6 +424,8 @@ F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等�
 
 ### 攀爬與戰鬥
 
+玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v5 新增可選 bool `player.crouching`，舊檔缺欄位為站立，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，行為與存檔分別由 `test_player_crouch`／`test_checkpoint_failures` 覆蓋。
+
 玩家只能從 RVLadder 兩端進入攀爬；牆面命中不再授權玩家攀車。RVLadder 繼承 Item，side_door_ladder／roof_ladder 使用原設備搬移、取消、支撐依賴、耐久及 v5 保存，登錄獨立 rv_ladders 群組。W 上爬、S 下爬、Space 脫離，A/D 不橫移；起點以完整膠囊腳底校正，進出梯與每步移動使用實體掃掠。登頂必須有真實可站立支撐，關門及封住開口均會阻擋。攀爬按 RV transform 差追蹤平移與旋轉，梯子搬移／毀損／失去支撐即安全脫離並繼承平台速度。梯子在兩種放置模式均保持背面 -Z 貼牆、+Z 朝外；牆面原始射線命中及細移直接決定位置，不重寫接觸點、不提供預設錨點。只接受近乎垂直的真實牆面，地板、天花板和活動門扇拒絕安裝；靜態牆面安裝歸 WorldEntities，避免支撐卸載時連同梯子被釋放。
 
 接梯需面向梯子（dot ≥ 0.8），左右誤差不超過 0.25 m；下端向外接近範圍為攀爬線外 0.22 m，上端以實際落腳點前後 0.25 m 判斷。进入攀爬只建立狀態，不立即改位置；ENTRY 以 1.4 m/s 逐步抬腳、對齊，每步實體掃掠並跟隨車輛，鬆開 W/S 暫停。攀升／下降為 1.6 m/s。到頂進入 TOP，持續 W 不再跨出；先放開移動鍵，再以玩家面向和 WASD 控制水平移動。腳下真實支撐確認後，只做垂直 LANDING 落地，不朝 top_landing_point 推送，也不播放頂端前傾收手動畫。離開梯頂可觸及範圍而無支撐時恢復重力，Space 可隨時脫離。當前行為見 [手動離梯](docs/validation/2026-10-06-ladder-manual-exit.md)；先前接近手感驗收見 [接梯手感修正](docs/validation/2026-10-06-ladder-transitions.md)。
@@ -481,7 +483,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
-- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。
+- CraftingStation 依實際產物根層碰撞檢查出料空間，以產物碰撞 AABB 底部計算出料高度；完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
+- CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
 
 #### 新增驗證入口
 
@@ -491,7 +494,7 @@ EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前�
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
-VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 的工作台燈隨設備釋放，CabinLighting 跟獨立燈條；照明只透過控制台控制；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
+VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，舊 work 請求欄位僅保留存檔相容；照明只透過控制台控制；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
 
 | 測試 | 覆蓋 |
 |---|---|

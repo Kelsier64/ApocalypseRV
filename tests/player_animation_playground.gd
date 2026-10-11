@@ -8,6 +8,8 @@ var observer: Camera3D
 var label: Label
 var replaying := false
 var jump_review := false
+var crouch_review := false
+var relaxed_crouch := false
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Player Animation Acceptance"
@@ -16,6 +18,9 @@ func _ready() -> void:
 	if "--wrists-only" in OS.get_cmdline_user_args(): capture_directory = OUT + "wrist-only/"
 	if "--relaxed-fingers" in OS.get_cmdline_user_args(): capture_directory = OUT + "relaxed-fingers/"
 	jump_review = "--jump" in OS.get_cmdline_user_args()
+	relaxed_crouch = "--crouch-relaxed" in OS.get_cmdline_user_args()
+	crouch_review = "--crouch" in OS.get_cmdline_user_args() or relaxed_crouch
+	if crouch_review: capture_directory = "res://.godot/crouch-relaxed-review/" if relaxed_crouch else "res://.godot/crouch-bent-review/"
 	if jump_review: capture_directory = OUT + "jump/"
 	DirAccess.make_dir_recursive_absolute(capture_directory)
 	var floor_body := StaticBody3D.new()
@@ -33,6 +38,18 @@ func _ready() -> void:
 	floor_mesh.material_override = material
 	floor_body.add_child(floor_mesh)
 	add_child(floor_body)
+	if crouch_review:
+		var beam := StaticBody3D.new()
+		beam.position = Vector3(0, 1.25, -3)
+		var shape := CollisionShape3D.new()
+		shape.shape = BoxShape3D.new()
+		shape.shape.size = Vector3(3, .2, 1.4)
+		beam.add_child(shape)
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = BoxMesh.new()
+		mesh.mesh.size = shape.shape.size
+		beam.add_child(mesh)
+		add_child(beam)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-45, -30, 0)
 	sun.shadow_enabled = true
@@ -47,6 +64,8 @@ func _ready() -> void:
 	add_child(environment)
 	actor = PLAYER.instantiate()
 	add_child(actor)
+	if relaxed_crouch:
+		actor.get_node("Visuals/Locomotion").crouch_clips = preload("res://assets/animations/player/crouch.res")
 	observer = Camera3D.new()
 	if jump_review: observer.fov = 50
 	add_child(observer)
@@ -69,6 +88,8 @@ func _process(_delta: float) -> void:
 	observer.position = center + Vector3(2.3, .55, -2.9)
 	observer.look_at(center)
 	label.text = "PLAYER v021 | 60 Hz | " + actor.get_node("Visuals/Locomotion").current_clip + "\nWASD / Shift / Space | F1 first person | F2 observer | F3 replay | Esc close"
+	if crouch_review:
+		label.text = "%s CROUCH | Hold Ctrl + WASD | F1 first person | F2 observer | F3 replay\n%s | capsule %.2f m | eye %.2f m" % ["RELAXED" if relaxed_crouch else "BENT", actor.get_node("Visuals/Locomotion").current_clip, actor.body_collision_shape.shape.height, actor.camera.global_position.y]
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
@@ -91,6 +112,9 @@ func capture(name: String) -> void:
 
 func replay() -> void:
 	if replaying: return
+	if crouch_review:
+		await replay_crouch()
+		return
 	if jump_review:
 		await replay_jumps()
 		return
@@ -127,6 +151,46 @@ func replay() -> void:
 	await wait_seconds(2.0)
 	await capture("recovered_idle")
 	print("PASS: rendered production locomotion replay completed at ", Engine.physics_ticks_per_second, " Hz")
+	replaying = false
+	if "--replay" in OS.get_cmdline_user_args(): get_tree().quit()
+
+func replay_crouch() -> void:
+	replaying = true
+	actor.global_position = Vector3(0, 0, 0)
+	actor.velocity = Vector3.ZERO
+	await wait_seconds(.6)
+	await capture("standing")
+	Input.action_press("crouch")
+	await wait_seconds(.7)
+	await capture("crouch_idle")
+	Input.action_release("crouch")
+	await wait_seconds(.6)
+	await capture("standing_after_crouch")
+	Input.action_press("crouch")
+	await wait_seconds(.6)
+	for direction in ["forward", "back", "left", "right"]:
+		Input.action_press("move_" + direction)
+		await wait_seconds(.45)
+		await capture("crouch_" + direction)
+		Input.action_release("move_" + direction)
+		await wait_seconds(.25)
+	actor.camera.rotation.x = deg_to_rad(-65)
+	actor.camera.make_current()
+	await capture("crouch_first_person")
+	observer.make_current()
+	actor.global_position = Vector3(0, -.249, 0)
+	Input.action_press("move_forward")
+	await wait_seconds(1.5)
+	Input.action_release("move_forward")
+	Input.action_release("crouch")
+	await wait_seconds(.5)
+	await capture("blocked_stand")
+	Input.action_press("move_forward")
+	await wait_seconds(.85)
+	Input.action_release("move_forward")
+	await wait_seconds(.5)
+	await capture("standing_after_tunnel")
+	print("PASS: rendered crouch directions, first-person view and low tunnel replay completed")
 	replaying = false
 	if "--replay" in OS.get_cmdline_user_args(): get_tree().quit()
 

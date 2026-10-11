@@ -186,10 +186,13 @@ func run() -> void:
 	rv.interior_requested.service = true
 	hatch.set_open(true)
 	rv.energy.step(rv, 0, 1)
-	check(rv.interior_powered.work and rv.interior_powered.service and is_equal_approx(rv.energy.load_rate - baseline, rv.cabin_light_draw * 2 + rv.work_light_draw + rv.service_light_draw), "Work and service light loads are included once")
+	check(not rv.interior_powered.work and rv.interior_powered.service and is_equal_approx(rv.energy.load_rate - baseline, rv.cabin_light_draw * 2 + rv.service_light_draw), "Legacy work request adds no load while cabin and service lighting remain powered")
+	var service_lighting: Node = rv.get_node("WorkLighting")
+	service_lighting._process(0.0)
+	check(service_lighting.service_lamp.visible and rv.get_node("CraftingStation").find_children("WorkLight", "", true, false).is_empty() and rv.get_node("CraftingStation").find_children("*", "Light3D", true, false).is_empty(), "Crafting station has no lamp or fixture while engine service lamp remains visible")
 	rv.get_node("CraftingStation").enabled = false
 	rv.energy.step(rv, 0, 1)
-	check(not rv.interior_powered.work and rv.interior_powered.cabin, "Disabled workstation stops its own illumination and load")
+	check(not rv.interior_powered.work and rv.interior_powered.cabin, "Workstation availability does not affect cabin lighting or enable a work lamp")
 	rv.current_power = 0
 	rv.energy.step(rv, 0, 1)
 	check(not rv.interior_powered.values().has(true), "No hidden light supply when battery empties")
@@ -203,7 +206,9 @@ func run() -> void:
 	hatch.set_open(false)
 	check(await VehicleSnapshot.apply(rv, saved), "Lighting settings round trip")
 	check(hatch.opened and rv.engine_bay.hatch_open and hatch.transform.is_equal_approx(open_pose) and hatch_geometry(hatch, hinge), "Stable open snapshot restores the hinged panel and rotating collision")
-	check(rv.instrument_brightness == 0.2 and rv.vibration_strength == 0.0 and rv.interior_requested.service, "Switches, dimmer and vibration restored exactly")
+	check(rv.instrument_brightness == 0.2 and rv.vibration_strength == 0.0 and rv.interior_requested.service and rv.interior_requested.work, "Active lighting settings and legacy work request round trip unchanged")
+	rv.energy.step(rv, 0, 1)
+	check(not rv.interior_powered.work and rv.interior_powered.cabin and rv.interior_powered.service, "Restored legacy work switch cannot power a hidden work lamp")
 	var bad := saved.duplicate(true)
 	bad.comfort.brightness = NAN
 	check(not VehicleSnapshot.validate(bad), "Invalid lighting settings rejected before restore")
