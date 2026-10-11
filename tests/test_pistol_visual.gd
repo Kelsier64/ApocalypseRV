@@ -3,6 +3,7 @@ extends SceneTree
 var failures: Array[String] = []
 var actor: CharacterBody3D
 var skeleton: Skeleton3D
+var arm_metrics := {"samples": 0, "wrist_bend_max_degrees": 0.0, "elbow_plane_max_degrees": 0.0, "forearm_pronation_max_degrees": 0.0}
 
 func _init() -> void: run.call_deferred()
 
@@ -75,28 +76,46 @@ func check_wrist(side: String, note: String) -> void:
 	# desired wrist orientation. Grip contact alone cannot detect a folded wrist.
 	var hand := skeleton.find_bone("hand_" + side)
 	var lower := skeleton.find_bone("forearm_" + side)
+	var upper := skeleton.find_bone("upper_arm_" + side)
 	var rest := skeleton.get_bone_global_rest(hand)
 	var lower_rest := skeleton.get_bone_global_rest(lower)
+	var upper_rest := skeleton.get_bone_global_rest(upper)
 	var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
-	var index := skeleton.get_bone_global_rest(skeleton.find_bone("index_01_" + side)).origin
-	var pinky := skeleton.get_bone_global_rest(skeleton.find_bone("pinky_01_" + side)).origin
 	var forward := (middle - rest.origin).normalized()
-	var radial := (index - pinky).slide(forward).normalized()
 	var hand_pose := skeleton.get_bone_global_pose(hand)
 	var lower_pose := skeleton.get_bone_global_pose(lower)
+	var upper_pose := skeleton.get_bone_global_pose(upper)
 	var hand_delta := hand_pose.basis * rest.basis.inverse()
 	var current_forward := (hand_delta * forward).normalized()
 	var lower_axis := (hand_pose.origin - lower_pose.origin).normalized()
 	var bend := rad_to_deg(lower_axis.angle_to(current_forward))
 	check(bend < 75.0, "%s wrist bends less than 75 degrees (%.1f)" % [note, bend])
-	# Transport the anatomical radial axis along each forearm. Comparing these
-	# transverse directions isolates pronation from ordinary wrist flexion.
+	# Contact and palm/forearm agreement cannot expose upper-arm twist. The
+	# upper arm must carry its authored hinge plane into the actual elbow bend.
+	var upper_axis := (lower_pose.origin - upper_pose.origin).normalized()
+	var rest_upper_axis := (lower_rest.origin - upper_rest.origin).normalized()
 	var rest_lower_axis := (rest.origin - lower_rest.origin).normalized()
-	var rest_radial := Basis(Quaternion(forward, rest_lower_axis)) * radial
-	var actual_radial := (lower_pose.basis * lower_rest.basis.inverse() * rest_radial).slide(lower_axis).normalized()
-	var palm_radial := (Basis(Quaternion(current_forward, lower_axis)) * hand_delta * radial).slide(lower_axis).normalized()
-	var pronation := rad_to_deg(actual_radial.angle_to(palm_radial))
-	check(pronation < 15.0, "%s forearm carries palm rotation without wrist twist (%.1f degrees)" % [note, pronation])
+	var upper_delta := upper_pose.basis * upper_rest.basis.inverse()
+	var elbow_plane := 0.0
+	# A nearly straight elbow has no reliable geometric bend direction.
+	if rad_to_deg(upper_axis.angle_to(lower_axis)) > 5.0:
+		var rest_bend := rest_lower_axis.slide(rest_upper_axis).normalized()
+		var expected_bend := (upper_delta * rest_bend).slide(upper_axis).normalized()
+		var actual_bend := lower_axis.slide(upper_axis).normalized()
+		elbow_plane = rad_to_deg(expected_bend.angle_to(actual_bend))
+		check(elbow_plane < 10.0, "%s elbow stays within its rest hinge plane (%.1f degrees)" % [note, elbow_plane])
+	# Remove upper-arm motion and the elbow's necessary swing before measuring
+	# forearm pronation. This remains independent of the desired pistol palm.
+	var inherited_axis := (upper_delta * rest_lower_axis).normalized()
+	var natural_lower := Basis(Quaternion(inherited_axis, lower_axis)) * upper_delta * lower_rest.basis
+	var natural_radial := natural_lower.x.slide(lower_axis).normalized()
+	var actual_radial := lower_pose.basis.x.slide(lower_axis).normalized()
+	var pronation := rad_to_deg(natural_radial.angle_to(actual_radial))
+	check(pronation < 5.0, "%s forearm stays in the natural elbow plane without axial twist (%.1f degrees)" % [note, pronation])
+	arm_metrics.samples += 1
+	arm_metrics.wrist_bend_max_degrees = maxf(arm_metrics.wrist_bend_max_degrees, bend)
+	arm_metrics.elbow_plane_max_degrees = maxf(arm_metrics.elbow_plane_max_degrees, elbow_plane)
+	arm_metrics.forearm_pronation_max_degrees = maxf(arm_metrics.forearm_pronation_max_degrees, pronation)
 
 func grip_contact(side: String) -> Vector3:
 	# The surviving left hand changes from support to trigger grip.
@@ -253,8 +272,9 @@ func run() -> void:
 		await steps(20)
 		check(carry.right_weight == 0.0 and carry.left_weight == 0.0 and carry.base_rotations.is_empty(), action + " restores clean locomotion after preview is freed")
 	world.free()
+	print("PISTOL_ARM_METRICS ", JSON.stringify(arm_metrics))
 	if failures.is_empty():
-		print("PASS: pistol body budgets, dimensions, actual palm contacts and bounded finger poses")
+		print("PASS: pistol body budgets, dimensions, actual palm contacts, elbow hinges and bounded forearm/finger poses")
 		quit(0)
 	else:
 		for failure in failures: push_error(failure)
