@@ -219,7 +219,7 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready and stage.mode == 0, "Actual free-play stage starts")
 	if not ready:
 		quit(1)
@@ -229,7 +229,10 @@ func run() -> void:
 		["PARTIAL_ROLLING_SPAWN_BOUNCE", false, false, false],
 		["DRIVER_PARKED", true, false, false], ["ROOF_SURVIVOR_PARKED", true, false, false]]
 	for index in cases.size():
-		if index > 0: await stage.select_mode(0)
+		if index > 0 and not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		var placement := "driver" if index == 5 else "roof" if index == 6 else "cabin"
 		await encounter(cases[index][0], cases[index][1], cases[index][2], cases[index][3], index != 4, placement)
 	check_remembered_turn()

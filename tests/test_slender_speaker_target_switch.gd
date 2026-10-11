@@ -34,7 +34,7 @@ func tap(code: Key) -> void:
 
 func fresh_stage() -> bool:
 	await stage.select_mode(0)
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready, "Production free play becomes ready for a fresh encounter")
 	return ready
 
@@ -338,7 +338,7 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready, "Production playground prepares navigation and real actors")
 	if ready:
 		await check_seat_exit()

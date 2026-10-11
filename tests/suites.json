@@ -18,6 +18,7 @@
       "test_slender_speaker_spawns",
       "test_slender_speaker_fog_spawn",
       "test_slender_speaker_encounter",
+      "test_vehicle_settle",
       "test_rv_engine",
       "test_rv_interactions",
       "test_rv_panel_damage",

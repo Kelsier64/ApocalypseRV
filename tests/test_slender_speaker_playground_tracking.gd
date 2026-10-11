@@ -175,13 +175,16 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready and stage.mode == 0, "Actual default playground becomes ready in free play")
 	if not ready:
 		quit(1)
 		return
 	await encounter(false)
-	await stage.select_mode(0)
+	if not await stage.select_mode(0):
+		stage.queue_free()
+		quit(1)
+		return
 	await encounter(true)
 	movement("")
 	stage.queue_free()

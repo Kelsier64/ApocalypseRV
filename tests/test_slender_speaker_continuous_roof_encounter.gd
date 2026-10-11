@@ -237,17 +237,29 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready, "Production playground starts")
 	if ready:
 		await encounter("MIDDLE", 0.0)
-		await stage.select_mode(0)
+		if not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		await encounter("REAR", 4.0)
-		await stage.select_mode(0)
+		if not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		await encounter("DRIVER_WALK_MIDDLE", 0.0, true)
-		await stage.select_mode(0)
+		if not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		await encounter("DRIVER_WALK_REAR", 4.0, true)
-		await stage.select_mode(0)
+		if not await stage.select_mode(0):
+			stage.queue_free()
+			quit(1)
+			return
 		await hatch_geometry()
 	stage.queue_free()
 	await frames(3)
