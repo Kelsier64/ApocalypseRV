@@ -2,9 +2,16 @@ extends Node
 ## Presentation of controller-relative velocity. No controller root motion.
 const CLIPS = preload("res://assets/models/player_animations_v021/player_animations_v021.glb")
 const INJURY_CLIPS = preload("res://assets/models/player_dismemberment/player_injury_animations.glb")
-const CROUCH_CLIPS = preload("res://assets/animations/player/crouch.res")
 const AUTHORED_CLIMB_SPEED := 2.6
 const LADDER_TRANSITION_POSE_SPEED := 0.6
+@export var crouch_clips: AnimationLibrary = preload("res://assets/animations/player/crouch_bent.res"):
+	set(value):
+		crouch_clips = value
+		if is_node_ready():
+			animation.stop()
+			animation.remove_animation_library("crouch")
+			animation.add_animation_library("crouch", crouch_clips)
+			reset_posture()
 static var library: AnimationLibrary
 static var injury_library: AnimationLibrary
 var actor: CharacterBody3D
@@ -53,7 +60,7 @@ func _ready() -> void:
 	animation.add_animation_library("locomotion", library)
 	if injury_library == null: injury_library = _injury_library()
 	animation.add_animation_library("injury", injury_library)
-	animation.add_animation_library("crouch", CROUCH_CLIPS)
+	animation.add_animation_library("crouch", crouch_clips)
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	animation.active = true
 	_select("idle")

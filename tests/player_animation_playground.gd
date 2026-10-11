@@ -9,6 +9,7 @@ var label: Label
 var replaying := false
 var jump_review := false
 var crouch_review := false
+var relaxed_crouch := false
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Player Animation Acceptance"
@@ -17,8 +18,9 @@ func _ready() -> void:
 	if "--wrists-only" in OS.get_cmdline_user_args(): capture_directory = OUT + "wrist-only/"
 	if "--relaxed-fingers" in OS.get_cmdline_user_args(): capture_directory = OUT + "relaxed-fingers/"
 	jump_review = "--jump" in OS.get_cmdline_user_args()
-	crouch_review = "--crouch" in OS.get_cmdline_user_args()
-	if crouch_review: capture_directory = "res://.godot/crouch-review/"
+	relaxed_crouch = "--crouch-relaxed" in OS.get_cmdline_user_args()
+	crouch_review = "--crouch" in OS.get_cmdline_user_args() or relaxed_crouch
+	if crouch_review: capture_directory = "res://.godot/crouch-relaxed-review/" if relaxed_crouch else "res://.godot/crouch-bent-review/"
 	if jump_review: capture_directory = OUT + "jump/"
 	DirAccess.make_dir_recursive_absolute(capture_directory)
 	var floor_body := StaticBody3D.new()
@@ -62,6 +64,8 @@ func _ready() -> void:
 	add_child(environment)
 	actor = PLAYER.instantiate()
 	add_child(actor)
+	if relaxed_crouch:
+		actor.get_node("Visuals/Locomotion").crouch_clips = preload("res://assets/animations/player/crouch.res")
 	observer = Camera3D.new()
 	if jump_review: observer.fov = 50
 	add_child(observer)
@@ -85,7 +89,7 @@ func _process(_delta: float) -> void:
 	observer.look_at(center)
 	label.text = "PLAYER v021 | 60 Hz | " + actor.get_node("Visuals/Locomotion").current_clip + "\nWASD / Shift / Space | F1 first person | F2 observer | F3 replay | Esc close"
 	if crouch_review:
-		label.text = "CROUCH | Hold Ctrl + WASD | F1 first person | F2 observer | F3 replay\n%s | capsule %.2f m | eye %.2f m" % [actor.get_node("Visuals/Locomotion").current_clip, actor.body_collision_shape.shape.height, actor.camera.global_position.y]
+		label.text = "%s CROUCH | Hold Ctrl + WASD | F1 first person | F2 observer | F3 replay\n%s | capsule %.2f m | eye %.2f m" % ["RELAXED" if relaxed_crouch else "BENT", actor.get_node("Visuals/Locomotion").current_clip, actor.body_collision_shape.shape.height, actor.camera.global_position.y]
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
