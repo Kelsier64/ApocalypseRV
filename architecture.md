@@ -215,6 +215,8 @@ ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材�
 - IndustrialTheme 統一背包、生命、駕駛 HUD、平板及道具箱配色、方角框線、按鈕焦點。保留原字體與中文 fallback、資訊布局、互動及原生 UI 解析度。
 - 本輪不改生成版本、地形／導航／碰撞或存檔格式；副本的 3D 材質與照明不在範圍內。驗證見 `docs/validation/2026-09-17-industrial-art.md`。
 
+2026-10-11 玩家快捷欄使用六個方形格子，沒有共用背景托盤；持有物品時只在其選取格上方顯示名稱，空手時不顯示名稱。格內有物品圖示、數字鍵與選取框，大型物品標示 `2H`，選取手電筒時顯示電量及開關狀態；手槍與彈藥盒顯示格內彈量，手持手槍時顯示備彈、換彈與使用狀態。`InventoryItemIcons` 依物品 `scene_path` 對應 `assets/inventory/` 的透明 PNG 快照，快照取自遊戲實際 3D 模型；未知物品顯示通用 SVG 圖示，不將 Texture 寫入背包或存檔。快捷欄只讀取預載紋理，不在執行時渲染模型或建立 3D Viewport。所有快捷欄裝飾忽略滑鼠輸入，放置操作仍由 Player 處理；駕駛時隱藏、離座恢復。顯示契約由 [test_inventory_ui](tests/test_inventory_ui.gd) 覆蓋，放置預覽保留圖示由 [test_item_player](tests/test_item_player.gd) 覆蓋。
+
 ### 可切換美術樣板
 
 `tests/industrial_style_playground.tscn` 繼承既有室外驗收流程，載入正式世界 seed 42。`world/art_sample/` 提供 SampleForest、SampleMaterials、維修廠附加立面，以及固定陰天天空／泥地 shader。替代 MultiMesh 與材質均由樣板持有；A/B 還原當前正式資源。樣板植被依 48m 格子分批，樹／灌叢裁切距離 300m／110m，保留 12m 遲滯。正式版分區後，樣板沿用来源節點變換與 forest_kind metadata，不解析分區名稱為型號。新載入 chunk 只掃直接子節點掛上外觀，沒有全樹每幀遍歷。
