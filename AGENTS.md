@@ -32,6 +32,12 @@ Godot: `C:\Users\evan4\AppData\Local\Programs\Godot\Godot.exe`. If the sandbox c
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
+## In-Game Text and Visual Prompts
+
+- Use English for all player-visible in-game text, including HUD, menus, interaction text, item names, signs, and test/playground UI. Keep text necessary and concise; omit redundant explanations and decorative text.
+- Do not place hints or instructions on 3D models or bake them into textures. Keep model text limited to necessary details of the asset itself, such as functional signage; omit unnecessary labels and decorative text.
+- Do not add floating text hints or prompts, including world-space labels above objects. Keep necessary gameplay instructions concise and in the screen-space UI.
+
 ## Subagents
 
 Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks. Choose the subagent's reasoning effort based on the task's difficulty.
