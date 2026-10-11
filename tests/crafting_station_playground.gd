@@ -3,7 +3,7 @@ extends Node3D
 var station: CraftingStation
 var elapsed := 0.0
 var paused := false
-var recipe_index := 3
+var recipe_index := 7
 var camera: Camera3D
 var angle := -0.6
 var label: Label
@@ -62,13 +62,13 @@ func _process(delta: float) -> void:
 	_show_progress(clampf(elapsed / 8.0, 0.0, 1.0))
 
 func _show_progress(amount: float) -> void:
-	var recipe := RecipeCatalog.all()[recipe_index]
+	var recipe := RecipeCatalog.all()[mini(recipe_index, RecipeCatalog.all().size() - 1)]
 	station.print_visual.sync_job({"id": str(recipe_index), "recipe": recipe.recipe_id, "remaining": recipe.duration * (1.0 - amount)}, station.spawn_marker.transform)
-	label.text = "FABRICATOR / %s   %d%%\nSpace: pause   R: replay   1-7: recipe   Left/Right: orbit" % [recipe.display_name, roundi(amount * 100.0)]
+	label.text = "FABRICATOR / %s   %d%%\nSpace: pause   R: replay   1-8: recipe   Left/Right: orbit" % [recipe.display_name, roundi(amount * 100.0)]
 
 func _update_camera() -> void:
-	camera.position = Vector3(sin(angle) * 3.6, 2.25, -cos(angle) * 3.6)
-	camera.look_at(Vector3(0, 0.85, 0))
+	camera.position = Vector3(sin(angle) * 5.0, 3.25, -cos(angle) * 5.0)
+	camera.look_at(Vector3(0, 1.25, 0))
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
@@ -77,14 +77,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_R: elapsed = 0.0
 		KEY_LEFT: angle -= 0.3
 		KEY_RIGHT: angle += 0.3
-	if event.keycode >= KEY_1 and event.keycode <= KEY_7:
+	if event.keycode >= KEY_1 and event.keycode <= KEY_8:
 		recipe_index = event.keycode - KEY_1
 		elapsed = 0.0
 	_update_camera()
 
 func _capture() -> void:
 	DirAccess.make_dir_recursive_absolute("res://.godot/fabricator-preview")
-	for index in [3, 1, 6]:
+	for index in [7, 3, 1, 6]:
 		recipe_index = index
 		for amount in [0.0, 0.25, 0.5, 0.75, 1.0]:
 			_show_progress(amount)

@@ -43,10 +43,8 @@ func clear() -> void:
 	_materials.clear()
 	_job_id = ""
 	progress = 0.0
-	var gantry := get_node_or_null("../Details/Gantry") as Node3D
-	if gantry:
-		gantry.position.y = 1.63
-		gantry.get_node("Head").position.x = -0.42
+	var rig := get_node_or_null("../Details")
+	if rig: rig.set_print_pose(0.75, 0.0, AABB(), false)
 	var status := get_node_or_null("../Details/Status") as Label3D
 	if status: status.text = "FAB / READY"
 
@@ -96,11 +94,8 @@ func _copy_meshes(node: Node, parent_transform: Transform3D, root_node: bool = f
 		_copy_meshes(child, local)
 
 func _update_machine(height: float, elapsed: float) -> void:
-	var gantry := get_node_or_null("../Details/Gantry") as Node3D
-	if gantry:
-		# A scanner bar sits behind the product, so wide engine outputs stay clear.
-		gantry.position.y = height + 0.055 if progress < 1.0 else 1.63
-		gantry.get_node("Head").position.x = sin(elapsed * 8.0) * 0.42 if progress < 1.0 else -0.42
+	var rig := get_node_or_null("../Details")
+	if rig: rig.set_print_pose(height, elapsed, _bounds, progress < 1.0)
 	var status := get_node_or_null("../Details/Status") as Label3D
 	if status:
 		status.text = "FAB / %03d%%" % roundi(progress * 100.0) if progress < 1.0 else "CLEAR OUTPUT"

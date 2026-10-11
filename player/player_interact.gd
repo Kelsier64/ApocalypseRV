@@ -184,6 +184,9 @@ func _held_delivery(obj: Node) -> bool:
 func _invoke(obj: Node, method: String) -> void:
 	if not is_instance_valid(obj) or obj.is_queued_for_deletion(): return
 	if not _can_interact(obj): return
+	if obj is PrintedPlayerBody:
+		show_feedback(obj.interact(player))
+		return
 	if obj is Item and not obj.is_fixed:
 		show_feedback(obj.pickup(player))
 		return
@@ -205,7 +208,9 @@ func get_prompt(obj: Node) -> String:
 		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂，並先放下大型物品"
 		return "缺少可用手臂，無法使用或拾取"
 	var text := ""
-	if obj is Item and not obj.is_fixed:
+	if obj is PrintedPlayerBody:
+		text = obj.get_interaction_prompt(player)
+	elif obj is Item and not obj.is_fixed:
 		text = obj.item_name + "\nE 拾取"
 	elif obj.has_method("get_interaction_prompt"):
 		text = obj.get_interaction_prompt(player)
@@ -228,6 +233,7 @@ func get_prompt(obj: Node) -> String:
 	return text
 
 func _can_interact(obj: Node) -> bool:
+	if obj is PrintedPlayerBody: return true
 	# Existing inventory may still be stored with no arms; withdrawal is
 	# gated separately by add_prop_item / the RV storage transaction.
 	if obj is Item and not obj.is_fixed: return player.can_use_hands(2 if obj.is_large else 1)

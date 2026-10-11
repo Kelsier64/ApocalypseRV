@@ -5,6 +5,7 @@
       "test_cabin_light_equipment",
       "test_combat_targeting",
       "test_crafting_print",
+      "test_printed_player",
       "test_equipment_lifecycle",
       "test_flashlight",
       "test_game_settings",

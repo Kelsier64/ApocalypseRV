@@ -1,28 +1,32 @@
-# 製作台模型與逐層成形動畫（2026-10-11）
+# 製作台、三軸列印與身體切換（2026-10-11）
 
-製作台改為原生 Godot 工業製造機：架高網格床、支架、後方雙柱、導螺桿、掃描滑台與狀態列。保留設備場景與 SpawnMarker，新增床面／後柱碰撞；完整測試 RV 的平板移至前面板，避免占用加工空間。
+## 最終模型與動作
 
-`CraftingPrintVisual` 只複製配方產物的可見 MeshInstance3D，不把暫存產物加入 SceneTree。各網格的 transform 與材質色彩／貼圖交给列印 shader，以製作台局部高度統一裁切；發光加工線、層紋與滑台位置依工作剩餘時間推進。沿用既有配方時間、材料、能源與出貨交易。完成但阻塞時保留完整預覽，成功出貨後移除；取消、下一個相同配方及存檔恢復依 job ID 同步。手持 presentation_only 不啟動製作。
+製作台重做為五組 Blender 倒角零件，使用分解機原有的漆面、金屬／粗糙度與法線貼圖。加工平台左右 X 與前後 Z 各有滑軌；Godot 的 Y 為高度軸。整組橫樑與重疊立柱隨加工高度升高，沒有固定高度上限。機柱實體碰撞同步伸展，各設備有獨立 Shape 資源。世界的出料空間檢查仍有效，屋頂等障礙不會被忽略。
 
-預覽指令：
+`CraftingPrintVisual` 依配方剩餘時間顯示物品底部到頂部，包含發光加工線、層紋及三軸動作。預覽只複製網格，不註冊實體 Item。停電／停用凍結進度；阻塞出料保留完整預覽與高位機架，完成出料或取消才收起。原先同名支架與立即釋放暫存資源問題已在前輪修正。
+
+## 正式角色製造
+
+平板新增 `Standing Player Body` 配方：20 Metal Parts、10 Electronic Scrap、10 Unrefined Fuel，20 秒、5 電力。產物是原比例約 1.6m 的直立玩家身體，來源為正式十一組玩家網格與 idle 姿勢的靜態烘焙。列印完成後，對著身體按 E 可切換控制，舊身體留在原地，可再次切回。
+
+切換保留唯一的正式 Player 節點、相機與 HUD；位置、健康、肢體及體力／疲勞狀態在兩具身體間交換。背包與手持裝備隨操控者轉移，不在兩具身體間複製。休眠身體不能收進背包，可保存為可信 Item；受傷的休眠身體顯示對應缺肢與傷口。切換前檢查新舊位置碰撞，禁止死亡、駕駛、攀爬、被抓、UI／放置等不適合的狀態。移動載具的接觸點速度與支撐關係一併處理。
+
+## 預覽與操作
 
 ```powershell
+# 八種配方的模型／動畫展示；八秒展示不改正式配方時間
 godot --path . res://tests/crafting_station_playground.tscn
+# 正式能源／20秒配方／玩家操作
+godot --path . res://tests/printed_player_playground.tscn
 ```
 
-Space 暫停，R 重播，1–7 切配方，左右鍵環繞。這是同一套正式模型／視覺控制器的展示場，為方便觀察把展示過程設為八秒；正式遊戲仍使用配方原本的時間。追加 `-- --capture` 可輸出五階段畫面至 gitignored `.godot/fabricator-preview/`。
+模型展示：Space 暫停、R 重播、1–8 選配方、左右鍵環繞；`-- --capture` 擷取階段圖到 `.godot/fabricator-preview/`。正式互動場：WASD／滑鼠控制、E 切換、R 製造另一具身體。此測試場會提供材料與電量；正式遊戲須自行取得。`-- --verify` 以真實能源迴圈和 interact 輸入自動驗證切換。
 
-## 驗證
+## 驗證與範圍
 
-以 Godot 4.7.2 統一 runner 分段執行，以下 12 項測試與 main-scene smoke 通過：
+Godot 4.7.2 統一 runner：13 項測試及 main-scene smoke 通過：`test_crafting_print`、`test_printed_player`、`test_player_carry`、`test_item_services`、`test_item_persistence`、`test_equipment_lifecycle`、`test_rv_checkpoint`、`test_rv_engine`、`test_rv_resource_cycle`、`test_rv_physics_regression`、`test_rv_cockpit`、`test_starting_shelter`、`test_starting_shelter_terrain`。另外 `test_checkpoint_failures` 通過。最終資產改用與分解機相同的 GLB 內嵌貼圖設定；清除舊解出貼圖後，首次匯入遇到舊 UID 快取，完成重新匯入後，兩項製作／角色測試及 Forward+ 階段渲染重跑通過。
 
-- `test_crafting_print`：全部七種配方、半成品、停電／停用、取消退款、相同配方連續佇列、阻塞後單次出貨、入樹前恢復、手持隔離、旋轉與位移後的裁切座標。
-- `test_item_services`、`test_item_persistence`、`test_equipment_lifecycle`。
-- `test_rv_checkpoint`、`test_rv_engine`、`test_rv_resource_cycle`、`test_rv_physics_regression`、`test_rv_cockpit`。
-- `test_player_carry`、`test_starting_shelter`、`test_starting_shelter_terrain`。搬運測試新增完整製作台網格皆在場景樹與握持邊界涵蓋整機的檢查。
+新增驗證包含八種配方、真人尺寸十一組靜態網格、6m 立柱伸展、X／Z 獨立行程、停電／取消／讀檔／連續佇列、阻塞後單次出貨、獨立碰撞 Shape、健康／缺肢／體力交換、單一控制器、背包不複製、物品快照還原、切回舊身體、障礙拒絕與載具速度。原生 Forward+／Compatibility 皆能渲染完整列印；原生遊戲回放驗證正式 20 秒製作與 interact 輸入切換。
 
-本輪原生 Forward+ 與 Compatibility 渲染五階段油桶、強化引擎與輪胎，最終日誌無 ERROR；實際視窗確認暫停保持進度及配方切換。另在完整測試 RV 內以真實 request_craft／step_work 取得半成品畫面，確認平板正向、床面淨空及車頂容納機架。
-
-中途發現並修正兩項問題：離樹暫存模型立即 free 的渲染資源錯誤（改為 queue_free），以及支架 sibling 重名造成搬運讀取離樹節點（改唯一名稱）。最終搬運與避難所測試無該錯誤，不修改角色搬運邏輯。
-
-本輪未執行整套 full suite 或長途行車列印實機驗證。進度預覽對目前配方的靜態網格有效；不包含蒙皮動畫、材質特效或實際噴嘴路徑規劃。
+尚未跑整套 full suite 或長途行車列印。休眠身體採靜態直立姿勢與站立碰撞；腿部缺損者切回控制後才採正式爬行碰撞與動作。無角色 AI、多人連線或噴嘴逐三角形的實際切片／路徑規劃。

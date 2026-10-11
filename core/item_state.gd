@@ -29,6 +29,10 @@ static func valid(scene: String, state: Dictionary) -> bool:
 	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
 	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
 	if state.has("service") and (not state.service is Dictionary or not valid_service(scene, state.service)): return false
+	if scene == "res://props/printed_player.tscn":
+		if not load("res://props/printed_player.gd").valid_state(state.get("printed_body")): return false
+		if state.condition > 0 and not state.printed_body.body.present["head"]: return false
+	elif state.has("printed_body"): return false
 	if scene == "res://props/corpse.tscn":
 		if not load("res://props/corpse.gd").valid_state(state.get("corpse")): return false
 	elif state.has("corpse"): return false
