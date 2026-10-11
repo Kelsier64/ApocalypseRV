@@ -8,7 +8,6 @@ const MUTED := Color("8c968e")
 
 var slots_container: HBoxContainer
 var selected_name: Label
-var large_item_hint: Label
 var flashlight_hint: Label
 
 func _ready() -> void:
@@ -44,8 +43,6 @@ func _ready() -> void:
 	selected_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	selected_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	caption.add_child(selected_name)
-	large_item_hint = _label("LargeItemHint", "雙手搬運", 13, IndustrialTheme.AMBER)
-	caption.add_child(large_item_hint)
 	flashlight_hint = _label("FlashlightHint", "", 13, IndustrialTheme.AMBER)
 	caption.add_child(flashlight_hint)
 
@@ -122,7 +119,6 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 		return
 	var selected: Dictionary = inventory[active_slot] if active_slot >= 0 and active_slot < inventory.size() else {}
 	selected_name.text = str(selected.get("name", "物品")) if not selected.is_empty() else "空手"
-	large_item_hint.visible = bool(selected.get("is_large", false))
 	var flashlight: Dictionary = selected.get("state", {}).get("flashlight", {}) if selected.get("scene_path", "") == "res://props/flashlight.tscn" else {}
 	flashlight_hint.visible = show_flashlight_hint and not flashlight.is_empty()
 	flashlight_hint.text = "電量 %d%%  ·  L %s" % [ceili(float(flashlight.get("charge", 0.0))), "開啟" if flashlight.get("on", false) else "關閉"] if flashlight_hint.visible else ""
@@ -134,7 +130,7 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 		var active := index == active_slot
 		var large := bool(item.get("is_large", false))
 		var icon := panel.get_node("ItemIcon") as TextureRect
-		icon.texture = InventoryItemIcons.texture_for(str(item.get("scene_path", ""))) if occupied else null
+		icon.texture = InventoryItemIcons.texture_for(str(item.get("scene_path", "")), item.get("state", {})) if occupied else null
 		icon.visible = occupied
 		panel.get_node("EmptyMark").visible = not occupied
 		panel.get_node("LargeItem").visible = large

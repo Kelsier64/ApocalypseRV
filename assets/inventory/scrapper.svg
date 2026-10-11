@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-<defs>
-<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a3b2a3"/><stop offset="1" stop-color="#526d64"/></linearGradient>
-<linearGradient id="olive" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#829575"/><stop offset="1" stop-color="#425b4e"/></linearGradient>
-<linearGradient id="rust" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#af8059"/><stop offset="1" stop-color="#664d3c"/></linearGradient>
-</defs>
-<g stroke="#192c2b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path fill="url(#steel)" d="M16 27h63v50H16z"/><path fill="#c1a56e" d="m16 27 9-14h43l11 14z"/><path fill="#1c2b29" d="M24 32h47v21H24z"/><path fill="#a8b7a0" d="m27 33 6 12 7-12 7 12 7-12 7 12 7-12v16H27z"/><path fill="#658074" d="M22 61h28v10H22z"/><circle fill="#c3a56e" cx="65" cy="65" r="5"/><path fill="#526b61" d="M20 78h12v8H20zm44 0h12v8H64z"/></g>
-</svg>

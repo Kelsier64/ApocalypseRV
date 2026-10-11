@@ -25,8 +25,17 @@ func _run() -> void:
 		_expect(InventoryItemIcons.ICONS.has(path), "Trusted item has a registered icon: " + path)
 		var texture := InventoryItemIcons.texture_for(path)
 		_expect(texture != null and texture != fallback, "Trusted item does not use the fallback: " + path)
+		_expect(texture != null and texture.resource_path.ends_with(".png"), "Trusted item uses a model snapshot texture: " + path)
 	for pair in [["gas_can", "gas_can_empty"], ["battery", "battery_large"], ["engine_standard", "engine_upgraded"]]:
-		_expect(InventoryItemIcons.texture_for("res://props/" + pair[0] + ".tscn") != InventoryItemIcons.texture_for("res://props/" + pair[1] + ".tscn"), "Item variants remain visually distinguishable: " + str(pair))
+		_expect(InventoryItemIcons.texture_for("res://props/" + pair[0] + ".tscn") != InventoryItemIcons.texture_for("res://props/" + pair[1] + ".tscn"), "Item variants retain per-scene snapshot resources: " + str(pair))
+	var player_corpse_state := {"corpse": {"kind": "player"}}
+	var player_corpse_snapshot := player_corpse_state.duplicate(true)
+	var player_corpse_texture := InventoryItemIcons.texture_for("res://props/corpse.tscn", player_corpse_state)
+	var raker_corpse_texture := InventoryItemIcons.texture_for("res://props/corpse.tscn", {"corpse": {"kind": "raker"}})
+	_expect(player_corpse_texture != null and player_corpse_texture != raker_corpse_texture, "Player and raker corpses use distinct model snapshots")
+	_expect(player_corpse_texture != null and player_corpse_texture.resource_path.ends_with("corpse_player.png"), "Player corpse uses its matching model snapshot")
+	_expect(raker_corpse_texture == InventoryItemIcons.texture_for("res://props/corpse.tscn"), "Corpses without a kind use the default raker snapshot")
+	_expect(player_corpse_state == player_corpse_snapshot, "Corpse icon lookup does not mutate saved state")
 
 	var host := InventoryHost.new()
 	root.add_child(host)
@@ -43,7 +52,7 @@ func _run() -> void:
 	var selection := slot.get_node("Selection") as ColorRect
 	_expect(icon.visible and icon.texture == InventoryItemIcons.texture_for("res://props/oil_barrel.tscn"), "Icon follows scene identity despite a custom item name")
 	_expect(ui.selected_name.text.contains("Renamed cargo"), "Selected item remains identifiable by its custom name")
-	_expect(large.visible and ui.large_item_hint.visible, "Large item shows its carrying restriction")
+	_expect(large.visible and large.text == "2H", "Large item shows its carrying restriction in the slot")
 	_expect(not empty.visible and selection.visible, "Occupied active slot is selected without an empty marker")
 	var style := slot.get_theme_stylebox("panel")
 	ui.update_slots(items, 0)
@@ -52,11 +61,16 @@ func _run() -> void:
 
 	ui.update_slots([], 0)
 	_expect(icon.texture == null and not icon.visible, "Removing an item clears its stale icon")
-	_expect(not large.visible and not ui.large_item_hint.visible, "Removing large cargo clears both large-item indicators")
+	_expect(not large.visible, "Removing large cargo clears its slot indicator")
 	_expect(not ui.selected_name.text.contains("Renamed cargo"), "Empty selection clears the previous item name")
 	_expect(empty.visible and selection.visible, "Empty slots remain visibly selectable")
 	ui.update_slots([], PlayerInventory.MAX_SLOTS - 1)
 	_expect(not selection.visible and (ui.slots_container.get_child(PlayerInventory.MAX_SLOTS - 1).get_node("Selection") as ColorRect).visible, "Selection can move to an empty final slot")
+	var corpse_items := [{"name": "Corpse", "is_large": true, "scene_path": "res://props/corpse.tscn", "state": player_corpse_state.duplicate(true)}]
+	var corpse_before := corpse_items.duplicate(true)
+	ui.update_slots(corpse_items, 0)
+	_expect(icon.visible and icon.texture == player_corpse_texture, "Hotbar selects the player corpse snapshot from saved state")
+	_expect(corpse_items == corpse_before, "Displaying a corpse snapshot does not mutate its inventory state")
 
 	var flashlight := [{"name": "Flashlight", "is_large": false, "scene_path": "res://props/flashlight.tscn", "state": {"flashlight": {"charge": 36.2, "on": false}}}]
 	ui.update_slots(flashlight, 0, true)
