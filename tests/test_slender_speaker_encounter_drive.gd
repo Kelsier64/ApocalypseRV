@@ -169,7 +169,7 @@ func run() -> void:
 	stage = load("res://tests/slender_speaker_playground.tscn").instantiate()
 	root.add_child(stage)
 	current_scene = stage
-	var ready := await Wait.until(self, func() -> bool: return stage.running, 60000, true)
+	var ready := await Wait.playground_ready(self, stage)
 	check(ready and stage.mode == 0, "Actual free-play playground becomes ready")
 	if not ready:
 		await finish()

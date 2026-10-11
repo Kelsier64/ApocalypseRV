@@ -98,7 +98,6 @@ static func _spawn_barrel_decoy(building: Node3D, container: Node, site_id: Stri
 ## loose actors use the same owner/snapshot lifecycle as every other walk-in.
 static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
 	var scenes := {
-		"StarterEquipment/Generator": "res://equipment/generator.tscn",
 		"StarterEquipment/CraftingStation": "res://equipment/crafting_station.tscn",
 		"StarterEquipment/Scrapper": "res://equipment/scrapper.tscn",
 		"StarterLoot/Flashlight": "res://props/flashlight.tscn",

@@ -4,6 +4,7 @@ extends Node3D
 const GIANT := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 const PLAYER := preload("res://player/player.tscn")
 const RV := preload("res://rv/new_rv.tscn")
+const VehicleSettle := preload("res://tests/support/vehicle_settle.gd")
 const MODE_NAMES := ["Free play", "Third-person execution", "Wheel-driven straight chase", "Wheel-driven bend chase", "One-panel smash", "Moving RV one-panel smash", "Steady cruise / wider gap", "Local shell opening / chassis smash", "Parked RV / roof removal / driver grab"]
 var actors: Node3D
 var giant: SlenderSpeaker
@@ -19,6 +20,8 @@ var controls: Node
 var generation := 0
 var elapsed := 0.0
 var running := false
+var setup_error := ""
+var vehicle_settle: RefCounted
 var paused := false
 var headless_check := false
 var capture_requested := false
@@ -179,16 +182,18 @@ func _build_navigation_forest() -> void:
 		if NavigationServer3D.map_get_iteration_id(giant_map) > 0: break
 	print("SLENDER_RUNTIME giant_nav_iteration=%d polygons=%d agent_height=15 radius=1.1" % [NavigationServer3D.map_get_iteration_id(giant_map), nav.get_polygon_count()])
 
-func select_mode(next: int) -> void:
+func select_mode(next: int) -> bool:
 	generation += 1
 	var ticket := generation
 	running = false
+	setup_error = ""
+	vehicle_settle = null
 	set_paused(false)
 	actors.process_mode = Node.PROCESS_MODE_PAUSABLE
 	for child in actors.get_children(): child.queue_free()
 	await get_tree().physics_frame
 	await get_tree().process_frame
-	if ticket != generation: return
+	if ticket != generation: return false
 	mode = next
 	elapsed = 0.0
 	completed = false
@@ -238,16 +243,14 @@ func select_mode(next: int) -> void:
 		rv = vehicle.get_node("Chassis")
 		rv.allow_test_controls = mode != 0
 		rv.handbrake = true
-		for frame in 100:
-			await get_tree().physics_frame
-			if ticket != generation: return
+		if not await _wait_for_vehicle_settle(ticket): return false
 		player.global_position = rv.to_global(Vector3(0, .6, -3))
 		var seat: Node3D = rv.get_node("DriverSeat")
 		seat.interact_hold(player)
 		if seat.current_driver != player:
-			push_error("SLENDER_RUNTIME production driver seat entry failed")
+			_fail_setup("SLENDER_RUNTIME production driver seat entry failed")
 			rv.get_parent().queue_free()
-			return
+			return false
 		rv.gear = 1 if mode == 0 else chassis_review_gear
 		rv.set_engine_running(true)
 		rv.handbrake = mode == 0
@@ -257,9 +260,7 @@ func select_mode(next: int) -> void:
 			rv.set_engine_running(false)
 			rv.handbrake = true
 			rv.control_override = {"brake": 1.0}
-			for frame in 120:
-				await get_tree().physics_frame
-				if ticket != generation: return
+			if not await _wait_for_vehicle_settle(ticket): return false
 			vehicle_start = rv.global_position
 		if mode == 7:
 			# Open the rear half; the cab/front shell remains intact.
@@ -272,9 +273,7 @@ func select_mode(next: int) -> void:
 				rv.control_override = {"brake": 1.0}
 				# Let the suspension settle after removing the rear shell before
 				# presenting a genuinely stationary first encounter to the giant.
-				for frame in 120:
-					await get_tree().physics_frame
-					if ticket != generation: return
+				if not await _wait_for_vehicle_settle(ticket): return false
 				vehicle_start = rv.global_position
 		broken_before = _broken_panels()
 		observer_enabled = true
@@ -317,6 +316,25 @@ func select_mode(next: int) -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if observer_enabled else Input.MOUSE_MODE_CAPTURED)
 	print("SLENDER_RUNTIME_READY mode=%d %s capture=%s" % [mode, MODE_NAMES[mode], capture_directory])
 	if mode == 8: hud.text = "PARKED RV / ROOF REMOVAL / DRIVER GRAB\nF7 start or pause · F6 camera · F11 reset · Esc exit"
+	return true
+
+func _wait_for_vehicle_settle(ticket: int) -> bool:
+	var wait := VehicleSettle.new()
+	vehicle_settle = wait
+	var stable := await wait.wait_for_vehicle(get_tree(), rv, func() -> bool: return ticket == generation)
+	if ticket != generation: return false
+	if not stable:
+		_fail_setup("SLENDER_RUNTIME vehicle settle timeout mode=%d generation=%d %s" % [mode, ticket, wait.diagnostic()])
+		return false
+	print("SLENDER_RUNTIME_VEHICLE_SETTLED mode=%d %s" % [mode, wait.diagnostic()])
+	return true
+
+func _fail_setup(message: String) -> void:
+	setup_error = message
+	running = false
+	push_error(message)
+	if is_instance_valid(hud): hud.text = message
+	if headless_check: get_tree().quit(1)
 
 func _physics_process(delta: float) -> void:
 	if not running or paused or not is_instance_valid(giant): return

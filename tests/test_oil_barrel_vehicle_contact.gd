@@ -68,6 +68,8 @@ func nearest_vehicle_surface(rv: Chassis, point: Vector3) -> Vector3:
 		var collision := node as CollisionShape3D
 		if collision == null or collision.disabled or collision.shape == null: continue
 		var owner := collision.get_parent()
+		# Interaction-only wheel sockets are not solid surfaces for this barrel.
+		if owner is CollisionObject3D and (owner.collision_layer & 1) == 0: continue
 		while owner != rv and owner != null and not owner is Item: owner = owner.get_parent()
 		if owner != rv: continue
 		var sample := BarrelExplosion.closest_shape_point(collision.shape, collision.global_transform, point)
@@ -115,16 +117,16 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 	var rv: Chassis = data.rv
 	var target := direction * 14 + Vector3.UP * 0.5
 	# The side-door ladder protrudes into a centerline skid. This unobstructed
-	# side scenario aims at the front wheel; the next scenario exercises the
+	# side scenario aims at the solid front sill; the next scenario exercises the
 	# mounted ladder itself. A small real gap keeps lateral tyre friction from
-	# ending the wheel scenario's skid before body contact.
+	# ending the side scenario's skid before body contact.
 	if label == "side": target.z = -3.0
 	var surface := nearest_vehicle_surface(rv, target)
 	var offset := 0.45 if label == "side" else (0.4 if fixed and speed < 6.0 else 0.93)
 	var barrel_position := Vector3(surface.x, 0.5, surface.z) + direction * offset
-	# The rear bumper sits above a floor-level cylinder; aim at its actual
-	# surface to exercise a frontal rear impact rather than an underside graze.
-	if direction == Vector3.BACK and speed >= 6.0: barrel_position.y = surface.y
+	# The rear bumper and front sill sit above a floor-level cylinder. Aim the
+	# barrel at the solid surface for a normal impact rather than an underside graze.
+	if speed >= 6.0 and (direction == Vector3.BACK or label == "side"): barrel_position.y = surface.y
 	var barrel := barrel_at(data.world, barrel_position)
 	if fixed: barrel.confirm_placement(barrel.global_transform, data.ground, data.ground)
 	var touched_bodies: Array[String] = []
@@ -153,6 +155,8 @@ func production_contact(direction: Vector3, speed: float, label: String, fixed :
 		node_added.disconnect(observer)
 		await retire(data)
 		return
+	if label == "side":
+		check(touched_bodies.has("Chassis") or touched_shape, "Side impact reaches the solid RV body rather than an interaction-only wheel socket")
 	check(effects.size() == 1, "%s actual production RV contact emits one blast effect" % label)
 	check(not is_instance_valid(barrel), "%s blast consumes the ordinary Item barrel" % label)
 	check(is_equal_approx(health_before - rv.get_engine().health - impact_damage, 60.0), "%s engine pays one shared 60 HP blast hit in addition to subsequent recorded impacts" % label)

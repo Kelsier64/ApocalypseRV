@@ -1141,9 +1141,6 @@ rotation = Vector3(0, 3.14159, 0)
 position = Vector3(0, 0, 40)
 rotation = Vector3(0, 3.14159, 0)
 
-[node name="Generator" type="Marker3D" parent="StarterEquipment"]
-position = Vector3(-7.5, 0.34, -5)
-
 [node name="CraftingStation" type="Marker3D" parent="StarterEquipment"]
 position = Vector3(-7.5, 0.04, -1)
 

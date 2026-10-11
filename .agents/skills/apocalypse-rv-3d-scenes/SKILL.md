@@ -7,11 +7,14 @@ description: Always read this skill first before building or editing ApocalypseR
 
 By default, follow “necessary production → one contextual review → relevant validation → concise report.” For small changes, perform only localized checks; expand or rerun checks only when there are new changes, failures, or unresolved concerns. Add scripts, delegation, lengthy reports, or delivery packages only when necessary or requested by the user.
 
+
 - **Finish simple objects directly:** Complete walls, floors and other objects that need only a few meshes and materials, including their visuals and function.
-- **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decor and equipment. The main agent handles reference creation, generation, inspection, refinement and integration directly. Use native meshes for precise structure, layout, collision and interaction; graybox where needed while producing the visual.
+- **Generate suitable visuals with ComfyUI:** Use [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) for suitable static props, decorations, crates, barrels, components, equipment, and objects with clear silhouettes where approximate details are acceptable. Use native meshes for precise structure, layout, collision and interaction.
 - **Split large buildings into components where useful:** Generate or model facade sections, entrance assemblies, roof equipment and interior fittings separately. Keep the building layout and assembly in Godot, with each component independently replaceable. Track the target node, local placement, orientation and adjoining dimensions or openings needed for a fit. Repeated instances share one asset; finish simple structural parts directly.
 - **Verify visual replacements in context:** Check local axes, origin, design dimensions and placement in the target scene. Preserve the existing wrapper tree, collision and gameplay behavior when replacing visuals. Graybox placement alone does not establish a finished visual result; inspect the actual integrated asset.
+- **Avoid direct model text and floating prompts:** Do not write labels, instructions, or other text directly onto a 3D model unless it is an intentional part of the modeled asset. Do not add floating text prompts or unrequested world-space UI.
 - **Evaluate rendering cost before delivery:** Choose a triangle budget for the object's size, viewing distance and expected instance count. Try reduction when the generated mesh is unnecessarily dense; compare the result visually and explain the choice if keeping a higher count. Generation defaults and automatic LOD do not establish an asset budget.
+
 
 
 ## Blender MCP
@@ -19,9 +22,3 @@ By default, follow “necessary production → one contextual review → relevan
 Blender MCP can be used for modeling, editing, inspecting, and exporting assets when the required tools are available and connected.
 
 If Blender MCP is unavailable, use existing offline CLI, glTF or Godot tools when they can complete the task. Ask the user to open Blender and enable its MCP connection only when the task requires Blender and available alternatives cannot complete it; explain the observed limitation.
-
-## Image-to-3D Workflow
-
-Follow [comfyui-image-to-3d](../comfyui-image-to-3d/SKILL.md) directly for image-to-3D work. Preserve the raw model, inspect and refine the result, then verify it in the target scene. Report remaining problems briefly. Do not require a modeling request document before starting; prepare a handoff only when the task needs one.
-
-For supported single-mesh static props, reuse its [parameterized preparation and integration tool](../comfyui-image-to-3d/references/static-props.md) instead of copying asset-specific scripts. Try one suitable reduction budget, compare the result and perform one contextual review; expand work only when a defect or new change requires it.

@@ -9,6 +9,7 @@
 
 [ext_resource type="Script" path="res://world/starting_shelter/start_run.gd" id="18_run"]
 [ext_resource type="Script" path="res://world/terrain/world_profile.gd" id="19_profile"]
+[ext_resource type="Script" path="res://world/deviation_pressure.gd" id="20_pressure"]
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
@@ -53,6 +54,9 @@ profile = SubResource("ProductionProfile")
 
 [node name="WorldClock" type="Node" parent="." unique_id=1066342904]
 script = ExtResource("17_clock")
+
+[node name="DeviationPressure" type="Node" parent="."]
+script = ExtResource("20_pressure")
 
 [node name="NewRv" parent="." unique_id=915576965 instance=ExtResource("12_ms8km")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8359404, 1.7807889, 1.9549446)
