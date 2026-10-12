@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-2026-10-11 教學基地階段一：正式新局採 v11 的獨立 `tutorial_shelter` 場址，40 × 236 m 內部、九區、八內門；v7–v10 場址與資產保留。`navigation_movable` 排除活動門烘焙，`navigation_solid` 排除封閉翼樓；場址 bounds 管理整地、植被及串流。Checkpoint 外層仍為 v5，StartRun v1 新增僅 v11 可用的選填 `bay_gates: bool[8]`；穩定開關狀態隨保存與區塊重建恢復，移動中拒絕保存。沒有教學進度、終端或重試快照。[階段計畫](docs/plans/starting-tutorial.md)。
+2026-10-11 教學基地階段一：正式新局採 v11 的獨立 `tutorial_shelter` 場址，40 × 416 m 內部（2026-10-13 九區各延長 20 m，出口固定、Z −402～14 m；依使用者要求未執行此次變更的驗證）、九區、八內門；v7–v10 場址與資產保留。`navigation_movable` 排除活動門烘焙，`navigation_solid` 排除封閉翼樓；場址 bounds 管理整地、植被及串流。v11 地形半寬為 500 m，以涵蓋延長後的後端；v7–v10 保留 450 m。Checkpoint 外層仍為 v5，StartRun v1 新增僅 v11 可用的選填 `bay_gates: bool[8]`；穩定開關狀態隨保存與區塊重建恢復，移動中拒絕保存。沒有教學進度、終端或重試快照。[階段計畫](docs/plans/starting-tutorial.md)。
 
 文件核對：2026-10-09 正式 v10 森林巨人整合與 v5 Item 保存；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 

@@ -1,8 +1,8 @@
 extends SceneTree
 ## Actual v11 chunk collision/navigation plus the manual stage-one gate controls.
 const WAIT = preload("res://tests/support/test_wait.gd")
-const LENGTHS := [60.0, 20.0, 20.0, 28.0, 20.0, 20.0, 20.0, 20.0, 28.0]
-const GATE_Z := [-162.0, -142.0, -122.0, -94.0, -74.0, -54.0, -34.0, -14.0]
+const LENGTHS := [80.0, 40.0, 40.0, 48.0, 40.0, 40.0, 40.0, 40.0, 48.0]
+const GATE_Z := [-322.0, -282.0, -242.0, -194.0, -154.0, -114.0, -74.0, -34.0]
 var failures: Array[String] = []
 
 class NavigationHost extends Node3D:
@@ -123,7 +123,7 @@ func run() -> void:
 	check_luminaires(building)
 	var bays := building.get_node_or_null("Bays")
 	check(bays != null and bays.get_child_count() == 9, "Tutorial has exactly nine authored bays")
-	var start_z := -222.0
+	var start_z := -402.0
 	for index in range(LENGTHS.size()):
 		var bay := building.get_node_or_null("Bays/Bay%02d" % (index + 1)) as Node3D
 		check(bay != null, "Bay %d exists" % (index + 1))
@@ -144,10 +144,10 @@ func run() -> void:
 			check(not ray(building, Vector3(side * 19, 1, mid_z), Vector3(side * 22, 1, mid_z)).is_empty(), "Bay %d has a solid outer side wall" % (index + 1))
 		check(not ray(building, Vector3(10, 1, mid_z), Vector3(10, 12, mid_z)).is_empty(), "Bay %d has a solid overhead enclosure" % (index + 1))
 		start_z = end_z
-	check(is_equal_approx(start_z, 14), "Nine bays total exactly 236 m from -222 to 14")
-	check(not ray(building, Vector3(0, 1, -220), Vector3(0, 1, -225)).is_empty(), "Tutorial rear wall blocks exit behind Bay01")
+	check(is_equal_approx(start_z, 14), "Nine bays total exactly 416 m from -402 to 14")
+	check(not ray(building, Vector3(0, 1, -400), Vector3(0, 1, -405)).is_empty(), "Tutorial rear wall blocks exit behind Bay01")
 	var spawn := building.to_local(building.get_node("RVSpawn").global_position)
-	check(absf(spawn.x) < 15 and spawn.z > -215 and spawn.z < -169, "Initial RV fits inside the 60 m first bay")
+	check(absf(spawn.x) < 15 and spawn.z > -395 and spawn.z < -329, "Initial RV fits inside the 80 m first bay")
 	var probe := CharacterBody3D.new()
 	probe.collision_layer = 2
 	probe.collision_mask = 1
@@ -158,7 +158,7 @@ func run() -> void:
 	shape.shape = capsule
 	probe.add_child(shape)
 	world.add_child(probe)
-	probe.global_position = building.to_global(Vector3(10, 1, -190))
+	probe.global_position = building.to_global(Vector3(10, 1, -370))
 	await physics_frame
 	var gates: Array[ShelterGarageGate] = []
 	for index in range(GATE_Z.size()):
@@ -185,7 +185,7 @@ func run() -> void:
 			check(not hit.is_empty() and hit.collider == (inside if side < 0 else outside), "Each switch face is reachable before its wall or door collision")
 		if inside != null and inside.has_method("interact"): inside.interact(probe)
 	check_gate_visual_clearance(building.get_node("GarageGate") as ShelterGarageGate, building)
-	probe.global_position = building.to_global(Vector3(10, 1, -190))
+	probe.global_position = building.to_global(Vector3(10, 1, -370))
 	check(await WAIT.until(self, func() -> bool: return gates.all(func(gate): return gate.is_open()), 10000, true), "All eight switch-driven gates complete their real opening movement")
 	for index in range(GATE_Z.size()):
 		for x in [-2.8, 0.0, 2.8]:
@@ -198,12 +198,12 @@ func run() -> void:
 		var to := building.to_global(Vector3(0, 0.1, GATE_Z[index] + 4))
 		var path := NavigationServer3D.map_get_path(world.get_world_3d().navigation_map, from, to, true)
 		check(not path.is_empty() and path[path.size() - 1].distance_to(to) < 1.0 and path[0].distance_to(from) < 1.0, "Production navigation reaches both sides of every opened inner gate")
-	var from := building.to_global(Vector3(0, 0.1, -192))
+	var from := building.to_global(Vector3(0, 0.1, -372))
 	var to := building.to_global(Vector3(0, 0.1, 0))
 	var through_path := NavigationServer3D.map_get_path(world.get_world_3d().navigation_map, from, to, true)
 	check(not through_path.is_empty() and through_path[through_path.size() - 1].distance_to(to) < 1.0 and through_path[0].distance_to(from) < 1.0, "Production navigation connects Bay01 through all eight gates to Bay09")
 	# The other side's physical switch closes each gate after the probe departs.
-	probe.global_position = building.to_global(Vector3(10, 1, -190))
+	probe.global_position = building.to_global(Vector3(10, 1, -370))
 	for index in range(GATE_Z.size()):
 		var button := building.get_node_or_null("Switches/Gate%02dOutside" % (index + 1))
 		if button != null and button.has_method("interact"): button.interact(probe)

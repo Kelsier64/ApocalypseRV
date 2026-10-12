@@ -59,15 +59,15 @@ func _input(event: InputEvent) -> void:
 func _exterior_camera() -> void:
 	if not is_instance_valid(overview): return
 	var shelter: Node3D = get_node("StartRun").shelter
-	overview.global_position = shelter.to_global(Vector3(-100, 90, -160))
-	overview.look_at(shelter.to_global(Vector3(0, 3, -104)))
+	overview.global_position = shelter.to_global(Vector3(-175, 140, -270))
+	overview.look_at(shelter.to_global(Vector3(0, 3, -194)))
 	overview.make_current()
 	_review_hud(false)
 
 func _interior_camera() -> void:
 	var shelter: Node3D = get_node("StartRun").shelter
-	overview.global_position = shelter.to_global(Vector3(9, 4.7, -218))
-	overview.look_at(shelter.to_global(Vector3(0, 2, -184)))
+	overview.global_position = shelter.to_global(Vector3(9, 4.7, -398))
+	overview.look_at(shelter.to_global(Vector3(0, 2, -364)))
 	overview.make_current()
 	_review_hud(false)
 
@@ -82,24 +82,24 @@ func _facade_camera() -> void:
 func _wall_camera() -> void:
 	if not is_instance_valid(overview): return
 	var shelter: Node3D = get_node("StartRun").shelter
-	overview.global_position = shelter.to_global(Vector3(-13, 3.6, -52))
-	overview.look_at(shelter.to_global(Vector3(3, 2.0, -36)))
+	overview.global_position = shelter.to_global(Vector3(-13, 3.6, -112))
+	overview.look_at(shelter.to_global(Vector3(3, 2.0, -76)))
 	overview.make_current()
 	_review_hud(false)
 
 func _gate_camera() -> void:
 	if not is_instance_valid(overview): return
 	var shelter: Node3D = get_node("StartRun").shelter
-	overview.global_position = shelter.to_global(Vector3(-6.4, 1.7, -166))
-	overview.look_at(shelter.to_global(Vector3(-2.5, 1.6, -162.55)))
+	overview.global_position = shelter.to_global(Vector3(-6.4, 1.7, -326))
+	overview.look_at(shelter.to_global(Vector3(-2.5, 1.6, -322.85)))
 	overview.make_current()
 	_review_hud(false)
 
 func _lamp_camera() -> void:
 	if not is_instance_valid(overview): return
 	var shelter: Node3D = get_node("StartRun").shelter
-	overview.global_position = shelter.to_global(Vector3(-12, 5.1, -157))
-	overview.look_at(shelter.to_global(Vector3(-9, 6.9, -152)))
+	overview.global_position = shelter.to_global(Vector3(-12, 5.1, -317))
+	overview.look_at(shelter.to_global(Vector3(-9, 6.9, -312)))
 	overview.make_current()
 	_review_hud(false)
 
@@ -130,7 +130,7 @@ func _start_replay() -> void:
 	replay_vehicle.set_engine_running(true)
 	replay_vehicle.set_gear(1)
 	replay_vehicle.set_handbrake(false)
-	for z in [-166.0, -146.0, -126.0, -98.0, -78.0, -58.0, -38.0, -18.0, 4.0]:
+	for z in [-326.0, -286.0, -246.0, -198.0, -158.0, -118.0, -78.0, -38.0, 4.0]:
 		route.append(run.shelter.to_global(Vector3(0, 0, z)))
 	var site: Dictionary = run.shelter_site
 	# Road-relative points create a broad left turn from the east-side garage.
@@ -164,7 +164,7 @@ func _physics_process(delta: float) -> void:
 	status.text = "WHEEL DRIVE  %.1f m/s | route %d/15 | gate %s" % [speed, route_index + 1, run.phase]
 	if replay_vehicle.global_position.y < -2 or replay_vehicle.global_basis.y.y < 0.65:
 		_finish(false, "lost ground support or rolled over")
-	elif replay_time > 180.0:
+	elif replay_time > 240.0:
 		_finish(false, "departure timed out at %s" % replay_vehicle.global_position)
 	elif route_index == route.size() - 1 and distance < 5:
 		_finish(run.phase == "sealed", "exited, turned onto forward highway and garage " + run.phase)

@@ -130,7 +130,7 @@ func run() -> void:
 		output_directory = OUTPUT + RenderingServer.get_current_rendering_method() + ("/legacy/" if legacy else "/current/")
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(output_directory))
 		# Use the WorldClock's actual morning/noon/afternoon solar orbit.
-		for bay in [["first", -200.0], ["middle", -104.0], ["final", 0.0]]:
+		for bay in [["first", -380.0], ["middle", -194.0], ["final", 0.0]]:
 			aim(Vector3(0, 0, bay[1]))
 			for hour: float in [8.0, 12.0, 15.0]:
 				var angle := (hour - 6.0) / 24.0 * TAU
@@ -143,7 +143,7 @@ func run() -> void:
 		# Stay inside the doorway but nearer the real lamp so the dimmed
 		# production fixture still gives the unoccluded positive control.
 		for probe in [["partition", -9.0], ["closed-gate", -1.5]]:
-			aim(Vector3(probe[1], 0, -164.0))
+			aim(Vector3(probe[1], 0, -324.0))
 			await compare_light("lamp-" + probe[0], fixture)
 	viewport.queue_free()
 	await process_frame
