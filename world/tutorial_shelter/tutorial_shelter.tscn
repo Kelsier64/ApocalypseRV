@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="luminaire"]
+
 [ext_resource type="Material" path="res://world/starting_shelter/materials/formed_concrete.tres" id="concrete"]
 
 [ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
@@ -153,46 +155,64 @@ subdivide_depth = 29
 size = Vector3(5, 0.018, 0.09)
 
 [sub_resource type="BoxMesh" id="r31"]
-size = Vector3(1.8, 0.16, 0.45)
+size = Vector3(0.24, 0.12, 0.24)
 
 [sub_resource type="BoxMesh" id="r32"]
-size = Vector3(1.6, 0.035, 0.32)
+size = Vector3(0.045, 3.16, 0.045)
 
 [sub_resource type="BoxMesh" id="r33"]
-size = Vector3(16.9, 8.8, 0.4)
+size = Vector3(0.14, 0.1, 0.22)
+
+[sub_resource type="BoxMesh" id="r34"]
+size = Vector3(0.018, 3.16, 0.018)
+
+[sub_resource type="BoxMesh" id="r35"]
+size = Vector3(16.6, 8.8, 0.4)
 subdivide_width = 2
 subdivide_height = 1
 
-[sub_resource type="BoxShape3D" id="r34"]
-size = Vector3(16.9, 8.8, 0.4)
-
-[sub_resource type="BoxMesh" id="r35"]
-size = Vector3(0.3, 5.1, 0.7)
-
 [sub_resource type="BoxShape3D" id="r36"]
-size = Vector3(0.3, 5.1, 0.7)
+size = Vector3(16.6, 8.8, 0.4)
 
 [sub_resource type="BoxMesh" id="r37"]
-size = Vector3(7, 3.8, 0.4)
+size = Vector3(0.3, 5, 0.7)
 
 [sub_resource type="BoxShape3D" id="r38"]
-size = Vector3(7, 3.8, 0.4)
+size = Vector3(0.3, 5, 0.7)
 
 [sub_resource type="BoxMesh" id="r39"]
+size = Vector3(7.6, 3.4, 0.4)
+
+[sub_resource type="BoxShape3D" id="r40"]
+size = Vector3(7.6, 3.4, 0.4)
+
+[sub_resource type="BoxMesh" id="r41"]
 size = Vector3(14.4, 0.16, 0.45)
 subdivide_width = 1
 
-[sub_resource type="BoxMesh" id="r40"]
-size = Vector3(7.3, 0.2, 0.65)
-
-[sub_resource type="BoxShape3D" id="r41"]
-size = Vector3(7.3, 0.2, 0.65)
-
 [sub_resource type="BoxMesh" id="r42"]
-size = Vector3(0.13, 1, 0.13)
+size = Vector3(7.6, 0.4, 0.7)
 
 [sub_resource type="BoxShape3D" id="r43"]
+size = Vector3(7.6, 0.4, 0.7)
+
+[sub_resource type="BoxMesh" id="r44"]
+size = Vector3(0.16, 0.12, 0.8)
+
+[sub_resource type="BoxMesh" id="r45"]
 size = Vector3(0.13, 1, 0.13)
+
+[sub_resource type="BoxShape3D" id="r46"]
+size = Vector3(0.13, 1, 0.13)
+
+[sub_resource type="BoxMesh" id="r47"]
+size = Vector3(0.18, 0.4, 0.1)
+
+[sub_resource type="BoxMesh" id="r48"]
+size = Vector3(0.08, 0.08, 0.55)
+
+[sub_resource type="BoxMesh" id="r49"]
+size = Vector3(0.14, 0.14, 0.22)
 
 [node name="TutorialShelter" type="Node3D"]
 metadata/stage_one_layout = true
@@ -4734,7 +4754,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -192)
 
 [node name="Bay01Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -162.27)
+position = Vector3(-11, 3.4, -162.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "01  /  INDUCTION"
 font_size = 96
@@ -4776,20 +4796,48 @@ position = Vector3(13, 0, -192)
 [node name="Bay01Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -197)
 
-[node name="Bay01Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -212)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -212)
+[node name="Bay01Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -212)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -212)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -212)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -212)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -212)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -212)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -212)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -212)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4797,20 +4845,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay01Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -212)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -212)
+[node name="Bay01Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -212)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -212)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -212)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -212)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -212)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -212)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -212)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -212)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4818,20 +4894,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay01Light1_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light1_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -192)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light1_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -192)
+[node name="Bay01Light1_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -192)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -192)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -192)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -192)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -192)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -192)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -192)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light1_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -192)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4839,20 +4943,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay01Light1_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light1_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -192)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light1_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -192)
+[node name="Bay01Light1_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -192)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -192)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -192)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -192)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -192)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -192)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light1_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -192)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light1_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -192)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4860,20 +4992,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay01Light2_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light2_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -172)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light2_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -172)
+[node name="Bay01Light2_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -172)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -172)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -172)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -172)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -172)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -172)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -172)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light2_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -172)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4881,20 +5041,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay01Light2_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay01Light2_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -172)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay01Light2_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -172)
+[node name="Bay01Light2_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -172)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -172)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -172)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -172)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -172)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -172)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay01Light2_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -172)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay01Light2_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -172)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -4903,81 +5091,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay01Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -162)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -162)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay01Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -162)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -162)
+shape = SubResource("r36")
 
 [node name="Bay01Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -162)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -162)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay01Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -162)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -162)
+shape = SubResource("r38")
 
 [node name="Bay01Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -162)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -162)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay01Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -162)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -162)
+shape = SubResource("r36")
 
 [node name="Bay01Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -162)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -162)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay01Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -162)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -162)
+shape = SubResource("r38")
 
 [node name="Bay01Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -162)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -162)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay01Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -162)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -162)
+shape = SubResource("r40")
 
 [node name="Bay01Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -162.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -162.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay01Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -162)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -162)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay01Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -162)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -162)
+shape = SubResource("r43")
+
+[node name="Bay01RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -162.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay01RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -162.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate01" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -162.55)
+position = Vector3(0, 0, -162.85)
 
 [node name="Gate01Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -163.2)
+position = Vector3(-4.4, 1.2, -163.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate01")
 
 [node name="Gate01InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -163.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -163.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate01InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -163.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -163.65)
+shape = SubResource("r46")
 
 [node name="Gate01Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -161.35)
@@ -4987,52 +5185,52 @@ target_gate = NodePath("../../Gates/Gate01")
 
 [node name="Gate01OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -161.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate01OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -161.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay01WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -162.2)
+position = Vector3(-7.95, 0, -162.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -161.8)
+position = Vector3(-7.95, 0, -161.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -162.2)
+position = Vector3(-16.25, 0, -162.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -161.8)
+position = Vector3(-16.25, 0, -161.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -162.2)
+position = Vector3(7.95, 0, -162.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -161.8)
+position = Vector3(7.95, 0, -161.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -162.2)
+position = Vector3(16.25, 0, -162.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay01WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -161.8)
+position = Vector3(16.25, 0, -161.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02" type="Node3D" parent="Bays"]
 metadata/stage_number = 2
@@ -5048,7 +5246,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -152)
 
 [node name="Bay02Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -142.27)
+position = Vector3(-11, 3.4, -142.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "02  /  POWER SERVICE"
 font_size = 96
@@ -5090,20 +5288,48 @@ position = Vector3(13, 0, -152)
 [node name="Bay02Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -157)
 
-[node name="Bay02Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay02Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -152)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay02Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -152)
+[node name="Bay02Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -152)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -152)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -152)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -152)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -152)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -152)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -152)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay02Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -152)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5111,20 +5337,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay02Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay02Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -152)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay02Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -152)
+[node name="Bay02Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -152)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -152)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -152)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -152)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -152)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -152)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay02Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -152)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay02Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -152)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5133,81 +5387,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay02Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -142)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -142)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay02Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -142)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -142)
+shape = SubResource("r36")
 
 [node name="Bay02Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -142)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -142)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay02Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -142)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -142)
+shape = SubResource("r38")
 
 [node name="Bay02Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -142)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -142)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay02Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -142)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -142)
+shape = SubResource("r36")
 
 [node name="Bay02Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -142)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -142)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay02Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -142)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -142)
+shape = SubResource("r38")
 
 [node name="Bay02Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -142)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -142)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay02Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -142)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -142)
+shape = SubResource("r40")
 
 [node name="Bay02Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -142.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -142.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay02Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -142)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -142)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay02Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -142)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -142)
+shape = SubResource("r43")
+
+[node name="Bay02RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -142.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay02RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -142.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate02" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -142.55)
+position = Vector3(0, 0, -142.85)
 
 [node name="Gate02Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -143.2)
+position = Vector3(-4.4, 1.2, -143.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate02")
 
 [node name="Gate02InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -143.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -143.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate02InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -143.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -143.65)
+shape = SubResource("r46")
 
 [node name="Gate02Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -141.35)
@@ -5217,52 +5481,52 @@ target_gate = NodePath("../../Gates/Gate02")
 
 [node name="Gate02OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -141.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate02OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -141.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay02WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -142.2)
+position = Vector3(-7.95, 0, -142.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -141.8)
+position = Vector3(-7.95, 0, -141.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -142.2)
+position = Vector3(-16.25, 0, -142.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -141.8)
+position = Vector3(-16.25, 0, -141.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -142.2)
+position = Vector3(7.95, 0, -142.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -141.8)
+position = Vector3(7.95, 0, -141.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -142.2)
+position = Vector3(16.25, 0, -142.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay02WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -141.8)
+position = Vector3(16.25, 0, -141.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03" type="Node3D" parent="Bays"]
 metadata/stage_number = 3
@@ -5278,7 +5542,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -132)
 
 [node name="Bay03Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -122.27)
+position = Vector3(-11, 3.4, -122.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "03  /  VEHICLE SYSTEMS"
 font_size = 96
@@ -5320,20 +5584,48 @@ position = Vector3(13, 0, -132)
 [node name="Bay03Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -137)
 
-[node name="Bay03Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay03Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -132)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay03Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -132)
+[node name="Bay03Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -132)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -132)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -132)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -132)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -132)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -132)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -132)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay03Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -132)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5341,20 +5633,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay03Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay03Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -132)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay03Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -132)
+[node name="Bay03Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -132)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -132)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -132)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -132)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -132)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -132)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay03Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -132)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay03Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -132)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5363,81 +5683,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay03Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -122)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -122)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay03Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -122)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -122)
+shape = SubResource("r36")
 
 [node name="Bay03Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -122)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -122)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay03Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -122)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -122)
+shape = SubResource("r38")
 
 [node name="Bay03Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -122)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -122)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay03Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -122)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -122)
+shape = SubResource("r36")
 
 [node name="Bay03Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -122)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -122)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay03Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -122)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -122)
+shape = SubResource("r38")
 
 [node name="Bay03Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -122)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -122)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay03Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -122)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -122)
+shape = SubResource("r40")
 
 [node name="Bay03Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -122.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -122.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay03Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -122)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -122)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay03Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -122)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -122)
+shape = SubResource("r43")
+
+[node name="Bay03RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -122.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay03RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -122.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate03" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -122.55)
+position = Vector3(0, 0, -122.85)
 
 [node name="Gate03Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -123.2)
+position = Vector3(-4.4, 1.2, -123.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate03")
 
 [node name="Gate03InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -123.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -123.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate03InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -123.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -123.65)
+shape = SubResource("r46")
 
 [node name="Gate03Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -121.35)
@@ -5447,52 +5777,52 @@ target_gate = NodePath("../../Gates/Gate03")
 
 [node name="Gate03OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -121.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate03OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -121.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay03WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -122.2)
+position = Vector3(-7.95, 0, -122.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -121.8)
+position = Vector3(-7.95, 0, -121.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -122.2)
+position = Vector3(-16.25, 0, -122.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -121.8)
+position = Vector3(-16.25, 0, -121.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -122.2)
+position = Vector3(7.95, 0, -122.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -121.8)
+position = Vector3(7.95, 0, -121.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -122.2)
+position = Vector3(16.25, 0, -122.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay03WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -121.8)
+position = Vector3(16.25, 0, -121.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04" type="Node3D" parent="Bays"]
 metadata/stage_number = 4
@@ -5508,7 +5838,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -108)
 
 [node name="Bay04Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -94.27)
+position = Vector3(-11, 3.4, -94.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "04  /  LOADOUT"
 font_size = 96
@@ -5550,20 +5880,48 @@ position = Vector3(13, 0, -108)
 [node name="Bay04Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -113)
 
-[node name="Bay04Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay04Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -108)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay04Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -108)
+[node name="Bay04Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -108)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -108)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -108)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -108)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -108)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -108)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -108)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay04Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -108)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5571,20 +5929,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay04Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay04Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -108)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay04Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -108)
+[node name="Bay04Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -108)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -108)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -108)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -108)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -108)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -108)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay04Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -108)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay04Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -108)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5593,81 +5979,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay04Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -94)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -94)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay04Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -94)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -94)
+shape = SubResource("r36")
 
 [node name="Bay04Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -94)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -94)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay04Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -94)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -94)
+shape = SubResource("r38")
 
 [node name="Bay04Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -94)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -94)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay04Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -94)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -94)
+shape = SubResource("r36")
 
 [node name="Bay04Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -94)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -94)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay04Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -94)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -94)
+shape = SubResource("r38")
 
 [node name="Bay04Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -94)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -94)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay04Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -94)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -94)
+shape = SubResource("r40")
 
 [node name="Bay04Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -94.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -94.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay04Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -94)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -94)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay04Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -94)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -94)
+shape = SubResource("r43")
+
+[node name="Bay04RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -94.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay04RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -94.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate04" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -94.55)
+position = Vector3(0, 0, -94.85)
 
 [node name="Gate04Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -95.2)
+position = Vector3(-4.4, 1.2, -95.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate04")
 
 [node name="Gate04InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -95.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -95.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate04InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -95.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -95.65)
+shape = SubResource("r46")
 
 [node name="Gate04Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -93.35)
@@ -5677,52 +6073,52 @@ target_gate = NodePath("../../Gates/Gate04")
 
 [node name="Gate04OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -93.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate04OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -93.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay04WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -94.2)
+position = Vector3(-7.95, 0, -94.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -93.8)
+position = Vector3(-7.95, 0, -93.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -94.2)
+position = Vector3(-16.25, 0, -94.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -93.8)
+position = Vector3(-16.25, 0, -93.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -94.2)
+position = Vector3(7.95, 0, -94.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -93.8)
+position = Vector3(7.95, 0, -93.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -94.2)
+position = Vector3(16.25, 0, -94.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay04WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -93.8)
+position = Vector3(16.25, 0, -93.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05" type="Node3D" parent="Bays"]
 metadata/stage_number = 5
@@ -5738,7 +6134,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -84)
 
 [node name="Bay05Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -74.27)
+position = Vector3(-11, 3.4, -74.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "05  /  RECLAMATION"
 font_size = 96
@@ -5780,20 +6176,48 @@ position = Vector3(13, 0, -84)
 [node name="Bay05Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -89)
 
-[node name="Bay05Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay05Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -84)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay05Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -84)
+[node name="Bay05Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -84)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -84)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -84)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -84)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -84)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -84)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -84)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay05Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -84)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5801,20 +6225,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay05Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay05Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -84)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay05Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -84)
+[node name="Bay05Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -84)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -84)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -84)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -84)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -84)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -84)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay05Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -84)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay05Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -84)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -5823,81 +6275,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay05Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -74)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -74)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay05Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -74)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -74)
+shape = SubResource("r36")
 
 [node name="Bay05Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -74)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -74)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay05Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -74)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -74)
+shape = SubResource("r38")
 
 [node name="Bay05Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -74)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -74)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay05Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -74)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -74)
+shape = SubResource("r36")
 
 [node name="Bay05Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -74)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -74)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay05Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -74)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -74)
+shape = SubResource("r38")
 
 [node name="Bay05Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -74)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -74)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay05Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -74)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -74)
+shape = SubResource("r40")
 
 [node name="Bay05Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -74.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -74.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay05Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -74)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -74)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay05Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -74)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -74)
+shape = SubResource("r43")
+
+[node name="Bay05RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -74.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay05RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -74.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate05" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -74.55)
+position = Vector3(0, 0, -74.85)
 
 [node name="Gate05Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -75.2)
+position = Vector3(-4.4, 1.2, -75.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate05")
 
 [node name="Gate05InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -75.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -75.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate05InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -75.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -75.65)
+shape = SubResource("r46")
 
 [node name="Gate05Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -73.35)
@@ -5907,52 +6369,52 @@ target_gate = NodePath("../../Gates/Gate05")
 
 [node name="Gate05OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -73.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate05OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -73.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay05WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -74.2)
+position = Vector3(-7.95, 0, -74.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -73.8)
+position = Vector3(-7.95, 0, -73.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -74.2)
+position = Vector3(-16.25, 0, -74.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -73.8)
+position = Vector3(-16.25, 0, -73.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -74.2)
+position = Vector3(7.95, 0, -74.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -73.8)
+position = Vector3(7.95, 0, -73.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -74.2)
+position = Vector3(16.25, 0, -74.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay05WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -73.8)
+position = Vector3(16.25, 0, -73.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06" type="Node3D" parent="Bays"]
 metadata/stage_number = 6
@@ -5968,7 +6430,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -64)
 
 [node name="Bay06Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -54.27)
+position = Vector3(-11, 3.4, -54.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "06  /  FABRICATION"
 font_size = 96
@@ -6010,20 +6472,48 @@ position = Vector3(13, 0, -64)
 [node name="Bay06Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -69)
 
-[node name="Bay06Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay06Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -64)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay06Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -64)
+[node name="Bay06Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -64)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -64)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -64)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -64)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -64)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -64)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -64)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay06Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -64)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6031,20 +6521,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay06Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay06Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -64)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay06Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -64)
+[node name="Bay06Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -64)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -64)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -64)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -64)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -64)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -64)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay06Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -64)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay06Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -64)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6053,81 +6571,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay06Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -54)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -54)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay06Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -54)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -54)
+shape = SubResource("r36")
 
 [node name="Bay06Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -54)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -54)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay06Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -54)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -54)
+shape = SubResource("r38")
 
 [node name="Bay06Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -54)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -54)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay06Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -54)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -54)
+shape = SubResource("r36")
 
 [node name="Bay06Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -54)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -54)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay06Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -54)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -54)
+shape = SubResource("r38")
 
 [node name="Bay06Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -54)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -54)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay06Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -54)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -54)
+shape = SubResource("r40")
 
 [node name="Bay06Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -54.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -54.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay06Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -54)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -54)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay06Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -54)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -54)
+shape = SubResource("r43")
+
+[node name="Bay06RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -54.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay06RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -54.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate06" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -54.55)
+position = Vector3(0, 0, -54.85)
 
 [node name="Gate06Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -55.2)
+position = Vector3(-4.4, 1.2, -55.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate06")
 
 [node name="Gate06InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -55.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -55.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate06InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -55.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -55.65)
+shape = SubResource("r46")
 
 [node name="Gate06Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -53.35)
@@ -6137,52 +6665,52 @@ target_gate = NodePath("../../Gates/Gate06")
 
 [node name="Gate06OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -53.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate06OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -53.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay06WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -54.2)
+position = Vector3(-7.95, 0, -54.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -53.8)
+position = Vector3(-7.95, 0, -53.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -54.2)
+position = Vector3(-16.25, 0, -54.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -53.8)
+position = Vector3(-16.25, 0, -53.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -54.2)
+position = Vector3(7.95, 0, -54.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -53.8)
+position = Vector3(7.95, 0, -53.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -54.2)
+position = Vector3(16.25, 0, -54.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay06WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -53.8)
+position = Vector3(16.25, 0, -53.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07" type="Node3D" parent="Bays"]
 metadata/stage_number = 7
@@ -6198,7 +6726,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -44)
 
 [node name="Bay07Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -34.27)
+position = Vector3(-11, 3.4, -34.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "07  /  MAINTENANCE"
 font_size = 96
@@ -6240,20 +6768,48 @@ position = Vector3(13, 0, -44)
 [node name="Bay07Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -49)
 
-[node name="Bay07Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay07Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -44)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay07Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -44)
+[node name="Bay07Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -44)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -44)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -44)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -44)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -44)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -44)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -44)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay07Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -44)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6261,20 +6817,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay07Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay07Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -44)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay07Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -44)
+[node name="Bay07Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -44)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -44)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -44)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -44)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -44)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -44)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay07Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -44)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay07Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -44)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6283,81 +6867,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay07Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -34)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -34)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay07Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -34)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -34)
+shape = SubResource("r36")
 
 [node name="Bay07Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -34)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -34)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay07Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -34)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -34)
+shape = SubResource("r38")
 
 [node name="Bay07Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -34)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -34)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay07Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -34)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -34)
+shape = SubResource("r36")
 
 [node name="Bay07Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -34)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -34)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay07Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -34)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -34)
+shape = SubResource("r38")
 
 [node name="Bay07Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -34)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -34)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay07Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -34)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -34)
+shape = SubResource("r40")
 
 [node name="Bay07Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -34.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -34.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay07Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -34)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -34)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay07Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -34)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -34)
+shape = SubResource("r43")
+
+[node name="Bay07RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -34.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay07RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -34.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate07" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -34.55)
+position = Vector3(0, 0, -34.85)
 
 [node name="Gate07Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -35.2)
+position = Vector3(-4.4, 1.2, -35.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate07")
 
 [node name="Gate07InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -35.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -35.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate07InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -35.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -35.65)
+shape = SubResource("r46")
 
 [node name="Gate07Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -33.35)
@@ -6367,52 +6961,52 @@ target_gate = NodePath("../../Gates/Gate07")
 
 [node name="Gate07OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -33.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate07OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -33.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay07WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -34.2)
+position = Vector3(-7.95, 0, -34.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -33.8)
+position = Vector3(-7.95, 0, -33.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -34.2)
+position = Vector3(-16.25, 0, -34.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -33.8)
+position = Vector3(-16.25, 0, -33.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -34.2)
+position = Vector3(7.95, 0, -34.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -33.8)
+position = Vector3(7.95, 0, -33.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -34.2)
+position = Vector3(16.25, 0, -34.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay07WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -33.8)
+position = Vector3(16.25, 0, -33.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08" type="Node3D" parent="Bays"]
 metadata/stage_number = 8
@@ -6428,7 +7022,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, -24)
 
 [node name="Bay08Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, -14.27)
+position = Vector3(-11, 3.4, -14.33)
 rotation = Vector3(0, 3.14159, 0)
 text = "08  /  FUEL SERVICE"
 font_size = 96
@@ -6470,20 +7064,48 @@ position = Vector3(13, 0, -24)
 [node name="Bay08Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -29)
 
-[node name="Bay08Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay08Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, -24)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay08Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, -24)
+[node name="Bay08Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, -24)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, -24)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, -24)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, -24)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, -24)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, -24)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, -24)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay08Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, -24)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6491,20 +7113,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay08Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay08Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, -24)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay08Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, -24)
+[node name="Bay08Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, -24)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, -24)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, -24)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, -24)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, -24)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, -24)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay08Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, -24)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay08Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, -24)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6513,81 +7163,91 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay08Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, -14)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, -14)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay08Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, -14)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, -14)
+shape = SubResource("r36")
 
 [node name="Bay08Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, -14)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, -14)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay08Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, -14)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, -14)
+shape = SubResource("r38")
 
 [node name="Bay08Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, -14)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, -14)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay08Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, -14)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, -14)
+shape = SubResource("r36")
 
 [node name="Bay08Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, -14)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, -14)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay08Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, -14)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, -14)
+shape = SubResource("r38")
 
 [node name="Bay08Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, -14)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, -14)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay08Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, -14)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, -14)
+shape = SubResource("r40")
 
 [node name="Bay08Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -14.55)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, -14.85)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay08Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, -14)
-mesh = SubResource("r40")
+position = Vector3(0, 5.2, -14)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Bay08Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, -14)
-shape = SubResource("r41")
+position = Vector3(0, 5.2, -14)
+shape = SubResource("r43")
+
+[node name="Bay08RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, -14.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay08RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, -14.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
 
 [node name="Gate08" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -14.55)
+position = Vector3(0, 0, -14.85)
 
 [node name="Gate08Inside" parent="Switches" instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, -15.2)
+position = Vector3(-4.4, 1.2, -15.65)
 script = ExtResource("switch")
 rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate08")
 
 [node name="Gate08InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -15.2)
-mesh = SubResource("r42")
+position = Vector3(-4.4, 0.5, -15.65)
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate08InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -15.2)
-shape = SubResource("r43")
+position = Vector3(-4.4, 0.5, -15.65)
+shape = SubResource("r46")
 
 [node name="Gate08Outside" parent="Switches" instance=ExtResource("button_model")]
 position = Vector3(-4.4, 1.2, -13.35)
@@ -6597,52 +7257,52 @@ target_gate = NodePath("../../Gates/Gate08")
 
 [node name="Gate08OutsidePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, -13.35)
-mesh = SubResource("r42")
+mesh = SubResource("r45")
 material_override = ExtResource("steel")
 
 [node name="Gate08OutsidePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, -13.35)
-shape = SubResource("r43")
+shape = SubResource("r46")
 
 [node name="Bay08WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -14.2)
+position = Vector3(-7.95, 0, -14.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, -13.8)
+position = Vector3(-7.95, 0, -13.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -14.2)
+position = Vector3(-16.25, 0, -14.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, -13.8)
+position = Vector3(-16.25, 0, -13.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -14.2)
+position = Vector3(7.95, 0, -14.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, -13.8)
+position = Vector3(7.95, 0, -13.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -14.2)
+position = Vector3(16.25, 0, -14.2)
 rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay08WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, -13.8)
+position = Vector3(16.25, 0, -13.8)
 rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
+scale = Vector3(1.0375, 1, 1)
 
 [node name="Bay09" type="Node3D" parent="Bays"]
 metadata/stage_number = 9
@@ -6658,7 +7318,7 @@ rotation = Vector3(0, 3.14159265, 0)
 position = Vector3(10, 0, 0)
 
 [node name="Bay09Sign" type="Label3D" parent="Visuals"]
-position = Vector3(-11, 3.4, 13.73)
+position = Vector3(-11, 3.4, 13.67)
 rotation = Vector3(0, 3.14159, 0)
 text = "09  /  DISPATCH"
 font_size = 96
@@ -6700,20 +7360,48 @@ position = Vector3(13, 0, 0)
 [node name="Bay09Shelf1" parent="Furnishings" instance=ExtResource("shelf")]
 position = Vector3(18, 0, -5)
 
-[node name="Bay09Light0_-1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay09Light0_-1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(-9, 5.5, 0)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay09Light0_-1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-9, 5.4, 0)
+[node name="Bay09Light0_-1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 8.76, 0)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 7.14, 0)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.65, 5.61, 0)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 8.76, 0)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 7.14, 0)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8.35, 5.61, 0)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_-1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9, 7.14, 0)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay09Light0_-1" type="OmniLight3D" parent="Lights"]
 position = Vector3(-9, 5.15, 0)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6721,20 +7409,48 @@ distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
-[node name="Bay09Light0_1Case" type="MeshInstance3D" parent="Visuals"]
+[node name="Bay09Light0_1Fixture" parent="Visuals" instance=ExtResource("luminaire")]
 position = Vector3(9, 5.5, 0)
-mesh = SubResource("r31")
-material_override = SubResource("dark")
 
-[node name="Bay09Light0_1Tube" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(9, 5.4, 0)
+[node name="Bay09Light0_1Anchor-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 8.76, 0)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Rod-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 7.14, 0)
 mesh = SubResource("r32")
-material_override = SubResource("lamp")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Clamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.35, 5.61, 0)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Anchor1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 8.76, 0)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Rod1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 7.14, 0)
+mesh = SubResource("r32")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Clamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.65, 5.61, 0)
+mesh = SubResource("r33")
+material_override = ExtResource("steel")
+
+[node name="Bay09Light0_1Cable" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9, 7.14, 0)
+mesh = SubResource("r34")
+material_override = SubResource("dark")
 
 [node name="Bay09Light0_1" type="OmniLight3D" parent="Lights"]
 position = Vector3(9, 5.15, 0)
 light_color = Color(0.88, 0.9, 0.77, 1)
-light_energy = 2.4
+light_energy = 1.25
 omni_range = 18.0
 omni_attenuation = 0.8
 shadow_enabled = true
@@ -6743,118 +7459,128 @@ distance_fade_begin = 45.0
 distance_fade_length = 15.0
 
 [node name="Bay09Partition-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-11.95, 4.4, 14)
-mesh = SubResource("r33")
+position = Vector3(-12.1, 4.4, 14)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay09Partition-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-11.95, 4.4, 14)
-shape = SubResource("r34")
+position = Vector3(-12.1, 4.4, 14)
+shape = SubResource("r36")
 
 [node name="Bay09Jamb-1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-3.65, 2.55, 14)
-mesh = SubResource("r35")
+position = Vector3(-3.65, 2.5, 14)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay09Jamb-1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-3.65, 2.55, 14)
-shape = SubResource("r36")
+position = Vector3(-3.65, 2.5, 14)
+shape = SubResource("r38")
 
 [node name="Bay09Partition1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(11.95, 4.4, 14)
-mesh = SubResource("r33")
+position = Vector3(12.1, 4.4, 14)
+mesh = SubResource("r35")
 material_override = ExtResource("concrete")
 
 [node name="Bay09Partition1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(11.95, 4.4, 14)
-shape = SubResource("r34")
+position = Vector3(12.1, 4.4, 14)
+shape = SubResource("r36")
 
 [node name="Bay09Jamb1" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(3.65, 2.55, 14)
-mesh = SubResource("r35")
+position = Vector3(3.65, 2.5, 14)
+mesh = SubResource("r37")
 material_override = ExtResource("steel")
 
 [node name="Bay09Jamb1" type="CollisionShape3D" parent="Collision"]
-position = Vector3(3.65, 2.55, 14)
-shape = SubResource("r36")
+position = Vector3(3.65, 2.5, 14)
+shape = SubResource("r38")
 
 [node name="Bay09Lintel" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 6.9, 14)
-mesh = SubResource("r37")
+position = Vector3(0, 7.1, 14)
+mesh = SubResource("r39")
 material_override = ExtResource("concrete")
 
 [node name="Bay09Lintel" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 6.9, 14)
-shape = SubResource("r38")
+position = Vector3(0, 7.1, 14)
+shape = SubResource("r40")
 
 [node name="Bay09Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, 13.45)
-mesh = SubResource("r39")
+position = Vector3(0, 5.18, 13.15)
+mesh = SubResource("r41")
 material_override = ExtResource("steel")
 
 [node name="Bay09Header" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.1, 14)
-mesh = SubResource("r40")
-material_override = ExtResource("steel")
-
-[node name="Bay09Header" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.1, 14)
-shape = SubResource("r41")
-
-[node name="Bay09WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, 13.8)
-rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-7.725, 0, 14.2)
-rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, 13.8)
-rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(-16.175, 0, 14.2)
-rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, 13.8)
-rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(7.725, 0, 14.2)
-rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, 13.8)
-rotation = Vector3(0, 3.14159, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="Bay09WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
-position = Vector3(16.175, 0, 14.2)
-rotation = Vector3(0, 0, 0)
-scale = Vector3(1.05625, 1, 1)
-
-[node name="GarageGate" parent="." instance=ExtResource("gate")]
-position = Vector3(0, 0, 13.45)
-
-[node name="GarageButton" parent="." instance=ExtResource("button_model")]
-position = Vector3(-4.4, 1.2, 12.8)
-
-[node name="DeparturePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, 12.8)
+position = Vector3(0, 5.2, 14)
 mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
-[node name="DeparturePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, 12.8)
+[node name="Bay09Header" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 5.2, 14)
 shape = SubResource("r43")
+
+[node name="Bay09RailBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.65, 5.18, 13.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay09RailBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.65, 5.18, 13.5)
+mesh = SubResource("r44")
+material_override = ExtResource("steel")
+
+[node name="Bay09WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.95, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.95, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.25, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.25, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.95, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.95, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.25, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="Bay09WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.25, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.0375, 1, 1)
+
+[node name="GarageGate" parent="." instance=ExtResource("gate")]
+position = Vector3(0, 0, 13.15)
+
+[node name="GarageButton" parent="." instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, 12.35)
+
+[node name="DeparturePost" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4.4, 0.5, 12.35)
+mesh = SubResource("r45")
+material_override = ExtResource("steel")
+
+[node name="DeparturePost" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-4.4, 0.5, 12.35)
+shape = SubResource("r46")
 
 [node name="SideSkin0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
 position = Vector3(-20, 0, -218)
@@ -7530,9 +8256,42 @@ shaded = true
 no_depth_test = false
 modulate = Color(0.76, 0.72, 0.6, 1)
 
+[node name="PorchFixture" parent="Visuals" instance=ExtResource("luminaire")]
+position = Vector3(0, 6, 14.7)
+
+[node name="PorchBackplate-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.65, 6.12, 14.23)
+mesh = SubResource("r47")
+material_override = ExtResource("steel")
+
+[node name="PorchBracket-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.65, 6.12, 14.5)
+mesh = SubResource("r48")
+material_override = ExtResource("steel")
+
+[node name="PorchClamp-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.65, 6.06, 14.7)
+mesh = SubResource("r49")
+material_override = ExtResource("steel")
+
+[node name="PorchBackplate1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.65, 6.12, 14.23)
+mesh = SubResource("r47")
+material_override = ExtResource("steel")
+
+[node name="PorchBracket1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.65, 6.12, 14.5)
+mesh = SubResource("r48")
+material_override = ExtResource("steel")
+
+[node name="PorchClamp1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.65, 6.06, 14.7)
+mesh = SubResource("r49")
+material_override = ExtResource("steel")
+
 [node name="PorchLight" type="OmniLight3D" parent="Lights"]
-position = Vector3(0, 5.2, 18)
-light_energy = 2.0
+position = Vector3(0, 5.65, 14.7)
+light_energy = 1.0
 omni_range = 18.0
 shadow_enabled = true
 

@@ -2,6 +2,7 @@
 
 - [教學基地分階段計畫](plans/starting-tutorial.md) · [階段一驗證](validation/2026-10-11-tutorial-stage1.md)
 - [第一階段光照與舊避難所美術返修](validation/2026-10-12-tutorial-stage1-art-fix.md)
+- [第一階段吊燈、調暗與門牆交疊返修](validation/2026-10-13-tutorial-fixtures.md)
 
 - [2026-10-11 RV 終端與 TUI](validation/2026-10-11-rv-terminal.md)：五頁英文車輛管理、隱藏終端切換、鍵盤與滑鼠、施工所有權及製作佇列，含 quick suite 與原生畫面驗證。
 

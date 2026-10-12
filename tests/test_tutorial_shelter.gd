@@ -31,6 +31,64 @@ func traverses(probe: CharacterBody3D, building: Node3D, start: Vector3, end: Ve
 	probe.move_and_collide(destination - probe.global_position)
 	return probe.global_position.distance_to(destination) < 0.05
 
+func mesh_bounds(mesh: MeshInstance3D, building: Node3D) -> AABB:
+	return (building.global_transform.affine_inverse() * mesh.global_transform) * mesh.get_aabb()
+
+func meshes_touch(first: MeshInstance3D, second: MeshInstance3D, building: Node3D) -> bool:
+	return mesh_bounds(first, building).grow(0.015).intersects(mesh_bounds(second, building))
+
+func check_luminaires(building: Node3D) -> void:
+	var roof := building.get_node("Visuals/Roof") as MeshInstance3D
+	var count := 0
+	for light: OmniLight3D in building.get_node("Lights").get_children():
+		if not str(light.name).begins_with("Bay"): continue
+		count += 1
+		var prefix := "Visuals/" + str(light.name)
+		var housing := building.get_node_or_null(prefix + "Fixture/Housing") as MeshInstance3D
+		var diffuser := building.get_node_or_null(prefix + "Fixture/Diffuser") as MeshInstance3D
+		check(housing != null and diffuser != null, "Ceiling lamp has a physical housing and diffuser: " + str(light.name))
+		if housing == null or diffuser == null: continue
+		check(meshes_touch(housing, diffuser, building), "Lamp diffuser attaches to its housing: " + str(light.name))
+		var material := diffuser.material_override as StandardMaterial3D
+		check(material != null and material.emission_enabled and material.emission_energy_multiplier <= 0.6, "Lamp diffuser uses restrained emission: " + str(light.name))
+		check(light.light_energy > 0.0 and light.light_energy <= 1.4 and light.shadow_enabled, "Ceiling lamp provides dim shadowed lighting: " + str(light.name))
+		for side in [-1, 1]:
+			var end_cap := building.get_node_or_null(prefix + "Fixture/EndCap%d" % side) as MeshInstance3D
+			check(end_cap != null, "Lamp has both end caps: " + str(light.name))
+			if end_cap != null:
+				check(meshes_touch(end_cap, housing, building) and mesh_bounds(end_cap, building).end.y <= mesh_bounds(housing, building).position.y + 0.003, "Lamp end cap joins the housing edge without overlapping its side faces: " + str(light.name))
+			var anchor := building.get_node_or_null(prefix + "Anchor%d" % side) as MeshInstance3D
+			var rod := building.get_node_or_null(prefix + "Rod%d" % side) as MeshInstance3D
+			var clamp := building.get_node_or_null(prefix + "Clamp%d" % side) as MeshInstance3D
+			check(anchor != null and rod != null and clamp != null, "Lamp owns both ceiling suspension assemblies: " + str(light.name))
+			if anchor == null or rod == null or clamp == null: continue
+			check(meshes_touch(roof, anchor, building) and meshes_touch(anchor, rod, building) and meshes_touch(rod, clamp, building) and meshes_touch(clamp, housing, building), "Lamp suspension continuously joins the roof to its housing: " + str(light.name))
+	check(count >= 18, "All nine bays retain their paired ceiling lamps")
+
+func check_gate_visual_clearance(gate: ShelterGarageGate, building: Node3D) -> void:
+	# Check the actual decorative meshes as well as the collision panel. A root
+	# offset alone missed wall skins and warning stripes buried in raised braces.
+	var static_meshes := building.get_node("Visuals").find_children("*", "MeshInstance3D", true, false)
+	for progress: float in [0.0, 0.5, 1.0]:
+		gate.progress = progress
+		gate._apply_pose()
+		for leaf in [gate.left, gate.right]:
+			for mesh: MeshInstance3D in leaf.find_children("*", "MeshInstance3D", true, false):
+				var bounds := mesh_bounds(mesh, building)
+				for fixed: MeshInstance3D in static_meshes:
+					var fixed_bounds := mesh_bounds(fixed, building)
+					# Floor paint sits a few millimetres above the floor and is
+					# intentionally under the leaf's bottom edge.
+					if fixed_bounds.end.y < 0.1: continue
+					var overlap_x := minf(bounds.end.x, fixed_bounds.end.x) - maxf(bounds.position.x, fixed_bounds.position.x)
+					var overlap_y := minf(bounds.end.y, fixed_bounds.end.y) - maxf(bounds.position.y, fixed_bounds.position.y)
+					var depth_gap := maxf(fixed_bounds.position.z - bounds.end.z, bounds.position.z - fixed_bounds.end.z)
+					check(overlap_x <= 0.003 or overlap_y <= 0.003 or depth_gap >= 0.015, "Door mesh clears authored walls, skins and frame at %.1f opening: %s/%s vs %s" % [progress, gate.name, mesh.name, fixed.name])
+			var stripe := leaf.get_node("Visuals/WarningBand") as MeshInstance3D
+			var brace := leaf.get_node("Visuals/Brace-1") as MeshInstance3D
+			check(mesh_bounds(stripe, building).end.z + 0.008 < mesh_bounds(brace, building).position.z, "Door warning stripe clears the raised brace face: " + str(gate.name))
+	gate.snap(false)
+
 func run() -> void:
 	var world := NavigationHost.new()
 	root.add_child(world)
@@ -62,6 +120,7 @@ func run() -> void:
 		if mesh.mesh != null: triangle_count += mesh.mesh.get_faces().size() / 3
 	print("TUTORIAL_STATIC_TRIANGLES: ", triangle_count)
 	check(triangle_count <= 200000, "Authored structural mesh instances stay within the 200k triangle budget")
+	check_luminaires(building)
 	var bays := building.get_node_or_null("Bays")
 	check(bays != null and bays.get_child_count() == 9, "Tutorial has exactly nine authored bays")
 	var start_z := -222.0
@@ -109,7 +168,7 @@ func run() -> void:
 		if gate == null: continue
 		gates.append(gate)
 		check(gate.left != null and gate.right != null and gate.stable() and gate.progress == 0.0, "Gate configures itself and starts fully closed: " + name)
-		check(is_equal_approx(building.to_local(gate.global_position).z, GATE_Z[index] - 0.55), "Gate slides clear of the partition face: " + name)
+		check_gate_visual_clearance(gate, building)
 		for leaf in [gate.left, gate.right]:
 			if leaf == null: continue
 			var collisions: Array = leaf.find_children("*", "CollisionShape3D", true, false)
@@ -125,6 +184,7 @@ func run() -> void:
 			var hit := ray(building, Vector3(-4.4, 1.2, GATE_Z[index] + side * 2), Vector3(-4.4, 1.2, GATE_Z[index]))
 			check(not hit.is_empty() and hit.collider == (inside if side < 0 else outside), "Each switch face is reachable before its wall or door collision")
 		if inside != null and inside.has_method("interact"): inside.interact(probe)
+	check_gate_visual_clearance(building.get_node("GarageGate") as ShelterGarageGate, building)
 	probe.global_position = building.to_global(Vector3(10, 1, -190))
 	check(await WAIT.until(self, func() -> bool: return gates.all(func(gate): return gate.is_open()), 10000, true), "All eight switch-driven gates complete their real opening movement")
 	for index in range(GATE_Z.size()):

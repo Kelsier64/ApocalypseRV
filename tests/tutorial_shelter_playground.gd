@@ -27,7 +27,7 @@ func _setup_replay() -> void:
 	status.add_theme_constant_override("shadow_offset_x", 2)
 	status.add_theme_constant_override("shadow_offset_y", 2)
 	layer.add_child(status)
-	status.text = "STAGE 1 REVIEW | F2 drive | F3 exterior | F4 first bay / player | F6 facade | F7 service bay | F8 gate"
+	status.text = "STAGE 1 REVIEW | F2 drive | F3 exterior | F4 first bay / player | F6 facade | F7 service bay | F8 gate | F9 lamp"
 	overview = Camera3D.new()
 	overview.fov = 82
 	add_child(overview)
@@ -36,6 +36,7 @@ func _setup_replay() -> void:
 	if "--inspect-exterior" in OS.get_cmdline_user_args(): _exterior_camera()
 	if "--inspect-facade" in OS.get_cmdline_user_args(): _facade_camera()
 	if "--inspect-gate" in OS.get_cmdline_user_args(): _gate_camera()
+	if "--inspect-lamp" in OS.get_cmdline_user_args(): _lamp_camera()
 	auto_replay = "--replay" in OS.get_cmdline_user_args()
 	if auto_replay:
 		await get_tree().create_timer(3.0).timeout
@@ -48,8 +49,11 @@ func _input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_F6 or event.keycode == KEY_F6: _facade_camera()
 		if event.physical_keycode == KEY_F7 or event.keycode == KEY_F7: _wall_camera()
 		if event.physical_keycode == KEY_F8 or event.keycode == KEY_F8: _gate_camera()
+		if event.physical_keycode == KEY_F9 or event.keycode == KEY_F9: _lamp_camera()
 		if (event.physical_keycode == KEY_F4 or event.keycode == KEY_F4) and is_instance_valid(overview):
-			if overview.current: get_node("Player").camera.make_current()
+			if overview.current:
+				get_node("Player").camera.make_current()
+				_review_hud(true)
 			else: _interior_camera()
 
 func _exterior_camera() -> void:
@@ -58,12 +62,14 @@ func _exterior_camera() -> void:
 	overview.global_position = shelter.to_global(Vector3(-100, 90, -160))
 	overview.look_at(shelter.to_global(Vector3(0, 3, -104)))
 	overview.make_current()
+	_review_hud(false)
 
 func _interior_camera() -> void:
 	var shelter: Node3D = get_node("StartRun").shelter
 	overview.global_position = shelter.to_global(Vector3(9, 4.7, -218))
 	overview.look_at(shelter.to_global(Vector3(0, 2, -184)))
 	overview.make_current()
+	_review_hud(false)
 
 func _facade_camera() -> void:
 	if not is_instance_valid(overview): return
@@ -71,6 +77,7 @@ func _facade_camera() -> void:
 	overview.global_position = shelter.to_global(Vector3(-23, 2.4, 28))
 	overview.look_at(shelter.to_global(Vector3(-7, 4.2, 12.5)))
 	overview.make_current()
+	_review_hud(false)
 
 func _wall_camera() -> void:
 	if not is_instance_valid(overview): return
@@ -78,6 +85,7 @@ func _wall_camera() -> void:
 	overview.global_position = shelter.to_global(Vector3(-13, 3.6, -52))
 	overview.look_at(shelter.to_global(Vector3(3, 2.0, -36)))
 	overview.make_current()
+	_review_hud(false)
 
 func _gate_camera() -> void:
 	if not is_instance_valid(overview): return
@@ -85,6 +93,20 @@ func _gate_camera() -> void:
 	overview.global_position = shelter.to_global(Vector3(-6.4, 1.7, -166))
 	overview.look_at(shelter.to_global(Vector3(-2.5, 1.6, -162.55)))
 	overview.make_current()
+	_review_hud(false)
+
+func _lamp_camera() -> void:
+	if not is_instance_valid(overview): return
+	var shelter: Node3D = get_node("StartRun").shelter
+	overview.global_position = shelter.to_global(Vector3(-12, 5.1, -157))
+	overview.look_at(shelter.to_global(Vector3(-9, 6.9, -152)))
+	overview.make_current()
+	_review_hud(false)
+
+func _review_hud(visible: bool) -> void:
+	# Inspection cameras must not show interaction prompts from the parked player.
+	for layer: CanvasLayer in get_node("Player").find_children("*", "CanvasLayer", true, false):
+		if layer.get_parent() is RayCast3D: layer.visible = visible
 
 func _start_replay() -> void:
 	if replay_started or not is_instance_valid(replay_vehicle): return

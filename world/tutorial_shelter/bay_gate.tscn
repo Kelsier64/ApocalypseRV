@@ -82,7 +82,7 @@ mesh = SubResource("r43")
 material_override = ExtResource("steel")
 
 [node name="WarningBand" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
-position = Vector3(0, -1.75, -0.208)
+position = Vector3(0, -1.75, -0.252)
 mesh = SubResource("r44")
 material_override = ExtResource("hazard")
 
@@ -151,7 +151,7 @@ mesh = SubResource("r43")
 material_override = ExtResource("steel")
 
 [node name="WarningBand" type="MeshInstance3D" parent="RightLeaf/Visuals"]
-position = Vector3(0, -1.75, -0.208)
+position = Vector3(0, -1.75, -0.252)
 mesh = SubResource("r44")
 material_override = ExtResource("hazard")
 

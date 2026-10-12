@@ -140,7 +140,9 @@ func run() -> void:
 		# The real next-bay ceiling fixture reaches these floor patches only
 		# if it leaks through the partition or the closed centre gate.
 		var fixture := shelter.get_node("Lights/Bay02Light0_-1") as OmniLight3D
-		for probe in [["partition", -9.0], ["closed-gate", 0.0]]:
+		# Stay inside the doorway but nearer the real lamp so the dimmed
+		# production fixture still gives the unoccluded positive control.
+		for probe in [["partition", -9.0], ["closed-gate", -1.5]]:
 			aim(Vector3(probe[1], 0, -164.0))
 			await compare_light("lamp-" + probe[0], fixture)
 	viewport.queue_free()
