@@ -11,6 +11,7 @@ const DEFINITIONS = [
 	preload("res://world/poi_definitions/research.tres"),
 	preload("res://world/poi_definitions/gas_station.tres"),
 	preload("res://world/poi_definitions/starting_shelter.tres"),
+	preload("res://world/poi_definitions/tutorial_shelter.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_0.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_1.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_2.tres"),

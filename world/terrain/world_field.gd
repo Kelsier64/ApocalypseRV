@@ -124,7 +124,7 @@ func stop(index: int) -> Dictionary:
 	if profile.generation_version >= 5 and index % 3 == 1:
 		WalkInSites.configure(result)
 	if profile.generation_version >= 7 and index == 0:
-		WalkInSites.configure(result, "starting_shelter")
+		WalkInSites.configure(result, "tutorial_shelter" if profile.generation_version >= 11 else "starting_shelter")
 	_stops[index] = result
 	return result
 
@@ -223,7 +223,11 @@ func surface(x: float, z: float) -> Dictionary:
 	var spawn_distance := Vector2(maxf(absf(x) - 14.0, 0.0), maxf(absf(z) - 14.0, 0.0)).length()
 	height = lerpf(height, 0.0, 1.0 - smoothstep(0.0, 20.0, spawn_distance))
 	reserved = reserved or spawn_distance < 8.0
-	if profile.generation_version >= 7 and z >= -100.0 and z <= 40.0:
+	if profile.generation_version >= 11:
+		var tutorial_surface := _tutorial_shelter_surface(x, z, height)
+		height = tutorial_surface.height
+		reserved = reserved or tutorial_surface.reserved
+	elif profile.generation_version >= 7 and z >= -100.0 and z <= 40.0:
 		var start_surface := _starting_shelter_surface(x, z, height)
 		height = start_surface.height
 		reserved = reserved or start_surface.reserved
@@ -266,6 +270,38 @@ func _starting_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 	if absf(x) <= 25.0 and z >= 14.0 and z <= 29.0:
 		height = 0.0
 		reserved = true
+	return {"height": height, "reserved": reserved}
+
+## v11 uses its own footprint; older shelter terrain remains unchanged.
+func _tutorial_shelter_surface(x: float, z: float, height: float) -> Dictionary:
+	var site := stop(0)
+	var world_influence: AABB = site.bounds.grow(24.0)
+	if x < world_influence.position.x or x > world_influence.end.x or z < world_influence.position.z or z > world_influence.end.z:
+		return {"height": height, "reserved": false}
+	var point := Vector3(x, 0, z)
+	var local: Vector3 = site.building.affine_inverse() * point
+	var definition := POIConfig.definition_for_site(site)
+	var bounds: AABB = definition.building_bounds
+	var influence: AABB = definition.site_bounds.grow(24.0)
+	if local.x < influence.position.x or local.x > influence.end.x or local.z < influence.position.z or local.z > influence.end.z:
+		return {"height": height, "reserved": false}
+	var distance := WalkInSites.court_distance(point, site)
+	var reserved := distance < 4.0
+	if distance <= 0.0:
+		height = 0.0
+	else:
+		var half_width := bounds.size.x * 0.5
+		var half_depth := bounds.size.z * 0.5
+		var side_bank := (1.0 - smoothstep(4.0, 14.0, absf(absf(local.x - bounds.get_center().x) - half_width - 12.0))) * (1.0 - smoothstep(half_depth - 3.0, half_depth + 11.0, absf(local.z - bounds.get_center().z)))
+		var rear_bank := (1.0 - smoothstep(4.0, 15.0, absf(local.z - bounds.position.z + 10.0))) * (1.0 - smoothstep(half_width + 4.0, half_width + 20.0, absf(local.x - bounds.get_center().x)))
+		height = lerpf(height, 5.0, maxf(side_bank, rear_bank) * smoothstep(0.0, 6.0, distance))
+	# Recess the full authored corridor and apron, including a terrain cell
+	# outside their slab edges, so terrain triangles cannot cover the floor.
+	var corridor_edge := maxf(absf(local.x) - 20.4, maxf(-222.4 - local.z, local.z - 14.0))
+	var apron_edge := maxf(absf(local.x) - 22.0, maxf(14.0 - local.z, local.z - 44.0))
+	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(corridor_edge, apron_edge))
+	height = lerpf(height, -0.08, slab_recess)
+	reserved = reserved or slab_recess > 0.0
 	return {"height": height, "reserved": reserved}
 
 func height_at(x: float, z: float) -> float:

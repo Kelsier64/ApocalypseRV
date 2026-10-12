@@ -380,21 +380,26 @@ func _build_navigation(gradual: bool = false) -> void:
 	# creates duplicate raster edges; use the ground once for navigation.
 	var road_body := get_node("Road").get_child(0) as StaticBody3D
 	road_body.collision_layer = 0
-	# A movable start gate must not permanently erase the doorway from this
-	# static bake. Its physical leaves still block the closed/sealed entrance.
+	# Moving leaves block physics, but their doorways remain in the static bake.
+	# The old shelter retains its named-leaf contract; v11 tags every stage door.
 	var gate_layers: Dictionary = {}
 	for building in get_children():
-		if building.get_meta("poi_definition_id", "") != &"starting_shelter": continue
-		for leaf_name in ["GarageGate/LeftLeaf", "GarageGate/RightLeaf"]:
-			var leaf := building.get_node_or_null(NodePath(leaf_name)) as CollisionObject3D
-			if leaf != null:
+		if building.get_meta("poi_definition_id", "") == &"starting_shelter":
+			for leaf_name in ["GarageGate/LeftLeaf", "GarageGate/RightLeaf"]:
+				var leaf := building.get_node_or_null(NodePath(leaf_name)) as CollisionObject3D
+				if leaf != null:
+					gate_layers[leaf] = leaf.collision_layer
+					leaf.collision_layer = 0
+		elif building.get_meta("poi_definition_id", "") == &"tutorial_shelter":
+			for leaf: CollisionObject3D in building.find_children("*", "CollisionObject3D", true, false):
+				if not leaf.get_meta("navigation_movable", false): continue
 				gate_layers[leaf] = leaf.collision_layer
 				leaf.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():
-		if building.get_meta("poi_definition_id", "") != &"starting_shelter": continue
+		if building.get_meta("poi_definition_id", "") not in [&"starting_shelter", &"tutorial_shelter"]: continue
 		for shape in building.find_children("*", "CollisionShape3D", true, false):
 			if shape.get_meta("navigation_solid", false) and shape.shape is BoxShape3D and not shape.disabled:
 				_append_solid_box_obstruction(source, shape.shape.size, global_transform.affine_inverse() * shape.global_transform)
@@ -476,6 +481,7 @@ func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> 
 		model.free()
 
 func _append_collision_boxes(source: NavigationMeshSourceGeometryData3D, node: Node, pose: Transform3D) -> void:
+	if node.get_meta("navigation_movable", false): return
 	if node is CollisionShape3D and node.shape is BoxShape3D and not node.disabled:
 		_append_box_faces(source, node.shape.size, pose)
 		if node.get_meta("navigation_solid", false):

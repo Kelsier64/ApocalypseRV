@@ -6,6 +6,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
+| [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
 | [公路隨機刷新](random_spawn.md) | v9 獨立生成已接入；本輪驗證待記錄 | Raker／油桶人／普通油桶分開抽取，廢車逐台選點及朝向，安全避讓、保存與 v2–v8 相容 | [本輪紀錄](../validation/2026-10-07-independent-road-spawns.md) |
 | [裂爪 Raker](2026-09-22-raker.md) | 獨立怪物首版已完成並驗收 | 2.18 m、22 段動畫、新追擊／蓄力攻擊、低姿態進出 RV、正式生成與保存；地形腳掌 IK、極端翻車及群怪效能仍屬擴充 | [本次驗收](../validation/2026-09-22-raker.md)、[模型與動畫說明](../../assets/models/raker/README.md) |
 | [隨機地堡重作](2026-09-24-random-bunker.md) | 結構已驗收；初版內容與 A04 修正已接入 | 16 模組、新訪 30–60 目標、1–3 層；散落物、補給箱、每次合格機會 30% 的 Raker 遭遇、強化引擎與完整快照；長局平衡、自由遊玩和效能仍待驗收 | [契約](../guides/bunker-interior.md)、[結構驗收](../validation/2026-09-24-random-bunker.md)、[先前內容驗證](../validation/2026-09-29-bunker-content.md) |

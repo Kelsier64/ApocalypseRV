@@ -1,0 +1,155 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://world/tutorial_shelter/bay_gate.gd" id="script"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[sub_resource type="StandardMaterial3D" id="ochre"]
+albedo_color = Color(0.42, 0.31, 0.08, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(3.5, 5, 0.24)
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(3.5, 5, 0.24)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(0.08, 4.85, 0.12)
+
+[sub_resource type="BoxMesh" id="r4"]
+size = Vector3(3.3, 0.22, 0.025)
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(3.3, 0.12, 0.06)
+
+[node name="BayGate" type="Node3D"]
+script = ExtResource("script")
+
+[node name="LeftLeaf" type="AnimatableBody3D" parent="."]
+position = Vector3(-1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 3
+sync_to_physics = false
+metadata/navigation_movable = true
+
+[node name="Visuals" type="Node3D" parent="LeftLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r1")
+material_override = ExtResource("steel")
+
+[node name="Panel" type="CollisionShape3D" parent="LeftLeaf"]
+position = Vector3(0, 0, 0)
+shape = SubResource("r2")
+
+[node name="Rib0" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Warning-1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.135)
+mesh = SubResource("r4")
+material_override = SubResource("ochre")
+
+[node name="Brace-1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.14)
+mesh = SubResource("r5")
+material_override = ExtResource("steel")
+
+[node name="Warning1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, -1.8, 0.135)
+mesh = SubResource("r4")
+material_override = SubResource("ochre")
+
+[node name="Brace1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, 1.8, 0.14)
+mesh = SubResource("r5")
+material_override = ExtResource("steel")
+
+[node name="RightLeaf" type="AnimatableBody3D" parent="."]
+position = Vector3(1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 3
+sync_to_physics = false
+metadata/navigation_movable = true
+
+[node name="Visuals" type="Node3D" parent="RightLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r1")
+material_override = ExtResource("steel")
+
+[node name="Panel" type="CollisionShape3D" parent="RightLeaf"]
+position = Vector3(0, 0, 0)
+shape = SubResource("r2")
+
+[node name="Rib0" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.16)
+mesh = SubResource("r3")
+material_override = ExtResource("steel")
+
+[node name="Warning-1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.135)
+mesh = SubResource("r4")
+material_override = SubResource("ochre")
+
+[node name="Brace-1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.14)
+mesh = SubResource("r5")
+material_override = ExtResource("steel")
+
+[node name="Warning1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, -1.8, 0.135)
+mesh = SubResource("r4")
+material_override = SubResource("ochre")
+
+[node name="Brace1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, 1.8, 0.14)
+mesh = SubResource("r5")
+material_override = ExtResource("steel")

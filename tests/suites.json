@@ -40,10 +40,12 @@
       "test_terminal_commands",
       "test_structure_construction",
       "test_starting_shelter_terrain",
+      "test_tutorial_shelter_terrain",
       "test_world_clock",
       "test_world_entities"
     ],
     "integration": [
+      "test_tutorial_shelter",
       "test_barrel_blast_render",
       "test_barrel_explosion",
       "test_barrel_man",
@@ -164,6 +166,7 @@
       "test_rv_checkpoint",
       "test_rv_handling",
       "test_starting_checkpoint",
+      "test_tutorial_checkpoint",
       "test_starting_roadblock",
       "test_starting_shelter",
       "test_tire_handling",

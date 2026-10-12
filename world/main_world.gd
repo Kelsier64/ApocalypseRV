@@ -16,9 +16,10 @@ func _enter_tree() -> void:
 		generator.world_seed = int(Time.get_unix_time_from_system()) ^ int(Time.get_ticks_usec())
 	var field := WorldField.new(generator.world_seed, generator.profile)
 	var site := field.stop(0)
+	var spawn_z := -208.0 if generator.profile.generation_version >= 11 else -1.0
 	# Set both actors before child ready/physics, while the first chunk is built.
-	get_node("Player").transform = site.building * Transform3D(Basis(Vector3.UP, -PI / 2.0), Vector3(-4, 1.5, -1))
-	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, -1))
+	get_node("Player").transform = site.building * Transform3D(Basis(Vector3.UP, -PI / 2.0), Vector3(-4, 1.5, spawn_z))
+	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, spawn_z))
 
 func _ready() -> void:
 	super._ready()

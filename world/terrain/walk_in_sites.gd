@@ -44,13 +44,14 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
-	if definition.definition_id == &"starting_shelter":
+	var starter_site := definition.definition_id in [&"starting_shelter", &"tutorial_shelter"]
+	if starter_site:
 		_spawn_starter_actors(building, container)
 	var barrel_site: bool = generator.field.profile.generation_version >= 8 and _barrel_site(definition)
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
 	for point in building.find_children("*", "Marker3D", true, false):
-		if definition.definition_id == &"starting_shelter": continue
+		if starter_site: continue
 		if not point is PoiLootPoint: continue
 		var scene: PackedScene = point.roll_scene(rng)
 		if scene == null: continue
