@@ -27,7 +27,7 @@ func _setup_replay() -> void:
 	status.add_theme_constant_override("shadow_offset_x", 2)
 	status.add_theme_constant_override("shadow_offset_y", 2)
 	layer.add_child(status)
-	status.text = "STAGE 1 REVIEW | F2 wheel drive | F3 exterior | F4 first bay / player | F6 facade | F7 service bay"
+	status.text = "STAGE 1 REVIEW | F2 drive | F3 exterior | F4 first bay / player | F6 facade | F7 service bay | F8 gate"
 	overview = Camera3D.new()
 	overview.fov = 82
 	add_child(overview)
@@ -35,6 +35,7 @@ func _setup_replay() -> void:
 	if "--art-daylight" in OS.get_cmdline_user_args(): get_node("WorldClock").set_time(1, 15.0)
 	if "--inspect-exterior" in OS.get_cmdline_user_args(): _exterior_camera()
 	if "--inspect-facade" in OS.get_cmdline_user_args(): _facade_camera()
+	if "--inspect-gate" in OS.get_cmdline_user_args(): _gate_camera()
 	auto_replay = "--replay" in OS.get_cmdline_user_args()
 	if auto_replay:
 		await get_tree().create_timer(3.0).timeout
@@ -46,6 +47,7 @@ func _input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_F3 or event.keycode == KEY_F3: _exterior_camera()
 		if event.physical_keycode == KEY_F6 or event.keycode == KEY_F6: _facade_camera()
 		if event.physical_keycode == KEY_F7 or event.keycode == KEY_F7: _wall_camera()
+		if event.physical_keycode == KEY_F8 or event.keycode == KEY_F8: _gate_camera()
 		if (event.physical_keycode == KEY_F4 or event.keycode == KEY_F4) and is_instance_valid(overview):
 			if overview.current: get_node("Player").camera.make_current()
 			else: _interior_camera()
@@ -75,6 +77,13 @@ func _wall_camera() -> void:
 	var shelter: Node3D = get_node("StartRun").shelter
 	overview.global_position = shelter.to_global(Vector3(-13, 3.6, -52))
 	overview.look_at(shelter.to_global(Vector3(3, 2.0, -36)))
+	overview.make_current()
+
+func _gate_camera() -> void:
+	if not is_instance_valid(overview): return
+	var shelter: Node3D = get_node("StartRun").shelter
+	overview.global_position = shelter.to_global(Vector3(-6.4, 1.7, -166))
+	overview.look_at(shelter.to_global(Vector3(-2.5, 1.6, -162.55)))
 	overview.make_current()
 
 func _start_replay() -> void:

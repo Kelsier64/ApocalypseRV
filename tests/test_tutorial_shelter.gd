@@ -109,7 +109,7 @@ func run() -> void:
 		if gate == null: continue
 		gates.append(gate)
 		check(gate.left != null and gate.right != null and gate.stable() and gate.progress == 0.0, "Gate configures itself and starts fully closed: " + name)
-		check(is_equal_approx(building.to_local(gate.global_position).z, GATE_Z[index]), "Gate is on the correct bay boundary: " + name)
+		check(is_equal_approx(building.to_local(gate.global_position).z, GATE_Z[index] - 0.55), "Gate slides clear of the partition face: " + name)
 		for leaf in [gate.left, gate.right]:
 			if leaf == null: continue
 			var collisions: Array = leaf.find_children("*", "CollisionShape3D", true, false)
@@ -121,12 +121,19 @@ func run() -> void:
 		var inside := building.get_node_or_null("Switches/" + name + "Inside")
 		var outside := building.get_node_or_null("Switches/" + name + "Outside")
 		check(inside is StaticBody3D and outside is StaticBody3D and inside.has_method("interact") and outside.has_method("interact"), "Gate has physical switches on both sides: " + name)
+		for side in [-1.0, 1.0]:
+			var hit := ray(building, Vector3(-4.4, 1.2, GATE_Z[index] + side * 2), Vector3(-4.4, 1.2, GATE_Z[index]))
+			check(not hit.is_empty() and hit.collider == (inside if side < 0 else outside), "Each switch face is reachable before its wall or door collision")
 		if inside != null and inside.has_method("interact"): inside.interact(probe)
 	probe.global_position = building.to_global(Vector3(10, 1, -190))
 	check(await WAIT.until(self, func() -> bool: return gates.all(func(gate): return gate.is_open()), 10000, true), "All eight switch-driven gates complete their real opening movement")
 	for index in range(GATE_Z.size()):
 		for x in [-2.8, 0.0, 2.8]:
 			check(traverses(probe, building, Vector3(x, 1, GATE_Z[index] - 2), Vector3(x, 1, GATE_Z[index] + 2)), "Opened gate admits full player-sized sweeps across its doorway")
+		# An open leaf must remain visible in front of the partition, not bury
+		# its panel while leaving only decorative ribs protruding from the wall.
+		var panel_hit := ray(building, Vector3(-5.35, 2.5, GATE_Z[index] - 2), Vector3(-5.35, 2.5, GATE_Z[index] + 1))
+		check(not panel_hit.is_empty() and panel_hit.collider == gates[index].left, "Open door leaf stands clear of its partition")
 		var from := building.to_global(Vector3(0, 0.1, GATE_Z[index] - 4))
 		var to := building.to_global(Vector3(0, 0.1, GATE_Z[index] + 4))
 		var path := NavigationServer3D.map_get_path(world.get_world_3d().navigation_map, from, to, true)

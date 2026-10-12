@@ -173,6 +173,7 @@
       "test_world_generation"
     ],
     "assets": [
+      "test_tutorial_shelter_render",
       "test_pistol_visual",
       "test_barrel_man_assets",
       "test_slender_speaker_animation",

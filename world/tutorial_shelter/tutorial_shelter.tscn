@@ -8,6 +8,10 @@
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/bay_gate.tscn" id="gate"]
 
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/gate_button_model.tscn" id="button_model"]
+
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/wall_surface.tscn" id="wall_skin"]
+
 [ext_resource type="Script" path="res://world/tutorial_shelter/bay_gate_button.gd" id="switch"]
 
 [ext_resource type="PackedScene" path="res://world/poi_kit/furniture/shelf.tscn" id="shelf"]
@@ -35,63 +39,85 @@ emission = Color(0.12, 0.2, 0.08, 1)
 
 [sub_resource type="BoxMesh" id="r1"]
 size = Vector3(40.8, 0.4, 236.4)
+subdivide_width = 5
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r2"]
 size = Vector3(40.8, 0.4, 236.4)
 
 [sub_resource type="BoxMesh" id="r3"]
 size = Vector3(44, 0.4, 30)
+subdivide_width = 5
+subdivide_depth = 3
 
 [sub_resource type="BoxShape3D" id="r4"]
 size = Vector3(44, 0.4, 30)
 
 [sub_resource type="BoxMesh" id="r5"]
 size = Vector3(40.8, 8.8, 0.4)
+subdivide_width = 5
+subdivide_height = 1
 
 [sub_resource type="BoxShape3D" id="r6"]
 size = Vector3(40.8, 8.8, 0.4)
 
 [sub_resource type="BoxMesh" id="r7"]
 size = Vector3(40.8, 0.3, 236.8)
+subdivide_width = 5
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r8"]
 size = Vector3(40.8, 0.3, 236.8)
 
 [sub_resource type="BoxMesh" id="r9"]
 size = Vector3(0.4, 8.8, 236)
+subdivide_height = 1
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r10"]
 size = Vector3(0.4, 8.8, 236)
 
 [sub_resource type="BoxMesh" id="r11"]
 size = Vector3(9.6, 8.4, 236)
+subdivide_width = 1
+subdivide_height = 1
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r12"]
 size = Vector3(9.6, 8.4, 236)
 
 [sub_resource type="BoxMesh" id="r13"]
 size = Vector3(9.6, 0.4, 236)
+subdivide_width = 1
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r14"]
 size = Vector3(9.6, 0.4, 236)
 
 [sub_resource type="BoxMesh" id="r15"]
 size = Vector3(0.4, 0.7, 236)
+subdivide_depth = 29
 
 [sub_resource type="BoxShape3D" id="r16"]
 size = Vector3(0.4, 0.7, 236)
 
 [sub_resource type="BoxMesh" id="r17"]
 size = Vector3(0.1, 0.012, 234)
+subdivide_depth = 29
 
 [sub_resource type="BoxMesh" id="r18"]
 size = Vector3(60, 8.8, 10)
+subdivide_width = 7
+subdivide_height = 1
+subdivide_depth = 1
 
 [sub_resource type="BoxShape3D" id="r19"]
 size = Vector3(60, 8.8, 10)
 
 [sub_resource type="BoxMesh" id="r20"]
 size = Vector3(60, 0.6, 10)
+subdivide_width = 7
+subdivide_depth = 1
 
 [sub_resource type="BoxShape3D" id="r21"]
 size = Vector3(60, 0.6, 10)
@@ -107,6 +133,7 @@ size = Vector3(0.7, 0.6, 0.85)
 
 [sub_resource type="BoxMesh" id="r25"]
 size = Vector3(39.5, 0.18, 0.2)
+subdivide_width = 4
 
 [sub_resource type="BoxMesh" id="r26"]
 size = Vector3(0.12, 1.6, 0.12)
@@ -116,9 +143,11 @@ size = Vector3(5.13085, 0.11, 0.11)
 
 [sub_resource type="BoxMesh" id="r28"]
 size = Vector3(0.35, 8.8, 0.65)
+subdivide_height = 1
 
 [sub_resource type="BoxMesh" id="r29"]
 size = Vector3(0.12, 0.2, 235.6)
+subdivide_depth = 29
 
 [sub_resource type="BoxMesh" id="r30"]
 size = Vector3(5, 0.018, 0.09)
@@ -131,6 +160,8 @@ size = Vector3(1.6, 0.035, 0.32)
 
 [sub_resource type="BoxMesh" id="r33"]
 size = Vector3(16.9, 8.8, 0.4)
+subdivide_width = 2
+subdivide_height = 1
 
 [sub_resource type="BoxShape3D" id="r34"]
 size = Vector3(16.9, 8.8, 0.4)
@@ -149,6 +180,7 @@ size = Vector3(7, 3.8, 0.4)
 
 [sub_resource type="BoxMesh" id="r39"]
 size = Vector3(14.4, 0.16, 0.45)
+subdivide_width = 1
 
 [sub_resource type="BoxMesh" id="r40"]
 size = Vector3(7.3, 0.2, 0.65)
@@ -157,25 +189,10 @@ size = Vector3(7.3, 0.2, 0.65)
 size = Vector3(7.3, 0.2, 0.65)
 
 [sub_resource type="BoxMesh" id="r42"]
-size = Vector3(0.35, 0.5, 0.22)
+size = Vector3(0.13, 1, 0.13)
 
 [sub_resource type="BoxShape3D" id="r43"]
-size = Vector3(0.35, 0.5, 0.22)
-
-[sub_resource type="BoxMesh" id="r44"]
-size = Vector3(0.14, 0.14, 0.06)
-
-[sub_resource type="BoxMesh" id="r45"]
-size = Vector3(0.15, 1, 0.15)
-
-[sub_resource type="BoxShape3D" id="r46"]
-size = Vector3(0.15, 1, 0.15)
-
-[sub_resource type="BoxMesh" id="r47"]
-size = Vector3(0.14, 0.14, 0.05)
-
-[sub_resource type="BoxMesh" id="r48"]
-size = Vector3(0.11, 0.07, 0.03)
+size = Vector3(0.13, 1, 0.13)
 
 [node name="TutorialShelter" type="Node3D"]
 metadata/stage_one_layout = true
@@ -4775,7 +4792,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4796,7 +4813,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4817,7 +4834,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4838,7 +4855,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4859,7 +4876,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4880,7 +4897,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -4931,7 +4948,7 @@ position = Vector3(0, 6.9, -162)
 shape = SubResource("r38")
 
 [node name="Bay01Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -162.1)
+position = Vector3(0, 5.18, -162.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -4945,63 +4962,77 @@ position = Vector3(0, 5.1, -162)
 shape = SubResource("r41")
 
 [node name="Gate01" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -162)
+position = Vector3(0, 0, -162.55)
 
-[node name="Gate01Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -163)
+[node name="Gate01Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -163.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate01")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate01Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate01Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate01Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate01InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -163)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -163.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate01InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -163)
-shape = SubResource("r46")
-
-[node name="Gate01Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -161)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate01")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate01Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate01Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -163.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate01Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate01Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -161.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate01")
 
 [node name="Gate01OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -161)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -161.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate01OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -161)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -161.35)
+shape = SubResource("r43")
+
+[node name="Bay01WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -162.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -161.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -162.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -161.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -162.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -161.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -162.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay01WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -161.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay02" type="Node3D" parent="Bays"]
 metadata/stage_number = 2
@@ -5075,7 +5106,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5096,7 +5127,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5147,7 +5178,7 @@ position = Vector3(0, 6.9, -142)
 shape = SubResource("r38")
 
 [node name="Bay02Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -142.1)
+position = Vector3(0, 5.18, -142.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -5161,63 +5192,77 @@ position = Vector3(0, 5.1, -142)
 shape = SubResource("r41")
 
 [node name="Gate02" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -142)
+position = Vector3(0, 0, -142.55)
 
-[node name="Gate02Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -143)
+[node name="Gate02Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -143.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate02")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate02Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate02Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate02Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate02InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -143)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -143.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate02InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -143)
-shape = SubResource("r46")
-
-[node name="Gate02Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -141)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate02")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate02Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate02Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -143.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate02Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate02Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -141.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate02")
 
 [node name="Gate02OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -141)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -141.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate02OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -141)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -141.35)
+shape = SubResource("r43")
+
+[node name="Bay02WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -142.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -141.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -142.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -141.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -142.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -141.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -142.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay02WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -141.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay03" type="Node3D" parent="Bays"]
 metadata/stage_number = 3
@@ -5291,7 +5336,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5312,7 +5357,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5363,7 +5408,7 @@ position = Vector3(0, 6.9, -122)
 shape = SubResource("r38")
 
 [node name="Bay03Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -122.1)
+position = Vector3(0, 5.18, -122.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -5377,63 +5422,77 @@ position = Vector3(0, 5.1, -122)
 shape = SubResource("r41")
 
 [node name="Gate03" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -122)
+position = Vector3(0, 0, -122.55)
 
-[node name="Gate03Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -123)
+[node name="Gate03Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -123.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate03")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate03Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate03Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate03Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate03InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -123)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -123.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate03InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -123)
-shape = SubResource("r46")
-
-[node name="Gate03Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -121)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate03")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate03Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate03Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -123.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate03Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate03Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -121.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate03")
 
 [node name="Gate03OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -121)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -121.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate03OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -121)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -121.35)
+shape = SubResource("r43")
+
+[node name="Bay03WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -122.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -121.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -122.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -121.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -122.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -121.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -122.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay03WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -121.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay04" type="Node3D" parent="Bays"]
 metadata/stage_number = 4
@@ -5507,7 +5566,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5528,7 +5587,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5579,7 +5638,7 @@ position = Vector3(0, 6.9, -94)
 shape = SubResource("r38")
 
 [node name="Bay04Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -94.1)
+position = Vector3(0, 5.18, -94.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -5593,63 +5652,77 @@ position = Vector3(0, 5.1, -94)
 shape = SubResource("r41")
 
 [node name="Gate04" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -94)
+position = Vector3(0, 0, -94.55)
 
-[node name="Gate04Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -95)
+[node name="Gate04Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -95.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate04")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate04Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate04Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate04Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate04InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -95)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -95.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate04InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -95)
-shape = SubResource("r46")
-
-[node name="Gate04Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -93)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate04")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate04Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate04Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -95.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate04Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate04Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -93.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate04")
 
 [node name="Gate04OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -93)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -93.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate04OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -93)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -93.35)
+shape = SubResource("r43")
+
+[node name="Bay04WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -94.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -93.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -94.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -93.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -94.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -93.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -94.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay04WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -93.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay05" type="Node3D" parent="Bays"]
 metadata/stage_number = 5
@@ -5723,7 +5796,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5744,7 +5817,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5795,7 +5868,7 @@ position = Vector3(0, 6.9, -74)
 shape = SubResource("r38")
 
 [node name="Bay05Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -74.1)
+position = Vector3(0, 5.18, -74.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -5809,63 +5882,77 @@ position = Vector3(0, 5.1, -74)
 shape = SubResource("r41")
 
 [node name="Gate05" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -74)
+position = Vector3(0, 0, -74.55)
 
-[node name="Gate05Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -75)
+[node name="Gate05Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -75.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate05")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate05Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate05Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate05Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate05InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -75)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -75.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate05InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -75)
-shape = SubResource("r46")
-
-[node name="Gate05Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -73)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate05")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate05Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate05Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -75.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate05Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate05Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -73.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate05")
 
 [node name="Gate05OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -73)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -73.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate05OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -73)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -73.35)
+shape = SubResource("r43")
+
+[node name="Bay05WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -74.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -73.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -74.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -73.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -74.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -73.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -74.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay05WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -73.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay06" type="Node3D" parent="Bays"]
 metadata/stage_number = 6
@@ -5939,7 +6026,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -5960,7 +6047,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6011,7 +6098,7 @@ position = Vector3(0, 6.9, -54)
 shape = SubResource("r38")
 
 [node name="Bay06Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -54.1)
+position = Vector3(0, 5.18, -54.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -6025,63 +6112,77 @@ position = Vector3(0, 5.1, -54)
 shape = SubResource("r41")
 
 [node name="Gate06" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -54)
+position = Vector3(0, 0, -54.55)
 
-[node name="Gate06Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -55)
+[node name="Gate06Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -55.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate06")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate06Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate06Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate06Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate06InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -55)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -55.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate06InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -55)
-shape = SubResource("r46")
-
-[node name="Gate06Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -53)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate06")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate06Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate06Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -55.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate06Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate06Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -53.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate06")
 
 [node name="Gate06OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -53)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -53.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate06OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -53)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -53.35)
+shape = SubResource("r43")
+
+[node name="Bay06WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -54.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -53.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -54.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -53.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -54.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -53.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -54.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay06WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -53.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay07" type="Node3D" parent="Bays"]
 metadata/stage_number = 7
@@ -6155,7 +6256,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6176,7 +6277,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6227,7 +6328,7 @@ position = Vector3(0, 6.9, -34)
 shape = SubResource("r38")
 
 [node name="Bay07Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -34.1)
+position = Vector3(0, 5.18, -34.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -6241,63 +6342,77 @@ position = Vector3(0, 5.1, -34)
 shape = SubResource("r41")
 
 [node name="Gate07" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -34)
+position = Vector3(0, 0, -34.55)
 
-[node name="Gate07Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -35)
+[node name="Gate07Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -35.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate07")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate07Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate07Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate07Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate07InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -35)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -35.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate07InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -35)
-shape = SubResource("r46")
-
-[node name="Gate07Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -33)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate07")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate07Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate07Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -35.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate07Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate07Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -33.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate07")
 
 [node name="Gate07OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -33)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -33.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate07OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -33)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -33.35)
+shape = SubResource("r43")
+
+[node name="Bay07WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -34.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -33.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -34.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -33.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -34.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -33.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -34.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay07WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -33.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay08" type="Node3D" parent="Bays"]
 metadata/stage_number = 8
@@ -6371,7 +6486,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6392,7 +6507,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6443,7 +6558,7 @@ position = Vector3(0, 6.9, -14)
 shape = SubResource("r38")
 
 [node name="Bay08Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, -14.1)
+position = Vector3(0, 5.18, -14.55)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -6457,63 +6572,77 @@ position = Vector3(0, 5.1, -14)
 shape = SubResource("r41")
 
 [node name="Gate08" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -14)
+position = Vector3(0, 0, -14.55)
 
-[node name="Gate08Inside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -15)
+[node name="Gate08Inside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -15.2)
 script = ExtResource("switch")
+rotation = Vector3(0, 0, 0)
 target_gate = NodePath("../../Gates/Gate08")
 
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate08Inside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate08Inside"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate08Inside"]
-position = Vector3(0, 0, -0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
-
 [node name="Gate08InsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -15)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -15.2)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate08InsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -15)
-shape = SubResource("r46")
-
-[node name="Gate08Outside" type="StaticBody3D" parent="Switches"]
-position = Vector3(-4.4, 1.25, -13)
-script = ExtResource("switch")
-target_gate = NodePath("../../Gates/Gate08")
-
-[node name="Case" type="MeshInstance3D" parent="Switches/Gate08Outside"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="Switches/Gate08Outside"]
-position = Vector3(0, 0, 0)
+position = Vector3(-4.4, 0.5, -15.2)
 shape = SubResource("r43")
 
-[node name="Button" type="MeshInstance3D" parent="Switches/Gate08Outside"]
-position = Vector3(0, 0, 0.13)
-mesh = SubResource("r44")
-material_override = SubResource("button")
+[node name="Gate08Outside" parent="Switches" instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, -13.35)
+script = ExtResource("switch")
+rotation = Vector3(0, 3.14159, 0)
+target_gate = NodePath("../../Gates/Gate08")
 
 [node name="Gate08OutsidePost" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-4.4, 0.5, -13)
-mesh = SubResource("r45")
+position = Vector3(-4.4, 0.5, -13.35)
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="Gate08OutsidePost" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-4.4, 0.5, -13)
-shape = SubResource("r46")
+position = Vector3(-4.4, 0.5, -13.35)
+shape = SubResource("r43")
+
+[node name="Bay08WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -14.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, -13.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -14.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, -13.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -14.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, -13.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -14.2)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay08WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, -13.8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
 
 [node name="Bay09" type="Node3D" parent="Bays"]
 metadata/stage_number = 9
@@ -6587,7 +6716,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6608,7 +6737,7 @@ light_color = Color(0.88, 0.9, 0.77, 1)
 light_energy = 2.4
 omni_range = 18.0
 omni_attenuation = 0.8
-shadow_enabled = false
+shadow_enabled = true
 distance_fade_enabled = true
 distance_fade_begin = 45.0
 distance_fade_length = 15.0
@@ -6659,7 +6788,7 @@ position = Vector3(0, 6.9, 14)
 shape = SubResource("r38")
 
 [node name="Bay09Rail" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.18, 13.9)
+position = Vector3(0, 5.18, 13.45)
 mesh = SubResource("r39")
 material_override = ExtResource("steel")
 
@@ -6672,42 +6801,723 @@ material_override = ExtResource("steel")
 position = Vector3(0, 5.1, 14)
 shape = SubResource("r41")
 
+[node name="Bay09WallSkin-1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin-1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-7.725, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin-1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin-1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16.175, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin1_0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin1_0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(7.725, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin1_1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, 13.8)
+rotation = Vector3(0, 3.14159, 0)
+scale = Vector3(1.05625, 1, 1)
+
+[node name="Bay09WallSkin1_1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16.175, 0, 14.2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.05625, 1, 1)
+
 [node name="GarageGate" parent="." instance=ExtResource("gate")]
-position = Vector3(0, 0, 14)
+position = Vector3(0, 0, 13.45)
 
-[node name="GarageButton" type="StaticBody3D" parent="."]
-position = Vector3(-4.4, 1.25, 12.8)
-
-[node name="Visuals" type="Node3D" parent="GarageButton"]
-
-
-[node name="Case" type="MeshInstance3D" parent="GarageButton/Visuals"]
-position = Vector3(0, 0, 0)
-mesh = SubResource("r42")
-material_override = SubResource("dark")
-
-[node name="Case" type="CollisionShape3D" parent="GarageButton"]
-position = Vector3(0, 0, 0)
-shape = SubResource("r43")
-
-[node name="Button" type="MeshInstance3D" parent="GarageButton/Visuals"]
-position = Vector3(0, -0.04, -0.14)
-mesh = SubResource("r47")
-material_override = SubResource("button")
-
-[node name="StatusLamp" type="MeshInstance3D" parent="GarageButton/Visuals"]
-position = Vector3(0, 0.16, -0.12)
-mesh = SubResource("r48")
-material_override = SubResource("button")
+[node name="GarageButton" parent="." instance=ExtResource("button_model")]
+position = Vector3(-4.4, 1.2, 12.8)
 
 [node name="DeparturePost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.4, 0.5, 12.8)
-mesh = SubResource("r45")
+mesh = SubResource("r42")
 material_override = ExtResource("steel")
 
 [node name="DeparturePost" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-4.4, 0.5, 12.8)
-shape = SubResource("r46")
+shape = SubResource("r43")
+
+[node name="SideSkin0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -218)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -218)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -210)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -210)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin2_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -202)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin2_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -202)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin3_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -194)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin3_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -194)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin4_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -186)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin4_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -186)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin5_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -178)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin5_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -178)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin6_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -170)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin6_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -170)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin7_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -162)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin7_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -162)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin8_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -154)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin8_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -154)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin9_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -146)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin9_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -146)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin10_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -138)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin10_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -138)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin11_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -130)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin11_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -130)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin12_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -122)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin12_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -122)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin13_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -114)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin13_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -114)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin14_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -106)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin14_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -106)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin15_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -98)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin15_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -98)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin16_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -90)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin16_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -90)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin17_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -82)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin17_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -82)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin18_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -74)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin18_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -74)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin19_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -66)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin19_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -66)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin20_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -58)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin20_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -58)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin21_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -50)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin21_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -50)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin22_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -42)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin22_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -42)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin23_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -34)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin23_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -34)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin24_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -26)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin24_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -26)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin25_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -18)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin25_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -18)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin26_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -10)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin26_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -10)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin27_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, -2)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin27_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, -2)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin28_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, 6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin28_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, 6)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="SideSkin29_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-20, 0, 12)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(0.5, 1, 1)
+
+[node name="SideSkin29_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(20, 0, 12)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(0.5, 1, 1)
+
+[node name="OuterSkin0_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -218)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin0_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -218)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin1_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -210)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin1_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -210)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin2_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -202)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin2_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -202)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin3_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -194)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin3_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -194)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin4_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -186)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin4_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -186)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin5_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -178)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin5_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -178)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin6_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -170)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin6_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -170)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin7_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -162)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin7_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -162)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin8_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -154)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin8_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -154)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin9_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -146)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin9_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -146)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin10_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -138)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin10_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -138)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin11_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -130)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin11_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -130)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin12_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -122)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin12_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -122)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin13_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -114)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin13_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -114)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin14_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -106)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin14_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -106)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin15_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -98)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin15_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -98)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin16_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -90)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin16_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -90)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin17_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -82)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin17_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -82)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin18_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -74)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin18_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -74)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin19_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -66)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin19_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -66)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin20_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -58)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin20_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -58)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin21_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -50)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin21_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -50)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin22_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -42)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin22_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -42)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin23_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -34)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin23_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -34)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin24_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -26)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin24_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -26)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin25_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -18)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin25_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -18)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin26_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -10)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin26_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -10)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin27_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, -2)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin27_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, -2)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin28_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, 6)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin28_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, 6)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.954545, 1)
+
+[node name="OuterSkin29_-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-30, 0, 12)
+rotation = Vector3(0, -1.5708, 0)
+scale = Vector3(0.5, 0.954545, 1)
+
+[node name="OuterSkin29_1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(30, 0, 12)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(0.5, 0.954545, 1)
+
+[node name="BackSkin0" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-16, 0, -222)
+
+[node name="BackSkin1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-8, 0, -222)
+
+[node name="BackSkin2" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(0, 0, -222)
+
+[node name="BackSkin3" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(8, 0, -222)
+
+[node name="BackSkin4" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(16, 0, -222)
+
+[node name="RearSkin0" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-26, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-18, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin2" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-10, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin3" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-2, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin4" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(6, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin5" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(14, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin6" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(22, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin7" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(28, 0, -232)
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(0.5, 1, 1)
+
+[node name="WingFrontSkin-1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(-25.2, 0, 14)
+scale = Vector3(1.2, 0.954545, 1)
+
+[node name="WingFrontSkin1" parent="Visuals" instance=ExtResource("wall_skin")]
+position = Vector3(25.2, 0, 14)
+scale = Vector3(1.2, 0.954545, 1)
 
 [node name="FrontTitle" type="Label3D" parent="Visuals"]
 position = Vector3(0, 6.55, 14.24)
@@ -6724,7 +7534,7 @@ modulate = Color(0.76, 0.72, 0.6, 1)
 position = Vector3(0, 5.2, 18)
 light_energy = 2.0
 omni_range = 18.0
-shadow_enabled = false
+shadow_enabled = true
 
 [node name="RVSpawn" type="Marker3D" parent="."]
 position = Vector3(0, 1.8, -208)

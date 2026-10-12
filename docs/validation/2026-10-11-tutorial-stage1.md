@@ -1,5 +1,7 @@
 # 教學基地階段一：配置與結構驗證
 
+2026-10-12 光照、牆面、按鈕與大門已返修，最新資產／測試見[返修紀錄](2026-10-12-tutorial-stage1-art-fix.md)。下方 17,208 三角面及實機數據為初版歷史結果。
+
 2026-10-11，Godot 4.7.2，分支 `codex/starting-tutorial`。**只完成階段一，等待使用者驗收；尚未開始階段二。** [完整階段契約](../plans/starting-tutorial.md)。
 
 2026-10-12 收尾：舊 `starting_shelter_playground` 啟動日誌確認 `WORLD v10` 且無腳本錯誤（`.godot/tutorial-stage1/legacy-playground.log`）；新文件相對連結檢查通過。使用者同時修改的 `AGENTS.md` 與 `project.godot` 保留，不納入本階段提交。
