@@ -150,13 +150,16 @@ func _terminal_state(data: Dictionary, identity: String) -> Dictionary:
 			if actor.state.id == identity: return actor.state.get("training_terminal", {})
 	return {}
 
+func _configured_service() -> Dictionary:
+	return {"version": 1, "configured": true, "wall_slot": "left_0", "wheel_slot": 0, "engine_id": "service-engine", "wheel_id": "service-wheel", "spare_id": "service-spare", "kit_id": "service-kit", "fuel_port_id": "service-port", "flags": {"wall": false, "engine": false, "removed": false, "wheel": false, "refueled": false, "departure": false}, "fuel_can_id": "", "empty_can_id": "", "fuel_amount": 0.0}
+
 func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
-	for kind in ["version", "stage", "status", "empty_id", "id_type", "flag_type", "flag_missing", "marker_range", "unknown_field", "entry_type", "nested", "entry_stage", "entry_identity", "entry_version", "entry_workshop_target", "duplicate"]:
+	for kind in ["version", "stage", "status", "empty_id", "id_type", "flag_type", "flag_missing", "marker_range", "unknown_field", "entry_type", "nested", "entry_stage", "entry_identity", "entry_version", "entry_workshop_target", "service_missing", "entry_service_configured", "duplicate"]:
 		var bad := saved.duplicate(true)
 		var tutorial: Dictionary = bad.start_state.tutorial
 		match kind:
-			"version": tutorial.version = 3
-			"stage": tutorial.stage = 8
+			"version": tutorial.version = 4
+			"stage": tutorial.stage = 10
 			"status": tutorial.status = "unknown"
 			"empty_id": tutorial.rv_id = ""
 			"id_type": tutorial.terminal_id = 12
@@ -172,7 +175,10 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 				var old_entry: Dictionary = tutorial.entry_snapshot.start_state.tutorial
 				old_entry.version = 1
 				old_entry.erase("workshop")
+				old_entry.erase("service")
 			"entry_workshop_target": tutorial.entry_snapshot.start_state.tutorial.workshop.targets.battery = "other-battery"
+			"service_missing": tutorial.erase("service")
+			"entry_service_configured": tutorial.entry_snapshot.start_state.tutorial.service = _configured_service()
 			"duplicate":
 				var items: Array = tutorial.entry_snapshot.actors.filter(func(actor): return actor.kind == "item")
 				check(not items.is_empty(), "Retry fixture contains real Item actors")
@@ -181,8 +187,10 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 	var legacy := saved.duplicate(true)
 	legacy.start_state.tutorial.version = 1
 	legacy.start_state.tutorial.erase("workshop")
+	legacy.start_state.tutorial.erase("service")
 	legacy.start_state.tutorial.entry_snapshot.start_state.tutorial.version = 1
 	legacy.start_state.tutorial.entry_snapshot.start_state.tutorial.erase("workshop")
+	legacy.start_state.tutorial.entry_snapshot.start_state.tutorial.erase("service")
 	check(checkpoint.validation_error(legacy).is_empty(), "Original tutorial v1 retains its independent retry snapshot")
 	var legacy_stage_two := legacy.duplicate(true)
 	legacy_stage_two.start_state.tutorial.stage = 2
@@ -190,7 +198,7 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 	check(checkpoint.validation_error(legacy_stage_two).is_empty(), "Original tutorial v1 accepts its historical stage-two entry")
 	legacy.start_state.erase("tutorial")
 	check(checkpoint.validation_error(legacy).is_empty(), "Existing v11 stage-one save remains valid without tutorial progress")
-	for status in ["active", "completed", "skipped"]:
+	for status in ["active", "skipped"]:
 		var valid := saved.duplicate(true)
 		valid.start_state.tutorial.status = status
 		check(checkpoint.validation_error(valid).is_empty(), "Explicit tutorial status remains valid: " + status)
@@ -198,6 +206,34 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 	next_stage.start_state.tutorial.stage = 2
 	next_stage.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 2
 	check(checkpoint.validation_error(next_stage).is_empty(), "Stage-two battery training can persist its own explicit entry snapshot")
+	var service_stage := saved.duplicate(true)
+	service_stage.start_state.tutorial.stage = 7
+	service_stage.start_state.tutorial.service = _configured_service()
+	service_stage.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 7
+	service_stage.start_state.tutorial.entry_snapshot.start_state.tutorial.service = _configured_service()
+	service_stage.start_state.tutorial.service.flags.wall = true
+	check(checkpoint.validation_error(service_stage).is_empty(), "Service entry permits later progress and references consumed or lost actors")
+	for field in ["engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id"]:
+		var mismatch := service_stage.duplicate(true)
+		mismatch.start_state.tutorial.entry_snapshot.start_state.tutorial.service[field] = "different-" + field
+		check(not checkpoint.validation_error(mismatch).is_empty(), "Service entry retains immutable " + field)
+	var complete := service_stage.duplicate(true)
+	complete.start_state.tutorial.stage = 9
+	complete.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 9
+	complete.start_state.tutorial.status = "completed"
+	complete.start_state.tutorial.service.flags.departure = true
+	check(checkpoint.validation_error(complete).is_empty(), "Completed v3 tutorial records stage-nine departure and its active entry")
+	var old_v2 := saved.duplicate(true)
+	old_v2.start_state.tutorial.version = 2
+	old_v2.start_state.tutorial.erase("service")
+	old_v2.start_state.tutorial.stage = 7
+	old_v2.start_state.tutorial.entry_snapshot.start_state.tutorial.version = 2
+	old_v2.start_state.tutorial.entry_snapshot.start_state.tutorial.erase("service")
+	old_v2.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 7
+	check(checkpoint.validation_error(old_v2).is_empty(), "V2 retains its original stage-seven entry")
+	old_v2.start_state.tutorial.stage = 8
+	old_v2.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 8
+	check(not checkpoint.validation_error(old_v2).is_empty(), "V2 cannot contain the new stage-eight lesson")
 	for version in [7, 8, 9, 10]:
 		var old := legacy.duplicate(true)
 		old.generation_version = version

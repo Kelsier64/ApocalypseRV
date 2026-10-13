@@ -87,18 +87,34 @@ func _run() -> void:
 	if not await restart_recycling_lesson(): await finish(); return
 	if not await recycling_lesson(): await finish(); return
 	if not await manufacturing_lesson(): await finish(); return
-	check(tutorial.stage == 7 and tutorial.status == "active" and not tutorial.terminal_page().available, "Stage seven remains an explicit pending maintenance briefing")
+	check(tutorial.stage == 7 and tutorial.status == "active" and tutorial.terminal_page().available and tutorial.service.configured, "Stage seven offers its configured maintenance exercise")
 	check(run_owner.phase == "preparing" and not world.get_node("WorldClock").running, "Workshop completion retains preparation and stopped world time")
 	for index in range(8):
 		var gate: ShelterGarageGate = run_owner.shelter.get_node("Gates").get_child(index)
 		check(gate.is_open() == (index < 6) and run_owner.bay_unlocked(index) == (index < 6), "Completed gates 1-6 open; later gate %d retains its lock" % (index + 1))
 	run_owner.shelter.get_node("GarageButton").interact(player)
 	check(run_owner.phase == "preparing", "Pending maintenance cannot bypass the tutorial departure lock")
+	if not await continue_training(): await finish(); return
 	if not await reload_stage_entries(): await finish(); return
 	await finish()
 
 func stage_ready(expected: int) -> bool:
-	if not check(await WAIT.until(self, func(): return tutorial.stage == expected and not tutorial.entry_snapshot.is_empty() and run_owner.save_block_reason().is_empty(), 30000, true), "Stage %d advances and captures its genuine stable entry" % expected): return false
+	if expected == 7:
+		if is_instance_valid(player.seated_in): player.seated_in.exit_seat()
+		var height: float = run_owner.shelter.to_local(vehicle.global_position).y
+		vehicle.global_transform = run_owner.shelter.global_transform * Transform3D(Basis(Vector3.UP, PI), Vector3(0, height, -94))
+		player.global_position = run_owner.shelter.to_global(Vector3(9, 0.1, -94))
+		player.velocity = Vector3.ZERO
+	var ready: bool = await WAIT.until(self, func(): return tutorial.stage == expected and not tutorial.entry_snapshot.is_empty() and run_owner.save_block_reason().is_empty(), 30000, true)
+	if not ready and expected == 7:
+		print("MAINTENANCE_READY: configured=", tutorial.service.configured,
+			" fully_inside=", tutorial._fully_inside(vehicle, TutorialService.PARKING),
+			" local_rv=", run_owner.shelter.to_local(vehicle.global_position),
+			" player_mode=", player.get_player_mode(), " seated=", player.seated_in,
+			" engine_running=", vehicle.energy.engine_running, " brake=", vehicle.handbrake,
+			" velocity=", vehicle.linear_velocity, " angular=", vehicle.angular_velocity,
+			" save_block=", run_owner.save_block_reason(), " checkpoint_error=", checkpoint.last_error)
+	if not check(ready, "Stage %d advances and captures its genuine stable entry" % expected): return false
 	var saved: Dictionary = checkpoint.capture_world(world)
 	if not check(not saved.is_empty(), "Stage %d captures a real current checkpoint" % expected): return false
 	check(checkpoint.validation_error(saved).is_empty(), "Stage %d current and retry checkpoint schemas validate" % expected)
@@ -106,6 +122,9 @@ func stage_ready(expected: int) -> bool:
 	check(not saved.start_state.tutorial.entry_snapshot.start_state.tutorial.has("entry_snapshot"), "Stage %d entry contains no recursively nested retry snapshot" % expected)
 	if expected in range(2, 7) and not stage_entries.has(expected):
 		stage_entries[expected] = tutorial.entry_snapshot.duplicate(true)
+	return true
+
+func continue_training() -> bool:
 	return true
 
 func select_item(identity: String) -> bool:
@@ -357,5 +376,8 @@ func finish() -> void:
 		await WAIT.generator_idle(self, world.get_node("WorldGenerator"))
 		await WAIT.navigation_bakes_finished(self, world)
 		world.free()
+		for frame in 2:
+			await physics_frame
+			await process_frame
 	if failures.is_empty(): print("PASS: production workshop lessons 2-6, current-output checkpoint and every stage entry reload")
 	quit(0 if failures.is_empty() else 1)

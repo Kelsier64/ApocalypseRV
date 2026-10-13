@@ -38,13 +38,14 @@ func _bind_and_pin() -> void:
 	world.get_node("Player").set_physics_process(false)
 
 func _settle() -> bool:
-	return await WAIT.generator_idle(self, world.get_node("WorldGenerator"), 30000) and await WAIT.retired_candidates(self, checkpoint, 30000) and await WAIT.until(self, func(): return workshop.prepared() and not tutorial.entry_snapshot.is_empty() and tutorial.entry_snapshot.start_state.tutorial.version == 2, 10000, true)
+	return await WAIT.generator_idle(self, world.get_node("WorldGenerator"), 30000) and await WAIT.retired_candidates(self, checkpoint, 30000) and await WAIT.until(self, func(): return workshop.prepared() and not tutorial.entry_snapshot.is_empty() and tutorial.entry_snapshot.start_state.tutorial.version == 3, 10000, true)
 
 func _strip_stock(snapshot: Dictionary, targets: Dictionary) -> void:
 	var identities: Array = []
 	for key in STOCK: identities.append(targets[key])
 	snapshot.actors = snapshot.actors.filter(func(actor): return actor.get("state", {}).get("id", "") not in identities)
 	snapshot.start_state.tutorial.erase("workshop")
+	snapshot.start_state.tutorial.erase("service")
 	snapshot.start_state.tutorial.version = 1
 
 func _run() -> void:
@@ -104,12 +105,13 @@ func _run() -> void:
 	var upgraded: Dictionary = checkpoint.capture_world(world)
 	if not check(not upgraded.is_empty() and checkpoint.validation_error(upgraded).is_empty(), "Migrated current and entry checkpoint validate"):
 		await finish(); return
-	check(upgraded.version == 5 and upgraded.start_state.tutorial.version == 2, "Migration upgrades only tutorial state and retains outer checkpoint v5")
+	check(upgraded.version == 5 and upgraded.start_state.tutorial.version == 3, "Migration upgrades only tutorial state and retains outer checkpoint v5")
 	check(upgraded.start_state.phase == legacy.start_state.phase and upgraded.start_state.tutorial.stage == legacy.start_state.tutorial.stage, "Migration preserves the original preparation phase and stage")
 	check(upgraded.start_state.tutorial.flags == legacy.start_state.tutorial.flags, "Migration preserves partial first-lesson progress")
 	for field in ["terminal_id", "rv_id", "flashlight_id"]:
 		check(upgraded.start_state.tutorial[field] == legacy.start_state.tutorial[field], "Migration preserves designated " + field)
 	check(upgraded.start_state.tutorial.workshop == empty_workshop, "Migration creates stock references without granting workshop progress")
+	check(upgraded.start_state.tutorial.service == fresh.start_state.tutorial.service and not upgraded.start_state.tutorial.service.configured, "Migration starts service training with blank progress and no new grants")
 	var upgraded_entry: Dictionary = upgraded.start_state.tutorial.entry_snapshot
 	check(upgraded_entry.start_state.tutorial.workshop.targets == targets and upgraded.start_state.tutorial.workshop.targets == targets, "Current and entry use the same deterministic designated supplies")
 	check(not upgraded_entry.start_state.tutorial.has("entry_snapshot"), "Migrated entry has no stale nested retry snapshot")
@@ -124,12 +126,12 @@ func _run() -> void:
 		await finish(); return
 	world = current_scene
 	_bind_and_pin()
-	if not check(await _settle(), "Reloaded v2 world settles without migration"):
+	if not check(await _settle(), "Reloaded v3 world settles without migration"):
 		await finish(); return
 	var reloaded: Dictionary = checkpoint.capture_world(world)
-	check(not reloaded.is_empty() and checkpoint.validation_error(reloaded).is_empty(), "Reloaded v2 checkpoint remains valid")
+	check(not reloaded.is_empty() and checkpoint.validation_error(reloaded).is_empty(), "Reloaded v3 checkpoint remains valid")
 	if reloaded.is_empty(): await finish(); return
-	check(reloaded.start_state.tutorial.workshop == upgraded.start_state.tutorial.workshop and tutorial.entry_snapshot == upgraded_entry, "V2 reload retains exact workshop IDs and the upgraded original entry")
+	check(reloaded.start_state.tutorial.workshop == upgraded.start_state.tutorial.workshop and tutorial.entry_snapshot == upgraded_entry, "V3 reload retains exact workshop IDs and the upgraded original entry")
 	_check_stock(reloaded, targets, "Reloaded current", legacy.actors.size())
 	if not check(await tutorial.restart_stage(), "Real Restart Stage loads the upgraded independent entry"):
 		await finish(); return
@@ -150,7 +152,7 @@ func _run() -> void:
 	check(workshop.capture() == empty_workshop, "Retry retains deterministic targets without fabricated workshop progress")
 	_check_stock(retried, targets, "Restarted current", legacy_entry.actors.size())
 	_check_manual(retried, legacy_entry, "Restarted current")
-	check(files.writes == 0 and FileAccess.get_file_as_bytes(SAVE_PATH) == source_bytes, "Migration, v2 reload and retry perform zero writes to the original manual save")
+	check(files.writes == 0 and FileAccess.get_file_as_bytes(SAVE_PATH) == source_bytes, "Migration, v3 reload and retry perform zero writes to the original manual save")
 	await finish()
 
 func _restored_vehicles_match(actual: Array, expected: Array) -> bool:
@@ -222,5 +224,8 @@ func finish() -> void:
 		await WAIT.generator_idle(self, world.get_node("WorldGenerator"), 30000)
 		await WAIT.navigation_bakes_finished(self, world, 30000)
 		world.free()
+		# Let deferred physics-server body cleanup finish before tree shutdown.
+		await physics_frame
+		await process_frame
 	if failures.is_empty(): print("PASS: real v1 tutorial migration, exact original entry and one-time stock grants")
 	quit(0 if failures.is_empty() else 1)

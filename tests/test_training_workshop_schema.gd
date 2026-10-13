@@ -50,8 +50,8 @@ func _run() -> void:
 	var old_later_stage := _tutorial(1)
 	old_later_stage.stage = 3
 	check(CheckpointSchema.tutorial_error(old_later_stage) == "stage", "V1 retains its original two-stage bound")
-	var unknown := _tutorial(3)
-	check(CheckpointSchema.tutorial_error(unknown) == "version", "Unknown tutorial v3 is rejected")
+	var unknown := _tutorial(4)
+	check(CheckpointSchema.tutorial_error(unknown) == "version", "Unknown tutorial v4 is rejected")
 	var missing := fresh.duplicate(true)
 	missing.erase("workshop")
 	check(not CheckpointSchema.tutorial_error(missing).is_empty(), "V2 requires complete workshop state")

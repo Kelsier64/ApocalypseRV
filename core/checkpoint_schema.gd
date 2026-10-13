@@ -63,12 +63,13 @@ static func tutorial_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
 	var fields := ["version", "stage", "status", "terminal_id", "rv_id", "flashlight_id", "flags"]
 	if not value.has_all(fields): return "fields"
-	if not value.version is int or value.version not in [1, 2]: return "version"
-	if value.version == 2: fields.append("workshop")
+	if not value.version is int or value.version not in [1, 2, 3]: return "version"
+	if value.version >= 2: fields.append("workshop")
+	if value.version == 3: fields.append("service")
 	if not value.has_all(fields): return "fields"
 	for key in value:
 		if key not in fields and key != "entry_snapshot": return "fields"
-	var last_stage := 2 if value.version == 1 else 7
+	var last_stage := 2 if value.version == 1 else (7 if value.version == 2 else 9)
 	if not value.stage is int or value.stage < 1 or value.stage > last_stage: return "stage"
 	if not value.status is String or value.status not in ["active", "completed", "skipped"]: return "status"
 	for key in ["terminal_id", "rv_id", "flashlight_id"]:
@@ -79,11 +80,45 @@ static func tutorial_error(value: Variant) -> String:
 	for key in ["viewed", "flashlight", "reversed", "parked"]:
 		if not flags[key] is bool: return "flags." + key
 	if not flags.marker_index is int or flags.marker_index < 0 or flags.marker_index > 2: return "flags.marker_index"
-	if value.version == 2:
+	if value.version >= 2:
 		var workshop_state_error := workshop_error(value.workshop)
 		if not workshop_state_error.is_empty(): return "workshop." + workshop_state_error
 		for identity in value.workshop.output_ids:
 			if identity in [value.terminal_id, value.rv_id, value.flashlight_id]: return "workshop.output_ids"
+	if value.version == 3:
+		var service_state_error := service_error(value.service)
+		if not service_state_error.is_empty(): return "service." + service_state_error
+		if value.service.flags.departure and value.stage != 9: return "service.flags.departure"
+		if value.status == "completed" and (value.stage != 9 or not value.service.flags.departure): return "status"
+	return ""
+
+static func service_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	var identity_fields := ["engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id", "fuel_can_id", "empty_can_id"]
+	var fields := ["version", "configured", "wall_slot", "wheel_slot", "flags", "fuel_amount"] + identity_fields
+	if value.size() != fields.size() or not value.has_all(fields): return "fields"
+	if not value.version is int or value.version != 1: return "version"
+	if not value.configured is bool: return "configured"
+	if not value.wall_slot is String or value.wall_slot != "left_0": return "wall_slot"
+	if not value.wheel_slot is int or value.wheel_slot != 0: return "wheel_slot"
+	var flag_fields := ["wall", "engine", "removed", "wheel", "refueled", "departure"]
+	if not value.flags is Dictionary or value.flags.size() != flag_fields.size() or not value.flags.has_all(flag_fields): return "flags"
+	for field in flag_fields:
+		if not value.flags[field] is bool: return "flags." + field
+		if not value.configured and value.flags[field]: return "flags." + field
+	var seen: Dictionary = {}
+	for field in identity_fields:
+		var identity: Variant = value[field]
+		if not identity is String: return field
+		if not value.configured and not identity.is_empty(): return field
+		if value.configured and field not in ["fuel_can_id", "empty_can_id"] and identity.is_empty(): return field
+		if not identity.is_empty():
+			if seen.has(identity): return field
+			seen[identity] = true
+	if not VehicleSnapshot._number(value.fuel_amount) or value.fuel_amount < 0.0: return "fuel_amount"
+	if not value.configured and value.fuel_amount != 0.0: return "fuel_amount"
+	if value.flags.wheel and not value.flags.removed: return "flags.wheel"
+	if value.flags.refueled and (value.fuel_amount <= 0.0 or value.fuel_can_id.is_empty() or value.empty_can_id.is_empty()): return "flags.refueled"
 	return ""
 
 static func workshop_error(value: Variant) -> String:

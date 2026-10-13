@@ -307,7 +307,10 @@ func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
 	for field in ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]:
 		if entry_tutorial.get(field) != value[field]: return "entry_snapshot.tutorial." + field
-	if value.version == 2 and entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
+	if value.version >= 2 and entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
+	if value.version == 3:
+		for field in ["configured", "wall_slot", "wheel_slot", "engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id"]:
+			if entry_tutorial.service[field] != value.service[field]: return "entry_snapshot.tutorial.service." + field
 	if entry_tutorial.status != "active": return "entry_snapshot.tutorial.status"
 	return ""
 

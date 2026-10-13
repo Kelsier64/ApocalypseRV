@@ -2,6 +2,8 @@
   "version": 1,
   "groups": {
     "quick": [
+      "test_training_service_transactions",
+      "test_training_service_schema",
       "test_material_commit_events",
       "test_training_transactions",
       "test_training_workshop_schema",
@@ -50,6 +52,7 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_training_maintenance",
       "test_training_playground",
       "test_training_driving",
       "test_tutorial_shelter",

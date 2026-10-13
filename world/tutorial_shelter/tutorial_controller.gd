@@ -21,6 +21,7 @@ var _park_min := Vector2.ZERO
 var _park_max := Vector2.ZERO
 var _snapshot_seconds := 0.0
 var workshop: TutorialWorkshop
+var service: TutorialService
 
 func _ensure_workshop() -> void:
 	if workshop != null: return
@@ -28,6 +29,10 @@ func _ensure_workshop() -> void:
 	workshop.name = "Workshop"
 	workshop.controller = self
 	add_child(workshop)
+	service = TutorialService.new()
+	service.name = "Service"
+	service.controller = self
+	add_child(service)
 
 func initialized() -> bool:
 	return not terminal_id.is_empty() and not legacy_disabled
@@ -44,6 +49,7 @@ func _on_world_ready() -> void:
 
 func _capture_entry() -> void:
 	if not initialized() or not entry_snapshot.is_empty(): return
+	if stage == 7 and not service.configured: return
 	var player := _world().get_node("Player")
 	var generator := _world().get_node("WorldGenerator")
 	if player.get_player_mode() != player.PlayerMode.NORMAL or player.settings_open or generator.building: return
@@ -64,9 +70,11 @@ func _checkpoint() -> Node:
 
 func capture(include_retry := true) -> Dictionary:
 	if not initialized(): return {}
-	var data := {"version": 2 if workshop != null and workshop.prepared() else 1, "stage": stage, "status": status, "terminal_id": terminal_id,
+	var data := {"version": 3 if workshop != null and workshop.prepared() else 1, "stage": stage, "status": status, "terminal_id": terminal_id,
 		"rv_id": rv_id, "flashlight_id": flashlight_id, "flags": flags.duplicate(true)}
-	if data.version == 2: data["workshop"] = workshop.capture()
+	if data.version == 3:
+		data["workshop"] = workshop.capture()
+		data["service"] = service.capture()
 	if include_retry and not entry_snapshot.is_empty(): data["entry_snapshot"] = entry_snapshot.duplicate(true)
 	return data
 
@@ -82,13 +90,28 @@ func restore(data: Dictionary) -> void:
 	flags = data.flags.duplicate(true)
 	entry_snapshot = data.get("entry_snapshot", {}).duplicate(true)
 	workshop.restore(data.get("workshop", {}))
+	service.restore(data.get("service", {}))
+	_upgrade_entry()
 	_previous = Vector3.INF
 	_reverse_distance = 4.0 if flags.reversed else 0.0
 	_park_seconds = 0.0
 	progress_changed.emit()
 
+func _upgrade_entry() -> void:
+	if not workshop.prepared() or entry_snapshot.is_empty(): return
+	var saved: Dictionary = entry_snapshot.start_state.tutorial
+	if saved.version >= 3: return
+	# Older phase-three saves could capture bay 7 before its faults existed.
+	# This lesson requires a fresh boundary after its single setup transaction.
+	if stage == 7 and not service.configured:
+		entry_snapshot.clear()
+		return
+	saved.version = 3
+	saved["service"] = service.capture()
+
 func terminal_page() -> Dictionary:
 	if not initialized(): return {"available": false, "stage": 1, "title": "Preparing training records"}
+	if stage >= 7: return service.page()
 	if stage >= 2 and workshop != null and workshop.prepared(): return workshop.page()
 	return {"available": true, "stage": 1, "title": "Basic operation and driving",
 		"conditions": [
@@ -163,12 +186,16 @@ func _physics_process(delta: float) -> void:
 	var vehicle := designated_rv()
 	if vehicle == null or _run().phase != "preparing": return
 	if not workshop.prepared(): workshop.prepare(vehicle)
+	_upgrade_entry()
 	workshop.bind_events(vehicle)
+	service.bind_events(vehicle)
 	# Preparation reserves are direct state floors, never successful transactions.
 	if vehicle.current_fuel < 10.0: vehicle.current_fuel = 10.0
 	var socket := vehicle.get_battery_socket()
 	if socket != null and socket.installed_battery != null and socket.installed_battery.condition > 0:
 		socket.installed_battery.charge = maxf(socket.installed_battery.charge, minf(20.0, socket.installed_battery.capacity))
+	if status != "active": return
+	if stage == 7 and not service.configure_if_ready(vehicle): return
 	if entry_snapshot.is_empty():
 		_snapshot_seconds += delta
 		if _snapshot_seconds >= 0.5 and vehicle.linear_velocity.length() < 0.25 and vehicle.angular_velocity.length() < 0.1:
@@ -177,6 +204,7 @@ func _physics_process(delta: float) -> void:
 		return # No actions count before a usable stage entry exists.
 	if stage == 1: _sample_driving(vehicle, delta)
 	elif stage <= 6 and workshop.complete(): _advance_stage()
+	elif stage == 7 and service.complete(): _advance_stage()
 
 func _advance_stage() -> void:
 	stage += 1
@@ -229,19 +257,22 @@ func _sample_driving(vehicle: Chassis, delta: float) -> void:
 		_advance_stage()
 
 func _fully_parked(vehicle: Chassis) -> bool:
-	var frame: Transform3D = _run().shelter.global_transform.affine_inverse()
 	if (-vehicle.global_basis.z).dot(_run().shelter.global_basis.z) < 0.85: return false
+	return _fully_inside(vehicle, PARKING)
+
+func _fully_inside(vehicle: Chassis, region: AABB) -> bool:
+	var frame: Transform3D = _run().shelter.global_transform.affine_inverse()
 	for node: CollisionShape3D in vehicle.find_children("*", "CollisionShape3D", true, false):
 		if node.disabled or node.shape == null: continue
 		var bounds := node.shape.get_debug_mesh().get_aabb()
 		var pose := frame * node.global_transform
 		for corner in range(8):
 			var point := pose * bounds.get_endpoint(corner)
-			if point.x < PARKING.position.x or point.x > PARKING.end.x or point.z < PARKING.position.z or point.z > PARKING.end.z: return false
+			if point.x < region.position.x or point.x > region.end.x or point.z < region.position.z or point.z > region.end.z: return false
 	return true
 
 func can_restart() -> bool:
-	return initialized() and not entry_snapshot.is_empty() and not _checkpoint().loading
+	return initialized() and status == "active" and not entry_snapshot.is_empty() and not _checkpoint().loading
 
 func restart_stage() -> bool:
 	if not can_restart(): return false
