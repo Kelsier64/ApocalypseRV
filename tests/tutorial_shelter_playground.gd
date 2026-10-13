@@ -9,13 +9,20 @@ var replay_vehicle: Chassis
 var overview: Camera3D
 var status: Label
 var auto_replay := false
+var review_mode := false
+
+static func requests_review(args: PackedStringArray) -> bool:
+	for arg in ["--review", "--replay", "--art-daylight", "--inspect-exterior", "--inspect-facade", "--inspect-gate", "--inspect-lamp"]:
+		if arg in args: return true
+	return false
 
 func _ready() -> void:
+	review_mode = requests_review(OS.get_cmdline_user_args())
 	super._ready()
-	# This geometry review deliberately retains its manual gates and departure.
-	# The production main scene owns the playable lesson and its training locks.
-	get_node("StartRun/Tutorial").restore({})
-	_setup_replay.call_deferred()
+	if review_mode:
+		# Review runs bypass the lesson only when explicitly requested.
+		get_node("StartRun/Tutorial").restore({})
+		_setup_replay.call_deferred()
 
 func _setup_replay() -> void:
 	if not await wait_for_play(): return
@@ -46,6 +53,7 @@ func _setup_replay() -> void:
 		_start_replay()
 
 func _input(event: InputEvent) -> void:
+	if not review_mode: return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_F2 or event.keycode == KEY_F2: _start_replay()
 		if event.physical_keycode == KEY_F3 or event.keycode == KEY_F3: _exterior_camera()
@@ -112,7 +120,7 @@ func _review_hud(visible: bool) -> void:
 		if layer.get_parent() is RayCast3D: layer.visible = visible
 
 func _start_replay() -> void:
-	if replay_started or not is_instance_valid(replay_vehicle): return
+	if not review_mode or replay_started or not is_instance_valid(replay_vehicle): return
 	for inner_gate in get_node("StartRun").shelter.get_node("Gates").get_children():
 		inner_gate.move_to(true)
 	replay_started = true
