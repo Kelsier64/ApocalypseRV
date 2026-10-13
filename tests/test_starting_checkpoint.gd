@@ -88,7 +88,9 @@ func _run() -> void:
 		var supported := prepared.duplicate(true)
 		supported.generation_version = version
 		supported.profile.generation_version = version
+		if supported.profile.get("terrain_half_width", 450.0) == 500.0: supported.profile.terrain_half_width = 450.0
 		supported.start_state.erase("bay_gates")
+		supported.start_state.erase("tutorial")
 		check(checkpoint.validation_error(supported).is_empty(), "Shelter checkpoint accepts generation v%d" % version)
 		var wrong_world := supported.duplicate(true)
 		wrong_world.world_id = "legacy"

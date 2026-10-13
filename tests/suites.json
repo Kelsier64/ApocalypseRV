@@ -2,6 +2,7 @@
   "version": 1,
   "groups": {
     "quick": [
+      "test_training_terminal",
       "test_cabin_light_equipment",
       "test_combat_targeting",
       "test_crafting_print",
@@ -45,6 +46,7 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_training_driving",
       "test_tutorial_shelter",
       "test_barrel_blast_render",
       "test_barrel_explosion",
@@ -140,6 +142,7 @@
       "test_world_weather"
     ],
     "slow": [
+      "test_training_checkpoint",
       "test_bunker_extraction",
       "test_flashlight_world",
       "test_gas_station",

@@ -13,6 +13,7 @@ var _save_message: Label
 var _retry: Button
 var _reset: Button
 var _return: Button
+var _restart_stage: Button
 var _preset: OptionButton
 var _preset_current: Label
 var _resolution_label: Label
@@ -170,6 +171,9 @@ func _build() -> void:
 	content.add_child(footer)
 	_reset = _button("恢復本頁預設", func(): settings.reset_category(CATEGORIES[_tabs.current_tab]))
 	footer.add_child(_reset)
+	_restart_stage = _button("Restart Stage", _show_restart_stage)
+	_restart_stage.visible = false
+	footer.add_child(_restart_stage)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
@@ -405,6 +409,9 @@ func _on_save_completed(error: Error) -> void:
 	_save_message.text = "設定無法儲存（%s）；目前仍已套用，可重試。" % error_string(error) if error != OK else "設定自動儲存；不會建立遊戲檢查點。"
 
 func _update_status() -> void:
+	var tutorial := _tutorial()
+	_restart_stage.visible = tutorial != null and tutorial.initialized()
+	_restart_stage.disabled = tutorial == null or not tutorial.can_restart()
 	_status.text = "遊戲持續運行  ·  HP %.0f / %.0f" % [player.current_player_health, player.max_player_health]
 	if is_instance_valid(player.seated_in):
 		var chassis = player.seated_in.get_connected_rv()
@@ -457,6 +464,22 @@ func _show_quit() -> void:
 	_modal_cancel.text = "取消"
 	_show_modal()
 
+func _tutorial() -> Node:
+	var anchor: Node = player
+	while anchor != null:
+		if anchor.has_meta("entity_domain"): return anchor.get_node_or_null("StartRun/Tutorial")
+		anchor = anchor.get_parent()
+	return null
+
+func _show_restart_stage() -> void:
+	var tutorial := _tutorial()
+	if tutorial == null or not tutorial.can_restart(): return
+	_modal_kind = "restart_stage"
+	_modal_text.text = "Restart this stage?\nThe world returns to the stage entrance.\nYour manual checkpoint remains unchanged."
+	_modal_accept.text = "Restart Stage"
+	_modal_cancel.text = "Cancel"
+	_show_modal()
+
 func _on_window_preview_changed(active: bool) -> void:
 	_refresh()
 	if active and visible:
@@ -474,6 +497,14 @@ func _accept_modal() -> void:
 		settings.cancel_window_preview()
 		settings.flush()
 		get_tree().quit()
+	elif _modal_kind == "restart_stage":
+		var tutorial := _tutorial()
+		if tutorial != null and tutorial.can_restart():
+			var world: Node = tutorial.get_parent().get_parent()
+			var snapshot: Dictionary = tutorial.entry_snapshot.duplicate(true)
+			close_menu()
+			Checkpoint.load_snapshot.call_deferred(world, snapshot)
+			return
 	_hide_modal()
 
 func _cancel_modal() -> void:

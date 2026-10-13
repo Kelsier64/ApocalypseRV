@@ -5,6 +5,9 @@ func generation_version() -> int:
 
 func prepare_fixture(world: Node) -> void:
 	var run: StartRun = world.get_node("StartRun")
+	# This inherited suite exercises existing stage-one saves with manual gates.
+	# Controller progress and retries have their own production-world suite.
+	run.get_node("Tutorial").restore({})
 	check(run.shelter.get_meta("poi_definition_id") == &"tutorial_shelter", "v11 production binds the tutorial building")
 	check(not run._status.visible, "v11 has no legacy preparation instruction HUD")
 	var gates := run.shelter.get_node("Gates")

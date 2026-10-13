@@ -76,6 +76,7 @@ var _settings_release_actions: Array[StringName] = []
 # place instead of ad-hoc at each call site.
 signal grab_started
 signal body_state_changed
+signal item_acquired(identity: String, scene_path: String)
 var grab_control: Node
 var _execution_crush_in_progress := false
 var ragdoll_control: Node
@@ -137,7 +138,9 @@ func add_prop_item(item: Item, path: String) -> bool:
 	if not item.can_pickup(self): return false
 	if not ItemState.valid(path, item.capture_item_state()): return false
 	item.prepare_pickup()
-	return add_item(item.item_name, item.is_large, path, item.capture_item_state())
+	var success := add_item(item.item_name, item.is_large, path, item.capture_item_state())
+	if success: item_acquired.emit(item.persistent_id, path)
+	return success
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
 	if not inventory.can_add_item(is_large): return false

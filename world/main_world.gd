@@ -20,6 +20,15 @@ func _enter_tree() -> void:
 	# Set both actors before child ready/physics, while the first chunk is built.
 	get_node("Player").transform = site.building * Transform3D(Basis(Vector3.UP, -PI / 2.0), Vector3(-4, 1.5, spawn_z))
 	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, spawn_z))
+	if generator.profile.generation_version >= 11:
+		var vehicle := get_node("NewRv/Chassis")
+		vehicle.current_fuel = 40.0
+		var terminal: Item = load("res://equipment/training_terminal.tscn").instantiate()
+		terminal.name = "TrainingTerminal"
+		terminal.position = Vector3(-1.74, 1.38, -3.05)
+		terminal.rotation = Vector3(0, PI / 2.0, 0)
+		terminal.initial_support = NodePath("../LeftFront")
+		vehicle.add_child(terminal)
 
 func _ready() -> void:
 	super._ready()

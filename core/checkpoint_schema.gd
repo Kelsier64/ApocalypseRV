@@ -44,7 +44,7 @@ static func profile_error(data: Dictionary) -> String:
 		var value: Variant = data[key]
 		if key == "terrain_half_width":
 			# Historical captures include this derived, read-only field.
-			if not VehicleSnapshot._number(value) or value not in [225.0, 450.0]: return "profile." + key
+			if not VehicleSnapshot._number(value) or (value not in [225.0, 450.0] and not (value == 500.0 and data.get("generation_version", 2) == 11)): return "profile." + key
 		elif key == "generation_version":
 			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]: return "profile." + key
 		elif key in constants:
@@ -57,6 +57,25 @@ static func profile_error(data: Dictionary) -> String:
 	if data.get("narrow_width", defaults.narrow_width) > data.get("road_width", defaults.road_width): return "profile.narrow_width"
 	if data.get("region_transition", defaults.region_transition) > data.get("region_length", defaults.region_length): return "profile.region_transition"
 	if data.get("stop_jitter", defaults.stop_jitter) * 2 >= data.get("stop_spacing", defaults.stop_spacing): return "profile.stop_jitter"
+	return ""
+
+static func tutorial_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	var fields := ["version", "stage", "status", "terminal_id", "rv_id", "flashlight_id", "flags"]
+	if not value.has_all(fields): return "fields"
+	for key in value:
+		if key not in fields and key != "entry_snapshot": return "fields"
+	if not value.version is int or value.version != 1: return "version"
+	if not value.stage is int or value.stage not in [1, 2]: return "stage"
+	if not value.status is String or value.status not in ["active", "completed", "skipped"]: return "status"
+	for key in ["terminal_id", "rv_id", "flashlight_id"]:
+		if not value[key] is String or value[key].is_empty(): return key
+	var flags: Variant = value.flags
+	var flag_fields := ["viewed", "flashlight", "marker_index", "reversed", "parked"]
+	if not flags is Dictionary or flags.size() != flag_fields.size() or not flags.has_all(flag_fields): return "flags"
+	for key in ["viewed", "flashlight", "reversed", "parked"]:
+		if not flags[key] is bool: return "flags." + key
+	if not flags.marker_index is int or flags.marker_index < 0 or flags.marker_index > 2: return "flags.marker_index"
 	return ""
 
 static func poi_error(value: Variant, path := "poi") -> String:

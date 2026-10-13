@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/bay_gate.tscn" id="gate"]
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/gate_button_model.tscn" id="button_model"]
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/first_briefing.tscn" id="first_briefing"]
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/wall_surface.tscn" id="wall_skin"]
 
@@ -12455,6 +12456,8 @@ rotation = Vector3(0, -1.57079633, 0)
 
 [node name="ExteriorExit" type="Marker3D" parent="."]
 position = Vector3(0, 0, 24)
+
+[node name="FirstBriefing" parent="." instance=ExtResource("first_briefing")]
 
 [node name="Front" type="Marker3D" parent="AccessPoints"]
 position = Vector3(0, 0, 15)

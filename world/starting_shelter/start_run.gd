@@ -17,7 +17,7 @@ var _bay_gate_states: Array[bool] = []
 const BAY_GATE_COUNT := 8
 
 static func valid_state(data: Variant) -> bool:
-	return data is Dictionary and data.get("version") is int and data.version == 1 and data.get("phase") is String and data.phase in STABLE_PHASES and (not data.has("bay_gates") or valid_bay_gates(data.bay_gates))
+	return data is Dictionary and data.get("version") is int and data.version == 1 and data.get("phase") is String and data.phase in STABLE_PHASES and (not data.has("bay_gates") or valid_bay_gates(data.bay_gates)) and (not data.has("tutorial") or CheckpointSchema.tutorial_error(data.tutorial).is_empty())
 
 static func valid_bay_gates(data: Variant) -> bool:
 	return data is Array and data.size() == BAY_GATE_COUNT and data.all(func(value): return value is bool)
@@ -26,11 +26,15 @@ func is_tutorial_shelter() -> bool:
 	var generator := get_parent().get_node_or_null("WorldGenerator")
 	return generator != null and generator.profile != null and generator.profile.generation_version >= 11
 
-func capture() -> Dictionary:
+func capture(include_retry := true) -> Dictionary:
 	var data := {"version": 1, "phase": phase}
 	if is_tutorial_shelter():
 		_remember_bay_gates()
 		data["bay_gates"] = _bay_gate_states.duplicate()
+		var tutorial := get_node_or_null("Tutorial")
+		if tutorial != null:
+			var progress: Dictionary = tutorial.capture(include_retry)
+			if not progress.is_empty(): data["tutorial"] = progress
 	return data
 
 func restore(data: Dictionary) -> void:
@@ -38,10 +42,13 @@ func restore(data: Dictionary) -> void:
 	phase = data.phase
 	_bay_gate_states.assign(data.get("bay_gates", []))
 	_spawn_applied = true
+	var tutorial := get_node_or_null("Tutorial")
+	if tutorial != null: tutorial.restore(data.get("tutorial", {}))
 	if is_inside_tree():
 		_apply_simulation()
 		_apply_gate()
 		_apply_bay_gates()
+		apply_tutorial_gates()
 		_update_status()
 		if is_instance_valid(shelter): shelter.get_node("GarageButton").sync_phase()
 
@@ -89,6 +96,10 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 			bay_gate.opened.connect(_remember_bay_gates)
 			bay_gate.closed.connect(_remember_bay_gates)
 		_apply_bay_gates()
+		for index in range(BAY_GATE_COUNT):
+			for suffix in ["Inside", "Outside"]:
+				building.get_node("Switches/Gate%02d%s" % [index + 1, suffix]).configure_tutorial(self, index)
+		apply_tutorial_gates()
 	_update_status()
 	var world := get_parent() as Node3D
 	if not _spawn_applied and world.get("fresh_start") == true:
@@ -105,6 +116,7 @@ func begin_run(player: Node3D) -> String:
 	var world := get_parent() as Node3D
 	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing; please wait" if tutorial else "世界仍在準備，請稍候"
 	if not WorldEntities.same_world(world, player): return ""
+	if tutorial_active(): return "Complete training before departure"
 	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first" if tutorial else "請先結束目前操作"
 	_set_phase("opening")
 	gate.move_to(true)
@@ -125,6 +137,21 @@ func _apply_bay_gates() -> void:
 		_bay_gate_states.assign([false, false, false, false, false, false, false, false])
 	for index in range(BAY_GATE_COUNT):
 		_bay_gates[index].snap(_bay_gate_states[index])
+
+func tutorial_active() -> bool:
+	var tutorial := get_node_or_null("Tutorial")
+	return is_tutorial_shelter() and tutorial != null and tutorial.initialized() and tutorial.status == "active"
+
+func bay_unlocked(index: int) -> bool:
+	return not tutorial_active() or index < get_node("Tutorial").stage - 1
+
+func apply_tutorial_gates() -> void:
+	if not tutorial_active() or _bay_gates.size() != BAY_GATE_COUNT: return
+	for index in range(BAY_GATE_COUNT):
+		var open := bay_unlocked(index)
+		_bay_gate_states[index] = open
+		if open and _bay_gates[index].target < 0.5: _bay_gates[index].move_to(true)
+		elif not open: _bay_gates[index].snap(false)
 
 func register_actor(actor: Monster) -> void:
 	actor.process_mode = Node.PROCESS_MODE_DISABLED if phase == "preparing" else Node.PROCESS_MODE_INHERIT

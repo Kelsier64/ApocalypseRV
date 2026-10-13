@@ -12,6 +12,9 @@ var auto_replay := false
 
 func _ready() -> void:
 	super._ready()
+	# This geometry review deliberately retains its manual gates and departure.
+	# The production main scene owns the playable lesson and its training locks.
+	get_node("StartRun/Tutorial").restore({})
 	_setup_replay.call_deferred()
 
 func _setup_replay() -> void:

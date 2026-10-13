@@ -60,24 +60,37 @@ func _unhandled_input(event: InputEvent) -> void:
 	label.text = message
 
 func save_world(world: Node, path: String) -> bool:
+	var data := capture_world(world)
+	if data.is_empty(): return false
+	return write_checkpoint(path, data)
+
+func capture_world(world: Node, include_retry := true) -> Dictionary:
 	last_error = {}
-	if loading: return _fail("state")
+	if loading:
+		_fail("state")
+		return {}
 	var start_run := world.get_node_or_null("StartRun")
 	if start_run != null and not start_run.save_block_reason().is_empty():
-		return _fail("motion", "start_state", start_run.save_block_reason())
+		_fail("motion", "start_state", start_run.save_block_reason())
+		return {}
 	var manager: Node = world.get_node_or_null("PoiInstances")
 	var generator: Node = world.get_node_or_null("WorldGenerator")
 	var player: Node = world.get_node_or_null("Player")
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
-		return _fail("state")
-	if player.has_method("is_grabbed") and player.is_grabbed(): return _fail("motion", "player", "Player is grabbed")
+		_fail("state")
+		return {}
+	if player.has_method("is_grabbed") and player.is_grabbed():
+		_fail("motion", "player", "Player is grabbed")
+		return {}
 	for monster in get_tree().get_nodes_in_group(Groups.MONSTERS):
 		if WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
-			return _fail("motion", "monster", "Monster grab or execution is active")
+			_fail("motion", "monster", "Monster grab or execution is active")
+			return {}
 	# v8 actors are committed by navigation publication, after terrain building.
 	# Saving in that interval would persist generated_bands without its Rakers.
 	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
-		return _fail("state")
+		_fail("state")
+		return {}
 	if generator.profile.generation_version >= 10:
 		generator._spawn_giant_segments(player.global_position)
 	# An open construction terminal puts the operator in UI mode. Report the
@@ -86,18 +99,25 @@ func save_world(world: Node, path: String) -> bool:
 	for rv in get_tree().get_nodes_in_group(Groups.CHASSIS):
 		if WorldEntities.same_world(player, rv):
 			var reason: String = rv.save_block_reason()
-			if not reason.is_empty(): return _fail("motion", "vehicle", reason)
+			if not reason.is_empty():
+				_fail("motion", "vehicle", reason)
+				return {}
 			matching_vehicles.append(rv)
-	if player.has_method("is_placing_equipment") and player.is_placing_equipment(): return _fail("preview")
+	if player.has_method("is_placing_equipment") and player.is_placing_equipment():
+		_fail("preview")
+		return {}
 	if player.get_player_mode() != player.PlayerMode.NORMAL:
-		return _fail("state")
+		_fail("state")
+		return {}
 	# A carried articulated body may have advanced since the previous frame.
 	# Commit its live pose to its single inventory owner before serialization.
 	if player.has_method("_sync_held_item_state"): player._sync_held_item_state()
 	var vehicles: Array[Dictionary] = []
 	for rv in matching_vehicles:
 		var state := VehicleSnapshot.capture(rv)
-		if state.is_empty(): return _fail("state")
+		if state.is_empty():
+			_fail("state")
+			return {}
 		vehicles.append(state)
 	var actors: Array[Dictionary] = []
 	_collect_actors(world, actors)
@@ -127,14 +147,16 @@ func save_world(world: Node, path: String) -> bool:
 		var pressure := world.get_node_or_null("DeviationPressure")
 		if pressure != null: data["route_pressure"] = pressure.capture()
 	data["world_id"] = "shelter" if start_run != null else "legacy"
-	if start_run != null: data["start_state"] = start_run.capture()
+	if start_run != null: data["start_state"] = start_run.capture(include_retry)
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null:
 		data["clock"] = clock.capture()
 		data["weather"] = clock.weather.capture()
 	var field := validation_error(data)
-	if not field.is_empty(): return _fail("data", field)
-	return write_checkpoint(path, data)
+	if not field.is_empty():
+		_fail("data", field)
+		return {}
+	return data
 
 func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
 	for child in node.get_children():
@@ -185,6 +207,9 @@ func read_checkpoint(path: String) -> Dictionary:
 	return data
 
 func validation_error(data: Dictionary) -> String:
+	return _validation_error(data, true)
+
+func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not CheckpointSchema.bounded(data, 0, [CheckpointSchema.MAX_ENTRIES]): return "data.size/depth"
 	if not data.get("version") is int or data.version != VERSION: return "version"
 	if not data.has_all(["vehicles", "player", "actors", "seed", "bands", "poi"]): return "data.fields"
@@ -213,6 +238,10 @@ func validation_error(data: Dictionary) -> String:
 		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
 		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
 		if start_state.has("bay_gates") and (data.generation_version < 11 or not StartRun.valid_bay_gates(start_state.bay_gates)): return "start_state.bay_gates"
+		if start_state.has("tutorial"):
+			if data.generation_version != 11: return "start_state.tutorial.generation_version"
+			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry)
+			if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
 	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11]:
 		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
@@ -255,7 +284,28 @@ func validation_error(data: Dictionary) -> String:
 	if not outdoor_error.is_empty(): return outdoor_error
 	var poi_error := CheckpointSchema.poi_error(data.poi)
 	if not poi_error.is_empty(): return poi_error
-	if not ItemState.unique_ids(data, {}): return "item.id.duplicate"
+	# Tutorial references are not Item owners. Retry worlds have their own
+	# independently validated ownership domain and can reuse every live ID.
+	var owned_data := data.duplicate()
+	owned_data.erase("start_state")
+	if not ItemState.unique_ids(owned_data, {}): return "item.id.duplicate"
+	return ""
+
+func _tutorial_error(value: Variant, allow_entry: bool) -> String:
+	var state_error := CheckpointSchema.tutorial_error(value)
+	if not state_error.is_empty(): return state_error
+	if not value.has("entry_snapshot"): return ""
+	if not allow_entry: return "entry_snapshot.nested"
+	var entry: Variant = value.entry_snapshot
+	if not entry is Dictionary: return "entry_snapshot"
+	var entry_error := _validation_error(entry, false)
+	if not entry_error.is_empty(): return "entry_snapshot." + entry_error
+	if entry.get("world_id") != "shelter" or entry.get("generation_version") != 11: return "entry_snapshot.world_id"
+	var entry_tutorial: Variant = entry.get("start_state", {}).get("tutorial")
+	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
+	for field in ["stage", "terminal_id", "rv_id", "flashlight_id"]:
+		if entry_tutorial.get(field) != value[field]: return "entry_snapshot.tutorial." + field
+	if entry_tutorial.status != "active": return "entry_snapshot.tutorial.status"
 	return ""
 
 func prepare_world(world: Node) -> void:
@@ -342,6 +392,16 @@ func restore_world(world: Node) -> Dictionary:
 
 func load_world(old_world: Node, path: String) -> bool:
 	if loading: return false
+	var data := read_default_checkpoint() if path == PATH else read_checkpoint(path)
+	if data.is_empty():
+		message = error_message()
+		label.text = message
+		return false
+	return await load_snapshot(old_world, data)
+
+func load_snapshot(old_world: Node, data: Dictionary) -> bool:
+	if loading: return false
+	last_error = {}
 	var manager: Node = old_world.get_node("PoiInstances")
 	var player: Node = old_world.get_node("Player")
 	if manager.busy or not manager.active_id.is_empty() or player.get_player_mode() != player.PlayerMode.NORMAL:
@@ -349,11 +409,28 @@ func load_world(old_world: Node, path: String) -> bool:
 		message = error_message()
 		label.text = message
 		return false
-	var data := read_default_checkpoint() if path == PATH else read_checkpoint(path)
-	if data.is_empty():
+	var field := validation_error(data)
+	if not field.is_empty():
+		_fail("data", field)
 		message = error_message()
 		label.text = message
 		return false
+	# A caller can retain or mutate its retry dictionary while preparation awaits.
+	# The candidate must apply precisely the data that passed validation.
+	data = data.duplicate(true)
+	if data.get("generation_version") == 11 and data.get("start_state", {}).has("tutorial"):
+		var tutorial: Dictionary = data.start_state.tutorial
+		if tutorial.status == "active" and not tutorial.has("entry_snapshot"):
+			# Entry snapshots omit their retry field on disk. Preserve that exact
+			# entry immediately, before restored actors can move or acquire items.
+			var entry_source := data.duplicate(true)
+			tutorial["entry_snapshot"] = entry_source
+			field = validation_error(data)
+			if not field.is_empty():
+				_fail("data", field)
+				message = error_message()
+				label.text = message
+				return false
 	loading = true
 	message = "Preparing checkpoint..."
 	label.text = message

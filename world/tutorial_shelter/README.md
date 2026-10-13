@@ -1,4 +1,4 @@
-# Tutorial shelter assets
+# Tutorial shelter assets and stage-two controller
 
 Stage-one v11 layout: nine bays, 40 × 416 m interior (local Z −402 to 14 m). Bay lengths are 80, 40, 40, 48, 40, 40, 40, 40 and 48 m; inner partitions are at local Z −322, −282, −242, −194, −154, −114, −74 and −34 m. The exit stays fixed and RVSpawn moves to local Z −388 m. The old v7–v10 shelter is unchanged.
 
@@ -10,4 +10,6 @@ Stage-one v11 layout: nine bays, 40 × 416 m interior (local Z −402 to 14 m). 
 
 The 2026-10-13 repair measured 162,522 static mesh instance triangles before the bay extension. The extended layout remains subject to the 200,000 triangle budget; its current count has not been measured. Source/intermediate extraction tools and render evidence stay in ignored `.godot/`. Full decorative treatment and performance tuning remain stage six.
 
-The nine-bay extension adds 20 m to every bay. At the user's request, no tests, checks or gameplay validation were run for this extension; the user will inspect it personally. Previous validation evidence describes the earlier layout.
+The stage-two additions are `first_briefing.tscn` (the first diegetic poster), `tutorial_controller.gd` (first-lesson progress and retry snapshot owner), and the powered `TrainingTerminal` Item documented in the stage validation record. The controller tracks designated persistent IDs, ordered floor markers at local Z −372 and −342, and reverse parking within X ±3.5 m / Z −371…−353 m. Completing the first lesson opens gate 1; battery training and the remaining lessons are future work.
+
+The nine-bay extension adds 20 m to every bay. At the user's request, no tests, checks or gameplay validation were run for that extension; the user will inspect it personally. Previous stage-one validation evidence describes the earlier layout. The extended static-mesh triangle count has not been measured against the 200,000 budget.
