@@ -44,11 +44,23 @@ var _original_positional_filter := 2
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_fit_startup_window()
 	_original_directional_size = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/size", 4096)
 	_original_directional_filter = ProjectSettings.get_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality", 2)
 	_original_positional_filter = ProjectSettings.get_setting("rendering/lights_and_shadows/positional_shadow/soft_shadow_filter_quality", 2)
 	load_preferences()
 	register_viewport.call_deferred(get_tree().root)
+
+func _fit_startup_window() -> void:
+	if DisplayServer.get_name() == "headless" or get_tree().root.is_embedded(): return
+	if DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED: return
+	var available := DisplayServer.screen_get_usable_rect()
+	if available.size.x <= 0 or available.size.y <= 0: return
+	var requested := DisplayServer.window_get_size()
+	var fitted := UILayout.fitted_window_size(requested, available.size)
+	if fitted == requested: return
+	DisplayServer.window_set_size(fitted)
+	DisplayServer.window_set_position(available.position + (available.size - fitted) / 2)
 
 func get_setting(key: StringName) -> Variant:
 	if key == &"quality_preset": return _preset

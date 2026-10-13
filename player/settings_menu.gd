@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Native-resolution settings overlay. The simulation intentionally keeps running.
+## Settings overlay scaled independently of 3D. The simulation keeps running.
 
 const CATEGORIES: Array[StringName] = [&"display", &"input", &"audio", &"help"]
 var player
@@ -37,8 +37,9 @@ func _ready() -> void:
 	settings.save_completed.connect(_on_save_completed)
 	settings.window_preview_changed.connect(_on_window_preview_changed)
 	player.grab_started.connect(close_menu)
-	get_tree().root.size_changed.connect(_resize)
-	_resize()
+	var layout := UILayout.attach(self, _root)
+	layout.resized.connect(_resize)
+	_resize(_root.size)
 	_refresh()
 
 func _exit_tree() -> void:
@@ -418,8 +419,7 @@ func _update_status() -> void:
 		if is_instance_valid(chassis):
 			_status.text += "  ·  車速 %.0f km/h" % (chassis.linear_velocity.length() * 3.6)
 
-func _resize() -> void:
-	var dimensions := get_tree().root.get_visible_rect().size
+func _resize(dimensions: Vector2) -> void:
 	_panel.custom_minimum_size = Vector2(minf(1040, maxf(0, dimensions.x - 40)), minf(650, maxf(0, dimensions.y - 40)))
 
 func _build_modal() -> void:

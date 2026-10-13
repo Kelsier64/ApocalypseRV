@@ -49,7 +49,8 @@ func _ready() -> void:
 	shell_input.text_changed.connect(_sanitize_input)
 	_build_tui()
 	_screen.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	get_viewport().size_changed.connect(_resize_console)
+	var layout := UILayout.attach(self, _screen)
+	layout.resized.connect(_resize_console.unbind(1))
 	_resize_console()
 	select_page("overview", false)
 
@@ -285,11 +286,6 @@ func _wire_popup(selector: OptionButton) -> void:
 	selector.get_popup().window_input.connect(_input)
 
 func _resize_console() -> void:
-	# Keep readable character cells when the game scales its large base viewport.
-	var viewport_size := get_viewport().get_visible_rect().size
-	var factor := maxf(1.0, viewport_size.x / 1280.0)
-	scale = Vector2.ONE * factor
-	_screen.size = viewport_size / factor
 	for grid in _grids: grid.columns = 1 if _screen.size.x < 1050 else 2
 
 func on_open() -> void:

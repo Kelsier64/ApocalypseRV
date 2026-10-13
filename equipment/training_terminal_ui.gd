@@ -78,9 +78,8 @@ func _ready() -> void:
 	footer.offset_top = -56
 	footer.offset_bottom = -16
 	footer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	get_viewport().size_changed.connect(_resize)
+	UILayout.attach(self, _screen)
 	select_page("conditions", false)
-	_resize()
 
 func label(parent: Node, text: String, color: Color = RVTerminalTheme.INK) -> Label:
 	var result := Label.new()
@@ -115,12 +114,6 @@ func _focus_button(button: Button, focused: bool) -> void:
 		button.add_theme_color_override(color, RVTerminalTheme.BACKGROUND if focused else RVTerminalTheme.INK)
 	for state in ["normal", "hover", "pressed", "hover_pressed"]:
 		button.add_theme_stylebox_override(state, RVTerminalTheme.style(RVTerminalTheme.AMBER if focused else Color.TRANSPARENT))
-
-func _resize() -> void:
-	var viewport_size := get_viewport().get_visible_rect().size
-	var factor := maxf(1.0, viewport_size.x / 1280.0)
-	scale = Vector2.ONE * factor
-	_screen.size = viewport_size / factor
 
 func on_open() -> void:
 	_session += 1

@@ -9,14 +9,16 @@ var _elapsed := 0.0
 
 func _ready() -> void:
 	layer = 30
+	var screen := Control.new()
+	add_child(screen)
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.02, 0.03, 0.04, 0.92)
-	add_child(shade)
+	screen.add_child(shade)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]: margin.add_theme_constant_override("margin_" + side, 60)
-	add_child(margin)
+	screen.add_child(margin)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 18)
 	box.theme = IndustrialTheme.make(24)
@@ -40,6 +42,7 @@ func _ready() -> void:
 	rows = VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(rows)
+	UILayout.attach(self, screen)
 	hide()
 
 func open(player: Node3D, vehicle: Node3D) -> void:

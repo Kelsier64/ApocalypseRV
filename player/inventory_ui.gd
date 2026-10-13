@@ -41,6 +41,7 @@ func _ready() -> void:
 	for index in range(PlayerInventory.MAX_SLOTS):
 		_make_slot(index)
 	update_slots([])
+	UILayout.attach(self, control)
 
 func _make_slot(index: int) -> void:
 	var panel := Panel.new()
