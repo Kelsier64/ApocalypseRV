@@ -65,6 +65,8 @@ var wheel_item_data: Array[Dictionary] = [{}, {}, {}, {}]
 signal inventory_changed(item_name: String, new_amount: int)
 signal fuel_changed(current: float, max_value: float)
 signal power_changed(current: float, max_value: float)
+signal battery_exchanged(socket_id: String, previous_id: String, installed_id: String)
+signal cabin_lights_changed(enabled: bool, source: Node)
 
 # Scene-local demo policy; production defaults and checkpoint data stay finite.
 var unlimited_materials := false
@@ -600,6 +602,7 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	feedback("complete", socket.position)
 	player.refresh_inventory()
 	power_changed.emit(current_power, max_power)
+	battery_exchanged.emit(socket.persistent_id, old.id if old else "", next.id)
 	return true
 
 func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> bool:

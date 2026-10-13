@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-2026-10-13 教學基地階段一已由使用者驗收；階段二已實作、等待驗收。正式新局採 v11 的獨立 `tutorial_shelter` 場址，內部 40 × 416 m、Z −402～14 m、九區八內門；v7–v10 場址與資產保留。`navigation_movable` 排除活動門烘焙，`navigation_solid` 排除封閉翼樓；場址 bounds 管理整地、植被及串流。v11 地形半寬為 500 m，以涵蓋延長後的後端；v7–v10 保留 450 m。Checkpoint 外層仍為 v5；StartRun v1 保存內門狀態，新增 `TutorialController` 持有第一關進度及入口快照。`TrainingTerminal` 繼承 `Item`，使用一般物品生命週期並只在供電時開啟終端；條件頁成功顯示才記錄查看。第一關追蹤指定終端／RV／手電筒 ID、兩個有序車道標記、倒車距離及停車／手煞車／熄火狀態；完成後自動解鎖第一道門。教學快照嵌入 Checkpoint v5，但捕獲入口快照時不再套入另一份入口快照。Esc 的 Restart Stage 不依賴終端存在；Skip Tutorial 留待階段五。第 2–9 關、正式啟程與可搜尋說明書仍未實作。[階段計畫與驗證](docs/plans/starting-tutorial.md)。延長後的靜態網格總數尚未量測，20 萬三角面預算仍待確認。
+2026-10-13 教學基地階段一、二已由使用者驗收；階段三（第 2–6 關資源流程）已實作並通過列出的自動驗證，完整新局實機驗收待進行。正式新局採 v11 獨立 `tutorial_shelter` 場址，40 × 416 m、Z −402～14 m、九區八內門；v7–v10 場址與資產保留。Checkpoint 外層仍為 v5；StartRun 保存 v1 狀態，`TutorialController` 持有進度與快照，`TutorialWorkshop` 管理第 2–6 關、指定 ID、成功交易紀錄及入口快照。流程驗證指定電池交換、`rvctl` 車內燈重啟、兩台訓練設備固定／取消／拆裝、實際回收入庫，以及指定工作台製造並拾取汽油罐。新物品使用一般 Item 保存與所有權；準備期保底不計為教學交易。Esc 重試恢復當關入口狀態；舊 v1 狀態會一次遷移至新版狀態。第 7–9 關、略過、正式啟程與可搜尋說明書尚未實作，出口保持鎖定。[階段計畫與驗證](docs/plans/starting-tutorial.md)。延長後靜態網格總數尚未量測，20 萬三角面預算待確認。
 
 文件核對：2026-10-09 正式 v10 森林巨人整合與 v5 Item 保存；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 

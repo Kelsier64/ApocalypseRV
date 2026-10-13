@@ -85,7 +85,7 @@ func _input(event: InputEvent) -> void:
 	if player.in_ui_mode:
 		return
 	if player.is_placing_equipment():
-		player.cancel_equipment_placement()
+		player.cancel_equipment_placement(true)
 		_handle_event()
 	elif open_menu():
 		_handle_event()

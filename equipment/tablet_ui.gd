@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 signal close_requested
+signal section_presented(section: String)
 enum Mode { TUI, SHELL }
 const PAGES := ["overview", "energy", "equipment", "crafting", "structure"]
 const PAGE_NAMES := ["Overview", "Energy", "Equipment", "Crafting", "Structure"]
@@ -35,6 +36,7 @@ var _history_index := 0
 var _history_draft := ""
 var _message := ""
 var _last_construction_message := ""
+var _presentation_revision := 0
 var _device_list: VBoxContainer
 var _construction_row: HBoxContainer
 @onready var _screen: Control = $Screen
@@ -299,6 +301,7 @@ func is_management_active() -> bool:
 	return visible and mode == Mode.TUI
 
 func enter_shell() -> void:
+	_presentation_revision += 1
 	dismiss_popups()
 	if mode == Mode.TUI and is_instance_valid(connected_rv):
 		var construction := _construction()
@@ -319,6 +322,7 @@ func enter_tui() -> void:
 
 func select_page(id: String, focus: bool = true) -> void:
 	if not _pages.has(id): return
+	_presentation_revision += 1
 	dismiss_popups()
 	current_page = id
 	for page in _pages:
@@ -330,6 +334,17 @@ func select_page(id: String, focus: bool = true) -> void:
 		var target: String = {"overview": "engine", "energy": "charging_enabled",
 			"equipment": "cabin", "crafting": "recipe:" + selected_recipe, "structure": "slot:" + selected_slot}[id]
 		if not _focus_id(target): _focus_first(_focus_order())
+	if id in ["overview", "energy", "equipment"] and _owns_session():
+		_report_section.call_deferred(id, _presentation_revision, get_parent().current_user)
+
+func _report_section(id: String, revision: int, user: Node3D) -> void:
+	# Page selection must survive a layout/render frame with the same owner.
+	await get_tree().process_frame
+	if revision != _presentation_revision or current_page != id or not is_management_active(): return
+	if not is_instance_valid(user) or get_parent().current_user != user or not _owns_session(): return
+	var page: Control = _pages[id]
+	if not page.is_visible_in_tree() or page.size.x <= 0.0 or page.size.y <= 0.0: return
+	section_presented.emit(id)
 
 func select_slot(id: String, focus: bool = true) -> void:
 	if not slot_controls.has(id): return
@@ -872,7 +887,10 @@ func _toggle_engine() -> void:
 func _set_light(kind: String, value: bool) -> void:
 	if not _can_write(): return
 	if kind == "headlights": connected_rv.headlights_requested = value
-	elif bool(connected_rv.interior_requested[kind]) != value: connected_rv.toggle_interior_light(kind)
+	elif bool(connected_rv.interior_requested[kind]) != value:
+		connected_rv.toggle_interior_light(kind)
+		if kind == "cabin" and bool(connected_rv.interior_requested.cabin) == value:
+			connected_rv.cabin_lights_changed.emit(value, get_parent())
 	_refresh()
 
 func _craft() -> void:

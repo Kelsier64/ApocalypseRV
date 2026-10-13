@@ -36,6 +36,12 @@ func physics_seconds(seconds: float) -> void:
 func frames(count := 3) -> void:
 	for frame in count: await process_frame
 
+func world_scene() -> String:
+	return "res://world/main_world.tscn"
+
+func check_entrypoint() -> void:
+	pass
+
 func stop_and_park(expect_advancement := false) -> bool:
 	vehicle.control_override = {"brake": 1.0}
 	var stopped := await WAIT.until(self, func() -> bool:
@@ -82,7 +88,7 @@ func drive_to_local_z(target: float, gear: int, speed_limit: float) -> bool:
 	return false
 
 func run() -> void:
-	world = load("res://world/main_world.tscn").instantiate()
+	world = load(world_scene()).instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.profile = generator.profile.duplicate()
 	generator.profile.generation_version = 11
@@ -100,6 +106,7 @@ func run() -> void:
 	if not await WAIT.until(self, func() -> bool: return tutorial.initialized() and not tutorial.entry_snapshot.is_empty(), 60000, true):
 		check(false, "Lesson initializes with a usable stage-entry snapshot")
 		finish(); return
+	check_entrypoint()
 	var player: Node3D = world.get_node("Player")
 	var clock: WorldClock = world.get_node("WorldClock")
 	var building: Node3D = run_owner.shelter

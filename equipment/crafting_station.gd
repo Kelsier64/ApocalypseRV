@@ -1,5 +1,6 @@
 extends Item
 class_name CraftingStation
+signal output_committed(rv_id: String, item_id: String, recipe_id: String)
 
 @onready var spawn_marker: Marker3D = $SpawnMarker
 @export var power_cost_per_spawn: float = 0.6
@@ -90,60 +91,70 @@ func step_work(delta: float) -> void:
 		# Show the finished height before clearing/changing jobs, even when the
 		# final work update consumes a large delta. The rig then retracts slowly.
 		_sync_print_visual()
-		if spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false)), int(job.get("print_orientation", 0)), int(job.get("print_offset", 0))): jobs.pop_front()
+		var output_rv := get_connected_rv()
+		var item := _spawn_item(recipe.scene_path, {}, 0.0, bool(job.get("crouching", false)), int(job.get("print_orientation", 0)), int(job.get("print_offset", 0)))
+		if item != null:
+			# Remove the committed job before notifying observers, so a synchronous
+			# completion retry cannot print the same job twice.
+			jobs.pop_front()
+			output_committed.emit(output_rv.persistent_id, item.persistent_id, recipe.recipe_id)
 	_sync_print_visual()
 
 func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false, orientation: int = -1, offset_index: int = 0) -> bool:
+	# Legacy/direct service calls create physical items but are not queued jobs.
+	return _spawn_item(scene_path, costs, power_cost, crouching, orientation, offset_index) != null
+
+func _spawn_item(scene_path: String, costs: Dictionary, power_cost: float, crouching: bool, orientation: int, offset_index: int) -> Item:
 	if _committing or not can_operate():
 		last_error = "Workstation unavailable"
-		return false
+		return null
 	var rv := get_connected_rv()
 	var fee := power_cost_per_spawn if power_cost < 0.0 else power_cost
 	if not rv.has_materials(costs) or not rv.has_usable_power(fee):
 		last_error = "Insufficient materials or battery charge"
-		return false
+		return null
 	if not ResourceLoader.exists(scene_path):
 		last_error = "Output unavailable"
-		return false
+		return null
 	var scene := load(scene_path) as PackedScene
 	if scene == null:
 		last_error = "Output unavailable"
-		return false
+		return null
 	var instance := scene.instantiate()
 	var item := instance as Item
 	if item == null:
 		instance.free()
 		last_error = "Invalid output"
-		return false
+		return null
 	if item is PrintedPlayerBody: item.set_crouching(crouching)
 	if orientation < 0 and not item is PrintedPlayerBody:
 		var selected := CraftingOutputPlacement.select_pose(self, item)
 		if selected.is_empty():
 			last_error = "Output blocked"
 			item.free()
-			return false
+			return null
 		orientation = selected.print_orientation
 		offset_index = selected.print_offset
 	var output := CraftingOutputPlacement.output_pose(item, spawn_marker.global_transform, maxi(orientation, 0), offset_index)
 	if not CraftingOutputPlacement.is_clear(self, item, output, false) or (item is PrintedPlayerBody and not CraftingOutputPlacement.body_can_stand(self, output, crouching)):
 		last_error = "Output blocked: clear print bed and overhead space" if item is PrintedPlayerBody else "Output blocked"
 		item.free()
-		return false
+		return null
 	var container := WorldEntities.get_container(self)
 	if not is_instance_valid(container) or container.is_queued_for_deletion():
 		item.free()
 		last_error = "Output unavailable"
-		return false
+		return null
 	_committing = true
 	if not rv.consume_power(fee):
 		item.free()
 		_committing = false
-		return false
+		return null
 	if not rv.deduct_materials(costs):
 		rv.add_power(fee)
 		item.free()
 		_committing = false
-		return false
+		return null
 	container.add_child(item)
 	if "battery" in item:
 		item.battery.charge = 0.0
@@ -152,7 +163,7 @@ func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = 
 	item.linear_velocity = ClimbMath.point_velocity(rv, output.origin)
 	_committing = false
 	last_error = "Output ready"
-	return true
+	return item
 
 func cancel_jobs() -> void:
 	var cancelled := jobs.duplicate()

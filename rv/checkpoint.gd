@@ -83,7 +83,7 @@ func capture_world(world: Node, include_retry := true) -> Dictionary:
 		_fail("motion", "player", "Player is grabbed")
 		return {}
 	for monster in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
+		if world.is_ancestor_of(monster) and WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
 			_fail("motion", "monster", "Monster grab or execution is active")
 			return {}
 	# v8 actors are committed by navigation publication, after terrain building.
@@ -97,7 +97,9 @@ func capture_world(world: Node, include_retry := true) -> Dictionary:
 	# vehicle's concrete blocker before the generic player interaction gate.
 	var matching_vehicles: Array[Node] = []
 	for rv in get_tree().get_nodes_in_group(Groups.CHASSIS):
-		if WorldEntities.same_world(player, rv):
+		# A successfully replaced world remains queued until the end of the frame.
+		# Its RVs share this World3D but do not belong to the requested snapshot.
+		if world.is_ancestor_of(rv) and WorldEntities.same_world(player, rv):
 			var reason: String = rv.save_block_reason()
 			if not reason.is_empty():
 				_fail("motion", "vehicle", reason)
@@ -303,8 +305,9 @@ func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	if entry.get("world_id") != "shelter" or entry.get("generation_version") != 11: return "entry_snapshot.world_id"
 	var entry_tutorial: Variant = entry.get("start_state", {}).get("tutorial")
 	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
-	for field in ["stage", "terminal_id", "rv_id", "flashlight_id"]:
+	for field in ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]:
 		if entry_tutorial.get(field) != value[field]: return "entry_snapshot.tutorial." + field
+	if value.version == 2 and entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
 	if entry_tutorial.status != "active": return "entry_snapshot.tutorial.status"
 	return ""
 

@@ -63,10 +63,13 @@ static func tutorial_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
 	var fields := ["version", "stage", "status", "terminal_id", "rv_id", "flashlight_id", "flags"]
 	if not value.has_all(fields): return "fields"
+	if not value.version is int or value.version not in [1, 2]: return "version"
+	if value.version == 2: fields.append("workshop")
+	if not value.has_all(fields): return "fields"
 	for key in value:
 		if key not in fields and key != "entry_snapshot": return "fields"
-	if not value.version is int or value.version != 1: return "version"
-	if not value.stage is int or value.stage not in [1, 2]: return "stage"
+	var last_stage := 2 if value.version == 1 else 7
+	if not value.stage is int or value.stage < 1 or value.stage > last_stage: return "stage"
 	if not value.status is String or value.status not in ["active", "completed", "skipped"]: return "status"
 	for key in ["terminal_id", "rv_id", "flashlight_id"]:
 		if not value[key] is String or value[key].is_empty(): return key
@@ -76,6 +79,41 @@ static func tutorial_error(value: Variant) -> String:
 	for key in ["viewed", "flashlight", "reversed", "parked"]:
 		if not flags[key] is bool: return "flags." + key
 	if not flags.marker_index is int or flags.marker_index < 0 or flags.marker_index > 2: return "flags.marker_index"
+	if value.version == 2:
+		var workshop_state_error := workshop_error(value.workshop)
+		if not workshop_state_error.is_empty(): return "workshop." + workshop_state_error
+		for identity in value.workshop.output_ids:
+			if identity in [value.terminal_id, value.rv_id, value.flashlight_id]: return "workshop.output_ids"
+	return ""
+
+static func workshop_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	var fields := ["version", "targets", "flags", "placed_ids", "unmounted_ids", "recycled_ids", "output_ids", "gasoline_id"]
+	if value.size() != fields.size() or not value.has_all(fields): return "fields"
+	if not value.version is int or value.version != 1: return "version"
+	var target_fields := ["battery", "original_battery", "socket", "tablet", "scrapper", "workbench", "scrap_a", "scrap_b", "barrel"]
+	var targets: Variant = value.targets
+	if not targets is Dictionary or targets.size() != target_fields.size() or not targets.has_all(target_fields): return "targets"
+	for key in target_fields:
+		if not targets[key] is String or targets[key].is_empty(): return "targets." + key
+	var flag_fields := ["battery", "overview", "energy", "equipment", "lights_off", "lights_on", "cancelled", "scrapper_placed", "workbench_placed", "remounted"]
+	var flags: Variant = value.flags
+	if not flags is Dictionary or flags.size() != flag_fields.size() or not flags.has_all(flag_fields): return "flags"
+	for key in flag_fields:
+		if not flags[key] is bool: return "flags." + key
+	for key in ["placed_ids", "unmounted_ids", "recycled_ids", "output_ids"]:
+		var identities: Variant = value[key]
+		var maximum := 64 if key == "output_ids" else (3 if key == "recycled_ids" else 2)
+		if not identities is Array or identities.size() > maximum: return key
+		var allowed: Array = [targets.scrap_a, targets.scrap_b, targets.barrel] if key == "recycled_ids" else [targets.scrapper, targets.workbench]
+		var seen: Dictionary = {}
+		for identity in identities:
+			if not identity is String or identity.is_empty() or seen.has(identity): return key
+			if key == "output_ids":
+				if identity in targets.values(): return key
+			elif identity not in allowed: return key
+			seen[identity] = true
+	if not value.gasoline_id is String or (not value.gasoline_id.is_empty() and value.gasoline_id not in value.output_ids): return "gasoline_id"
 	return ""
 
 static func poi_error(value: Variant, path := "poi") -> String:

@@ -1,6 +1,6 @@
 # 自動測試
 
-教學基地 v11：`test_tutorial_shelter_terrain`（quick）覆蓋完整場址整地、植被及串流邊界；`test_tutorial_shelter`（integration）覆蓋九區尺寸、碰撞、八門、導航及靜態三角面預算；`test_tutorial_checkpoint`（slow）覆蓋內門保存／區塊重綁、移動中拒存及完整世界存讀檔。原出生區測試明確固定 v10；[實機入口與限制](../docs/validation/2026-10-11-tutorial-stage1.md)。
+教學基地 v11：`test_tutorial_shelter_terrain`（quick）覆蓋完整場址整地、植被及串流邊界；`test_tutorial_shelter`（integration）覆蓋九區尺寸、碰撞、八門、導航及靜態三角面預算；`test_tutorial_checkpoint`（slow）覆蓋內門保存／區塊重綁、移動中拒存及完整世界存讀檔。原出生區測試明確固定 v10；[實機入口與限制](../docs/validation/2026-10-11-tutorial-stage1.md)。F6 測試場預設直接開始正式第一課；只有明確傳入 review 參數才啟用攝影／回放及其狀態列。
 
 從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。Godot 版本由 [.godot-version](../.godot-version) 固定。
 

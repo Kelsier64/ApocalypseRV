@@ -151,12 +151,12 @@ func _terminal_state(data: Dictionary, identity: String) -> Dictionary:
 	return {}
 
 func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
-	for kind in ["version", "stage", "status", "empty_id", "id_type", "flag_type", "flag_missing", "marker_range", "unknown_field", "entry_type", "nested", "entry_stage", "entry_identity", "duplicate"]:
+	for kind in ["version", "stage", "status", "empty_id", "id_type", "flag_type", "flag_missing", "marker_range", "unknown_field", "entry_type", "nested", "entry_stage", "entry_identity", "entry_version", "entry_workshop_target", "duplicate"]:
 		var bad := saved.duplicate(true)
 		var tutorial: Dictionary = bad.start_state.tutorial
 		match kind:
-			"version": tutorial.version = 2
-			"stage": tutorial.stage = 3
+			"version": tutorial.version = 3
+			"stage": tutorial.stage = 8
 			"status": tutorial.status = "unknown"
 			"empty_id": tutorial.rv_id = ""
 			"id_type": tutorial.terminal_id = 12
@@ -168,12 +168,26 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 			"nested": tutorial.entry_snapshot.start_state.tutorial["entry_snapshot"] = tutorial.entry_snapshot.duplicate(true)
 			"entry_stage": tutorial.entry_snapshot.start_state.tutorial.stage = 2
 			"entry_identity": tutorial.entry_snapshot.start_state.tutorial.terminal_id = "other-terminal"
+			"entry_version":
+				var old_entry: Dictionary = tutorial.entry_snapshot.start_state.tutorial
+				old_entry.version = 1
+				old_entry.erase("workshop")
+			"entry_workshop_target": tutorial.entry_snapshot.start_state.tutorial.workshop.targets.battery = "other-battery"
 			"duplicate":
 				var items: Array = tutorial.entry_snapshot.actors.filter(func(actor): return actor.kind == "item")
 				check(not items.is_empty(), "Retry fixture contains real Item actors")
 				if not items.is_empty(): tutorial.entry_snapshot.actors.append(items[0].duplicate(true))
 		check(not checkpoint.validation_error(bad).is_empty(), "Reject malformed tutorial or entry snapshot: " + kind)
 	var legacy := saved.duplicate(true)
+	legacy.start_state.tutorial.version = 1
+	legacy.start_state.tutorial.erase("workshop")
+	legacy.start_state.tutorial.entry_snapshot.start_state.tutorial.version = 1
+	legacy.start_state.tutorial.entry_snapshot.start_state.tutorial.erase("workshop")
+	check(checkpoint.validation_error(legacy).is_empty(), "Original tutorial v1 retains its independent retry snapshot")
+	var legacy_stage_two := legacy.duplicate(true)
+	legacy_stage_two.start_state.tutorial.stage = 2
+	legacy_stage_two.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 2
+	check(checkpoint.validation_error(legacy_stage_two).is_empty(), "Original tutorial v1 accepts its historical stage-two entry")
 	legacy.start_state.erase("tutorial")
 	check(checkpoint.validation_error(legacy).is_empty(), "Existing v11 stage-one save remains valid without tutorial progress")
 	for status in ["active", "completed", "skipped"]:
@@ -183,7 +197,7 @@ func _test_schema(checkpoint: Node, saved: Dictionary) -> void:
 	var next_stage := saved.duplicate(true)
 	next_stage.start_state.tutorial.stage = 2
 	next_stage.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 2
-	check(checkpoint.validation_error(next_stage).is_empty(), "Stage-two placeholder can persist its own explicit entry snapshot")
+	check(checkpoint.validation_error(next_stage).is_empty(), "Stage-two battery training can persist its own explicit entry snapshot")
 	for version in [7, 8, 9, 10]:
 		var old := legacy.duplicate(true)
 		old.generation_version = version

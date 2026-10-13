@@ -20,11 +20,20 @@ var _park_seconds := 0.0
 var _park_min := Vector2.ZERO
 var _park_max := Vector2.ZERO
 var _snapshot_seconds := 0.0
+var workshop: TutorialWorkshop
+
+func _ensure_workshop() -> void:
+	if workshop != null: return
+	workshop = TutorialWorkshop.new()
+	workshop.name = "Workshop"
+	workshop.controller = self
+	add_child(workshop)
 
 func initialized() -> bool:
 	return not terminal_id.is_empty() and not legacy_disabled
 
 func _ready() -> void:
+	_ensure_workshop()
 	_world().ready_for_play.connect(_on_world_ready)
 
 func _on_world_ready() -> void:
@@ -55,12 +64,14 @@ func _checkpoint() -> Node:
 
 func capture(include_retry := true) -> Dictionary:
 	if not initialized(): return {}
-	var data := {"version": 1, "stage": stage, "status": status, "terminal_id": terminal_id,
+	var data := {"version": 2 if workshop != null and workshop.prepared() else 1, "stage": stage, "status": status, "terminal_id": terminal_id,
 		"rv_id": rv_id, "flashlight_id": flashlight_id, "flags": flags.duplicate(true)}
+	if data.version == 2: data["workshop"] = workshop.capture()
 	if include_retry and not entry_snapshot.is_empty(): data["entry_snapshot"] = entry_snapshot.duplicate(true)
 	return data
 
 func restore(data: Dictionary) -> void:
+	_ensure_workshop()
 	legacy_disabled = data.is_empty()
 	if legacy_disabled: return
 	stage = data.stage
@@ -70,6 +81,7 @@ func restore(data: Dictionary) -> void:
 	flashlight_id = data.flashlight_id
 	flags = data.flags.duplicate(true)
 	entry_snapshot = data.get("entry_snapshot", {}).duplicate(true)
+	workshop.restore(data.get("workshop", {}))
 	_previous = Vector3.INF
 	_reverse_distance = 4.0 if flags.reversed else 0.0
 	_park_seconds = 0.0
@@ -77,9 +89,7 @@ func restore(data: Dictionary) -> void:
 
 func terminal_page() -> Dictionary:
 	if not initialized(): return {"available": false, "stage": 1, "title": "Preparing training records"}
-	if stage == 2:
-		return {"available": false, "stage": 2, "title": "Driving complete", "conditions": [],
-			"steps": ["The first gate is open. Battery training is being commissioned."], "reference": []}
+	if stage >= 2 and workshop != null and workshop.prepared(): return workshop.page()
 	return {"available": true, "stage": 1, "title": "Basic operation and driving",
 		"conditions": [
 			{"id": "viewed", "label": "Inspect this terminal's Conditions page", "complete": flags.viewed},
@@ -87,7 +97,7 @@ func terminal_page() -> Dictionary:
 			{"id": "markers", "label": "Drive through lane markers 01 and 02 in order (%d/2)" % flags.marker_index, "complete": flags.marker_index == 2},
 			{"id": "reversed", "label": "Reverse into the marked parking bay", "complete": flags.reversed},
 			{"id": "parked", "label": "Park fully inside, stop, apply handbrake and switch off the engine", "complete": flags.parked}],
-		"steps": ["Collect the flashlight from the supply area on the right side of the bay.", "Board the RV using the side ladder; inspect the terminal inside the front cabin.",
+		"steps": ["Collect the flashlight from the first bay's supply area.", "Board the RV using the side ladder; inspect the terminal inside the front cabin.",
 			"Take the driver's seat. Start the engine, release the handbrake and drive along the central lane.",
 			"Cross both numbered floor markers. Stop beyond 02, then select reverse.",
 			"Reverse at least four metres into the outlined parking bay. Stop completely, apply the handbrake and shut down the engine.",
@@ -108,15 +118,16 @@ func conditions_viewed(identity: String, player: Node3D) -> void:
 
 func designated_terminal() -> Item:
 	for item in get_tree().get_nodes_in_group(Groups.ITEMS):
-		if item is Item and item.persistent_id == terminal_id and WorldEntities.same_world(_world(), item): return item
+		if item is Item and item.persistent_id == terminal_id and _world().is_ancestor_of(item) and WorldEntities.same_world(_world(), item): return item
 	return null
 
 func designated_rv() -> Chassis:
 	for vehicle in get_tree().get_nodes_in_group(Groups.CHASSIS):
-		if vehicle is Chassis and vehicle.persistent_id == rv_id and WorldEntities.same_world(_world(), vehicle): return vehicle
+		if vehicle is Chassis and vehicle.persistent_id == rv_id and _world().is_ancestor_of(vehicle) and WorldEntities.same_world(_world(), vehicle): return vehicle
 	return null
 
 func _item_acquired(identity: String, scene: String) -> void:
+	if workshop != null: workshop.acquired(identity, scene)
 	if stage == 1 and initialized() and identity == flashlight_id and scene == FLASHLIGHT_SCENE:
 		flags.flashlight = true
 		progress_changed.emit()
@@ -137,6 +148,7 @@ func _initialize() -> void:
 	terminal_id = terminal.persistent_id
 	rv_id = vehicle.persistent_id
 	flashlight_id = flashlight.persistent_id
+	workshop.prepare(vehicle)
 	_connect_player()
 	_run().apply_tutorial_gates()
 	progress_changed.emit()
@@ -150,6 +162,8 @@ func _physics_process(delta: float) -> void:
 	_connect_player()
 	var vehicle := designated_rv()
 	if vehicle == null or _run().phase != "preparing": return
+	if not workshop.prepared(): workshop.prepare(vehicle)
+	workshop.bind_events(vehicle)
 	# Preparation reserves are direct state floors, never successful transactions.
 	if vehicle.current_fuel < 10.0: vehicle.current_fuel = 10.0
 	var socket := vehicle.get_battery_socket()
@@ -162,6 +176,14 @@ func _physics_process(delta: float) -> void:
 			_capture_entry()
 		return # No actions count before a usable stage entry exists.
 	if stage == 1: _sample_driving(vehicle, delta)
+	elif stage <= 6 and workshop.complete(): _advance_stage()
+
+func _advance_stage() -> void:
+	stage += 1
+	entry_snapshot.clear()
+	_snapshot_seconds = 0.0
+	_run().apply_tutorial_gates()
+	progress_changed.emit()
 
 func _sample_driving(vehicle: Chassis, delta: float) -> void:
 	var player := _world().get_node("Player")
@@ -204,11 +226,7 @@ func _sample_driving(vehicle: Chassis, delta: float) -> void:
 	_park_seconds = _park_seconds + delta if parked else 0.0
 	flags.parked = _park_seconds >= 1.0
 	if flags.viewed and flags.flashlight and flags.parked:
-		stage = 2
-		entry_snapshot.clear()
-		_snapshot_seconds = 0.0
-		_run().apply_tutorial_gates()
-		progress_changed.emit()
+		_advance_stage()
 
 func _fully_parked(vehicle: Chassis) -> bool:
 	var frame: Transform3D = _run().shelter.global_transform.affine_inverse()
