@@ -32,6 +32,15 @@ Godot: `C:\Users\evan4\AppData\Local\Programs\Godot\Godot.exe`. If the sandbox c
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
+## Token Efficiency and Validation Scope
+
+- Keep exploration, tool output, delegation, and reports focused on the current task. Read relevant files and ranges, reuse established context and results, and avoid repeated searches or checks without new evidence.
+- Do not write or run unnecessary tests. Choose the smallest meaningful checks for the changed behavior and its risks; expand only for related failures, unresolved risks, or explicit requirements. Do not run the full suite by default or repeat passing checks when nothing relevant changed.
+- For documentation-only changes, check wording, consistency, and any changed links; do not launch Godot or run gameplay tests.
+- For visual and art changes, assess the appropriate verification method yourself: inspect the asset or render directly, use computer-use when in-game interaction or context matters, or ask the user to inspect when their visual judgment or unavailable access is needed. Do not use computer-use automatically for every visual change.
+- Apply the game-testing workflow below only when relevant to the changed behavior. Run climbing, turning, and roof-destruction scenarios only for changes affecting those systems.
+- Report briefly what was checked and any material uncertainty. If user inspection is needed, state exactly what they should inspect; never claim it has already been verified.
+
 ## In-Game Text
 
 Use English for all in-game text. Keep it concise and necessary.
