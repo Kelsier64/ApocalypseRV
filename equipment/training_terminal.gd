@@ -38,7 +38,7 @@ func unlock_manual(result: String) -> void:
 	if result not in ["completed", "skipped"]: return
 	manual_unlocked = true
 	completion = result
-	if is_instance_valid(ui_instance): ui_instance.refresh()
+	if is_instance_valid(ui_instance): ui_instance.select_page("manual")
 
 func get_interaction_prompt(player: Node3D) -> String:
 	if is_instance_valid(processing_owner): return item_name + " | Recycling"

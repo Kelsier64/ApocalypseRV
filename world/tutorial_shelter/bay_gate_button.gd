@@ -22,7 +22,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not is_instance_valid(_gate): return
 	var phase := "opening" if not _gate.stable() else ("started" if _gate.is_open() else "preparing")
-	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_active() and _gate.stable():
+	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_enabled() and _gate.stable():
 		phase = "preparing" if _tutorial_run.bay_unlocked(_bay_index) else "sealed"
 	if phase == _shown_phase: return
 	_shown_phase = phase
@@ -30,13 +30,13 @@ func _process(_delta: float) -> void:
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	if not is_instance_valid(_gate): return ""
-	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_active():
+	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_enabled():
 		return "Bay gate | Unlocked" if _tutorial_run.bay_unlocked(_bay_index) else "Bay gate | Training lock"
 	return "Bay gate | E: " + ("Close" if _gate.target > 0.5 else "Open")
 
 func interact(_player: Node3D) -> String:
 	if not is_instance_valid(_gate): return "Gate unavailable"
-	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_active():
+	if is_instance_valid(_tutorial_run) and _tutorial_run.tutorial_enabled():
 		if not _tutorial_run.bay_unlocked(_bay_index): return "Training lock | Consult the RV training terminal"
 		return "Bay gate remains open"
 	var opening := _gate.target < 0.5

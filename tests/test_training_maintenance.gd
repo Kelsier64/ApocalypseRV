@@ -80,7 +80,7 @@ func continue_training() -> bool:
 	check(service.flags.engine and service.flags.wall and service.flags.wheel and not service.complete() and tutorial.stage == 7, "Three recorded repairs cannot advance while the current original engine is unusable")
 	vehicle.get_engine().health = vehicle.get_engine().definition().max_health
 	if not await stage_ready(8): return false
-	check(not tutorial.terminal_page().available and run_owner.phase == "preparing", "Successful maintenance captures the pending stage-eight entry and retains departure lock")
+	check(tutorial.terminal_page().available and run_owner.phase == "preparing", "Successful maintenance captures the stage-eight fuel entry and retains departure lock")
 	var gate: ShelterGarageGate = run_owner.shelter.get_node("Gates").get_child(6)
 	check(gate.is_open() and run_owner.bay_unlocked(6), "Maintenance success opens actual gate seven")
 	return true

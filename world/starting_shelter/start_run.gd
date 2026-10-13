@@ -115,11 +115,14 @@ func begin_run(player: Node3D) -> String:
 	if phase != "preparing": return "Journey already started" if tutorial else "旅程已開始"
 	var world := get_parent() as Node3D
 	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing; please wait" if tutorial else "世界仍在準備，請稍候"
-	if not WorldEntities.same_world(world, player): return ""
-	if tutorial_active(): return "Complete training before departure"
+	if not world.is_ancestor_of(player) or not WorldEntities.same_world(world, player): return ""
+	if tutorial_active():
+		var reason: String = get_node("Tutorial").departure_block_reason()
+		if not reason.is_empty(): return reason
 	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first" if tutorial else "請先結束目前操作"
 	_set_phase("opening")
 	gate.move_to(true)
+	if tutorial_active(): get_node("Tutorial").departure_started()
 	return "Journey started | Exit opening; it seals permanently after departure" if tutorial else "旅程開始｜車庫大門開啟中；離開後將永久封閉"
 
 func _remember_bay_gates() -> void:
@@ -139,14 +142,17 @@ func _apply_bay_gates() -> void:
 		_bay_gates[index].snap(_bay_gate_states[index])
 
 func tutorial_active() -> bool:
+	return tutorial_enabled() and get_node("Tutorial").status == "active"
+
+func tutorial_enabled() -> bool:
 	var tutorial := get_node_or_null("Tutorial")
-	return is_tutorial_shelter() and tutorial != null and tutorial.initialized() and tutorial.status == "active"
+	return is_tutorial_shelter() and tutorial != null and tutorial.initialized()
 
 func bay_unlocked(index: int) -> bool:
 	return not tutorial_active() or index < get_node("Tutorial").stage - 1
 
 func apply_tutorial_gates() -> void:
-	if not tutorial_active() or _bay_gates.size() != BAY_GATE_COUNT: return
+	if not tutorial_enabled() or _bay_gates.size() != BAY_GATE_COUNT: return
 	for index in range(BAY_GATE_COUNT):
 		var open := bay_unlocked(index)
 		_bay_gate_states[index] = open
@@ -158,7 +164,7 @@ func register_actor(actor: Monster) -> void:
 
 func apply_actor_state() -> void:
 	for actor in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if actor is Monster and WorldEntities.same_world(get_parent(), actor): register_actor(actor)
+		if actor is Monster and get_parent().is_ancestor_of(actor) and WorldEntities.same_world(get_parent(), actor): register_actor(actor)
 	_apply_simulation()
 
 func _apply_simulation() -> void:
@@ -168,7 +174,7 @@ func _apply_simulation() -> void:
 		clock.weather_running = phase != "preparing"
 	if is_inside_tree():
 		for actor in get_tree().get_nodes_in_group(Groups.MONSTERS):
-			if actor is Monster and WorldEntities.same_world(get_parent(), actor): register_actor(actor)
+			if actor is Monster and get_parent().is_ancestor_of(actor) and WorldEntities.same_world(get_parent(), actor): register_actor(actor)
 
 func _apply_gate() -> void:
 	if not is_instance_valid(gate): return
@@ -189,7 +195,12 @@ func _on_opened() -> void:
 
 func _on_closed() -> void:
 	if phase != "closing": return
+	if tutorial_enabled() and not departure_clear():
+		_set_phase("opening")
+		gate.move_to(true)
+		return
 	_set_phase("sealed")
+	if tutorial_active(): get_node("Tutorial").departure_completed()
 
 func _on_obstructed() -> void:
 	if phase == "closing":
@@ -211,9 +222,12 @@ func departure_clear() -> bool:
 	var world := get_parent() as Node3D
 	var player: Node3D = world.get_node_or_null("Player")
 	if player == null or gate.to_local(player.global_position).z < 8.0: return false
+	if tutorial_enabled():
+		var designated: Chassis = get_node("Tutorial").designated_rv()
+		return designated != null and vehicle_clear(designated)
 	var vehicle_seen := false
 	for vehicle in get_tree().get_nodes_in_group(Groups.CHASSIS):
-		if not vehicle is Chassis or not WorldEntities.same_world(world, vehicle): continue
+		if not vehicle is Chassis or not world.is_ancestor_of(vehicle) or not WorldEntities.same_world(world, vehicle): continue
 		vehicle_seen = true
 		if not vehicle_clear(vehicle): return false
 	return vehicle_seen

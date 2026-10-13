@@ -2,6 +2,7 @@
   "version": 1,
   "groups": {
     "quick": [
+      "test_training_manual",
       "test_training_service_transactions",
       "test_training_service_schema",
       "test_material_commit_events",
@@ -150,6 +151,8 @@
       "test_world_weather"
     ],
     "slow": [
+      "test_training_legacy_completion",
+      "test_training_completion",
       "test_training_migration",
       "test_training_workshop",
       "test_training_checkpoint",

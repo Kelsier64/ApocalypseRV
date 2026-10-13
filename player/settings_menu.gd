@@ -14,6 +14,7 @@ var _retry: Button
 var _reset: Button
 var _return: Button
 var _restart_stage: Button
+var _skip_tutorial: Button
 var _preset: OptionButton
 var _preset_current: Label
 var _resolution_label: Label
@@ -175,6 +176,9 @@ func _build() -> void:
 	_restart_stage = _button("Restart Stage", _show_restart_stage)
 	_restart_stage.visible = false
 	footer.add_child(_restart_stage)
+	_skip_tutorial = _button("Skip Tutorial", _show_skip_tutorial)
+	_skip_tutorial.visible = false
+	footer.add_child(_skip_tutorial)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
@@ -411,8 +415,10 @@ func _on_save_completed(error: Error) -> void:
 
 func _update_status() -> void:
 	var tutorial := _tutorial()
-	_restart_stage.visible = tutorial != null and tutorial.initialized()
-	_restart_stage.disabled = tutorial == null or not tutorial.can_restart()
+	_restart_stage.visible = tutorial != null and tutorial.can_restart()
+	_restart_stage.disabled = not _restart_stage.visible
+	_skip_tutorial.visible = tutorial != null and tutorial.has_method("can_skip") and tutorial.can_skip()
+	_skip_tutorial.disabled = not _skip_tutorial.visible
 	_status.text = "遊戲持續運行  ·  HP %.0f / %.0f" % [player.current_player_health, player.max_player_health]
 	if is_instance_valid(player.seated_in):
 		var chassis = player.seated_in.get_connected_rv()
@@ -480,6 +486,15 @@ func _show_restart_stage() -> void:
 	_modal_cancel.text = "Cancel"
 	_show_modal()
 
+func _show_skip_tutorial() -> void:
+	var tutorial := _tutorial()
+	if tutorial == null or not tutorial.has_method("can_skip") or not tutorial.can_skip(): return
+	_modal_kind = "skip_tutorial"
+	_modal_text.text = "Skip the remaining training?\nThe shelter route will open and the field manual will unlock.\nYour training record will be marked Skipped."
+	_modal_accept.text = "Skip Tutorial"
+	_modal_cancel.text = "Cancel"
+	_show_modal()
+
 func _on_window_preview_changed(active: bool) -> void:
 	_refresh()
 	if active and visible:
@@ -504,6 +519,12 @@ func _accept_modal() -> void:
 			var snapshot: Dictionary = tutorial.entry_snapshot.duplicate(true)
 			close_menu()
 			Checkpoint.load_snapshot.call_deferred(world, snapshot)
+			return
+	elif _modal_kind == "skip_tutorial":
+		var tutorial := _tutorial()
+		if tutorial != null and tutorial.has_method("can_skip") and tutorial.can_skip():
+			close_menu()
+			tutorial.skip_tutorial.call_deferred()
 			return
 	_hide_modal()
 

@@ -3,6 +3,7 @@ extends CanvasLayer
 signal close_requested
 signal current_conditions_visible(stage: int)
 const FRAME = preload("res://equipment/terminal_panel.gd")
+const MANUAL = preload("res://equipment/training_manual.gd")
 const PAGE_IDS := ["conditions", "steps", "reference", "manual"]
 const PAGE_NAMES := ["Conditions", "Steps", "Controls", "Manual"]
 var current_page := "conditions"
@@ -119,10 +120,11 @@ func on_open() -> void:
 	_session += 1
 	_last_presented_stage = -1
 	_search.text = ""
-	select_page("conditions")
+	select_page("manual" if get_parent().manual_unlocked else "conditions")
 
 func select_page(id: String, focus: bool = true) -> void:
 	if not _pages.has(id): return
+	if get_parent().manual_unlocked and id in ["conditions", "steps"]: id = "manual"
 	current_page = id
 	for page in _pages: _pages[page].visible = page == id
 	refresh()
@@ -130,6 +132,16 @@ func select_page(id: String, focus: bool = true) -> void:
 
 func refresh() -> void:
 	var terminal := get_parent()
+	controls.conditions.visible = not terminal.manual_unlocked
+	controls.steps.visible = not terminal.manual_unlocked
+	if terminal.manual_unlocked:
+		page_data = {}
+		_title.text = "Field manual / Training record: " + terminal.completion.capitalize()
+		_conditions.text = ""
+		_steps.text = ""
+		_reference.text = MANUAL.format("key reference")
+		_refresh_manual()
+		return
 	var controller: Node = terminal.tutorial_controller()
 	page_data = controller.terminal_page() if controller != null else {}
 	if page_data.is_empty():
@@ -160,14 +172,9 @@ func _refresh_manual() -> void:
 	var terminal := get_parent()
 	_search.editable = terminal.manual_unlocked
 	if not terminal.manual_unlocked:
-		_manual.text = "Complete training to unlock the field manual."
+		_manual.text = "Complete training or choose Skip Tutorial in the Esc menu to unlock the field manual."
 		return
-	# Search infrastructure is ready; the full manual is delivered with stage 5.
-	var entries := ["Civil Defense field manual", "Training record: " + terminal.completion.capitalize()]
-	var matches := PackedStringArray()
-	for entry: String in entries:
-		if _search.text.is_empty() or entry.to_lower().contains(_search.text.to_lower()): matches.append(entry)
-	_manual.text = "\n\n".join(matches) if not matches.is_empty() else "No matching entries."
+	_manual.text = MANUAL.format(_search.text)
 
 func _report_visible(stage: int, session: int) -> void:
 	# Deferred presentation alone is insufficient: allow one layout/render frame

@@ -22,6 +22,8 @@ var _park_max := Vector2.ZERO
 var _snapshot_seconds := 0.0
 var workshop: TutorialWorkshop
 var service: TutorialService
+var _legacy_completed_version := 0
+var _manual_synced := false
 
 func _ensure_workshop() -> void:
 	if workshop != null: return
@@ -48,7 +50,7 @@ func _on_world_ready() -> void:
 		_capture_entry()
 
 func _capture_entry() -> void:
-	if not initialized() or not entry_snapshot.is_empty(): return
+	if not initialized() or status != "active" or not entry_snapshot.is_empty(): return
 	if stage == 7 and not service.configured: return
 	var player := _world().get_node("Player")
 	var generator := _world().get_node("WorldGenerator")
@@ -72,8 +74,12 @@ func capture(include_retry := true) -> Dictionary:
 	if not initialized(): return {}
 	var data := {"version": 3 if workshop != null and workshop.prepared() else 1, "stage": stage, "status": status, "terminal_id": terminal_id,
 		"rv_id": rv_id, "flashlight_id": flashlight_id, "flags": flags.duplicate(true)}
-	if data.version == 3:
+	# Earlier schemas explicitly accepted completed courses below stage nine.
+	# Preserve that legacy contract rather than fabricate newer service evidence.
+	if _legacy_completed_version > 0: data.version = _legacy_completed_version
+	if data.version >= 2:
 		data["workshop"] = workshop.capture()
+	if data.version == 3:
 		data["service"] = service.capture()
 	if include_retry and not entry_snapshot.is_empty(): data["entry_snapshot"] = entry_snapshot.duplicate(true)
 	return data
@@ -84,6 +90,8 @@ func restore(data: Dictionary) -> void:
 	if legacy_disabled: return
 	stage = data.stage
 	status = data.status
+	_legacy_completed_version = data.version if data.version < 3 and status == "completed" else 0
+	_manual_synced = false
 	terminal_id = data.terminal_id
 	rv_id = data.rv_id
 	flashlight_id = data.flashlight_id
@@ -98,7 +106,7 @@ func restore(data: Dictionary) -> void:
 	progress_changed.emit()
 
 func _upgrade_entry() -> void:
-	if not workshop.prepared() or entry_snapshot.is_empty(): return
+	if _legacy_completed_version > 0 or not workshop.prepared() or entry_snapshot.is_empty(): return
 	var saved: Dictionary = entry_snapshot.start_state.tutorial
 	if saved.version >= 3: return
 	# Older phase-three saves could capture bay 7 before its faults existed.
@@ -182,6 +190,9 @@ func _physics_process(delta: float) -> void:
 	if not initialized():
 		if _world().fresh_start: _initialize()
 		return
+	if status in ["completed", "skipped"] and not _manual_synced: _unlock_manual(status)
+	if status == "completed": return
+	if _run().phase != "preparing": return
 	_connect_player()
 	var vehicle := designated_rv()
 	if vehicle == null or _run().phase != "preparing": return
@@ -204,7 +215,7 @@ func _physics_process(delta: float) -> void:
 		return # No actions count before a usable stage entry exists.
 	if stage == 1: _sample_driving(vehicle, delta)
 	elif stage <= 6 and workshop.complete(): _advance_stage()
-	elif stage == 7 and service.complete(): _advance_stage()
+	elif stage in [7, 8] and service.complete(): _advance_stage()
 
 func _advance_stage() -> void:
 	stage += 1
@@ -272,8 +283,72 @@ func _fully_inside(vehicle: Chassis, region: AABB) -> bool:
 	return true
 
 func can_restart() -> bool:
-	return initialized() and status == "active" and not entry_snapshot.is_empty() and not _checkpoint().loading
+	return initialized() and status == "active" and _run().phase == "preparing" and not entry_snapshot.is_empty() and not _checkpoint().loading
 
 func restart_stage() -> bool:
 	if not can_restart(): return false
 	return await _checkpoint().load_snapshot(_world(), entry_snapshot.duplicate(true))
+
+func can_skip() -> bool:
+	return initialized() and status == "active" and _run().phase == "preparing" and not _checkpoint().loading
+
+func skip_tutorial() -> bool:
+	if not can_skip(): return false
+	var player: Node = _world().get_node_or_null("Player")
+	if player == null or player.get_player_mode() != player.PlayerMode.NORMAL or player.settings_open: return false
+	status = "skipped"
+	entry_snapshot.clear()
+	_unlock_manual("skipped")
+	_run().apply_tutorial_gates()
+	progress_changed.emit()
+	return true
+
+func departure_block_reason() -> String:
+	if not initialized() or status != "active" or stage != 9: return "Complete training before departure"
+	if entry_snapshot.is_empty(): return "Wait for the final stage entrance record"
+	if not service.flags.refueled or not service.flags.wall or not service.flags.engine or not service.flags.wheel or not service.wall_ready() or not service.engine_ready() or not service.wheel_ready(): return "Restore the original engine, side wall and marked spare tire before departure"
+	if not service.hatch_closed(): return "Close the maintenance cover completely before departure"
+	var vehicle := designated_rv()
+	if vehicle == null or vehicle.current_fuel <= 0.0 or not vehicle.has_usable_power(): return "Restore fuel and installed battery power before departure"
+	if vehicle.energy.engine_running or not vehicle.handbrake or vehicle.linear_velocity.length() > 0.2: return "Park, apply the handbrake and switch off before using the departure button"
+	return "" if _run().phase == "preparing" else "Journey already started"
+
+func can_departure() -> bool:
+	return departure_block_reason().is_empty()
+
+func departure_started() -> void:
+	if status != "active" or stage != 9 or _run().phase != "opening" or _run().gate.target < 0.5: return
+	service.flags.departure = true
+	progress_changed.emit()
+
+func departure_completed() -> void:
+	if status != "active" or stage != 9 or not service.flags.departure or _run().phase != "sealed" or not _run().departure_clear(): return
+	status = "completed"
+	entry_snapshot.clear()
+	_unlock_manual("completed")
+	progress_changed.emit()
+
+func _unlock_manual(result: String) -> void:
+	_manual_synced = true
+	_unlock_live(_world(), result)
+	var player: Node = _world().get_node_or_null("Player")
+	if player != null:
+		_unlock_records(player.inventory.items, result)
+		player.refresh_inventory()
+	for vehicle in get_tree().get_nodes_in_group(Groups.CHASSIS):
+		if _world().is_ancestor_of(vehicle): _unlock_records(vehicle.stored_items, result)
+	_unlock_records(_world().get_node("WorldGenerator").dormant_items, result)
+	_unlock_records(_world().get_node("PoiInstances").saved_instances, result)
+
+func _unlock_live(node: Node, result: String) -> void:
+	# Includes held presentations, so syncing a held Item cannot relock its record.
+	if node is TrainingTerminal and node.persistent_id == terminal_id and not node.is_queued_for_deletion(): node.unlock_manual(result)
+	for child in node.get_children(): _unlock_live(child, result)
+
+func _unlock_records(value: Variant, result: String) -> void:
+	if value is Dictionary:
+		if value.get("id", "") == terminal_id and value.has("training_terminal"):
+			value.training_terminal = {"version": 1, "manual_unlocked": true, "completion": result}
+		for child in value.values(): _unlock_records(child, result)
+	elif value is Array:
+		for child in value: _unlock_records(child, result)

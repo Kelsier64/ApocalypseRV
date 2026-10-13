@@ -165,10 +165,17 @@ func page() -> Dictionary:
 			"With no tire selected, hold E on the left-front wheel socket to remove the damaged tire. Pick up the marked spare, then hold E on that empty socket to install it.",
 			"Complete the three repairs in any order. Patching or reinstalling the original tire does not count. Close the maintenance cover before departure."]
 		controls = ["Hold E rvctl. F5 Structure. Tab / Enter Select slot and Repair.", "E Open / close engine cover. H Engine repair: hold 3 seconds with a kit selected.", "Hold E Remove / install a tire at its socket. E Pick up the marked spare."]
-	else:
-		title = "Fuel briefing pending"
-		steps = ["Vehicle maintenance complete. The fuel briefing is not available yet."]
-	return {"available": controller.stage == 7, "stage": controller.stage, "title": title,
+	elif controller.stage == 8:
+		title = "Refuel the RV"
+		conditions = [_condition("refuel", "Transfer fuel from your manufactured can into this RV", flags.refueled and fuel_amount > 0.0), _condition("empty", "Receive the returned empty can", flags.refueled and not empty_can_id.is_empty())]
+		steps = ["Park in the eighth bay. Select the gasoline can you manufactured at the training workbench.", "Use the RV fuel port to transfer fuel and receive an empty can. A full tank rejects the can without consuming it.", "The preparation fuel reserve is not a fuel transfer. Keep the empty can for future supplies."]
+		controls = ["1-6 / Mouse wheel Select the manufactured gasoline can. E Use the RV fuel port."]
+	elif controller.stage == 9:
+		title = "Begin the journey"
+		conditions = [_condition("vehicle", "Keep the repaired original RV ready for departure", flags.wall and flags.engine and flags.wheel and wall_ready() and engine_ready() and wheel_ready()), _condition("hatch", "Close the maintenance cover completely", hatch_closed()), _condition("button", "Use the shelter departure button", flags.departure), _condition("outside", "Exit with the entire RV and let the shelter seal", controller.status == "completed")]
+		steps = ["Drive into the final bay and park. Switch off the engine and apply the handbrake. Close the front maintenance cover and wait for it to stop.", "Take your supplies with you. Leave the seat and use the departure button beside the final exit. World time, weather and enemies resume when it accepts.", "Return to the driver's seat, start the engine and drive the entire RV onto the road. You and all mounted equipment must clear the exit.", "The gate reopens if its closing path is blocked. Once it seals after departure, this terminal becomes your searchable field manual."]
+		controls = ["E Departure button / engine cover. Hold E Driver's seat. B Engine. Space Handbrake.", "W/S Throttle / brake. A/D Steer. Esc Restart Stage before departure / close terminal."]
+	return {"available": controller.status == "active", "stage": controller.stage, "title": title,
 		"conditions": conditions, "steps": steps, "reference": controls}
 
 func _condition(identity: String, text: String, done: bool) -> Dictionary:
