@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" path="res://rv/visuals/tablet_screen.tscn" id="detail_visual"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cjchr"]
-size = Vector3(0.6, 0.05, 0.4)
+size = Vector3(0.4, 0.05, 0.6)
 
 [node name="TabletScreen" type="RigidBody3D" unique_id=2003751090]
 script = ExtResource("1_js8em")

@@ -1,7 +1,21 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/rv_terminal/rv_terminal.glb" id="model"]
+[ext_resource type="Texture2D" path="res://assets/models/rv_terminal/overview.png" id="overview"]
+
+[sub_resource type="StandardMaterial3D" id="display_material"]
+shading_mode = 0
+albedo_texture = ExtResource("overview")
+
+[sub_resource type="QuadMesh" id="display_mesh"]
+size = Vector2(0.534, 0.300375)
 
 [node name="PanelDetails" type="Node3D"]
 
 [node name="Model" parent="." instance=ExtResource("model")]
+
+[node name="Display" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0.0248, 0)
+cast_shadow = 0
+mesh = SubResource("display_mesh")
+material_override = SubResource("display_material")
