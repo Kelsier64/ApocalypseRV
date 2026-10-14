@@ -114,8 +114,8 @@ func _on_hopper_body_entered(body: Node3D):
 	
 	# Assume Item extends RigidBody3D
 	if body is Item:
-		var local := to_local(body.global_position)
-		if absf(local.x) <= .30 and absf(local.z) <= .30 and (body is CorpseProp or FEED.admissible(body,self)): recycle_prop(body)
+		if body == self or body.is_fixed or body.is_being_placed or body.presentation_only or is_instance_valid(body.processing_owner): return
+		if body is CorpseProp or FEED.admissible(body,self): recycle_prop(body)
 	elif body is PhysicalBone3D:
 		# Resolve the actual owner of a limb; cosmetic loose parts have no yield.
 		var ancestor: Node = body.get_parent()
@@ -143,7 +143,7 @@ func _living_overlaps_feed(actor: Node3D) -> bool:
 		if body != actor and not actor.is_ancestor_of(body): continue
 		# A capsule grazing the outside wall is not a jump into the opening.
 		var local: Vector3 = shape_node.to_local(body.global_position)
-		if absf(local.x) <= half_size.x and absf(local.z) <= half_size.z: return true
+		if absf(local.x) <= minf(.30, half_size.x) and absf(local.z) <= minf(.30, half_size.z): return true
 	return false
 
 func _queue_living_input(actor: Node3D) -> void:
