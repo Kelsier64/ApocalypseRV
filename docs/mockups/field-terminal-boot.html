@@ -156,7 +156,7 @@
   };
   append('Civil Defense Linux recovery console (tty1)');
   append('field-terminal: internal power present; dock locked.');
-  append(''); append('Press Enter to initialize.'); cursor();
+  append(''); append('Press ENTER to boot the system.'); cursor();
   document.addEventListener('keydown', event => {
     if (!['Enter','Escape'].includes(event.key) || event.repeat) return;
     event.preventDefault();
