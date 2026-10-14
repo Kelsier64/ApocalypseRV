@@ -5,7 +5,7 @@ signal save_completed(error: Error)
 signal window_preview_changed(active: bool)
 
 const DEFAULTS := {
-	"window_mode": 0, "vsync": true, "max_fps": 0,
+	"window_mode": 1, "vsync": true, "max_fps": 0,
 	"render_mode": 0, "render_scale": 1.0, "aa": 0,
 	"shadow_quality": 0, "fog_quality": 2, "retro": true,
 	"brightness": 1.0, "contrast": 1.0, "saturation": 1.0,

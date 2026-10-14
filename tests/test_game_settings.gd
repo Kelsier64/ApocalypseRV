@@ -40,6 +40,10 @@ func run() -> void:
 	root.add_child(settings)
 	settings.save_completed.connect(func(error: int): saves.append(error))
 	defaults = snapshot()
+	check(defaults.window_mode == 1, "New installations default to fullscreen")
+	write_config({"display": {"window_mode": 0}})
+	settings.load_preferences(PATH)
+	check(settings.get_setting("window_mode") == 0, "An explicitly saved windowed preference remains supported")
 	check(defaults.walk_fov == 75.0 and defaults.drive_fov == 80.0, "Default walking and driving FOV remain distinct")
 	for retro: bool in [false, true]:
 		write_config({"display": {"retro": retro}})

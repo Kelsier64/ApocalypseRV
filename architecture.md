@@ -370,7 +370,7 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初�
 
 register_viewport 把 3D 縮放、抗鋸齒與陰影品質套用到主 viewport 及新建立的室內 SubViewport。舊解析度模式維持室外目標高度 540、最高 1，室內原生解析度；手動 50–100% 解析度同時套用室內外。復古色調與解析度分開，亮度／對比／飽和度使用 3D 後製，Canvas UI 保持清晰。品質預設只修改解析度、抗鋸齒、陰影與霧，其他欄位不變，個別品質調整後保留「自訂」來源，即使數值又與預設相同也不自動改回；此來源隨偏好保存，只有明確選取預設或重設顯示頁才切回預設。霧品質只影響體積霧，不改距離霧、WorldClock 天氣或光照；Compatibility 的體積霧控制不可用。視窗模式使用確認倒數，取消或逾時回復原設定；headless 不可驗證原生視窗輸出。
 
-啟動視窗預設 1280×720；GameSettings 在獨立視窗啟動時，若超出螢幕可用區域的 90%，等比例縮小並置中，保留標題列與工作列空間。嵌入編輯器及 headless 不調整原生視窗。`UILayout` 共用血條、快捷列、設定、平板、教學終端與倉庫的 CanvasLayer 縮放：以 1280×720 放大高解析度 UI，小視窗則保留至少 960×540 的邏輯佈局並縮小顯示；寬螢幕保留額外寬度，平板依邏輯寬度切換欄數。每幀只比較目前 viewport 尺寸，變更才更新，因此玩家移入室內 SubViewport 後仍可適應縮放。原生 3D 尺寸與解析度比例獨立；[版面測試](tests/test_ui_layout.gd) 驗證邊界、錨點、縮放點擊與 viewport 搬移。
+啟動預設全螢幕，已保存的視窗模式仍優先；視窗模式的初始尺寸為 1280×720。GameSettings 在獨立視窗啟動時，若超出螢幕可用區域的 90%，等比例縮小並置中，保留標題列與工作列空間。嵌入編輯器及 headless 不調整原生視窗。`UILayout` 共用血條、快捷列、設定、平板、教學終端與倉庫的 CanvasLayer 縮放：以 1280×720 放大高解析度 UI，小視窗則保留至少 960×540 的邏輯佈局並縮小顯示；寬螢幕保留額外寬度，平板依邏輯寬度切換欄數。每幀只比較目前 viewport 尺寸，變更才更新，因此玩家移入室內 SubViewport 後仍可適應縮放。原生 3D 尺寸與解析度比例獨立；[版面測試](tests/test_ui_layout.gd) 驗證邊界、錨點、縮放點擊與 viewport 搬移。
 
 SettingsMenu 不設定 SceneTree.paused，玩家 settings_open 是額外輸入遮罩。Player、互動射線、DriverSeat 與 Chassis 共同使用 is_gameplay_input_blocked，涵蓋事件與 held-key 輪詢；關閉時記錄仍按住的操作，放開後才恢復。重力、傷害冷卻、車頂支撐、世界時間、敵人與油電照常推進。駕駛期間釋放油門／腳煞車／轉向，不改引擎、gear 或 handbrake。平板與放置擁有各自 Esc 優先權；被抓、死亡、讀檔及 POI 轉場時拒絕設定入口，失去 actor 所有權時關閉。步行／駕駛 FOV 與滑鼠設定從服務即時更新現有及新建立的相機。
 
