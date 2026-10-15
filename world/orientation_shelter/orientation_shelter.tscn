@@ -14,6 +14,10 @@
 
 [ext_resource type="PackedScene" path="res://world/orientation_shelter/supply_shelf_collision.tscn" id="supply_shelf_collision"]
 
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/building_finish.tscn" id="finish"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/building_finish_collision.tscn" id="finish_collision"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/workshop_poster.tscn" id="workshop_poster"]
+
 [sub_resource type="StandardMaterial3D" id="paper"]
 albedo_color = Color(0.76, 0.72, 0.56, 1)
 roughness = 1.0
@@ -24,54 +28,74 @@ roughness = 0.9
 
 [sub_resource type="BoxMesh" id="r1"]
 size = Vector3(40.8, 0.4, 60.4)
+subdivide_width = 6
+subdivide_depth = 10
 
 [sub_resource type="BoxShape3D" id="r2"]
 size = Vector3(40.8, 0.4, 60.4)
 
 [sub_resource type="BoxMesh" id="r3"]
 size = Vector3(44, 0.4, 30)
+subdivide_width = 7
+subdivide_depth = 4
 
 [sub_resource type="BoxShape3D" id="r4"]
 size = Vector3(44, 0.4, 30)
 
 [sub_resource type="BoxMesh" id="r5"]
 size = Vector3(40.8, 8.8, 0.4)
+subdivide_width = 6
+subdivide_height = 1
 
 [sub_resource type="BoxShape3D" id="r6"]
 size = Vector3(40.8, 8.8, 0.4)
 
 [sub_resource type="BoxMesh" id="r7"]
 size = Vector3(40.8, 0.3, 60.8)
+subdivide_width = 6
+subdivide_depth = 10
 
 [sub_resource type="BoxShape3D" id="r8"]
 size = Vector3(40.8, 0.3, 60.8)
 
 [sub_resource type="BoxMesh" id="r9"]
 size = Vector3(0.4, 8.8, 60)
+subdivide_height = 1
+subdivide_depth = 9
 
 [sub_resource type="BoxShape3D" id="r10"]
 size = Vector3(0.4, 8.8, 60)
 
 [sub_resource type="BoxMesh" id="r11"]
 size = Vector3(9.6, 8.4, 60)
+subdivide_width = 1
+subdivide_height = 1
+subdivide_depth = 9
 
 [sub_resource type="BoxShape3D" id="r12"]
 size = Vector3(9.6, 8.4, 60)
 
 [sub_resource type="BoxMesh" id="r13"]
 size = Vector3(9.6, 0.4, 60)
+subdivide_width = 1
+subdivide_depth = 9
 
 [sub_resource type="BoxShape3D" id="r14"]
 size = Vector3(9.6, 0.4, 60)
 
 [sub_resource type="BoxMesh" id="r15"]
 size = Vector3(60, 8.4, 9.6)
+subdivide_width = 9
+subdivide_height = 1
+subdivide_depth = 1
 
 [sub_resource type="BoxShape3D" id="r16"]
 size = Vector3(60, 8.4, 9.6)
 
 [sub_resource type="BoxMesh" id="r17"]
 size = Vector3(16.1, 8.8, 1.0)
+subdivide_width = 2
+subdivide_height = 1
 
 [sub_resource type="BoxShape3D" id="r18"]
 size = Vector3(16.1, 8.8, 1.0)
@@ -84,24 +108,29 @@ size = Vector3(0.4, 5.2, 1.15)
 
 [sub_resource type="BoxMesh" id="r21"]
 size = Vector3(7.8, 3.7, 1.0)
+subdivide_width = 1
 
 [sub_resource type="BoxShape3D" id="r22"]
 size = Vector3(7.8, 3.7, 1.0)
 
 [sub_resource type="BoxMesh" id="r23"]
 size = Vector3(7.8, 0.5, 1.15)
+subdivide_width = 1
 
 [sub_resource type="BoxShape3D" id="r24"]
 size = Vector3(7.8, 0.5, 1.15)
 
 [sub_resource type="BoxMesh" id="r25"]
 size = Vector3(14.8, 0.25, 0.45)
+subdivide_width = 2
 
 [sub_resource type="BoxMesh" id="r26"]
 size = Vector3(40.8, 0.4, 0.45)
+subdivide_width = 6
 
 [sub_resource type="BoxMesh" id="r27"]
 size = Vector3(0.42, 8.2, 0.5)
+subdivide_height = 1
 
 [sub_resource type="BoxShape3D" id="r28"]
 size = Vector3(0.42, 8.2, 0.5)
@@ -132,6 +161,7 @@ size = Vector3(0.1, 0.75, 0.1)
 
 [sub_resource type="BoxMesh" id="recovery_stripe"]
 size = Vector3(0.1, 0.005, 7)
+subdivide_depth = 1
 
 [node name="OrientationShelter" type="Node3D"]
 metadata/generation_version = 12
@@ -355,7 +385,7 @@ shape = SubResource("r24")
 metadata/navigation_solid = true
 
 [node name="PartitionTrack" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.65, -26)
+position = Vector3(0, 5.65, -26.85)
 mesh = SubResource("r25")
 material_override = ExtResource("steel")
 
@@ -432,15 +462,15 @@ shape = SubResource("r24")
 metadata/navigation_solid = true
 
 [node name="FrontTrack" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.65, 14)
+position = Vector3(0, 5.65, 14.85)
 mesh = SubResource("r25")
 material_override = ExtResource("steel")
 
 [node name="GarageGate" parent="." instance=ExtResource("gate")]
-position = Vector3(0, 0, 14)
+position = Vector3(0, 0, 14.85)
 
 [node name="Gate01" parent="Gates" instance=ExtResource("gate")]
-position = Vector3(0, 0, -26)
+position = Vector3(0, 0, -26.85)
 
 [node name="Bay01" type="Node3D" parent="Bays"]
 metadata/start_z = -46.0
@@ -965,3 +995,28 @@ material_override = SubResource("paper")
 position = Vector3(4, 0.005, -10)
 mesh = SubResource("recovery_stripe")
 material_override = SubResource("paper")
+
+[node name="BuildingFinish" parent="Visuals" instance=ExtResource("finish")]
+
+[node name="BuildingFinish" parent="Collision" instance=ExtResource("finish_collision")]
+
+[node name="WorkshopPoster" parent="Visuals" instance=ExtResource("workshop_poster")]
+position = Vector3(-14, 1.65, -25.35)
+
+[node name="PosterReading0" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(1.7, 3.0, -45.45)
+rotation = Vector3(-0.9, 0, 0)
+light_color = Color(0.95, 0.83, 0.61, 1)
+light_energy = 1.4
+spot_range = 4.0
+spot_angle = 48.0
+shadow_enabled = true
+
+[node name="PosterReading1" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(-14, 3.0, -25.05)
+rotation = Vector3(-0.9, 0, 0)
+light_color = Color(0.95, 0.83, 0.61, 1)
+light_energy = 1.4
+spot_range = 4.0
+spot_angle = 48.0
+shadow_enabled = true

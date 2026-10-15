@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://world/tutorial_shelter/legacy_wall_skin.res" id="wall_skin"]
+
+[ext_resource type="ArrayMesh" path="res://world/tutorial_shelter/legacy_runoff.res" id="runoff"]
+
+[ext_resource type="ArrayMesh" path="res://world/tutorial_shelter/legacy_fracture.res" id="fracture"]
+
+[ext_resource type="ArrayMesh" path="res://world/tutorial_shelter/legacy_repair.res" id="repair"]
+
+[node name="WallFinish" type="Node3D"]
+
+[node name="wall_skin" type="MeshInstance3D" parent="."]
+mesh = ExtResource("wall_skin")
+
+[node name="runoff" type="MeshInstance3D" parent="."]
+mesh = ExtResource("runoff")
+
+[node name="fracture" type="MeshInstance3D" parent="."]
+mesh = ExtResource("fracture")
+
+[node name="repair" type="MeshInstance3D" parent="."]
+mesh = ExtResource("repair")

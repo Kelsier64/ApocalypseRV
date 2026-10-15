@@ -518,7 +518,7 @@ func _accept_modal() -> void:
 			var world: Node = tutorial.get_parent().get_parent()
 			var snapshot: Dictionary = tutorial.entry_snapshot.duplicate(true)
 			close_menu()
-			Checkpoint.load_snapshot.call_deferred(world, snapshot)
+			get_node("/root/Checkpoint").call_deferred("load_snapshot", world, snapshot)
 			return
 	elif _modal_kind == "skip_tutorial":
 		var tutorial := _tutorial()

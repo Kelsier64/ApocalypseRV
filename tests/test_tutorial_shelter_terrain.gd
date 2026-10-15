@@ -18,8 +18,8 @@ func run() -> void:
 	if definition == null: quit(1); return
 	check(definition.scene_path == "res://world/tutorial_shelter/tutorial_shelter.tscn", "v11 selects its dedicated tutorial scene")
 	check(definition.kind == PoiDefinition.Kind.WALK_IN and definition.validate().is_empty(), "Tutorial uses the valid walk-in contract")
-	check(definition.building_bounds == AABB(Vector3(-30, -0.4, -232), Vector3( 60, 11.4, 246.5)), "Building bounds include the full 236 m interior and exterior shell")
-	check(definition.site_bounds == AABB(Vector3(-33, -0.5, -235), Vector3( 66, 12, 281)), "Site bounds include the whole building and apron")
+	check(definition.building_bounds == AABB(Vector3(-30, -0.4, -412), Vector3(60, 11.4, 426.5)), "Building bounds include the full 416 m interior and exterior shell")
+	check(definition.site_bounds == AABB(Vector3(-33, -0.5, -415), Vector3(66, 12, 461)), "Site bounds include the whole building and apron")
 	var legacy_definition := POIConfig.definition(&"starting_shelter")
 	check(legacy_definition.scene_path == "res://world/starting_shelter/starting_shelter.tscn" and legacy_definition.building_bounds == AABB(Vector3(-25, -0.4, -30.5), Vector3( 50, 14.4, 45)) and legacy_definition.site_bounds == AABB(Vector3(-27, -0.5, -33), Vector3( 54, 15, 79)), "Old shelter asset and bounds remain unchanged")
 	for seed_value in [0, 1, 42, 99]:
@@ -31,12 +31,12 @@ func run() -> void:
 		check(site.s == 45.0 and site.building.origin.is_equal_approx(Vector3(49, 0, -45)) and site.building.basis.z.is_equal_approx(Vector3.LEFT), "Tutorial keeps the established opening placement and road frontage")
 		# Sample every bay, both long side edges and the rear/apron corners.
 		for x in [-33.0, -30.0, -20.4, -19.0, 0.0, 19.0, 20.4, 30.0, 33.0]:
-			for z in [-235.0, -232.0, -222.4, -192.0, -152.0, -132.0, -108.0, -84.0, -64.0, -44.0, -24.0, 0.0, 14.0, 30.0, 44.0, 46.0]:
+			for z in [-415.0, -412.0, -402.4, -362.0, -322.0, -282.0, -242.0, -194.0, -154.0, -114.0, -74.0, -34.0, 0.0, 14.0, 30.0, 44.0, 46.0]:
 				var point: Vector3 = site.building * Vector3(x, 0, z)
 				var sample := field.surface(point.x, point.z)
 				check(sample.reserved and sample.height <= 0.001 and sample.height >= -0.081, "Full tutorial site is level and excludes vegetation: seed=%d local=(%s,%s)" % [seed_value, x, z])
 		# Four vertices support each actual terrain triangle under the slab edge.
-		for footprint in [Rect2(-20.4, -222.4, 40.8, 236.4), Rect2(-22, 14, 44, 30)]:
+		for footprint in [Rect2(-20.4, -402.4, 40.8, 416.4), Rect2(-22, 14, 44, 30)]:
 			for x in [footprint.position.x, footprint.get_center().x, footprint.end.x]:
 				for fraction in [0.0, 0.125, 0.25, 0.5, 0.75, 0.875, 1.0]:
 					var z: float = lerpf(footprint.position.y, footprint.end.y, fraction)
