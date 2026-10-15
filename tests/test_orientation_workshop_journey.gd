@@ -80,13 +80,30 @@ func reception() -> bool:
 	terminal.pickup(player)
 	await frames()
 	if not check(tutorial.flags.terminal_taken and select_item(identity), "Original dock transaction transfers the terminal into inventory"): return false
-	# Sample a short crossing, as production does; the player's position alone
-	# never supplies the boot, original-dock or successful pickup evidence.
-	player.global_position = run_owner.shelter.to_global(Vector3(0, 1, -26.5))
-	tutorial._physics_process(0.016)
-	player.global_position = run_owner.shelter.to_global(Vector3(0, 1, -25.5))
-	tutorial._physics_process(0.016)
-	return check(tutorial.flags.workshop_entered, "Real doorway crossing begins the second-room guide")
+	if not check(await WAIT.until(self, func(): return run_owner.shelter.get_node("Gates/Gate01").is_open(), 8000, true), "Original pickup opens the physical inner door"): return false
+	# Walk with the real standing capsule after gravity settles it onto the slab.
+	# The Player origin is below its feet; a floating y=1 fixture misses this case.
+	player.global_transform = run_owner.shelter.global_transform * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1, -29))
+	player.set_physics_process(true)
+	for tick in 45: await physics_frame
+	check(player.is_on_floor() and run_owner.shelter.to_local(player.global_position).y < 0.0, "Native standing capsule settles with its origin below the floor")
+	Input.action_press("move_forward")
+	for tick in 180:
+		await physics_frame
+		if run_owner.shelter.to_local(player.global_position).z > -24.0: break
+	Input.action_release("move_forward")
+	for tick in 4: await physics_frame
+	player.set_physics_process(false)
+	player.velocity = Vector3.ZERO
+	if not check(run_owner.shelter.to_local(player.global_position).z > -24.0 and tutorial.flags.workshop_entered, "Native walking through the door activates workshop instructions"): return false
+	var reader: Node = player.read_held_terminal()
+	if not check(reader != null, "Carried original terminal opens after entering the workshop"): return false
+	await frames()
+	var page: Dictionary = reader.ui_instance.page_data
+	check(reader.ui_instance.visible and page.get("stage") == 2 and "Install workshop equipment" in page.get("title", ""), "Visible carried-terminal TUI presents the second-room equipment lesson")
+	reader._close_ui()
+	await frames()
+	return failures.is_empty()
 
 func initial_state() -> bool:
 	if not check(vehicle.current_fuel == 0.0, "Fresh workshop RV has zero fuel"): return false

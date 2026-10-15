@@ -6,13 +6,13 @@ const COURSE := "two_room_orientation"
 const STATE_VERSION := 2
 const TERMINAL_SCENE := "res://equipment/training_terminal.tscn"
 const ROOM_DIVIDER_Z := -26.0
+const WORKSHOP_BOUNDS := AABB(Vector3(-20, 0, ROOM_DIVIDER_Z), Vector3(40, 5, 40))
 var stage := 1
 var status := "active"
 var terminal_id := ""
 var rv_id := ""
 var workshop: OrientationWorkshop
 var flags := {"boot_complete": false, "terminal_taken": false, "workshop_entered": false}
-var _previous_player := Vector3.INF
 var _disabled := false
 
 func _ready() -> void:
@@ -133,7 +133,6 @@ func terminal_docked_pickup(identity: String, player: Node3D) -> void:
 	if terminal == null or terminal.is_fixed or not terminal.support_lost or terminal.is_destroyed or terminal.current_health <= 0.0 or terminal.is_being_placed: return
 	if not terminal_in_inventory(player): return
 	flags.terminal_taken = true
-	_previous_player = Vector3.INF
 	progress_changed.emit()
 
 func conditions_viewed(_identity: String, _player: Node3D) -> void:
@@ -165,14 +164,14 @@ func _physics_process(_delta: float) -> void:
 	var player := _world().get_node_or_null("Player") as Node3D
 	var building := get_parent().get("shelter") as Node3D
 	if not _accepts_player(player) or not is_instance_valid(building) or _world().get("play_ready") != true: return
-	var point := building.to_local(player.global_position)
-	# Observe a short, continuous crossing through the real doorway, excluding
-	# restoration/teleports and entry through the building's sides or roof.
-	if _previous_player.is_finite() and point.distance_to(_previous_player) < 2.0 and absf(point.x) <= 3.5 and absf(_previous_player.x) <= 3.5 and point.y >= 0.0 and point.y <= 5.0 and _previous_player.z < ROOM_DIVIDER_Z and point.z >= ROOM_DIVIDER_Z:
+	var body := player.get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if body == null or body.disabled: return
+	# The standing Player origin rests below the slab. Use the actual body in
+	# the authored room, including a restored save that already crossed the door.
+	if WORKSHOP_BOUNDS.has_point(building.to_local(body.global_position)):
 		flags.workshop_entered = true
 		stage = 2
 		progress_changed.emit()
-	_previous_player = point
 
 func save_state() -> Dictionary:
 	if not initialized(): return {}
@@ -233,7 +232,6 @@ func apply_state(data: Dictionary) -> bool:
 		workshop.restore(initial.capture())
 		initial.free()
 	else: workshop.restore(data.workshop)
-	_previous_player = Vector3.INF
 	progress_changed.emit()
 	return true
 
