@@ -296,30 +296,48 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	owned_data.erase("start_state")
 	if not ItemState.unique_ids(owned_data, {}): return "item.id.duplicate"
 	if data.get("generation_version") == 12 and data.get("start_state", {}).has("tutorial"):
-		var orientation_error := _orientation_terminal_error(owned_data, data.start_state.tutorial)
+		var orientation_error := _orientation_items_error(owned_data, data.start_state.tutorial)
 		if not orientation_error.is_empty(): return "start_state.tutorial." + orientation_error
 	return ""
 
-func _orientation_terminal_error(owned_data: Dictionary, tutorial: Dictionary) -> String:
+func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> String:
 	# The course references one persistent Item owner, including a carried or
 	# dormant terminal. A lost terminal is valid; retry will recover it later.
 	var records: Array[Dictionary] = []
-	_find_terminal_records(owned_data, tutorial.terminal_id, records)
-	if records.is_empty(): return ""
-	var record := records[0]
-	if record.get("scene", record.get("scene_path", "")) != "res://equipment/training_terminal.tscn": return "terminal_id"
-	var terminal: Dictionary = record.get("state", {}).get("training_terminal", {})
-	if terminal.get("version") != 2: return "terminal_id"
-	if terminal.get("initialized", false) != tutorial.flags.boot_complete: return "flags.boot_complete"
+	_find_item_records(owned_data, tutorial.terminal_id, records)
+	if not records.is_empty():
+		var record := records[0]
+		if record.get("scene", record.get("scene_path", "")) != "res://equipment/training_terminal.tscn": return "terminal_id"
+		var terminal: Dictionary = record.get("state", {}).get("training_terminal", {})
+		if terminal.get("version") != 2: return "terminal_id"
+		if terminal.get("initialized", false) != tutorial.flags.boot_complete: return "flags.boot_complete"
+	if tutorial.version == 1 or not tutorial.workshop.configured: return ""
+	# References may outlive consumed, recycled or destroyed Items. Any owner
+	# that still exists must retain its actual Item type, wherever it is stored.
+	var scenes := {"scrapper": "res://equipment/scrapper.tscn", "workbench": "res://equipment/crafting_station.tscn",
+		"scrap_a": "res://props/scrap.tscn", "scrap_b": "res://props/scrap.tscn", "barrel": "res://props/oil_barrel.tscn",
+		"spare": "res://props/wheel.tscn", "original_wheel": "res://props/wheel.tscn", "socket": "res://rv/battery_socket.tscn",
+		"tablet": "res://equipment/tablet_screen.tscn", "fuel_port": "res://equipment/fuel_port.tscn"}
+	for key in scenes:
+		if not _orientation_item_scene(owned_data, tutorial.workshop.targets[key], scenes[key]): return "workshop.targets." + key
+	for key in ["gasoline_id", "empty_can_id"]:
+		var scene := "res://props/gas_can.tscn" if key == "gasoline_id" else "res://props/gas_can_empty.tscn"
+		if not _orientation_item_scene(owned_data, tutorial.workshop[key], scene): return "workshop." + key
 	return ""
 
-func _find_terminal_records(value: Variant, identity: String, result: Array[Dictionary]) -> void:
+func _orientation_item_scene(owned_data: Dictionary, identity: String, scene: String) -> bool:
+	if identity.is_empty(): return true
+	var records: Array[Dictionary] = []
+	_find_item_records(owned_data, identity, records)
+	return records.is_empty() or records[0].get("scene", records[0].get("scene_path", "")) == scene
+
+func _find_item_records(value: Variant, identity: String, result: Array[Dictionary]) -> void:
 	if value is Dictionary:
 		if value.get("state") is Dictionary and value.state.get("id") == identity:
 			result.append(value)
-		for child in value.values(): _find_terminal_records(child, identity, result)
+		for child in value.values(): _find_item_records(child, identity, result)
 	elif value is Array:
-		for child in value: _find_terminal_records(child, identity, result)
+		for child in value: _find_item_records(child, identity, result)
 
 func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	var state_error := CheckpointSchema.tutorial_error(value)

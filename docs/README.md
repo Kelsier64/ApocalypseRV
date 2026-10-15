@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-15 兩室教學階段二](validation/2026-10-15-orientation-stage2.md)：指定設備搬運、回收製造、牆板／輪胎維修及加油，含原生交易、短距離輪驅與存檔升級。
+
 - [新版兩室教學計畫](plans/starting-tutorial-two-room.md) · [2026-10-15 新版階段一驗證](validation/2026-10-15-orientation-stage1.md)
 
 - [教學基地分階段計畫](plans/starting-tutorial.md) · [階段一驗證](validation/2026-10-11-tutorial-stage1.md) · [階段二驗證](validation/2026-10-13-tutorial-stage2.md) · [階段三驗證](validation/2026-10-13-tutorial-stage3.md) · [階段四驗證](validation/2026-10-14-tutorial-stage4.md) · [階段五驗證](validation/2026-10-14-tutorial-stage5.md)

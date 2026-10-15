@@ -114,6 +114,21 @@ size = Vector3(1.8, 2.35, 0.08)
 [sub_resource type="BoxMesh" id="r32"]
 size = Vector3(1.67, 2.2, 0.008)
 
+[sub_resource type="BoxMesh" id="recovery_shelf_top"]
+size = Vector3(2.4, 0.1, 0.8)
+
+[sub_resource type="BoxShape3D" id="recovery_shelf_top_shape"]
+size = Vector3(2.4, 0.1, 0.8)
+
+[sub_resource type="BoxMesh" id="recovery_shelf_leg"]
+size = Vector3(0.1, 0.75, 0.1)
+
+[sub_resource type="BoxShape3D" id="recovery_shelf_leg_shape"]
+size = Vector3(0.1, 0.75, 0.1)
+
+[sub_resource type="BoxMesh" id="recovery_stripe"]
+size = Vector3(0.1, 0.005, 7)
+
 [node name="OrientationShelter" type="Node3D"]
 metadata/generation_version = 12
 metadata/room_lengths = PackedFloat32Array(20, 40)
@@ -798,3 +813,97 @@ position = Vector3(0, 0, 15)
 
 [node name="Apron" type="Marker3D" parent="AccessPoints"]
 position = Vector3(0, 0, 40)
+
+[node name="WorkshopEquipment" type="Node3D" parent="."]
+
+
+[node name="WorkshopSupplies" type="Node3D" parent="."]
+
+
+[node name="Scrapper" type="Marker3D" parent="WorkshopEquipment"]
+position = Vector3(7.5, 0, -17)
+
+[node name="Workbench" type="Marker3D" parent="WorkshopEquipment"]
+position = Vector3(-7.5, 0, -17)
+
+[node name="ScrapA" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.45, 0.975, -10)
+
+[node name="ScrapB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(9.25, 0.975, -10)
+
+[node name="OilBarrel" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(10.7, 0.5, -10)
+
+[node name="SpareWheel" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-8, 0, -9)
+
+[node name="RecoveryShelf" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.85, 0.775, -10)
+mesh = SubResource("recovery_shelf_top")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelf" type="StaticBody3D" parent="Collision"]
+position = Vector3(8.85, 0.775, -10)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelf"]
+shape = SubResource("recovery_shelf_top_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7.8, 0.375, -10.3)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg0" type="StaticBody3D" parent="Collision"]
+position = Vector3(7.8, 0.375, -10.3)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg0"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7.8, 0.375, -9.7)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg1" type="StaticBody3D" parent="Collision"]
+position = Vector3(7.8, 0.375, -9.7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg1"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.9, 0.375, -10.3)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg2" type="StaticBody3D" parent="Collision"]
+position = Vector3(9.9, 0.375, -10.3)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg2"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.9, 0.375, -9.7)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg3" type="StaticBody3D" parent="Collision"]
+position = Vector3(9.9, 0.375, -9.7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg3"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryLane-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4, 0.005, -10)
+mesh = SubResource("recovery_stripe")
+material_override = SubResource("paper")
+
+[node name="RecoveryLane1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(4, 0.005, -10)
+mesh = SubResource("recovery_stripe")
+material_override = SubResource("paper")

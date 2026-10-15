@@ -6,7 +6,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
-| [新版兩室教學](starting-tutorial-two-room.md) | 階段一完成，等待驗收 | 每階段通過後才繼續；維修流程、感應離場、完整復原與最終美術尚未實作 | [新版階段一](../validation/2026-10-15-orientation-stage1.md) |
+| [新版兩室教學](starting-tutorial-two-room.md) | 階段一已驗收，階段二完成等待驗收 | 第二室資源／修車流程已接入；感應離場、完整復原及最終美術留待後續 | [新版階段二](../validation/2026-10-15-orientation-stage2.md) |
 | [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
 | [公路隨機刷新](random_spawn.md) | v9 獨立生成已接入；本輪驗證待記錄 | Raker／油桶人／普通油桶分開抽取，廢車逐台選點及朝向，安全避讓、保存與 v2–v8 相容 | [本輪紀錄](../validation/2026-10-07-independent-road-spawns.md) |
 | [裂爪 Raker](2026-09-22-raker.md) | 獨立怪物首版已完成並驗收 | 2.18 m、22 段動畫、新追擊／蓄力攻擊、低姿態進出 RV、正式生成與保存；地形腳掌 IK、極端翻車及群怪效能仍屬擴充 | [本次驗收](../validation/2026-09-22-raker.md)、[模型與動畫說明](../../assets/models/raker/README.md) |

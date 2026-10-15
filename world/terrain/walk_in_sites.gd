@@ -47,6 +47,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	var starter_site := definition.definition_id in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]
 	if definition.definition_id == &"orientation_shelter":
 		_spawn_orientation_terminal(building, container)
+		ensure_orientation_workshop(building, container)
 	elif starter_site:
 		_spawn_starter_actors(building, container)
 	var barrel_site: bool = generator.field.profile.generation_version >= 8 and _barrel_site(definition)
@@ -107,6 +108,66 @@ static func _spawn_orientation_terminal(building: Node3D, container: Node3D) -> 
 	container.add_child(terminal)
 	support.set_meta("training_terminal_dock", terminal.persistent_id)
 	terminal.confirm_placement(point.global_transform, container, support)
+
+static func orientation_workshop_ids(building: Node3D) -> Dictionary:
+	var prefix := str(building.get_meta("poi_id", "orientation")) + ":recovery:"
+	var result := {}
+	for role in ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare"]:
+		result[role] = prefix + role
+	return result
+
+## Called for a fresh site or explicitly once by a v1 course migration. A v2
+## reload never calls this to replace consumed or lost supplies.
+static func ensure_orientation_workshop(building: Node3D, container: Node3D) -> void:
+	var stock := {
+		"scrapper": ["WorkshopEquipment/Scrapper", "res://equipment/scrapper.tscn"],
+		"workbench": ["WorkshopEquipment/Workbench", "res://equipment/crafting_station.tscn"],
+		"scrap_a": ["WorkshopSupplies/ScrapA", "res://props/scrap.tscn"],
+		"scrap_b": ["WorkshopSupplies/ScrapB", "res://props/scrap.tscn"],
+		"barrel": ["WorkshopSupplies/OilBarrel", "res://props/oil_barrel.tscn"],
+		"spare": ["WorkshopSupplies/SpareWheel", "res://props/wheel.tscn"]}
+	var identities := orientation_workshop_ids(building)
+	for role in stock:
+		if _orientation_identity_owned(container, identities[role]):
+			for actor in container.get_tree().get_nodes_in_group(Groups.ITEMS):
+				if actor is Item and actor.persistent_id == identities[role] and WorldEntities.same_world(container, actor): actor.set_meta("orientation_role", role)
+			continue
+		var point := building.get_node(NodePath(stock[role][0])) as Marker3D
+		var item: Item = load(stock[role][1]).instantiate()
+		item.freeze = true
+		item.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+		item.set_meta("orientation_role", role)
+		container.add_child(item)
+		var state := item.capture_item_state()
+		state.id = identities[role]
+		if role in ["scrap_a", "scrap_b"]:
+			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(3, 3)}
+		elif role == "barrel":
+			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(2, 2), ItemNames.UNREFINED_FUEL: Vector2(10, 10)}
+		item.restore_item_state(state)
+		item.global_transform = point.global_transform
+
+static func _orientation_identity_owned(container: Node3D, identity: String) -> bool:
+	var world := WorldActorSnapshot.domain(container)
+	for item in container.get_tree().get_nodes_in_group(Groups.ITEMS):
+		if item is Item and not item.presentation_only and world.is_ancestor_of(item) and item.persistent_id == identity: return true
+	var player := world.get_node_or_null("Player")
+	if player != null and _orientation_record_has_id(player.inventory.items, identity): return true
+	for vehicle in container.get_tree().get_nodes_in_group(Groups.CHASSIS):
+		if not world.is_ancestor_of(vehicle): continue
+		if identity in vehicle.wheel_ids or _orientation_record_has_id(vehicle.stored_items, identity): return true
+	var generator := world.get_node_or_null("WorldGenerator")
+	return generator != null and (_orientation_record_has_id(generator.outdoor_sites, identity) or _orientation_record_has_id(generator.dormant_items, identity))
+
+static func _orientation_record_has_id(value: Variant, identity: String) -> bool:
+	if value is Dictionary:
+		if value.get("id") == identity: return true
+		for child in value.values():
+			if _orientation_record_has_id(child, identity): return true
+	elif value is Array:
+		for child in value:
+			if _orientation_record_has_id(child, identity): return true
+	return false
 
 static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
 	var scenes := {

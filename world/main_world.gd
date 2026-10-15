@@ -24,6 +24,7 @@ func _enter_tree() -> void:
 	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, -10.0 if version >= 12 else spawn_z))
 	if version >= 12:
 		get_node("NewRv/Chassis").current_fuel = 0.0
+		get_node("NewRv/Chassis").starter_kits = false
 	elif version == 11:
 		var vehicle := get_node("NewRv/Chassis")
 		vehicle.current_fuel = 40.0

@@ -27,6 +27,10 @@ func _run() -> void:
 		check(is_equal_approx(bay.get_meta("end_z") - bay.get_meta("start_z"), 20.0 if room == 1 else 40.0), "Room %d has its specified length" % room)
 	check(building.get_node("Gates").get_child_count() == 1 and not building.has_node("GarageButton"), "One inner gate; departure has no manual button")
 	check(building.get_node("StarterEquipment").get_child_count() == 1 and building.get_node("StarterEquipment/TrainingTerminal") is Marker3D, "Only the wall-terminal spawn is authored")
+	check(building.get_node("WorkshopEquipment").get_child_count() == 2 and building.get_node("WorkshopSupplies").get_child_count() == 4, "Workshop provides exactly two loose machines and four supply markers")
+	for category in ["WorkshopEquipment", "WorkshopSupplies"]:
+		for marker: Marker3D in building.get_node(category).get_children():
+			check(marker.position.z > -26.0 and marker.position.z < 14.0 and absf(marker.position.x) >= 4.0, "Workshop stock remains in the second room and outside the eight-metre vehicle lane")
 	check(building.get_node("PlayerSpawn").position.z < -26.0 and building.get_node("RVSpawn").position.z > -26.0, "Player and RV belong to separate rooms")
 	for index in range(5):
 		var beam: MeshInstance3D = building.get_node("Visuals/CrossBeam%d" % index)

@@ -54,6 +54,8 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_orientation_workshop",
+      "test_orientation_workshop_journey",
       "test_orientation_shelter",
       "test_orientation_controller",
       "test_orientation_checkpoint",
