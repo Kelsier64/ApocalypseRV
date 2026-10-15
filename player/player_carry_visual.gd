@@ -238,8 +238,8 @@ func _update_item(delta: float, large: bool) -> void:
 	var speed := Vector2(actor.velocity.x, actor.velocity.z).length() if not actor.in_ui_mode else 0.0
 	phase += delta * (8.0 if speed > .1 else 2.0)
 	var sway := Vector3(sin(phase * .5) * .006, sin(phase) * .006, 0) * minf(speed, 1.0)
-	# One-handed props sit at chest height, below the shoulder even while
-	# looking up. Full-size meshes must not lift the wrists toward the face.
+	# Ordinary one-handed props sit at chest height, below the shoulder even
+	# while looking up. The flashlight below uses a raised grip for visibility.
 	var shoulder := skeleton.find_bone("upper_arm_" + active_hand)
 	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
 	var crouch_drop := 0.0
@@ -259,7 +259,12 @@ func _update_item(delta: float, large: bool) -> void:
 		center = Vector3(0, 1.30 - bounds.size.y * .5, -maxf(.70, bounds.size.z * .5 + .35))
 	if item.has_method("held_support_center"): center = item.held_support_center()
 	if large or item.has_method("held_support_center"): center.y -= crouch_drop
-	if grip_kind == "round": center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
+	if grip_kind == "round":
+		center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
+		# Raise the light beside the shoulder so the real barrel clears the
+		# bottom of the first-person view. Keep the restrained/prone grips.
+		if not actor.is_crawling() and not actor.is_grabbed():
+			center = Vector3(.18, shoulder_height + .24, -.50)
 	# Follow the crouched torso in depth too, keeping real grips in arm reach.
 	center.z += crouch_depth
 	if active_hand == "L" and not large: center.x = -center.x

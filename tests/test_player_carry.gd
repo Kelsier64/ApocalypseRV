@@ -39,8 +39,12 @@ func check_small_hold_height(actor: Node3D, skeleton: Skeleton3D, note: String) 
 	var shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("upper_arm_R")).origin)
 	var wrist := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_R")).origin)
 	var elbow := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_R")).origin)
-	check(wrist.y < shoulder.y, note + " keeps the holding wrist below the shoulder")
-	check(elbow.y < shoulder.y, note + " keeps the holding elbow below the shoulder")
+	var flashlight: bool = actor.inventory.active_item().get("scene_path", "") == "res://props/flashlight.tscn"
+	if flashlight:
+		check(wrist.y < shoulder.y + .35, note + " keeps the raised flashlight within shoulder reach")
+	else:
+		check(wrist.y < shoulder.y, note + " keeps the holding wrist below the shoulder")
+	check(elbow.y < shoulder.y + (.15 if flashlight else 0.0), note + " keeps the holding elbow near or below the shoulder")
 
 func check_box_contact(actor: Node3D, skeleton: Skeleton3D, side: String, note: String) -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
@@ -59,6 +63,13 @@ func check_flashlight_grip(actor: Node3D, skeleton: Skeleton3D) -> void:
 	var radius := maxf(cylinder.top_radius, cylinder.bottom_radius)
 	var beam := held.get_node("Beam") as SpotLight3D
 	check((-beam.global_basis.z).normalized().dot(-actor.camera.global_basis.z) > .95, "Flashlight beam stays aimed ahead while the hand grips")
+	if not actor.is_grabbed() and not actor.is_crawling():
+		# Visibility in the tree alone misses a barrel held below the screen.
+		for node in [body, held.get_node("Lens")]:
+			var point: Vector3 = node.global_position
+			var screen: Vector2 = actor.camera.unproject_position(point) / Vector2(actor.camera.get_viewport().get_visible_rect().size)
+			var bottom := .98 if node == body else .85
+			check(not actor.camera.is_position_behind(point) and screen.x > .05 and screen.x < .95 and screen.y > .05 and screen.y < bottom, "Flashlight %s projects inside the first-person view (screen %s, pitch %.2f, crouch %s, eye %s, point %s)" % [node.name, screen, actor.camera.rotation.x, actor.is_crouching(), actor.camera.position, actor.to_local(point)])
 	for finger in ["index", "middle", "ring", "pinky"]:
 		for segment in ["01", "02"]:
 			var bone := skeleton.find_bone(finger + "_" + segment + "_R")
@@ -102,7 +113,7 @@ func release_pose(actor: CharacterBody3D, raker: Raker) -> void:
 	await steps(20)
 
 func check_prone_hold_height(arena: Node3D) -> void:
-	var prone_actor = preload("res://player/player.tscn").instantiate()
+	var prone_actor = load("res://player/player.tscn").instantiate()
 	arena.add_child(prone_actor)
 	prone_actor.body_state.sever(&"left_leg")
 	prone_actor._apply_body_capabilities()
@@ -122,7 +133,7 @@ func check_prone_hold_height(arena: Node3D) -> void:
 	await steps(2)
 
 func check_crouched_carry(arena: Node3D) -> void:
-	var actor: CharacterBody3D = preload("res://player/player.tscn").instantiate()
+	var actor: CharacterBody3D = load("res://player/player.tscn").instantiate()
 	arena.add_child(actor)
 	await steps(30)
 	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
@@ -210,6 +221,7 @@ func check_grab_hand_selection(arena: Node3D, actor: CharacterBody3D, skeleton: 
 	raker.queue_free()
 
 func run() -> void:
+	root.size = Vector2i(1280, 720)
 	var arena := Node3D.new()
 	root.add_child(arena)
 	var floor_body := StaticBody3D.new()
@@ -217,7 +229,8 @@ func run() -> void:
 	collision.shape = WorldBoundaryShape3D.new()
 	floor_body.add_child(collision)
 	arena.add_child(floor_body)
-	var actor = preload("res://player/player.tscn").instantiate()
+	# Load after autoload initialization; SettingsMenu references Checkpoint.
+	var actor = load("res://player/player.tscn").instantiate()
 	arena.add_child(actor)
 	await steps(30)
 	var carry: Node = actor.get_node("Visuals/Carry")
