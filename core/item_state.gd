@@ -60,11 +60,20 @@ static func valid_rounds(value: Variant, field: String, minimum: int, maximum: i
 	return value is Dictionary and value.size() == 1 and value.get(field) is int and value[field] >= minimum and value[field] <= maximum
 
 static func valid_training_terminal(value: Variant) -> bool:
-	if not value is Dictionary or value.size() != 3: return false
-	if not value.get("version") is int or value.version != 1: return false
+	if not value is Dictionary or not value.get("version") is int: return false
+	if value.version not in [1, 2] or value.size() != (3 if value.version == 1 else 9): return false
 	if not value.get("manual_unlocked") is bool or not value.get("completion") is String: return false
 	if value.completion not in ["locked", "completed", "skipped"]: return false
-	return value.manual_unlocked == (value.completion != "locked")
+	if value.manual_unlocked != (value.completion != "locked"): return false
+	if value.version == 1: return true
+	for key in ["internal_power", "initialized", "boot_started", "dock_locked"]:
+		if not value.get(key) is bool: return false
+	if not value.internal_power: return false
+	if not VehicleSnapshot._number(value.get("internal_charge")) or value.internal_charge < 0.0 or value.internal_charge > 100.0: return false
+	if not VehicleSnapshot._number(value.get("boot_elapsed")) or value.boot_elapsed < 0.0 or value.boot_elapsed > 6.0: return false
+	if value.initialized != (value.boot_started and value.boot_elapsed == 6.0): return false
+	if not value.boot_started and value.boot_elapsed != 0.0: return false
+	return value.dock_locked == (not value.initialized)
 
 static func valid_service(scene: String, service: Dictionary) -> bool:
 	for key in service:

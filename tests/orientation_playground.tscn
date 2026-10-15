@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://world/main_world.tscn" id="world"]
+[ext_resource type="Script" path="res://tests/orientation_playground.gd" id="playground"]
+
+[node name="OrientationPlayground" instance=ExtResource("world")]
+script = ExtResource("playground")

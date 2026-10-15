@@ -16,6 +16,12 @@ static func requests_review(args: PackedStringArray) -> bool:
 		if arg in args: return true
 	return false
 
+func _enter_tree() -> void:
+	# Existing nine-bay art/replay cameras retain their authored v11 layout.
+	if requests_review(OS.get_cmdline_user_args()):
+		get_node("WorldGenerator").profile.generation_version = 11
+	super._enter_tree()
+
 func _ready() -> void:
 	review_mode = requests_review(OS.get_cmdline_user_args())
 	super._ready()

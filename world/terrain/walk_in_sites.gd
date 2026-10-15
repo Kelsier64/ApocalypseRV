@@ -44,8 +44,10 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
-	var starter_site := definition.definition_id in [&"starting_shelter", &"tutorial_shelter"]
-	if starter_site:
+	var starter_site := definition.definition_id in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]
+	if definition.definition_id == &"orientation_shelter":
+		_spawn_orientation_terminal(building, container)
+	elif starter_site:
 		_spawn_starter_actors(building, container)
 	var barrel_site: bool = generator.field.profile.generation_version >= 8 and _barrel_site(definition)
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
@@ -97,6 +99,15 @@ static func _spawn_barrel_decoy(building: Node3D, container: Node, site_id: Stri
 
 ## The authored opening has a fixed inventory. Markers carry placement only;
 ## loose actors use the same owner/snapshot lifecycle as every other walk-in.
+static func _spawn_orientation_terminal(building: Node3D, container: Node3D) -> void:
+	var point := building.get_node("StarterEquipment/TrainingTerminal") as Marker3D
+	var support := building.get_node("Collision/TerminalSupport") as StaticBody3D
+	var terminal: TrainingTerminal = load("res://equipment/training_terminal.tscn").instantiate()
+	terminal.configure_portable_terminal()
+	container.add_child(terminal)
+	support.set_meta("training_terminal_dock", terminal.persistent_id)
+	terminal.confirm_placement(point.global_transform, container, support)
+
 static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
 	var scenes := {
 		"StarterEquipment/CraftingStation": "res://equipment/crafting_station.tscn",

@@ -5,6 +5,7 @@ var _initial_placement_done := false
 
 func _enter_tree() -> void:
 	super._enter_tree()
+	configure_tutorial_course()
 	# Checkpoint commit reparents this prepared world and re-enters the tree.
 	# Initial placement belongs only to the first entry, never to a transfer.
 	if _initial_placement_done: return
@@ -16,11 +17,14 @@ func _enter_tree() -> void:
 		generator.world_seed = int(Time.get_unix_time_from_system()) ^ int(Time.get_ticks_usec())
 	var field := WorldField.new(generator.world_seed, generator.profile)
 	var site := field.stop(0)
-	var spawn_z := -388.0 if generator.profile.generation_version >= 11 else -1.0
+	var version: int = generator.profile.generation_version
+	var spawn_z := -41.0 if version >= 12 else (-388.0 if version == 11 else -1.0)
 	# Set both actors before child ready/physics, while the first chunk is built.
-	get_node("Player").transform = site.building * Transform3D(Basis(Vector3.UP, -PI / 2.0), Vector3(-4, 1.5, spawn_z))
-	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, spawn_z))
-	if generator.profile.generation_version >= 11:
+	get_node("Player").transform = site.building * Transform3D(Basis(Vector3.UP, 0.0 if version >= 12 else -PI / 2.0), Vector3(0 if version >= 12 else -4, 1.5, spawn_z))
+	get_node("NewRv").transform = site.building * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 1.8, -10.0 if version >= 12 else spawn_z))
+	if version >= 12:
+		get_node("NewRv/Chassis").current_fuel = 0.0
+	elif version == 11:
 		var vehicle := get_node("NewRv/Chassis")
 		vehicle.current_fuel = 40.0
 		var terminal: Item = load("res://equipment/training_terminal.tscn").instantiate()
@@ -29,6 +33,13 @@ func _enter_tree() -> void:
 		terminal.rotation = Vector3(0, PI / 2.0, 0)
 		terminal.initial_support = NodePath("../LeftFront")
 		vehicle.add_child(terminal)
+
+func configure_tutorial_course() -> void:
+	# Select before child ready, including isolated checkpoint preparation.
+	var tutorial := get_node("StartRun/Tutorial")
+	var orientation: bool = get_node("WorldGenerator").profile.generation_version >= 12
+	var course := load("res://world/tutorial_shelter/orientation_controller.gd" if orientation else "res://world/tutorial_shelter/tutorial_controller.gd")
+	if tutorial.get_script() != course: tutorial.set_script(course)
 
 func _ready() -> void:
 	super._ready()

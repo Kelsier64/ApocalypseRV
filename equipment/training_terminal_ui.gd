@@ -4,6 +4,7 @@ signal close_requested
 signal current_conditions_visible(stage: int)
 const FRAME = preload("res://equipment/terminal_panel.gd")
 const MANUAL = preload("res://equipment/training_manual.gd")
+const BOOT = preload("res://equipment/training_terminal_boot.gd")
 const PAGE_IDS := ["conditions", "steps", "reference", "manual"]
 const PAGE_NAMES := ["Conditions", "Steps", "Controls", "Manual"]
 var current_page := "conditions"
@@ -21,6 +22,7 @@ var _search: LineEdit
 var _refresh_time := 0.0
 var _last_presented_stage := -1
 var _session := 0
+var _boot: Control
 
 func _ready() -> void:
 	layer = 20
@@ -80,6 +82,10 @@ func _ready() -> void:
 	footer.offset_bottom = -16
 	footer.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	UILayout.attach(self, _screen)
+	_boot = BOOT.new()
+	_boot.visible = false
+	add_child(_boot)
+	UILayout.attach(self, _boot)
 	select_page("conditions", false)
 
 func label(parent: Node, text: String, color: Color = RVTerminalTheme.INK) -> Label:
@@ -120,7 +126,19 @@ func on_open() -> void:
 	_session += 1
 	_last_presented_stage = -1
 	_search.text = ""
+	if _show_boot(): return
 	select_page("manual" if get_parent().manual_unlocked else "conditions")
+
+func _show_boot() -> bool:
+	var state: Dictionary = get_parent().boot_state()
+	var booting: bool = not state.is_empty() and not state.get("initialized", false)
+	_boot.visible = booting
+	_screen.visible = not booting
+	if booting:
+		var focused := get_viewport().gui_get_focus_owner()
+		if focused != null: focused.release_focus()
+		_boot.display(state)
+	return booting
 
 func select_page(id: String, focus: bool = true) -> void:
 	if not _pages.has(id): return
@@ -132,6 +150,7 @@ func select_page(id: String, focus: bool = true) -> void:
 
 func refresh() -> void:
 	var terminal := get_parent()
+	if is_instance_valid(_boot) and _show_boot(): return
 	controls.conditions.visible = not terminal.manual_unlocked
 	controls.steps.visible = not terminal.manual_unlocked
 	if terminal.manual_unlocked:
@@ -180,7 +199,7 @@ func _report_visible(stage: int, session: int) -> void:
 	# Deferred presentation alone is insufficient: allow one layout/render frame
 	# and check the actual current page, session and player ownership afterward.
 	await get_tree().process_frame
-	if session != _session or not visible or current_page != "conditions": return
+	if session != _session or not visible or current_page != "conditions" or _boot.visible: return
 	if not _conditions.is_visible_in_tree() or not page_data.get("available", false) or page_data.get("stage", 0) != stage: return
 	if not get_parent()._user_valid() or stage == _last_presented_stage: return
 	_last_presented_stage = stage
@@ -188,6 +207,10 @@ func _report_visible(stage: int, session: int) -> void:
 
 func _process(delta: float) -> void:
 	if not visible: return
+	if _boot.visible:
+		get_parent().advance_boot(delta)
+		if not _show_boot(): select_page("conditions")
+		return
 	_refresh_time += delta
 	if _refresh_time >= 0.2:
 		_refresh_time = 0.0
@@ -198,6 +221,11 @@ func _input(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE:
 		get_viewport().set_input_as_handled()
 		close_requested.emit()
+	elif _boot.visible:
+		get_viewport().set_input_as_handled()
+		if event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+			get_parent().start_boot()
+			_show_boot()
 	elif event.keycode >= KEY_F1 and event.keycode <= KEY_F4:
 		get_viewport().set_input_as_handled()
 		select_page(PAGE_IDS[event.keycode - KEY_F1])

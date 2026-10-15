@@ -627,6 +627,10 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 func _unhandled_input(event):
 	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
+		if read_held_terminal() != null:
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
 		_toggle_flashlight()
 	
@@ -658,6 +662,9 @@ func _unhandled_input(event):
 		drop_item()
 
 	placement.handle_input(self, event)
+
+func read_held_terminal() -> Node:
+	return load("res://equipment/training_terminal_reader.gd").open(self)
 
 ## Capability gate shared by the real ladder entry and behavior tests.
 func _can_use_ladder() -> bool:

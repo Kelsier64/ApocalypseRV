@@ -390,7 +390,7 @@ func _build_navigation(gradual: bool = false) -> void:
 				if leaf != null:
 					gate_layers[leaf] = leaf.collision_layer
 					leaf.collision_layer = 0
-		elif building.get_meta("poi_definition_id", "") == &"tutorial_shelter":
+		elif building.get_meta("poi_definition_id", "") in [&"tutorial_shelter", &"orientation_shelter"]:
 			for leaf: CollisionObject3D in building.find_children("*", "CollisionObject3D", true, false):
 				if not leaf.get_meta("navigation_movable", false): continue
 				gate_layers[leaf] = leaf.collision_layer
@@ -399,7 +399,7 @@ func _build_navigation(gradual: bool = false) -> void:
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():
-		if building.get_meta("poi_definition_id", "") not in [&"starting_shelter", &"tutorial_shelter"]: continue
+		if building.get_meta("poi_definition_id", "") not in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]: continue
 		for shape in building.find_children("*", "CollisionShape3D", true, false):
 			if shape.get_meta("navigation_solid", false) and shape.shape is BoxShape3D and not shape.disabled:
 				_append_solid_box_obstruction(source, shape.shape.size, global_transform.affine_inverse() * shape.global_transform)

@@ -2,6 +2,7 @@
   "version": 1,
   "groups": {
     "quick": [
+      "test_portable_training_terminal",
       "test_training_manual",
       "test_training_service_transactions",
       "test_training_service_schema",
@@ -53,6 +54,9 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_orientation_shelter",
+      "test_orientation_controller",
+      "test_orientation_checkpoint",
       "test_training_maintenance",
       "test_training_playground",
       "test_training_driving",

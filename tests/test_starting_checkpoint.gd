@@ -97,8 +97,8 @@ func _run() -> void:
 		wrong_world.erase("start_state")
 		check(checkpoint.validation_error(wrong_world) == "world_id.start_state", "Shelter generation cannot use legacy identity v%d" % version)
 	var future := prepared.duplicate(true)
-	future.generation_version = 12
-	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v12 remains rejected")
+	future.generation_version = 13
+	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v13 remains rejected")
 	check(prepared.player.items.size() == 2, "Picked flashlight and pistol belong only to player inventory")
 	check(prepared.player.items.any(func(item): return item.state.id == pistol_id and item.state.get("pistol", {}).get("loaded_rounds") == 5), "Real save records carried pistol identity and partial magazine")
 	check(prepared.vehicles[0].items.any(func(item): return item.state.id == ammo_id and item.state.get("ammo", {}).get("rounds") == 9), "Real save records stored ammo identity and partial count")

@@ -44,9 +44,9 @@ static func profile_error(data: Dictionary) -> String:
 		var value: Variant = data[key]
 		if key == "terrain_half_width":
 			# Historical captures include this derived, read-only field.
-			if not VehicleSnapshot._number(value) or (value not in [225.0, 450.0] and not (value == 500.0 and data.get("generation_version", 2) == 11)): return "profile." + key
+			if not VehicleSnapshot._number(value) or (value not in [225.0, 450.0] and not (value == 500.0 and data.get("generation_version", 2) in [11, 12])): return "profile." + key
 		elif key == "generation_version":
-			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]: return "profile." + key
+			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]: return "profile." + key
 		elif key in constants:
 			if value != defaults.get(key): return "profile." + key
 		elif key in ["chunks_ahead", "chunks_behind"]:
@@ -61,6 +61,8 @@ static func profile_error(data: Dictionary) -> String:
 
 static func tutorial_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
+	if value.get("course") == "two_room_orientation":
+		return preload("res://world/tutorial_shelter/orientation_controller.gd").validation_error(value)
 	var fields := ["version", "stage", "status", "terminal_id", "rv_id", "flashlight_id", "flags"]
 	if not value.has_all(fields): return "fields"
 	if not value.version is int or value.version not in [1, 2, 3]: return "version"

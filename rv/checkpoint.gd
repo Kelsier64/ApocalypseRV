@@ -227,7 +227,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]: return "generation_version"
 	if data.get("generation_version", 2) >= 10 and not SlenderSpeakerSpawns.valid_ledger(data.get("generated_giant_segments")): return "generated_giant_segments"
 	if data.get("generation_version", 2) >= 10:
 		if data.has("route_pressure") and not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"
@@ -235,16 +235,20 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var world_id: Variant = data.get("world_id", "legacy")
 	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
 	if world_id == "shelter":
-		if data.get("generation_version") not in [7, 8, 9, 10, 11]: return "world_id.generation_version"
+		if data.get("generation_version") not in [7, 8, 9, 10, 11, 12]: return "world_id.generation_version"
 		var start_state: Variant = data.get("start_state")
 		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
 		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
-		if start_state.has("bay_gates") and (data.generation_version < 11 or not StartRun.valid_bay_gates(start_state.bay_gates)): return "start_state.bay_gates"
+		var gate_count := 1 if data.generation_version == 12 else 8
+		if start_state.has("bay_gates") and (data.generation_version < 11 or not StartRun.valid_bay_gates(start_state.bay_gates, gate_count)): return "start_state.bay_gates"
 		if start_state.has("tutorial"):
-			if data.generation_version != 11: return "start_state.tutorial.generation_version"
+			var orientation: bool = start_state.tutorial is Dictionary and start_state.tutorial.get("course") == "two_room_orientation"
+			if data.generation_version != (12 if orientation else 11): return "start_state.tutorial.generation_version"
 			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry)
 			if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
-	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11]:
+		elif data.generation_version == 12:
+			return "start_state.tutorial"
+	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11, 12]:
 		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
@@ -291,7 +295,31 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var owned_data := data.duplicate()
 	owned_data.erase("start_state")
 	if not ItemState.unique_ids(owned_data, {}): return "item.id.duplicate"
+	if data.get("generation_version") == 12 and data.get("start_state", {}).has("tutorial"):
+		var orientation_error := _orientation_terminal_error(owned_data, data.start_state.tutorial)
+		if not orientation_error.is_empty(): return "start_state.tutorial." + orientation_error
 	return ""
+
+func _orientation_terminal_error(owned_data: Dictionary, tutorial: Dictionary) -> String:
+	# The course references one persistent Item owner, including a carried or
+	# dormant terminal. A lost terminal is valid; retry will recover it later.
+	var records: Array[Dictionary] = []
+	_find_terminal_records(owned_data, tutorial.terminal_id, records)
+	if records.is_empty(): return ""
+	var record := records[0]
+	if record.get("scene", record.get("scene_path", "")) != "res://equipment/training_terminal.tscn": return "terminal_id"
+	var terminal: Dictionary = record.get("state", {}).get("training_terminal", {})
+	if terminal.get("version") != 2: return "terminal_id"
+	if terminal.get("initialized", false) != tutorial.flags.boot_complete: return "flags.boot_complete"
+	return ""
+
+func _find_terminal_records(value: Variant, identity: String, result: Array[Dictionary]) -> void:
+	if value is Dictionary:
+		if value.get("state") is Dictionary and value.state.get("id") == identity:
+			result.append(value)
+		for child in value.values(): _find_terminal_records(child, identity, result)
+	elif value is Array:
+		for child in value: _find_terminal_records(child, identity, result)
 
 func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	var state_error := CheckpointSchema.tutorial_error(value)
@@ -316,8 +344,6 @@ func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 
 func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
-	var start_run := world.get_node_or_null("StartRun")
-	if start_run != null and pending.has("start_state"): start_run.restore(pending.start_state)
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null and pending.has("clock"): clock.restore(pending.clock)
 	if clock != null and pending.has("weather"): clock.weather.restore(pending.weather)
@@ -328,6 +354,9 @@ func prepare_world(world: Node) -> void:
 		if key in profile and key != "terrain_half_width": profile.set(key, pending.profile[key])
 	profile.generation_version = pending.get("generation_version", 2)
 	world.get_node("WorldGenerator").profile = profile
+	if world.has_method("configure_tutorial_course"): world.configure_tutorial_course()
+	var start_run := world.get_node_or_null("StartRun")
+	if start_run != null and pending.has("start_state"): start_run.restore(pending.start_state)
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
 	world.get_node("WorldGenerator").outdoor_sites = pending.get("outdoor_sites", {}).duplicate(true)
