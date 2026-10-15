@@ -266,14 +266,15 @@ func tick() -> void:
 func page() -> Dictionary:
 	var conditions := []
 	var steps := ["This workshop is optional. Use these references in any order; you can leave when the RV's normal driving systems work.",
+		"Supplies: search the warehouse racks, pallet bays and side aisles. Loose supplies sit on the lower shelves; sealed shipping crates are scenery. Keep the central vehicle lane clear.",
 		"Power: collect the charged reserve battery. Select it and use the RV battery socket to exchange the empty installed battery. The socket needs a healthy installed battery; no reserve charge is added automatically.",
 		"Engine: open the front maintenance cover and wait until it stops. Select an engine repair kit, aim at the engine socket and hold H for 3 seconds. Each consumed kit restores 150 engine durability; a second kit improves the repair.",
-		"Equipment: collect the marked scrapper and workbench, one large item at a time. Board via the side access and fasten them to the rear cabin floor. Keep the walkway, intake and output bed clear. Equipment can be mounted before restoring power.",
+		"Equipment: find the scrapper and workbench among the warehouse storage bays, one large item at a time. Board via the side access and fasten them to the rear cabin floor. Keep the walkway, intake and output bed clear. Equipment can be mounted before restoring power.",
 		"Materials: drop small scraps into the installed scrapper intake. Carry an oil barrel to the intake and deposit it as a held large item. Wait until materials enter RV storage. All eight scraps and both barrels yield 28 Metal Parts and 20 Unrefined Fuel.",
 		"Gasoline: open the RV's rvctl tablet, choose Crafting, the marked workbench and Gasoline Can. Confirm production (2 Metal Parts + 5 Unrefined Fuel), wait for the physical output and pick it up.",
 		"Walls: with the engine off and handbrake applied, open rvctl Structure. Select left_0 or right_0 and Repair (2 Metal Parts each). Keep rvctl open until the job finishes.",
 		"Roof: in rvctl Structure, select destroyed slot roof_1 and Rebuild (6 Metal Parts). Clear the construction area and keep rvctl open until completion. Repairs and reconstruction are optional for departure.",
-		"Tire: with no tire selected, hold E at the left-front wheel socket to remove the original flat tire. Collect the marked spare from the west floor stand and hold E at that same empty socket to install it.",
+		"Tire: with no tire selected, hold E at the left-front wheel socket to remove the original flat tire. Find the healthy spare among the pallet bays and hold E at that same empty socket to install it.",
 		"Fuel: select a completed gasoline can and use the RV fuel port. A successful transfer returns an empty can. You can refuel before completing any repair or equipment reference.",
 		"Departure: close the maintenance cover and stow the rear ramp. Board the driver's seat, start the engine, select first gear and release the handbrake. Drive towards the exit; its vehicle sensor opens the gate. Clear the exit with the entire RV to begin the journey."]
 	var controls := ["E: pick up / open cover / exchange selected battery / use fuel port. Hold E: fixed rvctl, driver's seat or wheel socket.",

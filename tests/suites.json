@@ -60,6 +60,7 @@
       "test_orientation_step_retry",
       "test_orientation_workshop",
       "test_orientation_workshop_journey",
+      "test_orientation_warehouse",
       "test_orientation_shelter",
       "test_orientation_controller",
       "test_orientation_checkpoint",

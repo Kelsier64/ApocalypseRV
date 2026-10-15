@@ -1,0 +1,1567 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse_rack.tscn" id="rack"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/shipping_crate.tscn" id="crate"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse_pallet.tscn" id="pallet"]
+
+[ext_resource type="PackedScene" path="res://assets/models/item_box/item_box.glb" id="case"]
+
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="lamp"]
+
+
+[node name="Warehouse" type="Node3D"]
+
+[node name="Rack-1_12.5_0" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_0LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -22.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_0LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -19.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_0Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 2.6, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_0Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_0Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 5.05, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_1" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_1LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -16.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_1LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -13.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_1Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 3.85, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_1Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 5.05, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_2" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_2LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_2LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_2Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 2.6, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_2Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 3.85, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_2Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_2Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_3" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_3LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_3LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, -1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_3Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 2.6, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_3Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 5.05, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_4" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_4LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, 1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_4LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, 4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_4Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 3.85, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_4Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 5.05, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_4Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_5" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_5LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, 7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_5LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.22, 1.075, 10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_12.5_5Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 2.3, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_5Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 2.6, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_5Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(-12.5, 3.85, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_5Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 3.55, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_12.5_5Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_12.5_5Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-12.5, 4.75, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_0" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_0LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -22.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_0LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -19.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_0Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 2.6, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_0Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_0Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 5.05, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_1" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_1LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -16.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_1LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -13.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_1Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 3.85, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_1Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 5.05, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_2" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_2LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_2LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_2Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 2.6, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_2Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 3.85, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_2Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_2Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_3" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_3LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_3LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, -1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_3Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 2.6, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_3Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 5.05, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_4" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_4LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, 1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_4LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, 4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_4Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 3.85, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_4Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 5.05, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_4Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_5" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_5LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, 7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_5LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(-17.28, 1.075, 10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack-1_17_5Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 2.3, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_5Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 2.6, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_5Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(-17, 3.85, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_5Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 3.55, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack-1_17_5Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack-1_17_5Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-17, 4.75, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_0" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_0LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -22.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_0LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -19.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_0Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 2.6, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_0Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_0Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 5.05, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_1" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_1LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -16.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_1LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -13.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_1Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 3.85, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_1Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 5.05, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_2" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_2LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_2LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_2Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 2.6, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_2Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 3.85, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_2Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_2Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_3" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_3LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_3LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, -1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_3Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 2.6, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_3Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 5.05, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_4" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_4LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, 1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_4LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, 4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_4Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 3.85, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_4Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 5.05, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_4Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_5" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_5LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, 7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_5LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(12.22, 1.075, 10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_12.5_5Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 2.3, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_5Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 2.6, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_5Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(12.5, 3.85, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_5Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 3.55, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_12.5_5Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_12.5_5Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(12.5, 4.75, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_0" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_0LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -22.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_0LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -19.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_0Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 2.6, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_0Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, -22.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_0Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 5.05, -20)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_1" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_1LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -16.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_1LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -13.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_1Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 3.85, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_1Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 5.05, -16.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, -14)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_2" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_2LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_2LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_2Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 2.6, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_2Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 3.85, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_2Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, -10.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_2Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, -8)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_3" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_3LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_3LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, -1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_3Case0_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 2.6, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, -4.1)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_3Case2_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 5.05, -2)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_4" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_4LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, 1.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_4LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, 4.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_4Case1_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 3.85, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_4Case2_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 5.05, 1.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_4Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, 4)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_5" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_5LowCase0" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, 7.7)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_5LowCase1" parent="." instance=ExtResource("case")]
+position = Vector3(17.28, 1.075, 10.3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.6, 0.833333, 1.14286)
+
+[node name="Rack1_17_5Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 2.3, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_5Case0_1" parent="." instance=ExtResource("case")]
+position = Vector3(17, 2.6, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_5Case1_0" parent="." instance=ExtResource("case")]
+position = Vector3(17, 3.85, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_5Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 3.55, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="Rack1_17_5Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, 7.9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1.08, 1, 0.95)
+
+[node name="Rack1_17_5Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(17, 4.75, 10)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.95, 0.85, 0.95)
+
+[node name="InnerPile-1_0" parent="." instance=ExtResource("pallet")]
+position = Vector3(-5.8, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile-1_0Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -21.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -20.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -20.52)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -21.48)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1" parent="." instance=ExtResource("pallet")]
+position = Vector3(-5.8, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile-1_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -15.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -14.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -14.52)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -15.48)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 2.105, -15.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 2.105, -14.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_2" parent="." instance=ExtResource("pallet")]
+position = Vector3(-5.8, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile-1_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -9.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_2Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -8.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_2Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -8.52)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -9.48)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3" parent="." instance=ExtResource("pallet")]
+position = Vector3(-5.8, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile-1_3Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -3.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, -2.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -2.52)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, -3.48)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 2.105, -3.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_3Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 2.105, -2.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_4" parent="." instance=ExtResource("pallet")]
+position = Vector3(-5.8, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile-1_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, 2.49)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.82, 0.185, 3.51)
+rotation = Vector3(0, 0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, 3.48)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile-1_4Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-5.77, 1.145, 2.52)
+rotation = Vector3(0, -0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_0" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_0Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -21.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -20.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -20.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -21.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -15.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -14.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -14.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -15.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, -15.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_1Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, -14.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_2" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -9.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_2Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -8.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_2Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -8.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -9.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_3Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -3.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, -2.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -2.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, -3.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, -3.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_3Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, -2.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_4" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_4Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, 2.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_4Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, 3.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_4Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, 3.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_4Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, 2.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5" parent="." instance=ExtResource("pallet")]
+position = Vector3(5.8, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerPile1_5Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, 8.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 0.185, 9.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, 9.48)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.83, 1.145, 8.52)
+rotation = Vector3(0, 0.025, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5Crate2_0" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, 8.49)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="InnerPile1_5Crate2_1" parent="." instance=ExtResource("crate")]
+position = Vector3(5.78, 2.105, 9.51)
+rotation = Vector3(0, -0.018, 0)
+scale = Vector3(0.97, 1, 1)
+
+[node name="Overflow0" parent="." instance=ExtResource("pallet")]
+position = Vector3(18.85, 0, -15)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.95, 0.72)
+
+[node name="Overflow0Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 0.185, -15.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow0Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 0.185, -14.53)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow0Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 1.145, -15.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow0Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 1.145, -14.53)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow1" parent="." instance=ExtResource("pallet")]
+position = Vector3(18.85, 0, 0)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.95, 0.72)
+
+[node name="Overflow1Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 0.185, -0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow1Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 0.185, 0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow1Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 1.145, -0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow1Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(18.85, 1.145, 0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow2" parent="." instance=ExtResource("pallet")]
+position = Vector3(-18.85, 0, -18)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.95, 0.72)
+
+[node name="Overflow2Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 0.185, -18.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow2Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 0.185, -17.53)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow2Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 1.145, -18.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow2Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 1.145, -17.53)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow3" parent="." instance=ExtResource("pallet")]
+position = Vector3(-18.85, 0, 0)
+rotation = Vector3(0, 1.5708, 0)
+scale = Vector3(1, 0.95, 0.72)
+
+[node name="Overflow3Crate0_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 0.185, -0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow3Crate0_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 0.185, 0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow3Crate1_0" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 1.145, -0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Overflow3Crate1_1" parent="." instance=ExtResource("crate")]
+position = Vector3(-18.85, 1.145, 0.47)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="ShelfLamp-1_0" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, -21)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp-1_1" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, -15)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp-1_2" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, -9)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp-1_3" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, -3)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp-1_4" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, 3)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp-1_5" parent="." instance=ExtResource("lamp")]
+position = Vector3(-12.92, 2.12, 9)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_0" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, -21)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_1" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, -15)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_2" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, -9)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_3" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, -3)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_4" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, 3)
+rotation = Vector3(0, 1.5707963, 0)
+
+[node name="ShelfLamp1_5" parent="." instance=ExtResource("lamp")]
+position = Vector3(12.92, 2.12, 9)
+rotation = Vector3(0, 1.5707963, 0)

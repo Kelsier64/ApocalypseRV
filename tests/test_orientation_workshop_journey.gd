@@ -162,7 +162,13 @@ func pickup(key: String) -> bool:
 	if not check(item != null, "Designated " + key + " exists before pickup"): return false
 	var identity := item.persistent_id
 	player.rv_support.clear()
-	player.global_position = item.global_position + vehicle.global_basis.x * 1.2
+	var approach := run_owner.shelter.get_node_or_null(NodePath("WarehouseApproaches/" + key)) as Marker3D
+	if approach != null and approach.global_position.distance_to(item.global_position) <= 2.5:
+		# Authored floor approaches keep the standing capsule out of rack/wall
+		# collision; its origin rests 0.25 m below the soles after reception.
+		player.global_position = approach.global_position - run_owner.shelter.global_basis.y * 0.25
+	else:
+		player.global_position = item.global_position + vehicle.global_basis.x * 1.2
 	var message: String = item.pickup(player)
 	await frames()
 	return check(select_item(identity), "Native " + key + " pickup retains its original identity: " + message)
