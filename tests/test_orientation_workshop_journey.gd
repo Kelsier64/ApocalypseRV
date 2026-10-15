@@ -104,7 +104,7 @@ func reception() -> bool:
 	if not check(reader != null, "Carried original terminal opens after entering the workshop"): return false
 	await frames()
 	var page: Dictionary = reader.ui_instance.page_data
-	check(reader.ui_instance.visible and page.get("stage") == 2 and "Install workshop equipment" in page.get("title", ""), "Visible carried-terminal TUI presents the second-room equipment lesson")
+	check(reader.ui_instance.visible and page.get("stage") == 2 and "Optional references" in page.get("title", ""), "Visible carried-terminal TUI presents the optional second-room field guide")
 	reader._close_ui()
 	await frames()
 	return failures.is_empty()
@@ -115,13 +115,34 @@ func initial_state() -> bool:
 	for slot in ["left_0", "right_0"]:
 		var panel: RVStructurePanel = vehicle.get_node("StructureSlots").panel(slot)
 		check(is_equal_approx(panel.max_health - panel.current_health, 60.0), "Original " + slot + " has exactly sixty damage")
-	check(vehicle.get_engine() != null and vehicle.get_engine().health == vehicle.get_engine().definition().max_health, "Engine remains healthy for the stage-two exercise")
+	check(vehicle.get_engine() != null and vehicle.get_engine().health == 0.0 and not vehicle.has_working_engine(), "New workshop engine is completely broken")
+	check(vehicle.get_node("StructureSlots").panel("roof_1").is_destroyed, "The middle ceiling is completely destroyed")
 	var socket: BatterySocket = workshop.item("socket")
 	if not check(socket != null and socket.installed_battery != null, "Original installed battery powers the workshop"): return false
-	socket.installed_battery.charge = 0.0
 	tutorial._physics_process(0.1)
-	check(socket.installed_battery.charge > 0.0 and vehicle.current_fuel == 0.0 and not workshop.flags.refueled, "Preparation restores installed battery power without adding or counting fuel")
+	check(socket.installed_battery.charge == 0.0 and vehicle.current_fuel == 0.0 and not workshop.flags.refueled, "The installed empty battery and fuel stay empty without automatic reserves")
 	check(not workshop.item("scrapper").is_fixed and not workshop.item("workbench").is_fixed, "Both designated machines await carrying on the workshop floor")
+	if not await pickup("battery"): return false
+	socket.interact(player)
+	check(workshop.flags.battery_exchanged and socket.installed_battery.id == workshop.targets.battery and vehicle.has_usable_power(), "A native charged-battery exchange restores power before any equipment task")
+	var hatch: Node = vehicle.get_node("EngineBay/Hatch")
+	await stand_clear()
+	hatch.interact(player)
+	if not check(await WAIT.until(self, func(): return hatch.stable() and hatch.opened, 5000, true), "Real engine hatch fully opens for kit service"): return false
+	for kit in ["engine_kit_a", "engine_kit_b"]:
+		if not await pickup(kit): return false
+		var identity: String = workshop.targets[kit]
+		var health: float = vehicle.get_engine().health
+		var operation := RepairOperation.new()
+		operation.step(player, vehicle.engine_bay, true, 1.0)
+		operation.cancel()
+		check(select_item(identity) and vehicle.get_engine().health == health, "Cancelling engine service preserves the kit and broken engine state")
+		operation.step(player, vehicle.engine_bay, true, 3.0)
+		check(not select_item(identity) and vehicle.get_engine().health == health + 150.0, "Native kit transaction consumes its original Item and restores 150 durability")
+	check(workshop.flags.engine_repaired and vehicle.has_working_engine() and workshop.step == 1, "Engine repair is recorded before any equipment, recycling or manufacture task")
+	await stand_clear()
+	hatch.interact(player)
+	if not check(await WAIT.until(self, func(): return hatch.stable() and not hatch.opened, 5000, true), "Engine cover closes after native repair"): return false
 	return failures.is_empty()
 
 func select_item(identity: String) -> bool:
@@ -186,7 +207,7 @@ func recycling_lesson() -> bool:
 	recycler.recycle_committed.emit("other-rv", workshop.targets.scrap_a, {ItemNames.METAL_PARTS: 3})
 	recycler.recycle_committed.emit(vehicle.persistent_id, "other-scrap", {ItemNames.METAL_PARTS: 3})
 	check(workshop.capture() == prior, "Other RV and other input identities cannot create marked recycling evidence")
-	for key in ["scrap_a", "scrap_b", "barrel"]:
+	for key in ["scrap_a", "scrap_b", "barrel", "scrap_c", "scrap_d"]:
 		if not await pickup(key): return false
 		var identity: String = workshop.targets[key]
 		await stand_clear()
@@ -209,7 +230,7 @@ func recycling_lesson() -> bool:
 			recycler.recycle_prop(input)
 		recycler.step_work(recycler.crush_time)
 		if not check(identity in workshop.recycled_ids, "Actual recycler work commits " + key): return false
-	if not check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 8 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 10, "The three original inputs supply exactly eight metal and ten raw fuel"): return false
+	if not check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 14 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 10, "Original stock plus two extra scraps supplies fourteen metal and ten raw fuel"): return false
 	return await step_ready(3)
 
 func manufacturing_lesson() -> bool:
@@ -218,7 +239,7 @@ func manufacturing_lesson() -> bool:
 	if not check(bench.request_craft("gasoline"), "Actual recipe accepts the recycled materials: " + bench.last_error): return false
 	check(workshop.output_ids.is_empty() and workshop.gasoline_id.is_empty() and workshop.step == 3, "Adding a recipe to the queue does not count as output or pickup")
 	bench.cancel_jobs()
-	check(workshop.output_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == 8 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 10, "Cancelling queued printing restores actual materials and creates no completion")
+	check(workshop.output_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == 14 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 10, "Cancelling queued printing restores actual materials and creates no completion")
 	if not check(bench.request_craft("gasoline"), "The refunded materials can queue the real fuel recipe"): return false
 	bench.step_work(RecipeCatalog.find("gasoline").duration)
 	if not check(workshop.output_ids.size() == 1, "Manufacturing creates one physical gasoline can: " + bench.last_error): return false
@@ -229,7 +250,7 @@ func manufacturing_lesson() -> bool:
 	output.interact(player)
 	await frames()
 	if not check(workshop.gasoline_id == identity and select_item(identity), "Native printed-can pickup retains the manufactured identity"): return false
-	check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 6 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 5, "Gasoline recipe consumes exactly two metal and five raw fuel")
+	check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 12 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 5, "Gasoline recipe consumes exactly two metal and five raw fuel")
 	return await step_ready(4)
 
 func repair_lesson() -> bool:
@@ -239,7 +260,7 @@ func repair_lesson() -> bool:
 	tablet.interact_hold(player)
 	if not check(construction.begin(tablet, "right_0", "repair").is_empty(), "Existing rvctl begins the first specified wall repair"): return false
 	tablet._close_ui()
-	check(construction.job.is_empty() and workshop.repaired_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == 6, "Closing rvctl cancels repair without material consumption or completion")
+	check(construction.job.is_empty() and workshop.repaired_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == 12, "Closing rvctl cancels repair without material consumption or completion")
 	for slot in ["right_0", "left_0"]:
 		tablet.interact_hold(player)
 		if not check(construction.begin(tablet, slot, "repair").is_empty(), "Native rvctl starts repair of " + slot): return false
@@ -247,7 +268,13 @@ func repair_lesson() -> bool:
 		tablet._close_ui()
 		var panel: RVStructurePanel = vehicle.get_node("StructureSlots").panel(slot)
 		if not check(slot in workshop.repaired_ids and panel.current_health == panel.max_health, "Real repair transaction restores " + slot): return false
-	check(workshop.step == 4 and vehicle.get_item_count(ItemNames.METAL_PARTS) == 2, "Both walls use four metal and preserve the promised two-metal margin; wheel remains required")
+	check(workshop.step == 4 and vehicle.get_item_count(ItemNames.METAL_PARTS) == 8, "Both walls use four metal, leaving enough for ceiling reconstruction")
+	tablet.interact_hold(player)
+	var roof_reason: String = construction.begin(tablet, "roof_1", "rebuild")
+	if not check(roof_reason.is_empty(), "Native rvctl accepts reconstruction of the destroyed roof: " + roof_reason): return false
+	construction._physics_process(6.0)
+	tablet._close_ui()
+	check(workshop.flags.roof_rebuilt and workshop.wall_ready("roof_1") and vehicle.get_item_count(ItemNames.METAL_PARTS) == 2, "Actual roof rebuild restores geometry and consumes six metal, retaining two spare metal")
 	var socket: Node3D = vehicle.get_node("WheelSocket0")
 	player.global_position = socket.global_position + vehicle.global_basis.x * 2
 	socket.interact_hold(player)
@@ -301,15 +328,15 @@ func fuel_lesson() -> bool:
 	check(workshop.ready_for_departure(), "Completed ledger also has working machines, healthy walls/spare and actual fuel")
 	var scrapper: Item = workshop.item("scrapper")
 	scrapper.enabled = false
-	check(not workshop.ready_for_departure(), "Disabled current equipment blocks readiness despite earlier successful installation")
+	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "Disabled workshop equipment cannot turn optional tasks into an exit lock")
 	scrapper.enabled = true
 	var wall: RVStructurePanel = vehicle.get_node("StructureSlots").panel("left_0")
 	wall.set_health(wall.max_health - 1.0)
-	check(not workshop.ready_for_departure(), "A damaged current target wall blocks readiness despite earlier repair evidence")
+	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "An unfinished side wall cannot turn optional repair into an exit lock")
 	wall.set_health(wall.max_health)
 	var wheel_health: float = vehicle.wheel_health[0]
 	vehicle.wheel_health[0] = 0.0
-	check(not workshop.ready_for_departure(), "A currently flat marked spare blocks readiness despite earlier installation evidence")
+	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "A flat tire affects ordinary physics without creating a tutorial exit lock")
 	vehicle.wheel_health[0] = wheel_health
 	return check(workshop.ready_for_departure(), "Restored current working states recover readiness without replaying evidence")
 

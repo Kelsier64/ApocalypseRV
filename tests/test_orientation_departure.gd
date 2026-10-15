@@ -8,7 +8,7 @@ func driving_check() -> bool:
 	check(not tutorial.departure_authorized, "A player on foot cannot trigger the vehicle sensor")
 	var hatch: Node = vehicle.get_node("EngineBay/Hatch")
 	hatch.requested_open = true
-	check(not tutorial.departure_block_reason().is_empty(), "An unstowed maintenance cover blocks automatic departure")
+	check(tutorial.departure_block_reason().is_empty(), "The guide does not turn cover advice into a departure lock")
 	hatch.requested_open = false
 	if not await super.driving_check(): return false
 	check(tutorial.departure_authorized and run_owner.gate.target == 1.0, "Native forward wheel motion in the original RV triggers the advance sensor")
@@ -36,9 +36,10 @@ func completion_check() -> bool:
 	driver.interact_hold(player)
 	if not check(player.seated_in == driver and vehicle.set_gear(1) and vehicle.set_engine_running(true), "The restored RV accepts its original driver and engine"): return false
 	vehicle.set_handbrake(false)
+	workshop.item("workbench").enabled = false
 	vehicle.freeze = false
 	player.set_physics_process(true)
-	vehicle.control_override = {"throttle": 0.35}
+	vehicle.control_override = {"throttle": 1.0}
 	var origin := vehicle.global_position
 	for tick in 1800:
 		await physics_frame
@@ -54,6 +55,7 @@ func completion_check() -> bool:
 				var hit := world.get_world_3d().direct_space_state.intersect_ray(query)
 				if not hit.is_empty(): print("DEPARTURE_BLOCKER: ", hit.collider.get_path(), " at=", hit.position)
 		print("DEPARTURE_CONTROLS: ", vehicle.control_override, " throttle=", vehicle.throttle_input, " gear=", vehicle.gear, " handbrake=", vehicle.handbrake, " locked=", vehicle.driver_controls_locked())
+		print("DEPARTURE_CONTACTS: ", vehicle.get_colliding_bodies().map(func(body): return str(body.get_path())), " force=", vehicle.engine_force, " fuel=", vehicle.current_fuel, " power=", vehicle.current_power)
 	if not check(run_owner.phase in ["started", "closing"] and tutorial.status == "completed", "Native wheel forces take the original RV and seated player completely out of the depot"): return false
 	check(run_owner.departure_clear() and vehicle.global_position.distance_to(origin) > 0.5, "Successful completion follows actual continuous driving past the whole-vehicle boundary")
 	check(world.get_node("WorldClock").running and world.get_node("WorldClock").weather_running, "Complete departure resumes time and weather")
@@ -120,8 +122,7 @@ func clearance_probes(gate: ShelterGarageGate) -> void:
 	check(not run_owner.vehicle_clear(vehicle), "Protruding fixed equipment must also clear the complete exit")
 	machine.transform = machine_pose
 	machine.enabled = false
-	run_owner._physics_process(1.0)
-	check(run_owner.phase == "preparing" and tutorial.status == "active", "Previously authorized departure still requires current working equipment at final clearance")
+	check(tutorial.departure_block_reason().is_empty(), "Disabled optional equipment cannot block final departure clearance")
 	machine.enabled = true
 	player.global_position = gate.to_global(Vector3(0, 1, 0))
 	check(run_owner.vehicle_clear(vehicle) and not run_owner.departure_clear(), "The player must leave too, even after every RV collision has cleared")

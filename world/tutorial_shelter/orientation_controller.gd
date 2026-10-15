@@ -3,7 +3,7 @@ class_name OrientationController
 ## The v12 course owns its evidence independently of the v11 course.
 signal progress_changed
 const COURSE := "two_room_orientation"
-const STATE_VERSION := 3
+const STATE_VERSION := 4
 const TERMINAL_SCENE := "res://equipment/training_terminal.tscn"
 const ROOM_DIVIDER_Z := -26.0
 const WORKSHOP_BOUNDS := AABB(Vector3(-20, 0, ROOM_DIVIDER_Z), Vector3(40, 5, 40))
@@ -212,14 +212,14 @@ static func validation_error(value: Variant) -> String:
 	var version: Variant = value.get("version")
 	var fields := ["version", "course", "stage", "status", "terminal_id", "flags"]
 	if version is int and version >= 2: fields.append_array(["rv_id", "workshop"])
-	if version == STATE_VERSION: fields.append("departure_started")
+	if version is int and version >= 3: fields.append("departure_started")
 	if not value.has_all(fields): return "fields"
 	for key in value:
-		if key not in fields and not (version == STATE_VERSION and key == "entry_snapshot"): return "fields"
-	if not value.version is int or value.version not in [1, 2, STATE_VERSION]: return "version"
+		if key not in fields and not (version is int and version >= 3 and key == "entry_snapshot"): return "fields"
+	if not value.version is int or value.version not in [1, 2, 3, STATE_VERSION]: return "version"
 	if not value.course is String or value.course != COURSE: return "course"
 	if not value.stage is int or value.stage not in [1, 2]: return "stage"
-	if not value.status is String or value.status not in (["active", "completed", "skipped"] if version == STATE_VERSION else ["active"]): return "status"
+	if not value.status is String or value.status not in (["active", "completed", "skipped"] if version >= 3 else ["active"]): return "status"
 	if not value.terminal_id is String or value.terminal_id.is_empty(): return "terminal_id"
 	var saved: Variant = value.flags
 	var names := ["boot_complete", "terminal_taken", "workshop_entered"]
@@ -241,9 +241,9 @@ static func validation_error(value: Variant) -> String:
 		if not value.workshop.empty_can_id.is_empty(): references.append(value.workshop.empty_can_id)
 		if value.terminal_id in references or not value.rv_id.is_empty() and value.rv_id in references: return "workshop.id.alias"
 		if not saved.workshop_entered and value.workshop.step != 1: return "workshop.step"
-	if version == STATE_VERSION:
+	if version >= 3:
 		if not value.departure_started is bool: return "departure_started"
-		if value.departure_started and value.status != "skipped" and (value.stage != 2 or value.workshop.step != 6): return "departure_started"
+		if value.departure_started and value.status != "skipped" and (value.stage != 2 or version == 3 and value.workshop.step != 6): return "departure_started"
 		if value.status == "completed" and not value.departure_started: return "status"
 		if value.has("entry_snapshot") and (value.status != "active" or not value.entry_snapshot is Dictionary or value.entry_snapshot.is_empty()): return "entry_snapshot"
 	return ""
@@ -268,9 +268,17 @@ func apply_state(data: Dictionary) -> bool:
 		initial.free()
 	else: workshop.restore(data.workshop)
 	_ensure_recovery()
-	recovery.restore(data.get("entry_snapshot", {}))
+	recovery.restore(_upgrade_entry(data.get("entry_snapshot", {})))
 	progress_changed.emit()
 	return true
+
+func _upgrade_entry(snapshot: Dictionary) -> Dictionary:
+	var upgraded := snapshot.duplicate(true)
+	var saved: Dictionary = upgraded.get("start_state", {}).get("tutorial", {})
+	if saved.get("course") == COURSE and saved.get("version") == 3:
+		saved.version = STATE_VERSION
+		saved.workshop = OrientationWorkshop.upgrade_state(saved.workshop)
+	return upgraded
 
 func restore(data: Dictionary) -> void:
 	if data.is_empty():
@@ -296,22 +304,17 @@ func skip_tutorial() -> bool:
 
 func departure_block_reason() -> String:
 	if not initialized() or not _active_world(): return "Journey already started"
-	if status == "active" and (not flags.workshop_entered or not workshop.ready_for_departure()): return "Restore the RV and finish the workshop guide before departure"
 	if status not in ["active", "skipped"]: return "Journey already started"
-	var vehicle := designated_rv()
-	if vehicle == null or vehicle.current_fuel <= 0.0 or not vehicle.has_usable_power(): return "Restore fuel and installed battery power before departure"
-	var hatch: Node = vehicle.engine_bay.get_node("Hatch")
-	if not hatch.stable() or hatch.requested_open or hatch.opened: return "Close the maintenance cover before departure"
-	if vehicle.drive_blocked(): return "Stow the rear access ramp before departure"
+	if status == "active" and not flags.workshop_entered: return "Take your terminal through the reception door"
+	# The guide never authorizes the exit. Fuel, faults and deployed hardware
+	# affect the vehicle through its normal systems, not tutorial checkboxes.
+	if designated_rv() == null: return "The vehicle sensor requires the original RV"
 	return ""
 
 func _tick_departure() -> void:
 	var owner := get_parent()
 	if departure_authorized or not departure_block_reason().is_empty() or not is_instance_valid(owner.gate): return
 	var vehicle := designated_rv()
-	var player: Node3D = _world().get_node_or_null("Player")
-	if player == null or player.is_player_dead or player.is_grabbed() or not is_instance_valid(player.seated_in) or ClimbMath.find_rv_ancestor(player.seated_in) != vehicle: return
-	if not vehicle.energy.engine_running or vehicle.handbrake or not vehicle.is_player_driving: return
 	var heading: Vector3 = owner.gate.global_basis.z.normalized()
 	if (-vehicle.global_basis.z).dot(heading) < 0.85 or vehicle.linear_velocity.dot(heading) <= 0.1: return
 	var position_in_gate: Vector3 = owner.gate.to_local(vehicle.global_position)

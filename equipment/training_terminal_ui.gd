@@ -191,7 +191,7 @@ func _refresh_manual() -> void:
 	var terminal := get_parent()
 	_search.editable = terminal.manual_unlocked
 	if not terminal.manual_unlocked:
-		_manual.text = "Complete training or choose Skip Tutorial in the Esc menu to unlock the field manual."
+		_manual.text = "Leave the depot or choose Skip Tutorial in the Esc menu to unlock the field manual." if terminal.tutorial_controller() is OrientationController else "Complete training or choose Skip Tutorial in the Esc menu to unlock the field manual."
 		return
 	_manual.text = MANUAL.format(_search.text)
 

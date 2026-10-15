@@ -10,6 +10,10 @@
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="lamp"]
 
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/supply_shelf.tscn" id="supply_shelf"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/supply_shelf_collision.tscn" id="supply_shelf_collision"]
+
 [sub_resource type="StandardMaterial3D" id="paper"]
 albedo_color = Color(0.76, 0.72, 0.56, 1)
 roughness = 1.0
@@ -837,6 +841,60 @@ position = Vector3(10.7, 0.5, -10)
 
 [node name="SpareWheel" type="Marker3D" parent="WorkshopSupplies"]
 position = Vector3(-8, 0, -9)
+
+[node name="ScrapC" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.45, 0.975, -6)
+
+[node name="ScrapD" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(9.25, 0.975, -6)
+
+[node name="ScrapE" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.45, 0.975, -2)
+
+[node name="ScrapF" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(9.25, 0.975, -2)
+
+[node name="ScrapG" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.45, 0.975, 2)
+
+[node name="ScrapH" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(9.25, 0.975, 2)
+
+[node name="OilBarrelB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(10.7, 0.5, -5)
+
+[node name="Battery" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-9.5, 0.975, -4)
+
+[node name="EngineKitA" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-8.7, 0.945, -4)
+
+[node name="EngineKitB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-8.1, 0.945, -4)
+
+[node name="SalvageShelfB" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, -6)
+
+[node name="SalvageShelfC" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, -2)
+
+[node name="SalvageShelfD" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, 2)
+
+[node name="ServiceShelf" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(-8.85, 0, -4)
+
+[node name="SalvageShelfB" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, -6)
+
+[node name="SalvageShelfC" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, -2)
+
+[node name="SalvageShelfD" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, 2)
+
+[node name="ServiceShelf" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(-8.85, 0, -4)
 
 [node name="RecoveryShelf" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(8.85, 0.775, -10)

@@ -55,6 +55,7 @@
     ],
     "integration": [
       "test_orientation_departure",
+      "test_orientation_optional_exit",
       "test_orientation_recovery",
       "test_orientation_step_retry",
       "test_orientation_workshop",

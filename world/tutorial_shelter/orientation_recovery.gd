@@ -66,9 +66,15 @@ func _observe_progress() -> void:
 		# tick is a fallback when a modal operation is still finishing.
 		tick.call_deferred()
 	elif _entrance_pending and evidence != _entrance_evidence:
-		# A delayed capture after the first transaction is not an entrance.
-		_entrance_pending = false
-		_stable_seconds = 0.0
+		if next > 0:
+			# Optional references can finish together or in any order. Preserve
+			# their next settled guide boundary, including a batch of extra salvage.
+			_entrance_evidence = evidence
+		else:
+			# Reception remains mandatory; do not relabel a partial boot as its
+			# original entrance. Existing captured boundaries are never overwritten.
+			_entrance_pending = false
+			_stable_seconds = 0.0
 
 func tick(delta := 0.0) -> void:
 	_connect_progress()

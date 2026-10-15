@@ -112,7 +112,7 @@ static func _spawn_orientation_terminal(building: Node3D, container: Node3D) -> 
 static func orientation_workshop_ids(building: Node3D) -> Dictionary:
 	var prefix := str(building.get_meta("poi_id", "orientation")) + ":recovery:"
 	var result := {}
-	for role in ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare"]:
+	for role in ["scrapper", "workbench", "scrap_a", "scrap_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel", "barrel_b", "spare", "battery", "engine_kit_a", "engine_kit_b"]:
 		result[role] = prefix + role
 	return result
 
@@ -125,7 +125,13 @@ static func ensure_orientation_workshop(building: Node3D, container: Node3D) -> 
 		"scrap_a": ["WorkshopSupplies/ScrapA", "res://props/scrap.tscn"],
 		"scrap_b": ["WorkshopSupplies/ScrapB", "res://props/scrap.tscn"],
 		"barrel": ["WorkshopSupplies/OilBarrel", "res://props/oil_barrel.tscn"],
-		"spare": ["WorkshopSupplies/SpareWheel", "res://props/wheel.tscn"]}
+		"spare": ["WorkshopSupplies/SpareWheel", "res://props/wheel.tscn"],
+		"battery": ["WorkshopSupplies/Battery", "res://props/battery.tscn"],
+		"engine_kit_a": ["WorkshopSupplies/EngineKitA", "res://props/engine_repair_kit.tscn"],
+		"engine_kit_b": ["WorkshopSupplies/EngineKitB", "res://props/engine_repair_kit.tscn"],
+		"barrel_b": ["WorkshopSupplies/OilBarrelB", "res://props/oil_barrel.tscn"]}
+	for suffix in ["c", "d", "e", "f", "g", "h"]:
+		stock["scrap_" + suffix] = ["WorkshopSupplies/Scrap" + suffix.to_upper(), "res://props/scrap.tscn"]
 	var identities := orientation_workshop_ids(building)
 	for role in stock:
 		if _orientation_identity_owned(container, identities[role]):
@@ -140,10 +146,13 @@ static func ensure_orientation_workshop(building: Node3D, container: Node3D) -> 
 		container.add_child(item)
 		var state := item.capture_item_state()
 		state.id = identities[role]
-		if role in ["scrap_a", "scrap_b"]:
+		if role.begins_with("scrap_"):
 			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(3, 3)}
-		elif role == "barrel":
+		elif role in ["barrel", "barrel_b"]:
 			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(2, 2), ItemNames.UNREFINED_FUEL: Vector2(10, 10)}
+		elif role == "battery":
+			state.battery.id = identities[role]
+			state.battery.charge = state.battery.capacity
 		item.restore_item_state(state)
 		item.global_transform = point.global_transform
 

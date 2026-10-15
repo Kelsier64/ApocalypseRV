@@ -2,6 +2,8 @@ extends SceneTree
 ## New-course checkpoints preserve the real terminal across static and inventory owners.
 const WAIT = preload("res://tests/support/test_wait.gd")
 const SAVE_PATH := "res://.godot/test-orientation-checkpoint.save"
+const LEGACY_TARGETS := ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare", "socket", "tablet", "fuel_port", "wall_a", "wall_b", "wheel_slot", "original_wheel"]
+const NEW_FLAGS := ["battery_exchanged", "engine_repaired", "roof_rebuilt"]
 var failures: Array[String] = []
 var world: Node3D
 var checkpoint: Node
@@ -60,14 +62,14 @@ func _run() -> void:
 	var starting_items := world.get_node("WorldEntities").get_children().filter(func(actor): return actor is Item and run.shelter_site.bounds.has_point(actor.global_position))
 	var reception_items := starting_items.filter(func(actor): return run.shelter.to_local(actor.global_position).z < -26.0)
 	check(reception_items.size() == 1 and reception_items[0] == terminal, "The wall terminal is the only Item in reception")
-	check(starting_items.size() == 7, "Workshop provides exactly six designated portable supplies")
+	check(starting_items.size() == 17, "Workshop provides sixteen designated portable supplies plus the reception terminal")
 	check(terminal.is_fixed and terminal.get_connected_rv() == null and not terminal.has_completed_boot(), "Original terminal operates from its static dock without RV ownership")
 	var initial: Dictionary = checkpoint.capture_world(world)
 	if not check(not initial.is_empty() and initial.start_state.bay_gates == [false], "Initial checkpoint records one closed inner gate"):
 		await finish(); return
 	check(initial.version == 5 and initial.start_state.tutorial.course == "two_room_orientation", "Outer v5 retains a distinct course discriminator")
 	var initial_workshop: Dictionary = initial.start_state.tutorial.workshop
-	check(initial.start_state.tutorial.version == 3 and initial_workshop.configured and not initial_workshop.migration_pending, "Current course v3 saves one-time workshop configuration")
+	check(initial.start_state.tutorial.version == 4 and initial_workshop.version == 2 and initial_workshop.configured and not initial_workshop.migration_pending, "Current course v4 and workshop v2 save one-time workshop configuration")
 	check(initial.start_state.tutorial.departure_started == false, "Fresh course has not authorized departure")
 	var targets: Dictionary = initial_workshop.targets
 	var original_index := 0
@@ -75,6 +77,10 @@ func _run() -> void:
 		if initial.vehicles[index].id == course.rv_id: original_index = index
 	check(initial.start_state.tutorial.rv_id == initial.vehicles[original_index].id and targets.original_wheel == initial.vehicles[original_index].wheels[targets.wheel_slot].id, "Course retains the original RV and left-front wheel identities")
 	check(initial.vehicles[original_index].fuel == 0.0 and initial.vehicles[original_index].wheels[targets.wheel_slot].health == 0.0, "Fresh workshop starts with zero fuel and the designated puncture")
+	var vehicle: Chassis = course.designated_rv()
+	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	check(targets.size() == 26 and vehicle.get_engine().id == targets.engine and vehicle.get_battery_socket().installed_battery.id == targets.original_battery, "Fresh workshop records all twenty-six targets including installed service identities")
+	check(vehicle.get_engine().health == 0.0 and vehicle.get_battery_socket().installed_battery.charge == 0.0 and slots.panel("roof_1").is_destroyed, "New engine, installed battery and roof faults remain after readiness without a power floor")
 	if initial.start_state.tutorial.has("entry_snapshot"):
 		check(initial.start_state.tutorial.entry_snapshot.start_state.tutorial.stage == 1 and not initial.start_state.tutorial.entry_snapshot.start_state.tutorial.has("entry_snapshot"), "Reception retry captures its own boundary without nesting")
 	var wrong := initial.duplicate(true)
@@ -98,6 +104,39 @@ func _run() -> void:
 		if actor.get("state", {}).get("id") == targets.spare:
 			wrong.player.items.append({"name": "Duplicate spare", "is_large": true, "scene_path": actor.scene, "state": actor.state.duplicate(true)})
 	check(checkpoint.validation_error(wrong) == "item.id.duplicate", "Course references do not exempt duplicate inventory and world Item owners")
+	for role in ["battery", "engine_kit_a", "engine_kit_b", "scrap_h", "barrel_b"]:
+		wrong = initial.duplicate(true)
+		# Another valid owner's identity tests role typing without creating an
+		# invalid engine/battery Item payload that fails at an earlier boundary.
+		wrong.start_state.tutorial.erase("entry_snapshot")
+		wrong.start_state.tutorial.workshop.targets[role] = "wrong-role-" + role
+		for actor: Dictionary in wrong.actors:
+			if actor.get("state", {}).get("id") == targets.spare: actor.state.id = "wrong-role-" + role
+		check(checkpoint.validation_error(wrong) == "start_state.tutorial.workshop.targets." + role, "New workshop role retains its saved Item type: " + role)
+	for role in ["engine", "original_battery"]:
+		wrong = initial.duplicate(true)
+		wrong.start_state.tutorial.erase("entry_snapshot")
+		var changed_id: String = "wrong-installed-role-" + role
+		wrong.start_state.tutorial.workshop.targets[role] = changed_id
+		if role == "engine":
+			for device: Dictionary in wrong.vehicles[original_index].mounted_items:
+				if device.scene == "res://rv/battery_socket.tscn": device.state.service.battery.id = changed_id
+		else:
+			wrong.vehicles[original_index].engine_item.id = changed_id
+		check(checkpoint.validation_error(wrong) == "start_state.tutorial.workshop.targets." + role, "Installed service references retain their saved owner type: " + role)
+	vehicle.get_engine().health = 123.0
+	vehicle.get_battery_socket().installed_battery.charge = 40.0
+	slots.replace_panel("roof_1", "rv_ceiling", 75.0)
+	var repaired: Dictionary = checkpoint.capture_world(world)
+	if not check(not repaired.is_empty(), "Fresh engine, battery and rebuilt-roof changes capture") or not await load_snapshot(repaired):
+		await finish(); return
+	course = world.get_node("StartRun/Tutorial")
+	vehicle = course.designated_rv()
+	slots = vehicle.get_node("StructureSlots")
+	check(vehicle.get_engine().health == 123.0 and absf(vehicle.get_battery_socket().installed_battery.charge - 40.0) < 0.5 and slots.panel("roof_1").current_health == 75.0, "Reload preserves current engine, charge and rebuilt roof without reapplying fresh faults")
+	check(course.workshop.targets == targets, "Reload preserves all original and supply identities")
+	if not await check_configured_legacy(repaired):
+		await finish(); return
 	# Stage-one saves contain no workshop supplies. The explicit course migration
 	# adds them and configures faults once, retaining original vehicle identity.
 	var legacy := initial.duplicate(true)
@@ -106,7 +145,8 @@ func _run() -> void:
 	legacy.start_state.tutorial.erase("workshop")
 	legacy.start_state.tutorial.erase("departure_started")
 	legacy.start_state.tutorial.erase("entry_snapshot")
-	var supplied: Array = [targets.scrapper, targets.workbench, targets.scrap_a, targets.scrap_b, targets.barrel, targets.spare]
+	var supplied: Array = []
+	for role in ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare", "battery", "engine_kit_a", "engine_kit_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel_b"]: supplied.append(targets[role])
 	legacy.actors = legacy.actors.filter(func(actor): return actor.get("state", {}).get("id", "") not in supplied)
 	legacy.vehicles[original_index].fuel = 4.5
 	legacy.vehicles[original_index].wheels[targets.wheel_slot].health = 100.0
@@ -121,10 +161,10 @@ func _run() -> void:
 	course = run.get_node("Tutorial")
 	terminal = course.designated_terminal()
 	player = world.get_node("Player")
-	var vehicle: Chassis = course.designated_rv()
+	vehicle = course.designated_rv()
 	if not check(vehicle != null, "Historical course rebinds its original restored RV"):
 		await finish(); return
-	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	slots = vehicle.get_node("StructureSlots")
 	check(course.workshop.configured and not course.workshop.migration_pending and course.workshop.targets.original_wheel == targets.original_wheel, "Legacy migration binds the same original wheel exactly once")
 	check(is_equal_approx(vehicle.current_fuel, 4.5) and vehicle.wheel_health[targets.wheel_slot] == 0.0, "Migration retains saved fuel and applies the designated puncture")
 	check(slots.panel(targets.wall_a).current_health == slots.panel(targets.wall_a).max_health - 60.0 and slots.panel(targets.wall_b).current_health == 25.0, "Migration clamps healthy walls to damage targets without adding damage to an already damaged wall")
@@ -148,10 +188,7 @@ func _run() -> void:
 	var partial: Dictionary = checkpoint.capture_world(world)
 	if not check(not partial.is_empty(), "Partially booted terminal saves"):
 		await finish(); return
-	partial.start_state.tutorial.version = 2
-	partial.start_state.tutorial.erase("departure_started")
-	partial.start_state.tutorial.erase("entry_snapshot")
-	check(checkpoint.validation_error(partial).is_empty(), "Historical v2 workshop state remains loadable")
+	check(checkpoint.validation_error(partial).is_empty(), "Current partially booted workshop state remains loadable")
 	if not await load_snapshot(partial):
 		await finish(); return
 	run = world.get_node("StartRun")
@@ -164,7 +201,7 @@ func _run() -> void:
 	check(slots.panel(targets.wall_a).current_health == 75.0 and slots.panel(targets.wall_b).current_health == 80.0 and absf(vehicle.wheel_health[targets.wheel_slot] - 55.0) < 0.1, "Configured reload preserves current repairs without reapplying original faults (walls=%s/%s, tire=%s)" % [slots.panel(targets.wall_a).current_health, slots.panel(targets.wall_b).current_health, vehicle.wheel_health[targets.wheel_slot]])
 	check(is_equal_approx(vehicle.current_fuel, 3.25) and vehicle.inventory.get("Metal Parts") == 3, "Configured reload retains current fuel and materials")
 	var restored_supplies: Array = world.get_node("WorldEntities").get_children().filter(func(actor): return actor is Item and actor.persistent_id in supplied)
-	check(restored_supplies.size() == 6 and course.workshop.capture() == partial.start_state.tutorial.workshop, "Reload preserves workshop evidence and supplies without reissuing Items")
+	check(restored_supplies.size() == 16 and course.workshop.capture() == partial.start_state.tutorial.workshop, "Reload preserves workshop evidence and supplies without reissuing Items")
 	check(terminal.boot_state().boot_started and terminal.boot_state().boot_elapsed >= 2.0 and terminal.boot_state().boot_elapsed < 6.0, "Reload preserves Enter and partial boot progress")
 	check(terminal.is_fixed and terminal.mount_support == run.shelter.get_node("Collision/TerminalSupport"), "Reload restores the original static dock support")
 	terminal.interact_hold(player)
@@ -194,6 +231,46 @@ func _run() -> void:
 	check(world.get_node("StartRun").capture().bay_gates == [true], "Reload keeps the original inner gate open")
 	await check_recovery_checkpoint()
 	await finish()
+
+func check_configured_legacy(source: Dictionary) -> bool:
+	var legacy := source.duplicate(true)
+	var tutorial: Dictionary = legacy.start_state.tutorial
+	tutorial.erase("entry_snapshot")
+	tutorial.version = 3
+	tutorial.workshop.version = 1
+	for key in NEW_FLAGS: tutorial.workshop.flags.erase(key)
+	var old_targets: Dictionary = tutorial.workshop.targets.duplicate(true)
+	var extra_supply_ids: Array = []
+	for key in old_targets:
+		if key not in LEGACY_TARGETS:
+			if key not in ["engine", "original_battery", "roof_slot"]: extra_supply_ids.append(old_targets[key])
+			tutorial.workshop.targets.erase(key)
+	legacy.actors = legacy.actors.filter(func(actor): return actor.get("state", {}).get("id", "") not in extra_supply_ids)
+	var old_v2 := legacy.duplicate(true)
+	old_v2.start_state.tutorial.version = 2
+	old_v2.start_state.tutorial.erase("departure_started")
+	check(checkpoint.validation_error(old_v2).is_empty(), "Historical course v2 with workshop v1 remains loadable")
+	tutorial["entry_snapshot"] = legacy.duplicate(true)
+	if not check(checkpoint.validation_error(legacy).is_empty(), "Historical course v3 and workshop v1 validate with their own retry entrance"): return false
+	var unchanged := legacy.duplicate(true)
+	if not await load_snapshot(legacy): return false
+	check(legacy == unchanged, "Configured migration leaves the source and embedded entrance unchanged")
+	var course: Node = world.get_node("StartRun/Tutorial")
+	var vehicle: Chassis = course.designated_rv()
+	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	var upgraded: Dictionary = checkpoint.capture_world(world)
+	if not check(not upgraded.is_empty(), "Configured historical course captures its upgraded schema"): return false
+	var progress: Dictionary = upgraded.start_state.tutorial
+	check(progress.version == 4 and progress.workshop.version == 2 and progress.workshop.targets.size() == 13 and progress.workshop.targets == tutorial.workshop.targets, "Configured migration upgrades schema without inventing new targets")
+	check(vehicle.get_engine().health == 123.0 and absf(vehicle.get_battery_socket().installed_battery.charge - 40.0) < 0.5 and slots.panel("roof_1").current_health == 75.0, "Configured historical migration adds no engine, battery or roof faults")
+	var supplied := world.get_node("WorldEntities").get_children().filter(func(actor): return actor is Item and actor.persistent_id in old_targets.values())
+	check(supplied.size() == 6, "Configured historical migration keeps exactly the original six supplies")
+	for key in NEW_FLAGS: check(progress.workshop.flags[key] == false, "Historical upgrade does not fabricate new service evidence: " + key)
+	if not check(progress.has("entry_snapshot"), "Historical configured course retains its original retry entrance"): return false
+	var entry: Dictionary = progress.entry_snapshot.start_state.tutorial
+	check(entry.version == 4 and entry.workshop.version == 2 and entry.workshop.targets == tutorial.workshop.targets, "Embedded entrance upgrades to the same schema without extra targets")
+	check(progress.entry_snapshot.actors.size() == unchanged.start_state.tutorial.entry_snapshot.actors.size(), "Embedded entrance migration adds no supplies")
+	return true
 
 func check_recovery_checkpoint() -> void:
 	# A retry entrance and the live state are separate ownership domains even
@@ -273,14 +350,27 @@ func check_departure_state(source: Dictionary) -> void:
 	check(checkpoint.validation_error(skipped) == "start_state.tutorial.departure_started.phase", "Running phase requires persisted exit authorization")
 	var completed := source.duplicate(true)
 	completed.start_state.tutorial.erase("entry_snapshot")
+	completed.start_state.tutorial.stage = 2
+	completed.start_state.tutorial.flags.workshop_entered = true
 	completed.start_state.tutorial.status = "completed"
 	completed.start_state.tutorial.departure_started = true
-	# Completed lessons require real workshop evidence; the root controller
-	# validates that evidence before phase linkage can authorize simulation.
+	# Room one is mandatory. The optional workshop guide may retain no receipts
+	# when the actual vehicle is restored through other valid transactions.
 	check(not CheckpointSchema.orientation_phase_error(completed.start_state).is_empty(), "Completed cannot resume the preparation phase")
 	for phase in ["started", "sealed"]:
 		completed.start_state.phase = phase
-		check(CheckpointSchema.orientation_phase_error(completed.start_state).is_empty(), "Completed course links to the stable " + phase + " phase")
+		check(checkpoint.validation_error(completed).is_empty(), "v4 completion retains unfinished optional workshop receipts in stable " + phase + " phase")
+	var optional := completed.duplicate(true)
+	optional.start_state.phase = "preparing"
+	optional.start_state.tutorial.status = "active"
+	check(checkpoint.validation_error(optional).is_empty(), "v4 permits departure authorization with a partially followed guide")
+	var strict := optional.duplicate(true)
+	strict.start_state.tutorial.version = 3
+	check(checkpoint.validation_error(strict) == "start_state.tutorial.departure_started", "Historical v3 keeps its strict step-six departure contract")
+	var before_reception := completed.duplicate(true)
+	before_reception.start_state.tutorial.stage = 1
+	before_reception.start_state.tutorial.flags.workshop_entered = false
+	check(not checkpoint.validation_error(before_reception).is_empty(), "Optional workshop progress does not permit leaving before reception completion")
 
 func finish() -> void:
 	if is_instance_valid(world): world.queue_free()

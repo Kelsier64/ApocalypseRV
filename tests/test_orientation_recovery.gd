@@ -44,7 +44,7 @@ func run() -> void:
 	if not check(await entrance(), "Reception captures a stable full-world entrance"):
 		await finish(); return
 	var initial: Dictionary = course.entry_snapshot.duplicate(true)
-	check(initial.start_state.tutorial.version == 3 and not initial.start_state.tutorial.has("entry_snapshot"), "Entrance uses v3 without recursive retry snapshots")
+	check(initial.start_state.tutorial.version == 4 and not initial.start_state.tutorial.has("entry_snapshot"), "Entrance uses v4 without recursive retry snapshots")
 	check(not course.capture(false).has("entry_snapshot") and course.capture().entry_snapshot == initial, "Controller include_retry persists an independent entrance")
 	check(checkpoint.write_checkpoint(SAVE_PATH, initial), "Separate manual-save fixture writes")
 	var manual_before := FileAccess.get_file_as_bytes(SAVE_PATH)
@@ -104,8 +104,8 @@ func run() -> void:
 		course.recovery.tick(0.6)
 		check(not course.entry_snapshot.is_empty(), "Internal entrance captures safely with the owned tutorial reader open")
 		reader._close_ui()
-	# If capture was blocked while the lesson progressed, never relabel that
-	# partial state as its entrance. This fixture changes evidence, not gameplay.
+	# Independent optional references may finish before the next safe capture.
+	# Preserve their settled guide boundary instead of disabling recovery.
 	course.recovery.restore({})
 	course.recovery._observe_progress()
 	var evidence: Dictionary = course.workshop.capture()
@@ -113,7 +113,7 @@ func run() -> void:
 	course.workshop.placed_ids.append(course.workshop.targets.scrapper)
 	course.progress_changed.emit()
 	course.recovery.tick(0.6)
-	check(course.entry_snapshot.is_empty(), "Pending capture never replaces a missed entrance with midlesson progress")
+	check(not course.entry_snapshot.is_empty() and course.entry_snapshot.start_state.tutorial.workshop.flags.scrapper_placed, "Out-of-order reference progress retains a safe guide recovery point")
 	course.workshop.restore(evidence)
 	course.recovery.restore(first_workshop)
 	await ownership_checks(identity)

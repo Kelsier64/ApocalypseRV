@@ -345,6 +345,13 @@ func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> S
 		"scrap_a": "res://props/scrap.tscn", "scrap_b": "res://props/scrap.tscn", "barrel": "res://props/oil_barrel.tscn",
 		"spare": "res://props/wheel.tscn", "original_wheel": "res://props/wheel.tscn", "socket": "res://rv/battery_socket.tscn",
 		"tablet": "res://equipment/tablet_screen.tscn", "fuel_port": "res://equipment/fuel_port.tscn"}
+	var extra_scenes := {"battery": "res://props/battery.tscn", "engine_kit_a": "res://props/engine_repair_kit.tscn",
+		"engine_kit_b": "res://props/engine_repair_kit.tscn", "barrel_b": "res://props/oil_barrel.tscn",
+		"original_battery": ["res://props/battery.tscn", "res://props/battery_large.tscn"],
+		"engine": ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]}
+	for letter in ["c", "d", "e", "f", "g", "h"]: extra_scenes["scrap_" + letter] = "res://props/scrap.tscn"
+	for key in extra_scenes:
+		if tutorial.workshop.targets.has(key): scenes[key] = extra_scenes[key]
 	for key in scenes:
 		if not _orientation_item_scene(owned_data, tutorial.workshop.targets[key], scenes[key]): return "workshop.targets." + key
 	for key in ["gasoline_id", "empty_can_id"]:
@@ -352,16 +359,28 @@ func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> S
 		if not _orientation_item_scene(owned_data, tutorial.workshop[key], scene): return "workshop." + key
 	return ""
 
-func _orientation_item_scene(owned_data: Dictionary, identity: String, scene: String) -> bool:
+func _orientation_item_scene(owned_data: Dictionary, identity: String, scene: Variant) -> bool:
 	if identity.is_empty(): return true
 	var records: Array[Dictionary] = []
 	_find_item_records(owned_data, identity, records)
-	return records.is_empty() or records[0].get("scene", records[0].get("scene_path", "")) == scene
+	var allowed: Array = scene if scene is Array else [scene]
+	for record in records:
+		if record.get("scene", record.get("scene_path", "")) not in allowed: return false
+	return true
 
 func _find_item_records(value: Variant, identity: String, result: Array[Dictionary]) -> void:
 	if value is Dictionary:
-		if value.get("state") is Dictionary and value.state.get("id") == identity:
+		if value.get("state") is Dictionary and value.state.get("id") is String and value.state.id == identity:
 			result.append(value)
+		elif value.get("id") is String and value.id == identity:
+			# Installed service parts own their state directly, without an Item
+			# wrapper. Check these identities as well as loose/inventory forms.
+			if value.has_all(["charge", "capacity", "scene_path"]):
+				result.append({"scene": value.scene_path})
+			elif value.has_all(["model", "health"]) and EngineState.valid(value, false):
+				result.append({"scene": "res://props/engine_" + str(value.model) + ".tscn"})
+			elif value.has_all(["installed", "health"]):
+				result.append({"scene": "res://props/wheel.tscn"})
 		for child in value.values(): _find_item_records(child, identity, result)
 	elif value is Array:
 		for child in value: _find_item_records(child, identity, result)
