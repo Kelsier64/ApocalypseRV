@@ -7,6 +7,8 @@ const STATE_VERSION := 4
 const TERMINAL_SCENE := "res://equipment/training_terminal.tscn"
 const ROOM_DIVIDER_Z := -26.0
 const WORKSHOP_BOUNDS := AABB(Vector3(-20, 0, ROOM_DIVIDER_Z), Vector3(40, 5, 40))
+const DEPARTURE_TRAVEL := 0.5
+const DEPARTURE_MOTION_SECONDS := 0.35
 var stage := 1
 var status := "active"
 var terminal_id := ""
@@ -21,6 +23,10 @@ var entry_snapshot: Dictionary:
 		recovery.entry_snapshot = value
 var flags := {"boot_complete": false, "terminal_taken": false, "workshop_entered": false}
 var _disabled := false
+var _departure_vehicle: Chassis
+var _departure_origin_z := 0.0
+var _departure_last_position := Vector3.ZERO
+var _departure_motion_seconds := 0.0
 
 func _ready() -> void:
 	_ensure_workshop()
@@ -167,11 +173,13 @@ func terminal_page() -> Dictionary:
 		"steps": ["Close this interface, then hold F while looking at the terminal to remove it into your inventory.", "Carry the same terminal through the open door into the workshop."],
 		"reference": ["Esc: close the terminal.", "Hold F: remove the fixed terminal.", "T: read the selected terminal from your inventory."]}
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if initialized() and status in ["completed", "skipped"]:
 		_ensure_recovery()
 		recovery.tick()
-	if not _active_world(): return
+	if not _active_world():
+		_reset_departure_motion()
+		return
 	if not initialized():
 		_on_world_ready()
 		return
@@ -181,7 +189,7 @@ func _physics_process(_delta: float) -> void:
 	_tick_workshop_entry()
 	_ensure_recovery()
 	recovery.tick()
-	_tick_departure()
+	_tick_departure(delta)
 
 func _tick_workshop_entry() -> void:
 	if flags.workshop_entered or not flags.terminal_taken: return
@@ -260,6 +268,7 @@ func apply_state(data: Dictionary) -> bool:
 	rv_id = data.get("rv_id", "")
 	flags = data.flags.duplicate(true)
 	departure_authorized = data.get("departure_started", false)
+	_reset_departure_motion()
 	_ensure_workshop()
 	if data.version == 1:
 		var initial := OrientationWorkshop.new()
@@ -311,16 +320,37 @@ func departure_block_reason() -> String:
 	if designated_rv() == null: return "The vehicle sensor requires the original RV"
 	return ""
 
-func _tick_departure() -> void:
+func _reset_departure_motion() -> void:
+	_departure_vehicle = null
+	_departure_motion_seconds = 0.0
+
+func _tick_departure(delta := 0.0) -> void:
 	var owner := get_parent()
-	if departure_authorized or not departure_block_reason().is_empty() or not is_instance_valid(owner.gate): return
+	if departure_authorized or not departure_block_reason().is_empty() or not is_instance_valid(owner.gate):
+		_reset_departure_motion()
+		return
 	var vehicle := designated_rv()
 	var heading: Vector3 = owner.gate.global_basis.z.normalized()
-	if (-vehicle.global_basis.z).dot(heading) < 0.85 or vehicle.linear_velocity.dot(heading) <= 0.1: return
 	var position_in_gate: Vector3 = owner.gate.to_local(vehicle.global_position)
-	# The original parking position is already inside this advance sensor. Motion
-	# towards the exit triggers it with a full doorway opening distance ahead.
-	if absf(position_in_gate.x) > 3.5 or position_in_gate.z < -30.0 or position_in_gate.z > 0.0: return
+	if delta <= 0.0 or (-vehicle.global_basis.z).dot(heading) < 0.85 or vehicle.linear_velocity.dot(heading) <= 0.1 or absf(position_in_gate.x) > 3.5 or position_in_gate.z < -30.0 or position_in_gate.z > 0.0:
+		_reset_departure_motion()
+		return
+	if _departure_vehicle != vehicle:
+		_departure_vehicle = vehicle
+		_departure_origin_z = position_in_gate.z
+		_departure_last_position = position_in_gate
+		_departure_motion_seconds = 0.0
+		return
+	var movement := position_in_gate - _departure_last_position
+	_departure_last_position = position_in_gate
+	# Suspensions can report forward velocity while a parked chassis barely
+	# moves. Require sustained net travel; never accumulate positive jitter or
+	# count a discontinuous placement/load as a driven approach.
+	if movement.z <= 0.0 or movement.length() > maxf(0.5, vehicle.linear_velocity.length() * delta * 2.0):
+		_reset_departure_motion()
+		return
+	_departure_motion_seconds += delta
+	if _departure_motion_seconds < DEPARTURE_MOTION_SECONDS or position_in_gate.z - _departure_origin_z < DEPARTURE_TRAVEL: return
 	departure_started()
 
 func departure_started() -> void:

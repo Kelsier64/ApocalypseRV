@@ -26,6 +26,7 @@ func run() -> void:
 	check(workshop.step == 1 and workshop.placed_ids.is_empty() and workshop.recycled_ids.is_empty() and workshop.output_ids.is_empty(), "No optional workshop task was completed")
 	check(vehicle.get_engine().health == 0.0 and vehicle.current_power == 0.0 and vehicle.current_fuel == 0.0 and vehicle.wheel_health[0] == 0.0 and vehicle.get_node("StructureSlots").panel("roof_1").is_destroyed, "All initial faults remain in place")
 	check(tutorial.departure_block_reason().is_empty(), "Unfinished tasks and broken equipment never lock the sensor")
+	if not await parked_sensor_check(): await finish(); return
 	vehicle.set_handbrake(false)
 	vehicle.freeze = false
 	vehicle.set_physics_process(true)
@@ -56,3 +57,19 @@ func run() -> void:
 	journey_completed = failures.is_empty()
 	print("ORIENTATION_OPTIONAL_EXIT: native push/sensor; separate player/whole-vehicle clearance probes; no guide receipts")
 	await finish()
+
+func parked_sensor_check() -> bool:
+	vehicle.set_handbrake(true)
+	vehicle.freeze = false
+	vehicle.set_physics_process(true)
+	var origin := vehicle.global_position
+	var heading: Vector3 = run_owner.gate.global_basis.z.normalized()
+	var peak_speed := 0.0
+	var max_travel := 0.0
+	for tick in 240:
+		await physics_frame
+		peak_speed = maxf(peak_speed, vehicle.linear_velocity.dot(heading))
+		max_travel = maxf(max_travel, absf((vehicle.global_position - origin).dot(heading)))
+		if tutorial.departure_authorized: break
+	print("PARKED_SENSOR: peak_forward_speed=", peak_speed, " max_forward_travel=", max_travel, " authorized=", tutorial.departure_authorized)
+	return check(not tutorial.departure_authorized and run_owner.gate.target == 0.0, "Suspension settling with no driver input keeps the exit closed")
