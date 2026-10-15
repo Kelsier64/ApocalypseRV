@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-15 兩室教學階段三](validation/2026-10-15-orientation-stage3.md)：感應離場、正式啟程、原終端說明書、逐步完整重試及略過。
+
 - [2026-10-15 兩室教學階段二](validation/2026-10-15-orientation-stage2.md)：指定設備搬運、回收製造、牆板／輪胎維修及加油，含原生交易、短距離輪驅與存檔升級。
 
 - [新版兩室教學計畫](plans/starting-tutorial-two-room.md) · [2026-10-15 新版階段一驗證](validation/2026-10-15-orientation-stage1.md)

@@ -26,7 +26,7 @@ func load_snapshot(snapshot: Dictionary) -> bool:
 
 func _run() -> void:
 	checkpoint = root.get_node("Checkpoint")
-	world = load("res://world/main_world.tscn").instantiate()
+	world = load("res://tests/orientation_playground.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.profile = generator.profile.duplicate()
 	check(generator.profile.generation_version == 12, "Production starts the separate v12 course")
@@ -67,14 +67,16 @@ func _run() -> void:
 		await finish(); return
 	check(initial.version == 5 and initial.start_state.tutorial.course == "two_room_orientation", "Outer v5 retains a distinct course discriminator")
 	var initial_workshop: Dictionary = initial.start_state.tutorial.workshop
-	check(initial.start_state.tutorial.version == 2 and initial_workshop.configured and not initial_workshop.migration_pending, "Current course saves one-time workshop configuration")
+	check(initial.start_state.tutorial.version == 3 and initial_workshop.configured and not initial_workshop.migration_pending, "Current course v3 saves one-time workshop configuration")
+	check(initial.start_state.tutorial.departure_started == false, "Fresh course has not authorized departure")
 	var targets: Dictionary = initial_workshop.targets
 	var original_index := 0
 	for index in range(initial.vehicles.size()):
 		if initial.vehicles[index].id == course.rv_id: original_index = index
 	check(initial.start_state.tutorial.rv_id == initial.vehicles[original_index].id and targets.original_wheel == initial.vehicles[original_index].wheels[targets.wheel_slot].id, "Course retains the original RV and left-front wheel identities")
 	check(initial.vehicles[original_index].fuel == 0.0 and initial.vehicles[original_index].wheels[targets.wheel_slot].health == 0.0, "Fresh workshop starts with zero fuel and the designated puncture")
-	check(not initial.start_state.tutorial.has("entry_snapshot"), "Stage one does not fabricate future retry state")
+	if initial.start_state.tutorial.has("entry_snapshot"):
+		check(initial.start_state.tutorial.entry_snapshot.start_state.tutorial.stage == 1 and not initial.start_state.tutorial.entry_snapshot.start_state.tutorial.has("entry_snapshot"), "Reception retry captures its own boundary without nesting")
 	var wrong := initial.duplicate(true)
 	wrong.start_state.bay_gates = [false, false, false, false, false, false, false, false]
 	check(checkpoint.validation_error(wrong) == "start_state.bay_gates", "v12 rejects the legacy eight-gate layout")
@@ -102,6 +104,8 @@ func _run() -> void:
 	legacy.start_state.tutorial.version = 1
 	legacy.start_state.tutorial.erase("rv_id")
 	legacy.start_state.tutorial.erase("workshop")
+	legacy.start_state.tutorial.erase("departure_started")
+	legacy.start_state.tutorial.erase("entry_snapshot")
 	var supplied: Array = [targets.scrapper, targets.workbench, targets.scrap_a, targets.scrap_b, targets.barrel, targets.spare]
 	legacy.actors = legacy.actors.filter(func(actor): return actor.get("state", {}).get("id", "") not in supplied)
 	legacy.vehicles[original_index].fuel = 4.5
@@ -135,9 +139,20 @@ func _run() -> void:
 		await finish(); return
 	terminal.start_boot()
 	terminal.advance_boot(2.0)
+	check(checkpoint.capture_world(world).is_empty(), "Manual save still rejects an open lesson interface")
+	check(not checkpoint.capture_world(world, false, true).is_empty(), "Internal retry can capture a stable owned lesson interface")
+	player.set_settings_open(true)
+	check(checkpoint.capture_world(world, false, true).is_empty(), "Internal UI capture cannot bypass the settings menu")
+	player.set_settings_open(false)
 	terminal._close_ui()
 	var partial: Dictionary = checkpoint.capture_world(world)
-	if not check(not partial.is_empty(), "Partially booted terminal saves") or not await load_snapshot(partial):
+	if not check(not partial.is_empty(), "Partially booted terminal saves"):
+		await finish(); return
+	partial.start_state.tutorial.version = 2
+	partial.start_state.tutorial.erase("departure_started")
+	partial.start_state.tutorial.erase("entry_snapshot")
+	check(checkpoint.validation_error(partial).is_empty(), "Historical v2 workshop state remains loadable")
+	if not await load_snapshot(partial):
 		await finish(); return
 	run = world.get_node("StartRun")
 	course = run.get_node("Tutorial")
@@ -177,7 +192,95 @@ func _run() -> void:
 	check(course.terminal_id == identity and course.flags.boot_complete and course.flags.terminal_taken, "Reload preserves both successful actions")
 	check(course.terminal_in_inventory(player) and course.designated_terminal() == null, "Carried terminal reloads with one inventory owner and no duplicate world Item")
 	check(world.get_node("StartRun").capture().bay_gates == [true], "Reload keeps the original inner gate open")
+	await check_recovery_checkpoint()
 	await finish()
+
+func check_recovery_checkpoint() -> void:
+	# A retry entrance and the live state are separate ownership domains even
+	# when every vehicle, carried Item and dormant actor ID occurs in both.
+	var saved: Dictionary = checkpoint.capture_world(world, false)
+	if not check(not saved.is_empty(), "Current state can capture a standalone retry entrance"): return
+	check(not saved.start_state.tutorial.has("entry_snapshot"), "include_retry=false omits the retry payload")
+	check_terminal_owner_forms(saved)
+	var source := saved.duplicate(true)
+	saved.start_state.tutorial["entry_snapshot"] = source
+	if not check(checkpoint.validation_error(saved).is_empty(), "Retry entrance validates its own IDs independently"): return
+	if not check(checkpoint.write_checkpoint(SAVE_PATH, saved), "Manual checkpoint persists a retry entrance"): return
+	var persisted: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
+	check(persisted == saved, "Disk round trip preserves the complete retry entrance")
+	var wrong := saved.duplicate(true)
+	wrong.start_state.tutorial.entry_snapshot.start_state.tutorial["entry_snapshot"] = source.duplicate(true)
+	check(checkpoint.validation_error(wrong).contains("entry_snapshot.nested"), "Retry entrances cannot contain another retry entrance")
+	wrong = saved.duplicate(true)
+	wrong.start_state.tutorial.entry_snapshot.start_state.tutorial.flags.workshop_entered = true
+	wrong.start_state.tutorial.entry_snapshot.start_state.tutorial.stage = 2
+	check(checkpoint.validation_error(wrong) == "start_state.tutorial.entry_snapshot.tutorial.stage", "A retry cannot cross the reception/workshop boundary")
+	wrong = saved.duplicate(true)
+	var entry: Dictionary = wrong.start_state.tutorial.entry_snapshot
+	entry.player.items.append(entry.player.items[0].duplicate(true))
+	check(checkpoint.validation_error(wrong) == "start_state.tutorial.entry_snapshot.item.id.duplicate", "Duplicate Item ownership inside the entrance is rejected independently")
+	var original_bytes := FileAccess.get_file_as_bytes(SAVE_PATH)
+	var retained := world
+	var original_applier: Callable = checkpoint.vehicle_applier
+	checkpoint.vehicle_applier = func(_vehicle: Node3D, _state: Dictionary) -> bool: return false
+	var applied: bool = await checkpoint.load_snapshot(world, persisted)
+	checkpoint.vehicle_applier = original_applier
+	check(not applied and current_scene == retained and not checkpoint.loading, "Candidate application failure retains the original live world")
+	check(FileAccess.get_file_as_bytes(SAVE_PATH) == original_bytes, "Failed retry application leaves the manual checkpoint untouched")
+	check(await WAIT.retired_candidates(self, checkpoint), "Failed retry candidate retires")
+	if not await load_snapshot(persisted): return
+	var restored: Dictionary = checkpoint.capture_world(world)
+	check(not restored.is_empty() and restored.start_state.tutorial.entry_snapshot == source, "Reload preserves the original retry entrance instead of capturing progressed state")
+	check_departure_state(saved)
+
+func check_terminal_owner_forms(source: Dictionary) -> void:
+	var terminal_record: Dictionary = source.player.items[0].duplicate(true)
+	var terminal_state: Dictionary = terminal_record.state.training_terminal
+	terminal_state.manual_unlocked = true
+	terminal_state.completion = "skipped"
+	for owner in ["inventory", "storage", "world", "mounted", "dormant"]:
+		var form := source.duplicate(true)
+		form.player.items.clear()
+		var actor: Dictionary = form.actors.filter(func(record): return record.kind == "item")[0].duplicate(true)
+		actor.scene = terminal_record.scene_path
+		actor.state = terminal_record.state.duplicate(true)
+		actor.name = terminal_record.name
+		actor.large = terminal_record.is_large
+		actor.fixed = owner == "mounted"
+		actor.support = {"kind": "chassis", "rv": form.vehicles[0].id} if actor.fixed else {"kind": "none"}
+		match owner:
+			"inventory": form.player.items.append(terminal_record.duplicate(true))
+			"storage": form.vehicles[0].items.append(terminal_record.duplicate(true))
+			"world": form.actors.append(actor)
+			"mounted": form.vehicles[0].mounted_items.append(actor)
+			"dormant":
+				var band: int = form.bands[0]
+				if not form.dormant_items.has(band): form.dormant_items[band] = []
+				form.dormant_items[band].append(actor)
+		if not check(checkpoint.validation_error(form).is_empty(), "Unlocked v2 terminal validates under " + owner + " ownership"): continue
+		check(checkpoint.write_checkpoint(SAVE_PATH, form) and checkpoint.read_checkpoint(SAVE_PATH) == form, "Disk round trip preserves v2 boot and manual fields under " + owner + " ownership")
+
+func check_departure_state(source: Dictionary) -> void:
+	var skipped := source.duplicate(true)
+	skipped.start_state.tutorial.erase("entry_snapshot")
+	skipped.start_state.tutorial.status = "skipped"
+	check(checkpoint.validation_error(skipped).is_empty(), "Skipped course can remain in preparation without fabricated departure")
+	skipped.start_state.tutorial.departure_started = true
+	check(checkpoint.validation_error(skipped).is_empty(), "Open-exit authorization persists while preparation remains active")
+	skipped.start_state.phase = "started"
+	check(checkpoint.validation_error(skipped).is_empty(), "Skipped departure can enter the running phase")
+	skipped.start_state.tutorial.departure_started = false
+	check(checkpoint.validation_error(skipped) == "start_state.tutorial.departure_started.phase", "Running phase requires persisted exit authorization")
+	var completed := source.duplicate(true)
+	completed.start_state.tutorial.erase("entry_snapshot")
+	completed.start_state.tutorial.status = "completed"
+	completed.start_state.tutorial.departure_started = true
+	# Completed lessons require real workshop evidence; the root controller
+	# validates that evidence before phase linkage can authorize simulation.
+	check(not CheckpointSchema.orientation_phase_error(completed.start_state).is_empty(), "Completed cannot resume the preparation phase")
+	for phase in ["started", "sealed"]:
+		completed.start_state.phase = phase
+		check(CheckpointSchema.orientation_phase_error(completed.start_state).is_empty(), "Completed course links to the stable " + phase + " phase")
 
 func finish() -> void:
 	if is_instance_valid(world): world.queue_free()

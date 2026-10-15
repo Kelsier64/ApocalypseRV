@@ -134,6 +134,7 @@ func begin_run(player: Node3D) -> String:
 	if tutorial_active():
 		var reason: String = get_node("Tutorial").departure_block_reason()
 		if not reason.is_empty(): return reason
+	if is_orientation_shelter(): return "Drive the original RV towards the automatic exit"
 	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first" if tutorial else "請先結束目前操作"
 	_set_phase("opening")
 	gate.move_to(true)
@@ -198,6 +199,10 @@ func _apply_simulation() -> void:
 
 func _apply_gate() -> void:
 	if not is_instance_valid(gate): return
+	if is_orientation_shelter() and phase == "preparing":
+		var tutorial := get_node_or_null("Tutorial")
+		gate.snap(tutorial != null and tutorial.get("departure_authorized") == true)
+		return
 	gate.snap(phase in ["opening", "started", "closing"])
 	if phase == "opening":
 		gate.snap(false)
@@ -229,6 +234,13 @@ func _on_obstructed() -> void:
 		if _status: _status.text = "車庫大門受阻，已重新開啟｜請移開門口物品"
 
 func _physics_process(delta: float) -> void:
+	if is_orientation_shelter() and phase == "preparing":
+		var tutorial := get_node_or_null("Tutorial")
+		if tutorial == null or tutorial.get("departure_authorized") != true or not is_instance_valid(gate) or not gate.is_open() or not departure_clear() or not tutorial.departure_block_reason().is_empty(): return
+		# Opening the sensor gate does not end the safe preparation period.
+		# Only the player and the complete RV clearing the exit starts simulation.
+		_set_phase("started")
+		tutorial.departure_completed()
 	if phase != "started" or not is_instance_valid(gate) or not gate.is_open(): return
 	_departure_check -= delta
 	if _departure_check > 0.0: return

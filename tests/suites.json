@@ -54,6 +54,9 @@
       "test_world_entities"
     ],
     "integration": [
+      "test_orientation_departure",
+      "test_orientation_recovery",
+      "test_orientation_step_retry",
       "test_orientation_workshop",
       "test_orientation_workshop_journey",
       "test_orientation_shelter",

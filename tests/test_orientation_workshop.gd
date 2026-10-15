@@ -89,7 +89,7 @@ func run() -> void:
 		"flags": {"boot_complete": true, "terminal_taken": true, "workshop_entered": true}}
 	check(course.apply_state(legacy), "Stage-one v1 save already inside workshop upgrades")
 	var migrated := course.capture()
-	check(migrated.version == 2 and migrated.workshop.migration_pending and not migrated.workshop.configured and migrated.workshop.step == 1 and migrated.workshop.recycled_ids.is_empty(), "Legacy migration schedules setup without inventing any completed transaction")
+	check(migrated.version == 3 and not migrated.departure_started and migrated.workshop.migration_pending and not migrated.workshop.configured and migrated.workshop.step == 1 and migrated.workshop.recycled_ids.is_empty(), "Legacy migration schedules setup without inventing any completed transaction or departure")
 	check(COURSE.validate_state(migrated), "Migrated stage-two course validates before world setup")
 	var rejected := migrated.duplicate(true)
 	rejected.workshop.step = 6

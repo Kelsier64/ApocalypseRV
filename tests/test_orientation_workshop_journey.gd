@@ -61,11 +61,15 @@ func run() -> void:
 	if not await repair_lesson(): await finish(); return
 	if not await fuel_lesson(): await finish(); return
 	if not await driving_check(): await finish(); return
-	check(run_owner.phase == "preparing" and not world.get_node("WorldClock").running, "Stage-two completion retains the preparation world")
-	check(tutorial.status == "active" and tutorial.stage == 2, "Stage two does not fabricate departure completion")
+	if not await completion_check(): await finish(); return
 	print("ORIENTATION_WORKSHOP_INPUTS: actor positions/camera aim and elapsed service work; native boot, pickup, placement, recycling, printing, rvctl, wheel and fuel transactions")
 	journey_completed = true
 	await finish()
+
+func completion_check() -> bool:
+	check(run_owner.phase == "preparing" and not world.get_node("WorldClock").running, "Stage-two completion retains the preparation world")
+	check(tutorial.status == "active" and tutorial.stage == 2, "Stage two does not fabricate departure completion")
+	return failures.is_empty()
 
 func reception() -> bool:
 	var terminal: TrainingTerminal = tutorial.designated_terminal()
@@ -324,8 +328,7 @@ func driving_check() -> bool:
 	vehicle.set_handbrake(false)
 	var origin := vehicle.global_position
 	vehicle.control_override = {"throttle": 0.35}
-	var deadline := Time.get_ticks_msec() + 2000
-	while Time.get_ticks_msec() < deadline: await physics_frame
+	for tick in 120: await physics_frame
 	vehicle.control_override = {"brake": 1.0}
 	var distance := vehicle.global_position.distance_to(origin)
 	if not check(distance > 0.5 and vehicle.global_basis.y.y > 0.8, "Native wheel forces drive the repaired original RV with both machines aboard"): return false

@@ -49,7 +49,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if get_tree().get_nodes_in_group(Groups.PLAYER).any(func(player): return player.get("settings_open") == true):
 		return
 	var world := get_tree().current_scene
-	if world == null or world.scene_file_path not in WORLD_SCENES.values():
+	# The F6 orientation playground inherits the complete production world;
+	# its saves still restore the trusted main scene, without review cameras.
+	if world == null or (world.scene_file_path not in WORLD_SCENES.values() and world.scene_file_path != "res://tests/orientation_playground.tscn"):
 		return
 	if loading: return
 	if event.physical_keycode == KEY_F6:
@@ -64,7 +66,7 @@ func save_world(world: Node, path: String) -> bool:
 	if data.is_empty(): return false
 	return write_checkpoint(path, data)
 
-func capture_world(world: Node, include_retry := true) -> Dictionary:
+func capture_world(world: Node, include_retry := true, allow_tutorial_ui := false) -> Dictionary:
 	last_error = {}
 	if loading:
 		_fail("state")
@@ -108,7 +110,7 @@ func capture_world(world: Node, include_retry := true) -> Dictionary:
 	if player.has_method("is_placing_equipment") and player.is_placing_equipment():
 		_fail("preview")
 		return {}
-	if player.get_player_mode() != player.PlayerMode.NORMAL:
+	if player.get_player_mode() != player.PlayerMode.NORMAL and not (allow_tutorial_ui and not include_retry and _orientation_ui_capture_allowed(world, player, start_run)):
 		_fail("state")
 		return {}
 	# A carried articulated body may have advanced since the previous frame.
@@ -159,6 +161,28 @@ func capture_world(world: Node, include_retry := true) -> Dictionary:
 		_fail("data", field)
 		return {}
 	return data
+
+func _orientation_ui_capture_allowed(world: Node, player: Node, start_run: Node) -> bool:
+	# Retry entrances may capture a settled native transaction while its read
+	# interface remains open. UI is never serialized and manual saves keep their
+	# ordinary interaction gate; all job/vehicle/placement checks run above.
+	if start_run == null or start_run.phase != "preparing" or player.get("settings_open") == true or player.get_player_mode() != player.PlayerMode.UI: return false
+	var generator := world.get_node_or_null("WorldGenerator")
+	var tutorial := start_run.get_node_or_null("Tutorial")
+	if generator == null or generator.profile.generation_version != 12 or tutorial == null or tutorial.get("status") != "active": return false
+	var item_scripts := ["res://equipment/tablet_screen.gd", "res://equipment/training_terminal.gd"]
+	for item in get_tree().get_nodes_in_group(Groups.ITEMS):
+		if not world.is_ancestor_of(item) or not WorldEntities.same_world(world, item) or item.is_queued_for_deletion(): continue
+		var script: Script = item.get_script()
+		if script == null or script.resource_path not in item_scripts or item.get("current_user") != player: continue
+		var ui: Node = item.get("ui_instance")
+		if is_instance_valid(ui) and ui.get("visible") == true: return true
+	for reader in player.get_children():
+		var script: Script = reader.get_script()
+		if script == null or script.resource_path != "res://equipment/training_terminal_reader.gd" or reader.get("current_user") != player or reader.is_queued_for_deletion(): continue
+		var ui: Node = reader.get("ui_instance")
+		if is_instance_valid(ui) and ui.get("visible") == true and reader.has_method("_user_valid") and reader._user_valid(): return true
+	return false
 
 func _collect_actors(node: Node, result: Array[Dictionary]) -> void:
 	for child in node.get_children():
@@ -246,6 +270,9 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 			if data.generation_version != (12 if orientation else 11): return "start_state.tutorial.generation_version"
 			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry)
 			if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
+			if orientation:
+				var phase_error := CheckpointSchema.orientation_phase_error(start_state)
+				if not phase_error.is_empty(): return "start_state.tutorial." + phase_error
 		elif data.generation_version == 12:
 			return "start_state.tutorial"
 	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11, 12]:
@@ -348,13 +375,19 @@ func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	if not entry is Dictionary: return "entry_snapshot"
 	var entry_error := _validation_error(entry, false)
 	if not entry_error.is_empty(): return "entry_snapshot." + entry_error
-	if entry.get("world_id") != "shelter" or entry.get("generation_version") != 11: return "entry_snapshot.world_id"
+	var orientation: bool = value.get("course") == "two_room_orientation"
+	if entry.get("world_id") != "shelter" or entry.get("generation_version") != (12 if orientation else 11): return "entry_snapshot.world_id"
 	var entry_tutorial: Variant = entry.get("start_state", {}).get("tutorial")
 	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
-	for field in ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]:
-		if entry_tutorial.get(field) != value[field]: return "entry_snapshot.tutorial." + field
+	var identity_fields := ["version", "stage", "terminal_id", "rv_id"] if orientation else ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]
+	if orientation: identity_fields.append("course")
+	for field in identity_fields:
+		if entry_tutorial.get(field) != value.get(field): return "entry_snapshot.tutorial." + field
 	if value.version >= 2 and entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
-	if value.version == 3:
+	if orientation and value.version >= 2:
+		for field in ["step", "configured", "migration_pending"]:
+			if entry_tutorial.workshop[field] != value.workshop[field]: return "entry_snapshot.tutorial.workshop." + field
+	if not orientation and value.version == 3:
 		for field in ["configured", "wall_slot", "wheel_slot", "engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id"]:
 			if entry_tutorial.service[field] != value.service[field]: return "entry_snapshot.tutorial.service." + field
 	if entry_tutorial.status != "active": return "entry_snapshot.tutorial.status"

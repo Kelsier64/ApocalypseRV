@@ -94,6 +94,15 @@ static func tutorial_error(value: Variant) -> String:
 		if value.status == "completed" and (value.stage != 9 or not value.service.flags.departure): return "status"
 	return ""
 
+static func orientation_phase_error(start_state: Dictionary) -> String:
+	var tutorial: Dictionary = start_state.get("tutorial", {})
+	if tutorial.get("course") != "two_room_orientation" or tutorial.get("version", 0) < 3: return ""
+	var phase: String = start_state.get("phase", "preparing")
+	if tutorial.status == "completed" and phase not in ["started", "sealed"]: return "status.phase"
+	if phase in ["started", "sealed"] and not tutorial.departure_started: return "departure_started.phase"
+	if tutorial.status == "active" and phase in ["started", "sealed"]: return "status.phase"
+	return ""
+
 static func service_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
 	var identity_fields := ["engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id", "fuel_can_id", "empty_can_id"]

@@ -251,8 +251,8 @@ func page() -> Dictionary:
 				_condition("walls", "Both designated walls were repaired and remain at full durability", repaired_ids.size() == 2 and wall_ready(targets.wall_a) and wall_ready(targets.wall_b)),
 				_condition("wheel", "The original flat was removed and the marked healthy spare remains installed", flags.wheel_removed and flags.wheel_installed and wheel_ready()),
 				_condition("fuel", "Manufactured fuel was transferred, an empty can returned, and fuel remains in the RV", flags.refueled and refuel_amount > 0.0 and not empty_can_id.is_empty() and controller.designated_rv() != null and controller.designated_rv().current_fuel > 0.0)]
-			steps = ["Keep your field terminal and supplies aboard. The depot exit remains secured.", "Keep the workshop units powered, both repaired walls intact, the marked spare installed and fuel in the tank."]
-			controls = ["T: read the selected field terminal. Esc: close."]
+			steps = ["Keep your field terminal and supplies aboard. Close the maintenance cover and stow the rear ramp.", "Keep both workshop units powered, both repaired walls intact, the marked spare installed and fuel in the tank.", "Board the driver's seat, start the engine, select first gear and release the handbrake. Drive straight towards the exit; the vehicle sensor opens it automatically.", "Drive the entire RV beyond the exit. Once you and all installed equipment clear it, the journey begins and this terminal becomes your searchable field manual."]
+			controls = ["Hold E at driver's seat: board. B: engine. C: first gear. Space: handbrake.", "W/S: throttle/brake. A/D: steer. T: read selected field terminal while on foot. Esc: close."]
 	return {"available": true, "stage": 2, "title": title, "conditions": conditions, "steps": steps, "reference": controls}
 
 func _condition(identity: String, text: String, done: bool) -> Dictionary:

@@ -131,7 +131,7 @@ func on_open() -> void:
 
 func _show_boot() -> bool:
 	var state: Dictionary = get_parent().boot_state()
-	var booting: bool = not state.is_empty() and not state.get("initialized", false)
+	var booting: bool = not get_parent().manual_unlocked and not state.is_empty() and not state.get("initialized", false)
 	_boot.visible = booting
 	_screen.visible = not booting
 	if booting:

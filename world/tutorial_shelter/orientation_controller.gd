@@ -1,9 +1,9 @@
 extends Node
 class_name OrientationController
-## The v12 reception lesson owns its evidence independently of the v11 course.
+## The v12 course owns its evidence independently of the v11 course.
 signal progress_changed
 const COURSE := "two_room_orientation"
-const STATE_VERSION := 2
+const STATE_VERSION := 3
 const TERMINAL_SCENE := "res://equipment/training_terminal.tscn"
 const ROOM_DIVIDER_Z := -26.0
 const WORKSHOP_BOUNDS := AABB(Vector3(-20, 0, ROOM_DIVIDER_Z), Vector3(40, 5, 40))
@@ -12,11 +12,19 @@ var status := "active"
 var terminal_id := ""
 var rv_id := ""
 var workshop: OrientationWorkshop
+var recovery: Node
+var departure_authorized := false
+var entry_snapshot: Dictionary:
+	get: return recovery.entry_snapshot if recovery != null else {}
+	set(value):
+		_ensure_recovery()
+		recovery.entry_snapshot = value
 var flags := {"boot_complete": false, "terminal_taken": false, "workshop_entered": false}
 var _disabled := false
 
 func _ready() -> void:
 	_ensure_workshop()
+	_ensure_recovery()
 	add_to_group("tutorial_controller")
 	var world := _world()
 	if world != null and world.has_signal("ready_for_play"):
@@ -46,6 +54,13 @@ func _ensure_workshop() -> void:
 	workshop.name = "Workshop"
 	workshop.controller = self
 	add_child(workshop)
+
+func _ensure_recovery() -> void:
+	if recovery != null: return
+	recovery = load("res://world/tutorial_shelter/orientation_recovery.gd").new()
+	recovery.name = "Recovery"
+	recovery.controller = self
+	add_child(recovery)
 
 func _prepare_workshop() -> void:
 	_ensure_workshop()
@@ -139,7 +154,7 @@ func conditions_viewed(_identity: String, _player: Node3D) -> void:
 	pass # Merely opening or reading the UI never initializes the system.
 
 func inner_gate_unlocked() -> bool:
-	return initialized() and flags.terminal_taken
+	return initialized() and (flags.terminal_taken or status == "skipped")
 
 func terminal_page() -> Dictionary:
 	if not initialized() or not flags.boot_complete:
@@ -153,6 +168,9 @@ func terminal_page() -> Dictionary:
 		"reference": ["Esc: close the terminal.", "Hold F: remove the fixed terminal.", "T: read the selected terminal from your inventory."]}
 
 func _physics_process(_delta: float) -> void:
+	if initialized() and status in ["completed", "skipped"]:
+		_ensure_recovery()
+		recovery.tick()
 	if not _active_world(): return
 	if not initialized():
 		_on_world_ready()
@@ -160,6 +178,12 @@ func _physics_process(_delta: float) -> void:
 	_sync_dock_marker()
 	_prepare_workshop()
 	if workshop != null and workshop.configured: workshop.tick()
+	_tick_workshop_entry()
+	_ensure_recovery()
+	recovery.tick()
+	_tick_departure()
+
+func _tick_workshop_entry() -> void:
 	if flags.workshop_entered or not flags.terminal_taken: return
 	var player := _world().get_node_or_null("Player") as Node3D
 	var building := get_parent().get("shelter") as Node3D
@@ -173,24 +197,29 @@ func _physics_process(_delta: float) -> void:
 		stage = 2
 		progress_changed.emit()
 
-func save_state() -> Dictionary:
+func save_state(include_retry := true) -> Dictionary:
 	if not initialized(): return {}
 	_ensure_workshop()
-	return {"version": STATE_VERSION, "course": COURSE, "stage": stage, "status": status, "terminal_id": terminal_id, "rv_id": rv_id, "flags": flags.duplicate(true), "workshop": workshop.capture()}
+	var data := {"version": STATE_VERSION, "course": COURSE, "stage": stage, "status": status, "terminal_id": terminal_id, "rv_id": rv_id, "flags": flags.duplicate(true), "workshop": workshop.capture(), "departure_started": departure_authorized}
+	if include_retry and not entry_snapshot.is_empty(): data["entry_snapshot"] = entry_snapshot.duplicate(true)
+	return data
 
-func capture(_include_retry := true) -> Dictionary:
-	return save_state()
+func capture(include_retry := true) -> Dictionary:
+	return save_state(include_retry)
 
 static func validation_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
 	var version: Variant = value.get("version")
 	var fields := ["version", "course", "stage", "status", "terminal_id", "flags"]
-	if version == STATE_VERSION: fields.append_array(["rv_id", "workshop"])
-	if value.size() != fields.size() or not value.has_all(fields): return "fields"
-	if not value.version is int or value.version not in [1, STATE_VERSION]: return "version"
+	if version is int and version >= 2: fields.append_array(["rv_id", "workshop"])
+	if version == STATE_VERSION: fields.append("departure_started")
+	if not value.has_all(fields): return "fields"
+	for key in value:
+		if key not in fields and not (version == STATE_VERSION and key == "entry_snapshot"): return "fields"
+	if not value.version is int or value.version not in [1, 2, STATE_VERSION]: return "version"
 	if not value.course is String or value.course != COURSE: return "course"
 	if not value.stage is int or value.stage not in [1, 2]: return "stage"
-	if not value.status is String or value.status != "active": return "status"
+	if not value.status is String or value.status not in (["active", "completed", "skipped"] if version == STATE_VERSION else ["active"]): return "status"
 	if not value.terminal_id is String or value.terminal_id.is_empty(): return "terminal_id"
 	var saved: Variant = value.flags
 	var names := ["boot_complete", "terminal_taken", "workshop_entered"]
@@ -200,7 +229,7 @@ static func validation_error(value: Variant) -> String:
 	if saved.terminal_taken and not saved.boot_complete: return "flags.terminal_taken"
 	if saved.workshop_entered and not saved.terminal_taken: return "flags.workshop_entered"
 	if (value.stage == 2) != saved.workshop_entered: return "stage"
-	if version == STATE_VERSION:
+	if version >= 2:
 		if not value.rv_id is String: return "rv_id"
 		var error := OrientationWorkshop.validation_error(value.workshop)
 		if not error.is_empty(): return "workshop." + error
@@ -212,6 +241,11 @@ static func validation_error(value: Variant) -> String:
 		if not value.workshop.empty_can_id.is_empty(): references.append(value.workshop.empty_can_id)
 		if value.terminal_id in references or not value.rv_id.is_empty() and value.rv_id in references: return "workshop.id.alias"
 		if not saved.workshop_entered and value.workshop.step != 1: return "workshop.step"
+	if version == STATE_VERSION:
+		if not value.departure_started is bool: return "departure_started"
+		if value.departure_started and value.status != "skipped" and (value.stage != 2 or value.workshop.step != 6): return "departure_started"
+		if value.status == "completed" and not value.departure_started: return "status"
+		if value.has("entry_snapshot") and (value.status != "active" or not value.entry_snapshot is Dictionary or value.entry_snapshot.is_empty()): return "entry_snapshot"
 	return ""
 
 static func validate_state(value: Variant) -> bool:
@@ -225,6 +259,7 @@ func apply_state(data: Dictionary) -> bool:
 	terminal_id = data.terminal_id
 	rv_id = data.get("rv_id", "")
 	flags = data.flags.duplicate(true)
+	departure_authorized = data.get("departure_started", false)
 	_ensure_workshop()
 	if data.version == 1:
 		var initial := OrientationWorkshop.new()
@@ -232,6 +267,8 @@ func apply_state(data: Dictionary) -> bool:
 		workshop.restore(initial.capture())
 		initial.free()
 	else: workshop.restore(data.workshop)
+	_ensure_recovery()
+	recovery.restore(data.get("entry_snapshot", {}))
 	progress_changed.emit()
 	return true
 
@@ -241,10 +278,60 @@ func restore(data: Dictionary) -> void:
 		return
 	apply_state(data)
 
-func can_restart() -> bool: return false
-func restart_stage() -> bool: return false
-func can_skip() -> bool: return false
-func skip_tutorial() -> bool: return false
-func departure_block_reason() -> String: return "Prepare the vehicle before departure"
-func departure_started() -> void: pass
-func departure_completed() -> void: pass
+func can_restart() -> bool:
+	_ensure_recovery()
+	return recovery.can_restart()
+
+func restart_stage() -> bool:
+	if not can_restart(): return false
+	return await recovery.restart_stage()
+
+func can_skip() -> bool:
+	_ensure_recovery()
+	return recovery.can_skip()
+
+func skip_tutorial() -> bool:
+	_ensure_recovery()
+	return recovery.skip_tutorial()
+
+func departure_block_reason() -> String:
+	if not initialized() or not _active_world(): return "Journey already started"
+	if status == "active" and (not flags.workshop_entered or not workshop.ready_for_departure()): return "Restore the RV and finish the workshop guide before departure"
+	if status not in ["active", "skipped"]: return "Journey already started"
+	var vehicle := designated_rv()
+	if vehicle == null or vehicle.current_fuel <= 0.0 or not vehicle.has_usable_power(): return "Restore fuel and installed battery power before departure"
+	var hatch: Node = vehicle.engine_bay.get_node("Hatch")
+	if not hatch.stable() or hatch.requested_open or hatch.opened: return "Close the maintenance cover before departure"
+	if vehicle.drive_blocked(): return "Stow the rear access ramp before departure"
+	return ""
+
+func _tick_departure() -> void:
+	var owner := get_parent()
+	if departure_authorized or not departure_block_reason().is_empty() or not is_instance_valid(owner.gate): return
+	var vehicle := designated_rv()
+	var player: Node3D = _world().get_node_or_null("Player")
+	if player == null or player.is_player_dead or player.is_grabbed() or not is_instance_valid(player.seated_in) or ClimbMath.find_rv_ancestor(player.seated_in) != vehicle: return
+	if not vehicle.energy.engine_running or vehicle.handbrake or not vehicle.is_player_driving: return
+	var heading: Vector3 = owner.gate.global_basis.z.normalized()
+	if (-vehicle.global_basis.z).dot(heading) < 0.85 or vehicle.linear_velocity.dot(heading) <= 0.1: return
+	var position_in_gate: Vector3 = owner.gate.to_local(vehicle.global_position)
+	# The original parking position is already inside this advance sensor. Motion
+	# towards the exit triggers it with a full doorway opening distance ahead.
+	if absf(position_in_gate.x) > 3.5 or position_in_gate.z < -30.0 or position_in_gate.z > 0.0: return
+	departure_started()
+
+func departure_started() -> void:
+	var owner := get_parent()
+	if departure_authorized or not departure_block_reason().is_empty() or not is_instance_valid(owner.gate): return
+	departure_authorized = true
+	owner.gate.move_to(true)
+	progress_changed.emit()
+
+func departure_completed() -> void:
+	var owner := get_parent()
+	if not departure_authorized or owner.phase != "started" or not owner.departure_clear(): return
+	if status == "active":
+		status = "completed"
+		entry_snapshot.clear()
+		recovery.unlock_manual("completed")
+	progress_changed.emit()

@@ -1,4 +1,8 @@
-# Tutorial shelter assets and nine-lesson controller
+# Tutorial shelter assets and course controllers
+
+New v12 runs use `orientation_controller.gd` for the 20 m reception and 40 m workshop. `orientation_workshop.gd` records committed equipment, recycling, gasoline, wall/tire and refueling transactions. `orientation_recovery.gd` owns independent full-world entrances for reception and each workshop step. Retry is staged and transactional; snapshots persist with the current save without nesting or overwriting the manual file. Esc can skip even if the original terminal is lost, without granting stock or fuel. The original terminal becomes a searchable manual in every ownership form, preserving portable v2 boot and power fields.
+
+The original RV moving forward inside the advance sensor opens the exit while simulation remains in preparation. The player and every RV collision, including protruding mounted devices, must clear the exit while the vehicle is ready before time, weather and enemies resume. The physical gate reopens on obstruction, then seals permanently after clearance. Course v3 accepts v1/v2 saves; v11 keeps the older independent controller. See the [two-room stage-three validation](../../docs/validation/2026-10-15-orientation-stage3.md). Final two-room art remains stage four; the following sections describe retained v11 assets.
 
 Stage-one v11 layout: nine bays, 40 × 416 m interior (local Z −402 to 14 m). Bay lengths are 80, 40, 40, 48, 40, 40, 40, 40 and 48 m; inner partitions are at local Z −322, −282, −242, −194, −154, −114, −74 and −34 m. The exit stays fixed and RVSpawn moves to local Z −388 m. The old v7–v10 shelter is unchanged.
 

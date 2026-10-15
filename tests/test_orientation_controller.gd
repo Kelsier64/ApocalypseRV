@@ -13,6 +13,12 @@ class RunFixture extends Node:
 	var phase := "preparing"
 	var shelter: Node3D
 
+class CheckpointInput extends "res://rv/checkpoint.gd":
+	var save_requests := 0
+	func save_world(_world: Node, _path: String) -> bool:
+		save_requests += 1
+		return true # Input routing probe never writes the user's manual file.
+
 func _init() -> void: run.call_deferred()
 
 func check(ok: bool, note: String) -> void:
@@ -38,6 +44,18 @@ func run() -> void:
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
 	current_scene = world
+	var checkpoint_input := CheckpointInput.new()
+	root.add_child(checkpoint_input)
+	var save_key := InputEventKey.new()
+	save_key.pressed = true
+	save_key.physical_keycode = KEY_F6
+	world.scene_file_path = "res://tests/rv_climb_playground.tscn"
+	checkpoint_input._unhandled_input(save_key)
+	check(checkpoint_input.save_requests == 0, "Unrelated playgrounds cannot route checkpoint hotkeys")
+	world.scene_file_path = "res://tests/orientation_playground.tscn"
+	checkpoint_input._unhandled_input(save_key)
+	check(checkpoint_input.save_requests == 1, "The inherited orientation F6 scene routes its save hotkey to the production checkpoint")
+	checkpoint_input.free()
 	var owner := RunFixture.new()
 	owner.name = "StartRun"
 	world.add_child(owner)
@@ -140,7 +158,7 @@ func run() -> void:
 	tutorial._physics_process(0.016)
 	check(tutorial.stage == 2 and tutorial.flags.workshop_entered and tutorial.terminal_page().available, "Actual body location recovers room-two teaching even when the Player origin is below the floor")
 	check(COURSE.validate_state(tutorial.capture()), "Captured room crossing has a consistent schema")
-	check(owner.phase == "preparing" and not tutorial.can_restart() and not tutorial.can_skip() and not tutorial.departure_block_reason().is_empty(), "Stage one preserves preparation and leaves later-course recovery/departure unavailable")
+	check(owner.phase == "preparing" and not tutorial.can_restart() and tutorial.can_skip() and not tutorial.departure_block_reason().is_empty(), "Missing entrance snapshots disable retry but retain skip and block unfinished departure")
 	world.free()
 	if failures.is_empty(): print("PASS: orientation controller native transactions and persistence")
 	quit(0 if failures.is_empty() else 1)

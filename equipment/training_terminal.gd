@@ -71,15 +71,15 @@ func get_interaction_prompt(player: Node3D) -> String:
 	if is_instance_valid(processing_owner): return item_name + " | Recycling"
 	if not player.can_use_hands(): return item_name + " | A usable arm is required"
 	if not is_fixed: return item_name + " | E Pick up"
-	if not _portable.is_empty() and _portable.dock_locked: return item_name + " | Hold E Open terminal | Dock locked"
+	if _dock_locked(): return item_name + " | Hold E Open terminal | Dock locked"
 	return item_name + " | Hold E Open terminal | Hold F Remove"
 
 func interact(player: Node3D) -> String:
-	if not _portable.is_empty() and _portable.dock_locked: return "Hold E to open the terminal. Initialize it to release the dock."
+	if _dock_locked(): return "Hold E to open the terminal. Initialize it to release the dock."
 	return pickup(player) if not is_fixed else "Hold E to open. Hold F to remove."
 
 func pickup(player: Node3D) -> String:
-	if not _portable.is_empty() and _portable.dock_locked: return "Initialize the terminal before removing it from its dock."
+	if _dock_locked(): return "Initialize the terminal before removing it from its dock."
 	if not can_pickup(player): return "Cannot pick up: item unavailable or inventory full."
 	if scene_file_path.is_empty(): return "Cannot pick up: item has no saved scene."
 	var from_original_dock: bool = is_fixed and is_instance_valid(mount_support) and mount_support.get_meta("training_terminal_dock", "") == persistent_id
@@ -91,7 +91,10 @@ func pickup(player: Node3D) -> String:
 	return "Picked up " + item_name
 
 func can_pickup(player: Node3D) -> bool:
-	return (_portable.is_empty() or not _portable.dock_locked) and super.can_pickup(player)
+	return not _dock_locked() and super.can_pickup(player)
+
+func _dock_locked() -> bool:
+	return not _portable.is_empty() and _portable.dock_locked and not manual_unlocked
 
 func can_operate() -> bool:
 	if is_queued_for_deletion() or is_instance_valid(processing_owner): return false
