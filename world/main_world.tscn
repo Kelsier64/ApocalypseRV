@@ -10,10 +10,11 @@
 [ext_resource type="Script" path="res://world/starting_shelter/start_run.gd" id="18_run"]
 [ext_resource type="Script" path="res://world/terrain/world_profile.gd" id="19_profile"]
 [ext_resource type="Script" path="res://world/deviation_pressure.gd" id="20_pressure"]
+[ext_resource type="Script" path="res://world/tutorial_shelter/tutorial_controller.gd" id="21_tutorial"]
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
-generation_version = 10
+generation_version = 12
 chunks_ahead = 2
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
@@ -46,6 +47,9 @@ script = ExtResource("14_instances")
 
 [node name="StartRun" type="Node" parent="."]
 script = ExtResource("18_run")
+
+[node name="Tutorial" type="Node" parent="StartRun"]
+script = ExtResource("21_tutorial")
 
 [node name="WorldGenerator" type="Node3D" parent="." unique_id=876925450]
 script = ExtResource("9_8hcw6")

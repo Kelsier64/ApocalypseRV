@@ -1,5 +1,11 @@
 # 自動測試
 
+新版兩室階段二新增 `test_orientation_workshop` 與 `test_orientation_workshop_journey`（integration），覆蓋順序／ID 驗證及原生安裝、回收、製造、修牆、換胎、加油與短距離輪驅。既有 orientation checkpoint 同時覆蓋課程 v1→v2 升級及一次性配置。[本輪證據與限制](../docs/validation/2026-10-15-orientation-stage2.md)。
+
+新版 v12 兩室階段一：`test_portable_training_terminal`（quick）檢查 TTY／TUI 交接、原物品手持閱讀及供電；`test_orientation_controller`、`test_orientation_shelter`、`test_orientation_checkpoint`（integration）檢查拆卸交易、房間尺寸／支撐／門碰撞、導航、串流和新舊保存分流。入口為 `orientation_playground.tscn`，正常 F6 不套用檢視捷徑。[本輪結果](../docs/validation/2026-10-15-orientation-stage1.md)。
+
+教學基地 v11：`test_tutorial_shelter_terrain`（quick）覆蓋完整場址整地、植被及串流邊界；`test_tutorial_shelter`（integration）覆蓋九區尺寸、碰撞、八門、導航及靜態三角面預算；`test_tutorial_checkpoint`（slow）覆蓋內門保存／區塊重綁、移動中拒存及完整世界存讀檔。原出生區測試明確固定 v10；[實機入口與限制](../docs/validation/2026-10-11-tutorial-stage1.md)。F6 測試場預設直接開始正式第一課；只有明確傳入 review 參數才啟用攝影／回放及其狀態列。
+
 從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。Godot 版本由 [.godot-version](../.godot-version) 固定。
 
 ```powershell

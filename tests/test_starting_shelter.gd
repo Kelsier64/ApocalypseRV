@@ -18,6 +18,8 @@ func wait_phase(run: StartRun, expected: String, frames := 360) -> bool:
 
 func _run() -> void:
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
+	world.get_node("WorldGenerator").profile = world.get_node("WorldGenerator").profile.duplicate()
+	world.get_node("WorldGenerator").profile.generation_version = 10 # Legacy shelter regression.
 	world.get_node("WorldGenerator").world_seed = 42
 	root.add_child(world)
 	current_scene = world

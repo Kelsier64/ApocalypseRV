@@ -46,6 +46,8 @@ func count_monsters(world: Node) -> int:
 func run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
+	world.get_node("WorldGenerator").profile = world.get_node("WorldGenerator").profile.duplicate()
+	world.get_node("WorldGenerator").profile.generation_version = 10 # Legacy shelter regression.
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()

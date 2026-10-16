@@ -1,5 +1,7 @@
 extends Item
 
+signal section_viewed(player: Node3D, section: String)
+
 var ui_instance: Node = null
 var current_user: Node3D = null
 @export var power_cost_per_open: float = 0.2
@@ -16,6 +18,13 @@ func _ready():
 		ui_instance.visible = false
 		add_child(ui_instance)
 		ui_instance.close_requested.connect(_close_ui)
+		ui_instance.section_presented.connect(_section_presented)
+
+func _section_presented(section: String) -> void:
+	if not is_instance_valid(current_user) or not is_instance_valid(ui_instance): return
+	if not ui_instance.is_management_active() or not ui_instance._owns_session(): return
+	if section != ui_instance.current_page: return
+	section_viewed.emit(current_user, section)
 
 # Called by player_interact when E is held for 1 second
 func interact_hold(player: Node3D):

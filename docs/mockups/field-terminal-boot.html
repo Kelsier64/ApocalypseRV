@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Field terminal — Linux TTY boot reference</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; background: #080808; }
+  body { padding: 14px 18px; overflow: hidden; color: #d8d8d8;
+    font: clamp(13px,1.35vw,19px)/1.23 "Cascadia Mono",Consolas,"Liberation Mono",monospace; }
+  #tty { height: 100%; overflow: auto; scrollbar-width: none; outline: none; }
+  #tty::-webkit-scrollbar { display: none; }
+  .line { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.23em; }
+  .ok { color: #89c379; }
+  .wait { color: #d5c078; }
+  .dim { color: #949494; }
+  #cursor { display: inline-block; width: .62em; height: 1em; background: #d8d8d8;
+    vertical-align: -.1em; animation: blink 1s steps(1,end) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { #cursor { animation: none; } }
+</style>
+<body>
+<main id="tty" tabindex="0" aria-label="Interactive field terminal boot reference"></main>
+<script>
+(() => {
+  const tty = document.getElementById('tty');
+  // Fictional device logs for an interface reference; no commands are run.
+  const logs = [
+    'Decompressing Linux... done.',
+    'Booting the kernel.',
+    '[    0.000000] Linux version 6.6.0-cd (field@civil-defense)',
+    '[    0.000000] Command line: root=/dev/mmcblk0p2 ro console=tty1',
+    '[    0.000000] BIOS-provided physical RAM map:',
+    '[    0.000000] BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff] usable',
+    '[    0.000000] BIOS-e820: [mem 0x0000000000100000-0x000000007fffffff] usable',
+    '[    0.000000] NX (Execute Disable) protection: active',
+    '[    0.000000] SMBIOS 3.2.0 present.',
+    '[    0.000000] DMI: Civil Defense FT-01 / Field Terminal',
+    '[    0.004181] ACPI: Early table checksum verification disabled',
+    '[    0.009327] ACPI: PM-Timer IO Port: 0x408',
+    '[    0.016930] APIC: Switch to symmetric I/O mode setup',
+    '[    0.021756] x86: Booting SMP configuration:',
+    '[    0.025418] smp: Brought up 1 node, 2 CPUs',
+    '[    0.031527] Memory: 2031616K/2097152K available',
+    '[    0.040708] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=2',
+    '[    0.052731] rcu: Hierarchical RCU implementation.',
+    '[    0.061980] Console: colour dummy device 80x25',
+    '[    0.074912] clocksource: tsc: mask: 0xffffffffffffffff',
+    '[    0.090484] Calibrating delay loop... 3192.00 BogoMIPS',
+    '[    0.101201] Mount-cache hash table entries: 4096',
+    '[    0.112636] devtmpfs: initialized',
+    '[    0.127338] pinctrl core: initialized pinctrl subsystem',
+    '[    0.145930] NET: Registered PF_NETLINK/PF_ROUTE protocol family',
+    '[    0.161829] PCI: Using configuration type 1 for base access',
+    '[    0.176824] pci 0000:00:1f.0: [8086:2918] type 00 class 0x060100',
+    '[    0.193764] SCSI subsystem initialized',
+    '[    0.209182] libata version 3.00 loaded.',
+    '[    0.228329] usbcore: registered new interface driver usbfs',
+    '[    0.247105] usbcore: registered new interface driver hub',
+    '[    0.259621] usbcore: registered new device driver usb',
+    '[    0.277828] pps_core: LinuxPPS API ver. 1 registered',
+    '[    0.292488] PTP clock support registered',
+    '[    0.310984] clocksource: Switched to clocksource tsc',
+    '[    0.326590] input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0',
+    '[    0.347128] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled',
+    '[    0.371836] sdhci: Secure Digital Host Controller Interface driver',
+    '[    0.392441] sdhci-pci 0000:00:1c.0: SDHCI controller found',
+    '[    0.428961] mmc0: SDHCI controller using ADMA',
+    '[    0.481231] mmc0: new high speed SDHC card',
+    '[    0.506092] mmcblk0: mmc0:0001 CDOS 7.40 GiB',
+    '[    0.518733] mmcblk0: p1 p2',
+    '[    0.562932] usb 1-1: new full-speed USB device number 2',
+    '[    0.590145] hid-generic: USB HID v1.11 Keyboard',
+    '[    0.637245] EXT4-fs (mmcblk0p2): mounted filesystem',
+    '[    0.658220] VFS: Mounted root (ext4 filesystem) readonly',
+    '[    0.689552] devtmpfs: mounted',
+    '[    0.714806] power_supply BAT0: internal supply online',
+    '[    0.749091] field_power: battery voltage 12.14 V',
+    '[    0.776126] field_power: external supply not connected; using internal battery',
+    '[    0.831482] field_dock: release interlock detected',
+    '[    0.871309] field_dock: latch LOCKED',
+    '[    0.909361] random: crng init done',
+    '[    0.954294] Freeing unused kernel image memory: 1216K',
+    '[    0.988372] Run /sbin/init as init process',
+    '[    1.029675] systemd[1]: Detected architecture x86-64.',
+    '[    1.057128] systemd[1]: Hostname set to <field-terminal>.',
+    '[  OK  ] Created slice System Slice.',
+    '[  OK  ] Started Dispatch Password Requests to Console.',
+    '[  OK  ] Reached target Local Encrypted Volumes.',
+    '[  OK  ] Listening on Device Manager Kernel Socket.',
+    '[  OK  ] Started Journal Service.',
+    '[  OK  ] Started Device Event Manager.',
+    '[  OK  ] Mounted /boot.',
+    '[  OK  ] Reached target Local File Systems.',
+    '[  OK  ] Started Terminal Power Monitor.',
+    '[ WAIT ] Loading local field-guide database...',
+    '[  OK  ] Loaded /var/lib/field-guide/manual.db.',
+    '[  OK  ] Started Dock Interlock Monitor.',
+    '[  OK  ] Started Civil Defense Field Guide.',
+    '[  OK  ] Reached target Field Terminal.',
+    '',
+    'Civil Defense Linux 6.6.0-cd (tty1)',
+    'field-terminal login: operator (automatic login)',
+    'operator@field-terminal:~$ field-guide --resume',
+    'Loading orientation session...'
+  ];
+  const screen = [];
+  let state = 'waiting', offset = 0, generation = 0, initialized = false;
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const append = text => {
+    screen.push(text);
+    const line = document.createElement('div');
+    line.className = 'line';
+    if (text.startsWith('[  OK  ]') || text.startsWith('[ WAIT ]')) {
+      const status = document.createElement('span');
+      status.className = text.startsWith('[  OK  ]') ? 'ok' : 'wait';
+      status.textContent = text.slice(0, 8);
+      line.append(status, document.createTextNode(text.slice(8)));
+    } else line.textContent = text;
+    tty.append(line);
+    tty.scrollTop = tty.scrollHeight;
+  };
+  const cursor = () => {
+    const line = document.createElement('div');
+    line.className = 'line';
+    const block = document.createElement('span');
+    block.id = 'cursor'; line.append(block); tty.append(line);
+    tty.scrollTop = tty.scrollHeight;
+  };
+  const showGuide = () => {
+    append('');
+    append('[session] ORIENTATION / RECEIVING ROOM');
+    append('[objective] Take this terminal with you.');
+    append('[dock] Release interlock: UNLOCKED');
+    append('[procedure] Close this display, then remove the terminal from its wall dock.');
+    append('');
+    append('Enter: show controls    Esc: close display');
+    cursor();
+  };
+  const boot = async () => {
+    const token = ++generation;
+    state = 'booting';
+    tty.querySelector('#cursor')?.parentElement.remove();
+    if (offset === 0) { tty.replaceChildren(); screen.length = 0; }
+    while (offset < logs.length && token === generation) {
+      const next = logs[offset++]; append(next);
+      const service = next.startsWith('[  OK  ]') || next.startsWith('[ WAIT ]');
+      const delay = next.includes('[ WAIT ]') ? 520 : service ? 130 : 38;
+      await sleep(delay);
+    }
+    if (token !== generation) return;
+    await sleep(450);
+    if (token !== generation) return;
+    initialized = true; state = 'ready'; showGuide();
+  };
+  append('Civil Defense Linux recovery console (tty1)');
+  append('field-terminal: internal power present; dock locked.');
+  append(''); append('Press ENTER to boot the system.'); cursor();
+  document.addEventListener('keydown', event => {
+    if (!['Enter','Escape'].includes(event.key) || event.repeat) return;
+    event.preventDefault();
+    if (event.key === 'Escape') {
+      ++generation; state = 'closed'; tty.replaceChildren();
+      const text = document.createElement('div'); text.className = 'line dim';
+      text.textContent = 'Display closed. Press Enter to reconnect.';
+      tty.append(text); cursor(); return;
+    }
+    if (state === 'waiting') boot();
+    else if (state === 'closed') {
+      const previous = screen.slice(); tty.replaceChildren(); screen.length = 0;
+      previous.forEach(append);
+      if (initialized) { state = 'ready'; cursor(); } else boot();
+    } else if (state === 'ready') {
+      tty.querySelector('#cursor')?.parentElement.remove();
+      append('[controls] Esc closes the display. Hold F on the unit to remove it.'); cursor();
+    }
+  });
+  tty.focus({preventScroll:true});
+})();
+</script>
+</body>
+</html>

@@ -41,6 +41,7 @@ func _ready() -> void:
 	for index in range(PlayerInventory.MAX_SLOTS):
 		_make_slot(index)
 	update_slots([])
+	UILayout.attach(self, control)
 
 func _make_slot(index: int) -> void:
 	var panel := Panel.new()
@@ -124,6 +125,9 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 			pistol_hint.text += " · 換彈 %.1fs" % remaining
 		if not weapon_data.get("can_use", true):
 			pistol_hint.text += " · 無法使用"
+	if show_flashlight_hint and selected.get("scene_path", "") == "res://equipment/training_terminal.tscn" and selected.get("state", {}).get("training_terminal", {}).get("version", 1) == 2:
+		pistol_hint.visible = true
+		pistol_hint.text = "T Read terminal"
 
 	for index in range(slots_container.get_child_count()):
 		var panel := slots_container.get_child(index) as Panel

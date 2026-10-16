@@ -1,0 +1,1195 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/formed_concrete.tres" id="concrete"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/floor.tres" id="floor"]
+
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/bay_gate.tscn" id="gate"]
+
+[ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="lamp"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/supply_shelf.tscn" id="supply_shelf"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/supply_shelf_collision.tscn" id="supply_shelf_collision"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/building_finish.tscn" id="finish"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/building_finish_collision.tscn" id="finish_collision"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/workshop_poster.tscn" id="workshop_poster"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse.tscn" id="warehouse"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse_collision.tscn" id="warehouse_collision"]
+
+[sub_resource type="StandardMaterial3D" id="paper"]
+albedo_color = Color(0.76, 0.72, 0.56, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="paint"]
+albedo_color = Color(0.11, 0.14, 0.12, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="r1"]
+size = Vector3(40.8, 0.4, 60.4)
+subdivide_width = 6
+subdivide_depth = 10
+
+[sub_resource type="BoxShape3D" id="r2"]
+size = Vector3(40.8, 0.4, 60.4)
+
+[sub_resource type="BoxMesh" id="r3"]
+size = Vector3(44, 0.4, 30)
+subdivide_width = 7
+subdivide_depth = 4
+
+[sub_resource type="BoxShape3D" id="r4"]
+size = Vector3(44, 0.4, 30)
+
+[sub_resource type="BoxMesh" id="r5"]
+size = Vector3(40.8, 8.8, 0.4)
+subdivide_width = 6
+subdivide_height = 1
+
+[sub_resource type="BoxShape3D" id="r6"]
+size = Vector3(40.8, 8.8, 0.4)
+
+[sub_resource type="BoxMesh" id="r7"]
+size = Vector3(40.8, 0.3, 60.8)
+subdivide_width = 6
+subdivide_depth = 10
+
+[sub_resource type="BoxShape3D" id="r8"]
+size = Vector3(40.8, 0.3, 60.8)
+
+[sub_resource type="BoxMesh" id="r9"]
+size = Vector3(0.4, 8.8, 60)
+subdivide_height = 1
+subdivide_depth = 9
+
+[sub_resource type="BoxShape3D" id="r10"]
+size = Vector3(0.4, 8.8, 60)
+
+[sub_resource type="BoxMesh" id="r11"]
+size = Vector3(9.6, 8.4, 60)
+subdivide_width = 1
+subdivide_height = 1
+subdivide_depth = 9
+
+[sub_resource type="BoxShape3D" id="r12"]
+size = Vector3(9.6, 8.4, 60)
+
+[sub_resource type="BoxMesh" id="r13"]
+size = Vector3(9.6, 0.4, 60)
+subdivide_width = 1
+subdivide_depth = 9
+
+[sub_resource type="BoxShape3D" id="r14"]
+size = Vector3(9.6, 0.4, 60)
+
+[sub_resource type="BoxMesh" id="r15"]
+size = Vector3(60, 8.4, 9.6)
+subdivide_width = 9
+subdivide_height = 1
+subdivide_depth = 1
+
+[sub_resource type="BoxShape3D" id="r16"]
+size = Vector3(60, 8.4, 9.6)
+
+[sub_resource type="BoxMesh" id="r17"]
+size = Vector3(16.1, 8.8, 1.0)
+subdivide_width = 2
+subdivide_height = 1
+
+[sub_resource type="BoxShape3D" id="r18"]
+size = Vector3(16.1, 8.8, 1.0)
+
+[sub_resource type="BoxMesh" id="r19"]
+size = Vector3(0.4, 5.2, 1.15)
+
+[sub_resource type="BoxShape3D" id="r20"]
+size = Vector3(0.4, 5.2, 1.15)
+
+[sub_resource type="BoxMesh" id="r21"]
+size = Vector3(7.8, 3.7, 1.0)
+subdivide_width = 1
+
+[sub_resource type="BoxShape3D" id="r22"]
+size = Vector3(7.8, 3.7, 1.0)
+
+[sub_resource type="BoxMesh" id="r23"]
+size = Vector3(7.8, 0.5, 1.15)
+subdivide_width = 1
+
+[sub_resource type="BoxShape3D" id="r24"]
+size = Vector3(7.8, 0.5, 1.15)
+
+[sub_resource type="BoxMesh" id="r25"]
+size = Vector3(14.8, 0.25, 0.45)
+subdivide_width = 2
+
+[sub_resource type="BoxMesh" id="r26"]
+size = Vector3(40.8, 0.4, 0.45)
+subdivide_width = 6
+
+[sub_resource type="BoxMesh" id="r27"]
+size = Vector3(0.42, 8.2, 0.5)
+subdivide_height = 1
+
+[sub_resource type="BoxShape3D" id="r28"]
+size = Vector3(0.42, 8.2, 0.5)
+
+[sub_resource type="BoxMesh" id="r29"]
+size = Vector3(0.9, 0.7, 0.2)
+
+[sub_resource type="BoxShape3D" id="r30"]
+size = Vector3(0.9, 0.7, 0.2)
+
+[sub_resource type="BoxMesh" id="r31"]
+size = Vector3(1.8, 2.35, 0.08)
+
+[sub_resource type="BoxMesh" id="r32"]
+size = Vector3(1.67, 2.2, 0.008)
+
+[sub_resource type="BoxMesh" id="recovery_shelf_top"]
+size = Vector3(2.4, 0.1, 0.8)
+
+[sub_resource type="BoxShape3D" id="recovery_shelf_top_shape"]
+size = Vector3(2.4, 0.1, 0.8)
+
+[sub_resource type="BoxMesh" id="recovery_shelf_leg"]
+size = Vector3(0.1, 0.75, 0.1)
+
+[sub_resource type="BoxShape3D" id="recovery_shelf_leg_shape"]
+size = Vector3(0.1, 0.75, 0.1)
+
+[sub_resource type="BoxMesh" id="recovery_stripe"]
+size = Vector3(0.1, 0.005, 7)
+subdivide_depth = 1
+
+[node name="OrientationShelter" type="Node3D"]
+metadata/generation_version = 12
+metadata/room_lengths = PackedFloat32Array(20, 40)
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Collision" type="Node3D" parent="."]
+
+[node name="Furnishings" type="Node3D" parent="."]
+
+[node name="LootSpawns" type="Node3D" parent="."]
+
+[node name="Gates" type="Node3D" parent="."]
+
+[node name="AccessPoints" type="Node3D" parent="."]
+
+[node name="StarterEquipment" type="Node3D" parent="."]
+
+[node name="Bays" type="Node3D" parent="."]
+
+[node name="Slab" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.2, -16)
+mesh = SubResource("r1")
+material_override = ExtResource("floor")
+
+[node name="Slab" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, -0.2, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Slab"]
+shape = SubResource("r2")
+
+[node name="Apron" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.2, 29)
+mesh = SubResource("r3")
+material_override = ExtResource("floor")
+
+[node name="Apron" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, -0.2, 29)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Apron"]
+shape = SubResource("r4")
+
+[node name="RearWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 4.4, -46.2)
+mesh = SubResource("r5")
+material_override = ExtResource("concrete")
+
+[node name="RearWall" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 4.4, -46.2)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RearWall"]
+shape = SubResource("r6")
+metadata/navigation_solid = true
+
+[node name="Roof" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.95, -16.2)
+mesh = SubResource("r7")
+material_override = ExtResource("concrete")
+
+[node name="Roof" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 8.95, -16.2)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Roof"]
+shape = SubResource("r8")
+
+[node name="LeftWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-20.2, 4.4, -16)
+mesh = SubResource("r9")
+material_override = ExtResource("concrete")
+
+[node name="LeftWall" type="StaticBody3D" parent="Collision"]
+position = Vector3(-20.2, 4.4, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/LeftWall"]
+shape = SubResource("r10")
+metadata/navigation_solid = true
+
+[node name="LeftServiceWing" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-25.2, 4.2, -16)
+mesh = SubResource("r11")
+material_override = ExtResource("concrete")
+
+[node name="LeftServiceWing" type="StaticBody3D" parent="Collision"]
+position = Vector3(-25.2, 4.2, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/LeftServiceWing"]
+shape = SubResource("r12")
+metadata/navigation_solid = true
+
+[node name="LeftWingRoof" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-25.2, 8.6, -16)
+mesh = SubResource("r13")
+material_override = ExtResource("concrete")
+
+[node name="LeftWingRoof" type="StaticBody3D" parent="Collision"]
+position = Vector3(-25.2, 8.6, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/LeftWingRoof"]
+shape = SubResource("r14")
+metadata/navigation_solid = true
+
+[node name="RightWall" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(20.2, 4.4, -16)
+mesh = SubResource("r9")
+material_override = ExtResource("concrete")
+
+[node name="RightWall" type="StaticBody3D" parent="Collision"]
+position = Vector3(20.2, 4.4, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RightWall"]
+shape = SubResource("r10")
+metadata/navigation_solid = true
+
+[node name="RightServiceWing" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(25.2, 4.2, -16)
+mesh = SubResource("r11")
+material_override = ExtResource("concrete")
+
+[node name="RightServiceWing" type="StaticBody3D" parent="Collision"]
+position = Vector3(25.2, 4.2, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RightServiceWing"]
+shape = SubResource("r12")
+metadata/navigation_solid = true
+
+[node name="RightWingRoof" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(25.2, 8.6, -16)
+mesh = SubResource("r13")
+material_override = ExtResource("concrete")
+
+[node name="RightWingRoof" type="StaticBody3D" parent="Collision"]
+position = Vector3(25.2, 8.6, -16)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RightWingRoof"]
+shape = SubResource("r14")
+metadata/navigation_solid = true
+
+[node name="RearServiceBlock" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 4.2, -51.2)
+mesh = SubResource("r15")
+material_override = ExtResource("concrete")
+
+[node name="RearServiceBlock" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 4.2, -51.2)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RearServiceBlock"]
+shape = SubResource("r16")
+metadata/navigation_solid = true
+
+[node name="PartitionLeft" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-11.95, 4.4, -26)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="PartitionLeft" type="StaticBody3D" parent="Collision"]
+position = Vector3(-11.95, 4.4, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionLeft"]
+shape = SubResource("r18")
+metadata/navigation_solid = true
+
+[node name="PartitionJambLeft" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.7, 2.6, -26)
+mesh = SubResource("r19")
+material_override = ExtResource("steel")
+
+[node name="PartitionJambLeft" type="StaticBody3D" parent="Collision"]
+position = Vector3(-3.7, 2.6, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionJambLeft"]
+shape = SubResource("r20")
+metadata/navigation_solid = true
+
+[node name="PartitionRight" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(11.95, 4.4, -26)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="PartitionRight" type="StaticBody3D" parent="Collision"]
+position = Vector3(11.95, 4.4, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionRight"]
+shape = SubResource("r18")
+metadata/navigation_solid = true
+
+[node name="PartitionJambRight" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.7, 2.6, -26)
+mesh = SubResource("r19")
+material_override = ExtResource("steel")
+
+[node name="PartitionJambRight" type="StaticBody3D" parent="Collision"]
+position = Vector3(3.7, 2.6, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionJambRight"]
+shape = SubResource("r20")
+metadata/navigation_solid = true
+
+[node name="PartitionLintel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.95, -26)
+mesh = SubResource("r21")
+material_override = ExtResource("concrete")
+
+[node name="PartitionLintel" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 6.95, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionLintel"]
+shape = SubResource("r22")
+metadata/navigation_solid = true
+
+[node name="PartitionDoorHeader" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.25, -26)
+mesh = SubResource("r23")
+material_override = ExtResource("steel")
+
+[node name="PartitionDoorHeader" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 5.25, -26)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/PartitionDoorHeader"]
+shape = SubResource("r24")
+metadata/navigation_solid = true
+
+[node name="PartitionTrack" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.65, -26.85)
+mesh = SubResource("r25")
+material_override = ExtResource("steel")
+
+[node name="FrontLeft" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-11.95, 4.4, 14)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="FrontLeft" type="StaticBody3D" parent="Collision"]
+position = Vector3(-11.95, 4.4, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontLeft"]
+shape = SubResource("r18")
+metadata/navigation_solid = true
+
+[node name="FrontJambLeft" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-3.7, 2.6, 14)
+mesh = SubResource("r19")
+material_override = ExtResource("steel")
+
+[node name="FrontJambLeft" type="StaticBody3D" parent="Collision"]
+position = Vector3(-3.7, 2.6, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontJambLeft"]
+shape = SubResource("r20")
+metadata/navigation_solid = true
+
+[node name="FrontRight" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(11.95, 4.4, 14)
+mesh = SubResource("r17")
+material_override = ExtResource("concrete")
+
+[node name="FrontRight" type="StaticBody3D" parent="Collision"]
+position = Vector3(11.95, 4.4, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontRight"]
+shape = SubResource("r18")
+metadata/navigation_solid = true
+
+[node name="FrontJambRight" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(3.7, 2.6, 14)
+mesh = SubResource("r19")
+material_override = ExtResource("steel")
+
+[node name="FrontJambRight" type="StaticBody3D" parent="Collision"]
+position = Vector3(3.7, 2.6, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontJambRight"]
+shape = SubResource("r20")
+metadata/navigation_solid = true
+
+[node name="FrontLintel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 6.95, 14)
+mesh = SubResource("r21")
+material_override = ExtResource("concrete")
+
+[node name="FrontLintel" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 6.95, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontLintel"]
+shape = SubResource("r22")
+metadata/navigation_solid = true
+
+[node name="FrontDoorHeader" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.25, 14)
+mesh = SubResource("r23")
+material_override = ExtResource("steel")
+
+[node name="FrontDoorHeader" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 5.25, 14)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/FrontDoorHeader"]
+shape = SubResource("r24")
+metadata/navigation_solid = true
+
+[node name="FrontTrack" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 5.65, 14.85)
+mesh = SubResource("r25")
+material_override = ExtResource("steel")
+
+[node name="GarageGate" parent="." instance=ExtResource("gate")]
+position = Vector3(0, 0, 14.85)
+
+[node name="Gate01" parent="Gates" instance=ExtResource("gate")]
+position = Vector3(0, 0, -26.85)
+
+[node name="Bay01" type="Node3D" parent="Bays"]
+metadata/start_z = -46.0
+metadata/end_z = -26.0
+metadata/interior_width = 40.0
+
+[node name="Bay02" type="Node3D" parent="Bays"]
+metadata/start_z = -26.0
+metadata/end_z = 14.0
+metadata/interior_width = 40.0
+
+[node name="CrossBeam0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.4, -41)
+mesh = SubResource("r26")
+material_override = ExtResource("steel")
+
+[node name="Column0_-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-19.65, 4.1, -41)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column0_-1" type="StaticBody3D" parent="Collision"]
+position = Vector3(-19.65, 4.1, -41)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column0_-1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp0_-1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(-9, 8.12, -41)
+
+[node name="Fill0_-1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-9, 7.4, -41)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="Column0_1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(19.65, 4.1, -41)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column0_1" type="StaticBody3D" parent="Collision"]
+position = Vector3(19.65, 4.1, -41)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column0_1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp0_1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(9, 8.12, -41)
+
+[node name="Fill0_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(9, 7.4, -41)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="CrossBeam1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.4, -29)
+mesh = SubResource("r26")
+material_override = ExtResource("steel")
+
+[node name="Column1_-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-19.65, 4.1, -29)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column1_-1" type="StaticBody3D" parent="Collision"]
+position = Vector3(-19.65, 4.1, -29)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column1_-1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp1_-1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(-9, 8.12, -29)
+
+[node name="Fill1_-1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-9, 7.4, -29)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="Column1_1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(19.65, 4.1, -29)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column1_1" type="StaticBody3D" parent="Collision"]
+position = Vector3(19.65, 4.1, -29)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column1_1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp1_1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(9, 8.12, -29)
+
+[node name="Fill1_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(9, 7.4, -29)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="CrossBeam2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.4, -17)
+mesh = SubResource("r26")
+material_override = ExtResource("steel")
+
+[node name="Column2_-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-19.65, 4.1, -17)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column2_-1" type="StaticBody3D" parent="Collision"]
+position = Vector3(-19.65, 4.1, -17)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column2_-1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp2_-1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(-9, 8.12, -17)
+
+[node name="Fill2_-1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-9, 7.4, -17)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="Column2_1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(19.65, 4.1, -17)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column2_1" type="StaticBody3D" parent="Collision"]
+position = Vector3(19.65, 4.1, -17)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column2_1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp2_1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(9, 8.12, -17)
+
+[node name="Fill2_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(9, 7.4, -17)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="CrossBeam3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.4, -5)
+mesh = SubResource("r26")
+material_override = ExtResource("steel")
+
+[node name="Column3_-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-19.65, 4.1, -5)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column3_-1" type="StaticBody3D" parent="Collision"]
+position = Vector3(-19.65, 4.1, -5)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column3_-1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp3_-1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(-9, 8.12, -5)
+
+[node name="Fill3_-1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-9, 7.4, -5)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="Column3_1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(19.65, 4.1, -5)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column3_1" type="StaticBody3D" parent="Collision"]
+position = Vector3(19.65, 4.1, -5)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column3_1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp3_1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(9, 8.12, -5)
+
+[node name="Fill3_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(9, 7.4, -5)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="CrossBeam4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 8.4, 7)
+mesh = SubResource("r26")
+material_override = ExtResource("steel")
+
+[node name="Column4_-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-19.65, 4.1, 7)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column4_-1" type="StaticBody3D" parent="Collision"]
+position = Vector3(-19.65, 4.1, 7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column4_-1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp4_-1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(-9, 8.12, 7)
+
+[node name="Fill4_-1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-9, 7.4, 7)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="Column4_1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(19.65, 4.1, 7)
+mesh = SubResource("r27")
+material_override = ExtResource("steel")
+
+[node name="Column4_1" type="StaticBody3D" parent="Collision"]
+position = Vector3(19.65, 4.1, 7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/Column4_1"]
+shape = SubResource("r28")
+metadata/navigation_solid = true
+
+[node name="Lamp4_1" parent="Visuals" instance=ExtResource("lamp")]
+position = Vector3(9, 8.12, 7)
+
+[node name="Fill4_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(9, 7.4, 7)
+light_color = Color(0.82, 0.84, 0.72, 1)
+light_energy = 0.7
+omni_range = 16.0
+omni_attenuation = 0.8
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 65.0
+distance_fade_length = 10.0
+
+[node name="TerminalSupport" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 1.45, -45.9)
+mesh = SubResource("r29")
+material_override = ExtResource("steel")
+
+[node name="TerminalSupport" type="StaticBody3D" parent="Collision"]
+position = Vector3(0, 1.45, -45.9)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/TerminalSupport"]
+shape = SubResource("r30")
+metadata/navigation_solid = true
+
+[node name="TrainingTerminal" type="Marker3D" parent="StarterEquipment"]
+position = Vector3(0, 1.45, -45.74)
+
+[node name="OrientationPoster" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(2.05, 1.65, -45.94)
+mesh = SubResource("r31")
+material_override = ExtResource("steel")
+
+[node name="PosterPaper" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(2.05, 1.65, -45.891)
+mesh = SubResource("r32")
+material_override = SubResource("paper")
+
+[node name="PosterHeading" type="Label3D" parent="Visuals"]
+position = Vector3(2.05, 2.5, -45.88)
+text = "CIVIL DEFENSE"
+font_size = 55
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="PosterTitle" type="Label3D" parent="Visuals"]
+position = Vector3(2.05, 2.13, -45.88)
+text = "CARRY KNOWLEDGE"
+font_size = 43
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="PosterText" type="Label3D" parent="Visuals"]
+position = Vector3(2.05, 1.43, -45.88)
+text = "Before leaving the depot,\nconsult the training terminal\nbeside this notice.\n\nKeep the terminal with you.\nIts field manual remains\navailable when outside\ncommunications fail.\n\nTools can be replaced.\nKnowledge keeps a crew alive."
+font_size = 24
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="PosterFooter" type="Label3D" parent="Visuals"]
+position = Vector3(2.05, 0.72, -45.88)
+text = "LOCAL ARCHIVE / RECEIVING DEPOT"
+font_size = 20
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+position = Vector3(0, 1.5, -41)
+
+[node name="RVSpawn" type="Marker3D" parent="."]
+position = Vector3(0, 1.8, -10)
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="ExteriorExit" type="Marker3D" parent="."]
+position = Vector3(0, 0, 44)
+
+[node name="Front" type="Marker3D" parent="AccessPoints"]
+position = Vector3(0, 0, 15)
+
+[node name="Apron" type="Marker3D" parent="AccessPoints"]
+position = Vector3(0, 0, 40)
+
+[node name="WorkshopEquipment" type="Node3D" parent="."]
+
+
+[node name="WorkshopSupplies" type="Node3D" parent="."]
+
+
+[node name="Scrapper" type="Marker3D" parent="WorkshopEquipment"]
+position = Vector3(4.65, 0, -23)
+
+[node name="Workbench" type="Marker3D" parent="WorkshopEquipment"]
+position = Vector3(-7, 0, 9.1)
+
+[node name="ScrapA" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(16.45, 0.975, -8.6)
+
+[node name="ScrapB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-13.05, 0.975, -20.6)
+
+[node name="OilBarrel" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(18.85, 0.5, -3)
+
+[node name="SpareWheel" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-6.4, 0, -22.4)
+
+[node name="ScrapC" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(13.05, 0.975, 3.4)
+
+[node name="ScrapD" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-16.45, 0.975, 8.7)
+
+[node name="ScrapE" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(16.45, 0.975, -14.7)
+
+[node name="ScrapF" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-16.45, 0.975, -8.7)
+
+[node name="ScrapG" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(13.05, 0.975, -2.7)
+
+[node name="ScrapH" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-13.05, 0.975, 3.4)
+
+[node name="OilBarrelB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-18.85, 0.5, 8.7)
+
+[node name="Battery" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-13.05, 0.975, -14.6)
+
+[node name="EngineKitA" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(-16.45, 0.945, -2.6)
+
+[node name="EngineKitB" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(13.05, 0.945, 8.5)
+
+[node name="SalvageShelfB" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, -6)
+
+[node name="SalvageShelfC" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, -2)
+
+[node name="SalvageShelfD" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(8.85, 0, 2)
+
+[node name="ServiceShelf" parent="Visuals" instance=ExtResource("supply_shelf")]
+position = Vector3(-8.85, 0, -4)
+
+[node name="SalvageShelfB" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, -6)
+
+[node name="SalvageShelfC" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, -2)
+
+[node name="SalvageShelfD" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(8.85, 0, 2)
+
+[node name="ServiceShelf" parent="Collision" instance=ExtResource("supply_shelf_collision")]
+position = Vector3(-8.85, 0, -4)
+
+[node name="RecoveryShelf" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.85, 0.775, -10)
+mesh = SubResource("recovery_shelf_top")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelf" type="StaticBody3D" parent="Collision"]
+position = Vector3(8.85, 0.775, -10)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelf"]
+shape = SubResource("recovery_shelf_top_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7.8, 0.375, -10.3)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg0" type="StaticBody3D" parent="Collision"]
+position = Vector3(7.8, 0.375, -10.3)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg0"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7.8, 0.375, -9.7)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg1" type="StaticBody3D" parent="Collision"]
+position = Vector3(7.8, 0.375, -9.7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg1"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.9, 0.375, -10.3)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg2" type="StaticBody3D" parent="Collision"]
+position = Vector3(9.9, 0.375, -10.3)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg2"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryShelfLeg3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.9, 0.375, -9.7)
+mesh = SubResource("recovery_shelf_leg")
+material_override = ExtResource("steel")
+
+[node name="RecoveryShelfLeg3" type="StaticBody3D" parent="Collision"]
+position = Vector3(9.9, 0.375, -9.7)
+
+[node name="Shape" type="CollisionShape3D" parent="Collision/RecoveryShelfLeg3"]
+shape = SubResource("recovery_shelf_leg_shape")
+metadata/navigation_solid = true
+
+[node name="RecoveryLane-1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4, 0.005, -10)
+mesh = SubResource("recovery_stripe")
+material_override = SubResource("paper")
+
+[node name="RecoveryLane1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(4, 0.005, -10)
+mesh = SubResource("recovery_stripe")
+material_override = SubResource("paper")
+
+[node name="BuildingFinish" parent="Visuals" instance=ExtResource("finish")]
+
+[node name="BuildingFinish" parent="Collision" instance=ExtResource("finish_collision")]
+
+[node name="WorkshopPoster" parent="Visuals" instance=ExtResource("workshop_poster")]
+position = Vector3(-14, 1.65, -25.35)
+
+[node name="PosterReading0" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(1.7, 3.0, -45.45)
+rotation = Vector3(-0.9, 0, 0)
+light_color = Color(0.95, 0.83, 0.61, 1)
+light_energy = 1.4
+spot_range = 4.0
+spot_angle = 48.0
+shadow_enabled = true
+
+[node name="PosterReading1" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(-14, 3.0, -25.05)
+rotation = Vector3(-0.9, 0, 0)
+light_color = Color(0.95, 0.83, 0.61, 1)
+light_energy = 1.4
+spot_range = 4.0
+spot_angle = 48.0
+shadow_enabled = true
+
+[node name="Warehouse" parent="Visuals" instance=ExtResource("warehouse")]
+
+[node name="Warehouse" parent="Collision" instance=ExtResource("warehouse_collision")]
+
+[node name="WarehouseApproaches" type="Node3D" parent="."]
+
+[node name="scrapper" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(4.65, 0, -24.6)
+metadata/route_x = 4.65
+metadata/route_z = -24.0
+
+[node name="workbench" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-7, 0, 7.5)
+metadata/route_x = -7
+metadata/route_z = 6.0
+
+[node name="battery" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, -14.6)
+metadata/route_x = -14.75
+metadata/route_z = -18.0
+
+[node name="engine_kit_a" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, -2.6)
+metadata/route_x = -14.75
+metadata/route_z = -6.0
+
+[node name="engine_kit_b" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(14.75, 0, 8.5)
+metadata/route_x = 14.75
+metadata/route_z = 6.0
+
+[node name="scrap_a" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(14.75, 0, -8.6)
+metadata/route_x = 14.75
+metadata/route_z = -12.0
+
+[node name="scrap_b" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, -20.6)
+metadata/route_x = -14.75
+metadata/route_z = -24.0
+
+[node name="scrap_c" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(14.75, 0, 3.4)
+metadata/route_x = 14.75
+metadata/route_z = 0.0
+
+[node name="scrap_d" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, 8.7)
+metadata/route_x = -14.75
+metadata/route_z = 6.0
+
+[node name="scrap_e" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(14.75, 0, -14.7)
+metadata/route_x = 14.75
+metadata/route_z = -18.0
+
+[node name="scrap_f" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, -8.7)
+metadata/route_x = -14.75
+metadata/route_z = -12.0
+
+[node name="scrap_g" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(14.75, 0, -2.7)
+metadata/route_x = 14.75
+metadata/route_z = -12.0
+
+[node name="scrap_h" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-14.75, 0, 3.4)
+metadata/route_x = -14.75
+metadata/route_z = 0.0
+
+[node name="barrel" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(18.85, 0, -4.4)
+metadata/route_x = 18.85
+metadata/route_z = -12.0
+
+[node name="barrel_b" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-18.85, 0, 7.2)
+metadata/route_x = -18.85
+metadata/route_z = 6.0
+
+[node name="spare" type="Marker3D" parent="WarehouseApproaches"]
+position = Vector3(-6.4, 0, -24)
+metadata/route_x = -6.4
+metadata/route_z = -24.0
+
+[node name="ShelfLight-1_0" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, -21)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight-1_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, -15)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight-1_2" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, -9)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight-1_3" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, -3)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight-1_4" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, 3)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight-1_5" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(-13.2, 1.86, 9)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_0" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, -21)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_1" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, -15)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_2" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, -9)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_3" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, -3)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_4" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, 3)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true
+
+[node name="ShelfLight1_5" type="OmniLight3D" parent="Furnishings"]
+position = Vector3(13.2, 1.86, 9)
+light_color = Color(1, 0.88, 0.68, 1)
+light_energy = 0.55
+omni_range = 4.5
+shadow_enabled = true

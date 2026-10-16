@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxShape3D" id="top"]
+size = Vector3(2.4, 0.1, 0.8)
+
+[sub_resource type="BoxShape3D" id="leg"]
+size = Vector3(0.1, 0.75, 0.1)
+
+[node name="SupplyShelf" type="StaticBody3D"]
+
+[node name="Top" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.775, 0)
+shape = SubResource("top")
+metadata/navigation_solid = true
+
+[node name="Leg0" type="CollisionShape3D" parent="."]
+position = Vector3(-1.05, 0.375, -0.3)
+shape = SubResource("leg")
+metadata/navigation_solid = true
+
+[node name="Leg1" type="CollisionShape3D" parent="."]
+position = Vector3(-1.05, 0.375, 0.3)
+shape = SubResource("leg")
+metadata/navigation_solid = true
+
+[node name="Leg2" type="CollisionShape3D" parent="."]
+position = Vector3(1.05, 0.375, -0.3)
+shape = SubResource("leg")
+metadata/navigation_solid = true
+
+[node name="Leg3" type="CollisionShape3D" parent="."]
+position = Vector3(1.05, 0.375, 0.3)
+shape = SubResource("leg")
+metadata/navigation_solid = true

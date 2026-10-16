@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Native-resolution settings overlay. The simulation intentionally keeps running.
+## Settings overlay scaled independently of 3D. The simulation keeps running.
 
 const CATEGORIES: Array[StringName] = [&"display", &"input", &"audio", &"help"]
 var player
@@ -13,6 +13,8 @@ var _save_message: Label
 var _retry: Button
 var _reset: Button
 var _return: Button
+var _restart_stage: Button
+var _skip_tutorial: Button
 var _preset: OptionButton
 var _preset_current: Label
 var _resolution_label: Label
@@ -36,8 +38,9 @@ func _ready() -> void:
 	settings.save_completed.connect(_on_save_completed)
 	settings.window_preview_changed.connect(_on_window_preview_changed)
 	player.grab_started.connect(close_menu)
-	get_tree().root.size_changed.connect(_resize)
-	_resize()
+	var layout := UILayout.attach(self, _root)
+	layout.resized.connect(_resize)
+	_resize(_root.size)
 	_refresh()
 
 func _exit_tree() -> void:
@@ -83,7 +86,7 @@ func _input(event: InputEvent) -> void:
 	if player.in_ui_mode:
 		return
 	if player.is_placing_equipment():
-		player.cancel_equipment_placement()
+		player.cancel_equipment_placement(true)
 		_handle_event()
 	elif open_menu():
 		_handle_event()
@@ -170,6 +173,12 @@ func _build() -> void:
 	content.add_child(footer)
 	_reset = _button("恢復本頁預設", func(): settings.reset_category(CATEGORIES[_tabs.current_tab]))
 	footer.add_child(_reset)
+	_restart_stage = _button("Restart Stage", _show_restart_stage)
+	_restart_stage.visible = false
+	footer.add_child(_restart_stage)
+	_skip_tutorial = _button("Skip Tutorial", _show_skip_tutorial)
+	_skip_tutorial.visible = false
+	footer.add_child(_skip_tutorial)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
@@ -405,14 +414,18 @@ func _on_save_completed(error: Error) -> void:
 	_save_message.text = "設定無法儲存（%s）；目前仍已套用，可重試。" % error_string(error) if error != OK else "設定自動儲存；不會建立遊戲檢查點。"
 
 func _update_status() -> void:
+	var tutorial := _tutorial()
+	_restart_stage.visible = tutorial != null and tutorial.can_restart()
+	_restart_stage.disabled = not _restart_stage.visible
+	_skip_tutorial.visible = tutorial != null and tutorial.has_method("can_skip") and tutorial.can_skip()
+	_skip_tutorial.disabled = not _skip_tutorial.visible
 	_status.text = "遊戲持續運行  ·  HP %.0f / %.0f" % [player.current_player_health, player.max_player_health]
 	if is_instance_valid(player.seated_in):
 		var chassis = player.seated_in.get_connected_rv()
 		if is_instance_valid(chassis):
 			_status.text += "  ·  車速 %.0f km/h" % (chassis.linear_velocity.length() * 3.6)
 
-func _resize() -> void:
-	var dimensions := get_tree().root.get_visible_rect().size
+func _resize(dimensions: Vector2) -> void:
 	_panel.custom_minimum_size = Vector2(minf(1040, maxf(0, dimensions.x - 40)), minf(650, maxf(0, dimensions.y - 40)))
 
 func _build_modal() -> void:
@@ -457,6 +470,31 @@ func _show_quit() -> void:
 	_modal_cancel.text = "取消"
 	_show_modal()
 
+func _tutorial() -> Node:
+	var anchor: Node = player
+	while anchor != null:
+		if anchor.has_meta("entity_domain"): return anchor.get_node_or_null("StartRun/Tutorial")
+		anchor = anchor.get_parent()
+	return null
+
+func _show_restart_stage() -> void:
+	var tutorial := _tutorial()
+	if tutorial == null or not tutorial.can_restart(): return
+	_modal_kind = "restart_stage"
+	_modal_text.text = "Restart this stage?\nThe world returns to the stage entrance.\nYour manual checkpoint remains unchanged."
+	_modal_accept.text = "Restart Stage"
+	_modal_cancel.text = "Cancel"
+	_show_modal()
+
+func _show_skip_tutorial() -> void:
+	var tutorial := _tutorial()
+	if tutorial == null or not tutorial.has_method("can_skip") or not tutorial.can_skip(): return
+	_modal_kind = "skip_tutorial"
+	_modal_text.text = "Skip the remaining training?\nThe shelter route will open and the field manual will unlock.\nYour training record will be marked Skipped."
+	_modal_accept.text = "Skip Tutorial"
+	_modal_cancel.text = "Cancel"
+	_show_modal()
+
 func _on_window_preview_changed(active: bool) -> void:
 	_refresh()
 	if active and visible:
@@ -474,6 +512,20 @@ func _accept_modal() -> void:
 		settings.cancel_window_preview()
 		settings.flush()
 		get_tree().quit()
+	elif _modal_kind == "restart_stage":
+		var tutorial := _tutorial()
+		if tutorial != null and tutorial.can_restart():
+			var world: Node = tutorial.get_parent().get_parent()
+			var snapshot: Dictionary = tutorial.entry_snapshot.duplicate(true)
+			close_menu()
+			get_node("/root/Checkpoint").call_deferred("load_snapshot", world, snapshot)
+			return
+	elif _modal_kind == "skip_tutorial":
+		var tutorial := _tutorial()
+		if tutorial != null and tutorial.has_method("can_skip") and tutorial.can_skip():
+			close_menu()
+			tutorial.skip_tutorial.call_deferred()
+			return
 	_hide_modal()
 
 func _cancel_modal() -> void:

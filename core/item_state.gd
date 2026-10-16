@@ -29,6 +29,9 @@ static func valid(scene: String, state: Dictionary) -> bool:
 	if state.has("scrap_yields") and not CheckpointSchema.yields_valid(state.scrap_yields): return false
 	if state.has("recycle_result") and (not state.recycle_result is Dictionary or not MaterialStorage.new().valid_amounts(state.recycle_result)): return false
 	if state.has("service") and (not state.service is Dictionary or not valid_service(scene, state.service)): return false
+	if scene == "res://equipment/training_terminal.tscn":
+		if not valid_training_terminal(state.get("training_terminal")): return false
+	elif state.has("training_terminal"): return false
 	if scene == "res://props/printed_player.tscn":
 		if not load("res://props/printed_player.gd").valid_state(state.get("printed_body")): return false
 		if state.condition > 0 and not state.printed_body.body.present["head"]: return false
@@ -55,6 +58,22 @@ static func valid(scene: String, state: Dictionary) -> bool:
 
 static func valid_rounds(value: Variant, field: String, minimum: int, maximum: int) -> bool:
 	return value is Dictionary and value.size() == 1 and value.get(field) is int and value[field] >= minimum and value[field] <= maximum
+
+static func valid_training_terminal(value: Variant) -> bool:
+	if not value is Dictionary or not value.get("version") is int: return false
+	if value.version not in [1, 2] or value.size() != (3 if value.version == 1 else 9): return false
+	if not value.get("manual_unlocked") is bool or not value.get("completion") is String: return false
+	if value.completion not in ["locked", "completed", "skipped"]: return false
+	if value.manual_unlocked != (value.completion != "locked"): return false
+	if value.version == 1: return true
+	for key in ["internal_power", "initialized", "boot_started", "dock_locked"]:
+		if not value.get(key) is bool: return false
+	if not value.internal_power: return false
+	if not VehicleSnapshot._number(value.get("internal_charge")) or value.internal_charge < 0.0 or value.internal_charge > 100.0: return false
+	if not VehicleSnapshot._number(value.get("boot_elapsed")) or value.boot_elapsed < 0.0 or value.boot_elapsed > 6.0: return false
+	if value.initialized != (value.boot_started and value.boot_elapsed == 6.0): return false
+	if not value.boot_started and value.boot_elapsed != 0.0: return false
+	return value.dock_locked == (not value.initialized)
 
 static func valid_service(scene: String, service: Dictionary) -> bool:
 	for key in service:

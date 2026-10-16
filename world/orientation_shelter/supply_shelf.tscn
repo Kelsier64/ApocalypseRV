@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[sub_resource type="BoxMesh" id="top"]
+size = Vector3(2.4, 0.1, 0.8)
+material = ExtResource("steel")
+
+[sub_resource type="BoxMesh" id="leg"]
+size = Vector3(0.1, 0.75, 0.1)
+material = ExtResource("steel")
+
+[node name="SupplyShelf" type="Node3D"]
+
+[node name="Top" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.775, 0)
+mesh = SubResource("top")
+
+[node name="Leg0" type="MeshInstance3D" parent="."]
+position = Vector3(-1.05, 0.375, -0.3)
+mesh = SubResource("leg")
+
+[node name="Leg1" type="MeshInstance3D" parent="."]
+position = Vector3(-1.05, 0.375, 0.3)
+mesh = SubResource("leg")
+
+[node name="Leg2" type="MeshInstance3D" parent="."]
+position = Vector3(1.05, 0.375, -0.3)
+mesh = SubResource("leg")
+
+[node name="Leg3" type="MeshInstance3D" parent="."]
+position = Vector3(1.05, 0.375, 0.3)
+mesh = SubResource("leg")

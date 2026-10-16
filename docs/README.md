@@ -1,5 +1,23 @@
 # 開發文件索引
 
+- [2026-10-16 教學基地 PR 驗證](validation/2026-10-16-tutorial-pr.md)：入口分解機、舊九關連續行車修正與乾淨副本回歸。
+
+- [2026-10-16 第二室倉庫配置](validation/2026-10-16-orientation-warehouse.md)：密集貨架、棧板支路、分散物資與拾取／離場回歸。
+
+- [2026-10-16 兩室教學階段四](validation/2026-10-16-orientation-stage4.md)：建築收邊、屋頂機組、宣導海報與完整回歸。
+
+- [2026-10-15 第二室改為選做指南](validation/2026-10-15-orientation-optional.md)：出口獨立感應、全故障引擎／空電池／毀壞車頂及擴充回收物資。
+
+- [2026-10-15 兩室教學階段三](validation/2026-10-15-orientation-stage3.md)：感應離場、正式啟程、原終端說明書、逐步完整重試及略過。
+
+- [2026-10-15 兩室教學階段二](validation/2026-10-15-orientation-stage2.md)：指定設備搬運、回收製造、牆板／輪胎維修及加油，含原生交易、短距離輪驅與存檔升級。
+
+- [新版兩室教學計畫](plans/starting-tutorial-two-room.md) · [2026-10-15 新版階段一驗證](validation/2026-10-15-orientation-stage1.md)
+
+- [教學基地分階段計畫](plans/starting-tutorial.md) · [階段一驗證](validation/2026-10-11-tutorial-stage1.md) · [階段二驗證](validation/2026-10-13-tutorial-stage2.md) · [階段三驗證](validation/2026-10-13-tutorial-stage3.md) · [階段四驗證](validation/2026-10-14-tutorial-stage4.md) · [階段五驗證](validation/2026-10-14-tutorial-stage5.md)
+- [第一階段光照與舊避難所美術返修](validation/2026-10-12-tutorial-stage1-art-fix.md)
+- [第一階段吊燈、調暗與門牆交疊返修](validation/2026-10-13-tutorial-fixtures.md)
+
 - [2026-10-11 RV 終端與 TUI](validation/2026-10-11-rv-terminal.md)：五頁英文車輛管理、隱藏終端切換、鍵盤與滑鼠、施工所有權及製作佇列，含 quick suite 與原生畫面驗證。
 
 - [2026-10-11 製作台與逐層列印](validation/2026-10-11-fabricator-print.md)：可升高的三軸製造機、八種配方逐層成形、正式角色製造與 E 切換控制，含能源、保存、原生渲染及搬運回歸。

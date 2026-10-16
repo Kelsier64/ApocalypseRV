@@ -1,0 +1,97 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[sub_resource type="StandardMaterial3D" id="paper"]
+albedo_color = Color(0.76, 0.72, 0.56, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="ink"]
+albedo_color = Color(0.16, 0.23, 0.2, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="frame"]
+size = Vector3(1.8, 2.35, 0.08)
+
+[sub_resource type="BoxMesh" id="sheet"]
+size = Vector3(1.67, 2.2, 0.008)
+
+[sub_resource type="BoxMesh" id="rule"]
+size = Vector3(1.4, 0.018, 0.002)
+
+[sub_resource type="BoxMesh" id="bar"]
+size = Vector3(0.06, 0.36, 0.002)
+
+[sub_resource type="CylinderMesh" id="emblem"]
+top_radius = 0.2
+bottom_radius = 0.2
+height = 0.002
+radial_segments = 32
+
+[node name="WorkshopPoster" type="Node3D"]
+
+[node name="Frame" type="MeshInstance3D" parent="."]
+mesh = SubResource("frame")
+material_override = ExtResource("steel")
+
+[node name="Paper" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0, 0.049)
+mesh = SubResource("sheet")
+material_override = SubResource("paper")
+
+[node name="Heading" type="Label3D" parent="."]
+position = Vector3(0, 0.9, 0.061)
+text = "CIVIL DEFENSE"
+font_size = 48
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="Rule" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.72, 0.055)
+mesh = SubResource("rule")
+material_override = SubResource("ink")
+
+[node name="Emblem" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.41, 0.055)
+rotation = Vector3(1.5707963, 0, 0)
+mesh = SubResource("emblem")
+material_override = SubResource("ink")
+
+[node name="ToolMark" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.41, 0.058)
+rotation = Vector3(0, 0, -0.6)
+mesh = SubResource("bar")
+material_override = SubResource("paper")
+
+[node name="Title" type="Label3D" parent="."]
+position = Vector3(0, 0.02, 0.061)
+text = "NOTHING IS WASTE"
+font_size = 39
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="Text" type="Label3D" parent="."]
+position = Vector3(0, -0.43, 0.061)
+text = "A broken machine can keep\nanother crew moving.\n\nSalvage sound metal.\nKeep fuel away from sparks.\nGive damaged equipment\na second life."
+font_size = 26
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false
+
+[node name="Footer" type="Label3D" parent="."]
+position = Vector3(0, -0.95, 0.061)
+text = "CONSERVATION SERVICE / FIELD EDITION"
+font_size = 18
+pixel_size = 0.0037
+modulate = Color(0.10, 0.14, 0.12, 1)
+outline_size = 0
+shaded = true
+no_depth_test = false

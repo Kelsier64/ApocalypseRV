@@ -2,6 +2,7 @@ extends Node
 class_name RVStructureConstruction
 ## One transactional construction job belongs to the vehicle, not the terminal.
 signal changed
+signal operation_committed(slot: String, operation: String)
 var job: Dictionary = {}
 var last_message := ""
 var _shape_cache: Dictionary = {}
@@ -143,8 +144,13 @@ func _finish() -> void:
 	else:
 		var health: float = definition.health
 		if completed.operation == "convert": health *= target.current_health / target.max_health
-		get_parent().replace_panel(completed.slot, completed.type, health)
+		if get_parent().replace_panel(completed.slot, completed.type, health) == null:
+			_rv().deposit_materials({"Metal Parts": operation_cost(completed.operation, definition)}, true)
+			last_message = "Construction failed; materials returned"
+			changed.emit()
+			return
 	last_message = "施工完成"
+	operation_committed.emit(completed.slot, completed.operation)
 	changed.emit()
 
 func collision_reason(slot: String, definition: Resource, old_panel: Node) -> String:

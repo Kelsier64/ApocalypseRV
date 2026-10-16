@@ -76,6 +76,8 @@ var _settings_release_actions: Array[StringName] = []
 # place instead of ad-hoc at each call site.
 signal grab_started
 signal body_state_changed
+signal item_acquired(identity: String, scene_path: String)
+signal item_unmounted(identity: String, rv_id: String)
 var grab_control: Node
 var _execution_crush_in_progress := false
 var ragdoll_control: Node
@@ -136,8 +138,14 @@ func add_prop_item(item: Item, path: String) -> bool:
 	if not can_use_hands(2 if item.is_large else 1) or not inventory.can_add_item(item.is_large): return false
 	if not item.can_pickup(self): return false
 	if not ItemState.valid(path, item.capture_item_state()): return false
+	var mounted_rv := item.get_connected_rv() if item.is_fixed else null
+	var mounted_rv_id: String = mounted_rv.persistent_id if mounted_rv != null else ""
 	item.prepare_pickup()
-	return add_item(item.item_name, item.is_large, path, item.capture_item_state())
+	var success := add_item(item.item_name, item.is_large, path, item.capture_item_state())
+	if success:
+		item_acquired.emit(item.persistent_id, path)
+		if not mounted_rv_id.is_empty(): item_unmounted.emit(item.persistent_id, mounted_rv_id)
+	return success
 
 func add_item(item_name: String, is_large: bool, scene_path: String, state: Dictionary = {}) -> bool:
 	if not inventory.can_add_item(is_large): return false
@@ -376,8 +384,8 @@ func close_settings() -> void:
 	# has already hidden or is not present in a small behavior fixture.
 	set_settings_open(false)
 
-func cancel_equipment_placement() -> void:
-	placement.cancel(self)
+func cancel_equipment_placement(user_requested := false) -> void:
+	placement.cancel(self, user_requested)
 	_advance_flashlight(0.0)
 
 func _capture_settings_release_latch() -> void:
@@ -619,6 +627,10 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 func _unhandled_input(event):
 	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
+		if read_held_terminal() != null:
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
 		_toggle_flashlight()
 	
@@ -650,6 +662,9 @@ func _unhandled_input(event):
 		drop_item()
 
 	placement.handle_input(self, event)
+
+func read_held_terminal() -> Node:
+	return load("res://equipment/training_terminal_reader.gd").open(self)
 
 ## Capability gate shared by the real ladder entry and behavior tests.
 func _can_use_ladder() -> bool:

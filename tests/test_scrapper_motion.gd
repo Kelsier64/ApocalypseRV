@@ -174,6 +174,81 @@ func grazing_input_preserves_physics() -> void:
 	edge.queue_free()
 	await steps(3)
 
+func jammed_and_offset_inputs() -> void:
+	for case_: String in ["tilted_inside", "offset_root", "bridging", "basin_bottom", "edge_inside"]:
+		var scene := "res://equipment/scrapper.tscn" if case_ == "tilted_inside" else "res://equipment/roof_ladder.tscn" if case_ == "bridging" else "res://props/wheel.tscn" if case_ == "offset_root" else "res://props/scrap.tscn"
+		var input := new_item(scene, true)
+		await steps(2)
+		input.scrap_yields = {ItemNames.METAL_PARTS: Vector2(3, 3)}
+		var pose := Transform3D(Basis.IDENTITY, Vector3(0, .95, 0))
+		if case_ == "tilted_inside":
+			pose = Transform3D(Basis(Vector3.FORWARD, .55), Vector3(.15, .4, 0))
+		elif case_ == "offset_root":
+			for child in input.get_children():
+				if child is Node3D: child.position.x -= .8
+			pose.origin.x = .8
+		elif case_ == "bridging":
+			pose.basis = Basis(Vector3.FORWARD, PI * .5)
+			var box: AABB = machine.FEED.rotated_box(machine.FEED.geometry_bounds(input), pose.basis)
+			pose.origin = Vector3(.65 - box.get_center().x, .8 - box.position.y, 0)
+		elif case_ == "basin_bottom":
+			for child in input.get_children():
+				if child is CollisionShape3D:
+					child.shape = child.shape.duplicate()
+					child.shape.size = Vector3(.1, .1, .1)
+				elif child is MeshInstance3D:
+					child.mesh = child.mesh.duplicate()
+					child.mesh.size = Vector3(.1, .1, .1)
+			pose.origin.y = .14
+		elif case_ == "edge_inside":
+			pose.origin = Vector3(.32, .5, 0)
+			for child in input.get_children():
+				if child is CollisionShape3D:
+					child.shape = child.shape.duplicate()
+					child.shape.size = Vector3(.1, .1, .1)
+				elif child is MeshInstance3D:
+					child.mesh = child.mesh.duplicate()
+					child.mesh.size = Vector3(.1, .1, .1)
+		var power_before := rv.current_power
+		rv.current_power = 0
+		input.global_transform = machine.global_transform * pose
+		input.reset_physics_interpolation()
+		await steps(4)
+		check(hopper.get_overlapping_bodies().has(input), case_ + " has actual production hopper contact")
+		check(not is_instance_valid(input.processing_owner), case_ + " waits without power")
+		var count_before := rv.get_item_count(ItemNames.METAL_PARTS)
+		rv.current_power = power_before
+		machine.step_work(0)
+		check(input.processing_owner == machine and machine.props_being_crushed.size() == 1, case_ + " is claimed once after power returns without another entry signal")
+		machine.step_work(machine.crush_time)
+		await steps(3)
+		check(not is_instance_valid(input) and machine.props_being_crushed.is_empty(), case_ + " completes recycling and releases the slot")
+		check(rv.get_item_count(ItemNames.METAL_PARTS) == count_before + 3, case_ + " commits its original yield exactly once")
+		if is_instance_valid(input):
+			machine._on_service_stopped()
+			input.queue_free()
+			await steps(3)
+
+func diagonal_corner_preserves_physics() -> void:
+	var input := new_item("res://props/scrap.tscn", true)
+	await steps(2)
+	for child in input.get_children():
+		if child is CollisionShape3D:
+			child.shape = child.shape.duplicate()
+			child.shape.size = Vector3(2, .2, .06)
+		elif child is MeshInstance3D:
+			child.mesh = child.mesh.duplicate()
+			child.mesh.size = Vector3(2, .2, .06)
+	input.global_transform = machine.global_transform * Transform3D(Basis(Vector3.UP, PI * .25), Vector3(.425, .85, .425))
+	input.reset_physics_interpolation()
+	await steps(4)
+	check(hopper.get_overlapping_bodies().has(input), "Diagonal bar has actual outer hopper corner contact")
+	machine.step_work(.2)
+	check(not is_instance_valid(input.processing_owner) and machine.props_being_crushed.is_empty(), "Diagonal corner contact does not claim a bar whose collider misses the central throat")
+	check(input.freeze and input.collision_layer != 0 and input.collision_mask != 0, "Diagonal corner graze keeps original physics")
+	input.queue_free()
+	await steps(3)
+
 func dropped_production_items() -> void:
 	for case_: Dictionary in [{"scene": "res://props/oil_barrel.tscn", "roll": 0.0}, {"scene": "res://props/oil_barrel.tscn", "roll": PI * .5}, {"scene": "res://equipment/scrapper.tscn", "roll": 0.0}, {"scene": "res://props/wheel.tscn", "roll": 0.0}]:
 		var scene: String = case_.scene
@@ -339,6 +414,8 @@ func run() -> void:
 	await fixture()
 	await continuous_contact_deformation()
 	await grazing_input_preserves_physics()
+	await jammed_and_offset_inputs()
+	await diagonal_corner_preserves_physics()
 	await dropped_production_items()
 	await save_restore_and_cancel()
 	await blocked_output_commits_once()

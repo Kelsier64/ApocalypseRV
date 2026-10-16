@@ -7,13 +7,16 @@ var stamina_label: Label
 var damage_flash: ColorRect
 
 func _ready():
+	var screen := Control.new()
+	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(screen)
 	# Create the UI elements programmatically
 	var margin = MarginContainer.new()
 	margin.theme = IndustrialTheme.make(18)
 	margin.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	margin.add_theme_constant_override("margin_left", 20)
 	margin.add_theme_constant_override("margin_top", 20)
-	add_child(margin)
+	screen.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
 	margin.add_child(vbox)
@@ -67,7 +70,8 @@ func _ready():
 	damage_flash.color = Color(0.8, 0.0, 0.0, 0.0)
 	damage_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
 	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(damage_flash)
+	screen.add_child(damage_flash)
+	UILayout.attach(self, screen)
 
 func set_health(current: float, maximum: float):
 	if health_bar:

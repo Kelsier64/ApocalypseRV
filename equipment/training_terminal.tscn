@@ -1,0 +1,122 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/training_terminal.gd" id="script"]
+[ext_resource type="Resource" path="res://equipment/training_terminal_definition.tres" id="definition"]
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[sub_resource type="StandardMaterial3D" id="bezel"]
+albedo_color = Color(0.055, 0.065, 0.061, 1)
+roughness = 0.82
+
+[sub_resource type="StandardMaterial3D" id="screen"]
+albedo_color = Color(0.008, 0.025, 0.018, 1)
+roughness = 0.28
+emission_enabled = true
+emission = Color(0.01, 0.06, 0.035, 1)
+emission_energy_multiplier = 0.3
+
+[sub_resource type="StandardMaterial3D" id="phosphor"]
+albedo_color = Color(0.28, 0.52, 0.38, 1)
+emission_enabled = true
+emission = Color(0.28, 0.52, 0.38, 1)
+emission_energy_multiplier = 0.4
+
+[sub_resource type="BoxMesh" id="case_mesh"]
+size = Vector3(0.64, 0.46, 0.12)
+
+[sub_resource type="BoxMesh" id="glass_mesh"]
+size = Vector3(0.5, 0.31, 0.008)
+
+[sub_resource type="BoxMesh" id="rail_mesh"]
+size = Vector3(0.018, 0.36, 0.008)
+
+[sub_resource type="BoxMesh" id="line_mesh"]
+size = Vector3(0.29, 0.006, 0.003)
+
+[sub_resource type="BoxMesh" id="lamp_mesh"]
+size = Vector3(0.026, 0.012, 0.009)
+
+[sub_resource type="CylinderMesh" id="bolt_mesh"]
+top_radius = 0.011
+bottom_radius = 0.011
+height = 0.01
+radial_segments = 8
+rings = 1
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.64, 0.46, 0.12)
+
+[node name="TrainingTerminal" type="RigidBody3D"]
+script = ExtResource("script")
+definition = ExtResource("definition")
+bottom_face = 3
+hold_position = Vector3(0.1, -0.12, -0.48)
+hold_rotation = Vector3(-0.1, 0, 0)
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Housing" type="MeshInstance3D" parent="."]
+mesh = SubResource("case_mesh")
+material_override = ExtResource("steel")
+
+[node name="Display" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.02, 0.064)
+mesh = SubResource("glass_mesh")
+material_override = SubResource("screen")
+
+[node name="LeftBezel" type="MeshInstance3D" parent="."]
+position = Vector3(-0.264, 0.015, 0.064)
+mesh = SubResource("rail_mesh")
+material_override = SubResource("bezel")
+
+[node name="RightBezel" type="MeshInstance3D" parent="."]
+position = Vector3(0.264, 0.015, 0.064)
+mesh = SubResource("rail_mesh")
+material_override = SubResource("bezel")
+
+[node name="PowerLamp" type="MeshInstance3D" parent="."]
+position = Vector3(0.245, -0.19, 0.065)
+mesh = SubResource("lamp_mesh")
+material_override = SubResource("phosphor")
+
+[node name="Line01" type="MeshInstance3D" parent="."]
+position = Vector3(-0.045, 0.112, 0.07)
+mesh = SubResource("line_mesh")
+material_override = SubResource("phosphor")
+
+[node name="Line02" type="MeshInstance3D" parent="."]
+position = Vector3(-0.045, 0.075, 0.07)
+scale = Vector3(0.65, 1, 1)
+mesh = SubResource("line_mesh")
+material_override = SubResource("phosphor")
+
+[node name="Line03" type="MeshInstance3D" parent="."]
+position = Vector3(-0.045, 0.038, 0.07)
+scale = Vector3(0.85, 1, 1)
+mesh = SubResource("line_mesh")
+material_override = SubResource("phosphor")
+
+[node name="BoltLeftTop" type="MeshInstance3D" parent="."]
+position = Vector3(-0.289, 0.192, 0.063)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("bolt_mesh")
+material_override = SubResource("bezel")
+
+[node name="BoltRightTop" type="MeshInstance3D" parent="."]
+position = Vector3(0.289, 0.192, 0.063)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("bolt_mesh")
+material_override = SubResource("bezel")
+
+[node name="BoltLeftBottom" type="MeshInstance3D" parent="."]
+position = Vector3(-0.289, -0.192, 0.063)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("bolt_mesh")
+material_override = SubResource("bezel")
+
+[node name="BoltRightBottom" type="MeshInstance3D" parent="."]
+position = Vector3(0.289, -0.192, 0.063)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("bolt_mesh")
+material_override = SubResource("bezel")

@@ -22,8 +22,9 @@ Checkpoint="*res://rv/checkpoint.gd"
 
 [display]
 
-window/size/viewport_width=2080
-window/size/viewport_height=1440
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/mode=3
 
 [input]
 

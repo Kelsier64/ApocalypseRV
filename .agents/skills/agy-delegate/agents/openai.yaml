@@ -1,0 +1,4 @@
+interface:
+  display_name: "AGY Task Delegation"
+  short_description: "Delegate tasks to Antigravity and verify results"
+  default_prompt: "Use $agy-delegate to hand this task to agy and verify its result."

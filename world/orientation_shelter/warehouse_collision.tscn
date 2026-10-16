@@ -1,0 +1,1590 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse_rack_collision.tscn" id="rack"]
+
+[sub_resource type="BoxShape3D" id="m0"]
+size = Vector3(0.6, 0.5, 0.8)
+
+[sub_resource type="BoxShape3D" id="m1"]
+size = Vector3(1, 0.6, 0.7)
+
+[sub_resource type="BoxShape3D" id="m2"]
+size = Vector3(1.14, 0.816, 0.893)
+
+[sub_resource type="BoxShape3D" id="m3"]
+size = Vector3(1.296, 0.96, 0.893)
+
+[sub_resource type="BoxShape3D" id="m4"]
+size = Vector3(1.2, 0.18, 2.2)
+
+[sub_resource type="BoxShape3D" id="m5"]
+size = Vector3(1.164, 0.96, 0.94)
+
+[sub_resource type="BoxShape3D" id="m6"]
+size = Vector3(1.6, 0.18, 1.2)
+
+[sub_resource type="BoxShape3D" id="m7"]
+size = Vector3(1.2, 0.96, 0.94)
+
+[node name="WarehouseCollision" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 3
+
+[node name="Rack-1_12.5_0" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_0LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -22.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -19.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.6, -22.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.708, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 4.03, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.958, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.23, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_0Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.05, -20)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_1LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -16.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -13.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.78, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.708, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 4.03, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.85, -14)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.05, -16.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.158, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_2LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.78, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.6, -8)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.85, -10.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.958, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.23, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_2Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.158, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_3LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, -1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.6, -4.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.708, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 4.03, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.958, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.23, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_3Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.05, -2)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_4LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, 1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, 4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.78, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.708, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 4.03, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.85, 4)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.05, 1.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_4Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.158, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5" parent="." instance=ExtResource("rack")]
+position = Vector3(-12.5, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_12.5_5LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, 7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.22, 1.075, 10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.78, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 2.6, 10)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.85, 7.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 3.958, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.23, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_12.5_5Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-12.5, 5.158, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_0LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -22.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -19.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.6, -22.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.708, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 4.03, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.958, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.23, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_0Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.05, -20)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_1LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -16.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -13.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.78, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.708, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 4.03, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.85, -14)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.05, -16.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.158, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_2LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.78, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.6, -8)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.85, -10.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.958, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.23, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_2Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.158, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_3LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, -1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.6, -4.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.708, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 4.03, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.958, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.23, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_3Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.05, -2)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_4LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, 1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, 4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.78, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.708, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 4.03, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.85, 4)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.05, 1.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_4Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.158, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5" parent="." instance=ExtResource("rack")]
+position = Vector3(-17, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack-1_17_5LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, 7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(-17.28, 1.075, 10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.78, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 2.6, 10)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.85, 7.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 3.958, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.23, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack-1_17_5Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-17, 5.158, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_0LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -22.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -19.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.6, -22.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.708, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 4.03, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.958, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.23, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_0Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.05, -20)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_1LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -16.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -13.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.78, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.708, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 4.03, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.85, -14)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.05, -16.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.158, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_2LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.78, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.6, -8)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.85, -10.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.958, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.23, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_2Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.158, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_3LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, -1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.6, -4.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.708, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 4.03, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.958, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.23, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_3Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.05, -2)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_4LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, 1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, 4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.78, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.708, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 4.03, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.85, 4)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.05, 1.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_4Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.158, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5" parent="." instance=ExtResource("rack")]
+position = Vector3(12.5, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_12.5_5LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, 7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(12.22, 1.075, 10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.78, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 2.6, 10)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.85, 7.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 3.958, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.23, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_12.5_5Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(12.5, 5.158, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -21)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_0LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -22.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -19.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.6, -22.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.708, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 4.03, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.958, -20)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.23, -22.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_0Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.05, -20)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -15)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_1LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -16.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -13.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.78, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.708, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 4.03, -16.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.85, -14)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.05, -16.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.158, -14)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_2LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.78, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.6, -8)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.85, -10.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.958, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.23, -10.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_2Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.158, -8)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, -3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_3LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, -1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Case0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.6, -4.1)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.708, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 4.03, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.958, -2)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.23, -4.1)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_3Case2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.05, -2)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, 3)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_4LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, 1.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, 4.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.78, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.708, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 4.03, 1.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Case1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.85, 4)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Case2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.05, 1.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_4Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.158, 4)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5" parent="." instance=ExtResource("rack")]
+position = Vector3(17, 0, 9)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="Rack1_17_5LowCase0" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, 7.7)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5LowCase1" type="CollisionShape3D" parent="."]
+position = Vector3(17.28, 1.075, 10.3)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.78, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Case0_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 2.6, 10)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Case1_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.85, 7.9)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 3.958, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.23, 7.9)
+shape = SubResource("m3")
+metadata/navigation_solid = true
+
+[node name="Rack1_17_5Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(17, 5.158, 10)
+shape = SubResource("m2")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_0Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-5.8, 0.09, -21)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_0Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -21.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -20.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -20.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -21.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_1Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-5.8, 0.09, -15)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -15.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -14.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -14.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_1Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -15.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_1Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 2.585, -15.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 2.585, -14.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_2Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-5.8, 0.09, -9)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -9.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_2Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -8.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_2Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -8.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -9.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_3Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-5.8, 0.09, -3)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_3Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, -2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -2.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, -3.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 2.585, -3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_3Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 2.585, -2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_4Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-5.8, 0.09, 3)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile-1_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, 2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.82, 0.665, 3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.018, 0)
+
+[node name="InnerPile-1_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, 3.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile-1_4Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-5.77, 1.625, 2.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.025, 0)
+
+[node name="InnerPile1_0Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, -21)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_0Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -21.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -20.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -20.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -21.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_1Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, -15)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -15.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -14.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -14.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_1Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -15.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_1Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, -15.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_1Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, -14.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_2Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, -9)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -9.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_2Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -8.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_2Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -8.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -9.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_3Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, -3)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_3Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, -2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -2.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, -3.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_3Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, -3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_3Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, -2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_4Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, 3)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_4Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, 2.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_4Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, 3.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_4Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, 3.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_4Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, 2.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_5Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(5.8, 0.09, 9)
+shape = SubResource("m4")
+metadata/navigation_solid = true
+
+[node name="InnerPile1_5Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, 8.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_5Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 0.665, 9.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_5Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, 9.48)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_5Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.83, 1.625, 8.52)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, 0.025, 0)
+
+[node name="InnerPile1_5Crate2_0" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, 8.49)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="InnerPile1_5Crate2_1" type="CollisionShape3D" parent="."]
+position = Vector3(5.78, 2.585, 9.51)
+shape = SubResource("m5")
+metadata/navigation_solid = true
+rotation = Vector3(0, -0.018, 0)
+
+[node name="Overflow0Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.09, -15)
+shape = SubResource("m6")
+metadata/navigation_solid = true
+
+[node name="Overflow0Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.665, -15.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow0Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.665, -14.53)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow0Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 1.625, -15.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow0Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 1.625, -14.53)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow1Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.09, 0)
+shape = SubResource("m6")
+metadata/navigation_solid = true
+
+[node name="Overflow1Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.665, -0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow1Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 0.665, 0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow1Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 1.625, -0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow1Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(18.85, 1.625, 0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow2Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.09, -18)
+shape = SubResource("m6")
+metadata/navigation_solid = true
+
+[node name="Overflow2Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.665, -18.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow2Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.665, -17.53)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow2Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 1.625, -18.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow2Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 1.625, -17.53)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow3Pallet" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.09, 0)
+shape = SubResource("m6")
+metadata/navigation_solid = true
+
+[node name="Overflow3Crate0_0" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.665, -0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow3Crate0_1" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 0.665, 0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow3Crate1_0" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 1.625, -0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true
+
+[node name="Overflow3Crate1_1" type="CollisionShape3D" parent="."]
+position = Vector3(-18.85, 1.625, 0.47)
+shape = SubResource("m7")
+metadata/navigation_solid = true

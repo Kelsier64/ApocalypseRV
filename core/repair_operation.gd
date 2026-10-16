@@ -6,6 +6,7 @@ var target: Node = null
 var progress: float = 0.0
 var repair_item_id: String = ""
 var repaired_engine_id: String = ""
+var _original_engine: EngineState = null
 var message: String = ""
 const DURATION := 2.0
 const COST := {"Metal Parts": 2}
@@ -16,9 +17,7 @@ func step(player: Node3D, candidate: Node, held: bool, delta: float) -> void:
 		message = "Repair requires a usable arm" if held else ""
 		return
 	if not held or not is_instance_valid(candidate) or not candidate.has_method("repair_health") or player.get_player_mode() != player.PlayerMode.NORMAL:
-		target = null
-		progress = 0.0
-		message = ""
+		cancel()
 		return
 	if candidate.has_method("repair_requirement"):
 		_step_engine(player, candidate, delta)
@@ -52,6 +51,7 @@ func cancel() -> void:
 	progress = 0.0
 	repair_item_id = ""
 	repaired_engine_id = ""
+	_original_engine = null
 	message = ""
 
 func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
@@ -62,16 +62,21 @@ func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
 		return
 	var item_id: String = player.inventory.active_item().get("state", {}).get("id", "")
 	var engine_id: String = candidate.installed_engine.id
-	if target != candidate or repair_item_id != item_id or repaired_engine_id != engine_id:
+	if target != candidate or repair_item_id != item_id or repaired_engine_id != engine_id or _original_engine != candidate.installed_engine:
 		target = candidate
 		progress = 0.0
 		repair_item_id = item_id
 		repaired_engine_id = engine_id
+		_original_engine = candidate.installed_engine
 	progress += delta
 	message = "引擎維修 %.0f%%｜完成消耗 1 維修包、回復 150 耐久" % minf(100.0, progress / 3.0 * 100.0)
 	if progress >= 3.0:
-		if candidate.repair_requirement(player).is_empty() and player.inventory.consume_active():
+		var item_count: int = player.inventory.items.size()
+		var original_health: float = _original_engine.health
+		if candidate.repair_requirement(player).is_empty() and candidate.installed_engine == _original_engine and player.inventory.active_item().get("state", {}).get("id", "") == repair_item_id and player.inventory.consume_active():
 			candidate.repair_health(150.0)
+			if candidate.installed_engine == _original_engine and _original_engine.health > original_health and player.inventory.items.size() == item_count - 1:
+				candidate.rv.engine_repair_committed.emit(repaired_engine_id, repair_item_id)
 			candidate.rv.feedback("complete")
 			player.refresh_inventory()
 		progress = 0.0

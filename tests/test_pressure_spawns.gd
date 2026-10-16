@@ -164,6 +164,7 @@ func run() -> void:
 	generator = world.get_node("WorldGenerator")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
+	generator.profile.generation_version = 10 # Keep the known forest/navigation fixture stable.
 	generator.profile.chunks_ahead = 0
 	generator.profile.chunks_behind = 0
 	root.add_child(world)

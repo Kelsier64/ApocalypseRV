@@ -10,6 +10,11 @@ var overview: Camera3D
 var status: Label
 var auto_replay := false
 
+func _enter_tree() -> void:
+	get_node("WorldGenerator").profile = get_node("WorldGenerator").profile.duplicate()
+	get_node("WorldGenerator").profile.generation_version = 10
+	super._enter_tree()
+
 func _ready() -> void:
 	super._ready()
 	_setup_replay.call_deferred()

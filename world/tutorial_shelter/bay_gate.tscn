@@ -1,0 +1,166 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/hazard.tres" id="hazard"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[ext_resource type="Script" path="res://world/tutorial_shelter/bay_gate.gd" id="controller"]
+[sub_resource type="BoxShape3D" id="r40"]
+size = Vector3(3.5, 5, 0.3)
+
+[sub_resource type="BoxMesh" id="r41"]
+size = Vector3(3.5, 5, 0.3)
+
+[sub_resource type="BoxMesh" id="r42"]
+size = Vector3(0.075, 4.85, 0.08)
+
+[sub_resource type="BoxMesh" id="r43"]
+size = Vector3(3.4, 0.12, 0.08)
+
+[sub_resource type="BoxMesh" id="r44"]
+size = Vector3(3.5, 0.2, 0.018)
+
+[sub_resource type="BoxMesh" id="r45"]
+size = Vector3(0.12, 0.5, 0.16)
+
+[node name="GarageGate" type="Node3D"]
+
+script = ExtResource("controller")
+
+[node name="LeftLeaf" type="AnimatableBody3D" parent="."]
+position = Vector3(-1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = false
+
+metadata/navigation_movable = true
+
+[node name="Collision" type="CollisionShape3D" parent="LeftLeaf"]
+shape = SubResource("r40")
+
+[node name="Visuals" type="Node3D" parent="LeftLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r41")
+material_override = ExtResource("steel")
+
+[node name="Rib0" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Brace-1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="Brace1" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="WarningBand" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, -1.75, -0.252)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="ExteriorWarningBand" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(0, -1.75, 0.16)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="Handle" type="MeshInstance3D" parent="LeftLeaf/Visuals"]
+position = Vector3(1.45, -0.55, -0.25)
+mesh = SubResource("r45")
+material_override = ExtResource("steel")
+
+[node name="RightLeaf" type="AnimatableBody3D" parent="."]
+position = Vector3(1.75, 2.5, 0)
+collision_layer = 1
+collision_mask = 0
+sync_to_physics = false
+
+metadata/navigation_movable = true
+
+[node name="Collision" type="CollisionShape3D" parent="RightLeaf"]
+shape = SubResource("r40")
+
+[node name="Visuals" type="Node3D" parent="RightLeaf"]
+
+
+[node name="Panel" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("r41")
+material_override = ExtResource("steel")
+
+[node name="Rib0" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-1.45, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-0.73, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib2" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-0.01, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib3" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0.71, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Rib4" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(1.43, 0, -0.185)
+mesh = SubResource("r42")
+material_override = ExtResource("steel")
+
+[node name="Brace-1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, -1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="Brace1" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, 1.8, -0.19)
+mesh = SubResource("r43")
+material_override = ExtResource("steel")
+
+[node name="WarningBand" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, -1.75, -0.252)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="ExteriorWarningBand" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(0, -1.75, 0.16)
+mesh = SubResource("r44")
+material_override = ExtResource("hazard")
+
+[node name="Handle" type="MeshInstance3D" parent="RightLeaf/Visuals"]
+position = Vector3(-1.45, -0.55, -0.25)
+mesh = SubResource("r45")
+material_override = ExtResource("steel")
