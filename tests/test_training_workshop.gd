@@ -371,12 +371,15 @@ func ownership(snapshot: Dictionary, identity: String) -> Dictionary:
 	return counts
 
 func finish() -> void:
+	check(await WAIT.retired_candidates(self, checkpoint), "Checkpoint staging viewports retire before teardown")
 	if is_instance_valid(world):
 		world.get_node("WorldGenerator").set_process(false)
-		await WAIT.generator_idle(self, world.get_node("WorldGenerator"))
-		await WAIT.navigation_bakes_finished(self, world)
-		world.free()
-		for frame in 2:
+		check(await WAIT.generator_idle(self, world.get_node("WorldGenerator")), "World generation finishes before teardown")
+		check(await WAIT.navigation_bakes_finished(self, world), "Navigation bakes finish before teardown")
+		world.queue_free()
+		# Delete at the frame boundary, then drain native server disposal before
+		# SceneTree shutdown. Maintenance and completion inherit this teardown.
+		for frame in 4:
 			await physics_frame
 			await process_frame
 	if failures.is_empty(): print("PASS: production workshop lessons 2-6, current-output checkpoint and every stage entry reload")

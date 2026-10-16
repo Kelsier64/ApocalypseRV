@@ -219,13 +219,16 @@ func _check_manual(snapshot: Dictionary, original: Dictionary, label: String) ->
 
 func finish() -> void:
 	checkpoint.file_operations = CheckpointFiles.new()
+	check(await WAIT.retired_candidates(self, checkpoint, 30000), "Checkpoint staging viewports retire before teardown")
 	if is_instance_valid(world):
 		world.get_node("WorldGenerator").set_process(false)
-		await WAIT.generator_idle(self, world.get_node("WorldGenerator"), 30000)
-		await WAIT.navigation_bakes_finished(self, world, 30000)
-		world.free()
-		# Let deferred physics-server body cleanup finish before tree shutdown.
-		await physics_frame
-		await process_frame
+		check(await WAIT.generator_idle(self, world.get_node("WorldGenerator"), 30000), "World generation finishes before teardown")
+		check(await WAIT.navigation_bakes_finished(self, world, 30000), "Navigation bakes finish before teardown")
+		world.queue_free()
+		# Delete at the frame boundary, then let native physics/navigation/render
+		# disposal commands drain before shutting down the SceneTree servers.
+		for tick in 4:
+			await physics_frame
+			await process_frame
 	if failures.is_empty(): print("PASS: real v1 tutorial migration, exact original entry and one-time stock grants")
 	quit(0 if failures.is_empty() else 1)
