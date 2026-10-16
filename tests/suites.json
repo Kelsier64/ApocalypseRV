@@ -162,6 +162,7 @@
       "test_world_weather"
     ],
     "slow": [
+      "test_training_journey",
       "test_training_legacy_completion",
       "test_training_completion",
       "test_training_migration",
