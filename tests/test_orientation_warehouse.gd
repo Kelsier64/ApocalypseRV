@@ -65,6 +65,12 @@ func run() -> void:
 		stock_visible(item, approach, role)
 		legacy_stock_clear(item, role)
 	var lane := BoxShape3D.new()
+	var scrapper: Item = workshop.item("scrapper")
+	var entry_eye := building.to_global(Vector3(0, 1.5, -30))
+	var entry_aim := scrapper.to_global(scrapper.get_placement_bounds().get_center())
+	var entry_query := PhysicsRayQueryParameters3D.create(entry_eye, entry_aim, 3, [player.get_rid(), vehicle.get_rid()])
+	var entry_hit := world.get_world_3d().direct_space_state.intersect_ray(entry_query)
+	check(not entry_hit.is_empty() and (entry_hit.collider == scrapper or scrapper.is_ancestor_of(entry_hit.collider)), "Scrapper is visible through the open inner doorway before entering the warehouse")
 	lane.size = Vector3(8, 4.9, 36)
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = lane

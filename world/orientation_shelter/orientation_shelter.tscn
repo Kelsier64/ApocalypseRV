@@ -858,7 +858,7 @@ position = Vector3(0, 0, 40)
 
 
 [node name="Scrapper" type="Marker3D" parent="WorkshopEquipment"]
-position = Vector3(18.85, 0, -22)
+position = Vector3(4.65, 0, -23)
 
 [node name="Workbench" type="Marker3D" parent="WorkshopEquipment"]
 position = Vector3(-7, 0, 9.1)
@@ -1031,8 +1031,8 @@ shadow_enabled = true
 [node name="WarehouseApproaches" type="Node3D" parent="."]
 
 [node name="scrapper" type="Marker3D" parent="WarehouseApproaches"]
-position = Vector3(18.85, 0, -23.7)
-metadata/route_x = 18.85
+position = Vector3(4.65, 0, -24.6)
+metadata/route_x = 4.65
 metadata/route_z = -24.0
 
 [node name="workbench" type="Marker3D" parent="WarehouseApproaches"]
