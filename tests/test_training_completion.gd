@@ -1,6 +1,10 @@
 extends "res://tests/test_training_maintenance.gd"
 ## All nine production lessons, physical exit completion and terminal ownership.
 ## Lesson one uses wheel forces; later lessons reuse real transaction fixtures.
+# Keep Item alive through Godot 4.7.2's script-list shutdown traversal.
+# Engine fix: https://github.com/godotengine/godot/pull/117991 (4.8).
+# The continuous journey inherits this compatibility pin too.
+static var _shutdown_base_scripts: Array[Script] = [Item]
 var forward_peak := 0.0
 var reverse_peak := 0.0
 var completed_snapshot: Dictionary = {}
