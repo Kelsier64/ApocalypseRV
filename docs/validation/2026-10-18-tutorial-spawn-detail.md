@@ -69,3 +69,5 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 貨架原木層板與橘色側梁的頂面重疊寬 3 cm，梁端也與橫梁／立柱產生共面外露。木板寬度改為 1.42 m、側梁長度改為 4.14 m，消除外露面的重疊；交叉斜撐分層並補穿接螺栓。所有承放頂面、原物資位置及獨立碰撞維持原樣。
 
 `test_orientation_warehouse` **PASS**，含資產匯入；`.godot/test-logs/20261018-215645-050-selected-28180/`。正式主世界以五個定點檢視紙箱、上下層板邊、梁端與走道，並核對 96 個新模型的包圍盒與原碰撞一致（1 mm 容差）、木板／側梁頂面交疊為 0。最後修整梁／立柱接合後另複查兩個近景；最終日誌 `.godot/warehouse-cargo-fix/review-final.log`。沒有人工遊走或完整套件驗收宣稱。
+
+後續腳部清理：移除 `building_details.tscn` 中與立柱重疊的 24 個 `RackFootGuard` 裝飾及專用網格，保留原貨架立柱與底板。正式主世界左右腳部及整排三個定點渲染已檢視；24 座貨架、96 支立柱與 96 片底板數量正確，所有立柱底面位於地面且與原碰撞位置及尺寸一致。最終日誌 `.godot/warehouse-foot-fix/review-final.log` 正常結束。此輪僅刪除視覺節點，未重跑先前的行為套件，未宣稱手動遊玩。
