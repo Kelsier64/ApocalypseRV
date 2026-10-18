@@ -87,3 +87,15 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 原 `Item` 基底參照只存在於 completion，直接執行 workshop／maintenance 未涵蓋。本次將既有 static 參照移至共用 workshop 基底，由 workshop → maintenance → completion → journey 共用單一定義；沒有修改交易、駕駛、關閉等待或 runner 判定。
 
 本機四個獨立入口 **4/4 PASS，退出碼皆為 0**：completion 67.41 秒、journey 36.15 秒、maintenance 32.20 秒、workshop 26.18 秒。命令：`./scripts/test.ps1 -Godot 'C:\Program Files\godot\godot.exe' -TestFilter 'test_training_workshop.gd,test_training_maintenance.gd,test_training_completion.gd,test_training_journey.gd' -SkipImport`；日誌 `.godot/test-logs/20261019-004416-082-selected-25884/`。這是移動相容參照後的驗證，不將本機通過冒充遠端完整 CI 結果。
+
+## PR #47 CI：讓 Item 參照跨過完整腳本清理
+
+`fcdd37e` 的 PR 五組通過，但 [push integration](https://github.com/Kelsier64/ApocalypseRV/actions/runs/39146656922/job/117731756524) 的 warehouse 在兩個完整 PASS 標記後仍以 `-1073741819` 退出。該 fixture 已繼承靜態 Item 保護，因此先前的相容處理仍不完整。本機一般執行 8/8 正常退出；ProcDump 的偵錯堆積條件則首輪重現原生例外，完整 dump 位於忽略目錄 `.godot/pr47-ci/warehouse-dumps/`。
+
+原生堆疊仍是 `GDScriptLanguage::finish` RVA `0x547f41`／參照計數 RVA `0x3e2d181`。在遍歷前以原生斷點記錄腳本節點及來源，再對照失效位址：`BatterySocket` 之後的節點確實為 `res://props/item.gd`，其指標已被 `0xfeeefeeefeeefeee` 覆蓋。舊靜態保護在 [GDScript::clear](https://github.com/godotengine/godot/blob/4.7.2-stable/modules/gdscript/gdscript.cpp#L1428) 中先被清掉，沒有涵蓋整段腳本列表遍歷；證據 `.godot/pr47-ci/warehouse-live-trace.jsonl`。
+
+新增僅作用於 **Godot 4.7.2** 的 [測試 helper](../../tests/support/godot_472_shutdown.gd)，把唯一已定位的 Item 參照保留於原生 ThemeDB 的私有 metadata。依 [原生清理順序](https://github.com/godotengine/godot/blob/4.7.2-stable/main/main.cpp#L5270)，ThemeDB 在 `finish_languages` 後、GDScriptLanguage 刪除前銷毀，能跨過危險的遍歷並在語言物件仍存在時釋放參照。crafting、v12 orientation 及 v11 training 三個 fixture 家族共用此 helper，取代原靜態陣列；沒有擴充其他腳本保留、修改遊戲、延後 teardown 或忽略退出碼。升級引擎後應移除此相容處理。
+
+同一原生斷點／偵錯堆積條件下，修正版 **連續 2/2 正常退出 0**；原本失效的 Item 節點保持有效直到遍歷完成，且沒有晚期錯誤或洩漏警告。證據 `.godot/pr47-ci/warehouse-guarded-trace.jsonl`、`warehouse-guarded-repeat.jsonl` 及對應引擎日誌。
+
+正常 runner 含匯入 **8/8 PASS，全部退出碼 0**：crafting print、orientation departure／warehouse／workshop journey、training completion／journey／maintenance／workshop；合計 221.32 秒。日誌 `.godot/test-logs/20261019-014413-128-selected-32448/`。未在本機重跑與這三個 fixture 家族無關的完整套件。
