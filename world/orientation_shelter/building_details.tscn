@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="PackedScene" path="res://assets/models/depot_air_compressor/depot_air_compressor.glb" id="air_compressor"]
+
 [ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
 
 [ext_resource type="Material" path="res://world/orientation_shelter/materials/painted_steel.tres" id="sage"]
@@ -412,6 +414,28 @@ size = Vector3(0.07, 0.08, 0.35)
 size = Vector3(1.1, 0.022, 3.85)
 
 [node name="BuildingDetails" type="Node3D"]
+
+[node name="AirCompressor" parent="." instance=ExtResource("air_compressor")]
+position = Vector3(-16.8, 0.03, 12.95)
+
+[node name="CompressorTaskLamp" type="Node3D" parent="."]
+position = Vector3(-16.8, 3.15, 13.22)
+rotation = Vector3(0, 3.141593, 0)
+
+[node name="WallBracket" type="MeshInstance3D" parent="CompressorTaskLamp"]
+position = Vector3(0, 0, -0.1)
+mesh = SubResource("part_037")
+material_override = ExtResource("steel")
+
+[node name="Hood" type="MeshInstance3D" parent="CompressorTaskLamp"]
+position = Vector3(0, 0, 0.12)
+mesh = SubResource("part_038")
+material_override = ExtResource("sage")
+
+[node name="Diffuser" type="MeshInstance3D" parent="CompressorTaskLamp"]
+position = Vector3(0, -0.079, 0.12)
+mesh = SubResource("part_039")
+material_override = SubResource("part_002")
 
 [node name="RoofTruss-41" type="Node3D" parent="."]
 position = Vector3(0, 0, -41)

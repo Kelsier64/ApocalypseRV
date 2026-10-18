@@ -46,6 +46,18 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 
 正式主世界 seed 42、Forward+ 定點檢查第二室入口、貨架、屋架、接待室、水設備、正面／側面／背面、發電機與屋頂，共 13 個視角；修正護網支撐、風管吊架接觸及帆布角落穿插後，最終日誌 `.godot/depot-whole-building/review-final.log` 正常結束且無腳本錯誤。最後屋頂材質另以兩視角複查，`.godot/depot-whole-building/roof-final.log`。沒有人工走遍基地或手動完成教學。
 
-另以內建 ImageGen 製作了新空壓機的透明參考圖，本機 ComfyUI 8188 preflight 已 READY。依 [生成技能](../../.agents/skills/comfyui-image-to-3d/SKILL.md)「完成後先給使用者確認」，圖像確認仍待回覆，**尚未提交新空壓機 3D 工作，也未將不存在的模型列入完成內容**。預覽留在忽略的 `.godot/depot-whole-building/compressor_reference.png`，不作為遊戲資產提交。
+另以內建 ImageGen 製作了新空壓機的透明參考圖，依 [生成技能](../../.agents/skills/comfyui-image-to-3d/SKILL.md) 取得使用者確認後，完成下方 ComfyUI 生成與整合。
 
 開始本輪時已有使用者的 `project.godot` 輸入序列化修改，保持原樣且不納入本輪提交。
+
+## 後續：ComfyUI 空壓機
+
+同日使用者確認參考造型，單次本機 TRELLIS.2／1024／seed 42 工作約 79 秒完成。原型 49,910 面，經 Y+90° 朝向與尺寸校正、gltfpack 1.3 減面後為 **4,990 面／6,490 頂點**，低於單件 5,000 面預算；三張 PBR 圖片 bytes 保留。原始 GLB 與生成紀錄保留在忽略工作目錄，交付 [正式資產](../../assets/models/depot_air_compressor/README.md)、[可編輯來源與參考圖](../../art_source/depot_air_compressor/README.md)。
+
+模型放於第二室前牆旁 `(-16.8,0.03,12.95)`，尺寸 1.45 × 0.95 × 0.65 m，服務面朝 −Z；輪／腳最低點與設備墊頂 Y=0.03 貼合，獨立盒碰撞與模型包圍盒相差不到 1 mm。保留原物資及接近路線，新增一盞實體壁面工作燈。空壓機為固定布景，沒有新增教學任務或可操作空壓系統。
+
+整棟擴充模組加上空壓機與燈殼後合計 59,395 三角面（原 54,369＋空壓機 4,990＋燈殼 36），仍低於 60,000 面預算。
+
+檢查原型與減面版的六視角、材質及素色幾何；把手開孔、儲氣桶、壓力錶與兩輪保留，輪轂及小型散熱鰭片有所簡化。拓樸限制及原始來源雜湊記於資產來源 README，未將技術匯出成功冒充可製造網格。
+
+`test_orientation_shelter`、`test_orientation_warehouse` **2/2 PASS**，含資產匯入；日誌 `.godot/test-logs/20261018-213740-176-selected-34132/`。實際主世界三個玩家高度定點檢查尺寸、貼地、朝向及走道可見性，補燈後複查；最終日誌 `.godot/art-work/depot_air_compressor/run-01/context-final.log` 正常結束，支撐／碰撞尺寸核對通過。未重跑與新增角落布景無關的整段出庫或完整套件，未宣稱手動遊玩。

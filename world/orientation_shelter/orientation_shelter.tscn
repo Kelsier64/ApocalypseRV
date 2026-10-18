@@ -191,6 +191,18 @@ metadata/room_lengths = PackedFloat32Array(20, 40)
 
 [node name="BuildingDetails" parent="Collision" instance=ExtResource("building_details_collision")]
 
+[node name="CompressorTaskLight" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(-16.8, 2.93, 12.85)
+rotation = Vector3(-1.570796, 0, 0)
+light_color = Color(1, 0.87, 0.66, 1)
+light_energy = 1.4
+spot_range = 4.0
+spot_angle = 55.0
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
+distance_fade_length = 10.0
+
 [node name="PumpTaskLight" type="SpotLight3D" parent="Furnishings"]
 position = Vector3(-19.3, 4.58, -30.5)
 rotation = Vector3(-1.570796, 0, 0)
