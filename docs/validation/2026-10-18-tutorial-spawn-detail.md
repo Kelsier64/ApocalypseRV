@@ -29,3 +29,23 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 這是實際世界的定點渲染檢查，沒有宣稱手動走遍基地或完成教學／駕駛，也沒有 FPS 基準測試。未跑完整套件或與本輪無關的攀爬／拆頂情境。
 
 開啟 [orientation_playground.tscn](../../tests/orientation_playground.tscn) 按 F6，或正式主場景開新局，可檢視接待室的視覺密度、原終端可辨識度及維修室的布景。美術觀感仍由使用者驗收。
+
+## 後續：整棟與第二室細化
+
+依使用者要求擴展至全棟，沿用同一分支；上方接待區結果保留為前一輪紀錄。
+
+- 兩室屋架新增斜撐及下弦、懸吊回風管／接縫／吊桿，側牆增加六組帶護網的排風扇與支架管線。第二室加入貨架實體編號、柱腳護板及六組帆布包覆貨堆，原物資與走道不移動。
+- 接待室側邊加入水處理設備區；室外前坪加入備用發電機、配電櫃、排氣管、基座與防撞柱。直接重用既有 ComfyUI 來源的 `bunker_filtration_pump`、`bunker_diesel_generator`、`bunker_switchgear` 模型，碰撞另設於 Collision。
+- 全棟外牆補上漆帶、基座、百葉檢修板、落水管與後側檢修蓋；入口增加實體招牌、緩衝件及雨棚燈殼。主樓與側翼分別貼合 Z=14.5／14.0 的原立面。
+- 屋頂增加通風帽、檢修口、側翼維護踏墊；主屋頂改用有搭接縫、卷材色差及積灰的獨立防水材質。未新增房間或改動外殼、場址尺寸、出生點、課程及存檔。
+- 美術／碰撞集中於 [building_details.tscn](../../world/orientation_shelter/building_details.tscn)、[building_details_collision.tscn](../../world/orientation_shelter/building_details_collision.tscn)。原創帆布是可編輯的 [OBJ](../../assets/models/depot_canvas_cover/depot_canvas_cover.obj)，材質程序生成。
+
+整棟擴充模組的預算為 60,000 三角面，最終 **748 個 MeshInstance／54,369 三角面**，包含上述三個既有生成模型；新增所有可見網格均在原 building_bounds 內。重用模型保留原有預算與來源；原生結構已足夠精簡，未為本輪再次降面。沒有 FPS 基準測試。
+
+最終相關驗證：`test_orientation_shelter`、`test_orientation_warehouse` **2/2 PASS**，含匯入；日誌 `.godot/test-logs/20261018-212612-261-selected-33272/`。外部發電機、防撞件與門邊緩衝件加入後，`test_orientation_departure` 的原生輪驅出庫也 PASS；該次三項皆通過，日誌 `.godot/test-logs/20261018-212143-024-selected-25140/`。之後僅修正高處護網／吊架、上層貨堆和材質，未改動出庫區碰撞。
+
+正式主世界 seed 42、Forward+ 定點檢查第二室入口、貨架、屋架、接待室、水設備、正面／側面／背面、發電機與屋頂，共 13 個視角；修正護網支撐、風管吊架接觸及帆布角落穿插後，最終日誌 `.godot/depot-whole-building/review-final.log` 正常結束且無腳本錯誤。最後屋頂材質另以兩視角複查，`.godot/depot-whole-building/roof-final.log`。沒有人工走遍基地或手動完成教學。
+
+另以內建 ImageGen 製作了新空壓機的透明參考圖，本機 ComfyUI 8188 preflight 已 READY。依 [生成技能](../../.agents/skills/comfyui-image-to-3d/SKILL.md)「完成後先給使用者確認」，圖像確認仍待回覆，**尚未提交新空壓機 3D 工作，也未將不存在的模型列入完成內容**。預覽留在忽略的 `.godot/depot-whole-building/compressor_reference.png`，不作為遊戲資產提交。
+
+開始本輪時已有使用者的 `project.godot` 輸入序列化修改，保持原樣且不納入本輪提交。
