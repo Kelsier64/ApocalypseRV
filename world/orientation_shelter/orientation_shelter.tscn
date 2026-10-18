@@ -6,6 +6,10 @@
 
 [ext_resource type="Material" path="res://world/starting_shelter/materials/floor.tres" id="floor"]
 
+[ext_resource type="Material" path="res://world/orientation_shelter/materials/depot_floor.tres" id="depot_floor"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/interior_details.tscn" id="interior_details"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/interior_details_collision.tscn" id="interior_details_collision"]
+
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/bay_gate.tscn" id="gate"]
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="lamp"]
@@ -176,6 +180,59 @@ metadata/room_lengths = PackedFloat32Array(20, 40)
 
 [node name="Furnishings" type="Node3D" parent="."]
 
+[node name="InteriorDetails" parent="Visuals" instance=ExtResource("interior_details")]
+
+[node name="InteriorDetails" parent="Collision" instance=ExtResource("interior_details_collision")]
+
+[node name="ReceivingDeskLight" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(-4.9, 3.45, -45.2)
+rotation = Vector3(-1.570796, 0, 0)
+light_color = Color(1.0, 0.84, 0.59, 1)
+light_energy = 2.2
+spot_range = 8.0
+spot_angle = 65.0
+spot_attenuation = 0.9
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
+distance_fade_length = 10.0
+
+[node name="WaitingBenchLight" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(9, 3.05, -45.2)
+rotation = Vector3(-1.570796, 0, 0)
+light_color = Color(0.83, 0.88, 0.76, 1)
+light_energy = 1.5
+spot_range = 7.5
+spot_angle = 65.0
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 30.0
+distance_fade_length = 10.0
+
+[node name="InnerGateLight" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(0, 5.4, -27.3)
+rotation = Vector3(-1.570796, 0, 0)
+light_color = Color(0.83, 0.88, 0.76, 1)
+light_energy = 1.0
+spot_range = 6.0
+spot_angle = 65.0
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 40.0
+distance_fade_length = 10.0
+
+[node name="ServiceBenchLight" type="SpotLight3D" parent="Furnishings"]
+position = Vector3(12, 2.95, 12.9)
+rotation = Vector3(-1.570796, 0, 0)
+light_color = Color(1, 0.86, 0.63, 1)
+light_energy = 1.6
+spot_range = 6.0
+spot_angle = 65.0
+shadow_enabled = true
+distance_fade_enabled = true
+distance_fade_begin = 35.0
+distance_fade_length = 10.0
+
 [node name="LootSpawns" type="Node3D" parent="."]
 
 [node name="Gates" type="Node3D" parent="."]
@@ -189,7 +246,7 @@ metadata/room_lengths = PackedFloat32Array(20, 40)
 [node name="Slab" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0, -0.2, -16)
 mesh = SubResource("r1")
-material_override = ExtResource("floor")
+material_override = ExtResource("depot_floor")
 
 [node name="Slab" type="StaticBody3D" parent="Collision"]
 position = Vector3(0, -0.2, -16)

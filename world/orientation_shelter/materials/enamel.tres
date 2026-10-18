@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://world/starting_shelter/materials/aged_metal.gdshader" id="shader"]
+
+[resource]
+shader = ExtResource("shader")
+shader_parameter/metal_color = Color(0.64, 0.60, 0.46, 1)
+shader_parameter/corrosion = 0.2
+shader_parameter/pattern_offset = 19.0
