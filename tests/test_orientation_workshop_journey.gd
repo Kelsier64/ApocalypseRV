@@ -2,6 +2,9 @@ extends SceneTree
 ## v12 stage two uses the original production world, stock and Item transactions.
 ## Actor positions, camera aim and service work time are controlled test inputs.
 ## No inventory records, successful course flags or material deposits are injected.
+# Godot 4.7.2 can free an inherited script while traversing its shutdown list.
+# Keep the shared base alive until this fixture clears (upstream #117991).
+static var _shutdown_base_scripts: Array[Script] = [Item]
 const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 var world: Node3D
@@ -297,6 +300,13 @@ func repair_lesson() -> bool:
 	select_item(workshop.gasoline_id)
 	socket.interact_hold(player)
 	if not check(vehicle.installed_wheels[0] == null, "Native removal frees the socket after the unmarked-wheel negative control"): return false
+	# This extra wheel exists only for the negative control. Leaving it beside
+	# the front axle can roll it underneath the RV during the departure test.
+	# Keep the original discarded flat tire as part of the production journey.
+	var removed_decoy: Item = workshop.by_id("journey-unmarked-healthy-wheel")
+	if not check(removed_decoy != null, "Native removal returns the unmarked fixture wheel to the world"): return false
+	removed_decoy.queue_free()
+	await frames()
 	if not await pickup("spare"): return false
 	player.global_position = socket.global_position + vehicle.global_basis.x * 2
 	socket.interact_hold(player)

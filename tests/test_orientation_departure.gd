@@ -56,6 +56,8 @@ func completion_check() -> bool:
 				if not hit.is_empty(): print("DEPARTURE_BLOCKER: ", hit.collider.get_path(), " at=", hit.position)
 		print("DEPARTURE_CONTROLS: ", vehicle.control_override, " throttle=", vehicle.throttle_input, " gear=", vehicle.gear, " handbrake=", vehicle.handbrake, " locked=", vehicle.driver_controls_locked())
 		print("DEPARTURE_CONTACTS: ", vehicle.get_colliding_bodies().map(func(body): return str(body.get_path())), " force=", vehicle.engine_force, " fuel=", vehicle.current_fuel, " power=", vehicle.current_power)
+		for body in vehicle.get_colliding_bodies():
+			if body is Item: print("DEPARTURE_CONTACT_ITEM: scene=", body.scene_file_path, " id=", body.persistent_id, " position=", vehicle.to_local(body.global_position), " fixed=", body.is_fixed)
 	if not check(run_owner.phase in ["started", "closing"] and tutorial.status == "completed", "Native wheel forces take the original RV and seated player completely out of the depot"): return false
 	check(run_owner.departure_clear() and vehicle.global_position.distance_to(origin) > 0.5, "Successful completion follows actual continuous driving past the whole-vehicle boundary")
 	check(world.get_node("WorldClock").running and world.get_node("WorldClock").weather_running, "Complete departure resumes time and weather")
