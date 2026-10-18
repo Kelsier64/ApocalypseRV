@@ -1,6 +1,10 @@
 extends SceneTree
 ## Production lessons 2-6: real stock, UI, inventory placement and material work.
 ## Only lesson one and actor positions are fixture setup; no workshop flags are set.
+# Keep Item alive through Godot 4.7.2's script-list shutdown traversal.
+# Engine fix: https://github.com/godotengine/godot/pull/117991 (4.8).
+# Standalone workshop and all maintenance/completion/journey fixtures share this pin.
+static var _shutdown_base_scripts: Array[Script] = [Item]
 const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 var world: Node3D

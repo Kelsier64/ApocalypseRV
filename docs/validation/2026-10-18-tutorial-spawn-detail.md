@@ -79,3 +79,11 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 原等待發生在把玩家移至入口之前；之後取樣時，入口位置所需的串流視窗仍可能未完成。測試改為先等待室外錨點所需的完整區塊集合（含保護帶）、導航及生成工作完成，再移動室內玩家。移動後跨越兩個 process frame，確保串流更新實際執行；斷言同時檢查區塊索引集合、無生成工作及原室外錨點，取代僅比較數量。沒有修改遊戲串流邏輯、等待期限或 runner 判定。
 
 本機原版一次通過，未宣稱穩定重現；最終修正版 `test_poi_instances` **PASS，8.74 秒、退出碼 0**，完整進出、物品保存與導航斷言保留。命令：`./scripts/test.ps1 -Godot 'C:\Program Files\godot\godot.exe' -TestFilter 'test_poi_instances.gd' -SkipImport`；日誌 `.godot/test-logs/20261019-002646-469-selected-21796/`。另在忽略目錄以衍生生成器刻意讓室內座標驅動室外串流，新斷言如期拒絕（區塊由 `[-2,-1,0,1,2,3]` 變成空集合且 `building=true`、退出碼 1）；證據 `.godot/pr47-ci/wrong-anchor.log`。對照腳本未交付，未在本機重跑完整 integration 組。
+
+## PR #47 CI：共用訓練 fixture 的關閉相容處理
+
+`26160fc` 的 [push integration](https://github.com/Kelsier64/ApocalypseRV/actions/runs/39145143334/job/117727353590) 已通過。另一次 [PR slow](https://github.com/Kelsier64/ApocalypseRV/actions/runs/39145146642/job/117727363311) 則在 `test_training_workshop` 印出完整 PASS 後以 `-1073741819` 退出，沒有行為斷言失敗；退出碼與時機符合 [先前定位的 Godot 4.7.2 腳本關閉問題](2026-10-18-pr46-ci.md)。本機原版一次正常退出，未宣稱每次可重現。
+
+原 `Item` 基底參照只存在於 completion，直接執行 workshop／maintenance 未涵蓋。本次將既有 static 參照移至共用 workshop 基底，由 workshop → maintenance → completion → journey 共用單一定義；沒有修改交易、駕駛、關閉等待或 runner 判定。
+
+本機四個獨立入口 **4/4 PASS，退出碼皆為 0**：completion 67.41 秒、journey 36.15 秒、maintenance 32.20 秒、workshop 26.18 秒。命令：`./scripts/test.ps1 -Godot 'C:\Program Files\godot\godot.exe' -TestFilter 'test_training_workshop.gd,test_training_maintenance.gd,test_training_completion.gd,test_training_journey.gd' -SkipImport`；日誌 `.godot/test-logs/20261019-004416-082-selected-25884/`。這是移動相容參照後的驗證，不將本機通過冒充遠端完整 CI 結果。
