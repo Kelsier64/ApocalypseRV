@@ -65,6 +65,12 @@ var wheel_item_data: Array[Dictionary] = [{}, {}, {}, {}]
 signal inventory_changed(item_name: String, new_amount: int)
 signal fuel_changed(current: float, max_value: float)
 signal power_changed(current: float, max_value: float)
+signal battery_exchanged(socket_id: String, previous_id: String, installed_id: String)
+signal cabin_lights_changed(enabled: bool, source: Node)
+signal engine_repair_committed(engine_id: String, kit_id: String)
+signal wheel_removed(slot: int, item_id: String)
+signal wheel_installed(slot: int, item_id: String)
+signal refuel_committed(port_id: String, can_id: String, empty_id: String, amount: float)
 
 # Scene-local demo policy; production defaults and checkpoint data stay finite.
 var unlimited_materials := false
@@ -600,6 +606,7 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	feedback("complete", socket.position)
 	player.refresh_inventory()
 	power_changed.emit(current_power, max_power)
+	battery_exchanged.emit(socket.persistent_id, old.id if old else "", next.id)
 	return true
 
 func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> bool:
@@ -753,12 +760,16 @@ func install_wheel_from_player(player: Node3D, slot: int = -1) -> bool:
 	if slot < 0 or slot >= 4 or installed_wheels[slot] != null:
 		return false
 	var state: Dictionary = player.inventory.active_item().get("state", {})
+	var item_count: int = player.inventory.items.size()
+	player.consume_active_item()
+	if player.inventory.items.size() != item_count - 1:
+		return false
 	wheel_health[slot] = clampf(float(state.get("condition", 100.0)), 0.0, 100.0)
 	wheel_ids[slot] = state.get("id", InstanceIds.create())
 	wheel_item_data[slot] = ItemState.slot_data(state)
 	_create_wheel_at(slot)
 	_update_wheel_condition(slot)
-	player.consume_active_item()
+	wheel_installed.emit(slot, wheel_ids[slot])
 	return true
 
 func remove_wheel_to_world(slot: int) -> bool:
@@ -769,6 +780,7 @@ func remove_wheel_to_world(slot: int) -> bool:
 	if scene == null or container == null:
 		return false
 	var prop := scene.instantiate() as Item
+	if prop == null: return false
 	var state := wheel_item_data[slot].duplicate(true)
 	state.merge({"id": wheel_ids[slot], "condition": wheel_health[slot]}, true)
 	prop.restore_item_state(state)
@@ -778,6 +790,7 @@ func remove_wheel_to_world(slot: int) -> bool:
 	prop.global_position = output
 	prop.linear_velocity = ClimbMath.point_velocity(self, output) + outward
 	remove_wheel(slot)
+	wheel_removed.emit(slot, prop.persistent_id)
 	return true
 
 func _update_wheel_condition(slot: int) -> void:

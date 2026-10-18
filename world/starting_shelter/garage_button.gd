@@ -56,6 +56,13 @@ func _on_phase_changed(phase: String) -> void:
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	if not is_instance_valid(run): return ""
+	if run.is_tutorial_shelter():
+		match run.phase:
+			"preparing": return "Departure button | E: Open exit and start journey\nThe exit seals permanently after departure; take supplies with you"
+			"opening": return "Exit gate opening"
+			"started": return "Journey started | Drive the RV outside\nThe exit seals permanently after departure"
+			"closing": return "Exit gate closing | Keep clear"
+			_: return "Exit permanently sealed"
 	match run.phase:
 		"preparing": return "啟程按鈕｜E 開啟車庫並出發\n車輛離開後大門永久封閉，留下的物資將無法取回"
 		"opening": return "車庫大門開啟中"

@@ -3,6 +3,8 @@ class_name EquipmentPlacement
 ## Owns preview state and placement input; the player authorizes mode entry.
 
 enum PlacementMode { SURFACE, UPRIGHT }
+signal placement_cancelled(item_id: String)
+signal placement_committed(item_id: String, rv_id: String)
 var placing_equipment: Node3D = null
 var max_place_distance: float = 4.0
 var can_place_equipment: bool = false
@@ -71,7 +73,7 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 	# Item Placement confirmation
 	if is_instance_valid(placing_equipment):
 		if event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE:
-			cancel(player)
+			cancel(player, true)
 			return
 		if event is InputEventKey and event.pressed:
 			var increment := deg_to_rad(5.0 if event.shift_pressed else 15.0)
@@ -94,7 +96,7 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 					commit(player)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
-				cancel(player)
+				cancel(player, true)
 
 func commit(player: Node) -> bool:
 	if not is_instance_valid(placing_equipment) or not can_place_equipment or not is_instance_valid(target_support): return false
@@ -125,11 +127,20 @@ func commit(player: Node) -> bool:
 	if not item.is_fixed:
 		item.queue_free()
 		return false
+	var committed_id := item.persistent_id
+	var committed_rv_id: String = rv.persistent_id if rv else ""
+	var inventory_count: int = player.inventory.items.size()
 	cancel(player)
 	player.consume_active_item()
+	if player.inventory.items.size() != inventory_count - 1:
+		item.prepare_pickup()
+		item.queue_free()
+		return false
+	placement_committed.emit(committed_id, committed_rv_id)
 	return true
 
-func cancel(_player: Node) -> void:
+func cancel(_player: Node, user_requested := false) -> void:
+	var cancelled_id := inventory_id if is_instance_valid(placing_equipment) else ""
 	if is_instance_valid(placing_equipment): placing_equipment.queue_free()
 	var held := hidden_held_item.get_ref() as Node3D if hidden_held_item != null else null
 	if is_instance_valid(held): held.visible = held_was_visible
@@ -144,6 +155,7 @@ func cancel(_player: Node) -> void:
 	inventory_slot = -1
 	inventory_id = ""
 	_clear_marker()
+	if user_requested and not cancelled_id.is_empty(): placement_cancelled.emit(cancelled_id)
 
 func update_ghost(player: CharacterBody3D) -> void:
 	if not is_instance_valid(placing_equipment):

@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://world/starting_shelter/materials/formed_concrete.gdshader" id="1_qtrqn"]
+[ext_resource type="Texture2D" path="res://assets/materials/ruined_wall/aggregate_albedo.png" id="2_s4sxa"]
+[ext_resource type="Texture2D" path="res://assets/materials/poi_kit/concrete_albedo.png" id="3_kq0mk"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_qtrqn")
+shader_parameter/concrete_color = Color(0.37254903, 0.3882353, 0.3647059, 1)
+shader_parameter/formwork_strength = null
+shader_parameter/exposed_aggregate = null
+shader_parameter/authored_surface = null
+shader_parameter/cement_texture = ExtResource("3_kq0mk")
+shader_parameter/aggregate_texture = ExtResource("2_s4sxa")

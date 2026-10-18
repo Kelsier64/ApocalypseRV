@@ -100,6 +100,12 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 			return false
 		staged.append(device)
 	var old_devices: Array[Node] = rv.get_equipment()
+	# A newly staged chassis may not have executed its deferred Item mounts yet.
+	# Replace embedded defaults as well as registered devices; otherwise a preset
+	# socket mounts later and fabricates an additional battery after restoration.
+	for descendant in rv.find_children("*", "RigidBody3D", true, false):
+		if descendant is Item and not descendant.presentation_only and not old_devices.has(descendant):
+			old_devices.append(descendant)
 	# Processing actors are owned by queues but parented to the world container.
 	# Replace them atomically; transfer suppression must not strand old inputs.
 	var old_container := WorldEntities.get_container(rv)
@@ -108,11 +114,12 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 			actor.begin_world_transfer()
 			actor.free()
 	for device in old_devices:
+		if not is_instance_valid(device): continue
 		if device is BatterySocket: device.installed_battery = null
 		device.begin_world_transfer()
 		device.set_mount_support(null)
 	for device in old_devices:
-		device.free()
+		if is_instance_valid(device): device.free()
 	rv.persistent_id = data.id
 	rv.global_transform = data.transform
 	rv.get_node("StructureSlots").restore(data.structures)
@@ -174,7 +181,9 @@ static func valid_item(value: Variant) -> bool:
 	if not value is Dictionary or not value.has_all(["name", "is_large", "scene_path", "state"]): return false
 	if not value.name is String or not value.is_large is bool or not value.scene_path is String or not value.state is Dictionary or not ResourceLoader.exists(value.scene_path): return false
 	if not value.state.get("id") is String or value.state.id.is_empty(): return false
-	if (value.scene_path.begins_with("res://equipment/") or value.scene_path == "res://rv/battery_socket.tscn") and not value.is_large: return false
+	# The handheld training terminal is registered small equipment. Other
+	# mounted devices retain the large-item ownership constraint.
+	if ((value.scene_path.begins_with("res://equipment/") and value.scene_path != "res://equipment/training_terminal.tscn") or value.scene_path == "res://rv/battery_socket.tscn") and not value.is_large: return false
 	if value.state.has("materials"): return false
 	if not valid_prop_state(value.scene_path, value.state): return false
 	if value.scene_path == "res://props/corpse.tscn" and not value.is_large: return false

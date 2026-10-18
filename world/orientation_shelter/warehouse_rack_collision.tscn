@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxShape3D" id="m0"]
+size = Vector3(0.12, 4.9, 0.12)
+
+[sub_resource type="BoxShape3D" id="m1"]
+size = Vector3(1.5, 0.1, 4.05)
+
+[node name="WarehouseRackCollision" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 3
+
+[node name="Post-0.75_-2.02" type="CollisionShape3D" parent="."]
+position = Vector3(-0.75, 2.45, -2.02)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Post-0.75_2.02" type="CollisionShape3D" parent="."]
+position = Vector3(-0.75, 2.45, 2.02)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Post0.75_-2.02" type="CollisionShape3D" parent="."]
+position = Vector3(0.75, 2.45, -2.02)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Post0.75_2.02" type="CollisionShape3D" parent="."]
+position = Vector3(0.75, 2.45, 2.02)
+shape = SubResource("m0")
+metadata/navigation_solid = true
+
+[node name="Deck0" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.775, 0)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Deck1" type="CollisionShape3D" parent="."]
+position = Vector3(0, 2.25, 0)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Deck2" type="CollisionShape3D" parent="."]
+position = Vector3(0, 3.5, 0)
+shape = SubResource("m1")
+metadata/navigation_solid = true
+
+[node name="Deck3" type="CollisionShape3D" parent="."]
+position = Vector3(0, 4.7, 0)
+shape = SubResource("m1")
+metadata/navigation_solid = true

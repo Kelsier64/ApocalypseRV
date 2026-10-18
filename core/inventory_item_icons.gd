@@ -23,6 +23,7 @@ const ICONS := {
 	"res://equipment/roof_ladder.tscn": preload("res://assets/inventory/roof_ladder.png"),
 	"res://equipment/cabin_light_strip.tscn": preload("res://assets/inventory/cabin_light_strip.png"),
 	"res://equipment/tablet_screen.tscn": preload("res://assets/inventory/tablet_screen.png"),
+	"res://equipment/training_terminal.tscn": preload("res://assets/inventory/tablet_screen.png"),
 	"res://equipment/driver_seat.tscn": preload("res://assets/inventory/driver_seat.png"),
 	"res://equipment/crafting_station.tscn": preload("res://assets/inventory/crafting_station.png"),
 	"res://equipment/fuel_port.tscn": preload("res://assets/inventory/fuel_port.png"),

@@ -44,9 +44,9 @@ static func profile_error(data: Dictionary) -> String:
 		var value: Variant = data[key]
 		if key == "terrain_half_width":
 			# Historical captures include this derived, read-only field.
-			if not VehicleSnapshot._number(value) or value not in [225.0, 450.0]: return "profile." + key
+			if not VehicleSnapshot._number(value) or (value not in [225.0, 450.0] and not (value == 500.0 and data.get("generation_version", 2) in [11, 12])): return "profile." + key
 		elif key == "generation_version":
-			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9, 10]: return "profile." + key
+			if not value is int or value not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]: return "profile." + key
 		elif key in constants:
 			if value != defaults.get(key): return "profile." + key
 		elif key in ["chunks_ahead", "chunks_behind"]:
@@ -57,6 +57,109 @@ static func profile_error(data: Dictionary) -> String:
 	if data.get("narrow_width", defaults.narrow_width) > data.get("road_width", defaults.road_width): return "profile.narrow_width"
 	if data.get("region_transition", defaults.region_transition) > data.get("region_length", defaults.region_length): return "profile.region_transition"
 	if data.get("stop_jitter", defaults.stop_jitter) * 2 >= data.get("stop_spacing", defaults.stop_spacing): return "profile.stop_jitter"
+	return ""
+
+static func tutorial_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	if value.get("course") == "two_room_orientation":
+		return preload("res://world/tutorial_shelter/orientation_controller.gd").validation_error(value)
+	var fields := ["version", "stage", "status", "terminal_id", "rv_id", "flashlight_id", "flags"]
+	if not value.has_all(fields): return "fields"
+	if not value.version is int or value.version not in [1, 2, 3]: return "version"
+	if value.version >= 2: fields.append("workshop")
+	if value.version == 3: fields.append("service")
+	if not value.has_all(fields): return "fields"
+	for key in value:
+		if key not in fields and key != "entry_snapshot": return "fields"
+	var last_stage := 2 if value.version == 1 else (7 if value.version == 2 else 9)
+	if not value.stage is int or value.stage < 1 or value.stage > last_stage: return "stage"
+	if not value.status is String or value.status not in ["active", "completed", "skipped"]: return "status"
+	for key in ["terminal_id", "rv_id", "flashlight_id"]:
+		if not value[key] is String or value[key].is_empty(): return key
+	var flags: Variant = value.flags
+	var flag_fields := ["viewed", "flashlight", "marker_index", "reversed", "parked"]
+	if not flags is Dictionary or flags.size() != flag_fields.size() or not flags.has_all(flag_fields): return "flags"
+	for key in ["viewed", "flashlight", "reversed", "parked"]:
+		if not flags[key] is bool: return "flags." + key
+	if not flags.marker_index is int or flags.marker_index < 0 or flags.marker_index > 2: return "flags.marker_index"
+	if value.version >= 2:
+		var workshop_state_error := workshop_error(value.workshop)
+		if not workshop_state_error.is_empty(): return "workshop." + workshop_state_error
+		for identity in value.workshop.output_ids:
+			if identity in [value.terminal_id, value.rv_id, value.flashlight_id]: return "workshop.output_ids"
+	if value.version == 3:
+		var service_state_error := service_error(value.service)
+		if not service_state_error.is_empty(): return "service." + service_state_error
+		if value.service.flags.departure and value.stage != 9: return "service.flags.departure"
+		if value.status == "completed" and (value.stage != 9 or not value.service.flags.departure): return "status"
+	return ""
+
+static func orientation_phase_error(start_state: Dictionary) -> String:
+	var tutorial: Dictionary = start_state.get("tutorial", {})
+	if tutorial.get("course") != "two_room_orientation" or tutorial.get("version", 0) < 3: return ""
+	var phase: String = start_state.get("phase", "preparing")
+	if tutorial.status == "completed" and phase not in ["started", "sealed"]: return "status.phase"
+	if phase in ["started", "sealed"] and not tutorial.departure_started: return "departure_started.phase"
+	if tutorial.status == "active" and phase in ["started", "sealed"]: return "status.phase"
+	return ""
+
+static func service_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	var identity_fields := ["engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id", "fuel_can_id", "empty_can_id"]
+	var fields := ["version", "configured", "wall_slot", "wheel_slot", "flags", "fuel_amount"] + identity_fields
+	if value.size() != fields.size() or not value.has_all(fields): return "fields"
+	if not value.version is int or value.version != 1: return "version"
+	if not value.configured is bool: return "configured"
+	if not value.wall_slot is String or value.wall_slot != "left_0": return "wall_slot"
+	if not value.wheel_slot is int or value.wheel_slot != 0: return "wheel_slot"
+	var flag_fields := ["wall", "engine", "removed", "wheel", "refueled", "departure"]
+	if not value.flags is Dictionary or value.flags.size() != flag_fields.size() or not value.flags.has_all(flag_fields): return "flags"
+	for field in flag_fields:
+		if not value.flags[field] is bool: return "flags." + field
+		if not value.configured and value.flags[field]: return "flags." + field
+	var seen: Dictionary = {}
+	for field in identity_fields:
+		var identity: Variant = value[field]
+		if not identity is String: return field
+		if not value.configured and not identity.is_empty(): return field
+		if value.configured and field not in ["fuel_can_id", "empty_can_id"] and identity.is_empty(): return field
+		if not identity.is_empty():
+			if seen.has(identity): return field
+			seen[identity] = true
+	if not VehicleSnapshot._number(value.fuel_amount) or value.fuel_amount < 0.0: return "fuel_amount"
+	if not value.configured and value.fuel_amount != 0.0: return "fuel_amount"
+	if value.flags.wheel and not value.flags.removed: return "flags.wheel"
+	if value.flags.refueled and (value.fuel_amount <= 0.0 or value.fuel_can_id.is_empty() or value.empty_can_id.is_empty()): return "flags.refueled"
+	return ""
+
+static func workshop_error(value: Variant) -> String:
+	if not value is Dictionary: return "state"
+	var fields := ["version", "targets", "flags", "placed_ids", "unmounted_ids", "recycled_ids", "output_ids", "gasoline_id"]
+	if value.size() != fields.size() or not value.has_all(fields): return "fields"
+	if not value.version is int or value.version != 1: return "version"
+	var target_fields := ["battery", "original_battery", "socket", "tablet", "scrapper", "workbench", "scrap_a", "scrap_b", "barrel"]
+	var targets: Variant = value.targets
+	if not targets is Dictionary or targets.size() != target_fields.size() or not targets.has_all(target_fields): return "targets"
+	for key in target_fields:
+		if not targets[key] is String or targets[key].is_empty(): return "targets." + key
+	var flag_fields := ["battery", "overview", "energy", "equipment", "lights_off", "lights_on", "cancelled", "scrapper_placed", "workbench_placed", "remounted"]
+	var flags: Variant = value.flags
+	if not flags is Dictionary or flags.size() != flag_fields.size() or not flags.has_all(flag_fields): return "flags"
+	for key in flag_fields:
+		if not flags[key] is bool: return "flags." + key
+	for key in ["placed_ids", "unmounted_ids", "recycled_ids", "output_ids"]:
+		var identities: Variant = value[key]
+		var maximum := 64 if key == "output_ids" else (3 if key == "recycled_ids" else 2)
+		if not identities is Array or identities.size() > maximum: return key
+		var allowed: Array = [targets.scrap_a, targets.scrap_b, targets.barrel] if key == "recycled_ids" else [targets.scrapper, targets.workbench]
+		var seen: Dictionary = {}
+		for identity in identities:
+			if not identity is String or identity.is_empty() or seen.has(identity): return key
+			if key == "output_ids":
+				if identity in targets.values(): return key
+			elif identity not in allowed: return key
+			seen[identity] = true
+	if not value.gasoline_id is String or (not value.gasoline_id.is_empty() and value.gasoline_id not in value.output_ids): return "gasoline_id"
 	return ""
 
 static func poi_error(value: Variant, path := "poi") -> String:

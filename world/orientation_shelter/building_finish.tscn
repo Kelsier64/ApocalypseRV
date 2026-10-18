@@ -1,0 +1,1663 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/formed_concrete.tres" id="concrete"]
+
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/wall_finish.tscn" id="skin"]
+
+[ext_resource type="PackedScene" path="res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb" id="handler"]
+
+[ext_resource type="PackedScene" path="res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb" id="filter"]
+
+[ext_resource type="Material" path="res://world/orientation_shelter/dark.tres" id="dark"]
+
+[ext_resource type="Material" path="res://world/orientation_shelter/glass.tres" id="glass"]
+
+[sub_resource type="BoxMesh" id="d0"]
+size = Vector3(0.2, 8.6, 0.65)
+subdivide_height = 1
+
+[sub_resource type="BoxMesh" id="d1"]
+size = Vector3(10, 0.28, 60.8)
+subdivide_width = 1
+subdivide_depth = 10
+
+[sub_resource type="BoxMesh" id="d2"]
+size = Vector3(0.24, 0.42, 60.5)
+subdivide_depth = 10
+
+[sub_resource type="BoxMesh" id="d3"]
+size = Vector3(0.38, 0.08, 60.6)
+subdivide_depth = 10
+
+[sub_resource type="BoxMesh" id="d4"]
+size = Vector3(0.08, 0.64, 59.8)
+subdivide_depth = 9
+
+[sub_resource type="BoxMesh" id="d5"]
+size = Vector3(0.3, 0.18, 59.5)
+subdivide_depth = 9
+
+[sub_resource type="CylinderMesh" id="d6"]
+top_radius = 0.11
+bottom_radius = 0.11
+height = 58.8
+radial_segments = 12
+rings = 1
+
+[sub_resource type="BoxMesh" id="d7"]
+size = Vector3(0.65, 0.12, 0.18)
+
+[sub_resource type="CylinderMesh" id="d8"]
+top_radius = 0.045
+bottom_radius = 0.045
+height = 5.5
+radial_segments = 12
+rings = 1
+
+[sub_resource type="BoxMesh" id="d9"]
+size = Vector3(0.19, 0.12, 0.15)
+
+[sub_resource type="BoxMesh" id="d10"]
+size = Vector3(5.7, 2.9, 0.05)
+
+[sub_resource type="BoxMesh" id="d11"]
+size = Vector3(5.3, 2.5, 0.06)
+
+[sub_resource type="BoxMesh" id="d12"]
+size = Vector3(0.2, 3.1, 0.4)
+
+[sub_resource type="BoxMesh" id="d13"]
+size = Vector3(5.9, 0.15, 0.4)
+
+[sub_resource type="BoxMesh" id="d14"]
+size = Vector3(0.08, 2.9, 0.16)
+
+[sub_resource type="BoxMesh" id="d15"]
+size = Vector3(4.5, 1, 0.06)
+
+[sub_resource type="BoxMesh" id="d16"]
+size = Vector3(4.5, 0.07, 0.23)
+
+[sub_resource type="BoxMesh" id="d17"]
+size = Vector3(39.5, 0.16, 0.22)
+subdivide_width = 6
+
+[sub_resource type="BoxMesh" id="d18"]
+size = Vector3(4.2, 0.1, 0.14)
+
+[sub_resource type="BoxMesh" id="d19"]
+size = Vector3(0.1, 0.75, 0.14)
+
+[sub_resource type="BoxMesh" id="d20"]
+size = Vector3(2.2, 0.18, 0.22)
+
+[sub_resource type="BoxMesh" id="d21"]
+size = Vector3(0.16, 0.2, 59.8)
+subdivide_depth = 9
+
+[sub_resource type="BoxMesh" id="d22"]
+size = Vector3(0.18, 0.3, 1.5)
+
+[sub_resource type="BoxMesh" id="d23"]
+size = Vector3(10.4, 0.24, 3.3)
+subdivide_width = 1
+
+[sub_resource type="BoxMesh" id="d24"]
+size = Vector3(0.16, 0.55, 1.9)
+
+[sub_resource type="BoxMesh" id="d25"]
+size = Vector3(16, 0.3, 1)
+subdivide_width = 2
+
+[sub_resource type="BoxMesh" id="d26"]
+size = Vector3(60, 0.5, 0.26)
+subdivide_width = 9
+
+[sub_resource type="BoxMesh" id="d27"]
+size = Vector3(60.3, 0.08, 0.4)
+subdivide_width = 10
+
+[sub_resource type="BoxMesh" id="d28"]
+size = Vector3(6.7, 0.24, 4.7)
+subdivide_width = 1
+
+[sub_resource type="BoxMesh" id="d29"]
+size = Vector3(0.23, 0.16, 4.2)
+
+[sub_resource type="BoxMesh" id="d30"]
+size = Vector3(1.2, 1.5, 1)
+
+[sub_resource type="BoxMesh" id="d31"]
+size = Vector3(1.5, 0.08, 1.3)
+
+[sub_resource type="BoxMesh" id="d32"]
+size = Vector3(9.7, 0.24, 5.7)
+subdivide_width = 1
+
+[sub_resource type="BoxMesh" id="d33"]
+size = Vector3(0.23, 0.16, 5.2)
+
+[sub_resource type="BoxMesh" id="d34"]
+size = Vector3(0.15, 0.12, 0.6)
+
+[sub_resource type="BoxMesh" id="d35"]
+size = Vector3(1.1, 0.16, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="marking"]
+albedo_color = Color(0.48, 0.46, 0.34, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="lane"]
+size = Vector3(0.09, 0.003, 34)
+subdivide_depth = 5
+
+[sub_resource type="BoxMesh" id="pad"]
+size = Vector3(3.0, 0.003, 0.08)
+
+[sub_resource type="BoxMesh" id="pipe_standoff"]
+size = Vector3(0.6, 0.10, 0.12)
+
+[sub_resource type="BoxMesh" id="junction_box"]
+size = Vector3(0.52, 0.44, 0.38)
+
+[node name="BuildingFinish" type="Node3D"]
+
+[node name="InnerSkin-1_0" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -42)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_1" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -34)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_2" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -26)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_3" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -18)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_4" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -10)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_5" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, -2)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_6" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, 6)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin-1_7" parent="." instance=ExtResource("skin")]
+position = Vector3(-20.01, 0, 12)
+rotation = Vector3(0, 1.570796, 0)
+scale = Vector3(0.5, 1, 1)
+
+[node name="OuterRib-1_-40" type="MeshInstance3D" parent="."]
+position = Vector3(-30.08, 4.3, -40)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib-1_-24" type="MeshInstance3D" parent="."]
+position = Vector3(-30.08, 4.3, -24)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib-1_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-30.08, 4.3, -8)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib-1_8" type="MeshInstance3D" parent="."]
+position = Vector3(-30.08, 4.3, 8)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="ServiceCoping-1" type="MeshInstance3D" parent="."]
+position = Vector3(-25.1, 8.94, -16)
+mesh = SubResource("d1")
+material_override = ExtResource("steel")
+
+[node name="OuterParapet-1" type="MeshInstance3D" parent="."]
+position = Vector3(-29.94, 9.28, -16)
+mesh = SubResource("d2")
+material_override = ExtResource("concrete")
+
+[node name="OuterCoping-1" type="MeshInstance3D" parent="."]
+position = Vector3(-29.94, 9.53, -16)
+mesh = SubResource("d3")
+material_override = ExtResource("steel")
+
+[node name="InnerSkirting-1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.88, 0.32, -16)
+mesh = SubResource("d4")
+material_override = ExtResource("steel")
+
+[node name="CableTray-1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.28, 6.15, -16)
+mesh = SubResource("d5")
+material_override = ExtResource("steel")
+
+[node name="ServicePipe-1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, -16.1)
+rotation = Vector3(1.570796, 0, -0)
+mesh = SubResource("d6")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket-1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(-19.6, 6, -41)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop-1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.85, -41)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-41_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 1.1, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-41_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.5, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-41_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket-1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(-19.6, 6, -29)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop-1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.85, -29)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-29_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 1.1, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-29_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.5, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-29_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket-1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(-19.6, 6, -17)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop-1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.85, -17)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-17_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 1.1, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-17_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.5, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-17_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket-1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.6, 6, -5)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop-1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.85, -5)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-5_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 1.1, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-5_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.5, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_-5_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket-1_7" type="MeshInstance3D" parent="."]
+position = Vector3(-19.6, 6, 7)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop-1_7" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.85, 7)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_7_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 1.1, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_7_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 3.5, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar-1_7_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.35, 6.6, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="WindowBacking-1" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 4.1, 14.035)
+mesh = SubResource("d10")
+material_override = ExtResource("dark")
+
+[node name="WindowGlass-1" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 4.1, 14.09)
+mesh = SubResource("d11")
+material_override = ExtResource("glass")
+
+[node name="WindowJamb-1_-2.85" type="MeshInstance3D" parent="."]
+position = Vector3(-27.85, 4.1, 14.24)
+mesh = SubResource("d12")
+material_override = ExtResource("steel")
+
+[node name="WindowJamb-1_2.85" type="MeshInstance3D" parent="."]
+position = Vector3(-22.15, 4.1, 14.24)
+mesh = SubResource("d12")
+material_override = ExtResource("steel")
+
+[node name="WindowSill-1_2.6" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 2.6, 14.24)
+mesh = SubResource("d13")
+material_override = ExtResource("steel")
+
+[node name="WindowSill-1_5.6" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 5.6, 14.24)
+mesh = SubResource("d13")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion-1_-1.8" type="MeshInstance3D" parent="."]
+position = Vector3(-26.8, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion-1_-0.6" type="MeshInstance3D" parent="."]
+position = Vector3(-25.6, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion-1_0.6" type="MeshInstance3D" parent="."]
+position = Vector3(-24.4, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion-1_1.8" type="MeshInstance3D" parent="."]
+position = Vector3(-23.2, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="VentBacking-1" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.5, 14.035)
+mesh = SubResource("d15")
+material_override = ExtResource("dark")
+
+[node name="VentSlat-1_0" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.1, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_1" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.23, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_2" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.36, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_3" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.49, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_4" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.62, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_5" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.75, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat-1_6" type="MeshInstance3D" parent="."]
+position = Vector3(-25, 1.88, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="InnerSkin1_0" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -42)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_1" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -34)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_2" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -26)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_3" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -18)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_4" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -10)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_5" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, -2)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_6" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, 6)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="InnerSkin1_7" parent="." instance=ExtResource("skin")]
+position = Vector3(20.01, 0, 12)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(0.5, 1, 1)
+
+[node name="OuterRib1_-40" type="MeshInstance3D" parent="."]
+position = Vector3(30.08, 4.3, -40)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib1_-24" type="MeshInstance3D" parent="."]
+position = Vector3(30.08, 4.3, -24)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib1_-8" type="MeshInstance3D" parent="."]
+position = Vector3(30.08, 4.3, -8)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="OuterRib1_8" type="MeshInstance3D" parent="."]
+position = Vector3(30.08, 4.3, 8)
+mesh = SubResource("d0")
+material_override = ExtResource("concrete")
+
+[node name="ServiceCoping1" type="MeshInstance3D" parent="."]
+position = Vector3(25.1, 8.94, -16)
+mesh = SubResource("d1")
+material_override = ExtResource("steel")
+
+[node name="OuterParapet1" type="MeshInstance3D" parent="."]
+position = Vector3(29.94, 9.28, -16)
+mesh = SubResource("d2")
+material_override = ExtResource("concrete")
+
+[node name="OuterCoping1" type="MeshInstance3D" parent="."]
+position = Vector3(29.94, 9.53, -16)
+mesh = SubResource("d3")
+material_override = ExtResource("steel")
+
+[node name="InnerSkirting1" type="MeshInstance3D" parent="."]
+position = Vector3(19.88, 0.32, -16)
+mesh = SubResource("d4")
+material_override = ExtResource("steel")
+
+[node name="CableTray1" type="MeshInstance3D" parent="."]
+position = Vector3(19.28, 6.15, -16)
+mesh = SubResource("d5")
+material_override = ExtResource("steel")
+
+[node name="ServicePipe1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, -16.1)
+rotation = Vector3(1.570796, 0, -0)
+mesh = SubResource("d6")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(19.6, 6, -41)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.85, -41)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-41_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 1.1, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-41_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.5, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-41_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, -41)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(19.6, 6, -29)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.85, -29)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-29_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 1.1, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-29_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.5, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-29_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, -29)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(19.6, 6, -17)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.85, -17)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-17_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 1.1, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-17_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.5, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-17_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, -17)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(19.6, 6, -5)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.85, -5)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-5_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 1.1, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-5_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.5, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_-5_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, -5)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="TrayBracket1_7" type="MeshInstance3D" parent="."]
+position = Vector3(19.6, 6, 7)
+mesh = SubResource("d7")
+material_override = ExtResource("steel")
+
+[node name="PipeDrop1_7" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.85, 7)
+rotation = Vector3(0, 0, -0)
+mesh = SubResource("d8")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_7_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 1.1, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_7_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 3.5, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="PipeCollar1_7_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.35, 6.6, 7)
+mesh = SubResource("d9")
+material_override = ExtResource("steel")
+
+[node name="WindowBacking1" type="MeshInstance3D" parent="."]
+position = Vector3(25, 4.1, 14.035)
+mesh = SubResource("d10")
+material_override = ExtResource("dark")
+
+[node name="WindowGlass1" type="MeshInstance3D" parent="."]
+position = Vector3(25, 4.1, 14.09)
+mesh = SubResource("d11")
+material_override = ExtResource("glass")
+
+[node name="WindowJamb1_-2.85" type="MeshInstance3D" parent="."]
+position = Vector3(22.15, 4.1, 14.24)
+mesh = SubResource("d12")
+material_override = ExtResource("steel")
+
+[node name="WindowJamb1_2.85" type="MeshInstance3D" parent="."]
+position = Vector3(27.85, 4.1, 14.24)
+mesh = SubResource("d12")
+material_override = ExtResource("steel")
+
+[node name="WindowSill1_2.6" type="MeshInstance3D" parent="."]
+position = Vector3(25, 2.6, 14.24)
+mesh = SubResource("d13")
+material_override = ExtResource("steel")
+
+[node name="WindowSill1_5.6" type="MeshInstance3D" parent="."]
+position = Vector3(25, 5.6, 14.24)
+mesh = SubResource("d13")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion1_-1.8" type="MeshInstance3D" parent="."]
+position = Vector3(23.2, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion1_-0.6" type="MeshInstance3D" parent="."]
+position = Vector3(24.4, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion1_0.6" type="MeshInstance3D" parent="."]
+position = Vector3(25.6, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="WindowMullion1_1.8" type="MeshInstance3D" parent="."]
+position = Vector3(26.8, 4.1, 14.22)
+mesh = SubResource("d14")
+material_override = ExtResource("steel")
+
+[node name="VentBacking1" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.5, 14.035)
+mesh = SubResource("d15")
+material_override = ExtResource("dark")
+
+[node name="VentSlat1_0" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.1, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_1" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.23, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_2" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.36, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_3" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.49, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_4" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.62, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_5" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.75, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="VentSlat1_6" type="MeshInstance3D" parent="."]
+position = Vector3(25, 1.88, 14.13)
+mesh = SubResource("d16")
+material_override = ExtResource("steel")
+
+[node name="RearSkin-16" parent="." instance=ExtResource("skin")]
+position = Vector3(-16, 0, -46.01)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin-8" parent="." instance=ExtResource("skin")]
+position = Vector3(-8, 0, -46.01)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin0" parent="." instance=ExtResource("skin")]
+position = Vector3(0, 0, -46.01)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin8" parent="." instance=ExtResource("skin")]
+position = Vector3(8, 0, -46.01)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="RearSkin16" parent="." instance=ExtResource("skin")]
+position = Vector3(16, 0, -46.01)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-15.95_-26.51" parent="." instance=ExtResource("skin")]
+position = Vector3(-15.95, 0, -26.51)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-7.95_-26.51" parent="." instance=ExtResource("skin")]
+position = Vector3(-7.95, 0, -26.51)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin7.95_-26.51" parent="." instance=ExtResource("skin")]
+position = Vector3(7.95, 0, -26.51)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin15.95_-26.51" parent="." instance=ExtResource("skin")]
+position = Vector3(15.95, 0, -26.51)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-15.95_-25.49" parent="." instance=ExtResource("skin")]
+position = Vector3(-15.95, 0, -25.49)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-7.95_-25.49" parent="." instance=ExtResource("skin")]
+position = Vector3(-7.95, 0, -25.49)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin7.95_-25.49" parent="." instance=ExtResource("skin")]
+position = Vector3(7.95, 0, -25.49)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin15.95_-25.49" parent="." instance=ExtResource("skin")]
+position = Vector3(15.95, 0, -25.49)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-15.95_14.51" parent="." instance=ExtResource("skin")]
+position = Vector3(-15.95, 0, 14.51)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-7.95_14.51" parent="." instance=ExtResource("skin")]
+position = Vector3(-7.95, 0, 14.51)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin7.95_14.51" parent="." instance=ExtResource("skin")]
+position = Vector3(7.95, 0, 14.51)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin15.95_14.51" parent="." instance=ExtResource("skin")]
+position = Vector3(15.95, 0, 14.51)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-15.95_13.49" parent="." instance=ExtResource("skin")]
+position = Vector3(-15.95, 0, 13.49)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin-7.95_13.49" parent="." instance=ExtResource("skin")]
+position = Vector3(-7.95, 0, 13.49)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin7.95_13.49" parent="." instance=ExtResource("skin")]
+position = Vector3(7.95, 0, 13.49)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="PortalSkin15.95_13.49" parent="." instance=ExtResource("skin")]
+position = Vector3(15.95, 0, 13.49)
+rotation = Vector3(0, 3.141593, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="TrussLower0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.65, -41)
+mesh = SubResource("d17")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb0_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 7.98, -41)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie0_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 8.02, -41)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb0_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 7.98, -41)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie0_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 8.02, -41)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb0_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.98, -41)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie0_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 8.02, -41)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb0_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 7.98, -41)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie0_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 8.02, -41)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb0_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 7.98, -41)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie0_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 8.02, -41)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="KneeBrace0_-1" type="MeshInstance3D" parent="."]
+position = Vector3(-18.7, 7.65, -41)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.45)
+
+[node name="KneeBrace0_1" type="MeshInstance3D" parent="."]
+position = Vector3(18.7, 7.65, -41)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.45)
+
+[node name="TrussLower1" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.65, -29)
+mesh = SubResource("d17")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb1_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 7.98, -29)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie1_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 8.02, -29)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb1_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 7.98, -29)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie1_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 8.02, -29)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb1_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.98, -29)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie1_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 8.02, -29)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb1_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 7.98, -29)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie1_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 8.02, -29)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb1_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 7.98, -29)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie1_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 8.02, -29)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="KneeBrace1_-1" type="MeshInstance3D" parent="."]
+position = Vector3(-18.7, 7.65, -29)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.45)
+
+[node name="KneeBrace1_1" type="MeshInstance3D" parent="."]
+position = Vector3(18.7, 7.65, -29)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.45)
+
+[node name="TrussLower2" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.65, -17)
+mesh = SubResource("d17")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb2_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 7.98, -17)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie2_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 8.02, -17)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb2_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 7.98, -17)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie2_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 8.02, -17)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb2_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.98, -17)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie2_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 8.02, -17)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb2_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 7.98, -17)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie2_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 8.02, -17)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb2_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 7.98, -17)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie2_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 8.02, -17)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="KneeBrace2_-1" type="MeshInstance3D" parent="."]
+position = Vector3(-18.7, 7.65, -17)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.45)
+
+[node name="KneeBrace2_1" type="MeshInstance3D" parent="."]
+position = Vector3(18.7, 7.65, -17)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.45)
+
+[node name="TrussLower3" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.65, -5)
+mesh = SubResource("d17")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb3_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 7.98, -5)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie3_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 8.02, -5)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb3_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 7.98, -5)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie3_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 8.02, -5)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb3_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.98, -5)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie3_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 8.02, -5)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb3_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 7.98, -5)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie3_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 8.02, -5)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb3_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 7.98, -5)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie3_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 8.02, -5)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="KneeBrace3_-1" type="MeshInstance3D" parent="."]
+position = Vector3(-18.7, 7.65, -5)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.45)
+
+[node name="KneeBrace3_1" type="MeshInstance3D" parent="."]
+position = Vector3(18.7, 7.65, -5)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.45)
+
+[node name="TrussLower4" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.65, 7)
+mesh = SubResource("d17")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb4_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 7.98, 7)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie4_-16" type="MeshInstance3D" parent="."]
+position = Vector3(-16, 8.02, 7)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb4_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 7.98, 7)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie4_-8" type="MeshInstance3D" parent="."]
+position = Vector3(-8, 8.02, 7)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb4_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.98, 7)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie4_0" type="MeshInstance3D" parent="."]
+position = Vector3(0, 8.02, 7)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb4_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 7.98, 7)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.16)
+
+[node name="TrussTie4_8" type="MeshInstance3D" parent="."]
+position = Vector3(8, 8.02, 7)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="TrussWeb4_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 7.98, 7)
+mesh = SubResource("d18")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.16)
+
+[node name="TrussTie4_16" type="MeshInstance3D" parent="."]
+position = Vector3(16, 8.02, 7)
+mesh = SubResource("d19")
+material_override = ExtResource("steel")
+
+[node name="KneeBrace4_-1" type="MeshInstance3D" parent="."]
+position = Vector3(-18.7, 7.65, 7)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, -0.45)
+
+[node name="KneeBrace4_1" type="MeshInstance3D" parent="."]
+position = Vector3(18.7, 7.65, 7)
+mesh = SubResource("d20")
+material_override = ExtResource("steel")
+rotation = Vector3(0, 0, 0.45)
+
+[node name="RoofPurlin-14" type="MeshInstance3D" parent="."]
+position = Vector3(-14, 8.68, -16)
+mesh = SubResource("d21")
+material_override = ExtResource("steel")
+
+[node name="RoofPurlin-5" type="MeshInstance3D" parent="."]
+position = Vector3(-5, 8.68, -16)
+mesh = SubResource("d21")
+material_override = ExtResource("steel")
+
+[node name="RoofPurlin5" type="MeshInstance3D" parent="."]
+position = Vector3(5, 8.68, -16)
+mesh = SubResource("d21")
+material_override = ExtResource("steel")
+
+[node name="RoofPurlin14" type="MeshInstance3D" parent="."]
+position = Vector3(14, 8.68, -16)
+mesh = SubResource("d21")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket-7_-26.85" type="MeshInstance3D" parent="."]
+position = Vector3(-7, 5.8, -26.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket-3.8_-26.85" type="MeshInstance3D" parent="."]
+position = Vector3(-3.8, 5.8, -26.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket3.8_-26.85" type="MeshInstance3D" parent="."]
+position = Vector3(3.8, 5.8, -26.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket7_-26.85" type="MeshInstance3D" parent="."]
+position = Vector3(7, 5.8, -26.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket-7_14.85" type="MeshInstance3D" parent="."]
+position = Vector3(-7, 5.8, 14.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket-3.8_14.85" type="MeshInstance3D" parent="."]
+position = Vector3(-3.8, 5.8, 14.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket3.8_14.85" type="MeshInstance3D" parent="."]
+position = Vector3(3.8, 5.8, 14.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="TrackBracket7_14.85" type="MeshInstance3D" parent="."]
+position = Vector3(7, 5.8, 14.85)
+mesh = SubResource("d22")
+material_override = ExtResource("steel")
+
+[node name="EntranceCanopy" type="MeshInstance3D" parent="."]
+position = Vector3(0, 6.25, 16.1)
+mesh = SubResource("d23")
+material_override = ExtResource("steel")
+
+[node name="CanopyBrace-5" type="MeshInstance3D" parent="."]
+position = Vector3(-5, 5.9, 15.4)
+mesh = SubResource("d24")
+material_override = ExtResource("steel")
+
+[node name="CanopyBrace5" type="MeshInstance3D" parent="."]
+position = Vector3(5, 5.9, 15.4)
+mesh = SubResource("d24")
+material_override = ExtResource("steel")
+
+[node name="FacadeCoping-1" type="MeshInstance3D" parent="."]
+position = Vector3(-12, 8.95, 14.35)
+mesh = SubResource("d25")
+material_override = ExtResource("steel")
+
+[node name="FacadeCoping1" type="MeshInstance3D" parent="."]
+position = Vector3(12, 8.95, 14.35)
+mesh = SubResource("d25")
+material_override = ExtResource("steel")
+
+[node name="RearParapet" type="MeshInstance3D" parent="."]
+position = Vector3(0, 9.35, -46.32)
+mesh = SubResource("d26")
+material_override = ExtResource("concrete")
+
+[node name="RearCoping" type="MeshInstance3D" parent="."]
+position = Vector3(0, 9.64, -46.32)
+mesh = SubResource("d27")
+material_override = ExtResource("steel")
+
+[node name="RoofPlant0" type="Node3D" parent="."]
+position = Vector3(-25, 9.08, -12)
+
+[node name="Plinth" type="MeshInstance3D" parent="RoofPlant0"]
+position = Vector3(0, 0.12, 0)
+mesh = SubResource("d28")
+material_override = ExtResource("concrete")
+
+[node name="Rail-1" type="MeshInstance3D" parent="RoofPlant0"]
+position = Vector3(-2.1, 0.32, 0)
+mesh = SubResource("d29")
+material_override = ExtResource("steel")
+
+[node name="Rail1" type="MeshInstance3D" parent="RoofPlant0"]
+position = Vector3(2.1, 0.32, 0)
+mesh = SubResource("d29")
+material_override = ExtResource("steel")
+
+[node name="PlantModel" parent="RoofPlant0" instance=ExtResource("handler")]
+position = Vector3(0, 1.4, 0)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="ReturnDuct" type="MeshInstance3D" parent="RoofPlant0"]
+position = Vector3(0, 0.8, -2.5)
+mesh = SubResource("d30")
+material_override = ExtResource("steel")
+
+[node name="Flashing" type="MeshInstance3D" parent="RoofPlant0"]
+position = Vector3(0, 0.04, -2.5)
+mesh = SubResource("d31")
+material_override = ExtResource("steel")
+
+[node name="RoofPlant1" type="Node3D" parent="."]
+position = Vector3(25, 9.08, -31)
+
+[node name="Plinth" type="MeshInstance3D" parent="RoofPlant1"]
+position = Vector3(0, 0.12, 0)
+mesh = SubResource("d32")
+material_override = ExtResource("concrete")
+
+[node name="Rail-1" type="MeshInstance3D" parent="RoofPlant1"]
+position = Vector3(-3.15, 0.32, 0)
+mesh = SubResource("d33")
+material_override = ExtResource("steel")
+
+[node name="Rail1" type="MeshInstance3D" parent="RoofPlant1"]
+position = Vector3(3.15, 0.32, 0)
+mesh = SubResource("d33")
+material_override = ExtResource("steel")
+
+[node name="PlantModel" parent="RoofPlant1" instance=ExtResource("filter")]
+position = Vector3(0, 1.15, 0)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(1, 1, 1)
+
+[node name="ReturnDuct" type="MeshInstance3D" parent="RoofPlant1"]
+position = Vector3(0, 0.8, -3)
+mesh = SubResource("d30")
+material_override = ExtResource("steel")
+
+[node name="Flashing" type="MeshInstance3D" parent="RoofPlant1"]
+position = Vector3(0, 0.04, -3)
+mesh = SubResource("d31")
+material_override = ExtResource("steel")
+
+[node name="ReadingBracket0" type="MeshInstance3D" parent="."]
+position = Vector3(1.7, 3.18, -45.82)
+mesh = SubResource("d34")
+material_override = ExtResource("steel")
+
+[node name="ReadingHood0" type="MeshInstance3D" parent="."]
+position = Vector3(1.7, 3.12, -45.63)
+mesh = SubResource("d35")
+material_override = ExtResource("steel")
+
+[node name="ReadingBracket1" type="MeshInstance3D" parent="."]
+position = Vector3(-14, 3.18, -25.42)
+mesh = SubResource("d34")
+material_override = ExtResource("steel")
+
+[node name="ReadingHood1" type="MeshInstance3D" parent="."]
+position = Vector3(-14, 3.12, -25.23)
+mesh = SubResource("d35")
+material_override = ExtResource("steel")
+
+[node name="LaneEdge-1" type="MeshInstance3D" parent="."]
+position = Vector3(-4.15, 0.006, -6.5)
+mesh = SubResource("lane")
+material_override = SubResource("marking")
+
+[node name="MachinePad-1_-19.5" type="MeshInstance3D" parent="."]
+position = Vector3(-7.5, 0.006, -19.5)
+mesh = SubResource("pad")
+material_override = SubResource("marking")
+
+[node name="MachinePad-1_-14.5" type="MeshInstance3D" parent="."]
+position = Vector3(-7.5, 0.006, -14.5)
+mesh = SubResource("pad")
+material_override = SubResource("marking")
+
+[node name="LaneEdge1" type="MeshInstance3D" parent="."]
+position = Vector3(4.15, 0.006, -6.5)
+mesh = SubResource("lane")
+material_override = SubResource("marking")
+
+[node name="MachinePad1_-19.5" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, 0.006, -19.5)
+mesh = SubResource("pad")
+material_override = SubResource("marking")
+
+[node name="MachinePad1_-14.5" type="MeshInstance3D" parent="."]
+position = Vector3(7.5, 0.006, -14.5)
+mesh = SubResource("pad")
+material_override = SubResource("marking")
+
+[node name="PipeMount-1_-41_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-41_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 3.5, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-41_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 6.6, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox-1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -41)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-29_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-29_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 3.5, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-29_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 6.6, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox-1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -29)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-17_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-17_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 3.5, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-17_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 6.6, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox-1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -17)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-5_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-5_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 3.5, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_-5_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 6.6, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox-1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, -5)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_7_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_7_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 3.5, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount-1_7_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 6.6, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox-1_7" type="MeshInstance3D" parent="."]
+position = Vector3(-19.65, 1.1, 7)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-41_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-41_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 3.5, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-41_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 6.6, -41)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox1_-41" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -41)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-29_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-29_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 3.5, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-29_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 6.6, -29)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox1_-29" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -29)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-17_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-17_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 3.5, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-17_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 6.6, -17)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox1_-17" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -17)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-5_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-5_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 3.5, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_-5_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 6.6, -5)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox1_-5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, -5)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_7_1.1" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_7_3.5" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 3.5, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="PipeMount1_7_6.6" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 6.6, 7)
+mesh = SubResource("pipe_standoff")
+material_override = ExtResource("steel")
+
+[node name="JunctionBox1_7" type="MeshInstance3D" parent="."]
+position = Vector3(19.65, 1.1, 7)
+mesh = SubResource("junction_box")
+material_override = ExtResource("steel")

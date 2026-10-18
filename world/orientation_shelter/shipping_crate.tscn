@@ -1,0 +1,162 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://world/starting_shelter/materials/aged_metal.tres" id="steel"]
+
+[ext_resource type="Material" path="res://world/orientation_shelter/warehouse_wood.tres" id="wood"]
+
+[sub_resource type="BoxMesh" id="m0"]
+size = Vector3(1.2, 0.215, 0.045)
+
+[sub_resource type="BoxMesh" id="m1"]
+size = Vector3(0.045, 0.215, 0.81)
+
+[sub_resource type="BoxMesh" id="m2"]
+size = Vector3(0.19, 0.04, 0.9)
+
+[sub_resource type="BoxMesh" id="m3"]
+size = Vector3(0.055, 0.9, 0.018)
+
+[sub_resource type="BoxMesh" id="m4"]
+size = Vector3(0.055, 0.012, 0.91)
+
+[node name="ShippingCrate" type="Node3D"]
+
+[node name="BoardZ0.1125_-0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.1125, -0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.1125_0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.1125, 0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.1125_-0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5775, 0.1125, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.1125_0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(0.5775, 0.1125, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.3375_-0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.3375, -0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.3375_0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.3375, 0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.3375_-0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5775, 0.3375, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.3375_0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(0.5775, 0.3375, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.5625_-0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.5625, -0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.5625_0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.5625, 0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.5625_-0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5775, 0.5625, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.5625_0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(0.5775, 0.5625, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.7875_-0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.7875, -0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardZ0.7875_0.4275" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.7875, 0.4275)
+mesh = SubResource("m0")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.7875_-0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5775, 0.7875, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="BoardX0.7875_0.5775" type="MeshInstance3D" parent="."]
+position = Vector3(0.5775, 0.7875, 0)
+mesh = SubResource("m1")
+material_override = ExtResource("wood")
+
+[node name="Lid0" type="MeshInstance3D" parent="."]
+position = Vector3(-0.5, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Lid1" type="MeshInstance3D" parent="."]
+position = Vector3(-0.3, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Lid2" type="MeshInstance3D" parent="."]
+position = Vector3(-0.1, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Lid3" type="MeshInstance3D" parent="."]
+position = Vector3(0.1, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Lid4" type="MeshInstance3D" parent="."]
+position = Vector3(0.3, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Lid5" type="MeshInstance3D" parent="."]
+position = Vector3(0.5, 0.92, 0)
+mesh = SubResource("m2")
+material_override = ExtResource("wood")
+
+[node name="Strap-0.42_-0.455" type="MeshInstance3D" parent="."]
+position = Vector3(-0.42, 0.45, -0.455)
+mesh = SubResource("m3")
+material_override = ExtResource("steel")
+
+[node name="Strap-0.42_0.455" type="MeshInstance3D" parent="."]
+position = Vector3(-0.42, 0.45, 0.455)
+mesh = SubResource("m3")
+material_override = ExtResource("steel")
+
+[node name="LidStrap-0.42" type="MeshInstance3D" parent="."]
+position = Vector3(-0.42, 0.946, 0)
+mesh = SubResource("m4")
+material_override = ExtResource("steel")
+
+[node name="Strap0.42_-0.455" type="MeshInstance3D" parent="."]
+position = Vector3(0.42, 0.45, -0.455)
+mesh = SubResource("m3")
+material_override = ExtResource("steel")
+
+[node name="Strap0.42_0.455" type="MeshInstance3D" parent="."]
+position = Vector3(0.42, 0.45, 0.455)
+mesh = SubResource("m3")
+material_override = ExtResource("steel")
+
+[node name="LidStrap0.42" type="MeshInstance3D" parent="."]
+position = Vector3(0.42, 0.946, 0)
+mesh = SubResource("m4")
+material_override = ExtResource("steel")

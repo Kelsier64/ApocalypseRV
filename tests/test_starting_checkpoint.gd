@@ -4,6 +4,15 @@ const SAVE_PATH := "res://.godot/test-starting-checkpoint.save"
 const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 
+func generation_version() -> int:
+	return 10
+
+func prepare_fixture(_world: Node) -> void:
+	pass
+
+func check_gate_state(_world: Node, _prepared: Dictionary) -> void:
+	pass
+
 func _init() -> void:
 	_run.call_deferred()
 
@@ -31,8 +40,10 @@ func wait_phase(world: Node, phase: String) -> bool:
 func _run() -> void:
 	var checkpoint: Node = root.get_node("Checkpoint")
 	var world: Node3D = load("res://world/main_world.tscn").instantiate()
+	world.get_node("WorldGenerator").profile = world.get_node("WorldGenerator").profile.duplicate()
+	world.get_node("WorldGenerator").profile.generation_version = generation_version() # Legacy and v11 fixtures share real checkpoint transactions.
 	var generator: Node = world.get_node("WorldGenerator")
-	check(generator.profile.generation_version == 10 and generator.profile.chunks_ahead == 2, "Production v10 streaming window fits the 450 m monster lifetime")
+	check(generator.profile.generation_version == generation_version() and generator.profile.chunks_ahead == 2, "Production streaming window fits the 450 m monster lifetime")
 	generator.world_seed = 42
 	generator.profile = generator.profile.duplicate()
 	generator.profile.chunks_ahead = 0
@@ -46,6 +57,7 @@ func _run() -> void:
 	if not await settle(world):
 		quit(1)
 		return
+	await prepare_fixture(world)
 	var flashlight: Item
 	var pistol: Item
 	var ammo: Item
@@ -70,20 +82,23 @@ func _run() -> void:
 	check(checkpoint.save_world(world, SAVE_PATH), "Preparation checkpoint writes")
 	var prepared: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
 	if prepared.is_empty(): quit(1); return
-	check(prepared.generation_version == 10, "New production checkpoint records v10")
+	check(prepared.generation_version == generation_version(), "Checkpoint records the fixture generation version")
 	check(prepared.world_id == "shelter" and prepared.start_state.phase == "preparing", "Checkpoint identifies production and preparation")
 	for version in [7, 8, 9]:
 		var supported := prepared.duplicate(true)
 		supported.generation_version = version
 		supported.profile.generation_version = version
+		if supported.profile.get("terrain_half_width", 450.0) == 500.0: supported.profile.terrain_half_width = 450.0
+		supported.start_state.erase("bay_gates")
+		supported.start_state.erase("tutorial")
 		check(checkpoint.validation_error(supported).is_empty(), "Shelter checkpoint accepts generation v%d" % version)
 		var wrong_world := supported.duplicate(true)
 		wrong_world.world_id = "legacy"
 		wrong_world.erase("start_state")
 		check(checkpoint.validation_error(wrong_world) == "world_id.start_state", "Shelter generation cannot use legacy identity v%d" % version)
 	var future := prepared.duplicate(true)
-	future.generation_version = 11
-	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v11 remains rejected")
+	future.generation_version = 13
+	check(checkpoint.validation_error(future) == "generation_version", "Unknown generation v13 remains rejected")
 	check(prepared.player.items.size() == 2, "Picked flashlight and pistol belong only to player inventory")
 	check(prepared.player.items.any(func(item): return item.state.id == pistol_id and item.state.get("pistol", {}).get("loaded_rounds") == 5), "Real save records carried pistol identity and partial magazine")
 	check(prepared.vehicles[0].items.any(func(item): return item.state.id == ammo_id and item.state.get("ammo", {}).get("rounds") == 9), "Real save records stored ammo identity and partial count")
@@ -109,6 +124,7 @@ func _run() -> void:
 	check(world.get_node("StartRun").phase == "preparing" and not world.get_node("WorldClock").running, "Reload keeps preparation frozen")
 	check(checkpoint.save_world(world, SAVE_PATH), "Reloaded preparation can save")
 	var again: Dictionary = checkpoint.read_checkpoint(SAVE_PATH)
+	check_gate_state(world, prepared)
 	check(again.player.items == prepared.player.items, "Inventory identities survive reload")
 	check(again.vehicles[0].items == prepared.vehicles[0].items, "Stored ammo identity and partial rounds survive full checkpoint reload")
 	check(again.actors.size() == prepared.actors.size(), "Reload does not duplicate remaining supplies or equipment")

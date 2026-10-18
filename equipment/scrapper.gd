@@ -1,5 +1,6 @@
 extends Item
 const FEED = preload("res://equipment/scrapper_feed_motion.gd")
+signal recycle_committed(rv_id: String, item_id: String, amounts: Dictionary)
 
 @onready var roller1: CSGCylinder3D = $CSGCylinder3D
 @onready var roller2: CSGCylinder3D = $CSGCylinder3D2
@@ -14,6 +15,7 @@ var power_draw_per_second: float = 0.8
 const LIVING_OWNER := &"scrapper_living_owner"
 var _pending_living: Dictionary = {}
 var crush_effect: Node3D
+var _recycle_committing: bool = false
 
 func _ready():
 	# Allow Item logic to initialize
@@ -112,8 +114,8 @@ func _on_hopper_body_entered(body: Node3D):
 	
 	# Assume Item extends RigidBody3D
 	if body is Item:
-		var local := to_local(body.global_position)
-		if absf(local.x) <= .30 and absf(local.z) <= .30 and (body is CorpseProp or FEED.admissible(body,self)): recycle_prop(body)
+		if body == self or body.is_fixed or body.is_being_placed or body.presentation_only or is_instance_valid(body.processing_owner): return
+		if body is CorpseProp or FEED.admissible(body,self): recycle_prop(body)
 	elif body is PhysicalBone3D:
 		# Resolve the actual owner of a limb; cosmetic loose parts have no yield.
 		var ancestor: Node = body.get_parent()
@@ -141,7 +143,7 @@ func _living_overlaps_feed(actor: Node3D) -> bool:
 		if body != actor and not actor.is_ancestor_of(body): continue
 		# A capsule grazing the outside wall is not a jump into the opening.
 		var local: Vector3 = shape_node.to_local(body.global_position)
-		if absf(local.x) <= half_size.x and absf(local.z) <= half_size.z: return true
+		if absf(local.x) <= minf(.30, half_size.x) and absf(local.z) <= minf(.30, half_size.z): return true
 	return false
 
 func _queue_living_input(actor: Node3D) -> void:
@@ -325,6 +327,8 @@ func _on_service_stopped() -> void:
 	props_being_crushed.clear()
 
 func _finish_recycle(prop: Item) -> bool:
+	if _recycle_committing or not is_instance_valid(prop) or prop.is_queued_for_deletion():
+		return false
 	var rv := get_connected_rv()
 	if rv == null:
 		return false
@@ -336,12 +340,19 @@ func _finish_recycle(prop: Item) -> bool:
 		if amounts.is_empty():
 			amounts[ItemNames.UNKNOWN_MATERIAL] = 1
 		prop.set_meta("recycle_result", amounts)
-	if not rv.deposit_materials(prop.get_meta("recycle_result")):
+	var committed_amounts: Dictionary = prop.get_meta("recycle_result")
+	_recycle_committing = true
+	if not rv.deposit_materials(committed_amounts):
+		_recycle_committing = false
 		return false
 	if is_instance_valid(crush_effect): crush_effect.impact(prop is CorpseProp, _crush_contact(to_local(prop.global_position)))
 	for entry: Dictionary in props_being_crushed:
 		if entry.prop == prop and entry.feed != null: entry.feed.dispose()
+	# Subscribers receive the consumed input identity only after storage accepts
+	# its actual yield. Keep the item alive and guard against synchronous retries.
+	recycle_committed.emit(rv.persistent_id, prop.persistent_id, committed_amounts.duplicate(true))
 	prop.queue_free()
+	_recycle_committing = false
 	return true
 
 func capture_service_state() -> Dictionary:

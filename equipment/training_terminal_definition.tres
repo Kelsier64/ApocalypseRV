@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://core/item_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+type_id = "training_terminal"
+display_name = "Training Terminal"
+weight = 5.0
+health = 120.0
+is_large = false
+requires_rv_connection = true
+scrap_yields = {"Metal Parts": Vector2(2, 2)}

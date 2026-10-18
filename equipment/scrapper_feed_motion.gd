@@ -40,14 +40,35 @@ static func rotated_box(box: AABB, basis: Basis) -> AABB:
 	for i in 8: result = result.expand(basis * box.get_endpoint(i))
 	return result
 
-static func admissible(prop: Node3D, owner: Node3D) -> bool:
+static func admissible(prop: Item, owner: Node3D) -> bool:
 	var box := rotated_box(geometry_bounds(prop),owner.global_basis.inverse()*prop.global_basis)
 	box.position += owner.to_local(prop.global_position)
-	var center := box.get_center()
-	if absf(center.x) > .30 or absf(center.z) > .30: return false
 	var contained := box.position.x >= -HALF_OPENING and box.end.x <= HALF_OPENING and box.position.z >= -HALF_OPENING and box.end.z <= HALF_OPENING
-	# An oversized object must approach from above; wall grazes keep physics.
-	return contained or box.position.y >= .68
+	if contained: return true
+	# Real HopperArea overlap supplies contact. Require a substantial footprint
+	# in its central throat, rather than either the authored root or box center.
+	# This also catches tilted oversized inputs already below the rim.
+	var overlap_x := minf(box.end.x, .30) - maxf(box.position.x, -.30)
+	var overlap_z := minf(box.end.z, .30) - maxf(box.position.z, -.30)
+	if overlap_x < minf(.12, box.size.x * .5) or overlap_z < minf(.12, box.size.z * .5): return false
+	# A diagonal object's AABB can cover the throat while its real collider only
+	# touches an outer corner. Confirm central contact in the physics world.
+	var hopper_shape: CollisionShape3D = owner.get_node("HopperArea").get_child(0)
+	var central := BoxShape3D.new()
+	central.size = hopper_shape.shape.size
+	central.size.x = .6
+	central.size.z = .6
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = central
+	query.transform = hopper_shape.global_transform
+	query.collision_mask = prop.collision_layer
+	var excluded: Array[RID] = []
+	for body in owner.get_node("HopperArea").get_overlapping_bodies():
+		if body != prop: excluded.append(body.get_rid())
+	query.exclude = excluded
+	for hit: Dictionary in owner.get_world_3d().direct_space_state.intersect_shape(query, 32):
+		if hit.rid == prop.get_rid(): return true
+	return false
 
 static func fits(prop: Node3D, owner: Node3D) -> bool:
 	var box := geometry_bounds(prop)
