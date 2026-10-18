@@ -71,3 +71,11 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 `test_orientation_warehouse` **PASS**，含資產匯入；`.godot/test-logs/20261018-215645-050-selected-28180/`。正式主世界以五個定點檢視紙箱、上下層板邊、梁端與走道，並核對 96 個新模型的包圍盒與原碰撞一致（1 mm 容差）、木板／側梁頂面交疊為 0。最後修整梁／立柱接合後另複查兩個近景；最終日誌 `.godot/warehouse-cargo-fix/review-final.log`。沒有人工遊走或完整套件驗收宣稱。
 
 後續腳部清理：移除 `building_details.tscn` 中與立柱重疊的 24 個 `RackFootGuard` 裝飾及專用網格，保留原貨架立柱與底板。正式主世界左右腳部及整排三個定點渲染已檢視；24 座貨架、96 支立柱與 96 片底板數量正確，所有立柱底面位於地面且與原碰撞位置及尺寸一致。最終日誌 `.godot/warehouse-foot-fix/review-final.log` 正常結束。此輪僅刪除視覺節點，未重跑先前的行為套件，未宣稱手動遊玩。
+
+## PR #47 CI：室外串流基準同步
+
+2026-10-19：[PR integration](https://github.com/Kelsier64/ApocalypseRV/actions/runs/39141325575/job/117716191659) 與 [push integration](https://github.com/Kelsier64/ApocalypseRV/actions/runs/39141307744/job/117716138996) 均僅 `test_poi_instances` 的室內／室外串流隔離斷言失敗；同批 quick、slow、assets、smoke 通過。兩份失敗紀錄都在進入 POI 後繼續生成正常室外 band 3，且發布完成落在斷言之後，沒有生成室內座標 Z=-2000 附近的區塊。這支 fixture 使用 v6，並未載入本輪 v12 美術。
+
+原等待發生在把玩家移至入口之前；之後取樣時，入口位置所需的串流視窗仍可能未完成。測試改為先等待室外錨點所需的完整區塊集合（含保護帶）、導航及生成工作完成，再移動室內玩家。移動後跨越兩個 process frame，確保串流更新實際執行；斷言同時檢查區塊索引集合、無生成工作及原室外錨點，取代僅比較數量。沒有修改遊戲串流邏輯、等待期限或 runner 判定。
+
+本機原版一次通過，未宣稱穩定重現；最終修正版 `test_poi_instances` **PASS，8.74 秒、退出碼 0**，完整進出、物品保存與導航斷言保留。命令：`./scripts/test.ps1 -Godot 'C:\Program Files\godot\godot.exe' -TestFilter 'test_poi_instances.gd' -SkipImport`；日誌 `.godot/test-logs/20261019-002646-469-selected-21796/`。另在忽略目錄以衍生生成器刻意讓室內座標驅動室外串流，新斷言如期拒絕（區塊由 `[-2,-1,0,1,2,3]` 變成空集合且 `building=true`、退出碼 1）；證據 `.godot/pr47-ci/wrong-anchor.log`。對照腳本未交付，未在本機重跑完整 integration 組。
