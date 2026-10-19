@@ -4,7 +4,7 @@ class_name WorldClock
 signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
-const NIGHT_VISION_FADE_BEGIN := 20.0
+const NIGHT_VISION_FADE_BEGIN := 12.0
 const NIGHT_VISION_FADE_END := 60.0
 const NIGHT_VISION_AMBIENT_ENERGY := 0.06
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
@@ -185,7 +185,7 @@ func apply_time() -> void:
 	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
 	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
 	# Separate the dim, distance-independent adaptation from its visibility
-	# envelope: full strength through 20 m, smoothly black by 60 m. Weather
+	# envelope: full strength through 12 m, smoothly black by 60 m. Weather
 	# may obscure the view earlier, but cannot extend this nighttime limit.
 	var night_fog_begin := lerpf(NIGHT_VISION_FADE_BEGIN, 8.0, light_mist)
 	environment.fog_depth_begin = lerpf(environment.fog_depth_begin, night_fog_begin, _night_vision_strength)
