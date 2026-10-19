@@ -47,6 +47,7 @@ func _ready() -> void:
 	var splash_mesh := QuadMesh.new()
 	splash_material = ShaderMaterial.new()
 	splash_material.shader = preload("res://world/rain_splash.gdshader")
+	clock.night_vision_effect.register_weather(splash_material)
 	splash_mesh.material = splash_material
 	splash_instance.multimesh.mesh = splash_mesh
 	splash_instance.multimesh.instance_count = MAX_SPLASHES
@@ -93,6 +94,9 @@ static func make_rain_audio(heavy: bool) -> AudioStreamWAV:
 	return stream
 
 func _exit_tree() -> void:
+	if is_instance_valid(clock) and is_instance_valid(clock.night_vision_effect):
+		for material in materials: clock.night_vision_effect.unregister_weather(material)
+		clock.night_vision_effect.unregister_weather(splash_material)
 	for voice in voices:
 		voice.stop()
 	var bus := AudioServer.get_bus_index(bus_name)
@@ -108,6 +112,7 @@ func _build_field(count: int, radius: float, height: float, distant: bool) -> vo
 	mesh.size = Vector2.ONE
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://world/rain_field.gdshader")
+	clock.night_vision_effect.register_weather(material)
 	material.set_shader_parameter("radius", radius)
 	material.set_shader_parameter("field_height", height)
 	material.set_shader_parameter("distant", distant)

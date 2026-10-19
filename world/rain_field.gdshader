@@ -1,6 +1,8 @@
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, skip_vertex_transform;
 
+#include "res://world/night_vision.gdshaderinc"
+
 uniform vec3 camera_center;
 uniform float simulation_time = 0.0;
 uniform float daylight = 1.0;
@@ -83,5 +85,5 @@ void fragment() {
 	float aa = max(fwidth(UV.x), 0.02);
 	float line = 1.0 - smoothstep(0.12 * taper - aa, 0.32 * taper + aa, abs(UV.x - 0.5));
 	ALBEDO = mix(vec3(0.24, 0.29, 0.34), vec3(0.63, 0.67, 0.69), daylight);
-	ALPHA = line * taper * opacity * visibility * mix(0.55, 1.0, daylight);
+	ALPHA = line * taper * opacity * visibility * mix(0.55, 1.0, daylight) * night_visibility(length(VERTEX));
 }
