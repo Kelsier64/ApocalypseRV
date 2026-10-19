@@ -41,6 +41,8 @@ func _ready() -> void:
 	_build_field(NEAR_COUNT, NEAR_RADIUS, 32.0, false)
 	_build_field(FAR_COUNT, FAR_RADIUS, 48.0, true)
 	splash_instance = MultiMeshInstance3D.new()
+	# Reference adaptation contains opaque surfaces, not a second rain image.
+	splash_instance.layers = NightVisionEffect.LIGHT_LAYER
 	splash_instance.multimesh = MultiMesh.new()
 	splash_instance.multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	splash_instance.multimesh.use_custom_data = true
@@ -104,6 +106,7 @@ func _exit_tree() -> void:
 
 func _build_field(count: int, radius: float, height: float, distant: bool) -> void:
 	var field := MultiMeshInstance3D.new()
+	field.layers = NightVisionEffect.LIGHT_LAYER
 	field.name = "DistantRain" if distant else "NearRain"
 	field.multimesh = MultiMesh.new()
 	field.multimesh.transform_format = MultiMesh.TRANSFORM_3D

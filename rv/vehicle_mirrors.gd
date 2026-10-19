@@ -71,6 +71,7 @@ func _process(delta: float) -> void:
 		mirror.rig.visible = mounted
 		if not mounted or not driving:
 			mirror.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+			_register_night_view(mirror.viewport, false)
 			continue
 		var side: float = mirror.side
 		# Fixed slot coordinates, attached to each front side panel's availability.
@@ -79,4 +80,14 @@ func _process(delta: float) -> void:
 		mirror.camera.look_at(rv.to_global(Vector3(side * 3.1, 0.8, 8.0)), rv.global_basis.y)
 		if refresh and i == next_mirror:
 			mirror.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_register_night_view(mirror.viewport, true)
 	if refresh: next_mirror = (next_mirror + 1) % mirrors.size()
+
+func _register_night_view(viewport: SubViewport, active: bool) -> void:
+	var ancestor := get_parent()
+	while ancestor != null:
+		var clock := ancestor.get_node_or_null("WorldClock") as WorldClock
+		if clock != null and is_instance_valid(clock.night_vision_effect):
+			clock.night_vision_effect.register_viewport(viewport, active)
+			return
+		ancestor = ancestor.get_parent()
