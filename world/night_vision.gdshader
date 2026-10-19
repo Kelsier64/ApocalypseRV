@@ -5,6 +5,8 @@ render_mode unshaded, fog_disabled, blend_mix, depth_test_disabled, depth_draw_n
 uniform sampler2D depth_texture : hint_depth_texture, filter_nearest, repeat_disable;
 uniform sampler2D scene_texture : hint_screen_texture, filter_nearest, repeat_disable;
 uniform sampler2D night_reference : source_color, filter_linear, repeat_disable;
+uniform float adaptation_dark_ratio = 0.1;
+uniform float adaptation_lit_ratio = 1.0;
 
 vec3 srgb_to_linear(vec3 value) {
 	return mix(value / 12.92, pow((value + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), value));
@@ -33,9 +35,15 @@ void fragment() {
 	scene = srgb_to_linear(scene);
 	reference = srgb_to_linear(reference);
 #endif
-	// Fill only missing gray adaptation; keep native light, color and shadows.
-	float missing = max(dot(reference - scene, vec3(0.2126, 0.7152, 0.0722)), 0.0);
-	ALBEDO = scene + vec3(missing * night_curve_visibility(distance_to_camera) * night_strength);
+	// Material-relative luminance avoids treating dark paint as missing light.
+	// Both images contain the same sky/emission. Their ratio suppresses fill on
+	// lit surfaces, with a continuous transition instead of a time-of-day switch.
+	vec3 luminance = vec3(0.2126, 0.7152, 0.0722);
+	float actual_light = max(dot(scene, luminance), 0.0);
+	float reference_light = max(dot(reference, luminance), 0.0);
+	float darkness = reference_light > 0.00001 ? 1.0 - smoothstep(adaptation_dark_ratio, adaptation_lit_ratio, actual_light / reference_light) : 0.0;
+	float missing = max(reference_light - actual_light, 0.0);
+	ALBEDO = scene + vec3(missing * darkness * night_curve_visibility(distance_to_camera));
 #if CURRENT_RENDERER == RENDERER_COMPATIBILITY
 	// GLES converts ALBEDO from sRGB before its lighting/output stage.
 	ALBEDO = linear_to_srgb(ALBEDO);

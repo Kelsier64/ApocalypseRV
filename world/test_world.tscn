@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://props/flashlight.tscn" id="15_flashlight"]
 [ext_resource type="Script" uid="uid://0ia4tupkiatx" path="res://world/test_world.gd" id="16_root"]
 [ext_resource type="Script" uid="uid://sdl8n0aibbxa" path="res://world/world_clock.gd" id="17_clock"]
+[ext_resource type="Script" path="res://world/night_vision_effect.gd" id="18_adaptation"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]
 
@@ -46,6 +47,9 @@ player = NodePath("../Player")
 
 [node name="WorldClock" type="Node" parent="." unique_id=1066342904]
 script = ExtResource("17_clock")
+
+[node name="DarkAdaptation" type="Node3D" parent="."]
+script = ExtResource("18_adaptation")
 
 [node name="OilBarrel" parent="." unique_id=1511901755 instance=ExtResource("8_x05cw")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.3379655, 1.774471, 0)

@@ -49,7 +49,6 @@ func _ready() -> void:
 	var splash_mesh := QuadMesh.new()
 	splash_material = ShaderMaterial.new()
 	splash_material.shader = preload("res://world/rain_splash.gdshader")
-	clock.night_vision_effect.register_weather(splash_material)
 	splash_mesh.material = splash_material
 	splash_instance.multimesh.mesh = splash_mesh
 	splash_instance.multimesh.instance_count = MAX_SPLASHES
@@ -96,9 +95,6 @@ static func make_rain_audio(heavy: bool) -> AudioStreamWAV:
 	return stream
 
 func _exit_tree() -> void:
-	if is_instance_valid(clock) and is_instance_valid(clock.night_vision_effect):
-		for material in materials: clock.night_vision_effect.unregister_weather(material)
-		clock.night_vision_effect.unregister_weather(splash_material)
 	for voice in voices:
 		voice.stop()
 	var bus := AudioServer.get_bus_index(bus_name)
@@ -115,7 +111,6 @@ func _build_field(count: int, radius: float, height: float, distant: bool) -> vo
 	mesh.size = Vector2.ONE
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://world/rain_field.gdshader")
-	clock.night_vision_effect.register_weather(material)
 	material.set_shader_parameter("radius", radius)
 	material.set_shader_parameter("field_height", height)
 	material.set_shader_parameter("distant", distant)
@@ -249,8 +244,6 @@ func _process(delta: float) -> void:
 	if camera == null: return
 	simulation_time += delta
 	var rain := clock.weather.sample().y / 2.0
-	var daylight := smoothstep(-0.16, 0.22, clock.sun_direction().y)
-	splash_material.set_shader_parameter("daylight", daylight)
 	visible_drops = 0
 	for i in range(fields.size()):
 		var field := fields[i]
@@ -263,7 +256,6 @@ func _process(delta: float) -> void:
 		field.custom_aabb = AABB(to_local(camera.global_position) - Vector3(radius + 1, height, radius + 1), Vector3((radius + 1) * 2, height * 2, (radius + 1) * 2))
 		materials[i].set_shader_parameter("camera_center", camera.global_position)
 		materials[i].set_shader_parameter("simulation_time", simulation_time)
-		materials[i].set_shader_parameter("daylight", daylight)
 		materials[i].set_shader_parameter("density", smoothstep(0.0, 0.15, rain))
 
 func _add_splash(hit: Dictionary, center: Vector3) -> void:

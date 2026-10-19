@@ -45,6 +45,9 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	environment.environment.ambient_light_color = Color("afb9a3")
 	environment.environment.ambient_light_energy = BunkerLighting.AMBIENT_ENERGY if BunkerLighting.is_abandoned(layout) else BunkerLighting.LEGACY_AMBIENT_ENERGY
 	add_child(environment)
+	var adaptation := NightVisionEffect.new()
+	adaptation.name = "DarkAdaptation"
+	add_child(adaptation)
 	navigation = NavigationRegion3D.new()
 	navigation.name = "BunkerGeometry"
 	add_child(navigation)

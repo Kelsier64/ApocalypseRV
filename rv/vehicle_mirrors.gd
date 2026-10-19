@@ -84,10 +84,5 @@ func _process(delta: float) -> void:
 	if refresh: next_mirror = (next_mirror + 1) % mirrors.size()
 
 func _register_night_view(viewport: SubViewport, active: bool) -> void:
-	var ancestor := get_parent()
-	while ancestor != null:
-		var clock := ancestor.get_node_or_null("WorldClock") as WorldClock
-		if clock != null and is_instance_valid(clock.night_vision_effect):
-			clock.night_vision_effect.register_viewport(viewport, active)
-			return
-		ancestor = ancestor.get_parent()
+	var effect := NightVisionEffect.find_for(self)
+	if effect != null: effect.register_viewport(viewport, active)

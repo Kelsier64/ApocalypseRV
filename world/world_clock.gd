@@ -4,34 +4,7 @@ class_name WorldClock
 signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
-const DEFAULT_NIGHT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
-@export_group("Night vision")
-## Distances in meters. Curve X=0 maps to begin, X=1 maps to end.
-@export_range(0.0, 500.0, 0.5, "or_greater", "suffix:m") var night_vision_fade_begin := 0.0:
-	set(value):
-		if not is_finite(value): return
-		night_vision_fade_begin = maxf(0.0, value)
-		apply_time()
-@export_range(0.01, 500.0, 0.5, "or_greater", "suffix:m") var night_vision_fade_end := 60.0:
-	set(value):
-		if not is_finite(value): return
-		night_vision_fade_end = maxf(0.01, value)
-		apply_time()
-## Gray-adaptation reference energy; native lamp energy is independent.
-@export_range(0.0, 1.0, 0.001) var night_vision_ambient_energy := 0.06:
-	set(value):
-		if not is_finite(value): return
-		night_vision_ambient_energy = clampf(value, 0.0, 1.0)
-		apply_time()
-## Y=1 retains gray adaptation; Y=0 removes it. Native lights keep working.
-@export var night_vision_curve: Curve = DEFAULT_NIGHT_CURVE:
-	set(value):
-		if night_vision_curve != null and night_vision_curve.changed.is_connected(apply_time):
-			night_vision_curve.changed.disconnect(apply_time)
-		night_vision_curve = value
-		if value != null: value.changed.connect(apply_time)
-		apply_time()
 var elapsed_seconds := DEFAULT_TIME
 var running := true
 var weather := WorldWeather.new()
@@ -44,8 +17,6 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
-var _night_vision_strength := 0.0
-var night_vision_effect: NightVisionEffect
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -54,10 +25,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT
 	var holder := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
 	sun = get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
-	night_vision_effect = NightVisionEffect.new()
-	add_child(night_vision_effect)
-	if night_vision_curve != null and not night_vision_curve.changed.is_connected(apply_time):
-		night_vision_curve.changed.connect(apply_time)
 	if holder != null:
 		environment = holder.environment.duplicate(true) as Environment
 		environment.background_mode = Environment.BG_SKY
@@ -194,13 +161,9 @@ func apply_time() -> void:
 	var mist := conditions.z / 2.0
 	var direction := sun_direction()
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
-	# Fade in below the horizon; daylight retains the original colors and light.
-	_night_vision_strength = 1.0 - smoothstep(-0.16, 0.02, direction.y)
-	var curve := night_vision_curve if night_vision_curve != null and night_vision_curve.point_count > 0 else DEFAULT_NIGHT_CURVE
-	# Native lighting keeps its color. Gray adaptation is composed separately.
-	environment.adjustment_enabled = false
-	var volume_visibility := 1.0 - _night_vision_strength
-	environment.volumetric_fog_enabled = volumetric and volume_visibility > 0.0
+	# Only physical lighting/weather depend on the clock. Display adaptation reads
+	# the resulting brightness independently, including daytime shadows/interiors.
+	environment.volumetric_fog_enabled = volumetric
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
@@ -214,22 +177,16 @@ func apply_time() -> void:
 	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
 	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
 	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
-	# Weather haze remains independent; the editable curve supplies night visibility.
-	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
+	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
-	# The sky shader disables fog, so fade its own colors to match the limit.
-	horizon = horizon.lerp(Color.BLACK, _night_vision_strength)
-	zenith = zenith.lerp(Color.BLACK, _night_vision_strength)
-	# Volumetric fog composites after depth fog and can reveal already-hidden
-	# geometry again. Fade it out as weather/night fog takes over the scene.
-	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist) * volume_visibility
+	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
 	for material in fog_materials:
-		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist) * volume_visibility)
+		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist))
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
 	environment.fog_light_color = horizon
-	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight).lerp(Color.WHITE, _night_vision_strength)
-	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight) * volume_visibility
+	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
+	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
 	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90) * (1.0 - mist * 0.85)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
@@ -241,14 +198,12 @@ func apply_time() -> void:
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
 	sky_material.set_shader_parameter("fog_cover", light_mist)
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist) * volume_visibility)
-	if is_instance_valid(night_vision_effect):
-		night_vision_effect.configure(_night_vision_strength, night_vision_fade_begin, night_vision_fade_end, curve, environment, night_vision_ambient_energy)
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist))
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := effective_visual_weather()
-	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)) * (1.0 - _night_vision_strength))
+	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)))
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)

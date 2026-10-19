@@ -41,11 +41,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		# F8 stops projects launched by the Godot editor before input reaches us.
 		if event.keycode == KEY_K:
-			var curve_path := clock.night_vision_curve.resource_path if clock.night_vision_curve != null else ""
+			var effect := main.get_node("DarkAdaptation") as NightVisionEffect
+			var curve_path := effect.profile.curve.resource_path if effect.profile.curve != null else ""
 			if curve_path.is_empty(): curve_path = "res://world/night_vision_curve.tres"
 			var curve := ResourceLoader.load(curve_path, "Curve", ResourceLoader.CACHE_MODE_REPLACE) as Curve
 			if curve != null:
-				clock.night_vision_curve = curve
+				effect.profile.curve = curve
 				print("DAY NIGHT reloaded curve: ", curve_path)
 			return
 	super._unhandled_input(event)

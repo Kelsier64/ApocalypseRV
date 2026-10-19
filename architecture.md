@@ -44,6 +44,7 @@ MainWorld
 │   └── InteriorViewport    獨立 World3D，僅探索時存在
 │       └── PoiInterior     房間／走廊／導航／WorldEntities／室內玩家
 ├── WorldClock              自然天氣與顯示霧合成
+├── DarkAdaptation          依局部亮度的灰階顯示、視圖與距離設定
 ├── DeviationPressure       偏行判定、真實秒數事件與額外刷新
 ├── NewRv
 │   └── Chassis             VehicleBody3D、油電、材料、耐久
@@ -181,9 +182,11 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
-夜視由同一 WorldClock 依太陽高度 −0.16～0.02 平滑切換，只增加真實照明不足的灰階暗部適應，不再對整張畫面降飽和度或乘黑色遮罩。主視圖保留原有材質、真實燈光、發光及陰影，夜間自然環境底光淡至零。Inspector 的 `night_vision_fade_begin`／`night_vision_fade_end` 預設為 0／60 m，參考底光 `night_vision_ambient_energy` 預設 0.06；`night_vision_curve` 指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。
+灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果依畫面每處的實際照明及材質參考估計缺光量，所以白天暗處仍可生效，夜間明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
 
-NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估算與主圖之間缺少的亮度，只將正的灰階差額乘曲線後加入主圖；真實燈光與發光不乘曲線。這是亮度差額估計，不是精確的光照分解，複雜透明材質可能不同。原生天氣霧仍作用於場景；夜間全域／林間體積霧淡出，天空自行淡黑，HUD 與獨立 POI 不受戶外適應處理影響。參考視圖不含第二份雨幕／水花；透明玻璃與天氣在灰階合成後依原生流程繪製。每個活動視圖增加一次同 3D 縮放比例的幾何參考渲染，不新增模擬或陰影 pass；白天停用參考渲染，兩側鏡只在既定刷新時同步其參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。復古與使用者畫面偏好繼續獨立套用。日夜視覺由時鐘及資源推導，不新增存檔欄位。編輯及重載流程見[夜視曲線指南](docs/guides/night-vision.md)。
+NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估計材質亮度。正的線性亮度差額乘上局部暗部反應及距離曲線後加至主圖；暗部反應為原生／參考亮度比例在 dark_ratio～lit_ratio 之間的反向 smoothstep，參考近零時不補足。亮天空或單一燈具不會控制其他暗處；主圖、真實燈光、發光與陰影不乘曲線。這是視覺估計，不是精確的光照分解，微弱彩色照明可能被灰階柔化，體積霧時間取樣及複雜透明材質也可能有差異。
+
+參考環境每幀讀取來源 Camera3D.environment，缺省時讀取所屬 World3D 的 Environment／fallback；保留天空、距離霧與全域／局部體積霧的遮蔽，將參考環境光／GI 注入體積霧設為零，避免補出額外散射。主圖的霧及燈光不受效果啟閉影響。參考不含第二份雨幕／水花，雨與水花直接接受原生場景照明；透明玻璃與天氣在灰階合成後依原生流程繪製。日間與夜間每個活動視圖都增加一次同 3D 縮放比例的幾何參考渲染，不新增模擬或陰影 pass；兩側鏡只在既定刷新時同步參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。合成 Quad 跟隨來源視錐中心，只略過遮蔽剔除，不能使用忽略所有剔除的 API，否則會繞過 layer mask 被自己的參考拍入並產生回饋。暫停保留上次參考圖，明確停用仍釋放相機及燈光路由；候選世界轉移後重新綁定目標 viewport／World3D。復古與使用者畫面偏好在其後獨立套用，HUD 不參與缺光估計。不新增存檔欄位。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
 
 Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。v5 缺欄位沿用 day 1 / 08:00，不改寫來源檔案、不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
 
