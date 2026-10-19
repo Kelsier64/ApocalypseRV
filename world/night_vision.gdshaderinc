@@ -1,6 +1,6 @@
 // Shared by the distance mask and transparent weather drawn after it.
 uniform sampler2D night_curve : filter_linear, repeat_disable;
-uniform float night_fade_begin = 5.0;
+uniform float night_fade_begin = 0.0;
 uniform float night_fade_end = 60.0;
 uniform float night_strength = 0.0;
 

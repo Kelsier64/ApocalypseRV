@@ -9,7 +9,7 @@ var curve_texture := ImageTexture.new()
 var curve: Curve
 var _materials: Array[ShaderMaterial] = []
 var _strength := 0.0
-var _fade_begin := 5.0
+var _fade_begin := 0.0
 var _fade_end := 60.0
 
 func _init() -> void:

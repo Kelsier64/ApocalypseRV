@@ -181,7 +181,7 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
-夜視由同一 WorldClock 依太陽高度 −0.16～0.02 平滑切換：獨立複製的 Environment 飽和度降至 0，只有 3D 場景轉灰，GameSettings 的復古色調與飽和度偏好仍獨立套用。中性環境底光預設能量 0.06；Inspector 的 `night_vision_fade_begin`／`night_vision_fade_end` 預設為 5／60 m，`night_vision_curve` 指向 [Curve 資源](world/night_vision_curve.tres)，X 為區間內正規化距離、Y 為保留亮度。支援任意控制點、切線與非單調曲線，預設取樣保留原 `1 - pow(smoothstep(0, 1, t), 0.85)` 外觀；區間外使用端點值，亮度限制於 0～1。
+夜視由同一 WorldClock 依太陽高度 −0.16～0.02 平滑切換：獨立複製的 Environment 飽和度降至 0，只有 3D 場景轉灰，GameSettings 的復古色調與飽和度偏好仍獨立套用。中性環境底光預設能量 0.06；Inspector 的 `night_vision_fade_begin`／`night_vision_fade_end` 預設為 0／60 m，`night_vision_curve` 指向 [Curve 資源](world/night_vision_curve.tres)，X 為區間內正規化距離、Y 為保留亮度。支援任意控制點、切線與非單調曲線，預設取樣保留原 `1 - pow(smoothstep(0, 1, t), 0.85)` 外觀；區間外使用端點值，亮度限制於 0～1。
 
 每個世界持有獨立的全螢幕黑色 alpha 空間遮罩與曲線 LUT，以不透明深度重建相機徑向距離，Forward+／Compatibility 各用正確的 NDC 範圍。原生距離霧只保留天氣用途；夜間同步淡出全域／林間體積霧，新串流材質也接收目前密度。雨幕及水花使用同一 LUT、以自身片段距離衰減並在遮罩後繪製；其餘透明物件依後方不透明深度近似衰減。天空 shader 自行淡至黑色，HUD 與獨立 POI 不套用戶外遮罩。復古後製保留至少一半輸入暗部，原中間調、高光與純黑不變。日夜視覺由時鐘及資源推導，不新增存檔欄位；白天恢復原光照與體積霧。編輯及重載流程見[夜視曲線指南](docs/guides/night-vision.md)。
 

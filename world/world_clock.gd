@@ -8,7 +8,7 @@ const DEFAULT_NIGHT_CURVE: Curve = preload("res://world/night_vision_curve.tres"
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
 @export_group("Night vision")
 ## Distances in meters. Curve X=0 maps to begin, X=1 maps to end.
-@export_range(0.0, 500.0, 0.5, "or_greater", "suffix:m") var night_vision_fade_begin := 5.0:
+@export_range(0.0, 500.0, 0.5, "or_greater", "suffix:m") var night_vision_fade_begin := 0.0:
 	set(value):
 		if not is_finite(value): return
 		night_vision_fade_begin = maxf(0.0, value)
