@@ -14,7 +14,7 @@ func _ready() -> void:
 	stage = 2
 	_view()
 	time_controls = Label.new()
-	time_controls.text = "F1 dawn / noon / dusk / night | F12 fast cycle | Home hold time\nF2 views | F8 reload night curve | F6 RV/cabin | Esc settings | F11 clean view"
+	time_controls.text = "F1 dawn / noon / dusk / night | F12 fast cycle | Home hold time\nF2 views | K reload night curve | F6 RV/cabin | Esc settings | F11 clean view"
 	time_controls.position = Vector2(24, 245)
 	time_controls.add_theme_font_size_override("font_size", 18)
 	label.get_parent().add_child(time_controls)
@@ -39,7 +39,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_HOME:
 			clock.running = not clock.running
 			return
-		if event.keycode == KEY_F8:
+		# F8 stops projects launched by the Godot editor before input reaches us.
+		if event.keycode == KEY_K:
 			var curve_path := clock.night_vision_curve.resource_path if clock.night_vision_curve != null else ""
 			if curve_path.is_empty(): curve_path = "res://world/night_vision_curve.tres"
 			var curve := ResourceLoader.load(curve_path, "Curve", ResourceLoader.CACHE_MODE_REPLACE) as Curve

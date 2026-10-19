@@ -25,7 +25,9 @@ Y 是距離遮罩的保留比例，實際像素仍受物件材質、場景照明
 godot --path . --log-file .godot/day-night-playground.log res://tests/day_night_playground.tscn
 ```
 
-F1 循環切換清晨／中午／黃昏／夜間，並固定時間。修改 Curve 後先儲存，再按 F8，測試場會依目前 `Curve.resource_path` 重載並立即套用，即使時鐘停止也可觀察。使用另存的資源時，先將 `night_vision_curve` 指向該檔案；F8 重載的是目前指定的已保存資源。
+F1 循環切換清晨／中午／黃昏／夜間，並固定時間。修改 Curve 後先儲存，再按 K，測試場會依目前 `Curve.resource_path` 重載並立即套用，即使時鐘停止也可觀察。使用另存的資源時，先將 `night_vision_curve` 指向該檔案；K 重載的是目前指定的已保存資源。
+
+F8 是 Godot 編輯器的「停止執行」快捷鍵，從編輯器啟動時會結束遊戲，因此重載使用 K。
 
 此測試場載入的是 `world/test_world.tscn`，共用預設 Curve 檔，但不會繼承 `main_world.tscn` 的 Inspector 設定。預覽距離、底光或其他 Curve 資源時，請調整測試世界的 `WorldClock`，或執行中的 Remote Inspector；正式效果則保存至 `main_world.tscn`。
 
