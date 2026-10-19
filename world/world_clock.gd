@@ -4,7 +4,7 @@ class_name WorldClock
 signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
-const NIGHT_VISION_RANGE := 8.0
+const NIGHT_VISION_RANGE := 32.0
 const NIGHT_VISION_ENERGY := 1.5
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
 var elapsed_seconds := DEFAULT_TIME
@@ -68,12 +68,14 @@ func _ready() -> void:
 	if sun != null:
 		sun.shadow_enabled = true
 		sun.directional_shadow_max_distance = 140.0
-	# A small, shadowed fill represents dark adaptation without lighting the
+	# A localized, shadowed fill represents dark adaptation without lighting the
 	# whole world. Keep it here: the player moves into a separate World3D in POIs.
 	night_vision_light = OmniLight3D.new()
 	night_vision_light.name = "NightVision"
 	night_vision_light.omni_range = NIGHT_VISION_RANGE
-	night_vision_light.omni_attenuation = 0.9
+	# Gentle distance decay keeps the middle distance readable while the
+	# light's smooth range falloff feathers the outer edge down to black.
+	night_vision_light.omni_attenuation = 0.35
 	night_vision_light.light_color = Color.WHITE
 	night_vision_light.light_specular = 0.0
 	night_vision_light.light_indirect_energy = 0.0
