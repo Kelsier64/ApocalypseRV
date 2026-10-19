@@ -1,51 +1,19 @@
 [CmdletBinding()]
 param(
     [string]$Godot = 'godot',
-    [ValidateSet('quick', 'integration', 'slow', 'assets', 'smoke', 'full')][string]$Suite = 'quick',
     [string[]]$TestFilter = @(),
     [ValidateRange(1, 600)][int]$TimeoutSeconds = 240,
-    [string]$StartAt = '',
     [switch]$List,
     [switch]$Smoke,
+    [switch]$SmokeOnly,
     [switch]$SkipImport,
-    [switch]$RealTime,
-    [switch]$FailFast
+    [switch]$RealTime
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
-$catalog = Get-Content (Join-Path $projectRoot 'tests/suites.json') -Raw | ConvertFrom-Json
-if ($catalog.version -ne 1 -or $catalog.groups -isnot [PSCustomObject] -or $catalog.retired -isnot [PSCustomObject]) {
-    throw 'Invalid tests/suites.json schema (expected version 1, groups and retired objects)'
-}
-$groupNames = @($catalog.groups.PSObject.Properties.Name)
-if (@(Compare-Object @('quick', 'integration', 'slow', 'assets') $groupNames).Count -ne 0) {
-    throw 'Catalog groups must be exactly quick, integration, slow and assets'
-}
 $available = @(Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tests') -Filter 'test_*.gd' -File | Sort-Object Name)
-$classified = @{}
-foreach ($group in $catalog.groups.PSObject.Properties) {
-    if ($group.Value -isnot [Array]) { throw "Catalog group must be an array: $($group.Name)" }
-    foreach ($name in $group.Value) {
-        if ($name -isnot [string] -or $name -notmatch '^test_[a-z0-9_]+$') { throw 'Invalid catalog test name' }
-        if ($classified.ContainsKey($name)) { throw "Duplicate test classification: $name" }
-        $classified[$name] = $group.Name
-    }
-}
-foreach ($entry in $catalog.retired.PSObject.Properties) {
-    if ($entry.Name -notmatch '^test_[a-z0-9_]+$' -or $entry.Value -isnot [string] -or [string]::IsNullOrWhiteSpace($entry.Value)) {
-        throw 'Retired tests require a valid name and a reason'
-    }
-    if ($classified.ContainsKey($entry.Name)) { throw "Duplicate retired test: $($entry.Name)" }
-    $classified[$entry.Name] = 'retired'
-}
-# A new test must be classified; never silently omit it from the default/CI suites.
-foreach ($test in $available) {
-    if (-not $classified.ContainsKey($test.BaseName)) { throw "Unclassified test: $($test.BaseName). Add it to tests/suites.json" }
-}
-foreach ($name in $classified.Keys) {
-    if ($name -notin $available.BaseName) { throw "Catalog references missing test: $name" }
-}
 $filtered = $PSBoundParameters.ContainsKey('TestFilter')
+if ($SmokeOnly -and $filtered) { throw '-SmokeOnly cannot be combined with -TestFilter' }
 if ($filtered) {
     $patterns = @(foreach ($argument in $TestFilter) { $argument -split ',' })
     if ($patterns.Count -eq 0) { throw 'At least one test filter is required' }
@@ -57,21 +25,13 @@ if ($filtered) {
         $matches
     })
     $tests = @($selected | Sort-Object Name -Unique)
-} else {
-    $tests = @($available | Where-Object {
-        $classified[$_.BaseName] -eq $Suite -or ($Suite -eq 'full' -and $classified[$_.BaseName] -ne 'retired')
-    })
-}
-$includeSmoke = $Smoke -or (-not $filtered -and $Suite -in @('smoke', 'full'))
-if ($tests.Count -eq 0 -and -not $includeSmoke) { throw "No tests selected for suite: $Suite" }
-if ($StartAt) {
-    if ($StartAt -notin $tests.BaseName) { throw "Unknown starting test: $StartAt" }
-    $tests = @($tests | Where-Object { $_.BaseName -ge $StartAt })
-}
+} elseif ($SmokeOnly) { $tests = @() }
+else { $tests = $available }
+$includeSmoke = $Smoke -or -not $filtered
 $selection = @(foreach ($test in $tests) {
-    [PSCustomObject]@{ Name = $test.BaseName; Suite = $classified[$test.BaseName] }
+    [PSCustomObject]@{ Name = $test.BaseName }
 })
-if ($includeSmoke) { $selection += [PSCustomObject]@{ Name = 'main-scene'; Suite = 'smoke' } }
+if ($includeSmoke) { $selection += [PSCustomObject]@{ Name = 'main-scene' } }
 if ($List) {
     $selection
     Write-Host "Selected $($selection.Count) checks. Engine not launched."
@@ -81,30 +41,26 @@ $executable = (Get-Command $Godot -ErrorAction Stop).Source
 $expectedVersion = (Get-Content (Join-Path $projectRoot '.godot-version') -Raw).Trim()
 $actualVersion = (& $executable --version | Out-String).Trim()
 if ($actualVersion -notlike "$expectedVersion.stable.*") { throw "Expected Godot $expectedVersion.stable, found $actualVersion" }
-$runName = if ($filtered) { 'selected' } else { $Suite }
+$runName = if ($SmokeOnly) { 'smoke' } elseif ($filtered) { 'selected' } else { 'all' }
 $logDirectory = Join-Path $projectRoot ('.godot/test-logs/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + "-$runName-$PID")
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
-$manifest = @(
-    "Commit: $(& git -C $projectRoot rev-parse HEAD)",
-    "Working tree: $((& git -C $projectRoot status --porcelain | Out-String).Trim())",
-    "Engine: $actualVersion", "OS: $([Environment]::OSVersion)",
-    "Suite: $runName", "Rendering: headless / dummy", "Real time: $RealTime",
-    "Import: $(-not $SkipImport)", "Timeout per check: $TimeoutSeconds seconds"
-) + @($selection | ForEach-Object { "$($_.Suite): $($_.Name)" })
-$manifest | Set-Content (Join-Path $logDirectory 'manifest.txt')
+$metadata = [ordered]@{
+    mode = $runName; commit = (& git -C $projectRoot rev-parse HEAD | Out-String).Trim()
+    working_tree = (& git -C $projectRoot status --porcelain | Out-String).Trim()
+    engine = $actualVersion; os = [Environment]::OSVersion.ToString()
+    real_time = [bool]$RealTime; import = -not $SkipImport; timeout_seconds = $TimeoutSeconds
+}
 Write-Host "Godot $actualVersion | $runName | $($selection.Count) checks"
 Write-Host "Logs: $logDirectory"
 $results = [Collections.Generic.List[object]]::new()
 $total = [Diagnostics.Stopwatch]::StartNew()
-$script:cleanupFailed = $false
 function Save-Results {
     $report = [ordered]@{
-        suite = $runName; engine = $actualVersion; real_time = [bool]$RealTime
+        metadata = $metadata
         elapsed_seconds = [Math]::Round($total.Elapsed.TotalSeconds, 3)
         selected = @($selection); results = @($results.ToArray())
     }
     $report | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $logDirectory 'results.json')
-    $results.ToArray() | Export-Csv (Join-Path $logDirectory 'timings.csv') -NoTypeInformation
 }
 function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$RequirePass = $false, [string]$PassPattern = '(?m)^PASS:') {
     $log = Join-Path $logDirectory ($Name + '.log')
@@ -132,7 +88,6 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
                         if ($LASTEXITCODE -ne 0 -and -not $process.HasExited) { throw 'Process-tree termination failed' }
                     }
                 } catch {
-                    $script:cleanupFailed = $true
                     if (-not $process.HasExited) { $process.Kill() }
                     throw "Unable to terminate test descendants: $($_.Exception.Message). Remaining checks stopped."
                 }
@@ -167,14 +122,11 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
         Write-Host $detail
         Get-Content -LiteralPath $log -Tail 30 | Write-Host
     }
-    if ($script:cleanupFailed) { throw $detail }
-    return ($status -eq 'PASS')
+    if ($status -ne 'PASS') { throw "$Name failed. See $log" }
 }
 try {
     if (-not $SkipImport) {
-        if (-not (Invoke-GodotCheck 'import' @('--editor', '--import', '--quit'))) {
-            throw "Import failed. See $logDirectory"
-        }
+        Invoke-GodotCheck 'import' @('--editor', '--import', '--quit')
     } elseif (-not (Test-Path (Join-Path $projectRoot '.godot/global_script_class_cache.cfg'))) {
         throw '-SkipImport requires a previously imported project. Run once without it.'
     }
@@ -183,18 +135,15 @@ try {
         # Fixed render delta removes wall-clock throttling, preserving the project
         # physics tick, solver configuration, frame counts and simulated duration.
         if (-not $RealTime) { $testArguments += @('--fixed-fps', '60') }
-        $passed = Invoke-GodotCheck $test.BaseName $testArguments $true
-        if (-not $passed -and $FailFast) { break }
+        Invoke-GodotCheck $test.BaseName $testArguments $true
     }
-    if ($includeSmoke -and (-not $FailFast -or @($results | Where-Object { $_.status -ne 'PASS' }).Count -eq 0)) {
+    if ($includeSmoke) {
         $smokeArguments = @('-s', 'res://tests/main_scene_smoke.gd')
         if (-not $RealTime) { $smokeArguments += @('--fixed-fps', '60') }
-        $null = Invoke-GodotCheck 'main-scene' $smokeArguments $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'
+        Invoke-GodotCheck 'main-scene' $smokeArguments $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'
     }
 } finally {
     Save-Results
     Write-Host ("Finished in {0:N2}s. Slowest checks:" -f $total.Elapsed.TotalSeconds)
     $results | Sort-Object seconds -Descending | Select-Object -First 5 name, status, seconds | Format-Table -AutoSize | Out-Host
 }
-$failed = @($results | Where-Object { $_.status -ne 'PASS' })
-if ($failed.Count -gt 0) { throw "$($failed.Count) checks failed. See $logDirectory/results.json" }

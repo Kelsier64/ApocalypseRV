@@ -79,7 +79,7 @@ F7 為觀察腳掌與動作而關閉該實例的導航代理，讓它依既定�
 
 命令末尾加 `-- --mode=1 --capture --quit-after-review` 自動擷取並退出，模式可選 1–8。F9／模式 6 為定速跟車步態檢查，模式 7 為局部破口露出底盤，F10／模式 8 為停車拆屋頂後抓出駕駛；模式 8 加 `--pov` 使用駕駛視角，加 `--review-wait` 在開始前暫停，F7 開始。錄製建議引擎參數 `--fixed-fps 30 --resolution 1440x900`；輸出 `.godot/slender-runtime-captures/`，manifest 記錄逐幀時間、行為、模型與程式開始／結束雜湊。`--headless-check` 執行行為重播而不擷取畫面。獨立場的森林用碰撞樹幹驗證追蹤／遮擋，不代表正式世界生成。
 
-正式森林生成、獨立導航與保存的自動回歸由 `test_slender_speaker_world.gd` 涵蓋；範圍與限制見[PR 驗證](../validation/2026-10-09-slender-speaker-pr.md)。
+正式森林生成、獨立導航與保存的專項自測已退出核心清單；歷史範圍與限制見[PR 驗證](../validation/2026-10-09-slender-speaker-pr.md)。現行自動入口保留遭遇 owner 與抓取行為，詳見 [測試指南](../../tests/README.md)。
 
 <a id="unified-item"></a>
 
@@ -93,7 +93,7 @@ godot --path . --log-file .godot/item-playground.log res://tests/item_playground
 
 依序觀察：F2 拆牆後工作台掉落；F3 對準後 E 拾取，工作台以雙手拿著；短 F 出現獨立輪廓並隱藏手持模型，物品仍保留在背包；右鍵／Esc 取消後恢復手持顯示，G 取消後丟出；左鍵合法位置固定，原 ID／耐久保留。修復牆後可重新安裝到 RV，確認固定與支撐關係正常。滿背包或缺手臂時，拾取失敗應保留原物件。
 
-所有 Item 免疫怪物攻擊，結構仍可被拆；物品保留碰撞及遮擋。自動入口為 `test_item_player.gd`、`test_item_services.gd`、`test_item_persistence.gd`，實機步驟不表示本輪已完成全部觀察。
+所有 Item 免疫怪物攻擊，結構仍可被拆；物品保留碰撞及遮擋。自動入口保留 `test_item_player.gd`、`test_item_persistence.gd`，實機步驟不表示本輪已完成全部觀察。
 
 <a id="corpse-carry"></a>
 
@@ -115,7 +115,7 @@ godot --path . --log-file .godot/tree-impact-playground.log res://tests/tree_imp
 godot --path . --log-file .godot/tree-impact-chain.log res://tests/tree_impact_playground.tscn -- --chain
 ```
 
-F6 自動輪驅撞向前方樹木，撞後繼續供油 2 秒再煞車；F7 重載為 8 排、共 16 棵的連續撞樹回放，R 重設目前模式。W/S 油門／煞車、A/D 轉向、Space 發動並切換手煞車。畫面顯示引擎耐久、撞毀棵數及連撞最低速度；確認車頭推開帶實際碰撞的輕量斷木、撞擊後繼續前進，葉簇落地形成薄層，留在視野內不消失，並有碎木、塵土及斷樁。斷木和斷樁在撞後 20 秒開始淡出，22 秒連同碰撞移除，落葉仍保留；視野外木材可提早回收。旁邊的樹保留外觀及碰撞。日誌 TREE_REPLAY 記錄真實輪驅撞擊速度，TREE_VISUAL 記錄批次實例移除與鄰樹碰撞，TREE_CHAIN_REPLAY 記錄 16 棵連撞結果。回放抵達 65 m 後主動煞車，最後顯示零速屬回放結束。此測試場不包含導航與串流；保存、重建、導航及相機視野清理回歸由 test_tree_impact.gd 驗證。最新結果見 [首次停頓與木材清理](../validation/2026-10-02-tree-impact-preparation.md)，前階段結果見 [落葉與連撞驗證](../validation/2026-10-02-tree-leaves.md)。
+F6 自動輪驅撞向前方樹木，撞後繼續供油 2 秒再煞車；F7 重載為 8 排、共 16 棵的連續撞樹回放，R 重設目前模式。W/S 油門／煞車、A/D 轉向、Space 發動並切換手煞車。畫面顯示引擎耐久、撞毀棵數及連撞最低速度；確認車頭推開帶實際碰撞的輕量斷木、撞擊後繼續前進，葉簇落地形成薄層，留在視野內不消失，並有碎木、塵土及斷樁。斷木和斷樁在撞後 20 秒開始淡出，22 秒連同碰撞移除，落葉仍保留；視野外木材可提早回收。旁邊的樹保留外觀及碰撞。日誌 TREE_REPLAY 記錄真實輪驅撞擊速度，TREE_VISUAL 記錄批次實例移除與鄰樹碰撞，TREE_CHAIN_REPLAY 記錄 16 棵連撞結果。回放抵達 65 m 後主動煞車，最後顯示零速屬回放結束。此測試場不包含導航與串流；保存、重建、導航及相機視野清理的專項結果屬歷史驗收，目前需另行檢查。最新結果見 [首次停頓與木材清理](../validation/2026-10-02-tree-impact-preparation.md)，前階段結果見 [落葉與連撞驗證](../validation/2026-10-02-tree-leaves.md)。
 
 <a id="starting-shelter"></a>
 
@@ -128,7 +128,7 @@ godot --path . --log-file .godot/shelter-replay.log res://tests/starting_shelter
 
 使用正式主場景、RV、物資、地形與開場控制器。F2 從原停車位開始輪驅出發，F3 查看外觀，F4 切換室內全景／玩家視角，F5 查看廢車封路。`--replay` 自動開門、入座並以油門／煞車／轉向駛出車庫、轉入公路，確認門封閉後退出；加上 `--keep-open` 保留結果畫面。`--inspect-exterior` 或 `--inspect-roadblock` 僅選擇初始觀察鏡頭。
 
-回放只在入座時切換玩家模式，行駛期間不設定車輛 transform 或速度、不停用正常油耗。它驗證空載基本 RV 的出發；裝載三種設備與門防夾由 `test_starting_shelter.gd` 驗證，保存、讀檔與舊場景相容由 `test_starting_checkpoint.gd` 驗證。這些不是翻車、超載或大量敵人追車的驗收。
+回放只在入座時切換玩家模式，行駛期間不設定車輛 transform 或速度、不停用正常油耗。它驗證空載基本 RV 的出發；舊場址裝載三種設備、門防夾、保存與相容性的專項自測已移除；目前 `test_orientation_departure.gd` 檢查新課程交易、正式離場與已開出口的保存恢復。這些不是翻車、超載或大量敵人追車的驗收。
 
 牆體近景：F6 查看入口與側翼窗洞，F7 查看玩家高度的內牆，F9 查看牆腳凹陷與斷面。`--inspect-facade` 以近景開始；另加 `--art-daylight` 只在這個測試場把時間設為 15:00，便於檢查立面光影，不改正式開場時間或天氣。
 
@@ -140,7 +140,7 @@ godot --path . --log-file .godot/shelter-replay.log res://tests/starting_shelter
 godot --path . --log-file .godot/carry-playground.log res://tests/player_carry_playground.tscn
 ```
 
-F1 切換外部／第一人稱、F2 輪換手電筒／廢鐵／電池／油桶／引擎／空手、F3 原地播放步行、F4 切換抬頭／低頭、F5 手部近景、F6 旋轉近景角度。F3 只供固定機位觀察動畫；正式移動由 `test_player_carry.gd` 使用真實輸入驗證。
+F1 切換外部／第一人稱、F2 輪換手電筒／廢鐵／電池／油桶／引擎／空手、F3 原地播放步行、F4 切換抬頭／低頭、F5 手部近景、F6 旋轉近景角度。F3 只供固定機位觀察動畫；移動時的持物姿勢須另行以真實輸入觀察。
 
 一般小物使用右手，大物依背包 `is_large` 使用雙手；持物與移動共用全身骨架。手持副本保留場景原尺寸與 hold_rotation，不再使用舊 hold_scale 或尺寸上限縮小，允許遮擋視線；不改地面物品或碰撞。G 從當下手持道具的世界位置與姿態放出，沿用原本朝角色前方的輕拋方向與速度；沒有手持顯示節點時仍使用原本的安全退路。預設抓點從持物網格包圍盒計算，可在 Item 根節點下加入 `GripRight`／`GripLeft` Marker3D 指定接觸點；手電筒已指定右手握柄位置。既有 hold_position 隨整體包圍盒置中，不再決定鏡頭內的持物位置。
 
@@ -163,7 +163,7 @@ godot --path . --log-file .godot/minor-production.log res://tests/production_min
 
 正式道路測試場：指定 v6 世界 seed 和小 POI 區間 cell，若該區間留空則尋找下一處。F2 總覽、F3 步行、F5 用正式輪胎物理駛入、倒回公路並換前進檔離場、F7 截圖。沿用正式串流、道路坡度和物資，測試場移除敵人避免干擾車輛測量。回放不代表所有地形或手動操控情境已驗收。
 
-自動檢查：`test_minor_site_generation.gd` 為 1,000 seeds；`test_outdoor_minor_assets.gd` 逐套驗證正式玩家與物資；`test_outdoor_minor_persistence.gd` 驗證正式串流及磁碟保存；`test_outdoor_minor_navigation.gd` 驗證跨區塊公路至搜刮點的導航和步行。效能抽樣：`godot --headless --path . -s res://scripts/profile_minor_streaming.gd`。
+1,000 seeds、逐套玩家與物資、串流保存及跨區塊步行的專項自測已退出核心清單；歷史結果見 [小 POI 驗收](../validation/2026-09-26-minor-pois.md)。效能抽樣：`godot --headless --path . -s res://scripts/profile_minor_streaming.gd`。
 
 <a id="section-1"></a>
 
@@ -223,7 +223,7 @@ F2 開平板、F3 傷害左中牆、F4 破壞右前牆、F5 只破壞中段屋�
 
 維修花 2 Metal Parts／2 秒補 60 HP；重建花 6／6 秒回滿血；六個側槽的牆門互換、三個屋頂槽的普通／左側開孔型態互換花 2／4 秒並保留耐久比例、新門關閉。需有電、熄火且速度 ≤ 0.5 m/s，一車一項；變型須移走直接／間接附掛設備。確認完成才扣料，受擊、關閉 UI、平板失去服務、斷電、發動或超速皆取消。施工期間不能保存。平板本身免傷、仍可 F 搬移，失去支撐會掉落；重新安裝並供電後可使用。
 
-人工觀察項目：修復與扣料、牆門互換與門扇 E 開關、破牆後附掛設備掉落、拆頂失去支撐，以及固定地板仍可站立且平板無地板操作。自動檢查以 `test_structure_construction.gd` 和 `test_rv_structure_modules.gd` 為入口；指南列出驗收步驟，不代表本輪桌面觀察或完整套件已通過。
+人工觀察項目：修復與扣料、牆門互換與門扇 E 開關、破牆後附掛設備掉落、拆頂失去支撐，以及固定地板仍可站立且平板無地板操作。自動檢查保留 `test_rv_structure_modules.gd` 的結構／支撐／保存案例；施工扣料與平板操作需另行驗收。指南列出驗收步驟，不代表本輪桌面觀察或完整套件已通過。
 
 屋頂前／中／後為三個獨立槽，各 50 kg／120 HP，初始普通／左側開孔／普通。選定任一屋頂槽可將普通與左側開孔型態互換，沿用 2 Metal Parts／4 秒及耐久比例；重建可選任一型態，6／6 秒。左側洞口 1.45 × 1.6 m，車內梯貼左內牆對準中片；確認洞內的人物或梯子會阻止封成普通屋頂，洞口本身不產生隱形碰撞／雨遮，毀壞一片後其餘片保持完整。存檔為 v5，但早期十槽快照拒絕載入。
 
@@ -386,7 +386,7 @@ godot --path . --log-file .godot/boarding-visible.log res://tests/monster_boardi
 godot --path . --log-file .godot/pursuit-visible.log res://tests/monster_pursuit_playground.tscn
 ```
 
-此追蹤／近戰場景現載入 Raker：藍色方柱標記玩家，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，可觀察怪物追近後的攻擊。F3 放入牆壁並固定怪物移速，F4 移除牆壁；正式 Raker 回歸以 `test_raker.gd` 為準。[舊追蹤驗收](../../docs/validation/2026-09-16-monster-pursuit.md)記錄的是當時場景。
+此追蹤／近戰場景現載入 Raker：藍色方柱標記玩家，黃色小方塊為可受傷設備。玩家生命提高且保持介面移動鎖，可觀察怪物追近後的攻擊。F3 放入牆壁並固定怪物移速，F4 移除牆壁；現行 Raker 自動回歸保留 `test_raker_grab.gd` 的抓取結果、所有權與清理；追擊及普通近戰需另行觀察。[舊追蹤驗收](../../docs/validation/2026-09-16-monster-pursuit.md)記錄的是當時場景。
 
 以下模型預覽現使用 Raker；其他動作與抓咬流程可用下方專用 Raker 測試場。[舊素材設定](../../assets/models/monster/README.md)僅供追溯早期試接。
 
@@ -488,7 +488,7 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 | F10 | 輪驅 S 型轉彎回放，36 km/h 目標；再次按下停止自動轉向 |
 | R | 重設整個場景及車輛 |
 
-畫面顯示車速、怪物速度、步態、動畫與距離。建議先 F2 測低速追上，再選 90 km/h 目標觀察 64.8 km/h 狂奔上限；定速期間 A/D 仍可轉向，怪物貼車後按 F6 可重測。預覽可配合 F4 側面檢查駝背和頸部，F6 返回 AI。啟動時加 `-- --preview` 可直接看待機姿勢，`-- --turns` 直接啟動轉彎回放。無限碰撞地板防止掉出路面，超過道路範圍會自動重設。測試場入口與操作有 [自動回歸](../../tests/test_raker_playground.gd)。
+畫面顯示車速、怪物速度、步態、動畫與距離。建議先 F2 測低速追上，再選 90 km/h 目標觀察 64.8 km/h 狂奔上限；定速期間 A/D 仍可轉向，怪物貼車後按 F6 可重測。預覽可配合 F4 側面檢查駝背和頸部，F6 返回 AI。啟動時加 `-- --preview` 可直接看待機姿勢，`-- --turns` 直接啟動轉彎回放。無限碰撞地板防止掉出路面，超過道路範圍會自動重設。測試場入口與操作需手動檢查，已無獨立自動自測。
 
 `godot --path . --log-file .godot/raker-climb.log res://tests/rv_climb_playground.tscn -- --replay --raker`
 
@@ -503,7 +503,7 @@ godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.
 
 F6 自動油門駛過單側釘帶，7 秒後漸進煞車；也可加 `-- --replay` 自動開始。1–4 分別讓左前／右前／左後／右後爆胎，R 重設。Space 啟動引擎並切換手煞車，W/S 油門／煞車、A/D 修正、Z 倒車、X 前進。使用正式輪驅與爆胎邏輯，畫面顯示各輪耐久和故障位置。這裡的 F6 是測試快捷鍵，正式世界仍為保存。
 
-自動化 `test_tire_handling.gd` 檢查 16 種組合、左右偏移、成對抵銷、前後驅動差異、停車、倒車、反打、高速和真實釘帶先後接觸；`test_tire_puncture.gd` 驗證維修／換胎／保存與確定性生成。驗收及尚未完成的目視檢查見 [爆胎紀錄](../validation/2026-09-22-tire-puncture.md)。
+16 種輪胎組合、操控與釘帶接觸、維修／換胎／保存及確定性生成的專項自測已退出核心清單，變更時須另行驗收。驗收及尚未完成的目視檢查見 [爆胎紀錄](../validation/2026-09-22-tire-puncture.md)。
 
 <a id="raker-impact"></a>
 
@@ -527,7 +527,7 @@ v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與�
 
 加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 60% 次數，方便檢查左臂咬擊：完整的 100 HP 玩家在咬合時降至 50 HP 並失去左臂，立即恢復操作、關閉掙扎 HUD；鏡頭在接觸前持續看著怪物，接觸後才短暫轉向手臂再淡回，雙腿仍完整的駕駛留在座位並恢復單臂控制。左臂已缺失時升級為頭部致死咬擊。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
 
-`godot --path . --log-file .godot/release-input-visible.log --script res://tests/test_raker_release_input.gd` 使用真實視窗自動驗證地面／車內／駕駛咬後控制。測試經正式輸入事件送入鍵盤與滑鼠，確認身體位移、水平及垂直轉向、油門恢復；也覆蓋抓取中滑鼠捕捉遺失。Headless runner 只驗證位移和駕駛，無法驗證作業系統滑鼠捕捉。未達 60% 或剩餘 HP 不足時仍按原規則死亡，等待重生期間不是抓取狀態。
+地面／車內／駕駛咬後控制的專項視窗自測已移除。使用上方抓咬場景手動檢查咬後身體位移、水平與垂直轉向、油門恢復，以及抓取中失去滑鼠捕捉後的恢復。現行 `test_raker_grab.gd` 只作行為回歸，headless 結果不能驗證作業系統滑鼠捕捉。未達 60% 或剩餘 HP 不足時仍按原規則死亡，等待重生期間不是抓取狀態。
 
 
 ## 玩家正式動作 v021
@@ -559,5 +559,5 @@ godot --path . --log-file .godot/player-climb-desktop.log res://tests/player_cli
 godot --path . --log-file .godot/player-driving.log res://tests/player_driving_playground.tscn
 ```
 
-使用正式玩家與駕駛座，隱藏車殼、凍結車體，檢查坐姿與控制件接觸。F1 回正、F2 左轉、F3 右轉、F4 切換外部／第一人稱／側面、F5 切換踩踏、F6 顯示／隱藏完整車殼。這是姿勢觀察場，不代表已驗證輪驅行駛。自動回歸 `test_rv_cockpit.gd` 檢查方向盤方向與回正、骨架接觸、跟車姿態及座位生命週期。
+使用正式玩家與駕駛座，隱藏車殼、凍結車體，檢查坐姿與控制件接觸。F1 回正、F2 左轉、F3 右轉、F4 切換外部／第一人稱／側面、F5 切換踩踏、F6 顯示／隱藏完整車殼。這是姿勢觀察場，不代表已驗證輪驅行駛。方向盤方向與回正、骨架接觸、跟車姿態及座位生命週期的專項自測已移除，須在此場景另行觀察。
 

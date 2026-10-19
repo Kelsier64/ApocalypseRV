@@ -22,11 +22,11 @@ godot --path .
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-These open the editor, launch gameplay, and run the quick behavior suite. Use `scripts/test.ps1 -Suite full` for all active tests and main-scene startup; `-TestFilter` selects only matching tests, with optional `-Smoke`. Classify every new `test_*.gd` in `tests/suites.json`. See `tests/README.md` for profiles, timings and runner self-tests. Logs: `.godot/test-logs/`. GitHub Actions runs all profiles through the same runner.
+These open the editor, launch gameplay, and run all 16 core tests plus main-scene startup. `-TestFilter` selects matching tests, with optional `-Smoke`; `-SmokeOnly` checks only main-scene startup. New top-level `tests/test_*.gd` files run automatically: prefer extending an existing core test over adding another process. See `tests/README.md` for coverage and runner self-tests. Logs: `.godot/test-logs/`. GitHub Actions uses the same default command in one Windows job.
 
 ### Godot Access (Codex / Windows)
 
-Godot: `C:\Users\evan4\AppData\Local\Programs\Godot\Godot.exe`. If the sandbox cannot find or access it, retry with `sandbox_permissions: "require_escalated"`. Use `& '<Godot path>'` in PowerShell and `scripts/test.ps1 -Godot '<Godot path>'` for tests.
+Godot: `C:\Program Files\godot\godot.exe` (also on PATH). If the sandbox cannot find or access it, retry with `sandbox_permissions: "require_escalated"`. Use `& '<Godot path>'` in PowerShell and `scripts/test.ps1 -Godot '<Godot path>'` for tests.
 
 ## Coding and Testing
 

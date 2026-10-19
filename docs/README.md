@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-19 自動測試與 CI 精簡](validation/2026-10-19-test-ci-simplification.md)：16 個核心測試、單一 CI job、速度量測與刪減的覆蓋範圍。
+
 - [2026-10-18 教學基地整棟細節](validation/2026-10-18-tutorial-spawn-detail.md)：接待室、第二室貨架／風管／屋架、外牆設備、入口與屋頂收邊。
 
 - [2026-10-18 PR #46 CI 修正](validation/2026-10-18-pr46-ci.md)：出庫測試負例輪胎清理與 Godot 4.7.2 關閉相容處理。

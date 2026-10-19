@@ -62,7 +62,7 @@
 | A12 | 背包已有 state 欄位，但玩家拾取／還原與 POI 快照主要只保存回收產出；新增電池不能只接場景路徑 | 道具實例狀態契約，端到端保存電量和身分 | [player.gd](../../player/player.gd)、[player_inventory.gd](../../player/player_inventory.gd)、[poi_interior.gd](../../world/instances/poi_interior.gd) |
 | A13 | 輪胎拆下先移除車輪再生成道具，使用底盤父節點作容器；輪胎也沒有個別損傷狀態 | 拆裝交易、個別輪槽／道具狀態及 WorldEntities 歸屬 | [wheel_hitbox.gd](../../rv/wheel_hitbox.gd)、[chassis.gd](../../rv/chassis.gd) |
 
-現有 [test_equipment_lifecycle.gd](../../tests/test_equipment_lifecycle.gd) 涵蓋玩家模式授權、取消、跨車連線及供電，但使用簡化 RV，未完整驗證正式發電機、電池、製作交易、平板毀損或分解機退料。已有攀爬測試不可取代這些測試。
+當時的設備生命週期測試涵蓋玩家模式授權、取消、跨車連線及供電，但使用簡化 RV，未完整驗證正式發電機、電池、製作交易、平板毀損或分解機退料。該專項測試已退出自動清單；現行核心覆蓋以 [測試指南](../../tests/README.md) 為準，攀爬測試不能代替設備交易與清理驗收。
 
 ## 3. 建議架構與狀態所有權
 

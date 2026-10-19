@@ -119,6 +119,6 @@
 4. 布娃娃／斷肢檢查姿態交接、速度繼承、碰撞、復原及保存；各角色不同物理配置分別驗收。
 5. 依 [測試指南](../../tests/README.md)選取適用回歸並使用統一 runner；物理與畫面改動另依 [AGENTS](../../AGENTS.md)及 [測試場指南](playgrounds.md)做實機觀察。
 
-既有資產覆蓋包括 [玩家匯入](../../tests/test_player_import_v020.gd)、[玩家正式模型](../../tests/test_player_model.gd)、[逐幀蒙皮](../../tests/test_player_animation_skin.gd)、[玩家布娃娃](../../tests/test_player_ragdoll_v020.gd)、[玩家斷肢資產](../../tests/test_player_dismemberment_assets.gd)、[Raker](../../tests/test_raker.gd)及 [Raker 布娃娃](../../tests/test_raker_ragdoll.gd)。這些仍是角色專用測試，尚無所有新角色通用的資產驗證器。
+玩家匯入、正式模型、逐幀蒙皮、布娃娃、斷肢與 Raker 外觀的專項自測已退出核心自動清單；歷史證據保留於 [角色整合驗收](../validation/2026-09-27-player-model-integration.md) 與 [Raker 驗收](../validation/2026-09-22-raker.md)。目前保留 [Raker 抓取](../../tests/test_raker_grab.gd) 及 [Slender Speaker 抓取](../../tests/test_slender_speaker_acquisition.gd) 等行為檢查；新角色資產仍須自行檢查匯入、蒙皮及實際姿勢，尚無通用資產驗證器。
 
 本輪只重整文件、讀取實際 GLB JSON、核對場景／腳本／匯入設定及相對連結；沒有啟動引擎、重跑行為測試或做實機驗收。既有結果與限制見各資產 README 連結的歷史驗收；舊 Zombie、1.75 m 玩家提案、統一 30 fps 建議、低模預算與九切口完整保留在 [v2 歷史快照](../archive/modeling-2026-10-05/character-modeling-v2.md)，不作為目前交付要求。

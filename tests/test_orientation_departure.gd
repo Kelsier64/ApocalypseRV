@@ -1,4 +1,4 @@
-extends "res://tests/test_orientation_workshop_journey.gd"
+extends "res://tests/support/orientation_journey.gd"
 ## Complete the same native workshop transactions, then drive through the real
 ## sensor exit. Only negative clearance probes reposition actors temporarily.
 

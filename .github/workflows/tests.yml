@@ -1,29 +1,32 @@
 name: Godot tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'docs/**']
+  pull_request:
+    paths-ignore: ['**/*.md', 'docs/**']
+  workflow_dispatch:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   tests:
-    name: Godot / ${{ matrix.suite }}
+    name: Godot / core
     runs-on: windows-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [quick, integration, slow, assets, smoke]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Check runner contracts (Windows PowerShell)
-        if: matrix.suite == 'quick'
-        shell: powershell
-        run: ./scripts/test-runner.tests.ps1
-      - name: Check runner contracts (PowerShell Core)
-        if: matrix.suite == 'quick'
-        shell: pwsh
+      - name: Check runner
         run: ./scripts/test-runner.tests.ps1
       - name: Install pinned Godot
-        shell: pwsh
         run: |
           $version = (Get-Content '.godot-version' -Raw).Trim()
           $archive = Join-Path $env:RUNNER_TEMP 'godot.zip'
@@ -31,13 +34,12 @@ jobs:
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$version-stable/Godot_v$version-stable_win64.exe.zip" -OutFile $archive
           Expand-Archive -LiteralPath $archive -DestinationPath $destination
           "GODOT_EXE=$destination/Godot_v$version-stable_win64.exe" >> $env:GITHUB_ENV
-      - name: Import and run selected suite
-        shell: pwsh
-        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE -Suite ${{ matrix.suite }}
+      - name: Import and run core tests and main scene
+        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE
       - name: Upload diagnostics
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-test-logs-${{ matrix.suite }}
+          name: godot-test-logs
           path: .godot/test-logs/
           include-hidden-files: true
