@@ -4,8 +4,9 @@ class_name WorldClock
 signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
-const NIGHT_VISION_RANGE := 32.0
-const NIGHT_VISION_ENERGY := 1.5
+const NIGHT_VISION_FADE_BEGIN := 20.0
+const NIGHT_VISION_FADE_END := 60.0
+const NIGHT_VISION_AMBIENT_ENERGY := 0.06
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
 var elapsed_seconds := DEFAULT_TIME
 var running := true
@@ -20,7 +21,6 @@ var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
 var _night_vision_strength := 0.0
-var night_vision_light: OmniLight3D
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -68,21 +68,6 @@ func _ready() -> void:
 	if sun != null:
 		sun.shadow_enabled = true
 		sun.directional_shadow_max_distance = 140.0
-	# A localized, shadowed fill represents dark adaptation without lighting the
-	# whole world. Keep it here: the player moves into a separate World3D in POIs.
-	night_vision_light = OmniLight3D.new()
-	night_vision_light.name = "NightVision"
-	night_vision_light.omni_range = NIGHT_VISION_RANGE
-	# Gentle distance decay keeps the middle distance readable while the
-	# light's smooth range falloff feathers the outer edge down to black.
-	night_vision_light.omni_attenuation = 0.35
-	night_vision_light.light_color = Color.WHITE
-	night_vision_light.light_specular = 0.0
-	night_vision_light.light_indirect_energy = 0.0
-	night_vision_light.light_volumetric_fog_energy = 0.0
-	night_vision_light.shadow_enabled = true
-	night_vision_light.visible = false
-	add_child(night_vision_light)
 	var layer := CanvasLayer.new()
 	layer.layer = 46
 	add_child(layer)
@@ -120,16 +105,6 @@ func _on_video_setting_changed(key: StringName, _value: Variant) -> void:
 
 func _process(delta: float) -> void:
 	if running: advance(delta)
-	# Camera motion also continues while time is held in staging/playgrounds.
-	_update_night_vision()
-
-func _update_night_vision() -> void:
-	if not is_instance_valid(night_vision_light): return
-	var camera := get_viewport().get_camera_3d()
-	night_vision_light.visible = _night_vision_strength > 0.0 and camera != null and camera.get_world_3d() == night_vision_light.get_world_3d()
-	if not night_vision_light.visible: return
-	night_vision_light.global_position = camera.global_position
-	night_vision_light.light_energy = NIGHT_VISION_ENERGY * _night_vision_strength
 
 func advance(real_seconds: float) -> void:
 	if not is_finite(real_seconds) or real_seconds < 0.0: return
@@ -184,7 +159,6 @@ func sun_direction() -> Vector3:
 func apply_time() -> void:
 	if environment == null or not is_instance_valid(sun): return
 	var volumetric: bool = game_settings.volumetric_fog_enabled()
-	environment.volumetric_fog_enabled = volumetric
 	var conditions := effective_visual_weather()
 	var clear := conditions.x
 	var rain := conditions.y / 2.0
@@ -195,7 +169,8 @@ func apply_time() -> void:
 	_night_vision_strength = 1.0 - smoothstep(-0.16, 0.02, direction.y)
 	environment.adjustment_enabled = _night_vision_strength > 0.0
 	environment.adjustment_saturation = 1.0 - _night_vision_strength
-	_update_night_vision()
+	var volume_visibility := 1.0 - _night_vision_strength
+	environment.volumetric_fog_enabled = volumetric and volume_visibility > 0.0
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
@@ -209,18 +184,28 @@ func apply_time() -> void:
 	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
 	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
 	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
+	# Separate the dim, distance-independent adaptation from its visibility
+	# envelope: full strength through 20 m, smoothly black by 60 m. Weather
+	# may obscure the view earlier, but cannot extend this nighttime limit.
+	var night_fog_begin := lerpf(NIGHT_VISION_FADE_BEGIN, 8.0, light_mist)
+	environment.fog_depth_begin = lerpf(environment.fog_depth_begin, night_fog_begin, _night_vision_strength)
+	environment.fog_depth_end = lerpf(environment.fog_depth_end, minf(environment.fog_depth_end, NIGHT_VISION_FADE_END), _night_vision_strength)
+	environment.fog_depth_curve = lerpf(environment.fog_depth_curve, 1.0, _night_vision_strength)
 	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
+	# The sky shader disables fog, so fade its own colors to match the limit.
+	horizon = horizon.lerp(Color.BLACK, _night_vision_strength)
+	zenith = zenith.lerp(Color.BLACK, _night_vision_strength)
 	# Volumetric fog composites after depth fog and can reveal already-hidden
-	# geometry again. Fade it out as weather fog takes over the full scene.
-	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
+	# geometry again. Fade it out as weather/night fog takes over the scene.
+	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist) * volume_visibility
 	for material in fog_materials:
-		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist))
+		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist) * volume_visibility)
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
 	environment.fog_light_color = horizon
-	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
-	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
+	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight).lerp(Color.WHITE, _night_vision_strength)
+	environment.ambient_light_energy = lerpf(lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight), NIGHT_VISION_AMBIENT_ENERGY, _night_vision_strength)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
 	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90) * (1.0 - mist * 0.85)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
@@ -232,12 +217,12 @@ func apply_time() -> void:
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
 	sky_material.set_shader_parameter("fog_cover", light_mist)
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist))
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist) * volume_visibility)
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := effective_visual_weather()
-	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)))
+	material.set_shader_parameter("density", 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)) * (1.0 - _night_vision_strength))
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)
