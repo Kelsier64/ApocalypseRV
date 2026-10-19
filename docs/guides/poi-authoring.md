@@ -92,9 +92,9 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 5. 登錄素材目錄後，再獨立完成場址生成、串流、保存與回訪，才加入正式生成池。
 6. 更新規格、現況與驗收紀錄。自動檢查、可見觀察、效能和未驗收項目分開記錄。
 
-現有檢查入口：`test_poi_definitions.gd` 驗證所有登錄定義與場景、ID 唯一性、類型分流、轉場接線及 v2／v3／v4 資料相容；加油站行為由 `test_gas_station.gd` 驗證。程式變更依專案規則執行完整 `scripts/test.ps1`。
+登錄定義、ID、類型分流與舊版場址的專項自測已退出核心清單。新增或修改 POI 時，仍須執行定義的 `validate()`／`validate_scene()` 並按上列步驟實際走查；現行自動範圍見 [測試指南](../../tests/README.md)。
 
-新增資產後，可先從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_definitions.gd`。此入口會先匯入資源，再檢查所有登錄定義；新增定義也須加入 POIConfig.DEFINITIONS。
+轉場或保存邏輯變更，可從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_transition_persistence.gd`；此測試聚焦轉場取消與保存，不能代替新場景的定義、通路或導航檢查。新增定義也須加入 POIConfig.DEFINITIONS。
 
 ## 7. 現有資產狀態
 
@@ -106,4 +106,4 @@ site_bounds 是**新資產的安置需求**；v5 加油站的場址整地與植�
 
 既有入口由 exterior_style.gd 在 Visuals/BunkerFacade 建立簡單軍事立面，沿用 service_entrance 的入口／返回點與原占地；外观附加量體不帶碰撞。既有定義的 legacy_visual_layout 旗標暫保留，尚未全面改成編輯器組裝資產；新資產不得沿用此例外。
 
-戶外正式整合另由 `test_outdoor_gas_station.gd` 驗證；加油站保存 content_version，若需更動佈局，必須保留舊版資產或提供遷移，不能只增加版本就宣稱相容。
+戶外正式整合的歷史專項結果見 [正式加油站驗收](../validation/2026-09-20-production-gas-station.md)；加油站保存 content_version，若需更動佈局，必須保留舊版資產或提供遷移，不能只增加版本就宣稱相容。

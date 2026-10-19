@@ -110,15 +110,15 @@ F6 寫入 `user://rv_checkpoint_v5.save`，上一份有效檔保存為同名 `.b
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
-# 完整回歸，包含正式主世界啟動
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -Suite full
 # 開發中只跑相關測試；不額外建立主世界
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter 'test_bunker_*.gd,test_interior_*.gd'
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter 'test_item_*.gd'
+# 只檢查正式主世界就緒、設定選單與移動
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -SmokeOnly
 ```
 
-預設執行 `quick` 快速行為集；`-Suite integration`、`slow`、`assets` 分別執行整合、長情境與資產驗收，`smoke` 只驗證正式世界就緒及移動，`full` 執行全部有效測試與 smoke。CI 分組執行全部覆蓋。`-TestFilter` 覆蓋分組選擇，支援逗號分隔樣式、去重與排序；需要同時啟動主世界時加 `-Smoke`。
+預設執行全部 16 個核心測試及正式世界 smoke，CI 也使用同一命令、單一 Windows job。已移除舊分組與 `suites.json`；頂層 `tests/test_*.gd` 自動納入執行。`-TestFilter` 支援逗號分隔樣式、去重與排序；需要同時啟動主世界時加 `-Smoke`。舊版教學、相容性長情境及外觀專用自動回歸已精簡，手動測試場保留。
 
-Runner 核對 `.godot-version`，共用一次匯入，使用固定 60 fps 模擬時間解除 headless 的實時節流，保留專案 60 Hz 物理與求解器設定。`-List` 不啟動引擎；`-SkipImport` 適用於已匯入且資產沒有變更的工作樹；`-RealTime` 可對照實時排程；`-StartAt test_name` 從指定測試接續。每次執行獨立保存 `manifest.txt`、`results.json`、`timings.csv` 與日誌到 `.godot/test-logs/`，失敗後繼續收集結果（`-FailFast` 可提前停止）。完整說明與新增測試規則見 [測試指南](tests/README.md)；可用 `-Godot 'C:/path/to/godot.exe'` 指定引擎。
+Runner 核對 `.godot-version`、共用一次匯入，並以固定 60 fps 執行各自獨立的 headless 程序；專案物理與求解器設定維持。遇到失敗立即停止，退出碼、錯誤日誌、PASS 標記與逾時仍會檢查。`-List` 不啟動引擎；`-SkipImport` 適用於已匯入且資產沒有變更的工作樹；`-RealTime` 可對照實時排程。每次執行保存 `results.json` 與各項日誌到 `.godot/test-logs/`。命令與覆蓋取捨見 [測試指南](tests/README.md)；可用 `-Godot 'C:/path/to/godot.exe'` 指定引擎。
 
 測試場操作見 [指南](docs/guides/playgrounds.md)，歷次結果見 [文件索引](docs/README.md)。Headless 通過不代替實機手感、GPU 畫面、翻車、怪物群或長途經濟驗收。
 

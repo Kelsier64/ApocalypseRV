@@ -41,7 +41,7 @@
 刪除候選先查 `res://` 路徑、UID、`class_name`、場景的 `ext_resource`、程式中的動態組字路徑、存檔白名單、結構型態目錄、測試與製作腳本。確認現行存檔與仍使用中的測試場沒有消費者，再移除無用檔案；歷史文件保留。完成後從乾淨匯入開始執行：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -Suite full
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-Runner 的 `full` 會匯入資源、執行全部有效的根層測試並檢查正式主場景啟動；預設命令只跑快速行為集，詳細選擇與分類見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [AGENTS](../../AGENTS.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。
+Runner 預設匯入資源、執行保留的 16 支根層核心測試並檢查正式主場景啟動；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [AGENTS](../../AGENTS.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。

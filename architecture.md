@@ -71,9 +71,9 @@ v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") �
 
 ### v10 森林 Slender Speaker
 
-2026-10-11 地面跑動抓取：出手時可見、沒有目標 RV、非攀爬／爬行且水平速度至少 4 m/s 的玩家，使用 2.2 倍伸手動畫、起點周圍 5 m 的有限追蹤及 12 m/s 手部落點修正，最後 0.05 秒以實際時間鎖定。倍率在動作提交時固定，後續減速或姿勢改變不重設動畫時鐘；靜止與車上目標沿用原節奏。視線、真實手部掃掠及抬升碰撞仍為必要條件。平地 5／8 m/s 持續直線移動的自主追擊、接觸及完整抬升由 `test_slender_speaker_ground_chase` 覆蓋；衝刺測試只補充耐力以維持速度，不代表坡地、急轉彎或障礙場景皆必抓。
+2026-10-11 地面跑動抓取：出手時可見、沒有目標 RV、非攀爬／爬行且水平速度至少 4 m/s 的玩家，使用 2.2 倍伸手動畫、起點周圍 5 m 的有限追蹤及 12 m/s 手部落點修正，最後 0.05 秒以實際時間鎖定。倍率在動作提交時固定，後續減速或姿勢改變不重設動畫時鐘；靜止與車上目標沿用原節奏。視線、真實手部掃掠及抬升碰撞仍為必要條件。平地 5／8 m/s 持續直線移動的自主追擊、接觸及完整抬升曾做專項驗收；當時衝刺案例只補充耐力以維持速度，不代表坡地、急轉彎或障礙場景皆必抓。現行自動覆蓋範圍見第 7 節。
 
-2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤由 [forest_tracking 回歸](tests/test_slender_speaker_forest_tracking.gd) 涵蓋，範圍及本輪結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)。
+2026-10-10 森林導航補正：巨人接地且已達路徑點水平容差時，以實際腳底高度校正 NavigationAgent 的抵達判定，避免簡化地形網格高於／低於坡面造成原地繞圈。要求前進卻被靜態側面持續阻擋 0.5 秒時，沿真實接觸法向選取附近可導航點，以最高 1.5 m/s 的要求速度、最多 3 秒做連續掃掠脫困，再恢復觀測／記憶目的地；不改感知與遭遇所有權。正式森林徘徊、坡面追玩家及 RV 輪驅追蹤的歷史專項結果見[驗證紀錄](docs/validation/2026-10-10-slender-speaker-forest-tracking.md)，不屬現行自動覆蓋。
 
 2026-10-10 天氣限制：正式生成只接受所屬世界 `WorldClock.weather.sample().z >= WorldWeather.FOG_LIGHT`（霧級 0.5，小霧以上）。依實際過渡後霧量判斷，不使用目標天氣、常駐遠景霧或畫質設定；晴天、單純下雨與缺少時鐘均不生成。無霧時同樣消耗候選區段，之後起霧、回訪或讀檔不補刷。天氣轉晴不移除已有巨人，存檔中已有巨人仍正常還原；機率、導航、同時一隻及安全距離沿用原規則。
 
@@ -153,7 +153,7 @@ RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種
 
 ### 樹木撞毀
 
-SlenderSpeaker 由 `move_and_slide()` 的實際身體接觸撞毀樹木，使用掃掠前的水平速度及命中 shape index。朝接觸法線內至少 0.1 m/s 的走路／追擊接觸即可觸發；靜止、離開樹幹及垂直落地不觸發。共用 ForestTrunks／路邊樹的破壞、倒塌、導航更新及 destroyed_trees 帳本；已毀樹等待延後停用時不觸發牆面脫困，其他實體仍保留碰撞與脫困。見 [撞樹回歸](tests/test_slender_speaker_tree_impact.gd)。
+SlenderSpeaker 由 `move_and_slide()` 的實際身體接觸撞毀樹木，使用掃掠前的水平速度及命中 shape index。朝接觸法線內至少 0.1 m/s 的走路／追擊接觸即可觸發；靜止、離開樹幹及垂直落地不觸發。共用 ForestTrunks／路邊樹的破壞、倒塌、導航更新及 destroyed_trees 帳本；已毀樹等待延後停用時不觸發牆面脫困，其他實體仍保留碰撞與脫困。歷史專項結果見 [撞樹驗收](docs/validation/2026-10-11-slender-speaker-tree-impact.md)。
 
 Chassis 讀取實際物理接觸，以至少 3 m/s 的水平速度、朝接觸法線內至少 0.1 m/s 的接近速度判定撞樹，高速斜擦也能折斷；離開樹幹、低速及垂直落地不觸發。TreeImpact 只處理破壞，Chassis 在補速後按每棵樹真正造成的速度損失結算一次傷害，沿用下方 VehicleImpact 契約及 take_damage 扣引擎耐久。引擎歸零沿用現有停機／維修流程。
 
@@ -165,7 +165,7 @@ ForestScenery.build 首次建立森林前 await TreeFall.prepare：獨立 32×32
 
 WorldGenerator／WorldField 共用 destroyed_trees 帳本，獨立於可淘汰的 forest_cache；森林 ID 使用 band／確定性生成索引，路邊樹使用原始位置。重建前仍消耗原外觀 RNG，存活樹位置與型號不漂移。Checkpoint v5 保存可選帳本，先驗證再恢復，v5 缺欄位視為空帳本，不改生成版本。
 
-破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。自動回歸為 test_tree_impact.gd，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
+破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。歷史專項結果見 [撞樹驗收](docs/validation/2026-10-02-tree-impact.md)，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
 
 ### 車輛碰撞傷害
 
@@ -223,7 +223,7 @@ ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材�
 - IndustrialTheme 統一背包、生命、駕駛 HUD 及道具箱配色、方角框線與按鈕焦點，這些介面保留原字體與中文 fallback。平板另用 RVTerminalTheme 的英文等寬終端配色及字元框線；所有 Canvas UI 維持原生解析度。
 - 本輪不改生成版本、地形／導航／碰撞或存檔格式；副本的 3D 材質與照明不在範圍內。驗證見 `docs/validation/2026-09-17-industrial-art.md`。
 
-2026-10-11 玩家快捷欄使用六個方形格子，沒有共用背景托盤；持有物品時只在其選取格上方顯示名稱，空手時不顯示名稱。格內有物品圖示、數字鍵與選取框，大型物品標示 `2H`，選取手電筒時顯示電量及開關狀態；手槍與彈藥盒顯示格內彈量，手持手槍時顯示備彈、換彈與使用狀態。`InventoryItemIcons` 依物品 `scene_path` 對應 `assets/inventory/` 的透明 PNG 快照，快照取自遊戲實際 3D 模型；未知物品顯示通用 SVG 圖示，不將 Texture 寫入背包或存檔。快捷欄只讀取預載紋理，不在執行時渲染模型或建立 3D Viewport。所有快捷欄裝飾忽略滑鼠輸入，放置操作仍由 Player 處理；駕駛時隱藏、離座恢復。顯示契約由 [test_inventory_ui](tests/test_inventory_ui.gd) 覆蓋，放置預覽保留圖示由 [test_item_player](tests/test_item_player.gd) 覆蓋。
+2026-10-11 玩家快捷欄使用六個方形格子，沒有共用背景托盤；持有物品時只在其選取格上方顯示名稱，空手時不顯示名稱。格內有物品圖示、數字鍵與選取框，大型物品標示 `2H`，選取手電筒時顯示電量及開關狀態；手槍與彈藥盒顯示格內彈量，手持手槍時顯示備彈、換彈與使用狀態。`InventoryItemIcons` 依物品 `scene_path` 對應 `assets/inventory/` 的透明 PNG 快照，快照取自遊戲實際 3D 模型；未知物品顯示通用 SVG 圖示，不將 Texture 寫入背包或存檔。快捷欄只讀取預載紋理，不在執行時渲染模型或建立 3D Viewport。所有快捷欄裝飾忽略滑鼠輸入，放置操作仍由 Player 處理；駕駛時隱藏、離座恢復。快捷欄顯示須做畫面檢查；[test_item_player](tests/test_item_player.gd) 保留放置預覽圖示的行為檢查。
 
 ### 可切換美術樣板
 
@@ -327,7 +327,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 | 保存 | 場景納入 SaveSceneCatalog；capture_item_state／restore_item_state 共用 ID、condition、回收結果、enabled、service 與專用子狀態，ItemState 驗證。世界記錄另保存 fixed、transform、physics 及 support；背包不保留舊支撐。所有權跨背包、倉庫、插槽、世界、副本及分解佇列，重複 ID 拒絕保存／載入。 |
 | 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動依 AGENTS 做實機攀爬／支撐／拆頂檢查。 |
 
-基礎回歸見 [設備生命週期](tests/test_equipment_lifecycle.gd)、[RV 系統](tests/test_rv_systems.gd)、[檢查點](tests/test_rv_checkpoint.gd)。凍結設備的碰撞力矩限制仍見第 6 節；遵守上述規格不代表大型外掛物理已解決。
+現行自動回歸保留 [物品操作](tests/test_item_player.gd)、[物品保存](tests/test_item_persistence.gd) 及 [檢查點失敗恢復](tests/test_checkpoint_failures.gd)。凍結設備的碰撞力矩限制仍見第 6 節；遵守上述規格不代表大型外掛物理已解決。
 
 
 <a id="section-4"></a>
@@ -376,7 +376,7 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初�
 
 register_viewport 把 3D 縮放、抗鋸齒與陰影品質套用到主 viewport 及新建立的室內 SubViewport。舊解析度模式維持室外目標高度 540、最高 1，室內原生解析度；手動 50–100% 解析度同時套用室內外。復古色調與解析度分開，亮度／對比／飽和度使用 3D 後製，Canvas UI 保持清晰。品質預設只修改解析度、抗鋸齒、陰影與霧，其他欄位不變，個別品質調整後保留「自訂」來源，即使數值又與預設相同也不自動改回；此來源隨偏好保存，只有明確選取預設或重設顯示頁才切回預設。霧品質只影響體積霧，不改距離霧、WorldClock 天氣或光照；Compatibility 的體積霧控制不可用。視窗模式使用確認倒數，取消或逾時回復原設定；headless 不可驗證原生視窗輸出。
 
-啟動預設全螢幕，已保存的視窗模式仍優先；視窗模式的初始尺寸為 1280×720。GameSettings 在獨立視窗啟動時，若超出螢幕可用區域的 90%，等比例縮小並置中，保留標題列與工作列空間。嵌入編輯器及 headless 不調整原生視窗。`UILayout` 共用血條、快捷列、設定、平板、教學終端與倉庫的 CanvasLayer 縮放：以 1280×720 放大高解析度 UI，小視窗則保留至少 960×540 的邏輯佈局並縮小顯示；寬螢幕保留額外寬度，平板依邏輯寬度切換欄數。每幀只比較目前 viewport 尺寸，變更才更新，因此玩家移入室內 SubViewport 後仍可適應縮放。原生 3D 尺寸與解析度比例獨立；[版面測試](tests/test_ui_layout.gd) 驗證邊界、錨點、縮放點擊與 viewport 搬移。
+啟動預設全螢幕，已保存的視窗模式仍優先；視窗模式的初始尺寸為 1280×720。GameSettings 在獨立視窗啟動時，若超出螢幕可用區域的 90%，等比例縮小並置中，保留標題列與工作列空間。嵌入編輯器及 headless 不調整原生視窗。`UILayout` 共用血條、快捷列、設定、平板、教學終端與倉庫的 CanvasLayer 縮放：以 1280×720 放大高解析度 UI，小視窗則保留至少 960×540 的邏輯佈局並縮小顯示；寬螢幕保留額外寬度，平板依邏輯寬度切換欄數。每幀只比較目前 viewport 尺寸，變更才更新，因此玩家移入室內 SubViewport 後仍可適應縮放。原生 3D 尺寸與解析度比例獨立；邊界、錨點、縮放點擊與 viewport 搬移的歷史驗收見 [UI 紀錄](docs/validation/2026-10-03-settings-ui.md)，目前需另行畫面檢查。
 
 SettingsMenu 不設定 SceneTree.paused，玩家 settings_open 是額外輸入遮罩。Player、互動射線、DriverSeat 與 Chassis 共同使用 is_gameplay_input_blocked，涵蓋事件與 held-key 輪詢；關閉時記錄仍按住的操作，放開後才恢復。重力、傷害冷卻、車頂支撐、世界時間、敵人與油電照常推進。駕駛期間釋放油門／腳煞車／轉向，不改引擎、gear 或 handbrake。平板與放置擁有各自 Esc 優先權；被抓、死亡、讀檔及 POI 轉場時拒絕設定入口，失去 actor 所有權時關閉。步行／駕駛 FOV 與滑鼠設定從服務即時更新現有及新建立的相機。
 
@@ -438,7 +438,7 @@ F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等�
 
 ### 攀爬與戰鬥
 
-玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v5 新增可選 bool `player.crouching`，舊檔缺欄位為站立，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，行為與存檔分別由 `test_player_crouch`／`test_checkpoint_failures` 覆蓋。
+玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v5 新增可選 bool `player.crouching`，舊檔缺欄位為站立，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，存檔錯誤與恢復由 `test_checkpoint_failures` 覆蓋，完整蹲姿行為需另行驗收。
 
 玩家只能從 RVLadder 兩端進入攀爬；牆面命中不再授權玩家攀車。RVLadder 繼承 Item，side_door_ladder／roof_ladder 使用原設備搬移、取消、支撐依賴、耐久及 v5 保存，登錄獨立 rv_ladders 群組。W 上爬、S 下爬、Space 脫離，A/D 不橫移；起點以完整膠囊腳底校正，進出梯與每步移動使用實體掃掠。登頂必須有真實可站立支撐，關門及封住開口均會阻擋。攀爬按 RV transform 差追蹤平移與旋轉，梯子搬移／毀損／失去支撐即安全脫離並繼承平台速度。梯子在兩種放置模式均保持背面 -Z 貼牆、+Z 朝外；牆面原始射線命中及細移直接決定位置，不重寫接觸點、不提供預設錨點。只接受近乎垂直的真實牆面，地板、天花板和活動門扇拒絕安裝；靜態牆面安裝歸 WorldEntities，避免支撐卸載時連同梯子被釋放。
 
@@ -454,13 +454,13 @@ Monster 結合 NavigationAgent3D、直接追蹤 fallback、卡住監測與高度
 
 MonsterBoardingVisual 僅處理程序生成手臂與原創 PCM 空間音效，透過 attack_landed 接收真正命中的事件，不改碰撞形狀。抓握、模式和導航目標屬暫態，讀檔重新判斷，不改 checkpoint 格式。
 
-[item_detour.gd](enemies/item_detour.gd) 在 RV 外補上固定 Item 的局部繞行，不依賴靜態導航網格重新烘焙。每步先以實際角色碰撞形狀掃掠原方向；遇到未接入 RV 的固定物品時，最多取附近 10 m 的 12 件 Item，沿其包圍盒外角建立 AStar3D 候選點。候選點需有腳下支撐，連線需通過完整碰撞掃掠；路徑每 0.5 秒、目標改變或下一段受阻時重算。物品移除後直路檢查立即恢復原導航方向；無有效路徑時水平移動為零並等待重算，避免沿用舊網格穿過新障礙。實際多物品繞行、移除及封閉等待由 [test_item_navigation.gd](tests/test_item_navigation.gd) 覆蓋。
+[item_detour.gd](enemies/item_detour.gd) 在 RV 外補上固定 Item 的局部繞行，不依賴靜態導航網格重新烘焙。每步先以實際角色碰撞形狀掃掠原方向；遇到未接入 RV 的固定物品時，最多取附近 10 m 的 12 件 Item，沿其包圍盒外角建立 AStar3D 候選點。候選點需有腳下支撐，連線需通過完整碰撞掃掠；路徑每 0.5 秒、目標改變或下一段受阻時重算。物品移除後直路檢查立即恢復原導航方向；無有效路徑時水平移動為零並等待重算，避免沿用舊網格穿過新障礙。實際多物品繞行、移除及封閉等待的歷史專項結果見 [Item 驗收](docs/validation/2026-10-06-unified-items.md)。
 
 MonsterCabinRoute 是目前 4 × 12 m RV 的獨立局部 AStar3D 步行圖，20 cm 網格、實際角色膠囊重疊／掃掠檢查，含對角連線。目標或車輛改變及每 0.65 秒重新規劃；路點存在車輛本地座標，隨轉向／平移轉換。落在設備上時從真實高度檢查離開桌面的水平路段，再由重力落地。近戰終點需視線可及，不單純靠近座位中心；玩家不可及時不把車內設備當替代攻擊目標。RVStructureSlots 提供被拆除後仍存在的破口位置，開門角度至少 70° 且完整膠囊可通過才視為出口。走道封死等待重規劃，車內不使用隨機跳躍脫困。DriverSeat 碰撞拆為座墊／底座與椅背，避免整塊盒子包住乘員而完全阻擋近戰。圖不保存至 checkpoint，也不取代室外 NavigationAgent3D。
 
 CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在選敵與實際命中都被排除。腳下攻擊僅接受 UnderfootProbe 實際命中的 RVStructurePanel，且需較低位置的追蹤玩家授權；同 physics tick 共用射線結果，其他攻擊路徑排除同一支撐目標，避免繞過授權。物品仍有碰撞並遮擋攻擊，有路繞行、無路等待重規劃。
 
-一般移動時，已在近戰距離／高度範圍且視線通暢的玩家優先於拆車體結構目標，直接進入 ATTACK；接觸攻擊不能先消耗其共用冷卻。攀車目標更新只選目標，不逐影格覆寫 CHASE，避免阻止攻擊狀態執行。待機取 detection_range、追擊／攻擊取 lose_interest_range。Player 的受傷無敵計時在座位／介面移動鎖之前更新，兩者不會延長無敵。正式 Raker 場景回歸見 [test_raker.gd](tests/test_raker.gd)、[test_raker_cabin.gd](tests/test_raker_cabin.gd) 與 [test_raker_boarding.gd](tests/test_raker_boarding.gd)。
+一般移動時，已在近戰距離／高度範圍且視線通暢的玩家優先於拆車體結構目標，直接進入 ATTACK；接觸攻擊不能先消耗其共用冷卻。攀車目標更新只選目標，不逐影格覆寫 CHASE，避免阻止攻擊狀態執行。待機取 detection_range、追擊／攻擊取 lose_interest_range。Player 的受傷無敵計時在座位／介面移動鎖之前更新，兩者不會延長無敵。現行正式 Raker 回歸保留 [抓取所有權與清理](tests/test_raker_grab.gd) 及 [移動 RV 攀爬](tests/test_moving_rv_climbing.gd)；其他追擊與近戰專項結果屬歷史驗收。
 
 ### RV 外觀與駕駛室原型
 
@@ -479,7 +479,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - 設備支撐可為底盤、Item 或 RVStructurePanel；板件毀壞發送 removing，附掛設備停機並以車輛點速度連鎖掉落。地板網格與碰撞屬底盤固定部分，重量包含在固定底盤中，不提供獨立耐久或施工；安裝在地板的物品直接引用底盤支撐。
 - `RVStructureConstruction` 提供 begin／rejection_reason／cancel／is_building，平板五頁為 Overview、Energy、Equipment、Crafting、Structure，施工位於 Structure；每槽顯示耐久、附掛設備、型態選單與操作原因。維修 2 Metal Parts／2 秒補 60 HP，重建 6／6 秒滿血，側牆門及普通／左側開孔屋頂互換 2／4 秒保留比例，新門關閉。一車一項，熄火、速度 ≤ 0.5 m/s、有電、操作者 UI 所有權及平板服務有效，且 is_management_active() 為真；受擊、退出 TUI、關閉、掉落、斷電、發動／超速中止該平板的施工，切換分頁不取消。完成前重驗材料、目標、依附與碰撞，通過才扣料提交；不提供主動拆除空槽、施工保存或進度還原。
 - 變型須清空直接／間接依附，維修不用；重建／變型以快取候選碰撞檢查全部物理層，排除舊部件與底盤，避免包住角色或物件。平板在 `_ready` 關閉可摧毀旗標並覆寫傷害，不加入怪物可攻擊群組；仍是可搬移、掉落與需供電的設備。
-- `test_rv_structure_modules.gd` 覆蓋固定槽、E 門扇、阻擋、獨立破壞、設備掉落、固定地板與保存；`test_structure_construction.gd` 驗證扣料時機、全部中止條件、比例、重建、依附與碰撞及真實平板按鈕／關閉，並確認地板沒有施工槽位或按鈕。可見場景為 `rv_structure_playground.tscn`，歷史門測試場保留 E 開關與破壞捷徑。
+- `test_rv_structure_modules.gd` 覆蓋固定槽、E 門扇、阻擋、獨立破壞、設備掉落、固定地板與保存；施工扣料、中止、比例、重建、依附碰撞與平板操作的歷史專項結果見 [施工驗收](docs/validation/2026-10-05-rv-structure-construction.md)。可見場景為 `rv_structure_playground.tscn`，歷史門測試場保留 E 開關與破壞捷徑。
 
 實測及限制見 [分片牆與門驗收](docs/validation/2026-09-16-rv-structure-doors.md)。
 
@@ -493,7 +493,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
-- DriverSeat 鏡頭局部高度 1.62 m，高於儀表台上緣 1.33 m；調整駕駛姿勢時須保留前方路面視線。`test_rv_cockpit` 檢查預設視角中車頭前 15／25／40 m 路面落在畫面內，且不被儀表台或車頭不透明方盒網格遮擋；原生畫面另行確認。
+- DriverSeat 鏡頭局部高度 1.62 m，高於儀表台上緣 1.33 m；調整駕駛姿勢時須保留前方路面視線。預設視角中車頭前 15／25／40 m 路面與不透明網格遮擋的歷史檢查見 [駕駛艙驗收](docs/validation/2026-09-16-rv-cockpit.md)；變更後須另行確認原生畫面。
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
 - v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
@@ -510,17 +510,9 @@ EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角�
 
 VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，舊 work 請求欄位僅保留存檔相容；Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
 
-| 測試 | 覆蓋 |
-|---|---|
-| test_terminal_commands.gd | 純文字解析、明確派送、唯讀補全、保留 cheat、非法輸入／結果及輸出上限 |
-| test_rv_terminal_presenter.gd | 英文名稱與原因呈現、未知訊息處理及原始服務狀態保持 |
-| test_rv_tablet_ui.gd | 五頁鍵盤／滑鼠、shell／歷史／補全、隱藏退出鍵、Esc／popup 所有權、施工取消及製作佇列獨立生命週期 |
-| test_rv_engine.gd | 預裝、引擎所有權、滿背包交換、大型道具、故障服務、維修、性能差、車燈、v5 往返、舊版拒絕與實際引擎製作 |
-| test_rv_boarding.gd | 正式角色攜引擎走坡板／走道，無碰撞動畫／占用操作／坡度、驅動互鎖、安全離座與自由放置 |
-| test_rv_checkpoint.gd | 磁碟往返：安裝／背包／倉庫／地面引擎 ID、型號、耐久，以及拒絕跨所有權重複 |
-| rv_rebuild_playground.tscn | 可見引擎艙／坡板／汽車儀表／夜間車燈／真實輪驅回放 |
+[test_rv_engine](tests/test_rv_engine.gd) 保留預裝、引擎所有權、交換、維修、性能、車燈、保存及製作檢查；終端呈現、坡板與駕駛姿勢需另行驗收。可見入口為 `rv_rebuild_playground.tscn`。
 
-完整測試與實機證據見 [驗收紀錄](docs/validation/2026-09-16-rv-rebuild-engine.md)。該次紀錄使用本機 Godot 4.7.2；目前 CI 也固定至 4.7.2。外掛設備撞擊力矩、極端翻車、怪物群和長途經濟未因此視為完成。
+歷史專項測試與實機證據見 [驗收紀錄](docs/validation/2026-09-16-rv-rebuild-engine.md)。該次紀錄使用本機 Godot 4.7.2；目前 CI 也固定至 4.7.2。外掛設備撞擊力矩、極端翻車、怪物群和長途經濟未因此視為完成。
 
 
 <a id="section-6"></a>
@@ -544,54 +536,37 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### POI 資產層與副本驗證
 
-`PoiDefinition`（`world/poi_definition.gd`）及 `world/poi_definitions/*.tres` 統一兩類 POI 的 ID、場景、場址範圍、入口路徑及室內 profile。POIConfig.DEFINITIONS 是資產目錄；GENERATION_IDS 是保留原順序的 v3／v4 生成池，兩者分開。POISpawner 與 chunk 鄰帶導航共用 scene_for_site，未知 ID 不退回預設；無 exterior 的舊場址解析至 maintenance_legacy。生成時只為 INSTANCE_ENTRANCE 註冊 PoiInstanceManager；入口與返回路徑由定義傳入 metadata，未使用定義的既有測試保留原節點路徑預設。v5 的 WalkInSites 使用定義 site_bounds 整地、清空植被及保護跨帶場址；舊場址規則不變。戶外保存記錄 content_version，不支援的版本拒絕載入，尚無自動佈局遷移。詳見 [共用規範](docs/guides/poi-authoring.md)。
+`PoiDefinition`（`world/poi_definition.gd`）及 `world/poi_definitions/*.tres` 統一兩類 POI 的 ID、場景、場址範圍、入口路徑及室內 profile。POIConfig.DEFINITIONS 是資產目錄；GENERATION_IDS 是保留原順序的 v3／v4 生成池，兩者分開。POISpawner 與 chunk 鄰帶導航共用 scene_for_site，未知 ID 不退回預設；無 exterior 的舊場址解析至 maintenance_legacy。生成時只為 INSTANCE_ENTRANCE 註冊 PoiInstanceManager；入口與返回路徑由定義傳入 metadata，未使用定義的 caller 保留原節點路徑預設。v5 的 WalkInSites 使用定義 site_bounds 整地、清空植被及保護跨帶場址；舊場址規則不變。戶外保存記錄 content_version，不支援的版本拒絕載入，尚無自動佈局遷移。詳見 [共用規範](docs/guides/poi-authoring.md)。
 
-加油站 `fuel_pump.tscn` 以 `Visuals/Model` 實例化 `assets/models/gas_station/fuel_pump.glb`，Collision 保留原三塊 BoxShape3D，字樣仍由 Godot 維護。GLB 不帶碰撞或行為；來源為 `scripts/build_fuel_pump_glb.py`。測試場 F7 只切換新舊 Visuals，原碰撞物件不重建。尺寸、匯入比例、碰撞及探索回歸由 `test_gas_station.gd` 驗證。
+加油站 `fuel_pump.tscn` 以 `Visuals/Model` 實例化 `assets/models/gas_station/fuel_pump.glb`，Collision 保留原三塊 BoxShape3D，字樣仍由 Godot 維護。GLB 不帶碰撞或行為；來源為 `scripts/build_fuel_pump_glb.py`。測試場 F7 只切換新舊 Visuals，原碰撞物件不重建。尺寸、匯入比例、碰撞及探索的歷史專項結果見 [加油站驗收](docs/validation/2026-09-19-gas-station.md)。
 
-`world/poi_kit/buildings/gas_station.tscn` 是同世界可步行進出的靜態建築資產，分離 Visuals、Collision、Furnishings、LootSpawns、AccessPoints 與 Lights。資產不自行產生物資，也不持有副本管理器；`tests/gas_station_playground.gd` 負責測試地面、導航烘焙、正式玩家／RV 及一次性固定 seed 物資生成，道具進入 WorldEntities。生成 v5 已接入正式串流、場址與檢查點；`test_gas_station.gd` 驗證同世界通行、導航、E 拾取及替換外觀後碰撞仍存在。
+`world/poi_kit/buildings/gas_station.tscn` 是同世界可步行進出的靜態建築資產，分離 Visuals、Collision、Furnishings、LootSpawns、AccessPoints 與 Lights。資產不自行產生物資，也不持有副本管理器；`tests/gas_station_playground.gd` 負責測試地面、導航烘焙、正式玩家／RV 及一次性固定 seed 物資生成，道具進入 WorldEntities。生成 v5 已接入正式串流、場址與檢查點；同世界通行、導航、E 拾取及替換外觀後碰撞的歷史結果見 [正式加油站驗收](docs/validation/2026-09-20-production-gas-station.md)。
 
 `world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。所有副本使用 InteriorProfile 登錄的 16 個地堡模組；舊副本專用資產與展示場已移除。
 
 物資標記只提供 caller RNG 的抽選契約；初訪地堡由 BunkerContent 使用獨立 RNG 安置內容，BunkerCache 保管未領取物件。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。首批來源 `build_bunker_kit.py` 拒絕覆蓋既有 kit。詳見 [製作規格](world/poi_kit/README.md)。
 
-`test_poi_asset_kit.gd` 驗證房型接口與玩家跨接縫；`test_interior_*.gd` 驗證 1000 seeds、扩充、逐門掃掠、三層大型搬運、導航與 manifest 保存；`test_poi_instances.gd` 驗證正式入口、世界隔離、外部電量、掉落／重返。實機觀察與自動檢查分開記錄。
+房型接口、跨接縫、seed 掃描、大型搬運及完整室內導航屬歷史專項驗收；現行自動測試保留 [POI 轉場取消與保存](tests/test_poi_transition_persistence.gd)。實機觀察與自動檢查分開記錄。
 
-### 統一驗證
+### 核心自動驗證
 
-測試入口為 `scripts/test.ps1`，預設 `quick`；`integration`、`slow`、`assets`、`smoke` 分組供開發選擇，`full` 執行全部有效測試與正式主世界驗證。`tests/suites.json` 必須覆蓋每個頂層測試，未分類、重複或缺檔即失敗。CI 在各 job 的獨立 checkout 分組跑全部覆蓋；本機保留逐支獨立程序，避免共享存檔與 autoload 狀態污染。固定 60 fps 模擬排程不修改物理 Hz、time_scale 或求解器；`-RealTime` 提供實時對照。等待導航及 checkpoint 背景工作的測試使用 `tests/support/test_wait.gd` 的條件與期限；有效物理採樣時段仍保留。命令、維護與證據位置見 [測試指南](tests/README.md)。
+[scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的 16 支 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
+
+舊版本相容性專項、全 seed 掃描、逐姿勢美術與展示場自測已退出自動清單；遊戲相容分支與手動場景仍保留。歷史驗收結果保持原日期與範圍，不能當作本次通過證據。完整保留清單與命令見 [測試指南](tests/README.md)。
+
+以 `-TestFilter` 選取檔名或逗號分隔的樣式時，只跑符合的保留測試；`-Smoke` 可加上主世界檢查，`-SmokeOnly` 只跑 smoke。`-List` 不啟動引擎；同一批已匯入資產可用 `-SkipImport`。每支測試以獨立 Godot 程序執行，固定 60 fps 模擬排程不修改物理 Hz、time_scale 或求解器，`-RealTime` 可作實時對照。等待背景工作使用 `tests/support/test_wait.gd` 的條件與期限，仍保留有意義的物理採樣時段。
+
+Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`；smoke 另要求 `WORLD_READY_FOR_PLAY`。任一程序失敗或超過期限即停止，避免繼續使用受污染的狀態。版本、工作樹、選取清單、結果與耗時保存於 `.godot/test-logs/` 各次執行目錄。[CI](.github/workflows/tests.yml) 使用單一 Windows／pwsh job，期限 10 分鐘，在 main push、PR 或手動啟動；取消同一分支被取代的執行，僅文件變更略過。
+
+文件更動核對連結與來源；程式更動選取最小有意義的測試，必要時執行預設核心集。物理更動另依 [AGENTS.md](AGENTS.md) 做互動觀察。Headless 結果不代表原生畫面、長途經濟、極端翻車或怪物群已完成驗收。
 
 底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
 
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 
-[scripts/test.ps1](scripts/test.ps1) 檢查實際 Godot process 的退出碼、錯誤日誌與 `PASS:`；smoke 需專屬 WORLD_READY_FOR_PLAY 標記。`-TestFilter` 可指定檔名或逗號分隔的多個樣式，合併去重後只跑選取項目；`-Smoke` 額外檢查正式主場景，`-StartAt test_name` 從指定測試接續。每項預設期限 240 秒，CI 每個分組 job 期限 30 分鐘；報告須區分分段與單次完整執行。CI 為 [tests.yml](.github/workflows/tests.yml)，版本／commit／工作樹、選取清單、結果及耗時保存於 `.godot/test-logs/` 的各次執行目錄。
-
-| 測試 | 關注範圍 |
-|---|---|
-| [test_player_inventory](tests/test_player_inventory.gd) | 格數、選取、大型限制、消耗 |
-| [test_equipment_lifecycle](tests/test_equipment_lifecycle.gd) | 玩家授權、取消、跨 RV 連線、正確車輛供電 |
-| [test_combat_targeting](tests/test_combat_targeting.gd) | 獨立選敵策略 |
-| [test_monster_navigation](tests/test_monster_navigation.gd) | 導航、高度、碰撞、攀爬和攻擊 gates，尤其腳下射線授權 |
-| [test_player_climbing](tests/test_player_climbing.gd) | 攀爬幾何、手持大型物品限制與 helper 契約 |
-| [test_player_large_item_climbing](tests/test_player_large_item_climbing.gd) | 正式 RV 梯子、拒絕提示節制、拾取／倉庫交接、丟棄／消耗恢復、平台速度與物品 ID |
-| [test_moving_rv_climbing](tests/test_moving_rv_climbing.gd) | 生產場景、移動 RV 攀爬／支撐／拆頂，含物理驅動情境 |
-| [test_world_entities](tests/test_world_entities.gd) | chunk 刪除後容器存活、場景重建 |
-| [test_rv_systems](tests/test_rv_systems.gd) | 電池交易、能源、正式設備工作／清理、失效授權 |
-| [test_rv_extended](tests/test_rv_extended.gd) | 底盤容量、加油孔、維修、輪胎、重量、長停耗電 |
-| [test_rv_braking](tests/test_rv_braking.gd) | 漸進踏板、不同速度煞停距離、倒車、引擎熄火與獨立駐車 |
-| [test_rv_handling](tests/test_rv_handling.gd) | 正式輪驅起步、轉向、低速停靠倒出、平地／5° 坡車況與設備配重、支撐離座 |
-| [test_rv_experience](tests/test_rv_experience.gd) | 維修蓋中途阻擋、坡板無碰撞與即時反向、過渡態保存拒絕、燈具供電／耗電、設定相容與音效狀態 |
-| [test_rv_shared_storage](tests/test_rv_shared_storage.gd) | 掉落電池、共用道具倉庫、滿庫／滿背包、引擎救援、v5 往返與舊版拒絕 |
-| [test_rv_checkpoint](tests/test_rv_checkpoint.gd) | 磁碟與主世界重建、電池及生產所有權 |
-| [test_rv_resource_cycle](tests/test_rv_resource_cycle.gd) | 搜刮、回收、製作、加油、維修、充電與再出發 |
-| [test_rv_physics_regression](tests/test_rv_physics_regression.gd) | 正式 RV 裝載設備穩定性 |
-| [test_poi_definitions](tests/test_poi_definitions.gd) | 完整 POI 目錄、ID 唯一性、資源與場景契約、類型分流及舊版場址相容 |
-
-本次改版見 [共用儲存驗收](docs/validation/2026-09-16-rv-shared-storage.md)。先前執行結果見 [RV 驗收紀錄](docs/validation/2026-09-15-rv-systems.md)。文件更動檢查連結與來源；程式更動執行適用測試及統一 runner。物理更動另須依 [AGENTS.md](AGENTS.md) 做互動視覺檢查。資源交易、能源與保存已有正式場景回歸；長途經濟、極端翻車和怪物群仍需擴大驗收。
-
 遵循 GDScript tabs、可行時明確型別、snake_case 檔案／函式、PascalCase class、UPPER_SNAKE_CASE 常數；重用 core 契約。新增 POI 必須有有效內容，新增物品需設回收產出，設備需驗證連線／取消／毀損。
 
-地形每帶依生成版本寬度建立網格（v4 為 301×51 個頂點，v2／v3 為 151×51），行駛中分批取樣、組裝及安置；導航背景烘焙，無獨立作業執行緒生成場景節點。`test_world_generation.gd` 驗證 100 seed、載入順序、坡度、停車與實際網格／導航接縫；`test_roadside_exploration.gd` 使用正式玩家從停車區走到物資、以 E 拾取再返回。`highway_playground.tscn` 提供正式輪驅 5 km 及停車倒出回放。量測、測試環境與限制見 [驗收紀錄](docs/validation/2026-09-15-highway.md)。
+地形每帶依生成版本寬度建立網格（v4 為 301×51 個頂點，v2／v3 為 151×51），行駛中分批取樣、組裝及安置；導航背景烘焙，無獨立作業執行緒生成場景節點。100 seed、載入順序、坡度、停車、網格／導航接縫及正式玩家搜刮往返的專項結果屬歷史驗收。現行 [串流生成檢查](tests/test_streaming_generation.gd) 聚焦分片幾何、森林配置與實體碰撞。`highway_playground.tscn` 提供正式輪驅 5 km 及停車倒出回放。量測、測試環境與限制見 [驗收紀錄](docs/validation/2026-09-15-highway.md)。
 
 ### v6 路邊小 POI
 
