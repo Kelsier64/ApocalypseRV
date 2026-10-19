@@ -181,6 +181,8 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
+夜視由同一 WorldClock 依太陽高度 −0.16～0.02 平滑切換：獨立複製的 Environment 飽和度降至 0，只有 3D 場景轉灰，GameSettings 的復古色調與飽和度偏好仍獨立套用。時鐘持有一盞範圍 8 m、能量 1.5、衰減 0.9 的中性 OmniLight3D，每幀跟隨該 viewport 的目前相機；時鐘 running=false 時仍更新位置，無同世界相機或白天則停用。補光啟用陰影、關閉高光／間接光／體積霧注入，保留近距離遮擋及遠處黑暗，不改既有霧距離或裁掉實際燈具。光源不隨玩家搬入獨立 POI，日夜視覺由既有時鐘推導，不新增存檔欄位。
+
 Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。v5 缺欄位沿用 day 1 / 08:00，不改寫來源檔案、不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
 
 `tests/day_night_playground.tscn` 的調時／加速鍵只用於驗收。歷史美術樣板凍結時鐘並明確使用 exponential fog，避免新光照每幀覆寫 A/B 環境。

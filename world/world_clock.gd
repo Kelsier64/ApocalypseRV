@@ -4,6 +4,8 @@ class_name WorldClock
 signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
+const NIGHT_VISION_RANGE := 8.0
+const NIGHT_VISION_ENERGY := 1.5
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
 var elapsed_seconds := DEFAULT_TIME
 var running := true
@@ -17,6 +19,8 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
+var _night_vision_strength := 0.0
+var night_vision_light: OmniLight3D
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -64,6 +68,19 @@ func _ready() -> void:
 	if sun != null:
 		sun.shadow_enabled = true
 		sun.directional_shadow_max_distance = 140.0
+	# A small, shadowed fill represents dark adaptation without lighting the
+	# whole world. Keep it here: the player moves into a separate World3D in POIs.
+	night_vision_light = OmniLight3D.new()
+	night_vision_light.name = "NightVision"
+	night_vision_light.omni_range = NIGHT_VISION_RANGE
+	night_vision_light.omni_attenuation = 0.9
+	night_vision_light.light_color = Color.WHITE
+	night_vision_light.light_specular = 0.0
+	night_vision_light.light_indirect_energy = 0.0
+	night_vision_light.light_volumetric_fog_energy = 0.0
+	night_vision_light.shadow_enabled = true
+	night_vision_light.visible = false
+	add_child(night_vision_light)
 	var layer := CanvasLayer.new()
 	layer.layer = 46
 	add_child(layer)
@@ -101,6 +118,16 @@ func _on_video_setting_changed(key: StringName, _value: Variant) -> void:
 
 func _process(delta: float) -> void:
 	if running: advance(delta)
+	# Camera motion also continues while time is held in staging/playgrounds.
+	_update_night_vision()
+
+func _update_night_vision() -> void:
+	if not is_instance_valid(night_vision_light): return
+	var camera := get_viewport().get_camera_3d()
+	night_vision_light.visible = _night_vision_strength > 0.0 and camera != null and camera.get_world_3d() == night_vision_light.get_world_3d()
+	if not night_vision_light.visible: return
+	night_vision_light.global_position = camera.global_position
+	night_vision_light.light_energy = NIGHT_VISION_ENERGY * _night_vision_strength
 
 func advance(real_seconds: float) -> void:
 	if not is_finite(real_seconds) or real_seconds < 0.0: return
@@ -162,6 +189,11 @@ func apply_time() -> void:
 	var mist := conditions.z / 2.0
 	var direction := sun_direction()
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
+	# Fade in below the horizon; daylight retains the original colors and light.
+	_night_vision_strength = 1.0 - smoothstep(-0.16, 0.02, direction.y)
+	environment.adjustment_enabled = _night_vision_strength > 0.0
+	environment.adjustment_saturation = 1.0 - _night_vision_strength
+	_update_night_vision()
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
