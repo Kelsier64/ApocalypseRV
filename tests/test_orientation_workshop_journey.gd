@@ -2,9 +2,7 @@ extends SceneTree
 ## v12 stage two uses the original production world, stock and Item transactions.
 ## Actor positions, camera aim and service work time are controlled test inputs.
 ## No inventory records, successful course flags or material deposits are injected.
-# Godot 4.7.2 can free an inherited script while traversing its shutdown list.
-# Keep the shared base alive until this fixture clears (upstream #117991).
-static var _shutdown_base_scripts: Array[Script] = [Item]
+const SHUTDOWN_GUARD = preload("res://tests/support/godot_472_shutdown.gd")
 const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 var world: Node3D
@@ -15,7 +13,9 @@ var vehicle: Chassis
 var player: CharacterBody3D
 var journey_completed := false
 
-func _init() -> void: run.call_deferred()
+func _init() -> void:
+	SHUTDOWN_GUARD.retain_item_base()
+	run.call_deferred()
 
 func check(ok: bool, note: String) -> bool:
 	if not ok:

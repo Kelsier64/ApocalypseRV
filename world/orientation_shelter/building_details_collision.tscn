@@ -1,0 +1,190 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxShape3D" id="compressor_shape"]
+size = Vector3(1.45, 0.95, 0.65)
+
+[sub_resource type="BoxShape3D" id="part_000"]
+size = Vector3(1.3, 0.84, 3.3)
+
+[sub_resource type="BoxShape3D" id="part_001"]
+size = Vector3(1.08, 0.16, 1.7)
+
+[sub_resource type="BoxShape3D" id="part_002"]
+size = Vector3(0.8, 1.4, 1.4)
+
+[sub_resource type="BoxShape3D" id="part_003"]
+size = Vector3(4, 0.2, 2)
+
+[sub_resource type="BoxShape3D" id="part_004"]
+size = Vector3(3.2, 1.7, 1.2)
+
+[sub_resource type="BoxShape3D" id="part_005"]
+size = Vector3(1.2, 2.35, 0.72)
+
+[sub_resource type="BoxShape3D" id="part_006"]
+size = Vector3(0.2, 1.32, 0.2)
+
+[sub_resource type="BoxShape3D" id="part_007"]
+size = Vector3(0.38, 1.5, 0.3)
+
+[sub_resource type="BoxShape3D" id="part_008"]
+size = Vector3(1.06, 1.08, 1.06)
+
+[sub_resource type="BoxShape3D" id="part_009"]
+size = Vector3(1.7, 0.26, 2.2)
+
+[node name="BuildingDetailsCollision" type="Node3D"]
+
+[node name="AirCompressor" type="StaticBody3D" parent="."]
+position = Vector3(-16.8, 0.505, 12.95)
+
+[node name="Shape" type="CollisionShape3D" parent="AirCompressor"]
+shape = SubResource("compressor_shape")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo-1_-21" type="StaticBody3D" parent="."]
+position = Vector3(-12.5, 5.35, -21)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo-1_-21"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo1_-15" type="StaticBody3D" parent="."]
+position = Vector3(12.5, 5.35, -15)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo1_-15"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo-1_-9" type="StaticBody3D" parent="."]
+position = Vector3(-12.5, 5.35, -9)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo-1_-9"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo1_-3" type="StaticBody3D" parent="."]
+position = Vector3(12.5, 5.35, -3)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo1_-3"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo-1_3" type="StaticBody3D" parent="."]
+position = Vector3(-12.5, 5.35, 3)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo-1_3"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="WrappedCargo1_9" type="StaticBody3D" parent="."]
+position = Vector3(12.5, 5.35, 9)
+
+[node name="Shape" type="CollisionShape3D" parent="WrappedCargo1_9"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="PumpPlinth" type="StaticBody3D" parent="."]
+position = Vector3(-18.55, 0.08, -30.5)
+
+[node name="Shape" type="CollisionShape3D" parent="PumpPlinth"]
+shape = SubResource("part_001")
+metadata/navigation_solid = true
+
+[node name="FiltrationPump" type="StaticBody3D" parent="."]
+position = Vector3(-18.55, 0.86, -30.5)
+
+[node name="Shape" type="CollisionShape3D" parent="FiltrationPump"]
+shape = SubResource("part_002")
+metadata/navigation_solid = true
+
+[node name="GeneratorPlinth" type="StaticBody3D" parent="."]
+position = Vector3(-12, 0.1, 16.5)
+
+[node name="Shape" type="CollisionShape3D" parent="GeneratorPlinth"]
+shape = SubResource("part_003")
+metadata/navigation_solid = true
+
+[node name="StandbyGenerator" type="StaticBody3D" parent="."]
+position = Vector3(-12, 1.05, 16.5)
+
+[node name="Shape" type="CollisionShape3D" parent="StandbyGenerator"]
+shape = SubResource("part_004")
+metadata/navigation_solid = true
+
+[node name="GeneratorSwitchgear" type="StaticBody3D" parent="."]
+position = Vector3(-8.8, 1.295, 14.95)
+
+[node name="Shape" type="CollisionShape3D" parent="GeneratorSwitchgear"]
+shape = SubResource("part_005")
+metadata/navigation_solid = true
+
+[node name="GeneratorGuard-14.4" type="StaticBody3D" parent="."]
+position = Vector3(-14.4, 0.66, 17.3)
+
+[node name="Shape" type="CollisionShape3D" parent="GeneratorGuard-14.4"]
+shape = SubResource("part_006")
+metadata/navigation_solid = true
+
+[node name="GeneratorGuard-9.6" type="StaticBody3D" parent="."]
+position = Vector3(-9.6, 0.66, 17.3)
+
+[node name="Shape" type="CollisionShape3D" parent="GeneratorGuard-9.6"]
+shape = SubResource("part_006")
+metadata/navigation_solid = true
+
+[node name="DoorBumper-4.65" type="StaticBody3D" parent="."]
+position = Vector3(-4.65, 0.75, 14.73)
+
+[node name="Shape" type="CollisionShape3D" parent="DoorBumper-4.65"]
+shape = SubResource("part_007")
+metadata/navigation_solid = true
+
+[node name="DoorBumper4.65" type="StaticBody3D" parent="."]
+position = Vector3(4.65, 0.75, 14.73)
+
+[node name="Shape" type="CollisionShape3D" parent="DoorBumper4.65"]
+shape = SubResource("part_007")
+metadata/navigation_solid = true
+
+[node name="RoofVent-11_-36" type="StaticBody3D" parent="."]
+position = Vector3(-11, 9.64, -36)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofVent-11_-36"]
+shape = SubResource("part_008")
+metadata/navigation_solid = true
+
+[node name="RoofVent11_-36" type="StaticBody3D" parent="."]
+position = Vector3(11, 9.64, -36)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofVent11_-36"]
+shape = SubResource("part_008")
+metadata/navigation_solid = true
+
+[node name="RoofVent-11_-4" type="StaticBody3D" parent="."]
+position = Vector3(-11, 9.64, -4)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofVent-11_-4"]
+shape = SubResource("part_008")
+metadata/navigation_solid = true
+
+[node name="RoofVent11_-4" type="StaticBody3D" parent="."]
+position = Vector3(11, 9.64, -4)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofVent11_-4"]
+shape = SubResource("part_008")
+metadata/navigation_solid = true
+
+[node name="RoofHatch-7.5" type="StaticBody3D" parent="."]
+position = Vector3(-7.5, 9.23, -20)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofHatch-7.5"]
+shape = SubResource("part_009")
+metadata/navigation_solid = true
+
+[node name="RoofHatch7.5" type="StaticBody3D" parent="."]
+position = Vector3(7.5, 9.23, -20)
+
+[node name="Shape" type="CollisionShape3D" parent="RoofHatch7.5"]
+shape = SubResource("part_009")
+metadata/navigation_solid = true

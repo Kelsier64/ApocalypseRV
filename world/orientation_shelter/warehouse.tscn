@@ -6,7 +6,7 @@
 
 [ext_resource type="PackedScene" path="res://world/orientation_shelter/warehouse_pallet.tscn" id="pallet"]
 
-[ext_resource type="PackedScene" path="res://assets/models/item_box/item_box.glb" id="case"]
+[ext_resource type="PackedScene" path="res://world/orientation_shelter/sealed_carton.tscn" id="case"]
 
 [ext_resource type="PackedScene" path="res://world/tutorial_shelter/industrial_light.tscn" id="lamp"]
 

@@ -13,16 +13,23 @@ size = Vector3(0.12, 4.9, 0.12)
 size = Vector3(0.26, 0.05, 0.28)
 
 [sub_resource type="BoxMesh" id="m2"]
-size = Vector3(1.5, 0.1, 4.05)
+size = Vector3(1.42, 0.1, 4.05)
 
 [sub_resource type="BoxMesh" id="m3"]
-size = Vector3(0.1, 0.16, 4.18)
+size = Vector3(0.1, 0.16, 4.14)
 
 [sub_resource type="BoxMesh" id="m4"]
 size = Vector3(1.6, 0.15, 0.1)
 
 [sub_resource type="BoxMesh" id="m5"]
 size = Vector3(0.06, 2.05, 0.06)
+
+[sub_resource type="CylinderMesh" id="brace_bolt"]
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.16
+radial_segments = 6
+rings = 1
 
 [node name="WarehouseRack" type="Node3D"]
 
@@ -167,25 +174,37 @@ mesh = SubResource("m4")
 material_override = ExtResource("steel")
 
 [node name="Brace-2.04_-1" type="MeshInstance3D" parent="."]
-position = Vector3(0, 2.9, -2.04)
+position = Vector3(0, 2.9, -2.073)
 mesh = SubResource("m5")
 material_override = ExtResource("steel")
 rotation = Vector3(0, 0, -0.78)
 
 [node name="Brace-2.04_1" type="MeshInstance3D" parent="."]
-position = Vector3(0, 2.9, -2.04)
+position = Vector3(0, 2.9, -2.007)
 mesh = SubResource("m5")
 material_override = ExtResource("steel")
 rotation = Vector3(0, 0, 0.78)
 
 [node name="Brace2.04_-1" type="MeshInstance3D" parent="."]
-position = Vector3(0, 2.9, 2.04)
+position = Vector3(0, 2.9, 2.007)
 mesh = SubResource("m5")
 material_override = ExtResource("steel")
 rotation = Vector3(0, 0, -0.78)
 
 [node name="Brace2.04_1" type="MeshInstance3D" parent="."]
-position = Vector3(0, 2.9, 2.04)
+position = Vector3(0, 2.9, 2.073)
 mesh = SubResource("m5")
 material_override = ExtResource("steel")
 rotation = Vector3(0, 0, 0.78)
+
+[node name="BraceBoltBack" type="MeshInstance3D" parent="."]
+position = Vector3(0, 2.9, -2.04)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("brace_bolt")
+material_override = ExtResource("steel")
+
+[node name="BraceBoltFront" type="MeshInstance3D" parent="."]
+position = Vector3(0, 2.9, 2.04)
+rotation = Vector3(1.570796, 0, 0)
+mesh = SubResource("brace_bolt")
+material_override = ExtResource("steel")

@@ -1,0 +1,93 @@
+{
+  "source_sha256": "588c365ff0e52a7cc15bf59f5fdec4f2e6dc6997f30b84b9a4602aa865f09623",
+  "size_m": [
+    1.45,
+    0.95,
+    0.65
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 90.0,
+  "fit_scale_xyz": [
+    1.4363393277824945,
+    1.5053994730935911,
+    1.1837699238677175
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "depot_air_compressor",
+  "up": "+Y",
+  "front_intended": "-Z",
+  "raw_triangles": 49910,
+  "triangles": 4990,
+  "vertices": 6490,
+  "final_sha256": "cb319a07397917ee8c5fd24a88e4ef77b20f3c0b16ff14b249c244c82f7ae686",
+  "texture_sha256": [
+    "6f9a86965723792391ae018e4c36fad0825cec5ed45122dff2195063722ce4a0",
+    "95299dabfc4ecea73ce0fb54f11af3955ab329f9f75abdf149d3f5996320551b",
+    "bc9670dd1813c79364356b74af9d33562be1b1a4f44f39a6918de1fe6ed85870"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.1",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.7250000238418579,
+    0.0,
+    -0.32499998807907104
+  ],
+  "bounds_max_m": [
+    0.7250000238418579,
+    0.949999988079071,
+    0.32499998807907104
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 88,
+    "duplicate_triangles": 36,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "PASS",
+    "scope": "single static scenery instance in v12 workshop",
+    "textured_views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "clay_views": [
+      "oblique"
+    ],
+    "raw_and_reduced_service_side_compared": true,
+    "placement_m": [
+      -16.8,
+      0.03,
+      12.95
+    ],
+    "in_world_support_and_collision_tolerance_m": 0.001,
+    "limitations": [
+      "Generated unseen back/underside; small fins and wheel hubs simplified.",
+      "Nonmanifold/duplicate internal topology retained for static visual; separate box collision.",
+      "No interactive compressor simulation or manual gameplay claim."
+    ]
+  },
+  "source_path": ".godot/art-work/depot_air_compressor/run-01/generation/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "fbf4805a-8fe6-4480-82ed-ab2aa29a588e",
+    "reference_sha256": "b724ccf01c848ce4f0ae904b126848d3e0b1a44ebb7bcccd263ec77ced3f260d"
+  }
+}

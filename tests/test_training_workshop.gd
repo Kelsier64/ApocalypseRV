@@ -1,6 +1,7 @@
 extends SceneTree
 ## Production lessons 2-6: real stock, UI, inventory placement and material work.
 ## Only lesson one and actor positions are fixture setup; no workshop flags are set.
+const SHUTDOWN_GUARD = preload("res://tests/support/godot_472_shutdown.gd")
 const WAIT = preload("res://tests/support/test_wait.gd")
 var failures: Array[String] = []
 var world: Node3D
@@ -12,7 +13,9 @@ var player: CharacterBody3D
 var checkpoint: Node
 var stage_entries: Dictionary = {}
 
-func _init() -> void: _run.call_deferred()
+func _init() -> void:
+	SHUTDOWN_GUARD.retain_item_base()
+	_run.call_deferred()
 
 func check(okay: bool, detail: String) -> bool:
 	if not okay:

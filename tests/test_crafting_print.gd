@@ -1,11 +1,10 @@
 extends SceneTree
 ## Rendering-independent coverage for the real station's mesh-only print presentation.
-# Keep Item alive through Godot 4.7.2's script-list shutdown traversal.
-# Engine fix: https://github.com/godotengine/godot/pull/117991 (4.8).
-static var _shutdown_base_scripts: Array[Script] = [Item]
+const SHUTDOWN_GUARD = preload("res://tests/support/godot_472_shutdown.gd")
 var failures: Array[String] = []
 
 func _init() -> void:
+	SHUTDOWN_GUARD.retain_item_base()
 	_run.call_deferred()
 
 func check(okay: bool, message: String) -> void:

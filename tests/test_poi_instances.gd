@@ -116,10 +116,31 @@ func _run() -> void:
 	var power_before: float = chassis.current_power
 	await frames(60)
 	check(chassis.current_power < power_before, "Overworld power drains during indoor visit")
-	var chunks: int = main.get_node("WorldGenerator").active_chunks.size()
+	# Moving to the exterior entrance changes the desired outdoor window.
+	# Its gradual publication can outlast the indoor physics-frame waits above.
+	var outdoor_anchor := manager.stream_anchor
+	var anchor_band := floori(-outdoor_anchor.z / generator.profile.chunk_length)
+	var expected_bands: Array[int] = generator.protected_bands(outdoor_anchor)
+	for band in range(anchor_band - generator.profile.chunks_behind, anchor_band + generator.profile.chunks_ahead + 1):
+		if band not in expected_bands: expected_bands.append(band)
+	expected_bands.sort()
+	if not await WAIT.until(self, func() -> bool:
+		var bands: Array = generator.active_chunks.map(func(entry): return int(entry.index))
+		bands.sort()
+		return not generator.building and bands == expected_bands and generator.active_chunks.all(func(entry): return is_instance_valid(entry.node) and entry.node.navigation_ready), 60000, true):
+		check(false, "Outdoor entrance streaming settles before indoor isolation check")
+		quit(1)
+		return
+	var chunks: Array = generator.active_chunks.map(func(entry): return int(entry.index))
+	chunks.sort()
 	player.position.z = -2000
 	await frames(5)
-	check(main.get_node("WorldGenerator").active_chunks.size() == chunks, "Indoor coordinates do not drive outdoor streaming")
+	# Streaming runs in _process, independently of catch-up physics ticks.
+	await process_frame
+	await process_frame
+	var chunks_after: Array = generator.active_chunks.map(func(entry): return int(entry.index))
+	chunks_after.sort()
+	check(not generator.building and chunks_after == chunks and manager.stream_anchor.is_equal_approx(outdoor_anchor), "Indoor coordinates do not drive outdoor streaming: before=%s after=%s building=%s" % [chunks, chunks_after, generator.building])
 	player.position = Vector3(0, 0.05, 2.5)
 	check(not inside.content.cargo_id.is_empty() and inside.caches.size() > 0, "Production bunker contains cargo and searchable supplies")
 	check(inside.entities.get_children().filter(func(actor): return actor is Monster).size() <= 4, "Production bunker respects encounter opportunity cap")

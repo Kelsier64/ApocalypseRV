@@ -1,0 +1,119 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxShape3D" id="part_000"]
+size = Vector3(3.54, 1, 0.98)
+
+[sub_resource type="BoxShape3D" id="part_001"]
+size = Vector3(0.58, 1.1, 0.58)
+
+[sub_resource type="BoxShape3D" id="part_002"]
+size = Vector3(3.57, 1.14, 0.66)
+
+[sub_resource type="BoxShape3D" id="part_003"]
+size = Vector3(0.68, 2.04, 0.67)
+
+[sub_resource type="BoxShape3D" id="part_004"]
+size = Vector3(0.44, 1.8, 1.3)
+
+[sub_resource type="BoxShape3D" id="part_005"]
+size = Vector3(0.55, 1.3, 0.46)
+
+[sub_resource type="BoxShape3D" id="part_006"]
+size = Vector3(4.1, 1.08, 0.89)
+
+[sub_resource type="BoxShape3D" id="part_007"]
+size = Vector3(3.9, 1.82, 0.12)
+
+[node name="InteriorDetailsCollision" type="Node3D"]
+
+[node name="ReceivingDesk" type="StaticBody3D" parent="."]
+position = Vector3(-4.9, 0.5, -45.15)
+
+[node name="Shape" type="CollisionShape3D" parent="ReceivingDesk"]
+shape = SubResource("part_000")
+metadata/navigation_solid = true
+
+[node name="ReceivingChair" type="StaticBody3D" parent="."]
+position = Vector3(-4.75, 0.55, -43.7)
+rotation = Vector3(0, -0.16, 0)
+
+[node name="Shape" type="CollisionShape3D" parent="ReceivingChair"]
+shape = SubResource("part_001")
+metadata/navigation_solid = true
+
+[node name="WaitingBenchA" type="StaticBody3D" parent="."]
+position = Vector3(6.7, 0.57, -45)
+
+[node name="Shape" type="CollisionShape3D" parent="WaitingBenchA"]
+shape = SubResource("part_002")
+metadata/navigation_solid = true
+
+[node name="WaitingBenchB" type="StaticBody3D" parent="."]
+position = Vector3(11.3, 0.57, -45)
+
+[node name="Shape" type="CollisionShape3D" parent="WaitingBenchB"]
+shape = SubResource("part_002")
+metadata/navigation_solid = true
+
+[node name="Locker00" type="StaticBody3D" parent="."]
+position = Vector3(15, 1.02, -45.42)
+
+[node name="Shape" type="CollisionShape3D" parent="Locker00"]
+shape = SubResource("part_003")
+metadata/navigation_solid = true
+
+[node name="Locker01" type="StaticBody3D" parent="."]
+position = Vector3(15.7, 1.02, -45.42)
+
+[node name="Shape" type="CollisionShape3D" parent="Locker01"]
+shape = SubResource("part_003")
+metadata/navigation_solid = true
+
+[node name="Locker02" type="StaticBody3D" parent="."]
+position = Vector3(16.4, 1.02, -45.42)
+
+[node name="Shape" type="CollisionShape3D" parent="Locker02"]
+shape = SubResource("part_003")
+metadata/navigation_solid = true
+
+[node name="Locker03" type="StaticBody3D" parent="."]
+position = Vector3(17.1, 1.02, -45.42)
+
+[node name="Shape" type="CollisionShape3D" parent="Locker03"]
+shape = SubResource("part_003")
+metadata/navigation_solid = true
+
+[node name="ReceptionPower" type="StaticBody3D" parent="."]
+position = Vector3(-19.55, 1.65, -37)
+
+[node name="Shape" type="CollisionShape3D" parent="ReceptionPower"]
+shape = SubResource("part_004")
+metadata/navigation_solid = true
+
+[node name="WorkshopPower" type="StaticBody3D" parent="."]
+position = Vector3(19.55, 1.65, 10.7)
+
+[node name="Shape" type="CollisionShape3D" parent="WorkshopPower"]
+shape = SubResource("part_004")
+metadata/navigation_solid = true
+
+[node name="FireStation" type="StaticBody3D" parent="."]
+position = Vector3(-10.5, 1.25, -45.4)
+
+[node name="Shape" type="CollisionShape3D" parent="FireStation"]
+shape = SubResource("part_005")
+metadata/navigation_solid = true
+
+[node name="ServiceBench" type="StaticBody3D" parent="."]
+position = Vector3(12, 0.54, 12.95)
+
+[node name="Shape" type="CollisionShape3D" parent="ServiceBench"]
+shape = SubResource("part_006")
+metadata/navigation_solid = true
+
+[node name="ServiceToolboard" type="StaticBody3D" parent="."]
+position = Vector3(12, 1.9, 13.38)
+
+[node name="Shape" type="CollisionShape3D" parent="ServiceToolboard"]
+shape = SubResource("part_007")
+metadata/navigation_solid = true

@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/warehouse_carton/warehouse_carton.obj" id="carton"]
+[ext_resource type="Material" path="res://world/orientation_shelter/materials/kraft_carton.tres" id="paper"]
+
+[node name="SealedCarton" type="Node3D"]
+
+[node name="Carton" type="MeshInstance3D" parent="."]
+mesh = ExtResource("carton")
+material_override = ExtResource("paper")
