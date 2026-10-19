@@ -31,11 +31,14 @@ func craft_rejection_reason(recipe_id: String) -> String:
 	# refresh a connection and emit registry signals. Read the same first usable
 	# installed battery directly so this query never changes service ownership.
 	var charge := 0.0
+	var has_battery := false
 	for device: Node in rv.get_equipment():
 		if device is BatterySocket and _craft_service_ready(device) and device.installed_battery != null:
+			if device.installed_battery.condition <= 0.0: break
+			has_battery = true
 			charge = device.installed_battery.charge
 			break
-	if charge < maxf(recipe.power_cost, 0.0):
+	if not (rv.unlimited_power and has_battery) and charge < maxf(recipe.power_cost, 0.0):
 		return "Insufficient battery charge"
 	if not rv.has_materials(recipe.costs):
 		return "Insufficient materials"
@@ -59,9 +62,10 @@ func request_craft(recipe_id: String) -> bool:
 		last_error = "Insufficient battery charge"
 		return false
 	_committing = true
+	var paid_costs: Dictionary = {} if rv.unlimited_materials else recipe.costs.duplicate(true)
 	var accepted: bool = rv.deduct_materials(recipe.costs)
 	if accepted:
-		jobs.append({"id": InstanceIds.create(), "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": recipe.costs.duplicate(true), "power": recipe.power_cost, "rv": rv})
+		jobs.append({"id": InstanceIds.create(), "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": paid_costs, "power": recipe.power_cost, "rv": rv})
 	_committing = false
 	last_error = "Queued" if accepted else "Insufficient materials"
 	_sync_print_visual()
@@ -146,12 +150,13 @@ func _spawn_item(scene_path: String, costs: Dictionary, power_cost: float, crouc
 		last_error = "Output unavailable"
 		return null
 	_committing = true
+	var paid_power := 0.0 if rv.unlimited_power else fee
 	if not rv.consume_power(fee):
 		item.free()
 		_committing = false
 		return null
 	if not rv.deduct_materials(costs):
-		rv.add_power(fee)
+		rv.add_power(paid_power)
 		item.free()
 		_committing = false
 		return null

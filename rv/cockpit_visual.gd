@@ -58,7 +58,7 @@ func _process(delta: float) -> void:
 	$BatteryLabel.text = "NO BAT" if connected and rv.energy.battery == null else "BATT"
 
 	if connected:
-		for row in VehicleStatus.read(rv): warning_lamps[row.id].modulate = VehicleStatus.color(row.level) if rv.current_power > 0 else VehicleStatus.color(0)
+		for row in VehicleStatus.read(rv): warning_lamps[row.id].modulate = VehicleStatus.color(row.level) if rv.has_usable_power(0.000001) else VehicleStatus.color(0)
 	else:
 		for lamp in warning_lamps.values(): lamp.modulate = VehicleStatus.color(0)
 	var brightness := rv.instrument_brightness if connected else 0.2

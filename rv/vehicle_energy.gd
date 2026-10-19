@@ -27,14 +27,26 @@ var generated_rate: float = 0.0
 var load_rate: float = 0.0
 var _consumed: float = 0.0
 
+func has_usable_power(required: float = 0.01) -> bool:
+	if required < 0.0 or not is_finite(required): return false
+	if required == 0.0: return true
+	var cell := battery
+	if cell == null or cell.condition <= 0.0: return false
+	var rv: Node = _vehicle.get_ref()
+	return rv.unlimited_power or cell.charge >= required
+
 func consume_power(amount: float) -> bool:
 	if amount < 0.0 or not is_finite(amount):
 		return false
 	if amount == 0.0:
 		return true
-	if battery == null or battery.charge + 0.000001 < amount:
+	var cell := battery
+	if cell == null or cell.condition <= 0.0:
 		return false
-	battery.charge = maxf(0.0, battery.charge - amount)
+	var rv: Node = _vehicle.get_ref()
+	if not rv.unlimited_power:
+		if cell.charge + 0.000001 < amount: return false
+		cell.charge = maxf(0.0, cell.charge - amount)
 	_consumed += amount
 	return true
 
@@ -60,14 +72,14 @@ func charging_status() -> String:
 	var rv: Node = _vehicle.get_ref()
 	if not charging_enabled: return "RV 充電已關閉"
 	if not engine_running: return "引擎未運轉"
-	if battery == null: return "未安裝可用電池"
-	if rv.current_fuel <= fuel_reserve: return "已達保留油量；引擎仍消耗運轉燃油"
+	if battery == null or battery.condition <= 0.0: return "未安裝可用電池"
+	if not rv.unlimited_fuel and rv.current_fuel <= fuel_reserve: return "已達保留油量；引擎仍消耗運轉燃油"
 	if battery.charge >= battery.capacity - 0.001: return "電池已充滿"
 	if not charging: return "等待充電門檻"
 	return "RV 充電中：最高 +%.1f 電量／秒" % power_generation_per_second
 
 func _charge(rv: Node, delta: float) -> void:
-	if not charging_enabled or not engine_running or battery == null:
+	if not charging_enabled or not engine_running or battery == null or battery.condition <= 0.0:
 		charging = false
 		return
 	if battery.charge >= battery.capacity - 0.001:
@@ -78,7 +90,7 @@ func _charge(rv: Node, delta: float) -> void:
 	var full_power := power_generation_per_second * delta
 	var full_fuel := fuel_consumption_per_second * delta
 	if full_power <= 0.0 or full_fuel <= 0.0: return
-	var available_fuel: float = maxf(rv.current_fuel - fuel_reserve, 0.0)
+	var available_fuel: float = full_fuel if rv.unlimited_fuel else maxf(rv.current_fuel - fuel_reserve, 0.0)
 	var generated := minf(battery.capacity - battery.charge, full_power * clampf(available_fuel / full_fuel, 0.0, 1.0))
 	if generated <= 0.0: return
 	if rv.consume_fuel(full_fuel * generated / full_power):
@@ -101,14 +113,14 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 	var equipment: Array[Node] = rv.get_equipment()
 	equipment.sort_custom(func(a: Node, b: Node) -> bool: return a.persistent_id < b.persistent_id)
 	var standby: float = rv.power_parked_drain_per_second * delta
-	if not consume_power(standby) and battery:
+	if not consume_power(standby) and battery and battery.condition > 0.0:
 		_consumed += battery.charge
 		battery.charge = 0.0
 	for device in equipment:
 		if is_instance_valid(device) and device.can_operate() and device.has_method("step_work"):
 			device.step_work(delta)
 	var lights: float = (0.12 if rv.headlights_requested else 0.0) + (0.04 if rv.handbrake or rv.brake_input > 0.0 else 0.0) + (0.04 if rv.gear < 0 else 0.0)
-	rv.lamps_powered = battery != null and battery.charge > 0.0 and consume_power(lights * delta)
+	rv.lamps_powered = has_usable_power(0.000001) and consume_power(lights * delta)
 	var strips := 0
 	for device in equipment:
 		if not device.can_operate(): continue
@@ -118,6 +130,6 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 	# Retain the legacy request field in saves, but it no longer powers a fixture.
 	rv.interior_powered.work = false
 	for kind in ["cabin", "service"]:
-		rv.interior_powered[kind] = rv.interior_requested[kind] and available[kind] and battery != null and battery.charge > 0.0 and consume_power(draws[kind] * delta)
+		rv.interior_powered[kind] = rv.interior_requested[kind] and available[kind] and has_usable_power(0.000001) and consume_power(draws[kind] * delta)
 	load_rate = _consumed / delta
 	return engine_running

@@ -12,6 +12,91 @@ func level(rv: Node, id: String) -> int:
 	for row in VehicleStatus.read(rv):
 		if row.id == id: return row.level
 	return -1
+
+func check_session_energy(rv: Chassis) -> void:
+	var fuel_before := rv.current_fuel
+	var power_before := rv.current_power
+	var service_before: bool = rv.interior_requested.service
+	rv.interior_requested.service = true
+	var engine := rv.get_engine()
+	var socket := rv.get_battery_socket()
+	var cell := socket.installed_battery
+	var tablet: Item = rv.get_node("TabletScreen")
+	rv.current_fuel = 0.0
+	rv.current_power = 0.0
+	rv.unlimited_fuel = true
+	check(rv.set_engine_running(true) and level(rv, "fuel") == 0, "Unlimited fuel starts an empty tank and clears fuel warning")
+	rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
+	check(rv.energy.engine_running and rv.current_fuel == 0.0 and rv.current_power > 0.0 and rv.energy.generated_rate > 0.0, "Unlimited fuel covers idle, drive and charging below reserve without filling fuel")
+	check(not rv.energy.charging_status().contains("保留油量"), "Charging status honors unlimited fuel below reserve")
+	rv.set_engine_running(false)
+	rv.engine_bay.installed_engine = null
+	check(not rv.set_engine_running(true) and level(rv, "engine") == 3, "Unlimited fuel still requires an installed engine")
+	rv.engine_bay.installed_engine = engine
+	var health_before := engine.health
+	engine.health = 0.0
+	check(not rv.set_engine_running(true) and level(rv, "engine") == 3, "Unlimited fuel still rejects a broken engine")
+	engine.health = health_before
+	rv.set_engine_running(true)
+	rv.unlimited_fuel = false
+	rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
+	check(not rv.energy.engine_running and not rv.set_engine_running(true) and level(rv, "fuel") == 3, "Disabling unlimited fuel restores empty-tank shutdown and startup rejection")
+	rv.current_fuel = 25.0
+	rv.energy.charging_enabled = false
+	rv.set_engine_running(true)
+	rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
+	check(rv.current_fuel < 25.0, "Disabling unlimited fuel restores finite fuel burn")
+	rv.set_engine_running(false)
+	rv.unlimited_power = true
+	rv.current_power = 0.0
+	check(rv.has_usable_power(20.0) and rv.energy.consume_power(20.0) and rv.consume_power(30.0) and rv.current_power == 0.0, "Unlimited power covers both direct and chassis draws without filling charge")
+	check(tablet.consume_rv_power(tablet.power_cost_per_open) and rv.current_power == 0.0, "Unlimited power covers the terminal opening fee at zero charge")
+	rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
+	check(rv.lamps_powered and rv.interior_powered.cabin and rv.interior_powered.service and rv.current_power == 0.0 and level(rv, "battery") == 0, "Unlimited power covers standby and exterior, cabin and service lighting at zero charge")
+	tablet.enabled = false
+	check(not tablet.consume_rv_power(1.0), "Unlimited power cannot run disabled equipment")
+	tablet.enabled = true
+	var tablet_health := tablet.current_health
+	tablet.current_health = 0.0
+	check(not tablet.consume_rv_power(1.0), "Unlimited power cannot run broken equipment")
+	tablet.current_health = tablet_health
+	var front: Item = rv.get_node("CabinLightFront")
+	var rear: Item = rv.get_node("CabinLightRear")
+	front.enabled = false
+	rear.enabled = false
+	rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
+	check(not rv.interior_powered.cabin, "Unlimited power does not enable disabled cabin fixtures")
+	front.enabled = true
+	rear.enabled = true
+	socket.installed_battery = null
+	check(not rv.has_usable_power() and not rv.energy.consume_power(1.0) and level(rv, "battery") == 3, "Unlimited power still requires an installed battery")
+	socket.installed_battery = cell
+	socket.enabled = false
+	check(not rv.has_usable_power() and not rv.consume_power(1.0) and level(rv, "battery") == 3, "Unlimited power still requires an enabled battery socket")
+	socket.enabled = true
+	var socket_health := socket.current_health
+	socket.current_health = 0.0
+	check(not rv.has_usable_power() and not rv.consume_power(1.0) and level(rv, "battery") == 3, "Unlimited power still rejects a broken battery socket")
+	socket.current_health = socket_health
+	cell.condition = 0.0
+	check(not rv.has_usable_power() and not rv.consume_power(1.0) and level(rv, "battery") == 3, "Unlimited power still rejects a broken battery")
+	cell.condition = 100.0
+	rv.unlimited_fuel = true
+	for amount in [-1.0, NAN, INF]:
+		check(not rv.consume_fuel(amount) and not rv.consume_power(amount) and not rv.energy.consume_power(amount) and not rv.has_usable_power(amount), "Unlimited policies reject invalid resource costs: " + str(amount))
+	check(rv.current_power == 0.0 and is_finite(rv.current_fuel), "Rejected costs preserve finite stored resources")
+	rv.unlimited_fuel = false
+	rv.unlimited_power = false
+	check(not rv.has_usable_power() and not tablet.consume_rv_power(1.0), "Disabling unlimited power restores empty-battery rejection")
+	rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
+	check(not rv.lamps_powered and not rv.interior_powered.cabin and not rv.interior_powered.service and level(rv, "battery") == 3, "Disabling unlimited power extinguishes empty-battery lighting")
+	rv.current_power = 12.0
+	check(rv.consume_power(3.0) and rv.current_power == 9.0, "Disabling unlimited power restores finite battery consumption")
+	rv.current_fuel = fuel_before
+	rv.current_power = power_before
+	rv.interior_requested.service = service_before
+	rv.energy.charging_enabled = true
+
 func _run() -> void:
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -43,6 +128,7 @@ func _run() -> void:
 	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	world.add_child(shell)
 	var rv: Chassis = shell.get_node("Chassis")
+	check(not rv.unlimited_fuel and not rv.unlimited_power and not rv.unlimited_materials, "Fresh production chassis keeps finite default resource policy")
 	rv.freeze = true
 	rv.set_physics_process(false)
 	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
@@ -180,6 +266,7 @@ func _run() -> void:
 	lights._process(0.0)
 	for lamp in lights.lamps.values(): check(not lamp.light.visible, "All exterior lamps extinguish without power")
 	rv.current_power = 100
+	check_session_energy(rv)
 	var saved := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.validate(saved), "V4 engine snapshot valid")
 	check(VehicleSnapshot.apply(rv, saved) and rv.get_engine().id == incoming.id and rv.get_engine().health == 150, "Engine save restores identity and condition")

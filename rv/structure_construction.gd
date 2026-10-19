@@ -135,7 +135,9 @@ func _finish() -> void:
 	var target: Node = job.target
 	var completed := job.duplicate()
 	# All validation precedes this synchronous material/state commit.
-	if not _rv().deduct_materials({"Metal Parts": operation_cost(job.operation, definition)}):
+	var costs := {"Metal Parts": operation_cost(job.operation, definition)}
+	var paid_costs: Dictionary = {} if _rv().unlimited_materials else costs.duplicate()
+	if not _rv().deduct_materials(costs):
 		cancel("材料不足，施工已取消")
 		return
 	_clear_job()
@@ -145,7 +147,7 @@ func _finish() -> void:
 		var health: float = definition.health
 		if completed.operation == "convert": health *= target.current_health / target.max_health
 		if get_parent().replace_panel(completed.slot, completed.type, health) == null:
-			_rv().deposit_materials({"Metal Parts": operation_cost(completed.operation, definition)}, true)
+			_rv().deposit_materials(paid_costs, true)
 			last_message = "Construction failed; materials returned"
 			changed.emit()
 			return

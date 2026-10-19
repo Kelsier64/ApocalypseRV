@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-19 車載終端作弊指令](validation/2026-10-19-terminal-cheats.md)：true／false 無限資源、立即設定時間與天氣、退款與暫態保存，以及原生畫面檢查。
+
 - [2026-10-19 自動測試與 CI 精簡](validation/2026-10-19-test-ci-simplification.md)：16 個核心測試、單一 CI job、速度量測與刪減的覆蓋範圍。
 
 - [2026-10-18 教學基地整棟細節](validation/2026-10-18-tutorial-spawn-detail.md)：接待室、第二室貨架／風管／屋架、外牆設備、入口與屋頂收邊。

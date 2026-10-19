@@ -72,10 +72,12 @@ func _run() -> void:
 	rv.get_node("FuelPort").take_damage(60.0)
 	RepairOperation.new().step(player, rv.get_node("FuelPort"), true, 2.0)
 	check(rv.get_node("FuelPort").current_health == rv.get_node("FuelPort").max_health and rv.get_item_count(ItemNames.METAL_PARTS) == 0, "Remaining scrap repairs installed equipment")
+	await _exercise_free_resources(rv, station, player)
 	rv.current_power = 0.0
 	check(rv.set_engine_running(true), "Empty battery can recover through manual ignition")
 	rv.step_energy_system(0.0, 0.0, 0.0, 5.0)
 	check(rv.current_power > 0.0 and rv.current_fuel < 30.0, "Recycled fuel charges depleted battery")
+	await preload("res://tests/support/terminal_checks.gd").run(world, rv, player, check)
 	rv.get_node("DriverSeat").interact_hold(player)
 	rv.handbrake = false
 	rv.allow_test_controls = true
@@ -87,3 +89,33 @@ func _run() -> void:
 	if failures.is_empty(): print("PASS: loot, recycle, craft, refuel, repair, recharge and departure cycle")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func _exercise_free_resources(rv: Chassis, station: CraftingStation, player: Node3D) -> void:
+	var materials := rv.inventory.duplicate(true)
+	var charge := rv.current_power
+	rv.inventory = {}
+	rv.unlimited_materials = true
+	var inlet: Item = rv.get_node("FuelPort")
+	inlet.take_damage(60.0)
+	RepairOperation.new().step(player, inlet, true, 2.0)
+	check(inlet.current_health == inlet.max_health and rv.inventory.is_empty(), "Unlimited materials repair real equipment without stock")
+	rv.unlimited_power = true
+	rv.current_power = 0.0
+	check(station.craft_rejection_reason("gasoline").is_empty(), "Depleted installed battery and empty stock allow unlimited crafting")
+	check(station.request_craft("gasoline"), "Unlimited resources queue the production recipe")
+	rv.step_energy_system(0.0, 0.0, 0.0, 2.0)
+	var output: Item
+	for actor in WorldEntities.get_container(rv).get_children():
+		if actor is Item and actor.item_name == ItemNames.GAS_CAN: output = actor
+	check(station.jobs.is_empty() and output != null and rv.inventory.is_empty() and rv.current_power == 0.0, "Unlimited crafting still completes real work and output without filling or consuming reserves")
+	if output != null: output.queue_free()
+	await process_frame
+	var socket := rv.get_battery_socket()
+	var installed := socket.installed_battery
+	socket.installed_battery = null
+	check(not station.craft_rejection_reason("gasoline").is_empty() and not station.request_craft("gasoline"), "Unlimited crafting still requires an installed battery")
+	socket.installed_battery = installed
+	rv.unlimited_materials = false
+	rv.unlimited_power = false
+	rv.current_power = charge
+	rv.inventory = materials

@@ -116,6 +116,7 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	rv.set_physics_process(false)
 	await process_frame
 	await process_frame
+	_exercise_cheat_job_refunds(world, rv)
 	var recycler: Item = rv.get_node("Scrapper")
 	var input := load("res://props/scrap.tscn").instantiate() as Item
 	WorldEntities.get_container(world).add_child(input)
@@ -133,6 +134,63 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	check(matching == 1, "Standalone apply replaces old queue actors without duplicate IDs")
 	await _exercise_socket_durability(world, rv)
 	_exercise_destroyed_support(world, rv)
+
+func _exercise_cheat_job_refunds(world: Node3D, rv: Chassis) -> void:
+	var station := rv.get_node("CraftingStation") as CraftingStation
+	var original_materials := rv.get_all_items()
+	var original_fuel := rv.current_fuel
+	var original_power := rv.current_power
+	var costs: Dictionary = RecipeCatalog.find("gasoline").costs
+	rv.inventory = {ItemNames.METAL_PARTS: 20, ItemNames.UNREFINED_FUEL: 30}
+	rv.current_fuel = 37.0
+	rv.current_power = 64.0
+	var available := rv.get_all_items()
+	check(station.request_craft("gasoline"), "Paid job reserves materials before enabling cheats")
+	rv.unlimited_materials = true
+	station.cancel_jobs()
+	check(rv.get_all_items() == available, "Enabling cheats before cancellation returns the paid reservation")
+	check(station.request_craft("gasoline"), "Free job queues with unlimited materials")
+	check(station.jobs.size() == 1 and station.jobs[0].costs.is_empty(), "Free job records an empty paid reservation")
+	rv.unlimited_materials = false
+	station.cancel_jobs()
+	check(rv.get_all_items() == available, "Disabling cheats before cancellation creates no materials")
+	check(station.request_craft("gasoline"), "Paid job queues for mixed reservation snapshot")
+	rv.unlimited_materials = true
+	check(station.request_craft("gasoline"), "Free job queues beside a paid reservation")
+	rv.unlimited_fuel = true
+	rv.unlimited_power = true
+	var saved := VehicleSnapshot.capture(rv)
+	check(VehicleSnapshot.validate(saved), "Mixed paid and empty free reservations form a valid snapshot")
+	# A gameplay load creates a new chassis; standalone apply on the original
+	# actor is deliberately not the session-reset boundary.
+	var domain := Node3D.new()
+	domain.set_meta("entity_domain", true)
+	world.add_child(domain)
+	var restored: Chassis = load("res://rv/chassis.tscn").instantiate()
+	domain.add_child(restored)
+	restored.freeze = true
+	restored.set_physics_process(false)
+	check(VehicleSnapshot.apply(restored, saved), "Fresh chassis restores mixed material reservations")
+	check(not restored.unlimited_materials and not restored.unlimited_fuel and not restored.unlimited_power, "Fresh snapshot actor starts with all session cheats disabled")
+	check(is_finite(restored.current_fuel) and is_finite(restored.current_power) and restored.current_fuel == saved.fuel and restored.current_power == 64.0 and restored.get_all_items() == saved.materials, "Snapshot preserves finite fuel, power and material stocks while cheats are active")
+	var restored_station: CraftingStation
+	for device in restored.get_equipment():
+		if device is CraftingStation: restored_station = device
+	check(restored_station != null and restored_station.jobs.size() == 2, "Fresh actor retains both queued jobs")
+	if restored_station != null and restored_station.jobs.size() == 2:
+		check(restored_station.jobs[0].costs == costs and restored_station.jobs[1].costs.is_empty(), "Saved jobs retain actual paid costs independently of session cheats")
+		restored_station.cancel_jobs()
+		check(restored.get_all_items() == available, "Restored mixed queue refunds only the paid job")
+		restored_station.cancel_jobs()
+		check(restored.get_all_items() == available, "Repeated restored queue cancellation cannot duplicate refunds")
+	domain.free()
+	station.cancel_jobs()
+	rv.unlimited_materials = false
+	rv.unlimited_fuel = false
+	rv.unlimited_power = false
+	rv.inventory = original_materials
+	rv.current_fuel = original_fuel
+	rv.current_power = original_power
 
 func _exercise_socket_durability(world: Node3D, rv: Chassis) -> void:
 	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()

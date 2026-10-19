@@ -68,7 +68,7 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF) -> void:
 			return
 
 func _process(delta: float) -> void:
-	var running := rv.energy.engine_running and rv.has_working_engine() and rv.current_fuel > 0.0
+	var running := rv.energy.engine_running and rv.has_working_engine() and rv.has_usable_fuel()
 	if running and not engine_player.playing: engine_player.play()
 	if not running:
 		engine_player.stop()

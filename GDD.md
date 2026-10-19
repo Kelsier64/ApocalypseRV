@@ -168,7 +168,7 @@ RV 使用 VehicleBody3D 與四個可拆裝輪槽，前輪轉向、後輪驅動�
 
 #### 平板施工
 
-平板模擬 Linux 終端，開啟時直接進入英文 `rvctl` TUI，提供 Overview、Energy、Equipment、Crafting、Structure 五頁。F1–F5 切頁、Tab 切焦點、方向鍵選取／調整、Enter 啟用，亦可用滑鼠。只有隱藏的 Ctrl+C／Ctrl+D 退出 TUI 到 shell，q 無綁定；Esc 在兩種介面始終關閉平板。shell 起始只有提示符，不顯示 banner、操作提示或按鈕；支援歷史、Tab 補全及 `help`、`status`、`rvctl`、`clear`、`exit` 命令。`cheat` 僅保留未實作入口，不改遊戲狀態；shell 不執行真實系統命令。退出 TUI 保留平板操作所有權，再用 `rvctl` 返回不重收開啟電費。
+平板模擬 Linux 終端，開啟時直接進入英文 `rvctl` TUI，提供 Overview、Energy、Equipment、Crafting、Structure 五頁。F1–F5 切頁、Tab 切焦點、方向鍵選取／調整、Enter 啟用，亦可用滑鼠。只有隱藏的 Ctrl+C／Ctrl+D 退出 TUI 到 shell，q 無綁定；Esc 在兩種介面始終關閉平板。shell 起始只有提示符，不顯示 banner、操作提示或按鈕；支援歷史、Tab 補全及 `help`、`status`、`rvctl`、`clear`、`exit` 命令。`cheat true/false` 控制目前 RV 的無限油／電／數值材料，也可用 `cheat fuel/power/materials true/false` 分別控制；開關僅限本次遊玩，讀檔後重設。無限資源維持實際庫存數字並標示 `UNLIMITED`，仍要求正常引擎、可用電池及實體道具。`time set HH:MM [day]` 與 `weather set <preset>` 立即設定後沿用世界原本的推進規則，結果可隨既有檢查點保存；完整指令見 [README](README.md)。shell 不執行真實系統命令。退出 TUI 保留平板操作所有權，再用 `rvctl` 返回不重收開啟電費。
 
 屋頂槽為 `roof_0`／`roof_1`／`roof_2`，中心沿車體 Z 分別為 -4／0／4 m，各片 4 × 4 m、50 kg、120 HP，合計 150 kg。初始前／後片為普通屋頂，中片為左側開孔型態；三槽都可選普通 `rv_ceiling` 或左側開孔 `rv_ceiling_hatch`，沿用相同施工費用與耐久比例。每片開孔在自身局部 x=-1.8～-0.35、z=-0.8～0.8 m，開口 1.45 × 1.6 m，沒有活動艙蓋；網格與碰撞都保留真正缺口。車內梯預裝左內牆對準中片開口，換成普通屋頂前須移開穿過開口的梯子或其他物件。破壞一片只影響該片的支撐與雨遮，固定地板仍由底盤提供。
 

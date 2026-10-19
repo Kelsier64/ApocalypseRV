@@ -644,6 +644,9 @@ func _number_value(id: String, value: float, maximum: float) -> void:
 	field.set_value_no_signal(value)
 	field.set_block_signals(false)
 
+func _unlimited(enabled: bool) -> String:
+	return " UNLIMITED" if enabled else ""
+
 func _refresh() -> void:
 	if not is_instance_valid(connected_rv) or _refreshing: return
 	var focused_id := _focused_id()
@@ -655,9 +658,9 @@ func _refresh() -> void:
 	if engine:
 		engine_info = "%s / HP %.0f / %.0f" % [RVTerminalPresenter.message(engine.definition().display_name), engine.health, engine.definition().max_health]
 	_text("telemetry", "FUEL %.1f   BATTERY %.1f" % [rv.current_fuel, rv.current_power])
-	_text("overview:status", "ENGINE  %s   %s\nFUEL    %s %5.1f / %.1f\nPOWER   %s %5.1f / %.1f\nSPEED   %.1f m/s   |   STORAGE %d / %d" % [
-		"RUNNING" if energy.engine_running else "STOPPED", engine_info, _bar(rv.current_fuel, rv.max_fuel), rv.current_fuel, rv.max_fuel,
-		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, rv.linear_velocity.length(), rv.storage.used(), rv.storage.capacity])
+	_text("overview:status", "ENGINE  %s   %s\nFUEL    %s %5.1f / %.1f%s\nPOWER   %s %5.1f / %.1f%s\nSPEED   %.1f m/s   |   MATERIALS %d / %d%s" % [
+		"RUNNING" if energy.engine_running else "STOPPED", engine_info, _bar(rv.current_fuel, rv.max_fuel), rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel),
+		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, _unlimited(rv.unlimited_power), rv.linear_velocity.length(), rv.storage.used(), rv.storage.capacity, _unlimited(rv.unlimited_materials)])
 	controls.engine.text = "[ Stop engine ]" if energy.engine_running else "[ Start engine ]"
 	var engine_reason: String = "" if energy.engine_running else RVTerminalPresenter.message(rv.engine_start_reason())
 	controls.engine.disabled = not engine_reason.is_empty()
@@ -670,9 +673,9 @@ func _refresh() -> void:
 	if rv.storage.used() > rv.storage.capacity: warnings.append("Storage full: spend materials before recycling")
 	_text("warnings", "\n".join(warnings) if not warnings.is_empty() else "All systems ready")
 	_refresh_structure()
-	_text("energy:flow", "BATTERY %s\n%.1f / %.1f charge\n\nGENERATION +%.2f /s\nLOAD       -%.2f /s\nNET        %+.2f /s\n\nFUEL %.1f / %.1f\nStandby load: 0.15 /s" % [
-		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, energy.generated_rate, energy.load_rate,
-		energy.generated_rate - energy.load_rate, rv.current_fuel, rv.max_fuel])
+	_text("energy:flow", "BATTERY %s\n%.1f / %.1f charge%s\n\nGENERATION +%.2f /s\nLOAD       -%.2f /s\nNET        %+.2f /s\n\nFUEL %.1f / %.1f%s\nStandby load: 0.15 /s" % [
+		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, _unlimited(rv.unlimited_power), energy.generated_rate, energy.load_rate,
+		energy.generated_rate - energy.load_rate, rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel)])
 	_pressed("charging_enabled", energy.charging_enabled)
 	_number_value("charging_threshold", energy.recharge_below * 100.0, 100)
 	_number_value("charging_reserve", energy.fuel_reserve, rv.max_fuel)
@@ -742,7 +745,7 @@ func _refresh_devices() -> void:
 		var state: String = "Ready" if selected.can_operate() else ("Disabled" if not selected.enabled else "Disconnected / damaged")
 		var activity := ""
 		if selected is CabinLightStrip: activity = "\nLighting: " + ("Powered" if selected.enabled and selected.can_operate() and connected_rv.interior_powered.cabin else "Off")
-		elif selected is BatterySocket: activity = "\nBattery %.1f / %.1f" % [connected_rv.current_power, connected_rv.max_power]
+		elif selected is BatterySocket: activity = "\nBattery %.1f / %.1f%s" % [connected_rv.current_power, connected_rv.max_power, _unlimited(connected_rv.unlimited_power)]
 		elif selected is CraftingStation: activity = "\nCraft queue %d / %d" % [selected.jobs.size(), selected.queue_capacity]
 		elif "props_being_crushed" in selected:
 			activity = "\nRecycling queue %d / %d" % [selected.props_being_crushed.size(), selected.queue_capacity]
@@ -781,7 +784,8 @@ func _refresh_crafting() -> void:
 	var keys := items.keys()
 	keys.sort()
 	for key in keys: lines.append("%s: %d" % [RVTerminalPresenter.message(str(key)), items[key]])
-	_text("materials", "  |  ".join(lines) if not lines.is_empty() else "Storage empty")
+	var material_text := "  |  ".join(lines) if not lines.is_empty() else "Storage empty"
+	_text("materials", ("UNLIMITED materials | " if connected_rv.unlimited_materials else "") + material_text)
 	var ids := PackedStringArray()
 	for device in _devices:
 		if device is CraftingStation: ids.append(device.persistent_id)
@@ -832,7 +836,7 @@ func _refresh_structure() -> void:
 		var short_name: String = {"front": "Front", "rear": "Rear"}.get(id, id.replace("left_", "L").replace("right_", "R").replace("roof_", "Roof "))
 		slot_controls[id].text = "[ %s %s ]" % [short_name, "X" if part.is_destroyed else "%.0f" % part.current_health]
 	_text("overview:structure", "%d ready   |   %d damaged   |   %d destroyed\nUse F5 to inspect, repair, rebuild or convert a part." % [11 - damaged - destroyed, damaged, destroyed])
-	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d\nConstruction needs a stopped engine and an active tablet." % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS)])
+	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d%s\nConstruction needs a stopped engine and an active tablet." % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS), _unlimited(connected_rv.unlimited_materials)])
 	var target: Node = slots.panel(selected_slot)
 	var selector: OptionButton = controls["structure:type"]
 	if _type_slot != selected_slot:
@@ -932,6 +936,6 @@ func _status_lines() -> PackedStringArray:
 	if not is_instance_valid(connected_rv): return PackedStringArray(["RV unavailable"])
 	var rv := connected_rv
 	return PackedStringArray(["ENGINE %s" % ("RUNNING" if rv.energy.engine_running else "STOPPED"),
-		"FUEL %.1f / %.1f" % [rv.current_fuel, rv.max_fuel], "BATTERY %.1f / %.1f" % [rv.current_power, rv.max_power],
-		"SPEED %.1f m/s" % rv.linear_velocity.length(), "STORAGE %d / %d" % [rv.storage.used(), rv.storage.capacity],
+		"FUEL %.1f / %.1f%s" % [rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel)], "BATTERY %.1f / %.1f%s" % [rv.current_power, rv.max_power, _unlimited(rv.unlimited_power)],
+		"SPEED %.1f m/s" % rv.linear_velocity.length(), "MATERIALS %d / %d%s" % [rv.storage.used(), rv.storage.capacity, _unlimited(rv.unlimited_materials)],
 		RVTerminalPresenter.message(rv.energy.charging_status())])

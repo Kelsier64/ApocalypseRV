@@ -150,6 +150,9 @@ func _run() -> void:
 	for wheel in extra.wheels: wheel.id += "-second"
 	second.vehicles.append(extra)
 	var original: Chassis = world.get_node("NewRv/Chassis")
+	original.unlimited_materials = true
+	original.unlimited_fuel = true
+	original.unlimited_power = true
 	var player: Node = world.get_node("Player")
 	var player_pose: Transform3D = player.global_transform
 	checkpoint.vehicle_applier = func(rv: Node3D, data: Dictionary) -> bool:
@@ -158,11 +161,13 @@ func _run() -> void:
 	var result: Dictionary = checkpoint.restore_world(world)
 	check(not result.ok and checkpoint.last_error.field == "vehicles[1]", "Second vehicle failure is identified")
 	check(is_instance_valid(original) and original.is_inside_tree(), "Failed restore keeps original vehicle")
+	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Failed vehicle restore preserves original session cheats")
 	check(player.global_transform == player_pose and player.is_physics_processing(), "Failed restore keeps player and input")
 	check(get_nodes_in_group(Groups.CHASSIS).size() == 1, "Failed staging leaks no vehicles")
 	check(checkpoint.write_checkpoint(PATH + ".two", second), "Two vehicle fixture writes")
 	check(not await checkpoint.load_world(world, PATH + ".two"), "Full load rejects failed second vehicle")
 	check(current_scene == world and world.process_mode != Node.PROCESS_MODE_DISABLED, "Full load rollback restores old world")
+	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Failed full load preserves original session cheats")
 	await process_frame
 	check(get_nodes_in_group(Groups.CHASSIS).size() == 1, "Full load rollback frees staging groups")
 	checkpoint.vehicle_applier = VehicleSnapshot.apply
@@ -171,6 +176,7 @@ func _run() -> void:
 	check(not await checkpoint.load_world(world, PATH), "World readiness timeout aborts loading")
 	check(current_scene == world and not checkpoint.loading, "Timed-out world leaves original playable")
 	check(world.get_node("WorldClock").capture() == old_time, "Failed load does not advance original clock")
+	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Readiness timeout preserves original session cheats")
 	checkpoint.world_timeout_ms = 60000
 	var manager: PoiInstanceManager = world.get_node("PoiInstances")
 	var building := Node3D.new()
@@ -212,6 +218,7 @@ func _run() -> void:
 	check(current_scene.get_node("WorldClock").capture() == saved.clock, "Staged world does not advance the saved clock")
 	for vehicle in get_nodes_in_group(Groups.CHASSIS):
 		if not current_scene.is_ancestor_of(vehicle): continue
+		check(not vehicle.unlimited_materials and not vehicle.unlimited_fuel and not vehicle.unlimited_power, "Successful world load resets every vehicle session cheat")
 		var restored := VehicleSnapshot.capture(vehicle)
 		check(restored.materials == saved.vehicles[0].materials, "World transfer does not refund materials")
 		check(restored.mounted_items.size() == saved.vehicles[0].mounted_items.size(), "World transfer retains equipment registry")

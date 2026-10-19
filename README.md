@@ -78,7 +78,24 @@ v10 啟程後，回退超過最遠道路進度 120 m（包含出生點後方）�
 
 設定選單不暫停世界：重力、敵人、傷害、時間與 RV 油電繼續運作。開啟時停止玩家操作；駕駛中車輛仍可滑行，不改引擎、排檔或手煞車。關閉後須放開原本按住的操作鍵才恢復輸入。被抓住或死亡時不能開啟；平板中的 Esc 優先關閉平板，放置中的 Esc 優先取消預覽。
 
-平板模擬 Linux 終端，開啟時直接進入英文 `rvctl` TUI：Overview、Energy、Equipment、Crafting、Structure 五頁，以 F1–F5 切頁、Tab 切焦點、方向鍵選取／調整、Enter 啟用，也支援滑鼠。隱藏的 Ctrl+C／Ctrl+D 退出 TUI 回到 shell，q 沒有快捷功能；Esc 始終關閉整台平板。shell 起始只有提示符，沒有 banner、提示或按鈕；提供歷史與 Tab 補全，`rvctl` 返回管理介面。命令只由遊戲內登錄表派送，`cheat` 保留名稱但不執行作弊功能。介面不提供工作燈、儀表亮度或引擎震動控制。
+平板模擬 Linux 終端，開啟時直接進入英文 `rvctl` TUI：Overview、Energy、Equipment、Crafting、Structure 五頁，以 F1–F5 切頁、Tab 切焦點、方向鍵選取／調整、Enter 啟用，也支援滑鼠。隱藏的 Ctrl+C／Ctrl+D 退出 TUI 回到 shell，q 沒有快捷功能；Esc 始終關閉整台平板。shell 起始只有提示符，沒有 banner、提示或按鈕；提供歷史與 Tab 補全，`rvctl` 返回管理介面。命令只由遊戲內登錄表派送，`help` 列出用法。介面不提供工作燈、儀表亮度或引擎震動控制。
+
+車載 shell 支援以下指令；布林值只接受小寫 `true`／`false`：
+
+```text
+cheat                         # 顯示目前三種開關；cheat status 亦可
+cheat true                    # 全部開啟；cheat false 全部關閉
+cheat fuel true               # 無限油
+cheat power true              # 無限電，仍須裝妥可用電池
+cheat materials true          # 無限制製作、建造及一般維修材料
+time                          # 顯示天數與時間
+time set 18:30                # 設定當天時間
+time set 08:00 3              # 設定第 3 天 08:00
+weather                       # 顯示目前及目標天氣
+weather set heavy_rain        # 立即設定天氣
+```
+
+天氣選項為 `clear`、`overcast`、`rain`、`heavy_rain`、`fog`、`medium_fog`、`heavy_fog`、`storm`；`rain`／`fog` 是小雨／小霧，`storm` 是大雨加大霧。時間與天氣只立即設定，後續沿用自然推進、教學暫停與偏行霧規則。作弊只作用於目前連接的 RV，重開平板保留，成功讀檔或新遊戲後重設；實際油電與材料數字不補滿，啟用項目標示 `UNLIMITED`。無限材料免除數值材料費，實體維修包、輪胎及其他道具仍照常消耗，工作時間與設備條件維持原規則。
 
 TUI 的 Tab／Shift+Tab 依閱讀順序在當頁循環；上下鍵沿清單移動，Equipment 右鍵進入同列 ON/OFF、左鍵返回設備，Crafting 右鍵進入 Add to queue、左鍵返回所選配方。方向鍵不切換開關；Enter／Space 啟用開關。Energy 數字欄位左右鍵調整數值、上下鍵切換欄位。Structure 方向鍵沿車殼格線移動，右側及前後槽可用右鍵進入操作欄，左鍵返回原槽。不可用或隱藏的操作會跳過，焦點移到畫面外時自動捲動。
 
