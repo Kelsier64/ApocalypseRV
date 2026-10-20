@@ -184,7 +184,7 @@ WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定
 
 灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果依畫面每處的實際照明及材質參考估計缺光量，所以白天暗處仍可生效，夜間明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
 
-NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估計材質亮度。正的線性亮度差額乘上局部暗部反應及距離曲線後加至主圖；暗部反應為原生／參考亮度比例在 dark_ratio～lit_ratio 之間的反向 smoothstep，參考近零時不補足。亮天空或單一燈具不會控制其他暗處；主圖、真實燈光、發光與陰影不乘曲線。這是視覺估計，不是精確的光照分解，微弱彩色照明可能被灰階柔化，體積霧時間取樣及複雜透明材質也可能有差異。
+NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估計材質亮度。正的線性亮度差額乘上局部暗部反應及距離曲線後加至主圖；暗部反應為原生／參考亮度比例在 dark_ratio～lit_ratio 之間的反向 smoothstep，參考近零時不補足。亮天空或單一燈具不會控制其他暗處；主圖、真實燈光、發光與陰影不乘曲線。這是視覺估計，不是精確的光照分解，微弱彩色照明可能被灰階柔化，體積霧低解析度取樣及複雜透明材質也可能有差異。
 
 參考環境每幀讀取來源 Camera3D.environment，缺省時讀取所屬 World3D 的 Environment／fallback；保留天空、距離霧與全域／局部體積霧的遮蔽，將參考環境光／GI 注入體積霧設為零，避免補出額外散射。主圖的霧及燈光不受效果啟閉影響。參考不含第二份雨幕／水花，雨與水花直接接受原生場景照明；透明玻璃與天氣在灰階合成後依原生流程繪製。日間與夜間每個活動視圖都增加一次同 3D 縮放比例的幾何參考渲染，不新增模擬或陰影 pass；兩側鏡只在既定刷新時同步參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。合成 Quad 跟隨來源視錐中心，只略過遮蔽剔除，不能使用忽略所有剔除的 API，否則會繞過 layer mask 被自己的參考拍入並產生回饋。暫停保留上次參考圖，明確停用仍釋放相機及燈光路由；候選世界轉移後重新綁定目標 viewport／World3D。復古與使用者畫面偏好在其後獨立套用，HUD 不參與缺光估計。不新增存檔欄位。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
 
@@ -196,7 +196,7 @@ Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes�
 
 WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨立 RNG；advance 將現實 delta 換算成遊戲秒後，同步推進時間與天氣。WorldWeather 提供 changed、sample、set_weather、capture／restore／valid_state，狀態以 Vector3 表示晴朗程度、雨級、霧級。分段剩餘時間與轉換進度都使用遊戲秒；set_time 是驗收調光入口，不重抽天氣。
 
-WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
+WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
 
 ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，不使用跨世界全域 shader 參數。新 chunk 立即接收目前密度；晴天淡出林間霧。天氣從無霧過渡至小霧（霧級 0.5）時，全域及林間體積霧一起淡出至零，由距離霧接手，避免體積霧二次合成重新顯露已遮蔽的輪廓；新材質登錄與每幀更新使用相同密度。天空 shader 使用 disable_fog，起霧後收斂至相同霧色。Compatibility 僅使用距離霧。
 

@@ -50,8 +50,9 @@ func _ready() -> void:
 			environment.volumetric_fog_detail_spread = 2.0
 			environment.volumetric_fog_anisotropy = 0.0
 			environment.volumetric_fog_ambient_inject = 0.08
-			environment.volumetric_fog_temporal_reprojection_enabled = true
-			environment.volumetric_fog_temporal_reprojection_amount = 0.8
+			# Moving flashlights/headlights need current-frame scattering. History
+			# blending leaves their old beams in the fog after turning or switching off.
+			environment.volumetric_fog_temporal_reprojection_enabled = false
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 		environment.sky = Sky.new()

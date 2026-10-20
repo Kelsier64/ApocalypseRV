@@ -42,6 +42,18 @@ func capture(target: SubViewport = viewport) -> Image:
 func pixel(image: Image) -> Color:
 	return image.get_pixel(64, 64)
 
+func capture_frame() -> Image:
+	await process_frame
+	await RenderingServer.frame_post_draw
+	return viewport.get_texture().get_image()
+
+func image_difference(a: Image, b: Image) -> float:
+	var difference := 0.0
+	for y in range(a.get_height()):
+		for x in range(a.get_width()):
+			difference = maxf(difference, color_distance(a.get_pixel(x, y), b.get_pixel(x, y)))
+	return difference
+
 func diagnostic_capture(label: String, target: SubViewport = viewport, effect: NightVisionEffect = renderer) -> Image:
 	var image := await capture(target)
 	if not OS.get_cmdline_user_args().has("--diagnostics"): return image
@@ -286,6 +298,10 @@ func run() -> void:
 	var night := pixel(await capture())
 	check(noon.r > 0.03 and color_distance(noon, night) < 0.015, "Identical native lighting produces the same adaptation at noon and night")
 	check(environment_state(stable_environment) == stable_state, "Clock-independent renderer leaves the held native Environment unchanged")
+	if RenderingServer.get_current_rendering_method() == "forward_plus":
+		holder.environment = clock.environment
+		await check_light_history(clock.environment, beam)
+		holder.environment = stable_environment
 	clock.queue_free()
 	await process_frame
 
@@ -344,6 +360,43 @@ func run() -> void:
 	await process_frame
 	print("DARK ADAPTATION GPU ", "PASS" if failures == 0 else "FAIL", " failures=", failures)
 	quit(1 if failures else 0)
+
+func check_light_history(native: Environment, beam: SpotLight3D) -> void:
+	check(not native.volumetric_fog_temporal_reprojection_enabled, "Production fog uses current-frame light scattering without temporal beam trails")
+	native.background_mode = Environment.BG_COLOR
+	native.background_color = Color.BLACK
+	native.ambient_light_energy = 0.0
+	native.fog_enabled = false
+	native.volumetric_fog_enabled = true
+	native.volumetric_fog_density = 0.06
+	native.volumetric_fog_albedo = Color.WHITE
+	native.volumetric_fog_length = 32.0
+	var previous_camera := camera.transform
+	var previous_beam := beam.transform
+	material.albedo_color = Color.BLACK
+	beam.look_at(Vector3(-7, 0, -12))
+	beam.visible = true
+	for index in range(24): await capture_frame()
+	var on := await capture_frame()
+	var black := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	black.fill(Color.BLACK)
+	check(image_difference(on, black) > 0.05, "A real flashlight still illuminates the fog with temporal accumulation disabled")
+	var reference_environment: Environment = renderer._views[0].camera.environment
+	check(not reference_environment.volumetric_fog_temporal_reprojection_enabled, "Gray reference matches the production fog's current-frame mode")
+	beam.look_at(Vector3(7, 0, -12))
+	var first_move := await capture_frame()
+	var settled_move := await capture()
+	check(image_difference(first_move, settled_move) < 0.015, "Moving the flashlight leaves no previous beam in the first rendered frame")
+	camera.rotation.y += 0.3
+	var first_pan := await capture_frame()
+	var settled_pan := await capture()
+	check(image_difference(first_pan, settled_pan) < 0.015, "Turning the camera leaves no previous-frame lit fog")
+	beam.visible = false
+	var first_off := await capture_frame()
+	check(image_difference(first_off, black) < 0.01, "Switching the flashlight off removes its fog light in the first rendered frame")
+	beam.transform = previous_beam
+	camera.transform = previous_camera
+	material.albedo_color = Color.WHITE
 
 func check_native_rain_light(beam: SpotLight3D) -> void:
 	# Use the production transparent splash shader over a black receiver so a
