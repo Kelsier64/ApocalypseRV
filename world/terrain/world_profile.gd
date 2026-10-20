@@ -1,11 +1,9 @@
 extends Resource
 class_name WorldProfile
-@export var generation_version: int = 6
+@export var generation_version: int = 14
 ## All distances are metres. Determinism includes the generation version.
-# Older worlds retain their original collision strip.
 var chunk_length: float = 150.0
-var terrain_half_width: float:
-	get: return 500.0 if generation_version >= 11 else (450.0 if generation_version >= 4 else 225.0)
+var terrain_half_width: float = 500.0
 var terrain_step: float = 3.0
 @export var road_width: float = 15.0
 @export var narrow_width: float = 10.0
@@ -24,4 +22,4 @@ var parking_size := Vector2(12.0, 24.0)
 @export var chunks_behind: int = 2
 
 func opening_shelter_id() -> String:
-	return "orientation_shelter" if generation_version >= 12 else ("tutorial_shelter" if generation_version == 11 else "starting_shelter")
+	return "orientation_shelter"

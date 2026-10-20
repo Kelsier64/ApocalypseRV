@@ -95,9 +95,6 @@ func load_preferences(path: String = "") -> Error:
 		for key: String in DEFAULTS:
 			var candidate: Variant = _config.get_value(_section(key), key, DEFAULTS[key])
 			if _valid(key, candidate): values[key] = candidate
-		if not _config.has_section_key("display", "render_mode"):
-			values.render_mode = 0 if values.retro else 1
-			values.render_scale = 1.0
 	_preset = _matching_preset_index()
 	var saved_preset: Variant = _config.get_value("display", "quality_preset", _preset)
 	if saved_preset is int and saved_preset in [0, 1, 2, 3, 4]:

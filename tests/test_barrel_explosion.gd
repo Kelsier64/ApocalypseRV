@@ -21,7 +21,7 @@ func fresh(position: Vector3 = Vector3.ZERO, body: Dictionary = {}) -> void:
 	actor.ragdoll_control.stop()
 	actor.is_player_dead = false
 	actor.damage_cooldown = 0.0
-	var state := {"items": [], "slot": 0, "health": 100.0, "transform": Transform3D(Basis.IDENTITY, position)}
+	var state := {"items": [], "slot": 0, "health": 100.0, "stamina": actor.MAX_STAMINA, "stamina_exhausted": false, "crouching": false, "body": PlayerBodyState.new().capture(), "transform": Transform3D(Basis.IDENTITY, position)}
 	if not body.is_empty(): state["body"] = body
 	actor.restore_checkpoint_state(state)
 	actor.set_physics_process(false)
@@ -343,6 +343,26 @@ func cosmetic_lifecycle() -> void:
 	domain.queue_free()
 	await steps()
 
+func saved_monster_state() -> void:
+	var monster: BarrelMan = load("res://enemies/barrel_man.tscn").instantiate()
+	arena.add_child(monster)
+	monster.set_physics_process(false)
+	var saved := WorldActorSnapshot.capture(monster)
+	check(WorldActorSnapshot.validation_error(saved, "monster").is_empty() and saved.barrel.proximity_fuse_remaining == -1.0, "Current monster snapshot explicitly saves an unarmed fuse")
+	var incomplete := saved.duplicate(true)
+	incomplete.erase("barrel")
+	check(WorldActorSnapshot.validation_error(incomplete, "monster") == "monster.barrel", "Monster snapshot requires its behavior state")
+	incomplete = saved.duplicate(true)
+	incomplete.barrel.erase("proximity_fuse_remaining")
+	check(WorldActorSnapshot.validation_error(incomplete, "monster") == "monster.barrel", "Monster snapshot requires explicit fuse state")
+	monster.proximity_fuse_remaining = 0.35
+	saved = WorldActorSnapshot.capture(monster)
+	var restored := WorldActorSnapshot.restore(saved, arena) as BarrelMan
+	restored.set_physics_process(false)
+	check(restored.capture_barrel_state() == saved.barrel, "Armed fuse and behavior state survive actor restoration unchanged")
+	monster.free()
+	restored.free()
+
 func run() -> void:
 	seed(817303)
 	arena = Node3D.new()
@@ -352,6 +372,7 @@ func run() -> void:
 	arena.add_child(actor)
 	actor.set_physics_process(false)
 	await steps()
+	saved_monster_state()
 	geometry()
 	await damage_gate_and_cuts()
 	await blast_distances_and_worlds()

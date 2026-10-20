@@ -17,7 +17,6 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
-var terrain_generation_version := 0
 var _stream_mist_limit := WorldWeather.BASE_MIST_END
 @onready var game_settings = get_node("/root/GameSettings")
 
@@ -61,7 +60,7 @@ func _ready() -> void:
 		# Matte surfaces do not need a full-resolution reflection cubemap.
 		environment.sky.radiance_size = Sky.RADIANCE_SIZE_32
 		sky_material = ShaderMaterial.new()
-		sky_material.shader = preload("res://world/terrain/overcast.gdshader")
+		sky_material.shader = preload("res://world/terrain/overcast_v14.gdshader")
 		environment.sky.sky_material = sky_material
 		holder.environment = environment
 	if sun != null:
@@ -82,9 +81,7 @@ func _ready() -> void:
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(label)
 	var generator := get_parent().get_node_or_null("WorldGenerator")
-	if generator != null and generator.get("profile") is WorldProfile:
-		terrain_generation_version = generator.profile.generation_version
-	if terrain_generation_version >= 14 and environment != null:
+	if environment != null:
 		sky_material.shader = preload("res://world/terrain/overcast_v14.gdshader")
 		environment.fog_sky_affect = 1.0
 		environment.volumetric_fog_sky_affect = 1.0
@@ -178,41 +175,27 @@ func apply_time(real_delta: float = 0.0) -> void:
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
-	# The new light tier takes over at strength 0.5; legacy strength 1 is medium.
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
-	var medium_mist := clampf((conditions.z - WorldWeather.FOG_LIGHT) / (WorldWeather.FOG_MEDIUM - WorldWeather.FOG_LIGHT), 0.0, 1.0)
-	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
-	var terrain_mist := terrain_generation_version >= 14
 	var profile := WorldWeather.mist_profile(conditions, volumetric)
-	if terrain_mist:
-		# Zero-density weather needs no froxel pass. Keep the quality-based depth
-		# profile stable, and re-enable scattering as soon as low mist returns.
-		environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
-		environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
-		environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
-		environment.fog_depth_curve = profile.depth_curve
-		# Volume depth is view-axis based while distance fog is radial. Keep the
-		# full integration in front of the opaque haze even at wide screen corners.
-		environment.volumetric_fog_length = maxf(0.1, minf(160.0, environment.fog_depth_end * 0.3))
-	else:
-		var base_begin := lerpf(160.0 if volumetric else 18.0, 240.0, clear)
-		environment.fog_depth_begin = lerpf(base_begin, 8.0, light_mist)
-		var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
-		environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
-		environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
+	# Zero-density weather needs no froxel pass. Keep the quality-based depth
+	# profile stable, and re-enable scattering as soon as low mist returns.
+	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
+	environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
+	environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
+	environment.fog_depth_curve = profile.depth_curve
+	# Volume depth is view-axis based while distance fog is radial. Keep the
+	# full integration in front of the opaque haze even at wide screen corners.
+	environment.volumetric_fog_length = maxf(0.1, minf(160.0, environment.fog_depth_end * 0.3))
 	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
 	var white_mist := Color("030405").lerp(Color("c3cbc8"), daylight)
-	if terrain_mist:
-		# Lit white haze during the day; no emissive veil over dark nights.
-		horizon = horizon.lerp(white_mist, profile.white_strength)
-		zenith = zenith.lerp(white_mist, 0.16 * profile.white_strength)
-		environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30).lerp(Color("c3cdc8"), profile.white_strength)
-		environment.volumetric_fog_density = profile.global_density
-	else:
-		environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
-	var local_density: float = profile.local_density if terrain_mist else 0.14 * (1.0 - clear) * (1.0 - light_mist)
+	# Lit white haze during the day; no emissive veil over dark nights.
+	horizon = horizon.lerp(white_mist, profile.white_strength)
+	zenith = zenith.lerp(white_mist, 0.16 * profile.white_strength)
+	environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30).lerp(Color("c3cdc8"), profile.white_strength)
+	environment.volumetric_fog_density = profile.global_density
+	var local_density: float = profile.local_density
 	for material in fog_materials:
 		material.set_shader_parameter("density", local_density)
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
@@ -252,10 +235,7 @@ func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := effective_visual_weather()
 	var density: float
-	if terrain_generation_version >= 14:
-		density = WorldWeather.mist_profile(conditions, environment != null and environment.volumetric_fog_enabled).local_density
-	else:
-		density = 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0))
+	density = WorldWeather.mist_profile(conditions, environment != null and environment.volumetric_fog_enabled).local_density
 	material.set_shader_parameter("density", density)
 
 func unregister_fog(material: ShaderMaterial) -> void:

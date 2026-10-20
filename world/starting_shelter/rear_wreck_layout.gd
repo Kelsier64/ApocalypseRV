@@ -111,7 +111,7 @@ static func valid_checkpoint(data: Dictionary) -> bool:
 	var profile := WorldProfile.new()
 	for key in data.get("profile", {}):
 		if key in profile and key != "terrain_half_width": profile.set(key, data.profile[key])
-	profile.generation_version = data.get("generation_version", 10)
+	profile.generation_version = data.generation_version
 	var field := WorldField.new(data.seed, profile)
 	for point: Vector3 in layout.walkway:
 		if absf(point.y - field.height_at(point.x, point.z)) > 0.001: return false

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name WalkInSites
-## Generation v5+: roadside forecourt, authored footprint and dormant loose actors.
+## Current outdoor sites: roadside forecourt, authored footprint and dormant loose actors.
 static func configure(site: Dictionary, definition_id: String = "gas_station") -> void:
 	for key in ["route", "deep_forest", "mirror", "exterior"]: site.erase(key)
 	site.kind = "walk_in"
@@ -44,13 +44,13 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
-	var starter_site := definition.definition_id in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]
+	var starter_site := definition.definition_id in [&"starting_shelter", &"orientation_shelter"]
 	if definition.definition_id == &"orientation_shelter":
 		_spawn_orientation_terminal(building, container)
 		ensure_orientation_workshop(building, container)
 	elif starter_site:
 		_spawn_starter_actors(building, container)
-	var barrel_site: bool = generator.field.profile.generation_version >= 8 and _barrel_site(definition)
+	var barrel_site: bool = _barrel_site(definition)
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
 	for point in building.find_children("*", "Marker3D", true, false):
@@ -104,7 +104,6 @@ static func _spawn_orientation_terminal(building: Node3D, container: Node3D) -> 
 	var point := building.get_node("StarterEquipment/TrainingTerminal") as Marker3D
 	var support := building.get_node("Collision/TerminalSupport") as StaticBody3D
 	var terminal: TrainingTerminal = load("res://equipment/training_terminal.tscn").instantiate()
-	terminal.configure_portable_terminal()
 	container.add_child(terminal)
 	support.set_meta("training_terminal_dock", terminal.persistent_id)
 	terminal.confirm_placement(point.global_transform, container, support)
@@ -116,8 +115,7 @@ static func orientation_workshop_ids(building: Node3D) -> Dictionary:
 		result[role] = prefix + role
 	return result
 
-## Called for a fresh site or explicitly once by a v1 course migration. A v2
-## reload never calls this to replace consumed or lost supplies.
+## Called for a fresh site. Reloading never calls this to replace consumed or lost supplies.
 static func ensure_orientation_workshop(building: Node3D, container: Node3D) -> void:
 	var stock := {
 		"scrapper": ["WorkshopEquipment/Scrapper", "res://equipment/scrapper.tscn"],
@@ -228,7 +226,7 @@ static func deactivate(generator: Node, site: Dictionary) -> void:
 static func validation_error(data: Dictionary) -> String:
 	var sites: Variant = data.get("outdoor_sites", {})
 	var bands: Variant = data.get("generated_bands", [])
-	if data.get("generation_version", 2) >= 5 and not data.has_all(["outdoor_sites", "generated_bands"]): return "outdoor_sites.missing"
+	if not data.has_all(["outdoor_sites", "generated_bands"]): return "outdoor_sites.missing"
 	if not sites is Dictionary: return "outdoor_sites"
 	if not bands is Array: return "generated_bands"
 	var seen := {}

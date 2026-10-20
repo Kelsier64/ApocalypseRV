@@ -11,7 +11,6 @@ const LIGHT_RAIN_THRESHOLD := 0.8
 const NO_FOG_CHANCE := 0.2
 const LIGHT_FOG_THRESHOLD := 0.6
 const MEDIUM_FOG_THRESHOLD := 0.85
-# Keep legacy saved strengths: old light fog becomes medium, heavy stays heavy.
 const FOG_NONE := 0.0
 const FOG_LIGHT := 0.5
 const FOG_MEDIUM := 1.0

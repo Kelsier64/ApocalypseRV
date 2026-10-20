@@ -31,17 +31,16 @@ func check(ok: bool, message: String) -> void:
 
 func run() -> void:
 	_check_opening_profiles()
-	var world := Node3D.new()
+	var world := TerrainHost.new()
 	root.add_child(world)
 	current_scene = world
 	var reference: Dictionary = {}
-	var legacy := WorldProfile.new()
-	legacy.generation_version = 6
+	var settings := WorldProfile.new()
 	for gradual: bool in [false, true]:
 		var chunk := ChunkGenerator.new()
 		chunk.set_meta("skip_actors", true)
 		world.add_child(chunk)
-		await chunk.generate(WorldField.new(42, legacy), 0, POISpawner.new(), gradual)
+		await chunk.generate(WorldField.new(42, settings), 0, POISpawner.new(), gradual)
 		var ground := chunk.get_node("Ground") as MeshInstance3D
 		var body := chunk.get_node("ForestTrunks") as StaticBody3D
 		var poses: Array[Transform3D] = []
@@ -61,22 +60,18 @@ func run() -> void:
 		chunk.queue_free()
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
-	TERRAIN_CONTRACTS.run(check, 14)
 	await V14_CONTRACTS.run(self, world, check)
-	for version: int in [13, 14]:
+	for version: int in [14]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13/v14 routes, landforms and crossings satisfy sampled contracts")
+	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms and crossings satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
 
 func _check_opening_profiles() -> void:
-	for version: int in [10, 11, 12, 14]:
-		var profile := WorldProfile.new()
-		profile.generation_version = version
-		var expected := "starting_shelter" if version == 10 else ("tutorial_shelter" if version == 11 else "orientation_shelter")
-		check(WorldField.new(42, profile).stop(0).definition_id == expected, "Default opening selection follows its generation profile")
+	var current_profile := WorldProfile.new()
+	check(current_profile.generation_version == 14 and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
 	var sandbox: WorldProfile = load("res://world/cheat_test_profile.gd").new()
 	sandbox.generation_version = 14
 	sandbox.max_grade = 0.12
@@ -154,11 +149,8 @@ func _check_dry_viaduct(world: Node3D, version: int) -> void:
 	var label := "v%d: " % version
 	var band := -1
 	var candidates: Array[int] = []
-	if version >= 14:
-		for index in range(3):
-			candidates.append(floori(float(field.landforms.dry_valley(index).s) / field.profile.chunk_length))
-	else:
-		for candidate in range(4, 80): candidates.append(candidate)
+	for index in range(3):
+		candidates.append(floori(float(field.landforms.dry_valley(index).s) / field.profile.chunk_length))
 	for candidate: int in candidates:
 		var eligible := true
 		for offset: float in [10.0, 75.0, 140.0]:

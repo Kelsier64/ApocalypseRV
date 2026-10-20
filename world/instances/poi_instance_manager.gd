@@ -81,14 +81,10 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	add_child(viewport)
 	game_settings.register_viewport(viewport, true)
-	var saved: Dictionary = saved_instances.get(id, {})
 	var profile: StringName = building.get_meta("poi_interior_profile", &"bunker")
 	if not POIConfig.supported_interior(profile):
 		cancel_transition("Unsupported interior profile")
 		return
-	# Only explicitly identified pre-bunker snapshots are discarded.
-	if CheckpointSchema.legacy_poi(saved):
-		saved_instances.erase(id)
 	interior = interior_factory.call() if interior_factory.is_valid() else PoiInterior.new()
 	interior.instance_id = id
 	viewport.add_child(interior)

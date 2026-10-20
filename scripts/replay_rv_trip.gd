@@ -126,7 +126,6 @@ func run() -> void:
 	if not await walk(Vector3(0, 0.5, 1.0)): return
 	var station: CraftingStation = rv.get_node("CraftingStation")
 	if not require(station.request_craft("gasoline"), "Gasoline queue: " + station.last_error): return
-	rv.interior_requested.work = true
 	if not await walk(Vector3(0, 0.5, 2.5)): return
 	await ticks(240)
 	var produced: Prop
@@ -190,7 +189,7 @@ func run() -> void:
 	player = world.get_node("Player")
 	for vehicle in get_nodes_in_group(Groups.CHASSIS):
 		if world.is_ancestor_of(vehicle): rv = vehicle
-	if not require(rv.get_engine().id == spare_id and rv.interior_requested.work and rv.interior_requested.service, "Reload changed engine or switches"): return
+	if not require(rv.get_engine().id == spare_id and rv.interior_requested.service, "Reload changed engine or switches"): return
 	for device in rv.get_equipment():
 		if device.has_method("exit_seat"): seat = device
 	seat.interact_hold(player)

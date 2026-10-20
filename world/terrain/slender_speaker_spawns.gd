@@ -9,7 +9,7 @@ const HEIGHT := 15.0
 const RADIUS := 1.1
 
 static func plan(field: WorldField, segment: int) -> Dictionary:
-	if field.profile.generation_version < 10 or segment < 1: return {}
+	if segment < 1: return {}
 	var rng := field.rng_for(segment, "slender_speaker_segment")
 	if rng.randf() >= CHANCE: return {"segment": segment, "band": segment * 10, "candidates": []}
 	var s := segment * SEGMENT_LENGTH + rng.randf_range(8.0, SEGMENT_LENGTH - 8.0)

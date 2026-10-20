@@ -1,17 +1,15 @@
 extends RefCounted
 class_name POIConfig
 
-## Order is part of generation v3/v4 compatibility. Never insert walk-in assets here.
+## Stable random selection order for the current instance entrances.
 const GENERATION_IDS := ["maintenance", "warehouse", "pump", "research"]
 const DEFINITIONS = [
-	preload("res://world/poi_definitions/maintenance_legacy.tres"),
 	preload("res://world/poi_definitions/maintenance.tres"),
 	preload("res://world/poi_definitions/warehouse.tres"),
 	preload("res://world/poi_definitions/pump.tres"),
 	preload("res://world/poi_definitions/research.tres"),
 	preload("res://world/poi_definitions/gas_station.tres"),
 	preload("res://world/poi_definitions/starting_shelter.tres"),
-	preload("res://world/poi_definitions/tutorial_shelter.tres"),
 	preload("res://world/poi_definitions/orientation_shelter.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_0.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_1.tres"),
@@ -39,8 +37,7 @@ static func definition(id: StringName) -> PoiDefinition:
 	return null
 
 static func definition_for_site(site: Dictionary) -> PoiDefinition:
-	# Missing exterior is the existing v2 route; unknown explicit IDs never fall back.
-	return definition(StringName(site.get("definition_id", site.get("exterior", "maintenance_legacy"))))
+	return definition(StringName(site.get("definition_id", site.get("exterior", ""))))
 
 static func instance_titles() -> Array[String]:
 	var result: Array[String] = []

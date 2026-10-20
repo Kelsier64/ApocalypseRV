@@ -24,7 +24,7 @@ func item() -> Dictionary:
 static func valid(value: Variant, allow_empty: bool = true) -> bool:
 	if not value is Dictionary: return false
 	if value.is_empty(): return allow_empty
-	if not ItemState.valid_slot_data(value.get("item_data", {})): return false
+	if not ItemState.valid_slot_data(value.get("item_data")): return false
 	if not value.has_all(["id", "model", "health"]) or not value.id is String or value.id.is_empty() or not value.model is String: return false
 	var spec := definition_for(value.model)
 	return spec != null and (value.health is float or value.health is int) and is_finite(float(value.health)) and value.health >= 0.0 and value.health <= spec.max_health

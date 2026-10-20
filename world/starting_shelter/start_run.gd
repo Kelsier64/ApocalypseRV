@@ -14,13 +14,11 @@ var _departure_check := 0.0
 var _status: Label
 var _bay_gates: Array[ShelterGarageGate] = []
 var _bay_gate_states: Array[bool] = []
-const BAY_GATE_COUNT := 8
+const BAY_GATE_COUNT := 1
 
 static func valid_state(data: Variant) -> bool:
 	if not data is Dictionary: return false
-	var tutorial: Variant = data.get("tutorial", {})
-	var orientation: bool = tutorial is Dictionary and tutorial.get("course", "") == "two_room_orientation"
-	return data.get("version") is int and data.version == 1 and data.get("phase") is String and data.phase in STABLE_PHASES and (not data.has("bay_gates") or valid_bay_gates(data.bay_gates, 1 if orientation else BAY_GATE_COUNT)) and (not data.has("tutorial") or CheckpointSchema.tutorial_error(data.tutorial).is_empty())
+	return data.get("version") is int and data.version == 1 and data.get("phase") is String and data.phase in STABLE_PHASES and (not data.has("bay_gates") or valid_bay_gates(data.bay_gates)) and (not data.has("tutorial") or CheckpointSchema.tutorial_error(data.tutorial).is_empty())
 
 static func valid_bay_gates(data: Variant, count := BAY_GATE_COUNT) -> bool:
 	return data is Array and data.size() == count and data.all(func(value): return value is bool)
@@ -30,15 +28,11 @@ func is_orientation_shelter() -> bool:
 	return generator != null and generator.profile != null and generator.profile.opening_shelter_id() == "orientation_shelter"
 
 func bay_gate_count() -> int:
-	return 1 if is_orientation_shelter() else BAY_GATE_COUNT
-
-func is_tutorial_shelter() -> bool:
-	var generator := get_parent().get_node_or_null("WorldGenerator")
-	return generator != null and generator.profile != null and generator.profile.opening_shelter_id() in ["tutorial_shelter", "orientation_shelter"]
+	return BAY_GATE_COUNT
 
 func capture(include_retry := true) -> Dictionary:
 	var data := {"version": 1, "phase": phase}
-	if is_tutorial_shelter():
+	if is_orientation_shelter():
 		_remember_bay_gates()
 		data["bay_gates"] = _bay_gate_states.duplicate()
 		var tutorial := get_node_or_null("Tutorial")
@@ -64,7 +58,7 @@ func restore(data: Dictionary) -> void:
 
 func save_block_reason() -> String:
 	if phase in ["opening", "closing"] or (is_instance_valid(gate) and not gate.stable()):
-		return "Wait for the exit gate to stop before saving" if is_tutorial_shelter() else "車庫大門仍在移動，請等待大門停妥後保存"
+		return "Wait for the exit gate to stop before saving" if is_orientation_shelter() else "車庫大門仍在移動，請等待大門停妥後保存"
 	for bay_gate in _bay_gates:
 		if is_instance_valid(bay_gate) and not bay_gate.stable():
 			return "Wait for all bay gates to stop before saving"
@@ -103,17 +97,13 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 		button.set_script(BUTTON_SCRIPT)
 		button.configure(self)
 	_apply_gate()
-	if site.get("definition_id", "") in ["tutorial_shelter", "orientation_shelter"]:
+	if site.get("definition_id", "") == "orientation_shelter":
 		for index in range(bay_gate_count()):
 			var bay_gate := building.get_node("Gates/Gate%02d" % (index + 1)) as ShelterGarageGate
 			_bay_gates.append(bay_gate)
 			bay_gate.opened.connect(_remember_bay_gates)
 			bay_gate.closed.connect(_remember_bay_gates)
 		_apply_bay_gates()
-		if not is_orientation_shelter():
-			for index in range(BAY_GATE_COUNT):
-				for suffix in ["Inside", "Outside"]:
-					building.get_node("Switches/Gate%02d%s" % [index + 1, suffix]).configure_tutorial(self, index)
 		apply_tutorial_gates()
 	_update_status()
 	var world := get_parent() as Node3D
@@ -126,7 +116,7 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 		rv.angular_velocity = Vector3.ZERO
 
 func begin_run(player: Node3D) -> String:
-	var tutorial := is_tutorial_shelter()
+	var tutorial := is_orientation_shelter()
 	if phase != "preparing": return "Journey already started" if tutorial else "旅程已開始"
 	var world := get_parent() as Node3D
 	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing; please wait" if tutorial else "世界仍在準備，請稍候"
@@ -166,11 +156,10 @@ func tutorial_active() -> bool:
 
 func tutorial_enabled() -> bool:
 	var tutorial := get_node_or_null("Tutorial")
-	return is_tutorial_shelter() and tutorial != null and tutorial.initialized()
+	return is_orientation_shelter() and tutorial != null and tutorial.initialized()
 
-func bay_unlocked(index: int) -> bool:
-	if is_orientation_shelter(): return tutorial_enabled() and get_node("Tutorial").inner_gate_unlocked()
-	return not tutorial_active() or index < get_node("Tutorial").stage - 1
+func bay_unlocked(_index: int) -> bool:
+	return tutorial_enabled() and get_node("Tutorial").inner_gate_unlocked()
 
 func apply_tutorial_gates() -> void:
 	if not tutorial_enabled() or _bay_gates.size() != bay_gate_count(): return
@@ -277,7 +266,7 @@ func vehicle_clear(vehicle: Chassis) -> bool:
 
 func _update_status() -> void:
 	if not _status: return
-	_status.visible = not is_tutorial_shelter()
+	_status.visible = not is_orientation_shelter()
 	if not _status.visible:
 		_status.text = ""
 		return

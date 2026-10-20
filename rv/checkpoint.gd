@@ -1,9 +1,8 @@
 extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
-const VERSION := 5
-const PATH := "user://rv_checkpoint_v5.save"
-const LEGACY_PATH := "user://rv_checkpoint_v4.save"
-const WORLD_SCENES := {"legacy": "res://world/test_world.tscn", "shelter": "res://world/main_world.tscn"}
+const VERSION := 6
+const PATH := "user://rv_checkpoint_v6.save"
+const WORLD_SCENE := "res://world/main_world.tscn"
 const ROUTE_PRESSURE = preload("res://world/deviation_pressure.gd")
 const REAR_WRECK_LAYOUT = preload("res://world/starting_shelter/rear_wreck_layout.gd")
 var pending: Dictionary = {}
@@ -29,7 +28,7 @@ func error_message() -> String:
 		"open": return "Cannot open checkpoint; check the save folder permissions"
 		"write": return "Cannot write checkpoint; check free disk space and permissions"
 		"rename", "backup": return "Cannot replace checkpoint; close programs locking the save file and retry"
-		"version": return "This checkpoint uses an incompatible Item format; start a new run"
+		"version": return "This checkpoint is incompatible; start a new run"
 		"timeout": return "World preparation timed out; current world retained"
 		_: return "Checkpoint rejected at %s; current world retained" % last_error.get("field", "data")
 
@@ -51,7 +50,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var world := get_tree().current_scene
 	# The F6 orientation playground inherits the complete production world;
 	# its saves still restore the trusted main scene, without review cameras.
-	if world == null or (world.scene_file_path not in WORLD_SCENES.values() and world.scene_file_path != "res://tests/orientation_playground.tscn"):
+	if world == null or world.scene_file_path not in [WORLD_SCENE, "res://tests/orientation_playground.tscn"]:
 		return
 	if loading: return
 	if event.physical_keycode == KEY_F6:
@@ -72,6 +71,9 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 		_fail("state")
 		return {}
 	var start_run := world.get_node_or_null("StartRun")
+	if start_run == null:
+		_fail("state", "start_state")
+		return {}
 	if start_run != null and not start_run.save_block_reason().is_empty():
 		_fail("motion", "start_state", start_run.save_block_reason())
 		return {}
@@ -88,13 +90,12 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 		if world.is_ancestor_of(monster) and WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
 			_fail("motion", "monster", "Monster grab or execution is active")
 			return {}
-	# v8 actors are committed by navigation publication, after terrain building.
+	# Actors are committed by navigation publication, after terrain building.
 	# Saving in that interval would persist generated_bands without its Rakers.
-	if generator.profile.generation_version >= 8 and generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
+	if generator.active_chunks.any(func(entry): return not entry.node.navigation_ready):
 		_fail("state")
 		return {}
-	if generator.profile.generation_version >= 10:
-		generator._spawn_giant_segments(player.global_position)
+	generator._spawn_giant_segments(player.global_position)
 	# An open construction terminal puts the operator in UI mode. Report the
 	# vehicle's concrete blocker before the generic player interaction gate.
 	var matching_vehicles: Array[Node] = []
@@ -143,15 +144,14 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 	data["dormant_items"] = generator.dormant_items.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
 	data["generated_bands"] = generator.generated_bands.duplicate()
-	if generator.profile.generation_version >= 10:
-		data["generated_giant_segments"] = generator.generated_giant_segments.duplicate()
-		# Keep the plan when its rear chunk is unloaded; returning must rebuild
-		# precisely the same wrecks rather than roll against a new actor footprint.
-		data["rear_wreck_layout"] = generator.rear_wreck_layout.duplicate(true)
-		var pressure := world.get_node_or_null("DeviationPressure")
-		if pressure != null: data["route_pressure"] = pressure.capture()
-	data["world_id"] = "shelter" if start_run != null else "legacy"
-	if start_run != null: data["start_state"] = start_run.capture(include_retry)
+	data["generated_giant_segments"] = generator.generated_giant_segments.duplicate()
+	# Keep the plan when its rear chunk is unloaded; returning must rebuild
+	# precisely the same wrecks rather than roll against a new actor footprint.
+	data["rear_wreck_layout"] = generator.rear_wreck_layout.duplicate(true)
+	var pressure := world.get_node_or_null("DeviationPressure")
+	if pressure != null: data["route_pressure"] = pressure.capture()
+	data["world_id"] = "shelter"
+	data["start_state"] = start_run.capture(include_retry)
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if clock != null:
 		data["clock"] = clock.capture()
@@ -169,7 +169,7 @@ func _orientation_ui_capture_allowed(world: Node, player: Node, start_run: Node)
 	if start_run == null or start_run.phase != "preparing" or player.get("settings_open") == true or player.get_player_mode() != player.PlayerMode.UI: return false
 	var generator := world.get_node_or_null("WorldGenerator")
 	var tutorial := start_run.get_node_or_null("Tutorial")
-	if generator == null or generator.profile.generation_version not in [12, 13, 14] or tutorial == null or tutorial.get("status") != "active": return false
+	if generator == null or generator.profile.generation_version != 14 or tutorial == null or tutorial.get("status") != "active": return false
 	var item_scripts := ["res://equipment/tablet_screen.gd", "res://equipment/training_terminal.gd"]
 	for item in get_tree().get_nodes_in_group(Groups.ITEMS):
 		if not world.is_ancestor_of(item) or not WorldEntities.same_world(world, item) or item.is_queued_for_deletion(): continue
@@ -198,14 +198,6 @@ func write_checkpoint(path: String, data: Dictionary) -> bool:
 	last_error = {}
 	return true
 
-func read_default_checkpoint(current_path: String = PATH, legacy_path: String = LEGACY_PATH) -> Dictionary:
-	# F9 must explain the new-run requirement when only the previous save exists.
-	# Detect its presence without decoding, migrating or modifying that file.
-	if not FileAccess.file_exists(current_path) and (FileAccess.file_exists(legacy_path) or (current_path == PATH and legacy_path == LEGACY_PATH and FileAccess.file_exists("user://rv_checkpoint.save"))):
-		_fail("version", "version")
-		return {}
-	return read_checkpoint(current_path)
-
 func read_checkpoint(path: String) -> Dictionary:
 	last_error = {}
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -225,7 +217,6 @@ func read_checkpoint(path: String) -> Dictionary:
 	if not data.get("version") is int or data.version != VERSION:
 		_fail("version", "version")
 		return {}
-	data = _upgrade_checkpoint(data)
 	var field := validation_error(data)
 	if not field.is_empty():
 		_fail("data", field)
@@ -238,7 +229,7 @@ func validation_error(data: Dictionary) -> String:
 func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not CheckpointSchema.bounded(data, 0, [CheckpointSchema.MAX_ENTRIES]): return "data.size/depth"
 	if not data.get("version") is int or data.version != VERSION: return "version"
-	if not data.has_all(["vehicles", "player", "actors", "seed", "bands", "poi"]): return "data.fields"
+	if not data.has_all(["vehicles", "player", "actors", "seed", "bands", "poi", "profile", "generation_version", "generated_giant_segments", "route_pressure", "rear_wreck_layout", "world_id", "start_state", "clock", "weather", "dormant_items", "outdoor_sites", "destroyed_trees", "generated_bands"]): return "data.fields"
 	if not data.vehicles is Array: return "vehicles"
 	if not data.actors is Array: return "actors"
 	if not data.player is Dictionary: return "player"
@@ -248,37 +239,26 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 		if not band is int or seen.has(band): return "bands"
 		seen[band] = true
 	if not data.seed is int: return "seed"
-	if not data.get("profile", {}) is Dictionary: return "profile"
-	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
+	if not data.profile is Dictionary: return "profile"
+	var profile_error := CheckpointSchema.profile_error(data.profile)
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]: return "generation_version"
-	if data.get("generation_version", 2) >= 10 and not SlenderSpeakerSpawns.valid_ledger(data.get("generated_giant_segments")): return "generated_giant_segments"
-	if data.get("generation_version", 2) >= 10:
-		if data.has("route_pressure") and not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"
-		if data.has("rear_wreck_layout") and not REAR_WRECK_LAYOUT.valid_checkpoint(data): return "rear_wreck_layout"
-	var world_id: Variant = data.get("world_id", "legacy")
-	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
-	if world_id == "shelter":
-		if data.get("generation_version") not in [7, 8, 9, 10, 11, 12, 13, 14]: return "world_id.generation_version"
-		var start_state: Variant = data.get("start_state")
-		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
-		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
-		var gate_count := 1 if data.generation_version >= 12 else 8
-		if start_state.has("bay_gates") and (data.generation_version < 11 or not StartRun.valid_bay_gates(start_state.bay_gates, gate_count)): return "start_state.bay_gates"
-		if start_state.has("tutorial"):
-			var orientation: bool = start_state.tutorial is Dictionary and start_state.tutorial.get("course") == "two_room_orientation"
-			if data.generation_version not in ([12, 13, 14] if orientation else [11]): return "start_state.tutorial.generation_version"
-			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry, data.generation_version)
-			if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
-			if orientation:
-				var phase_error := CheckpointSchema.orientation_phase_error(start_state)
-				if not phase_error.is_empty(): return "start_state.tutorial." + phase_error
-		elif data.generation_version >= 12:
-			return "start_state.tutorial"
-	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11, 12, 13, 14]:
-		return "world_id.start_state"
-	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
-	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
+	if not data.generation_version is int or data.generation_version != 14: return "generation_version"
+	if data.profile.generation_version != data.generation_version: return "profile.generation_version"
+	if not SlenderSpeakerSpawns.valid_ledger(data.generated_giant_segments): return "generated_giant_segments"
+	if not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"
+	if not REAR_WRECK_LAYOUT.valid_checkpoint(data): return "rear_wreck_layout"
+	if not data.world_id is String or data.world_id != "shelter": return "world_id"
+	var start_state: Variant = data.start_state
+	if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
+	if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
+	if not StartRun.valid_bay_gates(start_state.get("bay_gates"), 1): return "start_state.bay_gates"
+	if not start_state.has("tutorial"): return "start_state.tutorial"
+	var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry)
+	if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
+	var phase_error := CheckpointSchema.orientation_phase_error(start_state)
+	if not phase_error.is_empty(): return "start_state.tutorial." + phase_error
+	if not WorldClock.valid_state(data.clock): return "clock"
+	if not WorldWeather.valid_state(data.weather): return "weather"
 	var player: Dictionary = data.player
 	if not player.get("items") is Array: return "player.items"
 	# Selection is a hotbar index, including empty slots, not an item index.
@@ -286,9 +266,9 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not VehicleSnapshot._number(player.get("health")) or player.health < 0 or player.health > 100: return "player.health"
 	var body_error := CheckpointSchema.player_body_error(player)
 	if not body_error.is_empty(): return body_error
-	if player.has("stamina") and (not VehicleSnapshot._number(player.stamina) or player.stamina < 0 or player.stamina > 100): return "player.stamina"
-	if player.has("stamina_exhausted") and not player.stamina_exhausted is bool: return "player.stamina_exhausted"
-	if player.has("crouching") and not player.crouching is bool: return "player.crouching"
+	if not VehicleSnapshot._number(player.get("stamina")) or player.stamina < 0 or player.stamina > 100: return "player.stamina"
+	if not player.get("stamina_exhausted") is bool: return "player.stamina_exhausted"
+	if not player.get("crouching") is bool: return "player.crouching"
 	if not CheckpointSchema.valid_transform(player.get("transform")): return "player.transform"
 	for i in range(player.items.size()):
 		if not VehicleSnapshot.valid_item(player.items[i]): return "player.items[%d]" % i
@@ -301,7 +281,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	for i in range(data.actors.size()):
 		var actor_error := WorldActorSnapshot.validation_error(data.actors[i], "actors[%d]" % i)
 		if not actor_error.is_empty(): return actor_error
-	var dormant: Variant = data.get("dormant_items", {})
+	var dormant: Variant = data.dormant_items
 	if not dormant is Dictionary: return "dormant_items"
 	var outdoor_graph: Array = data.actors.duplicate()
 	for vehicle in data.vehicles: outdoor_graph.append_array(vehicle.mounted_items)
@@ -313,7 +293,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var graph_error := WorldActorSnapshot.graph_error(outdoor_graph)
 	if not graph_error.is_empty(): return graph_error
 	var outdoor_error := WalkInSites.validation_error(data)
-	if not TreeImpact.valid_ledger(data.get("destroyed_trees", {})): return "destroyed_trees"
+	if not TreeImpact.valid_ledger(data.destroyed_trees): return "destroyed_trees"
 	if not outdoor_error.is_empty(): return outdoor_error
 	var poi_error := CheckpointSchema.poi_error(data.poi)
 	if not poi_error.is_empty(): return poi_error
@@ -322,9 +302,8 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var owned_data := data.duplicate()
 	owned_data.erase("start_state")
 	if not ItemState.unique_ids(owned_data, {}): return "item.id.duplicate"
-	if data.get("generation_version") in [12, 13, 14] and data.get("start_state", {}).has("tutorial"):
-		var orientation_error := _orientation_items_error(owned_data, data.start_state.tutorial)
-		if not orientation_error.is_empty(): return "start_state.tutorial." + orientation_error
+	var orientation_error := _orientation_items_error(owned_data, data.start_state.tutorial)
+	if not orientation_error.is_empty(): return "start_state.tutorial." + orientation_error
 	return ""
 
 func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> String:
@@ -338,7 +317,7 @@ func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> S
 		var terminal: Dictionary = record.get("state", {}).get("training_terminal", {})
 		if terminal.get("version") != 2: return "terminal_id"
 		if terminal.get("initialized", false) != tutorial.flags.boot_complete: return "flags.boot_complete"
-	if tutorial.version == 1 or not tutorial.workshop.configured: return ""
+	if not tutorial.workshop.configured: return ""
 	# References may outlive consumed, recycled or destroyed Items. Any owner
 	# that still exists must retain its actual Item type, wherever it is stored.
 	var scenes := {"scrapper": "res://equipment/scrapper.tscn", "workbench": "res://equipment/crafting_station.tscn",
@@ -351,7 +330,7 @@ func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> S
 		"engine": ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]}
 	for letter in ["c", "d", "e", "f", "g", "h"]: extra_scenes["scrap_" + letter] = "res://props/scrap.tscn"
 	for key in extra_scenes:
-		if tutorial.workshop.targets.has(key): scenes[key] = extra_scenes[key]
+		scenes[key] = extra_scenes[key]
 	for key in scenes:
 		if not _orientation_item_scene(owned_data, tutorial.workshop.targets[key], scenes[key]): return "workshop.targets." + key
 	for key in ["gasoline_id", "empty_can_id"]:
@@ -385,7 +364,7 @@ func _find_item_records(value: Variant, identity: String, result: Array[Dictiona
 	elif value is Array:
 		for child in value: _find_item_records(child, identity, result)
 
-func _tutorial_error(value: Variant, allow_entry: bool, generation_version: int) -> String:
+func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	var state_error := CheckpointSchema.tutorial_error(value)
 	if not state_error.is_empty(): return state_error
 	if not value.has("entry_snapshot"): return ""
@@ -394,55 +373,43 @@ func _tutorial_error(value: Variant, allow_entry: bool, generation_version: int)
 	if not entry is Dictionary: return "entry_snapshot"
 	var entry_error := _validation_error(entry, false)
 	if not entry_error.is_empty(): return "entry_snapshot." + entry_error
-	var orientation: bool = value.get("course") == "two_room_orientation"
-	if entry.get("world_id") != "shelter" or entry.get("generation_version") != generation_version: return "entry_snapshot.world_id"
-	var entry_tutorial: Variant = entry.get("start_state", {}).get("tutorial")
-	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
-	var identity_fields := ["version", "stage", "terminal_id", "rv_id"] if orientation else ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]
-	if orientation: identity_fields.append("course")
-	for field in identity_fields:
-		if entry_tutorial.get(field) != value.get(field): return "entry_snapshot.tutorial." + field
-	if value.version >= 2 and entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
-	if orientation and value.version >= 2:
-		for field in ["step", "configured", "migration_pending"]:
-			if entry_tutorial.workshop[field] != value.workshop[field]: return "entry_snapshot.tutorial.workshop." + field
-	if not orientation and value.version == 3:
-		for field in ["configured", "wall_slot", "wheel_slot", "engine_id", "wheel_id", "spare_id", "kit_id", "fuel_port_id"]:
-			if entry_tutorial.service[field] != value.service[field]: return "entry_snapshot.tutorial.service." + field
+	var entry_tutorial: Dictionary = entry.start_state.tutorial
+	for field in ["version", "stage", "terminal_id", "rv_id", "course"]:
+		if entry_tutorial[field] != value[field]: return "entry_snapshot.tutorial." + field
+	if entry_tutorial.workshop.targets != value.workshop.targets: return "entry_snapshot.tutorial.workshop.targets"
+	for field in ["step", "configured"]:
+		if entry_tutorial.workshop[field] != value.workshop[field]: return "entry_snapshot.tutorial.workshop." + field
 	if entry_tutorial.status != "active": return "entry_snapshot.tutorial.status"
 	return ""
 
 func prepare_world(world: Node) -> void:
 	if pending.is_empty(): return
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
-	if clock != null and pending.has("clock"): clock.restore(pending.clock)
-	if clock != null and pending.has("weather"): clock.weather.restore(pending.weather)
+	if clock != null:
+		clock.restore(pending.clock)
+		clock.weather.restore(pending.weather)
 	world.get_node("Player").transform = pending.player.transform
 	world.get_node("WorldGenerator").world_seed = pending.seed
 	var profile := WorldProfile.new()
-	for key in pending.get("profile", {}):
+	for key in pending.profile:
 		if key in profile and key != "terrain_half_width": profile.set(key, pending.profile[key])
-	profile.generation_version = pending.get("generation_version", 2)
+	profile.generation_version = pending.generation_version
 	world.get_node("WorldGenerator").profile = profile
-	if world.has_method("configure_tutorial_course"): world.configure_tutorial_course()
 	var start_run := world.get_node_or_null("StartRun")
-	if start_run != null and pending.has("start_state"): start_run.restore(pending.start_state)
+	if start_run != null: start_run.restore(pending.start_state)
 	world.get_node("WorldGenerator").restore_bands.assign(pending.bands)
 	world.get_node("WorldGenerator").restoring_entities = true
-	world.get_node("WorldGenerator").outdoor_sites = pending.get("outdoor_sites", {}).duplicate(true)
-	world.get_node("WorldGenerator").dormant_items = pending.get("dormant_items", {}).duplicate(true)
-	world.get_node("WorldGenerator").destroyed_trees = pending.get("destroyed_trees", {}).duplicate()
-	world.get_node("WorldGenerator").generated_bands.assign(pending.get("generated_bands", pending.bands))
-	world.get_node("WorldGenerator").generated_giant_segments.assign(pending.get("generated_giant_segments", []))
-	if profile.generation_version >= 10:
-		var generator := world.get_node("WorldGenerator")
-		generator.rear_wreck_layout = pending.get("rear_wreck_layout", {}).duplicate(true)
-		generator.rear_wreck_exclusions.clear()
-		if generator.rear_wreck_layout.is_empty(): generator.rear_wreck_exclusions.assign(REAR_WRECK_LAYOUT.exclusions_for_checkpoint(pending))
-		var pressure := world.get_node_or_null("DeviationPressure")
-		# Missing optional state is an old v10 checkpoint. Initialization waits
-		# for actual restored placement and terrain, never a default scene pose.
-		if pressure != null: pressure.restore(pending.get("route_pressure", {}))
+	world.get_node("WorldGenerator").outdoor_sites = pending.outdoor_sites.duplicate(true)
+	world.get_node("WorldGenerator").dormant_items = pending.dormant_items.duplicate(true)
+	world.get_node("WorldGenerator").destroyed_trees = pending.destroyed_trees.duplicate()
+	world.get_node("WorldGenerator").generated_bands.assign(pending.generated_bands)
+	world.get_node("WorldGenerator").generated_giant_segments.assign(pending.generated_giant_segments)
+	var generator := world.get_node("WorldGenerator")
+	generator.rear_wreck_layout = pending.rear_wreck_layout.duplicate(true)
+	generator.rear_wreck_exclusions.clear()
+	if generator.rear_wreck_layout.is_empty(): generator.rear_wreck_exclusions.assign(REAR_WRECK_LAYOUT.exclusions_for_checkpoint(pending))
+	var pressure := world.get_node_or_null("DeviationPressure")
+	if pressure != null: pressure.restore(pending.route_pressure)
 
 func restore_world(world: Node) -> Dictionary:
 	if pending.is_empty(): return {"ok": true}
@@ -497,7 +464,7 @@ func restore_world(world: Node) -> Dictionary:
 
 func load_world(old_world: Node, path: String) -> bool:
 	if loading: return false
-	var data := read_default_checkpoint() if path == PATH else read_checkpoint(path)
+	var data := read_checkpoint(path)
 	if data.is_empty():
 		message = error_message()
 		label.text = message
@@ -523,19 +490,6 @@ func load_snapshot(old_world: Node, data: Dictionary) -> bool:
 	# A caller can retain or mutate its retry dictionary while preparation awaits.
 	# The candidate must apply precisely the data that passed validation.
 	data = data.duplicate(true)
-	if data.get("generation_version") == 11 and data.get("start_state", {}).has("tutorial"):
-		var tutorial: Dictionary = data.start_state.tutorial
-		if tutorial.status == "active" and not tutorial.has("entry_snapshot"):
-			# Entry snapshots omit their retry field on disk. Preserve that exact
-			# entry immediately, before restored actors can move or acquire items.
-			var entry_source := data.duplicate(true)
-			tutorial["entry_snapshot"] = entry_source
-			field = validation_error(data)
-			if not field.is_empty():
-				_fail("data", field)
-				message = error_message()
-				label.text = message
-				return false
 	loading = true
 	message = "Preparing checkpoint..."
 	label.text = message
@@ -545,7 +499,7 @@ func load_snapshot(old_world: Node, data: Dictionary) -> bool:
 	staging.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(staging)
 	PhysicsServer3D.space_set_active(staging.find_world_3d().space, false)
-	var candidate: Node3D = load(WORLD_SCENES[data.get("world_id", "legacy")]).instantiate()
+	var candidate: Node3D = load(WORLD_SCENE).instantiate()
 	candidate.set_meta("checkpoint_staging", true)
 	candidate.set_meta("entity_domain", true)
 	pending = data
@@ -600,19 +554,6 @@ func _collect_removable(node: Node, result: Array[Node]) -> void:
 			result.append(child)
 		else:
 			_collect_removable(child, result)
-
-# Earlier Item formats remain incompatible. The current format only normalizes
-# the former damageable deck, retaining all other saved vehicle state.
-func _upgrade_checkpoint(source: Dictionary) -> Dictionary:
-	if source.get("version", 0) != VERSION: return {}
-	var data := source.duplicate(true)
-	if not data.get("vehicles") is Array: return data
-	for index in range(data.vehicles.size()):
-		if not data.vehicles[index] is Dictionary: return data
-		var vehicle := VehicleSnapshot.upgrade(data.vehicles[index])
-		if vehicle.is_empty(): return {}
-		data.vehicles[index] = vehicle
-	return data
 
 func _unique_engine_ids(data: Dictionary) -> bool:
 	return EngineState.unique_ids(data)

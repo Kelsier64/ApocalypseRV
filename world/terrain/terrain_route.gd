@@ -10,7 +10,7 @@ var short_wave: float
 
 func _init(field: WorldField) -> void:
 	profile = field.profile
-	var rng := field.rng_for(0, "terrain_route", 13 if profile.generation_version == 14 else -1)
+	var rng := field.rng_for(0, "terrain_route", 13)
 	phase = rng.randf_range(-PI, PI)
 	handedness = -1.0 if rng.randf() < 0.5 else 1.0
 	long_wave = rng.randf_range(2200.0, 2600.0)

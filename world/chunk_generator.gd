@@ -3,7 +3,6 @@ class_name ChunkGenerator
 ## Fixed world-grid band. Roads curve inside it; the band never rotates.
 const CHUNK_SIZE := 150.0
 const RAKER_SCENE = preload("res://enemies/raker.tscn")
-const TERRAIN_SHADER = preload("res://world/terrain/terrain_material.gdshader")
 const TERRAIN_V14 = preload("res://world/terrain/terrain_v14.gdshader")
 const SLICE_BUDGET_USEC := 4000
 var field: WorldField
@@ -43,20 +42,13 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	if gradual:
 		await _pause()
 	_build_road()
-	if field.landforms != null:
-		await TerrainCrossings.build(self, gradual)
-	if field.profile.generation_version >= 8:
-		road_spawns = RoadSpawns.plan(field, band)
-		RoadSpawns.build_static(self, road_spawns)
-	else:
-		TireSpikeStrip.build(self, field, band)
+	await TerrainCrossings.build(self, gradual)
+	road_spawns = RoadSpawns.plan(field, band)
+	RoadSpawns.build_static(self, road_spawns)
 	for site in sites:
 		_build_site(site, spawner)
-	if field.profile.generation_version >= 3:
-		await _build_exploration_scenery(gradual)
-	await _decorate(gradual)
-	if field.profile.generation_version >= 4:
-		await ForestScenery.build(self, gradual)
+	await _build_exploration_scenery(gradual)
+	await ForestScenery.build(self, gradual)
 	if gradual:
 		await _pause()
 	await _build_navigation(gradual)
@@ -82,7 +74,7 @@ func slice_exhausted() -> bool:
 func _build_ground(gradual: bool) -> void:
 	var step := field.profile.terrain_step
 	var nx := roundi(field.profile.terrain_half_width * 2.0 / step)
-	var step_x := field.profile.terrain_half_width * 2.0 / nx if field.landforms != null else step
+	var step_x := field.profile.terrain_half_width * 2.0 / nx
 	var nz := roundi(field.profile.chunk_length / step)
 	var z0 := -band * field.profile.chunk_length
 	var rows: Array = []
@@ -102,22 +94,14 @@ func _build_ground(gradual: bool) -> void:
 			var normal := Vector3((float(rows[j + 1][i].height) - float(rows[j + 1][i + 2].height)) * step / step_x, 2.0 * step, float(rows[j + 2][i + 1].height) - float(rows[j][i + 1].height)).normalized()
 			var w: Vector3 = sample.weights
 			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
-			if field.profile.generation_version >= 3:
-				color = Color("656153") * w.x + Color("515849") * w.y + Color("797369") * w.z
-			if field.landforms != null:
-				color = field.landforms.color_at(-z0 + j * step)
-				if is_finite(float(sample.water_height)): color = Color("454e43")
-				color = color.lerp(Color("716b54"), float(sample.river_bank) * 0.72)
-			if field.profile.generation_version < 14:
-				color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
-				color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
+			color = Color("656153") * w.x + Color("515849") * w.y + Color("797369") * w.z
+			color = field.landforms.color_at(-z0 + j * step)
+			if is_finite(float(sample.water_height)): color = Color("454e43")
+			color = color.lerp(Color("716b54"), float(sample.river_bank) * 0.72)
 			st.set_normal(normal)
 			st.set_color(color)
-			if field.profile.generation_version >= 14:
-				st.set_uv(Vector2(sample.gravel, sample.river_bank))
-				st.set_uv2(field.landforms.material_weights(sample.appearance))
-			else:
-				st.set_uv(Vector2(i, j) * step / 4.0)
+			st.set_uv(Vector2(sample.gravel, sample.river_bank))
+			st.set_uv2(field.landforms.material_weights(sample.appearance))
 			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step_x, sample.height, z0 - j * step))
 		if gradual and slice_exhausted():
 			await _pause()
@@ -129,7 +113,7 @@ func _build_ground(gradual: bool) -> void:
 		if gradual and slice_exhausted(): await _pause()
 	_terrain = _mesh(st.commit(), "Ground", true)
 	var mat := ShaderMaterial.new()
-	mat.shader = TERRAIN_V14 if field.profile.generation_version >= 14 else TERRAIN_SHADER
+	mat.shader = TERRAIN_V14
 	mat.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
 	_terrain.material_override = mat
 	if gradual:
@@ -137,7 +121,7 @@ func _build_ground(gradual: bool) -> void:
 	await _build_distant_sides(gradual)
 
 func _build_distant_sides(gradual: bool) -> void:
-	var river_detail := field.landforms != null and not field.landforms.rivers_near(-(band + 0.5) * 150.0, 190.0).is_empty()
+	var river_detail := not field.landforms.rivers_near(-(band + 0.5) * 150.0, 190.0).is_empty()
 	for side in [-1.0, 1.0]:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -154,18 +138,13 @@ func _build_distant_sides(gradual: bool) -> void:
 		for j in range(51):
 			var z := -band * 150.0 - j * 3.0
 			for x in columns:
-				if field.landforms != null:
-					var sample := field.surface(x * side, z)
-					var color := field.landforms.color_at(-z)
-					if is_finite(float(sample.water_height)): color = Color("454e43")
-					st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
-					if field.profile.generation_version >= 14:
-						st.set_uv(Vector2(sample.gravel, sample.river_bank))
-						st.set_uv2(field.landforms.material_weights(sample.appearance))
-					st.add_vertex(Vector3(x * side, sample.height, z))
-				else:
-					st.set_color(Color(0.36, 0.39, 0.27))
-					st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
+				var sample := field.surface(x * side, z)
+				var color := field.landforms.color_at(-z)
+				if is_finite(float(sample.water_height)): color = Color("454e43")
+				st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
+				st.set_uv(Vector2(sample.gravel, sample.river_bank))
+				st.set_uv2(field.landforms.material_weights(sample.appearance))
+				st.add_vertex(Vector3(x * side, sample.height, z))
 				if gradual and slice_exhausted(): await _pause()
 			if gradual and slice_exhausted(): await _pause()
 		for j in range(50):
@@ -175,10 +154,9 @@ func _build_distant_sides(gradual: bool) -> void:
 				for v in indices:
 					st.add_index(v)
 		st.generate_normals()
-		var title := ("DistantTerrainLeft" if side < 0.0 else "DistantTerrainRight") if field.landforms != null else "DistantTerrain"
+		var title := "DistantTerrainLeft" if side < 0.0 else "DistantTerrainRight"
 		var node := _mesh(st.commit(), title, false)
-		if field.landforms != null:
-			node.material_override = _terrain.material_override
+		node.material_override = _terrain.material_override
 		if gradual:
 			await _pause()
 
@@ -221,29 +199,15 @@ func _build_road() -> void:
 		var frame := field.road_frame(s)
 		var paint := RoadsideKit.part(self, Vector3(0.16, 0.015, 4), frame.origin + Vector3.UP * 0.09, Color(0.76, 0.69, 0.42))
 		paint.basis = frame.basis
-		if field.landforms != null:
-			var behind := field.road_frame(s - 2).origin
-			var ahead := field.road_frame(s + 2).origin
-			paint.basis = Basis.looking_at(ahead - behind)
-		else:
-			paint.rotation.x = atan2(field.road_height(s + 2) - field.road_height(s - 2), 4.0)
+		var behind := field.road_frame(s - 2).origin
+		var ahead := field.road_frame(s + 2).origin
+		paint.basis = Basis.looking_at(ahead - behind)
 	for i in range(3):
 		var s := band * 150.0 + i * 50.0 + 20.0
 		var point := field.road_frame(s) * Vector3(14, 0, 0)
-		if field.landforms != null and (field.landforms.bridge_at(s) or field.road_width(s) > 18.0): continue
+		if (field.landforms.bridge_at(s) or field.road_width(s) > 18.0): continue
 		if not _near_site(point):
 			_place_module("pole", point, field.road_frame(s).basis)
-	if field.landforms == null and posmod(band, 6) == 3:
-		var frame := field.road_frame(band * 150.0 - 35.0)
-		var sign_node := _place_module("sign", frame * Vector3(11, 0, 0), frame.basis)
-		RoadsideKit.label(sign_node, "NARROW ROAD\nSLOW", Vector3(0, 3.4, 0.08), 34)
-		for i in range(12):
-			var s := band * 150.0 + 40.0 + i * 5.0
-			var rail := field.road_frame(s)
-			var point := rail * Vector3(-field.road_width(s) * 0.5 - 1.2, 0, 0)
-			if not _near_site(point):
-				_place_module("rail", point, rail.basis)
-
 func _near_site(point: Vector3) -> bool:
 	for site in field.sites_near_z(point.z):
 		if field.court_distance(point.x, point.z, site) < 20:
@@ -298,76 +262,6 @@ func _build_exploration_scenery(gradual: bool = false) -> void:
 			post.scale = Vector3.ONE * 0.35
 			var marker := RoadsideKit.part(self, Vector3(0.3, 0.4, 0.3), point + Vector3.UP * 1.6, Color("b6a071"))
 			marker.basis = site.road.basis
-		# Authored groves supplement sparse biome scenery, away from travel lanes.
-		if field.profile.generation_version >= 4: continue
-		var grove_rng := field.rng_for(int(site.index), "groves")
-		for i in range(70):
-			if gradual and i % 20 == 0: await _pause()
-			var u := grove_rng.randf_range(47, 148)
-			var v := grove_rng.randf_range(-34, 34)
-			var point := ExplorationSite.local_point(site, u, v)
-			if floori(-point.z / 150.0) != band or field.surface(point.x, point.z).reserved: continue
-			# Keep the elevated landmark view from the complete parking bay clear.
-			if absf(v) < 8: continue
-			var tree := _place_module("dead_tree" if i % 3 == 0 else "tree", point, Basis(Vector3.UP, grove_rng.randf_range(-PI, PI)))
-			tree.scale = Vector3.ONE * grove_rng.randf_range(0.65, 1.1)
-			for mesh in tree.find_children("*", "GeometryInstance3D", true, false):
-				mesh.visibility_range_end = 290.0
-			decoration_positions.append(point)
-
-func _decorate(gradual: bool) -> void:
-	if field.profile.generation_version >= 4: return
-	var rng := field.rng_for(band, "decoration")
-	var bushes: Array[Transform3D] = []
-	for i in range(roundi(450 * field.profile.decoration_density)):
-		if gradual and i % 75 == 0:
-			await _pause()
-		var x := rng.randf_range(-210.0, 210.0)
-		var z := -band * 150.0 - rng.randf_range(4.0, 146.0)
-		var sample := field.surface(x, z)
-		if sample.reserved:
-			continue
-		var w: Vector3 = sample.weights
-		var cluster := field.clusters.get_noise_2d(x, z)
-		if rng.randf() > clampf(0.25 + cluster * 1.5 + w.y * 0.35, 0.08, 0.9):
-			continue
-		var point := Vector3(x, sample.height, z)
-		var orientation := Basis(Vector3.UP, rng.randf_range(-PI, PI))
-		var scale_value := rng.randf_range(0.7, 1.35)
-		if i % 3 != 0:
-			var bush_scale := Vector3.ONE * scale_value
-			var bush_height := 0.25
-			if field.profile.generation_version >= 3:
-				if i % 5 == 0: bush_scale *= Vector3(1.6, 2.4, 1.6)
-				bush_height = 0.4 * bush_scale.y
-			bushes.append(Transform3D(orientation.scaled(bush_scale), point + Vector3.UP * bush_height))
-			continue
-		if field.normal_at(x, z).y < 0.83:
-			continue
-		var kind := "rock" if rng.randf() < 0.18 + w.z * 0.6 else ("tree" if rng.randf() < 0.15 + w.y * 0.85 else "dead_tree")
-		var module := _place_module(kind, point, orientation)
-		module.scale = Vector3.ONE * scale_value
-		for child in module.get_children():
-			if child is GeometryInstance3D:
-				child.visibility_range_end = 290.0
-		decoration_positions.append(point)
-	if not bushes.is_empty():
-		var mesh := SphereMesh.new()
-		mesh.radius = 0.65
-		mesh.height = 0.8
-		mesh.radial_segments = 5
-		mesh.rings = 2
-		mesh.material = RoadsideKit.material(Color("424c38") if field.profile.generation_version >= 3 else Color(0.32, 0.37, 0.19))
-		var multi := MultiMesh.new()
-		multi.transform_format = MultiMesh.TRANSFORM_3D
-		multi.mesh = mesh
-		multi.instance_count = bushes.size()
-		for i in range(bushes.size()):
-			multi.set_instance_transform(i, bushes[i])
-		var node := MultiMeshInstance3D.new()
-		node.multimesh = multi
-		node.visibility_range_end = 190.0
-		add_child(node)
 
 func request_navigation_rebuild() -> void:
 	_navigation_dirty = true
@@ -387,25 +281,24 @@ func _rebuild_navigation() -> void:
 func _build_navigation(gradual: bool = false) -> void:
 	navigation_ready = false
 	_regular_navigation_ready = false
-	giant_navigation_ready = field.profile.generation_version < 10
+	giant_navigation_ready = false
 	# A runtime rebake can outlive the 16-band placement cache. Recreate the
 	# same neighbour plans before capturing seam obstacles, just as at startup.
-	if field.profile.generation_version >= 4:
-		for neighbour in [band - 1, band + 1]:
-			await ForestScenery.prepare(self, neighbour, gradual)
+	for neighbour in [band - 1, band + 1]:
+		await ForestScenery.prepare(self, neighbour, gradual)
 	var nav := NavigationMesh.new()
 	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nav.agent_height = 2.0
 	nav.agent_radius = 0.5
 	nav.agent_max_climb = 0.25
 	nav.agent_max_slope = 40.0
-	nav.cell_size = 0.25 if field.profile.generation_version >= 3 else 0.5
+	nav.cell_size = 0.25
 	nav.cell_height = 0.25
 	# Sub-metre ground noise should not introduce near-collinear detail
 	# triangles into the already walkable voxel contour.
-	nav.detail_sample_max_error = 64.0 if field.profile.generation_version >= 3 else 2.0
+	nav.detail_sample_max_error = 64.0
 	nav.border_size = 1.0
-	var nav_half := field.profile.terrain_half_width if field.profile.generation_version >= 3 else 120.0
+	var nav_half := field.profile.terrain_half_width
 	nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 151), Vector3(nav_half * 2, 250, 152))
 	if navigation == null:
 		navigation = NavigationRegion3D.new()
@@ -423,7 +316,6 @@ func _build_navigation(gradual: bool = false) -> void:
 	var road_body := get_node("Road").get_child(0) as StaticBody3D
 	road_body.collision_layer = 0
 	# Moving leaves block physics, but their doorways remain in the static bake.
-	# The old shelter retains its named-leaf contract; v11 tags every stage door.
 	var gate_layers: Dictionary = {}
 	# Closed bridge undersides remain physical, but navigation uses the exact
 	# asphalt top once instead of rasterizing two surfaces 15cm apart.
@@ -438,14 +330,13 @@ func _build_navigation(gradual: bool = false) -> void:
 				if leaf != null:
 					gate_layers[leaf] = leaf.collision_layer
 					leaf.collision_layer = 0
-		elif building.get_meta("poi_definition_id", "") in [&"tutorial_shelter", &"orientation_shelter"]:
+		elif building.get_meta("poi_definition_id", "") == &"orientation_shelter":
 			for leaf: CollisionObject3D in building.find_children("*", "CollisionObject3D", true, false):
 				if not leaf.get_meta("navigation_movable", false): continue
 				gate_layers[leaf] = leaf.collision_layer
 				leaf.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
-	if field.landforms != null:
-		TerrainCrossings.navigation_obstacles(field, band, source)
+	TerrainCrossings.navigation_obstacles(field, band, source)
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():
@@ -467,7 +358,7 @@ func _build_navigation(gradual: bool = false) -> void:
 		for row in range(2):
 			var points := PackedVector3Array()
 			for i in range(columns + 1):
-				var px := -nav_half + i * (nav_half * 2.0 / columns if field.landforms != null else 3.0)
+				var px := -nav_half + i * (nav_half * 2.0 / columns)
 				var pz := z0 - row * 3.0
 				points.append(Vector3(px, field.height_at(px, pz), pz))
 				if gradual and i % 32 == 0 and slice_exhausted(): await _pause()
@@ -476,40 +367,37 @@ func _build_navigation(gradual: bool = false) -> void:
 			for point in [rows[0][i], rows[1][i], rows[0][i + 1], rows[0][i + 1], rows[1][i], rows[1][i + 1]]:
 				halo.append(point)
 	source.add_faces(halo, Transform3D.IDENTITY)
-	if field.profile.generation_version >= 3:
-		_append_neighbour_obstacles(source)
-	if field.profile.generation_version >= 4:
-		for neighbour in [band - 1, band + 1]:
-			var planned := ForestScenery.trees(field, neighbour)
-			for i in range(planned.size()):
-				if field.destroyed_trees.has(TreeImpact.forest_id(neighbour, i)): continue
-				var tree: Dictionary = planned[i]
-				if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
-				_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
-	if field.profile.generation_version >= 10:
-		var giant_nav: NavigationMesh = nav.duplicate()
-		giant_nav.agent_height = SlenderSpeakerSpawns.HEIGHT
-		giant_nav.agent_radius = SlenderSpeakerSpawns.RADIUS
-		# Four voxels represent the requested 1.1m radius exactly; 0.5m cells
-		# silently round it up to 1.5m and reject otherwise legal forest gaps.
-		giant_nav.cell_size = 0.275
-		giant_nav.border_size = 2.2
-		# Match the extra border on both seam sides. Keeping the humanoid's
-		# +/-1m AABB with this larger border cuts a gap between giant regions.
-		var north := snappedf(-band * 150.0, giant_nav.cell_size)
-		var south := snappedf(-(band + 1) * 150.0, giant_nav.cell_size)
-		# 150m does not divide by 0.275m. Anchor both clipped seam boundaries
-		# to one global voxel lattice so neighbours retain identical edges.
-		giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, south - giant_nav.border_size), Vector3(nav_half * 2, 250, north - south + 2.0 * giant_nav.border_size))
-		if giant_navigation == null:
-			giant_navigation = NavigationRegion3D.new()
-			giant_navigation.name = "GiantNavigationRegion"
-			giant_navigation.use_edge_connections = false
-			giant_navigation.navigation_mesh = giant_nav.duplicate()
-			add_child(giant_navigation)
-		giant_navigation.set_navigation_map(get_parent().giant_navigation_map)
-		giant_navigation.set_meta("pending_navigation_bake", giant_nav)
-		NavigationServer3D.bake_from_source_geometry_data_async(giant_nav, source, _giant_navigation_baked.bind(giant_nav))
+	_append_neighbour_obstacles(source)
+	for neighbour in [band - 1, band + 1]:
+		var planned := ForestScenery.trees(field, neighbour)
+		for i in range(planned.size()):
+			if field.destroyed_trees.has(TreeImpact.forest_id(neighbour, i)): continue
+			var tree: Dictionary = planned[i]
+			if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
+			_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
+	var giant_nav: NavigationMesh = nav.duplicate()
+	giant_nav.agent_height = SlenderSpeakerSpawns.HEIGHT
+	giant_nav.agent_radius = SlenderSpeakerSpawns.RADIUS
+	# Four voxels represent the requested 1.1m radius exactly; 0.5m cells
+	# silently round it up to 1.5m and reject otherwise legal forest gaps.
+	giant_nav.cell_size = 0.275
+	giant_nav.border_size = 2.2
+	# Match the extra border on both seam sides. Keeping the humanoid's
+	# +/-1m AABB with this larger border cuts a gap between giant regions.
+	var north := snappedf(-band * 150.0, giant_nav.cell_size)
+	var south := snappedf(-(band + 1) * 150.0, giant_nav.cell_size)
+	# 150m does not divide by 0.275m. Anchor both clipped seam boundaries
+	# to one global voxel lattice so neighbours retain identical edges.
+	giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, south - giant_nav.border_size), Vector3(nav_half * 2, 250, north - south + 2.0 * giant_nav.border_size))
+	if giant_navigation == null:
+		giant_navigation = NavigationRegion3D.new()
+		giant_navigation.name = "GiantNavigationRegion"
+		giant_navigation.use_edge_connections = false
+		giant_navigation.navigation_mesh = giant_nav.duplicate()
+		add_child(giant_navigation)
+	giant_navigation.set_navigation_map(get_parent().giant_navigation_map)
+	giant_navigation.set_meta("pending_navigation_bake", giant_nav)
+	NavigationServer3D.bake_from_source_geometry_data_async(giant_nav, source, _giant_navigation_baked.bind(giant_nav))
 	navigation.set_meta("pending_navigation_bake", nav)
 	NavigationServer3D.bake_from_source_geometry_data_async(nav, source, _navigation_baked.bind(nav))
 
@@ -636,7 +524,7 @@ func _spawn_actors() -> void:
 			container.add_child(monster)
 
 func _spawn_road_monsters() -> void:
-	# The shared once-only latch also owns v9 loose barrels. They must not be
+	# The shared once-only latch also owns loose barrels. They must not be
 	# rebuilt with static chunk geometry after pickup, explosion or a rebake.
 	if not navigation_ready or _road_monsters_spawned or road_spawns.is_empty(): return
 	_road_monsters_spawned = true

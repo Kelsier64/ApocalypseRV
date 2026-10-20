@@ -1,5 +1,5 @@
 extends SceneTree
-## v12 stage two uses the original production world, stock and Item transactions.
+## Current stage two uses the original production world, stock and Item transactions.
 ## Actor positions, camera aim and service work time are controlled test inputs.
 ## No inventory records, successful course flags or material deposits are injected.
 const SHUTDOWN_GUARD = preload("res://tests/support/godot_472_shutdown.gd")
@@ -32,7 +32,7 @@ func run() -> void:
 	world = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.profile = generator.profile.duplicate()
-	generator.profile.generation_version = 12
+	generator.profile.generation_version = 14
 	generator.profile.chunks_ahead = 0
 	generator.profile.chunks_behind = 1
 	generator.world_seed = 42

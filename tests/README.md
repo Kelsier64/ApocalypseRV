@@ -32,13 +32,13 @@
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
-| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v5 接受地形生成 v14、拒絕 v15，並檢查重試入口版本一致 |
+| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v6 只接受地形生成 v14，檢查當前教學／重試入口及舊版拒絕行為 |
 | [streaming_generation](test_streaming_generation.gd) | v6 分幀／碰撞一致性、v13／v14 四種子 12 km 路線與地形契約、v14 道路凍結及獨立外觀域、橋面支撐與導航發布 |
 | [main_scene_smoke](main_scene_smoke.gd) | 正式主世界可操作、Esc 設定路由與玩家移動 |
 
 新版教學共用旅程放在 [support/orientation_journey.gd](support/orientation_journey.gd)，只由 departure 執行，避免同一批交易重跑。新增頂層 `test_*.gd` 會自動納入預設及 CI；優先擴充既有核心測試，共用 fixture 放在 `support/`。
 
-2026-10-19 精簡移除 196 支測試，另將 1 個重複入口移至 support；原本 213 個入口剩下 16 個。刪除範圍包含已停用的重複攀車測試、早期模型樣板、外觀／骨架專用驗收、舊版教學與舊世界相容性專測，以及大量長時間情境變體。**這些覆蓋已減少**，不是由核心集完整取代。遊戲相容程式及手動 playground 保留；過去的驗收紀錄只代表當時範圍。量測與取捨見 [本次紀錄](../docs/validation/2026-10-19-test-ci-simplification.md)。
+2026-10-19 精簡移除 196 支測試，另將 1 個重複入口移至 support；原本 213 個入口剩下 16 個。刪除範圍包含已停用的重複攀車測試、早期模型樣板、外觀／骨架專用驗收、舊版教學與舊世界相容性專測，以及大量長時間情境變體。**這些覆蓋已減少**，不是由核心集完整取代。手動 playground 保留；舊存檔相容程式已移除；過去的驗收紀錄只代表當時範圍。量測與取捨見 [本次紀錄](../docs/validation/2026-10-19-test-ci-simplification.md)。
 
 ## 執行與 CI
 
@@ -50,4 +50,4 @@ Runner 檢查引擎版本、退出碼、非空日誌、錯誤訊息及 `PASS:`�
 
 [GitHub Actions](../.github/workflows/tests.yml) 只用一個 Windows job：runner 自測、安裝固定 Godot、匯入與執行核心集。main push、PR 及手動觸發；純 Markdown／docs 修改略過，更新同一分支會取消舊執行。job 上限 10 分鐘，失敗才上傳診斷。移除原本 5 個分組 job、重複下載／匯入及雙 shell 自測。
 
-Headless 不驗證 GPU 畫面、手感、極端翻車、群怪或完整舊存檔相容性；必要時依 [測試場指南](../docs/guides/playgrounds.md) 做相關人工驗收。
+Headless 不驗證 GPU 畫面、手感、極端翻車或群怪；必要時依 [測試場指南](../docs/guides/playgrounds.md) 做相關人工驗收。

@@ -61,11 +61,10 @@ static func valid_rounds(value: Variant, field: String, minimum: int, maximum: i
 
 static func valid_training_terminal(value: Variant) -> bool:
 	if not value is Dictionary or not value.get("version") is int: return false
-	if value.version not in [1, 2] or value.size() != (3 if value.version == 1 else 9): return false
+	if value.version != 2 or value.size() != 9: return false
 	if not value.get("manual_unlocked") is bool or not value.get("completion") is String: return false
 	if value.completion not in ["locked", "completed", "skipped"]: return false
 	if value.manual_unlocked != (value.completion != "locked"): return false
-	if value.version == 1: return true
 	for key in ["internal_power", "initialized", "boot_started", "dock_locked"]:
 		if not value.get(key) is bool: return false
 	if not value.internal_power: return false

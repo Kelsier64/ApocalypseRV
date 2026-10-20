@@ -11,8 +11,7 @@ var status: Label
 var auto_replay := false
 
 func _enter_tree() -> void:
-	get_node("WorldGenerator").profile = get_node("WorldGenerator").profile.duplicate()
-	get_node("WorldGenerator").profile.generation_version = 10
+	get_node("WorldGenerator").profile = preload("res://world/starting_shelter/garage_profile.gd").new()
 	super._enter_tree()
 
 func _ready() -> void:

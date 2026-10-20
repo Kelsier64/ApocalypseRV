@@ -35,6 +35,5 @@ func _unhandled_input(event: InputEvent) -> void:
 				seat.seat_camera.current = true
 				return
 			KEY_F11:
-				rv.interior_requested.work = true
 				rv.interior_requested.service = true
 	super._unhandled_input(event)

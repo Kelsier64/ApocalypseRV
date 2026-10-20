@@ -20,8 +20,8 @@ var throttle_input: float = 0.0
 @export var cabin_light_draw := 0.03
 @export var work_light_draw := 0.04
 @export var service_light_draw := 0.04
-var interior_requested := {"cabin": true, "work": false, "service": false}
-var interior_powered := {"cabin": false, "work": false, "service": false}
+var interior_requested := {"cabin": true, "service": false}
+var interior_powered := {"cabin": false, "service": false}
 var _last_road_position := Vector3.INF
 var _road_speed := 0.0
 var _impact_velocity := Vector3.ZERO
@@ -207,17 +207,17 @@ func toggle_interior_light(kind: String) -> void:
 		feedback("mechanical")
 
 func interior_light_status(kind: String) -> String:
-	var title: String = {"cabin": "車內照明", "work": "工作燈", "service": "維修燈"}.get(kind, kind)
+	var title: String = {"cabin": "車內照明", "service": "維修燈"}.get(kind, kind)
 	return title + "｜" + ("關閉" if not interior_requested[kind] else ("供電中" if interior_powered[kind] else "已開啟，等待供電／設備就緒"))
 
 func comfort_snapshot() -> Dictionary:
 	return {"lights": interior_requested.duplicate(), "brightness": instrument_brightness, "vibration": vibration_strength}
 
 func restore_comfort(data: Dictionary) -> void:
-	interior_requested = data.get("lights", {"cabin": true, "work": false, "service": false}).duplicate()
-	instrument_brightness = data.get("brightness", 0.65)
-	vibration_strength = data.get("vibration", 0.5)
-	interior_powered = {"cabin": false, "work": false, "service": false}
+	interior_requested = data.lights.duplicate()
+	instrument_brightness = data.brightness
+	vibration_strength = data.vibration
+	interior_powered = {"cabin": false, "service": false}
 
 func engine_start_reason() -> String:
 	if get_engine() == null: return "未安裝引擎，請到車頭引擎艙裝入"

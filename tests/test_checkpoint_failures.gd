@@ -38,7 +38,7 @@ func check(ok: bool, detail: String) -> void:
 		push_error("FAIL: " + detail)
 
 func _run() -> void:
-	var world: Node3D = load("res://world/test_world.tscn").instantiate()
+	var world: Node3D = load("res://world/main_world.tscn").instantiate()
 	# Disk faults and transactional rollback do not require seven terrain bands
 	# on every staged load. Keep real terrain/navigation with a fixed fixture.
 	var fixture_generator: Node = world.get_node("WorldGenerator")
@@ -68,7 +68,7 @@ func _run() -> void:
 	check(not wounded_roundtrip.is_empty() and wounded_roundtrip.player.body == wounded.player.body, "Player limb state survives checkpoint serialization")
 	var legacy_body := saved.duplicate(true)
 	legacy_body.player.erase("body")
-	check(checkpoint.validation_error(legacy_body).is_empty(), "Legacy checkpoint without body remains valid")
+	check(checkpoint.validation_error(legacy_body) == "player.body", "Current checkpoint requires authoritative body state")
 	for kind in ["missing_part", "unknown_part", "part_type", "body_version", "headless_alive"]:
 		var bad_body := saved.duplicate(true)
 		match kind:
@@ -92,7 +92,7 @@ func _run() -> void:
 	retired.outdoor_sites["retired-test"] = {"definition_id": "gas_station", "content_version": station.content_version, "loaded": false,
 		"actors": [{"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 20.0}]}
 	check(checkpoint.write_checkpoint(PATH + ".retired", retired), "Retired-monster fixture writes")
-	check(checkpoint.read_checkpoint(PATH + ".retired").is_empty(), "Unknown retired scenes are rejected in v5 without migration")
+	check(checkpoint.read_checkpoint(PATH + ".retired").is_empty(), "Unknown retired scenes are rejected without migration")
 	var bad_missing_prop := saved.duplicate(true)
 	bad_missing_prop.actors[0].scene = "res://props/retired_prop.tscn"
 	check(checkpoint.write_checkpoint(PATH + ".missing-prop", bad_missing_prop), "Missing-prop fixture writes")
@@ -251,65 +251,72 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
-	var controller := OrientationController.new()
-	controller.configure("checkpoint-orientation-terminal")
-	controller.rv_id = saved.vehicles[0].id
-	var tutorial := controller.capture(false)
-	controller.free()
-	var orientation_base := saved.duplicate(true)
-	orientation_base.world_id = "shelter"
-	orientation_base.generated_giant_segments = []
-	orientation_base.start_state = {"version": 1, "phase": "preparing", "bay_gates": [false], "tutorial": tutorial}
-	var orientation: Dictionary = {}
-	for version in [12, 13, 14]:
-		orientation = orientation_base.duplicate(true)
-		orientation.generation_version = version
-		orientation.profile.generation_version = version
-		orientation.profile.terrain_half_width = 500.0
-		check(checkpoint.validation_error(orientation).is_empty(), "Generation v%d accepts the two-room shelter course" % version)
-		# Retry must return to the same deterministic terrain, including its version.
-		orientation.start_state.tutorial.entry_snapshot = orientation.duplicate(true)
-		var version_path := PATH + ".v%d" % version
-		check(checkpoint.write_checkpoint(version_path, orientation), "Generation v%d shelter checkpoint writes" % version)
-		var roundtrip: Dictionary = checkpoint.read_checkpoint(version_path)
-		check(not roundtrip.is_empty() and roundtrip == orientation, "Generation v%d course and retry entry survive disk serialization" % version)
-		if not roundtrip.is_empty():
-			# Prepare without entering the tree: this verifies restore wiring without
-			# starting another terrain build or navigation bake for each version.
-			var candidate: Node3D = load("res://world/main_world.tscn").instantiate()
-			checkpoint.pending = roundtrip
-			checkpoint.prepare_world(candidate)
-			checkpoint.pending = {}
-			var generator: Node = candidate.get_node("WorldGenerator")
-			var start_run: StartRun = candidate.get_node("StartRun")
-			check(generator.profile.generation_version == version and generator.profile.terrain_half_width == 500.0, "Checkpoint preparation preserves v%d terrain identity" % version)
-			check(start_run.is_orientation_shelter() and start_run.bay_gate_count() == 1, "Generation v%d restores the one-gate orientation shelter" % version)
-			check(start_run.get_node("Tutorial").capture() == roundtrip.start_state.tutorial, "Checkpoint preparation restores the complete v%d course and retry entry" % version)
-			candidate.free()
-		var mismatched_entry := orientation.duplicate(true)
-		var other_version := 13 if version == 12 else 12
-		mismatched_entry.start_state.tutorial.entry_snapshot.generation_version = other_version
-		mismatched_entry.start_state.tutorial.entry_snapshot.profile.generation_version = other_version
-		check(checkpoint.validation_error(mismatched_entry) == "start_state.tutorial.entry_snapshot.world_id", "Generation v%d rejects a retry entry from v%d terrain" % [version, other_version])
-		var missing_course := orientation.duplicate(true)
-		missing_course.start_state.erase("tutorial")
-		check(checkpoint.validation_error(missing_course) == "start_state.tutorial", "Generation v%d requires its orientation course" % version)
-		var wrong_gates := orientation.duplicate(true)
-		wrong_gates.start_state.bay_gates = [false, false, false, false, false, false, false, false]
-		check(checkpoint.validation_error(wrong_gates) == "start_state.bay_gates", "Generation v%d rejects the old eight-gate course" % version)
-		var legacy_identity := orientation.duplicate(true)
-		legacy_identity.world_id = "legacy"
-		check(checkpoint.validation_error(legacy_identity) == "world_id.start_state", "Generation v%d cannot masquerade as the legacy world" % version)
-		var wrong_terminal := orientation.duplicate(true)
-		wrong_terminal.start_state.tutorial.erase("entry_snapshot")
-		wrong_terminal.start_state.tutorial.terminal_id = wrong_terminal.actors[0].state.id
-		check(checkpoint.validation_error(wrong_terminal) == "start_state.tutorial.terminal_id", "Generation v%d retains orientation Item identity validation" % version)
-	var future := orientation.duplicate(true)
-	future.generation_version = 15
-	check(checkpoint.validation_error(future) == "generation_version", "Unknown future terrain generation remains rejected")
-	future.profile.generation_version = 15
-	future.profile.erase("terrain_half_width")
-	check(checkpoint.validation_error(future) == "profile.generation_version", "Unknown future profile generation remains rejected")
+	check(saved.version == checkpoint.VERSION and saved.generation_version == 14 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")
+	var orientation := saved.duplicate(true)
+	orientation.start_state.tutorial.erase("entry_snapshot")
+	orientation.start_state.tutorial.entry_snapshot = orientation.duplicate(true)
+	check(checkpoint.validation_error(orientation).is_empty(), "Current orientation retry entry validates")
+	check(checkpoint.write_checkpoint(PATH + ".orientation", orientation), "Current shelter checkpoint writes")
+	var roundtrip: Dictionary = checkpoint.read_checkpoint(PATH + ".orientation")
+	check(not roundtrip.is_empty() and roundtrip == orientation, "Current course and retry entry survive disk serialization unchanged")
+	if not roundtrip.is_empty():
+		# Verify prepare wiring off-tree, without another terrain/navigation build.
+		var candidate: Node3D = load("res://world/main_world.tscn").instantiate()
+		checkpoint.pending = roundtrip
+		checkpoint.prepare_world(candidate)
+		checkpoint.pending = {}
+		var generator: Node = candidate.get_node("WorldGenerator")
+		var start_run: StartRun = candidate.get_node("StartRun")
+		check(generator.profile.generation_version == 14 and generator.profile.terrain_half_width == 500.0, "Preparation retains the current terrain identity")
+		check(start_run.is_orientation_shelter() and start_run.bay_gate_count() == 1, "Preparation restores the one-gate orientation shelter")
+		check(start_run.get_node("Tutorial").capture() == roundtrip.start_state.tutorial, "Preparation restores the complete current course and retry entry")
+		candidate.free()
+	for version in [2, 6, 10, 11, 12, 13, 15]:
+		var unsupported := saved.duplicate(true)
+		unsupported.generation_version = version
+		check(checkpoint.validation_error(unsupported) == "generation_version", "Reject unsupported terrain identity v%d" % version)
+		unsupported.profile.generation_version = version
+		check(checkpoint.validation_error(unsupported) == "profile.generation_version", "Reject unsupported terrain profile v%d" % version)
+	for identity in ["legacy", "unknown", "res://world/test_world.tscn"]:
+		var unsupported := saved.duplicate(true)
+		unsupported.world_id = identity
+		check(checkpoint.validation_error(unsupported) == "world_id", "Reject unsupported world identity " + identity)
+	for key in ["world_id", "profile", "generation_version", "start_state", "clock", "weather", "generated_bands", "generated_giant_segments", "rear_wreck_layout", "route_pressure", "destroyed_trees", "dormant_items", "outdoor_sites"]:
+		var incomplete := saved.duplicate(true)
+		incomplete.erase(key)
+		check(checkpoint.validation_error(incomplete) == "data.fields", "Require current capture field " + key)
+	for key in saved.profile:
+		var incomplete := saved.duplicate(true)
+		incomplete.profile.erase(key)
+		check(checkpoint.validation_error(incomplete) == "profile.fields", "Require current profile field " + key)
+	var missing_course := saved.duplicate(true)
+	missing_course.start_state.erase("tutorial")
+	check(checkpoint.validation_error(missing_course) == "start_state.tutorial", "Current checkpoint requires its orientation course")
+	var wrong_gates := saved.duplicate(true)
+	wrong_gates.start_state.bay_gates = [false, false, false, false, false, false, false, false]
+	check(checkpoint.validation_error(wrong_gates) == "start_state.bay_gates", "Reject the old eight-gate course")
+	for version in [1, 2, 3]:
+		var old_course := saved.duplicate(true)
+		old_course.start_state.tutorial.version = version
+		check(not checkpoint.validation_error(old_course).is_empty(), "Reject older orientation course v%d" % version)
+	check(not roundtrip.is_empty() and saved.start_state.tutorial.workshop.version == 3 and roundtrip.start_state.tutorial.workshop == saved.start_state.tutorial.workshop, "Complete current Workshop v3 survives roundtrip")
+	for version in [1, 2]:
+		var old_workshop := saved.duplicate(true)
+		old_workshop.start_state.tutorial.workshop.version = version
+		check(not checkpoint.validation_error(old_workshop).is_empty(), "Reject old workshop v%d" % version)
+	var migration := saved.duplicate(true)
+	migration.start_state.tutorial.workshop["migration_pending"] = true
+	check(not checkpoint.validation_error(migration).is_empty(), "Reject retired workshop migration flags")
+	var nested := orientation.duplicate(true)
+	nested.start_state.tutorial.entry_snapshot.start_state.tutorial.entry_snapshot = saved.duplicate(true)
+	check(checkpoint.validation_error(nested) == "start_state.tutorial.entry_snapshot.start_state.tutorial.entry_snapshot.nested", "Reject recursive retry ownership")
+	var wrong_terminal := saved.duplicate(true)
+	wrong_terminal.start_state.tutorial.erase("entry_snapshot")
+	var wrong_terminal_actor: Dictionary = saved.actors.filter(func(actor): return actor.kind == "item" and actor.scene != "res://equipment/training_terminal.tscn")[0].duplicate(true)
+	wrong_terminal_actor.state.id = "checkpoint-wrong-terminal-item"
+	wrong_terminal.actors.append(wrong_terminal_actor)
+	wrong_terminal.start_state.tutorial.terminal_id = wrong_terminal_actor.state.id
+	check(checkpoint.validation_error(wrong_terminal) == "start_state.tutorial.terminal_id", "Retain orientation Item identity validation")
 
 func _test_crouch_checkpoint(checkpoint: Node, world: Node3D, saved: Dictionary) -> void:
 	var actor: CharacterBody3D = world.get_node("Player")
@@ -334,11 +341,12 @@ func _test_crouch_checkpoint(checkpoint: Node, world: Node3D, saved: Dictionary)
 		check(actor.is_crouching() and is_equal_approx(actor.body_collision_shape.shape.height, actor.CROUCH_HEIGHT), "Restore immediately installs saved crouch capsule under a low ceiling")
 		check(not actor._crouch_standing_volume_clear(), "Saved crouched location rejects standing through its ceiling")
 		ceiling.free()
-	var legacy := saved.duplicate(true)
-	legacy.player.erase("crouching")
-	check(checkpoint.validation_error(legacy).is_empty(), "Legacy checkpoint without crouching remains valid")
-	actor.restore_checkpoint_state(legacy.player)
-	check(not actor.is_crouching() and is_equal_approx(actor.body_collision_shape.shape.height, actor.standing_collision_shape.height), "Legacy checkpoint restores standing capsule")
+	for key in ["crouching", "stamina", "stamina_exhausted"]:
+		var incomplete := saved.duplicate(true)
+		incomplete.player.erase(key)
+		check(checkpoint.validation_error(incomplete) == "player." + key, "Current checkpoint requires player " + key)
+	actor.restore_checkpoint_state(saved.player)
+	check(not actor.is_crouching() and is_equal_approx(actor.body_collision_shape.shape.height, actor.standing_collision_shape.height), "Current standing checkpoint restores the standing capsule")
 	var injured: Dictionary = saved.player.duplicate(true)
 	injured["crouching"] = true
 	injured.body.present.left_leg = false

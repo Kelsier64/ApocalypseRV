@@ -361,10 +361,8 @@ func _resolve_explosion(origin: Vector3, vehicle_ref: WeakRef) -> void:
 	queue_free()
 
 func capture_barrel_state() -> Dictionary:
-	var state := {"phase": int(phase), "phase_elapsed": phase_elapsed, "visual_height": visual_height, "lost_interest_elapsed": lost_interest_elapsed}
-	# Optional for backwards-compatible checkpoint v5 records.
-	if proximity_fuse_remaining >= 0.0: state["proximity_fuse_remaining"] = proximity_fuse_remaining
-	return state
+	return {"phase": int(phase), "phase_elapsed": phase_elapsed, "visual_height": visual_height,
+		"lost_interest_elapsed": lost_interest_elapsed, "proximity_fuse_remaining": proximity_fuse_remaining}
 
 static func validate_barrel_state(data: Variant) -> bool:
 	if not data is Dictionary: return false
@@ -376,9 +374,8 @@ static func validate_barrel_state(data: Variant) -> bool:
 	if data.visual_height < 0.5 or data.visual_height > 1.4: return false
 	if data.phase == Phase.DISGUISED and not is_equal_approx(data.visual_height, 0.5): return false
 	if data.phase == Phase.CHASE and not is_equal_approx(data.visual_height, 1.4): return false
-	if data.has("proximity_fuse_remaining"):
-		var fuse: Variant = data.proximity_fuse_remaining
-		if not (fuse is int or fuse is float) or not is_finite(float(fuse)) or fuse < 0.0 or fuse > 60.0: return false
+	var fuse: Variant = data.get("proximity_fuse_remaining")
+	if not (fuse is int or fuse is float) or not is_finite(float(fuse)) or (fuse != -1.0 and (fuse < 0.0 or fuse > 60.0)): return false
 	return true
 
 func restore_barrel_state(data: Dictionary) -> void:
@@ -387,7 +384,7 @@ func restore_barrel_state(data: Dictionary) -> void:
 	phase_elapsed = data.phase_elapsed
 	visual_height = data.visual_height
 	lost_interest_elapsed = minf(data.lost_interest_elapsed, settings.lose_interest_time)
-	proximity_fuse_remaining = data.get("proximity_fuse_remaining", -1.0)
+	proximity_fuse_remaining = data.proximity_fuse_remaining
 	_last_rise_fraction = clampf((visual_height - 0.5) / 0.9, 0.0, 1.0)
 	if phase == Phase.RISING: phase_elapsed = minf(phase_elapsed, settings.rise_duration)
 	elif phase == Phase.RETRACTING:

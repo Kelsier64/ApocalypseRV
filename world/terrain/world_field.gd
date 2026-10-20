@@ -1,15 +1,12 @@
 extends RefCounted
 class_name WorldField
 ## Pure world-coordinate queries. Never depends on global RNG or loaded nodes.
-const VERSION := 6
 var world_seed: int
 var profile: WorldProfile
 var macro := FastNoiseLite.new()
 var medium := FastNoiseLite.new()
 var detail := FastNoiseLite.new()
 var clusters := FastNoiseLite.new()
-var _phase: float
-var _heights: Dictionary = {0: 0.0, 1: 0.0}
 var _stops: Dictionary = {}
 var _minor_sites: Dictionary = {}
 var _site_queries: Dictionary = {}
@@ -24,14 +21,12 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	var noises := [macro, medium, detail, clusters]
 	var frequencies := [0.0011, 0.008, 0.07, 0.024]
 	for i in range(noises.size()):
-		noises[i].seed = seed_for(i, "noise", 13 if profile.generation_version == 14 else -1)
+		noises[i].seed = seed_for(i, "noise", 13)
 		noises[i].noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noises[i].frequency = frequencies[i]
 		noises[i].fractal_octaves = 3
-	_phase = rng_for(0, "road").randf_range(-PI, PI)
-	if profile.generation_version >= 13:
-		route = TerrainRoute.new(self)
-		landforms = TerrainLandforms.new(self)
+	route = TerrainRoute.new(self)
+	landforms = TerrainLandforms.new(self)
 
 func seed_for(id: int, domain: String, version_override: int = -1) -> int:
 	var version := profile.generation_version if version_override < 0 else version_override
@@ -54,67 +49,28 @@ func region_weights(x: float, z: float) -> Vector3:
 	return weights
 
 func raw_height(x: float, z: float) -> float:
-	if landforms != null: return landforms.height(x, z, road_query(x, z))
-	var w := region_weights(x, z)
-	var large := macro.get_noise_2d(x, z) * 42.0
-	var middle := medium.get_noise_2d(x, z)
-	return large + middle * (w.x * 5.0 + w.y * 11.0 + w.z * 26.0) + detail.get_noise_2d(x, z) * 0.7
+	return landforms.height(x, z, road_query(x, z))
 
 func road_x(s: float) -> float:
-	if route != null: return route.x(s)
-	var fade := smoothstep(150.0, 600.0, s)
-	var curve_scale := minf(1.0, 80.0 / maxf(80.0, profile.min_turn_radius))
-	return curve_scale * fade * (48.0 * sin(s * TAU / 1200.0 + _phase) + 16.0 * sin(s * TAU / 720.0 - _phase))
-
-func _height_knot(index: int) -> float:
-	if index <= 1:
-		return 0.0
-	if not _heights.has(index):
-		# Fill in order even when a far tile is requested first (no load-order drift).
-		var begin := _heights.size()
-		for i in range(begin, index + 1):
-			var s := i * profile.chunk_length
-			var target := macro.get_noise_2d(road_x(s), -s) * 32.0
-			var previous: float = _heights[i - 1]
-			# Smoothstep's peak derivative is 1.5. Narrow sections are level.
-			var limit := profile.chunk_length * profile.max_grade / 1.5 * 0.9
-			if posmod(i, 6) == 4:
-				limit = 0.0
-			_heights[i] = clampf(target, previous - limit, previous + limit)
-	return _heights[index]
+	return route.x(s)
 
 func road_height(s: float) -> float:
-	if route != null: return route.height(s)
-	var index := floori(s / profile.chunk_length)
-	return lerpf(_height_knot(index), _height_knot(index + 1), smoothstep(0.0, 1.0, fposmod(s, profile.chunk_length) / profile.chunk_length))
+	return route.height(s)
 
 func road_frame(s: float) -> Transform3D:
 	var forward := Vector3(road_x(s + 0.5) - road_x(s - 0.5), 0.0, -1.0).normalized()
 	return Transform3D(Basis.looking_at(forward), Vector3(road_x(s), road_height(s), -s))
 
 func road_width(s: float) -> float:
-	if route != null: return route.width(s)
-	if s < 300.0:
-		return profile.road_width
-	var phase := fposmod(s, profile.chunk_length * 6.0)
-	var narrow := smoothstep(455.0, 495.0, phase) * (1.0 - smoothstep(550.0, 595.0, phase))
-	return lerpf(profile.road_width, profile.narrow_width, narrow)
+	return route.width(s)
 
 func road_query(x: float, z: float) -> Dictionary:
-	if route != null: return route.query(x, z)
-	var s := -z
-	for i in range(3):
-		var dx := road_x(s)
-		var slope := road_x(s + 0.5) - road_x(s - 0.5)
-		s -= ((dx - x) * slope + s + z) / (1.0 + slope * slope)
-	var frame := road_frame(s)
-	var offset := Vector3(x, frame.origin.y, z) - frame.origin
-	return {"s": s, "distance": absf(offset.dot(frame.basis.x)), "height": frame.origin.y, "width": road_width(s), "frame": frame}
+	return route.query(x, z)
 
 func stop(index: int) -> Dictionary:
 	if index < 0:
 		return {}
-	if profile.generation_version >= 6 and index % 3 == 2:
+	if index % 3 == 2:
 		return {}
 	if _stops.has(index):
 		return _stops[index]
@@ -122,7 +78,7 @@ func stop(index: int) -> Dictionary:
 	var s := 45.0 if index == 0 else index * profile.stop_spacing + rng.randf_range(-profile.stop_jitter, profile.stop_jitter)
 	# Crossing banks must remain continuous: no driveway, building pad or POI
 	# terrace may fill the river or cut a bridge approach.
-	if landforms != null and index > 0 and not landforms.crossing_clearance(s):
+	if index > 0 and not landforms.crossing_clearance(s):
 		return {}
 	var side := 1.0 if index == 0 or rng.randf() > 0.5 else -1.0
 	var road := road_frame(s)
@@ -134,13 +90,12 @@ func stop(index: int) -> Dictionary:
 	var building := Transform3D(Basis.looking_at(-facing), building_pos)
 	var kind: String = "entrance" if index % 3 == 0 else ["wreck", "camp", "shed"][rng.randi_range(0, 2)]
 	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "frame": frame, "building": building, "road": road, "kind": kind, "seed": seed_for(index, "interior")}
-	if profile.generation_version >= 3:
-		ExplorationSite.configure(result, self)
-	if profile.generation_version >= 5 and index % 3 == 1:
+	ExplorationSite.configure(result, self)
+	if index % 3 == 1:
 		WalkInSites.configure(result)
-	if profile.generation_version >= 7 and index == 0:
+	if index == 0:
 		WalkInSites.configure(result, profile.opening_shelter_id())
-	if landforms != null and index > 0 and not landforms.site_clear(result):
+	if index > 0 and not landforms.site_clear(result):
 		_stops[index] = {}
 		return {}
 	_stops[index] = result
@@ -157,7 +112,7 @@ func stops_in_band(index: int) -> Array[Dictionary]:
 func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 	# Terrain rows repeatedly ask the same longitudinal question for different X.
 	# Results are read-only, like stop(); bound the cache during long drives.
-	if landforms != null: radius = maxf(radius, 420.0)
+	radius = maxf(radius, 420.0)
 	var key := Vector2(z, radius)
 	if _site_queries.has(key): return _site_queries[key]
 	var found: Array[Dictionary] = []
@@ -167,18 +122,17 @@ func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 		var site := stop(index)
 		if not site.is_empty() and absf(float(site.s) + z) <= radius:
 			found.append(site)
-	if profile.generation_version >= 6:
-		for cell in range(maxi(0, floori((-z - radius) / MinorSites.CELL_LENGTH)), maxi(0, floori((-z + radius) / MinorSites.CELL_LENGTH)) + 1):
-			var site := minor_site(cell)
-			if not site.is_empty() and absf(float(site.s) + z) <= radius:
-				found.append(site)
+	for cell in range(maxi(0, floori((-z - radius) / MinorSites.CELL_LENGTH)), maxi(0, floori((-z + radius) / MinorSites.CELL_LENGTH)) + 1):
+		var site := minor_site(cell)
+		if not site.is_empty() and absf(float(site.s) + z) <= radius:
+			found.append(site)
 	found.sort_custom(func(a, b): return a.s < b.s)
 	if _site_queries.size() >= 256: _site_queries.clear()
 	_site_queries[key] = found
 	return found
 
 func minor_site(cell: int) -> Dictionary:
-	if cell < 0 or profile.generation_version < 6: return {}
+	if cell < 0: return {}
 	if not _minor_sites.has(cell): _minor_sites[cell] = MinorSites.plan(self, cell)
 	return _minor_sites[cell]
 
@@ -198,34 +152,28 @@ func court_distance(x: float, z: float, site: Dictionary) -> float:
 
 func surface(x: float, z: float) -> Dictionary:
 	var road := road_query(x, z)
-	var height := landforms.height(x, z, road) if landforms != null else raw_height(x, z)
+	var height := landforms.height(x, z, road)
 	var reserved: bool = road.distance < road.width * 0.5 + 4.0
 	var gravel := 0.0
 	for site in sites_near_z(z):
-		if landforms != null and site.has("bounds"):
+		if site.has("bounds"):
 			var bounds: AABB = site.bounds.grow(25.0)
 			if z < bounds.position.z or z > bounds.end.z: continue
-		elif absf(-z - float(site.s)) > (180.0 if profile.generation_version >= 4 else 100.0):
+		elif absf(-z - float(site.s)) > 180.0:
 			continue
 		if site.has("route"):
 			var p: Vector3 = site.road.affine_inverse() * Vector3(x, site.road.origin.y, z)
 			p.x *= float(site.side)
-			var deep: bool = site.get("deep_forest", false)
-			var q := Vector2(maxf(absf(p.x - (199.5 if deep else 99.5)) - (159.5 if deep else 59.5), 0.0), maxf(absf(p.z) - (48 if deep else 42), 0.0))
+			var q := Vector2(maxf(absf(p.x - 199.5) - 159.5, 0.0), maxf(absf(p.z) - 48, 0.0))
 			var campus := 1.0 - smoothstep(0.0, 16.0, q.length())
 			var trail := ExplorationSite.route_distance(Vector3(x, 0, z), site.route)
-			var apron := Vector2(p.x - (335.2 if deep else 135), p.z).length() < (15.0 if deep else 13.0)
-			var hill := 0.0
-			for center in [Vector2(59, -12), Vector2(83, 8), Vector2(122, 26)]:
-				hill = maxf(hill, (1.0 - smoothstep(0.0, 13.0, Vector2(p.x, p.z).distance_to(center))) * 3.4)
-			hill *= smoothstep(4.0, 10.0, trail)
-			if deep:
-				# Narrow sunken walks between real banks, with a thin landmark slit.
-				hill = smoothstep(4.0, 11.0, trail) * (3.5 + 1.5 * medium.get_noise_2d(x, z)) * smoothstep(5.0, 12.0, absf(p.z))
+			var apron := Vector2(p.x - 335.2, p.z).length() < 15.0
+			# Narrow sunken walks between real banks, with a thin landmark slit.
+			var hill := smoothstep(4.0, 11.0, trail) * (3.5 + 1.5 * medium.get_noise_2d(x, z)) * smoothstep(5.0, 12.0, absf(p.z))
 			if apron: hill = 0.0
 			height = lerpf(height, site.frame.origin.y + ExplorationSite.site_rise(site, p.x) + hill, campus)
 			gravel = maxf(gravel, (1.0 - smoothstep(1.3, 2.8, trail)) * campus)
-			reserved = reserved or trail < (3.1 if deep else 4.5) or apron
+			reserved = reserved or trail < 3.1 or apron
 			# Keep authored perimeter/baffles clear of random trees and rocks.
 			for wall: Dictionary in site.walls:
 				var wp: Vector3 = wall.position
@@ -238,38 +186,35 @@ func surface(x: float, z: float) -> Dictionary:
 		gravel = maxf(gravel, influence)
 		reserved = reserved or court_distance < 4.0
 	# Road wins where the edge of a court approaches the live carriageway.
-	var earthwork_width := maxf(profile.road_shoulder, absf(height - float(road.height)) * 2.5)
+	var earthwork_width := clampf(profile.road_shoulder, 8.0, 18.0)
 	var water_height := -INF
 	var river_bank := 0.0
 	var channel_influence := 0.0
-	if landforms != null:
-		var channel := landforms.channel(x, z, height)
-		height = channel.height
-		water_height = channel.water_height
-		channel_influence = landforms.bridge_gap(float(road.s))
-		river_bank = channel.bank
-		reserved = reserved or channel.wet
-		earthwork_width = clampf(profile.road_shoulder, 8.0, 18.0)
+	var channel := landforms.channel(x, z, height)
+	height = channel.height
+	water_height = channel.water_height
+	channel_influence = landforms.bridge_gap(float(road.s))
+	river_bank = channel.bank
+	reserved = reserved or channel.wet
 	var road_blend := 1.0 - smoothstep(float(road.width) * 0.5, float(road.width) * 0.5 + earthwork_width, float(road.distance))
-	if landforms != null: road_blend *= 1.0 - channel_influence
+	road_blend *= 1.0 - channel_influence
 	height = lerpf(height, float(road.height), road_blend)
 	# Shared safe spawn apron replaces the old scene's isolated CSG floor.
 	var spawn_distance := Vector2(maxf(absf(x) - 14.0, 0.0), maxf(absf(z) - 14.0, 0.0)).length()
 	height = lerpf(height, 0.0, 1.0 - smoothstep(0.0, 20.0, spawn_distance))
 	reserved = reserved or spawn_distance < 8.0
-	if profile.generation_version >= 11 and profile.opening_shelter_id() != "starting_shelter":
-		var tutorial_surface := _tutorial_shelter_surface(x, z, height)
-		height = tutorial_surface.height
-		reserved = reserved or tutorial_surface.reserved
-	elif profile.generation_version >= 7 and z >= -100.0 and z <= 40.0:
-		var start_surface := _starting_shelter_surface(x, z, height)
-		height = start_surface.height
-		reserved = reserved or start_surface.reserved
+	if profile.opening_shelter_id() == "orientation_shelter":
+		var orientation_surface := _orientation_shelter_surface(x, z, height)
+		height = orientation_surface.height
+		reserved = reserved or orientation_surface.reserved
+	elif z >= -100.0 and z <= 40.0:
+		var garage_surface := _starting_shelter_surface(x, z, height)
+		height = garage_surface.height
+		reserved = reserved or garage_surface.reserved
 	var result := {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank}
-	if profile.generation_version >= 14:
-		result.appearance = landforms.appearance_at(-z)
-		var a: Vector3 = result.appearance
-		result.moisture = lerpf(TerrainLandforms.MOISTURE[int(a.x)], TerrainLandforms.MOISTURE[int(a.y)], a.z)
+	result.appearance = landforms.appearance_at(-z)
+	var a: Vector3 = result.appearance
+	result.moisture = lerpf(TerrainLandforms.MOISTURE[int(a.x)], TerrainLandforms.MOISTURE[int(a.y)], a.z)
 	return result
 
 ## Authored opening area: a level garage/forecourt with earth against its sides
@@ -299,20 +244,17 @@ func _starting_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(garage_edge, apron_edge))
 	height = lerpf(height, -0.08, slab_recess)
 	reserved = reserved or slab_recess > 0.0
-	# v7-v9 retain their rear berm. v10 keeps the exact vegetation mask so
-	# old band:index tree identities survive, while releasing the barrier height.
+	# Keep the rear barrier vegetation clear of the garage.
 	var ridge := 1.0 - smoothstep(3.0, 16.0, absf(z - 20.0))
-	var wing := smoothstep(25.0, 34.0, absf(x))
 	if ridge > 0.0:
-		if profile.generation_version < 10: height = lerpf(height, 8.0, ridge * wing)
 		reserved = true
 	if absf(x) <= 25.0 and z >= 14.0 and z <= 29.0:
 		height = 0.0
 		reserved = true
 	return {"height": height, "reserved": reserved}
 
-## v11 uses its own footprint; older shelter terrain remains unchanged.
-func _tutorial_shelter_surface(x: float, z: float, height: float) -> Dictionary:
+## Keep the orientation shelter floor and apron clear of terrain.
+func _orientation_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 	var site := stop(0)
 	var world_influence: AABB = site.bounds.grow(24.0)
 	if x < world_influence.position.x or x > world_influence.end.x or z < world_influence.position.z or z > world_influence.end.z:
@@ -336,7 +278,7 @@ func _tutorial_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 		height = lerpf(height, 5.0, maxf(side_bank, rear_bank) * smoothstep(0.0, 6.0, distance))
 	# Recess the full authored corridor and apron, including a terrain cell
 	# outside their slab edges, so terrain triangles cannot cover the floor.
-	var rear_edge := -46.4 if profile.opening_shelter_id() == "orientation_shelter" else -402.4
+	var rear_edge := -46.4
 	var corridor_edge := maxf(absf(local.x) - 20.4, maxf(rear_edge - local.z, local.z - 14.0))
 	var apron_edge := maxf(absf(local.x) - 22.0, maxf(14.0 - local.z, local.z - 44.0))
 	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(corridor_edge, apron_edge))
@@ -353,7 +295,7 @@ func normal_at(x: float, z: float) -> Vector3:
 func loot_plan(index: int) -> Array[String]:
 	var rng := rng_for(index, "loot")
 	var result: Array[String] = []
-	for i in range(rng.randi_range(1, 2 if profile.generation_version >= 3 else 3)):
+	for i in range(rng.randi_range(1, 2)):
 		result.append("res://props/gas_can.tscn" if rng.randf() < 0.2 else "res://props/scrap.tscn")
 	return result
 

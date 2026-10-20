@@ -4,7 +4,6 @@ class_name TireSpikeStrip
 ## tire contact patch to cross the visible spikes, never body overlap alone.
 const LENGTH := 2.4
 const DEPTH := 0.45
-const SPAWN_CHANCE := 0.08
 var nearby: Array[Chassis] = []
 var previous: Dictionary = {}
 
@@ -77,35 +76,3 @@ func _physics_process(delta: float) -> void:
 	if nearby.is_empty():
 		previous.clear()
 		set_physics_process(false)
-
-static func placement(field: WorldField, band: int) -> Dictionary:
-	# Separate RNG stream: no changes to loot, terrain, enemies or POI draws.
-	# Keep the initial 450 m safe; repeat visits regenerate the same hazard.
-	if band < 3: return {}
-	var rng := field.rng_for(band, "tire_spike_strip")
-	if rng.randf() >= SPAWN_CHANCE: return {}
-	var distance := band * field.profile.chunk_length + rng.randf_range(25.0, 125.0)
-	var nearby := field.sites_near_z(-distance, 90) if field.profile.generation_version >= 6 else field.stops_in_band(band)
-	for site in nearby:
-		if absf(-site.road.origin.z - distance) < 45.0: return {}
-	var frame := field.road_frame(distance)
-	var side := -1.0 if rng.randf() < 0.5 else 1.0
-	# Mostly on the shoulder, with 1.8 m extending into the road edge.
-	var center := frame.origin + frame.basis.x * side * (field.road_width(distance) / 2.0 - 0.6)
-	center.y = field.height_at(center.x, center.z) + 0.04
-	var along := frame.basis.z
-	var ahead := center - along
-	var behind := center + along
-	along.y = (field.height_at(behind.x, behind.z) - field.height_at(ahead.x, ahead.z)) / 2.0
-	along = along.normalized()
-	var right := frame.basis.x
-	var up := along.cross(right).normalized()
-	return {"transform": Transform3D(Basis(right, up, along), center)}
-
-static func build(chunk: Node3D, field: WorldField, band: int) -> void:
-	var data := placement(field, band)
-	if data.is_empty(): return
-	var strip := TireSpikeStrip.new()
-	strip.name = "TireSpikeStrip"
-	chunk.add_child(strip)
-	strip.global_transform = data.transform
