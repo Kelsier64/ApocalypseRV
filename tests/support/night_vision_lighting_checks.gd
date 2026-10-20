@@ -42,10 +42,10 @@ func capture(target: SubViewport = viewport) -> Image:
 func pixel(image: Image) -> Color:
 	return image.get_pixel(64, 64)
 
-func capture_frame() -> Image:
+func capture_frame(target: SubViewport = viewport) -> Image:
 	await process_frame
 	await RenderingServer.frame_post_draw
-	return viewport.get_texture().get_image()
+	return target.get_texture().get_image()
 
 func image_difference(a: Image, b: Image) -> float:
 	var difference := 0.0
@@ -259,6 +259,7 @@ func run() -> void:
 	mesh.size = Vector2(20, 20)
 	await check_fog_visibility()
 	await check_independent_indoor_world()
+	await check_vehicle_reference_motion()
 	var local_gray := pixel(await capture())
 	var local_transform := world.transform
 	world.transform = Transform3D(Basis(Vector3(0.3, 1, 0.2).normalized(), 1.2), Vector3(18000, 500, -24000))
@@ -360,6 +361,71 @@ func run() -> void:
 	await process_frame
 	print("DARK ADAPTATION GPU ", "PASS" if failures == 0 else "FAIL", " failures=", failures)
 	quit(1 if failures else 0)
+
+func check_vehicle_reference_motion() -> void:
+	var target := SubViewport.new()
+	target.size = Vector2i(128, 128)
+	target.own_world_3d = true
+	target.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(target)
+	var scene := Node3D.new()
+	target.add_child(scene)
+	var holder := WorldEnvironment.new()
+	holder.environment = native_environment()
+	scene.add_child(holder)
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color.WHITE
+	white.roughness = 1.0
+	white.metallic_specular = 0.0
+	for at in [Vector3(-4, 2, -14), Vector3(0, 3, -20), Vector3(4, 1, -16)]:
+		var box := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(2, 4, 2)
+		box.mesh = mesh
+		box.material_override = white
+		box.position = at
+		scene.add_child(box)
+	var rig := HeadlightRig.new()
+	scene.add_child(rig)
+	var source := Camera3D.new()
+	source.position = Vector3(0, 2, 0)
+	rig.add_child(source)
+	var lamps := Node3D.new()
+	lamps.set_script(load("res://rv/vehicle_lights.gd"))
+	rig.add_child(lamps)
+	var effect := add_renderer(scene, constant_curve(1))
+	var black := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	black.fill(Color.BLACK)
+	for powered in [false, true]:
+		rig.lamps_powered = powered
+		rig.transform = Transform3D.IDENTITY
+		await capture(target)
+		rig.transform = Transform3D(Basis.from_euler(Vector3(0.07, 0.12, -0.09)), Vector3(0.35, 0.15, -0.25))
+		var first := await capture_frame(target)
+		var settled := await capture(target)
+		check(image_difference(first, settled) < 0.015, "Vehicle tilt, roll and translation keep the first gray-reference frame aligned (lamps %s)" % powered)
+		check(image_difference(first, black) > 0.1, "Moving vehicle retains visible white silhouettes (lamps %s)" % powered)
+	var mirror := SubViewport.new()
+	mirror.size = target.size
+	mirror.world_3d = target.find_world_3d()
+	mirror.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(mirror)
+	var mirror_camera := Camera3D.new()
+	mirror_camera.position = Vector3(-2, 3, 2)
+	mirror.add_child(mirror_camera)
+	effect.register_viewport(mirror)
+	await capture(mirror)
+	mirror_camera.rotation = Vector3(0.05, 0.2, -0.07)
+	var mirror_first := await capture_frame(mirror)
+	var mirror_settled := await capture(mirror)
+	check(image_difference(mirror_first, mirror_settled) < 0.015 and image_difference(mirror_first, black) > 0.1, "A mirror camera step matches its current-frame reference without delayed silhouettes")
+	var helpers_uninterpolated := true
+	for entry in effect._views:
+		helpers_uninterpolated = helpers_uninterpolated and entry.camera.physics_interpolation_mode == Node.PHYSICS_INTERPOLATION_MODE_OFF and entry.quad.physics_interpolation_mode == Node.PHYSICS_INTERPOLATION_MODE_OFF
+	check(helpers_uninterpolated, "Render-driven reference cameras and quads disable their own physics interpolation")
+	mirror.queue_free()
+	target.queue_free()
+	await process_frame
 
 func check_light_history(native: Environment, beam: SpotLight3D) -> void:
 	check(not native.volumetric_fog_temporal_reprojection_enabled, "Production fog uses current-frame light scattering without temporal beam trails")

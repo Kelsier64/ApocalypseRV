@@ -188,6 +188,8 @@ NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投
 
 參考環境每幀讀取來源 Camera3D.environment，缺省時讀取所屬 World3D 的 Environment／fallback；保留天空、距離霧與全域／局部體積霧的遮蔽，將參考環境光／GI 注入體積霧設為零，避免補出額外散射。主圖的霧及燈光不受效果啟閉影響。參考不含第二份雨幕／水花，雨與水花直接接受原生場景照明；透明玻璃與天氣在灰階合成後依原生流程繪製。日間與夜間每個活動視圖都增加一次同 3D 縮放比例的幾何參考渲染，不新增模擬或陰影 pass；兩側鏡只在既定刷新時同步參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。合成 Quad 跟隨來源視錐中心，只略過遮蔽剔除，不能使用忽略所有剔除的 API，否則會繞過 layer mask 被自己的參考拍入並產生回饋。暫停保留上次參考圖，明確停用仍釋放相機及燈光路由；候選世界轉移後重新綁定目標 viewport／World3D。復古與使用者畫面偏好在其後獨立套用，HUD 不參與缺光估計。不新增存檔欄位。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
 
+來源 `get_camera_transform()` 提供含偏移、必要時已插值的顯示姿勢。參考相機與 Quad 在 `frame_pre_draw` 逐幀更新，因此明確關閉自己的 physics interpolation，並在定位後各呼叫 `force_update_transform()`；此時 SceneTree 的普通 transform notification 已處理完，僅設定 global_transform 會使繪圖端晚一幀。車身帶動相機／燈光晃動與鏡面轉向必須使用輪廓幾何的首幀回歸，純黑接收面或等待多幀後擷取無法驗證這種錯位。
+
 Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。v5 缺欄位沿用 day 1 / 08:00，不改寫來源檔案、不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
 
 `tests/day_night_playground.tscn` 的調時／加速鍵只用於驗收。歷史美術樣板凍結時鐘並明確使用 exponential fog，避免新光照每幀覆寫 A/B 環境。

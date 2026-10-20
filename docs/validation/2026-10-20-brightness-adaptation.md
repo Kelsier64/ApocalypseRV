@@ -49,3 +49,13 @@ GPU 覆蓋：固定原生照明下中午／夜間一致、同時段開關燈、�
 修正由 WorldClock 關閉正式室外體積霧的 temporal reprojection，灰階參考跟隨；霧、燈光互動、密度與使用者曲線不改。保留空間濾波，取樣平滑度仍受霧解析度限制。
 
 新增首幀 GPU 回歸，直接使用正式 WorldClock 的環境及正式手電筒：確認霧中光束仍可見，移動光束／轉相機的首幀與穩定畫面一致，關燈首幀無餘光；同步確認參考圖不保留歷史。Forward+ 支援檢查全數 PASS，含原有灰階、霧遮蔽、室內轉移及曲線原檔保護。紀錄：`.godot/light-ghost-regression-forward.log`。Compatibility 沒有體積霧，本次未重跑未受影響的核心／Compatibility 套件。
+
+## 同日後續：車身晃動的參考視圖錯位
+
+使用者回報車身晃動仍有明顯殘影。已重現獨立於霧歷史的另一個問題：`frame_pre_draw` 更新參考相機與合成 Quad 時，SceneTree 一般變換通知已處理完，繪圖端姿勢未即時更新。前段純黑接收面的霧測試沒有參考輪廓，無法揭露這種錯位。
+
+以共用車架的相機與正式 `vehicle_lights.gd`、黑色天空及白色輪廓比較晃動首幀與停住多幀後畫面。實際 runtime interpolation=false、TAA=false。256×256、使用原自訂距離曲線的診斷中，車燈關閉時最大 RGB 向量差為 0.407541，開燈時為 0.027730；參考相機及 Quad 定位後立即 `force_update_transform()`，兩種狀態差異均為 0。兩個 render-driven helper 同時明確停用自身 physics interpolation，避免將來源已插值的顯示姿勢再插值一次；專案插值設定不變。紀錄：`.godot/rig-pose-before.log`／`rig-pose-after.log`。
+
+支援測試新增傾斜、側滾、平移與鏡面轉向的輪廓首幀檢查及可見性斷言；Forward+／Compatibility 全數 PASS。既有原生燈光、霧、相機轉移、暫停、staging 與曲線原檔檢查維持通過。紀錄：`.godot/vehicle-ghost-regression-forward.log`／`vehicle-ghost-regression-compatibility.log`。
+
+另以正式 `rv/new_rv.tscn`、原玩家進入 DriverSeat、頭燈及 Jolt 車體／懸吊施加外部交變力矩，實際側滾最大 0.02702 rad、俯仰最大 0.00888 rad；檢視駕駛座與車外的當幀擷取，輪廓保持清楚。這是物理晃動場景與靜態擷取檢視，沒有宣稱輪驅行駛、轉彎、翻車或連續影片已驗收。紀錄：`.godot/rv-rocking-review.log`。曲線 SHA256 保持上述原值。

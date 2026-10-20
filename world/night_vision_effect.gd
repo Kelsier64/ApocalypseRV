@@ -91,6 +91,8 @@ func register_viewport(viewport: Viewport, active := true) -> void:
 	reference.positional_shadow_atlas_size = 0
 	add_child(reference)
 	var camera := Camera3D.new()
+	# This camera receives the source's rendered pose, already interpolated.
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	camera.environment = Environment.new()
 	reference.add_child(camera)
 	var material := ShaderMaterial.new()
@@ -99,6 +101,7 @@ func register_viewport(viewport: Viewport, active := true) -> void:
 	material.render_priority = -128
 	material.set_shader_parameter("night_reference", reference.get_texture())
 	var quad := MeshInstance3D.new()
+	quad.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	var mesh := QuadMesh.new()
 	mesh.size = Vector2(2, 2)
 	quad.mesh = mesh
@@ -210,6 +213,7 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 	# renders the composite in its own reference and causes temporal feedback.
 	entry.quad.global_position = source.project_position(target.get_visible_rect().size * 0.5, source.near + 1.0)
 	entry.quad.global_basis = source.get_camera_transform().basis
+	entry.quad.force_update_transform()
 	var target_rid := target.get_viewport_rid()
 	if entry.parent_rid != target_rid:
 		# Reference must render before its target, including sibling mirror views.
@@ -230,6 +234,9 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 	camera.near = source.near
 	camera.far = source.far
 	camera.cull_mask = source.cull_mask & ~OWNED_LAYERS
+	# frame_pre_draw is after SceneTree's transform-notification flush. Submit
+	# this pose now or the reference renders the previous vehicle/camera pose.
+	camera.force_update_transform()
 	var environment: Environment = camera.environment
 	var native := source.environment if source.environment != null else source.get_world_3d().environment
 	if native == null: native = source.get_world_3d().fallback_environment

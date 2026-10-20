@@ -45,7 +45,7 @@ godot --path . --script res://tests/support/night_vision_lighting_checks.gd
 
 此檢查需要 GPU，請勿加 `--headless`，也不屬於預設核心測試程序。切換 Compatibility 可在命令加入 `--rendering-method gl_compatibility`；指定 Forward+ 則使用 `--rendering-method forward_plus`。
 
-檢查涵蓋固定照明下的日夜一致、同時段開關燈、正式手電筒與車燈、曲線為 0 時的原生光色、黑色材質、天空、陰影、濃霧遮蔽、獨立室內、鏡面、曲線編輯與世界轉移；同時確認原生 Environment 與已保存的 Curve 檔未被修改。場景中的材質、車窗與遠景觀感仍需透過上述測試場檢視。
+檢查涵蓋固定照明下的日夜一致、同時段開關燈、正式手電筒與車燈、曲線為 0 時的原生光色、黑色材質、天空、陰影、濃霧遮蔽、獨立室內、鏡面、曲線編輯與世界轉移；另以清楚的物體輪廓檢查車架傾斜／側滾／位移及鏡面轉向後的第一幀，避免主圖與灰階參考晚一幀造成重影。同時確認原生 Environment 與已保存的 Curve 檔未被修改。場景中的材質、車窗與遠景觀感仍需透過上述測試場檢視。
 
 ## 畫面與限制
 
