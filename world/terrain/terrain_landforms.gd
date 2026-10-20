@@ -78,25 +78,45 @@ func river_z(plan: Dictionary, x: float) -> float:
 	var u := x - float(plan.center_x)
 	return -float(plan.s) + u * float(plan.skew) + 14.0 * (sin(u / 90.0 + float(plan.phase)) - sin(float(plan.phase)))
 
+func river_half_width(plan: Dictionary, x: float) -> float:
+	var u := x - float(plan.center_x)
+	return float(plan.half_width) * (1.0 + 0.12 * sin(u / 130.0) + 0.06 * sin(u / 47.0))
+
 func channel(x: float, z: float, height_value: float) -> Dictionary:
 	var wet := false
 	var influence := 0.0
 	var water := -INF
+	var bank := 0.0
 	for plan in rivers_near(z):
 		var distance := absf(z - river_z(plan, x))
-		var half: float = plan.half_width
-		var carve := 1.0 - smoothstep(half - 3.0, half + 22.0, distance)
-		var bed := float(plan.water_height) - 4.0 + 1.2 * field.medium.get_noise_2d(x, z)
-		height_value = lerpf(height_value, minf(height_value, bed), carve)
-		influence = maxf(influence, carve)
-		wet = wet or distance < half + 3.0
-		if distance < half: water = maxf(water, float(plan.water_height))
-	return {"height": height_value, "wet": wet, "influence": influence, "water_height": water}
+		var half := river_half_width(plan, x)
+		if distance >= half + 115.0: continue
+		var level: float = plan.water_height
+		# The waterline is defined by this profile, not a separate rectangular
+		# ribbon. The bed reaches the water at +/-half; banks rise above it.
+		var depth := 3.4 + field.medium.get_noise_2d(x, river_z(plan, x)) * 0.7
+		var bed := level - depth * (1.0 - smoothstep(0.25, 1.0, distance / half))
+		if distance > half:
+			bed = level + 1.3 * smoothstep(half, half + 16.0, distance)
+		var valley := 1.0 - smoothstep(half + 16.0, half + 115.0, distance)
+		height_value = lerpf(height_value, bed, valley)
+		# Road earthworks resume on dry banks before the bridge span ends.
+		influence = maxf(influence, 1.0 - smoothstep(half + 6.0, half + 36.0, distance))
+		wet = wet or distance < half + 5.0
+		bank = maxf(bank, smoothstep(half - 7.0, half + 1.0, distance) * (1.0 - smoothstep(half + 6.0, half + 24.0, distance)))
+		if distance <= half: water = maxf(water, level)
+	return {"height": height_value, "wet": wet, "influence": influence, "water_height": water, "bank": bank}
 
 func bridge_at(s: float) -> bool:
 	for plan in rivers_near(-s, 0.0):
 		if absf(s - float(plan.s)) <= 85.0: return true
 	return false
+
+func bridge_gap(s: float) -> float:
+	var result := 0.0
+	for plan in rivers_near(-s, 0.0):
+		result = maxf(result, 1.0 - smoothstep(65.0, 85.0, absf(s - float(plan.s))))
+	return result
 
 func crossing_clearance(s: float, margin: float = 190.0) -> bool:
 	for plan in rivers_near(-s, margin):
@@ -113,7 +133,7 @@ func site_clear(site: Dictionary) -> bool:
 		for i in range(count + 1):
 			var x := lerpf(box.position.x, box.end.x, float(i) / count)
 			var z := river_z(river_plan, x)
-			var width: float = river_plan.half_width + 28.0
+			var width := river_half_width(river_plan, x) + 115.0
 			if z + width >= box.position.z and z - width <= box.end.z: return false
 	return true
 

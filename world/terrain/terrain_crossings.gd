@@ -2,13 +2,19 @@ extends RefCounted
 class_name TerrainCrossings
 ## Water and bridges consume exactly the same plans as terrain and POI clearance.
 const WATER = preload("res://world/terrain/river_water.gdshader")
+const WATER_STEP := 6.0
+const WATER_EXTENT := 1310.0
+const SHORE_OVERLAP := 1.5
 
 static func water_polygon(landforms: TerrainLandforms, river: Dictionary, x0: float, x1: float) -> PackedVector3Array:
 	var a := landforms.river_z(river, x0)
 	var b := landforms.river_z(river, x1)
-	var half: float = river.half_width
+	# Bury the last 1.5m under the dry bank. This covers the small difference
+	# between curved analytical shores and triangulated ground without a gap.
+	var half0 := landforms.river_half_width(river, x0) + SHORE_OVERLAP
+	var half1 := landforms.river_half_width(river, x1) + SHORE_OVERLAP
 	var y: float = river.water_height
-	return PackedVector3Array([Vector3(x0, y, a - half), Vector3(x1, y, b - half), Vector3(x1, y, b + half), Vector3(x0, y, a + half)])
+	return PackedVector3Array([Vector3(x0, y, a - half0), Vector3(x1, y, b - half1), Vector3(x1, y, b + half1), Vector3(x0, y, a + half0)])
 
 static func _clip(points: PackedVector3Array, z: float, keep_below: bool) -> PackedVector3Array:
 	var result := PackedVector3Array()
@@ -33,12 +39,14 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var count := 0
 	for river in field.landforms.rivers_near((north + south) * 0.5, 75.0):
-		for i in range(218):
-			var x := -1308.0 + i * 12.0
-			var polygon := _clip(_clip(water_polygon(field.landforms, river, x, x + 12.0), north, true), south, false)
+		for i in range(ceili(WATER_EXTENT * 2.0 / WATER_STEP)):
+			var x := -WATER_EXTENT + i * WATER_STEP
+			var polygon := _clip(_clip(water_polygon(field.landforms, river, x, minf(x + WATER_STEP, WATER_EXTENT)), north, true), south, false)
 			for j in range(1, polygon.size() - 1):
 				for vertex in [polygon[0], polygon[j + 1], polygon[j]]:
 					st.set_normal(Vector3.UP)
+					var half := field.landforms.river_half_width(river, vertex.x)
+					st.set_uv(Vector2(vertex.x * 0.04, 0.5 + (vertex.z - field.landforms.river_z(river, vertex.x)) / (half * 2.0)))
 					st.add_vertex(vertex)
 					count += 1
 			if gradual and chunk.slice_exhausted(): await chunk._pause()
@@ -143,9 +151,9 @@ static func rail_plan(field: WorldField, band: int) -> Array[Dictionary]:
 static func navigation_obstacles(field: WorldField, band: int, source: NavigationMeshSourceGeometryData3D) -> void:
 	var north := -band * 150.0
 	for river in field.landforms.rivers_near(north - 75.0, 90.0):
-		for i in range(84):
-			var x := -504.0 + i * 12.0
-			var polygon := water_polygon(field.landforms, river, x, x + 12.0)
+		for i in range(168):
+			var x := -504.0 + i * WATER_STEP
+			var polygon := water_polygon(field.landforms, river, x, x + WATER_STEP)
 			if polygon[0].z > north + 15.0 and polygon[1].z > north + 15.0: continue
 			if polygon[2].z < north - 165.0 and polygon[3].z < north - 165.0: continue
 			# Remove the submerged bed, leaving the bridge overhead navigable.

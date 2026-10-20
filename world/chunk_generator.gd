@@ -81,13 +81,14 @@ func slice_exhausted() -> bool:
 func _build_ground(gradual: bool) -> void:
 	var step := field.profile.terrain_step
 	var nx := roundi(field.profile.terrain_half_width * 2.0 / step)
+	var step_x := field.profile.terrain_half_width * 2.0 / nx if field.landforms != null else step
 	var nz := roundi(field.profile.chunk_length / step)
 	var z0 := -band * field.profile.chunk_length
 	var rows: Array = []
 	for j in range(-1, nz + 2):
 		var row: Array = []
 		for i in range(-1, nx + 2):
-			row.append(field.surface(-field.profile.terrain_half_width + i * step, z0 - j * step))
+			row.append(field.surface(-field.profile.terrain_half_width + i * step_x, z0 - j * step))
 			if gradual and i % 32 == 0 and slice_exhausted(): await _pause()
 		rows.append(row)
 		if gradual and slice_exhausted():
@@ -97,7 +98,7 @@ func _build_ground(gradual: bool) -> void:
 	for j in range(nz + 1):
 		for i in range(nx + 1):
 			var sample: Dictionary = rows[j + 1][i + 1]
-			var normal := Vector3(float(rows[j + 1][i].height) - float(rows[j + 1][i + 2].height), 2.0 * step, float(rows[j + 2][i + 1].height) - float(rows[j][i + 1].height)).normalized()
+			var normal := Vector3((float(rows[j + 1][i].height) - float(rows[j + 1][i + 2].height)) * step / step_x, 2.0 * step, float(rows[j + 2][i + 1].height) - float(rows[j][i + 1].height)).normalized()
 			var w: Vector3 = sample.weights
 			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
 			if field.profile.generation_version >= 3:
@@ -105,12 +106,13 @@ func _build_ground(gradual: bool) -> void:
 			if field.landforms != null:
 				color = field.landforms.color_at(-z0 + j * step)
 				if is_finite(float(sample.water_height)): color = Color("454e43")
+				color = color.lerp(Color("716b54"), float(sample.river_bank) * 0.72)
 			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
 			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
 			st.set_normal(normal)
 			st.set_color(color)
 			st.set_uv(Vector2(i, j) * step / 4.0)
-			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step, sample.height, z0 - j * step))
+			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step_x, sample.height, z0 - j * step))
 		if gradual and slice_exhausted():
 			await _pause()
 	for j in range(nz):
@@ -129,25 +131,45 @@ func _build_ground(gradual: bool) -> void:
 	await _build_distant_sides(gradual)
 
 func _build_distant_sides(gradual: bool) -> void:
+	var river_detail := field.landforms != null and not field.landforms.rivers_near(-(band + 0.5) * 150.0, 190.0).is_empty()
 	for side in [-1.0, 1.0]:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var edge := field.profile.terrain_half_width
 		var columns := [edge, edge + 30, edge + 90, edge + 210, edge + 450, edge + 810]
+		if river_detail:
+			# A 360m-wide far triangle cannot represent a 40m river. Keep the
+			# same banks beyond the collision boundary, on a shared 12m grid.
+			columns = []
+			for i in range(ceili(810.0 / 12.0)):
+				columns.append(edge + i * 12.0)
+			columns.append(edge + 810.0)
+		var stride := columns.size()
 		for j in range(51):
 			var z := -band * 150.0 - j * 3.0
 			for x in columns:
-				st.set_color(field.landforms.color_at(-z) if field.landforms != null else Color(0.36, 0.39, 0.27))
-				st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
+				if field.landforms != null:
+					var sample := field.surface(x * side, z)
+					var color := field.landforms.color_at(-z)
+					if is_finite(float(sample.water_height)): color = Color("454e43")
+					st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
+					st.add_vertex(Vector3(x * side, sample.height, z))
+				else:
+					st.set_color(Color(0.36, 0.39, 0.27))
+					st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
+				if gradual and slice_exhausted(): await _pause()
 			if gradual and slice_exhausted(): await _pause()
 		for j in range(50):
-			for i in range(5):
-				var a := j * 6 + i
-				var indices := [a, a + 6, a + 1, a + 1, a + 6, a + 7] if side > 0 else [a, a + 1, a + 6, a + 1, a + 7, a + 6]
+			for i in range(stride - 1):
+				var a := j * stride + i
+				var indices := [a, a + stride, a + 1, a + 1, a + stride, a + stride + 1] if side > 0 else [a, a + 1, a + stride, a + 1, a + stride + 1, a + stride]
 				for v in indices:
 					st.add_index(v)
 		st.generate_normals()
-		_mesh(st.commit(), "DistantTerrain", false)
+		var title := ("DistantTerrainLeft" if side < 0.0 else "DistantTerrainRight") if field.landforms != null else "DistantTerrain"
+		var node := _mesh(st.commit(), title, false)
+		if field.landforms != null:
+			node.material_override = _terrain.material_override
 		if gradual:
 			await _pause()
 
@@ -430,7 +452,7 @@ func _build_navigation(gradual: bool = false) -> void:
 		for row in range(2):
 			var points := PackedVector3Array()
 			for i in range(columns + 1):
-				var px := -nav_half + i * 3.0
+				var px := -nav_half + i * (nav_half * 2.0 / columns if field.landforms != null else 3.0)
 				var pz := z0 - row * 3.0
 				points.append(Vector3(px, field.height_at(px, pz), pz))
 				if gradual and i % 32 == 0 and slice_exhausted(): await _pause()

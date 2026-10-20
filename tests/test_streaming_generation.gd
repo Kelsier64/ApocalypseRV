@@ -85,6 +85,9 @@ func _check_crossing_chunk(world: Node3D) -> void:
 	for mesh: MeshInstance3D in water:
 		check(mesh.mesh != null and mesh.mesh.get_faces().size() >= 6, "River water has real mesh geometry")
 		check(mesh.find_children("*", "CollisionShape3D", true, false).is_empty(), "River surface does not become a solid floor")
+	_check_terrain_side_seams(chunk)
+	_check_rendered_shores(chunk, crossing)
+	await _check_water_band_seam(host, chunk)
 	check(chunk.has_node("BridgeStructure"), "v13 crossing chunk builds bridge structure")
 	check(not chunk.find_children("*BridgeDeck*", "MeshInstance3D", true, false).is_empty(), "v13 crossing chunk builds bridge deck geometry")
 	if not await WAIT.navigation_ready(self, [chunk]):
@@ -93,6 +96,15 @@ func _check_crossing_chunk(world: Node3D) -> void:
 		await physics_frame
 		var frame := field.road_frame(s)
 		var space := world.get_world_3d().direct_space_state
+		for side: float in [-1.0, 1.0]:
+			var x := side * (field.profile.terrain_half_width - 0.25)
+			var z := -chunk.band * field.profile.chunk_length - 75.0
+			var height := field.height_at(x, z)
+			var ray := PhysicsRayQueryParameters3D.create(Vector3(x, height + 6.0, z), Vector3(x, height - 6.0, z), 1)
+			var hit := space.intersect_ray(ray)
+			check(not hit.is_empty(), "Physical ground supports actors immediately inside both terrain side boundaries")
+			if not hit.is_empty():
+				check(absf(float(hit.position.y) - height) < 0.3, "Side-boundary collision matches the continuous terrain surface")
 		for lateral: float in [-1.6, 0.0, 1.6]:
 			var point: Vector3 = frame.origin + frame.basis.x * lateral
 			var ray := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 6.0, point + Vector3.DOWN * 3.0, 1)
@@ -104,3 +116,96 @@ func _check_crossing_chunk(world: Node3D) -> void:
 			check(Vector2(closest.x - point.x, closest.z - point.z).length() < 1.0 and absf(closest.y - point.y) < 0.8, "Published navigation crosses the bridge deck above the river")
 	host.queue_free()
 	await process_frame
+
+func _check_terrain_side_seams(chunk: ChunkGenerator) -> void:
+	var ground := chunk.get_node("Ground") as MeshInstance3D
+	var distant := chunk.find_children("DistantTerrain*", "MeshInstance3D", false, false)
+	check(distant.size() == 2, "River chunk retains both distant terrain sides")
+	for side: float in [-1.0, 1.0]:
+		var x := side * chunk.field.profile.terrain_half_width
+		var near_edge := _vertices_at(ground.mesh.get_faces(), x, true)
+		var far_edge: Dictionary = {}
+		for mesh: MeshInstance3D in distant:
+			far_edge.merge(_vertices_at(mesh.mesh.get_faces(), x, true))
+		check(near_edge.size() >= 51 and near_edge == far_edge, "Physical and distant terrain share every vertex at x=%.0fm without a side gap" % x)
+
+func _vertices_at(faces: PackedVector3Array, coordinate: float, use_x: bool) -> Dictionary:
+	var vertices: Dictionary = {}
+	for point in faces:
+		if absf((point.x if use_x else point.z) - coordinate) < 0.001:
+			vertices[Vector2i(roundi((point.z if use_x else point.x) * 1000.0), roundi(point.y * 1000.0))] = true
+	return vertices
+
+func _check_water_band_seam(host: Node3D, chunk: ChunkGenerator) -> void:
+	var water := chunk.get_node("RiverWater") as MeshInstance3D
+	var north := -chunk.band * chunk.field.profile.chunk_length
+	var seam := north
+	var neighbor_band := chunk.band - 1
+	var edge := _vertices_at(water.mesh.get_faces(), seam, false)
+	if edge.is_empty():
+		seam = north - chunk.field.profile.chunk_length
+		neighbor_band = chunk.band + 1
+		edge = _vertices_at(water.mesh.get_faces(), seam, false)
+	check(not edge.is_empty(), "River fixture exercises a water ribbon crossing a streaming boundary")
+	if edge.is_empty(): return
+	# Only build the crossing geometry: the existing fixture already covers
+	# full generation/navigation, and a second forest adds no seam coverage.
+	var neighbor := ChunkGenerator.new()
+	neighbor.field = chunk.field
+	neighbor.band = neighbor_band
+	host.add_child(neighbor)
+	await TerrainCrossings.build(neighbor, false)
+	var adjacent := neighbor.get_node_or_null("RiverWater") as MeshInstance3D
+	check(adjacent != null, "Adjacent band owns the continuing river water mesh")
+	if adjacent != null:
+		check(edge == _vertices_at(adjacent.mesh.get_faces(), seam, false), "Clipped water meshes have identical intersection vertices across the streaming seam")
+	neighbor.queue_free()
+	await process_frame
+
+func _check_rendered_shores(chunk: ChunkGenerator, river: Dictionary) -> void:
+	var north := -chunk.band * chunk.field.profile.chunk_length
+	var south := north - chunk.field.profile.chunk_length
+	var terrain: Array[PackedVector3Array] = []
+	for mesh: MeshInstance3D in chunk.find_children("DistantTerrain*", "MeshInstance3D", false, false):
+		terrain.append(mesh.mesh.get_faces())
+	var checked := 0
+	var exposed := 0
+	var dry_bed := 0
+	# Sample actual water-segment midpoints between far-terrain columns,
+	# where a coarse mesh could bridge over the carved channel completely.
+	for index in range(0, ceili(2.0 * TerrainCrossings.WATER_EXTENT / TerrainCrossings.WATER_STEP), 4):
+		var x0 := -TerrainCrossings.WATER_EXTENT + index * TerrainCrossings.WATER_STEP
+		var polygon := TerrainCrossings.water_polygon(chunk.field.landforms, river, x0, minf(x0 + TerrainCrossings.WATER_STEP, TerrainCrossings.WATER_EXTENT))
+		for side: int in [0, 1]:
+			var edge := polygon[0].lerp(polygon[1], 0.5) if side == 0 else polygon[3].lerp(polygon[2], 0.5)
+			if absf(edge.x) < 520.0 or edge.z < south + 6.0 or edge.z > north - 6.0: continue
+			var inside := edge + Vector3(0.0, 0.0, 5.0 if side == 0 else -5.0)
+			var bank_height := INF
+			var bed_height := INF
+			for faces in terrain:
+				bank_height = minf(bank_height, _mesh_height(faces, edge))
+				bed_height = minf(bed_height, _mesh_height(faces, inside))
+			checked += 1
+			if not is_finite(bank_height) or bank_height < edge.y - 0.02: exposed += 1
+			if not is_finite(bed_height) or bed_height >= edge.y - 0.02: dry_bed += 1
+	check(checked > 0, "River fixture samples rendered shoreline in the distant terrain")
+	check(exposed == 0, "Distant terrain covers the outer water ribbon edge (%d exposed samples)" % exposed)
+	check(dry_bed == 0, "Distant terrain retains a submerged channel beneath visible water (%d dry samples)" % dry_bed)
+
+func _mesh_height(faces: PackedVector3Array, point: Vector3) -> float:
+	for index in range(0, faces.size(), 3):
+		var a := faces[index]
+		var b := faces[index + 1]
+		var c := faces[index + 2]
+		if point.x < minf(a.x, minf(b.x, c.x)) - 0.001 or point.x > maxf(a.x, maxf(b.x, c.x)) + 0.001: continue
+		if point.z < minf(a.z, minf(b.z, c.z)) - 0.001 or point.z > maxf(a.z, maxf(b.z, c.z)) + 0.001: continue
+		var ab := Vector2(b.x - a.x, b.z - a.z)
+		var ac := Vector2(c.x - a.x, c.z - a.z)
+		var ap := Vector2(point.x - a.x, point.z - a.z)
+		var determinant := ab.cross(ac)
+		if absf(determinant) < 0.000001: continue
+		var u := ap.cross(ac) / determinant
+		var v := ab.cross(ap) / determinant
+		if u >= -0.0001 and v >= -0.0001 and u + v <= 1.0001:
+			return a.y + u * (b.y - a.y) + v * (c.y - a.y)
+	return INF

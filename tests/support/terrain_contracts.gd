@@ -167,6 +167,7 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 		var x := field.road_x(s)
 		check.call(field.landforms.bridge_at(s), label + "river crossing has a bridge")
 		check.call(field.road_height(s) > water + 1.0, label + "bridge deck clears the water")
+		_check_shoreline(field, river, check)
 		# Sample the real carved bed away from the bridge and its piers.
 		for side: float in [-1.0, 1.0]:
 			var bank_x := x + side * 90.0
@@ -179,3 +180,34 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 				continue
 			var point := field.road_frame(approach_s).origin
 			check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "bridge approaches meet dry carriageway")
+		for side: float in [-1.0, 1.0]:
+			var approach := field.road_frame(s + side * 87.5)
+			for lateral: float in [-0.4, 0.0, 0.4]:
+				var point := approach.origin + approach.basis.x * field.road_width(s + side * 87.5) * lateral
+				check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "both bridge ends have dry terrain support across the carriageway")
+
+static func _check_shoreline(field: WorldField, river: Dictionary, check: Callable) -> void:
+	var label := "v13 seed %d river %.0fm: " % [field.world_seed, float(river.s)]
+	var level := float(river.water_height)
+	var waterline_error := 0.0
+	var inside_wet := true
+	var outside_dry := true
+	var mesh_edges_buried := true
+	# Cover the physical strip and both distant sides. These checks catch a
+	# water ribbon ending on a still-submerged bank even when its centre is wet.
+	for x: float in [-1250.0, -1010.0, -750.0, -500.0, float(river.center_x) - 90.0, float(river.center_x) + 90.0, 500.0, 750.0, 1010.0, 1250.0]:
+		var center := field.landforms.river_z(river, x)
+		var half := field.landforms.river_half_width(river, x)
+		for side: float in [-1.0, 1.0]:
+			waterline_error = maxf(waterline_error, absf(float(field.surface(x, center + side * half).height) - level))
+			inside_wet = inside_wet and float(field.surface(x, center + side * (half - 3.0)).height) < level - 0.05
+			outside_dry = outside_dry and float(field.surface(x, center + side * (half + 3.0)).height) > level + 0.05
+		var x0 := -TerrainCrossings.WATER_EXTENT + floorf((x + TerrainCrossings.WATER_EXTENT) / TerrainCrossings.WATER_STEP) * TerrainCrossings.WATER_STEP
+		var polygon := TerrainCrossings.water_polygon(field.landforms, river, x0, x0 + TerrainCrossings.WATER_STEP)
+		# Test the actual straight bank segments between water vertices too.
+		for t: float in [0.0, 0.5, 1.0]:
+			for edge: Vector3 in [polygon[0].lerp(polygon[1], t), polygon[3].lerp(polygon[2], t)]:
+				mesh_edges_buried = mesh_edges_buried and float(field.surface(edge.x, edge.z).height) > level
+	check.call(waterline_error < 0.02, label + "shared shoreline reaches water level across near and distant terrain (error %.4f)" % waterline_error)
+	check.call(inside_wet and outside_dry, label + "both shores transition from submerged bed to dry bank")
+	check.call(mesh_edges_buried, label + "rendered water bank edges and their midpoints overlap dry terrain")

@@ -240,12 +240,14 @@ func surface(x: float, z: float) -> Dictionary:
 	# Road wins where the edge of a court approaches the live carriageway.
 	var earthwork_width := maxf(profile.road_shoulder, absf(height - float(road.height)) * 2.5)
 	var water_height := -INF
+	var river_bank := 0.0
 	var channel_influence := 0.0
 	if landforms != null:
 		var channel := landforms.channel(x, z, height)
 		height = channel.height
 		water_height = channel.water_height
-		channel_influence = channel.influence
+		channel_influence = channel.influence * landforms.bridge_gap(float(road.s))
+		river_bank = channel.bank
 		reserved = reserved or channel.wet
 		earthwork_width = clampf(profile.road_shoulder, 8.0, 18.0)
 	var road_blend := 1.0 - smoothstep(float(road.width) * 0.5, float(road.width) * 0.5 + earthwork_width, float(road.distance))
@@ -263,7 +265,7 @@ func surface(x: float, z: float) -> Dictionary:
 		var start_surface := _starting_shelter_surface(x, z, height)
 		height = start_surface.height
 		reserved = reserved or start_surface.reserved
-	return {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height}
+	return {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank}
 
 ## Authored opening area: a level garage/forecourt with earth against its sides
 ## and rear. Applied after the shared road/spawn blending to keep its floor exact.
