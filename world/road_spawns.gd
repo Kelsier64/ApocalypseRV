@@ -116,6 +116,9 @@ static func _plan_v9(field: WorldField, band: int) -> Dictionary:
 	# Bridge rails constrain the usable corridor. Keep random wreck groups and
 	# roadside actors off the whole crossing rather than placing them in water.
 	if field.landforms != null and not field.landforms.crossing_clearance((band + 0.5) * field.profile.chunk_length, 170.0): return result
+	if field.landforms != null:
+		for i in range(10):
+			if field.landforms.bridge_at(band * field.profile.chunk_length + i * 15.0 + 7.5): return result
 	var occupied := _v9_road_obstacles(field, band)
 	var wreck_count := _v9_wreck_count(field.rng_for(band, "road_v9_wreck_count").randf())
 	for index in range(wreck_count):

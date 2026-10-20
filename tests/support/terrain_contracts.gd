@@ -28,12 +28,53 @@ static func run(check: Callable) -> void:
 		signatures.append(signature)
 		_check_route(field, check)
 		_check_rivers(field, check)
+		_check_elevated_spans(field, reverse, check)
 	for index in range(1, signatures.size()):
 		check.call(signatures[index] != signatures[0], "v13 different seeds produce different routes and terrain")
 
 static func _snapshot(field: WorldField, s: float) -> Array:
 	var x := field.road_x(s)
-	return [field.road_frame(s), field.road_width(s), field.surface(x + 65.0, -s), field.landforms.kind_at(s), field.landforms.rivers_near(-s)]
+	return [field.road_frame(s), field.road_width(s), field.surface(x + 65.0, -s), field.landforms.kind_at(s), field.landforms.rivers_near(-s), field.landforms.bridge_at(s), field.landforms.bridge_gap(s)]
+
+static func _check_elevated_spans(field: WorldField, reverse: WorldField, check: Callable) -> void:
+	var label := "v13 seed %d: " % field.world_seed
+	var dry_valley := false
+	var supported := true
+	var deterministic := true
+	var seam_count := 0
+	for index in range(40, int(LENGTH / 15.0)):
+		var s := index * 15.0
+		var frame := field.road_frame(s)
+		var gap := frame.origin.y - field.height_at(frame.origin.x, frame.origin.z)
+		if gap > 5.0:
+			supported = supported and field.landforms.bridge_at(s)
+		if not field.landforms.river_span_at(s) and field.landforms.bridge_gap(s) > 0.95 and field.landforms.natural_clearance(s) > 6.0:
+			dry_valley = dry_valley or gap > 3.0
+		if index % 10 != 0: continue
+		# Probe both sides of streaming boundaries after the other field was
+		# queried far-first. A loaded neighbour must not change span ownership.
+		for delta: float in [-1.25, 0.0, 1.25]:
+			var t := s + delta
+			deterministic = deterministic and field.landforms.bridge_at(t) == reverse.landforms.bridge_at(t)
+			deterministic = deterministic and field.landforms.bridge_gap(t) == reverse.landforms.bridge_gap(t)
+		var band := floori(s / field.profile.chunk_length)
+		var before := TerrainCrossings.bridge_faces(field, band - 1)
+		var after := TerrainCrossings.bridge_faces(reverse, band)
+		var before_edge := _seam_vertices(before, frame)
+		var after_edge := _seam_vertices(after, frame)
+		if not before_edge.is_empty() and not after_edge.is_empty():
+			seam_count += 1
+			deterministic = deterministic and before_edge == after_edge
+	check.call(dry_valley, label + "dry valleys retain terrain below a planned viaduct instead of a raised earth ribbon")
+	check.call(supported, label + "every sampled carriageway more than five metres above terrain has a planned structure")
+	check.call(deterministic and seam_count > 0, label + "span classification and deck edges agree across chunk seams and query order")
+
+static func _seam_vertices(faces: PackedVector3Array, frame: Transform3D) -> Dictionary:
+	var result: Dictionary = {}
+	for point in faces:
+		if absf((point - frame.origin).dot(frame.basis.z)) < 0.001:
+			result[Vector3i(roundi(point.x * 1000.0), roundi(point.y * 1000.0), roundi(point.z * 1000.0))] = true
+	return result
 
 static func _check_route(field: WorldField, check: Callable) -> void:
 	var maximum_grade := 0.0
@@ -181,7 +222,10 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 			var point := field.road_frame(approach_s).origin
 			check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "bridge approaches meet dry carriageway")
 		for side: float in [-1.0, 1.0]:
-			var approach := field.road_frame(s + side * 87.5)
+			var approach_s := s + side * 87.5
+			# A river bridge can continue as a dry viaduct beyond the bank.
+			if field.landforms.bridge_at(approach_s): continue
+			var approach := field.road_frame(approach_s)
 			for lateral: float in [-0.4, 0.0, 0.4]:
 				var point := approach.origin + approach.basis.x * field.road_width(s + side * 87.5) * lateral
 				check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "both bridge ends have dry terrain support across the carriageway")

@@ -10,6 +10,9 @@ var field: WorldField:
 var offset: int
 var _rivers: Dictionary = {}
 var rail_cache: Dictionary = {}
+const STRUCTURE_STEP := 15.0
+var _clearance: Dictionary = {}
+var _structure_cells: Dictionary = {}
 
 func _init(world_field: WorldField) -> void:
 	_field = weakref(world_field)
@@ -107,15 +110,58 @@ func channel(x: float, z: float, height_value: float) -> Dictionary:
 		if distance <= half: water = maxf(water, level)
 	return {"height": height_value, "wet": wet, "influence": influence, "water_height": water, "bank": bank}
 
-func bridge_at(s: float) -> bool:
+func river_span_at(s: float) -> bool:
 	for plan in rivers_near(-s, 0.0):
 		if absf(s - float(plan.s)) <= 85.0: return true
 	return false
 
+func natural_clearance(s: float) -> float:
+	var frame := field.road_frame(s)
+	var ground: Array[float] = []
+	for fraction: float in [-0.65, 0.0, 0.65]:
+		var point := frame * Vector3(field.road_width(s) * 0.5 * fraction, 0, 0)
+		var road := field.road_query(point.x, point.z)
+		var surface_height := float(channel(point.x, point.z, height(point.x, point.z, road)).height)
+		ground.append(surface_height)
+	ground.sort()
+	return frame.origin.y - ground[1]
+
+func _clearance_knot(index: int) -> float:
+	if not _clearance.has(index):
+		if _clearance.size() >= 4096: _clearance.clear()
+		_clearance[index] = natural_clearance((index + 0.5) * STRUCTURE_STEP)
+	return _clearance[index]
+
+func _structure_cell(index: int) -> bool:
+	if _structure_cells.has(index): return _structure_cells[index]
+	var s := (index + 0.5) * STRUCTURE_STEP
+	var elevated := false
+	if s >= 450.0:
+		for delta in [-1, 0, 1]:
+			if _clearance_knot(index + delta) > 4.5 or river_span_at(s + delta * STRUCTURE_STEP):
+				elevated = true
+				break
+		# Driveways remain grounded rather than joining the middle of a span.
+		if elevated:
+			var frame := field.road_frame(s)
+			for site in field.sites_near_z(-s):
+				if field.court_distance(frame.origin.x, frame.origin.z, site) < 20.0:
+					elevated = false
+					break
+	if _structure_cells.size() >= 2048: _structure_cells.clear()
+	_structure_cells[index] = elevated
+	return elevated
+
+func bridge_at(s: float) -> bool:
+	return _structure_cell(floori(s / STRUCTURE_STEP))
+
 func bridge_gap(s: float) -> float:
-	var result := 0.0
-	for plan in rivers_near(-s, 0.0):
-		result = maxf(result, 1.0 - smoothstep(65.0, 85.0, absf(s - float(plan.s))))
+	var index := floori(s / STRUCTURE_STEP)
+	if not _structure_cell(index): return 0.0
+	var t := fposmod(s, STRUCTURE_STEP) / STRUCTURE_STEP
+	var result := 1.0
+	if not _structure_cell(index - 1): result *= smoothstep(0.0, 1.0, t)
+	if not _structure_cell(index + 1): result *= 1.0 - smoothstep(0.0, 1.0, t)
 	return result
 
 func crossing_clearance(s: float, margin: float = 190.0) -> bool:

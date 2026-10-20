@@ -1,5 +1,7 @@
 # ApocalypseRV 架構
 
+v13 高路面更新：`TerrainLandforms` 以天然地形落差規劃固定 15 m 跨度格，河川與乾谷共用 `BridgeBuilder` 的變寬厚橋板／工字梁／雙柱墩／承台及橋台。`bridge_gap` 在端部接回土路基；橋板與主梁保留實體碰撞，導航只使用精確道路頂面，護欄與刷新避讓共用跨度。此為本輪模型與自動生成檢查點，實際輪驅及長途效能待驗收，見[本輪紀錄](docs/validation/2026-10-20-viaduct-bridge.md)。
+
 正式新局目前使用生成 v13，沿用 v12 兩室教學；舊存檔保留其原始生成版本。v13 由 `TerrainRoute` 提供 `x=f(s),z=-s` 的單向展開道路、變寬及有界坡度；`TerrainLandforms` 共用地形／河道與 POI 避讓；`TerrainCrossings` 生成水面、橋梁及護欄，橋面導航另行加入並排除水下河床。護欄計畫同時提供碰撞、生成避讓與鄰區導航，場址整地按實際旋轉占地查詢。Checkpoint 仍為 v5，v13 與教學重試入口保留同一生成版本。此為第一個檢查點，實際長途輪驅與美術細化尚未驗收；[分階段計畫](docs/plans/terrain-overhaul.md)與[本輪驗證](docs/validation/2026-10-20-terrain-stage1.md)。下方各歷史版本段落保留其對應契約，不代表正式新局仍選擇該版本。
 
 2026-10-16 倉庫配置：v12 第二室新增可重用靜態貨架、貨箱與棧板，16 件原有 Item 改由分散的出生標記配置；保留舊矮架及碰撞路徑，已保存的物資維持原位置。`WarehouseApproaches` 僅保存設計用接近點，不生成遊戲提示或改變交易判定；貨架燈具屬建築、光源置於 Furnishings。[驗證與驗收](docs/validation/2026-10-16-orientation-warehouse.md)。

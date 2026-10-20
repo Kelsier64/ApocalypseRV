@@ -246,7 +246,7 @@ func surface(x: float, z: float) -> Dictionary:
 		var channel := landforms.channel(x, z, height)
 		height = channel.height
 		water_height = channel.water_height
-		channel_influence = channel.influence * landforms.bridge_gap(float(road.s))
+		channel_influence = landforms.bridge_gap(float(road.s))
 		river_bank = channel.bank
 		reserved = reserved or channel.wet
 		earthwork_width = clampf(profile.road_shoulder, 8.0, 18.0)

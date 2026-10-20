@@ -416,6 +416,12 @@ func _build_navigation(gradual: bool = false) -> void:
 	# Moving leaves block physics, but their doorways remain in the static bake.
 	# The old shelter retains its named-leaf contract; v11 tags every stage door.
 	var gate_layers: Dictionary = {}
+	# Closed bridge undersides remain physical, but navigation uses the exact
+	# asphalt top once instead of rasterizing two surfaces 15cm apart.
+	for body: CollisionObject3D in find_children("*", "CollisionObject3D", true, false):
+		if body.get_meta("bridge_deck", false):
+			gate_layers[body] = body.collision_layer
+			body.collision_layer = 0
 	for building in get_children():
 		if building.get_meta("poi_definition_id", "") == &"starting_shelter":
 			for leaf_name in ["GarageGate/LeftLeaf", "GarageGate/RightLeaf"]:

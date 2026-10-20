@@ -60,6 +60,7 @@ func run() -> void:
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
 	await _check_crossing_chunk(world)
+	await _check_dry_viaduct(world)
 	world.queue_free()
 	await process_frame
 	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13 route and landforms satisfy sampled contracts")
@@ -90,6 +91,7 @@ func _check_crossing_chunk(world: Node3D) -> void:
 	await _check_water_band_seam(host, chunk)
 	check(chunk.has_node("BridgeStructure"), "v13 crossing chunk builds bridge structure")
 	check(not chunk.find_children("*BridgeDeck*", "MeshInstance3D", true, false).is_empty(), "v13 crossing chunk builds bridge deck geometry")
+	_check_bridge_supports(chunk)
 	if not await WAIT.navigation_ready(self, [chunk]):
 		check(false, "v13 river/bridge navigation bake/publication timed out")
 	else:
@@ -116,6 +118,103 @@ func _check_crossing_chunk(world: Node3D) -> void:
 			check(Vector2(closest.x - point.x, closest.z - point.z).length() < 1.0 and absf(closest.y - point.y) < 0.8, "Published navigation crosses the bridge deck above the river")
 	host.queue_free()
 	await process_frame
+
+func _check_dry_viaduct(world: Node3D) -> void:
+	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile())
+	var band := -1
+	for candidate in range(4, 80):
+		var eligible := true
+		for offset: float in [10.0, 75.0, 140.0]:
+			var s := candidate * field.profile.chunk_length + offset
+			eligible = eligible and not field.landforms.river_span_at(s) and field.landforms.bridge_gap(s) > 0.95 and field.landforms.natural_clearance(s) > 5.0
+		if eligible:
+			band = candidate
+			break
+	check(band >= 0, "v13 fixture contains a sustained elevated road over a dry valley")
+	if band < 0: return
+	var host := TerrainHost.new()
+	world.add_child(host)
+	var chunk := ChunkGenerator.new()
+	chunk.field = field
+	chunk.band = band
+	chunk.set_meta("skip_actors", true)
+	host.add_child(chunk)
+	# Exercise the production ground, road, structure and navigation builders
+	# without generating an unrelated second forest, scenery or actor population.
+	await chunk._build_ground(false)
+	chunk._build_road()
+	await TerrainCrossings.build(chunk, false)
+	_check_bridge_supports(chunk)
+	await chunk._build_navigation(false)
+	if not await WAIT.navigation_ready(self, [chunk]):
+		check(false, "Dry viaduct navigation bake/publication timed out")
+	else:
+		await physics_frame
+		var space := world.get_world_3d().direct_space_state
+		var supported := true
+		for offset in range(5, 150, 10):
+			var frame := field.road_frame(band * field.profile.chunk_length + offset)
+			for lateral: float in [-1.6, 1.6]:
+				var point := frame.origin + frame.basis.x * lateral
+				var ray := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point + Vector3.DOWN * 2.0, 1)
+				var hit := space.intersect_ray(ray)
+				supported = supported and not hit.is_empty()
+				if not hit.is_empty(): supported = supported and absf(float(hit.position.y) - point.y) < 0.2
+		check(supported, "Physical deck supports both RV wheel tracks continuously along the dry viaduct")
+		var start := field.road_frame(band * field.profile.chunk_length + 10.0).origin
+		var finish := field.road_frame(band * field.profile.chunk_length + 140.0).origin
+		var path := NavigationServer3D.map_get_path(chunk.navigation.get_navigation_map(), start, finish, true)
+		check(path.size() >= 2 and path[0].distance_to(start) < 1.0 and path[-1].distance_to(finish) < 1.0, "Published navigation connects both ends of the dry viaduct")
+		var stays_on_deck := not path.is_empty()
+		for point in path:
+			var road := field.road_query(point.x, point.z)
+			stays_on_deck = stays_on_deck and absf(point.y - float(road.height)) < 0.8
+		check(stays_on_deck, "Dry viaduct navigation stays on the deck above the valley floor")
+		var middle := field.road_frame(band * field.profile.chunk_length + 77.5)
+		var underside_frame := field.road_frame(band * field.profile.chunk_length + 78.1)
+		var underside := underside_frame * Vector3(field.road_width(band * field.profile.chunk_length + 78.1) * 0.5 * 0.58, -4.0, 0)
+		var girder_hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(underside, underside + Vector3.UP * 3.0, 1))
+		check(not girder_hit.is_empty() and absf(float(girder_hit.position.y) - (underside_frame.origin.y - 2.11)) < 0.12, "Main girders have physical undersides matching the visible structure: %s" % girder_hit)
+		for side: float in [-1.0, 1.0]:
+			var inner := middle * Vector3(side * (field.road_width(band * field.profile.chunk_length + 77.5) * 0.5 - 1.0), 0.9, 0.0)
+			var outer := inner + middle.basis.x * side * 4.0
+			var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(inner, outer, 1))
+			check(not hit.is_empty(), "Dry viaduct has physical vehicle barriers on both exposed edges")
+	host.queue_free()
+	await process_frame
+
+func _check_bridge_supports(chunk: ChunkGenerator) -> void:
+	var structure := chunk.get_node_or_null("BridgeStructure")
+	check(structure != null, "Elevated roadway has modeled supporting structure")
+	if structure == null: return
+	var piers: Array[MeshInstance3D] = []
+	var foundations: Array[MeshInstance3D] = []
+	var caps: Array[MeshInstance3D] = []
+	for member: MeshInstance3D in structure.find_children("*", "MeshInstance3D", true, false):
+		if str(member.name).begins_with("Foundation"): foundations.append(member)
+		elif str(member.name).begins_with("PierCap"): caps.append(member)
+		elif str(member.name).begins_with("Pier"): piers.append(member)
+	check(not piers.is_empty() and not foundations.is_empty() and not caps.is_empty(), "Bridge model includes piers, foundations and supporting caps")
+	for pier in piers:
+		var box := pier.global_transform * pier.mesh.get_aabb()
+		var grounded := false
+		var capped := false
+		for foundation in foundations:
+			var footing := foundation.global_transform * foundation.mesh.get_aabb()
+			if not _horizontal_overlap(box, footing): continue
+			var ground := chunk.field.height_at(footing.get_center().x, footing.get_center().z)
+			grounded = grounded or (footing.position.y <= ground + 0.05 and footing.end.y >= box.position.y - 0.05)
+		for cap in caps:
+			var cap_box := cap.global_transform * cap.mesh.get_aabb()
+			if _horizontal_overlap(box, cap_box): capped = capped or cap_box.position.y <= box.end.y + 0.05
+		check(grounded, "Each pier contacts a foundation embedded in the actual valley or river bed")
+		check(capped, "Each pier reaches its modeled cap beneath the bridge girders")
+	var deck := chunk.get_node_or_null("BridgeDeck") as MeshInstance3D
+	check(deck != null and deck.mesh != null and deck.mesh.get_aabb().size.y > 0.25, "Bridge deck is a substantial modeled slab")
+	check(not structure.find_children("MainGirder*", "MeshInstance3D", true, false).is_empty(), "Bridge deck has longitudinal load bearing girders")
+
+func _horizontal_overlap(a: AABB, b: AABB) -> bool:
+	return a.position.x <= b.end.x and b.position.x <= a.end.x and a.position.z <= b.end.z and b.position.z <= a.end.z
 
 func _check_terrain_side_seams(chunk: ChunkGenerator) -> void:
 	var ground := chunk.get_node("Ground") as MeshInstance3D

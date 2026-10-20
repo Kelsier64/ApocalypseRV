@@ -56,7 +56,7 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		material.shader = WATER
 		water.material_override = material
 		water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_build_bridges(chunk)
+	await BridgeBuilder.build(chunk, gradual)
 	_build_road_edges(chunk)
 
 static func bridge_faces(field: WorldField, band: int, halo: float = 0.0) -> PackedVector3Array:
@@ -72,48 +72,12 @@ static func bridge_faces(field: WorldField, band: int, halo: float = 0.0) -> Pac
 		for index in [0, 2, 1, 1, 2, 3]: faces.append(corners[index])
 	return faces
 
-static func _build_bridges(chunk: ChunkGenerator) -> void:
-	var field := chunk.field
-	var faces := bridge_faces(field, chunk.band)
-	if faces.is_empty(): return
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for point in faces:
-		st.set_color(Color("64685e"))
-		st.add_vertex(point - Vector3.UP * 0.18)
-	st.generate_normals()
-	chunk._mesh(st.commit(), "BridgeDeck", false)
-	var structure := Node3D.new()
-	structure.name = "BridgeStructure"
-	chunk.add_child(structure)
-	# Segment centres use the world lattice, so each pier/beam has one owner.
-	for i in range(30):
-		var s := chunk.band * 150.0 + i * 5.0 + 2.5
-		if not field.landforms.bridge_at(s): continue
-		var frame := field.road_frame(s)
-		var slope := atan2(field.road_height(s + 0.5) - field.road_height(s - 0.5), 1.0)
-		var basis := frame.basis * Basis(Vector3.RIGHT, slope)
-		var length := Vector2(field.road_x(s + 2.5) - field.road_x(s - 2.5), 5.0).length() + 0.2
-		var half := field.road_width(s) * 0.5
-		var slab := RoadsideKit.part(structure, Vector3(half * 2.0, 0.65, length), frame.origin - Vector3.UP * 0.44, Color("6c7167"))
-		slab.basis = basis
-		for side in [-1.0, 1.0]:
-			var beam := RoadsideKit.part(structure, Vector3(0.55, 1.05, length), frame * Vector3(side * (half - 0.8), -0.72, 0), Color("444d4a"))
-			beam.basis = basis
-		if posmod(roundi(s / 5.0), 6) != 3: continue
-		for side in [-1.0, 1.0]:
-			var base := frame * Vector3(side * (half - 1.2), 0, 0)
-			var bottom := field.height_at(base.x, base.z)
-			var height := maxf(0.8, base.y - bottom - 0.9)
-			RoadsideKit.part(structure, Vector3(1.25, height, 1.8), Vector3(base.x, bottom + height * 0.5, base.z), Color("71756b"), true).basis = frame.basis
-		var cap := RoadsideKit.part(structure, Vector3(field.road_width(s), 0.65, 1.6), frame.origin - Vector3.UP * 1.05, Color("62685e"))
-		cap.basis = frame.basis
-
 static func _build_road_edges(chunk: ChunkGenerator) -> void:
 	var root := Node3D.new()
 	root.name = "RoadSafety"
 	chunk.add_child(root)
 	for part in rail_plan(chunk.field, chunk.band):
+		if part.get("bridge", false): continue # Modeled Jersey profiles own these colliders.
 		RoadsideKit.part(root, part.size, part.pose.origin, part.color, part.solid).basis = part.pose.basis
 
 static func rail_plan(field: WorldField, band: int) -> Array[Dictionary]:
@@ -127,6 +91,11 @@ static func rail_plan(field: WorldField, band: int) -> Array[Dictionary]:
 		var bridge := field.landforms.bridge_at(s)
 		for side: float in [-1.0, 1.0]:
 			var point := frame * Vector3(side * (half + 0.55), 0, 0)
+			if bridge:
+				var next := field.road_frame(s + 2.5) * Vector3(side * (field.road_width(s + 2.5) * 0.5 + 0.56), 0.54, 0)
+				var previous := field.road_frame(s - 2.5) * Vector3(side * (field.road_width(s - 2.5) * 0.5 + 0.56), 0.54, 0)
+				result.append({"size": Vector3(0.80, 1.16, next.distance_to(previous) + 0.12), "pose": Transform3D(Basis.looking_at(next - previous), (next + previous) * 0.5), "color": Color("85877b"), "solid": true, "bridge": true})
+				continue
 			var near_site := false
 			for site in field.sites_near_z(point.z):
 				if field.court_distance(point.x, point.z, site) < 20.0:
