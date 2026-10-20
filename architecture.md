@@ -202,7 +202,7 @@ WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨�
 
 WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
 
-ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，不使用跨世界全域 shader 參數。新 chunk 立即接收目前密度；新材質登錄與每幀更新使用相同密度。v2–v13 保留原規則：從無霧過渡至小霧（霧級 0.5）時，全域及林間體積霧淡出至零，由距離霧接手。v14 改由 `WorldWeather.mist_profile` 同時取樣距離、白霧色權重與全域／局部密度；無額外霧時白霧權重及兩種密度歸零，遠霧沿小／中／大霧逐級增強。體積低霧在小霧達峰值，再於霧級 0.75 平滑淡出，由距離霧接手，避免散射重新顯露已遮蔽的輪廓。偏行霧使用相同有效天氣取樣，不改自然天氣、RNG 或保存狀態。天空 shader 使用 disable_fog，與距離霧共用終點色。Compatibility 僅使用距離霧。[v14 接地與天氣霧](docs/validation/2026-10-20-grounded-weather.md)。
+ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，新材質與每幀更新使用相同有效天氣密度。v2–v13 保留原景觀霧及天空 `disable_fog` 分支。v14 的 `WorldWeather.mist_profile` 保留常駐 24–230 m 白霧、curve 1，晴天／低畫質同樣遮蔽遠景；陰天恢復全域 0.0025／局部 0.14 密度，隨天氣霧淡出，由 220／110／38 m 距離霧接手。v14 天空參與原生距離及體積霧合成，與已遮蔽物體共用最終顏色；體積取樣範圍同步縮短以涵蓋廣角角落。`WorldGenerator.completed_scenery_clearance` 只計算包含實際相機的連續已完成區帶，忽略施工中區帶及不相連的 pinned islands；WorldClock 將霧終點限制在該邊界內 8 m，收近即時、恢復每真實秒 20 m。ForestScenery 的 CPU MultiMesh AABB 含所有變換，植被裁切含半徑／遲滯／8 m 緩衝，所有頂點都在完全遮蔽後才切換。自然天氣 RNG、保存、區帶／怪物生成與回收規則不變。Compatibility 保留相同距離霧。[常駐白霧與載入遮蔽](docs/validation/2026-10-20-persistent-mist.md)。
 
 WeatherRain 使用兩層固定種子 MultiMesh 雨幕：近景 24,576 粒子／半徑 24 m／高 32 m，遠景 49,152 粒子／半徑 96 m／高 48 m。種子只上傳一次，rain_field shader 以 CPU 傳入、尊重暫停的時間計算落雨、世界座標環繞和 billboard；每幀只更新相機、時間、天氣參數，不逐滴更新位置或碰撞。大雨最多提交 73,728 粒子，小雨約 24,323；兩層交界及範圍邊緣漸淡，數字代表提交量，不是遮擋後實際可見數。
 

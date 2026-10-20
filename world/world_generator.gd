@@ -121,6 +121,25 @@ func _process(delta: float) -> void:
 		_cleanup_timer = 0.5
 		_despawn_entities_behind(anchor.z)
 
+func completed_scenery_clearance(eye: Vector3) -> float:
+	if profile == null or profile.chunk_length <= 0.0 or not eye.is_finite(): return 0.0
+	var length := profile.chunk_length
+	var containing := floori(-eye.z / length)
+	var complete: Dictionary = {}
+	# Entries are published only after generation, so an unfinished band cannot
+	# extend the visible scenery coverage. Navigation publication is independent.
+	for entry in active_chunks:
+		complete[int(entry.index)] = true
+	if not complete.has(containing): return 0.0
+	var first := containing
+	var last := containing
+	while complete.has(first - 1): first -= 1
+	while complete.has(last + 1): last += 1
+	# Pinned islands beyond a missing band do not conceal that gap.
+	var north := -first * length
+	var south := -(last + 1) * length
+	return maxf(0.0, minf(north - eye.z, eye.z - south))
+
 func protected_bands(anchor: Vector3) -> Array[int]:
 	var result: Array[int] = []
 	if profile.generation_version < 3: return result

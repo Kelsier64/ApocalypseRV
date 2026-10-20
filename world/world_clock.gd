@@ -18,6 +18,7 @@ var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
 var terrain_generation_version := 0
+var _stream_mist_limit := WorldWeather.BASE_MIST_END
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -83,6 +84,10 @@ func _ready() -> void:
 	var generator := get_parent().get_node_or_null("WorldGenerator")
 	if generator != null and generator.get("profile") is WorldProfile:
 		terrain_generation_version = generator.profile.generation_version
+	if terrain_generation_version >= 14 and environment != null:
+		sky_material.shader = preload("res://world/terrain/overcast_v14.gdshader")
+		environment.fog_sky_affect = 1.0
+		environment.volumetric_fog_sky_affect = 1.0
 	weather.initialize(generator.world_seed if generator != null else 42)
 	weather_label = Label.new()
 	weather_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -111,7 +116,7 @@ func advance(real_seconds: float) -> void:
 	var seconds := real_seconds * DAY_SECONDS / (maxf(1.0, day_length_minutes) * 60.0)
 	elapsed_seconds += seconds
 	if weather_running: weather.advance(seconds)
-	apply_time()
+	apply_time(real_seconds)
 	_notify_minute()
 
 func day_number() -> int:
@@ -156,7 +161,7 @@ func sun_direction() -> Vector3:
 	var angle := (hour_of_day() - 6.0) / 24.0 * TAU
 	return Vector3(cos(angle), sin(angle) * 0.85, sin(angle) * 0.526783).normalized()
 
-func apply_time() -> void:
+func apply_time(real_delta: float = 0.0) -> void:
 	if environment == null or not is_instance_valid(sun): return
 	var volumetric: bool = game_settings.volumetric_fog_enabled()
 	var conditions := effective_visual_weather()
@@ -183,9 +188,12 @@ func apply_time() -> void:
 		# Zero-density weather needs no froxel pass. Keep the quality-based depth
 		# profile stable, and re-enable scattering as soon as low mist returns.
 		environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
-		environment.fog_depth_begin = profile.depth_begin
-		environment.fog_depth_end = profile.depth_end
+		environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
+		environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
 		environment.fog_depth_curve = profile.depth_curve
+		# Volume depth is view-axis based while distance fog is radial. Keep the
+		# full integration in front of the opaque haze even at wide screen corners.
+		environment.volumetric_fog_length = maxf(0.1, minf(160.0, environment.fog_depth_end * 0.3))
 	else:
 		var base_begin := lerpf(160.0 if volumetric else 18.0, 240.0, clear)
 		environment.fog_depth_begin = lerpf(base_begin, 8.0, light_mist)
@@ -225,6 +233,20 @@ func apply_time() -> void:
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
 	sky_material.set_shader_parameter("fog_cover", light_mist)
 	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist))
+
+func _completed_scenery_mist_limit(real_delta: float) -> float:
+	var generator := get_parent().get_node_or_null("WorldGenerator")
+	var camera := get_viewport().get_camera_3d()
+	var target := WorldWeather.BASE_MIST_END
+	if generator != null and generator.has_method("completed_scenery_clearance") and camera != null and camera.get_world_3d() == get_viewport().world_3d:
+		target = clampf(generator.completed_scenery_clearance(camera.global_position) - 8.0, 1.0, target)
+	# Close immediately when a slow build approaches the visible range. Reveal
+	# completed scenery gradually, independently of simulation/weather speed.
+	if target < _stream_mist_limit:
+		_stream_mist_limit = target
+	else:
+		_stream_mist_limit = move_toward(_stream_mist_limit, target, maxf(real_delta, 0.0) * 20.0)
+	return _stream_mist_limit
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)

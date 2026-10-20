@@ -1,6 +1,7 @@
 extends RefCounted
 ## v14 appearance, flora and mist checks, with frozen pre-v14 geometry fingerprints.
 const CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
+const WORLD_GENERATOR = preload("res://world/world_generator.gd")
 const FROZEN := {
 	6: [3807976057, 3370663327, 2309187816, 1401930638],
 	12: [1682033219, 593278675, 573957769, 2789942250],
@@ -10,6 +11,16 @@ const FROZEN := {
 class GeneratorStub extends Node:
 	var world_seed := 42
 	var profile: WorldProfile
+
+class SceneryGeneratorStub extends GeneratorStub:
+	var clearance := 80.0
+	var last_eye := Vector3.ZERO
+	var samples := 0
+
+	func completed_scenery_clearance(eye: Vector3) -> float:
+		last_eye = eye
+		samples += 1
+		return clearance
 
 class FogSettingsStub extends RefCounted:
 	var enabled := false
@@ -28,6 +39,9 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		_check_mist_plans(field, check)
 		await _check_forest_plans(field, world, check)
 	_check_mist_clock(world, check)
+	_check_streaming_mist_clock(world, check)
+	_check_forest_culling(world, check)
+	_check_completed_scenery(check)
 	await _check_forest_rebuild(tree, world, check)
 
 static func _check_grounded_corridor(field: WorldField, check: Callable) -> void:
@@ -132,6 +146,7 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		var holder := WorldEnvironment.new()
 		holder.name = "WorldEnvironment"
 		holder.environment = Environment.new()
+		var original_volume_sky := holder.environment.volumetric_fog_sky_affect
 		host.add_child(holder)
 		var sun := DirectionalLight3D.new()
 		sun.name = "DirectionalLight3D"
@@ -142,6 +157,9 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		clock.weather_running = false
 		host.add_child(clock)
 		check.call(clock.terrain_generation_version == version, "v%d mist clock reads its owning generator's profile" % version)
+		var sky_path := "res://world/terrain/overcast_v14.gdshader" if version == 14 else "res://world/terrain/overcast.gdshader"
+		check.call(clock.sky_material.shader == load(sky_path) and clock.sky_material.shader.code.contains("render_mode disable_fog;") == (version == 13), "v%d sky selects its own fog integration shader without changing legacy behavior" % version)
+		check.call(is_equal_approx(clock.environment.fog_sky_affect, 1.0 if version == 14 else 0.0) and is_equal_approx(clock.environment.volumetric_fog_sky_affect, 1.0 if version == 14 else original_volume_sky), "v%d sky receives the expected distance and volumetric fog integration" % version)
 		# Inject only this clock's quality view; preserve the real autoload's preferences.
 		var quality := FogSettingsStub.new()
 		clock.game_settings = quality
@@ -150,7 +168,7 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		check.call(material.shader != null, "v%d local mist retains its own loadable shader" % version)
 		for volumetric: bool in [false, true]:
 			quality.enabled = volumetric
-			for conditions: Vector3 in [Vector3.ZERO, Vector3(1, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 0.25), Vector3(0, 0, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 0, WorldWeather.FOG_HEAVY)]:
+			for conditions: Vector3 in [Vector3.ZERO, Vector3(1, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 0.25), Vector3(0.5, 1, 0.25), Vector3(0, 0, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 0, WorldWeather.FOG_HEAVY)]:
 				clock.weather.set_weather(conditions, true)
 				clock.set_time(1, 12.0)
 				var light := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
@@ -159,14 +177,14 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				var expected_white := 0.0
 				if version == 14:
 					# Fixed observable tier values, independent of mist_profile's implementation.
-					var tiers := {0.0: [0.0, 0.0, 0.0], 0.25: [0.035, 0.00075, 0.325], 0.5: [0.07, 0.0015, 0.65], 1.0: [0.0, 0.0, 0.85], 2.0: [0.0, 0.0, 1.0]}
-					expected_density = tiers[conditions.z][0]
-					expected_global = tiers[conditions.z][1]
-					expected_white = tiers[conditions.z][2]
-					check.call(is_equal_approx(float(WorldWeather.mist_profile(conditions, volumetric).white_strength), expected_white), "v14 white mist follows weather fog strength at %s" % conditions)
+					var densities := {Vector3.ZERO: [0.14, 0.0025], Vector3(1, 0, 0): [0.0, 0.0], Vector3(0, 2, 0): [0.14, 0.0035], Vector3(0, 0, 0.25): [0.07, 0.00125], Vector3(0.5, 1, 0.25): [0.035, 0.00075], Vector3(0, 0, 0.5): [0.0, 0.0], Vector3(0, 0, 1): [0.0, 0.0], Vector3(0, 0, 2): [0.0, 0.0]}
+					expected_density = densities[conditions][0]
+					expected_global = densities[conditions][1]
+					expected_white = 1.0
+					check.call(is_equal_approx(float(WorldWeather.mist_profile(conditions, volumetric).white_strength), expected_white), "v14 permanent white mist persists through clear skies, rain and every weather fog tier at %s" % conditions)
 					var horizon: Color = clock.sky_material.get_shader_parameter("horizon_color")
 					check.call(clock.environment.fog_light_color.is_equal_approx(horizon), "v14 fog and sky share the terminal color so distant objects cannot reappear as pale cutouts")
-					check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v14 zero-density weather skips volumetric scattering and light fog restores it without changing distance fog quality")
+					check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v14 zero-density weather skips volumetric scattering and low mist restores it without changing distance fog quality")
 				clock.register_fog(material)
 				var registered := float(material.get_shader_parameter("density"))
 				clock.apply_time()
@@ -178,6 +196,12 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				if conditions.z > 0.0:
 					begin = lerpf(begin, 8.0, light)
 					end = lerpf(end, 220.0, light) if conditions.z <= WorldWeather.FOG_LIGHT else (110.0 if conditions.z == WorldWeather.FOG_MEDIUM else 38.0)
+				if version == 14:
+					var endpoints := {0.0: [24.0, 230.0, 69.0], 0.25: [16.0, 225.0, 67.5], 0.5: [8.0, 220.0, 66.0], 1.0: [8.0, 110.0, 33.0], 2.0: [8.0, 38.0, 11.4]}
+					begin = endpoints[conditions.z][0]
+					end = endpoints[conditions.z][1]
+					curve = 1.0
+					check.call(is_equal_approx(clock.environment.volumetric_fog_length, endpoints[conditions.z][2]), "v14 scattering integrates before opaque distance haze at weather %s / volumetric %s" % [conditions, volumetric])
 				check.call(is_equal_approx(clock.environment.fog_depth_begin, begin) and is_equal_approx(clock.environment.fog_depth_end, end), "v%d depth mist keeps expected endpoints at weather %s / volumetric %s" % [version, conditions, volumetric])
 				check.call(is_equal_approx(clock.environment.fog_depth_curve, curve), "v%d distance haze retains its expected curve at every quality/weather setting" % version)
 				check.call(is_equal_approx(clock.environment.volumetric_fog_density, expected_global), "v%d global volumetric fog follows its weather contract" % version)
@@ -192,31 +216,144 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		host.free()
 
 static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, volumetric: bool, check: Callable) -> void:
-	for fixture: Array in [[0.625, 192.5, 0.70, 0.00075, 0.035], [0.75, 165.0, 0.75, 0.0, 0.0], [1.5, 74.0, 0.925, 0.0, 0.0]]:
+	for fixture: Array in [[0.625, 192.5], [0.75, 165.0], [1.5, 74.0]]:
 		var profile := WorldWeather.mist_profile(Vector3(0, 0, fixture[0]), volumetric)
-		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), fixture[2]) and is_equal_approx(float(profile.global_density), fixture[3]) and is_equal_approx(float(profile.local_density), fixture[4]), "v14 distance haze strengthens while scattering volumes fade above light fog at strength %.3f" % fixture[0])
+		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), 1.0) and is_zero_approx(float(profile.global_density)) and is_zero_approx(float(profile.local_density)), "v14 distance haze strengthens while scattering volumes remain absent above light fog at strength %.3f" % fixture[0])
 	clock.set_deviation_fog(0.0)
 	clock.weather.set_weather(Vector3.ZERO, true)
 	clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT))
 	clock.weather.advance(WorldWeather.TRANSITION * 0.5)
 	clock.apply_time()
 	clock.register_fog(material)
-	var background_end := 420.0 if volumetric else 380.0
-	var midpoint_end := (background_end + 220.0) * 0.5
+	var midpoint_end := 225.0
 	check.call(clock.weather.sample().is_equal_approx(Vector3(0, 0, 0.25)) and clock.weather.target.z == WorldWeather.FOG_LIGHT, "v14 natural fog transition retains its source/target and produces the halfway sample")
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00075) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 global and newly registered local mist use the interpolated weather sample")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00125) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v14 global and newly registered local mist use the interpolated weather sample")
 	var saved := clock.weather.capture()
 	var restored := WorldWeather.new()
 	check.call(restored.restore(saved) and restored.capture() == saved and restored.sample() == clock.weather.sample(), "v14 weather round trip preserves transition source, target, progress, duration and RNG state")
 	clock.weather = restored
 	clock.apply_time()
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 restored weather reproduces the same global and local mist")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v14 restored weather reproduces the same global and local mist")
 	clock.set_deviation_fog(WorldWeather.FOG_MEDIUM)
 	check.call(clock.effective_visual_weather().z == WorldWeather.FOG_MEDIUM and is_equal_approx(clock.environment.fog_depth_end, 110.0) and is_zero_approx(clock.environment.volumetric_fog_density) and is_zero_approx(float(material.get_shader_parameter("density"))), "v14 deviation fog strengthens distance haze and suppresses scattering volumes at medium fog")
 	check.call(clock.weather.capture() == saved, "v14 visual deviation fog preserves natural weather transition and RNG")
 	clock.set_deviation_fog(0.0)
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 clearing deviation fog resumes the unchanged natural weather blend")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v14 clearing deviation fog resumes the unchanged natural weather blend")
 	clock.unregister_fog(material)
+
+static func _check_forest_culling(world: Node3D, check: Callable) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(8, 20, 6)
+	# Two widely separated, scaled and rotated instances exercise the whole
+	# cell's nearest geometry rather than a single plant's origin or mesh size.
+	var poses: Array = [Transform3D(Basis(Vector3.UP, 0.7).scaled(Vector3(1.5, 1, 0.8)), Vector3(1, 0, 1)), Transform3D(Basis(Vector3.UP, -0.4).scaled(Vector3(0.9, 1.8, 1.2)), Vector3(47, 8, 47))]
+	var bounds: AABB = poses[0] * mesh.get_aabb()
+	for index in range(1, poses.size()): bounds = bounds.merge(poses[index] * mesh.get_aabb())
+	var radius := bounds.size.length() * 0.5
+	for version: int in [13, 14]:
+		var chunk := ChunkGenerator.new()
+		chunk.field = WorldField.new(42, CONTRACTS.profile(version))
+		world.add_child(chunk)
+		for title: String in ["ForestBrush0", "ForestTree0"]:
+			var instances := ForestScenery.batch(chunk, title, mesh, poses)
+			var node: MultiMeshInstance3D = instances[poses[0].origin].node
+			var legacy_end := 160.0 if title.begins_with("ForestBrush") else 340.0
+			check.call(instances.size() == 2 and instances[poses[1].origin].node == node and is_equal_approx(node.visibility_range_end_margin, 16.0), "v%d %s fixture shares one bounded cell with 16m hysteresis" % [version, title])
+			if version == 13:
+				check.call(is_equal_approx(node.visibility_range_end, legacy_end), "v13 %s retains its historical visibility range" % title)
+			else:
+				check.call(node.multimesh.custom_aabb.size.is_equal_approx(bounds.size), "v14 %s explicit batch AABB contains every scaled and rotated source mesh, including headless" % title)
+				check.call(node.visibility_range_end >= legacy_end and node.visibility_range_end - node.visibility_range_end_margin - radius >= 238.0 - 0.0001, "v14 %s nearest geometry stays beyond 230m terminal fog and 8m buffer through both culling directions" % title)
+				if DisplayServer.get_name() != "headless":
+					check.call(node.multimesh.get_aabb().size.is_equal_approx(bounds.size), "v14 %s renderer uses the complete explicit batch bounds" % title)
+		chunk.free()
+
+static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
+	var previous := world.get_viewport().get_camera_3d()
+	for version: int in [13, 14]:
+		var host := Node3D.new()
+		host.position = Vector3(50, 30, -100)
+		host.process_mode = Node.PROCESS_MODE_DISABLED
+		world.add_child(host)
+		var generator := SceneryGeneratorStub.new()
+		generator.name = "WorldGenerator"
+		generator.profile = CONTRACTS.profile(version)
+		host.add_child(generator)
+		var holder := WorldEnvironment.new()
+		holder.name = "WorldEnvironment"
+		holder.environment = Environment.new()
+		host.add_child(holder)
+		var sun := DirectionalLight3D.new()
+		sun.name = "DirectionalLight3D"
+		host.add_child(sun)
+		var camera := Camera3D.new()
+		camera.position = Vector3(2, 4, -5)
+		host.add_child(camera)
+		camera.make_current()
+		var clock := WorldClock.new()
+		clock.running = false
+		clock.weather_running = false
+		host.add_child(clock)
+		clock.game_settings = FogSettingsStub.new()
+		clock.weather.set_weather(Vector3.ZERO, true)
+		clock.set_time(1, 12.0)
+		var saved := clock.weather.capture()
+		if version == 13:
+			check.call(generator.samples == 0 and is_equal_approx(clock.environment.fog_depth_end, 380.0), "v13 distance mist ignores the new streaming coverage guard")
+		else:
+			check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 72.0), "v14 streaming guard samples the actual viewport camera and hides incomplete scenery with an 8m buffer")
+			camera.position += Vector3(9, 0, -12)
+			generator.clearance = 40.0
+			clock.apply_time()
+			check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v14 camera offsets immediately tighten both fog endpoints before missing scenery is exposed")
+			check.call(is_equal_approx(clock.environment.volumetric_fog_length, 9.6), "v14 near streaming guard shortens scattering integration ahead of the opaque haze")
+			generator.clearance = 400.0
+			clock.apply_time()
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0), "v14 a zero-delta weather or settings refresh cannot reveal a completed band abruptly")
+			clock.apply_time(0.5)
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 42.0), "v14 completed scenery opens at only 20m per real second")
+			clock.advance(0.5)
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 52.0) and clock.weather.capture() == saved, "v14 clock advancement passes real frame time to scenery recovery without changing paused natural weather or RNG")
+			check.call(is_equal_approx(clock.environment.volumetric_fog_length, 15.6), "v14 scattering integration follows gradual distance fog recovery")
+			clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
+			clock.apply_time(50.0)
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 38.0), "v14 completed coverage never weakens the heavy weather fog cap")
+			clock.weather.set_weather(Vector3(1, 0, 0), true)
+			clock.apply_time()
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 230.0), "v14 fully recovered clear skies retain the permanent 230m fog cap")
+			generator.clearance = 6.0
+			clock.apply_time()
+			check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0) and is_equal_approx(clock.environment.fog_depth_begin, 0.5), "v14 an uncovered eye clamps the guard to a positive, ordered near fog interval")
+			check.call(is_equal_approx(clock.environment.volumetric_fog_length, 0.3), "v14 minimum streaming clearance retains a positive scattering integration length")
+		camera.clear_current()
+		host.free()
+	if is_instance_valid(previous): previous.make_current()
+
+static func _check_completed_scenery(check: Callable) -> void:
+	# Off-tree construction prevents generation or navigation side effects;
+	# active_chunks is the real generator's completed-publication contract.
+	var generator := WORLD_GENERATOR.new()
+	generator.profile = CONTRACTS.profile(14)
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75))), "v14 empty completed scenery has no safe viewing clearance")
+	generator.active_chunks = [{"index": 1}, {"index": -1}, {"index": 0}]
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -149)), 151.0), "v14 completed clearance measures the nearest edge of contiguous bands independently of entry order")
+	generator.active_chunks.append({"index": -3})
+	generator.active_chunks.append({"index": 3})
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0), "v14 disconnected pinned islands cannot extend safe scenery clearance across missing bands")
+	generator.active_chunks = [{"index": -1}, {"index": 0}, {"index": 2}, {"index": 3}]
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 75.0) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -225))), "v14 an unfinished or removed band shortens coverage immediately and gives no clearance inside the gap")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, 75)), 75.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -375)), 75.0), "v14 completed clearance supports negative bands and separate completed islands")
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, 150))) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -150))), "v14 exact completed edges have zero clearance when the adjoining band is missing")
+	generator.profile.chunk_length = 100.0
+	generator.active_chunks = [{"index": -1}, {"index": 0}, {"index": 1}]
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -50)), 150.0), "v14 completed scenery clearance uses the world's configured chunk length")
+	generator.profile.chunk_length = 0.0
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v14 invalid chunk length supplies no scenery clearance")
+	generator.profile = CONTRACTS.profile(14)
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(INF, 0, 0))), "v14 nonfinite eye coordinates supply no scenery clearance")
+	generator.profile = null
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v14 a missing world profile supplies no scenery clearance")
+	generator.free()
 
 static func _check_legacy_geometry(check: Callable) -> void:
 	for version: int in FROZEN:

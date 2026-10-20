@@ -222,10 +222,17 @@ static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origi
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = mesh
 	multi.instance_count = poses.size()
+	var terrain_mist: bool = parent is ChunkGenerator and parent.field.profile.generation_version >= 14
+	var mesh_bounds := mesh.get_aabb()
+	var bounds := AABB()
 	for i in range(poses.size()):
 		var pose: Transform3D = poses[i]
 		pose.origin -= origin
 		multi.set_instance_transform(i, pose)
+		if terrain_mist:
+			var instance_bounds := pose * mesh_bounds
+			bounds = instance_bounds if i == 0 else bounds.merge(instance_bounds)
+	if terrain_mist: multi.custom_aabb = bounds
 	var node := MultiMeshInstance3D.new()
 	node.name = "%s_%d_%d" % [title, cell.x, cell.y]
 	node.position = origin
@@ -238,6 +245,12 @@ static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origi
 	# Hysteresis suppresses toggling; disappearance is hidden by distant fog.
 	node.visibility_range_end = 160 if title.begins_with("ForestBrush") else 340
 	node.visibility_range_end_margin = 16
+	if terrain_mist:
+		# Visibility ranges use the batch AABB center, not its nearest leaf.
+		# Include its full radius and both hysteresis directions so the entire
+		# cell is concealed before the renderer switches it on or off.
+		var radius := bounds.size.length() * 0.5
+		node.visibility_range_end = maxf(node.visibility_range_end, WorldWeather.BASE_MIST_END + radius + node.visibility_range_end_margin + 8.0)
 	parent.add_child(node)
 	var instances := {}
 	for i in range(poses.size()):
