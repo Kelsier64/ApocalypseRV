@@ -13,6 +13,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		var field := WorldField.new(seed_value, CONTRACTS.profile(14))
 		_check_frozen_road(field, check)
 		_check_appearance(field, check)
+		_check_local_screening(field, check)
 		await _check_forest_plans(field, world, check)
 	await _check_forest_rebuild(tree, world, check)
 
@@ -85,6 +86,72 @@ static func _check_appearance(field: WorldField, check: Callable) -> void:
 	check.call(kinds.size() == 6, "v14 seed %d: journey visits all six landforms" % field.world_seed)
 	check.call(blended and continuous, "v14 seed %d: appearance/color interpolation is shared, bounded and continuous at every region boundary" % field.world_seed)
 	check.call(maximum_height_jump < 0.2, "v14 seed %d: blended terrain remains continuous across landform transitions (%.4fm)" % [field.world_seed, maximum_height_jump])
+
+static func _check_local_screening(field: WorldField, check: Callable) -> void:
+	var fixtures: Dictionary = {}
+	var screened: Dictionary = {}
+	var heights: Dictionary = {}
+	var maximum_road_error := 0.0
+	var maximum_jump := 0.0
+	for region in range(6):
+		for candidate in range(9):
+			var s := 600.0 + (region + 0.15 + candidate * 0.075) * TerrainLandforms.REGION_LENGTH
+			var kind := field.landforms.kind_at(s)
+			if kind not in ["meadow", "wetland", "ridge", "basin"]: continue
+			if not field.landforms.crossing_clearance(s, 190.0): continue
+			var frame := field.road_frame(s)
+			var sites := field.sites_near_z(frame.origin.z)
+			var clear := true
+			for site: Dictionary in sites:
+				clear = clear and field.court_distance(frame.origin.x, frame.origin.z, site) > 24.0
+			if not clear: continue
+			var half_width := field.road_width(s) * 0.5
+			# A dry viaduct still supplies a road-height observation point.
+			# Only grounded road terrain must match the carriageway; the
+			# existing physical support suite checks suspended bridge decks.
+			if field.landforms.bridge_gap(s) == 0.0:
+				for lateral: float in [-half_width + 0.2, 0.0, half_width - 0.2]:
+					var point := frame * Vector3(lateral, 0.0, 0.0)
+					maximum_road_error = maxf(maximum_road_error, absf(field.height_at(point.x, point.z) - frame.origin.y))
+			var valid := false
+			var blocked := false
+			for side: float in [-1.0, 1.0]:
+				for beyond_edge: float in [20.0, 30.0, 40.0, 50.0, 60.0]:
+					var point := frame * Vector3(side * (half_width + beyond_edge), 0.0, 0.0)
+					var sample := field.surface(point.x, point.z)
+					if sample.reserved or is_finite(float(sample.water_height)): continue
+					var outside_courts := true
+					for site: Dictionary in sites:
+						outside_courts = outside_courts and field.court_distance(point.x, point.z, site) > 16.0
+					if not outside_courts: continue
+					valid = true
+					# A local terrain intersection with a horizontal eye-height
+					# ray, independent of fog or foliage. Open intervals are allowed.
+					blocked = blocked or float(sample.height) > frame.origin.y + 1.65
+					heights[Vector2(point.x, point.z)] = float(sample.height)
+				# Small world-space probes on both axes catch local steps at
+				# the bank's onset, crest and fade.
+				for beyond_edge: float in [7.0, 21.0, 43.0, 82.0]:
+					var point := frame * Vector3(side * (half_width + beyond_edge), 0.0, 0.0)
+					for axis: Vector3 in [Vector3.RIGHT, Vector3.BACK]:
+						var before := point - axis * 0.01
+						var after := point + axis * 0.01
+						maximum_jump = maxf(maximum_jump, absf(field.height_at(before.x, before.z) - field.height_at(after.x, after.z)))
+			if valid: fixtures[kind] = int(fixtures.get(kind, 0)) + 1
+			if blocked: screened[kind] = int(screened.get(kind, 0)) + 1
+	var label := "v14 seed %d: " % field.world_seed
+	for kind: String in ["meadow", "wetland", "ridge", "basin"]:
+		check.call(int(fixtures.get(kind, 0)) >= 2 and int(screened.get(kind, 0)) >= 2, label + "%s has several dry local roadside fixtures screening a 1.65m eye line (%d/%d)" % [kind, int(screened.get(kind, 0)), int(fixtures.get(kind, 0))])
+	check.call(maximum_road_error < 0.12, label + "nearby screening terrain leaves the full dry carriageway level (%.4fm)" % maximum_road_error)
+	check.call(maximum_jump < 0.2, label + "roadside banks remain locally continuous on both horizontal axes (%.4fm)" % maximum_jump)
+	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(14))
+	var points := heights.keys()
+	points.reverse()
+	for point: Vector2 in points: reverse.height_at(point.x, point.y)
+	var deterministic := not points.is_empty()
+	for point: Vector2 in heights:
+		deterministic = deterministic and reverse.height_at(point.x, point.y) == heights[point]
+	check.call(deterministic, label + "local screening heights are independent of query order")
 
 static func _check_forest_plans(field: WorldField, world: Node3D, check: Callable) -> void:
 	var chunk := ChunkGenerator.new()
@@ -196,7 +263,7 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 		check.call(mesh.get_surface_count() >= 2 and mesh.get_faces() != ForestMeshes.tree(0).get_faces(), "v14 broadleaf %d contains distinct trunk and foliage geometry" % kind)
 		if mesh.get_surface_count() >= 2:
 			check.call(not TreeFall._is_foliage(mesh.surface_get_material(0)) and TreeFall._is_foliage(mesh.surface_get_material(1)), "v14 broadleaf %d retains TreeFall's wood/foliage material classification" % kind)
-	for kind in range(4):
+	for kind in range(5):
 		var mesh := FloraMeshes.ground(kind)
 		check.call(mesh.get_faces().size() >= 12 and mesh.get_aabb().size.y > 0.05, "v14 ground-cover kind %d contains real three-dimensional geometry" % kind)
 	check.call(not planned.is_empty(), "v14 rebuild fixture contains a destructible tree")

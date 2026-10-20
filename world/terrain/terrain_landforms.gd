@@ -19,6 +19,7 @@ const TREE_DENSITY := [0.16, 0.24, 0.13, 0.075, 0.10, 0.70]
 const GROUND_DENSITY := [0.82, 0.16, 0.78, 0.24, 0.16, 0.60]
 const MOISTURE := [0.25, 0.10, 0.90, 0.04, 0.06, 0.62]
 const ROCK_EXPOSURE := [0.10, 0.78, 0.06, 0.85, 0.74, 0.14]
+const ROADSIDE_CREST := [5.5, 3.0, 3.8, 10.0, 3.5, 6.5]
 
 func material_weights(appearance: Vector3) -> Vector2:
 	return Vector2(lerpf(ROCK_EXPOSURE[int(appearance.x)], ROCK_EXPOSURE[int(appearance.y)], appearance.z), lerpf(MOISTURE[int(appearance.x)], MOISTURE[int(appearance.y)], appearance.z))
@@ -91,6 +92,16 @@ func _height_v14(x: float, z: float, road: Dictionary) -> float:
 	var first := _shape_v14(int(a.x), lateral, broad, middle, warp, fault)
 	var target := first
 	if a.z > 0.0: target = lerpf(first, _shape_v14(int(a.y), lateral, broad, middle, warp, fault), a.z)
+	# Close foreground shoulders break long side views even in clear weather.
+	# Staggered swells leave occasional openings instead of a continuous trench.
+	var edge := float(road.distance) - float(road.width) * 0.5
+	var shift := fault * 5.0
+	var shelter := smoothstep(7.0 + shift, 23.0 + shift, edge) * (1.0 - smoothstep(24.0 + shift, 78.0 + shift, edge))
+	if shelter > 0.0:
+		var phase := z * TAU / 215.0 + offset + (1.4 if lateral > 0.0 else -1.1) + fault * 1.2
+		var swell := lerpf(0.25, 1.0, smoothstep(-0.65, 0.60, sin(phase)))
+		var crest := lerpf(ROADSIDE_CREST[int(a.x)], ROADSIDE_CREST[int(a.y)], a.z)
+		target = lerpf(target, maxf(target, crest * swell + fault), shelter)
 	var original := broad * 32.0 + middle * 8.0
 	return lerpf(original, float(road.height) + target, smoothstep(300.0, 850.0, -z)) + field.detail.get_noise_2d(x, z) * 0.35
 

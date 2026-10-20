@@ -9,7 +9,14 @@ static func ground(kind: int) -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7014 + kind
-	if kind == 2:
+	if kind == 4:
+		# A low opaque crown fills the sight gap below tall tree canopies.
+		for i in range(5):
+			var center := Vector3(sin(i * 2.4) * 0.28, 0.42 + i * 0.10, cos(i * 2.4) * 0.25)
+			ForestMeshes._tube(st, Vector3(0, 0.02, 0), center, 0.023, 0.008, Color("77715b"), 4)
+			ForestMeshes._crown(st, center, Vector3(0.45, 0.32, 0.42), Color("48563b").lightened(i * 0.025), rng)
+			ForestMeshes._bough(st, center, center + Vector3(sin(i * 2.4), 0.15, cos(i * 2.4)) * 0.60, 0.18, Color("506240"))
+	elif kind == 2:
 		for i in range(4):
 			var center := Vector3(rng.randf_range(-0.4, 0.4), 0.02, rng.randf_range(-0.4, 0.4))
 			var height := rng.randf_range(0.09, 0.24)
@@ -38,6 +45,7 @@ static func ground(kind: int) -> ArrayMesh:
 	var mesh := st.commit()
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
+	if kind == 4: mat.vertex_color_is_srgb = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.roughness = 1.0
 	mat.metallic_specular = 0.0

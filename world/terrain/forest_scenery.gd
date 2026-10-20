@@ -129,7 +129,7 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 	await TreeFall.prepare(chunk)
 	for band in [chunk.band, chunk.band - 1, chunk.band + 1]: await prepare(chunk, band, gradual)
 	var tree_poses: Array = [[], [], [], [], [], [], [], []]
-	var shrubs: Array = [[], [], [], []]
+	var shrubs: Array = [[], [], [], [], []]
 	var body := ForestTrunks.new()
 	body.name = "ForestTrunks"
 	var trunk_shape := BoxShape3D.new()
@@ -171,14 +171,37 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		elif biome == 5: kind = 3
 		var radius := rng.randf_range(0.7, 1.5)
 		shrubs[kind].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3.ONE * radius), point))
+	# Keep the foreground layered: tall trunks alone expose the whole valley.
+	# A separate RNG leaves all existing tree/ground choices independent.
+	var screens := chunk.field.rng_for(chunk.band, "flora_v14_shelter")
+	for row in range(28):
+		if gradual and chunk.slice_exhausted(): await chunk._pause()
+		var s := chunk.band * 150.0 + (row + 0.5) * 150.0 / 28.0
+		var frame := chunk.field.road_frame(s)
+		var half := chunk.field.road_width(s) * 0.5
+		for side: float in [-1.0, 1.0]:
+			for column in range(3):
+				var point := frame * Vector3(side * (half + 9.0 + column * 9.0 + screens.randf_range(-2.0, 2.0)), 0, screens.randf_range(-2.1, 2.1))
+				var weights := chunk.field.landforms.flora_weights(point.x, point.z)
+				if screens.randf() > clampf(weights.y * 1.5, 0.12, 0.92) * chunk.field.profile.decoration_density: continue
+				var sample := chunk.field.surface(point.x, point.z)
+				if sample.reserved or sample.road.distance < sample.road.width * 0.5 + 5.5 or is_finite(float(sample.water_height)): continue
+				if chunk.field.normal_at(point.x, point.z).y < 0.72: continue
+				point.y = sample.height
+				if landmark_slit(chunk.field, point): continue
+				var wet := screens.randf() < smoothstep(0.65, 0.85, weights.z) or float(sample.river_bank) > 0.45
+				var kind := 1 if wet else 4
+				var size := Vector3(screens.randf_range(2.0, 3.5), screens.randf_range(2.4, 4.0), screens.randf_range(1.7, 2.8))
+				if wet: size = Vector3(screens.randf_range(1.3, 2.1), screens.randf_range(1.15, 1.65), screens.randf_range(1.3, 2.1))
+				shrubs[kind].append(Transform3D(Basis(Vector3.UP, screens.randf_range(-PI, PI)).scaled(size), point))
 	for kind in range(8):
 		body.visuals.merge(batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind]))
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
-	for kind in range(4):
+	for kind in range(5):
 		batch(chunk, "ForestBrush%d" % kind, FloraMeshes.ground(kind), shrubs[kind])
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	chunk.add_child(body)
-	print("FOREST v14 band=%d trees=%d ground=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size() + shrubs[3].size()])
+	print("FOREST v14 band=%d trees=%d ground=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size() + shrubs[3].size() + shrubs[4].size()])
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> Dictionary:
 	var instances := {}
