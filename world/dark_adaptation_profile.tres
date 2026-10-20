@@ -1,8 +1,7 @@
-[gd_resource type="Resource" script_class="DarkAdaptationProfile" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="DarkAdaptationProfile" format=3 uid="uid://ckgss5ys40cx4"]
 
-[ext_resource type="Script" path="res://world/dark_adaptation_profile.gd" id="1_profile"]
-[ext_resource type="Curve" path="res://world/night_vision_curve.tres" id="2_curve"]
+[ext_resource type="Script" uid="uid://bt5ewiwe8gvx0" path="res://world/dark_adaptation_profile.gd" id="1_profile"]
+[ext_resource type="Curve" uid="uid://dtivae23xotyu" path="res://world/night_vision_curve.tres" id="2_curve"]
 
 [resource]
 script = ExtResource("1_profile")
-curve = ExtResource("2_curve")

@@ -13,9 +13,6 @@ By default, follow “necessary production → one contextual review → relevan
 - **Split large buildings into components where useful:** Generate or model facade sections, entrance assemblies, roof equipment and interior fittings separately. Keep the building layout and assembly in Godot, with each component independently replaceable. Track the target node, local placement, orientation and adjoining dimensions or openings needed for a fit. Repeated instances share one asset; finish simple structural parts directly.
 - **Verify visual replacements in context:** Check local axes, origin, design dimensions and placement in the target scene. Preserve the existing wrapper tree, collision and gameplay behavior when replacing visuals. Graybox placement alone does not establish a finished visual result; inspect the actual integrated asset.
 - **Text:** Use English. No hints or instructions on models or textures, unnecessary text, or floating prompts.
-- **Evaluate rendering cost before delivery:** Choose a triangle budget for the object's size, viewing distance and expected instance count. Try reduction when the generated mesh is unnecessarily dense; compare the result visually and explain the choice if keeping a higher count. Generation defaults and automatic LOD do not establish an asset budget.
-
-
 
 ## Blender MCP
 
