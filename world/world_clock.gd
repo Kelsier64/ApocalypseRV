@@ -17,6 +17,7 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
+var terrain_generation_version := 0
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -80,6 +81,8 @@ func _ready() -> void:
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(label)
 	var generator := get_parent().get_node_or_null("WorldGenerator")
+	if generator != null and generator.get("profile") is WorldProfile:
+		terrain_generation_version = generator.profile.generation_version
 	weather.initialize(generator.world_seed if generator != null else 42)
 	weather_label = Label.new()
 	weather_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -174,18 +177,26 @@ func apply_time() -> void:
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
 	var medium_mist := clampf((conditions.z - WorldWeather.FOG_LIGHT) / (WorldWeather.FOG_MEDIUM - WorldWeather.FOG_LIGHT), 0.0, 1.0)
 	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
-	environment.fog_depth_begin = lerpf(lerpf(160.0 if volumetric else 18.0, 240.0, clear), 8.0, light_mist)
-	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
+	var terrain_mist := terrain_generation_version >= 14
+	var base_begin := lerpf(24.0, 40.0, clear) if terrain_mist else lerpf(160.0 if volumetric else 18.0, 240.0, clear)
+	environment.fog_depth_begin = lerpf(base_begin, 8.0, light_mist)
+	var far_distance := lerpf(230.0, 290.0, clear) if terrain_mist else lerpf(420.0 if volumetric else 380.0, 700.0, clear)
 	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
-	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
+	environment.fog_depth_curve = 1.0 if terrain_mist else lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
 	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
-	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
+	var white_mist := Color("030405").lerp(Color("c3cbc8"), daylight)
+	if terrain_mist:
+		# Lit white haze during the day; no emissive veil over dark nights.
+		horizon = horizon.lerp(white_mist, 0.45 * (1.0 - clear * 0.4))
+		zenith = zenith.lerp(white_mist, 0.16 * (1.0 - clear * 0.4))
+		environment.volumetric_fog_albedo = Color("c3cdc8")
+	environment.volumetric_fog_density = ((0.0025 if terrain_mist else 0.0015) * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
 	for material in fog_materials:
 		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist))
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
-	environment.fog_light_color = horizon
+	environment.fog_light_color = white_mist if terrain_mist else horizon
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
 	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))

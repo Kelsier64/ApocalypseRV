@@ -1,11 +1,21 @@
 extends RefCounted
-## v14 appearance/flora checks, with frozen pre-v14 geometry fingerprints.
+## v14 appearance, flora and mist checks, with frozen pre-v14 geometry fingerprints.
 const CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
 const FROZEN := {
 	6: [3807976057, 3370663327, 2309187816, 1401930638],
 	12: [1682033219, 593278675, 573957769, 2789942250],
 	13: [1572569537, 1002228210, 445820975, 2130005998],
 }
+
+class GeneratorStub extends Node:
+	var world_seed := 42
+	var profile: WorldProfile
+
+class FogSettingsStub extends RefCounted:
+	var enabled := false
+
+	func volumetric_fog_enabled() -> bool:
+		return enabled
 
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_legacy_geometry(check)
@@ -14,8 +24,130 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		_check_frozen_road(field, check)
 		_check_appearance(field, check)
 		_check_local_screening(field, check)
+		_check_mist_plans(field, check)
 		await _check_forest_plans(field, world, check)
+	_check_mist_clock(world, check)
 	await _check_forest_rebuild(tree, world, check)
+
+static func _check_mist_plans(field: WorldField, check: Callable) -> void:
+	var bands: Array[int] = []
+	for index in range(6):
+		bands.append(floori((600.0 + (index + 0.45) * TerrainLandforms.REGION_LENGTH) / field.profile.chunk_length))
+	for index in range(3):
+		var owner := floori(float(field.landforms.river(index).s) / field.profile.chunk_length)
+		for band in range(owner - 1, owner + 2):
+			if band not in bands: bands.append(band)
+	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(14))
+	var reference: Dictionary = {}
+	for index in range(bands.size() - 1, -1, -1):
+		reference[bands[index]] = ForestFog.plans(reverse, bands[index])
+	var deterministic := true
+	var legal := true
+	var clear_courts := true
+	var anchored_rivers := true
+	var ground_count := 0
+	var river_count := 0
+	for band: int in bands:
+		var plans := ForestFog.plans(field, band)
+		deterministic = deterministic and plans == reference[band]
+		var ground_in_band := 0
+		var rivers_in_band := 0
+		var owners: Array[Dictionary] = []
+		for river: Dictionary in field.landforms.rivers_near(-(band + 0.5) * field.profile.chunk_length):
+			if floori(float(river.s) / field.profile.chunk_length) == band: owners.append(river)
+		for plan: Dictionary in plans:
+			if not plan.has_all(["position", "size", "river"]):
+				legal = false
+				continue
+			var point: Vector3 = plan.position
+			var size: Vector3 = plan.size
+			legal = legal and point.is_finite() and size.is_finite() and size.x > 0.0 and size.y > 0.0 and size.z > 0.0
+			var radius := Vector2(size.x, size.z).length() * 0.5
+			for site: Dictionary in field.sites_near_z(point.z, radius + 400.0):
+				clear_courts = clear_courts and field.court_distance(point.x, point.z, site) >= radius + 4.0 - 0.0001
+			if not plan.river:
+				ground_in_band += 1
+				var sample := field.surface(point.x, point.z)
+				legal = legal and not sample.reserved and not is_finite(float(sample.water_height))
+				legal = legal and float(sample.road.distance) >= float(sample.road.width) * 0.5 + 12.0 - 0.0001
+				continue
+			rivers_in_band += 1
+			var anchored := false
+			for river: Dictionary in owners:
+				for lateral: float in [-100.0, 0.0, 100.0]:
+					var x := float(river.center_x) + lateral
+					# Match the Vector3 precision used by generated world positions.
+					var expected := Vector3(x, float(river.water_height) + 3.0, field.landforms.river_z(river, x))
+					if point.x != expected.x or point.z != expected.z: continue
+					anchored = point.y + size.y * 0.5 <= float(river.water_height) + 12.0 + 0.0001
+			anchored_rivers = anchored_rivers and anchored
+		legal = legal and ground_in_band <= 12 and rivers_in_band <= owners.size() * 3
+		ground_count += ground_in_band
+		river_count += rivers_in_band
+	var label := "v14 seed %d: " % field.world_seed
+	check.call(deterministic, label + "white-mist pockets are independent of chunk query order")
+	check.call(legal and ground_count > 0 and river_count > 0, label + "bounded white-mist plans have positive finite volumes and dry ground anchors outside reserved roads")
+	check.call(clear_courts, label + "every white-mist volume keeps its horizontal bounding circle at least 4m outside POI courts")
+	check.call(anchored_rivers, label + "river mist belongs to its crossing band, follows the channel and stays below the bridge deck")
+
+static func _check_mist_clock(world: Node3D, check: Callable) -> void:
+	for version: int in [13, 14]:
+		var host := Node3D.new()
+		host.process_mode = Node.PROCESS_MODE_DISABLED
+		world.add_child(host)
+		var generator := GeneratorStub.new()
+		generator.name = "WorldGenerator"
+		generator.profile = CONTRACTS.profile(version)
+		host.add_child(generator)
+		var holder := WorldEnvironment.new()
+		holder.name = "WorldEnvironment"
+		holder.environment = Environment.new()
+		host.add_child(holder)
+		var sun := DirectionalLight3D.new()
+		sun.name = "DirectionalLight3D"
+		host.add_child(sun)
+		var clock := WorldClock.new()
+		clock.name = "WorldClock"
+		clock.running = false
+		clock.weather_running = false
+		host.add_child(clock)
+		check.call(clock.terrain_generation_version == version, "v%d mist clock reads its owning generator's profile" % version)
+		# Inject only this clock's quality view; preserve the real autoload's preferences.
+		var quality := FogSettingsStub.new()
+		clock.game_settings = quality
+		var material := ShaderMaterial.new()
+		material.shader = load("res://world/terrain/white_mist.gdshader" if version == 14 else "res://world/terrain/forest_fog.gdshader") as Shader
+		check.call(material.shader != null, "v%d local mist retains its own loadable shader" % version)
+		for volumetric: bool in [false, true]:
+			quality.enabled = volumetric
+			for conditions: Vector3 in [Vector3.ZERO, Vector3(1, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 0.25), Vector3(0, 0, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 0, WorldWeather.FOG_HEAVY)]:
+				clock.weather.set_weather(conditions, true)
+				clock.set_time(1, 12.0)
+				var light := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
+				var expected_density := 0.14 * (1.0 - conditions.x) * (1.0 - light)
+				clock.register_fog(material)
+				var registered := float(material.get_shader_parameter("density"))
+				clock.apply_time()
+				check.call(is_equal_approx(registered, expected_density) and is_equal_approx(float(material.get_shader_parameter("density")), expected_density), "v%d local mist registration and updates agree at weather %s / volumetric %s" % [version, conditions, volumetric])
+				clock.unregister_fog(material)
+				if conditions.z == 0.25: continue
+				var begin := lerpf(24.0, 40.0, conditions.x) if version == 14 else lerpf(160.0 if volumetric else 18.0, 240.0, conditions.x)
+				var end := lerpf(230.0, 290.0, conditions.x) if version == 14 else lerpf(420.0 if volumetric else 380.0, 700.0, conditions.x)
+				if conditions.z > 0.0:
+					begin = 8.0
+					end = 220.0 if conditions.z == WorldWeather.FOG_LIGHT else (110.0 if conditions.z == WorldWeather.FOG_MEDIUM else 38.0)
+				check.call(is_equal_approx(clock.environment.fog_depth_begin, begin) and is_equal_approx(clock.environment.fog_depth_end, end), "v%d depth mist keeps expected endpoints at weather %s / volumetric %s" % [version, conditions, volumetric])
+				if version == 14: check.call(is_equal_approx(clock.environment.fog_depth_curve, 1.0), "v14 distance haze retains its curve at every quality/weather setting")
+				var base_density := (0.0025 if version == 14 else 0.0015) * (1.0 - conditions.x) + conditions.y * 0.5 * 0.001
+				check.call(is_equal_approx(clock.environment.volumetric_fog_density, base_density * (1.0 - light)), "v%d global volumetric-fog base fades fully when weather fog takes over" % version)
+		if version == 14:
+			clock.weather.set_weather(Vector3.ZERO, true)
+			clock.set_time(1, 12.0)
+			var noon := clock.environment.fog_light_color
+			clock.set_time(1, 0.0)
+			var night := clock.environment.fog_light_color
+			check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v14 gray-white daylight haze darkens with the native night lighting")
+		host.free()
 
 static func _check_legacy_geometry(check: Callable) -> void:
 	for version: int in FROZEN:
