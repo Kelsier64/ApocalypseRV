@@ -30,6 +30,7 @@ func check(ok: bool, message: String) -> void:
 		push_error("FAIL: " + message)
 
 func run() -> void:
+	_check_opening_profiles()
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -69,6 +70,30 @@ func run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13/v14 routes, landforms and crossings satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
+
+func _check_opening_profiles() -> void:
+	for version: int in [10, 11, 12, 14]:
+		var profile := WorldProfile.new()
+		profile.generation_version = version
+		var expected := "starting_shelter" if version == 10 else ("tutorial_shelter" if version == 11 else "orientation_shelter")
+		check(WorldField.new(42, profile).stop(0).definition_id == expected, "Default opening selection follows its generation profile")
+	var sandbox: WorldProfile = load("res://world/cheat_test_profile.gd").new()
+	sandbox.generation_version = 14
+	sandbox.max_grade = 0.12
+	var production := WorldProfile.new()
+	production.generation_version = 14
+	production.max_grade = sandbox.max_grade
+	var field := WorldField.new(42, sandbox)
+	var reference := WorldField.new(42, production)
+	var site := field.stop(0)
+	check(site.definition_id == "starting_shelter" and field.route != null and field.landforms != null, "Sandbox combines old garage with current route and landform generation")
+	for local: Vector3 in [Vector3(0, 0, -6), Vector3(0, 0, 30)]:
+		var point: Vector3 = site.building * local
+		var sample := field.surface(point.x, point.z)
+		check(sample.reserved and is_equal_approx(sample.height, -0.08), "Old garage and apron retain recessed terrain backing on v14")
+	for point: Vector2 in [Vector2(0, -900), Vector2(180, -1200), Vector2(-230, -2100)]:
+		check(field.surface(point.x, point.y) == reference.surface(point.x, point.y), "Sandbox outdoor terrain and appearance match the v14 production profile")
+		check(field.road_frame(-point.y) == reference.road_frame(-point.y), "Sandbox uses the v14 production road route")
 
 func _check_crossing_chunk(world: Node3D, version: int) -> void:
 	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))

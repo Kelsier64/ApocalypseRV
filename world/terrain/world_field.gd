@@ -139,8 +139,7 @@ func stop(index: int) -> Dictionary:
 	if profile.generation_version >= 5 and index % 3 == 1:
 		WalkInSites.configure(result)
 	if profile.generation_version >= 7 and index == 0:
-		var opening := "orientation_shelter" if profile.generation_version >= 12 else ("tutorial_shelter" if profile.generation_version == 11 else "starting_shelter")
-		WalkInSites.configure(result, opening)
+		WalkInSites.configure(result, profile.opening_shelter_id())
 	if landforms != null and index > 0 and not landforms.site_clear(result):
 		_stops[index] = {}
 		return {}
@@ -258,7 +257,7 @@ func surface(x: float, z: float) -> Dictionary:
 	var spawn_distance := Vector2(maxf(absf(x) - 14.0, 0.0), maxf(absf(z) - 14.0, 0.0)).length()
 	height = lerpf(height, 0.0, 1.0 - smoothstep(0.0, 20.0, spawn_distance))
 	reserved = reserved or spawn_distance < 8.0
-	if profile.generation_version >= 11:
+	if profile.generation_version >= 11 and profile.opening_shelter_id() != "starting_shelter":
 		var tutorial_surface := _tutorial_shelter_surface(x, z, height)
 		height = tutorial_surface.height
 		reserved = reserved or tutorial_surface.reserved
@@ -337,7 +336,7 @@ func _tutorial_shelter_surface(x: float, z: float, height: float) -> Dictionary:
 		height = lerpf(height, 5.0, maxf(side_bank, rear_bank) * smoothstep(0.0, 6.0, distance))
 	# Recess the full authored corridor and apron, including a terrain cell
 	# outside their slab edges, so terrain triangles cannot cover the floor.
-	var rear_edge := -46.4 if profile.generation_version >= 12 else -402.4
+	var rear_edge := -46.4 if profile.opening_shelter_id() == "orientation_shelter" else -402.4
 	var corridor_edge := maxf(absf(local.x) - 20.4, maxf(rear_edge - local.z, local.z - 14.0))
 	var apron_edge := maxf(absf(local.x) - 22.0, maxf(14.0 - local.z, local.z - 44.0))
 	var slab_recess := 1.0 - smoothstep(profile.terrain_step, profile.terrain_step * 2.0, minf(corridor_edge, apron_edge))

@@ -62,6 +62,8 @@ MainWorld
 
 ### 起始避難所與世界識別
 
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 沿用既有版本對應；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v14 地形、道路與植被，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
 歷史 v11 主場景契約：該版明確選擇生成 v11，共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、導航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。

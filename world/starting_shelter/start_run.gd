@@ -27,14 +27,14 @@ static func valid_bay_gates(data: Variant, count := BAY_GATE_COUNT) -> bool:
 
 func is_orientation_shelter() -> bool:
 	var generator := get_parent().get_node_or_null("WorldGenerator")
-	return generator != null and generator.profile != null and generator.profile.generation_version >= 12
+	return generator != null and generator.profile != null and generator.profile.opening_shelter_id() == "orientation_shelter"
 
 func bay_gate_count() -> int:
 	return 1 if is_orientation_shelter() else BAY_GATE_COUNT
 
 func is_tutorial_shelter() -> bool:
 	var generator := get_parent().get_node_or_null("WorldGenerator")
-	return generator != null and generator.profile != null and generator.profile.generation_version >= 11
+	return generator != null and generator.profile != null and generator.profile.opening_shelter_id() in ["tutorial_shelter", "orientation_shelter"]
 
 func capture(include_retry := true) -> Dictionary:
 	var data := {"version": 1, "phase": phase}
