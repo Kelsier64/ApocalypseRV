@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [地形與道路分階段改造](plans/terrain-overhaul.md) · [2026-10-20 第一個檢查點](validation/2026-10-20-terrain-stage1.md)：v13 連續 S 彎、寬窄／坡度、六類地形、河川及橋梁初版，完成後停下等待檢查。
+
 - [2026-10-19 車載終端作弊指令](validation/2026-10-19-terminal-cheats.md)：true／false 無限資源、立即設定時間與天氣、退款與暫態保存，以及原生畫面檢查。
 
 - [2026-10-19 自動測試與 CI 精簡](validation/2026-10-19-test-ci-simplification.md)：16 個核心測試、單一 CI job、速度量測與刪減的覆蓋範圍。

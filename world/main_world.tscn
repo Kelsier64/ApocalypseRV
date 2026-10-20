@@ -15,7 +15,8 @@
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
-generation_version = 12
+generation_version = 13
+max_grade = 0.12
 chunks_ahead = 2
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bn472"]

@@ -113,6 +113,9 @@ static func _v9_wreck_count(roll: float) -> int:
 static func _plan_v9(field: WorldField, band: int) -> Dictionary:
 	var result := {"strips": [], "wrecks": [], "monsters": [], "monster_scenes": [], "monster_yaws": [], "barrels": [], "blocked": false}
 	if band * field.profile.chunk_length < SAFE_DISTANCE: return result
+	# Bridge rails constrain the usable corridor. Keep random wreck groups and
+	# roadside actors off the whole crossing rather than placing them in water.
+	if field.landforms != null and not field.landforms.crossing_clearance((band + 0.5) * field.profile.chunk_length, 170.0): return result
 	var occupied := _v9_road_obstacles(field, band)
 	var wreck_count := _v9_wreck_count(field.rng_for(band, "road_v9_wreck_count").randf())
 	for index in range(wreck_count):
@@ -195,6 +198,16 @@ static func _box_footprint(box: AABB) -> PackedVector2Array:
 
 static func _v9_road_obstacles(field: WorldField, band: int) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
+	if field.landforms != null:
+		for part in TerrainCrossings.rail_plan(field, band):
+			if not part.solid: continue
+			var box: AABB = part.pose * AABB(-part.size * 0.5, part.size)
+			var footprint := PackedVector2Array()
+			for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(1, 0, 1), Vector3(-1, 0, 1)]:
+				var point: Vector3 = part.pose * (corner * part.size * 0.5)
+				footprint.append(Vector2(point.x, point.z))
+			result.append({"bounds": box, "footprint": footprint})
+		return result
 	# Mirror ChunkGenerator._build_road's deterministic guardrails. A road-side
 	# actor may be close to another actor, but cannot start inside a real rail.
 	if posmod(band, 6) != 3: return result

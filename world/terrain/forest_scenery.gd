@@ -19,6 +19,7 @@ static func prepare(chunk: ChunkGenerator, band: int, gradual: bool) -> void:
 			if chance > clampf(0.79 + field.clusters.get_noise_2d(x, z) * 0.4, 0.55, 0.95): continue
 			var sample := field.surface(x, z)
 			if sample.reserved or sample.road.distance < sample.road.width * 0.5 + 5.0: continue
+			if field.landforms != null and not field.landforms.vegetation(sample, x, z): continue
 			var point := Vector3(x, sample.height, z)
 			if landmark_slit(field, point): continue
 			result.append({"point": point, "height": rng.randf_range(12.0, 21.0), "width": rng.randf_range(2.8, 4.2), "angle": rng.randf_range(-PI, PI), "kind": rng.randi_range(0, 2)})
@@ -74,6 +75,7 @@ static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 		var z := -chunk.band * 150.0 - rng.randf_range(1, 149)
 		var sample := chunk.field.surface(x, z)
 		if sample.reserved or sample.road.distance < sample.road.width * 0.5 + 4.5: continue
+		if chunk.field.landforms != null and not chunk.field.landforms.vegetation(sample, x, z): continue
 		var point := Vector3(x, sample.height, z)
 		if landmark_slit(chunk.field, point): continue
 		var height := rng.randf_range(1.5, 3.0)

@@ -169,7 +169,7 @@ func _orientation_ui_capture_allowed(world: Node, player: Node, start_run: Node)
 	if start_run == null or start_run.phase != "preparing" or player.get("settings_open") == true or player.get_player_mode() != player.PlayerMode.UI: return false
 	var generator := world.get_node_or_null("WorldGenerator")
 	var tutorial := start_run.get_node_or_null("Tutorial")
-	if generator == null or generator.profile.generation_version != 12 or tutorial == null or tutorial.get("status") != "active": return false
+	if generator == null or generator.profile.generation_version not in [12, 13] or tutorial == null or tutorial.get("status") != "active": return false
 	var item_scripts := ["res://equipment/tablet_screen.gd", "res://equipment/training_terminal.gd"]
 	for item in get_tree().get_nodes_in_group(Groups.ITEMS):
 		if not world.is_ancestor_of(item) or not WorldEntities.same_world(world, item) or item.is_queued_for_deletion(): continue
@@ -251,7 +251,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not data.get("profile", {}) is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.get("profile", {}))
 	if not profile_error.is_empty(): return profile_error
-	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]: return "generation_version"
+	if not data.get("generation_version", 2) is int or data.get("generation_version", 2) not in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]: return "generation_version"
 	if data.get("generation_version", 2) >= 10 and not SlenderSpeakerSpawns.valid_ledger(data.get("generated_giant_segments")): return "generated_giant_segments"
 	if data.get("generation_version", 2) >= 10:
 		if data.has("route_pressure") and not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"
@@ -259,23 +259,23 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var world_id: Variant = data.get("world_id", "legacy")
 	if not world_id is String or not WORLD_SCENES.has(world_id): return "world_id"
 	if world_id == "shelter":
-		if data.get("generation_version") not in [7, 8, 9, 10, 11, 12]: return "world_id.generation_version"
+		if data.get("generation_version") not in [7, 8, 9, 10, 11, 12, 13]: return "world_id.generation_version"
 		var start_state: Variant = data.get("start_state")
 		if not start_state is Dictionary or not start_state.get("version") is int or start_state.version != 1: return "start_state.version"
 		if not start_state.get("phase") is String or start_state.phase not in ["preparing", "started", "sealed"]: return "start_state.phase"
-		var gate_count := 1 if data.generation_version == 12 else 8
+		var gate_count := 1 if data.generation_version >= 12 else 8
 		if start_state.has("bay_gates") and (data.generation_version < 11 or not StartRun.valid_bay_gates(start_state.bay_gates, gate_count)): return "start_state.bay_gates"
 		if start_state.has("tutorial"):
 			var orientation: bool = start_state.tutorial is Dictionary and start_state.tutorial.get("course") == "two_room_orientation"
-			if data.generation_version != (12 if orientation else 11): return "start_state.tutorial.generation_version"
-			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry)
+			if data.generation_version not in ([12, 13] if orientation else [11]): return "start_state.tutorial.generation_version"
+			var tutorial_error := _tutorial_error(start_state.tutorial, allow_entry, data.generation_version)
 			if not tutorial_error.is_empty(): return "start_state.tutorial." + tutorial_error
 			if orientation:
 				var phase_error := CheckpointSchema.orientation_phase_error(start_state)
 				if not phase_error.is_empty(): return "start_state.tutorial." + phase_error
-		elif data.generation_version == 12:
+		elif data.generation_version >= 12:
 			return "start_state.tutorial"
-	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11, 12]:
+	elif data.has("start_state") or data.get("generation_version", 2) in [7, 8, 9, 10, 11, 12, 13]:
 		return "world_id.start_state"
 	if data.has("clock") and not WorldClock.valid_state(data.clock): return "clock"
 	if data.has("weather") and not WorldWeather.valid_state(data.weather): return "weather"
@@ -322,7 +322,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	var owned_data := data.duplicate()
 	owned_data.erase("start_state")
 	if not ItemState.unique_ids(owned_data, {}): return "item.id.duplicate"
-	if data.get("generation_version") == 12 and data.get("start_state", {}).has("tutorial"):
+	if data.get("generation_version") in [12, 13] and data.get("start_state", {}).has("tutorial"):
 		var orientation_error := _orientation_items_error(owned_data, data.start_state.tutorial)
 		if not orientation_error.is_empty(): return "start_state.tutorial." + orientation_error
 	return ""
@@ -385,7 +385,7 @@ func _find_item_records(value: Variant, identity: String, result: Array[Dictiona
 	elif value is Array:
 		for child in value: _find_item_records(child, identity, result)
 
-func _tutorial_error(value: Variant, allow_entry: bool) -> String:
+func _tutorial_error(value: Variant, allow_entry: bool, generation_version: int) -> String:
 	var state_error := CheckpointSchema.tutorial_error(value)
 	if not state_error.is_empty(): return state_error
 	if not value.has("entry_snapshot"): return ""
@@ -395,7 +395,7 @@ func _tutorial_error(value: Variant, allow_entry: bool) -> String:
 	var entry_error := _validation_error(entry, false)
 	if not entry_error.is_empty(): return "entry_snapshot." + entry_error
 	var orientation: bool = value.get("course") == "two_room_orientation"
-	if entry.get("world_id") != "shelter" or entry.get("generation_version") != (12 if orientation else 11): return "entry_snapshot.world_id"
+	if entry.get("world_id") != "shelter" or entry.get("generation_version") != generation_version: return "entry_snapshot.world_id"
 	var entry_tutorial: Variant = entry.get("start_state", {}).get("tutorial")
 	if not entry_tutorial is Dictionary: return "entry_snapshot.tutorial"
 	var identity_fields := ["version", "stage", "terminal_id", "rv_id"] if orientation else ["version", "stage", "terminal_id", "rv_id", "flashlight_id"]

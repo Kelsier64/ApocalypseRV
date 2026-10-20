@@ -42,6 +42,8 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	if gradual:
 		await _pause()
 	_build_road()
+	if field.landforms != null:
+		await TerrainCrossings.build(self, gradual)
 	if field.profile.generation_version >= 8:
 		road_spawns = RoadSpawns.plan(field, band)
 		RoadSpawns.build_static(self, road_spawns)
@@ -100,6 +102,9 @@ func _build_ground(gradual: bool) -> void:
 			var color := Color(0.38, 0.43, 0.23) * w.x + Color(0.24, 0.32, 0.18) * w.y + Color(0.48, 0.43, 0.33) * w.z
 			if field.profile.generation_version >= 3:
 				color = Color("656153") * w.x + Color("515849") * w.y + Color("797369") * w.z
+			if field.landforms != null:
+				color = field.landforms.color_at(-z0 + j * step)
+				if is_finite(float(sample.water_height)): color = Color("454e43")
 			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
 			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
 			st.set_normal(normal)
@@ -132,7 +137,7 @@ func _build_distant_sides(gradual: bool) -> void:
 		for j in range(51):
 			var z := -band * 150.0 - j * 3.0
 			for x in columns:
-				st.set_color(Color(0.36, 0.39, 0.27))
+				st.set_color(field.landforms.color_at(-z) if field.landforms != null else Color(0.36, 0.39, 0.27))
 				st.add_vertex(Vector3(x * side, field.height_at(x * side, z), z))
 			if gradual and slice_exhausted(): await _pause()
 		for j in range(50):
@@ -185,13 +190,19 @@ func _build_road() -> void:
 		var frame := field.road_frame(s)
 		var paint := RoadsideKit.part(self, Vector3(0.16, 0.015, 4), frame.origin + Vector3.UP * 0.09, Color(0.76, 0.69, 0.42))
 		paint.basis = frame.basis
-		paint.rotation.x = atan2(field.road_height(s + 2) - field.road_height(s - 2), 4.0)
+		if field.landforms != null:
+			var behind := field.road_frame(s - 2).origin
+			var ahead := field.road_frame(s + 2).origin
+			paint.basis = Basis.looking_at(ahead - behind)
+		else:
+			paint.rotation.x = atan2(field.road_height(s + 2) - field.road_height(s - 2), 4.0)
 	for i in range(3):
 		var s := band * 150.0 + i * 50.0 + 20.0
 		var point := field.road_frame(s) * Vector3(14, 0, 0)
+		if field.landforms != null and (field.landforms.bridge_at(s) or field.road_width(s) > 18.0): continue
 		if not _near_site(point):
 			_place_module("pole", point, field.road_frame(s).basis)
-	if posmod(band, 6) == 3:
+	if field.landforms == null and posmod(band, 6) == 3:
 		var frame := field.road_frame(band * 150.0 - 35.0)
 		var sign_node := _place_module("sign", frame * Vector3(11, 0, 0), frame.basis)
 		RoadsideKit.label(sign_node, "NARROW ROAD\nSLOW", Vector3(0, 3.4, 0.08), 34)
@@ -396,6 +407,8 @@ func _build_navigation(gradual: bool = false) -> void:
 				gate_layers[leaf] = leaf.collision_layer
 				leaf.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
+	if field.landforms != null:
+		TerrainCrossings.navigation_obstacles(field, band, source)
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():

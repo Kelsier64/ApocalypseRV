@@ -182,7 +182,7 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 		var z := -index * profile.chunk_length - j * 30.0
 		for i in range(71):
 			var x := -1050.0 + i * 30.0
-			st.set_color(Color(0.36, 0.39, 0.27))
+			st.set_color(field.landforms.color_at(-z) if field.landforms != null else Color(0.36, 0.39, 0.27))
 			st.add_vertex(Vector3(x, field.height_at(x, z), z))
 		if gradual and j % 5 == 0:
 			await get_tree().process_frame
