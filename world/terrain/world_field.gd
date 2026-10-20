@@ -24,7 +24,7 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	var noises := [macro, medium, detail, clusters]
 	var frequencies := [0.0011, 0.008, 0.07, 0.024]
 	for i in range(noises.size()):
-		noises[i].seed = seed_for(i, "noise")
+		noises[i].seed = seed_for(i, "noise", 13 if profile.generation_version == 14 else -1)
 		noises[i].noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noises[i].frequency = frequencies[i]
 		noises[i].fractal_octaves = 3
@@ -33,12 +33,13 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 		route = TerrainRoute.new(self)
 		landforms = TerrainLandforms.new(self)
 
-func seed_for(id: int, domain: String) -> int:
-	return int(("%d:%d:%d:%s" % [profile.generation_version, world_seed, id, domain]).hash())
+func seed_for(id: int, domain: String, version_override: int = -1) -> int:
+	var version := profile.generation_version if version_override < 0 else version_override
+	return int(("%d:%d:%d:%s" % [version, world_seed, id, domain]).hash())
 
-func rng_for(id: int, domain: String) -> RandomNumberGenerator:
+func rng_for(id: int, domain: String, version_override: int = -1) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_for(id, domain)
+	rng.seed = seed_for(id, domain, version_override)
 	return rng
 
 func region_weights(x: float, z: float) -> Vector3:
@@ -265,7 +266,12 @@ func surface(x: float, z: float) -> Dictionary:
 		var start_surface := _starting_shelter_surface(x, z, height)
 		height = start_surface.height
 		reserved = reserved or start_surface.reserved
-	return {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank}
+	var result := {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank}
+	if profile.generation_version >= 14:
+		result.appearance = landforms.appearance_at(-z)
+		var a: Vector3 = result.appearance
+		result.moisture = lerpf(TerrainLandforms.MOISTURE[int(a.x)], TerrainLandforms.MOISTURE[int(a.y)], a.z)
+	return result
 
 ## Authored opening area: a level garage/forecourt with earth against its sides
 ## and rear. Applied after the shared road/spawn blending to keep its floor exact.

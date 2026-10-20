@@ -7,6 +7,7 @@ static var materials: Dictionary = {}
 static func tree(kind: int) -> ArrayMesh:
 	var key := "tree%d" % kind
 	if cache.has(key): return cache[key]
+	if kind >= 6: return _broadleaf(kind)
 	var wood := SurfaceTool.new()
 	var leaf := SurfaceTool.new()
 	wood.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -48,6 +49,60 @@ static func tree(kind: int) -> ArrayMesh:
 		result.surface_set_material(1, _material(false))
 	cache[key] = result
 	return result
+
+static func _broadleaf(kind: int) -> ArrayMesh:
+	var wood := SurfaceTool.new()
+	var leaf := SurfaceTool.new()
+	wood.begin(Mesh.PRIMITIVE_TRIANGLES)
+	leaf.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1400 + kind
+	var bend := Vector3(0.06 if kind == 6 else -0.08, 0, 0.035)
+	var bark := Color("8c8877")
+	_tube(wood, Vector3.ZERO, Vector3.UP * 0.45, 0.10, 0.065, bark, 7)
+	_tube(wood, Vector3.UP * 0.45, Vector3.UP * 0.84 + bend, 0.065, 0.015, bark, 6)
+	for i in range(6):
+		var angle := i * 2.399 + kind
+		var start := Vector3.UP * (0.40 + i * 0.046) + bend * 0.4
+		var reach := rng.randf_range(0.50, 0.92) * (0.85 if kind == 7 else 1.0)
+		var end := Vector3(cos(angle) * reach, rng.randf_range(0.62, 0.82), sin(angle) * reach) + bend
+		_tube(wood, start, end, 0.035, 0.007, bark, 5)
+		_crown(leaf, end + Vector3.UP * 0.05, Vector3(0.62, 0.19, 0.57), Color("505c3d") if kind == 6 else Color("5c6349"), rng)
+	_crown(leaf, Vector3.UP * 0.87 + bend, Vector3(0.63, 0.15, 0.61), Color("626e4b"), rng)
+	wood.generate_normals()
+	leaf.generate_normals()
+	var mesh := wood.commit()
+	mesh.surface_set_material(0, _material(true))
+	leaf.commit(mesh)
+	# Solid crowns use their own facets and tint rather than the needle pattern.
+	if not materials.has("broadleaf"):
+		var material := StandardMaterial3D.new()
+		material.vertex_color_use_as_albedo = true
+		material.roughness = 1.0
+		material.metallic_specular = 0.0
+		material.set_meta("forest_foliage", true)
+		materials["broadleaf"] = material
+	mesh.surface_set_material(1, materials["broadleaf"])
+	cache["tree%d" % kind] = mesh
+	return mesh
+
+static func _crown(st: SurfaceTool, center: Vector3, size: Vector3, tint: Color, rng: RandomNumberGenerator) -> void:
+	var rings: Array[PackedVector3Array] = []
+	for level: float in [-0.60, 0.0, 0.65]:
+		var ring := PackedVector3Array()
+		for i in range(7):
+			var angle := i * TAU / 7.0
+			var radius := (1.0 if level == 0 else 0.72) * rng.randf_range(0.87, 1.08)
+			ring.append(center + Vector3(cos(angle) * radius * size.x, level * size.y, sin(angle) * radius * size.z))
+		rings.append(ring)
+	for i in range(7):
+		var next := (i + 1) % 7
+		_triangle(st, center - Vector3.UP * size.y, rings[0][next], rings[0][i], tint.darkened(0.12))
+		for row in range(2):
+			var color := tint.lightened(row * 0.06)
+			_triangle(st, rings[row][i], rings[row][next], rings[row + 1][i], color)
+			_triangle(st, rings[row][next], rings[row + 1][next], rings[row + 1][i], color)
+		_triangle(st, rings[2][i], rings[2][next], center + Vector3.UP * size.y, tint.lightened(0.10))
 
 static func shrub(kind: int) -> ArrayMesh:
 	var key := "shrub%d" % kind

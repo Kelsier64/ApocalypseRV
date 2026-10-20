@@ -32,8 +32,8 @@
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
-| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權 |
-| [streaming_generation](test_streaming_generation.gd) | v6 分幀／碰撞一致性、v13 四種子 12 km 道路與地形契約、橋面支撐及導航發布 |
+| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v5 接受地形生成 v14、拒絕 v15，並檢查重試入口版本一致 |
+| [streaming_generation](test_streaming_generation.gd) | v6 分幀／碰撞一致性、v13／v14 四種子 12 km 路線與地形契約、v14 道路凍結及獨立外觀域、橋面支撐與導航發布 |
 | [main_scene_smoke](main_scene_smoke.gd) | 正式主世界可操作、Esc 設定路由與玩家移動 |
 
 新版教學共用旅程放在 [support/orientation_journey.gd](support/orientation_journey.gd)，只由 departure 執行，避免同一批交易重跑。新增頂層 `test_*.gd` 會自動納入預設及 CI；優先擴充既有核心測試，共用 fixture 放在 `support/`。

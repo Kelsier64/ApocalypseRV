@@ -183,7 +183,16 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 		for i in range(71):
 			var x := -1050.0 + i * 30.0
 			st.set_color(field.landforms.color_at(-z) if field.landforms != null else Color(0.36, 0.39, 0.27))
-			st.add_vertex(Vector3(x, field.height_at(x, z), z))
+			if field.profile.generation_version >= 14:
+				var sample := field.surface(x, z)
+				var color := field.landforms.color_at(-z)
+				if is_finite(float(sample.water_height)): color = Color("454e43")
+				st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
+				st.set_uv(Vector2(sample.gravel, sample.river_bank))
+				st.set_uv2(field.landforms.material_weights(sample.appearance))
+				st.add_vertex(Vector3(x, sample.height, z))
+			else:
+				st.add_vertex(Vector3(x, field.height_at(x, z), z))
 		if gradual and j % 5 == 0:
 			await get_tree().process_frame
 	for j in range(30):
@@ -199,6 +208,11 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 1.0
 	next.material_override = mat
+	if field.profile.generation_version >= 14:
+		var terrain_material := ShaderMaterial.new()
+		terrain_material.shader = ChunkGenerator.TERRAIN_V14
+		terrain_material.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
+		next.material_override = terrain_material
 	add_child(next)
 	if is_instance_valid(horizon):
 		horizon.queue_free()

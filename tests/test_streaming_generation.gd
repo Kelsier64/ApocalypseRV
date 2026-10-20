@@ -2,6 +2,7 @@ extends SceneTree
 ## Slicing must preserve geometry and collision, including every forest trunk.
 const WAIT = preload("res://tests/support/test_wait.gd")
 const TERRAIN_CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
+const V14_CONTRACTS = preload("res://tests/support/terrain_v14_contracts.gd")
 var failures: Array[String] = []
 
 class TerrainHost extends Node3D:
@@ -59,17 +60,21 @@ func run() -> void:
 		chunk.queue_free()
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
-	await _check_crossing_chunk(world)
-	await _check_dry_viaduct(world)
+	TERRAIN_CONTRACTS.run(check, 14)
+	await V14_CONTRACTS.run(self, world, check)
+	for version: int in [13, 14]:
+		await _check_crossing_chunk(world, version)
+		await _check_dry_viaduct(world, version)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13 route and landforms satisfy sampled contracts")
+	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13/v14 routes, landforms and crossings satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
 
-func _check_crossing_chunk(world: Node3D) -> void:
-	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile())
+func _check_crossing_chunk(world: Node3D, version: int) -> void:
+	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
+	var label := "v%d: " % version
 	var rivers: Array[Dictionary] = field.landforms.rivers_near(-1200.0)
-	check(not rivers.is_empty(), "v13 fixture contains a river crossing")
+	check(not rivers.is_empty(), label + "fixture contains a river crossing")
 	if rivers.is_empty():
 		return
 	var crossing: Dictionary = rivers[0]
@@ -82,18 +87,18 @@ func _check_crossing_chunk(world: Node3D) -> void:
 	host.add_child(chunk)
 	await chunk.generate(field, floori(s / field.profile.chunk_length), POISpawner.new(), true)
 	var water := chunk.find_children("*RiverWater*", "MeshInstance3D", true, false)
-	check(not water.is_empty(), "v13 crossing chunk builds visible river water")
+	check(not water.is_empty(), label + "crossing chunk builds visible river water")
 	for mesh: MeshInstance3D in water:
 		check(mesh.mesh != null and mesh.mesh.get_faces().size() >= 6, "River water has real mesh geometry")
 		check(mesh.find_children("*", "CollisionShape3D", true, false).is_empty(), "River surface does not become a solid floor")
 	_check_terrain_side_seams(chunk)
 	_check_rendered_shores(chunk, crossing)
 	await _check_water_band_seam(host, chunk)
-	check(chunk.has_node("BridgeStructure"), "v13 crossing chunk builds bridge structure")
-	check(not chunk.find_children("*BridgeDeck*", "MeshInstance3D", true, false).is_empty(), "v13 crossing chunk builds bridge deck geometry")
+	check(chunk.has_node("BridgeStructure"), label + "crossing chunk builds bridge structure")
+	check(not chunk.find_children("*BridgeDeck*", "MeshInstance3D", true, false).is_empty(), label + "crossing chunk builds bridge deck geometry")
 	_check_bridge_supports(chunk)
 	if not await WAIT.navigation_ready(self, [chunk]):
-		check(false, "v13 river/bridge navigation bake/publication timed out")
+		check(false, label + "river/bridge navigation bake/publication timed out")
 	else:
 		await physics_frame
 		var frame := field.road_frame(s)
@@ -119,8 +124,9 @@ func _check_crossing_chunk(world: Node3D) -> void:
 	host.queue_free()
 	await process_frame
 
-func _check_dry_viaduct(world: Node3D) -> void:
-	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile())
+func _check_dry_viaduct(world: Node3D, version: int) -> void:
+	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
+	var label := "v%d: " % version
 	var band := -1
 	for candidate in range(4, 80):
 		var eligible := true
@@ -130,7 +136,7 @@ func _check_dry_viaduct(world: Node3D) -> void:
 		if eligible:
 			band = candidate
 			break
-	check(band >= 0, "v13 fixture contains a sustained elevated road over a dry valley")
+	check(band >= 0, label + "fixture contains a sustained elevated road over a dry valley")
 	if band < 0: return
 	var host := TerrainHost.new()
 	world.add_child(host)
@@ -147,7 +153,7 @@ func _check_dry_viaduct(world: Node3D) -> void:
 	_check_bridge_supports(chunk)
 	await chunk._build_navigation(false)
 	if not await WAIT.navigation_ready(self, [chunk]):
-		check(false, "Dry viaduct navigation bake/publication timed out")
+		check(false, label + "dry viaduct navigation bake/publication timed out")
 	else:
 		await physics_frame
 		var space := world.get_world_3d().direct_space_state

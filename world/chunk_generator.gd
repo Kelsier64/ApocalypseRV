@@ -4,6 +4,7 @@ class_name ChunkGenerator
 const CHUNK_SIZE := 150.0
 const RAKER_SCENE = preload("res://enemies/raker.tscn")
 const TERRAIN_SHADER = preload("res://world/terrain/terrain_material.gdshader")
+const TERRAIN_V14 = preload("res://world/terrain/terrain_v14.gdshader")
 const SLICE_BUDGET_USEC := 4000
 var field: WorldField
 var band: int
@@ -107,11 +108,16 @@ func _build_ground(gradual: bool) -> void:
 				color = field.landforms.color_at(-z0 + j * step)
 				if is_finite(float(sample.water_height)): color = Color("454e43")
 				color = color.lerp(Color("716b54"), float(sample.river_bank) * 0.72)
-			color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
-			color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
+			if field.profile.generation_version < 14:
+				color = color.lerp(Color(0.38, 0.38, 0.34), smoothstep(0.18, 0.6, 1.0 - normal.y))
+				color = color.lerp(Color(0.43, 0.39, 0.30), float(sample.gravel) * 0.85)
 			st.set_normal(normal)
 			st.set_color(color)
-			st.set_uv(Vector2(i, j) * step / 4.0)
+			if field.profile.generation_version >= 14:
+				st.set_uv(Vector2(sample.gravel, sample.river_bank))
+				st.set_uv2(field.landforms.material_weights(sample.appearance))
+			else:
+				st.set_uv(Vector2(i, j) * step / 4.0)
 			st.add_vertex(Vector3(-field.profile.terrain_half_width + i * step_x, sample.height, z0 - j * step))
 		if gradual and slice_exhausted():
 			await _pause()
@@ -123,7 +129,7 @@ func _build_ground(gradual: bool) -> void:
 		if gradual and slice_exhausted(): await _pause()
 	_terrain = _mesh(st.commit(), "Ground", true)
 	var mat := ShaderMaterial.new()
-	mat.shader = TERRAIN_SHADER
+	mat.shader = TERRAIN_V14 if field.profile.generation_version >= 14 else TERRAIN_SHADER
 	mat.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
 	_terrain.material_override = mat
 	if gradual:
@@ -153,6 +159,9 @@ func _build_distant_sides(gradual: bool) -> void:
 					var color := field.landforms.color_at(-z)
 					if is_finite(float(sample.water_height)): color = Color("454e43")
 					st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
+					if field.profile.generation_version >= 14:
+						st.set_uv(Vector2(sample.gravel, sample.river_bank))
+						st.set_uv2(field.landforms.material_weights(sample.appearance))
 					st.add_vertex(Vector3(x * side, sample.height, z))
 				else:
 					st.set_color(Color(0.36, 0.39, 0.27))

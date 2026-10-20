@@ -167,6 +167,7 @@ static func spawn(source: Node3D, velocity: Vector3, vehicle_position: Vector3 =
 static func _is_foliage(material: Material) -> bool:
 	var standard := material as StandardMaterial3D
 	if standard == null: return false
+	if bool(standard.get_meta("forest_foliage", false)): return true
 	if standard.albedo_texture != null and standard.albedo_texture.resource_path.ends_with("bough.svg"): return true
 	return standard.albedo_color.g > standard.albedo_color.r * 1.12
 

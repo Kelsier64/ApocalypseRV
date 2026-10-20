@@ -1,21 +1,21 @@
 extends RefCounted
-## Pure, bounded v13 sampling. Geometry checks use the swept carriageway, not
+## Pure, bounded terrain sampling. Geometry checks use the swept carriageway, not
 ## only the monotonic centre parameter, so folded or overlapping edges fail too.
 const LENGTH := 12000.0
 const STEP := 10.0
 const SEEDS := [0, 42, 99173, -61]
 
-static func profile() -> WorldProfile:
+static func profile(version: int = 13) -> WorldProfile:
 	var settings := WorldProfile.new()
-	settings.generation_version = 13
+	settings.generation_version = version
 	settings.max_grade = 0.12
 	return settings
 
-static func run(check: Callable) -> void:
+static func run(check: Callable, version: int = 13) -> void:
 	var signatures: Array = []
 	for seed_value: int in SEEDS:
-		var field := WorldField.new(seed_value, profile())
-		var reverse := WorldField.new(seed_value, profile())
+		var field := WorldField.new(seed_value, profile(version))
+		var reverse := WorldField.new(seed_value, profile(version))
 		# Ask far-first before comparing ascending samples to catch cache/order drift.
 		for index in range(24, -1, -1):
 			_snapshot(reverse, index * 487.0 + 31.0)
@@ -23,21 +23,21 @@ static func run(check: Callable) -> void:
 		for index in range(25):
 			var s := index * 487.0 + 31.0
 			var sample := _snapshot(field, s)
-			check.call(sample == _snapshot(reverse, s), "v13 seed %d: queries are independent of request order at %.0fm" % [seed_value, s])
+			check.call(sample == _snapshot(reverse, s), "v%d seed %d: queries are independent of request order at %.0fm" % [version, seed_value, s])
 			signature.append(sample)
 		signatures.append(signature)
 		_check_route(field, check)
 		_check_rivers(field, check)
 		_check_elevated_spans(field, reverse, check)
 	for index in range(1, signatures.size()):
-		check.call(signatures[index] != signatures[0], "v13 different seeds produce different routes and terrain")
+		check.call(signatures[index] != signatures[0], "v%d different seeds produce different routes and terrain" % version)
 
 static func _snapshot(field: WorldField, s: float) -> Array:
 	var x := field.road_x(s)
 	return [field.road_frame(s), field.road_width(s), field.surface(x + 65.0, -s), field.landforms.kind_at(s), field.landforms.rivers_near(-s), field.landforms.bridge_at(s), field.landforms.bridge_gap(s)]
 
 static func _check_elevated_spans(field: WorldField, reverse: WorldField, check: Callable) -> void:
-	var label := "v13 seed %d: " % field.world_seed
+	var label := "v%d seed %d: " % [field.profile.generation_version, field.world_seed]
 	var dry_valley := false
 	var supported := true
 	var deterministic := true
@@ -152,7 +152,7 @@ static func _check_route(field: WorldField, check: Callable) -> void:
 			var left_terrain := float(field.surface(origin.x - 150.0, origin.z).height)
 			var right_terrain := float(field.surface(origin.x + 150.0, origin.z).height)
 			maximum_relief = maxf(maximum_relief, maxf(absf(left_terrain - right_terrain), maxf(absf(left_terrain - origin.y), absf(right_terrain - origin.y))))
-	var label := "v13 seed %d: " % field.world_seed
+	var label := "v%d seed %d: " % [field.profile.generation_version, field.world_seed]
 	check.call(forward_only and maximum_offset <= 220.0, label + "route progresses forward inside the terrain corridor")
 	check.call(ribbon_clear, label + "finite-width road ribbon neither folds nor intersects earlier road")
 	check.call(maximum_grade <= field.profile.max_grade + 0.002, label + "actual road grade respects the configured limit (%.4f)" % maximum_grade)
@@ -198,7 +198,7 @@ static func _insert_clear_ribbon(quad: PackedVector2Array, ribbons: Array[Packed
 
 static func _check_rivers(field: WorldField, check: Callable) -> void:
 	var rivers: Array[Dictionary] = field.landforms.rivers_near(-LENGTH * 0.5, LENGTH * 0.5)
-	var label := "v13 seed %d: " % field.world_seed
+	var label := "v%d seed %d: " % [field.profile.generation_version, field.world_seed]
 	check.call(not rivers.is_empty(), label + "journey contains river crossings")
 	for river: Dictionary in rivers:
 		var s := float(river.s)
@@ -231,7 +231,7 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 				check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "both bridge ends have dry terrain support across the carriageway")
 
 static func _check_shoreline(field: WorldField, river: Dictionary, check: Callable) -> void:
-	var label := "v13 seed %d river %.0fm: " % [field.world_seed, float(river.s)]
+	var label := "v%d seed %d river %.0fm: " % [field.profile.generation_version, field.world_seed, float(river.s)]
 	var level := float(river.water_height)
 	var waterline_error := 0.0
 	var inside_wet := true

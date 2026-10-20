@@ -1,8 +1,6 @@
 # ApocalypseRV 架構
 
-v13 高路面更新：`TerrainLandforms` 以天然地形落差規劃固定 15 m 跨度格，河川與乾谷共用 `BridgeBuilder` 的變寬厚橋板／工字梁／雙柱墩／承台及橋台。`bridge_gap` 在端部接回土路基；橋板與主梁保留實體碰撞，導航只使用精確道路頂面，護欄與刷新避讓共用跨度。此為本輪模型與自動生成檢查點，實際輪驅及長途效能待驗收，見[本輪紀錄](docs/validation/2026-10-20-viaduct-bridge.md)。
-
-正式新局目前使用生成 v13，沿用 v12 兩室教學；舊存檔保留其原始生成版本。v13 由 `TerrainRoute` 提供 `x=f(s),z=-s` 的單向展開道路、變寬及有界坡度；`TerrainLandforms` 共用地形／河道與 POI 避讓；`TerrainCrossings` 生成水面、橋梁及護欄，橋面導航另行加入並排除水下河床。護欄計畫同時提供碰撞、生成避讓與鄰區導航，場址整地按實際旋轉占地查詢。Checkpoint 仍為 v5，v13 與教學重試入口保留同一生成版本。此為第一個檢查點，實際長途輪驅與美術細化尚未驗收；[分階段計畫](docs/plans/terrain-overhaul.md)與[本輪驗證](docs/validation/2026-10-20-terrain-stage1.md)。下方各歷史版本段落保留其對應契約，不代表正式新局仍選擇該版本。
+正式新局目前使用地形生成 v14，沿用 v12 兩室教學；舊 v2–v13 存檔仍按原生成版本重建。道路 RNG 域固定在版本 13，因此相同種子／設定的道路路線、寬度與高度不變；v14 relief 與 flora 使用獨立隨機域。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地輪廓、世界空間噪音及材質；`ForestScenery` 依地貌分群植被並避開 40° 以上坡面，`FloraMeshes` 提供草、蘆葦及碎石，`ForestMeshes` 6、7 型為闊葉樹，沿用原 `TreeFall`。v13 橋梁按新版地形重新計算跨度。Checkpoint 外層仍為 v5，允許地形生成 v14、拒絕 v15，教學重試入口沿用同一生成版本。此輪停在等待使用者檢查實際渲染；湖泊、水流玩法、長途輪驅及完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [本輪紀錄](docs/validation/2026-10-20-terrain-v14.md)。下方歷史段落保留其對應契約，不代表正式新局仍選擇該版本。
 
 2026-10-16 倉庫配置：v12 第二室新增可重用靜態貨架、貨箱與棧板，16 件原有 Item 改由分散的出生標記配置；保留舊矮架及碰撞路徑，已保存的物資維持原位置。`WarehouseApproaches` 僅保存設計用接近點，不生成遊戲提示或改變交易判定；貨架燈具屬建築、光源置於 Furnishings。[驗證與驗收](docs/validation/2026-10-16-orientation-warehouse.md)。
 
@@ -64,7 +62,7 @@ MainWorld
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-正式主場景明確選擇生成 v11；共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、导航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
+歷史 v11 主場景契約：該版明確選擇生成 v11，共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、導航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
 Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9／v10／v11，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
 
@@ -583,7 +581,7 @@ Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`�
 
 ### v6 路邊小 POI
 
-正式主場景選擇 v11，v7／v8／v9／v10／v11 沿用 v6 小 POI 規則；共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
+歷史 v11 主場景使用 v6 小 POI 規則；v7／v8／v9／v10／v11 沿用該規則，共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
 
 `WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 
