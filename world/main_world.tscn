@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://world/terrain/world_profile.gd" id="19_profile"]
 [ext_resource type="Script" path="res://world/deviation_pressure.gd" id="20_pressure"]
 [ext_resource type="Script" path="res://world/tutorial_shelter/tutorial_controller.gd" id="21_tutorial"]
+[ext_resource type="Script" path="res://world/night_vision_effect.gd" id="22_adaptation"]
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
@@ -58,6 +59,9 @@ profile = SubResource("ProductionProfile")
 
 [node name="WorldClock" type="Node" parent="." unique_id=1066342904]
 script = ExtResource("17_clock")
+
+[node name="DarkAdaptation" type="Node3D" parent="."]
+script = ExtResource("22_adaptation")
 
 [node name="DeviationPressure" type="Node" parent="."]
 script = ExtResource("20_pressure")

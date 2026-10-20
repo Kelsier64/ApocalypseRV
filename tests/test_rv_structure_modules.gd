@@ -51,6 +51,7 @@ func _run() -> void:
 	var side: RVStructurePanel = rv.get_node("RightMiddle")
 	var ladder_wall: RVStructurePanel = rv.get_node("LeftMiddle")
 	var rear: RVStructurePanel = rv.get_node("RearDoor")
+	await _exercise_free_construction(slots)
 	check(rv.get_structures().filter(func(d): return d.structure_kind == "side").size() == 6, "Six independently owned side modules")
 	check(side.has_method("toggle_leaf") and not rv.get_node("LeftMiddle").has_method("toggle_leaf"), "Right wall-door-wall and left wall-wall-wall")
 	for slot in RVStructureSlots.layout():
@@ -232,3 +233,35 @@ func _run() -> void:
 	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop and persistent chassis floor")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func _exercise_free_construction(slots: RVStructureSlots) -> void:
+	var materials := rv.inventory.duplicate(true)
+	var charge := rv.current_power
+	rv.inventory = {}
+	rv.unlimited_materials = true
+	var tablet: Item = rv.get_node("TabletScreen")
+	tablet.interact_hold(player)
+	var construction: RVStructureConstruction = slots.construction
+	var panel := slots.panel("left_2")
+	panel.take_damage(60.0)
+	var health: float = panel.current_health
+	check(construction.begin(tablet, "left_2", "repair").is_empty(), "Unlimited materials permit structure repair with empty stock")
+	construction._physics_process(0.25)
+	check(construction.is_building() and panel.current_health == health, "Unlimited construction retains its work duration")
+	rv.unlimited_materials = false
+	construction._physics_process(2.0)
+	check(not construction.is_building() and panel.current_health == health and rv.inventory.is_empty(), "Turning off free materials rechecks payment at structure completion")
+	rv.unlimited_materials = true
+	check(construction.begin(tablet, "left_2", "repair").is_empty(), "Free structure repair can restart after cancellation")
+	construction._physics_process(2.0)
+	check(not construction.is_building() and panel.current_health == panel.max_health and rv.inventory.is_empty(), "Free structure repair completes without changing reserves")
+	panel.take_damage(999.0)
+	check(construction.begin(tablet, "left_2", "rebuild").is_empty(), "Free materials allow rebuilding a destroyed structure")
+	construction._physics_process(6.0)
+	var rebuilt := slots.occupant("left_2")
+	check(rebuilt != null and rebuilt.current_health == rebuilt.max_health and rv.inventory.is_empty(), "Free rebuild installs a real panel without a material refund")
+	tablet._close_ui()
+	rv.unlimited_materials = false
+	rv.current_power = charge
+	rv.inventory = materials
+	await physics_frame

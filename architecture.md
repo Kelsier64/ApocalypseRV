@@ -44,6 +44,7 @@ MainWorld
 │   └── InteriorViewport    獨立 World3D，僅探索時存在
 │       └── PoiInterior     房間／走廊／導航／WorldEntities／室內玩家
 ├── WorldClock              自然天氣與顯示霧合成
+├── DarkAdaptation          依局部亮度的灰階顯示、視圖與距離設定
 ├── DeviationPressure       偏行判定、真實秒數事件與額外刷新
 ├── NewRv
 │   └── Chassis             VehicleBody3D、油電、材料、耐久
@@ -181,6 +182,14 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
+灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果先依視圖環境光亮度啟用，再用各處的實際照明及材質參考估計缺光量，明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。`ambient_gate_enabled` 預設 true；Color 環境光的線性顏色 luminance × energy 在 ≤0.04 時完整啟用、0.04～0.06 反向 smoothstep 淡出、≥`ambient_threshold`（0.06）停用。`ambient_transition`（0.02）控制門檻下方漸變寬度；不累積前幀。Disabled 環境光視為 0；Sky／Background 或缺少 Environment 時保守維持啟用，避免猜測天空照度。明亮全域環境光下的局部陰影因此不補灰階；關閉 gate 可恢復持續局部處理。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
+
+NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估計材質亮度。正的線性亮度差額乘上局部暗部反應、距離曲線及環境光啟用強度後加至主圖；暗部反應為原生／參考亮度比例在 dark_ratio～lit_ratio 之間的反向 smoothstep，參考近零時不補足。單一燈具不控制全域啟閉；主圖、真實燈光、發光與陰影不乘曲線。這是視覺估計，不是精確的光照分解，微弱彩色照明可能被灰階柔化，體積霧低解析度取樣及複雜透明材質也可能有差異。
+
+參考環境每幀讀取來源 Camera3D.environment，缺省時讀取所屬 World3D 的 Environment／fallback；同一來源供環境光門檻使用。保留天空、距離霧與全域／局部體積霧的遮蔽，將參考環境光／GI 注入體積霧設為零，避免補出額外散射。主圖的霧及燈光不受效果啟閉影響。參考不含第二份雨幕／水花，雨與水花直接接受原生場景照明；透明玻璃與天氣在灰階合成後依原生流程繪製。只有低於環境光門檻的活動視圖增加一次同 3D 縮放比例的幾何參考渲染；明亮視圖停用參考更新及 Quad。不新增模擬或陰影 pass；兩側鏡只在既定刷新時同步參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。同世界任一視圖啟用時，所有活動相機（含明亮視圖）保留燈光圖層並排除其他視圖 Quad；全數停用才還原原始相機／燈光圖層。合成 Quad 跟隨來源視錐中心，只略過遮蔽剔除，不能使用忽略所有剔除的 API，否則會繞過 layer mask 被自己的參考拍入並產生回饋。暫停保留上次門檻及參考圖，明確停用仍釋放相機及燈光路由；候選世界轉移後重新綁定目標 viewport／World3D。復古與使用者畫面偏好在其後獨立套用，HUD 不參與缺光估計。不新增存檔欄位。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
+
+來源 `get_camera_transform()` 提供含偏移、必要時已插值的顯示姿勢。參考相機與 Quad 在 `frame_pre_draw` 逐幀更新，因此明確關閉自己的 physics interpolation，並在定位後各呼叫 `force_update_transform()`；此時 SceneTree 的普通 transform notification 已處理完，僅設定 global_transform 會使繪圖端晚一幀。車身帶動相機／燈光晃動與鏡面轉向必須使用輪廓幾何的首幀回歸，純黑接收面或等待多幀後擷取無法驗證這種錯位。
+
 Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。v5 缺欄位沿用 day 1 / 08:00，不改寫來源檔案、不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
 
 `tests/day_night_playground.tscn` 的調時／加速鍵只用於驗收。歷史美術樣板凍結時鐘並明確使用 exponential fog，避免新光照每幀覆寫 A/B 環境。
@@ -189,7 +198,7 @@ Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes�
 
 WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨立 RNG；advance 將現實 delta 換算成遊戲秒後，同步推進時間與天氣。WorldWeather 提供 changed、sample、set_weather、capture／restore／valid_state，狀態以 Vector3 表示晴朗程度、雨級、霧級。分段剩餘時間與轉換進度都使用遊戲秒；set_time 是驗收調光入口，不重抽天氣。
 
-WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。夜間環境光能量為 0.002，天空與霧同步降至近黑；照明主要依賴場景燈具。小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。無額外霧時維持下述遠景設定。
+WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
 
 ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，不使用跨世界全域 shader 參數。新 chunk 立即接收目前密度；晴天淡出林間霧。天氣從無霧過渡至小霧（霧級 0.5）時，全域及林間體積霧一起淡出至零，由距離霧接手，避免體積霧二次合成重新顯露已遮蔽的輪廓；新材質登錄與每幀更新使用相同密度。天空 shader 使用 disable_fog，起霧後收斂至相同霧色。Compatibility 僅使用距離霧。
 
@@ -353,7 +362,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 玩家 `enter_*`／`exit_*` 授權 UI、座位與放置，呼叫方須尊重拒絕。DEAD 阻擋輸入／移動；平板和座位在玩家死亡或設備失效時釋放模式。
 
-TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟預設 TUI；英文管理頁為 Overview、Energy、Equipment、Crafting、Structure。隱藏 Ctrl+C／Ctrl+D 退出 TUI，q 無綁定，Esc 始終關閉整台平板；切換及關閉須清理獨立 PopupMenu，事件由目前與 popup viewport 消耗。退出 UI 捕捉仍按住的遊戲操作，放開後才恢復。shell 起始只有提示符，沒有 banner、提示或按鈕；歷史及輸出有上限，補全不派送命令。RVTerminalCommands 以明確登錄表解析純文字及回傳允許的 UI action，提供 help／status／rvctl／clear／exit；cheat 僅回報未實作，沒有作弊 handler，不執行 OS 命令或任意程式。RVTerminalPresenter 只做英文呈現，原始服務狀態及交易仍由既有 owner 管理。施工要求 TUI 開啟，退出只取消本終端授權的施工；製作工作屬 CraftingStation，退出或關閉平板仍繼續。
+TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟預設 TUI；英文管理頁為 Overview、Energy、Equipment、Crafting、Structure。隱藏 Ctrl+C／Ctrl+D 退出 TUI，q 無綁定，Esc 始終關閉整台平板；切換及關閉須清理獨立 PopupMenu，事件由目前與 popup viewport 消耗。退出 UI 捕捉仍按住的遊戲操作，放開後才恢復。shell 起始只有提示符，沒有 banner、提示或按鈕；歷史及輸出有上限，補全不派送命令。RVTerminalCommands 以明確登錄表解析純文字及回傳允許的 UI action，提供 help／status／rvctl／clear／exit／cheat／time／weather，不執行 OS 命令或任意程式。時間與天氣只沿已連接 RV 的祖先尋找所屬 WorldClock，不使用全域查詢，以隔離待載入世界。三種 unlimited 旗標屬 Chassis 暫態，不進 VehicleSnapshot；成功讀檔重建車輛後重設，失敗保留原世界。VehicleEnergy 統一處理有效電力及各消耗，仍要求可用插槽與電池；燃油判斷涵蓋啟動、消耗、充電保留量及音效。免費製作以既有 job.costs 保存空字典，付費工作保存實付材料，取消與施工失敗退款依實付額，不依當下作弊開關。RVTerminalPresenter 只做英文呈現，原始服務狀態及交易仍由既有 owner 管理。施工要求 TUI 開啟，退出只取消本終端授權的施工；製作工作屬 CraftingStation，退出或關閉平板仍繼續。完整指令見 [README](README.md)；核心資源測試共用 [terminal_checks](tests/support/terminal_checks.gd)，不另增程序。
 
 
 <a id="section-5"></a>

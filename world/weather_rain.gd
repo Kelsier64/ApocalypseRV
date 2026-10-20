@@ -41,6 +41,8 @@ func _ready() -> void:
 	_build_field(NEAR_COUNT, NEAR_RADIUS, 32.0, false)
 	_build_field(FAR_COUNT, FAR_RADIUS, 48.0, true)
 	splash_instance = MultiMeshInstance3D.new()
+	# Reference adaptation contains opaque surfaces, not a second rain image.
+	splash_instance.layers = NightVisionEffect.LIGHT_LAYER
 	splash_instance.multimesh = MultiMesh.new()
 	splash_instance.multimesh.transform_format = MultiMesh.TRANSFORM_3D
 	splash_instance.multimesh.use_custom_data = true
@@ -100,6 +102,7 @@ func _exit_tree() -> void:
 
 func _build_field(count: int, radius: float, height: float, distant: bool) -> void:
 	var field := MultiMeshInstance3D.new()
+	field.layers = NightVisionEffect.LIGHT_LAYER
 	field.name = "DistantRain" if distant else "NearRain"
 	field.multimesh = MultiMesh.new()
 	field.multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -241,8 +244,6 @@ func _process(delta: float) -> void:
 	if camera == null: return
 	simulation_time += delta
 	var rain := clock.weather.sample().y / 2.0
-	var daylight := smoothstep(-0.16, 0.22, clock.sun_direction().y)
-	splash_material.set_shader_parameter("daylight", daylight)
 	visible_drops = 0
 	for i in range(fields.size()):
 		var field := fields[i]
@@ -255,7 +256,6 @@ func _process(delta: float) -> void:
 		field.custom_aabb = AABB(to_local(camera.global_position) - Vector3(radius + 1, height, radius + 1), Vector3((radius + 1) * 2, height * 2, (radius + 1) * 2))
 		materials[i].set_shader_parameter("camera_center", camera.global_position)
 		materials[i].set_shader_parameter("simulation_time", simulation_time)
-		materials[i].set_shader_parameter("daylight", daylight)
 		materials[i].set_shader_parameter("density", smoothstep(0.0, 0.15, rain))
 
 func _add_splash(hit: Dictionary, center: Vector3) -> void:

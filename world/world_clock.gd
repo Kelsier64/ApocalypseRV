@@ -50,8 +50,9 @@ func _ready() -> void:
 			environment.volumetric_fog_detail_spread = 2.0
 			environment.volumetric_fog_anisotropy = 0.0
 			environment.volumetric_fog_ambient_inject = 0.08
-			environment.volumetric_fog_temporal_reprojection_enabled = true
-			environment.volumetric_fog_temporal_reprojection_amount = 0.8
+			# Moving flashlights/headlights need current-frame scattering. History
+			# blending leaves their old beams in the fog after turning or switching off.
+			environment.volumetric_fog_temporal_reprojection_enabled = false
 		environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 		environment.sky = Sky.new()
@@ -155,13 +156,15 @@ func sun_direction() -> Vector3:
 func apply_time() -> void:
 	if environment == null or not is_instance_valid(sun): return
 	var volumetric: bool = game_settings.volumetric_fog_enabled()
-	environment.volumetric_fog_enabled = volumetric
 	var conditions := effective_visual_weather()
 	var clear := conditions.x
 	var rain := conditions.y / 2.0
 	var mist := conditions.z / 2.0
 	var direction := sun_direction()
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
+	# Only physical lighting/weather depend on the clock. Display adaptation reads
+	# the resulting brightness independently, including daytime shadows/interiors.
+	environment.volumetric_fog_enabled = volumetric
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
@@ -175,11 +178,9 @@ func apply_time() -> void:
 	var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
 	environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
 	environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
-	# Dark, matched sky/fog colors obscure geometry without a luminous white veil.
+	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
-	# Volumetric fog composites after depth fog and can reveal already-hidden
-	# geometry again. Fade it out as weather fog takes over the full scene.
 	environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
 	for material in fog_materials:
 		material.set_shader_parameter("density", 0.14 * (1.0 - clear) * (1.0 - light_mist))

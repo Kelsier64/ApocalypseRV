@@ -12,6 +12,12 @@ const MAX_OUTPUT_LINES := 128
 const MAX_OUTPUT_LENGTH := 16384
 const ACTIONS := ["", "open_tui", "close_tablet", "clear"]
 const UNSUPPORTED := "|&;<>$`\"'\\(){}[]"
+const WEATHER_PRESETS := {
+	"clear": Vector3(1, 0, 0), "overcast": Vector3.ZERO,
+	"rain": Vector3(0, 1, 0), "heavy_rain": Vector3(0, 2, 0),
+	"fog": Vector3(0, 0, 0.5), "medium_fog": Vector3(0, 0, 1),
+	"heavy_fog": Vector3(0, 0, 2), "storm": Vector3(0, 2, 2),
+}
 
 var _commands: Dictionary = {}
 var _help_length := 0
@@ -22,7 +28,9 @@ func _init() -> void:
 	register_command("rvctl", "rvctl", "Open RV controls.", _open_tui)
 	register_command("clear", "clear", "Clear shell output.", _clear)
 	register_command("exit", "exit", "Close the tablet.", _exit)
-	register_command("cheat", "cheat", "Reserved for future game commands.", _cheat)
+	register_command("cheat", "cheat [status|true|false|fuel|power|materials] [true|false]", "Read or change session-only unlimited resources on this RV.", _cheat, _complete_cheat)
+	register_command("time", "time [set HH:MM [day]]", "Read or immediately set world time (day 1-1000000).", _time, _complete_set)
+	register_command("weather", "weather [set preset]", "Read sample/target or immediately set weather. Use Tab to list presets.", _weather, _complete_weather)
 
 func register_command(name: String, usage: String, description: String, handler: Callable, completer: Callable = Callable()) -> bool:
 	if _commands.size() >= MAX_OUTPUT_LINES or not _valid_name(name) or _commands.has(name) or not handler.is_valid() or handler.get_argument_count() != 2:
@@ -185,8 +193,9 @@ func _status(args: PackedStringArray, context: Dictionary) -> Dictionary:
 	if rv is Chassis:
 		return _result(true, PackedStringArray([
 			"Speed: %.1f km/h" % (rv.road_speed() * 3.6),
-			"Fuel: %.1f / %.1f" % [rv.current_fuel, rv.max_fuel],
-			"Power: %.1f / %.1f" % [rv.current_power, rv.max_power],
+			"Fuel: %.1f / %.1f%s" % [rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel)],
+			"Power: %.1f / %.1f%s" % [rv.current_power, rv.max_power, _unlimited(rv.unlimited_power)],
+			"Materials: %d / %d%s" % [rv.storage.used(), rv.storage.capacity, _unlimited(rv.unlimited_materials)],
 			"Parking brake: %s" % ("ON" if rv.handbrake else "OFF"),
 		]))
 	return _error("RV status unavailable.")
@@ -200,5 +209,116 @@ func _clear(args: PackedStringArray, _context: Dictionary) -> Dictionary:
 func _exit(args: PackedStringArray, _context: Dictionary) -> Dictionary:
 	return _result(true, PackedStringArray(), "close_tablet") if args.is_empty() else _usage("exit")
 
-func _cheat(_args: PackedStringArray, _context: Dictionary) -> Dictionary:
-	return _error("cheat: not implemented.")
+func _connected_rv(context: Dictionary) -> Chassis:
+	var rv: Variant = context.get("rv")
+	return rv if rv is Chassis and is_instance_valid(rv) and not rv.is_queued_for_deletion() else null
+
+func _unlimited(enabled: bool) -> String:
+	return " UNLIMITED" if enabled else ""
+
+func _cheat(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	var all_flags := args.size() == 1 and args[0] in ["true", "false"]
+	var one_flag := args.size() == 2 and args[0] in ["fuel", "power", "materials"] and args[1] in ["true", "false"]
+	if not (args.is_empty() or (args.size() == 1 and args[0] == "status") or all_flags or one_flag):
+		return _usage("cheat")
+	var rv := _connected_rv(context)
+	if rv == null: return _error("RV unavailable.")
+	if all_flags:
+		for resource in ["fuel", "power", "materials"]: rv.set("unlimited_" + resource, args[0] == "true")
+	elif one_flag: rv.set("unlimited_" + args[0], args[1] == "true")
+	return _result(true, PackedStringArray([
+		"Fuel: %s" % ("UNLIMITED" if rv.unlimited_fuel else "finite"),
+		"Power: %s" % ("UNLIMITED" if rv.unlimited_power else "finite"),
+		"Materials: %s" % ("UNLIMITED" if rv.unlimited_materials else "finite"),
+	]))
+
+func _world_clock(context: Dictionary) -> WorldClock:
+	var rv := _connected_rv(context)
+	if rv == null or not rv.is_inside_tree(): return null
+	# Resolve through this RV's ancestors only. Never use current_scene, a
+	# global group, or WorldEntities.get_container (which may create a node).
+	var ancestor: Node = rv.get_parent()
+	while ancestor != null and not ancestor is Viewport:
+		var clock := ancestor.get_node_or_null("WorldClock") as WorldClock
+		if clock != null and not clock.is_queued_for_deletion(): return clock
+		if ancestor.has_meta("entity_domain"): break
+		ancestor = ancestor.get_parent()
+	return null
+
+func _digits(value: String) -> bool:
+	if value.is_empty(): return false
+	for index in value.length():
+		if value.unicode_at(index) < 48 or value.unicode_at(index) > 57: return false
+	return true
+
+func _time(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	if not args.is_empty() and (args.size() < 2 or args.size() > 3 or args[0] != "set"):
+		return _usage("time")
+	var hour := 0
+	var minute := 0
+	var day := 0
+	if not args.is_empty():
+		var stamp := args[1]
+		if stamp.length() != 5 or stamp.substr(2, 1) != ":" or not _digits(stamp.left(2)) or not _digits(stamp.right(2)):
+			return _usage("time")
+		hour = int(stamp.left(2))
+		minute = int(stamp.right(2))
+		if hour > 23 or minute > 59: return _usage("time")
+		if args.size() == 3:
+			if not _digits(args[2]) or args[2].length() > 7: return _usage("time")
+			day = int(args[2])
+			if day < 1 or day > 1000000: return _usage("time")
+	var clock := _world_clock(context)
+	if clock == null: return _error("World clock unavailable.")
+	if not args.is_empty():
+		if day == 0: day = clock.day_number()
+		if day < 1 or day > 1000000: return _usage("time")
+		# Keep minute boundaries exact: fractional hours can round just below
+		# the requested minute, including in the clock's minute notification.
+		clock.restore({"elapsed_seconds": (day - 1) * WorldClock.DAY_SECONDS + hour * 3600.0 + minute * 60.0, "day_length_minutes": clock.day_length_minutes})
+	var minutes := floori(fposmod(clock.elapsed_seconds, WorldClock.DAY_SECONDS) / 60.0)
+	return _result(true, PackedStringArray(["Day %d %02d:%02d" % [clock.day_number(), minutes / 60, minutes % 60]]))
+
+func _weather(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	if not args.is_empty() and (args.size() != 2 or args[0] != "set" or not WEATHER_PRESETS.has(args[1])):
+		return _usage("weather")
+	var clock := _world_clock(context)
+	if clock == null: return _error("World clock unavailable.")
+	if not args.is_empty():
+		clock.weather.set_weather(WEATHER_PRESETS[args[1]], true)
+		clock.apply_time()
+	return _result(true, PackedStringArray([
+		_weather_line("Sample", clock.weather.sample()),
+		_weather_line("Target", clock.weather.target),
+	]))
+
+func _weather_line(label: String, value: Vector3) -> String:
+	var conditions := PackedStringArray(["clear" if value.x > 0.5 else "overcast"])
+	if value.y > 0.0: conditions.append("rain" if value.y <= 1.0 else "heavy rain")
+	if value.z > 0.0: conditions.append("light fog" if value.z <= 0.5 else ("medium fog" if value.z <= 1.0 else "heavy fog"))
+	return "%s: %s (clear %.2f, rain %.2f, fog %.2f)" % [label, ", ".join(conditions), value.x, value.y, value.z]
+
+func _complete_options(prefix: String, options: Array) -> PackedStringArray:
+	var result := PackedStringArray()
+	for option: String in options:
+		if option.begins_with(prefix): result.append(option)
+	return result
+
+func _complete_cheat(args: PackedStringArray, _context: Dictionary) -> PackedStringArray:
+	if args.size() == 1:
+		return _complete_options("cheat " + args[0], ["cheat status", "cheat true", "cheat false", "cheat fuel", "cheat power", "cheat materials"])
+	if args.size() == 2 and args[0] in ["fuel", "power", "materials"]:
+		var prefix := "cheat " + args[0] + " "
+		return _complete_options(prefix + args[1], [prefix + "true", prefix + "false"])
+	return PackedStringArray()
+
+func _complete_set(args: PackedStringArray, _context: Dictionary) -> PackedStringArray:
+	return _complete_options("time " + args[0], ["time set"]) if args.size() == 1 else PackedStringArray()
+
+func _complete_weather(args: PackedStringArray, _context: Dictionary) -> PackedStringArray:
+	if args.size() == 1: return _complete_options("weather " + args[0], ["weather set"])
+	if args.size() == 2 and args[0] == "set":
+		var options: Array = []
+		for preset: String in WEATHER_PRESETS: options.append("weather set " + preset)
+		return _complete_options("weather set " + args[1], options)
+	return PackedStringArray()

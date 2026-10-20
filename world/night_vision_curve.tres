@@ -1,0 +1,7 @@
+[gd_resource type="Curve" format=3 uid="uid://dtivae23xotyu"]
+
+[resource]
+resource_name = "Night visibility (X distance, Y brightness)"
+_data = [Vector2(0, 1), 0.0, -0.8915384, 0, 0, Vector2(0.012345672, 1), 0.0, 0.0, 0, 0, Vector2(0.15432099, 0.7415731), -0.60674167, -0.60674167, 0, 0, Vector2(0.2654321, 0.26966298), -0.26768005, -0.26768005, 0, 0, Vector2(0.7407408, 0), -0.10112358, -0.10112358, 0, 0, Vector2(1, 0), 0.1281848, 0.0, 0, 0]
+point_count = 6
+metadata/_snap_count = 100

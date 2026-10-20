@@ -72,9 +72,10 @@ signal wheel_removed(slot: int, item_id: String)
 signal wheel_installed(slot: int, item_id: String)
 signal refuel_committed(port_id: String, can_id: String, empty_id: String, amount: float)
 
-# Scene-local demo policy; production defaults and checkpoint data stay finite.
+# Session-local policy; production defaults and checkpoint data stay finite.
 var unlimited_materials := false
 var unlimited_fuel := false
+var unlimited_power := false
 var storage := MaterialStorage.new()
 var inventory: Dictionary:
 	get: return storage.items
@@ -221,8 +222,11 @@ func restore_comfort(data: Dictionary) -> void:
 func engine_start_reason() -> String:
 	if get_engine() == null: return "未安裝引擎，請到車頭引擎艙裝入"
 	if not has_working_engine(): return "引擎故障，請使用引擎維修包或更換引擎"
-	if current_fuel <= 0.0: return "燃油耗盡，請使用加油孔補充"
+	if not has_usable_fuel(): return "燃油耗盡，請使用加油孔補充"
 	return ""
+
+func has_usable_fuel() -> bool:
+	return unlimited_fuel or current_fuel > 0.0
 
 func take_damage(amount: float) -> void:
 	var engine := get_engine()
@@ -288,9 +292,7 @@ func add_item(item_name: String, amount: int) -> bool:
 	return deposit_materials({item_name: amount})
 
 func deposit_materials(amounts: Dictionary, refund: bool = false) -> bool:
-	# Demo jobs never paid materials, so cancellation must not create a refund.
-	if unlimited_materials and refund:
-		return storage.valid_amounts(amounts)
+	# Refund callers supply the amount actually paid, independently of cheats now.
 	update_storage_capacity()
 	if not storage.deposit(amounts, refund):
 		return false
@@ -569,7 +571,7 @@ func add_power(amount: float) -> float:
 	return added
 
 func has_usable_power(required: float = 0.01) -> bool:
-	return current_power >= maxf(required, 0.0)
+	return energy.has_usable_power(required)
 
 func step_energy_system(drive_input: float, _braking_input: float, _steering_input: float, delta: float) -> bool:
 	var result := energy.step(self, drive_input, delta)

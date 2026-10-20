@@ -1,9 +1,8 @@
 shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, skip_vertex_transform;
+render_mode blend_mix, depth_draw_never, cull_disabled, skip_vertex_transform, specular_disabled;
 
 uniform vec3 camera_center;
 uniform float simulation_time = 0.0;
-uniform float daylight = 1.0;
 uniform float radius = 24.0;
 uniform float field_height = 32.0;
 uniform bool distant = false;
@@ -75,6 +74,7 @@ void vertex() {
 	right = length(right) > 0.001 ? normalize(right) : vec3(1.0, 0.0, 0.0);
 	vec3 offset = right * VERTEX.x * width + vec3(0.0, VERTEX.y * streak_length, 0.0);
 	VERTEX = (VIEW_MATRIX * vec4(point + offset, 1.0)).xyz;
+	NORMAL = vec3(0.0, 0.0, 1.0);
 	if (visibility < 0.001) VERTEX = vec3(0.0, 0.0, -0.01);
 }
 
@@ -82,6 +82,8 @@ void fragment() {
 	float taper = pow(max(sin(UV.y * 3.14159265), 0.0), 0.7);
 	float aa = max(fwidth(UV.x), 0.02);
 	float line = 1.0 - smoothstep(0.12 * taper - aa, 0.32 * taper + aa, abs(UV.x - 0.5));
-	ALBEDO = mix(vec3(0.24, 0.29, 0.34), vec3(0.63, 0.67, 0.69), daylight);
-	ALPHA = line * taper * opacity * visibility * mix(0.55, 1.0, daylight);
+	ALBEDO = vec3(0.63, 0.67, 0.69);
+	ROUGHNESS = 1.0;
+	BACKLIGHT = vec3(0.5);
+	ALPHA = line * taper * opacity * visibility;
 }
