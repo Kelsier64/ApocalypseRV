@@ -24,6 +24,28 @@ var transition_elapsed := TRANSITION
 var remaining := MIN_DURATION
 var initialized := false
 
+## v14 atmosphere, evaluated from the current natural/deviation weather blend.
+## No fog keeps the legacy background haze; white ground mist only accompanies fog.
+static func mist_profile(conditions: Vector3, volumetric: bool) -> Dictionary:
+	var clear := clampf(conditions.x, 0.0, 1.0)
+	var fog := clampf(conditions.z, FOG_NONE, FOG_HEAVY)
+	var light := clampf(fog / FOG_LIGHT, 0.0, 1.0)
+	var medium := clampf((fog - FOG_LIGHT) / (FOG_MEDIUM - FOG_LIGHT), 0.0, 1.0)
+	var heavy := clampf((fog - FOG_MEDIUM) / (FOG_HEAVY - FOG_MEDIUM), 0.0, 1.0)
+	# Distance mist takes over before medium fog, so volume scattering does not
+	# reveal geometry already concealed by the distance fog.
+	var volume_weight := light * (1.0 - smoothstep(FOG_LIGHT, 0.75, fog))
+	var background_begin := lerpf(160.0 if volumetric else 18.0, 240.0, clear)
+	var background_end := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
+	return {
+		"depth_begin": lerpf(background_begin, 8.0, light),
+		"depth_end": lerpf(lerpf(lerpf(background_end, 220.0, light), 110.0, medium), 38.0, heavy),
+		"depth_curve": lerpf(1.8 if volumetric else 0.65, 1.0, light),
+		"white_strength": lerpf(lerpf(0.65 * light, 0.85, medium), 1.0, heavy),
+		"global_density": 0.0015 * volume_weight,
+		"local_density": 0.07 * volume_weight,
+	}
+
 func initialize(world_seed: int) -> void:
 	if initialized: return
 	rng.seed = world_seed ^ 0x57454154484552

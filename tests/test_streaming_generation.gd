@@ -128,7 +128,13 @@ func _check_dry_viaduct(world: Node3D, version: int) -> void:
 	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
 	var label := "v%d: " % version
 	var band := -1
-	for candidate in range(4, 80):
+	var candidates: Array[int] = []
+	if version >= 14:
+		for index in range(3):
+			candidates.append(floori(float(field.landforms.dry_valley(index).s) / field.profile.chunk_length))
+	else:
+		for candidate in range(4, 80): candidates.append(candidate)
+	for candidate: int in candidates:
 		var eligible := true
 		for offset: float in [10.0, 75.0, 140.0]:
 			var s := candidate * field.profile.chunk_length + offset

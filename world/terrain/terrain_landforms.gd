@@ -13,6 +13,8 @@ var rail_cache: Dictionary = {}
 const STRUCTURE_STEP := 15.0
 var _clearance: Dictionary = {}
 var _structure_cells: Dictionary = {}
+var _dry_valleys: Dictionary = {}
+const DRY_VALLEY_INTERVAL := 4200.0
 var relief := FastNoiseLite.new()
 const COLORS_V14 := [Color("65724e"), Color("74776c"), Color("414f3e"), Color("797b73"), Color("887259"), Color("424e36")]
 const TREE_DENSITY := [0.16, 0.24, 0.13, 0.075, 0.10, 0.70]
@@ -102,8 +104,34 @@ func _height_v14(x: float, z: float, road: Dictionary) -> float:
 		var swell := lerpf(0.25, 1.0, smoothstep(-0.65, 0.60, sin(phase)))
 		var crest := lerpf(ROADSIDE_CREST[int(a.x)], ROADSIDE_CREST[int(a.y)], a.z)
 		target = lerpf(target, maxf(target, crest * swell + fault), shelter)
+	# A broad, gently graded road corridor is the normal terrain. Valley cuts
+	# are sparse exceptions, rather than every basin becoming a long viaduct.
+	var corridor := 1.0 - smoothstep(12.0, 70.0, edge)
+	target = lerpf(target, clampf(target, -0.75 + fault * 0.3, 1.5 + fault * 0.5), corridor)
+	var valley := dry_valley_weight(float(road.s))
+	if valley > 0.0:
+		var cut := 1.0 - smoothstep(35.0, 120.0, edge)
+		var depth := float(dry_valley(floori(float(road.s) / DRY_VALLEY_INTERVAL)).depth)
+		target = lerpf(target, minf(target, -depth + middle), valley * cut)
 	var original := broad * 32.0 + middle * 8.0
 	return lerpf(original, float(road.height) + target, smoothstep(300.0, 850.0, -z)) + field.detail.get_noise_2d(x, z) * 0.35
+
+func dry_valley(index: int) -> Dictionary:
+	if not _dry_valleys.has(index):
+		var rng := field.rng_for(index, "dry_valley_v14")
+		var first := rng.randi_range(0, 8)
+		var s := 0.0
+		for attempt in range(9):
+			var band := index * 28 + 10 + posmod(first + attempt * 5, 9)
+			s = (band + 0.5) * field.profile.chunk_length
+			if crossing_clearance(s, 340.0): break
+		_dry_valleys[index] = {"s": s, "depth": rng.randf_range(9.0, 14.0)}
+	return _dry_valleys[index]
+
+func dry_valley_weight(s: float) -> float:
+	if s < 450.0: return 0.0
+	var plan := dry_valley(floori(s / DRY_VALLEY_INTERVAL))
+	return 1.0 - smoothstep(60.0, 150.0, absf(s - float(plan.s)))
 
 func _shape_v14(kind: int, lateral: float, broad: float, middle: float, warp: float, fault: float) -> float:
 	var side := -1.0 if posmod(offset, 2) == 0 else 1.0

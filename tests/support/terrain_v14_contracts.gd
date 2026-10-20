@@ -23,11 +23,41 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		var field := WorldField.new(seed_value, CONTRACTS.profile(14))
 		_check_frozen_road(field, check)
 		_check_appearance(field, check)
+		_check_grounded_corridor(field, check)
 		_check_local_screening(field, check)
 		_check_mist_plans(field, check)
 		await _check_forest_plans(field, world, check)
 	_check_mist_clock(world, check)
 	await _check_forest_rebuild(tree, world, check)
+
+static func _check_grounded_corridor(field: WorldField, check: Callable) -> void:
+	var dry_samples := 0
+	var elevated_samples := 0
+	var shoulder_samples := [0, 0, 0]
+	var near_level_samples := [0, 0, 0]
+	var distances := [4.0, 10.0, 20.0]
+	for s in range(600, int(CONTRACTS.LENGTH) + 1, 15):
+		if not field.landforms.crossing_clearance(float(s), 200.0): continue
+		dry_samples += 1
+		if field.landforms.bridge_at(float(s)):
+			elevated_samples += 1
+			continue
+		var frame := field.road_frame(float(s))
+		var half_width := field.road_width(float(s)) * 0.5
+		for side: float in [-1.0, 1.0]:
+			for index in range(distances.size()):
+				var beyond_edge: float = distances[index]
+				var point := frame * Vector3(side * (half_width + beyond_edge), 0.0, 0.0)
+				var sample := field.surface(point.x, point.z)
+				if sample.reserved or float(sample.gravel) > 0.2 or is_finite(float(sample.water_height)): continue
+				shoulder_samples[index] += 1
+				if absf(float(sample.height) - frame.origin.y) <= 3.0: near_level_samples[index] += 1
+	var label := "v14 seed %d: " % field.world_seed
+	var elevated_fraction := float(elevated_samples) / maxi(dry_samples, 1)
+	check.call(dry_samples > 0 and elevated_fraction > 0.0 and elevated_fraction <= 0.12, label + "dry viaducts remain occasional across 12km (%.1f%%)" % (elevated_fraction * 100.0))
+	for index in range(distances.size()):
+		var near_level_fraction := float(near_level_samples[index]) / maxi(shoulder_samples[index], 1)
+		check.call(shoulder_samples[index] > 0 and near_level_fraction >= 0.95, label + "at least 95%% of natural terrain %.0fm beyond grounded road edges stays within 3m of the road (%.1f%%)" % [distances[index], near_level_fraction * 100.0])
 
 static func _check_mist_plans(field: WorldField, check: Callable) -> void:
 	var bands: Array[int] = []
@@ -125,29 +155,68 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				clock.set_time(1, 12.0)
 				var light := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
 				var expected_density := 0.14 * (1.0 - conditions.x) * (1.0 - light)
+				var expected_global := (0.0015 * (1.0 - conditions.x) + conditions.y * 0.5 * 0.001) * (1.0 - light)
+				var expected_white := 0.0
+				if version == 14:
+					# Fixed observable tier values, independent of mist_profile's implementation.
+					var tiers := {0.0: [0.0, 0.0, 0.0], 0.25: [0.035, 0.00075, 0.325], 0.5: [0.07, 0.0015, 0.65], 1.0: [0.0, 0.0, 0.85], 2.0: [0.0, 0.0, 1.0]}
+					expected_density = tiers[conditions.z][0]
+					expected_global = tiers[conditions.z][1]
+					expected_white = tiers[conditions.z][2]
+					check.call(is_equal_approx(float(WorldWeather.mist_profile(conditions, volumetric).white_strength), expected_white), "v14 white mist follows weather fog strength at %s" % conditions)
+					var horizon: Color = clock.sky_material.get_shader_parameter("horizon_color")
+					check.call(clock.environment.fog_light_color.is_equal_approx(horizon), "v14 fog and sky share the terminal color so distant objects cannot reappear as pale cutouts")
+					check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v14 zero-density weather skips volumetric scattering and light fog restores it without changing distance fog quality")
 				clock.register_fog(material)
 				var registered := float(material.get_shader_parameter("density"))
 				clock.apply_time()
 				check.call(is_equal_approx(registered, expected_density) and is_equal_approx(float(material.get_shader_parameter("density")), expected_density), "v%d local mist registration and updates agree at weather %s / volumetric %s" % [version, conditions, volumetric])
 				clock.unregister_fog(material)
-				if conditions.z == 0.25: continue
-				var begin := lerpf(24.0, 40.0, conditions.x) if version == 14 else lerpf(160.0 if volumetric else 18.0, 240.0, conditions.x)
-				var end := lerpf(230.0, 290.0, conditions.x) if version == 14 else lerpf(420.0 if volumetric else 380.0, 700.0, conditions.x)
+				var begin := lerpf(160.0 if volumetric else 18.0, 240.0, conditions.x)
+				var end := lerpf(420.0 if volumetric else 380.0, 700.0, conditions.x)
+				var curve := lerpf(1.8 if volumetric else 0.65, 1.0, light)
 				if conditions.z > 0.0:
-					begin = 8.0
-					end = 220.0 if conditions.z == WorldWeather.FOG_LIGHT else (110.0 if conditions.z == WorldWeather.FOG_MEDIUM else 38.0)
+					begin = lerpf(begin, 8.0, light)
+					end = lerpf(end, 220.0, light) if conditions.z <= WorldWeather.FOG_LIGHT else (110.0 if conditions.z == WorldWeather.FOG_MEDIUM else 38.0)
 				check.call(is_equal_approx(clock.environment.fog_depth_begin, begin) and is_equal_approx(clock.environment.fog_depth_end, end), "v%d depth mist keeps expected endpoints at weather %s / volumetric %s" % [version, conditions, volumetric])
-				if version == 14: check.call(is_equal_approx(clock.environment.fog_depth_curve, 1.0), "v14 distance haze retains its curve at every quality/weather setting")
-				var base_density := (0.0025 if version == 14 else 0.0015) * (1.0 - conditions.x) + conditions.y * 0.5 * 0.001
-				check.call(is_equal_approx(clock.environment.volumetric_fog_density, base_density * (1.0 - light)), "v%d global volumetric-fog base fades fully when weather fog takes over" % version)
+				check.call(is_equal_approx(clock.environment.fog_depth_curve, curve), "v%d distance haze retains its expected curve at every quality/weather setting" % version)
+				check.call(is_equal_approx(clock.environment.volumetric_fog_density, expected_global), "v%d global volumetric fog follows its weather contract" % version)
+			if version == 14: _check_mist_transition(clock, material, volumetric, check)
 		if version == 14:
-			clock.weather.set_weather(Vector3.ZERO, true)
+			clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
 			clock.set_time(1, 12.0)
 			var noon := clock.environment.fog_light_color
 			clock.set_time(1, 0.0)
 			var night := clock.environment.fog_light_color
 			check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v14 gray-white daylight haze darkens with the native night lighting")
 		host.free()
+
+static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, volumetric: bool, check: Callable) -> void:
+	for fixture: Array in [[0.625, 192.5, 0.70, 0.00075, 0.035], [0.75, 165.0, 0.75, 0.0, 0.0], [1.5, 74.0, 0.925, 0.0, 0.0]]:
+		var profile := WorldWeather.mist_profile(Vector3(0, 0, fixture[0]), volumetric)
+		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), fixture[2]) and is_equal_approx(float(profile.global_density), fixture[3]) and is_equal_approx(float(profile.local_density), fixture[4]), "v14 distance haze strengthens while scattering volumes fade above light fog at strength %.3f" % fixture[0])
+	clock.set_deviation_fog(0.0)
+	clock.weather.set_weather(Vector3.ZERO, true)
+	clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT))
+	clock.weather.advance(WorldWeather.TRANSITION * 0.5)
+	clock.apply_time()
+	clock.register_fog(material)
+	var background_end := 420.0 if volumetric else 380.0
+	var midpoint_end := (background_end + 220.0) * 0.5
+	check.call(clock.weather.sample().is_equal_approx(Vector3(0, 0, 0.25)) and clock.weather.target.z == WorldWeather.FOG_LIGHT, "v14 natural fog transition retains its source/target and produces the halfway sample")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00075) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 global and newly registered local mist use the interpolated weather sample")
+	var saved := clock.weather.capture()
+	var restored := WorldWeather.new()
+	check.call(restored.restore(saved) and restored.capture() == saved and restored.sample() == clock.weather.sample(), "v14 weather round trip preserves transition source, target, progress, duration and RNG state")
+	clock.weather = restored
+	clock.apply_time()
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 restored weather reproduces the same global and local mist")
+	clock.set_deviation_fog(WorldWeather.FOG_MEDIUM)
+	check.call(clock.effective_visual_weather().z == WorldWeather.FOG_MEDIUM and is_equal_approx(clock.environment.fog_depth_end, 110.0) and is_zero_approx(clock.environment.volumetric_fog_density) and is_zero_approx(float(material.get_shader_parameter("density"))), "v14 deviation fog strengthens distance haze and suppresses scattering volumes at medium fog")
+	check.call(clock.weather.capture() == saved, "v14 visual deviation fog preserves natural weather transition and RNG")
+	clock.set_deviation_fog(0.0)
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.035), "v14 clearing deviation fog resumes the unchanged natural weather blend")
+	clock.unregister_fog(material)
 
 static func _check_legacy_geometry(check: Callable) -> void:
 	for version: int in FROZEN:
