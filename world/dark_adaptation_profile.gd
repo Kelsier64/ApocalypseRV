@@ -1,6 +1,6 @@
 extends Resource
 class_name DarkAdaptationProfile
-## Display configuration, independent of simulation time and native lighting.
+## Display configuration; never rewrites simulation time or native lighting.
 const DEFAULT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 
 @export_group("Distance")
@@ -20,6 +20,25 @@ const DEFAULT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 		if curve != null and curve.changed.is_connected(emit_changed): curve.changed.disconnect(emit_changed)
 		curve = value
 		_watch_curve()
+		emit_changed()
+
+@export_group("Ambient Gate")
+## Skip reference rendering when the view's native ambient light is bright.
+@export var ambient_gate_enabled := true:
+	set(value):
+		ambient_gate_enabled = value
+		emit_changed()
+## Linear luminance (ambient color times energy), independent of clock time.
+@export_range(0.0, 1.0, 0.001, "or_greater") var ambient_threshold := 0.06:
+	set(value):
+		if not is_finite(value): return
+		ambient_threshold = maxf(0.0, value)
+		emit_changed()
+## Fade to zero across this brightness interval below the threshold.
+@export_range(0.0, 1.0, 0.001, "or_greater") var ambient_transition := 0.02:
+	set(value):
+		if not is_finite(value): return
+		ambient_transition = maxf(0.0, value)
 		emit_changed()
 
 @export_group("Brightness")

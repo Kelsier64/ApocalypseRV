@@ -260,6 +260,7 @@ func run() -> void:
 	await check_fog_visibility()
 	await check_independent_indoor_world()
 	await check_vehicle_reference_motion()
+	await check_ambient_gate()
 	var local_gray := pixel(await capture())
 	var local_transform := world.transform
 	world.transform = Transform3D(Basis(Vector3(0.3, 1, 0.2).normalized(), 1.2), Vector3(18000, 500, -24000))
@@ -361,6 +362,151 @@ func run() -> void:
 	await process_frame
 	print("DARK ADAPTATION GPU ", "PASS" if failures == 0 else "FAIL", " failures=", failures)
 	quit(1 if failures else 0)
+
+func check_ambient_gate() -> void:
+	var target := SubViewport.new()
+	target.size = Vector2i(128, 128)
+	target.own_world_3d = true
+	target.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(target)
+	var scene := Node3D.new()
+	target.add_child(scene)
+	var holder := WorldEnvironment.new()
+	var native := native_environment()
+	native.ambient_light_energy = 0.1
+	holder.environment = native
+	scene.add_child(holder)
+	var source := Camera3D.new()
+	var original_mask := 1 | (1 << 2)
+	source.cull_mask = original_mask
+	scene.add_child(source)
+	var receiver := MeshInstance3D.new()
+	var mesh := QuadMesh.new()
+	mesh.size = Vector2(20, 20)
+	receiver.mesh = mesh
+	receiver.position.z = -8
+	var white := StandardMaterial3D.new()
+	white.albedo_color = Color.WHITE
+	white.roughness = 1.0
+	white.metallic_specular = 0.0
+	receiver.material_override = white
+	scene.add_child(receiver)
+	var lamp := OmniLight3D.new()
+	lamp.position.z = -2
+	lamp.omni_range = 20
+	lamp.light_energy = 3.0
+	lamp.light_color = Color.RED
+	lamp.layers = 1 << 2
+	scene.add_child(lamp)
+	var effect := add_renderer(scene, constant_curve(1))
+	effect.profile.reference_energy = 0.4
+	var scheduled := {"updates": 0}
+	# Observe the scheduling decision before UPDATE_ONCE resets after rendering.
+	var count_updates := func():
+		for entry in effect._views:
+			if entry.reference.render_target_update_mode != SubViewport.UPDATE_DISABLED: scheduled.updates += 1
+	RenderingServer.frame_pre_draw.connect(count_updates)
+	var native_state := environment_state(native)
+	var bright := pixel(await capture(target))
+	check(not effect._views[0].quad.visible and scheduled.updates == 0 and source.cull_mask == original_mask and lamp.layers == 1 << 2, "Bright ambient skips both reference rendering and composition and restores custom native layers")
+	effect.enabled = false
+	var native_bright := pixel(await capture(target))
+	check(color_distance(bright, native_bright) < 0.015 and bright.r > bright.g + 0.05, "A dormant ambient gate preserves native colored physical lighting")
+	effect.enabled = true
+	lamp.visible = false
+	mesh.size = Vector2(3, 4)
+	await capture(target)
+	source.transform = Transform3D(Basis.from_euler(Vector3(0.04, 0.2, 0.09)), Vector3(0.75, 0.15, 0))
+	await capture(target)
+	native.ambient_light_energy = 0.0
+	var first_wake := await capture_frame(target)
+	var settled_wake := await capture(target)
+	var black := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	black.fill(Color.BLACK)
+	check(image_difference(first_wake, settled_wake) < 0.015 and image_difference(first_wake, black) > 0.1, "A dormant reference wakes with the camera's current silhouette in its first rendered frame")
+	source.transform = Transform3D.IDENTITY
+	mesh.size = Vector2(20, 20)
+	native.ambient_light_energy = 0.1
+	await capture(target)
+	var metric := native_environment()
+	metric.ambient_light_energy = 0.06
+	check(is_zero_approx(effect._ambient_strength(metric)), "Ambient gate is fully off at its threshold")
+	metric.ambient_light_energy = 0.04
+	check(is_equal_approx(effect._ambient_strength(metric), 1.0), "Ambient gate is fully on below the transition band")
+	metric.ambient_light_energy = 0.05
+	check(absf(effect._ambient_strength(metric) - 0.5) < 0.0001, "Ambient gate has a smooth half-strength transition midpoint")
+	metric.ambient_light_color = Color(0.5, 0.5, 0.5)
+	metric.ambient_light_energy = 0.2
+	var linear := metric.ambient_light_color.srgb_to_linear()
+	var expected := 1.0 - smoothstep(0.04, 0.06, Vector3(linear.r, linear.g, linear.b).dot(Vector3(0.2126, 0.7152, 0.0722)) * 0.2)
+	check(absf(effect._ambient_strength(metric) - expected) < 0.0001, "Ambient gate measures linear color luminance rather than raw sRGB components")
+	effect.profile.ambient_threshold = 0.0
+	metric.ambient_light_energy = 0.0
+	check(is_zero_approx(effect._ambient_strength(metric)), "A zero ambient threshold safely disables adaptation even at zero brightness")
+	effect.profile.ambient_threshold = 0.06
+	effect.profile.ambient_transition = 0.0
+	metric.ambient_light_color = Color.WHITE
+	metric.ambient_light_energy = 0.059
+	var below_step := effect._ambient_strength(metric)
+	# Environment energy and Vector3 luminance use float32; straddle the edge.
+	metric.ambient_light_energy = 0.061
+	check(is_equal_approx(below_step, 1.0) and is_zero_approx(effect._ambient_strength(metric)), "A zero-width ambient transition uses a finite threshold step")
+	for invalid in [NAN, INF, -INF]:
+		effect.profile.ambient_threshold = invalid
+		effect.profile.ambient_transition = invalid
+	check(is_equal_approx(effect.profile.ambient_threshold, 0.06) and is_zero_approx(effect.profile.ambient_transition), "Ambient profile setters reject NaN and infinite values")
+	effect.profile.ambient_transition = 0.02
+	metric.ambient_light_source = Environment.AMBIENT_SOURCE_DISABLED
+	check(is_equal_approx(effect._ambient_strength(metric), 1.0), "Disabled native ambient is treated as dark")
+	metric.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	check(is_equal_approx(effect._ambient_strength(metric), 1.0) and is_equal_approx(effect._ambient_strength(null), 1.0), "Unknown sky or missing Environment conservatively keeps adaptation available")
+	lamp.visible = false
+	native.ambient_light_energy = 0.05
+	effect.enabled = false
+	var native_middle := pixel(await capture(target))
+	effect.enabled = true
+	effect.profile.ambient_gate_enabled = false
+	var full_middle := pixel(await capture(target))
+	effect.profile.ambient_gate_enabled = true
+	var middle := pixel(await capture(target))
+	check(middle.r > native_middle.r + 0.01 and middle.r < full_middle.r - 0.01, "Transition-band GPU fill lies between native and full adaptation")
+	native.ambient_light_energy = 0.0
+	var before_dark := int(scheduled.updates)
+	check(pixel(await capture(target)).r > 0.1 and effect._views[0].quad.visible and scheduled.updates > before_dark, "Dark ambient wakes the reference renderer and visible gray fill")
+	native.ambient_light_energy = 0.1
+	lamp.visible = true
+	var mirror := SubViewport.new()
+	mirror.size = target.size
+	mirror.world_3d = target.find_world_3d()
+	mirror.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(mirror)
+	var mirror_camera := Camera3D.new()
+	mirror_camera.cull_mask = original_mask
+	var mirror_environment := native_environment()
+	mirror_camera.environment = mirror_environment
+	mirror.add_child(mirror_camera)
+	effect.register_viewport(mirror)
+	var mixed_bright := pixel(await capture(target))
+	check(not effect._views[0].quad.visible and effect._views[1].quad.visible and (source.cull_mask & NightVisionEffect.VIEW_MASK) == 0 and (source.cull_mask & NightVisionEffect.LIGHT_LAYER) != 0, "A bright main view stays routed while its dark camera-override mirror adapts")
+	check(color_distance(mixed_bright, native_bright) < 0.015 and lamp.layers == NightVisionEffect.LIGHT_LAYER, "Mixed views retain a custom-layer native lamp in the bright view")
+	native.ambient_light_energy = 0.0
+	mirror_environment.ambient_light_energy = 0.1
+	var mixed_mirror := pixel(await capture(mirror))
+	check(effect._views[0].quad.visible and not effect._views[1].quad.visible and (mirror_camera.cull_mask & NightVisionEffect.VIEW_MASK) == 0 and color_distance(mixed_mirror, native_bright) < 0.015, "Reversing dark and bright views switches routing without leaking another view's composite")
+	native.ambient_light_energy = 0.1
+	await capture(target)
+	var before_bright := int(scheduled.updates)
+	await capture(mirror)
+	check(scheduled.updates == before_bright and source.cull_mask == original_mask and mirror_camera.cull_mask == original_mask and lamp.layers == 1 << 2, "Returning all views to bright ambient stops reference draws and restores original camera and light layers")
+	effect.profile.ambient_gate_enabled = false
+	var before_forced := int(scheduled.updates)
+	await capture(target)
+	check(effect._views[0].quad.visible and effect._views[1].quad.visible and scheduled.updates > before_forced, "Disabling the ambient gate restores always-on per-pixel adaptation")
+	check(environment_state(native) == native_state, "Ambient gating leaves the native Environment unchanged")
+	RenderingServer.frame_pre_draw.disconnect(count_updates)
+	mirror.queue_free()
+	target.queue_free()
+	await process_frame
 
 func check_vehicle_reference_motion() -> void:
 	var target := SubViewport.new()

@@ -18,6 +18,7 @@ var curve: Curve
 var _materials: Array[ShaderMaterial] = []
 var _views: Array[Dictionary] = []
 var _lights: Dictionary = {}
+var _routing_active := false
 @export var enabled := true
 @export var profile: DarkAdaptationProfile = DEFAULT_PROFILE:
 	set(value):
@@ -70,6 +71,7 @@ func _exit_tree() -> void:
 		var light: Light3D = entry.node.get_ref()
 		_restore_light(light, entry.layers)
 	_lights.clear()
+	_routing_active = false
 
 func _on_profile_changed() -> void:
 	curve = profile.effective_curve()
@@ -166,33 +168,35 @@ func _release_camera(entry: Dictionary) -> void:
 func _prepare_views() -> void:
 	if not is_inside_tree(): return
 	_prune_views()
-	for id in _lights.keys():
-		var entry: Dictionary = _lights[id]
-		var light: Light3D = entry.node.get_ref()
-		if not is_instance_valid(light):
-			_lights.erase(id)
-			continue
-		if not light.is_inside_tree() or light.get_world_3d() != get_world_3d():
-			_restore_light(light, entry.layers)
-			_lights.erase(id)
-			continue
-		light.layers = LIGHT_LAYER if enabled else int(entry.layers)
 	if not can_process():
-		# Retain a static adapted world behind the pause menu, while an explicit
-		# display toggle must still release the camera and native light layers.
+		# Retain the last gate and adapted image behind the pause menu.
+		# An explicit disable must still restore native lights and cameras.
+		if not enabled: _routing_active = false
+		_route_lights(_routing_active)
 		for entry in _views:
 			entry.reference.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			if not enabled:
 				entry.quad.visible = false
 				_release_camera(entry)
 		return
+	var plans: Array[Dictionary] = []
+	_routing_active = false
 	for entry in _views:
 		var target := entry.target.get_ref() as Viewport
 		var source := target.get_camera_3d() if is_instance_valid(target) else null
-		var active: bool = enabled and entry.active and source != null and source.get_world_3d() == get_world_3d()
-		entry.quad.visible = active
+		var eligible: bool = enabled and entry.active and source != null and source.get_world_3d() == get_world_3d()
+		var strength := _ambient_strength(_view_environment(source)) if eligible else 0.0
+		if strength > 0.0: _routing_active = true
+		plans.append({"entry": entry, "target": target, "source": source, "eligible": eligible, "strength": strength})
+	_route_lights(_routing_active)
+	for plan in plans:
+		var entry: Dictionary = plan.entry
+		var source: Camera3D = plan.source
+		var strength: float = plan.strength
+		entry.quad.visible = strength > 0.0
 		entry.reference.render_target_update_mode = SubViewport.UPDATE_DISABLED
-		if not active:
+		entry.material.set_shader_parameter("adaptation_strength", strength)
+		if not plan.eligible or not _routing_active:
 			_release_camera(entry)
 			continue
 		var previous: Camera3D = entry.source.get_ref() if entry.source != null else null
@@ -203,8 +207,48 @@ func _prepare_views() -> void:
 			entry.mask = source.get_meta(CAMERA_ORIGINAL_LAYERS, source.cull_mask & OWNED_LAYERS)
 			source.set_meta(CAMERA_ORIGINAL_LAYERS, entry.mask)
 			source.set_meta(CAMERA_OWNER, get_instance_id())
-		source.cull_mask = (source.cull_mask & ~VIEW_MASK) | int(entry.quad.layers) | LIGHT_LAYER
-		_sync_reference(entry, target, source)
+		# Lights are shared by all views in this World3D. A bright view must still
+		# see them and exclude every other view's composite while one view is dark.
+		var quad_layer: int = entry.quad.layers if strength > 0.0 else 0
+		source.cull_mask = (source.cull_mask & ~OWNED_LAYERS) | quad_layer | LIGHT_LAYER
+		if strength > 0.0: _sync_reference(entry, plan.target, source)
+
+func _route_lights(active: bool) -> void:
+	for id in _lights.keys():
+		var entry: Dictionary = _lights[id]
+		var light: Light3D = entry.node.get_ref()
+		if not is_instance_valid(light):
+			_lights.erase(id)
+			continue
+		if not light.is_inside_tree() or light.get_world_3d() != get_world_3d():
+			_restore_light(light, entry.layers)
+			_lights.erase(id)
+			continue
+		light.layers = LIGHT_LAYER if active else int(entry.layers)
+
+func _view_environment(source: Camera3D) -> Environment:
+	if source.environment != null: return source.environment
+	var world := source.get_world_3d()
+	return world.environment if world.environment != null else world.fallback_environment
+
+func _ambient_strength(environment: Environment) -> float:
+	if not profile.ambient_gate_enabled or environment == null: return 1.0
+	var brightness := 0.0
+	match environment.ambient_light_source:
+		Environment.AMBIENT_SOURCE_DISABLED:
+			brightness = 0.0
+		Environment.AMBIENT_SOURCE_COLOR:
+			var linear := environment.ambient_light_color.srgb_to_linear()
+			brightness = Vector3(linear.r, linear.g, linear.b).dot(Vector3(0.2126, 0.7152, 0.0722)) * maxf(0.0, environment.ambient_light_energy)
+		_:
+			# Sky irradiance is not available as a CPU scalar. Keep local adaptation
+			# for these environments rather than guessing from the sky/background.
+			return 1.0
+	if not is_finite(brightness): return 1.0
+	if brightness >= profile.ambient_threshold: return 0.0
+	var full_below := maxf(0.0, profile.ambient_threshold - profile.ambient_transition)
+	if brightness <= full_below: return 1.0
+	return 1.0 - smoothstep(full_below, profile.ambient_threshold, brightness)
 
 func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> void:
 	var reference: SubViewport = entry.reference
@@ -238,8 +282,7 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 	# this pose now or the reference renders the previous vehicle/camera pose.
 	camera.force_update_transform()
 	var environment: Environment = camera.environment
-	var native := source.environment if source.environment != null else source.get_world_3d().environment
-	if native == null: native = source.get_world_3d().fallback_environment
+	var native := _view_environment(source)
 	# Read the actual view's environment every frame. Local FogVolumes share the
 	# World3D, so matching extinction preserves their occlusion too.
 	if native != null:
