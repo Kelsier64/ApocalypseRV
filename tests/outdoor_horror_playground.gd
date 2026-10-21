@@ -3,6 +3,7 @@ extends Node3D
 var main: Node3D
 var player: CharacterBody3D
 var site: Dictionary
+var walk_route := PackedVector3Array()
 var camera: Camera3D
 var label: Label
 var stage := 0
@@ -22,15 +23,22 @@ func _ready() -> void:
 	generator.profile = WorldProfile.new()
 	generator.profile.chunks_ahead = 1
 	generator.profile.chunks_behind = 1
+	var preview := WorldField.new(42, generator.profile)
+	var anchor: Dictionary = preview.stop(3)
+	var band := floori(float(anchor.s) / generator.profile.chunk_length)
+	generator.restore_bands.assign(range(band - 1, band + 2))
 	add_child(main)
 	main.get_node("WorldClock").weather_running = false
-	site = generator.field.stop(0)
+	site = generator.field.stop(3)
+	variant = POIConfig.GENERATION_IDS.find(str(site.definition_id))
+	_prepare_walk_route(generator.field)
 	player = main.get_node("Player")
 	for enemy in get_tree().get_nodes_in_group(Groups.MONSTERS): enemy.queue_free()
 	var rv: Chassis = main.get_node("NewRv/Chassis")
-	rv.global_position = site.frame * Vector3(-3, 1, 5)
+	rv.global_transform = site.road
+	rv.global_position = site.road * Vector3(float(site.side) * (generator.field.road_width(float(site.s)) * 0.5 + 3.0), 1, 8)
 	rv.linear_velocity = Vector3.ZERO
-	player.global_position = site.route[0] + Vector3(0, 0.1, 8)
+	player.global_position = walk_route[0] + Vector3.UP * 0.1
 	camera = Camera3D.new()
 	camera.far = 500
 	add_child(camera)
@@ -43,6 +51,15 @@ func _ready() -> void:
 	layer.add_child(label)
 	_view()
 	_validate_forest_alignment.call_deferred()
+
+func _prepare_walk_route(field: WorldField) -> void:
+	# Replay waypoints are local to this playground, never physical world trails.
+	walk_route.clear()
+	var shoulder: Vector3 = site.road * Vector3(float(site.side) * (field.road_width(float(site.s)) * 0.5 + 3.0), 0, 0)
+	shoulder.y = field.height_at(shoulder.x, shoulder.z)
+	walk_route.append(shoulder)
+	walk_route.append(site.building * Vector3(0, 0.05, 14))
+	walk_route.append(site.building * Vector3(0, 0.05, 6.3))
 
 func _validate_forest_alignment() -> void:
 	if DisplayServer.get_name() == "headless": return
@@ -73,16 +90,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.keycode >= KEY_1 and event.keycode <= KEY_4:
 		variant = event.keycode - KEY_1
 		for building in get_tree().get_nodes_in_group("poi_entrances"):
-			if building.global_position.distance_to(site.building.origin) < 1: building.queue_free()
-		site.exterior = ExplorationSite.TYPES[variant]
-		site.title = ExplorationSite.NAMES[variant]
-		main.get_node("WorldGenerator").poi_spawner.spawn_site(site, main.get_node("WorldGenerator").active_chunks[1].node)
+			if building.get_meta("poi_id", "") == site.id: building.free()
+		site.definition_id = POIConfig.GENERATION_IDS[variant]
+		site.title = POIConfig.instance_titles()[variant]
+		var generator := main.get_node("WorldGenerator")
+		var owner_band := floori(float(site.s) / generator.profile.chunk_length)
+		for entry in generator.active_chunks:
+			if int(entry.index) == owner_band:
+				generator.poi_spawner.spawn_site(site, entry.node)
+				break
 		_view()
 	elif event.keycode == KEY_F3:
 		player.inventory.items.clear()
 		var item := EngineState.new().item()
 		player.add_item(item.name, true, item.scene_path, item.state)
-		player.global_position = site.route[0] + Vector3.UP * 0.1
+		player.global_position = walk_route[0] + Vector3.UP * 0.1
 		player.velocity = Vector3.ZERO
 		player.in_ui_mode = false
 		player.camera.current = true
@@ -121,18 +143,18 @@ func _unhandled_input(event: InputEvent) -> void:
 func _view() -> void:
 	player.in_ui_mode = true
 	camera.current = true
-	var positions := [site.road.origin + Vector3(0, 2.3, 18), site.frame.origin + Vector3(0, 1.8, 8), site.route[3] + Vector3.UP * 1.8, site.building * Vector3(11, 3, 21), site.route[6] + Vector3.UP * 1.8]
+	var positions := [site.road.origin + Vector3(0, 2.3, 18), site.frame.origin + Vector3(0, 1.8, 8), walk_route[1] + Vector3.UP * 1.8, site.building * Vector3(11, 3, 21), walk_route[-1] + Vector3.UP * 1.8]
 	var rv: Chassis = main.get_node("NewRv/Chassis")
 	positions.append_array([rv.to_global(Vector3(9, 3, -11)), rv.to_global(Vector3(0.8, 1.95, -1.8)), rv.to_global(Vector3(0.8, 1.8, 5.0))])
 	camera.global_position = positions[stage]
 	var target: Vector3 = site.building.origin + Vector3.UP * 5
-	if stage == 2: target = site.route[4] + Vector3.UP * 1.8
+	if stage == 2: target = walk_route[-1] + Vector3.UP * 1.8
 	if stage == 4: target = site.frame.origin + Vector3.UP * 2
 	if stage == 5: target = rv.to_global(Vector3(0, 1.1, 0))
 	if stage == 6: target = rv.to_global(Vector3(-0.45, 1.3, -5))
 	if stage == 7: target = rv.to_global(Vector3(-0.7, 1.0, 0))
 	camera.look_at(target)
-	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | Esc settings\nF6 RV/cabin/equipment | F7 battery | F9 panel damage | R reset" % [ExplorationSite.NAMES[variant], ["HIGHWAY", "PARKING", "OCCLUDED TRAIL", "ENTRANCE", "RETURN VIEW", "RV", "CABIN", "EQUIPMENT"][stage]]
+	label.text = "%s | %s\nF2 view | 1-4 building | F3 walk | F4 enter/return | F5 resize | Esc settings\nF6 RV/cabin/equipment | F7 battery | F9 panel damage | R reset" % [POIConfig.instance_titles()[variant], ["HIGHWAY", "ROADSIDE", "APPROACH", "ENTRANCE", "RETURN VIEW", "RV", "CABIN", "EQUIPMENT"][stage]]
 
 func _physics_process(delta: float) -> void:
 	if interact_ticks > 0:
@@ -140,10 +162,10 @@ func _physics_process(delta: float) -> void:
 		if interact_ticks == 0: Input.action_release("interact")
 	if not walking: return
 	walk_time += delta
-	var target: Vector3 = site.route[route_index]
+	var target: Vector3 = walk_route[route_index]
 	if Vector2(player.global_position.x - target.x, player.global_position.z - target.z).length() < 0.35:
 		route_index += 1
-		if route_index >= site.route.size():
+		if route_index >= walk_route.size():
 			walking = false
 			Input.action_release("move_forward")
 			print("HORROR WALK complete seconds=", walk_time, " frames=", samples.size())
@@ -152,11 +174,11 @@ func _physics_process(delta: float) -> void:
 				print("HORROR FRAME median_ms=", samples[samples.size() / 2], " p95_ms=", samples[int(samples.size() * 0.95)])
 			label.text = "Walk complete: %.1f seconds | F2 views | Esc settings" % walk_time
 			return
-		target = site.route[route_index]
+		target = walk_route[route_index]
 	player.look_at(Vector3(target.x, player.global_position.y, target.z))
 	player.camera.rotation = Vector3.ZERO
 	Input.action_press("move_forward")
-	label.text = "CARRY ENGINE | %.1f s | waypoint %d/%d\nF2 stop | Esc settings" % [walk_time, route_index, site.route.size() - 1]
+	label.text = "CARRY ENGINE | %.1f s | waypoint %d/%d\nF2 stop | Esc settings" % [walk_time, route_index, walk_route.size() - 1]
 
 func _process(delta: float) -> void:
 	# Keep validation instructions out of the real terminal's controls.

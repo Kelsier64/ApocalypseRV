@@ -9,21 +9,13 @@ static func prepare(chunk: ChunkGenerator, band: int, gradual: bool) -> void:
 	if chunk.field.forest_cache.has(band): return
 	await _prepare_v14(chunk, band, gradual)
 
-static func landmark_slit(field: WorldField, point: Vector3) -> bool:
-	for site in field.sites_near_z(point.z):
-		if not site.has("route"): continue
-		var p: Vector3 = site.road.affine_inverse() * point
-		var u: float = p.x * float(site.side)
-		if u > 38 and u < 350 and absf(p.z) < 5.0: return true
-	return false
-
 static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	await _build_v14(chunk, gradual)
 
 static func _prepare_v14(chunk: ChunkGenerator, band: int, gradual: bool) -> void:
 	var field := chunk.field
 	var result: Array[Dictionary] = []
-	var rng := field.rng_for(band, "flora_v14_trees")
+	var rng := field.rng_for(band, "flora_v14_trees", 14)
 	for row in range(19):
 		for column in range(112):
 			# Query the same float32 coordinates ultimately stored by Node3D.
@@ -37,7 +29,6 @@ static func _prepare_v14(chunk: ChunkGenerator, band: int, gradual: bool) -> voi
 			var normal := field.normal_at(x, z)
 			if normal.y < cos(deg_to_rad(40.0)): continue
 			var point := Vector3(x, sample.height, z)
-			if landmark_slit(field, point): continue
 			var mesh_kind := field.landforms.tree_choice(x, z, rng.randf())
 			var appearance: Vector3 = sample.appearance
 			var ridge := lerpf(1.0 if int(appearance.x) == 3 else 0.0, 1.0 if int(appearance.y) == 3 else 0.0, appearance.z)
@@ -71,7 +62,7 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		body.add_child(shape)
 		chunk.decoration_positions.append(tree.point)
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
-	var rng := chunk.field.rng_for(chunk.band, "flora_v14_ground")
+	var rng := chunk.field.rng_for(chunk.band, "flora_v14_ground", 14)
 	for i in range(2400):
 		if gradual and i % 64 == 0 and chunk.slice_exhausted(): await chunk._pause()
 		var horizontal := Vector2(rng.randf_range(-440, 440), -chunk.band * 150.0 - rng.randf_range(1, 149))
@@ -84,7 +75,6 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		var normal := chunk.field.normal_at(x, z)
 		if normal.y < 0.70: continue
 		var point := Vector3(x, sample.height, z)
-		if landmark_slit(chunk.field, point): continue
 		var appearance: Vector3 = sample.appearance
 		var biome := int(appearance.y) if rng.randf() < appearance.z else int(appearance.x)
 		var kind := 0
@@ -95,7 +85,7 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		shrubs[kind].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3.ONE * radius), point))
 	# Keep the foreground layered: tall trunks alone expose the whole valley.
 	# A separate RNG leaves all existing tree/ground choices independent.
-	var screens := chunk.field.rng_for(chunk.band, "flora_v14_shelter")
+	var screens := chunk.field.rng_for(chunk.band, "flora_v14_shelter", 14)
 	for row in range(28):
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 		var s := chunk.band * 150.0 + (row + 0.5) * 150.0 / 28.0
@@ -110,7 +100,6 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 				if sample.reserved or sample.road.distance < sample.road.width * 0.5 + 5.5 or is_finite(float(sample.water_height)): continue
 				if chunk.field.normal_at(point.x, point.z).y < 0.72: continue
 				point.y = sample.height
-				if landmark_slit(chunk.field, point): continue
 				var wet := screens.randf() < smoothstep(0.65, 0.85, weights.z) or float(sample.river_bank) > 0.45
 				var kind := 1 if wet else 4
 				var size := Vector3(screens.randf_range(2.0, 3.5), screens.randf_range(2.4, 4.0), screens.randf_range(1.7, 2.8))

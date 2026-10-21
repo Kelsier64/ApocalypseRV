@@ -5,13 +5,13 @@ const LENGTH := 12000.0
 const STEP := 10.0
 const SEEDS := [0, 42, 99173, -61]
 
-static func profile(version: int = 14) -> WorldProfile:
+static func profile(version: int = 15) -> WorldProfile:
 	var settings := WorldProfile.new()
 	settings.generation_version = version
 	settings.max_grade = 0.12
 	return settings
 
-static func run(check: Callable, version: int = 14) -> void:
+static func run(check: Callable, version: int = 15) -> void:
 	var signatures: Array = []
 	for seed_value: int in SEEDS:
 		var field := WorldField.new(seed_value, profile(version))

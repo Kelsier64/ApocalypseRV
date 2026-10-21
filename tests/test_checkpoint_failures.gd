@@ -251,7 +251,7 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
-	check(saved.version == checkpoint.VERSION and saved.generation_version == 14 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")
+	check(saved.version == checkpoint.VERSION and saved.generation_version == 15 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")
 	var orientation := saved.duplicate(true)
 	orientation.start_state.tutorial.erase("entry_snapshot")
 	orientation.start_state.tutorial.entry_snapshot = orientation.duplicate(true)
@@ -267,11 +267,11 @@ func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
 		checkpoint.pending = {}
 		var generator: Node = candidate.get_node("WorldGenerator")
 		var start_run: StartRun = candidate.get_node("StartRun")
-		check(generator.profile.generation_version == 14 and generator.profile.terrain_half_width == 500.0, "Preparation retains the current terrain identity")
+		check(generator.profile.generation_version == 15 and generator.profile.terrain_half_width == 500.0, "Preparation retains the current terrain identity")
 		check(start_run.is_orientation_shelter() and start_run.bay_gate_count() == 1, "Preparation restores the one-gate orientation shelter")
 		check(start_run.get_node("Tutorial").capture() == roundtrip.start_state.tutorial, "Preparation restores the complete current course and retry entry")
 		candidate.free()
-	for version in [2, 6, 10, 11, 12, 13, 15]:
+	for version in [2, 6, 10, 11, 12, 13, 14, 16]:
 		var unsupported := saved.duplicate(true)
 		unsupported.generation_version = version
 		check(checkpoint.validation_error(unsupported) == "generation_version", "Reject unsupported terrain identity v%d" % version)

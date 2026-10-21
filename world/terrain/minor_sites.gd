@@ -15,13 +15,14 @@ static func plan(field: WorldField, cell: int) -> Dictionary:
 	var theme_rng := field.rng_for(cell, "minor_theme")
 	var layout_rng := field.rng_for(cell, "minor_layout")
 	var id := "roadside_%s_%d" % [THEMES[theme_rng.randi_range(0, 5)], layout_rng.randi_range(0, 2)]
+	if not POIConfig.definition(StringName(id)).supports_placement(PoiDefinition.Placement.ROADSIDE): return {}
 	for attempt in range(4):
 		var s := cell * CELL_LENGTH + placement.randf_range(150, 1050)
 		var side := -1.0 if placement.randf() < 0.5 else 1.0
 		if s < 450: continue
 		if not field.landforms.crossing_clearance(s): continue
 		var site := {"index": cell, "id": "v%d:%d:minor:%d" % [field.profile.generation_version, field.world_seed, cell], "s": s, "side": side,
-			"road": field.road_frame(s), "seed": field.seed_for(cell, "minor_art"), "minor": true}
+			"road": field.road_frame(s), "seed": field.seed_for(cell, "minor_art"), "minor": true, "placement": "roadside"}
 		WalkInSites.configure(site, id)
 		if not field.landforms.site_clear(site): continue
 		var blocked := false

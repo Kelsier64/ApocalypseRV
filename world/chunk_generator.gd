@@ -47,7 +47,6 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	RoadSpawns.build_static(self, road_spawns)
 	for site in sites:
 		_build_site(site, spawner)
-	await _build_exploration_scenery(gradual)
 	await ForestScenery.build(self, gradual)
 	if gradual:
 		await _pause()
@@ -225,10 +224,11 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		spawner.spawn_site(site, self)
 	else:
 		_place_module(site.kind, site.building.origin, site.building.basis)
+	# Standalone entrances and wild sites have no road advertising or approach.
+	if site.get("placement", "roadside") == "off_road" or site.kind == "entrance": return
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
 	var sign_node := _place_module("sign", sign_pos, site.road.basis)
-	var title := str(site.get("title", "SERVICE" if site.kind == "entrance" else "LAY-BY"))
-	if site.kind == "entrance": title += "\nFOOT ACCESS"
+	var title := str(site.get("title", "LAY-BY"))
 	if site.get("definition_id", "") == "gas_station": title = "NORTHLINE\nGAS / SERVICE"
 	RoadsideKit.label(sign_node, title, Vector3(0, 3.4, 0.08), 24)
 	for side in [-1.0, 1.0]:
@@ -239,29 +239,6 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		var point: Vector3 = site.building * Vector3(0, 0.06, 7.5 + i)
 		var stripe := RoadsideKit.part(self, Vector3(2, 0.03, 0.25), point, Color(0.70, 0.65, 0.49))
 		stripe.basis = site.building.basis
-
-func _build_exploration_scenery(gradual: bool = false) -> void:
-	for site in field.sites_near_z(-(band + 0.5) * 150, 400):
-		if not site.has("route"): continue
-		# A rotated deep site can touch a band far from its road anchor.
-		if site.bounds.position.z > -band * 150.0 + 4 or site.bounds.end.z < -(band + 1) * 150.0 - 4: continue
-		var parts := ExplorationSite.wall_parts(site)
-		for part_index in range(parts.size()):
-			if gradual and part_index % 20 == 0: await _pause()
-			var data: Dictionary = parts[part_index]
-			if floori(-data.base.z / 150.0) != band: continue
-			var color := Color("50564f") if part_index % 4 != 0 else Color("424b44")
-			var part := RoadsideKit.part(self, data.size, data.transform.origin, color, true)
-			part.basis = site.road.basis
-			var cap := RoadsideKit.part(self, Vector3(data.size.x + 0.12, 0.14, data.size.z + 0.12), data.base + Vector3.UP * (data.size.y + 0.05), Color("383f38"))
-			cap.basis = site.road.basis
-		for i in range(1, site.route.size() - 1):
-			var point: Vector3 = site.route[i] + site.road.basis * Vector3(3.5, 0, 3.5 if i % 2 == 0 else -3.5)
-			if floori(-point.z / 150.0) != band: continue
-			var post := _place_module("pole", point, site.road.basis)
-			post.scale = Vector3.ONE * 0.35
-			var marker := RoadsideKit.part(self, Vector3(0.3, 0.4, 0.3), point + Vector3.UP * 1.6, Color("b6a071"))
-			marker.basis = site.road.basis
 
 func request_navigation_rebuild() -> void:
 	_navigation_dirty = true
@@ -412,11 +389,6 @@ func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> 
 	# Query the shared plan, not loaded neighbours: bake order must not change
 	# walls at a seam. Physical segments still have exactly one owning chunk.
 	for site in field.sites_near_z(-(band + 0.5) * 150, 400):
-		if not site.has("walls"): continue
-		for part: Dictionary in ExplorationSite.wall_parts(site):
-			if floori(-part.base.z / 150.0) == band: continue
-			if part.base.z > -band * 150.0 + 5 or part.base.z < -(band + 1) * 150.0 - 5: continue
-			_append_box_faces(source, part.size, part.transform)
 		if floori(float(site.s) / 150.0) == band: continue
 		if site.has("bounds") and (site.bounds.position.z > -band * 150.0 + 5 or site.bounds.end.z < -(band + 1) * 150.0 - 5): continue
 		# Exterior collision boxes are read without registering a second POI.

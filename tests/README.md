@@ -32,7 +32,7 @@
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
-| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v6 只接受地形生成 v14，檢查當前教學／重試入口及舊版拒絕行為 |
+| [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v6 只接受世界生成 v15，檢查當前教學／重試入口及舊版拒絕行為 |
 | [streaming_generation](test_streaming_generation.gd) | 當前分幀／碰撞一致性、四種子 12 km 路線與地形契約、急彎及持續升降、固定道路指紋與獨立外觀域、全路寬河橋支撐、山頂跨區塊普通／巨人導航；霧外觀設定、載入視野保護及自然天氣 RNG／保存隔離 |
 | [main_scene_smoke](main_scene_smoke.gd) | 正式主世界可操作、教學凍結期間視野恢復且時間／天氣不前進、Esc 設定路由與玩家移動 |
 

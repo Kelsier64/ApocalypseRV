@@ -11,3 +11,5 @@ legacy_visual_layout = true
 access_paths = Array[NodePath]([NodePath("ReturnPoint")])
 
 interior_profile = &"bunker"
+
+placement_modes = 3

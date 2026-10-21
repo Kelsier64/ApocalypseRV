@@ -3,9 +3,12 @@ extends Resource
 class_name PoiDefinition
 ## Immutable authoring data. Site instances, loot and save state belong to world owners.
 enum Kind { INSTANCE_ENTRANCE, WALK_IN }
+enum Placement { ROADSIDE = 1, OFF_ROAD = 2 }
 @export var definition_id: StringName
 @export var display_name: String
 @export var kind: Kind = Kind.INSTANCE_ENTRANCE
+## Placement pools are independent of whether exploration uses an instance.
+@export_flags("Roadside", "Off road") var placement_modes: int = Placement.ROADSIDE
 @export_file("*.tscn") var scene_path: String
 @export_range(1, 1000) var content_version: int = 1
 ## Building-local bounds: solid structure vs required clear approach/service area.
@@ -20,11 +23,15 @@ enum Kind { INSTANCE_ENTRANCE, WALK_IN }
 ## Optional outdoor encounters. Zero preserves existing peaceful walk-in assets.
 @export var enemy_count_range := Vector2i.ZERO
 
+func supports_placement(mode: Placement) -> bool:
+	return (placement_modes & mode) != 0
+
 func validate() -> PackedStringArray:
 	var errors := PackedStringArray()
 	if definition_id.is_empty(): errors.append("Missing definition ID")
 	if display_name.is_empty(): errors.append("Missing display name")
 	if kind not in [Kind.INSTANCE_ENTRANCE, Kind.WALK_IN]: errors.append("Unknown POI kind")
+	if placement_modes <= 0 or (placement_modes & ~3) != 0: errors.append("Invalid placement modes")
 	if content_version < 1: errors.append("Content version must be positive")
 	if enemy_count_range.x < 0 or enemy_count_range.y < enemy_count_range.x or enemy_count_range.y > 2:
 		errors.append("Invalid outdoor enemy range")

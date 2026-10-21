@@ -46,7 +46,9 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	var starter_site := OpeningSiteContent.populate(building, container, definition.definition_id)
 	var barrel_site: bool = _barrel_site(definition)
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
-	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
+	var offroad: bool = site.get("placement", "roadside") == "off_road"
+	var loot_domain := "offroad_loot" if offroad else ("minor_loot" if site.get("minor", false) else "walk_in_loot")
+	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, loot_domain)
 	for point in building.find_children("*", "Marker3D", true, false):
 		if starter_site: continue
 		if not point is PoiLootPoint: continue
@@ -56,8 +58,8 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		container.add_child(item)
 		item.global_transform = point.global_transform
 	if definition.enemy_count_range.y > 0:
-		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_enemies")
-		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_enemy_species")
+		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemies" if offroad else "minor_enemies")
+		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemy_species" if offroad else "minor_enemy_species")
 		var points := building.get_node("EnemySpawns").get_children()
 		var count := enemies.randi_range(definition.enemy_count_range.x, definition.enemy_count_range.y)
 		for i in range(count):

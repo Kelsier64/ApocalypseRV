@@ -1,6 +1,6 @@
 extends Resource
 class_name WorldProfile
-@export var generation_version: int = 14
+@export var generation_version: int = 15
 ## All distances are metres. Determinism includes the generation version.
 var chunk_length: float = 150.0
 var terrain_half_width: float = 500.0

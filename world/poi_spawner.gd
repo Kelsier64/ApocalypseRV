@@ -6,6 +6,14 @@ func spawn_site(site: Dictionary, parent_node: Node3D) -> Node3D:
 	if definition == null:
 		push_warning("Unknown POI definition: " + str(site.get("definition_id", site.get("exterior", ""))))
 		return null
+	var placement: String = site.get("placement", "roadside")
+	if placement not in ["roadside", "off_road"]:
+		push_warning("Unknown POI placement: " + placement)
+		return null
+	var mode := PoiDefinition.Placement.OFF_ROAD if placement == "off_road" else PoiDefinition.Placement.ROADSIDE
+	if not definition.supports_placement(mode):
+		push_warning("POI does not support placement: " + str(definition.definition_id))
+		return null
 	var errors := definition.validate()
 	if not errors.is_empty():
 		push_warning("Invalid POI %s: %s" % [definition.definition_id, errors])

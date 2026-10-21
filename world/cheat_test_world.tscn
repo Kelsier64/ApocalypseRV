@@ -14,7 +14,7 @@
 
 [sub_resource type="Resource" id="CheatTestProfile"]
 script = ExtResource("19_profile")
-generation_version = 14
+generation_version = 15
 max_grade = 0.12
 chunks_ahead = 2
 

@@ -9,6 +9,7 @@ var detail := FastNoiseLite.new()
 var clusters := FastNoiseLite.new()
 var _stops: Dictionary = {}
 var _minor_sites: Dictionary = {}
+var _offroad_sites: Dictionary = {}
 var _site_queries: Dictionary = {}
 var forest_cache: Dictionary = {}
 var destroyed_trees: Dictionary = {}
@@ -82,7 +83,7 @@ func stop(index: int) -> Dictionary:
 		return {}
 	var side := 1.0 if index == 0 or rng.randf() > 0.5 else -1.0
 	var road := road_frame(s)
-	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "road": road, "seed": seed_for(index, "interior")}
+	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "road": road, "seed": seed_for(index, "interior"), "placement": "roadside"}
 	if index == 0 or index % 3 == 1:
 		result.side = ExplorationSite.select_side(road, side, self)
 		WalkInSites.configure(result, profile.opening_shelter_id() if index == 0 else "gas_station")
@@ -101,7 +102,7 @@ func stops_in_band(index: int) -> Array[Dictionary]:
 			found.append(candidate)
 	return found
 
-## Includes independent minor sites; callers must not infer sites from stop spacing.
+## All placement pools share one query; consumers never infer sites from stops.
 func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 	# Terrain rows repeatedly ask the same longitudinal question for different X.
 	# Results are read-only, like stop(); bound the cache during long drives.
@@ -119,6 +120,11 @@ func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 		var site := minor_site(cell)
 		if not site.is_empty() and absf(float(site.s) + z) <= radius:
 			found.append(site)
+	for row in range(maxi(0, floori((-z - radius) / OffroadSites.CELL_LENGTH)), maxi(0, floori((-z + radius) / OffroadSites.CELL_LENGTH)) + 1):
+		for column in range(OffroadSites.COLUMNS):
+			var site := offroad_site(row, column)
+			if not site.is_empty() and absf(float(site.s) + z) <= radius:
+				found.append(site)
 	found.sort_custom(func(a, b): return a.s < b.s)
 	if _site_queries.size() >= 256: _site_queries.clear()
 	_site_queries[key] = found
@@ -129,19 +135,17 @@ func minor_site(cell: int) -> Dictionary:
 	if not _minor_sites.has(cell): _minor_sites[cell] = MinorSites.plan(self, cell)
 	return _minor_sites[cell]
 
+func offroad_site(row: int, column: int) -> Dictionary:
+	if row < 0 or column < 0 or column >= OffroadSites.COLUMNS: return {}
+	var key := Vector2i(row, column)
+	if not _offroad_sites.has(key): _offroad_sites[key] = OffroadSites.plan(self, row, column)
+	return _offroad_sites[key]
+
 func court_distance(x: float, z: float, site: Dictionary) -> float:
-	var local: Vector3 = site.frame.affine_inverse() * Vector3(x, site.frame.origin.y, z)
-	if site.kind == "walk_in":
-		return WalkInSites.court_distance(Vector3(x, site.frame.origin.y, z), site)
-	# 12x24 parking is wholly clear, with an additional apron for the building.
-	var center_x := float(site.side) * 5.0
-	var half_width := 7.0 if site.has("route") else 23.0
-	var q := Vector2(absf(local.x - center_x) - half_width, absf(local.z) - 18.0)
-	var court := Vector2(maxf(q.x, 0.0), maxf(q.y, 0.0)).length()
-	var approach: Vector3 = site.road.affine_inverse() * Vector3(x, site.road.origin.y, z)
-	# Flared highway mouth accommodates the 12m RV's swept turning path.
-	var driveway := Vector2(absf(approach.x - float(site.side) * 16.5) - 16.5, absf(approach.z) - 20.0)
-	return minf(court, Vector2(maxf(driveway.x, 0.0), maxf(driveway.y, 0.0)).length())
+	var point := Vector3(x, site.frame.origin.y, z)
+	if site.get("placement", "roadside") == "off_road" or site.kind == "entrance":
+		return OffroadSites.court_distance(point, site)
+	return WalkInSites.court_distance(point, site)
 
 func surface(x: float, z: float) -> Dictionary:
 	var road := road_query(x, z)
@@ -154,25 +158,6 @@ func surface(x: float, z: float) -> Dictionary:
 			if z < bounds.position.z or z > bounds.end.z: continue
 		elif absf(-z - float(site.s)) > 180.0:
 			continue
-		if site.has("route"):
-			var p: Vector3 = site.road.affine_inverse() * Vector3(x, site.road.origin.y, z)
-			p.x *= float(site.side)
-			var q := Vector2(maxf(absf(p.x - 199.5) - 159.5, 0.0), maxf(absf(p.z) - 48, 0.0))
-			var campus := 1.0 - smoothstep(0.0, 16.0, q.length())
-			var trail := ExplorationSite.route_distance(Vector3(x, 0, z), site.route)
-			var apron := Vector2(p.x - 335.2, p.z).length() < 15.0
-			# Narrow sunken walks between real banks, with a thin landmark slit.
-			var hill := smoothstep(4.0, 11.0, trail) * (3.5 + 1.5 * medium.get_noise_2d(x, z)) * smoothstep(5.0, 12.0, absf(p.z))
-			if apron: hill = 0.0
-			height = lerpf(height, site.frame.origin.y + ExplorationSite.site_rise(site, p.x) + hill, campus)
-			gravel = maxf(gravel, (1.0 - smoothstep(1.3, 2.8, trail)) * campus)
-			reserved = reserved or trail < 3.1 or apron
-			# Keep authored perimeter/baffles clear of random trees and rocks.
-			for wall: Dictionary in site.walls:
-				var wp: Vector3 = wall.position
-				wp.x *= float(site.side)
-				if absf(p.x - wp.x) < wall.size.x * 0.5 + 2 and absf(p.z - wp.z) < wall.size.z * 0.5 + 2:
-					reserved = true
 		var court_distance := court_distance(x, z, site)
 		var influence := 1.0 - smoothstep(0.0, 16.0, court_distance)
 		height = lerpf(height, site.frame.origin.y, influence)

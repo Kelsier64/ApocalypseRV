@@ -20,10 +20,6 @@ func _ready() -> void:
 	RoadsideKit.part(art,Vector3(3.4,0.18,0.3),Vector3(0,3.5,4.7),Color("272f28"))
 	var leaf := get_node_or_null("Visuals/DoorVisual") as MeshInstance3D
 	if leaf != null: leaf.material_override = preload("res://world/poi_kit/materials/bunker/steel.tres")
-	RoadsideKit.part(art,Vector3(3.3,0.65,0.08),Vector3(0,4.25,4.7),Color("252c24"))
-	var index := maxi(0, ExplorationSite.TYPES.find(exterior))
-	RoadsideKit.label(art,"BUNKER / %02d" % (index+1),Vector3(0,4.25,4.76),20)
-	RoadsideKit.label(art,"MILITARY RESERVE\nAUTHORIZED ACCESS",Vector3(0,3.0,4.9),10)
 	for x in [-4.1,4.1]:
 		RoadsideKit.part(art,Vector3(0.12,4.2,0.15),Vector3(x,2.1,4.68),Color("474d3d"))
 	var lamp := OmniLight3D.new()

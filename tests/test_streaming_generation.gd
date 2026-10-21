@@ -3,6 +3,8 @@ extends SceneTree
 const WAIT = preload("res://tests/support/test_wait.gd")
 const TERRAIN_CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
 const V14_CONTRACTS = preload("res://tests/support/terrain_v14_contracts.gd")
+const OFFROAD_CONTRACTS = preload("res://tests/support/offroad_site_contracts.gd")
+const NAV_SURFACE = preload("res://tests/support/nav_surface_probe.gd")
 var failures: Array[String] = []
 
 class TerrainHost extends Node3D:
@@ -61,7 +63,8 @@ func run() -> void:
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
 	await V14_CONTRACTS.run(self, world, check)
-	for version: int in [14]:
+	await OFFROAD_CONTRACTS.run(self, world, check)
+	for version: int in [15]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
 	await _check_mountain_navigation(world)
@@ -72,12 +75,12 @@ func run() -> void:
 
 func _check_opening_profiles() -> void:
 	var current_profile := WorldProfile.new()
-	check(current_profile.generation_version == 14 and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
+	check(current_profile.generation_version == 15 and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
 	var sandbox: WorldProfile = load("res://world/cheat_test_profile.gd").new()
-	sandbox.generation_version = 14
+	sandbox.generation_version = 15
 	sandbox.max_grade = 0.12
 	var production := WorldProfile.new()
-	production.generation_version = 14
+	production.generation_version = 15
 	production.max_grade = sandbox.max_grade
 	var field := WorldField.new(42, sandbox)
 	var reference := WorldField.new(42, production)
@@ -86,10 +89,10 @@ func _check_opening_profiles() -> void:
 	for local: Vector3 in [Vector3(0, 0, -6), Vector3(0, 0, 30)]:
 		var point: Vector3 = site.building * local
 		var sample := field.surface(point.x, point.z)
-		check(sample.reserved and is_equal_approx(sample.height, -0.08), "Old garage and apron retain recessed terrain backing on v14")
+		check(sample.reserved and is_equal_approx(sample.height, -0.08), "Old garage and apron retain recessed terrain backing on v15")
 	for point: Vector2 in [Vector2(0, -900), Vector2(180, -1200), Vector2(-230, -2100)]:
-		check(field.surface(point.x, point.y) == reference.surface(point.x, point.y), "Sandbox outdoor terrain and appearance match the v14 production profile")
-		check(field.road_frame(-point.y) == reference.road_frame(-point.y), "Sandbox uses the v14 production road route")
+		check(field.surface(point.x, point.y) == reference.surface(point.x, point.y), "Sandbox outdoor terrain and appearance match the v15 production profile")
+		check(field.road_frame(-point.y) == reference.road_frame(-point.y), "Sandbox uses the v15 production road route")
 
 func _check_crossing_chunk(world: Node3D, version: int) -> void:
 	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
@@ -186,12 +189,15 @@ func _check_mountain_navigation(world: Node3D) -> void:
 		for giant: bool in [false, true]:
 			var map: RID = host.giant_navigation_map if giant else chunks[0].navigation.get_navigation_map()
 			var label := "Giant" if giant else "Ordinary"
-			var closest := NavigationServer3D.map_get_closest_point(map, summit)
 			# Navigation retains its established height-detail simplification;
 			# grounded actors advance waypoints using their real collider height.
 			# This regression checks summit coverage and horizontal connectivity,
 			# rather than imposing a new sub-metre vertical bake contract.
-			check(closest.y > 150.0 and Vector2(closest.x, closest.z).distance_to(Vector2(summit.x, summit.z)) < 1.0, label + " published navigation covers the road summit above the former 150m ceiling")
+			var surface := NAV_SURFACE.point_at(chunks, summit, giant)
+			check(surface.is_finite(), label + " baked navigation contains the summit XZ (summit %s at s %.1f)" % [summit, peak_s])
+			if surface.is_finite():
+				var closest := NavigationServer3D.map_get_closest_point(map, surface)
+				check(surface.y > 150.0 and closest.y > 150.0 and Vector2(closest.x, closest.z).distance_to(Vector2(summit.x, summit.z)) < 1.0, label + " published navigation covers the road summit above the former 150m ceiling (summit %s, baked surface %s, closest %s)" % [summit, surface, closest])
 			var path := NavigationServer3D.map_get_path(map, start, finish, true)
 			check(path.size() >= 2 and Vector2(path[0].x, path[0].z).distance_to(Vector2(start.x, start.z)) < 1.0 and Vector2(path[-1].x, path[-1].z).distance_to(Vector2(finish.x, finish.z)) < 1.0, label + " mountain navigation connects across the summit streaming seam")
 	host.queue_free()

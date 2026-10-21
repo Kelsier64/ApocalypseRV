@@ -1,6 +1,6 @@
-# 路邊小 POI（生成 v6）
+# 小 POI 資產（路旁生成 v6；世界生成 v15）
 
-六種主題，每種三套靜態場景，均登錄為 `PoiDefinition.WALK_IN`。本地 +Z 朝道路，1 unit = 1 m，根節點不縮放。原始程式化製作來源為 [build_minor_pois.gd](../../scripts/build_minor_pois.gd)；首次建立器拒絕覆蓋，日常直接編輯 `.tscn`。
+六種主題，每種三套靜態場景，均登錄為 `PoiDefinition.WALK_IN`。資產定義可由不同放置類別重用：camp／shed 亦支援越野生成；wreck、checkpoint、cargo、rest 僅路旁。本地 +Z 朝道路，1 unit = 1 m，根節點不縮放。原始程式化製作來源為 [build_minor_pois.gd](../../scripts/build_minor_pois.gd)；首次建立器拒絕覆蓋，日常直接編輯 `.tscn`。
 
 | 主題 | 0 | 1 | 2 | 次要物資 |
 |---|---|---|---|---|
@@ -17,6 +17,6 @@
 
 `building_bounds` 為 (-14,-0.5,-11)／(28,7,20)，`site_bounds` 為 (-16,-0.5,-12)／(32,14,42)，包含前方停車淨空。世界停車區中心距路中心 33 m，場景中心 49 m；12×24 m 停車區與道路座標對齊。RV 可沿進場路線倒車退出，不要求在小場址內迴轉。
 
-修改碰撞、佈局或標記必須處理 content_version；不能只加版本號後讓既有存檔載入不同位置。舊 v2–v5 保留原路旁資產，只有新 v6 使用這套場景。
+修改碰撞、佈局或標記必須處理 content_version；不能只加版本號後讓既有存檔載入不同位置。舊 v2–v5 保留原路旁資產，路旁小 POI 規則為 v6。世界生成 v15 將 bunker4、camp、shed 納入獨立越野場址；場址 ID 依生成版本、seed 與網格 row／column 穩定生成。越野場址沿自然地面配置，不帶公路標誌、方向標誌、車道、停車線、林間步道、迷宮或周界牆。
 
 測試場與命令見 [測試指南](../../docs/guides/playgrounds.md#minor-pois)，本輪結果見 [驗收](../../docs/validation/2026-09-26-minor-pois.md)。

@@ -1,6 +1,6 @@
 # POI 共用製作與接入規範
 
-更新：2026-10-21。適用目前 POI；既有資產的視覺組裝例外見末節。此文件是 POI 共用規範，房型接口細節仍由 [房間／家具規格](../../world/poi_kit/README.md) 管理。
+更新：2026-10-22。適用目前 POI；既有資產的視覺組裝例外見末節。此文件是 POI 共用規範，房型接口細節仍由 [房間／家具規格](../../world/poi_kit/README.md) 管理。
 
 ## 1. 類型與責任
 
@@ -22,6 +22,7 @@
 | `kind` | 副本入口或直接探索，兩者有不同驗證要求 |
 | `scene_path` | `res://` PackedScene 路徑；集中於定義，以免外觀載入與導航使用不同資產 |
 | `content_version` | 資產內容版本，起始為 1；不是檢查點格式或地形生成版本 |
+| `placement_modes` | 放置類別旗標 `ROADSIDE`、`OFF_ROAD`；可同時設定，與 `kind` 分開 |
 | `building_bounds` | 建築本地 AABB，包含店面、棚架、碰撞與地標等完整占用量體 |
 | `site_bounds` | 本地 AABB，包含建築及需要淨空的入口、後院、維修動線；包住 building_bounds |
 | `entrance_path`／`return_path` | 副本入口專用，本地 PoiEntrance／Marker3D 路徑 |
@@ -30,11 +31,13 @@
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
 | `enemy_count_range` | WALK_IN 首訪敵人數量範圍，預設 (0,0)；本輪上限 2，需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D |
 
+放置類別由 `placement_modes` 的 `ROADSIDE`、`OFF_ROAD` 旗標指定，與 `PoiDefinition.kind`（副本入口／直接探索）分開；兩個旗標可同時設定，無須複製定義或場景。四款地堡入口、camp、shed 同時支援兩類；其他四個小型 POI 主題維持路旁。四款地堡入口 路旁位置為距道路中心 49 m 的獨立場址，局部整地只用於建築本體安置。越野候選使用橫向 3 欄、每格 300 × 900 m 的網格，需避開道路、水域、陡坡及既有 POI，按自然地面高度及隨機朝向放置。路旁專用的公路標誌、方向標誌及停車區配置不得套用到越野場址。越野地堡只在建築本地入口局部整地，不改造周遭地形。
+
 場址實例 `site.id` 與 `site.seed` 由世界規劃提供。`definition_id` 識別資產種類，**不是某一棟建築的保存 ID**；同種建築可有許多不同場址 ID。未知明確定義不能默默退回維修站。
 
 Resource 為共用唯讀設定；執行時不得把拾取、門狀態、敵人生命或個別場址 seed 寫回 Resource。驗證工具需要改值時先 duplicate。
 
-生成 v6 的六類小 POI 共 18 個 WALK_IN 定義，獨立於既有地堡／加油站排程。`MinorSites` 使用每 1,200 m 一個候選區間、四次有界嘗試；位置／主題／佈局／美術／物資／怪物使用獨立 RNG。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
+路旁小 POI 共六類、18 個 WALK_IN 定義；四款地堡入口 與 camp／shed 定義可同時用於越野類別。生成 v15 的越野場址由橫向 3 欄、每格 300 × 900 m 的網格按每格 55% 候選率、最多 8 次嘗試規劃，候選以 40% 抽 bunker，否則為 camp／shed；位置、主題、佈局、美術、物資與怪物 RNG 分離。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
 
 **登錄不等於加入生成。** `GENERATION_IDS` 是目前四款副本入口的穩定抽樣順序；加油站透過 WalkInSites 的獨立場址排程加入。場址必須提供已登錄定義，沒有 maintenance_legacy 回退。新增或重排抽樣池需驗收當前場址安置與保存；不支援的舊存檔可直接重新開局。
 

@@ -28,7 +28,8 @@ func material_weights(appearance: Vector3) -> Vector2:
 func _init(world_field: WorldField) -> void:
 	_field = weakref(world_field)
 	offset = field.rng_for(0, "landform_order", 13).randi_range(0, KINDS.size() - 1)
-	relief.seed = field.seed_for(0, "terrain_relief_v14")
+	# POI distribution v15 does not reroll the established terrain domains.
+	relief.seed = field.seed_for(0, "terrain_relief_v14", 14)
 	relief.frequency = 0.016
 	relief.fractal_octaves = 2
 	relief.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -86,7 +87,7 @@ func _height_v14(x: float, z: float, road: Dictionary) -> float:
 
 func dry_valley(index: int) -> Dictionary:
 	if not _dry_valleys.has(index):
-		var rng := field.rng_for(index, "dry_valley_v14")
+		var rng := field.rng_for(index, "dry_valley_v14", 14)
 		var first := rng.randi_range(0, 8)
 		var s := 0.0
 		for attempt in range(9):
@@ -275,7 +276,6 @@ func crossing_clearance(s: float, margin: float = 190.0) -> bool:
 	return true
 
 func site_clear(site: Dictionary) -> bool:
-	if not ExplorationSite.road_clear(site, field): return false
 	if not site.has("bounds"): return crossing_clearance(float(site.s))
 	var box: AABB = site.bounds.grow(25.0)
 	for river_plan in rivers_near(box.get_center().z, box.size.z * 0.5):
