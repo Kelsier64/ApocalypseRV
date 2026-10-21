@@ -186,7 +186,7 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 正式場景持有 WorldClock，集中維護累積遊戲秒數與一天的現實分鐘數，預設 day 1 / 08:00 / 30 分鐘。每幀依 delta 前進，跨日由累積秒數推導；minute_changed 提供日期、時、分，HUD 每遊戲分鐘更新。PROCESS_MODE_INHERIT 尊重 SceneTree 暫停及候選世界停用，背包／平板與 POI 不暫停世界。
 
-WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
+WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空與環境填光按太陽高度平滑插值；常駐距離霧為 24–230 m，天氣與載入保護可進一步收近，所有畫質共用。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
 灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果先依視圖環境光亮度啟用，再用各處的實際照明及材質參考估計缺光量，明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。`ambient_gate_enabled` 預設 true；Color 環境光的線性顏色 luminance × energy 在 ≤0.04 時完整啟用、0.04～0.06 反向 smoothstep 淡出、≥`ambient_threshold`（0.06）停用。`ambient_transition`（0.02）控制門檻下方漸變寬度；不累積前幀。Disabled 環境光視為 0；Sky／Background 或缺少 Environment 時保守維持啟用，避免猜測天空照度。明亮全域環境光下的局部陰影因此不補灰階；關閉 gate 可恢復持續局部處理。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
 
@@ -204,9 +204,11 @@ Checkpoint v6 要求 clock 字典（elapsed_seconds、day_length_minutes），�
 
 WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨立 RNG；advance 將現實 delta 換算成遊戲秒後，同步推進時間與天氣。WorldWeather 提供 changed、sample、set_weather、capture／restore／valid_state，狀態以 Vector3 表示晴朗程度、雨級、霧級。分段剩餘時間與轉換進度都使用遊戲秒；set_time 是驗收調光入口，不重抽天氣。
 
-WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
+2026-10-21 重構：`WorldWeather` 只管理自然天氣；常駐景觀霧、天氣霧的外觀及載入視野保護各自獨立。`WorldClock.atmosphere` 指向 [WorldAtmosphereProfile](world/world_atmosphere_profile.tres)，集中距離、密度、白霧色、體積取樣與串流緩衝；其 `mist` 為無副作用取樣，`visual_conditions` 合成偏行壓力。`WorldStreamVisibility` 只保存暫態視野上限，按真實秒數恢復，不參與保存或自然 RNG。WorldClock 取得實際相機的已完成地景距離，將景觀／天氣霧與載入上限取較近值，再統一寫入 Environment、天空、光源及局部霧材質。巨人與雨幕仍讀自然 `weather.sample()`。本階段保留原畫面、機率、時間及五欄位天氣保存格式。[本輪驗證](docs/validation/2026-10-21-weather-refactor.md)。
 
-ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，新材質與每幀更新使用相同有效天氣密度。舊版景觀霧與天空分支已移除。v14 的 `WorldWeather.mist_profile` 保留常駐 24–230 m 白霧、curve 1，晴天／低畫質同樣遮蔽遠景；陰天恢復全域 0.0025／局部 0.14 密度，隨天氣霧淡出，由 220／110／38 m 距離霧接手。v14 天空參與原生距離及體積霧合成，與已遮蔽物體共用最終顏色；體積取樣範圍同步縮短以涵蓋廣角角落。`WorldGenerator.completed_scenery_clearance` 只計算包含實際相機的連續已完成區帶，忽略施工中區帶及不相連的 pinned islands；WorldClock 將霧終點限制在該邊界內 8 m，收近即時、恢復每真實秒 20 m。ForestScenery 的 CPU MultiMesh AABB 含所有變換，植被裁切含半徑／遲滯／8 m 緩衝，所有頂點都在完全遮蔽後才切換。自然天氣 RNG、保存、區帶／怪物生成與回收規則不變。Compatibility 保留相同距離霧。[常駐白霧與載入遮蔽](docs/validation/2026-10-20-persistent-mist.md)。
+WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧壓低太陽直射、日輪及體積散射；白霧色隨晝夜變暗，天空與完全遮蔽物體共用終端顏色。
+
+ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，新材質與每幀更新使用相同有效天氣密度。舊版景觀霧與天空分支已移除。`WorldAtmosphereProfile.mist` 保留常駐 24–230 m 白霧、curve 1，晴天／低畫質同樣遮蔽遠景；陰天全域 0.0025／局部 0.14 密度，隨天氣霧淡出，由 220／110／38 m 距離霧接手。天空參與原生距離及體積霧合成，體積取樣範圍同步縮短以涵蓋廣角角落。`WorldGenerator.completed_scenery_clearance` 只計算包含實際相機的連續已完成區帶，忽略施工中區帶及不相連的 pinned islands；`WorldStreamVisibility` 將霧終點限制在該邊界內 8 m，收近即時、恢復每真實秒 20 m。ForestScenery 建立時讀取所屬時鐘的同一份 atmosphere；CPU MultiMesh AABB 含所有變換，植被裁切含半徑／遲滯／8 m 緩衝，所有頂點都在完全遮蔽後才切換。霧距離／裁切參數應在生成前配置，調整已生成地景的可見距離需重建區塊；密度與顏色在 apply_time 重新取樣。自然天氣 RNG、保存、區帶／怪物生成與回收規則不變。Compatibility 保留相同距離霧。[常駐白霧與載入遮蔽](docs/validation/2026-10-20-persistent-mist.md)。
 
 WeatherRain 使用兩層固定種子 MultiMesh 雨幕：近景 24,576 粒子／半徑 24 m／高 32 m，遠景 49,152 粒子／半徑 96 m／高 48 m。種子只上傳一次，rain_field shader 以 CPU 傳入、尊重暫停的時間計算落雨、世界座標環繞和 billboard；每幀只更新相機、時間、天氣參數，不逐滴更新位置或碰撞。大雨最多提交 73,728 粒子，小雨約 24,323；兩層交界及範圍邊緣漸淡，數字代表提交量，不是遮擋後實際可見數。
 
@@ -218,13 +220,13 @@ Checkpoint v6 的必要 weather 字典保存 source／target、transition_elapse
 
 ### 局部體積霧（目前正式設定）
 
-桌面渲染改為 Forward+／Vulkan。WorldClock 設定薄全域體積霧與 160–420 m 遠景距離霧；ForestFog 使用獨立外觀 RNG，按地形低處與實際步道路線高度建立 FogVolume，隨 chunk 回收。世界座標 3D 噪聲和柔化邊界控制局部濃淡，霧不參與碰撞、導航或怪物感知，也不改地形生成版本與物資。
+桌面渲染使用 Forward+／Vulkan，常駐距離白霧與隨天氣調整的全域／局部體積霧共用 atmosphere 設定；ForestFog 使用獨立外觀 RNG，按地形低處與實際步道路線高度建立 FogVolume，隨 chunk 回收。世界座標 3D 噪聲和柔化邊界控制局部濃淡，霧不參與碰撞、導航或怪物感知，也不改地形生成版本與物資。
 
-RV 車頂的 CabinAir 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 降級沿用 18–380 m 距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)。
+RV 車頂的 CabinAir 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 保留相同距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。體積霧首版驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)，目前設定見上方動態天氣段落。
 
 ### 正式戶外 D 風格
 
-前一輪霧效修正（目前保留為 Compatibility 降級）：原生 Depth 模式，18–380 m、curve 0.65、最大混合量 1，避免近景過早洗灰。天空 horizon_color 使用 source_color，與 Environment.fog_light_color 共用時段色彩（白天 a4aca9）；fog_sky_affect 為 0，天際線由天空本身匹配，高處只有低對比固定雲層。此 Compatibility 路徑沒有額外全螢幕霧後製或體積霧；Forward+ 的正式設定見局部體積霧小節。
+正式距離霧使用原生 Depth 模式，24–230 m、curve 1、最大混合量 1；自然天氣與載入保護可收近終點。天空 horizon_color 與 Environment.fog_light_color 共用時段色彩，fog_sky_affect 為 1，使遠處物體與天空一起被白霧遮蔽。Compatibility 共用此路徑，僅省略體積霧。
 
 ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材質；ForestScenery 將原有世界座標轉成 48m 格內局部座標，樹／灌叢裁切距離為 340m／160m、遲滯 16m。未改生成 RNG、實例數、樹位或碰撞。這是正式渲染更新，不需要存檔或生成版本升級。
 

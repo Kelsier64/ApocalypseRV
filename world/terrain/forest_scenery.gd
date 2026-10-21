@@ -172,7 +172,8 @@ static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origi
 		# Include its full radius and both hysteresis directions so the entire
 		# cell is concealed before the renderer switches it on or off.
 		var radius := bounds.size.length() * 0.5
-		node.visibility_range_end = maxf(node.visibility_range_end, WorldWeather.BASE_MIST_END + radius + node.visibility_range_end_margin + 8.0)
+		var atmosphere := _atmosphere(parent)
+		node.visibility_range_end = maxf(node.visibility_range_end, atmosphere.landscape_end + radius + node.visibility_range_end_margin + atmosphere.cull_buffer)
 	parent.add_child(node)
 	var instances := {}
 	for i in range(poses.size()):
@@ -180,3 +181,10 @@ static func _cell(parent: Node3D, title: String, mesh: Mesh, poses: Array, origi
 		pose.origin -= origin
 		instances[poses[i].origin] = {"node": node, "index": i, "pose": pose}
 	return instances
+
+static func _atmosphere(node: Node) -> WorldAtmosphereProfile:
+	while node != null:
+		var clock := node.get_node_or_null("WorldClock") as WorldClock
+		if clock != null: return clock.atmosphere
+		node = node.get_parent()
+	return preload("res://world/world_atmosphere_profile.tres")

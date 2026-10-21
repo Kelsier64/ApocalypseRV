@@ -2,6 +2,8 @@ extends RefCounted
 ## Current terrain appearance, flora, mist and deterministic geometry checks.
 const CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
 const WORLD_GENERATOR = preload("res://world/world_generator.gd")
+const ATMOSPHERE = preload("res://world/world_atmosphere_profile.tres")
+const ATMOSPHERE_CONTRACTS = preload("res://tests/support/atmosphere_contracts.gd")
 const FROZEN := [2173645473, 2698986667, 2622734014, 1237357782]
 const ROAD_FROZEN := [2290317034, 3962838430, 934878813, 16663958]
 
@@ -39,6 +41,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_streaming_mist_clock(world, check)
 	_check_forest_culling(world, check)
 	_check_completed_scenery(check)
+	ATMOSPHERE_CONTRACTS.run(world, check)
 	await _check_forest_rebuild(tree, world, check)
 
 static func _check_grounded_corridor(field: WorldField, check: Callable) -> void:
@@ -166,12 +169,12 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 			for conditions: Vector3 in [Vector3.ZERO, Vector3(1, 0, 0), Vector3(0, 2, 0), Vector3(0, 0, 0.25), Vector3(0.5, 1, 0.25), Vector3(0, 0, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 0, WorldWeather.FOG_HEAVY)]:
 				clock.weather.set_weather(conditions, true)
 				clock.set_time(1, 12.0)
-				# Fixed observable tier values, independent of mist_profile's implementation.
+				# Fixed observable tier values, independent of the atmosphere implementation.
 				var densities := {Vector3.ZERO: [0.14, 0.0025], Vector3(1, 0, 0): [0.0, 0.0], Vector3(0, 2, 0): [0.14, 0.0035], Vector3(0, 0, 0.25): [0.07, 0.00125], Vector3(0.5, 1, 0.25): [0.035, 0.00075], Vector3(0, 0, 0.5): [0.0, 0.0], Vector3(0, 0, 1): [0.0, 0.0], Vector3(0, 0, 2): [0.0, 0.0]}
 				var expected_density: float = densities[conditions][0]
 				var expected_global: float = densities[conditions][1]
 				var expected_white := 1.0
-				check.call(is_equal_approx(float(WorldWeather.mist_profile(conditions, volumetric).white_strength), expected_white), "v14 permanent white mist persists through clear skies, rain and every weather fog tier at %s" % conditions)
+				check.call(is_equal_approx(float(ATMOSPHERE.mist(conditions).white_strength), expected_white), "v14 permanent white mist persists through clear skies, rain and every weather fog tier at %s" % conditions)
 				var horizon: Color = clock.sky_material.get_shader_parameter("horizon_color")
 				check.call(clock.environment.fog_light_color.is_equal_approx(horizon), "v14 fog and sky share the terminal color so distant objects cannot reappear as pale cutouts")
 				check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v14 zero-density weather skips volumetric scattering and low mist restores it without changing distance fog quality")
@@ -197,9 +200,9 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v14 gray-white daylight haze darkens with the native night lighting")
 		host.free()
 
-static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, volumetric: bool, check: Callable) -> void:
+static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, _volumetric: bool, check: Callable) -> void:
 	for fixture: Array in [[0.625, 192.5], [0.75, 165.0], [1.5, 74.0]]:
-		var profile := WorldWeather.mist_profile(Vector3(0, 0, fixture[0]), volumetric)
+		var profile := ATMOSPHERE.mist(Vector3(0, 0, fixture[0]))
 		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), 1.0) and is_zero_approx(float(profile.global_density)) and is_zero_approx(float(profile.local_density)), "v14 distance haze strengthens while scattering volumes remain absent above light fog at strength %.3f" % fixture[0])
 	clock.set_deviation_fog(0.0)
 	clock.weather.set_weather(Vector3.ZERO, true)
