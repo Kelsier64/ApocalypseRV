@@ -2,7 +2,6 @@ extends RefCounted
 class_name WalkInSites
 ## Current outdoor sites: roadside forecourt, authored footprint and dormant loose actors.
 static func configure(site: Dictionary, definition_id: String = "gas_station") -> void:
-	for key in ["route", "deep_forest", "mirror", "exterior"]: site.erase(key)
 	site.kind = "walk_in"
 	site.definition_id = definition_id
 	var definition := POIConfig.definition(StringName(definition_id))
@@ -44,12 +43,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for child in chunk.get_children():
 		if child.get_meta("poi_id", "") == site.id: building = child
 	if building == null: return
-	var starter_site := definition.definition_id in [&"starting_shelter", &"orientation_shelter"]
-	if definition.definition_id == &"orientation_shelter":
-		_spawn_orientation_terminal(building, container)
-		ensure_orientation_workshop(building, container)
-	elif starter_site:
-		_spawn_starter_actors(building, container)
+	var starter_site := OpeningSiteContent.populate(building, container, definition.definition_id)
 	var barrel_site: bool = _barrel_site(definition)
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, "minor_loot" if site.get("minor", false) else "walk_in_loot")
@@ -97,111 +91,6 @@ static func _spawn_barrel_decoy(building: Node3D, container: Node, site_id: Stri
 	container.add_child(barrel)
 	barrel.global_transform = point.global_transform
 	barrel.global_position = _ground_position(building, point.global_position, barrel) + Vector3.UP * 0.5
-
-## The authored opening has a fixed inventory. Markers carry placement only;
-## loose actors use the same owner/snapshot lifecycle as every other walk-in.
-static func _spawn_orientation_terminal(building: Node3D, container: Node3D) -> void:
-	var point := building.get_node("StarterEquipment/TrainingTerminal") as Marker3D
-	var support := building.get_node("Collision/TerminalSupport") as StaticBody3D
-	var terminal: TrainingTerminal = load("res://equipment/training_terminal.tscn").instantiate()
-	container.add_child(terminal)
-	support.set_meta("training_terminal_dock", terminal.persistent_id)
-	terminal.confirm_placement(point.global_transform, container, support)
-
-static func orientation_workshop_ids(building: Node3D) -> Dictionary:
-	var prefix := str(building.get_meta("poi_id", "orientation")) + ":recovery:"
-	var result := {}
-	for role in ["scrapper", "workbench", "scrap_a", "scrap_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel", "barrel_b", "spare", "battery", "engine_kit_a", "engine_kit_b"]:
-		result[role] = prefix + role
-	return result
-
-## Called for a fresh site. Reloading never calls this to replace consumed or lost supplies.
-static func ensure_orientation_workshop(building: Node3D, container: Node3D) -> void:
-	var stock := {
-		"scrapper": ["WorkshopEquipment/Scrapper", "res://equipment/scrapper.tscn"],
-		"workbench": ["WorkshopEquipment/Workbench", "res://equipment/crafting_station.tscn"],
-		"scrap_a": ["WorkshopSupplies/ScrapA", "res://props/scrap.tscn"],
-		"scrap_b": ["WorkshopSupplies/ScrapB", "res://props/scrap.tscn"],
-		"barrel": ["WorkshopSupplies/OilBarrel", "res://props/oil_barrel.tscn"],
-		"spare": ["WorkshopSupplies/SpareWheel", "res://props/wheel.tscn"],
-		"battery": ["WorkshopSupplies/Battery", "res://props/battery.tscn"],
-		"engine_kit_a": ["WorkshopSupplies/EngineKitA", "res://props/engine_repair_kit.tscn"],
-		"engine_kit_b": ["WorkshopSupplies/EngineKitB", "res://props/engine_repair_kit.tscn"],
-		"barrel_b": ["WorkshopSupplies/OilBarrelB", "res://props/oil_barrel.tscn"]}
-	for suffix in ["c", "d", "e", "f", "g", "h"]:
-		stock["scrap_" + suffix] = ["WorkshopSupplies/Scrap" + suffix.to_upper(), "res://props/scrap.tscn"]
-	var identities := orientation_workshop_ids(building)
-	for role in stock:
-		if _orientation_identity_owned(container, identities[role]):
-			for actor in container.get_tree().get_nodes_in_group(Groups.ITEMS):
-				if actor is Item and actor.persistent_id == identities[role] and WorldEntities.same_world(container, actor): actor.set_meta("orientation_role", role)
-			continue
-		var point := building.get_node(NodePath(stock[role][0])) as Marker3D
-		var item: Item = load(stock[role][1]).instantiate()
-		item.freeze = true
-		item.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
-		item.set_meta("orientation_role", role)
-		container.add_child(item)
-		var state := item.capture_item_state()
-		state.id = identities[role]
-		if role.begins_with("scrap_"):
-			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(3, 3)}
-		elif role in ["barrel", "barrel_b"]:
-			state.scrap_yields = {ItemNames.METAL_PARTS: Vector2(2, 2), ItemNames.UNREFINED_FUEL: Vector2(10, 10)}
-		elif role == "battery":
-			state.battery.id = identities[role]
-			state.battery.charge = state.battery.capacity
-		item.restore_item_state(state)
-		item.global_transform = point.global_transform
-
-static func _orientation_identity_owned(container: Node3D, identity: String) -> bool:
-	var world := WorldActorSnapshot.domain(container)
-	for item in container.get_tree().get_nodes_in_group(Groups.ITEMS):
-		if item is Item and not item.presentation_only and world.is_ancestor_of(item) and item.persistent_id == identity: return true
-	var player := world.get_node_or_null("Player")
-	if player != null and _orientation_record_has_id(player.inventory.items, identity): return true
-	for vehicle in container.get_tree().get_nodes_in_group(Groups.CHASSIS):
-		if not world.is_ancestor_of(vehicle): continue
-		if identity in vehicle.wheel_ids or _orientation_record_has_id(vehicle.stored_items, identity): return true
-	var generator := world.get_node_or_null("WorldGenerator")
-	return generator != null and (_orientation_record_has_id(generator.outdoor_sites, identity) or _orientation_record_has_id(generator.dormant_items, identity))
-
-static func _orientation_record_has_id(value: Variant, identity: String) -> bool:
-	if value is Dictionary:
-		if value.get("id") == identity: return true
-		for child in value.values():
-			if _orientation_record_has_id(child, identity): return true
-	elif value is Array:
-		for child in value:
-			if _orientation_record_has_id(child, identity): return true
-	return false
-
-static func _spawn_starter_actors(building: Node3D, container: Node) -> void:
-	var scenes := {
-		"StarterEquipment/CraftingStation": "res://equipment/crafting_station.tscn",
-		"StarterEquipment/Scrapper": "res://equipment/scrapper.tscn",
-		"StarterLoot/Flashlight": "res://props/flashlight.tscn",
-		"StarterLoot/Pistol": PistolRules.PISTOL_SCENE,
-		"StarterLoot/PistolAmmo1": PistolRules.AMMO_SCENE,
-		"StarterLoot/PistolAmmo2": PistolRules.AMMO_SCENE,
-		"StarterLoot/Battery": "res://props/battery.tscn",
-		"StarterLoot/GasCan1": "res://props/gas_can.tscn",
-		"StarterLoot/GasCan2": "res://props/gas_can.tscn",
-		"StarterLoot/OilBarrel": "res://props/oil_barrel.tscn",
-		"StarterLoot/Wheel": "res://props/wheel.tscn",
-	}
-	for i in range(1, 7): scenes["StarterLoot/Scrap%d" % i] = "res://props/scrap.tscn"
-	for path in scenes:
-		var point := building.get_node_or_null(NodePath(path)) as Marker3D
-		if point == null:
-			push_error("Starting shelter is missing marker: " + path)
-			continue
-		var actor: Node3D = load(scenes[path]).instantiate()
-		container.add_child(actor)
-		actor.global_transform = point.global_transform
-		if actor is Item:
-			actor.freeze = true
-			actor.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 
 static func deactivate(generator: Node, site: Dictionary) -> void:
 	if not generator.outdoor_sites.has(site.id): return

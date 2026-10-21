@@ -127,11 +127,7 @@ func leave() -> void:
 	_commit_interior_snapshot()
 	_player.reparent(_home)
 	_reset_player(_safe_return_transform())
-	_display.hide()
-	_display.texture = null
-	_retire_viewport(viewport, interior)
-	viewport = null
-	interior = null
+	_clear_interior_view()
 	print("POI EXIT: ", active_id)
 	active_id = ""
 	_status.text = ""
@@ -187,12 +183,7 @@ func cancel_transition(reason := "Transition cancelled") -> void:
 			_player.reparent(_home)
 			_reset_player(_safe_return_transform())
 		_player.exit_ui_mode()
-	_display.hide()
-	_display.texture = null
-	if is_instance_valid(interior): interior.cancelled = true
-	if is_instance_valid(viewport): _retire_viewport(viewport, interior)
-	viewport = null
-	interior = null
+	_clear_interior_view()
 	active_id = ""
 	busy = false
 	state = State.FAILED
@@ -203,6 +194,15 @@ func _commit_interior_snapshot() -> void:
 	if active_id.is_empty() or not is_instance_valid(interior) or not is_instance_valid(interior.entities) or interior.layout.is_empty():
 		return
 	saved_instances[active_id] = interior.snapshot()
+
+func _clear_interior_view() -> void:
+	_display.hide()
+	_display.texture = null
+	if is_instance_valid(interior): interior.cancelled = true
+	# Retirement can await a native bake; detach active references immediately.
+	if is_instance_valid(viewport): _retire_viewport(viewport, interior)
+	viewport = null
+	interior = null
 
 func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
 	for actor in retired.find_children("*", "RigidBody3D", true, false):

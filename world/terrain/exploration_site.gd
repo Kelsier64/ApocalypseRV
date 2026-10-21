@@ -6,16 +6,8 @@ const TYPES = POIConfig.GENERATION_IDS
 
 static func configure(site: Dictionary, field: WorldField) -> void:
 	var index: int = site.index
-	site.kind = "entrance" if index % 3 != 2 else ["wreck", "camp", "shed"][field.rng_for(index, "exterior").randi_range(0, 2)]
-	if site.kind != "entrance":
-		return
-	# Face inward when near a world edge, rather than expanding the terrain.
-	if absf(site.road.origin.x) > 25.0:
-		site.side = -signf(site.road.origin.x)
-	# Bounded candidate check; mirror to the opposite side if the requested
-	# side cannot contain the full apron/perimeter in the collision strip.
-	if not fits_strip(site.road, float(site.side), field.profile.terrain_half_width):
-		site.side = -float(site.side)
+	site.kind = "entrance"
+	site.side = select_side(site.road, float(site.side), field)
 	var side: float = site.side
 	var road: Transform3D = site.road
 	site.frame = Transform3D(road.basis, road * Vector3(side * 33, 0, 0))
@@ -25,23 +17,35 @@ static func configure(site: Dictionary, field: WorldField) -> void:
 	site.mirror = 1.0 if field.rng_for(index, "route").randf() > 0.5 else -1.0
 	site.building = Transform3D(Basis.looking_at(road.basis.x * side), Vector3.ZERO)
 	configure_forest(site)
-	if not road_clear(site, field):
-		site.side = -float(site.side)
-		site.frame = Transform3D(road.basis, road * Vector3(float(site.side) * 33.0, 0, 0))
-		site.building = Transform3D(Basis.looking_at(road.basis.x * float(site.side)), Vector3.ZERO)
-		configure_forest(site)
+
+## Major stops share the established side choice, including walk-in sites.
+## Only the clearance envelope is needed; no forest route or walls are built.
+static func select_side(road: Transform3D, side: float, field: WorldField) -> float:
+	# Face inward when near a world edge, rather than expanding the terrain.
+	if absf(road.origin.x) > 25.0:
+		side = -signf(road.origin.x)
+	# Bounded candidate check; mirror to the opposite side if the requested
+	# side cannot contain the full apron/perimeter in the collision strip.
+	if not fits_strip(road, side, field.profile.terrain_half_width):
+		side = -side
+	if not _road_clear(road, side, _forest_bounds(road, side), field):
+		side = -side
+	return side
 
 static func road_clear(site: Dictionary, field: WorldField) -> bool:
 	if not site.has("route"): return true
-	if not fits_strip(site.road, float(site.side), field.profile.terrain_half_width): return false
-	var inverse: Transform3D = site.road.affine_inverse()
-	var bounds: AABB = site.bounds.grow(14.0)
+	return _road_clear(site.road, float(site.side), site.bounds, field)
+
+static func _road_clear(road: Transform3D, side: float, site_bounds: AABB, field: WorldField) -> bool:
+	if not fits_strip(road, side, field.profile.terrain_half_width): return false
+	var inverse := road.affine_inverse()
+	var bounds := site_bounds.grow(14.0)
 	for station in range(maxi(0, floori(-bounds.end.z)), ceili(-bounds.position.z) + 1, 5):
 		var frame := field.road_frame(float(station))
 		var half := field.road_width(float(station)) * 0.5 + 2.0
 		for lateral: float in [-half, 0.0, half]:
 			var point: Vector3 = inverse * (frame * Vector3(lateral, 0, 0))
-			var u := point.x * float(site.side)
+			var u := point.x * side
 			if u > 18.0 and u < 362.0 and absf(point.z) < 60.0: return false
 	return true
 
@@ -53,10 +57,7 @@ static func configure_forest(site: Dictionary) -> void:
 		site.route.append(site.road * Vector3(p.x * float(site.side), site_rise(site, p.x), p.y * float(site.mirror)))
 	site.building.origin = site.road * Vector3(335.2 * float(site.side), 6, 0)
 	site.landmark = site.building * Vector3(0, 14, 0)
-	site.bounds = AABB(site.road * Vector3(20 * float(site.side), -15, -58), Vector3.ZERO)
-	for u in [20.0, 360.0]:
-		for v in [-58.0, 58.0]:
-			site.bounds = site.bounds.expand(site.road * Vector3(u * float(site.side), 38, v))
+	site.bounds = _forest_bounds(site.road, float(site.side))
 	site.walls = []
 	for gate in [Vector2(44, 0), Vector2(77, 24), Vector2(137, -24), Vector2(197, 24), Vector2(257, -24), Vector2(310, 0)]:
 		var gap: float = gate.y * float(site.mirror)
@@ -65,6 +66,13 @@ static func configure_forest(site: Dictionary) -> void:
 	for v in [-44.0, 44.0]:
 		site.walls.append({"position": Vector3(199.5 * float(site.side), 0, v), "size": Vector3(311.6, 3.2, 0.6)})
 	site.walls.append({"position": Vector3(355 * float(site.side), 0, 0), "size": Vector3(0.6, 3.2, 88)})
+
+static func _forest_bounds(road: Transform3D, side: float) -> AABB:
+	var bounds := AABB(road * Vector3(20 * side, -15, -58), Vector3.ZERO)
+	for u in [20.0, 360.0]:
+		for v in [-58.0, 58.0]:
+			bounds = bounds.expand(road * Vector3(u * side, 38, v))
+	return bounds
 
 static func site_rise(_site: Dictionary, u: float) -> float:
 	return smoothstep(40.0, 310.0, u) * 6.0

@@ -53,7 +53,7 @@ func prepare(vehicle: Chassis) -> bool:
 	var building: Node3D = controller.get_parent().get("shelter")
 	if not is_instance_valid(building): return false
 	var found := {}
-	var expected_ids := WalkInSites.orientation_workshop_ids(building)
+	var expected_ids := OpeningSiteContent.workshop_ids(building)
 	for actor in get_tree().get_nodes_in_group(Groups.ITEMS):
 		if not actor is Item or actor.presentation_only or actor.is_queued_for_deletion() or not controller._world().is_ancestor_of(actor) or not WorldEntities.same_world(controller._world(), actor): continue
 		for role in ROLE_KEYS:

@@ -82,19 +82,12 @@ func stop(index: int) -> Dictionary:
 		return {}
 	var side := 1.0 if index == 0 or rng.randf() > 0.5 else -1.0
 	var road := road_frame(s)
-	var center := road.origin + road.basis.x * side * 33.0
-	# Flat parking court and building apron share the adjacent road elevation.
-	var frame := Transform3D(road.basis, center)
-	var building_pos := road.origin + road.basis.x * side * 49.0
-	var facing := (road.origin - building_pos).normalized()
-	var building := Transform3D(Basis.looking_at(-facing), building_pos)
-	var kind: String = "entrance" if index % 3 == 0 else ["wreck", "camp", "shed"][rng.randi_range(0, 2)]
-	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "frame": frame, "building": building, "road": road, "kind": kind, "seed": seed_for(index, "interior")}
-	ExplorationSite.configure(result, self)
-	if index % 3 == 1:
-		WalkInSites.configure(result)
-	if index == 0:
-		WalkInSites.configure(result, profile.opening_shelter_id())
+	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "road": road, "seed": seed_for(index, "interior")}
+	if index == 0 or index % 3 == 1:
+		result.side = ExplorationSite.select_side(road, side, self)
+		WalkInSites.configure(result, profile.opening_shelter_id() if index == 0 else "gas_station")
+	else:
+		ExplorationSite.configure(result, self)
 	if index > 0 and not landforms.site_clear(result):
 		_stops[index] = {}
 		return {}
