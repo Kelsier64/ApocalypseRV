@@ -31,6 +31,9 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 
 func seed_for(id: int, domain: String, version_override: int = -1) -> int:
 	var version := profile.generation_version if version_override < 0 else version_override
+	# v16 changes the off-road pool and save identity, while retaining the
+	# established v15 rolls for placement, roadside content and encounters.
+	if version_override < 0 and version == 16: version = 15
 	return int(("%d:%d:%d:%s" % [version, world_seed, id, domain]).hash())
 
 func rng_for(id: int, domain: String, version_override: int = -1) -> RandomNumberGenerator:

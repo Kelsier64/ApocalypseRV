@@ -37,7 +37,7 @@
 
 Resource 為共用唯讀設定；執行時不得把拾取、門狀態、敵人生命或個別場址 seed 寫回 Resource。驗證工具需要改值時先 duplicate。
 
-路旁小 POI 共六類、18 個 WALK_IN 定義；四款地堡入口 與 camp／shed 定義可同時用於越野類別。生成 v15 的越野場址由橫向 3 欄、每格 300 × 900 m 的網格按每格 55% 候選率、最多 8 次嘗試規劃，候選以 40% 抽 bunker，否則為 camp／shed；位置、主題、佈局、美術、物資與怪物 RNG 分離。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
+路旁小 POI 共六類、18 個 WALK_IN 定義；四款地堡入口 與 camp／shed 定義可同時用於越野類別。生成 v16 的越野場址由橫向 3 欄、每格 300 × 900 m 的網格按每格 55% 候選率、最多 8 次嘗試規劃，候選以 40% 抽 bunker、20% 抽 civilian_shelter、40% 抽 camp／shed；位置、主題、佈局、美術、物資與怪物 RNG 分離。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
 
 **登錄不等於加入生成。** `GENERATION_IDS` 是目前四款副本入口的穩定抽樣順序；加油站透過 WalkInSites 的獨立場址排程加入。場址必須提供已登錄定義，沒有 maintenance_legacy 回退。新增或重排抽樣池需驗收當前場址安置與保存；不支援的舊存檔可直接重新開局。
 
@@ -105,6 +105,7 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 |---|---|---|
 | maintenance／warehouse／pump／research | 目前副本入口生成池 | 路徑、顯示名稱及順序集中；同一室內 profile |
 | gas_station | 正式公路及獨立測試場 | 占地整地、回程串流、剩餘物資及檢查點保存 |
+| civilian_shelter | WALK_IN、僅 OFF_ROAD、內容 v1 | 荒廢小型民用避難所；沿用戶外場址物資、串流與保存 |
 
 既有入口由 exterior_style.gd 在 Visuals/BunkerFacade 建立簡單軍事立面，沿用 service_entrance 的入口／返回點與原占地；外观附加量體不帶碰撞。既有定義的 legacy_visual_layout 旗標暫保留，尚未全面改成編輯器組裝資產；新資產不得沿用此例外。
 

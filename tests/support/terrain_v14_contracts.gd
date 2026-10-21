@@ -29,7 +29,7 @@ class FogSettingsStub extends RefCounted:
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_geometry(check)
 	for seed_value: int in CONTRACTS.SEEDS:
-		var field := WorldField.new(seed_value, CONTRACTS.profile(15))
+		var field := WorldField.new(seed_value, CONTRACTS.profile(16))
 		_check_frozen_road(field, check)
 		_check_appearance(field, check)
 		_check_grounded_corridor(field, check)
@@ -65,7 +65,7 @@ static func _check_grounded_corridor(field: WorldField, check: Callable) -> void
 				if sample.reserved or float(sample.gravel) > 0.2 or is_finite(float(sample.water_height)): continue
 				shoulder_samples[index] += 1
 				if absf(float(sample.height) - frame.origin.y) <= 3.0: near_level_samples[index] += 1
-	var label := "v15 seed %d: " % field.world_seed
+	var label := "v16 seed %d: " % field.world_seed
 	var elevated_fraction := float(elevated_samples) / maxi(dry_samples, 1)
 	check.call(dry_samples > 0 and elevated_fraction > 0.0 and elevated_fraction <= 0.12, label + "dry viaducts remain occasional across 12km (%.1f%%)" % (elevated_fraction * 100.0))
 	for index in range(distances.size()):
@@ -80,7 +80,7 @@ static func _check_mist_plans(field: WorldField, check: Callable) -> void:
 		var owner := floori(float(field.landforms.river(index).s) / field.profile.chunk_length)
 		for band in range(owner - 1, owner + 2):
 			if band not in bands: bands.append(band)
-	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(15))
+	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(16))
 	var reference: Dictionary = {}
 	for index in range(bands.size() - 1, -1, -1):
 		reference[bands[index]] = ForestFog.plans(reverse, bands[index])
@@ -127,14 +127,14 @@ static func _check_mist_plans(field: WorldField, check: Callable) -> void:
 		legal = legal and ground_in_band <= 12 and rivers_in_band <= owners.size() * 3
 		ground_count += ground_in_band
 		river_count += rivers_in_band
-	var label := "v15 seed %d: " % field.world_seed
+	var label := "v16 seed %d: " % field.world_seed
 	check.call(deterministic, label + "white-mist pockets are independent of chunk query order")
 	check.call(legal and ground_count > 0 and river_count > 0, label + "bounded white-mist plans have positive finite volumes and dry ground anchors outside reserved roads")
 	check.call(clear_courts, label + "every white-mist volume keeps its horizontal bounding circle at least 4m outside POI courts")
 	check.call(anchored_rivers, label + "river mist belongs to its crossing band, follows the channel and stays below the bridge deck")
 
 static func _check_mist_clock(world: Node3D, check: Callable) -> void:
-	for version: int in [15]:
+	for version: int in [16]:
 		var host := Node3D.new()
 		host.process_mode = Node.PROCESS_MODE_DISABLED
 		world.add_child(host)
@@ -173,10 +173,10 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				var expected_density: float = densities[conditions][0]
 				var expected_global: float = densities[conditions][1]
 				var expected_white := 1.0
-				check.call(is_equal_approx(float(ATMOSPHERE.mist(conditions).white_strength), expected_white), "v15 permanent white mist persists through clear skies, rain and every weather fog tier at %s" % conditions)
+				check.call(is_equal_approx(float(ATMOSPHERE.mist(conditions).white_strength), expected_white), "v16 permanent white mist persists through clear skies, rain and every weather fog tier at %s" % conditions)
 				var horizon: Color = clock.sky_material.get_shader_parameter("horizon_color")
-				check.call(clock.environment.fog_light_color.is_equal_approx(horizon), "v15 fog and sky share the terminal color so distant objects cannot reappear as pale cutouts")
-				check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v15 zero-density weather skips volumetric scattering and low mist restores it without changing distance fog quality")
+				check.call(clock.environment.fog_light_color.is_equal_approx(horizon), "v16 fog and sky share the terminal color so distant objects cannot reappear as pale cutouts")
+				check.call(clock.environment.volumetric_fog_enabled == (volumetric and expected_global > 0.0), "v16 zero-density weather skips volumetric scattering and low mist restores it without changing distance fog quality")
 				clock.register_fog(material)
 				var registered := float(material.get_shader_parameter("density"))
 				clock.apply_time()
@@ -188,7 +188,7 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				if conditions == Vector3(0.5, 1, 0.25): begin = 26.0
 				var end: float = endpoints[conditions.z][1]
 				var curve := 1.0
-				check.call(is_equal_approx(clock.environment.volumetric_fog_length, endpoints[conditions.z][2]), "v15 scattering integrates before opaque distance haze at weather %s / volumetric %s" % [conditions, volumetric])
+				check.call(is_equal_approx(clock.environment.volumetric_fog_length, endpoints[conditions.z][2]), "v16 scattering integrates before opaque distance haze at weather %s / volumetric %s" % [conditions, volumetric])
 				check.call(is_equal_approx(clock.environment.fog_depth_begin, begin) and is_equal_approx(clock.environment.fog_depth_end, end), "v%d depth mist keeps expected endpoints at weather %s / volumetric %s" % [version, conditions, volumetric])
 				check.call(is_equal_approx(clock.environment.fog_depth_curve, curve), "v%d distance haze retains its expected curve at every quality/weather setting" % version)
 				check.call(is_equal_approx(clock.environment.volumetric_fog_density, expected_global), "v%d global volumetric fog follows its weather contract" % version)
@@ -199,30 +199,30 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		var noon := clock.environment.fog_light_color
 		clock.set_time(1, 0.0)
 		var night := clock.environment.fog_light_color
-		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v15 gray-white daylight haze darkens with the native night lighting")
+		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v16 gray-white daylight haze darkens with the native night lighting")
 		host.free()
 
 static func _check_weather_appearance(clock: WorldClock, check: Callable) -> void:
 	for fixture: Array in [[Vector3(1, 0, 0), Color("d0cbb8"), 1.3], [Vector3.ZERO, Color("a4afb0"), 0.45], [Vector3(0, 0, 0.5), Color("c3cbc8"), 0.354375]]:
 		clock.weather.set_weather(fixture[0], true)
 		clock.set_time(1, 12.0)
-		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]), "v15 sunny, overcast and light fog have distinct daytime terminal tones and sun strengths at %s" % fixture[0])
+		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]), "v16 sunny, overcast and light fog have distinct daytime terminal tones and sun strengths at %s" % fixture[0])
 		var saved := clock.weather.capture()
 		clock.set_deviation_fog(WorldWeather.FOG_LIGHT)
-		check.call(clock.environment.fog_light_color.is_equal_approx(Color("c3cbc8")) and is_equal_approx(clock.environment.fog_depth_end, 150.0) and clock.weather.capture() == saved, "v15 deviation light fog uses the same white haze and cap without changing natural weather or RNG")
+		check.call(clock.environment.fog_light_color.is_equal_approx(Color("c3cbc8")) and is_equal_approx(clock.environment.fog_depth_end, 150.0) and clock.weather.capture() == saved, "v16 deviation light fog uses the same white haze and cap without changing natural weather or RNG")
 		clock.set_deviation_fog(0.0)
-		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]) and clock.weather.capture() == saved, "v15 clearing deviation restores the natural weather's terminal tone and sun strength")
+		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]) and clock.weather.capture() == saved, "v16 clearing deviation restores the natural weather's terminal tone and sun strength")
 	clock.weather.set_weather(Vector3(1, 0, 0), true)
 	clock.weather.set_weather(Vector3.ZERO)
 	clock.weather.advance(WorldWeather.TRANSITION * 0.5)
 	var saved := clock.weather.capture()
 	clock.apply_time()
-	check.call(is_equal_approx(clock.environment.fog_depth_begin, 44.0) and is_equal_approx(clock.environment.fog_depth_end, 230.0) and clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("d0cbb8"), 0.5)) and is_equal_approx(clock.sun.light_energy, 0.875) and clock.weather.capture() == saved, "v15 a natural clear-to-overcast midpoint blends onset, terminal tone and sun energy without a render-time RNG draw")
+	check.call(is_equal_approx(clock.environment.fog_depth_begin, 44.0) and is_equal_approx(clock.environment.fog_depth_end, 230.0) and clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("d0cbb8"), 0.5)) and is_equal_approx(clock.sun.light_energy, 0.875) and clock.weather.capture() == saved, "v16 a natural clear-to-overcast midpoint blends onset, terminal tone and sun energy without a render-time RNG draw")
 
 static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, _volumetric: bool, check: Callable) -> void:
 	for fixture: Array in [[0.625, 140.0], [0.75, 130.0], [1.5, 74.0]]:
 		var profile := ATMOSPHERE.mist(Vector3(0, 0, fixture[0]))
-		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), 1.0) and is_zero_approx(float(profile.global_density)) and is_zero_approx(float(profile.local_density)), "v15 distance haze strengthens while scattering volumes remain absent above light fog at strength %.3f" % fixture[0])
+		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), 1.0) and is_zero_approx(float(profile.global_density)) and is_zero_approx(float(profile.local_density)), "v16 distance haze strengthens while scattering volumes remain absent above light fog at strength %.3f" % fixture[0])
 	clock.set_deviation_fog(0.0)
 	clock.weather.set_weather(Vector3.ZERO, true)
 	clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT))
@@ -230,20 +230,20 @@ static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, 
 	clock.apply_time()
 	clock.register_fog(material)
 	var midpoint_end := 190.0
-	check.call(clock.weather.sample().is_equal_approx(Vector3(0, 0, 0.25)) and clock.weather.target.z == WorldWeather.FOG_LIGHT, "v15 natural fog transition retains its source/target and produces the halfway sample")
-	check.call(clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("c3cbc8"), 0.5)), "v15 natural light-fog midpoint blends the overcast and white terminal tones")
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00125) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v15 global and newly registered local mist use the interpolated weather sample")
+	check.call(clock.weather.sample().is_equal_approx(Vector3(0, 0, 0.25)) and clock.weather.target.z == WorldWeather.FOG_LIGHT, "v16 natural fog transition retains its source/target and produces the halfway sample")
+	check.call(clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("c3cbc8"), 0.5)), "v16 natural light-fog midpoint blends the overcast and white terminal tones")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00125) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v16 global and newly registered local mist use the interpolated weather sample")
 	var saved := clock.weather.capture()
 	var restored := WorldWeather.new()
-	check.call(restored.restore(saved) and restored.capture() == saved and restored.sample() == clock.weather.sample(), "v15 weather round trip preserves transition source, target, progress, duration and RNG state")
+	check.call(restored.restore(saved) and restored.capture() == saved and restored.sample() == clock.weather.sample(), "v16 weather round trip preserves transition source, target, progress, duration and RNG state")
 	clock.weather = restored
 	clock.apply_time()
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v15 restored weather reproduces the same global and local mist")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v16 restored weather reproduces the same global and local mist")
 	clock.set_deviation_fog(WorldWeather.FOG_MEDIUM)
-	check.call(clock.effective_visual_weather().z == WorldWeather.FOG_MEDIUM and is_equal_approx(clock.environment.fog_depth_end, 110.0) and is_zero_approx(clock.environment.volumetric_fog_density) and is_zero_approx(float(material.get_shader_parameter("density"))), "v15 deviation fog strengthens distance haze and suppresses scattering volumes at medium fog")
-	check.call(clock.weather.capture() == saved, "v15 visual deviation fog preserves natural weather transition and RNG")
+	check.call(clock.effective_visual_weather().z == WorldWeather.FOG_MEDIUM and is_equal_approx(clock.environment.fog_depth_end, 110.0) and is_zero_approx(clock.environment.volumetric_fog_density) and is_zero_approx(float(material.get_shader_parameter("density"))), "v16 deviation fog strengthens distance haze and suppresses scattering volumes at medium fog")
+	check.call(clock.weather.capture() == saved, "v16 visual deviation fog preserves natural weather transition and RNG")
 	clock.set_deviation_fog(0.0)
-	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v15 clearing deviation fog resumes the unchanged natural weather blend")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v16 clearing deviation fog resumes the unchanged natural weather blend")
 	clock.unregister_fog(material)
 
 static func _check_forest_culling(world: Node3D, check: Callable) -> void:
@@ -255,7 +255,7 @@ static func _check_forest_culling(world: Node3D, check: Callable) -> void:
 	var bounds: AABB = poses[0] * mesh.get_aabb()
 	for index in range(1, poses.size()): bounds = bounds.merge(poses[index] * mesh.get_aabb())
 	var radius := bounds.size.length() * 0.5
-	for version: int in [15]:
+	for version: int in [16]:
 		var chunk := ChunkGenerator.new()
 		chunk.field = WorldField.new(42, CONTRACTS.profile(version))
 		world.add_child(chunk)
@@ -264,17 +264,17 @@ static func _check_forest_culling(world: Node3D, check: Callable) -> void:
 			var node: MultiMeshInstance3D = instances[poses[0].origin].node
 			var base_end := 160.0 if title.begins_with("ForestBrush") else 340.0
 			check.call(instances.size() == 2 and instances[poses[1].origin].node == node and is_equal_approx(node.visibility_range_end_margin, 16.0), "v%d %s fixture shares one bounded cell with 16m hysteresis" % [version, title])
-			check.call(node.multimesh.custom_aabb.size.is_equal_approx(bounds.size), "v15 %s explicit batch AABB contains every scaled and rotated source mesh, including headless" % title)
-			check.call(node.visibility_range_end >= base_end and node.visibility_range_end - node.visibility_range_end_margin - radius >= 238.0 - 0.0001, "v15 %s nearest geometry stays beyond 230m terminal fog and 8m buffer through both culling directions" % title)
+			check.call(node.multimesh.custom_aabb.size.is_equal_approx(bounds.size), "v16 %s explicit batch AABB contains every scaled and rotated source mesh, including headless" % title)
+			check.call(node.visibility_range_end >= base_end and node.visibility_range_end - node.visibility_range_end_margin - radius >= 238.0 - 0.0001, "v16 %s nearest geometry stays beyond 230m terminal fog and 8m buffer through both culling directions" % title)
 			if DisplayServer.get_name() != "headless":
-				check.call(node.multimesh.get_aabb().size.is_equal_approx(bounds.size), "v15 %s renderer uses the complete explicit batch bounds" % title)
+				check.call(node.multimesh.get_aabb().size.is_equal_approx(bounds.size), "v16 %s renderer uses the complete explicit batch bounds" % title)
 		chunk.free()
 
 static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
 	var tree := world.get_tree()
 	var previous_paused := tree.paused
 	var previous := world.get_viewport().get_camera_3d()
-	for version: int in [15]:
+	for version: int in [16]:
 		var host := Node3D.new()
 		host.position = Vector3(50, 30, -100)
 		host.process_mode = Node.PROCESS_MODE_DISABLED
@@ -302,54 +302,54 @@ static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
 		clock.weather.set_weather(Vector3.ZERO, true)
 		clock.set_time(1, 12.0)
 		var saved := clock.weather.capture()
-		check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 72.0), "v15 streaming guard samples the actual viewport camera and hides incomplete scenery with an 8m buffer")
+		check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 72.0), "v16 streaming guard samples the actual viewport camera and hides incomplete scenery with an 8m buffer")
 		camera.position += Vector3(9, 0, -12)
 		generator.clearance = 40.0
 		clock.apply_time()
-		check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v15 camera offsets immediately tighten both fog endpoints before missing scenery is exposed")
-		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 9.6), "v15 near streaming guard shortens scattering integration ahead of the opaque haze")
+		check.call(generator.last_eye.is_equal_approx(camera.global_position) and is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v16 camera offsets immediately tighten both fog endpoints before missing scenery is exposed")
+		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 9.6), "v16 near streaming guard shortens scattering integration ahead of the opaque haze")
 		generator.clearance = 400.0
 		clock.apply_time()
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0), "v15 a zero-delta weather or settings refresh cannot reveal a completed band abruptly")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0), "v16 a zero-delta weather or settings refresh cannot reveal a completed band abruptly")
 		clock.apply_time(0.5)
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 42.0), "v15 completed scenery opens at only 20m per real second")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 42.0), "v16 completed scenery opens at only 20m per real second")
 		clock.advance(0.5)
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 52.0) and clock.weather.capture() == saved, "v15 clock advancement passes real frame time to scenery recovery without changing paused natural weather or RNG")
-		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 15.6), "v15 scattering integration follows gradual distance fog recovery")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 52.0) and clock.weather.capture() == saved, "v16 clock advancement passes real frame time to scenery recovery without changing paused natural weather or RNG")
+		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 15.6), "v16 scattering integration follows gradual distance fog recovery")
 		clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
 		clock.apply_time(50.0)
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 38.0), "v15 completed coverage never weakens the heavy weather fog cap")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 38.0), "v16 completed coverage never weakens the heavy weather fog cap")
 		clock.weather.set_weather(Vector3(1, 0, 0), true)
 		clock.apply_time()
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 230.0), "v15 fully recovered clear skies retain the permanent 230m fog cap")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 230.0), "v16 fully recovered clear skies retain the permanent 230m fog cap")
 		generator.clearance = 40.0
 		clock.apply_time()
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v15 the later sunny onset tightens to half the terminal distance as soon as completed coverage contracts")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v16 the later sunny onset tightens to half the terminal distance as soon as completed coverage contracts")
 		generator.clearance = 6.0
 		clock.apply_time()
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0) and is_equal_approx(clock.environment.fog_depth_begin, 0.5), "v15 an uncovered eye clamps the guard to a positive, ordered near fog interval")
-		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 0.3), "v15 minimum streaming clearance retains a positive scattering integration length")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0) and is_equal_approx(clock.environment.fog_depth_begin, 0.5), "v16 an uncovered eye clamps the guard to a positive, ordered near fog interval")
+		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 0.3), "v16 minimum streaming clearance retains a positive scattering integration length")
 		var frozen_clock := clock.capture()
 		var frozen_weather := clock.weather.capture()
 		generator.clearance = 400.0
 		clock._process(0.5)
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 11.0) and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather, "v15 frozen simulation still reveals completed scenery at 20m per real second without advancing time or weather")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 11.0) and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather, "v16 frozen simulation still reveals completed scenery at 20m per real second without advancing time or weather")
 		generator.clearance = 6.0
 		clock._process(0.5)
-		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0), "v15 frozen simulation immediately conceals newly incomplete scenery")
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0), "v16 frozen simulation immediately conceals newly incomplete scenery")
 		generator.clearance = 400.0
 		var samples := generator.samples
 		tree.paused = false
 		for frame in range(2): await tree.process_frame
-		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, 1.0), "v15 disabled checkpoint staging does not sample coverage or reveal scenery")
+		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, 1.0), "v16 disabled checkpoint staging does not sample coverage or reveal scenery")
 		host.process_mode = Node.PROCESS_MODE_INHERIT
 		for frame in range(2): await tree.process_frame
-		check.call(generator.samples > samples and clock.environment.fog_depth_end > 1.0 and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather and not clock.running and not clock.weather_running, "v15 actual process frames recover visibility while tutorial time and weather remain frozen")
+		check.call(generator.samples > samples and clock.environment.fog_depth_end > 1.0 and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather and not clock.running and not clock.weather_running, "v16 actual process frames recover visibility while tutorial time and weather remain frozen")
 		tree.paused = true
 		samples = generator.samples
 		var paused_depth := clock.environment.fog_depth_end
 		for frame in range(2): await tree.process_frame
-		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, paused_depth), "v15 scene pause stops inherited visual processing as well as simulation")
+		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, paused_depth), "v16 scene pause stops inherited visual processing as well as simulation")
 		host.process_mode = Node.PROCESS_MODE_DISABLED
 		tree.paused = previous_paused
 		camera.clear_current()
@@ -360,26 +360,26 @@ static func _check_completed_scenery(check: Callable) -> void:
 	# Off-tree construction prevents generation or navigation side effects;
 	# active_chunks is the real generator's completed-publication contract.
 	var generator := WORLD_GENERATOR.new()
-	generator.profile = CONTRACTS.profile(15)
-	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75))), "v15 empty completed scenery has no safe viewing clearance")
+	generator.profile = CONTRACTS.profile(16)
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75))), "v16 empty completed scenery has no safe viewing clearance")
 	generator.active_chunks = [{"index": 1}, {"index": -1}, {"index": 0}]
-	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -149)), 151.0), "v15 completed clearance measures the nearest edge of contiguous bands independently of entry order")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -149)), 151.0), "v16 completed clearance measures the nearest edge of contiguous bands independently of entry order")
 	generator.active_chunks.append({"index": -3})
 	generator.active_chunks.append({"index": 3})
-	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0), "v15 disconnected pinned islands cannot extend safe scenery clearance across missing bands")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 225.0), "v16 disconnected pinned islands cannot extend safe scenery clearance across missing bands")
 	generator.active_chunks = [{"index": -1}, {"index": 0}, {"index": 2}, {"index": 3}]
-	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 75.0) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -225))), "v15 an unfinished or removed band shortens coverage immediately and gives no clearance inside the gap")
-	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, 75)), 75.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -375)), 75.0), "v15 completed clearance supports negative bands and separate completed islands")
-	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, 150))) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -150))), "v15 exact completed edges have zero clearance when the adjoining band is missing")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -75)), 75.0) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -225))), "v16 an unfinished or removed band shortens coverage immediately and gives no clearance inside the gap")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, 75)), 75.0) and is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -375)), 75.0), "v16 completed clearance supports negative bands and separate completed islands")
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, 150))) and is_zero_approx(generator.completed_scenery_clearance(Vector3(0, 0, -150))), "v16 exact completed edges have zero clearance when the adjoining band is missing")
 	generator.profile.chunk_length = 100.0
 	generator.active_chunks = [{"index": -1}, {"index": 0}, {"index": 1}]
-	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -50)), 150.0), "v15 completed scenery clearance uses the world's configured chunk length")
+	check.call(is_equal_approx(generator.completed_scenery_clearance(Vector3(0, 0, -50)), 150.0), "v16 completed scenery clearance uses the world's configured chunk length")
 	generator.profile.chunk_length = 0.0
-	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v15 invalid chunk length supplies no scenery clearance")
-	generator.profile = CONTRACTS.profile(15)
-	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(INF, 0, 0))), "v15 nonfinite eye coordinates supply no scenery clearance")
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v16 invalid chunk length supplies no scenery clearance")
+	generator.profile = CONTRACTS.profile(16)
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3(INF, 0, 0))), "v16 nonfinite eye coordinates supply no scenery clearance")
 	generator.profile = null
-	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v15 a missing world profile supplies no scenery clearance")
+	check.call(is_zero_approx(generator.completed_scenery_clearance(Vector3.ZERO)), "v16 a missing world profile supplies no scenery clearance")
 	generator.free()
 
 static func _check_geometry(check: Callable) -> void:
@@ -399,7 +399,7 @@ static func _check_geometry(check: Callable) -> void:
 				repeated.append(reverse.surface(x, -s))
 		snapshot.append(field.landforms.rivers_near(-6000.0, 6000.0))
 		repeated.append(reverse.landforms.rivers_near(-6000.0, 6000.0))
-		# POI pads intentionally change in v15; only the road retains its old
+		# POI pads intentionally change in v16; only the road retains its old
 		# frozen fingerprint. Terrain must remain independent of request order.
 		check.call(snapshot == repeated, "Current terrain, road and water remain deterministic for seed %d" % field.world_seed)
 
@@ -454,9 +454,9 @@ static func _check_appearance(field: WorldField, check: Callable) -> void:
 		blended = blended and sample.appearance == appearance and is_equal_approx(float(sample.moisture), flora.z)
 		blended = blended and is_equal_approx(float(sample.moisture), field.landforms.material_weights(sample.appearance).y)
 		blended = blended and flora.x >= 0.0 and flora.x <= 1.0 and flora.y >= 0.0 and flora.y <= 1.0 and flora.z >= 0.0 and flora.z <= 1.0
-	check.call(kinds.size() == 6, "v15 seed %d: journey visits all six landforms" % field.world_seed)
-	check.call(blended and continuous, "v15 seed %d: appearance/color interpolation is shared, bounded and continuous at every region boundary" % field.world_seed)
-	check.call(maximum_height_jump < 0.2, "v15 seed %d: blended terrain remains continuous across landform transitions (%.4fm)" % [field.world_seed, maximum_height_jump])
+	check.call(kinds.size() == 6, "v16 seed %d: journey visits all six landforms" % field.world_seed)
+	check.call(blended and continuous, "v16 seed %d: appearance/color interpolation is shared, bounded and continuous at every region boundary" % field.world_seed)
+	check.call(maximum_height_jump < 0.2, "v16 seed %d: blended terrain remains continuous across landform transitions (%.4fm)" % [field.world_seed, maximum_height_jump])
 
 static func _check_local_screening(field: WorldField, check: Callable) -> void:
 	var fixtures: Dictionary = {}
@@ -510,12 +510,12 @@ static func _check_local_screening(field: WorldField, check: Callable) -> void:
 						maximum_jump = maxf(maximum_jump, absf(field.height_at(before.x, before.z) - field.height_at(after.x, after.z)))
 			if valid: fixtures[kind] = int(fixtures.get(kind, 0)) + 1
 			if blocked: screened[kind] = int(screened.get(kind, 0)) + 1
-	var label := "v15 seed %d: " % field.world_seed
+	var label := "v16 seed %d: " % field.world_seed
 	for kind: String in ["meadow", "wetland", "ridge", "basin"]:
 		check.call(int(fixtures.get(kind, 0)) >= 2 and int(screened.get(kind, 0)) >= 2, label + "%s has several dry local roadside fixtures screening a 1.65m eye line (%d/%d)" % [kind, int(screened.get(kind, 0)), int(fixtures.get(kind, 0))])
 	check.call(maximum_road_error < 0.12, label + "nearby screening terrain leaves the full dry carriageway level (%.4fm)" % maximum_road_error)
 	check.call(maximum_jump < 0.2, label + "roadside banks remain locally continuous on both horizontal axes (%.4fm)" % maximum_jump)
-	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(15))
+	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(16))
 	var points := heights.keys()
 	points.reverse()
 	for point: Vector2 in points: reverse.height_at(point.x, point.y)
@@ -528,7 +528,7 @@ static func _check_forest_plans(field: WorldField, world: Node3D, check: Callabl
 	var chunk := ChunkGenerator.new()
 	chunk.field = field
 	world.add_child(chunk)
-	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(15))
+	var reverse := WorldField.new(field.world_seed, CONTRACTS.profile(16))
 	var other := ChunkGenerator.new()
 	other.field = reverse
 	world.add_child(other)
@@ -555,9 +555,9 @@ static func _check_forest_plans(field: WorldField, world: Node3D, check: Callabl
 			for site: Dictionary in field.sites_near_z(point.z): legal = legal and field.court_distance(point.x, point.z, site) >= 4.0
 			if int(entry.mesh_kind) >= 6: broadleaf += 1
 			accepted += 1
-	check.call(accepted > 0 and broadleaf > 0, "v15 seed %d: six landform forest samples contain trees and broadleaf variants" % field.world_seed)
-	check.call(legal, "v15 seed %d: accepted trees avoid slopes above 40 degrees, water, road shoulders and POI courts" % field.world_seed)
-	check.call(deterministic, "v15 seed %d: forest layout and art variants are independent of preparation order" % field.world_seed)
+	check.call(accepted > 0 and broadleaf > 0, "v16 seed %d: six landform forest samples contain trees and broadleaf variants" % field.world_seed)
+	check.call(legal, "v16 seed %d: accepted trees avoid slopes above 40 degrees, water, road shoulders and POI courts" % field.world_seed)
+	check.call(deterministic, "v16 seed %d: forest layout and art variants are independent of preparation order" % field.world_seed)
 	chunk.queue_free()
 	other.queue_free()
 
@@ -590,12 +590,12 @@ static func _ground_snapshot(chunk: ChunkGenerator, check: Callable) -> Dictiona
 			legal = legal and not sample.reserved and not is_finite(float(sample.water_height))
 			legal = legal and float(sample.road.distance) >= float(sample.road.width) * 0.5 + 4.5
 			result[point] = {"pose": pose, "kind": kind}
-	var message := "v15 ground-cover batch checks retain real mesh, kind, cell, count and no colliders" if headless else "v15 generated ground cover uses real grass/reed/scree/shrub meshes outside water, roads and reserved POIs"
+	var message := "v16 ground-cover batch checks retain real mesh, kind, cell, count and no colliders" if headless else "v16 generated ground cover uses real grass/reed/scree/shrub meshes outside water, roads and reserved POIs"
 	check.call(not result.is_empty() and legal, message)
 	return result
 
 static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callable) -> void:
-	var field := WorldField.new(42, CONTRACTS.profile(15))
+	var field := WorldField.new(42, CONTRACTS.profile(16))
 	var band := -1
 	var chunk := ChunkGenerator.new()
 	chunk.field = field
@@ -609,7 +609,7 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 				band = candidate
 				break
 		if band >= 0: break
-	check.call(band >= 0, "v15 rebuild fixture locates an actual broadleaf habitat")
+	check.call(band >= 0, "v16 rebuild fixture locates an actual broadleaf habitat")
 	if band < 0:
 		chunk.queue_free()
 		return
@@ -628,16 +628,16 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 			broadleaf += 1
 			active = active and reference[key].mesh == ForestMeshes.tree(planned[index].mesh_kind)
 	for shape: CollisionShape3D in body.get_children(): active = active and not shape.disabled and shape.shape is BoxShape3D
-	check.call(active and broadleaf > 0, "v15 broadleaf instances have their real mesh, stable tree ID and active physical trunk")
+	check.call(active and broadleaf > 0, "v16 broadleaf instances have their real mesh, stable tree ID and active physical trunk")
 	for kind: int in [6, 7]:
 		var mesh := ForestMeshes.tree(kind)
-		check.call(mesh.get_surface_count() >= 2 and mesh.get_faces() != ForestMeshes.tree(0).get_faces(), "v15 broadleaf %d contains distinct trunk and foliage geometry" % kind)
+		check.call(mesh.get_surface_count() >= 2 and mesh.get_faces() != ForestMeshes.tree(0).get_faces(), "v16 broadleaf %d contains distinct trunk and foliage geometry" % kind)
 		if mesh.get_surface_count() >= 2:
-			check.call(not TreeFall._is_foliage(mesh.surface_get_material(0)) and TreeFall._is_foliage(mesh.surface_get_material(1)), "v15 broadleaf %d retains TreeFall's wood/foliage material classification" % kind)
+			check.call(not TreeFall._is_foliage(mesh.surface_get_material(0)) and TreeFall._is_foliage(mesh.surface_get_material(1)), "v16 broadleaf %d retains TreeFall's wood/foliage material classification" % kind)
 	for kind in range(5):
 		var mesh := FloraMeshes.ground(kind)
-		check.call(mesh.get_faces().size() >= 12 and mesh.get_aabb().size.y > 0.05, "v15 ground-cover kind %d contains real three-dimensional geometry" % kind)
-	check.call(not planned.is_empty(), "v15 rebuild fixture contains a destructible tree")
+		check.call(mesh.get_faces().size() >= 12 and mesh.get_aabb().size.y > 0.05, "v16 ground-cover kind %d contains real three-dimensional geometry" % kind)
+	check.call(not planned.is_empty(), "v16 rebuild fixture contains a destructible tree")
 	if planned.is_empty():
 		chunk.queue_free()
 		return
@@ -646,17 +646,17 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 	chunk.queue_free()
 	await tree.process_frame
 	var rebuilt := ChunkGenerator.new()
-	rebuilt.field = WorldField.new(42, CONTRACTS.profile(15))
+	rebuilt.field = WorldField.new(42, CONTRACTS.profile(16))
 	rebuilt.field.destroyed_trees = field.destroyed_trees.duplicate()
 	rebuilt.band = band
 	world.add_child(rebuilt)
 	await ForestScenery.build(rebuilt, true)
 	var after := _forest_snapshot(rebuilt)
-	var ground_message := "v15 sliced rebuilding preserves ground-cover batch mesh, kind, cell and count" if DisplayServer.get_name() == "headless" else "v15 sliced rebuilding preserves every ground-cover kind and transform"
+	var ground_message := "v16 sliced rebuilding preserves ground-cover batch mesh, kind, cell and count" if DisplayServer.get_name() == "headless" else "v16 sliced rebuilding preserves every ground-cover kind and transform"
 	check.call(_ground_snapshot(rebuilt, check) == ground_reference, ground_message)
-	check.call(not after.has(removed), "v15 saved tombstone removes the same tree during sliced forest rebuilding")
+	check.call(not after.has(removed), "v16 saved tombstone removes the same tree during sliced forest rebuilding")
 	reference.erase(removed)
-	check.call(after == reference, "v15 sliced forest rebuilding preserves every surviving mesh, pose, trunk and stable identity")
-	check.call(ForestScenery.trees(rebuilt.field, band) == planned, "v15 tombstones do not renumber or reroll the planned tree array")
+	check.call(after == reference, "v16 sliced forest rebuilding preserves every surviving mesh, pose, trunk and stable identity")
+	check.call(ForestScenery.trees(rebuilt.field, band) == planned, "v16 tombstones do not renumber or reroll the planned tree array")
 	rebuilt.queue_free()
 	await tree.process_frame

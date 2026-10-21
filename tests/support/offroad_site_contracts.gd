@@ -17,6 +17,15 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	if fixtures.is_empty(): return
 	var field := WorldField.new(42, CONTRACTS.profile())
 	_check_placement_membership(field, check)
+	_check_rng_stability(check)
+	var shelter: Dictionary = {}
+	for fixture: Dictionary in fixtures:
+		if fixture.site.definition_id == "civilian_shelter":
+			shelter = fixture
+			break
+	check.call(not shelter.is_empty(), "Deterministic off-road fixtures select the civilian shelter")
+	if not shelter.is_empty():
+		await _check_build_and_persistence(tree, world, WorldField.new(int(shelter.seed), CONTRACTS.profile()), shelter.site, check)
 	var selected: Dictionary = {}
 	for fixture: Dictionary in fixtures:
 		var site: Dictionary = fixture.site
@@ -56,7 +65,7 @@ static func _check_plans(seed_value: int, check: Callable, fixtures: Array[Dicti
 			definitions[str(site.definition_id)] = true
 			if site.placement != "off_road" or definition == null: problems.append("placement/definition")
 			if site.kind not in ["entrance", "walk_in"] or site.has("route") or not site.get("walls", []).is_empty(): problems.append("kind/route/walls")
-			if site.id != "v15:%d:offroad:%d:%d" % [seed_value, row, column]: problems.append("identity")
+			if site.id != "v16:%d:offroad:%d:%d" % [seed_value, row, column]: problems.append("identity")
 			if site.index != row * 3 + column or not is_equal_approx(float(site.s), -origin.z): problems.append("index/progress")
 			var bounds: AABB = site.bounds
 			if bounds.position.x <= -field.profile.terrain_half_width or bounds.end.x >= field.profile.terrain_half_width: problems.append("terrain bounds: %s" % bounds)
@@ -90,7 +99,7 @@ static func _check_plans(seed_value: int, check: Callable, fixtures: Array[Dicti
 				probes += 1
 				no_driveway = no_driveway and float(sample.gravel) == 0.0 and not sample.reserved
 		check.call(count <= 3, "Off-road row has a bounded candidate count")
-	var label := "v15 seed %d: " % seed_value
+	var label := "v16 seed %d: " % seed_value
 	check.call(accepted > 0 and independent, label + "off-road plans survive reverse cell query order")
 	check.call(legal, label + "off-road buildings retain unique world-grid identity and clear road/terrain boundaries")
 	check.call(owned and indexed, label + "mixed site queries include every off-road site with exactly one owning band")
@@ -117,6 +126,8 @@ static func _check_placement_membership(field: WorldField, check: Callable) -> v
 	var offroad: Dictionary = {}
 	for site: Dictionary in field.sites_near_z(-9000.0, 9000.0):
 		var definition := POIConfig.definition_for_site(site)
+		if site.definition_id == "civilian_shelter":
+			check.call(site.placement == "off_road" and site.kind == "walk_in", "Civilian shelters generate as directly explorable wilderness sites")
 		var flag := PoiDefinition.Placement.OFF_ROAD if site.placement == "off_road" else PoiDefinition.Placement.ROADSIDE
 		check.call(definition.supports_placement(flag), "Generated site belongs to its definition's allowed placement: " + str(site.id))
 		if definition.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE:
@@ -127,6 +138,23 @@ static func _check_placement_membership(field: WorldField, check: Callable) -> v
 	for id: String in POIConfig.GENERATION_IDS:
 		var definition := POIConfig.definition(StringName(id))
 		check.call(definition.supports_placement(PoiDefinition.Placement.ROADSIDE) and definition.supports_placement(PoiDefinition.Placement.OFF_ROAD), "Bunker definition supports both placements: " + id)
+	var shelter := POIConfig.definition(&"civilian_shelter")
+	check.call(shelter != null, "Civilian shelter is registered independently of the bunker pool")
+	if shelter == null: return
+	check.call(shelter.kind == PoiDefinition.Kind.WALK_IN and shelter.placement_modes == PoiDefinition.Placement.OFF_ROAD and shelter.content_version == 1, "Civilian shelter uses versioned walk-in content restricted to wilderness placement")
+	check.call("civilian_shelter" not in POIConfig.GENERATION_IDS, "Civilian shelter does not alter the stable bunker selection order")
+
+static func _check_rng_stability(check: Callable) -> void:
+	# A new save identity must not reroll unrelated roadside content or encounters.
+	var domains := ["stop", "exterior", "interior", "minor_placement", "minor_theme", "minor_layout", "minor_art", "loot", "enemies", "slender_speaker_segment", "white_ground_mist", "offroad_presence", "offroad_category", "offroad_placement"]
+	for seed_value: int in CONTRACTS.SEEDS:
+		var current := WorldField.new(seed_value, CONTRACTS.profile())
+		var previous := WorldField.new(seed_value, CONTRACTS.profile(15))
+		var stable := true
+		for domain: String in domains:
+			for index: int in [0, 1, 17, 61]:
+				stable = stable and current.seed_for(index, domain) == previous.seed_for(index, domain)
+		check.call(stable, "v16 seed %d retains established v15 RNG domains" % seed_value)
 
 static func _has_id(sites: Array[Dictionary], identity: String) -> bool:
 	for site: Dictionary in sites:
@@ -144,8 +172,14 @@ static func _check_build_and_persistence(tree: SceneTree, world: Node3D, field: 
 	host.add_child(chunk)
 	chunk._build_site(site, POISpawner.new())
 	check.call(chunk.get_child_count() == 1 and chunk.get_child(0).get_meta("poi_id", "") == site.id, "Off-road chunk site builder creates its asset without generated sign, stripes or walls")
+	if site.definition_id == "civilian_shelter" and chunk.get_child_count() == 1:
+		var building := chunk.get_child(0) as Node3D
+		_check_shelter_bounds(building, POIConfig.definition_for_site(site), check)
+		await _check_shelter_navigation(tree, building, check)
 	WalkInSites.activate(host, site, chunk)
 	var container := WorldEntities.get_container(host)
+	var definition := POIConfig.definition_for_site(site)
+	check.call(host.outdoor_sites[site.id].definition_id == str(definition.definition_id) and host.outdoor_sites[site.id].content_version == definition.content_version, "Off-road activation saves the selected definition and content version: " + str(site.definition_id))
 	var item := (load("res://props/battery.tscn") as PackedScene).instantiate() as Item
 	container.add_child(item)
 	item.global_position = site.building * Vector3(0, 1, 0)
@@ -159,6 +193,7 @@ static func _check_build_and_persistence(tree: SceneTree, world: Node3D, field: 
 	for actor: Dictionary in saved.actors:
 		if actor.kind == "item" and actor.state.id == identity: captured = true
 	check.call(not saved.loaded and captured, "Off-road unload captures a player-dropped Item through existing spatial ownership")
+	check.call(WalkInSites.validation_error({"outdoor_sites": host.outdoor_sites, "generated_bands": [chunk.band]}).is_empty(), "Off-road dormant content satisfies the checkpoint schema: " + str(site.definition_id))
 	WalkInSites.activate(host, site, chunk)
 	var restored := 0
 	for actor in container.get_children():
@@ -166,6 +201,60 @@ static func _check_build_and_persistence(tree: SceneTree, world: Node3D, field: 
 	check.call(host.outdoor_sites[site.id].loaded and restored == 1, "Off-road revisit restores the same dropped Item exactly once")
 	host.queue_free()
 	await tree.process_frame
+
+static func _check_shelter_bounds(building: Node3D, definition: PoiDefinition, check: Callable) -> void:
+	var bounds := definition.building_bounds.grow(0.02)
+	var inverse := building.global_transform.affine_inverse()
+	for mesh: MeshInstance3D in building.find_children("*", "MeshInstance3D", true, false):
+		var local: AABB = (inverse * mesh.global_transform) * mesh.get_aabb()
+		check.call(bounds.encloses(local), "Civilian shelter mesh fits declared building bounds: " + str(mesh.name))
+	for collider: CollisionShape3D in building.find_children("*", "CollisionShape3D", true, false):
+		if collider.shape == null or collider.disabled: continue
+		var local: AABB = (inverse * collider.global_transform) * collider.shape.get_debug_mesh().get_aabb()
+		check.call(bounds.encloses(local), "Civilian shelter collision fits declared building bounds: " + str(collider.name))
+	for point: Marker3D in building.find_children("*", "Marker3D", true, false):
+		if point is PoiLootPoint:
+			check.call(definition.site_bounds.has_point(building.to_local(point.global_position)), "Civilian shelter loot remains inside its persistence bounds: " + str(point.name))
+
+static func _check_shelter_navigation(tree: SceneTree, building: Node3D, check: Callable) -> void:
+	# Reuse the actual building fixture. Its slab/porches supply this bounded bake;
+	# full production terrain and neighbouring chunks are covered by the seam test.
+	var nav := NavigationMesh.new()
+	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nav.agent_height = 2.0
+	nav.agent_radius = 0.5
+	nav.agent_max_climb = 0.25
+	nav.agent_max_slope = 40.0
+	nav.cell_size = 0.25
+	nav.cell_height = 0.25
+	nav.detail_sample_max_error = 64.0
+	var source := NavigationMeshSourceGeometryData3D.new()
+	NavigationServer3D.parse_source_geometry_data(nav, source, building)
+	NavigationServer3D.bake_from_source_geometry_data(nav, source)
+	var map := NavigationServer3D.map_create()
+	NavigationServer3D.map_set_cell_size(map, nav.cell_size)
+	NavigationServer3D.map_set_cell_height(map, nav.cell_height)
+	NavigationServer3D.map_set_active(map, true)
+	var region := NavigationRegion3D.new()
+	region.navigation_mesh = nav
+	building.add_child(region)
+	region.set_navigation_map(map)
+	var ready := await WAIT.until(tree, func() -> bool: return NavigationServer3D.map_get_iteration_id(map) > 0 and NavigationServer3D.map_get_closest_point_owner(map, building.global_position) == region.get_rid(), 10000, true)
+	check.call(ready and nav.get_polygon_count() > 0, "Civilian shelter humanoid navigation bake is published")
+	if ready and nav.get_polygon_count() > 0:
+		var front: Vector3 = building.get_node("AccessPoints/Front").position
+		var rear: Vector3 = building.get_node("AccessPoints/Rear").position
+		for segment: Array in [[front, Vector3(0, 0.2, 2)], [Vector3(0, 0.2, 2), Vector3(-4, 0.2, 2.5)], [Vector3(0, 0.2, 2), Vector3(0, 0.2, -3)], [Vector3(0, 0.2, -3), rear]]:
+			var start := building.global_transform * (segment[0] as Vector3)
+			var finish := building.global_transform * (segment[1] as Vector3)
+			var nav_start := NavigationServer3D.map_get_closest_point(map, start)
+			var nav_finish := NavigationServer3D.map_get_closest_point(map, finish)
+			var path := NavigationServer3D.map_get_path(map, nav_start, nav_finish, true)
+			var length := 0.0
+			for index in range(1, path.size()): length += path[index - 1].distance_to(path[index])
+			check.call(path.size() >= 2 and nav_start.distance_to(start) < 0.65 and nav_finish.distance_to(finish) < 0.65 and path[0].distance_to(start) < 0.65 and path[-1].distance_to(finish) < 0.65 and length < start.distance_to(finish) * 1.8 + 3.0, "Civilian shelter doorway, bed and rear passage have direct humanoid routes: %s -> %s (%.2fm, snapped %s -> %s, source %s)" % [segment[0], segment[1], length, building.to_local(nav_start), building.to_local(nav_finish), source.get_bounds()])
+	region.free()
+	NavigationServer3D.free_rid(map)
 
 static func _check_streaming_seam(tree: SceneTree, world: Node3D, fixtures: Array[Dictionary], check: Callable) -> void:
 	var selected: Dictionary = {}

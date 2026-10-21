@@ -17,8 +17,12 @@ static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 	var theme := field.rng_for(cell_index, "offroad_theme")
 	var layout := field.rng_for(cell_index, "offroad_layout")
 	var definition_id: String
-	if category.randf() < 0.4:
+	# Preserve the bunker share; shelters use one third of the walk-in pool.
+	var category_roll := category.randf()
+	if category_roll < 0.4:
 		definition_id = POIConfig.GENERATION_IDS[theme.randi_range(0, POIConfig.GENERATION_IDS.size() - 1)]
+	elif category_roll < 0.6:
+		definition_id = "civilian_shelter"
 	else:
 		definition_id = "roadside_%s_%d" % ["camp" if theme.randf() < 0.5 else "shed", layout.randi_range(0, 2)]
 	var definition := POIConfig.definition(StringName(definition_id))

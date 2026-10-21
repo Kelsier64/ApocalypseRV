@@ -7,7 +7,7 @@
 
 [sub_resource type="Resource" id="DemoProfile"]
 script = ExtResource("4_profile")
-generation_version = 15
+generation_version = 16
 chunks_ahead = 2
 
 [node name="DemoWorld" instance=ExtResource("1_world")]

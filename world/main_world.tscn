@@ -15,7 +15,7 @@
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
-generation_version = 15
+generation_version = 16
 max_grade = 0.12
 chunks_ahead = 2
 
