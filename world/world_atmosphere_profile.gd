@@ -5,16 +5,23 @@ class_name WorldAtmosphereProfile
 
 @export_group("Landscape Mist")
 @export_range(0.0, 500.0, 0.5, "suffix:m") var landscape_begin := 24.0
+@export_range(0.0, 500.0, 0.5, "suffix:m") var clear_begin := 64.0
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var landscape_end := 230.0
 @export_range(0.01, 4.0, 0.01) var distance_curve := 1.0
 @export_range(0.0, 1.0, 0.01) var white_strength := 1.0
 @export var night_mist_color := Color("030405")
 @export var day_mist_color := Color("c3cbc8")
+@export var overcast_day_color := Color("a4afb0")
+@export var clear_day_color := Color("d0cbb8")
 @export_range(0.0, 1.0, 0.01) var sky_white_blend := 0.16
+
+@export_group("Daylight")
+@export_range(0.0, 4.0, 0.01) var overcast_sun_energy := 0.45
+@export_range(0.0, 4.0, 0.01) var clear_sun_energy := 1.3
 
 @export_group("Weather Haze")
 @export_range(0.0, 500.0, 0.5, "suffix:m") var weather_begin := 8.0
-@export_range(1.0, 1000.0, 0.5, "suffix:m") var light_end := 220.0
+@export_range(1.0, 1000.0, 0.5, "suffix:m") var light_end := 150.0
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var medium_end := 110.0
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var heavy_end := 38.0
 
@@ -51,13 +58,20 @@ func mist(conditions: Vector3) -> Dictionary:
 	# scattering cannot reveal geometry already concealed by distance fog.
 	var volume_weight := (1.0 - clear) * (1.0 - light)
 	return {
-		"depth_begin": lerpf(landscape_begin, weather_begin, light),
+		"depth_begin": lerpf(lerpf(landscape_begin, clear_begin, clear), weather_begin, light),
 		"depth_end": minf(landscape_end, lerpf(lerpf(lerpf(landscape_end, light_end, light), medium_end, medium), heavy_end, heavy)),
 		"depth_curve": distance_curve,
 		"white_strength": white_strength,
 		"global_density": (global_density + conditions.y * rain_density) * volume_weight,
 		"local_density": local_density * volume_weight,
 	}
+
+## All weather keeps an opaque terminal horizon, but its daylight color and
+## foreground illumination still identify clear skies, cloud cover and fog.
+func day_color(conditions: Vector3) -> Color:
+	var clear := clampf(conditions.x, 0.0, 1.0)
+	var light := clampf(conditions.z / WorldWeather.FOG_LIGHT, 0.0, 1.0)
+	return overcast_day_color.lerp(clear_day_color, clear).lerp(day_mist_color, light)
 
 ## Volume depth is view-axis based; keep its integration inside radial haze,
 ## including wide-angle screen corners and a temporarily shortened horizon.

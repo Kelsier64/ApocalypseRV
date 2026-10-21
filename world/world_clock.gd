@@ -173,7 +173,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
-	var white_mist := atmosphere.night_mist_color.lerp(atmosphere.day_mist_color, daylight)
+	var white_mist := atmosphere.night_mist_color.lerp(atmosphere.day_color(conditions), daylight)
 	# Lit white haze during the day; no emissive veil over dark nights.
 	horizon = horizon.lerp(white_mist, profile.white_strength)
 	zenith = zenith.lerp(white_mist, atmosphere.sky_white_blend * profile.white_strength)
@@ -189,7 +189,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
 	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
-	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90) * (1.0 - mist * 0.85)
+	sun.light_energy = lerpf(atmosphere.overcast_sun_energy, atmosphere.clear_sun_energy, clear) * smoothstep(0.0, 0.32, direction.y) * (1.0 - rain * 0.90) * (1.0 - mist * 0.85)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
 	# The light emits along -Z; the visible disk sits in the opposite direction.
 	sun.global_basis = Basis.looking_at(-direction, Vector3.UP)

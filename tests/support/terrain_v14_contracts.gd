@@ -183,8 +183,10 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				clock.apply_time()
 				check.call(is_equal_approx(registered, expected_density) and is_equal_approx(float(material.get_shader_parameter("density")), expected_density), "v%d local mist registration and updates agree at weather %s / volumetric %s" % [version, conditions, volumetric])
 				clock.unregister_fog(material)
-				var endpoints := {0.0: [24.0, 230.0, 69.0], 0.25: [16.0, 225.0, 67.5], 0.5: [8.0, 220.0, 66.0], 1.0: [8.0, 110.0, 33.0], 2.0: [8.0, 38.0, 11.4]}
+				var endpoints := {0.0: [24.0, 230.0, 69.0], 0.25: [16.0, 190.0, 57.0], 0.5: [8.0, 150.0, 45.0], 1.0: [8.0, 110.0, 33.0], 2.0: [8.0, 38.0, 11.4]}
 				var begin: float = endpoints[conditions.z][0]
+				if conditions == Vector3(1, 0, 0): begin = 64.0
+				if conditions == Vector3(0.5, 1, 0.25): begin = 26.0
 				var end: float = endpoints[conditions.z][1]
 				var curve := 1.0
 				check.call(is_equal_approx(clock.environment.volumetric_fog_length, endpoints[conditions.z][2]), "v14 scattering integrates before opaque distance haze at weather %s / volumetric %s" % [conditions, volumetric])
@@ -192,6 +194,7 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				check.call(is_equal_approx(clock.environment.fog_depth_curve, curve), "v%d distance haze retains its expected curve at every quality/weather setting" % version)
 				check.call(is_equal_approx(clock.environment.volumetric_fog_density, expected_global), "v%d global volumetric fog follows its weather contract" % version)
 			_check_mist_transition(clock, material, volumetric, check)
+			_check_weather_appearance(clock, check)
 		clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
 		clock.set_time(1, 12.0)
 		var noon := clock.environment.fog_light_color
@@ -200,8 +203,25 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v14 gray-white daylight haze darkens with the native night lighting")
 		host.free()
 
+static func _check_weather_appearance(clock: WorldClock, check: Callable) -> void:
+	for fixture: Array in [[Vector3(1, 0, 0), Color("d0cbb8"), 1.3], [Vector3.ZERO, Color("a4afb0"), 0.45], [Vector3(0, 0, 0.5), Color("c3cbc8"), 0.354375]]:
+		clock.weather.set_weather(fixture[0], true)
+		clock.set_time(1, 12.0)
+		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]), "v14 sunny, overcast and light fog have distinct daytime terminal tones and sun strengths at %s" % fixture[0])
+		var saved := clock.weather.capture()
+		clock.set_deviation_fog(WorldWeather.FOG_LIGHT)
+		check.call(clock.environment.fog_light_color.is_equal_approx(Color("c3cbc8")) and is_equal_approx(clock.environment.fog_depth_end, 150.0) and clock.weather.capture() == saved, "v14 deviation light fog uses the same white haze and cap without changing natural weather or RNG")
+		clock.set_deviation_fog(0.0)
+		check.call(clock.environment.fog_light_color.is_equal_approx(fixture[1]) and is_equal_approx(clock.sun.light_energy, fixture[2]) and clock.weather.capture() == saved, "v14 clearing deviation restores the natural weather's terminal tone and sun strength")
+	clock.weather.set_weather(Vector3(1, 0, 0), true)
+	clock.weather.set_weather(Vector3.ZERO)
+	clock.weather.advance(WorldWeather.TRANSITION * 0.5)
+	var saved := clock.weather.capture()
+	clock.apply_time()
+	check.call(is_equal_approx(clock.environment.fog_depth_begin, 44.0) and is_equal_approx(clock.environment.fog_depth_end, 230.0) and clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("d0cbb8"), 0.5)) and is_equal_approx(clock.sun.light_energy, 0.875) and clock.weather.capture() == saved, "v14 a natural clear-to-overcast midpoint blends onset, terminal tone and sun energy without a render-time RNG draw")
+
 static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, _volumetric: bool, check: Callable) -> void:
-	for fixture: Array in [[0.625, 192.5], [0.75, 165.0], [1.5, 74.0]]:
+	for fixture: Array in [[0.625, 140.0], [0.75, 130.0], [1.5, 74.0]]:
 		var profile := ATMOSPHERE.mist(Vector3(0, 0, fixture[0]))
 		check.call(is_equal_approx(float(profile.depth_end), fixture[1]) and is_equal_approx(float(profile.white_strength), 1.0) and is_zero_approx(float(profile.global_density)) and is_zero_approx(float(profile.local_density)), "v14 distance haze strengthens while scattering volumes remain absent above light fog at strength %.3f" % fixture[0])
 	clock.set_deviation_fog(0.0)
@@ -210,8 +230,9 @@ static func _check_mist_transition(clock: WorldClock, material: ShaderMaterial, 
 	clock.weather.advance(WorldWeather.TRANSITION * 0.5)
 	clock.apply_time()
 	clock.register_fog(material)
-	var midpoint_end := 225.0
+	var midpoint_end := 190.0
 	check.call(clock.weather.sample().is_equal_approx(Vector3(0, 0, 0.25)) and clock.weather.target.z == WorldWeather.FOG_LIGHT, "v14 natural fog transition retains its source/target and produces the halfway sample")
+	check.call(clock.environment.fog_light_color.is_equal_approx(Color("a4afb0").lerp(Color("c3cbc8"), 0.5)), "v14 natural light-fog midpoint blends the overcast and white terminal tones")
 	check.call(is_equal_approx(clock.environment.fog_depth_end, midpoint_end) and is_equal_approx(clock.environment.volumetric_fog_density, 0.00125) and is_equal_approx(float(material.get_shader_parameter("density")), 0.07), "v14 global and newly registered local mist use the interpolated weather sample")
 	var saved := clock.weather.capture()
 	var restored := WorldWeather.new()
@@ -300,6 +321,9 @@ static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
 		clock.weather.set_weather(Vector3(1, 0, 0), true)
 		clock.apply_time()
 		check.call(is_equal_approx(clock.environment.fog_depth_end, 230.0), "v14 fully recovered clear skies retain the permanent 230m fog cap")
+		generator.clearance = 40.0
+		clock.apply_time()
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 32.0) and is_equal_approx(clock.environment.fog_depth_begin, 16.0), "v14 the later sunny onset tightens to half the terminal distance as soon as completed coverage contracts")
 		generator.clearance = 6.0
 		clock.apply_time()
 		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0) and is_equal_approx(clock.environment.fog_depth_begin, 0.5), "v14 an uncovered eye clamps the guard to a positive, ordered near fog interval")

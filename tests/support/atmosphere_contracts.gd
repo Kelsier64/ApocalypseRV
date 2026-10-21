@@ -13,6 +13,7 @@ static func run(world: Node3D, check: Callable) -> void:
 static func _check_profile(check: Callable) -> void:
 	var custom := DEFAULT.duplicate() as WorldAtmosphereProfile
 	custom.landscape_begin = 40.0
+	custom.clear_begin = 80.0
 	custom.landscape_end = 300.0
 	custom.weather_begin = 10.0
 	custom.light_end = 250.0
@@ -26,6 +27,7 @@ static func _check_profile(check: Callable) -> void:
 	var clear := custom.mist(Vector3.ZERO)
 	var rain := custom.mist(Vector3(0, 2, 0.25))
 	check.call(is_equal_approx(clear.depth_begin, 40.0) and is_equal_approx(clear.depth_end, 300.0) and is_equal_approx(clear.depth_curve, 1.5) and is_equal_approx(clear.white_strength, 0.7), "Atmosphere resource controls landscape interval, curve and white strength")
+	check.call(is_equal_approx(custom.mist(Vector3(1, 0, 0)).depth_begin, 80.0) and is_equal_approx(custom.mist(Vector3(0.5, 0, 0.25)).depth_begin, 35.0), "Sunny onset is separately tunable and blends continuously into weather haze")
 	check.call(is_equal_approx(rain.depth_begin, 25.0) and is_equal_approx(rain.depth_end, 275.0) and is_equal_approx(rain.global_density, 0.003) and is_equal_approx(rain.local_density, 0.1), "Atmosphere resource preserves weather interpolation while tuning rain and local scattering")
 	check.call(is_equal_approx(custom.mist(Vector3(0, 0, 1)).depth_end, 120.0) and is_equal_approx(custom.mist(Vector3(0, 0, 2)).depth_end, 50.0), "Atmosphere resource controls medium and heavy weather endpoints")
 	custom.light_end = 500.0
@@ -33,6 +35,26 @@ static func _check_profile(check: Callable) -> void:
 	custom.volume_max_length = 80.0
 	custom.volume_end_ratio = 0.4
 	check.call(is_equal_approx(custom.volume_length(150.0), 60.0) and is_equal_approx(custom.volume_length(300.0), 80.0) and is_equal_approx(custom.volume_length(0.0), 0.1), "Atmosphere resource controls scattering integration with a positive minimum and maximum")
+	check.call(DEFAULT.day_color(Vector3.ZERO).is_equal_approx(Color("a4afb0")) and DEFAULT.day_color(Vector3(1, 0, 0)).is_equal_approx(Color("d0cbb8")) and DEFAULT.day_color(Vector3(0, 0, 0.5)).is_equal_approx(Color("c3cbc8")), "Overcast, sunny and light-fog daytime terminal colors remain distinct")
+	custom.overcast_day_color = Color("405060")
+	custom.clear_day_color = Color("c0a080")
+	custom.day_mist_color = Color("e0e8e0")
+	var halfway_color := Color("405060").lerp(Color("c0a080"), 0.5).lerp(Color("e0e8e0"), 0.5)
+	check.call(custom.day_color(Vector3(0.5, 2, 0.25)).is_equal_approx(halfway_color) and custom.day_color(Vector3(1, 0, 2)).is_equal_approx(Color("e0e8e0")), "Authored day colors blend clear and fog transitions without changing with rainfall")
+	var bounded := true
+	for clear_weight: float in [0.0, 0.5, 1.0]:
+		var previous_end := INF
+		for fog: float in [0.0, 0.25, 0.5, 0.625, 0.75, 1.0, 1.5, 2.0]:
+			var sample := DEFAULT.mist(Vector3(clear_weight, 0, fog))
+			bounded = bounded and sample.depth_begin >= 0.0 and sample.depth_begin < sample.depth_end and sample.depth_end <= 230.0 and sample.depth_end <= previous_end
+			previous_end = sample.depth_end
+	check.call(bounded, "Sunny, overcast and interpolated fog profiles retain ordered intervals and only shorten the permanent terminal cap")
+	for strength: float in [0.5, 1.0, 2.0]:
+		var before := DEFAULT.mist(Vector3(0, 0, strength - 0.00001))
+		var after := DEFAULT.mist(Vector3(0, 0, strength + 0.00001))
+		var before_color: Color = DEFAULT.day_color(Vector3(0, 0, strength - 0.00001))
+		var after_color: Color = DEFAULT.day_color(Vector3(0, 0, strength + 0.00001))
+		check.call(absf(before.depth_begin - after.depth_begin) < 0.01 and absf(before.depth_end - after.depth_end) < 0.01 and before_color.is_equal_approx(after_color), "Fog onset, terminal distance and day color remain continuous across tier %.1f" % strength)
 	for fixture: Array in [[Vector3(1, 2, 0), 0.25, Vector3(0.5, 2, 0.25)], [Vector3(1, 0, 0), 1.0, Vector3(0, 0, 1)], [Vector3(0, 1, 2), 0.5, Vector3(0, 1, 2)]]:
 		check.call(WorldAtmosphereProfile.visual_conditions(fixture[0], fixture[1]).is_equal_approx(fixture[2]), "Visual deviation blends clear skies and fog without weakening stronger natural weather")
 	check.call(is_equal_approx(DEFAULT.landscape_end, 230.0) and is_equal_approx(DEFAULT.local_density, 0.14), "Duplicated atmosphere tuning leaves the shared default resource unchanged")
@@ -73,7 +95,9 @@ static func _check_weather(check: Callable) -> void:
 		for _cycle in range(8):
 			var saved := weather.capture()
 			for sample_index in range(4):
-				DEFAULT.mist(WorldAtmosphereProfile.visual_conditions(weather.sample(), sample_index * 0.25))
+				var conditions := WorldAtmosphereProfile.visual_conditions(weather.sample(), sample_index * 0.25)
+				DEFAULT.mist(conditions)
+				DEFAULT.day_color(conditions)
 			check.call(weather.capture() == saved, "Atmosphere and weather sampling do not consume natural RNG or transition time")
 			# The outgoing transition completes before its duration expires.
 			var previous := weather.target
@@ -120,8 +144,11 @@ static func _check_owners(world: Node3D, check: Callable) -> void:
 	first_profile.landscape_end = 420.0
 	first_profile.cull_buffer = 23.0
 	first_profile.day_mist_color = Color("a1b2c3")
+	first_profile.overcast_day_color = Color("a1b2c3")
+	first_profile.clear_day_color = Color("a1b2c3")
 	first_profile.night_mist_color = Color("010203")
 	first_profile.local_density = 0.22
+	first_profile.overcast_sun_energy = 0.31
 	var second_profile := DEFAULT.duplicate() as WorldAtmosphereProfile
 	var first := _owner(world, first_profile)
 	var second := _owner(world, second_profile)
@@ -129,7 +156,7 @@ static func _check_owners(world: Node3D, check: Callable) -> void:
 	var clock := first.get_node("WorldClock") as WorldClock
 	var other := second.get_node("WorldClock") as WorldClock
 	var shared_clock := shared.get_node("WorldClock") as WorldClock
-	check.call(is_equal_approx(clock.environment.fog_depth_end, 420.0) and is_equal_approx(other.environment.fog_depth_end, 230.0) and clock.environment.fog_light_color.is_equal_approx(Color("a1b2c3")), "Each clock uses its own atmosphere resource for the terminal interval and daylight color")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, 420.0) and is_equal_approx(other.environment.fog_depth_end, 230.0) and clock.environment.fog_light_color.is_equal_approx(Color("a1b2c3")) and is_equal_approx(clock.sun.light_energy, 0.31) and is_equal_approx(other.sun.light_energy, 0.45), "Each clock uses its own atmosphere resource for the terminal interval, daylight color and sun energy")
 	clock.set_time(1, 0.0)
 	check.call(clock.environment.fog_light_color.is_equal_approx(Color("010203")), "Clock uses the owning atmosphere's night color")
 	clock.set_time(1, 12.0)
