@@ -186,6 +186,8 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 正式場景持有 WorldClock，集中維護累積遊戲秒數與一天的現實分鐘數，預設 day 1 / 08:00 / 30 分鐘。每幀依 delta 前進，跨日由累積秒數推導；minute_changed 提供日期、時、分，HUD 每遊戲分鐘更新。PROCESS_MODE_INHERIT 尊重 SceneTree 暫停及候選世界停用，背包／平板與 POI 不暫停世界。
 
+教學整備的 `running=false` 只凍結模擬；WorldClock 仍以真實 delta 更新視覺與載入霧上限，避免開局未完成地景造成的 1 m 霧永久遮住房間。SceneTree 真正暫停及停用的讀檔候選世界仍透過 INHERIT 一起停止視覺處理。主場景 smoke 使用正常 process frames 驗證整備期間視野恢復，且時間與天氣保存狀態不前進。[修正驗證](docs/validation/2026-10-21-tutorial-fog.md)。
+
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空與環境填光按太陽高度平滑插值；陰天距離霧為 24–230 m，晴天 64–230 m，天氣與載入保護可進一步收近，所有畫質共用。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
 灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果先依視圖環境光亮度啟用，再用各處的實際照明及材質參考估計缺光量，明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。`ambient_gate_enabled` 預設 true；Color 環境光的線性顏色 luminance × energy 在 ≤0.04 時完整啟用、0.04～0.06 反向 smoothstep 淡出、≥`ambient_threshold`（0.06）停用。`ambient_transition`（0.02）控制門檻下方漸變寬度；不累積前幀。Disabled 環境光視為 0；Sky／Background 或缺少 Environment 時保守維持啟用，避免猜測天空照度。明亮全域環境光下的局部陰影因此不補灰階；關閉 gate 可恢復持續局部處理。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。

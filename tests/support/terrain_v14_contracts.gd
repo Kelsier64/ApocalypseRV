@@ -38,7 +38,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		_check_mist_plans(field, check)
 		await _check_forest_plans(field, world, check)
 	_check_mist_clock(world, check)
-	_check_streaming_mist_clock(world, check)
+	await _check_streaming_mist_clock(world, check)
 	_check_forest_culling(world, check)
 	_check_completed_scenery(check)
 	ATMOSPHERE_CONTRACTS.run(world, check)
@@ -272,6 +272,8 @@ static func _check_forest_culling(world: Node3D, check: Callable) -> void:
 		chunk.free()
 
 static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
+	var tree := world.get_tree()
+	var previous_paused := tree.paused
 	var previous := world.get_viewport().get_camera_3d()
 	for version: int in [14]:
 		var host := Node3D.new()
@@ -328,6 +330,29 @@ static func _check_streaming_mist_clock(world: Node3D, check: Callable) -> void:
 		clock.apply_time()
 		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0) and is_equal_approx(clock.environment.fog_depth_begin, 0.5), "v14 an uncovered eye clamps the guard to a positive, ordered near fog interval")
 		check.call(is_equal_approx(clock.environment.volumetric_fog_length, 0.3), "v14 minimum streaming clearance retains a positive scattering integration length")
+		var frozen_clock := clock.capture()
+		var frozen_weather := clock.weather.capture()
+		generator.clearance = 400.0
+		clock._process(0.5)
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 11.0) and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather, "v14 frozen simulation still reveals completed scenery at 20m per real second without advancing time or weather")
+		generator.clearance = 6.0
+		clock._process(0.5)
+		check.call(is_equal_approx(clock.environment.fog_depth_end, 1.0), "v14 frozen simulation immediately conceals newly incomplete scenery")
+		generator.clearance = 400.0
+		var samples := generator.samples
+		tree.paused = false
+		for frame in range(2): await tree.process_frame
+		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, 1.0), "v14 disabled checkpoint staging does not sample coverage or reveal scenery")
+		host.process_mode = Node.PROCESS_MODE_INHERIT
+		for frame in range(2): await tree.process_frame
+		check.call(generator.samples > samples and clock.environment.fog_depth_end > 1.0 and clock.capture() == frozen_clock and clock.weather.capture() == frozen_weather and not clock.running and not clock.weather_running, "v14 actual process frames recover visibility while tutorial time and weather remain frozen")
+		tree.paused = true
+		samples = generator.samples
+		var paused_depth := clock.environment.fog_depth_end
+		for frame in range(2): await tree.process_frame
+		check.call(generator.samples == samples and is_equal_approx(clock.environment.fog_depth_end, paused_depth), "v14 scene pause stops inherited visual processing as well as simulation")
+		host.process_mode = Node.PROCESS_MODE_DISABLED
+		tree.paused = previous_paused
 		camera.clear_current()
 		host.free()
 	if is_instance_valid(previous): previous.make_current()

@@ -94,7 +94,12 @@ func _on_video_setting_changed(key: StringName, _value: Variant) -> void:
 	if key == &"fog_quality": apply_time()
 
 func _process(delta: float) -> void:
-	if running: advance(delta)
+	if running:
+		advance(delta)
+	else:
+		# Tutorial preparation freezes simulation, not camera/scenery visibility.
+		# Inherit scene processing so pause and disabled staging still stop both.
+		apply_time(delta)
 
 func advance(real_seconds: float) -> void:
 	if not is_finite(real_seconds) or real_seconds < 0.0: return
