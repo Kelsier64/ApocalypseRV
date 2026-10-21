@@ -8,6 +8,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
+| [廢棄巨型住宅：灰井住宅城](abandoned-megablock.md) | 設計提案與兩張概念圖完成，尚未實作 | 巨型外觀、B1–L3 四層首版、住宅 profile／保存支援、實體捷徑與 RV 搬運；六層內容留待擴充 | 本次僅設計及圖像檢查，詳見計畫第 7 節 |
 | [地形與道路改造](terrain-overhaul.md) | 第一個檢查點完成，等待使用者檢查 | v13 蜿蜒道路與地形／橋梁初版；每階段先停下，下一階段細化及輪驅驗收待確認 | [本次檢查](../validation/2026-10-20-terrain-stage1.md) |
 | [新版兩室教學](starting-tutorial-two-room.md) | 階段一已驗收，階段二完成等待驗收 | 第二室資源／修車流程已接入；感應離場、完整復原及最終美術留待後續 | [新版階段二](../validation/2026-10-15-orientation-stage2.md) |
 | [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
