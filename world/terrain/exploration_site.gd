@@ -25,6 +25,25 @@ static func configure(site: Dictionary, field: WorldField) -> void:
 	site.mirror = 1.0 if field.rng_for(index, "route").randf() > 0.5 else -1.0
 	site.building = Transform3D(Basis.looking_at(road.basis.x * side), Vector3.ZERO)
 	configure_forest(site)
+	if not road_clear(site, field):
+		site.side = -float(site.side)
+		site.frame = Transform3D(road.basis, road * Vector3(float(site.side) * 33.0, 0, 0))
+		site.building = Transform3D(Basis.looking_at(road.basis.x * float(site.side)), Vector3.ZERO)
+		configure_forest(site)
+
+static func road_clear(site: Dictionary, field: WorldField) -> bool:
+	if not site.has("route"): return true
+	if not fits_strip(site.road, float(site.side), field.profile.terrain_half_width): return false
+	var inverse: Transform3D = site.road.affine_inverse()
+	var bounds: AABB = site.bounds.grow(14.0)
+	for station in range(maxi(0, floori(-bounds.end.z)), ceili(-bounds.position.z) + 1, 5):
+		var frame := field.road_frame(float(station))
+		var half := field.road_width(float(station)) * 0.5 + 2.0
+		for lateral: float in [-half, 0.0, half]:
+			var point: Vector3 = inverse * (frame * Vector3(lateral, 0, 0))
+			var u := point.x * float(site.side)
+			if u > 18.0 and u < 362.0 and absf(point.z) < 60.0: return false
+	return true
 
 static func configure_forest(site: Dictionary) -> void:
 	# Keep the parking/first RV barrier, then weave through a deeper forest.

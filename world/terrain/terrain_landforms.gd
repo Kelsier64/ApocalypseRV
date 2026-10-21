@@ -57,6 +57,11 @@ func _height_v14(x: float, z: float, road: Dictionary) -> float:
 	var first := _shape_v14(int(a.x), lateral, broad, middle, warp, fault)
 	var target := first
 	if a.z > 0.0: target = lerpf(first, _shape_v14(int(a.y), lateral, broad, middle, warp, fault), a.z)
+	# The road traverses a mountain flank: uphill rock and a downhill valley
+	# reveal the accumulated climb beyond the grounded foreground shoulders.
+	var mountain := smoothstep(25.0, 180.0, float(road.height))
+	var hillside := clampf(lateral * (-0.55 if posmod(offset, 2) == 0 else 0.55), -110.0, 110.0)
+	target += mountain * hillside * smoothstep(32.0, 160.0, absf(lateral))
 	# Close foreground shoulders break long side views even in clear weather.
 	# Staggered swells leave occasional openings instead of a continuous trench.
 	var edge := float(road.distance) - float(road.width) * 0.5
@@ -147,6 +152,19 @@ func river(index: int) -> Dictionary:
 		var s := 1200.0 + index * REGION_LENGTH + rng.randf_range(-100.0, 100.0)
 		_rivers[index] = {"s": s, "half_width": rng.randf_range(17.0, 27.0), "water_height": field.road_height(s) - 12.0,
 			"center_x": field.road_x(s), "skew": rng.randf_range(-0.22, 0.22), "phase": rng.randf_range(-PI, PI)}
+		var plan: Dictionary = _rivers[index]
+		var lowest := field.road_height(s)
+		# A steep, oblique crossing can reach the river well below its centre.
+		# Keep the flat water below the lowest part of the whole carriageway.
+		for station in range(-60, 61):
+			var t := s + station * 5.0
+			var frame := field.road_frame(t)
+			var half := field.road_width(t) * 0.5 + 1.0
+			for lateral: float in [-half, 0.0, half]:
+				var point := frame * Vector3(lateral, 0, 0)
+				if absf(point.z - river_z(plan, point.x)) <= river_half_width(plan, point.x) + 16.0:
+					lowest = minf(lowest, frame.origin.y)
+		plan.water_height = minf(float(plan.water_height), lowest - 8.0)
 	return _rivers[index]
 
 func rivers_near(z: float, radius: float = 240.0) -> Array[Dictionary]:
@@ -193,8 +211,13 @@ func channel(x: float, z: float, height_value: float) -> Dictionary:
 	return {"height": height_value, "wet": wet, "influence": influence, "water_height": water, "bank": bank}
 
 func river_span_at(s: float) -> bool:
+	var frame := field.road_frame(s)
+	var half := field.road_width(s) * 0.5 + 2.0
 	for plan in rivers_near(-s, 0.0):
 		if absf(s - float(plan.s)) <= 85.0: return true
+		for lateral: float in [-half, 0.0, half]:
+			var point := frame * Vector3(lateral, 0, 0)
+			if absf(point.z - river_z(plan, point.x)) < river_half_width(plan, point.x) + 36.0: return true
 	return false
 
 func natural_clearance(s: float) -> float:
@@ -252,6 +275,7 @@ func crossing_clearance(s: float, margin: float = 190.0) -> bool:
 	return true
 
 func site_clear(site: Dictionary) -> bool:
+	if not ExplorationSite.road_clear(site, field): return false
 	if not site.has("bounds"): return crossing_clearance(float(site.s))
 	var box: AABB = site.bounds.grow(25.0)
 	for river_plan in rivers_near(box.get_center().z, box.size.z * 0.5):

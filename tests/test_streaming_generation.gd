@@ -64,6 +64,7 @@ func run() -> void:
 	for version: int in [14]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
+	await _check_mountain_navigation(world)
 	world.queue_free()
 	await process_frame
 	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms and crossings satisfy sampled contracts")
@@ -141,6 +142,58 @@ func _check_crossing_chunk(world: Node3D, version: int) -> void:
 				check(absf(float(hit.position.y) - point.y) < 0.2, "Bridge wheel support matches the drivable road elevation")
 			var closest := NavigationServer3D.map_get_closest_point(chunk.navigation.get_navigation_map(), point)
 			check(Vector2(closest.x - point.x, closest.z - point.z).length() < 1.0 and absf(closest.y - point.y) < 0.8, "Published navigation crosses the bridge deck above the river")
+	host.queue_free()
+	await process_frame
+
+func _check_mountain_navigation(world: Node3D) -> void:
+	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile())
+	var peak_s := 0.0
+	var peak_height := -INF
+	for sample in range(int(TERRAIN_CONTRACTS.LENGTH / 15.0) + 1):
+		var s := sample * 15.0
+		var height := field.road_height(s)
+		if height > peak_height:
+			peak_s = s
+			peak_height = height
+	check(peak_height > 150.0, "Mountain navigation fixture reaches a road summit above the former bake ceiling")
+	if peak_height <= 150.0: return
+	# The two bands adjoining the nearest summit seam include the highest
+	# sampled road point, and exercise independent vertical bake bounds.
+	var seam := roundi(peak_s / field.profile.chunk_length)
+	var host := TerrainHost.new()
+	world.add_child(host)
+	NavigationServer3D.map_set_merge_rasterizer_cell_scale(world.get_world_3d().navigation_map, 0.1)
+	var chunks: Array[ChunkGenerator] = []
+	for band in [seam - 1, seam]:
+		var chunk := ChunkGenerator.new()
+		chunk.field = field
+		chunk.band = band
+		chunk.set_meta("skip_actors", true)
+		host.add_child(chunk)
+		chunks.append(chunk)
+		# Use the production terrain/road/crossing/navigation builders; unrelated
+		# forest rendering and actor populations are covered by existing fixtures.
+		await chunk._build_ground(false)
+		chunk._build_road()
+		await TerrainCrossings.build(chunk, false)
+		await chunk._build_navigation(false)
+	if not await WAIT.navigation_ready(self, chunks):
+		check(false, "Summit and neighbouring band publish ordinary and giant navigation")
+	else:
+		var summit := field.road_frame(peak_s).origin
+		var start := field.road_frame(seam * field.profile.chunk_length - 20.0).origin
+		var finish := field.road_frame(seam * field.profile.chunk_length + 20.0).origin
+		for giant: bool in [false, true]:
+			var map: RID = host.giant_navigation_map if giant else chunks[0].navigation.get_navigation_map()
+			var label := "Giant" if giant else "Ordinary"
+			var closest := NavigationServer3D.map_get_closest_point(map, summit)
+			# Navigation retains its established height-detail simplification;
+			# grounded actors advance waypoints using their real collider height.
+			# This regression checks summit coverage and horizontal connectivity,
+			# rather than imposing a new sub-metre vertical bake contract.
+			check(closest.y > 150.0 and Vector2(closest.x, closest.z).distance_to(Vector2(summit.x, summit.z)) < 1.0, label + " published navigation covers the road summit above the former 150m ceiling")
+			var path := NavigationServer3D.map_get_path(map, start, finish, true)
+			check(path.size() >= 2 and Vector2(path[0].x, path[0].z).distance_to(Vector2(start.x, start.z)) < 1.0 and Vector2(path[-1].x, path[-1].z).distance_to(Vector2(finish.x, finish.z)) < 1.0, label + " mountain navigation connects across the summit streaming seam")
 	host.queue_free()
 	await process_frame
 

@@ -8,10 +8,10 @@ var terrain_step: float = 3.0
 @export var road_width: float = 15.0
 @export var narrow_width: float = 10.0
 @export var road_shoulder: float = 14.0
-@export var max_grade: float = 0.08
+@export var max_grade: float = 0.12
 # Road crossfall is currently zero (below the 3% design ceiling).
 var max_crossfall: float = 0.03
-@export var min_turn_radius: float = 80.0
+@export var min_turn_radius: float = 36.0
 @export var region_length: float = 900.0
 @export var region_transition: float = 240.0
 @export var stop_spacing: float = 450.0

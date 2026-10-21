@@ -299,7 +299,6 @@ func _build_navigation(gradual: bool = false) -> void:
 	nav.detail_sample_max_error = 64.0
 	nav.border_size = 1.0
 	var nav_half := field.profile.terrain_half_width
-	nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, -band * 150.0 - 151), Vector3(nav_half * 2, 250, 152))
 	if navigation == null:
 		navigation = NavigationRegion3D.new()
 		navigation.name = "ChunkNavigationRegion"
@@ -375,6 +374,14 @@ func _build_navigation(gradual: bool = false) -> void:
 			var tree: Dictionary = planned[i]
 			if tree.point.z > -band * 150.0 + 5 or tree.point.z < -(band + 1) * 150.0 - 5: continue
 			_append_box_faces(source, Vector3(0.7, tree.height, 0.7), Transform3D(Basis.IDENTITY, tree.point + Vector3.UP * tree.height * 0.5))
+	# Mountain roads can rise above the old fixed 150m ceiling. Derive only
+	# the vertical bake extent from the complete collision/halo/obstacle source.
+	# Shared voxel-aligned heights keep neighbouring bands on the same lattice.
+	var source_bounds := source.get_bounds()
+	var vertical_padding := maxf(nav.agent_height, SlenderSpeakerSpawns.HEIGHT) + nav.agent_max_climb + nav.cell_height * 2.0
+	var bottom := floorf((source_bounds.position.y - vertical_padding) / nav.cell_height) * nav.cell_height
+	var top := ceilf((source_bounds.end.y + vertical_padding) / nav.cell_height) * nav.cell_height
+	nav.filter_baking_aabb = AABB(Vector3(-nav_half, bottom, -band * 150.0 - 151), Vector3(nav_half * 2, top - bottom, 152))
 	var giant_nav: NavigationMesh = nav.duplicate()
 	giant_nav.agent_height = SlenderSpeakerSpawns.HEIGHT
 	giant_nav.agent_radius = SlenderSpeakerSpawns.RADIUS
@@ -388,7 +395,7 @@ func _build_navigation(gradual: bool = false) -> void:
 	var south := snappedf(-(band + 1) * 150.0, giant_nav.cell_size)
 	# 150m does not divide by 0.275m. Anchor both clipped seam boundaries
 	# to one global voxel lattice so neighbours retain identical edges.
-	giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, -100, south - giant_nav.border_size), Vector3(nav_half * 2, 250, north - south + 2.0 * giant_nav.border_size))
+	giant_nav.filter_baking_aabb = AABB(Vector3(-nav_half, bottom, south - giant_nav.border_size), Vector3(nav_half * 2, top - bottom, north - south + 2.0 * giant_nav.border_size))
 	if giant_navigation == null:
 		giant_navigation = NavigationRegion3D.new()
 		giant_navigation.name = "GiantNavigationRegion"

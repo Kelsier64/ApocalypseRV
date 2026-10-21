@@ -4,8 +4,8 @@ const CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
 const WORLD_GENERATOR = preload("res://world/world_generator.gd")
 const ATMOSPHERE = preload("res://world/world_atmosphere_profile.tres")
 const ATMOSPHERE_CONTRACTS = preload("res://tests/support/atmosphere_contracts.gd")
-const FROZEN := [2173645473, 2698986667, 2622734014, 1237357782]
-const ROAD_FROZEN := [2290317034, 3962838430, 934878813, 16663958]
+const FROZEN := [3868853425, 3433178243, 1051059513, 3883359571]
+const ROAD_FROZEN := [187953804, 2080674967, 3402611825, 3941524255]
 
 class GeneratorStub extends Node:
 	var world_seed := 42
@@ -391,7 +391,7 @@ static func _check_geometry(check: Callable) -> void:
 			snapshot.append([field.road_frame(s), field.road_width(s)])
 			for x: float in [-1250.0, -450.0, -150.0, 0.0, 150.0, 450.0, 1250.0]: snapshot.append(field.surface(x, -s))
 		snapshot.append(field.landforms.rivers_near(-6000.0, 6000.0))
-		check.call(snapshot.hash() == FROZEN[seed_index], "Current terrain, road and water fingerprint remains unchanged for seed %d" % field.world_seed)
+		check.call(snapshot.hash() == FROZEN[seed_index], "Current terrain, road and water fingerprint remains unchanged for seed %d (actual %d)" % [field.world_seed, snapshot.hash()])
 
 static func _check_frozen_road(field: WorldField, check: Callable) -> void:
 	var snapshot: Array = []
@@ -402,7 +402,7 @@ static func _check_frozen_road(field: WorldField, check: Callable) -> void:
 		for lateral: float in [-35.0, 0.0, 35.0]:
 			var point := field.road_frame(s) * Vector3(lateral, 0.0, 0.0)
 			snapshot.append(field.road_query(point.x, point.z))
-	check.call(snapshot.hash() == ROAD_FROZEN[CONTRACTS.SEEDS.find(field.world_seed)], "Current road frames, widths and projections retain their 12km fingerprint for seed %d" % field.world_seed)
+	check.call(snapshot.hash() == ROAD_FROZEN[CONTRACTS.SEEDS.find(field.world_seed)], "Current road frames, widths and projections retain their 12km fingerprint for seed %d (actual %d)" % [field.world_seed, snapshot.hash()])
 
 static func _appearance_weights(appearance: Vector3) -> PackedFloat64Array:
 	var weights := PackedFloat64Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])

@@ -256,13 +256,20 @@ godot --path . --log-file .godot/horror-visible.log res://tests/outdoor_horror_p
 
 F2 切換公路／停車處／遮蔽步道／入口／回望視角，1–4 換四款外觀，F3 回放正式玩家攜引擎步行，F4 在門前送出 E 互動／從室內返回，F5 切換視窗大小，Esc 開啟正式設定，R 重設。測試場只替換同一位置的入口模型供比較；正式世界依 seed 配置。截圖、效能與驗證範圍見 [室外氛圍驗收](../../docs/validation/2026-09-16-outdoor-horror.md)。
 
-在 WorldGenerator 設定 `world_seed` 可重現整條路線，`-1` 每局另選 seed；`profile` 集中景觀、路寬、坡度、密度和串流設定。此版仍是沿公路向前旅行，遠景不提供可探索碰撞，後方已回收的地形不重建。
+在 WorldGenerator 設定 `world_seed` 可重現整條路線，`-1` 每局另選 seed；`profile` 集中景觀、路寬、坡度、密度和串流設定。現行世界支援雙向串流，遠景不提供可探索碰撞。
 
 ```powershell
 godot --path . --log-file .godot/highway-visible.log res://tests/highway_playground.tscn
 ```
 
-F1/F2/F3 預覽草原／林地／岩丘，F6 執行固定 seed 的 5 km 輪驅測試，F7 測停車、倒出及返回公路。回放以正式油門／轉向和 VehicleBody3D 輪胎物理移動；僅起點擺位、測試相機及停用耗油屬測試設定。完成後再次按回放鍵會重載測試場，再按一次啟動。可用 `-- --replay` 或 `-- --parking` 自動執行並退出；headless 測試加 `--fixed-fps 60`。
+F1/F2/F3 預覽不同里程的景觀，F6 執行固定 seed 的道路輪驅，F7 測停車、倒出及返回公路，F8 切換駕駛／跟車鏡頭。回放以正式油門／轉向和 VehicleBody3D 輪胎物理移動，僅起點擺位；測試場停用耗油並移除隨機怪物、廢車和釘帶，保留地形及護欄碰撞。完成後再次按回放鍵會重載測試場，再按一次啟動。可用 `-- --replay` 或 `-- --parking` 自動執行；`--keep-open` 保留結果視窗，headless 可加 `--fixed-fps 60`。指定 `--from`／`--to` 只載入該段附近的初始區塊，`--driver-view` 使用正式座椅鏡頭：
+
+```powershell
+godot --path . --log-file .godot/mountain-uphill.log res://tests/highway_playground.tscn -- --replay --from=1660 --to=1900 --driver-view --keep-open
+godot --path . --log-file .godot/mountain-downhill.log res://tests/highway_playground.tscn -- --replay --from=4950 --to=5170 --driver-view --keep-open
+```
+
+本輪短段與限制見 [山路驗證](../validation/2026-10-21-mountain-road.md)。
 
 路旁九種模組提供可編輯場景，見 [roadside kit](../../world/roadside_kit/README.md)。地形驗收與效能紀錄見 [驗收紀錄](../../docs/validation/2026-09-15-highway.md)。
 
