@@ -1,24 +1,24 @@
 # ApocalypseRV 架構
 
-**存檔更新政策（2026-10-20）**：後續更新若造成舊存檔不相容，可以直接刪除舊存檔並重新開局；不必為舊存檔新增或維護相容分支、資料遷移或專門適配。下文記載的既有舊版本支援屬目前實作說明，不構成後續更新的相容性維護要求。
+**存檔更新政策（2026-10-20）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint／VehicleSnapshot v6、生成 v14、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
 
-正式新局目前使用地形生成 v14，沿用 v12 兩室教學；舊 v2–v13 存檔仍按原生成版本重建。道路 RNG 域固定在版本 13，因此相同種子／設定的道路路線、寬度與高度不變；v14 relief 與 flora 使用獨立隨機域。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地輪廓、世界空間噪音及材質；`ForestScenery` 依地貌分群植被並避開 40° 以上坡面，`FloraMeshes` 提供草、蘆葦及碎石，`ForestMeshes` 6、7 型為闊葉樹，沿用原 `TreeFall`。v13 橋梁按新版地形重新計算跨度。Checkpoint 外層仍為 v5，允許地形生成 v14、拒絕 v15，教學重試入口沿用同一生成版本。此輪停在等待使用者檢查實際渲染；湖泊、水流玩法、長途輪驅及完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [本輪紀錄](docs/validation/2026-10-20-terrain-v14.md)。下方歷史段落保留其對應契約，不代表正式新局仍選擇該版本。
+正式新局目前使用地形生成 v14，沿用兩室教學；舊版存檔不支援，需重新開局。道路 RNG 域維持版本 13，但 2026-10-21 依回饋重調急彎與高度公式，先前凍結路形的規則已被本輪調整取代；relief、flora 仍使用獨立域。道路以水平弧長積分持續爬升／下降，解析曲線導數協助急彎最近點投影；近路接地保留，山體外側另形成山坡與谷地。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地、世界噪音及材質；`ForestScenery` 依地貌分群並避開 40° 以上坡面。橋梁按完整路寬與斜向河岸重新判斷跨度、水面低於整段跨河道路；深林場址先嘗試鏡像，再排除會碰到後續急彎的候選。導航沿用既有細節簡化及怪物接地推進，普通／巨人烘焙的垂直範圍改由來源幾何推算，避免 150 m 上限裁掉山頂。Checkpoint 為 v6，只接受生成 v14。此階段停下等待檢查；湖泊、水流玩法、長途輪驅與完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [地形細化](docs/validation/2026-10-20-terrain-v14.md) · [山路修正](docs/validation/2026-10-21-mountain-road.md)。下方歷史段落保留當時契約。
 
 2026-10-16 倉庫配置：v12 第二室新增可重用靜態貨架、貨箱與棧板，16 件原有 Item 改由分散的出生標記配置；保留舊矮架及碰撞路徑，已保存的物資維持原位置。`WarehouseApproaches` 僅保存設計用接近點，不生成遊戲提示或改變交易判定；貨架燈具屬建築、光源置於 Furnishings。[驗證與驗收](docs/validation/2026-10-16-orientation-warehouse.md)。
 
-2026-10-16：兩室基地階段四加入獨立靜態建築收邊、舊牆皮、屋架／管線、屋頂機組及兩張實體宣導海報。大型結構網格細分以穩定陰影；滑門移至隔牆外側軌道，避免門片與牆皮交疊，活動碰撞仍不烘焙成永久導航障礙。機組基座、軌梁與碰撞由新版場景持有，不改物品 ID 或教學保存格式。保留 v11 與 Demo 的 v10 單間場址。結果與驗收見[階段四紀錄](docs/validation/2026-10-16-orientation-stage4.md)。
+2026-10-16：兩室基地階段四加入獨立靜態建築收邊、舊牆皮、屋架／管線、屋頂機組及兩張實體宣導海報。大型結構網格細分以穩定陰影；滑門移至隔牆外側軌道，避免門片與牆皮交疊，活動碰撞仍不烘焙成永久導航障礙。機組基座、軌梁與碰撞由新版場景持有，不改物品 ID 或教學保存格式。獨立 Demo 與作弊測試場仍可使用單間車庫。結果與驗收見[階段四紀錄](docs/validation/2026-10-16-orientation-stage4.md)。
 
-2026-10-15：正式新局使用 v12／`orientation_shelter`，40 × 60 m 兩室。`OrientationController` 課程 v4、`OrientationWorkshop` v2；Checkpoint 外層 v5、StartRun v1 不變。第一室仍檢查原終端開機及拆下；第二室所有參考均選做，成功交易可任意順序記錄，`step` 只保存單向推進的建議與復原邊界，不授權出口。新局一次性設為原引擎 0 耐久、原電池 0 電量、`roof_1` 毀壞、兩片牆損 60 與原左前胎爆胎；以持久 ID 提供充電備用電池、2 包維修包、備胎、8 件廢料及 2 油桶。取消 v12 電量保底。配置後不因讀檔、返回或查看終端重施故障／補發。v1–v3 課程及 Workshop v1 相容；已有舊配置只升級旗標，保留原 13 個目標及車況，入口快照同步純資料升級。`OrientationRecovery` 在任意順序交易批次結束且安全時捕獲待建立的建議邊界，已有復原點不被後續同段操作覆蓋；接待室仍不將部分開機冒充原始入口。`capture_world(world,false,true)` 只放寬有效終端閱讀的內部捕獲，所有權分開驗證、禁止遞迴、隔離載入成功後替換且不改手動檔案。感應門只依原 RV 的方向、位置及連續向前至少 0.35 秒／淨前移至少 0.5 m 開啟；停車懸吊微動不授權，未完成的移動觀察不保存，與教學證據、車況或服務狀態無關；普通車輛系統仍限制駕駛。玩家及整車碰撞離場後才恢復時間／天氣／敵人，即使清單未完成仍解鎖原終端說明書。Item v2 的 ID、所有權、開機與內部電量保留。v11 九關及舊場址不改，最終美術留階段四。[計畫](docs/plans/starting-tutorial-two-room.md) · [選做指南驗證](docs/validation/2026-10-15-orientation-optional.md)。
+目前兩室教學使用 `orientation_shelter`，40 × 60 m 兩室。`OrientationController` 課程 v4、`OrientationWorkshop` v3；Checkpoint 外層 v6、StartRun v1 不變。第一室仍檢查原終端開機及拆下；第二室所有參考均選做，成功交易可任意順序記錄，`step` 只保存單向推進的建議與復原邊界，不授權出口。新局一次性設為原引擎 0 耐久、原電池 0 電量、`roof_1` 毀壞、兩片牆損 60 與原左前胎爆胎；以持久 ID 提供充電備用電池、2 包維修包、備胎、8 件廢料及 2 油桶。取消 v12 電量保底。配置後不因讀檔、返回或查看終端重施故障／補發。只接受 OrientationController v4、OrientationWorkshop v3 的完整欄位與目標；不執行課程或入口快照升級。`OrientationRecovery` 在任意順序交易批次結束且安全時捕獲待建立的建議邊界，已有復原點不被後續同段操作覆蓋；接待室仍不將部分開機冒充原始入口。`capture_world(world,false,true)` 只放寬有效終端閱讀的內部捕獲，所有權分開驗證、禁止遞迴、隔離載入成功後替換且不改手動檔案。感應門只依原 RV 的方向、位置及連續向前至少 0.35 秒／淨前移至少 0.5 m 開啟；停車懸吊微動不授權，未完成的移動觀察不保存，與教學證據、車況或服務狀態無關；普通車輛系統仍限制駕駛。玩家及整車碰撞離場後才恢復時間／天氣／敵人，即使清單未完成仍解鎖原終端說明書。Item v2 的 ID、所有權、開機與內部電量保留。[計畫](docs/plans/starting-tutorial-two-room.md) · [選做指南驗證](docs/validation/2026-10-15-orientation-optional.md)。
 
-舊 v11 課程實作紀錄：2026-10-14 教學基地階段三至五的九關流程已實作，完整新局手動驗收仍待進行；使用者本次授權四、五連續完成後合併驗收。v11 採獨立 `tutorial_shelter` 場址，40 × 416 m、Z −402～14 m、九區八內門；v7–v10 場址與資產保留。Checkpoint 外層 v5、StartRun v1，教學子狀態 v3，Workshop／Service 各 v1。`TutorialController` 持有進度及互相獨立的現況／入口快照，`TutorialWorkshop` 判定第 2–6 關，`TutorialService` 判定第 7–9 關。維修故障只在第七區完整停妥、熄火、手煞車、離座及互動結束後配置一次，物理穩定後捕獲重試入口；維修、輪胎、材料、出料、加油均依成功交易與指定 ID 判定。準備期保底不計分，正式啟程按鈕接受後解除並恢復時間／天氣／敵人；出口受阻重開，整車與玩家離場並封門後完成。略過保持 preparing、開啟內門及解鎖同一終端，保存 skipped。說明書沿用 Item v1 狀態與所有權，涵蓋現場、背包、車內庫存、休眠及 POI 記錄。Esc 重試／略過僅在正式啟程前可用；失敗仍保留當前世界。舊 v1/v2 活躍課程升級而不改寫來源檔；既有 completed 課程保留舊教學版本以免捏造第九關證據。[階段計畫與驗證](docs/plans/starting-tutorial.md)。全套建築美術、海報、完整測試套件及延長後 20 萬三角面預算驗收屬階段六。
+舊九關教學的控制器、Workshop／Service 保存與升級支援已移除。歷史設計與驗收保留於[階段計畫](docs/plans/starting-tutorial.md)，不屬目前執行契約。
 
-文件核對：2026-10-09 正式 v10 森林巨人整合與 v5 Item 保存；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對（2026-10-21）：目前使用 v14 生成及 v6 檢查點；2026-10-09 森林巨人整合屬歷史驗收；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
-2026-10-06 Item 更新：可搬運道具與原設備共用 `Item`、`ItemDefinition`、`ItemState` 及 `ItemMount`，以背包紀錄持有手持狀態；短 F 進入獨立預覽，長 F 拆下固定物品。Item 免疫一般怪物攻擊，支撐被拆後掉落並可拾取；2026-10-10 Slender Speaker 僅保留砸擊接觸每拳對同一 Item 扣 60 耐久的專用例外，歸零才摧毀；抓取接觸設備時保留設備及其碰撞。檢查點改為 v5，舊檔保持原樣且須重新開局。此處描述實作，歷史驗收連結保留當時範圍，不代表本輪全部測試或實機已通過。
+Item 共用契約：可搬運道具與原設備共用 `Item`、`ItemDefinition`、`ItemState` 及 `ItemMount`，以背包紀錄持有手持狀態；短 F 進入獨立預覽，長 F 拆下固定物品。Item 免疫一般怪物攻擊，支撐被拆後掉落並可拾取；2026-10-10 Slender Speaker 僅保留砸擊接觸每拳對同一 Item 扣 60 耐久的專用例外，歸零才摧毀；抓取接觸設備時保留設備及其碰撞。檢查點目前為 v6，舊檔保持原樣且須重新開局。此處描述實作，歷史驗收連結保留當時範圍，不代表本輪全部測試或實機已通過。
 
-2026-10-09 整合更新：正式新局選擇生成 v10，沿用 v9 道路種類規則，新增森林 Slender Speaker 的獨立導航與區段紀錄；v5 檢查點保留舊生成版本。`SlenderSpeaker extends Monster` 覆寫行為，`PlayerGrab.Mode.EXECUTION` 共用抓取所有權並保留 Raker 分支。行為、音樂及實機驗證結果見[本輪紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)。下方 v9 專節描述該版既有契約，不能用其歷史測試證明 v10 已通過。
+2026-10-09 整合更新：正式新局選擇生成 v10，沿用 v9 道路種類規則，新增森林 Slender Speaker 的獨立導航與區段紀錄；目前檢查點只支援生成 v14。`SlenderSpeaker extends Monster` 覆寫行為，`PlayerGrab.Mode.EXECUTION` 共用抓取所有權並保留 Raker 分支。行為、音樂及實機驗證結果見[本輪紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)。下方 v9 專節描述該版既有契約，不能用其歷史測試證明 v10 已通過。
 
 ## 目錄
 
@@ -62,17 +62,19 @@ MainWorld
 
 ### 起始避難所與世界識別
 
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 固定選擇兩室 orientation_shelter；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v14 地形、道路與植被，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
 歷史 v11 主場景契約：該版明確選擇生成 v11，共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、導航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
-Checkpoint v5 保存 world_id 與 start_state（version、phase）；只接受受信任的 legacy／shelter 場景映射，禁止由存檔提供任意場景路徑。shelter 對應 v7／v8／v9／v10／v11，只保存 preparing／started／sealed；門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。v5 缺少 world_id 時使用 legacy，保留 v2–v6 地形與原位置，不建立車庫或補發物資。
+Checkpoint v6 要求 `world_id=shelter`、生成 v14 與完整 `start_state`；只載入受信任的 `world/main_world.tscn`。StartRun v1 要求 phase 為 preparing／started／sealed、一個 bay gate 布林值與當前兩室教學。門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。
 
 ### 輪胎與爆胎路障
 
 Chassis 四個輪槽的 wheel_health 為唯一耐久來源，0 表示爆胎；puncture_wheel 拒絕空槽與重複爆胎。TireDynamics 在底盤控制輸出後逐輪套用抓地、轉向及驅動修正；接地壞胎於接觸點施加隨速度平滑變化的阻力，另以接地壞胎的左右差與前後權重計算轉向偏差，不直接設定車身旋轉或清除速度。外觀與半徑只在爆胎／修復切換時更新。既有 WheelSocket、RepairOperation 與 Item condition 支援維修／換胎；VehicleSnapshot 的 health 與物品 condition 已能保存爆胎，無新存檔欄位或版本遷移。
 
-v2–v7 的 TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") 獨立種子流，在 ChunkGenerator 建立道路後生成，不消耗既有物資／敵人 RNG。路障屬 chunk，隨串流釋放與確定性重建；以該生成版本建立或從 v5 還原時會產生此障礙，地形生成版本不變。Area3D 只選取附近 Chassis，沒有車時停用 physics_process；附近每台車最多檢查四個接地點的跨幀線段與釘帶局部 AABB。輪寬計入邊界、離地與傳送跨距不觸發，無每幀全世界掃描或額外物理射線。釘帶不是可攀／可拆設備，不進 SaveSceneCatalog。回歸與限制見 [爆胎驗收](docs/validation/2026-09-22-tire-puncture.md)。
+TireSpikeStrip 使用 WorldField.rng_for(band, "tire_spike_strip") 獨立種子流，在 ChunkGenerator 建立道路後生成，不消耗既有物資／敵人 RNG。路障屬 chunk，隨串流釋放與確定性重建；當前規劃器建立道路時產生此障礙。Area3D 只選取附近 Chassis，沒有車時停用 physics_process；附近每台車最多檢查四個接地點的跨幀線段與釘帶局部 AABB。輪寬計入邊界、離地與傳送跨距不觸發，無每幀全世界掃描或額外物理射線。釘帶不是可攀／可拆設備，不進 SaveSceneCatalog。回歸與限制見 [爆胎驗收](docs/validation/2026-09-22-tire-puncture.md)。
 
 ### v10 森林 Slender Speaker
 
@@ -112,7 +114,7 @@ owner 使用正式 `Chassis.road_speed()` 分類車輛模式：追車時低於 6
 
 車外與駕駛座共用髖部前傾、雙掌朝內向下的 `grab`／`lift`，只按目標位置與高度修正；高處目標在前 0.25 秒建立正向高度修正，水平修正在前 0.8 秒建立。沒有駕駛專用轉掌、屋頂繞行、手指提前定格或起身混合。抓取掃掠及玩家抬升只忽略當下所乘的 `DriverSeat` 組件，仍由正式坐姿胸／頭／肩接觸、車殼／玻璃阻擋及完整玩家抬升路徑判定。座位例外於取消、移除或換世界清除，不影響一般碰撞和 Raker。每次取樣重設未被動畫覆寫的骨架位置，避免殘留變形；手臂 IK 隨伸手軸轉移原本彎肘平面。抬升初段保留接觸偏移，接著將軀幹帶回握持錨點。作者動畫的抬高手臂以實際 A-pose 手肘彎曲平面決定上臂旋轉，肘部引導持續朝前並降低，避免手掌旋轉傳回肩部造成半圈翻轉；lift／hold／crush／retract 共用此姿勢，驗證見[肩肘修正](docs/validation/2026-10-09-slender-speaker-lift-joints.md)。Slender Speaker 接觸取得所有權及抬升途中保持第一人稱，到達音箱前、進入 HOLD 時才切換獨立第三人稱相機，以實際玩家胸部為追蹤支點，預設沿遠離實際音箱的水平方向 2.2 m、側向 1.2 m、上方 1 m 取景，視線對準實際音箱，不依玩家身體朝向；相機包含完整身體圖層、排除第一人稱專用複本。第三人稱滑鼠可完整水平及垂直環繞構圖，沒有左右／上下角度範圍限制，完整轉圈以等價角度保存並讓相機上方向一起旋轉；沿用靈敏度及反轉 Y 設定；0.18 m 球形掃掠限制鏡頭與牆壁／車殼的距離，環繞觀看不改變玩家身體；抬升途中的第一人稱沿用慢速引導，切換時重設環繞偏移。取消、移除及換世界清除臨時相機、交回正常視角；處決死亡則保留目前第三人稱構圖，脫離巨人的追焦並直接跟隨布娃娃 spine_02 物理骨的世界位置（扣除 body_offset），隨身體落到地面，成功復活才清除並恢復正常视角；若其他相機已取得視角則保留其所有權。抬升 1.4 秒完成後 HOLD 停留 2 秒，再以 0.4 秒 CRUSH 完成處刑。一般 execution captor 未提供第三人稱構圖時沿用既有第一人稱引導；Raker 保留原流程。第三人稱驗證見[抓取視角紀錄](docs/validation/2026-10-10-slender-speaker-pov.md)。共用動畫原始證據見[共用抓取驗證](docs/validation/2026-10-09-slender-speaker-shared-grab.md)，後續停車決策與任一手接觸更新見[停車抓取驗證](docs/validation/2026-10-09-slender-speaker-parked-attack.md)。
 
-`SlenderSpeakerSpawns` 使用獨立種子流，v10 在前 1500 m 以外按 1500 m 區段以 25% 機率規劃候選；候選必須位於道路邊緣外 40–100 m 的合法森林。巨人使用獨立 NavigationServer map，區塊以 15 m 高、1.1 m 半徑、0.275 m voxel 同步烘焙、發布與卸載。導航完成後才評估生成，距玩家不足 160 m、無合法候選或同世界已有活動巨人便永久略過該段。v5 checkpoint 中的 v10 世界保存 `generated_giant_segments` 防止重烘焙、回程、死亡與清理後補刷；舊生成版本不轉版。恢復 actor 後重新綁定新 map 並清除舊感知。測試與限制見 [整合紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)。
+`SlenderSpeakerSpawns` 使用獨立種子流，v10 在前 1500 m 以外按 1500 m 區段以 25% 機率規劃候選；候選必須位於道路邊緣外 40–100 m 的合法森林。巨人使用獨立 NavigationServer map，區塊以 15 m 高、1.1 m 半徑、0.275 m voxel 同步烘焙、發布與卸載。導航完成後才評估生成，距玩家不足 160 m、無合法候選或同世界已有活動巨人便永久略過該段。Checkpoint v6 要求 `generated_giant_segments`，防止重烘焙、回程、死亡與清理後補刷。恢復 actor 後重新綁定新 map 並清除舊感知。測試與限制見 [整合紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)。
 
 首次建立遭遇時可見玩家優先於可見 RV；同一名玩家仍有效且搜尋尚未過期時，其他玩家或另一台可見 RV 不能取代遭遇。胸、頭、肩任一真實姿勢點通過音箱視角與物理遮擋即可感知。離座／下車會在可見觀測後改變所屬 RV，已提交動作保留原對象直到收手完成，再清除不相容的接近計畫。車內乘員超出原側抓取範圍時，僅根據實際可見位置選擇可達的另一側，繞車路程計入外側轉角間的遮擋；不使用隱藏玩家的即時位置。案例與物理阻擋限制見[站立／下車驗證](docs/validation/2026-10-09-slender-speaker-target-switch.md)。
 
@@ -132,25 +134,25 @@ owner 使用正式 `Chassis.road_speed()` 分類車輛模式：追車時低於 6
 
 `RearWreckLayout` 在 rear band 導航烘焙前建立最多 28 台既有廢車，以獨立路徑／逐台 RNG 在 X±24、Z10–110 m 隨機位置及朝向，檢查完整旋轉占地、植被、據點、支撐與保存 actor 避讓；保留連續 1.5 m 步行通道。v10 移除車堆、碎石 backing、長翼牆與橫向土堤，避難所本體地形不變；保留原植被 reservation mask，避免改變毀樹 band:index。v7–v9 仍建立原 roadblock 與土堤。
 
-v5 checkpoint 在 v10 可選保存 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（穩定 ID、實際 transform、步行通道）；存在但不合法時拒絕。缺少偏行記錄在玩家實際還原後初始化，highwater 至少為出生入口 45 m；沒有離線時間。缺少後方配置先保留玩家／RV／道具碰撞占地再生成，新車根節點 `RearWrecks` 與舊 `Roadblock` 支撐路徑分離，消失的 Item 靜態支撐走原脫落流程。配置 ledger 跨卸載保留，回訪及重載不重抽。當次驗證見[偏行刷新紀錄](docs/validation/2026-10-11-deviation-pressure.md)。
+Checkpoint v6 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（穩定 ID、實際 transform、步行通道），先驗證再還原。尚未生成後方配置時允許空 layout，還原後依玩家／RV／道具實際碰撞占地建立配置；這是當前新局狀態，不是舊檔缺欄位適配。配置 ledger 跨卸載保留，回訪及重載不重抽。歷史規劃與驗證見[偏行刷新紀錄](docs/validation/2026-10-11-deviation-pressure.md)。
 
-### v9 公路獨立生成與 v8 相容
+### 公路獨立生成
 
-v9 的公路規則由目前正式 main_world 新局 v11 沿用，沿用避難所開場及小 POI；共用 WorldProfile 預設與 legacy fixture 保留 v6，生成 v2–v7 分支保留原規則，僅接受 v5 檢查點。檢查點為 v5，shelter 接受 v7／v8／v9／v10／v11，legacy 禁止這五版開場身份。
+正式 main_world 與 WorldProfile 使用生成 v14；道路內容使用目前獨立規劃器。Checkpoint v6 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
 
-RoadSpawns.plan(field, band) 依生成版本分派純規劃器；v8 保留原種子流、一般 5 m 中央通道及封路車陣，v9 分離釘帶、Raker、油桶人、普通油桶及廢車的數量／位置 RNG。Raker 0–3 隻機率為 65／20／10／5%，逐隻以路面／路邊 40／60% 選點，沒有最小間距；油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。v2–v7 保留 TireSpikeStrip.build。
+RoadSpawns.plan(field, band) 使用當前純規劃器，分離釘帶、Raker、油桶人、普通油桶及廢車的數量／位置 RNG。Raker 0–3 隻機率為 65／20／10／5%，逐隻以路面／路邊 40／60% 選點，沒有最小間距；油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。
 
-導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；v8／v9 拒絕導航尚未發布時保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與舊版其他散落物清理維持。v9 正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；舊版 profile 設定保留。自訂更遠載入窗仍按 450 m 規則清理。普通油桶沿用 Item／WorldActorSnapshot 保存及 generated_bands 防補發；重烘焙、拾取、爆炸、清理或重載皆不重新抽取。實作、測試與未驗證範圍見 [v9 本輪紀錄](docs/validation/2026-10-07-independent-road-spawns.md)，[v8 初版紀錄](docs/validation/2026-10-01-random-road-spawns.md)保留當時結果。
+導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；導航尚未發布時拒絕保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與其他散落物清理維持。正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；自訂更遠載入窗仍按 450 m 規則清理。普通油桶沿用 Item／WorldActorSnapshot 保存及 generated_bands 防補發；重烘焙、拾取、爆炸、清理或重載皆不重新抽取。實作、測試與未驗證範圍見 [v9 本輪紀錄](docs/validation/2026-10-07-independent-road-spawns.md)，[v8 初版紀錄](docs/validation/2026-10-01-random-road-spawns.md)保留當時結果。
 
 ### 油桶人與接觸自爆
 
-`props/oil_barrel.gd` 的 `OilBarrel extends Item` 保留普通油桶的拾取、放置及 v5 Item 保存契約，車撞需接觸點法線相對接近速度至少 6 m/s。G 保留 3 m/s 拋出速度，疊加玩家相對移動及放手位置的 RV 點速度（含角速度）；離車後只另加已保存的水平載體速度，垂直分量已在玩家 velocity。剛離開駕駛座、尚未進入下一次正常移動時，velocity 仍含完整載體速度，油桶直接使用該值以免重複疊加。釋放前以完整桶碰撞形狀、從玩家一側的無重疊起點向持物位置掃掠，必要時縮短到障礙前方，空間不足則保留背包並提示。動態桶在 `_integrate_forces` 讀取真實接觸法線／接觸點，保留解算前一物理步的線／角速度以免 Jolt 解算後漏判；固定桶以自身碰撞形狀查詢補足移動中的 frozen 車板；Chassis 的物理接觸迴圈也直接通知油桶。可引爆來源為同 World3D 的 RV 車身／輪槽或已固定的 RV Item 設備；Area、角色、散落 Item、預覽、放置／回收處理中及跨世界接觸均排除，同車固定貨物忽略自車。合格撞擊或自空中最高位置下降至少 2 公尺後碰到向上支撐面時同步鎖定 `is_destroyed`，延後以桶身中心呼叫共用 `BarrelExplosion`，再移除 Item；掉落爆炸不授權任意 RV 接觸傷害，沿用真實距離及遮蔽。`ItemState.service.fall_height` 可選保存已下降距離，舊存檔缺欄位視為零，拾取／放置／世界轉移時重設；WorldActorSnapshot 排除已毀損 Item，封住延後結算前的保存空窗。Chassis 使用既有讓路修正保留行駛，只收共用爆炸傷害，不再收同次一般 body/monster 撞擊傷害。
+`props/oil_barrel.gd` 的 `OilBarrel extends Item` 保留普通油桶的拾取、放置及 v6 檢查點保存契約，車撞需接觸點法線相對接近速度至少 6 m/s。G 保留 3 m/s 拋出速度，疊加玩家相對移動及放手位置的 RV 點速度（含角速度）；離車後只另加已保存的水平載體速度，垂直分量已在玩家 velocity。剛離開駕駛座、尚未進入下一次正常移動時，velocity 仍含完整載體速度，油桶直接使用該值以免重複疊加。釋放前以完整桶碰撞形狀、從玩家一側的無重疊起點向持物位置掃掠，必要時縮短到障礙前方，空間不足則保留背包並提示。動態桶在 `_integrate_forces` 讀取真實接觸法線／接觸點，保留解算前一物理步的線／角速度以免 Jolt 解算後漏判；固定桶以自身碰撞形狀查詢補足移動中的 frozen 車板；Chassis 的物理接觸迴圈也直接通知油桶。可引爆來源為同 World3D 的 RV 車身／輪槽或已固定的 RV Item 設備；Area、角色、散落 Item、預覽、放置／回收處理中及跨世界接觸均排除，同車固定貨物忽略自車。合格撞擊或自空中最高位置下降至少 2 公尺後碰到向上支撐面時同步鎖定 `is_destroyed`，延後以桶身中心呼叫共用 `BarrelExplosion`，再移除 Item；掉落爆炸不授權任意 RV 接觸傷害，沿用真實距離及遮蔽。`ItemState.service.fall_height` 可選保存已下降距離，無下降距離時省略，拾取／放置／世界轉移時重設；WorldActorSnapshot 排除已毀損 Item，封住延後結算前的保存空窗。Chassis 使用既有讓路修正保留行駛，只收共用爆炸傷害，不再收同次一般 body/monster 撞擊傷害。
 
 `BarrelMan` 繼承 Monster 的導航、群組及 WorldEntities 生命週期，獨立處理偽裝、起身、追逐、收腿與自爆，不呼叫一般抓咬、攀車或近戰。玩家優先，入座改追該車外表面；速度 6 m/s，追車上限 10 m/s。低頂下不強行伸展。桶身中心 3 m 球形查詢找到玩家／車體真實碰撞表面且通過 LOS 後，啟動 2 秒倒數；倒數不因目標離開而取消，追逐仍持續。每幀先處理真接觸，再推進倒數；實際玩家／車體接觸和致命傷立即鎖定死亡，延後安全結算爆炸。`receive_vehicle_body_contact` 明確區別真實物理接觸與前方探針。近距離判定排除 Area、Item 及其子碰撞，使用同 World3D 的啟用碰撞表面，車尾與車板不依底盤中心距離判斷。Chassis 與怪物自己的 shape 重疊／滑動接觸共同覆蓋車體、車板與輪槽。車輛讓路保留速度修正，自爆來源的 pending impact 以獨立標記保留至結算，即使來源已釋放仍不重扣一般撞怪傷害。
 
 `BarrelExplosion.explode` 先收集同 World3D 全部受害者、真實碰撞形狀表面距離及 LOS，再依玩家、車板、引擎各自去重結算。完整車殼當次仍遮蔽乘員，已存在破口能曝露玩家；Item 完全免傷，也不能藉父節點轉交引擎傷害，但車板毀損仍觸發既有支撐掉落。爆炸半徑 4 m；玩家 1.5 m 內 70 HP／一肢，0.8 m 內最多兩肢；車板 2 m 內 120 HP，引擎 60 HP，外圈線性衰減。實際接觸 RV 直接授權引擎傷害，避免車尾漏傷。`Player.apply_explosion_hit` 共享一次傷害冷卻，從尚存四肢無重複抽取、先斷肢再死亡，斷肢共用切斷前速度及爆風。特效無拾取或保存身份，沒有持續燃燒或怪物連鎖爆炸。
 
-既有 v8 道路、v8／v9 貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 增加可選 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；已啟動倒數以可選 `proximity_fuse_remaining` 保存，舊記錄缺少此欄時視為未啟動，死亡來源不保存。檢查點維持 v5、新局生成 v10，v2–v7 戶外生成、舊活怪與已清空區域保持原資料。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
+既有 v8 道路、v8／v9 貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 保存 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；倒數狀態以 `proximity_fuse_remaining` 保存，缺欄位拒絕載入，死亡來源不保存。檢查點使用 v6、生成 v14，還原已保存活怪與清空區域。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
 
 `barrel_explosion_effect.gd` 負責獨立 8 秒特效生命週期：短閃光與單盞有陰影點光、Blender 預烘焙火煙、貼地揚塵、少量火星及八片彎曲桶身金屬。共用兩張火煙圖集，每次爆炸有獨立材質時間；火煙 shader 在 BoxMesh 邊界內沿視線積分 12 個密度樣本，以不透明場景深度截斷，避免駕駛鏡頭穿過中央平面時特效消失。火焰快速膨脹上升，煙霧缓升至消散；沒有即時流體求解。碎片以掃掠射線反彈／停落，落地聲最多三個同時播放、每次爆炸最多五次；音效預先烘焙。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；揚塵只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物及其他 entity domain。所有視覺節點不含碰撞、傷害或保存身份，結束後一起釋放。資產及驗證見 [火煙與碎片](docs/validation/2026-10-08-barrel-blast-realism.md)、[駕駛 POV 修正](docs/validation/2026-10-08-barrel-driver-explosion.md)。
 
@@ -168,7 +170,7 @@ ForestTrunks 保留一個共用靜態碰撞體，shape owner 識別單棵樹，�
 
 ForestScenery.build 首次建立森林前 await TreeFall.prepare：獨立 32×32 SubViewport 先建立一棵實際落葉／斷木／粉塵效果，停止處理、凍結剛體並停用碰撞，渲染兩幀後釋放，不播放音效、不寫破壞帳本或觸發導航。共用 Shader、頂點格式及陰影 pipeline 在載入期準備，blocked PCM 音效也預先合成；一次旗標避免串流重複準備。不可變原 mesh 的 surface arrays 快取最多 32 資源；切木只計算世界高度並在原局部座標裁切，葉面共用變換／法線矩陣，減少首次與每次撞擊的網格計算。
 
-WorldGenerator／WorldField 共用 destroyed_trees 帳本，獨立於可淘汰的 forest_cache；森林 ID 使用 band／確定性生成索引，路邊樹使用原始位置。重建前仍消耗原外觀 RNG，存活樹位置與型號不漂移。Checkpoint v5 保存可選帳本，先驗證再恢復，v5 缺欄位視為空帳本，不改生成版本。
+WorldGenerator／WorldField 共用 destroyed_trees 帳本，獨立於可淘汰的 forest_cache；森林 ID 使用 band／確定性生成索引，路邊樹使用原始位置。重建前仍消耗原外觀 RNG，存活樹位置與型號不漂移。Checkpoint v6 要求完整帳本，先驗證再恢復。
 
 破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。歷史專項結果見 [撞樹驗收](docs/validation/2026-10-02-tree-impact.md)，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
 
@@ -184,7 +186,9 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 正式場景持有 WorldClock，集中維護累積遊戲秒數與一天的現實分鐘數，預設 day 1 / 08:00 / 30 分鐘。每幀依 delta 前進，跨日由累積秒數推導；minute_changed 提供日期、時、分，HUD 每遊戲分鐘更新。PROCESS_MODE_INHERIT 尊重 SceneTree 暫停及候選世界停用，背包／平板與 POI 不暫停世界。
 
-WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空、距離霧與環境填光按太陽高度平滑插值，霧距離不隨時段突然跳動（Forward+ 遠景 160–420 m；Compatibility 18–380 m）。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
+教學整備的 `running=false` 只凍結模擬；WorldClock 仍以真實 delta 更新視覺與載入霧上限，避免開局未完成地景造成的 1 m 霧永久遮住房間。SceneTree 真正暫停及停用的讀檔候選世界仍透過 INHERIT 一起停止視覺處理。主場景 smoke 使用正常 process frames 驗證整備期間視野恢復，且時間與天氣保存狀態不前進。[修正驗證](docs/validation/2026-10-21-tutorial-fog.md)。
+
+WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空與環境填光按太陽高度平滑插值；陰天距離霧為 24–230 m，晴天 64–230 m，天氣與載入保護可進一步收近，所有畫質共用。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
 灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果先依視圖環境光亮度啟用，再用各處的實際照明及材質參考估計缺光量，明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，和室外共用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres)。`ambient_gate_enabled` 預設 true；Color 環境光的線性顏色 luminance × energy 在 ≤0.04 時完整啟用、0.04～0.06 反向 smoothstep 淡出、≥`ambient_threshold`（0.06）停用。`ambient_transition`（0.02）控制門檻下方漸變寬度；不累積前幀。Disabled 環境光視為 0；Sky／Background 或缺少 Environment 時保守維持啟用，避免猜測天空照度。明亮全域環境光下的局部陰影因此不補灰階；關閉 gate 可恢復持續局部處理。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
 
@@ -194,7 +198,7 @@ NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投
 
 來源 `get_camera_transform()` 提供含偏移、必要時已插值的顯示姿勢。參考相機與 Quad 在 `frame_pre_draw` 逐幀更新，因此明確關閉自己的 physics interpolation，並在定位後各呼叫 `force_update_transform()`；此時 SceneTree 的普通 transform notification 已處理完，僅設定 global_transform 會使繪圖端晚一幀。車身帶動相機／燈光晃動與鏡面轉向必須使用輪廓幾何的首幀回歸，純黑接收面或等待多幀後擷取無法驗證這種錯位。
 
-Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。v5 缺欄位沿用 day 1 / 08:00，不改寫來源檔案、不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
+Checkpoint v6 要求 clock 字典（elapsed_seconds、day_length_minutes），與生成版本分開。讀取時檢查數字型別、有限值及範圍；prepare_world 在子節點 ready 前恢復，HUD 在 ready 強制刷新。缺欄位拒絕載入，不計算離線時間。POI 的 own_world_3d 保留自身照明，戶外時鐘持續流動，返回立即使用目前時段。
 
 `tests/day_night_playground.tscn` 的調時／加速鍵只用於驗收。歷史美術樣板凍結時鐘並明確使用 exponential fog，避免新光照每幀覆寫 A/B 環境。
 
@@ -202,9 +206,11 @@ Checkpoint v5 保存可選 clock 字典（elapsed_seconds、day_length_minutes�
 
 WorldClock 持有 WorldWeather（RefCounted），使用世界 seed 衍生的獨立 RNG；advance 將現實 delta 換算成遊戲秒後，同步推進時間與天氣。WorldWeather 提供 changed、sample、set_weather、capture／restore／valid_state，狀態以 Vector3 表示晴朗程度、雨級、霧級。分段剩餘時間與轉換進度都使用遊戲秒；set_time 是驗收調光入口，不重抽天氣。
 
-WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 220／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。濃霧使用較暗的灰綠天空與霧色，壓低太陽直射、日輪及體積散射，避免遠景輪廓清晰或霧中物件泛白。白天無額外霧時維持下述遠景設定。
+2026-10-21 重構：`WorldWeather` 只管理自然天氣；常駐景觀霧、天氣霧的外觀及載入視野保護各自獨立。`WorldClock.atmosphere` 指向 [WorldAtmosphereProfile](world/world_atmosphere_profile.tres)，集中距離、密度、白霧色、體積取樣與串流緩衝；其 `mist` 為無副作用取樣，`visual_conditions` 合成偏行壓力。`WorldStreamVisibility` 只保存暫態視野上限，按真實秒數恢復，不參與保存或自然 RNG。WorldClock 取得實際相機的已完成地景距離，將景觀／天氣霧與載入上限取較近值，再統一寫入 Environment、天空、光源及局部霧材質。巨人與雨幕仍讀自然 `weather.sample()`。首階段保留原畫面，後續外觀修正拉開晴天、陰天與小霧的距離、色調及直射光；機率、時間及五欄位天氣保存格式不變。[重構驗證](docs/validation/2026-10-21-weather-refactor.md) · [天氣外觀修正](docs/validation/2026-10-21-weather-appearance.md)。
 
-ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，新材質與每幀更新使用相同有效天氣密度。v2–v13 保留原景觀霧及天空 `disable_fog` 分支。v14 的 `WorldWeather.mist_profile` 保留常駐 24–230 m 白霧、curve 1，晴天／低畫質同樣遮蔽遠景；陰天恢復全域 0.0025／局部 0.14 密度，隨天氣霧淡出，由 220／110／38 m 距離霧接手。v14 天空參與原生距離及體積霧合成，與已遮蔽物體共用最終顏色；體積取樣範圍同步縮短以涵蓋廣角角落。`WorldGenerator.completed_scenery_clearance` 只計算包含實際相機的連續已完成區帶，忽略施工中區帶及不相連的 pinned islands；WorldClock 將霧終點限制在該邊界內 8 m，收近即時、恢復每真實秒 20 m。ForestScenery 的 CPU MultiMesh AABB 含所有變換，植被裁切含半徑／遲滯／8 m 緩衝，所有頂點都在完全遮蔽後才切換。自然天氣 RNG、保存、區帶／怪物生成與回收規則不變。Compatibility 保留相同距離霧。[常駐白霧與載入遮蔽](docs/validation/2026-10-20-persistent-mist.md)。
+WorldClock 仍唯一寫入正式室外 Environment、DirectionalLight3D 及天空 shader。體積霧關閉 temporal reprojection，保留當幀散射與空間濾波，避免動態手電筒／車燈或短閃光留下前幀光束；灰階參考讀取同一模式，不以時段切換。夜間真實燈光保留原生光程、顏色及陰影，灰階適應只補足缺少的亮度。自然小霧／中霧／大霧的距離霧終點為 150／110／38 m，8 m 起漸入；曲線只限制灰階補光，真實燈光與發光仍受原生天氣霧影響。晴天採暖灰遠霧、直射光能量 1.3；陰天採冷灰遠霧、直射光 0.45；小霧轉為灰白色並縮短遠景。色調及光照隨過渡連續混合，雨與霧再壓低直射光。夜間霧色仍隨原生照明變暗，天空與完全遮蔽物體共用終端顏色。
+
+ForestFog 在 chunk 建立／退出時向該世界時鐘登錄／解除材質，新材質與每幀更新使用相同有效天氣密度。舊版景觀霧與天空分支已移除。`WorldAtmosphereProfile.mist` 保留最遠 230 m 的常駐遮蔽、curve 1，晴天／低畫質同樣保留；陰天全域 0.0025／局部 0.14 密度，隨天氣霧淡出，由 150／110／38 m 距離霧接手。天空參與原生距離及體積霧合成，體積取樣範圍同步縮短以涵蓋廣角角落。`WorldGenerator.completed_scenery_clearance` 只計算包含實際相機的連續已完成區帶，忽略施工中區帶及不相連的 pinned islands；`WorldStreamVisibility` 將霧終點限制在該邊界內 8 m，收近即時、恢復每真實秒 20 m。ForestScenery 建立時讀取所屬時鐘的同一份 atmosphere；CPU MultiMesh AABB 含所有變換，植被裁切含半徑／遲滯／8 m 緩衝，所有頂點都在完全遮蔽後才切換。霧距離／裁切參數應在生成前配置，調整已生成地景的可見距離需重建區塊；密度與顏色在 apply_time 重新取樣。自然天氣 RNG、保存、區帶／怪物生成與回收規則不變。Compatibility 保留相同距離霧。[常駐白霧與載入遮蔽](docs/validation/2026-10-20-persistent-mist.md)。
 
 WeatherRain 使用兩層固定種子 MultiMesh 雨幕：近景 24,576 粒子／半徑 24 m／高 32 m，遠景 49,152 粒子／半徑 96 m／高 48 m。種子只上傳一次，rain_field shader 以 CPU 傳入、尊重暫停的時間計算落雨、世界座標環繞和 billboard；每幀只更新相機、時間、天氣參數，不逐滴更新位置或碰撞。大雨最多提交 73,728 粒子，小雨約 24,323；兩層交界及範圍邊緣漸淡，數字代表提交量，不是遮擋後實際可見數。
 
@@ -212,17 +218,17 @@ RainCover 使用兩張 64×64 世界座標環狀高度圖，近格 0.75 m、遠�
 
 水花另取樣攝影機周圍最多 8 條落點射線，最多 64 個、壽命 0.18 秒，弱參照及局部座標跟隨承接物件。包含 1 條聲音遮蔽射線，合計上限 393 次／物理步，與粒子數無關。大雨抑制太陽直射光和天空日輪。獨立 POI 停止戶外雨幕與水花、保留低音量雨聲；2 條程序 PCM 循環依雨勢混合，專用 bus 的低通隨頭頂遮蔽變化，世界退出時移除 bus。Compatibility 使用相同空間 shader，無需 GPU 粒子碰撞節點；其雨幕密度與範圍不縮水。
 
-Checkpoint v5 的可選 weather 字典保存 source／target、transition_elapsed、remaining、rng_state；在 prepare_world、子節點 ready 前還原。霧級以 0／0.5／1／2 表示無額外霧／小霧／中霧／大霧；target 僅接受這四值，source 允許 0–2 的有限插值。既有未分版 weather 字典的 1／2 保留原距離與霧色，無需遷移。陰天天氣的霧抽選機率為 20／40／25／15%，門檻為 0.2／0.6／0.85；雨勢獨立抽選。缺欄位沿用陰天，非法值在世界重建前拒絕。正式天氣與測試快捷鍵分離；既有美術樣板固定天氣。驗收入口見 [天氣測試場](docs/guides/playgrounds.md)。
+Checkpoint v6 的必要 weather 字典保存 source／target、transition_elapsed、remaining、rng_state；在 prepare_world、子節點 ready 前還原。霧級以 0／0.5／1／2 表示無額外霧／小霧／中霧／大霧；target 僅接受這四值，source 允許 0–2 的有限插值。陰天天氣的霧抽選機率為 20／40／25／15%，門檻為 0.2／0.6／0.85；雨勢獨立抽選。缺欄位或非法值在世界重建前拒絕。正式天氣與測試快捷鍵分離；既有美術樣板固定天氣。驗收入口見 [天氣測試場](docs/guides/playgrounds.md)。
 
 ### 局部體積霧（目前正式設定）
 
-桌面渲染改為 Forward+／Vulkan。WorldClock 設定薄全域體積霧與 160–420 m 遠景距離霧；ForestFog 使用獨立外觀 RNG，按地形低處與實際步道路線高度建立 FogVolume，隨 chunk 回收。世界座標 3D 噪聲和柔化邊界控制局部濃淡，霧不參與碰撞、導航或怪物感知，也不改地形生成版本與物資。
+桌面渲染使用 Forward+／Vulkan，常駐距離白霧與隨天氣調整的全域／局部體積霧共用 atmosphere 設定；ForestFog 使用獨立外觀 RNG，按地形低處與實際步道路線高度建立 FogVolume，隨 chunk 回收。世界座標 3D 噪聲和柔化邊界控制局部濃淡，霧不參與碰撞、導航或怪物感知，也不改地形生成版本與物資。
 
-RV 車頂的 CabinAir 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 降級沿用 18–380 m 距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)。
+RV 車頂的 CabinAir 持有負密度排霧區，僅在安裝完成且可運作時啟用；獨立 World3D 室內副本不啟用室外體積霧。Compatibility 保留相同距離霧，不建立 FogVolume。地表紋理作為污痕資料遮罩採原始取樣，避免 Forward+ 的色彩空間轉換改變材質閾值。體積霧首版驗收見 [局部體積霧](docs/validation/2026-09-17-volumetric-fog.md)，目前設定見上方動態天氣段落。
 
 ### 正式戶外 D 風格
 
-前一輪霧效修正（目前保留為 Compatibility 降級）：原生 Depth 模式，18–380 m、curve 0.65、最大混合量 1，避免近景過早洗灰。天空 horizon_color 使用 source_color，與 Environment.fog_light_color 共用時段色彩（白天 a4aca9）；fog_sky_affect 為 0，天際線由天空本身匹配，高處只有低對比固定雲層。此 Compatibility 路徑沒有額外全螢幕霧後製或體積霧；Forward+ 的正式設定見局部體積霧小節。
+正式距離霧使用原生 Depth 模式，陰天 24–230 m、晴天 64–230 m、curve 1、最大混合量 1；自然天氣與載入保護可收近終點。天空 horizon_color 與 Environment.fog_light_color 共用時段及天氣色彩，fog_sky_affect 為 1，使遠處物體與天空一起被霧遮蔽。Compatibility 共用此路徑，僅省略體積霧。
 
 ForestMeshes 使用共用的不透明低模分枝網格與粗葉脈／樹皮材質；ForestScenery 將原有世界座標轉成 48m 格內局部座標，樹／灌叢裁切距離為 340m／160m、遲滯 16m。未改生成 RNG、實例數、樹位或碰撞。這是正式渲染更新，不需要存檔或生成版本升級。
 
@@ -283,7 +289,7 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 
 缺任一腿就改為低姿態水平膠囊（半徑 0.24 m，一腿長 1.4 m、無腿長 0.95 m）與匍匐動畫，胸腹低貼地面、前臂交替拉動、剩餘腿向後拖行。第一人稱眼位為根座標 (0, 0.58, -0.48)，平地實際眼高約 0.33 m，不繼承動畫搖擺；播放速率依每循環 0.34 m 手掌拉動、67% 支撐期及實際移速換算。初次由站立切入時以 0.45 秒倒地混合暫停主動位移，重力及 RV 支撐仍作用。雙臂可用時，一腿爬行 0.8 m/s、無腿 0.55 m/s；只剩一臂為 0.35 m/s，無臂為 0。缺腿禁止衝刺、跳躍、攀爬及駕駛；缺一臂禁止攀爬、大物持握及設備搬移，保留小物、維修與雙腿完整時的駕駛。雙臂缺失禁止拾取、使用、維修及駕駛，仍可看周圍、查看背包、丟棄及存入已有物品。失效中的操作取消，背包物品及 ID 保留；不追加失血扣血。
 
-檢查點的可選 `player.body={version:1,present:{五個部位:boolean}}` 保存存活缺肢，讀檔與跨 World3D 沿用原玩家部位，v5 缺欄位視為完整。死亡約兩秒後以快取的原站立碰撞檢查安全位置，成功才恢復全部部位、生命及能力；受阻持續等待。斷肢和血跡屬暫態效果，不寫入檢查點。
+檢查點必要的 `player.body={version:1,present:{五個部位:boolean}}` 保存存活缺肢，讀檔與跨 World3D 沿用原玩家部位，缺少欄位時拒絕載入。死亡約兩秒後以快取的原站立碰撞檢查安全位置，成功才恢復全部部位、生命及能力；受阻持續等待。斷肢和血跡屬暫態效果，不寫入檢查點。
 
 InteractRay 明確排除自己的玩家碰撞體，避免從較高相機往下看時命中自身膠囊。PlayerGrab 對蹲姿抓取者沿用駕駛座的 0.17 m 下拉分量，加上原 0.18 m 前拉仍在 0.25 m 上限內，保留球體掃掠與固定視角；怪物模型、骨長與原動作不變。
 
@@ -297,7 +303,7 @@ PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡�
 
 Raker 車撞效果只由 Monster 新接受撞擊後的 hook 觸發，沿用共用傷害／冷卻及 RV 結算。相對法向接近速度 ≥9 m/s（約 32 km/h；Raker.vehicle_knockdown_min_approach_speed 可調）或死亡切入 15 個 PhysicalBone3D；較輕撞擊保留 0.55 秒擊退；本輪驗證見 [門檻調整](docs/validation/2026-10-10-raker-impact-threshold.md)。切換延後至碰撞查詢結束，停用控制膠囊、動畫、頭手 IK、抓咬及 AI；物理骨承接當下姿態和撞擊速度。原始 GLB／54 骨／1.2 倍外觀不改，碰撞尺寸烘入放大倍率並抵銷 body_offset basis，保持物理 scale=1。碰撞層 128／mask 1，只與環境及車體接觸，不做布娃娃肢體互撞；CCD、關節限角及局部慣量維持原專案 60 Hz／Jolt 設定。初始手腳穿過車頭接觸面時，全姿態沿法線最多推出 1.2 m；撞擊點另有短粒子與程序音效。
 
-存活 Raker 倒地至少 2.5 秒且全部身體速度低於 1 m/s 持續 0.35 秒後，檢查附近下方支撐與完整站立淨空；受阻持續等待，以 0.8 秒姿勢混合起身。死亡將正在模擬的外觀與物理骨轉交獨立 CorpseProp，保留撞擊動量；舊 AI 殼於 18 秒後清理，屍體不隨之消失，支撐移除仍會下落。根位置跟隨骨盆，外觀世界座標獨立，避免重複位移並支援距離清理。WorldActorSnapshot 對戶外存活倒地怪新增可選 ragdoll 字典（外觀世界 transform、54 個骨局部 pose、骨盆速度），先驗證再恢復；v5 保存死亡屍體改以 Item 狀態保存，不列為存活怪物。讀檔保留倒地姿勢，肢體角速度和恢復計時不保存。驗收與輪驅重播見 [Raker 車撞布娃娃](docs/validation/2026-10-02-raker-impact-ragdoll.md)。
+存活 Raker 倒地至少 2.5 秒且全部身體速度低於 1 m/s 持續 0.35 秒後，檢查附近下方支撐與完整站立淨空；受阻持續等待，以 0.8 秒姿勢混合起身。死亡將正在模擬的外觀與物理骨轉交獨立 CorpseProp，保留撞擊動量；舊 AI 殼於 18 秒後清理，屍體不隨之消失，支撐移除仍會下落。根位置跟隨骨盆，外觀世界座標獨立，避免重複位移並支援距離清理。WorldActorSnapshot 對戶外存活倒地怪新增可選 ragdoll 字典（外觀世界 transform、54 個骨局部 pose、骨盆速度），先驗證再恢復；v6 保存死亡屍體改以 Item 狀態保存，不列為存活怪物。讀檔保留倒地姿勢，肢體角速度和恢復計時不保存。驗收與輪驅重播見 [Raker 車撞布娃娃](docs/validation/2026-10-02-raker-impact-ragdoll.md)。
 RakerGrab 是怪物的暫態抓取狀態機，PlayerGrab 持有唯一抓取者、輸入、HUD 與鏡頭鎖。0.36 秒前搖後重新驗證雙臂可達性和遮擋，再開始固定 1 秒倒數；6–10 次需求只抽一次，60% 以整數比例判定。咬合第 0.22 秒獨立扣血一次，避開一般受傷冷卻，同一 tick 解除存活玩家的輸入、鏡頭和 HUD；怪物自行進入 0.35 秒 RELEASE，死亡回呼重入清理時不重啟流程。Blender 咬合原在 0.38 秒，以 BITE_SPEED（0.38／0.22）同步加速，咬擊混合縮至 0.035 秒；伸手動畫以 0.6／0.36 倍速播放。玩家模式 GRABBED 優先於 SEATED，save/load 沿用 NORMAL gate 拒絕，無存檔欄位變更。駕駛事件和 Chassis 輪詢輸入都封鎖，仍保留車輛物理與鬆油門回收。雙方 tree_exiting、轉場、受傷、死亡、失去接觸／支撐、強制離座共用解除入口。
 
 達 100% 次數時完全掙脫並取得既有抓取免疫；60% 至未滿 100% 的咬擊固定扣 50 HP 並切左臂，左臂已缺失則升級為斷頭致死，未達 60% 直接咬頭致死。左臂咬擊不足 50 HP 時仍由生命歸零觸發死亡，不再額外重複傷害。`bite_part` 在倒數結束鎖定，傷害幀重新驗證缺肢與抓取者；嘴部和抓握使用同一左臂／頭部目標，爬行玩家拒絕新抓取並沿用爪擊。頭與斷臂可在口部短暫銜接，再交給獨立物理。
@@ -325,7 +331,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 ### Item 統一規格
 
-手槍與盒裝彈藥沿用 Item；`PistolRules` 集中容量、傷害、射速、射程、換彈與瞄準參數。`PlayerWeapon` 只擁有冷卻／換彈／瞄準暫態，背包 `state.pistol.loaded_rounds`／`state.ammo.rounds` 為唯一彈量來源，手持副本不回寫。換彈完成一次交易，按背包順序扣盒內發數、移除空盒，再以手槍 ID 保持選取。`ItemState` 驗證限定場景的整數範圍（手槍 0–12、彈藥盒 1–24），v5 保存版本保持，換彈暫態不保存。射線使用玩家所在 World3D，由視線與槍口遮擋檢查結算首個碰撞體；僅 Monster 接收傷害，Item／車體／牆阻擋。持槍姿勢沿用同一套真實手臂，視覺滑套／彈匣和音效不持有遊戲彈量。
+手槍與盒裝彈藥沿用 Item；`PistolRules` 集中容量、傷害、射速、射程、換彈與瞄準參數。`PlayerWeapon` 只擁有冷卻／換彈／瞄準暫態，背包 `state.pistol.loaded_rounds`／`state.ammo.rounds` 為唯一彈量來源，手持副本不回寫。換彈完成一次交易，按背包順序扣盒內發數、移除空盒，再以手槍 ID 保持選取。`ItemState` 驗證限定場景的整數範圍（手槍 0–12、彈藥盒 1–24），v6 保存版本保持，換彈暫態不保存。射線使用玩家所在 World3D，由視線與槍口遮擋檢查結算首個碰撞體；僅 Monster 接收傷害，Item／車體／牆阻擋。持槍姿勢沿用同一套真實手臂，視覺滑套／彈匣和音效不持有遊戲彈量。
 
 新增或修改可搬運物件沿用下列共用契約。原設備的功能腳本直接繼承 Item；引擎／電池仍須裝入相容插槽才能工作。固定 EngineBay／RearRamp 及車體結構保留各自施工／互動契約，不作為可拾取 Item。
 
@@ -351,7 +357,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 |---|---|---|
 | 背包 | PlayerInventory | `{name, is_large, scene_path, state}` 陣列、active_slot；state 保存 ID、condition、scrap_yields、回收結果及電池子型別資料 |
 | 玩家模式 | player.gd | NORMAL／PLACING／UI／SEATED／DEAD／GRABBED，由欄位推導優先模式，非完整集中狀態機 |
-| 玩家部位完整性 | PlayerBodyState | `version=1`／`present` 五個布林值；檢查點 `player.body` 可選，缺欄位恢復完整，與暫態斷肢及血跡分開 |
+| 玩家部位完整性 | PlayerBodyState | `version=1`／`present` 五個布林值；檢查點 `player.body` 必填，缺欄位拒絕載入，與暫態斷肢及血跡分開 |
 | 移動 | 各 actor | NORMAL／CLIMBING、附著 RV、前一 transform、接觸寬限、冷卻、RVSupport |
 | 怪物意圖 | Monster | WANDER／CHASE／ATTACK、追蹤玩家、攻擊目標 |
 | 車輛 | Chassis＋VehicleEnergy＋MaterialStorage | 控制、4 輪槽身分／耐久、引擎耐久代理、電池與材料；相容屬性轉送至專責狀態 |
@@ -377,7 +383,7 @@ TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟�
 
 WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z；v2–v4 只向 −Z 推進，v5+ 維護前後窗口並可回頭載入。WorldField 以世界座標計算有界平面曲線；道路高度取低頻地形需求，按 150 m 高度節點限坡，再 smoothstep 插值。WorldProfile 預設路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。seed_for(index, domain) 隔離道路、停靠、外觀、路線、裝飾、loot、敵人和副本亂數，入口 ID 為 v{generation_version}:world_seed:stop:index；重播的是生成配置，不是物理與 AI 時序。檢查點 v5 另存 generation_version（2–9），缺省為 2；新 WorldProfile 預設 6。v5 還原不改地形與 POI ID。
+串流比較室外玩家或副本錨點 Z，維護前後窗口並可回頭載入。WorldField 以世界座標計算有界道路曲線，WorldProfile 預設生成 v14、路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。獨立 RNG 域隔離道路、停靠、地形、外觀、物資及敵人，場址 ID 固定當前格式。Checkpoint v6 要求完整 profile 與 generation_version=14，不使用舊版預設。
 
 外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 
@@ -385,7 +391,7 @@ WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初�
 
 場址牆段依中心 Z 歸唯一 chunk；整地跨帶查詢同一計畫。玩家位於場址 bounds 或室內 stream_anchor 時，protected_bands 保留並補建停車區、路線及建築的區塊與 halo。ForestScenery 以獨立 RNG 的 8 m 網格抖動形成樹林，逐列分幀規劃，樹幹簡化碰撞也提供相鄰導航 halo；快取至多 16 個帶。ForestMeshes 快取四款不對稱針葉樹、兩款枯樹與三款灌叢，共九批 MultiMesh；forest_art_variants 獨立亂數只選外觀，不改既有樹位、碰撞與 seed。遠景左右及前方網格只提供視覺。新造景延續分幀建立，build_ms／max_slice_ms 記錄成本。
 
-室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。GameSettings autoload 管理全域顯示、輸入與音量偏好；Esc SettingsMenu 是設定入口，F8 不再處理顯示。值在載入與寫入時檢查型別、有限值及範圍；缺漏或非法持久化欄位各自回預設。偏好寫入獨立 ConfigFile，不進角色／車輛或 Checkpoint 快照，短時間多次滑桿變更合併保存，關閉選單時 flush，錯誤由 save_completed 與 last_save_error 回報。舊 display_preferences.cfg 的 retro=false 遷移至手動 100% 解析度及關閉復古色調，retro=true 保留舊室外 540p 模式及色調。
+室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。GameSettings autoload 管理全域顯示、輸入與音量偏好；Esc SettingsMenu 是設定入口，F8 不再處理顯示。值在載入與寫入時檢查型別、有限值及範圍；缺漏或非法持久化欄位各自回預設。偏好寫入獨立 ConfigFile，不進角色／車輛或 Checkpoint 快照，短時間多次滑桿變更合併保存，關閉選單時 flush，錯誤由 save_completed 與 last_save_error 回報。偏好僅使用目前設定格式，舊顯示設定不遷移。
 
 register_viewport 把 3D 縮放、抗鋸齒與陰影品質套用到主 viewport 及新建立的室內 SubViewport。舊解析度模式維持室外目標高度 540、最高 1，室內原生解析度；手動 50–100% 解析度同時套用室內外。復古色調與解析度分開，亮度／對比／飽和度使用 3D 後製，Canvas UI 保持清晰。品質預設只修改解析度、抗鋸齒、陰影與霧，其他欄位不變，個別品質調整後保留「自訂」來源，即使數值又與預設相同也不自動改回；此來源隨偏好保存，只有明確選取預設或重設顯示頁才切回預設。霧品質只影響體積霧，不改距離霧、WorldClock 天氣或光照；Compatibility 的體積霧控制不可用。視窗模式使用確認倒數，取消或逾時回復原設定；headless 不可驗證原生視窗輸出。
 
@@ -399,13 +405,13 @@ SettingsMenu 不設定 SceneTree.paused，玩家 settings_open 是額外輸入�
 
 `PoiInterior` 統一組裝、封牆、導航、探索、出生／出口與玩家掉落物保存。未接通 socket 的門框移除，牆板留在自身占地內，避免共享可見面閃爍。導航發布 immutable mesh 並等待 region／map 同步。`BunkerContent` 在初訪用獨立 RNG 配置深處一具 70% 耐久強化引擎，以及上限 2–12 件散落物、1–5 個各含兩件小型物資的補給箱；合法位置不足時不強行達標。敵人生成最多嘗試 `clamp(房間數 / 15, 1, 4)` 個合格房間，每次獨立以 30% 機率從可擴充候選池選出 Raker，因此可沒有敵人，也可有多隻。合格房間避開入口 24 m 房間連接距離及 18 m 空間距離。`BunkerCache` 使用靜態碰撞與分離視覺；玩家長按 E 1 秒，一次領一件，背包拒收不刪物。地圖按實際占用及保存層距繪製 B1–B3，HUD 顯示引擎與返回提示。
 
-保存實際布局與內容，不依 seed 重抽；`CheckpointSchema` 驗證逐房版本、接口對齊、占用、連通、內容與補給箱快照。剩餘補給品保留 Item 完整狀態與 ID，活 actor 保留位置及生命；既有布局不補抽新物資。新增目錄／修改權重不改變已訪布局，缺失或不支援版本拒絕。Checkpoint 只接受 v5，不再轉換或清除 pre-bunker 舊資料，舊檔保持原樣。原生成器／專用資產已移除。詳見 [地堡契約](docs/guides/bunker-interior.md)。
+保存實際布局與內容，不依 seed 重抽；`CheckpointSchema` 驗證逐房版本、接口對齊、占用、連通、內容與補給箱快照。剩餘補給品保留 Item 完整狀態與 ID，活 actor 保留位置及生命；既有布局不補抽新物資。新增目錄／修改權重不改變已訪布局，缺失或不支援版本拒絕。Checkpoint 只接受 v6，不再轉換或清除 pre-bunker 舊資料，舊檔保持原樣。原生成器／專用資產已移除。詳見 [地堡契約](docs/guides/bunker-interior.md)。
 
 PoiInstanceManager 在入口互動後鎖定玩家輸入、建立 own_world_3d 的 SubViewport，完成載入後 reparent 原玩家與 UI。根 CanvasLayer 顯示 viewport texture，輸入轉交子 viewport，視窗縮放同步。室內設定開啟時，根合成層由 20 提升至 60 並隱藏室外 POI 標題；關閉後恢復，避免室外 HUD 蓋住選單。正常退出先保存室內 Item、活怪與補給箱的完整剩餘狀態，再把原玩家移回主世界並檢查返回落點，釋放副本幾何。saved_instances 供同局重返重建相同布局與內容；室外檢查點把這份資料一併寫入磁碟。非活動副本不繼續模擬。轉場有明確狀態與操作序號；離場取消沿共用安全收尾路徑保存室內狀態、恢復控制並清理暫建 viewport。
 
 WorldEntities.same_world 用於群組選敵、碰撞例外及串流清理；怪物每 physics tick 清掉跨世界的快取玩家目標。只有原玩家與背包透過入口轉移；原設備作為背包 Item 可帶進地堡並放置。實例快照共用 Item／Monster，保存室內散落與固定物品，未連接 RV 的原設備不提供車輛服務。
 
-地堡新增 16 個房間內容版本 2，舊版定義停用生成但保留解析，布局仍為 version 3。新版家具碰撞獨立於 Visuals/Model；封牆沿用所在房間的牆／塗裝材質。BunkerLighting 以保存 seed、room ID 與固定版本字串做 SHA-256 排序，選出四捨五入後 60% 的普通模組熄燈，排除 entry／stairs；不消耗布局或內容 RNG，不增加存檔欄位。舊房間內容版本 1 保留原照明。
+地堡新增 16 個房間內容版本 2，只接受目前內容版本，布局仍為 version 3。新版家具碰撞獨立於 Visuals/Model；封牆沿用所在房間的牆／塗裝材質。BunkerLighting 以保存 seed、room ID 與固定版本字串做 SHA-256 排序，選出四捨五入後 60% 的普通模組熄燈，排除 entry／stairs；不消耗布局或內容 RNG，不增加存檔欄位。舊房間內容版本直接拒絕。
 
 Flashlight 是小型 Item，初始世界以場景實例放在地面。`state.flashlight={charge,on}` 使用獨立欄位，不能混用 RV 的 `state.battery`；VehicleSnapshot 驗證有限 0–100 電量和開關型別，SaveSceneCatalog 明確登錄場景。玩家背包狀態為耗电真值，手持節點只鏡射 Spotlight；在 NORMAL、選取且可見照明時按 100/300 每秒扣電。PlayerGrab 在抓取開始前記錄實際亮燈狀態；原本亮著的手電筒在 GRABBED 期間保持可見、正常耗電，由持物姿勢將燈頭朝向抓取者臉部，解除後恢復一般朝向。切換、丟棄及倉庫移轉在序列化前關燈；模式暫停不耗電。讀檔用原 actor 替換流程清除初始地面實例，不另補發。
 
@@ -421,7 +427,7 @@ BatterySocket 繼承 Item 並保存 installed_battery；VehicleEnergy 透過弱�
 
 底盤直接保存 current_fuel/max_fuel；FuelPort 只提供加油交易，拆除、損壞或多裝入口均不改變存量／容量。BatterySocket 交換先檢查新電池與舊電池去處，滿背包使用原槽位；沒有有效插槽就沒有隱藏電量。
 
-Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依平板設定執行內建充電 → 電池待機支出 → 工作站 step_work。充電預設啟用，門檻 80%、燃油保留 5；每秒最多發電 1.8、額外耗油 0.6，並另計引擎燃油。電量不高於門檻時開始充電，滿電或達到保留油量時停止額外充電；無油停止引擎。v5 檢查點以可選 charging 字典保存設定，缺少時採用新車預設；舊版便攜發電機記錄驗證拒絕，不遷移。玩家進副本時室外照常模擬。
+Chassis 物理步呼叫 VehicleEnergy：扣引擎油耗 → 依平板設定執行內建充電 → 電池待機支出 → 工作站 step_work。充電預設啟用，門檻 80%、燃油保留 5；每秒最多發電 1.8、額外耗油 0.6，並另計引擎燃油。電量不高於門檻時開始充電，滿電或達到保留油量時停止額外充電；無油停止引擎。v6 檢查點以必要 charging 字典保存設定；舊版便攜發電機記錄驗證拒絕，不遷移。玩家進副本時室外照常模擬。
 
 Item 或屍體所屬 PhysicalBone 進 HopperArea → Scrapper 解析整具屍體並取得唯一 processing_owner，保存物理快照 → 一個處理槽分步付費 → 固定一次回收結果 → MaterialStorage 接受後才刪物。缺電保留進度；滿庫保留完成結果；供電／佇列可用時重試料斗內尚未接收的重疊物；拆卸／摧毀恢復輸入物理。
 
@@ -433,7 +439,7 @@ service.inputs 可選 feed.start／feed.pose 保存完整局部變換；大型�
 
 CorpseProp（`props/corpse.tscn`）共用玩家／Raker 的既有模型、碰撞體與關節。凍結的第 2 層球形代理跟隨骨盆，提供 E 拾取及分解機偵測；鬆散屍體以第 8 層 PhysicalBone 模擬落地。大型道具需要雙手並鎖定手持欄位，沿用背包／倉庫規則。手持時仍由 PhysicalBone、關節與重力模擬完整骨架；手部目標使用頻率 36 的臨界阻尼速度追隨及移動目標前饋。屍體支撐中心依骨盆與胸部物理骨中點配置於玩家局部 `(0, 1.52, -0.37)`，兩處均受支撐並將質量提高為 6 倍；所有手持骨線性阻尼為 0.6、角阻尼至少 2.8。即時髖部／胸部底緣抓握標記隨骨架更新，並先於玩家手臂 IK 套用。G 丟棄、保存及回收沿用既有物理姿勢流程；佇列等待時停止物理骨；付費進料先同步建立 processing 等候階段，再恢復骨段碰撞與模擬，逐段吸入，避免稍後執行的接管回呼重新關閉已啟動的模擬。ScrapperFeedMotion 對每個骨段的八個碰撞角點檢查料斗範圍；完整進入口且抵達刀齒後才關掉該骨段碰撞，抵達刀齒後解除該段與相鄰骨段的關節；Godot 4.7.2 的 joint_type=NONE 不清除既存伺服器約束，故保留物理姿勢／速度並透過移出、重新加入節點清除。全部低於切割面才停止模擬，將已吞入骨移到非 simulator 的 ConsumedBones；節點留存直到整具屍體刪除，避免父骨刪除後的快取指標與重啟時後代骨重新模擬。剩餘骨重啟後還原實際姿勢／速度，已吞入皮膚固定世界姿勢。仍在邊框外的骨段保持碰撞；所有骨段吞入後才能完成回收。取消重建完整屍體物理，完成才刪除。玩家／怪物屍體均產出 Unknown Material 2–4、Unrefined Fuel 1–2。
 
-屍體 `state.corpse` v1 保存類型、五部位狀態、骨架相對道具的 transform、41／54 個局部骨姿勢；驗證類型、拓樸、有限變換與大型旗標。既有 Item 流程涵蓋背包、道具箱、世界、副本及分解輸入，納入 v5 Item 保存；不保存各肢體角速度或手持暫態。屍體不再按死亡秒數消失，但仍受世界既有距離串流／場址保存規則影響。測試及可見驗收見 [屍體搬運與分解](docs/validation/2026-10-04-corpse-props.md)。
+屍體 `state.corpse` v1 保存類型、五部位狀態、骨架相對道具的 transform、41／54 個局部骨姿勢；驗證類型、拓樸、有限變換與大型旗標。既有 Item 流程涵蓋背包、道具箱、世界、副本及分解輸入，納入 v6 檢查點保存；不保存各肢體角速度或手持暫態。屍體不再按死亡秒數消失，但仍受世界既有距離串流／場址保存規則影響。測試及可見驗收見 [屍體搬運與分解](docs/validation/2026-10-04-corpse-props.md)。
 
 RecipeDefinition/RecipeCatalog 定義七個配方（汽油罐、兩款電池、輪胎、兩款引擎與引擎維修包）。平板只 request_craft，工作站檢查有效性／完整電費並預留材料，進度逐步耗電；取消退材料，已用電不退。完成後檢查出料空間才生成；堵塞保留待出料工作。spawn_item 的即時介面也在完整驗證後扣材料與電費，失敗回復。成品屬於本世界 WorldEntities，繼承 RV 點速度；製作電池初始電量為零。
 
@@ -443,17 +449,17 @@ MaterialStorage 保存底盤數字材料，material_capacity 預設 300；容量
 
 控制仍由 Chassis 集中協調，未另做 VehicleController 類別。引擎狀態與入座分離，方向鍵遙控只可由測試明確啟用。輪槽常駐，即使沒有輪胎仍可射線互動；輪胎 ID／condition 在拆裝間保留。RepairOperation 累計持續瞄準時間，一般設備／輪胎完成才扣 2 Metal Parts 並補 60 HP；引擎另用專用維修包；切換目標、移動車輛、發動引擎或中斷免費取消。
 
-Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects，Checkpoint／VehicleSnapshot 版本均為 5；先寫 .tmp、flush 並讀回比對，將上次有效檔備份為 .bak，再 rename 至 user://rv_checkpoint_v5.save。只接受 v5，v1–v4 拒絕並提示重新開局；不遷移這些版本或修改來源檔／備份。讀取透過 CheckpointSchema 與 SaveSceneCatalog 驗證格式、值域、巢狀 POI、場景根類別、結構槽位及支撐引用與循環；磁碟錯誤按階段回報。
+Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects，Checkpoint／VehicleSnapshot 均為 v6；先寫 `.tmp`、flush 並讀回比對，上次有效檔備份為 `.bak`，再 rename 至 `user://rv_checkpoint_v6.save`。舊版本直接拒絕，不執行遷移或舊路徑偵測。CheckpointSchema 與 SaveSceneCatalog 驗證完整欄位、值域、POI、場景根類別、槽位、支撐引用及循環；磁碟錯誤按階段回報。
 
 F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等待地形與導航就緒，再套用 actors；原世界直到提交成功才釋放。WorldEntities.transfer 保留設備的支撐、電池和工作生命週期。失敗或逾時恢復原世界，來源存檔不變。
 
-檢查點包括玩家背包／位置／生命、世界 seed／profile／有效 bands、RV、鬆散 actors 與已訪 POI 記憶。主場景 enter_tree 先配置保存的地形範圍，生成時跳過動態物資；ready 先按槽還原車體結構，再建立設備、接回支撐、電池、輪胎、油料、材料及工作，最後恢復模擬。車輛 structures 保存槽位、型態、耐久及門角度，校驗唯一占用、相容型態、有限耐久與角度；毀壞槽位不自動補回。Item support 保存 kind=chassis＋rv、kind=item＋id、kind=structure＋rv／slot 或 kind=static＋相對場景錨點路徑；拒絕相依循環，已失效的合法支撐令物品恢復散落。分解機輸入不重複列入室外 actors，電池只存於設備 service；道具倉庫與底盤容量沿用現有資料。沒有舊版遷移、室內直接保存或多槽；世界生成 v5+ 仍保存休眠 walk-in 場址，尚未提供場址外所有散落物的永久歷史恢復。
+檢查點包括玩家背包／位置／生命、世界 seed／profile／有效 bands、RV、鬆散 actors 與已訪 POI 記憶。主場景 enter_tree 先配置保存的地形範圍，生成時跳過動態物資；ready 先按槽還原車體結構，再建立設備、接回支撐、電池、輪胎、油料、材料及工作，最後恢復模擬。車輛 structures 保存槽位、型態、耐久及門角度，校驗唯一占用、相容型態、有限耐久與角度；毀壞槽位不自動補回。Item support 保存 kind=chassis＋rv、kind=item＋id、kind=structure＋rv／slot 或 kind=static＋相對場景錨點路徑；拒絕相依循環，已失效的合法支撐令物品恢復散落。分解機輸入不重複列入室外 actors，電池只存於設備 service；道具倉庫與底盤容量沿用現有資料。沒有舊版遷移、室內直接保存或多槽；目前仍保存休眠 walk-in 場址，尚未提供場址外所有散落物的永久歷史恢復。
 
 ### 攀爬與戰鬥
 
-玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v5 新增可選 bool `player.crouching`，舊檔缺欄位為站立，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，存檔錯誤與恢復由 `test_checkpoint_failures` 覆蓋，完整蹲姿行為需另行驗收。
+玩家蹲下由 `Player.crouching` 管理，與缺腿觸發的 `is_crawling()` 分開。按住 Ctrl 接地進入，速度 2 m/s；膠囊高度 1.05 m，保持原半徑與腳底。放開後查詢站姿空間，阻擋時維持蹲姿；禁止蹲跳、衝刺與攀梯。UI／抓取凍結姿勢所有權，受傷爬行優先，入座與重生清除蹲姿。Checkpoint v6 要求 bool `player.crouching` 及完整身體、體力與耗盡旗標，恢復時先套碰撞體以支援低處讀檔。`Locomotion` 播放獨立 `crouch` 動畫庫並平滑降低視角 0.58 m，持物層沿實際肩高調整；原骨架、蒙皮與網格不變。動作資產見 [蹲下動畫](assets/animations/player/README.md)，存檔錯誤與恢復由 `test_checkpoint_failures` 覆蓋，完整蹲姿行為需另行驗收。
 
-玩家只能從 RVLadder 兩端進入攀爬；牆面命中不再授權玩家攀車。RVLadder 繼承 Item，side_door_ladder／roof_ladder 使用原設備搬移、取消、支撐依賴、耐久及 v5 保存，登錄獨立 rv_ladders 群組。W 上爬、S 下爬、Space 脫離，A/D 不橫移；起點以完整膠囊腳底校正，進出梯與每步移動使用實體掃掠。登頂必須有真實可站立支撐，關門及封住開口均會阻擋。攀爬按 RV transform 差追蹤平移與旋轉，梯子搬移／毀損／失去支撐即安全脫離並繼承平台速度。梯子在兩種放置模式均保持背面 -Z 貼牆、+Z 朝外；牆面原始射線命中及細移直接決定位置，不重寫接觸點、不提供預設錨點。只接受近乎垂直的真實牆面，地板、天花板和活動門扇拒絕安裝；靜態牆面安裝歸 WorldEntities，避免支撐卸載時連同梯子被釋放。
+玩家只能從 RVLadder 兩端進入攀爬；牆面命中不再授權玩家攀車。RVLadder 繼承 Item，side_door_ladder／roof_ladder 使用原設備搬移、取消、支撐依賴、耐久及 v6 保存，登錄獨立 rv_ladders 群組。W 上爬、S 下爬、Space 脫離，A/D 不橫移；起點以完整膠囊腳底校正，進出梯與每步移動使用實體掃掠。登頂必須有真實可站立支撐，關門及封住開口均會阻擋。攀爬按 RV transform 差追蹤平移與旋轉，梯子搬移／毀損／失去支撐即安全脫離並繼承平台速度。梯子在兩種放置模式均保持背面 -Z 貼牆、+Z 朝外；牆面原始射線命中及細移直接決定位置，不重寫接觸點、不提供預設錨點。只接受近乎垂直的真實牆面，地板、天花板和活動門扇拒絕安裝；靜態牆面安裝歸 WorldEntities，避免支撐卸載時連同梯子被釋放。
 
 接梯需面向梯子（dot ≥ 0.8），左右誤差不超過 0.25 m；下端向外接近範圍為攀爬線外 0.22 m，上端以實際落腳點前後 0.25 m 判斷。进入攀爬只建立狀態，不立即改位置；ENTRY 以 1.4 m/s 逐步抬腳、對齊，每步實體掃掠並跟隨車輛，鬆開 W/S 暫停。攀升／下降為 1.6 m/s。到頂進入 TOP，持續 W 不再跨出；先放開移動鍵，再以玩家面向和 WASD 控制水平移動。腳下真實支撐確認後，只做垂直 LANDING 落地，不朝 top_landing_point 推送，也不播放頂端前傾收手動畫。離開梯頂可觸及範圍而無支撐時恢復重力，Space 可隨時脫離。當前行為見 [手動離梯](docs/validation/2026-10-06-ladder-manual-exit.md)；先前接近手感驗收見 [接梯手感修正](docs/validation/2026-10-06-ladder-transitions.md)。
 
@@ -486,7 +492,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 #### 分片結構、槽位與門扇
 
 - `RVStructureSlots` 由底盤持有十一個永久槽：六側面、前、後、三片屋頂，保存各槽設定型態與毀壞狀態，並持有本車唯一施工控制器。`get_equipment()` 只列一般設備，`get_structures()` 與 `structure_changed` 提供結構查詢、重量、介面及外觀刷新。地板沒有結構槽位或平板操作。
-- 屋頂型態共用同一施工交易與比例耐久；平板按槽可選型態數量提供變更按鈕，不限制側牆。三片總屋頂重量 150 kg，破壞與附掛釋放獨立；地板固定於底盤，不參與施工。現行 v5 保存十一槽；既有 v5 十二槽快照經驗證後，載入時移除舊 floor 狀態並將該地板上的固定 Item 支撐轉為底盤，其他牆、屋頂及門狀態保留，轉換使用深拷貝，來源資料與檔案不改寫。舊 floor 及支撐仍須完整驗證；已毀壞的舊地板若仍有固定物品依附、地板或支撐資料畸形，則拒絕載入。v1–v4 與十槽／單一 roof 資料仍拒絕。
+- 屋頂型態共用同一施工交易與比例耐久；平板按槽可選型態數量提供變更按鈕，不限制側牆。三片總屋頂重量 150 kg，破壞與附掛釋放獨立；地板固定於底盤，不參與施工。現行 v6 僅保存十一槽；舊地板／單一屋頂格式直接拒絕，不轉換支撐或移除舊資料。
 - `RVStructurePanel`（`equipment/rv_panel.gd`）直接繼承凍結 `RigidBody3D`；`RVStructureDefinition` 是獨立 Resource，提供穩定型態 ID、槽型、場景、耐久、重量、施工參數及允許轉換。均不繼承設備類別。沒有 F 放置或 H 維修契約；`take_damage()` 逐片受傷，歸零移除外觀／碰撞／攻擊資格但保留空槽。
 - `rv_door.gd` 繼承結構類別；門框和可旋轉門扇碰撞同屬根剛體，共用耐久。E 開關與各葉角度保留，開關預檢完整掃掠路徑，動畫中逐步複查阻擋。怪物門框選敵使用結構契約。
 - 設備支撐可為底盤、Item 或 RVStructurePanel；板件毀壞發送 removing，附掛設備停機並以車輛點速度連鎖掉落。地板網格與碰撞屬底盤固定部分，重量包含在固定底盤中，不提供獨立耐久或施工；安裝在地板的物品直接引用底盤支撐。
@@ -509,7 +515,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - DriverSeat 鏡頭局部高度 1.62 m，高於儀表台上緣 1.33 m；調整駕駛姿勢時須保留前方路面視線。預設視角中車頭前 15／25／40 m 路面與不透明網格遮擋的歷史檢查見 [駕駛艙驗收](docs/validation/2026-09-16-rv-cockpit.md)；變更後須另行確認原生畫面。
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
 - RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](rv/visuals/README.md)。
-- v5 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
+- v6 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
 - CraftingStation 依實際產物根層碰撞檢查出料空間，以產物旋轉後碰撞 AABB 底部計算出料高度。一般物品依空間嘗試原姿與兩軸 90 度平放，選擇有台面支撐的小幅偏移；工作保存固定姿態，預覽與實體共用變換，輪胎可在完整房車頂下平放交付。選姿保留牆頂與機台碰撞，暫時占床的未固定物品不改變下一件姿態；交付仍檢查全部碰撞。完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
 - CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。完成／取消時水平兩軸以 0.65m/s 平滑回位，停靠後才以 0.45m/s 下降；偏移成品的加工路徑仍限制在實體滑軌行程內。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證；入口與範圍見 [製作台與身體切換驗證](docs/validation/2026-10-11-fabricator-print.md)。
 
@@ -521,7 +527,7 @@ EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前�
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。[本輪動畫與驗證](docs/validation/2026-10-10-rv-engine-hatch.md)。
 
-VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，舊 work 請求欄位僅保留存檔相容；Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的可選 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
+VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個一次性空間音源，操作提交後觸發並有節流；僅引擎視覺子樹可震動。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的必要 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。音源來源見 [音效說明](assets/audio/README.md)。
 
 [test_rv_engine](tests/test_rv_engine.gd) 保留預裝、引擎所有權、交換、維修、性能、車燈、保存及製作檢查；終端呈現、坡板與駕駛姿勢需另行驗收。可見入口為 `rv_rebuild_playground.tscn`。
 
@@ -538,8 +544,8 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 - 控制、輪槽與登錄仍共用 Chassis；能源、材料、保存已抽離，後續可按需求再拆控制／掛載服務。
 - 配方出料使用產物根層的實際碰撞形狀檢查；新增產品需驗證碰撞配置與出料淨空。
 - 簡化載重加總底盤、存活車體結構、已安裝引擎與有效的已安裝設備，並依位置計算重心；電池本體、抽象材料、庫存道具、燃油與鬆散貨物不納入車體質量。插槽與倉庫設備本體仍計重；游離道具保留既有剛體行為。BatteryState.weight 保留供道具物理使用，VehicleSnapshot 載入後以同一 update_load 重算車重，無需存檔遷移。首版檔位不模擬離合器／轉速。
-- 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；v2–v4 仍單向串流；v5 可回程載入。
-- 隨機地堡有 16 個啟用的廢棄房型與保留的 16 個舊版定義，已增加家具、表面破損及暗房；九類複雜設備仍以灰盒等待建模交付。完整地表設施、更多物資／敵人變化與長局平衡仍未製作。本次驗收見 [場景與手電筒](docs/validation/2026-09-29-bunker-art-flashlight.md)。
+- 保存只支援室外檢查點，沒有多人所有權、室內直接保存或多槽；目前支援往返串流。
+- 隨機地堡只使用 16 個當前 content_version=2 廢棄房型，已增加家具、表面破損及暗房；九類複雜設備仍以灰盒等待建模交付。完整地表設施、更多物資／敵人變化與長局平衡仍未製作。本次驗收見 [場景與手電筒](docs/validation/2026-09-29-bunker-art-flashlight.md)。
 - 真實輪驅與停車倒車測試通過，但燃油關閉的測試場不是長途資源平衡證據；未宣稱全部玩法與模擬步組合完成驗收。
 
 
@@ -549,7 +555,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### POI 資產層與副本驗證
 
-`PoiDefinition`（`world/poi_definition.gd`）及 `world/poi_definitions/*.tres` 統一兩類 POI 的 ID、場景、場址範圍、入口路徑及室內 profile。POIConfig.DEFINITIONS 是資產目錄；GENERATION_IDS 是保留原順序的 v3／v4 生成池，兩者分開。POISpawner 與 chunk 鄰帶導航共用 scene_for_site，未知 ID 不退回預設；無 exterior 的舊場址解析至 maintenance_legacy。生成時只為 INSTANCE_ENTRANCE 註冊 PoiInstanceManager；入口與返回路徑由定義傳入 metadata，未使用定義的 caller 保留原節點路徑預設。v5 的 WalkInSites 使用定義 site_bounds 整地、清空植被及保護跨帶場址；舊場址規則不變。戶外保存記錄 content_version，不支援的版本拒絕載入，尚無自動佈局遷移。詳見 [共用規範](docs/guides/poi-authoring.md)。
+`PoiDefinition`（`world/poi_definition.gd`）及 `world/poi_definitions/*.tres` 統一兩類 POI 的 ID、場景、場址範圍、入口路徑及室內 profile。POIConfig.DEFINITIONS 是資產目錄；GENERATION_IDS 是保留原順序的 v3／v4 生成池，兩者分開。POISpawner 與 chunk 鄰帶導航共用 scene_for_site，未知 ID 不退回預設；場址必須指定已登錄的 exterior。生成時只為 INSTANCE_ENTRANCE 註冊 PoiInstanceManager；入口與返回路徑由定義傳入 metadata，未使用定義的 caller 保留原節點路徑預設。v5 的 WalkInSites 使用定義 site_bounds 整地、清空植被及保護跨帶場址；戶外保存記錄 content_version，不支援的版本拒絕載入，尚無自動佈局遷移。詳見 [共用規範](docs/guides/poi-authoring.md)。
 
 加油站 `fuel_pump.tscn` 以 `Visuals/Model` 實例化 `assets/models/gas_station/fuel_pump.glb`，Collision 保留原三塊 BoxShape3D，字樣仍由 Godot 維護。GLB 不帶碰撞或行為；來源為 `scripts/build_fuel_pump_glb.py`。測試場 F7 只切換新舊 Visuals，原碰撞物件不重建。尺寸、匯入比例、碰撞及探索的歷史專項結果見 [加油站驗收](docs/validation/2026-09-19-gas-station.md)。
 
@@ -557,7 +563,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 `world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。所有副本使用 InteriorProfile 登錄的 16 個地堡模組；舊副本專用資產與展示場已移除。
 
-物資標記只提供 caller RNG 的抽選契約；初訪地堡由 BunkerContent 使用獨立 RNG 安置內容，BunkerCache 保管未領取物件。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。首批來源 `build_bunker_kit.py` 拒絕覆蓋既有 kit。詳見 [製作規格](world/poi_kit/README.md)。
+物資標記只提供 caller RNG 的抽選契約；初訪地堡由 BunkerContent 使用獨立 RNG 安置內容，BunkerCache 保管未領取物件。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。只供舊版房型生成的 `build_bunker_kit.py` 已移除。詳見 [製作規格](world/poi_kit/README.md)。
 
 房型接口、跨接縫、seed 掃描、大型搬運及完整室內導航屬歷史專項驗收；現行自動測試保留 [POI 轉場取消與保存](tests/test_poi_transition_persistence.gd)。實機觀察與自動檢查分開記錄。
 
@@ -565,7 +571,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 [scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的 16 支 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
 
-舊版本相容性專項、全 seed 掃描、逐姿勢美術與展示場自測已退出自動清單；遊戲相容分支與手動場景仍保留。歷史驗收結果保持原日期與範圍，不能當作本次通過證據。完整保留清單與命令見 [測試指南](tests/README.md)。
+舊版本相容性專項、全 seed 掃描、逐姿勢美術與展示場自測已退出自動清單；手動場景仍保留，舊存檔相容分支已移除。歷史驗收結果保持原日期與範圍，不能當作本次通過證據。完整保留清單與命令見 [測試指南](tests/README.md)。
 
 以 `-TestFilter` 選取檔名或逗號分隔的樣式時，只跑符合的保留測試；`-Smoke` 可加上主世界檢查，`-SmokeOnly` 只跑 smoke。`-List` 不啟動引擎；同一批已匯入資產可用 `-SkipImport`。每支測試以獨立 Godot 程序執行，固定 60 fps 模擬排程不修改物理 Hz、time_scale 或求解器，`-RealTime` 可作實時對照。等待背景工作使用 `tests/support/test_wait.gd` 的條件與期限，仍保留有意義的物理採樣時段。
 
@@ -583,11 +589,11 @@ Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`�
 
 ### v6 路邊小 POI
 
-歷史 v11 主場景使用 v6 小 POI 規則；v7／v8／v9／v10／v11 沿用該規則，共用 profile 與測試世界預設 v6，v2–v6 分支保留原 seed、場址、物資與舊資產。`MinorSites` 獨立規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v版本:seed:minor:cell`，v6 保留原 `v6:` 前綴。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。v6 不再生成固定 index % 3 == 2 的舊小點，該 stop 查詢返回空字典。
+`MinorSites` 以獨立 RNG 規劃每 1,200 m 區間的小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用 `v14:seed:minor:cell`。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。
 
 `WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 
-`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首訪抽取物資與敵人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。卸載與復原沿用 outdoor_sites／WorldActorSnapshot，無第二套保存資料。Checkpoint 格式為 v5，另存 generation_version（含 6）；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [本輪驗收](docs/validation/2026-09-26-minor-pois.md)。
+`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首訪抽取物資與敵人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。卸載與復原沿用 outdoor_sites／WorldActorSnapshot，無第二套保存資料。Checkpoint 格式為 v6，要求 generation_version=14；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [本輪驗收](docs/validation/2026-09-26-minor-pois.md)。
 
 ### v5 加油站保存基礎（v6 沿用）
 
@@ -595,4 +601,4 @@ Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`�
 
 WorldGenerator v5 維護前後載入窗口、場址 pinned bands 及 generated_bands，回程重建不重抽小補給點。加油站初次用獨立 walk_in_loot RNG 讀取標記；靜態資產仍不生物資。卸載 owner band 前，WalkInSites 收集 bounds 內主世界的散落或固定 Item／活怪，保留完整 transform、狀態及速度，釋放活動 actor；回程只還原保存的剩餘物件。搬入後丟下的物品也包含在內，車輛及車上設備／庫存不歸場址。
 
-Checkpoint v5 保存可選 outdoor_sites／generated_bands；活動物件只放 actors，休眠場址只放 outdoor_sites，WorldActorSnapshot 共用驗證／建立／捕捉契約。EngineState 的全樹唯一性檢查涵蓋休眠物件。v5 還原不改版圖；戶外 content_version 不符拒絕還原。加油機尚無燃油交易功能，遠離場址的普通散落物仍沿用既有遠距清理規則。
+Checkpoint v6 要求 outdoor_sites／generated_bands；活動物件只放 actors，休眠場址只放 outdoor_sites，WorldActorSnapshot 共用驗證／建立／捕捉契約。EngineState 的全樹唯一性檢查涵蓋休眠物件。戶外 content_version 不符拒絕還原。加油機尚無燃油交易功能，遠離場址的普通散落物仍沿用既有遠距清理規則。

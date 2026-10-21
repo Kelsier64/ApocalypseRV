@@ -14,7 +14,7 @@ var room_count := 0
 var target_floors := 0
 var instance_id := ""
 var populate_content := true
-var content: Dictionary = {}
+var content: Dictionary = {"version": BunkerContent.VERSION, "cargo_id": "", "cargo_room": ""}
 var caches: Array[Node3D] = []
 var explored: Array[String] = []
 var build_msec := 0
@@ -43,7 +43,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	environment.environment.background_color = Color("111511")
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color("afb9a3")
-	environment.environment.ambient_light_energy = BunkerLighting.AMBIENT_ENERGY if BunkerLighting.is_abandoned(layout) else BunkerLighting.LEGACY_AMBIENT_ENERGY
+	environment.environment.ambient_light_energy = BunkerLighting.AMBIENT_ENERGY
 	add_child(environment)
 	var adaptation := NightVisionEffect.new()
 	adaptation.name = "DarkAdaptation"
@@ -80,8 +80,8 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	if not await _bake(): return false
 	if saved.has("actors"):
 		# An existing empty bunker stays empty. Never populate on reentry.
-		content = saved.get("content", {}).duplicate(true)
-		for state: Dictionary in saved.get("caches", []):
+		content = saved.content.duplicate(true)
+		for state: Dictionary in saved.caches:
 			var cache = preload("res://world/instances/bunker_cache.tscn").instantiate()
 			cache.restore_state(state)
 			navigation.add_child(cache)
@@ -104,7 +104,7 @@ func spawn_transform() -> Transform3D:
 	return rooms[0].get_node("Walkway/Spawn").global_transform
 
 func _set_floor_signs(room: PoiRoom, definition: InteriorRoomDefinition) -> void:
-	if definition.content_version < 2 or definition.role != &"stairs": return
+	if definition.role != &"stairs": return
 	var lower_floor := 1 + roundi(-room.position.y / float(layout.floor_spacing))
 	var upper := room.get_node_or_null("Visuals/UpperFloorSign") as Label3D
 	var lower := room.get_node_or_null("Visuals/LowerFloorSign") as Label3D
@@ -227,11 +227,8 @@ func snapshot() -> Dictionary:
 	for actor in entities.get_children():
 		var saved := WorldActorSnapshot.capture(actor)
 		if not saved.is_empty(): actors.append(saved)
-	var result := {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate()}
-	if not content.is_empty(): result["content"] = content.duplicate(true)
-	if not caches.is_empty():
-		result["caches"] = []
-		for cache in caches: result.caches.append(cache.capture_state())
+	var result := {"actors": actors, "layout": layout.duplicate(true), "explored": explored.duplicate(), "content": content.duplicate(true), "caches": []}
+	for cache in caches: result.caches.append(cache.capture_state())
 	return result
 
 func _restore(actors: Array) -> void:

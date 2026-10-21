@@ -2,13 +2,10 @@ extends Node
 class_name OrientationWorkshop
 ## Optional field-guide receipts. Vehicle services, not this checklist, gate driving.
 const ROLE_KEYS := ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare", "battery", "engine_kit_a", "engine_kit_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel_b"]
-const TARGET_KEYS := ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare", "socket", "tablet", "fuel_port", "wall_a", "wall_b", "wheel_slot", "original_wheel"]
-const EXTRA_TARGET_KEYS := ["battery", "engine_kit_a", "engine_kit_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel_b", "original_battery", "engine", "roof_slot"]
-const LEGACY_FLAG_KEYS := ["scrapper_placed", "workbench_placed", "wheel_removed", "wheel_installed", "refueled"]
+const TARGET_KEYS := ["scrapper", "workbench", "scrap_a", "scrap_b", "barrel", "spare", "socket", "tablet", "fuel_port", "wall_a", "wall_b", "wheel_slot", "original_wheel", "battery", "engine_kit_a", "engine_kit_b", "scrap_c", "scrap_d", "scrap_e", "scrap_f", "scrap_g", "scrap_h", "barrel_b", "original_battery", "engine", "roof_slot"]
 const FLAG_KEYS := ["scrapper_placed", "workbench_placed", "wheel_removed", "wheel_installed", "refueled", "battery_exchanged", "engine_repaired", "roof_rebuilt"]
 var controller: Node
 var configured := false
-var migration_pending := false
 var step := 1
 var targets: Dictionary = {}
 var flags := {"scrapper_placed": false, "workbench_placed": false, "wheel_removed": false, "wheel_installed": false, "refueled": false, "battery_exchanged": false, "engine_repaired": false, "roof_rebuilt": false}
@@ -22,22 +19,13 @@ var removed_wheel_ids: Array[String] = []
 var refuel_amount := 0.0
 
 func capture() -> Dictionary:
-	return {"version": 2, "configured": configured, "migration_pending": migration_pending, "step": step,
+	return {"version": 3, "configured": configured, "step": step,
 		"targets": targets.duplicate(true), "flags": flags.duplicate(true), "placed_ids": placed_ids.duplicate(),
 		"recycled_ids": recycled_ids.duplicate(), "output_ids": output_ids.duplicate(), "gasoline_id": gasoline_id,
 		"empty_can_id": empty_can_id, "repaired_ids": repaired_ids.duplicate(), "removed_wheel_ids": removed_wheel_ids.duplicate(), "refuel_amount": refuel_amount}
 
-static func upgrade_state(data: Dictionary) -> Dictionary:
-	var upgraded := data.duplicate(true)
-	if upgraded.get("version") == 1:
-		upgraded.version = 2
-		for key in ["battery_exchanged", "engine_repaired", "roof_rebuilt"]: upgraded.flags[key] = false
-	return upgraded
-
-func restore(saved: Dictionary) -> void:
-	var data := upgrade_state(saved)
+func restore(data: Dictionary) -> void:
 	configured = data.configured
-	migration_pending = data.migration_pending
 	step = data.step
 	targets = data.targets.duplicate(true)
 	flags = data.flags.duplicate(true)
@@ -59,13 +47,11 @@ func by_id(identity: String) -> Item:
 func item(key: String) -> Item:
 	return by_id(str(targets.get(key, "")))
 
-func prepare(vehicle: Chassis, migrating := false) -> bool:
+func prepare(vehicle: Chassis) -> bool:
 	if configured: return true
 	if vehicle == null or vehicle.installed_wheels[0] == null: return false
 	var building: Node3D = controller.get_parent().get("shelter")
 	if not is_instance_valid(building): return false
-	if migrating:
-		WalkInSites.ensure_orientation_workshop(building, WorldEntities.get_container(controller._world()))
 	var found := {}
 	var expected_ids := WalkInSites.orientation_workshop_ids(building)
 	for actor in get_tree().get_nodes_in_group(Groups.ITEMS):
@@ -87,11 +73,10 @@ func prepare(vehicle: Chassis, migrating := false) -> bool:
 	found.merge({"socket": socket.persistent_id, "tablet": tablet.persistent_id, "fuel_port": port.persistent_id,
 		"wall_a": "left_0", "wall_b": "right_0", "wheel_slot": 0, "original_wheel": vehicle.wheel_ids[0],
 		"original_battery": socket.installed_battery.id, "engine": engine.id, "roof_slot": "roof_1"})
-	# All guards precede the sole fault configuration. Loading v2 never enters it.
+	# All guards precede the sole new-run fault configuration.
 	targets = found
 	controller.rv_id = vehicle.persistent_id
 	configured = true
-	migration_pending = false
 	wall_a.set_health(minf(wall_a.current_health, maxf(0.0, wall_a.max_health - 60.0)))
 	wall_b.set_health(minf(wall_b.current_health, maxf(0.0, wall_b.max_health - 60.0)))
 	vehicle.puncture_wheel(0)
@@ -183,7 +168,7 @@ func wheel_ready() -> bool:
 
 func _wall(slot: String, operation: String) -> void:
 	if not _active() or not wall_ready(slot): return
-	if slot == targets.get("roof_slot", "roof_1") and operation == "rebuild":
+	if slot == targets.roof_slot and operation == "rebuild":
 		flags.roof_rebuilt = true
 		_changed()
 		return
@@ -243,7 +228,7 @@ func complete() -> bool:
 		1: return flags.scrapper_placed and flags.workbench_placed and installed("scrapper") and installed("workbench")
 		2: return [targets.scrap_a, targets.scrap_b, targets.barrel].all(func(identity): return identity in recycled_ids)
 		3: return not gasoline_id.is_empty()
-		4: return repaired_ids.size() == 2 and flags.wheel_removed and flags.wheel_installed and flags.battery_exchanged and flags.engine_repaired and flags.roof_rebuilt and battery_ready() and engine_ready() and wall_ready(str(targets.get("roof_slot", "roof_1"))) and wall_ready(targets.wall_a) and wall_ready(targets.wall_b) and wheel_ready()
+		4: return repaired_ids.size() == 2 and flags.wheel_removed and flags.wheel_installed and flags.battery_exchanged and flags.engine_repaired and flags.roof_rebuilt and battery_ready() and engine_ready() and wall_ready(str(targets.roof_slot)) and wall_ready(targets.wall_a) and wall_ready(targets.wall_b) and wheel_ready()
 		5: return flags.refueled and refuel_amount > 0.0 and not empty_can_id.is_empty()
 	return false
 
@@ -291,7 +276,7 @@ func page() -> Dictionary:
 			_condition("recycle", "Optional: recycle marked Scrap A, Scrap B and the first oil barrel", [targets.scrap_a, targets.scrap_b, targets.barrel].all(func(identity): return identity in recycled_ids)),
 			_condition("manufacture", "Optional: manufacture and pick up a gasoline can", not gasoline_id.is_empty() and gasoline_id in output_ids),
 			_condition("walls", "Optional: repair both designated walls to full durability", repaired_ids.size() == 2 and wall_ready(targets.wall_a) and wall_ready(targets.wall_b)),
-			_condition("roof", "Optional: rebuild roof_1 to full durability", flags.roof_rebuilt and wall_ready(str(targets.get("roof_slot", "roof_1")))),
+			_condition("roof", "Optional: rebuild roof_1 to full durability", flags.roof_rebuilt and wall_ready(str(targets.roof_slot))),
 			_condition("wheel", "Optional: remove the original flat and install the marked healthy spare", flags.wheel_removed and flags.wheel_installed and wheel_ready()),
 			_condition("refuel", "Optional: refuel from manufactured gasoline and receive the empty can", flags.refueled and refuel_amount > 0.0 and not empty_can_id.is_empty())]
 	return {"available": true, "stage": 2, "title": "Workshop field guide / Optional references", "conditions": conditions, "steps": steps, "reference": controls}
@@ -300,14 +285,13 @@ func _condition(identity: String, text: String, done: bool) -> Dictionary:
 
 static func validation_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
-	var fields := ["version", "configured", "migration_pending", "step", "targets", "flags", "placed_ids", "recycled_ids", "output_ids", "gasoline_id", "empty_can_id", "repaired_ids", "removed_wheel_ids", "refuel_amount"]
+	var fields := ["version", "configured", "step", "targets", "flags", "placed_ids", "recycled_ids", "output_ids", "gasoline_id", "empty_can_id", "repaired_ids", "removed_wheel_ids", "refuel_amount"]
 	if value.size() != fields.size() or not value.has_all(fields): return "fields"
-	if not value.version is int or value.version not in [1, 2]: return "version"
-	if not value.configured is bool or not value.migration_pending is bool: return "configured"
+	if not value.version is int or value.version != 3: return "version"
+	if not value.configured is bool: return "configured"
 	if not value.step is int or value.step < 1 or value.step > 6: return "step"
-	var required_flags: Array = LEGACY_FLAG_KEYS if value.version == 1 else FLAG_KEYS
-	if not value.targets is Dictionary or not value.flags is Dictionary or value.flags.size() != required_flags.size() or not value.flags.has_all(required_flags): return "targets/flags"
-	for key in required_flags:
+	if not value.targets is Dictionary or not value.flags is Dictionary or value.flags.size() != FLAG_KEYS.size() or not value.flags.has_all(FLAG_KEYS): return "targets/flags"
+	for key in FLAG_KEYS:
 		if not value.flags[key] is bool: return "flags." + key
 	for key in ["placed_ids", "recycled_ids", "output_ids", "repaired_ids", "removed_wheel_ids"]:
 		if not value[key] is Array or value[key].size() > 64: return key
@@ -319,14 +303,13 @@ static func validation_error(value: Variant) -> String:
 	if not (value.refuel_amount is int or value.refuel_amount is float) or not is_finite(float(value.refuel_amount)) or value.refuel_amount < 0.0: return "refuel_amount"
 	if not value.configured:
 		if not value.targets.is_empty() or value.step != 1 or not value.placed_ids.is_empty() or not value.recycled_ids.is_empty() or not value.output_ids.is_empty() or not value.repaired_ids.is_empty() or not value.removed_wheel_ids.is_empty() or not value.gasoline_id.is_empty() or not value.empty_can_id.is_empty() or value.refuel_amount != 0.0: return "unconfigured"
-		for key in required_flags:
+		for key in FLAG_KEYS:
 			if value.flags[key]: return "unconfigured"
 		return ""
-	if value.migration_pending or not value.targets.has_all(TARGET_KEYS): return "targets"
-	if value.version == 1 and value.targets.size() != TARGET_KEYS.size(): return "targets"
+	if value.targets.size() != TARGET_KEYS.size() or not value.targets.has_all(TARGET_KEYS): return "targets"
 	var target_ids := {}
 	for key in value.targets:
-		if key not in TARGET_KEYS and (value.version == 1 or key not in EXTRA_TARGET_KEYS): return "targets." + str(key)
+		if key not in TARGET_KEYS: return "targets." + str(key)
 		if key == "wheel_slot":
 			if not value.targets[key] is int or value.targets[key] != 0: return "targets.wheel_slot"
 		elif not value.targets[key] is String or value.targets[key].is_empty(): return "targets." + key
@@ -334,7 +317,7 @@ static func validation_error(value: Variant) -> String:
 			if target_ids.has(value.targets[key]): return "targets.duplicate"
 			target_ids[value.targets[key]] = true
 	if value.targets.wall_a != "left_0" or value.targets.wall_b != "right_0": return "targets.wall"
-	if value.targets.get("roof_slot", "roof_1") != "roof_1": return "targets.roof_slot"
+	if value.targets.roof_slot != "roof_1": return "targets.roof_slot"
 	for identity in value.output_ids:
 		if target_ids.has(identity): return "output_ids.alias"
 	if not value.empty_can_id.is_empty() and (target_ids.has(value.empty_can_id) or value.empty_can_id in value.output_ids): return "empty_can_id.alias"
@@ -354,11 +337,4 @@ static func validation_error(value: Variant) -> String:
 	if not value.gasoline_id.is_empty() and value.gasoline_id not in value.output_ids: return "gasoline_id"
 	if value.flags.refueled != (not value.empty_can_id.is_empty() and value.refuel_amount > 0.0) or value.flags.refueled and value.gasoline_id.is_empty(): return "refuel"
 	if not value.flags.refueled and (not value.empty_can_id.is_empty() or value.refuel_amount != 0.0): return "refuel"
-	if value.version == 1:
-		if value.step >= 2 and value.placed_ids.size() != 2: return "step.mount"
-		if value.step >= 3 and value.recycled_ids.size() != 3: return "step.recycle"
-		if value.step >= 4 and value.gasoline_id.is_empty(): return "step.gasoline"
-		if value.step >= 5 and (value.repaired_ids.size() != 2 or not value.flags.wheel_installed): return "step.repair"
-		if value.step == 6 and not value.flags.refueled: return "step.refuel"
-		if value.step < 2 and not value.recycled_ids.is_empty() or value.step < 3 and not value.output_ids.is_empty() or value.step < 4 and (not value.repaired_ids.is_empty() or not value.removed_wheel_ids.is_empty()) or value.step < 5 and value.flags.refueled: return "step.evidence"
 	return ""

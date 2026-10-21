@@ -11,7 +11,25 @@ func check(ok: bool, text: String) -> void:
 		failures.append(text)
 		push_error("FAIL: " + text)
 
+func _check_printed_body() -> void:
+	var scene: PackedScene = load("res://props/printed_player.tscn")
+	var original := scene.instantiate() as PrintedPlayerBody
+	original.crouching = true
+	original.stamina = 37.0
+	original.body_state.sever(&"right_arm")
+	var saved := original.capture_item_state()
+	check(ItemState.valid(PrintedPlayerBody.SCENE, saved), "Current printed-body Item has a complete saved posture and body")
+	var incomplete := saved.duplicate(true)
+	incomplete.printed_body.erase("crouching")
+	check(not ItemState.valid(PrintedPlayerBody.SCENE, incomplete), "Printed-body state requires its saved posture")
+	var restored := scene.instantiate() as PrintedPlayerBody
+	restored.restore_item_state(saved)
+	check(restored.capture_item_state().printed_body == saved.printed_body, "Printed-body restoration preserves posture, stamina and missing limbs")
+	original.free()
+	restored.free()
+
 func _run() -> void:
+	_check_printed_body()
 	var world := Node3D.new()
 	world.set_meta("entity_domain", true)
 	root.add_child(world)

@@ -22,29 +22,28 @@ static func configure(site: Dictionary, field: WorldField) -> void:
 	var type_index := 0 if index == 0 else field.rng_for(index, "exterior").randi_range(0, 3)
 	site.exterior = TYPES[type_index]
 	site.title = NAMES[type_index]
-	var mirror := 1.0 if field.rng_for(index, "route").randf() > 0.5 else -1.0
-	var route := PackedVector3Array()
-	for p in [Vector2(33, 0), Vector2(50, 0), Vector2(50, 24), Vector2(78, 24), Vector2(78, -24), Vector2(108, -24), Vector2(108, 0), Vector2(128.7, 0)]:
-		route.append(road * Vector3(p.x * side, rise(p.x), p.y * mirror))
-	site.route = route
-	site.mirror = mirror
-	var building_pos: Vector3 = road * Vector3(side * 135, rise(135), 0)
-	site.building = Transform3D(Basis.looking_at(road.basis.x * side), building_pos)
-	site.landmark = site.building * Vector3(0, 14, 0)
-	site.bounds = AABB(road * Vector3(side * 20, -15, -45), Vector3.ZERO)
-	for u in [20.0, 160.0]:
-		for v in [-45.0, 45.0]:
-			site.bounds = site.bounds.expand(road * Vector3(side * u, 30, v))
-	site.walls = []
-	# Continuous perimeter and two staggered baffles. 1.8 m pedestrian gaps.
-	for gate in [Vector2(44, 0), Vector2(68, 24 * mirror), Vector2(92, -24 * mirror)]:
-		for interval in [Vector2(-38, gate.y - 0.9), Vector2(gate.y + 0.9, 38)]:
-			site.walls.append({"position": Vector3(gate.x * side, 0, (interval.x + interval.y) * 0.5), "size": Vector3(0.6, 1.4 if gate.x == 44 else 3.8, interval.y - interval.x)})
-	for v in [-38.0, 38.0]:
-		site.walls.append({"position": Vector3(99.5 * side, 0, v), "size": Vector3(111.6, 3.8, 0.6)})
-	site.walls.append({"position": Vector3(155 * side, 0, 0), "size": Vector3(0.6, 3.8, 76)})
-	if field.profile.generation_version >= 4:
+	site.mirror = 1.0 if field.rng_for(index, "route").randf() > 0.5 else -1.0
+	site.building = Transform3D(Basis.looking_at(road.basis.x * side), Vector3.ZERO)
+	configure_forest(site)
+	if not road_clear(site, field):
+		site.side = -float(site.side)
+		site.frame = Transform3D(road.basis, road * Vector3(float(site.side) * 33.0, 0, 0))
+		site.building = Transform3D(Basis.looking_at(road.basis.x * float(site.side)), Vector3.ZERO)
 		configure_forest(site)
+
+static func road_clear(site: Dictionary, field: WorldField) -> bool:
+	if not site.has("route"): return true
+	if not fits_strip(site.road, float(site.side), field.profile.terrain_half_width): return false
+	var inverse: Transform3D = site.road.affine_inverse()
+	var bounds: AABB = site.bounds.grow(14.0)
+	for station in range(maxi(0, floori(-bounds.end.z)), ceili(-bounds.position.z) + 1, 5):
+		var frame := field.road_frame(float(station))
+		var half := field.road_width(float(station)) * 0.5 + 2.0
+		for lateral: float in [-half, 0.0, half]:
+			var point: Vector3 = inverse * (frame * Vector3(lateral, 0, 0))
+			var u := point.x * float(site.side)
+			if u > 18.0 and u < 362.0 and absf(point.z) < 60.0: return false
+	return true
 
 static func configure_forest(site: Dictionary) -> void:
 	# Keep the parking/first RV barrier, then weave through a deeper forest.
@@ -67,8 +66,8 @@ static func configure_forest(site: Dictionary) -> void:
 		site.walls.append({"position": Vector3(199.5 * float(site.side), 0, v), "size": Vector3(311.6, 3.2, 0.6)})
 	site.walls.append({"position": Vector3(355 * float(site.side), 0, 0), "size": Vector3(0.6, 3.2, 88)})
 
-static func site_rise(site: Dictionary, u: float) -> float:
-	return smoothstep(40.0, 310.0, u) * 6.0 if site.get("deep_forest", false) else rise(u)
+static func site_rise(_site: Dictionary, u: float) -> float:
+	return smoothstep(40.0, 310.0, u) * 6.0
 
 static func route_distance(point: Vector3, route: PackedVector3Array) -> float:
 	var p := Vector2(point.x, point.z)
@@ -102,12 +101,8 @@ static func route_length(site: Dictionary) -> float:
 static func local_point(site: Dictionary, x: float, z: float) -> Vector3:
 	return site.road * Vector3(float(site.side) * x, 0, z)
 
-static func rise(u: float) -> float:
-	# Six-metre rise reveals the roof over foreground occluders; apron is level.
-	return smoothstep(40.0, 122.0, u) * 6.0
-
 static func fits_strip(road: Transform3D, side: float, half_width: float) -> bool:
-	for u in [20.0, 360.0 if half_width > 300 else 160.0]:
-		for v in [-58.0, 58.0] if half_width > 300 else [-45.0, 45.0]:
+	for u in [20.0, 360.0]:
+		for v in [-58.0, 58.0]:
 			if absf((road * Vector3(side * u, 0, v)).x) > half_width - 8: return false
 	return true

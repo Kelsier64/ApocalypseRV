@@ -125,7 +125,7 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 			pistol_hint.text += " · 換彈 %.1fs" % remaining
 		if not weapon_data.get("can_use", true):
 			pistol_hint.text += " · 無法使用"
-	if show_flashlight_hint and selected.get("scene_path", "") == "res://equipment/training_terminal.tscn" and selected.get("state", {}).get("training_terminal", {}).get("version", 1) == 2:
+	if show_flashlight_hint and selected.get("scene_path", "") == "res://equipment/training_terminal.tscn":
 		pistol_hint.visible = true
 		pistol_hint.text = "T Read terminal"
 

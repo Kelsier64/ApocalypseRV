@@ -8,13 +8,13 @@
 [ext_resource type="Script" uid="uid://sdl8n0aibbxa" path="res://world/world_clock.gd" id="17_clock"]
 
 [ext_resource type="Script" path="res://world/starting_shelter/start_run.gd" id="18_run"]
-[ext_resource type="Script" path="res://world/terrain/world_profile.gd" id="19_profile"]
+[ext_resource type="Script" path="res://world/cheat_test_profile.gd" id="19_profile"]
 [ext_resource type="Script" path="res://world/deviation_pressure.gd" id="20_pressure"]
 [ext_resource type="Script" path="res://world/night_vision_effect.gd" id="22_adaptation"]
 
 [sub_resource type="Resource" id="CheatTestProfile"]
 script = ExtResource("19_profile")
-generation_version = 10
+generation_version = 14
 max_grade = 0.12
 chunks_ahead = 2
 

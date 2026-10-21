@@ -177,7 +177,7 @@ godot --path . --log-file .godot/minor-production.log res://tests/production_min
 
 電池插槽長 F 拆下拾取，手持短 F 重新固定；拆下、脫落或損壞時，電池另行成為可拾取的掉落 Item，保留電量。取消放置預覽不收回電池或退回插槽原位置。電池短 E 裝入／交換、長 E 取出至背包；同車只接通一顆，倉庫電池不供電。
 
-F6 保存到 `user://rv_checkpoint_v5.save`，F9 限室外一般操作狀態使用；完成驗證與重建後才取代目前遊戲，失敗保留原世界。成功保存將上一份有效檔備份至 `rv_checkpoint_v5.save.bak`。v5 保存玩家、車輛、獨立結構槽位、設備支撐、油電、物品、工作與已訪 POI；缺口、空引擎槽及門角度保持原狀，不補發設備。施工或 Item 放置預覽期間禁止保存，不保存施工進度；一次一個檢查點，不支援副本內保存。v1–v4 拒絕載入，需要重新開局；沒有舊版遷移，舊存檔與備份保持原樣。
+F6 保存到 `user://rv_checkpoint_v6.save`，F9 限室外一般操作狀態使用；完成驗證與重建後才取代目前遊戲，失敗保留原世界。成功保存將上一份有效檔備份至 `rv_checkpoint_v6.save.bak`。v6 保存玩家、車輛、獨立結構槽位、設備支撐、油電、物品、工作與已訪 POI；缺口、空引擎槽及門角度保持原狀，不補發設備。施工或 Item 放置預覽期間禁止保存，不保存施工進度；一次一個檢查點，不支援副本內保存。只支援 v6、生成 v14 與當前課程／房型，舊版需重新開局；沒有舊版遷移或舊路徑偵測。
 
 ```powershell
 godot --path . --log-file .godot/rv-systems-visible.log res://tests/rv_systems_playground.tscn -- --replay
@@ -201,7 +201,7 @@ godot --path . --log-file .godot/rv-systems-visible.log res://tests/rv_systems_p
 
 開關門檢查整段路徑，角色或物件進入時停止；再按 E 可反向操作。活動門扇不允許安裝設備，固定門框可以。破壞一片結構只讓附掛於該片的設備停機並連鎖掉落，其餘板件獨立。重建或變型有碰撞阻擋時顯示原因，不能把角色或其他物件包進新部件。
 
-v5 檢查點獨立保存十一槽型態、耐久、毀壞狀態與門角度，先恢復結構再接回設備支撐。既有 v5 十二槽資料經驗證後，載入時移除舊地板狀態並將固定在該地板的 Item 支撐轉為底盤，其餘結構狀態保留，不改寫來源檔案；v1–v4 仍拒絕載入。
+v6 檢查點獨立保存十一槽型態、耐久、毀壞狀態與門角度，先恢復結構再接回設備支撐。舊十二槽地板及早期單片屋頂格式拒絕載入，不轉換結構或 Item 支撐。
 
 ```powershell
 godot --path . --log-file .godot/rv-doors-visible.log res://tests/rv_door_playground.tscn
@@ -225,7 +225,7 @@ F2 開平板、F3 傷害左中牆、F4 破壞右前牆、F5 只破壞中段屋�
 
 人工觀察項目：修復與扣料、牆門互換與門扇 E 開關、破牆後附掛設備掉落、拆頂失去支撐，以及固定地板仍可站立且平板無地板操作。自動檢查保留 `test_rv_structure_modules.gd` 的結構／支撐／保存案例；施工扣料與平板操作需另行驗收。指南列出驗收步驟，不代表本輪桌面觀察或完整套件已通過。
 
-屋頂前／中／後為三個獨立槽，各 50 kg／120 HP，初始普通／左側開孔／普通。選定任一屋頂槽可將普通與左側開孔型態互換，沿用 2 Metal Parts／4 秒及耐久比例；重建可選任一型態，6／6 秒。左側洞口 1.45 × 1.6 m，車內梯貼左內牆對準中片；確認洞內的人物或梯子會阻止封成普通屋頂，洞口本身不產生隱形碰撞／雨遮，毀壞一片後其餘片保持完整。存檔為 v5，但早期十槽快照拒絕載入。
+屋頂前／中／後為三個獨立槽，各 50 kg／120 HP，初始普通／左側開孔／普通。選定任一屋頂槽可將普通與左側開孔型態互換，沿用 2 Metal Parts／4 秒及耐久比例；重建可選任一型態，6／6 秒。左側洞口 1.45 × 1.6 m，車內梯貼左內牆對準中片；確認洞內的人物或梯子會阻止封成普通屋頂，洞口本身不產生隱形碰撞／雨遮，毀壞一片後其餘片保持完整。存檔為 v6，只接受目前十一槽布局。
 
 <a id="section-3"></a>
 
@@ -248,7 +248,7 @@ F8 引擎艙（E 開蓋）、F9 後門／坡板、F10 故障燈、F11 夜間、F
 
 室外使用陰天雲層、日夜光照、局部體積霧與灰綠工業配色，配置林帶、土堤、岩石、圍牆和路標。道路有緩起伏、連續彎和 15→10 m 縮窄段；看到 SLOW 請減速。每三個停靠點有兩個離路建築、一個近路小補給。四款入口共用現有室內內容；約 488 m 的密林交錯步道與 1.8 m 窄口允許玩家攜大型物品步行，阻擋 RV 直接開到門口。
 
-此公路測試場使用生成 v4：建築距公路約 330 m，樹冠與高灌叢包圍步道。生成 v2／v3 分支保留原地形和入口距離，與檢查點 v5 的格式版本分開；舊檢查點仍拒絕載入。Esc 設定中的顯示偏好獨立保存，舊 display_preferences.cfg 會遷移；F8 不再切換顯示。復古色調只影響室外 3D，不降低背包、平板或互動文字解析度。詳見 [歷次密林驗收](../../docs/validation/2026-09-16-dense-forest.md)。
+目前公路測試場使用生成 v14，舊生成分支已移除；2026-09-16 的密林記錄屬歷史結果。Esc 設定中的顯示偏好獨立保存，不遷移舊 display_preferences.cfg 欄位；F8 不再切換顯示。復古色調只影響室外 3D，不降低背包、平板或互動文字解析度。詳見 [歷次密林驗收](../../docs/validation/2026-09-16-dense-forest.md)。
 
 ```powershell
 godot --path . --log-file .godot/horror-visible.log res://tests/outdoor_horror_playground.tscn
@@ -256,13 +256,20 @@ godot --path . --log-file .godot/horror-visible.log res://tests/outdoor_horror_p
 
 F2 切換公路／停車處／遮蔽步道／入口／回望視角，1–4 換四款外觀，F3 回放正式玩家攜引擎步行，F4 在門前送出 E 互動／從室內返回，F5 切換視窗大小，Esc 開啟正式設定，R 重設。測試場只替換同一位置的入口模型供比較；正式世界依 seed 配置。截圖、效能與驗證範圍見 [室外氛圍驗收](../../docs/validation/2026-09-16-outdoor-horror.md)。
 
-在 WorldGenerator 設定 `world_seed` 可重現整條路線，`-1` 每局另選 seed；`profile` 集中景觀、路寬、坡度、密度和串流設定。此版仍是沿公路向前旅行，遠景不提供可探索碰撞，後方已回收的地形不重建。
+在 WorldGenerator 設定 `world_seed` 可重現整條路線，`-1` 每局另選 seed；`profile` 集中景觀、路寬、坡度、密度和串流設定。現行世界支援雙向串流，遠景不提供可探索碰撞。
 
 ```powershell
 godot --path . --log-file .godot/highway-visible.log res://tests/highway_playground.tscn
 ```
 
-F1/F2/F3 預覽草原／林地／岩丘，F6 執行固定 seed 的 5 km 輪驅測試，F7 測停車、倒出及返回公路。回放以正式油門／轉向和 VehicleBody3D 輪胎物理移動；僅起點擺位、測試相機及停用耗油屬測試設定。完成後再次按回放鍵會重載測試場，再按一次啟動。可用 `-- --replay` 或 `-- --parking` 自動執行並退出；headless 測試加 `--fixed-fps 60`。
+F1/F2/F3 預覽不同里程的景觀，F6 執行固定 seed 的道路輪驅，F7 測停車、倒出及返回公路，F8 切換駕駛／跟車鏡頭。回放以正式油門／轉向和 VehicleBody3D 輪胎物理移動，僅起點擺位；測試場停用耗油並移除隨機怪物、廢車和釘帶，保留地形及護欄碰撞。完成後再次按回放鍵會重載測試場，再按一次啟動。可用 `-- --replay` 或 `-- --parking` 自動執行；`--keep-open` 保留結果視窗，headless 可加 `--fixed-fps 60`。指定 `--from`／`--to` 只載入該段附近的初始區塊，`--driver-view` 使用正式座椅鏡頭：
+
+```powershell
+godot --path . --log-file .godot/mountain-uphill.log res://tests/highway_playground.tscn -- --replay --from=1660 --to=1900 --driver-view --keep-open
+godot --path . --log-file .godot/mountain-downhill.log res://tests/highway_playground.tscn -- --replay --from=4950 --to=5170 --driver-view --keep-open
+```
+
+本輪短段與限制見 [山路驗證](../validation/2026-10-21-mountain-road.md)。
 
 路旁九種模組提供可編輯場景，見 [roadside kit](../../world/roadside_kit/README.md)。地形驗收與效能紀錄見 [驗收紀錄](../../docs/validation/2026-09-15-highway.md)。
 
@@ -270,7 +277,7 @@ F1/F2/F3 預覽草原／林地／岩丘，F6 執行固定 seed 的 5 km 輪驅�
 
 ## POI 資產與副本
 
-16 個啟用的 v2 廢棄地堡模組、保留 16 個房間內容 v1 定義供既有房間解析，六種首批尺寸、隨機 1–3 層。普通模組 60% 暗房，外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
+16 個當前 content_version=2 廢棄地堡模組，沒有 content_version=1 載入支援，六種首批尺寸、隨機 1–3 層。普通模組 60% 暗房，外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
 
 美術檢查在地堡測試命令最後加 `--art-inspect`，可加 `--inspect-room=hall_03` 選起始房型（該 seed 未生成時回到入口）：測試專用手電筒自動拾取、怪物暫停；F4 轉向房內四角，F6／F7 切到下／上個房間，L 使用正式手電筒開關，F8 存當前房型和開關狀態截圖至 `.godot/bunker-art-*.png`。房間定位僅用於檢視，不能當成步行通過證據；F5 的連續搬運回放獨立驗證通行。正式遊戲仍須在初始世界地面 E 拾取手電筒。
 
@@ -285,7 +292,7 @@ godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playgr
 
 ## 日夜時間
 
-正式世界從第 1 天 **08:00** 開始，現實 **30 分鐘為遊戲一天**。右上角顯示日期／時間；太陽移動、陰影、天空、環境光和霧色同步變化。進入室內時間繼續，SceneTree 暫停或檢查點載入準備期間停止；F6／F9 檢查點保存與恢復時間，v5 缺少時間時從第 1 天 08:00 開始。不計算離線時間。
+正式世界從第 1 天 **08:00** 開始，現實 **30 分鐘為遊戲一天**。右上角顯示日期／時間；太陽移動、陰影、天空、環境光和霧色同步變化。進入室內時間繼續，SceneTree 暫停或檢查點載入準備期間停止；F6／F9 檢查點保存與恢復時間，v6 要求完整時間欄位。不計算離線時間。
 
 快速觀看四個時段：`godot --path . --log-file .godot/day-night.log res://tests/day_night_playground.tscn`。測試場景 F1 切換清晨／正午／黃昏／夜晚，F12 加速至 1 分鐘一天，Home 停住／繼續；F2 換視角，5 從高處檢查日輪，F11 隱藏測試文字。這些時間快捷鍵只存在於測試場景。
 
@@ -299,7 +306,7 @@ godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playgr
 
 獨立樣板仍保留前一輪針葉樹、高窗維修廠與 RV 材質實驗；F1 現在對照的是目前正式美術，不是凍結的歷史版本。正式遊玩請使用主場景；正式畫面驗收使用 `res://tests/outdoor_horror_playground.tscn`，F11 隱藏驗收文字。高窗量體與 RV 實驗材質仍未併入正式版。歷史資料見 [視覺研究](../../docs/research/2026-09-17-lethal-company-visual-direction.md) 與 [樣板驗收](../../docs/validation/2026-09-17-style-sample.md)。
 
-室外植物、地面、四款入口與 RV／設備已使用統一的老舊工業材質；生成紋理與完整提示詞見 [材質說明](../../assets/materials/industrial/README.md)。HUD、背包和平板保留操作方式，改為方角暗底及灰白／暗黃配色。新外觀適用新局與 v5 檢查點，不變更世界位置；舊生成版本仍保留其原植物配置。
+室外植物、地面、四款入口與 RV／設備已使用統一的老舊工業材質；生成紋理與完整提示詞見 [材質說明](../../assets/materials/industrial/README.md)。HUD、背包和平板保留操作方式，改為方角暗底及灰白／暗黃配色。目前新局與 v6 檢查點只使用生成 v14 的植物配置。
 
 室外展示場新增 **F6** 循環 RV 外觀／駕駛室／設備、**F7** 切換測試電池電量、**F9** 切換側牆損傷、**F10** 開啟正式平板介面。正式遊戲不增加這些快捷鍵。RV 車內暖燈由獨立燈條設備、控制台請求與統一電力結算供電；顯示改用 Esc 設定，文字保持清晰。
 

@@ -20,9 +20,7 @@ func capture() -> Dictionary:
 	return {"version": 1, "present": present.duplicate()}
 
 func restore(data: Dictionary) -> void:
-	if data.is_empty():
-		reset()
-	elif valid_state(data):
+	if valid_state(data):
 		present = data.present.duplicate()
 
 static func valid_state(data: Variant) -> bool:

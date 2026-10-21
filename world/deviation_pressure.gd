@@ -22,7 +22,6 @@ func _physics_process(delta: float) -> void:
 	var player := world.get_node_or_null("Player") as Node3D
 	var clock := world.get_node_or_null("WorldClock") as WorldClock
 	if generator == null or clock == null or player == null or generator.profile == null: return
-	if generator.profile.generation_version < 10: return
 	var instances := world.get_node_or_null("PoiInstances") as PoiInstanceManager
 	var indoors := instances != null and (instances.busy or not instances.active_id.is_empty())
 	if indoors:

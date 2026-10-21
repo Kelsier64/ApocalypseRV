@@ -1,9 +1,5 @@
 extends "res://world/main_world.gd"
-## Disposable v10 garage world with the same defaults as `cheat true`.
-
-func configure_tutorial_course() -> void:
-	# This scene intentionally has no tutorial controller.
-	pass
+## Latest outdoor generation and the old garage, with `cheat true` defaults.
 
 func _ready() -> void:
 	super._ready()

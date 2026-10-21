@@ -56,7 +56,7 @@ func _on_phase_changed(phase: String) -> void:
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	if not is_instance_valid(run): return ""
-	if run.is_tutorial_shelter():
+	if run.is_orientation_shelter():
 		match run.phase:
 			"preparing": return "Departure button | E: Open exit and start journey\nThe exit seals permanently after departure; take supplies with you"
 			"opening": return "Exit gate opening"

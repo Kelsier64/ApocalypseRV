@@ -37,6 +37,9 @@ func _run() -> void:
 		push_error("FAIL: world.ready_for_play timed out")
 		_finish(world, 1)
 		return
+	if not await _tutorial_visibility_ready(world):
+		_finish(world, 1)
+		return
 	_escape()
 	await process_frame
 	if not player.settings_open or not menu.visible or paused or root.gui_get_focus_owner() == null:
@@ -58,8 +61,29 @@ func _run() -> void:
 		push_error("FAIL: ready player cannot move")
 		_finish(world, 1)
 		return
-	print("PASS: WORLD_READY_FOR_PLAY, production Escape settings routing and player movement")
+	print("PASS: WORLD_READY_FOR_PLAY, frozen tutorial visibility, production Escape settings routing and player movement")
 	_finish(world, 0)
+
+func _tutorial_visibility_ready(world: Node3D) -> bool:
+	var clock: WorldClock = world.get_node("WorldClock")
+	var generator := world.get_node("WorldGenerator")
+	var clock_before := clock.capture()
+	var weather_before := clock.weather.capture()
+	var deadline := Time.get_ticks_msec() + 20000
+	for frame in range(720):
+		if clock.running or clock.weather_running or clock.capture() != clock_before or clock.weather.capture() != weather_before:
+			push_error("FAIL: tutorial visibility recovery advanced frozen time or weather")
+			return false
+		var camera := world.get_viewport().get_camera_3d()
+		var clearance: float = generator.completed_scenery_clearance(camera.global_position)
+		var weather_cap: float = clock.atmosphere.mist(clock.effective_visual_weather()).depth_end
+		var expected := minf(weather_cap, clampf(clearance - clock.atmosphere.stream_margin, 1.0, clock.atmosphere.landscape_end))
+		if expected > 1.0 and clock.environment.fog_depth_end >= expected - 0.5:
+			return true
+		if Time.get_ticks_msec() >= deadline: break
+		await process_frame
+	push_error("FAIL: ready tutorial retained near streaming fog instead of recovering completed scenery visibility")
+	return false
 
 func _escape() -> void:
 	for pressed: bool in [true, false]:

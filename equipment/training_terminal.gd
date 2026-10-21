@@ -2,34 +2,28 @@ extends Item
 class_name TrainingTerminal
 ## A normal mounted Item. Tutorial progress belongs to this world's StartRun.
 const UI = preload("res://equipment/training_terminal_ui.gd")
-const STATE_VERSION := 1
 const BOOT = preload("res://equipment/training_terminal_boot.gd")
 @export var power_cost_per_open: float = 0.2
 var ui_instance: CanvasLayer
 var current_user: Node3D
 var manual_unlocked := false
 var completion := "locked"
-var _portable: Dictionary = {}
-
-func configure_portable_terminal() -> void:
-	# Only the new course opts in; old terminals preserve their exact v1 data.
-	if _portable.is_empty(): _portable = BOOT.fresh_state()
+var _portable: Dictionary = BOOT.fresh_state()
 
 func boot_state() -> Dictionary:
-	if _portable.is_empty(): return {}
 	_portable.manual_unlocked = manual_unlocked
 	_portable.completion = completion
 	return _portable
 
 func has_completed_boot() -> bool:
-	return not _portable.is_empty() and _portable.initialized and _portable.boot_started and _portable.boot_elapsed == BOOT.DURATION
+	return _portable.initialized and _portable.boot_started and _portable.boot_elapsed == BOOT.DURATION
 
 func start_boot() -> void:
-	if _user_valid() and ui_instance.visible and not _portable.is_empty() and not _portable.initialized:
+	if _user_valid() and ui_instance.visible and not _portable.initialized:
 		_portable.boot_started = true
 
 func advance_boot(delta: float) -> void:
-	if not _user_valid() or not ui_instance.visible or _portable.is_empty(): return
+	if not _user_valid() or not ui_instance.visible: return
 	if BOOT.advance(_portable, delta):
 		var controller := tutorial_controller()
 		if controller != null and controller.has_method("terminal_initialized"):
@@ -49,7 +43,7 @@ func _ready() -> void:
 
 func capture_item_state() -> Dictionary:
 	var state := super.capture_item_state()
-	state["training_terminal"] = boot_state().duplicate(true) if not _portable.is_empty() else {"version": STATE_VERSION, "manual_unlocked": manual_unlocked, "completion": completion}
+	state["training_terminal"] = boot_state().duplicate(true)
 	return state
 
 func restore_item_state(state: Dictionary) -> void:
@@ -59,7 +53,7 @@ func restore_item_state(state: Dictionary) -> void:
 	super.restore_item_state(state)
 	manual_unlocked = saved.manual_unlocked
 	completion = saved.completion
-	_portable = saved.duplicate(true) if saved.version == 2 else {}
+	_portable = saved.duplicate(true)
 
 func unlock_manual(result: String) -> void:
 	if result not in ["completed", "skipped"]: return
@@ -94,21 +88,20 @@ func can_pickup(player: Node3D) -> bool:
 	return not _dock_locked() and super.can_pickup(player)
 
 func _dock_locked() -> bool:
-	return not _portable.is_empty() and _portable.dock_locked and not manual_unlocked
+	return _portable.dock_locked and not manual_unlocked
 
 func can_operate() -> bool:
 	if is_queued_for_deletion() or is_instance_valid(processing_owner): return false
-	if _portable.is_empty(): return super.can_operate()
 	return not presentation_only and is_fixed and enabled and not support_lost and not is_being_placed and not is_destroyed and current_health > 0.0
 
 func _has_power(amount: float = 0.01) -> bool:
 	var rv := get_connected_rv()
-	return (rv != null and rv.has_usable_power(amount)) or (not _portable.is_empty() and _portable.internal_charge > 0.0 and _portable.internal_charge >= amount)
+	return (rv != null and rv.has_usable_power(amount)) or (_portable.internal_charge > 0.0 and _portable.internal_charge >= amount)
 
 func _consume_open_power() -> bool:
 	var rv := get_connected_rv()
 	if rv != null and rv.has_usable_power(power_cost_per_open): return rv.consume_power(power_cost_per_open)
-	if _portable.is_empty() or not _has_power(power_cost_per_open): return false
+	if not _has_power(power_cost_per_open): return false
 	_portable.internal_charge = maxf(0.0, _portable.internal_charge - power_cost_per_open)
 	return true
 

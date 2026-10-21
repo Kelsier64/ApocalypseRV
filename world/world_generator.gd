@@ -1,5 +1,5 @@
 extends Node3D
-## v5+ streams both directions; indoor coordinates retain the outdoor anchor.
+## Streams both directions; indoor coordinates retain the outdoor anchor.
 var outdoor_sites: Dictionary = {}
 var dormant_items: Dictionary = {}
 var destroyed_trees: Dictionary = {}
@@ -44,13 +44,12 @@ func _ready() -> void:
 	if world_seed < 0:
 		world_seed = int(Time.get_unix_time_from_system()) ^ int(Time.get_ticks_usec())
 	field = WorldField.new(world_seed, profile)
-	if profile.generation_version >= 10:
-		giant_navigation_map = NavigationServer3D.map_create()
-		NavigationServer3D.map_set_cell_size(giant_navigation_map, 0.275)
-		NavigationServer3D.map_set_cell_height(giant_navigation_map, 0.25)
-		NavigationServer3D.map_set_merge_rasterizer_cell_scale(giant_navigation_map, 0.1)
-		NavigationServer3D.map_set_edge_connection_margin(giant_navigation_map, 0.8)
-		NavigationServer3D.map_set_active(giant_navigation_map, true)
+	giant_navigation_map = NavigationServer3D.map_create()
+	NavigationServer3D.map_set_cell_size(giant_navigation_map, 0.275)
+	NavigationServer3D.map_set_cell_height(giant_navigation_map, 0.25)
+	NavigationServer3D.map_set_merge_rasterizer_cell_scale(giant_navigation_map, 0.1)
+	NavigationServer3D.map_set_edge_connection_margin(giant_navigation_map, 0.8)
+	NavigationServer3D.map_set_active(giant_navigation_map, true)
 	field.destroyed_trees = destroyed_trees
 	# Thin scenery and independently baked tile edges must not quantize into
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
@@ -82,40 +81,26 @@ func _process(delta: float) -> void:
 	if instances != null and not instances.active_id.is_empty():
 		anchor = instances.stream_anchor
 	var current := floori(-anchor.z / profile.chunk_length)
-	if profile.generation_version >= 10:
-		_bind_giants()
-		if not restoring_entities: _spawn_giant_segments(anchor)
+	_bind_giants()
+	if not restoring_entities: _spawn_giant_segments(anchor)
 	var pinned := protected_bands(anchor)
 	if not building:
 		for index in pinned:
 			if not active_chunks.any(func(c): return int(c.index) == index):
 				_spawn_band(index, true)
 				break
-	if profile.generation_version >= 5:
-		if not building:
-			# Fill the closest missing band first, including when returning north.
-			var wanted: Array[int] = []
-			for index in range(current - profile.chunks_behind, current + profile.chunks_ahead + 1): wanted.append(index)
-			wanted.sort_custom(func(a, b): return absi(a - current) < absi(b - current))
-			for index in wanted:
-				if not active_chunks.any(func(c): return int(c.index) == index):
-					_spawn_band(index, true)
-					break
-		for entry in active_chunks.duplicate():
-			if (entry.index < current - profile.chunks_behind or entry.index > current + profile.chunks_ahead) and entry.index not in pinned:
-				retire_band(entry)
-		_cleanup_timer -= delta
-		if _cleanup_timer <= 0.0:
-			_cleanup_timer = 0.5
-			_despawn_entities_behind(anchor.z)
-		return
-	if not building and next_band <= current + profile.chunks_ahead:
-		if not active_chunks.any(func(c): return int(c.index) == next_band):
-			_spawn_band(next_band, true)
-		next_band += 1
-	if not active_chunks.is_empty() and int(active_chunks[0].index) < current - profile.chunks_behind and int(active_chunks[0].index) not in pinned:
-		active_chunks.pop_front().node.queue_free()
-	# Remote cleanup does not need to allocate group/child arrays every frame.
+	if not building:
+		# Fill the closest missing band first, including when returning north.
+		var wanted: Array[int] = []
+		for index in range(current - profile.chunks_behind, current + profile.chunks_ahead + 1): wanted.append(index)
+		wanted.sort_custom(func(a, b): return absi(a - current) < absi(b - current))
+		for index in wanted:
+			if not active_chunks.any(func(c): return int(c.index) == index):
+				_spawn_band(index, true)
+				break
+	for entry in active_chunks.duplicate():
+		if (entry.index < current - profile.chunks_behind or entry.index > current + profile.chunks_ahead) and entry.index not in pinned:
+			retire_band(entry)
 	_cleanup_timer -= delta
 	if _cleanup_timer <= 0.0:
 		_cleanup_timer = 0.5
@@ -142,7 +127,6 @@ func completed_scenery_clearance(eye: Vector3) -> float:
 
 func protected_bands(anchor: Vector3) -> Array[int]:
 	var result: Array[int] = []
-	if profile.generation_version < 3: return result
 	for site in field.sites_near_z(anchor.z, 400):
 		if not site.has("bounds") or not site.bounds.has_point(anchor): continue
 		var box: AABB = site.bounds
@@ -157,21 +141,15 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 	add_child(chunk)
 	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
 	chunk.set_meta("skip_walk_in", restoring_entities)
-	if profile.generation_version >= 7 and index == -1:
-		if profile.generation_version >= 10:
-			if rear_wreck_layout.is_empty():
-				chunk.field = field
-				for neighbour in [-2, -1, 0]: await ForestScenery.prepare(chunk, neighbour, gradual)
-				rear_wreck_layout = RearWreckLayout.plan(field, rear_wreck_exclusions)
-				rear_wreck_exclusions.clear()
-			RearWreckLayout.build(chunk, rear_wreck_layout)
-		else:
-			# Legacy rear barriers are parsed by the same navigation bake.
-			var roadblock: Node3D = load("res://world/starting_shelter/roadblock.tscn").instantiate()
-			chunk.add_child(roadblock)
-			roadblock.position = Vector3(0, 0, 20)
+	if index == -1:
+		if rear_wreck_layout.is_empty():
+			chunk.field = field
+			for neighbour in [-2, -1, 0]: await ForestScenery.prepare(chunk, neighbour, gradual)
+			rear_wreck_layout = RearWreckLayout.plan(field, rear_wreck_exclusions)
+			rear_wreck_exclusions.clear()
+		RearWreckLayout.build(chunk, rear_wreck_layout)
 	await chunk.generate(field, index, poi_spawner, gradual)
-	if profile.generation_version >= 7 and index == 0:
+	if index == 0:
 		var start_run := get_parent().get_node_or_null("StartRun")
 		if start_run != null and start_run.has_method("bind_shelter"):
 			var site := field.stop(0)
@@ -201,17 +179,14 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 		var z := -index * profile.chunk_length - j * 30.0
 		for i in range(71):
 			var x := -1050.0 + i * 30.0
-			st.set_color(field.landforms.color_at(-z) if field.landforms != null else Color(0.36, 0.39, 0.27))
-			if field.profile.generation_version >= 14:
-				var sample := field.surface(x, z)
-				var color := field.landforms.color_at(-z)
-				if is_finite(float(sample.water_height)): color = Color("454e43")
-				st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
-				st.set_uv(Vector2(sample.gravel, sample.river_bank))
-				st.set_uv2(field.landforms.material_weights(sample.appearance))
-				st.add_vertex(Vector3(x, sample.height, z))
-			else:
-				st.add_vertex(Vector3(x, field.height_at(x, z), z))
+			st.set_color(field.landforms.color_at(-z))
+			var sample := field.surface(x, z)
+			var color := field.landforms.color_at(-z)
+			if is_finite(float(sample.water_height)): color = Color("454e43")
+			st.set_color(color.lerp(Color("716b54"), float(sample.river_bank) * 0.72))
+			st.set_uv(Vector2(sample.gravel, sample.river_bank))
+			st.set_uv2(field.landforms.material_weights(sample.appearance))
+			st.add_vertex(Vector3(x, sample.height, z))
 		if gradual and j % 5 == 0:
 			await get_tree().process_frame
 	for j in range(30):
@@ -227,11 +202,10 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 1.0
 	next.material_override = mat
-	if field.profile.generation_version >= 14:
-		var terrain_material := ShaderMaterial.new()
-		terrain_material.shader = ChunkGenerator.TERRAIN_V14
-		terrain_material.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
-		next.material_override = terrain_material
+	var terrain_material := ShaderMaterial.new()
+	terrain_material.shader = ChunkGenerator.TERRAIN_V14
+	terrain_material.set_shader_parameter("ground_texture", preload("res://assets/materials/industrial/forest_floor.png"))
+	next.material_override = terrain_material
 	add_child(next)
 	if is_instance_valid(horizon):
 		horizon.queue_free()
@@ -240,13 +214,13 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 func _despawn_entities_behind(player_z: float) -> void:
 	var distance := (profile.chunks_behind + 1) * profile.chunk_length
 	for node in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if node is Node3D and WorldEntities.same_world(self, node) and (absf(node.global_position.z - player_z) > RoadSpawns.SAFE_DISTANCE if profile.generation_version >= 8 else node.global_position.z - player_z > distance) and not _in_loaded_walk_in(node.global_position):
+		if node is Node3D and WorldEntities.same_world(self, node) and absf(node.global_position.z - player_z) > RoadSpawns.SAFE_DISTANCE and not _in_loaded_walk_in(node.global_position):
 			node.queue_free()
 	var container := WorldEntities.get_container(self)
 	if container != null and container.is_inside_tree():
 		for child in container.get_children():
-			# v8 monsters already use the symmetric current-position policy above.
-			if profile.generation_version >= 8 and child is Monster: continue
+			# Monsters already use the symmetric current-position policy above.
+			if child is Monster: continue
 			if child is Node3D and child.global_position.z - player_z > distance and not _in_loaded_walk_in(child.global_position):
 				if child is Item:
 					_store_items([child])

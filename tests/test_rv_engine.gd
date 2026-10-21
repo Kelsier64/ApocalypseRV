@@ -268,7 +268,7 @@ func _run() -> void:
 	rv.current_power = 100
 	check_session_energy(rv)
 	var saved := VehicleSnapshot.capture(rv)
-	check(VehicleSnapshot.validate(saved), "V4 engine snapshot valid")
+	check(VehicleSnapshot.validate(saved), "Current vehicle snapshot valid")
 	check(VehicleSnapshot.apply(rv, saved) and rv.get_engine().id == incoming.id and rv.get_engine().health == 150, "Engine save restores identity and condition")
 	var bad := saved.duplicate(true)
 	bad.engine_item.health = INF
@@ -276,11 +276,6 @@ func _run() -> void:
 	var duplicate := saved.duplicate(true)
 	duplicate.items.append(rv.get_engine().item())
 	check(not VehicleSnapshot.validate(duplicate), "Installed and stored engines cannot share an ID")
-	var old := saved.duplicate(true)
-	old.version = 2
-	old.health = 0.0
-	old.erase("engine_item")
-	check(VehicleSnapshot.upgrade(old).is_empty() and not VehicleSnapshot.apply(rv, old), "Older engine snapshots require a new run and leave vehicle unchanged")
 	rv.engine_bay.installed_engine = null
 	var empty := VehicleSnapshot.capture(rv)
 	check(VehicleSnapshot.apply(rv, empty) and rv.get_engine() == null, "Empty slot stays empty after loading")
@@ -299,6 +294,6 @@ func _run() -> void:
 	check(product != null and EngineState.valid(product.capture_item_state().engine, false), "Crafted engine has valid durable state")
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: default assembly, engine ownership, repair, upgrades, lights, legacy rejection and crafting")
+	if failures.is_empty(): print("PASS: default assembly, engine ownership, repair, upgrades, lights and crafting")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

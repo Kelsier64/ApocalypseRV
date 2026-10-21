@@ -5,13 +5,13 @@ const LENGTH := 12000.0
 const STEP := 10.0
 const SEEDS := [0, 42, 99173, -61]
 
-static func profile(version: int = 13) -> WorldProfile:
+static func profile(version: int = 14) -> WorldProfile:
 	var settings := WorldProfile.new()
 	settings.generation_version = version
 	settings.max_grade = 0.12
 	return settings
 
-static func run(check: Callable, version: int = 13) -> void:
+static func run(check: Callable, version: int = 14) -> void:
 	var signatures: Array = []
 	for seed_value: int in SEEDS:
 		var field := WorldField.new(seed_value, profile(version))
@@ -27,6 +27,7 @@ static func run(check: Callable, version: int = 13) -> void:
 			signature.append(sample)
 		signatures.append(signature)
 		_check_route(field, check)
+		_check_mountain_journey(field, check)
 		_check_rivers(field, check)
 		_check_elevated_spans(field, reverse, check)
 	for index in range(1, signatures.size()):
@@ -165,6 +166,104 @@ static func _check_route(field: WorldField, check: Callable) -> void:
 	check.call(kinds.size() >= 4, label + "journey visits at least four landform kinds")
 	check.call(maximum_relief > 40.0, label + "landforms produce substantial real terrain relief beside the road")
 
+static func _check_mountain_journey(field: WorldField, check: Callable) -> void:
+	# Parameter s is forward Z progress, not distance driven: acute bends make
+	# the difference large. Measure mountain grades and turn lengths in actual
+	# horizontal road distance, independently of the implementation's waves.
+	var distances := PackedFloat64Array([0.0])
+	var headings := PackedFloat64Array()
+	var previous := field.road_frame(600.0).origin
+	var rise_start := previous.y
+	var fall_start := previous.y
+	var rise_distance := 0.0
+	var fall_distance := 0.0
+	var best_rise := 0.0
+	var best_fall := 0.0
+	var sharpest := [0.0, 0.0]
+	var sharpest_s := [600.0, 600.0]
+	var sharp_turn := [0.0, 0.0]
+	var turn_start := 0
+	var previous_turn := 0.0
+	for index in range(int((LENGTH - 600.0) / 2.5) + 1):
+		var s := 600.0 + index * 2.5
+		var frame := field.road_frame(s)
+		var origin := frame.origin
+		var before := Vector2(field.road_x(s - 1.0), -s + 1.0)
+		var center := Vector2(origin.x, origin.z)
+		var after := Vector2(field.road_x(s + 1.0), -s - 1.0)
+		var a := center - before
+		var b := after - center
+		var curvature := 2.0 * a.cross(b) / maxf(a.length() * b.length() * (after - before).length(), 0.001)
+		var side := 0 if curvature < 0.0 else 1
+		if absf(curvature) > sharpest[side]:
+			sharpest[side] = absf(curvature)
+			sharpest_s[side] = s
+		headings.append(atan2(-frame.basis.z.x, frame.basis.z.z))
+		if index == 0: continue
+		var distance := Vector2(origin.x, origin.z).distance_to(Vector2(previous.x, previous.z))
+		distances.append(distances[-1] + distance)
+		var height_change := origin.y - previous.y
+		if height_change < 0.0:
+			rise_start = origin.y
+			rise_distance = 0.0
+		else:
+			rise_distance += distance
+			var rise := origin.y - rise_start
+			if rise_distance >= 1000.0 and rise / rise_distance >= 0.06: best_rise = maxf(best_rise, rise)
+		if height_change > 0.0:
+			fall_start = origin.y
+			fall_distance = 0.0
+		else:
+			fall_distance += distance
+			var fall := fall_start - origin.y
+			if fall_distance >= 1000.0 and fall / fall_distance >= 0.06: best_fall = maxf(best_fall, fall)
+		var turn := headings[index] - headings[index - 1]
+		if turn * previous_turn < 0.0: turn_start = index - 1
+		while turn_start < index and distances[index] - distances[turn_start] > 250.0:
+			turn_start += 1
+		side = 0 if turn < 0.0 else 1
+		sharp_turn[side] = maxf(sharp_turn[side], absf(headings[index] - headings[turn_start]))
+		previous_turn = turn
+		previous = origin
+	var label := "v%d seed %d: " % [field.profile.generation_version, field.world_seed]
+	check.call(best_rise >= 150.0 and best_fall >= 150.0, label + "sustained climbs and descents each change elevation by at least 150m over 1km or more at a mean actual-road grade of at least 6%% (%.1fm up, %.1fm down)" % [best_rise, best_fall])
+	for side in range(2):
+		check.call(sharp_turn[side] >= deg_to_rad(100.0) and sharpest[side] >= 1.0 / 55.0, label + "direction %d has an acute bend changing heading at least 100 degrees within 250m of actual road and reaching a radius of 55m or less (%.1f degrees, curvature %.5f)" % [side, rad_to_deg(sharp_turn[side]), sharpest[side]])
+		_check_sharp_projection(field, float(sharpest_s[side]), check)
+
+static func _check_sharp_projection(field: WorldField, s: float, check: Callable) -> void:
+	var maximum_error := 0.0
+	# The uniform 120m projection probes can miss the tightest part of a bend.
+	# Probe the real positive/negative curvature extrema and their approaches.
+	for delta: float in [-10.0, -5.0, -2.5, 0.0, 2.5, 5.0, 10.0]:
+		var t := s + delta
+		var frame := field.road_frame(t)
+		var half := field.road_width(t) * 0.5
+		for lateral: float in [-half - 3.0, -half, -half * 0.5, 0.0, half * 0.5, half, half + 3.0]:
+			var point := frame * Vector3(lateral, 0.0, 0.0)
+			var query := field.road_query(point.x, point.z)
+			var queried_frame: Transform3D = query.frame
+			maximum_error = maxf(maximum_error, absf(float(query.s) - t))
+			maximum_error = maxf(maximum_error, absf(float(query.distance) - absf(lateral)))
+			maximum_error = maxf(maximum_error, absf((point - queried_frame.origin).dot(queried_frame.basis.x) - lateral))
+	check.call(maximum_error < 0.08, "v%d seed %d: full-width signed projection remains accurate around the sharpest bend at %.1fm (error %.4fm)" % [field.profile.generation_version, field.world_seed, s, maximum_error])
+	var outer_error := 0.0
+	var apex := field.road_frame(s)
+	for lateral: float in [-60.0, -44.0, -40.0, 40.0, 44.0, 60.0]:
+		var point: Vector3 = apex * Vector3(lateral, 0, 0)
+		var probe := Vector2(point.x, point.z)
+		var nearest := INF
+		# Independent polyline distance also covers inner-bend terrain beyond
+		# the curvature radius, where the apex need not be the closest station.
+		var previous := Vector2(field.road_x(s - 220.0), -s + 220.0)
+		for step in range(1, 441):
+			var t := s - 220.0 + step
+			var next := Vector2(field.road_x(t), -t)
+			nearest = minf(nearest, probe.distance_to(Geometry2D.get_closest_point_to_segment(probe, previous, next)))
+			previous = next
+		outer_error = maxf(outer_error, absf(float(field.road_query(point.x, point.z).distance) - nearest))
+	check.call(outer_error < 0.03, "v%d seed %d: terrain outside a tight bend selects the nearest road rather than the stationary apex (error %.4fm)" % [field.profile.generation_version, field.world_seed, outer_error])
+
 static func _insert_clear_ribbon(quad: PackedVector2Array, ribbons: Array[PackedVector2Array], buckets: Dictionary) -> bool:
 	if Geometry2D.segment_intersects_segment(quad[0], quad[1], quad[2], quad[3]) != null:
 		return false
@@ -209,6 +308,7 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 		check.call(field.landforms.bridge_at(s), label + "river crossing has a bridge")
 		check.call(field.road_height(s) > water + 1.0, label + "bridge deck clears the water")
 		_check_shoreline(field, river, check)
+		_check_crossing_support(field, river, check)
 		# Sample the real carved bed away from the bridge and its piers.
 		for side: float in [-1.0, 1.0]:
 			var bank_x := x + side * 90.0
@@ -229,6 +329,64 @@ static func _check_rivers(field: WorldField, check: Callable) -> void:
 			for lateral: float in [-0.4, 0.0, 0.4]:
 				var point := approach.origin + approach.basis.x * field.road_width(s + side * 87.5) * lateral
 				check.call(absf(float(field.surface(point.x, point.z).height) - point.y) < 0.12, label + "both bridge ends have dry terrain support across the carriageway")
+
+static func _check_crossing_support(field: WorldField, river: Dictionary, check: Callable) -> void:
+	var deck_cache: Dictionary = {}
+	var wet_samples := 0
+	var grounded_samples := 0
+	var supported := true
+	var water_clear := true
+	var maximum_ground_error := 0.0
+	# World-aligned 5m stations coincide with the real deck mesh's 2.5m
+	# cross-sections. Cover both banks and the full width, including the edge
+	# that can cross an oblique river before the road centre reaches it.
+	var first := floori((float(river.s) - 170.0) / 5.0)
+	var last := ceili((float(river.s) + 170.0) / 5.0)
+	for index in range(first, last + 1):
+		var s := index * 5.0
+		var frame := field.road_frame(s)
+		var half := field.road_width(s) * 0.5
+		var bridge := field.landforms.bridge_at(s)
+		for lateral: float in [-half + 0.01, -half * 0.5, 0.0, half * 0.5, half - 0.01]:
+			var point := frame * Vector3(lateral, 0.0, 0.0)
+			var sample := field.surface(point.x, point.z)
+			if is_finite(float(sample.water_height)):
+				wet_samples += 1
+				water_clear = water_clear and point.y > float(sample.water_height) + 1.0
+				supported = supported and bridge
+			if bridge:
+				var band := floori(s / 150.0)
+				if not deck_cache.has(band): deck_cache[band] = TerrainCrossings.bridge_faces(field, band, 2.5)
+				supported = supported and _deck_covers(deck_cache[band], point)
+			if not bridge:
+				grounded_samples += 1
+				maximum_ground_error = maxf(maximum_ground_error, absf(float(sample.height) - point.y))
+	var label := "v%d seed %d river %.0fm: " % [field.profile.generation_version, field.world_seed, float(river.s)]
+	check.call(wet_samples > 0 and supported and water_clear, label + "every wet full-width carriageway sample has a physical deck clearing water, including oblique bank edges")
+	check.call(maximum_ground_error < 0.12, label + "all grounded river approaches retain terrain support across the complete road width (%d samples, error %.4fm)" % [grounded_samples, maximum_ground_error])
+
+static func _deck_covers(faces: PackedVector3Array, point: Vector3) -> bool:
+	# Vector2/Vector3 store float32 coordinates. A point made from the same
+	# cross-section can round just outside its triangle's boundary kilometres
+	# from the origin. Admit only that coordinate-sized rounding distance;
+	# the independent vertical support tolerance remains unchanged.
+	var rounding := maxf(1.0, maxf(absf(point.x), absf(point.z))) * 0.00000012
+	for index in range(0, faces.size(), 3):
+		var a := faces[index]
+		var b := faces[index + 1]
+		var c := faces[index + 2]
+		var triangle := PackedVector2Array([Vector2(a.x, a.z), Vector2(b.x, b.z), Vector2(c.x, c.z)])
+		var inside := Geometry2D.is_point_in_polygon(Vector2(point.x, point.z), triangle)
+		if not inside:
+			for edge in range(3):
+				var closest := Geometry2D.get_closest_point_to_segment(Vector2(point.x, point.z), triangle[edge], triangle[(edge + 1) % 3])
+				inside = inside or closest.distance_to(Vector2(point.x, point.z)) <= rounding
+		if not inside: continue
+		var normal := (b - a).cross(c - a)
+		if absf(normal.y) < 0.0001: continue
+		var height := a.y - (normal.x * (point.x - a.x) + normal.z * (point.z - a.z)) / normal.y
+		if absf(height - (point.y + 0.07)) < 0.12: return true
+	return false
 
 static func _check_shoreline(field: WorldField, river: Dictionary, check: Callable) -> void:
 	var label := "v%d seed %d river %.0fm: " % [field.profile.generation_version, field.world_seed, float(river.s)]

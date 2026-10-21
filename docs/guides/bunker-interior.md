@@ -1,20 +1,20 @@
 # 隨機軍事地堡：房型製作與保存契約
 
-2026-09-29。適用 `bunker`／布局版本 3。基礎結構依據為 [原地堡計畫](../plans/2026-09-24-random-bunker.md)，物資與敵人見[內容驗證](../validation/2026-09-29-bunker-content.md)，廢棄場景、照明與手電筒見[本次驗證](../validation/2026-09-29-bunker-art-flashlight.md)，共用場址與資產規範見 [POI 製作規範](poi-authoring.md)。已完成 v2 房型的基本陳設、污損與管線；複雜物件精細模型、完整地表設施及長局平衡仍待後續完成。
+更新：2026-10-21。適用 `bunker`／布局版本 3。基礎結構依據為 [原地堡計畫](../plans/2026-09-24-random-bunker.md)，物資與敵人見[內容驗證](../validation/2026-09-29-bunker-content.md)，廢棄場景、照明與手電筒見[本次驗證](../validation/2026-09-29-bunker-art-flashlight.md)，共用場址與資產規範見 [POI 製作規範](poi-authoring.md)。已完成 v2 房型的基本陳設、污損與管線；複雜物件精細模型、完整地表設施及長局平衡仍待後續完成。
 
 ## 生成及遊玩
 
 所有既有副本入口共用地堡，新訪抽取 30–60 個模組與 1–3 層目標；入口、通道及樓梯計入總數。無平面邊界，全部接口候選耗盡即停止，允許低於 30 間。各樓層共用普通房池，向地下 B1／B2／B3 延伸，未找到合法跨層安置時保留較少樓層。沒有必出主路、分區或鎖門捷徑；已訪舊 v3 地堡維持原布局和空內容，不依新目標重建。
 
-入口房牆上的 EXIT 按 E 返回地面。M 顯示已探索地圖，Page Up／Down 切層，未探索房間不顯示。散落零件短按 E 拾取；補給箱長按 E 1 秒搜索，每次領一件，背包滿時物資仍留箱內。深入地堡可找到一具 70% 耐久的強化引擎，搬回 RV 可按一般引擎流程使用；HUD 提示引擎所在房間及返回 B1 ENTRY。室外世界仍繼續運行。玩家帶入並丟下的物品可保存，室外 F6／F9 使用 v5 檢查點 `user://rv_checkpoint_v5.save`；副本內的散落／固定 Item 隨卸載重返保存，不支援副本內直接磁碟存檔。
+入口房牆上的 EXIT 按 E 返回地面。M 顯示已探索地圖，Page Up／Down 切層，未探索房間不顯示。散落零件短按 E 拾取；補給箱長按 E 1 秒搜索，每次領一件，背包滿時物資仍留箱內。深入地堡可找到一具 70% 耐久的強化引擎，搬回 RV 可按一般引擎流程使用；HUD 提示引擎所在房間及返回 B1 ENTRY。室外世界仍繼續運行。玩家帶入並丟下的物品可保存，室外 F6／F9 使用 v6 檢查點 `user://rv_checkpoint_v6.save`；副本內的散落／固定 Item 隨卸載重返保存，不支援副本內直接磁碟存檔。
 
 初訪內容使用獨立 RNG：散落零件預算隨規模為 2–12 件，補給箱 1–5 個（各有兩件小型物資）。Raker 遭遇有最多 `clamp(房間數 / 15, 1, 4)` 次機會；每次對一個合格房間獨立抽取 30% 生成機率，沒有保底，所以一座地堡可有 0、1 或多隻，最多 4 隻。以 30–60 模組目標推算，散落物預算為 6–12 件、補給箱為 2–5 個、遭遇機會最多 2–4 次；合法位置不足時機會或內容都可能更少。敵人只在房間連接距離至少 24 m 且距入口實際位置至少 18 m 處生成。敵人場景由可擴充的候選池挑選，現時候選池只有 Raker。強化引擎優先放在最深的合適房間。
 
 ## 廢棄場景與照明
 
-新訪地堡採房間 `content_version=2`，位於 `world/poi_kit/rooms/bunker/v2/`；原 16 個 v1 場景與定義保留且停用新抽選，供舊布局精確還原。尺寸、接口與分類權重不變。小房為警衛／物資／醫療儲藏，中房為寢室／處置室，大房為倉庫／維修工場，大廳為指揮／機電過濾／撤離生活區；入口及樓梯補上標示和應急設施。
+新訪地堡採房間 `content_version=2`，位於 `world/poi_kit/rooms/bunker/v2/`；原 16 個 content_version=1 場景的載入支援已移除。尺寸、接口與分類權重不變。小房為警衛／物資／醫療儲藏，中房為寢室／處置室，大房為倉庫／維修工場，大廳為指揮／機電過濾／撤離生活區；入口及樓梯補上標示和應急設施。
 
-`BunkerLighting` 僅套用 v2：排除入口與樓梯後，依實際普通模組數量四捨五入取 60% 熄燈；包括 passage／corridor。每房由保存 seed、ID 與固定 `bunker-lights-v1` 排序決定，禁止更動此版本演算法造成舊地堡重新抽燈。燈管使用獨立不發光材質，不修改共用亮燈材質；開燈房間使用陰影避免穿牆。v1 沿用原環境光與燈具。
+`BunkerLighting` 套用當前 content_version=2 房型：排除入口與樓梯後，依實際普通模組數量四捨五入取 60% 熄燈；包括 passage／corridor。每房由保存 seed、ID 與固定 `bunker-lights-v1` 排序決定，禁止更動此版本演算法造成舊地堡重新抽燈。燈管使用獨立不發光材質，不修改共用亮燈材質；開燈房間使用陰影避免穿牆。
 
 手電筒是初始世界出生區的普通地面道具，E 拾取、選取後 L 開關；滿電實際照明 300 秒，無充電機制。切換、收起、丟棄或存入倉庫時關燈，UI／轉場／死亡／入座時停止照明及耗電。若被 Raker 抓住前正在使用，抓住與咬擊期間會持續亮著照向怪物臉部並正常耗電；原本關閉的燈維持關閉。大型引擎沿用選取鎖定，搬運返程須依微光與入口／樓梯照明。剩餘電量沿用 Prop 保存流程；地堡不生成免費手電筒。
 
@@ -43,14 +43,14 @@
 2. 同步編輯實際牆板、碰撞與家具，保留 Visuals／Collision／DoorSockets／Furnishings／Walkway。可換 Visuals/Model GLB，不把碰撞放進可替換外觀。
 3. `PoiDoorSocket` 原點在門底中央，local -Z 朝外、Y 朝上。設定穩定 socket_id、完整 transform、opening 與 interface_type。首批是 `bunker_240`／2.4×2.8 m；支援偏置門及同牆多門，接口需留出牆角厚度與實際膠囊淨空。`frame_nodes` 指向可在封牆時移除的純視覺門框。
 4. 建立 `InteriorRoomDefinition` 資源：穩定 id、content_version、PackedScene、role（ordinary／entry／stairs）、selection_group、weight、enabled。尺寸與接點直接由場景讀取，不複製座標。
-5. 登錄到 `world/instances/catalog/bunker.tres`。新增分類時在 group_weights 加權重；先抽分類再抽變體，新增變體不增加整類初選機率。weight=0 或 enabled=false 的版本不參與新生成，但仍可供舊存檔解析。
+5. 登錄到 `world/instances/catalog/bunker.tres`。新增分類時在 group_weights 加權重；先抽分類再抽變體，新增變體不增加整類初選機率。weight=0 或 enabled=false 的房型不參與生成，不代表提供舊存檔相容支援。
 6. 執行 Profile.validate、布局測試及預覽。普通房 Walkway 第一個 Marker 是可走的導航錨點；entry 必須提供 Walkway/Spawn 和 Walkway/Exit；樓梯上下 socket 必須與 Profile 層距吻合。
 
 完整占用是地板到屋頂的矩形 AABB。L 型／凹形房可使用保守外包盒，不能把其他房塞進凹角。90° 旋轉由接口計算；新增尺寸、普通房與分類不改生成器。電梯、攀爬等新移動機制需另寫程式。
 
 7.5×15 m、同牆雙門與新增分類曾以獨立 fixture 驗收；該 fixture 及其專項自測已移除，歷史範圍見 [地堡驗收](../validation/2026-09-24-random-bunker.md)。新增房型請從正式模組複製並完成上列檢查，現行自動覆蓋見 [測試指南](../../tests/README.md)。
 
-`scripts/build_bunker_kit.py` 是首批場景來源，遇到既有 kit 會在寫入前拒絕。後續直接編輯場景／Resource，不重跑覆蓋手工內容。
+首批舊版房型生成器已隨相容資產移除；目前直接編輯現行場景／Resource。
 
 ## 生成與保存邊界
 
@@ -60,7 +60,7 @@
 
 保存 version、profile、seed、target_rooms、target_floors、floor_spacing、每房 id／definition／content_version／transform／connections，以及帶 socket ID 的 links／edges、explored、actors、content、caches。驗證逐一檢查版本、正交旋轉、樓層、三維排斥、接口對齊、整圖連通及內容快照，不依當前 seed 重抽。剩餘散落物、活怪、引擎和每個補給箱的剩餘道具保存完整狀態與穩定 ID；已取物資及已死亡怪物不補充。新增房型、改 enabled 或權重不改變已保存布局；舊 v3 快照缺內容欄位時視為原有空內容地堡。
 
-更動尺寸、碰撞、接點或家具通路時另開內容版本並保留舊資源；舊版可設 enabled=false。缺少被保存引用的版本明確拒絕；只換不影響占用／碰撞的外觀可沿用。檢查點只接受 v5，v1–v4 提示重新開局並保留原檔；不再執行清除舊 POI 的遷移。v5 內若仍含 v1 actor-only／v2 maintenance_v2 舊 POI 或未知新版本，也拒絕載入，不改寫來源檔。地堡布局版本與檢查點版本各自獨立。
+更動尺寸、碰撞、接點或家具通路時檢查目前內容版本與布局；不相容時可要求重新開局，不需保留舊資源或提供遷移。檢查點只接受 v6、生成 v14 及當前 content_version=2 房型；未知、缺失或損壞的資料直接拒絕。地堡布局版本 3 與檢查點版本各自獨立。
 
 ## 預覽與驗收
 

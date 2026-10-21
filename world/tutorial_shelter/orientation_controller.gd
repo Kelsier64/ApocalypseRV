@@ -1,6 +1,6 @@
 extends Node
 class_name OrientationController
-## The v12 course owns its evidence independently of the v11 course.
+## The two-room orientation owns its evidence and recovery boundaries.
 signal progress_changed
 const COURSE := "two_room_orientation"
 const STATE_VERSION := 4
@@ -71,9 +71,9 @@ func _ensure_recovery() -> void:
 func _prepare_workshop() -> void:
 	_ensure_workshop()
 	if not initialized() or workshop.configured: return
-	if _world().get("fresh_start") != true and not workshop.migration_pending: return
+	if _world().get("fresh_start") != true: return
 	var vehicle := designated_rv()
-	if vehicle != null: workshop.prepare(vehicle, workshop.migration_pending)
+	if vehicle != null: workshop.prepare(vehicle)
 
 func _sync_dock_marker() -> void:
 	var building: Node = get_parent().get("shelter")
@@ -108,19 +108,7 @@ func designated_rv() -> Chassis:
 	if rv_id.is_empty():
 		var original := _world().get_node_or_null("NewRv/Chassis") as Chassis
 		if original != null: return original
-		# v1 had no vehicle ID. Checkpoint restoration reparents chassis roots;
-		# migrate only the sole vehicle physically inside the locked workshop.
-		if workshop == null or not workshop.migration_pending or not is_inside_tree(): return null
-		var building := get_parent().get("shelter") as Node3D
-		if not is_instance_valid(building): return null
-		var candidates: Array[Chassis] = []
-		for vehicle in get_tree().get_nodes_in_group(Groups.CHASSIS):
-			if not vehicle is Chassis or vehicle.is_queued_for_deletion() or not _world().is_ancestor_of(vehicle) or not WorldEntities.same_world(_world(), vehicle): continue
-			var point := building.to_local(vehicle.global_position)
-			if absf(point.x) < 19.0 and point.z >= ROOM_DIVIDER_Z and point.z < 14.0 and point.y >= -1.0 and point.y < 8.0: candidates.append(vehicle)
-		if candidates.size() != 1: return null
-		rv_id = candidates[0].persistent_id
-		return candidates[0]
+		return null
 	if not is_inside_tree(): return null
 	for vehicle in get_tree().get_nodes_in_group(Groups.CHASSIS):
 		if vehicle is Chassis and vehicle.persistent_id == rv_id and not vehicle.is_queued_for_deletion() and _world().is_ancestor_of(vehicle) and WorldEntities.same_world(_world(), vehicle): return vehicle
@@ -217,17 +205,14 @@ func capture(include_retry := true) -> Dictionary:
 
 static func validation_error(value: Variant) -> String:
 	if not value is Dictionary: return "state"
-	var version: Variant = value.get("version")
-	var fields := ["version", "course", "stage", "status", "terminal_id", "flags"]
-	if version is int and version >= 2: fields.append_array(["rv_id", "workshop"])
-	if version is int and version >= 3: fields.append("departure_started")
+	var fields := ["version", "course", "stage", "status", "terminal_id", "flags", "rv_id", "workshop", "departure_started"]
 	if not value.has_all(fields): return "fields"
 	for key in value:
-		if key not in fields and not (version is int and version >= 3 and key == "entry_snapshot"): return "fields"
-	if not value.version is int or value.version not in [1, 2, 3, STATE_VERSION]: return "version"
+		if key not in fields and key != "entry_snapshot": return "fields"
+	if not value.version is int or value.version != STATE_VERSION: return "version"
 	if not value.course is String or value.course != COURSE: return "course"
 	if not value.stage is int or value.stage not in [1, 2]: return "stage"
-	if not value.status is String or value.status not in (["active", "completed", "skipped"] if version >= 3 else ["active"]): return "status"
+	if not value.status is String or value.status not in ["active", "completed", "skipped"]: return "status"
 	if not value.terminal_id is String or value.terminal_id.is_empty(): return "terminal_id"
 	var saved: Variant = value.flags
 	var names := ["boot_complete", "terminal_taken", "workshop_entered"]
@@ -237,23 +222,21 @@ static func validation_error(value: Variant) -> String:
 	if saved.terminal_taken and not saved.boot_complete: return "flags.terminal_taken"
 	if saved.workshop_entered and not saved.terminal_taken: return "flags.workshop_entered"
 	if (value.stage == 2) != saved.workshop_entered: return "stage"
-	if version >= 2:
-		if not value.rv_id is String: return "rv_id"
-		var error := OrientationWorkshop.validation_error(value.workshop)
-		if not error.is_empty(): return "workshop." + error
-		if value.workshop.configured and value.rv_id.is_empty(): return "rv_id"
-		if value.rv_id == value.terminal_id: return "rv_id.alias"
-		var references: Array = []
-		references.append_array(value.workshop.output_ids)
-		references.append_array(value.workshop.targets.values())
-		if not value.workshop.empty_can_id.is_empty(): references.append(value.workshop.empty_can_id)
-		if value.terminal_id in references or not value.rv_id.is_empty() and value.rv_id in references: return "workshop.id.alias"
-		if not saved.workshop_entered and value.workshop.step != 1: return "workshop.step"
-	if version >= 3:
-		if not value.departure_started is bool: return "departure_started"
-		if value.departure_started and value.status != "skipped" and (value.stage != 2 or version == 3 and value.workshop.step != 6): return "departure_started"
-		if value.status == "completed" and not value.departure_started: return "status"
-		if value.has("entry_snapshot") and (value.status != "active" or not value.entry_snapshot is Dictionary or value.entry_snapshot.is_empty()): return "entry_snapshot"
+	if not value.rv_id is String: return "rv_id"
+	var error := OrientationWorkshop.validation_error(value.workshop)
+	if not error.is_empty(): return "workshop." + error
+	if value.workshop.configured and value.rv_id.is_empty(): return "rv_id"
+	if value.rv_id == value.terminal_id: return "rv_id.alias"
+	var references: Array = []
+	references.append_array(value.workshop.output_ids)
+	references.append_array(value.workshop.targets.values())
+	if not value.workshop.empty_can_id.is_empty(): references.append(value.workshop.empty_can_id)
+	if value.terminal_id in references or not value.rv_id.is_empty() and value.rv_id in references: return "workshop.id.alias"
+	if not saved.workshop_entered and value.workshop.step != 1: return "workshop.step"
+	if not value.departure_started is bool: return "departure_started"
+	if value.departure_started and value.status != "skipped" and value.stage != 2: return "departure_started"
+	if value.status == "completed" and not value.departure_started: return "status"
+	if value.has("entry_snapshot") and (value.status != "active" or not value.entry_snapshot is Dictionary or value.entry_snapshot.is_empty()): return "entry_snapshot"
 	return ""
 
 static func validate_state(value: Variant) -> bool:
@@ -265,29 +248,16 @@ func apply_state(data: Dictionary) -> bool:
 	stage = data.stage
 	status = data.status
 	terminal_id = data.terminal_id
-	rv_id = data.get("rv_id", "")
+	rv_id = data.rv_id
 	flags = data.flags.duplicate(true)
-	departure_authorized = data.get("departure_started", false)
+	departure_authorized = data.departure_started
 	_reset_departure_motion()
 	_ensure_workshop()
-	if data.version == 1:
-		var initial := OrientationWorkshop.new()
-		initial.migration_pending = true
-		workshop.restore(initial.capture())
-		initial.free()
-	else: workshop.restore(data.workshop)
+	workshop.restore(data.workshop)
 	_ensure_recovery()
-	recovery.restore(_upgrade_entry(data.get("entry_snapshot", {})))
+	recovery.restore(data.get("entry_snapshot", {}))
 	progress_changed.emit()
 	return true
-
-func _upgrade_entry(snapshot: Dictionary) -> Dictionary:
-	var upgraded := snapshot.duplicate(true)
-	var saved: Dictionary = upgraded.get("start_state", {}).get("tutorial", {})
-	if saved.get("course") == COURSE and saved.get("version") == 3:
-		saved.version = STATE_VERSION
-		saved.workshop = OrientationWorkshop.upgrade_state(saved.workshop)
-	return upgraded
 
 func restore(data: Dictionary) -> void:
 	if data.is_empty():

@@ -61,10 +61,10 @@ func charging_snapshot() -> Dictionary:
 	return {"enabled": charging_enabled, "charging": charging, "fuel_reserve": fuel_reserve, "recharge_below": recharge_below}
 
 func restore_charging(data: Dictionary) -> void:
-	charging_enabled = data.get("enabled", true)
-	charging = data.get("charging", false) and charging_enabled
-	fuel_reserve = data.get("fuel_reserve", 5.0)
-	recharge_below = data.get("recharge_below", 0.8)
+	charging_enabled = data.enabled
+	charging = data.charging and charging_enabled
+	fuel_reserve = data.fuel_reserve
+	recharge_below = data.recharge_below
 	generated_rate = 0.0
 	load_rate = 0.0
 
@@ -127,8 +127,6 @@ func step(rv: Node, drive_intensity: float, delta: float) -> bool:
 		if device is CabinLightStrip: strips += 1
 	var available := {"cabin": strips > 0, "service": rv.engine_bay.hatch_open}
 	var draws := {"cabin": rv.cabin_light_draw * strips, "service": rv.service_light_draw}
-	# Retain the legacy request field in saves, but it no longer powers a fixture.
-	rv.interior_powered.work = false
 	for kind in ["cabin", "service"]:
 		rv.interior_powered[kind] = rv.interior_requested[kind] and available[kind] and has_usable_power(0.000001) and consume_power(draws[kind] * delta)
 	load_rate = _consumed / delta

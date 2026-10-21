@@ -3,17 +3,13 @@ class_name BunkerLighting
 ## Version-2 room presentation. Keep this ranking stable for saved layouts.
 const DARK_FRACTION := 0.6
 const AMBIENT_ENERGY := 0.04
-const LEGACY_AMBIENT_ENERGY := 0.22
 const OFF_MATERIAL: Material = preload("res://world/poi_kit/materials/bunker/lamp_off.tres")
-
-static func is_abandoned(layout: Dictionary) -> bool:
-	return layout.rooms.any(func(room: Dictionary) -> bool: return room.content_version >= 2)
 
 static func dark_room_ids(layout: Dictionary, profile: InteriorProfile = InteriorLayout.PROFILE) -> Array[String]:
 	var candidates: Array[Dictionary] = []
 	for room: Dictionary in layout.rooms:
 		var definition := profile.room(room.definition, room.content_version)
-		if room.content_version < 2 or definition == null or definition.role != &"ordinary": continue
+		if definition == null or definition.role != &"ordinary": continue
 		# Per-room ranking uses no layout/content/global RNG and survives tree order changes.
 		var rank := ("bunker-lights-v1:%d:%s" % [int(layout.seed), room.id]).sha256_text()
 		candidates.append({"id": str(room.id), "rank": rank})
@@ -23,9 +19,7 @@ static func dark_room_ids(layout: Dictionary, profile: InteriorProfile = Interio
 	for i in roundi(candidates.size() * DARK_FRACTION): result.append(candidates[i].id)
 	return result
 
-static func apply(room: PoiRoom, definition: InteriorRoomDefinition, dark: bool) -> void:
-	# Legacy instances keep their original lights and emissive materials.
-	if definition.content_version < 2: return
+static func apply(room: PoiRoom, _definition: InteriorRoomDefinition, dark: bool) -> void:
 	room.set_meta("bunker_dark", dark)
 	for child in room.find_children("*", "Light3D", true, false):
 		var light := child as Light3D

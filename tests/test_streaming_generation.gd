@@ -30,17 +30,17 @@ func check(ok: bool, message: String) -> void:
 		push_error("FAIL: " + message)
 
 func run() -> void:
-	var world := Node3D.new()
+	_check_opening_profiles()
+	var world := TerrainHost.new()
 	root.add_child(world)
 	current_scene = world
 	var reference: Dictionary = {}
-	var legacy := WorldProfile.new()
-	legacy.generation_version = 6
+	var settings := WorldProfile.new()
 	for gradual: bool in [false, true]:
 		var chunk := ChunkGenerator.new()
 		chunk.set_meta("skip_actors", true)
 		world.add_child(chunk)
-		await chunk.generate(WorldField.new(42, legacy), 0, POISpawner.new(), gradual)
+		await chunk.generate(WorldField.new(42, settings), 0, POISpawner.new(), gradual)
 		var ground := chunk.get_node("Ground") as MeshInstance3D
 		var body := chunk.get_node("ForestTrunks") as StaticBody3D
 		var poses: Array[Transform3D] = []
@@ -60,15 +60,36 @@ func run() -> void:
 		chunk.queue_free()
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
-	TERRAIN_CONTRACTS.run(check, 14)
 	await V14_CONTRACTS.run(self, world, check)
-	for version: int in [13, 14]:
+	for version: int in [14]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
+	await _check_mountain_navigation(world)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; v13/v14 routes, landforms and crossings satisfy sampled contracts")
+	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms and crossings satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
+
+func _check_opening_profiles() -> void:
+	var current_profile := WorldProfile.new()
+	check(current_profile.generation_version == 14 and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
+	var sandbox: WorldProfile = load("res://world/cheat_test_profile.gd").new()
+	sandbox.generation_version = 14
+	sandbox.max_grade = 0.12
+	var production := WorldProfile.new()
+	production.generation_version = 14
+	production.max_grade = sandbox.max_grade
+	var field := WorldField.new(42, sandbox)
+	var reference := WorldField.new(42, production)
+	var site := field.stop(0)
+	check(site.definition_id == "starting_shelter" and field.route != null and field.landforms != null, "Sandbox combines old garage with current route and landform generation")
+	for local: Vector3 in [Vector3(0, 0, -6), Vector3(0, 0, 30)]:
+		var point: Vector3 = site.building * local
+		var sample := field.surface(point.x, point.z)
+		check(sample.reserved and is_equal_approx(sample.height, -0.08), "Old garage and apron retain recessed terrain backing on v14")
+	for point: Vector2 in [Vector2(0, -900), Vector2(180, -1200), Vector2(-230, -2100)]:
+		check(field.surface(point.x, point.y) == reference.surface(point.x, point.y), "Sandbox outdoor terrain and appearance match the v14 production profile")
+		check(field.road_frame(-point.y) == reference.road_frame(-point.y), "Sandbox uses the v14 production road route")
 
 func _check_crossing_chunk(world: Node3D, version: int) -> void:
 	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
@@ -124,16 +145,65 @@ func _check_crossing_chunk(world: Node3D, version: int) -> void:
 	host.queue_free()
 	await process_frame
 
+func _check_mountain_navigation(world: Node3D) -> void:
+	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile())
+	var peak_s := 0.0
+	var peak_height := -INF
+	for sample in range(int(TERRAIN_CONTRACTS.LENGTH / 15.0) + 1):
+		var s := sample * 15.0
+		var height := field.road_height(s)
+		if height > peak_height:
+			peak_s = s
+			peak_height = height
+	check(peak_height > 150.0, "Mountain navigation fixture reaches a road summit above the former bake ceiling")
+	if peak_height <= 150.0: return
+	# The two bands adjoining the nearest summit seam include the highest
+	# sampled road point, and exercise independent vertical bake bounds.
+	var seam := roundi(peak_s / field.profile.chunk_length)
+	var host := TerrainHost.new()
+	world.add_child(host)
+	NavigationServer3D.map_set_merge_rasterizer_cell_scale(world.get_world_3d().navigation_map, 0.1)
+	var chunks: Array[ChunkGenerator] = []
+	for band in [seam - 1, seam]:
+		var chunk := ChunkGenerator.new()
+		chunk.field = field
+		chunk.band = band
+		chunk.set_meta("skip_actors", true)
+		host.add_child(chunk)
+		chunks.append(chunk)
+		# Use the production terrain/road/crossing/navigation builders; unrelated
+		# forest rendering and actor populations are covered by existing fixtures.
+		await chunk._build_ground(false)
+		chunk._build_road()
+		await TerrainCrossings.build(chunk, false)
+		await chunk._build_navigation(false)
+	if not await WAIT.navigation_ready(self, chunks):
+		check(false, "Summit and neighbouring band publish ordinary and giant navigation")
+	else:
+		var summit := field.road_frame(peak_s).origin
+		var start := field.road_frame(seam * field.profile.chunk_length - 20.0).origin
+		var finish := field.road_frame(seam * field.profile.chunk_length + 20.0).origin
+		for giant: bool in [false, true]:
+			var map: RID = host.giant_navigation_map if giant else chunks[0].navigation.get_navigation_map()
+			var label := "Giant" if giant else "Ordinary"
+			var closest := NavigationServer3D.map_get_closest_point(map, summit)
+			# Navigation retains its established height-detail simplification;
+			# grounded actors advance waypoints using their real collider height.
+			# This regression checks summit coverage and horizontal connectivity,
+			# rather than imposing a new sub-metre vertical bake contract.
+			check(closest.y > 150.0 and Vector2(closest.x, closest.z).distance_to(Vector2(summit.x, summit.z)) < 1.0, label + " published navigation covers the road summit above the former 150m ceiling")
+			var path := NavigationServer3D.map_get_path(map, start, finish, true)
+			check(path.size() >= 2 and Vector2(path[0].x, path[0].z).distance_to(Vector2(start.x, start.z)) < 1.0 and Vector2(path[-1].x, path[-1].z).distance_to(Vector2(finish.x, finish.z)) < 1.0, label + " mountain navigation connects across the summit streaming seam")
+	host.queue_free()
+	await process_frame
+
 func _check_dry_viaduct(world: Node3D, version: int) -> void:
 	var field := WorldField.new(42, TERRAIN_CONTRACTS.profile(version))
 	var label := "v%d: " % version
 	var band := -1
 	var candidates: Array[int] = []
-	if version >= 14:
-		for index in range(3):
-			candidates.append(floori(float(field.landforms.dry_valley(index).s) / field.profile.chunk_length))
-	else:
-		for candidate in range(4, 80): candidates.append(candidate)
+	for index in range(3):
+		candidates.append(floori(float(field.landforms.dry_valley(index).s) / field.profile.chunk_length))
 	for candidate: int in candidates:
 		var eligible := true
 		for offset: float in [10.0, 75.0, 140.0]:

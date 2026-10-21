@@ -18,8 +18,8 @@ func _ready() -> void:
 	set_crouching(crouching)
 
 static func valid_state(data: Variant) -> bool:
-	if not data is Dictionary or data.size() not in [5, 6] or data.get("version") != 1 or not data.version is int: return false
-	if data.size() == 6 and (not data.has("crouching") or not data.crouching is bool): return false
+	if not data is Dictionary or data.size() != 6 or data.get("version") != 1 or not data.version is int: return false
+	if not data.get("crouching") is bool: return false
 	if not PlayerBodyState.valid_state(data.get("body")): return false
 	if not VehicleSnapshot._number(data.get("stamina")) or data.stamina < 0 or data.stamina > 100: return false
 	if not data.get("exhausted") is bool: return false
@@ -39,7 +39,7 @@ func restore_item_state(state: Dictionary) -> void:
 	stamina = float(data.stamina)
 	stamina_exhausted = data.exhausted
 	recovery_delay = float(data.recovery_delay)
-	set_crouching(bool(data.get("crouching", false)))
+	set_crouching(data.crouching)
 
 func can_pickup(_player: Node3D) -> bool:
 	return false

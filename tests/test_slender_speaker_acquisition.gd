@@ -26,7 +26,7 @@ func reset_player(point: Vector3) -> void:
 	if player.is_grabbed(): player.grab_control.end("fixture_reset")
 	player.ragdoll_control.stop()
 	player.is_player_dead = false
-	player.restore_checkpoint_state({"items": [], "slot": 0, "health": 100.0, "transform": Transform3D(Basis.IDENTITY, point)})
+	player.restore_checkpoint_state({"items": [], "slot": 0, "health": 100.0, "stamina": player.MAX_STAMINA, "stamina_exhausted": false, "crouching": false, "body": PlayerBodyState.new().capture(), "transform": Transform3D(Basis.IDENTITY, point)})
 	player.set_physics_process(false)
 	player.grab_control.immunity = 0.0
 	giant.target_player = player

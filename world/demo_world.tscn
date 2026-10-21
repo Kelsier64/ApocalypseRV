@@ -3,11 +3,11 @@
 [ext_resource type="PackedScene" path="res://world/main_world.tscn" id="1_world"]
 [ext_resource type="Script" path="res://world/demo_world.gd" id="2_demo"]
 [ext_resource type="Script" path="res://world/demo_world_generator.gd" id="3_generator"]
-[ext_resource type="Script" path="res://world/terrain/world_profile.gd" id="4_profile"]
+[ext_resource type="Script" path="res://world/starting_shelter/garage_profile.gd" id="4_profile"]
 
 [sub_resource type="Resource" id="DemoProfile"]
 script = ExtResource("4_profile")
-generation_version = 10
+generation_version = 14
 chunks_ahead = 2
 
 [node name="DemoWorld" instance=ExtResource("1_world")]

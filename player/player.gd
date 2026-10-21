@@ -179,6 +179,7 @@ func _create_granted_item_state(scene_path: String, state: Dictionary) -> Dictio
 	if seed.get("battery") is Dictionary:
 		if not seed.battery.has("condition"): seed.battery["condition"] = seed.get("condition", 100.0)
 		if not seed.battery.has("scene_path"): seed.battery["scene_path"] = scene_path
+		if not seed.battery.has("item_data"): seed.battery["item_data"] = {}
 		if not VehicleSnapshot.valid_battery(seed.battery):
 			item.free()
 			return {}
@@ -502,14 +503,14 @@ func complete_world_transition(at: Transform3D) -> void:
 
 func restore_checkpoint_state(state: Dictionary) -> void:
 	crawl_transition_remaining = 0.0
-	body_state.restore(state.get("body", {}))
-	crouching = bool(state.get("crouching", false)) and not is_crawling()
+	body_state.restore(state.body)
+	crouching = state.crouching and not is_crawling()
 	inventory.items.assign(state.items.duplicate(true))
 	inventory.active_slot = state.slot
 	current_player_health = state.health
-	current_stamina = clampf(float(state.get("stamina", MAX_STAMINA)), 0.0, MAX_STAMINA)
+	current_stamina = clampf(float(state.stamina), 0.0, MAX_STAMINA)
 	stamina_recovery_delay_remaining = 0.0
-	stamina_exhausted = bool(state.get("stamina_exhausted", current_stamina <= 0.0))
+	stamina_exhausted = state.stamina_exhausted
 	complete_world_transition(state.transform)
 	_apply_body_capabilities()
 	get_node("Visuals/Locomotion").reset_posture()

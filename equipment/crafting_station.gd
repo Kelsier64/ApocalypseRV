@@ -105,7 +105,7 @@ func step_work(delta: float) -> void:
 	_sync_print_visual()
 
 func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false, orientation: int = -1, offset_index: int = 0) -> bool:
-	# Legacy/direct service calls create physical items but are not queued jobs.
+	# Direct service calls create physical items without queueing a job.
 	return _spawn_item(scene_path, costs, power_cost, crouching, orientation, offset_index) != null
 
 func _spawn_item(scene_path: String, costs: Dictionary, power_cost: float, crouching: bool, orientation: int, offset_index: int) -> Item:

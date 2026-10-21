@@ -25,13 +25,13 @@
 
 匯入模型用途見 [模型入口](../../assets/models/README.md)，來源與授權資訊有需要時記在各資產 README。建模需求使用 [短 prompt](../modeling/README.md)，不另維護全域清單；舊來源與使用關係可查 [2026-09-29 歷史盤點](../archive/modeling-2026-09-29/inventory.md)。
 
-## 資源與存檔相容
+## 資源與存檔格式
 
 - `res://` 路徑和 Godot UID 都是引用入口；搬移或刪除場景、腳本時要檢查兩者。與仍在使用的腳本／資產成對的 `.gd.uid`／`.import` 檔應保留。
 - `SaveSceneCatalog` 根據存檔場景路徑載入白名單中的一般設備與道具；車體結構從 `RVStructureSlots` 的型態目錄建立。正式地板網格與碰撞固定在 `rv/chassis.tscn`，重量包含在底盤內，不屬於可破壞或施工的結構槽位。
 - `props/item.gd` 是唯一可搬運基類；`core/item_definition.gd` 集中物品定義，`core/item_state.gd` 驗證所有所有權領域的狀態，`core/item_mount.gd` 管理固定支撐與掉落。原 Prop／Equipment 基類已移除，不再按這兩種類型分流背包、回收或世界保存。
-- `Checkpoint` 和 `VehicleSnapshot` 僅接受 v5，預設 `user://rv_checkpoint_v5.save`；v1–v4 拒絕並提示重新開局，不轉換舊油箱、材料架、材料包或長牆，也不改寫舊存檔／備份。結構、耐久、破口及門角度獨立保存；Item 支撐明確區分底盤、Item ID、結構槽位與靜態場景錨點。
-- 結構目錄包含普通 `rv_ceiling` 與左側開孔 `rv_ceiling_hatch`，都能裝入 `roof_0`／`roof_1`／`roof_2`；總布局十一槽，屋頂每片 50 kg／120 HP。Snapshot 版本維持 v5；既有 v5 十二槽資料經驗證後，載入時僅移除舊 floor 狀態，將該地板上的固定 Item 支撐改為底盤，保留其他牆、屋頂及門狀態，不改寫來源檔案。v1–v4（包含早期十槽／單片屋頂）仍拒絕載入。
+- `Checkpoint` 和 `VehicleSnapshot` 僅接受 v6，預設 `user://rv_checkpoint_v6.save`；只支援生成 v14、shelter 正式世界及當前課程／房型。舊格式與舊路徑不支援，不提供遷移。結構、耐久、破口及門角度獨立保存；Item 支撐明確區分底盤、Item ID、結構槽位與靜態場景錨點。
+- 結構目錄包含普通 `rv_ceiling` 與左側開孔 `rv_ceiling_hatch`，都能裝入 `roof_0`／`roof_1`／`roof_2`；總布局十一槽，屋頂每片 50 kg／120 HP。Snapshot v6 只接受當前十一槽；舊地板／單片屋頂資料不轉換。
 - `art_source/` 和建置腳本保存可編輯來源；`docs/validation/` 保存當次證據。圖片或模型未被主場景直接引用，也可能是匯入來源、展示場或審核證據。
 
 ## 整理與驗證

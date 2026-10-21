@@ -5,6 +5,7 @@ signal minute_changed(day: int, hour: int, minute: int)
 const DAY_SECONDS := 86400.0
 const DEFAULT_TIME := 8.0 * 3600.0
 @export_range(1.0, 1440.0) var day_length_minutes := 30.0
+@export var atmosphere: WorldAtmosphereProfile = preload("res://world/world_atmosphere_profile.tres")
 var elapsed_seconds := DEFAULT_TIME
 var running := true
 var weather := WorldWeather.new()
@@ -17,8 +18,7 @@ var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
 var label: Label
 var _last_minute := -1
-var terrain_generation_version := 0
-var _stream_mist_limit := WorldWeather.BASE_MIST_END
+var _stream_visibility := WorldStreamVisibility.new()
 @onready var game_settings = get_node("/root/GameSettings")
 
 func _ready() -> void:
@@ -33,21 +33,12 @@ func _ready() -> void:
 		environment.fog_enabled = true
 		environment.fog_mode = Environment.FOG_MODE_DEPTH
 		environment.fog_density = 1.0
-		environment.fog_depth_begin = 18.0
-		environment.fog_depth_end = 380.0
-		environment.fog_depth_curve = 0.65
 		environment.fog_height_density = 0.0
 		environment.fog_sun_scatter = 0.0
-		environment.fog_sky_affect = 0.0
+		environment.fog_sky_affect = 1.0
+		environment.volumetric_fog_sky_affect = 1.0
 		environment.fog_light_energy = 1.0
 		if game_settings.supports_volumetric_fog():
-			environment.fog_depth_begin = 160.0
-			environment.fog_depth_end = 420.0
-			environment.fog_depth_curve = 1.8
-			environment.volumetric_fog_enabled = game_settings.volumetric_fog_enabled()
-			environment.volumetric_fog_density = 0.0015
-			environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30)
-			environment.volumetric_fog_length = 160.0
 			# Concentrate froxels near the camera so fog behind a door does not bleed over it.
 			environment.volumetric_fog_detail_spread = 2.0
 			environment.volumetric_fog_anisotropy = 0.0
@@ -61,7 +52,7 @@ func _ready() -> void:
 		# Matte surfaces do not need a full-resolution reflection cubemap.
 		environment.sky.radiance_size = Sky.RADIANCE_SIZE_32
 		sky_material = ShaderMaterial.new()
-		sky_material.shader = preload("res://world/terrain/overcast.gdshader")
+		sky_material.shader = preload("res://world/terrain/overcast_v14.gdshader")
 		environment.sky.sky_material = sky_material
 		holder.environment = environment
 	if sun != null:
@@ -82,12 +73,6 @@ func _ready() -> void:
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(label)
 	var generator := get_parent().get_node_or_null("WorldGenerator")
-	if generator != null and generator.get("profile") is WorldProfile:
-		terrain_generation_version = generator.profile.generation_version
-	if terrain_generation_version >= 14 and environment != null:
-		sky_material.shader = preload("res://world/terrain/overcast_v14.gdshader")
-		environment.fog_sky_affect = 1.0
-		environment.volumetric_fog_sky_affect = 1.0
 	weather.initialize(generator.world_seed if generator != null else 42)
 	weather_label = Label.new()
 	weather_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
@@ -109,7 +94,12 @@ func _on_video_setting_changed(key: StringName, _value: Variant) -> void:
 	if key == &"fog_quality": apply_time()
 
 func _process(delta: float) -> void:
-	if running: advance(delta)
+	if running:
+		advance(delta)
+	else:
+		# Tutorial preparation freezes simulation, not camera/scenery visibility.
+		# Inherit scene processing so pause and disabled staging still stop both.
+		apply_time(delta)
 
 func advance(real_seconds: float) -> void:
 	if not is_finite(real_seconds) or real_seconds < 0.0: return
@@ -172,47 +162,29 @@ func apply_time(real_delta: float = 0.0) -> void:
 	var daylight := smoothstep(-0.16, 0.22, direction.y)
 	# Only physical lighting/weather depend on the clock. Display adaptation reads
 	# the resulting brightness independently, including daytime shadows/interiors.
-	environment.volumetric_fog_enabled = volumetric
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
 	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
 	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
-	# The new light tier takes over at strength 0.5; legacy strength 1 is medium.
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
-	var medium_mist := clampf((conditions.z - WorldWeather.FOG_LIGHT) / (WorldWeather.FOG_MEDIUM - WorldWeather.FOG_LIGHT), 0.0, 1.0)
-	var heavy_mist := maxf(mist * 2.0 - 1.0, 0.0)
-	var terrain_mist := terrain_generation_version >= 14
-	var profile := WorldWeather.mist_profile(conditions, volumetric)
-	if terrain_mist:
-		# Zero-density weather needs no froxel pass. Keep the quality-based depth
-		# profile stable, and re-enable scattering as soon as low mist returns.
-		environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
-		environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
-		environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
-		environment.fog_depth_curve = profile.depth_curve
-		# Volume depth is view-axis based while distance fog is radial. Keep the
-		# full integration in front of the opaque haze even at wide screen corners.
-		environment.volumetric_fog_length = maxf(0.1, minf(160.0, environment.fog_depth_end * 0.3))
-	else:
-		var base_begin := lerpf(160.0 if volumetric else 18.0, 240.0, clear)
-		environment.fog_depth_begin = lerpf(base_begin, 8.0, light_mist)
-		var far_distance := lerpf(420.0 if volumetric else 380.0, 700.0, clear)
-		environment.fog_depth_end = lerpf(lerpf(lerpf(far_distance, 220.0, light_mist), 110.0, medium_mist), 38.0, heavy_mist)
-		environment.fog_depth_curve = lerpf(1.8 if volumetric else 0.65, 1.0, light_mist)
+	var profile := atmosphere.mist(conditions)
+	# Quality controls scattering only; all qualities retain the same haze.
+	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
+	environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
+	environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
+	environment.fog_depth_curve = profile.depth_curve
+	environment.volumetric_fog_length = atmosphere.volume_length(environment.fog_depth_end)
 	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
-	var white_mist := Color("030405").lerp(Color("c3cbc8"), daylight)
-	if terrain_mist:
-		# Lit white haze during the day; no emissive veil over dark nights.
-		horizon = horizon.lerp(white_mist, profile.white_strength)
-		zenith = zenith.lerp(white_mist, 0.16 * profile.white_strength)
-		environment.volumetric_fog_albedo = Color(0.28, 0.31, 0.30).lerp(Color("c3cdc8"), profile.white_strength)
-		environment.volumetric_fog_density = profile.global_density
-	else:
-		environment.volumetric_fog_density = (0.0015 * (1.0 - clear) + rain * 0.001) * (1.0 - light_mist)
-	var local_density: float = profile.local_density if terrain_mist else 0.14 * (1.0 - clear) * (1.0 - light_mist)
+	var white_mist := atmosphere.night_mist_color.lerp(atmosphere.day_color(conditions), daylight)
+	# Lit white haze during the day; no emissive veil over dark nights.
+	horizon = horizon.lerp(white_mist, profile.white_strength)
+	zenith = zenith.lerp(white_mist, atmosphere.sky_white_blend * profile.white_strength)
+	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength)
+	environment.volumetric_fog_density = profile.global_density
+	var local_density: float = profile.local_density
 	for material in fog_materials:
 		material.set_shader_parameter("density", local_density)
 	if is_instance_valid(weather_label): weather_label.text = weather.description()
@@ -222,7 +194,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
 	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
-	sun.light_energy = 1.05 * smoothstep(0.0, 0.32, direction.y) * (1.0 + clear * 0.25 - rain * 0.90) * (1.0 - mist * 0.85)
+	sun.light_energy = lerpf(atmosphere.overcast_sun_energy, atmosphere.clear_sun_energy, clear) * smoothstep(0.0, 0.32, direction.y) * (1.0 - rain * 0.90) * (1.0 - mist * 0.85)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
 	# The light emits along -Z; the visible disk sits in the opposite direction.
 	sun.global_basis = Basis.looking_at(-direction, Vector3.UP)
@@ -237,35 +209,22 @@ func apply_time(real_delta: float = 0.0) -> void:
 func _completed_scenery_mist_limit(real_delta: float) -> float:
 	var generator := get_parent().get_node_or_null("WorldGenerator")
 	var camera := get_viewport().get_camera_3d()
-	var target := WorldWeather.BASE_MIST_END
+	var clearance := INF
 	if generator != null and generator.has_method("completed_scenery_clearance") and camera != null and camera.get_world_3d() == get_viewport().world_3d:
-		target = clampf(generator.completed_scenery_clearance(camera.global_position) - 8.0, 1.0, target)
-	# Close immediately when a slow build approaches the visible range. Reveal
-	# completed scenery gradually, independently of simulation/weather speed.
-	if target < _stream_mist_limit:
-		_stream_mist_limit = target
-	else:
-		_stream_mist_limit = move_toward(_stream_mist_limit, target, maxf(real_delta, 0.0) * 20.0)
-	return _stream_mist_limit
+		clearance = generator.completed_scenery_clearance(camera.global_position)
+	return _stream_visibility.update(clearance, real_delta, atmosphere)
 
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := effective_visual_weather()
-	var density: float
-	if terrain_generation_version >= 14:
-		density = WorldWeather.mist_profile(conditions, environment != null and environment.volumetric_fog_enabled).local_density
-	else:
-		density = 0.14 * (1.0 - conditions.x) * (1.0 - minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0))
+	var density: float = atmosphere.mist(conditions).local_density
 	material.set_shader_parameter("density", density)
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)
 
 func effective_visual_weather() -> Vector3:
-	var conditions := weather.sample()
-	conditions.x *= 1.0 - clampf(deviation_fog / WorldWeather.FOG_LIGHT, 0.0, 1.0)
-	conditions.z = maxf(conditions.z, deviation_fog)
-	return conditions
+	return WorldAtmosphereProfile.visual_conditions(weather.sample(), deviation_fog)
 
 func set_deviation_fog(strength: float) -> void:
 	if not is_finite(strength): return

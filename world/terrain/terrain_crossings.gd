@@ -32,7 +32,6 @@ static func _clip(points: PackedVector3Array, z: float, keep_below: bool) -> Pac
 
 static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	var field := chunk.field
-	if field.landforms == null: return
 	var north := -chunk.band * 150.0
 	var south := north - 150.0
 	var st := SurfaceTool.new()
