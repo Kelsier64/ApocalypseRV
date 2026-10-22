@@ -1,6 +1,6 @@
-# 小 POI 資產（路旁生成 v6；世界生成 v16）
+# 小 POI 資產（路旁生成 v6；世界生成 v17）
 
-六種路旁主題，每種三套靜態場景，均登錄為 `PoiDefinition.WALK_IN`；另有僅越野生成的 [civilian_shelter](civilian_shelter.tscn) 小型民用避難所。資產定義可由不同放置類別重用：camp／shed 亦支援越野生成；wreck、checkpoint、cargo、rest 僅路旁。本地 +Z 為正面，1 unit = 1 m，根節點不縮放。原始路旁資產製作來源為 [build_minor_pois.gd](../../scripts/build_minor_pois.gd)；首次建立器拒絕覆蓋，日常直接編輯 `.tscn`。
+六種路旁主題，每種三套靜態場景，均登錄為 `PoiDefinition.WALK_IN`；另有僅越野生成的 [civilian_shelter](civilian_shelter.tscn) 小型民用避難所與 [courtyard_shelter](courtyard_shelter.tscn) 庭院變體。資產定義可由不同放置類別重用：camp／shed 亦支援越野生成；wreck、checkpoint、cargo、rest 僅路旁。本地 +Z 為正面，1 unit = 1 m，根節點不縮放。原始路旁資產製作來源為 [build_minor_pois.gd](../../scripts/build_minor_pois.gd)；首次建立器拒絕覆蓋，日常直接編輯 `.tscn`。
 
 | 主題 | 0 | 1 | 2 | 次要物資 |
 |---|---|---|---|---|
@@ -19,6 +19,8 @@
 
 `civilian_shelter` 主體約 18 × 13 m，另有退縮門廳及前廊。水泥厚牆、窗洞、樑柱、斷裂女兒牆、破頂鋼筋、排水管及通風座使用原生網格，沿用專案水泥、鏽蝕金屬及低解析風格；六床、桌椅與補給架為暫用簡模，保留獨立 Furnishings 供之後替換。建築界限為 (-10,-0.5,-7.5)／(20,6.5,17)，場址界限為 (-13,-0.5,-10)／(26,11,24)。前後入口直接通行；首訪必出電池與廢鐵，另有 65% 引擎維修包、50% 廢鐵及 0–2 隻 Raker。詳細檢查見 [民用避難所紀錄](../../docs/validation/2026-10-22-civilian-shelter.md)。
 
-修改碰撞、佈局或標記必須處理 content_version；不能只加版本號後讓既有存檔載入不同位置。舊 v2–v5 保留原路旁資產，路旁小 POI 規則為 v6。世界生成 v15 將 bunker4、camp、shed 納入獨立越野場址；v16 加入 civilian_shelter（content_version=1、僅 OFF_ROAD），候選比例為 40% 地堡、20% 民用避難所、40% 營地／棚屋，實際密度仍受地形避讓影響。v16 沿用 v15 的 RNG 域及原道路／地形串流，但場址種類可能改變，依政策舊世界須重新開局。場址 ID 依生成版本、seed 與網格 row／column 穩定生成。越野場址沿自然地面配置，不帶公路標誌、方向標誌、車道、停車線、林間步道、迷宮或周界牆。
+`courtyard_shelter` 為 L 形混凝土建築，北側與西側翼圍出開放庭院，前後入口及兩側室內空間直接相通；沿用同一組水泥與鏽蝕金屬材質。建築界限為 (-11,-0.5,-9.3)／(22,7,19.3)，場址界限為 (-14,-0.5,-12)／(28,11,25)。物資與 0–2 隻 Raker 沿用 WalkInSites 的首訪／回訪保存，內容版本為 1。檢查範圍見 [庭院避難所紀錄](../../docs/validation/2026-10-22-courtyard-shelter.md)。
+
+修改碰撞、佈局或標記必須處理 content_version；不能只加版本號後讓既有存檔載入不同位置。舊 v2–v5 保留原路旁資產，路旁小 POI 規則為 v6。世界生成 v15 將 bunker4、camp、shed 納入獨立越野場址；v16 加入 civilian_shelter，v17 加入 courtyard_shelter（兩者 content_version=1、僅 OFF_ROAD）。當前候選比例為 40% 地堡、10% 民用避難所、10% 庭院避難所、40% 營地／棚屋，實際密度仍受地形避讓影響。v17 沿用 v15 的 RNG 域及原道路／地形串流，但場址種類可能改變，依政策舊世界須重新開局。場址 ID 依生成版本、seed 與網格 row／column 穩定生成。越野場址沿自然地面配置，不帶公路標誌、方向標誌、車道、停車線、林間步道、迷宮或周界牆。
 
 測試場與命令見 [測試指南](../../docs/guides/playgrounds.md#minor-pois)，本輪結果見 [驗收](../../docs/validation/2026-09-26-minor-pois.md)。
