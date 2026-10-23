@@ -25,6 +25,7 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 5
 	add_child(layer)
+	HUDVisibility.attach(layer)
 	aim_marker = CenterContainer.new()
 	aim_marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	aim_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

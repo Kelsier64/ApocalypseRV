@@ -12,6 +12,7 @@ var flashlight_hint: Label
 var pistol_hint: Label
 
 func _ready() -> void:
+	HUDVisibility.attach(self)
 	var control := Control.new()
 	control.theme = IndustrialTheme.make(16)
 	control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

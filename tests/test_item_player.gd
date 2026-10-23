@@ -105,6 +105,40 @@ func check_new_grants() -> void:
 	clear_bag()
 	await steps()
 
+func check_hud_toggle() -> void:
+	var key := InputEventKey.new()
+	key.keycode = KEY_F12
+	key.pressed = true
+	Input.parse_input_event(key)
+	await steps()
+	actor.refresh_inventory()
+	check(HUDVisibility.hud_hidden and actor.get_player_mode() == actor.PlayerMode.NORMAL, "F12 hides HUD without changing gameplay mode")
+	for gate in get_nodes_in_group(HUDVisibility.GROUP):
+		check(gate.color.a == 0.0, "HUD stays hidden across display refreshes: " + str(gate.get_path()))
+	key.echo = true
+	Input.parse_input_event(key)
+	await steps()
+	check(HUDVisibility.hud_hidden, "Holding F12 does not repeatedly toggle HUD")
+	var later_layer := CanvasLayer.new()
+	world.add_child(later_layer)
+	HUDVisibility.attach(later_layer)
+	check(later_layer.get_node("HUDVisibility").color.a == 0.0, "New HUD inherits hidden state across scene creation")
+	later_layer.hide()
+	var menu := actor.get_node("SettingsMenu")
+	check(menu.open_menu(), "Settings remain accessible with HUD hidden")
+	key.echo = false
+	Input.parse_input_event(key)
+	await steps()
+	check(not HUDVisibility.hud_hidden and menu.visible, "F12 restores HUD while settings retain visibility")
+	for gate in get_nodes_in_group(HUDVisibility.GROUP):
+		check(gate.color.a == 1.0, "F12 restores HUD presentation: " + str(gate.get_path()))
+	check(not later_layer.visible, "Restoring HUD preserves locally hidden layers")
+	menu.close_menu()
+	later_layer.queue_free()
+	key.pressed = false
+	Input.parse_input_event(key)
+	await steps()
+
 func run() -> void:
 	world = Node3D.new()
 	world.set_meta("entity_domain", true)
@@ -126,6 +160,7 @@ func run() -> void:
 	world.add_child(wall)
 	wall.position = Vector3(0, 2, 0)
 	await steps()
+	await check_hud_toggle()
 	await check_new_grants()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.

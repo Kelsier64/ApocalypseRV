@@ -75,6 +75,7 @@ func _ready() -> void:
 	hud = CanvasLayer.new()
 	hud.layer = 30
 	add_child(hud)
+	HUDVisibility.attach(hud)
 	var screen := Control.new()
 	hud.add_child(screen)
 	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

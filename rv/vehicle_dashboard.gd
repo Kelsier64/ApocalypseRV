@@ -5,6 +5,7 @@ var status: Label
 var indicators: Dictionary = {}
 
 func _ready() -> void:
+	HUDVisibility.attach(self)
 	seat = get_parent()
 	layer = 15
 	var panel := PanelContainer.new()

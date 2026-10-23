@@ -36,6 +36,7 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 45
 	add_child(layer)
+	HUDVisibility.attach(layer)
 	label = Label.new()
 	label.position = Vector2(24, 280)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

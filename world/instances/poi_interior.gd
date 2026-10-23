@@ -242,6 +242,7 @@ func _add_hud() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 3
 	add_child(layer)
+	HUDVisibility.attach(layer)
 	_hud = Label.new()
 	_hud.position = Vector2(24,80)
 	_hud.add_theme_font_size_override("font_size", 20)

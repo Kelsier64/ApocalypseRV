@@ -61,6 +61,7 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 46
 	add_child(layer)
+	HUDVisibility.attach(layer)
 	label = Label.new()
 	label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	label.position = Vector2(-224, 18)

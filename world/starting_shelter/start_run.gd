@@ -71,6 +71,7 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 18
 	add_child(layer)
+	HUDVisibility.attach(layer)
 	_status = Label.new()
 	_status.position = Vector2(24, 220)
 	_status.add_theme_font_size_override("font_size", 18)

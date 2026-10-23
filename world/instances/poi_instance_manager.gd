@@ -34,11 +34,16 @@ func _ready() -> void:
 	_display.stretch_mode = TextureRect.STRETCH_SCALE
 	_display.hide()
 	_layer.add_child(_display)
+	# Keep status separate from the canvas compositing the interior's 3D view.
+	var status_layer := CanvasLayer.new()
+	status_layer.layer = 20
+	add_child(status_layer)
+	HUDVisibility.attach(status_layer)
 	_status = Label.new()
 	_status.position = Vector2(24, 50)
 	_status.add_theme_font_size_override("font_size", 22)
 	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_layer.add_child(_status)
+	status_layer.add_child(_status)
 
 func register_entrance(building: Node3D, seed_value: int, stable_id: String = "") -> void:
 	var door := building.get_node_or_null(NodePath(building.get_meta("poi_entrance_path", ^"Entrance"))) as PoiEntrance

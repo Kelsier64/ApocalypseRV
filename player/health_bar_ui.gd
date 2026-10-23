@@ -7,6 +7,7 @@ var stamina_label: Label
 var damage_flash: ColorRect
 
 func _ready():
+	HUDVisibility.attach(self)
 	var screen := Control.new()
 	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(screen)

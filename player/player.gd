@@ -625,6 +625,11 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 		node.is_large = data["is_large"]
 		node.restore_item_state(data.get("state", {}))
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.keycode == KEY_F12 and event.pressed and not event.echo:
+		HUDVisibility.toggle(get_tree())
+		get_viewport().set_input_as_handled()
+
 func _unhandled_input(event):
 	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
