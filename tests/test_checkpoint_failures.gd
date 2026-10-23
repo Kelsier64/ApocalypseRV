@@ -58,6 +58,11 @@ func _run() -> void:
 	check(not saved.is_empty(), "Valid fixture reads")
 	if saved.is_empty(): quit(1); return
 	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
+	var flying_player: CharacterBody3D = world.get_node("Player")
+	check(flying_player.set_cheat_flying(true), "Player can enable session flight")
+	check(checkpoint.capture_world(world).is_empty() and checkpoint.last_error.get("field") == "player", "Checkpoint rejects a collision-free flight position")
+	flying_player.restore_checkpoint_state(saved.player)
+	check(not flying_player.is_cheat_flying() and not flying_player.body_collision_shape.disabled, "Restoring checkpoint clears flight and restores the saved body")
 	_test_orientation_generation(checkpoint, saved)
 	await _test_crouch_checkpoint(checkpoint, world, saved)
 	var wounded := saved.duplicate(true)

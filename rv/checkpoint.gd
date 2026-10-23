@@ -87,6 +87,9 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 	if player.has_method("is_grabbed") and player.is_grabbed():
 		_fail("motion", "player", "Player is grabbed")
 		return {}
+	if player.has_method("is_cheat_flying") and player.is_cheat_flying():
+		_fail("motion", "player", "Disable cheat flight in open space before saving")
+		return {}
 	for monster in get_tree().get_nodes_in_group(Groups.MONSTERS):
 		if world.is_ancestor_of(monster) and WorldEntities.same_world(player, monster) and monster.has_method("can_save") and not monster.can_save():
 			_fail("motion", "monster", "Monster grab or execution is active")

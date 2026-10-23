@@ -163,7 +163,7 @@ func begin(owner_node: Node3D, count: int) -> bool:
 
 func can_begin_execution() -> bool:
 	# Giant hands can reach crawling, roof-supported and climbing survivors.
-	return not active() and immunity <= 0 and not player.is_player_dead
+	return not active() and immunity <= 0 and not player.is_player_dead and not player.is_cheat_flying()
 
 func begin_execution(owner_node: Node3D, anchor: Node3D, look_target: Node3D) -> bool:
 	if not can_begin_execution() or not is_instance_valid(owner_node) or not is_instance_valid(anchor) or not is_instance_valid(look_target): return false

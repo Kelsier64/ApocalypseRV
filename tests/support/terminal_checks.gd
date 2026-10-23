@@ -30,7 +30,7 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 	var staged_time := staged_clock.capture()
 	var staged_weather := staged_clock.weather.capture()
 	var commands := RVTerminalCommands.new()
-	var context := {"rv": rv, "world": staged, "clock": staged_clock}
+	var context := {"rv": rv, "world": staged, "clock": staged_clock, "player": player}
 	var clock_before := clock.capture()
 	var weather_before := clock.weather.capture()
 	var children_before := world.get_child_count()
@@ -39,6 +39,13 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 	for line in ["", "che", "cheat ", "cheat p", "cheat power ", "time ", "time set ", "weather ", "weather set ", "weather set heavy_"]:
 		commands.completion_candidates(line, context)
 	check.call(commands.completion_candidates("cheat power ", context) == PackedStringArray(["cheat power false", "cheat power true"]), "Cheat completion lists only exact boolean spellings")
+	check.call(commands.completion_candidates("cheat fly ", context) == PackedStringArray(["cheat fly false", "cheat fly status", "cheat fly true"]), "Flight completion lists booleans and read-only status")
+	check.call(commands.execute("cheat fly", context).ok and not player.is_cheat_flying(), "Flight status is read-only")
+	check.call(not commands.execute("cheat fly true", {"rv": rv}).ok and not player.is_cheat_flying(), "Flight requires an explicit operator")
+	check.call(commands.execute("cheat fly true", context).ok and player.is_cheat_flying(), "Flight enables for the connected terminal operator")
+	for line in ["cheat fly TRUE", "cheat fly on", "cheat fly 1", "cheat fly false extra", "cheat unknown true"]:
+		check.call(not commands.execute(line, context).ok and player.is_cheat_flying(), "Malformed flight command is atomic: " + line)
+	check.call(commands.execute("cheat fly false", context).ok and not player.is_cheat_flying(), "Flight disables in clear space")
 	check.call(commands.completion_candidates("weather set heavy_", context) == PackedStringArray(["weather set heavy_fog", "weather set heavy_rain"]), "Weather completion includes heavy fog and rain")
 	check.call(clock.capture() == clock_before and clock.weather.capture() == weather_before and world.get_child_count() == children_before and _resources_unchanged(rv, saved), "Help, completion and status preserve resources, time, weather RNG and hierarchy")
 	check.call(_flags(rv) == [saved.fuel_cheat, saved.power_cheat, saved.materials_cheat], "Read-only commands do not change cheats")
@@ -90,6 +97,7 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 	check.call(not commands.execute("time set 12:00", context).ok and not commands.execute("weather set clear", context).ok, "Missing owning clock rejects mutation instead of selecting the staged clock")
 	world.add_child(clock)
 	check.call(staged_clock.capture() == staged_time and staged_clock.weather.capture() == staged_weather, "Commands leave the staged world's clock and weather unchanged")
+	await _flight_motion(world, player, check)
 	var terminal: Item = rv.get_node("TabletScreen")
 	var ui: Node = terminal.ui_instance
 	terminal.interact_hold(player)
@@ -101,7 +109,9 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 		chord.ctrl_pressed = true
 		chord.pressed = true
 		Input.parse_input_event(chord)
+		await tree.physics_frame
 		await tree.process_frame
+		chord = chord.duplicate()
 		chord.pressed = false
 		Input.parse_input_event(chord)
 		check.call(ui.mode == ui.Mode.SHELL, "Real Ctrl+D input opens the shell")
@@ -114,6 +124,19 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 		terminal.interact_hold(player)
 		check.call(ui.visible and _flags(rv) == [true, true, true], "Closing and reopening the tablet retains session cheats")
 		ui.enter_shell()
+		ui.submit_command("cheat fly true")
+		var flight_position: Vector3 = player.global_position
+		Input.action_press("move_forward")
+		player._physics_process(.25)
+		check.call(player.is_cheat_flying() and ui._owns_session() and player.global_position.is_equal_approx(flight_position), "Owned shell enables flight without moving its UI operator")
+		terminal._close_ui()
+		player._physics_process(.25)
+		check.call(player.global_position.is_equal_approx(flight_position), "Closing terminal latches held flight controls until release")
+		Input.action_release("move_forward")
+		player._physics_process(0.0)
+		check.call(player.set_cheat_flying(false), "Flight can be disabled after closing the terminal")
+		terminal.interact_hold(player)
+		ui.enter_shell()
 		ui.submit_command("cheat false")
 		check.call(_flags(rv) == [false, false, false], "Owned shell dispatches cheat mutations")
 		# Leave the UI visible to exercise its ownership guard directly.
@@ -121,8 +144,8 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 		var history_size: int = ui.command_history.size()
 		time_before = clock.elapsed_seconds
 		weather_before = clock.weather.capture()
-		for line in ["cheat true", "time set 00:00 1", "weather set clear"]: ui.submit_command(line)
-		check.call(_flags(rv) == [false, false, false] and clock.elapsed_seconds == time_before and clock.weather.capture() == weather_before and ui.command_history.size() == history_size, "Shell rejects commands after session ownership is lost")
+		for line in ["cheat true", "cheat fly true", "time set 00:00 1", "weather set clear"]: ui.submit_command(line)
+		check.call(not player.is_cheat_flying() and _flags(rv) == [false, false, false] and clock.elapsed_seconds == time_before and clock.weather.capture() == weather_before and ui.command_history.size() == history_size, "Shell rejects commands after session ownership is lost")
 		terminal.current_user = player
 	terminal._close_ui()
 	rv.current_fuel = saved.fuel
@@ -136,6 +159,72 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 	clock.queue_free()
 	staged.queue_free()
 	await tree.process_frame
+
+static func _flight_motion(world: Node3D, player: CharacterBody3D, check: Callable) -> void:
+	var saved_transform: Transform3D = player.global_transform
+	var saved_camera: Vector3 = player.camera.rotation
+	var saved_stamina: float = player.current_stamina
+	var origin := Vector3(100, 20, 0)
+	player.complete_world_transition(Transform3D(Basis.IDENTITY, origin))
+	var wall := StaticBody3D.new()
+	var collision := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(4, 6, .2)
+	collision.shape = box
+	wall.add_child(collision)
+	world.add_child(wall)
+	wall.global_position = origin + Vector3(0, 1, -1.5)
+	await world.get_tree().physics_frame
+	check.call(player.set_cheat_flying(true), "Flight starts in normal locomotion")
+	player.camera.rotation.x = -.3
+	var forward: Vector3 = -player.camera.global_basis.z.normalized()
+	Input.action_press("move_forward")
+	player._physics_process(.25)
+	Input.action_release("move_forward")
+	check.call(player.global_position.is_equal_approx(origin + forward * 3.0) and player.body_collision_shape.disabled, "Flight follows camera pitch through a solid wall at 12 metres per second")
+	var before: Vector3 = player.global_position
+	Input.action_press("jump")
+	Input.action_press("sprint")
+	player._physics_process(.25)
+	Input.action_release("jump")
+	Input.action_release("sprint")
+	check.call(player.global_position.is_equal_approx(before + Vector3.UP * 6.0), "Sprint flight ascends at 24 metres per second")
+	before = player.global_position
+	Input.action_press("crouch")
+	player._physics_process(.25)
+	Input.action_release("crouch")
+	check.call(player.global_position.is_equal_approx(before + Vector3.DOWN * 3.0), "Flight uses crouch for vertical descent")
+	before = player.global_position
+	player._physics_process(.25)
+	check.call(player.global_position.is_equal_approx(before) and is_equal_approx(player.current_stamina, saved_stamina), "Idle flight has no gravity or stamina cost")
+	player.set_settings_open(true)
+	Input.action_press("move_forward")
+	player._physics_process(.25)
+	check.call(player.global_position.is_equal_approx(before), "Settings block flight movement")
+	Input.action_release("move_forward")
+	player.set_settings_open(false)
+	player._physics_process(0.0)
+	player.global_position = wall.global_position
+	check.call(not player.set_cheat_flying(false) and player.is_cheat_flying(), "Flight cannot restore collisions inside a solid wall")
+	player.global_position = origin
+	check.call(player.set_cheat_flying(false) and not player.body_collision_shape.disabled and player.velocity == Vector3.ZERO, "Clear flight exit restores the capsule without momentum")
+	check.call(player.set_cheat_flying(true), "Flight can restart after a safe exit")
+	var saved_body: Dictionary = player.body_state.capture()
+	player.body_state.sever(&"left_leg")
+	player._apply_body_collision()
+	wall.global_position = origin + Vector3(0, 1, -.6)
+	await world.get_tree().physics_frame
+	check.call(not player.set_cheat_flying(false) and player.is_cheat_flying(), "Crawling flight exit checks horizontal body clearance beside a wall")
+	player.global_position = origin + Vector3(5, 0, 0)
+	check.call(player.set_cheat_flying(false), "Crawling flight can end in clear space")
+	player.body_state.restore(saved_body)
+	player._apply_body_collision()
+	check.call(player.set_cheat_flying(true), "Flight restarts before world transfer")
+	player.complete_world_transition(saved_transform)
+	player.camera.rotation = saved_camera
+	check.call(not player.is_cheat_flying() and not player.body_collision_shape.disabled, "World transfer clears session flight and restores collision")
+	wall.queue_free()
+	await world.get_tree().physics_frame
 
 static func _flags(rv: Chassis) -> Array:
 	return [rv.unlimited_fuel, rv.unlimited_power, rv.unlimited_materials]

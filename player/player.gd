@@ -2,6 +2,8 @@ extends CharacterBody3D
 
 const SPEED = 5.0
 const SPRINT_SPEED = 8.0
+const CHEAT_FLY_SPEED := 12.0
+const CHEAT_FLY_FAST_SPEED := 24.0
 const CROUCH_SPEED := 2.0
 const CROUCH_HEIGHT := 1.05
 const CRAWL_ONE_LEG_SPEED := 0.8
@@ -86,7 +88,7 @@ enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED }
 var seated_in: Node3D = null
 
 # Locomotion
-enum LocomotionState { NORMAL, CLIMBING }
+enum LocomotionState { NORMAL, CLIMBING, FLYING }
 var locomotion_state: LocomotionState = LocomotionState.NORMAL
 var active_climb_rv: Node3D = null
 var active_climb_ladder: RVLadder = null
@@ -458,6 +460,7 @@ func enter_ui_mode() -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
+	if is_cheat_flying(): velocity = Vector3.ZERO
 	weapon.cancel_actions()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_advance_flashlight(0.0)
@@ -704,7 +707,53 @@ func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
 	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
 
 func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
-	return seated_in != null or is_player_dead
+	return seated_in != null or is_player_dead or is_cheat_flying()
+
+func is_cheat_flying() -> bool:
+	return locomotion_state == LocomotionState.FLYING
+
+func set_cheat_flying(enabled: bool) -> bool:
+	if get_player_mode() not in [PlayerMode.NORMAL, PlayerMode.UI]: return false
+	if enabled == is_cheat_flying(): return true
+	# Flight can pass through geometry; only restore solid movement in free space.
+	if not enabled:
+		_apply_body_collision()
+		if not _cheat_flight_exit_clear(): return false
+	weapon.cancel_actions()
+	_exit_climb_to_normal()
+	rv_support.clear()
+	velocity = Vector3.ZERO
+	released_carrier_velocity = Vector3.ZERO
+	_seat_exit_velocity_has_carrier = false
+	if enabled:
+		locomotion_state = LocomotionState.FLYING
+		crouching = false
+	_apply_body_collision()
+	return true
+
+func _cheat_flight_exit_clear() -> bool:
+	# Use the resumed posture, including a crawling survivor's horizontal capsule.
+	var capsule := body_collision_shape.shape.duplicate() as CapsuleShape3D
+	if capsule == null: return false
+	capsule.radius = maxf(.01, capsule.radius - .005)
+	capsule.height = maxf(capsule.radius * 2, capsule.height - .01)
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = capsule
+	query.transform = global_transform * body_collision_shape.transform
+	query.collision_mask = collision_mask
+	query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
+
+func _process_cheat_flight(delta: float) -> void:
+	var direction := Vector3.ZERO
+	if not is_gameplay_input_blocked():
+		var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		direction = camera.global_basis * Vector3(input_dir.x, 0, input_dir.y)
+		if Input.is_action_pressed("jump"): direction += Vector3.UP
+		if Input.is_action_pressed("crouch"): direction += Vector3.DOWN
+	var speed := CHEAT_FLY_FAST_SPEED if Input.is_action_pressed("sprint") else CHEAT_FLY_SPEED
+	velocity = direction.limit_length() * speed
+	global_position += velocity * delta
 
 func _sync_body_collision_to_locomotion() -> void:
 	if body_collision_shape == null:
@@ -1187,7 +1236,7 @@ func _physics_process(delta):
 	if is_player_dead:
 		return
 	crawl_transition_remaining = maxf(0.0, crawl_transition_remaining - delta)
-	if is_instance_valid(seated_in) or in_ui_mode or locomotion_state == LocomotionState.CLIMBING:
+	if is_instance_valid(seated_in) or in_ui_mode or locomotion_state in [LocomotionState.CLIMBING, LocomotionState.FLYING]:
 		_update_stamina(delta, false)
 	# UI/seat lock movement, not the lifetime of damage invulnerability.
 	if damage_cooldown > 0.0:
@@ -1208,6 +1257,8 @@ func _physics_process(delta):
 		climb_reenter_cooldown_remaining = maxf(0.0, climb_reenter_cooldown_remaining - delta)
 
 	match locomotion_state:
+		LocomotionState.FLYING:
+			_process_cheat_flight(delta)
 		LocomotionState.NORMAL:
 			if not is_grabbed(): _try_start_climb()
 			# If already within reach, catch before the walking step overshoots

@@ -28,7 +28,7 @@ func _init() -> void:
 	register_command("rvctl", "rvctl", "Open RV controls.", _open_tui)
 	register_command("clear", "clear", "Clear shell output.", _clear)
 	register_command("exit", "exit", "Close the tablet.", _exit)
-	register_command("cheat", "cheat [status|true|false|fuel|power|materials] [true|false]", "Read or change session-only unlimited resources on this RV.", _cheat, _complete_cheat)
+	register_command("cheat", "cheat [status|true|false|fuel|power|materials|fly] [true|false|status]", "Read or change session-only RV resources or operator flight. cheat true/false changes resources only.", _cheat, _complete_cheat)
 	register_command("time", "time [set HH:MM [day]]", "Read or immediately set world time (day 1-1000000).", _time, _complete_set)
 	register_command("weather", "weather [set preset]", "Read sample/target or immediately set weather. Use Tab to list presets.", _weather, _complete_weather)
 
@@ -217,6 +217,7 @@ func _unlimited(enabled: bool) -> String:
 	return " UNLIMITED" if enabled else ""
 
 func _cheat(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	if not args.is_empty() and args[0] == "fly": return _cheat_fly(args.slice(1), context)
 	var all_flags := args.size() == 1 and args[0] in ["true", "false"]
 	var one_flag := args.size() == 2 and args[0] in ["fuel", "power", "materials"] and args[1] in ["true", "false"]
 	if not (args.is_empty() or (args.size() == 1 and args[0] == "status") or all_flags or one_flag):
@@ -231,6 +232,21 @@ func _cheat(args: PackedStringArray, context: Dictionary) -> Dictionary:
 		"Power: %s" % ("UNLIMITED" if rv.unlimited_power else "finite"),
 		"Materials: %s" % ("UNLIMITED" if rv.unlimited_materials else "finite"),
 	]))
+
+func _cheat_fly(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	if args.size() > 1 or (args.size() == 1 and args[0] not in ["true", "false", "status"]): return _usage("cheat")
+	var rv := _connected_rv(context)
+	if rv == null: return _error("RV unavailable.")
+	var player: Variant = context.get("player")
+	if not player is Node3D or not is_instance_valid(player) or player.is_queued_for_deletion() or not player.is_inside_tree() or not player.has_method("set_cheat_flying") or not WorldEntities.same_world(player, rv):
+		return _error("Terminal operator unavailable.")
+	if args.size() == 1 and args[0] != "status":
+		if not player.set_cheat_flying(args[0] == "true"):
+			return _error("Flight change blocked. Leave seats, grabs and placement; use open space to disable flight.")
+	var flying: bool = player.is_cheat_flying()
+	var lines := PackedStringArray(["Flight: %s" % ("ON" if flying else "OFF")])
+	if flying: lines.append("Close terminal: WASD fly, Space up, Ctrl down, Shift fast. cheat fly false disables in open space.")
+	return _result(true, lines)
 
 func _world_clock(context: Dictionary) -> WorldClock:
 	var rv := _connected_rv(context)
@@ -306,7 +322,9 @@ func _complete_options(prefix: String, options: Array) -> PackedStringArray:
 
 func _complete_cheat(args: PackedStringArray, _context: Dictionary) -> PackedStringArray:
 	if args.size() == 1:
-		return _complete_options("cheat " + args[0], ["cheat status", "cheat true", "cheat false", "cheat fuel", "cheat power", "cheat materials"])
+		return _complete_options("cheat " + args[0], ["cheat status", "cheat true", "cheat false", "cheat fuel", "cheat power", "cheat materials", "cheat fly"])
+	if args.size() == 2 and args[0] == "fly":
+		return _complete_options("cheat fly " + args[1], ["cheat fly true", "cheat fly false", "cheat fly status"])
 	if args.size() == 2 and args[0] in ["fuel", "power", "materials"]:
 		var prefix := "cheat " + args[0] + " "
 		return _complete_options(prefix + args[1], [prefix + "true", prefix + "false"])

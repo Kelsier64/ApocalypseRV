@@ -99,6 +99,9 @@ cheat true                    # 全部開啟；cheat false 全部關閉
 cheat fuel true               # 無限油
 cheat power true              # 無限電，仍須裝妥可用電池
 cheat materials true          # 無限制製作、建造及一般維修材料
+cheat fly true                # 玩家穿牆飛行；Esc 關閉終端後開始移動
+cheat fly false               # 關閉飛行，須位於足夠站立的空間
+cheat fly status              # 查詢飛行狀態（也可輸入 cheat fly）
 time                          # 顯示天數與時間
 time set 18:30                # 設定當天時間
 time set 08:00 3              # 設定第 3 天 08:00
@@ -106,7 +109,9 @@ weather                       # 顯示目前及目標天氣
 weather set heavy_rain        # 立即設定天氣
 ```
 
-天氣選項為 `clear`、`overcast`、`rain`、`heavy_rain`、`fog`、`medium_fog`、`heavy_fog`、`storm`；`rain`／`fog` 是小雨／小霧，`storm` 是大雨加大霧。時間與天氣只立即設定，後續沿用自然推進、教學暫停與偏行霧規則。作弊只作用於目前連接的 RV，重開平板保留，成功讀檔或新遊戲後重設；實際油電與材料數字不補滿，啟用項目標示 `UNLIMITED`。無限材料免除數值材料費，實體維修包、輪胎及其他道具仍照常消耗，工作時間與設備條件維持原規則。
+天氣選項為 `clear`、`overcast`、`rain`、`heavy_rain`、`fog`、`medium_fog`、`heavy_fog`、`storm`；`rain`／`fog` 是小雨／小霧，`storm` 是大雨加大霧。時間與天氣只立即設定，後續沿用自然推進、教學暫停與偏行霧規則。資源作弊只作用於目前連接的 RV，重開平板保留，成功讀檔或新遊戲後重設；實際油電與材料數字不補滿，啟用項目標示 `UNLIMITED`。無限材料免除數值材料費，實體維修包、輪胎及其他道具仍照常消耗，工作時間與設備條件維持原規則。
+
+飛行只作用於操作終端的玩家：WASD 朝視線方向移動（12 m/s）、Space 上升、Ctrl 下降、Shift 加速（24 m/s），不受重力及碰撞影響，也不消耗體力。終端或設定開啟時停在原地，關閉後須放開原本按住的操作鍵。`cheat true/false` 只切換資源，不改飛行。飛行期間不能保存；在空曠處關閉後恢復重力。入座、死亡、跨世界轉場及讀檔會結束飛行。
 
 TUI 的 Tab／Shift+Tab 依閱讀順序在當頁循環；上下鍵沿清單移動，Equipment 右鍵進入同列 ON/OFF、左鍵返回設備，Crafting 右鍵進入 Add to queue、左鍵返回所選配方。方向鍵不切換開關；Enter／Space 啟用開關。Energy 數字欄位左右鍵調整數值、上下鍵切換欄位。Structure 方向鍵沿車殼格線移動，右側及前後槽可用右鍵進入操作欄，左鍵返回原槽。不可用或隱藏的操作會跳過，焦點移到畫面外時自動捲動。
 
