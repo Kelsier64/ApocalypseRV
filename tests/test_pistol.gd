@@ -43,7 +43,102 @@ func mouse(button: int, pressed: bool) -> InputEventMouseButton:
 	event.pressed = pressed
 	return event
 
+func steps(count: int = 2) -> void:
+	for index in count:
+		await physics_frame
+		await process_frame
+
+func check_animated_copies(view: Node, source_root: Node3D, note: String) -> void:
+	check(source_root != null, "Pistol has animated source: " + note)
+	if source_root == null: return
+	var count := 0
+	for entry: Dictionary in view.item_meshes:
+		if entry.source != source_root and not source_root.is_ancestor_of(entry.source): continue
+		for copy: MeshInstance3D in entry.copies:
+			if copy.layers != 1 << 21: continue
+			count += 1
+			check(copy.global_transform.is_equal_approx(entry.source.global_transform) and copy.visible == entry.source.visible, "Viewmodel follows animated source transform and visibility: " + note)
+	check(count > 0, "Animated pistol source has a rendered viewmodel copy: " + note)
+
+func check_pistol_viewmodel() -> void:
+	clear_bag()
+	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
+	var observer := Camera3D.new()
+	world.add_child(observer)
+	observer.make_current()
+	var competing_lights: Array[OmniLight3D] = []
+	for index in 4:
+		var light := OmniLight3D.new()
+		world.add_child(light)
+		light.global_position = actor.camera.global_position
+		competing_lights.append(light)
+	add_pistol(4)
+	add_ammo(20)
+	await steps(20)
+	view.update_view()
+	var pistol: Pistol = actor.held_item_node
+	pistol.set_process(false)
+	var held_pose := pistol.global_transform
+	var muzzle_pose: Transform3D = pistol.get_node("Muzzle").global_transform
+	var camera_pose: Transform3D = actor.camera.global_transform
+	var baseline: float = actor.camera.fov
+	actor.camera.make_current()
+	view.update_view()
+	check(view.active and view.arm_meshes["R"].is_visible_in_tree() and view.arm_meshes["L"].is_visible_in_tree(), "Pistol viewmodel renders both surviving arms")
+	check(pistol.global_transform.is_equal_approx(held_pose) and pistol.get_node("Muzzle").global_transform.is_equal_approx(muzzle_pose), "Pistol view activation preserves the authoritative held and muzzle transforms")
+	check(actor.camera.global_transform.is_equal_approx(camera_pose) and is_equal_approx(actor.camera.fov, baseline), "Pistol view activation preserves gameplay camera pose and FOV")
+	var muzzle_light: Light3D = pistol.get_node("Muzzle/Light")
+	check(view.held_light_copies.has(muzzle_light.get_instance_id()), "Invisible muzzle light is bound before firing")
+	if view.held_light_copies.has(muzzle_light.get_instance_id()):
+		var light_copy: Light3D = view.held_light_copies[muzzle_light.get_instance_id()].copy
+		check(not light_copy.visible, "Unfired muzzle copy remains dark")
+		check(actor.weapon.try_fire() and rounds() == 3, "Viewmodel firing spends one canonical round")
+		pistol._process(.01)
+		view.update_view()
+		check(muzzle_light.visible and light_copy.visible and light_copy.layers == 1 << 21 and light_copy.global_transform.is_equal_approx(muzzle_light.global_transform), "Muzzle copy lights immediately at the real emitter transform")
+		var slide := pistol.find_child("Slide", true, false) as Node3D
+		check(slide != null and slide.position.z > .001, "Firing animates the real slide")
+		check_animated_copies(view, slide, "recoiling slide")
+		check_animated_copies(view, pistol.get_node("Muzzle/Flash"), "visible muzzle flash")
+		pistol._process(.10)
+		view.update_view()
+		check(view.held_light_copies[muzzle_light.get_instance_id()].copy == light_copy and not light_copy.visible, "The persistent muzzle copy switches off immediately after the flash")
+		check_animated_copies(view, pistol.get_node("Muzzle/Flash"), "hidden muzzle flash")
+	check(actor.weapon.start_reload(), "Viewmodel pistol starts its normal reload")
+	actor.weapon.advance(.6)
+	var magazine := pistol.find_child("Magazine", true, false) as Node3D
+	check(magazine != null and magazine.position.y < -.01, "Reload moves the real magazine")
+	view.update_view()
+	check_animated_copies(view, magazine, "reload magazine")
+	actor.weapon.cancel_actions()
+	Input.action_press("weapon_aim")
+	actor.weapon.advance(.16)
+	for pitch: float in [0.0, -.65, .65]:
+		actor.camera.rotation.x = pitch
+		await steps(20)
+		view.update_view()
+		check(actor.weapon.aim_weight > .99 and is_equal_approx(view.camera.fov, actor.camera.fov), "Full ADS viewmodel retains the gameplay FOV at pitch " + str(pitch))
+		for point: Vector3 in [pistol.muzzle_position(), pistol.muzzle_position() + pistol.global_basis.x * .08]:
+			var gameplay: Vector2 = actor.camera.unproject_position(point) / root.get_visible_rect().size
+			var rendered: Vector2 = view.camera.unproject_position(point) / Vector2(view.viewport.size)
+			check(gameplay.distance_to(rendered) < .0001, "Full ADS projection matches the gameplay sight line at pitch " + str(pitch))
+	Input.action_release("weapon_aim")
+	actor.weapon.advance(.16)
+	actor.camera.rotation = Vector3.ZERO
+	actor.body_state.sever(&"right_arm")
+	actor._apply_body_capabilities()
+	await steps(20)
+	view.update_view()
+	check(view.active and view.arm_meshes["L"].is_visible_in_tree() and not view.arm_meshes["R"].is_visible_in_tree(), "Pistol viewmodel supports the surviving left arm without a ghost right arm")
+	actor.body_state.reset()
+	actor._apply_body_capabilities()
+	clear_bag()
+	for light: OmniLight3D in competing_lights: light.queue_free()
+	observer.queue_free()
+	await steps()
+
 func run() -> void:
+	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
@@ -56,6 +151,7 @@ func run() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	await physics_frame
 	await process_frame
+	await check_pistol_viewmodel()
 	add_pistol(4)
 	check(actor.weapon.can_use(), "Normal player can use held pistol")
 	var identity: String = actor.inventory.active_item().state.id

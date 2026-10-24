@@ -321,6 +321,51 @@ func check_first_person_carry() -> void:
 	observer.queue_free()
 	await steps()
 
+func check_flashlight_viewmodel() -> void:
+	clear_bag()
+	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
+	var observer := Camera3D.new()
+	world.add_child(observer)
+	observer.make_current()
+	check(actor.add_item("Flashlight", false, "res://props/flashlight.tscn", {"flashlight": {"charge": 30.0, "on": false}}), "Grant flashlight with known battery charge")
+	await steps(20)
+	var held: Flashlight = actor.held_item_node
+	var beam: SpotLight3D = held.get_node("Beam")
+	var held_pose := held.global_transform
+	var beam_pose := beam.global_transform
+	actor.camera.make_current()
+	view.update_view()
+	check(view.active and held.global_transform.is_equal_approx(held_pose) and beam.global_transform.is_equal_approx(beam_pose), "Flashlight view activation preserves its real body and beam transforms")
+	check(view.held_light_copies.has(beam.get_instance_id()), "Flashlight beam has a persistent copy while switched off")
+	if view.held_light_copies.has(beam.get_instance_id()):
+		var light_copy: Light3D = view.held_light_copies[beam.get_instance_id()].copy
+		check(not light_copy.visible, "Off flashlight does not illuminate the viewmodel")
+		actor._toggle_flashlight()
+		view.update_view()
+		check(beam.visible and light_copy.visible and light_copy.layers == 1 << 21 and light_copy.global_transform.is_equal_approx(beam.global_transform), "Flashlight copy switches on immediately at the authoritative beam transform")
+		actor._advance_flashlight(3.0)
+		actor._advance_flashlight(0.0)
+		var charge: float = actor.inventory.active_item().state.flashlight.charge
+		view.update_view()
+		view.update_view()
+		check(is_equal_approx(charge, 29.0) and is_equal_approx(actor.inventory.active_item().state.flashlight.charge, charge) and is_equal_approx(held.charge, charge), "Only the flashlight authority drains charge; view updates do not consume battery")
+		actor._toggle_flashlight()
+		view.update_view()
+		check(not beam.visible and not light_copy.visible and view.held_light_copies[beam.get_instance_id()].copy == light_copy, "The same flashlight copy switches off immediately")
+		actor._toggle_flashlight()
+		actor.grab_control.captor = world
+		actor.grab_control.keep_flashlight = true
+		actor._advance_flashlight(0.0)
+		view.update_view()
+		check(not view.active and beam.visible and not light_copy.visible and beam.global_transform.is_equal_approx(beam_pose), "Grab fallback preserves the real flashlight beam while hiding its cosmetic copy")
+		actor.grab_control.captor = null
+		actor.grab_control.keep_flashlight = false
+		view.update_view()
+		check(view.active, "Flashlight returns to its viewmodel after grab ownership ends")
+	clear_bag()
+	observer.queue_free()
+	await steps()
+
 func check_carry_postures() -> void:
 	clear_bag()
 	actor.camera.rotation = Vector3.ZERO
@@ -491,6 +536,7 @@ func run() -> void:
 	await check_scavenge_loot()
 	await check_carry_postures()
 	await check_first_person_carry()
+	await check_flashlight_viewmodel()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))

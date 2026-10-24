@@ -21,6 +21,7 @@ var item_meshes: Array[Dictionary] = []
 var hidden_arms: Dictionary = {}
 var light_sources: Array[WeakRef] = []
 var light_copies: Dictionary = {}
+var held_light_copies: Dictionary = {}
 var next_light_scan := 0
 
 func _enter_tree() -> void:
@@ -86,8 +87,8 @@ func _eligible() -> bool:
 	if actor.locomotion_state == actor.LocomotionState.CLIMBING or visual.get_node("Locomotion").climb_exit_remaining > 0.0: return false
 	var held: Node3D = actor.held_item_node
 	if not is_instance_valid(held) or held.is_queued_for_deletion() or not held.is_visible_in_tree() or carry.item != held: return false
-	# Emitters and articulated supports keep their existing world-space view.
-	if not held is Item or held is Flashlight or held is Pistol or held.has_method("held_support_center"): return false
+	# Articulated supports keep their existing world-space view.
+	if not held is Item or held.has_method("held_support_center"): return false
 	if held.definition != null and held.definition.requires_rv_connection: return false
 	var large: bool = actor.inventory.active_item().get("is_large", false)
 	return actor.can_use_hands(2 if large else 1) and (large or carry.bounds.size.x <= .70)
@@ -102,7 +103,8 @@ func update_view() -> void:
 		_bind_item()
 	active = true
 	var large: bool = actor.inventory.active_item().get("is_large", false)
-	var mode: String = "both" if large else carry.active_hand
+	var two_hands: bool = large or item is Pistol
+	var mode: String = "both" if two_hands else carry.active_hand
 	visual.local_body.mesh = parts["body_" + mode]
 	_restore_arm_layers()
 	for piece in visual.dismemberment.pieces:
@@ -113,7 +115,7 @@ func update_view() -> void:
 		hidden_arms[mesh] = mesh.layers
 		mesh.layers &= ~PlayerModelVisual.LOCAL_VIEW_LAYER
 	for side: String in arm_meshes:
-		arm_meshes[side].visible = actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm") and (large or carry.active_hand == side)
+		arm_meshes[side].visible = actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm") and (two_hands or carry.active_hand == side)
 	for entry in item_meshes:
 		if not is_instance_valid(entry.source): continue
 		entry.source.layers = PlayerModelVisual.FULL_BODY_LAYER
@@ -145,6 +147,17 @@ func update_view() -> void:
 		# Center bulky props between two forearms entering from opposite corners.
 		offset = Vector3(0, 0, .30 + maxf(0.0, carry.bounds.size.y - .50) * .30)
 	if carry.active_hand == "L" and not large: offset.x = -offset.x
+	camera.fov = 70.0
+	if item is Pistol:
+		# Weapon posing follows the full aim camera. At full ADS, use its exact
+		# projection so iron sights and the authoritative shot ray stay aligned.
+		var aim: float = actor.weapon.aim_weight
+		basis = actor.camera.get_camera_transform().basis
+		var pitch: float = actor.camera.rotation.x
+		var hip_height := lerpf(-.10, 0.0, smoothstep(.25, .80, pitch))
+		# Keep the virtual lens above the sleeves while the real arms retract.
+		offset = _safe_pistol_offset(Vector3(-.12 if carry.active_hand == "R" else .12, hip_height, .25).lerp(Vector3.ZERO, aim), basis)
+		camera.fov = lerpf(70.0, actor.camera.fov, aim)
 	camera.global_transform = Transform3D(basis, actor.camera.get_camera_transform().origin + basis * offset)
 	camera.force_update_transform()
 	_sync_lights()
@@ -169,6 +182,15 @@ func _bind_item() -> void:
 			mesh.get_parent().add_child(copy)
 			copies.append(copy)
 		item_meshes.append({"source": mesh, "layers": mesh.layers, "copies": copies})
+	# Reserve attached emitters even while off: a muzzle flash lasts less than
+	# the nearby-light scan interval and must illuminate the arms on that frame.
+	for source: Light3D in item.find_children("*", "Light3D", true, false):
+		var id := source.get_instance_id()
+		if light_copies.has(id):
+			light_copies[id].copy.hide()
+			light_copies[id].copy.queue_free()
+			light_copies.erase(id)
+		held_light_copies[id] = _copy_light(source)
 
 func _restore_arm_layers() -> void:
 	for mesh: MeshInstance3D in hidden_arms:
@@ -176,6 +198,11 @@ func _restore_arm_layers() -> void:
 	hidden_arms.clear()
 
 func _clear_item() -> void:
+	for entry in held_light_copies.values():
+		if is_instance_valid(entry.copy):
+			entry.copy.hide()
+			entry.copy.queue_free()
+	held_light_copies.clear()
 	for entry in item_meshes:
 		if is_instance_valid(entry.source): entry.source.layers = entry.layers
 		for copy in entry.copies:
@@ -217,7 +244,7 @@ func _sync_lights() -> void:
 		for reference in light_sources:
 			var source := reference.get_ref() as Light3D
 			if source != null: live_sources.append(reference)
-			if source == null or not source.is_inside_tree() or source.get_world_3d() != actor.get_world_3d() or not source.is_visible_in_tree() or source.light_energy <= 0.0: continue
+			if source == null or held_light_copies.has(source.get_instance_id()) or not source.is_inside_tree() or source.get_world_3d() != actor.get_world_3d() or not source.is_visible_in_tree() or source.light_energy <= 0.0: continue
 			var distance := source.global_position.distance_to(actor.camera.global_position)
 			if source is DirectionalLight3D: distance = -1.0
 			elif source is OmniLight3D and distance > source.omni_range + 1.0: continue
@@ -231,17 +258,12 @@ func _sync_lights() -> void:
 			var id := source.get_instance_id()
 			selected[id] = true
 			if light_copies.has(id): continue
-			var copy := source.duplicate(0) as Light3D
-			for child in copy.get_children(): child.free()
-			copy.set_meta(LIGHT_COPY, true)
-			copy.layers = VIEW_LAYER
-			add_child(copy)
-			light_copies[id] = {"source": weakref(source), "copy": copy}
+			light_copies[id] = _copy_light(source)
 		for id in light_copies.keys():
 			if selected.has(id): continue
 			light_copies[id].copy.queue_free()
 			light_copies.erase(id)
-	for entry in light_copies.values():
+	for entry in light_copies.values() + held_light_copies.values():
 		var source := entry.source.get_ref() as Light3D
 		var copy: Light3D = entry.copy
 		if source == null:
@@ -255,3 +277,38 @@ func _sync_lights() -> void:
 		copy.light_cull_mask = source.light_cull_mask | VIEW_LAYER
 		copy.visible = source.is_visible_in_tree()
 		copy.global_transform = source.global_transform
+
+func _copy_light(source: Light3D) -> Dictionary:
+	var copy := source.duplicate(0) as Light3D
+	for child in copy.get_children(): child.free()
+	copy.set_meta(LIGHT_COPY, true)
+	copy.layers = VIEW_LAYER
+	add_child(copy)
+	return {"source": weakref(source), "copy": copy}
+
+func _safe_pistol_offset(offset: Vector3, basis: Basis) -> Vector3:
+	# Shorten only the cosmetic camera travel when a raised/reloading sleeve
+	# crosses it. ADS stays at the real eye, and no physical pose is changed.
+	var travel := basis * offset
+	if travel.length_squared() < .000001: return offset
+	var origin: Vector3 = actor.camera.get_camera_transform().origin
+	var rig: Skeleton3D = visual.skeleton
+	var amount := 1.0
+	for side: String in ["R", "L"]:
+		if not actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"): continue
+		for segment in [["upper_arm_", "forearm_", .15], ["forearm_", "hand_", .13]]:
+			var start := rig.to_global(rig.get_bone_global_pose(rig.find_bone(segment[0] + side)).origin)
+			var end := rig.to_global(rig.get_bone_global_pose(rig.find_bone(segment[1] + side)).origin)
+			var radius: float = segment[2]
+			if origin.distance_to(Geometry3D.get_closest_point_to_segment(origin, start, end)) < radius: return Vector3.ZERO
+			var nearest := Geometry3D.get_closest_points_between_segments(origin, origin + travel * amount, start, end)
+			if nearest[0].distance_to(nearest[1]) >= radius: continue
+			var low := 0.0
+			var high := (nearest[0] - origin).dot(travel) / travel.length_squared()
+			for iteration in 10:
+				var middle := (low + high) * .5
+				var point := origin + travel * middle
+				if point.distance_to(Geometry3D.get_closest_point_to_segment(point, start, end)) < radius: high = middle
+				else: low = middle
+			amount = minf(amount, low)
+	return offset * amount
