@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "created": "2026-10-24",
+  "generator": "built-in image_gen",
+  "use_case": "stylized-concept",
+  "stage": "Reference concepts only; no ComfyUI 3D generation or gameplay integration.",
+  "transparent_background": true,
+  "prompt_assembly": "shared_prompt + \"\\nSubject: \" + item.subject",
+  "shared_prompt": "Use case: stylized-concept.\nAsset type: single reference image to be consumed by a single-image ComfyUI TRELLIS.2 image-to-3D workflow for a first-person post-apocalyptic RV scavenging game.\nPrimary request: Create the ONE specified pickup prop as a production-ready isolated reference render.\nStyle: restrained retro industrial horror game art; low-poly structural geometry with broad beveled/faceted planes and simple chunky forms; hand-painted low-resolution-looking material blocks, not pixelated output. Dull cold gray, olive, muted cream, rust-brown with one restrained accent color appropriate to the subject. Strong clear silhouette recognizable at 540p gameplay. Wear describes seams, edges and handling, not uniformly noisy speckles. Practical original unbranded object, believable proportions, no whimsical cartoon exaggeration. Clear simplified mesh-friendly construction, no ultra fine engineering, no loose fragments.\nComposition: exactly one complete object centered at 75-85 percent of a square image with generous transparent margin, upright or specified resting orientation. Weak-perspective three-quarter view, camera slightly above the object, showing front, one side and top; important handle holes and attachment joints visible. No repeated object, no multi-view sheet, no orthographic turnaround, no collage.\nLighting: soft broad neutral studio light sufficient to distinguish structure and material, mild shading for volume, no harsh specular glare, no baked ambient occlusion pools, no dramatic horror lighting.\nBackground: genuine transparent alpha, including holes through handles, not a checkerboard graphic. No ground, no floor, no cast ground shadow, no scene, no stand, no frame.\nText: none; no words, numbers, labels, logos, watermark, dimension arrows or UI. Keep surfaces quiet and material boundaries obvious.",
+  "items": [
+    {
+      "id": "copper_wire_spool",
+      "name_zh": "銅線捲盤",
+      "reference": "copper_wire_spool/reference.png",
+      "proposed_dimensions_cm": "28 × 24 × 28 cm",
+      "proposed_carry": "單手",
+      "proposed_use_zh": "可分解為銅與少量鋼材的回收物。",
+      "subject": "ONE compact industrial copper-wire spool, 28 cm diameter, 24 cm wide, lying firmly on its two circular flanges with its rotation axis horizontal, the front circular flange and the drum visible. Two thick dull petrol-teal painted steel circular flanges connected by a broad center drum densely wound with thick reddish copper wire. Front flange has a small deep dark central spindle hole and three shallow pressed radial ribs, not perforated. The dense copper winding is clearly visible between flanges as one coherent continuous mass, copper at least one third of the visible object. A short thick insulated wire end is tucked securely under a winding, no loose wires extending outward. Chunky clean silhouette, physically plausible straight circular flanges, chipped teal paint and restrained oxidized copper."
+    },
+    {
+      "id": "salvaged_motor",
+      "name_zh": "報廢馬達",
+      "reference": "salvaged_motor/reference.png",
+      "proposed_dimensions_cm": "42 × 27 × 30 cm",
+      "proposed_carry": "雙手",
+      "proposed_use_zh": "沉重的高價值回收物，可提供鋼、銅與機械零件。",
+      "subject": "ONE salvaged compact industrial electric motor, approximately 42 cm long, 27 cm wide, 30 cm tall. Horizontal cylindrical dark olive-gray cast metal housing with exactly six broad straight longitudinal cooling ribs, a large circular front endcap, a short thick steel output shaft projecting from its center, an integrated rectangular electrical junction box on top, and two thick bolted mounting feet forming a stable base. Short stout cast lifting lug integrated into the top. One partly exposed orange-copper coil patch visible through a broad inset side vent, no loose parts. Clearly cylindrical main body, robust everyday industrial design, oily black grime near base, restrained rust at seams, peeling dull olive paint, intact structural shape."
+    },
+    {
+      "id": "broken_shortwave_radio",
+      "name_zh": "故障短波收音機",
+      "reference": "broken_shortwave_radio/reference.png",
+      "proposed_dimensions_cm": "32 × 12 × 22 cm",
+      "proposed_carry": "單手",
+      "proposed_use_zh": "可分解為電子元件；是否能修復留待玩法設計。",
+      "subject": "ONE broken portable shortwave radio, approximately 32 cm wide, 12 cm deep, 22 cm tall. Original unbranded 1970s utility design: rectangular faded mustard-beige painted metal case with modest chamfered corners, large round black recessed speaker grille occupying left front with simplified thick horizontal slots, small recessed smoky dark green tuning window on upper right with a few simple unlabeled pale ticks, two large dark knobs under it. One rigid thick dark carry handle forms a clean open rectangular hole above the body. Telescopic antenna fully retracted flush into the top edge, no extended aerial. Small dent on one lower corner, chipped paint exposing dark steel, clear material blocks and readable speaker silhouette. No glowing display, no strings, no cables, no accessories."
+    },
+    {
+      "id": "medical_tin",
+      "name_zh": "密封醫療鐵盒",
+      "reference": "medical_tin/reference.png",
+      "proposed_dimensions_cm": "30 × 20 × 12 cm",
+      "proposed_carry": "單手",
+      "proposed_use_zh": "補給容器提案；治療與內容物尚未實作。",
+      "subject": "ONE closed rectangular portable medical supply metal tin, approximately 30 cm wide, 20 cm tall, 12 cm deep. Squat rounded rectangular dull desaturated brick-red painted steel case with a chunky integrated carry handle above, exactly two large dark front closure latches, visible continuous lid seam, broad flat front surface featuring one simple faded ivory square patch with a plain dark red plus-shaped medical symbol, no lettering. Thick folded metal corners, structurally intact closed box, shallow pressed border in lid, subtly worn painted metal with large readable patches of missing paint at edges, tiny rust at seam, dark charcoal handle and latches. Clean chunky shape, no bandages, no loose contents, no equipment attached."
+    },
+    {
+      "id": "industrial_valve",
+      "name_zh": "生鏽工業閥門",
+      "reference": "industrial_valve/reference.png",
+      "proposed_dimensions_cm": "32 × 20 × 36 cm",
+      "proposed_carry": "單手",
+      "proposed_use_zh": "機械回收物，可提供鋼材與少量黃銅。",
+      "subject": "ONE compact salvaged industrial shutoff valve assembly, approximately 32 cm wide, 20 cm deep, 36 cm tall. A short horizontal T-shaped thick cast-iron valve body with one broad circular pipe flange at each end, both flanges permanently part of the same object. A short thick vertical stem rises from the center and supports one large deep brick-red circular handwheel with exactly four thick straight spokes and four large open quadrants, the center connection and open wheel holes clearly legible. The wheel is horizontal with its top visible. The iron body is dull charcoal-gray with coarse restrained rust at flange rims, warm tarnished brass stem collar below red wheel, four large chunky bolt holes per flange. Compact robust silhouette, no attached long pipes, no separate bolts, no hoses."
+    },
+    {
+      "id": "enamel_kettle",
+      "name_zh": "搪瓷熱水壺",
+      "reference": "enamel_kettle/reference.png",
+      "proposed_dimensions_cm": "27 × 21 × 25 cm",
+      "proposed_carry": "單手",
+      "proposed_use_zh": "常見生活廢品，可分解回收少量金屬。",
+      "subject": "ONE old closed enamel stovetop kettle, approximately 27 cm wide including spout, 21 cm deep, 25 cm tall including handle. Squat rounded slightly faceted metal body coated in worn desaturated cream enamel, a dark forest-green band around the base, one short stout tapered upward-angled spout permanently attached on one side, closed circular inset lid with one chunky charcoal-black knob, one thick rigid charcoal-black arched carry handle attached at two sturdy side mounts above the lid. Handle arch is a clearly open hole. Spout is stubby and structurally thick with a small clearly open dark mouth. Large restrained chips in enamel expose dark iron at base and spout edge, a few broad rusty streaks, no severe damage. Warm familiar household object with an easily recognizable silhouette."
+    }
+  ]
+}
