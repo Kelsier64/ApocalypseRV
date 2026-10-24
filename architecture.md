@@ -18,6 +18,8 @@
 
 Item 共用契約：可搬運道具與原設備共用 `Item`、`ItemDefinition`、`ItemState` 及 `ItemMount`，以背包紀錄持有手持狀態；短 F 進入獨立預覽，長 F 拆下固定物品。Item 免疫一般怪物攻擊，支撐被拆後掉落並可拾取；2026-10-10 Slender Speaker 僅保留砸擊接觸每拳對同一 Item 扣 60 耐久的專用例外，歸零才摧毀；抓取接觸設備時保留設備及其碰撞。檢查點目前為 v6，舊檔保持原樣且須重新開局。此處描述實作，歷史驗收連結保留當時範圍，不代表本輪全部測試或實機已通過。
 
+教學倉庫的 Scrap A–F 使用六件 `props/scavenge_loot/` Item，G／H 保留原廢料；馬達為大型物品。`OpeningSiteContent.ORIENTATION_SALVAGE` 集中角色對應場景，沿用原 ID 與各件固定三份金屬產量。`SaveSceneCatalog` 登錄新場景；Checkpoint 的教學角色驗證只接受原廢料或該角色指定的新物品，保留當前格式已保存的舊外觀，不補發、不升級保存格式。Wrapper 使用獨立基本碰撞，不以生成網格建立物理形狀。詳見[物資製作與整合](art_source/scavenge_loot_references/README.md)。
+
 2026-10-09 整合更新：正式新局選擇生成 v10，沿用 v9 道路種類規則，新增森林 Slender Speaker 的獨立導航與區段紀錄；該輪檢查點支援生成 v14；目前改為 v17。`SlenderSpeaker extends Monster` 覆寫行為，`PlayerGrab.Mode.EXECUTION` 共用抓取所有權並保留 Raker 分支。行為、音樂及實機驗證結果見[本輪紀錄](docs/validation/2026-10-09-slender-speaker-pr.md)。下方 v9 專節描述該版既有契約，不能用其歷史測試證明 v10 已通過。
 
 ## 目錄

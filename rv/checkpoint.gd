@@ -325,14 +325,17 @@ func _orientation_items_error(owned_data: Dictionary, tutorial: Dictionary) -> S
 	# References may outlive consumed, recycled or destroyed Items. Any owner
 	# that still exists must retain its actual Item type, wherever it is stored.
 	var scenes := {"scrapper": "res://equipment/scrapper.tscn", "workbench": "res://equipment/crafting_station.tscn",
-		"scrap_a": "res://props/scrap.tscn", "scrap_b": "res://props/scrap.tscn", "barrel": "res://props/oil_barrel.tscn",
+		"barrel": "res://props/oil_barrel.tscn",
 		"spare": "res://props/wheel.tscn", "original_wheel": "res://props/wheel.tscn", "socket": "res://rv/battery_socket.tscn",
 		"tablet": "res://equipment/tablet_screen.tscn", "fuel_port": "res://equipment/fuel_port.tscn"}
 	var extra_scenes := {"battery": "res://props/battery.tscn", "engine_kit_a": "res://props/engine_repair_kit.tscn",
 		"engine_kit_b": "res://props/engine_repair_kit.tscn", "barrel_b": "res://props/oil_barrel.tscn",
 		"original_battery": ["res://props/battery.tscn", "res://props/battery_large.tscn"],
 		"engine": ["res://props/engine_standard.tscn", "res://props/engine_upgraded.tscn"]}
-	for letter in ["c", "d", "e", "f", "g", "h"]: extra_scenes["scrap_" + letter] = "res://props/scrap.tscn"
+	# Existing current-version saves retain their original scrap scene. New art
+	# accepts only the scene assigned to that role, not arbitrary trusted Items.
+	for letter in OpeningSiteContent.ORIENTATION_SALVAGE:
+		extra_scenes["scrap_" + letter] = ["res://props/scrap.tscn", OpeningSiteContent.ORIENTATION_SALVAGE[letter]]
 	for key in extra_scenes:
 		scenes[key] = extra_scenes[key]
 	for key in scenes:

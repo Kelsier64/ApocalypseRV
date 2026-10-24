@@ -1,6 +1,15 @@
 extends RefCounted
 class_name OpeningSiteContent
 ## Fixed opening inventory; callers retain the shared outdoor actor lifecycle.
+const ORIENTATION_SALVAGE := {
+	"a": "res://props/scavenge_loot/copper_wire_spool.tscn",
+	"b": "res://props/scavenge_loot/broken_shortwave_radio.tscn",
+	"c": "res://props/scavenge_loot/salvaged_motor.tscn",
+	"d": "res://props/scavenge_loot/medical_tin.tscn",
+	"e": "res://props/scavenge_loot/industrial_valve.tscn",
+	"f": "res://props/scavenge_loot/enamel_kettle.tscn",
+	"g": "res://props/scrap.tscn",
+	"h": "res://props/scrap.tscn"}
 
 ## Populate only fresh sites. Restoring a snapshot must never replenish supplies.
 static func populate(building: Node3D, container: Node3D, definition_id: StringName) -> bool:
@@ -36,16 +45,14 @@ static func _spawn_orientation_workshop(building: Node3D, container: Node3D) -> 
 	var stock := {
 		"scrapper": ["WorkshopEquipment/Scrapper", "res://equipment/scrapper.tscn"],
 		"workbench": ["WorkshopEquipment/Workbench", "res://equipment/crafting_station.tscn"],
-		"scrap_a": ["WorkshopSupplies/ScrapA", "res://props/scrap.tscn"],
-		"scrap_b": ["WorkshopSupplies/ScrapB", "res://props/scrap.tscn"],
 		"barrel": ["WorkshopSupplies/OilBarrel", "res://props/oil_barrel.tscn"],
 		"spare": ["WorkshopSupplies/SpareWheel", "res://props/wheel.tscn"],
 		"battery": ["WorkshopSupplies/Battery", "res://props/battery.tscn"],
 		"engine_kit_a": ["WorkshopSupplies/EngineKitA", "res://props/engine_repair_kit.tscn"],
 		"engine_kit_b": ["WorkshopSupplies/EngineKitB", "res://props/engine_repair_kit.tscn"],
 		"barrel_b": ["WorkshopSupplies/OilBarrelB", "res://props/oil_barrel.tscn"]}
-	for suffix in ["c", "d", "e", "f", "g", "h"]:
-		stock["scrap_" + suffix] = ["WorkshopSupplies/Scrap" + suffix.to_upper(), "res://props/scrap.tscn"]
+	for suffix in ORIENTATION_SALVAGE:
+		stock["scrap_" + suffix] = ["WorkshopSupplies/Scrap" + suffix.to_upper(), ORIENTATION_SALVAGE[suffix]]
 	var identities := workshop_ids(building)
 	for role in stock:
 		if _orientation_identity_owned(container, identities[role]):

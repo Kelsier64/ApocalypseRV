@@ -105,6 +105,72 @@ func check_new_grants() -> void:
 	clear_bag()
 	await steps()
 
+func check_scavenge_loot() -> void:
+	var loot := ["copper_wire_spool", "broken_shortwave_radio", "salvaged_motor", "medical_tin", "industrial_valve", "enamel_kettle"]
+	var save_path := "res://.godot/test-scavenge-loot.save"
+	var camera_pose: Transform3D = actor.camera.transform
+	ray.set_physics_process(true)
+	for slug in loot:
+		var path: String = "res://props/scavenge_loot/" + slug + ".tscn"
+		check(InventoryItemIcons.texture_for(path) != InventoryItemIcons.FALLBACK, "Scavenge loot has its own inventory icon: " + slug)
+		var scene := load(path) as PackedScene
+		check(scene != null, "Scavenge loot scene loads: " + slug)
+		if scene == null: continue
+		var item := scene.instantiate() as Item
+		check(item != null, "Scavenge loot uses the production Item contract: " + slug)
+		if item == null: continue
+		item.freeze = true
+		entities.add_child(item)
+		item.global_position = actor.camera.global_position + Vector3(1.5, -0.2, 0)
+		actor.camera.look_at(item.global_position, Vector3.UP)
+		var large: bool = slug == "salvaged_motor"
+		check(item.is_large == large, "Only the salvaged motor requires the large-item slot: " + slug)
+		check(not item.scrap_yields.is_empty(), "Scavenge loot has recycling output outside the tutorial: " + slug)
+		item.condition = 47.0
+		item.set_meta("recycle_result", {ItemNames.METAL_PARTS: 3})
+		var state := item.capture_item_state()
+		check(ItemState.valid(path, state), "Scavenge loot state is accepted by the save catalog: " + slug)
+		await steps()
+		ray.force_raycast_update()
+		check(ray.get_collider() == item, "Native interaction ray hits the loot collision: " + slug)
+		var key := InputEventKey.new()
+		key.physical_keycode = KEY_E
+		key.pressed = true
+		Input.parse_input_event(key)
+		await steps()
+		key.pressed = false
+		Input.parse_input_event(key)
+		await steps()
+		var owned: Dictionary = actor.inventory.active_item()
+		check(owned.get("scene_path") == path and owned.get("is_large") == large and owned.get("state") == state, "Physical E input through the native interaction ray preserves loot scene, size, identity and recycling state: " + slug)
+		if owned.is_empty():
+			if is_instance_valid(item): item.queue_free()
+			continue
+		var file := FileAccess.open(save_path, FileAccess.WRITE)
+		file.store_var(actor.inventory.items, false)
+		file.close()
+		file = FileAccess.open(save_path, FileAccess.READ)
+		var inventory: Array = file.get_var(false)
+		file.close()
+		actor.inventory.items.assign(inventory)
+		actor.refresh_inventory()
+		check(actor.held_item_node != null and actor.held_item_node.scene_file_path == path and actor.held_item_node.capture_item_state() == state, "Saved loot inventory recreates the same held Item: " + slug)
+		actor.drop_item()
+		var dropped := find_item(state.id)
+		check(dropped != null and dropped.scene_file_path == path and dropped.is_large == large and dropped.capture_item_state() == state, "Native drop preserves the saved loot Item: " + slug)
+		if dropped != null:
+			var snapshot := WorldActorSnapshot.capture(dropped)
+			check(WorldActorSnapshot.validation_error(snapshot, slug).is_empty(), "Dropped loot forms a valid checkpoint actor: " + slug)
+			dropped.free()
+			var restored := WorldActorSnapshot.restore(snapshot, entities) as Item
+			check(restored.scene_file_path == path and restored.is_large == large and restored.capture_item_state() == state, "World restoration preserves loot scene and state: " + slug)
+			restored.queue_free()
+		clear_bag()
+		await steps()
+	if FileAccess.file_exists(save_path): DirAccess.remove_absolute(save_path)
+	ray.set_physics_process(false)
+	actor.camera.transform = camera_pose
+
 func check_hud_toggle() -> void:
 	var key := InputEventKey.new()
 	key.keycode = KEY_F12
@@ -162,6 +228,7 @@ func run() -> void:
 	await steps()
 	await check_hud_toggle()
 	await check_new_grants()
+	await check_scavenge_loot()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))

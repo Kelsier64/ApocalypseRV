@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/enamel_kettle.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.27, 0.25, 0.21)
+
+[node name="EnamelKettle" type="RigidBody3D"]
+mass = 1.0
+continuous_cd = true
+script = ExtResource("item")
+item_name = "Enamel Kettle"
+is_large = false
+hold_rotation = Vector3(-8, -20, 0)
+scrap_yields = {"Metal Parts": Vector2(1, 2)}
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+position = Vector3(0, -0.125, 0)

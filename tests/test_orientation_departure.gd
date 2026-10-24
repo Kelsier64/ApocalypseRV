@@ -2,6 +2,52 @@ extends "res://tests/support/orientation_journey.gd"
 ## Complete the same native workshop transactions, then drive through the real
 ## sensor exit. Only negative clearance probes reposition actors temporarily.
 
+func initial_state() -> bool:
+	var scenes := {
+		"scrap_a": "res://props/scavenge_loot/copper_wire_spool.tscn",
+		"scrap_b": "res://props/scavenge_loot/broken_shortwave_radio.tscn",
+		"scrap_c": "res://props/scavenge_loot/salvaged_motor.tscn",
+		"scrap_d": "res://props/scavenge_loot/medical_tin.tscn",
+		"scrap_e": "res://props/scavenge_loot/industrial_valve.tscn",
+		"scrap_f": "res://props/scavenge_loot/enamel_kettle.tscn",
+		"scrap_g": "res://props/scrap.tscn",
+		"scrap_h": "res://props/scrap.tscn"}
+	var prefix: String = str(run_owner.shelter.get_meta("poi_id")) + ":recovery:"
+	var checkpoint: Node = root.get_node("Checkpoint")
+	var guide: Dictionary = tutorial.capture(false)
+	var total_metal := 0
+	for role in scenes:
+		var item: Item = workshop.item(role)
+		if not check(item != null, "Original tutorial stock retains " + role): return false
+		check(item.scene_file_path == scenes[role], "Tutorial role selects its authored loot scene: " + role)
+		check(item.persistent_id == prefix + role and workshop.targets[role] == item.persistent_id, "Tutorial loot retains the existing role identity: " + role)
+		check(item.is_large == (role == "scrap_c"), "Tutorial size matches each loot Item: " + role)
+		check(item.scrap_yields == {ItemNames.METAL_PARTS: Vector2(3, 3)}, "Tutorial overrides decorative loot yields with its fixed three-metal supply: " + role)
+		total_metal += int(item.scrap_yields[ItemNames.METAL_PARTS].x)
+		var record := WorldActorSnapshot.capture(item)
+		check(checkpoint._orientation_items_error({"actors": [record]}, guide).is_empty(), "Checkpoint accepts the mapped tutorial loot scene: " + role)
+		record.scene = scenes.scrap_b if role == "scrap_a" else scenes.scrap_a
+		check(checkpoint._orientation_items_error({"actors": [record]}, guide) == "workshop.targets." + role, "Checkpoint rejects a different loot type under the same tutorial role identity: " + role)
+	check(total_metal == 24, "All eight tutorial scrap Items retain twenty-four guaranteed metal")
+	# Existing current-version checkpoints can still own the former Scrap scene.
+	# Repopulation must honor identity rather than replacing it with the new art.
+	var original: Item = workshop.item("scrap_f")
+	var saved := WorldActorSnapshot.capture(original)
+	saved.scene = "res://props/scrap.tscn"
+	saved.name = "Scrap Metal"
+	saved.large = false
+	check(WorldActorSnapshot.validation_error(saved, "saved_tutorial_scrap").is_empty(), "The previous tutorial Scrap scene remains a valid checkpoint actor")
+	check(checkpoint._orientation_items_error({"actors": [saved]}, guide).is_empty(), "Checkpoint still accepts the previous Scrap scene under its saved tutorial role identity")
+	var container := original.get_parent() as Node3D
+	original.free()
+	var restored := WorldActorSnapshot.restore(saved, container) as Item
+	var count := container.get_child_count()
+	OpeningSiteContent._spawn_orientation_workshop(run_owner.shelter, container)
+	check(container.get_child_count() == count and workshop.item("scrap_f") == restored, "Populating the workshop cannot duplicate stock already owned by a saved role identity")
+	check(restored.scene_file_path == saved.scene and restored.capture_item_state() == saved.state and restored.get_meta("orientation_role") == "scrap_f", "Existing saved tutorial Scrap retains its scene, state and role")
+	if not failures.is_empty(): return false
+	return await super.initial_state()
+
 func driving_check() -> bool:
 	check(not tutorial.departure_authorized and not run_owner.gate.is_open(), "Workshop completion alone does not open the exit")
 	tutorial._tick_departure()
