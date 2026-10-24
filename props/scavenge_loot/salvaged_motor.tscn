@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/salvaged_motor.glb" id="model"]
 
 [sub_resource type="BoxShape3D" id="collision"]
-size = Vector3(0.27, 0.3, 0.42)
+size = Vector3(0.378, 0.42, 0.588)
 
 [node name="SalvagedMotor" type="RigidBody3D"]
 mass = 12.0
@@ -19,6 +19,7 @@ scrap_yields = {"Metal Parts": Vector2(4, 6)}
 shape = SubResource("collision")
 
 [node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(1.4, 1.4, 1.4)
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 position = Vector3(0, -0.15, 0)

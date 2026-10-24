@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/industrial_valve.glb" id="model"]
 
 [sub_resource type="BoxShape3D" id="collision"]
-size = Vector3(0.32, 0.36, 0.27)
+size = Vector3(0.384, 0.432, 0.324)
 
 [node name="IndustrialValve" type="RigidBody3D"]
 mass = 5.0
@@ -19,6 +19,7 @@ scrap_yields = {"Metal Parts": Vector2(2, 4)}
 shape = SubResource("collision")
 
 [node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(1.2, 1.2, 1.2)
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 position = Vector3(0, -0.18, 0)

@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/enamel_kettle.glb" id="model"]
 
 [sub_resource type="BoxShape3D" id="collision"]
-size = Vector3(0.27, 0.25, 0.21)
+size = Vector3(0.324, 0.3, 0.252)
 
 [node name="EnamelKettle" type="RigidBody3D"]
 mass = 1.0
@@ -19,6 +19,7 @@ scrap_yields = {"Metal Parts": Vector2(1, 2)}
 shape = SubResource("collision")
 
 [node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(1.2, 1.2, 1.2)
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 position = Vector3(0, -0.125, 0)

@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/broken_shortwave_radio.glb" id="model"]
 
 [sub_resource type="BoxShape3D" id="collision"]
-size = Vector3(0.32, 0.22, 0.12)
+size = Vector3(0.4, 0.275, 0.15)
 
 [node name="ShortwaveRadio" type="RigidBody3D"]
 mass = 2.0
@@ -19,6 +19,7 @@ scrap_yields = {"Metal Parts": Vector2(2, 4)}
 shape = SubResource("collision")
 
 [node name="Visuals" type="Node3D" parent="."]
+scale = Vector3(1.25, 1.25, 1.25)
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 position = Vector3(0, -0.11, 0)

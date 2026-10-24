@@ -964,11 +964,11 @@ position = Vector3(4.65, 0, -23)
 position = Vector3(-7, 0, 9.1)
 
 [node name="ScrapA" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(16.45, 0.965, -8.6)
+position = Vector3(16.45, 1.007, -8.6)
 rotation = Vector3(0, -1.5707964, 0)
 
 [node name="ScrapB" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(-13.05, 0.935, -20.6)
+position = Vector3(-13.05, 0.9625, -20.6)
 rotation = Vector3(0, -1.5707964, 0)
 
 [node name="OilBarrel" type="Marker3D" parent="WorkshopSupplies"]
@@ -978,19 +978,19 @@ position = Vector3(18.85, 0.5, -3)
 position = Vector3(-6.4, 0, -22.4)
 
 [node name="ScrapC" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(13.05, 0.975, 3.4)
+position = Vector3(13.05, 1.035, 3.4)
 rotation = Vector3(0, 1.5707964, 0)
 
 [node name="ScrapD" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(-16.45, 0.935, 8.7)
+position = Vector3(-16.45, 0.9735, 8.7)
 rotation = Vector3(0, 1.5707964, 0)
 
 [node name="ScrapE" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(16.45, 1.005, -14.7)
+position = Vector3(16.45, 1.041, -14.7)
 rotation = Vector3(0, -1.5707964, 0)
 
 [node name="ScrapF" type="Marker3D" parent="WorkshopSupplies"]
-position = Vector3(-16.45, 0.95, -8.7)
+position = Vector3(-16.45, 0.975, -8.7)
 rotation = Vector3(0, 1.5707964, 0)
 
 [node name="ScrapG" type="Marker3D" parent="WorkshopSupplies"]
