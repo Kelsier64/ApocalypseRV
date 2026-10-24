@@ -266,7 +266,7 @@ func _update_item(delta: float, large: bool) -> void:
 			center = Vector3(.18, shoulder_height + .16, -maxf(.50, bounds.size.z * .5 + .35))
 		elif large and not (item is Item and item.definition != null and item.definition.requires_rv_connection):
 			# Keep the top in view and the nearest face clear of the eye.
-			center = Vector3(.04, 1.88 - bounds.size.y * .5 - crouch_drop, -maxf(.60, bounds.size.z * .5 + .35))
+			center = Vector3(0, 1.88 - bounds.size.y * .5 - crouch_drop, -maxf(.60, bounds.size.z * .5 + .35))
 	if grip_kind == "round":
 		center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
 		# Raise the light beside the shoulder so the real barrel clears the
@@ -406,6 +406,9 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 	var a := shoulder.distance_to(elbow)
 	var b := elbow.distance_to(old_wrist)
 	var pole := skeleton.global_basis.inverse() * actor.global_basis * Vector3(sign_x * .45, -1, .15)
+	if grip_kind == "large" and is_instance_valid(item) and not actor.is_grabbed() and not actor.is_crawling() and not item.has_method("held_support_center") and not (item is Item and item.definition != null and item.definition.requires_rv_connection):
+		# Cup two-handed props with elbows apart, keeping both palms on their grips.
+		pole = skeleton.global_basis.inverse() * actor.global_basis * Vector3(sign_x * 1.5, -.45, .10)
 	# The inherited hand orientation changes as the elbow bends. Re-evaluate
 	# the palm offset with a small fixed solve, without twisting the wrist.
 	for iteration in 4:

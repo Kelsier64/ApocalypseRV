@@ -141,6 +141,9 @@ func update_view() -> void:
 	# remains freely controllable, including looking straight up or down.
 	var basis: Basis = actor.global_basis * Basis(Vector3.RIGHT, clampf(actor.camera.rotation.x, -.45, .45) * .65)
 	var offset := CAMERA_OFFSET
+	if large:
+		# Center bulky props between two forearms entering from opposite corners.
+		offset = Vector3(0, 0, .30 + maxf(0.0, carry.bounds.size.y - .50) * .30)
 	if carry.active_hand == "L" and not large: offset.x = -offset.x
 	camera.global_transform = Transform3D(basis, actor.camera.get_camera_transform().origin + basis * offset)
 	camera.force_update_transform()

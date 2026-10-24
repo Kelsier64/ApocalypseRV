@@ -24,7 +24,7 @@ shape = SubResource("CylinderShape3D_vagdt")
 [node name="oil_barrel" parent="." instance=ExtResource("model")]
 
 [node name="GripRight" type="Marker3D" parent="."]
-position = Vector3(0.22, 0, 0.246)
+position = Vector3(0.22, 0.2, 0.246)
 
 [node name="GripLeft" type="Marker3D" parent="."]
-position = Vector3(-0.22, 0, 0.246)
+position = Vector3(-0.22, 0.2, 0.246)

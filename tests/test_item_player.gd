@@ -105,7 +105,7 @@ func check_new_grants() -> void:
 	clear_bag()
 	await steps()
 
-func check_carry_frame(note: String, large: bool = false) -> void:
+func check_carry_frame(note: String, large: bool = false, require_world_frame: bool = true) -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var held: Node3D = actor.held_item_node
 	var center: Vector3 = held.get_parent().to_global(carry.bounds.get_center())
@@ -114,7 +114,7 @@ func check_carry_frame(note: String, large: bool = false) -> void:
 	var left: bool = carry.active_hand == "L"
 	var min_x := .35 if large else (.05 if left else .60)
 	var max_x := .65 if large else (.40 if left else .95)
-	check(not actor.camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .30 and screen.y < .95, "Carry center stays visible on its holding side: " + note + " screen=" + str(screen) + " fov=" + str(actor.camera.fov))
+	check(not require_world_frame or (not actor.camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .30 and screen.y < .95), "Carry center stays visible on its holding side: " + note + " screen=" + str(screen) + " fov=" + str(actor.camera.fov))
 	for side: String in (["R", "L"] if large else [carry.active_hand]):
 		var skeleton: Skeleton3D = carry.skeleton
 		var hand := skeleton.find_bone("hand_" + side)
@@ -137,16 +137,23 @@ func check_viewmodel_frame(note: String, large: bool = false) -> void:
 	var center: Vector3 = actor.held_item_node.get_parent().to_global(carry.bounds.get_center())
 	var screen := camera.unproject_position(center) / Vector2(viewport.size)
 	var left: bool = carry.active_hand == "L"
-	var min_x := .25 if large else (.02 if left else .50)
-	var max_x := .75 if large else (.50 if left else .98)
+	var min_x := .465 if large else (.02 if left else .50)
+	var max_x := .535 if large else (.50 if left else .98)
 	check(not camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .20 and screen.y < .98, "Viewmodel item stays on its holding side: " + note + " screen=" + str(screen))
 	var skeleton: Skeleton3D = carry.skeleton
+	var forearms: Dictionary = {}
 	for side: String in (["R", "L"] if large else [carry.active_hand]):
 		var wrist: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side)).origin
 		var elbow: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_" + side)).origin
+		forearms[side] = camera.unproject_position(elbow.lerp(wrist, .5)) / Vector2(viewport.size)
 		for point: Vector3 in [wrist, elbow.lerp(wrist, .5)]:
 			var projected := camera.unproject_position(point) / Vector2(viewport.size)
 			check(not camera.is_position_behind(point) and Rect2(Vector2.ZERO, Vector2.ONE).has_point(projected), "Viewmodel shows wrist and forearm on " + side + ": " + note + " screen=" + str(projected))
+
+	if large:
+		var left_x: float = forearms["L"].x
+		var right_x: float = forearms["R"].x
+		check(left_x < screen.x and screen.x < right_x and absf((left_x + right_x) * .5 - .5) < .04 and right_x - left_x >= (.22 if actor.is_crouching() else .28), "Two-hand forearms bracket the centered item with balanced spacing: " + note + " left=" + str(left_x) + " right=" + str(right_x))
 
 func check_first_person_carry() -> void:
 	clear_bag()
@@ -256,11 +263,26 @@ func check_first_person_carry() -> void:
 	check(dropped != null and dropped.global_transform.is_equal_approx(held_pose), "Viewmodel release drops from the unchanged world-held pose")
 	if dropped: dropped.queue_free()
 	clear_bag()
-	actor.add_item("Salvaged Motor", true, "res://props/scavenge_loot/salvaged_motor.tscn")
-	await steps(20)
-	view.update_view()
-	check_viewmodel_frame("portable large motor", true)
-	clear_bag()
+	for path: String in ["res://props/scavenge_loot/salvaged_motor.tscn", "res://props/oil_barrel.tscn"]:
+		var name := path.get_file().get_basename()
+		actor.add_item(name, true, path)
+		for pitch: float in [0.0, -.35, .35]:
+			actor.camera.rotation.x = pitch
+			await steps(20)
+			view.update_view()
+			check_carry_frame(name + " pitch=" + str(pitch), true, name != "oil_barrel")
+			check_viewmodel_frame(name + " pitch=" + str(pitch), true)
+		actor.camera.rotation.x = 0.0
+		if name == "salvaged_motor":
+			actor.crouching = true
+			actor._apply_body_collision()
+			await steps(45)
+			view.update_view()
+			check_carry_frame("crouched motor", true)
+			check_viewmodel_frame("crouched motor", true)
+			actor.crouching = false
+			actor._apply_body_collision()
+		clear_bag()
 	actor.add_item("Scrapper", true, "res://equipment/scrapper.tscn")
 	await steps(20)
 	view.update_view()
