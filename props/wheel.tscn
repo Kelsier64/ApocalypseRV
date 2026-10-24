@@ -22,3 +22,7 @@ shape = SubResource("CylinderShape3D_col")
 position = Vector3(0, 0.7, 0)
 rotation = Vector3(0, 1.5707964, 0)
 scale = Vector3(1.25, 1.4, 1.4)
+
+[node name="GripRight" type="Marker3D" parent="."]
+
+[node name="GripLeft" type="Marker3D" parent="."]

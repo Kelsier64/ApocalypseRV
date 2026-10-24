@@ -105,6 +105,34 @@ func check_new_grants() -> void:
 	clear_bag()
 	await steps()
 
+func triangle_distance(point: Vector3, a: Vector3, b: Vector3, c: Vector3) -> float:
+	var ab := b - a
+	var ac := c - a
+	var normal := ab.cross(ac)
+	var area_squared := normal.length_squared()
+	if area_squared > 1e-14:
+		var projected := point - normal * normal.dot(point - a) / area_squared
+		var ap := projected - a
+		var d00 := ab.dot(ab)
+		var d01 := ab.dot(ac)
+		var d11 := ac.dot(ac)
+		var v := (d11 * ap.dot(ab) - d01 * ap.dot(ac)) / area_squared
+		var w := (d00 * ap.dot(ac) - d01 * ap.dot(ab)) / area_squared
+		if v >= 0.0 and w >= 0.0 and v + w <= 1.0: return point.distance_to(projected)
+	return minf(point.distance_to(Geometry3D.get_closest_point_to_segment(point, a, b)), minf(point.distance_to(Geometry3D.get_closest_point_to_segment(point, b, c)), point.distance_to(Geometry3D.get_closest_point_to_segment(point, c, a))))
+
+func visible_surface_distance(held: Node3D, palm: Vector3) -> float:
+	var nearest := INF
+	for mesh: MeshInstance3D in held.find_children("*", "MeshInstance3D", true, false):
+		if mesh.mesh == null or not mesh.is_visible_in_tree() or mesh.is_queued_for_deletion(): continue
+		if mesh.has_meta(&"first_person_render_copy") or mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY: continue
+		# World-space triangles account for nested model scale and authored hold rotation.
+		var faces := mesh.mesh.get_faces()
+		var pose := mesh.global_transform
+		for index in range(0, faces.size(), 3):
+			nearest = minf(nearest, triangle_distance(palm, pose * faces[index], pose * faces[index + 1], pose * faces[index + 2]))
+	return nearest
+
 func check_carry_frame(note: String, large: bool = false, require_world_frame: bool = true) -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var held: Node3D = actor.held_item_node
@@ -126,6 +154,8 @@ func check_carry_frame(note: String, large: bool = false, require_world_frame: b
 		var palm: Vector3 = skeleton.global_transform * (skeleton.get_bone_global_pose(hand) * palm_offset)
 		var grip: Vector3 = carry.grip_right if side == "R" else carry.grip_left
 		check(palm.distance_to(grip) < .035, "Visible carry retains palm contact on " + side + ": " + note)
+		var surface_gap := visible_surface_distance(held, palm)
+		check(surface_gap <= .025, "Palm reaches actual visible item surface on " + side + ": " + note + " gap=" + str(surface_gap))
 
 func check_viewmodel_frame(note: String, large: bool = false) -> void:
 	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
@@ -294,11 +324,18 @@ func check_first_person_carry() -> void:
 func check_carry_postures() -> void:
 	clear_bag()
 	actor.camera.rotation = Vector3.ZERO
-	for key: String in ["gas_can", "gas_can_empty"]:
+	for key: String in ["gas_can", "gas_can_empty", "battery", "engine_repair_kit"]:
 		actor.add_item(key, false, "res://props/" + key + ".tscn")
 		await steps(20)
 		check_carry_frame(key)
 		clear_bag()
+	actor.add_item("Wheel", false, "res://props/wheel.tscn")
+	await steps(20)
+	check_carry_frame("intact wheel", false, false)
+	actor.held_item_node.condition = 0.0
+	await steps(20)
+	check_carry_frame("flat wheel", false, false)
+	clear_bag()
 	actor.add_item("Scrap", false, "res://props/scrap.tscn")
 	actor.crouching = true
 	actor._apply_body_collision()

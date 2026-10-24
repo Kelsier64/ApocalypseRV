@@ -7,6 +7,7 @@ var base_rotations: Dictionary = {}
 var item: Node3D
 var item_hold_transform := Transform3D.IDENTITY
 var bounds := AABB()
+var surface_grips: Dictionary = {}
 var right_weight := 0.0
 var left_weight := 0.0
 var phase := 0.0
@@ -34,6 +35,7 @@ func reset() -> void:
 	right_weight = 0.0
 	left_weight = 0.0
 	item = null
+	surface_grips.clear()
 	grip_kind = "small"
 
 func _physics_process(delta: float) -> void:
@@ -70,6 +72,7 @@ func _physics_process(delta: float) -> void:
 		if item != held:
 			item = held
 			bounds = _held_bounds(item)
+			surface_grips = _surface_grips(item) if grip_kind in ["small", "large"] and not item.has_method("held_support_center") and not item.has_method("set_held") else {}
 			if item.has_method("set_held"):
 				# The corpse grip is full size; never scale its live physical skeleton.
 				bounds = AABB(Vector3(-.2, -.15, -.15), Vector3(.4, .3, .3))
@@ -264,6 +267,9 @@ func _update_item(delta: float, large: bool) -> void:
 		# an authored support grip rather than an unreachable outer-edge grip.
 		if grip_kind == "small" and bounds.size.x <= .70:
 			center = Vector3(.18, shoulder_height + .16, -maxf(.50, bounds.size.z * .5 + .35))
+		elif grip_kind == "small":
+			# Wide props keep their low hold, with the near face clear of the eye.
+			center.z = -maxf(.48, bounds.size.z * .5 + .25)
 		elif large and not (item is Item and item.definition != null and item.definition.requires_rv_connection):
 			# Keep the top in view and the nearest face clear of the eye.
 			center = Vector3(0, 1.88 - bounds.size.y * .5 - crouch_drop, -maxf(.60, bounds.size.z * .5 + .35))
@@ -284,11 +290,11 @@ func _update_item(delta: float, large: bool) -> void:
 	var marker: Node3D = item.get_parent()
 	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())
 	if item.has_method("update_held_grips"): item.update_held_grips()
-	# Bounds are in marker space, including the prop's authored rotation/scale.
-	# Cup the sides at mid-height. Leave room for the proximal finger joints
-	# and seat the palm along the near edge of a full-sized box.
-	var right := Vector3(bounds.end.x + .035, bounds.get_center().y, bounds.end.z - .04)
-	var left := Vector3(bounds.position.x - .035, right.y, right.z)
+	# Generic contacts were fitted to visible triangles on equip. Bounds are
+	# only a seed; irregular silhouettes need not fill their AABB corners.
+	# Explicit support/flashlight grips retain their authored behavior.
+	var right: Vector3 = surface_grips.get("R", Vector3(bounds.end.x + .035, bounds.get_center().y, bounds.end.z - .04))
+	var left: Vector3 = surface_grips.get("L", Vector3(bounds.position.x - .035, bounds.get_center().y, bounds.end.z - .04))
 	grip_right = marker.to_global(right)
 	grip_left = marker.to_global(left)
 	for side in ["Right", "Left"]:
@@ -493,10 +499,89 @@ func _set_global_rotation(bone: int, rotation: Quaternion, weight: float) -> voi
 func _held_bounds(prop: Node3D) -> AABB:
 	var result := AABB()
 	var first := true
-	for mesh: MeshInstance3D in prop.find_children("*", "MeshInstance3D", true, false):
-		if mesh.mesh == null: continue
+	for mesh: MeshInstance3D in _source_meshes(prop):
 		var relative: Transform3D = prop.get_parent().global_transform.affine_inverse() * mesh.global_transform
 		var box: AABB = relative * mesh.get_aabb()
 		result = box if first else result.merge(box)
 		first = false
 	return result if not first else AABB(Vector3(-.06, -.06, -.06), Vector3.ONE * .12)
+
+func _source_meshes(prop: Node3D) -> Array[MeshInstance3D]:
+	var result: Array[MeshInstance3D] = []
+	for mesh: MeshInstance3D in prop.find_children("*", "MeshInstance3D", true, false):
+		if mesh.mesh == null or mesh.is_queued_for_deletion() or mesh.has_meta(&"first_person_render_copy") or mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY: continue
+		# Ignore authored hidden helpers, even if placement temporarily hides
+		# the held root itself while the carry pose is still evaluated.
+		var node: Node = mesh
+		var visible_mesh := true
+		while node != prop and node != null:
+			if node is Node3D and not node.visible:
+				visible_mesh = false
+				break
+			node = node.get_parent()
+		if visible_mesh: result.append(mesh)
+	return result
+
+func _surface_grips(prop: Node3D) -> Dictionary:
+	var seeds: Dictionary = {}
+	var height := bounds.get_center().y
+	# Large machines hang lower; support their upper casing within arm reach.
+	if prop is Item and prop.definition != null and prop.definition.requires_rv_connection:
+		height = bounds.end.y - minf(.08, bounds.size.y * .2)
+	for side: String in ["R", "L"]:
+		if prop.get_node_or_null("Grip" + ("Right" if side == "R" else "Left")) != null: continue
+		seeds[side] = Vector3(bounds.end.x + .035 if side == "R" else bounds.position.x - .035, height, bounds.end.z - .04)
+	if seeds.is_empty(): return {}
+	var triangles := PackedVector3Array()
+	var inverse: Transform3D = prop.get_parent().global_transform.affine_inverse()
+	for mesh: MeshInstance3D in _source_meshes(prop):
+		var relative: Transform3D = inverse * mesh.global_transform
+		for vertex in mesh.mesh.get_faces(): triangles.append(relative * vertex)
+	if triangles.is_empty(): return {}
+	var result: Dictionary = {}
+	for side: String in seeds:
+		var seed: Vector3 = seeds[side]
+		var closest := seed
+		var distance := INF
+		for triangle in range(0, triangles.size(), 3):
+			var point := _closest_triangle(seed, triangles[triangle], triangles[triangle + 1], triangles[triangle + 2])
+			var candidate := seed.distance_squared_to(point)
+			if candidate < distance:
+				distance = candidate
+				closest = point
+		# A small skin clearance seats the glove against the real surface.
+		result[side] = closest + (seed - closest).normalized() * .006
+	return result
+
+func _closest_segment(point: Vector3, a: Vector3, b: Vector3) -> Vector3:
+	var edge := b - a
+	return a + edge * clampf((point - a).dot(edge) / maxf(edge.length_squared(), .000000000001), 0.0, 1.0)
+
+func _closest_triangle(point: Vector3, a: Vector3, b: Vector3, c: Vector3) -> Vector3:
+	var ab := b - a
+	var ac := c - a
+	if ab.cross(ac).length_squared() < .000000000001:
+		var best := _closest_segment(point, a, b)
+		for candidate: Vector3 in [_closest_segment(point, b, c), _closest_segment(point, c, a)]:
+			if point.distance_squared_to(candidate) < point.distance_squared_to(best): best = candidate
+		return best
+	var ap := point - a
+	var d1 := ab.dot(ap)
+	var d2 := ac.dot(ap)
+	if d1 <= 0.0 and d2 <= 0.0: return a
+	var bp := point - b
+	var d3 := ab.dot(bp)
+	var d4 := ac.dot(bp)
+	if d3 >= 0.0 and d4 <= d3: return b
+	var vc := d1 * d4 - d3 * d2
+	if vc <= 0.0 and d1 >= 0.0 and d3 <= 0.0: return a + ab * (d1 / (d1 - d3))
+	var cp := point - c
+	var d5 := ab.dot(cp)
+	var d6 := ac.dot(cp)
+	if d6 >= 0.0 and d5 <= d6: return c
+	var vb := d5 * d2 - d1 * d6
+	if vb <= 0.0 and d2 >= 0.0 and d6 <= 0.0: return a + ac * (d2 / (d2 - d6))
+	var va := d3 * d6 - d5 * d4
+	if va <= 0.0 and d4 - d3 >= 0.0 and d5 - d6 >= 0.0: return b + (c - b) * ((d4 - d3) / ((d4 - d3) + (d5 - d6)))
+	var denominator := 1.0 / (va + vb + vc)
+	return a + ab * (vb * denominator) + ac * (vc * denominator)
