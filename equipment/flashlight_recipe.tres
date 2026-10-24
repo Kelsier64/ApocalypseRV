@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://equipment/recipe_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+recipe_id = "flashlight"
+display_name = "Flashlight"
+scene_path = "res://props/flashlight.tscn"
+costs = {"Metal Parts": 3, "Electronic Scrap": 2}
+duration = 3.0
+power_cost = 1.0

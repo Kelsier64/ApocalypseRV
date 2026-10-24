@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://equipment/recipe_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+recipe_id = "pistol"
+display_name = "Pistol"
+scene_path = "res://props/pistol.tscn"
+costs = {"Metal Parts": 12, "Electronic Scrap": 4}
+duration = 8.0
+power_cost = 3.0

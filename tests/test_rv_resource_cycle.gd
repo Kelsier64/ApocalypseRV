@@ -72,6 +72,7 @@ func _run() -> void:
 	rv.get_node("FuelPort").take_damage(60.0)
 	RepairOperation.new().step(player, rv.get_node("FuelPort"), true, 2.0)
 	check(rv.get_node("FuelPort").current_health == rv.get_node("FuelPort").max_health and rv.get_item_count(ItemNames.METAL_PARTS) == 0, "Remaining scrap repairs installed equipment")
+	await _exercise_portable_recipes(rv, station)
 	await _exercise_free_resources(rv, station, player)
 	rv.current_power = 0.0
 	check(rv.set_engine_running(true), "Empty battery can recover through manual ignition")
@@ -89,6 +90,38 @@ func _run() -> void:
 	if failures.is_empty(): print("PASS: loot, recycle, craft, refuel, repair, recharge and departure cycle")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func _exercise_portable_recipes(rv: Chassis, station: CraftingStation) -> void:
+	var materials := rv.inventory.duplicate(true)
+	var charge := rv.current_power
+	for id in ["flashlight", "pistol", "pistol_ammo"]:
+		var recipe := RecipeCatalog.find(id)
+		check(recipe != null, "Portable recipe is registered: " + id)
+		if recipe == null: continue
+		rv.inventory = recipe.costs.duplicate(true)
+		rv.current_power = 10.0
+		check(station.request_craft(id), "Portable recipe queues with exact materials: " + id)
+		for key in recipe.costs:
+			check(rv.get_item_count(key) == 0, "Queue reserves portable recipe materials: " + id)
+		station.step_work(recipe.duration)
+		var output: Item
+		for actor in WorldEntities.get_container(rv).get_children():
+			if actor is Item and actor.scene_file_path == recipe.scene_path: output = actor
+		check(output != null and station.jobs.is_empty(), "Portable recipe delivers its physical item: " + id)
+		check(is_equal_approx(rv.current_power, 10.0 - recipe.power_cost), "Portable recipe charges its full power cost: " + id)
+		if output != null:
+			var state := output.capture_item_state()
+			if id == "flashlight":
+				check(state.flashlight.charge == Flashlight.FULL_CHARGE and not state.flashlight.on, "Crafted flashlight is charged and switched off")
+			elif id == "pistol":
+				check(state.pistol.loaded_rounds == PistolRules.MAGAZINE_CAPACITY, "Crafted pistol has a full magazine")
+			else:
+				check(state.ammo.rounds == PistolRules.BOX_CAPACITY, "Crafted ammunition box contains 24 rounds")
+			output.queue_free()
+		await process_frame
+		await physics_frame
+	rv.inventory = materials
+	rv.current_power = charge
 
 func _exercise_free_resources(rv: Chassis, station: CraftingStation, player: Node3D) -> void:
 	var materials := rv.inventory.duplicate(true)

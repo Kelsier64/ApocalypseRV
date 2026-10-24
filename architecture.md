@@ -444,7 +444,7 @@ CorpseProp（`props/corpse.tscn`）共用玩家／Raker 的既有模型、碰撞
 
 屍體 `state.corpse` v1 保存類型、五部位狀態、骨架相對道具的 transform、41／54 個局部骨姿勢；驗證類型、拓樸、有限變換與大型旗標。既有 Item 流程涵蓋背包、道具箱、世界、副本及分解輸入，納入 v6 檢查點保存；不保存各肢體角速度或手持暫態。屍體不再按死亡秒數消失，但仍受世界既有距離串流／場址保存規則影響。測試及可見驗收見 [屍體搬運與分解](docs/validation/2026-10-04-corpse-props.md)。
 
-RecipeDefinition/RecipeCatalog 定義七個配方（汽油罐、兩款電池、輪胎、兩款引擎與引擎維修包）。平板只 request_craft，工作站檢查有效性／完整電費並預留材料，進度逐步耗電；取消退材料，已用電不退。完成後檢查出料空間才生成；堵塞保留待出料工作。spawn_item 的即時介面也在完整驗證後扣材料與電費，失敗回復。成品屬於本世界 WorldEntities，繼承 RV 點速度；製作電池初始電量為零。
+RecipeDefinition/RecipeCatalog 定義十一個配方（汽油罐、兩款電池、輪胎、兩款引擎、引擎維修包、玩家身體、手電筒、手槍與盒裝子彈）。平板只 request_craft，工作站檢查有效性／完整電費並預留材料，進度逐步耗電；取消退材料，已用電不退。完成後檢查出料空間才生成；堵塞保留待出料工作。spawn_item 的即時介面也在完整驗證後扣材料與電費，失敗回復。成品屬於本世界 WorldEntities，繼承 RV 點速度；製作電池初始電量為零。製作手電筒滿電且關閉，手槍裝填 12 發，子彈每盒 24 發，沿用物品場景預設。
 
 MaterialStorage 保存底盤數字材料，material_capacity 預設 300；容量不依賴設備，超額只允許消費／退款，不再領出 Material Bundle。底盤 stored_items 保存完整道具記錄，item_capacity 預設 24 格。ItemBox 開啟不耗電的 item_storage_ui；同車箱子共用底盤倉庫，先驗證容量／背包大型限制再轉移，按鈕保留原項目快照以拒絕過期操作。搬移、損壞、斷線與玩家死亡關閉 UI。
 
