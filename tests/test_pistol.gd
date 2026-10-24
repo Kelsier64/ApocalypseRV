@@ -60,6 +60,25 @@ func check_animated_copies(view: Node, source_root: Node3D, note: String) -> voi
 			check(copy.global_transform.is_equal_approx(entry.source.global_transform) and copy.visible == entry.source.visible, "Viewmodel follows animated source transform and visibility: " + note)
 	check(count > 0, "Animated pistol source has a rendered viewmodel copy: " + note)
 
+func check_pistol_contacts(note: String, lowered: bool = false) -> void:
+	var carry: Node = actor.get_node("Visuals/Carry")
+	var skeleton: Skeleton3D = carry.skeleton
+	for side: String in ["R", "L"]:
+		if not actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"): continue
+		var hand := skeleton.find_bone("hand_" + side)
+		var rest := skeleton.get_bone_global_rest(hand)
+		var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+		var frame: Basis = carry.hand_frames[side]
+		var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
+		var palm_offset := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
+		var palm: Vector3 = skeleton.global_transform * (skeleton.get_bone_global_pose(hand) * palm_offset)
+		var grip: Vector3 = carry.grip_right if side == "R" else carry.grip_left
+		check(palm.distance_to(grip) < .035, "Real pistol palm remains seated on " + side + ": " + note)
+		if lowered:
+			var elbow: Vector3 = actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_" + side)).origin)
+			var shoulder: Vector3 = actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("upper_arm_" + side)).origin)
+			check(elbow.y <= shoulder.y + .02, "Neutral or lowered pistol elbow stays below its shoulder on " + side + ": " + note)
+
 func check_pistol_viewmodel() -> void:
 	clear_bag()
 	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
@@ -82,11 +101,28 @@ func check_pistol_viewmodel() -> void:
 	var muzzle_pose: Transform3D = pistol.get_node("Muzzle").global_transform
 	var camera_pose: Transform3D = actor.camera.global_transform
 	var baseline: float = actor.camera.fov
+	var original_body: Mesh = actor.get_node("Visuals").local_body.mesh
+	var source_layers: Dictionary = {}
+	for mesh: MeshInstance3D in pistol.find_children("*", "MeshInstance3D", true, false): source_layers[mesh] = mesh.layers
 	actor.camera.make_current()
 	view.update_view()
 	check(view.active and view.arm_meshes["R"].is_visible_in_tree() and view.arm_meshes["L"].is_visible_in_tree(), "Pistol viewmodel renders both surviving arms")
+	check_pistol_contacts("neutral hip", true)
 	check(pistol.global_transform.is_equal_approx(held_pose) and pistol.get_node("Muzzle").global_transform.is_equal_approx(muzzle_pose), "Pistol view activation preserves the authoritative held and muzzle transforms")
 	check(actor.camera.global_transform.is_equal_approx(camera_pose) and is_equal_approx(actor.camera.fov, baseline), "Pistol view activation preserves gameplay camera pose and FOV")
+	for sample: Array in [[-.30, true], [-.35, false], [-.32, false], [-.30, false], [-.29, true], [0.0, true]]:
+		actor.camera.rotation.x = sample[0]
+		var before_held := pistol.global_transform
+		var before_muzzle: Transform3D = pistol.get_node("Muzzle").global_transform
+		view.update_view()
+		check(view.active == sample[1], "Pistol lookdown handoff hysteresis at pitch " + str(sample[0]) + " active=" + str(sample[1]))
+		check(pistol.global_transform.is_equal_approx(before_held) and pistol.get_node("Muzzle").global_transform.is_equal_approx(before_muzzle), "Pistol lookdown handoff preserves the held pose and authoritative muzzle")
+		if sample[0] == -.30 and sample[1]:
+			check(view.camera.global_transform.is_equal_approx(actor.camera.get_camera_transform()) and is_equal_approx(view.camera.fov, actor.camera.fov), "Active pistol handoff exactly joins the gameplay camera")
+		if not sample[1]:
+			check(actor.get_node("Visuals").local_body.mesh == original_body, "Pistol lookdown restores the complete local skin")
+			for arm: MeshInstance3D in view.arm_meshes.values(): check(not arm.visible, "Pistol lookdown hides separate arms")
+			for mesh: MeshInstance3D in source_layers: check(mesh.layers == source_layers[mesh], "Pistol lookdown restores exact held source layers")
 	var muzzle_light: Light3D = pistol.get_node("Muzzle/Light")
 	check(view.held_light_copies.has(muzzle_light.get_instance_id()), "Invisible muzzle light is bound before firing")
 	if view.held_light_copies.has(muzzle_light.get_instance_id()):
@@ -106,18 +142,30 @@ func check_pistol_viewmodel() -> void:
 		check_animated_copies(view, pistol.get_node("Muzzle/Flash"), "hidden muzzle flash")
 	check(actor.weapon.start_reload(), "Viewmodel pistol starts its normal reload")
 	actor.weapon.advance(.6)
+	await steps(20)
+	check_pistol_contacts("reload")
 	var magazine := pistol.find_child("Magazine", true, false) as Node3D
 	check(magazine != null and magazine.position.y < -.01, "Reload moves the real magazine")
 	view.update_view()
 	check_animated_copies(view, magazine, "reload magazine")
 	actor.weapon.cancel_actions()
+	actor.camera.rotation.x = -.85
+	await steps(20)
+	check_pistol_contacts("lowered hip", true)
+	actor.camera.rotation.x = 0.0
 	Input.action_press("weapon_aim")
 	actor.weapon.advance(.16)
-	for pitch: float in [0.0, -.65, .65]:
+	for pitch: float in [0.0, -.30, .65, -.85]:
 		actor.camera.rotation.x = pitch
 		await steps(20)
 		view.update_view()
-		check(actor.weapon.aim_weight > .99 and is_equal_approx(view.camera.fov, actor.camera.fov), "Full ADS viewmodel retains the gameplay FOV at pitch " + str(pitch))
+		check_pistol_contacts("aim pitch=" + str(pitch), pitch <= -.35)
+		if pitch <= -.35:
+			check(not view.active and actor.get_node("Visuals").local_body.mesh == original_body, "Full-down ADS uses the restored gameplay body view")
+			for arm: MeshInstance3D in view.arm_meshes.values(): check(not arm.visible, "Full-down ADS hides separate arms")
+			for mesh: MeshInstance3D in source_layers: check(mesh.layers == source_layers[mesh], "Full-down ADS restores exact source layers")
+			continue
+		check(view.active and actor.weapon.aim_weight > .99 and is_equal_approx(view.camera.fov, actor.camera.fov), "Full ADS viewmodel retains the gameplay FOV at pitch " + str(pitch))
 		for point: Vector3 in [pistol.muzzle_position(), pistol.muzzle_position() + pistol.global_basis.x * .08]:
 			var gameplay: Vector2 = actor.camera.unproject_position(point) / root.get_visible_rect().size
 			var rendered: Vector2 = view.camera.unproject_position(point) / Vector2(view.viewport.size)

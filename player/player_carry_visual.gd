@@ -428,9 +428,10 @@ func _arm(side: String, contact: Vector3, weight: float) -> void:
 		var bend := (pole - axis * pole.dot(axis)).normalized()
 		if grip_kind == "pistol":
 			var lateral := skeleton.global_basis.inverse() * actor.global_basis.x
-			# A shoulder-to-wrist frame stays continuous through vertical aim.
-			# Lower elbows at eye level; draw them outward/back when looking down.
-			var elbow_angle := lerpf(atan2(1.0, .45), -PI * .25, smoothstep(0.0, .85, -actor.camera.rotation.x))
+			# Keep the elbow bend outward and down through lowered aim. Reversing
+			# this bend while looking down folds both sleeves up across the chest.
+			var elbow_angle := lerpf(.65, 1.05, actor.weapon.aim_weight)
+			elbow_angle = lerpf(elbow_angle, .55, smoothstep(.15, .85, -actor.camera.rotation.x))
 			bend = lateral.slide(axis).normalized() * sign_x * cos(elbow_angle) + axis.cross(lateral).normalized() * sin(elbow_angle)
 		var along := (a * a - b * b + distance * distance) / (2.0 * distance)
 		var height := sqrt(maxf(0, a * a - along * along))

@@ -6,6 +6,12 @@ const LIGHT_COPY := &"first_person_light_copy"
 const MESH_COPY := &"first_person_render_copy"
 const CAMERA_OFFSET := Vector3(-.18, .14, .50)
 const MAX_LIGHTS := 4
+const BODY_VIEW_BLEND_START := .08
+const BODY_VIEW_BLEND_END := .30
+const BODY_VIEW_HIDE := .35
+const CROUCH_VIEW_BLEND_START := .015
+const CROUCH_VIEW_BLEND_END := .14
+const CROUCH_VIEW_HIDE := .16
 var active := false
 var viewport: SubViewport
 var camera: Camera3D
@@ -84,6 +90,11 @@ func _eligible() -> bool:
 	if not is_instance_valid(actor) or not actor.is_inside_tree() or not actor.is_visible_in_tree(): return false
 	if actor.is_player_dead or actor.seated_in != null or actor.is_grabbed() or actor.is_crawling(): return false
 	if not actor.camera.is_current() or actor.is_placing_equipment(): return false
+	# Switch only after both projections match. A small dead band avoids
+	# rebuilding the cosmetic copies while hovering around the boundary.
+	if actor.camera.rotation.x <= -(BODY_VIEW_HIDE if active else BODY_VIEW_BLEND_END) + .000001: return false
+	var crouch_drop: float = visual.get_node("Locomotion").crouch_eye_drop
+	if crouch_drop >= (CROUCH_VIEW_HIDE if active else CROUCH_VIEW_BLEND_END) - .000001: return false
 	if actor.locomotion_state == actor.LocomotionState.CLIMBING or visual.get_node("Locomotion").climb_exit_remaining > 0.0: return false
 	var held: Node3D = actor.held_item_node
 	if not is_instance_valid(held) or held.is_queued_for_deletion() or not held.is_visible_in_tree() or carry.item != held: return false
@@ -158,7 +169,13 @@ func update_view() -> void:
 		# Keep the virtual lens above the sleeves while the real arms retract.
 		offset = _safe_pistol_offset(Vector3(-.12 if carry.active_hand == "R" else .12, hip_height, .25).lerp(Vector3.ZERO, aim), basis)
 		camera.fov = lerpf(70.0, actor.camera.fov, aim)
-	camera.global_transform = Transform3D(basis, actor.camera.get_camera_transform().origin + basis * offset)
+	var world_lens: Transform3D = actor.camera.get_camera_transform()
+	var body_view := smoothstep(BODY_VIEW_BLEND_START, BODY_VIEW_BLEND_END, -actor.camera.rotation.x)
+	body_view = maxf(body_view, smoothstep(CROUCH_VIEW_BLEND_START, CROUCH_VIEW_BLEND_END, visual.get_node("Locomotion").crouch_eye_drop))
+	# Shoulder triangles meet the torso only when position, angle and FOV use
+	# the same projection. Rejoin that projection before the body enters view.
+	camera.global_transform = Transform3D(basis, world_lens.origin + basis * offset).interpolate_with(world_lens, body_view)
+	camera.fov = lerpf(camera.fov, actor.camera.fov, body_view)
 	camera.force_update_transform()
 	_sync_lights()
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS

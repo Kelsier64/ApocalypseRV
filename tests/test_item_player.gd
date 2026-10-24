@@ -160,6 +160,15 @@ func check_carry_frame(note: String, large: bool = false, require_world_frame: b
 func check_viewmodel_frame(note: String, large: bool = false) -> void:
 	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
 	var carry: Node = actor.get_node("Visuals/Carry")
+	var crouch_drop: float = actor.get_node("Visuals/Locomotion").crouch_eye_drop
+	if actor.camera.rotation.x < -.35 or is_equal_approx(actor.camera.rotation.x, -.35) or crouch_drop > .16 or is_equal_approx(crouch_drop, .16):
+		check(not view.active and actor.get_node("Visuals").local_body.mesh == view.original_body, "Body-view posture restores the complete local body: " + note)
+		for arm: MeshInstance3D in view.arm_meshes.values():
+			check(not arm.visible, "Body-view posture hides every separate viewmodel arm: " + note)
+		for mesh: MeshInstance3D in actor.held_item_node.find_children("*", "MeshInstance3D", true, false):
+			if not mesh.is_visible_in_tree() or mesh.has_meta(&"first_person_render_copy") or mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY: continue
+			check(mesh.layers & actor.camera.cull_mask != 0, "Body-view posture restores held source rendering with the body: " + note)
+		return
 	check(view.active, "Ordinary carry enables the first-person view: " + note)
 	if not view.active: return
 	var camera: Camera3D = view.camera
@@ -216,6 +225,32 @@ func check_first_person_carry() -> void:
 	check(local_body.mesh != original_body_mesh, "Local body removes its original arms while the viewmodel draws them")
 	for mesh: MeshInstance3D in original_layers:
 		check(mesh.layers & actor.camera.cull_mask == 0 and mesh.layers & observer.cull_mask != 0, "Held mesh renders once locally and remains available to observers")
+	# Cross the handoff synchronously to isolate view changes from carry animation.
+	for sample: Array in [[-.30, true], [-.35, false], [-.32, false], [-.30, false], [-.29, true], [0.0, true]]:
+		actor.camera.rotation.x = sample[0]
+		var before_view := held.global_transform
+		view.update_view()
+		check(view.active == sample[1], "Lookdown handoff hysteresis at pitch " + str(sample[0]) + " active=" + str(sample[1]))
+		check(held.global_transform.is_equal_approx(before_view), "Lookdown handoff preserves the world-held pose")
+		if sample[0] == -.30 and sample[1]:
+			check(view.camera.global_transform.is_equal_approx(actor.camera.get_camera_transform()) and is_equal_approx(view.camera.fov, actor.camera.fov), "The active handoff camera exactly joins the gameplay body camera")
+		if not sample[1]:
+			check(local_body.mesh == original_body_mesh, "Lookdown handoff restores the original local skin")
+			for arm: MeshInstance3D in view.arm_meshes.values(): check(not arm.visible, "Lookdown handoff hides separate arms")
+			for mesh: MeshInstance3D in original_layers: check(mesh.layers == original_layers[mesh], "Lookdown handoff restores exact source layers")
+	actor.crouching = true
+	actor._apply_body_collision()
+	await steps(45)
+	view.update_view()
+	check(actor.get_node("Visuals/Locomotion").crouch_eye_drop >= .16 and not view.active and local_body.mesh == original_body_mesh, "Settled crouch restores the contiguous original local body")
+	for arm: MeshInstance3D in view.arm_meshes.values(): check(not arm.visible, "Crouching hides separate viewmodel arms")
+	for mesh: MeshInstance3D in original_layers: check(mesh.layers == original_layers[mesh], "Crouching restores exact held source layers")
+	actor.crouching = false
+	actor._apply_body_collision()
+	await steps(45)
+	view.update_view()
+	check(actor.get_node("Visuals/Locomotion").crouch_eye_drop < .14 and view.active, "Standing restores the viewmodel after the crouch handoff")
+	check_viewmodel_frame("standing after crouch handoff")
 	# Moving a live actor between worlds does not rerun the component's _ready.
 	var interior := SubViewport.new()
 	interior.own_world_3d = true
