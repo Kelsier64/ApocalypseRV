@@ -9,6 +9,7 @@ const LOCAL_VIEW_LAYER := 1 << 20
 # Keep these accessories on the complete observer/shadow model only.
 const LOCAL_HIDDEN_MESHES := [&"PLAYER_Skin_Hood", &"PLAYER_Skin_Hood_Lining", &"PLAYER_Skin_Hood_Seams", &"PLAYER_Skin_Mask", &"PLAYER_Skin_MaskStrap", &"PLAYER_Skin_Collar", &"PLAYER_Skin_Undershirt"]
 static var _local_body_mesh: ArrayMesh
+static var _first_person_meshes: Dictionary = {}
 
 @export var local_camera_path := NodePath("../Camera3D")
 var source_meshes: Array[MeshInstance3D] = []
@@ -56,6 +57,9 @@ func _ready() -> void:
 	dismemberment = preload("res://player/player_dismemberment_visual.gd").new()
 	dismemberment.name = "Dismemberment"
 	add_child(dismemberment)
+	var first_person := preload("res://player/player_first_person_carry.gd").new()
+	first_person.name = "FirstPersonCarry"
+	add_child(first_person)
 
 func detach_part(part: StringName, context: Dictionary = {}) -> Node3D:
 	return dismemberment.detach_part(part, context) if dismemberment != null else null
@@ -128,4 +132,59 @@ static func _build_local_body(original: MeshInstance3D) -> ArrayMesh:
 		arrays[Mesh.ARRAY_INDEX] = body_indices
 		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 		result.surface_set_material(result.get_surface_count() - 1, original.mesh.surface_get_material(surface))
+	return result
+
+## Complementary triangle sets retain the original skin, UVs and materials.
+## Only the arms currently drawn by the viewmodel leave the local world mesh.
+func split_first_person_mesh(original: MeshInstance3D) -> Dictionary:
+	var key := original.mesh.get_instance_id()
+	if _first_person_meshes.has(key): return _first_person_meshes[key]
+	var result: Dictionary = {}
+	for label: String in ["R", "L", "body_R", "body_L", "body_both"]: result[label] = ArrayMesh.new()
+	var bind_sides: Dictionary = {}
+	for bind in original.skin.get_bind_count():
+		var bone := skeleton.find_bone(String(original.skin.get_bind_name(bind)))
+		while bone >= 0:
+			var label := String(skeleton.get_bone_name(bone))
+			if label in ["upper_arm_R", "upper_arm_L"]:
+				bind_sides[bind] = label.right(1)
+				break
+			bone = skeleton.get_bone_parent(bone)
+	for surface in original.mesh.get_surface_count():
+		var arrays := original.mesh.surface_get_arrays(surface)
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+		var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+		var right := PackedInt32Array()
+		var left := PackedInt32Array()
+		var body := PackedInt32Array()
+		for triangle in range(0, indices.size(), 3):
+			var side := ""
+			for corner in 3:
+				var vertex := indices[triangle + corner]
+				var right_weight := 0.0
+				var left_weight := 0.0
+				for influence in 4:
+					var offset := vertex * 4 + influence
+					var arm: String = bind_sides.get(bones[offset], "")
+					if arm == "R": right_weight += weights[offset]
+					elif arm == "L": left_weight += weights[offset]
+				if right_weight > .5: side = "R"
+				elif left_weight > .5: side = "L"
+			var tri := indices.slice(triangle, triangle + 3)
+			if side == "R": right.append_array(tri)
+			elif side == "L": left.append_array(tri)
+			else: body.append_array(tri)
+		var keep_right := body.duplicate()
+		keep_right.append_array(left)
+		var keep_left := body.duplicate()
+		keep_left.append_array(right)
+		var selections := {"R": right, "L": left, "body_R": keep_right, "body_L": keep_left, "body_both": body}
+		for label: String in selections:
+			if selections[label].is_empty(): continue
+			arrays[Mesh.ARRAY_INDEX] = selections[label]
+			var mesh: ArrayMesh = result[label]
+			mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, original.mesh.surface_get_material(surface))
+	_first_person_meshes[key] = result
 	return result

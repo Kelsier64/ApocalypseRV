@@ -127,6 +127,148 @@ func check_carry_frame(note: String, large: bool = false) -> void:
 		var grip: Vector3 = carry.grip_right if side == "R" else carry.grip_left
 		check(palm.distance_to(grip) < .035, "Visible carry retains palm contact on " + side + ": " + note)
 
+func check_viewmodel_frame(note: String, large: bool = false) -> void:
+	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
+	var carry: Node = actor.get_node("Visuals/Carry")
+	check(view.active, "Ordinary carry enables the first-person view: " + note)
+	if not view.active: return
+	var camera: Camera3D = view.camera
+	var viewport: SubViewport = view.viewport
+	var center: Vector3 = actor.held_item_node.get_parent().to_global(carry.bounds.get_center())
+	var screen := camera.unproject_position(center) / Vector2(viewport.size)
+	var left: bool = carry.active_hand == "L"
+	var min_x := .25 if large else (.02 if left else .50)
+	var max_x := .75 if large else (.50 if left else .98)
+	check(not camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .20 and screen.y < .98, "Viewmodel item stays on its holding side: " + note + " screen=" + str(screen))
+	var skeleton: Skeleton3D = carry.skeleton
+	for side: String in (["R", "L"] if large else [carry.active_hand]):
+		var wrist: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side)).origin
+		var elbow: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("forearm_" + side)).origin
+		for point: Vector3 in [wrist, elbow.lerp(wrist, .5)]:
+			var projected := camera.unproject_position(point) / Vector2(viewport.size)
+			check(not camera.is_position_behind(point) and Rect2(Vector2.ZERO, Vector2.ONE).has_point(projected), "Viewmodel shows wrist and forearm on " + side + ": " + note + " screen=" + str(projected))
+
+func check_first_person_carry() -> void:
+	clear_bag()
+	var view: Node = actor.get_node_or_null("Visuals/FirstPersonCarry")
+	check(view != null, "Production player owns the first-person carry component")
+	if view == null: return
+	actor.camera.rotation = Vector3.ZERO
+	var observer := Camera3D.new()
+	world.add_child(observer)
+	observer.make_current()
+	actor.add_item("Scrap", false, "res://props/scrap.tscn")
+	await steps(20)
+	view.update_view()
+	var held: Node3D = actor.held_item_node
+	var original_layers: Dictionary = {}
+	for mesh: MeshInstance3D in held.find_children("*", "MeshInstance3D", true, false):
+		original_layers[mesh] = mesh.layers
+	var local_body: MeshInstance3D = actor.get_node("Visuals").local_body
+	var original_body_mesh := local_body.mesh
+	check(not view.active, "An observer camera leaves the world carry authoritative")
+	var held_pose := held.global_transform
+	var camera_pose: Transform3D = actor.camera.global_transform
+	var camera_fov: float = actor.camera.fov
+	actor.camera.make_current()
+	view.update_view()
+	check_viewmodel_frame("right-hand scrap")
+	check(held.global_transform.is_equal_approx(held_pose), "Activating viewmodel preserves the world-held transform")
+	check(actor.camera.global_transform.is_equal_approx(camera_pose) and is_equal_approx(actor.camera.fov, camera_fov), "Viewmodel leaves the gameplay lens and transform unchanged")
+	check(is_equal_approx(view.camera.fov, 70.0) and view.camera.cull_mask == 1 << 21 and actor.camera.cull_mask & (1 << 21) == 0, "The independent 70-degree camera alone renders layer 22")
+	check(local_body.mesh != original_body_mesh, "Local body removes its original arms while the viewmodel draws them")
+	for mesh: MeshInstance3D in original_layers:
+		check(mesh.layers & actor.camera.cull_mask == 0 and mesh.layers & observer.cull_mask != 0, "Held mesh renders once locally and remains available to observers")
+	# Moving a live actor between worlds does not rerun the component's _ready.
+	var interior := SubViewport.new()
+	interior.own_world_3d = true
+	interior.size = Vector2i(1280, 720)
+	root.add_child(interior)
+	var host := Node3D.new()
+	interior.add_child(host)
+	actor.reparent(host)
+	actor.camera.make_current()
+	await steps()
+	view.update_view()
+	check(view.active and view.viewport.world_3d == actor.get_world_3d(), "Reparented carry rebinds to the interior World3D without reinitializing")
+	var light := OmniLight3D.new()
+	world.add_child(light)
+	light.global_position = actor.camera.global_position
+	var adaptation := preload("res://world/night_vision_effect.gd").new()
+	adaptation.name = "DarkAdaptation"
+	adaptation.profile = adaptation.profile.duplicate()
+	adaptation.profile.ambient_gate_enabled = false
+	world.add_child(adaptation)
+	actor.reparent(world)
+	actor.camera.make_current()
+	await steps()
+	adaptation._prepare_views()
+	view.update_view()
+	check(view.active and view.viewport.world_3d == actor.get_world_3d(), "Returning carry rebinds to its original World3D")
+	check(light.layers == NightVisionEffect.LIGHT_LAYER, "Night adaptation routes the real world light to its lighting layer")
+	check(view.light_copies.has(light.get_instance_id()), "Returning carry discovers and copies the real world light")
+	for entry: Dictionary in view.light_copies.values():
+		check(entry.copy.layers == 1 << 21 and entry.copy.has_meta(&"first_person_light_copy"), "Night adaptation leaves cosmetic carry lights on layer 22")
+	check(root.get_node("GameSettings").viewport_effect(view.viewport) == null, "Carry viewport does not receive a second fullscreen display effect")
+	adaptation.queue_free()
+	light.queue_free()
+	interior.queue_free()
+	await steps()
+	view.update_view()
+	# Change ownership synchronously so a generic fixture never enters grab animation.
+	actor.grab_control.captor = world
+	view.update_view()
+	check(not view.active and local_body.mesh == original_body_mesh, "Grab ownership immediately restores the normal world presentation")
+	actor.grab_control.captor = null
+	view.update_view()
+	check(view.active, "Releasing grab ownership restores first-person carry")
+	observer.make_current()
+	view.update_view()
+	check(not view.active and local_body.mesh == original_body_mesh, "Observer takeover removes the overlay and restores the original local skin")
+	for mesh: MeshInstance3D in original_layers:
+		check(mesh.layers == original_layers[mesh], "Observer fallback restores exact held-mesh layers")
+	actor.camera.make_current()
+	view.update_view()
+	check(actor.enter_equipment_placement(), "Ordinary viewmodel item can enter placement")
+	view.update_view()
+	check(not view.active and not held.visible and local_body.mesh == original_body_mesh, "Placement hides the overlay and original held model together")
+	actor.cancel_equipment_placement()
+	view.update_view()
+	check(view.active and actor.held_item_node == held, "Cancelling placement restores the same held item and viewmodel")
+	actor.add_item("Scrap", false, "res://props/scrap.tscn")
+	actor._set_active_slot(1)
+	await steps(20)
+	view.update_view()
+	check(view.active and actor.held_item_node != held, "Slot switching follows the new ordinary held item")
+	actor._set_active_slot(2)
+	view.update_view()
+	check(not view.active and local_body.mesh == original_body_mesh, "An empty slot clears the previous viewmodel immediately")
+	clear_bag()
+	actor.add_item("Scrap", false, "res://props/scrap.tscn")
+	await steps(20)
+	view.update_view()
+	var state: Dictionary = actor.inventory.active_item().state.duplicate(true)
+	held_pose = actor.held_item_node.global_transform
+	actor.drop_item()
+	view.update_view()
+	var dropped := find_item(state.id)
+	check(not view.active and local_body.mesh == original_body_mesh, "Dropping clears the viewmodel and restores the local body")
+	check(dropped != null and dropped.global_transform.is_equal_approx(held_pose), "Viewmodel release drops from the unchanged world-held pose")
+	if dropped: dropped.queue_free()
+	clear_bag()
+	actor.add_item("Salvaged Motor", true, "res://props/scavenge_loot/salvaged_motor.tscn")
+	await steps(20)
+	view.update_view()
+	check_viewmodel_frame("portable large motor", true)
+	clear_bag()
+	actor.add_item("Scrapper", true, "res://equipment/scrapper.tscn")
+	await steps(20)
+	view.update_view()
+	check(not view.active, "Service machinery retains world carry instead of receiving a viewmodel")
+	clear_bag()
+	observer.queue_free()
+	await steps()
+
 func check_carry_postures() -> void:
 	clear_bag()
 	actor.camera.rotation = Vector3.ZERO
@@ -140,6 +282,8 @@ func check_carry_postures() -> void:
 	actor._apply_body_collision()
 	await steps(45)
 	check_carry_frame("crouched scrap")
+	actor.get_node("Visuals/FirstPersonCarry").update_view()
+	check_viewmodel_frame("crouched scrap")
 	actor.crouching = false
 	actor._apply_body_collision()
 	await steps(45)
@@ -147,6 +291,8 @@ func check_carry_postures() -> void:
 	actor._apply_body_capabilities()
 	await steps(20)
 	check_carry_frame("left-hand fallback")
+	actor.get_node("Visuals/FirstPersonCarry").update_view()
+	check_viewmodel_frame("left-hand fallback")
 	actor.body_state.reset()
 	actor._apply_body_capabilities()
 	clear_bag()
@@ -285,6 +431,7 @@ func run() -> void:
 	await check_new_grants()
 	await check_scavenge_loot()
 	await check_carry_postures()
+	await check_first_person_carry()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))

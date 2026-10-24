@@ -132,6 +132,8 @@ func _track_light(reference: WeakRef) -> void:
 	if not is_inside_tree(): return
 	var light := reference.get_ref() as Light3D
 	if light == null or not light.is_inside_tree() or light.get_world_3d() != get_world_3d(): return
+	# Cosmetic view lights already have their own render layer.
+	if light.has_meta(&"first_person_light_copy"): return
 	var id := light.get_instance_id()
 	if not _lights.has(id):
 		var original_layers: int = light.get_meta(LIGHT_ORIGINAL_LAYERS, light.layers)

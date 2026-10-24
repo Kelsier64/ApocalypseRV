@@ -23,3 +23,9 @@ scale = Vector3(1.25, 1.25, 1.25)
 
 [node name="Model" parent="Visuals" instance=ExtResource("model")]
 position = Vector3(0, -0.11, 0)
+
+[node name="GripRight" type="Marker3D" parent="."]
+position = Vector3(0.2, -0.02, 0)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+position = Vector3(-0.2, -0.02, 0)
