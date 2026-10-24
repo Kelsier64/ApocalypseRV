@@ -238,8 +238,8 @@ func _update_item(delta: float, large: bool) -> void:
 	var speed := Vector2(actor.velocity.x, actor.velocity.z).length() if not actor.in_ui_mode else 0.0
 	phase += delta * (8.0 if speed > .1 else 2.0)
 	var sway := Vector3(sin(phase * .5) * .006, sin(phase) * .006, 0) * minf(speed, 1.0)
-	# Ordinary one-handed props sit at chest height, below the shoulder even
-	# while looking up. The flashlight below uses a raised grip for visibility.
+	# Follow the animated torso while keeping the shared prop and real arms
+	# visible to both the local camera and observers.
 	var shoulder := skeleton.find_bone("upper_arm_" + active_hand)
 	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
 	var crouch_drop := 0.0
@@ -259,6 +259,14 @@ func _update_item(delta: float, large: bool) -> void:
 		center = Vector3(0, 1.30 - bounds.size.y * .5, -maxf(.70, bounds.size.z * .5 + .35))
 	if item.has_method("held_support_center"): center = item.held_support_center()
 	if large or item.has_method("held_support_center"): center.y -= crouch_drop
+	if not actor.is_crawling() and not actor.is_grabbed() and not item.has_method("held_support_center"):
+		# Raise compact props beside the shoulder. Very wide props still need
+		# an authored support grip rather than an unreachable outer-edge grip.
+		if grip_kind == "small" and bounds.size.x <= .70:
+			center = Vector3(.18, shoulder_height + .16, -maxf(.50, bounds.size.z * .5 + .35))
+		elif large and not (item is Item and item.definition != null and item.definition.requires_rv_connection):
+			# Keep the top in view and the nearest face clear of the eye.
+			center = Vector3(.04, 1.88 - bounds.size.y * .5 - crouch_drop, -maxf(.60, bounds.size.z * .5 + .35))
 	if grip_kind == "round":
 		center = Vector3(.10, 1.69 if actor.is_crawling() else shoulder_height - .21, -.46)
 		# Raise the light beside the shoulder so the real barrel clears the
@@ -268,7 +276,8 @@ func _update_item(delta: float, large: bool) -> void:
 	# Follow the crouched torso in depth too, keeping real grips in arm reach.
 	center.z += crouch_depth
 	if active_hand == "L" and not large: center.x = -center.x
-	center += sway + Vector3.DOWN * (1.0 - right_weight) * .16
+	var hold_weight := right_weight if active_hand == "R" else left_weight
+	center += sway + Vector3.DOWN * (1.0 - hold_weight) * .16
 	var pivot := Vector3(0, 1.45 - crouch_drop, 0)
 	center = pivot + carry_basis * (center - pivot)
 	if actor.is_crawling(): center += Vector3(0, -1.0, -.12)

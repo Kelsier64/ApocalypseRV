@@ -105,6 +105,53 @@ func check_new_grants() -> void:
 	clear_bag()
 	await steps()
 
+func check_carry_frame(note: String, large: bool = false) -> void:
+	var carry: Node = actor.get_node("Visuals/Carry")
+	var held: Node3D = actor.held_item_node
+	var center: Vector3 = held.get_parent().to_global(carry.bounds.get_center())
+	var screen: Vector2 = actor.camera.unproject_position(center) / root.get_visible_rect().size
+	check(not carry.bounds.has_point(held.get_parent().to_local(actor.camera.global_position)), "Held mesh bounds stay clear of the eye: " + note)
+	var left: bool = carry.active_hand == "L"
+	var min_x := .35 if large else (.05 if left else .60)
+	var max_x := .65 if large else (.40 if left else .95)
+	check(not actor.camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .30 and screen.y < .95, "Carry center stays visible on its holding side: " + note + " screen=" + str(screen) + " fov=" + str(actor.camera.fov))
+	for side: String in (["R", "L"] if large else [carry.active_hand]):
+		var skeleton: Skeleton3D = carry.skeleton
+		var hand := skeleton.find_bone("hand_" + side)
+		var rest := skeleton.get_bone_global_rest(hand)
+		var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+		var frame: Basis = carry.hand_frames[side]
+		var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
+		var palm_offset := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
+		var palm: Vector3 = skeleton.global_transform * (skeleton.get_bone_global_pose(hand) * palm_offset)
+		var grip: Vector3 = carry.grip_right if side == "R" else carry.grip_left
+		check(palm.distance_to(grip) < .035, "Visible carry retains palm contact on " + side + ": " + note)
+
+func check_carry_postures() -> void:
+	clear_bag()
+	actor.camera.rotation = Vector3.ZERO
+	for key: String in ["gas_can", "gas_can_empty"]:
+		actor.add_item(key, false, "res://props/" + key + ".tscn")
+		await steps(20)
+		check_carry_frame(key)
+		clear_bag()
+	actor.add_item("Scrap", false, "res://props/scrap.tscn")
+	actor.crouching = true
+	actor._apply_body_collision()
+	await steps(45)
+	check_carry_frame("crouched scrap")
+	actor.crouching = false
+	actor._apply_body_collision()
+	await steps(45)
+	actor.body_state.sever(&"right_arm")
+	actor._apply_body_capabilities()
+	await steps(20)
+	check_carry_frame("left-hand fallback")
+	actor.body_state.reset()
+	actor._apply_body_capabilities()
+	clear_bag()
+	await steps(20)
+
 func check_scavenge_loot() -> void:
 	var loot := ["copper_wire_spool", "broken_shortwave_radio", "salvaged_motor", "medical_tin", "industrial_valve", "enamel_kettle"]
 	var save_path := "res://.godot/test-scavenge-loot.save"
@@ -155,8 +202,15 @@ func check_scavenge_loot() -> void:
 		actor.inventory.items.assign(inventory)
 		actor.refresh_inventory()
 		check(actor.held_item_node != null and actor.held_item_node.scene_file_path == path and actor.held_item_node.capture_item_state() == state, "Saved loot inventory recreates the same held Item: " + slug)
+		actor.camera.transform = camera_pose
+		for pitch in [0.0, -.35, .35]:
+			actor.camera.rotation.x = pitch
+			await steps(20)
+			check_carry_frame(slug + " pitch=" + str(pitch), large)
+		var held_pose: Transform3D = actor.held_item_node.global_transform
 		actor.drop_item()
 		var dropped := find_item(state.id)
+		check(dropped != null and dropped.global_transform.is_equal_approx(held_pose), "Drop starts at the visible held transform: " + slug)
 		check(dropped != null and dropped.scene_file_path == path and dropped.is_large == large and dropped.capture_item_state() == state, "Native drop preserves the saved loot Item: " + slug)
 		if dropped != null:
 			var snapshot := WorldActorSnapshot.capture(dropped)
@@ -206,6 +260,7 @@ func check_hud_toggle() -> void:
 	await steps()
 
 func run() -> void:
+	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
@@ -229,6 +284,7 @@ func run() -> void:
 	await check_hud_toggle()
 	await check_new_grants()
 	await check_scavenge_loot()
+	await check_carry_postures()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))

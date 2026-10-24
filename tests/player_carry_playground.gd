@@ -1,5 +1,5 @@
 extends Node3D
-const ITEMS := ["flashlight", "scrap", "battery", "engine_repair_kit", "gas_can", "gas_can_empty", "wheel", "oil_barrel", "engine_standard", ""]
+const ITEMS := ["flashlight", "scrap", "battery", "engine_repair_kit", "gas_can", "gas_can_empty", "wheel", "oil_barrel", "engine_standard", "scavenge_loot/copper_wire_spool", "scavenge_loot/broken_shortwave_radio", "scavenge_loot/salvaged_motor", "scavenge_loot/medical_tin", "scavenge_loot/industrial_valve", "scavenge_loot/enamel_kettle", ""]
 var actor: CharacterBody3D
 var observer: Camera3D
 var label: Label
@@ -53,6 +53,7 @@ func _ready() -> void:
 			var index := ITEMS.find(argument.trim_prefix("--item="))
 			if index >= 0: selected = index
 		elif argument == "--hands": hand_closeup = true
+		elif argument == "--first-person": actor.camera.make_current()
 	_equip()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -60,7 +61,7 @@ func _equip() -> void:
 	actor.inventory.items.clear()
 	actor.inventory.active_slot = 0
 	var key: String = ITEMS[selected]
-	if not key.is_empty(): actor.add_item(key, key in ["oil_barrel", "engine_standard"], "res://props/" + key + ".tscn")
+	if not key.is_empty(): actor.add_item(key, key in ["oil_barrel", "engine_standard", "scavenge_loot/salvaged_motor"], "res://props/" + key + ".tscn")
 	actor._equip_active_slot()
 	label.text = "F1 View | F2 Item | F3 Walk | F4 Look pitch | F5 Hands | F6 Orbit\n" + (key if not key.is_empty() else "Empty hands")
 
