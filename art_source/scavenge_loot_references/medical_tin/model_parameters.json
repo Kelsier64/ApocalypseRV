@@ -1,0 +1,108 @@
+{
+  "source_sha256": "6ef6b67ee50e74e2f9a7ac80269bf040c15a0ab446635ce5fea7b44a64aeaee8",
+  "size_m": [
+    0.3,
+    0.22,
+    0.18
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 90.0,
+  "fit_scale_xyz": [
+    0.2969221163334971,
+    0.3024882773103235,
+    0.2946332205786927
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "loot_medical_tin",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49808,
+  "triangles": 5976,
+  "vertices": 6157,
+  "final_sha256": "05f06364ab9c16c0c5e8f008853cb4593066d18d0a9fc67397c8775d26d56460",
+  "texture_sha256": [
+    "e7b933cac0788dd174cc9e1afc808af073cdd80c0249d68675c3f505900b91df",
+    "7eb75cb18e379dcb5f39546c23d1b78fa07be25a03b634fcac07ed06ef833a70",
+    "b529b92178e768bcecfcb3275312544783b4a543400dbe6e96e9d2318cd95a3e"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.15000000596046448,
+    0.0,
+    -0.09000000357627869
+  ],
+  "bounds_max_m": [
+    0.15000000596046448,
+    0.2199999988079071,
+    0.09000000357627869
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 502,
+    "duplicate_triangles": 64,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "VISUALLY_REVIEWED_WITH_LIMITATIONS",
+    "views_inspected": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "scope": "Static asset preview only; no game integration",
+    "limitations": [
+      "Single-image reconstruction; unseen details inferred.",
+      "Generated mesh retains nonmanifold/duplicate geometry; no watertight or clean-retopology claim.",
+      "Independent Godot viewer only; collision, pickups and gameplay not implemented."
+    ]
+  },
+  "source_path": "art_source/scavenge_loot_references/medical_tin/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "b10ca91e-20fc-4594-9313-7243d1c5959f",
+    "reference_sha256": "d2dede51c2b65ac207b8e6165db46ee3f245dc666560dad6571567f97ce52b24"
+  },
+  "final_path": "assets/models/scavenge_loot/medical_tin.glb",
+  "final_technical_checks": {
+    "vertices": 6157,
+    "triangles": 5976,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}

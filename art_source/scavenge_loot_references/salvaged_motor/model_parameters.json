@@ -1,0 +1,108 @@
+{
+  "source_sha256": "1a0d0f0abf54e87e0955bde1029b7fedf4bec56d5375f32eb9be3e053e6167c3",
+  "size_m": [
+    0.27,
+    0.3,
+    0.42
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 180.0,
+  "fit_scale_xyz": [
+    0.41195014817970144,
+    0.41387271030960743,
+    0.4159316964554763
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "loot_salvaged_motor",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49520,
+  "triangles": 12276,
+  "vertices": 14460,
+  "final_sha256": "3810eb6449497af5640181126c6410801797e70f5b7618d921f299921d202fb1",
+  "texture_sha256": [
+    "d217d3d07d6424aaf93e839420737cc5a7e99c4727e7a777184375cfea92c867",
+    "801c4e040aec18dc2f0c100da29c240b41353b02aa24b450b8142b4216983d08",
+    "b3f85441e0b6d0aab0757eab57d4727fcf8225dad04aa75822908e4781477672"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.13500000536441803,
+    0.0,
+    -0.20999999344348907
+  ],
+  "bounds_max_m": [
+    0.13500000536441803,
+    0.30000001192092896,
+    0.20999999344348907
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 557,
+    "duplicate_triangles": 194,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "VISUALLY_REVIEWED_WITH_LIMITATIONS",
+    "views_inspected": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "scope": "Static asset preview only; no game integration",
+    "limitations": [
+      "Single-image reconstruction; unseen details inferred.",
+      "Generated mesh retains nonmanifold/duplicate geometry; no watertight or clean-retopology claim.",
+      "Independent Godot viewer only; collision, pickups and gameplay not implemented."
+    ]
+  },
+  "source_path": "art_source/scavenge_loot_references/salvaged_motor/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "1d65312e-a93a-49f1-86c1-cd57f15559f5",
+    "reference_sha256": "ae5fb70b7c8ef874250f2bd741ed3588834fce4cabf2f39833b360d30834a043"
+  },
+  "final_path": "assets/models/scavenge_loot/salvaged_motor.glb",
+  "final_technical_checks": {
+    "vertices": 14460,
+    "triangles": 12276,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}

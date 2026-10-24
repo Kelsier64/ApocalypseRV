@@ -1,0 +1,108 @@
+{
+  "source_sha256": "ca6755ad0a460cf41a619a603257efa34129105985e85e7e837a28205e2a4760",
+  "size_m": [
+    0.32,
+    0.22,
+    0.12
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 0.0,
+  "fit_scale_xyz": [
+    0.3166483121801312,
+    0.30622002252645397,
+    0.27979188206933175
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "loot_broken_shortwave_radio",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49888,
+  "triangles": 5983,
+  "vertices": 6151,
+  "final_sha256": "3612f32e2b3292e13e1e1cb92fc68bcff2a9daef4a6a6ee5196f113eb452af6e",
+  "texture_sha256": [
+    "07f5e9953834ee28682a986edc877ae0ff353447cb698a99f47efebcd408222a",
+    "3dafb347e136c78f291c99130dc7cb1299492db02d803cea2bdc3b8213e2b875",
+    "994a24ce6360010b1f9a42ab0535e2dae3f70545f43610b46bf42d71fffec210"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.1599999964237213,
+    -1.3877787807814457e-17,
+    -0.05999999865889549
+  ],
+  "bounds_max_m": [
+    0.1599999964237213,
+    0.2199999988079071,
+    0.05999999865889549
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 3,
+    "nonmanifold_edges": 99,
+    "duplicate_triangles": 32,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "VISUALLY_REVIEWED_WITH_LIMITATIONS",
+    "views_inspected": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "scope": "Static asset preview only; no game integration",
+    "limitations": [
+      "Single-image reconstruction; unseen details inferred.",
+      "Generated mesh retains nonmanifold/duplicate geometry; no watertight or clean-retopology claim.",
+      "Independent Godot viewer only; collision, pickups and gameplay not implemented."
+    ]
+  },
+  "source_path": "art_source/scavenge_loot_references/broken_shortwave_radio/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "c2d29359-33d5-4d32-8dd1-f35cc03876d4",
+    "reference_sha256": "5e74aa0eb8803bbf871dea12610f42fc5bd586aa91deef73187e284a3a66a2fb"
+  },
+  "final_path": "assets/models/scavenge_loot/broken_shortwave_radio.glb",
+  "final_technical_checks": {
+    "vertices": 6151,
+    "triangles": 5983,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}

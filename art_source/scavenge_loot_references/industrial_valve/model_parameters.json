@@ -1,0 +1,108 @@
+{
+  "source_sha256": "85719e46b02ba9c30a1833052a8948cf1c7716a5d570010b38ec9e3a276ad28f",
+  "size_m": [
+    0.32,
+    0.36,
+    0.27
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 0.0,
+  "fit_scale_xyz": [
+    0.34197717788570026,
+    0.3562624248469038,
+    0.3506960927314872
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "loot_industrial_valve",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49490,
+  "triangles": 7360,
+  "vertices": 8455,
+  "final_sha256": "59855547a19432dc074620e73ae0dd5ccbfa23e1d90db09d0ebe164055b2795a",
+  "texture_sha256": [
+    "0dc13635fadb70625cd4d17e4f6a04e46a61c3ac3c9a1b8523633851f3f260dd",
+    "84b6cde0feed62cb74c979444ba9beb1d912ebc1e968c9200524635e6dd9157b",
+    "e070e25fe52eea3fbddc4a1f90cd03dd2f7274b179d32faab541c2937a9d649f"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.1599999964237213,
+    -2.7755575615628914e-17,
+    -0.13500000536441803
+  ],
+  "bounds_max_m": [
+    0.1599999964237213,
+    0.36000001430511475,
+    0.13500000536441803
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 381,
+    "duplicate_triangles": 104,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "VISUALLY_REVIEWED_WITH_LIMITATIONS",
+    "views_inspected": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "scope": "Static asset preview only; no game integration",
+    "limitations": [
+      "Single-image reconstruction; unseen details inferred.",
+      "Generated mesh retains nonmanifold/duplicate geometry; no watertight or clean-retopology claim.",
+      "Independent Godot viewer only; collision, pickups and gameplay not implemented."
+    ]
+  },
+  "source_path": "art_source/scavenge_loot_references/industrial_valve/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "5fa195da-5096-4488-bfa4-e7513d45b912",
+    "reference_sha256": "25a53c8dc6defda229320ff8a79a773d961a2d7385a40a386e6a20a813c84700"
+  },
+  "final_path": "assets/models/scavenge_loot/industrial_valve.glb",
+  "final_technical_checks": {
+    "vertices": 8455,
+    "triangles": 7360,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "source_sha256": "34b926ef1b0276e2ea2b43fa5808d2cc8840dfb8a1b8d107fd3a94c3f968dcb9",
+  "size_m": [
+    0.28,
+    0.28,
+    0.24
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 0,
+  "fit_scale_xyz": [
+    0.27746007482931406,
+    0.2773921308867552,
+    0.27755865159468124
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "loot_copper_wire_spool",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49935,
+  "triangles": 9965,
+  "vertices": 11122,
+  "final_sha256": "838eb506886a4c2212e5dfffa9036be2e184ec80c9ae26e25963a3ad3b397e53",
+  "texture_sha256": [
+    "030f0deba66f0a0860837061339c2592b3f2265058ed01489e55fb54d649f52d",
+    "e36d3a6c09e1841634c2644c2f2d4b1cf97dfe349ab5173dd3914d8e88137f78",
+    "3b448247588a2e9455238503e60205f56eaec9cef56d51e1dd4e203536e11e2f"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.14000000059604645,
+    0.0,
+    -0.11999999731779099
+  ],
+  "bounds_max_m": [
+    0.14000000059604645,
+    0.2800000011920929,
+    0.11999999731779099
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 9,
+    "nonmanifold_edges": 106,
+    "duplicate_triangles": 48,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "VISUALLY_REVIEWED_WITH_LIMITATIONS",
+    "views_inspected": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "scope": "Static asset preview only; no game integration",
+    "limitations": [
+      "Single-image reconstruction; unseen details inferred.",
+      "Generated mesh retains nonmanifold/duplicate geometry; no watertight or clean-retopology claim.",
+      "Independent Godot viewer only; collision, pickups and gameplay not implemented."
+    ]
+  },
+  "source_path": "art_source/scavenge_loot_references/copper_wire_spool/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "51826c3d-6b0e-4993-8a7e-eb214187b93f",
+    "reference_sha256": "266f22873bf094d968e0b07d62c0e13c0ca3c0798bae093919857105a770d89c"
+  },
+  "final_path": "assets/models/scavenge_loot/copper_wire_spool.glb",
+  "final_technical_checks": {
+    "vertices": 11122,
+    "triangles": 9965,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}

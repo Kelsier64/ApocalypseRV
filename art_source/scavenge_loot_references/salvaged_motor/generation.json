@@ -1,0 +1,38 @@
+{
+  "profile": "trellis-single-1024-50k",
+  "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+  "seed": 42,
+  "resolution": 1024,
+  "prompt_id": "1d65312e-a93a-49f1-86c1-cd57f15559f5",
+  "reference_sha256": "ae5fb70b7c8ef874250f2bd741ed3588834fce4cabf2f39833b360d30834a043",
+  "reference_dimensions": [
+    1254,
+    1254
+  ],
+  "raw_sha256": "1a0d0f0abf54e87e0955bde1029b7fedf4bec56d5375f32eb9be3e053e6167c3",
+  "conditioning_sha256": "fce92ecf57d86d13b7a1367e49d8af217fbc1786d989dc23542cdf3995f77d54",
+  "technical_checks": {
+    "vertices": 41909,
+    "triangles": 49520,
+    "embedded_images": 3,
+    "finite_positions": true,
+    "finite_vertex_attributes": true,
+    "checked_attributes": [
+      "NORMAL",
+      "POSITION",
+      "TANGENT",
+      "TEXCOORD_0"
+    ],
+    "attribute_issues": {
+      "zero_normals": 0,
+      "non_unit_normals": 0,
+      "zero_tangents": 0,
+      "non_unit_tangents": 0,
+      "non_orthogonal_tangents": 0,
+      "invalid_tangent_handedness": 0
+    },
+    "container_valid": true,
+    "geometry_straightness_checked": false,
+    "topology_checked": false
+  }
+}
