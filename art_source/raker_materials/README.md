@@ -1,14 +1,28 @@
 # Raker material sources
 
-## Current: smooth tissue and visible lividity, 2026-10-26
+## Current: B direction, rough neutral / olive gray, 2026-10-26
+
+The current body, hand and keratin textures are authored with native Blender 5.2.3 LTS shader nodes. Neither of the historical generated color samples below is used. The conceptual B image is an art-direction target, not a UV texture or a measured PBR material; its generated anatomy/lighting is not part of the current mesh.
+
+Color is a mirrored object-space 3D field with neutral/olive ramps (green >= red), darker joints, underarms, flanks, fingertips and eye sockets, and quiet worn patches. Relief uses roughly 7–20 mm surface grain, localized centimeter folds at shoulders/joints/neck and restrained anatomical ridges, baked as OpenGL tangent-space normals. There is no photo/box projection or image luminance converted to bump. Average mapped roughness is approximately 0.75 for skin, 0.71 for hands and 0.61 for keratin. ORM now stores local baked AO in R, roughness in G and zero metallic in B; the glTF material connects the same map to occlusion and metallic/roughness. AO strength is 0.75. Oral tissue is dark neutral olive rather than red.
+
+Every pre-existing node, skin, mesh, UV, index, joint/weight and all 3,282 accessor metadata/payloads remain identical to the previous appearance commit; all 41 animations are retained. Only materials and embedded skin/hand/nail images change. Body albedo/normal 4096² and ORM 1024², hands 2048² / 512², keratin 1024² / 512²; eye atlas 512² retained. No extra tangent attributes are delivered.
+
+Validation: same camera, lighting, pose and color management in Blender source-vs-baked renders yielded mean RGB absolute error 0.084/255, p99 1/255. Godot material inspection confirms normal maps enabled at scale 1, roughness from G and AO from R. Runtime GLTF and imported-scene review, normal/AO/shadow isolation and a discarded authored-tangent trial found no loss of whole-model UV/material routing; the posed grazing-angle chest lighting responds strongly to the normal detail. Formal preview uses fixed key/rim/front fill for readable inspection; game lighting varies. No gameplay or animation changes/tests in this material-only round. Appearance awaits user acceptance.
+
+Authoring graph and native/baked/render diagnostics are in ignored `.godot/art-work/raker-b-rough/`, including `raker_b_authoring.blend`. The authoring file uses the source procedural materials. Production asset: [raker.glb](../../assets/models/raker/raker.glb).
+
+Format references: [Godot normal-map convention](https://docs.godotengine.org/en/4.6/tutorials/3d/standard_material_3d.html), [Blender glTF material/bake convention](https://docs.blender.org/manual/en/3.0/addons/import_export/scene_gltf2.html).
+
+## Historical: smooth tissue and visible lividity, 2026-10-26 (replaced)
 
 `lividity_albedo_source.png` is a new 1254² synthetic color sample made with the built-in ImageGen tool using the preferred Raker direction board as a visual reference. It replaces the earlier dry-skin sample. This is generated artwork, not a photograph or scan. The current material does not use `dry_skin_albedo_source.png` or its sampled wrinkle normals.
 
 Blender 5.2.3 LTS projects the new pigmentation with fully blended box projection in object space, mirrored across X, then bakes it to the original body/hand UVs. Temporary authoring normals are averaged at coincident UV boundaries to soften projection transitions. Large plum, slate and brown lividity areas emphasize the shoulders, flanks, abdomen, knees, elbows and fingers. The normal maps contain restrained anatomical relief rather than image-derived pores or dense creases; roughness separates matte tissue, lips, eyes and keratin. The eyes have a dedicated 512² color atlas. Local symmetric face/eye geometry is refined; animation curves, rig hierarchy, weights and triangle indices are retained.
 
-Final asset: [raker.glb](../../assets/models/raker/raker.glb). Source and intermediate bake scripts/renders are kept in the ignored `.godot/art-work/raker-dark-skin/` review workspace. Subjective appearance is pending user acceptance.
+That revision was delivered in `4a12d42`. Source and intermediate bake scripts/renders are kept in the ignored `.godot/art-work/raker-dark-skin/` review workspace.
 
-### Current ImageGen prompt
+### Historical lividity ImageGen prompt
 
 Use case: precise-object-edit. The attached creature concept board is ONLY a reference for biological color appearance. Create ONE square flat PBR ALBEDO material sample for painting the Raker game creature, no body shape or concept sheet. Crop a 60cm by 60cm patch of the reference creature's skin color. This is a new material replacing failed wrinkled leather-like material.
 
