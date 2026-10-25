@@ -1,12 +1,14 @@
 # 裂爪 Raker
 
-獨立的新怪物；目前遊戲使用 v021 左右手完整重建、v019 掌向、v018 口腔與 v012 加密模型，共 41 段動畫。待機／走路／奔跑／狂奔共用駝背、前彎頸部、收肘、拇指朝前與掌心朝內，四指朝掌心彎曲，切換步態保留腳步相位。新掌部、拇指根部、指縫與三節四指在 Blender 重新建模、綁定和製作 41 段張合動畫；保留掌心向內的方向。[整手重建驗收](../../../docs/validation/2026-09-23-raker-v021.md)。
+獨立的新怪物；目前遊戲使用 2026-10-25 外觀細化，建立於 v021 左右手完整重建、v019 掌向、v018 口腔與 v012 加密模型，共 41 段動畫。待機／走路／奔跑／狂奔共用駝背、前彎頸部、收肘、拇指朝前與掌心朝內，四指朝掌心彎曲，切換步態保留腳步相位。新掌部、拇指根部、指縫與三節四指在 Blender 重新建模、綁定和製作 41 段張合動畫；保留掌心向內的方向。[整手重建歷史驗收](../../../docs/validation/2026-09-23-raker-v021.md)。
 
-主世界一般戶外站點新生成的敵人使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查其既有範圍內的實際生成模型。新訪地堡的每個合格遭遇機會獨立以 30% 機率從可擴充敵人池生成，目前池中只有 Raker，一座地堡可有 0、1 或多隻。仍存在的 Raker 存檔照原狀還原；已移除場景的怪物在讀取舊檢查點時略過，保留其他世界資料。Zombie 不再是現行敵人或新訪地堡候選。
+本次增加肋弓、鎖骨、肩胛、脊椎與前臂肌腱的淺浮雕，並烘焙乾皮皺褶、眼窩色差、疤痕、指甲角質及粗糙度。保留原拓樸、節點、骨架、蒙皮與動畫資料；身體位置與法線局部調整，口腔、牙齒和手部幾何不變。原始模型保留於 [v021 GLB](../../../art_source/monster_refined_v021/raker_refined_v021.glb)。
 
-- 可編輯來源：[monster_refined_v021.blend](../../../art_source/monster_refined_v021/monster_refined_v021.blend)，細化場景 `MONSTER_REFINED_V021`；保留先前模型場景與動畫。原始動畫來源為 `C:/Users/evan4/Projects/3d/raker_animated_v008.blend`。
-- 匯出資產：[raker.glb](raker.glb)，Blender 5.2.2 LTS，glTF 2.0 Binary；只匯出目前場景所選骨架／網格，NLA track 分片、約束烘焙、54 變形骨、Y-up。
-- 中立腳底至頭頂 2.18 m，15,159 來源頂點、30,242 三角面、6 材質、UV0。2048 × 2048 身體污垢貼圖與 1024 × 1024 新手圖集內嵌於 GLB，眼窩與嘴部具有幾何深度。jaw 下顎骨帶動原生嘴縫及內壁，移除外掛唇圈；18 顆牙齒退入口內，咬擊才張嘴，其餘動畫閉嘴。
+主世界一般戶外站點的 Raker 使用[正式敵人場景](../../../enemies/raker.tscn)。新訪地堡的每個合格遭遇機會獨立以 30% 機率從可擴充敵人池生成，目前池中只有 Raker，一座地堡可有 0、1 或多隻。Zombie 不再是現行敵人或新訪地堡候選。
+
+- 歷史可編輯來源：[monster_refined_v021.blend](../../../art_source/monster_refined_v021/monster_refined_v021.blend)，場景 `MONSTER_REFINED_V021`；此檔不含 2026-10-25 細化。原始動畫來源為 `C:/Users/evan4/Projects/3d/raker_animated_v008.blend`。現行外觀可直接將下方 GLB 匯入 Blender 編輯。
+- 正式資產：[raker.glb](raker.glb)，glTF 2.0 Binary、54 變形骨、Y-up。本次以 Blender 5.2.3 LTS 烘焙材質，只更新原 GLB 的身體幾何與材質，保留動畫及蒙皮的原二進位資料。
+- 中立腳底至頭頂約 2.18 m，18,869 個匯出頂點（含 UV／材質邊界拆點）、30,242 三角面、6 材質、UV0。新貼圖為身體 4096²、手部 2048²、指甲 512²，各含 albedo、切線空間 normal 與 ORM（R=1、G=roughness、B=0）；GLB 內嵌並由 Godot 抽出 PNG。眼睛與口腔沿用原材質。jaw 下顎骨帶動原生嘴縫及內壁，18 顆牙齒位於口內，咬擊才張嘴。
 - Godot Model 等比放大至 1.20 倍，中立身高由 2.18 m 增至 **2.616 m（約 2.62 m）**；保留原始 GLB、骨架與 41 段動畫。轉 Y 180° 使資產 +Z 面向角色 -Z；BodyMesh Y=0.25 與原有腳底座標契約一致，CharacterBody3D 本身不縮放。
 - 站立膠囊與導航高度 2.616 m，低姿態膠囊 1.85 m；來源低姿態動畫最高約 1.501 m，放大後約 1.801 m。膠囊半徑保留 0.40 m，站起需要真實碰撞淨空。步態播放速率按放大後步幅換算，移動速度不變。
 
@@ -47,13 +49,15 @@ Godot 會消耗匯入名稱的 `_loop` 尾綴；外觀腳本的獨立 `game` lib
 
 ## 重建和檢查
 
-新版綁定、動畫、匯出與來源要求見 [v021 說明](../../../art_source/monster_refined_v021/README.md)。沿用 v011 已烘焙贴圖；完成後將 `raker_refined_v021.glb` 複製到本目錄的 `raker.glb`，再執行 Raker 回歸與正式主世界模型測試。
+歷史綁定、動畫及匯出流程見 [v021 說明](../../../art_source/monster_refined_v021/README.md)。該流程會產生細化前的模型；目前外觀應從本目錄 `raker.glb` 繼續編輯，保留附帶材質、骨名與動畫名稱。重匯入 Godot 後執行 `scripts/test.ps1 -TestFilter test_raker_grab.gd`，另檢查實際材質與動畫姿勢。
 
-舊 v007→v008 建置及動畫掃描腳本已於 2026-09-29 移除；目前使用上述 v021 來源流程，不再提供早期版本的建置入口。
+舊 v007→v008 建置及動畫掃描腳本已於 2026-09-29 移除，不再提供早期版本的建置入口。
 
-[v021 動畫檢查](../../../art_source/monster_refined_v021/audit.py) 掃描每個烘焙影格；[結果](animation_audit.json) 保存本版身體自交、牙齒互穿與五方向閉嘴遮齒掃描結果（嘴縫接觸、口腔及牙根嵌合區域除外）。[手指檢查](../../../art_source/monster_refined_v021/audit_hands.py) 另檢查實際替換的手網格、三節骨、蒙皮權重、手部拓樸及逐幀朝掌心屈曲。排除共用頂點的三角形，不代表任意跨動畫混合也已全部窮舉驗證。
+2026-10-25 檢查：原始與細化 GLB 的節點、skin、41 動畫及其 sampler 資料、JOINTS／WEIGHTS／UV／索引資料相同；位置與法線皆有限值，法線為單位長度。Godot 4.7.2 Forward+ 使用正式 `raker.tscn` 檢查待機正面、軀幹近照、背面與抓握姿勢，匯入及渲染日誌無錯誤；`test_raker_grab.gd` 通過。貼圖使用 VRAM 壓縮與 mipmaps，但 4K 身體／2K 手部材質仍增加貼圖記憶體；未量測怪物群效能，也未重跑攀車、翻車或人工駕駛。`animation_audit.json` 與上方 v021 連結屬歷史逐幀驗收，不代表本次重新執行了那些掃描。
 
-[遊戲場景](../../../enemies/raker.tscn)、[動作與戰鬥測試](../../../tests/test_raker.gd)、[車內回歸](../../../tests/test_raker_cabin.gd)。
+[v021 動畫檢查](../../../art_source/monster_refined_v021/audit.py) 掃描每個烘焙影格；[歷史結果](animation_audit.json) 保存 v021 身體自交、牙齒互穿與五方向閉嘴遮齒掃描結果（嘴縫接觸、口腔及牙根嵌合區域除外）。[手指檢查](../../../art_source/monster_refined_v021/audit_hands.py) 另檢查實際替換的手網格、三節骨、蒙皮權重、手部拓樸及逐幀朝掌心屈曲。排除共用頂點的三角形，不代表任意跨動畫混合也已全部窮舉驗證。
+
+[遊戲場景](../../../enemies/raker.tscn)、[目前抓取回歸](../../../tests/test_raker_grab.gd)、[互動預覽場](../../../tests/raker_playground.tscn)。
 
 ## 可動頸部與抓咬
 
