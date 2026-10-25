@@ -113,6 +113,9 @@ func check_pistol_viewmodel() -> void:
 	view.update_view()
 	check(view.active and view.arm_meshes["R"].is_visible_in_tree() and view.arm_meshes["L"].is_visible_in_tree(), "Pistol viewmodel renders both surviving arms")
 	check_pistol_contacts("neutral hip", true)
+	var tracer_start: Vector3 = view.tracer_origin(pistol.muzzle_position())
+	var rendered_muzzle: Vector2 = view.camera.unproject_position(pistol.muzzle_position()) / Vector2(view.viewport.size)
+	check((actor.camera.unproject_position(tracer_start) / root.get_visible_rect().size).distance_to(rendered_muzzle) < .0001, "Hip tracer starts at the visible first-person muzzle")
 	check(pistol.global_transform.is_equal_approx(held_pose) and pistol.get_node("Muzzle").global_transform.is_equal_approx(muzzle_pose), "Pistol view activation preserves the authoritative held and muzzle transforms")
 	check(actor.camera.global_transform.is_equal_approx(camera_pose) and is_equal_approx(actor.camera.fov, baseline), "Pistol view activation preserves gameplay camera pose and FOV")
 	actor.camera.rotation.x = .20
@@ -176,6 +179,7 @@ func check_pistol_viewmodel() -> void:
 			for mesh: MeshInstance3D in source_layers: check(mesh.layers == source_layers[mesh], "Full-down ADS restores exact source layers")
 			continue
 		check(view.active and actor.weapon.aim_weight > .99 and is_equal_approx(view.camera.fov, actor.camera.fov), "Full ADS viewmodel retains the gameplay FOV at pitch " + str(pitch))
+		check(view.tracer_origin(pistol.muzzle_position()).distance_to(pistol.muzzle_position()) < .0001, "Full ADS tracer retains the real muzzle at pitch " + str(pitch))
 		for point: Vector3 in [pistol.muzzle_position(), pistol.muzzle_position() + pistol.global_basis.x * .08]:
 			var gameplay: Vector2 = actor.camera.unproject_position(point) / root.get_visible_rect().size
 			var rendered: Vector2 = view.camera.unproject_position(point) / Vector2(view.viewport.size)

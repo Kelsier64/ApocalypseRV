@@ -73,6 +73,16 @@ func _ready() -> void:
 	canvas.add_child(image_rect)
 	image_rect.hide()
 
+func tracer_origin(muzzle: Vector3) -> Vector3:
+	update_view()
+	if not active: return muzzle
+	# Reproject only the cosmetic trail; hit queries keep the real muzzle.
+	var screen := camera.unproject_position(muzzle) / Vector2(viewport.size)
+	var world_camera: Camera3D = actor.camera
+	var depth := -(world_camera.get_camera_transform().affine_inverse() * muzzle).z
+	if depth <= world_camera.near: return muzzle
+	return world_camera.project_position(screen * get_viewport().get_visible_rect().size, depth)
+
 func _process(_delta: float) -> void:
 	update_view()
 

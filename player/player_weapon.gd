@@ -173,6 +173,10 @@ func _trace_shot() -> void:
 		return
 	if muzzle.distance_squared_to(target) < .000001: return
 	var hit := _ray(space, muzzle, target + (target - muzzle).normalized() * .005, excluded)
+	if held.has_method("play_tracer"):
+		var first_person := actor.get_node_or_null("Visuals/FirstPersonCarry")
+		var visual_muzzle: Vector3 = first_person.tracer_origin(muzzle) if first_person != null else muzzle
+		held.play_tracer(visual_muzzle, target if hit.is_empty() else hit.position)
 	if hit.is_empty(): return
 	_resolve_hit(held, hit)
 

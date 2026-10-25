@@ -55,6 +55,35 @@ func _process(delta: float) -> void:
 func get_interaction_prompt(player: Node3D) -> String:
 	return "手槍｜%d / %d 發\n%s" % [loaded_rounds, PistolRules.MAGAZINE_CAPACITY, super.get_interaction_prompt(player)]
 
+func play_tracer(from: Vector3, to: Vector3) -> void:
+	var distance := from.distance_to(to)
+	if distance < .001: return
+	var tracer := MeshInstance3D.new()
+	tracer.name = "PistolTracer"
+	tracer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	tracer.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = .001
+	mesh.bottom_radius = .0025
+	mesh.height = distance
+	mesh.radial_segments = 6
+	mesh.rings = 0
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = Color(1.0, .86, .60, .85)
+	material.emission_enabled = true
+	material.emission = Color(1.0, .48, .12)
+	material.emission_energy_multiplier = .6
+	mesh.material = material
+	tracer.mesh = mesh
+	# World ownership keeps the shot fixed even if the player moves or unequips.
+	WorldEntities.get_container(self).add_child(tracer)
+	tracer.global_transform = Transform3D(Basis(Quaternion(Vector3.UP, (to - from) / distance)), (from + to) * .5)
+	var tween := tracer.create_tween()
+	tween.tween_property(material, "albedo_color:a", 0.0, .09)
+	tween.tween_callback(tracer.queue_free)
+
 func play_impact(point: Vector3, normal: Vector3) -> void:
 	var spark := MeshInstance3D.new()
 	var mesh := SphereMesh.new()
