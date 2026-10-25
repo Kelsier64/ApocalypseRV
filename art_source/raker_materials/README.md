@@ -1,10 +1,28 @@
-# Raker skin material source
+# Raker material sources
 
-2026-10-25. `dry_skin_albedo_source.png` is an original synthetic skin sample made with the built-in ImageGen tool, not a photograph or a scanned material. It is the color/detail source for the current Raker skin and hand atlases.
+## Current: smooth tissue and visible lividity, 2026-10-26
+
+`lividity_albedo_source.png` is a new 1254² synthetic color sample made with the built-in ImageGen tool using the preferred Raker direction board as a visual reference. It replaces the earlier dry-skin sample. This is generated artwork, not a photograph or scan. The current material does not use `dry_skin_albedo_source.png` or its sampled wrinkle normals.
+
+Blender 5.2.3 LTS projects the new pigmentation with fully blended box projection in object space, mirrored across X, then bakes it to the original body/hand UVs. Temporary authoring normals are averaged at coincident UV boundaries to soften projection transitions. Large plum, slate and brown lividity areas emphasize the shoulders, flanks, abdomen, knees, elbows and fingers. The normal maps contain restrained anatomical relief rather than image-derived pores or dense creases; roughness separates matte tissue, lips, eyes and keratin. The eyes have a dedicated 512² color atlas. Local symmetric face/eye geometry is refined; animation curves, rig hierarchy, weights and triangle indices are retained.
+
+Final asset: [raker.glb](../../assets/models/raker/raker.glb). Source and intermediate bake scripts/renders are kept in the ignored `.godot/art-work/raker-dark-skin/` review workspace. Subjective appearance is pending user acceptance.
+
+### Current ImageGen prompt
+
+Use case: precise-object-edit. The attached creature concept board is ONLY a reference for biological color appearance. Create ONE square flat PBR ALBEDO material sample for painting the Raker game creature, no body shape or concept sheet. Crop a 60cm by 60cm patch of the reference creature's skin color. This is a new material replacing failed wrinkled leather-like material.
+
+The dominant surface is SMOOTH soft dead flesh, muted neutral gray flesh with a little dirty pink. There are clearly visible LARGE irregular purple/plum/slate-blue lividity patches with mottled wine-brown centers and diffuse reddish margins. Color patches must have organically uneven lobed edges and branching small isolated satellite marks, NOT circular dots or camouflage clouds. About half of image quiet unblemished smooth gray flesh, about half obvious purple/bruised areas grouped into 2 or 3 broad patches that are 10-25cm across. Large-scale biological pigmentation and soft subsurface-looking color transitions, no open wounds, no blood, no exposed tissue. No visible individual pores or fine wrinkles at this framing. Absolutely NO leathery creases, scales, cracked clay, reptile texture, burlap, stone, dry furrows, surface relief, scratch noise or fine grained bump. This is primarily COLOR under an almost flat smooth surface. Natural photographic color complexity within the larger purple regions, not airbrushed single-color blobs.
+
+Fill image edge to edge, seamless tileable sample. Uniform diffuse cross-polarized illumination with NO directional lighting, NO cast shadows, NO highlights, NO ambient-occlusion cavities, NO vignette. No anatomical features, face, eyes, fingers, words, borders or props. Square 2048x2048 if possible. Preserve that the desired reference aesthetic is soft biological color layers rather than an intricate high-frequency skin texture.
+
+## Historical dry-skin source, 2026-10-25 (not used by current material)
+
+2026-10-25. `dry_skin_albedo_source.png` is an original synthetic skin sample made with the built-in ImageGen tool, not a photograph or a scanned material. It was the color/detail source for the previous Raker skin and hand atlases.
 
 Blender 5.2.3 LTS projects the sample in object space with blended box projection, desaturates it, adds restrained joint/eye/scar coloration, and bakes it onto the existing UVs. Fine sample luminance contributes shallow bump detail; the earlier anatomical normal map is retained at reduced strength. Keratin is authored separately with longitudinal grain and greater roughness than the first preview. Runtime uses ordinary baked glTF PBR textures; no procedural shader or added geometry is required.
 
-Final asset: [raker.glb](../../assets/models/raker/raker.glb). Skin albedo/normal are 4096², hands 2048², nails 1024²; ORM is 1024² for skin and 512² for hands/nails. Texture import settings retain mipmaps and high-quality VRAM compression. Authoring scripts, intermediate maps and review renders remain in the ignored `.godot/art-work/raker-material-realism/` working directory.
+The previous asset used skin albedo/normal at 4096², hands 2048², nails 1024²; ORM at 1024² for skin and 512² for hands/nails. Authoring scripts, intermediate maps and review renders remain in the ignored `.godot/art-work/raker-material-realism/` working directory.
 
 ## ImageGen prompt
 
