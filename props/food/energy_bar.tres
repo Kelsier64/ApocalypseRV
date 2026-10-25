@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="FoodDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://core/food_definition.gd" id="food"]
+
+[resource]
+script = ExtResource("food")
+type_id = "energy_bar"
+display_name = "Energy Bar"
+weight = 0.08
+health = 40.0
+is_large = false
+requires_rv_connection = false
+scrap_yields = {}
+nutrition = 20.0
+eat_seconds = 2.0

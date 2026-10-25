@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="Resource" path="res://props/food/canned_food.tres" id="definition"]
+
+[ext_resource type="PackedScene" path="res://assets/models/food/canned_food.glb" id="model"]
+
+[sub_resource type="CylinderShape3D" id="collision"]
+radius = 0.0425
+height = 0.12
+
+[node name="CannedFood" type="RigidBody3D"]
+mass = 0.4
+continuous_cd = true
+script = ExtResource("item")
+definition = ExtResource("definition")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]

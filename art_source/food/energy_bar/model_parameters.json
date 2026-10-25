@@ -1,0 +1,67 @@
+{
+  "source_sha256": "c4fd004edb042ee296c0fe71a3793eb577ceb85e6db99df8b11180bc94da9669",
+  "size_m": [
+    0.14,
+    0.025,
+    0.045
+  ],
+  "origin": "center",
+  "rotation_y_degrees": 0.0,
+  "fit_scale_xyz": [
+    0.14014880542429842,
+    0.18046688657591914,
+    0.1199606071131554
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "energy_bar",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49994,
+  "triangles": 2998,
+  "vertices": 2412,
+  "final_sha256": "3716243b6ebf47af5c1a943e807fa737ab0718388092584dffb8887f6341894c",
+  "texture_sha256": [
+    "024265ce6220391247185957870c8517de358b2f46f9849894ce6423cad21740",
+    "f66031fb099b4cc1f76d7e377fe385f2e9df17e0247d886aaa1e7baf385320f3",
+    "e951af890dd53fd57f63dd0953e85e0f728cef77c8f09a59fcc2e27677892a7c"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.06",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.07000000029802322,
+    -0.012500000186264515,
+    -0.02250000089406967
+  ],
+  "bounds_max_m": [
+    0.07000000029802322,
+    0.012500000186264515,
+    0.02250000089406967
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 24,
+    "duplicate_triangles": 7,
+    "zero_area_triangles": 0
+  },
+  "visual_review": "required",
+  "source_path": ".godot/art-work/food/energy_bar/run_01/generation/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "b2bf148a-2548-48d3-a885-774dcd97f872",
+    "reference_sha256": "f6358f5c61a8fbccfbc6d42e848a139ff17711c41d9a6d21407afa7a94be99f8"
+  }
+}

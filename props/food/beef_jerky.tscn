@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="Resource" path="res://props/food/beef_jerky.tres" id="definition"]
+
+[ext_resource type="PackedScene" path="res://assets/models/food/beef_jerky.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.12, 0.18, 0.035)
+
+[node name="BeefJerky" type="RigidBody3D"]
+mass = 0.15
+continuous_cd = true
+script = ExtResource("item")
+definition = ExtResource("definition")
+hold_rotation = Vector3(-10, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]

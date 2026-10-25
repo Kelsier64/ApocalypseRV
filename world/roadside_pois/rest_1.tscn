@@ -7,6 +7,10 @@
 [ext_resource type="PackedScene" path="res://props/scrap.tscn" id="3_b8su2"]
 [ext_resource type="PackedScene" path="res://props/battery.tscn" id="4_kr8g1"]
 
+[ext_resource type="PackedScene" path="res://props/food/canned_food.tscn" id="food_0"]
+[ext_resource type="PackedScene" path="res://props/food/energy_bar.tscn" id="food_1"]
+[ext_resource type="PackedScene" path="res://props/food/beef_jerky.tscn" id="food_2"]
+
 [sub_resource type="Gradient" id="Gradient_ly4i6"]
 offsets = PackedFloat32Array(0.1, 0.55, 0.9)
 colors = PackedColorArray(0.4509804, 0.4509804, 0.41960785, 1, 0.7372549, 0.7254902, 0.65882355, 1, 0.8980392, 0.8784314, 0.80784315, 1)
@@ -931,3 +935,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 2)
 
 [node name="Enemy2" type="Marker3D" parent="EnemySpawns" unique_id=608634655]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.2, 2)
+
+[node name="FoodSupply" type="Marker3D" parent="LootSpawns"]
+script = ExtResource("2_vi17d")
+position = Vector3(-4.35, 0.9, 4.0)
+point_id = &"rest_food"
+category = &"food"
+spawn_chance = 1.0
+candidates = Array[PackedScene]([ExtResource("food_0"), ExtResource("food_1"), ExtResource("food_2")])

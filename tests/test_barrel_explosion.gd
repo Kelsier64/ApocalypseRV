@@ -23,6 +23,7 @@ func fresh(position: Vector3 = Vector3.ZERO, body: Dictionary = {}) -> void:
 	actor.damage_cooldown = 0.0
 	var state := {"items": [], "slot": 0, "health": 100.0, "stamina": actor.MAX_STAMINA, "stamina_exhausted": false, "crouching": false, "body": PlayerBodyState.new().capture(), "transform": Transform3D(Basis.IDENTITY, position)}
 	if not body.is_empty(): state["body"] = body
+	state["survival"] = PlayerSurvival.new().capture()
 	actor.restore_checkpoint_state(state)
 	actor.set_physics_process(false)
 

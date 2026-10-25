@@ -3,6 +3,7 @@ extends Item
 ## Persistent idle body; consciousness keeps the one production controller and inventory.
 const SCENE := "res://props/printed_player.tscn"
 var body_state := PlayerBodyState.new()
+var survival := PlayerSurvival.new()
 var stamina := 100.0
 var stamina_exhausted := false
 var recovery_delay := 0.0
@@ -18,24 +19,26 @@ func _ready() -> void:
 	set_crouching(crouching)
 
 static func valid_state(data: Variant) -> bool:
-	if not data is Dictionary or data.size() != 6 or data.get("version") != 1 or not data.version is int: return false
+	if not data is Dictionary or data.size() != 7 or data.get("version") != 2 or not data.version is int: return false
 	if not data.get("crouching") is bool: return false
 	if not PlayerBodyState.valid_state(data.get("body")): return false
+	if not PlayerSurvival.valid_state(data.get("survival")): return false
 	if not VehicleSnapshot._number(data.get("stamina")) or data.stamina < 0 or data.stamina > 100: return false
 	if not data.get("exhausted") is bool: return false
 	return VehicleSnapshot._number(data.get("recovery_delay")) and data.recovery_delay >= 0 and data.recovery_delay <= 60
 
 func capture_item_state() -> Dictionary:
 	var state := super.capture_item_state()
-	state["printed_body"] = {"version": 1, "body": body_state.capture(), "stamina": stamina,
+	state["printed_body"] = {"version": 2, "body": body_state.capture(), "survival": survival.capture(), "stamina": stamina,
 		"exhausted": stamina_exhausted, "recovery_delay": recovery_delay, "crouching": crouching}
 	return state
 
 func restore_item_state(state: Dictionary) -> void:
-	super.restore_item_state(state)
 	var data: Dictionary = state.get("printed_body", {})
 	if not valid_state(data): return
+	super.restore_item_state(state)
 	body_state.restore(data.body)
+	survival.restore(data.survival)
 	stamina = float(data.stamina)
 	stamina_exhausted = data.exhausted
 	recovery_delay = float(data.recovery_delay)
@@ -61,6 +64,10 @@ func transfer_control(player: Node3D) -> bool:
 	if player.is_gameplay_input_blocked() or player.get_player_mode() != player.PlayerMode.NORMAL or player.is_executing(): return false
 	if player.locomotion_state == player.LocomotionState.CLIMBING: return false
 	if global_basis.y.normalized().dot(Vector3.UP) < .98: return false
+	# Both physical bodies must be valid before inventory sync or ownership moves.
+	var old_survival: Dictionary = player.survival.capture()
+	var target_survival := survival.capture()
+	if not PlayerSurvival.valid_state(old_survival) or not PlayerSurvival.valid_state(target_survival): return false
 	# The production controller origin is 0.25 m above its standing boot sole.
 	var sole_offset: float = player.standing_collision_transform.origin.y - (player.standing_collision_shape as CapsuleShape3D).height * .5
 	var target := Transform3D(Basis(Vector3.UP, rotation.y), global_position - Vector3.UP * sole_offset)
@@ -91,13 +98,14 @@ func transfer_control(player: Node3D) -> bool:
 	angular_velocity = Vector3.ZERO
 	current_health = old_health
 	body_state.restore(old_parts)
+	survival.restore(old_survival)
 	stamina = old_stamina
 	stamina_exhausted = old_exhausted
 	recovery_delay = old_delay
 	set_crouching(old_crouching)
 	reset_physics_interpolation()
 	player.restore_checkpoint_state({"items": items, "slot": slot, "health": target_health,
-		"body": target_parts, "stamina": target_stamina, "stamina_exhausted": target_exhausted, "crouching": target_crouching, "transform": target})
+		"body": target_parts, "survival": target_survival, "stamina": target_stamina, "stamina_exhausted": target_exhausted, "crouching": target_crouching, "transform": target})
 	player.stamina_recovery_delay_remaining = target_delay
 	player._apply_body_collision()
 	# Establish the destination carrier explicitly; old floor contacts refer to

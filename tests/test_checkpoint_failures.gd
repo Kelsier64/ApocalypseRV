@@ -53,11 +53,13 @@ func _run() -> void:
 	check(not await world.wait_for_play(20), "Never-ready state times out instead of passing by frame count")
 	world.play_ready = true
 	var checkpoint: Node = root.get_node("Checkpoint")
+	world.get_node("Player").survival.restore({"hunger": 0.0, "starvation_elapsed": 3.25})
 	check(checkpoint.save_world(world, PATH), "Valid fixture writes")
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	check(not saved.is_empty(), "Valid fixture reads")
 	if saved.is_empty(): quit(1); return
 	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
+	_test_survival_checkpoint(checkpoint, saved)
 	var flying_player: CharacterBody3D = world.get_node("Player")
 	check(flying_player.set_cheat_flying(true), "Player can enable session flight")
 	check(checkpoint.capture_world(world).is_empty() and checkpoint.last_error.get("field") == "player", "Checkpoint rejects a collision-free flight position")
@@ -160,6 +162,8 @@ func _run() -> void:
 	original.unlimited_fuel = true
 	original.unlimited_power = true
 	var player: Node = world.get_node("Player")
+	player.survival.restore({"hunger": 71.5, "starvation_elapsed": 0.0})
+	var original_survival: Dictionary = player.survival.capture()
 	var player_pose: Transform3D = player.global_transform
 	checkpoint.vehicle_applier = func(rv: Node3D, data: Dictionary) -> bool:
 		return false if data.id.ends_with("-second") else VehicleSnapshot.apply(rv, data)
@@ -169,11 +173,13 @@ func _run() -> void:
 	check(is_instance_valid(original) and original.is_inside_tree(), "Failed restore keeps original vehicle")
 	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Failed vehicle restore preserves original session cheats")
 	check(player.global_transform == player_pose and player.is_physics_processing(), "Failed restore keeps player and input")
+	check(player.survival.capture() == original_survival, "Failed vehicle restore preserves original hunger state")
 	check(get_nodes_in_group(Groups.CHASSIS).size() == 1, "Failed staging leaks no vehicles")
 	check(checkpoint.write_checkpoint(PATH + ".two", second), "Two vehicle fixture writes")
 	check(not await checkpoint.load_world(world, PATH + ".two"), "Full load rejects failed second vehicle")
 	check(current_scene == world and world.process_mode != Node.PROCESS_MODE_DISABLED, "Full load rollback restores old world")
 	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Failed full load preserves original session cheats")
+	check(player.survival.capture() == original_survival, "Failed full load preserves original hunger state")
 	await process_frame
 	check(get_nodes_in_group(Groups.CHASSIS).size() == 1, "Full load rollback frees staging groups")
 	checkpoint.vehicle_applier = VehicleSnapshot.apply
@@ -182,6 +188,7 @@ func _run() -> void:
 	check(not await checkpoint.load_world(world, PATH), "World readiness timeout aborts loading")
 	check(current_scene == world and not checkpoint.loading, "Timed-out world leaves original playable")
 	check(world.get_node("WorldClock").capture() == old_time, "Failed load does not advance original clock")
+	check(player.survival.capture() == original_survival, "Readiness timeout preserves original hunger state")
 	check(original.unlimited_materials and original.unlimited_fuel and original.unlimited_power, "Readiness timeout preserves original session cheats")
 	checkpoint.world_timeout_ms = 60000
 	var manager: PoiInstanceManager = world.get_node("PoiInstances")
@@ -222,6 +229,7 @@ func _run() -> void:
 	check(await checkpoint.load_world(world, PATH), "Full load succeeds after previous failures")
 	check(current_scene != world and current_scene.play_ready, "Only completed world becomes current")
 	check(current_scene.get_node("WorldClock").capture() == saved.clock, "Staged world does not advance the saved clock")
+	check(current_scene.get_node("Player").survival.capture() == saved.player.survival, "Successful load restores hunger and starvation remainder")
 	for vehicle in get_nodes_in_group(Groups.CHASSIS):
 		if not current_scene.is_ancestor_of(vehicle): continue
 		check(not vehicle.unlimited_materials and not vehicle.unlimited_fuel and not vehicle.unlimited_power, "Successful world load resets every vehicle session cheat")
@@ -254,6 +262,31 @@ func _run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: checkpoint schema, disk faults, second-vehicle rollback, full-world commit and POI failure recovery")
 	quit(0 if failures.is_empty() else 1)
+
+func _test_survival_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
+	check(saved.version == 7 and saved.vehicles[0].version == 6, "Survival changes only the outer checkpoint version")
+	check(saved.player.get("survival") == {"hunger": 0.0, "starvation_elapsed": 3.25}, "Checkpoint disk roundtrip retains starvation remainder")
+	for kind in ["missing", "type", "hunger_type", "nan", "infinity", "negative", "overflow", "elapsed_missing", "elapsed_type", "elapsed_nan", "elapsed_infinity", "elapsed_negative", "elapsed_boundary", "fed_remainder"]:
+		var malformed := saved.duplicate(true)
+		match kind:
+			"missing": malformed.player.erase("survival")
+			"type": malformed.player.survival = []
+			"hunger_type": malformed.player.survival.hunger = "0"
+			"nan": malformed.player.survival.hunger = NAN
+			"infinity": malformed.player.survival.hunger = INF
+			"negative": malformed.player.survival.hunger = -1.0
+			"overflow": malformed.player.survival.hunger = 101.0
+			"elapsed_missing": malformed.player.survival.erase("starvation_elapsed")
+			"elapsed_type": malformed.player.survival.starvation_elapsed = false
+			"elapsed_nan": malformed.player.survival.starvation_elapsed = NAN
+			"elapsed_infinity": malformed.player.survival.starvation_elapsed = INF
+			"elapsed_negative": malformed.player.survival.starvation_elapsed = -0.01
+			"elapsed_boundary": malformed.player.survival.starvation_elapsed = 5.0
+			"fed_remainder": malformed.player.survival.hunger = 1.0
+		check(checkpoint.validation_error(malformed) == "player.survival", "Reject malformed survival " + kind + " before mutation")
+	var previous := saved.duplicate(true)
+	previous.version = 6
+	check(checkpoint.validation_error(previous) == "version", "Previous checkpoint version is rejected without migration")
 
 func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
 	check(saved.version == checkpoint.VERSION and saved.generation_version == 17 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")

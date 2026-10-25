@@ -1,7 +1,7 @@
 extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
-const VERSION := 6
-const PATH := "user://rv_checkpoint_v6.save"
+const VERSION := 7
+const PATH := "user://rv_checkpoint_v7.save"
 const WORLD_SCENE := "res://world/main_world.tscn"
 const ROUTE_PRESSURE = preload("res://world/deviation_pressure.gd")
 const REAR_WRECK_LAYOUT = preload("res://world/starting_shelter/rear_wreck_layout.gd")
@@ -84,6 +84,10 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 	if manager == null or generator == null or player == null or manager.busy or not manager.active_id.is_empty() or generator.building:
 		_fail("state")
 		return {}
+	var survival: Dictionary = player.survival.capture()
+	if not PlayerSurvival.valid_state(survival):
+		_fail("data", "player.survival")
+		return {}
 	if player.has_method("is_grabbed") and player.is_grabbed():
 		_fail("motion", "player", "Player is grabbed")
 		return {}
@@ -143,7 +147,7 @@ func capture_world(world: Node, include_retry := true, allow_tutorial_ui := fals
 		"slot": player.inventory.active_slot, "health": player.current_player_health,
 		"stamina": player.current_stamina, "stamina_exhausted": player.stamina_exhausted,
 		"crouching": player.is_crouching(),
-		"body": player.body_state.capture()}}
+		"body": player.body_state.capture(), "survival": survival}}
 	data["outdoor_sites"] = generator.outdoor_sites.duplicate(true)
 	data["dormant_items"] = generator.dormant_items.duplicate(true)
 	data["destroyed_trees"] = generator.destroyed_trees.duplicate()
@@ -270,6 +274,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not VehicleSnapshot._number(player.get("health")) or player.health < 0 or player.health > 100: return "player.health"
 	var body_error := CheckpointSchema.player_body_error(player)
 	if not body_error.is_empty(): return body_error
+	if not PlayerSurvival.valid_state(player.get("survival")): return "player.survival"
 	if not VehicleSnapshot._number(player.get("stamina")) or player.stamina < 0 or player.stamina > 100: return "player.stamina"
 	if not player.get("stamina_exhausted") is bool: return "player.stamina_exhausted"
 	if not player.get("crouching") is bool: return "player.crouching"

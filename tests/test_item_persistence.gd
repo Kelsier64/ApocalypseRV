@@ -14,17 +14,25 @@ func check(ok: bool, text: String) -> void:
 func _check_printed_body() -> void:
 	var scene: PackedScene = load("res://props/printed_player.tscn")
 	var original := scene.instantiate() as PrintedPlayerBody
+	check(original.survival.capture() == {"hunger": 100.0, "starvation_elapsed": 0.0}, "New printed body starts fully fed")
 	original.crouching = true
 	original.stamina = 37.0
+	original.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.25})
 	original.body_state.sever(&"right_arm")
 	var saved := original.capture_item_state()
 	check(ItemState.valid(PrintedPlayerBody.SCENE, saved), "Current printed-body Item has a complete saved posture and body")
 	var incomplete := saved.duplicate(true)
 	incomplete.printed_body.erase("crouching")
 	check(not ItemState.valid(PrintedPlayerBody.SCENE, incomplete), "Printed-body state requires its saved posture")
+	incomplete = saved.duplicate(true)
+	incomplete.printed_body.erase("survival")
+	check(not ItemState.valid(PrintedPlayerBody.SCENE, incomplete), "Printed-body state requires hunger and starvation remainder")
+	incomplete = saved.duplicate(true)
+	incomplete.printed_body.version = 1
+	check(not ItemState.valid(PrintedPlayerBody.SCENE, incomplete), "Previous printed-body version is rejected without migration")
 	var restored := scene.instantiate() as PrintedPlayerBody
 	restored.restore_item_state(saved)
-	check(restored.capture_item_state().printed_body == saved.printed_body, "Printed-body restoration preserves posture, stamina and missing limbs")
+	check(restored.capture_item_state().printed_body == saved.printed_body, "Printed-body restoration preserves posture, stamina, hunger and missing limbs")
 	original.free()
 	restored.free()
 
@@ -34,6 +42,7 @@ func _run() -> void:
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
 	current_scene = world
+	await _exercise_printed_body_survival(world)
 	var wall := StaticBody3D.new()
 	wall.name = "Wall"
 	world.add_child(wall)
@@ -125,6 +134,46 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
+func _exercise_printed_body_survival(world: Node3D) -> void:
+	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	player.position = Vector3(200, 2, 0)
+	world.add_child(player)
+	player.set_physics_process(false)
+	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.25})
+	check(player.add_item("Scrap", false, "res://props/scrap.tscn"), "Body swap fixture carries one inventory Item")
+	var inventory: Array = player.inventory.items.duplicate(true)
+	var controller := player.get_instance_id()
+	var body := load(PrintedPlayerBody.SCENE).instantiate() as PrintedPlayerBody
+	body.position = Vector3(204, 1.75, 0)
+	body.freeze = true
+	WorldEntities.get_container(world).add_child(body)
+	await physics_frame
+	await process_frame
+	check(body.transfer_control(player), "Production controller transfers into a new printed body")
+	check(player.survival.capture() == {"hunger": 100.0, "starvation_elapsed": 0.0}, "New body supplies full hunger to active controller")
+	check(body.survival.capture() == {"hunger": 0.0, "starvation_elapsed": 4.25}, "Abandoned body retains its starvation remainder")
+	player.set_physics_process(false)
+	var dormant: Dictionary = body.survival.capture()
+	await physics_frame
+	await process_frame
+	check(body.survival.capture() == dormant, "Inactive printed body does not advance starvation")
+	player.survival.restore({"hunger": 22.5, "starvation_elapsed": 0.0})
+	check(body.transfer_control(player), "Production controller returns to its starving physical body")
+	player.set_physics_process(false)
+	check(player.survival.capture() == dormant and body.survival.capture() == {"hunger": 22.5, "starvation_elapsed": 0.0}, "Roundtrip swaps both physical hunger states exactly")
+	check(player.get_instance_id() == controller and player.inventory.items == inventory, "Body transfers retain controller and inventory ownership")
+	var pose: Transform3D = player.global_transform
+	var body_pose := body.global_transform
+	body.survival.hunger = NAN
+	check(not body.transfer_control(player), "Malformed target survival rejects body transfer")
+	check(player.global_transform == pose and body.global_transform == body_pose and player.inventory.items == inventory and player.survival.capture() == dormant, "Rejected target survival leaves both poses, inventory and active hunger intact")
+	body.survival.restore({"hunger": 22.5, "starvation_elapsed": 0.0})
+	player.survival.hunger = INF
+	check(not body.transfer_control(player) and body.survival.hunger == 22.5 and body.global_transform == body_pose, "Malformed active survival cannot overwrite the dormant body")
+	player.free()
+	body.free()
+
+
 func _exercise_queue_replace(world: Node3D) -> void:
 	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	shell.position = Vector3(50, 0, 0)
@@ -135,6 +184,7 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	await process_frame
 	await process_frame
 	_exercise_cheat_job_refunds(world, rv)
+	_exercise_food_persistence(world, rv)
 	var recycler: Item = rv.get_node("Scrapper")
 	var input := load("res://props/scrap.tscn").instantiate() as Item
 	WorldEntities.get_container(world).add_child(input)
@@ -152,6 +202,41 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	check(matching == 1, "Standalone apply replaces old queue actors without duplicate IDs")
 	await _exercise_socket_durability(world, rv)
 	_exercise_destroyed_support(world, rv)
+
+func _exercise_food_persistence(world: Node3D, rv: Chassis) -> void:
+	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	player.position = Vector3(300, 2, 0)
+	world.add_child(player)
+	player.set_physics_process(false)
+	var foods: Array[Dictionary] = []
+	var container := WorldEntities.get_container(world)
+	for scene_path in ["res://props/food/canned_food.tscn", "res://props/food/energy_bar.tscn", "res://props/food/beef_jerky.tscn"]:
+		var food := load(scene_path).instantiate() as Item
+		food.position = Vector3(300, 1, 3)
+		food.freeze = true
+		container.add_child(food)
+		var ground := WorldActorSnapshot.capture(food)
+		check(not food.is_large and WorldActorSnapshot.validation_error(ground, "food").is_empty(), "Food is a small Item with valid ground persistence: " + scene_path)
+		food.begin_world_transfer()
+		food.free()
+		food = WorldActorSnapshot.restore(ground, container) as Item
+		check(food.capture_item_state() == ground.state, "Ground food restores its canonical identity and state: " + scene_path)
+		check(player.add_prop_item(food, scene_path), "Restored ground food enters inventory: " + scene_path)
+		food.free()
+		var record: Dictionary = player.inventory.active_item().duplicate(true)
+		foods.append(record)
+		check(VehicleSnapshot.valid_item(record) and record.state == ground.state, "Inventory food preserves ground identity: " + scene_path)
+		check(rv.store_player_item(player, 0) and player.inventory.items.is_empty(), "Food transfers to RV storage with one owner: " + scene_path)
+	var saved := VehicleSnapshot.capture(rv)
+	check(VehicleSnapshot.validate(saved) and VehicleSnapshot.apply(rv, saved), "Vehicle snapshot restores stored food through normal Item records")
+	for food in foods:
+		var matching: Array = rv.stored_items.filter(func(record): return record.state.id == food.state.id)
+		check(matching.size() == 1 and matching[0] == food, "Restored storage contains one unchanged food record: " + food.scene_path)
+		var index := rv.stored_items.find(food)
+		check(index >= 0 and rv.take_stored_item(player, index), "Restored food returns from RV storage: " + food.scene_path)
+	check(ItemState.unique_ids({"player": {"items": player.inventory.items}, "vehicle": {"items": rv.stored_items}}, {}), "Retrieved food identities have one inventory/storage owner")
+	check(player.inventory.items == foods, "Food inventory roundtrip preserves all three records")
+	player.free()
 
 func _exercise_cheat_job_refunds(world: Node3D, rv: Chassis) -> void:
 	var station := rv.get_node("CraftingStation") as CraftingStation

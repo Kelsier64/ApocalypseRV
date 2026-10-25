@@ -4,6 +4,9 @@ var health_bar: ProgressBar
 var health_label: Label
 var stamina_bar: ProgressBar
 var stamina_label: Label
+var food_bar: ProgressBar
+var food_label: Label
+var food_penalty: Label
 var damage_flash: ColorRect
 
 func _ready():
@@ -65,6 +68,18 @@ func _ready():
 	stamina_bar.add_theme_stylebox_override("fill", stamina_fill)
 	stamina_bar.add_theme_stylebox_override("background", bg_style)
 	vbox.add_child(stamina_bar)
+	food_label = Label.new()
+	vbox.add_child(food_label)
+	food_bar = ProgressBar.new()
+	food_bar.max_value = PlayerSurvival.MAX_HUNGER
+	food_bar.custom_minimum_size = Vector2(200, 14)
+	food_bar.show_percentage = false
+	food_bar.add_theme_stylebox_override("background", bg_style)
+	vbox.add_child(food_bar)
+	food_penalty = Label.new()
+	food_penalty.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(food_penalty)
+	set_food(PlayerSurvival.MAX_HUNGER)
 	
 	# Damage flash (full-screen red overlay)
 	damage_flash = ColorRect.new()
@@ -93,3 +108,18 @@ func set_stamina(current: float, maximum: float) -> void:
 		stamina_bar.value = current
 	if stamina_label:
 		stamina_label.text = "STA: %d / %d" % [ceili(current), int(maximum)]
+
+func set_food(current: float) -> void:
+	if not food_bar: return
+	food_bar.value = current
+	food_label.text = "FOOD: %d / 100" % ceili(current)
+	var color := Color("c6503e") if current <= 20.0 else (IndustrialTheme.AMBER if current < 40.0 else IndustrialTheme.INK)
+	food_label.add_theme_color_override("font_color", color)
+	food_penalty.add_theme_color_override("font_color", color)
+	food_penalty.text = "Starving: -1 HP / 5s" if current <= 0.0 else ("No sprint · Slow stamina recovery" if current <= 20.0 else ("Slow stamina recovery" if current < 40.0 else ""))
+	food_penalty.visible = current < 40.0
+	var fill := food_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	if fill == null or fill.bg_color != color:
+		fill = StyleBoxFlat.new()
+		fill.bg_color = color
+		food_bar.add_theme_stylebox_override("fill", fill)

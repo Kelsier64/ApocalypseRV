@@ -1,8 +1,10 @@
 # ApocalypseRV 架構
 
-**存檔更新政策（2026-10-20）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint／VehicleSnapshot v6、生成 v17、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
+2026-10-25 生存狀態：`PlayerSurvival` 屬目前受控身體，保存 `{hunger, starvation_elapsed}`，以玩家物理 delta 推進，沿自身祖先查找 StartRun／POI／staging 狀態並檢查載入 gate；不讀日夜累計時間或任意候選世界。滿值 100／1200 秒，零值每 5 秒獨立扣 1 HP，保留戰鬥無敵時間並沿用死亡入口。Player 在移動前推進，低於 40 時耐力恢復乘 0.5、20 以下禁止衝刺，同一 tick 生效。`PlayerConsumables` 以一次右鍵按壓持有 slot＋Item ID＋scene，完成 2 秒前反覆檢查能力與所有權，移除一份後才補營養；中斷／完成後需放開才可重試。`FoodDefinition extends ItemDefinition` 保存營養與食用時間，`FoodCatalog` 以允許場景查定義，不信任保存資料中的名稱或營養。食物沿用 Item 身分／倉庫／物理／串流快照；新局三份食物獨立於教學維修角色契約。Checkpoint v7 必要 `player.survival`；列印身體 v2 保存並交換同一 survival，未控制不推進，重生／新列印滿值。VehicleSnapshot 仍 v6，無格式遷移。下方 v6 描述涉及既往整合時，以此段及頂部政策為當前保存契約。
 
-正式新局目前使用生成 v17；地形與植被外觀沿用 v14，沿用兩室教學；舊版存檔不支援，需重新開局。道路 RNG 域為 v13，relief／dry-valley／flora 域沿用 v14；v17 沿用 v15 預設 RNG 域，只擴充越野資產池為 40% 地堡、10% 民用避難所、10% 庭院避難所、40% 營地／棚屋，不重抽既有排程或底層地形串流。道路以水平弧長積分持續爬升／下降，解析曲線導數協助急彎最近點投影；近路接地保留，山體外側另形成山坡與谷地。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地、世界噪音及材質；`ForestScenery` 依地貌分群並避開 40° 以上坡面。橋梁按完整路寬與斜向河岸重新判斷跨度、水面低於整段跨河道路；地堡入口改為路旁及越野雙分布，不再生成深林步道場區。導航沿用既有細節簡化及怪物接地推進，普通／巨人烘焙的垂直範圍改由來源幾何推算，避免 150 m 上限裁掉山頂。Checkpoint 為 v6，只接受生成 v17；舊版世界按政策需重新開局。湖泊、水流玩法、長途輪驅與完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [地形細化](docs/validation/2026-10-20-terrain-v14.md) · [山路修正](docs/validation/2026-10-21-mountain-road.md)。下方歷史段落保留當時契約。
+**存檔更新政策（2026-10-20）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint v7／VehicleSnapshot v6、生成 v17、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
+
+正式新局目前使用生成 v17；地形與植被外觀沿用 v14，沿用兩室教學；舊版存檔不支援，需重新開局。道路 RNG 域為 v13，relief／dry-valley／flora 域沿用 v14；v17 沿用 v15 預設 RNG 域，只擴充越野資產池為 40% 地堡、10% 民用避難所、10% 庭院避難所、40% 營地／棚屋，不重抽既有排程或底層地形串流。道路以水平弧長積分持續爬升／下降，解析曲線導數協助急彎最近點投影；近路接地保留，山體外側另形成山坡與谷地。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地、世界噪音及材質；`ForestScenery` 依地貌分群並避開 40° 以上坡面。橋梁按完整路寬與斜向河岸重新判斷跨度、水面低於整段跨河道路；地堡入口改為路旁及越野雙分布，不再生成深林步道場區。導航沿用既有細節簡化及怪物接地推進，普通／巨人烘焙的垂直範圍改由來源幾何推算，避免 150 m 上限裁掉山頂。Checkpoint 為 v7，只接受生成 v17；舊版世界按政策需重新開局。湖泊、水流玩法、長途輪驅與完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [地形細化](docs/validation/2026-10-20-terrain-v14.md) · [山路修正](docs/validation/2026-10-21-mountain-road.md)。下方歷史段落保留當時契約。
 
 2026-10-16 倉庫配置：v12 第二室新增可重用靜態貨架、貨箱與棧板，16 件原有 Item 改由分散的出生標記配置；保留舊矮架及碰撞路徑，已保存的物資維持原位置。`WarehouseApproaches` 僅保存設計用接近點，不生成遊戲提示或改變交易判定；貨架燈具屬建築、光源置於 Furnishings。[驗證與驗收](docs/validation/2026-10-16-orientation-warehouse.md)。
 
@@ -12,11 +14,11 @@
 
 舊九關教學的控制器、Workshop／Service 保存與升級支援已移除。歷史設計與驗收保留於[階段計畫](docs/plans/starting-tutorial.md)，不屬目前執行契約。
 
-文件核對（2026-10-22）：目前使用生成 v17 及 v6 檢查點；地形與植被外觀沿用 v14。2026-10-09 森林巨人整合屬歷史驗收；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
+文件核對（2026-10-22）：目前使用生成 v17 及 v7 檢查點；地形與植被外觀沿用 v14。2026-10-09 森林巨人整合屬歷史驗收；各功能細節沿用各自驗收日期。描述目前工作樹實作；已實作不等於全部情境已驗收。本輪架構審查、headless 檢查與當時未修正問題見 [架構與遺產報告](docs/report/ApocalypseRV_Architecture_Audit_2026-09-22.md)，未進行實機操作驗收。本次檔案清理見 [整理紀錄](docs/validation/2026-09-28-codebase-cleanup.md)。歷次測試結果保留在 [文件索引](docs/README.md)，目錄責任見 [程式與資產目錄指南](docs/guides/codebase.md)，待辦與後續設計見 [計畫總覽](docs/plans/README.md)。
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
-Item 共用契約：可搬運道具與原設備共用 `Item`、`ItemDefinition`、`ItemState` 及 `ItemMount`，以背包紀錄持有手持狀態；短 F 進入獨立預覽，長 F 拆下固定物品。Item 免疫一般怪物攻擊，支撐被拆後掉落並可拾取；2026-10-10 Slender Speaker 僅保留砸擊接觸每拳對同一 Item 扣 60 耐久的專用例外，歸零才摧毀；抓取接觸設備時保留設備及其碰撞。檢查點目前為 v6，舊檔保持原樣且須重新開局。此處描述實作，歷史驗收連結保留當時範圍，不代表本輪全部測試或實機已通過。
+Item 共用契約：可搬運道具與原設備共用 `Item`、`ItemDefinition`、`ItemState` 及 `ItemMount`，以背包紀錄持有手持狀態；短 F 進入獨立預覽，長 F 拆下固定物品。Item 免疫一般怪物攻擊，支撐被拆後掉落並可拾取；2026-10-10 Slender Speaker 僅保留砸擊接觸每拳對同一 Item 扣 60 耐久的專用例外，歸零才摧毀；抓取接觸設備時保留設備及其碰撞。檢查點目前為 v7，舊檔保持原樣且須重新開局。此處描述實作，歷史驗收連結保留當時範圍，不代表本輪全部測試或實機已通過。
 
 教學倉庫的 Scrap A–F 使用六件 `props/scavenge_loot/` Item，G／H 保留原廢料；馬達為大型物品。`OpeningSiteContent.ORIENTATION_SALVAGE` 集中角色對應場景，沿用原 ID 與各件固定三份金屬產量。`SaveSceneCatalog` 登錄新場景；Checkpoint 的教學角色驗證只接受原廢料或該角色指定的新物品，保留當前格式已保存的舊外觀，不補發、不升級保存格式。Wrapper 使用獨立基本碰撞，不以生成網格建立物理形狀。詳見[物資製作與整合](art_source/scavenge_loot_references/README.md)。
 

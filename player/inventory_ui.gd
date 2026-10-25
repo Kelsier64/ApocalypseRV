@@ -10,6 +10,7 @@ var slots_container: HBoxContainer
 var selected_name: Label
 var flashlight_hint: Label
 var pistol_hint: Label
+var food_hint: Label
 
 func _ready() -> void:
 	HUDVisibility.attach(self)
@@ -27,6 +28,10 @@ func _ready() -> void:
 	_above_slot(pistol_hint, -54, -32)
 	pistol_hint.offset_left = -160
 	pistol_hint.offset_right = 160
+	food_hint = _label("FoodHint", "", 13, IndustrialTheme.AMBER)
+	control.add_child(food_hint)
+	_above_slot(food_hint, -54, -32)
+	food_hint.hide()
 
 	slots_container = HBoxContainer.new()
 	slots_container.name = "Slots"
@@ -145,6 +150,8 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 				flashlight_hint.reparent(panel, false)
 			if pistol_hint.get_parent() != panel:
 				pistol_hint.reparent(panel, false)
+			if food_hint.get_parent() != panel:
+				food_hint.reparent(panel, false)
 		var icon := panel.get_node("ItemIcon") as TextureRect
 		icon.texture = InventoryItemIcons.texture_for(str(item.get("scene_path", "")), item.get("state", {})) if occupied else null
 		icon.visible = occupied
@@ -183,6 +190,15 @@ func _above_slot(label: Label, top: float, bottom: float) -> void:
 	label.offset_bottom = bottom
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+
+func set_food_hint(data: Dictionary) -> void:
+	if food_hint == null: return
+	food_hint.visible = data.get("visible", false)
+	if not food_hint.visible: return
+	if data.get("eating", false):
+		food_hint.text = "Eating %d%% · Hold RMB" % clampi(int(100.0 * float(data.elapsed) / float(data.seconds)), 0, 100)
+	else:
+		food_hint.text = "Full" if data.get("full", false) else "Hold RMB %.0fs to eat" % float(data.seconds)
 
 func _label(node_name: String, text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()

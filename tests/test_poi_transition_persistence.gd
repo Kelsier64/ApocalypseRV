@@ -32,9 +32,11 @@ func _add_scrap(label: String) -> Item:
 	return item
 
 func _enter(id: String) -> bool:
+	var survival: Dictionary = player.survival.capture()
 	await manager.enter(player, building, id, 913)
 	var ok: bool = manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null and player.get_parent() == manager.interior
 	check(ok, id + " enters a complete real interior: " + manager.last_error)
+	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
 
 func _retired(label: String) -> void:
@@ -44,6 +46,7 @@ func _retired(label: String) -> void:
 	check(not manager.get_children().any(func(child: Node): return child is SubViewport), label + " retires viewport")
 
 func _interrupt_exit(mode: String, label: String) -> void:
+	var survival: Dictionary = player.survival.capture()
 	manager.transition_timeout_ms = 60000
 	if mode == "timeout": manager.transition_timeout_ms = 0
 	manager.leave()
@@ -58,17 +61,20 @@ func _interrupt_exit(mode: String, label: String) -> void:
 	player.current_player_health = player.max_player_health
 	check(manager.state == PoiInstanceManager.State.FAILED and not manager.busy and manager.active_id.is_empty(), label + " releases transition")
 	check(player.get_parent() == arena and not player.in_ui_mode, label + " restores player and controls")
+	check(player.survival.capture() == survival, label + " retains hunger and starvation remainder")
 	await _retired(label)
 	manager.transition_timeout_ms = 60000
 
 func _case(mode: String) -> void:
 	var id := "exit-" + mode
+	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 2.75})
 	if not await _enter(id): return
 	var room := manager.interior
 	var picked := _add_scrap(id + "-picked-first")
 	var remaining := _add_scrap(id + "-remaining-first")
 	var remaining_id: String = remaining.persistent_id
 	check(picked.interact(player).begins_with("已拾取"), id + " first visit picks up a real prop")
+	if mode == "cancel": _eat_interior_food()
 	await process_frame
 	check(player.inventory.items.size() > 0 and room.entities.get_child_count() == 1, id + " inventory and room reflect pickup")
 	var first_room_id: String = room.layout.rooms[0].id
@@ -97,6 +103,26 @@ func _case(mode: String) -> void:
 	check(not second.is_empty() and second.actors.size() == 1 and second.actors[0].state.id == next_id, id + " revisit commits current actors, not previous manifest")
 	check(second.get("explored", []).has(revisited_room_id) and player.inventory.items.size() == second_inventory, id + " revisit commits exploration with inventory")
 
+func _eat_interior_food() -> void:
+	var food := load("res://props/food/canned_food.tscn").instantiate() as Item
+	food.freeze = true
+	manager.interior.entities.add_child(food)
+	var identity := food.persistent_id
+	var count: int = player.inventory.items.size()
+	food.interact(player)
+	player._set_active_slot(player.inventory.items.size() - 1)
+	player.process_mode = Node.PROCESS_MODE_INHERIT
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_RIGHT
+	press.pressed = true
+	player.consumables.handle_input(player, press)
+	player.consumables.advance(player, 2.0)
+	press.pressed = false
+	player.consumables.handle_input(player, press)
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	check(player.inventory.items.size() == count and not player.inventory.items.any(func(record): return record.state.id == identity), "POI food is consumed exactly once through the real eating path")
+	check(player.survival.capture() == {"hunger": 40.0, "starvation_elapsed": 0.0}, "Eating inside POI restores hunger and clears starvation remainder")
+
 func _run() -> void:
 	arena = Node3D.new()
 	arena.name = "PoiTransitionArena"
@@ -116,6 +142,8 @@ func _run() -> void:
 	root.add_child(arena)
 	current_scene = arena
 	player.set_physics_process(false)
+	# Transitions re-enable physics; keep this persistence fixture deterministic.
+	player.process_mode = Node.PROCESS_MODE_DISABLED
 	for mode in ["cancel", "death", "timeout"]:
 		await _case(mode)
 	if await _enter("exit-cancel"):

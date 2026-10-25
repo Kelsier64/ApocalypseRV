@@ -48,6 +48,8 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
+var survival := PlayerSurvival.new()
+var consumables := PlayerConsumables.new()
 var body_state := PlayerBodyState.new()
 var standing_collision_shape: Shape3D
 var standing_collision_transform := Transform3D.IDENTITY
@@ -274,6 +276,7 @@ func _set_active_slot(index: int) -> void:
 	else:
 		changed = inventory.select_slot(index)
 	if changed:
+		consumables.cancel()
 		_abort_climb_if_holding_large_item()
 		_set_flashlight_off_at(previous)
 		_update_inventory_display()
@@ -329,6 +332,7 @@ func _ready():
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
+	grab_started.connect(consumables.cancel)
 	add_child(weapon)
 	grab_started.connect(weapon.cancel_actions)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
@@ -350,6 +354,7 @@ func _ready():
 	current_player_health = max_player_health
 	_update_health_bar()
 	_update_stamina_bar()
+	_update_food_bar()
 	camera.fov = float(game_settings.get_setting(&"walk_fov"))
 	game_settings.setting_changed.connect(_on_setting_changed)
 
@@ -370,6 +375,7 @@ func can_open_settings() -> bool:
 func set_settings_open(value: bool) -> void:
 	if settings_open == value: return
 	if value:
+		consumables.cancel()
 		weapon.cancel_actions()
 		cancel_equipment_placement()
 	settings_open = value
@@ -421,6 +427,7 @@ func get_active_item_name() -> String:
 
 func consume_active_item() -> void:
 	if is_grabbed(): return
+	consumables.cancel()
 	weapon.cancel_actions()
 	_set_flashlight_off_at(inventory.active_slot)
 	if inventory.consume_active():
@@ -451,6 +458,7 @@ func enter_equipment_placement(_equip: Node3D = null) -> bool:
 		_abort_climb("Item placement")
 	_sync_held_item_state()
 	if not placement.begin_from_inventory(self): return false
+	consumables.cancel()
 	weapon.cancel_actions()
 	_advance_flashlight(0.0)
 	return true
@@ -460,6 +468,7 @@ func enter_ui_mode() -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
+	consumables.cancel()
 	if is_cheat_flying(): velocity = Vector3.ZERO
 	weapon.cancel_actions()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -474,6 +483,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	consumables.cancel()
 	weapon.cancel_actions()
 	cancel_equipment_placement()
 	close_settings()
@@ -511,6 +521,7 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	inventory.items.assign(state.items.duplicate(true))
 	inventory.active_slot = state.slot
 	current_player_health = state.health
+	survival.restore(state.survival)
 	current_stamina = clampf(float(state.stamina), 0.0, MAX_STAMINA)
 	stamina_recovery_delay_remaining = 0.0
 	stamina_exhausted = state.stamina_exhausted
@@ -522,6 +533,7 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	refresh_inventory()
 	_update_health_bar()
 	_update_stamina_bar()
+	_update_food_bar()
 	if current_player_health <= 0.0: _player_die()
 
 ## Seat flow: the player owns its own state mutation; the seat only decides
@@ -536,6 +548,7 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	seated_in = seat
+	consumables.cancel()
 	crouching = false
 	_apply_body_collision()
 	_advance_flashlight(0.0)
@@ -565,6 +578,7 @@ func exit_seat_mode(exit_position: Vector3) -> void:
 	camera.current = true
 
 func drop_item():
+	consumables.cancel()
 	if is_grabbed() or is_gameplay_input_blocked(): return
 	if is_placing_equipment(): cancel_equipment_placement()
 	if inventory.active_slot < 0 or inventory.active_slot >= inventory.items.size(): return
@@ -629,6 +643,7 @@ func _restore_prop_state(node: Node, data: Dictionary) -> void:
 		node.restore_item_state(data.get("state", {}))
 
 func _input(event: InputEvent) -> void:
+	consumables.handle_input(self, event)
 	if event is InputEventKey and event.keycode == KEY_F12 and event.pressed and not event.echo:
 		HUDVisibility.toggle(get_tree())
 		get_viewport().set_input_as_handled()
@@ -847,7 +862,7 @@ func _find_rv_ancestor(node: Node) -> Node3D:
 
 func _can_sprint(moving: bool) -> bool:
 	return moving and not is_gameplay_input_blocked() and not is_crawling() and not is_crouching() and not is_grabbed() and get_player_mode() == PlayerMode.NORMAL \
-		and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
+		and survival.hunger > 20.0 and not stamina_exhausted and current_stamina > 0.0 and Input.is_action_pressed("sprint")
 
 func _spend_stamina(amount: float) -> bool:
 	if current_stamina < amount:
@@ -867,7 +882,7 @@ func _update_stamina(delta: float, sprinting: bool) -> void:
 		stamina_recovery_delay_remaining = maxf(0.0, stamina_recovery_delay_remaining - delta)
 		return
 	if current_stamina < MAX_STAMINA:
-		current_stamina = minf(MAX_STAMINA, current_stamina + STAMINA_RECOVERY_PER_SECOND * delta)
+		current_stamina = minf(MAX_STAMINA, current_stamina + STAMINA_RECOVERY_PER_SECOND * (1.0 if survival.hunger >= 40.0 else 0.5) * delta)
 		if stamina_exhausted and current_stamina >= STAMINA_EXHAUSTION_RECOVERY:
 			stamina_exhausted = false
 		_update_stamina_bar()
@@ -989,6 +1004,7 @@ func begin_ladder_climb(ladder: RVLadder, descending: bool = false) -> bool:
 	velocity = Vector3.ZERO
 	rv_support.clear()
 	locomotion_state = LocomotionState.CLIMBING
+	consumables.cancel()
 	weapon.cancel_actions()
 	ladder.availability_changed.connect(_validate_active_ladder)
 	ladder.tree_exiting.connect(_active_ladder_removed)
@@ -1227,7 +1243,28 @@ func _exit_climb_to_normal() -> void:
 	climb_carrier_velocity = Vector3.ZERO
 	_sync_body_collision_to_locomotion()
 
+func _update_food_bar() -> void:
+	if health_bar and health_bar.has_method("set_food"):
+		health_bar.set_food(survival.hunger)
+	if inventory_ui and inventory_ui.has_method("set_food_hint"):
+		inventory_ui.set_food_hint(consumables.hud_data(self))
+
+func _advance_survival(delta: float) -> void:
+	if PlayerSurvival.simulation_active(self):
+		var ticks := survival.advance(delta)
+		for tick in mini(ticks, ceili(current_player_health)):
+			if is_player_dead: break
+			# Starvation neither observes nor changes combat invulnerability.
+			consumables.cancel()
+			current_player_health = maxf(0.0, current_player_health - 1.0)
+			_update_health_bar()
+			if current_player_health <= 0.0: _player_die()
+	_update_food_bar()
+
 func _physics_process(delta):
+	_advance_survival(delta)
+	consumables.advance(self, 0.0)
+	_update_food_bar()
 	# Cover restored/direct inventory changes before applying any carrier motion.
 	_abort_climb_if_holding_large_item()
 	if not Input.is_action_pressed("move_forward") and not Input.is_action_pressed("move_back"):
@@ -1271,6 +1308,8 @@ func _physics_process(delta):
 			if locomotion_state == LocomotionState.CLIMBING:
 				_process_climbing(delta)
 
+	# Climbing can start in this movement step; cancel before another tick.
+	consumables.advance(self, delta)
 	placement.update_ghost(self)
 
 
@@ -1278,6 +1317,8 @@ func _physics_process(delta):
 func take_damage(amount: float):
 	if is_player_dead: return
 	if damage_cooldown > 0.0: return
+	if not is_finite(amount) or amount <= 0.0: return
+	consumables.cancel()
 	
 	current_player_health = maxf(0.0, current_player_health - amount)
 	damage_cooldown = 0.5  # Half second invincibility after hit
@@ -1295,6 +1336,7 @@ func take_damage(amount: float):
 ## Capture platform motion before a leg cut can force the player out of a seat.
 func apply_explosion_hit(amount: float, limb_count: int = 0, blast_impulse: Vector3 = Vector3.ZERO) -> bool:
 	if is_player_dead or damage_cooldown > 0.0 or not is_finite(amount) or amount <= 0.0 or not blast_impulse.is_finite(): return false
+	consumables.cancel()
 	var inherited := velocity
 	if locomotion_state == LocomotionState.CLIMBING:
 		inherited = climb_carrier_velocity
@@ -1327,6 +1369,7 @@ func _update_health_bar():
 
 func _player_die():
 	if is_player_dead: return
+	consumables.cancel()
 	weapon.cancel_actions()
 	_death_corpse_released = false
 	close_settings()
@@ -1382,6 +1425,8 @@ func _respawn():
 	grab_control.clear_execution_observer()
 	# Recovery checked the original upright volume before restoring any limb.
 	body_state.reset()
+	survival.reset()
+	consumables.cancel()
 	_death_corpse_released = false
 	crawl_transition_remaining = 0.0
 	crouching = false
@@ -1403,9 +1448,11 @@ func _respawn():
 	stamina_recovery_delay_remaining = 0.0
 	_update_health_bar()
 	_update_stamina_bar()
+	_update_food_bar()
 	print("Player respawned!")
 
 func refresh_inventory() -> void:
+	consumables.advance(self, 0.0)
 	_abort_climb_if_holding_large_item()
 	_update_inventory_display()
 	_equip_active_slot()
@@ -1523,6 +1570,7 @@ func grab_contact_origin() -> Vector3:
 func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
 	if not is_grabbed() or grab_control.captor != captor or is_player_dead: return
 	grab_control.bite_impact()
+	consumables.cancel()
 	var head_bite := fatal or not body_state.has_part(&"left_arm")
 	if head_bite:
 		current_player_health = 0.0
@@ -1584,6 +1632,7 @@ func crawl_speed() -> float:
 
 func sever_part(part: StringName, context: Dictionary = {}) -> bool:
 	if is_player_dead or not PlayerBodyState.PARTS.has(part) or not body_state.has_part(part): return false
+	consumables.cancel()
 	var was_crawling := is_crawling()
 	var visuals := get_node_or_null("Visuals")
 	# Capture the current animated limb before hiding its mesh and bone branch.

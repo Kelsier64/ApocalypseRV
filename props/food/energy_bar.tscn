@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="Resource" path="res://props/food/energy_bar.tres" id="definition"]
+
+[ext_resource type="PackedScene" path="res://assets/models/food/energy_bar.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.14, 0.025, 0.045)
+
+[node name="EnergyBar" type="RigidBody3D"]
+mass = 0.08
+continuous_cd = true
+script = ExtResource("item")
+definition = ExtResource("definition")
+hold_rotation = Vector3(20, -15, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]

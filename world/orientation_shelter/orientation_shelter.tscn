@@ -1299,3 +1299,12 @@ light_color = Color(1, 0.88, 0.68, 1)
 light_energy = 0.55
 omni_range = 4.5
 shadow_enabled = true
+
+[node name="canned_food" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.25, 0.862, -10)
+
+[node name="energy_bar" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(8.85, 0.815, -10)
+
+[node name="beef_jerky" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(9.45, 0.892, -10)

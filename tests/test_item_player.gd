@@ -33,6 +33,197 @@ func clear_bag() -> void:
 	actor.inventory.active_slot = 0
 	actor.refresh_inventory()
 
+func food_button(pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = pressed
+	actor._input(event)
+
+func check_survival() -> void:
+	var whole := PlayerSurvival.new()
+	var split := PlayerSurvival.new()
+	check(whole.advance(1200.0) == 0 and whole.hunger == 0.0, "Full food lasts exactly 20 simulation minutes")
+	check(whole.advance(4.99) == 0 and whole.advance(.01) == 1, "Starvation first damages at five seconds")
+	var split_ticks := 0
+	for step in 12050: split_ticks += split.advance(.1)
+	check(split.hunger == 0.0 and split_ticks == 1 and is_zero_approx(split.starvation_elapsed), "Frame partition preserves zero crossing and starvation boundary")
+	var crossed := PlayerSurvival.new()
+	crossed.hunger = PlayerSurvival.DRAIN_PER_SECOND * 2.0
+	check(crossed.advance(13.0) == 2 and is_equal_approx(crossed.starvation_elapsed, 1.0), "Only the post-zero portion of a frame counts toward starvation")
+	for invalid: Variant in [{}, {"hunger": NAN, "starvation_elapsed": 0.0}, {"hunger": -1.0, "starvation_elapsed": 0.0}, {"hunger": 101.0, "starvation_elapsed": 0.0}, {"hunger": true, "starvation_elapsed": 0.0}, {"hunger": 0.0, "starvation_elapsed": 5.0}, {"hunger": 1.0, "starvation_elapsed": .1}]:
+		check(not PlayerSurvival.valid_state(invalid), "Malformed survival state is refused: " + str(invalid))
+	var saved := crossed.capture()
+	whole.restore(saved)
+	whole.restore({"hunger": 999.0})
+	check(whole.capture() == saved, "Validated survival restore is exact and refuses malformed replacement")
+	whole.nourish(200.0)
+	check(whole.hunger == 100.0 and whole.starvation_elapsed == 0.0, "Nutrition caps hunger and clears starvation progress")
+	actor.survival.hunger = 40.0
+	actor.current_stamina = 0.0
+	actor._update_stamina(1.0, false)
+	check(actor.current_stamina == 18.0, "Hunger 40 retains full stamina recovery")
+	actor.survival.hunger = 39.99
+	actor.current_stamina = 0.0
+	actor._update_stamina(1.0, false)
+	check(actor.current_stamina == 9.0, "Below 40 halves stamina recovery")
+	Input.action_press("sprint")
+	actor.survival.hunger = 20.01
+	check(actor._can_sprint(true), "Hunger above 20 permits sprint")
+	actor.survival.hunger = 20.0
+	check(not actor._can_sprint(true), "Hunger exactly 20 blocks sprint immediately")
+	Input.action_release("sprint")
+	var start := StartRun.new()
+	start.name = "StartRun"
+	world.add_child(start)
+	actor.survival.reset()
+	actor._advance_survival(60.0)
+	check(actor.survival.hunger == 100.0, "Preparing tutorial stops hunger")
+	start.phase = "started"
+	actor.in_ui_mode = true
+	actor.settings_open = true
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 95.0), "World simulation continues hunger through UI and settings")
+	actor.in_ui_mode = false
+	actor.settings_open = false
+	var manager := PoiInstanceManager.new()
+	manager.name = "PoiInstances"
+	world.add_child(manager)
+	manager.busy = true
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 95.0), "Outdoor POI transition stops hunger before reparent")
+	var indoor := Node3D.new()
+	manager.add_child(indoor)
+	actor.reparent(indoor)
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 95.0), "Owning POI transition stops hunger after reparent")
+	manager.busy = false
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 90.0), "Indoor exploration continues the same player survival state")
+	actor.reparent(world)
+	world.set_meta("checkpoint_staging", true)
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 90.0), "Checkpoint staging cannot simulate hunger")
+	world.remove_meta("checkpoint_staging")
+	var checkpoint := root.get_node("Checkpoint")
+	checkpoint.loading = true
+	actor._advance_survival(60.0)
+	check(is_equal_approx(actor.survival.hunger, 90.0), "Checkpoint loading stops hunger")
+	checkpoint.loading = false
+	actor.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.0})
+	actor.damage_cooldown = .4
+	actor.current_player_health = 100.0
+	actor._advance_survival(1.0)
+	check(actor.current_player_health == 99.0 and actor.damage_cooldown == .4, "Starvation bypasses combat cooldown without changing immunity")
+	actor.is_player_dead = true
+	actor._advance_survival(10.0)
+	check(actor.current_player_health == 99.0 and actor.survival.starvation_elapsed == 0.0, "Dead player stops hunger and starvation")
+	actor.is_player_dead = false
+	actor.damage_cooldown = 0.0
+	actor.current_player_health = 100.0
+	actor.current_stamina = 100.0
+	actor.survival.reset()
+	start.free()
+	manager.free()
+
+func check_eating() -> void:
+	clear_bag()
+	var path: String = FoodCatalog.SCENES[0]
+	check(actor.add_item("Renamed meal", false, path), "Food scene receives canonical inventory identity")
+	food_button(false)
+	food_button(true)
+	check(not actor.consumables.eating, "Full hunger refuses eating")
+	actor.survival.hunger = 80.0
+	actor.current_player_health = 67.0
+	actor.current_stamina = 53.0
+	food_button(false)
+	food_button(true)
+	actor.crouching = true
+	actor.consumables.advance(actor, 1.99)
+	check(actor.consumables.eating and actor.inventory.items.size() == 1, "Crouching allows hold progress without early consumption")
+	actor.consumables.advance(actor, .01)
+	check(actor.inventory.items.is_empty() and actor.survival.hunger == 100.0 and actor.current_player_health == 67.0 and actor.current_stamina == 53.0, "Two-second eat consumes exactly one and caps nutrition without healing")
+	actor.crouching = false
+	actor.add_item("Meal", false, path)
+	actor.survival.hunger = 50.0
+	food_button(true)
+	check(not actor.consumables.eating, "Held button cannot repeat after completion")
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 1.0)
+	actor.damage_cooldown = .1
+	actor.take_damage(1.0)
+	check(actor.consumables.eating, "Rejected combat hit does not cancel eating")
+	actor.damage_cooldown = 0.0
+	actor.take_damage(1.0)
+	check(not actor.consumables.eating and actor.inventory.items.size() == 1, "Actual damage cancels eating without consuming")
+	actor.consumables.advance(actor, 5.0)
+	food_button(true)
+	check(not actor.consumables.eating, "Interrupted hold needs a fresh release and press")
+	for reason: String in ["sprint", "jump", "settings", "ui", "climb", "seat", "dead", "arm", "slot", "identity", "remove", "placement"]:
+		clear_bag()
+		actor.add_item("Meal", false, path)
+		actor.add_item("Second meal", false, path)
+		food_button(false)
+		food_button(true)
+		actor.consumables.advance(actor, 1.0)
+		match reason:
+			"sprint", "jump":
+				var event := InputEventAction.new()
+				event.action = reason
+				event.pressed = true
+				actor._input(event)
+			"settings": actor.set_settings_open(true)
+			"ui": actor.enter_ui_mode()
+			"climb": actor.locomotion_state = actor.LocomotionState.CLIMBING
+			"seat": actor.seated_in = world
+			"dead": actor.is_player_dead = true
+			"arm":
+				actor.body_state.sever(&"left_arm")
+				actor.body_state.sever(&"right_arm")
+			"slot": actor._set_active_slot(1)
+			"identity": actor.inventory.items[0].state.id = "replacement-id"
+			"remove": actor.inventory.items.remove_at(0)
+			"placement": actor.enter_equipment_placement()
+		actor.consumables.advance(actor, 2.0)
+		check(not actor.consumables.eating and actor.survival.hunger == 50.0, "Eating interruption is atomic: " + reason)
+		actor.is_player_dead = false
+		actor.locomotion_state = actor.LocomotionState.NORMAL
+		actor.seated_in = null
+		actor.in_ui_mode = false
+		actor.set_settings_open(false)
+		actor.body_state.reset()
+		actor.cancel_equipment_placement()
+		actor.damage_cooldown = 0.0
+	clear_bag()
+	actor.add_item("One-arm meal", false, path)
+	actor.body_state.sever(&"left_arm")
+	food_button(false)
+	food_button(true)
+	check(actor.consumables.eating, "One available arm can eat")
+	food_button(false)
+	check(not actor.consumables.eating and actor.inventory.items.size() == 1, "Release cancels an unfinished meal")
+	actor.body_state.reset()
+	for food_path in FoodCatalog.SCENES:
+		clear_bag()
+		actor.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.0})
+		actor.add_item("Renamed food", false, food_path)
+		food_button(false)
+		food_button(true)
+		actor.consumables.advance(actor, 2.0)
+		var nutrition: float = FoodCatalog.definition_for(food_path).nutrition
+		check(actor.survival.hunger == nutrition and actor.survival.starvation_elapsed == 0.0 and actor.inventory.items.is_empty(), "Food restores trusted nutrition and clears starvation: " + food_path)
+		actor.current_stamina = 0.0
+		actor.stamina_recovery_delay_remaining = 0.0
+		actor._update_stamina(1.0, false)
+		check(actor.current_stamina == (18.0 if nutrition >= 40.0 else 9.0), "Eating across 40 immediately restores the correct recovery rate")
+		Input.action_press("sprint")
+		check(actor._can_sprint(true) == (nutrition > 20.0), "Eating across 20 immediately updates sprint permission")
+		Input.action_release("sprint")
+	actor.current_player_health = 100.0
+	actor.current_stamina = 100.0
+	actor.survival.reset()
+	clear_bag()
+
 func check_new_grants() -> void:
 	check(actor.add_item(ItemNames.GAS_CAN_EMPTY, false, "res://props/gas_can_empty.tscn"), "Sparse new grant receives canonical Item state")
 	var granted: Dictionary = actor.inventory.active_item().state.duplicate(true)
@@ -566,6 +757,8 @@ func run() -> void:
 	world.add_child(wall)
 	wall.position = Vector3(0, 2, 0)
 	await steps()
+	check_survival()
+	check_eating()
 	await check_hud_toggle()
 	await check_new_grants()
 	await check_scavenge_loot()

@@ -76,6 +76,23 @@ static func _spawn_orientation_workshop(building: Node3D, container: Node3D) -> 
 			state.battery.charge = state.battery.capacity
 		item.restore_item_state(state)
 		item.global_transform = point.global_transform
+	_spawn_orientation_food(building, container)
+
+static func _spawn_orientation_food(building: Node3D, container: Node3D) -> void:
+	# Food is ordinary starter stock, outside the tutorial's repair-role contract.
+	for scene_path in FoodCatalog.SCENES:
+		var food_id: String = scene_path.get_file().get_basename()
+		var identity := str(building.get_meta("poi_id", "orientation")) + ":food:" + food_id
+		if _orientation_identity_owned(container, identity): continue
+		var point := building.get_node("WorkshopSupplies/" + food_id) as Marker3D
+		var food: Item = load(scene_path).instantiate()
+		food.freeze = true
+		food.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
+		container.add_child(food)
+		var state := food.capture_item_state()
+		state.id = identity
+		food.restore_item_state(state)
+		food.global_transform = point.global_transform
 
 static func _orientation_identity_owned(container: Node3D, identity: String) -> bool:
 	var world := WorldActorSnapshot.domain(container)
