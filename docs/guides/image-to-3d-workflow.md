@@ -27,7 +27,7 @@ $skill = '.agents/skills/comfyui-image-to-3d'
 
 生成 job 與完整 history、各輪候選、批次渲染圖、失敗輸出、臨時 logs 和依賴預設都留在這個忽略的本機工作目錄。技術檢查與目視驗收仍完整執行，檢查證據留在本機供除錯。提交時選入必要原始來源、editable／重建腳本、精簡參數與來源摘要、正式模型／貼圖，以及少量最終代表圖和報告；不要求整套驗收檔都進 Git，也不預設清理原始或使用者檔案。
 
-本機生成服務及權重已由使用者裝在 `C:/Users/evan4/Apps`。本流程只檢查及使用現有服務，不自動更新、下載權重、啟停或改服務。8000 的 `/health` 用於發現 8188 ComfyUI 後端；生成使用固定 TRELLIS.2 原生 graph 直接提交到後端，並非 8000 的 API preset。
+本機生成服務及權重已由使用者裝在 `C:/Users/evan4/Apps`。使用者已要求生成而服務未開時，可按 skill 的[本機操作](../../.agents/skills/comfyui-image-to-3d/references/operations.md)啟動既有安裝；不重裝、下載權重或改服務設定。8000 的 `/health` 用於發現 8188 ComfyUI 後端；生成使用固定 TRELLIS.2 原生 graph 直接提交到後端，並非 8000 的 API preset。
 
 ## 2. 確認需求
 
@@ -58,7 +58,7 @@ python "$skill/scripts/generate.py" collect --output $job
 python "$skill/scripts/generate.py" inspect --glb "$job/raw.glb"
 ```
 
-`preflight` 檢查服務、節點、權重與空閒佇列；失敗或忙碌就停止。只有明確使用 ComfyUI 而沒有 8000 wrapper 時，對 `preflight`／`submit` 加 `--backend http://127.0.0.1:8188`。預設 graph 是 TRELLIS.2、1024、seed 42、約 50k 面；不自行改節點、換 preset 或掃參數。
+`preflight` 檢查服務、節點、權重與空閒佇列；服務未開先依上節啟動，忙碌就等待；節點／權重檢查失敗則停止查明。只有明確使用 ComfyUI 而沒有 8000 wrapper 時，對 `preflight`／`submit` 加 `--backend http://127.0.0.1:8188`。預設 graph 是 TRELLIS.2、1024、seed 42、約 50k 面；不自行改節點、換 preset 或掃參數。
 
 `status` 每次只查一次，未完成時先做其他工作再查。`collect` 只收既有工作，保留 prompt、history、conditioning、原圖、raw GLB 與摘要；同一工作收檔失敗可重試 collect。技術成功狀態 `ART_REVIEW_REQUIRED` 仍需美術驗收。
 

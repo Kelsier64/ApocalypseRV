@@ -2,6 +2,16 @@
 
 專案根目錄執行，Python 需 Pillow。PATH 沒有 Python 時可用 Codex `load_workspace_dependencies` 找內建 runtime，改以完整路徑執行；工具說明見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。每次工作建立新的 `.godot/art-work/<asset>/<run>/`，生成 job、歷史、候選、檢查圖、失敗輸出、logs 與本機依賴都放在這裡。完整跑完技術檢查與目視驗收，保留本機產物供除錯；提交 Git 時只挑必要的來源、editable／重建資料、正式資產和少量代表證據，不預設清理工作資料。
 
+## ComfyUI 沒開啟時
+
+preflight 若連線被拒絕，先確認服務是否已開；使用者已要求生成時，可使用本機已驗證的啟動器：
+
+```powershell
+& "$env:USERPROFILE/Apps/Pixal3D-API-v2/start.ps1"
+```
+
+先確認腳本存在；其他電腦沿用實際安裝的啟動方式。此腳本會隱藏啟動既有 ComfyUI 與 API，不需重裝或下載權重。等 8000 `/health` 的 `backend.available=true`，再跑 preflight；約兩分鐘仍未就緒就查啟動器旁的 `deployment/comfy.stderr.log` 和 `deployment/api-8000.stderr.log`。API 已開但後端失效時，啟動器會直接返回，需另查後端；不要反覆重啟共用服務。
+
 ## 生成與收檔
 
 ```powershell
@@ -18,6 +28,10 @@ python "$skill/scripts/generate.py" inspect --glb "$job/raw.glb"
 預設由 8000 `/health` 找後端；只用 ComfyUI 時，preflight／submit 加 `--backend http://127.0.0.1:8188`。會檢查 API／Comfy queue 空閒，但沒有跨程序鎖；腳本不啟停服務、下載權重或改 preset。
 
 每次命令只操作一次，未完成稍後再查。沿用自動保存的 job、原圖、conditioning、prompt／history 與結果。`READY` 表示資源可用，`ART_REVIEW_REQUIRED` 表示技術檢查成功，仍需看模型。
+
+## 多件生成與續跑
+
+多件逐件提交，收妥原 GLB 後再開始下一件；佇列忙碌就稍後再查，不清空或中斷其他工作。中途斷線先看原資料夾的 `job.json`，已有 prompt ID 就續用 status／collect；提交結果不明按下一節核對，不換資料夾重送。
 
 ## 提交結果不明
 

@@ -18,6 +18,10 @@ python "$skill/scripts/prepare_prop.py" prepare --source "$work/generation/raw.g
 - 產出 fitted／reduced／final GLB、精簡參數及外部貼圖的 editable glTF/BIN；圖片 bytes 與 raw 相同，原檔不修改。法線以逆轉置校正，切線重新正交化；拓樸只計數回報，不自動修復。
 - 原型與 final 的材質／素色多角度比較可沿用 `review.py --source`，gltfpack 結果不使用 `--candidate`。完成情境檢查仍由 agent 判斷；檔案成功輸出不代表美術驗收。
 
+## 只調整整體大小
+
+外形已正確時，以角色和場景作尺度基準，等比縮放即可，不必重新生成。`prepare --size X Y Z` 會逐軸縮放，要保比例就用同一倍率計算三軸。Godot 剛體根 scale 維持 1，調整視覺節點並同步碰撞尺寸、擺放高度；確認接地、拾取和手持，並分開記錄基礎 GLB 與場景最終尺寸。
+
 ## 檢查後接入
 
 只適用 `.tscn:Visuals/Model` 為 Node3D、尚未接入 Asset 的灰盒 wrapper；指定要隱藏的直接子節點。其他 wrapper 或既有正式資產直接編輯，不移動碰撞遷就外觀。
