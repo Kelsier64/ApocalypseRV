@@ -92,8 +92,13 @@ func check_pistol_viewmodel() -> void:
 		light.global_position = actor.camera.global_position
 		competing_lights.append(light)
 	add_pistol(4)
+	check(actor.held_item_node.is_visible_in_tree() and actor.get_node("Visuals/Carry").item == actor.held_item_node, "Immediately visible pistol has a solved carry pose")
+	check_pistol_contacts("immediately visible equip")
 	add_ammo(20)
-	await steps(20)
+	for frame in 10:
+		await steps(1)
+		check_pistol_contacts("equip frame=" + str(frame + 1))
+	await steps(10)
 	view.update_view()
 	var pistol: Pistol = actor.held_item_node
 	pistol.set_process(false)
@@ -110,6 +115,11 @@ func check_pistol_viewmodel() -> void:
 	check_pistol_contacts("neutral hip", true)
 	check(pistol.global_transform.is_equal_approx(held_pose) and pistol.get_node("Muzzle").global_transform.is_equal_approx(muzzle_pose), "Pistol view activation preserves the authoritative held and muzzle transforms")
 	check(actor.camera.global_transform.is_equal_approx(camera_pose) and is_equal_approx(actor.camera.fov, baseline), "Pistol view activation preserves gameplay camera pose and FOV")
+	actor.camera.rotation.x = .20
+	view.update_view()
+	check(pistol.global_transform.is_equal_approx(held_pose) and pistol.get_node("Muzzle").global_transform.is_equal_approx(muzzle_pose), "Mouse pitch between physics frames preserves the real pistol and muzzle transforms")
+	actor.camera.rotation.x = 0.0
+	view.update_view()
 	for sample: Array in [[-.30, true], [-.35, false], [-.32, false], [-.30, false], [-.29, true], [0.0, true]]:
 		actor.camera.rotation.x = sample[0]
 		var before_held := pistol.global_transform

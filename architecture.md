@@ -265,7 +265,7 @@ RV 牆板的局部 PanelWear source 隨比較切換，保留真實耐久損傷�
 | 玩家背包 | [player_inventory.gd](player/player_inventory.gd) | 6 格、選取、大型限制與消耗，不持有場景節點 |
 | 玩家部位 | [player_body_state.gd](player/player_body_state.gd) | 頭、左右整臂、左右整腿的完整性；Player 授權能力、切斷及安全重生，視覺效果不持有存檔真值 |
 | 玩家斷肢外觀 | [player_dismemberment_visual.gd](player/player_dismemberment_visual.gd)、[player_detached_part.gd](player/player_detached_part.gd)、[player_gore.gd](player/player_gore.gd) | 分件／兩端封口、獨立斷肢物理、短血噴與限量血跡，與原骨架及生命狀態分開 |
-| 玩家持物姿勢 | [player_carry_visual.gd](player/player_carry_visual.gd) | 依背包 is_large 切換右手／雙手；缺少專用握點時，在裝備時由可見模型三角面快取貼合點，排除隱藏替代網格與呈現複本。移動動畫後套用手臂 IK 與五指握合；手腕局部旋轉保留原動畫，拇指朝前。手電筒燈身依掌面貼合、四指依圓柱截面求解，燈頭維持朝前。下次動畫取樣前還原，死亡交接保留姿勢、重生清除快取。只調整手持外觀，不改移動／背包規則 |
+| 玩家持物姿勢 | [player_carry_visual.gd](player/player_carry_visual.gd) | 裝備時同步完成握點／手臂 IK 再顯示物品；HandMarker 隸屬 Player，避免鏡頭輸入在物理步間單獨移動物品。依 is_large 使用單／雙手，缺專用握點時由可見三角面快取貼合點，排除隱藏網格與呈現複本。持物手保持完整接觸權重，初次解出的手腕基底鎖在持物座標；物品晃動與手臂在同一步求解，可達距離殘差再以共用物品框貼回真實掌面並重解支撐手，鬆手才混合回移動動畫。手電筒保留圓柄／指節與抓取照臉專用求解，手槍保留瞄準／換彈；屍體、專用支撐與 RV 機械維持其原支撐定位。下一次動畫取樣前還原骨姿，死亡保留求值姿勢、重生清除快取；不改物理／背包真值 |
 | 第一人稱持物 | [player_first_person_carry.gd](player/player_first_person_carry.gd) | 一般單／雙手 Item、手電筒與手槍以 layer 22、獨立透明 SubViewport 顯示，沿用正式骨架姿勢與材質；一般取景 70°，手槍腰射使用完整視角基底與專用偏移，瞄準時混合至正式鏡頭的相同位置／FOV，偏移以當下袖子範圍限制，避免鏡頭穿入手臂。手槍顯示兩側存活手臂，手肘保持向外下方彎曲，低頭時不反轉；手電筒保留圓柄持握與實際 Beam；世界鏡頭、尺寸、陰影、實際槍口／射線與丟棄姿態維持原所有權。保留未替換身體／空手並支援缺手；低頭或蹲下時先把獨立鏡頭的位置、角度與 FOV 對齊正式鏡頭，再恢復完整本地身體，避免肩部接縫錯開；回正／站起反向交接，門檻保留緩衝避免反覆切換。抓取、攀爬、入座、爬行、死亡、放置、旁觀、超寬物品與 RV 連線設備沿用原呈現。最多同步四盞附近燈光，手持發光源另常駐並逐幀同步，避免漏掉短槍口閃光；排除夜間圖層重派，合成於既有色彩處理與 HUD 前，換 World3D 時重新綁定 |
 | 互動 | [player_interact.gd](player/player_interact.gd) | 射線、目標提示與結果、E／F 獨立按鍵狀態、快速事件緩衝、輪胎安裝特例 |
 | 放置 | [equipment_placement.gd](player/equipment_placement.gd) | 預覽位置／朝向、確認／取消輸入 |

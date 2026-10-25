@@ -324,6 +324,98 @@ func visible_surface_distance(held: Node3D, palm: Vector3) -> float:
 			nearest = minf(nearest, triangle_distance(palm, pose * faces[index], pose * faces[index + 1], pose * faces[index + 2]))
 	return nearest
 
+func carry_hand(side: String) -> Transform3D:
+	var skeleton: Skeleton3D = actor.get_node("Visuals/Carry").skeleton
+	return skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
+
+func carry_palm(side: String) -> Vector3:
+	var carry: Node = actor.get_node("Visuals/Carry")
+	var skeleton: Skeleton3D = carry.skeleton
+	var hand := skeleton.find_bone("hand_" + side)
+	var rest := skeleton.get_bone_global_rest(hand)
+	var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
+	var frame: Basis = carry.hand_frames[side]
+	var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
+	var offset := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
+	return carry_hand(side) * offset
+
+func carry_gap(sides: Array[String]) -> float:
+	var carry: Node = actor.get_node("Visuals/Carry")
+	var gap := 0.0
+	for side in sides: gap = maxf(gap, carry_palm(side).distance_to(carry.grip_right if side == "R" else carry.grip_left))
+	return gap
+
+func check_carry_motion() -> void:
+	clear_bag()
+	var original_pose := actor.global_transform
+	actor.camera.rotation = Vector3.ZERO
+	# Ground the real controller before freezing it, so this samples jog rather
+	# than an airborne fallback animation.
+	var floor := StaticBody3D.new()
+	var collision := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(10, .2, 10)
+	collision.shape = box
+	floor.add_child(collision)
+	world.add_child(floor)
+	var capsule: CollisionShape3D = actor.get_node("CollisionShape3D")
+	floor.global_position = Vector3(actor.global_position.x, capsule.global_position.y - (capsule.shape as CapsuleShape3D).height * .5 - .1, actor.global_position.z)
+	await steps()
+	actor.velocity = Vector3.DOWN
+	actor.move_and_slide()
+	check(actor.is_on_floor(), "Carry motion fixture establishes real grounded locomotion")
+	var carry: Node = actor.get_node("Visuals/Carry")
+	for record: Array in [["radio", "res://props/scavenge_loot/broken_shortwave_radio.tscn", false], ["scrap", "res://props/scrap.tscn", false], ["motor", "res://props/scavenge_loot/salvaged_motor.tscn", true], ["flashlight", "res://props/flashlight.tscn", false]]:
+		clear_bag()
+		actor.velocity = Vector3.ZERO
+		await steps(15)
+		actor.add_item(record[0], record[2], record[1])
+		var held: Node3D = actor.held_item_node
+		var sides: Array[String] = ["R"]
+		if record[2]: sides.append("L")
+		check(held.is_visible_in_tree() and carry.item == held and carry_gap(sides) <= .001, "First visible equip is already solved against its hands: " + record[0])
+		var maximum_gap := carry_gap(sides)
+		for frame in 10:
+			await steps(1)
+			maximum_gap = maxf(maximum_gap, carry_gap(sides))
+		check(maximum_gap <= .001, "Every visible equip frame remains seated within one millimeter: " + record[0] + " gap=" + str(maximum_gap))
+		actor.velocity = actor.global_basis * Vector3(0, 0, -3)
+		for frame in 20:
+			await steps(1)
+			maximum_gap = maxf(maximum_gap, carry_gap(sides))
+		var reference: Dictionary = {}
+		for side in sides: reference[side] = carry_hand(side).affine_inverse() * held.global_transform
+		var drift := 0.0
+		var angle := 0.0
+		for frame in 120:
+			actor.rotation.y += .008
+			actor.velocity = actor.global_basis * Vector3(0, 0, -3)
+			await steps(1)
+			maximum_gap = maxf(maximum_gap, carry_gap(sides))
+			for side in sides:
+				var relative := carry_hand(side).affine_inverse() * held.global_transform
+				drift = maxf(drift, reference[side].origin.distance_to(relative.origin))
+				angle = maxf(angle, reference[side].basis.orthonormalized().get_rotation_quaternion().angle_to(relative.basis.orthonormalized().get_rotation_quaternion()))
+		check(actor.get_node("Visuals/Locomotion").current_clip == "jog_forward", "Carry regression samples a full grounded jog cycle: " + record[0])
+		check(maximum_gap < .035, "Visible equip and jogging preserve palm contact: " + record[0] + " gap=" + str(maximum_gap))
+		check(drift < .002 and angle < deg_to_rad(1.0), "Jogging and turning preserve the hand-relative item transform: " + record[0] + " drift=" + str(drift) + " angle=" + str(rad_to_deg(angle)))
+		actor.refresh_inventory()
+		held = actor.held_item_node
+		check(held.is_visible_in_tree() and carry.item == held and carry_gap(sides) <= .001, "Equipping during a jog is already seated before the next physics tick: " + record[0])
+		await steps(1)
+		check(carry_gap(sides) <= .001, "The first moving equip frame keeps both contacts seated: " + record[0])
+		var held_pose := held.global_transform
+		var hand_pose := carry_hand("R")
+		actor.camera.rotation.x = .20
+		actor.get_node("Visuals/FirstPersonCarry").update_view()
+		check(held.global_transform.is_equal_approx(held_pose) and carry_hand("R").is_equal_approx(hand_pose), "Mouse pitch between physics frames cannot move the item apart from its hand: " + record[0])
+		actor.camera.rotation.x = 0.0
+	clear_bag()
+	actor.velocity = Vector3.ZERO
+	actor.global_transform = original_pose
+	floor.queue_free()
+	await steps(15)
+
 func check_carry_frame(note: String, large: bool = false, require_world_frame: bool = true) -> void:
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var held: Node3D = actor.held_item_node
@@ -335,14 +427,7 @@ func check_carry_frame(note: String, large: bool = false, require_world_frame: b
 	var max_x := .65 if large else (.40 if left else .95)
 	check(not require_world_frame or (not actor.camera.is_position_behind(center) and screen.x > min_x and screen.x < max_x and screen.y > .30 and screen.y < .95), "Carry center stays visible on its holding side: " + note + " screen=" + str(screen) + " fov=" + str(actor.camera.fov))
 	for side: String in (["R", "L"] if large else [carry.active_hand]):
-		var skeleton: Skeleton3D = carry.skeleton
-		var hand := skeleton.find_bone("hand_" + side)
-		var rest := skeleton.get_bone_global_rest(hand)
-		var middle := skeleton.get_bone_global_rest(skeleton.find_bone("middle_01_" + side)).origin
-		var frame: Basis = carry.hand_frames[side]
-		var normal := frame.y.cross(frame.x) * (1.0 if side == "L" else -1.0)
-		var palm_offset := rest.basis.inverse() * ((middle - rest.origin) * .72 + normal * .014)
-		var palm: Vector3 = skeleton.global_transform * (skeleton.get_bone_global_pose(hand) * palm_offset)
+		var palm := carry_palm(side)
 		var grip: Vector3 = carry.grip_right if side == "R" else carry.grip_left
 		check(palm.distance_to(grip) < .035, "Visible carry retains palm contact on " + side + ": " + note)
 		var surface_gap := visible_surface_distance(held, palm)
@@ -765,6 +850,7 @@ func run() -> void:
 	await check_carry_postures()
 	await check_first_person_carry()
 	await check_flashlight_viewmodel()
+	await check_carry_motion()
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))

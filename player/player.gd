@@ -285,15 +285,17 @@ func _set_active_slot(index: int) -> void:
 
 func _equip_active_slot():
 	weapon.cancel_actions()
-	var hand_marker = camera.get_node_or_null("HandMarker")
+	var hand_marker = get_node_or_null("HandMarker")
 	if not hand_marker:
 		hand_marker = Marker3D.new()
 		hand_marker.name = "HandMarker"
-		# Position the hand lower right in front of the camera
-		hand_marker.position = Vector3(0.5, -0.5, -0.8)
-		camera.add_child(hand_marker)
+		# Carry owns the hold pose. Camera input must not move the item between
+		# skeleton solves; actor motion still carries the whole hand/item pair.
+		hand_marker.position = camera.position + Vector3(0.5, -0.5, -0.8)
+		add_child(hand_marker)
 		
 	if is_instance_valid(held_item_node):
+		held_item_node.hide()
 		held_item_node.queue_free()
 		held_item_node = null
 	if not can_use_hands(2 if inventory.active_item().get("is_large", false) else 1): return
@@ -303,6 +305,7 @@ func _equip_active_slot():
 		var scene: PackedScene = load(item_data["scene_path"])
 		if scene:
 			held_item_node = scene.instantiate()
+			held_item_node.hide()
 			if held_item_node is Item: held_item_node.presentation_only = true
 			_restore_prop_state(held_item_node, item_data)
 			if held_item_node.has_method("set_held"): held_item_node.set_held(true)
@@ -325,6 +328,10 @@ func _equip_active_slot():
 				# Held props may obstruct the view; never shrink them to fit.
 			else:
 				held_item_node.transform = Transform3D.IDENTITY
+			# Publish the complete grip synchronously, including the real muzzle
+			# for an immediate shot after selecting a pistol.
+			get_node("Visuals/Carry").prepare_current_pose()
+			get_node("Visuals/FirstPersonCarry").update_view()
 
 func _ready():
 	standing_collision_shape = body_collision_shape.shape.duplicate()
