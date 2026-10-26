@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/discarded_electric_iron.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.33, 0.174, 0.143)
+
+[node name="DiscardedElectricIron" type="RigidBody3D"]
+mass = 2.5
+continuous_cd = true
+script = ExtResource("item")
+item_name = "Discarded Electric Iron"
+is_large = false
+hold_rotation = Vector3(-8, -20, 0)
+scrap_yields = {"Metal Parts": Vector2(2, 5)}
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+position = Vector3(0, -0.087, 0)

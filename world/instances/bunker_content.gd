@@ -2,7 +2,6 @@ extends RefCounted
 class_name BunkerContent
 ## Initial content is rolled once using its own RNG, then only snapshots are restored.
 const VERSION := 1
-const SCRAP: PackedScene = preload("res://props/scrap.tscn")
 const CARGO: PackedScene = preload("res://props/engine_upgraded.tscn")
 const CACHE: PackedScene = preload("res://world/instances/bunker_cache.tscn")
 const ENCOUNTER_CHANCE := 0.3
@@ -73,10 +72,10 @@ static func populate(inside: Node3D) -> Dictionary:
 			var location := _position(inside, i, rng, reserved)
 			if not location.is_empty():
 				var item := _supply(rng, prefix + "supply:%d" % loose_count, false)
-				var prop := SCRAP.instantiate() as Item
+				var prop := load(item.scene).instantiate() as Item
 				prop.restore_item_state(item.state)
 				prop.item_name = item.name
-				prop.position = location.point + Vector3.UP * 0.35
+				prop.position = location.point + Vector3.UP * ScavengeLoot.bottom_offset(prop, 0.35)
 				prop.freeze = true
 				inside.entities.add_child(prop)
 				loose_count += 1
@@ -117,7 +116,10 @@ static func _supply(rng: RandomNumberGenerator, identity: String, rich: bool) ->
 	var electronics := rng.randi_range(1, 2) if rich else 0
 	var yields := {"Metal Parts": Vector2(metal, metal)}
 	if electronics > 0: yields["Electronic Scrap"] = Vector2(electronics, electronics)
-	return {"scene": "res://props/scrap.tscn", "name": "地堡備用零件" if rich else "地堡廢料", "large": false,
+	var scene := ScavengeLoot.scene_for(identity)
+	var supply_name := ScavengeLoot.item_name(scene)
+	if scene == ScavengeLoot.LEGACY: supply_name = "Bunker Spare Parts" if rich else "Bunker Scrap"
+	return {"scene": scene, "name": supply_name, "large": false,
 		"state": {"id": identity, "condition": 100.0, "scrap_yields": yields, "recycle_result": {}}}
 
 static func configure_monster(enemy: Monster) -> void:

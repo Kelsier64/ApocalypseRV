@@ -421,7 +421,8 @@ func check_carry_frame(note: String, large: bool = false, require_world_frame: b
 	var held: Node3D = actor.held_item_node
 	var center: Vector3 = held.get_parent().to_global(carry.bounds.get_center())
 	var screen: Vector2 = actor.camera.unproject_position(center) / root.get_visible_rect().size
-	check(not carry.bounds.has_point(held.get_parent().to_local(actor.camera.global_position)), "Held mesh bounds stay clear of the eye: " + note)
+	var eye: Vector3 = held.get_parent().to_local(actor.camera.global_position)
+	check(not carry.bounds.has_point(eye), "Held mesh bounds stay clear of the eye: " + note + " eye=" + str(eye) + " bounds=" + str(carry.bounds))
 	var left: bool = carry.active_hand == "L"
 	var min_x := .35 if large else (.05 if left else .60)
 	var max_x := .65 if large else (.40 if left else .95)
@@ -713,8 +714,74 @@ func check_carry_postures() -> void:
 	clear_bag()
 	await steps(20)
 
+func check_scavenge_selection() -> void:
+	var seen := {}
+	for index in 128:
+		var key := "selection-contract:%d" % index
+		var selected := ScavengeLoot.scene_for(key)
+		seen[selected] = key
+		check(selected in ScavengeLoot.SCENES and selected == ScavengeLoot.scene_for(key), "Fresh scrap selection is deterministic and catalogued")
+	check(seen.size() == ScavengeLoot.SCENES.size() and seen.has(ScavengeLoot.LEGACY), "Fresh scrap pool reaches all six props and retains legacy scrap")
+	var point := PoiLootPoint.new()
+	point.point_id = &"placement_contract"
+	point.spawn_chance = 1.0
+	point.candidates = [load(ScavengeLoot.LEGACY)]
+	world.add_child(point)
+	point.transform = Transform3D(Basis.from_euler(Vector3(0.2, 0.5, -0.1)), Vector3(25, 5, 25))
+	for selected: String in ScavengeLoot.SCENES:
+		if not seen.has(selected): continue
+		var actual := RandomNumberGenerator.new()
+		actual.seed = 193
+		var reference := RandomNumberGenerator.new()
+		reference.seed = 193
+		point.roll_scene(reference)
+		var item := WalkInSites._spawn_loot(point, actual, entities, seen[selected])
+		check(item != null and item.scene_file_path == selected and actual.state == reference.state, "POI scrap substitution keeps the selected scene and original marker RNG draws")
+		if item == null: continue
+		var bounds := item.get_placement_bounds()
+		check(item.global_basis.is_equal_approx(point.global_basis), "POI scrap substitution keeps the authored orientation")
+		if selected == ScavengeLoot.LEGACY:
+			check(item.global_transform.is_equal_approx(point.global_transform) and ScavengeLoot.bottom_offset(item, 0.35) == 0.35, "Legacy scrap keeps its original marker and bunker placement")
+		else:
+			var bottom := item.global_transform * Vector3(0, bounds.position.y, 0)
+			var original_bottom := point.global_transform * Vector3(0, -0.15, 0)
+			check(bottom.is_equal_approx(original_bottom), "New POI props align with the original scrap bottom along marker local up")
+			check(is_zero_approx(ScavengeLoot.bottom_offset(item, 0.35) + bounds.position.y), "New bunker props rest their collision bottom exactly on the floor")
+		item.free()
+	point.candidates = [load("res://props/battery.tscn")]
+	var other := WalkInSites._spawn_loot(point, RandomNumberGenerator.new(), entities, "non-scrap")
+	check(other != null and other.scene_file_path == "res://props/battery.tscn" and other.global_transform.is_equal_approx(point.global_transform), "POI substitution preserves non-scrap scene and placement")
+	if other != null: other.free()
+	point.free()
+	var field := WorldField.new(42)
+	for index in 32:
+		var reference := field.rng_for(index, "loot")
+		var count := reference.randi_range(1, 2)
+		var plan := field.loot_plan(index)
+		check(plan.size() == count and plan == field.loot_plan(index), "Loose world supply counts and replay remain deterministic")
+		for slot in count:
+			var fuel := reference.randf() < 0.2
+			check((plan[slot] == "res://props/gas_can.tscn") == fuel, "New scrap variants preserve existing fuel chance rolls")
+			if not fuel: check(plan[slot] in ScavengeLoot.SCENES, "World scrap opportunities use the recyclable prop pool")
+	for rich: bool in [false, true]:
+		for index in 16:
+			var actual := RandomNumberGenerator.new()
+			actual.seed = index
+			var reference := RandomNumberGenerator.new()
+			reference.seed = index
+			var metal := reference.randi_range(2, 4) if rich else reference.randi_range(1, 3)
+			var electronics := reference.randi_range(1, 2) if rich else 0
+			var identity := "bunker:selection-contract:%d:%s" % [index, rich]
+			var supply := BunkerContent._supply(actual, identity, rich)
+			var yields := {ItemNames.METAL_PARTS: Vector2(metal, metal)}
+			if electronics > 0: yields["Electronic Scrap"] = Vector2(electronics, electronics)
+			check(actual.state == reference.state and supply.state.scrap_yields == yields, "Bunker variants preserve rolled recycling output and later content RNG")
+			check(supply.scene == ScavengeLoot.scene_for(identity) and supply.state.id == identity and supply.large == false, "Bunker cache and loose supply records retain stable identity and selected scene")
+
 func check_scavenge_loot() -> void:
-	var loot := ["copper_wire_spool", "broken_shortwave_radio", "salvaged_motor", "medical_tin", "industrial_valve", "enamel_kettle"]
+	check_scavenge_selection()
+	var loot := ["copper_wire_spool", "broken_shortwave_radio", "salvaged_motor", "medical_tin", "industrial_valve", "enamel_kettle",
+		"bent_steel_plate", "broken_pipe_elbow", "rusted_brake_drum", "old_exhaust_muffler", "dented_paint_bucket", "discarded_electric_iron"]
 	var save_path := "res://.godot/test-scavenge-loot.save"
 	var camera_pose: Transform3D = actor.camera.transform
 	ray.set_physics_process(true)
@@ -734,6 +801,8 @@ func check_scavenge_loot() -> void:
 		var large: bool = slug == "salvaged_motor"
 		check(item.is_large == large, "Only the salvaged motor requires the large-item slot: " + slug)
 		check(not item.scrap_yields.is_empty(), "Scavenge loot has recycling output outside the tutorial: " + slug)
+		if path in ScavengeLoot.SCENES:
+			check(item.scrap_yields == {ItemNames.METAL_PARTS: Vector2(2, 5)}, "New junk props provide their default metal recycling range: " + slug)
 		item.condition = 47.0
 		item.set_meta("recycle_result", {ItemNames.METAL_PARTS: 3})
 		var state := item.capture_item_state()

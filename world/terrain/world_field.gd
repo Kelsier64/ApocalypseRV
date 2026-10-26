@@ -277,7 +277,7 @@ func loot_plan(index: int) -> Array[String]:
 	var rng := rng_for(index, "loot")
 	var result: Array[String] = []
 	for i in range(rng.randi_range(1, 2)):
-		result.append("res://props/gas_can.tscn" if rng.randf() < 0.2 else "res://props/scrap.tscn")
+		result.append("res://props/gas_can.tscn" if rng.randf() < 0.2 else ScavengeLoot.scene_for("world:%d:loot:%d:%d" % [world_seed, index, i]))
 	return result
 
 func enemy_count(index: int) -> int:

@@ -1,0 +1,89 @@
+{
+  "source_sha256": "8be03f46a33660ec4648650b35d0446eb004f20afe53598c9ab53494e7623dea",
+  "size_m": [
+    0.31,
+    0.4,
+    0.277
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 0,
+  "fit_scale_xyz": [
+    0.39643978579491235,
+    0.39628799824640626,
+    0.3962927680510498
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "dented_paint_bucket",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49984,
+  "triangles": 4994,
+  "vertices": 5362,
+  "final_sha256": "ba225c16a619c89d7c86ca9fd2ae5c75749f3cd4be75438dd68505c19e1b7f2d",
+  "texture_sha256": [
+    "28f3b14bcb2d31c36ff9910301a1aa196a10a4d2a86980c506b71932a6325647",
+    "3de27e4e4706374478f67f6adfc461492028be9a1d0a7c79c7f2109ccc0f2117",
+    "066f76a40aa745a462135bcb0f68178bc7a5316c89dba9e8f66fb908189f2d07"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.1",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.1550000011920929,
+    0.0,
+    -0.13850000500679016
+  ],
+  "bounds_max_m": [
+    0.1550000011920929,
+    0.4000000059604645,
+    0.13850000500679016
+  ],
+  "topology": {
+    "weld_m": 1E-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 475,
+    "duplicate_triangles": 151,
+    "zero_area_triangles": 0
+  },
+  "visual_review": {
+    "state": "accepted after six-view comparison and staged production-room inspection",
+    "views": [
+      "front",
+      "side",
+      "back",
+      "oblique",
+      "top",
+      "underside"
+    ],
+    "modes": [
+      "textured",
+      "clay"
+    ],
+    "limits": "Generated static visual; non-manifold edges and duplicate triangles retained. Independent primitive collision.",
+    "context": "small_02 bunker room: production wrappers on utility tables and floor; bounds aligned; not manual random-layout exploration"
+  },
+  "source_path": ".godot/art-work/recyclable_junk/20261027-01/dented_paint_bucket/generation/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "d9426035-496f-455d-8883-b91f9f3ce54b",
+    "reference_sha256": "b3fc512517594b1e35e964c52a51ab99ad32584f3767913253197cbf695d1057"
+  },
+  "wrapper": {
+    "mass_kg": 1.5,
+    "is_large": false,
+    "rigid_origin": "bounds centre",
+    "visual_translation_y_m": -0.2
+  }
+}

@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://props/item.gd" id="item"]
+[ext_resource type="PackedScene" path="res://assets/models/scavenge_loot/old_exhaust_muffler.glb" id="model"]
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.55, 0.178, 0.227)
+
+[node name="OldExhaustMuffler" type="RigidBody3D"]
+mass = 4.5
+continuous_cd = true
+script = ExtResource("item")
+item_name = "Old Exhaust Muffler"
+is_large = false
+hold_rotation = Vector3(-8, -20, 0)
+scrap_yields = {"Metal Parts": Vector2(2, 5)}
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Model" parent="Visuals" instance=ExtResource("model")]
+position = Vector3(0, -0.089, 0)

@@ -52,11 +52,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	for point in building.find_children("*", "Marker3D", true, false):
 		if starter_site: continue
 		if not point is PoiLootPoint: continue
-		var scene: PackedScene = point.roll_scene(rng)
-		if scene == null: continue
-		var item: Item = scene.instantiate()
-		container.add_child(item)
-		item.global_transform = point.global_transform
+		_spawn_loot(point, rng, container, "outdoor:%s:%s" % [site.id, building.get_path_to(point)])
 	if definition.enemy_count_range.y > 0:
 		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemies" if offroad else "minor_enemies")
 		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemy_species" if offroad else "minor_enemy_species")
@@ -71,6 +67,16 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 			monster.global_transform = point.global_transform
 			if monster is BarrelMan: monster.global_position = _ground_position(building, point.global_position, monster as CollisionObject3D)
 	generator.outdoor_sites[site.id] = {"definition_id": str(definition.definition_id), "content_version": definition.content_version, "loaded": true, "actors": []}
+
+static func _spawn_loot(point: PoiLootPoint, rng: RandomNumberGenerator, container: Node3D, source_key: String) -> Item:
+	var scene := point.roll_scene(rng)
+	if scene == null: return null
+	var substitute := scene.resource_path == ScavengeLoot.LEGACY
+	if substitute: scene = load(ScavengeLoot.scene_for(source_key))
+	var item: Item = scene.instantiate()
+	container.add_child(item)
+	item.global_transform = ScavengeLoot.marker_transform(item, point.global_transform) if substitute else point.global_transform
+	return item
 
 static func _barrel_site(definition: PoiDefinition) -> bool:
 	var id := str(definition.definition_id)
