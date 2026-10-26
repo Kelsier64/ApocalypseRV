@@ -1,14 +1,15 @@
 extends "res://tests/monster_pursuit_playground.gd"
 ## Inspect the new skin pose, or switch to the production chase/attack behavior.
+@export var crawler_scene: PackedScene = preload("res://enemies/crawler.tscn")
 var preview := true
 var angle := 0.5
 var paused := false
 var comparison: Raker
 
 func _ready() -> void:
-	monster_scene = preload("res://enemies/crawler.tscn")
+	monster_scene = crawler_scene
 	super._ready()
-	DisplayServer.window_set_title("Crawler - Raker Model Variant")
+	DisplayServer.window_set_title(monster.monster_name + " - Raker Model Variant")
 	monster.position = Vector3(0, -0.25, 0)
 	monster.set_physics_process(false)
 	monster.get_node("BodyMesh").preview_speed = 1.0
@@ -60,4 +61,4 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	_frame_camera()
-	status.text = "CRAWLER | %s\nLeft / Right: orbit | Space: idle / crawl | Tab: original Raker\nF4: preview / live pursuit | R: reset | Player HP: %.0f" % ["POSE PREVIEW" if preview else "LIVE AI", player.current_player_health]
+	status.text = "%s | %s\nLeft / Right: orbit | Space: idle / crawl | Tab: original Raker\nF4: preview / live pursuit | R: reset | Player HP: %.0f" % [monster.monster_name.to_upper(), "POSE PREVIEW" if preview else "LIVE AI", player.current_player_health]

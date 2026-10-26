@@ -136,7 +136,7 @@ func _run() -> void:
 
 
 func _exercise_monster_persistence(world: Node3D) -> void:
-	for scene_path in ["res://enemies/crawler.tscn", "res://enemies/raker.tscn"]:
+	for scene_path in ["res://enemies/crawler.tscn", "res://enemies/raker.tscn", "res://enemies/reverse_crawler.tscn"]:
 		var scene := SaveSceneCatalog.resolve(scene_path, "monster")
 		check(scene != null, "Distinct monster remains trusted: " + scene_path)
 		if scene == null: continue
@@ -146,6 +146,8 @@ func _exercise_monster_persistence(world: Node3D) -> void:
 		original.global_transform = Transform3D(Basis(Vector3.UP, 0.65), Vector3(120, 2, 90))
 		original.current_health = 37.0
 		check((original is Raker) == scene_path.ends_with("/raker.tscn"), "Crawler remains a separate actor from the existing Raker")
+		if scene_path.ends_with("/reverse_crawler.tscn"):
+			check(original is Crawler, "Reverse crawler retains the Crawler behavior script")
 		var saved := WorldActorSnapshot.capture(original)
 		check(WorldActorSnapshot.validation_error(saved, "monster").is_empty(), "Monster snapshot validates: " + scene_path)
 		original.free()

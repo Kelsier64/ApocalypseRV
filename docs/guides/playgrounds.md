@@ -12,6 +12,14 @@
 
 2026-10-26：Godot 4.7.2 的正面／側面／踏步 GPU 渲染已檢視；平地追擊檢查確認實際位移、接地與攻擊，`test_item_persistence` 通過 Crawler 與 Raker 的獨立保存／還原。坡面足部貼合、車廂通行及群怪未驗收。
 
+### Reverse Crawler 腹部朝上版本
+
+`godot --path . --log-file .godot/reverse-crawler-playground.log res://tests/reverse_crawler_playground.tscn`
+
+[Reverse Crawler](../../enemies/reverse_crawler.tscn) 是另一個獨立場景，共用 Crawler 行為與 Raker 原模型，改為腹部朝上、反向拱背、倒轉頭部並將臉抬向前上方。手掌與腳掌撐地，以對角肢體交錯踏步；原 Crawler 的腹部朝下姿勢保留。展示場操作相同，目前未加入隨機生成池。
+
+2026-10-26：已檢視正面、側面與踏步渲染，檢查平地實際追擊／接地／攻擊，並通過三種怪物的獨立保存／還原測試。坡面、車廂與群怪仍未驗收。
+
 <a id="pistol"></a>
 
 ## 手槍與盒裝子彈
