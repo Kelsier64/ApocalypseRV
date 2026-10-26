@@ -1,0 +1,48 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/crawler.gd" id="1"]
+[ext_resource type="PackedScene" path="res://assets/models/raker/raker.glb" id="2"]
+[ext_resource type="Script" path="res://enemies/crawler_visual.gd" id="3"]
+
+[sub_resource type="BoxShape3D" id="body"]
+size = Vector3(0.76, 0.76, 2.0)
+
+[node name="Crawler" type="CharacterBody3D"]
+script = ExtResource("1")
+monster_name = "Crawler"
+max_health = 100.0
+move_speed = 2.6
+contact_damage = 18.0
+attack_range = 1.4
+attack_cooldown = 1.4
+nav_target_desired_distance = 0.8
+enable_boarding_visual = false
+loot_drops = {"Unknown Material": Vector2(1, 3)}
+
+[node name="BodyMesh" type="Node3D" parent="."]
+position = Vector3(0, 0.25, 0)
+script = ExtResource("3")
+
+[node name="Model" parent="BodyMesh" instance=ExtResource("2")]
+rotation = Vector3(0, 3.14159265, 0)
+scale = Vector3(1.2, 1.2, 1.2)
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.63, 0)
+shape = SubResource("body")
+
+[node name="HitBox" type="Area3D" parent="."]
+position = Vector3(0, 0.63, 0)
+collision_layer = 0
+monitorable = false
+
+[node name="HitBoxShape" type="CollisionShape3D" parent="HitBox"]
+shape = SubResource("body")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+radius = 0.85
+height = 1.2
+
+[node name="UnderfootProbe" type="RayCast3D" parent="."]
+position = Vector3(0, 0.8, 0)
+target_position = Vector3(0, -1.4, 0)

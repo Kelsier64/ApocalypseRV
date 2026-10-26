@@ -2,6 +2,16 @@
 
 正式遊戲操作見 [README](../../README.md)，規則與數值見 [GDD](../../GDD.md)。以下保留各測試場命令、快捷鍵、測試設定與限制；測試場按鍵不等同主世界按鍵。
 
+## Crawler 爬行怪物
+
+`godot --path . --log-file .godot/crawler-playground.log res://tests/crawler_playground.tscn`
+
+[Crawler](../../enemies/crawler.tscn) 共用原 Raker 的網格、材質與骨架，以獨立姿勢控制器形成腹部朝下、四肢外張的對角交錯步態。原 Raker 場景及 GLB 未修改。Crawler 使用低伏碰撞盒與 Monster 的基本追擊／接觸攻擊，不使用 Raker 抓取或攀車動作，目前未加入隨機生成池。
+
+展示場預設原地爬行；左右方向鍵繞看、Space 切待機／爬行、Tab 顯示原 Raker 對照、F4 切正式追擊、R 重設。正式玩家隱藏並固定在場內作為追擊目標，HP 提高以便觀察。
+
+2026-10-26：Godot 4.7.2 的正面／側面／踏步 GPU 渲染已檢視；平地追擊檢查確認實際位移、接地與攻擊，`test_item_persistence` 通過 Crawler 與 Raker 的獨立保存／還原。坡面足部貼合、車廂通行及群怪未驗收。
+
 <a id="pistol"></a>
 
 ## 手槍與盒裝子彈

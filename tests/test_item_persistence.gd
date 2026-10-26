@@ -42,6 +42,7 @@ func _run() -> void:
 	world.set_meta("entity_domain", true)
 	root.add_child(world)
 	current_scene = world
+	_exercise_monster_persistence(world)
 	await _exercise_printed_body_survival(world)
 	var wall := StaticBody3D.new()
 	wall.name = "Wall"
@@ -132,6 +133,27 @@ func _run() -> void:
 	world.free()
 	if failures.is_empty(): print("PASS: unified Item state, ownership, support graph and wall-loss persistence")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _exercise_monster_persistence(world: Node3D) -> void:
+	for scene_path in ["res://enemies/crawler.tscn", "res://enemies/raker.tscn"]:
+		var scene := SaveSceneCatalog.resolve(scene_path, "monster")
+		check(scene != null, "Distinct monster remains trusted: " + scene_path)
+		if scene == null: continue
+		var original := scene.instantiate() as Monster
+		world.add_child(original)
+		original.set_physics_process(false)
+		original.global_transform = Transform3D(Basis(Vector3.UP, 0.65), Vector3(120, 2, 90))
+		original.current_health = 37.0
+		check((original is Raker) == scene_path.ends_with("/raker.tscn"), "Crawler remains a separate actor from the existing Raker")
+		var saved := WorldActorSnapshot.capture(original)
+		check(WorldActorSnapshot.validation_error(saved, "monster").is_empty(), "Monster snapshot validates: " + scene_path)
+		original.free()
+		var restored := WorldActorSnapshot.restore(saved, world) as Monster
+		restored.set_physics_process(false)
+		check(restored.scene_file_path == scene_path and restored.current_health == 37.0 and restored.global_transform.is_equal_approx(saved.transform), "Monster roundtrip preserves species, health and transform: " + scene_path)
+		check(WorldActorSnapshot.capture(restored) == saved, "Restored monster captures the same snapshot: " + scene_path)
+		restored.free()
 
 
 func _exercise_printed_body_survival(world: Node3D) -> void:
