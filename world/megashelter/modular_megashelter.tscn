@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/megashelter/modular_megashelter.gd" id="1"]
+
+[node name="ModularMegashelter" type="Node3D"]
+script = ExtResource("1")
+metadata/navigation_solid_geometry = true
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Furnishings" type="Node3D" parent="."]
+
+[node name="LootSpawns" type="Node3D" parent="."]
+
+[node name="AccessPoints" type="Node3D" parent="."]
+
+[node name="Front" type="Marker3D" parent="AccessPoints"]
+position = Vector3(0, 0.05, 32)

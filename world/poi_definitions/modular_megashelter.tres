@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="PoiDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/poi_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+definition_id = &"modular_megashelter"
+display_name = "Abandoned Megashelter"
+kind = 1
+placement_modes = 2
+scene_path = "res://world/megashelter/modular_megashelter.tscn"
+content_version = 1
+building_bounds = AABB(-34, -1, -26, 68, 85, 56)
+site_bounds = AABB(-46, -1, -38, 92, 85, 92)
+entrance_path = NodePath("")
+return_path = NodePath("")
+access_paths = Array[NodePath]([NodePath("AccessPoints/Front")])
+interior_profile = &""

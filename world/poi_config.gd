@@ -13,6 +13,7 @@ const DEFINITIONS = [
 	preload("res://world/poi_definitions/orientation_shelter.tres"),
 	preload("res://world/poi_definitions/civilian_shelter.tres"),
 	preload("res://world/poi_definitions/courtyard_shelter.tres"),
+	preload("res://world/poi_definitions/modular_megashelter.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_0.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_1.tres"),
 	preload("res://world/poi_definitions/roadside_wreck_2.tres"),
@@ -50,6 +51,22 @@ static func scene_for_site(site: Dictionary) -> PackedScene:
 	var entry := definition_for_site(site)
 	if entry == null: return null
 	return load(entry.scene_path) as PackedScene
+
+## Build the same exterior for live physics and neighbouring navigation geometry.
+static func instantiate_site(site: Dictionary, include_visuals := true) -> Node3D:
+	var scene := scene_for_site(site)
+	if scene == null: return null
+	var instance := scene.instantiate()
+	var building := instance as Node3D
+	if building == null:
+		instance.free()
+		return null
+	if site.get("definition_id", "") == "modular_megashelter":
+		var plan: Dictionary = site.get("exterior_plan", {})
+		if plan.is_empty(): plan = MegashelterPlan.generate(int(site.seed))
+		building.call("configure_exterior", plan, include_visuals)
+		building.set_meta("navigation_solid_geometry", true)
+	return building
 
 static func supported_interior(profile: StringName) -> bool:
 	return profile == &"bunker"

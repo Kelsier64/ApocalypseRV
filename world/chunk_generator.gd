@@ -46,7 +46,10 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	road_spawns = RoadSpawns.plan(field, band)
 	RoadSpawns.build_static(self, road_spawns)
 	for site in sites:
-		_build_site(site, spawner)
+		var sliced_exterior: bool = gradual and site.get("definition_id", "") == "modular_megashelter"
+		var exterior := _build_site(site, spawner, not sliced_exterior)
+		if sliced_exterior and exterior != null:
+			await exterior.build_visuals_gradual(self)
 	await ForestScenery.build(self, gradual)
 	if gradual:
 		await _pause()
@@ -219,13 +222,14 @@ func _place_module(kind: String, point: Vector3, orientation: Basis = Basis.IDEN
 	add_child(node)
 	return node
 
-func _build_site(site: Dictionary, spawner: POISpawner) -> void:
+func _build_site(site: Dictionary, spawner: POISpawner, include_visuals: bool = true) -> Node3D:
+	var exterior: Node3D
 	if site.kind in ["entrance", "walk_in"]:
-		spawner.spawn_site(site, self)
+		exterior = spawner.spawn_site(site, self, include_visuals)
 	else:
 		_place_module(site.kind, site.building.origin, site.building.basis)
 	# Standalone entrances and wild sites have no road advertising or approach.
-	if site.get("placement", "roadside") == "off_road" or site.kind == "entrance": return
+	if site.get("placement", "roadside") == "off_road" or site.kind == "entrance": return exterior
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
 	var sign_node := _place_module("sign", sign_pos, site.road.basis)
 	var title := str(site.get("title", "LAY-BY"))
@@ -239,6 +243,7 @@ func _build_site(site: Dictionary, spawner: POISpawner) -> void:
 		var point: Vector3 = site.building * Vector3(0, 0.06, 7.5 + i)
 		var stripe := RoadsideKit.part(self, Vector3(2, 0.03, 0.25), point, Color(0.70, 0.65, 0.49))
 		stripe.basis = site.building.basis
+	return exterior
 
 func request_navigation_rebuild() -> void:
 	_navigation_dirty = true
@@ -316,7 +321,7 @@ func _build_navigation(gradual: bool = false) -> void:
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():
-		if building.get_meta("poi_definition_id", "") not in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]: continue
+		if not building.get_meta("navigation_solid_geometry", false) and building.get_meta("poi_definition_id", "") not in [&"starting_shelter", &"tutorial_shelter", &"orientation_shelter"]: continue
 		for shape in building.find_children("*", "CollisionShape3D", true, false):
 			if shape.get_meta("navigation_solid", false) and shape.shape is BoxShape3D and not shape.disabled:
 				_append_solid_box_obstruction(source, shape.shape.size, global_transform.affine_inverse() * shape.global_transform)
@@ -392,7 +397,8 @@ func _append_neighbour_obstacles(source: NavigationMeshSourceGeometryData3D) -> 
 		if floori(float(site.s) / 150.0) == band: continue
 		if site.has("bounds") and (site.bounds.position.z > -band * 150.0 + 5 or site.bounds.end.z < -(band + 1) * 150.0 - 5): continue
 		# Exterior collision boxes are read without registering a second POI.
-		var model: Node3D = POIConfig.scene_for_site(site).instantiate()
+		var model := POIConfig.instantiate_site(site, false)
+		if model == null: continue
 		if model.has_method("_ready"): model._ready()
 		_append_collision_boxes(source, model, site.building)
 		model.free()

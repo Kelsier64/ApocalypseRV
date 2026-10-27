@@ -6,7 +6,7 @@
 - [2026-10-22 野外廢棄民用避難所](validation/2026-10-22-civilian-shelter.md)：生成 v16、新增水泥建築、野外生成與該輪檢查。
 - [2026-10-22 路旁與越野 POI](validation/2026-10-22-offroad-pois.md)：生成 v15 的放置類別、越野網格、資產重用與保存範圍；實作驗證待補。
 
-- [2026-10-22 廢棄巨型住宅副本：灰井住宅城](plans/abandoned-megablock.md)：第二版簡單對稱外觀、每層一個大空間與隨機內容、六階段計畫及新版概念圖；目前為提案，尚未實作。
+- [Abandoned Megashelter（灰井住宅城）](plans/abandoned-megablock.md)：世界 v18 外部生成、封閉程序量體與驗證狀態；舊版室內提案摘要保留於文件末尾。
 
 - [2026-10-21 山路急彎與持續升降](validation/2026-10-21-mountain-road.md)：四種子山路、全路寬河橋、山頂導航，以及上坡／下坡急彎實際輪驅。
 
@@ -211,6 +211,7 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 - [可動 3D 角色製作與接入規格](guides/character-modeling.md) — 現行共通契約、玩家／Raker 個別尺寸、骨架、動畫、匯入與布娃娃配置，以及玩家五切口接口；舊 Zombie、面數預算與擴充提案另存 [v2 歷史快照](archive/modeling-2026-10-05/character-modeling-v2.md)。
 
 - [POI 共用製作與接入規範](guides/poi-authoring.md) — 類型、Resource、場景層級、素材替換及生成／保存責任。
+- [灰井住宅城室外外殼指南](guides/megashelter-exteriors.md) — 模組、尺寸、場址規劃與生成界線。
 
 - [遊玩與測試場指南](guides/playgrounds.md) — `guides/playgrounds.md`
 

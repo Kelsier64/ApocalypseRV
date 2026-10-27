@@ -1,7 +1,7 @@
 extends RefCounted
 class_name POISpawner
 ## Exterior transform and stable identity come from the shared world plan.
-func spawn_site(site: Dictionary, parent_node: Node3D) -> Node3D:
+func spawn_site(site: Dictionary, parent_node: Node3D, include_visuals: bool = true) -> Node3D:
 	var definition := POIConfig.definition_for_site(site)
 	if definition == null:
 		push_warning("Unknown POI definition: " + str(site.get("definition_id", site.get("exterior", ""))))
@@ -21,13 +21,8 @@ func spawn_site(site: Dictionary, parent_node: Node3D) -> Node3D:
 	if definition.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE and not POIConfig.supported_interior(definition.interior_profile):
 		push_warning("Unsupported POI interior profile: " + str(definition.interior_profile))
 		return null
-	var scene := POIConfig.scene_for_site(site)
-	if scene == null:
-		return null
-	var instance := scene.instantiate()
-	var building := instance as Node3D
+	var building := POIConfig.instantiate_site(site, include_visuals)
 	if building == null:
-		instance.free()
 		push_warning("POI scene root must be Node3D: " + definition.scene_path)
 		return null
 	errors = definition.validate_scene(building)

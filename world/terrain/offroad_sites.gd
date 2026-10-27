@@ -8,25 +8,33 @@ const COLUMNS := 3
 const WALK_MARGIN := 3.0
 const BLEND_MARGIN := 16.0
 const ROAD_CLEARANCE := 25.0
+const MEGASHELTER_CHANCE := 0.02
 
 static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 	if row < 0 or column < 0 or column >= COLUMNS: return {}
 	var cell_index := row * COLUMNS + column
 	if field.rng_for(cell_index, "offroad_presence").randf() >= 0.55: return {}
-	var category := field.rng_for(cell_index, "offroad_category")
-	var theme := field.rng_for(cell_index, "offroad_theme")
-	var layout := field.rng_for(cell_index, "offroad_layout")
+	var seed_value := field.seed_for(cell_index, "offroad_content")
+	var exterior_plan: Dictionary = {}
 	var definition_id: String
-	# Preserve the bunker and shelter shares; split shelters with the theme stream.
-	var category_roll := category.randf()
-	if category_roll < 0.4:
-		definition_id = POIConfig.GENERATION_IDS[theme.randi_range(0, POIConfig.GENERATION_IDS.size() - 1)]
-	elif category_roll < 0.6:
-		definition_id = "civilian_shelter" if theme.randf() < 0.5 else "courtyard_shelter"
+	if field.profile.generation_version >= 18 and field.rng_for(cell_index, "offroad_megashelter").randf() < MEGASHELTER_CHANCE:
+		definition_id = "modular_megashelter"
+		exterior_plan = MegashelterPlan.generate(seed_value)
 	else:
-		definition_id = "roadside_%s_%d" % ["camp" if theme.randf() < 0.5 else "shed", layout.randi_range(0, 2)]
+		var category := field.rng_for(cell_index, "offroad_category")
+		var theme := field.rng_for(cell_index, "offroad_theme")
+		var layout := field.rng_for(cell_index, "offroad_layout")
+		# Existing category and layout draws retain their independent streams.
+		var category_roll := category.randf()
+		if category_roll < 0.4:
+			definition_id = POIConfig.GENERATION_IDS[theme.randi_range(0, POIConfig.GENERATION_IDS.size() - 1)]
+		elif category_roll < 0.6:
+			definition_id = "civilian_shelter" if theme.randf() < 0.5 else "courtyard_shelter"
+		else:
+			definition_id = "roadside_%s_%d" % ["camp" if theme.randf() < 0.5 else "shed", layout.randi_range(0, 2)]
 	var definition := POIConfig.definition(StringName(definition_id))
 	if definition == null or not definition.supports_placement(PoiDefinition.Placement.OFF_ROAD): return {}
+	var local_site_bounds: AABB = exterior_plan.get("site_bounds", definition.site_bounds)
 	var placement := field.rng_for(cell_index, "offroad_placement")
 	var x_min := -450.0 + column * CELL_WIDTH
 	var s_min := row * CELL_LENGTH
@@ -36,21 +44,25 @@ static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 		if -position.z < 450.0: continue
 		var building := Transform3D(Basis(Vector3.UP, placement.randf_range(-PI, PI)), position)
 		# The complete terrain blend stays inside its cell and the collision strip.
-		var influence: AABB = definition.site_bounds.grow(WALK_MARGIN + BLEND_MARGIN + 1.0)
+		var influence := local_site_bounds.grow(WALK_MARGIN + BLEND_MARGIN + 1.0)
 		var envelope: AABB = building * influence
 		if envelope.position.x < maxf(-440.0, x_min) or envelope.end.x > minf(440.0, x_min + CELL_WIDTH): continue
 		if envelope.position.z < -s_min - CELL_LENGTH or envelope.end.z > -s_min: continue
 		if not _environment_clear(field, building, influence): continue
-		if not _terrain_clear(field, building, definition.site_bounds.grow(4.0)): continue
+		if not _terrain_clear(field, building, local_site_bounds.grow(4.0)): continue
 		position.y = field.raw_height(position.x, position.z)
 		building.origin = position
 		var site := {"index": cell_index,
 			"id": "v%d:%d:offroad:%d:%d" % [field.profile.generation_version, field.world_seed, row, column],
 			"s": -position.z, "building": building, "frame": building,
-			"bounds": (building * definition.site_bounds).grow(5.0),
+			"bounds": (building * local_site_bounds).grow(5.0),
 			"placement": "off_road", "definition_id": definition_id,
 			"kind": "entrance" if definition.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE else "walk_in",
-			"title": definition.display_name, "seed": field.seed_for(cell_index, "offroad_content"), "walls": []}
+			"title": definition.display_name, "seed": seed_value, "walls": []}
+		if not exterior_plan.is_empty():
+			site.exterior_plan = exterior_plan
+			site.local_site_bounds = local_site_bounds
+			site.local_building_bounds = exterior_plan.building_bounds
 		if definition.kind == PoiDefinition.Kind.WALK_IN: site.minor = true
 		if _occupied(field, building * influence): continue
 		return site
@@ -58,7 +70,7 @@ static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 
 static func court_distance(point: Vector3, site: Dictionary) -> float:
 	var local: Vector3 = site.building.affine_inverse() * point
-	var bounds: AABB = POIConfig.definition_for_site(site).site_bounds
+	var bounds: AABB = site.get("local_site_bounds", POIConfig.definition_for_site(site).site_bounds)
 	var center := bounds.get_center()
 	var q := Vector2(absf(local.x - center.x) - bounds.size.x * 0.5 - WALK_MARGIN,
 		absf(local.z - center.z) - bounds.size.z * 0.5 - WALK_MARGIN)

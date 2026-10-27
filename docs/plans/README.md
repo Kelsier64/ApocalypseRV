@@ -8,7 +8,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
-| [廢棄巨型住宅：灰井住宅城](abandoned-megablock.md) | 第二版提案與新版兩張概念圖完成，尚未實作 | 簡單對稱外殼、L1–L4 每層一個大空間、隨機陳設與內容、住宅 profile／保存及 RV 搬運；六層內容留待擴充 | 本次僅設計及圖像檢查，詳見計畫第 7 節 |
+| [Abandoned Megashelter（灰井住宅城）](abandoned-megablock.md) | 六個實作階段完成；選定驗證完成，完整自由遊玩未完成 | 三種封閉量體模板；無窗戶／窗框、室內、物資、敵人或轉場 | [外觀指南](../guides/megashelter-exteriors.md) · [本輪驗證](../validation/2026-10-27-modular-megashelter.md) |
 | [地形與道路改造](terrain-overhaul.md) | 第一個檢查點完成，等待使用者檢查 | v13 蜿蜒道路與地形／橋梁初版；每階段先停下，下一階段細化及輪驅驗收待確認 | [本次檢查](../validation/2026-10-20-terrain-stage1.md) |
 | [新版兩室教學](starting-tutorial-two-room.md) | 階段一已驗收，階段二完成等待驗收 | 第二室資源／修車流程已接入；感應離場、完整復原及最終美術留待後續 | [新版階段二](../validation/2026-10-15-orientation-stage2.md) |
 | [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
@@ -53,4 +53,3 @@
 勾選只代表該項列出的範圍；「已實作」「已有驗收紀錄」「全情境驗收完成」不可互換。當前存檔格式 v6 與地形生成 v14 是不同欄位；只接受當前版本。往返串流不等於全世界所有散落物永久保存。
 
 2026-09-24：室內方向已由 [隨機地堡](2026-09-24-random-bunker.md) 取代；v2 驗收保留為歷史結果。
-

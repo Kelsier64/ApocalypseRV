@@ -67,7 +67,7 @@ static func _check_plans(seed_value: int, check: Callable, fixtures: Array[Dicti
 			definitions[str(site.definition_id)] = true
 			if site.placement != "off_road" or definition == null: problems.append("placement/definition")
 			if site.kind not in ["entrance", "walk_in"] or site.has("route") or not site.get("walls", []).is_empty(): problems.append("kind/route/walls")
-			if site.id != "v17:%d:offroad:%d:%d" % [seed_value, row, column]: problems.append("identity")
+			if site.id != "v18:%d:offroad:%d:%d" % [seed_value, row, column]: problems.append("identity")
 			if site.index != row * 3 + column or not is_equal_approx(float(site.s), -origin.z): problems.append("index/progress")
 			var bounds: AABB = site.bounds
 			if bounds.position.x <= -field.profile.terrain_half_width or bounds.end.x >= field.profile.terrain_half_width: problems.append("terrain bounds: %s" % bounds)
@@ -101,7 +101,7 @@ static func _check_plans(seed_value: int, check: Callable, fixtures: Array[Dicti
 				probes += 1
 				no_driveway = no_driveway and float(sample.gravel) == 0.0 and not sample.reserved
 		check.call(count <= 3, "Off-road row has a bounded candidate count")
-	var label := "v17 seed %d: " % seed_value
+	var label := "v18 seed %d: " % seed_value
 	check.call(accepted > 0 and independent, label + "off-road plans survive reverse cell query order")
 	check.call(legal, label + "off-road buildings retain unique world-grid identity and clear road/terrain boundaries")
 	check.call(owned and indexed, label + "mixed site queries include every off-road site with exactly one owning band")
@@ -157,7 +157,7 @@ static func _check_rng_stability(check: Callable) -> void:
 		for domain: String in domains:
 			for index: int in [0, 1, 17, 61]:
 				stable = stable and current.seed_for(index, domain) == previous.seed_for(index, domain)
-		check.call(stable, "v17 seed %d retains established v15 RNG domains" % seed_value)
+		check.call(stable, "v18 seed %d retains established v15 RNG domains" % seed_value)
 
 static func _has_id(sites: Array[Dictionary], identity: String) -> bool:
 	for site: Dictionary in sites:

@@ -177,7 +177,7 @@ func _orientation_ui_capture_allowed(world: Node, player: Node, start_run: Node)
 	if start_run == null or start_run.phase != "preparing" or player.get("settings_open") == true or player.get_player_mode() != player.PlayerMode.UI: return false
 	var generator := world.get_node_or_null("WorldGenerator")
 	var tutorial := start_run.get_node_or_null("Tutorial")
-	if generator == null or generator.profile.generation_version != 17 or tutorial == null or tutorial.get("status") != "active": return false
+	if generator == null or generator.profile.generation_version != 18 or tutorial == null or tutorial.get("status") != "active": return false
 	var item_scripts := ["res://equipment/tablet_screen.gd", "res://equipment/training_terminal.gd"]
 	for item in get_tree().get_nodes_in_group(Groups.ITEMS):
 		if not world.is_ancestor_of(item) or not WorldEntities.same_world(world, item) or item.is_queued_for_deletion(): continue
@@ -250,7 +250,7 @@ func _validation_error(data: Dictionary, allow_entry: bool) -> String:
 	if not data.profile is Dictionary: return "profile"
 	var profile_error := CheckpointSchema.profile_error(data.profile)
 	if not profile_error.is_empty(): return profile_error
-	if not data.generation_version is int or data.generation_version != 17: return "generation_version"
+	if not data.generation_version is int or data.generation_version != 18: return "generation_version"
 	if data.profile.generation_version != data.generation_version: return "profile.generation_version"
 	if not SlenderSpeakerSpawns.valid_ledger(data.generated_giant_segments): return "generated_giant_segments"
 	if not ROUTE_PRESSURE.valid_state(data.route_pressure): return "route_pressure"

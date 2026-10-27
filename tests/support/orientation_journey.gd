@@ -32,7 +32,7 @@ func run() -> void:
 	world = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.profile = generator.profile.duplicate()
-	generator.profile.generation_version = 17
+	generator.profile.generation_version = 18
 	generator.profile.chunks_ahead = 0
 	generator.profile.chunks_behind = 1
 	generator.world_seed = 42
