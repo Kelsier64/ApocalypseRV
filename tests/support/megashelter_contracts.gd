@@ -25,6 +25,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	for seed_value in range(32):
 		var plan: Dictionary = PLAN.generate(seed_value)
 		_check_plan(plan, seed_value, check)
+		_check_legacy_massing(plan, check)
 		check.call(plan == PLAN.generate(seed_value), "Megashelter seed %d reproduces every module and collision box" % seed_value)
 		if not templates.has(plan.template):
 			templates[plan.template] = plan
@@ -42,7 +43,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 1 and plan.seed == seed_value and plan.template in [0, 1, 2], label + "versioned plan retains its seed and template")
+	check.call(plan.version == 2 and plan.seed == seed_value and plan.template in [0, 1, 2], label + "versioned plan retains its seed and template")
 	var building: AABB = plan.building_bounds
 	var site: AABB = plan.site_bounds
 	var maximum := POIConfig.definition(&"modular_megashelter").building_bounds
@@ -65,19 +66,39 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 	check.call(enclosed and supported and non_overlapping, label + "closed structural masses meet without overlap or unsupported vertical gaps and retain complete collision")
 	var unique: Dictionary = {}
 	var modules_valid := true
+	var solid_modules_valid := true
+	var solid_kinds: Dictionary = {}
 	for module: Dictionary in plan.modules:
 		var pose: Transform3D = module.transform
 		var size: Vector3 = module.size
 		var id := str(module.id)
 		modules_valid = modules_valid and not id.is_empty() and not unique.has(id) and not str(module.kind).is_empty() and module.variant is int and pose.is_finite() and size.is_finite() and size.x > 0.0 and size.y > 0.0 and size.z > 0.0
-		for piece: Dictionary in KIT.pieces(module.kind, size, module.variant):
-			modules_valid = modules_valid and building.grow(0.01).encloses(pose * AABB(piece.center - piece.size * 0.5, piece.size))
+		var pieces: Array[Dictionary] = KIT.pieces(module.kind, size, module.variant)
+		modules_valid = modules_valid and module.kind in PLAN.KINDS and not pieces.is_empty()
+		for piece: Dictionary in pieces:
+			modules_valid = modules_valid and piece.center.is_finite() and piece.size.is_finite() and piece.size.x > 0.0 and piece.size.y > 0.0 and piece.size.z > 0.0 and building.grow(0.01).encloses(pose * AABB(piece.center - piece.size * 0.5, piece.size))
+		if module.kind in ["pier", "roof_plant", "drain"]:
+			solid_kinds[module.kind] = true
+			solid_modules_valid = solid_modules_valid and module.get("solid", false)
+		if module.get("solid", false):
+			solid_modules_valid = solid_modules_valid and PLAN.module_bounds(module) in plan.collision_boxes
 		unique[id] = true
 	check.call(modules_valid, label + "module identities, transforms and bounds are finite, unique and enclosed")
+	check.call(solid_modules_valid and solid_kinds.size() == 3, label + "broad piers, roof equipment and drains retain their complete solid module collision envelopes")
 	var collision_enclosed := true
 	for box: AABB in plan.collision_boxes:
 		collision_enclosed = collision_enclosed and box.size.x > 0.0 and box.size.y > 0.0 and box.size.z > 0.0 and building.grow(0.01).encloses(box)
 	check.call(collision_enclosed, label + "closed-door collision remains inside declared bounds")
+
+static func _check_legacy_massing(plan: Dictionary, check: Callable) -> void:
+	# Content v2 redraws the facade, but must preserve the v1 choice stream.
+	# Fix the original dimension choices here so a content-version seed bump
+	# cannot silently reroll an already selected site's structural envelope.
+	var legacy := RandomNumberGenerator.new()
+	legacy.seed = ("megashelter:1:%d:massing" % int(plan.seed)).hash()
+	var expected := [legacy.randi_range(0, 2), float([48, 56, 64][legacy.randi_range(0, 2)]),
+		float([32, 40, 48][legacy.randi_range(0, 2)]), [54.0, 67.5, 81.0][legacy.randi_range(0, 2)]]
+	check.call([plan.template, plan.width, plan.depth, plan.height] == expected, "Megashelter seed %d retains its v1 template and dimension choices after the art revision" % int(plan.seed))
 
 static func _check_build(plan: Dictionary, check: Callable) -> void:
 	var site := _site(plan)
@@ -90,7 +111,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 1, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 2 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:

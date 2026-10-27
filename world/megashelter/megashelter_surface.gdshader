@@ -1,8 +1,9 @@
 shader_type spatial;
-render_mode specular_disabled;
+render_mode diffuse_burley, specular_schlick_ggx;
 uniform vec4 base_color : source_color = vec4(0.40, 0.42, 0.40, 1.0);
 uniform float surface_kind = 0.0;
 uniform float wear_seed = 0.0;
+uniform vec4 exposed_concrete : source_color = vec4(0.49,0.49,0.45,1.0);
 varying vec3 local_position;
 varying vec3 local_normal;
 
@@ -18,22 +19,32 @@ void vertex() {
 void fragment() {
 	vec3 n = abs(normalize(local_normal));
 	vec2 p = n.y > 0.7 ? local_position.xz : vec2(n.x > n.z ? local_position.z : local_position.x, local_position.y);
-	p = floor(p * 8.0) / 8.0;
+	p = floor(p * 12.0) / 12.0;
 	vec2 offset = vec2(wear_seed * 0.071, wear_seed * 0.039);
-	float patch = coarse(p * 0.55 + offset);
-	float grain = hash21(floor(p * 3.0) + offset);
-	float run = smoothstep(0.52, 0.78, coarse(p * vec2(1.8, 0.055) + offset));
+	float patch = coarse(p * 0.48 + offset);
+	float grain = hash21(floor(p * 5.0) + offset);
+	float fracture = coarse(p*1.8+offset)*0.65 + grain*0.35;
+	float run = smoothstep(0.52, 0.78, coarse(p * vec2(2.8, 0.085) + offset));
 	float vertical = 1.0 - step(0.7, n.y);
-	float seam_run = 1.0 - smoothstep(0.0, 8.0, mod(local_position.y + 0.3, 13.5));
+	float seam_run = 1.0 - smoothstep(0.0, 7.0, mod(local_position.y + 0.3, 18.0));
 	float damp = (1.0 - smoothstep(0.0, 3.5, local_position.y)) * vertical;
-	vec3 color = base_color.rgb * COLOR.rgb * (0.86 + patch * 0.20 + grain * 0.045);
+	vec3 color = base_color.rgb * COLOR.rgb * (0.87 + patch * 0.20 + grain * 0.07);
 	color *= 1.0 - (run * (0.13 + seam_run * 0.22) * vertical + damp * 0.22);
 	if (surface_kind > 0.5 && surface_kind < 1.5) {
-		color *= 1.0 - smoothstep(0.56, 0.72, patch) * 0.12;
+		float peel = smoothstep(0.62,0.69,fracture+patch*0.08);
+		color = mix(color,exposed_concrete.rgb*(0.76+grain*0.22),peel*0.88);
+		// Sparse, shallow construction joints stay secondary to the megablocks.
+		float joint = 1.0-smoothstep(0.018,0.035,abs(mod(p.y+0.02,4.5)-0.02));
+		color *= 1.0-joint*0.13*vertical;
+	} else if (surface_kind < 0.5) {
+		float chipped = smoothstep(0.63,0.75,fracture);
+		color *= 1.0-chipped*0.16;
 	}
 	if (surface_kind > 1.5) {
-		color = mix(color, vec3(0.035, 0.019, 0.012), smoothstep(0.48, 0.69, patch) * 0.55);
+		float corrosion = smoothstep(0.44,0.68,fracture*0.7+patch*0.3);
+		color = mix(color,vec3(0.06,0.031,0.016)*(0.8+grain*0.35),corrosion*0.75);
 	}
 	ALBEDO = color;
-	ROUGHNESS = 0.98;
+	ROUGHNESS = surface_kind > 1.5 ? 0.88 : 0.98;
+	SPECULAR = surface_kind > 1.5 ? 0.22 : 0.08;
 }

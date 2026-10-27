@@ -151,16 +151,18 @@ func _kit_view() -> void:
 	if not is_instance_valid(kit_root):
 		kit_root = Node3D.new()
 		add_child(kit_root)
-		var sizes := [Vector3(4,4.5,0.4), Vector3(4,4.5,0.4), Vector3(1,4.5,1), Vector3(1.25,4.5,0.85), Vector3(4,0.6,0.75), Vector3(4,4.5,0.4), Vector3(12,9,3), Vector3(4,0.35,4)]
+		var sizes := [Vector3(4,4.5,0.4), Vector3(4,4.5,0.4), Vector3(1,4.5,1), Vector3(4,4.5,6.4), Vector3(4,0.6,0.75), Vector3(4,1.25,0.4), Vector3(12,9,3), Vector3(4,0.75,4)]
 		for index in range(8):
 			var origin := Vector3((index % 4) * 15 - 23, 0, 74 + (index / 4) * 16)
+			var batches: Array[MegashelterKit.Batch] = [MegashelterKit.Batch.new(),MegashelterKit.Batch.new(),MegashelterKit.Batch.new()]
 			for piece: Dictionary in MegashelterKit.pieces(MegashelterPlan.KINDS[index], sizes[index]):
+				if piece.get("visible",true): batches[piece.material].add_piece(Transform3D.IDENTITY,piece)
+			for material_index in range(3):
+				if batches[material_index].vertices.is_empty(): continue
 				var mesh := MeshInstance3D.new()
-				var box := BoxMesh.new()
-				box.size = piece.size
-				mesh.mesh = box
-				mesh.position = origin + piece.center
-				mesh.material_override = building.get_node("Visuals").get_child(piece.material).mesh.surface_get_material(0)
+				mesh.mesh = batches[material_index].mesh()
+				mesh.position = origin
+				mesh.material_override = building.get_node("Visuals").get_child(material_index).mesh.surface_get_material(0)
 				kit_root.add_child(mesh)
 	kit_root_visible(true)
 	camera.fov = 85
@@ -261,8 +263,10 @@ func _benchmark() -> void:
 			"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 			"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)}
 	var triangles := 0
-	for mesh: MeshInstance3D in building.get_node("Visuals").get_children():
-		triangles += mesh.mesh.surface_get_array_index_len(0) / 3
+	for mesh: MeshInstance3D in building.get_node("Visuals").find_children("*","MeshInstance3D",true,false):
+		for surface in range(mesh.mesh.get_surface_count()):
+			var count: int = mesh.mesh.surface_get_array_index_len(surface)
+			triangles += (count if count > 0 else mesh.mesh.surface_get_array_len(surface)) / 3
 	results["building_triangles"] = triangles
 	var file := FileAccess.open("res://.godot/megashelter-benchmark.json", FileAccess.WRITE)
 	file.store_string(JSON.stringify(results, "\t"))

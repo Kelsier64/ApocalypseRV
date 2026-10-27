@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-10-28 巨型避難所模型細化](validation/2026-10-28-megashelter-art-refinement.md)：按選定概念重做厚柱、凹槽、大牆塊、門片與屋頂；內容 v2、無霧檢查、32-seed 與效能量測。
+
 - [2026-10-25 飢餓與即食食物](validation/2026-10-25-hunger-food.md)：飽食值、耐力門檻、三種食物、ComfyUI 模型與選取測試／原生觀察。
 
 - [2026-10-22 野外廢棄庭院避難所](validation/2026-10-22-courtyard-shelter.md)：生成 v17、L 形庭院變體與野外資產池。
