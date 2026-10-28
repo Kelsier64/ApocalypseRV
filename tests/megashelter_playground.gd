@@ -1,7 +1,6 @@
 extends Node3D
 ## Exterior authoring and actual wheel-powered parking. Outputs stay in .godot/.
 var seed_value := 42
-var template_index := -1
 var plan: Dictionary
 var building: Node3D
 var camera: Camera3D
@@ -21,7 +20,6 @@ func _ready() -> void:
 	get_window().size = Vector2i(1280, 800)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--seed="): seed_value = arg.trim_prefix("--seed=").to_int()
-		if arg.begins_with("--template="): template_index = clampi(arg.trim_prefix("--template=").to_int(), -1, 7)
 	var holder := WorldEnvironment.new()
 	holder.name = "WorldEnvironment"
 	holder.environment = Environment.new()
@@ -75,7 +73,7 @@ func _ready() -> void:
 	layer.add_child(label)
 	_overview()
 	_status()
-	print("MEGASHELTER_READY seed=%d template=%d modules=%d build_ms=%.2f" % [seed_value, template_index, plan.modules.size(), build_ms])
+	print("MEGASHELTER_READY seed=%d growth=%d modules=%d build_ms=%.2f" % [seed_value, plan.growth_steps.size(), plan.modules.size(), build_ms])
 	if "--capture" in OS.get_cmdline_user_args(): _capture_set()
 	elif "--benchmark" in OS.get_cmdline_user_args(): _benchmark()
 	elif "--replay" in OS.get_cmdline_user_args():
@@ -95,13 +93,12 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			(player.get("camera") as Camera3D).make_current()
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		KEY_F5:
-			template_index = (int(plan.template) + 1) % 8
+			seed_value += 1
 			_rebuild()
 			_overview()
 			_status()
 		KEY_F6:
-			seed_value += 1
-			template_index = -1
+			seed_value = randi_range(1,2147483646)
 			_rebuild()
 			_overview()
 			_status()
@@ -120,7 +117,7 @@ func _rebuild() -> void:
 	if is_instance_valid(building):
 		remove_child(building)
 		building.free()
-	plan = MegashelterPlan.generate(seed_value, template_index)
+	plan = MegashelterPlan.generate(seed_value)
 	var start := Time.get_ticks_usec()
 	building = POIConfig.instantiate_site({"definition_id": "modular_megashelter", "seed": seed_value, "exterior_plan": plan})
 	add_child(building)
@@ -206,11 +203,11 @@ func _forest() -> void:
 	ForestScenery.batch(self, "ReviewBrush", FloraMeshes.ground(0), brush)
 
 func _status() -> void:
-	label.text = "MEGASHELTER / seed %d / %s / %.0f x %.0f x %.1f m\nF2 exterior  F3 entrance  F4 walk  F5 shape  F6 seed\nF7 weather/time  F8 kit  F9 capture  F10 parking replay" % [seed_value, MegashelterPlan.FOOTPRINT_NAMES[plan.template], plan.width, plan.depth, plan.height]
+	label.text = "MEGASHELTER / seed %d / %d growth modules / %.0f x %.0f x %.1f m\nF2 exterior  F3 entrance  F4 walk  F5 next seed  F6 seed\nF7 weather/time  F8 kit  F9 capture  F10 parking replay" % [seed_value, plan.growth_steps.size(), plan.width, plan.depth, plan.height]
 
 func _capture(suffix: String) -> void:
 	await RenderingServer.frame_post_draw
-	var path := "res://.godot/megashelter-%d-%d-%s.png" % [seed_value, template_index, suffix]
+	var path := "res://.godot/megashelter-%d-%s.png" % [seed_value, suffix]
 	get_viewport().get_texture().get_image().save_png(path)
 	print("MEGASHELTER_CAPTURE ", path)
 
@@ -218,7 +215,7 @@ func _capture_set() -> void:
 	label.visible = false
 	await get_tree().create_timer(1.5).timeout
 	for index in range(8):
-		template_index = index
+		seed_value += 1
 		_rebuild()
 		_overview()
 		await get_tree().create_timer(0.5).timeout
@@ -248,7 +245,7 @@ func _capture_set() -> void:
 
 func _benchmark() -> void:
 	await get_tree().create_timer(2.0).timeout
-	var results := {"seed": seed_value, "template": template_index, "build_ms": build_ms,
+	var results := {"seed": seed_value, "growth_modules": plan.growth_steps.size(), "build_ms": build_ms,
 		"renderer": RenderingServer.get_current_rendering_method(), "viewport": get_viewport().get_visible_rect().size,
 		"gpu": RenderingServer.get_video_adapter_name(), "samples": 180}
 	for visible_geometry: bool in [false, true]:

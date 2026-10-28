@@ -20,34 +20,18 @@ class SeamField extends WorldField:
 		return 0.0
 
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
-	var templates: Dictionary = {}
-	var signatures: Dictionary = {}
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
-		_check_plan(plan, seed_value, check)
-		check.call(plan == PLAN.generate(seed_value), "Megashelter seed %d reproduces every module and collision box" % seed_value)
-		if not templates.has(plan.template):
-			templates[plan.template] = plan
-			signatures[plan.template] = plan.volumes
-	check.call(templates.size() == 8, "Sixty-four megashelter seeds exercise all eight footprint families")
-	var distinct := true
-	for first: int in signatures:
-		for second: int in signatures:
-			if first < second: distinct = distinct and signatures[first] != signatures[second]
-	check.call(distinct, "Megashelter footprint families have distinct structural massing")
+		_check_plan(plan,seed_value,check)
+		check.call(plan == PLAN.generate(seed_value),"Growth seed %d reproduces every module and collider" % seed_value)
 	_check_seed_diversity(check)
 	_check_custom_heights(check)
-	for template_index in range(8):
-		var plan: Dictionary = PLAN.generate(42, template_index)
-		check.call(plan.template == template_index, "Megashelter authoring override selects template %d" % template_index)
-		_check_plan(plan, 42, check)
-		_check_build(plan, check)
-	if not templates.is_empty():
-		await _check_streaming_navigation(tree, world, templates.values()[0], check)
+	for seed_value in range(8): _check_build(PLAN.generate(seed_value),check)
+	await _check_streaming_navigation(tree,world,PLAN.generate(0),check)
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 4 and plan.seed == seed_value and plan.template in range(8), label + "versioned plan retains its seed and footprint family")
+	check.call(plan.version == 5 and plan.seed == seed_value and not plan.has("template") and plan.growth_steps.size() >= 2, label + "versioned plan retains its seed and a grown assembly without a template ID")
 	check.call(plan.structure in range(5) and plan.style in range(3), label + "structural treatment and facade style use separate valid choices")
 	check.call(plan.width in [48.0, 56.0, 64.0] and plan.depth in [32.0, 40.0, 48.0] and plan.height in [54.0, 67.5, 81.0], label + "default dimensions retain the configured envelope choices")
 	var building: AABB = plan.building_bounds
@@ -109,9 +93,9 @@ static func _check_custom_heights(check: Callable) -> void:
 	for height: float in [58.5, 63.0, 72.0]:
 		profile.heights = PackedFloat32Array([height])
 		check.call(profile.validate().is_empty(), "Megashelter custom height %.1f is a valid authoring profile" % height)
-		for footprint in range(8):
-			var plan: Dictionary = PLAN.generate(42, footprint, profile)
-			_check_facade_and_equipment_clearance(plan, "Megashelter height %.1f footprint %d: " % [height, footprint], check)
+		for sample in range(8):
+			var plan: Dictionary = PLAN.generate(42+sample,profile)
+			_check_facade_and_equipment_clearance(plan, "Megashelter height %.1f sample %d: " % [height, sample], check)
 
 static func _check_facade_and_equipment_clearance(plan: Dictionary, label: String, check: Callable) -> void:
 	var walls_backed := true
@@ -138,30 +122,69 @@ static func _check_facade_and_equipment_clearance(plan: Dictionary, label: Strin
 	check.call(equipment_clear, label + "roof equipment clears taller wings and their projecting facade fittings")
 
 static func _check_seed_diversity(check: Callable) -> void:
-	# Hold the envelope fixed so scale, facade colors and trim cannot masquerade
-	# as different building layouts. Structural treatment and style must also
-	# recombine within each footprint, rather than select a single prefab.
 	var profile := MegashelterProfile.new()
 	profile.widths = PackedInt32Array([56])
 	profile.depths = PackedInt32Array([40])
 	profile.heights = PackedFloat32Array([67.5])
-	var all_layouts: Array = []
-	for template_index in range(8):
-		var layouts: Array = []
-		var structures: Dictionary = {}
-		var styles: Dictionary = {}
-		var combinations: Dictionary = {}
-		for seed_value in range(32):
-			var plan: Dictionary = PLAN.generate(seed_value, template_index, profile)
-			var layout: Array = plan.volumes
-			if layout not in layouts: layouts.append(layout)
-			if layout not in all_layouts: all_layouts.append(layout)
-			structures[plan.structure] = true
-			styles[plan.style] = true
-			combinations[Vector2i(plan.structure, plan.style)] = true
-		check.call(layouts.size() >= 8, "Megashelter footprint %d produces at least eight different solid layouts at identical dimensions" % template_index)
-		check.call(structures.size() == 5 and styles.size() == 3 and combinations.size() >= 10, "Megashelter footprint %d independently recombines all five structural treatments and three facade styles" % template_index)
-	check.call(all_layouts.size() >= 64, "Fixed-envelope megashelters retain at least sixty-four distinct structural layouts")
+	var silhouettes: Dictionary = {}
+	var counts: Dictionary = {}
+	var combinations: Dictionary = {}
+	for seed_value in range(128):
+		var plan: Dictionary = PLAN.generate(seed_value,profile)
+		silhouettes[_footprint_signature(plan.volumes)] = true
+		counts[plan.growth_steps.size()] = true
+		combinations[Vector2i(plan.structure,plan.style)] = true
+		_check_growth_trace(plan,check)
+	print("MEGASHELTER_GROWTH_DIVERSITY samples=128 canonical_footprints=",silhouettes.size()," module_counts=",counts.keys()," structure_palette_pairs=",combinations.size())
+	check.call(silhouettes.size() >= 48,"Growth creates at least48 distinct footprints after discarding heights, translation, rotation and reflection")
+	check.call(counts.size() >= 3 and combinations.size() == 15,"Growth has variable assembly length and independently combines all structure/palette pairs")
+
+static func _check_growth_trace(plan: Dictionary,check: Callable) -> void:
+	var steps: Array = plan.growth_steps
+	var valid := true
+	var expected_area := 0.0
+	for index in range(steps.size()):
+		var step: Dictionary = steps[index]
+		var rect: Rect2i = step.rect
+		expected_area += rect.get_area()*16.0
+		valid = valid and Rect2i(0,0,int(plan.width/4),int(plan.depth/4)).encloses(rect)
+		if index == 0:
+			valid = valid and step.parent == -1 and rect.end.y == int(plan.depth/4) and rect.size.x >= 4
+		else:
+			valid = valid and step.parent >= 0 and step.parent < index
+			var parent: Rect2i = steps[step.parent].rect
+			var contact_x := mini(rect.end.x,parent.end.x)-maxi(rect.position.x,parent.position.x)
+			var contact_z := mini(rect.end.y,parent.end.y)-maxi(rect.position.y,parent.position.y)
+			valid = valid and ((contact_x >= 2 and (rect.end.y == parent.position.y or rect.position.y == parent.end.y)) or (contact_z >= 2 and (rect.end.x == parent.position.x or rect.position.x == parent.end.x)))
+		for earlier in range(index): valid = valid and not rect.intersects(steps[earlier].rect)
+	var actual_area := 0.0
+	for volume: AABB in plan.volumes: actual_area += volume.size.x*volume.size.z
+	check.call(valid and is_equal_approx(expected_area,actual_area),"Each growth module attaches by a full face to an earlier parent and contributes real occupied area")
+	var approach := AABB(plan.access_point+Vector3(-1,0,-1),Vector3(2,3,2))
+	for box: AABB in plan.collision_boxes: valid = valid and not approach.intersects(box)
+	check.call(valid,"Growth keeps the front approach free of solid geometry")
+
+static func _footprint_signature(volumes: Array) -> String:
+	var cells: Array[Vector2i] = []
+	for volume: AABB in volumes:
+		for z in range(roundi(volume.position.z/4),roundi(volume.end.z/4)):
+			for x in range(roundi(volume.position.x/4),roundi(volume.end.x/4)): cells.append(Vector2i(x,z))
+	var signatures: Array[String] = []
+	for turn in range(4):
+		for mirror in range(2):
+			var points: Array[Vector2i] = []
+			var minimum := Vector2i(10000,10000)
+			for cell in cells:
+				var point := Vector2i(-cell.x if mirror else cell.x,cell.y)
+				for rotation_index in range(turn): point = Vector2i(-point.y,point.x)
+				points.append(point)
+				minimum = minimum.min(point)
+			var encoded: Array[String] = []
+			for point in points: encoded.append("%d,%d" % [point.x-minimum.x,point.y-minimum.y])
+			encoded.sort()
+			signatures.append(";".join(encoded))
+	signatures.sort()
+	return signatures[0]
 
 static func _check_build(plan: Dictionary, check: Callable) -> void:
 	var site := _site(plan)
@@ -174,7 +197,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 4 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 5 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:

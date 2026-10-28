@@ -25,7 +25,6 @@ func _enter_tree() -> void:
 		return
 	plan = site.exterior_plan
 	seed_value = plan.seed
-	template_index = plan.template
 	$WorldGenerator.world_seed = world_seed
 	$WorldGenerator.profile = profile
 	var band := floori(float(site.s) / 150.0)

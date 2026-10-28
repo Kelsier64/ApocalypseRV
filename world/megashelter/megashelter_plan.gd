@@ -1,11 +1,10 @@
 extends RefCounted
 class_name MegashelterPlan
-## One connected footprint grammar, independent structure and facade choices.
+## Seeded frontier growth; no named or preselected building footprints.
 const PROFILE = preload("res://world/megashelter/megashelter_profile.gd")
 const KINDS := ["wall", "rib_wall", "corner", "pier", "beam", "vent", "entrance", "roof", "roof_plant", "drain", "service_spine", "buttress"]
-const FOOTPRINT_NAMES := ["T", "L", "U", "H", "Cross", "Z", "Comb", "Offset"]
 
-static func generate(seed_value: int, template_override: int = -1, profile: MegashelterProfile = null) -> Dictionary:
+static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dictionary:
 	var settings := profile if profile != null else MegashelterProfile.new()
 	if not settings.validate().is_empty(): return {}
 	var dimensions := _rng(seed_value,"massing")
@@ -14,10 +13,10 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 	var depth := float(settings.depths[dimensions.randi_range(0,settings.depths.size()-1)])
 	var height := float(settings.heights[dimensions.randi_range(0,settings.heights.size()-1)])
 	var rng := _rng(seed_value,"architecture")
-	var layout := rng.randi_range(0,7) if template_override < 0 else clampi(template_override,0,7)
 	var nx := int(width/4)
 	var nz := int(depth/4)
-	var grid := _footprint(nx,nz,height,layout,rng)
+	var growth := _grow(nx,nz,height,_rng(seed_value,"growth"))
+	var grid: PackedFloat32Array = growth.grid
 	var volumes := _rectangles(grid,nx,nz,width,depth)
 	var entry_x := 0.0
 	var best := 0
@@ -30,7 +29,7 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 			best = end-start
 			entry_x = -width/2 + (start+end)*2.0
 		start = end
-	var plan := {"version":PROFILE.CONTENT_VERSION,"seed":seed_value,"template":layout,
+	var plan := {"version":PROFILE.CONTENT_VERSION,"seed":seed_value,"growth_steps":growth.steps,
 		"width":width,"depth":depth,"height":height,"style":rng.randi_range(0,2),
 		"structure":rng.randi_range(0,4),"rhythm":rng.randi_range(2,4),
 		"volumes":volumes,"modules":[],"collision_boxes":volumes.duplicate(),
@@ -73,6 +72,9 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 	var roof_count := 0
 	for volume: AABB in volumes:
 		_add(plan,"roof",Vector3(volume.get_center().x,volume.end.y,volume.end.z),Vector3(volume.size.x,0.75,volume.size.z),0,0)
+	for step: Dictionary in growth.steps:
+		var rect: Rect2i = step.rect
+		var volume := AABB(Vector3(rect.position.x*4-width/2,0,rect.position.y*4-depth/2),Vector3(rect.size.x*4,step.height,rect.size.y*4))
 		# Leave >=3.3m around equipment for adjacent taller facade/structure returns.
 		if volume.size.x >= 16 and volume.size.z >= 12 and roof_count < 4:
 			var equipment := rng.randi_range(0,1) if volume.size.x >= 20 and volume.size.z >= 16 else 0
@@ -94,41 +96,69 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 		if module.get("solid",false): boxes.append(extent)
 	plan.building_bounds = bounds.grow(0.3)
 	var physical: AABB = plan.building_bounds
-	plan.site_bounds = AABB(Vector3(physical.position.x-12,-1,physical.position.z-12),Vector3(physical.size.x+24,physical.end.y+1,physical.size.z+36))
+	plan.site_bounds = AABB(Vector3(-width/2-12,-1,-depth/2-12),Vector3(width+24,physical.end.y+1,depth+42)).merge(physical)
 	return plan
 
-static func _footprint(nx: int,nz: int,height: float,layout: int,rng: RandomNumberGenerator) -> PackedFloat32Array:
+static func _grow(nx: int,nz: int,height: float,rng: RandomNumberGenerator) -> Dictionary:
+	var core_size := Vector2i(rng.randi_range(4,5),rng.randi_range(3,4))
+	var core := Rect2i(rng.randi_range(0,nx-core_size.x),nz-core_size.y,core_size.x,core_size.y)
+	var steps: Array[Dictionary] = [{"rect":core,"parent":-1,"height":0.0}]
+	var area := core.get_area()
+	var target_area := roundi(nx*nz*rng.randf_range(0.48,0.78))
+	var target_count := rng.randi_range(4,10)
+	# New rooms/wing sections attach to a random existing face. Their offsets,
+	# aspect ratios and branching order are sampled; no complete plan is stored.
+	for attempt in range(240):
+		if steps.size() >= target_count or area >= target_area: break
+		var parent := rng.randi_range(0,steps.size()-1)
+		var anchor: Rect2i = steps[parent].rect
+		var size := Vector2i(rng.randi_range(3,6),rng.randi_range(2,5))
+		var candidate := Rect2i(Vector2i.ZERO,size)
+		match rng.randi_range(0,3):
+			0: candidate.position = Vector2i(anchor.end.x,rng.randi_range(anchor.position.y-size.y+2,anchor.end.y-2))
+			1: candidate.position = Vector2i(anchor.position.x-size.x,rng.randi_range(anchor.position.y-size.y+2,anchor.end.y-2))
+			2: candidate.position = Vector2i(rng.randi_range(anchor.position.x-size.x+2,anchor.end.x-2),anchor.position.y-size.y)
+			3: candidate.position = Vector2i(rng.randi_range(anchor.position.x-size.x+2,anchor.end.x-2),anchor.end.y)
+		if not Rect2i(0,0,nx,nz).encloses(candidate): continue
+		if area+candidate.get_area() > nx*nz*0.85: continue
+		var fits := true
+		for step: Dictionary in steps:
+			if candidate.intersects(step.rect): fits = false; break
+		if not fits or not _clear_growth(steps,candidate,nx,nz): continue
+		steps.append({"rect":candidate,"parent":parent,"height":0.0})
+		area += candidate.get_area()
+	# Masses have individual roof heights; every addition remains ground-supported.
+	var tallest := rng.randi_range(0,steps.size()-1)
 	var grid := PackedFloat32Array()
 	grid.resize(nx*nz)
-	var wx := rng.randi_range(4,5)
-	var wz := rng.randi_range(3,4)
-	var cx := rng.randi_range(wx/2,nx-wx+wx/2)
-	var cz := rng.randi_range(wz/2,nz-wz+wz/2)
-	var rects: Array[Rect2i] = []
-	match layout:
-		0: rects = [Rect2i(0,0,nx,wz),Rect2i(cx-wx/2,wz,wx,nz-wz)]
-		1: rects = [Rect2i(0,0,wx,nz),Rect2i(wx,nz-wz,nx-wx,wz)]
-		2: rects = [Rect2i(0,0,nx,wz),Rect2i(0,wz,4,nz-wz),Rect2i(nx-4,wz,4,nz-wz)]
-		3: rects = [Rect2i(0,0,4,nz),Rect2i(nx-4,0,4,nz),Rect2i(4,cz-wz/2,nx-8,wz)]
-		4: rects = [Rect2i(cx-wx/2,0,wx,nz),Rect2i(0,cz-wz/2,nx,wz)]
-		5: rects = [Rect2i(0,0,nx-4,wz),Rect2i(cx-wx/2,0,wx,nz),Rect2i(4,nz-wz,nx-4,wz)]
-		6: rects = [Rect2i(0,0,nx,wz),Rect2i(0,wz,4,nz-wz),Rect2i(nx-4,wz,4,nz-wz),Rect2i(nx/2-2,wz,4,maxi(1,nz-wz-2))]
-		7: rects = [Rect2i(0,0,nx-4,nz-wz),Rect2i(4,nz-wz,nx-4,wz),Rect2i(cx-wx/2,0,wx,nz)]
-	var tallest := rng.randi_range(0,rects.size()-1)
-	for index in range(rects.size()):
-		var rect: Rect2i = rects[index]
-		var h := height if index == tallest else maxf(27,height-rng.randi_range(1,3)*13.5)
+	for index in range(steps.size()):
+		var step: Dictionary = steps[index]
+		var parent_height := height if step.parent < 0 else float(steps[step.parent].height)
+		var roof := clampf(parent_height+rng.randi_range(-2,1)*PROFILE.BAND,27,height)
+		step.height = height if index == tallest else roof
+		var rect: Rect2i = step.rect
 		for z in range(rect.position.y,rect.end.y):
-			for x in range(rect.position.x,rect.end.x): grid[z*nx+x] = maxf(grid[z*nx+x],h)
-	# Mirror the full composition; its entrance is derived from the resulting front.
-	if rng.randf() < 0.5:
-		for z in range(nz):
-			for x in range(nx/2):
-				var opposite := z*nx+nx-1-x
-				var old := grid[z*nx+x]
-				grid[z*nx+x] = grid[opposite]
-				grid[opposite] = old
-	return grid
+			for x in range(rect.position.x,rect.end.x): grid[z*nx+x] = step.height
+	return {"grid":grid,"steps":steps}
+
+static func _clear_growth(steps: Array[Dictionary],candidate: Rect2i,nx: int,nz: int) -> bool:
+	var mask := PackedByteArray()
+	mask.resize(nx*nz)
+	var rectangles: Array[Rect2i] = [candidate]
+	for step: Dictionary in steps: rectangles.append(step.rect)
+	for rect: Rect2i in rectangles:
+		for z in range(rect.position.y,rect.end.y):
+			for x in range(rect.position.x,rect.end.x): mask[z*nx+x] = 1
+	for z in range(nz):
+		for x in range(nx):
+			if mask[z*nx+x]: continue
+			# A 4m slit cannot fit two projecting facades; retain >=8m recesses.
+			if x > 0 and x < nx-1 and mask[z*nx+x-1] and mask[z*nx+x+1]: return false
+			if z > 0 and z < nz-1 and mask[(z-1)*nx+x] and mask[(z+1)*nx+x]: return false
+			# Point-only corner contacts would leave ambiguous contour junctions.
+			if x < nx-1 and z < nz-1 and mask[(z+1)*nx+x+1] == 0 and mask[z*nx+x+1] and mask[(z+1)*nx+x]: return false
+			if x > 0 and z < nz-1 and mask[(z+1)*nx+x-1] == 0 and mask[z*nx+x-1] and mask[(z+1)*nx+x]: return false
+	return true
 
 static func _rectangles(grid: PackedFloat32Array,nx: int,nz: int,width: float,depth: float) -> Array[AABB]:
 	var used := PackedByteArray()
