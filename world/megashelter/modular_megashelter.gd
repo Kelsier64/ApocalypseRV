@@ -2,6 +2,9 @@
 extends Node3D
 class_name ModularMegashelter
 const SURFACE = preload("res://world/megashelter/megashelter_surface.gdshader")
+const CONCRETE = preload("res://assets/materials/megashelter/cast_concrete_albedo.png")
+const COATING = preload("res://assets/materials/megashelter/aged_coating_albedo.png")
+const AGGREGATE = preload("res://assets/materials/ruined_wall/aggregate_albedo.png")
 const ROOF_PLANT = [preload("res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb"),
 	preload("res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb")]
 @export var preview_seed: int = 42
@@ -63,12 +66,15 @@ func _finish_visuals(plan: Dictionary) -> void:
 		var mesh := _surfaces[index].mesh()
 		var material := ShaderMaterial.new()
 		material.shader = SURFACE
-		var palettes := [[Color("656b65"),Color("47554f"),Color("343d3c")],
-			[Color("62666a"),Color("48525a"),Color("343b40")],
-			[Color("696a60"),Color("50564b"),Color("383b36")]]
+		var palettes := [[Color("a0a194"),Color("778579"),Color("4d5955")],
+			[Color("9a9e9e"),Color("74818a"),Color("4c555b")],
+			[Color("a39f90"),Color("818270"),Color("55594e")]]
 		material.set_shader_parameter("base_color", palettes[int(plan.get("style",0))][index])
 		material.set_shader_parameter("surface_kind", float(index))
 		material.set_shader_parameter("wear_seed", float(posmod(int(plan.seed), 10000)))
+		material.set_shader_parameter("concrete_texture", CONCRETE)
+		material.set_shader_parameter("coating_texture", COATING)
+		material.set_shader_parameter("aggregate_texture", AGGREGATE)
 		mesh.surface_set_material(0, material)
 		var visual := MeshInstance3D.new()
 		visual.name = ["Concrete", "SealedPanels", "OldSteel"][index]

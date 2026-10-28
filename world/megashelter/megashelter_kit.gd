@@ -7,6 +7,7 @@ class Batch extends RefCounted:
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 	var source: Array
+	var _damage := 0.0
 
 	func _init() -> void:
 		var cube := BoxMesh.new()
@@ -18,7 +19,7 @@ class Batch extends RefCounted:
 		var source_vertices: PackedVector3Array = source[Mesh.ARRAY_VERTEX]
 		var source_normals: PackedVector3Array = source[Mesh.ARRAY_NORMAL]
 		var source_uvs: PackedVector2Array = source[Mesh.ARRAY_TEX_UV]
-		var tint := Color(shade, shade, shade)
+		var tint := Color(shade, shade, shade, _damage)
 		for index in range(source_vertices.size()):
 			vertices.append(pose * (center + source_vertices[index] * size))
 			normals.append(pose.basis * source_normals[index])
@@ -39,6 +40,7 @@ class Batch extends RefCounted:
 		return result
 
 	func add_piece(pose: Transform3D, piece: Dictionary) -> void:
+		_damage = 1.0 if piece.get("shape", "box") == "spall" else 0.0
 		match piece.get("shape", "box"):
 			"bevel": _beveled(pose, piece.center, piece.size, piece.shade, piece.bevel)
 			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade)
@@ -51,7 +53,7 @@ class Batch extends RefCounted:
 			vertices.append(pose * (center + point))
 			normals.append((pose.basis * normal).normalized())
 			uvs.append(Vector2(point.x, point.y))
-			colors.append(Color(shade, shade, shade))
+			colors.append(Color(shade, shade, shade, _damage))
 		var reverse := (points[1] - points[0]).cross(points[2] - points[0]).dot(normal) > 0.0
 		for index in range(1, points.size() - 1):
 			indices.append(offset)
@@ -165,17 +167,19 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 			if variant >= 4:
 				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
 				if variant == 7:
-					_piece(result,Vector3(0,patch_y,0.028),Vector3(2.3,2.8,0.06),0,3,0,"spall")
-					for x: float in [-0.65,-0.2,0.25,0.7]:
-						_piece(result,Vector3(x,patch_y,0.08),Vector3(0.055,1.8,0.055),2,3,0,"cylinder")
+					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.05,1.45,0.06),0,1,0,"spall")
+					for x: float in [-0.3,0.0,0.3]:
+						_piece(result,Vector3(x,patch_y,0.065),Vector3(0.028,0.92,0.035),2,3,0,"cylinder")
 				else:
-					_piece(result,Vector3(0,patch_y,0.07),Vector3(2.7,2.2,0.14),2,variant%3,0.045)
-					for x: float in [-1.16,1.16]:
-						for y: float in [-0.86,0.86]:
-							_piece(result,Vector3(x,patch_y+y,0.18),Vector3(0.12,0.12,0.1),2,1,0.025)
+					# A framed maintenance cover replaces the oversized random repair plate.
+					_piece(result,Vector3(0,patch_y,0.025),Vector3(1.55,1.85,0.05),2,2,0.025)
+					_piece(result,Vector3(0,patch_y,0.07),Vector3(1.38,1.68,0.065),2,0,0.025)
+					for x: float in [-0.61,0.61]:
+						for y: float in [-0.75,0.75]:
+							_piece(result,Vector3(x,patch_y+y,0.12),Vector3(0.07,0.07,0.055),2,1,0.015)
 					if variant == 6:
-						for y: float in [-0.65,0.0,0.65]:
-							_piece(result,Vector3(0,patch_y+y,0.18),Vector3(2.5,0.13,0.18),2,2,0.025)
+						for y: float in [-0.42,0.0,0.42]:
+							_piece(result,Vector3(0,patch_y+y,0.13),Vector3(1.22,0.065,0.08),2,1,0.015)
 		"vent":
 			_piece(result, Vector3(0,size.y*0.5,-size.z*0.5), size, 2, 2, 0.045)
 			for x: float in [-1.0,1.0]:
