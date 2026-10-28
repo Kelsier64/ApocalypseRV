@@ -155,8 +155,22 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 			# Raised vertical returns and a chipped exposed-concrete patch.
 			if kind == "rib_wall":
 				_piece(result, Vector3(-size.x * 0.5 + 0.12, size.y * 0.5, 0.035), Vector3(0.22, size.y - 0.02, 0.14), 0, 1, 0.03)
-			if variant == 3:
+			if variant == 3 or variant == 7:
 				_piece(result, Vector3(-size.x * 0.33, size.y * 0.24, 0.025), Vector3(0.6, minf(1.1,size.y*0.4), 0.045), 0, 3, 0, "spall")
+			if variant >= 4:
+				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
+				if variant == 7:
+					_piece(result,Vector3(0,patch_y,0.028),Vector3(2.3,2.8,0.06),0,3,0,"spall")
+					for x: float in [-0.65,-0.2,0.25,0.7]:
+						_piece(result,Vector3(x,patch_y,0.08),Vector3(0.055,1.8,0.055),2,3,0,"cylinder")
+				else:
+					_piece(result,Vector3(0,patch_y,0.07),Vector3(2.7,2.2,0.14),2,variant%3,0.045)
+					for x: float in [-1.16,1.16]:
+						for y: float in [-0.86,0.86]:
+							_piece(result,Vector3(x,patch_y+y,0.18),Vector3(0.12,0.12,0.1),2,1,0.025)
+					if variant == 6:
+						for y: float in [-0.65,0.0,0.65]:
+							_piece(result,Vector3(0,patch_y+y,0.18),Vector3(2.5,0.13,0.18),2,2,0.025)
 		"vent":
 			_piece(result, Vector3(0,size.y*0.5,-size.z*0.5), size, 2, 2, 0.045)
 			for x: float in [-1.0,1.0]:
@@ -166,6 +180,9 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 			var slats := maxi(3, floori(size.y / 0.22))
 			for index in range(slats):
 				_piece(result, Vector3(0,0.22+index*(size.y-0.4)/slats,0.13),Vector3(size.x-0.35,0.105,0.31),2,1,0.035)
+			if variant >= 2:
+				for x: float in [-size.x*0.25,0.0,size.x*0.25]:
+					_piece(result,Vector3(x,size.y*0.5,0.32),Vector3(0.07,size.y-0.2,0.08),2,2,0.015)
 		"corner":
 			_piece(result, Vector3(-size.x * 0.5, size.y * 0.5, 0.08), Vector3(size.x, size.y, 0.18), 0,1,0.06)
 			_piece(result, Vector3(0.08, size.y * 0.5, -size.z * 0.5), Vector3(0.18, size.y, size.z), 0,1,0.06)
@@ -177,6 +194,11 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 				_piece(result,Vector3(side*(size.x*0.5-0.16),size.y*0.5,0.035),Vector3(0.12,size.y-0.3,0.1),0,2,0.035)
 			_piece(result,Vector3(0,0.7,-size.z*0.5),Vector3(size.x+0.22,1.4,size.z+0.12),0,2,0.12)
 			_piece(result,Vector3(0,size.y-0.16,-size.z*0.5),Vector3(size.x+0.12,0.32,size.z+0.12),0,1,0.07)
+			for level in range(1,ceili(size.y/9.0)):
+				for x: float in [-size.x*0.3,size.x*0.3]:
+					_piece(result,Vector3(x,level*9.0-0.35,0.035),Vector3(0.3,0.3,0.07),2,3,0.04)
+			if variant == 1:
+				_piece(result,Vector3(0,size.y*0.5,0.035),Vector3(0.44,size.y-1.6,0.08),2,2,0.025)
 		"beam":
 			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), size, 2 if variant == 2 else 0, variant,0.07)
 		"roof":
@@ -195,10 +217,18 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 			for index in range(ceili(size.y/4.5)):
 				_piece(result,Vector3(0,0.5+index*4.5,-0.22),Vector3(0.38,0.12,0.35),2,1,0.025)
 		"entrance":
-			_entrance(result)
+			_entrance(result,variant)
+		"service_spine":
+			_piece(result,Vector3(0,size.y*0.5,-0.5),Vector3(size.x,size.y,1.0),2,2,0.13)
+			for x: float in [-1.05,1.05]:
+				_piece(result,Vector3(x,size.y*0.5,0.08),Vector3(0.22,size.y,0.32),0,2,0.045)
+			for level in range(ceili(size.y/3.0)):
+				var y := minf(size.y-0.3,0.4+level*3.0)
+				_piece(result,Vector3(0,y,0.16),Vector3(2.5,0.18,0.4),2,1,0.035)
+				_piece(result,Vector3(0,minf(size.y-0.6,y+0.7),0.06),Vector3(1.5,0.5,0.14),2,3,0.035)
 	return result
 
-static func _entrance(parts: Array[Dictionary]) -> void:
+static func _entrance(parts: Array[Dictionary], variant: int) -> void:
 	for x: float in [-5.5,5.5]:
 		_piece(parts,Vector3(x,4.5,-1.5),Vector3(1,9,3),0,0,0.14)
 		_piece(parts,Vector3(x,0.65,-1.5),Vector3(1.18,1.3,3.12),0,2,0.12)
@@ -212,6 +242,17 @@ static func _entrance(parts: Array[Dictionary]) -> void:
 			_piece(parts,Vector3(x+edge*1.65,3.12,-2.55),Vector3(0.16,6.05,0.2),2,1,0.035)
 		for y: float in [0.24,2.15,4.2,6.02]:
 			_piece(parts,Vector3(x,y,-2.55),Vector3(3.4,0.18,0.2),2,1,0.035)
+		# Layered armor, hinge housings and locking rams remain inside the portal collider.
+		for y: float in [1.15,3.15,5.1]:
+			_piece(parts,Vector3(x,y,-2.53),Vector3(2.7,1.35,0.12),2,variant,0.06)
+			for edge: float in [-1.0,1.0]:
+				_piece(parts,Vector3(x+edge*1.2,y,-2.42),Vector3(0.13,0.13,0.12),2,1,0.025)
+			if variant == 1:
+				_piece(parts,Vector3(x,y,-2.33),Vector3(2.8,0.16,0.26),2,2,0.035)
+		for y: float in [1.0,3.1,5.2]:
+			_piece(parts,Vector3(x+(-1.6 if side == 0 else 1.6),y,-2.38),Vector3(0.3,0.6,0.28),2,2,0.045)
+	for y: float in [1.15,3.15,5.1]:
+		_piece(parts,Vector3(-1.1,y,-2.3),Vector3(1.0,0.23,0.23),2,1,0,"cylinder")
 	for x: float in [-4.85,2.78]:
 		_piece(parts,Vector3(x,3.3,-2.62),Vector3(0.25,6.6,0.6),2,1,0.045)
 	_piece(parts,Vector3(-1.1,6.75,-2.5),Vector3(8.1,0.7,0.8),2,1,0.08)

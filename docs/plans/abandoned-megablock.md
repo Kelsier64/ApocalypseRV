@@ -1,6 +1,6 @@
 # Abandoned Megashelter（舊稱「灰井住宅城」）
 
-更新：2026-10-28。現行方向：在正式世界生成可見、可繞行的廢棄大型住宅外殼；本工作不提供可玩室內、戰利品、敵人或進出轉場。外觀已依使用者回饋重作為內容版本 2，以[選定概念圖](../art/modular-megashelter/README.md)為準；詳見[本輪檢查](../validation/2026-10-28-megashelter-art-refinement.md)。完整自由遊玩與使用者的最終美術確認仍未完成。
+更新：2026-10-28。現行方向：在正式世界生成可見、可繞行的廢棄大型住宅外殼；本工作不提供可玩室內、戰利品、敵人或進出轉場。外觀已依使用者回饋局部重製為內容版本 3，以[選定概念圖](../art/modular-megashelter/README.md)為準；詳見[本輪檢查](../validation/2026-10-28-megashelter-variation.md)。完整自由遊玩與使用者的最終美術確認仍未完成。
 
 [文件索引](../README.md) · [計畫總覽](README.md) · [室外資產製作指南](../guides/megashelter-exteriors.md) · 舊版室內提案摘要見文末
 

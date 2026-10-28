@@ -33,6 +33,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	check.call(templates.size() == 3, "Thirty-two megashelter seeds exercise all three silhouette templates")
 	if templates.size() == 3:
 		check.call(signatures[0] != signatures[1] and signatures[0] != signatures[2] and signatures[1] != signatures[2], "Megashelter templates have distinct structural silhouettes")
+	_check_seed_diversity(check)
 	for template_index in range(3):
 		var plan: Dictionary = PLAN.generate(42, template_index)
 		check.call(plan.template == template_index, "Megashelter authoring override selects template %d" % template_index)
@@ -43,7 +44,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 2 and plan.seed == seed_value and plan.template in [0, 1, 2], label + "versioned plan retains its seed and template")
+	check.call(plan.version == 3 and plan.seed == seed_value and plan.template in [0, 1, 2], label + "versioned plan retains its seed and template")
 	var building: AABB = plan.building_bounds
 	var site: AABB = plan.site_bounds
 	var maximum := POIConfig.definition(&"modular_megashelter").building_bounds
@@ -61,9 +62,9 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 		for lower: AABB in plan.volumes:
 			if lower == volume: continue
 			non_overlapping = non_overlapping and not lower.grow(-0.001).intersects(volume.grow(-0.001))
-			if absf(lower.end.y - volume.position.y) < 0.01 and _overlap_xz(lower, volume): contact = true
+			if absf(lower.end.y - volume.position.y) < 0.01 and _contains_xz(lower, volume): contact = true
 		supported = supported and contact
-	check.call(enclosed and supported and non_overlapping, label + "closed structural masses meet without overlap or unsupported vertical gaps and retain complete collision")
+	check.call(enclosed and supported and non_overlapping, label + "closed structural masses meet without overlap, fully support upper footprints and retain complete collision")
 	var unique: Dictionary = {}
 	var modules_valid := true
 	var solid_modules_valid := true
@@ -91,7 +92,7 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 	check.call(collision_enclosed, label + "closed-door collision remains inside declared bounds")
 
 static func _check_legacy_massing(plan: Dictionary, check: Callable) -> void:
-	# Content v2 redraws the facade, but must preserve the v1 choice stream.
+	# Art revisions preserve the v1 template and dimension choice stream.
 	# Fix the original dimension choices here so a content-version seed bump
 	# cannot silently reroll an already selected site's structural envelope.
 	var legacy := RandomNumberGenerator.new()
@@ -99,6 +100,23 @@ static func _check_legacy_massing(plan: Dictionary, check: Callable) -> void:
 	var expected := [legacy.randi_range(0, 2), float([48, 56, 64][legacy.randi_range(0, 2)]),
 		float([32, 40, 48][legacy.randi_range(0, 2)]), [54.0, 67.5, 81.0][legacy.randi_range(0, 2)]]
 	check.call([plan.template, plan.width, plan.depth, plan.height] == expected, "Megashelter seed %d retains its v1 template and dimension choices after the art revision" % int(plan.seed))
+
+static func _check_seed_diversity(check: Callable) -> void:
+	# Hold the envelope fixed so dimension choices cannot satisfy this check.
+	var profile := MegashelterProfile.new()
+	profile.widths = PackedInt32Array([56])
+	profile.depths = PackedInt32Array([40])
+	profile.heights = PackedFloat32Array([67.5])
+	for template_index in range(3):
+		var layouts: Array = []
+		for seed_value in range(4):
+			var plan: Dictionary = PLAN.generate(seed_value, template_index, profile)
+			var piers: Array = []
+			for module: Dictionary in plan.modules:
+				if module.kind == "pier": piers.append([module.transform, module.size])
+			var layout := [plan.volumes, piers]
+			if layout not in layouts: layouts.append(layout)
+		check.call(layouts.size() > 1, "Megashelter template %d varies tier or pier layout across seeds with identical dimensions" % template_index)
 
 static func _check_build(plan: Dictionary, check: Callable) -> void:
 	var site := _site(plan)
@@ -111,7 +129,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 2 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 3 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:
@@ -173,8 +191,8 @@ static func _local_pose(building: Node3D, child: Node3D) -> Transform3D:
 		parent = parent.get_parent()
 	return pose
 
-static func _overlap_xz(a: AABB, b: AABB) -> bool:
-	return a.position.x < b.end.x and a.end.x > b.position.x and a.position.z < b.end.z and a.end.z > b.position.z
+static func _contains_xz(a: AABB, b: AABB) -> bool:
+	return a.position.x <= b.position.x + 0.01 and a.end.x >= b.end.x - 0.01 and a.position.z <= b.position.z + 0.01 and a.end.z >= b.end.z - 0.01
 
 static func _check_streaming_navigation(tree: SceneTree, world: Node3D, plan: Dictionary, check: Callable) -> void:
 	# A controlled level fixture isolates both production navigation branches:

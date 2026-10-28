@@ -2,7 +2,7 @@
 extends Resource
 class_name MegashelterProfile
 ## Exterior dimensions only; these are not playable floor plans.
-const CONTENT_VERSION := 2
+const CONTENT_VERSION := 3
 const BAY := 4.0
 const FLOOR := 4.5
 const BAND := 18.0

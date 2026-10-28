@@ -2,7 +2,7 @@ extends RefCounted
 class_name MegashelterPlan
 ## Pure, versioned assembly. Physics, visuals and neighbour navigation share this data.
 const PROFILE = preload("res://world/megashelter/megashelter_profile.gd")
-const KINDS := ["wall", "rib_wall", "corner", "pier", "beam", "vent", "entrance", "roof", "roof_plant", "drain"]
+const KINDS := ["wall", "rib_wall", "corner", "pier", "beam", "vent", "entrance", "roof", "roof_plant", "drain", "service_spine"]
 
 static func generate(seed_value: int, template_override: int = -1, profile: MegashelterProfile = null) -> Dictionary:
 	var settings := profile if profile != null else MegashelterProfile.new()
@@ -15,35 +15,45 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 	var depth := float(settings.depths[rng.randi_range(0, settings.depths.size() - 1)])
 	var height := float(settings.heights[rng.randi_range(0, settings.heights.size() - 1)])
 	var volumes: Array[AABB] = []
+	var architecture := _rng(seed_value, "architecture")
+	var style := architecture.randi_range(0, 2)
+	var setback := float(architecture.randi_range(1, 2) * 4)
+	var center := Vector2.ZERO
 	# Every tier rests on the full preceding tier. No detached or hollow masses.
 	var y := 0.0
 	while y < height - 0.01:
 		var tier_height := minf(PROFILE.BAND, height - y)
 		var inset := 0.0
-		if template == 2: inset = minf(8.0, floorf(y / 27.0) * 4.0)
+		if template == 2: inset = minf(8.0, floorf(y / 27.0) * setback)
 		var tier_width := width - inset * 2.0
 		var tier_depth := depth - inset
 		if template == 1 and y >= height - PROFILE.BAND:
-			tier_width -= 16.0
-		volumes.append(AABB(Vector3(-tier_width * 0.5, y, -tier_depth * 0.5), Vector3(tier_width, tier_height, tier_depth)))
+			tier_width -= 12.0 + setback
+		if not volumes.is_empty():
+			var below: AABB = volumes.back()
+			var shift := Vector2((below.size.x-tier_width)*0.5,(below.size.z-tier_depth)*0.5)
+			center += Vector2(architecture.randf_range(-shift.x,shift.x),architecture.randf_range(-shift.y,shift.y))
+		volumes.append(AABB(Vector3(center.x-tier_width * 0.5, y, center.y-tier_depth * 0.5), Vector3(tier_width, tier_height, tier_depth)))
 		y += tier_height
 	var plan := {"version": PROFILE.CONTENT_VERSION, "seed": seed_value, "template": template,
-		"width": width, "depth": depth, "height": height, "volumes": volumes,
+		"width": width, "depth": depth, "height": height, "volumes": volumes, "style": style,
 		"modules": [], "collision_boxes": volumes.duplicate(),
 		"access_point": Vector3(0, 0.05, depth * 0.5 + 8.0)}
 	var facade := _rng(seed_value, "facade")
 	for index in range(volumes.size()):
 		_facade(plan, volumes[index], index, facade)
 	# Broad concrete spines, rather than narrow trim, define the reference silhouette.
-	for x: float in [-width * 0.5 + 2.2, -width / 6.0, width / 6.0, width * 0.5 - 2.2]:
+	var inner_pier := width * architecture.randf_range(0.19,0.28)
+	var pier_width := [4.0,3.2,4.4][style] as float
+	for x: float in [-width * 0.5 + 2.2, -inner_pier, inner_pier, width * 0.5 - 2.2]:
 		var pier_height := 0.0
 		for volume: AABB in volumes:
 			if x >= volume.position.x and x <= volume.end.x: pier_height = maxf(pier_height, volume.end.y)
-		_add(plan, "pier", Vector3(x,0,depth*0.5+2.4), Vector3(4.0,pier_height+1.4,6.4),0,0,true)
+		_add(plan, "pier", Vector3(x,0,depth*0.5+2.4), Vector3(pier_width,pier_height+1.4,6.4),0,style,true)
 	for x: float in [-width*0.5+6.0,width*0.5-6.0]:
 		_add(plan,"drain",Vector3(x,0,depth*0.5+0.3),Vector3(0.4,16.0,0.4),0,0,true)
 	var front := depth * 0.5
-	_add(plan, "entrance", Vector3(0, 0, front + 3.0), Vector3(12, 9, 3), 0, 0)
+	_add(plan, "entrance", Vector3(0, 0, front + 3.0), Vector3(12, 9, 3), 0, style)
 	# Portal posts and lintel protrude; the closed leaves meet the solid backing.
 	var boxes: Array = plan.collision_boxes
 	boxes.append(AABB(Vector3(-6.09,0,front-0.06),Vector3(1.18,9,3.12)))
@@ -52,8 +62,13 @@ static func generate(seed_value: int, template_override: int = -1, profile: Mega
 	boxes.append(AABB(Vector3(-5,0,front),Vector3(7.95,7.15,1.0)))
 	boxes.append(AABB(Vector3(3,0,front),Vector3(1.8,3.0,0.9)))
 	# Existing project equipment sits on proper plinths, clear of parapets.
-	_add(plan,"roof_plant",Vector3(-8,height+0.27,-1.7),Vector3(6.6,2.5,4.6),0,0,true)
-	_add(plan,"roof_plant",Vector3(8,height+0.27,6.8),Vector3(9.6,2.0,5.6),0,1,true)
+	var top: AABB = volumes.back()
+	var plant_count := architecture.randi_range(1,3)
+	for index in range(plant_count):
+		var location: Vector3 = [Vector3(-8,0,4),Vector3(7,0,5),Vector3(0,0,-5)][index]
+		var equipment := architecture.randi_range(0,1)
+		_add(plan,"roof_plant",Vector3(top.get_center().x,height+0.27,top.get_center().z)+location,
+			Vector3(6.6,2.5,4.6) if equipment == 0 else Vector3(9.6,2.0,5.6),0,equipment,true)
 	var bounds := AABB(Vector3(-width * 0.5, -0.5, -depth * 0.5), Vector3(width, height + 1.2, depth))
 	for module: Dictionary in plan.modules:
 		var extent := module_bounds(module)
@@ -77,15 +92,20 @@ static func _facade(plan: Dictionary, volume: AABB, tier: int, rng: RandomNumber
 		var run: float = surfaces[side][2]
 		var basis := Basis(Vector3.UP, angle)
 		var group_variant := rng.randi_range(0, 3)
+		var rib_spacing := 3 + int(plan.style)
 		var recess := 1.7 if tier > 0 else 0.0
 		for column in range(roundi(run / PROFILE.BAY)):
 			var position := origin + basis * Vector3((column+0.5)*PROFILE.BAY,recess,0)
-			_add(plan,"rib_wall" if column%4 == 0 else "wall",position,Vector3(PROFILE.BAY,volume.size.y-recess,2.2),angle,group_variant)
+			var variant := rng.randi_range(0,7) if rng.randf() < 0.3 else group_variant
+			_add(plan,"rib_wall" if column%rib_spacing == 0 else "wall",position,Vector3(PROFILE.BAY,volume.size.y-recess,2.2),angle,variant)
+			if plan.style == 2 and side >= 2 and column == roundi(run/8):
+				_add(plan,"service_spine",position+basis*Vector3(0,0,0.65),Vector3(2.6,volume.size.y-recess,1.0),angle,tier%2,true)
 		# A genuinely recessed, sealed service belt separates the large blocks.
 		if recess > 0:
 			_add(plan,"beam",origin+basis*Vector3(run*0.5,0,-1.65),Vector3(run,recess,0.5),angle,2)
-			for column: int in [1,maxi(2,roundi(run/4)-2)]:
-				_add(plan,"vent",origin+basis*Vector3((column+0.5)*4,0.2,-1.4),Vector3(3.0,1.25,0.4),angle,1)
+			for column in range(1,roundi(run/4)-1):
+				if (column+int(plan.style))%3 == 0 or rng.randf() < 0.2:
+					_add(plan,"vent",origin+basis*Vector3((column+0.5)*4,0.2,-1.4),Vector3(3.0,1.25,0.4),angle,rng.randi_range(0,3))
 		_add(plan,"beam",origin+basis*Vector3(run*0.5,recess,0.18),Vector3(run,0.55,2.45),angle,0)
 		_add(plan,"beam",origin+basis*Vector3(run*0.5,volume.size.y-0.32,0.16),Vector3(run,0.32,2.4),angle,0)
 	# Roof caps close every exposed setback. Full slabs also close the wall joints.

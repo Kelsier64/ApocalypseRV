@@ -63,7 +63,10 @@ func _finish_visuals(plan: Dictionary) -> void:
 		var mesh := _surfaces[index].mesh()
 		var material := ShaderMaterial.new()
 		material.shader = SURFACE
-		material.set_shader_parameter("base_color", [Color("8b8c80"), Color("747b6d"), Color("444c49")][index])
+		var palettes := [[Color("656b65"),Color("47554f"),Color("343d3c")],
+			[Color("62666a"),Color("48525a"),Color("343b40")],
+			[Color("696a60"),Color("50564b"),Color("383b36")]]
+		material.set_shader_parameter("base_color", palettes[int(plan.get("style",0))][index])
 		material.set_shader_parameter("surface_kind", float(index))
 		material.set_shader_parameter("wear_seed", float(posmod(int(plan.seed), 10000)))
 		mesh.surface_set_material(0, material)

@@ -3,7 +3,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 uniform vec4 base_color : source_color = vec4(0.40, 0.42, 0.40, 1.0);
 uniform float surface_kind = 0.0;
 uniform float wear_seed = 0.0;
-uniform vec4 exposed_concrete : source_color = vec4(0.49,0.49,0.45,1.0);
+uniform vec4 exposed_concrete : source_color = vec4(0.37,0.38,0.35,1.0);
 varying vec3 local_position;
 varying vec3 local_normal;
 
@@ -31,8 +31,8 @@ void fragment() {
 	vec3 color = base_color.rgb * COLOR.rgb * (0.87 + patch * 0.20 + grain * 0.07);
 	color *= 1.0 - (run * (0.13 + seam_run * 0.22) * vertical + damp * 0.22);
 	if (surface_kind > 0.5 && surface_kind < 1.5) {
-		float peel = smoothstep(0.62,0.69,fracture+patch*0.08);
-		color = mix(color,exposed_concrete.rgb*(0.76+grain*0.22),peel*0.88);
+		float peel = smoothstep(0.60,0.74,coarse(p*0.22+offset)*0.7+fracture*0.3);
+		color = mix(color,exposed_concrete.rgb*(0.76+grain*0.22),peel*0.65);
 		// Sparse, shallow construction joints stay secondary to the megablocks.
 		float joint = 1.0-smoothstep(0.018,0.035,abs(mod(p.y+0.02,4.5)-0.02));
 		color *= 1.0-joint*0.13*vertical;
