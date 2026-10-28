@@ -257,6 +257,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		expected.append([Transform3D(Basis.IDENTITY, box.get_center()), box.size, false, true])
 	check.call(_collision_snapshot(visual) == expected, "Megashelter physical boxes exactly match their declared plan")
 	check.call(visual.get_meta("navigation_solid_geometry", false) and collision.get_meta("navigation_solid_geometry", false), "Both megashelter factory modes declare closed solid navigation geometry")
+	_check_appearance_metadata(plan, visual, check)
 	check.call(not visual.find_children("*", "MeshInstance3D", true, false).is_empty() and collision.find_children("*", "MeshInstance3D", true, false).is_empty(), "Neighbour factory omits only visual mesh construction")
 	var bounds_ok := true
 	var shapes_solid := true
@@ -276,6 +277,36 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 	var reloaded := POIConfig.instantiate_site(site, true)
 	check.call(before == _collision_snapshot(reloaded), "Unloading and reloading a megashelter retains exact physical geometry")
 	reloaded.free()
+
+static func _check_appearance_metadata(plan: Dictionary, building: Node3D, check: Callable) -> void:
+	var ledges := {}
+	var expected_drains: Array[Vector4] = []
+	for volume: AABB in plan.volumes: ledges[roundi(volume.end.y * 1000.0)] = true
+	for module: Dictionary in plan.modules:
+		var origin: Vector3 = module.transform.origin
+		ledges[roundi((origin.y + float(module.size.y)) * 1000.0)] = true
+		ledges[roundi(origin.y * 1000.0)] = true
+		if module.kind == "entrance":
+			for piece: Dictionary in KIT.pieces(module.kind, module.size, module.variant):
+				ledges[roundi((origin.y + piece.center.y - piece.size.y * 0.5) * 1000.0)] = true
+		if module.kind == "drain": expected_drains.append(Vector4(origin.x, origin.y + float(module.size.y), origin.z, origin.y))
+	var variants := {}
+	var valid := true
+	for name_value in ["Concrete", "SealedPanels", "OldSteel"]:
+		var mesh: ArrayMesh = building.get_node("Visuals/" + name_value).mesh
+		var arrays := mesh.surface_get_arrays(0)
+		var metadata: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV2]
+		valid = valid and metadata.size() == (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+		for value: Vector2 in metadata:
+			valid = valid and value.is_finite() and value.x >= 0.0 and value.x < 1.0 and ledges.has(roundi(value.y * 1000.0))
+			variants[value.x] = true
+		var material := mesh.surface_get_material(0) as ShaderMaterial
+		var count: int = material.get_shader_parameter("drain_count")
+		var sources: PackedVector4Array = material.get_shader_parameter("drain_sources")
+		valid = valid and count >= 2 and count <= 4 and sources.size() == 4
+		for index in range(count):
+			valid = valid and sources[index] in expected_drains
+	check.call(valid and variants.size() > 8, "Merged material batches retain independent module variants, real ledge heights and authored drain sources")
 
 static func _site(plan: Dictionary) -> Dictionary:
 	var pose := Transform3D(Basis.IDENTITY, Vector3(0, 0, -150))
@@ -300,6 +331,7 @@ static func _visual_snapshot(building: Node3D) -> Array:
 				var appearance: Array = [material.get_class() if material != null else ""]
 				if material is ShaderMaterial:
 					appearance.append_array([material.shader.resource_path, material.get_shader_parameter("base_color"), material.get_shader_parameter("surface_kind"), material.get_shader_parameter("wear_seed")])
+					appearance.append_array([material.get_shader_parameter("drain_count"), material.get_shader_parameter("drain_sources")])
 					for parameter in ["concrete_texture", "coating_texture", "aggregate_texture", "decay_texture", "corrosion_texture"]:
 						var texture = material.get_shader_parameter(parameter)
 						appearance.append(texture.resource_path if texture is Texture2D else "missing:" + parameter)

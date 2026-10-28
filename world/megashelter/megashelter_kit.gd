@@ -4,10 +4,15 @@ class Batch extends RefCounted:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
+	var appearance := PackedVector2Array()
 	var colors := PackedColorArray()
 	var indices := PackedInt32Array()
 	var source: Array
 	var _damage := 0.0
+	var _appearance := Vector2.ZERO
+
+	func set_appearance(stable_seed: int, ledge_height: float) -> void:
+		_appearance = Vector2(float(posmod(stable_seed, 65521)) / 65521.0, ledge_height)
 
 	func _init() -> void:
 		var cube := BoxMesh.new()
@@ -24,6 +29,7 @@ class Batch extends RefCounted:
 			vertices.append(pose * (center + source_vertices[index] * size))
 			normals.append(pose.basis * source_normals[index])
 			uvs.append(source_uvs[index])
+			appearance.append(_appearance)
 			colors.append(tint)
 		for index: int in source[Mesh.ARRAY_INDEX]: indices.append(offset + index)
 
@@ -33,6 +39,7 @@ class Batch extends RefCounted:
 		arrays[Mesh.ARRAY_VERTEX] = vertices
 		arrays[Mesh.ARRAY_NORMAL] = normals
 		arrays[Mesh.ARRAY_TEX_UV] = uvs
+		arrays[Mesh.ARRAY_TEX_UV2] = appearance
 		arrays[Mesh.ARRAY_COLOR] = colors
 		arrays[Mesh.ARRAY_INDEX] = indices
 		var result := ArrayMesh.new()
@@ -53,6 +60,7 @@ class Batch extends RefCounted:
 			vertices.append(pose * (center + point))
 			normals.append((pose.basis * normal).normalized())
 			uvs.append(Vector2(point.x, point.y))
+			appearance.append(_appearance)
 			colors.append(Color(shade, shade, shade, _damage))
 		var reverse := (points[1] - points[0]).cross(points[2] - points[0]).dot(normal) > 0.0
 		for index in range(1, points.size() - 1):

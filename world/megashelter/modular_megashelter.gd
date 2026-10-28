@@ -55,15 +55,37 @@ func _begin_visuals(plan: Dictionary) -> void:
 	for index in range(3):
 		_surfaces.append(MegashelterKit.Batch.new())
 	# Solid backing closes the narrow joints between wall cassettes.
-	for bounds: AABB in plan.volumes:
+	for volume_index in range(plan.volumes.size()):
+		var bounds: AABB = plan.volumes[volume_index]
+		_surfaces[0].set_appearance(("backing:%d" % volume_index).hash(), bounds.end.y)
 		_append_box(Transform3D.IDENTITY, bounds.get_center(), bounds.size - Vector3(0.02, 0.02, 0.02), 0, 0.62)
 
 func _append_module(module: Dictionary) -> void:
 	if module.kind == "roof_plant": _roof_modules.append(module)
-	for piece: Dictionary in MegashelterKit.pieces(module.kind, module.size, module.variant):
+	var pieces := MegashelterKit.pieces(module.kind, module.size, module.variant)
+	var ledge_height := float(module.transform.origin.y) + float(module.size.y)
+	if module.kind == "beam": ledge_height = module.transform.origin.y
+	elif module.kind == "entrance":
+		# Water falls from the portal lintel/trim, below the cap's front face.
+		for piece: Dictionary in pieces:
+			if piece.material == 0 and piece.center.y > module.size.y * 0.75 and piece.size.x > module.size.x * 0.5:
+				ledge_height = minf(ledge_height, module.transform.origin.y + piece.center.y - piece.size.y * 0.5)
+	for batch: MegashelterKit.Batch in _surfaces:
+		batch.set_appearance(str(module.id).hash(), ledge_height)
+	for piece: Dictionary in pieces:
 		if piece.get("visible",true): _surfaces[piece.material].add_piece(module.transform,piece)
 
 func _finish_visuals(plan: Dictionary) -> void:
+	# Actual drain endpoints, prioritising the entrance pair at the end of the plan.
+	var drains := PackedVector4Array()
+	for module_index in range(plan.modules.size() - 1, -1, -1):
+		var module: Dictionary = plan.modules[module_index]
+		if module.kind != "drain": continue
+		var position: Vector3 = module.transform.origin
+		drains.append(Vector4(position.x, position.y + float(module.size.y), position.z, position.y))
+		if drains.size() == 4: break
+	var drain_count := drains.size()
+	drains.resize(4)
 	for index in range(_surfaces.size()):
 		var mesh := _surfaces[index].mesh()
 		var material := ShaderMaterial.new()
@@ -79,6 +101,8 @@ func _finish_visuals(plan: Dictionary) -> void:
 		material.set_shader_parameter("aggregate_texture", AGGREGATE)
 		material.set_shader_parameter("decay_texture", DECAY)
 		material.set_shader_parameter("corrosion_texture", CORROSION)
+		material.set_shader_parameter("drain_count", drain_count)
+		material.set_shader_parameter("drain_sources", drains)
 		mesh.surface_set_material(0, material)
 		var visual := MeshInstance3D.new()
 		visual.name = ["Concrete", "SealedPanels", "OldSteel"][index]
