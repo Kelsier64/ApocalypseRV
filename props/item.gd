@@ -15,6 +15,7 @@ enum BottomFace { DOWN, UP, FRONT, BACK, LEFT, RIGHT }
 @export var scrap_yields: Dictionary = {}
 @export var hold_position: Vector3 = Vector3.ZERO
 @export var hold_rotation: Vector3 = Vector3.ZERO
+@export var carry_offset: Vector3 = Vector3.ZERO
 @export var hold_scale: Vector3 = Vector3.ONE
 @export var max_health: float = 100.0
 @export var can_be_destroyed: bool = true

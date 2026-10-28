@@ -6,6 +6,80 @@ var actor: CharacterBody3D
 var ray: RayCast3D
 var entities: Node3D
 
+class CompassGenerator extends Node3D:
+	var field: WorldField
+
+func check_compass() -> void:
+	clear_bag()
+	var path := "res://props/electronic_compass.tscn"
+	var compass := make_item(path, Vector3(25, 1, 20)) as ElectronicCompass
+	compass.freeze = true
+	var saved := compass.capture_item_state()
+	check(ItemState.valid(path, saved), "Compass uses the registered persistent Item contract")
+	check(actor.add_prop_item(compass, path), "Compass can be picked up as a one-hand Item")
+	compass.queue_free()
+	var held := actor.held_item_node as ElectronicCompass
+	check(held != null and held.presentation_only and held.persistent_id == saved.id, "Compass equip retains the physical Item identity")
+	check(InventoryItemIcons.texture_for(path) != InventoryItemIcons.FALLBACK, "Compass has a dedicated inventory icon")
+	check(is_zero_approx(ElectronicCompass.bearing(Vector3.FORWARD, Vector3.FORWARD)), "Compass points up for a target ahead")
+	check(is_equal_approx(ElectronicCompass.bearing(Vector3.RIGHT, Vector3.FORWARD), PI / 2.0), "Compass points right for an east target")
+	check(is_equal_approx(absf(ElectronicCompass.bearing(Vector3.BACK, Vector3.FORWARD)), PI), "Compass points down for a target behind")
+	check(is_zero_approx(ElectronicCompass.bearing(Vector3.RIGHT, Vector3.RIGHT)), "Compass bearing follows player turns")
+	var generator := CompassGenerator.new()
+	generator.name = "WorldGenerator"
+	generator.field = WorldField.new(6)
+	world.add_child(generator)
+	actor.position = Vector3(0, 1, -1600)
+	held.set_process(false)
+	held._process(0.0)
+	check(held._scan_thread != null, "Equipping schedules the cold search on a worker thread")
+	var deadline := Time.get_ticks_msec() + 10000
+	while held.target_site.is_empty() and Time.get_ticks_msec() < deadline:
+		await steps(1)
+		held._process(0.0)
+	check(not held.target_site.is_empty() and held.screen.status == "BUILDING", "Held compass receives a real unloaded building target")
+	check(generator.field._megashelter_sites.is_empty() and generator.field._offroad_sites.is_empty(), "Worker planning leaves live world caches untouched")
+	if not held.target_site.is_empty():
+		var offset: Vector3 = held.target_site.building.origin - actor.global_position
+		check(is_equal_approx(held.target_distance, Vector2(offset.x, offset.z).length()), "Screen distance measures the actual horizontal target distance")
+		actor.rotation.y += PI / 2.0
+		held._process(0.0)
+		check(is_equal_approx(held.target_bearing, ElectronicCompass.bearing(offset, -actor.global_basis.z)), "Turning immediately updates the physical screen arrow")
+	var indoor := Node3D.new()
+	indoor.set_meta("entity_domain", true)
+	world.add_child(indoor)
+	# Remove the field during a cold scan without exiting the Item's tree.
+	held._scan_remaining = 0.0
+	held._locator = BuildingLocator.new(WorldField.new(7))
+	held._process(0.0)
+	var pending: WeakRef = weakref(held._request_locator)
+	generator.name = "UnavailableGenerator"
+	held._process(0.0)
+	check(held.target_site.is_empty() and held.screen.status == "NO SIGNAL", "Losing the field clears a cached compass reading")
+	check(pending.get_ref() != null, "Field loss retains the in-flight worker's locator")
+	generator.name = "WorldGenerator"
+	deadline = Time.get_ticks_msec() + 10000
+	while held._scan_thread != null and held._scan_thread.is_alive() and Time.get_ticks_msec() < deadline:
+		await steps(1)
+	held._process(0.0)
+	check(held.target_site.is_empty(), "Returning to a domain discards the previous in-flight target")
+	check(held._scan_thread != null, "Returning schedules a fresh search in the current domain")
+	actor.reparent(indoor)
+	held._process(0.0)
+	check(held.target_site.is_empty() and held.screen.status == "NO SIGNAL", "Compass does not borrow an outdoor target inside an independent domain")
+	actor.reparent(world)
+	held._process(0.0)
+	indoor.queue_free()
+	actor.drop_item()
+	var dropped := find_item(saved.id)
+	check(dropped is ElectronicCompass and dropped.capture_item_state() == saved, "Compass drop preserves identity and common saved state")
+	if dropped: dropped.queue_free()
+	generator.queue_free()
+	actor.position = Vector3(20, 1, 20)
+	actor.rotation = Vector3.ZERO
+	clear_bag()
+	await steps()
+
 func _init() -> void: run.call_deferred()
 
 func check(value: bool, note: String) -> void:
@@ -913,6 +987,7 @@ func run() -> void:
 	await steps()
 	check_survival()
 	check_eating()
+	await check_compass()
 	await check_hud_toggle()
 	await check_new_grants()
 	await check_scavenge_loot()

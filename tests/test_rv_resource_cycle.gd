@@ -94,7 +94,7 @@ func _run() -> void:
 func _exercise_portable_recipes(rv: Chassis, station: CraftingStation) -> void:
 	var materials := rv.inventory.duplicate(true)
 	var charge := rv.current_power
-	for id in ["flashlight", "pistol", "pistol_ammo"]:
+	for id in ["flashlight", "electronic_compass", "pistol", "pistol_ammo"]:
 		var recipe := RecipeCatalog.find(id)
 		check(recipe != null, "Portable recipe is registered: " + id)
 		if recipe == null: continue
@@ -115,8 +115,10 @@ func _exercise_portable_recipes(rv: Chassis, station: CraftingStation) -> void:
 				check(state.flashlight.charge == Flashlight.FULL_CHARGE and not state.flashlight.on, "Crafted flashlight is charged and switched off")
 			elif id == "pistol":
 				check(state.pistol.loaded_rounds == PistolRules.MAGAZINE_CAPACITY, "Crafted pistol has a full magazine")
-			else:
+			elif id == "pistol_ammo":
 				check(state.ammo.rounds == PistolRules.BOX_CAPACITY, "Crafted ammunition box contains 24 rounds")
+			elif id == "electronic_compass":
+				check(ItemState.valid(recipe.scene_path, state), "Crafted compass uses the persistent portable Item contract")
 			output.queue_free()
 		await process_frame
 		await physics_frame

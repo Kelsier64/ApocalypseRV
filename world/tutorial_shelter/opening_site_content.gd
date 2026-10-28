@@ -77,6 +77,19 @@ static func _spawn_orientation_workshop(building: Node3D, container: Node3D) -> 
 		item.restore_item_state(state)
 		item.global_transform = point.global_transform
 	_spawn_orientation_food(building, container)
+	_spawn_orientation_compass(building, container)
+
+static func _spawn_orientation_compass(building: Node3D, container: Node3D) -> void:
+	# Ordinary starter stock, outside the tutorial's required repair roles.
+	var identity := str(building.get_meta("poi_id", "orientation")) + ":electronic_compass"
+	if _orientation_identity_owned(container, identity): return
+	var compass: Item = load("res://props/electronic_compass.tscn").instantiate()
+	compass.freeze = true
+	container.add_child(compass)
+	var state := compass.capture_item_state()
+	state.id = identity
+	compass.restore_item_state(state)
+	compass.global_transform = building.get_node("WorkshopSupplies/ElectronicCompass").global_transform
 
 static func _spawn_orientation_food(building: Node3D, container: Node3D) -> void:
 	# Food is ordinary starter stock, outside the tutorial's repair-role contract.

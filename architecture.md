@@ -1,5 +1,7 @@
 # ApocalypseRV 架構
 
+2026-10-28 電子指南針：`ElectronicCompass extends Item` 共用物品 ID、倉庫與保存契約，不保存搜尋目標。`BuildingLocator` 從普通越野及獨立大樓候選帶查詢 `modular_megashelter`，依建築原點的水平距離選取 2 km 內最近目標，包含未載入場址。手持副本每秒或移動超過 20 m 啟動背景搜尋，工作執行緒擁有獨立 `WorldField`／profile／快取，完成後才在主執行緒更新讀值；跨 domain 結果以 epoch 拒絕，保留工作 locator 至執行緒 join。只查玩家祖先內同 World3D 的生成器。箭頭及距離逐幀更新；實物與預覽待機，不啟動世界服務。`carry_offset` 調整共用手臂求解中的持物中心，指南針上移以避開操作提示。新局倉庫提供一件，另登錄製作配方；已生成的保存場址不補發。模型來源與軸向見 [資產說明](assets/models/electronic_compass/README.md)。
+
 2026-10-28 巨型住宅密度：生成 v18 的 `modular_megashelter`（`Abandoned Megashelter`）增加獨立 300 m 候選帶，每帶最多一棟；最多嘗試三種 footprint、各 64 次位置，無合法位置則略過。一般越野候選維持 55%，原有 2% 大樓抽選及場址保持不變且優先保留；新增大樓完整整地範圍必須避開其他場址、道路及河谷，坡度上限維持 0.65，新增大樓場址地面高差上限為 12 m（原候選仍為 6 m）。四個固定種子共 288 個 150 m 區塊抽樣新增 64 棟，平均每 4.5 區塊一棟；屬平均密度，沒有固定間距保證。新增大樓使用獨立 `megashelter` 身分與 RNG 域，納入相同場址查詢及單一區塊歸屬；道路 RNG 域維持 v15。
 
 `ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；不含可玩室內、物資、敵人或轉場。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。2026-10-27 初版的自動檢查、seed 6 正式場址輪驅及效能結果屬歷史驗收；完整自由遊玩未完成，正式世界遠景受霧遮擋，詳見[初版驗證](docs/validation/2026-10-27-modular-megashelter.md)。本次密度調整的自動契約位於 `tests/support/megashelter_contracts.gd`，未重新做輪驅或自由遊玩驗收。

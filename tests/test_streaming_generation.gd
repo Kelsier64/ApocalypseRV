@@ -5,6 +5,7 @@ const TERRAIN_CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
 const V14_CONTRACTS = preload("res://tests/support/terrain_v14_contracts.gd")
 const OFFROAD_CONTRACTS = preload("res://tests/support/offroad_site_contracts.gd")
 const MEGASHELTER_CONTRACTS = preload("res://tests/support/megashelter_contracts.gd")
+const BUILDING_LOCATOR_CONTRACTS = preload("res://tests/support/building_locator_contracts.gd")
 const NAV_SURFACE = preload("res://tests/support/nav_surface_probe.gd")
 var failures: Array[String] = []
 
@@ -65,6 +66,7 @@ func run() -> void:
 	TERRAIN_CONTRACTS.run(check)
 	await V14_CONTRACTS.run(self, world, check)
 	await OFFROAD_CONTRACTS.run(self, world, check)
+	BUILDING_LOCATOR_CONTRACTS.run(check)
 	await MEGASHELTER_CONTRACTS.run(self, world, check)
 	for version: int in [18]:
 		await _check_crossing_chunk(world, version)

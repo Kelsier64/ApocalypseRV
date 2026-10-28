@@ -287,6 +287,7 @@ Checkpoint v7、VehicleSnapshot v6，預設 `user://rv_checkpoint_v7.save`，上
 | 標準引擎 | Metal Parts 30＋Electronic Scrap 10 | 20 秒 | 8 |
 | 強化引擎 | Metal Parts 50＋Electronic Scrap 20 | 30 秒 | 12 |
 | 引擎維修包 | Metal Parts 5＋Electronic Scrap 1 | 4 秒 | 1 |
+| 電子指南針 | Metal Parts 2＋Electronic Scrap 3 | 4 秒 | 1 |
 
 製作電池產出為空電池，須在引擎運轉時由 RV 充電。排隊時預留材料且檢查完整電費，工作時逐步支付電力；取消退回預留材料，已花電力不退。出料口堵住保留完成工作，暢通後只出一次。即時出料也先驗證場景、空間及完整成本，失敗不扣款。
 

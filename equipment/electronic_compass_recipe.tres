@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" load_steps=2 format=3]
+[ext_resource type="Script" path="res://equipment/recipe_definition.gd" id="1"]
+[resource]
+script = ExtResource("1")
+recipe_id = "electronic_compass"
+display_name = "Electronic Compass"
+scene_path = "res://props/electronic_compass.tscn"
+costs = {"Metal Parts": 2, "Electronic Scrap": 3}
+duration = 4.0
+power_cost = 1.0

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name SaveSceneCatalog
 ## Save files can only instantiate trusted gameplay scenes.
-const PROPS := ["scrap", "oil_barrel", "battery", "battery_large", "wheel", "gas_can", "gas_can_empty", "engine_standard", "engine_upgraded", "engine_repair_kit", "flashlight", "corpse", "pistol", "pistol_ammo", "printed_player",
+const PROPS := ["scrap", "oil_barrel", "battery", "battery_large", "wheel", "gas_can", "gas_can_empty", "engine_standard", "engine_upgraded", "engine_repair_kit", "flashlight", "electronic_compass", "corpse", "pistol", "pistol_ammo", "printed_player",
 	"scavenge_loot/copper_wire_spool", "scavenge_loot/broken_shortwave_radio", "scavenge_loot/salvaged_motor", "scavenge_loot/medical_tin", "scavenge_loot/industrial_valve", "scavenge_loot/enamel_kettle",
 	"scavenge_loot/bent_steel_plate", "scavenge_loot/broken_pipe_elbow", "scavenge_loot/rusted_brake_drum", "scavenge_loot/old_exhaust_muffler", "scavenge_loot/dented_paint_bucket", "scavenge_loot/discarded_electric_iron",
 	"food/canned_food", "food/energy_bar", "food/beef_jerky"]

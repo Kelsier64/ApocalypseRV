@@ -208,7 +208,7 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	await process_frame
 	await process_frame
 	_exercise_cheat_job_refunds(world, rv)
-	_exercise_food_persistence(world, rv)
+	_exercise_portable_persistence(world, rv)
 	var recycler: Item = rv.get_node("Scrapper")
 	var input := load("res://props/scrap.tscn").instantiate() as Item
 	WorldEntities.get_container(world).add_child(input)
@@ -227,39 +227,39 @@ func _exercise_queue_replace(world: Node3D) -> void:
 	await _exercise_socket_durability(world, rv)
 	_exercise_destroyed_support(world, rv)
 
-func _exercise_food_persistence(world: Node3D, rv: Chassis) -> void:
+func _exercise_portable_persistence(world: Node3D, rv: Chassis) -> void:
 	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
 	player.position = Vector3(300, 2, 0)
 	world.add_child(player)
 	player.set_physics_process(false)
-	var foods: Array[Dictionary] = []
+	var records: Array[Dictionary] = []
 	var container := WorldEntities.get_container(world)
-	for scene_path in ["res://props/food/canned_food.tscn", "res://props/food/energy_bar.tscn", "res://props/food/beef_jerky.tscn"]:
+	for scene_path in ["res://props/food/canned_food.tscn", "res://props/food/energy_bar.tscn", "res://props/food/beef_jerky.tscn", "res://props/electronic_compass.tscn"]:
 		var food := load(scene_path).instantiate() as Item
 		food.position = Vector3(300, 1, 3)
 		food.freeze = true
 		container.add_child(food)
 		var ground := WorldActorSnapshot.capture(food)
-		check(not food.is_large and WorldActorSnapshot.validation_error(ground, "food").is_empty(), "Food is a small Item with valid ground persistence: " + scene_path)
+		check(not food.is_large and WorldActorSnapshot.validation_error(ground, "portable").is_empty(), "Portable Item has valid ground persistence: " + scene_path)
 		food.begin_world_transfer()
 		food.free()
 		food = WorldActorSnapshot.restore(ground, container) as Item
-		check(food.capture_item_state() == ground.state, "Ground food restores its canonical identity and state: " + scene_path)
-		check(player.add_prop_item(food, scene_path), "Restored ground food enters inventory: " + scene_path)
+		check(food.capture_item_state() == ground.state, "Ground Item restores its canonical identity and state: " + scene_path)
+		check(player.add_prop_item(food, scene_path), "Restored ground Item enters inventory: " + scene_path)
 		food.free()
 		var record: Dictionary = player.inventory.active_item().duplicate(true)
-		foods.append(record)
-		check(VehicleSnapshot.valid_item(record) and record.state == ground.state, "Inventory food preserves ground identity: " + scene_path)
-		check(rv.store_player_item(player, 0) and player.inventory.items.is_empty(), "Food transfers to RV storage with one owner: " + scene_path)
+		records.append(record)
+		check(VehicleSnapshot.valid_item(record) and record.state == ground.state, "Inventory Item preserves ground identity: " + scene_path)
+		check(rv.store_player_item(player, 0) and player.inventory.items.is_empty(), "Item transfers to RV storage with one owner: " + scene_path)
 	var saved := VehicleSnapshot.capture(rv)
-	check(VehicleSnapshot.validate(saved) and VehicleSnapshot.apply(rv, saved), "Vehicle snapshot restores stored food through normal Item records")
-	for food in foods:
+	check(VehicleSnapshot.validate(saved) and VehicleSnapshot.apply(rv, saved), "Vehicle snapshot restores portable Item records")
+	for food in records:
 		var matching: Array = rv.stored_items.filter(func(record): return record.state.id == food.state.id)
-		check(matching.size() == 1 and matching[0] == food, "Restored storage contains one unchanged food record: " + food.scene_path)
+		check(matching.size() == 1 and matching[0] == food, "Restored storage contains one unchanged Item record: " + food.scene_path)
 		var index := rv.stored_items.find(food)
-		check(index >= 0 and rv.take_stored_item(player, index), "Restored food returns from RV storage: " + food.scene_path)
-	check(ItemState.unique_ids({"player": {"items": player.inventory.items}, "vehicle": {"items": rv.stored_items}}, {}), "Retrieved food identities have one inventory/storage owner")
-	check(player.inventory.items == foods, "Food inventory roundtrip preserves all three records")
+		check(index >= 0 and rv.take_stored_item(player, index), "Restored Item returns from RV storage: " + food.scene_path)
+	check(ItemState.unique_ids({"player": {"items": player.inventory.items}, "vehicle": {"items": rv.stored_items}}, {}), "Retrieved Item identities have one inventory/storage owner")
+	check(player.inventory.items == records, "Portable inventory roundtrip preserves every record")
 	player.free()
 
 func _exercise_cheat_job_refunds(world: Node3D, rv: Chassis) -> void:

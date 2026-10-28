@@ -1,0 +1,278 @@
+[gd_scene load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://props/electronic_compass.gd" id="1"]
+[ext_resource type="Resource" path="res://props/electronic_compass_definition.tres" id="2"]
+[ext_resource type="Mesh" path="res://assets/models/electronic_compass/enclosure.obj" id="3"]
+[ext_resource type="Script" path="res://props/electronic_compass_screen.gd" id="4"]
+
+[sub_resource type="StandardMaterial3D" id="olive"]
+albedo_color = Color(0.24, 0.29, 0.24, 1)
+metallic = 0.45
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="rubber"]
+albedo_color = Color(0.025, 0.035, 0.032, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="steel"]
+albedo_color = Color(0.42, 0.48, 0.44, 1)
+metallic = 0.85
+roughness = 0.35
+
+[sub_resource type="StandardMaterial3D" id="amber"]
+albedo_color = Color(0.7, 0.30, 0.065, 1)
+roughness = 0.64
+
+[sub_resource type="StandardMaterial3D" id="led"]
+albedo_color = Color(0.24, 0.85, 0.62, 1)
+emission_enabled = true
+emission = Color(0.15, 0.7, 0.42, 1)
+emission_energy_multiplier = 0.4
+
+[sub_resource type="BoxMesh" id="bezel"]
+size = Vector3(0.126, 0.164, 0.012)
+material = SubResource("rubber")
+
+[sub_resource type="QuadMesh" id="screen"]
+size = Vector2(0.108, 0.140)
+
+[sub_resource type="CylinderMesh" id="screw"]
+top_radius = 0.0036
+bottom_radius = 0.0036
+height = 0.0018
+radial_segments = 12
+material = SubResource("steel")
+
+[sub_resource type="BoxMesh" id="slot"]
+size = Vector3(0.004, 0.0008, 0.0005)
+material = SubResource("rubber")
+
+[sub_resource type="CylinderMesh" id="button"]
+top_radius = 0.008
+bottom_radius = 0.009
+height = 0.005
+radial_segments = 16
+material = SubResource("rubber")
+
+[sub_resource type="BoxMesh" id="rib"]
+size = Vector3(0.007, 0.004, 0.037)
+material = SubResource("rubber")
+
+[sub_resource type="BoxMesh" id="bumper"]
+size = Vector3(0.063, 0.009, 0.052)
+material = SubResource("rubber")
+
+[sub_resource type="BoxMesh" id="accent"]
+size = Vector3(0.05, 0.003, 0.001)
+material = SubResource("amber")
+
+[sub_resource type="CylinderMesh" id="indicator"]
+top_radius = 0.002
+bottom_radius = 0.002
+height = 0.001
+radial_segments = 12
+material = SubResource("led")
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.164, 0.236, 0.064)
+
+[node name="ElectronicCompass" type="RigidBody3D"]
+script = ExtResource("1")
+definition = ExtResource("2")
+mass = 0.45
+item_name = "Electronic Compass"
+hold_rotation = Vector3(-12, 0, 0)
+carry_offset = Vector3(0, 0.17, 0)
+
+[node name="Visuals" type="Node3D" parent="."]
+
+[node name="Enclosure" type="MeshInstance3D" parent="Visuals"]
+mesh = ExtResource("3")
+material_override = SubResource("olive")
+
+[node name="Gasket" type="MeshInstance3D" parent="Visuals"]
+scale = Vector3(1.012, 1.008, 0.10)
+mesh = ExtResource("3")
+material_override = SubResource("rubber")
+
+[node name="RearCover" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0, -0.025)
+scale = Vector3(0.89, 0.92, 0.14)
+mesh = ExtResource("3")
+material_override = SubResource("rubber")
+
+[node name="Bezel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.012, 0.027)
+mesh = SubResource("bezel")
+
+[node name="Screen" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.012, 0.0335)
+mesh = SubResource("screen")
+cast_shadow = 0
+
+[node name="Accent" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.015, 0.102, 0.026)
+mesh = SubResource("accent")
+
+[node name="Indicator" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.035, 0.102, 0.026)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("indicator")
+
+[node name="GripRight" type="Marker3D" parent="."]
+position = Vector3(0.077, -0.06, 0)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+position = Vector3(-0.077, -0.06, 0)
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("collision")
+
+[node name="Display" type="SubViewport" parent="."]
+size = Vector2i(256, 332)
+disable_3d = true
+gui_disable_input = true
+render_target_update_mode = 2
+
+[node name="Screen" type="Control" parent="Display"]
+layout_mode = 0
+offset_right = 256.0
+offset_bottom = 332.0
+mouse_filter = 2
+script = ExtResource("4")
+
+[node name="Screw0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.061, -0.096, 0.026)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+
+[node name="ScrewSlot0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.061, -0.096, 0.0272)
+rotation_degrees = Vector3(0, 0, 0)
+mesh = SubResource("slot")
+
+[node name="Screw1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.061, -0.096, 0.026)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+
+[node name="ScrewSlot1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.061, -0.096, 0.0272)
+rotation_degrees = Vector3(0, 0, 32)
+mesh = SubResource("slot")
+
+[node name="Screw2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.061, 0.096, 0.026)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+
+[node name="ScrewSlot2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.061, 0.096, 0.0272)
+rotation_degrees = Vector3(0, 0, 64)
+mesh = SubResource("slot")
+
+[node name="Screw3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.061, 0.096, 0.026)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("screw")
+
+[node name="ScrewSlot3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.061, 0.096, 0.0272)
+rotation_degrees = Vector3(0, 0, 96)
+mesh = SubResource("slot")
+
+[node name="Button0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.027, -0.085, 0.027)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("button")
+
+[node name="Button1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, -0.085, 0.027)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("button")
+material_override = SubResource("amber")
+
+[node name="Button2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.027, -0.085, 0.027)
+rotation_degrees = Vector3(90, 0, 0)
+mesh = SubResource("button")
+
+[node name="RibL0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.075, 0)
+mesh = SubResource("rib")
+
+[node name="RibL1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.061, 0)
+mesh = SubResource("rib")
+
+[node name="RibL2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.047, 0)
+mesh = SubResource("rib")
+
+[node name="RibL3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.032999999999999995, 0)
+mesh = SubResource("rib")
+
+[node name="RibL4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.018999999999999996, 0)
+mesh = SubResource("rib")
+
+[node name="RibL5" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, -0.0049999999999999906, 0)
+mesh = SubResource("rib")
+
+[node name="RibL6" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, 0.009000000000000008, 0)
+mesh = SubResource("rib")
+
+[node name="RibL7" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.077, 0.023000000000000007, 0)
+mesh = SubResource("rib")
+
+[node name="RibR0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.075, 0)
+mesh = SubResource("rib")
+
+[node name="RibR1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.061, 0)
+mesh = SubResource("rib")
+
+[node name="RibR2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.047, 0)
+mesh = SubResource("rib")
+
+[node name="RibR3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.032999999999999995, 0)
+mesh = SubResource("rib")
+
+[node name="RibR4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.018999999999999996, 0)
+mesh = SubResource("rib")
+
+[node name="RibR5" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, -0.0049999999999999906, 0)
+mesh = SubResource("rib")
+
+[node name="RibR6" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, 0.009000000000000008, 0)
+mesh = SubResource("rib")
+
+[node name="RibR7" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.077, 0.023000000000000007, 0)
+mesh = SubResource("rib")
+
+[node name="Bumper0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.042, -0.112, 0)
+mesh = SubResource("bumper")
+
+[node name="Bumper1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.042, -0.112, 0)
+mesh = SubResource("bumper")
+
+[node name="Bumper2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-0.042, 0.112, 0)
+mesh = SubResource("bumper")
+
+[node name="Bumper3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0.042, 0.112, 0)
+mesh = SubResource("bumper")

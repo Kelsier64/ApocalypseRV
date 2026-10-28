@@ -327,6 +327,7 @@ func _update_item(delta: float, large: bool) -> void:
 			center = Vector3(.18, shoulder_height + .24, -.50)
 	# Follow the crouched torso in depth too, keeping real grips in arm reach.
 	center.z += crouch_depth
+	if item is Item: center += item.carry_offset
 	if active_hand == "L" and not large: center.x = -center.x
 	# Item sway is solved into the holding arms in this same transaction.
 	center += sway
