@@ -1,6 +1,6 @@
 extends RefCounted
 class_name OffroadSites
-## World-coordinate cells keep independent off-road sites separated by construction.
+## World-coordinate cells separate sites; large buildings also avoid ordinary sites.
 ## WorldField owns the cache; this planner never queries the blended surface.
 const CELL_LENGTH := 900.0
 const CELL_WIDTH := 300.0
@@ -9,15 +9,31 @@ const WALK_MARGIN := 3.0
 const BLEND_MARGIN := 16.0
 const ROAD_CLEARANCE := 25.0
 const MEGASHELTER_CHANCE := 0.02
+const MEGASHELTER_CELL_LENGTH := 300.0
+const MEGASHELTER_MAX_RELIEF := 12.0
 
 static func plan(field: WorldField, row: int, column: int) -> Dictionary:
+	return _plan_site(field, row, column, false)
+
+static func plan_megashelter(field: WorldField, row: int) -> Dictionary:
+	if row < 1 or field.profile.generation_version < 18: return {}
+	# One opportunity per two chunks, with bounded retries for different footprints.
+	# Terrain/occupancy rejection brings sampled actual spacing to about 3-5 chunks.
+	for variant in range(COLUMNS):
+		var site := _plan_site(field, row, variant, true)
+		if not site.is_empty(): return site
+	return {}
+
+static func _plan_site(field: WorldField, row: int, column: int, megashelter: bool) -> Dictionary:
 	if row < 0 or column < 0 or column >= COLUMNS: return {}
 	var cell_index := row * COLUMNS + column
-	if field.rng_for(cell_index, "offroad_presence").randf() >= 0.55: return {}
-	var seed_value := field.seed_for(cell_index, "offroad_content")
+	if not megashelter and field.rng_for(cell_index, "offroad_presence").randf() >= 0.55: return {}
+	var domain := "megashelter" if megashelter else "offroad"
+	var cell_length := MEGASHELTER_CELL_LENGTH if megashelter else CELL_LENGTH
+	var seed_value := field.seed_for(cell_index, domain + "_content")
 	var exterior_plan: Dictionary = {}
 	var definition_id: String
-	if field.profile.generation_version >= 18 and field.rng_for(cell_index, "offroad_megashelter").randf() < MEGASHELTER_CHANCE:
+	if megashelter or (field.profile.generation_version >= 18 and field.rng_for(cell_index, "offroad_megashelter").randf() < MEGASHELTER_CHANCE):
 		definition_id = "modular_megashelter"
 		exterior_plan = MegashelterPlan.generate(seed_value)
 	else:
@@ -35,25 +51,28 @@ static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 	var definition := POIConfig.definition(StringName(definition_id))
 	if definition == null or not definition.supports_placement(PoiDefinition.Placement.OFF_ROAD): return {}
 	var local_site_bounds: AABB = exterior_plan.get("site_bounds", definition.site_bounds)
-	var placement := field.rng_for(cell_index, "offroad_placement")
-	var x_min := -450.0 + column * CELL_WIDTH
-	var s_min := row * CELL_LENGTH
-	for attempt in range(8):
-		var position := Vector3(placement.randf_range(x_min + 65.0, x_min + CELL_WIDTH - 65.0), 0.0,
-			-placement.randf_range(s_min + 100.0, s_min + CELL_LENGTH - 100.0))
+	var placement := field.rng_for(cell_index, domain + "_placement")
+	var x_min := -450.0 if megashelter else -450.0 + column * CELL_WIDTH
+	var x_max := 450.0 if megashelter else x_min + CELL_WIDTH
+	var s_min := row * cell_length
+	var end_margin := 65.0 if megashelter else 100.0
+	for attempt in range(64 if megashelter else 8):
+		var position := Vector3(placement.randf_range(x_min + 65.0, x_max - 65.0), 0.0,
+			-placement.randf_range(s_min + end_margin, s_min + cell_length - end_margin))
 		if -position.z < 450.0: continue
 		var building := Transform3D(Basis(Vector3.UP, placement.randf_range(-PI, PI)), position)
 		# The complete terrain blend stays inside its cell and the collision strip.
 		var influence := local_site_bounds.grow(WALK_MARGIN + BLEND_MARGIN + 1.0)
 		var envelope: AABB = building * influence
-		if envelope.position.x < maxf(-440.0, x_min) or envelope.end.x > minf(440.0, x_min + CELL_WIDTH): continue
-		if envelope.position.z < -s_min - CELL_LENGTH or envelope.end.z > -s_min: continue
+		if envelope.position.x < maxf(-440.0, x_min) or envelope.end.x > minf(440.0, x_max): continue
+		if envelope.position.z < -s_min - cell_length or envelope.end.z > -s_min: continue
+		if megashelter and not _terrain_clear(field, building, local_site_bounds.grow(4.0), MEGASHELTER_MAX_RELIEF): continue
 		if not _environment_clear(field, building, influence): continue
-		if not _terrain_clear(field, building, local_site_bounds.grow(4.0)): continue
+		if not megashelter and not _terrain_clear(field, building, local_site_bounds.grow(4.0)): continue
 		position.y = field.raw_height(position.x, position.z)
 		building.origin = position
 		var site := {"index": cell_index,
-			"id": "v%d:%d:offroad:%d:%d" % [field.profile.generation_version, field.world_seed, row, column],
+			"id": "v%d:%d:%s:%d:%d" % [field.profile.generation_version, field.world_seed, domain, row, column],
 			"s": -position.z, "building": building, "frame": building,
 			"bounds": (building * local_site_bounds).grow(5.0),
 			"placement": "off_road", "definition_id": definition_id,
@@ -65,8 +84,22 @@ static func plan(field: WorldField, row: int, column: int) -> Dictionary:
 			site.local_building_bounds = exterior_plan.building_bounds
 		if definition.kind == PoiDefinition.Kind.WALK_IN: site.minor = true
 		if _occupied(field, building * influence): continue
+		if megashelter and _offroad_occupied(field, building * influence): continue
 		return site
 	return {}
+
+static func _offroad_occupied(field: WorldField, envelope: AABB) -> bool:
+	# Ordinary sites have priority and never query this additional pool.
+	var first := maxi(0, floori(-envelope.end.z / CELL_LENGTH))
+	var last := maxi(0, floori(-envelope.position.z / CELL_LENGTH))
+	for row in range(first, last + 1):
+		for column in range(COLUMNS):
+			var site := field.offroad_site(row, column)
+			if site.is_empty(): continue
+			var local_bounds: AABB = site.get("local_site_bounds", POIConfig.definition_for_site(site).site_bounds)
+			var bounds: AABB = site.building * local_bounds.grow(WALK_MARGIN + BLEND_MARGIN + 1.0)
+			if _intersects_xz(envelope, bounds): return true
+	return false
 
 static func court_distance(point: Vector3, site: Dictionary) -> float:
 	var local: Vector3 = site.building.affine_inverse() * point
@@ -106,7 +139,7 @@ static func _environment_clear(field: WorldField, building: Transform3D, bounds:
 			if channel.wet or is_finite(float(channel.water_height)): return false
 	return true
 
-static func _terrain_clear(field: WorldField, building: Transform3D, bounds: AABB) -> bool:
+static func _terrain_clear(field: WorldField, building: Transform3D, bounds: AABB, max_relief: float = 6.0) -> bool:
 	var low := INF
 	var high := -INF
 	for x_index in range(3):
@@ -116,7 +149,7 @@ static func _terrain_clear(field: WorldField, building: Transform3D, bounds: AAB
 			var height := field.raw_height(point.x, point.z)
 			low = minf(low, height)
 			high = maxf(high, height)
-			if high - low > 6.0: return false
+			if high - low > max_relief: return false
 	var center := building.origin
 	var dx := (field.raw_height(center.x + 2.0, center.z) - field.raw_height(center.x - 2.0, center.z)) / 4.0
 	var dz := (field.raw_height(center.x, center.z + 2.0) - field.raw_height(center.x, center.z - 2.0)) / 4.0

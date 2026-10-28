@@ -1,6 +1,8 @@
 # ApocalypseRV 架構
 
-2026-10-27 巨型住宅外殼：正式世界生成 v18 引入 `modular_megashelter`（顯示名 `Abandoned Megashelter`），作為越野候選的獨立 2% 選項；候選率維持 55%，道路 RNG 域維持 v15。`ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；不含可玩室內、物資、敵人或轉場。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。自動檢查及 seed 6 正式場址輪驅通過；完整自由遊玩未完成，正式世界遠景受霧遮擋。效能結果與限制見[本輪驗證](docs/validation/2026-10-27-modular-megashelter.md)。
+2026-10-28 巨型住宅密度：生成 v18 的 `modular_megashelter`（`Abandoned Megashelter`）增加獨立 300 m 候選帶，每帶最多一棟；最多嘗試三種 footprint、各 64 次位置，無合法位置則略過。一般越野候選維持 55%，原有 2% 大樓抽選及場址保持不變且優先保留；新增大樓完整整地範圍必須避開其他場址、道路及河谷，坡度上限維持 0.65，新增大樓場址地面高差上限為 12 m（原候選仍為 6 m）。四個固定種子共 288 個 150 m 區塊抽樣新增 64 棟，平均每 4.5 區塊一棟；屬平均密度，沒有固定間距保證。新增大樓使用獨立 `megashelter` 身分與 RNG 域，納入相同場址查詢及單一區塊歸屬；道路 RNG 域維持 v15。
+
+`ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；不含可玩室內、物資、敵人或轉場。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。2026-10-27 初版的自動檢查、seed 6 正式場址輪驅及效能結果屬歷史驗收；完整自由遊玩未完成，正式世界遠景受霧遮擋，詳見[初版驗證](docs/validation/2026-10-27-modular-megashelter.md)。本次密度調整的自動契約位於 `tests/support/megashelter_contracts.gd`，未重新做輪驅或自由遊玩驗收。
 
 
 2026-10-25 生存狀態：`PlayerSurvival` 屬目前受控身體，保存 `{hunger, starvation_elapsed}`，以玩家物理 delta 推進，沿自身祖先查找 StartRun／POI／staging 狀態並檢查載入 gate；不讀日夜累計時間或任意候選世界。滿值 100／1200 秒，零值每 5 秒獨立扣 1 HP，保留戰鬥無敵時間並沿用死亡入口。Player 在移動前推進，低於 40 時耐力恢復乘 0.5、20 以下禁止衝刺，同一 tick 生效。`PlayerConsumables` 以一次右鍵按壓持有 slot＋Item ID＋scene，完成 2 秒前反覆檢查能力與所有權，移除一份後才補營養；中斷／完成後需放開才可重試。`FoodDefinition extends ItemDefinition` 保存營養與食用時間，`FoodCatalog` 以允許場景查定義，不信任保存資料中的名稱或營養。食物沿用 Item 身分／倉庫／物理／串流快照；新局三份食物獨立於教學維修角色契約。Checkpoint v7 必要 `player.survival`；列印身體 v2 保存並交換同一 survival，未控制不推進，重生／新列印滿值。VehicleSnapshot 仍 v6，無格式遷移。下方 v6 描述涉及既往整合時，以此段及頂部政策為當前保存契約。

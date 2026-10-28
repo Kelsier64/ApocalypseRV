@@ -10,6 +10,7 @@ var clusters := FastNoiseLite.new()
 var _stops: Dictionary = {}
 var _minor_sites: Dictionary = {}
 var _offroad_sites: Dictionary = {}
+var _megashelter_sites: Dictionary = {}
 var _site_queries: Dictionary = {}
 var forest_cache: Dictionary = {}
 var destroyed_trees: Dictionary = {}
@@ -128,6 +129,10 @@ func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 			var site := offroad_site(row, column)
 			if not site.is_empty() and absf(float(site.s) + z) <= radius:
 				found.append(site)
+	for row in range(maxi(1, floori((-z - radius) / OffroadSites.MEGASHELTER_CELL_LENGTH)), maxi(0, floori((-z + radius) / OffroadSites.MEGASHELTER_CELL_LENGTH)) + 1):
+		var site := megashelter_site(row)
+		if not site.is_empty() and absf(float(site.s) + z) <= radius:
+			found.append(site)
 	found.sort_custom(func(a, b): return a.s < b.s)
 	if _site_queries.size() >= 256: _site_queries.clear()
 	_site_queries[key] = found
@@ -143,6 +148,11 @@ func offroad_site(row: int, column: int) -> Dictionary:
 	var key := Vector2i(row, column)
 	if not _offroad_sites.has(key): _offroad_sites[key] = OffroadSites.plan(self, row, column)
 	return _offroad_sites[key]
+
+func megashelter_site(row: int) -> Dictionary:
+	if row < 1 or profile.generation_version < 18: return {}
+	if not _megashelter_sites.has(row): _megashelter_sites[row] = OffroadSites.plan_megashelter(self, row)
+	return _megashelter_sites[row]
 
 func court_distance(x: float, z: float, site: Dictionary) -> float:
 	var point := Vector3(x, site.frame.origin.y, z)

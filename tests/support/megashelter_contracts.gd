@@ -20,6 +20,7 @@ class SeamField extends WorldField:
 		return 0.0
 
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
+	_check_generation(check)
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
 		_check_plan(plan,seed_value,check)
@@ -28,6 +29,44 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_custom_heights(check)
 	for seed_value in range(8): _check_build(PLAN.generate(seed_value),check)
 	await _check_streaming_navigation(tree,world,PLAN.generate(0),check)
+
+static func _check_generation(check: Callable) -> void:
+	var accepted := 0
+	var ids := {}
+	for seed_value in [6, 42, 913, 2026]:
+		var field := WorldField.new(seed_value)
+		var reverse := WorldField.new(seed_value)
+		for row in range(37, 1, -1): reverse.megashelter_site(row)
+		check.call(field.megashelter_site(0).is_empty(), "Megashelters stay outside the opening area")
+		for row in range(2, 38):
+			var site := field.megashelter_site(row)
+			check.call(site == reverse.megashelter_site(row), "Megashelter placement survives reversed query order: %d/%d" % [seed_value, row])
+			if site.is_empty(): continue
+			accepted += 1
+			check.call(not ids.has(site.id), "Megashelters retain unique stable identities")
+			ids[site.id] = true
+			var envelope: AABB = site.building * (site.local_site_bounds as AABB).grow(20.0)
+			check.call(envelope.position.x >= -440.0 and envelope.end.x <= 440.0 and envelope.position.z >= -(row + 1) * 300.0 and envelope.end.z <= -row * 300.0, "Large-building terrain blend fits its row and terrain strip")
+			var band := floori(float(site.s) / field.profile.chunk_length)
+			var occurrences := 0
+			for neighbour in range(band - 1, band + 2):
+				for found: Dictionary in field.stops_in_band(neighbour):
+					if found.id == site.id:
+						occurrences += 1
+						check.call(neighbour == band, "Megashelter belongs to the chunk containing its root")
+			check.call(occurrences == 1, "Megashelter has exactly one streamed owner")
+			for other: Dictionary in field.sites_near_z(-float(site.s)):
+				if other.id == site.id: continue
+				var local_bounds: AABB = other.get("local_site_bounds", POIConfig.definition_for_site(other).site_bounds)
+				var bounds: AABB = other.building * local_bounds.grow(20.0)
+				check.call(not OffroadSites._intersects_xz(envelope, bounds), "Megashelter terrain blend avoids existing sites")
+			var surface := field.surface(site.building.origin.x, site.building.origin.z)
+			check.call(surface.reserved and absf(float(surface.height) - site.building.origin.y) < 0.12, "Generated megashelter remains grounded on its reserved pad")
+	# Four fixed seeds over 72 chunks each: measure accepted sites, including
+	# terrain rejection, rather than asserting the candidate probability.
+	var spacing := 288.0 / maxi(1, accepted)
+	check.call(spacing >= 3.0 and spacing <= 5.0, "Sampled megashelter density stays near one per 3-5 chunks: %.2f" % spacing)
+	print("MEGASHELTER_DENSITY chunks=288 accepted=", accepted, " mean_chunks=", spacing)
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
