@@ -31,7 +31,7 @@ func _enter_tree() -> void:
 	var band := floori(float(site.s) / 150.0)
 	$WorldGenerator.restore_bands.assign(range(band - 1, band + 2))
 	$Player.transform = site.building * Transform3D(Basis.IDENTITY, plan.access_point + Vector3(7, 0.5, 3))
-	$NewRv.transform = site.building * Transform3D(Basis.IDENTITY, Vector3(-10, 1.8, float(plan.depth) * 0.5 + 19))
+	$NewRv.transform = site.building * Transform3D(Basis.IDENTITY, Vector3(plan.access_point.x, 1.8, float(plan.depth) * 0.5 + 19))
 	get_tree().node_added.connect(_freeze_enemy)
 
 func _ready() -> void:
@@ -93,8 +93,8 @@ func _overview() -> void:
 
 func _entrance() -> void:
 	camera.fov = 68
-	camera.global_position = site.building * Vector3(16, 3.1, float(plan.depth) * 0.5 + 24)
-	camera.look_at(site.building * Vector3(0, 4.2, float(plan.depth) * 0.5))
+	camera.global_position = site.building * Vector3(plan.access_point.x+16, 3.1, float(plan.depth) * 0.5 + 26)
+	camera.look_at(site.building * Vector3(plan.access_point.x, 4.2, float(plan.depth) * 0.5+2.2))
 	camera.make_current()
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -112,7 +112,7 @@ func _drive_leg(reverse: bool, target_z: float) -> bool:
 	# Keep both ends of the 12m RV inside the authored clear forecourt.
 	if reverse: target_z = minf(target_z, float(plan.depth) * 0.5 + 23.0)
 	vehicle.gear = -1 if reverse else 4
-	var target: Vector3 = site.building * Vector3(-10, 0, target_z)
+	var target: Vector3 = site.building * Vector3(plan.access_point.x, 0, target_z)
 	for frame in range(1800):
 		var local_position: Vector3 = site.building.affine_inverse() * vehicle.global_position
 		var remaining := target_z - local_position.z if reverse else local_position.z - target_z

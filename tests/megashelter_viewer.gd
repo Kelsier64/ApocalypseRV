@@ -1,7 +1,7 @@
 extends Node3D
 ## Standalone, fog-free inspection of the production exterior.
 @export var seed_value: int = 101
-@export_enum("Slab", "Central tower", "Stepped") var template_index: int = 2
+@export_enum("Random:-1", "T:0", "L:1", "U:2", "H:3", "Cross:4", "Z:5", "Comb:6", "Offset:7") var template_index: int = -1
 
 @onready var camera: Camera3D = $Camera3D
 @onready var status: Label = $Interface/Status
@@ -24,7 +24,7 @@ func _rebuild() -> void:
 	building = POIConfig.instantiate_site({"definition_id": "modular_megashelter", "seed": seed_value, "exterior_plan": plan})
 	add_child(building)
 	_overview()
-	status.text = "MEGASHELTER / seed %d / %s\nRMB orbit | MMB pan | Wheel zoom\n1 overall | 2 entrance | 3 roof | F5 shape | F6 random seed" % [seed_value, ["Slab", "Central tower", "Stepped"][template_index]]
+	status.text = "MEGASHELTER / seed %d / %s\nRMB orbit | MMB pan | Wheel zoom\n1 overall | 2 entrance | 3 roof | F5 shape | F6 random seed" % [seed_value, MegashelterPlan.FOOTPRINT_NAMES[plan.template]]
 
 func _overview() -> void:
 	_set_view(Vector3(float(plan.width) * 0.95, float(plan.height) * 0.4, float(plan.depth) * 0.5 + float(plan.height) * 1.3), Vector3(0, float(plan.height) * 0.44, 0))
@@ -63,11 +63,12 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_1: _overview()
-			KEY_2: _set_view(Vector3(16, 5, float(plan.depth) * 0.5 + 24), Vector3(0, 4.2, float(plan.depth) * 0.5))
+			KEY_2: _set_view(Vector3(plan.access_point.x+16, 5, float(plan.depth) * 0.5 + 26), Vector3(plan.access_point.x, 4.2, float(plan.depth) * 0.5+2.2))
 			KEY_3: _set_view(Vector3(36, float(plan.height) + 30, 45), Vector3(0, float(plan.height), 0))
 			KEY_F5:
-				template_index = (template_index + 1) % 3
+				template_index = (int(plan.template) + 1) % 8
 				_rebuild()
 			KEY_F6:
 				seed_value = randi_range(1, 2147483646)
+				template_index = -1
 				_rebuild()

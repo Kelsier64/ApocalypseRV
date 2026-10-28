@@ -51,7 +51,7 @@ func _begin_visuals(plan: Dictionary) -> void:
 		_surfaces.append(MegashelterKit.Batch.new())
 	# Solid backing closes the narrow joints between wall cassettes.
 	for bounds: AABB in plan.volumes:
-		_append_box(Transform3D.IDENTITY, bounds.get_center(), bounds.size - Vector3(4.3, 0.02, 4.3), 0, 0.62)
+		_append_box(Transform3D.IDENTITY, bounds.get_center(), bounds.size - Vector3(0.02, 0.02, 0.02), 0, 0.62)
 
 func _append_module(module: Dictionary) -> void:
 	if module.kind == "roof_plant": _roof_modules.append(module)
@@ -96,7 +96,7 @@ func _dress_base(plan: Dictionary) -> void:
 	var paving := MegashelterKit.Batch.new()
 	for row in range(3):
 		for column in range(6):
-			paving.add_box(Transform3D.IDENTITY,Vector3(-10+column*4,-0.005,float(plan.depth)*0.5+3.8+row*4),Vector3(3.97,0.04,3.97),rng.randf_range(0.78,0.92))
+			paving.add_box(Transform3D.IDENTITY,Vector3(plan.access_point.x-10+column*4,-0.005,float(plan.depth)*0.5+5.8+row*4),Vector3(3.97,0.04,3.97),rng.randf_range(0.78,0.92))
 	var floor_visual := MeshInstance3D.new()
 	floor_visual.name = "CrackedForecourt"
 	floor_visual.mesh = paving.mesh()

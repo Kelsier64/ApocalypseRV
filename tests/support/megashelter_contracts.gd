@@ -22,19 +22,22 @@ class SeamField extends WorldField:
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	var templates: Dictionary = {}
 	var signatures: Dictionary = {}
-	for seed_value in range(32):
+	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
 		_check_plan(plan, seed_value, check)
-		_check_legacy_massing(plan, check)
 		check.call(plan == PLAN.generate(seed_value), "Megashelter seed %d reproduces every module and collision box" % seed_value)
 		if not templates.has(plan.template):
 			templates[plan.template] = plan
 			signatures[plan.template] = plan.volumes
-	check.call(templates.size() == 3, "Thirty-two megashelter seeds exercise all three silhouette templates")
-	if templates.size() == 3:
-		check.call(signatures[0] != signatures[1] and signatures[0] != signatures[2] and signatures[1] != signatures[2], "Megashelter templates have distinct structural silhouettes")
+	check.call(templates.size() == 8, "Sixty-four megashelter seeds exercise all eight footprint families")
+	var distinct := true
+	for first: int in signatures:
+		for second: int in signatures:
+			if first < second: distinct = distinct and signatures[first] != signatures[second]
+	check.call(distinct, "Megashelter footprint families have distinct structural massing")
 	_check_seed_diversity(check)
-	for template_index in range(3):
+	_check_custom_heights(check)
+	for template_index in range(8):
 		var plan: Dictionary = PLAN.generate(42, template_index)
 		check.call(plan.template == template_index, "Megashelter authoring override selects template %d" % template_index)
 		_check_plan(plan, 42, check)
@@ -44,7 +47,9 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 3 and plan.seed == seed_value and plan.template in [0, 1, 2], label + "versioned plan retains its seed and template")
+	check.call(plan.version == 4 and plan.seed == seed_value and plan.template in range(8), label + "versioned plan retains its seed and footprint family")
+	check.call(plan.structure in range(5) and plan.style in range(3), label + "structural treatment and facade style use separate valid choices")
+	check.call(plan.width in [48.0, 56.0, 64.0] and plan.depth in [32.0, 40.0, 48.0] and plan.height in [54.0, 67.5, 81.0], label + "default dimensions retain the configured envelope choices")
 	var building: AABB = plan.building_bounds
 	var site: AABB = plan.site_bounds
 	var maximum := POIConfig.definition(&"modular_megashelter").building_bounds
@@ -54,7 +59,9 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 	var enclosed := true
 	var supported := true
 	var non_overlapping := true
+	var footprint_area := 0.0
 	for volume: AABB in plan.volumes:
+		footprint_area += volume.size.x * volume.size.z
 		enclosed = enclosed and volume.size.x > 0.0 and volume.size.y > 0.0 and volume.size.z > 0.0 and building.grow(0.001).encloses(volume) and volume in plan.collision_boxes
 		# Structural masses are closed solid boxes. Upper blocks must touch an
 		# underlying mass; decorative ribs and service fittings are separate.
@@ -65,6 +72,8 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 			if absf(lower.end.y - volume.position.y) < 0.01 and _contains_xz(lower, volume): contact = true
 		supported = supported and contact
 	check.call(enclosed and supported and non_overlapping, label + "closed structural masses meet without overlap, fully support upper footprints and retain complete collision")
+	check.call(_connected_ground_footprint(plan.volumes), label + "structural wings form one connected footprint through shared faces")
+	check.call(footprint_area < float(plan.width * plan.depth) - 0.01, label + "the footprint leaves genuine exterior space instead of filling one rectangular slab")
 	var unique: Dictionary = {}
 	var modules_valid := true
 	var solid_modules_valid := true
@@ -85,38 +94,74 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 			solid_modules_valid = solid_modules_valid and PLAN.module_bounds(module) in plan.collision_boxes
 		unique[id] = true
 	check.call(modules_valid, label + "module identities, transforms and bounds are finite, unique and enclosed")
-	check.call(solid_modules_valid and solid_kinds.size() == 3, label + "broad piers, roof equipment and drains retain their complete solid module collision envelopes")
+	check.call(solid_modules_valid and solid_kinds.has("roof_plant") and solid_kinds.has("drain"), label + "structural fittings and service equipment retain their complete solid module collision envelopes")
 	var collision_enclosed := true
 	for box: AABB in plan.collision_boxes:
 		collision_enclosed = collision_enclosed and box.size.x > 0.0 and box.size.y > 0.0 and box.size.z > 0.0 and building.grow(0.01).encloses(box)
 	check.call(collision_enclosed, label + "closed-door collision remains inside declared bounds")
+	_check_facade_and_equipment_clearance(plan, label, check)
 
-static func _check_legacy_massing(plan: Dictionary, check: Callable) -> void:
-	# Art revisions preserve the v1 template and dimension choice stream.
-	# Fix the original dimension choices here so a content-version seed bump
-	# cannot silently reroll an already selected site's structural envelope.
-	var legacy := RandomNumberGenerator.new()
-	legacy.seed = ("megashelter:1:%d:massing" % int(plan.seed)).hash()
-	var expected := [legacy.randi_range(0, 2), float([48, 56, 64][legacy.randi_range(0, 2)]),
-		float([32, 40, 48][legacy.randi_range(0, 2)]), [54.0, 67.5, 81.0][legacy.randi_range(0, 2)]]
-	check.call([plan.template, plan.width, plan.depth, plan.height] == expected, "Megashelter seed %d retains its v1 template and dimension choices after the art revision" % int(plan.seed))
+static func _check_custom_heights(check: Callable) -> void:
+	# Valid floor-aligned profiles need not be multiples of a facade band.
+	var profile := MegashelterProfile.new()
+	profile.widths = PackedInt32Array([56])
+	profile.depths = PackedInt32Array([40])
+	for height: float in [58.5, 63.0, 72.0]:
+		profile.heights = PackedFloat32Array([height])
+		check.call(profile.validate().is_empty(), "Megashelter custom height %.1f is a valid authoring profile" % height)
+		for footprint in range(8):
+			var plan: Dictionary = PLAN.generate(42, footprint, profile)
+			_check_facade_and_equipment_clearance(plan, "Megashelter height %.1f footprint %d: " % [height, footprint], check)
+
+static func _check_facade_and_equipment_clearance(plan: Dictionary, label: String, check: Callable) -> void:
+	var walls_backed := true
+	var equipment_clear := true
+	for module: Dictionary in plan.modules:
+		if module.kind in ["wall", "rib_wall"]:
+			# Facades sit just outside the solid boundary. Probe through their
+			# thickness to identify the actual wing supporting this wall band.
+			var probe: Vector3 = module.transform * Vector3(0, 0, -2.25)
+			var backed := false
+			for volume: AABB in plan.volumes:
+				if _contains_xz(volume, AABB(probe, Vector3.ZERO)):
+					backed = backed or volume.end.y + 0.01 >= module.transform.origin.y + module.size.y
+			walls_backed = walls_backed and backed
+		elif module.kind == "roof_plant":
+			var plant: AABB = PLAN.module_bounds(module)
+			for volume: AABB in plan.volumes:
+				if volume.end.y <= plant.position.y: continue
+				# Taller wings carry outward facade fittings. Their horizontal
+				# clearance must remain free all the way down to the plant roof.
+				var facade := AABB(volume.position - Vector3(3.15, 0, 3.15), volume.size + Vector3(6.3, 0, 6.3))
+				equipment_clear = equipment_clear and not facade.intersects(plant.grow(-0.001))
+	check.call(walls_backed, label + "every facade wall band ends at or below its backing wing roof")
+	check.call(equipment_clear, label + "roof equipment clears taller wings and their projecting facade fittings")
 
 static func _check_seed_diversity(check: Callable) -> void:
-	# Hold the envelope fixed so dimension choices cannot satisfy this check.
+	# Hold the envelope fixed so scale, facade colors and trim cannot masquerade
+	# as different building layouts. Structural treatment and style must also
+	# recombine within each footprint, rather than select a single prefab.
 	var profile := MegashelterProfile.new()
 	profile.widths = PackedInt32Array([56])
 	profile.depths = PackedInt32Array([40])
 	profile.heights = PackedFloat32Array([67.5])
-	for template_index in range(3):
+	var all_layouts: Array = []
+	for template_index in range(8):
 		var layouts: Array = []
-		for seed_value in range(4):
+		var structures: Dictionary = {}
+		var styles: Dictionary = {}
+		var combinations: Dictionary = {}
+		for seed_value in range(32):
 			var plan: Dictionary = PLAN.generate(seed_value, template_index, profile)
-			var piers: Array = []
-			for module: Dictionary in plan.modules:
-				if module.kind == "pier": piers.append([module.transform, module.size])
-			var layout := [plan.volumes, piers]
+			var layout: Array = plan.volumes
 			if layout not in layouts: layouts.append(layout)
-		check.call(layouts.size() > 1, "Megashelter template %d varies tier or pier layout across seeds with identical dimensions" % template_index)
+			if layout not in all_layouts: all_layouts.append(layout)
+			structures[plan.structure] = true
+			styles[plan.style] = true
+			combinations[Vector2i(plan.structure, plan.style)] = true
+		check.call(layouts.size() >= 8, "Megashelter footprint %d produces at least eight different solid layouts at identical dimensions" % template_index)
+		check.call(structures.size() == 5 and styles.size() == 3 and combinations.size() >= 10, "Megashelter footprint %d independently recombines all five structural treatments and three facade styles" % template_index)
+	check.call(all_layouts.size() >= 64, "Fixed-envelope megashelters retain at least sixty-four distinct structural layouts")
 
 static func _check_build(plan: Dictionary, check: Callable) -> void:
 	var site := _site(plan)
@@ -129,7 +174,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 3 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 4 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:
@@ -193,6 +238,23 @@ static func _local_pose(building: Node3D, child: Node3D) -> Transform3D:
 
 static func _contains_xz(a: AABB, b: AABB) -> bool:
 	return a.position.x <= b.position.x + 0.01 and a.end.x >= b.end.x - 0.01 and a.position.z <= b.position.z + 0.01 and a.end.z >= b.end.z - 0.01
+
+static func _connected_ground_footprint(volumes: Array) -> bool:
+	if volumes.is_empty(): return false
+	var reached: Array[int] = [0]
+	var cursor := 0
+	while cursor < reached.size():
+		var current: AABB = volumes[reached[cursor]]
+		cursor += 1
+		for index in range(volumes.size()):
+			if index in reached: continue
+			var other: AABB = volumes[index]
+			var overlap_x := minf(current.end.x, other.end.x) - maxf(current.position.x, other.position.x)
+			var overlap_z := minf(current.end.z, other.end.z) - maxf(current.position.z, other.position.z)
+			var touch_x := absf(current.end.x - other.position.x) < 0.01 or absf(other.end.x - current.position.x) < 0.01
+			var touch_z := absf(current.end.z - other.position.z) < 0.01 or absf(other.end.z - current.position.z) < 0.01
+			if (touch_x and overlap_z > 0.01) or (touch_z and overlap_x > 0.01): reached.append(index)
+	return reached.size() == volumes.size()
 
 static func _check_streaming_navigation(tree: SceneTree, world: Node3D, plan: Dictionary, check: Callable) -> void:
 	# A controlled level fixture isolates both production navigation branches:
@@ -263,8 +325,10 @@ static func _check_streaming_navigation(tree: SceneTree, world: Node3D, plan: Di
 							clear = clear and not box.grow(-0.05).has_point(point)
 				check.call(clear, label + " path contains no segment through a closed structural mass")
 			var interior_clear := true
-			for side: float in [-1.0, 1.0]:
-				var interior_point := Vector3(0, 0, -150.0 + side * 3.0)
+			for volume: AABB in plan.volumes:
+				# Probe actual occupied wings; the footprint's center may be a
+				# courtyard whose ground must remain available to navigation.
+				var interior_point: Vector3 = field.fixture.building * Vector3(volume.get_center().x, 0, volume.get_center().z)
 				var interior := NAV_SURFACE.point_at(chunks, interior_point, giant)
 				interior_clear = interior_clear and (not interior.is_finite() or absf(interior.y) > 2.0)
 			check.call(interior_clear, label + " neither owner nor neighbouring bake leaves navigable ground inside the megashelter")

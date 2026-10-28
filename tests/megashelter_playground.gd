@@ -1,7 +1,7 @@
 extends Node3D
 ## Exterior authoring and actual wheel-powered parking. Outputs stay in .godot/.
 var seed_value := 42
-var template_index := 1
+var template_index := -1
 var plan: Dictionary
 var building: Node3D
 var camera: Camera3D
@@ -21,7 +21,7 @@ func _ready() -> void:
 	get_window().size = Vector2i(1280, 800)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--seed="): seed_value = arg.trim_prefix("--seed=").to_int()
-		if arg.begins_with("--template="): template_index = clampi(arg.trim_prefix("--template=").to_int(), 0, 2)
+		if arg.begins_with("--template="): template_index = clampi(arg.trim_prefix("--template=").to_int(), -1, 7)
 	var holder := WorldEnvironment.new()
 	holder.name = "WorldEnvironment"
 	holder.environment = Environment.new()
@@ -47,7 +47,7 @@ func _ready() -> void:
 	player.position = plan.access_point + Vector3(7, 0.5, 3)
 	add_child(player)
 	var rv := preload("res://rv/starter_rv.tscn").instantiate()
-	rv.position = Vector3(-10, 1.5, float(plan.depth) * 0.5 + 22)
+	rv.position = Vector3(plan.access_point.x, 1.5, float(plan.depth) * 0.5 + 22)
 	add_child(rv)
 	vehicle = rv.get_node("Chassis")
 	vehicle.handbrake = true
@@ -95,12 +95,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			(player.get("camera") as Camera3D).make_current()
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		KEY_F5:
-			template_index = (template_index + 1) % 3
+			template_index = (int(plan.template) + 1) % 8
 			_rebuild()
 			_overview()
 			_status()
 		KEY_F6:
 			seed_value += 1
+			template_index = -1
 			_rebuild()
 			_overview()
 			_status()
@@ -137,9 +138,9 @@ func _overview() -> void:
 
 func _entrance() -> void:
 	kit_root_visible(false)
-	camera.position = Vector3(16, 3.1, float(plan.depth) * 0.5 + 24)
+	camera.position = Vector3(plan.access_point.x+16, 3.1, float(plan.depth) * 0.5 + 26)
 	camera.fov = 68
-	camera.look_at(Vector3(0, 4.2, float(plan.depth) * 0.5))
+	camera.look_at(Vector3(plan.access_point.x, 4.2, float(plan.depth) * 0.5+2.2))
 	camera.make_current()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -205,7 +206,7 @@ func _forest() -> void:
 	ForestScenery.batch(self, "ReviewBrush", FloraMeshes.ground(0), brush)
 
 func _status() -> void:
-	label.text = "MEGASHELTER / seed %d / %s / %.0f x %.0f x %.1f m\nF2 exterior  F3 entrance  F4 walk  F5 shape  F6 seed\nF7 weather/time  F8 kit  F9 capture  F10 parking replay" % [seed_value, ["Slab", "Central tower", "Stepped"][template_index], plan.width, plan.depth, plan.height]
+	label.text = "MEGASHELTER / seed %d / %s / %.0f x %.0f x %.1f m\nF2 exterior  F3 entrance  F4 walk  F5 shape  F6 seed\nF7 weather/time  F8 kit  F9 capture  F10 parking replay" % [seed_value, MegashelterPlan.FOOTPRINT_NAMES[plan.template], plan.width, plan.depth, plan.height]
 
 func _capture(suffix: String) -> void:
 	await RenderingServer.frame_post_draw
@@ -216,7 +217,7 @@ func _capture(suffix: String) -> void:
 func _capture_set() -> void:
 	label.visible = false
 	await get_tree().create_timer(1.5).timeout
-	for index in range(3):
+	for index in range(8):
 		template_index = index
 		_rebuild()
 		_overview()
@@ -234,8 +235,8 @@ func _capture_set() -> void:
 		clock.weather.set_weather(Vector3(1 if weather == 0 else 0, 0, 0.5 if weather == 1 else 0), true)
 		_entrance()
 		if weather == 2:
-			camera.position = Vector3(7, 1.8, float(plan.depth) * 0.5 + 13)
-			camera.look_at(Vector3(0, 3.0, float(plan.depth) * 0.5))
+			camera.position = Vector3(plan.access_point.x+7, 1.8, float(plan.depth) * 0.5 + 15)
+			camera.look_at(Vector3(plan.access_point.x, 3.0, float(plan.depth) * 0.5+2.2))
 			review_torch.visible = true
 			review_torch.switched_on = true
 			review_torch.set_held_active(true)
@@ -300,7 +301,7 @@ func _drive_leg(reverse: bool, target_z: float) -> bool:
 		var remaining := target_z - vehicle.global_position.z if reverse else vehicle.global_position.z - target_z
 		if remaining < 1.5: return true
 		var speed := vehicle.linear_velocity.length()
-		var local := vehicle.global_transform.affine_inverse() * Vector3(-10, 0, target_z)
+		var local := vehicle.global_transform.affine_inverse() * Vector3(plan.access_point.x, 0, target_z)
 		var angle := atan2(local.x, local.z) if reverse else atan2(-local.x, -local.z)
 		var steering := clampf(angle * (-1.8 if reverse else 1.8) / vehicle.max_steering, -1, 1)
 		vehicle.control_override = {"throttle": clampf((2.5 - speed) * 0.7, 0, 1), "brake": clampf((speed - 3) * 0.5, 0, 1), "steering": steering}

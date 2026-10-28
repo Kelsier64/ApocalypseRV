@@ -150,6 +150,11 @@ class Batch extends RefCounted:
 static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	match kind:
+		"buttress":
+			# Stepped concrete feet and deep upper ribs form a readable load path.
+			for level in range(3):
+				var depth := size.z * (1.0 - level * 0.22)
+				_piece(result,Vector3(0,(level+0.5)*size.y/3,-depth*0.5),Vector3(size.x-level*0.45,size.y/3,depth),0,level,0.16)
 		"wall", "rib_wall":
 			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), Vector3(size.x - 0.055, size.y - 0.045, size.z), 1, variant, 0.045)
 			# Raised vertical returns and a chipped exposed-concrete patch.
