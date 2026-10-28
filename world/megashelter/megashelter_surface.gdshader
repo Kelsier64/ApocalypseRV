@@ -20,25 +20,48 @@ float noise(vec2 p) {
 	vec2 q = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(hash21(q), hash21(q + vec2(1,0)), f.x), mix(hash21(q + vec2(0,1)), hash21(q + vec2(1,1)), f.x), f.y);
 }
+vec2 orient(vec2 p, float turn) {
+	if (turn < 1.0) { return p; }
+	if (turn < 2.0) { return vec2(-p.y, p.x); }
+	if (turn < 3.0) { return -p; }
+	return vec2(p.y, -p.x);
+}
 void vertex() { local_position = VERTEX; local_normal = NORMAL; module_appearance = UV2; }
 void fragment() {
 	vec3 n = abs(normalize(local_normal));
 	float vertical = 1.0 - smoothstep(0.6, 0.85, n.y);
 	vec2 p = n.y > 0.7 ? local_position.xz : vec2(n.x > n.z ? local_position.z : local_position.x, local_position.y);
 	vec2 offset = vec2(wear_seed * 0.071, wear_seed * 0.039);
-	// UV2 is constant within each authored module; floor joints hide the only
-	// sampling discontinuity. Keep +Y upright so age never runs sideways/uphill.
+	// UV2 is flat within each module. Only nondirectional surface textures rotate;
+	// rain and drain masks below stay in untransformed building coordinates.
 	float story = floor((local_position.y + 0.02) / 4.5);
 	vec2 key = vec2(module_appearance.x * 127.0 + wear_seed * 0.013, story);
 	vec2 tile_offset = vec2(hash21(key), hash21(key + 19.7)) * 17.0;
-	float tile_scale = mix(0.86, 1.16, hash21(key + 42.3));
+	vec2 second_offset = vec2(hash21(key + 113.7), hash21(key + 149.2)) * 23.0;
+	float tile_scale = mix(0.68, 1.42, hash21(key + 42.3));
+	float second_scale = mix(0.55, 1.35, hash21(key + 193.4));
+	float turn = floor(hash21(key + 67.2) * 4.0);
+	float second_turn = floor(hash21(key + 173.6) * 4.0);
 	float mirror = hash21(key + 73.1) < 0.5 ? -1.0 : 1.0;
-	vec2 material_p = p * vec2(mirror, 1.0) * tile_scale;
-	float footprint = max(length(dFdx(p)), length(dFdy(p)));
-	float detail = 1.0 - smoothstep(0.018, 0.10, footprint);
-	float cement = texture(concrete_texture, material_p * 0.5 + offset + tile_offset).r;
+	float age = hash21(key + 211.9);
 	float mineral = noise(p * 0.19 + offset);
 	vec2 warp = vec2(noise(p * 0.62 + offset), noise(p * 0.71 + offset + 13.0)) - 0.5;
+	float distortion = mix(0.35, 1.15, hash21(key + 237.4));
+	vec2 material_p = orient(p * vec2(mirror, 1.0), turn) * tile_scale + warp * distortion;
+	vec2 material_q = orient(p, second_turn) * second_scale - warp.yx * 1.3;
+	// Explicit gradients exclude discrete panel offsets/turns from mip selection.
+	// Warping is continuous, so its own gradients still contribute to filtering.
+	vec2 px = dFdx(p), py = dFdy(p), wx = dFdx(warp), wy = dFdy(warp);
+	vec2 primary_x = orient(px * vec2(mirror, 1.0), turn) * tile_scale + wx * distortion;
+	vec2 primary_y = orient(py * vec2(mirror, 1.0), turn) * tile_scale + wy * distortion;
+	vec2 second_x = orient(px, second_turn) * second_scale - wx.yx * 1.3;
+	vec2 second_y = orient(py, second_turn) * second_scale - wy.yx * 1.3;
+	float blend_field = noise(p * 0.31 + warp * 0.65 + offset + tile_offset) * 0.70
+		+ noise(p * 0.73 + warp * 0.35 + offset + second_offset) * 0.30;
+	float material_blend = smoothstep(0.47, 0.55, blend_field);
+	float footprint = max(length(dFdx(p)), length(dFdy(p)));
+	float detail = 1.0 - smoothstep(0.018, 0.10, footprint);
+	float cement = textureGrad(concrete_texture, material_p * 0.5 + offset + tile_offset, primary_x * 0.5, primary_y * 0.5).r;
 	float shade = mix(0.84, 1.04, COLOR.r);
 	vec3 color = base_color.rgb * shade * (0.84 + mineral * 0.23);
 	float relief = cement * 0.0015;
@@ -47,10 +70,11 @@ void fragment() {
 	if (surface_kind < 0.5) {
 		color *= 0.67 + cement * 1.20;
 		// Metre-scale erosion exposes aggregate, separate from the tiny cement pores.
-		float chipped_skin = texture(decay_texture, material_p / 3.0 + offset + tile_offset).r;
-		float erosion = noise(p * 0.45 + offset) * 0.70 + chipped_skin * 0.30;
-		float damage = max(COLOR.a, smoothstep(0.59, 0.65, erosion) * 0.76 * vertical);
-		vec3 stones = texture(aggregate_texture, material_p * 0.8 + offset + tile_offset).rgb;
+		float chipped_skin = textureGrad(decay_texture, material_p / 3.0 + offset + tile_offset, primary_x / 3.0, primary_y / 3.0).r;
+		float erosion = noise(p * mix(0.30, 0.70, age) + offset + tile_offset * 0.53) * 0.70 + chipped_skin * 0.30;
+		float erosion_start = mix(0.64, 0.54, age);
+		float damage = max(COLOR.a, smoothstep(erosion_start, erosion_start + 0.07, erosion) * 0.76 * vertical);
+		vec3 stones = textureGrad(aggregate_texture, material_p * 0.8 + offset + tile_offset, primary_x * 0.8, primary_y * 0.8).rgb;
 		color = mix(color, stones * vec3(0.70, 0.67, 0.61) + vec3(0.045), damage);
 		relief += stones.r * damage * 0.004;
 		vec2 tie = (fract(p / vec2(1.8, 2.25) + 0.5) - 0.5) * vec2(1.8, 2.25);
@@ -59,22 +83,34 @@ void fragment() {
 	} else if (surface_kind < 1.5) {
 		// Decayed mineral paint and exposed cement are actual coloured material,
 		// not tiny dark specks added to an otherwise pristine panel.
-		vec3 decay = texture(decay_texture, material_p / 6.0 + offset + tile_offset).rgb;
+		vec3 decay_a = textureGrad(decay_texture, material_p / 6.0 + offset + tile_offset, primary_x / 6.0, primary_y / 6.0).rgb;
+		vec3 decay_b = textureGrad(decay_texture, material_q / 4.3 + offset + second_offset, second_x / 4.3, second_y / 4.3).rgb;
+		vec3 decay = mix(decay_a, decay_b, material_blend);
 		color = mix(color, decay, 0.82) * shade * (0.86 + mineral * 0.25);
+		float exposed = smoothstep(0.57, 0.76, blend_field + age * 0.16) * mix(0.08, 0.28, age);
+		color = mix(color, vec3(0.22, 0.225, 0.20) * (0.7 + cement), exposed);
 		float joint_distance = abs(mod(local_position.y + 2.25, 4.5) - 2.25);
 		float joint = (1.0 - smoothstep(0.012, 0.028 + fwidth(p.y), joint_distance)) * vertical;
 		color *= 1.0 - joint * 0.48;
 		relief = dot(decay, vec3(0.3, 0.5, 0.2)) * 0.003 - joint * 0.003;
 		roughness = 0.91 + cement * 0.08;
 	} else {
-		vec3 corrosion = texture(corrosion_texture, material_p * 0.25 + offset + tile_offset).rgb;
+		vec3 corrosion_a = textureGrad(corrosion_texture, material_p * 0.25 + offset + tile_offset, primary_x * 0.25, primary_y * 0.25).rgb;
+		vec3 corrosion_b = textureGrad(corrosion_texture, material_q / 3.0 + offset + second_offset, second_x / 3.0, second_y / 3.0).rgb;
+		vec3 corrosion = mix(corrosion_a, corrosion_b, material_blend);
 		float rust = smoothstep(0.012, 0.09, corrosion.r - corrosion.g * 0.92);
 		color = mix(color * 0.8, corrosion * 1.12, 0.91) * shade;
-		float scratch = texture(coating_texture, material_p * 0.5 + offset + tile_offset).r;
+		float scratch = textureGrad(coating_texture, material_p * 0.5 + offset + tile_offset, primary_x * 0.5, primary_y * 0.5).r;
+		float paint_remaining = smoothstep(0.52, 0.74, blend_field + (1.0 - age) * 0.12) * mix(0.12, 0.34, hash21(key + 259.3));
+		color = mix(color, base_color.rgb * (0.65 + scratch * 0.9), paint_remaining);
+		float oxide = smoothstep(0.46, 0.70, 1.0 - blend_field) * age * 0.23;
+		color *= mix(vec3(1.0), vec3(0.62, 0.55, 0.48), oxide);
 		relief = scratch * 0.0009 + rust * 0.0025;
-		roughness = mix(0.65, 0.98, rust);
-		metal = mix(0.38, 0.0, rust);
+		roughness = mix(mix(0.65, 0.98, rust), 0.80, paint_remaining);
+		metal = mix(0.38, 0.0, rust) * (1.0 - paint_remaining * 0.6);
 	}
+	vec3 finish_tint = mix(vec3(0.92, 0.97, 1.0), vec3(1.10, 1.03, 0.88), hash21(key + 271.4));
+	color *= finish_tint * mix(0.91, 1.09, age);
 	// Low-frequency object-space fields cross module/floor boundaries continuously.
 	// Their scale is tens of metres, independent of the local peeling texture.
 	vec2 macro_p = local_position.xz * 0.043 + vec2(local_position.y * 0.019, -local_position.y * 0.012);
