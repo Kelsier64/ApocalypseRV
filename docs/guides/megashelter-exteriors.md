@@ -32,6 +32,8 @@ slab 為單量體，twin wings 為中央高量體與較低兩翼，stepped 為�
 
 ## 分幀建構與測試入口
 
+純觀察場景：[megashelter_viewer.tscn](../../tests/megashelter_viewer.tscn)。在 Godot 開啟後按 F6 執行目前場景，預設無霧、固定日光，不載入玩家或世界串流。滑鼠右鍵拖曳環繞、中鍵平移、滾輪縮放；1 全棟、2 入口、3 屋頂、F5 切換樓型、F6 換隨機 seed。根節點 Inspector 可設定初始 `seed_value` 與 `template_index`。也可執行 `godot --path . res://tests/megashelter_viewer.tscn`。
+
 六個實作階段均已完成。v3 通過 32 seeds 與固定尺寸多樣性檢查，並完成三種樓型／風格的無霧樣板渲染；完整自由遊玩與最終美術確認尚未完成。v1 的正式場址與輪驅結果保留於[初版紀錄](../validation/2026-10-27-modular-megashelter.md)，本輪沒有重跑輪驅情境。詳細結果與測量限制見[本輪驗證](../validation/2026-10-28-megashelter-variation.md)。
 
 視覺模型分材質合併建置，稀疏碎塊另行建置；行駛中的區塊串流使用約 4 ms 合作式分幀預算。單次 mesh／collision 建立仍不可中斷，因此此預算不是硬性幀時間上限。完整效能數據見驗證紀錄。
