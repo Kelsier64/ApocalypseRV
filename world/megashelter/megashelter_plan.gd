@@ -208,7 +208,7 @@ static func _facade_run(plan: Dictionary,edge: Vector3,angle: float,run: float,h
 	var structure := int(plan.structure)
 	if structure == 3:
 		for level: float in [3.0,8.5]:
-			if level < h: _add(plan,"beam",origin+basis*Vector3(run/2,level,0.9),Vector3(run,1.3,3),angle,0,true)
+			if level < h: _reinforcement_beam(plan,Transform3D(basis,origin+basis*Vector3(0,level,0.9)),run,angle)
 	for column in range(roundi(run/4)):
 		if column%rhythm != 0: continue
 		var p := origin+basis*Vector3((column+0.5)*4,0,0.8)
@@ -223,6 +223,21 @@ static func _facade_run(plan: Dictionary,edge: Vector3,angle: float,run: float,h
 			4:
 				_add(plan,"service_spine",p,Vector3(2.6,h,1),angle,int(plan.style)%2,true)
 				_add(plan,"drain",p+basis*Vector3(1.5,0,0),Vector3(0.4,h,0.4),angle,0,true)
+
+static func _reinforcement_beam(plan: Dictionary, pose: Transform3D, run: float, angle: float) -> void:
+	# Reserve the whole authored 12m x 9m portal, including its frame, rather
+	# than only the access marker. Work in facade coordinates for every facing.
+	var portal := AABB(Vector3(plan.access_point.x-6.2,-0.1,float(plan.depth)/2+2.1),Vector3(12.4,9.2,3.2))
+	var local_portal: AABB = pose.affine_inverse() * portal
+	var sections: Array[Vector2] = [Vector2(0,run)]
+	if AABB(Vector3(0,0,-3),Vector3(run,1.3,3)).intersects(local_portal):
+		sections = [Vector2(0,clampf(local_portal.position.x-0.05,0,run)),
+			Vector2(clampf(local_portal.end.x+0.05,0,run),run)]
+	for section: Vector2 in sections:
+		var length := section.y-section.x
+		if length <= 0.01: continue
+		# Each remaining segment owns matching visual geometry and solid bounds.
+		_add(plan,"beam",pose*Vector3((section.x+section.y)/2,0,0),Vector3(length,1.3,3),angle,0,true)
 
 static func _add(plan: Dictionary,kind: String,position: Vector3,size: Vector3,angle: float,variant: int,solid: bool = false) -> void:
 	plan.modules.append({"id":"%s_%04d" % [kind,plan.modules.size()],"kind":kind,"transform":Transform3D(Basis(Vector3.UP,angle),position),"size":size,"variant":variant,"solid":solid})

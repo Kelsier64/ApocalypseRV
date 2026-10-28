@@ -123,6 +123,19 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 		collision_enclosed = collision_enclosed and box.size.x > 0.0 and box.size.y > 0.0 and box.size.z > 0.0 and building.grow(0.01).encloses(box)
 	check.call(collision_enclosed, label + "closed-door collision remains inside declared bounds")
 	_check_facade_and_equipment_clearance(plan, label, check)
+	_check_entrance_clearance(plan, label, check)
+
+static func _check_entrance_clearance(plan: Dictionary, label: String, check: Callable) -> void:
+	var portal := AABB()
+	for module: Dictionary in plan.modules:
+		if module.kind == "entrance": portal = PLAN.module_bounds(module)
+	var blocked := false
+	for module: Dictionary in plan.modules:
+		# The authored closed leaves/header are intentional. Foreign reinforcement
+		# beams must clear the entire portal, not just the distant access marker.
+		if module.kind == "beam" and module.get("solid", false):
+			blocked = blocked or PLAN.module_bounds(module).intersects(portal.grow(-0.01))
+	check.call(portal.size.x > 0.0 and not blocked, label + "structural beams leave the full entrance portal clear")
 
 static func _check_custom_heights(check: Callable) -> void:
 	# Valid floor-aligned profiles need not be multiples of a facade band.
@@ -135,6 +148,7 @@ static func _check_custom_heights(check: Callable) -> void:
 		for sample in range(8):
 			var plan: Dictionary = PLAN.generate(42+sample,profile)
 			_check_facade_and_equipment_clearance(plan, "Megashelter height %.1f sample %d: " % [height, sample], check)
+			_check_entrance_clearance(plan, "Megashelter height %.1f sample %d: " % [height, sample], check)
 
 static func _check_facade_and_equipment_clearance(plan: Dictionary, label: String, check: Callable) -> void:
 	var walls_backed := true
