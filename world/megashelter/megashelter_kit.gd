@@ -167,9 +167,9 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 			if variant >= 4:
 				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
 				if variant == 7:
-					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.05,1.45,0.06),0,1,0,"spall")
-					for x: float in [-0.3,0.0,0.3]:
-						_piece(result,Vector3(x,patch_y,0.065),Vector3(0.028,0.92,0.035),2,3,0,"cylinder")
+					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.65,2.25,0.06),0,1,0,"spall")
+					for x: float in [-0.52,-0.17,0.18,0.53]:
+						_piece(result,Vector3(x,patch_y,0.065),Vector3(0.035,1.5,0.04),2,3,0,"cylinder")
 				else:
 					# A framed maintenance cover replaces the oversized random repair plate.
 					_piece(result,Vector3(0,patch_y,0.025),Vector3(1.55,1.85,0.05),2,2,0.025)
@@ -188,6 +188,7 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 				_piece(result, Vector3(0,y,0.08), Vector3(size.x,0.16,0.3),0,2,0.025)
 			var slats := maxi(3, floori(size.y / 0.22))
 			for index in range(slats):
+				if variant >= 2 and index % 5 == 2: continue # Missing slats expose the dark sealed backing.
 				_piece(result, Vector3(0,0.22+index*(size.y-0.4)/slats,0.13),Vector3(size.x-0.35,0.105,0.31),2,1,0.035)
 			if variant >= 2:
 				for x: float in [-size.x*0.25,0.0,size.x*0.25]:

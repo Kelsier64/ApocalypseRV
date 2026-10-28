@@ -5,6 +5,8 @@ const SURFACE = preload("res://world/megashelter/megashelter_surface.gdshader")
 const CONCRETE = preload("res://assets/materials/megashelter/cast_concrete_albedo.png")
 const COATING = preload("res://assets/materials/megashelter/aged_coating_albedo.png")
 const AGGREGATE = preload("res://assets/materials/ruined_wall/aggregate_albedo.png")
+const DECAY = preload("res://assets/materials/megashelter/decayed_facade_albedo.png")
+const CORROSION = preload("res://assets/materials/megashelter/corroded_steel_albedo.png")
 const ROOF_PLANT = [preload("res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb"),
 	preload("res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb")]
 @export var preview_seed: int = 42
@@ -75,6 +77,8 @@ func _finish_visuals(plan: Dictionary) -> void:
 		material.set_shader_parameter("concrete_texture", CONCRETE)
 		material.set_shader_parameter("coating_texture", COATING)
 		material.set_shader_parameter("aggregate_texture", AGGREGATE)
+		material.set_shader_parameter("decay_texture", DECAY)
+		material.set_shader_parameter("corrosion_texture", CORROSION)
 		mesh.surface_set_material(0, material)
 		var visual := MeshInstance3D.new()
 		visual.name = ["Concrete", "SealedPanels", "OldSteel"][index]

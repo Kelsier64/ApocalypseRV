@@ -4,7 +4,7 @@
 
 2026-10-28 巨型住宅密度：生成 v18 的 `modular_megashelter`（`Abandoned Megashelter`）增加獨立 300 m 候選帶，每帶最多一棟；最多嘗試三種 footprint、各 64 次位置，無合法位置則略過。一般越野候選維持 55%，原有 2% 大樓抽選及場址保持不變且優先保留；新增大樓完整整地範圍必須避開其他場址、道路及河谷，坡度上限維持 0.65，新增大樓場址地面高差上限為 12 m（原候選仍為 6 m）。四個固定種子共 288 個 150 m 區塊抽樣新增 64 棟，平均每 4.5 區塊一棟；屬平均密度，沒有固定間距保證。新增大樓使用獨立 `megashelter` 身分與 RNG 域，納入相同場址查詢及單一區塊歸屬；道路 RNG 域維持 v15。
 
-2026-10-28 巨型住宅材質：三個合併網格分別呈現現澆混凝土、封層預鑄面板與舊鋼件，使用兩張專用 AI 生成 albedo、既有露骨材貼圖、物件空間公尺投影、衍生微凹凸及各自粗糙度／金屬反應。接縫與模板拉桿孔作抗鋸齒處理，遠景漸隱微細凹凸；污痕集中於梁下與牆腳。過大的牆面補板改為小型有框維修蓋板，露筋破損縮小；仍沿用三個材質批次及共用碰撞／bounds 流程。貼圖來源、取樣與匯入設定見[材質說明](assets/materials/megashelter/README.md)。
+2026-10-28 巨型住宅材質：三個合併網格分別呈現現澆混凝土、剝落預鑄面板與鏽蝕鋼件。兩張基礎 AI albedo 補近景顆粒，另兩張廢棄材質以 512 px 執行時上限、6 m 剝漆／4 m 鏽蝕圖樣供低畫質辨識；露骨材沿用既有貼圖。梁下黑痕及局部鏽水沿 13.5 m 結構帶下流，牆腳與水平面累積髒污；接縫與模板孔抗鋸齒，遠景漸隱微凹凸。維修蓋板保留框與螺栓，擴大局部露筋破損並缺失部分風口葉片；仍保留封閉背板、三個材質批次及共用碰撞／bounds 流程。視覺檢查保留正式光照與復古濾鏡，比較 legacy 540p 及 low 50% 渲染比例；來源與設定見[材質說明](assets/materials/megashelter/README.md)。
 
 `ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；不含可玩室內、物資、敵人或轉場。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。2026-10-27 初版的自動檢查、seed 6 正式場址輪驅及效能結果屬歷史驗收；完整自由遊玩未完成，正式世界遠景受霧遮擋，詳見[初版驗證](docs/validation/2026-10-27-modular-megashelter.md)。本次密度及材質調整的自動契約位於 `tests/support/megashelter_contracts.gd`，未重新做輪驅或自由遊玩驗收。
 
