@@ -1,6 +1,6 @@
 # 廢棄巨型住宅外殼：室外外殼製作指南
 
-本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 5）。這是一個封閉的視覺場址，不含可玩室內、戰利品、敵人或進出轉場。美術以[已選概念圖](../art/modular-megashelter/README.md)為準；本版生成多樣性與驗證狀態見[2026-10-28 多樣性紀錄](../validation/2026-10-28-megashelter-growth.md)。
+本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 6）。這是一個封閉的視覺場址，不含可玩室內、戰利品、敵人或進出轉場。美術以[已選概念圖](../art/modular-megashelter/README.md)為準；最新地面裝飾與驗證見[2026-10-30 紀錄](../validation/2026-10-30-megashelter-ground-details.md)，生長機制沿用 v5。
 
 ## 幾何規格
 
@@ -22,6 +22,8 @@
 
 ## 場址、碰撞與導航
 
+入口與地面服務組包含遮簷、服務櫃、雙管閥組、深罩百葉、露筋碎塊及排風機；最多十組，使用獨立種子域。優先放入口附近的接地牆板，避開門框、柱體與其他設備，前方保留接近空間。安裝背板接牆，碎塊跟隨剝落位置；屋頂配置不變。詳見上述地面裝飾紀錄。
+
 規劃資料包含 version、seed、growth_steps、width、depth、height、structure、style、rhythm、volumes、modules、collision_boxes、building_bounds、site_bounds 及 access_point。`module_bounds()` 使用實際 kit 零件及屋頂資產的包圍代理計算 bounds；`solid` 附件的相同包圍盒加入碰撞計畫。渲染端、正式 POI 放置與鄰帶導航消費同一份規劃。
 
 碰撞覆蓋實際建築外殼，不應封死外圈步行接近空間。碰撞盒和導航排除區需依最終模組尺寸核對。封閉立面與門不需要互動碰撞或觸發器。此 POI 使用 OFF_ROAD 類別，不應註冊室內管理器、profile、物資或敵人。
@@ -30,7 +32,7 @@
 
 由生成 v18 的越野候選格以獨立 2% 機率選取；越野候選率保持 55%，其它 POI 權重不變。選擇使用獨立 RNG，不得消耗或改變道路 RNG 域。正式生成和鄰帶導航共用同一次場址規劃。`ModularMegashelter.configure_exterior(plan, include_visuals)` 依規劃組裝場景；導航端停用視覺節點，但沿用相同量體、碰撞與 bounds。
 
-外殼內容版本為 5。尺寸選擇沿用原 v1 massing RNG 域以維持既有 seeds 的寬／深／高抽樣；足跡、各翼高度、結構及立面則使用新版內容規劃。曾造訪內容版本 1–4 外殼的舊存檔依既有政策重新開局，不提供遷移。
+外殼內容版本為 6。尺寸選擇沿用原 v1 massing RNG 域；足跡、各翼高度、結構及屋頂配置沿用 v5 RNG 域；地面附件使用 v6 獨立域。曾造訪內容版本 1–5 外殼的舊存檔依既有政策重新開局，不提供遷移。
 
 ## 分幀建構與測試入口
 
@@ -38,4 +40,4 @@
 
 生成、seed 與視覺驗證狀態及未完成項目記於[2026-10-28 多樣性紀錄](../validation/2026-10-28-megashelter-growth.md)。較早版本的場址、輪驅和美術結果保留於[歷史驗證索引](../README.md)，不代表本版驗證結果。
 
-視覺模型分材質合併建置，稀疏碎塊另行建置；行駛中的區塊串流使用約 4 ms 合作式分幀預算。單次 mesh／collision 建立仍不可中斷，因此此預算不是硬性幀時間上限。
+視覺模型分材質合併建置，原生地面附件與碎塊也進入共用批次，生成設備重用 GLB；行駛中的區塊串流使用約 4 ms 合作式分幀預算。單次 mesh／collision 建立仍不可中斷，因此此預算不是硬性幀時間上限。

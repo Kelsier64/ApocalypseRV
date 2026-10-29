@@ -21,10 +21,13 @@ class SeamField extends WorldField:
 
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_generation(check)
+	var ground_kinds := {}
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
 		_check_plan(plan,seed_value,check)
+		_check_ground_details(plan,ground_kinds,check)
 		check.call(plan == PLAN.generate(seed_value),"Growth seed %d reproduces every module and collider" % seed_value)
+	check.call(ground_kinds.size() == 5,"Megashelter sampled ground dressing includes all five service assemblies")
 	_check_seed_diversity(check)
 	_check_custom_heights(check)
 	for seed_value in range(8): _check_build(PLAN.generate(seed_value),check)
@@ -70,7 +73,7 @@ static func _check_generation(check: Callable) -> void:
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 5 and plan.seed == seed_value and not plan.has("template") and plan.growth_steps.size() >= 2, label + "versioned plan retains its seed and a grown assembly without a template ID")
+	check.call(plan.version == 6 and plan.seed == seed_value and not plan.has("template") and plan.growth_steps.size() >= 2, label + "versioned plan retains its seed and a grown assembly without a template ID")
 	check.call(plan.structure in range(5) and plan.style in range(3), label + "structural treatment and facade style use separate valid choices")
 	check.call(plan.width in [48.0, 56.0, 64.0] and plan.depth in [32.0, 40.0, 48.0] and plan.height in [54.0, 67.5, 81.0], label + "default dimensions retain the configured envelope choices")
 	var building: AABB = plan.building_bounds
@@ -109,7 +112,8 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 		var pieces: Array[Dictionary] = KIT.pieces(module.kind, size, module.variant)
 		modules_valid = modules_valid and module.kind in PLAN.KINDS and not pieces.is_empty()
 		for piece: Dictionary in pieces:
-			modules_valid = modules_valid and piece.center.is_finite() and piece.size.is_finite() and piece.size.x > 0.0 and piece.size.y > 0.0 and piece.size.z > 0.0 and building.grow(0.01).encloses(pose * AABB(piece.center - piece.size * 0.5, piece.size))
+			var piece_pose := pose * Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+			modules_valid = modules_valid and piece.center.is_finite() and piece.size.is_finite() and piece.size.x > 0.0 and piece.size.y > 0.0 and piece.size.z > 0.0 and building.grow(0.01).encloses(piece_pose * AABB(-piece.size * 0.5, piece.size))
 		if module.kind in ["pier", "roof_plant", "drain"]:
 			solid_kinds[module.kind] = true
 			solid_modules_valid = solid_modules_valid and module.get("solid", false)
@@ -136,6 +140,60 @@ static func _check_entrance_clearance(plan: Dictionary, label: String, check: Ca
 		if module.kind == "beam" and module.get("solid", false):
 			blocked = blocked or PLAN.module_bounds(module).intersects(portal.grow(-0.01))
 	check.call(portal.size.x > 0.0 and not blocked, label + "structural beams leave the full entrance portal clear")
+
+static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, check: Callable) -> void:
+	var label := "Megashelter seed %d: " % int(plan.seed)
+	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage","service_fan"]
+	var by_id := {}
+	var dressing_bounds: Array[AABB] = []
+	for module: Dictionary in plan.modules:
+		by_id[module.id] = module
+		if module.kind in kinds or module.kind == "portal_canopy": dressing_bounds.append(PLAN.module_bounds(module))
+	var obstacles: Array[AABB] = []
+	for bounds: AABB in plan.collision_boxes:
+		if bounds not in dressing_bounds: obstacles.append(bounds)
+	var portal := AABB(Vector3(plan.access_point.x-6.5,0,float(plan.depth)/2+1.9),Vector3(13,9.1,8.1))
+	var anchors: Array[Vector3] = []
+	var mounted := true
+	var clear := true
+	var approachable := true
+	var canopy_count := 0
+	for module: Dictionary in plan.modules:
+		if module.kind == "portal_canopy":
+			canopy_count += 1
+			mounted = mounted and module.get("solid",false) and PLAN.module_bounds(module) in plan.collision_boxes and is_equal_approx(module.transform.origin.y,9.02)
+			continue
+		if module.kind not in kinds: continue
+		seen_kinds[module.kind] = true
+		var bounds := PLAN.module_bounds(module)
+		var anchor: Dictionary = by_id.get(module.get("decoration_anchor",""),{})
+		if anchor.is_empty():
+			mounted = false
+			continue
+		var expected: Transform3D = anchor.transform * Transform3D(Basis.IDENTITY,Vector3(0,0,module.size.z+0.02))
+		mounted = mounted and anchor.kind in ["wall","rib_wall"] and absf(anchor.transform.origin.y) < 0.01 and module.transform.is_equal_approx(expected) and module.get("solid",false) and bounds in plan.collision_boxes and bounds.position.y >= -0.01 and bounds.end.y <= 7.11
+		for previous: Vector3 in anchors: clear = clear and previous.distance_to(anchor.transform.origin) >= 7.49
+		anchors.append(anchor.transform.origin)
+		clear = clear and not bounds.intersects(portal) and module.has("clearance_bounds")
+		if module.has("clearance_bounds"):
+			var clearance: AABB = module.clearance_bounds
+			var local_bounds: AABB = module.transform.affine_inverse() * bounds
+			var local_clearance: AABB = module.transform.affine_inverse() * clearance
+			clear = clear and clearance.position.is_finite() and clearance.size.is_finite() and clearance.size.x > 0 and clearance.size.y > 0 and clearance.size.z > 0 and bounds.grow(0.001).encloses(clearance)
+			clear = clear and absf(local_clearance.position.x-local_bounds.position.x) < 0.001 and absf(local_clearance.position.y-local_bounds.position.y) < 0.001 and local_clearance.end.is_equal_approx(local_bounds.end) and local_clearance.position.z <= -module.size.z+0.361
+			for obstacle: AABB in obstacles: clear = clear and not clearance.grow(0.119).intersects(obstacle)
+		approachable = approachable and module.has("approach_bounds")
+		if module.has("approach_bounds"):
+			var approach: AABB = module.approach_bounds
+			var expected_approach: AABB = module.transform * AABB(Vector3(-module.size.x/2,0,0.2),Vector3(module.size.x,3,7))
+			approachable = approachable and approach.position.is_equal_approx(expected_approach.position) and approach.size.is_equal_approx(expected_approach.size)
+			# Check the final plan, including fixtures appended after this one.
+			for obstacle: AABB in plan.collision_boxes:
+				if obstacle != bounds: approachable = approachable and not approach.intersects(obstacle)
+		obstacles.append(bounds)
+	check.call(mounted and not anchors.is_empty() and canopy_count == 1,label + "ground service assemblies attach to backed ground bays and retain solid bounds below 7.1m; one canopy sits on the portal header")
+	check.call(clear,label + "ground service assemblies clear the reserved entrance, structural obstacles and neighbouring fittings")
+	check.call(approachable,label + "each ground service assembly retains a clear seven-metre walk-up apron after every fixture is placed")
 
 static func _check_custom_heights(check: Callable) -> void:
 	# Valid floor-aligned profiles need not be multiples of a facade band.
@@ -250,7 +308,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 5 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 6 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:

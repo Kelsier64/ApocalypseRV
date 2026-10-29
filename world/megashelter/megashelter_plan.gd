@@ -2,7 +2,7 @@ extends RefCounted
 class_name MegashelterPlan
 ## Seeded frontier growth; no named or preselected building footprints.
 const PROFILE = preload("res://world/megashelter/megashelter_profile.gd")
-const KINDS := ["wall", "rib_wall", "corner", "pier", "beam", "vent", "entrance", "roof", "roof_plant", "drain", "service_spine", "buttress"]
+const KINDS := ["wall", "rib_wall", "corner", "pier", "beam", "vent", "entrance", "roof", "roof_plant", "drain", "service_spine", "buttress", "service_cabinet", "pipe_manifold", "intake_hood", "wall_salvage", "portal_canopy", "service_fan"]
 
 static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dictionary:
 	var settings := profile if profile != null else MegashelterProfile.new()
@@ -88,6 +88,7 @@ static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dic
 		boxes.append(AABB(box.position+Vector3(entry_x,0,front),box.size))
 	for x: float in [-7.0,7.0]:
 		_add(plan,"drain",Vector3(entry_x+x,0,front+0.1),Vector3(0.4,12,0.4),0,0,true)
+	_ground_details(plan)
 	var bounds: AABB = volumes[0]
 	for volume: AABB in volumes: bounds = bounds.merge(volume)
 	for module: Dictionary in plan.modules:
@@ -242,16 +243,86 @@ static func _reinforcement_beam(plan: Dictionary, pose: Transform3D, run: float,
 static func _add(plan: Dictionary,kind: String,position: Vector3,size: Vector3,angle: float,variant: int,solid: bool = false) -> void:
 	plan.modules.append({"id":"%s_%04d" % [kind,plan.modules.size()],"kind":kind,"transform":Transform3D(Basis(Vector3.UP,angle),position),"size":size,"variant":variant,"solid":solid})
 
+static func _ground_details(plan: Dictionary) -> void:
+	var rng := _rng(plan.seed,"ground_details")
+	var obstacles: Array[AABB] = []
+	for bounds: AABB in plan.collision_boxes:
+		if bounds.position.y < 8.0: obstacles.append(bounds)
+	var anchors: Array[Dictionary] = []
+	for module: Dictionary in plan.modules:
+		if module.get("solid",false) and module.transform.origin.y < 8.0: obstacles.append(module_bounds(module))
+		if module.kind in ["wall","rib_wall"] and module.transform.origin.y < 0.01:
+			anchors.append(module)
+	# Shuffle ties, then favour the entrance-facing facade and its visible returns.
+	for index in range(anchors.size()-1,0,-1):
+		var other := rng.randi_range(0,index)
+		var swap := anchors[index]
+		anchors[index] = anchors[other]
+		anchors[other] = swap
+	anchors.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
+		return a.transform.origin.distance_squared_to(plan.access_point) < b.transform.origin.distance_squared_to(plan.access_point))
+	var portal := AABB(Vector3(plan.access_point.x-6.5,0,float(plan.depth)/2+1.9),Vector3(13,9.1,8.1))
+	var placements: Array[Vector3] = []
+	var reserved_approaches: Array[AABB] = []
+	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage","service_fan"]
+	var sizes := [Vector3(3.2,6.0,1.3),Vector3(3.0,7.1,1.2),Vector3(3.5,5.7,1.4),Vector3(2.8,3.2,0.8),Vector3(3.6,4.6,3.0)]
+	if plan.structure == 3: sizes[0].y = 2.7
+	var offset := rng.randi_range(0,kinds.size()-1)
+	for anchor: Dictionary in anchors:
+		if placements.size() >= 10: break
+		var nearby := false
+		for placed: Vector3 in placements:
+			if placed.distance_to(anchor.transform.origin) < 7.5: nearby = true; break
+		if nearby: continue
+		# Try another assembly if a deep unit cannot fit a concave return.
+		for attempt in range(kinds.size()):
+			var choice := (offset+placements.size()+attempt)%kinds.size()
+			var size: Vector3 = sizes[choice]
+			var pose: Transform3D = anchor.transform * Transform3D(Basis.IDENTITY,Vector3(0,0,size.z+0.02))
+			var candidate := {"id":"%s_%04d" % [kinds[choice],plan.modules.size()],"kind":kinds[choice],"transform":pose,"size":size,"variant":rng.randi_range(0,3),"solid":true,"decoration_anchor":anchor.id}
+			var bounds := module_bounds(candidate)
+			if bounds.intersects(portal): continue
+			# Mounting plates may meet the facade skin. All projecting geometry
+			# beyond its first 36cm must clear columns, returns and earlier fixtures.
+			var local_bounds: AABB = pose.affine_inverse()*bounds
+			var far_end := local_bounds.end.z
+			local_bounds.position.z = maxf(local_bounds.position.z,-size.z+0.36)
+			local_bounds.size.z = far_end-local_bounds.position.z
+			var clearance: AABB = pose*local_bounds
+			# Keep a visible, walk-up maintenance apron in front of each group.
+			# This also avoids hiding focal machines deep in narrow courtyards.
+			var approach: AABB = pose*AABB(Vector3(-size.x/2,0,0.2),Vector3(size.x,3.0,7.0))
+			var blocked := false
+			for reserved: AABB in reserved_approaches:
+				if reserved.intersects(bounds): blocked = true; break
+			for obstacle: AABB in obstacles:
+				if clearance.grow(0.12).intersects(obstacle) or approach.intersects(obstacle): blocked = true; break
+			if blocked: continue
+			candidate["clearance_bounds"] = clearance
+			candidate["approach_bounds"] = approach
+			plan.modules.append(candidate)
+			obstacles.append(bounds)
+			reserved_approaches.append(approach)
+			placements.append(anchor.transform.origin)
+			# The dedicated service group replaces the old isolated cover below it.
+			if anchor.variant >= 4 and anchor.variant != 7: anchor.variant = 0
+			break
+	# The portal itself carries a broad, ribbed rain canopy with dead downlights.
+	_add(plan,"portal_canopy",Vector3(plan.access_point.x,9.02,float(plan.depth)/2+6.5),Vector3(11.8,0.9,4.5),0,0,true)
+
 static func module_bounds(module: Dictionary) -> AABB:
 	var result := AABB()
 	var first := true
 	for piece: Dictionary in MegashelterKit.pieces(module.kind,module.size,module.variant):
-		var bounds: AABB = module.transform*AABB(piece.center-piece.size*0.5,piece.size)
+		var pose: Transform3D = module.transform*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+		var bounds: AABB = pose*AABB(-piece.size*0.5,piece.size)
 		result = bounds if first else result.merge(bounds)
 		first = false
 	return result
 
 static func _rng(seed_value: int,domain: String) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = ("megashelter:%d:%d:%s" % [1 if domain == "massing" else PROFILE.CONTENT_VERSION,seed_value,domain]).hash()
+	# Dressing revisions never reroll approved silhouettes or roof layouts.
+	var version := 1 if domain == "massing" else (5 if domain in ["growth","architecture"] else PROFILE.CONTENT_VERSION)
+	rng.seed = ("megashelter:%d:%d:%s" % [version,seed_value,domain]).hash()
 	return rng

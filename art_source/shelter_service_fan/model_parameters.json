@@ -1,0 +1,67 @@
+{
+  "source_sha256": "dbc6f7eca8cbfa3d760588227c9b654993934b54f9f59f5219b656c3260c7787",
+  "size_m": [
+    3.1,
+    2.8,
+    2.4
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 90.0,
+  "fit_scale_xyz": [
+    3.4691709034621625,
+    2.804057198076445,
+    2.381056390645092
+  ],
+  "collapsed_tangents_repaired": 3,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "shelter_service_fan",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49713,
+  "triangles": 13039,
+  "vertices": 14566,
+  "final_sha256": "a751a75c86f893ffe9d26c8b2a7387c6c3fb9f3795385d4660c2d2e5fa704824",
+  "texture_sha256": [
+    "f22503ca82737799ffebaa2040be5db0858802b237764f9e7516cc9526b93832",
+    "8da095e0751043e4d7eb142cf7a4ae74ca6eaa7f23f0521d99c03d94f0817073",
+    "e7c762cf9da0646e64d5eb046731f7fcfa0012c92e54d4ba2ff5cccd29433c85"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -1.5499999523162842,
+    0.0,
+    -1.2000000476837158
+  ],
+  "bounds_max_m": [
+    1.5499999523162842,
+    2.799999952316284,
+    1.2000000476837158
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 2,
+    "nonmanifold_edges": 814,
+    "duplicate_triangles": 245,
+    "zero_area_triangles": 0
+  },
+  "visual_review": "required",
+  "source_path": ".godot/art-work/megashelter-decor/generation/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "a7581b7e-8ff4-4fc7-831a-266b92a0df65",
+    "reference_sha256": "5fc13a3ea01b371191c426f17acd50e2d41c9d7c19621edb926a54ca34aa8634"
+  }
+}

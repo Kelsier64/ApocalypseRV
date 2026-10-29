@@ -1,5 +1,7 @@
 # ApocalypseRV 架構
 
+2026-10-30 巨型避難所地面裝飾：外殼內容 v6，`MegashelterDetails` 提供低層設備、露筋碎塊及入口遮簷；地面配置使用獨立 RNG，生長／結構／屋頂仍沿用 v5 域。附件錨定接地牆板，實際 bounds 避讓門框及結構，並保留前方接近空間。原生零件進入既有三材質批次，ComfyUI 排風機使用共用 GLB；碰撞與鄰帶導航仍消費同份 plan。見[地面裝飾驗證](docs/validation/2026-10-30-megashelter-ground-details.md)。
+
 2026-10-28 電子指南針：`ElectronicCompass extends Item` 共用物品 ID、倉庫與保存契約，不保存搜尋目標。`BuildingLocator` 從普通越野及獨立大樓候選帶查詢 `modular_megashelter`，依建築原點的水平距離選取 2 km 內最近目標，包含未載入場址。手持副本每秒或移動超過 20 m 啟動背景搜尋，工作執行緒擁有獨立 `WorldField`／profile／快取，完成後才在主執行緒更新讀值；跨 domain 結果以 epoch 拒絕，保留工作 locator 至執行緒 join。只查玩家祖先內同 World3D 的生成器。箭頭及距離逐幀更新；實物與預覽待機，不啟動世界服務。`carry_offset` 調整共用手臂求解中的持物中心，指南針上移以避開操作提示。新局倉庫提供一件，另登錄製作配方；已生成的保存場址不補發。模型來源與軸向見 [資產說明](assets/models/electronic_compass/README.md)。
 
 2026-10-28 巨型住宅密度：生成 v18 的 `modular_megashelter`（`Abandoned Megashelter`）增加獨立 300 m 候選帶，每帶最多一棟；最多嘗試三種 footprint、各 64 次位置，無合法位置則略過。一般越野候選維持 55%，原有 2% 大樓抽選及場址保持不變且優先保留；新增大樓完整整地範圍必須避開其他場址、道路及河谷，坡度上限維持 0.65，新增大樓場址地面高差上限為 12 m（原候選仍為 6 m）。四個固定種子共 288 個 150 m 區塊抽樣新增 64 棟，平均每 4.5 區塊一棟；屬平均密度，沒有固定間距保證。新增大樓使用獨立 `megashelter` 身分與 RNG 域，納入相同場址查詢及單一區塊歸屬；道路 RNG 域維持 v15。

@@ -47,10 +47,14 @@ class Batch extends RefCounted:
 		return result
 
 	func add_piece(pose: Transform3D, piece: Dictionary) -> void:
+		if piece.has("basis"):
+			pose = pose * Transform3D(piece.basis,piece.center)
+			piece = piece.duplicate()
+			piece.center = Vector3.ZERO
 		_damage = 1.0 if piece.get("shape", "box") == "spall" else 0.0
 		match piece.get("shape", "box"):
 			"bevel": _beveled(pose, piece.center, piece.size, piece.shade, piece.bevel)
-			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade)
+			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade, piece.get("axis",-1))
 			"spall": _spall(pose, piece.center, piece.size, piece.shade)
 			_: add_box(pose, piece.center, piece.size, piece.shade)
 
@@ -111,8 +115,8 @@ class Batch extends RefCounted:
 						Vector3(inner.x, half.y, inner.z) * signs, Vector3(inner.x, inner.y, half.z) * signs]
 					_face(pose, center, points, signs.normalized(), shade * 0.91)
 
-	func _cylinder(pose: Transform3D, center: Vector3, size: Vector3, shade: float) -> void:
-		var axis := size.max_axis_index()
+	func _cylinder(pose: Transform3D, center: Vector3, size: Vector3, shade: float, requested_axis: int = -1) -> void:
+		var axis := size.max_axis_index() if requested_axis < 0 else requested_axis
 		var u := (axis + 1) % 3
 		var v := (axis + 2) % 3
 		var ends: Array[Array] = [[], []]
@@ -160,6 +164,8 @@ class Batch extends RefCounted:
 static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	match kind:
+		"service_cabinet", "pipe_manifold", "intake_hood", "wall_salvage", "portal_canopy", "service_fan":
+			return MegashelterDetails.pieces(kind,size,variant)
 		"buttress":
 			# Stepped concrete feet and deep upper ribs form a readable load path.
 			for level in range(3):

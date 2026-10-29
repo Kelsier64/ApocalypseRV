@@ -1,0 +1,9 @@
+# Shelter service fan source
+
+Reference: `reference.png`, generated with the built-in ImageGen tool. Final prompt: single isolated abandoned centrifugal extraction fan, snail housing, radial intake grille, upper rectangular rain hood, attached motor and mounting skids; muted graphite steel, restrained rust and dust, broad low-poly forms, no yellow, lettering or active lights; transparent background, front three-quarter view. Initially conceived as rooftop equipment, then reassigned to a ground-level service bay when the user narrowed scope. No roof changes were made.
+
+ComfyUI: TRELLIS.2 `trellis-single-1024-50k`, seed 42, prompt `a7581b7e-8ff4-4fc7-831a-266b92a0df65`. Original raw GLB remains unmodified in `.godot/art-work/megashelter-decor/generation/raw.glb`; SHA256 and fitting parameters are in `model_parameters.json`. Runtime asset: [shelter_service_fan.glb](../../assets/models/shelter_service_fan/shelter_service_fan.glb).
+
+Preparation uses the shared `prepare_prop.py`: Y rotation 90 degrees, size 3.1 × 2.8 × 2.4 m, bottom-center origin, front +Z. gltfpack 1.3 with ratio 0.12, error 0.025, `-sp -sv -noq -kn -km` produced 13,039 triangles from 49,713. Three collapsed source tangents were repaired in the copy; embedded texture hashes were preserved. Original and candidate files remain in the ignored work directory.
+
+All six textured sides of the first fitted candidate, and corrected front / oblique clay views were inspected. Native Godot integration was inspected at ground level. The model retains approximate grille/rear topology (814 non-manifold and 2 boundary edges, 245 duplicate triangles reported by the preparation tool); it is a static decoration with separate box collision, not a moving fan or watertight physics mesh. Do not use its generated surface as an interaction interface.

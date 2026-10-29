@@ -2,6 +2,7 @@
 extends Node3D
 class_name ModularMegashelter
 const SURFACE = preload("res://world/megashelter/megashelter_surface.gdshader")
+const SERVICE_FAN = preload("res://assets/models/shelter_service_fan/shelter_service_fan.glb")
 const ROOF_PLANT = [preload("res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb"),
 	preload("res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb")]
 @export var preview_seed: int = 42
@@ -56,7 +57,7 @@ func _begin_visuals(plan: Dictionary) -> void:
 		_append_box(Transform3D.IDENTITY, bounds.get_center(), bounds.size - Vector3(0.02, 0.02, 0.02), 0, 0.62)
 
 func _append_module(module: Dictionary) -> void:
-	if module.kind == "roof_plant": _roof_modules.append(module)
+	if module.kind in ["roof_plant","service_fan"]: _roof_modules.append(module)
 	var pieces := MegashelterKit.pieces(module.kind, module.size, module.variant)
 	var ledge_height := float(module.transform.origin.y) + float(module.size.y)
 	if module.kind == "beam": ledge_height = module.transform.origin.y
@@ -100,8 +101,13 @@ func _finish_visuals(plan: Dictionary) -> void:
 		var wrapper := Node3D.new()
 		wrapper.name = module.id
 		wrapper.transform = module.transform
-		var equipment: Node3D = ROOF_PLANT[module.variant].instantiate()
-		equipment.position = Vector3(0,1.36 if module.variant == 0 else 1.11,-module.size.z*0.5)
+		var equipment: Node3D
+		if module.kind == "service_fan":
+			equipment = SERVICE_FAN.instantiate()
+			equipment.position = Vector3(0,0.32,-module.size.z*0.5)
+		else:
+			equipment = ROOF_PLANT[module.variant].instantiate()
+			equipment.position = Vector3(0,1.36 if module.variant == 0 else 1.11,-module.size.z*0.5)
 		wrapper.add_child(equipment)
 		$Visuals.add_child(wrapper)
 	_roof_modules.clear()
@@ -140,17 +146,3 @@ func _dress_base(plan: Dictionary) -> void:
 	floor_visual.mesh.surface_set_material(0,$Visuals/Concrete.mesh.surface_get_material(0))
 	floor_visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	$Furnishings.add_child(floor_visual)
-	var debris := MegashelterKit.Batch.new()
-	for index in range(18):
-		var side := -1.0 if index % 2 == 0 else 1.0
-		var x := side * rng.randf_range(9.0, float(plan.width) * 0.5 + 2.0)
-		var z := float(plan.depth) * 0.5 + rng.randf_range(1.0, 12.0)
-		var size := Vector3(rng.randf_range(0.3, 1.0), rng.randf_range(0.08, 0.35), rng.randf_range(0.3, 0.8))
-		var piece := {"center":Vector3.ZERO,"size":size,"shade":rng.randf_range(0.62,0.88),"shape":"bevel","bevel":0.09}
-		debris.add_piece(Transform3D(Basis(Vector3.UP,rng.randf_range(-PI,PI)),Vector3(x,size.y*0.5,z)),piece)
-	var mesh := debris.mesh()
-	mesh.surface_set_material(0,$Visuals/Concrete.mesh.surface_get_material(0))
-	var visual := MeshInstance3D.new()
-	visual.name = "AbandonedFragments"
-	visual.mesh = mesh
-	$Furnishings.add_child(visual)
