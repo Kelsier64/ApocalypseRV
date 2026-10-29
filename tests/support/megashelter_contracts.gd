@@ -332,9 +332,6 @@ static func _visual_snapshot(building: Node3D) -> Array:
 				if material is ShaderMaterial:
 					appearance.append_array([material.shader.resource_path, material.get_shader_parameter("base_color"), material.get_shader_parameter("surface_kind"), material.get_shader_parameter("wear_seed")])
 					appearance.append_array([material.get_shader_parameter("drain_count"), material.get_shader_parameter("drain_sources")])
-					for parameter in ["concrete_texture", "coating_texture", "aggregate_texture", "decay_texture", "corrosion_texture"]:
-						var texture = material.get_shader_parameter(parameter)
-						appearance.append(texture.resource_path if texture is Texture2D else "missing:" + parameter)
 				surfaces.append([visual.mesh.surface_get_arrays(index), appearance])
 			result.append([str(building.get_path_to(visual)), _local_pose(building, visual), visual.mesh.get_aabb(), surfaces])
 	return result
