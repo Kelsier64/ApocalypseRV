@@ -185,7 +185,7 @@ class Batch extends RefCounted:
 
 ## Eight structural families plus roof plant and drainage attachments.
 ## Root lies at floor centre of front face, front +Z; depth extends towards -Z.
-static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dictionary]:
+static func pieces(kind: String, size: Vector3, variant: int = 0, repair_variant: int = -1) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	match kind:
 		"service_cabinet", "pipe_manifold", "intake_hood", "wall_salvage", "portal_canopy", "service_fan":
@@ -202,7 +202,9 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 				_piece(result, Vector3(-size.x * 0.5 + 0.12, size.y * 0.5, 0.035), Vector3(0.22, size.y - 0.02, 0.14), 0, 1, 0.03)
 			if variant == 3 or variant == 7:
 				_piece(result, Vector3(-size.x * 0.33, size.y * 0.24, 0.025), Vector3(0.6, minf(1.1,size.y*0.4), 0.045), 0, 3, 0, "spall")
-			if variant >= 4:
+			if repair_variant >= 8:
+				result.append_array(MegashelterDetails.wall_panels(size,repair_variant,variant))
+			elif variant >= 4:
 				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
 				if variant == 7:
 					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.65,2.25,0.06),0,1,0,"spall")

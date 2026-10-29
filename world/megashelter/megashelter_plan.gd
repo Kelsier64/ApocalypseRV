@@ -89,6 +89,7 @@ static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dic
 	for x: float in [-7.0,7.0]:
 		_add(plan,"drain",Vector3(entry_x+x,0,front+0.1),Vector3(0.4,12,0.4),0,0,true)
 	_ground_details(plan)
+	_repair_details(plan)
 	var bounds: AABB = volumes[0]
 	for volume: AABB in volumes: bounds = bounds.merge(volume)
 	for module: Dictionary in plan.modules:
@@ -314,10 +315,36 @@ static func _ground_details(plan: Dictionary) -> void:
 	# The portal itself carries a broad, ribbed rain canopy with dead downlights.
 	_add(plan,"portal_canopy",Vector3(plan.access_point.x,9.02,float(plan.depth)/2+6.5),Vector3(11.8,0.9,4.5),0,0,true)
 
+## Keep the original per-bay repair slots; choose new models independently.
+static func _repair_details(plan: Dictionary) -> void:
+	var obstacles: Array[AABB] = []
+	obstacles.assign(plan.collision_boxes)
+	for module: Dictionary in plan.modules:
+		if module.get("solid",false): obstacles.append(module_bounds(module))
+	for module: Dictionary in plan.modules:
+		if module.kind not in ["wall","rib_wall"] or module.variant not in [4,5,6]: continue
+		var code := posmod(("repair-model:%d:%s" % [plan.seed,module.id]).hash(),65521)
+		var repair_variant := 8+code%1536
+		var blocked := false
+		var inverse: Transform3D = module.transform.affine_inverse()
+		for piece: Dictionary in MegashelterDetails.wall_panels(module.size,repair_variant,module.variant):
+			var pose: Transform3D = module.transform*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+			var bounds: AABB = pose*AABB(-piece.size/2,piece.size)
+			for obstacle: AABB in obstacles:
+				if not bounds.grow(0.015).intersects(obstacle): continue
+				# Flush fittings can occupy the backing wall's collision skin.
+				var local: AABB = inverse*obstacle
+				if absf(local.position.z+2.2) < 0.005 and absf(local.end.z-0.2) < 0.005 and local.has_point(Vector3(0,module.size.y/2,0)): continue
+				blocked = true
+				break
+			if blocked: break
+		# Retain the small original cover where a larger assembly cannot fit.
+		if not blocked: module["repair_variant"] = repair_variant
+
 static func module_bounds(module: Dictionary) -> AABB:
 	var result := AABB()
 	var first := true
-	for piece: Dictionary in MegashelterKit.pieces(module.kind,module.size,module.variant):
+	for piece: Dictionary in MegashelterKit.pieces(module.kind,module.size,module.variant,module.get("repair_variant",-1)):
 		var pose: Transform3D = module.transform*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
 		var bounds: AABB = pose*AABB(-piece.size*0.5,piece.size)
 		result = bounds if first else result.merge(bounds)

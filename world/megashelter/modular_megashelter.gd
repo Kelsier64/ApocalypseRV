@@ -57,7 +57,7 @@ func _begin_visuals(plan: Dictionary) -> void:
 
 func _append_module(module: Dictionary) -> void:
 	if module.kind == "roof_plant": _roof_modules.append(module)
-	var pieces := MegashelterKit.pieces(module.kind, module.size, module.variant)
+	var pieces := MegashelterKit.pieces(module.kind, module.size, module.variant,module.get("repair_variant",-1))
 	var ledge_height := float(module.transform.origin.y) + float(module.size.y)
 	if module.kind == "beam": ledge_height = module.transform.origin.y
 	elif module.kind == "entrance":

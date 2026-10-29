@@ -23,16 +23,22 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_generation(check)
 	var ground_kinds := {}
 	var wall_variants := {}
+	var repair_geometry := {}
 	var wall_detail_totals := {"lower":0,"upper":0,"walls":0,"spalls":0}
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
-		_check_wall_details(plan,wall_variants,wall_detail_totals,check)
+		_check_wall_details(plan,wall_variants,repair_geometry,wall_detail_totals,check)
 		_check_plan(plan,seed_value,check)
 		_check_ground_details(plan,ground_kinds,check)
 		_check_detail_geometry(plan,check)
 		check.call(plan == PLAN.generate(seed_value),"Growth seed %d reproduces every module and collider" % seed_value)
 	check.call(ground_kinds.size() == 4,"Megashelter sampled ground dressing includes all four service assemblies")
 	check.call(wall_variants.has(4) and wall_variants.has(5) and wall_variants.has(6),"Megashelter sampled facades retain the original maintenance cover variants")
+	check.call(repair_geometry.size() == 6,"Megashelter sampled facades include all six replacement repair assemblies")
+	var varied_repairs := 0
+	for signatures: Dictionary in repair_geometry.values():
+		if signatures.size() > 1: varied_repairs += 1
+	check.call(varied_repairs == 6,"Megashelter repairs vary their actual geometry within every assembly kind")
 	check.call(wall_detail_totals.lower > 0 and wall_detail_totals.upper > 0 and wall_detail_totals.spalls > 0,"Megashelter sampled facades retain repairs across wall heights and exposed concrete damage")
 	_check_seed_diversity(check)
 	_check_custom_heights(check)
@@ -115,7 +121,7 @@ static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> v
 		var size: Vector3 = module.size
 		var id := str(module.id)
 		modules_valid = modules_valid and not id.is_empty() and not unique.has(id) and not str(module.kind).is_empty() and module.variant is int and pose.is_finite() and size.is_finite() and size.x > 0.0 and size.y > 0.0 and size.z > 0.0
-		var pieces: Array[Dictionary] = KIT.pieces(module.kind, size, module.variant)
+		var pieces: Array[Dictionary] = KIT.pieces(module.kind, size, module.variant,module.get("repair_variant",-1))
 		modules_valid = modules_valid and module.kind in PLAN.KINDS and not pieces.is_empty()
 		for piece: Dictionary in pieces:
 			var piece_pose := pose * Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
@@ -204,18 +210,41 @@ static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, chec
 	check.call(clear,label + "ground service assemblies clear the reserved entrance, structural obstacles and neighbouring fittings")
 	check.call(approachable,label + "each ground service assembly retains a clear seven-metre walk-up apron after every fixture is placed")
 
-static func _check_wall_details(plan: Dictionary, seen_variants: Dictionary, totals: Dictionary, check: Callable) -> void:
+static func _check_wall_details(plan: Dictionary, seen_variants: Dictionary, repair_geometry: Dictionary, totals: Dictionary, check: Callable) -> void:
 	var baseline_variants := true
+	var repair_assignments := true
+	var baseline_covers := 0
+	var repair_count := 0
 	for module: Dictionary in plan.modules:
-		if module.kind not in ["wall","rib_wall"]: continue
+		if module.kind not in ["wall","rib_wall"]:
+			repair_assignments = repair_assignments and not module.has("repair_variant")
+			continue
 		totals.walls += 1
 		baseline_variants = baseline_variants and module.variant in range(8)
 		seen_variants[int(module.variant)] = true
 		if module.variant in [3,7]: totals.spalls += 1
-		if module.variant not in [4,5,6]: continue
+		if module.variant not in [4,5,6]:
+			repair_assignments = repair_assignments and not module.has("repair_variant")
+			continue
+		baseline_covers += 1
 		if module.transform.origin.y <= 18.0: totals.lower += 1
 		else: totals.upper += 1
+		if not module.has("repair_variant"): continue
+		var repair_variant: int = module.get("repair_variant",-1)
+		repair_assignments = repair_assignments and repair_variant >= 8
+		if repair_variant < 8: continue
+		repair_count += 1
+		var repair_kind := (repair_variant-8)%6
+		if not repair_geometry.has(repair_kind): repair_geometry[repair_kind] = {}
+		# Exclude the backing wall/rib and appearance metadata: only repair
+		# geometry should establish variation within an assembly kind.
+		var pieces := KIT.pieces(module.kind,module.size,module.variant,repair_variant)
+		var geometry: Array = []
+		for piece: Dictionary in pieces.slice(2 if module.kind == "rib_wall" else 1):
+			geometry.append([piece.center,piece.size,piece.get("basis",Basis.IDENTITY),piece.get("shape","box")])
+		repair_geometry[repair_kind][str(geometry)] = true
 	check.call(baseline_variants,"Megashelter seed %d retains the original eight facade variants" % int(plan.seed))
+	check.call(repair_assignments and repair_count <= baseline_covers,"Megashelter seed %d replaces only existing cover bays and retains their original variants" % int(plan.seed))
 
 static func _check_detail_geometry(plan: Dictionary, check: Callable) -> void:
 	var chips_valid := true
@@ -226,7 +255,7 @@ static func _check_detail_geometry(plan: Dictionary, check: Callable) -> void:
 	var pieces: Array[Dictionary] = []
 	for module: Dictionary in plan.modules:
 		if module.kind in ["wall","rib_wall"]:
-			for piece: Dictionary in KIT.pieces(module.kind,module.size,module.variant):
+			for piece: Dictionary in KIT.pieces(module.kind,module.size,module.variant,module.get("repair_variant",-1)):
 				if piece.get("shape","") == "spall": pieces.append(piece)
 		if module.kind != "wall_salvage": continue
 		var has_spall := false
@@ -428,7 +457,7 @@ static func _check_appearance_metadata(plan: Dictionary, building: Node3D, check
 		ledges[roundi((origin.y + float(module.size.y)) * 1000.0)] = true
 		ledges[roundi(origin.y * 1000.0)] = true
 		if module.kind == "entrance":
-			for piece: Dictionary in KIT.pieces(module.kind, module.size, module.variant):
+			for piece: Dictionary in KIT.pieces(module.kind, module.size, module.variant,module.get("repair_variant",-1)):
 				ledges[roundi((origin.y + piece.center.y - piece.size.y * 0.5) * 1000.0)] = true
 		if module.kind == "drain": expected_drains.append(Vector4(origin.x, origin.y + float(module.size.y), origin.z, origin.y))
 	var variants := {}
