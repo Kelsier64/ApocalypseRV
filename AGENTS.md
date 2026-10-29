@@ -34,7 +34,8 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 
 ## Token Efficiency and Validation Scope
 
-- Keep exploration, tool output, delegation, and reports focused on the current task. Read relevant files and ranges, reuse established context and results, and avoid repeated searches or checks without new evidence.
+- Save tokens and time without compromising quality or requested scope. Use `rg`, inspect targeted ranges and diffs, batch independent reads, and reuse established findings.
+- Delegate narrowly with concise context; avoid duplicate exploration and validation. Keep tool output and reports focused on actionable results.
 - Do not write or run unnecessary tests. Choose the smallest meaningful checks for the changed behavior and its risks; expand only for related failures, unresolved risks, or explicit requirements. Do not run the full suite by default or repeat passing checks when nothing relevant changed.
 - For documentation-only changes, check wording, consistency, and any changed links; do not launch Godot or run gameplay tests.
 - For visual and art changes, assess the appropriate verification method yourself: inspect the asset or render directly, use computer-use when in-game interaction or context matters, or ask the user to inspect when their visual judgment or unavailable access is needed. Do not use computer-use automatically for every visual change.
