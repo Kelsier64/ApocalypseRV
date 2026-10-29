@@ -52,14 +52,13 @@ class Batch extends RefCounted:
 			piece = piece.duplicate()
 			piece.center = Vector3.ZERO
 		_damage = 1.0 if piece.get("shape", "box") == "spall" else 0.0
-		if piece.material == 2: _damage = float(piece.get("steel_preservation",0.0))
+		if piece.material == 2: _damage = float(piece.get("steel_corrosion",0.0))
 		match piece.get("shape", "box"):
 			"bevel": _beveled(pose, piece.center, piece.size, piece.shade, piece.bevel)
 			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade, piece.get("axis",-1))
 			"spall": _spall(pose, piece.center, piece.size, piece.shade)
 			"chip": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0))
 			"paver": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0),true)
-			"scar": _scar(pose,piece.center,piece.size,piece.shade,piece.get("scar_seed",0))
 			_: add_box(pose, piece.center, piece.size, piece.shade)
 
 	func _face(pose: Transform3D, center: Vector3, points: Array[Vector3], normal: Vector3, shade: float) -> void:
@@ -168,38 +167,6 @@ class Batch extends RefCounted:
 			var normal := (top[index]-bottom[index]).cross(bottom[next]-bottom[index]).normalized()
 			_face(pose,center,[bottom[index],bottom[next],top[next],top[index]],normal,shade*(0.72+float(index%3)*0.08))
 
-	func _scar(pose: Transform3D, center: Vector3, size: Vector3, shade: float, seed_value: int) -> void:
-		var rng := RandomNumberGenerator.new()
-		rng.seed = seed_value*3307+91
-		var outer: Array[Vector3] = []
-		var lip: Array[Vector3] = []
-		var inner: Array[Vector3] = []
-		for index in range(15):
-			var angle := TAU*index/15.0
-			var radius := rng.randf_range(0.29,0.5)
-			var edge := Vector3(cos(angle)*size.x*radius,sin(angle)*size.y*radius,-size.z*0.48)
-			outer.append(edge)
-			lip.append(Vector3(edge.x*0.95,edge.y*0.95,size.z*(-0.22 if index%3 == 0 else rng.randf_range(0.12,0.5))))
-			var exposed := rng.randf_range(0.77,0.93)
-			inner.append(Vector3(edge.x*exposed,edge.y*exposed,-size.z*0.36))
-		var bed := Vector3(0,0,-size.z*0.38)
-		for index in range(15):
-			var next := (index+1)%15
-			# A thin feathered outside, chipped raised lip, then an inward fracture
-			# slope. No box-shaped pieces pasted over an exposed reinforcement grid.
-			_damage = 0.0
-			_triangle(pose,center,outer[index],outer[next],lip[next],shade)
-			_triangle(pose,center,outer[index],lip[next],lip[index],shade)
-			_triangle(pose,center,lip[index],lip[next],inner[next],shade*0.87)
-			_triangle(pose,center,lip[index],inner[next],inner[index],shade*0.87)
-			_damage = 0.22
-			_triangle(pose,center,inner[index],inner[next],bed,shade*0.72)
-
-	func _triangle(pose: Transform3D, center: Vector3, a: Vector3, b: Vector3, c: Vector3, shade: float) -> void:
-		var normal := (b-a).cross(c-a).normalized()
-		if normal.z < 0: normal = -normal
-		_face(pose,center,[a,b,c],normal,shade)
-
 	func _spall(pose: Transform3D, center: Vector3, size: Vector3, shade: float) -> void:
 		var polygon := [Vector2(-0.5,-0.35), Vector2(-0.2,-0.5), Vector2(0.5,-0.24), Vector2(0.3,0.42), Vector2(-0.35,0.5)]
 		var faces: Array[Array] = [[], []]
@@ -229,15 +196,13 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 				var depth := size.z * (1.0 - level * 0.22)
 				_piece(result,Vector3(0,(level+0.5)*size.y/3,-depth*0.5),Vector3(size.x-level*0.45,size.y/3,depth),0,level,0.16)
 		"wall", "rib_wall":
-			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), Vector3(size.x - 0.055, size.y - 0.045, size.z), 1, variant%8, 0.045)
+			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), Vector3(size.x - 0.055, size.y - 0.045, size.z), 1, variant, 0.045)
 			# Raised vertical returns and a chipped exposed-concrete patch.
 			if kind == "rib_wall":
 				_piece(result, Vector3(-size.x * 0.5 + 0.12, size.y * 0.5, 0.035), Vector3(0.22, size.y - 0.02, 0.14), 0, 1, 0.03)
 			if variant == 3 or variant == 7:
 				_piece(result, Vector3(-size.x * 0.33, size.y * 0.24, 0.025), Vector3(0.6, minf(1.1,size.y*0.4), 0.045), 0, 3, 0, "spall")
-			if variant >= 8:
-				result.append_array(MegashelterDetails.wall_panels(size,variant))
-			elif variant >= 4:
+			if variant >= 4:
 				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
 				if variant == 7:
 					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.65,2.25,0.06),0,1,0,"spall")

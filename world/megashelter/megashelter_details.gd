@@ -52,19 +52,10 @@ static func pieces(kind: String, size: Vector3, variant: int) -> Array[Dictionar
 			_box(p,Vector3(0,1.0,back+0.22),Vector3(1.15,2.0,0.44),2,0.05)
 			for y: float in [0.4,1.5]: _box(p,Vector3(0,y,back+0.26),Vector3(1.4,0.16,0.52),2)
 		"wall_salvage":
-			# Ragged fracture rim around a shallow aggregate bed. Steel is revealed
-			# only inside the break, with torn/bent ends instead of a complete grid.
-			_box(p,Vector3(-0.08,1.36,back+0.055),Vector3(2.5,2.45,0.09),0,0,0.85,"scar")
-			p.back()["scar_seed"] = variant+31
-			for index in range(3):
-				var x := -0.55+index*0.43
-				var start := Vector3(x,0.67+index*0.11,back+0.04)
-				var end := Vector3(x,1.87-index*0.13,back+0.045)
-				_rebar(p,start,end)
-				_rebar(p,end,end+Vector3(0.10-0.1*index,0.18,0.035+index*0.015))
-			_rebar(p,Vector3(-0.69,1.08,back+0.065),Vector3(0.55,1.08,back+0.065))
-			_rebar(p,Vector3(-0.48,1.65,back+0.065),Vector3(0.33,1.65,back+0.065))
-			_rebar(p,Vector3(0.33,1.65,back+0.065),Vector3(0.52,1.59,back+0.12))
+			_box(p,Vector3(0,1.4,back+0.035),Vector3(2.5,2.5,0.07),0,0,0.72,"spall")
+			for x: float in [-0.85,-0.42,0,0.42,0.85]:
+				_pipe(p,Vector3(x,1.4,back+0.11),Vector3(0.055,2.2,0.055),3)
+			for y: float in [0.6,1.4,2.2]: _pipe(p,Vector3(0,y,back+0.12),Vector3(2.2,0.055,0.055),3)
 			var debris_rng := RandomNumberGenerator.new()
 			debris_rng.seed = 8107+variant*7919
 			for index in range(18):
@@ -98,85 +89,11 @@ static func pieces(kind: String, size: Vector3, variant: int) -> Array[Dictionar
 			piece.size.y *= 0.45
 	return p
 
-## Six flat assemblies: overlapping repairs, corrugated patch, strapped seam,
-## hinged hatch, cable chase and stripped mounting frame. All remain sealed.
-static func wall_panels(size: Vector3, variant: int) -> Array[Dictionary]:
-	var p: Array[Dictionary] = []
-	var kind := posmod(variant-8,6)
+## Stable repair history per building and assembly; never consumes layout RNG.
+static func corrosion_amount(building_seed: int, module_id: String) -> float:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = variant*7919+413
-	var center := Vector3(0,minf(size.y*0.5,2.3),0)
-	match kind:
-		0:
-			_plate(p,center+Vector3(-0.4,-0.16,0.05),Vector2(1.65,1.55),0.85)
-			_plate(p,center+Vector3(0.47,0.25,0.13),Vector2(1.25,1.4),0.69)
-			_strap(p,center+Vector3(-0.94,-0.58,0.22),center+Vector3(0.82,0.69,0.22),0.13)
-		1:
-			_box(p,center+Vector3(0,0,0.05),Vector3(2.45,1.9,0.1),2,0.025,0.7)
-			for index in range(9):
-				_box(p,center+Vector3(-1.04+index*0.26,0,0.13),Vector3(0.13,1.8,0.14),2,0.025,0.87)
-			for y: float in [-0.7,0.7]: _box(p,center+Vector3(0,y,0.23),Vector3(2.65,0.12,0.08),2,0.015)
-		2:
-			_box(p,center+Vector3(-0.15,0,0.07),Vector3(0.9,1.9,0.13),0,0,0.85,"scar")
-			p.back()["scar_seed"] = variant
-			_strap(p,center+Vector3(-1.05,-0.55,0.19),center+Vector3(0.87,-0.30,0.19),0.18)
-			_strap(p,center+Vector3(-0.78,0.6,0.19),center+Vector3(1.08,0.38,0.19),0.14)
-		3:
-			_box(p,center+Vector3(0,0,0.05),Vector3(1.95,2.15,0.1),2,0.035,0.5)
-			_plate(p,center+Vector3(0,0,0.14),Vector2(1.68,1.9),0.92)
-			for y: float in [-0.58,0.58]: _box(p,center+Vector3(-0.84,y,0.22),Vector3(0.23,0.36,0.15),2,0.035)
-			_box(p,center+Vector3(0.57,0,0.27),Vector3(0.09,0.4,0.1),2,0.02)
-			_box(p,center+Vector3(0,1.11,0.16),Vector3(2.13,0.12,0.3),2,0.025)
-		4:
-			_plate(p,center+Vector3(0.57,0.35,0.055),Vector2(1.05,0.85),0.85)
-			for x: float in [-0.65,-0.38]:
-				_pipe(p,center+Vector3(x,0,0.12),Vector3(0.09,2.15,0.09))
-				_box(p,center+Vector3(x,1.1,0.08),Vector3(0.22,0.18,0.16),2,0.02)
-				_box(p,center+Vector3(x,-1.05,0.08),Vector3(0.24,0.2,0.16),2,0.02)
-			for y: float in [-0.67,0.65]: _box(p,center+Vector3(-0.51,y,0.18),Vector3(0.63,0.09,0.1),2,0.015)
-			_box(p,center+Vector3(-0.07,0.35,0.12),Vector3(0.7,0.12,0.12),2,0.02)
-		5:
-			# Bare concrete stays visible through a missing cover, not a black window.
-			for x: float in [-1.05,1.05]: _box(p,center+Vector3(x,0,0.065),Vector3(0.16,1.9,0.13),2,0.025,0.65)
-			for y: float in [-0.88,0.88]: _plate(p,center+Vector3(0,y,0.07),Vector2(2.25,0.16),0.8)
-			_plate(p,center+Vector3(-0.75,-0.47,0.14),Vector2(0.55,0.65),0.7)
-	# Repairs differ at assembly scale; functional hatches remain level. All
-	# transformations are baked into pieces before clearance and bounds checks.
-	var scale_value := rng.randf_range(0.65,0.95)
-	var angle := rng.randf_range(-0.075,0.075) if kind in [0,1,2,5] else 0.0
-	var rotation := Basis(Vector3.BACK,angle)
-	var offset := Vector3(rng.randf_range(-0.3,0.3),rng.randf_range(1.45,minf(size.y-1.25,5.5)),0)
-	for piece: Dictionary in p:
-		piece.center = offset+rotation*((piece.center-center)*scale_value)
-		piece.size *= scale_value
-		piece["basis"] = rotation*piece.get("basis",Basis.IDENTITY)
-		if piece.material == 2: piece["steel_preservation"] = rng.randf_range(0.35,0.8)
-	return p
-
-static func _strap(p: Array[Dictionary], a: Vector3, b: Vector3, width: float) -> void:
-	var axis := (b-a).normalized()
-	var rotation := Basis(Quaternion(Vector3.UP,axis))
-	# Wide flat stock with a narrow raised rib: the ends sit on bolted shoes.
-	_box(p,(a+b)*0.5,Vector3(width,a.distance_to(b),0.065),2,0.015,0.85)
-	p.back()["basis"] = rotation
-	_box(p,(a+b)*0.5+Vector3(0,0,0.045),Vector3(0.035,a.distance_to(b)-0.18,0.035),2,0.007,0.8)
-	p.back()["basis"] = rotation
-	for end: Vector3 in [a,b]:
-		_box(p,end-Vector3(0,0,0.06),Vector3(width+0.16,0.34,0.07),2,0.02,0.7)
-		p.back()["basis"] = rotation
-		for sign_value: float in [-1,1]:
-			var bolt := end+axis*sign_value*0.105+Vector3(0,0,0.045)
-			_pipe(p,bolt,Vector3(0.085,0.085,0.04),2,2)
-
-static func _rebar(p: Array[Dictionary], a: Vector3, b: Vector3) -> void:
-	_pipe(p,(a+b)/2,Vector3(0.035,a.distance_to(b),0.035),3,1)
-	p.back()["basis"] = Basis(Quaternion(Vector3.UP,(b-a).normalized()))
-
-static func _plate(p: Array[Dictionary], center: Vector3, size: Vector2, shade: float) -> void:
-	_box(p,center,Vector3(size.x,size.y,0.075),2,0.018,shade)
-	for x: float in [-1,1]:
-		for y: float in [-1,1]:
-			_box(p,center+Vector3(x*(size.x*0.5-0.08),y*(size.y*0.5-0.06),0.055),Vector3(0.065,0.065,0.04),2,0.012,0.58)
+	rng.seed = ("megashelter:corrosion:v1:%d:%s" % [building_seed,module_id]).hash()
+	return rng.randf_range(0.12,0.95)
 
 ## Flush forecourt: expansion joints, threshold apron and drain, with a broken
 ## outer margin. Tops stay within 4cm of terrain; no invisible raised platform.

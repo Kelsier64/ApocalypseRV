@@ -67,6 +67,12 @@ func _append_module(module: Dictionary) -> void:
 				ledge_height = minf(ledge_height, module.transform.origin.y + piece.center.y - piece.size.y * 0.5)
 	for batch: MegashelterKit.Batch in _surfaces:
 		batch.set_appearance(str(module.id).hash(), ledge_height)
+	# Wall repairs and ground fittings have independent light-to-heavy corrosion.
+	# Roof equipment, structural steel and paving retain their existing finish.
+	if module.kind in ["wall","rib_wall","service_cabinet","pipe_manifold","intake_hood","wall_salvage"]:
+		var corrosion := MegashelterDetails.corrosion_amount(int(exterior_plan.seed),str(module.id))
+		for piece: Dictionary in pieces:
+			if piece.material == 2: piece["steel_corrosion"] = corrosion
 	for piece: Dictionary in pieces:
 		if piece.get("visible",true): _surfaces[piece.material].add_piece(module.transform,piece)
 

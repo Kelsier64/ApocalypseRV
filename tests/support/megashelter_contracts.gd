@@ -23,7 +23,7 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_generation(check)
 	var ground_kinds := {}
 	var wall_variants := {}
-	var wall_detail_totals := {"lower":0,"upper":0,"walls":0}
+	var wall_detail_totals := {"lower":0,"upper":0,"walls":0,"spalls":0}
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
 		_check_wall_details(plan,wall_variants,wall_detail_totals,check)
@@ -32,13 +32,8 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 		_check_detail_geometry(plan,check)
 		check.call(plan == PLAN.generate(seed_value),"Growth seed %d reproduces every module and collider" % seed_value)
 	check.call(ground_kinds.size() == 4,"Megashelter sampled ground dressing includes all four service assemblies")
-	check.call(wall_variants.size() == 6,"Megashelter sampled lower facades include all six native repair assemblies")
-	var varied_wall_kinds := 0
-	for signatures: Dictionary in wall_variants.values():
-		if signatures.size() > 1: varied_wall_kinds += 1
-	check.call(varied_wall_kinds == 6,"Megashelter repairs vary their actual geometry within every assembly kind")
-	check.call(wall_detail_totals.lower > wall_detail_totals.upper * 2,"Megashelter repair dressing concentrates near the ground and leaves upper facades mostly bare")
-	check.call(wall_detail_totals.lower + wall_detail_totals.upper <= wall_detail_totals.walls * 0.12,"Megashelter sampled facades keep at least 88 percent of wall bays free of repair plates")
+	check.call(wall_variants.has(4) and wall_variants.has(5) and wall_variants.has(6),"Megashelter sampled facades retain the original maintenance cover variants")
+	check.call(wall_detail_totals.lower > 0 and wall_detail_totals.upper > 0 and wall_detail_totals.spalls > 0,"Megashelter sampled facades retain repairs across wall heights and exposed concrete damage")
 	_check_seed_diversity(check)
 	_check_custom_heights(check)
 	for seed_value in range(8): _check_build(PLAN.generate(seed_value),check)
@@ -185,7 +180,7 @@ static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, chec
 			mounted = false
 			continue
 		var expected: Transform3D = anchor.transform * Transform3D(Basis.IDENTITY,Vector3(0,0,module.size.z+0.02))
-		mounted = mounted and anchor.kind in ["wall","rib_wall"] and anchor.variant < 4 and absf(anchor.transform.origin.y) < 0.01 and module.transform.is_equal_approx(expected) and module.get("solid",false) and bounds in plan.collision_boxes and bounds.position.y >= -0.01 and bounds.end.y <= 7.11
+		mounted = mounted and anchor.kind in ["wall","rib_wall"] and (anchor.variant < 4 or anchor.variant == 7) and absf(anchor.transform.origin.y) < 0.01 and module.transform.is_equal_approx(expected) and module.get("solid",false) and bounds in plan.collision_boxes and bounds.position.y >= -0.01 and bounds.end.y <= 7.11
 		for previous: Vector3 in anchors: clear = clear and previous.distance_to(anchor.transform.origin) >= 7.49
 		anchors.append(anchor.transform.origin)
 		clear = clear and not bounds.intersects(portal) and module.has("clearance_bounds")
@@ -210,60 +205,40 @@ static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, chec
 	check.call(approachable,label + "each ground service assembly retains a clear seven-metre walk-up apron after every fixture is placed")
 
 static func _check_wall_details(plan: Dictionary, seen_variants: Dictionary, totals: Dictionary, check: Callable) -> void:
-	var walls := 0
-	var upper := 0
-	var repairs: Array[Dictionary] = []
-	var legacy_covers := false
+	var baseline_variants := true
 	for module: Dictionary in plan.modules:
 		if module.kind not in ["wall","rib_wall"]: continue
-		walls += 1
-		legacy_covers = legacy_covers or module.variant in range(4,8)
-		if module.variant < 8: continue
-		repairs.append(module)
-		var kind := posmod(int(module.variant)-8,6)
-		if not seen_variants.has(kind): seen_variants[kind] = {}
-		# Compare generated pieces, so changing only the encoded seed cannot pass.
-		seen_variants[kind][str(MegashelterDetails.wall_panels(module.size,module.variant))] = true
+		totals.walls += 1
+		baseline_variants = baseline_variants and module.variant in range(8)
+		seen_variants[int(module.variant)] = true
+		if module.variant in [3,7]: totals.spalls += 1
+		if module.variant not in [4,5,6]: continue
 		if module.transform.origin.y <= 18.0: totals.lower += 1
-		else:
-			totals.upper += 1
-			upper += 1
-	totals.walls += walls
-	var spaced := true
-	for index in range(repairs.size()):
-		var a: Transform3D = repairs[index].transform
-		for other in range(index):
-			var b: Transform3D = repairs[other].transform
-			if a.basis.z.dot(b.basis.z) < 0.99: continue
-			var offset := a.origin-b.origin
-			if absf(offset.dot(a.basis.z)) > 0.01: continue
-			spaced = spaced and Vector2(offset.x,offset.z).length() >= 9.99
-	var label := "Megashelter seed %d: " % int(plan.seed)
-	check.call(not legacy_covers and repairs.size() <= 10 and upper <= 2,label + "sparse repairs remain limited at every height with at most two upper assemblies")
-	check.call(spaced,label + "repairs on the same facade leave broad horizontal gaps instead of repeated adjacent plates")
+		else: totals.upper += 1
+	check.call(baseline_variants,"Megashelter seed %d retains the original eight facade variants" % int(plan.seed))
 
 static func _check_detail_geometry(plan: Dictionary, check: Callable) -> void:
 	var chips_valid := true
 	var normals_valid := true
-	var scars_present := true
+	var spalls_present := true
 	var grounded := true
 	var forecourt_valid := true
 	var pieces: Array[Dictionary] = []
 	for module: Dictionary in plan.modules:
-		if module.kind in ["wall","rib_wall"] and module.variant >= 8:
-			for piece: Dictionary in MegashelterDetails.wall_panels(module.size,module.variant):
-				if piece.get("shape","") == "scar": pieces.append(piece)
+		if module.kind in ["wall","rib_wall"]:
+			for piece: Dictionary in KIT.pieces(module.kind,module.size,module.variant):
+				if piece.get("shape","") == "spall": pieces.append(piece)
 		if module.kind != "wall_salvage": continue
-		var has_scar := false
+		var has_spall := false
 		for piece: Dictionary in KIT.pieces(module.kind,module.size,module.variant):
-			if piece.get("shape","") == "scar":
+			if piece.get("shape","") == "spall":
 				pieces.append(piece)
-				has_scar = true
+				has_spall = true
 			if piece.get("shape","") == "chip":
 				pieces.append(piece)
 				if piece.center.y < 0.5:
 					grounded = grounded and absf(piece.center.y-piece.size.y*0.5) < 0.001
-		scars_present = scars_present and has_scar
+		spalls_present = spalls_present and has_spall
 	var forecourt_pose := Transform3D(Basis.IDENTITY,Vector3(plan.access_point.x,0,float(plan.depth)*0.5+5.2))
 	for piece: Dictionary in MegashelterDetails.forecourt(int(plan.seed)):
 		var pose := forecourt_pose*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
@@ -279,9 +254,29 @@ static func _check_detail_geometry(plan: Dictionary, check: Callable) -> void:
 		normals_valid = normals_valid and not batch.vertices.is_empty() and batch.normals.size() == batch.vertices.size()
 		for normal: Vector3 in batch.normals:
 			normals_valid = normals_valid and normal.is_finite() and absf(normal.length()-1.0) < 0.001
-	check.call(chips_valid and grounded,"Megashelter fractured scars, chips and pavers stay inside declared bounds and fallen wall debris rests on the ground")
-	check.call(normals_valid and scars_present,"Megashelter fractured surfaces have finite unit normals and broken walls retain authored scars")
+	check.call(chips_valid and grounded,"Megashelter spalls, chips and pavers stay inside declared bounds and fallen wall debris rests on the ground")
+	check.call(normals_valid and spalls_present,"Megashelter fractured surfaces have finite unit normals and broken walls retain their original spalls")
 	check.call(forecourt_valid,"Megashelter entrance paving and its edge debris fit the declared site bounds")
+	var corrosion_values := {}
+	var corrosion_valid := true
+	for sample in range(16):
+		var module_id := "facade:%d" % sample
+		var amount := MegashelterDetails.corrosion_amount(int(plan.seed),module_id)
+		corrosion_valid = corrosion_valid and is_finite(amount) and amount >= 0.12 and amount <= 0.95
+		corrosion_valid = corrosion_valid and amount == MegashelterDetails.corrosion_amount(int(plan.seed),module_id)
+		corrosion_values[amount] = true
+	var steel_piece := {"center":Vector3.ZERO,"size":Vector3.ONE,"material":2,"shade":1.0,"steel_corrosion":0.37}
+	var steel_batch := KIT.Batch.new()
+	steel_batch.add_piece(Transform3D.IDENTITY,steel_piece)
+	var alpha_valid := not steel_batch.colors.is_empty()
+	for color: Color in steel_batch.colors: alpha_valid = alpha_valid and absf(color.a-0.37) < 0.0001
+	steel_piece.erase("steel_corrosion")
+	var original_batch := KIT.Batch.new()
+	original_batch.add_piece(Transform3D.IDENTITY,steel_piece)
+	alpha_valid = alpha_valid and not original_batch.colors.is_empty()
+	for color: Color in original_batch.colors: alpha_valid = alpha_valid and color.a == 0.0
+	check.call(corrosion_valid and corrosion_values.size() > 1,"Megashelter facade corrosion varies reproducibly within its declared range")
+	check.call(alpha_valid,"Megashelter steel batches preserve supplied corrosion and leave unmodified steel at zero")
 
 static func _check_custom_heights(check: Callable) -> void:
 	# Valid floor-aligned profiles need not be multiples of a facade band.

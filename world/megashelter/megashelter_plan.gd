@@ -89,7 +89,6 @@ static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dic
 	for x: float in [-7.0,7.0]:
 		_add(plan,"drain",Vector3(entry_x+x,0,front+0.1),Vector3(0.4,12,0.4),0,0,true)
 	_ground_details(plan)
-	_wall_details(plan)
 	var bounds: AABB = volumes[0]
 	for volume: AABB in volumes: bounds = bounds.merge(volume)
 	for module: Dictionary in plan.modules:
@@ -310,68 +309,10 @@ static func _ground_details(plan: Dictionary) -> void:
 			reserved_approaches.append(approach)
 			placements.append(anchor.transform.origin)
 			# The dedicated service group replaces the old isolated cover below it.
-			if anchor.variant >= 4: anchor.variant = 0
+			if anchor.variant >= 4 and anchor.variant != 7: anchor.variant = 0
 			break
 	# The portal itself carries a broad, ribbed rain canopy with dead downlights.
 	_add(plan,"portal_canopy",Vector3(plan.access_point.x,9.02,float(plan.depth)/2+6.5),Vector3(11.8,0.9,4.5),0,0,true)
-
-static func _wall_details(plan: Dictionary) -> void:
-	var occupied := {}
-	var obstacles: Array[AABB] = []
-	obstacles.assign(plan.collision_boxes)
-	for module: Dictionary in plan.modules:
-		if module.has("decoration_anchor"): occupied[module.decoration_anchor] = true
-		if module.get("solid",false): obstacles.append(module_bounds(module))
-	var candidates: Array[Dictionary] = []
-	for module: Dictionary in plan.modules:
-		if module.kind not in ["wall","rib_wall"]: continue
-		# Remove the dense legacy covers on upper storeys as well as at eye level.
-		if module.variant >= 4: module.variant = 0
-		if occupied.has(module.id) or module.size.y < 3 or module.size.x < 3: continue
-		var code := posmod(("sparse-repair:%d:%s" % [plan.seed,module.id]).hash(),65521)
-		if code%100 >= (18 if module.transform.origin.y <= 18 else 3): continue
-		candidates.append({"module":module,"code":code})
-	# Sample individual bays, favour reachable repairs and avoid marching rows.
-	candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
-		var high_a: bool = a.module.transform.origin.y > 18
-		var high_b: bool = b.module.transform.origin.y > 18
-		return not high_a if high_a != high_b else a.code < b.code)
-	var placed: Array[Dictionary] = []
-	var upper_count := 0
-	for candidate: Dictionary in candidates:
-		if placed.size() >= 10: break
-		var module: Dictionary = candidate.module
-		var high: bool = module.transform.origin.y > 18
-		if high and upper_count >= 2: continue
-		var nearby := false
-		for previous: Dictionary in placed:
-			var delta: Vector3 = module.transform.origin-previous.transform.origin
-			if module.transform.basis.z.dot(previous.transform.basis.z) > 0.99 and absf(delta.dot(module.transform.basis.z)) < 0.5 and Vector2(delta.x,delta.z).length() < 10:
-				nearby = true
-				break
-		if nearby: continue
-		# Encode a stable visual seed with the six categories, so bounds and both
-		# rendering paths regenerate precisely the same offsets and angled parts.
-		var variant := 8+int(candidate.code)%1536
-		var blocked := false
-		var inverse: Transform3D = module.transform.affine_inverse()
-		for piece: Dictionary in MegashelterDetails.wall_panels(module.size,variant):
-			var pose: Transform3D = module.transform*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
-			var bounds: AABB = pose*AABB(-piece.size/2,piece.size)
-			for obstacle: AABB in obstacles:
-				if not bounds.grow(0.015).intersects(obstacle): continue
-				# The authored collision skin extends 20cm in front of its visible
-				# wall. Flush attachments may occupy this supporting strip only.
-				var local: AABB = inverse*obstacle
-				if absf(local.position.z+2.2) < 0.005 and absf(local.end.z-0.2) < 0.005 and local.has_point(Vector3(0,module.size.y/2,0)):
-					continue
-				blocked = true
-				break
-			if blocked: break
-		if not blocked:
-			module.variant = variant
-			placed.append(module)
-			if high: upper_count += 1
 
 static func module_bounds(module: Dictionary) -> AABB:
 	var result := AABB()
