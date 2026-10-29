@@ -56,10 +56,19 @@ static func pieces(kind: String, size: Vector3, variant: int) -> Array[Dictionar
 			for x: float in [-0.85,-0.42,0,0.42,0.85]:
 				_pipe(p,Vector3(x,1.4,back+0.11),Vector3(0.055,2.2,0.055),3)
 			for y: float in [0.6,1.4,2.2]: _pipe(p,Vector3(0,y,back+0.12),Vector3(2.2,0.055,0.055),3)
-			for index in range(7):
-				var x := -1.2+index*0.39
-				var h := 0.12+float((index+variant)%3)*0.1
-				_box(p,Vector3(x,h*0.5,-0.3-float(index%2)*0.3),Vector3(0.4,h,0.45),0,0.08,0.75)
+			# Broken skins still attached to the exposed reinforcement.
+			_box(p,Vector3(-0.92,1.9,back+0.19),Vector3(0.5,0.75,0.24),0,0,0.88,"chip")
+			_box(p,Vector3(0.84,0.7,back+0.18),Vector3(0.65,0.8,0.22),0,0,0.82,"chip")
+			var debris_rng := RandomNumberGenerator.new()
+			debris_rng.seed = 8107+variant*7919
+			for index in range(18):
+				# Large fractured slabs remain close to the source; small chips spread out.
+				var large := index < 5
+				var extent := Vector3(debris_rng.randf_range(0.4,0.8),debris_rng.randf_range(0.16,0.32),debris_rng.randf_range(0.28,0.5)) if large else Vector3(debris_rng.randf_range(0.12,0.32),debris_rng.randf_range(0.05,0.14),debris_rng.randf_range(0.12,0.28))
+				var center := Vector3(debris_rng.randf_range(-0.96,0.96),extent.y*0.5,debris_rng.randf_range(back+0.42,-0.3) if large else debris_rng.randf_range(back+0.3,-0.2))
+				_box(p,center,extent,0,0,debris_rng.randf_range(0.72,0.98),"chip")
+				p.back()["basis"] = Basis(Vector3.UP,debris_rng.randf_range(-PI,PI))
+				p.back()["chip_variant"] = index+variant*19
 		"portal_canopy":
 			_box(p,Vector3(0,0.62,-size.z*0.5),Vector3(size.x,0.38,size.z),2,0.09)
 			_box(p,Vector3(0,0.4,-0.12),Vector3(size.x,0.4,0.24),0,0.05)
@@ -81,6 +90,83 @@ static func pieces(kind: String, size: Vector3, variant: int) -> Array[Dictionar
 		for piece: Dictionary in p:
 			piece.center.y *= 0.45
 			piece.size.y *= 0.45
+	return p
+
+## Six flat assemblies: overlapping repairs, corrugated patch, strapped seam,
+## hinged hatch, cable chase and stripped mounting frame. All remain sealed.
+static func wall_panels(size: Vector3, variant: int) -> Array[Dictionary]:
+	var p: Array[Dictionary] = []
+	var kind := posmod(variant-8,6)
+	var center := Vector3(0,minf(size.y*0.5,2.3),0)
+	match kind:
+		0:
+			_plate(p,center+Vector3(-0.4,-0.16,0.05),Vector2(1.65,1.55),0.85)
+			_plate(p,center+Vector3(0.47,0.25,0.13),Vector2(1.25,1.4),0.69)
+			_segment(p,center+Vector3(-1.05,-0.69,0.17),center+Vector3(0.98,0.78,0.17),0.075)
+		1:
+			_box(p,center+Vector3(0,0,0.05),Vector3(2.45,1.9,0.1),2,0.025,0.7)
+			for index in range(9):
+				_box(p,center+Vector3(-1.04+index*0.26,0,0.13),Vector3(0.13,1.8,0.14),2,0.025,0.87)
+			for y: float in [-0.7,0.7]: _box(p,center+Vector3(0,y,0.23),Vector3(2.65,0.12,0.08),2,0.015)
+		2:
+			_plate(p,center+Vector3(-0.65,0,0.045),Vector2(1.1,1.9),0.72)
+			_plate(p,center+Vector3(0.65,0,0.045),Vector2(1.1,1.9),0.9)
+			for y: float in [-0.62,0.62]: _plate(p,center+Vector3(0,y,0.13),Vector2(2.65,0.24),0.8)
+		3:
+			_box(p,center+Vector3(0,0,0.05),Vector3(1.95,2.15,0.1),2,0.035,0.5)
+			_plate(p,center+Vector3(0,0,0.14),Vector2(1.68,1.9),0.92)
+			for y: float in [-0.58,0.58]: _box(p,center+Vector3(-0.84,y,0.22),Vector3(0.23,0.36,0.15),2,0.035)
+			_box(p,center+Vector3(0.57,0,0.27),Vector3(0.09,0.4,0.1),2,0.02)
+			_box(p,center+Vector3(0,1.11,0.16),Vector3(2.13,0.12,0.3),2,0.025)
+		4:
+			_plate(p,center+Vector3(0.57,0.35,0.055),Vector2(1.05,0.85),0.85)
+			for x: float in [-0.65,-0.38]:
+				_pipe(p,center+Vector3(x,0,0.12),Vector3(0.09,2.15,0.09))
+				_box(p,center+Vector3(x,1.1,0.08),Vector3(0.22,0.18,0.16),2,0.02)
+				_box(p,center+Vector3(x,-1.05,0.08),Vector3(0.24,0.2,0.16),2,0.02)
+			for y: float in [-0.67,0.65]: _box(p,center+Vector3(-0.51,y,0.18),Vector3(0.63,0.09,0.1),2,0.015)
+			_box(p,center+Vector3(-0.07,0.35,0.12),Vector3(0.7,0.12,0.12),2,0.02)
+		5:
+			# Bare concrete stays visible through a missing cover, not a black window.
+			for x: float in [-1.05,1.05]: _box(p,center+Vector3(x,0,0.065),Vector3(0.16,1.9,0.13),2,0.025,0.65)
+			for y: float in [-0.88,0.88]: _plate(p,center+Vector3(0,y,0.07),Vector2(2.25,0.16),0.8)
+			_plate(p,center+Vector3(-0.75,-0.47,0.14),Vector2(0.55,0.65),0.7)
+	return p
+
+static func _plate(p: Array[Dictionary], center: Vector3, size: Vector2, shade: float) -> void:
+	_box(p,center,Vector3(size.x,size.y,0.075),2,0.018,shade)
+	for x: float in [-1,1]:
+		for y: float in [-1,1]:
+			_box(p,center+Vector3(x*(size.x*0.5-0.08),y*(size.y*0.5-0.06),0.055),Vector3(0.065,0.065,0.04),2,0.012,0.58)
+
+## Flush forecourt: expansion joints, threshold apron and drain, with a broken
+## outer margin. Tops stay within 4cm of terrain; no invisible raised platform.
+static func forecourt(seed_value: int) -> Array[Dictionary]:
+	var p: Array[Dictionary] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("megashelter:forecourt:%d" % seed_value).hash()
+	# Coordinates are relative to the front of the entrance frame (+Z outward).
+	for row in range(5):
+		for column in range(8):
+			var outer := column in [0,7] or row == 4
+			var extent := Vector3(2.47,0.1,2.47)
+			var center := Vector3(-8.75+column*2.5,-0.025,-1.25+row*2.5)
+			_box(p,center,extent,0,0,rng.randf_range(0.77,0.95),"paver" if outer else "box")
+			if outer: p.back()["chip_variant"] = column+row*8
+	# A recessed dark bed and transverse steel bars read as a slotted drain.
+	_box(p,Vector3(0,0.027,0.25),Vector3(10.0,0.012,0.38),2,0,0.35)
+	for index in range(51):
+		_box(p,Vector3(-4.9+index*0.196,0.035,0.25),Vector3(0.055,0.01,0.35),2,0,0.84)
+	for z: float in [0.035,0.465]: _box(p,Vector3(0,0.032,z),Vector3(10.1,0.012,0.045),2,0,0.72)
+	# Continuous threshold reaches the recessed blast leaves and portal feet.
+	_box(p,Vector3(0,0.03,-2.25),Vector3(10.0,0.016,0.28),2,0,0.75)
+	for side: float in [-1,1]:
+		for row in range(4):
+			_box(p,Vector3(side*5.7,0.025,0.8+row*2.0),Vector3(0.42,0.025,1.97),0,0,0.83)
+		for index in range(9):
+			var h := rng.randf_range(0.025,0.04)
+			_box(p,Vector3(side*rng.randf_range(9.2,10.4),h/2,rng.randf_range(1,9.7)),Vector3(rng.randf_range(0.15,0.4),h,rng.randf_range(0.15,0.35)),0,0,rng.randf_range(0.75,0.92),"chip")
+			p.back()["basis"] = Basis(Vector3.UP,rng.randf_range(-PI,PI))
 	return p
 
 static func _wheel(p: Array[Dictionary], center: Vector3, radius: float) -> void:

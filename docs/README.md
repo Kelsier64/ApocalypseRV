@@ -1,6 +1,7 @@
 # 開發文件索引
 
-- [2026-10-30 巨型避難所地面裝飾](validation/2026-10-30-megashelter-ground-details.md)：內容 v6，入口遮簷、接地設備組、ComfyUI 排風機與接近空間避讓；保留原輪廓和屋頂。
+- [2026-10-30 巨型避難所 v7 牆面與入口細化](validation/2026-10-30-megashelter-facade-refinement.md)：停用風機，改善碎塊、六種牆面組件及入口鋪面銜接；保留原輪廓和屋頂。
+- [2026-10-30 巨型避難所地面裝飾](validation/2026-10-30-megashelter-ground-details.md)：歷史 v6，入口遮簷、接地設備組、ComfyUI 排風機與接近空間避讓。
 
 - [2026-10-28 巨型避難所自由生長](validation/2026-10-28-megashelter-growth.md)：內容 v5，從入口核心逐步接合分支，移除完整平面模板；128 個固定尺寸樣本的平面均不同。
 

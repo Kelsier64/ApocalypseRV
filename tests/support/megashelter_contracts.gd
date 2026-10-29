@@ -22,12 +22,17 @@ class SeamField extends WorldField:
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	_check_generation(check)
 	var ground_kinds := {}
+	var wall_variants := {}
 	for seed_value in range(64):
 		var plan: Dictionary = PLAN.generate(seed_value)
+		for module: Dictionary in plan.modules:
+			if module.kind in ["wall","rib_wall"] and module.variant in range(8,14): wall_variants[module.variant] = true
 		_check_plan(plan,seed_value,check)
 		_check_ground_details(plan,ground_kinds,check)
+		_check_detail_geometry(plan,check)
 		check.call(plan == PLAN.generate(seed_value),"Growth seed %d reproduces every module and collider" % seed_value)
-	check.call(ground_kinds.size() == 5,"Megashelter sampled ground dressing includes all five service assemblies")
+	check.call(ground_kinds.size() == 4,"Megashelter sampled ground dressing includes all four service assemblies")
+	check.call(wall_variants.size() == 6,"Megashelter sampled lower facades include all six native repair assemblies")
 	_check_seed_diversity(check)
 	_check_custom_heights(check)
 	for seed_value in range(8): _check_build(PLAN.generate(seed_value),check)
@@ -73,7 +78,7 @@ static func _check_generation(check: Callable) -> void:
 
 static func _check_plan(plan: Dictionary, seed_value: int, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % seed_value
-	check.call(plan.version == 6 and plan.seed == seed_value and not plan.has("template") and plan.growth_steps.size() >= 2, label + "versioned plan retains its seed and a grown assembly without a template ID")
+	check.call(plan.version == 7 and plan.seed == seed_value and not plan.has("template") and plan.growth_steps.size() >= 2, label + "versioned plan retains its seed and a grown assembly without a template ID")
 	check.call(plan.structure in range(5) and plan.style in range(3), label + "structural treatment and facade style use separate valid choices")
 	check.call(plan.width in [48.0, 56.0, 64.0] and plan.depth in [32.0, 40.0, 48.0] and plan.height in [54.0, 67.5, 81.0], label + "default dimensions retain the configured envelope choices")
 	var building: AABB = plan.building_bounds
@@ -143,12 +148,15 @@ static func _check_entrance_clearance(plan: Dictionary, label: String, check: Ca
 
 static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, check: Callable) -> void:
 	var label := "Megashelter seed %d: " % int(plan.seed)
-	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage","service_fan"]
+	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage"]
+	var fan_free := true
 	var by_id := {}
 	var dressing_bounds: Array[AABB] = []
 	for module: Dictionary in plan.modules:
 		by_id[module.id] = module
+		fan_free = fan_free and module.kind != "service_fan"
 		if module.kind in kinds or module.kind == "portal_canopy": dressing_bounds.append(PLAN.module_bounds(module))
+	check.call(fan_free,label + "generated ground dressing omits the disabled service fan")
 	var obstacles: Array[AABB] = []
 	for bounds: AABB in plan.collision_boxes:
 		if bounds not in dressing_bounds: obstacles.append(bounds)
@@ -171,7 +179,7 @@ static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, chec
 			mounted = false
 			continue
 		var expected: Transform3D = anchor.transform * Transform3D(Basis.IDENTITY,Vector3(0,0,module.size.z+0.02))
-		mounted = mounted and anchor.kind in ["wall","rib_wall"] and absf(anchor.transform.origin.y) < 0.01 and module.transform.is_equal_approx(expected) and module.get("solid",false) and bounds in plan.collision_boxes and bounds.position.y >= -0.01 and bounds.end.y <= 7.11
+		mounted = mounted and anchor.kind in ["wall","rib_wall"] and anchor.variant < 4 and absf(anchor.transform.origin.y) < 0.01 and module.transform.is_equal_approx(expected) and module.get("solid",false) and bounds in plan.collision_boxes and bounds.position.y >= -0.01 and bounds.end.y <= 7.11
 		for previous: Vector3 in anchors: clear = clear and previous.distance_to(anchor.transform.origin) >= 7.49
 		anchors.append(anchor.transform.origin)
 		clear = clear and not bounds.intersects(portal) and module.has("clearance_bounds")
@@ -194,6 +202,33 @@ static func _check_ground_details(plan: Dictionary, seen_kinds: Dictionary, chec
 	check.call(mounted and not anchors.is_empty() and canopy_count == 1,label + "ground service assemblies attach to backed ground bays and retain solid bounds below 7.1m; one canopy sits on the portal header")
 	check.call(clear,label + "ground service assemblies clear the reserved entrance, structural obstacles and neighbouring fittings")
 	check.call(approachable,label + "each ground service assembly retains a clear seven-metre walk-up apron after every fixture is placed")
+
+static func _check_detail_geometry(plan: Dictionary, check: Callable) -> void:
+	var chips_valid := true
+	var grounded := true
+	var forecourt_valid := true
+	var pieces: Array[Dictionary] = []
+	for module: Dictionary in plan.modules:
+		if module.kind != "wall_salvage": continue
+		for piece: Dictionary in KIT.pieces(module.kind,module.size,module.variant):
+			if piece.get("shape","") == "chip":
+				pieces.append(piece)
+				if piece.center.y < 0.5:
+					grounded = grounded and absf(piece.center.y-piece.size.y*0.5) < 0.001
+	var forecourt_pose := Transform3D(Basis.IDENTITY,Vector3(plan.access_point.x,0,float(plan.depth)*0.5+5.2))
+	for piece: Dictionary in MegashelterDetails.forecourt(int(plan.seed)):
+		var pose := forecourt_pose*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+		forecourt_valid = forecourt_valid and (plan.site_bounds as AABB).encloses(pose*AABB(-piece.size*0.5,piece.size))
+		forecourt_valid = forecourt_valid and piece.center.y+piece.size.y*0.5 <= 0.0401
+		if piece.get("shape","") in ["chip","paver"]: pieces.append(piece)
+	for piece: Dictionary in pieces:
+		var batch := KIT.Batch.new()
+		batch.add_piece(Transform3D.IDENTITY,piece)
+		var pose := Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+		for vertex: Vector3 in batch.vertices:
+			chips_valid = chips_valid and AABB(-piece.size*0.5,piece.size).grow(0.0001).has_point(pose.affine_inverse()*vertex)
+	check.call(chips_valid and grounded,"Megashelter fractured chips and pavers stay inside their declared bounds and fallen wall debris rests on the ground")
+	check.call(forecourt_valid,"Megashelter entrance paving and its edge debris fit the declared site bounds")
 
 static func _check_custom_heights(check: Callable) -> void:
 	# Valid floor-aligned profiles need not be multiples of a facade band.
@@ -308,7 +343,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 6 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 7 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:
@@ -337,7 +372,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 	reloaded.free()
 
 static func _check_appearance_metadata(plan: Dictionary, building: Node3D, check: Callable) -> void:
-	var ledges := {}
+	var ledges := {40:true} # Shared forecourt batch uses a 4cm terrain ledge.
 	var expected_drains: Array[Vector4] = []
 	for volume: AABB in plan.volumes: ledges[roundi(volume.end.y * 1000.0)] = true
 	for module: Dictionary in plan.modules:

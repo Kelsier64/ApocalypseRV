@@ -56,6 +56,8 @@ class Batch extends RefCounted:
 			"bevel": _beveled(pose, piece.center, piece.size, piece.shade, piece.bevel)
 			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade, piece.get("axis",-1))
 			"spall": _spall(pose, piece.center, piece.size, piece.shade)
+			"chip": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0))
+			"paver": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0),true)
 			_: add_box(pose, piece.center, piece.size, piece.shade)
 
 	func _face(pose: Transform3D, center: Vector3, points: Array[Vector3], normal: Vector3, shade: float) -> void:
@@ -143,6 +145,27 @@ class Batch extends RefCounted:
 			points.assign(ends[index])
 			_face(pose, center, points, normal, shade * 0.92)
 
+	func _chip(pose: Transform3D, center: Vector3, size: Vector3, shade: float, variant: int, paving: bool = false) -> void:
+		# Clipped, asymmetric fracture outline; every vertex stays in the piece AABB.
+		var cut := 0.12+float(posmod(variant,4))*0.065
+		var outline: Array[Vector2] = [Vector2(-0.5+cut,-0.5),Vector2(0.32,-0.5),Vector2(0.5,-0.22),Vector2(0.5,0.34),Vector2(0.18,0.5),Vector2(-0.5,0.5-cut),Vector2(-0.5,-0.2)]
+		if paving:
+			outline = [Vector2(-0.5,-0.5),Vector2(0.5,-0.5),Vector2(0.5,0.5-cut*0.5),Vector2(0.5-cut*0.7,0.5),Vector2(-0.5,0.5)]
+		var bottom: Array[Vector3] = []
+		var top: Array[Vector3] = []
+		for point: Vector2 in outline:
+			bottom.append(Vector3(point.x*size.x,-size.y*0.5,point.y*size.z))
+			var height := 0.5 if paving else 0.18+0.08*float(posmod(top.size()+variant,5))
+			top.append(Vector3(point.x*size.x*(1.0 if paving else 0.83),size.y*height,point.y*size.z*(1.0 if paving else 0.87)))
+		_face(pose,center,bottom,Vector3.DOWN,shade*0.7)
+		for index in range(1,top.size()-1):
+			var normal := (top[index+1]-top[0]).cross(top[index]-top[0]).normalized()
+			_face(pose,center,[top[0],top[index],top[index+1]],normal,shade)
+		for index in range(outline.size()):
+			var next := (index+1)%outline.size()
+			var normal := (top[index]-bottom[index]).cross(bottom[next]-bottom[index]).normalized()
+			_face(pose,center,[bottom[index],bottom[next],top[next],top[index]],normal,shade*(0.72+float(index%3)*0.08))
+
 	func _spall(pose: Transform3D, center: Vector3, size: Vector3, shade: float) -> void:
 		var polygon := [Vector2(-0.5,-0.35), Vector2(-0.2,-0.5), Vector2(0.5,-0.24), Vector2(0.3,0.42), Vector2(-0.35,0.5)]
 		var faces: Array[Array] = [[], []]
@@ -172,13 +195,15 @@ static func pieces(kind: String, size: Vector3, variant: int = 0) -> Array[Dicti
 				var depth := size.z * (1.0 - level * 0.22)
 				_piece(result,Vector3(0,(level+0.5)*size.y/3,-depth*0.5),Vector3(size.x-level*0.45,size.y/3,depth),0,level,0.16)
 		"wall", "rib_wall":
-			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), Vector3(size.x - 0.055, size.y - 0.045, size.z), 1, variant, 0.045)
+			_piece(result, Vector3(0, size.y * 0.5, -size.z * 0.5), Vector3(size.x - 0.055, size.y - 0.045, size.z), 1, variant%8, 0.045)
 			# Raised vertical returns and a chipped exposed-concrete patch.
 			if kind == "rib_wall":
 				_piece(result, Vector3(-size.x * 0.5 + 0.12, size.y * 0.5, 0.035), Vector3(0.22, size.y - 0.02, 0.14), 0, 1, 0.03)
 			if variant == 3 or variant == 7:
 				_piece(result, Vector3(-size.x * 0.33, size.y * 0.24, 0.025), Vector3(0.6, minf(1.1,size.y*0.4), 0.045), 0, 3, 0, "spall")
-			if variant >= 4:
+			if variant >= 8:
+				result.append_array(MegashelterDetails.wall_panels(size,variant))
+			elif variant >= 4:
 				var patch_y := size.y * (0.32 if variant%2 == 0 else 0.68)
 				if variant == 7:
 					_piece(result,Vector3(0,patch_y,0.028),Vector3(1.65,2.25,0.06),0,1,0,"spall")

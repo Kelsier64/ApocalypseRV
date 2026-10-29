@@ -1,6 +1,6 @@
 # 開發計畫總覽
 
-目前存檔契約（2026-10-30）：只支援 Checkpoint v7、VehicleSnapshot v6、生成 v18 與當前課程／房型；巨型避難所外殼內容為 v6。舊版相容、遷移及專門適配已移除；各計畫中的退役條款與歷史驗收不代表目前支援。
+目前存檔契約（2026-10-30）：只支援 Checkpoint v7、VehicleSnapshot v6、生成 v18 與當前課程／房型；巨型避難所外殼內容為 v7。舊版相容、遷移及專門適配已移除；各計畫中的退役條款與歷史驗收不代表目前支援。
 
 狀態核對：2026-10-07（v9 公路獨立生成；其餘項目沿用各自核對日期）。此表依目前程式、場景、根目錄文件與驗收紀錄整理；RV 駕駛體驗、隨機地堡、Raker、玩家模型與新世界 v6 路邊小 POI 各有獨立驗收紀錄。地堡內容與 A04 離場取消修正見[本輪驗證](../validation/2026-09-29-bunker-content.md)；2026-09-22 架構審查的 A01–A03 仍待收斂。本次檔案清理見 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。以下順序是建議，不是排程承諾。
 
@@ -8,7 +8,7 @@
 
 | 計畫 | 狀態 | 剩餘工作／閱讀重點 | 驗收依據 |
 |---|---|---|---|
-| [Abandoned Megashelter（灰井住宅城）](abandoned-megablock.md) | v6 地面裝飾；完整自由遊玩與最終美術確認未完成 | 保留生長量體與屋頂，改善入口及地面服務設備；無窗戶或可玩室內 | [外觀指南](../guides/megashelter-exteriors.md) · [本輪驗證](../validation/2026-10-30-megashelter-ground-details.md) |
+| [Abandoned Megashelter（灰井住宅城）](abandoned-megablock.md) | v7 牆面與入口細化；完整自由遊玩與最終美術確認未完成 | 保留生長量體與屋頂，改善入口及地面服務設備；無窗戶或可玩室內 | [外觀指南](../guides/megashelter-exteriors.md) · [本輪驗證](../validation/2026-10-30-megashelter-facade-refinement.md) |
 | [地形與道路改造](terrain-overhaul.md) | 第一個檢查點完成，等待使用者檢查 | v13 蜿蜒道路與地形／橋梁初版；每階段先停下，下一階段細化及輪驅驗收待確認 | [本次檢查](../validation/2026-10-20-terrain-stage1.md) |
 | [新版兩室教學](starting-tutorial-two-room.md) | 階段一已驗收，階段二完成等待驗收 | 第二室資源／修車流程已接入；感應離場、完整復原及最終美術留待後續 | [新版階段二](../validation/2026-10-15-orientation-stage2.md) |
 | [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |

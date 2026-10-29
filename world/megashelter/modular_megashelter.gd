@@ -2,7 +2,6 @@
 extends Node3D
 class_name ModularMegashelter
 const SURFACE = preload("res://world/megashelter/megashelter_surface.gdshader")
-const SERVICE_FAN = preload("res://assets/models/shelter_service_fan/shelter_service_fan.glb")
 const ROOF_PLANT = [preload("res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler.glb"),
 	preload("res://assets/models/shelter_roof_filter_bank/shelter_roof_filter_bank.glb")]
 @export var preview_seed: int = 42
@@ -57,7 +56,7 @@ func _begin_visuals(plan: Dictionary) -> void:
 		_append_box(Transform3D.IDENTITY, bounds.get_center(), bounds.size - Vector3(0.02, 0.02, 0.02), 0, 0.62)
 
 func _append_module(module: Dictionary) -> void:
-	if module.kind in ["roof_plant","service_fan"]: _roof_modules.append(module)
+	if module.kind == "roof_plant": _roof_modules.append(module)
 	var pieces := MegashelterKit.pieces(module.kind, module.size, module.variant)
 	var ledge_height := float(module.transform.origin.y) + float(module.size.y)
 	if module.kind == "beam": ledge_height = module.transform.origin.y
@@ -82,6 +81,11 @@ func _finish_visuals(plan: Dictionary) -> void:
 		if drains.size() == 4: break
 	var drain_count := drains.size()
 	drains.resize(4)
+	# Paving, drains and edge chips use the same three batches as the facade.
+	var forecourt_pose := Transform3D(Basis.IDENTITY,Vector3(plan.access_point.x,0,float(plan.depth)*0.5+5.2))
+	for batch: MegashelterKit.Batch in _surfaces: batch.set_appearance(int(plan.seed),0.04)
+	for piece: Dictionary in MegashelterDetails.forecourt(int(plan.seed)):
+		_surfaces[piece.material].add_piece(forecourt_pose,piece)
 	var surface_colors := _surface_colors(plan)
 	for index in range(_surfaces.size()):
 		var mesh := _surfaces[index].mesh()
@@ -101,18 +105,12 @@ func _finish_visuals(plan: Dictionary) -> void:
 		var wrapper := Node3D.new()
 		wrapper.name = module.id
 		wrapper.transform = module.transform
-		var equipment: Node3D
-		if module.kind == "service_fan":
-			equipment = SERVICE_FAN.instantiate()
-			equipment.position = Vector3(0,0.32,-module.size.z*0.5)
-		else:
-			equipment = ROOF_PLANT[module.variant].instantiate()
-			equipment.position = Vector3(0,1.36 if module.variant == 0 else 1.11,-module.size.z*0.5)
+		var equipment: Node3D = ROOF_PLANT[module.variant].instantiate()
+		equipment.position = Vector3(0,1.36 if module.variant == 0 else 1.11,-module.size.z*0.5)
 		wrapper.add_child(equipment)
 		$Visuals.add_child(wrapper)
 	_roof_modules.clear()
 	_surfaces.clear()
-	_dress_base(plan)
 
 static func _surface_colors(plan: Dictionary) -> Array[Color]:
 	# A separate domain keeps colour choices stable without consuming layout RNG.
@@ -131,18 +129,3 @@ static func _surface_colors(plan: Dictionary) -> Array[Color]:
 
 func _append_box(pose: Transform3D, center: Vector3, size: Vector3, material: int, shade: float = 1.0) -> void:
 	_surfaces[material].add_box(pose, center, size, shade)
-
-func _dress_base(plan: Dictionary) -> void:
-	# Sparse, non-interactive debris never blocks the central vehicle approach.
-	var rng := RandomNumberGenerator.new()
-	rng.seed = ("megashelter:wear:%d" % int(plan.seed)).hash()
-	var paving := MegashelterKit.Batch.new()
-	for row in range(3):
-		for column in range(6):
-			paving.add_box(Transform3D.IDENTITY,Vector3(plan.access_point.x-10+column*4,-0.005,float(plan.depth)*0.5+5.8+row*4),Vector3(3.97,0.04,3.97),rng.randf_range(0.78,0.92))
-	var floor_visual := MeshInstance3D.new()
-	floor_visual.name = "CrackedForecourt"
-	floor_visual.mesh = paving.mesh()
-	floor_visual.mesh.surface_set_material(0,$Visuals/Concrete.mesh.surface_get_material(0))
-	floor_visual.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	$Furnishings.add_child(floor_visual)

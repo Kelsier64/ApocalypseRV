@@ -89,12 +89,17 @@ static func generate(seed_value: int, profile: MegashelterProfile = null) -> Dic
 	for x: float in [-7.0,7.0]:
 		_add(plan,"drain",Vector3(entry_x+x,0,front+0.1),Vector3(0.4,12,0.4),0,0,true)
 	_ground_details(plan)
+	_wall_details(plan)
 	var bounds: AABB = volumes[0]
 	for volume: AABB in volumes: bounds = bounds.merge(volume)
 	for module: Dictionary in plan.modules:
 		var extent := module_bounds(module)
 		bounds = bounds.merge(extent)
 		if module.get("solid",false): boxes.append(extent)
+	var forecourt_pose := Transform3D(Basis.IDENTITY,Vector3(entry_x,0,depth/2+5.2))
+	for piece: Dictionary in MegashelterDetails.forecourt(seed_value):
+		var pose := forecourt_pose*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+		bounds = bounds.merge(pose*AABB(-piece.size/2,piece.size))
 	plan.building_bounds = bounds.grow(0.3)
 	var physical: AABB = plan.building_bounds
 	plan.site_bounds = AABB(Vector3(-width/2-12,-1,-depth/2-12),Vector3(width+24,physical.end.y+1,depth+42)).merge(physical)
@@ -264,8 +269,8 @@ static func _ground_details(plan: Dictionary) -> void:
 	var portal := AABB(Vector3(plan.access_point.x-6.5,0,float(plan.depth)/2+1.9),Vector3(13,9.1,8.1))
 	var placements: Array[Vector3] = []
 	var reserved_approaches: Array[AABB] = []
-	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage","service_fan"]
-	var sizes := [Vector3(3.2,6.0,1.3),Vector3(3.0,7.1,1.2),Vector3(3.5,5.7,1.4),Vector3(2.8,3.2,0.8),Vector3(3.6,4.6,3.0)]
+	var kinds := ["service_cabinet","pipe_manifold","intake_hood","wall_salvage"]
+	var sizes := [Vector3(3.2,6.0,1.3),Vector3(3.0,7.1,1.2),Vector3(3.5,5.7,1.4),Vector3(2.8,3.2,1.6)]
 	if plan.structure == 3: sizes[0].y = 2.7
 	var offset := rng.randi_range(0,kinds.size()-1)
 	for anchor: Dictionary in anchors:
@@ -305,10 +310,47 @@ static func _ground_details(plan: Dictionary) -> void:
 			reserved_approaches.append(approach)
 			placements.append(anchor.transform.origin)
 			# The dedicated service group replaces the old isolated cover below it.
-			if anchor.variant >= 4 and anchor.variant != 7: anchor.variant = 0
+			if anchor.variant >= 4: anchor.variant = 0
 			break
 	# The portal itself carries a broad, ribbed rain canopy with dead downlights.
 	_add(plan,"portal_canopy",Vector3(plan.access_point.x,9.02,float(plan.depth)/2+6.5),Vector3(11.8,0.9,4.5),0,0,true)
+
+static func _wall_details(plan: Dictionary) -> void:
+	var occupied := {}
+	var obstacles: Array[AABB] = []
+	obstacles.assign(plan.collision_boxes)
+	for module: Dictionary in plan.modules:
+		if module.has("decoration_anchor"): occupied[module.decoration_anchor] = true
+		if module.get("solid",false): obstacles.append(module_bounds(module))
+	for module: Dictionary in plan.modules:
+		if module.kind not in ["wall","rib_wall"] or module.transform.origin.y > 18: continue
+		# Clear old random covers from the player's lower facade before allocating
+		# new repairs. Service equipment owns its entire bay, not a second overlay.
+		if module.variant >= 4: module.variant = 0
+		if occupied.has(module.id) or module.size.y < 3 or module.size.x < 3: continue
+		var origin: Vector3 = module.transform.origin
+		# Adjacent bays share repair vocabulary in 8m work zones, separated by
+		# empty panels. This reads as maintenance history rather than confetti.
+		var zone := Vector3i(floori(origin.x/8),floori(origin.y/9),floori(origin.z/8))
+		var code := posmod(("wall-repair:%d:%s" % [plan.seed,zone]).hash(),65521)
+		if code%5 >= 3: continue
+		var variant := 8+code%6
+		var blocked := false
+		var inverse: Transform3D = module.transform.affine_inverse()
+		for piece: Dictionary in MegashelterDetails.wall_panels(module.size,variant):
+			var pose: Transform3D = module.transform*Transform3D(piece.get("basis",Basis.IDENTITY),piece.center)
+			var bounds: AABB = pose*AABB(-piece.size/2,piece.size)
+			for obstacle: AABB in obstacles:
+				if not bounds.grow(0.015).intersects(obstacle): continue
+				# The authored collision skin extends 20cm in front of its visible
+				# wall. Flush attachments may occupy this supporting strip only.
+				var local: AABB = inverse*obstacle
+				if absf(local.position.z+2.2) < 0.005 and absf(local.end.z-0.2) < 0.005 and local.has_point(Vector3(0,module.size.y/2,0)):
+					continue
+				blocked = true
+				break
+			if blocked: break
+		if not blocked: module.variant = variant
 
 static func module_bounds(module: Dictionary) -> AABB:
 	var result := AABB()
