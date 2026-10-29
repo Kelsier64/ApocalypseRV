@@ -52,12 +52,14 @@ class Batch extends RefCounted:
 			piece = piece.duplicate()
 			piece.center = Vector3.ZERO
 		_damage = 1.0 if piece.get("shape", "box") == "spall" else 0.0
+		if piece.material == 2: _damage = float(piece.get("steel_preservation",0.0))
 		match piece.get("shape", "box"):
 			"bevel": _beveled(pose, piece.center, piece.size, piece.shade, piece.bevel)
 			"cylinder": _cylinder(pose, piece.center, piece.size, piece.shade, piece.get("axis",-1))
 			"spall": _spall(pose, piece.center, piece.size, piece.shade)
 			"chip": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0))
 			"paver": _chip(pose,piece.center,piece.size,piece.shade,piece.get("chip_variant",0),true)
+			"scar": _scar(pose,piece.center,piece.size,piece.shade,piece.get("scar_seed",0))
 			_: add_box(pose, piece.center, piece.size, piece.shade)
 
 	func _face(pose: Transform3D, center: Vector3, points: Array[Vector3], normal: Vector3, shade: float) -> void:
@@ -165,6 +167,38 @@ class Batch extends RefCounted:
 			var next := (index+1)%outline.size()
 			var normal := (top[index]-bottom[index]).cross(bottom[next]-bottom[index]).normalized()
 			_face(pose,center,[bottom[index],bottom[next],top[next],top[index]],normal,shade*(0.72+float(index%3)*0.08))
+
+	func _scar(pose: Transform3D, center: Vector3, size: Vector3, shade: float, seed_value: int) -> void:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = seed_value*3307+91
+		var outer: Array[Vector3] = []
+		var lip: Array[Vector3] = []
+		var inner: Array[Vector3] = []
+		for index in range(15):
+			var angle := TAU*index/15.0
+			var radius := rng.randf_range(0.29,0.5)
+			var edge := Vector3(cos(angle)*size.x*radius,sin(angle)*size.y*radius,-size.z*0.48)
+			outer.append(edge)
+			lip.append(Vector3(edge.x*0.95,edge.y*0.95,size.z*(-0.22 if index%3 == 0 else rng.randf_range(0.12,0.5))))
+			var exposed := rng.randf_range(0.77,0.93)
+			inner.append(Vector3(edge.x*exposed,edge.y*exposed,-size.z*0.36))
+		var bed := Vector3(0,0,-size.z*0.38)
+		for index in range(15):
+			var next := (index+1)%15
+			# A thin feathered outside, chipped raised lip, then an inward fracture
+			# slope. No box-shaped pieces pasted over an exposed reinforcement grid.
+			_damage = 0.0
+			_triangle(pose,center,outer[index],outer[next],lip[next],shade)
+			_triangle(pose,center,outer[index],lip[next],lip[index],shade)
+			_triangle(pose,center,lip[index],lip[next],inner[next],shade*0.87)
+			_triangle(pose,center,lip[index],inner[next],inner[index],shade*0.87)
+			_damage = 0.22
+			_triangle(pose,center,inner[index],inner[next],bed,shade*0.72)
+
+	func _triangle(pose: Transform3D, center: Vector3, a: Vector3, b: Vector3, c: Vector3, shade: float) -> void:
+		var normal := (b-a).cross(c-a).normalized()
+		if normal.z < 0: normal = -normal
+		_face(pose,center,[a,b,c],normal,shade)
 
 	func _spall(pose: Transform3D, center: Vector3, size: Vector3, shade: float) -> void:
 		var polygon := [Vector2(-0.5,-0.35), Vector2(-0.2,-0.5), Vector2(0.5,-0.24), Vector2(0.3,0.42), Vector2(-0.35,0.5)]

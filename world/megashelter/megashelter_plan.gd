@@ -322,19 +322,37 @@ static func _wall_details(plan: Dictionary) -> void:
 	for module: Dictionary in plan.modules:
 		if module.has("decoration_anchor"): occupied[module.decoration_anchor] = true
 		if module.get("solid",false): obstacles.append(module_bounds(module))
+	var candidates: Array[Dictionary] = []
 	for module: Dictionary in plan.modules:
-		if module.kind not in ["wall","rib_wall"] or module.transform.origin.y > 18: continue
-		# Clear old random covers from the player's lower facade before allocating
-		# new repairs. Service equipment owns its entire bay, not a second overlay.
+		if module.kind not in ["wall","rib_wall"]: continue
+		# Remove the dense legacy covers on upper storeys as well as at eye level.
 		if module.variant >= 4: module.variant = 0
 		if occupied.has(module.id) or module.size.y < 3 or module.size.x < 3: continue
-		var origin: Vector3 = module.transform.origin
-		# Adjacent bays share repair vocabulary in 8m work zones, separated by
-		# empty panels. This reads as maintenance history rather than confetti.
-		var zone := Vector3i(floori(origin.x/8),floori(origin.y/9),floori(origin.z/8))
-		var code := posmod(("wall-repair:%d:%s" % [plan.seed,zone]).hash(),65521)
-		if code%5 >= 3: continue
-		var variant := 8+code%6
+		var code := posmod(("sparse-repair:%d:%s" % [plan.seed,module.id]).hash(),65521)
+		if code%100 >= (18 if module.transform.origin.y <= 18 else 3): continue
+		candidates.append({"module":module,"code":code})
+	# Sample individual bays, favour reachable repairs and avoid marching rows.
+	candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
+		var high_a: bool = a.module.transform.origin.y > 18
+		var high_b: bool = b.module.transform.origin.y > 18
+		return not high_a if high_a != high_b else a.code < b.code)
+	var placed: Array[Dictionary] = []
+	var upper_count := 0
+	for candidate: Dictionary in candidates:
+		if placed.size() >= 10: break
+		var module: Dictionary = candidate.module
+		var high: bool = module.transform.origin.y > 18
+		if high and upper_count >= 2: continue
+		var nearby := false
+		for previous: Dictionary in placed:
+			var delta: Vector3 = module.transform.origin-previous.transform.origin
+			if module.transform.basis.z.dot(previous.transform.basis.z) > 0.99 and absf(delta.dot(module.transform.basis.z)) < 0.5 and Vector2(delta.x,delta.z).length() < 10:
+				nearby = true
+				break
+		if nearby: continue
+		# Encode a stable visual seed with the six categories, so bounds and both
+		# rendering paths regenerate precisely the same offsets and angled parts.
+		var variant := 8+int(candidate.code)%1536
 		var blocked := false
 		var inverse: Transform3D = module.transform.affine_inverse()
 		for piece: Dictionary in MegashelterDetails.wall_panels(module.size,variant):
@@ -350,7 +368,10 @@ static func _wall_details(plan: Dictionary) -> void:
 				blocked = true
 				break
 			if blocked: break
-		if not blocked: module.variant = variant
+		if not blocked:
+			module.variant = variant
+			placed.append(module)
+			if high: upper_count += 1
 
 static func module_bounds(module: Dictionary) -> AABB:
 	var result := AABB()

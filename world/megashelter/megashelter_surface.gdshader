@@ -103,6 +103,9 @@ void fragment() {
 		float rust_scale = mix(0.70,1.80,hash31(seed + 719.3));
 		float steel_wear = filtered_noise(warped * vec3(2.7,1.9,2.7) * rust_scale + seed + 101.3, footprint * 2.7 * rust_scale) * 0.7 + grit * 0.3;
 		float rust = smoothstep(peel_level - 0.07, peel_level + 0.04, steel_wear);
+		// Local repair stock can retain its dark coating; old structural steel
+		// keeps alpha=0 and its established corrosion response.
+		rust *= 1.0 - clamp(COLOR.a,0.0,1.0) * 0.75;
 		float oxidation = filtered_noise(p * vec3(2.5,3.5,2.5) + seed + 227.2, footprint * 3.5);
 		float oxide = smoothstep(0.23,0.78,oxidation * 0.60 + grit * 0.25 + exposure * 0.15);
 		vec3 oxide_color = mix(vec3(0.14,0.064,0.032),vec3(0.29,0.087,0.021),oxide_hue);
