@@ -113,12 +113,12 @@ static func _surface_colors(plan: Dictionary) -> Array[Color]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = ("megashelter:palette:v1:%d:%d" % [int(plan.seed), int(plan.get("style",0))]).hash()
 	# Continuous full-hue sampling generates a new RGB colour, with no swatch list.
-	# Pigment remains legible; the separate weathering layers make it abandoned.
-	var paint := Color.from_hsv(rng.randf(),rng.randf_range(0.35,0.85),rng.randf_range(0.40,0.80))
+	# Match the old grey coats' saturation/value while retaining random hue.
+	var paint := Color.from_hsv(rng.randf(),rng.randf_range(0.10,0.16),rng.randf_range(0.50,0.54))
 	var concrete_hue := rng.randf_range(0.53,0.62) if rng.randf() < 0.45 else rng.randf_range(0.09,0.17)
-	var concrete := Color.from_hsv(concrete_hue,rng.randf_range(0.035,0.10),rng.randf_range(0.52,0.66))
+	var concrete := Color.from_hsv(concrete_hue,rng.randf_range(0.035,0.10),rng.randf_range(0.61,0.64))
 	var steel := Color.from_hsv(fposmod(paint.h + rng.randf_range(-0.035,0.035),1.0),
-		clampf(paint.s * rng.randf_range(0.60,0.85),0.08,0.48),rng.randf_range(0.30,0.43))
+		rng.randf_range(0.10,0.17),rng.randf_range(0.34,0.36))
 	# Only the original coats change hue. The shader still applies physical dirt,
 	# exposed cement, mildew and rust colours after the coat, without recolouring them.
 	return [concrete,paint,steel]
