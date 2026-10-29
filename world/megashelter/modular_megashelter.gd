@@ -81,14 +81,12 @@ func _finish_visuals(plan: Dictionary) -> void:
 		if drains.size() == 4: break
 	var drain_count := drains.size()
 	drains.resize(4)
+	var surface_colors := _surface_colors(plan)
 	for index in range(_surfaces.size()):
 		var mesh := _surfaces[index].mesh()
 		var material := ShaderMaterial.new()
 		material.shader = SURFACE
-		var palettes := [[Color("a0a194"),Color("778579"),Color("4d5955")],
-			[Color("9a9e9e"),Color("74818a"),Color("4c555b")],
-			[Color("a39f90"),Color("818270"),Color("55594e")]]
-		material.set_shader_parameter("base_color", palettes[int(plan.get("style",0))][index])
+		material.set_shader_parameter("base_color", surface_colors[index])
 		material.set_shader_parameter("surface_kind", float(index))
 		material.set_shader_parameter("wear_seed", float(posmod(int(plan.seed), 10000)))
 		material.set_shader_parameter("drain_count", drain_count)
@@ -109,6 +107,21 @@ func _finish_visuals(plan: Dictionary) -> void:
 	_roof_modules.clear()
 	_surfaces.clear()
 	_dress_base(plan)
+
+static func _surface_colors(plan: Dictionary) -> Array[Color]:
+	# A separate domain keeps colour choices stable without consuming layout RNG.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("megashelter:palette:v1:%d:%d" % [int(plan.seed), int(plan.get("style",0))]).hash()
+	# Continuous full-hue sampling generates a new RGB colour, with no swatch list.
+	# Pigment remains legible; the separate weathering layers make it abandoned.
+	var paint := Color.from_hsv(rng.randf(),rng.randf_range(0.35,0.85),rng.randf_range(0.40,0.80))
+	var concrete_hue := rng.randf_range(0.53,0.62) if rng.randf() < 0.45 else rng.randf_range(0.09,0.17)
+	var concrete := Color.from_hsv(concrete_hue,rng.randf_range(0.035,0.10),rng.randf_range(0.52,0.66))
+	var steel := Color.from_hsv(fposmod(paint.h + rng.randf_range(-0.035,0.035),1.0),
+		clampf(paint.s * rng.randf_range(0.60,0.85),0.08,0.48),rng.randf_range(0.30,0.43))
+	# Only the original coats change hue. The shader still applies physical dirt,
+	# exposed cement, mildew and rust colours after the coat, without recolouring them.
+	return [concrete,paint,steel]
 
 func _append_box(pose: Transform3D, center: Vector3, size: Vector3, material: int, shade: float = 1.0) -> void:
 	_surfaces[material].add_box(pose, center, size, shade)
