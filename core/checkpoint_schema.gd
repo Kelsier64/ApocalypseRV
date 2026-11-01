@@ -76,7 +76,10 @@ static func poi_error(value: Variant, path := "poi") -> String:
 		var prefix: String = path + "." + str(id)
 		if not id is String or not entry is Dictionary or not entry.get("actors") is Array: return prefix
 		if entry.has("layout"):
-			var layout_error := InteriorLayout.validate(entry.layout)
+			if not entry.layout is Dictionary or not entry.layout.get("profile") is String: return prefix + ".layout.profile"
+			var profile := InteriorProfiles.get_profile(StringName(entry.layout.profile))
+			if profile == null: return prefix + ".layout.profile"
+			var layout_error := InteriorLayout.validate(entry.layout, profile)
 			if not layout_error.is_empty(): return prefix + "." + layout_error
 			if not entry.get("explored") is Array: return prefix + ".progress"
 			var seen: Array[String] = []
@@ -89,7 +92,7 @@ static func poi_error(value: Variant, path := "poi") -> String:
 				seen.append(room_id)
 		else:
 			return prefix + ".missing_layout"
-		var content_error := _bunker_content_error(entry)
+		var content_error := MegashelterInteriorContent.validate_content(entry) if entry.layout.profile == "megashelter" else _bunker_content_error(entry)
 		if not content_error.is_empty(): return prefix + "." + content_error
 		for i in range(entry.actors.size()):
 			var actor_error := WorldActorSnapshot.validation_error(entry.actors[i], prefix + ".actors[%d]" % i)

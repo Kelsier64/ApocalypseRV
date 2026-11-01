@@ -6,13 +6,13 @@
 script = ExtResource("1")
 definition_id = &"modular_megashelter"
 display_name = "Abandoned Megashelter"
-kind = 1
+kind = 0
 placement_modes = 2
 scene_path = "res://world/megashelter/modular_megashelter.tscn"
 content_version = 7
 building_bounds = AABB(-40, -1, -32, 80, 89, 72)
 site_bounds = AABB(-52, -1, -44, 104, 90, 106)
-entrance_path = NodePath("")
-return_path = NodePath("")
+entrance_path = NodePath("Entrance")
+return_path = NodePath("ReturnPoint")
 access_paths = Array[NodePath]([NodePath("AccessPoints/Front")])
-interior_profile = &""
+interior_profile = &"megashelter"

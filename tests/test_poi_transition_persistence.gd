@@ -2,6 +2,7 @@ extends SceneTree
 
 const PLAYER := preload("res://player/player.tscn")
 const SCRAP := preload("res://props/scrap.tscn")
+const MEGASHELTER := preload("res://tests/support/megashelter_interior_contracts.gd")
 
 class SmallInterior extends PoiInterior:
 	func _init() -> void:
@@ -157,5 +158,8 @@ func _run() -> void:
 	await manager.enter(player, building, "exit-cancel", 913)
 	check(manager.saved_instances["exit-cancel"] == preserved, "Failed entry keeps the prior saved interior")
 	await _retired("failed entry")
-	if failures.is_empty(): print("PASS: POI first/revisited exit cancellation, death, timeout, and prior-entry persistence")
+	manager.transition_timeout_ms = 60000
+	await MEGASHELTER.run(self, arena, manager, player, check)
+	await _retired("megashelter exit")
+	if failures.is_empty(): print("PASS: POI transition failure persistence; megashelter layout/profile and cache/drop revisit contracts")
 	quit(0 if failures.is_empty() else 1)

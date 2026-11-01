@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://world/megashelter/megashelter_room.gd" id="1"]
+
+[node name="sanitary" type="Node3D"]
+script = ExtResource("1")
+room_id = &"sanitary"
+footprint = Vector2(12, 12)
+clear_height = 3.6
+category = &"functional"
+function_id = "sanitary"

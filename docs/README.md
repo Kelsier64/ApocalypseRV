@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [巨型避難所可探索室內](guides/megashelter-interiors.md)：生成 v19、獨立地面一層、少量功能房、profile 分流與不補貨保存；轉場／保存檢查與 seed 42 實際回放已通過，串流及 smoke 待補。
+
 - [2026-10-30 巨型避難所 v7 牆面與入口細化](validation/2026-10-30-megashelter-facade-refinement.md)：停用風機，改善碎塊、六種牆面組件及入口鋪面銜接；保留原輪廓和屋頂。
 - [2026-10-30 巨型避難所地面裝飾](validation/2026-10-30-megashelter-ground-details.md)：歷史 v6，入口遮簷、接地設備組、ComfyUI 排風機與接近空間避讓。
 
@@ -17,7 +19,7 @@
 - [2026-10-22 野外廢棄民用避難所](validation/2026-10-22-civilian-shelter.md)：生成 v16、新增水泥建築、野外生成與該輪檢查。
 - [2026-10-22 路旁與越野 POI](validation/2026-10-22-offroad-pois.md)：生成 v15 的放置類別、越野網格、資產重用與保存範圍；實作驗證待補。
 
-- [Abandoned Megashelter（灰井住宅城）](plans/abandoned-megablock.md)：世界 v18 外部生成、封閉程序量體與驗證狀態；舊版室內提案摘要保留於文件末尾。
+- [Abandoned Megashelter（灰井住宅城）](plans/abandoned-megablock.md)：歷史 v18 外部生成、封閉程序量體與驗證狀態；目前室內以[室內指南](guides/megashelter-interiors.md)為準。
 
 - [2026-10-21 山路急彎與持續升降](validation/2026-10-21-mountain-road.md)：四種子山路、全路寬河橋、山頂導航，以及上坡／下坡急彎實際輪驅。
 

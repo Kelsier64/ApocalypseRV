@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://world/megashelter/modular_megashelter.gd" id="1"]
+[ext_resource type="Script" path="res://world/poi_kit/poi_entrance.gd" id="2"]
+
+[sub_resource type="BoxShape3D" id="entrance_shape"]
+size = Vector3(9.2, 5.8, 0.12)
 
 [node name="ModularMegashelter" type="Node3D"]
 script = ExtResource("1")
@@ -20,3 +24,15 @@ collision_mask = 0
 
 [node name="Front" type="Marker3D" parent="AccessPoints"]
 position = Vector3(0, 0.05, 32)
+
+[node name="Entrance" type="StaticBody3D" parent="."]
+script = ExtResource("2")
+destination_id = &"megashelter"
+collision_layer = 1
+collision_mask = 0
+
+[node name="Shape" type="CollisionShape3D" parent="Entrance"]
+position = Vector3(0, 2.9, 0)
+shape = SubResource("entrance_shape")
+
+[node name="ReturnPoint" type="Marker3D" parent="."]

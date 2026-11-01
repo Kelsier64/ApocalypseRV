@@ -1,5 +1,7 @@
 # ApocalypseRV 架構
 
+2026-11-01 巨型避難所室內：生成 v19 將 `modular_megashelter` 接到獨立 World3D 的 `megashelter` profile；外殼內容仍 v7，既有地形／道路及外觀 RNG 域保留。只開放地面一層，入口、大廳、三至五間功能房與少量連接空間通常共六至八個模組，按外部面積選擇模組尺寸。首訪二至四件散物與一個箱子，沒有敵人或升級引擎目標。`InteriorProfiles` 供生成與 Checkpoint 共用分流；保存完整布局、探索、箱子與散物，回訪不補貨。Checkpoint v7／VehicleSnapshot v6 不變，只接受生成 v19，舊局重新開始。本次轉場／保存檢查與 seed 42 實際回放已通過；完整範圍與待驗項目見[室內指南](docs/guides/megashelter-interiors.md)。
+
 2026-10-30 巨型避難所地面裝飾：外殼內容 v7，`MegashelterDetails` 提供低層設備、露筋碎塊及入口遮簷；地面配置使用獨立 RNG，生長／結構／屋頂仍沿用 v5 域。附件錨定接地牆板，實際 bounds 避讓門框及結構，並保留前方接近空間。原生零件進入既有三材質批次，地面排風機已停用；牆面沿用四項改進前的修補位置與剝落變體，獨立 `repair_variant` 選用六種新裝飾模型並檢查避讓，牆面及地面服務鐵件依 seed 與組件 ID 抽選鏽蝕程度。入口鋪面含門檻、排水與破損收邊，同樣合批；碰撞與鄰帶導航仍消費同份 plan。見[地面裝飾驗證](docs/validation/2026-10-30-megashelter-facade-refinement.md)。
 
 2026-10-28 電子指南針：`ElectronicCompass extends Item` 共用物品 ID、倉庫與保存契約，不保存搜尋目標。`BuildingLocator` 從普通越野及獨立大樓候選帶查詢 `modular_megashelter`，依建築原點的水平距離選取 2 km 內最近目標，包含未載入場址。手持副本每秒或移動超過 20 m 啟動背景搜尋，工作執行緒擁有獨立 `WorldField`／profile／快取，完成後才在主執行緒更新讀值；跨 domain 結果以 epoch 拒絕，保留工作 locator 至執行緒 join。只查玩家祖先內同 World3D 的生成器。箭頭及距離逐幀更新；實物與預覽待機，不啟動世界服務。`carry_offset` 調整共用手臂求解中的持物中心，指南針上移以避開操作提示。新局倉庫提供一件，另登錄製作配方；已生成的保存場址不補發。模型來源與軸向見 [資產說明](assets/models/electronic_compass/README.md)。
@@ -8,12 +10,12 @@
 
 2026-10-30 巨型住宅材質：三個合併網格的混凝土、剝落預鑄面板與鏽蝕鋼件改由固定種子的連續三維噪音直接生成，不再讀取或隨機拼接 albedo 圖。所有紋路以整棟局部公尺座標取樣，跨模組與轉角延續；外牆原漆使用獨立種子 RNG 連續產生全色相 RGB 色碼，不從固定色票抽選，色相仍隨機，但彩度與明度回到先前灰舊範圍（牆漆 S 0.10–0.16／V 0.50–0.54），混凝土及鋼件同步收窄明暗；混凝土保留礦物灰、鋼件原漆採同色相深灰，污垢與鏽蝕沿用實際材質色。種子另決定老化程度、剝落尺度與形狀、殘漆比例、鏽色及雨痕長度，連續局部受潮場再產生同棟內的差異。近景補骨材、細孔、稀疏裂紋、剝漆底層與鏽殼／鏽坑，氧化色使用獨立噪音。雨痕沿重力方向且跨牆板共用相位，UV2 的實際牆頂／梁與門楣下緣高度調整滴水強度；鏽水跟隨最多四條實際排水管，入口雙管優先。牆腳與水平面積垢，滴水區有黴斑與淡色礦物沉積，次像素噪音及微凹凸依像素足跡漸隱。保留維修蓋板、露筋、缺失風口、封閉背板、三個材質批次及共用碰撞／bounds 流程。正式濾鏡下檢查 legacy 540p 與 low 50% 渲染；噪音增加逐像素運算，不能視為所有 GPU 上都更快。舊圖保留供參考但不再載入，詳見[材質說明](assets/materials/megashelter/README.md)。
 
-`ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；不含可玩室內、物資、敵人或轉場。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。2026-10-27 初版的自動檢查、seed 6 正式場址輪驅及效能結果屬歷史驗收；完整自由遊玩未完成，正式世界遠景受霧遮擋，詳見[初版驗證](docs/validation/2026-10-27-modular-megashelter.md)。本次密度及材質調整的自動契約位於 `tests/support/megashelter_contracts.gd`，未重新做輪驅或自由遊玩驗收。
+`ModularMegashelter.configure_exterior(plan, include_visuals)` 組裝封閉無窗外觀；室內接入改由上方 v19 摘要及室內指南管理，外殼本身不生成物資或敵人。正式生成與鄰帶導航共用 `site.exterior_plan`，並以 `POIConfig.instantiate_site(site, include_visuals)` 組裝可視場景或碰撞／bounds 幾何。Checkpoint v7、VehicleSnapshot v6，不支援舊生成版本遷移。2026-10-27 初版的自動檢查、seed 6 正式場址輪驅及效能結果屬歷史驗收；完整自由遊玩未完成，正式世界遠景受霧遮擋，詳見[初版驗證](docs/validation/2026-10-27-modular-megashelter.md)。本次密度及材質調整的自動契約位於 `tests/support/megashelter_contracts.gd`，未重新做輪驅或自由遊玩驗收。
 
 
 2026-10-25 生存狀態：`PlayerSurvival` 屬目前受控身體，保存 `{hunger, starvation_elapsed}`，以玩家物理 delta 推進，沿自身祖先查找 StartRun／POI／staging 狀態並檢查載入 gate；不讀日夜累計時間或任意候選世界。滿值 100／1200 秒，零值每 5 秒獨立扣 1 HP，保留戰鬥無敵時間並沿用死亡入口。Player 在移動前推進，低於 40 時耐力恢復乘 0.5、20 以下禁止衝刺，同一 tick 生效。`PlayerConsumables` 以一次右鍵按壓持有 slot＋Item ID＋scene，完成 2 秒前反覆檢查能力與所有權，移除一份後才補營養；中斷／完成後需放開才可重試。`FoodDefinition extends ItemDefinition` 保存營養與食用時間，`FoodCatalog` 以允許場景查定義，不信任保存資料中的名稱或營養。食物沿用 Item 身分／倉庫／物理／串流快照；新局三份食物獨立於教學維修角色契約。Checkpoint v7 必要 `player.survival`；列印身體 v2 保存並交換同一 survival，未控制不推進，重生／新列印滿值。VehicleSnapshot 仍 v6，無格式遷移。下方 v6 描述涉及既往整合時，以此段及頂部政策為當前保存契約。
 
-**存檔更新政策（2026-10-27）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint v7／VehicleSnapshot v6、生成 v18、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
+**存檔更新政策（2026-10-27）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint v7／VehicleSnapshot v6、生成 v19、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
 
 （2026-10-25 世界狀態紀錄，已由上方 2026-10-27 v18 摘要更新。）當時正式新局使用生成 v17；地形與植被外觀沿用 v14，沿用兩室教學；舊版存檔不支援，需重新開局。道路 RNG 域為 v13，relief／dry-valley／flora 域沿用 v14；v17 沿用 v15 預設 RNG 域，只擴充越野資產池為 40% 地堡、10% 民用避難所、10% 庭院避難所、40% 營地／棚屋，不重抽既有排程或底層地形串流。道路以水平弧長積分持續爬升／下降，解析曲線導數協助急彎最近點投影；近路接地保留，山體外側另形成山坡與谷地。`TerrainLandforms` 混合草原、懸崖、濕地、山脊、峽谷與盆地、世界噪音及材質；`ForestScenery` 依地貌分群並避開 40° 以上坡面。橋梁按完整路寬與斜向河岸重新判斷跨度、水面低於整段跨河道路；地堡入口改為路旁及越野雙分布，不再生成深林步道場區。導航沿用既有細節簡化及怪物接地推進，普通／巨人烘焙的垂直範圍改由來源幾何推算，避免 150 m 上限裁掉山頂。Checkpoint 為 v7，只接受生成 v17；舊版世界按政策需重新開局。湖泊、水流玩法、長途輪驅與完整串流仍待後續。[分階段計畫](docs/plans/terrain-overhaul.md) · [地形細化](docs/validation/2026-10-20-terrain-v14.md) · [山路修正](docs/validation/2026-10-21-mountain-road.md)。下方歷史段落保留當時契約。
 
@@ -77,13 +79,13 @@ MainWorld
 
 ### 起始避難所與世界識別
 
-`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 固定選擇兩室 orientation_shelter；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v18 世界生成，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 固定選擇兩室 orientation_shelter；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
 歷史 v11 主場景契約：該版明確選擇生成 v11，共用 WorldProfile 預設及測試世界保持 v6。v7／v8／v9／v10 的第一個停靠點為固定 WALK_IN 避難所，場址共用整地、植被排除、導航與串流範圍；兩台設備及十五件物資（含手槍與兩盒子彈）只在首訪生成，沿用 WorldEntities／outdoor_sites 的動態物件保存。車庫門由 StartRun 管理 preparing → opening → started → closing → sealed，區塊重建時重新綁定門並套用狀態。ready_for_play 只表示地形／玩家可操作，不等於旅程已開始。整備期間停止時鐘與敵人處理，不跳過敵人生成。
 
-Checkpoint v7 要求 `world_id=shelter`、生成 v18 與完整 `start_state`；只載入受信任的 `world/main_world.tscn`。StartRun v1 要求 phase 為 preparing／started／sealed、一個 bay gate 布林值與當前兩室教學。門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。
+Checkpoint v7 要求 `world_id=shelter`、生成 v19 與完整 `start_state`；只載入受信任的 `world/main_world.tscn`。StartRun v1 要求 phase 為 preparing／started／sealed、一個 bay gate 布林值與當前兩室教學。門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。
 
 ### 輪胎與爆胎路障
 
@@ -153,7 +155,7 @@ Checkpoint v6 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`�
 
 ### 公路獨立生成
 
-正式 main_world 與 WorldProfile 使用生成 v18；道路內容使用目前獨立規劃器。Checkpoint v7 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
+正式 main_world 與 WorldProfile 使用生成 v19；道路內容使用目前獨立規劃器。Checkpoint v7 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
 
 RoadSpawns.plan(field, band) 使用當前純規劃器，分離釘帶、Raker、油桶人、普通油桶及廢車的數量／位置 RNG。Raker 0–3 隻機率為 65／20／10／5%，逐隻以路面／路邊 40／60% 選點，沒有最小間距；油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。
 
@@ -399,7 +401,7 @@ TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟�
 
 WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z，維護前後窗口並可回頭載入。WorldField 以世界座標計算有界道路曲線，WorldProfile 預設生成 v18、路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。獨立 RNG 域隔離道路、停靠、地形、外觀、物資及敵人，場址 ID 固定當前格式。Checkpoint v7 要求完整 profile 與 generation_version=18，不使用舊版預設。
+串流比較室外玩家或副本錨點 Z，維護前後窗口並可回頭載入。WorldField 以世界座標計算有界道路曲線，WorldProfile 預設生成 v19、路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。獨立 RNG 域隔離道路、停靠、地形、外觀、物資及敵人，場址 ID 固定當前格式。Checkpoint v7 要求完整 profile 與 generation_version=19，不使用舊版預設。
 
 外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 
@@ -579,7 +581,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 `world/poi_kit/buildings/gas_station.tscn` 是同世界可步行進出的靜態建築資產，分離 Visuals、Collision、Furnishings、LootSpawns、AccessPoints 與 Lights。資產不自行產生物資，也不持有副本管理器；`tests/gas_station_playground.gd` 負責測試地面、導航烘焙、正式玩家／RV 及一次性固定 seed 物資生成，道具進入 WorldEntities。生成 v5 已接入正式串流、場址與檢查點；同世界通行、導航、E 拾取及替換外觀後碰撞的歷史結果見 [正式加油站驗收](docs/validation/2026-09-20-production-gas-station.md)。
 
-`world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。所有副本使用 InteriorProfile 登錄的 16 個地堡模組；舊副本專用資產與展示場已移除。
+`world/poi_kit/` 提供 `PoiRoom`、`PoiDoorSocket`、`PoiFurniture` 與 `PoiLootPoint`、`PoiEntrance`。房間原點在地板中心，接點 local -Z 朝外；`connect_to()` 依完整 transform 接合不同尺寸房間，拒絕不相容接口。Visuals、Collision、Furnishings 與標記彼此獨立。地堡使用 InteriorProfile 登錄的 16 個地堡模組；巨型避難所使用獨立 megashelter catalog，透過 InteriorProfiles 分流；舊副本專用資產與展示場已移除。
 
 物資標記只提供 caller RNG 的抽選契約；初訪地堡由 BunkerContent 使用獨立 RNG 安置內容，BunkerCache 保管未領取物件。入口只發出 entry_requested，由 PoiInstanceManager 管理；場景及 Resource 可在編輯器直接修改。只供舊版房型生成的 `build_bunker_kit.py` 已移除。詳見 [製作規格](world/poi_kit/README.md)。
 
@@ -605,13 +607,13 @@ Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`�
 
 地形每帶依生成版本寬度建立網格（v4 為 301×51 個頂點，v2／v3 為 151×51），行駛中分批取樣、組裝及安置；導航背景烘焙，無獨立作業執行緒生成場景節點。100 seed、載入順序、坡度、停車、網格／導航接縫及正式玩家搜刮往返的專項結果屬歷史驗收。現行 [串流生成檢查](tests/test_streaming_generation.gd) 聚焦分片幾何、森林配置與實體碰撞。`highway_playground.tscn` 提供正式輪驅 5 km 及停車倒出回放。量測、測試環境與限制見 [驗收紀錄](docs/validation/2026-09-15-highway.md)。
 
-### 路旁小 POI 與越野場址（生成 v18）
+### 路旁小 POI 與越野場址（生成 v19）
 
 POI 定義的 `placement_modes` 以 `ROADSIDE`、`OFF_ROAD` 旗標指定放置類別，兩者可並用，且與 `kind`（副本入口／直接探索）分開。`MinorSites` 以獨立 RNG 規劃每 1,200 m 區間的路旁小場址，最多四次候選，避開大型場址與車道；穩定 ID 使用當前生成版本、seed 與道路 cell。六主題各三個 WALK_IN 定義，不重排 POIConfig.GENERATION_IDS。越野場址按橫向 3 欄、每格 300 × 900 m 的網格規劃，每格 55% 成為候選，8 次有界嘗試並避開道路、水域、陡坡及其他 POI；候選 40% 為 bunker、10% 為 civilian_shelter、10% 為 courtyard_shelter、40% 為 camp／shed；另以獨立 2% 機率選取 `modular_megashelter`，取代一般候選而不改原池權重。四款地堡入口 與 camp／shed 支援路旁及越野，兩款 shelter 僅越野，其他四類小型主題僅路旁。四款地堡入口 路旁場址距道路中心 49 m，為獨立位置，局部整地僅用於入口建築安置。越野場址依自然地面高度及隨機朝向配置，只在資產占地及外圈步行餘量局部整地；不生成公路標誌、方向標誌、車道、停車線、林間步道、迷宮或周界牆。穩定 ID 使用生成版本、seed、row、column。
 
 `POIConfig.instantiate_site(site, include_visuals)` 為場景設定提供單一入口；程序外觀及鄰帶導航共用同一個 `site.exterior_plan`，保持碰撞與動態 bounds 一致。`WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 
-`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首訪抽取物資與敵人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。越野地堡室內沿用 PoiInstanceManager.saved_instances 與 checkpoint 的 `poi` 狀態；戶外營地等沿用 outdoor_sites／WorldActorSnapshot，不新增專用保存格式。Checkpoint v7 要求 generation_version=18；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [民用避難所檢查](docs/validation/2026-10-22-civilian-shelter.md) · [v15 越野 POI 紀錄](docs/validation/2026-10-22-offroad-pois.md) · [路旁小 POI 歷史驗收](docs/validation/2026-09-26-minor-pois.md)。
+`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首訪抽取物資與敵人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。越野地堡室內沿用 PoiInstanceManager.saved_instances 與 checkpoint 的 `poi` 狀態；戶外營地等沿用 outdoor_sites／WorldActorSnapshot，不新增專用保存格式。Checkpoint v7 要求 generation_version=19；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [民用避難所檢查](docs/validation/2026-10-22-civilian-shelter.md) · [v15 越野 POI 紀錄](docs/validation/2026-10-22-offroad-pois.md) · [路旁小 POI 歷史驗收](docs/validation/2026-09-26-minor-pois.md)。
 
 ### v5 加油站保存基礎（v6 沿用）
 

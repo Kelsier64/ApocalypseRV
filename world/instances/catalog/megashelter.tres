@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="InteriorProfile" load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://world/instances/interior_profile.gd" id="1"]
+[ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room_script"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/reception.tres" id="2"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/common_hall.tres" id="3"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/common_hall_large.tres" id="4"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/service_spine.tres" id="5"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sleeping.tres" id="6"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sleeping_large.tres" id="7"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/medical.tres" id="8"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/medical_large.tres" id="9"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/storage.tres" id="10"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/storage_large.tres" id="11"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/canteen.tres" id="12"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/canteen_large.tres" id="13"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/services.tres" id="14"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/services_large.tres" id="15"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sanitary.tres" id="16"]
+[ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sanitary_large.tres" id="17"]
+
+[resource]
+script = ExtResource("1")
+profile_id = &"megashelter"
+rooms = Array[ExtResource("room_script")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17")])
+min_rooms = 6
+max_rooms = 8
+max_floors = 1
+floor_spacing = 5.0
+group_weights = {"hall": 1.0, "corridor": 1.0, "functional": 1.0}

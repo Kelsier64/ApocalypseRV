@@ -60,6 +60,7 @@ func _run() -> void:
 	if saved.is_empty(): quit(1); return
 	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
 	_test_survival_checkpoint(checkpoint, saved)
+	await _test_megashelter_checkpoint(checkpoint, saved)
 	var flying_player: CharacterBody3D = world.get_node("Player")
 	check(flying_player.set_cheat_flying(true), "Player can enable session flight")
 	check(checkpoint.capture_world(world).is_empty() and checkpoint.last_error.get("field") == "player", "Checkpoint rejects a collision-free flight position")
@@ -288,8 +289,32 @@ func _test_survival_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 	previous.version = 6
 	check(checkpoint.validation_error(previous) == "version", "Previous checkpoint version is rejected without migration")
 
+func _test_megashelter_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
+	var viewport := SubViewport.new()
+	viewport.own_world_3d = true
+	root.add_child(viewport)
+	var inside := PoiInterior.new()
+	inside.profile_id = &"megashelter"
+	inside.exterior_area = 800.0
+	inside.instance_id = "checkpoint-megashelter"
+	viewport.add_child(inside)
+	var built: bool = await inside.build(913)
+	check(built, "Small real megashelter builds a complete checkpoint fixture")
+	if built:
+		inside.explored.assign([str(inside.layout.rooms[0].id)])
+		var snapshot := inside.snapshot()
+		var fixture := saved.duplicate(true)
+		fixture.poi[inside.instance_id] = snapshot
+		check(checkpoint.validation_error(fixture).is_empty(), "Full checkpoint accepts the megashelter layout, actors and caches")
+		check(checkpoint.write_checkpoint(PATH + ".megashelter", fixture), "Megashelter checkpoint writes to disk")
+		var restored: Dictionary = checkpoint.read_checkpoint(PATH + ".megashelter")
+		check(not restored.is_empty() and restored == fixture, "Checkpoint disk roundtrip preserves the exact megashelter manifest, exploration and supplies")
+		check(not restored.is_empty() and CheckpointSchema.poi_error(restored.poi).is_empty(), "Disk-restored megashelter remains valid under profile dispatch")
+	viewport.queue_free()
+	await process_frame
+
 func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
-	check(saved.version == checkpoint.VERSION and saved.generation_version == 18 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")
+	check(saved.version == checkpoint.VERSION and saved.generation_version == 19 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")
 	var orientation := saved.duplicate(true)
 	orientation.start_state.tutorial.erase("entry_snapshot")
 	orientation.start_state.tutorial.entry_snapshot = orientation.duplicate(true)
@@ -305,11 +330,11 @@ func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
 		checkpoint.pending = {}
 		var generator: Node = candidate.get_node("WorldGenerator")
 		var start_run: StartRun = candidate.get_node("StartRun")
-		check(generator.profile.generation_version == 18 and generator.profile.terrain_half_width == 500.0, "Preparation retains the current terrain identity")
+		check(generator.profile.generation_version == 19 and generator.profile.terrain_half_width == 500.0, "Preparation retains the current terrain identity")
 		check(start_run.is_orientation_shelter() and start_run.bay_gate_count() == 1, "Preparation restores the one-gate orientation shelter")
 		check(start_run.get_node("Tutorial").capture() == roundtrip.start_state.tutorial, "Preparation restores the complete current course and retry entry")
 		candidate.free()
-	for version in [2, 6, 10, 11, 12, 13, 14, 15, 16, 17]:
+	for version in [2, 6, 10, 11, 12, 13, 14, 15, 16, 17, 18]:
 		var unsupported := saved.duplicate(true)
 		unsupported.generation_version = version
 		check(checkpoint.validation_error(unsupported) == "generation_version", "Reject unsupported terrain identity v%d" % version)

@@ -69,4 +69,4 @@ static func instantiate_site(site: Dictionary, include_visuals := true) -> Node3
 	return building
 
 static func supported_interior(profile: StringName) -> bool:
-	return profile == &"bunker"
+	return InteriorProfiles.get_profile(profile) != null

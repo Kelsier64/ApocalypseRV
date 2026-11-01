@@ -1,6 +1,6 @@
 # POI 共用製作與接入規範
 
-更新：2026-10-27。適用目前 POI；既有資產的視覺組裝例外見末節。此文件是 POI 共用規範，房型接口細節仍由 [房間／家具規格](../../world/poi_kit/README.md) 管理。
+更新：2026-11-01。適用目前 POI；既有資產的視覺組裝例外見末節。此文件是 POI 共用規範，房型接口細節仍由 [房間／家具規格](../../world/poi_kit/README.md) 管理。
 
 ## 1. 類型與責任
 
@@ -27,7 +27,7 @@
 | `site_bounds` | 本地 AABB，包含建築及需要淨空的入口、後院、維修動線；包住 building_bounds |
 | `entrance_path`／`return_path` | 副本入口專用，本地 PoiEntrance／Marker3D 路徑 |
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
-| `interior_profile` | 副本入口專用；支援 `bunker`；室內見 [地堡規格](bunker-interior.md) |
+| `interior_profile` | 副本入口專用；支援 `bunker`／`megashelter`；見 [地堡規格](bunker-interior.md)／[巨型避難所室內](megashelter-interiors.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
 | `enemy_count_range` | WALK_IN 首訪敵人數量範圍，預設 (0,0)；本輪上限 2，需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D |
 
@@ -37,7 +37,7 @@
 
 Resource 為共用唯讀設定；執行時不得把拾取、門狀態、敵人生命或個別場址 seed 寫回 Resource。驗證工具需要改值時先 duplicate。
 
-路旁小 POI 共六類、18 個 WALK_IN 定義；四款地堡入口 與 camp／shed 定義可同時用於越野類別。生成 v18 的越野場址由橫向 3 欄、每格 300 × 900 m 的網格按每格 55% 候選率、最多 8 次嘗試規劃，候選以 40% 抽 bunker、10% 抽 civilian_shelter、10% 抽 courtyard_shelter、40% 抽 camp／shed；獨立 2% 越野抽選以 `modular_megashelter` 取代該候選的一般 POI，不改上述權重或 55% 候選率；位置、主題、佈局、美術、物資與怪物 RNG 分離。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
+路旁小 POI 共六類、18 個 WALK_IN 定義；四款地堡入口 與 camp／shed 定義可同時用於越野類別。生成 v19 的越野場址由橫向 3 欄、每格 300 × 900 m 的網格按每格 55% 候選率、最多 8 次嘗試規劃，候選以 40% 抽 bunker、10% 抽 civilian_shelter、10% 抽 courtyard_shelter、40% 抽 camp／shed；獨立 2% 越野抽選以 `modular_megashelter` 取代該候選的一般 POI，不改上述權重或 55% 候選率；位置、主題、佈局、美術、物資與怪物 RNG 分離。所有戶外消費者透過 `WorldField.sites_near_z()` 或 `stops_in_band()` 查詢；v6 的 `stop(index % 3 == 2)` 回傳空字典，不能再把固定停靠點索引當成完整世界場址清單。詳見 [小 POI 規格](../../world/roadside_pois/README.md)。
 
 **登錄不等於加入生成。** `GENERATION_IDS` 是目前四款副本入口的穩定抽樣順序；加油站透過 WalkInSites 的獨立場址排程加入。場址必須提供已登錄定義，沒有 maintenance_legacy 回退。動態組裝資產以 `site.exterior_plan` 字典作為場景設定來源；消費端不得各自重建外觀或 bounds。新增或重排抽樣池需驗收當前場址安置與保存；不支援的舊存檔可直接重新開局。
 
@@ -71,7 +71,7 @@ site_bounds 是資產安置需求；WalkInSites 的整地與植被排除讀取�
 
 新資產加入正式世界前，必須讓共享場址計畫決定完整 transform、整平範圍、接近路線、避讓與串流保護範圍；地形、視覺放置及導航讀相同計畫。所有入口、後門、棚架、招牌、RV 轉彎和搬運路線都要納入驗收。
 
-直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。所有既有入口指向 `bunker`；不支援的副本資料直接拒絕載入；新增 profile 必須先實作生成及保存支援，未知 profile 在生成時拒絕。
+直接探索型需要室外到室內的連續碰撞及導航，不得用傳送替代門洞。副本入口型由定義的 entrance_path／return_path 接線，外觀腳本不得自行建立 World3D 或管理返回狀態。四款地堡入口指向 `bunker`，`modular_megashelter` 指向 `megashelter`。`InteriorProfiles` 只解析登錄的 profile，Checkpoint 依保存 manifest 的 profile 分流驗證；未知 profile 或保存／請求不符時拒絕載入。新增 profile 必須先實作生成及保存支援。
 
 ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；AccessPoints 的朝向與實際入口動線一併驗收。
 
@@ -97,7 +97,7 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 
 登錄定義、ID、類型分流與舊版場址的專項自測已退出核心清單。新增或修改 POI 時，仍須執行定義的 `validate()`／`validate_scene()` 並按上列步驟實際走查；現行自動範圍見 [測試指南](../../tests/README.md)。
 
-轉場或保存邏輯變更，可從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_transition_persistence.gd`；此測試聚焦轉場取消與保存，不能代替新場景的定義、通路或導航檢查。新增定義也須加入 POIConfig.DEFINITIONS。
+轉場或保存邏輯變更，可從專案根目錄執行 `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_transition_persistence.gd`；此測試包含地堡轉場取消與保存，以及巨型避難所的抽樣布局、profile、真實進出及物資回訪；不能代替畫面與玩家逐室走查。新增定義也須加入 POIConfig.DEFINITIONS。
 
 ## 7. 現有資產狀態
 
@@ -107,10 +107,11 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 | gas_station | 正式公路及獨立測試場 | 占地整地、回程串流、剩餘物資及檢查點保存 |
 | civilian_shelter | WALK_IN、僅 OFF_ROAD、內容 v1 | 荒廢小型民用避難所；沿用戶外場址物資、串流與保存 |
 | courtyard_shelter | WALK_IN、僅 OFF_ROAD、內容 v1 | L 形庭院變體；沿用戶外場址物資、串流與保存 |
+| modular_megashelter | INSTANCE_ENTRANCE、僅 OFF_ROAD、外殼內容 v7 | megashelter 單層室內、獨立副本物資及探索保存 |
 
 既有入口由 exterior_style.gd 在 Visuals/BunkerFacade 建立簡單軍事立面，沿用 service_entrance 的入口／返回點與原占地；外观附加量體不帶碰撞。既有定義的 legacy_visual_layout 旗標暫保留，尚未全面改成編輯器組裝資產；新資產不得沿用此例外。
 
 戶外整合的歷史結果見 [正式加油站驗收](../validation/2026-09-20-production-gas-station.md)，僅代表當時範圍。加油站保存 content_version；更動佈局時驗證當前版本，不維護舊版資產或存檔遷移。
 
 
-Abandoned Megashelter 使用專用模組規劃器與 `modular_megashelter` definition，依 `OFF_ROAD` 以獨立 2% 機率替換越野候選。`site.exterior_plan` 保存一次生成的規劃；正式視覺／碰撞呼叫 `POIConfig.instantiate_site(site, true)`，鄰帶導航呼叫 `POIConfig.instantiate_site(site, false)`，兩者共用 `modules`、`collision_boxes`、`building_bounds`、`site_bounds` 和 `access_point`。該資產不建立室內 profile、物資或敵人。生成 v18 契約及驗證見 [巨型住宅驗證](../validation/2026-10-27-modular-megashelter.md)。
+Abandoned Megashelter 使用專用模組規劃器與 `modular_megashelter` definition，依 `OFF_ROAD` 以獨立 2% 機率替換越野候選。`site.exterior_plan` 保存一次生成的規劃；正式視覺／碰撞呼叫 `POIConfig.instantiate_site(site, true)`，鄰帶導航呼叫 `POIConfig.instantiate_site(site, false)`，兩者共用 `modules`、`collision_boxes`、`building_bounds`、`site_bounds` 和 `access_point`。該資產現在是 `INSTANCE_ENTRANCE`，提供 `Entrance`／`ReturnPoint` 及 `megashelter` profile；室內物資由副本首訪生成，外殼本身不生成物資或敵人。生成 v19 保留 v18 的候選及外觀 RNG 域，詳見[室內指南](megashelter-interiors.md)。外部初版的歷史驗證見[巨型住宅驗證](../validation/2026-10-27-modular-megashelter.md)。

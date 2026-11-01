@@ -27,25 +27,25 @@ func restore_state(data: Dictionary) -> void:
 
 func get_interaction_prompt(_player: Node3D) -> String:
 	if searched and remaining.is_empty():
-		return "補給箱｜已搜空"
-	return "補給箱｜長按 E 1 秒搜索（剩餘 %d 件）" % remaining.size()
+		return "Supply cache | Empty"
+	return "Supply cache | Hold E for 1 second (%d remaining)" % remaining.size()
 
 func interact(_player: Node3D) -> String:
-	if searched and remaining.is_empty(): return "補給箱已搜空"
-	return "長按 E 1 秒搜索補給箱"
+	if searched and remaining.is_empty(): return "Supply cache is empty"
+	return "Hold E for 1 second to search"
 
 func interact_hold(player: Node3D) -> String:
-	if not _can_search(player): return "無法搜索補給箱"
+	if not _can_search(player): return "Cannot search cache"
 	if remaining.is_empty():
 		searched = true
 		_update_visual()
-		return "補給箱已搜空"
+		return "Supply cache is empty"
 	var entry: Dictionary = remaining.front()
 	var scene_path := str(entry.get("scene", ""))
 	var scene := load(scene_path) as PackedScene
-	if scene == null: return "補給品無法讀取"
+	if scene == null: return "Supply unavailable"
 	var item := scene.instantiate() as Item
-	if item == null: return "補給品無法使用"
+	if item == null: return "Supply unavailable"
 	# Some props initialize model state in _ready. Restore after initialization so
 	# the inventory receives their exact saved identity and condition.
 	item.freeze = true
@@ -57,11 +57,11 @@ func interact_hold(player: Node3D) -> String:
 	item.restore_item_state(entry.get("state", {}))
 	var accepted: bool = player.add_prop_item(item, scene_path)
 	item.queue_free()
-	if not accepted: return "無法拾取：背包已滿，或已攜帶大型物品"
+	if not accepted: return "Cannot carry: inventory full or large item already held"
 	remaining.remove_at(0)
 	searched = true
 	_update_visual()
-	return "已取得 %s" % str(entry.get("name", "補給品"))
+	return "Collected %s" % str(entry.get("name", "supply"))
 
 func _can_search(player: Node3D) -> bool:
 	return is_inside_tree() and is_instance_valid(player) and player.is_inside_tree() \

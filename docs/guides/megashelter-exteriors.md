@@ -1,6 +1,6 @@
 # 廢棄巨型住宅外殼：室外外殼製作指南
 
-本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 7）。這是一個封閉的視覺場址，不含可玩室內、戰利品、敵人或進出轉場。美術以[已選概念圖](../art/modular-megashelter/README.md)為準；最新細節與驗證見[v7 紀錄](../validation/2026-10-30-megashelter-facade-refinement.md)，生長機制沿用 v5。
+本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 7）。生成 v19 將此場址設為副本入口，封閉外殼由 `Entrance` 轉入獨立的 `megashelter` 地面室內，詳見[室內指南](megashelter-interiors.md)。外殼本身不生成物資或敵人。美術以[已選概念圖](../art/modular-megashelter/README.md)為準；最新細節與驗證見[v7 紀錄](../validation/2026-10-30-megashelter-facade-refinement.md)，生長機制沿用 v5。
 
 ## 幾何規格
 
@@ -34,13 +34,13 @@
 
 規劃資料包含 version、seed、growth_steps、width、depth、height、structure、style、rhythm、volumes、modules、collision_boxes、building_bounds、site_bounds 及 access_point。`module_bounds()` 使用實際 kit 零件及屋頂資產的包圍代理計算 bounds；`solid` 附件的相同包圍盒加入碰撞計畫。渲染端、正式 POI 放置與鄰帶導航消費同一份規劃。
 
-碰撞覆蓋實際建築外殼，不應封死外圈步行接近空間。碰撞盒和導航排除區需依最終模組尺寸核對。封閉立面與門不需要互動碰撞或觸發器。此 POI 使用 OFF_ROAD 類別，不應註冊室內管理器、profile、物資或敵人。
+碰撞覆蓋實際建築外殼，不應封死外圈步行接近空間。碰撞盒和導航排除區需依最終模組尺寸核對。封閉立面與門保留實體碰撞，門前另有一個 PoiEntrance 互動碰撞及安全 ReturnPoint；這些由副本管理器接線，不納入外殼的實體量體計畫。此 POI 使用 OFF_ROAD 放置類別與 INSTANCE_ENTRANCE 類型，interior_profile 為 megashelter。
 
 ## 生成規則
 
-由生成 v18 的越野候選格以獨立 2% 機率選取；越野候選率保持 55%，其它 POI 權重不變。選擇使用獨立 RNG，不得消耗或改變道路 RNG 域。正式生成和鄰帶導航共用同一次場址規劃。`ModularMegashelter.configure_exterior(plan, include_visuals)` 依規劃組裝場景；導航端停用視覺節點，但沿用相同量體、碰撞與 bounds。
+目前生成 v19 保留 v18 的場址排程：一般越野候選格以獨立 2% 機率選取，另有每 300 m 一個的獨立大樓候選帶；越野候選率保持 55%，其它 POI 權重不變。選擇使用獨立 RNG，不得消耗或改變道路 RNG 域。正式生成和鄰帶導航共用同一次場址規劃。`ModularMegashelter.configure_exterior(plan, include_visuals)` 依規劃組裝場景；導航端停用視覺節點，但沿用相同量體、碰撞與 bounds。
 
-外殼內容版本為 7。尺寸選擇沿用原 v1 massing RNG 域；足跡、各翼高度、結構及屋頂配置沿用 v5 RNG 域；地面附件使用 v7 獨立域。曾造訪內容版本 1–6 外殼的舊存檔依既有政策重新開局，不提供遷移。
+外殼內容版本為 7。尺寸選擇沿用原 v1 massing RNG 域；足跡、各翼高度、結構及屋頂配置沿用 v5 RNG 域；地面附件使用 v7 獨立域。生成 v18 及更舊存檔依既有政策重新開局，不提供遷移；v19 的變更為副本接入，外觀計畫仍為 v7。
 
 ## 分幀建構與測試入口
 

@@ -21,6 +21,10 @@ func configure_exterior(plan: Dictionary, include_visuals: bool = true) -> void:
 			get_node(path).remove_child(child)
 			child.free()
 	get_node("AccessPoints/Front").position = plan.access_point
+	# Interactive skin sits in front of the existing closed leaves. It is not
+	# included in the permanent navigation volume or the exterior RNG plan.
+	get_node("Entrance").position = Vector3(plan.access_point.x, 0, float(plan.depth)*0.5 + 3.28)
+	get_node("ReturnPoint").position = plan.access_point
 	set_meta("navigation_solid_geometry", true)
 	for index in range(plan.collision_boxes.size()):
 		var bounds: AABB = plan.collision_boxes[index]

@@ -420,7 +420,7 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 		if collision != null: collision.free()
 		return
 	check.call(definition.validate_scene(visual).is_empty() and definition.validate_scene(collision).is_empty(), "Both megashelter build modes satisfy the POI scene contract")
-	check.call(definition.kind == PoiDefinition.Kind.WALK_IN and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 7 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness walk-in definition")
+	check.call(definition.kind == PoiDefinition.Kind.INSTANCE_ENTRANCE and definition.interior_profile == &"megashelter" and definition.placement_modes == PoiDefinition.Placement.OFF_ROAD and definition.enemy_count_range == Vector2i.ZERO and definition.content_version == 7 and definition.content_version == plan.version, "Megashelter is a versioned peaceful wilderness instance entrance")
 	check.call(_collision_snapshot(visual) == _collision_snapshot(collision) and _collision_snapshot(visual).size() == plan.collision_boxes.size(), "Owner and neighbour consume identical complete collision plans")
 	var expected: Array = []
 	for box: AABB in plan.collision_boxes:
@@ -436,9 +436,10 @@ static func _check_build(plan: Dictionary, check: Callable) -> void:
 	for mesh: MeshInstance3D in visual.get_node("Furnishings").find_children("*", "MeshInstance3D", true, false):
 		bounds_ok = bounds_ok and (plan.site_bounds as AABB).grow(0.02).encloses(_local_pose(visual, mesh) * mesh.get_aabb())
 	for shape: CollisionShape3D in visual.find_children("*", "CollisionShape3D", true, false):
+		if shape.get_parent() is PoiEntrance: continue
 		shapes_solid = shapes_solid and shape.shape is BoxShape3D and not shape.disabled and shape.get_meta("navigation_solid", false)
 	check.call(bounds_ok and shapes_solid, "Megashelter rendered extents are enclosed and every static box excludes interior navigation")
-	check.call(visual.get_node("LootSpawns").get_child_count() == 0 and visual.find_children("*", "PoiEntrance", true, false).is_empty() and visual.find_children("*", "PoiLootPoint", true, false).is_empty() and visual.find_children("*", "CharacterBody3D", true, false).is_empty(), "Exterior-only megashelter creates no loot, actors or transition entrance")
+	check.call(visual.get_node("LootSpawns").get_child_count() == 0 and visual.find_children("*", "PoiEntrance", true, false).size() == 1 and visual.get_node_or_null("Entrance") is PoiEntrance and visual.get_node_or_null("ReturnPoint") is Marker3D and collision.get_node_or_null("Entrance") is PoiEntrance and collision.get_node_or_null("ReturnPoint") is Marker3D and visual.find_children("*", "PoiLootPoint", true, false).is_empty() and visual.find_children("*", "CharacterBody3D", true, false).is_empty(), "Megashelter exterior has one transition entrance and return marker without outdoor loot or actors")
 	var before := _collision_snapshot(visual)
 	visual.configure_exterior(plan, true)
 	check.call(before == _collision_snapshot(visual), "Reconfiguring a megashelter is idempotent")
@@ -480,13 +481,14 @@ static func _check_appearance_metadata(plan: Dictionary, building: Node3D, check
 
 static func _site(plan: Dictionary) -> Dictionary:
 	var pose := Transform3D(Basis.IDENTITY, Vector3(0, 0, -150))
-	return {"index": 1, "id": "v18:42:offroad:fixture", "s": 150.0, "building": pose, "frame": pose,
+	return {"index": 1, "id": "v19:42:offroad:fixture", "s": 150.0, "building": pose, "frame": pose,
 		"bounds": pose * (plan.site_bounds as AABB), "placement": "off_road", "definition_id": "modular_megashelter",
-		"kind": "walk_in", "title": "Abandoned Megashelter", "seed": plan.seed, "walls": [], "exterior_plan": plan}
+		"kind": "entrance", "title": "Abandoned Megashelter", "seed": plan.seed, "walls": [], "exterior_plan": plan}
 
 static func _collision_snapshot(building: Node3D) -> Array:
 	var result: Array = []
 	for shape: CollisionShape3D in building.find_children("*", "CollisionShape3D", true, false):
+		if shape.get_parent() is PoiEntrance: continue
 		if shape.shape is BoxShape3D:
 			result.append([_local_pose(building, shape), shape.shape.size, shape.disabled, shape.get_meta("navigation_solid", false)])
 	return result

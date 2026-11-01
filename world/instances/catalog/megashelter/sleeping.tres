@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="InteriorRoomDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://world/instances/room_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://world/poi_kit/rooms/megashelter/sleeping.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"sleeping"
+scene = ExtResource("2")
+role = &"ordinary"
+selection_group = &"functional"
+content_version = 1

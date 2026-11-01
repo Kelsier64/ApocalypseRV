@@ -1,8 +1,11 @@
 extends Node3D
 class_name PoiInterior
-## Bunker assembler. Geometry comes from the saved manifest; actors belong to this World3D.
+## Geometry comes from the saved manifest; actors belong to this World3D.
 const PROFILE: InteriorProfile = preload("res://world/instances/catalog/bunker.tres")
 const WALL = preload("res://world/poi_kit/materials/bunker/concrete.tres")
+var profile_id: StringName = &"bunker"
+var profile: InteriorProfile = PROFILE
+var exterior_area := 1000.0
 var layout: Dictionary
 var rooms: Array[PoiRoom] = []
 var entities: Node3D
@@ -28,10 +31,17 @@ var _map: Control
 
 func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	var started := Time.get_ticks_msec()
+	profile = InteriorProfiles.get_profile(profile_id)
+	if profile == null or not profile.validate().is_empty(): return false
 	if not saved.is_empty() and not CheckpointSchema.poi_error({"interior": saved}).is_empty(): return false
-	if not PROFILE.validate().is_empty(): return false
-	layout = saved.layout.duplicate(true) if saved.has("layout") else InteriorLayout.generate(seed_value, room_count, PROFILE, target_floors)
-	if layout.is_empty() or not InteriorLayout.validate(layout).is_empty(): return false
+	if saved.has("layout"):
+		if saved.layout.profile != str(profile_id): return false
+		layout = saved.layout.duplicate(true)
+	elif profile_id == &"megashelter":
+		layout = MegashelterInteriorLayout.generate(seed_value, exterior_area, profile)
+	else:
+		layout = InteriorLayout.generate(seed_value, room_count, profile, target_floors)
+	if layout.is_empty() or not InteriorLayout.validate(layout, profile).is_empty(): return false
 	if saved.has("explored"): explored.assign(saved.explored)
 	set_meta("entity_domain", true)
 	entities = Node3D.new()
@@ -43,24 +53,26 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	environment.environment.background_color = Color("111511")
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color("afb9a3")
-	environment.environment.ambient_light_energy = BunkerLighting.AMBIENT_ENERGY
+	environment.environment.ambient_light_energy = MegashelterInteriorLighting.AMBIENT_ENERGY if profile_id == &"megashelter" else BunkerLighting.AMBIENT_ENERGY
 	add_child(environment)
 	var adaptation := NightVisionEffect.new()
 	adaptation.name = "DarkAdaptation"
 	add_child(adaptation)
 	navigation = NavigationRegion3D.new()
-	navigation.name = "BunkerGeometry"
+	# Static Item supports save paths relative to this root.
+	navigation.name = "MegashelterGeometry" if profile_id == &"megashelter" else "BunkerGeometry"
 	add_child(navigation)
-	var dark_rooms := BunkerLighting.dark_room_ids(layout)
+	var dark_rooms: Array[String] = MegashelterInteriorLighting.dark_room_ids(layout, profile) if profile_id == &"megashelter" else BunkerLighting.dark_room_ids(layout, profile)
 	for i in layout.rooms.size():
 		var data: Dictionary = layout.rooms[i]
-		var definition := InteriorLayout.definition(layout, i)
+		var definition := InteriorLayout.definition(layout, i, profile)
 		var room := definition.scene.instantiate() as PoiRoom
 		room.name = data.id
 		room.transform = data.transform
 		navigation.add_child(room)
 		rooms.append(room)
-		BunkerLighting.apply(room, definition, str(data.id) in dark_rooms)
+		if profile_id == &"megashelter": MegashelterInteriorLighting.apply(room, definition, str(data.id) in dark_rooms)
+		else: BunkerLighting.apply(room, definition, str(data.id) in dark_rooms)
 		_set_floor_signs(room, definition)
 		for socket in room.get_node("DoorSockets").get_children():
 			if not InteriorLayout.used(layout, i, str(socket.socket_id)): _seal(room, socket)
@@ -79,7 +91,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	navigation.navigation_mesh = mesh
 	if not await _bake(): return false
 	if saved.has("actors"):
-		# An existing empty bunker stays empty. Never populate on reentry.
+		# An existing empty interior stays empty. Never populate on reentry.
 		content = saved.content.duplicate(true)
 		for state: Dictionary in saved.caches:
 			var cache = preload("res://world/instances/bunker_cache.tscn").instantiate()
@@ -87,17 +99,19 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 			navigation.add_child(cache)
 			caches.append(cache)
 	elif populate_content:
-		content = BunkerContent.populate(self)
+		content = MegashelterInteriorContent.populate(self) if profile_id == &"megashelter" else BunkerContent.populate(self)
 	if not caches.is_empty() and not await _bake(): return false
 	# Restore movable actors only after all async geometry work is complete.
 	# Otherwise a saved drop can fall/move while the player is still loading.
 	if saved.has("actors"): _restore(saved.actors)
-	if not content.is_empty() and not BunkerContent.reachable(self, saved.is_empty()): return false
+	if not content.is_empty():
+		var content_reachable: bool = MegashelterInteriorContent.reachable(self, saved.is_empty()) if profile_id == &"megashelter" else BunkerContent.reachable(self, saved.is_empty())
+		if not content_reachable: return false
 	for actor in entities.get_children():
 		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_INHERIT
 	_add_hud()
 	build_msec = Time.get_ticks_msec() - started
-	print("BUNKER_READY seed=%d rooms=%d/%d floors=%d/%d build_ms=%d nav_ms=%d" % [seed_value, rooms.size(), layout.target_rooms, InteriorLayout.floor_count(layout), layout.target_floors, build_msec, navigation_msec])
+	print("INTERIOR_READY profile=%s seed=%d rooms=%d/%d floors=%d/%d build_ms=%d nav_ms=%d" % [profile_id, seed_value, rooms.size(), layout.target_rooms, InteriorLayout.floor_count(layout), layout.target_floors, build_msec, navigation_msec])
 	return true
 
 func spawn_transform() -> Transform3D:
@@ -213,6 +227,10 @@ func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> voi
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	visual.mesh = mesh
+	if profile_id == &"megashelter":
+		var batch := MegashelterKit.Batch.new()
+		batch.add_box(Transform3D.IDENTITY, Vector3.ZERO, size, 0.93)
+		visual.mesh = batch.mesh()
 	visual.material_override = material
 	body.add_child(visual)
 	var shape := CollisionShape3D.new()
@@ -245,6 +263,13 @@ func _add_hud() -> void:
 	HUDVisibility.attach(layer)
 	_hud = Label.new()
 	_hud.position = Vector2(24,80)
+	if profile_id == &"megashelter":
+		_hud.anchor_left = 1.0
+		_hud.anchor_right = 1.0
+		_hud.offset_left = -500.0
+		_hud.offset_right = -24.0
+		_hud.offset_top = 62.0
+		_hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hud.add_theme_font_size_override("font_size", 20)
 	layer.add_child(_hud)
 	_map = preload("res://world/instances/interior_map.gd").new()
@@ -264,15 +289,18 @@ func _process(delta: float) -> void:
 	current_floor = clampi(roundi(-player.position.y/layout.floor_spacing),0,InteriorLayout.floor_count(layout)-1)
 	for i in rooms.size():
 		var local := rooms[i].to_local(player.global_position)
-		var bounds: AABB = InteriorLayout.definition(layout, i).describe().bounds
+		var bounds: AABB = InteriorLayout.definition(layout, i, profile).describe().bounds
 		# Sample feet, not the below-floor origin; do not expand into another level.
 		if bounds.has_point(local + Vector3.UP * 0.3):
 			current_room = i
 			var id: String = layout.rooms[i].id
 			if id not in explored: explored.append(id)
 			break
-	_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]
-	if not content.is_empty(): _hud.text += "\n" + BunkerContent.objective_text(self, player)
+	if profile_id == &"megashelter":
+		_hud.text = "GROUND FLOOR / %s    %d explored\nM: explored map  |  Return to ENTRY to exit" % [str(layout.rooms[current_room].id).to_upper(), explored.size()]
+	else:
+		_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]
+		if not content.is_empty(): _hud.text += "\n" + BunkerContent.objective_text(self, player)
 	if _map.visible: _map.queue_redraw()
 
 func _input(event: InputEvent) -> void:

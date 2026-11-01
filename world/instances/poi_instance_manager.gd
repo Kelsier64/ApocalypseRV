@@ -87,11 +87,23 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	add_child(viewport)
 	game_settings.register_viewport(viewport, true)
 	var profile: StringName = building.get_meta("poi_interior_profile", &"bunker")
+	# Keep the new shelter header clear of the player's scaled health bars.
+	_status.anchor_left = 1.0 if profile == &"megashelter" else 0.0
+	_status.anchor_right = _status.anchor_left
+	_status.offset_left = -600.0 if profile == &"megashelter" else 24.0
+	_status.offset_right = -24.0 if profile == &"megashelter" else 1000.0
+	_status.offset_top = 24.0 if profile == &"megashelter" else 50.0
+	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if profile == &"megashelter" else HORIZONTAL_ALIGNMENT_LEFT
 	if not POIConfig.supported_interior(profile):
 		cancel_transition("Unsupported interior profile")
 		return
 	interior = interior_factory.call() if interior_factory.is_valid() else PoiInterior.new()
 	interior.instance_id = id
+	interior.profile_id = profile
+	if profile == &"megashelter" and building is ModularMegashelter:
+		interior.exterior_area = 0.0
+		for volume: AABB in building.exterior_plan.get("volumes", []):
+			interior.exterior_area += volume.size.x * volume.size.z
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
 	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
@@ -110,7 +122,8 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
-	_status.text = "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), "Return to B1 ENTRY to exit"]
+	var exit_hint := "Return to GROUND FLOOR ENTRY to exit" if profile == &"megashelter" else "Return to B1 ENTRY to exit"
+	_status.text = "%s / %d ROOMS" % [active_title, interior.rooms.size()] if profile == &"megashelter" else "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), exit_hint]
 	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
 
 func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
