@@ -9,6 +9,7 @@ var seed_value := 42
 var running := false
 var cutaway := false
 var inspect_index := 0
+var inspection_torch: SpotLight3D
 
 func _ready() -> void:
 	DisplayServer.window_set_title("ApocalypseRV - Megashelter Interior")
@@ -77,6 +78,14 @@ func _load_seed() -> void:
 		return
 	preview = Camera3D.new()
 	manager.interior.add_child(preview)
+	# Optional close-up captures use the real flashlight's beam settings.
+	var torch_source := preload("res://props/flashlight.tscn").instantiate()
+	inspection_torch = torch_source.get_node("Beam").duplicate() as SpotLight3D
+	torch_source.free()
+	preview.add_child(inspection_torch)
+	inspection_torch.rotation = Vector3.ZERO
+	inspection_torch.position = Vector3(0.12,-0.12,-0.1)
+	inspection_torch.hide()
 	if not player.inventory.items.any(func(item: Dictionary) -> bool: return item.get("scene_path") == "res://props/flashlight.tscn"):
 		var torch := preload("res://props/flashlight.tscn").instantiate() as Item
 		manager.interior.entities.add_child(torch)
@@ -91,13 +100,14 @@ func _load_seed() -> void:
 	print("MEGASHELTER_PREVIEW_READY seed=%d rooms=%d exterior_m2=%.0f" % [seed_value, manager.interior.rooms.size(), manager.interior.exterior_area])
 
 func _hint() -> void:
-	status.text = "SHELTER / seed %d\nF1 walk / F2 overview / F3 cutaway / F4 next room / F5 carry replay / F6 next seed / F8 capture\nE exit / L flashlight / M explored map" % seed_value
+	status.text = "SHELTER / seed %d\nF1 walk / F2 overview / F3 cutaway / F4 next room / F5 carry replay / F6 next seed / F7 entrance / F8 capture\nE exit / L flashlight / M explored map" % seed_value
 
 func _inspect(index: int) -> void:
 	if manager.interior == null: return
 	inspect_index = posmod(index, manager.interior.rooms.size())
 	var room := manager.interior.rooms[inspect_index]
 	player.set_physics_process(false)
+	player.hide()
 	var at := room.to_global(Vector3(room.footprint.x*0.32, 1.65, room.footprint.y*0.14))
 	preview.projection = Camera3D.PROJECTION_PERSPECTIVE
 	preview.fov = 75
@@ -106,6 +116,19 @@ func _inspect(index: int) -> void:
 	preview.current = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	status.text = "SHELTER / %s / %s\nF1 walk / F4 next room / F5 carry replay / F6 next seed / F8 capture" % [room.room_id, "DARK" if room.get_meta("megashelter_dark", false) else "LIT"]
+
+func _inspect_entrance() -> void:
+	if manager.interior == null: return
+	var room := manager.interior.rooms[0]
+	player.set_physics_process(false)
+	player.hide()
+	preview.projection = Camera3D.PROJECTION_PERSPECTIVE
+	preview.fov = 68
+	preview.global_position = room.to_global(Vector3(0.1, 1.65, -0.8))
+	preview.look_at(room.to_global(Vector3(0, 1.65, room.footprint.y*0.5-0.3)))
+	preview.current = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	status.text = "SHELTER / RECEPTION ENTRANCE\nF1 walk / F4 next room / F7 entrance / F8 capture"
 
 func _overview() -> void:
 	var inside := manager.interior
@@ -118,6 +141,7 @@ func _overview() -> void:
 	preview.look_at(bounds.get_center())
 	preview.current = true
 	player.set_physics_process(false)
+	player.hide()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func _replay() -> void:
@@ -127,21 +151,24 @@ func _replay() -> void:
 	var replay = preload("res://tests/bunker_replay.gd").new()
 	var passed: bool = await replay.run(manager.interior, player, func(message): status.text = message)
 	if passed:
-		# Exercise the actual exit ray and E interaction, rather than calling leave.
-		var exit := manager.interior.exit_door
-		player.look_at(Vector3(exit.global_position.x, player.global_position.y, exit.global_position.z))
-		player.camera.look_at(exit.global_position + Vector3.UP * 1.4)
-		Input.action_press("interact")
-		for i in 4: await get_tree().physics_frame
-		Input.action_release("interact")
-		for i in 30: await get_tree().physics_frame
-		passed = manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == self
+		# Finish through the pedestrian leaf with real movement and the player ray.
+		var exit: Marker3D = manager.interior.rooms[0].get_node("Walkway/PedestrianExit")
+		passed = await replay.route(exit.global_position + exit.global_basis.z*1.2)
+		if passed:
+			player.look_at(Vector3(exit.global_position.x, player.global_position.y, exit.global_position.z))
+			player.camera.look_at(exit.global_position + Vector3.UP * 1.4)
+			Input.action_press("interact")
+			for i in 4: await get_tree().physics_frame
+			Input.action_release("interact")
+			for i in 30: await get_tree().physics_frame
+			passed = manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == self
 	status.text = "PASS / all rooms, large cargo and exterior return" if passed else "FAIL / inspect log"
 	print("MEGASHELTER_REPLAY: " + status.text)
 	running = false
 	if "--quit-after-replay" in OS.get_cmdline_user_args(): get_tree().quit(0 if passed else 1)
 
 func _walk() -> void:
+	player.show()
 	player.camera.current = true
 	player.set_physics_process(true)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -154,8 +181,41 @@ func _capture() -> void:
 		_inspect(index)
 		for i in 12: await get_tree().process_frame
 		get_viewport().get_texture().get_image().save_png("%s/%d-%s.png" % [dir, seed_value, manager.interior.rooms[index].room_id])
+	_inspect_entrance()
+	for i in 12: await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/%d-reception-entrance.png" % [dir, seed_value])
+	if "--detail-capture" in OS.get_cmdline_user_args():
+		for room in manager.interior.rooms:
+			if room.function_id == "sanitary":
+				await _detail_capture(dir, room, Vector3(-room.footprint.x*0.5+0.8,0.86,-room.footprint.y*0.5+2.4), Vector3(2.3,0.85,1.2), "basins")
+				await _detail_capture(dir, room, Vector3(room.footprint.x*0.5-0.9,0.58,-room.footprint.y*0.5+2.1), Vector3(-1.8,1.0,0.2), "toilet")
+		for room in manager.interior.rooms:
+			var side := posmod(str(room.room_id).hash(),4)
+			if room.function_id == "reception" and side == 2: continue
+			var angle := -PI*0.5*side
+			var span: float = room.footprint.x if side%2 == 0 else room.footprint.y
+			if span < 7: continue
+			var depth: float = room.footprint.y*0.5 if side%2 == 0 else room.footprint.x*0.5
+			var pose := Transform3D(Basis(Vector3.UP,angle),Basis(Vector3.UP,angle)*Vector3(0,0,-depth))
+			var target := pose*Vector3(span*0.5-1.65,0.725,0.14)
+			await _detail_capture(dir,room,target,pose.basis*Vector3(0,0.45,1.8),"wall-cavity")
+			break
 	_walk()
 	if "--quit-after-capture" in OS.get_cmdline_user_args(): get_tree().quit()
+
+func _detail_capture(dir: String, room: PoiRoom, target: Vector3, offset: Vector3, label: String) -> void:
+	player.hide()
+	player.set_physics_process(false)
+	preview.projection = Camera3D.PROJECTION_PERSPECTIVE
+	preview.fov = 65
+	preview.global_position = room.to_global(target+offset)
+	preview.look_at(room.to_global(target))
+	preview.current = true
+	inspection_torch.show()
+	status.text = "SHELTER DETAIL / %s / FLASHLIGHT" % label
+	for i in 12: await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/%d-detail-%s.png" % [dir,seed_value,label])
+	inspection_torch.hide()
 
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo or running or manager == null: return
@@ -173,6 +233,7 @@ func _input(event: InputEvent) -> void:
 				room.get_node("Visuals/CeilingSlab").visible = not cutaway
 		KEY_F4: _inspect(inspect_index + 1)
 		KEY_F5: _replay()
+		KEY_F7: _inspect_entrance()
 		KEY_F8:
 			DirAccess.make_dir_recursive_absolute("res://.godot/art-work/megashelter-interior")
 			get_viewport().get_texture().get_image().save_png("res://.godot/art-work/megashelter-interior/preview.png")

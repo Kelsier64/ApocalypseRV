@@ -155,13 +155,20 @@ func _add_exit() -> void:
 	exit_door = PoiEntrance.new()
 	exit_door.name = "Exit"
 	exit_door.transform = marker.global_transform
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(2.35, 2.8, 0.1)
-	shape.shape = box
-	shape.position.y = 1.4
-	exit_door.add_child(shape)
 	add_child(exit_door)
+	var markers: Array[Marker3D] = [marker]
+	var pedestrian := rooms[0].get_node_or_null("Walkway/PedestrianExit") as Marker3D
+	if pedestrian != null: markers.append(pedestrian)
+	for target in markers:
+		var opening: Vector2 = target.get_meta("opening", Vector2(2.35, 2.8))
+		var shape := CollisionShape3D.new()
+		shape.name = str(target.name) + "Interaction"
+		var box := BoxShape3D.new()
+		box.size = Vector3(opening.x, opening.y, 0.1)
+		shape.shape = box
+		exit_door.add_child(shape)
+		shape.global_transform = target.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, opening.y*0.5, 0))
+	if profile_id == &"megashelter": return
 	var sign := Label3D.new()
 	sign.text = "[E] EXIT / SURFACE"
 	sign.position = Vector3(0, 2.4, 0.10)

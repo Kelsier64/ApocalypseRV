@@ -52,6 +52,8 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	check.call(manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null, "Real megashelter enters through the manager: " + manager.last_error)
 	if manager.interior == null: return
 	var room := manager.interior
+	await tree.physics_frame
+	_check_reception_exit(room, player, check)
 	var original_layout: Dictionary = room.layout.duplicate(true)
 	var first := room.snapshot()
 	check.call(first.actors.size() >= 2 and first.actors.size() <= 4 and first.caches.size() == 1, "Fresh megashelter contains only two-to-four loose supplies and one cache")
@@ -121,3 +123,61 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	check.call(CheckpointSchema.poi_error({site.id: revisited}).is_empty(), "Revisited cache/drop snapshot remains valid")
 	await manager.leave()
 	building.queue_free()
+
+static func _check_reception_exit(interior: PoiInterior, player: CharacterBody3D, check: Callable) -> void:
+	var reception := interior.rooms[0]
+	var large := reception.get_node_or_null("Visuals/EntranceDoors/LargeDoor") as Node3D
+	var pedestrian := reception.get_node_or_null("Visuals/EntranceDoors/PedestrianDoor") as Node3D
+	check.call(large != null and pedestrian != null and large != pedestrian, "Reception has distinct large and pedestrian door visuals")
+	if large != null and pedestrian != null:
+		check.call(not large.find_children("*", "MeshInstance3D", true, false).is_empty() and not pedestrian.find_children("*", "MeshInstance3D", true, false).is_empty(), "Both reception doors contain rendered geometry")
+	var markers: Array[Marker3D] = []
+	var openings: Array[Vector2] = []
+	for path in ["Walkway/Exit", "Walkway/PedestrianExit"]:
+		var marker := reception.get_node_or_null(path) as Marker3D
+		check.call(marker != null, "Reception provides an exit marker for " + path)
+		if marker == null: return
+		var opening: Vector2 = marker.get_meta("opening", Vector2.ZERO)
+		check.call(opening.is_finite() and opening.x >= 0.75 and opening.y >= 2.0, path + " fits a standing player")
+		if not opening.is_finite() or opening.x <= 0 or opening.y <= 0: return
+		markers.append(marker)
+		openings.append(opening)
+		var fits := true
+		for x in [-opening.x * 0.5, opening.x * 0.5]:
+			for y in [0.0, opening.y]:
+				var corner := reception.to_local(marker.to_global(Vector3(x, y, 0)))
+				fits = fits and reception.occupancy().grow(0.001).has_point(corner)
+		check.call(fits, path + " opening stays inside the authored reception footprint and ceiling")
+	check.call(openings[0].x > openings[1].x * 2.0, "Reception retains a large loading door beside the smaller pedestrian door")
+	var separation := absf((markers[1].global_position - markers[0].global_position).dot(markers[0].global_basis.x))
+	check.call(separation > (openings[0].x + openings[1].x) * 0.5, "Reception exit openings have separate unobstructed widths")
+	check.call(interior.exit_door != null, "Reception exits share the production PoiEntrance")
+	if interior.exit_door == null: return
+	var shapes := interior.exit_door.find_children("*", "CollisionShape3D", true, false)
+	check.call(shapes.size() == markers.size(), "Shared reception PoiEntrance has one interaction shape per doorway")
+	for index in markers.size():
+		var marker := markers[index]
+		var opening := openings[index]
+		var matched := false
+		for node in shapes:
+			var shape := node as CollisionShape3D
+			var box := shape.shape as BoxShape3D
+			if shape.disabled or box == null: continue
+			var center := marker.to_local(shape.global_position)
+			if not center.is_equal_approx(Vector3(0, opening.y * 0.5, 0)): continue
+			var facing := marker.global_basis.inverse() * shape.global_basis
+			matched = facing.is_equal_approx(Basis.IDENTITY) and is_equal_approx(box.size.x, opening.x) and is_equal_approx(box.size.y, opening.y) and box.size.z > 0
+			if matched: break
+		check.call(matched, str(marker.name) + " interaction shape matches its full authored opening")
+		# Use the actual physics world, including room walls and furnishings: both
+		# leaves must be the first E target from a normal standing approach.
+		var from := marker.to_global(Vector3(0, 1.5, 1.2))
+		var to := marker.to_global(Vector3(0, 1.5, -0.2))
+		var ray := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid()])
+		var hit := interior.get_world_3d().direct_space_state.intersect_ray(ray)
+		check.call(not hit.is_empty() and hit.get("collider") == interior.exit_door, str(marker.name) + " standing interaction ray reaches the shared exit before walls or furniture")
+	var floating_prompt := false
+	for node in interior.exit_door.find_children("*", "Label3D", true, false):
+		var label := node as Label3D
+		if "[E]" in label.text: floating_prompt = true
+	check.call(not floating_prompt, "Megashelter exit uses physical door signs without a floating E label")
