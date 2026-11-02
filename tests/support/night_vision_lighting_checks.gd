@@ -795,7 +795,7 @@ func check_production_indoor_darkness() -> void:
 	material.albedo_color = Color.WHITE
 	var indoor_pixels: Array[Color] = []
 	var outdoor_pixels: Array[Color] = []
-	for distance in [0.75, 2.0, 4.0, 9.0]:
+	for distance in [0.75, 1.5, 2.5, 4.5]:
 		surface.position.z = -distance
 		# Keep a receiver large enough to cover the center pixel at each depth.
 		receiver.size = Vector2(distance * 0.8, distance * 0.8)
@@ -809,16 +809,18 @@ func check_production_indoor_darkness() -> void:
 	var indoor_near := indoor_pixels[0]
 	var outdoor_near := outdoor_pixels[0]
 	check(indoor_near.r > 0.08 and absf(indoor_near.r - indoor_near.g) < 0.02 and indoor_near.r < outdoor_near.r, "Production indoor adaptation is visibly gray but weaker than the outdoor profile")
-	check(indoor_pixels[2].r > 0.08, "Production indoor adaptation remains readable at four metres")
+	check(indoor_pixels[1].r > 0.08, "Production indoor adaptation retains nearby silhouettes at one and a half metres")
 	# Allow one output code step when comparing 8-bit images from both renderers.
 	var output_step := 1.0 / 255.0
-	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 2, 4 and 9 m to pitch black")
+	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 1.5, 2.5 and 4.5 m to pitch black")
 	if OS.get_cmdline_user_args().has("--diagnostics"):
-		print("PROBE production-indoor distances=[0.75,2,4,9] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
+		print("PROBE production-indoor distances=[0.75,1.5,2.5,4.5] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
 	adaptation.enabled = false
 	check(pixel(await capture(indoor)).r < 0.01, "Disabling indoor adaptation leaves the unlit receiver black")
 	# Keep the physical beam probe below output clipping on every renderer.
 	surface_material.albedo_color = Color(0.4, 0.4, 0.4)
+	surface.position.z = -9.0
+	receiver.size = Vector2(7.2, 7.2)
 	var flashlight: Node3D = load("res://props/flashlight.tscn").instantiate()
 	var beam := flashlight.get_node("Beam") as SpotLight3D
 	flashlight.remove_child(beam)
