@@ -63,7 +63,7 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	await tree.physics_frame
 	_check_door_ray(manager.interior, player, manager.interior.exit_door, manager.interior.spawn_transform().origin, "Upper stairwell exit", check)
 	_check_door_ray(manager.interior, player, door, stairs_return.origin, "Lower stairwell bunker door", check)
-	await _interact(tree, manager, player, door, check)
+	await _interact_key(tree, manager, player, door, stairs_return, false, check)
 	if not _inside(manager, player, id + ":bunker", &"bunker", check): return
 	var bunker := manager.interior
 	for actor in bunker.entities.get_children():
@@ -90,7 +90,7 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	# Revisit the child domain too: a return stack must retain the child save.
 	await _interact(tree, manager, player, manager.interior.link_doors[&"megashelter_stairwell"], check)
 	if not _inside(manager, player, id + ":stairs", &"megashelter_stairwell", check): return
-	await _interact(tree, manager, player, manager.interior.link_doors[&"bunker"], check)
+	await _interact_key(tree, manager, player, manager.interior.link_doors[&"bunker"], manager.interior.link_return_transforms[&"bunker"], true, check)
 	if not _inside(manager, player, id + ":bunker", &"bunker", check): return
 	var bunker_revisit := manager.interior.snapshot()
 	var bunker_ids := _item_ids(bunker_revisit)
@@ -158,6 +158,31 @@ static func _interact(tree: SceneTree, manager: PoiInstanceManager, player: Char
 		if manager.state == PoiInstanceManager.State.FAILED: return
 		if is_instance_valid(manager._retained_viewport): _check_retained(manager, player, check)
 		await tree.process_frame
+
+static func _interact_key(tree: SceneTree, manager: PoiInstanceManager, player: CharacterBody3D, door: PoiEntrance, landing: Transform3D, physical: bool, check: Callable) -> void:
+	# Exercise the real camera ray and viewport keyboard forwarding. A virtual
+	# keyboard can report E without a physical scan code.
+	var previous := manager.active_id
+	player.complete_world_transition(landing)
+	player.look_at(Vector3(door.global_position.x, player.global_position.y, door.global_position.z))
+	player.camera.look_at(door.global_position + Vector3.UP * 1.5)
+	player.process_mode = Node.PROCESS_MODE_INHERIT
+	player.set_physics_process(false)
+	for _frame in 3: await tree.physics_frame
+	var ray := player.get_node("Camera3D/InteractRay") as RayCast3D
+	ray.force_raycast_update()
+	check.call(ray.get_collider() == door and not ray.prompt_label.text.is_empty(), "Bunker door is targeted by the real player interaction ray")
+	var event := InputEventKey.new()
+	event.keycode = 0 if physical else KEY_E
+	if physical: event.physical_keycode = KEY_E
+	event.pressed = true
+	Input.parse_input_event(event)
+	for _frame in 3: await tree.physics_frame
+	event.pressed = false
+	Input.parse_input_event(event)
+	var arrived := await WAIT.until(tree, func(): return manager.active_id != previous and not manager.busy, 10000)
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	check.call(arrived and manager.state == PoiInstanceManager.State.INDOOR, "%s E key enters the bunker through the player input path" % ("Physical" if physical else "Logical"))
 
 static func _check_retained(manager: PoiInstanceManager, player: CharacterBody3D, check: Callable) -> void:
 	var source := manager._retained_viewport
