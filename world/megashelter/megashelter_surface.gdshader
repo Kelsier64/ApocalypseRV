@@ -4,6 +4,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 uniform vec4 base_color : source_color = vec4(0.57, 0.58, 0.54, 1.0);
 uniform float surface_kind = 0.0;
 uniform float wear_seed = 0.0;
+uniform bool interior_formwork = false;
 uniform int drain_count = 0;
 uniform vec4 drain_sources[4];
 varying vec3 local_position;
@@ -90,6 +91,21 @@ void fragment() {
 		color = mix(color, aggregate, eroded);
 		color *= 1.0 - pores * (0.12 + eroded * 0.10);
 		relief += (stones - 0.5) * eroded * 0.006 - pores * 0.001;
+		if (interior_formwork) {
+			// Plywood shutter joints and recessed form-tie plugs on the cast face.
+			float along = abs(local_normal.x) > abs(local_normal.z) ? p.z : p.x;
+			vec2 sheet = vec2(2.4, 1.2);
+			vec2 panel = abs((fract((vec2(along, p.y) + seed.xy) / sheet) - 0.5) * sheet);
+			vec2 edge = sheet * 0.5 - panel;
+			float blur = max(0.001, footprint * 0.5);
+			float joint = 1.0 - smoothstep(0.002, 0.005 + blur, min(edge.x, edge.y));
+			float radius = length(panel - vec2(0.87, 0.32));
+			float plug = 1.0 - smoothstep(0.013, 0.022 + blur, radius);
+			float intact = vertical * detail * (1.0 - eroded);
+			float imprint = (joint * 0.14 + plug * 0.26) * intact;
+			color *= 1.0 - imprint;
+			relief -= imprint * 0.012;
+		}
 	} else if (surface_kind < 1.5) {
 		// A worn undercoat appears only at the fragmented edge of remaining paint.
 		float undercoat = smoothstep(peel_level - 0.075,peel_level - 0.015,skin) * (1.0 - missing_paint);

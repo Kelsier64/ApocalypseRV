@@ -78,6 +78,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 		_set_floor_signs(room, definition)
 		for socket in room.get_node("DoorSockets").get_children():
 			if not InteriorLayout.used(layout, i, str(socket.socket_id)): _seal(room, socket)
+		if profile_id == &"megashelter": room.call("finish_sealed_sockets", data.connections)
 		if i % 4 == 3:
 			await get_tree().process_frame
 			if cancelled or Time.get_ticks_msec() - started > build_timeout_ms: return false
@@ -134,10 +135,26 @@ func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
 	holder.transform = room.get_node("Collision").transform.affine_inverse() * room.socket_transform(socket)
 	room.get_node("Collision").add_child(holder)
 	# +Z faces inward. The whole wall slab stays in its own room.
-	_box(holder, Vector3(socket.opening.x, socket.opening.y, 0.24), Vector3(0, socket.opening.y/2, 0.12), _room_material(room, "Wall", WALL))
+	var body := StaticBody3D.new()
+	body.name = "Support_0"
+	body.position = Vector3(0, socket.opening.y * 0.5, 0.12)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(socket.opening.x, socket.opening.y, 0.24)
+	shape.shape = box
+	body.add_child(shape)
+	holder.add_child(body)
 	for path in socket.frame_nodes:
 		var frame := socket.get_node_or_null(path)
 		if frame != null: frame.queue_free()
+	# Shelter finishes are batched in room coordinates with the adjacent walls.
+	if profile_id == &"megashelter": return
+	var visual := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = box.size
+	visual.mesh = mesh
+	visual.material_override = _room_material(room, "Wall", WALL)
+	body.add_child(visual)
 	var paint := MeshInstance3D.new()
 	var panel := BoxMesh.new()
 	panel.size = Vector3(socket.opening.x, 1.1, 0.012)
@@ -254,27 +271,6 @@ func _navigation_connected() -> bool:
 		var path := NavigationServer3D.map_get_path(map, start, target, true)
 		if path.size() < 2 or path[-1].distance_to(target) >= 1.0: return false
 	return true
-
-func _box(parent: Node3D, size: Vector3, at: Vector3, material: Material) -> void:
-	var body := StaticBody3D.new()
-	body.name = "Support_%d" % parent.get_child_count()
-	body.position = at
-	var visual := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	visual.mesh = mesh
-	if profile_id == &"megashelter":
-		var batch := MegashelterKit.Batch.new()
-		batch.add_box(Transform3D.IDENTITY, Vector3.ZERO, size, 0.93)
-		visual.mesh = batch.mesh()
-	visual.material_override = material
-	body.add_child(visual)
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = size
-	shape.shape = box
-	body.add_child(shape)
-	parent.add_child(body)
 
 func snapshot() -> Dictionary:
 	var actors: Array[Dictionary] = []

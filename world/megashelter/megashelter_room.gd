@@ -32,7 +32,10 @@ func _prepare_room() -> void:
 	_room_collision.collision_layer = 1
 	_room_collision.collision_mask = 0
 	add_child(_room_collision)
-	for i in 7:
+	_begin_batches(7)
+
+func _begin_batches(count: int) -> void:
+	for i in count:
 		var batch := MegashelterKit.Batch.new()
 		batch.set_appearance(str(room_id).hash(), clear_height)
 		_batches.append(batch)
@@ -153,19 +156,31 @@ func _wall(pose: Transform3D, span: float, opening: bool, offset: float, side: i
 		var size: Vector3 = pieces[i]
 		var centre: Vector3 = centres[i]
 		var face := Rect2(Vector2(centre.x-size.x*0.5, centre.y-size.y*0.5), Vector2(size.x, size.y))
-		# A continuous back retains a closed wall; front concrete and paint are
-		# actually cut around the cavity instead of hiding it behind a decal.
-		_batches[0].add_box(pose, Vector3(centre.x, centre.y, 0.04), Vector3(size.x, size.y, 0.08), 0.93)
-		for rect: Rect2 in _subtract(face, damage):
-			_batches[0].add_box(pose, Vector3(rect.get_center().x, rect.get_center().y, 0.16), Vector3(rect.size.x, rect.size.y, 0.16), 0.93)
+		_wall_finish(pose, face, damage)
 		_collider(pose * centres[i], pieces[i], pose.basis)
-		# Worn lower protective coating has real thickness and stops at openings.
-		if pieces[i].y < clear_height - 0.01: continue
-		var coat := Rect2(Vector2(centre.x-size.x*0.5, 0), Vector2(size.x, 1.6))
-		for rect: Rect2 in _subtract(coat, damage):
-			_batches[1].add_box(pose, Vector3(rect.get_center().x, rect.get_center().y, 0.252), Vector3(rect.size.x, rect.size.y, 0.024), 0.91)
-		_batches[2].add_box(pose, Vector3(centres[i].x, 0.095, 0.268), Vector3(pieces[i].x, 0.19, 0.032), 0.74)
 	if damage.has_area(): _cavity(pose, damage)
+
+func _wall_finish(pose: Transform3D, face: Rect2, damage: Rect2) -> void:
+	var centre := face.get_center()
+	# The back stays solid behind the cut in the concrete face and its coating.
+	_batches[0].add_box(pose, Vector3(centre.x, centre.y, 0.04), Vector3(face.size.x, face.size.y, 0.08), 0.93)
+	for rect: Rect2 in _subtract(face, damage):
+		_batches[0].add_box(pose, Vector3(rect.get_center().x, rect.get_center().y, 0.16), Vector3(rect.size.x, rect.size.y, 0.16), 0.93)
+	if not is_zero_approx(face.position.y): return
+	var coat := Rect2(face.position, Vector2(face.size.x, 1.6))
+	for rect: Rect2 in _subtract(coat, damage):
+		_batches[1].add_box(pose, Vector3(rect.get_center().x, rect.get_center().y, 0.252), Vector3(rect.size.x, rect.size.y, 0.024), 0.91)
+	_batches[2]._damage = 0.0
+	_batches[2].add_box(pose, Vector3(centre.x, 0.095, 0.268), Vector3(face.size.x, 0.19, 0.032), 0.74)
+
+func finish_sealed_sockets(connections: Array) -> void:
+	_begin_batches(3)
+	for socket: PoiDoorSocket in get_node("DoorSockets").get_children():
+		if str(socket.socket_id) in connections: continue
+		var face := Rect2(Vector2(-socket.opening.x * 0.5, 0), socket.opening)
+		_wall_finish(socket_transform(socket), face, Rect2())
+	_finish_batches("Sealed")
+	_batches.clear()
 
 func _damaged_side(side: int) -> bool:
 	return (function_id != "reception" or side != 2) and side == posmod(str(room_id).hash(), 4)
@@ -551,17 +566,18 @@ func _material(index: int) -> Material:
 		_materials[index] = material
 		return material
 	material.shader = SURFACE
+	material.set_shader_parameter("interior_formwork", index == 0)
 	material.set_shader_parameter("surface_kind", float(index))
 	material.set_shader_parameter("base_color", [Color("858981"), Color("737e70"), Color("424b44")][index])
 	material.set_shader_parameter("wear_seed", float(posmod(str(room_id).hash(), 10000)))
 	_materials[index] = material
 	return material
 
-func _finish_batches() -> void:
+func _finish_batches(prefix := "") -> void:
 	for i in _batches.size():
 		if _batches[i].vertices.is_empty(): continue
 		var visual := MeshInstance3D.new()
-		visual.name = ["WallStructure", "PaintFinish", "SteelServices", "Ceramic", "Gaskets", "OldTimber", "Paper"][i]
+		visual.name = prefix + ["WallStructure", "PaintFinish", "SteelServices", "Ceramic", "Gaskets", "OldTimber", "Paper"][i]
 		visual.mesh = _batches[i].mesh()
 		visual.material_override = _material(i)
 		_room_visuals.add_child(visual)
