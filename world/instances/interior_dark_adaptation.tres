@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="DarkAdaptationProfile" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://world/dark_adaptation_profile.gd" id="1_profile"]
+
+[sub_resource type="Curve" id="Curve_close_darkness"]
+resource_name = "Interior gray visibility (fades to black at 3 m)"
+_data = [Vector2(0, 0.5), 0.0, 0.0, 0, 0, Vector2(0.15, 0.35), 0.0, 0.0, 0, 0, Vector2(0.4, 0.08), 0.0, 0.0, 0, 0, Vector2(0.6, 0), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 5
+
+[resource]
+script = ExtResource("1_profile")
+distance_end = 5.0
+curve = SubResource("Curve_close_darkness")
+reference_energy = 0.012

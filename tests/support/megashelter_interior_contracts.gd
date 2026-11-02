@@ -52,6 +52,17 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	check.call(manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null, "Real megashelter enters through the manager: " + manager.last_error)
 	if manager.interior == null: return
 	var room := manager.interior
+	var adaptation := room.get_node_or_null("DarkAdaptation") as NightVisionEffect
+	var interior_environment := room.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	check.call(adaptation != null and NightVisionEffect.find_for(room.rooms[0]) == adaptation, "Production megashelter owns dark adaptation in its isolated World3D")
+	check.call(room.get_node_or_null("WorldClock") == null, "Production megashelter has no outdoor day/night clock")
+	check.call(adaptation != null and adaptation.profile == PoiInterior.DARK_ADAPTATION_PROFILE and adaptation.profile.resource_path == "res://world/instances/interior_dark_adaptation.tres", "Production megashelter uses the dedicated short-range interior adaptation profile")
+	if interior_environment == null:
+		check.call(false, "Production megashelter creates its dark native environment")
+	else:
+		var native := interior_environment.environment
+		check.call(native.background_mode == Environment.BG_COLOR and native.background_color.is_equal_approx(Color.BLACK) and is_zero_approx(native.ambient_light_energy), "Production megashelter starts with a black background and zero ambient fill")
+		check.call(native.reflected_light_source == Environment.REFLECTION_SOURCE_DISABLED, "Production megashelter has no environment reflection fill in unlit rooms")
 	await tree.physics_frame
 	_check_reception_exit(room, player, check)
 	var original_layout: Dictionary = room.layout.duplicate(true)

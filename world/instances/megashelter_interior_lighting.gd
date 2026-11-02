@@ -2,7 +2,7 @@ extends RefCounted
 class_name MegashelterInteriorLighting
 ## Failed circuits are stable per saved room; entry and circulation stay lit.
 const DARK_FRACTION := 0.5
-const AMBIENT_ENERGY := 0.04
+const AMBIENT_ENERGY := BunkerLighting.AMBIENT_ENERGY
 
 static func dark_room_ids(layout: Dictionary, profile: InteriorProfile) -> Array[String]:
 	var candidates: Array[Dictionary] = []

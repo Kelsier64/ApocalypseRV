@@ -3,6 +3,7 @@ class_name PoiInterior
 ## Geometry comes from the saved manifest; actors belong to this World3D.
 const PROFILE: InteriorProfile = preload("res://world/instances/catalog/bunker.tres")
 const WALL = preload("res://world/poi_kit/materials/bunker/concrete.tres")
+const DARK_ADAPTATION_PROFILE: DarkAdaptationProfile = preload("res://world/instances/interior_dark_adaptation.tres")
 var profile_id: StringName = &"bunker"
 var profile: InteriorProfile = PROFILE
 var exterior_area := 1000.0
@@ -50,15 +51,12 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	entities.name = "WorldEntities"
 	add_child(entities)
 	var environment := WorldEnvironment.new()
-	environment.environment = Environment.new()
-	environment.environment.background_mode = Environment.BG_COLOR
-	environment.environment.background_color = Color("111511")
-	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.environment.ambient_light_color = Color("afb9a3")
-	environment.environment.ambient_light_energy = MegashelterInteriorLighting.AMBIENT_ENERGY if profile_id == &"megashelter" else BunkerLighting.AMBIENT_ENERGY
+	environment.name = "WorldEnvironment"
+	environment.environment = BunkerLighting.create_environment()
 	add_child(environment)
 	var adaptation := NightVisionEffect.new()
 	adaptation.name = "DarkAdaptation"
+	adaptation.profile = DARK_ADAPTATION_PROFILE
 	add_child(adaptation)
 	navigation = NavigationRegion3D.new()
 	# Static Item supports save paths relative to this root.

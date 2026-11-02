@@ -150,6 +150,11 @@ func run() -> void:
 	world.add_child(panel)
 	renderer = add_renderer(world, constant_curve(1))
 	var original_environment := environment_state(environment)
+	if OS.get_cmdline_user_args().has("--interior-only"):
+		await check_production_indoor_darkness()
+		print("INTERIOR-ONLY RESULT: ", "PASS" if failures == 0 else "FAIL (%d checks)" % failures)
+		quit(0 if failures == 0 else 1)
+		return
 	var unlit := pixel(await capture())
 	var reference: SubViewport = renderer._views[0].reference
 	check(unlit.r > 0.03 and absf(unlit.r - unlit.g) < 0.02 and absf(unlit.g - unlit.b) < 0.02, "A clock-free dark world receives local gray adaptation")
@@ -259,6 +264,7 @@ func run() -> void:
 	mesh.size = Vector2(20, 20)
 	await check_fog_visibility()
 	await check_independent_indoor_world()
+	await check_production_indoor_darkness()
 	await check_vehicle_reference_motion()
 	await check_ambient_gate()
 	var local_gray := pixel(await capture())
@@ -742,5 +748,93 @@ func check_independent_indoor_world() -> void:
 	indoor_renderer.enabled = true
 	await capture()
 	check(NightVisionEffect.find_for(camera) == renderer and camera.get_meta(NightVisionEffect.CAMERA_OWNER, 0) == renderer.get_instance_id(), "Returning the player camera resolves and reclaims its original world renderer")
+	indoor.queue_free()
+	await process_frame
+
+func check_production_indoor_darkness() -> void:
+	# Exercise the same fixed-dark environment and short adaptation profile used
+	# by generated POI interiors, while comparing the authored outdoor profile.
+	var outdoor_profile_hash := FileAccess.get_sha256("res://world/dark_adaptation_profile.tres")
+	var outdoor_curve_hash := FileAccess.get_sha256("res://world/night_vision_curve.tres")
+	var indoor := SubViewport.new()
+	indoor.size = viewport.size
+	indoor.own_world_3d = true
+	indoor.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(indoor)
+	var interior := Node3D.new()
+	indoor.add_child(interior)
+	var holder := WorldEnvironment.new()
+	holder.environment = BunkerLighting.create_environment()
+	interior.add_child(holder)
+	var camera := Camera3D.new()
+	camera.far = 100.0
+	interior.add_child(camera)
+	var surface := MeshInstance3D.new()
+	var receiver := QuadMesh.new()
+	receiver.size = Vector2(2, 2)
+	surface.mesh = receiver
+	surface.position.z = -1.0
+	var surface_material := StandardMaterial3D.new()
+	surface_material.albedo_color = Color.WHITE
+	surface_material.roughness = 1.0
+	surface_material.metallic_specular = 0.0
+	surface.material_override = surface_material
+	interior.add_child(surface)
+	var adaptation := NightVisionEffect.new()
+	adaptation.profile = PoiInterior.DARK_ADAPTATION_PROFILE
+	interior.add_child(adaptation)
+	await capture(indoor)
+	var saved_indoor_environment := environment_state(holder.environment)
+	var saved_outdoor_environment := environment_state(environment)
+	var saved_outdoor_profile := renderer.profile
+	var saved_panel_position := panel.position
+	var saved_panel_color := material.albedo_color
+	var outdoor_mesh := panel.mesh as QuadMesh
+	var saved_mesh_size := outdoor_mesh.size
+	renderer.profile = NightVisionEffect.DEFAULT_PROFILE.duplicate(true)
+	material.albedo_color = Color.WHITE
+	var indoor_pixels: Array[Color] = []
+	var outdoor_pixels: Array[Color] = []
+	for distance in [0.75, 1.0, 2.0, 4.5]:
+		surface.position.z = -distance
+		# Keep a receiver large enough to cover the center pixel at each depth.
+		receiver.size = Vector2(distance * 0.8, distance * 0.8)
+		indoor_pixels.append(pixel(await capture(indoor)))
+		if OS.get_cmdline_user_args().has("--diagnostics"):
+			var reference: SubViewport = adaptation._views[0].reference
+			print("PROBE indoor-reference distance=", distance, " pixel=", pixel(reference.get_texture().get_image()))
+		panel.position.z = -distance
+		outdoor_mesh.size = Vector2(distance * 0.8, distance * 0.8)
+		outdoor_pixels.append(pixel(await capture()))
+	var indoor_near := indoor_pixels[0]
+	var outdoor_near := outdoor_pixels[0]
+	check(indoor_near.r > 0.0 and absf(indoor_near.r - indoor_near.g) < 0.02 and indoor_near.r < outdoor_near.r, "Production indoor adaptation is a dim gray, weaker than the outdoor profile at the same distance")
+	# Compatibility can quantize these deliberately tiny fills to the same 8-bit
+	# value. Require a visible near/far difference and no increase with distance.
+	var output_step := 1.0 / 255.0
+	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 1, 2 and 4.5 m to pitch black")
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE production-indoor distances=[0.75,1,2,4.5] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
+	adaptation.enabled = false
+	check(pixel(await capture(indoor)).r < 0.01, "Disabling indoor adaptation leaves the unlit receiver black")
+	adaptation.enabled = true
+	var flashlight: Node3D = load("res://props/flashlight.tscn").instantiate()
+	var beam := flashlight.get_node("Beam") as SpotLight3D
+	flashlight.remove_child(beam)
+	flashlight.free()
+	interior.add_child(beam)
+	beam.global_position = Vector3.ZERO
+	beam.look_at(surface.global_position)
+	beam.visible = true
+	var illuminated := pixel(await capture(indoor))
+	check(illuminated.r > 0.03 and illuminated.r > illuminated.b, "Production flashlight illuminates a receiver beyond the indoor gray-adaptation range")
+	beam.visible = false
+	check(pixel(await capture(indoor)).r < 0.01, "Turning the production flashlight off returns the far receiver to pitch black")
+	check(environment_state(holder.environment) == saved_indoor_environment and environment_state(environment) == saved_outdoor_environment, "Production indoor darkness checks leave both indoor and outdoor native environments unchanged")
+	check(FileAccess.get_sha256("res://world/dark_adaptation_profile.tres") == outdoor_profile_hash and FileAccess.get_sha256("res://world/night_vision_curve.tres") == outdoor_curve_hash, "Production indoor lighting leaves the authored outdoor profile and Curve files unchanged")
+	renderer.profile = saved_outdoor_profile
+	panel.position = saved_panel_position
+	material.albedo_color = saved_panel_color
+	outdoor_mesh.size = saved_mesh_size
 	indoor.queue_free()
 	await process_frame
