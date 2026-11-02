@@ -18,6 +18,10 @@ var active_title: String = "MAINTENANCE"
 var _player: Node3D
 var _home: Node
 var _return_transform := Transform3D.IDENTITY
+var _route_stack: Array[Dictionary] = []
+var _active_seed := 0
+var _retained_viewport: SubViewport
+var _retained_interior: PoiInterior
 var _layer: CanvasLayer
 var _display: TextureRect
 var _status: Label
@@ -75,18 +79,21 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	# Face away from the building on return, with a clear area in front.
 	_return_transform.basis = building.global_basis * Basis(Vector3.UP, PI)
 	active_id = id
+	_active_seed = seed_value
+	_route_stack.clear()
 	active_title = str(building.get_meta("poi_title", "MAINTENANCE"))
 	_status.text = "Preparing %s..." % active_title
 	await get_tree().process_frame
 	if not _valid_operation(token): return
-	viewport = SubViewport.new()
-	viewport.name = "InteriorViewport"
-	viewport.own_world_3d = true
-	viewport.size = Vector2i(get_viewport().get_visible_rect().size)
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	add_child(viewport)
-	game_settings.register_viewport(viewport, true)
 	var profile: StringName = building.get_meta("poi_interior_profile", &"bunker")
+	var area := 1000.0
+	if profile == &"megashelter" and building is ModularMegashelter:
+		area = 0.0
+		for volume: AABB in building.exterior_plan.get("volumes", []):
+			area += volume.size.x * volume.size.z
+	await _load_interior(profile, seed_value, token, null, area)
+
+func _position_status(profile: StringName) -> void:
 	# Keep the new shelter header clear of the player's scaled health bars.
 	_status.anchor_left = 1.0 if profile == &"megashelter" else 0.0
 	_status.anchor_right = _status.anchor_left
@@ -94,44 +101,102 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 	_status.offset_right = -24.0 if profile == &"megashelter" else 1000.0
 	_status.offset_top = 24.0 if profile == &"megashelter" else 50.0
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if profile == &"megashelter" else HORIZONTAL_ALIGNMENT_LEFT
+
+func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
+	result.ok = await room.build(seed_value, saved)
+	result.done = true
+
+func _connect_interior_doors() -> void:
+	interior.exit_door.entry_requested.connect(func(_actor: Node3D, _destination: StringName) -> void:
+		leave.call_deferred())
+	for door: PoiEntrance in interior.link_doors.values():
+		door.entry_requested.connect(func(_actor: Node3D, destination: StringName) -> void:
+			enter_link.call_deferred(destination))
+	if interior.profile_id == &"bunker" and not _route_stack.is_empty():
+		var sign := interior.exit_door.get_node_or_null("ReturnSign") as Label3D
+		if sign != null: sign.text = "EXIT / STAIRWELL"
+
+func enter_link(destination: StringName) -> void:
+	if busy or state != State.INDOOR or not is_instance_valid(interior): return
+	if not interior.link_doors.has(destination) or not is_instance_valid(_player): return
+	if not _player.enter_ui_mode(): return
+	var child_id := active_id + ":stairs" if destination == &"megashelter_stairwell" else active_id.trim_suffix(":stairs") + ":bunker"
+	var seed_value := ("megashelter-link:v1:%d:%s" % [_active_seed, destination]).sha256_text().substr(0, 15).hex_to_int()
+	_route_stack.append({"id": active_id, "profile": interior.profile_id, "seed": _active_seed,
+		"area": interior.exterior_area, "title": active_title, "return": interior.link_return_transforms[destination]})
+	await _switch_interior(child_id, destination, seed_value, "BUNKER ACCESS" if destination == &"megashelter_stairwell" else "BUNKER")
+
+func _switch_interior(id: String, profile: StringName, seed_value: int, title: String, at: Variant = null, area := 1000.0) -> void:
+	busy = true
+	state = State.LEAVING
+	operation += 1
+	var token := operation
+	_deadline = Time.get_ticks_msec() + transition_timeout_ms
+	_status.text = "Preparing %s..." % title
+	# Let deferred pickups/deaths settle before freezing this instance's manifest.
+	await get_tree().process_frame
+	if not _valid_operation(token): return
+	_commit_interior_snapshot()
+	# Keep the player and the last rendered source frame inside the source
+	# World3D until the destination is ready. No outdoor simulation touches them.
+	_retained_viewport = viewport
+	_retained_interior = interior
+	_retained_viewport.process_mode = Node.PROCESS_MODE_DISABLED
+	_retained_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	viewport = null
+	interior = null
+	active_id = id
+	active_title = title
+	_active_seed = seed_value
+	state = State.ENTERING
+	await _load_interior(profile, seed_value, token, at, area)
+
+func _load_interior(profile: StringName, seed_value: int, token: int, at: Variant = null, area := 1000.0) -> void:
 	if not POIConfig.supported_interior(profile):
 		cancel_transition("Unsupported interior profile")
 		return
+	_position_status(profile)
+	viewport = SubViewport.new()
+	viewport.name = "InteriorViewport"
+	viewport.own_world_3d = true
+	viewport.size = Vector2i(get_viewport().get_visible_rect().size)
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(viewport)
+	game_settings.register_viewport(viewport, true)
 	interior = interior_factory.call() if interior_factory.is_valid() else PoiInterior.new()
-	interior.instance_id = id
+	interior.instance_id = active_id
 	interior.profile_id = profile
-	if profile == &"megashelter" and building is ModularMegashelter:
-		interior.exterior_area = 0.0
-		for volume: AABB in building.exterior_plan.get("volumes", []):
-			interior.exterior_area += volume.size.x * volume.size.z
+	interior.exterior_area = area
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
-	_build_interior(interior, seed_value, saved_instances.get(id, {}), build_result)
+	_build_interior(interior, seed_value, saved_instances.get(active_id, {}), build_result)
 	while not build_result.done and token == operation:
 		await get_tree().process_frame
 	if token != operation: return
 	if not build_result.ok or not _valid_operation(token):
 		cancel_transition("Interior could not be prepared")
 		return
-	interior.exit_door.entry_requested.connect(func(_actor: Node3D, _destination: StringName) -> void:
-		leave.call_deferred())
+	_connect_interior_doors()
 	_player.reparent(interior)
-	_reset_player(interior.spawn_transform())
+	_reset_player(interior.spawn_transform() if at == null else at)
 	_display.texture = viewport.get_texture()
 	_display.show()
+	_release_retained_view()
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
-	var exit_hint := "Return to GROUND FLOOR ENTRY to exit" if profile == &"megashelter" else "Return to B1 ENTRY to exit"
-	_status.text = "%s / %d ROOMS" % [active_title, interior.rooms.size()] if profile == &"megashelter" else "%s / %d ROOMS   |   %s" % [active_title, interior.rooms.size(), exit_hint]
-	print("POI ENTER: ", id, " rooms=", interior.rooms.size())
-
-func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
-	result.ok = await room.build(seed_value, saved)
-	result.done = true
+	_status.text = "%s / %d ROOMS" % [active_title, interior.rooms.size()]
+	if profile == &"megashelter_stairwell": _status.text = active_title
+	if profile == &"bunker":
+		_status.text += "   |   Return to B1 ENTRY to %s" % ("reach the stairwell" if not _route_stack.is_empty() else "exit")
+	print("POI ENTER: ", active_id, " rooms=", interior.rooms.size())
 
 func leave() -> void:
 	if busy or active_id.is_empty() or not is_instance_valid(_player) or not _player.enter_ui_mode():
+		return
+	if not _route_stack.is_empty():
+		var parent: Dictionary = _route_stack.pop_back()
+		await _switch_interior(parent.id, parent.profile, parent.seed, parent.title, parent.return, parent.area)
 		return
 	busy = true
 	state = State.LEAVING
@@ -148,6 +213,7 @@ func leave() -> void:
 	_clear_interior_view()
 	print("POI EXIT: ", active_id)
 	active_id = ""
+	_route_stack.clear()
 	_status.text = ""
 	_player.exit_ui_mode()
 	busy = false
@@ -203,6 +269,7 @@ func cancel_transition(reason := "Transition cancelled") -> void:
 		_player.exit_ui_mode()
 	_clear_interior_view()
 	active_id = ""
+	_route_stack.clear()
 	busy = false
 	state = State.FAILED
 	_status.text = reason
@@ -221,6 +288,12 @@ func _clear_interior_view() -> void:
 	if is_instance_valid(viewport): _retire_viewport(viewport, interior)
 	viewport = null
 	interior = null
+	_release_retained_view()
+
+func _release_retained_view() -> void:
+	if is_instance_valid(_retained_viewport): _retire_viewport(_retained_viewport, _retained_interior)
+	_retained_viewport = null
+	_retained_interior = null
 
 func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
 	for actor in retired.find_children("*", "RigidBody3D", true, false):
@@ -237,6 +310,7 @@ func _retire_viewport(retired: SubViewport, room: PoiInterior) -> void:
 func _exit_tree() -> void:
 	operation += 1
 	if is_instance_valid(interior): interior.cancelled = true
+	if is_instance_valid(_retained_interior): _retained_interior.cancelled = true
 
 func _process(_delta: float) -> void:
 	_sync_settings_overlay()

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="InteriorProfile" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://world/instances/interior_profile.gd" id="profile"]
+[ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room"]
+[ext_resource type="PackedScene" path="res://world/poi_kit/rooms/megashelter/stairwell.tscn" id="scene"]
+
+[sub_resource type="Resource" id="entry"]
+script = ExtResource("room")
+id = &"stairwell"
+scene = ExtResource("scene")
+role = &"entry"
+selection_group = &"entry"
+
+[resource]
+script = ExtResource("profile")
+profile_id = &"megashelter_stairwell"
+rooms = Array[ExtResource("room")]([SubResource("entry")])
+min_rooms = 1
+max_rooms = 1
+max_floors = 1
+floor_spacing = 4.5

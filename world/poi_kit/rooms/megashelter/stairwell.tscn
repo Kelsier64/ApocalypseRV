@@ -1,0 +1,39 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://world/megashelter/megashelter_stairwell.gd" id="1"]
+[ext_resource type="Script" path="res://world/poi_kit/poi_door_socket.gd" id="2"]
+
+[node name="ServiceStair" type="Node3D"]
+script = ExtResource("1")
+room_id = &"stairwell"
+footprint = Vector2(6.6, 9.8)
+clear_height = 7.8
+category = &"entry"
+function_id = "stairwell"
+
+[node name="DoorSockets" type="Node3D" parent="."]
+
+[node name="Bulkhead" type="Marker3D" parent="DoorSockets"]
+position = Vector3(0.85, 0, 4.9)
+rotation = Vector3(0, 3.1415927, 0)
+script = ExtResource("2")
+socket_id = &"bulkhead"
+opening = Vector2(3.7, 3.03)
+
+[node name="Walkway" type="Node3D" parent="."]
+
+[node name="Spawn" type="Marker3D" parent="Walkway"]
+position = Vector3(-1.5, 4.58, 3.28)
+
+[node name="Exit" type="Marker3D" parent="Walkway"]
+position = Vector3(-1.5, 4.5, 4.32)
+rotation = Vector3(0, 3.1415927, 0)
+metadata/opening = Vector2(1.06, 2.32)
+
+[node name="BunkerSpawn" type="Marker3D" parent="Walkway"]
+position = Vector3(1.5, 0.08, 3.25)
+
+[node name="BunkerExit" type="Marker3D" parent="Walkway"]
+position = Vector3(0.85, 0, 4.24)
+rotation = Vector3(0, 3.1415927, 0)
+metadata/opening = Vector2(3.7, 3.03)

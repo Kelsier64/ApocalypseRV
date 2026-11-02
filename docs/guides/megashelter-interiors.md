@@ -1,6 +1,6 @@
 # 巨型避難所室內
 
-2026-11-01：`modular_megashelter` 使用 `INSTANCE_ENTRANCE`，入口轉入獨立 World3D 的 `megashelter` profile。外殼仍是封閉無窗的內容 v7，室內只開放地面一層，不對應外觀的全部樓層。正式世界生成為 v19；Checkpoint v7／VehicleSnapshot v6 不變。v18 舊局須重新開局，沒有資料遷移。
+2026-11-01：`modular_megashelter` 使用 `INSTANCE_ENTRANCE`，入口轉入獨立 World3D 的 `megashelter` profile。外殼仍是封閉無窗的內容 v7，主要房間集中在地面一層，接待室另有獨立樓梯間通往地下地堡。正式世界生成為 v19；Checkpoint v7／VehicleSnapshot v6 不變。v18 舊局須重新開局，沒有資料遷移。
 
 ## 配置與內容
 
@@ -8,11 +8,15 @@
 
 室內採民用避難所用途、老化混凝土與鋼件、固定燈具及局部黑暗。全新場址只配置二至四件散放物資與一個補給箱；沒有敵人或升級引擎獎勵。補給箱沿用持續搜索及每次一件的物品交易。遊戲中的提示使用英文。
 
+## 地下通道
+
+在接待室東牆對著標有 `BUNKER / STAIRS` 的單扇門按 E，進入[勤務樓梯間](../../world/poi_kit/rooms/megashelter/stairwell.tscn)。沿兩段折返梯下降 4.5 m，在 B1 防爆門按 E 進入該棟大樓專屬的[地堡](bunker-interior.md)。回程沿原路上樓，接待室原有的出口通往戶外。
+
 ## 入口與保存
 
 外殼場景提供 `Entrance`（`PoiEntrance`）及 `ReturnPoint`；`POISpawner` 根據 definition 設定 `poi_interior_profile`，`PoiInstanceManager` 管理轉場、串流錨點與安全返回。外部 plan、碰撞與既有 RNG 域保持不變；鄰帶導航使用相同外部碰撞，不建立可玩室內。
 
-`InteriorProfiles` 只解析登錄的 `bunker`／`megashelter`。Checkpoint 依保存的 `layout.profile` 分流檢查房型及物資，未知 profile 或請求／保存不一致時拒絕載入。房間 manifest、已探索房間、散落 Item、搜索狀態及箱內剩餘物資共同保存；回訪重建 manifest，不重抽布局或補貨。玩家帶入後丟下的物品同樣屬該副本的 WorldEntities。
+`InteriorProfiles` 登錄 `megashelter`、`megashelter_stairwell` 與 `bunker`。每棟大樓的地面層、樓梯間與地堡各有保存 ID，切換門時先保存離開的副本。Checkpoint 依保存的 `layout.profile` 分流檢查房型及物資，未知 profile 或請求／保存不一致時拒絕載入。房間 manifest、已探索房間、散落 Item、搜索狀態及箱內剩餘物資共同保存；回訪重建 manifest，不重抽布局或補貨。玩家帶入後丟下的物品同樣屬該副本的 WorldEntities。
 
 ## 驗證範圍
 

@@ -52,7 +52,12 @@ func _ready() -> void:
 
 func _load_seed() -> void:
 	running = true
-	if not manager.active_id.is_empty(): await manager.leave()
+	while manager.state == PoiInstanceManager.State.INDOOR:
+		var previous_id := manager.active_id
+		await manager.leave()
+		if manager.active_id == previous_id:
+			running = false
+			return
 	if is_instance_valid(building): building.queue_free()
 	await get_tree().process_frame
 	var plan := MegashelterPlan.generate(seed_value)
@@ -76,16 +81,7 @@ func _load_seed() -> void:
 		status.text = "FAIL / " + manager.last_error
 		running = false
 		return
-	preview = Camera3D.new()
-	manager.interior.add_child(preview)
-	# Optional close-up captures use the real flashlight's beam settings.
-	var torch_source := preload("res://props/flashlight.tscn").instantiate()
-	inspection_torch = torch_source.get_node("Beam").duplicate() as SpotLight3D
-	torch_source.free()
-	preview.add_child(inspection_torch)
-	inspection_torch.rotation = Vector3.ZERO
-	inspection_torch.position = Vector3(0.12,-0.12,-0.1)
-	inspection_torch.hide()
+	_prepare_preview()
 	if not player.inventory.items.any(func(item: Dictionary) -> bool: return item.get("scene_path") == "res://props/flashlight.tscn"):
 		var torch := preload("res://props/flashlight.tscn").instantiate() as Item
 		manager.interior.entities.add_child(torch)
@@ -101,6 +97,19 @@ func _load_seed() -> void:
 
 func _hint() -> void:
 	status.text = "SHELTER / seed %d\nF1 walk / F2 overview / F3 cutaway / F4 next room / F5 carry replay / F6 next seed / F7 entrance / F8 capture\nE exit / L flashlight / M explored map" % seed_value
+
+func _prepare_preview() -> void:
+	# Returning through the stairwell rebuilds reception in a new viewport.
+	if is_instance_valid(preview) and preview.get_parent() == manager.interior: return
+	preview = Camera3D.new()
+	manager.interior.add_child(preview)
+	var torch_source := preload("res://props/flashlight.tscn").instantiate()
+	inspection_torch = torch_source.get_node("Beam").duplicate() as SpotLight3D
+	torch_source.free()
+	preview.add_child(inspection_torch)
+	inspection_torch.rotation = Vector3.ZERO
+	inspection_torch.position = Vector3(0.12,-0.12,-0.1)
+	inspection_torch.hide()
 
 func _inspect(index: int) -> void:
 	if manager.interior == null: return
@@ -218,12 +227,13 @@ func _detail_capture(dir: String, room: PoiRoom, target: Vector3, offset: Vector
 	inspection_torch.hide()
 
 func _input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo or running or manager == null: return
+	if not event is InputEventKey or not event.pressed or event.echo or running or manager == null or manager.busy: return
 	if event.keycode == KEY_F6:
 		seed_value += 1
 		_load_seed()
 		return
-	if manager.interior == null: return
+	if manager.interior == null or manager.interior.profile_id != &"megashelter": return
+	_prepare_preview()
 	match event.keycode:
 		KEY_F1: _walk()
 		KEY_F2: _overview()

@@ -7,4 +7,5 @@ static func get_profile(id: StringName) -> InteriorProfile:
 	match id:
 		&"bunker": return BUNKER
 		&"megashelter": return load("res://world/instances/catalog/megashelter.tres") as InteriorProfile
+		&"megashelter_stairwell": return load("res://world/instances/catalog/megashelter_stairwell.tres") as InteriorProfile
 	return null

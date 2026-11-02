@@ -10,6 +10,8 @@ var layout: Dictionary
 var rooms: Array[PoiRoom] = []
 var entities: Node3D
 var exit_door: PoiEntrance
+var link_doors: Dictionary = {}
+var link_return_transforms: Dictionary = {}
 var navigation: NavigationRegion3D
 var cancelled := false
 var build_timeout_ms := 60000
@@ -80,6 +82,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 			await get_tree().process_frame
 			if cancelled or Time.get_ticks_msec() - started > build_timeout_ms: return false
 	_add_exit()
+	_add_links()
 	var mesh := NavigationMesh.new()
 	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	mesh.agent_radius = 0.5
@@ -98,13 +101,13 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 			cache.restore_state(state)
 			navigation.add_child(cache)
 			caches.append(cache)
-	elif populate_content:
+	elif populate_content and profile_id != &"megashelter_stairwell":
 		content = MegashelterInteriorContent.populate(self) if profile_id == &"megashelter" else BunkerContent.populate(self)
 	if not caches.is_empty() and not await _bake(): return false
 	# Restore movable actors only after all async geometry work is complete.
 	# Otherwise a saved drop can fall/move while the player is still loading.
 	if saved.has("actors"): _restore(saved.actors)
-	if not content.is_empty():
+	if not content.is_empty() and profile_id != &"megashelter_stairwell":
 		var content_reachable: bool = MegashelterInteriorContent.reachable(self, saved.is_empty()) if profile_id == &"megashelter" else BunkerContent.reachable(self, saved.is_empty())
 		if not content_reachable: return false
 	for actor in entities.get_children():
@@ -168,13 +171,39 @@ func _add_exit() -> void:
 		shape.shape = box
 		exit_door.add_child(shape)
 		shape.global_transform = target.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, opening.y*0.5, 0))
-	if profile_id == &"megashelter": return
+	if profile_id in [&"megashelter", &"megashelter_stairwell"]: return
 	var sign := Label3D.new()
+	sign.name = "ReturnSign"
 	sign.text = "[E] EXIT / SURFACE"
 	sign.position = Vector3(0, 2.4, 0.10)
 	sign.font_size = 40
 	sign.pixel_size = 0.006
 	exit_door.add_child(sign)
+
+func _add_links() -> void:
+	if profile_id == &"megashelter":
+		var pose: Transform3D = rooms[0].global_transform * rooms[0].call("add_stair_access")
+		_add_link(&"megashelter_stairwell", pose * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.3)), Vector2(1.25, 2.5))
+		# The returning player faces the open reception aisle, clear of the door.
+		link_return_transforms[&"megashelter_stairwell"] = pose * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.08, 1.5))
+	elif profile_id == &"megashelter_stairwell":
+		var marker := rooms[0].get_node("Walkway/BunkerExit") as Marker3D
+		_add_link(&"bunker", marker.global_transform, marker.get_meta("opening", Vector2(2.8, 3.0)))
+		link_return_transforms[&"bunker"] = rooms[0].get_node("Walkway/BunkerSpawn").global_transform
+
+func _add_link(destination: StringName, pose: Transform3D, opening: Vector2) -> void:
+	var door := PoiEntrance.new()
+	door.name = "Link_" + str(destination)
+	door.destination_id = destination
+	door.transform = pose
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(opening.x, opening.y, 0.12)
+	shape.shape = box
+	shape.position = Vector3(0, opening.y*0.5, 0)
+	door.add_child(shape)
+	add_child(door)
+	link_doors[destination] = door
 
 func navigation_anchor(index: int) -> Vector3:
 	var route := rooms[index].get_node("Walkway").get_child(0) as Marker3D
@@ -303,7 +332,9 @@ func _process(delta: float) -> void:
 			var id: String = layout.rooms[i].id
 			if id not in explored: explored.append(id)
 			break
-	if profile_id == &"megashelter":
+	if profile_id == &"megashelter_stairwell":
+		_hud.text = "SERVICE STAIR"
+	elif profile_id == &"megashelter":
 		_hud.text = "GROUND FLOOR / %s    %d explored\nM: explored map  |  Return to ENTRY to exit" % [str(layout.rooms[current_room].id).to_upper(), explored.size()]
 	else:
 		_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]

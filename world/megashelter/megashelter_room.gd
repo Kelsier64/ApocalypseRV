@@ -19,10 +19,9 @@ func _notification(what: int) -> void:
 func _ready() -> void:
 	_build()
 
-func _build() -> void:
-	if _built: return
-	_built = true
+func _prepare_room() -> void:
 	for layer in ["Visuals", "DoorSockets", "Furnishings", "Walkway"]:
+		if has_node(layer): continue
 		var node := Node3D.new()
 		node.name = layer
 		add_child(node)
@@ -37,6 +36,11 @@ func _build() -> void:
 		var batch := MegashelterKit.Batch.new()
 		batch.set_appearance(str(room_id).hash(), clear_height)
 		_batches.append(batch)
+
+func _build() -> void:
+	if _built: return
+	_built = true
+	_prepare_room()
 	var half := footprint * 0.5
 	_box(Vector3(0, -0.125, 0), Vector3(footprint.x, 0.25, footprint.y), 0, true)
 	# Separate ceiling mesh permits the preview cutaway without deleting collision.
@@ -487,6 +491,26 @@ func _entrance_doors() -> void:
 	_model(assembly, "LargeDoor", Transform3D(Basis(Vector3.UP, PI), Vector3(-0.95, 0, footprint.y*0.5-0.35)), FITTINGS.large_door())
 	_model(assembly, "PedestrianDoor", Transform3D(Basis(Vector3.UP, PI), Vector3(2.45, 0, footprint.y*0.5-0.35)), FITTINGS.pedestrian_door())
 	_sign("EXIT", Vector3(2.45, 2.72, footprint.y*0.5-0.26), PI, 1.04)
+
+func add_stair_access() -> Transform3D:
+	# This side of reception is clear of the desk, lockers and outdoor doors.
+	# The wall behind the closed door remains solid across the instance boundary.
+	var pose := Transform3D(Basis(Vector3.UP, -PI*0.5), Vector3(footprint.x*0.5-0.28, 0, 1.1))
+	var assembly := Node3D.new()
+	assembly.name = "StairAccess"
+	_room_visuals.add_child(assembly)
+	_model(assembly, "StairDoor", pose, FITTINGS.pedestrian_door())
+	var plate: Array[Dictionary] = []
+	FITTINGS._plate(plate, Vector3(0, 2.78, 0.02), Vector2(1.55, 0.35), 2)
+	_model(assembly, "StairSign", pose, plate)
+	var sign := Label3D.new()
+	sign.text = "BUNKER / STAIRS"
+	sign.transform = pose * Transform3D(Basis.IDENTITY, Vector3(0, 2.78, 0.08))
+	sign.font_size = 40
+	sign.pixel_size = 0.0035
+	sign.modulate = Color("a0a494")
+	assembly.add_child(sign)
+	return pose
 
 func _model(parent: Node3D, node_name: String, pose: Transform3D, pieces: Array[Dictionary]) -> void:
 	var node := Node3D.new()

@@ -94,6 +94,11 @@ static func poi_error(value: Variant, path := "poi") -> String:
 			return prefix + ".missing_layout"
 		var content_error := MegashelterInteriorContent.validate_content(entry) if entry.layout.profile == "megashelter" else _bunker_content_error(entry)
 		if not content_error.is_empty(): return prefix + "." + content_error
+		if entry.layout.profile == "megashelter_stairwell":
+			if not entry.content.cargo_id.is_empty() or not entry.content.cargo_room.is_empty(): return prefix + ".content.cargo"
+			if not entry.caches.is_empty(): return prefix + ".caches"
+			for actor in entry.actors:
+				if actor is Dictionary and actor.get("kind") == "monster": return prefix + ".actors.monster"
 		for i in range(entry.actors.size()):
 			var actor_error := WorldActorSnapshot.validation_error(entry.actors[i], prefix + ".actors[%d]" % i)
 			if not actor_error.is_empty(): return actor_error
