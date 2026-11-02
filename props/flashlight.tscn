@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://props/flashlight.gd" id="1_script"]
 
@@ -12,11 +12,23 @@ albedo_color = Color(0.035, 0.045, 0.046, 1)
 roughness = 0.9
 
 [sub_resource type="StandardMaterial3D" id="lens"]
-albedo_color = Color(0.91, 0.9, 0.72, 1)
-emission_enabled = true
-emission = Color(0.62, 0.59, 0.38, 1)
-emission_energy_multiplier = 0.25
-roughness = 0.2
+albedo_color = Color(0.26, 0.29, 0.28, 1)
+emission = Color(1, 0.96, 0.86, 1)
+emission_energy_multiplier = 2.0
+roughness = 0.12
+
+[sub_resource type="Gradient" id="beam_profile"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0, 0.24, 0.52, 0.78, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.98, 0.98, 0.98, 1, 0.72, 0.72, 0.72, 1, 0.26, 0.26, 0.26, 1, 0, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="beam_projector"]
+gradient = SubResource("beam_profile")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 1)
 
 [sub_resource type="CylinderMesh" id="body"]
 top_radius = 0.048
@@ -64,12 +76,32 @@ mesh = SubResource("lens_mesh")
 [node name="Beam" type="SpotLight3D" parent="."]
 position = Vector3(0, 0.16, 0)
 rotation_degrees = Vector3(90, 0, 0)
-light_color = Color(1, 0.94, 0.76, 1)
-light_energy = 2.4
+light_color = Color(1, 0.96, 0.87, 1)
+light_energy = 35.0
+light_projector = SubResource("beam_projector")
+light_size = 0.025
+light_volumetric_fog_energy = 0.35
 shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 2.0
 spot_range = 24.0
-spot_angle = 32.0
+spot_attenuation = 2.0
+spot_angle = 19.0
+spot_angle_attenuation = 0.7
 visible = false
+
+[node name="Spill" type="SpotLight3D" parent="Beam"]
+light_color = Color(1, 0.91, 0.76, 1)
+light_energy = 3.5
+light_size = 0.025
+light_volumetric_fog_energy = 0.15
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 1.0
+spot_range = 14.0
+spot_attenuation = 2.0
+spot_angle = 43.0
+spot_angle_attenuation = 2.0
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("collision")

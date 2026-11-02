@@ -717,33 +717,71 @@ func check_flashlight_viewmodel() -> void:
 	await steps(20)
 	var held: Flashlight = actor.held_item_node
 	var beam: SpotLight3D = held.get_node("Beam")
+	var emitters: Array[Light3D] = []
+	for emitter: Light3D in held.find_children("*", "Light3D", true, false): emitters.append(emitter)
+	var lens := held.get_node("Lens") as MeshInstance3D
+	var lens_material := lens.get_active_material(0) as StandardMaterial3D
+	var lens_copy: MeshInstance3D
 	var held_pose := held.global_transform
 	var beam_pose := beam.global_transform
 	actor.camera.make_current()
 	view.update_view()
 	check(view.active and held.global_transform.is_equal_approx(held_pose) and beam.global_transform.is_equal_approx(beam_pose), "Flashlight view activation preserves its real body and beam transforms")
-	check(view.held_light_copies.has(beam.get_instance_id()), "Flashlight beam has a persistent copy while switched off")
+	for mesh_entry: Dictionary in view.item_meshes:
+		if mesh_entry.source != lens: continue
+		for copy: MeshInstance3D in mesh_entry.copies:
+			if copy.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY:
+				lens_copy = copy
+				break
+	check(emitters.size() >= 2 and view.held_light_copies.size() == emitters.size() and view.held_light_copies.has(beam.get_instance_id()), "Flashlight and spill emitters each receive one persistent viewmodel copy while switched off")
+	check(not lens_material.emission_enabled and is_instance_valid(lens_copy) and not (lens_copy.get_active_material(0) as StandardMaterial3D).emission_enabled, "Off flashlight lens stays dark in both body and first-person copies")
 	if view.held_light_copies.has(beam.get_instance_id()):
 		var light_copy: Light3D = view.held_light_copies[beam.get_instance_id()].copy
-		check(not light_copy.visible, "Off flashlight does not illuminate the viewmodel")
+		var all_copies_off := true
+		for source: Light3D in emitters:
+			var off_entry: Dictionary = view.held_light_copies.get(source.get_instance_id(), {})
+			var copy := off_entry.get("copy") as Light3D
+			all_copies_off = all_copies_off and copy != null and not copy.is_visible_in_tree()
+		check(all_copies_off and not light_copy.visible, "Off flashlight beam and spill do not illuminate the viewmodel")
 		actor._toggle_flashlight()
 		view.update_view()
-		check(beam.visible and light_copy.visible and light_copy.layers == 1 << 21 and light_copy.global_transform.is_equal_approx(beam.global_transform), "Flashlight copy switches on immediately at the authoritative beam transform")
+		var emitters_match := true
+		var projector_matches := true
+		for source: Light3D in emitters:
+			var on_entry: Dictionary = view.held_light_copies.get(source.get_instance_id(), {})
+			var copy := on_entry.get("copy") as Light3D
+			emitters_match = emitters_match and copy != null and source.is_visible_in_tree() and copy.is_visible_in_tree() and copy.layers == 1 << 21 and copy.global_transform.is_equal_approx(source.global_transform) and is_equal_approx(copy.light_energy, source.light_energy)
+			if source.get("light_projector") != null:
+				projector_matches = projector_matches and copy != null and copy.get("light_projector") == source.get("light_projector")
+		check(beam.visible and light_copy.visible and emitters_match and projector_matches, "Flashlight beam and spill copies switch on with matching transforms and projector")
+		check(lens_material.emission_enabled and (lens_copy.get_active_material(0) as StandardMaterial3D).emission_enabled, "Flashlight lens and first-person copy illuminate with the active beam")
 		actor._advance_flashlight(3.0)
 		actor._advance_flashlight(0.0)
 		var charge: float = actor.inventory.active_item().state.flashlight.charge
 		view.update_view()
 		view.update_view()
 		check(is_equal_approx(charge, 29.0) and is_equal_approx(actor.inventory.active_item().state.flashlight.charge, charge) and is_equal_approx(held.charge, charge), "Only the flashlight authority drains charge; view updates do not consume battery")
+		var copies_before_grab: Array[Light3D] = []
+		for source: Light3D in emitters:
+			var entry_before_grab: Dictionary = view.held_light_copies.get(source.get_instance_id(), {})
+			var copy_before_grab := entry_before_grab.get("copy") as Light3D
+			if copy_before_grab != null: copies_before_grab.append(copy_before_grab)
 		actor._toggle_flashlight()
 		view.update_view()
-		check(not beam.visible and not light_copy.visible and view.held_light_copies[beam.get_instance_id()].copy == light_copy, "The same flashlight copy switches off immediately")
+		var all_copies_off_after_toggle := true
+		for source: Light3D in emitters:
+			var copy := (view.held_light_copies.get(source.get_instance_id(), {}).get("copy") as Light3D)
+			all_copies_off_after_toggle = all_copies_off_after_toggle and copy != null and not copy.is_visible_in_tree() and not source.is_visible_in_tree()
+		check(not beam.visible and not lens_material.emission_enabled and not light_copy.visible and all_copies_off_after_toggle and view.held_light_copies[beam.get_instance_id()].copy == light_copy, "The same flashlight and spill copies switch off immediately with the lens")
 		actor._toggle_flashlight()
 		actor.grab_control.captor = world
 		actor.grab_control.keep_flashlight = true
 		actor._advance_flashlight(0.0)
 		view.update_view()
-		check(not view.active and beam.visible and not light_copy.visible and beam.global_transform.is_equal_approx(beam_pose), "Grab fallback preserves the real flashlight beam while hiding its cosmetic copy")
+		var grab_copies_hidden := true
+		for copy: Light3D in copies_before_grab:
+			grab_copies_hidden = grab_copies_hidden and (copy.is_queued_for_deletion() or not copy.is_visible_in_tree())
+		check(not view.active and beam.visible and beam.is_visible_in_tree() and view.held_light_copies.is_empty() and grab_copies_hidden and beam.global_transform.is_equal_approx(beam_pose), "Grab fallback preserves the real flashlight beam while retiring hidden beam and spill copies")
 		actor.grab_control.captor = null
 		actor.grab_control.keep_flashlight = false
 		view.update_view()

@@ -795,7 +795,7 @@ func check_production_indoor_darkness() -> void:
 	material.albedo_color = Color.WHITE
 	var indoor_pixels: Array[Color] = []
 	var outdoor_pixels: Array[Color] = []
-	for distance in [0.75, 1.0, 2.0, 4.5]:
+	for distance in [0.75, 2.0, 4.0, 9.0]:
 		surface.position.z = -distance
 		# Keep a receiver large enough to cover the center pixel at each depth.
 		receiver.size = Vector2(distance * 0.8, distance * 0.8)
@@ -808,16 +808,17 @@ func check_production_indoor_darkness() -> void:
 		outdoor_pixels.append(pixel(await capture()))
 	var indoor_near := indoor_pixels[0]
 	var outdoor_near := outdoor_pixels[0]
-	check(indoor_near.r > 0.0 and absf(indoor_near.r - indoor_near.g) < 0.02 and indoor_near.r < outdoor_near.r, "Production indoor adaptation is a dim gray, weaker than the outdoor profile at the same distance")
-	# Compatibility can quantize these deliberately tiny fills to the same 8-bit
-	# value. Require a visible near/far difference and no increase with distance.
+	check(indoor_near.r > 0.08 and absf(indoor_near.r - indoor_near.g) < 0.02 and indoor_near.r < outdoor_near.r, "Production indoor adaptation is visibly gray but weaker than the outdoor profile")
+	check(indoor_pixels[2].r > 0.08, "Production indoor adaptation remains readable at four metres")
+	# Allow one output code step when comparing 8-bit images from both renderers.
 	var output_step := 1.0 / 255.0
-	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 1, 2 and 4.5 m to pitch black")
+	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 2, 4 and 9 m to pitch black")
 	if OS.get_cmdline_user_args().has("--diagnostics"):
-		print("PROBE production-indoor distances=[0.75,1,2,4.5] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
+		print("PROBE production-indoor distances=[0.75,2,4,9] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
 	adaptation.enabled = false
 	check(pixel(await capture(indoor)).r < 0.01, "Disabling indoor adaptation leaves the unlit receiver black")
-	adaptation.enabled = true
+	# Keep the physical beam probe below output clipping on every renderer.
+	surface_material.albedo_color = Color(0.4, 0.4, 0.4)
 	var flashlight: Node3D = load("res://props/flashlight.tscn").instantiate()
 	var beam := flashlight.get_node("Beam") as SpotLight3D
 	flashlight.remove_child(beam)
@@ -825,11 +826,54 @@ func check_production_indoor_darkness() -> void:
 	interior.add_child(beam)
 	beam.global_position = Vector3.ZERO
 	beam.look_at(surface.global_position)
+	var original_beam_transform := beam.global_transform
 	beam.visible = true
 	var illuminated := pixel(await capture(indoor))
-	check(illuminated.r > 0.03 and illuminated.r > illuminated.b, "Production flashlight illuminates a receiver beyond the indoor gray-adaptation range")
+	check(illuminated.r > 0.03 and illuminated.r > illuminated.b, "Production flashlight illuminates a receiver at nine metres beyond the indoor gray-adaptation range")
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE production-flashlight far receiver=", illuminated)
+	if OS.get_cmdline_user_args().has("--interior-only"):
+		var original_camera_fov := camera.fov
+		var original_surface_color := surface_material.albedo_color
+		surface.position.z = -4.0
+		receiver.size = Vector2(10, 8)
+		camera.fov = 100.0
+		beam.look_at(surface.global_position)
+		var beam_image := await capture(indoor)
+		var center := _sample_world_pixel(beam_image, camera, Vector3(0.0, 0.0, -4.0))
+		var inner_wing := _sample_world_pixel(beam_image, camera, Vector3(0.4, 0.0, -4.0))
+		var spill_wing := _sample_world_pixel(beam_image, camera, Vector3(1.3, 0.0, -4.0))
+		var outside := _sample_world_pixel(beam_image, camera, Vector3(3.8, 0.0, -4.0))
+		var beam_output_step := 1.0 / 255.0
+		check(center.r > inner_wing.r + beam_output_step and inner_wing.r + beam_output_step >= spill_wing.r and spill_wing.r > outside.r + beam_output_step and outside.r < 0.02, "Production flashlight beam has a bright center, soft spill wing and dark exterior")
+		if OS.get_cmdline_user_args().has("--diagnostics"):
+			print("PROBE production-flashlight center/inner/spill/outside=", [center, inner_wing, spill_wing, outside])
+		surface_material.albedo_color = original_surface_color
+		surface.position.z = -9.0
+		receiver.size = Vector2(7.2, 7.2)
+		camera.fov = original_camera_fov
+		beam.global_transform = original_beam_transform
+		var far_lit := pixel(await capture(indoor))
+		check(far_lit.r > 0.03, "Flashlight still reaches the nine-metre receiver after the near-beam shape sample")
+		beam.global_position = Vector3(0.6, 0.0, 0.0)
+		beam.look_at(surface.global_position)
+		var blocker := MeshInstance3D.new()
+		var blocker_mesh := BoxMesh.new()
+		blocker_mesh.size = Vector3(0.28, 1.0, 0.2)
+		blocker.mesh = blocker_mesh
+		blocker.position = Vector3(0.467, 0.0, -2.0)
+		interior.add_child(blocker)
+		var shadowed := pixel(await capture(indoor))
+		var blocker_ray_fraction := absf(blocker.position.z / surface.global_position.z)
+		var beam_ray_x := lerpf(beam.global_position.x, surface.global_position.x, blocker_ray_fraction)
+		var blocker_crosses_beam := absf(blocker.position.x - beam_ray_x) < blocker_mesh.size.x * 0.5
+		var blocker_clears_camera_center := absf(blocker.position.x) > blocker_mesh.size.x * 0.5
+		check(blocker_crosses_beam and blocker_clears_camera_center and far_lit.r > shadowed.r + 0.02 and shadowed.r < 0.02, "Both production flashlight cones cast a blocker shadow across the receiver without blocking the camera ray")
+		blocker.queue_free()
+		await process_frame
+		beam.global_transform = original_beam_transform
 	beam.visible = false
-	check(pixel(await capture(indoor)).r < 0.01, "Turning the production flashlight off returns the far receiver to pitch black")
+	check(pixel(await capture(indoor)).r < 0.01, "Turning the production flashlight off returns the nine-metre receiver to pitch black")
 	check(environment_state(holder.environment) == saved_indoor_environment and environment_state(environment) == saved_outdoor_environment, "Production indoor darkness checks leave both indoor and outdoor native environments unchanged")
 	check(FileAccess.get_sha256("res://world/dark_adaptation_profile.tres") == outdoor_profile_hash and FileAccess.get_sha256("res://world/night_vision_curve.tres") == outdoor_curve_hash, "Production indoor lighting leaves the authored outdoor profile and Curve files unchanged")
 	renderer.profile = saved_outdoor_profile
@@ -838,3 +882,9 @@ func check_production_indoor_darkness() -> void:
 	outdoor_mesh.size = saved_mesh_size
 	indoor.queue_free()
 	await process_frame
+
+func _sample_world_pixel(image: Image, camera: Camera3D, position: Vector3) -> Color:
+	var projected := camera.unproject_position(position)
+	var x := clampi(roundi(projected.x), 0, image.get_width() - 1)
+	var y := clampi(roundi(projected.y), 0, image.get_height() - 1)
+	return image.get_pixel(x, y)
