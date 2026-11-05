@@ -1,5 +1,10 @@
 [gd_resource type="StandardMaterial3D" format=3]
 
+[ext_resource type="Texture2D" path="res://assets/materials/industrial/worn_paint.png" id="finish"]
+
 [resource]
+albedo_texture = ExtResource("finish")
+uv1_triplanar = true
+uv1_world_triplanar = true
 albedo_color = Color(0.51, 0.34, 0.075, 1)
 roughness = 0.9

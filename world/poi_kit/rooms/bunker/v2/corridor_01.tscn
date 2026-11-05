@@ -12,23 +12,38 @@
 
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/steel.tres" id="steel"]
 
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/stripe.tres" id="stripe"]
-
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/lamp.tres" id="lamp"]
 
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rust.tres" id="v_rust"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/soot.tres" id="v_soot"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/hazard.tres" id="v_hazard"]
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/rubber.tres" id="v_rubber"]
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/blood.tres" id="v_blood"]
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/emergency.tres" id="v_emergency"]
-
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/aggregate.tres" id="ab_aggregate"]
-[ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/peel.tres" id="ab_peel"]
-
 [ext_resource type="Mesh" path="res://world/poi_kit/rooms/bunker/v2/visuals/chipped_wall.obj" id="ab_wall_mesh"]
 [ext_resource type="Mesh" path="res://world/poi_kit/rooms/bunker/v2/visuals/aggregate_chip.obj" id="ab_chip_mesh"]
 [ext_resource type="Material" path="res://world/poi_kit/materials/bunker/v2/damaged_concrete.tres" id="ab_damaged"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/conduit_run.res" id="conduit_run"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/guarded_batten.res" id="guarded_batten"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/fluorescent_pair.res" id="fluorescent_pair"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/service_tray.res" id="service_tray"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/cable_run.res" id="cable_run"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/drain_grate.res" id="drain_grate"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/paint_flake.res" id="paint_flake"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/loose_ceiling_panel.res" id="loose_ceiling_panel"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/spalled_chunks.res" id="spalled_chunks"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/damp.res" id="damp"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/oxide_streak.res" id="oxide_streak"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/seep.res" id="seep"]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/ceiling_recess.res" id="ceiling_recess"]
 
 [sub_resource type="BoxMesh" id="b1m"]
 size = Vector3(3.000000, 0.250000, 12.000000)
@@ -126,62 +141,11 @@ size = Vector3(0.240000, 3.000000, 12.000000)
 [sub_resource type="BoxMesh" id="b22m"]
 size = Vector3(0.012000, 1.100000, 11.960000)
 
-[sub_resource type="BoxMesh" id="b23m"]
-size = Vector3(0.080000, 0.080000, 11.400000)
-
-[sub_resource type="BoxMesh" id="b24m"]
-size = Vector3(0.080000, 0.080000, 11.400000)
-
-[sub_resource type="BoxMesh" id="b25m"]
-size = Vector3(1.200000, 0.100000, 0.280000)
-
-[sub_resource type="BoxMesh" id="b26m"]
-size = Vector3(1.050000, 0.050000, 0.170000)
-
-[sub_resource type="BoxMesh" id="b27m"]
-size = Vector3(1.200000, 0.100000, 0.280000)
-
-[sub_resource type="BoxMesh" id="b28m"]
-size = Vector3(1.050000, 0.050000, 0.170000)
-
-[sub_resource type="BoxMesh" id="v2_0"]
-size = Vector3(0.34, 0.06, 11.3)
-
-[sub_resource type="BoxMesh" id="v2_1"]
-size = Vector3(0.07, 0.045, 11.1)
-
-[sub_resource type="BoxMesh" id="v2_2"]
-size = Vector3(0.64, 0.025, 0.85)
-
 [sub_resource type="BoxMesh" id="v2_3"]
 size = Vector3(0.53, 0.009, 0.72)
 
-[sub_resource type="BoxMesh" id="v2_4"]
-size = Vector3(0.018, 1.65, 0.42)
-
-[sub_resource type="BoxMesh" id="v2_5"]
-size = Vector3(0.013, 0.85, 0.48)
-
-[sub_resource type="BoxMesh" id="v2_6"]
-size = Vector3(0.16, 1.1, 0.012)
-
-[sub_resource type="BoxMesh" id="v2_7"]
-size = Vector3(0.68, 0.012, 0.38)
-
 [sub_resource type="BoxMesh" id="v2_8"]
 size = Vector3(0.65, 0.012, 0.16)
-
-[sub_resource type="BoxMesh" id="ab_4"]
-size = Vector3(0.019, 0.34, 0.24)
-
-[sub_resource type="BoxMesh" id="ab_5"]
-size = Vector3(1.02, 0.018, 0.74)
-
-[sub_resource type="BoxMesh" id="ab_6"]
-size = Vector3(0.87, 0.035, 0.55)
-
-[sub_resource type="BoxMesh" id="ab_7"]
-size = Vector3(0.25, 0.036, 0.14)
 
 [node name="Corridor_01" type="Node3D"]
 script = ExtResource("room")
@@ -392,22 +356,21 @@ frame_nodes = Array[NodePath]([NodePath("../../Visuals/Jamb14"), NodePath("../..
 
 [node name="Pipe23" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.100000, 2.600000, 0.000000)
-mesh = SubResource("b23m")
-material_override = ExtResource("steel")
+scale = Vector3(1, 1, 2.11111)
+mesh = ExtResource("conduit_run")
 
 [node name="Pipe24" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-0.920000, 2.600000, 0.000000)
-mesh = SubResource("b24m")
-material_override = ExtResource("steel")
+scale = Vector3(1, 1, 2.11111)
+mesh = ExtResource("conduit_run")
 
 [node name="LampHousing25" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.000000, 2.750000, -4.000000)
-mesh = SubResource("b25m")
-material_override = ExtResource("steel")
+mesh = ExtResource("guarded_batten")
 
 [node name="LampTube26" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.000000, 2.685000, -4.000000)
-mesh = SubResource("b26m")
+mesh = ExtResource("fluorescent_pair")
 material_override = ExtResource("lamp")
 
 [node name="Light0" type="OmniLight3D" parent="Visuals"]
@@ -419,12 +382,11 @@ omni_attenuation = 1.3
 
 [node name="LampHousing27" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.000000, 2.750000, 4.000000)
-mesh = SubResource("b27m")
-material_override = ExtResource("steel")
+mesh = ExtResource("guarded_batten")
 
 [node name="LampTube28" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.000000, 2.685000, 4.000000)
-mesh = SubResource("b28m")
+mesh = ExtResource("fluorescent_pair")
 material_override = ExtResource("lamp")
 
 [node name="Light1" type="OmniLight3D" parent="Visuals"]
@@ -436,18 +398,17 @@ omni_attenuation = 1.3
 
 [node name="ServiceTray0" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.08, 2.78, 0)
-mesh = SubResource("v2_0")
-material_override = ExtResource("steel")
+scale = Vector3(1, 1, 2.13208)
+mesh = ExtResource("service_tray")
 
 [node name="ExposedCable1" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.22, 2.89, 0)
-mesh = SubResource("v2_1")
-material_override = ExtResource("v_rubber")
+scale = Vector3(1, 1, 2.17647)
+mesh = ExtResource("cable_run")
 
 [node name="FloorDrain2" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-0.98, 0.018, -5.45)
-mesh = SubResource("v2_2")
-material_override = ExtResource("steel")
+mesh = ExtResource("drain_grate")
 
 [node name="DrainShadow3" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-0.98, 0.002, -5.45)
@@ -455,24 +416,32 @@ mesh = SubResource("v2_3")
 material_override = ExtResource("v_soot")
 
 [node name="RustBleed4" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(1.372, 1.65, -5.54)
-mesh = SubResource("v2_4")
-material_override = ExtResource("v_rust")
+position = Vector3(1.242, 1.65, -5.54)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(0.525, 1.65, 1)
+cast_shadow = 0
+mesh = ExtResource("oxide_streak")
 
 [node name="SmokeStain5" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(1.384, 2.65, -5.52)
-mesh = SubResource("v2_5")
-material_override = ExtResource("v_soot")
+position = Vector3(1.242, 2.65, -5.52)
+rotation = Vector3(0, -1.570796, 0)
+scale = Vector3(0.6, 0.85, 1)
+cast_shadow = 0
+mesh = ExtResource("seep")
 
 [node name="NorthSeep6" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-1.28, 1.2, -5.874)
-mesh = SubResource("v2_6")
-material_override = ExtResource("v_soot")
+position = Vector3(-1.08, 1.2, -5.742)
+rotation = Vector3(0, 0, 0)
+scale = Vector3(0.264, 1.1, 1)
+cast_shadow = 0
+mesh = ExtResource("seep")
 
 [node name="EdgeWater7" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-0.85, 0.009, 5.47)
-mesh = SubResource("v2_7")
-material_override = ExtResource("v_soot")
+rotation = Vector3(-1.570796, 0, 0)
+scale = Vector3(0.68, 0.38, 1)
+cast_shadow = 0
+mesh = ExtResource("damp")
 
 [node name="WarningStripe8" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.98, 0.012, 5.45)
@@ -520,22 +489,19 @@ material_override = ExtResource("ab_aggregate")
 [node name="PaintFlake" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.204, 0.8, -0.43)
 rotation = Vector3(0.19, 0, 0)
-mesh = SubResource("ab_4")
-material_override = ExtResource("ab_peel")
+mesh = ExtResource("paint_flake")
 
 [node name="CeilingVoid" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.88, 2.986, -1.25)
-mesh = SubResource("ab_5")
-material_override = ExtResource("v_soot")
+mesh = ExtResource("ceiling_recess")
 
 [node name="HangingPanel" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.96, 2.89, -1.12)
 rotation = Vector3(0, 0, 0.09)
-mesh = SubResource("ab_6")
-material_override = ExtResource("ab_peel")
+mesh = ExtResource("loose_ceiling_panel")
 
 [node name="CeilingFracture" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0.49, 2.953, -1.52)
 rotation = Vector3(0, 0.14, 0)
-mesh = SubResource("ab_7")
-material_override = ExtResource("ab_aggregate")
+scale = Vector3(0.925926, 0.189474, 0.666667)
+mesh = ExtResource("spalled_chunks")

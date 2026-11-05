@@ -2,8 +2,7 @@
 
 [ext_resource type="Script" path="res://props/item.gd" id="1_kfnut"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_cxucu"]
-size = Vector3(0.3, 0.3, 0.3)
+[ext_resource type="ArrayMesh" path="res://assets/models/bunker_fittings/scrap_casting.res" id="scrap_casting"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_xqh2i"]
 size = Vector3(0.3, 0.3, 0.3)
@@ -16,7 +15,7 @@ scrap_yields = {
 }
 
 [node name="@MeshInstance3D@2" type="MeshInstance3D" parent="." unique_id=747362514]
-mesh = SubResource("BoxMesh_cxucu")
+mesh = ExtResource("scrap_casting")
 
 [node name="@CollisionShape3D@3" type="CollisionShape3D" parent="." unique_id=2066708620]
 shape = SubResource("BoxShape3D_xqh2i")
