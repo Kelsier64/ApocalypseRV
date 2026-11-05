@@ -539,12 +539,3 @@ rotation_degrees = Vector3(90, 0, 0)
 [node name="HingeCollar2" type="MeshInstance3D" parent="Leaf0"]
 position = Vector3(0.035, 0.825, 0.125)
 mesh = SubResource("detail_32")
-
-[node name="HeaderSign" type="Label3D" parent="."]
-position = Vector3(0, 0.93, 0.115)
-text = "ENTRY"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)

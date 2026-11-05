@@ -600,14 +600,6 @@ position = Vector3(2.48, 0.012, 2.45)
 mesh = SubResource("v2_8")
 material_override = ExtResource("v_hazard")
 
-[node name="SectorSign" type="Label3D" parent="Visuals"]
-position = Vector3(0, 3.26, -2.73)
-text = "GUARD OFFICE"
-font_size = 32
-pixel_size = 0.0035
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
 [node name="locker_graybox_0" parent="Furnishings" instance=ExtResource("p_locker_graybox")]
 position = Vector3(-2.35, 0, -2.35)
 rotation = Vector3(0, 0, 0)

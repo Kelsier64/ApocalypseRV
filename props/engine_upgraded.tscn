@@ -19,11 +19,4 @@ scrap_yields = {"Metal Parts": Vector2(8, 12), "Electronic Scrap": Vector2(2, 4)
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("r12")
 
-[node name="Label" type="Label3D" parent="."]
-position = Vector3(0, 0.65, 0)
-text = "ENGINE"
-font_size = 28
-pixel_size = 0.0025
-billboard = 1
-
 [node name="Powerplant" parent="." instance=ExtResource("salvage_engine")]

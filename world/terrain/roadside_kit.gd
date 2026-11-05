@@ -59,15 +59,6 @@ static func part(parent: Node3D, size: Vector3, position: Vector3, color: Color,
 		instance.add_child(body)
 	return instance
 
-static func label(parent: Node3D, words: String, position: Vector3, size: int = 38) -> void:
-	var text := Label3D.new()
-	text.text = words
-	text.position = position
-	text.font_size = size
-	text.pixel_size = 0.014
-	text.modulate = Color(0.92, 0.86, 0.63)
-	parent.add_child(text)
-
 static func make(kind: String) -> Node3D:
 	var root := Node3D.new()
 	root.name = kind.to_pascal_case()

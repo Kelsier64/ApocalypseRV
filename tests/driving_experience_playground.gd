@@ -4,13 +4,7 @@ func _ready() -> void:
 	super._ready()
 	get_window().title = "ApocalypseRV - Driving Experience"
 	for side in [-1.0, 1.0]:
-		var block := RoadsideKit.part(self, Vector3(0.8, 1.5, 0.8), Vector3(side * 3.5, 0.75, 8), Color("d84028") if side < 0 else Color("238bec"))
-		var label := Label3D.new()
-		label.text = "LEFT / L" if side < 0 else "RIGHT / R"
-		label.font_size = 96
-		label.position = block.position + Vector3(0, 1.25, 0)
-		label.rotation.y = PI
-		add_child(label)
+		RoadsideKit.part(self, Vector3(0.8, 1.5, 0.8), Vector3(side * 3.5, 0.75, 8), Color("d84028") if side < 0 else Color("238bec"))
 	await get_tree().physics_frame
 	seat.interact_hold(player)
 	view = 2

@@ -7,7 +7,6 @@ var searched: bool = false
 var remaining: Array[Dictionary] = []
 
 @onready var _lid: Node3D = $Visuals/LidPivot
-@onready var _label: Label3D = $Visuals/Status
 
 func _ready() -> void:
 	_update_visual()
@@ -71,7 +70,5 @@ func _can_search(player: Node3D) -> bool:
 		and global_position.distance_to(player.global_position) <= 3.0
 
 func _update_visual() -> void:
-	if _lid == null or _label == null: return
+	if _lid == null: return
 	_lid.rotation.x = -1.15 if searched else 0.0
-	_label.text = "EMPTY" if searched and remaining.is_empty() else ("OPEN" if searched else "SUPPLIES")
-	_label.modulate = Color(0.7, 0.72, 0.61) if searched else Color(0.98, 0.85, 0.38)

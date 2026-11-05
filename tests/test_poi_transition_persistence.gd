@@ -38,6 +38,7 @@ func _enter(id: String) -> bool:
 	await manager.enter(player, building, id, 913)
 	var ok: bool = manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null and player.get_parent() == manager.interior
 	check(ok, id + " enters a complete real interior: " + manager.last_error)
+	if ok: check(manager.interior.find_children("*", "Label3D", true, false).is_empty(), id + " bunker has no model text labels")
 	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
 

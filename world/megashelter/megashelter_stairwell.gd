@@ -112,10 +112,6 @@ func _landings() -> void:
 	var south := Basis(Vector3.UP, PI)
 	_append_pieces(Transform3D(south, Vector3(-1.5, 4.5, 4.61)), FITTINGS.pedestrian_door())
 	_model(_room_visuals, "BunkerDoor", Transform3D(south, Vector3(1.5, 0, 4.61)), FITTINGS.pedestrian_door())
-	_sign("GROUND", Vector3(-1.5, 7.17, 4.58), PI, 1.48)
-	_sign("B1 / BUNKER", Vector3(1.5, 2.85, 4.58), PI, 1.48)
-	_floor_number("G", Vector3(1.45, 6.12, 4.60), PI)
-	_floor_number("B1", Vector3(0.0, 3.77, -4.62), 0)
 	_append_pieces(Transform3D(Basis.IDENTITY, Vector3(0, MID_LEVEL, -4.9)), FITTINGS.wall_bay(7.0, 3.4, 2))
 	_grate(Vector3(-2.25, MID_LEVEL + 0.012, -4.03), Vector2(0.57, 0.55))
 	_grate(Vector3(-1.88, 0.012, 3.85), Vector2(0.34, 1.35))
@@ -138,17 +134,6 @@ func _risers() -> void:
 	for y: float in [3.12, 5.5, 7.1]:
 		_box(Vector3(2.1, y, -4.48), Vector3(0.79, 0.065, 0.34), 2)
 	_append_pieces(Transform3D.IDENTITY, pipes)
-
-func _floor_number(value: String, at: Vector3, angle: float) -> void:
-	var stencil := Label3D.new()
-	stencil.text = value
-	stencil.transform = Transform3D(Basis(Vector3.UP, angle), at)
-	stencil.font_size = 128
-	stencil.pixel_size = 0.009
-	stencil.outline_size = 0
-	stencil.shaded = true
-	stencil.modulate = Color("9c9e87")
-	_room_visuals.add_child(stencil)
 
 func _bulkhead_light(at: Vector3, facing: Basis, tint: Color, energy: float) -> void:
 	var pose := Transform3D(facing, at)

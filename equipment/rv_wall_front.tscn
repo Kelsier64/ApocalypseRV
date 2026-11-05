@@ -236,12 +236,3 @@ rotation_degrees = Vector3(0, 0, 0)
 position = Vector3(0.759, 0.64, -0.045)
 mesh = SubResource("m25")
 rotation_degrees = Vector3(0, 0, 13.799999999999999)
-
-[node name="Brand" type="Label3D" parent="."]
-position = Vector3(0, 0.34, -0.115)
-text = "W A Y F A R E R"
-font_size = 48
-pixel_size = 0.0017
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 180, 0)

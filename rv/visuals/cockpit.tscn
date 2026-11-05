@@ -407,15 +407,6 @@ position = Vector3(0, 0.26, 0)
 mesh = SubResource("m21")
 rotation_degrees = Vector3(0, 0, 0)
 
-[node name="GearMark" type="Label3D" parent="."]
-position = Vector3(0.48, 0.63, -0.34)
-text = "R  N  1–4"
-font_size = 48
-pixel_size = 0.00065
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(-90, 0, 0)
-
 [node name="ParkingLever" type="Node3D" parent="."]
 position = Vector3(0.48, 0.6, 0.02)
 
@@ -504,15 +495,6 @@ position = Vector3(0, 0.039, 0)
 mesh = SubResource("m37")
 rotation_degrees = Vector3(0, 0, 0)
 
-[node name="SpeedLabel" type="Label3D" parent="."]
-position = Vector3(-0.37, 1.075, -0.95)
-text = "km/h"
-font_size = 48
-pixel_size = 0.00055
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)
-
 [node name="FuelRim" type="MeshInstance3D" parent="."]
 position = Vector3(0, 1.135, -0.998)
 mesh = SubResource("m38")
@@ -577,15 +559,6 @@ position = Vector3(0, 0.028499999999999998, 0)
 mesh = SubResource("m49")
 rotation_degrees = Vector3(0, 0, 0)
 
-[node name="FuelLabel" type="Label3D" parent="."]
-position = Vector3(0, 1.075, -0.95)
-text = "FUEL"
-font_size = 48
-pixel_size = 0.00055
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)
-
 [node name="BatteryRim" type="MeshInstance3D" parent="."]
 position = Vector3(0.29, 1.135, -0.998)
 mesh = SubResource("m50")
@@ -648,42 +621,6 @@ position = Vector3(0.29, 1.135, -0.954)
 [node name="Pointer" type="MeshInstance3D" parent="BatteryNeedle"]
 position = Vector3(0, 0.028499999999999998, 0)
 mesh = SubResource("m61")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="BatteryLabel" type="Label3D" parent="."]
-position = Vector3(0.29, 1.075, -0.95)
-text = "BATT"
-font_size = 48
-pixel_size = 0.00055
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="Readout" type="Label3D" parent="."]
-position = Vector3(-0.35, 1.295, -0.969)
-text = "000  N"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="EngineStatus" type="Label3D" parent="."]
-position = Vector3(0.22, 1.295, -0.969)
-text = "ENGINE OFF"
-font_size = 48
-pixel_size = 0.00065
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="BrakeStatus" type="Label3D" parent="."]
-position = Vector3(0.48, 1.12, -0.95)
-text = "PARK"
-font_size = 48
-pixel_size = 0.00065
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="IgnitionButton" type="MeshInstance3D" parent="."]

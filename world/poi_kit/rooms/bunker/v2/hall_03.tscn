@@ -722,14 +722,6 @@ position = Vector3(-4.85, 0.009, 0)
 mesh = SubResource("v2_13")
 material_override = ExtResource("v_hazard")
 
-[node name="SectorSign" type="Label3D" parent="Visuals"]
-position = Vector3(0, 3.66, -8.73)
-text = "EVACUATION"
-font_size = 32
-pixel_size = 0.0035
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
 [node name="bunk_bed_graybox_0" parent="Furnishings" instance=ExtResource("p_bunk_bed_graybox")]
 position = Vector3(-5, 0, -4.1)
 rotation = Vector3(0, 1.5708, 0)

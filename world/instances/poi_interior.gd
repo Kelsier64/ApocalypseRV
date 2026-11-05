@@ -73,7 +73,6 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 		rooms.append(room)
 		if profile_id == &"megashelter": MegashelterInteriorLighting.apply(room, definition, str(data.id) in dark_rooms)
 		else: BunkerLighting.apply(room, definition, str(data.id) in dark_rooms)
-		_set_floor_signs(room, definition)
 		for socket in room.get_node("DoorSockets").get_children():
 			if not InteriorLayout.used(layout, i, str(socket.socket_id)): _seal(room, socket)
 		if profile_id == &"megashelter": room.call("finish_sealed_sockets", data.connections)
@@ -120,14 +119,6 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 
 func spawn_transform() -> Transform3D:
 	return rooms[0].get_node("Walkway/Spawn").global_transform
-
-func _set_floor_signs(room: PoiRoom, definition: InteriorRoomDefinition) -> void:
-	if definition.role != &"stairs": return
-	var lower_floor := 1 + roundi(-room.position.y / float(layout.floor_spacing))
-	var upper := room.get_node_or_null("Visuals/UpperFloorSign") as Label3D
-	var lower := room.get_node_or_null("Visuals/LowerFloorSign") as Label3D
-	if upper: upper.text = "B%d\nDOWN TO B%d" % [lower_floor - 1, lower_floor]
-	if lower: lower.text = "B%d\nUP TO B%d" % [lower_floor, lower_floor - 1]
 
 func _seal(room: PoiRoom, socket: PoiDoorSocket) -> void:
 	var holder := Node3D.new()
@@ -188,14 +179,6 @@ func _add_exit() -> void:
 		shape.shape = box
 		exit_door.add_child(shape)
 		shape.global_transform = target.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, opening.y*0.5, 0))
-	if profile_id in [&"megashelter", &"megashelter_stairwell"]: return
-	var sign := Label3D.new()
-	sign.name = "ReturnSign"
-	sign.text = "[E] EXIT / SURFACE"
-	sign.position = Vector3(0, 2.4, 0.10)
-	sign.font_size = 40
-	sign.pixel_size = 0.006
-	exit_door.add_child(sign)
 
 func _add_links() -> bool:
 	if profile_id == &"megashelter":

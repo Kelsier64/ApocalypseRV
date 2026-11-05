@@ -43,8 +43,6 @@ func setup(prop: Node3D, owner: Node3D, bounds: AABB, pose: Transform3D) -> void
 		owner.add_child(visual)
 		meshes.append(visual)
 		originals.append(source)
-	for label: Label3D in prop.find_children("*","Label3D",true,false):
-		if label.is_visible_in_tree(): originals.append(label)
 	for original in originals: original.hide()
 	advance(owner,0)
 

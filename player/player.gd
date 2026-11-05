@@ -316,9 +316,6 @@ func _equip_active_slot():
 				held_item_node.collision_mask = 0
 				
 			hand_marker.add_child(held_item_node)
-			# World labels should not cover the interaction HUD in a held preview.
-			for label in held_item_node.find_children("*", "Label3D", true, false):
-				label.hide()
 			
 			# Apply visual holding offsets if it's our new Item class
 			if held_item_node is Item:
@@ -1706,4 +1703,3 @@ func _standing_volume_clear(at: Vector3) -> bool:
 	query.collision_mask = collision_mask
 	query.exclude = [get_rid()]
 	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
-

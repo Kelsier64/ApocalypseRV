@@ -163,7 +163,7 @@ func _spawn_item(scene_path: String, costs: Dictionary, power_cost: float, crouc
 	container.add_child(item)
 	if "battery" in item:
 		item.battery.charge = 0.0
-		item._update_label()
+		item._sync_battery_state()
 	item.global_transform = output
 	item.linear_velocity = ClimbMath.point_velocity(rv, output.origin)
 	_committing = false

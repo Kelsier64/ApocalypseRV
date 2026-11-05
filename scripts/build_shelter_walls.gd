@@ -232,21 +232,6 @@ func weathering_details() -> void:
 			points.append(entry + left * Vector3(p.x,p.y,0))
 		face(points, left * Vector3.BACK, "repair")
 
-func label(text: String, pos: Vector3, pixel_size: float, facing := 0.0) -> void:
-	var node := Label3D.new()
-	node.name = "Stencil%d" % scene.get_child_count()
-	node.text = text
-	node.font_size = 96
-	node.pixel_size = pixel_size
-	node.outline_size = 0
-	node.modulate = Color("999386")
-	node.shaded = true
-	node.double_sided = false
-	node.position = pos
-	node.rotation.y = facing
-	scene.add_child(node)
-	node.owner = scene
-
 func block(x0: float, x1: float, back: float, front: float, height: float, windows: Array[float], window_y: float, window_height := 2.0) -> void:
 	var width := x1 - x0
 	var depth := front - back
@@ -358,9 +343,6 @@ func build() -> void:
 	for x in [-3.9, 3.9]: box(Vector3(0.65,5.65,0.32), Vector3(x,2.825,14.52), "trim", 0.06)
 	box(Vector3(8.45,0.45,0.4), Vector3(0,5.7,14.54), "trim", 0.055)
 	box(Vector3(19.8,0.22,0.55), Vector3(0,6.94,14.4), "steel", 0.035)
-	label("BAY 01", Vector3(-21.3,7.25,12.55), 0.007)
-	label("SERVICE 02", Vector3(21.3,8.4,12.55), 0.006)
-	label("MOTOR POOL", Vector3(0,6.25,14.53), 0.006)
 	weathering_details()
 	for key in batches:
 		var data: Dictionary = batches[key]

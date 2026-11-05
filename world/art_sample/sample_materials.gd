@@ -43,15 +43,3 @@ static func beam(parent: Node3D, a: Vector3, b: Vector3, width: float, mat: Mate
 	var node := box(parent, Vector3(width, width, a.distance_to(b)), (a + b) * 0.5, mat)
 	node.basis = Basis.looking_at(b - a, Vector3.FORWARD if absf((b-a).normalized().y) > 0.99 else Vector3.UP)
 	return node
-
-static func caption(parent: Node3D, words: String, at: Vector3, size: int, color: Color = Color("d5c9a4")) -> void:
-	var label := Label3D.new()
-	label.text = words
-	label.position = at
-	label.font_size = size
-	label.pixel_size = 0.012
-	label.outline_size = 0
-	label.modulate = color
-	label.no_depth_test = false
-	label.shaded = true
-	parent.add_child(label)

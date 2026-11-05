@@ -112,9 +112,6 @@ func _connect_interior_doors() -> void:
 	for door: PoiEntrance in interior.link_doors.values():
 		door.entry_requested.connect(func(_actor: Node3D, destination: StringName) -> void:
 			enter_link.call_deferred(destination))
-	if interior.profile_id == &"bunker" and not _route_stack.is_empty():
-		var sign := interior.exit_door.get_node_or_null("ReturnSign") as Label3D
-		if sign != null: sign.text = "EXIT / STAIRWELL"
 
 func enter_link(destination: StringName) -> void:
 	if busy or state != State.INDOOR or not is_instance_valid(interior): return

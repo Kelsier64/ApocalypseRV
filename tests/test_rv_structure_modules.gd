@@ -47,6 +47,7 @@ func _run() -> void:
 	ray.set_physics_process(false)
 	await physics_frame
 	await physics_frame
+	check(shell.find_children("*", "Label3D", true, false).is_empty(), "RV shell, cockpit and equipment have no model text labels")
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
 	var side: RVStructurePanel = rv.get_node("RightMiddle")
 	var ladder_wall: RVStructurePanel = rv.get_node("LeftMiddle")
@@ -199,6 +200,13 @@ func _run() -> void:
 	remembered.rv = rv
 	check(not remembered.follow(player, 1.0 / 60.0), "Remembered destroyed surface cannot carry an actor")
 	var ramp: RearRamp = rv.get_node("RearRamp")
+	var ramp_control := ramp.get_node("Control")
+	var ramp_lamp: StandardMaterial3D = ramp_control.get_node("Visuals/Lamp").material_override
+	ramp_control.sync_state(true, true, false)
+	check(ramp_lamp.albedo_color.is_equal_approx(Color("ffc15a")) and ramp_control.get_node("Visuals/Rocker").rotation.x < 0.0, "Moving ramp retains its amber lamp and extending rocker without text")
+	ramp_control.sync_state(false, false, true)
+	check(ramp_lamp.albedo_color.is_equal_approx(Color("8fe3ad")) and is_zero_approx(ramp_control.get_node("Visuals/Rocker").rotation.x), "Deployed ramp retains its green lamp and neutral rocker without text")
+	ramp_control.sync_state(false, false, false)
 	rear.restore_angles([-deg_to_rad(100.0), deg_to_rad(100.0)])
 	check(ramp.doors_open(), "Ramp reads open rear door from structure slots")
 	rear.restore_angles([0.0, 0.0])

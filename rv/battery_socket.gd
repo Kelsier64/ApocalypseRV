@@ -8,7 +8,7 @@ func _ready() -> void:
 	super._ready()
 	if presentation_only: return
 	if preinstalled_battery and installed_battery == null: installed_battery = BatteryState.new()
-var _visual_state := ""
+var _visual_occupancy := -1
 
 func get_interaction_prompt(player: Node3D) -> String:
 	var rv := get_connected_rv()
@@ -51,13 +51,11 @@ func _process(_delta: float) -> void:
 	_update_visual()
 
 func _update_visual() -> void:
-	var state := "%.0f / %.0f" % [installed_battery.charge, installed_battery.capacity] if installed_battery else "EMPTY"
-	if state == _visual_state: return
-	_visual_state = state
+	var occupied := installed_battery != null
+	if int(occupied) == _visual_occupancy: return
+	_visual_occupancy = int(occupied)
 	var cell := get_node_or_null("Cell") as MeshInstance3D
-	if cell: cell.visible = installed_battery != null
-	var label := get_node_or_null("Charge") as Label3D
-	if label: label.text = state
+	if cell: cell.visible = occupied
 
 func _on_service_stopped() -> void:
 	if is_being_placed or support_lost or is_destroyed or current_health <= 0.0:

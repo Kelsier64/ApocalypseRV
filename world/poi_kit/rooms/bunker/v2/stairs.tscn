@@ -974,25 +974,6 @@ rotation = Vector3(0, 0.14, 0)
 scale = Vector3(0.925926, 0.189474, 0.666667)
 mesh = ExtResource("spalled_chunks")
 
-[node name="UpperFloorSign" type="Label3D" parent="Visuals"]
-position = Vector3(2.0, 6.1, -5.73)
-text = "UPPER"
-font_size = 32
-pixel_size = 0.007
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
-
-[node name="LowerFloorSign" type="Label3D" parent="Visuals"]
-position = Vector3(2.0, 1.6, 5.73)
-rotation = Vector3(0, 3.141592653589793, 0)
-text = "LOWER"
-font_size = 32
-pixel_size = 0.007
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
-
 [node name="PendantLampHousing69_0" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-0.38, 7.2735, -4)
 scale = Vector3(1, 0.453, 1)

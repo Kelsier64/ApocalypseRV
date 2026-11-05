@@ -55,15 +55,6 @@ func cylinder(radius: float, height: float, pos: Vector3, key: String, rotation_
 	node.rotation = rotation_value
 	visuals.add_child(node)
 
-func label(words: String, pos: Vector3, size := 32) -> void:
-	var node := Label3D.new()
-	node.text = words
-	node.font_size = size
-	node.pixel_size = 0.009
-	node.modulate = Color("c2c3a6")
-	node.position = pos
-	visuals.add_child(node)
-
 func crate(p: Vector3, size := Vector3(1.2, 0.9, 0.9)) -> void:
 	part(size, p + Vector3.UP * size.y * 0.5, "wood")
 	for x in [-0.4, 0.4]:
@@ -189,7 +180,6 @@ func dress(theme: int, variant: int) -> void:
 			if variant == 2:
 				for x in [4, 7]: part(Vector3(0.16, 2.5, 0.16), Vector3(x, 1.25, -5), "wood")
 				part(Vector3(3.2, 1.7, 0.15), Vector3(5.5, 1.9, -5), "paint")
-				label("NORTH RIDGE\nTRAIL CLOSED", Vector3(5.5, 1.9, -4.91), 30)
 				for i in range(3): part(Vector3(0.08, 0.45, 0.025), Vector3(4.8 + i * 0.55, 1.35, -4.89), "yellow", false, Vector3(0, 0, 0.3))
 	# Theme-specific silhouettes above; all layouts retain the same clear front loop.
 	for i in range(4):

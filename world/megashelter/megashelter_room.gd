@@ -291,7 +291,6 @@ func _furniture() -> void:
 			_asset("locker", Vector3(hx - 0.8, 0, -1.4))
 			_asset("locker", Vector3(hx - 0.8, 0, -2.15))
 			_entrance_doors()
-			_sign("RECEPTION", Vector3(-hx + 0.29, 2.65, 0), PI*0.5)
 		"common_hall":
 			for x in [-hx + 1.1, hx - 1.1]:
 				_bench(Vector3(x, 0, -hz + 3.5))
@@ -300,7 +299,6 @@ func _furniture() -> void:
 			for x in [-hx * 0.5, hx * 0.5]:
 				for z in [-hz * 0.5, hz * 0.5]:
 					_piece(Vector3(x, clear_height*0.5, z), Vector3(0.72, clear_height, 0.72), 0, "bevel", true)
-			_sign("COMMON HALL", Vector3(-hx+0.29, 2.65, 0), PI*0.5)
 		"sleeping":
 			for z in [-hz + 1.6, -hz + 3.2]: _asset("bunk_bed", Vector3(-hx + 1.6, 0, z))
 			_asset("locker", Vector3(hx - 1.1, 0, -hz + 1.5))
@@ -331,8 +329,6 @@ func _furniture() -> void:
 				_box(Vector3(hx - 1.7, 1.15, z), Vector3(2.6, 2.3, 0.08), 1, true)
 			_append_pieces(Transform3D(Basis(Vector3.UP, -PI*0.5), Vector3(hx-0.9, 0, -hz+2.1)), FITTINGS.toilet())
 			_collider(Vector3(hx-0.9, 0.5, -hz+2.1), Vector3(0.8, 1, 0.6))
-	if function_id not in ["reception", "common_hall", "service_spine"]:
-		_sign({"sleeping":"DORMITORY", "medical":"FIRST AID", "storage":"SUPPLIES", "canteen":"CANTEEN", "services":"PLANT ROOM", "sanitary":"WASHROOM"}[function_id], Vector3(2.65, 2.65, hz - 0.29), PI)
 
 func _asset(kind: String, at: Vector3) -> void:
 	var scene := load("res://world/poi_kit/furniture/bunker/%s_graybox.tscn" % kind) as PackedScene
@@ -467,21 +463,6 @@ func _shelf(at: Vector3) -> void:
 	_box(at+Vector3(0.23, 0.35, 0), Vector3(0.6, 0.3, 0.55), 1)
 	_collider(at+Vector3(0, 1.0, 0), Vector3(1.7, 2.0, 0.8))
 
-func _sign(text: String, at: Vector3, angle: float, width := 2.65) -> void:
-	var plate: Array[Dictionary] = []
-	FITTINGS._plate(plate, Vector3.ZERO, Vector2(width, 0.35), 2)
-	_append_pieces(Transform3D(Basis(Vector3.UP, angle), at), plate)
-	var label := Label3D.new()
-	label.name = "WallSign" + str(_room_visuals.get_child_count())
-	label.text = text
-	label.position = at + Basis(Vector3.UP, angle)*Vector3(0, 0, 0.06)
-	label.rotation.y = angle
-	label.font_size = 48
-	label.pixel_size = 0.004
-	label.modulate = Color("a0a494")
-	label.no_depth_test = false
-	_room_visuals.add_child(label)
-
 func _box(at: Vector3, size: Vector3, material: int, solid := false) -> void:
 	_batches[material].add_box(Transform3D.IDENTITY, at, size, 0.9)
 	if solid: _collider(at, size)
@@ -505,7 +486,6 @@ func _entrance_doors() -> void:
 	_room_visuals.add_child(assembly)
 	_model(assembly, "LargeDoor", Transform3D(Basis(Vector3.UP, PI), Vector3(-0.95, 0, footprint.y*0.5-0.35)), FITTINGS.large_door())
 	_model(assembly, "PedestrianDoor", Transform3D(Basis(Vector3.UP, PI), Vector3(2.45, 0, footprint.y*0.5-0.35)), FITTINGS.pedestrian_door())
-	_sign("EXIT", Vector3(2.45, 2.72, footprint.y*0.5-0.26), PI, 1.04)
 
 func add_stair_access(pose: Transform3D) -> Transform3D:
 	# The wall behind the closed door remains solid across the instance boundary.
@@ -513,16 +493,6 @@ func add_stair_access(pose: Transform3D) -> Transform3D:
 	assembly.name = "StairAccess"
 	_room_visuals.add_child(assembly)
 	_model(assembly, "StairDoor", pose, FITTINGS.pedestrian_door())
-	var plate: Array[Dictionary] = []
-	FITTINGS._plate(plate, Vector3(0, 2.78, 0.02), Vector2(1.55, 0.35), 2)
-	_model(assembly, "StairSign", pose, plate)
-	var sign := Label3D.new()
-	sign.text = "BUNKER / STAIRS"
-	sign.transform = pose * Transform3D(Basis.IDENTITY, Vector3(0, 2.78, 0.08))
-	sign.font_size = 40
-	sign.pixel_size = 0.0035
-	sign.modulate = Color("a0a494")
-	assembly.add_child(sign)
 	return pose
 
 func _model(parent: Node3D, node_name: String, pose: Transform3D, pieces: Array[Dictionary]) -> void:

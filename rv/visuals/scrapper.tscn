@@ -5,20 +5,3 @@
 [node name="ScrapperDetails" type="Node3D"]
 
 [node name="Housing" parent="." instance=ExtResource("body")]
-
-[node name="Warning-0.49" type="Label3D" parent="."]
-position = Vector3(0, 0.24, -0.539)
-text = "CAUTION / FEED"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.80, 0.65, 1)
-rotation_degrees = Vector3(0, 180, 0)
-
-[node name="Warning0.49" type="Label3D" parent="."]
-position = Vector3(0, 0.24, 0.539)
-text = "CAUTION / FEED"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.80, 0.65, 1)

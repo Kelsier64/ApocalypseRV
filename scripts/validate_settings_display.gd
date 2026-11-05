@@ -36,10 +36,6 @@ class ManualInterior extends PoiInterior:
 		door_box.size = Vector3(1.2, 2.0, 0.2)
 		door_shape.shape = door_box
 		exit_door.add_child(door_shape)
-		var marker := Label3D.new()
-		marker.text = "EXIT — E"
-		marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		exit_door.add_child(marker)
 		add_child(exit_door)
 		return true
 	func spawn_transform() -> Transform3D:

@@ -37,13 +37,3 @@ material_override = ExtResource("soot")
 [node name="Collision" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.6, 0)
 shape = SubResource("collision")
-
-[node name="Stencil" type="Label3D" parent="Visuals/Model"]
-visible = false
-position = Vector3(0, 0.78, 0.375)
-text = "COMMAND"
-font_size = 32
-pixel_size = 0.003
-shaded = true
-double_sided = false
-modulate = Color(0.68, 0.67, 0.53, 1)

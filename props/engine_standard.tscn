@@ -122,10 +122,3 @@ material_override = ExtResource("orange")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("r12")
-
-[node name="Label" type="Label3D" parent="."]
-position = Vector3(0, 0.65, 0)
-text = "ENGINE"
-font_size = 28
-pixel_size = 0.0025
-billboard = 1

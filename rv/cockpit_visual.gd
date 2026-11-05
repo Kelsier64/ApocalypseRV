@@ -41,7 +41,6 @@ func _process(delta: float) -> void:
 	var charge := rv.current_power / maxf(rv.max_power, 1.0) if connected else 0.0
 	var gear := rv.gear if connected else 0
 	var parked := rv.handbrake if connected else true
-	var running := connected and rv.energy.engine_running
 	# Tilted local +Y points toward the driver: positive rotation is left.
 	var steer := clampf(rv.steering * 3.5, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) if connected else 0.0
 	steering_wheel.rotation.y = lerp_angle(steering_wheel.rotation.y, steer, minf(delta * 12.0, 1.0))
@@ -51,11 +50,6 @@ func _process(delta: float) -> void:
 	$SpeedNeedle.rotation.z = deg_to_rad(130.0 - clampf(speed / 140.0, 0.0, 1.0) * 260.0)
 	$FuelNeedle.rotation.z = deg_to_rad(130.0 - clampf(fuel, 0.0, 1.0) * 260.0)
 	$BatteryNeedle.rotation.z = deg_to_rad(130.0 - clampf(charge, 0.0, 1.0) * 260.0)
-	$Readout.text = "%03.0f  %s" % [speed, "R" if gear < 0 else ("N" if gear == 0 else str(gear))]
-	$EngineStatus.text = ("ENGINE ON" if running else "ENGINE OFF") if connected else "OFFLINE"
-	$EngineStatus.modulate = Color(0.3, 1.0, 0.6) if running else Color(0.95, 0.55, 0.2)
-	$BrakeStatus.text = "PARK" if parked else ""
-	$BatteryLabel.text = "NO BAT" if connected and rv.energy.battery == null else "BATT"
 
 	if connected:
 		for row in VehicleStatus.read(rv): warning_lamps[row.id].modulate = VehicleStatus.color(row.level) if rv.has_usable_power(0.000001) else VehicleStatus.color(0)
@@ -63,11 +57,6 @@ func _process(delta: float) -> void:
 		for lamp in warning_lamps.values(): lamp.modulate = VehicleStatus.color(0)
 	var brightness := rv.instrument_brightness if connected else 0.2
 	for mat in instrument_materials: mat.emission_energy_multiplier = brightness * 0.6 if connected and rv.has_usable_power() else 0.0
-	for key in ["Readout", "FuelLabel", "BatteryLabel", "SpeedLabel", "EngineStatus", "BrakeStatus"]:
-		var text_label := get_node_or_null(key) as Label3D
-		if text_label:
-			var tint := text_label.modulate if key == "EngineStatus" else Color.WHITE
-			text_label.modulate = Color(tint.r * brightness, tint.g * brightness, tint.b * brightness, 1)
 	for lamp in warning_lamps.values():
 		var tint: Color = lamp.modulate
 		lamp.modulate = Color(tint.r * brightness, tint.g * brightness, tint.b * brightness, 1)

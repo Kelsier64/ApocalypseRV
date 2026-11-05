@@ -46,6 +46,9 @@ Follow the conventions and validation guidance in `architecture.md`. For documen
 
 Use English for all in-game text. Keep it concise and necessary.
 
+- Never place gameplay hints, controls, instructions, item names, or status labels on models or in the 3D world. This includes floating prompts, `Label3D`, `TextMesh`, and white, glowing, unshaded, or camera-facing text. Keep interaction prompts in screen-space UI.
+- World text is allowed only where it clearly belongs in the fiction (for example, an essential physical sign, manufacturer plate, or instrument display). Finish it as integrated game art using a texture, decal, or an actual device screen; match the surface, lighting, wear, scale, and placement. Do not convert hints into textures to bypass this rule, add decorative wording by default, or restore removed labels through scene generators.
+
 ## Subagents
 
 Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks,use `gpt-6.1-terra` for computer-use tasks. Choose the subagent's reasoning effort based on the task's difficulty.

@@ -198,36 +198,6 @@ _surfaces = [{
 [node name="Facade" type="Node3D" unique_id=1982331061]
 metadata/art_status = "low-poly cast walls with recessed spalling, cold joints, sealed louvers and structural wear"
 
-[node name="Stencil0" type="Label3D" parent="." unique_id=1787166589]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21.3, 7.25, 12.55)
-pixel_size = 0.007
-shaded = true
-double_sided = false
-modulate = Color(0.6, 0.5764706, 0.5254902, 1)
-text = "BAY 01"
-font_size = 96
-outline_size = 0
-
-[node name="Stencil1" type="Label3D" parent="." unique_id=2023728821]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.3, 8.4, 12.55)
-pixel_size = 0.006
-shaded = true
-double_sided = false
-modulate = Color(0.6, 0.5764706, 0.5254902, 1)
-text = "SERVICE 02"
-font_size = 96
-outline_size = 0
-
-[node name="Stencil2" type="Label3D" parent="." unique_id=15281385]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.25, 14.53)
-pixel_size = 0.006
-shaded = true
-double_sided = false
-modulate = Color(0.6, 0.5764706, 0.5254902, 1)
-text = "MOTOR POOL"
-font_size = 96
-outline_size = 0
-
 [node name="ConcreteArchitecture" type="MeshInstance3D" parent="." unique_id=291385706]
 material_override = ExtResource("1_3cbdh")
 mesh = SubResource("ArrayMesh_liuiv")
