@@ -48,7 +48,7 @@ Use English for all in-game text. Keep it concise and necessary.
 
 ## Subagents
 
-Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks. Choose the subagent's reasoning effort based on the task's difficulty.
+Use subagents whenever a task is suitable for delegation. When delegating general tasks to a subagent, use `gpt-6.1-sol` for complex tasks(require deep reasoning),use `gpt-6-luna` for eazy tasks,use `gpt-6.1-terra` for computer-use tasks. Choose the subagent's reasoning effort based on the task's difficulty.
 Do scene modeling and general 3D tasks yourself. For suitable visual assets, use [comfyui-image-to-3d](.agents/skills/comfyui-image-to-3d/SKILL.md) directly: the main agent chooses reference creation, generation, inspection, edits and integration as the task needs. Modeling requests and specialized subagents are optional when a handoff is useful. Keep the raw model, verify the result in context, and report unresolved problems accurately.
 
 ## Computer Use: Game Testing

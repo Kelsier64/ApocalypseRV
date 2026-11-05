@@ -507,10 +507,8 @@ func _entrance_doors() -> void:
 	_model(assembly, "PedestrianDoor", Transform3D(Basis(Vector3.UP, PI), Vector3(2.45, 0, footprint.y*0.5-0.35)), FITTINGS.pedestrian_door())
 	_sign("EXIT", Vector3(2.45, 2.72, footprint.y*0.5-0.26), PI, 1.04)
 
-func add_stair_access() -> Transform3D:
-	# This side of reception is clear of the desk, lockers and outdoor doors.
+func add_stair_access(pose: Transform3D) -> Transform3D:
 	# The wall behind the closed door remains solid across the instance boundary.
-	var pose := Transform3D(Basis(Vector3.UP, -PI*0.5), Vector3(footprint.x*0.5-0.28, 0, 1.1))
 	var assembly := Node3D.new()
 	assembly.name = "StairAccess"
 	_room_visuals.add_child(assembly)

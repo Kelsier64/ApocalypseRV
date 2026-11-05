@@ -1,6 +1,6 @@
 # ApocalypseRV 架構
 
-2026-11-02 巨型避難所地下通道。接待室經獨立的 `megashelter_stairwell` 副本連接既有 `bunker`。樓梯間和地堡使用該棟大樓衍生的種子與保存 ID。轉場管理器記住來時的門，離場時可逐層返回。[室內指南](docs/guides/megashelter-interiors.md)
+2026-11-02 巨型避難所地下通道。室內依保存 seed，從接待室以外房間的未連通牆面接口抽選樓梯間入口，先檢查門前淨空與導航可達性。獨立的 `megashelter_stairwell` 副本經底部單扇小門連接既有 `bunker`。樓梯間和地堡使用該棟大樓衍生的種子與保存 ID。轉場管理器記住來時的門，離場時可逐層返回。[室內指南](docs/guides/megashelter-interiors.md)
 
 2026-11-01 巨型避難所室內：生成 v19 將 `modular_megashelter` 接到獨立 World3D 的 `megashelter` profile；外殼內容仍 v7，既有地形／道路及外觀 RNG 域保留。只開放地面一層，入口、大廳、三至五間功能房與少量連接空間通常共六至八個模組，按外部面積選擇模組尺寸。首訪二至四件散物與一個箱子，沒有敵人或升級引擎目標。`InteriorProfiles` 供生成與 Checkpoint 共用分流；保存完整布局、探索、箱子與散物，回訪不補貨。Checkpoint v7／VehicleSnapshot v6 不變，只接受生成 v19，舊局重新開始。本次轉場／保存檢查與 seed 42 實際回放已通過；完整範圍與待驗項目見[室內指南](docs/guides/megashelter-interiors.md)。
 

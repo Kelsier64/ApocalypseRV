@@ -1,6 +1,6 @@
 # 巨型避難所室內
 
-2026-11-01：`modular_megashelter` 使用 `INSTANCE_ENTRANCE`，入口轉入獨立 World3D 的 `megashelter` profile。外殼仍是封閉無窗的內容 v7，主要房間集中在地面一層，接待室另有獨立樓梯間通往地下地堡。正式世界生成為 v19；Checkpoint v7／VehicleSnapshot v6 不變。v18 舊局須重新開局，沒有資料遷移。
+2026-11-01：`modular_megashelter` 使用 `INSTANCE_ENTRANCE`，入口轉入獨立 World3D 的 `megashelter` profile。外殼仍是封閉無窗的內容 v7，主要房間集中在地面一層，室內另有獨立樓梯間通往地下地堡。正式世界生成為 v19；Checkpoint v7／VehicleSnapshot v6 不變。v18 舊局須重新開局，沒有資料遷移。
 
 ## 配置與內容
 
@@ -12,7 +12,9 @@
 
 ## 地下通道
 
-在接待室東牆對著標有 `BUNKER / STAIRS` 的單扇門按 E，進入[勤務樓梯間](../../world/poi_kit/rooms/megashelter/stairwell.tscn)。沿兩段折返梯下降 4.5 m，在 B1 防爆門按 E 進入該棟大樓專屬的[地堡](bunker-interior.md)。回程沿原路上樓，接待室原有的出口通往戶外。
+標有 `BUNKER / STAIRS` 的單扇門依大樓 seed 隨機設於接待室以外房間的未連通牆面接口。抽選使用獨立 RNG，檢查門前站立淨空及從入口可達的導航路徑；位置依保存布局重現，物資與玩家掉落物不參與重抽。
+
+對著這扇門按 E，進入[勤務樓梯間](../../world/poi_kit/rooms/megashelter/stairwell.tscn)。沿兩段折返梯下降 4.5 m，在 B1 的單扇鋼製小門按 E 進入該棟大樓專屬的[地堡](bunker-interior.md)。回程沿原路上樓，返回原先的房間，再經接待室出口通往戶外。
 
 ## 入口與保存
 

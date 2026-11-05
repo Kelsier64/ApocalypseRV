@@ -14,11 +14,11 @@ function_id = "stairwell"
 [node name="DoorSockets" type="Node3D" parent="."]
 
 [node name="Bulkhead" type="Marker3D" parent="DoorSockets"]
-position = Vector3(0.85, 0, 4.9)
+position = Vector3(1.5, 0, 4.9)
 rotation = Vector3(0, 3.1415927, 0)
 script = ExtResource("2")
 socket_id = &"bulkhead"
-opening = Vector2(3.7, 3.03)
+opening = Vector2(1.36, 2.52)
 
 [node name="Walkway" type="Node3D" parent="."]
 
@@ -34,6 +34,6 @@ metadata/opening = Vector2(1.06, 2.32)
 position = Vector3(1.5, 0.08, 3.25)
 
 [node name="BunkerExit" type="Marker3D" parent="Walkway"]
-position = Vector3(0.85, 0, 4.24)
+position = Vector3(1.5, 0, 4.24)
 rotation = Vector3(0, 3.1415927, 0)
-metadata/opening = Vector2(3.7, 3.03)
+metadata/opening = Vector2(1.06, 2.32)

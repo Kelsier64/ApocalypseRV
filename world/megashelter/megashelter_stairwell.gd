@@ -31,10 +31,12 @@ func _shell() -> void:
 		for z in [-2.52, 0.0, 2.52]:
 			_box(Vector3(3.057 * side, 3.9, z), Vector3(0.009, 7.8, 0.023), 4)
 	_turn_wall()
-	# South wall wraps the lower blast-door socket. Its lintel carries the G landing.
-	_box(Vector3(-2.03, 1.52, 4.78), Vector3(2.06, 3.04, 0.24), 0, true)
-	_box(Vector3(2.88, 1.52, 4.78), Vector3(0.36, 3.04, 0.24), 0, true)
-	_box(Vector3(0, 5.42, 4.78), Vector3(6.12, 4.76, 0.24), 0, true)
+	# The lower pedestrian door is centred on the descending flight's landing.
+	_box(Vector3(-1.12, 1.26, 4.78), Vector3(3.88, 2.52, 0.24), 0, true)
+	_box(Vector3(2.62, 1.26, 4.78), Vector3(0.88, 2.52, 0.24), 0, true)
+	_box(Vector3(0, 5.16, 4.78), Vector3(6.12, 5.28, 0.24), 0, true)
+	_box(Vector3(-1.12, 0.62, 4.65), Vector3(3.88, 1.24, 0.036), 1)
+	_box(Vector3(2.62, 0.62, 4.65), Vector3(0.88, 1.24, 0.036), 1)
 	for landing: Vector2 in [Vector2(MID_LEVEL, -1), Vector2(4.5, 1)]:
 		var z := landing.y * (FLIGHT_END + 4.66) * 0.5
 		var slab_size := Vector3(6.12, 0.24, 4.66 - FLIGHT_END)
@@ -109,9 +111,9 @@ func _balustrade(a: Vector3, b: Vector3) -> void:
 func _landings() -> void:
 	var south := Basis(Vector3.UP, PI)
 	_append_pieces(Transform3D(south, Vector3(-1.5, 4.5, 4.61)), FITTINGS.pedestrian_door())
-	_append_pieces(Transform3D(south, Vector3(0.85, 0, 4.61)), FITTINGS.large_door())
+	_model(_room_visuals, "BunkerDoor", Transform3D(south, Vector3(1.5, 0, 4.61)), FITTINGS.pedestrian_door())
 	_sign("GROUND", Vector3(-1.5, 7.17, 4.58), PI, 1.48)
-	_sign("B1   /   BUNKER", Vector3(0.85, 3.56, 4.58), PI, 2.22)
+	_sign("B1 / BUNKER", Vector3(1.5, 2.85, 4.58), PI, 1.48)
 	_floor_number("G", Vector3(1.45, 6.12, 4.60), PI)
 	_floor_number("B1", Vector3(0.0, 3.77, -4.62), 0)
 	_append_pieces(Transform3D(Basis.IDENTITY, Vector3(0, MID_LEVEL, -4.9)), FITTINGS.wall_bay(7.0, 3.4, 2))
@@ -121,7 +123,7 @@ func _landings() -> void:
 	_bulkhead_light(Vector3(-1.75, 5.25, -4.59), Basis.IDENTITY, Color("c3cfbf"), 3.8)
 	_bulkhead_light(Vector3(0, 7.1, 4.58), south, Color("bdcac7"), 2.9)
 	_bulkhead_light(Vector3(-1.66, 2.72, 4.58), south, Color("ddab7f"), 2.5)
-	# Recessed under the upper landing, this task light grazes the wheel and locking dogs.
+	# Recessed under the upper landing, this task light picks out the door fittings.
 	_bulkhead_light(Vector3(1.65, 4.20, 2.85), Basis(Vector3.RIGHT, PI * 0.5), Color("b4c1b6"), 2.1)
 
 func _risers() -> void:

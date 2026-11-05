@@ -81,7 +81,6 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 			await get_tree().process_frame
 			if cancelled or Time.get_ticks_msec() - started > build_timeout_ms: return false
 	_add_exit()
-	_add_links()
 	var mesh := NavigationMesh.new()
 	mesh.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	mesh.agent_radius = 0.5
@@ -92,6 +91,9 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	mesh.cell_height = 0.25
 	navigation.navigation_mesh = mesh
 	if not await _bake(): return false
+	# Choose the service door against published geometry before supplies or
+	# restored actors can influence placement on a later visit.
+	if not _add_links(): return false
 	if saved.has("actors"):
 		# An existing empty interior stays empty. Never populate on reentry.
 		content = saved.content.duplicate(true)
@@ -195,16 +197,47 @@ func _add_exit() -> void:
 	sign.pixel_size = 0.006
 	exit_door.add_child(sign)
 
-func _add_links() -> void:
+func _add_links() -> bool:
 	if profile_id == &"megashelter":
-		var pose: Transform3D = rooms[0].global_transform * rooms[0].call("add_stair_access")
-		_add_link(&"megashelter_stairwell", pose * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.3)), Vector2(1.25, 2.5))
-		# The returning player faces the open reception aisle, clear of the door.
-		link_return_transforms[&"megashelter_stairwell"] = pose * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.08, 1.5))
+		return _add_stair_access()
 	elif profile_id == &"megashelter_stairwell":
 		var marker := rooms[0].get_node("Walkway/BunkerExit") as Marker3D
 		_add_link(&"bunker", marker.global_transform, marker.get_meta("opening", Vector2(2.8, 3.0)))
 		link_return_transforms[&"bunker"] = rooms[0].get_node("Walkway/BunkerSpawn").global_transform
+	return true
+
+func _add_stair_access() -> bool:
+	var candidates: Array[Dictionary] = []
+	for i in range(1, rooms.size()):
+		for socket: PoiDoorSocket in rooms[i].get_node("DoorSockets").get_children():
+			if InteriorLayout.used(layout, i, str(socket.socket_id)): continue
+			var pose := rooms[i].socket_transform(socket) * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.28))
+			candidates.append({"room": rooms[i], "pose": pose})
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ("megashelter-stair-access:v1:%d" % int(layout.seed)).sha256_text().substr(0, 15).hex_to_int()
+	var clearance := PhysicsShapeQueryParameters3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(1.4, 2.1, 1.5)
+	clearance.shape = box
+	clearance.collision_mask = 1
+	var map := navigation.get_navigation_map()
+	var space := get_world_3d().direct_space_state
+	while not candidates.is_empty():
+		var candidate: Dictionary = candidates.pop_at(rng.randi_range(0, candidates.size() - 1))
+		var room: PoiRoom = candidate.room
+		var pose: Transform3D = room.global_transform * candidate.pose
+		clearance.transform = pose * Transform3D(Basis.IDENTITY, Vector3(0, 1.1, 1.05))
+		if not space.intersect_shape(clearance, 1).is_empty(): continue
+		var landing := pose * Vector3(0, 0, 1.5)
+		var nearest := NavigationServer3D.map_get_closest_point(map, landing)
+		if absf(nearest.y - landing.y) > 0.65 or Vector2(nearest.x - landing.x, nearest.z - landing.z).length() > 0.3: continue
+		var path := NavigationServer3D.map_get_path(map, navigation_anchor(0), nearest, true)
+		if path.size() < 2 or path[-1].distance_to(nearest) > 0.5: continue
+		room.call("add_stair_access", candidate.pose)
+		_add_link(&"megashelter_stairwell", pose * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.3)), Vector2(1.06, 2.32))
+		link_return_transforms[&"megashelter_stairwell"] = pose * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.08, 1.5))
+		return true
+	return false
 
 func _add_link(destination: StringName, pose: Transform3D, opening: Vector2) -> void:
 	var door := PoiEntrance.new()

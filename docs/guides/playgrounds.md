@@ -1,6 +1,124 @@
 # 遊玩與測試場指南
 
-正式遊戲操作見 [README](../../README.md)，規則與數值見 [GDD](../../GDD.md)。以下保留各測試場命令、快捷鍵、測試設定與限制；測試場按鍵不等同主世界按鍵。
+全部功能與接入狀態見 [功能總覽](features.md)，正式操作見 [README](../../README.md)，規則與數值見 [GDD](../../GDD.md)。本頁先列完整入口，再保留各測試場的詳細操作與歷史驗收連結。測試場快捷鍵不等同主世界按鍵。
+
+## 完整場景目錄（2026-11-02）
+
+以實體檔案及場景腳本盤點：`tests/` 共 **58 個場景**，包含 **53 個 playground**（51 個頂層、2 個巢狀）及 **5 個檢視／工作坊／review**；其中 **56 個已納入 Git、2 個僅存在本機且被忽略**。下表逐一涵蓋，另列 5 個 `world/` 的遊玩／美術入口。操作依程式核對；本次文件整理未啟動 Godot，不代表這些場景都已完成新版人工驗收。
+
+「正式系統」表示測試場引用正式角色、設備或服務；「主世界」表示使用正式世界或其衍生場景；「獨立實驗」表示視覺／模型研究，不能據此認定已接入主遊戲。即使引用正式系統，測試場仍可能提高 HP、凍結車輛或移除敵人，詳見後文與腳本。
+
+從專案根目錄執行，將路徑換成任一表列場景：
+
+```powershell
+godot --path . --log-file .godot/playground.log res://tests/megashelter_interior_playground.tscn
+# 場景自訂參數放在第二個 -- 之後
+godot --path . --log-file .godot/playground.log res://tests/megashelter_interior_playground.tscn -- --seed=42 --replay
+```
+
+### 主遊戲與其他世界入口
+
+| 場景 | 用途與接入狀態 | 操作／差異 |
+|---|---|---|
+| [main_world](../../world/main_world.tscn) | 正式主入口；目前教學、出庫與戶外生存流程 | 使用 README 的正式操作；專案預設啟動此場景。 |
+| [demo_world](../../world/demo_world.tscn) | 主世界衍生展示；保留出發流程 | 固定小霧並停用自然天氣，無限材料／燃油；不是一般資源平衡。 |
+| [cheat_test_world](../../world/cheat_test_world.tscn) | 主世界衍生作弊測試；保留舊車庫配置 | 預設無限燃油、電力及材料；用於自由試玩。 |
+| [test_world](../../world/test_world.tscn) | 獨立世界生成與存讀檔測試入口 | 正式玩家／完整 RV／物資；沒有正式新版教學起始流程。 |
+| [ruined_wall_study](../../world/art_samples/ruined_wall_study.tscn) | 獨立破損混凝土／鋼筋美術樣板 | F1 全景、F2 細節、F12 輸出當前畫面；`--capture` 自動輸出預覽。 |
+
+### 教學、世界與 POI（15 個）
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [orientation_playground](../../tests/orientation_playground.tscn) | 主世界：目前接待室／終端課程／維修出發 | 正式操作；`--terminal-review` 開正式教學終端，`--workshop-review` 看工作區。 |
+| [starting_shelter_playground](../../tests/starting_shelter_playground.tscn) | 主世界：出庫、外殼與舊車庫驗收入口 | F2 輪驅離場、F3 外觀、F4 室內／玩家、F5 封路；`--replay`。 |
+| [highway_playground](../../tests/highway_playground.tscn) | 主世界：道路起伏、山路與停靠輪驅 | F1–F3 里程視角、F6 行駛、F7 停靠、F8 駕駛／跟車；`--replay`／`--parking`。 |
+| [outdoor_horror_playground](../../tests/outdoor_horror_playground.tscn) | 主世界：正式戶外氛圍、入口與大物步行 | F2 視角、1–4 入口外觀、F3 搬運回放、F4 進出、F6 RV、F10 平板。 |
+| [rear_pressure_playground](../../tests/rear_pressure_playground.tscn) | 主世界 fixture：後方廢車通行與偏離壓力 | F2 穿越廢車、F3 後方霧／遭遇、F4 鏡頭；`--replay` 跑通行。 |
+| [gas_station_playground](../../tests/gas_station_playground.tscn) | 正式資產獨立場：加油站商店／維修間／加油棚 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |
+| [production_gas_station_playground](../../tests/production_gas_station_playground.tscn) | 主世界：正式加油站場址與整地／森林 | F2 鳥瞰、F3 玩家、F5 真實輪驅停靠、F7 截圖；此場移除怪物。 |
+| [minor_poi_playground](../../tests/minor_poi_playground.tscn) | 正式資產獨立場：18 套路邊小 POI | 左右切佈局、N 換 seed、F1 步行、F2 總覽、F7 截圖；`--capture-all`。 |
+| [production_minor_poi_playground](../../tests/production_minor_poi_playground.tscn) | 主世界：實際小 POI 排程、地形及停靠 | `--seed=0 --cell=0` 選場址；F2 總覽、F3 步行、F5 輪驅；`--replay`。 |
+| [bunker_playground](../../tests/bunker_playground.tscn) | 正式系統獨立場：多層地堡生成、地圖與搬運 | F1 步行、F2 總覽、F3 掀頂、F5 搬運、R 重建；`--rooms=12 --floors=3 --seed=42`。 |
+| [poi_instance_playground](../../tests/poi_instance_playground.tscn) | 主世界：地堡入口、室內副本與返回 | F6 或 `--replay` 正式 E 進出、F7 外觀、F8 截圖。 |
+| [megashelter_playground](../../tests/megashelter_playground.tscn) | 正式資產獨立場：巨型避難所外殼、生長模組與停車 | F2 外觀、F3 入口、F4 步行、F5 下一 seed、F6 隨機、F7 天氣／時間、F8 模組、F10 輪驅。 |
+| [megashelter_world_playground](../../tests/megashelter_world_playground.tscn) | 主世界：排程生成的巨型避難所、坡度與停車 | `--world-seed=42 --row=0 --column=0`；F2 外觀、F3 入口、F4 步行、F9 截圖、F10 輪驅；`--replay`。 |
+| [megashelter_interior_playground](../../tests/megashelter_interior_playground.tscn) | 正式系統獨立場：真正外殼入口／室內管理器／玩家、全部房間與搬運返回 | F1 步行、F2 總覽、F3 掀頂、F4 下一房、F5 搬運回放、F6 下一 seed、F7 入口、F8 截圖；E 返回、L 手電筒、M 地圖。 |
+| [megashelter_viewer](../../tests/megashelter_viewer.tscn) | 正式外殼檢視器；不包含步行／室內驗收 | 右鍵旋轉、中鍵平移、滾輪縮放；1 全景、2 入口、3 屋頂、F5 下一 seed、F6 隨機。 |
+
+### RV、設備與物品（13 個）
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [rv_systems_playground](../../tests/rv_systems_playground.tscn) | 正式能源、充電、電池、製作與車輛回放 | F2 引擎、F3 換電池、F4 入座、F5 平板、F6 回放、F7 平板免傷、R 重設；`--replay`。 |
+| [rv_interaction_playground](../../tests/rv_interaction_playground.tscn) | 正式射線／E 互動隔離場；固定玩家位置 | F2 電池槽、F3 座位、F4 加油孔、F5 道具箱、F6 掉落電池；1 電池、2 汽油罐。 |
+| [rv_door_playground](../../tests/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
+| [rv_structure_playground](../../tests/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
+| [rv_roof_playground](../../tests/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
+| [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
+| [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台。 |
+| [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F6／F7 左右鏡、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅。 |
+| [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
+| [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |
+| [item_playground](../../tests/item_playground.tscn) | 正式 Item 支撐、掉落、背包、放置與分解 | F2 拆牆、F3 看工作台、F4 鏡頭、F6 修牆、F7 看分解機、F8 長 E 回放。 |
+| [crafting_station_playground](../../tests/crafting_station_playground.tscn) | 製造機列印視覺預覽；直接取樣進度，非完整資源交易 | 1–8 配方、Space 暫停、R 重播、左右旋轉；`--capture`，`--crouch` 看蹲姿列印。 |
+| [printed_player_playground](../../tests/printed_player_playground.tscn) | 正式配方／能源／控制權切換；RV 凍結供隔離 | 開場排入 20 秒列印；WASD／滑鼠、E 換身體、R 再製造；`--verify` 行為檢查。 |
+
+### 玩家、動作與身體（12 個）
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [player_model_playground](../../tests/player_model_playground.tscn) | 主世界：正式玩家模型與視角 | F1 第一人稱、F2 低頭、F3 旁觀、F4 回放；`--replay --quit-replay`。 |
+| [player_animation_playground](../../tests/player_animation_playground.tscn) | 正式移動、四向跑步、死亡／重生與跳躍 | WASD／Shift、F1 低頭、F2 外部、F3 回放；`--jump` 看跳躍、`--replay` 自動。 |
+| [player_carry_playground](../../tests/player_carry_playground.tscn) | 正式手持與握姿的原地觀察 | F1 鏡頭、F2 換道具、F3 原地走、F4 俯仰、F5 手部、F6 近景角度。 |
+| [player_climb_animation_playground](../../tests/player_climb_animation_playground.tscn) | 正式玩家攀梯動畫、收手與視角 | F1 第一人稱、F2 外部、F3 重播；`--animation-review`／`--camera-review`。 |
+| [player_driving_playground](../../tests/player_driving_playground.tscn) | 正式坐姿／方向盤／踏板觀察；車體凍結、車殼可隱藏 | F1 回正、F2 左轉、F3 右轉、F4 鏡頭、F5 踩踏、F6 車殼。 |
+| [player_death_playground](../../tests/player_death_playground.tscn) | 主世界：正式死亡布娃娃與座位清理 | F1 第一人稱、F2 旁觀、F3 致命傷、F4 回放、F5 坐姿死亡；`--replay --quit-replay`。 |
+| [player_dismemberment_playground](../../tests/player_dismemberment_playground.tscn) | 正式身體／受傷爬行／Raker 咬擊結果的隔離場 | 1 頭、2／3 左右臂、4／5 左右腿；F1 鏡頭、F6 傷殘咬、F7 致死咬、F8 前進、R 重設。 |
+| [corpse_playground](../../tests/corpse_playground.tscn) | 正式屍體物理、搬運與分解 | E 拾取、G 丟棄、F1 第一人稱、F2 拾取捷徑、F3 旁觀、F4 行走、F5 死亡、F6 分解捷徑；`--replay`。 |
+| [pistol_playground](../../tests/pistol_playground.tscn) | 正式玩家／手槍／彈藥與敵人射擊；敵人移動停用 | 左鍵單發、右鍵瞄準、R 換彈；F6 回放、F7 巨人射線、F8 拾取；`--replay --capture`／`--headless-check`。 |
+| [rv_climb_playground](../../tests/rv_climb_playground.tscn) | 正式雙角色攀車／轉彎留車／砸頂；RV 使用腳本運動 | F2 移動、F3 屋頂梯、F4 鏡頭、F5 入座砸頂、F6 車內、F7 側梯、R 重設；`--replay`。 |
+| [player_import_v020/playground](../../tests/player_import_v020/playground.tscn) | 獨立 v020 匯入／骨架姿勢研究；無布娃娃 | F1–F8 姿勢、F9 低頭、F10 手部、F11 旁觀、Space TEST 片段、P 截圖；`--capture`。 |
+| [player_ragdoll_v020/playground](../../tests/player_ragdoll_v020/playground.tscn) | 獨立 v020 布娃娃實驗；不是正式死亡入口 | F1–F10 情境、Space 倒下、R 恢復、C 碰撞體、T TEST 片段、WASD；`--replay --quit-replay`。 |
+
+### 怪物、追擊與巨人（10 個）
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [raker_playground](../../tests/raker_playground.tscn) | 正式 Raker AI 與動畫；玩家 HP 提高 | Space 移動目標、F6 受傷、F7 死亡、F8 23 段動畫、F9 定格、R 恢復 AI。 |
+| [raker_vehicle_playground](../../tests/raker_vehicle_playground.tscn) | 正式輪驅追車、步態、轉彎與地面／車內／駕駛抓咬 | F2 定速、F4 鏡頭、F6 重生、F8 預覽、F10 轉彎、F11 抓咬情境、F12 重試；`--grab-ground`／`--grab-cabin`／`--grab-driver`。 |
+| [raker_impact_playground](../../tests/raker_impact_playground.tscn) | 正式輪驅撞擊、存活起身與致死布娃娃 | 1–4 案例、Space 開始、R 重播、F4 鏡頭、F9 暫停；`--replay --review --case=0`。 |
+| [monster_pursuit_playground](../../tests/monster_pursuit_playground.tscn) | 正式 Raker 追擊、玩家／設備傷害與牆壁遮擋 | F3 加牆並固定移動、F4 移牆；玩家 HP 提高，攻擊冷卻不變。 |
+| [monster_model_playground](../../tests/monster_model_playground.tscn) | 上列正式 Raker 戰鬥近景 | 沿用追擊場；F6 傷害閃白、R 重設。 |
+| [monster_boarding_playground](../../tests/monster_boarding_playground.tscn) | 正式掛車／破門／砸頂；車板 HP 與握力提高方便觀察 | F6 門降至 15 HP、F5 屋頂降至 15 HP、F7 耗盡握力；F2 為腳本車體運動。 |
+| [monster_cabin_playground](../../tests/monster_cabin_playground.tscn) | 正式破口進車／車內追擊；目標板件 15 HP | 預設破側門、F3 屋頂落入、F4 玩家移車外、R 重設；隱藏屋頂外觀但保留碰撞。 |
+| [crawler_playground](../../tests/crawler_playground.tscn) | 正式獨立 Crawler 角色與四肢步態；未加入隨機生成池 | 左右繞看、Space 待機／爬行、Tab Raker 對照、F4 正式追擊、R 重設。 |
+| [reverse_crawler_playground](../../tests/reverse_crawler_playground.tscn) | 獨立腹部朝上 Crawler 變體；未加入隨機生成池 | 與 Crawler 相同操作；不覆蓋原腹部朝下版本。 |
+| [barrel_man_playground](../../tests/barrel_man_playground.tscn) | 正式油桶人／油桶爆炸，玩家、車撞、追車及坡面 | F1 動畫、F2 手動、F3 玩家回放、F4 車撞、F5 追車、F7 坡面、F8 感應、F10 普通桶、F11 駕駛 POV。 |
+
+### 巨人專項與環境美術（6 個已追蹤）
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [slender_speaker_playground](../../tests/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
+| [slender_speaker_bend_review](../../tests/slender_speaker_bend_review.tscn) | 正式接觸與彎腰／抬升的視覺專項 review；非自由遊玩 | `--scenario=ground` 或 `driver`；`--angle=front`／`side`／`hands`／`pov`；Space 播放／暫停、1–4 鏡頭。 |
+| [day_night_playground](../../tests/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
+| [weather_playground](../../tests/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、時間與車頂遮蔽 | 6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |
+| [volumetric_fog_playground](../../tests/volumetric_fog_playground.tscn) | 日夜場衍生霧效對照；局部體積霧與舊距離霧 | B 切模式、7／8 局部密度、其餘沿用日夜場；`--entry` 從入口開始。 |
+| [industrial_style_playground](../../tests/industrial_style_playground.tscn) | 獨立工業美術樣板；部分針葉樹／高窗／RV 材質未接入正式版 | F1 樣板／目前正式版、F2 視角、F3 搬運、F4 進出、F6 RV、F9 損傷、F10 平板。 |
+
+### 本機限定工作坊（2 個；Git 忽略）
+
+這兩個入口在本次盤點的工作目錄中確實存在，但不隨版本庫交付；其他 clone 可能沒有檔案。本次只記錄，不把場景或生成物加入 Git。
+
+| 場景 | 用途與接入狀態 | 主要操作／模式 |
+|---|---|---|
+| [slender_speaker_workshop](../../tests/slender_speaker_workshop.tscn) | 巨人 Stage 01 獨立造型／材質／尺寸工作坊 | 1–9 視角、L 燈光、F8 擷取、Esc 離開；`--capture-review --quit-after-review`。 |
+| [slender_speaker_animation_workshop](../../tests/slender_speaker_animation_workshop.tscn) | 巨人 Stage 02 動畫／手部／處刑視覺預覽；處刑預覽不結算正式行為 | 1–6 視角、[／] 片段、Space 暫停、逗號／句號逐格、E 處刑、M 位移、R 重播、F8 擷取；`--capture-hands-studio`／`--capture-motion-revision`。 |
+
+## 詳細操作與驗收範圍
+
+以下日期與「通過」敘述保留歷史驗收的時間與範圍；目前自動入口以 [tests/README](../../tests/README.md) 為準。Headless 不驗證畫面、滑鼠捕捉或操作手感。
 
 ## Crawler 爬行怪物
 

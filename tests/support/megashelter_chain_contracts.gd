@@ -47,9 +47,11 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	var door := shelter.link_doors.get(&"megashelter_stairwell") as PoiEntrance
 	check.call(door != null, "Shelter service doorway targets the isolated stairwell")
 	if door == null: return
+	var shelter_door_pose := door.global_transform
+	_check_shelter_access(shelter, door, check)
 	await tree.physics_frame
-	_check_door_ray(shelter, player, door, shelter_return.origin, "Reception stair access", check)
-	await _interact(tree, manager, player, door, check)
+	_check_door_ray(shelter, player, door, shelter_return.origin, "Seeded shelter stair access", check)
+	await _interact_key(tree, manager, player, door, shelter_return, false, check)
 	if not _inside(manager, player, id + ":stairs", &"megashelter_stairwell", check): return
 	check.call(manager.interior.get_world_3d() != shelter_world, "Stairwell owns a separate World3D from the shelter")
 	check.call(manager.saved_instances.get(id, {}) == shelter_commit, "Entering stairs commits the shelter manifest before transfer")
@@ -60,6 +62,10 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	door = manager.interior.link_doors.get(&"bunker") as PoiEntrance
 	check.call(door != null, "Lower stairwell door targets the bunker")
 	if door == null: return
+	var lower_shape := door.get_child(0) as CollisionShape3D
+	var lower_box := lower_shape.shape as BoxShape3D if lower_shape != null else null
+	check.call(lower_box != null and is_equal_approx(lower_box.size.x, 1.06) and is_equal_approx(lower_box.size.y, 2.32), "Lower bunker interaction opening fits the small pedestrian door")
+	check.call(manager.interior.rooms[0].has_node("Visuals/BunkerDoor"), "Lower bunker entrance has its own pedestrian door model")
 	await tree.physics_frame
 	_check_door_ray(manager.interior, player, manager.interior.exit_door, manager.interior.spawn_transform().origin, "Upper stairwell exit", check)
 	_check_door_ray(manager.interior, player, door, stairs_return.origin, "Lower stairwell bunker door", check)
@@ -81,14 +87,15 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	check.call(manager.saved_instances.get(id + ":bunker", {}).get("explored", []) == bunker_commit.explored, "Bunker exploration commits under its own child instance ID")
 	await _interact(tree, manager, player, manager.interior.exit_door, check)
 	if not _inside(manager, player, id, &"megashelter", check): return
-	check.call(player.global_transform.is_equal_approx(shelter_return), "Stairwell exit returns to the reception aisle facing away from the service door")
+	check.call(player.global_transform.is_equal_approx(shelter_return), "Stairwell exit returns to the selected room landing facing away from its door")
+	check.call(manager.interior.link_doors[&"megashelter_stairwell"].global_transform.is_equal_approx(shelter_door_pose) and manager.interior.link_return_transforms[&"megashelter_stairwell"].is_equal_approx(shelter_return), "Shelter revisit restores the same seeded stair doorway and return landing")
 	var shelter_revisit := manager.interior.snapshot()
 	check.call(shelter_revisit.layout == shelter_commit.layout and shelter_revisit.explored == shelter_commit.explored, "Returning upstairs preserves shelter layout and exploration")
 	var shelter_ids := _item_ids(shelter_revisit)
 	check.call(shelter_drop_id in shelter_ids and picked_id not in shelter_ids and bunker_drop_id not in shelter_ids, "Shelter return keeps its drop once without respawning pickup or importing bunker props")
 	check.call(player.inventory.items.any(func(item): return item.state.id == picked_id), "Picked shelter supply remains owned by player through both child instances")
 	# Revisit the child domain too: a return stack must retain the child save.
-	await _interact(tree, manager, player, manager.interior.link_doors[&"megashelter_stairwell"], check)
+	await _interact_key(tree, manager, player, manager.interior.link_doors[&"megashelter_stairwell"], manager.interior.link_return_transforms[&"megashelter_stairwell"], true, check)
 	if not _inside(manager, player, id + ":stairs", &"megashelter_stairwell", check): return
 	await _interact_key(tree, manager, player, manager.interior.link_doors[&"bunker"], manager.interior.link_return_transforms[&"bunker"], true, check)
 	if not _inside(manager, player, id + ":bunker", &"bunker", check): return
@@ -101,7 +108,7 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	await manager.leave()
 	await manager.leave()
 	check.call(manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == arena and manager.active_id.is_empty(), "Complete child return chain eventually restores the original outdoor player owner")
-	await _failed_child(tree, arena, manager, player, building, id, check)
+	await _failed_child(tree, arena, manager, player, building, id, shelter_door_pose, shelter_return, check)
 	building.queue_free()
 	await _direct_bunker(tree, arena, manager, player, check)
 
@@ -133,6 +140,21 @@ static func _item_ids(snapshot: Dictionary) -> Array[String]:
 	for actor: Dictionary in snapshot.actors:
 		if actor.kind == "item": ids.append(str(actor.state.id))
 	return ids
+
+static func _check_shelter_access(interior: PoiInterior, door: PoiEntrance, check: Callable) -> void:
+	var access_rooms: Array[int] = []
+	var unused_socket := false
+	for i in interior.rooms.size():
+		var room := interior.rooms[i]
+		if not room.has_node("Visuals/StairAccess"): continue
+		access_rooms.append(i)
+		for socket: PoiDoorSocket in room.get_node("DoorSockets").get_children():
+			if InteriorLayout.used(interior.layout, i, str(socket.socket_id)): continue
+			# The door skin and interaction body sit just inside a sealed port.
+			if socket.global_position.distance_to(door.global_position) < 0.75:
+				unused_socket = true
+	check.call(access_rooms.size() == 1 and access_rooms[0] > 0, "Seeded stairs occupy exactly one room beyond reception")
+	check.call(unused_socket, "Seeded stair doorway uses an unused wall socket without replacing a room connection")
 
 static func _check_door_ray(interior: PoiInterior, player: CharacterBody3D, door: PoiEntrance, landing: Vector3, label: String, check: Callable) -> void:
 	var from := landing + Vector3.UP * 1.5
@@ -171,7 +193,8 @@ static func _interact_key(tree: SceneTree, manager: PoiInstanceManager, player: 
 	for _frame in 3: await tree.physics_frame
 	var ray := player.get_node("Camera3D/InteractRay") as RayCast3D
 	ray.force_raycast_update()
-	check.call(ray.get_collider() == door and not ray.prompt_label.text.is_empty(), "Bunker door is targeted by the real player interaction ray")
+	var destination := str(door.destination_id)
+	check.call(ray.get_collider() == door and not ray.prompt_label.text.is_empty(), destination + " door is targeted by the real player interaction ray")
 	var event := InputEventKey.new()
 	event.keycode = 0 if physical else KEY_E
 	if physical: event.physical_keycode = KEY_E
@@ -182,18 +205,21 @@ static func _interact_key(tree: SceneTree, manager: PoiInstanceManager, player: 
 	Input.parse_input_event(event)
 	var arrived := await WAIT.until(tree, func(): return manager.active_id != previous and not manager.busy, 10000)
 	player.process_mode = Node.PROCESS_MODE_DISABLED
-	check.call(arrived and manager.state == PoiInstanceManager.State.INDOOR, "%s E key enters the bunker through the player input path" % ("Physical" if physical else "Logical"))
+	check.call(arrived and manager.state == PoiInstanceManager.State.INDOOR, "%s E key enters %s through the player input path" % ["Physical" if physical else "Logical", destination])
 
 static func _check_retained(manager: PoiInstanceManager, player: CharacterBody3D, check: Callable) -> void:
 	var source := manager._retained_viewport
 	check.call(player.get_parent() == manager._retained_interior and source.process_mode == Node.PROCESS_MODE_DISABLED and source.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Destination build keeps player in the frozen source World3D")
 	check.call(manager._display.visible and manager._display.texture == source.get_texture(), "Destination build retains the source frame until the new interior is ready")
 
-static func _failed_child(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, player: CharacterBody3D, building: Node3D, id: String, check: Callable) -> void:
+static func _failed_child(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, player: CharacterBody3D, building: Node3D, id: String, shelter_door_pose: Transform3D, shelter_return: Transform3D, check: Callable) -> void:
 	for mode in ["build failure", "timeout"]:
 		manager.interior_factory = Callable()
-		await manager.enter(player, building, id, 913)
+		# Restore an existing manifest with a different caller seed: saved layout
+		# remains authoritative for the chosen access as well as the room plan.
+		await manager.enter(player, building, id, 10101 if mode == "build failure" else 20202)
 		if not _inside(manager, player, id, &"megashelter", check): return
+		check.call(manager.interior.link_doors[&"megashelter_stairwell"].global_transform.is_equal_approx(shelter_door_pose) and manager.interior.link_return_transforms[&"megashelter_stairwell"].is_equal_approx(shelter_return), "Saved layout seed keeps stair access stable when the caller seed changes")
 		var source := manager.interior.snapshot()
 		var child: Dictionary = manager.saved_instances[id + ":stairs"].duplicate(true)
 		manager.interior_factory = func(): return FailedChild.new()

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjjkra5u2xigs"
-path="res://.godot/imported/shelter_roof_air_handler_0.png-e3fb39372e291a4eb8643fb324a45934.ctex"
+path.s3tc="res://.godot/imported/shelter_roof_air_handler_0.png-e3fb39372e291a4eb8643fb324a45934.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "15c8e91fecb7d4593108a0552e6ff194"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/shelter_roof_air_handler/shelter_roof_air_handler_0.png"
-dest_files=["res://.godot/imported/shelter_roof_air_handler_0.png-e3fb39372e291a4eb8643fb324a45934.ctex"]
+dest_files=["res://.godot/imported/shelter_roof_air_handler_0.png-e3fb39372e291a4eb8643fb324a45934.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
