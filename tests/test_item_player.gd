@@ -512,7 +512,8 @@ func check_viewmodel_frame(note: String, large: bool = false) -> void:
 	var view: Node = actor.get_node("Visuals/FirstPersonCarry")
 	var carry: Node = actor.get_node("Visuals/Carry")
 	var crouch_drop: float = actor.get_node("Visuals/Locomotion").crouch_eye_drop
-	if actor.camera.rotation.x < -.35 or is_equal_approx(actor.camera.rotation.x, -.35) or crouch_drop > .16 or is_equal_approx(crouch_drop, .16):
+	var hide_pitch := -.35 if large else -.57
+	if actor.camera.rotation.x < hide_pitch or is_equal_approx(actor.camera.rotation.x, hide_pitch) or crouch_drop > .16 or is_equal_approx(crouch_drop, .16):
 		check(not view.active and actor.get_node("Visuals").local_body.mesh == view.original_body, "Body-view posture restores the complete local body: " + note)
 		for arm: MeshInstance3D in view.arm_meshes.values():
 			check(not arm.visible, "Body-view posture hides every separate viewmodel arm: " + note)
@@ -577,13 +578,13 @@ func check_first_person_carry() -> void:
 	for mesh: MeshInstance3D in original_layers:
 		check(mesh.layers & actor.camera.cull_mask == 0 and mesh.layers & observer.cull_mask != 0, "Held mesh renders once locally and remains available to observers")
 	# Cross the handoff synchronously to isolate view changes from carry animation.
-	for sample: Array in [[-.30, true], [-.35, false], [-.32, false], [-.30, false], [-.29, true], [0.0, true]]:
+	for sample: Array in [[-.35, true], [-.52, true], [-.57, false], [-.55, false], [-.52, false], [-.51, true], [0.0, true]]:
 		actor.camera.rotation.x = sample[0]
 		var before_view := held.global_transform
 		view.update_view()
 		check(view.active == sample[1], "Lookdown handoff hysteresis at pitch " + str(sample[0]) + " active=" + str(sample[1]))
 		check(held.global_transform.is_equal_approx(before_view), "Lookdown handoff preserves the world-held pose")
-		if sample[0] == -.30 and sample[1]:
+		if sample[0] == -.52 and sample[1]:
 			check(view.camera.global_transform.is_equal_approx(actor.camera.get_camera_transform()) and is_equal_approx(view.camera.fov, actor.camera.fov), "The active handoff camera exactly joins the gameplay body camera")
 		if not sample[1]:
 			check(local_body.mesh == original_body_mesh, "Lookdown handoff restores the original local skin")
@@ -786,6 +787,13 @@ func check_flashlight_viewmodel() -> void:
 		actor.grab_control.keep_flashlight = false
 		view.update_view()
 		check(view.active, "Flashlight returns to its viewmodel after grab ownership ends")
+	var level_height: float = actor.to_local(held.global_position).y
+	actor.camera.rotation.x = -1.0
+	await steps(20)
+	check(not view.active and actor.to_local(held.global_position).y < level_height - .25, "Looking down lowers the real flashlight after the body-view handoff")
+	actor.camera.rotation.x = 0.0
+	await steps(20)
+	check(view.active and absf(actor.to_local(held.global_position).y - level_height) < .02, "Returning to level restores the original flashlight grip height")
 	clear_bag()
 	observer.queue_free()
 	await steps()

@@ -293,7 +293,8 @@ func _update_item(delta: float, large: bool) -> void:
 	var shoulder_height := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin).y
 	var crouch_drop := 0.0
 	var crouch_depth := 0.0
-	if get_parent().get_node("Locomotion").crouch_eye_drop > 0.0:
+	var crouch_eye_drop: float = get_parent().get_node("Locomotion").crouch_eye_drop
+	if crouch_eye_drop > 0.0:
 		var rest_shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_rest(shoulder).origin)
 		var posed_shoulder := actor.to_local(skeleton.global_transform * skeleton.get_bone_global_pose(shoulder).origin)
 		crouch_drop = clampf(rest_shoulder.y - shoulder_height, 0.0, .7)
@@ -308,11 +309,14 @@ func _update_item(delta: float, large: bool) -> void:
 		center = Vector3(0, 1.30 - bounds.size.y * .5, -maxf(.70, bounds.size.z * .5 + .35))
 	if item.has_method("held_support_center"): center = item.held_support_center()
 	if large or item.has_method("held_support_center"): center.y -= crouch_drop
+	# Relax raised single-hand grips as the player looks down at their body.
+	var lookdown_drop := .30 * smoothstep(.12, .92, -actor.camera.rotation.x)
+	lookdown_drop *= 1.0 - smoothstep(0.0, .58, crouch_eye_drop)
 	if not actor.is_crawling() and not actor.is_grabbed() and not item.has_method("held_support_center"):
 		# Raise compact props beside the shoulder. Very wide props still need
 		# an authored support grip rather than an unreachable outer-edge grip.
 		if grip_kind == "small" and bounds.size.x <= .70:
-			center = Vector3(.18, shoulder_height + .16, -maxf(.50, bounds.size.z * .5 + .35))
+			center = Vector3(.18, shoulder_height + .16 - lookdown_drop, -maxf(.50, bounds.size.z * .5 + .35))
 		elif grip_kind == "small":
 			# Wide props keep their low hold, with the near face clear of the eye.
 			center.z = -maxf(.48, bounds.size.z * .5 + .25)
@@ -324,7 +328,7 @@ func _update_item(delta: float, large: bool) -> void:
 		# Raise the light beside the shoulder so the real barrel clears the
 		# bottom of the first-person view. Keep the restrained/prone grips.
 		if not actor.is_crawling() and not actor.is_grabbed():
-			center = Vector3(.18, shoulder_height + .24, -.50)
+			center = Vector3(.18, shoulder_height + .24 - lookdown_drop, -.50)
 	# Follow the crouched torso in depth too, keeping real grips in arm reach.
 	center.z += crouch_depth
 	if item is Item: center += item.carry_offset

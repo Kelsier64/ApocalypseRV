@@ -4,11 +4,12 @@ extends Node
 const VIEW_LAYER := 1 << 21
 const LIGHT_COPY := &"first_person_light_copy"
 const MESH_COPY := &"first_person_render_copy"
-const CAMERA_OFFSET := Vector3(-.08, -.025, .28)
+const CAMERA_OFFSET := Vector3(-.18, .14, .50)
 const MAX_LIGHTS := 4
 const BODY_VIEW_BLEND_START := .08
 const BODY_VIEW_BLEND_END := .30
-const BODY_VIEW_HIDE := .35
+const SINGLE_HAND_BODY_VIEW_BLEND_END := .52
+const BODY_VIEW_HYSTERESIS := .05
 const CROUCH_VIEW_BLEND_START := .015
 const CROUCH_VIEW_BLEND_END := .14
 const CROUCH_VIEW_HIDE := .16
@@ -100,9 +101,6 @@ func _eligible() -> bool:
 	if not is_instance_valid(actor) or not actor.is_inside_tree() or not actor.is_visible_in_tree(): return false
 	if actor.is_player_dead or actor.seated_in != null or actor.is_grabbed() or actor.is_crawling(): return false
 	if not actor.camera.is_current() or actor.is_placing_equipment(): return false
-	# Switch only after both projections match. A small dead band avoids
-	# rebuilding the cosmetic copies while hovering around the boundary.
-	if actor.camera.rotation.x <= -(BODY_VIEW_HIDE if active else BODY_VIEW_BLEND_END) + .000001: return false
 	var crouch_drop: float = visual.get_node("Locomotion").crouch_eye_drop
 	if crouch_drop >= (CROUCH_VIEW_HIDE if active else CROUCH_VIEW_BLEND_END) - .000001: return false
 	if actor.locomotion_state == actor.LocomotionState.CLIMBING or visual.get_node("Locomotion").climb_exit_remaining > 0.0: return false
@@ -118,13 +116,21 @@ func update_view() -> void:
 	if not is_instance_valid(viewport) or not _eligible():
 		_deactivate()
 		return
-	if item != actor.held_item_node:
+	var held: Node3D = actor.held_item_node
+	var large: bool = actor.inventory.active_item().get("is_large", false)
+	var two_hands: bool = large or held is Pistol
+	var blend_end := BODY_VIEW_BLEND_END if two_hands else SINGLE_HAND_BODY_VIEW_BLEND_END
+	# Let a lowered single-hand grip settle over a wider angle before the
+	# body and arms return to the same render pass.
+	var hide_angle := blend_end + (BODY_VIEW_HYSTERESIS if active else 0.0)
+	if -actor.camera.rotation.x >= hide_angle - .000001:
+		_deactivate()
+		return
+	if item != held:
 		_clear_item()
-		item = actor.held_item_node
+		item = held
 		_bind_item()
 	active = true
-	var large: bool = actor.inventory.active_item().get("is_large", false)
-	var two_hands: bool = large or item is Pistol
 	var mode: String = "both" if two_hands else carry.active_hand
 	visual.local_body.mesh = parts["body_" + mode]
 	_restore_arm_layers()
@@ -180,7 +186,7 @@ func update_view() -> void:
 		offset = _safe_pistol_offset(Vector3(-.12 if carry.active_hand == "R" else .12, hip_height, .25).lerp(Vector3.ZERO, aim), basis)
 		camera.fov = lerpf(70.0, actor.camera.fov, aim)
 	var world_lens: Transform3D = actor.camera.get_camera_transform()
-	var body_view := smoothstep(BODY_VIEW_BLEND_START, BODY_VIEW_BLEND_END, -actor.camera.rotation.x)
+	var body_view := smoothstep(BODY_VIEW_BLEND_START, blend_end, -actor.camera.rotation.x)
 	body_view = maxf(body_view, smoothstep(CROUCH_VIEW_BLEND_START, CROUCH_VIEW_BLEND_END, visual.get_node("Locomotion").crouch_eye_drop))
 	# Shoulder triangles meet the torso only when position, angle and FOV use
 	# the same projection. Rejoin that projection before the body enters view.
