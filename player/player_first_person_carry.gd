@@ -4,7 +4,7 @@ extends Node
 const VIEW_LAYER := 1 << 21
 const LIGHT_COPY := &"first_person_light_copy"
 const MESH_COPY := &"first_person_render_copy"
-const CAMERA_OFFSET := Vector3(-.18, .14, .50)
+const CAMERA_OFFSET := Vector3(-.08, -.025, .28)
 const MAX_LIGHTS := 4
 const BODY_VIEW_BLEND_START := .08
 const BODY_VIEW_BLEND_END := .30
