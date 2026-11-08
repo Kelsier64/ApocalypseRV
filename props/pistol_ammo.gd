@@ -12,4 +12,4 @@ func restore_item_state(state: Dictionary) -> void:
 	rounds = int(state.get("ammo", {}).get("rounds", PistolRules.BOX_CAPACITY))
 
 func get_interaction_prompt(player: Node3D) -> String:
-	return "手槍子彈｜%d 發\n%s" % [rounds, super.get_interaction_prompt(player)]
+	return "Pistol Ammo | %d rounds\n%s" % [rounds, super.get_interaction_prompt(player)]

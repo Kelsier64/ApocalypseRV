@@ -18,13 +18,13 @@ static func layout() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
 	for side in ["right", "left"]:
 		for i in range(3):
-			slots.append({"id": side + "_" + str(i), "kind": "side", "label": ("右側" if side == "right" else "左側") + ["前段", "中段", "後段"][i],
+			slots.append({"id": side + "_" + str(i), "kind": "side", "label": ("Right " if side == "right" else "Left ") + ["front", "middle", "rear"][i],
 				"pose": Transform3D(Basis(Vector3.UP, PI / 2.0 if side == "right" else -PI / 2.0), Vector3(1.9 if side == "right" else -1.9, 1.5, -4.0 + i * 4.0)),
 				"size": Vector3(3.96, 1.98, 0.2), "center": Vector3.ZERO})
-	slots.append({"id": "rear", "kind": "rear", "label": "後方大門", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1.5, 5.9)), "size": Vector3(3.6, 1.98, 0.2), "center": Vector3.ZERO})
-	slots.append({"id": "front", "kind": "front", "label": "車頭", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1, -5.9)), "size": Vector3(3.6, 2, 0.2), "center": Vector3(0, 0.5, 0)})
+	slots.append({"id": "rear", "kind": "rear", "label": "Rear doors", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1.5, 5.9)), "size": Vector3(3.6, 1.98, 0.2), "center": Vector3.ZERO})
+	slots.append({"id": "front", "kind": "front", "label": "Front wall", "pose": Transform3D(Basis.IDENTITY, Vector3(0, 1, -5.9)), "size": Vector3(3.6, 2, 0.2), "center": Vector3(0, 0.5, 0)})
 	for i in range(3):
-		slots.append({"id": "roof_" + str(i), "kind": "roof", "label": "屋頂" + ["前段", "中段", "後段"][i],
+		slots.append({"id": "roof_" + str(i), "kind": "roof", "label": ["Front roof", "Middle roof", "Rear roof"][i],
 			"pose": Transform3D(Basis.IDENTITY, Vector3(0, 2.6005738, -4.0 + i * 4.0)),
 			"size": Vector3(4, 0.2, 4), "center": Vector3.ZERO})
 	return slots
@@ -141,7 +141,7 @@ static func validate_snapshot(data: Variant) -> bool:
 
 func restore(data: Array) -> void:
 	if not validate_snapshot(data): return
-	if is_instance_valid(construction): construction.cancel("載入車體狀態")
+	if is_instance_valid(construction): construction.cancel("Loading structure state")
 	for entry in data:
 		var part := replace_panel(entry.slot, entry.type, entry.health)
 		if part.has_method("restore_angles"): part.restore_angles(entry.door_angles)

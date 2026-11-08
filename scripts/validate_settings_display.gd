@@ -240,8 +240,8 @@ func check_resolution_summary(note: String) -> void:
 	var dimensions := Vector2i(viewport.get_visible_rect().size)
 	var ratio := viewport.scaling_3d_scale
 	var rendered := Vector2i(Vector2(dimensions) * ratio)
-	check(menu.get("_resolution_label").text == "3D：%d × %d（%.0f%%）" % [rendered.x, rendered.y, ratio * 100.0], note + " displays applied 3D size and percentage")
-	check(menu.controls[&"render_mode"].description.text.contains("視窗：%d × %d" % [dimensions.x, dimensions.y]), note + " explains native window size")
+	check(menu.get("_resolution_label").text == "3D: %d × %d (%.0f%%)" % [rendered.x, rendered.y, ratio * 100.0], note + " displays applied 3D size and percentage")
+	check(menu.controls[&"render_mode"].description.text.contains("Window: %d × %d" % [dimensions.x, dimensions.y]), note + " explains native window size")
 
 func check_actor_viewport_summary() -> void:
 	var original_player_transform := player.global_transform

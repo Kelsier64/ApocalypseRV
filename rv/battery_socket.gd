@@ -12,40 +12,40 @@ var _visual_occupancy := -1
 
 func get_interaction_prompt(player: Node3D) -> String:
 	var rv := get_connected_rv()
-	if rv == null: return "電池插槽｜未連接 RV，請先安裝到車上"
-	if not can_operate(): return "電池插槽｜無法供電，請先維修或結束搬移"
-	var text := "電池插槽｜%s" % ("電量 %.1f / %.0f" % [installed_battery.charge, installed_battery.capacity] if installed_battery else "空槽")
-	text += "\n接入電池供電；搬移／脫落／損壞時，電池會掉落"
-	if has_other_battery(): return text + "\n本車已有另一個插槽供電，請先取出那顆電池"
-	if rv.linear_velocity.length() > 0.5: return text + "\n車輛仍在移動，請停穩後操作"
+	if rv == null: return "Battery socket | Install it on the RV first"
+	if not can_operate(): return "Battery socket | Repair it or finish moving it first"
+	var text := "Battery socket | %s" % ("Charge %.1f / %.0f" % [installed_battery.charge, installed_battery.capacity] if installed_battery else "Empty")
+	text += "\nThe battery powers the RV and drops if the socket moves, detaches, or breaks."
+	if has_other_battery(): return text + "\nRemove the battery from the other socket first"
+	if rv.linear_velocity.length() > 0.5: return text + "\nStop the vehicle first"
 	if player.get_active_item_name() == ItemNames.BATTERY:
-		text += "\n短按 E：交換電池（舊電池回到原背包格）" if rv.energy.battery else "\n短按 E：裝入手持電池"
+		text += "\nTap E to swap batteries (old battery returns to the same slot)" if rv.energy.battery else "\nTap E to install the held battery"
 	else:
-		text += "\n請先用 1–6／滾輪選取背包電池，再短按 E 裝入"
+		text += "\nSelect a battery with 1–6 or the mouse wheel, then tap E to install"
 	if rv.energy.battery:
-		text += "\n長按 E 1 秒：取出電池"
-		if player.inventory.items.size() >= PlayerInventory.MAX_SLOTS: text += "（需空背包格）"
+		text += "\nHold E for 1 second to remove the battery"
+		if player.inventory.items.size() >= PlayerInventory.MAX_SLOTS: text += " (requires a free inventory slot)"
 	return text
 
 func interact(player: Node3D) -> String:
 	var rv := get_connected_rv()
-	if rv == null or not can_operate(): return "插槽未接入或無法使用，請先安裝／維修"
-	if has_other_battery(): return "本車已有另一個插槽供電，請先取出那顆電池"
-	if rv.linear_velocity.length() > 0.5: return "請先把車停穩，再更換電池"
-	if player.get_active_item_name() != ItemNames.BATTERY: return "尚未選取電池：請用 1–6 或滾輪選取背包中的電池"
-	if not rv.exchange_battery(player, self): return "無法裝入：手持物品沒有有效電池狀態"
+	if rv == null or not can_operate(): return "Socket unavailable: install or repair it"
+	if has_other_battery(): return "Remove the battery from the other socket first"
+	if rv.linear_velocity.length() > 0.5: return "Stop the vehicle before replacing the battery"
+	if player.get_active_item_name() != ItemNames.BATTERY: return "Select an inventory battery with 1-6 or the mouse wheel"
+	if not rv.exchange_battery(player, self): return "Cannot install: held item has invalid battery data"
 	_update_visual()
-	return "電池已接入，電量 %.1f / %.0f" % [rv.current_power, rv.max_power]
+	return "Battery connected | Charge %.1f / %.0f" % [rv.current_power, rv.max_power]
 
 func interact_hold(player: Node3D) -> String:
 	var rv := get_connected_rv()
-	if rv == null or not can_operate(): return "插槽未接入或無法使用，請先安裝／維修"
-	if has_other_battery(): return "本車已有另一個插槽供電，請先取出那顆電池"
-	if rv.linear_velocity.length() > 0.5: return "請先把車停穩，再取出電池"
-	if rv.energy.battery == null: return "插槽已經是空的"
-	if not rv.remove_battery_to_player(player, self): return "背包已滿：先空出一格，或手持另一顆電池短按 E 交換"
+	if rv == null or not can_operate(): return "Socket unavailable: install or repair it"
+	if has_other_battery(): return "Remove the battery from the other socket first"
+	if rv.linear_velocity.length() > 0.5: return "Stop the vehicle before removing the battery"
+	if rv.energy.battery == null: return "Socket already empty"
+	if not rv.remove_battery_to_player(player, self): return "Inventory full. Free a slot or hold another battery and tap E to swap."
 	_update_visual()
-	return "電池已取出，車上用電暫停；電池已存入背包"
+	return "Battery moved to inventory. Vehicle power paused."
 
 func _process(_delta: float) -> void:
 	_update_visual()

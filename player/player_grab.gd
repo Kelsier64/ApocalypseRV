@@ -368,7 +368,7 @@ func _owner_exiting() -> void:
 
 func update_progress(seconds: float) -> void:
 	remaining = maxf(0, seconds)
-	label.text = "連按 SPACE 掙脫  %d / %d\n%.1f 秒  ·  %d%% 可避免致命咬擊" % [presses, required, remaining, GrabRules.WOUNDED_PERCENT]
+	label.text = "Tap SPACE to break free  %d / %d\n%.1f s  ·  Reach %d%% to survive the bite" % [presses, required, remaining, GrabRules.WOUNDED_PERCENT]
 	bar.value = 100.0 * presses / maxi(1, required)
 	changed.emit(presses, required, remaining)
 

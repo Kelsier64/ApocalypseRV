@@ -509,7 +509,7 @@ func set_paused(value: bool) -> void:
 	get_tree().paused = value
 	if value:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-		if hud != null: hud.text = "已暫停 · F7 繼續 · F11 重設 · F12 自由模式"
+		if hud != null: hud.text = "Paused · F7 Resume · F11 Reset · F12 Free Mode"
 	elif is_instance_valid(player):
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if observer_enabled else Input.MOUSE_MODE_CAPTURED)
 
@@ -520,10 +520,10 @@ func _update_free_play() -> void:
 		var center := rv.global_position + Vector3.UP * 4 if is_instance_valid(rv) else player.global_position
 		observer.global_position = center + Vector3(22, 15, 22)
 		observer.look_at(center)
-	var state: String = SlenderSpeaker.Phase.keys()[int(giant.phase)] if giant_enabled else "暫停"
-	hud.text = "自由測試 · 巨人 %s · 車速 %.1f km/h\nWASD 移動／駕駛 · 滑鼠視角 · E 離座／互動 · 長按 E 入座\nSpace 手煞車 · B 引擎 · C 一檔 · R/T 升降檔\nF2 巨人開／關 · F6 觀察鏡頭 · F7 暫停 · F11 全部重設\nEsc 設定 · Ctrl+F12 結束測試" % [state, rv.road_speed() * 3.6 if is_instance_valid(rv) else 0.0]
+	var state: String = SlenderSpeaker.Phase.keys()[int(giant.phase)] if giant_enabled else "Paused"
+	hud.text = "Free Test · Giant %s · Vehicle %.1f km/h\nWASD Move/Drive · Mouse Look · E Exit Seat/Interact · Hold E to Enter Seat\nSpace Handbrake · B Engine · C First Gear · R/T Shift Gears\nF2 Toggle Giant · F6 Observer Camera · F7 Pause · F11 Reset All\nEsc Settings · Ctrl+F12 End Test" % [state, rv.road_speed() * 3.6 if is_instance_valid(rv) else 0.0]
 	hud.text += "\n" + giant.encounter_debug_text()
-	if player.is_player_dead: hud.text += "\n玩家已死亡：使用原本復活按鈕，或 F11 重設場景"
+	if player.is_player_dead: hud.text += "\nPlayer is dead: use the usual respawn button or F11 to reset the scene."
 	if capture_requested and elapsed >= capture_time and not capture_pending and DisplayServer.get_name() != "headless":
 		capture_time = elapsed + 1.0 / 30.0
 		capture_pending = true

@@ -102,7 +102,7 @@ static func restore(saved: Dictionary, container: Node) -> Node3D:
 	container.add_child(actor)
 	actor.global_transform = saved.transform
 	if actor is Item:
-		actor.item_name = saved.name
+		actor.item_name = ItemNames.from_saved_name(saved.name)
 		actor.is_large = saved.large
 		var initial: Dictionary = saved.state.duplicate(true)
 		if saved.fixed: initial["service"] = {}

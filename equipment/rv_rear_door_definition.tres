@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("1")
 type_id = "rv_rear_door"
-display_name = "後方雙開門"
+display_name = "Rear double doors"
 weight = 80
 health = 120.0
 

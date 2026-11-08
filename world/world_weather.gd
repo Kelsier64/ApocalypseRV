@@ -58,10 +58,10 @@ func advance(seconds: float) -> void:
 			set_weather(choose(rng.randf(), rng.randf(), rng.randf()))
 
 func description() -> String:
-	if target.x > 0.5: return "晴天"
-	var result := "陰天"
-	if target.y > 0: result += "・" + ("小雨" if target.y == 1 else "大雨")
-	if target.z > 0: result += "・" + ("小霧" if target.z == FOG_LIGHT else ("中霧" if target.z == FOG_MEDIUM else "大霧"))
+	if target.x > 0.5: return "Clear"
+	var result := "Overcast"
+	if target.y > 0: result += " · " + ("Light rain" if target.y == 1 else "Heavy rain")
+	if target.z > 0: result += " · " + ("Light fog" if target.z == FOG_LIGHT else ("Moderate fog" if target.z == FOG_MEDIUM else "Dense fog"))
 	return result
 
 func capture() -> Dictionary:

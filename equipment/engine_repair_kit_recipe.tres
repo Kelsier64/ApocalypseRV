@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("script")
 recipe_id = "engine_repair_kit"
-display_name = "引擎維修包"
+display_name = "Engine Repair Kit"
 scene_path = "res://props/engine_repair_kit.tscn"
 costs = {"Metal Parts": 5, "Electronic Scrap": 1}
 duration = 4.0

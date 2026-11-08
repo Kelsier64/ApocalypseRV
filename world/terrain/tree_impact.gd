@@ -42,7 +42,7 @@ static func hit(rv: Chassis, collider: Node, shape_index: int, velocity: Vector3
 	if target == null or not target.vehicle_tree_impact(shape_index, velocity, rv.global_position): return false
 	# Durability is settled by Chassis after its final yielding velocity, so a
 	# solver's temporary hard stop cannot be mistaken for a heavy impact.
-	rv.service_message = "撞毀樹木"
+	rv.service_message = "Tree knocked down"
 	rv.feedback("blocked")
 	return true
 

@@ -14,7 +14,7 @@ height = 2.616
 
 [node name="Raker" type="CharacterBody3D"]
 script = ExtResource("1")
-monster_name = "裂爪 Raker"
+monster_name = "Raker"
 max_health = 140.0
 move_speed = 3.4
 contact_damage = 24.0

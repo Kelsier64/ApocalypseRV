@@ -53,7 +53,7 @@ func _physics_process(delta: float) -> void:
 		var reason := swing_blocker(index, angles[index], next)
 		if not reason.is_empty():
 			targets[index] = angles[index]
-			blocked_message = "門被 " + reason + " 擋住，移開後再按 E"
+			blocked_message = "Door blocked by " + reason + ". Clear it and press E again."
 			get_connected_rv().feedback("blocked", position)
 			continue
 		angles[index] = next
@@ -88,29 +88,29 @@ func aimed_leaf(player: Node3D) -> int:
 	return 0
 
 func interact(player: Node3D) -> String:
-	if not can_operate(): return "門尚未安裝到車上或已損壞"
+	if not can_operate(): return "Door unavailable: install or repair it"
 	return toggle_leaf(aimed_leaf(player))
 
 func toggle_leaf(index: int) -> String:
-	if not can_operate() or index < 0 or index >= leaf_count: return "門無法操作"
+	if not can_operate() or index < 0 or index >= leaf_count: return "Door unavailable"
 	# A partly blocked leaf can be reversed by the next press.
 	var opening := not open_requested[index]
 	var goal := (-1.0 if index == 0 else 1.0) * deg_to_rad(100.0) if opening else 0.0
 	var blocker := swing_blocker(index, angles[index], goal)
 	if not blocker.is_empty():
-		blocked_message = "門被 " + blocker + " 擋住，請移開或退後"
+		blocked_message = "Door blocked by " + blocker + ". Move it or step back."
 		return blocked_message
 	blocked_message = ""
 	targets[index] = goal
 	open_requested[index] = opening
 	get_connected_rv().feedback("mechanical", position)
-	return "開門中" if opening else "關門中"
+	return "Door opening" if opening else "Door closing"
 
 func get_interaction_prompt(player: Node3D) -> String:
-	if not can_operate(): return equipment_name + "｜尚未接入或已損壞"
+	if not can_operate(): return equipment_name + " | Disconnected or damaged"
 	var index := aimed_leaf(player)
-	var action := "關門" if open_requested[index] else "開門"
-	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n改裝請使用車載平板；" + dependent_summary() + "\n" + blocked_message
+	var action := "Close" if open_requested[index] else "Open"
+	return equipment_name + ((" (left)" if index == 0 else " (right)") if leaf_count == 2 else "") + " | E " + action + "\nUse the RV tablet for modifications. " + dependent_summary() + "\n" + blocked_message
 
 func allows_mount_at(point: Vector3) -> bool:
 	for index in range(leaf_count):

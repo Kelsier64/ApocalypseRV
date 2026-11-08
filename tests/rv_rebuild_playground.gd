@@ -18,7 +18,7 @@ func _ready() -> void:
 	if "--drive" in OS.get_cmdline_user_args(): _start_drive()
 func _process(delta: float) -> void:
 	super._process(delta)
-	instructions.text += "\nF8 引擎艙（E 開蓋） · F9 後門／坡板 · F10 故障儀表 · F11 夜間 · F12 輪驅回放\n" + result
+	instructions.text += "\nF8 Engine Bay (E Open Hood) · F9 Rear Door / Ramp · F10 Fault Dashboard · F11 Night · F12 Wheel-Drive Replay\n" + result
 	if extra_view == 2:
 		observer.position = rv.to_global(Vector3(6, 3, 11))
 		observer.look_at(rv.to_global(Vector3(0, 0.5, 6.8)))

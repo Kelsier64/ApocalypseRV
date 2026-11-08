@@ -53,7 +53,7 @@ func _process(delta: float) -> void:
 	$Muzzle/Light.visible = _shot_time > .060 and is_visible_in_tree()
 
 func get_interaction_prompt(player: Node3D) -> String:
-	return "手槍｜%d / %d 發\n%s" % [loaded_rounds, PistolRules.MAGAZINE_CAPACITY, super.get_interaction_prompt(player)]
+	return "Pistol | %d / %d rounds\n%s" % [loaded_rounds, PistolRules.MAGAZINE_CAPACITY, super.get_interaction_prompt(player)]
 
 func play_tracer(from: Vector3, to: Vector3) -> void:
 	var distance := from.distance_to(to)

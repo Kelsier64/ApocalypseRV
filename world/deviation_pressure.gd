@@ -47,7 +47,7 @@ func _physics_process(delta: float) -> void:
 	if state.active and not previous:
 		var interact := player.get_node_or_null("Camera3D/InteractRay")
 		if interact != null and interact.has_method("show_feedback"):
-			interact.show_feedback("濃霧逼近｜返回公路或步道" if state.reason == "forest" else "濃霧逼近｜沿公路繼續前進")
+			interact.show_feedback("Dense fog closing in. Return to the road or trail." if state.reason == "forest" else "Dense fog closing in. Keep moving along the road.")
 		print("PRESSURE_START reason=", state.reason, " highwater=", state.highwater, " progress=", _route_sample.progress)
 	elif previous and not state.active:
 		print("PRESSURE_RECOVERY fog=", state.fog)

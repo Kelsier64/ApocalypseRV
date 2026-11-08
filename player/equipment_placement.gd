@@ -64,7 +64,7 @@ func begin(equipment: Node3D) -> void:
 	placing_equipment = equipment
 	preview_scale = equipment.global_basis.get_scale()
 	can_place_equipment = false
-	message = "瞄準安裝位置"
+	message = "Aim at a mounting surface"
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
@@ -252,18 +252,18 @@ func update_ghost(player: CharacterBody3D) -> void:
 		placing_equipment.global_position = result.position + normal * (offset + 0.012) - base_basis * bounds.get_center()
 		var reason := PlacementRules.rejection_reason(equip, target_support, placing_equipment.global_transform, result.position, normal)
 		var contact_check := space_state.intersect_ray(PhysicsRayQueryParameters3D.create(result.position + normal * 0.1, result.position - normal * 0.15, 0xFFFFFFFF, [equip.get_rid(), player.get_rid()]))
-		if contact_check.get("collider") != target_support: reason = "細調位置已離開安裝面"
-		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "超過安裝距離"
+		if contact_check.get("collider") != target_support: reason = "Adjusted position is off the mounting surface"
+		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "Out of placement range"
 		can_place_equipment = reason.is_empty()
-		message = ("左鍵安裝｜右鍵取消｜R 貼面／直立\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm" if can_place_equipment else "無法安裝：" + reason)
-		if can_place_equipment and equip is RVLadder: message = "左鍵貼牆安裝｜右鍵取消\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm"
+		message = ("LMB Install · RMB Cancel · R Align/Upright\nQ/E Rotate 15° (Shift 5°) · Arrows Move 5 cm" if can_place_equipment else "Cannot install: " + reason)
+		if can_place_equipment and equip is RVLadder: message = "LMB Mount to wall · RMB Cancel\nQ/E Rotate 15° (Shift 5°) · Arrows Move 5 cm"
 		if equip.ghost_material is StandardMaterial3D:
 			equip.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
 	else:
 		can_place_equipment = false
 		target_support = null
-		message = "請瞄準牆面｜右鍵／Esc 取消" if placing_equipment is RVLadder else "請瞄準有效支撐｜右鍵／Esc 取消"
+		message = "Aim at a wall · RMB/Esc Cancel" if placing_equipment is RVLadder else "Aim at a valid support · RMB/Esc Cancel"
 		_clear_marker()
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false

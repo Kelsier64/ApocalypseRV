@@ -52,7 +52,7 @@ func _ready() -> void:
 	var instructions := Label.new()
 	instructions.position = Vector2(24, 90)
 	instructions.add_theme_font_size_override("font_size", 22)
-	instructions.text = "互動驗收｜F2 電池插槽／F3 駕駛座／F4 加油孔／F5 道具箱／F6 掉落電池\n1 電池／2 汽油罐｜測試固定玩家位置，使用正式射線與 E"
+	instructions.text = "Interaction Test | F2 Battery Slot / F3 Driver Seat / F4 Fuel Port / F5 Storage Box / F6 Drop Battery\n1 Battery / 2 Gas Can | The player stays in place. Aim and press E to interact."
 	layer.add_child(instructions)
 	await get_tree().physics_frame
 	focus(rv.get_node("BatterySocket"), Vector3(2, 0.5, 0))

@@ -10,7 +10,7 @@ height = 1.0
 
 [node name="BarrelMan" type="CharacterBody3D"]
 script = ExtResource("ai")
-monster_name = "油桶人"
+monster_name = "Barrel Man"
 max_health = 60.0
 enable_boarding_visual = false
 floor_snap_length = 0.3

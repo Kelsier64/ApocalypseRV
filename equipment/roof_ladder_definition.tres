@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("script")
 type_id = "roof_ladder"
-display_name = "車內登頂梯"
+display_name = "Interior roof ladder"
 weight = 18.0
 health = 120.0
 requires_upright = true

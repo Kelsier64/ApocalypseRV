@@ -26,11 +26,11 @@ func _ready() -> void:
 	title = Label.new()
 	box.add_child(title)
 	var help := Label.new()
-	help.text = "道具箱不耗電；同車的箱子共用一份倉庫。\n電池放在倉庫裡不供電，材料是底盤的數字資源。"
+	help.text = "Boxes on this RV share storage and need no power.\nStored batteries supply no power. Materials are tracked separately."
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(help)
 	var close_button := Button.new()
-	close_button.text = "關閉 [Esc]"
+	close_button.text = "Close [Esc]"
 	close_button.pressed.connect(close)
 	box.add_child(close_button)
 	feedback = Label.new()
@@ -77,7 +77,7 @@ func _process(delta: float) -> void:
 		_refresh()
 
 func _refresh() -> void:
-	title.text = "本車道具倉庫｜%d / %d　背包｜%d / %d" % [rv.stored_items.size(), rv.item_capacity, user.inventory.items.size(), PlayerInventory.MAX_SLOTS]
+	title.text = "RV storage %d / %d  |  Inventory %d / %d" % [rv.stored_items.size(), rv.item_capacity, user.inventory.items.size(), PlayerInventory.MAX_SLOTS]
 	var signature := str(rv.stored_items) + str(user.inventory.items) + str(user.usable_arms())
 	if signature == _signature: return
 	_signature = signature
@@ -85,16 +85,16 @@ func _refresh() -> void:
 		rows.remove_child(child)
 		child.queue_free()
 	var header := Label.new()
-	header.text = "背包 → 存入車輛"
+	header.text = "Inventory to RV"
 	rows.add_child(header)
 	for index in range(user.inventory.items.size()):
 		_add_item_button(user.inventory.items[index], index, true)
 	header = Label.new()
-	header.text = "車輛 → 取出至背包"
+	header.text = "RV to inventory"
 	rows.add_child(header)
 	if rv.stored_items.is_empty():
 		var empty := Label.new()
-		empty.text = "車內目前沒有道具"
+		empty.text = "RV storage is empty"
 		rows.add_child(empty)
 	for index in range(rv.stored_items.size()):
 		_add_item_button(rv.stored_items[index], index, false)
@@ -103,24 +103,24 @@ func _add_item_button(item: Dictionary, index: int, deposit: bool) -> void:
 	var button := Button.new()
 	var detail := ""
 	if item.state.has("battery"):
-		detail = "｜電量 %.1f / %.0f" % [item.state.battery.charge, item.state.battery.capacity]
+		detail = " | Charge %.1f / %.0f" % [item.state.battery.charge, item.state.battery.capacity]
 	elif item.state.has("condition"):
-		detail = "｜耐久 %.0f" % item.state.condition
-	button.text = "%s %s%s" % ["存入" if deposit else "取出", item.name, detail]
+		detail = " | Durability %.0f" % item.state.condition
+	button.text = "%s %s%s" % ["Store" if deposit else "Take", item.name, detail]
 	button.disabled = rv.stored_items.size() >= rv.item_capacity if deposit else user.inventory.items.size() >= PlayerInventory.MAX_SLOTS
 	if not deposit and not user.can_use_hands(2 if item.is_large else 1):
 		button.disabled = true
-		button.text += "｜缺少可用手臂"
+		button.text += " | Arms unavailable"
 	# Bind a snapshot too: a stale button must never transfer a different item.
 	var expected := item.duplicate(true)
 	button.pressed.connect(func():
 		if not is_instance_valid(user) or not is_instance_valid(rv) or not get_parent().can_operate(): return
 		var source: Array = user.inventory.items if deposit else rv.stored_items
 		if index >= source.size() or source[index] != expected:
-			feedback.text = "內容已變動，請重新選擇"
+			feedback.text = "Items changed. Select again."
 		else:
 			var okay: bool = rv.store_player_item(user, index) if deposit else rv.take_stored_item(user, index)
-			feedback.text = ("已存入車輛" if deposit else "已取出至背包") if okay else "無法轉移：空間不足或背包已攜帶大型道具"
+			feedback.text = ("Stored in RV" if deposit else "Moved to inventory") if okay else "Cannot transfer. Inventory or storage full, or already carrying a large item."
 		_signature = ""
 		_refresh())
 	rows.add_child(button)

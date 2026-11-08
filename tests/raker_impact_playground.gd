@@ -1,6 +1,6 @@
 extends Node3D
 ## Real wheel-driven frontal/offset contact with the production Raker and RV.
-const CASES := ["目標 43 km/h · 存活起身", "目標 61 km/h · 受傷目標 40 HP", "目標 43 km/h · 偏側撞擊", "目標 14 km/h · 輕撞擊退", "目標 29 km/h · 擊退不倒地"]
+const CASES := ["Target 43 km/h · Survive and stand up", "Target 61 km/h · Injured target at 40 HP", "Target 43 km/h · Off-center impact", "Target 14 km/h · Light impact knockback", "Target 29 km/h · Knockback without falling"]
 const SPEEDS := [12.0, 17.0, 12.0, 4.0, 8.0]
 static var selected := 0
 static var read_args := false
@@ -122,13 +122,13 @@ func _process(delta: float) -> void:
 	var offset := Vector3(6,3,-7) if close_view else Vector3(13,7,-11)
 	camera.global_position = camera.global_position.lerp(focus+offset,1.0-exp(-delta*8))
 	camera.look_at(focus)
-	var state := "等待開始"
-	if running: state = "行駛中"
+	var state := "Waiting to start"
+	if running: state = "Driving"
 	if impact_seen:
-		state = "已起身" if is_instance_valid(monster) and not monster.ragdoll.is_busy() else "布娃娃"
-		if is_instance_valid(monster) and monster.is_dead: state = "死亡布娃娃"
-		if not is_instance_valid(monster): state = "屍體已回收"
-	label.text = "RAKER 車撞 / 布娃娃\n%s\n%s · 車速 %.1f km/h · HP %.0f\nSpace 開始 · 1–5 切換案例 · R 重播\nF4 近景 / 全景 · F9 暫停 / 繼續" % [CASES[selected],state,rv.road_speed()*3.6,monster.current_health if is_instance_valid(monster) else 0.0]
+		state = "Standing" if is_instance_valid(monster) and not monster.ragdoll.is_busy() else "Ragdoll"
+		if is_instance_valid(monster) and monster.is_dead: state = "Dead ragdoll"
+		if not is_instance_valid(monster): state = "Corpse removed"
+	label.text = "RAKER Vehicle Impact / Ragdoll\n%s\n%s · Vehicle %.1f km/h · HP %.0f\nSpace Start · 1–5 Select Case · R Replay\nF4 Close / Wide View · F9 Pause / Resume" % [CASES[selected],state,rv.road_speed()*3.6,monster.current_health if is_instance_valid(monster) else 0.0]
 
 func _pause() -> void:
 	review_paused = not review_paused

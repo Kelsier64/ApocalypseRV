@@ -40,4 +40,4 @@ func _sync_battery_state() -> void:
 	mass = battery.weight
 
 func get_interaction_prompt(player: Node3D) -> String:
-	return "電池｜電量 %.1f / %.0f\n%s\n拾取後選取電池，對車身電池插槽短按 E 裝入" % [battery.charge, battery.capacity, super.get_interaction_prompt(player)]
+	return "Battery | Charge %.1f / %.0f\n%s\nSelect the battery and press E at the RV battery socket to install it" % [battery.charge, battery.capacity, super.get_interaction_prompt(player)]

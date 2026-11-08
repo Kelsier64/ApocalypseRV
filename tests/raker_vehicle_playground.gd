@@ -243,14 +243,14 @@ func _process(delta: float) -> void:
 	observer.global_position = observer.global_position.lerp(point + offset, 1.0 - exp(-delta * 8.0))
 	observer.look_at(point + Vector3(0, .5, 0))
 	if not ready_to_drive:
-		status.text = "追車測試場準備中…"
+		status.text = "Preparing vehicle chase test..."
 		return
-	var mode := "手動駕駛" if player.seated_in != null else "步行追逐"
-	if cruise_index >= 0: mode = "定速目標 %.0f km/h" % (CRUISE_SPEEDS[cruise_index] * 3.6)
-	var detail := "怪物已死亡；F6 重生"
+	var mode := "Manual driving" if player.seated_in != null else "Walking pursuit"
+	if cruise_index >= 0: mode = "Cruise target %.0f km/h" % (CRUISE_SPEEDS[cruise_index] * 3.6)
+	var detail := "Monster is dead. F6 respawns it."
 	if is_instance_valid(monster):
-		detail = "怪物 %.1f km/h｜%s｜%s｜距車 %.1f m" % [Vector2(monster.velocity.x, monster.velocity.z).length() * 3.6, Raker.PursuitGait.keys()[monster.pursuit_gait], monster.get_node("BodyMesh").animation_player.current_animation, monster.global_position.distance_to(rv.global_position)]
-	status.text = "RAKER 2.18 m｜%s｜車速 %.1f km/h｜狂奔上限 64.8 km/h\n%s\nW/S 油門/煞車 · A/D 轉向 · F1 手動駕駛 · F2 切換定速 0/18/36/61/90\nF3 停車 · F4 全景/近景/側面 · F5 下車測追逐 · F6 重生怪物\nF11 地面/車內/駕駛抓咬 · F12 重試\nF7 受傷中斷 · F8 步態預覽 · F9 暫停 · F10 轉彎回放 · R 重設%s" % [mode, rv.road_speed() * 3.6, detail, "\n動畫預覽中；F6 恢復實際 AI" if preview else ("\n轉彎回放中；F10 停止自動轉向" if turn_replay else "")]
+		detail = "Monster %.1f km/h | %s | %s | %.1f m from vehicle" % [Vector2(monster.velocity.x, monster.velocity.z).length() * 3.6, Raker.PursuitGait.keys()[monster.pursuit_gait], monster.get_node("BodyMesh").animation_player.current_animation, monster.global_position.distance_to(rv.global_position)]
+	status.text = "RAKER 2.18 m | %s | Vehicle %.1f km/h | Sprint cap 64.8 km/h\n%s\nW/S Throttle/Brake · A/D Steer · F1 Manual Drive · F2 Cruise 0/18/36/61/90\nF3 Stop · F4 Wide/Close/Side View · F5 Exit to Test Pursuit · F6 Respawn Monster\nF11 Ground/Cabin/Driver Bites · F12 Retry\nF7 Interrupt Injury · F8 Gait Preview · F9 Pause · F10 Turn Replay · R Reset%s" % [mode, rv.road_speed() * 3.6, detail, "\nAnimation preview. F6 restores live AI." if preview else ("\nTurn replay. F10 stops auto-steering." if turn_replay else "")]
 
 func setup_grab(mode: int) -> void:
 	if bite_review_frozen: get_tree().paused = false

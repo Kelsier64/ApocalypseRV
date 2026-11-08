@@ -27,12 +27,12 @@ func confirm_placement(pose: Transform3D, new_parent: Node3D, support: Node3D = 
 
 func get_interaction_prompt(player: Node3D) -> String:
 	if player.active_climb_ladder == self and player.ladder_transition == player.LadderTransition.TOP:
-		return equipment_name + "｜已到梯頂\n放開移動鍵，再用 WASD 自行走出｜Space 脫離"
-	var text := equipment_name + "｜W 上爬／S 下爬／Space 脫離"
-	if not can_climb(): return text + "\n請先貼牆安裝並修復梯子"
-	if not player.can_use_hands(2): return text + "\n攀爬需要兩隻手臂"
-	if player.inventory.is_holding_large_item(): return text + "\n請先丟棄、消耗或存入大型物品"
-	return text + "\n面向梯子，在下端按 W／上端按 S"
+		return equipment_name + " | Top of ladder\nRelease movement keys, then use WASD to step off | Space to detach"
+	var text := equipment_name + " | W Climb up | S Climb down | Space Detach"
+	if not can_climb(): return text + "\nMount the ladder to a wall and repair it first"
+	if not player.can_use_hands(2): return text + "\nClimbing requires both arms"
+	if player.inventory.is_holding_large_item(): return text + "\nDrop, use, or store your large item first"
+	return text + "\nFace the ladder. Press W at the bottom or S at the top."
 
 func can_climb() -> bool:
 	return not presentation_only and is_fixed and is_inside_tree() and not is_queued_for_deletion() and enabled \

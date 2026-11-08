@@ -28,7 +28,7 @@ func check_session_energy(rv: Chassis) -> void:
 	check(rv.set_engine_running(true) and level(rv, "fuel") == 0, "Unlimited fuel starts an empty tank and clears fuel warning")
 	rv.step_energy_system(1.0, 0.0, 0.0, 1.0)
 	check(rv.energy.engine_running and rv.current_fuel == 0.0 and rv.current_power > 0.0 and rv.energy.generated_rate > 0.0, "Unlimited fuel covers idle, drive and charging below reserve without filling fuel")
-	check(not rv.energy.charging_status().contains("保留油量"), "Charging status honors unlimited fuel below reserve")
+	check(not rv.energy.charging_status().contains("Fuel reserve"), "Charging status honors unlimited fuel below reserve")
 	rv.set_engine_running(false)
 	rv.engine_bay.installed_engine = null
 	check(not rv.set_engine_running(true) and level(rv, "engine") == 3, "Unlimited fuel still requires an installed engine")
@@ -146,30 +146,30 @@ func _run() -> void:
 	check(rv.get_engine().health == 450 and not bay.hatch_open, "Standard engine and closed hatch at start")
 	var incoming := add_engine(player, "upgraded", 257)
 	var old_id := rv.get_engine().id
-	check(rv.exchange_engine(player).contains("維修蓋") and rv.get_engine().id == old_id, "Closed hatch rejects exchange")
+	check(rv.exchange_engine(player).contains("service hatch") and rv.get_engine().id == old_id, "Closed hatch rejects exchange")
 	bay.get_node("Hatch").set_open(true)
 	rv.set_engine_running(true)
-	check(rv.exchange_engine(player).contains("熄火"), "Running exchange rejected")
+	check(rv.exchange_engine(player).contains("Stop the engine"), "Running exchange rejected")
 	rv.set_engine_running(false)
 	rv.linear_velocity = Vector3.RIGHT
-	check(rv.exchange_engine(player).contains("停穩"), "Moving exchange rejected")
+	check(rv.exchange_engine(player).contains("Stop the vehicle"), "Moving exchange rejected")
 	rv.linear_velocity = Vector3.ZERO
 	rv.handbrake = false
-	check(rv.exchange_engine(player).contains("手煞車"), "Unbraked exchange rejected")
+	check(rv.exchange_engine(player).contains("parking brake"), "Unbraked exchange rejected")
 	rv.handbrake = true
 	for i in range(5): player.add_item(ItemNames.WHEEL, false, "res://props/wheel.tscn")
-	check(rv.exchange_engine(player).contains("已裝入") and rv.get_engine().id == incoming.id and rv.get_engine().health == 257, "Full inventory exchange is atomic")
+	check(rv.exchange_engine(player).contains("Installed") and rv.get_engine().id == incoming.id and rv.get_engine().health == 257, "Full inventory exchange is atomic")
 	check(player.inventory.active_item().state.engine.id == old_id, "Old engine remains in same slot")
 	check(not player.inventory.select_slot(1), "Large engine prevents slot switching")
-	check(rv.remove_engine(player).contains("背包"), "Removal respects large item and capacity rules")
+	check(rv.remove_engine(player).contains("inventory"), "Removal respects large item and capacity rules")
 	player.inventory.items.clear()
 	player.refresh_inventory()
-	check(rv.remove_engine(player).contains("已取出") and rv.get_engine() == null, "Engine becomes one carried item")
+	check(rv.remove_engine(player).contains("Engine removed") and rv.get_engine() == null, "Engine becomes one carried item")
 	rv.take_damage(999)
 	check(not rv.set_engine_running(true) and level(rv, "engine") == 3, "Empty bay cannot start")
 	check(rv.store_player_item(player, 0), "Engine can enter shared warehouse")
 	check(rv.take_stored_item(player, 2), "Same engine can be taken back from warehouse")
-	check(rv.exchange_engine(player).contains("已裝入") and rv.get_engine().health == 257, "Warehouse roundtrip keeps engine condition")
+	check(rv.exchange_engine(player).contains("Installed") and rv.get_engine().health == 257, "Warehouse roundtrip keeps engine condition")
 	rv.take_damage(999)
 	check(rv.get_engine().health == 0 and not rv.energy.engine_running, "Engine destruction stops only drivetrain")
 	var seat: Item = rv.get_node("DriverSeat")
@@ -179,7 +179,7 @@ func _run() -> void:
 	player.set_physics_process(false)
 	check(rv.get_node("ItemBox").can_operate() and rv.current_power > 0, "Broken engine preserves warehouse and battery")
 	var kit := {"id": "test-kit", "condition": 100.0}
-	player.add_item("引擎維修包", false, "res://props/engine_repair_kit.tscn", kit)
+	player.add_item("Engine Repair Kit", false, "res://props/engine_repair_kit.tscn", kit)
 	var repair := RepairOperation.new()
 	repair.step(player, bay, true, 1.5)
 	repair.step(player, null, false, 0.1)
@@ -187,7 +187,7 @@ func _run() -> void:
 	repair.step(player, bay, true, 3.0)
 	check(rv.get_engine().health == 150 and player.inventory.items.is_empty(), "Kit revives broken engine once")
 	rv.get_engine().health = rv.get_engine().definition().max_health
-	player.add_item("引擎維修包", false, "res://props/engine_repair_kit.tscn")
+	player.add_item("Engine Repair Kit", false, "res://props/engine_repair_kit.tscn")
 	repair.step(player, bay, true, 3.0)
 	check(player.inventory.items.size() == 1, "Full engine never consumes a repair kit")
 	rv.get_engine().health = 150
@@ -268,8 +268,11 @@ func _run() -> void:
 	rv.current_power = 100
 	check_session_energy(rv)
 	var saved := VehicleSnapshot.capture(rv)
+	var stored_kit: Dictionary = saved.items[0].duplicate(true)
+	saved.items[0].name = "引擎維修包" # Legacy checkpoint fixture.
 	check(VehicleSnapshot.validate(saved), "Current vehicle snapshot valid")
 	check(VehicleSnapshot.apply(rv, saved) and rv.get_engine().id == incoming.id and rv.get_engine().health == 150, "Engine save restores identity and condition")
+	check(rv.stored_items[0] == stored_kit and rv.stored_items[0].name == "Engine Repair Kit", "Legacy warehouse name becomes English without changing item state")
 	var bad := saved.duplicate(true)
 	bad.engine_item.health = INF
 	check(not VehicleSnapshot.validate(bad), "Nonfinite engine durability rejected")

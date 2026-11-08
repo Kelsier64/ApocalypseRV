@@ -53,8 +53,9 @@ func _ready() -> void:
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(status)
 	var controls := Label.new()
-	controls.text = "B 引擎 · L 頭燈 · Space 手煞車 · Z/X/C 排檔 · R/T 升降檔 · W/S 油門煞車 · E 離座"
+	controls.text = "B Engine · L Headlights · Space Parking brake · Z/X/C Select gear · R/T Shift · W/S Throttle/brake · E Exit seat"
 	controls.add_theme_font_size_override("font_size", 20)
+	controls.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(controls)
 	visible = false
@@ -65,7 +66,7 @@ func _process(_delta: float) -> void:
 	var rv: Chassis = seat.get_connected_rv() as Chassis
 	if rv == null: return
 	var gear := "R" if rv.gear < 0 else ("N" if rv.gear == 0 else str(rv.gear))
-	label.text = "%03.0f km/h   %s 檔   |   引擎 %s   |   燃油 %.0f / %.0f   |   電池 %.0f / %.0f" % [rv.road_speed() * 3.6, gear, "運轉" if rv.energy.engine_running else "停止", rv.current_fuel, rv.max_fuel, rv.current_power, rv.max_power]
+	label.text = "%03.0f km/h   Gear %s   |   Engine %s   |   Fuel %.0f / %.0f   |   Battery %.0f / %.0f" % [rv.road_speed() * 3.6, gear, "running" if rv.energy.engine_running else "off", rv.current_fuel, rv.max_fuel, rv.current_power, rv.max_power]
 	for row in VehicleStatus.read(rv):
 		indicators[row.id].icon.modulate = VehicleStatus.color(row.level)
 		indicators[row.id].caption.text = row.label

@@ -140,11 +140,11 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 				_invoke(_e_target, "accept_held_item")
 			elif _wheel_install(_e_target):
 				var installed: bool = _e_target.install_wheel_from_player(player)
-				show_feedback("輪胎已安裝" if installed else "無法安裝：請熄火停穩，並確認有空輪槽")
+				show_feedback("Wheel installed" if installed else "To install a wheel, stop, turn off the engine and find an empty wheel slot")
 			else:
 				_invoke(_e_target, "interact_hold")
 		else:
-			prompt_label.text += "\n長按 E：%d%%" % mini(100, int(_e_time * 100.0))
+			prompt_label.text += "\nHold E: %d%%" % mini(100, int(_e_time * 100.0))
 	if not e_pressed and _e_was_pressed:
 		if is_instance_valid(_e_target) and not _e_done and _uses_hold(_e_target):
 			_invoke(_e_target, "interact")
@@ -163,7 +163,7 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 			_f_done = true
 			show_feedback(_f_target.pickup(player))
 		elif is_instance_valid(_f_target):
-			prompt_label.text += "\n長按 F 拆下拾取：%d%%" % mini(100, int(_f_time * 50.0))
+			prompt_label.text += "\nHold F to detach: %d%%" % mini(100, int(_f_time * 50.0))
 	if not f_pressed:
 		if _f_was_pressed and not _f_done and _f_time < 2.0 and not player.inventory.active_item().is_empty():
 			player.enter_equipment_placement()
@@ -200,36 +200,36 @@ func show_feedback(message: String) -> void:
 	feedback_time = 3.0
 
 func get_prompt(obj: Node) -> String:
-	var held_hint := "F 放置手持物品｜G 丟棄" if not player.inventory.active_item().is_empty() else ""
+	var held_hint := "F Place held item · G Drop" if not player.inventory.active_item().is_empty() else ""
 	# Weapon controls already live above the hotbar; avoid a duplicate opaque
 	# panel covering the sights and hands when no interaction is targeted.
 	if player.inventory.active_item().get("scene_path", "") == PistolRules.PISTOL_SCENE: held_hint = ""
 	if not is_instance_valid(obj): return held_hint
 	if not _can_interact(obj):
-		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂，並先放下大型物品"
-		return "缺少可用手臂，無法使用或拾取"
+		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "Driving requires both legs and at least one arm. Put down any large item first."
+		return "You need a usable arm to interact or pick up items"
 	var text := ""
 	if obj is PrintedPlayerBody:
 		text = obj.get_interaction_prompt(player)
 	elif obj is Item and not obj.is_fixed:
-		text = obj.item_name + "\nE 拾取"
+		text = obj.item_name + "\nE Pick up"
 	elif obj.has_method("get_interaction_prompt"):
 		text = obj.get_interaction_prompt(player)
 	elif obj is Item:
 		text = obj.equipment_name
-		if obj.has_method("interact_hold"): text += "\n長按 E 1 秒使用"
-		elif obj.has_method("interact"): text += "\nE 使用"
-		if obj.get_connected_rv() == null: text += "\n未安裝至 RV，功能尚未接通"
+		if obj.has_method("interact_hold"): text += "\nHold E for 1 s to use"
+		elif obj.has_method("interact"): text += "\nE Use"
+		if obj.get_connected_rv() == null: text += "\nInstall on the RV to use"
 	elif obj.has_method("interact_hold"):
-		text = "長按 E 1 秒使用"
+		text = "Hold E for 1 s to use"
 	elif obj.has_method("interact"):
-		text = "E 使用"
-	if _wheel_install(obj): text += "\n長按 E 1 秒安裝手持輪胎"
-	if _held_delivery(obj): text += "\n長按 E 1 秒投入手持大型物品"
+		text = "E Use"
+	if _wheel_install(obj): text += "\nHold E for 1 s to install held wheel"
+	if _held_delivery(obj): text += "\nHold E for 1 s to deposit held large item"
 	if obj is Item and obj.is_fixed:
-		text += "\n長按 F 2 秒拆下拾取" if player.can_use_hands(2 if obj.is_large else 1) else "\n缺少搬運所需手臂"
+		text += "\nHold F for 2 s to detach and pick up" if player.can_use_hands(2 if obj.is_large else 1) else "\nYou need more usable arms to carry this"
 	if not obj is RVStructurePanel and obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
-		text += "\n長按 H 維修：2 秒／2 Metal Parts（需熄火停穩）"
+		text += "\nHold H for 2 s to repair (2 Metal Parts). Stop and turn off the engine first."
 	if not held_hint.is_empty(): text += "\n" + held_hint
 	return text
 

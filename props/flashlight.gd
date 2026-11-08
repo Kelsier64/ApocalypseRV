@@ -35,4 +35,4 @@ func set_held_active(active: bool) -> void:
 	if _lens_material: _lens_material.emission_enabled = emitting
 
 func get_interaction_prompt(player: Node3D) -> String:
-	return "手電筒｜電量 %.0f%%\n%s" % [charge, super.get_interaction_prompt(player)]
+	return "Flashlight | Charge %.0f%%\n%s" % [charge, super.get_interaction_prompt(player)]

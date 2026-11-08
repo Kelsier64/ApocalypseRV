@@ -418,17 +418,17 @@ func _broken_panels() -> int:
 
 func _process(delta: float) -> void:
 	if hud == null: return
-	var titles := {1:"外觀與動畫｜普通油桶 / 偽裝 / 起身收腿 / 6m/s / 10m/s",2:"手動步行接近",3:"連續步行輸入重播",4:"輪驅撞擊偽裝桶（固定偽裝以隔離碰撞）",5:"追車與輪驅行駛",7:"坡面／左右轉向／落地：無碰撞路線目標，直線引導",8:"近距離倒數：接近後停步，接觸或倒數結束即爆",10:"輪驅撞擊一般油桶（正式 Item）"}
-	hud.text = "油桶人驗收場 — %s\nF1 外觀 · F2 步行 · F3 徒步重播 · F4 撞桶 · F5 追車\nF6 保存 · F7 坡面 · F8 倒數 · F9 恢復 · P 暫停 · R 重設 · Esc 滑鼠\n" % titles.get(mode,"")
-	hud.text += "F10 車撞一般油桶 · F11 駕駛視角撞一般油桶\n"
-	if driver_pov and mode in [4,5,10]: hud.text += "正式駕駛座視角；玩家受車殼正常遮蔽\n"
-	if is_instance_valid(monster): hud.text += "狀態 %s｜速度 %.2f m/s\n" % [BarrelMan.Phase.keys()[monster.phase],monster.horizontal_speed]
-	if is_instance_valid(monster) and monster.proximity_fuse_remaining >= 0.0: hud.text += "爆炸倒數 %.2f 秒（接觸即爆）\n" % monster.proximity_fuse_remaining
-	if proximity_blast_delay >= 0.0: hud.text += "啟動至爆炸 %.3f 秒\n" % proximity_blast_delay
-	if is_instance_valid(player): hud.text += "玩家 HP %.0f｜%s\n" % [player.current_player_health,player.body_state.capture()]
-	if is_instance_valid(rv): hud.text += "RV %.1f km/h｜引擎 %.0f → %.0f｜損毀車殼 %d\n" % [rv.road_speed()*3.6,health_before,rv.get_engine().health,_broken_panels()]
-	if exploded: hud.text += "已爆炸；傷害與狀態詳見 log。"
-	if mode == 7: hud.text += "上坡 %s｜下坡 %s｜落下 %s｜落地 %s｜路線 %d/%d\n" % [uphill_seen,downhill_seen,falling_seen,landing_seen,route_index,route_points.size()]
+	var titles := {1:"Appearance and animation | regular barrel / disguise / stand-up and tuck / 6m/s / 10m/s",2:"Manual walking approach",3:"Continuous walking input replay",4:"Wheel-drive disguised-barrel impact (fixed disguise isolates collision)",5:"Vehicle chase and wheel-drive",7:"Slope / turns / landing: guided straight path with no-collision route targets",8:"Close-range fuse: stop after approach. Detonation on contact or fuse expiry",10:"Wheel-drive regular barrel impact (real Item)"}
+	hud.text = "Barrel Man Test Range — %s\nF1 Appearance · F2 Walk · F3 Walking Replay · F4 Hit Barrel · F5 Chase\nF6 Save · F7 Slope · F8 Fuse · F9 Restore · P Pause · R Reset · Esc Mouse\n" % titles.get(mode,"")
+	hud.text += "F10 Vehicle hits regular barrel · F11 Driver-view hit on regular barrel\n"
+	if driver_pov and mode in [4,5,10]: hud.text += "Driver-seat view. The vehicle body hides the player.\n"
+	if is_instance_valid(monster): hud.text += "State %s | Speed %.2f m/s\n" % [BarrelMan.Phase.keys()[monster.phase],monster.horizontal_speed]
+	if is_instance_valid(monster) and monster.proximity_fuse_remaining >= 0.0: hud.text += "Detonation fuse %.2f sec (detonates on contact)\n" % monster.proximity_fuse_remaining
+	if proximity_blast_delay >= 0.0: hud.text += "Activation to detonation %.3f sec\n" % proximity_blast_delay
+	if is_instance_valid(player): hud.text += "Player HP %.0f | %s\n" % [player.current_player_health,player.body_state.capture()]
+	if is_instance_valid(rv): hud.text += "RV %.1f km/h | Engine %.0f → %.0f | Damaged body panels %d\n" % [rv.road_speed()*3.6,health_before,rv.get_engine().health,_broken_panels()]
+	if exploded: hud.text += "Detonated. See the log for damage and state."
+	if mode == 7: hud.text += "Uphill %s | Downhill %s | Falling %s | Landed %s | Route %d/%d\n" % [uphill_seen,downhill_seen,falling_seen,landing_seen,route_index,route_points.size()]
 	if requested_capture and ready_to_run and DisplayServer.get_name() != "headless":
 		capture_clock += delta
 		var milestones := [1.0,2.0,2.5,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,12.0,14.0,16.0] if mode == 7 else [.5,1.0,2.0,3.0,4.0]

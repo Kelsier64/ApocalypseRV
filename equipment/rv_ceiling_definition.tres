@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("1")
 type_id = "rv_ceiling"
-display_name = "完整屋頂"
+display_name = "Solid roof"
 weight = 50.0
 health = 120.0
 scene_path = "res://equipment/rv_ceiling.tscn"

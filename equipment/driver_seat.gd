@@ -90,7 +90,7 @@ func exit_seat(forced: bool = false) -> void:
 	if forced: player.close_settings()
 	var exit_position := _find_clear_exit_position(forced)
 	if not exit_position.is_finite():
-		exit_message = "離座位置被擋住，請先清出走道"
+		exit_message = "Exit blocked. Clear the aisle first."
 		return
 	exit_message = ""
 	current_driver = null
@@ -168,6 +168,6 @@ func _physics_process(_delta: float) -> void:
 			exit_seat(true)
 
 func get_interaction_prompt(player: Node3D) -> String:
-	if not can_operate(): return "駕駛座｜尚未接入或已損壞"
-	if not player.can_drive(): return "駕駛需要雙腿及至少一隻手臂"
-	return "駕駛座／控制台｜長按 E 1 秒：入座；長按 F：搬移整組\nB 引擎／L 頭燈／Space 手煞車／Z X C 排檔；需燃油"
+	if not can_operate(): return "Driver Seat | Disconnected or damaged"
+	if not player.can_drive(): return "Driving requires both legs and at least one arm"
+	return "Driver Seat | Hold E for 1s to sit | Hold F to move\nB Engine | L Headlights | Space Parking brake | Z/X/C Gears\nFuel required"

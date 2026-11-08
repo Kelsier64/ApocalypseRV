@@ -58,7 +58,7 @@ func restore(data: Dictionary) -> void:
 
 func save_block_reason() -> String:
 	if phase in ["opening", "closing"] or (is_instance_valid(gate) and not gate.stable()):
-		return "Wait for the exit gate to stop before saving" if is_orientation_shelter() else "車庫大門仍在移動，請等待大門停妥後保存"
+		return "Wait for the exit gate to stop before saving" if is_orientation_shelter() else "Wait for the garage gate to stop before saving"
 	for bay_gate in _bay_gates:
 		if is_instance_valid(bay_gate) and not bay_gate.stable():
 			return "Wait for all bay gates to stop before saving"
@@ -118,19 +118,19 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 
 func begin_run(player: Node3D) -> String:
 	var tutorial := is_orientation_shelter()
-	if phase != "preparing": return "Journey already started" if tutorial else "旅程已開始"
+	if phase != "preparing": return "Journey already started"
 	var world := get_parent() as Node3D
-	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing; please wait" if tutorial else "世界仍在準備，請稍候"
+	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing. Please wait."
 	if not world.is_ancestor_of(player) or not WorldEntities.same_world(world, player): return ""
 	if tutorial_active():
 		var reason: String = get_node("Tutorial").departure_block_reason()
 		if not reason.is_empty(): return reason
 	if is_orientation_shelter(): return "Drive the original RV towards the automatic exit"
-	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first" if tutorial else "請先結束目前操作"
+	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first"
 	_set_phase("opening")
 	gate.move_to(true)
 	if tutorial_active(): get_node("Tutorial").departure_started()
-	return "Journey started | Exit opening; it seals permanently after departure" if tutorial else "旅程開始｜車庫大門開啟中；離開後將永久封閉"
+	return "Journey started · Exit opening. It seals permanently after departure." if tutorial else "Journey started · Garage gate opening. It seals permanently after departure."
 
 func _remember_bay_gates() -> void:
 	var count := bay_gate_count()
@@ -221,7 +221,7 @@ func _on_obstructed() -> void:
 	if phase == "closing":
 		_set_phase("started")
 		_departure_check = 1.0
-		if _status: _status.text = "車庫大門受阻，已重新開啟｜請移開門口物品"
+		if _status: _status.text = "The blocked gate has reopened. Clear the doorway."
 
 func _physics_process(delta: float) -> void:
 	if is_orientation_shelter() and phase == "preparing":
@@ -272,8 +272,8 @@ func _update_status() -> void:
 		_status.text = ""
 		return
 	match phase:
-		"preparing": _status.text = "整備區｜時間暫停\n裝載所需物資後，按下大門旁的啟程按鈕\n離開後車庫永久封閉，留下的物資將無法取回"
-		"opening": _status.text = "旅程開始｜大門開啟中"
-		"started": _status.text = "駛離車庫後，大門將永久封閉"
-		"closing": _status.text = "車庫大門正在永久封閉"
-		"sealed": _status.text = "車庫已封閉｜沿公路繼續前進"
+		"preparing": _status.text = "Staging Area · Time paused\nLoad your supplies, then press the departure button by the gate.\nThe garage seals after you leave. Take any supplies you need."
+		"opening": _status.text = "Journey started · Gate opening"
+		"started": _status.text = "The gate seals after you drive out."
+		"closing": _status.text = "Garage gate sealing permanently"
+		"sealed": _status.text = "Garage sealed · Follow the road"

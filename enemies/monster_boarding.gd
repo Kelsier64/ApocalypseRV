@@ -246,10 +246,10 @@ func chase_destination(actor, destination: Vector3) -> Vector3:
 	return destination
 
 func describe(actor) -> String:
-	if recovery > 0.0: return "失衡恢復"
-	if is_instance_valid(cabin_vehicle): return "車內追擊／尋找出口"
-	if mode == Mode.DOOR: return "掛門破門｜抓握 %d%%" % roundi(grip / actor.grip_capacity * 100.0)
+	if recovery > 0.0: return "Recovering balance"
+	if is_instance_valid(cabin_vehicle): return "Pursuing inside RV / Finding exit"
+	if mode == Mode.DOOR: return "Attacking door · Grip %d%%" % roundi(grip / actor.grip_capacity * 100.0)
 	if mode == Mode.ROOF:
-		if actor.locomotion_state == actor.LocomotionState.CLIMBING: return "登頂攀爬｜抓握 %d%%" % roundi(grip / actor.grip_capacity * 100.0)
-		return "車頂抓穩" if settle > 0.0 else "車頂追擊／破頂"
-	return "接近目標"
+		if actor.locomotion_state == actor.LocomotionState.CLIMBING: return "Climbing to roof · Grip %d%%" % roundi(grip / actor.grip_capacity * 100.0)
+		return "Securing grip on roof" if settle > 0.0 else "Pursuing on roof / Breaking roof"
+	return "Approaching target"

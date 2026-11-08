@@ -89,7 +89,7 @@ func _process(_delta: float) -> void:
 	elif view == 3:
 		observer.global_position = legacy.get_node("Chassis").to_global(Vector3(11, 6, -13))
 		observer.look_at(legacy.get_node("Chassis").to_global(Vector3(0, 1, 0)))
-	instructions.text = "WAYFARER / RV DESIGN WORKSHOP\nF2 外觀  ·  F3 車內  ·  F4 駕駛座  ·  F5 實際輪驅展示  ·  F6 舊版對照  ·  F7 控制台全貌\n%s | %.1f km/h | FUEL %.1f | BATTERY %.1f" % ["行駛中" if demonstration else "停車", rv.linear_velocity.length() * 3.6, rv.current_fuel, rv.current_power]
+	instructions.text = "WAYFARER / RV DESIGN WORKSHOP\nF2 Exterior · F3 Interior · F4 Driver Seat · F5 Wheel-Drive Demo · F6 Legacy Comparison · F7 Full Dashboard\n%s | %.1f km/h | FUEL %.1f | BATTERY %.1f" % ["Driving" if demonstration else "Parked", rv.linear_velocity.length() * 3.6, rv.current_fuel, rv.current_power]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return

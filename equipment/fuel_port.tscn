@@ -14,7 +14,7 @@ size = Vector3(0.6, 0.3, 0.4)
 [node name="FuelPort" type="RigidBody3D"]
 script = ExtResource("1")
 definition = ExtResource("def")
-equipment_name = "加油孔"
+equipment_name = "Fuel inlet"
 destroy_on_zero_health = false
 mass = 8.0
 [node name="Mesh" type="MeshInstance3D" parent="."]

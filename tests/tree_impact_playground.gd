@@ -123,8 +123,8 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(rv) or camera == null: return
 	camera.global_position = Vector3(25, 13, rv.global_position.z + 18) if chain_mode else Vector3(25, 13, -7)
 	camera.look_at(Vector3(0, 4, rv.global_position.z - 10) if chain_mode else Vector3(0, 5, -30))
-	label.text = "撞樹測試｜F6 單樹 · F7 連續撞樹｜R 重設\nW/S 油門煞車 · A/D 轉向 · Space 手煞車\n%.0f km/h｜引擎耐久 %.0f → %.0f\n撞毀 %d / %d 棵" % [rv.road_speed() * 3.6, health_before, rv.get_engine().health, chunk.field.destroyed_trees.size(), 16 if chain_mode else 1]
-	if chain_mode: label.text += "｜連撞最低 %.1f km/h" % (minimum_chain_speed * 3.6 if is_finite(minimum_chain_speed) else 0.0)
+	label.text = "Tree Impact Test | F6 Single Tree · F7 Chain Impacts | R Reset\nW/S Throttle/Brake · A/D Steer · Space Handbrake\n%.0f km/h | Engine Durability %.0f → %.0f\nTrees Destroyed %d / %d" % [rv.road_speed() * 3.6, health_before, rv.get_engine().health, chunk.field.destroyed_trees.size(), 16 if chain_mode else 1]
+	if chain_mode: label.text += " | Minimum Speed in Chain %.1f km/h" % (minimum_chain_speed * 3.6 if is_finite(minimum_chain_speed) else 0.0)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
