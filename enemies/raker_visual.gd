@@ -63,11 +63,13 @@ func _ground_locomotion(delta: float, speed: float) -> void:
 	if actor.crouched and ground_clip == "idle": ground_clip = "crouch_idle"
 	var rate := 1.0
 	var stride_scale: float = $Model.scale.z
+	# Filter only gait selection. Planted feet must follow the current travel
+	# speed, including slow starts and the sprint exit hysteresis range.
 	match ground_clip:
-		"walk": rate = clampf(filtered_speed / (1.13 * stride_scale), .4, 1.8)
-		"chase": rate = clampf(filtered_speed / (2.3 * stride_scale), .6, 1.8)
-		"sprint": rate = clampf(filtered_speed / (6.0 * stride_scale), .8, 2.5)
-		"crouch_walk": rate = clampf(filtered_speed / (.4 * stride_scale), .4, 1.8)
+		"walk": rate = clampf(speed / (1.13 * stride_scale), .05, 1.8)
+		"chase": rate = clampf(speed / (2.3 * stride_scale), .05, 1.8)
+		"sprint": rate = clampf(speed / (6.0 * stride_scale), .05, 2.5)
+		"crouch_walk": rate = clampf(speed / (.4 * stride_scale), .05, 1.8)
 	play(ground_clip, rate)
 
 func _attack(clip: String, duration: float) -> void:

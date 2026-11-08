@@ -5,7 +5,7 @@
 - `player_test_v020/player_export_test_v020.glb` 雖帶 `test` 名稱，仍是正式玩家外觀；`player_animations_v021/player_animations_v021.glb` 只供執行期擷取動畫，並不替換 v020 的 mesh、材質或骨架 rest pose。
 - `player_dismemberment/player_dismemberment.glb` 是五切口分件與封口網格來源，`player_injury_animations.glb` 只供擷取六段受傷動作；兩者均接回正式玩家骨架，詳細重建入口見 [分件資產說明](player_dismemberment/README.md)。
 - 舊 `monster/monster_export_test.glb` 與 Zombie 場景已移除；[試接紀錄](monster/README.md)保留當時的資產與驗收脈絡。現行敵人生成使用 Raker。
-- `raker/raker.glb` 是正式 v021 外觀。v009–v020 的製作版本保留在 `art_source/monster_refined_vNNN/`，不是額外的執行期模型。
+- `raker/raker.glb` 是正式 v021 外觀，套用 [v022 動作修整](../../art_source/raker_motion_v022/README.md)。v009–v020 的製作版本保留在 `art_source/monster_refined_vNNN/`，不是額外的執行期模型。
 - 原 `assets/gas_can.glb`、`assets/oil_barrel.glb` 及配套貼圖／匯入設定已收存到 `art_source/retired_props/2026-09-29/`；道具場景路徑保留並改用 Godot 原生灰盒。
 
 需要追查舊資料時，可看 [2026-09-29 來源快照](../../docs/archive/modeling-2026-09-29/asset-provenance.md)，內容不代表目前狀態；不得由檔名中的 `test` 或目前沒有主場景文字引用推定可刪除。

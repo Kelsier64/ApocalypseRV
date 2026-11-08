@@ -47,6 +47,31 @@ func capture(count: int, facing: float = 0.0, player_yaw: float = 0.0) -> void:
 	actor.grab._change(Grab.Phase.HOLD)
 	actor.grab.had_support = false
 	actor.grab.was_seated = false
+func check_ground_animation(raker: Raker) -> void:
+	var visual := raker.get_node("BodyMesh")
+	var animation: AnimationPlayer = visual.animation_player
+	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	var other_animation: AnimationPlayer = actor.get_node("BodyMesh").animation_player
+	var walk := animation.get_animation("game/walk")
+	check(walk != null and walk != other_animation.get_animation("game/walk"), "Rakers own separate gameplay animation resources")
+	if walk == null: return
+	var model_scale: float = visual.get_node("Model").scale.z
+	visual._ground_locomotion(.01, .2)
+	check(animation.current_animation == "game/walk" and is_equal_approx(animation.speed_scale, .2 / (1.13 * model_scale)), "Slow walk cadence follows movement during gait filtering")
+	var phase := .37
+	animation.seek(phase * walk.length, true)
+	visual._ground_locomotion(1.0, 3.0)
+	check(animation.current_animation == "game/chase" and is_equal_approx(animation.current_animation_position / animation.current_animation_length, phase), "Walk to chase preserves normalized step phase")
+	visual._ground_locomotion(.01, .9)
+	check(animation.current_animation == "game/chase" and is_equal_approx(animation.speed_scale, .9 / (2.3 * model_scale)), "Chase cadence follows deceleration before the gait changes")
+	raker.pursuit_gait = Raker.PursuitGait.VEHICLE_SPRINT
+	visual._ground_locomotion(1.0, 5.4)
+	check(animation.current_animation == "game/sprint" and is_equal_approx(animation.current_animation_position / animation.current_animation_length, phase), "Chase to sprint preserves normalized step phase")
+	visual._ground_locomotion(1.0, 4.5)
+	check(animation.current_animation == "game/sprint" and is_equal_approx(animation.speed_scale, 4.5 / (6.0 * model_scale)), "Sprint hysteresis keeps the gait and matches its cadence to 4.5 m/s")
+	raker.set_crouched(true)
+	visual._ground_locomotion(1.0, .16)
+	check(animation.current_animation == "game/crouch_walk" and is_equal_approx(animation.speed_scale, .16 / (.4 * model_scale)), "Slow crouch cadence follows movement")
 func run() -> void:
 	world = Node3D.new()
 	root.add_child(world)
@@ -219,6 +244,7 @@ func run() -> void:
 	world.add_child(second)
 	second.set_physics_process(false)
 	check(not player.begin_grab(second,6),"Single captor ownership")
+	check_ground_animation(second)
 	second.free()
 	key(true)
 	actor.grab.cancel()
@@ -289,7 +315,7 @@ func run() -> void:
 	actor.free()
 	check(not player.is_grabbed() and not player.grab_control.hud.visible,"Removing monster releases HUD/input")
 	world.free()
-	if failures.is_empty(): print("PASS: Raker grab outcomes, ownership, input and cleanup")
+	if failures.is_empty(): print("PASS: Raker grab outcomes, ownership, input, cleanup and gait playback")
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
