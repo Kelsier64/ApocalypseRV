@@ -64,14 +64,41 @@ func check_ground_animation(raker: Raker) -> void:
 	check(animation.current_animation == "game/chase" and is_equal_approx(animation.current_animation_position / animation.current_animation_length, phase), "Walk to chase preserves normalized step phase")
 	visual._ground_locomotion(.01, .9)
 	check(animation.current_animation == "game/chase" and is_equal_approx(animation.speed_scale, .9 / (2.3 * model_scale)), "Chase cadence follows deceleration before the gait changes")
-	raker.pursuit_gait = Raker.PursuitGait.VEHICLE_SPRINT
+	raker.pursuit_gait = Raker.PursuitGait.RUN
 	visual._ground_locomotion(1.0, 5.4)
 	check(animation.current_animation == "game/sprint" and is_equal_approx(animation.current_animation_position / animation.current_animation_length, phase), "Chase to sprint preserves normalized step phase")
+	raker.pursuit_gait = Raker.PursuitGait.VEHICLE_SPRINT
 	visual._ground_locomotion(1.0, 4.5)
 	check(animation.current_animation == "game/sprint" and is_equal_approx(animation.speed_scale, 4.5 / (6.0 * model_scale)), "Sprint hysteresis keeps the gait and matches its cadence to 4.5 m/s")
 	raker.set_crouched(true)
 	visual._ground_locomotion(1.0, .16)
 	check(animation.current_animation == "game/crouch_walk" and is_equal_approx(animation.speed_scale, .16 / (.4 * model_scale)), "Slow crouch cadence follows movement")
+
+func check_foot_pursuit(animation: AnimationPlayer) -> void:
+	const STEP := 1.0 / 60.0
+	for escape in ["walk", "sprint", "sidestep"]:
+		reset()
+		actor.ai_state = Monster.State.CHASE
+		actor.velocity = Vector3.ZERO
+		player.position.z = actor.position.z - 2.7
+		var began_reach := false
+		for _frame in 360:
+			await physics_frame
+			var retreat := 8.0 if escape == "sprint" else 5.0
+			player.velocity = Vector3(5, -1, 0) if escape == "sidestep" and began_reach else Vector3(0, -1, -retreat)
+			player.move_and_slide()
+			actor._physics_process(STEP)
+			animation.advance(STEP)
+			if not began_reach and actor.grab.phase == Grab.Phase.REACH:
+				began_reach = true
+				check(actor.grab.reach_duration == Grab.MOVING_REACH_DURATION, "Retreating target uses the moving reach")
+				check(actor.velocity.z < -5.0, "Moving reach carries chase speed into the grab")
+			if player.is_grabbed() or actor.grab.phase == Grab.Phase.MISS: break
+		match escape:
+			"walk": check(began_reach and player.is_grabbed(), "Raker catches a player retreating at 5 m/s inside the old slowdown range (phase %s, gap %.2f, %s)" % [Grab.Phase.keys()[actor.grab.phase], actor.position.distance_to(player.position), actor.grab.contact_failure])
+			"sprint": check(not began_reach and not player.is_grabbed(), "A straight 8 m/s sprint opens the gap")
+			"sidestep": check(began_reach and actor.grab.phase == Grab.Phase.MISS, "Sidestep during committed reach avoids capture")
+
 func run() -> void:
 	world = Node3D.new()
 	root.add_child(world)
@@ -311,11 +338,12 @@ func run() -> void:
 	player.position.x = 4
 	actor.grab.tick(.6)
 	check(actor.grab.phase==Grab.Phase.MISS and not player.is_grabbed(),"Windup rechecks range")
+	await check_foot_pursuit(animation)
 	capture(6)
 	actor.free()
 	check(not player.is_grabbed() and not player.grab_control.hud.visible,"Removing monster releases HUD/input")
 	world.free()
-	if failures.is_empty(): print("PASS: Raker grab outcomes, ownership, input, cleanup and gait playback")
+	if failures.is_empty(): print("PASS: Raker pursuit, gait playback, grab outcomes, ownership and cleanup")
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

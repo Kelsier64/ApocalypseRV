@@ -17,6 +17,11 @@ var was_seated := false
 var contact_failure := ""
 var rng := RandomNumberGenerator.new()
 const REACH_DURATION := .36
+const MOVING_REACH_DURATION := .24
+const MOVING_REACH_MIN_RETREAT_SPEED := 1.5
+const REACH_FOLLOW_DISTANCE := .85
+var reach_duration := REACH_DURATION
+var reach_direction := Vector3.ZERO
 const BITE_CONTACT := .22
 const BITE_SOURCE_CONTACT := .38
 const BITE_SPEED := BITE_SOURCE_CONTACT / BITE_CONTACT
@@ -37,15 +42,32 @@ func start(target: CharacterBody3D) -> bool:
 	outcome = 0
 	resolved = false
 	variant = "seat" if is_instance_valid(target.seated_in) else ("low" if actor.crouched else "stand")
+	reach_direction = Vector3.ZERO
+	reach_duration = REACH_DURATION
+	if actor.is_foot_pursuit(target):
+		var direction := -actor.global_basis.z
+		if target.velocity.dot(direction) >= MOVING_REACH_MIN_RETREAT_SPEED:
+			reach_direction = direction
+			reach_duration = MOVING_REACH_DURATION
 	_change(Phase.REACH)
 	return true
+
+func approach_velocity() -> Vector3:
+	if phase != Phase.REACH or reach_direction == Vector3.ZERO or not actor.is_foot_pursuit(victim):
+		return Vector3.ZERO
+	if not actor._has_attack_line_of_sight_to_target(victim): return Vector3.ZERO
+	# One committed step. The player can still dodge laterally or use cover.
+	var gap := (victim.global_position - actor.global_position).dot(reach_direction)
+	if gap <= 0.0: return Vector3.ZERO
+	var speed := victim.velocity.dot(reach_direction) + (gap - REACH_FOLLOW_DISTANCE) / reach_duration
+	return reach_direction * clampf(speed, 0.0, actor.FOOT_PURSUIT_SPEED)
 
 func _change(next: Phase) -> void:
 	phase = next
 	elapsed = 0
 	if next == Phase.NONE: bite_part = &""
 	if next != Phase.NONE:
-		actor.attack_started.emit("grab_" + variant + "_" + CLIPS[next], DURATIONS[next])
+		actor.attack_started.emit("grab_" + variant + "_" + CLIPS[next], reach_duration if next == Phase.REACH else DURATIONS[next])
 
 static func classify(presses: int, required: int) -> int:
 	if presses >= required: return 0
@@ -59,7 +81,7 @@ func tick(delta: float) -> void:
 	elapsed += delta
 	match phase:
 		Phase.REACH:
-			if elapsed >= REACH_DURATION:
+			if elapsed >= reach_duration:
 				if not valid_contact(false) or not victim.begin_grab(actor, rng.randi_range(GrabRules.MIN_PRESSES, GrabRules.MAX_PRESSES)):
 					victim = null
 					_change(Phase.MISS)

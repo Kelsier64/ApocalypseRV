@@ -57,7 +57,7 @@ func _ground_locomotion(delta: float, speed: float) -> void:
 	if speed < .08: filtered_speed = 0.0
 	if speed < .08 and filtered_speed < .18: ground_clip = "idle"
 	elif actor.crouched: ground_clip = "crouch_walk" if speed > .12 else "crouch_idle"
-	elif actor.pursuit_gait == Raker.PursuitGait.VEHICLE_SPRINT and filtered_speed > (4.0 if ground_clip == "sprint" else 5.0): ground_clip = "sprint"
+	elif actor.pursuit_gait != Raker.PursuitGait.STALK and filtered_speed > (4.0 if ground_clip == "sprint" else 5.0): ground_clip = "sprint"
 	elif filtered_speed > (1.9 if ground_clip == "chase" or ground_clip == "sprint" else 2.5): ground_clip = "chase"
 	else: ground_clip = "walk"
 	if actor.crouched and ground_clip == "idle": ground_clip = "crouch_idle"
@@ -81,8 +81,8 @@ func _attack(clip: String, duration: float) -> void:
 			speed = actor.grab.BITE_SPEED
 			blend = .035
 		elif clip.ends_with("_reach"):
-			speed = .6 / actor.grab.REACH_DURATION
-			blend = .06
+			speed = .6 / duration
+			blend = .10 if duration < actor.grab.REACH_DURATION else .06
 	play(clip, speed, true, blend)
 
 func _reaction() -> void:

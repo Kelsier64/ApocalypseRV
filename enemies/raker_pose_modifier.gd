@@ -64,7 +64,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		_solve_bite(sk)
 	if is_instance_valid(actor.grab) and is_instance_valid(actor.grab.victim):
 		var weight := 1.0
-		if actor.grab.phase == actor.grab.Phase.REACH: weight = smoothstep(0, actor.grab.REACH_DURATION, actor.grab.elapsed)
+		if actor.grab.phase == actor.grab.Phase.REACH: weight = smoothstep(0, actor.grab.reach_duration, actor.grab.elapsed)
 		for side in [-1, 1]:
 			var grip: Vector3 = actor.grab.victim.grab_contact_position(side, actor)
 			var victim_grab: Node = actor.grab.victim.grab_control
