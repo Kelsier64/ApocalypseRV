@@ -68,7 +68,7 @@
 
 動畫來源採樣、Godot 匯入採樣與物理 tick 分別管理；專案物理為 60 Hz。替換資產時保留各自已接受的匯入設定，必要調整須另驗證。此文件整理不更改上述設定。
 
-來源位置：玩家原始及 v020 匯出工作檔在資產 README 記載的外部 `Projects/3d/`；玩家動作／分件來源在 [player_animations_v021](../../art_source/player_animations_v021/player_animations_v021.blend) 與 [player_dismemberment](../../art_source/player_dismemberment/player_dismemberment.blend)；Raker 目前來源為 [monster_refined_v021](../../art_source/monster_refined_v021/monster_refined_v021.blend)。外部工作檔的位置依 README 記錄，本輪未檢查其存在或內容。
+來源位置：玩家原始及 v020 匯出工作檔在資產 README 記載的外部 `Projects/3d/`；玩家動作／分件來源在 [player_animations_v021](../../art_source/player_animations_v021/player_animations_v021.blend) 與 [player_dismemberment](../../art_source/player_dismemberment/player_dismemberment.blend)；Raker 外觀來源為 [monster_refined_v021](../../art_source/monster_refined_v021/monster_refined_v021.blend)，2026-11-08 的九段動作修整來源為 [raker_motion_v022](../../art_source/raker_motion_v022/README.md)。外部工作檔的位置依 README 記錄，本輪未檢查其存在或內容。
 
 ### 2.3 骨名與動作接口
 
