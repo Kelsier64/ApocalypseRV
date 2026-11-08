@@ -1,8 +1,14 @@
 extends "res://world/main_world.gd"
 ## The main-world departure flow with stable, immediate light fog for demos.
 
+const COMPASS_SCENE := "res://props/electronic_compass.tscn"
+const COMPASS_DEFINITION = preload("res://props/electronic_compass_definition.tres")
+
 func _ready() -> void:
 	super._ready()
+	if fresh_start:
+		# The first item goes into the active slot and is equipped by Player.
+		get_node("Player").add_item(COMPASS_DEFINITION.display_name, COMPASS_DEFINITION.is_large, COMPASS_SCENE)
 	var rv: Chassis = get_node("NewRv/Chassis")
 	rv.unlimited_materials = true
 	rv.unlimited_fuel = true

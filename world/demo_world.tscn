@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://world/demo_world.gd" id="2_demo"]
 [ext_resource type="Script" path="res://world/demo_world_generator.gd" id="3_generator"]
 [ext_resource type="Script" path="res://world/starting_shelter/garage_profile.gd" id="4_profile"]
+[ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="5_station"]
 
 [sub_resource type="Resource" id="DemoProfile"]
 script = ExtResource("4_profile")
@@ -18,3 +19,11 @@ metadata/checkpoint_staging = true
 script = ExtResource("3_generator")
 profile = SubResource("DemoProfile")
 world_seed = 42
+
+[node name="CraftingStation" parent="NewRv/Chassis" instance=ExtResource("5_station")]
+position = Vector3(-1.15, 0.5, 1)
+initial_support = NodePath("..")
+freeze = true
+collision_mask = 0
+
+[editable path="NewRv"]
