@@ -169,6 +169,7 @@ static func _inside(manager: PoiInstanceManager, player: CharacterBody3D, id: St
 	if not ok: return false
 	ok = manager.interior.profile_id == profile and player.get_parent() == manager.interior and not manager.busy and not player.in_ui_mode
 	check.call(ok, "Route restores controls and correct profile/ownership for " + id)
+	check.call(manager._status.text.is_empty(), "Route clears passive title and return instructions for " + id)
 	return ok
 
 static func _interact(tree: SceneTree, manager: PoiInstanceManager, player: CharacterBody3D, door: PoiEntrance, check: Callable) -> void:

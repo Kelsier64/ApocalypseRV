@@ -185,16 +185,3 @@ static func reachable(inside: Node3D, check_cargo := true) -> bool:
 		var path := NavigationServer3D.map_get_path(map, start, nearest, true)
 		if path.size() < 2 or path[-1].distance_to(nearest) > 0.5: return false
 	return true
-
-static func objective_text(inside: Node3D, player: Node3D) -> String:
-	var identity: String = inside.content.get("cargo_id", "")
-	if identity.is_empty(): return "搜尋補給箱與零件，返回 B1 ENTRY 離開"
-	for item: Dictionary in player.inventory.items:
-		if item.get("state", {}).get("id", "") == identity: return "已攜帶強化引擎：返回 B1 ENTRY 帶回 RV"
-	for actor in inside.entities.get_children():
-		if actor is Item and not actor.is_queued_for_deletion() and actor.persistent_id == identity:
-			var floor_number := 1
-			for room: Dictionary in inside.layout.rooms:
-				if room.id == inside.content.cargo_room: floor_number = 1 + roundi(-room.transform.origin.y / inside.layout.floor_spacing)
-			return "回收目標：B%d / %s 強化引擎｜補給箱長按 E 搜尋" % [floor_number, str(inside.content.cargo_room).to_upper()]
-	return "強化引擎已移出地堡｜剩餘物資不會補充"

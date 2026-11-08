@@ -51,6 +51,7 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	await manager.enter(player, building, site.id, site.seed)
 	check.call(manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null, "Real megashelter enters through the manager: " + manager.last_error)
 	if manager.interior == null: return
+	check.call(manager._status.text.is_empty(), "Megashelter clears its room-count banner after entry")
 	var room := manager.interior
 	var adaptation := room.get_node_or_null("DarkAdaptation") as NightVisionEffect
 	var interior_environment := room.get_node_or_null("WorldEnvironment") as WorldEnvironment

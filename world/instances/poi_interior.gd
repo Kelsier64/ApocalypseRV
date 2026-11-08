@@ -29,7 +29,6 @@ var rebaking := false
 var current_room := 0
 var current_floor := 0
 var _sample_time := 0.0
-var _hud: Label
 var _map: Control
 
 func build(seed_value: int, saved: Dictionary = {}) -> bool:
@@ -112,7 +111,7 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 		if not content_reachable: return false
 	for actor in entities.get_children():
 		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_INHERIT
-	_add_hud()
+	_add_map()
 	build_msec = Time.get_ticks_msec() - started
 	print("INTERIOR_READY profile=%s seed=%d rooms=%d/%d floors=%d/%d build_ms=%d nav_ms=%d" % [profile_id, seed_value, rooms.size(), layout.target_rooms, InteriorLayout.floor_count(layout), layout.target_floors, build_msec, navigation_msec])
 	return true
@@ -302,22 +301,11 @@ func _restore(actors: Array) -> void:
 		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
 		restored.append(actor)
 	WorldActorSnapshot.restore_supports(actors, restored, self)
-func _add_hud() -> void:
+func _add_map() -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 3
 	add_child(layer)
 	HUDVisibility.attach(layer)
-	_hud = Label.new()
-	_hud.position = Vector2(24,80)
-	if profile_id == &"megashelter":
-		_hud.anchor_left = 1.0
-		_hud.anchor_right = 1.0
-		_hud.offset_left = -500.0
-		_hud.offset_right = -24.0
-		_hud.offset_top = 62.0
-		_hud.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hud.add_theme_font_size_override("font_size", 20)
-	layer.add_child(_hud)
 	_map = preload("res://world/instances/interior_map.gd").new()
 	_map.interior = self
 	_map.position = Vector2(24,180)
@@ -326,7 +314,7 @@ func _add_hud() -> void:
 	layer.add_child(_map)
 
 func _process(delta: float) -> void:
-	if _hud == null: return
+	if _map == null: return
 	_sample_time += delta
 	if _sample_time < 0.2: return
 	_sample_time = 0
@@ -342,13 +330,6 @@ func _process(delta: float) -> void:
 			var id: String = layout.rooms[i].id
 			if id not in explored: explored.append(id)
 			break
-	if profile_id == &"megashelter_stairwell":
-		_hud.text = "SERVICE STAIR"
-	elif profile_id == &"megashelter":
-		_hud.text = "GROUND FLOOR / %s    %d explored\nM: explored map  |  Return to ENTRY to exit" % [str(layout.rooms[current_room].id).to_upper(), explored.size()]
-	else:
-		_hud.text = "B%d / %s    %d explored\nM: explored map   Page Up/Down: map floor" % [current_floor+1, str(layout.rooms[current_room].id).to_upper(), explored.size()]
-		if not content.is_empty(): _hud.text += "\n" + BunkerContent.objective_text(self, player)
 	if _map.visible: _map.queue_redraw()
 
 func _input(event: InputEvent) -> void:

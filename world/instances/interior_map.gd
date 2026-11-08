@@ -8,7 +8,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO,size),Color(0.025,0.04,0.045,0.94))
 	var font := ThemeDB.fallback_font
 	var floor_label: String = "GROUND FLOOR" if interior.profile_id == &"megashelter" else "B%d" % (floor_index+1)
-	draw_string(font,Vector2(16,28),"EXPLORED / " + floor_label,HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color.WHITE)
+	draw_string(font,Vector2(16,28),floor_label,HORIZONTAL_ALIGNMENT_LEFT,-1,20,Color.WHITE)
 	var visible_rooms: Array[int] = []
 	var bounds := Rect2(Vector2(-5,-5),Vector2(10,10))
 	for i in interior.rooms.size():
@@ -25,11 +25,19 @@ func _draw() -> void:
 		var box: AABB = room.transform * InteriorLayout.definition(interior.layout, i, interior.profile).describe().bounds
 		var rect := Rect2(Vector2(box.position.x,box.position.z)*scale_factor+offset,Vector2(box.size.x,box.size.z)*scale_factor)
 		draw_rect(rect.grow(-1),Color("24555a") if i != interior.current_room else Color("a87c38"))
-		var label: String = room.id.trim_prefix("r")
-		if InteriorLayout.definition(interior.layout, i, interior.profile).role == &"stairs": label = "STAIRS"
-		draw_string(font,rect.position+Vector2(3,14),label,HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color.WHITE)
+		if InteriorLayout.definition(interior.layout, i, interior.profile).role == &"stairs": _draw_stairs(rect)
 	for edge: Dictionary in interior.layout.links:
 		if edge.a not in visible_rooms or edge.b not in visible_rooms: continue
 		var a: Vector3 = interior.layout.rooms[edge.a].transform.origin
 		var b: Vector3 = interior.layout.rooms[edge.b].transform.origin
 		draw_line(Vector2(a.x,a.z)*scale_factor+offset,Vector2(b.x,b.z)*scale_factor+offset,Color(0.7,0.8,0.7,0.5),2)
+
+func _draw_stairs(rect: Rect2) -> void:
+	var span := minf(18.0, minf(rect.size.x, rect.size.y) - 6.0)
+	if span < 6.0: return
+	var origin := rect.get_center() + Vector2(-span, span) * 0.5
+	var points := PackedVector2Array([origin])
+	for step in 3:
+		points.append(origin + Vector2(step, -step - 1) * span / 3.0)
+		points.append(origin + Vector2(step + 1, -step - 1) * span / 3.0)
+	draw_polyline(points, Color("c3ccc5"), 2.0)
