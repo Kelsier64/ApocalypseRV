@@ -706,15 +706,6 @@ size = Vector3(2, 0.07, 0.85)
 
 [node name="Visuals" type="Node3D" parent="." unique_id=1117677549]
 
-[node name="ShelterPlaque" type="Label3D" parent="Visuals" unique_id=563747335]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3.8, -0.603)
-pixel_size = 0.0028
-shaded = true
-modulate = Color(0.7019608, 0.6745098, 0.5764706, 1)
-text = "CIVIL SHELTER  /  12"
-font_size = 48
-outline_size = 0
-
 [node name="Trim" type="MeshInstance3D" parent="Visuals" unique_id=1991221717]
 mesh = SubResource("ArrayMesh_fpxh1")
 

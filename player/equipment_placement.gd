@@ -47,7 +47,6 @@ func begin_from_inventory(player: Node) -> bool:
 		node.collision_mask = 0
 	for mesh in ghost.find_children("*", "GeometryInstance3D", true, false):
 		mesh.material_override = ghost.ghost_material
-	for label in ghost.find_children("*", "Label3D", true, false): label.hide()
 	begin(ghost)
 	inventory_slot = player.inventory.active_slot
 	inventory_id = str(data.get("state", {}).get("id", ""))

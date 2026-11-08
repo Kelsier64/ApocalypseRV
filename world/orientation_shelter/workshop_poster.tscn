@@ -39,16 +39,6 @@ position = Vector3(0, 0, 0.049)
 mesh = SubResource("sheet")
 material_override = SubResource("paper")
 
-[node name="Heading" type="Label3D" parent="."]
-position = Vector3(0, 0.9, 0.061)
-text = "CIVIL DEFENSE"
-font_size = 48
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
 [node name="Rule" type="MeshInstance3D" parent="."]
 position = Vector3(0, 0.72, 0.055)
 mesh = SubResource("rule")
@@ -65,33 +55,3 @@ position = Vector3(0, 0.41, 0.058)
 rotation = Vector3(0, 0, -0.6)
 mesh = SubResource("bar")
 material_override = SubResource("paper")
-
-[node name="Title" type="Label3D" parent="."]
-position = Vector3(0, 0.02, 0.061)
-text = "NOTHING IS WASTE"
-font_size = 39
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
-[node name="Text" type="Label3D" parent="."]
-position = Vector3(0, -0.43, 0.061)
-text = "A broken machine can keep\nanother crew moving.\n\nSalvage sound metal.\nKeep fuel away from sparks.\nGive damaged equipment\na second life."
-font_size = 26
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
-[node name="Footer" type="Label3D" parent="."]
-position = Vector3(0, -0.95, 0.061)
-text = "CONSERVATION SERVICE / FIELD EDITION"
-font_size = 18
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false

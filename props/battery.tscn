@@ -22,9 +22,3 @@ mesh = SubResource("mesh")
 [node name="Visuals" parent="." instance=ExtResource("visual")]
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("shape")
-[node name="Charge" type="Label3D" parent="."]
-position = Vector3(0, 0.21, 0)
-billboard = 1
-font_size = 28
-pixel_size = 0.003
-text = "BATTERY"

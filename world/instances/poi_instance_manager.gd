@@ -93,15 +93,6 @@ func enter(player: Node3D, building: Node3D, id: String, seed_value: int) -> voi
 			area += volume.size.x * volume.size.z
 	await _load_interior(profile, seed_value, token, null, area)
 
-func _position_status(profile: StringName) -> void:
-	# Keep the new shelter header clear of the player's scaled health bars.
-	_status.anchor_left = 1.0 if profile == &"megashelter" else 0.0
-	_status.anchor_right = _status.anchor_left
-	_status.offset_left = -600.0 if profile == &"megashelter" else 24.0
-	_status.offset_right = -24.0 if profile == &"megashelter" else 1000.0
-	_status.offset_top = 24.0 if profile == &"megashelter" else 50.0
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if profile == &"megashelter" else HORIZONTAL_ALIGNMENT_LEFT
-
 func _build_interior(room: PoiInterior, seed_value: int, saved: Dictionary, result: Dictionary) -> void:
 	result.ok = await room.build(seed_value, saved)
 	result.done = true
@@ -112,9 +103,6 @@ func _connect_interior_doors() -> void:
 	for door: PoiEntrance in interior.link_doors.values():
 		door.entry_requested.connect(func(_actor: Node3D, destination: StringName) -> void:
 			enter_link.call_deferred(destination))
-	if interior.profile_id == &"bunker" and not _route_stack.is_empty():
-		var sign := interior.exit_door.get_node_or_null("ReturnSign") as Label3D
-		if sign != null: sign.text = "EXIT / STAIRWELL"
 
 func enter_link(destination: StringName) -> void:
 	if busy or state != State.INDOOR or not is_instance_valid(interior): return
@@ -155,7 +143,6 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	if not POIConfig.supported_interior(profile):
 		cancel_transition("Unsupported interior profile")
 		return
-	_position_status(profile)
 	viewport = SubViewport.new()
 	viewport.name = "InteriorViewport"
 	viewport.own_world_3d = true
@@ -185,10 +172,7 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
-	_status.text = "%s / %d ROOMS" % [active_title, interior.rooms.size()]
-	if profile == &"megashelter_stairwell": _status.text = active_title
-	if profile == &"bunker":
-		_status.text += "   |   Return to B1 ENTRY to %s" % ("reach the stairwell" if not _route_stack.is_empty() else "exit")
+	_status.text = ""
 	print("POI ENTER: ", active_id, " rooms=", interior.rooms.size())
 
 func leave() -> void:
@@ -332,7 +316,7 @@ func _input(event: InputEvent) -> void:
 
 func _sync_settings_overlay() -> void:
 	# The inner CanvasLayer 60 is composited through this root layer. Raise
-	# the composite too, so outdoor HUD and the POI title cannot cover it.
+	# the composite too, so outdoor HUD and transition messages cannot cover it.
 	var settings_active: bool = is_instance_valid(viewport) and is_instance_valid(_player) and _player.get("settings_open") == true
 	_layer.layer = 60 if settings_active else 20
 	_status.visible = not settings_active

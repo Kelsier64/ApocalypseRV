@@ -741,12 +741,3 @@ mesh = SubResource("detail_30")
 [node name="LatchGuide0.6" type="MeshInstance3D" parent="Leaf1"]
 position = Vector3(-1.2825, 0.6, -0.121)
 mesh = SubResource("detail_30")
-
-[node name="HeaderSign" type="Label3D" parent="."]
-position = Vector3(0, 0.93, 0.115)
-text = "CARGO / EXIT"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)

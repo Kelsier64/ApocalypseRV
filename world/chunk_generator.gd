@@ -231,10 +231,7 @@ func _build_site(site: Dictionary, spawner: POISpawner, include_visuals: bool = 
 	# Standalone entrances and wild sites have no road advertising or approach.
 	if site.get("placement", "roadside") == "off_road" or site.kind == "entrance": return exterior
 	var sign_pos: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
-	var sign_node := _place_module("sign", sign_pos, site.road.basis)
-	var title := str(site.get("title", "LAY-BY"))
-	if site.get("definition_id", "") == "gas_station": title = "NORTHLINE\nGAS / SERVICE"
-	RoadsideKit.label(sign_node, title, Vector3(0, 3.4, 0.08), 24)
+	_place_module("sign", sign_pos, site.road.basis)
 	for side in [-1.0, 1.0]:
 		var point: Vector3 = site.frame * Vector3(side * 6.2, 0.05, 0)
 		var stripe := RoadsideKit.part(self, Vector3(0.15, 0.03, 24), point, Color(0.72, 0.64, 0.43))

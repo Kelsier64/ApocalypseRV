@@ -51,6 +51,7 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	await manager.enter(player, building, site.id, site.seed)
 	check.call(manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null, "Real megashelter enters through the manager: " + manager.last_error)
 	if manager.interior == null: return
+	check.call(manager._status.text.is_empty(), "Megashelter clears its room-count banner after entry")
 	var room := manager.interior
 	var adaptation := room.get_node_or_null("DarkAdaptation") as NightVisionEffect
 	var interior_environment := room.get_node_or_null("WorldEnvironment") as WorldEnvironment
@@ -94,10 +95,12 @@ static func _visit(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, 
 	await tree.process_frame
 	check.call(player.inventory.items.any(func(item): return item.state.id == picked_id), "Loose megashelter supply is picked up through Item interaction")
 	var cache := room.caches[0] as BunkerCache
+	check.call(is_zero_approx(cache.get_node("Visuals/LidPivot").rotation.x), "Unsearched cache keeps its physical lid closed without a status label")
 	player.global_position = cache.global_position + Vector3(0, 0, 1.5)
 	var cache_count := cache.remaining.size()
 	cache.interact_hold(player)
 	check.call(cache.searched and cache.remaining.size() == cache_count - 1, "Real cache search transfers exactly one supply")
+	check.call(is_equal_approx(cache.get_node("Visuals/LidPivot").rotation.x, -1.15), "Searching opens the physical cache lid without a status label")
 	# Exercise the production drop path, then freeze the prop to isolate persistence.
 	var cache_item_id: String = player.inventory.items.back().state.id
 	player._set_active_slot(player.inventory.items.size() - 1)
@@ -187,8 +190,4 @@ static func _check_reception_exit(interior: PoiInterior, player: CharacterBody3D
 		var ray := PhysicsRayQueryParameters3D.create(from, to, 0xFFFFFFFF, [player.get_rid()])
 		var hit := interior.get_world_3d().direct_space_state.intersect_ray(ray)
 		check.call(not hit.is_empty() and hit.get("collider") == interior.exit_door, str(marker.name) + " standing interaction ray reaches the shared exit before walls or furniture")
-	var floating_prompt := false
-	for node in interior.exit_door.find_children("*", "Label3D", true, false):
-		var label := node as Label3D
-		if "[E]" in label.text: floating_prompt = true
-	check.call(not floating_prompt, "Megashelter exit uses physical door signs without a floating E label")
+	check.call(interior.find_children("*", "Label3D", true, false).is_empty(), "Megashelter rooms, doors and supplies have no model text labels")

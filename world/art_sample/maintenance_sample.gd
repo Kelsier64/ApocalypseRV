@@ -43,11 +43,7 @@ func _ready() -> void:
 		SampleMaterials.box(self, Vector3(0.46, 0.58, 0.02), Vector3(x, 2.48, 4.68), dark)
 		SampleMaterials.box(self, Vector3(0.44, 0.045, 0.065), Vector3(x, 1.18, 4.71), pale)
 	SampleMaterials.box(self, Vector3(3.8, 0.7, 0.09), Vector3(0, 4.77, 4.77), dark)
-	SampleMaterials.caption(self, "NORTHLINE / 07", Vector3(0, 4.8, 4.83), 28)
-	SampleMaterials.caption(self, "SERVICE ACCESS", Vector3(0, 3.76, 4.80), 16)
-	SampleMaterials.caption(self, "07", Vector3(-3.08, 3.25, 4.73), 100, Color("cdc8aa"))
 	SampleMaterials.box(self, Vector3(0.95, 0.57, 0.03), Vector3(2.52, 2.3, 4.73), yellow)
-	SampleMaterials.caption(self, "DANGER\nHIGH VOLTAGE", Vector3(2.52, 2.3, 4.76), 10, Color("242e2c"))
 	# Overhead service pipes break the front into depth layers without blocking it.
 	for y in [5.65, 6.14]:
 		SampleMaterials.beam(self, Vector3(-4.65, y, 5), Vector3(4.65, y, 5), 0.22, rust)

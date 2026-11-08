@@ -24,9 +24,7 @@ godot --headless --editor --path . --import --quit
 ```text
 FuelPump
 ├── Visuals
-│   ├── Model      匯入 fuel_pump.glb
-│   ├── Readout    Godot Label3D
-│   └── Notice     Godot Label3D
+│   └── Model      匯入 fuel_pump.glb
 └── Collision
     ├── Base
     ├── Pedestal
@@ -35,7 +33,7 @@ FuelPump
 
 1. 把新 GLB 放在素材目錄，記錄來源、授權、作者與修改；原始素材另存，不直接改 Godot 匯入快取。
 2. 在外部建模工具對齊本規格的尺寸、原點與朝向；替換 `Visuals/Model` 的場景引用。
-3. 保留 Collision、外層場景路徑，以及字樣／物資／互動等遊戲節點。若模型形狀或尺寸改變，重新設計並驗證碰撞，不能只假定舊碰撞仍適合。
+3. 保留 Collision、外層場景路徑，以及物資／互動等遊戲節點。模型上的 Readout／Notice 文字節點已移除，不得補回提示字。若模型形狀或尺寸改變，重新設計並驗證碰撞，不能只假定舊碰撞仍適合。
 4. 在加油站測試場 F6 近看，F7 比較原灰盒；檢查支撐、穿模、朝向與材質。F8 可保存畫面。
 5. 執行 `scripts/test.ps1 -TestFilter test_gas_station.gd`，檢查匯入尺寸、碰撞不變、導航、步行及 E 拾取。
 

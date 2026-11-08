@@ -895,46 +895,6 @@ position = Vector3(2.05, 1.65, -45.891)
 mesh = SubResource("r32")
 material_override = SubResource("paper")
 
-[node name="PosterHeading" type="Label3D" parent="Visuals"]
-position = Vector3(2.05, 2.5, -45.88)
-text = "CIVIL DEFENSE"
-font_size = 55
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
-[node name="PosterTitle" type="Label3D" parent="Visuals"]
-position = Vector3(2.05, 2.13, -45.88)
-text = "CARRY KNOWLEDGE"
-font_size = 43
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
-[node name="PosterText" type="Label3D" parent="Visuals"]
-position = Vector3(2.05, 1.43, -45.88)
-text = "Before leaving the depot,\nconsult the training terminal\nbeside this notice.\n\nKeep the terminal with you.\nIts field manual remains\navailable when outside\ncommunications fail.\n\nTools can be replaced.\nKnowledge keeps a crew alive."
-font_size = 24
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
-[node name="PosterFooter" type="Label3D" parent="Visuals"]
-position = Vector3(2.05, 0.72, -45.88)
-text = "LOCAL ARCHIVE / RECEIVING DEPOT"
-font_size = 20
-pixel_size = 0.0037
-modulate = Color(0.10, 0.14, 0.12, 1)
-outline_size = 0
-shaded = true
-no_depth_test = false
-
 [node name="PlayerSpawn" type="Marker3D" parent="."]
 position = Vector3(0, 1.5, -41)
 

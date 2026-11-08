@@ -657,17 +657,6 @@ position = Vector3(-7.5, 0.009, -3.65)
 mesh = SubResource("r36")
 material_override = ExtResource("hazard")
 
-[node name="BayNumber0" type="Label3D" parent="Visuals"]
-position = Vector3(-9.94, 2.15, -6.4)
-text = "01"
-font_size = 64
-pixel_size = 0.007
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 1.5708, 0)
-
 [node name="EquipmentBay1_-8.85" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-8.85, 0.009, -1)
 mesh = SubResource("r35")
@@ -688,17 +677,6 @@ position = Vector3(-7.5, 0.009, 0.35)
 mesh = SubResource("r36")
 material_override = ExtResource("hazard")
 
-[node name="BayNumber1" type="Label3D" parent="Visuals"]
-position = Vector3(-9.94, 2.15, -1)
-text = "02"
-font_size = 64
-pixel_size = 0.007
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 1.5708, 0)
-
 [node name="EquipmentBay2_-8.85" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-8.85, 0.009, 3)
 mesh = SubResource("r35")
@@ -718,17 +696,6 @@ material_override = ExtResource("hazard")
 position = Vector3(-7.5, 0.009, 4.35)
 mesh = SubResource("r36")
 material_override = ExtResource("hazard")
-
-[node name="BayNumber2" type="Label3D" parent="Visuals"]
-position = Vector3(-9.94, 2.15, 3)
-text = "03"
-font_size = 64
-pixel_size = 0.007
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 1.5708, 0)
 
 [node name="SupplyRack1" parent="Furnishings" instance=ExtResource("rack0")]
 position = Vector3(8.9, 0, -9)
@@ -764,91 +731,6 @@ position = Vector3(-8.8, 0, -12.5)
 
 [node name="Rations" parent="Furnishings" instance=ExtResource("ration_stack")]
 position = Vector3(6, 0.87, -12.7)
-
-[node name="InteriorTitle" type="Label3D" parent="Visuals"]
-position = Vector3(0, 4.55, -13.97)
-text = "CIVIL DEFENCE  /  MOTOR POOL"
-font_size = 64
-pixel_size = 0.012
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-
-[node name="LoadingSign" type="Label3D" parent="Visuals"]
-position = Vector3(-9.96, 3.2, -2)
-text = "OPTIONAL LOADOUT"
-font_size = 64
-pixel_size = 0.0065
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 1.5708, 0)
-
-[node name="SupplySign" type="Label3D" parent="Visuals"]
-position = Vector3(9.96, 3.2, -2)
-text = "RESERVE SUPPLIES"
-font_size = 64
-pixel_size = 0.0065
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, -1.5708, 0)
-
-[node name="BaySign" type="Label3D" parent="Visuals"]
-visible = false
-position = Vector3(0, 5.85, 14.53)
-text = "SERVICE BAY  01"
-font_size = 64
-pixel_size = 0.01
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-
-[node name="ExteriorTitle" type="Label3D" parent="Visuals"]
-position = Vector3(-6.8, 3.75, 14.54)
-text = "SHELTER  /  07"
-font_size = 64
-pixel_size = 0.012
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-
-[node name="ExteriorWarning" type="Label3D" parent="Visuals"]
-position = Vector3(6.8, 2.8, 14.54)
-text = "KEEP APPROACH CLEAR"
-font_size = 64
-pixel_size = 0.0055
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-
-[node name="InteriorExit" type="Label3D" parent="Visuals"]
-position = Vector3(0, 5.66, 14.17)
-text = "DEPARTURE"
-font_size = 64
-pixel_size = 0.009
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 3.14159, 0)
-
-[node name="LoadingInstruction" type="Label3D" parent="Visuals"]
-position = Vector3(-9.955, 2.6, -2)
-text = "LOAD EQUIPMENT BEFORE DEPARTURE"
-font_size = 64
-pixel_size = 0.0036
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 1.5708, 0)
 
 [node name="LampHousing0" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-6, 6.05, -8)
@@ -1101,17 +983,6 @@ material_override = SubResource("green")
 position = Vector3(0, 0.14, -0.163)
 mesh = SubResource("r50")
 material_override = SubResource("lamp")
-
-[node name="Prompt" type="Label3D" parent="Visuals"]
-position = Vector3(-4.2, 1.67, 12.64)
-text = "OPEN GARAGE"
-font_size = 64
-pixel_size = 0.0024
-modulate = Color(0.73, 0.73, 0.61, 1)
-outline_size = 0
-no_depth_test = false
-double_sided = false
-rotation = Vector3(0, 3.14159, 0)
 
 [node name="ButtonPost" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-4.2, 0.5, 12.8)

@@ -342,14 +342,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.9, -5)
 material_override = SubResource("StandardMaterial3D_7sqs8")
 mesh = SubResource("BoxMesh_k4yj6")
 
-[node name="@Label3D@341" type="Label3D" parent="Visuals" unique_id=1545695817]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.9, -4.91)
-pixel_size = 0.009
-modulate = Color(0.7607843, 0.7647059, 0.6509804, 1)
-text = "NORTH RIDGE
-TRAIL CLOSED"
-font_size = 30
-
 [node name="Part016" type="MeshInstance3D" parent="Visuals" unique_id=197478530]
 transform = Transform3D(0.9553365, -0.29552022, 0, 0.29552022, 0.9553365, 0, 0, 0, 1, 4.8, 1.35, -4.89)
 material_override = SubResource("StandardMaterial3D_irm8t")

@@ -96,18 +96,6 @@ func _loot(parent: Node, label: String, pos: Vector3, chance: float = 0.7) -> vo
 	point.candidates.append(preload("res://props/scrap.tscn"))
 	parent.get_node("LootSpawns").add_child(point)
 
-func _label(parent: Node3D, caption: String, pos: Vector3, text_size: int, tint: Color = Color("e7e3d5")) -> Label3D:
-	var sign := Label3D.new()
-	sign.name = "Sign" + str(parent.get_child_count())
-	sign.text = caption
-	sign.position = pos
-	sign.font_size = text_size
-	sign.pixel_size = 0.008
-	sign.modulate = tint
-	sign.outline_size = 0
-	parent.add_child(sign)
-	return sign
-
 func _shelf() -> Node3D:
 	var asset := FURNITURE.new()
 	asset.name = "Shelf"
@@ -202,8 +190,6 @@ func _exterior() -> Node3D:
 	_box(asset, "Canopy", Vector3(10.6, 0.18, 3.4), Vector3(0, 4.15, 5.7), paint)
 	_box(asset, "Fascia", Vector3(10.6, 0.25, 0.08), Vector3(0, 4.15, 7.42), orange, false)
 	_box(asset, "SignBoard", Vector3(7.9, 0.7, 0.1), Vector3(0, 4.75, 4.7), steel, false)
-	_label(asset.get_node("Visuals"), "NORTHLINE  /  SERVICE 07", Vector3(0, 4.75, 4.77), 60)
-	_label(asset.get_node("Visuals"), "MAINTENANCE ACCESS\n[E] ENTER", Vector3(0, 2.3, 4.62), 36, Color("dc8b42"))
 	for x in [-3.6, 3.6]:
 		_box(asset, "Post" + str(x), Vector3(0.16, 4, 0.16), Vector3(x, 2, 7.0), steel)
 		_box(asset, "PostGuard" + str(x), Vector3(0.22, 0.9, 0.22), Vector3(x, 0.45, 7), orange, false)

@@ -4,7 +4,6 @@ extends Node3D
 @export_enum("maintenance", "warehouse", "pump", "research") var exterior: String = "maintenance"
 func _ready() -> void:
 	if has_node("Visuals/BunkerFacade"): return
-	for sign_node in find_children("*", "Label3D", true, false): sign_node.visible = false
 	for mesh in get_node("Visuals").get_children():
 		if mesh is MeshInstance3D:
 			mesh.material_override = preload("res://world/poi_kit/materials/bunker/concrete.tres")

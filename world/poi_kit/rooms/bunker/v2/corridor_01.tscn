@@ -448,16 +448,6 @@ position = Vector3(0.98, 0.012, 5.45)
 mesh = SubResource("v2_8")
 material_override = ExtResource("v_hazard")
 
-[node name="SectorSign" type="Label3D" parent="Visuals"]
-position = Vector3(-1.23, 2.2, 0)
-rotation = Vector3(0, 1.5707963267948966, 0)
-text = "SERVICE SPINE"
-font_size = 32
-pixel_size = 0.0035
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
-
 [node name="BreakRecess" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.234, 1.25, 0)
 rotation = Vector3(0.113, 0, 0)

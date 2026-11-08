@@ -21,14 +21,6 @@ shape = SubResource("body_shape")
 [node name="LidPivot" type="Node3D" parent="Visuals"]
 position = Vector3(0, 0.68, -0.3)
 
-[node name="Status" type="Label3D" parent="Visuals"]
-position = Vector3(0, 0.36, 0.347)
-pixel_size = 0.002
-font_size = 42
-text = "SUPPLIES"
-outline_size = 6
-modulate = Color(0.98, 0.85, 0.38, 1)
-
 [node name="Body" type="MeshInstance3D" parent="Visuals"]
 mesh = ExtResource("transit_chest")
 

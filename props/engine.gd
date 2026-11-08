@@ -41,7 +41,5 @@ func _update() -> void:
 	mass = engine.definition().weight
 	max_health = engine.definition().max_health
 	EngineAppearance.apply(self, engine)
-	var label := get_node_or_null("Label") as Label3D
-	if label: label.text = "%s\n%.0f / %.0f" % [item_name, engine.health, engine.definition().max_health]
 func get_interaction_prompt(player: Node3D) -> String:
 	return "%s｜耐久 %.0f / %.0f\n%s" % [item_name, engine.health, engine.definition().max_health, super.get_interaction_prompt(player)]

@@ -98,8 +98,8 @@ func run() -> void:
 	check(generator.get_node("Visuals/Model") is Node3D, "Model container preserved")
 	check(generator.get_node("Visuals/Model/Blockout") is MeshInstance3D, "Blockout name/type preserved")
 	check(generator.get_node("Visuals/Model/Cover") is MeshInstance3D, "Cover name/type preserved")
-	check(generator.get_node("Visuals/Model/Stencil") is Label3D, "Stencil name/type preserved")
-	for old_visual in ["Blockout", "Cover", "Stencil"]:
+	check(generator.find_children("*", "Label3D", true, false).is_empty(), "Generator has no model text labels")
+	for old_visual in ["Blockout", "Cover"]:
 		check(not generator.get_node("Visuals/Model/" + old_visual).visible, "Old visual hidden: " + old_visual)
 	check(model.find_children("*", "CollisionObject3D", true, false).is_empty(), "Generated visuals add no collision or actors")
 	await physics_frame

@@ -41,10 +41,3 @@ shape = SubResource("r2")
 position = Vector3(0, 0.125, 0)
 mesh = SubResource("r3")
 material_override = ExtResource("cream")
-
-[node name="Label" type="Label3D" parent="."]
-position = Vector3(0, 0.23, 0)
-text = "ENGINE KIT"
-font_size = 28
-pixel_size = 0.0025
-billboard = 1

@@ -27,13 +27,4 @@ position = Vector3(0, 0.229, 0)
 mesh = SubResource("m2")
 rotation_degrees = Vector3(0, 0, 0)
 
-[node name="Stencil" type="Label3D" parent="."]
-position = Vector3(0, 0.1105, -0.161)
-text = "FUEL"
-font_size = 48
-pixel_size = 0.001
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(-90, 0, 0)
-
 [node name="Visuals" parent="." instance=ExtResource("visual")]

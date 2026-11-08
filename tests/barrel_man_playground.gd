@@ -230,12 +230,6 @@ func _select_mode(next: int) -> void:
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		marker.material_override = material
 		route_target.add_child(marker)
-		var label := Label3D.new()
-		label.text = "自動路線目標（無碰撞）"
-		label.position.y = 1.5
-		label.font_size = 40
-		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		route_target.add_child(label)
 		monster = _spawn_barrel(Vector3(12,0,1))
 		# A deliberate fixture path exercises the drop edge rather than allowing
 		# navigation to reroute downhill. Production acceleration/physics remain live.

@@ -42,17 +42,12 @@ func _ready() -> void:
 	barrel = target("res://enemies/barrel_man.tscn", Vector3(0, 0, -12)) as BarrelMan
 	blocked = target("res://enemies/raker.tscn", Vector3(4, 0, -12))
 	giant = target("res://enemies/slender_speaker/slender_speaker.tscn", Vector3(12, 0, -23))
-	sign_at("RAKER\n140 HP / 6 hits", Vector3(-4, 3.3, -12))
-	sign_at("BARREL MAN\n60 HP / detonates", Vector3(0, 2.8, -12))
-	sign_at("SOLID WALL\nblocks bullets", Vector3(4, 3.0, -8))
-	sign_at("SLENDER SPEAKER\ninvincible", Vector3(12, 16.1, -23))
 	box(Vector3(-3, 0.45, -1), Vector3(1.6, 0.9, 1), Color(0.35, 0.43, 0.47))
 	for sample in [["res://props/pistol.tscn", Vector3(-3.25, 1.0, -1)], ["res://props/pistol_ammo.tscn", Vector3(-2.8, 1.0, -1)]]:
 		var item: Item = load(sample[0]).instantiate()
 		item.position = sample[1]
 		WorldEntities.get_container(self).add_child(item)
 		if sample[0] == "res://props/pistol.tscn": loose_pistol = item
-	sign_at("LOOSE PICKUPS\nE pickup / F place / G drop", Vector3(-3, 1.8, -1), 0.0015)
 	player = load("res://player/player.tscn").instantiate()
 	player.position = Vector3(-4, 0.05, 1)
 	add_child(player)
@@ -104,16 +99,6 @@ func target(path: String, at: Vector3) -> Monster:
 	add_child(monster)
 	monster.set_physics_process(false)
 	return monster
-
-func sign_at(text: String, at: Vector3, pixel_size := 0.0025) -> void:
-	var label := Label3D.new()
-	label.text = text
-	label.position = at
-	label.font_size = 46
-	label.pixel_size = pixel_size
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.no_depth_test = false
-	add_child(label)
 
 func _process(_delta: float) -> void:
 	if player == null: return

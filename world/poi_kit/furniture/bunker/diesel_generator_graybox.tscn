@@ -35,14 +35,4 @@ material_override = ExtResource("rust")
 position = Vector3(0, 0.85, 0)
 shape = SubResource("collision")
 
-[node name="Stencil" type="Label3D" parent="Visuals/Model"]
-visible = false
-position = Vector3(0, 1.105, 0.615)
-text = "GENSET"
-font_size = 32
-pixel_size = 0.003
-shaded = true
-double_sided = false
-modulate = Color(0.68, 0.67, 0.53, 1)
-
 [node name="Generator" parent="Visuals/Model" instance=ExtResource("generator")]

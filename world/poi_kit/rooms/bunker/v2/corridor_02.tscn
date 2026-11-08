@@ -532,16 +532,6 @@ scale = Vector3(0.58, 1.1, 1)
 cast_shadow = 0
 mesh = ExtResource("damp")
 
-[node name="SectorSign" type="Label3D" parent="Visuals"]
-position = Vector3(-1.23, 2.2, 2.4)
-rotation = Vector3(0, 1.5707963267948966, 0)
-text = "QUARANTINE"
-font_size = 32
-pixel_size = 0.0035
-shaded = true
-double_sided = false
-modulate = Color(0.65, 0.68, 0.57, 1)
-
 [node name="BreakRecess" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-1.234, 1.25, 2.35)
 rotation = Vector3(0.124, 0, 0)

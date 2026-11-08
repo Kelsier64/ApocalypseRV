@@ -23,7 +23,7 @@ func restore_item_state(state: Dictionary) -> void:
 		battery = BatteryState.new(state.battery)
 		battery.condition = clampf(float(state.get("condition", battery.condition)), 0.0, 100.0)
 		restored = true
-	_update_label()
+	_sync_battery_state()
 
 func _ready() -> void:
 	super._ready()
@@ -33,14 +33,11 @@ func _ready() -> void:
 		battery.charge = initial_capacity
 		battery.weight = initial_weight
 	mass = battery.weight
-	_update_label()
+	_sync_battery_state()
 
-func _update_label() -> void:
+func _sync_battery_state() -> void:
 	persistent_id = battery.id
 	mass = battery.weight
-	var label := get_node_or_null("Charge") as Label3D
-	if label:
-		label.text = "BATTERY\n%.0f / %.0f" % [battery.charge, battery.capacity]
 
 func get_interaction_prompt(player: Node3D) -> String:
 	return "電池｜電量 %.1f / %.0f\n%s\n拾取後選取電池，對車身電池插槽短按 E 裝入" % [battery.charge, battery.capacity, super.get_interaction_prompt(player)]

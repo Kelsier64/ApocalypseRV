@@ -131,12 +131,3 @@ rotation_degrees = Vector3(0, 0, 0)
 [node name="HeaderCollision" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.95, 0)
 shape = SubResource("c14")
-
-[node name="ExitSign" type="Label3D" parent="."]
-position = Vector3(0, 0.95, 0.115)
-text = "EXIT"
-font_size = 48
-pixel_size = 0.0014
-outline_size = 0
-modulate = Color(0.8, 0.88, 0.78, 1)
-rotation_degrees = Vector3(0, 0, 0)

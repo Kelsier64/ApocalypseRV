@@ -2348,17 +2348,6 @@ position = Vector3(-12.5, 3.1, -23.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberA1" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, -23.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "A1"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountA2" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 3.1, -17.095)
 mesh = SubResource("part_028")
@@ -2368,17 +2357,6 @@ material_override = ExtResource("steel")
 position = Vector3(-12.5, 3.1, -17.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberA2" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, -17.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "A2"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="RackSignMountA3" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 3.1, -11.095)
@@ -2390,17 +2368,6 @@ position = Vector3(-12.5, 3.1, -11.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberA3" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, -11.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "A3"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountA4" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 3.1, -5.095)
 mesh = SubResource("part_028")
@@ -2410,17 +2377,6 @@ material_override = ExtResource("steel")
 position = Vector3(-12.5, 3.1, -5.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberA4" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, -5.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "A4"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="RackSignMountA5" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 3.1, 0.905)
@@ -2432,17 +2388,6 @@ position = Vector3(-12.5, 3.1, 0.875)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberA5" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, 0.85)
-rotation = Vector3(0, 3.14159, 0)
-text = "A5"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountA6" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 3.1, 6.905)
 mesh = SubResource("part_028")
@@ -2452,17 +2397,6 @@ material_override = ExtResource("steel")
 position = Vector3(-12.5, 3.1, 6.875)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberA6" type="Label3D" parent="."]
-position = Vector3(-12.5, 3.1, 6.85)
-rotation = Vector3(0, 3.14159, 0)
-text = "A6"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="RackSignMountB1" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, -23.095)
@@ -2474,17 +2408,6 @@ position = Vector3(12.5, 3.1, -23.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberB1" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, -23.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "B1"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountB2" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, -17.095)
 mesh = SubResource("part_028")
@@ -2494,17 +2417,6 @@ material_override = ExtResource("steel")
 position = Vector3(12.5, 3.1, -17.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberB2" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, -17.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "B2"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="RackSignMountB3" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, -11.095)
@@ -2516,17 +2428,6 @@ position = Vector3(12.5, 3.1, -11.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberB3" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, -11.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "B3"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountB4" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, -5.095)
 mesh = SubResource("part_028")
@@ -2536,17 +2437,6 @@ material_override = ExtResource("steel")
 position = Vector3(12.5, 3.1, -5.125)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberB4" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, -5.15)
-rotation = Vector3(0, 3.14159, 0)
-text = "B4"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="RackSignMountB5" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, 0.905)
@@ -2558,17 +2448,6 @@ position = Vector3(12.5, 3.1, 0.875)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
 
-[node name="RackNumberB5" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, 0.85)
-rotation = Vector3(0, 3.14159, 0)
-text = "B5"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
 [node name="RackSignMountB6" type="MeshInstance3D" parent="."]
 position = Vector3(12.5, 3.1, 6.905)
 mesh = SubResource("part_028")
@@ -2578,17 +2457,6 @@ material_override = ExtResource("steel")
 position = Vector3(12.5, 3.1, 6.875)
 mesh = SubResource("part_029")
 material_override = ExtResource("sage")
-
-[node name="RackNumberB6" type="Label3D" parent="."]
-position = Vector3(12.5, 3.1, 6.85)
-rotation = Vector3(0, 3.14159, 0)
-text = "B6"
-font_size = 62
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="WrappedCargo-1_-21" type="MeshInstance3D" parent="."]
 position = Vector3(-12.5, 5.35, -21)
@@ -2713,17 +2581,6 @@ transform = Transform3D(0, -1, 0, 1, 0, 0, -0, 0, 1, -18.975, 0.8, -29.85)
 position = Vector3(-19.75, 3.3, -30.5)
 mesh = SubResource("part_036")
 material_override = ExtResource("sage")
-
-[node name="WaterServiceText" type="Label3D" parent="."]
-position = Vector3(-19.69, 3.3, -30.5)
-rotation = Vector3(0, 1.5708, 0)
-text = "WATER SERVICE"
-font_size = 42
-pixel_size = 0.004
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="PumpTaskLamp" type="Node3D" parent="."]
 position = Vector3(-19.72, 4.8, -30.5)
@@ -4213,26 +4070,6 @@ material_override = SubResource("part_002")
 position = Vector3(0, 7.4, 14.6)
 mesh = SubResource("part_073")
 material_override = ExtResource("sage")
-
-[node name="DepotName" type="Label3D" parent="."]
-position = Vector3(0, 7.65, 14.67)
-text = "CIVIL DEFENSE"
-font_size = 72
-pixel_size = 0.006
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
-
-[node name="DepotSubtitle" type="Label3D" parent="."]
-position = Vector3(0, 7.12, 14.67)
-text = "RECEIVING DEPOT"
-font_size = 45
-pixel_size = 0.006
-outline_size = 0
-modulate = Color(0.65, 0.63, 0.48, 1)
-shaded = true
-no_depth_test = false
 
 [node name="DoorBumper-4.65" type="MeshInstance3D" parent="."]
 position = Vector3(-4.65, 0.75, 14.73)

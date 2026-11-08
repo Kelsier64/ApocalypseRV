@@ -38,8 +38,27 @@ func _enter(id: String) -> bool:
 	await manager.enter(player, building, id, 913)
 	var ok: bool = manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null and player.get_parent() == manager.interior
 	check(ok, id + " enters a complete real interior: " + manager.last_error)
+	if ok: check(manager._status.text.is_empty(), id + " clears transition text while playing indoors")
+	if ok: check(manager.interior.find_children("*", "Label3D", true, false).is_empty(), id + " bunker has no model text labels")
 	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
+
+func _check_exploration_map() -> void:
+	var inside := manager.interior
+	var map := inside._map
+	check(not map.visible and map.get_parent().find_children("*", "Label", true, false).is_empty(), "Interior starts without passive room, objective or control text")
+	var original := player.global_transform
+	player.global_position = inside.navigation_anchor(1)
+	inside._process(0.25)
+	check(inside.current_room == 1 and str(inside.layout.rooms[1].id) in inside.explored, "Exploration still records the occupied room without a room HUD")
+	var key := InputEventKey.new()
+	key.pressed = true
+	key.keycode = KEY_M
+	inside._input(key)
+	check(map.visible and map.floor_index == inside.current_floor, "Requested map opens on the player's floor")
+	inside._input(key)
+	check(not map.visible, "Map closes without leaving text on screen")
+	player.global_transform = original
 
 func _retired(label: String) -> void:
 	var deadline := Time.get_ticks_msec() + 10000
@@ -149,6 +168,7 @@ func _run() -> void:
 	for mode in ["cancel", "death", "timeout"]:
 		await _case(mode)
 	if await _enter("exit-cancel"):
+		_check_exploration_map()
 		await manager.leave()
 		check(manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == arena, "Normal exit returns the player")
 		await _retired("normal exit")
