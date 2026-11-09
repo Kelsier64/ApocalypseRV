@@ -193,7 +193,9 @@ ForestScenery.build 首次建立森林前 await TreeFall.prepare：獨立 32×32
 
 WorldGenerator／WorldField 共用 destroyed_trees 帳本，獨立於可淘汰的 forest_cache；森林 ID 使用 band／確定性生成索引，路邊樹使用原始位置。重建前仍消耗原外觀 RNG，存活樹位置與型號不漂移。Checkpoint v6 要求完整帳本，先驗證再恢復。
 
-破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。歷史專項結果見 [撞樹驗收](docs/validation/2026-10-02-tree-impact.md)，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
+木質小樹叢用獨立的 ForestShrubs 複合碰撞體，由 Chassis 接觸觸發同一撞擊判定。被撞毀的實例以 band／候選位置索引記入 destroyed_trees，TreeFall 散開枝葉並揚起塵土。步行與導航沿用原本的通行範圍。
+
+樹木破壞後以 0.35 秒合併導航重烘焙，沿用原 NavigationRegion 並序列化更新；接縫附近的已載入鄰帶一起更新，鄰帶 halo 也排除已毀樹。歷史專項結果見 [撞樹驗收](docs/validation/2026-10-02-tree-impact.md)，可見輪驅入口見 [測試場指南](docs/guides/playgrounds.md#tree-impact)。
 
 ### 車輛碰撞傷害
 

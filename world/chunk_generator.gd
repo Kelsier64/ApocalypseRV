@@ -266,6 +266,7 @@ func _build_navigation(gradual: bool = false) -> void:
 		await ForestScenery.prepare(self, neighbour, gradual)
 	var nav := NavigationMesh.new()
 	nav.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nav.geometry_collision_mask &= ~TreeImpact.SHRUB_LAYER
 	nav.agent_height = 2.0
 	nav.agent_radius = 0.5
 	nav.agent_max_climb = 0.25

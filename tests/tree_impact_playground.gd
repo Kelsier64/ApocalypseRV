@@ -41,18 +41,19 @@ func _ready() -> void:
 	add_child(environment)
 	chunk = ChunkGenerator.new()
 	chunk.field = WorldField.new(42)
-	var planned: Array[Dictionary] = [{"point": Vector3(0, 0, -35), "height": 14.0, "width": 3.0, "angle": 0.0}, {"point": Vector3(10, 0, -35), "height": 15.0, "width": 3.0, "angle": 0.5}]
+	var planned: Array[Dictionary] = [{"point": Vector3(0, 0, -35), "height": 14.0, "width": 3.0, "angle": 0.0, "mesh_kind": 0}, {"point": Vector3(10, 0, -35), "height": 15.0, "width": 3.0, "angle": 0.5, "mesh_kind": 0}]
 	if chain_mode:
 		planned.clear()
 		for row in range(8):
 			for x in [-0.8, 0.8]:
-				planned.append({"point": Vector3(x, 0, -13.0 - row * 6.0), "height": 14.0, "width": 3.0, "angle": 0.0})
+				planned.append({"point": Vector3(x, 0, -13.0 - row * 6.0), "height": 14.0, "width": 3.0, "angle": 0.0, "mesh_kind": 0})
 	chunk.field.forest_cache = {0: planned, -1: [] as Array[Dictionary], 1: [] as Array[Dictionary]}
 	add_child(chunk)
 	await ForestScenery.build(chunk, false)
 	# Keep the two trunks/canopies unobstructed for inspection.
 	for node in chunk.get_children():
 		if str(node.name).begins_with("ForestBrush"): node.hide()
+	chunk.get_node("ForestShrubs").queue_free()
 	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	shell.position.y = 1.8
 	add_child(shell)

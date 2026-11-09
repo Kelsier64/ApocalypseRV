@@ -146,6 +146,7 @@ func get_structures() -> Array[Node]:
 func _ready() -> void:
 	contact_monitor = true
 	max_contacts_reported = maxi(max_contacts_reported, 128)
+	collision_mask |= TreeImpact.SHRUB_LAYER
 	var mirrors := Node3D.new()
 	mirrors.name = "Mirrors"
 	mirrors.set_script(load("res://rv/vehicle_mirrors.gd"))

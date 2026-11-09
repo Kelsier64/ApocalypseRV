@@ -17,7 +17,7 @@ static var dust_mesh: QuadMesh
 static var chip_mesh: BoxMesh
 static var bark_material: StandardMaterial3D
 static var cut_material: StandardMaterial3D
-var crown := RigidBody3D.new()
+var crown: RigidBody3D
 var canopy := Node3D.new()
 var stump: MeshInstance3D
 var pieces: Array[Dictionary] = []
@@ -98,7 +98,7 @@ static func _surface_arrays(mesh: Mesh, surface: int) -> Array:
 	if not mesh_arrays[mesh].has(surface): mesh_arrays[mesh][surface] = mesh.surface_get_arrays(surface)
 	return mesh_arrays[mesh][surface]
 
-static func spawn(source: Node3D, velocity: Vector3, vehicle_position: Vector3 = Vector3.INF) -> TreeFall:
+static func spawn(source: Node3D, velocity: Vector3, vehicle_position: Vector3 = Vector3.INF, is_shrub: bool = false) -> TreeFall:
 	var parent := source.get_parent() as Node3D
 	var holder := parent.get_node_or_null("TreeDebris") as Node3D
 	if holder == null:
@@ -120,49 +120,56 @@ static func spawn(source: Node3D, velocity: Vector3, vehicle_position: Vector3 =
 	effect.scatter_direction = effect.axis * side
 	effect.rng.seed = hash(source.global_position)
 	effect.add_child(effect.canopy)
-	var radius := source.global_basis.get_scale().x * (0.1 if source is MeshInstance3D else 0.325)
 	var meshes: Array[Node] = []
 	if source is MeshInstance3D: meshes.append(source)
 	else: meshes.assign(source.find_children("*", "MeshInstance3D", true, false))
+	effect.wood_removed = is_shrub
+	if not is_shrub:
+		var radius := source.global_basis.get_scale().x * (0.1 if source is MeshInstance3D else 0.325)
+		effect._make_wood(meshes, radius, velocity)
+	for original: MeshInstance3D in meshes:
+		if original.mesh != null: effect._make_leaves(original, is_shrub)
+	if not is_shrub:
+		if effect.crown != null: effect._refresh_ground()
+		effect._emit_chips()
+	effect._emit_dust(Vector3.DOWN * BREAK_HEIGHT, 5, 0.6)
+	source.hide()
+	if source is MeshInstance3D: source.queue_free()
+	effect.set_process(true)
+	effect.set_physics_process(effect.crown != null)
+	return effect
+
+func _make_wood(meshes: Array[Node], radius: float, velocity: Vector3) -> void:
 	var height := 0.0
 	for original: MeshInstance3D in meshes:
 		if original.mesh == null: continue
 		for surface in range(original.mesh.get_surface_count()):
 			if _is_foliage(original.get_active_material(surface)): continue
 			for vertex: Vector3 in _surface_arrays(original.mesh, surface)[Mesh.ARRAY_VERTEX]:
-				height = maxf(height, (original.to_global(vertex) - effect.global_position).y)
+				height = maxf(height, (original.to_global(vertex) - global_position).y)
 	var offset := 0.0
 	while offset < height:
-		var body := effect.crown if effect.wood_bodies.is_empty() else RigidBody3D.new()
-		body.name = "FallenTrunk%d" % effect.wood_bodies.size()
+		var body := RigidBody3D.new()
+		if crown == null: crown = body
+		body.name = "FallenTrunk%d" % wood_bodies.size()
 		body.freeze = true
 		body.collision_layer = 1
 		body.collision_mask = 1
 		body.continuous_cd = true
 		body.contact_monitor = true
 		body.max_contacts_reported = 16
-		effect.add_child(body)
+		add_child(body)
 		body.position.y = offset
-		effect.wood_bodies.append(body)
+		wood_bodies.append(body)
 		var length := minf(MAX_LOG_LENGTH, height - offset)
 		for original: MeshInstance3D in meshes:
 			if original.mesh == null: continue
-			var mesh := _cut_upper(original, effect.global_position.y + offset, effect.global_position.y + offset + length)
-			effect._add_wood(original, mesh, body)
-		effect._make_collision(body, radius * lerpf(1.0, 0.2, offset / height), length, velocity)
+			var mesh := _cut_upper(original, global_position.y + offset, global_position.y + offset + length)
+			_add_wood(original, mesh, body)
+		_make_collision(body, radius * lerpf(1.0, 0.2, offset / height), length, velocity)
 		offset += length
-	effect.crown_height = height
-	effect._make_stump(radius)
-	for original: MeshInstance3D in meshes:
-		if original.mesh != null: effect._make_leaves(original)
-	effect._refresh_ground()
-	effect._emit_chips()
-	effect._emit_dust(Vector3.DOWN * BREAK_HEIGHT, 5, 0.6)
-	source.hide()
-	if source is MeshInstance3D: source.queue_free()
-	effect.set_process(true)
-	effect.set_physics_process(true)
-	return effect
+	crown_height = height
+	_make_stump(radius)
 
 static func _is_foliage(material: Material) -> bool:
 	var standard := material as StandardMaterial3D
@@ -285,10 +292,10 @@ static func _cut_upper(source: MeshInstance3D, cut_y: float, top_y: float = INF)
 			st.commit(result)
 	return result
 
-func _make_leaves(source: MeshInstance3D) -> void:
+func _make_leaves(source: MeshInstance3D, whole_mesh: bool = false) -> void:
 	for surface in range(source.mesh.get_surface_count()):
 		var material := source.get_active_material(surface) as StandardMaterial3D
-		if not _is_foliage(material): continue
+		if material == null or (not whole_mesh and not _is_foliage(material)): continue
 		var arrays := _surface_arrays(source.mesh, surface)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL] if arrays[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
@@ -338,6 +345,9 @@ func _make_leaves(source: MeshInstance3D) -> void:
 			leaf_meshes.append(visual)
 			canopy_materials.append(leaf_material)
 			var leaf_velocity := direction * rng.randf_range(1.5, 3.0) + Vector3(rng.randf_range(-1.4, 1.4), rng.randf_range(0.0, 1.0), rng.randf_range(-1.4, 1.4))
+			if whole_mesh:
+				var outward := centre.slide(Vector3.UP).normalized()
+				leaf_velocity += outward * rng.randf_range(1.6, 3.6) + Vector3.UP * rng.randf_range(0.8, 2.4)
 			var fall_time := sqrt(maxf(centre.y + BREAK_HEIGHT, 0) / 3.0)
 			var ground := _ground_height(visual.global_position + leaf_velocity * fall_time)
 			leaf_pieces.append({"node": visual, "start": centre, "velocity": leaf_velocity,

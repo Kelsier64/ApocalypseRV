@@ -85,10 +85,17 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		shrubs[kind].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3.ONE * radius), point))
 	# Keep the foreground layered: tall trunks alone expose the whole valley.
 	# A separate RNG leaves all existing tree/ground choices independent.
+	var shrub_body := ForestTrunks.new()
+	shrub_body.name = "ForestShrubs"
+	shrub_body.is_shrub = true
+	shrub_body.collision_layer = TreeImpact.SHRUB_LAYER
+	shrub_body.collision_mask = 0
+	var shrub_shape := BoxShape3D.new()
+	shrub_shape.size = Vector3(0.48, 0.64, 0.48)
 	var screens := chunk.field.rng_for(chunk.band, "flora_v14_shelter", 14)
-	for row in range(28):
+	for row in range(TreeImpact.SHRUB_ROWS):
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
-		var s := chunk.band * 150.0 + (row + 0.5) * 150.0 / 28.0
+		var s := chunk.band * 150.0 + (row + 0.5) * 150.0 / TreeImpact.SHRUB_ROWS
 		var frame := chunk.field.road_frame(s)
 		var half := chunk.field.road_width(s) * 0.5
 		for side: float in [-1.0, 1.0]:
@@ -101,17 +108,30 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 				if chunk.field.normal_at(point.x, point.z).y < 0.72: continue
 				point.y = sample.height
 				var wet := screens.randf() < smoothstep(0.65, 0.85, weights.z) or float(sample.river_bank) > 0.45
-				var kind := 1 if wet else 4
+				var kind := 1 if wet else FloraMeshes.WOODY_SHRUB
 				var size := Vector3(screens.randf_range(2.0, 3.5), screens.randf_range(2.4, 4.0), screens.randf_range(1.7, 2.8))
 				if wet: size = Vector3(screens.randf_range(1.3, 2.1), screens.randf_range(1.15, 1.65), screens.randf_range(1.3, 2.1))
-				shrubs[kind].append(Transform3D(Basis(Vector3.UP, screens.randf_range(-PI, PI)).scaled(size), point))
+				var pose := Transform3D(Basis(Vector3.UP, screens.randf_range(-PI, PI)).scaled(size), point)
+				if not wet:
+					var index := row * 6 + (0 if side < 0.0 else 3) + column
+					var key := TreeImpact.shrub_id(chunk.band, index)
+					if chunk.field.destroyed_trees.has(key): continue
+					var shape := CollisionShape3D.new()
+					shape.shape = shrub_shape
+					shape.transform = pose.translated_local(Vector3.UP * shrub_shape.size.y * 0.5)
+					shape.set_meta("tree_id", key)
+					shape.set_meta("tree_point", point)
+					shrub_body.add_child(shape)
+				shrubs[kind].append(pose)
 	for kind in range(8):
 		body.visuals.merge(batch(chunk, "ForestTree%d" % kind, ForestMeshes.tree(kind), tree_poses[kind]))
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	for kind in range(5):
-		batch(chunk, "ForestBrush%d" % kind, FloraMeshes.ground(kind), shrubs[kind])
+		var instances := batch(chunk, "ForestBrush%d" % kind, FloraMeshes.ground(kind), shrubs[kind])
+		if kind == FloraMeshes.WOODY_SHRUB: shrub_body.visuals = instances
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	chunk.add_child(body)
+	chunk.add_child(shrub_body)
 	print("FOREST v14 band=%d trees=%d ground=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size() + shrubs[3].size() + shrubs[4].size()])
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> Dictionary:
