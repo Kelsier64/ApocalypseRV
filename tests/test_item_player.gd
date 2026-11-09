@@ -80,6 +80,53 @@ func check_compass() -> void:
 	clear_bag()
 	await steps()
 
+func check_field_terminal() -> void:
+	clear_bag()
+	var clock := WorldClock.new()
+	clock.name = "WorldClock"
+	clock.running = false
+	world.add_child(clock)
+	clock.set_time(3, 23.75)
+	var terminal := make_item(FieldTerminal.SCENE, Vector3(25, 1, 20)) as FieldTerminal
+	var state := terminal.capture_item_state()
+	check(terminal.screen.values.is_empty(), "An unheld terminal displays standby")
+	check(actor.add_prop_item(terminal, FieldTerminal.SCENE), "The terminal fits a normal handheld slot")
+	terminal.queue_free()
+	var held := actor.held_item_node as FieldTerminal
+	check(held != null and held.persistent_id == state.id, "Equipping keeps the terminal's Item identity")
+	if held != null:
+		actor.current_player_health = 72.0
+		actor.current_stamina = 48.0
+		actor.survival.hunger = 31.0
+		actor.survival.san = -4.5
+		await steps()
+		check(held.screen.values == PackedInt32Array([72, 48, 31, -5]), "The screen reflects four live values, including negative SAN")
+		check(held.screen.day == "DAY 3" and held.screen.time == "23:45", "The terminal displays the owning world's day and time")
+		var interior := SubViewport.new()
+		interior.own_world_3d = true
+		world.add_child(interior)
+		var room := Node3D.new()
+		interior.add_child(room)
+		actor.reparent(room)
+		clock.advance_game_seconds(1200.0, 0.0)
+		actor.current_stamina = 21.0
+		await steps()
+		check(held.screen.day == "DAY 4" and held.screen.time == "00:05", "Indoor time keeps updating across midnight")
+		check(held.screen.values[1] == 21, "Equipped values keep updating inside the interior viewport")
+		actor.reparent(world)
+		interior.queue_free()
+		actor.drop_item()
+		var dropped := find_item(state.id) as FieldTerminal
+		check(dropped != null and dropped.capture_item_state() == state and dropped.screen.values.is_empty(), "Dropping preserves saved item state and returns the display to standby")
+		if dropped != null: dropped.queue_free()
+	check(InventoryItemIcons.texture_for(FieldTerminal.SCENE) != InventoryItemIcons.FALLBACK, "The terminal has an inventory icon")
+	actor.current_player_health = actor.max_player_health
+	actor.current_stamina = actor.MAX_STAMINA
+	actor.survival.reset()
+	clock.queue_free()
+	clear_bag()
+	await steps()
+
 func _init() -> void: run.call_deferred()
 
 func check(value: bool, note: String) -> void:
@@ -1412,6 +1459,7 @@ func run() -> void:
 	check_san_food()
 	await check_bed_rest()
 	await check_compass()
+	await check_field_terminal()
 	await check_hud_toggle()
 	await check_new_grants()
 	await check_scavenge_loot()

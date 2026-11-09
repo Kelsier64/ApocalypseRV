@@ -1275,3 +1275,7 @@ rotation = Vector3(0, -1.5707964, 0)
 [node name="ElectronicCompass" type="Marker3D" parent="WorkshopSupplies"]
 position = Vector3(11.95, 0.862, -20.25)
 rotation_degrees = Vector3(-90, 0, 0)
+
+[node name="FieldTerminal" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(11.95, 0.882, -20.75)
+rotation_degrees = Vector3(-90, 0, 0)
