@@ -14,7 +14,8 @@ const MAX_SPAWN_ATTEMPTS := 16
 const GAZE_SECONDS := 0.6
 const COVER_DESPAWN_SECONDS := 3.0
 const UNSEEN_DESPAWN_SECONDS := 30.0
-const PURSUIT_SPEED := 5.5
+const WATCHED_PURSUIT_SPEED := 5.5
+const UNWATCHED_PURSUIT_SPEED := 3.0
 const PURSUIT_STEP_HEIGHT := 0.18
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const SEATED_TORSO_RADIUS := 0.22
@@ -88,9 +89,10 @@ func _physics_process(delta: float) -> void:
 				_time_left = 2.0
 		Phase.VISIBLE, Phase.CONFIRMED:
 			var origin := global_position
-			_update_visible(camera, delta)
+			var watched := _update_visible(camera, delta)
 			if _phase != Phase.HIDDEN and global_position == origin:
-				_pursue(delta)
+				var speed := WATCHED_PURSUIT_SPEED if watched else UNWATCHED_PURSUIT_SPEED
+				_pursue(delta, speed)
 
 func _active_player_camera() -> Camera3D:
 	if _player.get("in_ui_mode") == true or _player.is_gameplay_input_blocked() or _player.is_grabbed(): return null
@@ -100,34 +102,36 @@ func _active_player_camera() -> Camera3D:
 	if camera == null or camera != player_camera or not WorldEntities.same_world(self, camera): return null
 	return camera
 
-func _update_visible(camera: Camera3D, delta: float) -> void:
+func _update_visible(camera: Camera3D, delta: float) -> bool:
 	var points: PackedVector3Array = _visual.gaze_points()
 	if points.size() != 2: points = PackedVector3Array([to_global(CHEST), to_global(HEAD)])
 	var chest := points[0]
 	var head := points[1]
 	if _phase == Phase.CONFIRMED:
-		_update_confirmed(camera, chest, head, delta)
-		return
+		return _update_confirmed(camera, chest, head, delta)
 
-	_gaze_elapsed = _gaze_elapsed + delta if _can_confirm(camera, chest, head) else 0.0
+	var watched := _can_confirm(camera, chest, head)
+	_gaze_elapsed = _gaze_elapsed + delta if watched else 0.0
 	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
 		_reposition_armed = true
 	elif _time_left <= 0.0:
 		_enter_hidden()
+	return watched
 
 func _can_confirm(camera: Camera3D, chest: Vector3, head: Vector3) -> bool:
 	if not is_visible_in_tree(): return false
 	return _point_in_frame(camera, chest, CENTER) and camera.is_position_in_frustum(head) \
 		and _clear_sight(camera, chest) and _clear_sight(camera, head)
 
-func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: float) -> void:
+func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: float) -> bool:
 	var chest_clear := _clear_sight(camera, chest)
 	var head_clear := _clear_sight(camera, head)
 	var chest_in_frame := camera.is_position_in_frustum(chest)
 	var head_in_frame := camera.is_position_in_frustum(head)
 	var centered := _point_in_frame(camera, chest, CENTER)
-	if centered and chest_clear and head_clear and head_in_frame:
+	var watched := centered and chest_clear and head_clear and head_in_frame
+	if watched:
 		_reposition_armed = true
 		var distance := camera.get_camera_transform().origin.distance_to(to_global(CHEST))
 		_player.drain_san(_san_drain_rate(distance) * delta)
@@ -138,11 +142,11 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 	_covered_elapsed = _covered_elapsed + delta if covered else 0.0
 	if _covered_elapsed >= COVER_DESPAWN_SECONDS or _unseen_elapsed >= UNSEEN_DESPAWN_SECONDS:
 		_enter_hidden()
-		return
+		return false
 
 	if _reposition_armed and not covered and not centered:
 		var frustum := camera.get_frustum()
-		if not _body_outside_view(global_position, frustum): return
+		if not _body_outside_view(global_position, frustum): return false
 		_reposition_armed = false
 		var point := _find_reposition(camera, frustum)
 		if point.is_finite():
@@ -150,11 +154,12 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 			global_position = point
 			look_at(Vector3(observer.x, point.y, observer.z))
 			reset_physics_interpolation()
+	return watched
 
-func _pursue(delta: float) -> void:
+func _pursue(delta: float, speed: float) -> void:
 	var space := get_world_3d().direct_space_state
 	var toward := (_player.global_position - global_position).slide(Vector3.UP)
-	var stride := toward.limit_length(PURSUIT_SPEED * delta)
+	var stride := toward.limit_length(speed * delta)
 	if not toward.is_zero_approx():
 		look_at(global_position + toward)
 

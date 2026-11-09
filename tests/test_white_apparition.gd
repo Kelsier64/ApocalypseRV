@@ -276,7 +276,7 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	apparition._physics_process(1.0 / 60.0)
 	var departure := apparition.global_position
 	var peripheral_stride := departure.z - confirmed_position.z
-	_check(is_equal_approx(peripheral_stride, Apparition.PURSUIT_SPEED / 60.0) and player.survival.san == san, "The apparition advances at pursuit speed in peripheral view without teleporting or draining SAN")
+	_check(is_equal_approx(peripheral_stride, 3.0 / 60.0) and player.survival.san == san, "The apparition advances at 3 m/s in peripheral view without teleporting or draining SAN")
 	camera.look_at(chest)
 	camera.rotate_y(PI)
 	apparition._physics_process(1.0 / 60.0)
@@ -287,12 +287,13 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	apparition._physics_process(0.1)
 	var unseen_position := apparition.global_position
 	var unseen_stride := (unseen_position - destination).slide(Vector3.UP).length()
-	_check(unseen_position.length() < destination.length() and is_equal_approx(unseen_stride, Apparition.PURSUIT_SPEED * 0.1) and player.survival.san == san, "The apparition advances at pursuit speed out of view without another teleport or SAN drain")
+	_check(unseen_position.length() < destination.length() and is_equal_approx(unseen_stride, 3.0 * 0.1) and player.survival.san == san, "The apparition advances at 3 m/s out of view without another teleport or SAN drain")
 	camera.look_at(visual.gaze_points()[0])
 	distance = camera.global_position.distance_to(unseen_position + Apparition.CHEST)
 	apparition._physics_process(0.1)
 	var watched_position := apparition.global_position
-	_check(watched_position.length() < unseen_position.length(), "The apparition keeps advancing while watched directly")
+	var watched_stride := (watched_position - unseen_position).slide(Vector3.UP).length()
+	_check(watched_position.length() < unseen_position.length() and is_equal_approx(watched_stride, 5.5 * 0.1), "The apparition immediately resumes 5.5 m/s when watched directly")
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 0.1), "Looking back resumes drain on the first tick")
 	san = player.survival.san
 	camera.rotate_y(PI)
