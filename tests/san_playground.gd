@@ -83,7 +83,6 @@ func _queue_effect(key: Key, cycle_vision := false) -> void:
 	if effects._control == PlayerSanEffects.InputMode.NONE: return
 	match key:
 		KEY_F4:
-			if player.survival.san > PlayerSanEffects.MEDIUM_THRESHOLD: return
 			_vision_preview_pending = true
 			_cycle_vision_preview = cycle_vision
 			if effects._blink_remaining <= effects._blink_open_duration():
@@ -131,7 +130,7 @@ func _apply_san() -> void:
 
 func _set_san(value: float) -> void:
 	player.survival.san = minf(value, PlayerSurvival.MAX_SAN)
-	if value > PlayerSanEffects.MEDIUM_THRESHOLD: _vision_preview_pending = false
+	if value >= PlayerSanEffects.THRESHOLD: _vision_preview_pending = false
 	player._update_san_bar()
 	player._advance_san_effects(0.0)
 
@@ -145,7 +144,7 @@ func _build_ui() -> void:
 	_status = Label.new()
 	labels.add_child(_status)
 	var controls := Label.new()
-	controls.text = "Up / Down SAN +/- 5   F6 Enter SAN\nF5 Seat / Exit   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nF4 Blink + Random Vision   Shift+F4 Cycle Vision\nF11 Long Blink   (Vision and Long Blink: SAN <= 0)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
+	controls.text = "Up / Down SAN +/- 5   F6 Enter SAN\nF5 Seat / Exit   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nF4 Random Vision   Shift+F4 Cycle Vision (SAN < 20)\nF11 Long Blink (SAN <= 0)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
 	labels.add_child(controls)
 	layer.add_child(hud)
 	hud.grow_horizontal = Control.GROW_DIRECTION_BEGIN

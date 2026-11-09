@@ -343,18 +343,24 @@ func check_medium_san_vision() -> void:
 		check(effects._overlay.visible and not effects._long_blink and effects._blink_duration > previous_blink, "A matched ordinary blink lasts longer at lower SAN %s" % san)
 		previous_blink = effects._blink_duration
 
-	effects.reset()
-	effects.advance(.01, 0.01, walk)
-	effects._blink_wait = 1.0
-	effects._long_blink_wait = 0.0
-	effects.advance(.01, 0.01, walk)
-	check(not effects._long_blink and not grade.visible, "Long closure and vision distortion are disabled above zero SAN")
-	effects.advance(.01, 0.0, walk)
 	var profile := PlayerSanEffects.VisionProfile.NEGATIVE
 	var start_first_vision := func(severity: float) -> void:
 		effects._start_vision(profile, severity)
 		effects._vision_blinks_left = 2
+	effects.reset()
+	effects.advance(.01, 10.0, walk)
 	effects.vision_blink_reopening.connect(start_first_vision, Object.CONNECT_ONE_SHOT)
+	effects._blink_wait = 0.0
+	effects._long_blink_wait = 0.0
+	effects.advance(.01, 10.0, walk)
+	check(effects._overlay.visible and not effects._long_blink and not grade.visible, "A blink above zero SAN starts normally with no grade change while closing")
+	effects.advance(effects._blink_remaining + .01, 10.0, walk)
+	check(effects._vision_profile == profile and grade.visible, "Ordinary reopening below 20 SAN can enable vision distortion above zero")
+
+	effects.reset()
+	effects.advance(.01, 0.0, walk)
+	effects.vision_blink_reopening.connect(start_first_vision, Object.CONNECT_ONE_SHOT)
+	effects._blink_wait = 1.0
 	effects._long_blink_wait = 0.0
 	effects.advance(.01, 0.0, walk)
 	check(effects._long_blink and effects._overlay.visible and effects._blink_duration > previous_blink, "A long blink becomes eligible at zero SAN")
@@ -369,10 +375,10 @@ func check_medium_san_vision() -> void:
 	check(not effects._overlay.visible and effects._vision_blinks_left == 2 and grade.visible, "The filter persists between blinks without spending a blink")
 	check(int(vision_material.get_shader_parameter("san_profile")) == profile and float(vision_material.get_shader_parameter("san_elapsed")) > 0.0, "The shared filter receives the active profile and elapsed time")
 	effects._blink_wait = 0.0
-	effects.advance(.01, 0.0, walk)
+	effects.advance(.01, 10.0, walk)
 	check(effects._vision_blinks_left == 2, "Starting another blink does not spend a blink before reopening")
-	effects.advance(effects._blink_remaining + .01, 0.0, walk)
-	check(effects._vision_profile == profile and effects._vision_blinks_left == 1 and grade.visible, "An intermediate reopening keeps the current filter")
+	effects.advance(effects._blink_remaining + .01, 10.0, walk)
+	check(effects._vision_profile == profile and effects._vision_blinks_left == 1 and grade.visible, "An intermediate reopening keeps the filter after SAN rises above zero")
 	effects._blink_wait = 0.0
 	effects.advance(.01, 0.0, walk)
 	effects.advance(effects._blink_remaining + .01, 0.0, walk)
@@ -384,12 +390,12 @@ func check_medium_san_vision() -> void:
 	check(grade.visible, "The shared filter is active before SAN recovery")
 	effects._blink_wait = 1.0
 	effects.advance(.01, 0.01, walk)
-	check(not effects._long_blink and not effects._overlay.visible and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Returning above zero clears the medium effects and hides the neutral filter")
+	check(not effects._long_blink and grade.visible, "Returning above zero preserves the active SAN grade")
 	effects._blink_wait = 0.0
 	effects.advance(.01, 0.01, walk)
-	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible after medium effects clear")
+	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible above zero SAN")
 	effects.advance(.01, 20.0, walk)
-	check(not effects._overlay.visible and not grade.visible, "Recovering to 20 clears all visual effects")
+	check(not effects._overlay.visible and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Recovering to 20 clears all visual effects")
 
 	var interior := SubViewport.new()
 	viewport.add_child(interior)
@@ -408,6 +414,29 @@ func check_medium_san_vision() -> void:
 	interior.free()
 	for key in previous_preferences:
 		settings.set_setting(key, previous_preferences[key], false)
+
+func check_san_vision_chances() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var profile := PlayerSanEffects.VisionProfile.NEGATIVE
+	var previous := Vector2i.ZERO
+	for severity in [0.05, 0.5, 0.9]:
+		effects._rng.seed = 83
+		var counts := Vector2i.ZERO
+		for draw in 1000:
+			effects._end_vision()
+			effects._advance_vision_on_blink(severity)
+			if effects._vision_profile >= 0: counts.x += 1
+			effects._start_vision(profile, severity)
+			effects._vision_blinks_left = 1
+			effects._advance_vision_on_blink(severity)
+			if effects._vision_profile >= 0: counts.y += 1
+		check(counts.x > previous.x and counts.y > previous.y, "Starting and extending vision become likelier as SAN falls")
+		if severity == 0.05:
+			check(counts.x < 60 and counts.y < 60, "Vision changes stay rare near 20 SAN")
+		if severity == 0.5:
+			check(abs(counts.x - 405) < 55 and abs(counts.y - 350) < 55, "Zero SAN retains the 40.5% start and 35% continuation chances")
+		previous = counts
+	effects.reset()
 
 func check_long_blink_distribution() -> void:
 	var effects: PlayerSanEffects = actor.san_effects
@@ -1309,6 +1338,7 @@ func run() -> void:
 	check_survival()
 	check_san_effects()
 	check_medium_san_vision()
+	check_san_vision_chances()
 	check_long_blink_distribution()
 	check_eating()
 	check_san_food()

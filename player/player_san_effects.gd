@@ -8,7 +8,7 @@ enum InputMode { NONE, WALK, DRIVE }
 enum VisionProfile { NEGATIVE, MONOCHROME, OVERSATURATED, SPACE_WARP, COLOR_SPLIT, TUNNEL_VISION }
 
 const THRESHOLD := 20.0
-const MEDIUM_THRESHOLD := 0.0
+const LONG_BLINK_THRESHOLD := 0.0
 const DELAY_RATE := 0.22
 const MISDIRECTION_RATE := 0.27
 const LONG_BLINK_RATE := 0.15
@@ -66,28 +66,28 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	# Use the full deficit so hostile SAN loss below zero still raises the rate.
 	var deficit := THRESHOLD - san
 	var severity := deficit / (THRESHOLD + deficit)
-	var medium := san <= MEDIUM_THRESHOLD
-	if not medium: _clear_medium_vision()
-	_advance_blink(delta, severity, medium)
-	if medium: _update_vision_grade(delta)
+	var long_blinks_enabled := san <= LONG_BLINK_THRESHOLD
+	if not long_blinks_enabled: _clear_long_blink()
+	_advance_blink(delta, severity, long_blinks_enabled)
+	_update_vision_grade(delta)
 	_advance_direction(delta, severity)
 
-func _advance_blink(delta: float, severity: float, medium: bool) -> void:
+func _advance_blink(delta: float, severity: float, long_blinks_enabled: bool) -> void:
 	if _blink_wait < 0.0: _blink_wait = _rng.randf_range(0.55, 1.45)
-	if medium and _long_blink_wait < 0.0: _long_blink_wait = 0.28 + 0.72 * _roll_wait()
+	if long_blinks_enabled and _long_blink_wait < 0.0: _long_blink_wait = 0.28 + 0.72 * _roll_wait()
 	var previous_remaining := _blink_remaining
 	var open_time := maxf(0.0, delta - _blink_remaining)
 	_blink_remaining = maxf(0.0, _blink_remaining - delta)
 	var previous_open_duration := _blink_open_duration()
 	# Switch while the lids still cover the screen so reopening reveals the change.
-	if medium and previous_remaining > previous_open_duration and _blink_remaining <= previous_open_duration:
+	if previous_remaining > previous_open_duration and _blink_remaining <= previous_open_duration:
 		_advance_vision_on_blink(severity)
 		vision_blink_reopening.emit(severity)
 	if _blink_remaining == 0.0:
 		_long_blink = false
 		_blink_wait = maxf(0.0, _blink_wait - open_time / lerpf(6.0, 0.9, severity))
-		if medium: _long_blink_wait -= open_time * severity * LONG_BLINK_RATE
-		if medium and _long_blink_wait <= 0.0:
+		if long_blinks_enabled: _long_blink_wait -= open_time * severity * LONG_BLINK_RATE
+		if long_blinks_enabled and _long_blink_wait <= 0.0:
 			_long_blink = true
 			_long_blink_wait = 0.28 + 0.72 * _roll_wait()
 			_blink_duration = _sample_long_blink_duration(severity)
@@ -106,13 +106,15 @@ func _blink_open_duration() -> float:
 	return 0.38 if _long_blink else _blink_duration * 0.52
 
 func _advance_vision_on_blink(severity: float) -> void:
+	# Severity reaches 0.5 at zero SAN. From there the original odds apply.
+	var probability_scale := minf(2.0 * severity, 1.0)
 	if _vision_profile < 0:
-		if _rng.randf() < lerpf(0.19, 0.62, severity):
+		if _rng.randf() < lerpf(0.19, 0.62, severity) * probability_scale:
 			_start_vision(_roll_vision_profile(), severity)
 		return
 	_vision_blinks_left -= 1
 	if _vision_blinks_left > 0: return
-	if _rng.randf() < lerpf(0.10, 0.60, severity):
+	if _rng.randf() < lerpf(0.10, 0.60, severity) * probability_scale:
 		_start_vision(_roll_vision_profile(), severity)
 	else:
 		_end_vision()
@@ -145,11 +147,10 @@ func _update_vision_grade(delta: float) -> void:
 		_vision_viewport = viewport
 	_video.set_san_vision(viewport, _vision_profile, _vision_strength, _vision_elapsed)
 
-func _clear_medium_vision() -> void:
+func _clear_long_blink() -> void:
 	if _long_blink: _blink_remaining = 0.0
 	_long_blink = false
 	_long_blink_wait = -1.0
-	_end_vision()
 
 func _clear_vision_grade() -> void:
 	if is_instance_valid(_vision_viewport) and is_instance_valid(_video):
@@ -246,7 +247,8 @@ func reset() -> void:
 	_blink_wait = -1.0
 	_blink_remaining = 0.0
 	if _overlay != null: _overlay.hide()
-	_clear_medium_vision()
+	_clear_long_blink()
+	_end_vision()
 	_reset_direction()
 
 func _reset_direction() -> void:
