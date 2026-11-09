@@ -70,30 +70,41 @@ func _check_visual_motion() -> void:
 	var visual = load("res://enemies/white_apparition/white_apparition_visual.gd").new()
 	root.add_child(visual)
 	visual.set_process(false)
+	visual._rng.seed = 2026
 	visual.set_presence(1.0)
 	visual.position = Vector3(4, 0, -7)
 	visual.rotation.y = 0.6
 	visual._clock = 0.0
 	var skeleton: Skeleton3D = visual._skeletons[0]
+	var feet: Array[int] = [skeleton.find_bone("FootL"), skeleton.find_bone("FootR")]
 	var ankles: Array[Vector3] = []
-	for foot in ["FootL", "FootR"]:
-		ankles.append(skeleton.get_bone_global_rest(skeleton.find_bone(foot)).origin)
+	for foot in feet:
+		ankles.append(skeleton.get_bone_global_rest(foot).origin)
 	var start_head: Vector3 = visual.gaze_points()[1]
 	var max_head_motion := 0.0
 	var max_foot_drift := 0.0
-	for phrase in 3:
+	var max_anchor_step := 0.0
+	var previous_gaze := PackedVector3Array()
+	for phrase in 6:
 		visual._phrase = phrase
 		visual._phrase_time = 0.0
-		visual._phrase_duration = 99.0
+		visual._phrase_duration = 4.0 if phrase < 5 else 0.22
+		# The shudder runs through its full envelope and returns to a sustained phrase.
 		for tick in 240:
 			visual._process(1.0 / 60.0)
 			var gaze: PackedVector3Array = visual.gaze_points()
-			_check(gaze.size() == 2 and gaze[0].is_finite() and gaze[1].is_finite(), "Animated gaze anchors stay finite")
+			if gaze.size() != 2 or not gaze[0].is_finite() or not gaze[1].is_finite():
+				_check(false, "Animated gaze anchors stay finite through phrase %d" % phrase)
+				visual.free()
+				return
+			for anchor in previous_gaze.size():
+				max_anchor_step = maxf(max_anchor_step, gaze[anchor].distance_to(previous_gaze[anchor]))
+			previous_gaze = gaze
 			max_head_motion = maxf(max_head_motion, gaze[1].distance_to(start_head))
-			for side in 2:
-				var foot := skeleton.find_bone("FootL" if side == 0 else "FootR")
-				max_foot_drift = maxf(max_foot_drift, skeleton.get_bone_global_pose(foot).origin.distance_to(ankles[side]))
+			for side in feet.size():
+				max_foot_drift = maxf(max_foot_drift, skeleton.get_bone_global_pose(feet[side]).origin.distance_to(ankles[side]))
 	_check(max_head_motion > 0.3, "Head gaze anchor follows substantial body contortion in world space")
+	_check(max_anchor_step < 0.16, "Gaze anchors move without snapping through phrase transitions")
 	_check(max_foot_drift < 0.02, "Both ankles remain planted throughout all motion phrases")
 	var frozen: PackedVector3Array = visual.gaze_points()
 	visual.confirmed = 1.0

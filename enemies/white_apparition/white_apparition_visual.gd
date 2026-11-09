@@ -6,8 +6,9 @@ const SPINE := ["Hips", "Spine", "Spine02", "Spine03", "Spine04", "Spine05", "Sp
 const ARM := ["UpperArm", "ArmBend", "Forearm", "Wrist", "Hand"]
 const LEG := ["Thigh", "LegBend", "Shin", "Foot"]
 const SIDES := ["L", "R"]
-# Torso bend, plane bias, and reach height for the three sustained motion phrases.
-const STYLES := [Vector3(1.19, 0.64, 0.88), Vector3(1.28, -0.34, 0.92), Vector3(1.13, 0.04, 1.0)]
+# Traveling wave, torsion, arm weaving, side fold, suspended reach.
+const STYLES := [Vector3(1.19, 0.64, 0.88), Vector3(0.87, -0.34, 0.72), Vector3(0.91, 0.04, 1.0), Vector3(0.62, 0.18, 0.56), Vector3(1.13, 0.04, 1.0)]
+const SHUDDER := 5
 const REST_SOLE_HEIGHT := 0.03003
 const HISTORY_INTERVAL := 0.04
 var confirmed := 0.0
@@ -17,6 +18,10 @@ var _phrase_time := 0.0
 var _phrase_duration := 4.0
 var _phrase := 2
 var _style: Vector3 = STYLES[2]
+var _motifs: Array[float] = [0.0, 0.0, 1.0, 0.0, 0.0]
+var _rate := 1.0
+var _target_rate := 1.0
+var _last_sustained := 2
 var _rng := RandomNumberGenerator.new()
 var _skeletons: Array[Skeleton3D] = []
 var _models: Array[Node3D] = []
@@ -73,10 +78,15 @@ func set_presence(amount: float) -> void:
 		_history.clear()
 		_history_clock = 0.0
 	elif not was_visible:
-		_phrase = _rng.randi_range(0, 2)
+		_phrase = _rng.randi_range(0, STYLES.size() - 1)
+		_last_sustained = _phrase
 		_phrase_time = 0.0
-		_phrase_duration = _rng.randf_range(3.2, 5.8)
+		_phrase_duration = _rng.randf_range(2.8, 4.8)
+		_target_rate = _rng.randf_range(0.7, 1.35)
+		_rate = _target_rate
 		_style = STYLES[_phrase]
+		for motif in _motifs.size():
+			_motifs[motif] = 1.0 if motif == _phrase else 0.0
 
 func gaze_points() -> PackedVector3Array:
 	if not _rig_ready: return PackedVector3Array()
@@ -87,18 +97,35 @@ func gaze_points() -> PackedVector3Array:
 
 func _process(delta: float) -> void:
 	if not visible or not _rig_ready or confirmed > 0.0: return
-	_clock += delta
 	_phrase_time += delta
 	if _phrase_time >= _phrase_duration:
 		_phrase_time = 0.0
-		_phrase = (_phrase + _rng.randi_range(1, 2)) % 3 if _phrase == 3 or _rng.randf() > 0.14 else 3
-		_phrase_duration = _rng.randf_range(3.2, 5.8) if _phrase != 3 else _rng.randf_range(0.17, 0.26)
+		if _phrase != SHUDDER and _rng.randf() < 0.18:
+			_last_sustained = _phrase
+			_phrase = SHUDDER
+			_phrase_duration = _rng.randf_range(0.17, 0.26)
+		else:
+			var previous := _last_sustained if _phrase == SHUDDER else _phrase
+			_phrase = (previous + _rng.randi_range(1, STYLES.size() - 1)) % STYLES.size()
+			_last_sustained = _phrase
+			_phrase_duration = _rng.randf_range(2.8, 4.8)
+			_target_rate = _rng.randf_range(0.7, 1.35)
+	var progress := clampf(_phrase_time / _phrase_duration, 0.0, 1.0)
+	var pace := _target_rate
+	if _phrase == 4:
+		# Hang in an unfinished gesture, then resume faster; never reset the wave phase.
+		var hold := smoothstep(0.14, 0.29, progress) * (1.0 - smoothstep(0.65, 0.78, progress))
+		pace = lerpf(_target_rate + 0.5 * smoothstep(0.72, 0.9, progress), 0.025, hold)
+	_rate = lerpf(_rate, pace, 1.0 - exp(-delta * 9.0))
+	_clock += delta * _rate
 	var shudder := 0.0
-	if _phrase == 3:
+	if _phrase == SHUDDER:
 		var envelope := sin(PI * _phrase_time / _phrase_duration)
 		shudder = envelope * envelope * sin(_phrase_time * 56.0)
 	else:
 		_style = _style.lerp(STYLES[_phrase], 1.0 - exp(-delta * 2.0))
+		for motif in _motifs.size():
+			_motifs[motif] = lerpf(_motifs[motif], 1.0 if motif == _phrase else 0.0, 1.0 - exp(-delta * 2.5))
 	var t := _clock
 	var skeleton := _skeletons[0]
 	var hips: int = _bones.Hips
@@ -125,10 +152,14 @@ func _pose_spine(skeleton: Skeleton3D, time: float, shudder: float) -> void:
 		var bend := amplitude * (0.89 * sin(phase) + 0.23 * sin(delayed * 1.13 - height * 2.6))
 		var plane := _style.y + 0.84 * sin(time * 0.38) + 0.48 * height
 		var turn := (0.24 + height * 0.43) * sin(delayed * 1.21 - height * 3.1)
+		# Opposed chest/waist rotation and an off-centre fold change the silhouette,
+		# rather than merely changing the amplitude of the same wave.
+		turn += _motifs[1] * 0.78 * sin(height * 5.2 - 0.8) * sin(delayed * 0.91)
+		var fold := _motifs[3] * sin(delayed * 0.83) * smoothstep(0.0, 0.55, height)
 		var frame := Quaternion.from_euler(Vector3(
-			bend * sin(plane) - 0.19 * height + shudder * 0.09 * height,
+			bend * sin(plane) - 0.19 * height + shudder * 0.09 * height + absf(fold) * 0.28,
 			turn,
-			bend * cos(plane) + height * 0.14 * sin(delayed * 0.77)))
+			bend * cos(plane) + height * 0.14 * sin(delayed * 0.77) + fold * (0.86 - 0.48 * height)))
 		skeleton.set_bone_pose_rotation(_bones[SPINE[segment]], parent_frame.inverse() * frame)
 		parent_frame = frame
 
@@ -148,6 +179,16 @@ func _pose_arm(skeleton: Skeleton3D, time: float, shudder: float, side: int, sup
 			curl + shudder * 0.14 * outward,
 			0.34 * sin(phase * 0.87),
 			outward * float(segment) * 0.05 * cos(phase * 1.23)))
+		# Forearms weave forward of the torso, with different timing on each side.
+		var weave := support * Quaternion.from_euler(Vector3(
+			0.95 + 0.42 * sin(phase) + float(segment) * 0.13,
+			outward * (0.28 + 0.3 * sin(phase * 0.73)),
+			-outward * (0.4 + 0.3 * sin(phase - float(segment) * 0.32))))
+		frame = frame.slerp(weave, _motifs[2])
+		# In the side fold one arm trails low while the other hooks over the head.
+		var hook := support * Quaternion(reach_axis, (0.22 if side == 0 else 2.62) + 0.2 * sin(phase)) * Quaternion.from_euler(Vector3(
+			float(segment) * 0.19, 0.24 * sin(phase), -outward * float(segment) * 0.16))
+		frame = frame.slerp(hook, _motifs[3])
 		skeleton.set_bone_pose_rotation(_bones[ARM[segment] + suffix], parent_frame.inverse() * frame)
 		parent_frame = frame
 
