@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [白影遭遇](guides/white-apparition.md) — 戶外出現條件、三次注視判定與目前實作範圍。
+
 - [巨型避難所可探索室內](guides/megashelter-interiors.md)：生成 v19、獨立地面一層、少量功能房、profile 分流與不補貨保存；轉場／保存檢查與 seed 42 實際回放已通過，串流及 smoke 待補。
 
 - [2026-10-30 巨型避難所 v7 牆面與入口細化](validation/2026-10-30-megashelter-facade-refinement.md)：停用風機，改善碎塊、六種牆面組件及入口鋪面銜接；保留原輪廓和屋頂。

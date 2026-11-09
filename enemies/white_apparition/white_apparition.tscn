@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/white_apparition/white_apparition.gd" id="1_actor"]
+[ext_resource type="Script" path="res://enemies/white_apparition/white_apparition_visual.gd" id="2_visual"]
+
+[node name="WhiteApparition" type="Node3D"]
+visible = false
+script = ExtResource("1_actor")
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2_visual")

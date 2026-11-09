@@ -1,6 +1,6 @@
 # 自動測試
 
-從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。預設跑全部 **16 個核心測試 + 正式主世界 smoke**，匯入只做一次。Godot 版本由 [.godot-version](../.godot-version) 固定。
+從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。預設跑全部 **17 個核心測試 + 正式主世界 smoke**，匯入只做一次。Godot 版本由 [.godot-version](../.godot-version) 固定。
 
 ```powershell
 # 日常與 CI 使用相同入口
@@ -31,6 +31,7 @@
 | [moving_rv_climbing](test_moving_rv_climbing.gd) | 玩家與 Raker 的移動 RV 攀爬 |
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |
+| [white_apparition](test_white_apparition.gd) | 白影接地換位、中央視野／遮擋、每次現身計數與第三次完成事件 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
 | [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；Checkpoint v7 只接受世界生成 v19，檢查當前教學／重試入口及 v18 舊版拒絕行為；巨型避難所固定 seed／面積布局、profile 分流、真實進出、補給箱與丟物回訪不補貨，以及完整檢查點磁碟往返 |
 | [streaming_generation](test_streaming_generation.gd) | 當前分幀／碰撞一致性、四種子 12 km 路線與地形契約、急彎及持續升降、固定道路指紋與獨立外觀域、全路寬河橋支撐、山頂跨區塊普通／巨人導航；霧外觀設定、載入視野保護及自然天氣 RNG／保存隔離 |

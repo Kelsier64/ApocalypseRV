@@ -1,5 +1,7 @@
 # ApocalypseRV 架構
 
+2026-11-09 白影：主世界離開開局後啟用暫態戶外遭遇，使用當前步行／駕駛攝影機、中央視野停留與頭胸遮擋判定。三次不同現身只發出完成訊號，沒有幻覺實作；不進入一般怪物戰鬥群組或存檔 actor 清單。Blender 分節模型以程序動作和延遲殘影呈現。詳見[白影指南](docs/guides/white-apparition.md)。
+
 2026-11-02 巨型避難所地下通道。室內依保存 seed，從接待室以外房間的未連通牆面接口抽選樓梯間入口，先檢查門前淨空與導航可達性。獨立的 `megashelter_stairwell` 副本經底部單扇小門連接既有 `bunker`。樓梯間和地堡使用該棟大樓衍生的種子與保存 ID。轉場管理器記住來時的門，離場時可逐層返回。[室內指南](docs/guides/megashelter-interiors.md)
 
 2026-11-01 巨型避難所室內：生成 v19 將 `modular_megashelter` 接到獨立 World3D 的 `megashelter` profile；外殼內容仍 v7，既有地形／道路及外觀 RNG 域保留。只開放地面一層，入口、大廳、三至五間功能房與少量連接空間通常共六至八個模組，按外部面積選擇模組尺寸。首訪二至四件散物與一個箱子，沒有敵人或升級引擎目標。`InteriorProfiles` 供生成與 Checkpoint 共用分流；保存完整布局、探索、箱子與散物，回訪不補貨。Checkpoint v7／VehicleSnapshot v6 不變，只接受生成 v19，舊局重新開始。本次轉場／保存檢查與 seed 42 實際回放已通過；完整範圍與待驗項目見[室內指南](docs/guides/megashelter-interiors.md)。
@@ -591,7 +593,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### 核心自動驗證
 
-[scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的 16 支 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
+[scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的 17 支 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
 
 舊版本相容性專項、全 seed 掃描、逐姿勢美術與展示場自測已退出自動清單；手動場景仍保留，舊存檔相容分支已移除。歷史驗收結果保持原日期與範圍，不能當作本次通過證據。完整保留清單與命令見 [測試指南](tests/README.md)。
 
