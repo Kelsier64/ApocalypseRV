@@ -2,15 +2,16 @@ extends CanvasLayer
 class_name PlayerSanEffects
 ## Transient effects for the controlled player and their active driving seat.
 
+signal vision_blink_reopening(severity: float)
+
 enum InputMode { NONE, WALK, DRIVE }
-enum VisionProfile { BLEACHED, COLD_SPLIT, BROKEN_SIGNAL }
+enum VisionProfile { NEGATIVE, MONOCHROME, OVERSATURATED, SPACE_WARP, COLOR_SPLIT, TUNNEL_VISION }
 
 const THRESHOLD := 20.0
 const MEDIUM_THRESHOLD := 0.0
 const DELAY_RATE := 0.22
 const MISDIRECTION_RATE := 0.27
 const LONG_BLINK_RATE := 0.15
-const VISION_RATE := 0.22
 
 var _rng := RandomNumberGenerator.new()
 var _control := InputMode.NONE
@@ -21,11 +22,10 @@ var _blink_duration := 1.0
 var _blink_remaining := 0.0
 var _long_blink_wait := -1.0
 var _long_blink := false
-var _vision_wait := -1.0
-var _vision_duration := 1.0
-var _vision_remaining := 0.0
+var _vision_blinks_left := 0
+var _vision_elapsed := 0.0
 var _vision_strength := 0.0
-var _vision_profile: int = VisionProfile.BLEACHED
+var _vision_profile := -1
 var _vision_viewport: Viewport
 var _delay_wait := 0.0
 var _delay_remaining := 0.0
@@ -69,14 +69,20 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	var medium := san <= MEDIUM_THRESHOLD
 	if not medium: _clear_medium_vision()
 	_advance_blink(delta, severity, medium)
-	if medium: _advance_vision(delta, severity)
+	if medium: _update_vision_grade(delta)
 	_advance_direction(delta, severity)
 
 func _advance_blink(delta: float, severity: float, medium: bool) -> void:
 	if _blink_wait < 0.0: _blink_wait = _rng.randf_range(0.55, 1.45)
 	if medium and _long_blink_wait < 0.0: _long_blink_wait = 0.28 + 0.72 * _roll_wait()
+	var previous_remaining := _blink_remaining
 	var open_time := maxf(0.0, delta - _blink_remaining)
 	_blink_remaining = maxf(0.0, _blink_remaining - delta)
+	var previous_open_duration := _blink_open_duration()
+	# Switch while the lids still cover the screen so reopening reveals the change.
+	if medium and previous_remaining > previous_open_duration and _blink_remaining <= previous_open_duration:
+		_advance_vision_on_blink(severity)
+		vision_blink_reopening.emit(severity)
 	if _blink_remaining == 0.0:
 		_long_blink = false
 		_blink_wait = maxf(0.0, _blink_wait - open_time / lerpf(6.0, 0.9, severity))
@@ -92,42 +98,58 @@ func _advance_blink(delta: float, severity: float, medium: bool) -> void:
 			_blink_remaining = _blink_duration
 	var elapsed := _blink_duration - _blink_remaining
 	var close_time := 0.18 if _long_blink else _blink_duration * 0.32
-	var open_duration := 0.38 if _long_blink else _blink_duration * 0.52
-	var closure := smoothstep(0.0, close_time, elapsed) * smoothstep(0.0, open_duration, _blink_remaining)
+	var closure := smoothstep(0.0, close_time, elapsed) * smoothstep(0.0, _blink_open_duration(), _blink_remaining)
 	_eyelids.set_shader_parameter("closure", closure)
 	_overlay.visible = _blink_remaining > 0.0
 
-func _advance_vision(delta: float, severity: float) -> void:
-	if _vision_wait < 0.0: _vision_wait = _roll_wait()
-	var idle_time := maxf(0.0, delta - _vision_remaining)
-	_vision_remaining = maxf(0.0, _vision_remaining - delta)
-	if _vision_remaining == 0.0:
-		_vision_wait -= idle_time * severity * VISION_RATE
-		if _vision_wait <= 0.0:
-			_vision_wait = _roll_wait()
-			_vision_duration = lerpf(2.5, 6.5, _sample_episode(severity))
-			_vision_remaining = _vision_duration
-			_vision_strength = lerpf(0.38, 1.0, _sample_episode(severity))
-			_vision_profile = _rng.randi_range(0, VisionProfile.size() - 1)
-	if _vision_remaining == 0.0:
-		_clear_vision_grade()
+func _blink_open_duration() -> float:
+	return 0.38 if _long_blink else _blink_duration * 0.52
+
+func _advance_vision_on_blink(severity: float) -> void:
+	if _vision_profile < 0:
+		if _rng.randf() < lerpf(0.19, 0.62, severity):
+			_start_vision(_roll_vision_profile(), severity)
 		return
-	var elapsed := _vision_duration - _vision_remaining
-	var progress := elapsed / _vision_duration
-	var envelope := smoothstep(0.0, 0.20, progress) * (1.0 - smoothstep(0.65, 1.0, progress))
+	_vision_blinks_left -= 1
+	if _vision_blinks_left > 0: return
+	if _rng.randf() < lerpf(0.10, 0.60, severity):
+		_start_vision(_roll_vision_profile(), severity)
+	else:
+		_end_vision()
+
+func _roll_vision_profile() -> int:
+	var last_profile := VisionProfile.size() - 1
+	if _vision_profile < 0: return _rng.randi_range(0, last_profile)
+	var profile := _rng.randi_range(0, last_profile - 1)
+	# Skip the active profile when the episode is switching directly to another.
+	return profile + 1 if profile >= _vision_profile else profile
+
+func _start_vision(profile: int, severity: float) -> void:
+	_vision_profile = profile
+	_vision_strength = lerpf(0.38, 1.0, _sample_episode(severity))
+	_vision_blinks_left = mini(4, 2 + floori(3.0 * _sample_episode(severity)))
+	_vision_elapsed = 0.0
+
+func _end_vision() -> void:
+	_vision_profile = -1
+	_vision_blinks_left = 0
+	_vision_elapsed = 0.0
+	_clear_vision_grade()
+
+func _update_vision_grade(delta: float) -> void:
+	if _vision_profile < 0: return
+	_vision_elapsed += delta
 	var viewport := get_viewport()
 	if _vision_viewport != viewport:
 		_clear_vision_grade()
 		_vision_viewport = viewport
-	_video.set_san_vision(viewport, _vision_profile, envelope * _vision_strength, elapsed)
+	_video.set_san_vision(viewport, _vision_profile, _vision_strength, _vision_elapsed)
 
 func _clear_medium_vision() -> void:
 	if _long_blink: _blink_remaining = 0.0
 	_long_blink = false
 	_long_blink_wait = -1.0
-	_vision_wait = -1.0
-	_vision_remaining = 0.0
-	_clear_vision_grade()
+	_end_vision()
 
 func _clear_vision_grade() -> void:
 	if is_instance_valid(_vision_viewport) and is_instance_valid(_video):

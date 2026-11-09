@@ -338,7 +338,6 @@ func check_medium_san_vision() -> void:
 		effects.advance(.01, san, walk)
 		effects._rng.seed = 23
 		effects._long_blink_wait = 1.0
-		effects._vision_wait = 1.0
 		effects._blink_wait = 0.0
 		effects.advance(.01, san, walk)
 		check(effects._overlay.visible and not effects._long_blink and effects._blink_duration > previous_blink, "A matched ordinary blink lasts longer at lower SAN %s" % san)
@@ -348,23 +347,41 @@ func check_medium_san_vision() -> void:
 	effects.advance(.01, 0.01, walk)
 	effects._blink_wait = 1.0
 	effects._long_blink_wait = 0.0
-	effects._vision_wait = 0.0
 	effects.advance(.01, 0.01, walk)
 	check(not effects._long_blink and not grade.visible, "Long closure and vision distortion are disabled above zero SAN")
 	effects.advance(.01, 0.0, walk)
+	var profile := PlayerSanEffects.VisionProfile.NEGATIVE
+	var start_first_vision := func(severity: float) -> void:
+		effects._start_vision(profile, severity)
+		effects._vision_blinks_left = 2
+	effects.vision_blink_reopening.connect(start_first_vision, Object.CONNECT_ONE_SHOT)
 	effects._long_blink_wait = 0.0
-	effects._vision_wait = 0.0
 	effects.advance(.01, 0.0, walk)
-	check(effects._long_blink and effects._overlay.visible and effects._vision_remaining > 0.0, "Long closure and vision distortion can start together at zero SAN")
-	check(effects._blink_duration > previous_blink and effects._vision_strength > 0.0, "Medium SAN draws a longer closure and a nonzero distortion strength")
-	var overlap_step := minf(effects._blink_duration, effects._vision_duration) * .35
-	effects.advance(overlap_step, 0.0, walk)
-	check(grade.visible and float(vision_material.get_shader_parameter("san_amount")) > 0.0, "Vision distortion enables the shared filter during overlap")
-	check(int(vision_material.get_shader_parameter("san_profile")) == effects._vision_profile and float(vision_material.get_shader_parameter("san_elapsed")) > 0.0, "The shared filter receives the sampled profile and episode time")
+	check(effects._long_blink and effects._overlay.visible and effects._blink_duration > previous_blink, "A long blink becomes eligible at zero SAN")
+	effects.advance(.25, 0.0, walk)
 	var closure := float(effects._eyelids.get_shader_parameter("closure"))
-	check(effects._long_blink and closure > .9, "A long blink keeps the eyes nearly closed during the overlap")
+	check(closure > .9 and not grade.visible and effects._vision_profile == -1, "Closed eyelids leave the normal grade in place until reopening")
+	effects.advance(effects._blink_remaining - .1, 0.0, walk)
+	check(grade.visible and float(vision_material.get_shader_parameter("san_amount")) > 0.0, "Reopening the eyes can enable the shared filter")
+	effects._blink_wait = 10.0
+	effects._long_blink_wait = 10.0
+	effects.advance(.6, 0.0, walk)
+	check(not effects._overlay.visible and effects._vision_blinks_left == 2 and grade.visible, "The filter persists between blinks without spending a blink")
+	check(int(vision_material.get_shader_parameter("san_profile")) == profile and float(vision_material.get_shader_parameter("san_elapsed")) > 0.0, "The shared filter receives the active profile and elapsed time")
+	effects._blink_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	check(effects._vision_blinks_left == 2, "Starting another blink does not spend a blink before reopening")
+	effects.advance(effects._blink_remaining + .01, 0.0, walk)
+	check(effects._vision_profile == profile and effects._vision_blinks_left == 1 and grade.visible, "An intermediate reopening keeps the current filter")
+	effects._blink_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	effects.advance(effects._blink_remaining + .01, 0.0, walk)
+	check(effects._vision_profile != profile, "The last reopening clears or replaces the expired filter")
 	for key in base_preferences:
 		check(settings.get_setting(key) == base_preferences[key], "SAN does not change the player's base filter preference for " + String(key))
+	effects._start_vision(profile, .5)
+	effects.advance(.01, 0.0, walk)
+	check(grade.visible, "The shared filter is active before SAN recovery")
 	effects._blink_wait = 1.0
 	effects.advance(.01, 0.01, walk)
 	check(not effects._long_blink and not effects._overlay.visible and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Returning above zero clears the medium effects and hides the neutral filter")
@@ -379,9 +396,8 @@ func check_medium_san_vision() -> void:
 	settings.register_viewport(interior, true)
 	var interior_grade: ColorRect = settings.viewport_effect(interior)
 	effects.advance(0.0, 0.0, walk)
-	effects._vision_wait = 0.0
-	effects.advance(.5, 0.0, walk)
-	effects.advance(.5, 0.0, walk)
+	effects._start_vision(profile, .5)
+	effects.advance(.01, 0.0, walk)
 	check(grade.visible, "The source viewport has an active SAN grade")
 	effects.reparent(interior)
 	effects.advance(.1, 0.0, walk)
