@@ -11,17 +11,16 @@ var _replay := "--replay" in OS.get_cmdline_user_args()
 var _elapsed := 0.0
 var _capture_started := false
 var _capture_saved := false
-var _thresholds := 0
+var _san_at_capture := 0.0
 
 func _ready() -> void:
 	player.camera.make_current()
 	if _replay: apparition._rng.seed = 2026
 	apparition.configure(player)
-	apparition.threshold_reached.connect(_on_threshold_reached)
 
 func _physics_process(delta: float) -> void:
 	var phase := apparition._phase
-	status.text = "Sightings %d/3   %s" % [apparition._gaze.count, WhiteApparition.Phase.keys()[phase].capitalize()]
+	status.text = WhiteApparition.Phase.keys()[phase].capitalize()
 	if not _replay: return
 	_elapsed += delta
 	if _elapsed > 45.0:
@@ -30,12 +29,13 @@ func _physics_process(delta: float) -> void:
 		return
 	if phase == WhiteApparition.Phase.VISIBLE:
 		player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
-		if apparition._presence >= 0.95 and not _capture_started:
+	elif phase == WhiteApparition.Phase.CONFIRMED:
+		if player.survival.san <= -10.0 and not _capture_started:
 			_capture_started = true
 			_capture_context()
-	if phase == WhiteApparition.Phase.COOLDOWN and _thresholds == 1 and _capture_saved:
-		print("WHITE_APPARITION_REPLAY sightings=", apparition._gaze.count, " threshold=", _thresholds)
-		get_tree().quit()
+		if _capture_saved and apparition.visible and player.survival.san <= _san_at_capture - 100.0:
+			print("WHITE_APPARITION_REPLAY confirmed=true visible_after_looking_away=true san=%.1f" % player.survival.san)
+			get_tree().quit()
 
 func _capture_context() -> void:
 	await RenderingServer.frame_post_draw
@@ -47,7 +47,6 @@ func _capture_context() -> void:
 		get_tree().quit(1)
 		return
 	_capture_saved = true
-	print("WHITE_APPARITION_CAPTURE distance=%.2f path=%s" % [player.camera.global_position.distance_to(apparition.global_position), CAPTURE_PATH])
-
-func _on_threshold_reached(observer: Node3D) -> void:
-	if observer == player: _thresholds += 1
+	_san_at_capture = player.survival.san
+	print("WHITE_APPARITION_CAPTURE distance=%.2f san=%.1f path=%s" % [player.camera.global_position.distance_to(apparition.global_position), _san_at_capture, CAPTURE_PATH])
+	player.camera.rotate_y(PI)

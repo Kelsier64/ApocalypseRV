@@ -1,6 +1,5 @@
 extends SceneTree
 
-const GazeTracker := preload("res://enemies/white_apparition/gaze_tracker.gd")
 const ApparitionScene := preload("res://enemies/white_apparition/white_apparition.tscn")
 const Apparition := preload("res://enemies/white_apparition/white_apparition.gd")
 
@@ -11,6 +10,7 @@ class Survivor extends CharacterBody3D:
 	var is_player_dead := false
 	var blocked := false
 	var grabbed := false
+	var survival := PlayerSurvival.new()
 
 	func is_gameplay_input_blocked() -> bool:
 		return blocked
@@ -18,11 +18,13 @@ class Survivor extends CharacterBody3D:
 	func is_grabbed() -> bool:
 		return grabbed
 
+	func drain_san(amount: float) -> void:
+		survival.drain_san(amount)
+
 class Seat extends Node3D:
 	var seat_camera: Camera3D
 
 var _failures: Array[String] = []
-var _threshold_players: Array[Node3D] = []
 
 func _init() -> void:
 	_run.call_deferred()
@@ -33,45 +35,18 @@ func _check(ok: bool, label: String) -> void:
 	push_error(label)
 
 func _run() -> void:
-	_check_tracker()
 	_check_visual_motion()
 	await _check_encounter()
 	if _failures.is_empty():
-		print("PASS: White apparition planted motion, grounded emergence and drift, camera and occlusion gates, and three distinct sightings")
+		print("PASS: White apparition motion, abrupt visibility, gaze gates, and persistent SAN drain")
 	quit(0 if _failures.is_empty() else 1)
-
-func _check_tracker() -> void:
-	var tracker := GazeTracker.new()
-	var signals: Array[bool] = []
-	tracker.threshold_reached.connect(func() -> void: signals.append(true))
-	_check(not tracker.sample(true, 1.0), "No gaze can score before an emergence")
-	tracker.begin_appearance()
-	_check(not tracker.sample(true, 0.59), "A glance shorter than 0.6 seconds does not score")
-	tracker.sample(false, 0.01)
-	_check(not tracker.sample(true, 0.59), "An interruption restarts the dwell")
-	_check(tracker.sample(true, 0.02) and tracker.count == 1, "An uninterrupted look records one sighting")
-	tracker.sample(false, 1.0)
-	_check(not tracker.sample(true, 1.0) and tracker.count == 1, "Looking back at the same appearance never scores again")
-	tracker.begin_appearance()
-	tracker.sample(false, 59.99)
-	_check(tracker.count == 1, "Unseen time below sixty seconds retains the streak")
-	tracker.sample(false, 0.02)
-	_check(tracker.count == 0, "Sixty seconds without valid gaze expires the streak")
-	for sighting in 3:
-		tracker.begin_appearance()
-		_check(tracker.sample(true, 0.6) and tracker.count == sighting + 1, "Each separate emergence can score once")
-	_check(tracker.completed and signals.size() == 1, "The third sighting emits one threshold event")
-	tracker.begin_appearance()
-	_check(not tracker.sample(true, 1.0) and signals.size() == 1, "Completion remains latched across samples")
-	tracker.reset()
-	_check(not tracker.completed and tracker.count == 0, "Reset clears the encounter")
 
 func _check_visual_motion() -> void:
 	var visual = load("res://enemies/white_apparition/white_apparition_visual.gd").new()
 	root.add_child(visual)
 	visual.set_process(false)
 	visual._rng.seed = 2026
-	visual.set_presence(1.0)
+	visual.begin_appearance()
 	visual.position = Vector3(4, 0, -7)
 	visual.rotation.y = 0.6
 	visual._clock = 0.0
@@ -106,10 +81,6 @@ func _check_visual_motion() -> void:
 	_check(max_head_motion > 0.3, "Head gaze anchor follows substantial body contortion in world space")
 	_check(max_anchor_step < 0.16, "Gaze anchors move without snapping through phrase transitions")
 	_check(max_foot_drift < 0.02, "Both ankles remain planted throughout all motion phrases")
-	var frozen: PackedVector3Array = visual.gaze_points()
-	visual.confirmed = 1.0
-	visual._process(0.5)
-	_check(visual.gaze_points() == frozen, "Confirmed gaze holds the actual animated pose")
 	visual.free()
 
 func _check_encounter() -> void:
@@ -140,14 +111,14 @@ func _check_encounter() -> void:
 	apparition.get_node("Visual").set_process(false)
 	apparition.configure(player)
 	apparition._rng.seed = 2026
-	apparition.threshold_reached.connect(func(observer: Node3D) -> void: _threshold_players.append(observer))
 	await physics_frame
 	await physics_frame
 	apparition._physics_process(0.0)
 
 	var chest := Vector3(0.0, 1.55, -15.0)
 	var head := Vector3(0.0, 2.05, -15.0)
-	apparition._set_presence(1.0)
+	_check(not apparition._can_confirm(player.camera, chest, head), "Hidden apparitions cannot confirm a sighting")
+	apparition.show()
 	_check(not apparition._can_confirm(player.camera, chest, head), "Occluding just the head breaks the sighting")
 	head_occluder.position.y = 1.55
 	await physics_frame
@@ -157,9 +128,6 @@ func _check_encounter() -> void:
 	await physics_frame
 	await physics_frame
 	_check(apparition._can_confirm(player.camera, chest, head), "Clear center rays ignore the observer's own collision RID")
-	apparition._set_presence(0.69)
-	_check(not apparition._can_confirm(player.camera, chest, head), "A faint fade-in is too early to confirm")
-	apparition._set_presence(1.0)
 	for screen_position in [Vector2(0.71, 0.5), Vector2(0.5, 0.71)]:
 		var edge := player.camera.project_position(screen_position * Vector2(viewport.size), 15.0)
 		_check(not apparition._can_confirm(player.camera, edge, edge + Vector3.UP * 0.5), "Peripheral horizontal or vertical screen projection does not count")
@@ -189,7 +157,7 @@ func _check_encounter() -> void:
 	player.grabbed = true
 	_check(apparition._active_player_camera() == null, "Grab execution views exclude gaze")
 	player.grabbed = false
-	apparition._set_presence(0.0)
+	apparition.hide()
 
 	var start := Vector3(2.5, 0.04, -15.0)
 	apparition.global_position = start
@@ -208,44 +176,54 @@ func _check_encounter() -> void:
 	_check(drift.x < -1.9 and drift.x >= -2.0 and is_zero_approx(drift.z), "The drift moves sideways toward center within two metres")
 	apparition._appearance_origin = Vector3.INF
 
-	for sighting in 3:
-		player.camera.rotation = Vector3.ZERO
-		apparition._time_left = 0.0
-		apparition._physics_process(1.0 / 60.0)
-		if apparition._phase != Apparition.Phase.VISIBLE:
-			_check(false, "An unobstructed terrain candidate emerges")
-			break
-		var target := apparition.to_global(Apparition.CHEST)
-		_check(not apparition._point_in_frame(player.camera, target, Apparition.CENTER), "A new appearance starts outside the center")
-		var distance := player.camera.global_position.distance_to(target)
-		_check(distance >= 10.0 and distance <= 22.0, "Emergence stays at a comfortable distance")
-		player.camera.look_at(target)
-		for tick in 120:
-			apparition._physics_process(1.0 / 60.0)
-			if apparition._phase == Apparition.Phase.CONFIRMED: break
-		_check(apparition._gaze.count == sighting + 1 and apparition._phase == Apparition.Phase.CONFIRMED, "Continuous eligible gaze confirms the current emergence")
-		_check(_threshold_players.size() == (1 if sighting == 2 else 0), "Only the third emergence emits the threshold")
-		apparition._physics_process(0.71)
-		_check(apparition._phase == Apparition.Phase.FADING, "Confirmed appearance holds briefly before fading")
-		apparition._physics_process(0.36)
-		_check(not apparition.visible, "The scored appearance disappears")
-	_check(_threshold_players == [player], "The one threshold event carries the observing player")
-	_check(apparition._phase == Apparition.Phase.COOLDOWN, "The completed encounter enters its cooldown")
-	apparition._physics_process(90.01)
-	_check(apparition._phase == Apparition.Phase.HIDDEN and apparition._gaze.count == 0, "Cooldown expiry starts a new empty encounter")
-	apparition._gaze.begin_appearance()
-	apparition._gaze.sample(true, 0.6)
+	apparition._time_left = 0.0
+	apparition._physics_process(1.0 / 60.0)
+	_check(apparition._phase == Apparition.Phase.VISIBLE and apparition.get_node("Visual").is_visible_in_tree(), "An emergence is visible on its first tick")
+	var target := apparition.to_global(Apparition.CHEST)
+	_check(not apparition._point_in_frame(player.camera, target, Apparition.CENTER), "A new appearance starts outside the center")
+	var distance := player.camera.global_position.distance_to(target)
+	_check(distance >= 10.0 and distance <= 22.0, "Emergence stays at a comfortable distance")
+	apparition._time_left = 0.0
+	apparition._physics_process(1.0 / 60.0)
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.get_node("Visual").is_visible_in_tree(), "An unconfirmed appearance disappears on the expiry tick")
+	_check(player.survival.san == PlayerSurvival.MAX_SAN, "An unseen apparition does not rapidly drain SAN")
+
+	apparition._time_left = 0.0
+	apparition._physics_process(1.0 / 60.0)
+	_check(apparition._phase == Apparition.Phase.VISIBLE, "The apparition can emerge again after going unseen")
+	player.camera.look_at(apparition.to_global(Apparition.CHEST))
+	apparition._physics_process(0.59)
+	_check(apparition._phase == Apparition.Phase.VISIBLE, "A glance shorter than 0.6 seconds does not confirm")
+	player.camera.rotate_y(PI)
+	apparition._physics_process(0.01)
+	player.camera.look_at(apparition.to_global(Apparition.CHEST))
+	apparition._physics_process(0.59)
+	_check(apparition._phase == Apparition.Phase.VISIBLE, "An interruption restarts the gaze dwell")
+	apparition._physics_process(0.02)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED, "The first uninterrupted gaze confirms the apparition")
+	var visual = apparition.get_node("Visual")
+	var pose: PackedVector3Array = visual.gaze_points()
+	visual._process(1.0 / 60.0)
+	_check(visual.gaze_points() != pose, "White apparition keeps animating after confirmation")
+
+	player.camera.rotate_y(PI)
+	player.in_ui_mode = true
+	var confirmed_position := apparition.global_position
+	apparition._physics_process(2.0)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and apparition.global_position == confirmed_position, "The confirmed apparition stays when the player looks away and opens the UI")
+	_check(player.survival.san == PlayerSurvival.MAX_SAN - 200.0, "Confirmed drain continues at 100 SAN per second through zero")
+	world.set_meta("checkpoint_staging", true)
+	apparition._physics_process(1.0)
+	_check(player.survival.san == -100.0, "Staged simulation cannot drain SAN")
+	world.remove_meta("checkpoint_staging")
 	player.is_player_dead = true
 	apparition._physics_process(0.01)
-	_check(apparition._gaze.count == 0 and not apparition.visible, "Death clears the transient encounter")
-	player.is_player_dead = false
-	apparition._physics_process(0.01)
-	apparition._gaze.begin_appearance()
-	apparition._gaze.sample(true, 0.6)
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == -100.0, "Death clears the transient encounter and stops rapid drain")
 	var replacement := Survivor.new()
 	world.add_child(replacement)
 	apparition.configure(replacement)
-	_check(apparition._gaze.count == 0, "A different observer never inherits the previous player's streak")
+	apparition._physics_process(1.0)
+	_check(replacement.survival.san == PlayerSurvival.MAX_SAN and not apparition.visible, "A different observer never inherits a confirmed sighting")
 	viewport.free()
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:

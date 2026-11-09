@@ -359,6 +359,7 @@ func _ready():
 	_update_health_bar()
 	_update_stamina_bar()
 	_update_food_bar()
+	_update_san_bar()
 	camera.fov = float(game_settings.get_setting(&"walk_fov"))
 	game_settings.setting_changed.connect(_on_setting_changed)
 
@@ -540,6 +541,7 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	_update_health_bar()
 	_update_stamina_bar()
 	_update_food_bar()
+	_update_san_bar()
 	if current_player_health <= 0.0: _player_die()
 
 ## Seat flow: the player owns its own state mutation; the seat only decides
@@ -1255,6 +1257,14 @@ func _update_food_bar() -> void:
 	if inventory_ui and inventory_ui.has_method("set_food_hint"):
 		inventory_ui.set_food_hint(consumables.hud_data(self))
 
+func _update_san_bar() -> void:
+	if health_bar:
+		health_bar.set_san(survival.san)
+
+func drain_san(amount: float) -> void:
+	survival.drain_san(amount)
+	_update_san_bar()
+
 func _advance_survival(delta: float) -> void:
 	if PlayerSurvival.simulation_active(self):
 		var ticks := survival.advance(delta)
@@ -1266,6 +1276,7 @@ func _advance_survival(delta: float) -> void:
 			_update_health_bar()
 			if current_player_health <= 0.0: _player_die()
 	_update_food_bar()
+	_update_san_bar()
 
 func _physics_process(delta):
 	_advance_survival(delta)
@@ -1455,6 +1466,7 @@ func _respawn():
 	_update_health_bar()
 	_update_stamina_bar()
 	_update_food_bar()
+	_update_san_bar()
 	print("Player respawned!")
 
 func refresh_inventory() -> void:

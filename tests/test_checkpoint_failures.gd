@@ -53,7 +53,7 @@ func _run() -> void:
 	check(not await world.wait_for_play(20), "Never-ready state times out instead of passing by frame count")
 	world.play_ready = true
 	var checkpoint: Node = root.get_node("Checkpoint")
-	world.get_node("Player").survival.restore({"hunger": 0.0, "starvation_elapsed": 3.25})
+	world.get_node("Player").survival.restore({"hunger": 0.0, "starvation_elapsed": 3.25, "san": -47.5})
 	check(checkpoint.save_world(world, PATH), "Valid fixture writes")
 	var saved: Dictionary = checkpoint.read_checkpoint(PATH)
 	check(not saved.is_empty(), "Valid fixture reads")
@@ -230,7 +230,7 @@ func _run() -> void:
 	check(await checkpoint.load_world(world, PATH), "Full load succeeds after previous failures")
 	check(current_scene != world and current_scene.play_ready, "Only completed world becomes current")
 	check(current_scene.get_node("WorldClock").capture() == saved.clock, "Staged world does not advance the saved clock")
-	check(current_scene.get_node("Player").survival.capture() == saved.player.survival, "Successful load restores hunger and starvation remainder")
+	check(current_scene.get_node("Player").survival.capture() == saved.player.survival, "Successful load restores hunger, starvation remainder, and SAN debt")
 	for vehicle in get_nodes_in_group(Groups.CHASSIS):
 		if not current_scene.is_ancestor_of(vehicle): continue
 		check(not vehicle.unlimited_materials and not vehicle.unlimited_fuel and not vehicle.unlimited_power, "Successful world load resets every vehicle session cheat")
@@ -266,8 +266,8 @@ func _run() -> void:
 
 func _test_survival_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 	check(saved.version == 7 and saved.vehicles[0].version == 6, "Survival changes only the outer checkpoint version")
-	check(saved.player.get("survival") == {"hunger": 0.0, "starvation_elapsed": 3.25}, "Checkpoint disk roundtrip retains starvation remainder")
-	for kind in ["missing", "type", "hunger_type", "nan", "infinity", "negative", "overflow", "elapsed_missing", "elapsed_type", "elapsed_nan", "elapsed_infinity", "elapsed_negative", "elapsed_boundary", "fed_remainder"]:
+	check(saved.player.get("survival") == {"hunger": 0.0, "starvation_elapsed": 3.25, "san": -47.5}, "Checkpoint disk roundtrip retains starvation remainder and SAN debt")
+	for kind in ["missing", "type", "hunger_type", "nan", "infinity", "negative", "overflow", "elapsed_missing", "elapsed_type", "elapsed_nan", "elapsed_infinity", "elapsed_negative", "elapsed_boundary", "fed_remainder", "san_type", "san_nan", "san_infinity", "san_overflow"]:
 		var malformed := saved.duplicate(true)
 		match kind:
 			"missing": malformed.player.erase("survival")
@@ -284,7 +284,18 @@ func _test_survival_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 			"elapsed_negative": malformed.player.survival.starvation_elapsed = -0.01
 			"elapsed_boundary": malformed.player.survival.starvation_elapsed = 5.0
 			"fed_remainder": malformed.player.survival.hunger = 1.0
+			"san_type": malformed.player.survival.san = "0"
+			"san_nan": malformed.player.survival.san = NAN
+			"san_infinity": malformed.player.survival.san = -INF
+			"san_overflow": malformed.player.survival.san = 100.01
 		check(checkpoint.validation_error(malformed) == "player.survival", "Reject malformed survival " + kind + " before mutation")
+	var before_san := saved.duplicate(true)
+	before_san.player.survival.erase("san")
+	check(checkpoint.validation_error(before_san).is_empty(), "Current checkpoint format accepts snapshots saved before SAN")
+	var restored := PlayerSurvival.new()
+	restored.san = -47.5
+	restored.restore(before_san.player.survival)
+	check(restored.san == 100.0, "Restoring a snapshot saved before SAN uses a full meter")
 	var previous := saved.duplicate(true)
 	previous.version = 6
 	check(checkpoint.validation_error(previous) == "version", "Previous checkpoint version is rejected without migration")

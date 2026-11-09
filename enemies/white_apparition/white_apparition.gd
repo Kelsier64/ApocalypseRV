@@ -1,9 +1,6 @@
 extends Node3D
 class_name WhiteApparition
 ## Transient outdoor encounter. The player, camera, and apparition share a World3D.
-signal threshold_reached(player: Node3D)
-
-const GazeTracker := preload("res://enemies/white_apparition/gaze_tracker.gd")
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
 const SPAWN_FRAME := Rect2(0.05, 0.05, 0.90, 0.90)
 const CHEST := Vector3(0.0, 2.00, 0.0)
@@ -14,26 +11,22 @@ const MAX_SPAWN_DISTANCE := 22.0
 const MAX_SPAWN_ATTEMPTS := 16
 const MAX_DRIFT := 2.0
 const DRIFT_SPEED := 0.45
-const FADE_IN := 0.7
-const FADE_OUT := 0.35
-const CONFIRMED_HOLD := 0.7
-const COOLDOWN := 90.0
-const MIN_PRESENCE := 0.7
+const GAZE_SECONDS := 0.6
+const SAN_DRAIN_PER_SECOND := 100.0
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const CLEARANCE_RADIUS := 0.44
 const CLEARANCE_HEIGHT := 2.75
 
-enum Phase { HIDDEN, VISIBLE, CONFIRMED, FADING, COOLDOWN }
+enum Phase { HIDDEN, VISIBLE, CONFIRMED }
 
 @onready var _visual = $Visual
-var _gaze := GazeTracker.new()
 var _rng := RandomNumberGenerator.new()
 var _player: Node3D
 var _world_id := 0
 var _camera_id := 0
 var _phase := Phase.HIDDEN
 var _time_left := 0.0
-var _presence := 0.0
+var _gaze_elapsed := 0.0
 var _appearance_origin := Vector3.INF
 var _capsule := CapsuleShape3D.new()
 
@@ -41,7 +34,7 @@ func _ready() -> void:
 	_rng.randomize()
 	_capsule.radius = CLEARANCE_RADIUS
 	_capsule.height = CLEARANCE_HEIGHT
-	_set_presence(0.0)
+	hide()
 
 func configure(player: Node3D) -> void:
 	if is_instance_valid(_player) and player == _player: return
@@ -50,7 +43,6 @@ func configure(player: Node3D) -> void:
 	_reset()
 
 func _reset() -> void:
-	_gaze.reset()
 	_camera_id = 0
 	_appearance_origin = Vector3.INF
 	_enter_hidden()
@@ -58,13 +50,8 @@ func _reset() -> void:
 func _enter_hidden() -> void:
 	_phase = Phase.HIDDEN
 	_time_left = _rng.randf_range(4.0, 8.0)
-	_set_presence(0.0)
-	if is_node_ready(): _visual.confirmed = 0.0
-
-func _set_presence(amount: float) -> void:
-	_presence = amount
-	visible = amount > 0.0
-	if is_node_ready(): _visual.set_presence(amount)
+	_gaze_elapsed = 0.0
+	hide()
 
 func _physics_process(delta: float) -> void:
 	if not WorldEntities.same_world(self, _player) or _player.is_queued_for_deletion() or _player.get("is_player_dead") == true:
@@ -76,34 +63,26 @@ func _physics_process(delta: float) -> void:
 	if world_id != _world_id:
 		_world_id = world_id
 		_reset()
+	if not PlayerSurvival.simulation_active(_player): return
+	if _phase == Phase.CONFIRMED:
+		_player.drain_san(SAN_DRAIN_PER_SECOND * delta)
+		return
+
 	var camera := _active_player_camera()
 	if camera == null:
-		_gaze.sample(false, delta)
 		_camera_id = 0
-		if _phase == Phase.VISIBLE:
-			_enter_hidden()
-		elif _phase in [Phase.CONFIRMED, Phase.FADING]:
-			_finish_fade()
+		if _phase == Phase.VISIBLE: _enter_hidden()
 		return
 	if _camera_id != camera.get_instance_id():
 		_camera_id = camera.get_instance_id()
-		_gaze.sample(false, 0.0)
+		_gaze_elapsed = 0.0
 	_time_left -= delta
 	match _phase:
 		Phase.HIDDEN:
-			_gaze.sample(false, delta)
 			if _time_left <= 0.0 and not _try_emerge(camera):
 				_time_left = 2.0
 		Phase.VISIBLE:
 			_update_visible(camera, delta)
-		Phase.CONFIRMED:
-			if _time_left <= 0.0: _phase = Phase.FADING
-		Phase.FADING:
-			_gaze.sample(false, delta)
-			_set_presence(move_toward(_presence, 0.0, delta / FADE_OUT))
-			if _presence <= 0.0: _finish_fade()
-		Phase.COOLDOWN:
-			if _time_left <= 0.0: _reset()
 
 func _active_player_camera() -> Camera3D:
 	if _player.get("in_ui_mode") == true or _player.is_gameplay_input_blocked() or _player.is_grabbed(): return null
@@ -114,28 +93,18 @@ func _active_player_camera() -> Camera3D:
 	return camera
 
 func _update_visible(camera: Camera3D, delta: float) -> void:
-	_set_presence(move_toward(_presence, 1.0, delta / FADE_IN))
 	var points: PackedVector3Array = _visual.gaze_points()
 	if points.size() != 2: points = PackedVector3Array([to_global(CHEST), to_global(HEAD)])
-	if _gaze.sample(_can_confirm(camera, points[0], points[1]), delta):
+	_gaze_elapsed = _gaze_elapsed + delta if _can_confirm(camera, points[0], points[1]) else 0.0
+	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
-		_time_left = CONFIRMED_HOLD
-		_visual.confirmed = 1.0
-		_set_presence(1.0)
-		if _gaze.completed: threshold_reached.emit(_player)
 	elif _time_left <= 0.0:
-		_phase = Phase.FADING
+		_enter_hidden()
 	else:
 		_drift_toward_center(camera, delta)
 
-func _finish_fade() -> void:
-	_enter_hidden()
-	if _gaze.completed:
-		_phase = Phase.COOLDOWN
-		_time_left = COOLDOWN
-
 func _can_confirm(camera: Camera3D, chest: Vector3, head: Vector3) -> bool:
-	if _presence < MIN_PRESENCE or not is_visible_in_tree(): return false
+	if not is_visible_in_tree(): return false
 	if camera.get_camera_transform().origin.distance_squared_to(chest) > MAX_GAZE_DISTANCE * MAX_GAZE_DISTANCE: return false
 	if not _point_in_frame(camera, chest, CENTER) or not camera.is_position_in_frustum(head): return false
 	return _clear_sight(camera, chest, head)
@@ -176,9 +145,10 @@ func _try_emerge(camera: Camera3D) -> bool:
 		global_position = point
 		look_at(Vector3(anchor.x, point.y, anchor.z))
 		_appearance_origin = point
-		_gaze.begin_appearance()
 		_phase = Phase.VISIBLE
 		_time_left = _rng.randf_range(6.0, 10.0)
+		_visual.begin_appearance()
+		show()
 		return true
 	return false
 

@@ -117,6 +117,7 @@ func check_survival() -> void:
 	var whole := PlayerSurvival.new()
 	var split := PlayerSurvival.new()
 	check(whole.advance(1200.0) == 0 and whole.hunger == 0.0, "Full food lasts exactly 20 simulation minutes")
+	check(whole.san == 0.0, "Full SAN lasts 20 simulation minutes and naturally stops at zero")
 	check(whole.advance(4.99) == 0 and whole.advance(.01) == 1, "Starvation first damages at five seconds")
 	var split_ticks := 0
 	for step in 12050: split_ticks += split.advance(.1)
@@ -152,6 +153,7 @@ func check_survival() -> void:
 	actor.survival.reset()
 	actor._advance_survival(60.0)
 	check(actor.survival.hunger == 100.0, "Preparing tutorial stops hunger")
+	check(actor.survival.san == 100.0, "Preparing tutorial stops passive SAN drain")
 	start.phase = "started"
 	actor.in_ui_mode = true
 	actor.settings_open = true
@@ -173,6 +175,7 @@ func check_survival() -> void:
 	manager.busy = false
 	actor._advance_survival(60.0)
 	check(is_equal_approx(actor.survival.hunger, 90.0), "Indoor exploration continues the same player survival state")
+	check(is_equal_approx(actor.survival.san, 90.0), "SAN shares hunger's UI, indoor, and transition simulation rules")
 	actor.reparent(world)
 	world.set_meta("checkpoint_staging", true)
 	actor._advance_survival(60.0)
@@ -182,7 +185,13 @@ func check_survival() -> void:
 	checkpoint.loading = true
 	actor._advance_survival(60.0)
 	check(is_equal_approx(actor.survival.hunger, 90.0), "Checkpoint loading stops hunger")
+	check(is_equal_approx(actor.survival.san, 90.0), "Staging and checkpoint loading stop SAN loss")
 	checkpoint.loading = false
+	actor.drain_san(90.0)
+	check(actor.health_bar.san_label.text == "SAN: 0 / 100", "SAN HUD shows zero")
+	actor.drain_san(0.25)
+	actor._advance_survival(1.0)
+	check(actor.survival.san == -0.25 and actor.health_bar.san_bar.value == 0.0 and actor.health_bar.san_label.text == "SAN: -1 / 100", "Hostile loss passes below zero, passive loss preserves debt, and HUD shows the negative value")
 	actor.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.0})
 	actor.damage_cooldown = .4
 	actor.current_player_health = 100.0

@@ -1,7 +1,7 @@
 # 開發文件索引
 
 - [2026-11-09 遊玩畫面提示盤點與清理](validation/2026-11-09-gameplay-ui-cleanup.md)：刪除瞄準名稱／狀態、自動操作教學與重複解說，保留必要狀態、操作進度及主動查閱介面。
-- [白影遭遇](guides/white-apparition.md) — 戶外出現條件、三次注視判定與目前實作範圍。
+- [白影遭遇](guides/white-apparition.md) — 戶外出現條件、注視判定與 SAN 消耗。
 
 - [巨型避難所可探索室內](guides/megashelter-interiors.md)：生成 v19、獨立地面一層、少量功能房、profile 分流與不補貨保存；轉場／保存檢查與 seed 42 實際回放已通過，串流及 smoke 待補。
 

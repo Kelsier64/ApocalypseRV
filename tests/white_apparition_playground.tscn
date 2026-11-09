@@ -65,5 +65,5 @@ offset_top = 24.0
 offset_right = -24.0
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
-text = "Sightings 0/3   Hidden"
+text = "Hidden"
 horizontal_alignment = 2

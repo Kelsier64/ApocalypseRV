@@ -88,7 +88,7 @@ func _interrupt_exit(mode: String, label: String) -> void:
 
 func _case(mode: String) -> void:
 	var id := "exit-" + mode
-	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 2.75})
+	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 2.75, "san": -13.5})
 	if not await _enter(id): return
 	var room := manager.interior
 	var picked := _add_scrap(id + "-picked-first")
@@ -142,7 +142,7 @@ func _eat_interior_food() -> void:
 	player.consumables.handle_input(player, press)
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	check(player.inventory.items.size() == count and not player.inventory.items.any(func(record): return record.state.id == identity), "POI food is consumed exactly once through the real eating path")
-	check(player.survival.capture() == {"hunger": 40.0, "starvation_elapsed": 0.0}, "Eating inside POI restores hunger and clears starvation remainder")
+	check(player.survival.capture() == {"hunger": 40.0, "starvation_elapsed": 0.0, "san": -13.5}, "Eating inside POI restores hunger and clears starvation while preserving SAN debt")
 
 func _run() -> void:
 	arena = Node3D.new()

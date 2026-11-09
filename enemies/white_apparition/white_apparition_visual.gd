@@ -11,8 +11,6 @@ const STYLES := [Vector3(1.19, 0.64, 0.88), Vector3(0.87, -0.34, 0.72), Vector3(
 const SHUDDER := 5
 const REST_SOLE_HEIGHT := 0.03003
 const HISTORY_INTERVAL := 0.04
-var confirmed := 0.0
-var _presence := 0.0
 var _clock := 0.0
 var _phrase_time := 0.0
 var _phrase_duration := 4.0
@@ -27,7 +25,6 @@ var _skeletons: Array[Skeleton3D] = []
 var _models: Array[Node3D] = []
 var _bones: Dictionary = {}
 var _rig_ready := false
-var _materials: Array[ShaderMaterial] = []
 var _history: Array[Dictionary] = []
 var _history_clock := 0.0
 
@@ -43,8 +40,6 @@ func _ready() -> void:
 		var material := ShaderMaterial.new()
 		material.shader = SKIN
 		material.set_shader_parameter("veil", 0.0 if layer == 0 else 1.0)
-		material.set_shader_parameter("presence", _presence)
-		_materials.append(material)
 		for part in model.find_children("*", "Node3D", true, false):
 			if part is MeshInstance3D:
 				part.material_override = material
@@ -66,27 +61,19 @@ func _ready() -> void:
 			return
 		_bones[bone] = index
 	_rig_ready = true
-	visible = _presence > 0.001
 
-func set_presence(amount: float) -> void:
-	var was_visible := visible
-	_presence = clampf(amount, 0.0, 1.0)
-	visible = _presence > 0.001
-	for material in _materials:
-		material.set_shader_parameter("presence", _presence)
-	if not visible:
-		_history.clear()
-		_history_clock = 0.0
-	elif not was_visible:
-		_phrase = _rng.randi_range(0, STYLES.size() - 1)
-		_last_sustained = _phrase
-		_phrase_time = 0.0
-		_phrase_duration = _rng.randf_range(2.8, 4.8)
-		_target_rate = _rng.randf_range(0.7, 1.35)
-		_rate = _target_rate
-		_style = STYLES[_phrase]
-		for motif in _motifs.size():
-			_motifs[motif] = 1.0 if motif == _phrase else 0.0
+func begin_appearance() -> void:
+	_history.clear()
+	_history_clock = 0.0
+	_phrase = _rng.randi_range(0, STYLES.size() - 1)
+	_last_sustained = _phrase
+	_phrase_time = 0.0
+	_phrase_duration = _rng.randf_range(2.8, 4.8)
+	_target_rate = _rng.randf_range(0.7, 1.35)
+	_rate = _target_rate
+	_style = STYLES[_phrase]
+	for motif in _motifs.size():
+		_motifs[motif] = 1.0 if motif == _phrase else 0.0
 
 func gaze_points() -> PackedVector3Array:
 	if not _rig_ready: return PackedVector3Array()
@@ -96,7 +83,7 @@ func gaze_points() -> PackedVector3Array:
 		skeleton.to_global(skeleton.get_bone_global_pose(_bones.Head) * Vector3(0, 0.145, 0))])
 
 func _process(delta: float) -> void:
-	if not visible or not _rig_ready or confirmed > 0.0: return
+	if not is_visible_in_tree() or not _rig_ready: return
 	_phrase_time += delta
 	if _phrase_time >= _phrase_duration:
 		_phrase_time = 0.0

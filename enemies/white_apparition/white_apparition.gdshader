@@ -1,6 +1,5 @@
 shader_type spatial;
 render_mode blend_mix, depth_prepass_alpha, cull_back, unshaded;
-uniform float presence : hint_range(0.0, 1.0) = 1.0;
 uniform float veil : hint_range(0.0, 1.0) = 0.0;
 varying vec3 local_point;
 void vertex() {
@@ -15,5 +14,5 @@ void fragment() {
  ALBEDO = vec3(0.84, 0.85, 0.83) + grain;
  ROUGHNESS = 0.94;
  EMISSION = vec3(0.12, 0.13, 0.125) * (1.0 - veil * 0.4);
- ALPHA = presence * soft_edge * mix(0.9, 0.035, veil);
+ ALPHA = soft_edge * mix(0.9, 0.035, veil);
 }
