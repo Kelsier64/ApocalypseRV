@@ -53,7 +53,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		if starter_site: continue
 		if not point is PoiLootPoint: continue
 		_spawn_loot(point, rng, container, "outdoor:%s:%s" % [site.id, building.get_path_to(point)])
-	if definition.enemy_count_range.y > 0:
+	if barrel_site and definition.enemy_count_range.y > 0:
 		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemies" if offroad else "minor_enemies")
 		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemy_species" if offroad else "minor_enemy_species")
 		var points := building.get_node("EnemySpawns").get_children()
@@ -61,11 +61,11 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		for i in range(count):
 			var selected := enemies.randi_range(0, points.size() - 1)
 			var point: Marker3D = points.pop_at(selected)
-			var path := RoadSpawns.BARREL_MAN_SCENE if barrel_site and species.randf() < BarrelManSettings.MINOR_CHANCE else RoadSpawns.RAKER_SCENE
-			var monster: Node3D = load(path).instantiate()
+			if species.randf() >= BarrelManSettings.MINOR_CHANCE: continue
+			var monster: BarrelMan = load(RoadSpawns.BARREL_MAN_SCENE).instantiate()
 			container.add_child(monster)
 			monster.global_transform = point.global_transform
-			if monster is BarrelMan: monster.global_position = _ground_position(building, point.global_position, monster as CollisionObject3D)
+			monster.global_position = _ground_position(building, point.global_position, monster)
 	generator.outdoor_sites[site.id] = {"definition_id": str(definition.definition_id), "content_version": definition.content_version, "loaded": true, "actors": []}
 
 static func _spawn_loot(point: PoiLootPoint, rng: RandomNumberGenerator, container: Node3D, source_key: String) -> Item:

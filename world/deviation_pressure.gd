@@ -57,14 +57,8 @@ func _physics_process(delta: float) -> void:
 	var forest: Vector3 = _route_sample.forest_direction
 	spawn_sample.danger_direction = forest if state.reason == "forest" else backwards
 	if state.reason == "backtrack_forest": spawn_sample.danger_direction = (backwards + forest).normalized()
-	if state.rakers_due():
-		var emitted := 0
-		while emitted < state.pending_rakers and PressureSpawns.raker_count(world) < 8:
-			if not PressureSpawns.try_spawn(world, "raker", spawn_sample, rng): break
-			emitted += 1
-		state.resolve_raker_wave(emitted, PressureSpawns.raker_count(world) >= 8)
 	if state.giant_due():
-		state.resolve_giant(PressureSpawns.giant_present(world) or PressureSpawns.try_spawn(world, "giant", spawn_sample, rng))
+		state.resolve_giant(PressureSpawns.giant_present(world) or PressureSpawns.try_spawn_giant(world, spawn_sample, rng))
 
 func capture() -> Dictionary:
 	return {"version": 1, "timing": state.capture(), "rng_initialized": _rng_initialized, "rng_state": rng.state}

@@ -2,7 +2,6 @@ extends Node3D
 class_name ChunkGenerator
 ## Fixed world-grid band. Roads curve inside it; the band never rotates.
 const CHUNK_SIZE := 150.0
-const RAKER_SCENE = preload("res://enemies/raker.tscn")
 const TERRAIN_V14 = preload("res://world/terrain/terrain_v14.gdshader")
 const SLICE_BUDGET_USEC := 4000
 var field: WorldField
@@ -498,12 +497,6 @@ func _spawn_actors() -> void:
 			point.y = field.height_at(point.x, point.z) + 0.8
 			prop.position = point
 			container.add_child(prop)
-		for i in range(field.enemy_count(int(site.index))):
-			var monster: Node3D = RAKER_SCENE.instantiate()
-			var point: Vector3 = site.frame * Vector3(float(site.side) * 9, 0, -10 + i * 5)
-			point.y = field.height_at(point.x, point.z) + 0.5
-			monster.position = point
-			container.add_child(monster)
 
 func _spawn_road_monsters() -> void:
 	# The shared once-only latch also owns loose barrels. They must not be
@@ -515,8 +508,7 @@ func _spawn_road_monsters() -> void:
 	if container == null: return
 	for index in range(road_spawns.monsters.size()):
 		var point: Vector3 = road_spawns.monsters[index]
-		var scenes: Array = road_spawns.get("monster_scenes", [])
-		var path: String = scenes[index] if index < scenes.size() else RoadSpawns.RAKER_SCENE
+		var path: String = road_spawns.monster_scenes[index]
 		var monster: Node3D = load(path).instantiate()
 		container.add_child(monster)
 		monster.global_position = point - Vector3.UP * 0.5 if monster is BarrelMan else point

@@ -100,8 +100,8 @@
 | 巨型避難所室內 | 正式 v19；獨立單層、通常六至八模組、依外觀面積選房型；少量散物與一箱，無敵人／樓梯／升級引擎；大小出口門共用返回流程，回訪不補貨 | [室內指南](megashelter-interiors.md)、[interior playground](../../tests/megashelter_interior_playground.tscn) |
 | 隨機軍事地堡 | 正式；四種入口、16 房型、目標 30–60 模組及 1–3 層；接口／樓梯空間可能使規模減少；暗房、補給箱、機率 Raker 與強化引擎 | [地堡指南](bunker-interior.md)、[bunker playground](../../tests/bunker_playground.tscn) |
 | 副本轉場與探索地圖 | 正式；入口 E 進獨立 World3D、安全返回、探索圖與切層；外界 RV 油電持續，保存布局／探索／物資／箱子／敵人及玩家丟物 | [instance manager](../../world/instances/poi_instance_manager.gd)、[interior map](../../world/instances/interior_map.gd)、[poi instance](../../tests/poi_instance_playground.tscn) |
-| 公路障礙與遭遇 | 正式；開場安全段、後方最多 28 台廢車，公路分開抽取 Raker／油桶人／普通油桶／廢車／釘帶；廢車不能清除 | [road spawns](../../world/road_spawns.gd)、[rear wreck](../../world/starting_shelter/rear_wreck_layout.gd) |
-| 偏行壓迫 | 正式；退後或離路過遠會起霧並按時間追加怪物；合法探索場址／通道豁免，返回安全範圍後停止追加與退霧 | [deviation pressure](../../world/deviation_pressure.gd)、[rear pressure](../../tests/rear_pressure_playground.tscn) |
+| 公路障礙與遭遇 | 正式；開場安全段、後方最多 28 台廢車，公路分開抽取油桶人／普通油桶／廢車／釘帶；廢車不能清除 | [road spawns](../../world/road_spawns.gd)、[rear wreck](../../world/starting_shelter/rear_wreck_layout.gd) |
+| 偏行壓迫 | 正式；退後或離路過遠會起霧，事件持續 30 秒後可出現 Slender Speaker；合法探索場址／通道豁免，返回安全範圍後停止遭遇生成並退霧 | [deviation pressure](../../world/deviation_pressure.gd)、[rear pressure](../../tests/rear_pressure_playground.tscn) |
 | 樹木碰撞與倒塌 | 正式；RV／巨人撞樹、斷裂倒塌與破壞狀態保存 | [tree impact](../../world/terrain/tree_impact.gd)、[tree playground](../../tests/tree_impact_playground.tscn) |
 
 ## 敵人與遭遇

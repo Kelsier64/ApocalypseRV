@@ -147,11 +147,11 @@ owner 使用正式 `Chassis.road_speed()` 分類車輛模式：追車時低於 6
 
 ### v10 偏行壓迫與後方車群
 
-`RoutePressureSample` 以有符號道路投影取進度，保留出生點後方負值；只在正常路線或據點實際占地／出入口／步道 12 m 範圍推進 highwater。探索通道使用所屬據點的道路入口進度，整片森林場址 AABB 不提供豁免。`RoutePressureState` 是獨立可保存的真實秒數狀態機：120／100 m 偏行門檻、3 秒確認、8 秒兩隻 Raker、30 秒一隻巨人及每 30 秒 Raker 波次；80／70 m 恢復遲滯、3 秒離場、12 秒退霧和 60 秒刷新冷卻。失敗每 2 秒重試，過期波次不累積，退霧重入保持濃度連續。
+`RoutePressureSample` 以有符號道路投影取進度，保留出生點後方負值；只在正常路線或據點實際占地／出入口／步道 12 m 範圍推進 highwater。探索通道使用所屬據點的道路入口進度，整片森林場址 AABB 不提供豁免。`RoutePressureState` 是獨立可保存的真實秒數狀態機：120／100 m 偏行門檻、3 秒確認、30 秒一隻巨人；80／70 m 恢復遲滯、3 秒離場、12 秒退霧和 60 秒刷新冷卻。巨人生成失敗每 2 秒重試，退霧重入保持濃度連續。舊存檔的 Raker 波次欄位仍可讀取，載入時會捨棄待生成名額。
 
 `DeviationPressure` 隨主世界暫停／staging 停止；整備、死亡與抓取期間不計時。副本及轉場期間釋放戶外霧，返回重新取樣。`WorldClock.effective_visual_weather` 只改顯示用晴天／霧，取自然霧與偏行霧的較濃值；自然 RNG、雨量、原巨人天氣判定和保存不變。新串流霧材質立即同步，低畫質仍有距離霧。
 
-`PressureSpawns` 每名額最多 24 候選，使用已發布且連通的普通／巨人導航、實體地面、完整膠囊碰撞、據點／步道避讓及正常 AI 感知。Raker 20–24 m 且符合實際 3D 偵測距離；巨人 120–160 m，可出現在負區段與深林。合併整個視覺外形判定相機視錐或完整远霧遮蔽，面向玩家但不強制目標。每次插入重驗同世界 Raker 存活上限 8 和原刷新共用的巨人名額。怪物仍屬 `WorldEntities`，沿用原戰鬥、掉落、actor snapshot 及清理；退霧不釋放怪物。
+`PressureSpawns` 每名額最多 24 候選，使用已發布且連通的巨人導航、實體地面、完整膠囊碰撞、據點／步道避讓及正常 AI 感知。巨人距玩家 120–160 m，可出現在負區段與深林。合併整個視覺外形判定相機視錐或完整遠霧遮蔽，面向玩家但不強制目標。每次插入重驗與自然刷新共用的巨人名額。怪物仍屬 `WorldEntities`，沿用原戰鬥、掉落、actor snapshot 及清理；退霧不釋放怪物。
 
 `RearWreckLayout` 在 rear band 導航烘焙前建立最多 28 台既有廢車，以獨立路徑／逐台 RNG 在 X±24、Z10–110 m 隨機位置及朝向，檢查完整旋轉占地、植被、據點、支撐與保存 actor 避讓；保留連續 1.5 m 步行通道。v10 移除車堆、碎石 backing、長翼牆與橫向土堤，避難所本體地形不變；保留原植被 reservation mask，避免改變毀樹 band:index。v7–v9 仍建立原 roadblock 與土堤。
 
@@ -161,7 +161,7 @@ Checkpoint v6 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`�
 
 正式 main_world 與 WorldProfile 使用生成 v19；道路內容使用目前獨立規劃器。Checkpoint v7 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
 
-RoadSpawns.plan(field, band) 使用當前純規劃器，分離釘帶、Raker、油桶人、普通油桶及廢車的數量／位置 RNG。Raker 0–3 隻機率為 65／20／10／5%，逐隻以路面／路邊 40／60% 選點，沒有最小間距；油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。
+RoadSpawns.plan(field, band) 使用當前純規劃器，分離釘帶、油桶人、普通油桶及廢車的數量／位置 RNG。油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。
 
 導航 map／region 同步完成後建立道路怪物，加入 WorldEntities 並尊重 skip_actors。generated_bands 防止回訪、死亡、遠距清理及重載補怪；導航尚未發布時拒絕保存，以免漏掉即將生成的怪物。清理按怪物目前位置與戶外串流錨點前後 450 m 判斷，不以出生 chunk 決定；loaded WALK_IN 保護與其他散落物清理維持。正式 profile 設 chunks_ahead=2，與目前帶共覆蓋至多 450 m，避免前方道路怪物立即被遠距清理；自訂更遠載入窗仍按 450 m 規則清理。普通油桶沿用 Item／WorldActorSnapshot 保存及 generated_bands 防補發；重烘焙、拾取、爆炸、清理或重載皆不重新抽取。實作、測試與未驗證範圍見 [v9 本輪紀錄](docs/validation/2026-10-07-independent-road-spawns.md)，[v8 初版紀錄](docs/validation/2026-10-01-random-road-spawns.md)保留當時結果。
 
@@ -321,7 +321,7 @@ PlayerRagdoll（`player/player_ragdoll.gd`）僅持有暫態物理與死亡鏡�
 
 2026-09-22 的舊怪物 GLB 試接與 Zombie 場景已非現行敵人契約；當時的模型、膠囊縮放及原地測試動畫見[歷史資產說明](assets/models/monster/README.md)與[驗收](docs/validation/2026-09-22-monster-model.md)。Raker 外觀與動作由下述場景負責，油桶人使用獨立場景。
 
-獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，以剩餘近戰距離和玩家的徑向退速決定地面追逐速度，以 6 m/s² 調整並限制於 6.4 m/s。伸手抓向退離中的玩家時，沿鎖定方向跟進 0.24 秒，沿用角色碰撞和抓取接觸檢查。另有獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。主世界一般戶外停靠點沿用 Raker 名額，v9 道路油桶人獨立抽取；既有 v8 道路與 v8／v9 貨物／棚屋依上述油桶人比例替換；敵人數量、選點與原生成 RNG 不變。新訪地堡依上述獨立種類 RNG 選擇 Raker 或油桶人。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
+獨立 `raker.tscn` 使用 v021 左右整手網格／權重／UV 重建、54 根變形骨與三節四指动画、v019 掌向、v018 口腔與 v012 頭部／軀幹加密模型原尺寸 2.18 m，遊戲外觀等比放大 1.20 倍至 2.616 m，含立體深眼窩、凹陷嘴部與內嵌 2K 污垢膚色貼圖；`Raker` 繼承 Monster 的導航／攀爬／RV 支撐，以剩餘近戰距離和玩家的徑向退速決定地面追逐速度，以 6 m/s² 調整並限制於 6.4 m/s。伸手抓向退離中的玩家時，沿鎖定方向跟進 0.24 秒，沿用角色碰撞和抓取接觸檢查。另有獨立追車狂奔（車速 +1.2 m/s、上限 18 m/s、加速 10 m/s²）、對一般玩家抓咬掙脫、對攀爬玩家與結構保留橫掃／專用攻擊、接觸時重新驗證傷害、受傷中斷和死亡布娃娃。低姿態膠囊 1.85 m，跨破口門檻維持低姿態；站起須有淨空。41 段原地骨架動畫由 `raker_visual.gd` 切換，含低姿態受傷／落地／死亡，匯入資源不共用修改。Raker 的新遭遇限於地堡副本。新訪地堡依上述獨立種類 RNG 選擇 Raker 或油桶人。SaveSceneCatalog 登錄其場景，既有 WorldActorSnapshot 保存物種類型與 HP。資產與限制見 [Raker 說明](assets/models/raker/README.md)。
 
 Raker 車撞效果只由 Monster 新接受撞擊後的 hook 觸發，沿用共用傷害／冷卻及 RV 結算。相對法向接近速度 ≥9 m/s（約 32 km/h；Raker.vehicle_knockdown_min_approach_speed 可調）或死亡切入 15 個 PhysicalBone3D；較輕撞擊保留 0.55 秒擊退；本輪驗證見 [門檻調整](docs/validation/2026-10-10-raker-impact-threshold.md)。切換延後至碰撞查詢結束，停用控制膠囊、動畫、頭手 IK、抓咬及 AI；物理骨承接當下姿態和撞擊速度。原始 GLB／54 骨／1.2 倍外觀不改，碰撞尺寸烘入放大倍率並抵銷 body_offset basis，保持物理 scale=1。碰撞層 128／mask 1，只與環境及車體接觸，不做布娃娃肢體互撞；CCD、關節限角及局部慣量維持原專案 60 Hz／Jolt 設定。初始手腳穿過車頭接觸面時，全姿態沿法線最多推出 1.2 m；撞擊點另有短粒子與程序音效。
 
@@ -617,7 +617,7 @@ POI 定義的 `placement_modes` 以 `ROADSIDE`、`OFF_ROAD` 旗標指定放置�
 
 `POIConfig.instantiate_site(site, include_visuals)` 為場景設定提供單一入口；程序外觀及鄰帶導航共用同一個 `site.exterior_plan`，保持碰撞與動態 bounds 一致。`WorldField.sites_near_z` 與 `stops_in_band` 合併大型與小型場址，作為整地、植被、道路裝飾、導航鄰帶幾何、釘帶避讓與 protected_bands 的共用入口；縱向查詢有上限 256 筆的唯讀快取。主題、佈局、位置、美術、物資、敵人各有獨立 RNG。小場景資產的 Visuals 不持有碰撞或 actor 標記，外觀隨機化不改通路。
 
-`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首訪抽取物資與敵人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。越野地堡室內沿用 PoiInstanceManager.saved_instances 與 checkpoint 的 `poi` 狀態；戶外營地等沿用 outdoor_sites／WorldActorSnapshot，不新增專用保存格式。Checkpoint v7 要求 generation_version=19；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [民用避難所檢查](docs/validation/2026-10-22-civilian-shelter.md) · [v15 越野 POI 紀錄](docs/validation/2026-10-22-offroad-pois.md) · [路旁小 POI 歷史驗收](docs/validation/2026-09-26-minor-pois.md)。
+`PoiDefinition.enemy_count_range` 預設為零，非零時驗證 EnemySpawns 中足量且在界內的 Marker3D。WalkInSites 首次載入時抽取物資，貨櫃與棚屋依既有標記和 RNG 生成油桶人，actor 均屬 WorldEntities；加油站既有物資 RNG 不變。越野地堡室內沿用 PoiInstanceManager.saved_instances 與 checkpoint 的 `poi` 狀態；戶外營地等沿用 outdoor_sites／WorldActorSnapshot，不新增專用保存格式。Checkpoint v7 要求 generation_version=19；休眠狀態記錄 definition_id 和 content_version，未知版本拒絕。更多內容與驗收見 [小 POI 規格](world/roadside_pois/README.md) 與 [民用避難所檢查](docs/validation/2026-10-22-civilian-shelter.md) · [v15 越野 POI 紀錄](docs/validation/2026-10-22-offroad-pois.md) · [路旁小 POI 歷史驗收](docs/validation/2026-09-26-minor-pois.md)。
 
 ### v5 加油站保存基礎（v6 沿用）
 

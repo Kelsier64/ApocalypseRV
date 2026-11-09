@@ -1,21 +1,12 @@
 extends RefCounted
 class_name PressureSpawns
-## Extra encounters use the production actors, maps and physical perception.
+## The pressure encounter uses the production giant, navigation and perception.
 ## Every call is bounded; unavailable terrain simply defers the encounter.
-const RAKER_SCENE := preload("res://enemies/raker.tscn")
 const GIANT_SCENE := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 const MAX_CANDIDATES := 24
-const RAKER_CAP := 8
 const NAV_TOLERANCE := 1.5
 const POI_CLEARANCE := 12.0
 const SUPPORT_EPSILON := 0.003
-
-static func raker_count(owner: Node3D) -> int:
-	var count := 0
-	if not is_instance_valid(owner) or not owner.is_inside_tree(): return count
-	for actor in owner.get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if actor is Raker and WorldEntities.same_world(owner, actor) and not actor.is_dead and not actor.is_queued_for_deletion(): count += 1
-	return count
 
 static func giant_present(owner: Node3D) -> bool:
 	if not is_instance_valid(owner) or not owner.is_inside_tree(): return false
@@ -25,10 +16,8 @@ static func giant_present(owner: Node3D) -> bool:
 		if actor is Node3D and WorldEntities.same_world(owner, actor) and not actor.is_queued_for_deletion(): return true
 	return false
 
-static func try_spawn(owner: Node3D, kind: String, sample: Dictionary, rng: RandomNumberGenerator) -> bool:
-	if not is_instance_valid(owner) or not owner.is_inside_tree() or rng == null or kind not in ["raker", "giant"]: return false
-	var giant := kind == "giant"
-	if giant_present(owner) if giant else raker_count(owner) >= RAKER_CAP: return false
+static func try_spawn_giant(owner: Node3D, sample: Dictionary, rng: RandomNumberGenerator) -> bool:
+	if not is_instance_valid(owner) or not owner.is_inside_tree() or rng == null or giant_present(owner): return false
 	var generator := owner.get_node_or_null("WorldGenerator")
 	var player := sample.get("target", owner.get_node_or_null("Player")) as Node3D
 	if generator == null or generator.get("field") == null or not WorldEntities.same_world(owner, player): return false
@@ -37,12 +26,11 @@ static func try_spawn(owner: Node3D, kind: String, sample: Dictionary, rng: Rand
 	var danger: Vector3 = sample.get("danger_direction", Vector3.ZERO)
 	danger = danger.slide(Vector3.UP).normalized()
 	if not anchor.is_finite() or danger.length_squared() < .5: return false
-	var map: RID = generator.giant_navigation_map if giant else owner.get_world_3d().navigation_map
+	var map: RID = generator.giant_navigation_map
 	if not map.is_valid() or NavigationServer3D.map_get_iteration_id(map) == 0: return false
 	var camera := owner.get_viewport().get_camera_3d()
 	if camera == null: return false
-	var scene: PackedScene = GIANT_SCENE if giant else RAKER_SCENE
-	var template := scene.instantiate() as Monster
+	var template := GIANT_SCENE.instantiate() as SlenderSpeaker
 	var collision := template.get_node("CollisionShape") as CollisionShape3D
 	var capsule := collision.shape as CapsuleShape3D
 	var local_bounds := mesh_bounds(template)
@@ -53,18 +41,18 @@ static func try_spawn(owner: Node3D, kind: String, sample: Dictionary, rng: Rand
 	var space := owner.get_world_3d().direct_space_state
 	for attempt in MAX_CANDIDATES:
 		var direction := danger.rotated(Vector3.UP, rng.randf_range(-deg_to_rad(75.0), deg_to_rad(75.0)))
-		var candidate := anchor + direction * rng.randf_range(120.0 if giant else 20.0, 160.0 if giant else 24.0)
+		var candidate := anchor + direction * rng.randf_range(120.0, 160.0)
 		candidate.y = field.height_at(candidate.x, candidate.z)
-		if not static_valid(field, candidate, capsule.radius) or not _band_ready(generator, candidate, giant): continue
+		if not static_valid(field, candidate, capsule.radius) or not _band_ready(generator, candidate): continue
 		var projected := NavigationServer3D.map_get_closest_point(map, candidate)
 		if planar_distance(projected, candidate) > NAV_TOLERANCE or not static_valid(field, projected, capsule.radius): continue
-		if not _band_ready(generator, projected, giant) or (projected - anchor).slide(Vector3.UP).dot(danger) <= 0.0: continue
+		if not _band_ready(generator, projected) or (projected - anchor).slide(Vector3.UP).dot(danger) <= 0.0: continue
 		var ground := support(space, projected, capsule.radius, foot)
 		if ground.is_empty(): continue
 		var point: Vector3 = ground.point
 		var distance := planar_distance(point, anchor)
-		if distance < (120.0 if giant else 20.0) or distance > (160.0 if giant else 24.0): continue
-		if not _spacing(owner, point, 12.0 if giant else 3.0): continue
+		if distance < 120.0 or distance > 160.0: continue
+		if not _spacing(owner, point, 12.0): continue
 		var facing := (player.global_position - point).slide(Vector3.UP)
 		if facing.length_squared() < .001: continue
 		var transform := Transform3D(Basis.looking_at(facing.normalized(), Vector3.UP), point)
@@ -76,22 +64,17 @@ static func try_spawn(owner: Node3D, kind: String, sample: Dictionary, rng: Rand
 		query.margin = 0.0
 		if not space.intersect_shape(query, 1).is_empty(): continue
 		if not connected_path(map, projected, destinations): continue
-		if not _potential_sight(space, point, targets, giant): continue
+		if not _potential_sight(space, point, targets): continue
 		# No asynchronous gap between the shared slot check and insertion.
-		if giant_present(owner) if giant else raker_count(owner) >= RAKER_CAP: break
-		var actor := scene.instantiate() as Monster
+		if giant_present(owner): break
+		var actor := GIANT_SCENE.instantiate() as SlenderSpeaker
 		var container := WorldEntities.get_container(owner)
 		actor.transform = container.global_transform.affine_inverse() * transform
-		if giant: actor.set_giant_navigation_map(map)
+		actor.set_giant_navigation_map(map)
 		container.add_child(actor)
-		var sensed := false
-		if giant:
-			sensed = actor.can_see_player(player)
-			for target in targets:
-				if target is Chassis and actor._visible_vehicle_point(target) != Vector3.INF: sensed = true
-		else:
-			for target in targets:
-				if point.distance_to(target.global_position) <= actor.detection_range and actor._has_attack_line_of_sight_to_target(target): sensed = true
+		var sensed := actor.can_see_player(player)
+		for target in targets:
+			if target is Chassis and actor._visible_vehicle_point(target) != Vector3.INF: sensed = true
 		if not sensed:
 			actor.free()
 			continue
@@ -136,13 +119,13 @@ static func _site_clearance(point: Vector3, site: Dictionary, radius: float) -> 
 		if RoutePressureSample._segment_distance(point, road.origin, frame.origin) <= clearance or RoutePressureSample._segment_distance(point, frame.origin, building.origin) <= clearance: return true
 	return false
 
-static func _band_ready(generator: Node, point: Vector3, giant: bool) -> bool:
+static func _band_ready(generator: Node, point: Vector3) -> bool:
 	var band := floori(-point.z / generator.field.profile.chunk_length)
 	for entry in generator.active_chunks:
 		if int(entry.index) != band: continue
 		var chunk: Node = entry.node
-		var region: NavigationRegion3D = chunk.giant_navigation if giant else chunk.navigation
-		return is_instance_valid(chunk) and chunk.navigation_ready and (not giant or chunk.giant_navigation_ready) and region != null and region.enabled and NavigationServer3D.region_get_iteration_id(region.get_region_rid()) > 0
+		var region: NavigationRegion3D = chunk.giant_navigation
+		return is_instance_valid(chunk) and chunk.navigation_ready and chunk.giant_navigation_ready and region != null and region.enabled and NavigationServer3D.region_get_iteration_id(region.get_region_rid()) > 0
 	return false
 
 static func support(space: PhysicsDirectSpaceState3D, point: Vector3, radius: float, foot: float) -> Dictionary:
@@ -253,10 +236,9 @@ static func _spacing(owner: Node3D, point: Vector3, minimum: float) -> bool:
 		if actor is Node3D and WorldEntities.same_world(owner, actor) and not actor.is_queued_for_deletion() and planar_distance(actor.global_position, point) < minimum: return false
 	return true
 
-static func _potential_sight(space: PhysicsDirectSpaceState3D, point: Vector3, targets: Array[Node3D], giant: bool) -> bool:
-	var origin := point + Vector3.UP * (14.0 if giant else 1.0)
+static func _potential_sight(space: PhysicsDirectSpaceState3D, point: Vector3, targets: Array[Node3D]) -> bool:
+	var origin := point + Vector3.UP * 14.0
 	for target in targets:
-		if not giant and point.distance_to(target.global_position) > 25.0: continue
 		var ray := PhysicsRayQueryParameters3D.create(origin, target.global_position + Vector3.UP, 0xFFFFFFFF)
 		ray.hit_from_inside = true
 		var hit := space.intersect_ray(ray)
