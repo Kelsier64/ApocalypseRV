@@ -52,7 +52,7 @@ func interact_hold(player: Node3D) -> void:
 	seat_camera.current = true
 
 	if rv.has_method("set_driving_state"):
-		rv.set_driving_state(true)
+		rv.set_driving_state(true, player)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not current_driver or current_driver.is_grabbed() or not current_driver.can_drive() or current_driver.is_gameplay_input_blocked():

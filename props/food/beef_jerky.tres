@@ -12,4 +12,5 @@ is_large = false
 requires_rv_connection = false
 scrap_yields = {}
 nutrition = 30.0
+san_recovery = 8.0
 eat_seconds = 2.0

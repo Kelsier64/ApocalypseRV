@@ -49,6 +49,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
 var survival := PlayerSurvival.new()
+var san_effects := PlayerSanEffects.new()
 var consumables := PlayerConsumables.new()
 var body_state := PlayerBodyState.new()
 var standing_collision_shape: Shape3D
@@ -333,10 +334,12 @@ func _equip_active_slot():
 func _ready():
 	standing_collision_shape = body_collision_shape.shape.duplicate()
 	standing_collision_transform = body_collision_shape.transform
+	add_child(san_effects)
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
 	grab_started.connect(consumables.cancel)
+	grab_started.connect(san_effects.reset)
 	add_child(weapon)
 	grab_started.connect(weapon.cancel_actions)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
@@ -380,6 +383,7 @@ func can_open_settings() -> bool:
 func set_settings_open(value: bool) -> void:
 	if settings_open == value: return
 	if value:
+		san_effects.reset()
 		consumables.cancel()
 		weapon.cancel_actions()
 		cancel_equipment_placement()
@@ -473,6 +477,7 @@ func enter_ui_mode() -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
+	san_effects.reset()
 	consumables.cancel()
 	if is_cheat_flying(): velocity = Vector3.ZERO
 	weapon.cancel_actions()
@@ -488,6 +493,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	san_effects.reset()
 	consumables.cancel()
 	weapon.cancel_actions()
 	cancel_equipment_placement()
@@ -929,6 +935,8 @@ func _process_normal_movement(delta: float) -> void:
 
 	if input_dir.length_squared() > 0.0:
 		input_dir = input_dir.normalized()
+	if input_allowed:
+		input_dir = san_effects.walk_direction(input_dir)
 
 	var sprinting := _can_sprint(input_dir != Vector2.ZERO)
 	_update_stamina(delta, sprinting)
@@ -936,7 +944,7 @@ func _process_normal_movement(delta: float) -> void:
 	if is_crawling(): movement_speed = crawl_speed()
 	elif is_crouching(): movement_speed = CROUCH_SPEED
 	if crawl_transition_remaining > 0.0: movement_speed = 0.0
-	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
+	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized() * input_dir.length()
 	if direction:
 		velocity.x = direction.x * movement_speed
 		velocity.z = direction.z * movement_speed
@@ -1265,6 +1273,24 @@ func drain_san(amount: float) -> void:
 	survival.drain_san(amount)
 	_update_san_bar()
 
+func recover_san(amount: float) -> void:
+	survival.recover_san(amount)
+	if survival.san >= PlayerSanEffects.THRESHOLD: san_effects.reset()
+	_update_san_bar()
+
+func hallucinated_steering(turn: float) -> float:
+	return san_effects.steering(turn)
+
+func _advance_san_effects(delta: float) -> void:
+	var control := PlayerSanEffects.InputMode.NONE
+	if survival.san < PlayerSanEffects.THRESHOLD and PlayerSurvival.simulation_active(self) and not is_gameplay_input_blocked():
+		var mode := get_player_mode()
+		if mode == PlayerMode.SEATED:
+			control = PlayerSanEffects.InputMode.DRIVE
+		elif mode == PlayerMode.NORMAL and locomotion_state == LocomotionState.NORMAL:
+			control = PlayerSanEffects.InputMode.WALK
+	san_effects.advance(delta, survival.san, control)
+
 func _advance_survival(delta: float) -> void:
 	if PlayerSurvival.simulation_active(self):
 		var ticks := survival.advance(delta)
@@ -1284,6 +1310,7 @@ func _physics_process(delta):
 	_update_food_bar()
 	# Cover restored/direct inventory changes before applying any carrier motion.
 	_abort_climb_if_holding_large_item()
+	_advance_san_effects(delta)
 	if not Input.is_action_pressed("move_forward") and not Input.is_action_pressed("move_back"):
 		_large_item_climb_feedback_shown = false
 	_advance_flashlight(delta)
@@ -1393,6 +1420,7 @@ func _update_health_bar():
 
 func _player_die():
 	if is_player_dead: return
+	san_effects.reset()
 	consumables.cancel()
 	weapon.cancel_actions()
 	_death_corpse_released = false

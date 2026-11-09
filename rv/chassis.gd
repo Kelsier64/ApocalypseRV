@@ -38,6 +38,7 @@ var _monster_impacts: Dictionary = {}
 var _monster_impact_times: Dictionary = {}
 var _monster_explosion_impacts: Dictionary = {}
 @export var is_player_driving: bool = false
+var _player_driver: Node3D
 @export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
 
 # --- WHEEL SLOT SYSTEM ---
@@ -535,8 +536,9 @@ func _sample_suspension_impact() -> void:
 	_impact_velocity = state.linear_velocity
 	_impact_angular_velocity = state.angular_velocity
 
-func set_driving_state(state: bool) -> void:
+func set_driving_state(state: bool, driver: Node3D = null) -> void:
 	is_player_driving = state
+	_player_driver = driver if state else null
 
 func consume_fuel(amount: float) -> bool:
 	if amount < 0.0 or not is_finite(amount):
@@ -641,7 +643,8 @@ func _physics_process(delta: float) -> void:
 		throttle = Input.get_action_strength("move_forward")
 		braking_input = Input.get_action_strength("move_back")
 		turn = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
-	if allow_test_controls and not control_override.is_empty():
+	var scripted_controls := allow_test_controls and not control_override.is_empty()
+	if scripted_controls:
 		throttle = control_override.get("throttle", 0.0)
 		braking_input = control_override.get("brake", 0.0)
 		turn = control_override.get("steering", 0.0)
@@ -649,6 +652,8 @@ func _physics_process(delta: float) -> void:
 		throttle = 0.0
 		braking_input = 0.0
 		turn = 0.0
+	elif is_player_driving and not scripted_controls and is_instance_valid(_player_driver) and _player_driver.has_method("hallucinated_steering"):
+		turn = _player_driver.hallucinated_steering(turn)
 	var target_throttle := clampf(throttle, 0.0, 1.0) if gear != 0 and not handbrake and not drive_blocked() and braking_input == 0.0 else 0.0
 	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
 	throttle_input = move_toward(throttle_input, target_throttle, delta / maxf(0.01, throttle_response))

@@ -175,6 +175,20 @@ func _run() -> void:
 	var seat: Item = rv.get_node("DriverSeat")
 	seat.interact_hold(player)
 	check(seat.current_driver == player, "Broken engine still permits driving controls and seat access")
+	player.survival.san = 0.0
+	player._advance_san_effects(.01)
+	player.san_effects._misdirection_wait = .0001
+	player._advance_san_effects(.01)
+	Input.action_press("move_left")
+	Input.action_press("move_back")
+	rv._physics_process(1.0 / 60.0)
+	check(rv.steering < 0.0 and rv.brake_input > 0.0, "The seated driver's hallucination reverses steering and preserves the brake command")
+	Input.action_release("move_left")
+	Input.action_release("move_back")
+	player.recover_san(20.0)
+	rv.steering = 0.0
+	rv.brake_input = 0.0
+	player.survival.reset()
 	seat.exit_seat()
 	player.set_physics_process(false)
 	check(rv.get_node("ItemBox").can_operate() and rv.current_power > 0, "Broken engine preserves warehouse and battery")

@@ -208,6 +208,58 @@ func check_survival() -> void:
 	start.free()
 	manager.free()
 
+func check_san_effects() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var walk := PlayerSanEffects.InputMode.WALK
+	var drive := PlayerSanEffects.InputMode.DRIVE
+	effects._rng.seed = 7
+	actor.survival.san = 20.0
+	actor._advance_san_effects(.01)
+	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "SAN at exactly 20 leaves vision and movement clear")
+	actor.survival.san = 19.99
+	actor._advance_san_effects(.01)
+	effects._blink_wait = .001
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Blink can occur independently of directional disruption")
+	actor._advance_san_effects(.5)
+	check(not effects._overlay.visible, "Blink clears quickly")
+	effects._blink_wait = .001
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible, "Blink can recur while SAN stays low")
+	actor.settings_open = true
+	actor._advance_san_effects(.01)
+	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Settings clears the current SAN effects")
+	actor.settings_open = false
+
+	effects.advance(.01, 0.0, walk)
+	for sample in 20:
+		effects.advance(.02, 0.0, walk)
+		effects.walk_direction(Vector2.LEFT)
+	effects._delay_wait = .0001
+	effects.advance(.01, 0.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "Delayed movement briefly uses the earlier direction")
+	effects.advance(.26, 0.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Delayed movement delivers the new direction within the brief delay")
+	effects.advance(.01, 20.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Recovering to 20 immediately clears delayed input")
+
+	effects.advance(.01, -5.0, walk)
+	effects._misdirection_wait = .0001
+	effects.advance(.01, -5.0, walk)
+	var wrong_direction := effects.walk_direction(Vector2.UP)
+	check(is_zero_approx(wrong_direction.y) and is_equal_approx(absf(wrong_direction.x), 1.0), "Low SAN can turn a walking command into a sidestep")
+	check(not effects.walk_direction(Vector2.ZERO).is_zero_approx(), "Low SAN can produce an idle sidestep")
+	effects.advance(.01, -5.0, drive)
+	check(effects.steering(.6) == .6, "Walking disruption does not carry over to steering")
+	effects._misdirection_wait = .0001
+	effects.advance(.01, -5.0, drive)
+	check(is_equal_approx(effects.steering(.6), -.6), "Low SAN can briefly invert steering")
+	check(is_equal_approx(absf(effects.steering(0.0)), .45), "Low SAN can briefly nudge idle steering")
+	effects.advance(.01, -5.0, PlayerSanEffects.InputMode.NONE)
+	check(effects.steering(.6) == .6 and effects.steering(0.0) == 0.0, "Leaving active controls clears the steering episode")
+	effects.reset()
+	actor.survival.reset()
+
 func check_eating() -> void:
 	clear_bag()
 	var path: String = FoodCatalog.SCENES[0]
@@ -304,6 +356,47 @@ func check_eating() -> void:
 		Input.action_release("sprint")
 	actor.current_player_health = 100.0
 	actor.current_stamina = 100.0
+	actor.survival.reset()
+	clear_bag()
+
+func check_san_food() -> void:
+	var energy_bar := "res://props/food/energy_bar.tscn"
+	var jerky := "res://props/food/beef_jerky.tscn"
+	var canned := "res://props/food/canned_food.tscn"
+	actor.survival.san = 13.0
+	actor.add_item("Energy bar", false, energy_bar)
+	food_button(false)
+	food_button(true)
+	check(actor.consumables.eating, "Energy bar can be eaten at full hunger when SAN is missing")
+	actor.consumables.advance(actor, 1.0)
+	food_button(false)
+	check(actor.survival.san == 13.0 and actor.inventory.items.size() == 1, "Interrupted snack leaves SAN and the inventory unchanged")
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 25.0 and actor.survival.hunger == 100.0 and actor.inventory.items.is_empty(), "Energy bar restores 12 SAN on completion at full hunger")
+	actor.add_item("Beef jerky", false, jerky)
+	actor.survival.san = -5.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 3.0 and actor.inventory.items.is_empty(), "Jerky restores 8 SAN from below zero")
+	actor.add_item("Energy bar", false, energy_bar)
+	actor.survival.san = 99.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 100.0 and actor.inventory.items.is_empty(), "Snack recovery caps SAN at 100")
+	actor.add_item("Canned food", false, canned)
+	actor.survival.san = 13.0
+	food_button(false)
+	food_button(true)
+	check(not actor.consumables.eating, "Missing SAN alone does not allow eating canned food")
+	actor.survival.hunger = 20.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 13.0 and actor.survival.hunger > 20.0 and actor.inventory.items.is_empty(), "Canned food still restores hunger only")
+	food_button(false)
 	actor.survival.reset()
 	clear_bag()
 
@@ -1041,7 +1134,9 @@ func run() -> void:
 	wall.position = Vector3(0, 2, 0)
 	await steps()
 	check_survival()
+	check_san_effects()
 	check_eating()
+	check_san_food()
 	await check_compass()
 	await check_hud_toggle()
 	await check_new_grants()

@@ -60,6 +60,10 @@ func drain_san(amount: float) -> void:
 	var remaining := san - amount
 	if is_finite(remaining): san = remaining
 
+func recover_san(amount: float) -> void:
+	if not is_finite(amount) or amount <= 0.0: return
+	san = minf(MAX_SAN, san + amount)
+
 static func simulation_active(actor: Node) -> bool:
 	if not is_instance_valid(actor) or not actor.is_inside_tree() or actor.get("is_player_dead") == true: return false
 	# Interiors remain descendants of their owning PoiInstances/world. Inspect
