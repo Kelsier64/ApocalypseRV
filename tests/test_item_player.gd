@@ -218,12 +218,13 @@ func check_san_effects() -> void:
 	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "SAN at exactly 20 leaves vision and movement clear")
 	actor.survival.san = 19.99
 	actor._advance_san_effects(.01)
-	effects._blink_wait = .001
+	effects._blink_wait = 0.0
 	actor._advance_san_effects(.01)
 	check(effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Blink can occur independently of directional disruption")
-	actor._advance_san_effects(.5)
+	effects._blink_wait = 1.0
+	actor._advance_san_effects(effects._blink_duration + .01)
 	check(not effects._overlay.visible, "Blink clears quickly")
-	effects._blink_wait = .001
+	effects._blink_wait = 0.0
 	actor._advance_san_effects(.01)
 	check(effects._overlay.visible, "Blink can recur while SAN stays low")
 	actor.settings_open = true
@@ -316,6 +317,50 @@ func check_san_effects() -> void:
 	check(effects.driving_input(.6, .4).is_equal_approx(Vector2(.6, .4)), "Leaving active controls clears the driving episode")
 	effects.reset()
 	actor.survival.reset()
+
+func check_medium_san_vision() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var walk := PlayerSanEffects.InputMode.WALK
+	var previous_blink := 0.0
+	for san in [19.0, 0.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._rng.seed = 23
+		effects._long_blink_wait = 1.0
+		effects._vision_wait = 1.0
+		effects._blink_wait = 0.0
+		effects.advance(.01, san, walk)
+		check(effects._overlay.visible and not effects._long_blink and effects._blink_duration > previous_blink, "A matched ordinary blink lasts longer at lower SAN %s" % san)
+		previous_blink = effects._blink_duration
+
+	effects.reset()
+	effects.advance(.01, 0.01, walk)
+	effects._blink_wait = 1.0
+	effects._long_blink_wait = 0.0
+	effects._vision_wait = 0.0
+	effects.advance(.01, 0.01, walk)
+	check(not effects._long_blink and not effects._vision_overlay.is_visible_in_tree(), "Long closure and vision distortion are disabled above zero SAN")
+	effects.advance(.01, 0.0, walk)
+	effects._long_blink_wait = 0.0
+	effects._vision_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	check(effects._long_blink and effects._overlay.visible and effects._vision_overlay.is_visible_in_tree(), "Long closure and vision distortion can overlap at zero SAN")
+	check(effects._blink_duration > previous_blink and effects._vision_duration > 0.0 and effects._vision_strength > 0.0, "Medium SAN draws a longer closure and a visible distortion episode")
+	var overlap_step := minf(effects._blink_duration, effects._vision_duration) * .35
+	effects.advance(overlap_step, 0.0, walk)
+	var vision_material := effects._vision_overlay.material as ShaderMaterial
+	check(float(vision_material.get_shader_parameter("amount")) > 0.0, "Vision distortion has a nonzero shader amount during overlap")
+	effects.advance(effects._blink_duration * .45 - overlap_step, 0.0, walk)
+	var closure := float(effects._eyelids.get_shader_parameter("closure"))
+	check(effects._long_blink and closure > .9, "The middle of a long blink keeps the eyes nearly closed")
+	effects._blink_wait = 1.0
+	effects.advance(.01, 0.01, walk)
+	check(not effects._long_blink and not effects._overlay.visible and not effects._vision_overlay.is_visible_in_tree(), "Returning above zero clears both medium SAN effects")
+	effects._blink_wait = 0.0
+	effects.advance(.01, 0.01, walk)
+	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible after medium effects clear")
+	effects.advance(.01, 20.0, walk)
+	check(not effects._overlay.visible and not effects._vision_overlay.is_visible_in_tree(), "Recovering to 20 clears all visual effects")
 
 func check_eating() -> void:
 	clear_bag()
@@ -1192,6 +1237,7 @@ func run() -> void:
 	await steps()
 	check_survival()
 	check_san_effects()
+	check_medium_san_vision()
 	check_eating()
 	check_san_food()
 	await check_compass()

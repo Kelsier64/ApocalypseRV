@@ -5,16 +5,28 @@ class_name PlayerSanEffects
 enum InputMode { NONE, WALK, DRIVE }
 
 const THRESHOLD := 20.0
+const MEDIUM_THRESHOLD := 0.0
 const DELAY_RATE := 0.22
 const MISDIRECTION_RATE := 0.27
+const LONG_BLINK_RATE := 0.15
+const VISION_RATE := 0.22
+const VISION_TINTS := [Vector3(0.80, 1.10, 0.91), Vector3(0.84, 0.91, 1.23), Vector3(1.18, 0.82, 1.04)]
 
 var _rng := RandomNumberGenerator.new()
 var _control := InputMode.NONE
 var _overlay: ColorRect
 var _eyelids := ShaderMaterial.new()
-var _blink_wait := 0.0
+var _blink_wait := -1.0
 var _blink_duration := 1.0
 var _blink_remaining := 0.0
+var _long_blink_wait := -1.0
+var _long_blink := false
+var _vision_wait := -1.0
+var _vision_duration := 1.0
+var _vision_remaining := 0.0
+var _vision_strength := 0.0
+var _vision_overlay: ColorRect
+var _vision_grade := ShaderMaterial.new()
 var _delay_wait := 0.0
 var _delay_remaining := 0.0
 var _delay_seconds := 0.0
@@ -32,6 +44,18 @@ var _side := 1.0
 
 func _ready() -> void:
 	layer = 1
+	_vision_overlay = ColorRect.new()
+	_vision_overlay.mouse_filter = ColorRect.MOUSE_FILTER_IGNORE
+	_vision_overlay.set_anchors_and_offsets_preset(ColorRect.PRESET_FULL_RECT)
+	_vision_grade.shader = preload("res://player/san_vision.gdshader")
+	_vision_overlay.material = _vision_grade
+	_vision_overlay.hide()
+	add_child(_vision_overlay)
+	# Refresh the screen texture after the video grade and before sampling it.
+	var screen_copy := BackBufferCopy.new()
+	screen_copy.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
+	screen_copy.show_behind_parent = true
+	_vision_overlay.add_child(screen_copy)
 	_overlay = ColorRect.new()
 	_overlay.mouse_filter = ColorRect.MOUSE_FILTER_IGNORE
 	_overlay.set_anchors_and_offsets_preset(ColorRect.PRESET_FULL_RECT)
@@ -50,21 +74,61 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	# Use the full deficit so hostile SAN loss below zero still raises the rate.
 	var deficit := THRESHOLD - san
 	var severity := deficit / (THRESHOLD + deficit)
-	_advance_blink(delta, severity)
+	var medium := san <= MEDIUM_THRESHOLD
+	if not medium: _clear_medium_vision()
+	_advance_blink(delta, severity, medium)
+	if medium: _advance_vision(delta, severity)
 	_advance_direction(delta, severity)
 
-func _advance_blink(delta: float, severity: float) -> void:
-	if _blink_wait <= 0.0: _blink_wait = _rng.randf_range(0.72, 1.28)
-	_blink_wait -= delta / lerpf(6.0, 0.9, severity)
+func _advance_blink(delta: float, severity: float, medium: bool) -> void:
+	if _blink_wait < 0.0: _blink_wait = _rng.randf_range(0.55, 1.45)
+	if medium and _long_blink_wait < 0.0: _long_blink_wait = 0.28 + 0.72 * _roll_wait()
+	var open_time := maxf(0.0, delta - _blink_remaining)
 	_blink_remaining = maxf(0.0, _blink_remaining - delta)
-	if _blink_wait <= 0.0:
-		_blink_wait = _rng.randf_range(0.72, 1.28)
-		_blink_duration = _rng.randf_range(0.12, 0.22)
-		_blink_remaining = _blink_duration
-	var progress := 1.0 - _blink_remaining / _blink_duration
-	var closure := smoothstep(0.0, 0.32, progress) * (1.0 - smoothstep(0.48, 1.0, progress))
+	if _blink_remaining == 0.0:
+		_long_blink = false
+		_blink_wait = maxf(0.0, _blink_wait - open_time / lerpf(6.0, 0.9, severity))
+		if medium: _long_blink_wait -= open_time * severity * LONG_BLINK_RATE
+		if medium and _long_blink_wait <= 0.0:
+			_long_blink = true
+			_long_blink_wait = 0.28 + 0.72 * _roll_wait()
+			_blink_duration = lerpf(1.3, 4.2, _sample_episode(severity))
+			_blink_remaining = _blink_duration
+		elif _blink_wait == 0.0:
+			_blink_wait = _rng.randf_range(0.55, 1.45)
+			_blink_duration = lerpf(0.12, 0.85, _sample_episode(severity))
+			_blink_remaining = _blink_duration
+	var elapsed := _blink_duration - _blink_remaining
+	var close_time := 0.18 if _long_blink else _blink_duration * 0.32
+	var open_duration := 0.38 if _long_blink else _blink_duration * 0.52
+	var closure := smoothstep(0.0, close_time, elapsed) * smoothstep(0.0, open_duration, _blink_remaining)
 	_eyelids.set_shader_parameter("closure", closure)
 	_overlay.visible = _blink_remaining > 0.0
+
+func _advance_vision(delta: float, severity: float) -> void:
+	if _vision_wait < 0.0: _vision_wait = _roll_wait()
+	var idle_time := maxf(0.0, delta - _vision_remaining)
+	_vision_remaining = maxf(0.0, _vision_remaining - delta)
+	if _vision_remaining == 0.0:
+		_vision_wait -= idle_time * severity * VISION_RATE
+		if _vision_wait <= 0.0:
+			_vision_wait = _roll_wait()
+			_vision_duration = lerpf(2.5, 6.5, _sample_episode(severity))
+			_vision_remaining = _vision_duration
+			_vision_strength = lerpf(0.38, 1.0, _sample_episode(severity))
+			_vision_grade.set_shader_parameter("tint", VISION_TINTS[_rng.randi_range(0, VISION_TINTS.size() - 1)])
+	var progress := 1.0 - _vision_remaining / _vision_duration
+	var envelope := smoothstep(0.0, 0.20, progress) * (1.0 - smoothstep(0.65, 1.0, progress))
+	_vision_grade.set_shader_parameter("amount", envelope * _vision_strength)
+	_vision_overlay.visible = _vision_remaining > 0.0
+
+func _clear_medium_vision() -> void:
+	if _long_blink: _blink_remaining = 0.0
+	_long_blink = false
+	_long_blink_wait = -1.0
+	_vision_wait = -1.0
+	_vision_remaining = 0.0
+	if _vision_overlay != null: _vision_overlay.hide()
 
 func _advance_direction(delta: float, severity: float) -> void:
 	# Exponential wait budgets give each eligible effect a rate set by the
@@ -145,9 +209,10 @@ func _delay_input(input: Vector2) -> Vector2:
 
 func reset() -> void:
 	_control = InputMode.NONE
-	_blink_wait = 0.0
+	_blink_wait = -1.0
 	_blink_remaining = 0.0
 	if _overlay != null: _overlay.hide()
+	_clear_medium_vision()
 	_reset_direction()
 
 func _reset_direction() -> void:
