@@ -8,7 +8,9 @@ func _ready() -> void:
 	super._ready()
 	if fresh_start:
 		# The first item goes into the active slot and is equipped by Player.
-		get_node("Player").add_item(COMPASS_DEFINITION.display_name, COMPASS_DEFINITION.is_large, COMPASS_SCENE)
+		var player := get_node("Player")
+		player.add_item(COMPASS_DEFINITION.display_name, COMPASS_DEFINITION.is_large, COMPASS_SCENE)
+		player.add_item(ItemNames.FLASHLIGHT, false, "res://props/flashlight.tscn")
 	var rv: Chassis = get_node("NewRv/Chassis")
 	rv.unlimited_materials = true
 	rv.unlimited_fuel = true
