@@ -275,7 +275,8 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "Peripheral fixture places the chest in frame outside the center")
 	apparition._physics_process(1.0 / 60.0)
 	var departure := apparition.global_position
-	_check(departure.z > confirmed_position.z and departure.distance_to(confirmed_position) < 0.1 and player.survival.san == san, "The apparition advances in peripheral view without teleporting or draining SAN")
+	var peripheral_stride := departure.z - confirmed_position.z
+	_check(is_equal_approx(peripheral_stride, Apparition.PURSUIT_SPEED / 60.0) and player.survival.san == san, "The apparition advances at pursuit speed in peripheral view without teleporting or draining SAN")
 	camera.look_at(chest)
 	camera.rotate_y(PI)
 	apparition._physics_process(1.0 / 60.0)
@@ -285,7 +286,8 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	_check(apparition._body_outside_view(destination, camera.get_frustum()) and not camera.is_position_in_frustum(chest), "The teleport cannot introduce the apparition into the frame")
 	apparition._physics_process(0.1)
 	var unseen_position := apparition.global_position
-	_check(unseen_position.length() < destination.length() and unseen_position.distance_to(destination) < 0.3 and player.survival.san == san, "The apparition advances out of view without another teleport or SAN drain")
+	var unseen_stride := (unseen_position - destination).slide(Vector3.UP).length()
+	_check(unseen_position.length() < destination.length() and is_equal_approx(unseen_stride, Apparition.PURSUIT_SPEED * 0.1) and player.survival.san == san, "The apparition advances at pursuit speed out of view without another teleport or SAN drain")
 	camera.look_at(visual.gaze_points()[0])
 	distance = camera.global_position.distance_to(unseen_position + Apparition.CHEST)
 	apparition._physics_process(0.1)
