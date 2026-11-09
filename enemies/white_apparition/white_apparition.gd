@@ -6,8 +6,8 @@ signal threshold_reached(player: Node3D)
 const GazeTracker := preload("res://enemies/white_apparition/gaze_tracker.gd")
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
 const SPAWN_FRAME := Rect2(0.05, 0.05, 0.90, 0.90)
-const CHEST := Vector3(0.0, 1.55, 0.0)
-const HEAD := Vector3(0.0, 1.99, 0.0)
+const CHEST := Vector3(0.0, 2.00, 0.0)
+const HEAD := Vector3(0.0, 2.45, 0.0)
 const MAX_GAZE_DISTANCE := 40.0
 const MIN_SPAWN_DISTANCE := 10.0
 const MAX_SPAWN_DISTANCE := 22.0
@@ -21,7 +21,7 @@ const COOLDOWN := 90.0
 const MIN_PRESENCE := 0.7
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const CLEARANCE_RADIUS := 0.44
-const CLEARANCE_HEIGHT := 2.25
+const CLEARANCE_HEIGHT := 2.75
 
 enum Phase { HIDDEN, VISIBLE, CONFIRMED, FADING, COOLDOWN }
 
