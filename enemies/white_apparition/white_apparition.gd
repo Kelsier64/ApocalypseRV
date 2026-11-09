@@ -2,9 +2,10 @@ extends Node3D
 class_name WhiteApparition
 ## Transient outdoor encounter. The player, camera, and apparition share a World3D.
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
-const SPAWN_FRAME := Rect2(0.05, 0.05, 0.90, 0.90)
 const CHEST := Vector3(0.0, 2.00, 0.0)
 const HEAD := Vector3(0.0, 2.45, 0.0)
+const BODY_CENTER := Vector3(0.0, 1.3, 0.0)
+const BODY_VIEW_RADIUS := 2.5
 const NEAR_SPAWN_MIN := 15.0
 const NEAR_SPAWN_MAX := 25.0
 const DISTANT_SPAWN_MIN := 40.0
@@ -137,8 +138,10 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 		return
 
 	if _reposition_armed and not covered and not centered:
+		var frustum := camera.get_frustum()
+		if not _body_outside_view(global_position, frustum): return
 		_reposition_armed = false
-		var point := _find_reposition(camera, chest, head, seen)
+		var point := _find_reposition(camera, frustum)
 		if point.is_finite():
 			var observer := camera.get_camera_transform().origin
 			global_position = point
@@ -158,6 +161,13 @@ func _point_in_frame(camera: Camera3D, point: Vector3, frame: Rect2) -> bool:
 	if viewport_rect.size.x <= 0.0 or viewport_rect.size.y <= 0.0: return false
 	return frame.has_point((camera.unproject_position(point) - viewport_rect.position) / viewport_rect.size)
 
+func _body_outside_view(point: Vector3, frustum: Array[Plane]) -> bool:
+	# Leave room for the whole animated silhouette and its echoes at screen edges.
+	var center := point + BODY_CENTER
+	for plane in frustum:
+		if plane.distance_to(center) > BODY_VIEW_RADIUS: return true
+	return false
+
 func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
 	var space := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(camera.get_camera_transform().origin, point)
@@ -173,6 +183,7 @@ func _try_emerge(camera: Camera3D) -> bool:
 	global_position = point
 	var observer := camera.get_camera_transform().origin
 	look_at(Vector3(observer.x, point.y, observer.z))
+	reset_physics_interpolation()
 	_appearance_origin = point
 	_phase = Phase.VISIBLE
 	_time_left = _rng.randf_range(6.0, 10.0)
@@ -181,38 +192,30 @@ func _try_emerge(camera: Camera3D) -> bool:
 	return true
 
 func _find_emergence(camera: Camera3D, distant: bool) -> Vector3:
-	var min_depth := DISTANT_SPAWN_MIN if distant else NEAR_SPAWN_MIN
-	var max_depth := camera.far
+	var min_distance := DISTANT_SPAWN_MIN if distant else NEAR_SPAWN_MIN
+	var max_distance := camera.far
 	var environment := camera.environment if camera.environment != null else get_world_3d().environment
 	if environment != null and environment.fog_enabled and environment.fog_mode == Environment.FOG_MODE_DEPTH and environment.fog_density >= 0.999:
-		max_depth = minf(max_depth, environment.fog_depth_end)
-	if not distant: max_depth = minf(max_depth, NEAR_SPAWN_MAX)
-	if max_depth <= min_depth: return Vector3.INF
+		max_distance = minf(max_distance, environment.fog_depth_end)
+	if not distant: max_distance = minf(max_distance, NEAR_SPAWN_MAX)
+	if max_distance <= min_distance: return Vector3.INF
 
-	var rect := camera.get_viewport().get_visible_rect()
-	if rect.size.x <= 0.0 or rect.size.y <= 0.0: return Vector3.INF
 	var view := camera.get_camera_transform()
+	var forward := Vector3.UP.cross(view.basis.x).normalized()
+	var frustum := camera.get_frustum()
 	var space := get_world_3d().direct_space_state
 	for attempt in MAX_SPAWN_ATTEMPTS:
-		var x := _rng.randf_range(0.12, 0.26)
-		if _rng.randf() < 0.5: x = 1.0 - x
-		var depth := _rng.randf_range(min_depth, max_depth)
+		var angle := deg_to_rad(_rng.randf_range(70.0, 170.0))
+		if _rng.randf() < 0.5: angle = -angle
+		var radius := _rng.randf_range(min_distance, max_distance)
 		if distant:
-			x = _rng.randf_range(0.24, 0.76)
 			# Sample the start of the far band first, then search out to the view limit.
-			depth = minf(46.0, max_depth) if attempt == 0 else min_depth * pow(max_depth / min_depth, _rng.randf())
-		var screen := rect.position + rect.size * Vector2(x, _rng.randf_range(0.42, 0.58))
-		var point := _grounded_position(space, camera.project_position(screen, depth), 24.0, 24.0)
+			radius = minf(46.0, max_distance) if attempt == 0 else min_distance * pow(max_distance / min_distance, _rng.randf())
+		var point := _grounded_position(space, view.origin + forward.rotated(Vector3.UP, angle) * radius, 24.0, 24.0)
 		if not point.is_finite() or _appearance_origin.distance_squared_to(point) < 9.0: continue
+		if not _body_outside_view(point, frustum): continue
 		var chest := point + CHEST
-		var offset := chest - view.origin
-		if offset.slide(Vector3.UP).length_squared() < 1.0: continue
-		var distance := offset.length()
-		if distance < min_depth or (not distant and distance > NEAR_SPAWN_MAX): continue
-		if -view.basis.z.dot(offset) > max_depth: continue
-		if not _point_in_frame(camera, chest, SPAWN_FRAME): continue
-		if not distant and _point_in_frame(camera, chest, CENTER): continue
-		if not _point_in_frame(camera, point + HEAD, SPAWN_FRAME): continue
+		if view.origin.distance_to(chest) > max_distance: continue
 		if not _clear_sight(camera, chest) or not _clear_sight(camera, point + HEAD): continue
 		if not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
 		return point
@@ -235,33 +238,21 @@ func _clearance_at(point: Vector3) -> PhysicsShapeQueryParameters3D:
 	query.transform = Transform3D(Basis.IDENTITY, point + Vector3.UP * (CLEARANCE_HEIGHT * 0.5))
 	return query
 
-func _find_reposition(camera: Camera3D, chest: Vector3, head: Vector3, seen: bool) -> Vector3:
+func _find_reposition(camera: Camera3D, frustum: Array[Plane]) -> Vector3:
 	var space := get_world_3d().direct_space_state
 	var observer := camera.get_camera_transform().origin
 	var offset := (global_position - observer).slide(Vector3.UP)
 	var bearing := offset.normalized()
 	if bearing.is_zero_approx(): return Vector3.INF
-	var chest_local := to_local(chest)
-	var head_local := to_local(head)
 	var side := -1.0 if _rng.randf() < 0.5 else 1.0
-	var fallback := Vector3.INF
-	var safe_frame := CENTER.grow(0.10)
 
-	# Change sides around the observer so even a nearby apparition jumps a
-	# substantial distance. Prefer the periphery when the old spot was visible.
+	# Change sides around the observer so even a nearby apparition jumps far.
 	for radius: float in [clampf(offset.length() * 0.75, 12.0, 22.0), 30.0]:
 		for angle: float in [60.0, -60.0, 75.0, -75.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0]:
 			var direction := bearing.rotated(Vector3.UP, deg_to_rad(angle) * side)
 			var point := _grounded_position(space, observer + direction * radius, 6.0, 10.0)
-			if not point.is_finite(): continue
-			var facing := Basis.looking_at(-direction)
-			var new_chest := point + facing * chest_local
-			var new_head := point + facing * head_local
-			if _point_in_frame(camera, new_chest, safe_frame) or _point_in_frame(camera, new_head, safe_frame): continue
-			var in_frame := camera.is_position_in_frustum(new_chest) or camera.is_position_in_frustum(new_head)
-			if in_frame != seen and fallback.is_finite(): continue
+			if not point.is_finite() or not _body_outside_view(point, frustum): continue
 			if not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
-			if not _clear_sight(camera, new_chest) or not _clear_sight(camera, new_head): continue
-			if in_frame == seen: return point
-			fallback = point
-	return fallback
+			if not _clear_sight(camera, point + CHEST) or not _clear_sight(camera, point + HEAD): continue
+			return point
+	return Vector3.INF

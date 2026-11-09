@@ -6,7 +6,7 @@ const CAPTURE_AFTER_PATH := CAPTURE_DIRECTORY + "/context-after.png"
 const WORLD_SEED := 42
 const ROAD_START := 330.0
 
-enum ReplayStep { WAITING, CAPTURING, REPOSITIONING, LOOK_AWAY }
+enum ReplayStep { WAITING, CAPTURING, PERIPHERAL, REPOSITIONING, LOOK_AWAY }
 
 @onready var player = $Player
 @onready var encounter = $WhiteApparitionEncounter
@@ -16,6 +16,7 @@ var apparition: WhiteApparition
 var _replay := "--replay" in OS.get_cmdline_user_args()
 var _elapsed := 0.0
 var _replay_started := false
+var _spawn_checked := false
 var _replay_step := ReplayStep.WAITING
 var _san_at_capture := 0.0
 var _reposition_origin := Vector3.ZERO
@@ -81,9 +82,17 @@ func _physics_process(delta: float) -> void:
 	match _replay_step:
 		ReplayStep.WAITING:
 			if phase == WhiteApparition.Phase.HIDDEN: return
+			if not _spawn_checked:
+				_spawn_checked = true
+				if not apparition._body_outside_view(apparition.global_position, player.camera.get_frustum()):
+					_replay_error("White apparition spawned in the current view")
+					return
+				print("WHITE_APPARITION_EMERGED offscreen=true")
 			player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 			if phase == WhiteApparition.Phase.CONFIRMED and player.survival.san < 0.0:
 				_begin_reposition()
+		ReplayStep.PERIPHERAL:
+			_verify_peripheral()
 		ReplayStep.REPOSITIONING:
 			_verify_reposition(phase)
 		ReplayStep.LOOK_AWAY:
@@ -98,6 +107,18 @@ func _begin_reposition() -> void:
 	_reposition_origin = apparition.global_position
 	_san_at_capture = player.survival.san
 	camera.rotate_y(atan2(ray.x, -ray.z))
+	_replay_step = ReplayStep.PERIPHERAL
+
+func _verify_peripheral() -> void:
+	_reposition_ticks += 1
+	if _reposition_ticks < 2: return
+	var camera: Camera3D = player.camera
+	if apparition.global_position != _reposition_origin or player.survival.san != _san_at_capture:
+		_replay_error("The apparition moved or drained SAN in the periphery")
+		return
+	camera.look_at(apparition.to_global(WhiteApparition.CHEST))
+	camera.rotate_y(PI)
+	_reposition_ticks = 0
 	_replay_step = ReplayStep.REPOSITIONING
 
 func _verify_reposition(phase: WhiteApparition.Phase) -> void:
@@ -116,13 +137,14 @@ func _verify_reposition(phase: WhiteApparition.Phase) -> void:
 	if displacement < 10.0 or bearing_change < 59.0:
 		_replay_error("White apparition did not jump far enough (%.2f m, %.1f degrees)" % [displacement, bearing_change])
 		return
+	if not apparition._body_outside_view(destination, camera.get_frustum()):
+		_replay_error("White apparition teleported into the current view")
+		return
 	_replay_step = ReplayStep.CAPTURING
 	if not await _save_capture(CAPTURE_AFTER_PATH): return
-	print("WHITE_APPARITION_REPOSITION displacement=%.2f bearing_change=%.1f san_unchanged=true" % [displacement, bearing_change])
+	print("WHITE_APPARITION_REPOSITION displacement=%.2f bearing_change=%.1f offscreen=true san_unchanged=true" % [displacement, bearing_change])
 	_look_away_origin = apparition.global_position
 	_look_away_elapsed = apparition._unseen_elapsed
-	camera.look_at(apparition.to_global(WhiteApparition.CHEST))
-	camera.rotate_y(PI)
 	_replay_step = ReplayStep.LOOK_AWAY
 
 func _verify_look_away(phase: WhiteApparition.Phase, delta: float) -> void:

@@ -184,10 +184,14 @@ func _check_encounter() -> void:
 	apparition.hide()
 
 	_check_spawn_bands(apparition, player.camera)
+	var edge_chest := player.camera.project_position(Vector2(1288, 360), 15.0)
+	_check(not player.camera.is_position_in_frustum(edge_chest), "Edge fixture puts the chest just outside the viewport")
+	_check(not apparition._body_outside_view(edge_chest - Apparition.CHEST, player.camera.get_frustum()), "An offscreen chest can still leave part of the silhouette in view")
 
 	apparition._time_left = 0.0
 	apparition._physics_process(1.0 / 60.0)
-	_check(apparition._phase == Apparition.Phase.VISIBLE and apparition.get_node("Visual").is_visible_in_tree(), "An emergence is visible on its first tick")
+	_check(apparition._phase == Apparition.Phase.VISIBLE and apparition.get_node("Visual").is_visible_in_tree(), "An emergence is active on its first tick")
+	_check(apparition._body_outside_view(apparition.global_position, player.camera.get_frustum()), "An emergence starts entirely outside the current view")
 	apparition._time_left = 0.0
 	apparition._physics_process(1.0 / 60.0)
 	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.get_node("Visual").is_visible_in_tree(), "An unconfirmed appearance disappears on the expiry tick")
@@ -215,18 +219,15 @@ func _check_encounter() -> void:
 	viewport.free()
 
 func _check_spawn_bands(apparition: Apparition, camera: Camera3D) -> void:
-	var near := apparition._find_emergence(camera, false) + Apparition.CHEST
-	var near_distance := camera.global_position.distance_to(near)
-	_check(near_distance >= 15.0 and near_distance <= 25.0, "Near emergence is between 15 m and 25 m")
-	_check(near.is_finite() and not apparition._point_in_frame(camera, near, Apparition.CENTER), "Near emergence is outside the center")
-	var centered_far := false
-	for attempt in 24:
-		var distant := apparition._find_emergence(camera, true) + Apparition.CHEST
-		_check(distant.is_finite() and camera.global_position.distance_to(distant) >= 40.0, "Far emergence starts at 40 m")
-		if distant.is_finite() and apparition._point_in_frame(camera, distant, Apparition.CENTER):
-			centered_far = true
-			break
-	_check(centered_far, "Far emergence can appear in the center")
+	var frustum := camera.get_frustum()
+	for attempt in 8:
+		var near := apparition._find_emergence(camera, false)
+		var near_distance := camera.global_position.distance_to(near + Apparition.CHEST)
+		_check(near_distance >= 15.0 and near_distance <= 25.0, "Near emergence is between 15 m and 25 m")
+		_check(near.is_finite() and apparition._body_outside_view(near, frustum), "Near emergence is entirely offscreen")
+		var distant := apparition._find_emergence(camera, true)
+		_check(distant.is_finite() and camera.global_position.distance_to(distant + Apparition.CHEST) >= 40.0, "Far emergence starts at 40 m")
+		_check(distant.is_finite() and apparition._body_outside_view(distant, frustum), "Far emergence is entirely offscreen")
 
 func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world: Node3D) -> void:
 	var camera := player.camera
@@ -263,10 +264,14 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	camera.rotate_y(deg_to_rad(33.0))
 	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "Peripheral fixture places the chest in frame outside the center")
 	apparition._physics_process(1.0 / 60.0)
+	_check(apparition.global_position == confirmed_position and player.survival.san == san, "The apparition stays still in peripheral view without draining SAN")
+	camera.look_at(chest)
+	camera.rotate_y(PI)
+	apparition._physics_process(1.0 / 60.0)
 	var destination := apparition.global_position
 	chest = visual.gaze_points()[0]
-	_check(destination.distance_to(confirmed_position) >= 10.0, "Leaving direct gaze teleports at least 10 m on the first tick")
-	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "With open ground the new position is visible in the periphery")
+	_check(destination.distance_to(confirmed_position) >= 10.0, "Leaving the frame teleports at least 10 m on the first tick")
+	_check(apparition._body_outside_view(destination, camera.get_frustum()) and not camera.is_position_in_frustum(chest), "The teleport cannot introduce the apparition into the frame")
 	apparition._physics_process(0.1)
 	_check(destination == apparition.global_position and player.survival.san == san, "Holding the same look direction neither relocates again nor drains SAN")
 	camera.look_at(chest)
@@ -369,6 +374,7 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		var end := apparition.global_position
 		var bearing_change := start.slide(Vector3.UP).angle_to(end.slide(Vector3.UP))
 		_check(end.distance_to(start) >= 10.0 and bearing_change >= deg_to_rad(59.0), "Turning away from %.1f m immediately produces a large change in position and bearing" % distance)
+		_check(apparition._body_outside_view(end, camera.get_frustum()), "Turning away cannot cause an apparition to enter the current view")
 		_check(is_equal_approx(end.y, start.y), "The teleport ends on the ground")
 		for blocker in blockers:
 			_check(end.distance_to(blocker.position) > 1.0, "The teleport skips obstructed destinations")
