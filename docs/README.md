@@ -1,5 +1,7 @@
 # 開發文件索引
 
+- [2026-11-09 遊玩畫面提示盤點與清理](validation/2026-11-09-gameplay-ui-cleanup.md)：刪除瞄準名稱／狀態、自動操作教學與重複解說，保留必要狀態、操作進度及主動查閱介面。
+
 - [巨型避難所可探索室內](guides/megashelter-interiors.md)：生成 v19、獨立地面一層、少量功能房、profile 分流與不補貨保存；轉場／保存檢查與 seed 42 實際回放已通過，串流及 smoke 待補。
 
 - [2026-10-30 巨型避難所 v7 牆面與入口細化](validation/2026-10-30-megashelter-facade-refinement.md)：停用風機，改善碎塊、六種牆面組件及入口鋪面銜接；保留原輪廓和屋頂。

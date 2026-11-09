@@ -120,20 +120,17 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 	var selected: Dictionary = inventory[active_slot] if active_slot >= 0 and active_slot < inventory.size() else {}
 	var flashlight: Dictionary = selected.get("state", {}).get("flashlight", {}) if selected.get("scene_path", "") == "res://props/flashlight.tscn" else {}
 	flashlight_hint.visible = show_flashlight_hint and not flashlight.is_empty()
-	flashlight_hint.text = "電量 %d%%  ·  L %s" % [ceili(float(flashlight.get("charge", 0.0))), "開啟" if flashlight.get("on", false) else "關閉"] if flashlight_hint.visible else ""
+	flashlight_hint.text = "Battery %d%% · %s" % [ceili(float(flashlight.get("charge", 0.0))), "ON" if flashlight.get("on", false) else "OFF"] if flashlight_hint.visible else ""
 	pistol_hint.visible = show_flashlight_hint and selected.get("scene_path", "") == PistolRules.PISTOL_SCENE
 	pistol_hint.text = ""
 	if pistol_hint.visible:
 		var rounds := int(selected.get("state", {}).get("pistol", {}).get("loaded_rounds", 0))
-		pistol_hint.text = "彈量 %d/%d · 備彈 %d" % [rounds, PistolRules.MAGAZINE_CAPACITY, int(weapon_data.get("reserve", 0))]
+		pistol_hint.text = "Ammo %d/%d · Reserve %d" % [rounds, PistolRules.MAGAZINE_CAPACITY, int(weapon_data.get("reserve", 0))]
 		var remaining := float(weapon_data.get("reload_remaining", 0.0))
 		if remaining > 0.0:
-			pistol_hint.text += " · 換彈 %.1fs" % remaining
+			pistol_hint.text += " · Reload %.1fs" % remaining
 		if not weapon_data.get("can_use", true):
-			pistol_hint.text += " · 無法使用"
-	if show_flashlight_hint and selected.get("scene_path", "") == "res://equipment/training_terminal.tscn":
-		pistol_hint.visible = true
-		pistol_hint.text = "T Read terminal"
+			pistol_hint.text += " · Unavailable"
 
 	for index in range(slots_container.get_child_count()):
 		var panel := slots_container.get_child(index) as Panel
@@ -142,7 +139,7 @@ func update_slots(inventory: Array, active_slot: int = 0, show_flashlight_hint: 
 		var active := index == active_slot
 		var large := bool(item.get("is_large", false))
 		var item_name := panel.get_node("ItemName") as Label
-		item_name.text = str(item.get("name", "物品")) if occupied else ""
+		item_name.text = str(item.get("name", "Item")) if occupied else ""
 		item_name.visible = active and occupied
 		if active:
 			selected_name = item_name
@@ -193,12 +190,9 @@ func _above_slot(label: Label, top: float, bottom: float) -> void:
 
 func set_food_hint(data: Dictionary) -> void:
 	if food_hint == null: return
-	food_hint.visible = data.get("visible", false)
+	food_hint.visible = data.get("visible", false) and data.get("eating", false)
 	if not food_hint.visible: return
-	if data.get("eating", false):
-		food_hint.text = "Eating %d%% · Hold RMB" % clampi(int(100.0 * float(data.elapsed) / float(data.seconds)), 0, 100)
-	else:
-		food_hint.text = "Full" if data.get("full", false) else "Hold RMB %.0fs to eat" % float(data.seconds)
+	food_hint.text = "Eating %d%%" % clampi(int(100.0 * float(data.elapsed) / float(data.seconds)), 0, 100)
 
 func _label(node_name: String, text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()

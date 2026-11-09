@@ -10,23 +10,6 @@ func _ready() -> void:
 	if preinstalled_battery and installed_battery == null: installed_battery = BatteryState.new()
 var _visual_occupancy := -1
 
-func get_interaction_prompt(player: Node3D) -> String:
-	var rv := get_connected_rv()
-	if rv == null: return "電池插槽｜未連接 RV，請先安裝到車上"
-	if not can_operate(): return "電池插槽｜無法供電，請先維修或結束搬移"
-	var text := "電池插槽｜%s" % ("電量 %.1f / %.0f" % [installed_battery.charge, installed_battery.capacity] if installed_battery else "空槽")
-	text += "\n接入電池供電；搬移／脫落／損壞時，電池會掉落"
-	if has_other_battery(): return text + "\n本車已有另一個插槽供電，請先取出那顆電池"
-	if rv.linear_velocity.length() > 0.5: return text + "\n車輛仍在移動，請停穩後操作"
-	if player.get_active_item_name() == ItemNames.BATTERY:
-		text += "\n短按 E：交換電池（舊電池回到原背包格）" if rv.energy.battery else "\n短按 E：裝入手持電池"
-	else:
-		text += "\n請先用 1–6／滾輪選取背包電池，再短按 E 裝入"
-	if rv.energy.battery:
-		text += "\n長按 E 1 秒：取出電池"
-		if player.inventory.items.size() >= PlayerInventory.MAX_SLOTS: text += "（需空背包格）"
-	return text
-
 func interact(player: Node3D) -> String:
 	var rv := get_connected_rv()
 	if rv == null or not can_operate(): return "插槽未接入或無法使用，請先安裝／維修"

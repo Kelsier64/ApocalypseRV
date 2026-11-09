@@ -173,8 +173,6 @@ func _build_tui() -> void:
 	_label(_construction_row, "construction")
 	_button(_construction_row, "structure:cancel", "Cancel construction", _cancel_construction)
 	_label(_tui, "message", "", RVTerminalTheme.AMBER)
-	var footer := _label(_tui, "", "F1-F5 Pages   Tab / Shift+Tab Focus   Arrows Select / Adjust   Enter Activate   Esc Close tablet", RVTerminalTheme.DIM)
-	footer.add_theme_font_size_override("font_size", 16)
 
 func _build_overview(body: Node) -> void:
 	_label(_panel(body, "Vehicle status"), "overview:status")
@@ -203,7 +201,6 @@ func _build_energy(body: Node) -> void:
 		if _can_write(): connected_rv.energy.recharge_below = value / 100.0)
 	_number(settings, "charging_reserve", "Fuel reserve", 100, 1, func(value: float):
 		if _can_write(): connected_rv.energy.fuel_reserve = value)
-	_label(settings, "", "Charging needs a running engine and an installed battery. The reserve stops charging; an idling engine still burns fuel.", RVTerminalTheme.DIM)
 	_label(settings, "charging:state")
 
 func _build_equipment(body: Node) -> void:
@@ -215,7 +212,6 @@ func _build_equipment(body: Node) -> void:
 	_device_list = _panel(grid, "Installed equipment")
 	var detail := _panel(grid, "Selected equipment")
 	_label(detail, "device:detail")
-	_label(detail, "", "Hold H while facing damaged hardware to repair it. Stop the engine first. Engine repairs require an Engine Repair Kit.", RVTerminalTheme.DIM)
 	_label(_panel(body, "Tires"), "tires")
 
 func _build_crafting(body: Node) -> void:
@@ -671,7 +667,7 @@ func _refresh() -> void:
 	for row in RVTerminalPresenter.warnings(rv):
 		if row.level > 0 and row.id != "headlight": warnings.append("%s: %s" % [row.label, row.message])
 	if rv.storage.used() > rv.storage.capacity: warnings.append("Storage full: spend materials before recycling")
-	_text("warnings", "\n".join(warnings) if not warnings.is_empty() else "All systems ready")
+	_text("warnings", "\n".join(warnings))
 	_refresh_structure()
 	_text("energy:flow", "BATTERY %s\n%.1f / %.1f charge%s\n\nGENERATION +%.2f /s\nLOAD       -%.2f /s\nNET        %+.2f /s\n\nFUEL %.1f / %.1f%s\nStandby load: 0.15 /s" % [
 		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, _unlimited(rv.unlimited_power), energy.generated_rate, energy.load_rate,
@@ -681,7 +677,7 @@ func _refresh() -> void:
 	_number_value("charging_reserve", energy.fuel_reserve, rv.max_fuel)
 	_text("charging:state", RVTerminalPresenter.message(energy.charging_status()))
 	for kind in ["cabin", "service"]: _pressed(kind, rv.interior_requested[kind])
-	_text("interior:state", "Cabin: %s   |   Service: %s\nService lamp lights an open engine bay." % [_light_state("cabin"), _light_state("service")])
+	_text("interior:state", "Cabin: %s   |   Service: %s" % [_light_state("cabin"), _light_state("service")])
 	_refresh_devices()
 	_refresh_crafting()
 	_text("message", _message)
@@ -758,7 +754,7 @@ func _refresh_devices() -> void:
 	for index in 4:
 		var state := "MISSING" if connected_rv.installed_wheels[index] == null else ("FLAT" if connected_rv.wheel_health[index] <= 0 else "%.0f HP" % connected_rv.wheel_health[index])
 		tires.append("%-12s %s %s" % [names[index], _bar(connected_rv.wheel_health[index], 100, 10), state])
-	_text("tires", "\n".join(tires) + "\nStop and face a damaged tire; hold H to repair or install a replacement wheel.")
+	_text("tires", "\n".join(tires))
 
 func _mount_location(device: Item) -> String:
 	var support: Node = device.mount_support
@@ -807,7 +803,7 @@ func _refresh_crafting() -> void:
 	_text("recipe:detail", "%s\n%s\nTime %.1fs   Power %.1f" % [RVTerminalPresenter.recipe_name(recipe), "\n".join(costs), recipe.duration, recipe.power_cost])
 	var station := _station()
 	var reason: String = station.craft_rejection_reason(selected_recipe) if station else "Workstation unavailable"
-	_text("craft:reason", reason if not reason.is_empty() else "Ready to queue")
+	_text("craft:reason", reason)
 	controls["craft:add"].disabled = not reason.is_empty()
 	controls["craft:cancel"].disabled = station == null or station.jobs.is_empty()
 	var queue := PackedStringArray()
@@ -835,8 +831,8 @@ func _refresh_structure() -> void:
 		elif part.current_health < part.max_health: damaged += 1
 		var short_name: String = {"front": "Front", "rear": "Rear"}.get(id, id.replace("left_", "L").replace("right_", "R").replace("roof_", "Roof "))
 		slot_controls[id].text = "[ %s %s ]" % [short_name, "X" if part.is_destroyed else "%.0f" % part.current_health]
-	_text("overview:structure", "%d ready   |   %d damaged   |   %d destroyed\nUse F5 to inspect, repair, rebuild or convert a part." % [11 - damaged - destroyed, damaged, destroyed])
-	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d%s\nConstruction needs a stopped engine and an active tablet." % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS), _unlimited(connected_rv.unlimited_materials)])
+	_text("overview:structure", "%d ready   |   %d damaged   |   %d destroyed" % [11 - damaged - destroyed, damaged, destroyed])
+	_text("structure:conditions", "ENGINE %s   SPEED %.1f / 0.5 m/s   METAL PARTS %d%s" % ["RUNNING" if connected_rv.energy.engine_running else "OFF", connected_rv.linear_velocity.length(), connected_rv.get_item_count(ItemNames.METAL_PARTS), _unlimited(connected_rv.unlimited_materials)])
 	var target: Node = slots.panel(selected_slot)
 	var selector: OptionButton = controls["structure:type"]
 	if _type_slot != selected_slot:
@@ -861,7 +857,7 @@ func _refresh_structure() -> void:
 		_texts["structure:reason:" + operation].visible = show_action
 		controls["structure:" + operation].text = "[ %s / %d Metal Parts / %.1fs ]" % [operation.capitalize(), construction.operation_cost(operation, definition), construction.operation_seconds(operation, definition)]
 		controls["structure:" + operation].disabled = not reason.is_empty()
-		_text("structure:reason:" + operation, RVTerminalPresenter.message(reason) if not reason.is_empty() else "Ready")
+		_text("structure:reason:" + operation, RVTerminalPresenter.message(reason))
 	_construction_row.visible = construction.is_building()
 	if construction.is_building():
 		_text("construction", _bar(construction.progress(), 1, 12) + " " + RVTerminalPresenter.message(construction.status_message()))

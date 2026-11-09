@@ -18,12 +18,6 @@ func interact(player: Node3D) -> String:
 func interact_hold(player: Node3D) -> String:
 	var reason := service_reason()
 	return reason if not reason.is_empty() else rv.remove_engine(player)
-func get_interaction_prompt(player: Node3D) -> String:
-	var info := "空槽" if installed_engine == null else "%s｜%.0f / %.0f" % [installed_engine.definition().display_name, installed_engine.health, installed_engine.definition().max_health]
-	var action := "短 E 裝入／交換大型引擎｜長 E 取出\n手持引擎維修包，H 3 秒修復 150 耐久"
-	if not service_reason().is_empty(): action = service_reason()
-	elif not player.inventory.active_item().get("state", {}).has("engine"): action = "選取引擎後短 E 安裝／交換｜長 E 取出\n手持引擎維修包，H 3 秒修復 150 耐久"
-	return "引擎槽｜" + info + "\n" + action
 func needs_repair() -> bool:
 	return installed_engine != null and installed_engine.health < installed_engine.definition().max_health
 func repair_health(amount: float) -> void:

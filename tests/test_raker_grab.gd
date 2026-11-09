@@ -109,7 +109,7 @@ func run() -> void:
 		check(GrabRules.minimum_wounded_presses(required) == threshold, "Rounded 60 percent boundary %d" % required)
 		capture(required)
 		check(player.grab_control.required == required and player.grab_control.remaining == 1.0, "Capture preserves count and starts one-second HUD")
-		check(player.grab_control.label.text.contains("60%"), "HUD displays the 60 percent threshold")
+		check(player.grab_control.label.text == "1.0s", "Grab HUD shows remaining time without controls or outcome rules")
 		check(is_equal_approx(player.grab_control.threshold_mark.position.x, 264.0), "HUD marker is at 60 percent")
 		for i in required:
 			key(true)
@@ -319,4 +319,3 @@ func run() -> void:
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
-

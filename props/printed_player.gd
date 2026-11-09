@@ -50,9 +50,6 @@ func can_pickup(_player: Node3D) -> bool:
 func pickup(_player: Node3D) -> String:
 	return "身體無法放入背包"
 
-func get_interaction_prompt(_player: Node3D) -> String:
-	return "列印身體｜E 切換控制" if current_health > 0 and body_state.has_part(&"head") else "列印身體｜已死亡"
-
 func interact(player: Node3D) -> String:
 	return "已切換身體；裝備隨意識移動" if transfer_control(player) else last_transfer_error
 

@@ -37,7 +37,6 @@ func _ready() -> void:
 	generator.set_process(false)
 	world.get_node("DeviationPressure").set_physics_process(false)
 	world.get_node("StartRun").restore({"version": 1, "phase": "sealed"})
-	world.get_node("StartRun")._update_status()
 	var clock: WorldClock = world.get_node("WorldClock")
 	clock.running = false
 	clock.weather_running = false

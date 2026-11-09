@@ -24,14 +24,9 @@ func restore_state(data: Dictionary) -> void:
 			remaining.append(entry.duplicate(true))
 	_update_visual()
 
-func get_interaction_prompt(_player: Node3D) -> String:
-	if searched and remaining.is_empty():
-		return "Supply cache | Empty"
-	return "Supply cache | Hold E for 1 second (%d remaining)" % remaining.size()
-
 func interact(_player: Node3D) -> String:
 	if searched and remaining.is_empty(): return "Supply cache is empty"
-	return "Hold E for 1 second to search"
+	return ""
 
 func interact_hold(player: Node3D) -> String:
 	if not _can_search(player): return "Cannot search cache"

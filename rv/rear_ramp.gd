@@ -104,9 +104,6 @@ func _sync() -> void:
 	visual.transform = pose
 	visual.scale.z = length
 	$Control.sync_state(moving, requested_deployed, unfolded)
-func get_interaction_prompt(_player: Node3D) -> String:
-	if moving: return "後方登車坡板｜E 反向" + ("收起" if requested_deployed else "展開") + "（動畫中無碰撞）"
-	return "後方登車坡板｜E " + ("收起" if blocks_driving() else "展開（停穩、手煞車）")
 func snapshot() -> Dictionary:
 	return {"deployed": deployed, "angle": angle, "length": length}
 func restore_state(data: Dictionary) -> void:

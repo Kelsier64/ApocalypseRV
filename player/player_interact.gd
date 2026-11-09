@@ -3,7 +3,8 @@ extends RayCast3D
 @onready var player = get_parent().get_parent()
 var repair := RepairOperation.new()
 var repair_label: Label
-var prompt_label: Label
+var action_progress: ProgressBar
+var feedback_panel: PanelContainer
 var feedback_label: Label
 var feedback_time := 0.0
 var aim_marker: CenterContainer
@@ -36,6 +37,7 @@ func _ready() -> void:
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	aim_marker.add_child(dot)
 	var panel := PanelContainer.new()
+	feedback_panel = panel
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	panel.position = Vector2(-380, -160)
@@ -45,10 +47,15 @@ func _ready() -> void:
 	var box := VBoxContainer.new()
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(box)
-	prompt_label = _label(box, 22)
+	action_progress = ProgressBar.new()
+	action_progress.custom_minimum_size = Vector2(180, 6)
+	action_progress.show_percentage = false
+	action_progress.hide()
+	box.add_child(action_progress)
 	repair_label = _label(box, 20)
 	feedback_label = _label(box, 22)
 	feedback_label.modulate = Color(1.0, 0.85, 0.4)
+	panel.hide()
 
 func _label(parent: Node, font_size: int) -> Label:
 	var label := Label.new()
@@ -65,22 +72,20 @@ func _physics_process(delta: float) -> void:
 	var f_pressed := Input.is_action_pressed("place_equipment")
 	var repair_pressed := Input.is_physical_key_pressed(KEY_H)
 	if not repair_pressed: _repair_release_required = false
-	var panel: Control = prompt_label.get_parent().get_parent()
+	feedback_time = maxf(0.0, feedback_time - delta)
+	if feedback_time == 0.0: feedback_label.text = ""
 	if player.is_gameplay_input_blocked() or player.get_player_mode() != player.PlayerMode.NORMAL:
 		cancel_input_gestures()
 		aim_marker.visible = not player.is_gameplay_input_blocked() and player.get_player_mode() == player.PlayerMode.PLACING
-		panel.visible = aim_marker.visible
-		prompt_label.text = player.placement.message if panel.visible else ""
+		action_progress.hide()
 		repair_label.text = ""
-		feedback_label.text = ""
+		feedback_panel.visible = aim_marker.visible and not feedback_label.text.is_empty()
 		return
 	aim_marker.show()
 	target_position = Vector3(0, 0, -3.0)
 	var obj: Node = get_collider() if is_colliding() else null
 	if is_instance_valid(obj) and obj.is_queued_for_deletion(): obj = null
-	feedback_time = maxf(0.0, feedback_time - delta)
-	if feedback_time == 0.0: feedback_label.text = ""
-	prompt_label.text = get_prompt(obj)
+	action_progress.hide()
 	repair.step(player, null if obj is RVStructurePanel else obj, repair_pressed and not _repair_release_required, delta)
 	repair_label.text = repair.message
 	var edges := _input_edges.duplicate()
@@ -91,7 +96,9 @@ func _physics_process(delta: float) -> void:
 		_step_buttons(target, edge.pressed if edge.key == "e" else _e_was_pressed, edge.pressed if edge.key == "f" else _f_was_pressed, 0.0)
 	if player.get_player_mode() == player.PlayerMode.NORMAL:
 		_step_buttons(obj, e_pressed, f_pressed, delta)
-	panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (not prompt_label.text.is_empty() or not feedback_label.text.is_empty() or not repair_label.text.is_empty())
+	repair_label.visible = not repair_label.text.is_empty()
+	feedback_label.visible = not feedback_label.text.is_empty()
+	feedback_panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (action_progress.visible or feedback_label.visible or repair_label.visible)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if player.is_gameplay_input_blocked():
@@ -105,6 +112,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	_input_edges.append({"key": key, "pressed": event.is_pressed(), "target": weakref(target) if is_instance_valid(target) else null})
 
 func cancel_input_gestures() -> void:
+	action_progress.hide()
 	repair.step(player, null, false, 0.0)
 	# A repair press made during any input block must be released too, including
 	# one begun after closing settings while another held key keeps the latch.
@@ -120,7 +128,10 @@ func cancel_input_gestures() -> void:
 	_f_was_pressed = Input.is_action_pressed("place_equipment")
 
 func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) -> void:
-	if is_instance_valid(obj) and not _can_interact(obj): obj = null
+	if is_instance_valid(obj) and not _can_interact(obj):
+		if (e_pressed and not _e_was_pressed) or (f_pressed and not _f_was_pressed):
+			show_feedback("Cannot use with your current body or carried load")
+		obj = null
 	if obj != _e_target: _e_target = null
 	if is_instance_valid(_f_target) and obj != _f_target:
 		_f_target = null
@@ -140,11 +151,11 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 				_invoke(_e_target, "accept_held_item")
 			elif _wheel_install(_e_target):
 				var installed: bool = _e_target.install_wheel_from_player(player)
-				show_feedback("輪胎已安裝" if installed else "無法安裝：請熄火停穩，並確認有空輪槽")
+				show_feedback("Wheel installed" if installed else "Cannot install wheel: vehicle moving, engine running or no empty slot")
 			else:
 				_invoke(_e_target, "interact_hold")
 		else:
-			prompt_label.text += "\n長按 E：%d%%" % mini(100, int(_e_time * 100.0))
+			_show_progress(_e_time)
 	if not e_pressed and _e_was_pressed:
 		if is_instance_valid(_e_target) and not _e_done and _uses_hold(_e_target):
 			_invoke(_e_target, "interact")
@@ -163,7 +174,7 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 			_f_done = true
 			show_feedback(_f_target.pickup(player))
 		elif is_instance_valid(_f_target):
-			prompt_label.text += "\n長按 F 拆下拾取：%d%%" % mini(100, int(_f_time * 50.0))
+			_show_progress(_f_time / 2.0)
 	if not f_pressed:
 		if _f_was_pressed and not _f_done and _f_time < 2.0 and not player.inventory.active_item().is_empty():
 			player.enter_equipment_placement()
@@ -192,46 +203,20 @@ func _invoke(obj: Node, method: String) -> void:
 		show_feedback(obj.pickup(player))
 		return
 	if not obj.has_method(method): return
+	if obj is Item and method == "interact_hold" and not obj.can_operate():
+		show_feedback("Device unavailable")
+		return
 	var result: Variant = obj.call(method, player)
 	if result is String and not result.is_empty(): show_feedback(result)
 
 func show_feedback(message: String) -> void:
 	feedback_label.text = message
+	feedback_label.visible = not message.is_empty()
 	feedback_time = 3.0
 
-func get_prompt(obj: Node) -> String:
-	var held_hint := "F 放置手持物品｜G 丟棄" if not player.inventory.active_item().is_empty() else ""
-	# Weapon controls already live above the hotbar; avoid a duplicate opaque
-	# panel covering the sights and hands when no interaction is targeted.
-	if player.inventory.active_item().get("scene_path", "") == PistolRules.PISTOL_SCENE: held_hint = ""
-	if not is_instance_valid(obj): return held_hint
-	if not _can_interact(obj):
-		if obj.get_script() == preload("res://equipment/driver_seat.gd"): return "駕駛需要雙腿及至少一隻手臂，並先放下大型物品"
-		return "缺少可用手臂，無法使用或拾取"
-	var text := ""
-	if obj is PrintedPlayerBody:
-		text = obj.get_interaction_prompt(player)
-	elif obj is Item and not obj.is_fixed:
-		text = obj.item_name + "\nE 拾取"
-	elif obj.has_method("get_interaction_prompt"):
-		text = obj.get_interaction_prompt(player)
-	elif obj is Item:
-		text = obj.equipment_name
-		if obj.has_method("interact_hold"): text += "\n長按 E 1 秒使用"
-		elif obj.has_method("interact"): text += "\nE 使用"
-		if obj.get_connected_rv() == null: text += "\n未安裝至 RV，功能尚未接通"
-	elif obj.has_method("interact_hold"):
-		text = "長按 E 1 秒使用"
-	elif obj.has_method("interact"):
-		text = "E 使用"
-	if _wheel_install(obj): text += "\n長按 E 1 秒安裝手持輪胎"
-	if _held_delivery(obj): text += "\n長按 E 1 秒投入手持大型物品"
-	if obj is Item and obj.is_fixed:
-		text += "\n長按 F 2 秒拆下拾取" if player.can_use_hands(2 if obj.is_large else 1) else "\n缺少搬運所需手臂"
-	if not obj is RVStructurePanel and obj.has_method("needs_repair") and obj.needs_repair() and not obj.has_method("repair_requirement"):
-		text += "\n長按 H 維修：2 秒／2 Metal Parts（需熄火停穩）"
-	if not held_hint.is_empty(): text += "\n" + held_hint
-	return text
+func _show_progress(fraction: float) -> void:
+	action_progress.value = clampf(fraction * 100.0, 0.0, 100.0)
+	action_progress.show()
 
 func _can_interact(obj: Node) -> bool:
 	if obj is PrintedPlayerBody: return true

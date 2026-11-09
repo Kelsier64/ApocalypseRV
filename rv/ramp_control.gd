@@ -10,5 +10,4 @@ func sync_state(moving: bool, extending: bool, deployed: bool) -> void:
 	light.albedo_color = Color("ffc15a") if moving else (Color("8fe3ad") if deployed else Color("b4c3c7"))
 	light.emission = light.albedo_color
 func interact(player: Node3D) -> String: return get_parent().interact(player)
-func get_interaction_prompt(player: Node3D) -> String: return get_parent().get_interaction_prompt(player)
 func allows_mount_at(_point: Vector3) -> bool: return false

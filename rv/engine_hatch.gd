@@ -103,6 +103,4 @@ func set_open(value: bool) -> void:
 	blocked_message = ""
 	bay().hatch_open = value
 	apply_pose()
-func get_interaction_prompt(_player: Node3D) -> String:
-	return "引擎維修蓋｜" + ("移動中" if moving else "E " + ("關閉" if requested_open else "打開")) + "\n" + blocked_message
 func allows_mount_at(_point: Vector3) -> bool: return false

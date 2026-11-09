@@ -281,9 +281,6 @@ func save_block_reason() -> String:
 	if rear_ramp and not rear_ramp.stable(): return "坡板尚在移動或受阻，暫時無法保存"
 	return ""
 
-func get_interaction_prompt(_player: Node3D) -> String:
-	return "底盤｜引擎" + ("未安裝" if get_engine() == null else "耐久 %.0f / %.0f" % [get_engine().health, get_engine().definition().max_health]) + "\n維修／更換引擎請到車頭維修蓋"
-
 # --- INVENTORY MANAGEMENT ---
 func update_storage_capacity() -> void:
 	storage.capacity = maxi(0, material_capacity)

@@ -139,11 +139,6 @@ func prepare_pickup() -> void:
 func interact(player: Node3D) -> String:
 	return pickup(player) if not is_fixed else "長按 F 2 秒解除固定並拾取"
 
-func get_interaction_prompt(player: Node3D) -> String:
-	if is_instance_valid(processing_owner): return item_name + "｜正在分解"
-	if not player.can_use_hands(2 if is_large else 1): return item_name + "｜需要" + ("兩隻手臂" if is_large else "可用手臂")
-	return item_name if is_fixed else item_name + "｜E 拾取"
-
 func can_operate() -> bool:
 	return not presentation_only and is_fixed and enabled and not support_lost and not is_being_placed and not is_destroyed and current_health > 0.0 and get_connected_rv() != null
 

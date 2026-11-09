@@ -103,8 +103,6 @@ func _run() -> void:
 	for device in rv.get_structures():
 		check(not device.has_method("start_placement") and not device.has_method("repair_health"), "Structure has no F/H Item entry point: " + device.mount_slot)
 		check(not rv.get_equipment().has(device), "Structure is excluded from Item registry: " + device.mount_slot)
-		var prompt: String = ray.get_prompt(device)
-		check(not prompt.contains("長按 F") and not prompt.contains("長按 H"), "Structure prompt never offers field movement or repair")
 	ray._step_buttons(side, false, true, 2.1)
 	check(not player.is_placing_equipment(), "Holding F on a door cannot start placement")
 	ray._step_buttons(side, false, false, 0.0)

@@ -25,10 +25,6 @@ func _ready() -> void:
 	margin.add_child(box)
 	title = Label.new()
 	box.add_child(title)
-	var help := Label.new()
-	help.text = "道具箱不耗電；同車的箱子共用一份倉庫。\n電池放在倉庫裡不供電，材料是底盤的數字資源。"
-	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(help)
 	var close_button := Button.new()
 	close_button.text = "關閉 [Esc]"
 	close_button.pressed.connect(close)

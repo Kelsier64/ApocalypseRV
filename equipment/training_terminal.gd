@@ -61,16 +61,9 @@ func unlock_manual(result: String) -> void:
 	completion = result
 	if is_instance_valid(ui_instance): ui_instance.select_page("manual")
 
-func get_interaction_prompt(player: Node3D) -> String:
-	if is_instance_valid(processing_owner): return item_name + " | Recycling"
-	if not player.can_use_hands(): return item_name + " | A usable arm is required"
-	if not is_fixed: return item_name + " | E Pick up"
-	if _dock_locked(): return item_name + " | Hold E Open terminal | Dock locked"
-	return item_name + " | Hold E Open terminal | Hold F Remove"
-
 func interact(player: Node3D) -> String:
-	if _dock_locked(): return "Hold E to open the terminal. Initialize it to release the dock."
-	return pickup(player) if not is_fixed else "Hold E to open. Hold F to remove."
+	if _dock_locked(): return "Terminal dock locked"
+	return pickup(player) if not is_fixed else ""
 
 func pickup(player: Node3D) -> String:
 	if _dock_locked(): return "Initialize the terminal before removing it from its dock."

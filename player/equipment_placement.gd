@@ -9,7 +9,7 @@ var placing_equipment: Node3D = null
 var max_place_distance: float = 4.0
 var can_place_equipment: bool = false
 var target_support: Node3D = null
-var message: String = ""
+var rejection_reason: String = ""
 var preview_scale: Vector3 = Vector3.ONE
 var placement_mode: PlacementMode = PlacementMode.SURFACE
 var rotation_offset: float = 0.0
@@ -64,7 +64,7 @@ func begin(equipment: Node3D) -> void:
 	placing_equipment = equipment
 	preview_scale = equipment.global_basis.get_scale()
 	can_place_equipment = false
-	message = "瞄準安裝位置"
+	rejection_reason = "No supporting surface"
 	placement_mode = PlacementMode.SURFACE
 
 func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
@@ -92,7 +92,9 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				update_ghost(player)
 				if can_place_equipment and is_instance_valid(target_support):
-					commit(player)
+					if not commit(player): _placement_feedback(player, "Placement blocked")
+				else:
+					_placement_feedback(player, rejection_reason)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				cancel(player, true)
@@ -150,7 +152,7 @@ func cancel(_player: Node, user_requested := false) -> void:
 	target_support = null
 	previous_support = null
 	previous_normal = Vector3.ZERO
-	message = ""
+	rejection_reason = ""
 	inventory_slot = -1
 	inventory_id = ""
 	_clear_marker()
@@ -255,21 +257,19 @@ func update_ghost(player: CharacterBody3D) -> void:
 		if contact_check.get("collider") != target_support: reason = "細調位置已離開安裝面"
 		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "超過安裝距離"
 		can_place_equipment = reason.is_empty()
-		message = ("左鍵安裝｜右鍵取消｜R 貼面／直立\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm" if can_place_equipment else "無法安裝：" + reason)
-		if can_place_equipment and equip is RVLadder: message = "左鍵貼牆安裝｜右鍵取消\nQ/E 旋轉15°（Shift 5°）｜方向鍵細移5cm"
+		rejection_reason = reason
 		if equip.ghost_material is StandardMaterial3D:
 			equip.ghost_material.albedo_color = Color(0.2, 0.8, 0.2, 0.5) if can_place_equipment else Color(0.9, 0.15, 0.1, 0.5)
 
 	else:
 		can_place_equipment = false
 		target_support = null
-		message = "請瞄準牆面｜右鍵／Esc 取消" if placing_equipment is RVLadder else "請瞄準有效支撐｜右鍵／Esc 取消"
+		rejection_reason = "No supporting wall" if placing_equipment is RVLadder else "No supporting surface"
 		_clear_marker()
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false
-
-
-
+func _placement_feedback(player: Node, reason: String) -> void:
+	player.get_node("Camera3D/InteractRay").show_feedback(reason)
 
 func _clear_marker() -> void:
 	if is_instance_valid(surface_marker): surface_marker.queue_free()

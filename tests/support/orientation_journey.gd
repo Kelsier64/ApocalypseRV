@@ -186,7 +186,7 @@ func mount(key: String, point: Vector3) -> bool:
 		player.camera.look_at(vehicle.to_global(target), vehicle.global_basis.y)
 		player.placement.update_ghost(player)
 		if player.placement.can_place_equipment and RVConnection.resolve(player.placement.target_support) == vehicle: break
-	if not check(player.placement.can_place_equipment and RVConnection.resolve(player.placement.target_support) == vehicle, "RV floor and overlap rules validate " + key + ": " + player.placement.message):
+	if not check(player.placement.can_place_equipment and RVConnection.resolve(player.placement.target_support) == vehicle, "RV floor and overlap rules validate " + key + ": " + player.placement.rejection_reason):
 		player.cancel_equipment_placement()
 		return false
 	if not check(player.placement.commit(player), "Native " + key + " placement commits its inventory ownership"): return false

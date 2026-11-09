@@ -166,8 +166,3 @@ func _physics_process(_delta: float) -> void:
 		var rv := get_connected_rv()
 		if not rv or not current_driver.can_drive():
 			exit_seat(true)
-
-func get_interaction_prompt(player: Node3D) -> String:
-	if not can_operate(): return "駕駛座｜尚未接入或已損壞"
-	if not player.can_drive(): return "駕駛需要雙腿及至少一隻手臂"
-	return "駕駛座／控制台｜長按 E 1 秒：入座；長按 F：搬移整組\nB 引擎／L 頭燈／Space 手煞車／Z X C 排檔；需燃油"

@@ -11,7 +11,6 @@ var running := true
 var weather := WorldWeather.new()
 var deviation_fog := 0.0
 var weather_running := true
-var weather_label: Label
 var fog_materials: Array[ShaderMaterial] = []
 var environment: Environment
 var sun: DirectionalLight3D
@@ -75,13 +74,6 @@ func _ready() -> void:
 	layer.add_child(label)
 	var generator := get_parent().get_node_or_null("WorldGenerator")
 	weather.initialize(generator.world_seed if generator != null else 42)
-	weather_label = Label.new()
-	weather_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	weather_label.position = Vector2(-350, 46)
-	weather_label.size = Vector2(326, 30)
-	weather_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	weather_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(weather_label)
 	var rain := WeatherRain.new()
 	rain.name = "WeatherRain"
 	rain.clock = self
@@ -188,7 +180,6 @@ func apply_time(real_delta: float = 0.0) -> void:
 	var local_density: float = profile.local_density
 	for material in fog_materials:
 		material.set_shader_parameter("density", local_density)
-	if is_instance_valid(weather_label): weather_label.text = weather.description()
 	# The fogged sky and fully hidden geometry must share one color, or distant
 	# objects reappear as white silhouettes against the darker sky.
 	environment.fog_light_color = horizon

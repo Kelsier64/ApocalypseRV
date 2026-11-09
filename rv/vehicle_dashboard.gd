@@ -1,4 +1,5 @@
 extends CanvasLayer
+const INDICATOR_LABELS := {"engine": "Engine", "fuel": "Fuel", "battery": "Battery", "door": "Doors", "brake": "Brake", "tire": "Tires", "ramp": "Ramp", "headlight": "Lights"}
 var seat: Node3D
 var label: Label
 var status: Label
@@ -13,7 +14,7 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	panel.offset_left = 24
 	panel.offset_right = -24
-	panel.offset_top = -230
+	panel.offset_top = -180
 	panel.offset_bottom = -24
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
@@ -52,11 +53,6 @@ func _ready() -> void:
 	status.add_theme_color_override("font_color", Color(0.94, 0.72, 0.38))
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rows.add_child(status)
-	var controls := Label.new()
-	controls.text = "B 引擎 · L 頭燈 · Space 手煞車 · Z/X/C 排檔 · R/T 升降檔 · W/S 油門煞車 · E 離座"
-	controls.add_theme_font_size_override("font_size", 20)
-	controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rows.add_child(controls)
 	visible = false
 
 func _process(_delta: float) -> void:
@@ -65,9 +61,10 @@ func _process(_delta: float) -> void:
 	var rv: Chassis = seat.get_connected_rv() as Chassis
 	if rv == null: return
 	var gear := "R" if rv.gear < 0 else ("N" if rv.gear == 0 else str(rv.gear))
-	label.text = "%03.0f km/h   %s 檔   |   引擎 %s   |   燃油 %.0f / %.0f   |   電池 %.0f / %.0f" % [rv.road_speed() * 3.6, gear, "運轉" if rv.energy.engine_running else "停止", rv.current_fuel, rv.max_fuel, rv.current_power, rv.max_power]
+	label.text = "%03.0f km/h   GEAR %s   |   ENGINE %s   |   FUEL %.0f / %.0f   |   BATTERY %.0f / %.0f" % [rv.road_speed() * 3.6, gear, "RUNNING" if rv.energy.engine_running else "OFF", rv.current_fuel, rv.max_fuel, rv.current_power, rv.max_power]
 	for row in VehicleStatus.read(rv):
 		indicators[row.id].icon.modulate = VehicleStatus.color(row.level)
-		indicators[row.id].caption.text = row.label
-	status.text = seat.exit_message if not seat.exit_message.is_empty() else VehicleStatus.messages(rv)
-	if not rv.service_message.is_empty(): status.text += "  " + rv.service_message
+		indicators[row.id].caption.text = INDICATOR_LABELS[row.id]
+	status.text = RVTerminalPresenter.message(seat.exit_message)
+	if not rv.service_message.is_empty(): status.text += "  " + RVTerminalPresenter.message(rv.service_message)
+	status.visible = not status.text.strip_edges().is_empty()

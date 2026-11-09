@@ -69,7 +69,7 @@ func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
 		repaired_engine_id = engine_id
 		_original_engine = candidate.installed_engine
 	progress += delta
-	message = "引擎維修 %.0f%%｜完成消耗 1 維修包、回復 150 耐久" % minf(100.0, progress / 3.0 * 100.0)
+	message = "Repair %.0f%%" % minf(100.0, progress / 3.0 * 100.0)
 	if progress >= 3.0:
 		var item_count: int = player.inventory.items.size()
 		var original_health: float = _original_engine.health

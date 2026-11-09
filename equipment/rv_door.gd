@@ -106,12 +106,6 @@ func toggle_leaf(index: int) -> String:
 	get_connected_rv().feedback("mechanical", position)
 	return "開門中" if opening else "關門中"
 
-func get_interaction_prompt(player: Node3D) -> String:
-	if not can_operate(): return equipment_name + "｜尚未接入或已損壞"
-	var index := aimed_leaf(player)
-	var action := "關門" if open_requested[index] else "開門"
-	return equipment_name + (("（左扇）" if index == 0 else "（右扇）") if leaf_count == 2 else "") + "｜E " + action + "\n改裝請使用車載平板；" + dependent_summary() + "\n" + blocked_message
-
 func allows_mount_at(point: Vector3) -> bool:
 	for index in range(leaf_count):
 		var collider: CollisionShape3D = get_node("LeafCollision" + str(index))

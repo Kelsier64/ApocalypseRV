@@ -195,7 +195,7 @@ static func _interact_key(tree: SceneTree, manager: PoiInstanceManager, player: 
 	var ray := player.get_node("Camera3D/InteractRay") as RayCast3D
 	ray.force_raycast_update()
 	var destination := str(door.destination_id)
-	check.call(ray.get_collider() == door and not ray.prompt_label.text.is_empty(), destination + " door is targeted by the real player interaction ray")
+	check.call(ray.get_collider() == door, destination + " door is targeted by the real player interaction ray")
 	var event := InputEventKey.new()
 	event.keycode = 0 if physical else KEY_E
 	if physical: event.physical_keycode = KEY_E

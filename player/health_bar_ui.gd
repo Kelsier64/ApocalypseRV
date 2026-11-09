@@ -6,7 +6,6 @@ var stamina_bar: ProgressBar
 var stamina_label: Label
 var food_bar: ProgressBar
 var food_label: Label
-var food_penalty: Label
 var damage_flash: ColorRect
 
 func _ready():
@@ -76,9 +75,6 @@ func _ready():
 	food_bar.show_percentage = false
 	food_bar.add_theme_stylebox_override("background", bg_style)
 	vbox.add_child(food_bar)
-	food_penalty = Label.new()
-	food_penalty.add_theme_font_size_override("font_size", 14)
-	vbox.add_child(food_penalty)
 	set_food(PlayerSurvival.MAX_HUNGER)
 	
 	# Damage flash (full-screen red overlay)
@@ -115,9 +111,6 @@ func set_food(current: float) -> void:
 	food_label.text = "FOOD: %d / 100" % ceili(current)
 	var color := Color("c6503e") if current <= 20.0 else (IndustrialTheme.AMBER if current < 40.0 else IndustrialTheme.INK)
 	food_label.add_theme_color_override("font_color", color)
-	food_penalty.add_theme_color_override("font_color", color)
-	food_penalty.text = "Starving: -1 HP / 5s" if current <= 0.0 else ("No sprint · Slow stamina recovery" if current <= 20.0 else ("Slow stamina recovery" if current < 40.0 else ""))
-	food_penalty.visible = current < 40.0
 	var fill := food_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if fill == null or fill.bg_color != color:
 		fill = StyleBoxFlat.new()

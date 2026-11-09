@@ -53,7 +53,6 @@ func restore(data: Dictionary) -> void:
 		_apply_gate()
 		_apply_bay_gates()
 		apply_tutorial_gates()
-		_update_status()
 		if is_instance_valid(shelter) and shelter.has_node("GarageButton"): shelter.get_node("GarageButton").sync_phase()
 
 func save_block_reason() -> String:
@@ -76,9 +75,9 @@ func _ready() -> void:
 	_status.position = Vector2(24, 220)
 	_status.add_theme_font_size_override("font_size", 18)
 	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status.visible = false
 	layer.add_child(_status)
 	_apply_simulation()
-	_update_status()
 
 func bind_shelter(building: Node3D, site: Dictionary) -> void:
 	if is_instance_valid(shelter) and shelter == building: return
@@ -106,7 +105,6 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 			bay_gate.closed.connect(_remember_bay_gates)
 		_apply_bay_gates()
 		apply_tutorial_gates()
-	_update_status()
 	var world := get_parent() as Node3D
 	if not _spawn_applied and world.get("fresh_start") == true:
 		_spawn_applied = true
@@ -130,7 +128,7 @@ func begin_run(player: Node3D) -> String:
 	_set_phase("opening")
 	gate.move_to(true)
 	if tutorial_active(): get_node("Tutorial").departure_started()
-	return "Journey started | Exit opening; it seals permanently after departure" if tutorial else "旅程開始｜車庫大門開啟中；離開後將永久封閉"
+	return "Exit opening."
 
 func _remember_bay_gates() -> void:
 	var count := bay_gate_count()
@@ -202,7 +200,6 @@ func _apply_gate() -> void:
 func _set_phase(value: String) -> void:
 	phase = value
 	_apply_simulation()
-	_update_status()
 	phase_changed.emit(phase)
 
 func _on_opened() -> void:
@@ -221,7 +218,17 @@ func _on_obstructed() -> void:
 	if phase == "closing":
 		_set_phase("started")
 		_departure_check = 1.0
-		if _status: _status.text = "車庫大門受阻，已重新開啟｜請移開門口物品"
+		_show_obstruction_feedback()
+
+func _show_obstruction_feedback() -> void:
+	if not is_instance_valid(_status) or _status.visible: return
+	_status.text = "Exit blocked. Move objects away from the gate."
+	_status.visible = true
+	_clear_obstruction_feedback()
+
+func _clear_obstruction_feedback() -> void:
+	await get_tree().create_timer(3.0).timeout
+	if is_instance_valid(_status): _status.visible = false
 
 func _physics_process(delta: float) -> void:
 	if is_orientation_shelter() and phase == "preparing":
@@ -264,16 +271,3 @@ func vehicle_clear(vehicle: Chassis) -> bool:
 		for corner in range(8):
 			if (pose * bounds.get_endpoint(corner)).z < 8.0: return false
 	return gate.to_local(vehicle.global_position).z >= 8.0
-
-func _update_status() -> void:
-	if not _status: return
-	_status.visible = not is_orientation_shelter()
-	if not _status.visible:
-		_status.text = ""
-		return
-	match phase:
-		"preparing": _status.text = "整備區｜時間暫停\n裝載所需物資後，按下大門旁的啟程按鈕\n離開後車庫永久封閉，留下的物資將無法取回"
-		"opening": _status.text = "旅程開始｜大門開啟中"
-		"started": _status.text = "駛離車庫後，大門將永久封閉"
-		"closing": _status.text = "車庫大門正在永久封閉"
-		"sealed": _status.text = "車庫已封閉｜沿公路繼續前進"

@@ -96,9 +96,6 @@ func dependent_summary() -> String:
 	var names := dependent_names()
 	return "無附掛設備" if names.is_empty() else "附掛設備：" + "、".join(names)
 
-func get_interaction_prompt(_player: Node3D) -> String:
-	return "%s｜耐久 %.0f / %.0f\n請使用車載平板維修或改裝\n%s" % [equipment_name, current_health, max_health, dependent_summary()]
-
 func get_placement_bounds() -> AABB:
 	var bounds := AABB()
 	var found := false
