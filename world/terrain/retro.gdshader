@@ -25,7 +25,7 @@ void fragment() {
 	vec3 source = texture(screen_texture, SCREEN_UV).rgb;
 	vec3 graded = video_grade(source);
 	if (san_amount > 0.0) {
-		graded = san_vision(source, graded, SCREEN_UV);
+		graded = san_vision(source, graded, SCREEN_UV, SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x);
 	}
 	COLOR = vec4(clamp(graded, 0.0, 1.0), 1.0);
 }
