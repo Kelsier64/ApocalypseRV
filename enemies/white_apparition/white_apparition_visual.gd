@@ -34,6 +34,7 @@ func _ready() -> void:
 			if part is MeshInstance3D:
 				part.material_override = material
 				part.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				part.extra_cull_margin = 1.6
 			elif part is Skeleton3D:
 				_skeletons.append(part)
 	for bone in BONES:
@@ -116,7 +117,7 @@ func _process(delta: float) -> void:
 		if _history.size() > 10: _history.pop_back()
 	for layer in range(1, 3):
 		if _history.is_empty(): continue
-		var delayed: Dictionary = _history[mini(layer * 4, _history.size() - 1)]
+		var delayed: Dictionary = _history[mini(layer, _history.size() - 1)]
 		for bone in delayed.rotations:
 			_skeletons[layer].set_bone_pose_rotation(_bones[bone], delayed.rotations[bone])
 		_models[layer].position = delayed.root + Vector3(layer * 0.012 * sin(t * 2.3), 0, layer * 0.01)

@@ -15,5 +15,5 @@ void fragment() {
  ALBEDO = vec3(0.84, 0.85, 0.83) + grain;
  ROUGHNESS = 0.94;
  EMISSION = vec3(0.12, 0.13, 0.125) * (1.0 - veil * 0.4);
- ALPHA = presence * soft_edge * mix(0.9, 0.085, veil);
+ ALPHA = presence * soft_edge * mix(0.9, 0.035, veil);
 }
