@@ -4,7 +4,7 @@
 
 ## SAN 輕幻覺測試場
 
-用 Godot 執行 [san_playground.tscn](../../tests/san_playground.tscn)。F6 設定 SAN，可輸入負值。F5 入座或離座，入座後按 Space 放手煞，再用 WASD 試駕。SAN 低於 20 時，F7 觸發閉眼，F8 觸發方向延遲，F9 觸發方向誤動。徒步時按 1 或 2 選零食，再按住右鍵食用。F10 重設測試場。
+用 Godot 執行 [san_playground.tscn](../../tests/san_playground.tscn)。按 ↑／↓ 增減 5 點 SAN，按住可連續調整。F6 可輸入精確值或負值。F5 入座或離座，入座後按 Space 放手煞，再用 WASD 試駕。SAN 低於 20 時，F7 觸發閉眼，F8 觸發方向延遲，F9 觸發方向誤動。徒步時按 1 或 2 選零食，再按住右鍵食用。F10 重設測試場。
 
 ## 完整場景目錄（2026-11-02）
 

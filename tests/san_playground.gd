@@ -1,6 +1,8 @@
 extends Node3D
 ## Runs the production controller and wheels on a flat, marked test course.
 
+const SAN_STEP := 5.0
+
 @onready var player: CharacterBody3D = $Player
 @onready var rv: Chassis = $RV/Chassis
 @onready var seat: Item = $RV/Chassis/DriverSeat
@@ -43,7 +45,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event.pressed or event.echo or player.is_gameplay_input_blocked() or player.in_ui_mode: return
+	if not event.pressed or player.is_gameplay_input_blocked() or player.in_ui_mode: return
+	if event.keycode in [KEY_UP, KEY_DOWN]:
+		var change := SAN_STEP if event.keycode == KEY_UP else -SAN_STEP
+		_set_san(player.survival.san + change)
+		get_viewport().set_input_as_handled()
+		return
+	if event.echo: return
 	match event.keycode:
 		KEY_F5:
 			if seat.current_driver == player: seat.exit_seat()
@@ -85,9 +93,13 @@ func _apply_san() -> void:
 	if not entered.is_valid_float() or not is_finite(entered.to_float()):
 		_error.text = "Enter a number, such as 10 or -5."
 		return
-	player.survival.san = minf(entered.to_float(), PlayerSurvival.MAX_SAN)
-	player._update_san_bar()
+	_set_san(entered.to_float())
 	_close_editor()
+
+func _set_san(value: float) -> void:
+	player.survival.san = minf(value, PlayerSurvival.MAX_SAN)
+	player._update_san_bar()
+	player._advance_san_effects(0.0)
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
@@ -99,7 +111,7 @@ func _build_ui() -> void:
 	_status = Label.new()
 	labels.add_child(_status)
 	var controls := Label.new()
-	controls.text = "F5 Seat / Exit   F6 Set SAN   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
+	controls.text = "Up / Down SAN +/- 5   F6 Enter SAN\nF5 Seat / Exit   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
 	labels.add_child(controls)
 	layer.add_child(hud)
 	hud.grow_horizontal = Control.GROW_DIRECTION_BEGIN
