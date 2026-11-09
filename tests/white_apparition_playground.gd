@@ -21,8 +21,10 @@ var _replay_step := ReplayStep.WAITING
 var _san_at_capture := 0.0
 var _reposition_origin := Vector3.ZERO
 var _reposition_ticks := 0
-var _look_away_origin := Vector3.ZERO
+var _spawn_distance := 0.0
+var _look_away_distance := 0.0
 var _look_away_elapsed := 0.0
+var _last_pursuit_distance := INF
 
 func _enter_tree() -> void:
 	set_meta("checkpoint_staging", true)
@@ -69,6 +71,9 @@ func _physics_process(delta: float) -> void:
 		if _elapsed > 60.0:
 			_replay_error("White apparition replay timed out")
 			return
+		if _replay_step == ReplayStep.LOOK_AWAY and player.is_player_dead:
+			_verify_lethal_contact()
+			return
 	apparition = encounter._apparition
 	if not is_instance_valid(apparition) or apparition._world_id == 0: return
 	var phase := apparition._phase
@@ -87,6 +92,7 @@ func _physics_process(delta: float) -> void:
 				if not apparition._body_outside_view(apparition.global_position, player.camera.get_frustum()):
 					_replay_error("White apparition spawned in the current view")
 					return
+				_spawn_distance = apparition.global_position.distance_to(player.global_position)
 				print("WHITE_APPARITION_EMERGED offscreen=true")
 			player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 			if phase == WhiteApparition.Phase.CONFIRMED and player.survival.san < 0.0:
@@ -99,6 +105,11 @@ func _physics_process(delta: float) -> void:
 			_verify_look_away(phase, delta)
 
 func _begin_reposition() -> void:
+	var approach := _spawn_distance - apparition.global_position.distance_to(player.global_position)
+	if approach < 0.5:
+		_replay_error("White apparition did not approach while watched")
+		return
+	print("WHITE_APPARITION_PURSUIT watched_approach=%.2f" % approach)
 	_replay_step = ReplayStep.CAPTURING
 	if not await _save_capture(CAPTURE_PATH): return
 	var camera: Camera3D = player.camera
@@ -113,9 +124,10 @@ func _verify_peripheral() -> void:
 	_reposition_ticks += 1
 	if _reposition_ticks < 2: return
 	var camera: Camera3D = player.camera
-	if apparition.global_position != _reposition_origin or player.survival.san != _san_at_capture:
-		_replay_error("The apparition moved or drained SAN in the periphery")
+	if apparition.global_position.distance_to(_reposition_origin) > 0.2 or player.survival.san != _san_at_capture:
+		_replay_error("The apparition teleported or drained SAN in the periphery")
 		return
+	_reposition_origin = apparition.global_position
 	camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 	camera.rotate_y(PI)
 	_reposition_ticks = 0
@@ -128,8 +140,8 @@ func _verify_reposition(phase: WhiteApparition.Phase) -> void:
 		_replay_error("The apparition vanished or drained SAN while the replay looked away")
 		return
 	var destination := apparition.global_position
-	if destination == _reposition_origin and _reposition_ticks < 3: return
 	var displacement := (destination - _reposition_origin).slide(Vector3.UP).length()
+	if displacement < 10.0 and _reposition_ticks < 3: return
 	var observer := camera.get_camera_transform().origin
 	var old_bearing := (_reposition_origin - observer).slide(Vector3.UP)
 	var new_bearing := (destination - observer).slide(Vector3.UP)
@@ -143,23 +155,32 @@ func _verify_reposition(phase: WhiteApparition.Phase) -> void:
 	_replay_step = ReplayStep.CAPTURING
 	if not await _save_capture(CAPTURE_AFTER_PATH): return
 	print("WHITE_APPARITION_REPOSITION displacement=%.2f bearing_change=%.1f offscreen=true san_unchanged=true" % [displacement, bearing_change])
-	_look_away_origin = apparition.global_position
+	_look_away_distance = apparition.global_position.distance_to(player.global_position)
+	_last_pursuit_distance = _look_away_distance
 	_look_away_elapsed = apparition._unseen_elapsed
 	_replay_step = ReplayStep.LOOK_AWAY
 
 func _verify_look_away(phase: WhiteApparition.Phase, delta: float) -> void:
 	_look_away_elapsed += delta
-	var grace := WhiteApparition.UNSEEN_DESPAWN_SECONDS
-	var timely_despawn := phase == WhiteApparition.Phase.HIDDEN and not apparition.visible and _look_away_elapsed >= grace - delta
+	_last_pursuit_distance = apparition.global_position.distance_to(player.global_position)
 	if player.survival.san != _san_at_capture:
 		_replay_error("White apparition kept draining SAN after the replay looked away")
-	elif apparition.global_position != _look_away_origin:
-		_replay_error("White apparition relocated again after the replay looked away")
-	elif _look_away_elapsed > grace + 2.0 * delta or (not apparition.visible and not timely_despawn):
-		_replay_error("White apparition disappeared outside the expected grace period")
-	elif timely_despawn:
-		print("WHITE_APPARITION_REPLAY confirmed=true despawn_after_looking_away=%.2f san_unchanged=true san=%.1f" % [_look_away_elapsed, _san_at_capture])
-		get_tree().quit()
+	elif _look_away_elapsed >= WhiteApparition.UNSEEN_DESPAWN_SECONDS or phase == WhiteApparition.Phase.HIDDEN:
+		_replay_error("White apparition did not reach the replay player (%.2f m remaining after %.2f s)" % [_last_pursuit_distance, _look_away_elapsed])
+	else:
+		# Verify lethal contact uses the death path even during hit immunity.
+		player.damage_cooldown = 1.0
+
+func _verify_lethal_contact() -> void:
+	# The encounter owner can remove the apparition before the next tick.
+	if not player.ragdoll_control.active: return
+	if player.current_player_health != 0.0 or player.damage_cooldown <= 0.0 \
+		or player.survival.san != _san_at_capture or _last_pursuit_distance > 1.5:
+		_replay_error("The replay player died without the expected lethal contact")
+		return
+	var approach := _look_away_distance - _last_pursuit_distance
+	print("WHITE_APPARITION_REPLAY lethal_contact=true unseen_approach=%.2f elapsed=%.2f san_unchanged=true" % [approach, _look_away_elapsed])
+	get_tree().quit()
 
 func _save_capture(path: String) -> bool:
 	if DisplayServer.get_name() == "headless": return true

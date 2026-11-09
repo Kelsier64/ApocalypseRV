@@ -1,4 +1,4 @@
-extends Node3D
+extends CharacterBody3D
 class_name WhiteApparition
 ## Transient outdoor encounter. The player, camera, and apparition share a World3D.
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
@@ -14,13 +14,16 @@ const MAX_SPAWN_ATTEMPTS := 16
 const GAZE_SECONDS := 0.6
 const COVER_DESPAWN_SECONDS := 3.0
 const UNSEEN_DESPAWN_SECONDS := 30.0
+const PURSUIT_SPEED := 2.6
+const PURSUIT_STEP_HEIGHT := 0.18
 const MIN_SUPPORT_NORMAL_Y := 0.82
-const CLEARANCE_RADIUS := 0.44
-const CLEARANCE_HEIGHT := 2.75
+const SEATED_TORSO_RADIUS := 0.22
 
 enum Phase { HIDDEN, VISIBLE, CONFIRMED }
 
 @onready var _visual = $Visual
+@onready var _body: CollisionShape3D = $CollisionShape3D
+@onready var _capsule: CapsuleShape3D = _body.shape
 var _rng := RandomNumberGenerator.new()
 var _player: Node3D
 var _world_id := 0
@@ -32,12 +35,9 @@ var _unseen_elapsed := 0.0
 var _covered_elapsed := 0.0
 var _reposition_armed := false
 var _appearance_origin := Vector3.INF
-var _capsule := CapsuleShape3D.new()
 
 func _ready() -> void:
 	_rng.randomize()
-	_capsule.radius = CLEARANCE_RADIUS
-	_capsule.height = CLEARANCE_HEIGHT
 	hide()
 
 func configure(player: Node3D) -> void:
@@ -87,7 +87,10 @@ func _physics_process(delta: float) -> void:
 			if _time_left <= 0.0 and not _try_emerge(camera):
 				_time_left = 2.0
 		Phase.VISIBLE, Phase.CONFIRMED:
+			var origin := global_position
 			_update_visible(camera, delta)
+			if _phase != Phase.HIDDEN and global_position == origin:
+				_pursue(delta)
 
 func _active_player_camera() -> Camera3D:
 	if _player.get("in_ui_mode") == true or _player.is_gameplay_input_blocked() or _player.is_grabbed(): return null
@@ -147,6 +150,60 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 			global_position = point
 			look_at(Vector3(observer.x, point.y, observer.z))
 			reset_physics_interpolation()
+
+func _pursue(delta: float) -> void:
+	var space := get_world_3d().direct_space_state
+	var toward := (_player.global_position - global_position).slide(Vector3.UP)
+	var stride := toward.limit_length(PURSUIT_SPEED * delta)
+	if not toward.is_zero_approx():
+		look_at(global_position + toward)
+
+	# Try the direct step first, then steer to either side of a local obstacle.
+	for angle: float in [0.0, 55.0, -55.0, 85.0, -85.0]:
+		var next := global_position + stride.rotated(Vector3.UP, deg_to_rad(angle))
+		var ground := _grounded_position(space, next, 0.25, 0.40)
+		var motion := ground - global_position if ground.is_finite() else Vector3.ZERO
+		var hit := move_and_collide(motion, true, safe_margin, true)
+		if hit != null and hit.get_collider() == _player:
+			move_and_collide(motion, false, safe_margin, true)
+			_player.kill()
+			return
+		if hit == null and ground.is_finite():
+			move_and_collide(motion)
+			break
+		if hit != null and _step_over_ground_lip(hit, motion):
+			break
+
+	if _touching_seated_player(space):
+		_player.kill()
+
+func _step_over_ground_lip(hit: KinematicCollision3D, motion: Vector3) -> bool:
+	if hit.get_normal().y < MIN_SUPPORT_NORMAL_Y or not _is_terrain_support(hit.get_collider()): return false
+	var across := motion.slide(Vector3.UP)
+	if across.is_zero_approx(): return false
+	# Road and ground meshes can meet under the leading edge of the capsule.
+	# Sweep a small lift, the original stride, and the descent separately.
+	var lift := Vector3.UP * PURSUIT_STEP_HEIGHT
+	if test_move(global_transform, lift) or test_move(global_transform.translated(lift), across): return false
+	move_and_collide(lift)
+	move_and_collide(across)
+	var landing := move_and_collide(Vector3.UP * (motion.y - PURSUIT_STEP_HEIGHT))
+	if landing != null and landing.get_collider() == _player:
+		_player.kill()
+	return true
+
+func _touching_seated_player(space: PhysicsDirectSpaceState3D) -> bool:
+	# Seats disable the player's normal capsule. Use the posed torso, and let
+	# solid chassis, panels and furniture block contact with it.
+	if not is_instance_valid(_player.get("seated_in")): return false
+	var torso: Vector3 = _player.execution_contact_position()
+	var base := global_position
+	var axis_point := Vector3(base.x, clampf(torso.y, base.y + _capsule.radius,
+		base.y + _capsule.height - _capsule.radius), base.z)
+	if axis_point.distance_to(torso) > _capsule.radius + SEATED_TORSO_RADIUS: return false
+	var query := PhysicsRayQueryParameters3D.create(axis_point, torso, collision_mask)
+	query.hit_from_inside = true
+	return space.intersect_ray(query).is_empty()
 
 static func _san_drain_rate(distance: float) -> float:
 	if distance < 8.0: return 100.0 + (8.0 - distance) * 15.0
@@ -224,18 +281,20 @@ func _find_emergence(camera: Camera3D, distant: bool) -> Vector3:
 func _grounded_position(space: PhysicsDirectSpaceState3D, point: Vector3, above: float, below: float) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * above, point - Vector3.UP * below, 1)
 	var hit := space.intersect_ray(query)
-	if hit.is_empty() or hit.normal.y < MIN_SUPPORT_NORMAL_Y or not hit.collider is StaticBody3D: return Vector3.INF
+	if hit.is_empty() or hit.normal.y < MIN_SUPPORT_NORMAL_Y or not _is_terrain_support(hit.collider): return Vector3.INF
+	return hit.position + Vector3.UP * (_capsule.radius * (1.0 / hit.normal.y - 1.0) + 0.04)
+
+func _is_terrain_support(collider: Object) -> bool:
 	# Only streamed terrain and road collision can support an emergence. Roofs,
 	# props, and bridges can otherwise be mistaken for level terrain by a ray.
-	var surface := (hit.collider as StaticBody3D).get_parent()
-	if not surface is MeshInstance3D or not surface.get_parent() is ChunkGenerator or surface.name not in [&"Ground", &"Road"]:
-		return Vector3.INF
-	return hit.position + Vector3.UP * (CLEARANCE_RADIUS * (1.0 / hit.normal.y - 1.0) + 0.04)
+	if not collider is StaticBody3D: return false
+	var surface := (collider as StaticBody3D).get_parent()
+	return surface is MeshInstance3D and surface.get_parent() is ChunkGenerator and surface.name in [&"Ground", &"Road"]
 
 func _clearance_at(point: Vector3) -> PhysicsShapeQueryParameters3D:
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = _capsule
-	query.transform = Transform3D(Basis.IDENTITY, point + Vector3.UP * (CLEARANCE_HEIGHT * 0.5))
+	query.transform = Transform3D(Basis.IDENTITY, point + _body.position)
 	return query
 
 func _find_reposition(camera: Camera3D, frustum: Array[Plane]) -> Vector3:

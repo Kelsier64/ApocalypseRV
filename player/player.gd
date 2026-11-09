@@ -1349,6 +1349,13 @@ func take_damage(amount: float):
 		current_player_health = 0.0
 		_player_die()
 
+## Lethal contact ignores the ordinary damage cooldown.
+func kill() -> void:
+	if is_player_dead: return
+	current_player_health = 0.0
+	_update_health_bar()
+	_player_die()
+
 ## One explosion owns one hurt-cooldown decision, including all of its cuts.
 ## Capture platform motion before a leg cut can force the player out of a seat.
 func apply_explosion_hit(amount: float, limb_count: int = 0, blast_impulse: Vector3 = Vector3.ZERO) -> bool:

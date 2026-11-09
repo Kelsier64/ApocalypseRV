@@ -10,6 +10,7 @@ class Survivor extends CharacterBody3D:
 	var is_player_dead := false
 	var blocked := false
 	var grabbed := false
+	var lethal_contacts := 0
 	var survival := PlayerSurvival.new()
 
 	func is_gameplay_input_blocked() -> bool:
@@ -20,6 +21,13 @@ class Survivor extends CharacterBody3D:
 
 	func drain_san(amount: float) -> void:
 		survival.drain_san(amount)
+
+	func execution_contact_position() -> Vector3:
+		return to_global(Vector3.UP * 1.55)
+
+	func kill() -> void:
+		lethal_contacts += 1
+		is_player_dead = true
 
 class Seat extends Node3D:
 	var seat_camera: Camera3D
@@ -112,7 +120,7 @@ func _check_encounter() -> void:
 	player.camera = Camera3D.new()
 	player.camera.position = Vector3(0, 1.55, 0)
 	player.add_child(player.camera)
-	_box(player, Vector3(0, 1.55, 0), Vector3.ONE)
+	var player_shape := _box(player, Vector3(0, 1.55, 0), Vector3.ONE)
 	world.add_child(player)
 	player.camera.make_current()
 	var apparition := ApparitionScene.instantiate() as Apparition
@@ -216,6 +224,8 @@ func _check_encounter() -> void:
 	_check(visual.gaze_points() != pose, "White apparition keeps animating after confirmation")
 
 	await _check_confirmed_encounter(apparition, player, world)
+	await _check_lethal_pursuit(apparition, player, world)
+	await _check_seated_contact(apparition, player, player_shape, world)
 	viewport.free()
 
 func _check_spawn_bands(apparition: Apparition, camera: Camera3D) -> void:
@@ -237,7 +247,7 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	camera.look_at(apparition.to_global(Apparition.CHEST))
 	var distance := camera.global_position.distance_to(distant + Apparition.CHEST)
 	var san := player.survival.san
-	apparition._physics_process(0.5)
+	apparition._update_visible(camera, 0.5)
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 0.5), "Centered confirmed gaze drains SAN at 45 m")
 	var confirmed_position := Vector3(0.0, 0.04, -15.0)
 	apparition.global_position = confirmed_position
@@ -245,13 +255,13 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	camera.look_at(apparition.to_global(Apparition.CHEST))
 	distance = camera.global_position.distance_to(confirmed_position + Apparition.CHEST)
 	san = player.survival.san
-	apparition._physics_process(1.5)
+	apparition._update_visible(camera, 1.5)
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 1.5), "Confirmed SAN drain uses the fixed chest distance")
 	san = player.survival.san
 	var pose: PackedVector3Array = visual.gaze_points()
 	visual._process(0.25)
 	_check(visual.gaze_points() != pose, "The drain fixture advances the apparition pose")
-	apparition._physics_process(1.5)
+	apparition._update_visible(camera, 1.5)
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 1.5) and player.survival.san < 0.0, "Moving gaze anchors leave the drain rate fixed and SAN can go below zero")
 	san = player.survival.san
 	world.set_meta("checkpoint_staging", true)
@@ -264,25 +274,28 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	camera.rotate_y(deg_to_rad(33.0))
 	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "Peripheral fixture places the chest in frame outside the center")
 	apparition._physics_process(1.0 / 60.0)
-	_check(apparition.global_position == confirmed_position and player.survival.san == san, "The apparition stays still in peripheral view without draining SAN")
+	var departure := apparition.global_position
+	_check(departure.z > confirmed_position.z and departure.distance_to(confirmed_position) < 0.1 and player.survival.san == san, "The apparition advances in peripheral view without teleporting or draining SAN")
 	camera.look_at(chest)
 	camera.rotate_y(PI)
 	apparition._physics_process(1.0 / 60.0)
 	var destination := apparition.global_position
 	chest = visual.gaze_points()[0]
-	_check(destination.distance_to(confirmed_position) >= 10.0, "Leaving the frame teleports at least 10 m on the first tick")
+	_check(destination.distance_to(departure) >= 10.0, "Leaving the frame teleports at least 10 m on the first tick")
 	_check(apparition._body_outside_view(destination, camera.get_frustum()) and not camera.is_position_in_frustum(chest), "The teleport cannot introduce the apparition into the frame")
 	apparition._physics_process(0.1)
-	_check(destination == apparition.global_position and player.survival.san == san, "Holding the same look direction neither relocates again nor drains SAN")
-	camera.look_at(chest)
+	var unseen_position := apparition.global_position
+	_check(unseen_position.length() < destination.length() and unseen_position.distance_to(destination) < 0.3 and player.survival.san == san, "The apparition advances out of view without another teleport or SAN drain")
+	camera.look_at(visual.gaze_points()[0])
+	distance = camera.global_position.distance_to(unseen_position + Apparition.CHEST)
 	apparition._physics_process(0.1)
-	distance = camera.global_position.distance_to(destination + Apparition.CHEST)
-	_check(destination == apparition.global_position, "Looking directly at the new position holds the apparition still")
+	var watched_position := apparition.global_position
+	_check(watched_position.length() < unseen_position.length(), "The apparition keeps advancing while watched directly")
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 0.1), "Looking back resumes drain on the first tick")
 	san = player.survival.san
 	camera.rotate_y(PI)
 	apparition._physics_process(1.0 / 60.0)
-	_check(apparition.global_position.distance_to(destination) >= 10.0 and player.survival.san == san, "Looking away after reacquiring the apparition triggers another jump without draining SAN")
+	_check(apparition.global_position.distance_to(watched_position) >= 10.0 and player.survival.san == san, "Looking away after reacquiring the apparition triggers another jump without draining SAN")
 	camera.look_at(visual.gaze_points()[0])
 	apparition._physics_process(0.0)
 	await _check_cover_despawn(apparition, player, world)
@@ -314,24 +327,24 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 	await physics_frame
 	await physics_frame
 	_check(not apparition._can_confirm(camera, chest, head), "Occluder blocks the centered head ray")
-	apparition._physics_process(Apparition.COVER_DESPAWN_SECONDS + 1.0)
+	apparition._update_visible(camera, Apparition.COVER_DESPAWN_SECONDS + 1.0)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "A clear chest alone keeps the apparition visible without rapid drain")
 	var chest_occluder := _static_box(world, camera.global_position.lerp(chest, 0.5), Vector3.ONE * 0.08)
 	await physics_frame
 	await physics_frame
 	camera.rotate_y(deg_to_rad(33.0))
-	apparition._physics_process(Apparition.COVER_DESPAWN_SECONDS - 0.11)
+	apparition._update_visible(camera, Apparition.COVER_DESPAWN_SECONDS - 0.11)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Full cover starts the grace period without draining SAN")
 	_check(apparition.global_position == start, "Full cover prevents a pending peripheral relocation")
 	camera.look_at(chest)
 	occluder.position.y += 1.0
 	await physics_frame
 	await physics_frame
-	apparition._physics_process(0.2)
+	apparition._update_visible(camera, 0.2)
 	occluder.position.y -= 1.0
 	await physics_frame
 	await physics_frame
-	apparition._physics_process(Apparition.COVER_DESPAWN_SECONDS - 0.11)
+	apparition._update_visible(camera, Apparition.COVER_DESPAWN_SECONDS - 0.11)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible, "Breaking full cover restarts the three-second timer")
 	player.in_ui_mode = true
 	apparition._physics_process(4.0)
@@ -340,7 +353,7 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 	apparition._physics_process(4.0)
 	player.grabbed = false
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Ineligible cameras pause the cover timer and drain")
-	apparition._physics_process(0.09)
+	apparition._update_visible(camera, 0.09)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible, "The apparition remains present just before three seconds of cover")
 	apparition._physics_process(0.03)
 	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Three seconds of full cover trigger abrupt despawn")
@@ -365,7 +378,7 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		apparition._time_left = 0.0
 		apparition._physics_process(1.0 / 60.0)
 		apparition.global_position = start
-		apparition._physics_process(0.61)
+		apparition._update_visible(camera, 0.61)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED, "The relocation fixture confirms with clear chest and head rays")
 		var san := player.survival.san
 		camera.rotate_y(PI)
@@ -378,12 +391,58 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		_check(is_equal_approx(end.y, start.y), "The teleport ends on the ground")
 		for blocker in blockers:
 			_check(end.distance_to(blocker.position) > 1.0, "The teleport skips obstructed destinations")
-		apparition._physics_process(29.99 - tick)
+		apparition._update_visible(camera, 29.99 - tick)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Looking away preserves SAN and keeps the apparition present just before 30 seconds")
 		_check(apparition.global_position == end, "Relocation does not repeat during the look-away")
 		apparition._physics_process(0.03)
 		_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "30 seconds of continuous look-away trigger abrupt despawn")
 
+func _check_lethal_pursuit(apparition: Apparition, player: Survivor, world: Node3D) -> void:
+	player.is_player_dead = false
+	apparition.configure(player)
+	player.camera.make_current()
+	player.camera.look_at(Vector3(0, 1.55, 1))
+	apparition._physics_process(0.0)
+	apparition._time_left = 0.0
+	apparition._physics_process(0.0)
+	apparition.global_position = Vector3(0, 0.04, -2.0)
+	_check(apparition._phase == Apparition.Phase.VISIBLE, "The lethal pursuit fixture starts unconfirmed")
+	var wall := _static_box(world, Vector3(0, 1.5, -0.65), Vector3(8, 3, 0.08))
+	await physics_frame
+	await physics_frame
+	for tick in 60:
+		apparition._physics_process(1.0 / 60.0)
+	_check(apparition.global_position.z > -2.0 and apparition.global_position.z < -1.1, "The unseen apparition advances up to the wall")
+	_check(not player.is_player_dead, "A solid wall blocks lethal contact")
+	wall.queue_free()
+	await physics_frame
+	await physics_frame
+	for tick in 60:
+		apparition._physics_process(1.0 / 60.0)
+	_check(player.is_player_dead and player.lethal_contacts == 1, "An unseen, unconfirmed apparition kills exactly once on body contact")
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible, "Lethal contact clears the encounter")
+
+func _check_seated_contact(apparition: Apparition, player: Survivor, player_shape: CollisionShape3D, world: Node3D) -> void:
+	player.is_player_dead = false
+	var seat := Seat.new()
+	seat.seat_camera = player.camera
+	world.add_child(seat)
+	player.seated_in = seat
+	player_shape.disabled = true
+	var panel := _static_box(world, Vector3(0, 1.5, -0.14), Vector3(2, 3, 0.08))
+	await physics_frame
+	await physics_frame
+	apparition._physics_process(0.0)
+	apparition._time_left = 0.0
+	apparition._physics_process(0.0)
+	apparition.global_position = Vector3(0, 0.04, -0.64)
+	apparition._physics_process(1.0 / 60.0)
+	_check(not player.is_player_dead, "A solid panel blocks the seated torso contact even within reach")
+	panel.queue_free()
+	await physics_frame
+	await physics_frame
+	apparition._physics_process(1.0 / 60.0)
+	_check(player.is_player_dead and player.lethal_contacts == 2, "A physically exposed seated torso can be touched without a locomotion capsule")
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
@@ -392,10 +451,11 @@ func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D
 	_box(body, Vector3.ZERO, size)
 	return body
 
-func _box(body: CollisionObject3D, center: Vector3, size: Vector3) -> void:
+func _box(body: CollisionObject3D, center: Vector3, size: Vector3) -> CollisionShape3D:
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = size
 	collision.shape = shape
 	collision.position = center
 	body.add_child(collision)
+	return collision
