@@ -31,7 +31,10 @@ func update(actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node, delta: fl
 	# Grab presentation owns the arms while restrained, preserving the seated legs.
 	if actor.is_grabbed(): return
 	carry.grip_kind = "small"
+	var holding_item: bool = actor.can_hold_item_while_driving()
 	for side in ["L", "R"]:
+		# Carry solves the right arm after the seated pose.
+		if holding_item and side == "R": continue
 		if not actor.body_state.has_part(&"left_arm" if side == "L" else &"right_arm"): continue
 		# The wheel limits its travel to the existing hand range. Keep each
 		# palm at a fixed point on the rim throughout the turn.

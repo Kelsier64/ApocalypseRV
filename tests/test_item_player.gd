@@ -127,6 +127,73 @@ func check_field_terminal() -> void:
 	clear_bag()
 	await steps()
 
+func check_driving_carry() -> void:
+	clear_bag()
+	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
+	rv.position = Vector3(20, 0, 30)
+	world.add_child(rv)
+	var chassis := rv.get_node("Chassis") as Chassis
+	chassis.freeze = true
+	var seat := chassis.get_node("DriverSeat")
+	check(actor.add_item("Field Terminal", false, FieldTerminal.SCENE), "Add a one-hand terminal")
+	check(actor.add_item("Scrapper", true, "res://equipment/scrapper.tscn"), "Add two-hand equipment")
+	check(actor.add_item("Pistol", false, "res://props/pistol.tscn"), "Add a small item with a two-hand stance")
+	await steps()
+	seat.interact_hold(actor)
+	check(seat.current_driver == null, "A selected two-hand item still prevents sitting")
+	# A large item may remain in a different slot after losing an arm.
+	actor.inventory.active_slot = 0
+	actor.refresh_inventory()
+	var terminal := actor.held_item_node as FieldTerminal
+	seat.interact_hold(actor)
+	await steps()
+	check(seat.current_driver == actor and seat.seat_camera.is_current(), "Sitting with a small item activates driving")
+	var carry := actor.get_node("Visuals/Carry")
+	var wheel := seat.get_node("CockpitVisual/SteeringTilt/SteeringWheel") as Node3D
+	for direction in [&"move_right", &"move_left"]:
+		Input.action_press(direction)
+		await steps(30)
+		Input.action_release(direction)
+		var turn_sign := 1.0 if direction == &"move_left" else -1.0
+		check(wheel.rotation.y * turn_sign > .25, "Steering input turns the wheel while holding an item")
+		var rim := wheel.to_global(Vector3(-.211, .018, -.07))
+		check(carry._palm_position("L").distance_to(rim) < .06, "Left hand follows the turning rim")
+		check(terminal.is_visible_in_tree() and carry._palm_position("R").distance_to(terminal.get_node("GripRight").global_position) < .01, "Right hand retains the visible terminal on the turn")
+		check(not terminal.screen.values.is_empty(), "The held display continues to update in the seat")
+
+	var hotbar := InputEventAction.new()
+	hotbar.action = &"hotbar_2"
+	hotbar.pressed = true
+	seat._unhandled_input(hotbar)
+	check(actor.inventory.active_slot == 0 and seat.current_driver == actor, "Seated hotbar refuses the large item without interrupting driving")
+	var scroll := InputEventMouseButton.new()
+	scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	scroll.pressed = true
+	seat._unhandled_input(scroll)
+	check(actor.inventory.active_slot == 2 and actor.held_item_node is Pistol and not actor.held_item_node.visible, "Scrolling skips the large item and the pistol stays holstered")
+	hotbar.action = &"hotbar_1"
+	seat._unhandled_input(hotbar)
+	await steps()
+	terminal = actor.held_item_node as FieldTerminal
+	check(terminal != null and terminal.visible, "A small item can be equipped from the driver's seat")
+
+	actor.body_state.sever(&"left_arm")
+	actor.refresh_inventory()
+	await steps()
+	check(seat.current_driver == actor and not actor.held_item_node.visible, "A driver with one arm keeps steering and stows the item")
+	actor.body_state.reset()
+	actor.refresh_inventory()
+	terminal = actor.held_item_node as FieldTerminal
+	seat.exit_seat(true)
+	actor.set_physics_process(false)
+	await steps()
+	check(actor.seated_in == null and actor.camera.is_current() and terminal.visible, "Leaving the seat restores walking carry")
+	rv.queue_free()
+	actor.position = Vector3(20, 1, 20)
+	actor.rotation = Vector3.ZERO
+	clear_bag()
+	await steps()
+
 func _init() -> void: run.call_deferred()
 
 func check(value: bool, note: String) -> void:
@@ -1460,6 +1527,7 @@ func run() -> void:
 	await check_bed_rest()
 	await check_compass()
 	await check_field_terminal()
+	await check_driving_carry()
 	await check_hud_toggle()
 	await check_new_grants()
 	await check_scavenge_loot()

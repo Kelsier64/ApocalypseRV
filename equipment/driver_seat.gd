@@ -57,6 +57,9 @@ func interact_hold(player: Node3D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not current_driver or current_driver.is_grabbed() or not current_driver.can_drive() or current_driver.is_gameplay_input_blocked():
 		return
+	if current_driver.handle_hotbar_input(event):
+		get_viewport().set_input_as_handled()
+		return
 
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var sensitivity := MOUSE_SENSITIVITY * float(game_settings.get_setting(&"sensitivity"))

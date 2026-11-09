@@ -51,8 +51,13 @@ func _physics_process(delta: float) -> void:
 	var held: Node3D = actor.held_item_node
 	var driver: Node = get_parent().get_node("Locomotion")
 	var grabbed: bool = actor.is_grabbed()
-	var blocked: bool = actor.seated_in != null or actor.sleep.active() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
-	blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
+	var seated: bool = actor.seated_in != null
+	var blocked: bool
+	if seated:
+		blocked = not actor.can_hold_item_while_driving()
+	else:
+		blocked = actor.sleep.active() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+		blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
 	var pistol: bool = carrying and held is Pistol and not grabbed
@@ -62,7 +67,7 @@ func _physics_process(delta: float) -> void:
 	if large and not actor.can_use_hands(2): carrying = false
 	active_hand = "R" if actor.body_state.has_part(&"right_arm") else "L"
 	if grabbed:
-		_grab_arms(is_instance_valid(held))
+		_grab_arms(not seated and is_instance_valid(held))
 		# Free hands belong entirely to the grab pose, with no stale carry blend
 		# overriding it (including the support hand of a normally two-hand prop).
 		if not carrying or active_hand != "R": right_weight = 0.0
@@ -73,6 +78,7 @@ func _physics_process(delta: float) -> void:
 	var holding_left := carrying and ((large and not grabbed) or active_hand == "L" or pistol)
 	right_weight = 1.0 if holding_right else move_toward(right_weight, 0.0, delta * 7.0)
 	left_weight = 1.0 if holding_left else move_toward(left_weight, 0.0, delta * 7.0)
+	if seated: left_weight = 0.0 # The steering pose owns the left arm immediately.
 	# Keep grip pose and held simulation while placement hides the real model.
 	if blocked:
 		if is_instance_valid(held): held.hide()
@@ -280,6 +286,30 @@ func _grab_arms(holding_item: bool) -> void:
 
 func _update_item(delta: float, large: bool) -> void:
 	if grip_kind == "round": item.transform = item_hold_transform
+	var marker: Node3D = item.get_parent()
+	marker.global_transform = actor.global_transform * _item_hold_pose(delta, large)
+	if item.has_method("update_held_grips"): item.update_held_grips()
+	# Generic contacts were fitted to visible triangles on equip. Bounds are
+	# only a seed; irregular silhouettes need not fill their AABB corners.
+	# Explicit support/flashlight grips retain their authored behavior.
+	var right: Vector3 = surface_grips.get("R", Vector3(bounds.end.x + .035, bounds.get_center().y, bounds.end.z - .04))
+	var left: Vector3 = surface_grips.get("L", Vector3(bounds.position.x - .035, bounds.get_center().y, bounds.end.z - .04))
+	grip_right = marker.to_global(right)
+	grip_left = marker.to_global(left)
+	for side in ["Right", "Left"]:
+		var grip := item.get_node_or_null("Grip" + side) as Node3D
+		if grip != null:
+			if side == "Right": grip_right = grip.global_position
+			else: grip_left = grip.global_position
+	if active_hand == "L" and grip_kind == "round": grip_left = grip_right
+
+func _item_hold_pose(delta: float, large: bool) -> Transform3D:
+	if actor.seated_in != null:
+		# Keep the prop beside and above the rim. Its display can be seen by
+		# looking down while the grip stays fixed relative to the seat.
+		var seated_basis := Basis(Vector3.RIGHT, -.25)
+		var seated_center := Vector3(.30, 1.36, -.46)
+		return Transform3D(seated_basis, seated_center - seated_basis * bounds.get_center())
 	# Pitch is limited by reach, independent of free camera look. Both observers
 	# and the first-person camera see these same hands and this same prop.
 	var pitch: float = clampf(actor.camera.rotation.x, -.45, .45)
@@ -338,22 +368,7 @@ func _update_item(delta: float, large: bool) -> void:
 	var pivot := Vector3(0, 1.45 - crouch_drop, 0)
 	center = pivot + carry_basis * (center - pivot)
 	if actor.is_crawling(): center += Vector3(0, -1.0, -.12)
-	var marker: Node3D = item.get_parent()
-	marker.global_transform = actor.global_transform * Transform3D(carry_basis, center - carry_basis * bounds.get_center())
-	if item.has_method("update_held_grips"): item.update_held_grips()
-	# Generic contacts were fitted to visible triangles on equip. Bounds are
-	# only a seed; irregular silhouettes need not fill their AABB corners.
-	# Explicit support/flashlight grips retain their authored behavior.
-	var right: Vector3 = surface_grips.get("R", Vector3(bounds.end.x + .035, bounds.get_center().y, bounds.end.z - .04))
-	var left: Vector3 = surface_grips.get("L", Vector3(bounds.position.x - .035, bounds.get_center().y, bounds.end.z - .04))
-	grip_right = marker.to_global(right)
-	grip_left = marker.to_global(left)
-	for side in ["Right", "Left"]:
-		var grip := item.get_node_or_null("Grip" + side) as Node3D
-		if grip != null:
-			if side == "Right": grip_right = grip.global_position
-			else: grip_left = grip.global_position
-	if active_hand == "L" and grip_kind == "round": grip_left = grip_right
+	return Transform3D(carry_basis, center - carry_basis * bounds.get_center())
 
 func _align_flashlight() -> void:
 	# Keep the lens aimed forward, and seat the handle against the natural palm.

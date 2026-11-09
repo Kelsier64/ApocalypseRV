@@ -267,8 +267,12 @@ func _advance_flashlight(delta: float) -> void:
 		_flashlight_display_signature = signature
 		_update_inventory_display()
 
+func _is_large_slot(index: int) -> bool:
+	return index >= 0 and index < inventory.items.size() and inventory.items[index].get("is_large", false)
+
 func _set_active_slot(index: int) -> void:
 	if is_grabbed() or is_gameplay_input_blocked() or is_placing_equipment(): return
+	if seated_in != null and _is_large_slot(index): return
 	var previous := inventory.active_slot
 	# A now unusable large item stays in the bag but must not lock slot selection.
 	var changed := false
@@ -693,24 +697,27 @@ func _unhandled_input(event):
 		# Clamp vertical rotation to avoid flipping backward
 		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 	
-	# Mouse wheel to change slots
-	if event is InputEventMouseButton and event.is_pressed():
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_set_active_slot((inventory.active_slot - 1 + MAX_SLOTS) % MAX_SLOTS)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_set_active_slot((inventory.active_slot + 1) % MAX_SLOTS)
-			
-	# Number keys to change slots
-	for slot in range(MAX_SLOTS):
-		if event.is_action_pressed("hotbar_%d" % (slot + 1)):
-			_set_active_slot(slot)
-			break
+	handle_hotbar_input(event)
 
-	# Drop item
 	if event.is_action_pressed("drop_item"):
 		drop_item()
 
 	placement.handle_input(self, event)
+
+func handle_hotbar_input(event: InputEvent) -> bool:
+	if event is InputEventMouseButton and event.is_pressed() and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		var direction := -1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1
+		var index := posmod(inventory.active_slot + direction, MAX_SLOTS)
+		if seated_in != null and _is_large_slot(index):
+			# The bag can contain at most one two-hand item.
+			index = posmod(index + direction, MAX_SLOTS)
+		_set_active_slot(index)
+		return true
+	for slot in range(MAX_SLOTS):
+		if event.is_action_pressed("hotbar_%d" % (slot + 1)):
+			_set_active_slot(slot)
+			return true
+	return false
 
 func read_held_terminal() -> Node:
 	return load("res://equipment/training_terminal_reader.gd").open(self)
@@ -1692,6 +1699,10 @@ func can_use_hands(required: int = 1) -> bool:
 
 func can_drive() -> bool:
 	return not is_crawling() and can_use_hands() and not inventory.is_holding_large_item()
+
+func can_hold_item_while_driving() -> bool:
+	# Pistols use a two-hand grip despite fitting in a normal inventory slot.
+	return can_use_hands(2) and not is_grabbed() and not inventory.is_holding_large_item() and is_instance_valid(held_item_node) and not held_item_node is Pistol
 
 func crawl_speed() -> float:
 	if usable_arms() == 0: return 0.0
