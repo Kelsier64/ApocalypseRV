@@ -32,7 +32,12 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var mode := "Driving" if seat.current_driver == player else "On foot"
-	_status.text = "SAN %.2f%%  |  %s" % [player.survival.san, mode]
+	var effects: PlayerSanEffects = player.san_effects
+	var active := PackedStringArray()
+	if effects._blink_remaining > 0.0: active.append("Blink")
+	if effects._delay_remaining > 0.0: active.append("Direction delay")
+	if effects._misdirection_remaining > 0.0: active.append("Wrong direction")
+	_status.text = "SAN %.2f%%  |  %s\nActive: %s" % [player.survival.san, mode, ", ".join(active) if not active.is_empty() else "None"]
 
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return
@@ -68,8 +73,8 @@ func _queue_effect(key: Key) -> void:
 	if effects._control == PlayerSanEffects.InputMode.NONE: return
 	match key:
 		KEY_F7: effects._blink_wait = 0.00001
-		KEY_F8: effects._delay_wait = 0.00001
-		KEY_F9: effects._misdirection_wait = 0.00001
+		KEY_F8: effects._delay_wait = 0.0
+		KEY_F9: effects._misdirection_wait = 0.0
 
 func _open_editor() -> void:
 	if player.is_gameplay_input_blocked() or player.in_ui_mode or player.is_placing_equipment(): return

@@ -231,19 +231,38 @@ func check_san_effects() -> void:
 	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Settings clears the current SAN effects")
 	actor.settings_open = false
 
+	var previous_wait := Vector3.ONE
+	for san in [19.0, 10.0, 0.0, -5.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._delay_wait = 1.0
+		effects._misdirection_wait = 1.0
+		effects._blink_wait = 1.0
+		effects.advance(.5, san, walk)
+		var remaining := Vector3(effects._delay_wait, effects._misdirection_wait, effects._blink_wait)
+		check(remaining.x < previous_wait.x and remaining.y < previous_wait.y and remaining.z < previous_wait.z, "Delay, misdirection, and blinking become more likely as SAN falls to %s" % san)
+		previous_wait = remaining
+	effects.reset()
+
 	effects.advance(.01, 0.0, walk)
+	effects._delay_wait = 1.0
+	effects._misdirection_wait = 1.0
 	for sample in 20:
 		effects.advance(.02, 0.0, walk)
 		effects.walk_direction(Vector2.LEFT)
 	effects._delay_wait = .0001
 	effects.advance(.01, 0.0, walk)
+	effects._delay_wait = 1.0
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "Delayed movement briefly uses the earlier direction")
-	effects.advance(.26, 0.0, walk)
+	effects.advance(.25, 0.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "The previous direction persists long enough for the delay to register")
+	effects.advance(.20, 0.0, walk)
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Delayed movement delivers the new direction within the brief delay")
 	effects.advance(.01, 20.0, walk)
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Recovering to 20 immediately clears delayed input")
 
 	effects.advance(.01, -5.0, walk)
+	effects._delay_wait = 1.0
 	effects._misdirection_wait = .0001
 	effects.advance(.01, -5.0, walk)
 	var wrong_direction := effects.walk_direction(Vector2.UP)
@@ -251,10 +270,13 @@ func check_san_effects() -> void:
 	check(not effects.walk_direction(Vector2.ZERO).is_zero_approx(), "Low SAN can produce an idle sidestep")
 	effects.advance(.01, -5.0, drive)
 	check(effects.steering(.6) == .6, "Walking disruption does not carry over to steering")
+	effects._delay_wait = 1.0
 	effects._misdirection_wait = .0001
 	effects.advance(.01, -5.0, drive)
+	effects._misdirection_wait = 1.0
 	check(is_equal_approx(effects.steering(.6), -.6), "Low SAN can briefly invert steering")
-	check(is_equal_approx(absf(effects.steering(0.0)), .45), "Low SAN can briefly nudge idle steering")
+	effects.advance(.45, -5.0, drive)
+	check(is_equal_approx(absf(effects.steering(0.0)), .65), "Low SAN can noticeably nudge idle steering during the disruption")
 	effects.advance(.01, -5.0, PlayerSanEffects.InputMode.NONE)
 	check(effects.steering(.6) == .6 and effects.steering(0.0) == 0.0, "Leaving active controls clears the steering episode")
 	effects.reset()
