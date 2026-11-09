@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://equipment/bed.gd" id="1"]
+[ext_resource type="Resource" path="res://equipment/bed_definition.tres" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/rv_bunk/rv_bunk.glb" id="3"]
+
+[sub_resource type="BoxShape3D" id="Mattress"]
+size = Vector3(0.88, 0.25, 2.10)
+
+[sub_resource type="BoxShape3D" id="Support"]
+size = Vector3(0.84, 0.27, 0.15)
+
+[node name="Bed" type="RigidBody3D"]
+collision_layer = 3
+script = ExtResource("1")
+definition = ExtResource("2")
+hold_rotation = Vector3(0, 1.5707963, 0)
+
+[node name="Visuals" parent="." instance=ExtResource("3")]
+
+[node name="MattressCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.395, 0)
+shape = SubResource("Mattress")
+
+[node name="HeadSupportCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.135, 0.784)
+shape = SubResource("Support")
+
+[node name="FootSupportCollision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.135, -0.784)
+shape = SubResource("Support")
+
+[node name="RestPose" type="Marker3D" parent="."]
+position = Vector3(0, 0.62, -1.04)
+rotation_degrees = Vector3(90, 0, 0)

@@ -1313,6 +1313,74 @@ func check_hud_toggle() -> void:
 	Input.parse_input_event(key)
 	await steps()
 
+func check_bed_rest() -> void:
+	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
+	rv.position = Vector3(20.0, 0.0, 30.0)
+	world.add_child(rv)
+	var chassis := rv.get_node("Chassis") as Chassis
+	chassis.freeze = true
+	var bed := chassis.get_node("Bunk") as Bed
+	var clock := WorldClock.new()
+	clock.name = "WorldClock"
+	world.add_child(clock)
+	clock.set_time(1, 23.5)
+	clock.running = false
+	clear_bag()
+	actor.global_position = bed.to_global(Vector3(1.0, 0.10, 0.06))
+	actor.set_physics_process(true)
+	ray.set_physics_process(true)
+	await steps(30)
+	check(bed.is_fixed and bed.get_connected_rv() == chassis, "Starter bed uses the normal mounted Item contract")
+	check(ItemState.valid(bed.scene_file_path, bed.capture_item_state()), "Bed is accepted by the Item save catalog")
+	check(RecipeCatalog.find("rv_bunk").scene_path == bed.scene_file_path, "Older vehicles can obtain the same bed from crafting")
+	actor.look_at(actor.global_position + Vector3.LEFT)
+	actor.camera.look_at(bed.to_global(Vector3(0.0, 0.49, 0.0)))
+	actor.survival.san = 34.0
+	var key := InputEventAction.new()
+	key.action = &"interact"
+	key.pressed = true
+	Input.parse_input_event(key)
+	await steps(4)
+	key.pressed = false
+	Input.parse_input_event(key)
+	check(actor.get_player_mode() == actor.PlayerMode.RESTING and bed.occupant == actor, "Looking at the mounted bed and pressing E enters rest")
+	if actor.sleep.active():
+		check(actor.global_basis.y.dot(bed.global_basis.z) > 0.99, "The player lies with their head toward the pillow")
+		check(not actor.enter_ui_mode() and not bed.can_pickup(actor), "Rest owns player controls and prevents equipment pickup")
+		var san_before: float = actor.survival.san
+		var time_before := clock.elapsed_seconds
+		actor.sleep.request_skip(6)
+		await steps(12)
+		check(clock.elapsed_seconds == time_before and actor.survival.san > san_before, "Rest gradually restores SAN without advancing a frozen clock")
+		clock.running = true
+		san_before = actor.survival.san
+		var weather_before := clock.weather.capture()
+		actor.sleep.request_skip(1)
+		await steps(120)
+		check(actor.survival.san > san_before and actor.survival.san < san_before + 10.0, "A sleep skip restores SAN gradually over the interval")
+		await steps(132)
+		check(clock.day_number() == 2 and absf(clock.elapsed_seconds - time_before - 3600.0) < 45.0, "Sleep advances one hour across midnight")
+		check(absf(actor.survival.san - san_before - 10.0) < 0.2 and clock.weather.capture() != weather_before, "The skip advances weather and restores ten SAN per in-game hour")
+		var interrupt_time := clock.elapsed_seconds
+		actor.sleep.request_skip(6)
+		await steps(12)
+		actor.take_damage(1.0)
+		await steps(6)
+		check(actor.get_player_mode() == actor.PlayerMode.NORMAL and not is_instance_valid(bed.occupant) and actor.is_on_floor(), "Damage wakes the player on the deck and releases the bed")
+		check(clock.elapsed_seconds - interrupt_time < 3600.0, "Waking early cancels the remaining time skip")
+	actor.exit_ui_mode()
+	actor.current_player_health = actor.max_player_health
+	actor.damage_cooldown = 0.0
+	actor.survival.reset()
+	actor.set_physics_process(false)
+	ray.set_physics_process(false)
+	actor.global_position = Vector3(20, 1, 20)
+	actor.global_rotation = Vector3.ZERO
+	actor.camera.rotation = Vector3.ZERO
+	rv.queue_free()
+	clock.queue_free()
+	await steps()
+
 func run() -> void:
 	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
@@ -1342,6 +1410,7 @@ func run() -> void:
 	check_long_blink_distribution()
 	check_eating()
 	check_san_food()
+	await check_bed_rest()
 	await check_compass()
 	await check_hud_toggle()
 	await check_new_grants()
@@ -1460,5 +1529,5 @@ func run() -> void:
 	world.queue_free()
 	await steps()
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: unified Item player preflight, F gestures, preview ownership, commit/drop and support pickup")
+	if failures.is_empty(): print("PASS: unified Item player preflight, F gestures, preview ownership, commit/drop, support pickup and bed rest")
 	quit(0 if failures.is_empty() else 1)

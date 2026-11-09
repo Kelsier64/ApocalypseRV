@@ -51,7 +51,7 @@ func _physics_process(delta: float) -> void:
 	var held: Node3D = actor.held_item_node
 	var driver: Node = get_parent().get_node("Locomotion")
 	var grabbed: bool = actor.is_grabbed()
-	var blocked: bool = actor.seated_in != null or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
+	var blocked: bool = actor.seated_in != null or actor.sleep.active() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
 	blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
 	var carrying := is_instance_valid(held) and not blocked
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))

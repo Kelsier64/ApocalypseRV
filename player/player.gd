@@ -49,6 +49,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
 var survival := PlayerSurvival.new()
+var sleep := PlayerSleep.new()
 var san_effects := PlayerSanEffects.new()
 var consumables := PlayerConsumables.new()
 var body_state := PlayerBodyState.new()
@@ -87,7 +88,7 @@ var grab_control: Node
 var _execution_crush_in_progress := false
 var ragdoll_control: Node
 var death_velocity := Vector3.ZERO
-enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED }
+enum PlayerMode { NORMAL, PLACING, UI, SEATED, DEAD, GRABBED, RESTING }
 var seated_in: Node3D = null
 
 # Locomotion
@@ -450,6 +451,8 @@ func get_player_mode() -> PlayerMode:
 	if is_grabbed(): return PlayerMode.GRABBED
 	if seated_in != null:
 		return PlayerMode.SEATED
+	if sleep.active():
+		return PlayerMode.RESTING
 	if in_ui_mode:
 		return PlayerMode.UI
 	if is_placing_equipment():
@@ -486,6 +489,7 @@ func enter_ui_mode() -> bool:
 	return true
 
 func exit_ui_mode():
+	sleep.end(self)
 	if in_ui_mode:
 		_capture_settings_release_latch()
 	in_ui_mode = false
@@ -493,6 +497,7 @@ func exit_ui_mode():
 	_advance_flashlight(0.0)
 
 func complete_world_transition(at: Transform3D) -> void:
+	if sleep.active(): exit_ui_mode()
 	san_effects.reset()
 	consumables.cancel()
 	weapon.cancel_actions()
@@ -524,6 +529,9 @@ func complete_world_transition(at: Transform3D) -> void:
 		# Rebind physics at that location instead of keeping the old-space pose.
 		death_velocity = Vector3.ZERO
 		_begin_death_physics.call_deferred()
+
+func begin_rest(bed: Bed) -> String:
+	return sleep.begin(self, bed)
 
 func restore_checkpoint_state(state: Dictionary) -> void:
 	crawl_transition_remaining = 0.0
@@ -663,6 +671,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event):
+	if sleep.active():
+		sleep.handle_input(self, event)
+		return
 	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
@@ -1291,9 +1302,9 @@ func _advance_san_effects(delta: float) -> void:
 			control = PlayerSanEffects.InputMode.WALK
 	san_effects.advance(delta, survival.san, control)
 
-func _advance_survival(delta: float) -> void:
+func _advance_survival(delta: float, rest_recovery := 0.0) -> void:
 	if PlayerSurvival.simulation_active(self):
-		var ticks := survival.advance(delta)
+		var ticks := survival.advance(delta, rest_recovery <= 0.0)
 		for tick in mini(ticks, ceili(current_player_health)):
 			if is_player_dead: break
 			# Starvation neither observes nor changes combat invulnerability.
@@ -1301,11 +1312,13 @@ func _advance_survival(delta: float) -> void:
 			current_player_health = maxf(0.0, current_player_health - 1.0)
 			_update_health_bar()
 			if current_player_health <= 0.0: _player_die()
+		if rest_recovery > 0.0 and not is_player_dead: recover_san(rest_recovery)
 	_update_food_bar()
 	_update_san_bar()
 
 func _physics_process(delta):
-	_advance_survival(delta)
+	var survival_delta := sleep.advance(self, delta)
+	_advance_survival(survival_delta, sleep.recover_amount(survival_delta) if sleep.active() else 0.0)
 	consumables.advance(self, 0.0)
 	_update_food_bar()
 	# Cover restored/direct inventory changes before applying any carrier motion.
@@ -1362,6 +1375,7 @@ func take_damage(amount: float):
 	if is_player_dead: return
 	if damage_cooldown > 0.0: return
 	if not is_finite(amount) or amount <= 0.0: return
+	if sleep.active(): sleep.request_wake()
 	consumables.cancel()
 	
 	current_player_health = maxf(0.0, current_player_health - amount)
@@ -1387,6 +1401,7 @@ func kill() -> void:
 ## Capture platform motion before a leg cut can force the player out of a seat.
 func apply_explosion_hit(amount: float, limb_count: int = 0, blast_impulse: Vector3 = Vector3.ZERO) -> bool:
 	if is_player_dead or damage_cooldown > 0.0 or not is_finite(amount) or amount <= 0.0 or not blast_impulse.is_finite(): return false
+	if sleep.active(): sleep.request_wake()
 	consumables.cancel()
 	var inherited := velocity
 	if locomotion_state == LocomotionState.CLIMBING:
@@ -1724,7 +1739,10 @@ func _apply_body_capabilities() -> void:
 
 func _apply_body_collision() -> void:
 	if not is_instance_valid(body_collision_shape) or standing_collision_shape == null: return
-	if is_crawling():
+	if sleep.active():
+		body_collision_shape.shape = sleep.capsule
+		body_collision_shape.transform = PlayerSleep.POSE_COLLISION
+	elif is_crawling():
 		var capsule := CapsuleShape3D.new()
 		capsule.radius = CRAWL_RADIUS
 		capsule.height = CRAWL_ONE_LEG_LENGTH if body_state.has_part(&"left_leg") or body_state.has_part(&"right_leg") else CRAWL_NO_LEGS_LENGTH

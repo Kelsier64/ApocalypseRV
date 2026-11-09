@@ -37,9 +37,9 @@ func nourish(amount: float) -> void:
 	hunger = minf(MAX_HUNGER, hunger + amount)
 	starvation_elapsed = 0.0
 
-func advance(delta: float) -> int:
+func advance(delta: float, drain_passive_san := true) -> int:
 	if not is_finite(delta) or delta <= 0.0: return 0
-	if san > 0.0:
+	if drain_passive_san and san > 0.0:
 		san -= SAN_DRAIN_PER_SECOND * delta
 		if san < 1e-9: san = 0.0
 	var starving_time := delta
