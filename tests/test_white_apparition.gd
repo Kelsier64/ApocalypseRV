@@ -378,11 +378,11 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		_check(is_equal_approx(end.y, start.y), "The teleport ends on the ground")
 		for blocker in blockers:
 			_check(end.distance_to(blocker.position) > 1.0, "The teleport skips obstructed destinations")
-		apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS - tick - 0.01)
-		_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Looking away preserves SAN and keeps the apparition present just before eight seconds")
+		apparition._physics_process(29.99 - tick)
+		_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Looking away preserves SAN and keeps the apparition present just before 30 seconds")
 		_check(apparition.global_position == end, "Relocation does not repeat during the look-away")
 		apparition._physics_process(0.03)
-		_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Eight seconds of continuous look-away trigger abrupt despawn")
+		_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "30 seconds of continuous look-away trigger abrupt despawn")
 
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:

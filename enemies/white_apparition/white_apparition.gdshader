@@ -5,7 +5,11 @@ varying vec3 local_point;
 void vertex() {
  local_point = VERTEX;
  float shiver = sin(VERTEX.y * 11.0 + TIME * 3.0) * sin(TIME * 2.1 + VERTEX.z * 8.0);
- VERTEX += NORMAL * (shiver * (0.0006 + veil * 0.002) + veil * 0.008);
+ // Keep thin limbs sampled by the 3D render at low resolutions or long distances.
+ float clip_w = abs(PROJECTION_MATRIX[2].w * NODE_POSITION_VIEW.z + PROJECTION_MATRIX[3].w);
+ float meters_per_pixel = 2.0 * clip_w / (VIEWPORT_SIZE.y * abs(PROJECTION_MATRIX[1].y));
+ float silhouette_padding = clamp(meters_per_pixel * 0.7 - 0.028, 0.0, 0.16);
+ VERTEX += NORMAL * (silhouette_padding + shiver * (0.0006 + veil * 0.002) + veil * 0.008);
 }
 void fragment() {
  float facing = abs(dot(normalize(NORMAL), normalize(VIEW)));
