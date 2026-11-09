@@ -362,6 +362,30 @@ func check_medium_san_vision() -> void:
 	effects.advance(.01, 20.0, walk)
 	check(not effects._overlay.visible and not effects._vision_overlay.is_visible_in_tree(), "Recovering to 20 clears all visual effects")
 
+func check_long_blink_distribution() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	const DRAW_COUNT := 40000
+	var averages: Array[float] = []
+	for severity in [0.5, 0.9]:
+		effects._rng.seed = 83
+		var total := 0.0
+		var shortest := INF
+		var longest := -INF
+		var rare_closures := 0
+		var endpoint_draws := 0
+		for draw in DRAW_COUNT:
+			var duration := effects._sample_long_blink_duration(severity)
+			total += duration
+			shortest = minf(shortest, duration)
+			longest = maxf(longest, duration)
+			if duration >= 15.0: rare_closures += 1
+			if duration == 1.5 or duration == 16.0: endpoint_draws += 1
+		averages.append(total / DRAW_COUNT)
+		check(shortest >= 1.5 and longest <= 16.0 and endpoint_draws == 0, "Long closures stay within 1.5–16 seconds without piling up at the limits")
+		check(rare_closures < DRAW_COUNT * .001, "Closures of 15 seconds or more account for less than 0.1 percent")
+		if severity == 0.9: check(rare_closures > 0, "Closures of 15–16 seconds are possible at very low SAN")
+	check(averages[1] > averages[0] + .7, "Long closures last longer on average as SAN falls below zero")
+
 func check_eating() -> void:
 	clear_bag()
 	var path: String = FoodCatalog.SCENES[0]
@@ -1238,6 +1262,7 @@ func run() -> void:
 	check_survival()
 	check_san_effects()
 	check_medium_san_vision()
+	check_long_blink_distribution()
 	check_eating()
 	check_san_food()
 	await check_compass()

@@ -92,7 +92,7 @@ func _advance_blink(delta: float, severity: float, medium: bool) -> void:
 		if medium and _long_blink_wait <= 0.0:
 			_long_blink = true
 			_long_blink_wait = 0.28 + 0.72 * _roll_wait()
-			_blink_duration = lerpf(1.3, 4.2, _sample_episode(severity))
+			_blink_duration = _sample_long_blink_duration(severity)
 			_blink_remaining = _blink_duration
 		elif _blink_wait == 0.0:
 			_blink_wait = _rng.randf_range(0.55, 1.45)
@@ -156,6 +156,14 @@ func _advance_direction(delta: float, severity: float) -> void:
 
 func _roll_wait() -> float:
 	return -log(maxf(_rng.randf(), 0.000001))
+
+func _sample_long_blink_duration(severity: float) -> float:
+	var mean := lerpf(2.6, 6.2, severity)
+	var duration := _rng.randfn(mean, 2.8)
+	# Reject the tails outside the range so samples never pile up at either limit.
+	while duration < 1.5 or duration > 16.0:
+		duration = _rng.randfn(mean, 2.8)
+	return duration
 
 func _sample_episode(severity: float) -> float:
 	# Every SAN has the same range. Lower SAN weights the draw toward larger values.
