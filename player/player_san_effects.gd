@@ -5,8 +5,8 @@ class_name PlayerSanEffects
 enum InputMode { NONE, WALK, DRIVE }
 
 const THRESHOLD := 20.0
-const DELAY_RATE := 0.24
-const MISDIRECTION_RATE := 0.32
+const DELAY_RATE := 0.16
+const MISDIRECTION_RATE := 0.20
 
 var _rng := RandomNumberGenerator.new()
 var _control := InputMode.NONE
@@ -24,6 +24,10 @@ var _delayed_input := Vector2.ZERO
 var _pending_input: Array[Vector3] = []
 var _misdirection_wait := 0.0
 var _misdirection_remaining := 0.0
+var _misdirection_duration := 0.0
+var _misdirection_strength := 0.0
+var _sway_period := 1.0
+var _sway_phase := 0.0
 var _side := 1.0
 
 func _ready() -> void:
@@ -72,36 +76,58 @@ func _advance_direction(delta: float, severity: float) -> void:
 		_delay_wait -= delta * severity * DELAY_RATE
 		if _delay_wait <= 0.0:
 			_delay_wait = _roll_wait()
-			_delay_seconds = _rng.randf_range(0.27, 0.42)
-			_delay_remaining = _rng.randf_range(1.0, 1.35)
+			_delay_seconds = lerpf(0.22, 0.68, _sample_episode(severity))
+			_delay_remaining = lerpf(1.3, 4.2, _sample_episode(severity))
 			_delayed_input = _last_input
 	if _misdirection_remaining == 0.0:
 		_misdirection_wait -= delta * severity * MISDIRECTION_RATE
 		if _misdirection_wait <= 0.0:
 			_misdirection_wait = _roll_wait()
-			_misdirection_remaining = _rng.randf_range(0.5, 0.75)
+			_misdirection_duration = lerpf(1.1, 3.4, _sample_episode(severity))
+			_misdirection_remaining = _misdirection_duration
+			_misdirection_strength = lerpf(0.12, 1.0, _sample_episode(severity))
+			_sway_period = _rng.randf_range(0.75, 1.35)
+			_sway_phase = _rng.randf_range(0.0, TAU)
 			_side = -1.0 if _rng.randf() < 0.5 else 1.0
 
 func _roll_wait() -> float:
 	return -log(maxf(_rng.randf(), 0.000001))
 
+func _sample_episode(severity: float) -> float:
+	# Every SAN has the same range. Lower SAN weights the draw toward larger values.
+	return pow(_rng.randf(), lerpf(3.8, 0.38, severity))
+
+func _misdirection_weight() -> float:
+	if _misdirection_remaining <= 0.0: return 0.0
+	var elapsed := _misdirection_duration - _misdirection_remaining
+	var envelope := smoothstep(0.0, 0.22, elapsed) * smoothstep(0.0, 0.30, _misdirection_remaining)
+	var sway := 0.5 + 0.5 * sin(TAU * elapsed / _sway_period + _sway_phase)
+	return _misdirection_strength * envelope * sway * sway
+
 func walk_direction(input: Vector2) -> Vector2:
 	if _control != InputMode.WALK: return input
 	var direction := _delay_direction(input)
 	if _misdirection_remaining <= 0.0: return direction
-	if direction.is_zero_approx(): return Vector2(_side * 0.55, 0.0)
-	return direction.orthogonal() * _side
+	var pull := _side * _misdirection_weight() * (0.38 + 0.40 * direction.length())
+	return (direction + Vector2(pull, 0.0)).limit_length()
 
 func steering(turn: float) -> float:
 	if _control != InputMode.DRIVE: return turn
 	var delayed := _delay_direction(Vector2(turn, 0.0))
 	var direction := delayed.x if _delay_remaining > 0.0 else turn
 	if _misdirection_remaining <= 0.0: return direction
-	return _side * 0.65 if is_zero_approx(direction) else -direction
+	var weight := _misdirection_weight()
+	var response := 1.0 - 2.0 * pow(weight, 1.7)
+	var pull := _side * weight * 0.55 * (1.0 - absf(direction))
+	return clampf(direction * response + pull, -1.0, 1.0)
+
+func _direction_delay() -> float:
+	# Shorten the lag as the episode ends while keeping queued samples in order.
+	return minf(_delay_seconds, 0.75 * _delay_remaining)
 
 func _delay_direction(input: Vector2) -> Vector2:
 	if _delay_remaining > 0.0 and not input.is_equal_approx(_last_input):
-		_pending_input.append(Vector3(input.x, input.y, _delay_remaining - _delay_seconds))
+		_pending_input.append(Vector3(input.x, input.y, _delay_remaining - _direction_delay()))
 	_last_input = input
 	if _delay_remaining <= 0.0: return input
 	while not _pending_input.is_empty() and _pending_input[0].z >= _delay_remaining:

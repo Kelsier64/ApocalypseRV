@@ -242,6 +242,18 @@ func check_san_effects() -> void:
 		var remaining := Vector3(effects._delay_wait, effects._misdirection_wait, effects._blink_wait)
 		check(remaining.x < previous_wait.x and remaining.y < previous_wait.y and remaining.z < previous_wait.z, "Delay, misdirection, and blinking become more likely as SAN falls to %s" % san)
 		previous_wait = remaining
+	var previous_sample := Vector4.ZERO
+	for san in [19.0, 0.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._rng.seed = 23
+		effects._blink_wait = 1.0
+		effects._delay_wait = 0.0
+		effects._misdirection_wait = 0.0
+		effects.advance(.01, san, walk)
+		var sample := Vector4(effects._delay_seconds, effects._delay_remaining, effects._misdirection_strength, effects._misdirection_duration)
+		check(sample.x > previous_sample.x and sample.y > previous_sample.y and sample.z > previous_sample.z and sample.w > previous_sample.w, "Matched random draws yield longer and stronger directional effects at SAN %s" % san)
+		previous_sample = sample
 	effects.reset()
 
 	effects.advance(.01, 0.0, walk)
@@ -250,33 +262,46 @@ func check_san_effects() -> void:
 	for sample in 20:
 		effects.advance(.02, 0.0, walk)
 		effects.walk_direction(Vector2.LEFT)
-	effects._delay_wait = .0001
+	effects._delay_wait = 0.0
 	effects.advance(.01, 0.0, walk)
 	effects._delay_wait = 1.0
+	var delay := effects._delay_seconds
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "Delayed movement briefly uses the earlier direction")
-	effects.advance(.25, 0.0, walk)
+	effects.advance(delay * .9, 0.0, walk)
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "The previous direction persists long enough for the delay to register")
-	effects.advance(.20, 0.0, walk)
+	effects.advance(delay * .2, 0.0, walk)
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Delayed movement delivers the new direction within the brief delay")
+	effects._delay_remaining = .12
+	check(effects.walk_direction(Vector2.UP) == Vector2.RIGHT, "The last part of a delay still queues new input")
+	effects.advance(.1, 0.0, walk)
+	check(effects.walk_direction(Vector2.ZERO) == Vector2.UP, "The shortened delay delivers a late tap before the episode ends")
 	effects.advance(.01, 20.0, walk)
 	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Recovering to 20 immediately clears delayed input")
 
 	effects.advance(.01, -5.0, walk)
 	effects._delay_wait = 1.0
-	effects._misdirection_wait = .0001
+	effects._misdirection_wait = 0.0
 	effects.advance(.01, -5.0, walk)
-	var wrong_direction := effects.walk_direction(Vector2.UP)
-	check(is_zero_approx(wrong_direction.y) and is_equal_approx(absf(wrong_direction.x), 1.0), "Low SAN can turn a walking command into a sidestep")
-	check(not effects.walk_direction(Vector2.ZERO).is_zero_approx(), "Low SAN can produce an idle sidestep")
+	effects._misdirection_duration = 2.0
+	effects._misdirection_strength = 1.0
+	effects._sway_period = 1.0
+	effects._sway_phase = PI / 2.0
+	effects._side = 1.0
+	effects._misdirection_remaining = 2.0
+	check(effects.walk_direction(Vector2.UP).is_equal_approx(Vector2.UP), "Walking bias starts smoothly at zero")
+	effects._misdirection_remaining = 1.9
+	var onset := absf(effects.walk_direction(Vector2.UP).x)
+	effects._sway_phase = -PI / 2.0
+	effects._misdirection_remaining = 1.5
+	var biased_direction := effects.walk_direction(Vector2.UP)
+	check(onset > 0.0 and absf(biased_direction.x) > onset and biased_direction.y < 0.0, "A walking sway grows into a lateral bias while retaining forward movement")
+	var idle_sway := absf(effects.walk_direction(Vector2.ZERO).x)
+	check(idle_sway > 0.0 and idle_sway < absf(biased_direction.x), "The same sway gives an idle player a smaller sidestep")
+	effects._misdirection_remaining = .01
+	effects._sway_phase = PI / 2.0 - TAU * 1.99
+	check(absf(effects.walk_direction(Vector2.UP).x) < onset, "Walking bias fades before the episode ends")
 	effects.advance(.01, -5.0, drive)
 	check(effects.steering(.6) == .6, "Walking disruption does not carry over to steering")
-	effects._delay_wait = 1.0
-	effects._misdirection_wait = .0001
-	effects.advance(.01, -5.0, drive)
-	effects._misdirection_wait = 1.0
-	check(is_equal_approx(effects.steering(.6), -.6), "Low SAN can briefly invert steering")
-	effects.advance(.45, -5.0, drive)
-	check(is_equal_approx(absf(effects.steering(0.0)), .65), "Low SAN can noticeably nudge idle steering during the disruption")
 	effects.advance(.01, -5.0, PlayerSanEffects.InputMode.NONE)
 	check(effects.steering(.6) == .6 and effects.steering(0.0) == 0.0, "Leaving active controls clears the steering episode")
 	effects.reset()

@@ -176,15 +176,24 @@ func _run() -> void:
 	seat.interact_hold(player)
 	check(seat.current_driver == player, "Broken engine still permits driving controls and seat access")
 	player.survival.san = 0.0
-	player._advance_san_effects(.01)
-	player.san_effects._misdirection_wait = .0001
-	player._advance_san_effects(.01)
+	var effects: PlayerSanEffects = player.san_effects
+	effects._rng.seed = 7
+	player._advance_san_effects(0.0)
+	effects._misdirection_duration = 2.0
+	effects._misdirection_remaining = 1.5
+	effects._misdirection_strength = 1.0
+	effects._sway_period = 1.0
+	effects._sway_phase = -PI / 2.0
+	effects._side = 1.0
 	Input.action_press("move_left")
 	Input.action_press("move_back")
 	rv._physics_process(1.0 / 60.0)
 	check(rv.steering < 0.0 and rv.brake_input > 0.0, "The seated driver's hallucination reverses steering and preserves the brake command")
 	Input.action_release("move_left")
 	Input.action_release("move_back")
+	rv.steering = 0.0
+	rv._physics_process(1.0 / 60.0)
+	check(rv.steering > 0.0, "A strong steering sway can pull the RV sideways while the driver leaves steering idle")
 	player.recover_san(20.0)
 	rv.steering = 0.0
 	rv.brake_input = 0.0

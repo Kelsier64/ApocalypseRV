@@ -35,8 +35,8 @@ func _process(_delta: float) -> void:
 	var effects: PlayerSanEffects = player.san_effects
 	var active := PackedStringArray()
 	if effects._blink_remaining > 0.0: active.append("Blink")
-	if effects._delay_remaining > 0.0: active.append("Direction delay")
-	if effects._misdirection_remaining > 0.0: active.append("Wrong direction")
+	if effects._delay_remaining > 0.0: active.append("Direction delay %.0f ms" % (1000.0 * effects._direction_delay()))
+	if effects._misdirection_remaining > 0.0: active.append("Directional drift")
 	_status.text = "SAN %.2f%%  |  %s\nActive: %s" % [player.survival.san, mode, ", ".join(active) if not active.is_empty() else "None"]
 
 func _input(event: InputEvent) -> void:
