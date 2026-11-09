@@ -6,7 +6,7 @@ const CAPTURE_AFTER_PATH := CAPTURE_DIRECTORY + "/context-after.png"
 const WORLD_SEED := 42
 const ROAD_START := 330.0
 
-enum ReplayStep { WAITING, PERIPHERAL, CAPTURING_AFTER, LOOK_AWAY }
+enum ReplayStep { WAITING, CAPTURING, REPOSITIONING, LOOK_AWAY }
 
 @onready var player = $Player
 @onready var encounter = $WhiteApparitionEncounter
@@ -18,10 +18,8 @@ var _elapsed := 0.0
 var _replay_started := false
 var _replay_step := ReplayStep.WAITING
 var _san_at_capture := 0.0
-var _peripheral_view := Transform3D.IDENTITY
-var _peripheral_origin := Vector3.ZERO
-var _peripheral_screen_x := 0.0
-var _peripheral_elapsed := 0.0
+var _reposition_origin := Vector3.ZERO
+var _reposition_ticks := 0
 var _look_away_origin := Vector3.ZERO
 var _look_away_elapsed := 0.0
 
@@ -85,58 +83,47 @@ func _physics_process(delta: float) -> void:
 			if phase == WhiteApparition.Phase.HIDDEN: return
 			player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 			if phase == WhiteApparition.Phase.CONFIRMED and player.survival.san < 0.0:
-				_begin_peripheral()
-		ReplayStep.PERIPHERAL:
-			_verify_peripheral(phase, delta)
+				_begin_reposition()
+		ReplayStep.REPOSITIONING:
+			_verify_reposition(phase)
 		ReplayStep.LOOK_AWAY:
 			_verify_look_away(phase, delta)
 
-func _begin_peripheral() -> void:
+func _begin_reposition() -> void:
+	_replay_step = ReplayStep.CAPTURING
+	if not await _save_capture(CAPTURE_PATH): return
 	var camera: Camera3D = player.camera
-	var chest := apparition.to_global(WhiteApparition.CHEST)
-	var distance := camera.global_position.distance_to(chest)
 	var rect := get_viewport().get_visible_rect()
-	var peripheral_ray := camera.project_local_ray_normal(rect.position + rect.size * Vector2(0.73, 0.5))
-	camera.rotate_y(atan2(peripheral_ray.x, -peripheral_ray.z))
-	_replay_step = ReplayStep.PERIPHERAL
-	_peripheral_view = camera.global_transform
-	_peripheral_origin = apparition.global_position
-	_peripheral_screen_x = camera.unproject_position(chest).x
+	var ray := camera.project_local_ray_normal(rect.position + rect.size * Vector2(0.74, 0.5))
+	_reposition_origin = apparition.global_position
 	_san_at_capture = player.survival.san
-	if await _save_capture(CAPTURE_PATH):
-		print("WHITE_APPARITION_CAPTURE distance=%.2f san=%.2f" % [distance, _san_at_capture])
+	camera.rotate_y(atan2(ray.x, -ray.z))
+	_replay_step = ReplayStep.REPOSITIONING
 
-func _verify_peripheral(phase: WhiteApparition.Phase, delta: float) -> void:
-	_peripheral_elapsed += delta
+func _verify_reposition(phase: WhiteApparition.Phase) -> void:
+	_reposition_ticks += 1
 	var camera: Camera3D = player.camera
-	var chest := apparition.to_global(WhiteApparition.CHEST)
-	if phase != WhiteApparition.Phase.CONFIRMED or not apparition.visible or not camera.is_position_in_frustum(chest) \
-		or apparition._point_in_frame(camera, chest, WhiteApparition.CENTER):
-		_replay_error("White apparition left the visible periphery during replay relocation")
+	if phase != WhiteApparition.Phase.CONFIRMED or not apparition.visible or player.survival.san != _san_at_capture:
+		_replay_error("The apparition vanished or drained SAN while the replay looked away")
 		return
-	if player.survival.san != _san_at_capture or not camera.global_transform.is_equal_approx(_peripheral_view):
-		_replay_error("SAN or the fixed camera changed during peripheral relocation")
+	var destination := apparition.global_position
+	if destination == _reposition_origin and _reposition_ticks < 3: return
+	var displacement := (destination - _reposition_origin).slide(Vector3.UP).length()
+	var observer := camera.get_camera_transform().origin
+	var old_bearing := (_reposition_origin - observer).slide(Vector3.UP)
+	var new_bearing := (destination - observer).slide(Vector3.UP)
+	var bearing_change := rad_to_deg(old_bearing.angle_to(new_bearing))
+	if displacement < 10.0 or bearing_change < 59.0:
+		_replay_error("White apparition did not jump far enough (%.2f m, %.1f degrees)" % [displacement, bearing_change])
 		return
-	var displacement := (apparition.global_position - _peripheral_origin).slide(Vector3.UP)
-	if _peripheral_elapsed < WhiteApparition.REPOSITION_DELAY - delta and not displacement.is_zero_approx():
-		_replay_error("White apparition moved before the peripheral delay")
-		return
-	if not apparition._reposition_spent or apparition._reposition_target.is_finite(): return
-	var rect := get_viewport().get_visible_rect()
-	var screen_x := camera.unproject_position(chest).x
-	var viewport_shift := (absf(screen_x - rect.get_center().x) - absf(_peripheral_screen_x - rect.get_center().x)) / rect.size.x
-	var inward := (camera.global_position - _peripheral_origin).slide(Vector3.UP).normalized()
-	var approach := displacement.dot(inward)
-	var lateral := displacement.slide(inward).length()
-	if viewport_shift < 0.10 or approach < 3.8 or lateral < 3.8:
-		_replay_error("White apparition relocation was too small (viewport shift %.3f, approach %.2f m, lateral %.2f m)" % [viewport_shift, approach, lateral])
-		return
-	_replay_step = ReplayStep.CAPTURING_AFTER
+	_replay_step = ReplayStep.CAPTURING
 	if not await _save_capture(CAPTURE_AFTER_PATH): return
-	print("WHITE_APPARITION_PERIPHERAL viewport_shift=%.3f relocation_inward=%.2f relocation_lateral=%.2f san_unchanged=true" % [viewport_shift, approach, lateral])
+	print("WHITE_APPARITION_REPOSITION displacement=%.2f bearing_change=%.1f san_unchanged=true" % [displacement, bearing_change])
 	_look_away_origin = apparition.global_position
-	_replay_step = ReplayStep.LOOK_AWAY
+	_look_away_elapsed = apparition._unseen_elapsed
+	camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 	camera.rotate_y(PI)
+	_replay_step = ReplayStep.LOOK_AWAY
 
 func _verify_look_away(phase: WhiteApparition.Phase, delta: float) -> void:
 	_look_away_elapsed += delta

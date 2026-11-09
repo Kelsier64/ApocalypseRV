@@ -13,8 +13,6 @@ const MAX_SPAWN_ATTEMPTS := 16
 const GAZE_SECONDS := 0.6
 const COVER_DESPAWN_SECONDS := 3.0
 const UNSEEN_DESPAWN_SECONDS := 8.0
-const REPOSITION_DELAY := 0.35
-const MAX_GROUND_STEP := 0.15
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const CLEARANCE_RADIUS := 0.44
 const CLEARANCE_HEIGHT := 2.75
@@ -31,9 +29,7 @@ var _time_left := 0.0
 var _gaze_elapsed := 0.0
 var _unseen_elapsed := 0.0
 var _covered_elapsed := 0.0
-var _look_away_elapsed := 0.0
-var _reposition_spent := false
-var _reposition_target := Vector3.INF
+var _reposition_armed := false
 var _appearance_origin := Vector3.INF
 var _capsule := CapsuleShape3D.new()
 
@@ -60,9 +56,7 @@ func _enter_hidden() -> void:
 	_gaze_elapsed = 0.0
 	_unseen_elapsed = 0.0
 	_covered_elapsed = 0.0
-	_look_away_elapsed = 0.0
-	_reposition_spent = false
-	_reposition_target = Vector3.INF
+	_reposition_armed = false
 	hide()
 
 func _physics_process(delta: float) -> void:
@@ -114,6 +108,7 @@ func _update_visible(camera: Camera3D, delta: float) -> void:
 	_gaze_elapsed = _gaze_elapsed + delta if _can_confirm(camera, chest, head) else 0.0
 	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
+		_reposition_armed = true
 	elif _time_left <= 0.0:
 		_enter_hidden()
 
@@ -129,6 +124,7 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 	var head_in_frame := camera.is_position_in_frustum(head)
 	var centered := _point_in_frame(camera, chest, CENTER)
 	if centered and chest_clear and head_clear and head_in_frame:
+		_reposition_armed = true
 		var distance := camera.get_camera_transform().origin.distance_to(to_global(CHEST))
 		_player.drain_san(_san_drain_rate(distance) * delta)
 
@@ -140,13 +136,14 @@ func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: f
 		_enter_hidden()
 		return
 
-	if covered or centered:
-		_look_away_elapsed = 0.0
-		_reposition_target = Vector3.INF
-		return
-	_look_away_elapsed += delta
-	if _look_away_elapsed >= REPOSITION_DELAY:
-		_reposition(camera, chest, delta)
+	if _reposition_armed and not covered and not centered:
+		_reposition_armed = false
+		var point := _find_reposition(camera, chest, head, seen)
+		if point.is_finite():
+			var observer := camera.get_camera_transform().origin
+			global_position = point
+			look_at(Vector3(observer.x, point.y, observer.z))
+			reset_physics_interpolation()
 
 static func _san_drain_rate(distance: float) -> float:
 	if distance < 8.0: return 100.0 + (8.0 - distance) * 15.0
@@ -238,50 +235,33 @@ func _clearance_at(point: Vector3) -> PhysicsShapeQueryParameters3D:
 	query.transform = Transform3D(Basis.IDENTITY, point + Vector3.UP * (CLEARANCE_HEIGHT * 0.5))
 	return query
 
-func _reposition(camera: Camera3D, chest: Vector3, delta: float) -> void:
-	if _reposition_spent and not _reposition_target.is_finite(): return
-	var current := global_position
-	var chest_offset := chest - current
-	var view := camera.get_camera_transform()
-	var inward := (view.origin - current).slide(Vector3.UP)
-	var distance := inward.length()
+func _find_reposition(camera: Camera3D, chest: Vector3, head: Vector3, seen: bool) -> Vector3:
 	var space := get_world_3d().direct_space_state
-	if not _reposition_spent:
-		_reposition_spent = true
-		_reposition_target = _find_reposition(camera, chest, inward, distance, space)
-	if not _reposition_target.is_finite(): return
+	var observer := camera.get_camera_transform().origin
+	var offset := (global_position - observer).slide(Vector3.UP)
+	var bearing := offset.normalized()
+	if bearing.is_zero_approx(): return Vector3.INF
+	var chest_local := to_local(chest)
+	var head_local := to_local(head)
+	var side := -1.0 if _rng.randf() < 0.5 else 1.0
+	var fallback := Vector3.INF
+	var safe_frame := CENTER.grow(0.10)
 
-	var speed := clampf(distance * 0.16, 3.5, 9.0)
-	var step := current.move_toward(_reposition_target, minf(speed * delta, MAX_GROUND_STEP))
-	step = _grounded_position(space, step, 0.3, 0.3)
-	if not step.is_finite() or _point_in_frame(camera, step + chest_offset, CENTER) or not space.intersect_shape(_clearance_at(step), 1).is_empty():
-		_reposition_target = Vector3.INF
-		return
-	var query := _clearance_at(current)
-	query.motion = step - current
-	var safe := space.cast_motion(query)
-	if safe.size() != 2 or safe[0] < 1.0:
-		_reposition_target = Vector3.INF
-		return
-	global_position = step
-	if step.distance_squared_to(_reposition_target) < 0.0001:
-		_reposition_target = Vector3.INF
-
-func _find_reposition(camera: Camera3D, chest: Vector3, inward: Vector3, distance: float, space: PhysicsDirectSpaceState3D) -> Vector3:
-	if distance < CLEARANCE_RADIUS: return Vector3.INF
-	inward /= distance
-	var approach := minf(clampf(distance * 0.20, 4.0, 13.0), distance * 0.6)
-	var lateral := minf(clampf(distance * 0.22, 4.0, 16.0), distance * 0.35)
-	var side := inward.cross(Vector3.UP) * lateral
-	if camera.is_position_in_frustum(chest):
-		var view := camera.get_camera_transform()
-		var screen_side := (chest - view.origin).dot(view.basis.x)
-		if side.dot(view.basis.x) * screen_side < 0.0: side = -side
-	elif _rng.randf() < 0.5:
-		side = -side
-	var chest_offset := chest - global_position
-	for offset in [side, -side]:
-		var target := _grounded_position(space, global_position + inward * approach + offset, 2.0, 2.0)
-		if target.is_finite() and not _point_in_frame(camera, target + chest_offset, CENTER) and space.intersect_shape(_clearance_at(target), 1).is_empty():
-			return target
-	return Vector3.INF
+	# Change sides around the observer so even a nearby apparition jumps a
+	# substantial distance. Prefer the periphery when the old spot was visible.
+	for radius: float in [clampf(offset.length() * 0.75, 12.0, 22.0), 30.0]:
+		for angle: float in [60.0, -60.0, 75.0, -75.0, 90.0, -90.0, 120.0, -120.0, 150.0, -150.0]:
+			var direction := bearing.rotated(Vector3.UP, deg_to_rad(angle) * side)
+			var point := _grounded_position(space, observer + direction * radius, 6.0, 10.0)
+			if not point.is_finite(): continue
+			var facing := Basis.looking_at(-direction)
+			var new_chest := point + facing * chest_local
+			var new_head := point + facing * head_local
+			if _point_in_frame(camera, new_chest, safe_frame) or _point_in_frame(camera, new_head, safe_frame): continue
+			var in_frame := camera.is_position_in_frustum(new_chest) or camera.is_position_in_frustum(new_head)
+			if in_frame != seen and fallback.is_finite(): continue
+			if not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
+			if not _clear_sight(camera, new_chest) or not _clear_sight(camera, new_head): continue
+			if in_frame == seen: return point
+			fallback = point
+	return fallback

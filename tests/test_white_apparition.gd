@@ -261,40 +261,27 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	var chest: Vector3 = visual.gaze_points()[0]
 	camera.look_at(chest)
 	camera.rotate_y(deg_to_rad(33.0))
-	var peripheral_view := camera.global_transform
-	var viewport_center_x := camera.get_viewport().get_visible_rect().get_center().x
-	var initial_screen_x := absf(camera.unproject_position(chest).x - viewport_center_x)
 	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "Peripheral fixture places the chest in frame outside the center")
-	apparition._physics_process(Apparition.REPOSITION_DELAY - 0.01)
-	_check(apparition.global_position == confirmed_position and player.survival.san == san, "Peripheral gaze stops drain immediately and relocation waits for the delay")
-	camera.look_at(chest)
-	apparition._physics_process(0.0)
-	camera.global_transform = peripheral_view
-	apparition._physics_process(0.02)
-	_check(apparition.global_position == confirmed_position, "Recentering resets the pending relocation delay")
-	apparition._physics_process(Apparition.REPOSITION_DELAY - 0.03)
-	for tick in 24:
-		apparition._physics_process(1.0 / 60.0)
-	var midway := apparition.global_position
+	apparition._physics_process(1.0 / 60.0)
+	var destination := apparition.global_position
 	chest = visual.gaze_points()[0]
-	_check(absf(midway.distance_to(confirmed_position) - 1.4) < 0.07, "Uninterrupted peripheral gaze starts relocation at 3.5 m/s from 15 m")
-	_check(camera.is_position_in_frustum(chest) and absf(camera.unproject_position(chest).x - viewport_center_x) > initial_screen_x, "The apparition moves toward the edge while remaining visible")
-	_check(player.survival.san == san, "Peripheral relocation leaves SAN unchanged")
+	_check(destination.distance_to(confirmed_position) >= 10.0, "Leaving direct gaze teleports at least 10 m on the first tick")
+	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "With open ground the new position is visible in the periphery")
+	apparition._physics_process(0.1)
+	_check(destination == apparition.global_position and player.survival.san == san, "Holding the same look direction neither relocates again nor drains SAN")
 	camera.look_at(chest)
 	apparition._physics_process(0.1)
-	distance = camera.global_position.distance_to(midway + Apparition.CHEST)
-	_check(midway == apparition.global_position, "The apparition stops on the first centered tick")
+	distance = camera.global_position.distance_to(destination + Apparition.CHEST)
+	_check(destination == apparition.global_position, "Looking directly at the new position holds the apparition still")
 	_check(is_equal_approx(player.survival.san, san - Apparition._san_drain_rate(distance) * 0.1), "Looking back resumes drain on the first tick")
 	san = player.survival.san
-	camera.global_transform = peripheral_view
-	apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS + 1.0)
-	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Peripheral visibility prevents despawn without draining SAN")
-	_check(midway == apparition.global_position, "A second peripheral glance cannot restart an interrupted relocation")
-	camera.look_at(chest)
+	camera.rotate_y(PI)
+	apparition._physics_process(1.0 / 60.0)
+	_check(apparition.global_position.distance_to(destination) >= 10.0 and player.survival.san == san, "Looking away after reacquiring the apparition triggers another jump without draining SAN")
+	camera.look_at(visual.gaze_points()[0])
 	apparition._physics_process(0.0)
 	await _check_cover_despawn(apparition, player, world)
 	await _check_look_away_despawn(apparition, player, world)
-	_check_close_relocation(apparition, camera)
 
 	apparition._time_left = 0.0
 	apparition._physics_process(1.0 / 60.0)
@@ -327,11 +314,10 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 	var chest_occluder := _static_box(world, camera.global_position.lerp(chest, 0.5), Vector3.ONE * 0.08)
 	await physics_frame
 	await physics_frame
-	apparition._reposition_spent = false
 	camera.rotate_y(deg_to_rad(33.0))
 	apparition._physics_process(Apparition.COVER_DESPAWN_SECONDS - 0.11)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Full cover starts the grace period without draining SAN")
-	_check(apparition.global_position == start and not apparition._reposition_spent, "Full cover prevents a pending peripheral relocation")
+	_check(apparition.global_position == start, "Full cover prevents a pending peripheral relocation")
 	camera.look_at(chest)
 	occluder.position.y += 1.0
 	await physics_frame
@@ -361,55 +347,37 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 
 func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: Node3D) -> void:
 	var camera := player.camera
-	var barrier := _static_box(world, Vector3(0.0, 0.35, -14.1), Vector3(12.0, 0.7, 0.08))
+	# Occupy both of the closest candidate points without covering the original.
+	var blockers: Array[StaticBody3D] = []
+	for angle: float in [-60.0, 60.0]:
+		var candidate := Vector3.FORWARD.rotated(Vector3.UP, deg_to_rad(angle)) * 12.0
+		blockers.append(_static_box(world, candidate + Vector3.UP * 0.25, Vector3.ONE))
 	await physics_frame
 	await physics_frame
-	for distance: float in [15.0, 15.0, 45.0]:
+	for distance: float in [4.5, 15.0, 45.0]:
 		var start := Vector3(0.0, 0.04, -distance)
 		camera.look_at(start + Apparition.CHEST)
 		apparition._time_left = 0.0
 		apparition._physics_process(1.0 / 60.0)
 		apparition.global_position = start
-		apparition._appearance_origin = start
 		apparition._physics_process(0.61)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED, "The relocation fixture confirms with clear chest and head rays")
 		var san := player.survival.san
 		camera.rotate_y(PI)
-		for tick in 300:
-			apparition._physics_process(1.0 / 60.0)
+		var tick := 1.0 / 60.0
+		apparition._physics_process(tick)
 		var end := apparition.global_position
-		if barrier != null:
-			_check(end.z < -14.5, "The relocation sweep cannot cross a low barrier below the gaze rays")
-			barrier.queue_free()
-			barrier = null
-			await physics_frame
-			await physics_frame
-		else:
-			var motion := end - start
-			var expected := Vector2(4.0, 4.0) if distance == 15.0 else Vector2(9.9, 9.0)
-			_check(Vector2(absf(motion.x), motion.z).distance_to(expected) < 0.02, "One relocation moves the expected lateral and inward distances from %.0f m" % distance)
-			_check(is_equal_approx(end.y, start.y), "The relocated apparition remains grounded")
-		apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS - 5.01)
+		var bearing_change := start.slide(Vector3.UP).angle_to(end.slide(Vector3.UP))
+		_check(end.distance_to(start) >= 10.0 and bearing_change >= deg_to_rad(59.0), "Turning away from %.1f m immediately produces a large change in position and bearing" % distance)
+		_check(is_equal_approx(end.y, start.y), "The teleport ends on the ground")
+		for blocker in blockers:
+			_check(end.distance_to(blocker.position) > 1.0, "The teleport skips obstructed destinations")
+		apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS - tick - 0.01)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Looking away preserves SAN and keeps the apparition present just before eight seconds")
 		_check(apparition.global_position == end, "Relocation does not repeat during the look-away")
-		apparition._physics_process(0.02)
+		apparition._physics_process(0.03)
 		_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Eight seconds of continuous look-away trigger abrupt despawn")
 
-func _check_close_relocation(apparition: Apparition, camera: Camera3D) -> void:
-	var start := Vector3(0.0, 0.04, -4.5)
-	camera.look_at(start + Apparition.CHEST)
-	apparition._time_left = 0.0
-	apparition._physics_process(1.0 / 60.0)
-	apparition.global_position = start
-	apparition._appearance_origin = start
-	apparition._physics_process(0.61)
-	_check(apparition._phase == Apparition.Phase.CONFIRMED, "The close fixture confirms with a centered gaze")
-	camera.rotate_y(PI)
-	for tick in 240:
-		apparition._physics_process(1.0 / 60.0)
-	var motion := apparition.global_position - start
-	_check(absf(motion.z - 2.7) < 0.02 and absf(absf(motion.x) - 1.575) < 0.02, "A close apparition limits its relocation to a fraction of the starting distance")
-	apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS)
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
