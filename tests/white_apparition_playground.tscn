@@ -1,69 +1,22 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://tests/white_apparition_playground.gd" id="1_playground"]
-[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player"]
-[ext_resource type="PackedScene" path="res://enemies/white_apparition/white_apparition.tscn" id="3_apparition"]
-[ext_resource type="Script" path="res://world/chunk_generator.gd" id="4_chunk"]
+[ext_resource type="PackedScene" path="res://world/main_world.tscn" id="1_world"]
+[ext_resource type="Script" path="res://tests/white_apparition_playground.gd" id="2_playground"]
 
-[sub_resource type="Environment" id="Environment_fog"]
-background_mode = 1
-background_color = Color(0.21, 0.25, 0.24, 1)
-ambient_light_source = 3
-ambient_light_color = Color(0.73, 0.83, 0.8, 1)
-ambient_light_energy = 0.65
-fog_enabled = true
-fog_light_color = Color(0.21, 0.25, 0.24, 1)
-fog_density = 0.027
+[node name="WhiteApparitionPlayground" instance=ExtResource("1_world")]
+script = ExtResource("2_playground")
 
-[sub_resource type="StandardMaterial3D" id="Material_ground"]
-albedo_color = Color(0.11, 0.13, 0.1, 1)
-roughness = 1.0
-
-[sub_resource type="BoxMesh" id="Mesh_ground"]
-material = SubResource("Material_ground")
-size = Vector3(120, 1, 120)
-
-[sub_resource type="BoxShape3D" id="Shape_ground"]
-size = Vector3(120, 1, 120)
-
-[node name="WhiteApparitionPlayground" type="Node3D"]
-script = ExtResource("1_playground")
-
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_fog")
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-rotation = Vector3(-0.5, 0.7, 0)
-light_color = Color(0.87, 0.91, 0.94, 1)
-light_energy = 0.6
-shadow_enabled = true
-
-[node name="Chunk" type="Node3D" parent="."]
-script = ExtResource("4_chunk")
-
-[node name="Ground" type="MeshInstance3D" parent="Chunk"]
-position = Vector3(0, -0.5, 0)
-mesh = SubResource("Mesh_ground")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="Chunk/Ground"]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Chunk/Ground/StaticBody3D"]
-shape = SubResource("Shape_ground")
-
-[node name="Player" parent="." instance=ExtResource("2_player")]
-
-[node name="WhiteApparition" parent="." instance=ExtResource("3_apparition")]
-
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="PlaygroundHUD" type="CanvasLayer" parent="."]
 layer = 10
 
-[node name="Status" type="Label" parent="HUD"]
+[node name="Status" type="Label" parent="PlaygroundHUD"]
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -260.0
-offset_top = 24.0
+offset_left = -500.0
+offset_top = 48.0
 offset_right = -24.0
+mouse_filter = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
-text = "Hidden"
+text = "Preparing the road..."
 horizontal_alignment = 2

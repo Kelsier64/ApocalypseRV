@@ -361,11 +361,11 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 
 func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: Node3D) -> void:
 	var camera := player.camera
-	var start := Vector3(0.0, 0.04, -15.0)
 	var barrier := _static_box(world, Vector3(0.0, 0.35, -14.1), Vector3(12.0, 0.7, 0.08))
 	await physics_frame
 	await physics_frame
-	for with_barrier: bool in [true, false]:
+	for distance: float in [15.0, 15.0, 45.0]:
+		var start := Vector3(0.0, 0.04, -distance)
 		camera.look_at(start + Apparition.CHEST)
 		apparition._time_left = 0.0
 		apparition._physics_process(1.0 / 60.0)
@@ -378,14 +378,16 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		for tick in 300:
 			apparition._physics_process(1.0 / 60.0)
 		var end := apparition.global_position
-		if with_barrier:
+		if barrier != null:
 			_check(end.z < -14.5, "The relocation sweep cannot cross a low barrier below the gaze rays")
 			barrier.queue_free()
+			barrier = null
 			await physics_frame
 			await physics_frame
 		else:
 			var motion := end - start
-			_check(absf(absf(motion.x) - 3.0) < 0.02 and absf(motion.z - 3.0) < 0.02, "One look-away relocation travels 3 m inward and 3 m laterally from 15 m")
+			var expected := Vector2(4.0, 4.0) if distance == 15.0 else Vector2(9.9, 9.0)
+			_check(Vector2(absf(motion.x), motion.z).distance_to(expected) < 0.02, "One relocation moves the expected lateral and inward distances from %.0f m" % distance)
 			_check(is_equal_approx(end.y, start.y), "The relocated apparition remains grounded")
 		apparition._physics_process(Apparition.UNSEEN_DESPAWN_SECONDS - 5.01)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Looking away preserves SAN and keeps the apparition present just before eight seconds")

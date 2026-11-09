@@ -270,8 +270,8 @@ func _reposition(camera: Camera3D, chest: Vector3, delta: float) -> void:
 func _find_reposition(camera: Camera3D, chest: Vector3, inward: Vector3, distance: float, space: PhysicsDirectSpaceState3D) -> Vector3:
 	if distance < CLEARANCE_RADIUS: return Vector3.INF
 	inward /= distance
-	var approach := minf(clampf(distance * 0.13, 3.0, 8.0), distance * 0.6)
-	var lateral := minf(clampf(distance * 0.16, 3.0, 12.0), distance * 0.35)
+	var approach := minf(clampf(distance * 0.20, 4.0, 13.0), distance * 0.6)
+	var lateral := minf(clampf(distance * 0.22, 4.0, 16.0), distance * 0.35)
 	var side := inward.cross(Vector3.UP) * lateral
 	if camera.is_position_in_frustum(chest):
 		var view := camera.get_camera_transform()
