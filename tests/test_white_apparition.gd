@@ -38,7 +38,7 @@ func _run() -> void:
 	_check_visual_motion()
 	await _check_encounter()
 	if _failures.is_empty():
-		print("PASS: White apparition motion, abrupt visibility, gaze gates, and persistent SAN drain")
+		print("PASS: White apparition motion, gaze-dependent SAN drain, and unseen despawn")
 	quit(0 if _failures.is_empty() else 1)
 
 func _check_visual_motion() -> void:
@@ -206,25 +206,85 @@ func _check_encounter() -> void:
 	visual._process(1.0 / 60.0)
 	_check(visual.gaze_points() != pose, "White apparition keeps animating after confirmation")
 
-	player.camera.rotate_y(PI)
-	player.in_ui_mode = true
+	await _check_confirmed_encounter(apparition, player, world)
+	viewport.free()
+
+func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world: Node3D) -> void:
+	var camera := player.camera
+	var anchors: PackedVector3Array = apparition.get_node("Visual").gaze_points()
+	var chest := anchors[0]
+	var head := anchors[1]
 	var confirmed_position := apparition.global_position
-	apparition._physics_process(2.0)
-	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and apparition.global_position == confirmed_position, "The confirmed apparition stays when the player looks away and opens the UI")
-	_check(player.survival.san == PlayerSurvival.MAX_SAN - 200.0, "Confirmed drain continues at 100 SAN per second through zero")
+	camera.look_at(chest)
+	var san := player.survival.san
+	apparition._physics_process(1.5)
+	_check(is_equal_approx(player.survival.san, san - 150.0) and player.survival.san < 0.0, "Centered confirmed gaze drains at 100 SAN per second through zero")
+	san = player.survival.san
 	world.set_meta("checkpoint_staging", true)
 	apparition._physics_process(1.0)
-	_check(player.survival.san == -100.0, "Staged simulation cannot drain SAN")
+	_check(player.survival.san == san, "Staged simulation cannot drain SAN")
 	world.remove_meta("checkpoint_staging")
+
+	camera.rotate_y(PI)
+	apparition._physics_process(2.9)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible, "Looking away leaves the apparition visible during the grace period")
+	_check(player.survival.san == san, "Looking away immediately stops rapid drain")
+	camera.look_at(chest)
+	camera.rotate_y(deg_to_rad(40.0))
+	_check(camera.is_position_in_frustum(chest) and not apparition._point_in_frame(camera, chest, Apparition.CENTER), "Peripheral fixture places the chest in frame outside the center")
+	apparition._physics_process(4.0)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Peripheral visibility prevents despawn without rapidly draining SAN")
+	_check(apparition.global_position == confirmed_position, "The confirmed apparition stays in place")
+	camera.rotate_y(PI)
+	apparition._physics_process(0.2)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED, "Peripheral reacquisition restarts the continuous unseen timer")
+	camera.look_at(chest)
+	apparition._physics_process(0.1)
+	_check(is_equal_approx(player.survival.san, san - 10.0), "Looking back resumes rapid drain on the first tick")
+	san = player.survival.san
+
+	var occluder := _static_box(world, camera.global_position.lerp(head, 0.5), Vector3.ONE * 0.08)
+	await physics_frame
+	await physics_frame
+	_check(not apparition._can_confirm(camera, chest, head), "Occluder blocks the centered head ray")
+	apparition._physics_process(4.0)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "A clear chest alone keeps the apparition visible without rapid drain")
+	var chest_occluder := _static_box(world, camera.global_position.lerp(chest, 0.5), Vector3.ONE * 0.08)
+	await physics_frame
+	await physics_frame
+	apparition._physics_process(2.9)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Full occlusion starts the grace period and stops rapid drain")
+	player.in_ui_mode = true
+	apparition._physics_process(4.0)
+	player.in_ui_mode = false
+	player.grabbed = true
+	apparition._physics_process(4.0)
+	player.grabbed = false
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible and player.survival.san == san, "Ineligible cameras pause the unseen timer and rapid drain")
+	apparition._physics_process(0.09)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible, "The apparition remains visible just before three unseen seconds")
+	apparition._physics_process(0.02)
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Three unseen seconds trigger abrupt despawn")
+	_check(apparition._time_left >= 4.0 and apparition._time_left <= 8.0, "Despawn starts a new emergence wait")
+	occluder.queue_free()
+	chest_occluder.queue_free()
+	await physics_frame
+	await physics_frame
+
+	apparition._time_left = 0.0
+	apparition._physics_process(1.0 / 60.0)
+	camera.look_at(apparition.to_global(Apparition.CHEST))
+	apparition._physics_process(0.61)
+	_check(apparition._phase == Apparition.Phase.CONFIRMED, "A later emergence can be confirmed again")
+	san = player.survival.san
 	player.is_player_dead = true
 	apparition._physics_process(0.01)
-	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == -100.0, "Death clears the transient encounter and stops rapid drain")
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Death clears the transient encounter and stops rapid drain")
 	var replacement := Survivor.new()
 	world.add_child(replacement)
 	apparition.configure(replacement)
 	apparition._physics_process(1.0)
 	_check(replacement.survival.san == PlayerSurvival.MAX_SAN and not apparition.visible, "A different observer never inherits a confirmed sighting")
-	viewport.free()
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()

@@ -13,6 +13,7 @@ const MAX_DRIFT := 2.0
 const DRIFT_SPEED := 0.45
 const GAZE_SECONDS := 0.6
 const SAN_DRAIN_PER_SECOND := 100.0
+const UNSEEN_DESPAWN_SECONDS := 3.0
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const CLEARANCE_RADIUS := 0.44
 const CLEARANCE_HEIGHT := 2.75
@@ -64,9 +65,6 @@ func _physics_process(delta: float) -> void:
 		_world_id = world_id
 		_reset()
 	if not PlayerSurvival.simulation_active(_player): return
-	if _phase == Phase.CONFIRMED:
-		_player.drain_san(SAN_DRAIN_PER_SECOND * delta)
-		return
 
 	var camera := _active_player_camera()
 	if camera == null:
@@ -81,7 +79,7 @@ func _physics_process(delta: float) -> void:
 		Phase.HIDDEN:
 			if _time_left <= 0.0 and not _try_emerge(camera):
 				_time_left = 2.0
-		Phase.VISIBLE:
+		Phase.VISIBLE, Phase.CONFIRMED:
 			_update_visible(camera, delta)
 
 func _active_player_camera() -> Camera3D:
@@ -95,9 +93,23 @@ func _active_player_camera() -> Camera3D:
 func _update_visible(camera: Camera3D, delta: float) -> void:
 	var points: PackedVector3Array = _visual.gaze_points()
 	if points.size() != 2: points = PackedVector3Array([to_global(CHEST), to_global(HEAD)])
-	_gaze_elapsed = _gaze_elapsed + delta if _can_confirm(camera, points[0], points[1]) else 0.0
+	var chest := points[0]
+	var head := points[1]
+	var gazing := _can_confirm(camera, chest, head)
+	if _phase == Phase.CONFIRMED:
+		if gazing:
+			_player.drain_san(SAN_DRAIN_PER_SECOND * delta)
+		# Peripheral sight keeps the apparition present without counting as a gaze.
+		if gazing or _can_see_point(camera, chest) or _can_see_point(camera, head):
+			_time_left = UNSEEN_DESPAWN_SECONDS
+		elif _time_left <= 0.0:
+			_enter_hidden()
+		return
+
+	_gaze_elapsed = _gaze_elapsed + delta if gazing else 0.0
 	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
+		_time_left = UNSEEN_DESPAWN_SECONDS
 	elif _time_left <= 0.0:
 		_enter_hidden()
 	else:
@@ -106,8 +118,7 @@ func _update_visible(camera: Camera3D, delta: float) -> void:
 func _can_confirm(camera: Camera3D, chest: Vector3, head: Vector3) -> bool:
 	if not is_visible_in_tree(): return false
 	if camera.get_camera_transform().origin.distance_squared_to(chest) > MAX_GAZE_DISTANCE * MAX_GAZE_DISTANCE: return false
-	if not _point_in_frame(camera, chest, CENTER) or not camera.is_position_in_frustum(head): return false
-	return _clear_sight(camera, chest, head)
+	return _point_in_frame(camera, chest, CENTER) and _can_see_point(camera, head) and _clear_sight(camera, chest)
 
 func _point_in_frame(camera: Camera3D, point: Vector3, frame: Rect2) -> bool:
 	if not camera.is_position_in_frustum(point): return false
@@ -115,13 +126,14 @@ func _point_in_frame(camera: Camera3D, point: Vector3, frame: Rect2) -> bool:
 	if viewport_rect.size.x <= 0.0 or viewport_rect.size.y <= 0.0: return false
 	return frame.has_point((camera.unproject_position(point) - viewport_rect.position) / viewport_rect.size)
 
-func _clear_sight(camera: Camera3D, chest: Vector3, head: Vector3) -> bool:
+func _can_see_point(camera: Camera3D, point: Vector3) -> bool:
+	return camera.is_position_in_frustum(point) and _clear_sight(camera, point)
+
+func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
 	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(camera.get_camera_transform().origin, chest)
+	var query := PhysicsRayQueryParameters3D.create(camera.get_camera_transform().origin, point)
 	query.hit_from_inside = true
 	if _player is CollisionObject3D: query.exclude = [_player.get_rid()]
-	if not space.intersect_ray(query).is_empty(): return false
-	query.to = head
 	return space.intersect_ray(query).is_empty()
 
 func _try_emerge(camera: Camera3D) -> bool:
@@ -141,7 +153,8 @@ func _try_emerge(camera: Camera3D) -> bool:
 		if distance < MIN_SPAWN_DISTANCE or distance > MAX_SPAWN_DISTANCE: continue
 		if not _point_in_frame(camera, chest, SPAWN_FRAME) or _point_in_frame(camera, chest, CENTER): continue
 		if not _point_in_frame(camera, point + HEAD, SPAWN_FRAME): continue
-		if not _clear_sight(camera, chest, point + HEAD) or not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
+		if not _clear_sight(camera, chest) or not _clear_sight(camera, point + HEAD): continue
+		if not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
 		global_position = point
 		look_at(Vector3(anchor.x, point.y, anchor.z))
 		_appearance_origin = point

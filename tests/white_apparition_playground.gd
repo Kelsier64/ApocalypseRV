@@ -12,6 +12,7 @@ var _elapsed := 0.0
 var _capture_started := false
 var _capture_saved := false
 var _san_at_capture := 0.0
+var _look_away_elapsed := 0.0
 
 func _ready() -> void:
 	player.camera.make_current()
@@ -27,15 +28,27 @@ func _physics_process(delta: float) -> void:
 		push_error("White apparition replay timed out")
 		get_tree().quit(1)
 		return
-	if phase == WhiteApparition.Phase.VISIBLE:
+	if _capture_saved:
+		_verify_look_away(phase, delta)
+	elif phase == WhiteApparition.Phase.VISIBLE:
 		player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
-	elif phase == WhiteApparition.Phase.CONFIRMED:
-		if player.survival.san <= -10.0 and not _capture_started:
-			_capture_started = true
-			_capture_context()
-		if _capture_saved and apparition.visible and player.survival.san <= _san_at_capture - 100.0:
-			print("WHITE_APPARITION_REPLAY confirmed=true visible_after_looking_away=true san=%.1f" % player.survival.san)
-			get_tree().quit()
+	elif phase == WhiteApparition.Phase.CONFIRMED and player.survival.san <= -10.0 and not _capture_started:
+		_capture_started = true
+		_capture_context()
+
+func _verify_look_away(phase: WhiteApparition.Phase, delta: float) -> void:
+	_look_away_elapsed += delta
+	var grace := WhiteApparition.UNSEEN_DESPAWN_SECONDS
+	var timely_despawn := phase == WhiteApparition.Phase.HIDDEN and not apparition.visible and _look_away_elapsed >= grace - delta
+	if player.survival.san != _san_at_capture:
+		push_error("White apparition kept draining SAN after the replay looked away")
+		get_tree().quit(1)
+	elif _look_away_elapsed > grace + 2.0 * delta or (not apparition.visible and not timely_despawn):
+		push_error("White apparition disappeared outside the expected grace period")
+		get_tree().quit(1)
+	elif timely_despawn:
+		print("WHITE_APPARITION_REPLAY confirmed=true despawn_after_looking_away=%.2f san_unchanged=true san=%.1f" % [_look_away_elapsed, _san_at_capture])
+		get_tree().quit()
 
 func _capture_context() -> void:
 	await RenderingServer.frame_post_draw
