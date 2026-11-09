@@ -5,6 +5,9 @@ uniform bool retro_enabled = true;
 uniform float brightness = 1.0;
 uniform float contrast = 1.0;
 uniform float saturation = 1.0;
+
+#include "res://player/san_vision.gdshaderinc"
+
 void fragment() {
 	// Resolution loss comes from the 3D viewport, not a second mosaic filter.
 	vec3 source = texture(screen_texture, SCREEN_UV).rgb;
@@ -13,6 +16,9 @@ void fragment() {
 	// Exact black stays black; the original midtone/highlight grade is retained.
 	vec3 retro_grade = max((source - 0.38) * 1.04 + 0.38, source * 0.5);
 	vec3 graded = retro_enabled ? retro_grade : source;
+	if (san_amount > 0.0) {
+		graded = mix(graded, san_vision(source, SCREEN_UV), san_amount);
+	}
 	graded = clamp(graded, vec3(0.0), vec3(1.0));
 	float luminance = dot(graded, vec3(0.2126, 0.7152, 0.0722));
 	graded = mix(vec3(luminance), graded, saturation);

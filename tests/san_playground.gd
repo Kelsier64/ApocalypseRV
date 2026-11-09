@@ -2,6 +2,7 @@ extends Node3D
 ## Runs the production controller and wheels on a flat, marked test course.
 
 const SAN_STEP := 5.0
+const VISION_NAMES := ["Bleached", "Cold Split", "Broken Signal"]
 
 @onready var player: CharacterBody3D = $Player
 @onready var rv: Chassis = $RV/Chassis
@@ -12,6 +13,7 @@ var _status: Label
 var _editor: PanelContainer
 var _value: LineEdit
 var _error: Label
+var _next_vision_profile := 0
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - SAN Playground"
@@ -36,7 +38,7 @@ func _process(_delta: float) -> void:
 	var active := PackedStringArray()
 	if effects._blink_remaining > 0.0:
 		active.append("Long blink %.1fs" % effects._blink_remaining if effects._long_blink else "Blink")
-	if effects._vision_remaining > 0.0: active.append("Vision filter")
+	if effects._vision_remaining > 0.0: active.append(VISION_NAMES[effects._vision_profile])
 	if effects._delay_remaining > 0.0: active.append("Input delay %.0f ms" % (1000.0 * effects._input_delay()))
 	if effects._misdirection_remaining > 0.0: active.append("Directional drift")
 	_status.text = "SAN %.2f%%  |  %s\nActive: %s" % [player.survival.san, mode, ", ".join(active) if not active.is_empty() else "None"]
@@ -63,23 +65,31 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F5:
 			if seat.current_driver == player: seat.exit_seat()
 			else: seat.interact_hold(player)
-		KEY_F4, KEY_F7, KEY_F8, KEY_F9, KEY_F11:
+		KEY_F4:
+			_queue_effect(KEY_F4, event.shift_pressed)
+		KEY_F7, KEY_F8, KEY_F9, KEY_F11:
 			_queue_effect(event.keycode)
 		KEY_F10:
 			get_tree().reload_current_scene.call_deferred()
 
-func _queue_effect(key: Key) -> void:
+func _queue_effect(key: Key, cycle_vision := false) -> void:
 	# Advance through the normal player gate before moving one timer forward.
 	player._advance_san_effects(0.0)
 	var effects: PlayerSanEffects = player.san_effects
 	if effects._control == PlayerSanEffects.InputMode.NONE: return
 	match key:
-		KEY_F4: effects._vision_wait = 0.0
+		KEY_F4:
+			if player.survival.san > PlayerSanEffects.MEDIUM_THRESHOLD: return
+			effects._vision_remaining = 0.0
+			effects._vision_wait = 0.0
 		KEY_F7: effects._blink_wait = 0.0
 		KEY_F8: effects._delay_wait = 0.0
 		KEY_F9: effects._misdirection_wait = 0.0
 		KEY_F11: effects._long_blink_wait = 0.0
 	player._advance_san_effects(0.0)
+	if cycle_vision:
+		effects._vision_profile = _next_vision_profile
+		_next_vision_profile = (_next_vision_profile + 1) % VISION_NAMES.size()
 
 func _open_editor() -> void:
 	if player.is_gameplay_input_blocked() or player.in_ui_mode or player.is_placing_equipment(): return
@@ -121,7 +131,7 @@ func _build_ui() -> void:
 	_status = Label.new()
 	labels.add_child(_status)
 	var controls := Label.new()
-	controls.text = "Up / Down SAN +/- 5   F6 Enter SAN\nF5 Seat / Exit   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nF4 Vision Filter   F11 Long Blink (SAN <= 0)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
+	controls.text = "Up / Down SAN +/- 5   F6 Enter SAN\nF5 Seat / Exit   F10 Reset\nF7 Blink   F8 Delay   F9 Misdirection (SAN < 20)\nF4 Random Vision   Shift+F4 Cycle Vision (SAN <= 0)\nF11 Long Blink (SAN <= 0)\nWASD Move / Drive   Space Parking Brake (seated)\n1 / 2 Select Snack   Hold Right Mouse to Eat"
 	labels.add_child(controls)
 	layer.add_child(hud)
 	hud.grow_horizontal = Control.GROW_DIRECTION_BEGIN

@@ -209,6 +209,7 @@ func register_viewport(viewport: Viewport, indoor: bool = false) -> void:
 	effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://world/terrain/retro.gdshader")
+	material.set_shader_parameter("san_amount", 0.0)
 	effect.material = material
 	layer.add_child(effect)
 	_viewports[id] = {"viewport": weakref(viewport), "indoor": indoor, "effect": weakref(effect), "atlas": viewport.positional_shadow_atlas_size}
@@ -218,6 +219,15 @@ func register_viewport(viewport: Viewport, indoor: bool = false) -> void:
 func viewport_effect(viewport: Viewport) -> ColorRect:
 	var entry: Dictionary = _viewports.get(viewport.get_instance_id(), {})
 	return entry.effect.get_ref() as ColorRect if not entry.is_empty() else null
+
+func set_san_vision(viewport: Viewport, profile: int, amount: float, elapsed: float) -> void:
+	var effect := viewport_effect(viewport)
+	if effect == null: return
+	var material := effect.material as ShaderMaterial
+	material.set_shader_parameter("san_profile", profile)
+	material.set_shader_parameter("san_amount", amount)
+	material.set_shader_parameter("san_elapsed", elapsed)
+	_update_grade_visibility(effect, _viewports[viewport.get_instance_id()].indoor, amount)
 
 func set_outdoor_active(active: bool) -> void:
 	if _outdoor_active == active: return
@@ -245,7 +255,11 @@ func _apply_viewport(id: int) -> void:
 	var material := effect.material as ShaderMaterial
 	material.set_shader_parameter("retro_enabled", bool(values.retro) and not indoor)
 	for key in ["brightness", "contrast", "saturation"]: material.set_shader_parameter(key, float(values[key]))
-	effect.visible = (indoor or _outdoor_active) and ((bool(values.retro) and not indoor) or values.brightness != 1.0 or values.contrast != 1.0 or values.saturation != 1.0)
+	_update_grade_visibility(effect, indoor, material.get_shader_parameter("san_amount"))
+
+func _update_grade_visibility(effect: ColorRect, indoor: bool, san_amount: float) -> void:
+	var base_grade: bool = (bool(values.retro) and not indoor) or values.brightness != 1.0 or values.contrast != 1.0 or values.saturation != 1.0
+	effect.visible = (indoor or _outdoor_active) and (base_grade or san_amount > 0.0)
 
 func begin_window_preview(mode: int) -> bool:
 	if mode not in [0, 1]: return false

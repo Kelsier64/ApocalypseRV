@@ -3,6 +3,7 @@ class_name PlayerSanEffects
 ## Transient effects for the controlled player and their active driving seat.
 
 enum InputMode { NONE, WALK, DRIVE }
+enum VisionProfile { BLEACHED, COLD_SPLIT, BROKEN_SIGNAL }
 
 const THRESHOLD := 20.0
 const MEDIUM_THRESHOLD := 0.0
@@ -10,7 +11,6 @@ const DELAY_RATE := 0.22
 const MISDIRECTION_RATE := 0.27
 const LONG_BLINK_RATE := 0.15
 const VISION_RATE := 0.22
-const VISION_TINTS := [Vector3(0.80, 1.10, 0.91), Vector3(0.84, 0.91, 1.23), Vector3(1.18, 0.82, 1.04)]
 
 var _rng := RandomNumberGenerator.new()
 var _control := InputMode.NONE
@@ -25,8 +25,8 @@ var _vision_wait := -1.0
 var _vision_duration := 1.0
 var _vision_remaining := 0.0
 var _vision_strength := 0.0
-var _vision_overlay: ColorRect
-var _vision_grade := ShaderMaterial.new()
+var _vision_profile: int = VisionProfile.BLEACHED
+var _vision_viewport: Viewport
 var _delay_wait := 0.0
 var _delay_remaining := 0.0
 var _delay_seconds := 0.0
@@ -41,21 +41,10 @@ var _misdirection_strength := 0.0
 var _sway_period := 1.0
 var _sway_phase := 0.0
 var _side := 1.0
+@onready var _video := get_node("/root/GameSettings")
 
 func _ready() -> void:
 	layer = 1
-	_vision_overlay = ColorRect.new()
-	_vision_overlay.mouse_filter = ColorRect.MOUSE_FILTER_IGNORE
-	_vision_overlay.set_anchors_and_offsets_preset(ColorRect.PRESET_FULL_RECT)
-	_vision_grade.shader = preload("res://player/san_vision.gdshader")
-	_vision_overlay.material = _vision_grade
-	_vision_overlay.hide()
-	add_child(_vision_overlay)
-	# Refresh the screen texture after the video grade and before sampling it.
-	var screen_copy := BackBufferCopy.new()
-	screen_copy.copy_mode = BackBufferCopy.COPY_MODE_VIEWPORT
-	screen_copy.show_behind_parent = true
-	_vision_overlay.add_child(screen_copy)
 	_overlay = ColorRect.new()
 	_overlay.mouse_filter = ColorRect.MOUSE_FILTER_IGNORE
 	_overlay.set_anchors_and_offsets_preset(ColorRect.PRESET_FULL_RECT)
@@ -63,6 +52,9 @@ func _ready() -> void:
 	_overlay.material = _eyelids
 	_overlay.hide()
 	add_child(_overlay)
+
+func _exit_tree() -> void:
+	_clear_vision_grade()
 
 func advance(delta: float, san: float, control: InputMode) -> void:
 	if control == InputMode.NONE or san >= THRESHOLD:
@@ -116,11 +108,18 @@ func _advance_vision(delta: float, severity: float) -> void:
 			_vision_duration = lerpf(2.5, 6.5, _sample_episode(severity))
 			_vision_remaining = _vision_duration
 			_vision_strength = lerpf(0.38, 1.0, _sample_episode(severity))
-			_vision_grade.set_shader_parameter("tint", VISION_TINTS[_rng.randi_range(0, VISION_TINTS.size() - 1)])
-	var progress := 1.0 - _vision_remaining / _vision_duration
+			_vision_profile = _rng.randi_range(0, VisionProfile.size() - 1)
+	if _vision_remaining == 0.0:
+		_clear_vision_grade()
+		return
+	var elapsed := _vision_duration - _vision_remaining
+	var progress := elapsed / _vision_duration
 	var envelope := smoothstep(0.0, 0.20, progress) * (1.0 - smoothstep(0.65, 1.0, progress))
-	_vision_grade.set_shader_parameter("amount", envelope * _vision_strength)
-	_vision_overlay.visible = _vision_remaining > 0.0
+	var viewport := get_viewport()
+	if _vision_viewport != viewport:
+		_clear_vision_grade()
+		_vision_viewport = viewport
+	_video.set_san_vision(viewport, _vision_profile, envelope * _vision_strength, elapsed)
 
 func _clear_medium_vision() -> void:
 	if _long_blink: _blink_remaining = 0.0
@@ -128,7 +127,12 @@ func _clear_medium_vision() -> void:
 	_long_blink_wait = -1.0
 	_vision_wait = -1.0
 	_vision_remaining = 0.0
-	if _vision_overlay != null: _vision_overlay.hide()
+	_clear_vision_grade()
+
+func _clear_vision_grade() -> void:
+	if is_instance_valid(_vision_viewport) and is_instance_valid(_video):
+		_video.set_san_vision(_vision_viewport, 0, 0.0, 0.0)
+	_vision_viewport = null
 
 func _advance_direction(delta: float, severity: float) -> void:
 	# Exponential wait budgets give each eligible effect a rate set by the

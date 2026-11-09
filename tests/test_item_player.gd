@@ -321,6 +321,17 @@ func check_san_effects() -> void:
 func check_medium_san_vision() -> void:
 	var effects: PlayerSanEffects = actor.san_effects
 	var walk := PlayerSanEffects.InputMode.WALK
+	var settings := root.get_node("GameSettings")
+	var viewport := actor.get_viewport()
+	settings.register_viewport(viewport)
+	var grade: ColorRect = settings.viewport_effect(viewport)
+	var vision_material := grade.material as ShaderMaterial
+	var base_preferences := {&"retro": false, &"brightness": 1.0, &"contrast": 1.0, &"saturation": 1.0}
+	var previous_preferences := {}
+	for key in base_preferences:
+		previous_preferences[key] = settings.get_setting(key)
+		settings.set_setting(key, base_preferences[key], false)
+	check(not grade.visible, "The shared filter starts hidden with neutral base preferences")
 	var previous_blink := 0.0
 	for san in [19.0, 0.0, -30.0]:
 		effects.reset()
@@ -339,28 +350,48 @@ func check_medium_san_vision() -> void:
 	effects._long_blink_wait = 0.0
 	effects._vision_wait = 0.0
 	effects.advance(.01, 0.01, walk)
-	check(not effects._long_blink and not effects._vision_overlay.is_visible_in_tree(), "Long closure and vision distortion are disabled above zero SAN")
+	check(not effects._long_blink and not grade.visible, "Long closure and vision distortion are disabled above zero SAN")
 	effects.advance(.01, 0.0, walk)
 	effects._long_blink_wait = 0.0
 	effects._vision_wait = 0.0
 	effects.advance(.01, 0.0, walk)
-	check(effects._long_blink and effects._overlay.visible and effects._vision_overlay.is_visible_in_tree(), "Long closure and vision distortion can overlap at zero SAN")
-	check(effects._blink_duration > previous_blink and effects._vision_duration > 0.0 and effects._vision_strength > 0.0, "Medium SAN draws a longer closure and a visible distortion episode")
+	check(effects._long_blink and effects._overlay.visible and effects._vision_remaining > 0.0, "Long closure and vision distortion can start together at zero SAN")
+	check(effects._blink_duration > previous_blink and effects._vision_strength > 0.0, "Medium SAN draws a longer closure and a nonzero distortion strength")
 	var overlap_step := minf(effects._blink_duration, effects._vision_duration) * .35
 	effects.advance(overlap_step, 0.0, walk)
-	var vision_material := effects._vision_overlay.material as ShaderMaterial
-	check(float(vision_material.get_shader_parameter("amount")) > 0.0, "Vision distortion has a nonzero shader amount during overlap")
-	effects.advance(effects._blink_duration * .45 - overlap_step, 0.0, walk)
+	check(grade.visible and float(vision_material.get_shader_parameter("san_amount")) > 0.0, "Vision distortion enables the shared filter during overlap")
+	check(int(vision_material.get_shader_parameter("san_profile")) == effects._vision_profile and float(vision_material.get_shader_parameter("san_elapsed")) > 0.0, "The shared filter receives the sampled profile and episode time")
 	var closure := float(effects._eyelids.get_shader_parameter("closure"))
-	check(effects._long_blink and closure > .9, "The middle of a long blink keeps the eyes nearly closed")
+	check(effects._long_blink and closure > .9, "A long blink keeps the eyes nearly closed during the overlap")
+	for key in base_preferences:
+		check(settings.get_setting(key) == base_preferences[key], "SAN does not change the player's base filter preference for " + String(key))
 	effects._blink_wait = 1.0
 	effects.advance(.01, 0.01, walk)
-	check(not effects._long_blink and not effects._overlay.visible and not effects._vision_overlay.is_visible_in_tree(), "Returning above zero clears both medium SAN effects")
+	check(not effects._long_blink and not effects._overlay.visible and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Returning above zero clears the medium effects and hides the neutral filter")
 	effects._blink_wait = 0.0
 	effects.advance(.01, 0.01, walk)
 	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible after medium effects clear")
 	effects.advance(.01, 20.0, walk)
-	check(not effects._overlay.visible and not effects._vision_overlay.is_visible_in_tree(), "Recovering to 20 clears all visual effects")
+	check(not effects._overlay.visible and not grade.visible, "Recovering to 20 clears all visual effects")
+
+	var interior := SubViewport.new()
+	viewport.add_child(interior)
+	settings.register_viewport(interior, true)
+	var interior_grade: ColorRect = settings.viewport_effect(interior)
+	effects.advance(0.0, 0.0, walk)
+	effects._vision_wait = 0.0
+	effects.advance(.5, 0.0, walk)
+	effects.advance(.5, 0.0, walk)
+	check(grade.visible, "The source viewport has an active SAN grade")
+	effects.reparent(interior)
+	effects.advance(.1, 0.0, walk)
+	check(not grade.visible and interior_grade.visible, "An active SAN grade follows its viewport and clears the source")
+	effects.reparent(actor)
+	check(not interior_grade.visible, "Leaving the interior clears its SAN grade")
+	effects.reset()
+	interior.free()
+	for key in previous_preferences:
+		settings.set_setting(key, previous_preferences[key], false)
 
 func check_long_blink_distribution() -> void:
 	var effects: PlayerSanEffects = actor.san_effects
