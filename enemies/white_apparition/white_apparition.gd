@@ -6,10 +6,8 @@ const CHEST := Vector3(0.0, 2.00, 0.0)
 const HEAD := Vector3(0.0, 2.45, 0.0)
 const BODY_CENTER := Vector3(0.0, 1.3, 0.0)
 const BODY_VIEW_RADIUS := 2.5
-const NEAR_SPAWN_MIN := 15.0
-const NEAR_SPAWN_MAX := 25.0
-const DISTANT_SPAWN_MIN := 40.0
-const DISTANT_SPAWN_CHANCE := 0.4
+const SPAWN_MIN := 35.0
+const SPAWN_MAX := 55.0
 const MAX_SPAWN_ATTEMPTS := 16
 const GAZE_SECONDS := 0.6
 const COVER_DESPAWN_SECONDS := 3.0
@@ -27,10 +25,13 @@ enum Phase { HIDDEN, VISIBLE, CONFIRMED }
 @onready var _capsule: CapsuleShape3D = _body.shape
 var _rng := RandomNumberGenerator.new()
 var _player: Node3D
+var _clock: WorldClock
 var _world_id := 0
 var _camera_id := 0
 var _phase := Phase.HIDDEN
 var _time_left := 0.0
+var _refresh_elapsed := 0.0
+var _ending_at_dusk := false
 var _gaze_elapsed := 0.0
 var _unseen_elapsed := 0.0
 var _covered_elapsed := 0.0
@@ -41,11 +42,16 @@ func _ready() -> void:
 	_rng.randomize()
 	hide()
 
-func configure(player: Node3D) -> void:
-	if is_instance_valid(_player) and player == _player: return
+func configure(player: Node3D, clock: WorldClock) -> void:
+	if is_instance_valid(_player) and player == _player and clock == _clock: return
 	_player = player
+	_clock = clock
 	_world_id = 0
 	_reset()
+
+func suspend_outdoors() -> void:
+	if _phase != Phase.HIDDEN: _enter_hidden()
+	set_physics_process(false)
 
 func _reset() -> void:
 	_camera_id = 0
@@ -54,7 +60,9 @@ func _reset() -> void:
 
 func _enter_hidden() -> void:
 	_phase = Phase.HIDDEN
-	_time_left = _rng.randf_range(25.0, 40.0)
+	_time_left = _rng.randf_range(15.0, 35.0) * 60.0
+	_refresh_elapsed = 0.0
+	_ending_at_dusk = false
 	_gaze_elapsed = 0.0
 	_unseen_elapsed = 0.0
 	_covered_elapsed = 0.0
@@ -62,17 +70,22 @@ func _enter_hidden() -> void:
 	hide()
 
 func _physics_process(delta: float) -> void:
-	if not WorldEntities.same_world(self, _player) or _player.is_queued_for_deletion() or _player.get("is_player_dead") == true:
+	if not is_instance_valid(_player) or _player.is_queued_for_deletion() or _player.get("is_player_dead") == true:
 		if _world_id != 0:
 			_world_id = 0
 			_reset()
 		return
+	if not WorldEntities.same_world(self, _player): return
 	var world_id := get_world_3d().get_instance_id()
 	if world_id != _world_id:
 		_world_id = world_id
 		_reset()
 	if not PlayerSurvival.simulation_active(_player): return
 
+	# Match the world clock's sunrise and sunset, independent of weather.
+	var hour := _clock.hour_of_day()
+	var daytime := hour >= 6.0 and hour < 18.0
+	if _phase != Phase.HIDDEN and not daytime: _ending_at_dusk = true
 	var camera := _active_player_camera()
 	if camera == null:
 		_camera_id = 0
@@ -81,18 +94,30 @@ func _physics_process(delta: float) -> void:
 	if _camera_id != camera.get_instance_id():
 		_camera_id = camera.get_instance_id()
 		_gaze_elapsed = 0.0
-	if _phase != Phase.CONFIRMED:
-		_time_left -= delta
-	match _phase:
-		Phase.HIDDEN:
-			if _time_left <= 0.0 and not _try_emerge(camera):
-				_time_left = 2.0
-		Phase.VISIBLE, Phase.CONFIRMED:
-			var origin := global_position
-			var watched := _update_visible(camera, delta)
-			if _phase != Phase.HIDDEN and global_position == origin:
-				var speed := WATCHED_PURSUIT_SPEED if watched else UNWATCHED_PURSUIT_SPEED
-				_pursue(delta, speed)
+	if _phase == Phase.HIDDEN:
+		if daytime: _advance_refresh(camera, delta)
+		return
+	if _ending_at_dusk and _body_outside_view(global_position, camera.get_frustum()):
+		_enter_hidden()
+		return
+	if _phase == Phase.VISIBLE and not _ending_at_dusk: _time_left -= delta
+	var origin := global_position
+	var watched := _update_visible(camera, delta)
+	if _phase != Phase.HIDDEN and global_position == origin:
+		var speed := WATCHED_PURSUIT_SPEED if watched else UNWATCHED_PURSUIT_SPEED
+		_pursue(delta, speed)
+
+func _advance_refresh(camera: Camera3D, delta: float) -> void:
+	_refresh_elapsed += delta
+	_time_left -= delta
+	if _time_left > 0.0: return
+	if _rng.randf() < _refresh_chance(_refresh_elapsed) and _try_emerge(camera): return
+	_time_left = _rng.randf_range(5.0, 15.0) * 60.0
+
+static func _refresh_chance(elapsed: float) -> float:
+	if elapsed < 30.0 * 60.0: return 0.1
+	if elapsed < 60.0 * 60.0: return 0.3
+	return 0.6
 
 func _active_player_camera() -> Camera3D:
 	if _player.get("in_ui_mode") == true or _player.is_gameplay_input_blocked() or _player.is_grabbed(): return null
@@ -115,7 +140,7 @@ func _update_visible(camera: Camera3D, delta: float) -> bool:
 	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
 		_reposition_armed = true
-	elif _time_left <= 0.0:
+	elif _time_left <= 0.0 and not _ending_at_dusk:
 		_enter_hidden()
 	return watched
 
@@ -238,9 +263,7 @@ func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
 	return space.intersect_ray(query).is_empty()
 
 func _try_emerge(camera: Camera3D) -> bool:
-	var distant := _rng.randf() < DISTANT_SPAWN_CHANCE
-	var point := _find_emergence(camera, distant)
-	if not point.is_finite(): point = _find_emergence(camera, not distant)
+	var point := _find_emergence(camera)
 	if not point.is_finite(): return false
 	global_position = point
 	var observer := camera.get_camera_transform().origin
@@ -253,26 +276,21 @@ func _try_emerge(camera: Camera3D) -> bool:
 	show()
 	return true
 
-func _find_emergence(camera: Camera3D, distant: bool) -> Vector3:
-	var min_distance := DISTANT_SPAWN_MIN if distant else NEAR_SPAWN_MIN
-	var max_distance := camera.far
+func _find_emergence(camera: Camera3D) -> Vector3:
+	var max_distance := minf(camera.far, SPAWN_MAX)
 	var environment := camera.environment if camera.environment != null else get_world_3d().environment
 	if environment != null and environment.fog_enabled and environment.fog_mode == Environment.FOG_MODE_DEPTH and environment.fog_density >= 0.999:
 		max_distance = minf(max_distance, environment.fog_depth_end)
-	if not distant: max_distance = minf(max_distance, NEAR_SPAWN_MAX)
-	if max_distance <= min_distance: return Vector3.INF
+	if max_distance <= SPAWN_MIN: return Vector3.INF
 
 	var view := camera.get_camera_transform()
 	var forward := Vector3.UP.cross(view.basis.x).normalized()
 	var frustum := camera.get_frustum()
 	var space := get_world_3d().direct_space_state
-	for attempt in MAX_SPAWN_ATTEMPTS:
+	for _attempt in MAX_SPAWN_ATTEMPTS:
 		var angle := deg_to_rad(_rng.randf_range(70.0, 170.0))
 		if _rng.randf() < 0.5: angle = -angle
-		var radius := _rng.randf_range(min_distance, max_distance)
-		if distant:
-			# Sample the start of the far band first, then search out to the view limit.
-			radius = minf(46.0, max_distance) if attempt == 0 else min_distance * pow(max_distance / min_distance, _rng.randf())
+		var radius := _rng.randf_range(SPAWN_MIN, max_distance)
 		var point := _grounded_position(space, view.origin + forward.rotated(Vector3.UP, angle) * radius, 24.0, 24.0)
 		if not point.is_finite() or _appearance_origin.distance_squared_to(point) < 9.0: continue
 		if not _body_outside_view(point, frustum): continue

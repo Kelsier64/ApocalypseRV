@@ -15,6 +15,7 @@ enum ReplayStep { WAITING, CAPTURING, PERIPHERAL, REPOSITIONING, LOOK_AWAY }
 var apparition: WhiteApparition
 var _replay := "--replay" in OS.get_cmdline_user_args()
 var _elapsed := 0.0
+var _sighting_requested := false
 var _replay_started := false
 var _spawn_checked := false
 var _replay_step := ReplayStep.WAITING
@@ -58,12 +59,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if _replay or not event is InputEventKey or not event.pressed or event.echo or event.physical_keycode != KEY_F6:
 		return
 	if is_instance_valid(apparition) and apparition._active_player_camera() != null:
-		_request_sighting()
+		_sighting_requested = true
 		get_viewport().set_input_as_handled()
-
-func _request_sighting() -> void:
-	apparition._reset()
-	apparition._time_left = 0.0
 
 func _physics_process(delta: float) -> void:
 	if _replay:
@@ -76,14 +73,22 @@ func _physics_process(delta: float) -> void:
 			return
 	apparition = encounter._apparition
 	if not is_instance_valid(apparition) or apparition._world_id == 0: return
+	# Wait until the live player settles onto the streamed road.
+	if _replay and not _replay_started and _elapsed >= 0.2 and player.is_on_floor():
+		_replay_started = true
+		apparition._rng.seed = 2
+		_sighting_requested = true
+	if _sighting_requested:
+		_sighting_requested = false
+		var camera := apparition._active_player_camera()
+		if camera != null:
+			apparition._reset()
+			if not apparition._try_emerge(camera) and _replay:
+				_replay_error("White apparition replay could not find an offscreen spawn")
+				return
 	var phase := apparition._phase
 	status.text = "WASD move   Mouse look   F6 request sighting\n%s   SAN %.1f" % [WhiteApparition.Phase.keys()[phase].capitalize(), player.survival.san]
 	if not _replay: return
-	# Wait until the live player settles onto the streamed road.
-	if not _replay_started and _elapsed >= 0.2 and player.is_on_floor():
-		_replay_started = true
-		_request_sighting()
-		apparition._rng.seed = 2
 	match _replay_step:
 		ReplayStep.WAITING:
 			if phase == WhiteApparition.Phase.HIDDEN: return
@@ -93,7 +98,7 @@ func _physics_process(delta: float) -> void:
 					_replay_error("White apparition spawned in the current view")
 					return
 				_spawn_distance = apparition.global_position.distance_to(player.global_position)
-				print("WHITE_APPARITION_EMERGED offscreen=true")
+				print("WHITE_APPARITION_EMERGED offscreen=true distance=%.2f" % _spawn_distance)
 			player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
 			if phase == WhiteApparition.Phase.CONFIRMED and player.survival.san < 0.0:
 				_begin_reposition()

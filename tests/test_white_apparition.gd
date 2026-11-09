@@ -45,9 +45,10 @@ func _check(ok: bool, label: String) -> void:
 func _run() -> void:
 	_check_visual_motion()
 	_check_drain_rates()
+	_check_refresh_chances()
 	await _check_encounter()
 	if _failures.is_empty():
-		print("PASS: White apparition emergence, distance-based gaze drain, relocation, and despawn")
+		print("PASS: White apparition daytime refresh, distance-based gaze drain, relocation, and despawn")
 	quit(0 if _failures.is_empty() else 1)
 
 func _check_visual_motion() -> void:
@@ -101,6 +102,13 @@ func _check_drain_rates() -> void:
 		_check(rate > 0.0 and rate < previous, "SAN drain remains positive and falls with distance at %d m" % distance)
 		previous = rate
 
+func _check_refresh_chances() -> void:
+	_check(is_equal_approx(Apparition._refresh_chance(0.0), 0.1), "Refresh chance is 10% before 30 m")
+	_check(is_equal_approx(Apparition._refresh_chance(30.0 * 60.0 - 0.001), 0.1), "Refresh chance stays 10% below 30 m")
+	_check(is_equal_approx(Apparition._refresh_chance(30.0 * 60.0), 0.3), "Refresh chance becomes 30% at 30 m")
+	_check(is_equal_approx(Apparition._refresh_chance(60.0 * 60.0 - 0.001), 0.3), "Refresh chance stays 30% below 60 m")
+	_check(is_equal_approx(Apparition._refresh_chance(60.0 * 60.0), 0.6), "Refresh chance becomes 60% at 60 m")
+
 func _check_encounter() -> void:
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(1280, 720)
@@ -123,11 +131,15 @@ func _check_encounter() -> void:
 	var player_shape := _box(player, Vector3(0, 1.55, 0), Vector3.ONE)
 	world.add_child(player)
 	player.camera.make_current()
+	var clock := WorldClock.new()
+	clock.set_process(false)
+	world.add_child(clock)
+	clock.elapsed_seconds = 14.0 * 3600.0
 	var apparition := ApparitionScene.instantiate() as Apparition
 	world.add_child(apparition)
 	apparition.set_physics_process(false)
 	apparition.get_node("Visual").set_process(false)
-	apparition.configure(player)
+	apparition.configure(player, clock)
 	apparition._rng.seed = 2026
 	await physics_frame
 	await physics_frame
@@ -152,18 +164,17 @@ func _check_encounter() -> void:
 	_check(not apparition._can_confirm(player.camera, chest - Vector3.FORWARD * 30.0, head - Vector3.FORWARD * 30.0), "Points behind the camera do not count")
 	_check(apparition._can_confirm(player.camera, chest + Vector3.FORWARD * 30.0, head + Vector3.FORWARD * 30.0), "Clear center gaze beyond 40 m can confirm")
 	var camera_far := player.camera.far
-	player.camera.far = 39.0
+	player.camera.far = 34.0
 	_check(not apparition._can_confirm(player.camera, chest + Vector3.FORWARD * 30.0, head + Vector3.FORWARD * 30.0), "The camera far plane still bounds gaze")
-	_check(not apparition._find_emergence(player.camera, true).is_finite(), "The far spawn band respects the camera far plane")
+	_check(not apparition._find_emergence(player.camera).is_finite(), "The spawn band respects the camera far plane")
 	player.camera.far = camera_far
 	var fog := Environment.new()
 	fog.fog_enabled = true
 	fog.fog_mode = Environment.FOG_MODE_DEPTH
 	fog.fog_density = 1.0
-	fog.fog_depth_end = 39.0
+	fog.fog_depth_end = 34.0
 	player.camera.environment = fog
-	_check(not apparition._find_emergence(player.camera, true).is_finite(), "Opaque depth fog bounds distant emergence")
-	_check(apparition._find_emergence(player.camera, false).is_finite(), "Near emergence still fits before opaque depth fog")
+	_check(not apparition._find_emergence(player.camera).is_finite(), "Opaque depth fog bounds emergence")
 	player.camera.environment = null
 	var space := world.get_world_3d().direct_space_state
 	_check(not apparition._grounded_position(space, roof.position, 4.0, 8.0).is_finite(), "A roof cannot support an emergence")
@@ -192,12 +203,12 @@ func _check_encounter() -> void:
 	apparition.hide()
 
 	_check_spawn_bands(apparition, player.camera)
-	var edge_chest := player.camera.project_position(Vector2(1288, 360), 15.0)
+	_check_outdoor_schedule(apparition, player, clock)
+	var edge_chest := player.camera.project_position(Vector2(1288, 360), 35.0)
 	_check(not player.camera.is_position_in_frustum(edge_chest), "Edge fixture puts the chest just outside the viewport")
 	_check(not apparition._body_outside_view(edge_chest - Apparition.CHEST, player.camera.get_frustum()), "An offscreen chest can still leave part of the silhouette in view")
 
-	apparition._time_left = 0.0
-	apparition._physics_process(1.0 / 60.0)
+	_check(apparition._try_emerge(player.camera), "A daytime fixture can force a valid emergence")
 	_check(apparition._phase == Apparition.Phase.VISIBLE and apparition.get_node("Visual").is_visible_in_tree(), "An emergence is active on its first tick")
 	_check(apparition._body_outside_view(apparition.global_position, player.camera.get_frustum()), "An emergence starts entirely outside the current view")
 	apparition._time_left = 0.0
@@ -205,9 +216,7 @@ func _check_encounter() -> void:
 	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.get_node("Visual").is_visible_in_tree(), "An unconfirmed appearance disappears on the expiry tick")
 	_check(player.survival.san == PlayerSurvival.MAX_SAN, "An unseen apparition does not rapidly drain SAN")
 
-	apparition._time_left = 0.0
-	apparition._physics_process(1.0 / 60.0)
-	_check(apparition._phase == Apparition.Phase.VISIBLE, "The apparition can emerge again after going unseen")
+	_check(apparition._try_emerge(player.camera), "The apparition can emerge again after going unseen")
 	player.camera.look_at(apparition.to_global(Apparition.CHEST))
 	apparition._physics_process(0.59)
 	_check(apparition._phase == Apparition.Phase.VISIBLE, "A glance shorter than 0.6 seconds does not confirm")
@@ -223,23 +232,81 @@ func _check_encounter() -> void:
 	visual._process(1.0 / 60.0)
 	_check(visual.gaze_points() != pose, "White apparition keeps animating after confirmation")
 
-	await _check_confirmed_encounter(apparition, player, world)
-	await _check_lethal_pursuit(apparition, player, world)
+	await _check_confirmed_encounter(apparition, player, world, clock)
+	await _check_lethal_pursuit(apparition, player, world, clock)
 	await _check_seated_contact(apparition, player, player_shape, world)
 	viewport.free()
 
 func _check_spawn_bands(apparition: Apparition, camera: Camera3D) -> void:
 	var frustum := camera.get_frustum()
 	for attempt in 8:
-		var near := apparition._find_emergence(camera, false)
-		var near_distance := camera.global_position.distance_to(near + Apparition.CHEST)
-		_check(near_distance >= 15.0 and near_distance <= 25.0, "Near emergence is between 15 m and 25 m")
-		_check(near.is_finite() and apparition._body_outside_view(near, frustum), "Near emergence is entirely offscreen")
-		var distant := apparition._find_emergence(camera, true)
-		_check(distant.is_finite() and camera.global_position.distance_to(distant + Apparition.CHEST) >= 40.0, "Far emergence starts at 40 m")
-		_check(distant.is_finite() and apparition._body_outside_view(distant, frustum), "Far emergence is entirely offscreen")
+		var point := apparition._find_emergence(camera)
+		var distance := camera.global_position.distance_to(point + Apparition.CHEST)
+		_check(point.is_finite() and distance >= 35.0 and distance <= 55.0, "Emergence is between 35 m and 55 m")
+		_check(point.is_finite() and apparition._body_outside_view(point, frustum), "Emergence is entirely offscreen")
 
-func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world: Node3D) -> void:
+func _check_outdoor_schedule(apparition: Apparition, player: Survivor, clock: WorldClock) -> void:
+	var camera := player.camera
+	clock.elapsed_seconds = 5.99 * 3600.0
+	var prior_refresh := apparition._refresh_elapsed
+	var prior_wait := apparition._time_left
+	_check(prior_wait >= 900.0 and prior_wait <= 2100.0, "First emergence waits 15–35 minutes")
+	apparition._physics_process(1.0)
+	_check(apparition._phase == Apparition.Phase.HIDDEN and apparition._refresh_elapsed == prior_refresh and apparition._time_left == prior_wait, "Night suspends refresh and emergence timers")
+	clock.elapsed_seconds = 6.0 * 3600.0
+	apparition._physics_process(1.0)
+	_check(apparition._refresh_elapsed > prior_refresh, "Daylight advances the refresh timer")
+	var preserved_wait := apparition._time_left
+	var preserved_refresh := apparition._refresh_elapsed
+	apparition.suspend_outdoors()
+	_check(not apparition.visible and not apparition.is_physics_processing(), "Leaving outdoors hides and suspends the apparition")
+	_check(apparition._time_left == preserved_wait and apparition._refresh_elapsed == preserved_refresh, "Suspending a hidden encounter preserves its timers")
+	_check(apparition._try_emerge(camera), "The outdoor suspension fixture can force an emergence")
+	apparition.suspend_outdoors()
+	_check(not apparition.visible and apparition._time_left >= 900.0 and apparition._time_left <= 2100.0, "Suspending an active actor clears it and starts a fresh wait")
+	_check_refresh_retries(apparition, camera)
+	_check_active_dusk(apparition, player, clock)
+
+func _check_refresh_retries(apparition: Apparition, camera: Camera3D) -> void:
+	var camera_far := camera.far
+	var probe := RandomNumberGenerator.new()
+	for roll_passes: bool in [false, true]:
+		var found_seed := false
+		for candidate in 32:
+			probe.seed = candidate
+			if (probe.randf() < 0.6) != roll_passes: continue
+			apparition._rng.seed = candidate
+			found_seed = true
+			break
+		_check(found_seed, "The seeded fixture supplies a known refresh roll")
+		# Use clear terrain for a failed roll and a too-short view for a passed roll.
+		camera.far = 34.0 if roll_passes else camera_far
+		apparition._refresh_elapsed = 3600.0
+		apparition._time_left = 0.0
+		apparition._physics_process(1.0)
+		_check(not apparition.visible and apparition._refresh_elapsed == 3601.0, "A missed refresh preserves elapsed daytime")
+		_check(apparition._time_left >= 300.0 and apparition._time_left <= 900.0, "A missed refresh retries in 5–15 minutes")
+	camera.far = camera_far
+
+func _check_active_dusk(apparition: Apparition, player: Survivor, clock: WorldClock) -> void:
+	var camera := player.camera
+	clock.elapsed_seconds = 14.0 * 3600.0
+	_check(apparition._try_emerge(camera), "The dusk fixture can force a daytime emergence")
+	apparition.global_position = Vector3(0.0, 0.04, -15.0)
+	clock.elapsed_seconds = 18.0 * 3600.0
+	apparition._time_left = 0.0
+	apparition._physics_process(0.0)
+	_check(apparition._phase == Apparition.Phase.VISIBLE and apparition.visible, "A dusk transition preserves an unconfirmed figure still in frame")
+	var daytime_view := camera.basis
+	camera.rotate_y(PI)
+	apparition._physics_process(0.0)
+	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible, "Dusk removes an active silhouette while it is fully offscreen")
+	_check(apparition._time_left >= 900.0 and apparition._time_left <= 2100.0, "Dusk starts a fresh 15–35 minute eligible-time wait")
+	_check(apparition._refresh_elapsed == 0.0, "Dusk despawn resets elapsed daytime for the next encounter")
+	camera.basis = daytime_view
+	clock.elapsed_seconds = 14.0 * 3600.0
+
+func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world: Node3D, clock: WorldClock) -> void:
 	var camera := player.camera
 	var visual = apparition.get_node("Visual")
 	var distant := Vector3(0.0, 0.04, -45.0)
@@ -304,8 +371,7 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	await _check_cover_despawn(apparition, player, world)
 	await _check_look_away_despawn(apparition, player, world)
 
-	apparition._time_left = 0.0
-	apparition._physics_process(1.0 / 60.0)
+	_check(apparition._try_emerge(camera), "The later confirmation fixture can force an emergence")
 	camera.look_at(apparition.to_global(Apparition.CHEST))
 	apparition._physics_process(0.61)
 	_check(apparition._phase == Apparition.Phase.CONFIRMED, "A later emergence can be confirmed again")
@@ -315,7 +381,7 @@ func _check_confirmed_encounter(apparition: Apparition, player: Survivor, world:
 	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Death clears the transient encounter and stops rapid drain")
 	var replacement := Survivor.new()
 	world.add_child(replacement)
-	apparition.configure(replacement)
+	apparition.configure(replacement, clock)
 	apparition._physics_process(1.0)
 	_check(replacement.survival.san == PlayerSurvival.MAX_SAN and not apparition.visible, "A different observer never inherits a confirmed sighting")
 
@@ -360,7 +426,7 @@ func _check_cover_despawn(apparition: Apparition, player: Survivor, world: Node3
 	_check(apparition._phase == Apparition.Phase.CONFIRMED and apparition.visible, "The apparition remains present just before three seconds of cover")
 	apparition._physics_process(0.03)
 	_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "Three seconds of full cover trigger abrupt despawn")
-	_check(apparition._time_left >= 25.0 and apparition._time_left <= 40.0, "Despawn starts a new 25–40 second emergence wait")
+	_check(apparition._time_left >= 900.0 and apparition._time_left <= 2100.0, "Despawn starts a new 15–35 minute eligible-time wait")
 	occluder.queue_free()
 	chest_occluder.queue_free()
 	await physics_frame
@@ -378,8 +444,7 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 	for distance: float in [4.5, 15.0, 45.0]:
 		var start := Vector3(0.0, 0.04, -distance)
 		camera.look_at(start + Apparition.CHEST)
-		apparition._time_left = 0.0
-		apparition._physics_process(1.0 / 60.0)
+		_check(apparition._try_emerge(camera), "The relocation fixture can force an emergence")
 		apparition.global_position = start
 		apparition._update_visible(camera, 0.61)
 		_check(apparition._phase == Apparition.Phase.CONFIRMED, "The relocation fixture confirms with clear chest and head rays")
@@ -400,14 +465,13 @@ func _check_look_away_despawn(apparition: Apparition, player: Survivor, world: N
 		apparition._physics_process(0.03)
 		_check(apparition._phase == Apparition.Phase.HIDDEN and not apparition.visible and player.survival.san == san, "30 seconds of continuous look-away trigger abrupt despawn")
 
-func _check_lethal_pursuit(apparition: Apparition, player: Survivor, world: Node3D) -> void:
+func _check_lethal_pursuit(apparition: Apparition, player: Survivor, world: Node3D, clock: WorldClock) -> void:
 	player.is_player_dead = false
-	apparition.configure(player)
+	apparition.configure(player, clock)
 	player.camera.make_current()
 	player.camera.look_at(Vector3(0, 1.55, 1))
 	apparition._physics_process(0.0)
-	apparition._time_left = 0.0
-	apparition._physics_process(0.0)
+	_check(apparition._try_emerge(player.camera), "The lethal pursuit fixture can force an emergence")
 	apparition.global_position = Vector3(0, 0.04, -2.0)
 	_check(apparition._phase == Apparition.Phase.VISIBLE, "The lethal pursuit fixture starts unconfirmed")
 	var wall := _static_box(world, Vector3(0, 1.5, -0.65), Vector3(8, 3, 0.08))
@@ -436,8 +500,7 @@ func _check_seated_contact(apparition: Apparition, player: Survivor, player_shap
 	await physics_frame
 	await physics_frame
 	apparition._physics_process(0.0)
-	apparition._time_left = 0.0
-	apparition._physics_process(0.0)
+	_check(apparition._try_emerge(player.camera), "The seated contact fixture can force an emergence")
 	apparition.global_position = Vector3(0, 0.04, -0.64)
 	apparition._physics_process(1.0 / 60.0)
 	_check(not player.is_player_dead, "A solid panel blocks the seated torso contact even within reach")
