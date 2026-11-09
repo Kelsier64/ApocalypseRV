@@ -5,15 +5,18 @@ const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
 const SPAWN_FRAME := Rect2(0.05, 0.05, 0.90, 0.90)
 const CHEST := Vector3(0.0, 2.00, 0.0)
 const HEAD := Vector3(0.0, 2.45, 0.0)
-const MAX_GAZE_DISTANCE := 40.0
-const MIN_SPAWN_DISTANCE := 10.0
-const MAX_SPAWN_DISTANCE := 22.0
+const NEAR_SPAWN_MIN := 15.0
+const NEAR_SPAWN_MAX := 25.0
+const DISTANT_SPAWN_MIN := 40.0
+const DISTANT_SPAWN_CHANCE := 0.4
 const MAX_SPAWN_ATTEMPTS := 16
-const MAX_DRIFT := 2.0
-const DRIFT_SPEED := 0.45
 const GAZE_SECONDS := 0.6
-const SAN_DRAIN_PER_SECOND := 100.0
-const UNSEEN_DESPAWN_SECONDS := 3.0
+const COVER_DESPAWN_SECONDS := 3.0
+const UNSEEN_DESPAWN_SECONDS := 8.0
+const REPOSITION_DELAY := 1.0
+const REPOSITION_SPEED := 2.5
+const MAX_GROUND_STEP := 0.15
+const VISUAL_RADIUS := 1.8
 const MIN_SUPPORT_NORMAL_Y := 0.82
 const CLEARANCE_RADIUS := 0.44
 const CLEARANCE_HEIGHT := 2.75
@@ -28,6 +31,11 @@ var _camera_id := 0
 var _phase := Phase.HIDDEN
 var _time_left := 0.0
 var _gaze_elapsed := 0.0
+var _unseen_elapsed := 0.0
+var _covered_elapsed := 0.0
+var _offscreen_elapsed := 0.0
+var _reposition_spent := false
+var _reposition_target := Vector3.INF
 var _appearance_origin := Vector3.INF
 var _capsule := CapsuleShape3D.new()
 
@@ -50,8 +58,13 @@ func _reset() -> void:
 
 func _enter_hidden() -> void:
 	_phase = Phase.HIDDEN
-	_time_left = _rng.randf_range(4.0, 8.0)
+	_time_left = _rng.randf_range(25.0, 40.0)
 	_gaze_elapsed = 0.0
+	_unseen_elapsed = 0.0
+	_covered_elapsed = 0.0
+	_offscreen_elapsed = 0.0
+	_reposition_spent = false
+	_reposition_target = Vector3.INF
 	hide()
 
 func _physics_process(delta: float) -> void:
@@ -74,7 +87,8 @@ func _physics_process(delta: float) -> void:
 	if _camera_id != camera.get_instance_id():
 		_camera_id = camera.get_instance_id()
 		_gaze_elapsed = 0.0
-	_time_left -= delta
+	if _phase != Phase.CONFIRMED:
+		_time_left -= delta
 	match _phase:
 		Phase.HIDDEN:
 			if _time_left <= 0.0 and not _try_emerge(camera):
@@ -95,39 +109,59 @@ func _update_visible(camera: Camera3D, delta: float) -> void:
 	if points.size() != 2: points = PackedVector3Array([to_global(CHEST), to_global(HEAD)])
 	var chest := points[0]
 	var head := points[1]
-	var gazing := _can_confirm(camera, chest, head)
 	if _phase == Phase.CONFIRMED:
-		if gazing:
-			_player.drain_san(SAN_DRAIN_PER_SECOND * delta)
-		# Peripheral sight keeps the apparition present without counting as a gaze.
-		if gazing or _can_see_point(camera, chest) or _can_see_point(camera, head):
-			_time_left = UNSEEN_DESPAWN_SECONDS
-		elif _time_left <= 0.0:
-			_enter_hidden()
+		_update_confirmed(camera, chest, head, delta)
 		return
 
-	_gaze_elapsed = _gaze_elapsed + delta if gazing else 0.0
+	_gaze_elapsed = _gaze_elapsed + delta if _can_confirm(camera, chest, head) else 0.0
 	if _gaze_elapsed >= GAZE_SECONDS:
 		_phase = Phase.CONFIRMED
-		_time_left = UNSEEN_DESPAWN_SECONDS
 	elif _time_left <= 0.0:
 		_enter_hidden()
-	else:
-		_drift_toward_center(camera, delta)
 
 func _can_confirm(camera: Camera3D, chest: Vector3, head: Vector3) -> bool:
 	if not is_visible_in_tree(): return false
-	if camera.get_camera_transform().origin.distance_squared_to(chest) > MAX_GAZE_DISTANCE * MAX_GAZE_DISTANCE: return false
-	return _point_in_frame(camera, chest, CENTER) and _can_see_point(camera, head) and _clear_sight(camera, chest)
+	return _point_in_frame(camera, chest, CENTER) and camera.is_position_in_frustum(head) \
+		and _clear_sight(camera, chest) and _clear_sight(camera, head)
+
+func _update_confirmed(camera: Camera3D, chest: Vector3, head: Vector3, delta: float) -> void:
+	var chest_clear := _clear_sight(camera, chest)
+	var head_clear := _clear_sight(camera, head)
+	var chest_in_frame := camera.is_position_in_frustum(chest)
+	var head_in_frame := camera.is_position_in_frustum(head)
+	if chest_clear and head_clear and head_in_frame and _point_in_frame(camera, chest, CENTER):
+		var distance := camera.get_camera_transform().origin.distance_to(to_global(CHEST))
+		_player.drain_san(_san_drain_rate(distance) * delta)
+
+	var seen := (chest_clear and chest_in_frame) or (head_clear and head_in_frame)
+	var covered := not chest_clear and not head_clear
+	_unseen_elapsed = 0.0 if seen else _unseen_elapsed + delta
+	_covered_elapsed = _covered_elapsed + delta if covered else 0.0
+	if _covered_elapsed >= COVER_DESPAWN_SECONDS or _unseen_elapsed >= UNSEEN_DESPAWN_SECONDS:
+		_enter_hidden()
+		return
+
+	var frustum := camera.get_frustum()
+	if covered or not _outside_view(frustum, global_position):
+		_offscreen_elapsed = 0.0
+		_reposition_target = Vector3.INF
+		return
+	_offscreen_elapsed += delta
+	if _offscreen_elapsed >= REPOSITION_DELAY:
+		_reposition(camera, frustum, delta)
+
+static func _san_drain_rate(distance: float) -> float:
+	if distance < 8.0: return 100.0 + (8.0 - distance) * 15.0
+	if distance < 15.0: return lerpf(100.0, 50.0, (distance - 8.0) / 7.0)
+	if distance < 25.0: return lerpf(50.0, 15.0, (distance - 15.0) / 10.0)
+	var falloff := 25.0 / distance
+	return 15.0 * falloff * falloff
 
 func _point_in_frame(camera: Camera3D, point: Vector3, frame: Rect2) -> bool:
 	if not camera.is_position_in_frustum(point): return false
 	var viewport_rect := camera.get_viewport().get_visible_rect()
 	if viewport_rect.size.x <= 0.0 or viewport_rect.size.y <= 0.0: return false
 	return frame.has_point((camera.unproject_position(point) - viewport_rect.position) / viewport_rect.size)
-
-func _can_see_point(camera: Camera3D, point: Vector3) -> bool:
-	return camera.is_position_in_frustum(point) and _clear_sight(camera, point)
 
 func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
 	var space := get_world_3d().direct_space_state
@@ -137,33 +171,57 @@ func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
 	return space.intersect_ray(query).is_empty()
 
 func _try_emerge(camera: Camera3D) -> bool:
-	var camera_pose := camera.get_camera_transform()
-	var forward := -camera_pose.basis.z.slide(Vector3.UP).normalized()
-	if forward.length_squared() < 0.5: return false
-	var anchor := camera_pose.origin
-	anchor.y = _player.global_position.y
+	var distant := _rng.randf() < DISTANT_SPAWN_CHANCE
+	var point := _find_emergence(camera, distant)
+	if not point.is_finite(): point = _find_emergence(camera, not distant)
+	if not point.is_finite(): return false
+	global_position = point
+	var observer := camera.get_camera_transform().origin
+	look_at(Vector3(observer.x, point.y, observer.z))
+	_appearance_origin = point
+	_phase = Phase.VISIBLE
+	_time_left = _rng.randf_range(6.0, 10.0)
+	_visual.begin_appearance()
+	show()
+	return true
+
+func _find_emergence(camera: Camera3D, distant: bool) -> Vector3:
+	var min_depth := DISTANT_SPAWN_MIN if distant else NEAR_SPAWN_MIN
+	var max_depth := camera.far
+	var environment := camera.environment if camera.environment != null else get_world_3d().environment
+	if environment != null and environment.fog_enabled and environment.fog_mode == Environment.FOG_MODE_DEPTH and environment.fog_density >= 0.999:
+		max_depth = minf(max_depth, environment.fog_depth_end)
+	if not distant: max_depth = minf(max_depth, NEAR_SPAWN_MAX)
+	if max_depth <= min_depth: return Vector3.INF
+
+	var rect := camera.get_viewport().get_visible_rect()
+	if rect.size.x <= 0.0 or rect.size.y <= 0.0: return Vector3.INF
+	var view := camera.get_camera_transform()
 	var space := get_world_3d().direct_space_state
 	for attempt in MAX_SPAWN_ATTEMPTS:
-		var angle := deg_to_rad(_rng.randf_range(13.0, 35.0)) * (-1.0 if _rng.randf() < 0.5 else 1.0)
-		var candidate := anchor + forward.rotated(Vector3.UP, angle) * _rng.randf_range(MIN_SPAWN_DISTANCE, MAX_SPAWN_DISTANCE)
-		var point := _grounded_position(space, candidate, 6.0, 8.0)
+		var x := _rng.randf_range(0.12, 0.26)
+		if _rng.randf() < 0.5: x = 1.0 - x
+		var depth := _rng.randf_range(min_depth, max_depth)
+		if distant:
+			x = _rng.randf_range(0.24, 0.76)
+			# Sample the start of the far band first, then search out to the view limit.
+			depth = minf(46.0, max_depth) if attempt == 0 else min_depth * pow(max_depth / min_depth, _rng.randf())
+		var screen := rect.position + rect.size * Vector2(x, _rng.randf_range(0.42, 0.58))
+		var point := _grounded_position(space, camera.project_position(screen, depth), 24.0, 24.0)
 		if not point.is_finite() or _appearance_origin.distance_squared_to(point) < 9.0: continue
 		var chest := point + CHEST
-		var distance := camera_pose.origin.distance_to(chest)
-		if distance < MIN_SPAWN_DISTANCE or distance > MAX_SPAWN_DISTANCE: continue
-		if not _point_in_frame(camera, chest, SPAWN_FRAME) or _point_in_frame(camera, chest, CENTER): continue
+		var offset := chest - view.origin
+		if offset.slide(Vector3.UP).length_squared() < 1.0: continue
+		var distance := offset.length()
+		if distance < min_depth or (not distant and distance > NEAR_SPAWN_MAX): continue
+		if -view.basis.z.dot(offset) > max_depth: continue
+		if not _point_in_frame(camera, chest, SPAWN_FRAME): continue
+		if not distant and _point_in_frame(camera, chest, CENTER): continue
 		if not _point_in_frame(camera, point + HEAD, SPAWN_FRAME): continue
 		if not _clear_sight(camera, chest) or not _clear_sight(camera, point + HEAD): continue
 		if not space.intersect_shape(_clearance_at(point), 1).is_empty(): continue
-		global_position = point
-		look_at(Vector3(anchor.x, point.y, anchor.z))
-		_appearance_origin = point
-		_phase = Phase.VISIBLE
-		_time_left = _rng.randf_range(6.0, 10.0)
-		_visual.begin_appearance()
-		show()
-		return true
-	return false
+		return point
+	return Vector3.INF
 
 func _grounded_position(space: PhysicsDirectSpaceState3D, point: Vector3, above: float, below: float) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * above, point - Vector3.UP * below, 1)
@@ -182,24 +240,46 @@ func _clearance_at(point: Vector3) -> PhysicsShapeQueryParameters3D:
 	query.transform = Transform3D(Basis.IDENTITY, point + Vector3.UP * (CLEARANCE_HEIGHT * 0.5))
 	return query
 
-func _drift_toward_center(camera: Camera3D, delta: float) -> void:
-	var camera_pose := camera.get_camera_transform()
-	var forward := -camera_pose.basis.z.slide(Vector3.UP).normalized()
-	if forward.length_squared() < 0.5: return
-	var offset := global_position - camera_pose.origin
-	if offset.dot(forward) <= 0.0: return
-	var right := forward.cross(Vector3.UP)
-	var motion := right * clampf(-offset.dot(right), -DRIFT_SPEED * delta, DRIFT_SPEED * delta)
-	if motion.length_squared() < 0.000001: return
-	var current := global_position
-	var target := current + motion
-	var drift := (target - _appearance_origin).slide(Vector3.UP)
-	if drift.length_squared() > MAX_DRIFT * MAX_DRIFT: return
+func _outside_view(frustum: Array[Plane], point: Vector3) -> bool:
+	var center := point + Vector3.UP * (CLEARANCE_HEIGHT * 0.5)
+	for plane in frustum:
+		if plane.distance_to(center) > VISUAL_RADIUS: return true
+	return false
+
+func _reposition(camera: Camera3D, frustum: Array[Plane], delta: float) -> void:
 	var space := get_world_3d().direct_space_state
-	target = _grounded_position(space, target, 0.3, 0.3)
-	if not target.is_finite() or not space.intersect_shape(_clearance_at(target), 1).is_empty(): return
+	if not _reposition_spent:
+		_reposition_spent = true
+		_reposition_target = _find_reposition(camera, frustum, space)
+	if not _reposition_target.is_finite(): return
+
+	var current := global_position
+	var step := current.move_toward(_reposition_target, minf(REPOSITION_SPEED * delta, MAX_GROUND_STEP))
+	step = _grounded_position(space, step, 0.3, 0.3)
+	if not step.is_finite() or not _outside_view(frustum, step) or not space.intersect_shape(_clearance_at(step), 1).is_empty():
+		_reposition_target = Vector3.INF
+		return
 	var query := _clearance_at(current)
-	query.motion = target - current
+	query.motion = step - current
 	var safe := space.cast_motion(query)
-	if safe.size() == 2 and safe[0] >= 1.0:
-		global_position = target
+	if safe.size() != 2 or safe[0] < 1.0:
+		_reposition_target = Vector3.INF
+		return
+	global_position = step
+	if step.distance_squared_to(_reposition_target) < 0.0001:
+		_reposition_target = Vector3.INF
+
+func _find_reposition(camera: Camera3D, frustum: Array[Plane], space: PhysicsDirectSpaceState3D) -> Vector3:
+	var inward := (camera.get_camera_transform().origin - global_position).slide(Vector3.UP)
+	var distance := inward.length()
+	if distance < CLEARANCE_RADIUS: return Vector3.INF
+	inward /= distance
+	var approach := minf(_rng.randf_range(2.0, 4.0), distance * 0.6)
+	var lateral := minf(_rng.randf_range(2.0, 4.0), distance * 0.35)
+	var side := inward.cross(Vector3.UP) * lateral
+	if _rng.randf() < 0.5: side = -side
+	for offset in [side, -side]:
+		var target := _grounded_position(space, global_position + inward * approach + offset, 2.0, 2.0)
+		if target.is_finite() and _outside_view(frustum, target) and space.intersect_shape(_clearance_at(target), 1).is_empty():
+			return target
+	return Vector3.INF
