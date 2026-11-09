@@ -300,10 +300,20 @@ func check_san_effects() -> void:
 	effects._misdirection_remaining = .01
 	effects._sway_phase = PI / 2.0 - TAU * 1.99
 	check(absf(effects.walk_direction(Vector2.UP).x) < onset, "Walking bias fades before the episode ends")
+	effects.advance(0.0, -5.0, drive)
+	check(effects.driving_input(.6, .4).is_equal_approx(Vector2(.6, .4)), "Walking disruption does not carry over to driving inputs")
+	effects.driving_input(0.0, 0.0)
+	effects._delay_wait = 0.0
+	effects._misdirection_wait = 1.0
 	effects.advance(.01, -5.0, drive)
-	check(effects.steering(.6) == .6, "Walking disruption does not carry over to steering")
+	effects._delay_wait = 1.0
+	check(is_zero_approx(effects.driving_input(.6, 1.0).y), "A delayed throttle tap starts with no acceleration")
+	effects.advance(.1, -5.0, drive)
+	check(is_zero_approx(effects.driving_input(.6, 0.0).y), "Releasing the throttle takes effect immediately")
+	effects.advance(effects._delay_seconds - .05, -5.0, drive)
+	check(effects.driving_input(.6, 0.0).is_equal_approx(Vector2(.6, 0.0)), "A released throttle tap cannot accelerate later while the steering sample still arrives")
 	effects.advance(.01, -5.0, PlayerSanEffects.InputMode.NONE)
-	check(effects.steering(.6) == .6 and effects.steering(0.0) == 0.0, "Leaving active controls clears the steering episode")
+	check(effects.driving_input(.6, .4).is_equal_approx(Vector2(.6, .4)), "Leaving active controls clears the driving episode")
 	effects.reset()
 	actor.survival.reset()
 

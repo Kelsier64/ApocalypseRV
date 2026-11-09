@@ -5,8 +5,8 @@ class_name PlayerSanEffects
 enum InputMode { NONE, WALK, DRIVE }
 
 const THRESHOLD := 20.0
-const DELAY_RATE := 0.16
-const MISDIRECTION_RATE := 0.20
+const DELAY_RATE := 0.22
+const MISDIRECTION_RATE := 0.27
 
 var _rng := RandomNumberGenerator.new()
 var _control := InputMode.NONE
@@ -20,7 +20,7 @@ var _delay_remaining := 0.0
 var _delay_seconds := 0.0
 var _last_input := Vector2.ZERO
 var _delayed_input := Vector2.ZERO
-# Each sample stores the direction and the remaining episode time at delivery.
+# Each sample stores the command and the remaining episode time at delivery.
 var _pending_input: Array[Vector3] = []
 var _misdirection_wait := 0.0
 var _misdirection_remaining := 0.0
@@ -55,7 +55,7 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 
 func _advance_blink(delta: float, severity: float) -> void:
 	if _blink_wait <= 0.0: _blink_wait = _rng.randf_range(0.72, 1.28)
-	_blink_wait -= delta / lerpf(7.0, 1.0, severity)
+	_blink_wait -= delta / lerpf(6.0, 0.9, severity)
 	_blink_remaining = maxf(0.0, _blink_remaining - delta)
 	if _blink_wait <= 0.0:
 		_blink_wait = _rng.randf_range(0.72, 1.28)
@@ -76,8 +76,8 @@ func _advance_direction(delta: float, severity: float) -> void:
 		_delay_wait -= delta * severity * DELAY_RATE
 		if _delay_wait <= 0.0:
 			_delay_wait = _roll_wait()
-			_delay_seconds = lerpf(0.22, 0.68, _sample_episode(severity))
-			_delay_remaining = lerpf(1.3, 4.2, _sample_episode(severity))
+			_delay_seconds = lerpf(0.42, 0.95, _sample_episode(severity))
+			_delay_remaining = lerpf(2.0, 4.5, _sample_episode(severity))
 			_delayed_input = _last_input
 	if _misdirection_remaining == 0.0:
 		_misdirection_wait -= delta * severity * MISDIRECTION_RATE
@@ -106,28 +106,36 @@ func _misdirection_weight() -> float:
 
 func walk_direction(input: Vector2) -> Vector2:
 	if _control != InputMode.WALK: return input
-	var direction := _delay_direction(input)
+	var direction := _delay_input(input)
 	if _misdirection_remaining <= 0.0: return direction
 	var pull := _side * _misdirection_weight() * (0.38 + 0.40 * direction.length())
 	return (direction + Vector2(pull, 0.0)).limit_length()
 
-func steering(turn: float) -> float:
-	if _control != InputMode.DRIVE: return turn
-	var delayed := _delay_direction(Vector2(turn, 0.0))
-	var direction := delayed.x if _delay_remaining > 0.0 else turn
-	if _misdirection_remaining <= 0.0: return direction
+func driving_input(turn: float, throttle: float) -> Vector2:
+	var input := Vector2(turn, throttle)
+	if _control != InputMode.DRIVE: return input
+	if _delay_remaining > 0.0 and input.y < _last_input.y:
+		# Easing off the pedal or braking cancels buffered acceleration.
+		_delayed_input.y = minf(_delayed_input.y, input.y)
+		for index in _pending_input.size():
+			var sample := _pending_input[index]
+			sample.y = minf(sample.y, input.y)
+			_pending_input[index] = sample
+	var applied := _delay_input(input)
+	if _misdirection_remaining <= 0.0: return applied
 	var weight := _misdirection_weight()
 	var response := 1.0 - 2.0 * pow(weight, 1.7)
-	var pull := _side * weight * 0.55 * (1.0 - absf(direction))
-	return clampf(direction * response + pull, -1.0, 1.0)
+	var pull := _side * weight * 0.55 * (1.0 - absf(applied.x))
+	applied.x = clampf(applied.x * response + pull, -1.0, 1.0)
+	return applied
 
-func _direction_delay() -> float:
+func _input_delay() -> float:
 	# Shorten the lag as the episode ends while keeping queued samples in order.
 	return minf(_delay_seconds, 0.75 * _delay_remaining)
 
-func _delay_direction(input: Vector2) -> Vector2:
+func _delay_input(input: Vector2) -> Vector2:
 	if _delay_remaining > 0.0 and not input.is_equal_approx(_last_input):
-		_pending_input.append(Vector3(input.x, input.y, _delay_remaining - _direction_delay()))
+		_pending_input.append(Vector3(input.x, input.y, _delay_remaining - _input_delay()))
 	_last_input = input
 	if _delay_remaining <= 0.0: return input
 	while not _pending_input.is_empty() and _pending_input[0].z >= _delay_remaining:

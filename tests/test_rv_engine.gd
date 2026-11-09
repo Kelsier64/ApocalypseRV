@@ -194,6 +194,30 @@ func _run() -> void:
 	rv.steering = 0.0
 	rv._physics_process(1.0 / 60.0)
 	check(rv.steering > 0.0, "A strong steering sway can pull the RV sideways while the driver leaves steering idle")
+	var previous_gear := rv.gear
+	var previous_handbrake := rv.handbrake
+	rv.gear = 1
+	rv.handbrake = false
+	effects._misdirection_remaining = 0.0
+	effects._misdirection_wait = 1.0
+	effects._delay_wait = 0.0
+	player._advance_san_effects(.01)
+	effects._delay_wait = 1.0
+	Input.action_press("move_forward")
+	rv._physics_process(1.0 / 60.0)
+	check(is_zero_approx(rv.throttle_input), "A seated driver's throttle increase waits during a delay episode")
+	player._advance_san_effects(effects._delay_seconds + .01)
+	rv._physics_process(1.0 / 60.0)
+	check(rv.throttle_input > 0.0, "A held throttle reaches the RV after the delay")
+	Input.action_press("move_back")
+	rv._physics_process(.2)
+	check(is_zero_approx(rv.throttle_input) and rv.brake_input > 0.0, "Service braking cuts delayed throttle while W remains held")
+	Input.action_release("move_back")
+	rv._physics_process(1.0 / 60.0)
+	check(is_zero_approx(rv.throttle_input), "Releasing the brake does not resurrect delayed throttle")
+	Input.action_release("move_forward")
+	rv.gear = previous_gear
+	rv.handbrake = previous_handbrake
 	player.recover_san(20.0)
 	rv.steering = 0.0
 	rv.brake_input = 0.0

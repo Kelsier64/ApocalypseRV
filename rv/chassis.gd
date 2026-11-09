@@ -652,8 +652,10 @@ func _physics_process(delta: float) -> void:
 		throttle = 0.0
 		braking_input = 0.0
 		turn = 0.0
-	elif is_player_driving and not scripted_controls and is_instance_valid(_player_driver) and _player_driver.has_method("hallucinated_steering"):
-		turn = _player_driver.hallucinated_steering(turn)
+	elif is_player_driving and not scripted_controls and is_instance_valid(_player_driver) and _player_driver.has_method("hallucinated_driving_input"):
+		var applied: Vector2 = _player_driver.hallucinated_driving_input(turn, throttle if braking_input == 0.0 else 0.0)
+		turn = applied.x
+		throttle = applied.y
 	var target_throttle := clampf(throttle, 0.0, 1.0) if gear != 0 and not handbrake and not drive_blocked() and braking_input == 0.0 else 0.0
 	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
 	throttle_input = move_toward(throttle_input, target_throttle, delta / maxf(0.01, throttle_response))

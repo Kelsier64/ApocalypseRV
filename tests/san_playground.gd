@@ -35,7 +35,7 @@ func _process(_delta: float) -> void:
 	var effects: PlayerSanEffects = player.san_effects
 	var active := PackedStringArray()
 	if effects._blink_remaining > 0.0: active.append("Blink")
-	if effects._delay_remaining > 0.0: active.append("Direction delay %.0f ms" % (1000.0 * effects._direction_delay()))
+	if effects._delay_remaining > 0.0: active.append("Input delay %.0f ms" % (1000.0 * effects._input_delay()))
 	if effects._misdirection_remaining > 0.0: active.append("Directional drift")
 	_status.text = "SAN %.2f%%  |  %s\nActive: %s" % [player.survival.san, mode, ", ".join(active) if not active.is_empty() else "None"]
 
@@ -75,6 +75,7 @@ func _queue_effect(key: Key) -> void:
 		KEY_F7: effects._blink_wait = 0.00001
 		KEY_F8: effects._delay_wait = 0.0
 		KEY_F9: effects._misdirection_wait = 0.0
+	player._advance_san_effects(0.0)
 
 func _open_editor() -> void:
 	if player.is_gameplay_input_blocked() or player.in_ui_mode or player.is_placing_equipment(): return

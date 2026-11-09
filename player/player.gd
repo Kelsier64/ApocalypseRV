@@ -1278,8 +1278,8 @@ func recover_san(amount: float) -> void:
 	if survival.san >= PlayerSanEffects.THRESHOLD: san_effects.reset()
 	_update_san_bar()
 
-func hallucinated_steering(turn: float) -> float:
-	return san_effects.steering(turn)
+func hallucinated_driving_input(turn: float, throttle: float) -> Vector2:
+	return san_effects.driving_input(turn, throttle)
 
 func _advance_san_effects(delta: float) -> void:
 	var control := PlayerSanEffects.InputMode.NONE
