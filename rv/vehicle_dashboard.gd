@@ -65,6 +65,6 @@ func _process(_delta: float) -> void:
 	for row in VehicleStatus.read(rv):
 		indicators[row.id].icon.modulate = VehicleStatus.color(row.level)
 		indicators[row.id].caption.text = INDICATOR_LABELS[row.id]
-	status.text = RVTerminalPresenter.message(seat.exit_message)
-	if not rv.service_message.is_empty(): status.text += "  " + RVTerminalPresenter.message(rv.service_message)
+	status.text = seat.exit_message
+	if not rv.service_message.is_empty(): status.text += "  " + rv.service_message
 	status.visible = not status.text.strip_edges().is_empty()

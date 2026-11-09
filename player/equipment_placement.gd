@@ -254,8 +254,8 @@ func update_ghost(player: CharacterBody3D) -> void:
 		placing_equipment.global_position = result.position + normal * (offset + 0.012) - base_basis * bounds.get_center()
 		var reason := PlacementRules.rejection_reason(equip, target_support, placing_equipment.global_transform, result.position, normal)
 		var contact_check := space_state.intersect_ray(PhysicsRayQueryParameters3D.create(result.position + normal * 0.1, result.position - normal * 0.15, 0xFFFFFFFF, [equip.get_rid(), player.get_rid()]))
-		if contact_check.get("collider") != target_support: reason = "細調位置已離開安裝面"
-		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "超過安裝距離"
+		if contact_check.get("collider") != target_support: reason = "Adjusted position is off the mounting surface"
+		if from.distance_to(placing_equipment.global_position) > max_place_distance + bounds.size.length() * 0.5: reason = "Out of placement range"
 		can_place_equipment = reason.is_empty()
 		rejection_reason = reason
 		if equip.ghost_material is StandardMaterial3D:

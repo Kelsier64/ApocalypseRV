@@ -48,13 +48,13 @@ func can_pickup(_player: Node3D) -> bool:
 	return false
 
 func pickup(_player: Node3D) -> String:
-	return "身體無法放入背包"
+	return "Cannot put a body in inventory"
 
 func interact(player: Node3D) -> String:
-	return "已切換身體；裝備隨意識移動" if transfer_control(player) else last_transfer_error
+	return "Control transferred. Gear moved with you." if transfer_control(player) else last_transfer_error
 
 func transfer_control(player: Node3D) -> bool:
-	last_transfer_error = "目前無法切換身體"
+	last_transfer_error = "Cannot transfer control right now"
 	if not player is CharacterBody3D or not player.has_method("restore_checkpoint_state"): return false
 	if not WorldEntities.same_world(self, player) or presentation_only or is_being_placed or is_queued_for_deletion(): return false
 	if is_fixed or is_instance_valid(processing_owner) or current_health <= 0 or not body_state.has_part(&"head"): return false
@@ -70,7 +70,7 @@ func transfer_control(player: Node3D) -> bool:
 	var target := Transform3D(Basis(Vector3.UP, rotation.y), global_position - Vector3.UP * sole_offset)
 	var old_body := Transform3D(Basis(Vector3.UP, player.global_rotation.y), player.global_position + Vector3.UP * sole_offset)
 	if not _destination_clear(player, target) or not _old_body_clear(player, old_body):
-		last_transfer_error = "身體周圍空間不足"
+		last_transfer_error = "Clear space around the body first"
 		return false
 	var old_health: float = player.current_player_health
 	var old_parts: Dictionary = player.body_state.capture()

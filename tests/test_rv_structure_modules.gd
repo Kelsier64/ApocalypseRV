@@ -116,7 +116,7 @@ func _run() -> void:
 	# Both rear leaves remain separate E targets on the fixed frame.
 	aim(rear.to_global(Vector3(-0.7, 0, 0)), Vector3(0, 0, 2.1))
 	check(rear.aimed_leaf(player) == 0, "Left rear leaf selected by its actual shape")
-	check(rear.interact(player) == "開門中", "Left rear leaf begins opening")
+	check(rear.interact(player) == "Door opening", "Left rear leaf begins opening")
 	player.position = Vector3(10, 0, 0)
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	check(rear.angles[0] < -1.6 and rear.angles[1] == 0.0, "Opening left rear leaf leaves right leaf closed")
@@ -147,14 +147,14 @@ func _run() -> void:
 	player.global_position = side.to_global(Vector3(0, -1.0, 0.55))
 	await physics_frame
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
-	check(absf(side.angles[0]) > 0.2 and side.blocked_message.contains("角色"), "Closing leaf stops for a character entering the sweep")
-	check(side.toggle_leaf(0) == "開門中", "A blocked closing leaf can reverse safely")
+	check(absf(side.angles[0]) > 0.2 and side.blocked_message.contains("character"), "Closing leaf stops for a character entering the sweep")
+	check(side.toggle_leaf(0) == "Door opening", "A blocked closing leaf can reverse safely")
 	player.position = Vector3(10, 0, 0)
 	for frame in ceili(75 * Engine.physics_ticks_per_second / 60.0): await physics_frame
 	# A closed door rejects equipment attachment to its moving leaf, but permits fixed jamb contact.
 	side.restore_angles([0.0])
 	var item: Item = rv.get_node("ItemBox")
-	check(PlacementRules.rejection_reason(item, side, Transform3D.IDENTITY, side.to_global(Vector3(0, 0, 0.05))).contains("活動門扇"), "Cannot mount equipment on moving door leaf")
+	check(PlacementRules.rejection_reason(item, side, Transform3D.IDENTITY, side.to_global(Vector3(0, 0, 0.05))).contains("Moving door leaves"), "Cannot mount equipment on moving door leaf")
 	check(side.allows_mount_at(side.to_global(Vector3(1.5, 0, 0.1))), "Fixed side jamb remains an attachment surface")
 	# A destroyed slot keeps its state node while only its dependents drop.
 	var support_panel: RVStructurePanel = slots.occupant("right_0")

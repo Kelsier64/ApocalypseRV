@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("script")
 model_id = "upgraded"
-display_name = "強化引擎"
+display_name = "Upgraded Engine"
 max_health = 600.0
 force_multiplier = 1.25
 fuel_multiplier = 1.15

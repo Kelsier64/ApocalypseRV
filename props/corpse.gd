@@ -52,7 +52,7 @@ func restore_item_state(state: Dictionary) -> void:
 	saved_pose = data.duplicate(true)
 	kind = data.kind
 	body_state.restore(data.body)
-	item_name = "玩家屍體" if kind == "player" else "裂爪屍體"
+	item_name = "Player remains" if kind == "player" else "Raker remains"
 	if initialized:
 		_rebuild.call_deferred()
 
@@ -88,7 +88,7 @@ func _capture_pose() -> Dictionary:
 ## Move the running monster rig without restarting joints or losing impact momentum.
 func adopt_raker(actor: Raker) -> void:
 	kind = "raker"
-	item_name = "裂爪屍體"
+	item_name = "Raker remains"
 	source_actor = weakref(actor)
 	var control: Node = actor.ragdoll
 	skeleton = control.skeleton
@@ -108,7 +108,7 @@ static func leave_player(actor: CharacterBody3D) -> CorpseProp:
 	var control: Node = actor.ragdoll_control
 	var corpse: CorpseProp = load("res://props/corpse.tscn").instantiate()
 	corpse.kind = "player"
-	corpse.item_name = "玩家屍體"
+	corpse.item_name = "Player remains"
 	corpse.body_state.restore(actor.body_state.capture())
 	var parent := WorldEntities.get_container(actor)
 	if not WorldEntities.same_world(actor, parent): parent = actor.get_parent()

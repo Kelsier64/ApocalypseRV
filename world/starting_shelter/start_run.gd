@@ -57,7 +57,7 @@ func restore(data: Dictionary) -> void:
 
 func save_block_reason() -> String:
 	if phase in ["opening", "closing"] or (is_instance_valid(gate) and not gate.stable()):
-		return "Wait for the exit gate to stop before saving" if is_orientation_shelter() else "車庫大門仍在移動，請等待大門停妥後保存"
+		return "Wait for the exit gate to stop before saving" if is_orientation_shelter() else "Wait for the garage gate to stop before saving"
 	for bay_gate in _bay_gates:
 		if is_instance_valid(bay_gate) and not bay_gate.stable():
 			return "Wait for all bay gates to stop before saving"
@@ -116,15 +116,15 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 
 func begin_run(player: Node3D) -> String:
 	var tutorial := is_orientation_shelter()
-	if phase != "preparing": return "Journey already started" if tutorial else "旅程已開始"
+	if phase != "preparing": return "Journey already started"
 	var world := get_parent() as Node3D
-	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing; please wait" if tutorial else "世界仍在準備，請稍候"
+	if not world.get("play_ready") or not is_instance_valid(gate): return "World is preparing. Please wait."
 	if not world.is_ancestor_of(player) or not WorldEntities.same_world(world, player): return ""
 	if tutorial_active():
 		var reason: String = get_node("Tutorial").departure_block_reason()
 		if not reason.is_empty(): return reason
 	if is_orientation_shelter(): return "Drive the original RV towards the automatic exit"
-	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first" if tutorial else "請先結束目前操作"
+	if player.has_method("get_player_mode") and player.get_player_mode() != player.PlayerMode.NORMAL: return "Finish the current interaction first"
 	_set_phase("opening")
 	gate.move_to(true)
 	if tutorial_active(): get_node("Tutorial").departure_started()

@@ -109,7 +109,7 @@ func _process(_delta: float) -> void:
 	_update_status()
 	_update_resolution_summary()
 	if _modal_kind == "window":
-		_modal_text.text = "保留此顯示模式？\n%.0f 秒後自動還原；設定期間遊戲持續運行。" % ceilf(settings.preview_remaining())
+		_modal_text.text = "Keep this display mode?\nReverting in %.0f s. The game keeps running." % ceilf(settings.preview_remaining())
 
 func _build() -> void:
 	_root = Control.new()
@@ -132,7 +132,7 @@ func _build() -> void:
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 12)
 	_panel.add_child(content)
-	var title := _label("設定", 28)
+	var title := _label("Settings", 28)
 	title.add_theme_color_override("font_color", IndustrialTheme.AMBER)
 	content.add_child(title)
 	_status = _label("")
@@ -145,7 +145,7 @@ func _build() -> void:
 			_reset.disabled = _tabs.current_tab == 3)
 	content.add_child(_tabs)
 	var pages: Array[VBoxContainer] = []
-	for tab_name in ["視訊", "操作與視角", "音訊", "按鍵說明"]:
+	for tab_name in ["Video", "Controls", "Audio", "Key Bindings"]:
 		var scroll := ScrollContainer.new()
 		scroll.name = tab_name
 		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -158,20 +158,20 @@ func _build() -> void:
 		pages.append(page)
 	_build_display(pages[0])
 	_build_input(pages[1])
-	_add_slider(pages[2], &"master_volume", "主音量", "所有遊戲音效；0% 為靜音。", 0.0, 1.0, 0.01, "percent")
+	_add_slider(pages[2], &"master_volume", "Master Volume", "Controls all game audio. Set to 0% to mute.", 0.0, 1.0, 0.01, "percent")
 	_build_help(pages[3])
 	var save_row := HBoxContainer.new()
 	content.add_child(save_row)
 	_save_message = _label("")
 	_save_message.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	save_row.add_child(_save_message)
-	_retry = _button("重試儲存", func(): _on_save_completed(settings.flush()))
+	_retry = _button("Retry Save", func(): _on_save_completed(settings.flush()))
 	_retry.visible = false
 	save_row.add_child(_retry)
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
 	content.add_child(footer)
-	_reset = _button("恢復本頁預設", func(): settings.reset_category(CATEGORIES[_tabs.current_tab]))
+	_reset = _button("Reset Tab", func(): settings.reset_category(CATEGORIES[_tabs.current_tab]))
 	footer.add_child(_reset)
 	_restart_stage = _button("Restart Stage", _show_restart_stage)
 	_restart_stage.visible = false
@@ -182,37 +182,37 @@ func _build() -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
-	_return = _button("返回遊戲 [Esc]", close_menu)
+	_return = _button("Resume [Esc]", close_menu)
 	footer.add_child(_return)
-	footer.add_child(_button("退出遊戲", _show_quit))
+	footer.add_child(_button("Quit Game", _show_quit))
 	_build_modal()
 
 func _build_display(page: VBoxContainer) -> void:
-	_section(page, "畫質與清晰度")
-	_preset = _option(["遊戲預設", "低（較流暢）", "中（均衡）", "高（較清晰）", "自訂"])
+	_section(page, "Graphics")
+	_preset = _option(["Game Default", "Low (Faster)", "Medium (Balanced)", "High (Sharper)", "Custom"])
 	_preset.set_item_disabled(4, true)
 	_preset.item_selected.connect(func(index: int):
 		if not _refreshing and index < 4:
 			settings.apply_preset(index))
-	var preset_row := _row(page, "畫質組合", "一次調整解析度、抗鋸齒、陰影與霧。遊戲預設會依場景調整解析度。", _preset)
+	var preset_row := _row(page, "Quality Preset", "Adjust resolution, anti-aliasing, shadows and fog together. Game Default scales resolution by location.", _preset)
 	_preset_current = preset_row.current
 	_preset_current.hide()
-	_add_option(page, &"render_mode", "3D 解析度", "只調整遊戲場景的清晰度；選單、文字與 HUD 維持清楚。", ["依場景自動", "自訂比例"], [0, 1])
+	_add_option(page, &"render_mode", "3D Resolution", "Changes scene resolution. Menus, text and the HUD stay sharp.", ["Automatic", "Custom Scale"], [0, 1])
 	_resolution_label = controls[&"render_mode"].current
 	_resolution_label.show()
-	_add_slider(page, &"render_scale", "解析度比例", "100% 與視窗同樣清晰；降低比例可提升效能，但畫面會較模糊。", 0.5, 1.0, 0.05, "percent")
-	_add_option(page, &"aa", "抗鋸齒", "減少物體邊緣的鋸齒；MSAA 越高，顯示卡負載越大。", ["關", "FXAA（較省效能）", "MSAA 2×", "MSAA 4×"], [0, 1, 2, 3])
-	_add_option(page, &"shadow_quality", "陰影品質", "較高品質讓陰影邊緣更平滑。", ["遊戲預設", "低", "中", "高"], [0, 1, 2, 3])
-	_add_option(page, &"fog_quality", "霧效果", "體積霧呈現局部霧氣與光影；天氣造成的濃霧會保留。", ["距離霧（較省效能）", "體積霧：低", "體積霧：中", "體積霧：高"], [0, 1, 2, 3])
-	_section(page, "顯示與效能")
-	_add_option(page, &"window_mode", "顯示模式", "切換後有 15 秒確認；未確認會自動還原。", ["視窗", "全螢幕"], [0, 1])
-	_add_toggle(page, &"vsync", "垂直同步", "減少畫面撕裂；可能增加操作延遲。")
-	_add_option(page, &"max_fps", "幀率上限", "限制每秒顯示的畫面數，降低顯示卡負載。", ["不限", "30 FPS", "60 FPS", "120 FPS", "144 FPS"], [0, 30, 60, 120, 144])
-	_section(page, "色彩")
-	_add_toggle(page, &"retro", "復古色調", "讓戶外呈現偏冷、低飽和的色彩；不改變畫面清晰度。")
-	_add_slider(page, &"brightness", "亮度", "100% 為遊戲預設亮度。", 0.75, 1.25, 0.05, "percent")
-	_add_slider(page, &"contrast", "對比", "100% 為遊戲預設明暗差異。", 0.75, 1.25, 0.05, "percent")
-	_add_slider(page, &"saturation", "飽和度", "0% 為灰階；100% 為遊戲預設色彩。", 0.0, 1.5, 0.05, "percent")
+	_add_slider(page, &"render_scale", "Resolution Scale", "100% matches window resolution. Lower scales improve performance but reduce sharpness.", 0.5, 1.0, 0.05, "percent")
+	_add_option(page, &"aa", "Anti-Aliasing", "Smooths jagged edges. Higher MSAA settings use more GPU power.", ["Off", "FXAA (Faster)", "MSAA 2×", "MSAA 4×"], [0, 1, 2, 3])
+	_add_option(page, &"shadow_quality", "Shadow Quality", "Higher quality smooths shadow edges.", ["Game Default", "Low", "Medium", "High"], [0, 1, 2, 3])
+	_add_option(page, &"fog_quality", "Fog Quality", "Volumetric fog shows local mist and lighting. Heavy weather fog persists at all settings.", ["Distance Fog (Faster)", "Volumetric Fog (Low)", "Volumetric Fog (Medium)", "Volumetric Fog (High)"], [0, 1, 2, 3])
+	_section(page, "Display and Performance")
+	_add_option(page, &"window_mode", "Display Mode", "Confirm within 15 seconds to keep the new mode.", ["Windowed", "Fullscreen"], [0, 1])
+	_add_toggle(page, &"vsync", "VSync", "Reduces screen tearing and may increase input latency.")
+	_add_option(page, &"max_fps", "Frame Rate Limit", "Caps the frame rate to reduce GPU load.", ["Unlimited", "30 FPS", "60 FPS", "120 FPS", "144 FPS"], [0, 30, 60, 120, 144])
+	_section(page, "Color")
+	_add_toggle(page, &"retro", "Retro Colors", "Gives outdoor areas cooler, muted colors at the same resolution.")
+	_add_slider(page, &"brightness", "Brightness", "100% is the default brightness.", 0.75, 1.25, 0.05, "percent")
+	_add_slider(page, &"contrast", "Contrast", "100% is the default contrast.", 0.75, 1.25, 0.05, "percent")
+	_add_slider(page, &"saturation", "Saturation", "0% is grayscale. 100% is the default saturation.", 0.0, 1.5, 0.05, "percent")
 
 func _section(page: VBoxContainer, title: String) -> void:
 	var row := HBoxContainer.new()
@@ -227,30 +227,30 @@ func _section(page: VBoxContainer, title: String) -> void:
 	row.add_child(line)
 
 func _build_input(page: VBoxContainer) -> void:
-	_add_slider(page, &"sensitivity", "滑鼠靈敏度", "同時套用步行與駕駛視角；以原始靈敏度為 1 倍。", 0.25, 2.0, 0.05, "multiple")
-	_add_toggle(page, &"invert_y", "反轉垂直視角", "反轉滑鼠上下移動的視角方向。")
-	_add_slider(page, &"walk_fov", "步行視野", "較大視野顯示更多周圍環境；原始為 75°。", 60.0, 100.0, 1.0, "degrees")
-	_add_slider(page, &"drive_fov", "駕駛視野", "調整駕駛座視角；原始為 80°。", 60.0, 100.0, 1.0, "degrees")
+	_add_slider(page, &"sensitivity", "Mouse Sensitivity", "Applies on foot and while driving. 1× is the default.", 0.25, 2.0, 0.05, "multiple")
+	_add_toggle(page, &"invert_y", "Invert Vertical Look", "Reverses vertical mouse look.")
+	_add_slider(page, &"walk_fov", "On-Foot FOV", "A wider field of view shows more of your surroundings. Default is 75°.", 60.0, 100.0, 1.0, "degrees")
+	_add_slider(page, &"drive_fov", "Driving FOV", "Sets the field of view from the driver seat. Default is 80°.", 60.0, 100.0, 1.0, "degrees")
 
 func _build_help(page: VBoxContainer) -> void:
-	page.add_child(_label("固定按鍵說明；此頁不提供重新綁定。"))
+	page.add_child(_label("These controls use fixed bindings."))
 	var rows := [
-		["步行 / 視角", "WASD 移動、左 Shift 衝刺、滑鼠視角、Space 跳躍；衝刺與跳躍消耗耐力。"],
-		["梯子攀爬", "靠近梯子面向踏板，W 上爬、S 下爬、Space 脫離；大型物品須先放下。側門梯登車，車內梯穿過屋頂開口。"],
-		["拾取 / 互動", "短按 E 拾取、加油或進出副本；長按 E 約 1 秒入座、開平板、拆裝輪胎。"],
-		["設備放置", "長按 F 約 2 秒搬移設備；左鍵確認、右鍵或 Esc 取消；R 切換貼面 / 直立。車體結構請到平板配置。"],
-		["自由放置", "Q/E 旋轉 15°、Shift 旋轉 5°、方向鍵移動 5 cm。"],
-		["背包 / 手電筒", "1–6 或滾輪選取、G 丟棄；大型物品鎖定選取；手持手電筒時 L 開關。"],
-		["駕駛", "W 油門、A/D 轉向、S 漸進腳煞車、Space 手煞車、E 離座；設定開啟時無控制輸入。"],
-		["引擎 / 排檔 / 車燈", "B 啟停、L 頭燈；Z 倒檔、X 空檔、C 一檔、R 升檔、T 降檔。"],
-		["照明 / 儀表", "從平板控制車內、工作與維修燈、儀表亮度及引擎視覺震動。"],
-		["電池 / 引擎", "持有零件時短 E 交換、長 E 取出；更換引擎須停穩、熄火且拉手煞車。"],
-		["維修", "引擎：手持維修包 H 3 秒；設備 / 輪槽：熄火停穩後 H 2 秒，花 2 金屬。"],
-		["後坡板", "控制柄 E；展開須停穩、手煞車、後門全開及合適地面；無人 / 物才可收起。"],
-		["副本地圖", "M 顯示已探索地圖；Page Up / Page Down 切換樓層。"],
-		["保存 / 載入", "主世界 F6 / F9；保存須室外離座、結束互動且地形建立完成。設定選單內不接受保存 / 載入。"],
-		["設定 / 返回", "Esc 開啟 / 關閉設定；平板或儲物 UI 開啟時，先關閉該 UI；放置時先取消放置。"],
-		["選單導覽", "Tab / Shift+Tab 移動焦點；方向鍵調整；Enter / Space 啟用按鈕；Esc 先取消確認提示。"]
+		["Movement and View", "WASD to move, Left Shift to sprint, mouse to look, Space to jump. Sprinting and jumping cost stamina."],
+		["Climbing Ladders", "Face the rungs and press W to climb, S to descend or Space to let go. Put down large items first. Use the side ladder to board and the cabin ladder to reach the roof hatch."],
+		["Pickup and Interaction", "Tap E to pick up items, refuel or enter and exit interiors. Hold E for 1 second to sit, open the tablet, or install or remove a wheel."],
+		["Equipment Placement", "Hold F for 2 seconds to move equipment. Left-click to place, right-click or Esc to cancel, and R to toggle surface alignment. Use the tablet to modify the RV structure."],
+		["Placement Adjustments", "Q/E to rotate 15°. Hold Shift for 5° steps. Arrow keys move 5 cm."],
+		["Inventory and Flashlight", "Use 1–6 or the mouse wheel to select and G to drop. Large items lock selection. Press L to toggle a held flashlight."],
+		["Driving", "W for throttle, A/D to steer, S for the foot brake, Space for the parking brake and E to exit. Driving controls are disabled while Settings is open."],
+		["Engine, Gears and Lights", "B toggles the engine and L toggles headlights. Z selects reverse, X neutral, C first gear, R shifts up and T shifts down."],
+		["Lights and Dashboard", "Use the tablet to control cabin, work and service lights, dashboard brightness and engine camera shake."],
+		["Battery and Engine", "Tap E while holding a part to swap it, or hold E to remove it. Stop, shut off the engine and set the parking brake before an engine swap."],
+		["Repairs", "Hold H for 3 seconds with an Engine Repair Kit. For equipment and wheel slots, stop, shut off the engine and hold H for 2 seconds. Costs 2 Metal Parts."],
+		["Rear Ramp", "Press E at the handle. Stop on suitable ground, set the parking brake and fully open the rear doors. Clear the ramp before stowing it."],
+		["Interior Map", "M opens the explored map. Page Up and Page Down switch floors."],
+		["Save and Load", "In the main world, F6 saves and F9 loads. To save, go outside on foot, finish interactions and wait for terrain to load. Close Settings first."],
+		["Settings and Back", "Esc opens or closes Settings. It first closes the tablet or storage screen, or cancels equipment placement."],
+		["Menu Navigation", "Tab and Shift+Tab move focus. Arrow keys adjust values. Enter or Space activates buttons. Esc dismisses confirmation dialogs."]
 	]
 	for item in rows:
 		var box := VBoxContainer.new()
@@ -282,7 +282,7 @@ func _add_toggle(page: VBoxContainer, key: StringName, title: String, descriptio
 	var buttons: Array[Button] = []
 	for value: bool in [false, true]:
 		var button := Button.new()
-		button.text = "開" if value else "關"
+		button.text = "On" if value else "Off"
 		button.toggle_mode = true
 		button.button_group = group
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -342,7 +342,7 @@ func _row(page: VBoxContainer, title: String, description: String, control: Cont
 func _refresh() -> void:
 	_refreshing = true
 	_preset.select(settings.preset_index())
-	_preset_current.text = "目前：" + _preset.get_item_text(_preset.selected)
+	_preset_current.text = "Current: " + _preset.get_item_text(_preset.selected)
 	for key in controls:
 		var entry: Dictionary = controls[key]
 		var control: Control = entry.control
@@ -353,11 +353,11 @@ func _refresh() -> void:
 				var button: Button = entry.buttons[index]
 				var selected: bool = bool(value) == bool(index)
 				button.set_pressed_no_signal(selected)
-				button.text = ("✓ " if selected else "") + ("開" if index == 1 else "關")
+				button.text = ("✓ " if selected else "") + ("On" if index == 1 else "Off")
 		elif control is OptionButton:
 			var index: int = entry.values.find(value)
 			control.select(maxi(0, index))
-			entry.current.text = "目前：" + control.get_item_text(control.selected)
+			entry.current.text = "Current: " + control.get_item_text(control.selected)
 		elif control is HSlider:
 			control.set_value_no_signal(float(value))
 			entry.current.text = _format_value(float(value), entry.format)
@@ -366,7 +366,7 @@ func _refresh() -> void:
 	controls[&"render_scale"].panel.visible = scale.editable
 	for button: Button in controls[&"vsync"].buttons:
 		button.disabled = not settings.supports_vsync_toggle()
-	_set_reason(&"vsync", "目前顯示驅動不支援切換垂直同步。" if not settings.supports_vsync_toggle() else "")
+	_set_reason(&"vsync", "The current display driver cannot toggle VSync." if not settings.supports_vsync_toggle() else "")
 	var fog: OptionButton = controls[&"fog_quality"].control
 	var volume_supported: bool = settings.supports_volumetric_fog()
 	for index in range(1, 4):
@@ -374,10 +374,10 @@ func _refresh() -> void:
 	if not volume_supported:
 		fog.select(0)
 		controls[&"fog_quality"].current.show()
-		controls[&"fog_quality"].current.text = "實際：距離霧（相容模式降級）"
+		controls[&"fog_quality"].current.text = "Active: Distance Fog (Compatibility)"
 	else:
 		controls[&"fog_quality"].current.hide()
-	_set_reason(&"fog_quality", "目前渲染器不支援體積霧。" if not volume_supported else "")
+	_set_reason(&"fog_quality", "The current renderer does not support volumetric fog." if not volume_supported else "")
 	_update_resolution_summary()
 	_refreshing = false
 	_on_save_completed(settings.last_save_error)
@@ -390,7 +390,7 @@ func _format_value(value: float, kind: String) -> String:
 	match kind:
 		"percent": return "%.0f%%" % (value * 100.0)
 		"degrees": return "%.0f°" % value
-		"multiple": return "%.2f 倍" % value
+		"multiple": return "%.2f×" % value
 	return "%.2f" % value
 
 func _update_resolution_summary() -> void:
@@ -401,17 +401,17 @@ func _update_resolution_summary() -> void:
 	var dimensions := Vector2i(viewport.get_visible_rect().size)
 	var ratio := viewport.scaling_3d_scale
 	var rendered := Vector2i(Vector2(dimensions) * ratio)
-	_resolution_label.text = "3D：%d × %d（%.0f%%）" % [rendered.x, rendered.y, ratio * 100.0]
+	_resolution_label.text = "3D: %d × %d (%.0f%%)" % [rendered.x, rendered.y, ratio * 100.0]
 	var automatic: bool = int(settings.get_setting(&"render_mode")) == 0
-	var explanation := "自動：戶外降低解析度，室內使用完整解析度。" if automatic else "自訂：100% 與視窗同樣清晰；較低比例讓畫面更模糊。"
-	controls[&"render_mode"].description.text = "%s\n視窗：%d × %d；選單與文字不受影響。" % [explanation, dimensions.x, dimensions.y]
+	var explanation := "Automatic uses a lower resolution outdoors and full resolution indoors." if automatic else "At 100%, the scene matches window resolution. Lower scales reduce sharpness."
+	controls[&"render_mode"].description.text = "%s\nWindow: %d × %d. Menus and text stay sharp." % [explanation, dimensions.x, dimensions.y]
 
 func _on_setting_changed(_key: StringName, _value: Variant) -> void:
 	_refresh()
 
 func _on_save_completed(error: Error) -> void:
 	_retry.visible = error != OK
-	_save_message.text = "設定無法儲存（%s）；目前仍已套用，可重試。" % error_string(error) if error != OK else "設定自動儲存；不會建立遊戲檢查點。"
+	_save_message.text = "Could not save settings (%s). Changes are active. Try saving again." % error_string(error) if error != OK else "Settings save automatically. Use F6 to save game progress."
 
 func _update_status() -> void:
 	var tutorial := _tutorial()
@@ -419,11 +419,11 @@ func _update_status() -> void:
 	_restart_stage.disabled = not _restart_stage.visible
 	_skip_tutorial.visible = tutorial != null and tutorial.has_method("can_skip") and tutorial.can_skip()
 	_skip_tutorial.disabled = not _skip_tutorial.visible
-	_status.text = "遊戲持續運行  ·  HP %.0f / %.0f" % [player.current_player_health, player.max_player_health]
+	_status.text = "Game running  ·  HP %.0f / %.0f" % [player.current_player_health, player.max_player_health]
 	if is_instance_valid(player.seated_in):
 		var chassis = player.seated_in.get_connected_rv()
 		if is_instance_valid(chassis):
-			_status.text += "  ·  車速 %.0f km/h" % (chassis.linear_velocity.length() * 3.6)
+			_status.text += "  ·  Speed %.0f km/h" % (chassis.linear_velocity.length() * 3.6)
 
 func _resize(dimensions: Vector2) -> void:
 	_panel.custom_minimum_size = Vector2(minf(1040, maxf(0, dimensions.x - 40)), minf(650, maxf(0, dimensions.y - 40)))
@@ -450,9 +450,9 @@ func _build_modal() -> void:
 	box.add_child(_modal_text)
 	var buttons := HBoxContainer.new()
 	box.add_child(buttons)
-	_modal_accept = _button("確認", _accept_modal)
+	_modal_accept = _button("Confirm", _accept_modal)
 	buttons.add_child(_modal_accept)
-	_modal_cancel = _button("取消", _cancel_modal)
+	_modal_cancel = _button("Cancel", _cancel_modal)
 	buttons.add_child(_modal_cancel)
 	for button in [_modal_accept, _modal_cancel]:
 		var other: Button = _modal_cancel if button == _modal_accept else _modal_accept
@@ -465,9 +465,9 @@ func _build_modal() -> void:
 
 func _show_quit() -> void:
 	_modal_kind = "quit"
-	_modal_text.text = "確定退出遊戲？\n未以 F6 保存的遊戲進度將遺失。\n設定會保存；此處不會自動保存遊戲進度。"
-	_modal_accept.text = "退出遊戲"
-	_modal_cancel.text = "取消"
+	_modal_text.text = "Quit the game?\nProgress since your last F6 save will be lost.\nSettings are saved automatically."
+	_modal_accept.text = "Quit Game"
+	_modal_cancel.text = "Cancel"
 	_show_modal()
 
 func _tutorial() -> Node:
@@ -499,8 +499,8 @@ func _on_window_preview_changed(active: bool) -> void:
 	_refresh()
 	if active and visible:
 		_modal_kind = "window"
-		_modal_accept.text = "保留顯示模式"
-		_modal_cancel.text = "還原"
+		_modal_accept.text = "Keep Display Mode"
+		_modal_cancel.text = "Revert"
 		_show_modal()
 	elif _modal_kind == "window":
 		_hide_modal()

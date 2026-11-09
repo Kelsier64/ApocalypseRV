@@ -90,7 +90,7 @@ func exit_seat(forced: bool = false) -> void:
 	if forced: player.close_settings()
 	var exit_position := _find_clear_exit_position(forced)
 	if not exit_position.is_finite():
-		exit_message = "離座位置被擋住，請先清出走道"
+		exit_message = "Exit blocked. Clear the aisle first."
 		return
 	exit_message = ""
 	current_driver = null

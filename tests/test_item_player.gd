@@ -347,7 +347,7 @@ func check_new_grants() -> void:
 	check(actor.add_item(ItemNames.GAS_CAN, false, "res://props/gas_can.tscn"), "Gas-can grant receives canonical state")
 	var full_id: String = actor.inventory.active_item().state.id
 	var fuel_port := rv.get_node("FuelPort") as Item
-	check(fuel_port.interact(actor).contains("空罐"), "Fuel-port conversion produces empty can through grant boundary")
+	check(fuel_port.interact(actor).contains("Empty can returned"), "Fuel-port conversion produces empty can through grant boundary")
 	var empty: Dictionary = actor.inventory.active_item().state.duplicate(true)
 	check(actor.inventory.active_item().scene_path == "res://props/gas_can_empty.tscn" and ItemState.valid("res://props/gas_can_empty.tscn", empty) and empty.id != full_id, "Converted empty can owns one valid new identity")
 	file = FileAccess.open(save_path, FileAccess.WRITE)

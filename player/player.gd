@@ -38,7 +38,7 @@ const CLIMB_REENTER_COOLDOWN = 0.2
 const CLIMB_WALL_ALIGN_OFFSET = 0.22
 const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
 const CLIMB_DEBUG_LOG_ABORTS = false
-const LARGE_ITEM_CLIMB_MESSAGE := "手持大型物品時無法攀爬，請先丟棄、消耗或存入"
+const LARGE_ITEM_CLIMB_MESSAGE := "Put down, use or store the large item before climbing"
 
 @onready var camera = $Camera3D
 @onready var game_settings = get_node("/root/GameSettings")
@@ -523,6 +523,8 @@ func restore_checkpoint_state(state: Dictionary) -> void:
 	body_state.restore(state.body)
 	crouching = state.crouching and not is_crawling()
 	inventory.items.assign(state.items.duplicate(true))
+	for item in inventory.items:
+		item.name = ItemNames.from_saved_name(item.name)
 	inventory.active_slot = state.slot
 	current_player_health = state.health
 	survival.restore(state.survival)
@@ -610,7 +612,7 @@ func drop_item():
 		if release.is_empty():
 			dropped_item.free()
 			var interaction := get_node_or_null("Camera3D/InteractRay")
-			if interaction != null: interaction.show_feedback("空間不足，請離車壁或障礙物遠一點再丟油桶")
+			if interaction != null: interaction.show_feedback("Move away from walls or obstacles before throwing the barrel")
 			return
 		drop_transform = release.transform
 	var entity_parent: Node = WorldEntities.get_container(self)
@@ -1148,7 +1150,7 @@ func _process_climbing(delta: float) -> void:
 		ladder_transition = LadderTransition.TOP
 		ladder_top_input_ready = false
 		var interaction := get_node_or_null("Camera3D/InteractRay")
-		if interaction != null: interaction.show_feedback("已到梯頂：放開移動鍵，再用 WASD 自行走出")
+		if interaction != null: interaction.show_feedback("At the top: release the movement keys, then use WASD to step off")
 	elif direction < 0.0 and actual_height <= 0.015:
 		_try_ladder_landing(false)
 

@@ -56,13 +56,13 @@ func blocker(from: float, to: float) -> String:
 		var orientation := Basis(Vector3.RIGHT, lerpf(start_angle, end_angle, float(i) / steps))
 		var pose := Transform3D(orientation, HINGE + orientation * (CLOSED - HINGE))
 		query.transform = bay().global_transform * pose * $Collision.transform
-		if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty(): return "維修蓋被擋住，請退後或移開物品"
+		if not get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty(): return "Service hatch blocked: step back or move items"
 	return ""
 
 func interact(_player: Node3D) -> String:
 	var rv := bay().get_parent()
-	if rv.linear_velocity.length() > 0.5: return "請停穩後操作維修蓋"
-	if moving: return "維修蓋移動中，請等停止後再操作"
+	if rv.linear_velocity.length() > 0.5: return "Stop the vehicle before using the service hatch"
+	if moving: return "Service hatch moving: wait until it stops"
 	var next := not requested_open
 	var reason := blocker(progress, 1.0 if next else 0.0)
 	if not reason.is_empty(): return reason
@@ -72,14 +72,14 @@ func interact(_player: Node3D) -> String:
 	bay().hatch_open = false
 	blocked_message = ""
 	rv.feedback("mechanical")
-	return "維修蓋打開中" if next else "維修蓋關閉中"
+	return "Service hatch opening" if next else "Service hatch closing"
 
 func _physics_process(delta: float) -> void:
 	if not moving: return
 	var target := 1.0 if requested_open else 0.0
 	var next := move_toward(progress, target, delta / maxf(travel_seconds, 0.1))
 	var reason := blocker(progress, next)
-	if bay().get_parent().linear_velocity.length() > 0.5: reason = "車輛移動，維修蓋已停止"
+	if bay().get_parent().linear_velocity.length() > 0.5: reason = "Vehicle moving: service hatch stopped"
 	if not reason.is_empty():
 		moving = false
 		blocked_message = reason

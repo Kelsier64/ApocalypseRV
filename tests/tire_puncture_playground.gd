@@ -80,7 +80,7 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(rv): return
 	camera.global_position = rv.global_position + Vector3(11, 6, -14)
 	camera.look_at(rv.global_position + Vector3(0, 0, -3))
-	label.text = "爆胎測試｜F6 自動行駛壓釘帶｜1–4 個別爆胎｜R 重設\nW/S 油門煞車 · A/D 修正 · Space 手煞車 · Z 倒車 · X 前進\n%.0f km/h｜%s\n左前 %.0f　右前 %.0f　左後 %.0f　右後 %.0f" % [rv.road_speed() * 3.6, rv.tire_warning(), rv.wheel_health[0], rv.wheel_health[1], rv.wheel_health[2], rv.wheel_health[3]]
+	label.text = "Tire Puncture Test | F6 Auto-Drive Over Spike Strip | 1–4 Puncture Individual Tires | R Reset\nW/S Throttle/Brake · A/D Steer · Space Handbrake · Z Reverse · X Forward\n%.0f km/h | %s\nFront Left %.0f  Front Right %.0f  Rear Left %.0f  Rear Right %.0f" % [rv.road_speed() * 3.6, rv.tire_warning(), rv.wheel_health[0], rv.wheel_health[1], rv.wheel_health[2], rv.wheel_health[3]]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return

@@ -6,10 +6,10 @@ var rv: Node3D
 func _ready() -> void:
 	rv = get_parent()
 func service_reason() -> String:
-	if rv.linear_velocity.length() > 0.5: return "請先停穩"
-	if rv.energy.engine_running: return "請先熄火"
-	if not rv.handbrake: return "請拉起手煞車"
-	if not hatch_open: return "請先打開車頭維修蓋"
+	if rv.linear_velocity.length() > 0.5: return "Stop the vehicle first"
+	if rv.energy.engine_running: return "Stop the engine first"
+	if not rv.handbrake: return "Apply the parking brake"
+	if not hatch_open: return "Open the front service hatch first"
 	return ""
 func interact(player: Node3D) -> String:
 	var reason := service_reason()
@@ -24,8 +24,8 @@ func repair_health(amount: float) -> void:
 	if installed_engine: installed_engine.health = minf(installed_engine.definition().max_health, installed_engine.health + maxf(amount, 0.0))
 func repair_requirement(player: Node3D) -> String:
 	if not service_reason().is_empty(): return service_reason()
-	if not needs_repair(): return "沒有需要維修的引擎"
-	if player.inventory.active_item().get("scene_path", "") != "res://props/engine_repair_kit.tscn": return "請手持引擎專用維修包"
+	if not needs_repair(): return "No engine needs repair"
+	if player.inventory.active_item().get("scene_path", "") != "res://props/engine_repair_kit.tscn": return "Hold an Engine Repair Kit"
 	return ""
 func take_damage(amount: float) -> void:
 	rv.take_damage(amount)

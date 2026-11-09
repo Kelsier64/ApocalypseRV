@@ -122,11 +122,11 @@ func can_pickup(player: Node3D) -> bool:
 	return true
 
 func pickup(player: Node3D) -> String:
-	if not can_pickup(player): return "無法拾取：背包已滿、雙手不可用或物品正在使用"
-	if scene_file_path.is_empty(): return "無法拾取：物品沒有可保存的場景"
-	if not player.add_prop_item(self, scene_file_path): return "無法拾取：請先空出背包或大型物品欄位"
+	if not can_pickup(player): return "Cannot pick up. Inventory full, arms unavailable, or item in use."
+	if scene_file_path.is_empty(): return "Cannot pick up. This item cannot be saved."
+	if not player.add_prop_item(self, scene_file_path): return "Cannot pick up. Free an inventory slot or put down your large item."
 	queue_free()
-	return "已拾取 " + item_name
+	return "Picked up " + item_name
 
 func prepare_pickup() -> void:
 	support_lost = true
@@ -137,7 +137,7 @@ func prepare_pickup() -> void:
 	_unregister_rv()
 
 func interact(player: Node3D) -> String:
-	return pickup(player) if not is_fixed else "長按 F 2 秒解除固定並拾取"
+	return pickup(player) if not is_fixed else "Hold F for 2s to detach and pick up"
 
 func can_operate() -> bool:
 	return not presentation_only and is_fixed and enabled and not support_lost and not is_being_placed and not is_destroyed and current_health > 0.0 and get_connected_rv() != null

@@ -70,13 +70,13 @@ func restore_charging(data: Dictionary) -> void:
 
 func charging_status() -> String:
 	var rv: Node = _vehicle.get_ref()
-	if not charging_enabled: return "RV 充電已關閉"
-	if not engine_running: return "引擎未運轉"
-	if battery == null or battery.condition <= 0.0: return "未安裝可用電池"
-	if not rv.unlimited_fuel and rv.current_fuel <= fuel_reserve: return "已達保留油量；引擎仍消耗運轉燃油"
-	if battery.charge >= battery.capacity - 0.001: return "電池已充滿"
-	if not charging: return "等待充電門檻"
-	return "RV 充電中：最高 +%.1f 電量／秒" % power_generation_per_second
+	if not charging_enabled: return "RV charging disabled"
+	if not engine_running: return "Engine is stopped"
+	if battery == null or battery.condition <= 0.0: return "No usable battery installed"
+	if not rv.unlimited_fuel and rv.current_fuel <= fuel_reserve: return "Fuel reserve reached. The engine still uses fuel."
+	if battery.charge >= battery.capacity - 0.001: return "Battery fully charged"
+	if not charging: return "Waiting for charging threshold"
+	return "RV charging | Up to +%.1f charge/s" % power_generation_per_second
 
 func _charge(rv: Node, delta: float) -> void:
 	if not charging_enabled or not engine_running or battery == null or battery.condition <= 0.0:

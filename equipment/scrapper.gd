@@ -399,7 +399,7 @@ func can_accept_held_item(player: Node3D) -> bool:
 	return true
 
 func accept_held_item(player: Node3D) -> String:
-	if not can_accept_held_item(player): return "無法投入：分解機未就緒、佇列已滿，或需要雙手大型物品"
+	if not can_accept_held_item(player): return "Cannot deposit: scrapper unavailable, queue full, or large item requires both arms"
 	var record: Dictionary = player.inventory.active_item().duplicate(true)
 	var scene := SaveSceneCatalog.resolve(record.scene_path, "item")
 	var input: Item = scene.instantiate()
@@ -410,12 +410,12 @@ func accept_held_item(player: Node3D) -> String:
 	var container := WorldEntities.get_container(self)
 	if container == null:
 		input.free()
-		return "分解機所在世界無法接收物品"
+		return "Scrapper world cannot receive items"
 	container.add_child(input)
 	input.global_transform = global_transform * Transform3D(input.basis,Vector3(0,1.5,0))
 	recycle_prop(input)
 	if input.processing_owner != self:
 		input.queue_free()
-		return "物品未投入，請稍後再試"
+		return "Item not deposited. Try again."
 	player.consume_active_item()
-	return "已投入大型物品，等待分解"
+	return "Large item queued for recycling"

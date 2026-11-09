@@ -34,7 +34,7 @@ func breach_door(name: String) -> void:
 	door.take_damage(100000.0)
 
 func _process(_delta: float) -> void:
-	instructions.text = "固定車體驗收｜E 開關門；F/H 無法搬移或維修車體\nF2 側門  ·  F3 後門左扇  ·  F4 後門右扇  ·  F5 擊毀側門  ·  F6 障礙箱  ·  F7 擊毀後門\n結構施工請使用車載平板"
+	instructions.text = "Fixed RV Body Test | E Open/Close Door. Use the tablet to modify the RV body.\nF2 Side Door · F3 Left Rear Door · F4 Right Rear Door · F5 Destroy Side Door · F6 Obstacle Crate · F7 Destroy Rear Door\nF/H field controls are disabled for fixed body panels."
 
 func _physics_process(_delta: float) -> void:
 	if player and player.is_placing_equipment(): player.placement.update_ghost(player)
@@ -53,7 +53,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				crate = null
 			else:
 				crate = StaticBody3D.new()
-				crate.name = "測試箱"
+				crate.name = "Test Crate"
 				var collision := CollisionShape3D.new()
 				var shape := BoxShape3D.new()
 				shape.size = Vector3(0.35, 0.8, 0.5)

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TireDynamics
 ## A flat is condition == 0, shared with the existing wheel item/save/repair state.
-const NAMES := ["左前", "右前", "左後", "右後"]
+const NAMES := ["Front left", "Front right", "Rear left", "Rear right"]
 const FLAT_GRIP := 0.5
 const FLAT_DRIVE := 0.35
 const FLAT_STEERING := 0.55

@@ -31,7 +31,7 @@ var _proximity_shape: SphereShape3D
 func _ready() -> void:
 	enable_boarding_visual = false
 	max_health = settings.max_health
-	monster_name = "油桶人"
+	monster_name = "Barrel Man"
 	contact_damage = 0.0
 	super._ready()
 	if nav_agent:

@@ -136,6 +136,8 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 		records.append(entry)
 	rv.inventory = data.materials
 	rv.stored_items.assign(data.items.duplicate(true))
+	for item in rv.stored_items:
+		item.name = ItemNames.from_saved_name(item.name)
 	rv.material_capacity = data.material_capacity
 	rv.item_capacity = data.item_capacity
 	rv.max_fuel = data.fuel_capacity

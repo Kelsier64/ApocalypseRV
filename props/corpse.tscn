@@ -10,7 +10,7 @@ script = ExtResource("1")
 freeze = true
 collision_layer = 2
 collision_mask = 0
-item_name = "屍體"
+item_name = "Remains"
 is_large = true
 scrap_yields = {"Unknown Material": Vector2(2, 4), "Unrefined Fuel": Vector2(1, 2)}
 

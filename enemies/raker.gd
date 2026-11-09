@@ -9,6 +9,8 @@ const STANDING_HEIGHT := 2.616
 const CROUCH_HEIGHT := 1.85
 const FOOT_OFFSET := 0.25
 const SWEEP_CONTACT := 0.72
+const FOOT_PURSUIT_SPEED := 6.4
+const PURSUIT_ACCELERATION := 6.0
 enum PursuitGait { STALK, RUN, VEHICLE_SPRINT }
 @export var vehicle_sprint_margin := 1.2
 @export var vehicle_sprint_cap := 18.0
@@ -21,8 +23,6 @@ var reversal_side := 0.0
 var pursuit_gait := PursuitGait.STALK
 var vehicle_sprint_speed := 0.0
 var crouched := false
-var running_pursuit := false
-var ground_chase_speed := 0.0
 var strike_elapsed := -1.0
 var strike_contact := SWEEP_CONTACT
 var strike_duration := 1.2
@@ -94,18 +94,12 @@ func _process_wander(delta: float) -> bool:
 func _process_chase(delta: float, destination: Vector3) -> bool:
 	steering_delta = delta
 	if grab.busy() or strike_elapsed >= 0 or reaction_remaining > 0:
-		velocity.x = 0
-		velocity.z = 0
+		_apply_grab_approach()
 		return false
 	var configured_speed := move_speed
-	# Close distance at a run, then stalk into attack range. Separate enter/exit
-	# distances prevent a timer or small target movements from flipping gait.
-	var distance := (destination - global_position).slide(Vector3.UP).length()
-	if distance > 4.5: running_pursuit = true
-	elif distance < 2.8: running_pursuit = false
-	var desired_speed := 0.7 if crouched else (3.4 if running_pursuit else 1.45)
-	ground_chase_speed = move_toward(Vector2(velocity.x, velocity.z).length(), desired_speed, delta * 6.0)
-	move_speed = minf(ground_chase_speed, 0.7) if crouched else ground_chase_speed
+	var desired_speed := _chase_speed(_get_current_combat_target_node(), destination)
+	move_speed = move_toward(Vector2(velocity.x, velocity.z).length(), desired_speed, delta * PURSUIT_ACCELERATION)
+	if crouched: move_speed = minf(move_speed, desired_speed)
 	pursuit_gait = PursuitGait.RUN if move_speed > 2.0 else PursuitGait.STALK
 	var sprint_target := _vehicle_sprint_target_speed()
 	if sprint_target > 0.0:
@@ -122,6 +116,29 @@ func _process_chase(delta: float, destination: Vector3) -> bool:
 		pursuit_gait = PursuitGait.STALK
 		vehicle_sprint_speed = 0.0
 	return moving
+
+func is_foot_pursuit(victim: Node3D) -> bool:
+	return victim is CharacterBody3D and victim.has_method("can_be_grabbed") \
+		and not victim.is_queued_for_deletion() and not victim.is_player_dead \
+		and victim.locomotion_state == victim.LocomotionState.NORMAL and not is_instance_valid(victim.seated_in) \
+		and is_on_floor() and not crouched \
+		and locomotion_state == LocomotionState.NORMAL and not _is_on_rv_surface() \
+		and not is_instance_valid(victim.rv_support.rv) and not is_instance_valid(boarding.target_vehicle) \
+		and not is_instance_valid(boarding.cabin_vehicle)
+
+func _chase_speed(victim: Node3D, destination: Vector3) -> float:
+	if crouched: return 0.7
+	if not is_foot_pursuit(victim): return move_speed
+	var offset := (destination - global_position).slide(Vector3.UP)
+	# Brake for a reachable, stationary target. Keep closing on a retreating
+	# target, and keep full pace while routing around an obstruction.
+	var remaining := maxf(0.0, offset.length() - attack_range)
+	var retreat_speed := maxf(0.0, victim.velocity.dot(offset.normalized()))
+	var closing_speed := maxf(2.0, sqrt(2.0 * PURSUIT_ACCELERATION * remaining))
+	var approach_speed := retreat_speed + closing_speed
+	if approach_speed >= FOOT_PURSUIT_SPEED or not _has_attack_line_of_sight_to_target(victim):
+		return FOOT_PURSUIT_SPEED
+	return approach_speed
 
 func _face_movement_direction() -> void:
 	# Shared navigation supplies the desired velocity. Turn the actor first,
@@ -169,10 +186,15 @@ func _vehicle_sprint_target_speed() -> float:
 func _process_attack(delta: float) -> void:
 	if grab.busy() or strike_elapsed >= 0 or reaction_remaining > 0:
 		if locomotion_state == LocomotionState.NORMAL:
-			velocity.x = 0
-			velocity.z = 0
+			_apply_grab_approach()
 		return
 	super._process_attack(delta)
+	if grab.busy(): _apply_grab_approach()
+
+func _apply_grab_approach() -> void:
+	var motion: Vector3 = grab.approach_velocity()
+	velocity.x = motion.x
+	velocity.z = motion.z
 
 func _execute_attack_on_target(data: Dictionary) -> void:
 	if is_dead or grab.busy() or attack_timer > 0 or strike_elapsed >= 0 or reaction_remaining > 0: return

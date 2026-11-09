@@ -1,18 +1,18 @@
 extends Item
 
 func interact(player: Node3D) -> String:
-	if not player.can_use_hands(): return "加油需要可用手臂"
-	if not can_operate(): return "加油孔尚未接入或無法使用，請先安裝／維修"
+	if not player.can_use_hands(): return "Refueling requires an available arm"
+	if not can_operate(): return "Install or repair the fuel inlet first"
 	var rv := get_connected_rv()
-	if player.get_active_item_name() != ItemNames.GAS_CAN: return "需要手持汽油罐"
-	if rv.current_fuel >= rv.max_fuel - 0.01: return "燃油已滿，未消耗汽油罐"
+	if player.get_active_item_name() != ItemNames.GAS_CAN: return "Hold a Gasoline Can"
+	if rv.current_fuel >= rv.max_fuel - 0.01: return "Fuel tank full. Gasoline Can kept."
 	if not is_finite(rv.fuel_per_gas_can) or rv.fuel_per_gas_can <= 0.0: return "Fuel transfer unavailable"
 	# The can conversion must succeed before the chassis receives any fuel.
 	# Retain the original records and selection so failed grants lose nothing.
 	var previous_items: Array[Dictionary] = player.inventory.items.duplicate(true)
 	var previous_slot: int = player.inventory.active_slot
 	var can_id: String = player.inventory.active_item().get("state", {}).get("id", "")
-	if not player.inventory.consume_active(): return "找不到手持汽油罐"
+	if not player.inventory.consume_active(): return "Held Gasoline Can unavailable"
 	if not player.add_item(ItemNames.GAS_CAN_EMPTY, false, "res://props/gas_can_empty.tscn"):
 		_restore_inventory(player, previous_items, previous_slot)
 		return "Empty can could not be created; fuel can retained"
@@ -30,7 +30,7 @@ func interact(player: Node3D) -> String:
 		return "No fuel transferred; fuel can retained"
 	rv.refuel_committed.emit(persistent_id, can_id, empty_id, added)
 	player.refresh_inventory()
-	return "已加入 %.1f 燃油，空罐已放回背包" % added
+	return "Added %.1f fuel. Empty can returned to inventory." % added
 
 func _restore_inventory(player: Node3D, items: Array[Dictionary], slot: int) -> void:
 	player.inventory.items = items

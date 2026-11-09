@@ -652,13 +652,13 @@ func _refresh() -> void:
 	var engine: EngineState = rv.get_engine()
 	var engine_info := "No engine installed"
 	if engine:
-		engine_info = "%s / HP %.0f / %.0f" % [RVTerminalPresenter.message(engine.definition().display_name), engine.health, engine.definition().max_health]
+		engine_info = "%s / HP %.0f / %.0f" % [engine.definition().display_name, engine.health, engine.definition().max_health]
 	_text("telemetry", "FUEL %.1f   BATTERY %.1f" % [rv.current_fuel, rv.current_power])
 	_text("overview:status", "ENGINE  %s   %s\nFUEL    %s %5.1f / %.1f%s\nPOWER   %s %5.1f / %.1f%s\nSPEED   %.1f m/s   |   MATERIALS %d / %d%s" % [
 		"RUNNING" if energy.engine_running else "STOPPED", engine_info, _bar(rv.current_fuel, rv.max_fuel), rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel),
 		_bar(rv.current_power, rv.max_power), rv.current_power, rv.max_power, _unlimited(rv.unlimited_power), rv.linear_velocity.length(), rv.storage.used(), rv.storage.capacity, _unlimited(rv.unlimited_materials)])
 	controls.engine.text = "[ Stop engine ]" if energy.engine_running else "[ Start engine ]"
-	var engine_reason: String = "" if energy.engine_running else RVTerminalPresenter.message(rv.engine_start_reason())
+	var engine_reason: String = "" if energy.engine_running else rv.engine_start_reason()
 	controls.engine.disabled = not engine_reason.is_empty()
 	_text("engine:reason", engine_reason)
 	_pressed("headlights", rv.headlights_requested)
@@ -675,7 +675,7 @@ func _refresh() -> void:
 	_pressed("charging_enabled", energy.charging_enabled)
 	_number_value("charging_threshold", energy.recharge_below * 100.0, 100)
 	_number_value("charging_reserve", energy.fuel_reserve, rv.max_fuel)
-	_text("charging:state", RVTerminalPresenter.message(energy.charging_status()))
+	_text("charging:state", energy.charging_status())
 	for kind in ["cabin", "service"]: _pressed(kind, rv.interior_requested[kind])
 	_text("interior:state", "Cabin: %s   |   Service: %s" % [_light_state("cabin"), _light_state("service")])
 	_refresh_devices()
@@ -779,7 +779,7 @@ func _refresh_crafting() -> void:
 	var lines := PackedStringArray()
 	var keys := items.keys()
 	keys.sort()
-	for key in keys: lines.append("%s: %d" % [RVTerminalPresenter.message(str(key)), items[key]])
+	for key in keys: lines.append("%s: %d" % [str(key), items[key]])
 	var material_text := "  |  ".join(lines) if not lines.is_empty() else "Storage empty"
 	_text("materials", ("UNLIMITED materials | " if connected_rv.unlimited_materials else "") + material_text)
 	var ids := PackedStringArray()
@@ -812,7 +812,7 @@ func _refresh_crafting() -> void:
 		for job in station.jobs:
 			var queued := RecipeCatalog.find(job.recipe)
 			queue.append("%s  %s %.1fs" % [RVTerminalPresenter.recipe_name(queued), _bar(queued.duration - job.remaining, queued.duration, 10), job.remaining])
-		if not station.last_error.is_empty(): queue.append(RVTerminalPresenter.message(station.last_error))
+		if not station.last_error.is_empty(): queue.append(station.last_error)
 	_text("queue", "\n".join(queue) if not queue.is_empty() else "Queue unavailable")
 
 func _construction() -> RVStructureConstruction:
@@ -843,10 +843,9 @@ func _refresh_structure() -> void:
 			selector.set_item_metadata(selector.item_count - 1, type)
 			if type == target.definition.type_id: selector.select(selector.item_count - 1)
 	var type: String = str(selector.get_selected_metadata())
-	var dependents: PackedStringArray = target.dependent_names()
 	_text("structure:detail", "%s\n%s\nHP %s %.0f / %.0f\n%s" % [RVTerminalPresenter.slot_name(selected_slot), RVTerminalPresenter.type_name(target.definition.type_id),
 		_bar(target.current_health, target.max_health), target.current_health, target.max_health,
-		RVTerminalPresenter.message("Attached equipment: " + ", ".join(dependents)) if not dependents.is_empty() else "No attached equipment"])
+		target.dependent_summary()])
 	var construction: RVStructureConstruction = slots.construction
 	for operation in ["repair", "rebuild", "convert"]:
 		var chosen: String = "" if operation == "repair" else type
@@ -857,14 +856,14 @@ func _refresh_structure() -> void:
 		_texts["structure:reason:" + operation].visible = show_action
 		controls["structure:" + operation].text = "[ %s / %d Metal Parts / %.1fs ]" % [operation.capitalize(), construction.operation_cost(operation, definition), construction.operation_seconds(operation, definition)]
 		controls["structure:" + operation].disabled = not reason.is_empty()
-		_text("structure:reason:" + operation, RVTerminalPresenter.message(reason))
+		_text("structure:reason:" + operation, reason)
 	_construction_row.visible = construction.is_building()
 	if construction.is_building():
-		_text("construction", _bar(construction.progress(), 1, 12) + " " + RVTerminalPresenter.message(construction.status_message()))
+		_text("construction", _bar(construction.progress(), 1, 12) + " " + construction.status_message())
 		controls["structure:cancel"].disabled = construction.job.terminal != get_parent()
 	elif construction.last_message != _last_construction_message:
 		_last_construction_message = construction.last_message
-		_message = RVTerminalPresenter.message(construction.last_message)
+		_message = construction.last_message
 
 func _can_write() -> bool:
 	return not _refreshing and is_management_active() and _owns_session()
@@ -881,7 +880,7 @@ func _owns_session() -> bool:
 func _toggle_engine() -> void:
 	if not _can_write(): return
 	var okay: bool = connected_rv.set_engine_running(not connected_rv.energy.engine_running)
-	_message = ("Engine started" if connected_rv.energy.engine_running else "Engine stopped") if okay else RVTerminalPresenter.message(connected_rv.engine_start_reason())
+	_message = ("Engine started" if connected_rv.energy.engine_running else "Engine stopped") if okay else connected_rv.engine_start_reason()
 	_refresh()
 
 func _set_light(kind: String, value: bool) -> void:
@@ -896,7 +895,7 @@ func _set_light(kind: String, value: bool) -> void:
 func _craft() -> void:
 	var station := _station()
 	if not _can_write() or not station: return
-	_message = "Queued " + RVTerminalPresenter.recipe_name(RecipeCatalog.find(selected_recipe)) if station.request_craft(selected_recipe) else RVTerminalPresenter.message(station.last_error)
+	_message = "Queued " + RVTerminalPresenter.recipe_name(RecipeCatalog.find(selected_recipe)) if station.request_craft(selected_recipe) else station.last_error
 	_refresh()
 
 func _cancel_crafting() -> void:
@@ -910,7 +909,7 @@ func _begin_structure(operation: String) -> void:
 	if not _can_write(): return
 	var type: String = "" if operation == "repair" else str(controls["structure:type"].get_selected_metadata())
 	var reason := _construction().begin(get_parent(), selected_slot, operation, type)
-	_message = RVTerminalPresenter.message(reason) if not reason.is_empty() else "Construction started"
+	_message = reason if not reason.is_empty() else "Construction started"
 	_refresh()
 
 func _cancel_construction() -> void:
@@ -934,4 +933,4 @@ func _status_lines() -> PackedStringArray:
 	return PackedStringArray(["ENGINE %s" % ("RUNNING" if rv.energy.engine_running else "STOPPED"),
 		"FUEL %.1f / %.1f%s" % [rv.current_fuel, rv.max_fuel, _unlimited(rv.unlimited_fuel)], "BATTERY %.1f / %.1f%s" % [rv.current_power, rv.max_power, _unlimited(rv.unlimited_power)],
 		"SPEED %.1f m/s" % rv.linear_velocity.length(), "MATERIALS %d / %d%s" % [rv.storage.used(), rv.storage.capacity, _unlimited(rv.unlimited_materials)],
-		RVTerminalPresenter.message(rv.energy.charging_status())])
+		rv.energy.charging_status()])

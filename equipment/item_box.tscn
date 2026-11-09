@@ -14,7 +14,7 @@ size = Vector3(1, 0.6, 0.7)
 [node name="ItemBox" type="RigidBody3D"]
 script = ExtResource("1")
 definition = ExtResource("def")
-equipment_name = "道具箱"
+equipment_name = "Item storage box"
 destroy_on_zero_health = false
 mass = 30.0
 [node name="Mesh" type="MeshInstance3D" parent="."]

@@ -158,7 +158,7 @@ func _ready() -> void:
 	work_lights.set_script(load("res://rv/work_lighting.gd"))
 	add_child(work_lights)
 	if starter_kits:
-		for i in range(2): stored_items.append({"name": "引擎維修包", "is_large": false, "scene_path": "res://props/engine_repair_kit.tscn", "state": {"id": InstanceIds.create(), "condition": 100.0}})
+		for i in range(2): stored_items.append({"name": "Engine Repair Kit", "is_large": false, "scene_path": "res://props/engine_repair_kit.tscn", "state": {"id": InstanceIds.create(), "condition": 100.0}})
 	engine_bay = get_node("EngineBay")
 	rear_ramp = get_node_or_null("RearRamp")
 	for body in find_children("*", "StaticBody3D", true, false):
@@ -207,8 +207,8 @@ func toggle_interior_light(kind: String) -> void:
 		feedback("mechanical")
 
 func interior_light_status(kind: String) -> String:
-	var title: String = {"cabin": "車內照明", "service": "維修燈"}.get(kind, kind)
-	return title + "｜" + ("關閉" if not interior_requested[kind] else ("供電中" if interior_powered[kind] else "已開啟，等待供電／設備就緒"))
+	var title: String = {"cabin": "Cabin lights", "service": "Service light"}.get(kind, kind)
+	return title + " | " + ("Off" if not interior_requested[kind] else ("Powered" if interior_powered[kind] else "On, waiting for power or equipment"))
 
 func comfort_snapshot() -> Dictionary:
 	return {"lights": interior_requested.duplicate(), "brightness": instrument_brightness, "vibration": vibration_strength}
@@ -220,9 +220,9 @@ func restore_comfort(data: Dictionary) -> void:
 	interior_powered = {"cabin": false, "service": false}
 
 func engine_start_reason() -> String:
-	if get_engine() == null: return "未安裝引擎，請到車頭引擎艙裝入"
-	if not has_working_engine(): return "引擎故障，請使用引擎維修包或更換引擎"
-	if not has_usable_fuel(): return "燃油耗盡，請使用加油孔補充"
+	if get_engine() == null: return "No engine installed: use the front engine bay"
+	if not has_working_engine(): return "Engine failed: use an Engine Repair Kit or replace the engine"
+	if not has_usable_fuel(): return "Fuel exhausted: refill through the fuel inlet"
 	return ""
 
 func has_usable_fuel() -> bool:
@@ -237,13 +237,13 @@ func take_damage(amount: float) -> void:
 		engine_force = 0.0
 
 func exchange_engine(player: Node3D) -> String:
-	if not player.can_use_hands(2): return "更換大型引擎需要兩隻手臂"
+	if not player.can_use_hands(2): return "Engine replacement requires both arms"
 	var reason: String = engine_bay.service_reason()
 	if not reason.is_empty(): return reason
 	var active: Dictionary = player.inventory.active_item()
 	var state: Variant = active.get("state", {}).get("engine")
-	if not EngineState.valid(state, false): return "請先選取大型引擎道具"
-	if active.get("scene_path", "") != "res://props/engine_" + state.model + ".tscn" or not active.get("is_large", false): return "引擎道具資料不符"
+	if not EngineState.valid(state, false): return "Select an engine item first"
+	if active.get("scene_path", "") != "res://props/engine_" + state.model + ".tscn" or not active.get("is_large", false): return "Invalid engine item data"
 	var incoming := EngineState.new(state)
 	incoming.item_data = ItemState.slot_data(active.state)
 	var old := get_engine()
@@ -255,30 +255,30 @@ func exchange_engine(player: Node3D) -> String:
 	feedback("complete")
 	player.refresh_inventory()
 	update_load()
-	return "已裝入 " + incoming.definition().display_name
+	return "Installed " + incoming.definition().display_name
 
 func remove_engine(player: Node3D) -> String:
-	if not player.can_use_hands(2): return "取出大型引擎需要兩隻手臂"
+	if not player.can_use_hands(2): return "Engine removal requires both arms"
 	var reason: String = engine_bay.service_reason()
 	if not reason.is_empty(): return reason
 	var engine := get_engine()
-	if engine == null: return "引擎槽是空的"
+	if engine == null: return "Engine bay is empty"
 	var item := engine.item()
-	if not player.add_item(item.name, true, item.scene_path, item.state): return "背包已滿或已攜帶大型物品，無法取出引擎"
+	if not player.add_item(item.name, true, item.scene_path, item.state): return "Cannot remove engine: inventory full or already carrying a large item"
 	engine_bay.installed_engine = null
 	feedback("complete")
 	energy.engine_running = false
 	update_load()
-	return "引擎已取出"
+	return "Engine removed"
 
 func drive_blocked() -> bool:
 	return rear_ramp != null and rear_ramp.blocks_driving()
 
 func save_block_reason() -> String:
 	var structures := get_node_or_null("StructureSlots")
-	if structures and structures.is_building(): return "車體施工中，暫時無法保存"
-	if not engine_bay.get_node("Hatch").stable(): return "維修蓋尚未開妥／關妥，暫時無法保存"
-	if rear_ramp and not rear_ramp.stable(): return "坡板尚在移動或受阻，暫時無法保存"
+	if structures and structures.is_building(): return "Saving unavailable during structure construction"
+	if not engine_bay.get_node("Hatch").stable(): return "Saving unavailable while the service hatch is moving"
+	if rear_ramp and not rear_ramp.stable(): return "Saving unavailable: ramp is moving or blocked"
 	return ""
 
 # --- INVENTORY MANAGEMENT ---
@@ -386,8 +386,8 @@ func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incomin
 		effective_loss = result.loss
 	if paid <= 0.0: return
 	take_damage(paid)
-	var title: String = {"tree": "撞樹", "monster": "撞擊怪物", "ground": "地面衝擊", "body": "碰撞"}.get(kind, "碰撞")
-	service_message = "%s｜引擎耐久 -%.1f" % [title, paid]
+	var title: String = {"tree": "Tree impact", "monster": "Monster impact", "ground": "Ground impact", "body": "Collision"}.get(kind, "Collision")
+	service_message = "%s | Engine durability -%.1f" % [title, paid]
 	feedback("blocked")
 	vehicle_impact.emit(kind, effective_loss, paid)
 
@@ -582,7 +582,7 @@ func set_engine_running(running: bool) -> bool:
 		return false
 	if running and not energy.engine_running: feedback("start")
 	energy.engine_running = running
-	service_message = "引擎已發動" if running else "引擎已停止"
+	service_message = "Engine started" if running else "Engine stopped"
 	return true
 
 func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
@@ -809,10 +809,10 @@ func tire_warning() -> String:
 	var issues := PackedStringArray()
 	for slot in range(4):
 		var label: String = TireDynamics.NAMES[slot]
-		if installed_wheels[slot] == null: issues.append(label + "缺輪")
-		elif wheel_health[slot] <= 0.0: issues.append(label + "爆胎")
-		elif wheel_health[slot] < 30.0: issues.append(label + "磨損")
-	return "、".join(issues) + "｜請停穩熄火，維修或換胎" if not issues.is_empty() else ""
+		if installed_wheels[slot] == null: issues.append(label + " wheel missing")
+		elif wheel_health[slot] <= 0.0: issues.append(label + " tire flat")
+		elif wheel_health[slot] < 30.0: issues.append(label + " tire worn")
+	return ", ".join(issues) + " | Stop the vehicle and switch off the engine to repair or replace tires." if not issues.is_empty() else ""
 
 func update_load() -> void:
 	# Only installed engine/equipment affect vehicle load. Batteries, fuel and

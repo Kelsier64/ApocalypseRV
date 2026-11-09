@@ -100,8 +100,8 @@ func _process(_delta: float) -> void:
 	if not is_instance_valid(rv) or not is_instance_valid(status): return
 	var slots: RVStructureSlots = rv.get_node("StructureSlots")
 	var roof := slots.panel("roof_1")
-	status.text = "F2 平板｜F3 左中部件受擊｜F4 拆右前牆（平板掉落）\nF5 拆中段屋頂｜R 重設｜F1 慢動作 %.2fx｜F11 拆右後牆｜F12 拆後屋頂\nF6 右後牆 -25%%｜F7 修復右後牆／後屋頂｜F8 後屋頂 -30\nF9 近看車牆｜F10 看屋頂｜右後牆 HP %.0f / %.0f｜後屋頂 HP %.0f\n地板：固定底盤｜中段屋頂：%s｜玩家車內高度 %.2f｜材料 %d" % [
+	status.text = "F2 Tablet | F3 Hit Left-Middle Part | F4 Remove Front-Right Wall (drops tablet)\nF5 Remove Middle Roof | R Reset | F1 Slow Motion %.2fx | F11 Remove Rear-Right Wall | F12 Remove Rear Roof\nF6 Rear-Right Wall -25%% | F7 Repair Rear-Right Wall / Rear Roof | F8 Rear Roof -30\nF9 Inspect RV Walls | F10 Inspect Roof | Rear-Right Wall HP %.0f / %.0f | Rear Roof HP %.0f\nFloor: Fixed Chassis | Middle Roof: %s | Player Interior Height %.2f | Materials %d" % [
 		Engine.time_scale,
 		slots.panel("right_2").current_health, slots.panel("right_2").max_health, slots.panel("roof_2").current_health,
-		"DESTROYED" if roof and roof.is_destroyed else "完整",
+		"DESTROYED" if roof and roof.is_destroyed else "Intact",
 		rv.to_local(player.global_position).y, rv.get_item_count("Metal Parts")]

@@ -3,7 +3,7 @@
 [resource]
 script = ExtResource("script")
 model_id = "standard"
-display_name = "標準引擎"
+display_name = "Standard Engine"
 max_health = 450.0
 force_multiplier = 1
 fuel_multiplier = 1

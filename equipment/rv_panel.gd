@@ -2,7 +2,7 @@ extends RigidBody3D
 class_name RVStructurePanel
 ## Fixed independently damageable vehicle part. Deliberately not an Item.
 @export var definition: RVStructureDefinition
-@export var equipment_name: String = "車體結構"
+@export var equipment_name: String = "Vehicle structure"
 @export var structure_kind: String = ""
 @export var mount_slot: String = ""
 var current_health: float = 120.0
@@ -94,7 +94,7 @@ func dependent_names() -> PackedStringArray:
 
 func dependent_summary() -> String:
 	var names := dependent_names()
-	return "無附掛設備" if names.is_empty() else "附掛設備：" + "、".join(names)
+	return "No attached equipment" if names.is_empty() else "Attached equipment: " + ", ".join(names)
 
 func get_placement_bounds() -> AABB:
 	var bounds := AABB()

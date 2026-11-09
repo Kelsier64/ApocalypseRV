@@ -94,7 +94,7 @@ func _case(mode: String) -> void:
 	var picked := _add_scrap(id + "-picked-first")
 	var remaining := _add_scrap(id + "-remaining-first")
 	var remaining_id: String = remaining.persistent_id
-	check(picked.interact(player).begins_with("已拾取"), id + " first visit picks up a real prop")
+	check(picked.interact(player).begins_with("Picked up "), id + " first visit picks up a real prop")
 	if mode == "cancel": _eat_interior_food()
 	await process_frame
 	check(player.inventory.items.size() > 0 and room.entities.get_child_count() == 1, id + " inventory and room reflect pickup")
@@ -112,7 +112,7 @@ func _case(mode: String) -> void:
 	if room.entities.get_child_count() == 1: restored = room.entities.get_child(0) as Item
 	check(restored != null and restored.persistent_id == remaining_id, id + " revisit restores surviving prop identity")
 	if restored != null:
-		check(restored.interact(player).begins_with("已拾取"), id + " revisit picks up the restored prop")
+		check(restored.interact(player).begins_with("Picked up "), id + " revisit picks up the restored prop")
 	var next := _add_scrap(id + "-remaining-second")
 	var next_id: String = next.persistent_id
 	var revisited_room_id: String = room.layout.rooms[1].id

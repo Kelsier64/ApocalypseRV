@@ -60,33 +60,33 @@ func doors_open() -> bool:
 func exclusions() -> Array[RID]:
 	return [get_rid(), rv.get_rid(), $Control.get_rid()]
 func interact(_player: Node3D) -> String:
-	if rv.linear_velocity.length() > 0.5 or not rv.handbrake: return "請停穩並拉起手煞車"
+	if rv.linear_velocity.length() > 0.5 or not rv.handbrake: return "Stop the vehicle and apply the parking brake"
 	if moving:
 		requested_deployed = not requested_deployed
 		rv.feedback("mechanical", position)
 		_sync()
-		return "坡板反向展開中" if requested_deployed else "坡板反向收起中"
+		return "Ramp reversing to deploy" if requested_deployed else "Ramp reversing to stow"
 	if deployed or progress > 0.0:
 		requested_deployed = false
 		moving = true
 		rv.feedback("mechanical", position)
 		_sync()
-		return "坡板收起中"
+		return "Ramp stowing"
 	var end := to_global(Vector3(0, 0, 3.6))
 	var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(end + Vector3.UP * 0.3, end - Vector3.UP * 3.0, 1, exclusions()))
-	if hit.is_empty() or hit.normal.dot(Vector3.UP) < cos(deg_to_rad(30)): return "後方沒有平穩地面可支撐坡板"
+	if hit.is_empty() or hit.normal.dot(Vector3.UP) < cos(deg_to_rad(30)): return "No stable ground behind the vehicle for the ramp"
 	var local_end := to_local(hit.position + Vector3.UP * 0.04)
 	var next_angle := atan2(-local_end.y, local_end.z)
-	if absf(next_angle) > deg_to_rad(30): return "地面高差太大，坡板坡度超過 30°"
+	if absf(next_angle) > deg_to_rad(30): return "Ground height difference too large: ramp slope exceeds 30 degrees"
 	var next_length := local_end.length()
-	if next_length < 3.0 or next_length > 4.3: return "地面高差太大，坡板無法接地"
+	if next_length < 3.0 or next_length > 4.3: return "Ground height difference too large: ramp cannot reach the ground"
 	angle = next_angle
 	length = next_length
 	requested_deployed = true
 	moving = true
 	rv.feedback("mechanical", position)
 	_sync()
-	return "坡板展開中；收妥後才能行駛"
+	return "Ramp deploying. Stow it before driving."
 func _sync() -> void:
 	var unfolded := progress == 1.0 and not moving
 	deck.disabled = not unfolded
