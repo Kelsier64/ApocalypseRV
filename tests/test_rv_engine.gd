@@ -217,6 +217,22 @@ func _run() -> void:
 	rv.throttle_input = 0.0
 	rv._physics_process(0.016)
 	check(is_equal_approx(rv.engine_force / standard_force, 1.25), "Upgraded engine drive force multiplier")
+	var engine := rv.get_engine()
+	var previous_health := engine.health
+	rv.throttle_input = 1.0
+	rv.linear_velocity = -rv.global_basis.z * 4.0
+	var drive_force := {}
+	for percent in [100, 60, 59, 30, 10]:
+		engine.health = engine.definition().max_health * percent / 100.0
+		rv._physics_process(0.016)
+		drive_force[percent] = absf(rv.engine_force)
+	check(drive_force[100] > 0.0 and is_equal_approx(drive_force[60], drive_force[100]), "60% engine health retains normal drive at speed")
+	check(drive_force[10] > 0.0 and drive_force[10] < drive_force[30] and drive_force[30] < drive_force[59] and drive_force[59] < drive_force[60], "Drive at speed progressively falls below 60% health")
+	engine.health = engine.definition().max_health * 0.6
+	rv._physics_process(0.016)
+	check(is_equal_approx(absf(rv.engine_force), drive_force[100]), "Restored health recovers normal drive immediately")
+	engine.health = previous_health
+	rv.linear_velocity = Vector3.ZERO
 	rv.control_override.clear()
 	rv.set_engine_running(false)
 	rv.handbrake = true
