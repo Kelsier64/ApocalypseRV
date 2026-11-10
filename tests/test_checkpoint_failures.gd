@@ -317,10 +317,12 @@ func _test_megashelter_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 func _test_bunker_service_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 	var fixture := saved.duplicate(true)
 	var id := "checkpoint-service-route"
+	var stairs_seed := "bunker-link:v1:44:bunker_stairwell".sha256_text().substr(0, 15).hex_to_int()
+	var hall_seed := ("bunker-link:v1:%d:bunker_dark_column_hall" % stairs_seed).sha256_text().substr(0, 15).hex_to_int()
 	for route in [
-		[&"bunker", ""],
-		[&"bunker_stairwell", ":liminal-stairs"],
-		[&"bunker_dark_column_hall", ":liminal-stairs:column-hall"],
+		[&"bunker", "", 44],
+		[&"bunker_stairwell", ":liminal-stairs", stairs_seed],
+		[&"bunker_dark_column_hall", ":liminal-stairs:column-hall", hall_seed],
 	]:
 		var viewport := SubViewport.new()
 		viewport.own_world_3d = true
@@ -329,7 +331,7 @@ func _test_bunker_service_checkpoint(checkpoint: Node, saved: Dictionary) -> voi
 		inside.profile_id = route[0]
 		inside.instance_id = id + route[1]
 		viewport.add_child(inside)
-		var built: bool = await inside.build(40)
+		var built: bool = await inside.build(route[2])
 		check(built, "Build real checkpoint fixture for " + str(route[0]))
 		if built:
 			inside.explored.assign([str(inside.layout.rooms[0].id)])
@@ -338,6 +340,10 @@ func _test_bunker_service_checkpoint(checkpoint: Node, saved: Dictionary) -> voi
 		await process_frame
 		if not built: return
 	check(fixture.poi[id].layout.has("stair_access"), "Disk fixture includes a committed bunker service access")
+	check(fixture.poi[id + ":liminal-stairs"].layout.get("stair_destination") == "bunker_dark_column_hall", "Disk fixture includes the committed stair destination")
+	var invalid := fixture.duplicate(true)
+	invalid.poi[id + ":liminal-stairs"].layout.stair_destination = "unknown_room"
+	check(not checkpoint.validation_error(invalid).is_empty(), "Checkpoint rejects an invalid saved stair destination")
 	check(checkpoint.validation_error(fixture).is_empty(), "Full checkpoint accepts all service route profiles")
 	var path := PATH + ".service-route"
 	check(checkpoint.write_checkpoint(path, fixture), "Bunker service route checkpoint writes to disk")

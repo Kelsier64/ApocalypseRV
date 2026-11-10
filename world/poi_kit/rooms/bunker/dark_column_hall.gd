@@ -14,6 +14,8 @@ func _build() -> void:
 	_box(Vector3(0, -0.125, 0), Vector3(footprint.x, 0.25, footprint.y), 0, true)
 	_box(Vector3(0, clear_height + 0.125, 0), Vector3(footprint.x, 0.25, footprint.y), 0, true)
 	_box(Vector3(0, clear_height * 0.5, -half.y + WALL_DEPTH * 0.5), Vector3(footprint.x, clear_height, WALL_DEPTH), 0, true)
+	var stair_marker := get_node("Walkway/StairExit") as Marker3D
+	_model(_room_visuals, "StairDoor", stair_marker.transform.translated_local(Vector3(0, 0, -WALL_DEPTH)), FITTINGS.pedestrian_door())
 	for side: float in [-1.0, 1.0]:
 		var x := side * (half.x - WALL_DEPTH * 0.5)
 		_box(Vector3(x, clear_height * 0.5, 0), Vector3(WALL_DEPTH, clear_height, footprint.y - 2.0 * WALL_DEPTH), 0, true)

@@ -28,3 +28,11 @@ position = Vector3(3, 0.08, 13.05)
 position = Vector3(3, 0, 14.4)
 rotation = Vector3(0, 3.1415927, 0)
 metadata/opening = Vector2(1.06, 2.32)
+
+[node name="StairExit" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0, -14.4)
+metadata/opening = Vector2(1.06, 2.32)
+
+[node name="StairSpawn" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0.08, -13.05)
+rotation = Vector3(0, 3.1415927, 0)

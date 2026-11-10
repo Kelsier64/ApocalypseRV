@@ -185,10 +185,12 @@ func _add_links(first_visit: bool) -> bool:
 	match profile_id:
 		&"megashelter":
 			return _add_stair_access()
-		&"megashelter_stairwell":
-			_add_lower_stair_door(&"bunker")
-		&"bunker_stairwell":
-			_add_lower_stair_door(&"bunker_dark_column_hall")
+		&"megashelter_stairwell", &"bunker_stairwell":
+			if not layout.has("stair_destination"):
+				layout.stair_destination = str(InteriorProfiles.roll_stair_destination(int(layout.seed)))
+			_add_marked_link(StringName(layout.stair_destination), ^"Walkway/BunkerExit", ^"Walkway/BunkerSpawn")
+		&"bunker_dark_column_hall":
+			_add_marked_link(&"bunker_stairwell", ^"Walkway/StairExit", ^"Walkway/StairSpawn")
 		&"bunker":
 			if first_visit:
 				var access := BUNKER_STAIR_ACCESS.choose(self)
@@ -201,10 +203,10 @@ func _add_links(first_visit: bool) -> bool:
 				link_return_transforms[&"bunker_stairwell"] = pose * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.08, 1.5))
 	return true
 
-func _add_lower_stair_door(destination: StringName) -> void:
-	var marker := rooms[0].get_node("Walkway/BunkerExit") as Marker3D
-	_add_link(destination, marker.global_transform, marker.get_meta("opening", Vector2(2.8, 3.0)))
-	link_return_transforms[destination] = rooms[0].get_node("Walkway/BunkerSpawn").global_transform
+func _add_marked_link(destination: StringName, door_path: NodePath, landing_path: NodePath) -> void:
+	var marker := rooms[0].get_node(door_path) as Marker3D
+	_add_link(destination, marker.global_transform, marker.get_meta("opening"))
+	link_return_transforms[destination] = rooms[0].get_node(landing_path).global_transform
 
 func _add_stair_access() -> bool:
 	var candidates: Array[Dictionary] = []

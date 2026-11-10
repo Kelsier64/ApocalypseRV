@@ -230,6 +230,10 @@ static func validate(value: Variant, profile: InteriorProfile = PROFILE) -> Stri
 		if access.room <= 0 or access.room >= value.rooms.size() or access.socket in connections[access.room]: return "stair access location"
 		var room := definition(value, access.room, profile)
 		if room.role != &"ordinary" or not room.describe().sockets.has(access.socket): return "stair access socket"
+	if value.has("stair_destination"):
+		var destination: Variant = value.stair_destination
+		if not InteriorProfiles.is_stairwell(profile.profile_id) or not destination is String or not InteriorProfiles.STAIR_DESTINATIONS.has(StringName(destination)):
+			return "stair destination"
 	for distance in distances(value):
 		if is_inf(distance): return "disconnected room"
 	return ""
