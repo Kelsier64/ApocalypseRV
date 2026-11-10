@@ -1,5 +1,15 @@
 extends RayCast3D
 ## The player owns a key gesture. Looking away cancels it; holding never repeats.
+const WALK_HINTS := {"W A S D": "Move", "Shift": "Sprint", "Ctrl": "Crouch", "Space": "Jump", "1–6 / Wheel": "Select slot"}
+const DRIVE_HINTS := {
+	"W / S": "Throttle / Brake", "A / D": "Steer", "Space": "Parking brake", "B": "Toggle engine",
+	"Z / X / C": "Reverse / Neutral / 1st", "R / T": "Shift up / down", "L": "Headlights", "E": "Exit seat",
+}
+const PLACE_HINTS := {
+	"LMB": "Place", "RMB / Esc": "Cancel", "Q / E": "Rotate", "Hold Shift": "Fine rotation",
+	"Arrows": "Nudge", "R": "Switch mode",
+}
+
 @onready var player = get_parent().get_parent()
 var repair := RepairOperation.new()
 var repair_label: Label
@@ -9,8 +19,7 @@ var feedback_label: Label
 var feedback_time := 0.0
 var aim_marker: CenterContainer
 var _control_hints_enabled := false
-var _control_hints_panel: PanelContainer
-var _control_hints_label: Label
+var _control_hints := preload("res://player/control_hints.gd").new()
 var _e_was_pressed := false
 var _f_was_pressed := false
 var _e_target: Node
@@ -59,99 +68,74 @@ func _ready() -> void:
 	feedback_label = _label(box, 22)
 	feedback_label.modulate = Color(1.0, 0.85, 0.4)
 	panel.hide()
-	_build_control_hints()
-
-func _build_control_hints() -> void:
-	var layer := CanvasLayer.new()
-	layer.name = "ControlHints"
-	layer.layer = 6
-	add_child(layer)
-	HUDVisibility.attach(layer)
-	var screen := Control.new()
-	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(screen)
-	var align := HBoxContainer.new()
-	align.alignment = BoxContainer.ALIGNMENT_END
-	align.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	screen.add_child(align)
-	align.anchor_right = 1.0
-	align.anchor_top = 0.4
-	align.anchor_bottom = 0.4
-	align.offset_right = -20.0
-	var panel := PanelContainer.new()
-	_control_hints_panel = panel
-	panel.theme = IndustrialTheme.make(16)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	panel.hide()
-	align.add_child(panel)
-	var rows := VBoxContainer.new()
-	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(rows)
-	var heading := Label.new()
-	heading.text = "J  Hide hints"
-	heading.add_theme_color_override("font_color", IndustrialTheme.AMBER)
-	rows.add_child(heading)
-	_control_hints_label = Label.new()
-	rows.add_child(_control_hints_label)
-	UILayout.attach(layer, screen)
+	_control_hints.name = "ControlHints"
+	add_child(_control_hints)
 
 func _input(event: InputEvent) -> void:
 	if not event.is_action_pressed("toggle_control_hints") or player.is_gameplay_input_blocked(): return
 	if player.get_player_mode() in [player.PlayerMode.UI, player.PlayerMode.DEAD, player.PlayerMode.RESTING]: return
 	_control_hints_enabled = not _control_hints_enabled
-	if not _control_hints_enabled: _control_hints_panel.hide()
+	if not _control_hints_enabled: _control_hints.hide()
 	get_viewport().set_input_as_handled()
 
 func _update_control_hints(obj: Node = null, blocked := false) -> void:
 	if not _control_hints_enabled: return
-	var hint := "" if blocked else _control_hint_text(obj)
-	if _control_hints_label.text != hint: _control_hints_label.text = hint
-	_control_hints_panel.visible = not hint.is_empty()
-
-func _control_hint_text(obj: Node) -> String:
+	if blocked:
+		_control_hints.hide()
+		return
 	match player.get_player_mode():
 		player.PlayerMode.SEATED:
-			return "W Throttle · S Brake · A/D Steer\nSpace Parking brake · B Engine\nZ/X/C Reverse/Neutral/First · R/T Shift\nL Headlights · E Exit seat"
+			_control_hints.present("DRIVING", DRIVE_HINTS)
 		player.PlayerMode.PLACING:
-			return "LMB Place · RMB / Esc Cancel\nQ/E Rotate · Shift Fine rotate\nArrows Nudge · R Switch mode"
+			_control_hints.present("PLACEMENT", PLACE_HINTS)
 		player.PlayerMode.GRABBED:
-			return "Tap Space repeatedly to escape" if player.grab_control.accepting else ""
+			if player.grab_control.accepting:
+				_control_hints.present("STRUGGLE", {"Tap Space": "Repeat to break free"})
+			else:
+				_control_hints.hide()
 		player.PlayerMode.NORMAL:
-			if player.locomotion_state == player.LocomotionState.CLIMBING:
-				return "W Climb · S Descend · Space Let go"
-			if player.is_cheat_flying():
-				return "WASD Fly · Space Up · Ctrl Down\nShift Fly faster"
-			var lines := PackedStringArray(["WASD Move · Shift Sprint · Ctrl Crouch", "Space Jump · 1–6 / Wheel Select"])
-			var target_hint := _target_control_hint(obj)
-			if not target_hint.is_empty(): lines.append(target_hint)
-			var held: Dictionary = player.inventory.active_item()
-			if not held.is_empty() and player.can_use_hands(2 if held.get("is_large", false) else 1):
-				lines.append("F Place · G Drop")
-				if held.get("scene_path") == "res://props/flashlight.tscn":
-					lines.append("L Toggle flashlight")
-				elif player.weapon.can_use():
-					lines.append("LMB Fire · RMB Aim · R Reload")
-				elif player.consumables.can_eat(player):
-					lines.append("Hold RMB Eat")
-			return "\n".join(lines)
-	return ""
+			_show_on_foot_hints(obj)
+		_:
+			_control_hints.hide()
 
-func _target_control_hint(obj: Node) -> String:
-	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not _can_interact(obj): return ""
-	if obj is Item and not obj.is_fixed: return "E Pick up"
-	if obj is BunkerCache: return "Hold E Search"
-	var actions := PackedStringArray()
+func _show_on_foot_hints(obj: Node) -> void:
+	if player.locomotion_state == player.LocomotionState.CLIMBING:
+		_control_hints.present("LADDER", {"W": "Climb", "S": "Descend", "Space": "Let go"})
+		return
+	if player.is_cheat_flying():
+		_control_hints.present("FLIGHT", {"W A S D": "Fly", "Space": "Ascend", "Ctrl": "Descend", "Shift": "Fly faster"})
+		return
+	var bindings := WALK_HINTS.duplicate()
+	_add_target_hints(obj, bindings)
+	var held: Dictionary = player.inventory.active_item()
+	if not held.is_empty() and player.can_use_hands(2 if held.get("is_large", false) else 1):
+		bindings["F"] = "Place"
+		bindings["G"] = "Drop"
+		if held.get("scene_path") == "res://props/flashlight.tscn":
+			bindings["L"] = "Toggle flashlight"
+		elif player.weapon.can_use():
+			bindings.merge({"LMB": "Fire", "RMB": "Aim", "R": "Reload"})
+		elif player.consumables.can_eat(player):
+			bindings["Hold RMB"] = "Eat"
+	_control_hints.present("ON FOOT", bindings)
+
+func _add_target_hints(obj: Node, bindings: Dictionary) -> void:
+	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not _can_interact(obj): return
+	if obj is Item and not obj.is_fixed:
+		bindings["E"] = "Pick up"
+		return
+	if obj is BunkerCache:
+		bindings["Hold E"] = "Search"
+		return
+	var has_tap := not obj is Item and obj.has_method("interact")
+	if has_tap: bindings["E"] = "Use"
 	if _held_delivery(obj):
-		actions.append("Hold E Feed item")
+		bindings["Hold E"] = "Feed item"
 	elif _uses_hold(obj):
-		actions.append("E Use · Hold E Service" if not obj is Item and obj.has_method("interact") else "Hold E Use")
-	elif not obj is Item and obj.has_method("interact"):
-		actions.append("E Use")
-	if obj is Item and obj.can_pickup(player): actions.append("Hold F Detach")
+		bindings["Hold E"] = "Service" if has_tap else "Use"
+	if obj is Item and obj.can_pickup(player): bindings["Hold F"] = "Detach"
 	if not obj is RVStructurePanel and obj.has_method("needs_repair") and obj.needs_repair():
-		actions.append("Hold H Repair")
-	return " · ".join(actions)
+		bindings["Hold H"] = "Repair"
 
 func _label(parent: Node, font_size: int) -> Label:
 	var label := Label.new()
