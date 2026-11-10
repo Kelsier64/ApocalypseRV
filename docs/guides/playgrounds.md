@@ -10,6 +10,16 @@
 
 SAN 低於 20 時，按 F4 眨眼並在睜眼時隨機切換視覺幻覺，或按 Shift+F4 依序預覽負片、黑白、過飽和、空間扭曲、色彩分離和視野收窄。右上角顯示目前效果的剩餘秒數。倒數完會顯示 Next blink，可按 F7 測試睜眼後恢復或接續。SAN 為 0 或負值時，按 F11 觸發長閉眼。可用 F6 比較 SAN 19、10、0 和 −30 的自然發作頻率與持續時間。
 
+## 黑影測試場
+
+在 Godot 執行 [black_apparition_playground.tscn](../../tests/black_apparition_playground.tscn)，或從專案根目錄執行下方指令。
+
+```powershell
+godot --path . --log-file .godot/black-apparition-playground.log res://tests/black_apparition_playground.tscn
+```
+
+進場已裝備充滿電的手電筒。先往右轉找白眼，用 WASD 移動、滑鼠轉向、Shift 衝刺、L 開關手電筒。F6 請求黑影在畫面外另一處暗點現身，R 可在死亡後重開。螢幕顯示注視秒數和 SAN，可以測試連續注視 2 秒、移開視線重置、直照觸發、隔牆擋光與接觸即死。
+
 ## 完整場景目錄（2026-11-02）
 
 以實體檔案及場景腳本盤點：`tests/` 共 **58 個場景**，包含 **53 個 playground**（51 個頂層、2 個巢狀）及 **5 個檢視／工作坊／review**；其中 **56 個已納入 Git、2 個僅存在本機且被忽略**。下表逐一涵蓋，另列 5 個 `world/` 的遊玩／美術入口。操作依程式核對；本次文件整理未啟動 Godot，不代表這些場景都已完成新版人工驗收。
