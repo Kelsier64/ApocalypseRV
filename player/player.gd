@@ -344,7 +344,7 @@ func _ready():
 	add_child(grab_control)
 	grab_started.connect(close_settings)
 	grab_started.connect(consumables.cancel)
-	grab_started.connect(san_effects.reset)
+	grab_started.connect(san_effects.suspend)
 	add_child(weapon)
 	grab_started.connect(weapon.cancel_actions)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
@@ -388,7 +388,7 @@ func can_open_settings() -> bool:
 func set_settings_open(value: bool) -> void:
 	if settings_open == value: return
 	if value:
-		san_effects.reset()
+		san_effects.suspend()
 		consumables.cancel()
 		weapon.cancel_actions()
 		cancel_equipment_placement()
@@ -484,7 +484,7 @@ func enter_ui_mode() -> bool:
 	if get_player_mode() != PlayerMode.NORMAL:
 		return false
 	in_ui_mode = true
-	san_effects.reset()
+	san_effects.suspend()
 	consumables.cancel()
 	if is_cheat_flying(): velocity = Vector3.ZERO
 	weapon.cancel_actions()
@@ -1293,7 +1293,7 @@ func drain_san(amount: float) -> void:
 
 func recover_san(amount: float) -> void:
 	survival.recover_san(amount)
-	if survival.san >= PlayerSanEffects.THRESHOLD: san_effects.reset()
+	if survival.san >= PlayerSanEffects.THRESHOLD: san_effects.request_vision_recovery()
 	_update_san_bar()
 
 func hallucinated_driving_input(turn: float, throttle: float) -> Vector2:
@@ -1301,7 +1301,7 @@ func hallucinated_driving_input(turn: float, throttle: float) -> Vector2:
 
 func _advance_san_effects(delta: float) -> void:
 	var control := PlayerSanEffects.InputMode.NONE
-	if survival.san < PlayerSanEffects.THRESHOLD and PlayerSurvival.simulation_active(self) and not is_gameplay_input_blocked():
+	if PlayerSurvival.simulation_active(self) and not is_gameplay_input_blocked():
 		var mode := get_player_mode()
 		if mode == PlayerMode.SEATED:
 			control = PlayerSanEffects.InputMode.DRIVE

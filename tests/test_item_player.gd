@@ -343,7 +343,7 @@ func check_san_effects() -> void:
 	check(effects._overlay.visible, "Blink can recur while SAN stays low")
 	actor.settings_open = true
 	actor._advance_san_effects(.01)
-	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Settings clears the current SAN effects")
+	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Settings suspends blinking and input effects")
 	actor.settings_open = false
 
 	var previous_wait := Vector3.ONE
@@ -508,8 +508,20 @@ func check_medium_san_vision() -> void:
 	effects._blink_wait = 0.0
 	effects.advance(.01, 0.01, walk)
 	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible above zero SAN")
-	effects.advance(.01, 20.0, walk)
-	check(not effects._overlay.visible and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Recovering to 20 clears all visual effects")
+	var blinks_before_suspend := effects._vision_blinks_left
+	effects.advance(.01, 0.01, PlayerSanEffects.InputMode.NONE)
+	check(not effects._overlay.visible and effects._vision_profile == profile and grade.visible, "Suspending controls stops the blink while preserving the active grade")
+	effects.advance(.01, 0.01, walk)
+	check(effects._vision_profile == profile and effects._vision_blinks_left == blinks_before_suspend and grade.visible, "Resuming controls keeps the same grade and blink count")
+	actor.survival.san = 19.0
+	actor.recover_san(1.0)
+	check(actor.survival.san == 20.0 and grade.visible, "SAN recovery keeps the grade until the recovery blink")
+	actor.survival.advance(.01)
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible and effects._vision_profile == profile and grade.visible, "A recovery blink closes with the active grade still in place")
+	actor._advance_san_effects(effects._blink_remaining + .01)
+	check(effects._vision_profile == -1 and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Reopening the recovery blink clears the active grade")
+	actor.survival.reset()
 
 	var interior := SubViewport.new()
 	viewport.add_child(interior)

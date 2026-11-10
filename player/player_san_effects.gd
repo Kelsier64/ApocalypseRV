@@ -20,6 +20,7 @@ var _eyelids := ShaderMaterial.new()
 var _blink_wait := -1.0
 var _blink_duration := 1.0
 var _blink_remaining := 0.0
+var _blink_cover_frame := -1
 var _long_blink_wait := -1.0
 var _long_blink := false
 var _vision_blinks_left := 0
@@ -27,6 +28,7 @@ var _vision_elapsed := 0.0
 var _vision_strength := 0.0
 var _vision_profile := -1
 var _vision_viewport: Viewport
+var _vision_recovery_pending := false
 var _delay_wait := 0.0
 var _delay_remaining := 0.0
 var _delay_seconds := 0.0
@@ -57,8 +59,20 @@ func _exit_tree() -> void:
 	_clear_vision_grade()
 
 func advance(delta: float, san: float, control: InputMode) -> void:
-	if control == InputMode.NONE or san >= THRESHOLD:
-		if _control != InputMode.NONE: reset()
+	if san >= THRESHOLD: request_vision_recovery()
+	if control == InputMode.NONE:
+		if _control != InputMode.NONE or _blink_remaining > 0.0: suspend()
+		return
+	if san >= THRESHOLD or _vision_recovery_pending:
+		if _control != InputMode.NONE:
+			_control = InputMode.NONE
+			_reset_direction()
+		if _vision_profile >= 0 or _blink_remaining > 0.0:
+			_advance_blink(delta, 0.0, false, true)
+			_update_vision_grade(delta)
+		else:
+			_blink_wait = -1.0
+			_clear_long_blink()
 		return
 	if control != _control:
 		_reset_direction()
@@ -72,38 +86,64 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	_update_vision_grade(delta)
 	_advance_direction(delta, severity)
 
-func _advance_blink(delta: float, severity: float, long_blinks_enabled: bool) -> void:
-	if _blink_wait < 0.0: _blink_wait = _rng.randf_range(0.55, 1.45)
+func _advance_blink(delta: float, severity: float, long_blinks_enabled: bool, recovered := false) -> void:
+	if _blink_cover_frame >= 0:
+		if Engine.get_frames_drawn() == _blink_cover_frame: return
+		_blink_cover_frame = -1
+		_reveal_vision(severity, recovered)
+	if not recovered and _blink_wait < 0.0: _blink_wait = _rng.randf_range(0.55, 1.45)
 	if long_blinks_enabled and _long_blink_wait < 0.0: _long_blink_wait = 0.28 + 0.72 * _roll_wait()
+	var previous_open_duration := _blink_open_duration()
+	if recovered and _long_blink:
+		_blink_remaining = minf(_blink_remaining, previous_open_duration + 0.02)
 	var previous_remaining := _blink_remaining
 	var open_time := maxf(0.0, delta - _blink_remaining)
 	_blink_remaining = maxf(0.0, _blink_remaining - delta)
-	var previous_open_duration := _blink_open_duration()
-	# Switch while the lids still cover the screen so reopening reveals the change.
 	if previous_remaining > previous_open_duration and _blink_remaining <= previous_open_duration:
-		_advance_vision_on_blink(severity)
-		vision_blink_reopening.emit(severity)
+		# Catch-up physics ticks can run an entire short blink between draws.
+		if DisplayServer.get_name() != "headless":
+			_blink_cover_frame = Engine.get_frames_drawn()
+			_blink_remaining = previous_open_duration
+			_eyelids.set_shader_parameter("closure", 1.0)
+			_overlay.show()
+			return
+		_reveal_vision(severity, recovered)
 	if _blink_remaining == 0.0:
 		_long_blink = false
-		_blink_wait = maxf(0.0, _blink_wait - open_time / lerpf(6.0, 0.9, severity))
-		if long_blinks_enabled: _long_blink_wait -= open_time * severity * LONG_BLINK_RATE
-		if long_blinks_enabled and _long_blink_wait <= 0.0:
-			_long_blink = true
-			_long_blink_wait = 0.28 + 0.72 * _roll_wait()
-			_blink_duration = _sample_long_blink_duration(severity)
-			_blink_remaining = _blink_duration
-		elif _blink_wait == 0.0:
-			_blink_wait = _rng.randf_range(0.55, 1.45)
-			_blink_duration = lerpf(0.12, 0.85, _sample_episode(severity))
-			_blink_remaining = _blink_duration
+		if recovered:
+			if _vision_profile >= 0:
+				_blink_duration = 0.24
+				_blink_remaining = _blink_duration
+		else:
+			_schedule_blink(open_time, severity, long_blinks_enabled)
 	var elapsed := _blink_duration - _blink_remaining
 	var close_time := 0.18 if _long_blink else _blink_duration * 0.32
 	var closure := smoothstep(0.0, close_time, elapsed) * smoothstep(0.0, _blink_open_duration(), _blink_remaining)
 	_eyelids.set_shader_parameter("closure", closure)
 	_overlay.visible = _blink_remaining > 0.0
 
+func _schedule_blink(open_time: float, severity: float, long_blinks_enabled: bool) -> void:
+	_blink_wait = maxf(0.0, _blink_wait - open_time / lerpf(6.0, 0.9, severity))
+	if long_blinks_enabled: _long_blink_wait -= open_time * severity * LONG_BLINK_RATE
+	if long_blinks_enabled and _long_blink_wait <= 0.0:
+		_long_blink = true
+		_long_blink_wait = 0.28 + 0.72 * _roll_wait()
+		_blink_duration = _sample_long_blink_duration(severity)
+		_blink_remaining = _blink_duration
+	elif _blink_wait == 0.0:
+		_blink_wait = _rng.randf_range(0.55, 1.45)
+		_blink_duration = lerpf(0.12, 0.85, _sample_episode(severity))
+		_blink_remaining = _blink_duration
+
 func _blink_open_duration() -> float:
 	return 0.38 if _long_blink else _blink_duration * 0.52
+
+func _reveal_vision(severity: float, recovered: bool) -> void:
+	if recovered:
+		_end_vision()
+		return
+	_advance_vision_on_blink(severity)
+	vision_blink_reopening.emit(severity)
 
 func _advance_vision_on_blink(severity: float) -> void:
 	# Severity reaches 0.5 at zero SAN. From there the original odds apply.
@@ -136,7 +176,12 @@ func _end_vision() -> void:
 	_vision_profile = -1
 	_vision_blinks_left = 0
 	_vision_elapsed = 0.0
+	_vision_recovery_pending = false
 	_clear_vision_grade()
+
+func request_vision_recovery() -> void:
+	# Passive drain can lower SAN again before a recovery blink is drawn.
+	_vision_recovery_pending = _vision_profile >= 0
 
 func _update_vision_grade(delta: float) -> void:
 	if _vision_profile < 0: return
@@ -148,7 +193,9 @@ func _update_vision_grade(delta: float) -> void:
 	_video.set_san_vision(viewport, _vision_profile, _vision_strength, _vision_elapsed)
 
 func _clear_long_blink() -> void:
-	if _long_blink: _blink_remaining = 0.0
+	if _long_blink:
+		_blink_remaining = 0.0
+		_blink_cover_frame = -1
 	_long_blink = false
 	_long_blink_wait = -1.0
 
@@ -243,12 +290,16 @@ func _delay_input(input: Vector2) -> Vector2:
 	return _delayed_input
 
 func reset() -> void:
+	suspend()
+	_end_vision()
+
+func suspend() -> void:
 	_control = InputMode.NONE
 	_blink_wait = -1.0
 	_blink_remaining = 0.0
+	_blink_cover_frame = -1
 	if _overlay != null: _overlay.hide()
 	_clear_long_blink()
-	_end_vision()
 	_reset_direction()
 
 func _reset_direction() -> void:
