@@ -1,6 +1,9 @@
 extends VehicleBody3D
 class_name Chassis
 
+const PARKING_HOLD_MAX_SPEED := 0.5
+const PARKING_HOLD_RESPONSE := 40.0
+
 @export var max_engine_force: float = 5000.0
 @export var max_speed: float = 35.0
 @export var max_braking_force: float = 100.0
@@ -670,13 +673,40 @@ func _physics_process(delta: float) -> void:
 	engine_force = 0.0
 	# VehicleBody3D treats brake as a per-step impulse (engine force already
 	# includes its timestep). Preserve our authored 60 Hz braking strength.
-	var braking_strength := parking_braking_force if handbrake or drive_blocked() else brake_input * max_braking_force
+	var parking := handbrake or drive_blocked()
+	var braking_strength := parking_braking_force if parking else brake_input * max_braking_force
 	brake = braking_strength * 60.0 * delta
 	if can_drive and drive > 0.0 and brake_input == 0.0:
 		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():
 		engine_force = 0.0
 	TireDynamics.step(self)
+	if parking and brake > 0.0:
+		_hold_parking_brake()
+
+func _hold_parking_brake() -> void:
+	if freeze or sleeping: return
+	var state := PhysicsServer3D.body_get_direct_state(get_rid())
+	if state == null: return
+	var velocity := state.linear_velocity
+	if velocity.length() > PARKING_HOLD_MAX_SPEED: return
+	var support_normal := Vector3.ZERO
+	var supports := 0
+	for wheel: VehicleWheel3D in installed_wheels:
+		if wheel == null or not wheel.is_in_contact(): continue
+		if not wheel.get_contact_body() is StaticBody3D: continue
+		var normal := wheel.get_contact_normal()
+		if normal.y <= 0.5: continue
+		support_normal += normal
+		supports += 1
+	if supports < 3: return
+	support_normal = support_normal.normalized()
+	# Wheel impulses have already run. Ease out residual drift and counter
+	# the next step's downhill gravity without fighting suspension travel.
+	var response := 1.0 - exp(-state.step * PARKING_HOLD_RESPONSE)
+	var correction := (velocity * response + state.total_gravity * state.step).slide(support_normal)
+	linear_velocity = velocity - correction.limit_length(brake * supports / mass)
+	_impact_velocity = linear_velocity
 
 # --- WHEEL MANAGEMENT ---
 func install_wheel() -> bool:
