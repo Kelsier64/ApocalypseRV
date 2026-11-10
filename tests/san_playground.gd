@@ -42,7 +42,10 @@ func _process(_delta: float) -> void:
 	if effects._blink_remaining > 0.0:
 		active.append("Long blink %.1fs" % effects._blink_remaining if effects._long_blink else "Blink")
 	if effects._vision_profile >= 0:
-		active.append("%s (%d blinks left)" % [VISION_NAMES[effects._vision_profile], effects._vision_blinks_left])
+		var remaining := effects._vision_duration - effects._vision_elapsed
+		var timing := "%.1fs left" % remaining if remaining > 0.0 else "next blink"
+		if effects._vision_recovery_pending: timing = "recovery blink"
+		active.append("%s (%s)" % [VISION_NAMES[effects._vision_profile], timing])
 	if effects._delay_remaining > 0.0: active.append("Input delay %.0f ms" % (1000.0 * effects._input_delay()))
 	if effects._misdirection_remaining > 0.0: active.append("Directional drift")
 	_status.text = "SAN %.2f%%  |  %s\nActive: %s" % [player.survival.san, mode, ", ".join(active) if not active.is_empty() else "None"]

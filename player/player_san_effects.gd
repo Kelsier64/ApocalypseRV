@@ -23,7 +23,7 @@ var _blink_remaining := 0.0
 var _blink_cover_frame := -1
 var _long_blink_wait := -1.0
 var _long_blink := false
-var _vision_blinks_left := 0
+var _vision_duration := 0.0
 var _vision_elapsed := 0.0
 var _vision_strength := 0.0
 var _vision_profile := -1
@@ -63,13 +63,14 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	if control == InputMode.NONE:
 		if _control != InputMode.NONE or _blink_remaining > 0.0: suspend()
 		return
+	if _vision_profile >= 0: _vision_elapsed += delta
 	if san >= THRESHOLD or _vision_recovery_pending:
 		if _control != InputMode.NONE:
 			_control = InputMode.NONE
 			_reset_direction()
 		if _vision_profile >= 0 or _blink_remaining > 0.0:
 			_advance_blink(delta, 0.0, false, true)
-			_update_vision_grade(delta)
+			_update_vision_grade()
 		else:
 			_blink_wait = -1.0
 			_clear_long_blink()
@@ -83,7 +84,7 @@ func advance(delta: float, san: float, control: InputMode) -> void:
 	var long_blinks_enabled := san <= LONG_BLINK_THRESHOLD
 	if not long_blinks_enabled: _clear_long_blink()
 	_advance_blink(delta, severity, long_blinks_enabled)
-	_update_vision_grade(delta)
+	_update_vision_grade()
 	_advance_direction(delta, severity)
 
 func _advance_blink(delta: float, severity: float, long_blinks_enabled: bool, recovered := false) -> void:
@@ -152,8 +153,7 @@ func _advance_vision_on_blink(severity: float) -> void:
 		if _rng.randf() < lerpf(0.19, 0.62, severity) * probability_scale:
 			_start_vision(_roll_vision_profile(), severity)
 		return
-	_vision_blinks_left -= 1
-	if _vision_blinks_left > 0: return
+	if _vision_elapsed < _vision_duration: return
 	if _rng.randf() < lerpf(0.10, 0.60, severity) * probability_scale:
 		_start_vision(_roll_vision_profile(), severity)
 	else:
@@ -169,12 +169,12 @@ func _roll_vision_profile() -> int:
 func _start_vision(profile: int, severity: float) -> void:
 	_vision_profile = profile
 	_vision_strength = lerpf(0.38, 1.0, _sample_episode(severity))
-	_vision_blinks_left = mini(4, 2 + floori(3.0 * _sample_episode(severity)))
+	_vision_duration = lerpf(12.0, 36.0, _sample_episode(severity))
 	_vision_elapsed = 0.0
 
 func _end_vision() -> void:
 	_vision_profile = -1
-	_vision_blinks_left = 0
+	_vision_duration = 0.0
 	_vision_elapsed = 0.0
 	_vision_recovery_pending = false
 	_clear_vision_grade()
@@ -183,9 +183,8 @@ func request_vision_recovery() -> void:
 	# Passive drain can lower SAN again before a recovery blink is drawn.
 	_vision_recovery_pending = _vision_profile >= 0
 
-func _update_vision_grade(delta: float) -> void:
+func _update_vision_grade() -> void:
 	if _vision_profile < 0: return
-	_vision_elapsed += delta
 	var viewport := get_viewport()
 	if _vision_viewport != viewport:
 		_clear_vision_grade()
