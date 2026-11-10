@@ -1009,6 +1009,71 @@ func check_hud_toggle() -> void:
 	Input.parse_input_event(key)
 	await steps()
 
+func check_training_terminal_placement(wall: StaticBody3D) -> void:
+	var path := "res://equipment/training_terminal.tscn"
+	var terminal := make_item(path, Vector3(22, 2, 20)) as TrainingTerminal
+	var boot := terminal.boot_state()
+	boot.boot_started = true
+	TrainingTerminal.BOOT.advance(boot, TrainingTerminal.BOOT.DURATION)
+	var id := terminal.persistent_id
+	check(actor.add_prop_item(terminal, path), "Training terminal can be carried")
+	terminal.queue_free()
+	if not actor.enter_equipment_placement():
+		check(false, "Training terminal can enter placement")
+		clear_bag()
+		return
+
+	var camera: Camera3D = actor.camera
+	var saved_camera := camera.transform
+	var floor := StaticBody3D.new()
+	var collider := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(4, 0.2, 4)
+	collider.shape = shape
+	floor.add_child(collider)
+	world.add_child(floor)
+	floor.position = Vector3(5, -0.1, 0)
+	await steps()
+
+	var placement: EquipmentPlacement = actor.placement
+	var preview := placement.placing_equipment as Item
+	camera.global_transform = Transform3D(Basis.looking_at(Vector3.DOWN, Vector3.FORWARD), Vector3(5, 2, 0))
+	placement.update_ghost(actor)
+	check(placement.can_place_equipment and placement.target_support == floor and preview.global_basis.z.is_equal_approx(Vector3.UP) and preview.global_basis.y.is_equal_approx(Vector3.FORWARD), "A straight-down floor preview shows the screen face up and readable")
+
+	placement.placement_mode = EquipmentPlacement.PlacementMode.UPRIGHT
+	camera.global_position = Vector3(5, 2, 1.5)
+	camera.look_at(Vector3(5, 0, 0))
+	placement.update_ghost(actor)
+	check(placement.can_place_equipment and preview.global_basis.z.is_equal_approx(Vector3.BACK) and preview.global_basis.y.is_equal_approx(Vector3.UP), "Upright floor placement faces the player")
+
+	placement.placement_mode = EquipmentPlacement.PlacementMode.SURFACE
+	camera.global_transform = Transform3D(Basis.looking_at(Vector3.LEFT), Vector3(2.5, 1.45, 0))
+	placement.update_ghost(actor)
+	check(placement.can_place_equipment and placement.target_support == wall and preview.global_basis.z.is_equal_approx(Vector3.RIGHT) and preview.global_basis.y.is_equal_approx(Vector3.UP), "Default wall preview has an upright screen facing away from the wall")
+	var back_center := preview.to_global(Vector3(0, 0, preview.get_placement_bounds().position.z))
+	check(is_equal_approx(back_center.x, 0.112), "The back of the terminal is flush with the wall at the placement gap")
+
+	placement.placement_mode = EquipmentPlacement.PlacementMode.UPRIGHT
+	placement.update_ghost(actor)
+	check(preview.global_basis.z.is_equal_approx(Vector3.RIGHT) and preview.global_basis.y.is_equal_approx(Vector3.UP), "Upright mode also keeps the wall-mounted screen readable")
+	placement.placement_mode = EquipmentPlacement.PlacementMode.SURFACE
+	var rotate := InputEventKey.new()
+	rotate.pressed = true
+	rotate.physical_keycode = KEY_E
+	placement.handle_input(actor, rotate)
+	placement.update_ghost(actor)
+	var pose := preview.global_transform
+	check(pose.basis.z.is_equal_approx(Vector3.RIGHT) and pose.basis.y.is_equal_approx(Vector3.UP.rotated(Vector3.RIGHT, deg_to_rad(15.0))), "Terminal rotation stays in the plane of the wall")
+	check(placement.commit(actor), "Training terminal can be fixed to the previewed wall")
+	var mounted := find_item(id)
+	check(mounted != null and mounted.mount_support == wall and mounted.global_transform.is_equal_approx(pose), "Committed terminal preserves the preview pose and identity")
+	if mounted: mounted.queue_free()
+	floor.queue_free()
+	camera.transform = saved_camera
+	clear_bag()
+	await steps()
+
 func run() -> void:
 	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
@@ -1041,6 +1106,7 @@ func run() -> void:
 	await check_first_person_carry()
 	await check_flashlight_viewmodel()
 	await check_carry_motion()
+	await check_training_terminal_placement(wall)
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
 	var scrapper := make_item("res://equipment/scrapper.tscn", Vector3(2, 2, 0))
