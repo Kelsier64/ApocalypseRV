@@ -2,6 +2,7 @@ extends Node3D
 var inside: PoiInterior
 var player: CharacterBody3D
 var status: Label
+var encounter: BlackApparitionEncounter
 var running := false
 var preview: Camera3D
 var inspection_light: DirectionalLight3D
@@ -47,7 +48,7 @@ func _ready() -> void:
 	inspection_light.light_energy = 1.2
 	inspection_light.hide()
 	add_child(inspection_light)
-	status.text = "BUNKER / seed %d / %d rooms / %d floors\nF1 walk / F2 overview / F3 cutaway / F5 replay / R reset / F8 capture" % [seed_value,inside.rooms.size(),InteriorLayout.floor_count(inside.layout)]
+	status.text = "BUNKER / seed %d / %d rooms / %d floors\nF1 walk / F2 overview / F3 cutaway / F5 replay / F8 capture / F9 black apparition / R reset" % [seed_value,inside.rooms.size(),InteriorLayout.floor_count(inside.layout)]
 	if art_inspect:
 		# Isolated inspection fixture; production only supplies the loose world prop.
 		for actor in inside.entities.get_children():
@@ -64,6 +65,8 @@ func _ready() -> void:
 					first_room = i
 					break
 		_inspect_room(first_room)
+	else:
+		encounter = BlackApparitionEncounter.attach_interior(inside, player)
 	if "--replay" in OS.get_cmdline_user_args(): _replay.call_deferred()
 
 func _inspect_room(index: int) -> void:
@@ -86,6 +89,9 @@ func _inspect_view() -> void:
 func _replay() -> void:
 	if running: return
 	running = true
+	if is_instance_valid(encounter):
+		encounter.process_mode = Node.PROCESS_MODE_DISABLED
+		encounter.hide()
 	player.camera.current = true
 	player.set_physics_process(true)
 	inspection_light.hide()
@@ -98,6 +104,9 @@ func _replay() -> void:
 	var passed: bool = await replay.run(inside,player,func(text): status.text = text)
 	for actor in paused_enemies:
 		if is_instance_valid(actor): actor.process_mode = Node.PROCESS_MODE_INHERIT
+	if is_instance_valid(encounter):
+		encounter.show()
+		encounter.process_mode = Node.PROCESS_MODE_INHERIT
 	status.text = "PASS / bunker traversal" if passed else "FAIL / inspect log"
 	running = false
 	if "--quit-after-replay" in OS.get_cmdline_user_args(): get_tree().quit(0 if passed else 1)
@@ -119,6 +128,8 @@ func _input(event: InputEvent) -> void:
 			for mesh in room.get_node("Visuals").get_children():
 				if str(mesh.name).begins_with("Ceiling"): mesh.visible = not cutaway
 	if event.keycode == KEY_F5: _replay()
+	if event.keycode == KEY_F9 and not running and is_instance_valid(encounter):
+		encounter._delay = 0.0
 	if art_inspect and not running and event.keycode == KEY_F4:
 		inspect_corner = (inspect_corner + 1) % 4
 		_inspect_view()

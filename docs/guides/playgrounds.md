@@ -440,7 +440,7 @@ godot --path . --log-file .godot/bunker.log res://tests/bunker_playground.tscn -
 godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playground.tscn -- --replay
 ```
 
-地堡測試場 F1 步行、F2 總覽、F3 掀頂、F5 連續搬運回放、R 重建、F8 截圖；M／Page Up／Down 是正式探索地圖。主世界回放 F6 或 --replay 從入口以 E 進出；F7 查看入口外觀、F8 截圖至 `.godot/bunker-exterior.png`。回放的測試引擎不屬於正式生成。舊資產 workshop／v2 playground 已移除。
+地堡測試場 F1 步行、F2 總覽、F3 掀頂、F5 連續搬運回放、R 重建、F8 截圖。步行時按 F9 可立即嘗試在畫面外的暗處刷新黑影。M／Page Up／Down 是正式探索地圖。主世界回放 F6 或 --replay 從入口以 E 進出；F7 查看入口外觀、F8 截圖至 `.godot/bunker-exterior.png`。回放的測試引擎不屬於正式生成。舊資產 workshop／v2 playground 已移除。
 
 <a id="section-6"></a>
 
