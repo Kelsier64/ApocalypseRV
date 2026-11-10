@@ -17,6 +17,7 @@ const MAX_STAMINA = 100.0
 const SPRINT_STAMINA_PER_SECOND = 20.0
 const JUMP_STAMINA_COST = 15.0
 const STAMINA_RECOVERY_PER_SECOND = 18.0
+const SAN_STAMINA_RECOVERY_THRESHOLD = 50.0
 const STAMINA_RECOVERY_DELAY = 1.0
 const STAMINA_EXHAUSTION_RECOVERY = 20.0
 const MOUSE_SENSITIVITY = 0.002
@@ -914,7 +915,11 @@ func _update_stamina(delta: float, sprinting: bool) -> void:
 		stamina_recovery_delay_remaining = maxf(0.0, stamina_recovery_delay_remaining - delta)
 		return
 	if current_stamina < MAX_STAMINA:
-		current_stamina = minf(MAX_STAMINA, current_stamina + STAMINA_RECOVERY_PER_SECOND * (1.0 if survival.hunger >= 40.0 else 0.5) * delta)
+		var hunger_multiplier := 1.0 if survival.hunger >= 40.0 else 0.5
+		var san_deficit := maxf(0.0, SAN_STAMINA_RECOVERY_THRESHOLD - survival.san)
+		var san_multiplier := lerpf(0.25, 1.0, 25.0 / (25.0 + san_deficit))
+		var recovery_rate := STAMINA_RECOVERY_PER_SECOND * hunger_multiplier * san_multiplier
+		current_stamina = minf(MAX_STAMINA, current_stamina + recovery_rate * delta)
 		if stamina_exhausted and current_stamina >= STAMINA_EXHAUSTION_RECOVERY:
 			stamina_exhausted = false
 		_update_stamina_bar()

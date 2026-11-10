@@ -256,6 +256,20 @@ func check_survival() -> void:
 	actor.current_stamina = 0.0
 	actor._update_stamina(1.0, false)
 	check(actor.current_stamina == 9.0, "Below 40 halves stamina recovery")
+	var san_before_recovery_checks: float = actor.survival.san
+	var stamina_before_recovery_checks: float = actor.current_stamina
+	actor.survival.hunger = 40.0
+	for sample in [Vector2(50.0, 18.0), Vector2(25.0, 11.25), Vector2(0.0, 9.0), Vector2(-50.0, 7.2)]:
+		actor.survival.san = sample.x
+		actor.current_stamina = 0.0
+		actor._update_stamina(1.0, false)
+		check(is_equal_approx(actor.current_stamina, sample.y), "Stamina recovers %.2f per second at %.0f SAN" % [sample.y, sample.x])
+	actor.survival.hunger = 39.99
+	actor.current_stamina = 0.0
+	actor._update_stamina(1.0, false)
+	check(is_equal_approx(actor.current_stamina, 3.6), "Low hunger halves the stamina recovery rate already reduced by negative SAN")
+	actor.survival.san = san_before_recovery_checks
+	actor.current_stamina = stamina_before_recovery_checks
 	Input.action_press("sprint")
 	actor.survival.hunger = 20.01
 	check(actor._can_sprint(true), "Hunger above 20 permits sprint")
