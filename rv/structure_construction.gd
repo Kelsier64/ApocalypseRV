@@ -30,7 +30,7 @@ func _service_reason(terminal: Node) -> String:
 	if user.get("is_player_dead") == true: return "Operator is dead"
 	if user.has_method("can_use_hands") and not user.can_use_hands(): return "Operator cannot use the tablet"
 	if user.has_method("get_player_mode") and user.get_player_mode() != user.PlayerMode.UI: return "Operator has left tablet mode"
-	if not _rv().has_usable_power(): return "Tablet has no power"
+	if not _rv().has_usable_power(): return "Construction requires vehicle power"
 	if _rv().energy.engine_running: return "Stop the engine first"
 	if _rv().linear_velocity.length() > 0.5: return "Vehicle speed must be at or below 0.5 m/s"
 	return ""

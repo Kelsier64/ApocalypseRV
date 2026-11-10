@@ -36,33 +36,46 @@ theme_override_constants/margin_right = 24
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="TUI" type="VBoxContainer" parent="Screen/Margin"]
+[node name="Console" type="VBoxContainer" parent="Screen/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Shell" type="VBoxContainer" parent="Screen/Margin"]
+[node name="PowerWarning" type="Label" parent="Screen/Margin/Console"]
 visible = false
 layout_mode = 2
+mouse_filter = 2
+text = "Warning: No vehicle power."
+autowrap_mode = 3
+
+[node name="TUI" type="VBoxContainer" parent="Screen/Margin/Console"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="Shell" type="VBoxContainer" parent="Screen/Margin/Console"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 2
 
-[node name="Output" type="RichTextLabel" parent="Screen/Margin/Shell"]
+[node name="Output" type="RichTextLabel" parent="Screen/Margin/Console/Shell"]
 layout_mode = 2
 size_flags_vertical = 3
 scroll_following = true
 selection_enabled = true
 context_menu_enabled = false
 
-[node name="Prompt" type="HBoxContainer" parent="Screen/Margin/Shell"]
+[node name="Prompt" type="HBoxContainer" parent="Screen/Margin/Console/Shell"]
 layout_mode = 2
 
-[node name="User" type="RichTextLabel" parent="Screen/Margin/Shell/Prompt"]
+[node name="User" type="RichTextLabel" parent="Screen/Margin/Console/Shell/Prompt"]
 custom_minimum_size = Vector2(185, 30)
 layout_mode = 2
 text = "operator@rv:~$"
 scroll_active = false
 mouse_filter = 2
 
-[node name="Input" type="LineEdit" parent="Screen/Margin/Shell/Prompt"]
+[node name="Input" type="LineEdit" parent="Screen/Margin/Console/Shell/Prompt"]
 layout_mode = 2
 size_flags_horizontal = 3
 max_length = 512
