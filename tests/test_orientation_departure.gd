@@ -77,6 +77,7 @@ func completion_check() -> bool:
 	if not await rebind_world(): return false
 	gate = run_owner.gate
 	check(tutorial.departure_authorized and gate.is_open() and run_owner.phase == "preparing" and not world.get_node("WorldClock").running, "Restoring an open gate preserves authorization and the safe preparation world")
+	check(workshop.wall_ready("left_0") and workshop.wall_ready("right_0") and workshop.wheel_ready(), "Loading during preparation preserves both wall repairs and the spare tire")
 	var driver: Item = vehicle.get_node("DriverSeat")
 	player.global_position = driver.global_position + vehicle.global_basis.z
 	driver.interact_hold(player)

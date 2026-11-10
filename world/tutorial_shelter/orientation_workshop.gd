@@ -74,12 +74,16 @@ func prepare(vehicle: Chassis) -> bool:
 		"wall_a": "left_0", "wall_b": "right_0", "wheel_slot": 0, "original_wheel": vehicle.wheel_ids[0],
 		"original_battery": socket.installed_battery.id, "engine": engine.id, "roof_slot": "roof_1"})
 	# All guards precede the sole new-run fault configuration.
+	var generator: Node = controller._world().get_node("WorldGenerator")
+	var rng: RandomNumberGenerator = generator.field.rng_for(0, "orientation_rv_condition")
 	targets = found
 	controller.rv_id = vehicle.persistent_id
 	configured = true
-	wall_a.set_health(minf(wall_a.current_health, maxf(0.0, wall_a.max_health - 60.0)))
-	wall_b.set_health(minf(wall_b.current_health, maxf(0.0, wall_b.max_health - 60.0)))
-	vehicle.puncture_wheel(0)
+	wall_a.set_health(minf(wall_a.current_health, wall_a.max_health - rng.randi_range(20, 60)))
+	wall_b.set_health(minf(wall_b.current_health, wall_b.max_health - rng.randi_range(20, 60)))
+	var tire_health := 0.0 if rng.randi_range(1, 3) == 1 else float(rng.randi_range(10, 29))
+	vehicle.wheel_health[0] = minf(vehicle.wheel_health[0], tire_health)
+	vehicle._update_wheel_condition(0)
 	engine.health = 0.0
 	vehicle.set_engine_running(false)
 	socket.installed_battery.charge = 0.0
@@ -259,7 +263,7 @@ func page() -> Dictionary:
 		"Gasoline: open the RV's rvctl tablet, choose Crafting, the marked workbench and Gasoline Can. Confirm production (2 Metal Parts + 5 Unrefined Fuel), wait for the physical output and pick it up.",
 		"Walls: with the engine off and handbrake applied, open rvctl Structure. Select left_0 or right_0 and Repair (2 Metal Parts each). Keep rvctl open until the job finishes.",
 		"Roof: in rvctl Structure, select destroyed slot roof_1 and Rebuild (6 Metal Parts). Clear the construction area and keep rvctl open until completion. Repairs and reconstruction are optional for departure.",
-		"Tire: with no tire selected, hold E at the left-front wheel socket to remove the original flat tire. Find the healthy spare among the pallet bays and hold E at that same empty socket to install it.",
+		"Tire: with no tire selected, hold E at the left-front wheel socket to remove the worn or flat tire. Find the healthy spare among the pallet bays and hold E at that same empty socket to install it.",
 		"Fuel: select a completed gasoline can and use the RV fuel port. A successful transfer returns an empty can. You can refuel before completing any repair or equipment reference.",
 		"Departure: close the maintenance cover and stow the rear ramp. Board the driver's seat, start the engine, select first gear and release the handbrake. Drive towards the exit; its vehicle sensor opens the gate. Clear the exit with the entire RV to begin the journey."]
 	var controls := ["E: pick up / open cover / exchange selected battery / use fuel port. Hold E: fixed rvctl, driver's seat or wheel socket.",
@@ -277,7 +281,7 @@ func page() -> Dictionary:
 			_condition("manufacture", "Optional: manufacture and pick up a gasoline can", not gasoline_id.is_empty() and gasoline_id in output_ids),
 			_condition("walls", "Optional: repair both designated walls to full durability", repaired_ids.size() == 2 and wall_ready(targets.wall_a) and wall_ready(targets.wall_b)),
 			_condition("roof", "Optional: rebuild roof_1 to full durability", flags.roof_rebuilt and wall_ready(str(targets.roof_slot))),
-			_condition("wheel", "Optional: remove the original flat and install the marked healthy spare", flags.wheel_removed and flags.wheel_installed and wheel_ready()),
+			_condition("wheel", "Optional: replace the damaged left-front tire with the marked spare", flags.wheel_removed and flags.wheel_installed and wheel_ready()),
 			_condition("refuel", "Optional: refuel from manufactured gasoline and receive the empty can", flags.refueled and refuel_amount > 0.0 and not empty_can_id.is_empty())]
 	return {"available": true, "stage": 2, "title": "Workshop field guide / Optional references", "conditions": conditions, "steps": steps, "reference": controls}
 func _condition(identity: String, text: String, done: bool) -> Dictionary:

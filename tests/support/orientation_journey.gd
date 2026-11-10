@@ -117,7 +117,13 @@ func initial_state() -> bool:
 	check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 0 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 0, "Course starts without hidden repair or recipe materials")
 	for slot in ["left_0", "right_0"]:
 		var panel: RVStructurePanel = vehicle.get_node("StructureSlots").panel(slot)
-		check(is_equal_approx(panel.max_health - panel.current_health, 60.0), "Original " + slot + " has exactly sixty damage")
+		var damage := panel.max_health - panel.current_health
+		check(not panel.is_destroyed and damage >= 20.0 and damage <= 60.0, "Original " + slot + " starts damaged and can be repaired in one operation")
+	var tire_health := vehicle.wheel_health[0]
+	var original_wheel: VehicleWheel3D = vehicle.installed_wheels[0]
+	if not check(original_wheel != null and (tire_health == 0.0 or (tire_health >= 10.0 and tire_health < 30.0)), "Original left-front tire starts installed and either worn or flat"): return false
+	var expected_grip := TireDynamics.FLAT_GRIP if tire_health == 0.0 else lerpf(0.7, 3.5, tire_health / 100.0)
+	check(is_equal_approx(original_wheel.wheel_friction_slip, expected_grip), "Initial tire condition updates real wheel grip")
 	check(vehicle.get_engine() != null and vehicle.get_engine().health == 0.0 and not vehicle.has_working_engine(), "New workshop engine is completely broken")
 	check(vehicle.get_node("StructureSlots").panel("roof_1").is_destroyed, "The middle ceiling is completely destroyed")
 	var socket: BatterySocket = workshop.item("socket")
@@ -287,7 +293,7 @@ func repair_lesson() -> bool:
 	var socket: Node3D = vehicle.get_node("WheelSocket0")
 	player.global_position = socket.global_position + vehicle.global_basis.x * 2
 	socket.interact_hold(player)
-	if not check(workshop.flags.wheel_removed and vehicle.installed_wheels[0] == null, "Native wheel removal releases the designated original flat tire"): return false
+	if not check(workshop.flags.wheel_removed and vehicle.installed_wheels[0] == null, "Native wheel removal releases the designated damaged tire"): return false
 	var decoy: Item = load("res://props/wheel.tscn").instantiate()
 	decoy.persistent_id = "journey-unmarked-healthy-wheel"
 	WorldEntities.get_container(world).add_child(decoy)
@@ -302,7 +308,7 @@ func repair_lesson() -> bool:
 	if not check(vehicle.installed_wheels[0] == null, "Native removal frees the socket after the unmarked-wheel negative control"): return false
 	# This extra wheel exists only for the negative control. Leaving it beside
 	# the front axle can roll it underneath the RV during the departure test.
-	# Keep the original discarded flat tire as part of the production journey.
+	# Keep the original discarded tire as part of the production journey.
 	var removed_decoy: Item = workshop.by_id("journey-unmarked-healthy-wheel")
 	if not check(removed_decoy != null, "Native removal returns the unmarked fixture wheel to the world"): return false
 	removed_decoy.queue_free()
