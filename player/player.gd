@@ -1269,6 +1269,7 @@ func _advance_survival(delta: float) -> void:
 
 func _physics_process(delta):
 	_advance_survival(delta)
+	inventory.advance_terminal_boot(delta)
 	consumables.advance(self, 0.0)
 	_update_food_bar()
 	# Cover restored/direct inventory changes before applying any carrier motion.

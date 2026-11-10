@@ -79,10 +79,25 @@ func reception() -> bool:
 	if not check(terminal != null and terminal.can_operate(), "Original reception terminal operates on internal power"): return false
 	player.global_position = terminal.global_position + Vector3.RIGHT
 	terminal.interact_hold(player)
-	terminal.start_boot()
-	terminal.advance_boot(6.0)
-	if not check(tutorial.flags.boot_complete, "Actual boot completion initializes the terminal"): return false
-	terminal._close_ui()
+	var ui := terminal.ui_instance
+	var enter := InputEventKey.new()
+	enter.keycode = KEY_ENTER
+	enter.pressed = true
+	ui._input(enter)
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	ui._input(escape)
+	if not check(not ui.visible and not player.in_ui_mode and not terminal.can_pickup(player), "Esc frees the player immediately while the unfinished boot keeps the dock locked"): return false
+	if not check(await WAIT.until(self, func(): return terminal.boot_state().boot_elapsed >= 1.0, 3000, true), "Boot advances on physics ticks with the interface closed"): return false
+	terminal.interact_hold(player)
+	if not check(ui.visible and ui._boot.visible and terminal.boot_state().boot_elapsed >= 1.0, "Reopening during boot shows the current progress"): return false
+	ui._input(escape)
+	if not check(await WAIT.until(self, func(): return tutorial.flags.boot_complete, 8000, true), "Boot completes and updates tutorial progress without an open interface"): return false
+	if not check(not ui.visible and terminal.can_pickup(player) and not tutorial.inner_gate_unlocked(), "Background boot unlocks the dock while the door still requires pickup"): return false
+	terminal.interact_hold(player)
+	if not check(ui.visible and not ui._boot.visible and ui.current_page == "conditions" and ui.page_data.available, "Reopening after boot goes directly to the conditions page"): return false
+	ui._input(escape)
 	var identity := terminal.persistent_id
 	terminal.pickup(player)
 	await frames()
