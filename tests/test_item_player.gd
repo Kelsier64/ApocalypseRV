@@ -148,6 +148,7 @@ func check_driving_carry() -> void:
 	seat.interact_hold(actor)
 	await steps()
 	check(seat.current_driver == actor and seat.seat_camera.is_current(), "Sitting with a small item activates driving")
+	check(ray._control_hint_text(null).contains("W Throttle"), "Driving replaces walking hints with seat controls")
 	var carry := actor.get_node("Visuals/Carry")
 	var wheel := seat.get_node("CockpitVisual/SteeringTilt/SteeringWheel") as Node3D
 	for direction in [&"move_right", &"move_left"]:
@@ -1448,6 +1449,51 @@ func check_hud_toggle() -> void:
 	Input.parse_input_event(key)
 	await steps()
 
+func check_control_hints() -> void:
+	ray.set_physics_process(true)
+	var panel: PanelContainer = ray._control_hints_panel
+	var label: Label = ray._control_hints_label
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_J
+	key.pressed = true
+	check(not panel.visible, "Control hints start hidden")
+	Input.parse_input_event(key)
+	await steps()
+	check(panel.visible and label.text.contains("WASD Move"), "Physical J shows walking hints")
+	check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(panel.get_global_rect()), "The hint panel %s fits the %s viewport" % [panel.get_global_rect(), root.size])
+	key.echo = true
+	Input.parse_input_event(key)
+	await steps()
+	check(panel.visible, "Holding J does not repeatedly toggle hints")
+	key.echo = false
+	var target := make_item("res://props/scrap.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
+	target.freeze = true
+	await steps()
+	check(ray.get_collider() == target and label.text.contains("E Pick up"), "Aiming at a loose item shows its pickup key")
+	target.queue_free()
+	check(actor.add_item("Scrap", false, "res://props/scrap.tscn") and actor.enter_equipment_placement(), "Open a real placement preview")
+	await steps()
+	check(panel.visible and label.text.contains("LMB Place") and not label.text.contains("E Pick up"), "Placement replaces walking and interaction hints")
+	actor.cancel_equipment_placement()
+	var menu := actor.get_node("SettingsMenu")
+	check(menu.open_menu(), "Settings can open while hints are enabled")
+	await steps()
+	check(not panel.visible, "Settings temporarily hide hints")
+	menu.close_menu()
+	await steps()
+	check(panel.visible and label.text.contains("WASD Move"), "Closing Settings restores the selected hint state")
+	key.pressed = false
+	Input.parse_input_event(key)
+	await steps()
+	key.pressed = true
+	Input.parse_input_event(key)
+	await steps()
+	check(not panel.visible and not HUDVisibility.hud_hidden, "Second J hides only control hints")
+	key.pressed = false
+	Input.parse_input_event(key)
+	clear_bag()
+	ray.set_physics_process(false)
+
 func check_bed_rest() -> void:
 	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
 	rv.position = Vector3(20.0, 0.0, 30.0)
@@ -1550,6 +1596,7 @@ func run() -> void:
 	await check_field_terminal()
 	await check_driving_carry()
 	await check_hud_toggle()
+	await check_control_hints()
 	await check_new_grants()
 	await check_scavenge_loot()
 	await check_carry_postures()
