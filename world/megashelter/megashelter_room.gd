@@ -496,25 +496,7 @@ func add_stair_access(pose: Transform3D) -> Transform3D:
 	return pose
 
 func _model(parent: Node3D, node_name: String, pose: Transform3D, pieces: Array[Dictionary]) -> void:
-	var node := Node3D.new()
-	node.name = node_name
-	node.transform = pose
-	parent.add_child(node)
-	var batches: Array[MegashelterKit.Batch] = []
-	for i in 7:
-		var batch := MegashelterKit.Batch.new()
-		batch.set_appearance(node_name.hash(), 3.3)
-		batches.append(batch)
-	for piece in pieces:
-		if piece.shape == "lathe": FITTINGS.add_lathe(batches[piece.material], Transform3D.IDENTITY, piece)
-		else: batches[piece.material].add_piece(Transform3D.IDENTITY, piece)
-	for i in batches.size():
-		if batches[i].vertices.is_empty(): continue
-		var mesh := MeshInstance3D.new()
-		mesh.name = "Surface%d" % i
-		mesh.mesh = batches[i].mesh()
-		mesh.material_override = _material(i)
-		node.add_child(mesh)
+	FITTINGS.add_model(parent, node_name, pose, pieces, _material)
 
 func _collider(at: Vector3, size: Vector3, basis := Basis.IDENTITY) -> void:
 	var collision := CollisionShape3D.new()

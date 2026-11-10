@@ -61,6 +61,7 @@ func _run() -> void:
 	check(saved.player.get("body") == world.get_node("Player").body_state.capture(), "Checkpoint captures authoritative player body state")
 	_test_survival_checkpoint(checkpoint, saved)
 	await _test_megashelter_checkpoint(checkpoint, saved)
+	await _test_bunker_service_checkpoint(checkpoint, saved)
 	var flying_player: CharacterBody3D = world.get_node("Player")
 	check(flying_player.set_cheat_flying(true), "Player can enable session flight")
 	check(checkpoint.capture_world(world).is_empty() and checkpoint.last_error.get("field") == "player", "Checkpoint rejects a collision-free flight position")
@@ -312,6 +313,36 @@ func _test_megashelter_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
 		check(not restored.is_empty() and CheckpointSchema.poi_error(restored.poi).is_empty(), "Disk-restored megashelter remains valid under profile dispatch")
 	viewport.queue_free()
 	await process_frame
+
+func _test_bunker_service_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
+	var fixture := saved.duplicate(true)
+	var id := "checkpoint-service-route"
+	for route in [
+		[&"bunker", ""],
+		[&"bunker_stairwell", ":liminal-stairs"],
+		[&"bunker_dark_column_hall", ":liminal-stairs:column-hall"],
+	]:
+		var viewport := SubViewport.new()
+		viewport.own_world_3d = true
+		root.add_child(viewport)
+		var inside := PoiInterior.new()
+		inside.profile_id = route[0]
+		inside.instance_id = id + route[1]
+		viewport.add_child(inside)
+		var built: bool = await inside.build(40)
+		check(built, "Build real checkpoint fixture for " + str(route[0]))
+		if built:
+			inside.explored.assign([str(inside.layout.rooms[0].id)])
+			fixture.poi[inside.instance_id] = inside.snapshot()
+		viewport.queue_free()
+		await process_frame
+		if not built: return
+	check(fixture.poi[id].layout.has("stair_access"), "Disk fixture includes a committed bunker service access")
+	check(checkpoint.validation_error(fixture).is_empty(), "Full checkpoint accepts all service route profiles")
+	var path := PATH + ".service-route"
+	check(checkpoint.write_checkpoint(path, fixture), "Bunker service route checkpoint writes to disk")
+	var restored: Dictionary = checkpoint.read_checkpoint(path)
+	check(not restored.is_empty() and restored == fixture, "Disk roundtrip preserves bunker service access, both child layouts and exploration")
 
 func _test_orientation_generation(checkpoint: Node, saved: Dictionary) -> void:
 	check(saved.version == checkpoint.VERSION and saved.generation_version == 19 and saved.world_id == "shelter", "Production capture uses the current checkpoint and terrain identity")

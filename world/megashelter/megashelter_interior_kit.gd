@@ -3,6 +3,27 @@ class_name MegashelterInteriorKit
 ## Small, replaceable fittings in metres. Structure and gameplay collision stay
 ## in the room wrapper. Local +Z is the front of wall-mounted assemblies.
 
+static func add_model(parent: Node3D, node_name: String, pose: Transform3D, pieces: Array[Dictionary], material_for_surface: Callable) -> void:
+	var node := Node3D.new()
+	node.name = node_name
+	node.transform = pose
+	parent.add_child(node)
+	var batches: Array[MegashelterKit.Batch] = []
+	for i in 7:
+		var batch := MegashelterKit.Batch.new()
+		batch.set_appearance(node_name.hash(), 3.3)
+		batches.append(batch)
+	for piece in pieces:
+		if piece.shape == "lathe": add_lathe(batches[piece.material], Transform3D.IDENTITY, piece)
+		else: batches[piece.material].add_piece(Transform3D.IDENTITY, piece)
+	for i in batches.size():
+		if batches[i].vertices.is_empty(): continue
+		var mesh := MeshInstance3D.new()
+		mesh.name = "Surface%d" % i
+		mesh.mesh = batches[i].mesh()
+		mesh.material_override = material_for_surface.call(i)
+		node.add_child(mesh)
+
 static func _part(parts: Array[Dictionary], at: Vector3, size: Vector3, material := 2, shape := "bevel", basis := Basis.IDENTITY) -> void:
 	parts.append({"center": at, "size": size, "material": material, "shape": shape,
 		"basis": basis, "bevel": 0.025, "shade": 0.92, "steel_corrosion": 0.38})

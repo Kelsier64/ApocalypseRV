@@ -788,6 +788,9 @@ func check_flashlight_viewmodel() -> void:
 		view.update_view()
 		check(view.active, "Flashlight returns to its viewmodel after grab ownership ends")
 	var level_height: float = actor.to_local(held.global_position).y
+	actor.camera.rotation.x = 1.0
+	await steps(20)
+	check(beam.global_basis.z.normalized().dot(actor.camera.global_basis.z.normalized()) > .99, "The real flashlight follows a steep upward look")
 	actor.camera.rotation.x = -1.0
 	await steps(20)
 	check(not view.active and actor.to_local(held.global_position).y < level_height - .25, "Looking down lowers the real flashlight after the body-view handoff")

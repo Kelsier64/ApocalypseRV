@@ -107,12 +107,33 @@ func _connect_interior_doors() -> void:
 func enter_link(destination: StringName) -> void:
 	if busy or state != State.INDOOR or not is_instance_valid(interior): return
 	if not interior.link_doors.has(destination) or not is_instance_valid(_player): return
+	var child_id: String
+	var title: String
+	var seed_key: String
+	match destination:
+		&"megashelter_stairwell":
+			child_id = active_id + ":stairs"
+			title = "BUNKER ACCESS"
+			seed_key = "megashelter-link:v1:%d:%s" % [_active_seed, destination]
+		&"bunker":
+			child_id = active_id.trim_suffix(":stairs") + ":bunker"
+			title = "BUNKER"
+			seed_key = "megashelter-link:v1:%d:%s" % [_active_seed, destination]
+		&"bunker_stairwell":
+			child_id = active_id + ":liminal-stairs"
+			title = "STAIRWELL"
+			seed_key = "bunker-link:v1:%d:%s" % [int(interior.layout.seed), destination]
+		&"bunker_dark_column_hall":
+			child_id = active_id + ":column-hall"
+			title = "COLUMN HALL"
+			seed_key = "bunker-link:v1:%d:%s" % [int(interior.layout.seed), destination]
+		_:
+			return
 	if not _player.enter_ui_mode(): return
-	var child_id := active_id + ":stairs" if destination == &"megashelter_stairwell" else active_id.trim_suffix(":stairs") + ":bunker"
-	var seed_value := ("megashelter-link:v1:%d:%s" % [_active_seed, destination]).sha256_text().substr(0, 15).hex_to_int()
+	var seed_value := seed_key.sha256_text().substr(0, 15).hex_to_int()
 	_route_stack.append({"id": active_id, "profile": interior.profile_id, "seed": _active_seed,
 		"area": interior.exterior_area, "title": active_title, "return": interior.link_return_transforms[destination]})
-	await _switch_interior(child_id, destination, seed_value, "BUNKER ACCESS" if destination == &"megashelter_stairwell" else "BUNKER")
+	await _switch_interior(child_id, destination, seed_value, title)
 
 func _switch_interior(id: String, profile: StringName, seed_value: int, title: String, at: Variant = null, area := 1000.0) -> void:
 	busy = true

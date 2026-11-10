@@ -3,6 +3,8 @@ extends RefCounted
 
 const SCRAP := preload("res://props/scrap.tscn")
 const WAIT := preload("res://tests/support/test_wait.gd")
+const LIMINAL_STAIRS := &"bunker_stairwell"
+const COLUMN_HALL := &"bunker_dark_column_hall"
 
 class FailedChild extends PoiInterior:
 	func build(_seed: int, _saved: Dictionary = {}) -> bool:
@@ -111,6 +113,90 @@ static func run(tree: SceneTree, arena: Node3D, manager: PoiInstanceManager, pla
 	await _failed_child(tree, arena, manager, player, building, id, shelter_door_pose, shelter_return, check)
 	building.queue_free()
 	await _direct_bunker(tree, arena, manager, player, check)
+
+static func run_bunker_service_route(tree: SceneTree, manager: PoiInstanceManager, player: CharacterBody3D, building: Node3D, check: Callable) -> void:
+	const BUNKER_ID := "service-route-bunker"
+	const STAIRS_ID := BUNKER_ID + ":liminal-stairs"
+	const HALL_ID := STAIRS_ID + ":column-hall"
+	await manager.enter(player, building, "service-route-no-access", 42)
+	if not _inside(manager, player, "service-route-no-access", &"bunker", check): return
+	check.call(not manager.interior.layout.has("stair_access") and not manager.interior.link_doors.has(LIMINAL_STAIRS), "A bunker seed outside the gate has no service access")
+	await manager.leave()
+
+	await manager.enter(player, building, BUNKER_ID, 40)
+	if not _inside(manager, player, BUNKER_ID, &"bunker", check): return
+	var bunker := manager.interior
+	var stairs_door := bunker.link_doors.get(LIMINAL_STAIRS) as PoiEntrance
+	var access: Dictionary = bunker.layout.get("stair_access", {})
+	check.call(stairs_door != null and not access.is_empty(), "An eligible bunker commits its service access to the layout")
+	if stairs_door == null or access.is_empty():
+		await manager.leave()
+		return
+	for actor in bunker.entities.get_children():
+		if actor is Monster: actor.process_mode = Node.PROCESS_MODE_DISABLED
+		elif actor is Item: actor.freeze = true
+	var legacy := bunker.snapshot()
+	legacy.layout.erase("stair_access")
+	var invalid := bunker.snapshot()
+	invalid.layout.stair_access.socket = "missing_socket"
+	check.call(CheckpointSchema.poi_error({"bunker": invalid}).ends_with(".stair access socket"), "Checkpoint rejects an unknown service door socket")
+	var bunker_return: Transform3D = bunker.link_return_transforms[LIMINAL_STAIRS]
+	var bunker_door_pose := stairs_door.global_transform
+	var bunker_world := bunker.get_world_3d()
+	var bunker_drop := _drop(bunker, "Bunker service route drop").persistent_id
+	await _interact_key(tree, manager, player, stairs_door, bunker_return, true, check)
+	if not _inside(manager, player, STAIRS_ID, LIMINAL_STAIRS, check): return
+	var stairs := manager.interior
+	var stairs_world := stairs.get_world_3d()
+	check.call(stairs_world != bunker_world, "Service stairwell owns a separate World3D")
+	var hall_door := stairs.link_doors.get(COLUMN_HALL) as PoiEntrance
+	check.call(hall_door != null, "Service stairwell links to the column hall")
+	if hall_door == null:
+		await manager.leave()
+		await manager.leave()
+		return
+	var stairs_return: Transform3D = stairs.link_return_transforms[COLUMN_HALL]
+	var stairs_drop := _drop(stairs, "Service stairwell drop").persistent_id
+	await _interact_key(tree, manager, player, hall_door, stairs_return, true, check)
+	if not _inside(manager, player, HALL_ID, COLUMN_HALL, check): return
+	var hall := manager.interior
+	check.call(hall.get_world_3d() != stairs_world and hall.get_world_3d() != bunker_world, "Column hall owns a separate World3D")
+	var hall_drop := _drop(hall, "Column hall drop").persistent_id
+	var hall_layout := hall.layout.duplicate(true)
+	await _interact_key(tree, manager, player, hall.exit_door, hall.spawn_transform(), true, check)
+	if not _inside(manager, player, STAIRS_ID, LIMINAL_STAIRS, check): return
+	check.call(player.global_transform.is_equal_approx(stairs_return), "Column hall exit restores the lower stair landing")
+	check.call(_item_ids(manager.interior.snapshot()) == [stairs_drop], "Stairwell revisit restores only its own drop")
+	await _interact_key(tree, manager, player, manager.interior.exit_door, manager.interior.spawn_transform(), true, check)
+	if not _inside(manager, player, BUNKER_ID, &"bunker", check): return
+	check.call(player.global_transform.is_equal_approx(bunker_return), "Stairwell exit restores the bunker landing")
+	var bunker_items := _item_ids(manager.interior.snapshot())
+	check.call(bunker_items.count(bunker_drop) == 1 and stairs_drop not in bunker_items and hall_drop not in bunker_items, "Bunker revisit restores its drop without importing child drops")
+	await manager.leave()
+
+	await manager.enter(player, building, BUNKER_ID, 42)
+	if not _inside(manager, player, BUNKER_ID, &"bunker", check): return
+	stairs_door = manager.interior.link_doors.get(LIMINAL_STAIRS) as PoiEntrance
+	check.call(manager.interior.layout.get("stair_access") == access and stairs_door != null and stairs_door.global_transform.is_equal_approx(bunker_door_pose), "Saved service access survives a caller seed outside the gate")
+	if stairs_door == null:
+		await manager.leave()
+		return
+	await _interact(tree, manager, player, stairs_door, check)
+	if not _inside(manager, player, STAIRS_ID, LIMINAL_STAIRS, check): return
+	await _interact(tree, manager, player, manager.interior.link_doors[COLUMN_HALL], check)
+	if not _inside(manager, player, HALL_ID, COLUMN_HALL, check): return
+	check.call(manager.interior.layout == hall_layout and _item_ids(manager.interior.snapshot()) == [hall_drop], "Column hall revisit restores the exact layout and only its own drop")
+	await manager.leave()
+	await manager.leave()
+	await manager.leave()
+	check.call(CheckpointSchema.poi_error(manager.saved_instances).is_empty(), "Checkpoint schema accepts all three independent service route manifests")
+
+	const LEGACY_ID := "legacy-service-route-bunker"
+	manager.saved_instances[LEGACY_ID] = legacy
+	await manager.enter(player, building, LEGACY_ID, 44)
+	if not _inside(manager, player, LEGACY_ID, &"bunker", check): return
+	check.call(manager.interior.layout == legacy.layout and not manager.interior.link_doors.has(LIMINAL_STAIRS), "Legacy bunker layouts stay closed even when their saved and caller seeds qualify")
+	await manager.leave()
 
 static func _drop(interior: PoiInterior, label: String) -> Item:
 	var item := SCRAP.instantiate() as Item
