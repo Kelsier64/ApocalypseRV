@@ -20,6 +20,7 @@ var parking_size := Vector2(12.0, 24.0)
 @export var decoration_density: float = 1.0
 @export var chunks_ahead: int = 3
 @export var chunks_behind: int = 2
+@export var opening_shelter: String = "orientation_shelter"
 
 func opening_shelter_id() -> String:
-	return "orientation_shelter"
+	return opening_shelter

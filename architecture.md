@@ -83,7 +83,7 @@ MainWorld
 
 ### 起始避難所與世界識別
 
-`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 固定選擇兩室 orientation_shelter；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 預設選擇兩室 `orientation_shelter`。Demo 在計算出生位置前複製繼承的主世界 profile，只改用按鈕開門的單間車庫。`cheat_test_profile.gd` 也覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留單間車庫及完整起始 RV。作弊測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 

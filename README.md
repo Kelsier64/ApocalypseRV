@@ -43,7 +43,7 @@ godot --path . res://world/cheat_test_world.tscn
 godot --path . res://world/demo_world.tscn
 ```
 
-Demo 使用 v19 世界生成與獨立單間車庫。玩家開場手持 `Electronic Compass`，會自動顯示最近巨型避難所的方向與距離。RV 已裝好合成台；長按 `E` 開啟車載平板，再選 `Crafting` 即可製作。材料和燃油無限，電力照常消耗。按車庫大門旁的啟程按鈕即可開門上路。
+Demo 啟動時沿用主世界的生成設定，開場使用獨立單間車庫。玩家開場手持 `Electronic Compass`，會自動顯示最近巨型避難所的方向與距離。RV 已裝好合成台；長按 `E` 開啟車載平板，再選 `Crafting` 即可製作。材料和燃油無限，電力照常消耗。按車庫大門旁的啟程按鈕即可開門上路。
 
 固定種子 42 和小霧；啟程後駛上公路，從起始停靠點往前約 60 m，前方路肩會安排一隻 Slender Speaker，沿用正式追車、拆車與抓取行為。此場景只安排一次巨人遭遇，需重新啟動場景才能重置；不提供遊戲中的 F6／F9 檢查點保存／載入。正式入口仍為 `main_world.tscn`。
 
