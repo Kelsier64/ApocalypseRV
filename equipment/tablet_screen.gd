@@ -32,9 +32,8 @@ func interact_hold(player: Node3D):
 		return
 	if not player.enter_ui_mode():
 		return
-	if not consume_rv_power(power_cost_per_open):
-		player.exit_ui_mode()
-		return
+	# Charge the opening fee when available without blocking access.
+	consume_rv_power(power_cost_per_open)
 	current_user = player
 	player.grab_started.connect(_close_ui)
 	player.body_state_changed.connect(_on_body_state_changed)
@@ -70,5 +69,5 @@ func _on_body_state_changed() -> void:
 
 func _physics_process(_delta: float) -> void:
 	if is_instance_valid(current_user):
-		if not can_operate() or current_user.is_player_dead or not get_connected_rv().has_usable_power():
+		if not can_operate() or current_user.is_player_dead:
 			_close_ui()
