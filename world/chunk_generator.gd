@@ -43,6 +43,7 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 		await _pause()
 	_build_road()
 	await TerrainCrossings.build(self, gradual)
+	RoadsideStreetlights.build(field, band, $RoadSafety)
 	road_spawns = RoadSpawns.plan(field, band)
 	RoadSpawns.build_static(self, road_spawns)
 	for site in sites:

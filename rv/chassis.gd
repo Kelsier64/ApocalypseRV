@@ -3,6 +3,8 @@ class_name Chassis
 
 const PARKING_HOLD_MAX_SPEED := 0.5
 const PARKING_HOLD_RESPONSE := 40.0
+const ENGINE_SPEED_WEAR_THRESHOLD := 0.6
+const MIN_ENGINE_SPEED_SCALE := 0.4
 
 @export var max_engine_force: float = 5000.0
 @export var max_speed: float = 35.0
@@ -659,15 +661,12 @@ func _physics_process(delta: float) -> void:
 	var brake_response := brake_apply_seconds if braking_input > brake_input else brake_release_seconds
 	brake_input = move_toward(brake_input, clampf(braking_input, 0.0, 1.0), delta / maxf(0.01, brake_response))
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
-	var forward := -global_transform.basis.z
-	var speed_factor := clampf(absf(linear_velocity.dot(forward)) / max_speed, 0.0, 1.0)
-	var gear_limit: float = [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
-	var torque := maxf(0.1, 1.0 - absf(linear_velocity.dot(forward)) / gear_limit)
+	var longitudinal_speed := absf(linear_velocity.dot(global_basis.z))
+	var speed_factor := clampf(longitudinal_speed / max_speed, 0.0, 1.0)
 	var response := steering_return_response if is_zero_approx(turn) else steering_response
 	var steering_limit := lerpf(max_steering, max_steering * high_speed_steering_ratio, speed_factor)
 	# A speed-dependent steering envelope, not an extra stabilizing force.
 	var wheelbase := absf(WHEEL_SLOTS[0].position.z - WHEEL_SLOTS[2].position.z)
-	var longitudinal_speed := absf(linear_velocity.dot(forward))
 	steering_limit = minf(steering_limit, atan(wheelbase * steering_lateral_acceleration / maxf(1.0, longitudinal_speed * longitudinal_speed)))
 	steering = lerpf(steering, clampf(turn, -1.0, 1.0) * steering_limit, 1.0 - exp(-response * delta))
 	engine_force = 0.0
@@ -677,7 +676,13 @@ func _physics_process(delta: float) -> void:
 	var braking_strength := parking_braking_force if parking else brake_input * max_braking_force
 	brake = braking_strength * 60.0 * delta
 	if can_drive and drive > 0.0 and brake_input == 0.0:
-		engine_force = -drive * max_engine_force * get_engine().definition().force_multiplier * torque * (1.0 if gear > 0 else -0.3)
+		var engine := get_engine()
+		var spec := engine.definition()
+		var health_scale := minf(1.0, engine.health / (spec.max_health * ENGINE_SPEED_WEAR_THRESHOLD))
+		var speed_scale := lerpf(MIN_ENGINE_SPEED_SCALE, 1.0, health_scale)
+		var gear_speed: float = [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
+		var torque := maxf(0.1 * speed_scale, 1.0 - longitudinal_speed / (gear_speed * speed_scale))
+		engine_force = -drive * max_engine_force * spec.force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():
 		engine_force = 0.0
 	TireDynamics.step(self)

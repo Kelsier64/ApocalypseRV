@@ -32,21 +32,33 @@ Godot: `C:\Program Files\godot\godot.exe` (also on PATH). If the sandbox cannot 
 
 Follow the conventions and validation guidance in `architecture.md`. For documentation-only edits, verify relative links and source consistency; record historical test results separately from checks run for the current change.
 
+## Clarifying Requirements
+
+Use the user-input tool proactively when a requirement, preference, or tradeoff could materially affect the result. Ask early, offer concise choices when practical, and continue any work that can proceed independently.
+
+## Save Data
+
+Treat existing saves as disposable during development. Change save formats and save/load logic directly, including changes that break compatibility. You may delete old local saves when a clean start is needed.
+
+## Gameplay Randomness
+
+Treat randomness as a core part of gameplay. Use it to create meaningful variation across runs, especially in procedural generation, encounters, and loot. Preserve any guarantees the player relies on, and use fixed seeds when you need to reproduce a run.
+
 ## Token Efficiency and Validation Scope
 
-- Save tokens and time without compromising quality or requested scope. Use `rg`, inspect targeted ranges and diffs, batch independent reads, and reuse established findings.
+- Default to a token-efficient workflow while preserving quality and the requested scope. Use `rg`, inspect targeted ranges and diffs, batch independent reads, and reuse established findings.
 - Delegate narrowly with concise context; avoid duplicate exploration and validation. Keep tool output and reports focused on actionable results.
-- Do not write or run unnecessary tests. Choose the smallest meaningful checks for the changed behavior and its risks; expand only for related failures, unresolved risks, or explicit requirements. Do not run the full suite by default or repeat passing checks when nothing relevant changed.
+- Skip writing and running tests for simple, low-risk tasks. Review the diff and use direct checks where needed. For changes that need tests, choose the smallest set that covers the affected behavior and its risks. Expand only for related failures, unresolved risks, or explicit requirements. Reuse passing results when the relevant code has stayed the same.
 - For documentation-only changes, check wording, consistency, and any changed links; do not launch Godot or run gameplay tests.
-- For visual and art changes, assess the appropriate verification method yourself: inspect the asset or render directly, use computer-use when in-game interaction or context matters, or ask the user to inspect when their visual judgment or unavailable access is needed. Do not use computer-use automatically for every visual change.
+- For visual and art changes, use direct asset inspection, a render, or a screenshot whenever it can verify the result. Reserve computer-use for checks that require live interaction. Ask the user to inspect when their visual judgment or access is needed.
 - Apply the game-testing workflow below only when relevant to the changed behavior. Run climbing, turning, and roof-destruction scenarios only for changes affecting those systems.
 - Report briefly what was checked and any material uncertainty. If user inspection is needed, state exactly what they should inspect; never claim it has already been verified.
 
 ## In-Game Text
 
-Use English for all in-game text. Keep it concise and necessary.
+Use English for all in-game text. Keep wording concise and include it only where the player or setting needs it. Omit gameplay hints and tutorial copy. Keep essential interaction prompts in screen-space UI.
 
-- Never place gameplay hints, controls, instructions, item names, or status labels on models or in the 3D world. This includes floating prompts, `Label3D`, `TextMesh`, and white, glowing, unshaded, or camera-facing text. Keep interaction prompts in screen-space UI.
+- Never place gameplay hints, controls, instructions, item names, or status labels on models or in the 3D world. This includes floating prompts, `Label3D`, `TextMesh`, and white, glowing, unshaded, or camera-facing text.
 - World text is allowed only where it clearly belongs in the fiction (for example, an essential physical sign, manufacturer plate, or instrument display). Finish it as integrated game art using a texture, decal, or an actual device screen; match the surface, lighting, wear, scale, and placement. Do not convert hints into textures to bypass this rule, add decorative wording by default, or restore removed labels through scene generators.
 
 ## Subagents

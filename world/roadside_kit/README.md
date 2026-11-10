@@ -4,4 +4,6 @@
 
 正式生成器透過 `RoadsideKit.instantiate_module()` 使用這些場景。可逐一替換 Mesh 和材質；保留碰撞合理尺寸，以及生成器預留的道路／停車／入口空間。地表顏色與細節材質在 `world/terrain/`。
 
+[路燈](streetlight.tscn)由 `RoadsideStreetlights` 沿主公路稀疏配置，燈頭朝本地 −Z。燈具在天黑後亮起，少數有不同色溫、短暫變暗或連閃後熄滅再恢復的故障。
+
 `scripts/build_roadside_kit_20260915.gd` 是首次建立腳本，已有任一輸出時拒絕覆蓋。日常修改直接編輯場景，不要重跑產生器覆寫手動美術。
