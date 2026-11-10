@@ -114,12 +114,10 @@ func designated_rv() -> Chassis:
 		if vehicle is Chassis and vehicle.persistent_id == rv_id and not vehicle.is_queued_for_deletion() and _world().is_ancestor_of(vehicle) and WorldEntities.same_world(_world(), vehicle): return vehicle
 	return null
 
-func terminal_initialized(identity: String, player: Node3D) -> void:
-	if not _accepts_player(player) or identity != terminal_id or flags.boot_complete: return
-	var terminal := designated_terminal()
-	if terminal == null or not terminal.can_operate() or not terminal.has_method("has_completed_boot") or not terminal.has_completed_boot(): return
-	var ui: Node = terminal.get("ui_instance")
-	if terminal.get("current_user") != player or not is_instance_valid(ui) or not ui.visible or not player.get("in_ui_mode"): return
+func terminal_initialized(terminal: TrainingTerminal) -> void:
+	if not initialized() or not _active_world() or status != "active" or flags.boot_complete: return
+	if terminal == null or terminal != designated_terminal(): return
+	if not terminal.can_operate() or not terminal.has_completed_boot(): return
 	flags.boot_complete = true
 	progress_changed.emit()
 

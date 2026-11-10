@@ -22,13 +22,6 @@ func start_boot() -> void:
 	if _user_valid() and ui_instance.visible and not _portable.initialized:
 		_portable.boot_started = true
 
-func advance_boot(delta: float) -> void:
-	if not _user_valid() or not ui_instance.visible: return
-	if BOOT.advance(_portable, delta):
-		var controller := tutorial_controller()
-		if controller != null and controller.has_method("terminal_initialized"):
-			controller.terminal_initialized(persistent_id, current_user)
-
 func _ready() -> void:
 	super._ready()
 	if presentation_only: return
@@ -151,8 +144,14 @@ func _validate_user() -> void:
 func _on_body_state_changed() -> void:
 	_validate_user()
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_validate_user()
+	if not _portable.boot_started or _portable.initialized or manual_unlocked: return
+	if not can_operate() or not _has_power(): return
+	if BOOT.advance(_portable, delta):
+		var controller := tutorial_controller()
+		if controller != null and controller.has_method("terminal_initialized"):
+			controller.terminal_initialized(self)
 
 func _on_service_stopped() -> void:
 	_close_ui()

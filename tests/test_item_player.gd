@@ -1074,6 +1074,27 @@ func check_training_terminal_placement(wall: StaticBody3D) -> void:
 	clear_bag()
 	await steps()
 
+func check_held_terminal_boot() -> void:
+	var path := "res://equipment/training_terminal.tscn"
+	var terminal := make_item(path, Vector3(22, 2, 20))
+	var state := terminal.capture_item_state()
+	terminal.queue_free()
+	actor.inventory.add_item(ItemNames.TRAINING_TERMINAL, false, path, state)
+	actor.refresh_inventory()
+	var reader: Node = actor.read_held_terminal()
+	if reader == null:
+		check(false, "A valid uninitialized terminal record can open in the inventory reader")
+	else:
+		var enter := InputEventKey.new()
+		enter.keycode = KEY_ENTER
+		enter.pressed = true
+		reader.ui_instance._input(enter)
+		reader._close_ui()
+		actor.inventory.advance_terminal_boot(6.0)
+		var saved: Dictionary = actor.inventory.active_item().state
+		check(saved.training_terminal.initialized and ItemState.valid(path, saved), "A portable terminal completes boot in its original inventory record after the reader closes")
+	clear_bag()
+
 func run() -> void:
 	root.size = Vector2i(1280, 720)
 	world = Node3D.new()
@@ -1106,6 +1127,7 @@ func run() -> void:
 	await check_first_person_carry()
 	await check_flashlight_viewmodel()
 	await check_carry_motion()
+	check_held_terminal_boot()
 	await check_training_terminal_placement(wall)
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
