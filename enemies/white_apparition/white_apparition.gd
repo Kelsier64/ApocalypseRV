@@ -1,6 +1,7 @@
 extends CharacterBody3D
 class_name WhiteApparition
 ## Transient outdoor encounter. The player, camera, and apparition share a World3D.
+const Perception := preload("res://core/apparition_perception.gd")
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
 const CHEST := Vector3(0.0, 2.00, 0.0)
 const HEAD := Vector3(0.0, 2.45, 0.0)
@@ -16,7 +17,6 @@ const WATCHED_PURSUIT_SPEED := 5.5
 const UNWATCHED_PURSUIT_SPEED := 3.0
 const PURSUIT_STEP_HEIGHT := 0.18
 const MIN_SUPPORT_NORMAL_Y := 0.82
-const SEATED_TORSO_RADIUS := 0.22
 
 enum Phase { HIDDEN, VISIBLE, CONFIRMED }
 
@@ -120,12 +120,7 @@ static func _refresh_chance(elapsed: float) -> float:
 	return 0.6
 
 func _active_player_camera() -> Camera3D:
-	if _player.get("in_ui_mode") == true or _player.is_gameplay_input_blocked() or _player.is_grabbed(): return null
-	var camera := get_viewport().get_camera_3d()
-	var seat := _player.get("seated_in") as Node3D
-	var player_camera := (seat.get("seat_camera") if is_instance_valid(seat) else _player.get("camera")) as Camera3D
-	if camera == null or camera != player_camera or not WorldEntities.same_world(self, camera): return null
-	return camera
+	return Perception.player_camera(self, _player)
 
 func _update_visible(camera: Camera3D, delta: float) -> bool:
 	var points: PackedVector3Array = _visual.gaze_points()
@@ -204,7 +199,7 @@ func _pursue(delta: float, speed: float) -> void:
 		if hit != null and _step_over_ground_lip(hit, motion):
 			break
 
-	if _touching_seated_player(space):
+	if Perception.touching_seated_player(self, _player, _capsule):
 		_player.kill()
 
 func _step_over_ground_lip(hit: KinematicCollision3D, motion: Vector3) -> bool:
@@ -222,19 +217,6 @@ func _step_over_ground_lip(hit: KinematicCollision3D, motion: Vector3) -> bool:
 		_player.kill()
 	return true
 
-func _touching_seated_player(space: PhysicsDirectSpaceState3D) -> bool:
-	# Seats disable the player's normal capsule. Use the posed torso, and let
-	# solid chassis, panels and furniture block contact with it.
-	if not is_instance_valid(_player.get("seated_in")): return false
-	var torso: Vector3 = _player.execution_contact_position()
-	var base := global_position
-	var axis_point := Vector3(base.x, clampf(torso.y, base.y + _capsule.radius,
-		base.y + _capsule.height - _capsule.radius), base.z)
-	if axis_point.distance_to(torso) > _capsule.radius + SEATED_TORSO_RADIUS: return false
-	var query := PhysicsRayQueryParameters3D.create(axis_point, torso, collision_mask)
-	query.hit_from_inside = true
-	return space.intersect_ray(query).is_empty()
-
 static func _san_drain_rate(distance: float) -> float:
 	if distance < 8.0: return 100.0 + (8.0 - distance) * 15.0
 	if distance < 15.0: return lerpf(100.0, 50.0, (distance - 8.0) / 7.0)
@@ -243,10 +225,7 @@ static func _san_drain_rate(distance: float) -> float:
 	return 15.0 * falloff * falloff
 
 func _point_in_frame(camera: Camera3D, point: Vector3, frame: Rect2) -> bool:
-	if not camera.is_position_in_frustum(point): return false
-	var viewport_rect := camera.get_viewport().get_visible_rect()
-	if viewport_rect.size.x <= 0.0 or viewport_rect.size.y <= 0.0: return false
-	return frame.has_point((camera.unproject_position(point) - viewport_rect.position) / viewport_rect.size)
+	return Perception.point_in_frame(camera, point, frame)
 
 func _body_outside_view(point: Vector3, frustum: Array[Plane]) -> bool:
 	# Leave room for the whole animated silhouette and its echoes at screen edges.
@@ -256,11 +235,7 @@ func _body_outside_view(point: Vector3, frustum: Array[Plane]) -> bool:
 	return false
 
 func _clear_sight(camera: Camera3D, point: Vector3) -> bool:
-	var space := get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(camera.get_camera_transform().origin, point)
-	query.hit_from_inside = true
-	if _player is CollisionObject3D: query.exclude = [_player.get_rid()]
-	return space.intersect_ray(query).is_empty()
+	return Perception.clear_sight(camera, _player, point)
 
 func _try_emerge(camera: Camera3D) -> bool:
 	var point := _find_emergence(camera)

@@ -31,15 +31,13 @@ var _history_clock := 0.0
 func _ready() -> void:
 	_rng.randomize()
 	_clock = _rng.randf_range(0.0, 30.0)
-	for layer in 3:
+	for layer in _layer_count():
 		var model := MODEL.instantiate() as Node3D
 		model.name = "Skin" if layer == 0 else "Echo%d" % layer
 		model.position.y = -REST_SOLE_HEIGHT
 		add_child(model)
 		_models.append(model)
-		var material := ShaderMaterial.new()
-		material.shader = SKIN
-		material.set_shader_parameter("veil", 0.0 if layer == 0 else 1.0)
+		var material := _skin_material(layer)
 		for part in model.find_children("*", "Node3D", true, false):
 			if part is MeshInstance3D:
 				part.material_override = material
@@ -61,6 +59,15 @@ func _ready() -> void:
 			return
 		_bones[bone] = index
 	_rig_ready = true
+
+func _layer_count() -> int:
+	return 3
+
+func _skin_material(layer: int) -> Material:
+	var material := ShaderMaterial.new()
+	material.shader = SKIN
+	material.set_shader_parameter("veil", 0.0 if layer == 0 else 1.0)
+	return material
 
 func begin_appearance() -> void:
 	_history.clear()
@@ -189,7 +196,7 @@ func _plant_foot(skeleton: Skeleton3D, suffix: String) -> void:
 	var bend_rest := skeleton.get_bone_rest(bend)
 	var shin_rest := skeleton.get_bone_rest(shin)
 	var foot_rest := skeleton.get_bone_rest(foot)
-	var planted := skeleton.get_bone_global_rest(foot)
+	var planted := _ankle_target(skeleton, foot, suffix)
 	var thigh_pose := hips * thigh_rest
 	var upper := (bend_rest * shin_rest).origin
 	var reach := planted.origin - thigh_pose.origin
@@ -210,7 +217,11 @@ func _plant_foot(skeleton: Skeleton3D, suffix: String) -> void:
 	skeleton.set_bone_pose_rotation(shin, (bend_basis.inverse() * shin_basis).get_rotation_quaternion())
 	skeleton.set_bone_pose_rotation(foot, (shin_basis.inverse() * planted.basis).get_rotation_quaternion())
 
+func _ankle_target(skeleton: Skeleton3D, foot: int, _suffix: String) -> Transform3D:
+	return skeleton.get_bone_global_rest(foot)
+
 func _update_echoes(delta: float, hip_position: Vector3) -> void:
+	if _skeletons.size() == 1: return
 	_history_clock += delta
 	if _history.is_empty() or _history_clock >= HISTORY_INTERVAL:
 		_history_clock = fmod(_history_clock, HISTORY_INTERVAL)

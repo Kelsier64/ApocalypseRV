@@ -2,6 +2,8 @@ extends SceneTree
 
 const ApparitionScene := preload("res://enemies/white_apparition/white_apparition.tscn")
 const Apparition := preload("res://enemies/white_apparition/white_apparition.gd")
+const LightExposure := preload("res://core/apparition_light_exposure.gd")
+const BlackApparition := preload("res://enemies/black_apparition/black_apparition.gd")
 
 class Survivor extends CharacterBody3D:
 	var camera: Camera3D
@@ -47,8 +49,9 @@ func _run() -> void:
 	_check_drain_rates()
 	_check_refresh_chances()
 	await _check_encounter()
+	await _check_black_apparition()
 	if _failures.is_empty():
-		print("PASS: White apparition daytime refresh, distance-based gaze drain, relocation, and despawn")
+		print("PASS: White and black apparition encounter behavior")
 	quit(0 if _failures.is_empty() else 1)
 
 func _check_visual_motion() -> void:
@@ -509,6 +512,76 @@ func _check_seated_contact(apparition: Apparition, player: Survivor, player_shap
 	await physics_frame
 	apparition._physics_process(1.0 / 60.0)
 	_check(player.is_player_dead and player.lethal_contacts == 2, "A physically exposed seated torso can be touched without a locomotion capsule")
+
+func _check_black_apparition() -> void:
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	viewport.own_world_3d = true
+	root.add_child(viewport)
+	var world := Node3D.new()
+	viewport.add_child(world)
+	var floor := _static_box(world, Vector3(0, -0.5, 0), Vector3(30, 1, 30))
+	var player := Survivor.new()
+	player.camera = Camera3D.new()
+	player.camera.position = Vector3(0, 1.55, 0)
+	player.add_child(player.camera)
+	_box(player, Vector3(0, 1.55, 0), Vector3.ONE)
+	world.add_child(player)
+	player.camera.make_current()
+	var black: BlackApparition = load("res://enemies/black_apparition/black_apparition.tscn").instantiate()
+	world.add_child(black)
+	black.set_physics_process(false)
+	black.get_node("Visual").set_process(false)
+	await physics_frame
+	await physics_frame
+	black.configure(player, true)
+	var spawn := Vector3(0, 0.04, -6.0)
+	black.emerge(spawn, player.camera)
+	player.camera.look_at(spawn + Vector3.UP * 1.55)
+	var san := player.survival.san
+	black._physics_process(1.0)
+	_check(black.phase == BlackApparition.Phase.OBSERVING and black.global_position == spawn, "Black apparition remains stationary before two seconds of gaze")
+	player.camera.rotate_y(PI)
+	black._physics_process(0.1)
+	player.camera.look_at(spawn + Vector3.UP * 1.55)
+	black._physics_process(1.0)
+	_check(black.phase != BlackApparition.Phase.FRENZIED, "Looking away resets the uninterrupted gaze dwell")
+	black._physics_process(1.1)
+	_check(black.phase == BlackApparition.Phase.FRENZIED, "Two uninterrupted seconds of centered gaze trigger frenzy")
+	_check(player.survival.san == san, "Black apparition observation leaves survivor SAN unchanged")
+	black.emerge(spawn, player.camera)
+
+	var beam := SpotLight3D.new()
+	beam.spot_range = 12.0
+	beam.spot_angle = 40.0
+	beam.light_energy = 35.0
+	beam.visible = true
+	player.camera.add_child(beam)
+	beam.position = Vector3.ZERO
+	beam.look_at(spawn + Vector3.UP * 1.4)
+	var target := PackedVector3Array([spawn + Vector3.UP * 1.4])
+	beam.look_at(beam.global_position + Vector3.RIGHT)
+	_check(not LightExposure.is_exposed(black, target, LightExposure.active_lights(black)), "A flashlight outside its cone does not expose the apparition")
+	beam.look_at(spawn + Vector3.UP * 1.4)
+	var blocker := _static_box(world, Vector3(0, 1.5, -3.0), Vector3(2.0, 2.0, 0.15))
+	await physics_frame
+	await physics_frame
+	_check(not LightExposure.is_exposed(black, target, LightExposure.active_lights(black)), "A wall blocks flashlight exposure")
+	blocker.queue_free()
+	await physics_frame
+	await physics_frame
+	_check(LightExposure.is_exposed(black, target, LightExposure.active_lights(black)), "A clear flashlight cone exposes the apparition")
+	black._physics_process(1.0 / 60.0)
+	_check(black.phase == BlackApparition.Phase.FRENZIED, "Direct light exposure triggers frenzy")
+	_check(player.survival.san == san, "Frenzy and pursuit do not drain survivor SAN")
+	for tick in 180:
+		black._physics_process(1.0 / 60.0)
+		if player.is_player_dead:
+			break
+	_check(player.is_player_dead and player.lethal_contacts == 1, "Frenzied pursuit kills exactly once on contact")
+	beam.queue_free()
+	floor.queue_free()
+	viewport.free()
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()
