@@ -5,7 +5,7 @@ enum Fault { STEADY, DIP, BURST }
 
 # At this elevation the outdoor clock's twilight blend reaches full night.
 const NIGHT_ELEVATION := -0.16
-const LENS_ENERGY := 2.2
+const LENS_ENERGY := 0.85
 
 var _clock: WorldClock
 var _tint := Color("ffe3bc")
