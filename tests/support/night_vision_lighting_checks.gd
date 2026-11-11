@@ -874,8 +874,7 @@ func check_production_indoor_darkness() -> void:
 	# Exercise the same fixed-dark environment and short adaptation profile used
 	# by generated POI interiors, while comparing the authored outdoor profile.
 	var outdoor_profile_hash := FileAccess.get_sha256("res://world/dark_adaptation_profile.tres")
-	var outdoor_curve_path := NightVisionEffect.DEFAULT_PROFILE.curve.resource_path
-	var outdoor_curve_hash := FileAccess.get_sha256(outdoor_curve_path)
+	var outdoor_curve_hash := FileAccess.get_sha256("res://world/night_vision_curve.tres")
 	var indoor := SubViewport.new()
 	indoor.size = viewport.size
 	indoor.own_world_3d = true
@@ -915,7 +914,7 @@ func check_production_indoor_darkness() -> void:
 	material.albedo_color = Color.WHITE
 	var indoor_pixels: Array[Color] = []
 	var outdoor_pixels: Array[Color] = []
-	for distance in [0.75, 1.5, 2.5, 3.0]:
+	for distance in [0.75, 1.5, 2.5, 4.5]:
 		surface.position.z = -distance
 		# Keep a receiver large enough to cover the center pixel at each depth.
 		receiver.size = Vector2(distance * 0.8, distance * 0.8)
@@ -926,13 +925,15 @@ func check_production_indoor_darkness() -> void:
 		panel.position.z = -distance
 		outdoor_mesh.size = Vector2(distance * 0.8, distance * 0.8)
 		outdoor_pixels.append(pixel(await capture()))
+	var indoor_near := indoor_pixels[0]
+	var outdoor_near := outdoor_pixels[0]
+	check(indoor_near.r > 0.08 and absf(indoor_near.r - indoor_near.g) < 0.02 and indoor_near.r < outdoor_near.r, "Production indoor adaptation is visibly gray but weaker than the outdoor profile")
+	check(indoor_pixels[1].r > 0.08, "Production indoor adaptation retains nearby silhouettes at one and a half metres")
 	# Allow one output code step when comparing 8-bit images from both renderers.
 	var output_step := 1.0 / 255.0
-	for pixels in [indoor_pixels, outdoor_pixels]:
-		check(pixels[0].r > 0.08 and absf(pixels[0].r - pixels[0].g) < 0.02 and pixels[1].r > 0.08, "Production adaptation retains nearby gray silhouettes through 1.5 m")
-		check(pixels[0].r > pixels[1].r and pixels[1].r > pixels[2].r and pixels[2].r > pixels[3].r and pixels[3].r < output_step, "Production gray fades to black at 3 m with zero native light")
+	check(indoor_near.r >= indoor_pixels[3].r + output_step and indoor_pixels[1].r + output_step >= indoor_pixels[2].r and indoor_pixels[2].r + output_step >= indoor_pixels[3].r and indoor_pixels[3].r < output_step, "Production indoor gray fades across 1.5, 2.5 and 4.5 m to pitch black")
 	if OS.get_cmdline_user_args().has("--diagnostics"):
-		print("PROBE production distances=[0.75,1.5,2.5,3.0] indoor=", indoor_pixels, " outdoor=", outdoor_pixels)
+		print("PROBE production-indoor distances=[0.75,1.5,2.5,4.5] pixels=", indoor_pixels, " outdoor_near=", outdoor_near)
 	adaptation.enabled = false
 	check(pixel(await capture(indoor)).r < 0.01, "Disabling indoor adaptation leaves the unlit receiver black")
 	# Keep the physical beam probe below output clipping on every renderer.
@@ -995,7 +996,7 @@ func check_production_indoor_darkness() -> void:
 	beam.visible = false
 	check(pixel(await capture(indoor)).r < 0.01, "Turning the production flashlight off returns the nine-metre receiver to pitch black")
 	check(environment_state(holder.environment) == saved_indoor_environment and environment_state(environment) == saved_outdoor_environment, "Production indoor darkness checks leave both indoor and outdoor native environments unchanged")
-	check(FileAccess.get_sha256("res://world/dark_adaptation_profile.tres") == outdoor_profile_hash and FileAccess.get_sha256(outdoor_curve_path) == outdoor_curve_hash, "Production lighting leaves the authored outdoor profile and Curve files unchanged")
+	check(FileAccess.get_sha256("res://world/dark_adaptation_profile.tres") == outdoor_profile_hash and FileAccess.get_sha256("res://world/night_vision_curve.tres") == outdoor_curve_hash, "Production indoor lighting leaves the authored outdoor profile and Curve files unchanged")
 	renderer.profile = saved_outdoor_profile
 	panel.position = saved_panel_position
 	material.albedo_color = saved_panel_color

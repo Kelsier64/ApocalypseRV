@@ -1,6 +1,0 @@
-[gd_resource type="Curve" format=3]
-
-[resource]
-resource_name = "Outdoor gray visibility (close silhouettes, fades out at 3 m)"
-_data = [Vector2(0, 0.72), 0.0, 0.0, 0, 0, Vector2(0.15, 0.68), 0.0, 0.0, 0, 0, Vector2(0.3, 0.52), 0.0, 0.0, 0, 0, Vector2(0.45, 0.28), 0.0, 0.0, 0, 0, Vector2(0.6, 0), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 6
