@@ -130,6 +130,12 @@ static func _road_obstacles(field: WorldField, band: int) -> Array[Dictionary]:
 			var point: Vector3 = part.pose * (corner * part.size * 0.5)
 			footprint.append(Vector2(point.x, point.z))
 		result.append({"bounds": box, "footprint": footprint})
+	# Streetlights sit inside the shoulder space available to encounters.
+	var radius := RoadsideStreetlights.FOOTING_RADIUS
+	for lamp in RoadsideStreetlights.plan(field, band):
+		var point: Vector3 = lamp.pose.origin
+		var box := AABB(point - Vector3(radius, 0, radius), Vector3(radius * 2.0, 7.0, radius * 2.0))
+		result.append({"bounds": box, "footprint": _box_footprint(box)})
 	return result
 
 static func _valid(field: WorldField, band: int, box: AABB, footprint: PackedVector2Array, occupied: Array[Dictionary]) -> bool:

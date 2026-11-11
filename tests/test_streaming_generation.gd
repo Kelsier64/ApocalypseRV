@@ -81,18 +81,18 @@ func run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func _check_streetlight_placement() -> void:
-	var cell_counts := Vector3i.ZERO
-	var names := {}
-	const BAND_COUNT := 32
-	for world_seed: int in [6, 42, 99, 733]:
+	const BAND_COUNT := 36
+	var single_count := 0
+	var row_spacings: Array[float] = []
+	var crosses_seam := false
+	for world_seed: int in [6, 42, 99, 733, 1792913777, 1792932659, 1209537593]:
 		var field := WorldField.new(world_seed)
 		var other := WorldField.new(world_seed)
 		var band_length := field.profile.chunk_length
 		var plans: Array = []
-		var lights: Array[Dictionary] = []
-		var counts := PackedInt32Array()
-		counts.resize(ceili(BAND_COUNT * band_length / 600.0))
-		names.clear()
+		var rows: Dictionary = {}
+		var singles: Dictionary = {}
+		var names: Dictionary = {}
 		check(RoadsideStreetlights.plan(field, -1).is_empty(), "Streetlights leave the route behind the origin empty")
 		for band in range(BAND_COUNT):
 			var plan := RoadsideStreetlights.plan(field, band)
@@ -106,28 +106,66 @@ func _check_streetlight_placement() -> void:
 				check(floori(-point.z / band_length) == band and remainder >= 5.0 and remainder <= band_length - 5.0, label + " belongs to one band with seam clearance")
 				check(not names.has(light.name), label + " has a unique stable name")
 				names[light.name] = true
-				var cell := floori(s / 600.0)
-				if cell >= 0 and cell < counts.size():
-					counts[cell] += 1
-				lights.append(light)
+				var cell := floori(s / RoadsideStreetlights.CELL_LENGTH)
+				if String(light.name).begins_with("StreetlightV3Row"):
+					if not rows.has(cell): rows[cell] = []
+					rows[cell].append(light)
+				else:
+					check(not singles.has(cell), label + " has at most one isolated lamp per cell")
+					singles[cell] = s
+				var cell_offset := fposmod(s, RoadsideStreetlights.CELL_LENGTH)
+				check(cell_offset >= 35.0 and cell_offset <= RoadsideStreetlights.CELL_LENGTH - 35.0, label + " leaves a gap between patterns")
 				_check_streetlight_ground(field, s, point, label)
 		for band in range(BAND_COUNT - 1, -1, -1):
 			check(RoadsideStreetlights.plan(other, band) == plans[band], "Streetlight plans are identical when seed %d streams in reverse (band %d)" % [world_seed, band])
-		lights.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.s < b.s)
-		for i in range(1, lights.size()):
-			check(float(lights[i].s) - float(lights[i - 1].s) >= 120.0, "Streetlights preserve 120 m route gaps across bands and cells for seed %d" % world_seed)
-		for count in counts:
-			check(count <= 2, "A streetlight cell contains at most two lamps")
-			if count >= 0 and count <= 2:
-				cell_counts[count] += 1
-	check(cell_counts.x > 0 and cell_counts.y > 0 and cell_counts.z > 0, "Sampled streetlight route cells include blank cells, single lamps and pairs (%s)" % cell_counts)
+		check(rows.has(0), "Seed %d has a complete row within the opening 900 m" % world_seed)
+		check(rows.size() >= 4, "Seed %d has at least four rows in the first 5.4 km" % world_seed)
+		single_count += singles.size()
+		for cell in rows:
+			var lamps: Array = rows[cell]
+			check(lamps.size() >= 11 and lamps.size() <= 16, "A streetlight row has 11–16 fixtures")
+			if lamps.size() < 2:
+				continue
+			lamps.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.s < b.s)
+			if singles.has(cell):
+				var single_s: float = singles[cell]
+				check(single_s <= float(lamps[0].s) - 95.0 + 0.001 or single_s >= float(lamps.back().s) + 95.0 - 0.001, "An isolated lamp is at least 95 m from its cell's row")
+			var spacing := _streetlight_road_distance(field, lamps[0].s, lamps[1].s)
+			row_spacings.append(spacing)
+			check(spacing >= 19.95 and spacing <= 28.05, "Row spacing is between 20 and 28 m (%.2f m)" % spacing)
+			var side := _streetlight_side(field, lamps[0])
+			for i in range(1, lamps.size()):
+				var gap := _streetlight_road_distance(field, lamps[i - 1].s, lamps[i].s)
+				check(absf(gap - spacing) < 0.06, "Streetlight row keeps its spacing through bends and across bands")
+				check(_streetlight_side(field, lamps[i]) == side, "Streetlight row stays on one shoulder")
+			crosses_seam = crosses_seam or floori(-lamps[0].pose.origin.z / band_length) != floori(-lamps.back().pose.origin.z / band_length)
+	check(single_count > 0 and row_spacings.size() > 1, "The route has isolated lamps and continuous rows")
+	check(crosses_seam, "At least one streetlight row spans multiple bands")
+	if not row_spacings.is_empty():
+		check(row_spacings.max() - row_spacings.min() > 0.5, "Different rows roll different spacing")
+
+func _streetlight_road_distance(field: WorldField, from: float, to: float) -> float:
+	var previous := field.road_frame(from).origin
+	var distance := 0.0
+	for i in range(1, ceili(to - from) + 1):
+		var point := field.road_frame(minf(from + i, to)).origin
+		distance += point.distance_to(previous)
+		previous = point
+	return distance
+
+func _streetlight_side(field: WorldField, lamp: Dictionary) -> float:
+	var road := field.road_frame(lamp.s)
+	var point: Vector3 = lamp.pose.origin
+	return signf((point - road.origin).dot(road.basis.x))
 
 func _check_streetlight_ground(field: WorldField, s: float, point: Vector3, label: String) -> void:
 	var surface := field.surface(point.x, point.z)
 	var road: Dictionary = surface.road
-	check(float(road.distance) >= float(road.width) * 0.5 + 4.25 - 0.01, label + " sits outside the asphalt")
+	var setback := float(road.distance) - float(road.width) * 0.5
+	check(setback >= 1.99, label + " sits outside the asphalt")
 	check(not is_finite(float(surface.water_height)) and is_equal_approx(point.y, float(surface.height)), label + " sits on dry terrain")
-	check(field.normal_at(point.x, point.z).y >= cos(deg_to_rad(20.0)), label + " avoids steep ground")
+	var slope_limit := 50.0 if setback < 2.5 else 25.0
+	check(field.normal_at(point.x, point.z).y >= cos(deg_to_rad(slope_limit)), label + " has ground its footing can support")
 	check(not field.landforms.bridge_at(s - 15.0) and not field.landforms.bridge_at(s) and not field.landforms.bridge_at(s + 15.0), label + " stays off bridges and their approaches")
 	for site in field.sites_near_z(point.z):
 		check(field.court_distance(point.x, point.z, site) >= 20.0, label + " clears POI courts")

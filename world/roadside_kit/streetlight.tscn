@@ -9,7 +9,7 @@ roughness = 0.98
 
 [sub_resource type="BoxMesh" id="FootingMesh"]
 material = SubResource("Concrete")
-size = Vector3(0.46, 0.44, 0.46)
+size = Vector3(0.46, 1.16, 0.46)
 
 [sub_resource type="ShaderMaterial" id="WeatheredSteel"]
 shader = ExtResource("2_metal")
@@ -65,7 +65,7 @@ radial_segments = 8
 rings = 1
 
 [sub_resource type="BoxShape3D" id="FootingShape"]
-size = Vector3(0.46, 0.44, 0.46)
+size = Vector3(0.46, 1.16, 0.46)
 
 [sub_resource type="BoxShape3D" id="PostShape"]
 size = Vector3(0.25, 6.48, 0.25)
@@ -74,7 +74,7 @@ size = Vector3(0.25, 6.48, 0.25)
 script = ExtResource("1_streetlight")
 
 [node name="Footing" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.04, 0)
+position = Vector3(0, -0.32, 0)
 mesh = SubResource("FootingMesh")
 
 [node name="Post" type="MeshInstance3D" parent="."]
@@ -114,7 +114,7 @@ spot_attenuation = 1.15
 [node name="Body" type="StaticBody3D" parent="."]
 
 [node name="FootingShape" type="CollisionShape3D" parent="Body"]
-position = Vector3(0, 0.04, 0)
+position = Vector3(0, -0.32, 0)
 shape = SubResource("FootingShape")
 
 [node name="PostShape" type="CollisionShape3D" parent="Body"]

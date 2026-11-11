@@ -50,7 +50,7 @@ Treat randomness as a core part of gameplay. Use it to create meaningful variati
 - Delegate narrowly with concise context; avoid duplicate exploration and validation. Keep tool output and reports focused on actionable results.
 - Skip writing and running tests for simple, low-risk tasks. Review the diff and use direct checks where needed. For changes that need tests, choose the smallest set that covers the affected behavior and its risks. Expand only for related failures, unresolved risks, or explicit requirements. Reuse passing results when the relevant code has stayed the same.
 - For documentation-only changes, check wording, consistency, and any changed links; do not launch Godot or run gameplay tests.
-- For visual and art changes, use direct asset inspection, a render, or a screenshot whenever it can verify the result. Reserve computer-use for checks that require live interaction. Ask the user to inspect when their visual judgment or access is needed.
+- Take screenshots only when you need to verify a specific visual result. Use direct asset inspection or a render when either is sufficient. Reserve computer-use for checks that require live interaction. Ask the user to inspect when their visual judgment or access is needed.
 - Apply the game-testing workflow below only when relevant to the changed behavior. Run climbing, turning, and roof-destruction scenarios only for changes affecting those systems.
 - Report briefly what was checked and any material uncertainty. If user inspection is needed, state exactly what they should inspect; never claim it has already been verified.
 
@@ -78,7 +78,7 @@ godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playg
 
 Omit `-- --replay` for manual WASD/Space play. Controls: F2 stops/toggles motion; F3 auto-climbs; F4 switches camera; F5 seats the player; R resets.
 
-Observe, send one action with `sky.press_key`, then refresh the screenshot. Short key presses cannot substitute for sustained movement; use replay for continuous input. Verify both actors climb and remain aboard during turns; press F5 and verify roof HP reaches `DESTROYED` and the monster falls. Inspect the log for script errors.
+Observe the game before sending one action with `sky.press_key`. Refresh the screenshot only when you need to verify the on-screen result. Short key presses cannot substitute for sustained movement; use replay for continuous input. Verify both actors climb and remain aboard during turns; press F5 and verify roof HP reaches `DESTROYED` and the monster falls. Inspect the log for script errors.
 
 Close only your test window afterward. Report observed results separately from automated checks and untested scenarios. Replay uses scripted vehicle motion; wheel-driven handling, rollovers, and crowds need additional testing.
 
