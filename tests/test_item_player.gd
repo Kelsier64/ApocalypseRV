@@ -620,8 +620,6 @@ func check_first_person_carry() -> void:
 	light.global_position = actor.camera.global_position
 	var adaptation := preload("res://world/night_vision_effect.gd").new()
 	adaptation.name = "DarkAdaptation"
-	adaptation.profile = adaptation.profile.duplicate()
-	adaptation.profile.ambient_gate_enabled = false
 	world.add_child(adaptation)
 	actor.reparent(world)
 	actor.camera.make_current()

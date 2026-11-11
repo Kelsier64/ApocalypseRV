@@ -96,6 +96,16 @@ func register_viewport(viewport: Viewport, active := true) -> void:
 	# This camera receives the source's rendered pose, already interpolated.
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	camera.environment = Environment.new()
+	camera.environment.background_mode = Environment.BG_COLOR
+	camera.environment.background_color = Color.BLACK
+	camera.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	camera.environment.ambient_light_color = Color.WHITE
+	camera.environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	camera.environment.fog_light_color = Color.BLACK
+	camera.environment.fog_light_energy = 0.0
+	camera.environment.volumetric_fog_ambient_inject = 0.0
+	camera.environment.volumetric_fog_gi_inject = 0.0
+	camera.environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	reference.add_child(camera)
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://world/night_vision.gdshader")
@@ -171,7 +181,7 @@ func _prepare_views() -> void:
 	if not is_inside_tree(): return
 	_prune_views()
 	if not can_process():
-		# Retain the last gate and adapted image behind the pause menu.
+		# Retain the last adapted image behind the pause menu.
 		# An explicit disable must still restore native lights and cameras.
 		if not enabled: _routing_active = false
 		_route_lights(_routing_active)
@@ -187,18 +197,15 @@ func _prepare_views() -> void:
 		var target := entry.target.get_ref() as Viewport
 		var source := target.get_camera_3d() if is_instance_valid(target) else null
 		var eligible: bool = enabled and entry.active and source != null and source.get_world_3d() == get_world_3d()
-		var strength := _ambient_strength(_view_environment(source)) if eligible else 0.0
-		if strength > 0.0: _routing_active = true
-		plans.append({"entry": entry, "target": target, "source": source, "eligible": eligible, "strength": strength})
+		if eligible: _routing_active = true
+		plans.append({"entry": entry, "target": target, "source": source, "eligible": eligible})
 	_route_lights(_routing_active)
 	for plan in plans:
 		var entry: Dictionary = plan.entry
 		var source: Camera3D = plan.source
-		var strength: float = plan.strength
-		entry.quad.visible = strength > 0.0
+		entry.quad.visible = plan.eligible
 		entry.reference.render_target_update_mode = SubViewport.UPDATE_DISABLED
-		entry.material.set_shader_parameter("adaptation_strength", strength)
-		if not plan.eligible or not _routing_active:
+		if not plan.eligible:
 			_release_camera(entry)
 			continue
 		var previous: Camera3D = entry.source.get_ref() if entry.source != null else null
@@ -209,11 +216,9 @@ func _prepare_views() -> void:
 			entry.mask = source.get_meta(CAMERA_ORIGINAL_LAYERS, source.cull_mask & OWNED_LAYERS)
 			source.set_meta(CAMERA_ORIGINAL_LAYERS, entry.mask)
 			source.set_meta(CAMERA_OWNER, get_instance_id())
-		# Lights are shared by all views in this World3D. A bright view must still
-		# see them and exclude every other view's composite while one view is dark.
-		var quad_layer: int = entry.quad.layers if strength > 0.0 else 0
+		var quad_layer: int = entry.quad.layers
 		source.cull_mask = (source.cull_mask & ~OWNED_LAYERS) | quad_layer | LIGHT_LAYER
-		if strength > 0.0: _sync_reference(entry, plan.target, source)
+		_sync_reference(entry, plan.target, source)
 
 func _route_lights(active: bool) -> void:
 	for id in _lights.keys():
@@ -233,27 +238,9 @@ func _view_environment(source: Camera3D) -> Environment:
 	var world := source.get_world_3d()
 	return world.environment if world.environment != null else world.fallback_environment
 
-func _ambient_strength(environment: Environment) -> float:
-	if not profile.ambient_gate_enabled or environment == null: return 1.0
-	var brightness := 0.0
-	match environment.ambient_light_source:
-		Environment.AMBIENT_SOURCE_DISABLED:
-			brightness = 0.0
-		Environment.AMBIENT_SOURCE_COLOR:
-			var linear := environment.ambient_light_color.srgb_to_linear()
-			brightness = Vector3(linear.r, linear.g, linear.b).dot(Vector3(0.2126, 0.7152, 0.0722)) * maxf(0.0, environment.ambient_light_energy)
-		_:
-			# Sky irradiance is not available as a CPU scalar. Keep local adaptation
-			# for these environments rather than guessing from the sky/background.
-			return 1.0
-	if not is_finite(brightness): return 1.0
-	if brightness >= profile.ambient_threshold: return 0.0
-	var full_below := maxf(0.0, profile.ambient_threshold - profile.ambient_transition)
-	if brightness <= full_below: return 1.0
-	return 1.0 - smoothstep(full_below, profile.ambient_threshold, brightness)
-
 func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> void:
 	var reference: SubViewport = entry.reference
+	if target is SubViewport and target.render_target_update_mode == SubViewport.UPDATE_DISABLED: return
 	var camera: Camera3D = entry.camera
 	# Bypass only occlusion, never the view-layer check: ignore_all_culling also
 	# renders the composite in its own reference and causes temporal feedback.
@@ -285,25 +272,17 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 	camera.force_update_transform()
 	var environment: Environment = camera.environment
 	var native := _view_environment(source)
-	# Read the actual view's environment every frame. Local FogVolumes share the
-	# World3D, so matching extinction preserves their occlusion too.
+	# Match extinction, including local FogVolumes in the shared World3D. The
+	# reference has black fog and background so atmospheric radiance adds no fill.
 	if native != null:
-		for property in ["background_mode", "background_color", "background_energy_multiplier", "sky", "sky_rotation", "sky_custom_fov",
-			"fog_enabled", "fog_mode", "fog_density", "fog_light_color", "fog_light_energy", "fog_depth_begin", "fog_depth_end", "fog_depth_curve", "fog_sky_affect", "fog_height", "fog_height_density", "fog_aerial_perspective",
-			"volumetric_fog_enabled", "volumetric_fog_density", "volumetric_fog_albedo", "volumetric_fog_length", "volumetric_fog_detail_spread", "volumetric_fog_anisotropy", "volumetric_fog_sky_affect",
-			"volumetric_fog_temporal_reprojection_enabled", "volumetric_fog_temporal_reprojection_amount", "volumetric_fog_emission", "volumetric_fog_emission_energy"]:
+		for property in ["fog_enabled", "fog_mode", "fog_density", "fog_depth_begin", "fog_depth_end", "fog_depth_curve", "fog_height", "fog_height_density",
+			"volumetric_fog_enabled", "volumetric_fog_density", "volumetric_fog_length", "volumetric_fog_detail_spread",
+			"volumetric_fog_temporal_reprojection_enabled", "volumetric_fog_temporal_reprojection_amount"]:
 			environment.set(property, native.get(property))
 	else:
-		environment.background_mode = Environment.BG_COLOR
-		environment.background_color = Color.BLACK
 		environment.fog_enabled = false
 		environment.volumetric_fog_enabled = false
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color.WHITE
 	environment.ambient_light_energy = profile.reference_energy
-	environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
-	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	environment.adjustment_enabled = false
 	# Forward+ shades ambient light before composition. Compatibility applies
 	# its SSAO after composition, so the final image already gets that pass.
 	environment.ssao_enabled = native != null and native.ssao_enabled and RenderingServer.get_current_rendering_method() == "forward_plus"
@@ -314,11 +293,6 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 		environment.ssao_detail = native.ssao_detail
 		environment.ssao_horizon = native.ssao_horizon
 		environment.ssao_sharpness = native.ssao_sharpness
-	# Reference ambient illuminates materials, never the fog. Native lamps/scatter
-	# remain in the real image; the reference only preserves fog transmission.
-	environment.volumetric_fog_ambient_inject = 0.0
-	environment.volumetric_fog_gi_inject = 0.0
-	if target is SubViewport and target.render_target_update_mode == SubViewport.UPDATE_DISABLED: return
 	reference.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _bake_curve() -> void:

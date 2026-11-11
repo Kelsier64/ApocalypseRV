@@ -156,8 +156,8 @@ func apply_time(real_delta: float = 0.0) -> void:
 	# Only physical lighting/weather depend on the clock. Display adaptation reads
 	# the resulting brightness independently, including daytime shadows/interiors.
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
-	var horizon := Color("040609").lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
-	var zenith := Color("010203").lerp(Color("7f9298"), daylight)
+	var horizon := atmosphere.night_mist_color.lerp(Color("a4aca9"), daylight).lerp(Color("a08b78"), warmth * 0.55)
+	var zenith := atmosphere.night_mist_color.lerp(Color("7f9298"), daylight)
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
@@ -169,7 +169,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	environment.fog_depth_curve = profile.depth_curve
 	environment.volumetric_fog_length = atmosphere.volume_length(environment.fog_depth_end)
 	# Weather haze and sky remain native lighting, independent of gray fill.
-	horizon = horizon.lerp(Color("030405").lerp(Color("535c5b"), daylight), mist)
+	horizon = horizon.lerp(atmosphere.night_mist_color.lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
 	var white_mist := atmosphere.night_mist_color.lerp(atmosphere.day_color(conditions), daylight)
 	# Lit white haze during the day; no emissive veil over dark nights.
@@ -184,7 +184,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	# objects reappear as white silhouettes against the darker sky.
 	environment.fog_light_color = horizon
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
-	environment.ambient_light_energy = lerpf(0.002, 0.24 + clear * 0.07 - rain * 0.04, daylight)
+	environment.ambient_light_energy = (0.24 + clear * 0.07 - rain * 0.04) * daylight
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
 	sun.light_energy = lerpf(atmosphere.overcast_sun_energy, atmosphere.clear_sun_energy, clear) * smoothstep(0.0, 0.32, direction.y) * (1.0 - rain * 0.90) * (1.0 - mist * 0.85)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
