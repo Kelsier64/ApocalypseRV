@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="InteriorProfile" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="InteriorProfile" format=3 uid="uid://cff4bigsbjc6t"]
 
-[ext_resource type="Script" path="res://world/instances/interior_profile.gd" id="profile"]
-[ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room"]
+[ext_resource type="Script" uid="uid://dbu7xvkjt8lsc" path="res://world/instances/interior_profile.gd" id="profile"]
+[ext_resource type="Script" uid="uid://ch7q18o5qk8hh" path="res://world/instances/room_definition.gd" id="room"]
 [ext_resource type="PackedScene" path="res://world/poi_kit/rooms/bunker/dark_column_hall.tscn" id="scene"]
 
 [sub_resource type="Resource" id="entry"]
