@@ -16,7 +16,7 @@
 | `dark_ratio` | 0.1 | 與 `lit_ratio` 的差值決定收尾的平滑區間寬度 |
 | `lit_ratio` | 1.0 | 比例達此值時停止灰階補足；須大於 `dark_ratio` |
 
-想調整「環境多暗才開啟」時改 `ambient_threshold`，想讓啟閉更柔和時增加 `ambient_transition`；這是亮度區間的平滑過渡，不累積前幀，也不檢查時間。門檻為 0 時不啟用；漸變寬度為 0 時直接切換。降低 `lit_ratio` 可讓較弱的燈光也恢復原生光色；提高它則讓補光延續到較亮的區域。補光在比例差值的最後五分之一平滑收尾。`reference_energy` 設定參考底光與參考亮度上限，原場景的環境光和燈具能量保持原值。
+想調整「環境多暗才開啟」時改 `ambient_threshold`，想讓啟閉更柔和時增加 `ambient_transition`；這是亮度區間的平滑過渡，不累積前幀，也不檢查時間。門檻為 0 時不啟用；漸變寬度為 0 時直接切換。降低 `lit_ratio` 可讓較弱的燈光也恢復原生光色；提高它則讓補光延續到較亮的區域。補光在比例差值的後半段平滑收尾，減少弱光區域的灰階補光。`reference_energy` 設定參考底光與參考亮度上限，原場景的環境光和燈具能量保持原值。
 
 環境光取 Camera3D 的 Environment override，否則取所屬 World3D 的 Environment／fallback。正式室外及 POI 使用 Color 來源，以環境光顏色轉為線性亮度後乘 energy；所以深色環境光不會被當成高亮度。停用環境光視為 0。Sky／Background 來源無法直接從 CPU 得到天空照度，目前保留局部效果，避免錯誤停用。這個省效能門檻也表示：全域環境光明亮時，局部陰影不會補灰階；若需要持續處理白天暗處，可關閉 `ambient_gate_enabled`。
 

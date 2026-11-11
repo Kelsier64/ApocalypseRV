@@ -47,7 +47,9 @@ void fragment() {
 	if (reference_light > 0.00001 && actual_light < adaptation_lit_ratio * reference_light) {
 		float ratio = actual_light / reference_light;
 		float deficit = adaptation_lit_ratio - ratio;
-		float knee = 0.2 * (adaptation_lit_ratio - adaptation_dark_ratio);
+		// A wider knee keeps partly lit surfaces close to the authored night
+		// darkness while leaving the distance curve in control of falloff.
+		float knee = 0.5 * (adaptation_lit_ratio - adaptation_dark_ratio);
 		float rounded = min(deficit, knee);
 		// Round off the lift at the lit threshold. Each extra unit of native
 		// luminance can remove at most one unit of lift, even at full strength.
