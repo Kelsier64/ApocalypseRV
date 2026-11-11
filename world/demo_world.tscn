@@ -1,22 +1,73 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dqs1s6ab2801f"]
 
 [ext_resource type="PackedScene" path="res://world/main_world.tscn" id="1_world"]
-[ext_resource type="Script" path="res://world/demo_world.gd" id="2_demo"]
-[ext_resource type="Script" path="res://world/demo_world_generator.gd" id="3_generator"]
-[ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="5_station"]
+[ext_resource type="Script" uid="uid://icqr6jdw2oio" path="res://world/demo_world.gd" id="2_demo"]
+[ext_resource type="Script" uid="uid://s0enintd3y5s" path="res://world/demo_world_generator.gd" id="3_generator"]
+[ext_resource type="PackedScene" uid="uid://dmi1qeemgmwrn" path="res://equipment/crafting_station.tscn" id="5_station"]
 
-[node name="DemoWorld" instance=ExtResource("1_world")]
+[node name="DemoWorld" unique_id=1804039339 instance=ExtResource("1_world")]
 script = ExtResource("2_demo")
 metadata/checkpoint_staging = true
 
-[node name="WorldGenerator" parent="." index="6"]
+[node name="WorldGenerator" parent="." index="6" unique_id=876925450]
 script = ExtResource("3_generator")
 world_seed = 42
 
-[node name="CraftingStation" parent="NewRv/Chassis" instance=ExtResource("5_station")]
-position = Vector3(-1.15, 0.5, 1)
-initial_support = NodePath("..")
-freeze = true
+[node name="RoofFront" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="93"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, -4)
+
+[node name="RoofMiddle" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="94"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 0)
+
+[node name="RoofRear" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="95"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6005738, 4)
+
+[node name="CabinLightFront" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="97"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4405737, -3.2)
+
+[node name="CabinLightRear" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="98"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4405737, 2.2)
+
+[node name="FuelPort" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="100"]
+transform = Transform3D(-4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0, 1, 2.16, 0.9, 3.6)
+
+[node name="ItemBox" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="101"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.8, 3.7)
+
+[node name="RightFront" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="102"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9, 1.5, -4)
+
+[node name="RightMiddle" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="103"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9, 1.5, 0)
+
+[node name="RightRear" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="104"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9, 1.5, 4)
+
+[node name="LeftFront" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="105"]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -1.9, 1.5, -4)
+
+[node name="LeftMiddle" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="106"]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -1.9, 1.5, 0)
+
+[node name="LeftRear" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="107"]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -1.9, 1.5, 4)
+
+[node name="RearDoor" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="108"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 5.9)
+
+[node name="TabletScreen" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="109"]
+transform = Transform3D(-4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0, 1, 1.774, 1.45, -3.8)
+
+[node name="SideDoorLadder" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="110"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2.142, -0.8, 0)
+
+[node name="RoofLadder" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="111"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -1.638, 0.5, 0)
+
+[node name="CraftingStation" parent="NewRv/Chassis" parent_id_path=PackedInt32Array(915576965, 604864203) index="112" unique_id=1413685754 instance=ExtResource("5_station")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 0.5, 1)
 collision_mask = 0
+freeze = true
+initial_support = NodePath("..")
 
 [editable path="NewRv"]
