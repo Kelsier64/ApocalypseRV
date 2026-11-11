@@ -304,6 +304,16 @@ func _sync_reference(entry: Dictionary, target: Viewport, source: Camera3D) -> v
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.adjustment_enabled = false
+	# Forward+ shades ambient light before composition. Compatibility applies
+	# its SSAO after composition, so the final image already gets that pass.
+	environment.ssao_enabled = native != null and native.ssao_enabled and RenderingServer.get_current_rendering_method() == "forward_plus"
+	if environment.ssao_enabled:
+		environment.ssao_radius = native.ssao_radius
+		environment.ssao_intensity = native.ssao_intensity
+		environment.ssao_power = native.ssao_power
+		environment.ssao_detail = native.ssao_detail
+		environment.ssao_horizon = native.ssao_horizon
+		environment.ssao_sharpness = native.ssao_sharpness
 	# Reference ambient illuminates materials, never the fog. Native lamps/scatter
 	# remain in the real image; the reference only preserves fog transmission.
 	environment.volumetric_fog_ambient_inject = 0.0
@@ -324,5 +334,6 @@ func _update_material(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("night_curve", curve_texture)
 	material.set_shader_parameter("night_fade_begin", profile.distance_begin)
 	material.set_shader_parameter("night_fade_end", maxf(profile.distance_begin + 0.001, profile.distance_end))
+	material.set_shader_parameter("adaptation_reference_energy", profile.reference_energy)
 	material.set_shader_parameter("adaptation_dark_ratio", profile.dark_ratio)
 	material.set_shader_parameter("adaptation_lit_ratio", maxf(profile.dark_ratio + 0.001, profile.lit_ratio))

@@ -155,6 +155,12 @@ func run() -> void:
 		print("INTERIOR-ONLY RESULT: ", "PASS" if failures == 0 else "FAIL (%d checks)" % failures)
 		quit(0 if failures == 0 else 1)
 		return
+	if OS.get_cmdline_user_args().has("--blend-only"):
+		await check_adaptation_light_sweep()
+		await check_adaptation_contact_shading()
+		print("BLEND-ONLY RESULT: ", "PASS" if failures == 0 else "FAIL (%d checks)" % failures)
+		quit(0 if failures == 0 else 1)
+		return
 	var unlit := pixel(await capture())
 	var reference: SubViewport = renderer._views[0].reference
 	check(unlit.r > 0.03 and absf(unlit.r - unlit.g) < 0.02 and absf(unlit.g - unlit.b) < 0.02, "A clock-free dark world receives local gray adaptation")
@@ -204,6 +210,9 @@ func run() -> void:
 	check(pixel(await capture()).r < 0.01 and light.layers == 1 and camera.cull_mask == original_camera_mask, "Disabling adaptation while paused immediately restores native pixels and owned layers")
 	world.process_mode = original_process_mode
 	renderer.enabled = true
+
+	await check_adaptation_light_sweep()
+	await check_adaptation_contact_shading()
 
 	# Production beam settings, rather than an oversized substitute test light.
 	renderer.profile.curve = constant_curve(0)
@@ -749,6 +758,116 @@ func check_independent_indoor_world() -> void:
 	await capture()
 	check(NightVisionEffect.find_for(camera) == renderer and camera.get_meta(NightVisionEffect.CAMERA_OWNER, 0) == renderer.get_instance_id(), "Returning the player camera resolves and reclaims its original world renderer")
 	indoor.queue_free()
+	await process_frame
+
+func check_adaptation_light_sweep() -> void:
+	var original_color := material.albedo_color
+	var original_curve := renderer.profile.curve
+	material.albedo_color = Color.WHITE
+	var lamp := DirectionalLight3D.new()
+	lamp.light_color = Color(1.0, 0.55, 0.25)
+	world.add_child(lamp)
+	var no_fill := constant_curve(0.0)
+	var indoor_fill := constant_curve(0.72)
+	var full_fill := constant_curve(1.0)
+	var native_samples: Array[Color] = []
+	var indoor_samples: Array[Color] = []
+	var full_samples: Array[Color] = []
+	for energy in [0.0, 0.002, 0.004, 0.008, 0.012, 0.018, 0.024, 0.032, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.24, 0.5]:
+		lamp.light_energy = energy
+		renderer.profile.curve = no_fill
+		native_samples.append(pixel(await capture_frame()))
+		renderer.profile.curve = indoor_fill
+		indoor_samples.append(pixel(await capture_frame()))
+		renderer.profile.curve = full_fill
+		full_samples.append(pixel(await capture_frame()))
+	for samples in [indoor_samples, full_samples]:
+		var monotone := true
+		for index in range(1, samples.size()):
+			var previous: Color = samples[index - 1]
+			var current: Color = samples[index]
+			# PNG/viewport output rounds each channel independently.
+			monotone = monotone and current.srgb_to_linear().get_luminance() + 0.002 >= previous.srgb_to_linear().get_luminance()
+		check(monotone, "Increasing warm lamp energy never darkens an adapted receiver")
+	var dark := full_samples[0]
+	var weak := full_samples[5].srgb_to_linear()
+	var weak_native := native_samples[5].srgb_to_linear()
+	check(dark.r > 0.1 and absf(dark.r - dark.b) < 0.01, "Unlit white material still receives a neutral lift")
+	check(weak.r - weak.b > weak_native.r - weak_native.b + 0.005 and weak.get_luminance() > weak_native.get_luminance(), "Weak warm lighting colors some of the remaining lift")
+	check(color_distance(full_samples.back(), native_samples.back()) < 0.012, "A strong lamp hands off to the exact native color and luminance")
+	lamp.visible = false
+	material.emission_enabled = true
+	material.emission = Color(0.0, 0.3, 1.0)
+	material.emission_energy_multiplier = 0.8
+	var adapted_emission := pixel(await capture_frame())
+	renderer.profile.curve = no_fill
+	var native_emission := pixel(await capture_frame())
+	check(native_emission.b > 0.7 and color_distance(adapted_emission, native_emission) < 0.008, "Bright blue emission on a light surface stays native inside the fill range")
+	material.emission_enabled = false
+	material.emission_energy_multiplier = 1.0
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE light-sweep native=", native_samples, " indoor=", indoor_samples, " full=", full_samples)
+	lamp.queue_free()
+	renderer.profile.curve = original_curve
+	material.albedo_color = original_color
+	await process_frame
+
+func check_adaptation_contact_shading() -> void:
+	var backend := RenderingServer.get_current_rendering_method()
+	if backend == "mobile":
+		return
+	var room_view := SubViewport.new()
+	room_view.size = Vector2i(256, 256)
+	room_view.own_world_3d = true
+	room_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(room_view)
+	var room := Node3D.new()
+	room_view.add_child(room)
+	var holder := WorldEnvironment.new()
+	holder.environment = BunkerLighting.create_environment()
+	room.add_child(holder)
+	var view := Camera3D.new()
+	view.position = Vector3(0.0, 0.9, 0.8)
+	room.add_child(view)
+	view.look_at(Vector3(0.0, 0.05, -0.5))
+	var gray_material := StandardMaterial3D.new()
+	gray_material.albedo_color = Color(0.7, 0.7, 0.7)
+	gray_material.roughness = 1.0
+	var floor := MeshInstance3D.new()
+	var floor_mesh := PlaneMesh.new()
+	floor_mesh.size = Vector2(8.0, 8.0)
+	floor.mesh = floor_mesh
+	floor.material_override = gray_material
+	room.add_child(floor)
+	var box := MeshInstance3D.new()
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(0.65, 0.55, 0.65)
+	box.mesh = box_mesh
+	box.material_override = gray_material
+	box.position = Vector3(0.0, 0.275, -0.55)
+	room.add_child(box)
+	var effect := NightVisionEffect.new()
+	effect.profile = PoiInterior.DARK_ADAPTATION_PROFILE
+	room.add_child(effect)
+	var original_environment := environment_state(holder.environment)
+	var shaded := await diagnostic_capture("contact-ssao", room_view, effect)
+	var reference_environment: Environment = effect._views[0].camera.environment
+	check(reference_environment.ssao_enabled == (backend == "forward_plus"), "Only Forward+ needs SSAO in the reference to shade the composite once")
+	check(environment_state(holder.environment) == original_environment, "Contact shading leaves the native environment untouched")
+	holder.environment.ssao_enabled = false
+	var flat := await diagnostic_capture("contact-flat", room_view, effect)
+	var contact := Vector3(0.0, 0.0, -0.19)
+	var open_floor := Vector3(0.7, 0.0, -0.19)
+	var contact_delta := _sample_world_pixel(flat, view, contact).r - _sample_world_pixel(shaded, view, contact).r
+	var open_delta := absf(_sample_world_pixel(flat, view, open_floor).r - _sample_world_pixel(shaded, view, open_floor).r)
+	var output_step := 1.0 / 255.0
+	if backend == "forward_plus":
+		check(contact_delta > 2.0 * output_step and open_delta < 2.0 * output_step, "Authored AO shades the contact in the gray fill while leaving open floor readable")
+	else:
+		check(contact_delta >= output_step * 0.9, "Compatibility retains its native post-composite SSAO on the gray fill")
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE contact delta=", contact_delta, " open floor delta=", open_delta)
+	room_view.queue_free()
 	await process_frame
 
 func check_production_indoor_darkness() -> void:

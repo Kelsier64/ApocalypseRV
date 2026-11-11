@@ -48,12 +48,13 @@ const DEFAULT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 		if not is_finite(value): return
 		reference_energy = clampf(value, 0.0, 1.0)
 		emit_changed()
-## Native/reference luminance ratios. Gray fill fades smoothly between these.
+## Native/reference luminance ratio used with lit_ratio to size the fade's rounded end.
 @export_range(0.0, 1.0, 0.01) var dark_ratio := 0.1:
 	set(value):
 		if not is_finite(value): return
 		dark_ratio = clampf(value, 0.0, 1.0)
 		emit_changed()
+## Native/reference luminance ratio at which gray fill reaches zero.
 @export_range(0.01, 2.0, 0.01) var lit_ratio := 1.0:
 	set(value):
 		if not is_finite(value): return
