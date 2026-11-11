@@ -4,6 +4,8 @@ const CLIPS = preload("res://assets/models/player_animations_v021/player_animati
 const INJURY_CLIPS = preload("res://assets/models/player_dismemberment/player_injury_animations.glb")
 const AUTHORED_CLIMB_SPEED := 2.6
 const LADDER_TRANSITION_POSE_SPEED := 0.6
+const CROUCH_EYE_DROP := 0.58
+const CROUCH_EYE_FORWARD := 0.12
 @export var crouch_clips: AnimationLibrary = preload("res://assets/animations/player/crouch_bent.res"):
 	set(value):
 		crouch_clips = value
@@ -292,10 +294,10 @@ func _advance(delta: float, playback_direction: float = 1.0, pose_delta: float =
 	# Animation resets this track each sample; never accumulate into a bind pose.
 	applied_root_offset = skeleton.global_basis.inverse() * climb_pose_offset
 	skeleton.set_bone_pose_position(root_bone, skeleton.get_bone_pose_position(root_bone) + applied_root_offset)
-	# Move the eye by the same world-space approach as the visible body. Keep
-	# mouse pitch/yaw independent, and unwind both together after detaching.
-	crouch_eye_drop = move_toward(crouch_eye_drop, .58 if actor.is_crouching() else 0.0, blend_delta * 2.8)
-	view_camera.position = camera_rest_position + Vector3.DOWN * crouch_eye_drop + actor.global_basis.inverse() * climb_pose_offset
+	crouch_eye_drop = move_toward(crouch_eye_drop, CROUCH_EYE_DROP if actor.is_crouching() else 0.0, blend_delta * 2.8)
+	# Move forward with the crouch blend so the bent torso stays behind the eye.
+	var crouch_eye_offset := Vector3(0.0, -crouch_eye_drop, -CROUCH_EYE_FORWARD * (crouch_eye_drop / CROUCH_EYE_DROP))
+	view_camera.position = camera_rest_position + crouch_eye_offset + actor.global_basis.inverse() * climb_pose_offset
 
 func _clear_pose_offset() -> void:
 	# Never let the transition blend capture last frame's procedural offset.
@@ -344,7 +346,7 @@ func reset_posture() -> void:
 	manual_top_departure = false
 	climb_pose_offset = Vector3.ZERO
 	climb_pose_target = Vector3.ZERO
-	crouch_eye_drop = .58 if actor.is_crouching() else 0.0
+	crouch_eye_drop = CROUCH_EYE_DROP if actor.is_crouching() else 0.0
 	if actor.is_crawling():
 		was_crawling = true
 		current_clip = "injury/prone_idle"
