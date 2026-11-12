@@ -74,7 +74,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [rv_structure_playground](../../tests/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
-| [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台。 |
+| [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台；`--capture` 輸出三種車況的駕駛視角與儀表近景到 `.godot/rv-workshop-captures/` 後退出。 |
 | [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F6／F7 左右鏡、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅。 |
 | [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
 | [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |

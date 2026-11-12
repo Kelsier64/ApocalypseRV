@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bf0dk0obxo41w"
-path="res://.godot/imported/cluster_face.svg-e796330301eb9614b73521b9f39d5747.ctex"
+uid="uid://cvcqeh3fg51mf"
+path="res://.godot/imported/dial_rpm.svg-761d1b3af5523e3f2d7962112cfdb8ea.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/rv_status/cluster_face.svg"
-dest_files=["res://.godot/imported/cluster_face.svg-e796330301eb9614b73521b9f39d5747.ctex"]
+source_file="res://assets/rv_status/dial_rpm.svg"
+dest_files=["res://.godot/imported/dial_rpm.svg-761d1b3af5523e3f2d7962112cfdb8ea.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

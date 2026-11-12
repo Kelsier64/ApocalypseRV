@@ -7,7 +7,7 @@
 - `rv/new_rv.tscn`：正式預設車；沿用 4 × 12 m 底盤與原輪槽物理。
 - `rv/legacy/new_rv.tscn`：改造前的車殼／座椅對照，沿用目前系統和道具設備。
 - `cockpit.tscn`：座椅、儀表台、方向盤、排檔桿、手煞車、踏板，一起掛在 DriverSeat 下。
-- `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔與手煞車；`rv/instrument_cluster.gd` 管理實體雙錶、油量滑針、十格電量、檔位、充電及八種車況燈號，沒有另一套引擎或電力狀態。
+- `rv/cockpit_visual.gd`：只讀已連接底盤狀態，更新轉向、排檔與手煞車；`rv/instrument_cluster.gd` 管理實體時速／轉速錶、油量與電量指針錶、檔位窗、充電燈及八種車況燈號，沒有另一套引擎或電力狀態。
 - `wheel.tscn`：胎面、輪圈和螺帽；底盤與 `props/wheel.tscn` 共用同一外觀及尺寸，物品僅轉向原本的 Z 軸並保留底部原點。`TireDynamics.visual_scale` 共用縮放規則；爆胎時裝車、散落、手持及放置預覽同步縮徑與加寬，物品碰撞隨之調整。
 - `roof.tscn`／`roof_hatch.tscn`：4 × 4 m 普通／左側開孔屋頂片視覺，分別由 `equipment/rv_ceiling.tscn`／`rv_ceiling_hatch.tscn` 持有碰撞。固定地板網格與碰撞、車架、接縫與保險桿都在 `rv/chassis.tscn`。
 - `scrapper.tscn`／`scrapper_roller.tscn`：回收粉碎機的中空機殼、金屬內襯與兩組交錯七齒切削盤；GLB 位於 `assets/models/scrapper/`，可重建來源與尺寸／材質／驗證紀錄見 [scrapper 作者來源](../../art_source/scrapper/README.md)。保留設備五個碰撞、投料區域與原 CSG 轉軸，活動外觀跟隨原回收供電動畫。
@@ -68,8 +68,20 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 ## 2026-11-12 實體儀表
 
-雙大錶使用立體金屬錶圈、橘色指針、輪轂與印刷刻度；面板有遮光罩、固定螺絲和輕微磨痕。可編輯 SVG 原稿位於 `assets/rv_status/cluster_face.svg`、`cluster_gears.svg`，僅保留刻度、單位及檔位字元；符號為固定在面板的受光材質，沒有浮動標籤。整組上緣約 1.33 m，保留原座位相機與碰撞。
+儀表組由 `rv/instrument_cluster.gd` 以原生網格建立：遮光罩與向下收斂的側護罩、沿用車內磨損漆面的面板、凸出的金屬錶圈、退在鏡片後的印刷錶面、帶軸蓋的錐形指針、固定螺絲與調光旋鈕。只有錶面刻度與檔位字元是貼圖，沒有浮動標籤。整組上緣約 1.34 m，保留原座位相機與碰撞。
 
-`Chassis.engine_rpm()` 由既有檔位速度帶、縱向車速及油門估算 750–4800 RPM，4200 起為紅區；熄火、缺油或引擎故障歸零。空檔／手煞車可空轉，僅影響表針與音調，不新增驅動力或油耗模型。油量採 E/F 滑針；電池十格向上取整，20% 以下琥珀色、10% 以下紅色。閃電只依 `generated_rate` 實際產電顯示。缺電時背光、電量格、檔位及警示燈熄滅；時速／油量機械讀值仍保留。駕駛 HUD 文字列與 J 駕駛提示已移除，手冊仍提供按鍵參考。
+- 左時速、右轉速；紅區起點讀 `Chassis.ENGINE_REDLINE_RPM`。
+- 中央上排八個車況燈：未亮時是暗色鏡片，亮起時鏡片與符號一起發光，顏色來自 `VehicleStatus`。
+- 檔位窗印有 R N 1 2 3 4：通電時全部微亮，目前檔位高亮。
+- 油量、電量各一顆 E–F 指針錶，低量段為紅區；指針有阻尼。充電燈只依 `generated_rate` 實際產電亮起。
 
-本次通過 `test_item_player`、擴充後的 `test_rv_engine`，涵蓋 RPM、檔位、電量分格、實際充電、缺電／拆電池與多車材質隔離。另以正式 RV、正式座位相機及 Forward+ 渲染檢查白天、夜間低油低電故障、斷電畫面；這是固定狀態畫面檢查，不是完整道路駕駛驗收。
+缺電時背光、檔位窗、充電燈及車況燈熄滅，電量錶歸零；時速與油量讀值仍保留。`Chassis.engine_rpm()` 由既有檔位速度帶、縱向車速及油門估算，熄火、缺油或引擎故障歸零；空檔／手煞車可空轉，僅影響表針與音調，不新增驅動力或油耗模型。駕駛 HUD 沒有行車文字列，手冊仍提供按鍵參考。
+
+錶面原稿由 `scripts/build_rv_instrument_art.gd` 產生到 `assets/rv_status/dial_*.svg` 與 `gear_strip.svg`，刻度角度讀儀表腳本的 `DIAL_SWEEP`／`LEVEL_SWEEP`。改掃角、量程或字形後重跑產生器再匯入；這些 SVG 的 `.import` 必須保留 `mipmaps/generate=true`，否則 540p 渲染下刻度會閃爍。
+
+```powershell
+godot --headless --path . -s scripts/build_rv_instrument_art.gd
+godot --path . res://tests/rv_design_workshop.tscn -- --capture
+```
+
+第二行以正式 RV 與座位相機輸出白天行駛、夜間低油低電、斷電三種狀態的座位視角與近景到 `.godot/rv-workshop-captures/`。這是固定狀態畫面，不能取代道路駕駛手感驗收。自動測試在 `tests/test_rv_engine.gd`。

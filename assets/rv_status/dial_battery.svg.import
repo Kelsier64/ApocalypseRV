@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgmudik1j0wxy"
-path="res://.godot/imported/cluster_gears.svg-f791963a2eb12e360c645cdc301958d6.ctex"
+uid="uid://dh2ox0f513wax"
+path="res://.godot/imported/dial_battery.svg-eea21ea7723707fdf23fede6a36899a4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/rv_status/cluster_gears.svg"
-dest_files=["res://.godot/imported/cluster_gears.svg-f791963a2eb12e360c645cdc301958d6.ctex"]
+source_file="res://assets/rv_status/dial_battery.svg"
+dest_files=["res://.godot/imported/dial_battery.svg-eea21ea7723707fdf23fede6a36899a4.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

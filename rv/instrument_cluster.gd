@@ -1,64 +1,71 @@
 extends Node3D
-## Physical instruments: millimetre-authored artwork and moving parts share one face.
-const FACE := preload("res://assets/rv_status/cluster_face.svg")
-const GEARS := preload("res://assets/rv_status/cluster_gears.svg")
+## Physical instrument binnacle. Housing, bezels, lenses, needles and lamps are real
+## geometry; only the dial print is a texture. Reads the chassis and owns no vehicle state.
+## Local units are metres before the scene's scale; +Z faces the driver.
+const ART := "res://assets/rv_status/"
+const WEAR := "res://assets/materials/industrial/worn_paint.png"
+const GEAR_GLYPHS := "RN1234" # Cell order in gear_strip.svg; index is gear + 1.
+const SPEED_FULL_SCALE := 140.0 # km/h
+const RPM_FULL_SCALE := 5000.0
+const DIAL_SWEEP := 4.886922 # 280 degrees, shared by needles and scripts/build_rv_instrument_art.gd.
+const LEVEL_SWEEP := 2.094395 # 120 degrees for the fuel and battery gauges.
 const INK := Color("d9dfbe")
 const OFF := Color("172421")
+const UNLIT_PRINT := Color("59625c")
+const BIG_DIAL := 0.168
+const SMALL_DIAL := 0.08
+
 var speed_needle: Node3D
 var rpm_needle: Node3D
-var fuel_pointer: MeshInstance3D
-var gear_material: StandardMaterial3D
+var fuel_needle: Node3D
+var battery_needle: Node3D
+var gear_lamps: Array[StandardMaterial3D] = []
 var charge_material: StandardMaterial3D
-var battery_cells: Array[MeshInstance3D] = []
 var warning_lamps: Dictionary = {}
+var lamp_lenses: Dictionary = {}
 var backlights: Array[StandardMaterial3D] = []
 var indicated_speed := 0.0
 var indicated_rpm := 0.0
+var indicated_fuel := 0.0
+var indicated_charge := 0.0
 var _status_elapsed := 0.0
+var _housing: StandardMaterial3D
+var _plate: StandardMaterial3D
+var _bezel: StandardMaterial3D
+var _trim: StandardMaterial3D
+var _glass: StandardMaterial3D
+var _hub: StandardMaterial3D
+
+## Needle rotation about +Z for a 0..1 reading on the speed and RPM dials.
+static func dial_rotation(ratio: float) -> float:
+	return DIAL_SWEEP * (0.5 - clampf(ratio, 0.0, 1.0))
+
+## Needle rotation about +Z for a 0..1 reading on the fuel and battery gauges.
+static func level_rotation(ratio: float) -> float:
+	return LEVEL_SWEEP * (0.5 - clampf(ratio, 0.0, 1.0))
 
 func _ready() -> void:
-	var housing := _material(Color("171d1e"))
-	housing.roughness = 0.86
-	_box("Housing", Vector3(1.24, 0.48, 0.085), Vector3(0, 0, -0.045), housing)
-	_box("UpperVisor", Vector3(1.28, 0.025, 0.13), Vector3(0, 0.245, -0.005), housing)
-	var face_mat := _material(Color.WHITE, FACE)
-	face_mat.emission_enabled = true
-	face_mat.emission_texture = FACE
-	backlights.append(face_mat)
-	_quad("PrintedFace", Vector2(1.2, 0.44), Vector3.ZERO, face_mat)
-	for x in [-0.588, 0.588]:
-		for y in [-0.202, 0.202]:
-			_disc("Fastener", Vector3(x, y, 0.004), 0.006, 0.003, _material(Color("69716e")))
-			_box("ScrewSlot", Vector3(0.007, 0.0013, 0.001), Vector3(x, y, 0.006), housing)
-	for x in [-0.37, 0.37]:
-		var ring := MeshInstance3D.new()
-		var mesh := TorusMesh.new()
-		mesh.inner_radius = 0.164
-		mesh.outer_radius = 0.170
-		mesh.rings = 64
-		mesh.ring_segments = 8
-		ring.mesh = mesh
-		ring.position = Vector3(x, -0.008, 0.003)
-		ring.rotation.x = PI / 2.0
-		ring.material_override = _material(Color("59615f"))
-		add_child(ring)
-	speed_needle = _needle("SpeedNeedle", -0.37)
-	rpm_needle = _needle("RPMNeedle", 0.37)
-	gear_material = _material(INK, GEARS)
-	gear_material.uv1_scale.x = 1.0 / 7.0
-	gear_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	_quad("GearDisplay", Vector2(0.064, 0.096), Vector3(0, 0.096, 0.002), gear_material)
-	for i in range(10):
-		var cell := _box("ChargeCell%d" % i, Vector3(0.018, 0.034, 0.001), Vector3(-0.106 + i * 0.022, -0.014, 0.003), _material(OFF))
-		battery_cells.append(cell)
-	charge_material = _icon("Charging", "charging", Vector2(0.032, 0.032), Vector3(0, 0.035, 0.003))
-	_icon("FuelSymbol", "fuel", Vector2(0.038, 0.038), Vector3(0, -0.134, 0.003), INK)
-	var pointer_mat := _material(Color("f1ab60"))
-	backlights.append(pointer_mat)
-	fuel_pointer = _box("FuelPointer", Vector3(0.006, 0.027, 0.002), Vector3(-0.107, -0.09, 0.004), pointer_mat)
+	_housing = _worn(Color(0.11, 0.13, 0.135), 0.92)
+	_plate = _worn(Color(0.27, 0.31, 0.315), 0.74)
+	_bezel = _solid(Color(0.5, 0.53, 0.52), 0.36)
+	_bezel.metallic = 0.6
+	_trim = _solid(Color(0.03, 0.035, 0.036), 0.42)
+	_hub = _solid(Color(0.16, 0.175, 0.175), 0.3)
+	_glass = _solid(Color(0.78, 0.87, 0.9, 0.07), 0.06)
+	_glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_glass.metallic_specular = 0.9
+	_build_housing()
+	speed_needle = _gauge("Speed", Vector2(-0.385, -0.01), BIG_DIAL, "dial_speed", dial_rotation(0.0))
+	rpm_needle = _gauge("RPM", Vector2(0.385, -0.01), BIG_DIAL, "dial_rpm", dial_rotation(0.0))
+	fuel_needle = _gauge("Fuel", Vector2(-0.105, -0.118), SMALL_DIAL, "dial_fuel", level_rotation(0.0))
+	battery_needle = _gauge("Battery", Vector2(0.105, -0.118), SMALL_DIAL, "dial_battery", level_rotation(0.0))
+	_build_gear_quadrant()
+	_box("TelltaleBar", Vector3(0.55, 0.058, 0.012), Vector3(0, 0.178, 0.006), _housing)
 	for i in range(VehicleStatus.IDS.size()):
 		var id: String = VehicleStatus.IDS[i]
-		warning_lamps[id] = _icon(id, id, Vector2(0.040, 0.040), Vector3(-0.252 + i * 0.074, 0.180, 0.003))
+		warning_lamps[id] = _telltale(id, Vector3((i - 3.5) * 0.068, 0.178, 0.012))
+	_box("ChargeBezel", Vector3(0.07, 0.05, 0.01), Vector3(0, 0.0, 0.005), _housing)
+	charge_material = _telltale("charging", Vector3(0, 0.0, 0.01))
 
 func update_instruments(rv: Chassis, delta: float) -> void:
 	var connected := is_instance_valid(rv)
@@ -66,27 +73,25 @@ func update_instruments(rv: Chassis, delta: float) -> void:
 	var brightness := rv.instrument_brightness if powered else 0.0
 	var speed := rv.road_speed() * 3.6 if connected else 0.0
 	var rpm := rv.engine_rpm() if connected else 0.0
+	var fuel := rv.current_fuel / maxf(rv.max_fuel, 1.0) if connected else 0.0
+	# The charge gauge is electrical: without power it drops to empty.
+	var charge := rv.current_power / maxf(rv.max_power, 1.0) if powered else 0.0
 	indicated_speed = lerpf(indicated_speed, speed, 1.0 - exp(-delta * 10.0))
 	indicated_rpm = lerpf(indicated_rpm, rpm, 1.0 - exp(-delta * 8.0))
-	speed_needle.rotation.z = deg_to_rad(140.0 - clampf(indicated_speed / 140.0, 0.0, 1.0) * 280.0)
-	rpm_needle.rotation.z = deg_to_rad(140.0 - clampf(indicated_rpm / 5000.0, 0.0, 1.0) * 280.0)
-	var fuel := clampf(rv.current_fuel / maxf(rv.max_fuel, 1.0), 0.0, 1.0) if connected else 0.0
-	fuel_pointer.position.x = lerpf(-0.107, 0.107, fuel)
-	var charge := clampf(rv.current_power / maxf(rv.max_power, 1.0), 0.0, 1.0) if connected else 0.0
-	for i in range(battery_cells.size()):
-		var cell := battery_cells[i]
-		var lit := powered and charge * 10.0 > float(i)
-		var tint := Color("ef6142") if charge <= 0.1 else (Color("e9b559") if charge <= 0.2 else INK)
-		_lamp(cell.material_override, tint if lit else OFF, brightness if lit else 0.0)
-	var gear := clampi(rv.gear + 1, 0, 5) if connected else 6
-	gear_material.uv1_offset.x = float(gear) / 7.0
-	_lamp(gear_material, INK if powered else OFF, brightness)
+	indicated_fuel = lerpf(indicated_fuel, fuel, 1.0 - exp(-delta * 3.0))
+	indicated_charge = lerpf(indicated_charge, charge, 1.0 - exp(-delta * 3.0))
+	speed_needle.rotation.z = dial_rotation(indicated_speed / SPEED_FULL_SCALE)
+	rpm_needle.rotation.z = dial_rotation(indicated_rpm / RPM_FULL_SCALE)
+	fuel_needle.rotation.z = level_rotation(indicated_fuel)
+	battery_needle.rotation.z = level_rotation(indicated_charge)
+	var selected := clampi(rv.gear + 1, 0, gear_lamps.size() - 1) if powered else -1
+	for i in range(gear_lamps.size()):
+		# Every position is faintly backlit; the engaged one burns bright.
+		_glow(gear_lamps[i], INK if i == selected else UNLIT_PRINT, brightness * (2.4 if i == selected else 0.12))
 	var charging := powered and rv.energy.generated_rate > 0.000001
-	_lamp(charge_material, Color("83c7a0") if charging else OFF, brightness if charging else 0.0)
+	_lamp("charging", charge_material, Color("83c7a0"), brightness if charging else 0.0)
 	for mat in backlights:
-		mat.emission_enabled = true
-		mat.emission = mat.albedo_color
-		mat.emission_energy_multiplier = brightness * 0.7
+		mat.emission_energy_multiplier = brightness * 0.9
 	# Door/structure traversal only needs a dashboard-rate refresh.
 	_status_elapsed -= delta
 	if _status_elapsed <= 0.0:
@@ -94,44 +99,111 @@ func update_instruments(rv: Chassis, delta: float) -> void:
 		if connected:
 			for row in VehicleStatus.read(rv):
 				var active: bool = powered and row.level > 0
-				_lamp(warning_lamps[row.id], VehicleStatus.color(row.level) if active else OFF, brightness if active else 0.0)
+				_lamp(row.id, warning_lamps[row.id], VehicleStatus.color(row.level), brightness if active else 0.0)
 		else:
-			for mat in warning_lamps.values(): _lamp(mat, OFF, 0.0)
+			for id in warning_lamps: _lamp(id, warning_lamps[id], OFF, 0.0)
 
-func _needle(title: String, x: float) -> Node3D:
+func _build_housing() -> void:
+	_box("Housing", Vector3(1.27, 0.495, 0.16), Vector3(0, 0.0025, -0.085), _housing)
+	_box("FacePlate", Vector3(1.2, 0.44, 0.006), Vector3(0, 0, -0.003), _plate)
+	_box("Hood", Vector3(1.27, 0.02, 0.125), Vector3(0, 0.245, 0.0575), _housing)
+	_box("LowerLip", Vector3(1.27, 0.02, 0.035), Vector3(0, -0.235, 0.0125), _housing)
+	# Cheeks taper from the hood down to the lip so the face sits in a shroud.
+	var cheek := _prism(PackedVector2Array([Vector2(-0.005, -0.245), Vector2(0.03, -0.245), Vector2(0.12, 0.255), Vector2(-0.005, 0.255)]), 0.035)
+	for side in [-1.0, 1.0]:
+		var node := _mesh("Cheek", cheek, Vector3(side * 0.6175 + 0.0175, 0, 0), _housing)
+		node.rotation.y = -PI / 2.0
+	var screw := _solid(Color(0.4, 0.43, 0.42), 0.5)
+	screw.metallic = 0.5
+	for x in [-0.585, 0.585]:
+		for y in [-0.205, 0.205]:
+			_mesh("Fastener", _lathe(_cap_profile(0.0075, 0.004), 12), Vector3(x, y, 0), screw)
+			_box("ScrewSlot", Vector3(0.011, 0.0018, 0.001), Vector3(x, y, 0.0042), _trim).rotation.z = x * 7.0 + y * 3.0
+	_mesh("DimmerKnob", _lathe(_cap_profile(0.014, 0.02), 16), Vector3(0, -0.196, 0), _trim)
+
+## A pod gauge: raised bezel, printed face set behind a lens, needle on a capped hub.
+func _gauge(title: String, at: Vector2, radius: float, art: String, rest: float) -> Node3D:
+	var depth := radius * 0.18
+	var root := Node3D.new()
+	root.name = title + "Gauge"
+	root.position = Vector3(at.x, at.y, 0)
+	add_child(root)
+	var face := _solid(Color.WHITE, 0.62, load(ART + art + ".svg"))
+	face.emission_enabled = true
+	face.emission = INK
+	face.emission_texture = face.albedo_texture
+	face.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
+	backlights.append(face)
+	_mesh("Face", _disc(radius, 48), Vector3(0, 0, 0.002), face, root)
+	var lip := radius * 0.11
+	var bezel := PackedVector2Array([Vector2(radius + lip, 0), Vector2(radius + lip, depth * 0.72), Vector2(radius + lip * 0.62, depth), Vector2(radius + lip * 0.2, depth), Vector2(radius, depth * 0.86), Vector2(radius, 0)])
+	_mesh("Bezel", _lathe(bezel, 48), Vector3.ZERO, _bezel, root)
 	var pivot := Node3D.new()
-	pivot.name = title
-	pivot.position = Vector3(x, -0.008, 0.009)
-	add_child(pivot)
-	var mat := _material(Color("f39a52"))
-	backlights.append(mat)
-	var pointer := _box("Pointer", Vector3(0.005, 0.133, 0.003), Vector3(0, 0.052, 0), mat)
-	pointer.reparent(pivot, false)
-	_disc("NeedleHub", Vector3(x, -0.008, 0.015), 0.017, 0.009, _material(Color("303b3b")))
-	pivot.rotation.z = deg_to_rad(140.0)
+	pivot.name = "Needle"
+	pivot.position.z = depth * 0.4
+	pivot.rotation.z = rest
+	root.add_child(pivot)
+	var pointer := _solid(Color("f39a52"), 0.5)
+	pointer.emission_enabled = true
+	pointer.emission = pointer.albedo_color
+	backlights.append(pointer)
+	var reach := radius * 0.84
+	var half := radius * 0.03
+	_mesh("Pointer", _prism(PackedVector2Array([Vector2(-half, -radius * 0.1), Vector2(half, -radius * 0.1), Vector2(half * 0.35, reach), Vector2(-half * 0.35, reach)]), radius * 0.012), Vector3.ZERO, pointer, pivot)
+	_mesh("Hub", _lathe(_cap_profile(radius * 0.15, depth * 0.42), 20), Vector3(0, 0, depth * 0.38), _hub, root)
+	_mesh("Lens", _disc(radius * 1.01, 32), Vector3(0, 0, depth * 0.9), _glass, root)
 	return pivot
 
-func _material(tint: Color, texture: Texture2D = null) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = tint
-	mat.albedo_texture = texture
-	mat.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY if texture else BaseMaterial3D.EMISSION_OP_ADD
-	mat.roughness = 0.68
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	return mat
+## Gear positions printed behind one smoked window, like a column-shift quadrant.
+func _build_gear_quadrant() -> void:
+	_box("GearBezel", Vector3(0.372, 0.086, 0.014), Vector3(0, 0.078, 0.007), _housing)
+	_box("GearWindow", Vector3(0.356, 0.07, 0.002), Vector3(0, 0.078, 0.0145), _solid(Color(0.02, 0.025, 0.026), 0.22))
+	var strip: Texture2D = load(ART + "gear_strip.svg")
+	for i in range(GEAR_GLYPHS.length()):
+		var mat := _solid(UNLIT_PRINT, 0.6, strip)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		mat.uv1_scale.x = 1.0 / GEAR_GLYPHS.length()
+		mat.uv1_offset.x = float(i) / GEAR_GLYPHS.length()
+		_quad("Gear" + GEAR_GLYPHS[i], Vector2(0.048, 0.064), Vector3((i - 2.5) * 0.058, 0.078, 0.0162), mat)
+		gear_lamps.append(mat)
 
-func _lamp(mat: StandardMaterial3D, tint: Color, brightness: float) -> void:
+## A lamp tile: smoked lens that glows in the lamp colour behind its symbol.
+func _telltale(id: String, at: Vector3) -> StandardMaterial3D:
+	var lens := _solid(Color(0.03, 0.04, 0.04), 0.25)
+	_box(id.capitalize() + "Lens", Vector3(0.056, 0.042, 0.003), at + Vector3(0, 0, 0.0015), lens)
+	lamp_lenses[id] = lens
+	var icon := _solid(OFF, 0.5, load(ART + id + ".svg"))
+	icon.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	_quad(id.capitalize() + "Symbol", Vector2(0.036, 0.036), at + Vector3(0, 0, 0.0036), icon)
+	return icon
+
+func _lamp(id: String, icon: StandardMaterial3D, tint: Color, brightness: float) -> void:
+	var lit := brightness > 0.0
+	_glow(icon, tint if lit else OFF, brightness * 1.8)
+	_glow(lamp_lenses[id], tint.darkened(0.55) if lit else Color(0.03, 0.04, 0.04), brightness * 0.5)
+
+func _glow(mat: StandardMaterial3D, tint: Color, energy: float) -> void:
 	mat.albedo_color = tint
 	mat.emission_enabled = true
 	mat.emission = tint
 	mat.emission_texture = mat.albedo_texture
-	mat.emission_energy_multiplier = brightness * 1.8
+	mat.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY if mat.albedo_texture else BaseMaterial3D.EMISSION_OP_ADD
+	mat.emission_energy_multiplier = energy
 
-func _icon(title: String, id: String, dimensions: Vector2, at: Vector3, tint: Color = OFF) -> StandardMaterial3D:
-	var mat := _material(tint, load("res://assets/rv_status/" + id + ".svg"))
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	_quad(title, dimensions, at, mat)
-	if tint != OFF: backlights.append(mat)
+func _solid(tint: Color, roughness: float, texture: Texture2D = null) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = tint
+	mat.albedo_texture = texture
+	mat.roughness = roughness
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	return mat
+
+## Same worn paint as the rest of the cab, so the binnacle belongs to the vehicle.
+func _worn(tint: Color, roughness: float) -> StandardMaterial3D:
+	var mat := _solid(tint, roughness, load(WEAR))
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	mat.uv1_triplanar = true
+	mat.uv1_scale = Vector3.ONE * 1.4
 	return mat
 
 func _box(title: String, dimensions: Vector3, at: Vector3, mat: StandardMaterial3D) -> MeshInstance3D:
@@ -144,19 +216,84 @@ func _quad(title: String, dimensions: Vector2, at: Vector3, mat: StandardMateria
 	mesh.size = dimensions
 	_mesh(title, mesh, at, mat)
 
-func _disc(title: String, at: Vector3, radius: float, depth: float, mat: StandardMaterial3D) -> void:
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = depth
-	mesh.radial_segments = 24
-	_mesh(title, mesh, at, mat).rotation.x = PI / 2.0
-
-func _mesh(title: String, mesh: Mesh, at: Vector3, mat: StandardMaterial3D) -> MeshInstance3D:
+func _mesh(title: String, mesh: Mesh, at: Vector3, mat: StandardMaterial3D, parent: Node3D = self) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.name = title
 	node.mesh = mesh
 	node.position = at
 	node.material_override = mat
-	add_child(node)
+	parent.add_child(node)
 	return node
+
+## Rounded cap profile (radius, height) for hubs, knobs and screw heads.
+func _cap_profile(radius: float, height: float) -> PackedVector2Array:
+	return PackedVector2Array([Vector2(radius, 0), Vector2(radius, height * 0.6), Vector2(radius * 0.72, height), Vector2(0, height)])
+
+## Surface of revolution about +Z. The profile lists (radius, z) from the outer base
+## over the top to the inner base; each profile edge is one flat-shaded band.
+func _lathe(profile: PackedVector2Array, segments: int) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for edge in range(profile.size() - 1):
+		var a := profile[edge]
+		var b := profile[edge + 1]
+		var slope := Vector2(b.y - a.y, a.x - b.x).normalized()
+		for i in range(segments):
+			var t0 := TAU * i / segments
+			var t1 := TAU * (i + 1) / segments
+			var ring0 := Vector3(cos(t0), sin(t0), 0)
+			var ring1 := Vector3(cos(t1), sin(t1), 0)
+			var corners: Array[Vector3] = [ring0 * a.x + Vector3(0, 0, a.y), ring1 * a.x + Vector3(0, 0, a.y), ring1 * b.x + Vector3(0, 0, b.y), ring0 * b.x + Vector3(0, 0, b.y)]
+			var normals: Array[Vector3] = [ring0 * slope.x + Vector3(0, 0, slope.y), ring1 * slope.x + Vector3(0, 0, slope.y)]
+			_face(tool, [corners[0], corners[1], corners[2]], [normals[0], normals[1], normals[1]])
+			_face(tool, [corners[0], corners[2], corners[3]], [normals[0], normals[1], normals[0]])
+	return tool.commit()
+
+## Flat disc facing +Z with the texture mapped once across its diameter.
+func _disc(radius: float, segments: int) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(segments):
+		var points: Array[Vector3] = [Vector3.ZERO]
+		for step: int in [i, i + 1]:
+			var angle := TAU * step / segments
+			points.append(Vector3(cos(angle), sin(angle), 0) * radius)
+		var uvs: Array[Vector2] = []
+		for point in points: uvs.append(Vector2(0.5 + point.x / (radius * 2.0), 0.5 - point.y / (radius * 2.0)))
+		_face(tool, points, [Vector3.BACK, Vector3.BACK, Vector3.BACK], uvs)
+	return tool.commit()
+
+## Convex outline in XY extruded from z = 0 to z = depth, with its top and side faces.
+func _prism(outline: PackedVector2Array, depth: float) -> ArrayMesh:
+	var tool := SurfaceTool.new()
+	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var count := outline.size()
+	for i in range(1, count - 1):
+		for z in [depth, 0.0]:
+			var normal := Vector3.BACK if z > 0.0 else Vector3.FORWARD
+			_face(tool, [Vector3(outline[0].x, outline[0].y, z), Vector3(outline[i].x, outline[i].y, z), Vector3(outline[i + 1].x, outline[i + 1].y, z)], [normal, normal, normal])
+	for i in range(count):
+		var a := outline[i]
+		var b := outline[(i + 1) % count]
+		var side := Vector3(b.y - a.y, a.x - b.x, 0).normalized()
+		# Outlines may wind either way; point the wall away from the centroid.
+		if side.dot(Vector3(a.x + b.x, a.y + b.y, 0) * 0.5 - _centroid(outline)) < 0.0: side = -side
+		_face(tool, [Vector3(a.x, a.y, 0), Vector3(b.x, b.y, 0), Vector3(b.x, b.y, depth)], [side, side, side])
+		_face(tool, [Vector3(a.x, a.y, 0), Vector3(b.x, b.y, depth), Vector3(a.x, a.y, depth)], [side, side, side])
+	return tool.commit()
+
+func _centroid(outline: PackedVector2Array) -> Vector3:
+	var sum := Vector2.ZERO
+	for point in outline: sum += point
+	sum /= outline.size()
+	return Vector3(sum.x, sum.y, 0)
+
+## Adds one triangle wound so its front faces along the given normals.
+func _face(tool: SurfaceTool, points: Array, normals: Array, uvs: Array = []) -> void:
+	var order := [0, 1, 2]
+	# Godot front faces wind clockwise: the geometric cross product points away from the viewer.
+	if (points[1] - points[0]).cross(points[2] - points[0]).dot(normals[0] + normals[1] + normals[2]) > 0.0: order = [0, 2, 1]
+	for index in order:
+		tool.set_normal(normals[index].normalized())
+		if not uvs.is_empty(): tool.set_uv(uvs[index])
+		tool.add_vertex(points[index])

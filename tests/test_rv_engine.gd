@@ -63,16 +63,23 @@ func check_engine_rpm(rv: Chassis) -> void:
 	rv.current_fuel = fuel_before
 	rv.current_power = power_before
 
-func lit_battery_cells(cluster: InstrumentCluster) -> int:
-	var count := 0
-	for cell in cluster.battery_cells:
-		var material := cell.material_override as StandardMaterial3D
-		if material.emission_energy_multiplier > 0.0:
-			count += 1
-	return count
+## Index of the one gear position that outshines the others, or -1 when none does.
+func lit_gear(cluster: InstrumentCluster) -> int:
+	var energies: Array[float] = []
+	for material in cluster.gear_lamps:
+		energies.append(material.emission_energy_multiplier)
+	var brightest: float = energies.max()
+	if brightest <= 0.0 or energies.count(brightest) != 1:
+		return -1
+	return energies.find(brightest)
+
+## Long enough for the damped needles to reach their targets.
+func settle_instruments(cluster: InstrumentCluster, rv: Chassis) -> void:
+	cluster.update_instruments(rv, 10.0)
 
 func check_unpowered_instruments(cluster: InstrumentCluster, reason: String) -> void:
-	check(cluster.gear_material.emission_energy_multiplier == 0.0 and lit_battery_cells(cluster) == 0, reason + " extinguishes the gear and battery displays")
+	check(lit_gear(cluster) == -1, reason + " extinguishes the gear quadrant")
+	check(is_equal_approx(cluster.battery_needle.rotation.z, InstrumentCluster.level_rotation(0.0)), reason + " drops the charge gauge to empty")
 	check(cluster.charge_material.emission_energy_multiplier == 0.0, reason + " extinguishes the charging indicator")
 	for id in VehicleStatus.IDS:
 		check(cluster.warning_lamps[id].emission_energy_multiplier == 0.0, reason + " extinguishes the " + id + " lamp")
@@ -86,17 +93,16 @@ func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
 	var generation_before := rv.energy.generated_rate
 	var socket := rv.get_battery_socket()
 	var battery := socket.installed_battery
-	rv.current_power = rv.max_power * 0.12
+	var low_charge := 0.12
+	rv.current_power = rv.max_power * low_charge
 	rv.current_fuel = 0.0
 	rv.energy.charging = true
 	rv.energy.generated_rate = 0.0
-	cluster.update_instruments(rv, 0.11)
-	check(lit_battery_cells(cluster) == 2, "Twelve percent charge lights two battery cells")
-	for i in range(2):
-		var material := cluster.battery_cells[i].material_override as StandardMaterial3D
-		check(material.emission.is_equal_approx(Color("e9b559")), "Low-charge battery cell lights amber")
-	check(is_equal_approx(cluster.fuel_pointer.position.x, -0.107), "Empty fuel puts the pointer at E")
+	settle_instruments(cluster, rv)
+	check(is_equal_approx(cluster.battery_needle.rotation.z, InstrumentCluster.level_rotation(low_charge)), "Charge gauge needle follows the battery level")
+	check(is_equal_approx(cluster.fuel_needle.rotation.z, InstrumentCluster.level_rotation(0.0)), "Empty fuel puts the needle at E")
 	check(cluster.charge_material.emission_energy_multiplier == 0.0, "Charging flag alone does not light the charging indicator")
+	check(is_equal_approx(cluster.rpm_needle.rotation.z, InstrumentCluster.dial_rotation(rv.engine_rpm() / InstrumentCluster.RPM_FULL_SCALE)), "Tachometer needle follows engine RPM")
 	for row in VehicleStatus.read(rv):
 		var lamp: StandardMaterial3D = cluster.warning_lamps[row.id]
 		check((lamp.emission_energy_multiplier > 0.0) == (row.level > 0), "Cluster warning follows vehicle status for " + row.id)
@@ -108,10 +114,11 @@ func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
 	rv.current_fuel = rv.max_fuel
 	for selected_gear in [-1, 0, 1, 4]:
 		rv.set_gear(selected_gear)
-		cluster.update_instruments(rv, 0.11)
-		check(is_equal_approx(cluster.gear_material.uv1_offset.x, float(selected_gear + 1) / 7.0), "Gear display selects the glyph for %d" % selected_gear)
-	check(lit_battery_cells(cluster) == 10, "Full charge lights all ten battery cells")
-	check(is_equal_approx(cluster.fuel_pointer.position.x, 0.107), "Full fuel puts the pointer at F")
+		settle_instruments(cluster, rv)
+		var glyph := "R" if selected_gear < 0 else ("N" if selected_gear == 0 else str(selected_gear))
+		check(lit_gear(cluster) == InstrumentCluster.GEAR_GLYPHS.find(glyph), "Gear quadrant lights the position for %d" % selected_gear)
+	check(is_equal_approx(cluster.battery_needle.rotation.z, InstrumentCluster.level_rotation(1.0)), "Full charge puts the charge needle at F")
+	check(is_equal_approx(cluster.fuel_needle.rotation.z, InstrumentCluster.level_rotation(1.0)), "Full fuel puts the needle at F")
 	check(cluster.charge_material.emission_energy_multiplier > 0.0, "Positive generation lights the charging indicator")
 	var second_shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	second_shell.position.x = -20.0
@@ -120,16 +127,16 @@ func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
 	var second_cluster := second_rv.get_node("DriverSeat/CockpitVisual/InstrumentCluster") as InstrumentCluster
 	second_rv.set_gear(0)
 	second_rv.current_power = 0.0
-	second_cluster.update_instruments(second_rv, 0.11)
-	check(is_equal_approx(second_cluster.gear_material.uv1_offset.x, 1.0 / 7.0) and is_equal_approx(cluster.gear_material.uv1_offset.x, 5.0 / 7.0), "Two RVs keep independent gear display materials")
-	check(lit_battery_cells(second_cluster) == 0 and lit_battery_cells(cluster) == 10, "Two RVs keep independent battery display materials")
+	settle_instruments(second_cluster, second_rv)
+	check(lit_gear(second_cluster) == -1 and lit_gear(cluster) == InstrumentCluster.GEAR_GLYPHS.find("4"), "Two RVs keep independent gear quadrant materials")
+	check(not is_equal_approx(second_cluster.battery_needle.rotation.z, cluster.battery_needle.rotation.z), "Two RVs keep independent charge gauges")
 	second_shell.free()
 	rv.current_power = 0.0
-	cluster.update_instruments(rv, 0.11)
+	settle_instruments(cluster, rv)
 	check_unpowered_instruments(cluster, "Empty battery")
 	rv.current_power = rv.max_power
 	socket.installed_battery = null
-	cluster.update_instruments(rv, 0.11)
+	settle_instruments(cluster, rv)
 	check_unpowered_instruments(cluster, "Missing battery")
 	socket.installed_battery = battery
 	rv.current_power = power_before
@@ -137,7 +144,7 @@ func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
 	rv.set_gear(gear_before)
 	rv.energy.charging = charging_before
 	rv.energy.generated_rate = generation_before
-	cluster.update_instruments(rv, 0.11)
+	settle_instruments(cluster, rv)
 
 func check_session_energy(rv: Chassis) -> void:
 	var fuel_before := rv.current_fuel
