@@ -47,9 +47,21 @@ func by_id(identity: String) -> Item:
 func item(key: String) -> Item:
 	return by_id(str(targets.get(key, "")))
 
+static func _wall_slots() -> Array[String]:
+	var ids: Array[String] = []
+	for slot in RVStructureSlots.layout():
+		if slot.kind != "roof": ids.append(slot.id)
+	return ids
+
+static func _roll_repair_targets(rng: RandomNumberGenerator) -> Dictionary:
+	var walls := _wall_slots()
+	var wall_a: String = walls.pop_at(rng.randi_range(0, walls.size() - 1))
+	return {"wall_a": wall_a, "wall_b": walls[rng.randi_range(0, walls.size() - 1)],
+		"wheel_slot": rng.randi_range(0, Chassis.WHEEL_SLOTS.size() - 1)}
+
 func prepare(vehicle: Chassis) -> bool:
 	if configured: return true
-	if vehicle == null or vehicle.installed_wheels[0] == null: return false
+	if vehicle == null: return false
 	var building: Node3D = controller.get_parent().get("shelter")
 	if not is_instance_valid(building): return false
 	var found := {}
@@ -64,26 +76,29 @@ func prepare(vehicle: Chassis) -> bool:
 	var port: Item
 	for equipment in vehicle.get_equipment():
 		if equipment.scene_file_path == "res://equipment/fuel_port.tscn": port = equipment
-	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
-	var wall_a: RVStructurePanel = slots.panel("left_0")
-	var wall_b: RVStructurePanel = slots.panel("right_0")
-	var roof: RVStructurePanel = slots.panel("roof_1")
-	var engine := vehicle.get_engine()
-	if socket == null or socket.installed_battery == null or engine == null or tablet == null or port == null or wall_a == null or wall_b == null or roof == null or wall_a.is_destroyed or wall_b.is_destroyed: return false
-	found.merge({"socket": socket.persistent_id, "tablet": tablet.persistent_id, "fuel_port": port.persistent_id,
-		"wall_a": "left_0", "wall_b": "right_0", "wheel_slot": 0, "original_wheel": vehicle.wheel_ids[0],
-		"original_battery": socket.installed_battery.id, "engine": engine.id, "roof_slot": "roof_1"})
-	# All guards precede the sole new-run fault configuration.
 	var generator: Node = controller._world().get_node("WorldGenerator")
 	var rng: RandomNumberGenerator = generator.field.rng_for(0, "orientation_rv_condition")
+	var repairs := _roll_repair_targets(rng)
+	var wheel_slot: int = repairs.wheel_slot
+	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	var wall_a := slots.occupant(repairs.wall_a)
+	var wall_b := slots.occupant(repairs.wall_b)
+	var roof: RVStructurePanel = slots.panel("roof_1")
+	var engine := vehicle.get_engine()
+	if socket == null or socket.installed_battery == null or engine == null or tablet == null or port == null or wall_a == null or wall_b == null or roof == null or vehicle.installed_wheels[wheel_slot] == null: return false
+	found.merge(repairs)
+	found.merge({"socket": socket.persistent_id, "tablet": tablet.persistent_id, "fuel_port": port.persistent_id,
+		"original_wheel": vehicle.wheel_ids[wheel_slot],
+		"original_battery": socket.installed_battery.id, "engine": engine.id, "roof_slot": "roof_1"})
+	# All guards precede the sole new-run fault configuration.
 	targets = found
 	controller.rv_id = vehicle.persistent_id
 	configured = true
 	wall_a.set_health(minf(wall_a.current_health, wall_a.max_health - rng.randi_range(20, 60)))
 	wall_b.set_health(minf(wall_b.current_health, wall_b.max_health - rng.randi_range(20, 60)))
 	var tire_health := 0.0 if rng.randi_range(1, 3) == 1 else float(rng.randi_range(10, 29))
-	vehicle.wheel_health[0] = minf(vehicle.wheel_health[0], tire_health)
-	vehicle._update_wheel_condition(0)
+	vehicle.wheel_health[wheel_slot] = minf(vehicle.wheel_health[wheel_slot], tire_health)
+	vehicle._update_wheel_condition(wheel_slot)
 	engine.health = 0.0
 	vehicle.set_engine_running(false)
 	socket.installed_battery.charge = 0.0
@@ -254,6 +269,11 @@ func tick() -> void:
 
 func page() -> Dictionary:
 	var conditions := []
+	var wall_names := "the two damaged sections"
+	var tire_name := "the damaged tire"
+	if configured:
+		wall_names = "%s and %s" % [RVTerminalPresenter.slot_name(targets.wall_a), RVTerminalPresenter.slot_name(targets.wall_b)]
+		tire_name = "the %s tire" % TireDynamics.NAMES[targets.wheel_slot].to_lower()
 	var steps := ["This workshop is optional. Use these references in any order; you can leave when the RV's normal driving systems work.",
 		"Supplies: search the warehouse racks, pallet bays and side aisles. Loose supplies sit on the lower shelves; sealed shipping crates are scenery. Keep the central vehicle lane clear.",
 		"Power: collect the charged reserve battery. Select it and use the RV battery socket to exchange the empty installed battery. The socket needs a healthy installed battery; no reserve charge is added automatically.",
@@ -261,9 +281,9 @@ func page() -> Dictionary:
 		"Equipment: find the scrapper and workbench among the warehouse storage bays, one large item at a time. Board via the side access and fasten them to the rear cabin floor. Keep the walkway, intake and output bed clear. Equipment can be mounted before restoring power.",
 		"Materials: drop small salvage into the installed scrapper intake. Carry the motor and oil barrels to the intake and deposit them as held large items. Wait until materials enter RV storage. All eight salvage items and both barrels yield 28 Metal Parts and 20 Unrefined Fuel.",
 		"Gasoline: open the RV's rvctl tablet, choose Crafting, the marked workbench and Gasoline Can. Confirm production (2 Metal Parts + 5 Unrefined Fuel), wait for the physical output and pick it up.",
-		"Walls: with the engine off and handbrake applied, open rvctl Structure. Select left_0 or right_0 and Repair (2 Metal Parts each). Keep rvctl open until the job finishes.",
+		"Bodywork: with the engine off and handbrake applied, open rvctl Structure. Repair %s (2 Metal Parts each). Keep rvctl open until each job finishes." % wall_names,
 		"Roof: in rvctl Structure, select destroyed slot roof_1 and Rebuild (6 Metal Parts). Clear the construction area and keep rvctl open until completion. Repairs and reconstruction are optional for departure.",
-		"Tire: with no tire selected, hold E at the left-front wheel socket to remove the worn or flat tire. Find the healthy spare among the pallet bays and hold E at that same empty socket to install it.",
+		"Tire: with no tire selected, hold E at the wheel socket to remove %s. Select the spare from the pallet bays and hold E at the same socket to install it." % tire_name,
 		"Fuel: select a completed gasoline can and use the RV fuel port. A successful transfer returns an empty can. You can refuel before completing any repair or equipment reference.",
 		"Departure: close the maintenance cover and stow the rear ramp. Board the driver's seat, start the engine, select first gear and release the handbrake. Drive towards the exit; its vehicle sensor opens the gate. Clear the exit with the entire RV to begin the journey."]
 	var controls := ["E: pick up / open cover / exchange selected battery / use fuel port. Hold E: fixed rvctl, driver's seat or wheel socket.",
@@ -279,9 +299,9 @@ func page() -> Dictionary:
 			_condition("workbench", "Optional: fasten and power the marked workbench", flags.workbench_placed and installed("workbench")),
 			_condition("recycle", "Optional: recycle the copper spool, radio and first oil barrel", [targets.scrap_a, targets.scrap_b, targets.barrel].all(func(identity): return identity in recycled_ids)),
 			_condition("manufacture", "Optional: manufacture and pick up a gasoline can", not gasoline_id.is_empty() and gasoline_id in output_ids),
-			_condition("walls", "Optional: repair both designated walls to full durability", repaired_ids.size() == 2 and wall_ready(targets.wall_a) and wall_ready(targets.wall_b)),
+			_condition("walls", "Optional: repair %s" % wall_names, repaired_ids.size() == 2 and wall_ready(targets.wall_a) and wall_ready(targets.wall_b)),
 			_condition("roof", "Optional: rebuild roof_1 to full durability", flags.roof_rebuilt and wall_ready(str(targets.roof_slot))),
-			_condition("wheel", "Optional: replace the damaged left-front tire with the marked spare", flags.wheel_removed and flags.wheel_installed and wheel_ready()),
+			_condition("wheel", "Optional: replace %s with the spare" % tire_name, flags.wheel_removed and flags.wheel_installed and wheel_ready()),
 			_condition("refuel", "Optional: refuel from manufactured gasoline and receive the empty can", flags.refueled and refuel_amount > 0.0 and not empty_can_id.is_empty())]
 	return {"available": true, "stage": 2, "title": "Workshop field guide / Optional references", "conditions": conditions, "steps": steps, "reference": controls}
 func _condition(identity: String, text: String, done: bool) -> Dictionary:
@@ -315,12 +335,13 @@ static func validation_error(value: Variant) -> String:
 	for key in value.targets:
 		if key not in TARGET_KEYS: return "targets." + str(key)
 		if key == "wheel_slot":
-			if not value.targets[key] is int or value.targets[key] != 0: return "targets.wheel_slot"
+			if not value.targets[key] is int or value.targets[key] < 0 or value.targets[key] >= Chassis.WHEEL_SLOTS.size(): return "targets.wheel_slot"
 		elif not value.targets[key] is String or value.targets[key].is_empty(): return "targets." + key
 		elif key not in ["wall_a", "wall_b", "roof_slot"]:
 			if target_ids.has(value.targets[key]): return "targets.duplicate"
 			target_ids[value.targets[key]] = true
-	if value.targets.wall_a != "left_0" or value.targets.wall_b != "right_0": return "targets.wall"
+	var wall_slots := _wall_slots()
+	if value.targets.wall_a == value.targets.wall_b or value.targets.wall_a not in wall_slots or value.targets.wall_b not in wall_slots: return "targets.wall"
 	if value.targets.roof_slot != "roof_1": return "targets.roof_slot"
 	for identity in value.output_ids:
 		if target_ids.has(identity): return "output_ids.alias"
