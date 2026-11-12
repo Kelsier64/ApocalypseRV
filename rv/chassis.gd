@@ -5,6 +5,9 @@ const PARKING_HOLD_MAX_SPEED := 0.5
 const PARKING_HOLD_RESPONSE := 40.0
 const ENGINE_SPEED_WEAR_THRESHOLD := 0.6
 const MIN_ENGINE_SPEED_SCALE := 0.4
+const ENGINE_IDLE_RPM := 750.0
+const ENGINE_REDLINE_RPM := 4200.0
+const ENGINE_MAX_RPM := 4800.0
 
 @export var max_engine_force: float = 5000.0
 @export var max_speed: float = 35.0
@@ -20,6 +23,7 @@ const MIN_ENGINE_SPEED_SCALE := 0.4
 @export_range(0.05, 1.0) var high_speed_steering_ratio: float = 0.18
 @export var steering_lateral_acceleration: float = 4.0
 var throttle_input: float = 0.0
+var _free_rev_pedal := 0.0
 @export_range(0.0, 1.0) var vibration_strength := 0.5
 @export_range(0.2, 1.0) var instrument_brightness := 0.65
 @export var cabin_light_draw := 0.03
@@ -198,6 +202,20 @@ func road_speed() -> float:
 	# Wheel constraint impulses can leave a small reported velocity even while
 	# parked. Instruments measure actual movement, excluding suspension travel.
 	return _road_speed
+
+func engine_rpm() -> float:
+	# Presentation estimate from the drive speed bands. The drivetrain has no shaft RPM.
+	if not energy.engine_running or not has_working_engine() or not has_usable_fuel():
+		return 0.0
+	if gear == 0 or handbrake or drive_blocked():
+		return lerpf(ENGINE_IDLE_RPM, ENGINE_MAX_RPM, _free_rev_pedal)
+	var longitudinal_speed := absf(linear_velocity.dot(global_basis.z))
+	var speed_ratio := longitudinal_speed / maxf(_gear_speed(), 0.01)
+	var launch_rpm := throttle_input * 900.0 * maxf(0.0, 1.0 - speed_ratio)
+	return minf(ENGINE_MAX_RPM, lerpf(ENGINE_IDLE_RPM, ENGINE_REDLINE_RPM, speed_ratio) + launch_rpm)
+
+func _gear_speed() -> float:
+	return [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
 
 func feedback(kind: String, at: Vector3 = Vector3.INF) -> void:
 	var sound := get_node_or_null("Audio")
@@ -657,10 +675,15 @@ func _physics_process(delta: float) -> void:
 		var applied: Vector2 = _player_driver.hallucinated_driving_input(turn, throttle if braking_input == 0.0 else 0.0)
 		turn = applied.x
 		throttle = applied.y
-	var target_throttle := clampf(throttle, 0.0, 1.0) if gear != 0 and not handbrake and not drive_blocked() and braking_input == 0.0 else 0.0
+	var drive_engaged := gear != 0 and not handbrake and not drive_blocked()
+	var pedal := clampf(throttle, 0.0, 1.0) if braking_input == 0.0 else 0.0
+	var target_throttle := pedal if drive_engaged else 0.0
 	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
 	throttle_input = move_toward(throttle_input, target_throttle, delta / maxf(0.01, throttle_response))
-	var drive := throttle_input if gear != 0 and not handbrake and not drive_blocked() else 0.0
+	var rev_pedal := pedal if not drive_engaged and energy.engine_running else 0.0
+	var rev_response := throttle_apply_seconds if rev_pedal > _free_rev_pedal else throttle_release_seconds
+	_free_rev_pedal = move_toward(_free_rev_pedal, rev_pedal, delta / maxf(0.01, rev_response))
+	var drive := throttle_input if drive_engaged else 0.0
 	var brake_response := brake_apply_seconds if braking_input > brake_input else brake_release_seconds
 	brake_input = move_toward(brake_input, clampf(braking_input, 0.0, 1.0), delta / maxf(0.01, brake_response))
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
@@ -683,7 +706,7 @@ func _physics_process(delta: float) -> void:
 		var spec := engine.definition()
 		var health_scale := minf(1.0, engine.health / (spec.max_health * ENGINE_SPEED_WEAR_THRESHOLD))
 		var speed_scale := lerpf(MIN_ENGINE_SPEED_SCALE, 1.0, health_scale)
-		var gear_speed: float = [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
+		var gear_speed := _gear_speed()
 		var torque := maxf(0.1 * speed_scale, 1.0 - longitudinal_speed / (gear_speed * speed_scale))
 		engine_force = -drive * max_engine_force * spec.force_multiplier * torque * (1.0 if gear > 0 else -0.3)
 	if not is_player_driving and control_override.is_empty():

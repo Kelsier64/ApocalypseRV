@@ -15,9 +15,6 @@ func _ready() -> void:
 	seat_camera.cull_mask = (seat_camera.cull_mask & ~PlayerModelVisual.FULL_BODY_LAYER) | PlayerModelVisual.LOCAL_VIEW_LAYER
 	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))
 	game_settings.setting_changed.connect(_on_setting_changed)
-	var dashboard := CanvasLayer.new()
-	dashboard.set_script(load("res://rv/vehicle_dashboard.gd"))
-	add_child(dashboard)
 	# Defer setup so the RV parent's _ready() (which calls add_to_group("rv"))
 	# has already run before we walk up the tree looking for it.
 	call_deferred("_setup_if_on_rv")

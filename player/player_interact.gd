@@ -1,9 +1,5 @@
 extends RayCast3D
 ## The player owns a key gesture. Looking away cancels it; holding never repeats.
-const DRIVE_HINTS := {
-	"W / S": "Throttle / Brake", "A / D": "Steer", "Space": "Parking brake", "B": "Toggle engine",
-	"Z / X / C": "Reverse / Neutral / 1st", "R / T": "Shift up / down", "L": "Headlights", "E": "Exit seat",
-}
 const PLACE_HINTS := {
 	"LMB": "Place", "RMB / Esc": "Cancel", "Q / E": "Rotate", "Hold Shift": "Fine rotation",
 	"Arrows": "Nudge", "R": "Switch mode",
@@ -80,7 +76,7 @@ func _update_control_hints(obj: Node = null, blocked := false) -> void:
 		return
 	match player.get_player_mode():
 		player.PlayerMode.SEATED:
-			_control_hints.present("DRIVING", DRIVE_HINTS)
+			_control_hints.hide()
 		player.PlayerMode.PLACING:
 			_control_hints.present("PLACEMENT", PLACE_HINTS)
 		player.PlayerMode.GRABBED:

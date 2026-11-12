@@ -154,11 +154,11 @@ func check_driving_carry() -> void:
 	ray._input(toggle)
 	ray._update_control_hints()
 	var hints = ray._control_hints
-	check(hints.visible and hints._heading.text == "DRIVING" and hints._bindings.get("W / S") == "Throttle / Brake", "Driving replaces walking hints with seat controls")
+	check(not hints.visible, "Seated driving keeps the optional control hint overlay hidden when J is toggled on")
 	var previous_size := root.size
 	root.size = Vector2i(960, 540)
 	await steps()
-	check(hints._layout.get_global_rect().end.y <= root.size.y - 180, "Driving hints clear the dashboard in a short window")
+	check(not hints.visible, "Seated driving keeps the optional control hint overlay hidden in a short window")
 	root.size = previous_size
 	ray._input(toggle)
 	var carry := actor.get_node("Visuals/Carry")

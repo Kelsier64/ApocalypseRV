@@ -1,4 +1,5 @@
 extends SceneTree
+const InstrumentCluster := preload("res://rv/instrument_cluster.gd")
 var failures: Array[String] = []
 func _init() -> void: _run.call_deferred()
 func check(ok: bool, note: String) -> void:
@@ -12,6 +13,131 @@ func level(rv: Node, id: String) -> int:
 	for row in VehicleStatus.read(rv):
 		if row.id == id: return row.level
 	return -1
+
+func check_engine_rpm(rv: Chassis) -> void:
+	var fuel_before := rv.current_fuel
+	var power_before := rv.current_power
+	var previous_gear := rv.gear
+	var previous_handbrake := rv.handbrake
+	check(rv.engine_rpm() == 0.0, "Stopped engine reads zero RPM")
+	check(rv.set_engine_running(true) and rv.engine_rpm() == Chassis.ENGINE_IDLE_RPM, "Running engine idles with the pedal released")
+	rv.allow_test_controls = true
+	rv.set_gear(0)
+	rv.set_handbrake(false)
+	rv.control_override = {"throttle": 1.0}
+	rv._physics_process(rv.throttle_apply_seconds)
+	check(is_equal_approx(rv.engine_rpm(), Chassis.ENGINE_MAX_RPM) and rv.engine_force == 0.0, "Neutral revs without driving the wheels")
+	rv.control_override.clear()
+	rv._physics_process(rv.throttle_release_seconds)
+	rv.set_handbrake(true)
+	rv.set_gear(1)
+	rv.control_override = {"throttle": 1.0}
+	rv._physics_process(rv.throttle_apply_seconds)
+	check(is_equal_approx(rv.engine_rpm(), Chassis.ENGINE_MAX_RPM) and rv.engine_force == 0.0, "Parking brake allows free revs in gear without driving the wheels")
+	rv.control_override.clear()
+	rv._physics_process(rv.throttle_release_seconds)
+	rv.set_handbrake(false)
+	rv.linear_velocity = -rv.global_basis.z * 5.0
+	var first_gear_rpm := rv.engine_rpm()
+	rv.set_gear(2)
+	check(first_gear_rpm > rv.engine_rpm() and rv.engine_rpm() > Chassis.ENGINE_IDLE_RPM, "Upshifting at the same road speed lowers RPM")
+	rv.linear_velocity = Vector3.ZERO
+	check(rv.engine_rpm() == Chassis.ENGINE_IDLE_RPM, "Running engine idles at rest in gear")
+	rv.set_gear(-1)
+	rv.linear_velocity = rv.global_basis.z * 5.0
+	check(is_equal_approx(rv.engine_rpm(), first_gear_rpm), "Reverse raises RPM as the RV backs up")
+	rv.current_fuel = 0.0
+	check(rv.engine_rpm() == 0.0, "Empty tank reads zero RPM")
+	rv.current_fuel = fuel_before
+	var engine := rv.get_engine()
+	var health_before := engine.health
+	engine.health = 0.0
+	check(rv.engine_rpm() == 0.0, "Broken engine reads zero RPM")
+	engine.health = health_before
+	rv.set_engine_running(false)
+	check(rv.engine_rpm() == 0.0, "Moving RV reads zero RPM after engine shutdown")
+	rv.linear_velocity = Vector3.ZERO
+	rv.set_gear(previous_gear)
+	rv.set_handbrake(previous_handbrake)
+	rv.allow_test_controls = false
+	rv.current_fuel = fuel_before
+	rv.current_power = power_before
+
+func lit_battery_cells(cluster: InstrumentCluster) -> int:
+	var count := 0
+	for cell in cluster.battery_cells:
+		var material := cell.material_override as StandardMaterial3D
+		if material.emission_energy_multiplier > 0.0:
+			count += 1
+	return count
+
+func check_unpowered_instruments(cluster: InstrumentCluster, reason: String) -> void:
+	check(cluster.gear_material.emission_energy_multiplier == 0.0 and lit_battery_cells(cluster) == 0, reason + " extinguishes the gear and battery displays")
+	check(cluster.charge_material.emission_energy_multiplier == 0.0, reason + " extinguishes the charging indicator")
+	for id in VehicleStatus.IDS:
+		check(cluster.warning_lamps[id].emission_energy_multiplier == 0.0, reason + " extinguishes the " + id + " lamp")
+
+func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
+	var cluster := rv.get_node("DriverSeat/CockpitVisual/InstrumentCluster") as InstrumentCluster
+	var power_before := rv.current_power
+	var fuel_before := rv.current_fuel
+	var gear_before := rv.gear
+	var charging_before := rv.energy.charging
+	var generation_before := rv.energy.generated_rate
+	var socket := rv.get_battery_socket()
+	var battery := socket.installed_battery
+	rv.current_power = rv.max_power * 0.12
+	rv.current_fuel = 0.0
+	rv.energy.charging = true
+	rv.energy.generated_rate = 0.0
+	cluster.update_instruments(rv, 0.11)
+	check(lit_battery_cells(cluster) == 2, "Twelve percent charge lights two battery cells")
+	for i in range(2):
+		var material := cluster.battery_cells[i].material_override as StandardMaterial3D
+		check(material.emission.is_equal_approx(Color("e9b559")), "Low-charge battery cell lights amber")
+	check(is_equal_approx(cluster.fuel_pointer.position.x, -0.107), "Empty fuel puts the pointer at E")
+	check(cluster.charge_material.emission_energy_multiplier == 0.0, "Charging flag alone does not light the charging indicator")
+	for row in VehicleStatus.read(rv):
+		var lamp: StandardMaterial3D = cluster.warning_lamps[row.id]
+		check((lamp.emission_energy_multiplier > 0.0) == (row.level > 0), "Cluster warning follows vehicle status for " + row.id)
+		if row.level > 0:
+			check(lamp.emission.is_equal_approx(VehicleStatus.color(row.level)), "Cluster warning color follows severity for " + row.id)
+	rv.energy.charging = false
+	rv.energy.generated_rate = 1.0
+	rv.current_power = rv.max_power
+	rv.current_fuel = rv.max_fuel
+	for selected_gear in [-1, 0, 1, 4]:
+		rv.set_gear(selected_gear)
+		cluster.update_instruments(rv, 0.11)
+		check(is_equal_approx(cluster.gear_material.uv1_offset.x, float(selected_gear + 1) / 7.0), "Gear display selects the glyph for %d" % selected_gear)
+	check(lit_battery_cells(cluster) == 10, "Full charge lights all ten battery cells")
+	check(is_equal_approx(cluster.fuel_pointer.position.x, 0.107), "Full fuel puts the pointer at F")
+	check(cluster.charge_material.emission_energy_multiplier > 0.0, "Positive generation lights the charging indicator")
+	var second_shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
+	second_shell.position.x = -20.0
+	world.add_child(second_shell)
+	var second_rv: Chassis = second_shell.get_node("Chassis")
+	var second_cluster := second_rv.get_node("DriverSeat/CockpitVisual/InstrumentCluster") as InstrumentCluster
+	second_rv.set_gear(0)
+	second_rv.current_power = 0.0
+	second_cluster.update_instruments(second_rv, 0.11)
+	check(is_equal_approx(second_cluster.gear_material.uv1_offset.x, 1.0 / 7.0) and is_equal_approx(cluster.gear_material.uv1_offset.x, 5.0 / 7.0), "Two RVs keep independent gear display materials")
+	check(lit_battery_cells(second_cluster) == 0 and lit_battery_cells(cluster) == 10, "Two RVs keep independent battery display materials")
+	second_shell.free()
+	rv.current_power = 0.0
+	cluster.update_instruments(rv, 0.11)
+	check_unpowered_instruments(cluster, "Empty battery")
+	rv.current_power = rv.max_power
+	socket.installed_battery = null
+	cluster.update_instruments(rv, 0.11)
+	check_unpowered_instruments(cluster, "Missing battery")
+	socket.installed_battery = battery
+	rv.current_power = power_before
+	rv.current_fuel = fuel_before
+	rv.set_gear(gear_before)
+	rv.energy.charging = charging_before
+	rv.energy.generated_rate = generation_before
+	cluster.update_instruments(rv, 0.11)
 
 func check_session_energy(rv: Chassis) -> void:
 	var fuel_before := rv.current_fuel
@@ -137,6 +263,8 @@ func _run() -> void:
 	player.set_physics_process(false)
 	await physics_frame
 	await physics_frame
+	check_engine_rpm(rv)
+	check_instrument_cluster(rv, world)
 	check(not rv.has_node("Generator"), "Charging needs no portable generator")
 	for name in ["CraftingStation", "Scrapper", "TabletScreen", "ItemBox", "FuelPort", "DriverSeat"]:
 		check(rv.get_node(name).can_operate(), "Default installed service: " + name)

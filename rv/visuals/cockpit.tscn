@@ -1,13 +1,12 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://rv/cockpit_visual.gd" id="script"]
+[ext_resource type="Script" path="res://rv/instrument_cluster.gd" id="cluster"]
 [ext_resource type="Material" path="res://rv/visuals/metal.tres" id="metal"]
 [ext_resource type="Material" path="res://rv/visuals/rubber.tres" id="rubber"]
 [ext_resource type="Material" path="res://rv/visuals/teal.tres" id="teal"]
 [ext_resource type="Material" path="res://rv/visuals/orange.tres" id="orange"]
 [ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
-[ext_resource type="Material" path="res://rv/visuals/screen.tres" id="screen"]
-[ext_resource type="Material" path="res://rv/visuals/white.tres" id="white"]
 
 [sub_resource type="BoxMesh" id="m1"]
 size = Vector3(0.43, 0.34, 0.5)
@@ -44,14 +43,6 @@ material = ExtResource("dark")
 [sub_resource type="BoxMesh" id="m9"]
 size = Vector3(1.44, 0.065, 0.61)
 material = ExtResource("rubber")
-
-[sub_resource type="BoxMesh" id="m10"]
-size = Vector3(1.18, 0.29, 0.018)
-material = ExtResource("dark")
-
-[sub_resource type="BoxMesh" id="m11"]
-size = Vector3(1.28, 0.06, 0.24)
-material = ExtResource("teal")
 
 [sub_resource type="TorusMesh" id="m12"]
 inner_radius = 0.205
@@ -121,172 +112,6 @@ material = ExtResource("metal")
 size = Vector3(0.1, 0.045, 0.2)
 material = ExtResource("rubber")
 
-[sub_resource type="CylinderMesh" id="m26"]
-top_radius = 0.14500000000000002
-bottom_radius = 0.14500000000000002
-height = 0.025
-radial_segments = 24
-material = ExtResource("metal")
-
-[sub_resource type="CylinderMesh" id="m27"]
-top_radius = 0.13
-bottom_radius = 0.13
-height = 0.03
-radial_segments = 24
-material = ExtResource("screen")
-
-[sub_resource type="BoxMesh" id="m28"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m29"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m30"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m31"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m32"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m33"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m34"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m35"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m36"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m37"]
-size = Vector3(0.008, 0.0884, 0.007)
-material = ExtResource("orange")
-
-[sub_resource type="CylinderMesh" id="m38"]
-top_radius = 0.11
-bottom_radius = 0.11
-height = 0.025
-radial_segments = 24
-material = ExtResource("metal")
-
-[sub_resource type="CylinderMesh" id="m39"]
-top_radius = 0.095
-bottom_radius = 0.095
-height = 0.03
-radial_segments = 24
-material = ExtResource("screen")
-
-[sub_resource type="BoxMesh" id="m40"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m41"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m42"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m43"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m44"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m45"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m46"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m47"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m48"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m49"]
-size = Vector3(0.008, 0.0646, 0.007)
-material = ExtResource("orange")
-
-[sub_resource type="CylinderMesh" id="m50"]
-top_radius = 0.11
-bottom_radius = 0.11
-height = 0.025
-radial_segments = 24
-material = ExtResource("metal")
-
-[sub_resource type="CylinderMesh" id="m51"]
-top_radius = 0.095
-bottom_radius = 0.095
-height = 0.03
-radial_segments = 24
-material = ExtResource("screen")
-
-[sub_resource type="BoxMesh" id="m52"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m53"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m54"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m55"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m56"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m57"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m58"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m59"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m60"]
-size = Vector3(0.008, 0.022, 0.004)
-material = ExtResource("white")
-
-[sub_resource type="BoxMesh" id="m61"]
-size = Vector3(0.008, 0.0646, 0.007)
-material = ExtResource("orange")
-
-[sub_resource type="BoxMesh" id="m62"]
-size = Vector3(0.075, 0.065, 0.025)
-material = ExtResource("orange")
-
 [node name="CockpitVisual" type="Node3D"]
 script = ExtResource("script")
 
@@ -333,16 +158,6 @@ rotation_degrees = Vector3(0, 0, 0)
 [node name="DashTop" type="MeshInstance3D" parent="."]
 position = Vector3(0, 0.998, -1.25)
 mesh = SubResource("m9")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="InstrumentFace" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.125, -1.025)
-mesh = SubResource("m10")
-rotation_degrees = Vector3(-12, 0, 0)
-
-[node name="DashboardBrow" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.3, -1.095)
-mesh = SubResource("m11")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="SteeringTilt" type="Node3D" parent="."]
@@ -431,199 +246,8 @@ position = Vector3(0.13, 0.1, -0.55)
 mesh = SubResource("m25")
 rotation_degrees = Vector3(-25, 0, 0)
 
-[node name="SpeedRim" type="MeshInstance3D" parent="."]
-position = Vector3(-0.37, 1.135, -0.998)
-mesh = SubResource("m26")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="SpeedDial" type="MeshInstance3D" parent="."]
-position = Vector3(-0.37, 1.135, -0.98)
-mesh = SubResource("m27")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="SpeedTick0" type="MeshInstance3D" parent="."]
-position = Vector3(-0.4527, 1.0656, -0.961)
-mesh = SubResource("m28")
-rotation_degrees = Vector3(0, 0, 130)
-
-[node name="SpeedTick1" type="MeshInstance3D" parent="."]
-position = Vector3(-0.477, 1.1209, -0.961)
-mesh = SubResource("m29")
-rotation_degrees = Vector3(0, 0, 97.5)
-
-[node name="SpeedTick2" type="MeshInstance3D" parent="."]
-position = Vector3(-0.4678, 1.1806, -0.961)
-mesh = SubResource("m30")
-rotation_degrees = Vector3(0, 0, 65)
-
-[node name="SpeedTick3" type="MeshInstance3D" parent="."]
-position = Vector3(-0.428, 1.226, -0.961)
-mesh = SubResource("m31")
-rotation_degrees = Vector3(0, 0, 32.5)
-
-[node name="SpeedTick4" type="MeshInstance3D" parent="."]
-position = Vector3(-0.37, 1.2429, -0.961)
-mesh = SubResource("m32")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="SpeedTick5" type="MeshInstance3D" parent="."]
-position = Vector3(-0.312, 1.226, -0.961)
-mesh = SubResource("m33")
-rotation_degrees = Vector3(0, 0, -32.5)
-
-[node name="SpeedTick6" type="MeshInstance3D" parent="."]
-position = Vector3(-0.2722, 1.1806, -0.961)
-mesh = SubResource("m34")
-rotation_degrees = Vector3(0, 0, -65)
-
-[node name="SpeedTick7" type="MeshInstance3D" parent="."]
-position = Vector3(-0.263, 1.1209, -0.961)
-mesh = SubResource("m35")
-rotation_degrees = Vector3(0, 0, -97.5)
-
-[node name="SpeedTick8" type="MeshInstance3D" parent="."]
-position = Vector3(-0.2873, 1.0656, -0.961)
-mesh = SubResource("m36")
-rotation_degrees = Vector3(0, 0, -130)
-
-[node name="SpeedNeedle" type="Node3D" parent="."]
-position = Vector3(-0.37, 1.135, -0.954)
-
-
-[node name="Pointer" type="MeshInstance3D" parent="SpeedNeedle"]
-position = Vector3(0, 0.039, 0)
-mesh = SubResource("m37")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="FuelRim" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.135, -0.998)
-mesh = SubResource("m38")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="FuelDial" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.135, -0.98)
-mesh = SubResource("m39")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="FuelTick0" type="MeshInstance3D" parent="."]
-position = Vector3(-0.0604, 1.0843, -0.961)
-mesh = SubResource("m40")
-rotation_degrees = Vector3(0, 0, 130)
-
-[node name="FuelTick1" type="MeshInstance3D" parent="."]
-position = Vector3(-0.0782, 1.1247, -0.961)
-mesh = SubResource("m41")
-rotation_degrees = Vector3(0, 0, 97.5)
-
-[node name="FuelTick2" type="MeshInstance3D" parent="."]
-position = Vector3(-0.0715, 1.1683, -0.961)
-mesh = SubResource("m42")
-rotation_degrees = Vector3(0, 0, 65)
-
-[node name="FuelTick3" type="MeshInstance3D" parent="."]
-position = Vector3(-0.0424, 1.2015, -0.961)
-mesh = SubResource("m43")
-rotation_degrees = Vector3(0, 0, 32.5)
-
-[node name="FuelTick4" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.2139, -0.961)
-mesh = SubResource("m44")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="FuelTick5" type="MeshInstance3D" parent="."]
-position = Vector3(0.0424, 1.2015, -0.961)
-mesh = SubResource("m45")
-rotation_degrees = Vector3(0, 0, -32.5)
-
-[node name="FuelTick6" type="MeshInstance3D" parent="."]
-position = Vector3(0.0715, 1.1683, -0.961)
-mesh = SubResource("m46")
-rotation_degrees = Vector3(0, 0, -65)
-
-[node name="FuelTick7" type="MeshInstance3D" parent="."]
-position = Vector3(0.0782, 1.1247, -0.961)
-mesh = SubResource("m47")
-rotation_degrees = Vector3(0, 0, -97.5)
-
-[node name="FuelTick8" type="MeshInstance3D" parent="."]
-position = Vector3(0.0604, 1.0843, -0.961)
-mesh = SubResource("m48")
-rotation_degrees = Vector3(0, 0, -130)
-
-[node name="FuelNeedle" type="Node3D" parent="."]
-position = Vector3(0, 1.135, -0.954)
-
-
-[node name="Pointer" type="MeshInstance3D" parent="FuelNeedle"]
-position = Vector3(0, 0.028499999999999998, 0)
-mesh = SubResource("m49")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="BatteryRim" type="MeshInstance3D" parent="."]
-position = Vector3(0.29, 1.135, -0.998)
-mesh = SubResource("m50")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="BatteryDial" type="MeshInstance3D" parent="."]
-position = Vector3(0.29, 1.135, -0.98)
-mesh = SubResource("m51")
-rotation_degrees = Vector3(90, 0, 0)
-
-[node name="BatteryTick0" type="MeshInstance3D" parent="."]
-position = Vector3(0.2296, 1.0843, -0.961)
-mesh = SubResource("m52")
-rotation_degrees = Vector3(0, 0, 130)
-
-[node name="BatteryTick1" type="MeshInstance3D" parent="."]
-position = Vector3(0.2118, 1.1247, -0.961)
-mesh = SubResource("m53")
-rotation_degrees = Vector3(0, 0, 97.5)
-
-[node name="BatteryTick2" type="MeshInstance3D" parent="."]
-position = Vector3(0.2185, 1.1683, -0.961)
-mesh = SubResource("m54")
-rotation_degrees = Vector3(0, 0, 65)
-
-[node name="BatteryTick3" type="MeshInstance3D" parent="."]
-position = Vector3(0.2476, 1.2015, -0.961)
-mesh = SubResource("m55")
-rotation_degrees = Vector3(0, 0, 32.5)
-
-[node name="BatteryTick4" type="MeshInstance3D" parent="."]
-position = Vector3(0.29, 1.2139, -0.961)
-mesh = SubResource("m56")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="BatteryTick5" type="MeshInstance3D" parent="."]
-position = Vector3(0.3324, 1.2015, -0.961)
-mesh = SubResource("m57")
-rotation_degrees = Vector3(0, 0, -32.5)
-
-[node name="BatteryTick6" type="MeshInstance3D" parent="."]
-position = Vector3(0.3615, 1.1683, -0.961)
-mesh = SubResource("m58")
-rotation_degrees = Vector3(0, 0, -65)
-
-[node name="BatteryTick7" type="MeshInstance3D" parent="."]
-position = Vector3(0.3682, 1.1247, -0.961)
-mesh = SubResource("m59")
-rotation_degrees = Vector3(0, 0, -97.5)
-
-[node name="BatteryTick8" type="MeshInstance3D" parent="."]
-position = Vector3(0.3504, 1.0843, -0.961)
-mesh = SubResource("m60")
-rotation_degrees = Vector3(0, 0, -130)
-
-[node name="BatteryNeedle" type="Node3D" parent="."]
-position = Vector3(0.29, 1.135, -0.954)
-
-
-[node name="Pointer" type="MeshInstance3D" parent="BatteryNeedle"]
-position = Vector3(0, 0.028499999999999998, 0)
-mesh = SubResource("m61")
-rotation_degrees = Vector3(0, 0, 0)
-
-[node name="IgnitionButton" type="MeshInstance3D" parent="."]
-position = Vector3(0.49, 1.23, -0.96)
-mesh = SubResource("m62")
-rotation_degrees = Vector3(0, 0, 0)
+[node name="InstrumentCluster" type="Node3D" parent="."]
+position = Vector3(0, 1.10, -0.94)
+rotation_degrees = Vector3(-12, 0, 0)
+scale = Vector3(0.9, 0.9, 0.9)
+script = ExtResource("cluster")

@@ -62,7 +62,7 @@ func _ready() -> void:
 	_layout.add_child(_rows)
 	var layout := UILayout.attach(self, screen)
 	var position_guide := func(logical_size: Vector2) -> void:
-		# On short windows, leave space below for the driving dashboard.
+		# Keep optional guides within short viewports.
 		var top := minf(logical_size.y * 0.25, logical_size.y - 465.0)
 		right_edge.offset_top = top
 		right_edge.offset_bottom = top

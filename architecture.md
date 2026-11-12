@@ -532,7 +532,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - 固定 EngineBay 持有唯一安裝狀態。Chassis.exchange_engine／remove_engine 原子轉移同格背包，service_reason 共用停穩／熄火／手煞車／開蓋條件。Chassis.take_damage 轉交引擎，has_working_engine 和 engine_start_reason 統一啟動條件；沒有底盤 HP 或整車毀損旗標。
 - RepairOperation 對引擎使用 repair_requirement 契約；鎖住目標、引擎 ID 與維修包 ID，連續 3 秒後再次驗證並消耗道具，+150 耐久。一般設備／輪胎沿用材料路徑。
 - VehicleEnergy 依引擎定義計算基礎油耗；只有有效引擎能運轉，並由底盤內建充電功能替插槽電池充電。處理充電、待機、工作後統一支付車燈負載，lamps_powered 為實際供電結果。
-- VehicleStatus.read 回傳 8 項圖示／等級／文字；CockpitVisual、VehicleDashboard、TabletUI 讀同一結果，沒有副本數值；RVTerminalPresenter 僅翻譯英文顯示名稱及訊息，不改 domain owner 的原始訊息、交易或狀態。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。
+- VehicleStatus.read 回傳 8 項圖示／等級／文字；實體 InstrumentCluster 與 TabletUI 讀同一結果，沒有副本數值；RVTerminalPresenter 僅翻譯英文顯示名稱及訊息，不改 domain owner 的原始訊息、交易或狀態。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。2026-11-12 移除駕駛 HUD 文字列及 J 駕駛提示，實體雙錶、油量滑針、分格電量、檔位、充電符號與車況燈提供行車資訊；`Chassis.engine_rpm()` 為既有車速／檔位／油門的呈現估算，由轉速表與音調共用，不另建動力或保存狀態。見 [儀表說明](rv/visuals/README.md#2026-11-12-實體儀表)。
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
