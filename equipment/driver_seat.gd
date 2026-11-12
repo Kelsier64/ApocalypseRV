@@ -7,7 +7,6 @@ const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 @onready var game_settings = get_node("/root/GameSettings")
 
 var current_driver: Node3D = null
-var exit_message: String = ""
 
 func _ready() -> void:
 	super._ready()
@@ -93,9 +92,7 @@ func exit_seat(forced: bool = false) -> void:
 	if forced: player.close_settings()
 	var exit_position := _find_clear_exit_position(forced)
 	if not exit_position.is_finite():
-		exit_message = "Exit blocked. Clear the aisle first."
 		return
-	exit_message = ""
 	current_driver = null
 
 	player.exit_seat_mode(exit_position)

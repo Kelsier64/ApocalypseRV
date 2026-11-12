@@ -39,7 +39,6 @@ const CLIMB_REENTER_COOLDOWN = 0.2
 const CLIMB_WALL_ALIGN_OFFSET = 0.22
 const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
 const CLIMB_DEBUG_LOG_ABORTS = false
-const LARGE_ITEM_CLIMB_MESSAGE := "Put down, use or store the large item before climbing"
 
 @onready var camera = $Camera3D
 @onready var game_settings = get_node("/root/GameSettings")
@@ -114,7 +113,6 @@ var _seat_exit_velocity_has_carrier := false
 var rv_support := RVSupport.new()
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
-var _large_item_climb_feedback_shown := false
 var crawl_transition_remaining: float = 0.0
 var crouching := false
 var debug_last_ceiling_hit_distance: float = INF
@@ -632,8 +630,6 @@ func drop_item():
 		var release: Dictionary = dropped_item.find_release_pose(self, drop_transform)
 		if release.is_empty():
 			dropped_item.free()
-			var interaction := get_node_or_null("Camera3D/InteractRay")
-			if interaction != null: interaction.show_feedback("Move away from walls or obstacles before throwing the barrel")
 			return
 		drop_transform = release.transform
 	var entity_parent: Node = WorldEntities.get_container(self)
@@ -729,21 +725,9 @@ func read_held_terminal() -> Node:
 func _can_use_ladder() -> bool:
 	return not is_crawling() and not is_crouching() and can_use_hands(2) and not inventory.is_holding_large_item()
 
-func _show_large_item_climb_feedback() -> void:
-	if _large_item_climb_feedback_shown:
-		return
-	var interaction := get_node_or_null("Camera3D/InteractRay")
-	if interaction != null and interaction.has_method("show_feedback"):
-		interaction.show_feedback(LARGE_ITEM_CLIMB_MESSAGE)
-		_large_item_climb_feedback_shown = true
-
 func _abort_climb_if_holding_large_item() -> bool:
-	if not inventory.is_holding_large_item():
-		_large_item_climb_feedback_shown = false
+	if not inventory.is_holding_large_item() or locomotion_state != LocomotionState.CLIMBING:
 		return false
-	if locomotion_state != LocomotionState.CLIMBING:
-		return false
-	_show_large_item_climb_feedback()
 	# Preserve the carrier velocity and collision cleanup of every other detach.
 	_abort_climb("carrying large item")
 	return true
@@ -996,8 +980,6 @@ func _ladder_body_position(feet: Vector3) -> Vector3:
 func _try_start_climb() -> void:
 	var ascending := Input.is_action_pressed("move_forward")
 	var descending := Input.is_action_pressed("move_back")
-	if not (ascending or descending) or not inventory.is_holding_large_item():
-		_large_item_climb_feedback_shown = false
 	if ascending == descending: return
 	if is_gameplay_input_blocked() or get_player_mode() != PlayerMode.NORMAL: return
 	if locomotion_state != LocomotionState.NORMAL or is_crawling() or is_crouching() or not can_use_hands(2): return
@@ -1025,9 +1007,6 @@ func begin_ladder_climb(ladder: RVLadder, descending: bool = false) -> bool:
 	if not is_instance_valid(ladder) or ladder.get_world_3d() != get_world_3d(): return false
 	if not ladder.can_enter_from(_climb_feet(), descending): return false
 	if (-global_basis.z).dot(-ladder.global_basis.z.normalized()) < LADDER_ENTRY_FACING_DOT: return false
-	if inventory.is_holding_large_item():
-		_show_large_item_climb_feedback()
-		return false
 	if not _can_use_ladder(): return false
 	add_collision_exception_with(ladder)
 	if not _queue_ladder_alignment(ladder, descending):
@@ -1184,8 +1163,6 @@ func _process_climbing(delta: float) -> void:
 	if direction > 0.0 and actual_height >= ladder.climb_height - 0.015:
 		ladder_transition = LadderTransition.TOP
 		ladder_top_input_ready = false
-		var interaction := get_node_or_null("Camera3D/InteractRay")
-		if interaction != null: interaction.show_feedback("At the top: release the movement keys, then use WASD to step off")
 	elif direction < 0.0 and actual_height <= 0.015:
 		_try_ladder_landing(false)
 
@@ -1339,8 +1316,6 @@ func _physics_process(delta):
 	# Cover restored/direct inventory changes before applying any carrier motion.
 	_abort_climb_if_holding_large_item()
 	_advance_san_effects(delta)
-	if not Input.is_action_pressed("move_forward") and not Input.is_action_pressed("move_back"):
-		_large_item_climb_feedback_shown = false
 	_advance_flashlight(delta)
 	if is_player_dead:
 		return

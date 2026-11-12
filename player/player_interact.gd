@@ -13,9 +13,7 @@ const PLACE_HINTS := {
 var repair := RepairOperation.new()
 var repair_label: Label
 var action_progress: ProgressBar
-var feedback_panel: PanelContainer
-var feedback_label: Label
-var feedback_time := 0.0
+var action_panel: PanelContainer
 var aim_marker: CenterContainer
 var _control_hints_enabled := false
 var _control_hints := preload("res://player/control_hints.gd").new()
@@ -48,7 +46,7 @@ func _ready() -> void:
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	aim_marker.add_child(dot)
 	var panel := PanelContainer.new()
-	feedback_panel = panel
+	action_panel = panel
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	panel.position = Vector2(-380, -160)
@@ -64,8 +62,6 @@ func _ready() -> void:
 	action_progress.hide()
 	box.add_child(action_progress)
 	repair_label = _label(box, 20)
-	feedback_label = _label(box, 22)
-	feedback_label.modulate = Color(1.0, 0.85, 0.4)
 	panel.hide()
 	_control_hints.name = "ControlHints"
 	add_child(_control_hints)
@@ -157,15 +153,12 @@ func _physics_process(delta: float) -> void:
 	var f_pressed := Input.is_action_pressed("place_equipment")
 	var repair_pressed := Input.is_physical_key_pressed(KEY_H)
 	if not repair_pressed: _repair_release_required = false
-	feedback_time = maxf(0.0, feedback_time - delta)
-	if feedback_time == 0.0: feedback_label.text = ""
 	var blocked: bool = player.is_gameplay_input_blocked()
 	if blocked or player.get_player_mode() != player.PlayerMode.NORMAL:
 		cancel_input_gestures()
 		aim_marker.visible = not blocked and player.get_player_mode() == player.PlayerMode.PLACING
-		action_progress.hide()
 		repair_label.text = ""
-		feedback_panel.visible = aim_marker.visible and not feedback_label.text.is_empty()
+		action_panel.hide()
 		_update_control_hints(null, blocked)
 		return
 	aim_marker.show()
@@ -184,8 +177,7 @@ func _physics_process(delta: float) -> void:
 	if player.get_player_mode() == player.PlayerMode.NORMAL:
 		_step_buttons(obj, e_pressed, f_pressed, delta)
 	repair_label.visible = not repair_label.text.is_empty()
-	feedback_label.visible = not feedback_label.text.is_empty()
-	feedback_panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (action_progress.visible or feedback_label.visible or repair_label.visible)
+	action_panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (action_progress.visible or repair_label.visible)
 	_update_control_hints(obj)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -216,10 +208,7 @@ func cancel_input_gestures() -> void:
 	_f_was_pressed = Input.is_action_pressed("place_equipment")
 
 func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) -> void:
-	if is_instance_valid(obj) and not _can_interact(obj):
-		if (e_pressed and not _e_was_pressed) or (f_pressed and not _f_was_pressed):
-			show_feedback("Cannot use with your current body or carried load")
-		obj = null
+	if is_instance_valid(obj) and not _can_interact(obj): obj = null
 	if obj != _e_target: _e_target = null
 	if is_instance_valid(_f_target) and obj != _f_target:
 		_f_target = null
@@ -238,8 +227,7 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 			if _held_delivery(_e_target):
 				_invoke(_e_target, "accept_held_item")
 			elif _wheel_install(_e_target):
-				var installed: bool = _e_target.install_wheel_from_player(player)
-				show_feedback("Wheel installed" if installed else "Cannot install wheel: vehicle moving, engine running or no empty slot")
+				_e_target.install_wheel_from_player(player)
 			else:
 				_invoke(_e_target, "interact_hold")
 		else:
@@ -260,7 +248,7 @@ func _step_buttons(obj: Node, e_pressed: bool, f_pressed: bool, delta: float) ->
 		_f_time += delta
 		if _f_time >= 2.0 and is_instance_valid(_f_target):
 			_f_done = true
-			show_feedback(_f_target.pickup(player))
+			_f_target.pickup(player)
 		elif is_instance_valid(_f_target):
 			_show_progress(_f_time / 2.0)
 	if not f_pressed:
@@ -285,22 +273,14 @@ func _invoke(obj: Node, method: String) -> void:
 	if not is_instance_valid(obj) or obj.is_queued_for_deletion(): return
 	if not _can_interact(obj): return
 	if obj is PrintedPlayerBody:
-		show_feedback(obj.interact(player))
+		obj.interact(player)
 		return
 	if obj is Item and not obj.is_fixed:
-		show_feedback(obj.pickup(player))
+		obj.pickup(player)
 		return
 	if not obj.has_method(method): return
-	if obj is Item and method == "interact_hold" and not obj.can_operate():
-		show_feedback("Device unavailable")
-		return
-	var result: Variant = obj.call(method, player)
-	if result is String and not result.is_empty(): show_feedback(result)
-
-func show_feedback(message: String) -> void:
-	feedback_label.text = message
-	feedback_label.visible = not message.is_empty()
-	feedback_time = 3.0
+	if obj is Item and method == "interact_hold" and not obj.can_operate(): return
+	obj.call(method, player)
 
 func _show_progress(fraction: float) -> void:
 	action_progress.value = clampf(fraction * 100.0, 0.0, 100.0)

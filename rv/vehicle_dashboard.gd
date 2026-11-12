@@ -2,7 +2,6 @@ extends CanvasLayer
 const INDICATOR_LABELS := {"engine": "Engine", "fuel": "Fuel", "battery": "Battery", "door": "Doors", "brake": "Brake", "tire": "Tires", "ramp": "Ramp", "headlight": "Lights"}
 var seat: Node3D
 var label: Label
-var status: Label
 var indicators: Dictionary = {}
 
 func _ready() -> void:
@@ -14,7 +13,7 @@ func _ready() -> void:
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	panel.offset_left = 24
 	panel.offset_right = -24
-	panel.offset_top = -180
+	panel.offset_top = -130
 	panel.offset_bottom = -24
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
@@ -47,12 +46,6 @@ func _ready() -> void:
 		caption.add_theme_font_size_override("font_size", 22)
 		cell.add_child(caption)
 		indicators[id] = {"icon": icon, "caption": caption}
-	status = Label.new()
-	status.add_theme_font_size_override("font_size", 22)
-	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status.add_theme_color_override("font_color", Color(0.94, 0.72, 0.38))
-	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	rows.add_child(status)
 	visible = false
 
 func _process(_delta: float) -> void:
@@ -65,6 +58,3 @@ func _process(_delta: float) -> void:
 	for row in VehicleStatus.read(rv):
 		indicators[row.id].icon.modulate = VehicleStatus.color(row.level)
 		indicators[row.id].caption.text = INDICATOR_LABELS[row.id]
-	status.text = seat.exit_message
-	if not rv.service_message.is_empty(): status.text += "  " + rv.service_message
-	status.visible = not status.text.strip_edges().is_empty()

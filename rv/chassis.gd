@@ -117,7 +117,6 @@ var control_override: Dictionary = {}
 var headlights_requested: bool = false
 var brake_input: float = 0.0
 var lamps_powered: bool = false
-var service_message: String = ""
 @export var starter_kits: bool = false
 var engine_bay: Node3D
 var rear_ramp: Node3D
@@ -393,8 +392,6 @@ func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incomin
 		effective_loss = result.loss
 	if paid <= 0.0: return
 	take_damage(paid)
-	var title: String = {"tree": "Tree impact", "monster": "Monster impact", "ground": "Ground impact", "body": "Collision"}.get(kind, "Collision")
-	service_message = "%s | Engine durability -%.1f" % [title, paid]
 	feedback("blocked")
 	vehicle_impact.emit(kind, effective_loss, paid)
 
@@ -586,11 +583,9 @@ func step_energy_system(drive_input: float, _braking_input: float, _steering_inp
 
 func set_engine_running(running: bool) -> bool:
 	if running and not engine_start_reason().is_empty():
-		service_message = engine_start_reason()
 		return false
 	if running and not energy.engine_running: feedback("start")
 	energy.engine_running = running
-	service_message = "Engine started" if running else "Engine stopped"
 	return true
 
 func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:

@@ -83,7 +83,6 @@ func _physics_process(delta: float) -> void:
 	if not reason.is_empty():
 		moving = false
 		blocked_message = reason
-		bay().get_parent().service_message = reason
 		bay().get_parent().feedback("blocked")
 		return
 	progress = next
