@@ -107,7 +107,7 @@ theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 text = "BLACK APPARITION
 WASD move   Shift sprint   Mouse look
-L flashlight   F6 new sighting   R restart
+RMB flashlight   F6 new sighting   R restart
 Turn right for the first sighting."
 horizontal_alignment = 2
 

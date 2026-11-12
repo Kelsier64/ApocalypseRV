@@ -271,7 +271,7 @@ func page() -> Dictionary:
 		"F: placement preview. Left click: fasten. Right click / Esc: cancel preview. Q/E: rotate. R: surface/upright mode. Arrow keys: shift. Hold F: remove fixed equipment.",
 		"G: drop selected small scrap into intake. Hold E at scrapper: deposit a held large item.",
 		"rvctl F4: Crafting. F5: Structure. Tab / Enter: choose workstation, recipe, slot or operation. Esc: close.",
-		"B: engine. C: first gear. Space: handbrake. W/S: throttle/brake. A/D: steer. T: read selected field terminal while on foot."]
+		"B: engine. C: first gear. Space: handbrake. W/S: throttle/brake. A/D: steer. Right-click to read the held terminal on foot."]
 	if configured:
 		conditions = [_condition("battery", "Optional: exchange the battery and restore usable charge", flags.battery_exchanged and battery_ready()),
 			_condition("engine", "Optional: repair the engine with a kit until it can start", flags.engine_repaired and engine_ready()),

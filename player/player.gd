@@ -72,7 +72,7 @@ var in_ui_mode: bool = false
 var settings_open: bool = false
 # Closing settings waits for held controls to be released before gameplay resumes.
 const SETTINGS_GAMEPLAY_KEYS = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_CTRL, KEY_SPACE, KEY_E, KEY_F, KEY_H, KEY_B, KEY_L, KEY_Z, KEY_X, KEY_C, KEY_R, KEY_T, KEY_Q, KEY_V, KEY_G, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_LEFT, KEY_RIGHT, KEY_UP, KEY_DOWN]
-const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"crouch", &"jump", &"interact", &"place_equipment", &"toggle_flashlight", &"drop_item", &"toggle_placement_mode", &"weapon_fire", &"weapon_aim", &"weapon_reload", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
+const SETTINGS_GAMEPLAY_ACTIONS = [&"move_forward", &"move_back", &"move_left", &"move_right", &"sprint", &"crouch", &"jump", &"interact", &"place_equipment", &"use_held_item", &"drop_item", &"toggle_placement_mode", &"weapon_fire", &"weapon_reload", &"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5", &"hotbar_6"]
 var _settings_release_keys: Array[int] = []
 var _settings_release_buttons: Array[int] = []
 var _settings_release_actions: Array[StringName] = []
@@ -681,12 +681,14 @@ func _unhandled_input(event):
 		return
 	weapon.handle_input(event)
 	if in_ui_mode or is_player_dead or is_grabbed() or is_gameplay_input_blocked(): return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
-		if read_held_terminal() != null:
+	if event.is_action_pressed("use_held_item") and get_player_mode() == PlayerMode.NORMAL:
+		if held_item_node is Flashlight:
+			_toggle_flashlight()
 			get_viewport().set_input_as_handled()
 			return
-	if event.is_action_pressed("toggle_flashlight") and not event.is_echo():
-		_toggle_flashlight()
+		if held_item_node is TrainingTerminal and read_held_terminal() != null:
+			get_viewport().set_input_as_handled()
+			return
 	
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		# Rotate horizontal (body) normally

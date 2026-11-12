@@ -234,11 +234,14 @@ func clear_bag() -> void:
 	actor.inventory.active_slot = 0
 	actor.refresh_inventory()
 
-func food_button(pressed: bool) -> void:
+func right_mouse_event(pressed: bool) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_RIGHT
 	event.pressed = pressed
-	actor._input(event)
+	return event
+
+func food_button(pressed: bool) -> void:
+	actor._input(right_mouse_event(pressed))
 
 func check_survival() -> void:
 	var whole := PlayerSurvival.new()
@@ -1214,7 +1217,9 @@ func check_flashlight_viewmodel() -> void:
 			var copy := off_entry.get("copy") as Light3D
 			all_copies_off = all_copies_off and copy != null and not copy.is_visible_in_tree()
 		check(all_copies_off and not light_copy.visible, "Off flashlight beam and spill do not illuminate the viewmodel")
-		actor._toggle_flashlight()
+		Input.parse_input_event(right_mouse_event(true))
+		Input.parse_input_event(right_mouse_event(false))
+		await steps()
 		view.update_view()
 		var emitters_match := true
 		var projector_matches := true
@@ -1237,7 +1242,9 @@ func check_flashlight_viewmodel() -> void:
 			var entry_before_grab: Dictionary = view.held_light_copies.get(source.get_instance_id(), {})
 			var copy_before_grab := entry_before_grab.get("copy") as Light3D
 			if copy_before_grab != null: copies_before_grab.append(copy_before_grab)
-		actor._toggle_flashlight()
+		Input.parse_input_event(right_mouse_event(true))
+		Input.parse_input_event(right_mouse_event(false))
+		await steps()
 		view.update_view()
 		var all_copies_off_after_toggle := true
 		for source: Light3D in emitters:
@@ -1492,7 +1499,7 @@ func check_control_hints() -> void:
 	check(not hints.visible, "Control hints start hidden")
 	Input.parse_input_event(key)
 	await steps()
-	check(hints.visible and hints._heading.text == "ON FOOT" and hints._bindings.get("W A S D") == "Move", "Physical J shows walking hints")
+	check(hints.visible and hints._heading.text == "ON FOOT" and hints._bindings.keys() == ["G", "E", "F", "RMB"], "Physical J shows only the four basic item controls")
 	check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(layout.get_global_rect()), "The hint guide %s fits the %s viewport" % [layout.get_global_rect(), root.size])
 	check(not hints._key_frame.draw_center, "Keycaps have outlines without a fill")
 	key.echo = true
@@ -1505,10 +1512,16 @@ func check_control_hints() -> void:
 	await steps()
 	check(ray.get_collider() == target and hints._bindings.get("E") == "Pick up", "Aiming at a loose item shows its pickup key")
 	target.queue_free()
-	check(actor.add_item("Scrap", false, "res://props/scrap.tscn") and actor.enter_equipment_placement(), "Open a real placement preview")
+	check(actor.add_item("Flashlight", false, "res://props/flashlight.tscn"), "Equip a flashlight for the item guide")
+	await steps()
+	check(hints._bindings.get("RMB") == "Toggle flashlight", "Right-click hint describes the held flashlight")
+	check(actor.enter_equipment_placement(), "Open a real placement preview")
 	await steps()
 	check(hints.visible and hints._heading.text == "PLACEMENT" and hints._bindings.get("LMB") == "Place" and not hints._bindings.has("E"), "Placement replaces walking and interaction hints")
-	actor.cancel_equipment_placement()
+	Input.parse_input_event(right_mouse_event(true))
+	Input.parse_input_event(right_mouse_event(false))
+	await steps()
+	check(not actor.is_placing_equipment() and not actor.inventory.active_item().state.flashlight.on, "Right-click cancels placement without switching on the flashlight")
 	var menu := actor.get_node("SettingsMenu")
 	check(menu.open_menu(), "Settings can open while hints are enabled")
 	await steps()
@@ -1668,10 +1681,13 @@ func check_held_terminal_boot() -> void:
 	terminal.queue_free()
 	actor.inventory.add_item(ItemNames.TRAINING_TERMINAL, false, path, state)
 	actor.refresh_inventory()
-	var reader: Node = actor.read_held_terminal()
-	if reader == null:
-		check(false, "A valid uninitialized terminal record can open in the inventory reader")
+	Input.parse_input_event(right_mouse_event(true))
+	Input.parse_input_event(right_mouse_event(false))
+	await steps()
+	if not actor.in_ui_mode:
+		check(false, "Right-click opens a valid uninitialized terminal in the inventory reader")
 	else:
+		var reader := actor.get_child(-1)
 		var enter := InputEventKey.new()
 		enter.keycode = KEY_ENTER
 		enter.pressed = true
@@ -1723,7 +1739,7 @@ func run() -> void:
 	await check_first_person_carry()
 	await check_flashlight_viewmodel()
 	await check_carry_motion()
-	check_held_terminal_boot()
+	await check_held_terminal_boot()
 	await check_training_terminal_placement(wall)
 
 	# Capacity rejection leaves real fixed ownership and service state intact.

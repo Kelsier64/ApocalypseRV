@@ -101,7 +101,7 @@ func advance(delta: float) -> void:
 				_complete_reload()
 			else:
 				_set_reload_visual(1.0 - reload_remaining / PistolRules.RELOAD_SECONDS)
-	var aiming := reload_remaining <= 0.0 and Input.is_action_pressed("weapon_aim")
+	var aiming := reload_remaining <= 0.0 and Input.is_action_pressed("use_held_item")
 	aim_weight = move_toward(aim_weight, 1.0 if aiming else 0.0, elapsed / PistolRules.AIM_SECONDS)
 	if actor.camera.current:
 		actor.camera.fov = _walk_fov() * lerpf(1.0, PistolRules.AIM_FOV_SCALE, aim_weight)

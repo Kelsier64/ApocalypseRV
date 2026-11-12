@@ -38,6 +38,6 @@ Forward+ 的 seed 42 遊戲視窗中實際觀察步行回放通過全部七室�
 
 ## 檢視入口
 
-執行 `godot --path . res://tests/megashelter_interior_playground.tscn -- --seed=42`，或在編輯器開啟[檢視場景](../../tests/megashelter_interior_playground.tscn)後按 F6。F1 步行、F2 全局、F3 隱藏天花板、F4 下一間、F5 搬運／小門出口回放、F6 下一個 seed、F7 看大小門、F8 截圖；E 互動、L 手電筒、M 探索地圖。檢視模式沿用正式室內燈光，測試場額外提供一把手電筒，正式場址不會因此補發。`--capture --detail-capture --quit-after-capture` 匯出全景、入口及近照；近照以原手電筒光束設定補光並標示 FLASHLIGHT，不改正式場景照明。截圖留在 gitignored `.godot/art-work/megashelter-interior/`。
+執行 `godot --path . res://tests/megashelter_interior_playground.tscn -- --seed=42`，或在編輯器開啟[檢視場景](../../tests/megashelter_interior_playground.tscn)後按 F6。F1 步行、F2 全局、F3 隱藏天花板、F4 下一間、F5 搬運／小門出口回放、F6 下一個 seed、F7 看大小門、F8 截圖；E 互動、右鍵開關手電筒、M 探索地圖。檢視模式沿用正式室內燈光，測試場額外提供一把手電筒，正式場址不會因此補發。`--capture --detail-capture --quit-after-capture` 匯出全景、入口及近照；近照以原手電筒光束設定補光並標示 FLASHLIGHT，不改正式場景照明。截圖留在 gitignored `.godot/art-work/megashelter-interior/`。
 
 [外殼規格](megashelter-exteriors.md) · [POI 接入規範](poi-authoring.md) · [地堡規格](bunker-interior.md) · [測試入口](../../tests/README.md)

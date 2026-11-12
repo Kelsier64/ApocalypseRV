@@ -166,7 +166,7 @@ func check_pistol_viewmodel() -> void:
 	await steps(20)
 	check_pistol_contacts("lowered hip", true)
 	actor.camera.rotation.x = 0.0
-	Input.action_press("weapon_aim")
+	Input.action_press("use_held_item")
 	actor.weapon.advance(.16)
 	for pitch: float in [0.0, -.30, .65, -.85]:
 		actor.camera.rotation.x = pitch
@@ -184,7 +184,7 @@ func check_pistol_viewmodel() -> void:
 			var gameplay: Vector2 = actor.camera.unproject_position(point) / root.get_visible_rect().size
 			var rendered: Vector2 = view.camera.unproject_position(point) / Vector2(view.viewport.size)
 			check(gameplay.distance_to(rendered) < .0001, "Full ADS projection matches the gameplay sight line at pitch " + str(pitch))
-	Input.action_release("weapon_aim")
+	Input.action_release("use_held_item")
 	actor.weapon.advance(.16)
 	actor.camera.rotation = Vector3.ZERO
 	actor.body_state.sever(&"right_arm")
@@ -352,20 +352,20 @@ func run() -> void:
 	actor.stamina_exhausted = false
 
 	var baseline: float = actor.camera.fov
-	Input.action_press("weapon_aim")
+	Input.action_press("use_held_item")
 	actor.weapon.advance(0.16)
 	check(actor.weapon.aim_weight > 0.99 and is_equal_approx(actor.camera.fov, baseline * 0.8), "Held right aim reaches intended 0.15-second FOV")
-	Input.action_release("weapon_aim")
+	Input.action_release("use_held_item")
 	actor.weapon.advance(0.16)
 	check(is_equal_approx(actor.camera.fov, baseline), "Aim release restores baseline FOV")
-	Input.action_press("weapon_aim")
+	Input.action_press("use_held_item")
 	actor.weapon.advance(0.16)
 	actor.in_ui_mode = true
 	var before := rounds()
 	actor._unhandled_input(mouse(MOUSE_BUTTON_LEFT, true))
 	actor.weapon.advance(0.5)
 	check(rounds() == before and is_equal_approx(actor.camera.fov, baseline), "UI blocks shooting and restores aimed FOV")
-	Input.action_release("weapon_aim")
+	Input.action_release("use_held_item")
 	actor.in_ui_mode = false
 	actor._unhandled_input(mouse(MOUSE_BUTTON_LEFT, false))
 	actor.set_settings_open(true)

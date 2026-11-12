@@ -77,7 +77,7 @@ func _inspect_room(index: int) -> void:
 	inspection_light.hide()
 	player.set_physics_process(true)
 	_inspect_view()
-	status.text = "ART INSPECT / %s / %s / %s\nF4 turn / F6 next / F7 previous / L flashlight / F8 capture" % [room.name, room.room_id, "DARK" if room.get_meta("bunker_dark", false) else "LIT"]
+	status.text = "ART INSPECT / %s / %s / %s\nF4 turn / F6 next / F7 previous / RMB flashlight / F8 capture" % [room.name, room.room_id, "DARK" if room.get_meta("bunker_dark", false) else "LIT"]
 	print("BUNKER_ART_VIEW: %s %s dark=%s" % [room.name, room.room_id, room.get_meta("bunker_dark", false)])
 func _inspect_view() -> void:
 	var room := inside.rooms[inspect_index]

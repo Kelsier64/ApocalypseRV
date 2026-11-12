@@ -26,12 +26,11 @@ func _can_benefit(survival: PlayerSurvival, definition: FoodDefinition) -> bool:
 
 func handle_input(actor: CharacterBody3D, event: InputEvent) -> void:
 	if event.is_action_pressed("sprint") or event.is_action_pressed("jump"): cancel()
-	if not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_RIGHT: return
-	if not event.pressed:
+	if event.is_action_released("use_held_item"):
 		_down = false
 		cancel()
 		return
-	if _down: return
+	if _down or not event.is_action_pressed("use_held_item"): return
 	_down = true
 	if not can_eat(actor): return
 	var item: Dictionary = actor.inventory.active_item()

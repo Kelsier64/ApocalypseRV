@@ -96,7 +96,7 @@ func _load_seed() -> void:
 	print("MEGASHELTER_PREVIEW_READY seed=%d rooms=%d exterior_m2=%.0f" % [seed_value, manager.interior.rooms.size(), manager.interior.exterior_area])
 
 func _hint() -> void:
-	status.text = "SHELTER / seed %d\nF1 walk / F2 overview / F3 cutaway / F4 next room / F5 carry replay / F6 next seed / F7 entrance / F8 capture\nE exit / L flashlight / M explored map" % seed_value
+	status.text = "SHELTER / seed %d\nF1 walk / F2 overview / F3 cutaway / F4 next room / F5 carry replay / F6 next seed / F7 entrance / F8 capture\nE exit / RMB flashlight / M explored map" % seed_value
 
 func _prepare_preview() -> void:
 	# Returning through the stairwell rebuilds reception in a new viewport.

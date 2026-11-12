@@ -54,7 +54,7 @@
 | 支撐鏈與掉落 | 正式；區分車輛歸屬及實際支撐；車板或底層設備失效，附掛物停機並帶平台速度掉落，保留身分與功能狀態 | [mount](../../core/item_mount.gd)、[RV support](../../core/rv_support.gd) |
 | 共用倉庫 | 正式；道具箱存取同車物品，材料為車輛數值庫存；拆除箱子不刪庫存 | [item box](../../equipment/item_box.gd)、[material storage](../../rv/material_storage.gd) |
 | 搜刮物與模型圖示 | 正式；12 款具名回收物、燃油／電池／引擎／輪胎／食物等；快捷欄使用預載模型快照，顯示雙手、電量及彈量 | [scavenge loot](../../core/scavenge_loot.gd)、[icons](../../core/inventory_item_icons.gd)、[props](../../props/) |
-| 手電筒 | 正式；手持 L 開關，有限內建電量、保存剩餘電量；目前不能充電 | [flashlight](../../props/flashlight.gd)、[bunker playground](../../tests/bunker_playground.tscn) |
+| 手電筒 | 正式；手持時按右鍵開關，有限內建電量、保存剩餘電量；目前不能充電 | [flashlight](../../props/flashlight.gd)、[bunker playground](../../tests/bunker_playground.tscn) |
 | 電子指南針 | 正式；手持自動定位 2 km 內最近巨型避難所，含未載入場址；獨立室內顯示無訊號 | [compass](../../props/electronic_compass.gd)、[building locator](../../core/building_locator.gd) |
 | 手槍與彈藥 | 正式；單發、瞄準、換彈、12 發彈匣與盒裝備彈；實體遮擋射線，怪物傷害與油桶人致命爆炸；巨人無敵 | [weapon](../../player/player_weapon.gd)、[pistol playground](../../tests/pistol_playground.tscn) |
 

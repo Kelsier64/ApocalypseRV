@@ -1,6 +1,6 @@
 extends RayCast3D
 ## The player owns a key gesture. Looking away cancels it; holding never repeats.
-const WALK_HINTS := {"W A S D": "Move", "Shift": "Sprint", "Ctrl": "Crouch", "Space": "Jump", "1–6 / Wheel": "Select slot"}
+const WALK_HINTS := {"G": "Drop", "E": "Interact", "F": "Place", "RMB": "Use item"}
 const DRIVE_HINTS := {
 	"W / S": "Throttle / Brake", "A / D": "Steer", "Space": "Parking brake", "B": "Toggle engine",
 	"Z / X / C": "Reverse / Neutral / 1st", "R / T": "Shift up / down", "L": "Headlights", "E": "Exit seat",
@@ -107,16 +107,14 @@ func _show_on_foot_hints(obj: Node) -> void:
 		return
 	var bindings := WALK_HINTS.duplicate()
 	_add_target_hints(obj, bindings)
-	var held: Dictionary = player.inventory.active_item()
-	if not held.is_empty() and player.can_use_hands(2 if held.get("is_large", false) else 1):
-		bindings["F"] = "Place"
-		bindings["G"] = "Drop"
-		if held.get("scene_path") == "res://props/flashlight.tscn":
-			bindings["L"] = "Toggle flashlight"
-		elif player.weapon.can_use():
-			bindings.merge({"LMB": "Fire", "RMB": "Aim", "R": "Reload"})
-		elif player.consumables.can_eat(player):
-			bindings["Hold RMB"] = "Eat"
+	if player.held_item_node is Flashlight:
+		bindings["RMB"] = "Toggle flashlight"
+	elif player.held_item_node is TrainingTerminal:
+		bindings["RMB"] = "Read terminal"
+	elif player.weapon.can_use():
+		bindings["RMB"] = "Hold to aim"
+	elif player.consumables.can_eat(player):
+		bindings["RMB"] = "Hold to eat"
 	_control_hints.present("ON FOOT", bindings)
 
 func _add_target_hints(obj: Node, bindings: Dictionary) -> void:
@@ -125,17 +123,14 @@ func _add_target_hints(obj: Node, bindings: Dictionary) -> void:
 		bindings["E"] = "Pick up"
 		return
 	if obj is BunkerCache:
-		bindings["Hold E"] = "Search"
+		bindings["E"] = "Hold to search"
 		return
 	var has_tap := not obj is Item and obj.has_method("interact")
-	if has_tap: bindings["E"] = "Use"
 	if _held_delivery(obj):
-		bindings["Hold E"] = "Feed item"
+		bindings["E"] = "Hold to feed item"
 	elif _uses_hold(obj):
-		bindings["Hold E"] = "Service" if has_tap else "Use"
-	if obj is Item and obj.can_pickup(player): bindings["Hold F"] = "Detach"
-	if not obj is RVStructurePanel and obj.has_method("needs_repair") and obj.needs_repair():
-		bindings["Hold H"] = "Repair"
+		bindings["E"] = "Use / hold to service" if has_tap else "Hold to use"
+	if obj is Item and obj.can_pickup(player): bindings["F"] = "Place / hold to detach"
 
 func _label(parent: Node, font_size: int) -> Label:
 	var label := Label.new()
