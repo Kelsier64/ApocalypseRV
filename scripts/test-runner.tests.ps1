@@ -116,7 +116,7 @@ exit /b 0
 function Invoke-MockRun([string]$Mode, [hashtable]$Parameters) {
     $Mode | Set-Content -LiteralPath (Join-Path $scratchRoot 'mode.txt') -Encoding ASCII
     $Parameters['Godot'] = $mock
-    $Parameters['TimeoutSeconds'] = 3
+    if (-not $Parameters.ContainsKey('TimeoutSeconds')) { $Parameters['TimeoutSeconds'] = 3 }
     $reportRoot = Join-Path $scratchRoot '.godot/test-logs'
     $before = @(Get-ChildItem -LiteralPath $reportRoot -Filter results.json -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName)
     $result = Invoke-Runner $Parameters
@@ -134,9 +134,13 @@ foreach ($case in @(
     @{ Mode = 'script'; Detail = 'SCRIPT ERROR:'; Status = 'FAIL' },
     @{ Mode = 'nomarker'; Detail = 'Missing PASS marker'; Status = 'FAIL' },
     @{ Mode = 'empty'; Detail = 'Empty engine log'; Status = 'FAIL' },
-    @{ Mode = 'timeout'; Detail = 'Exceeded 3 seconds'; Status = 'TIMEOUT' }
+    # The descendant is a cold Windows PowerShell start, which can exceed 3 s on CI
+    # runners; the deadline must outlast it or the fixture is killed before it records its PID.
+    @{ Mode = 'timeout'; Detail = 'Exceeded 15 seconds'; Status = 'TIMEOUT'; Timeout = 15 }
 )) {
-    $run = Invoke-MockRun $case.Mode @{ SkipImport = $true }
+    $parameters = @{ SkipImport = $true }
+    if ($case.Timeout) { $parameters['TimeoutSeconds'] = $case.Timeout }
+    $run = Invoke-MockRun $case.Mode $parameters
     Assert-True ($null -ne $run.Failure -and $run.Report.results[0].status -eq $case.Status -and $run.Report.results[0].detail -match $case.Detail) "Failure was not detected: $($case.Mode)"
     Assert-True ($run.Report.results.Count -eq 1 -and $run.Report.selected.Count -eq 3) 'Failure must stop later tests and smoke while retaining the selection'
 }

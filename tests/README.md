@@ -49,10 +49,10 @@
 
 每支測試使用獨立 Godot 程序，避免 autoload／存檔共享污染。固定 `--fixed-fps 60` 解除實時節流；`-RealTime` 可作實時對照，不改物理 Hz、求解器或 time_scale。
 
-Runner 檢查引擎版本、退出碼、非空日誌、錯誤訊息及 `PASS:`；smoke 必須有 `WORLD_READY_FOR_PLAY`。預設第一項失敗立即停止；`-KeepGoing` 會跑完全部再列出所有失敗，但匯入失敗或無法終止逾時子程序時仍立即停止。每項期限預設 240 秒，可用 `-TimeoutSeconds` 調整；超時會終止該測試與子程序。每次執行在 `.godot/test-logs/` 建立獨立目錄，保存 `results.json`、選取清單、環境／commit／工作樹資訊、耗時及各項日誌。
+Runner 檢查引擎版本、退出碼、非空日誌、錯誤訊息及 `PASS:`；smoke 必須有 `WORLD_READY_FOR_PLAY`。預設第一項失敗立即停止；`-KeepGoing` 會跑完全部再列出所有失敗，但匯入失敗或無法終止逾時子程序時仍立即停止。每項期限預設 240 秒，可用 `-TimeoutSeconds` 調整（CI 較慢，使用 480 秒）；超時會終止該測試與子程序。每次執行在 `.godot/test-logs/` 建立獨立目錄，保存 `results.json`、選取清單、環境／commit／工作樹資訊、耗時及各項日誌。
 
 不再使用 `-Suite`、`-StartAt`、`-FailFast` 或 `suites.json`。指定篩選若有任一樣式沒有匹配，會在啟動引擎前失敗。`-SmokeOnly` 不可與 `-TestFilter` 併用。
 
-[GitHub Actions](../.github/workflows/tests.yml) 只用一個 Windows job：runner 自測、安裝固定 Godot、匯入並以 `-KeepGoing` 執行核心集。main push、PR 及手動觸發；純 Markdown／docs 修改略過，更新同一分支會取消舊執行。job 上限 20 分鐘，失敗才上傳診斷。
+[GitHub Actions](../.github/workflows/tests.yml) 只用一個 Windows job：runner 自測、安裝固定 Godot、匯入並以 `-KeepGoing -TimeoutSeconds 480` 執行核心集。main push、PR 及手動觸發；純 Markdown／docs 修改略過，更新同一分支會取消舊執行。job 上限 20 分鐘，失敗才上傳診斷。
 
 Headless 不驗證 GPU 畫面、手感、極端翻車或群怪；必要時依 [測試場指南](../docs/guides/playgrounds.md) 做相關人工驗收。

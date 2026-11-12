@@ -43,4 +43,4 @@ description: Use when choosing, running, writing or debugging ApocalypseRV autom
 
 ## CI
 
-`.github/workflows/tests.yml` runs the runner self-tests, then `scripts/test.ps1 -KeepGoing` with the pinned Godot on one Windows job. Markdown-only and `docs/` changes skip CI. On failure, the `godot-test-logs` artifact holds the same log folder.
+`.github/workflows/tests.yml` runs the runner self-tests, then `scripts/test.ps1 -KeepGoing -TimeoutSeconds 480` with the pinned Godot (CI is slower than a desktop) on one Windows job. Markdown-only and `docs/` changes skip CI. On failure, the `godot-test-logs` artifact holds the same log folder.
