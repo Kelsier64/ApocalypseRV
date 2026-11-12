@@ -10,7 +10,7 @@ Facts that drift (branch state, version constants, test count, last full test re
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent/session-context.ps1
 ```
 
-Version constants live in `world/terrain/world_profile.gd` (`generation_version`), `rv/checkpoint.gd` and `rv/vehicle_snapshot.gd` (`VERSION`).
+Version constants live in `world/terrain/world_profile.gd` (`generation_version`), `rv/checkpoint.gd` and `rv/vehicle_snapshot.gd` (`VERSION`). For a full class index generated from code, run `scripts/agent/module-index.ps1 [filter]`.
 
 Docs lag behind code. Root `README.md`, `GDD.md` and `architecture.md` state intent but carry dated history; `docs/validation/`, `docs/report/` and `docs/archive/` are historical records. Verify a doc claim against code before relying on it, and correct stale statements you touch.
 

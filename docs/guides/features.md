@@ -63,7 +63,7 @@
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
 | 真實輪驅與排檔 | 正式；四輪 VehicleBody3D、前輪轉向／後輪驅動，四前進檔／空檔／倒檔、漸進油門及腳煞車、手煞車與高速轉向限制 | [Chassis](../../rv/chassis.gd)、[driving experience](../../tests/driving_experience_playground.tscn) |
-| 駕駛座、儀表與鏡面 | 正式；入／離座與安全淨空、速度／油電／輪況、左右後照鏡；離座不自動熄火或拉手煞車 | [driver seat](../../equipment/driver_seat.gd)、[dashboard](../../rv/vehicle_dashboard.gd)、[mirrors](../../rv/vehicle_mirrors.gd) |
+| 駕駛座、儀表與鏡面 | 正式；入／離座與安全淨空、速度／油電／輪況、左右後照鏡；離座不自動熄火或拉手煞車 | [driver seat](../../equipment/driver_seat.gd)、[instrument cluster](../../rv/instrument_cluster.gd)、[mirrors](../../rv/vehicle_mirrors.gd) |
 | 可換引擎與維修 | 正式；標準／強化引擎，維修蓋、停穩熄火交換、維修包；耐久歸零熄火但引擎保留 | [engine bay](../../rv/engine_bay.gd)、[rv rebuild](../../tests/rv_rebuild_playground.tscn) |
 | 輪胎磨耗、爆胎與換輪 | 正式；四輪獨立耐久，接地磨耗、釘帶爆胎、抓地／驅動／轉向減弱與偏移；拆裝保存輪況 | [tire dynamics](../../rv/tire_dynamics.gd)、[tire puncture](../../tests/tire_puncture_playground.tscn) |
 | 碰撞與敵人車撞 | 正式；RV 碰撞受損與按相對接近速度處理撞怪／Raker 倒地，爆炸造成車殼／引擎傷害 | [vehicle impact](../../rv/vehicle_impact.gd)、[raker impact](../../tests/raker_impact_playground.tscn) |

@@ -12,9 +12,9 @@ description: Use when editing ApocalypseRV README.md, GDD.md, architecture.md or
 | `README.md` | What the game is, how to run and play it, entry points to other docs | Dated changelog paragraphs, test results |
 | `GDD.md` | Design intent and player-facing rules, plus unbuilt ideas marked as such | Implementation detail |
 | `architecture.md` | Current modules, ownership, data flow, contracts and known limits, in the present tense | History, dated entries, per-feature tuning numbers |
-| `docs/guides/` | How to work on one area | Status reports |
-| `docs/plans/` | One plan per file with a status line; update the status when it changes | Validation logs |
-| `docs/validation/` | One dated record per validation run; leave it unchanged afterwards | Current-state claims |
+| `docs/guides/` | How to work on one area. `feature-contracts.md` holds per-feature implementation detail moved out of `architecture.md`; clean a section up when you touch it | Status reports |
+| `docs/plans/` | One plan per file, with its status row in `docs/plans/README.md`; update the row when the status changes | Validation logs |
+| `docs/validation/` | One dated record per validation run, added at the top of `docs/validation/README.md`; leave the record unchanged afterwards | Current-state claims |
 | `docs/archive/` | Frozen history | Anything new |
 
 Existing documents break several of these rules. Do not copy their patterns. When you touch a section, move it toward this layout.
