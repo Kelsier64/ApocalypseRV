@@ -12,7 +12,7 @@ const LEVEL_SWEEP := 2.094395 # 120 degrees for the fuel and battery gauges.
 const INK := Color("d9dfbe")
 const OFF := Color("172421")
 const UNLIT_PRINT := Color("59625c")
-const TILE_OFF := Color(0.17, 0.19, 0.185)
+const SYMBOL_OFF := Color(0.2, 0.22, 0.215) # Unlit symbol, just visible on its dark lens.
 # Telltale colours by VehicleStatus level: 1 information, 2 caution, 3 fault.
 const LAMP_YELLOW := Color(1.0, 0.88, 0.2)
 const LAMP_AMBER := Color(1.0, 0.52, 0.06)
@@ -45,7 +45,7 @@ var _lens: StandardMaterial3D
 var _ring_shadow: StandardMaterial3D
 var _face_shade: StandardMaterial3D
 var _edge_shadow: StandardMaterial3D
-var _lamp_falloff: GradientTexture2D
+var _smoked: StandardMaterial3D
 
 ## Lamp colour for a VehicleStatus level above zero.
 static func lamp_color(level: int) -> Color:
@@ -69,12 +69,12 @@ func _ready() -> void:
 	_tunnel = _shaded(Color(0.12, 0.13, 0.13), 0.75)
 	_hub = _shaded(Color(0.24, 0.25, 0.25), 0.35)
 	_trim = _solid(Color(0.03, 0.035, 0.036), 0.42)
+	_smoked = _solid(Color(0.02, 0.025, 0.026), 0.22)
 	_lens = _overlay(_gradient([Color(1, 1, 1, 0.21), Color(1, 1, 1, 0.06), Color(1, 1, 1, 0.02)], [0.0, 0.5, 1.0], false), false)
 	_lens.roughness = 0.05
 	_ring_shadow = _overlay(_gradient([Color(0, 0, 0, 0.6), Color(0, 0, 0, 0.6), Color(0, 0, 0, 0)], [0.0, 0.78, 1.0], true), true)
 	_face_shade = _overlay(_gradient([Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0, 0, 0, 0.55)], [0.0, 0.7, 1.0], true), true)
 	_edge_shadow = _overlay(_gradient([Color(0, 0, 0, 0.7), Color(0, 0, 0, 0.25), Color(0, 0, 0, 0)], [0.0, 0.45, 1.0], false), true)
-	_lamp_falloff = _gradient([Color.WHITE, Color(0.86, 0.86, 0.86), Color(0.5, 0.5, 0.5)], [0.0, 0.5, 1.0], true)
 	_build_housing()
 	speed_needle = _gauge("Speed", Vector2(-0.44, -0.008), BIG_DIAL, "dial_speed", dial_rotation(0.0))
 	rpm_needle = _gauge("RPM", Vector2(0.44, -0.008), BIG_DIAL, "dial_rpm", dial_rotation(0.0))
@@ -129,9 +129,9 @@ func update_instruments(rv: Chassis, delta: float) -> void:
 		else:
 			for id in warning_lamps: light_lamp(warning_lamps[id], OFF, 0.0)
 
-## Lights one telltale tile in a colour; zero brightness leaves the unlit grey lens.
-func light_lamp(tile: StandardMaterial3D, tint: Color, brightness: float) -> void:
-	_glow(tile, tint if brightness > 0.0 else TILE_OFF, brightness * 1.25)
+## Lights one telltale symbol in a colour; zero brightness leaves it dull grey.
+func light_lamp(symbol: StandardMaterial3D, tint: Color, brightness: float) -> void:
+	_glow(symbol, tint if brightness > 0.0 else SYMBOL_OFF, brightness * 2.0)
 
 func _build_housing() -> void:
 	var width := PLATE.x + 0.07
@@ -200,8 +200,8 @@ func _gauge(title: String, at: Vector2, radius: float, art: String, rest: float)
 	_mesh("Lens", _disc(mouth * 0.995, 32), Vector3(0, 0, depth * 0.9), _lens, root)
 	return pivot
 
-## Eight warning tiles in a 4 x 2 annunciator block: a pale lens that lights yellow,
-## amber or red behind a solid black symbol.
+## Eight warning tiles in a 4 x 2 annunciator block: a dark lens whose solid symbol
+## lights yellow, amber or red.
 func _build_annunciator() -> void:
 	var pitch := Vector2(0.1, 0.07)
 	var center := Vector2(0, 0.133)
@@ -223,7 +223,7 @@ func _build_gear_quadrant() -> void:
 	var window := Vector2(pitch * GEAR_GLYPHS.length(), 0.064)
 	var center := Vector2(-0.052, 0.018)
 	_frame("Gear", center, window, 0.007, 0.014)
-	_box("GearWindow", Vector3(window.x, window.y, 0.004), Vector3(center.x, center.y, 0.002), _solid(Color(0.02, 0.025, 0.026), 0.22))
+	_box("GearWindow", Vector3(window.x, window.y, 0.004), Vector3(center.x, center.y, 0.002), _smoked)
 	var strip: Texture2D = load(ART + "gear_strip.svg")
 	for i in range(GEAR_GLYPHS.length()):
 		var mat := _solid(UNLIT_PRINT, 0.6, strip)
@@ -243,17 +243,14 @@ func _frame(title: String, center: Vector2, inner: Vector2, bar: float, height: 
 		_box(title + "Rail", Vector3(inner.x + bar * 2.0, bar, height), Vector3(center.x, center.y + side * (inner.y + bar) * 0.5, height * 0.5), _housing)
 		_box(title + "Post", Vector3(bar, inner.y, height), Vector3(center.x + side * (inner.x + bar) * 0.5, center.y, height * 0.5), _housing)
 
-## A lamp tile sitting at the given base height; returns the lens material that lights up.
+## A lamp tile sitting at the given base height; returns the symbol material that lights up.
 func _telltale(id: String, at: Vector3, size: Vector2) -> StandardMaterial3D:
-	# The bulb sits behind the middle of the lens, so the tile falls off toward its edges.
-	var lens := _solid(TILE_OFF, 0.3, _lamp_falloff)
-	_box(id.capitalize() + "Body", Vector3(size.x, size.y, 0.003), at + Vector3(0, 0, 0.0015), _trim)
-	_quad(id.capitalize() + "Lens", size, at + Vector3(0, 0, 0.0032), lens)
-	var symbol := _solid(Color(0.012, 0.016, 0.016), 0.5, load(ART + id + ".svg"))
+	_box(id.capitalize() + "Lens", Vector3(size.x, size.y, 0.003), at + Vector3(0, 0, 0.0015), _smoked)
+	var symbol := _solid(SYMBOL_OFF, 0.5, load(ART + id + ".svg"))
 	symbol.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	var side := minf(size.x, size.y) * 0.9
+	var side := minf(size.x, size.y) * 0.92
 	_quad(id.capitalize() + "Symbol", Vector2(side, side), at + Vector3(0, 0, 0.0036), symbol)
-	return lens
+	return symbol
 
 func _glow(mat: StandardMaterial3D, tint: Color, energy: float) -> void:
 	mat.albedo_color = tint
