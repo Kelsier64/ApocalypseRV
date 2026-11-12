@@ -1,4 +1,5 @@
-# Checks files about to be committed for intermediate outputs and oversized binaries.
+# Checks files about to be committed for intermediate outputs, oversized binaries
+# and new world-space text nodes.
 # Manual use: run after staging; exits 1 when something must not be committed.
 # -Hook: Claude Code PreToolUse payload on stdin; inspects only `git commit`
 # commands, including files staged earlier in the same command.
@@ -24,6 +25,11 @@ if ($Hook) {
         foreach ($file in Get-GitList (@('ls-files', '--others', '--exclude-standard', '--') + $specs)) { [void]$files.Add($file); [void]$newFiles.Add($file) }
         foreach ($file in Get-GitList (@('ls-files', '--modified', '--') + $specs)) { [void]$files.Add($file) }
     }
+    # `git commit ... -- <paths>` commits those paths without staging them first.
+    if ($command -match '\bcommit\b[^\r\n;&|]*\s--\s+([^\r\n;&|]+)') {
+        $specs = @($Matches[1].Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_.Trim('"', "'") })
+        foreach ($file in Get-GitList (@('ls-files', '--modified', '--') + $specs)) { [void]$files.Add($file) }
+    }
     if ($command -match '\bcommit\b[^\r\n;&|]*\s(--all|-[a-zA-Z]*a[a-zA-Z]*)(\s|$)') {
         foreach ($file in Get-GitList @('diff', '--name-only', '--diff-filter=ACMR')) { [void]$files.Add($file) }
     }
@@ -42,11 +48,19 @@ foreach ($file in $files) {
     if ($megabytes -gt 95) { $blocked.Add("$file ($megabytes MB, over GitHub's 100 MB limit)") }
     elseif ($megabytes -gt 25) { $warnings.Add("$file ($megabytes MB)") }
 }
+# World-space text nodes (AGENTS.md hard rule 1). guard-edit.ps1 only sees Edit/Write
+# tool calls, so shell-made edits and agents without hooks are caught here.
+foreach ($file in $files) {
+    if ($file -notmatch '\.(gd|tscn|tres|scn)$' -or $file -match '^(tests|art_source|docs|scripts|\.agents|\.claude)/') { continue }
+    $added = if ($newFiles.Contains($file)) { @(Get-Content -LiteralPath (Join-Path $root $file) -ErrorAction SilentlyContinue) }
+        else { @(Get-GitList @('diff', 'HEAD', '--unified=0', '--', $file) | Where-Object { $_ -match '^\+(?!\+\+)' }) }
+    if (($added -join "`n") -cmatch '\b(Label3D|TextMesh)\b') { $blocked.Add("$file (adds Label3D/TextMesh; world text must be texture, decal or device-screen art)") }
+}
 $evidence = @($newFiles | Where-Object { $_ -match '^docs/.*\.(png|jpe?g|webp|gif|mp4)$' })
 if ($evidence.Count -gt 6) { $warnings.Add("$($evidence.Count) new images under docs/ (keep a few representative ones; leave the rest in .godot/)") }
 
 $message = ''
-if ($blocked.Count) { $message += "Must not be committed (keep it in .godot/ or another ignored path, then unstage it): $($blocked -join '; '). " }
+if ($blocked.Count) { $message += "Must not be committed (fix it, or keep it in .godot/ or another ignored path and unstage it): $($blocked -join '; '). " }
 if ($warnings.Count) { $message += "Review before committing: $($warnings -join '; ')." }
 if ($Hook) {
     if (-not $message) { exit 0 }

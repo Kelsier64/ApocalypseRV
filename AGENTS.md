@@ -45,7 +45,7 @@ The last command imports once, then runs every top-level `tests/test_*.gd` and t
 4. **Randomness is gameplay.** Use it for meaningful variation in generation, encounters and loot. Preserve guarantees the player relies on, and use fixed seeds to reproduce a run.
 5. **Tests read their baselines.** Never copy tuning values (energy, colors, speeds, timings) from scenes into tests as literals. Read them from the scene or resource under test, or assert relative behavior.
 
-Claude Code enforces rules 1 and 2 with hooks. Other agents apply them by hand.
+Claude Code enforces rules 1 and 2 with hooks. Other agents apply them by hand. `check-staged.ps1` also rejects new `Label3D`/`TextMesh` in game code, however the edit was made.
 
 ## Working Defaults
 

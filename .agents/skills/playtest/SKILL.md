@@ -7,6 +7,21 @@ description: Use when an ApocalypseRV change needs live on-screen verification i
 
 Use live play only when headless tests and renders cannot answer the question. If the user's visual judgment is what matters, ask them to look instead.
 
+## Render Captures First
+
+For a static look (a model, a dashboard, lighting, a fixed vehicle state) render and read the image yourself; no desktop control is needed.
+
+```powershell
+godot --path . --log-file .godot/rv-workshop-capture.log res://tests/rv_design_workshop.tscn -- --capture
+```
+
+- Scenes with a capture flag are listed in [docs/guides/playgrounds.md](../../../docs/guides/playgrounds.md). They write PNGs under `.godot/<name>-captures/`, print each path as `CAPTURE:`, and quit. Open the PNGs with your image reader.
+- Never pass `--headless`: it has no renderer and produces empty images.
+- When a scene you need has no capture flag, add one that follows [rv_design_workshop.gd](../../../tests/rv_design_workshop.gd): fixed states, the real gameplay camera plus a close-up, two `frame_post_draw` waits before each grab.
+- A camera that is not parented to a moving vehicle must be repositioned every frame, and an observer camera needs the gameplay camera's `cull_mask` or it sees the player's own head.
+- Outdoor 3D renders at 540 lines by default (`render_mode` in `core/game_settings.gd`). Judge legibility at that scale, not in a close-up.
+- Report captures as fixed-state renders. They say nothing about motion, feel or timing.
+
 ## Launch
 
 Launch from the shell with an explicit log, never through the editor:
