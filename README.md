@@ -13,7 +13,7 @@ Godot 4.7.2 第一人稱末日公路生存原型：駕駛 RV、搜刮建築、�
 - [GDD.md](GDD.md)：遊戲設計、完整玩法、資源數值、目標與未實作願景。
 - [architecture.md](architecture.md)：場景、模組契約、資料流、測試範圍與限制。
 - [docs 索引](docs/README.md)：開發計畫、驗收紀錄與 archive 歷史文件；現行文件以根目錄版本為準。
-- [AGENTS.md](AGENTS.md)：開發約定；[todo](todo) 保留原項目並標記狀態，[todo_prompt](todo_prompt) 保留 POI 規劃方向。
+- [AGENTS.md](AGENTS.md)：所有 coding agent 共用的開發約定（Claude Code 經 [CLAUDE.md](CLAUDE.md) 引用，另有 hooks 與 skills）；[todo](todo) 保留原項目並標記狀態，[todo_prompt](todo_prompt) 保留 POI 規劃方向。
 - [遊玩與測試場指南](docs/guides/playgrounds.md)：RV 維護、各展示場命令與快捷鍵。
 - [開發計畫總覽](docs/plans/README.md)：各計畫狀態、剩餘工作與驗收依據。
 - [程式與資產目錄指南](docs/guides/codebase.md)：目錄責任、資源引用、存檔格式及清理流程。

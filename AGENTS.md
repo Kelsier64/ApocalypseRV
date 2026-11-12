@@ -1,30 +1,33 @@
-# Repository Guidelines
+# ApocalypseRV Agent Guide
 
-Shared instructions for every coding agent working in this repository. Agent-specific notes are at the end; Claude Code also reads [CLAUDE.md](CLAUDE.md).
+Single-player first-person survival prototype in Godot 4.7.2: drive an RV, scavenge buildings, craft, and survive monsters that climb and wreck the vehicle. Main scene: `world/main_world.tscn`. This file is shared by every coding agent; Claude Code also reads [CLAUDE.md](CLAUDE.md).
 
-## Project Structure
+## Start Here
 
-Godot 4.7.2 survival prototype; `world/main_world.tscn` is the main scene.
+Facts that drift (branch state, version constants, test count, last full test result) come from the repository, not from prose. Claude Code receives them at session start; other agents run:
 
-- `player/`, `enemies/`, `props/`: actors, interaction, AI, and items.
-- `rv/`, `equipment/`: vehicle physics, save checkpoint, and mounted devices.
-- `world/`: terrain streaming, chunks, POIs, procedural buildings, and interiors.
-- `core/`: shared rules and contracts (items, saves, climbing math, placement, settings).
-- `assets/`: runtime art; `art_source/`: editable sources and build inputs. Scenes live beside their scripts.
-- `scripts/`: test runner, asset builders, and benchmarks.
-- `tests/`: automated top-level `test_*.gd`, shared fixtures in `tests/support/`, and manual `*_playground` scenes.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent/session-context.ps1
+```
 
-## Sources of Truth
+Version constants live in `world/terrain/world_profile.gd` (`generation_version`), `rv/checkpoint.gd` and `rv/vehicle_snapshot.gd` (`VERSION`).
 
-Code is the only authority for current behavior and versions. Read version constants from code, not from prose: `rv/checkpoint.gd` (`VERSION`), `rv/vehicle_snapshot.gd` (`VERSION`), and `world/terrain/world_profile.gd` (`generation_version`).
+Docs lag behind code. Root `README.md`, `GDD.md` and `architecture.md` state intent but carry dated history; `docs/validation/`, `docs/report/` and `docs/archive/` are historical records. Verify a doc claim against code before relying on it, and correct stale statements you touch.
 
-- Root `README.md`, `GDD.md`, and `architecture.md` describe usage, design, and architecture, but they contain dated history and can lag behind code. Verify any claim before relying on it, and fix stale statements you touch.
-- `docs/guides/` and `docs/plans/` are working documents. `docs/validation/`, `docs/report/`, and `docs/archive/` are dated historical records: never treat their results as evidence for the current code.
-- Do not hard-code counts that drift (number of tests, files, or versions) in documentation.
+## Map
 
-## Development Commands
+| Path | Holds |
+|---|---|
+| `player/`, `enemies/`, `props/` | Actors, interaction, AI, items |
+| `rv/`, `equipment/` | Vehicle physics, save checkpoint, mounted devices |
+| `world/` | Terrain streaming, chunks, POIs, buildings, interiors |
+| `core/` | Shared rules and contracts: items, saves, climbing math, placement, settings |
+| `assets/`, `art_source/` | Runtime art; editable sources and build inputs |
+| `tests/`, `scripts/` | Automated tests, fixtures, manual playgrounds; runner, builders, agent tools |
 
-Run from the repository root with `godot` on PATH (`C:\Program Files\godot\godot.exe`; pass `-Godot '<path>'` to the runner if it is not):
+Placement, reference and cleanup rules: [docs/guides/codebase.md](docs/guides/codebase.md).
+
+## Commands
 
 ```powershell
 godot --editor --path .
@@ -32,86 +35,47 @@ godot --path .
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-These open the editor, launch gameplay, and run every top-level `tests/test_*.gd` plus the main-scene smoke check. `-TestFilter` selects matching tests, with optional `-Smoke`; `-SmokeOnly` checks only main-scene startup; `-List` prints the selection without launching Godot. The runner stops at the first failure, so report which checks did not run. Logs: `.godot/test-logs/`. GitHub Actions runs the same default command in one Windows job. See `tests/README.md` for coverage and the runner self-tests.
+The last command imports once, then runs every top-level `tests/test_*.gd` and the main-scene smoke check. It stops at the first failure unless you pass `-KeepGoing`. Load the `godot-tests` skill before choosing, writing or debugging tests.
 
-New top-level `tests/test_*.gd` files run automatically: prefer extending an existing core test over adding another process.
+## Hard Rules
 
-## Coding and Testing
+1. **In-game text.** Use English and only what the player or setting needs. Never put hints, controls, item names or status in the 3D world, including `Label3D`, `TextMesh`, floating, camera-facing, glowing or unshaded text. Essential prompts belong in screen-space UI. World text is allowed only where the fiction demands it (a physical sign, a maker's plate, an instrument screen). Finish it as integrated texture, decal or device-screen art, and never smuggle hints into textures. This applies to reference images and generated assets too.
+2. **Nothing intermediate in Git.** Keep work files, screenshots, recordings, logs, archives and editor backups (`.blend1`) under `.godot/` or another ignored path. Commit only game assets, code, tests, concise docs and at most a few representative evidence images. Run `scripts/agent/check-staged.ps1` before committing.
+3. **Saves are disposable.** Change save formats directly, delete old local saves when needed, and remove compatibility branches instead of extending them.
+4. **Randomness is gameplay.** Use it for meaningful variation in generation, encounters and loot. Preserve guarantees the player relies on, and use fixed seeds to reproduce a run.
+5. **Tests read their baselines.** Never copy tuning values (energy, colors, speeds, timings) from scenes into tests as literals. Read them from the scene or resource under test, or assert relative behavior.
 
-Follow the placement, reference, and cleanup rules in `docs/guides/codebase.md`. In short:
+Claude Code enforces rules 1 and 2 with hooks. Other agents apply them by hand.
 
-- Put a scene with the module that owns its behavior; shared pure logic goes in `core/`.
-- `res://` paths and Godot UIDs are both references. When moving or deleting a script or scene, check both, plus dynamically built paths and `SaveSceneCatalog`. Keep `.uid` and `.import` files paired with their sources.
-- Tests must not copy tuning values (light energy, colors, speeds, timings) from scenes as literals. Read the baseline from the scene or resource under test, or assert relative behavior, so tuning changes do not break tests silently.
-- When a change alters a tuned value, run the tests that cover it before committing.
+## Working Defaults
 
-For documentation-only edits, verify relative links and consistency with code; record historical test results separately from checks run for the current change.
-
-## Clarifying Requirements
-
-Ask the user early when a requirement, preference, or tradeoff could materially affect the result. Offer concise choices when practical, and continue any work that can proceed independently.
-
-## Save Data
-
-Treat existing saves as disposable during development. Change save formats and save/load logic directly, including changes that break compatibility. Remove obsolete compatibility branches instead of extending them. You may delete old local saves when a clean start is needed.
-
-## Gameplay Randomness
-
-Treat randomness as a core part of gameplay. Use it to create meaningful variation across runs, especially in procedural generation, encounters, and loot. Preserve any guarantees the player relies on, and use fixed seeds when you need to reproduce a run.
-
-## Token Efficiency and Validation Scope
-
-- Default to a token-efficient workflow while preserving quality and the requested scope. Use `rg`, inspect targeted ranges and diffs, batch independent reads, and reuse established findings.
-- Skip writing and running tests for simple, low-risk tasks. Review the diff and use direct checks where needed. For changes that need tests, choose the smallest set that covers the affected behavior and its risks. Expand only for related failures, unresolved risks, or explicit requirements. Reuse passing results when the relevant code has stayed the same.
-- For documentation-only changes, check wording, consistency, and any changed links; do not launch Godot or run gameplay tests.
-- Take screenshots only when you need to verify a specific visual result. Use direct asset inspection or a render when either is sufficient. Reserve desktop control for checks that require live interaction. Ask the user to inspect when their visual judgment or access is needed.
-- Run climbing, turning, and roof-destruction scenarios only for changes affecting those systems.
-- Report briefly what was checked and any material uncertainty. If user inspection is needed, state exactly what they should inspect; never claim it has already been verified.
-
-## In-Game Text
-
-Use English for all in-game text. Keep wording concise and include it only where the player or setting needs it. Omit gameplay hints and tutorial copy. Keep essential interaction prompts in screen-space UI.
-
-- Never place gameplay hints, controls, instructions, item names, or status labels on models or in the 3D world. This includes floating prompts, `Label3D`, `TextMesh`, and white, glowing, unshaded, or camera-facing text.
-- World text is allowed only where it clearly belongs in the fiction (for example, an essential physical sign, manufacturer plate, or instrument display). Finish it as integrated game art using a texture, decal, or an actual device screen; match the surface, lighting, wear, scale, and placement. Do not convert hints into textures to bypass this rule, add decorative wording by default, or restore removed labels through scene generators.
-
-## Delegation and 3D Work
-
-- Delegate only narrow, self-contained work, such as a broad search or an independent check, with concise context. Use a fast, cheap model for simple lookups and the strongest model for deep reasoning. Do not duplicate exploration or validation the main agent already did.
-- Do scene modeling and general 3D work in the main agent. Before building or editing 3D scenes or replacing visual assets, read the `apocalypse-rv-3d-scenes` skill. For suitable static props, use the `comfyui-image-to-3d` skill directly. Keep the raw model, verify the result in context, and report unresolved problems accurately.
-- Shared skill sources live in `.agents/skills/`. Edit them there; agent-specific entry points must stay thin pointers.
-
-## Game Testing with Desktop Control
-
-Use your agent's desktop-control tool and read its guidance first. Select exactly one game window; never target the Godot editor by mistake or invent window IDs.
-
-Launch through the shell with an explicit log:
-
-```powershell
-godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playground.tscn -- --replay
-```
-
-Omit `-- --replay` for manual WASD/Space play. Controls: F2 stops/toggles motion; F3 auto-climbs; F4 switches camera; F5 seats the player; R resets.
-
-Observe the game before sending each key press. Refresh the screenshot only when you need to verify the on-screen result. Short key presses cannot substitute for sustained movement; use replay for continuous input. Verify both actors climb and remain aboard during turns; press F5 and verify roof HP reaches `DESTROYED` and the monster falls. Inspect the log for script errors.
-
-Close only your test window afterward. Report observed results separately from automated checks and untested scenarios. Replay uses scripted vehicle motion; wheel-driven handling, rollovers, and crowds need additional testing.
+- Ask early when a requirement, preference or tradeoff could materially change the result. Offer concise choices and keep doing independent work.
+- Report architecture problems you notice. Ask before large architectural changes.
+- Validate with the smallest set that covers the changed behavior and its risks. Skip tests for simple, low-risk edits. For docs-only changes, check wording, consistency and links (`scripts/agent/check-links.ps1 <files>`); do not launch Godot.
+- Report what you checked, what you did not, and any material uncertainty. When the user must inspect something, name exactly what. Never claim visual or hands-on verification you did not do.
+- Work token-efficiently: use `rg`, read targeted ranges, batch independent reads, and reuse established findings.
+- Delegate only narrow, self-contained work, such as broad searches or independent checks. Keep scene modeling and 3D integration in the main agent.
 
 ## Git
 
-- Before starting new work, ask the user whether to create a new branch from `origin/main`. Create one only if the user agrees; otherwise continue on the current branch (default). Use the same branch for follow-ups.
-- Complete the work and validation, then ask the user for approval before pushing or creating/updating a PR.
-- Keep intermediate outputs out of Git from start to finish: build/generation work files, screenshots, recordings, logs, archives, and editor backups (such as `.blend1`). Put them under `.godot/` or another ignored path. Commit only necessary game assets, code, tests, concise docs, and at most a few representative evidence images.
-- Review `git status` and the diff, clean up task-generated temporary files and accidental changes, and commit all validated task changes. Preserve and report unrelated or pre-existing user changes.
+- Before new work, ask whether to branch from `origin/main`. Default: stay on the current branch, and keep follow-ups on it.
+- Finish and validate, review `git status` and the diff, remove task-generated clutter, and commit the validated changes. Preserve and report unrelated user changes.
+- Ask before pushing or creating or updating a PR.
 
-## Agent-Specific Notes
+## Skills
 
-### Codex
+Load a skill when its trigger applies. Sources live in `.agents/skills/`. After changing a skill's `name` or `description`, run `scripts/agent/sync-skills.ps1` to regenerate the Claude Code entry points.
 
-- Godot: if the sandbox cannot find or access it, retry with `sandbox_permissions: "require_escalated"`.
-- Subagent models: `gpt-6.1-sol` for complex reasoning, `gpt-6-luna` for simple tasks, `gpt-6.1-terra` for desktop control.
-- Desktop control: use `node_repl` with `@oai/sky`; initialize `sky`, call `list_windows()`, obtain the game window with `get_window`, activate it, inspect `get_window_state`, and send keys with `sky.press_key`.
+| Skill | Load when |
+|---|---|
+| `godot-tests` | Choosing, running, writing or debugging automated tests or CI failures |
+| `playtest` | A change needs live on-screen verification in the running game |
+| `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md`, or anything under `docs/` |
+| `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
+| `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
 
-### Claude Code
+## Codex Notes
 
-See [CLAUDE.md](CLAUDE.md).
+- If the sandbox cannot reach Godot (`C:\Program Files\godot\godot.exe`), retry with `sandbox_permissions: "require_escalated"`.
+- Subagent models: `gpt-6.1-sol` for deep reasoning, `gpt-6-luna` for simple tasks, `gpt-6.1-terra` for desktop control.
+- Hooks do not run for Codex: run `session-context.ps1` at the start and `check-staged.ps1` before every commit.

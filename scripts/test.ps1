@@ -7,7 +7,8 @@ param(
     [switch]$Smoke,
     [switch]$SmokeOnly,
     [switch]$SkipImport,
-    [switch]$RealTime
+    [switch]$RealTime,
+    [switch]$KeepGoing
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
@@ -49,10 +50,12 @@ $metadata = [ordered]@{
     working_tree = (& git -C $projectRoot status --porcelain | Out-String).Trim()
     engine = $actualVersion; os = [Environment]::OSVersion.ToString()
     real_time = [bool]$RealTime; import = -not $SkipImport; timeout_seconds = $TimeoutSeconds
+    keep_going = [bool]$KeepGoing
 }
 Write-Host "Godot $actualVersion | $runName | $($selection.Count) checks"
 Write-Host "Logs: $logDirectory"
 $results = [Collections.Generic.List[object]]::new()
+$failedChecks = [Collections.Generic.List[string]]::new()
 $total = [Diagnostics.Stopwatch]::StartNew()
 function Save-Results {
     $report = [ordered]@{
@@ -71,6 +74,7 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
     $detail = ''
     $exitCode = $null
     $process = $null
+    $fatal = $false
     try {
         $process = Start-Process -FilePath $executable -ArgumentList $arguments -WindowStyle Hidden -PassThru
         if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
@@ -89,6 +93,7 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
                     }
                 } catch {
                     if (-not $process.HasExited) { $process.Kill() }
+                    $fatal = $true
                     throw "Unable to terminate test descendants: $($_.Exception.Message). Remaining checks stopped."
                 }
             }
@@ -122,7 +127,10 @@ function Invoke-GodotCheck([string]$Name, [string[]]$ExtraArguments, [bool]$Requ
         Write-Host $detail
         Get-Content -LiteralPath $log -Tail 30 | Write-Host
     }
-    if ($status -ne 'PASS') { throw "$Name failed. See $log" }
+    if ($status -eq 'PASS') { return }
+    # Import failures and orphaned descendants invalidate later checks.
+    if ($KeepGoing -and -not $fatal -and $Name -ne 'import') { $failedChecks.Add($Name); return }
+    throw "$Name failed. See $log"
 }
 try {
     if (-not $SkipImport) {
@@ -142,6 +150,7 @@ try {
         if (-not $RealTime) { $smokeArguments += @('--fixed-fps', '60') }
         Invoke-GodotCheck 'main-scene' $smokeArguments $true '(?m)^PASS: WORLD_READY_FOR_PLAY\b'
     }
+    if ($failedChecks.Count -gt 0) { throw "$($failedChecks.Count) checks failed: $($failedChecks -join ', '). Logs: $logDirectory" }
 } finally {
     Save-Results
     Write-Host ("Finished in {0:N2}s. Slowest checks:" -f $total.Elapsed.TotalSeconds)

@@ -148,6 +148,12 @@ $run = Invoke-MockRun 'smoke' @{ SmokeOnly = $true; SkipImport = $true }
 Assert-True ($null -ne $run.Failure -and $run.Report.results[0].detail -eq 'Missing PASS marker') 'Smoke must reject a generic PASS marker'
 $run = Invoke-MockRun 'import' @{}
 Assert-True ($null -ne $run.Failure -and ($run.Report.results.name -join ',') -eq 'import') 'Import errors must stop tests'
+$run = Invoke-MockRun 'import' @{ KeepGoing = $true }
+Assert-True ($null -ne $run.Failure -and ($run.Report.results.name -join ',') -eq 'import') 'Import errors must stop tests even with KeepGoing'
+$run = Invoke-MockRun 'exit' @{ KeepGoing = $true }
+Assert-True ($run.Failure -match '2 checks failed: test_alpha, test_bravo') "KeepGoing must report every failed check: $($run.Failure)"
+Assert-True (($run.Report.results.name -join ',') -eq 'import,test_alpha,test_bravo,main-scene') 'KeepGoing must run every selected check'
+Assert-True (($run.Report.results.status -join ',') -eq 'PASS,FAIL,FAIL,PASS' -and $run.Report.metadata.keep_going) 'KeepGoing must record each status and the option'
 $run = Invoke-MockRun 'pass' @{ TestFilter = @('test_alpha.gd'); RealTime = $true; SkipImport = $true }
 Assert-True ($null -eq $run.Failure -and $run.Report.metadata.real_time -and -not $run.Report.metadata.import) 'Report must record execution options'
 Assert-True ((Get-Content -LiteralPath ($run.Report.results[0].log + '.args') -Raw) -notmatch '--fixed-fps') 'RealTime must omit fixed FPS'
