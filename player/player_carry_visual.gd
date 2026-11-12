@@ -1,6 +1,8 @@
 extends Node
 ## Arm-only overlay, evaluated after locomotion. Never modifies rest poses or physics.
 ## Restore before the next animation sample so blends cannot accumulate IK offsets.
+const DRIVING_GRIP_SECONDS := .30
+
 var actor: CharacterBody3D
 var skeleton: Skeleton3D
 var base_rotations: Dictionary = {}
@@ -17,6 +19,10 @@ var hand_frames: Dictionary = {}
 var grip_hand_bases: Dictionary = {}
 var grip_kind := "small"
 var active_hand := "R"
+var driving_item_id := -1
+var driving_grip_elapsed := 0.0
+var driving_grip_start := Vector3.ZERO
+var driving_palm := Vector3.ZERO
 
 func _ready() -> void:
 	process_physics_priority = 2
@@ -39,10 +45,12 @@ func reset() -> void:
 	surface_grips.clear()
 	grip_hand_bases.clear()
 	grip_kind = "small"
+	driving_item_id = -1
 
 func prepare_current_pose() -> void:
 	# Slot changes can happen between physics ticks. Solve from the current
-	# animation sample before making either the item or its viewmodel visible.
+	# animation sample on foot. In the seat, wait for the next driving pose.
+	if actor.seated_in != null: return
 	clear_pose()
 	_physics_process(0.0)
 
@@ -52,13 +60,13 @@ func _physics_process(delta: float) -> void:
 	var driver: Node = get_parent().get_node("Locomotion")
 	var grabbed: bool = actor.is_grabbed()
 	var seated: bool = actor.seated_in != null
-	var blocked: bool
-	if seated:
-		blocked = not actor.can_hold_item_while_driving()
-	else:
+	var blocked := false
+	if not seated:
 		blocked = actor.sleep.active() or actor.locomotion_state == actor.LocomotionState.CLIMBING or driver.climb_exit_remaining > 0.0
 		blocked = blocked or not actor.can_use_hands() or (actor.is_crawling() and Vector2(actor.velocity.x, actor.velocity.z).length() > .06)
-	var carrying := is_instance_valid(held) and not blocked
+	var carrying: bool = is_instance_valid(held) and (actor.can_hold_item_while_driving() if seated else not blocked)
+	var drives_right: bool = seated and not grabbed and actor.body_state.has_part(&"right_arm")
+	if not drives_right: driving_item_id = -1
 	var large: bool = carrying and bool(actor.inventory.active_item().get("is_large", false))
 	var pistol: bool = carrying and held is Pistol and not grabbed
 	# Arm weights fade after unequipping, but the preview may already be freed.
@@ -76,9 +84,12 @@ func _physics_process(delta: float) -> void:
 	# back to locomotion; blending a holding arm lets the item leave its palm.
 	var holding_right := carrying and (active_hand == "R" or pistol)
 	var holding_left := carrying and ((large and not grabbed) or active_hand == "L" or pistol)
-	right_weight = 1.0 if holding_right else move_toward(right_weight, 0.0, delta * 7.0)
-	left_weight = 1.0 if holding_left else move_toward(left_weight, 0.0, delta * 7.0)
-	if seated: left_weight = 0.0 # The steering pose owns the left arm immediately.
+	if seated:
+		right_weight = 1.0 if holding_right else 0.0
+		left_weight = 0.0
+	else:
+		right_weight = 1.0 if holding_right else move_toward(right_weight, 0.0, delta * 7.0)
+		left_weight = 1.0 if holding_left else move_toward(left_weight, 0.0, delta * 7.0)
 	# Keep grip pose and held simulation while placement hides the real model.
 	if blocked:
 		if is_instance_valid(held): held.hide()
@@ -99,8 +110,11 @@ func _physics_process(delta: float) -> void:
 			item_hold_transform = item.transform
 		if pistol: _update_pistol(delta)
 		else: _update_item(delta, large)
-	if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight, holding_right)
-	if left_weight > 0.0 and actor.body_state.has_part(&"left_arm"): _arm("L", grip_left, left_weight, holding_left)
+	if seated:
+		if drives_right: _drive_right_arm(driver.driving.right_wheel_contact, holding_right, delta)
+	else:
+		if right_weight > 0.0 and actor.body_state.has_part(&"right_arm"): _arm("R", grip_right, right_weight, holding_right)
+		if left_weight > 0.0 and actor.body_state.has_part(&"left_arm"): _arm("L", grip_left, left_weight, holding_left)
 	if pistol:
 		for side in ["R", "L"]:
 			if actor.body_state.has_part(&"right_arm" if side == "R" else &"left_arm"):
@@ -110,6 +124,19 @@ func _physics_process(delta: float) -> void:
 		_align_flashlight()
 		_pose_flashlight_fingers(right_weight if active_hand == "R" else left_weight)
 	if is_instance_valid(held): held.visible = carrying and not actor.is_placing_equipment()
+
+func _drive_right_arm(wheel_contact: Vector3, holding: bool, delta: float) -> void:
+	var next_item_id := item.get_instance_id() if holding else 0
+	if driving_item_id != next_item_id:
+		# Start from the last solved palm so changing slots mid-motion is continuous.
+		driving_grip_start = actor.to_local(wheel_contact) if driving_item_id == -1 else driving_palm
+		driving_grip_elapsed = DRIVING_GRIP_SECONDS if driving_item_id == -1 and not holding else 0.0
+		driving_item_id = next_item_id
+	driving_grip_elapsed = minf(driving_grip_elapsed + delta, DRIVING_GRIP_SECONDS)
+	var weight := smoothstep(0.0, DRIVING_GRIP_SECONDS, driving_grip_elapsed)
+	var target := grip_right if holding else wheel_contact
+	_arm("R", actor.to_global(driving_grip_start).lerp(target, weight), 1.0, holding)
+	driving_palm = actor.to_local(_palm_position("R"))
 
 func _seat_grip_contacts(two_hands: bool) -> void:
 	# Reach clamping can leave even a full-strength IK palm short of its target.

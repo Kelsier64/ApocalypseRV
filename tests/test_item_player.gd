@@ -163,6 +163,8 @@ func check_driving_carry() -> void:
 	ray._input(toggle)
 	var carry := actor.get_node("Visuals/Carry")
 	var wheel := seat.get_node("CockpitVisual/SteeringTilt/SteeringWheel") as Node3D
+	await steps(20)
+	var raised_palm: Vector3 = carry._palm_position("R")
 	for direction in [&"move_right", &"move_left"]:
 		Input.action_press(direction)
 		await steps(30)
@@ -179,16 +181,29 @@ func check_driving_carry() -> void:
 	hotbar.pressed = true
 	seat._unhandled_input(hotbar)
 	check(actor.inventory.active_slot == 0 and seat.current_driver == actor, "Seated hotbar refuses the large item without interrupting driving")
+	await steps(35)
 	var scroll := InputEventMouseButton.new()
 	scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
 	scroll.pressed = true
 	seat._unhandled_input(scroll)
 	check(actor.inventory.active_slot == 2 and actor.held_item_node is Pistol and not actor.held_item_node.visible, "Scrolling skips the large item and the pistol stays holstered")
+	await steps(4)
+	var rim_right := wheel.to_global(Vector3(.211, .018, -.07))
+	var lowering_palm: Vector3 = carry._palm_position("R")
+	check(lowering_palm.distance_to(raised_palm) < .12 and lowering_palm.distance_to(rim_right) > .12, "Stowing eases the right hand back toward the wheel")
+	await steps(20)
+	var steering_palm: Vector3 = carry._palm_position("R")
+	check(steering_palm.distance_to(rim_right) < .06, "The right hand returns to the wheel after stowing")
 	hotbar.action = &"hotbar_1"
 	seat._unhandled_input(hotbar)
-	await steps()
 	terminal = actor.held_item_node as FieldTerminal
-	check(terminal != null and terminal.visible, "A small item can be equipped from the driver's seat")
+	check(carry._palm_position("R").distance_to(steering_palm) < .01, "Equipping between physics ticks leaves the hand in place")
+	await steps(6)
+	var lifting_palm: Vector3 = carry._palm_position("R")
+	check(lifting_palm.distance_to(steering_palm) > .04 and lifting_palm.distance_to(raised_palm) > .12, "The right hand passes through an intermediate pose during the lift")
+	check(terminal != null and terminal.visible and lifting_palm.distance_to(terminal.get_node("GripRight").global_position) < .01, "The terminal stays attached to the moving palm")
+	await steps(20)
+	check(carry._palm_position("R").distance_to(raised_palm) < .04, "The lift settles at the raised grip")
 
 	actor.body_state.sever(&"left_arm")
 	actor.refresh_inventory()
