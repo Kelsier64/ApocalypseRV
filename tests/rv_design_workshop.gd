@@ -79,7 +79,8 @@ func _ready() -> void:
 		canvas.visible = false
 		_capture.call_deferred()
 
-## Renders the real seat view and a dashboard close-up for fixed vehicle states, then quits.
+## Renders the real seat view, a dashboard close-up and a raking side view for fixed
+## vehicle states, then quits.
 func _capture() -> void:
 	var folder := "res://.godot/rv-workshop-captures"
 	DirAccess.make_dir_recursive_absolute(folder)
@@ -90,7 +91,10 @@ func _capture() -> void:
 		if node is WorldEnvironment: sky = node.environment
 	var day_sun := sun.light_energy
 	var day_ambient := sky.ambient_light_energy
-	for state in ["day_drive", "night_faults", "unpowered"]:
+	var visual: Node3D = seat.get_node("CockpitVisual")
+	var cluster: Node3D = visual.get_node("InstrumentCluster")
+	for state in ["day_drive", "night_faults", "unpowered", "lamp_test"]:
+		visual.set_process(true)
 		seat.exit_seat()
 		rv.control_override = {}
 		rv.linear_velocity = Vector3.ZERO
@@ -118,11 +122,18 @@ func _capture() -> void:
 				rv.set_engine_running(true)
 			"unpowered":
 				rv.current_power = 0.0
+			"lamp_test":
+				rv.set_engine_running(true)
 		await get_tree().create_timer(4.0).timeout
-		for shot in ["seat", "close"]:
+		if state == "lamp_test":
+			# Hold every lamp on, cycling the three severities, to judge symbol legibility.
+			visual.set_process(false)
+			for i in range(VehicleStatus.IDS.size()):
+				cluster.light_lamp(cluster.warning_lamps[VehicleStatus.IDS[i]], VehicleStatus.color(1 + i % 3), rv.instrument_brightness)
+		for shot in ["seat", "close", "angle"]:
 			var camera: Camera3D = seat.seat_camera
-			if shot == "close":
-				view = 5
+			if shot != "seat":
+				view = 5 if shot == "close" else 6
 				observer.cull_mask = camera.cull_mask
 				observer.fov = 52
 				observer.current = true
@@ -149,6 +160,10 @@ func _process(_delta: float) -> void:
 	elif view == 5:
 		var cluster: Node3D = seat.get_node("CockpitVisual/InstrumentCluster")
 		observer.global_position = seat.seat_camera.global_position.lerp(cluster.global_position, 0.3)
+		observer.look_at(cluster.global_position)
+	elif view == 6:
+		var cluster: Node3D = seat.get_node("CockpitVisual/InstrumentCluster")
+		observer.global_position = cluster.to_global(Vector3(0.75, 0.3, 0.62))
 		observer.look_at(cluster.global_position)
 	elif view == 3:
 		observer.global_position = legacy.get_node("Chassis").to_global(Vector3(11, 6, -13))

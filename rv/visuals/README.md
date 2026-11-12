@@ -68,20 +68,22 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 ## 2026-11-12 實體儀表
 
-儀表組由 `rv/instrument_cluster.gd` 以原生網格建立：遮光罩與向下收斂的側護罩、沿用車內磨損漆面的面板、凸出的金屬錶圈、退在鏡片後的印刷錶面、帶軸蓋的錐形指針、固定螺絲與調光旋鈕。只有錶面刻度與檔位字元是貼圖，沒有浮動標籤。整組上緣約 1.34 m，保留原座位相機與碰撞。
+儀表組由 `rv/instrument_cluster.gd` 以原生網格建立：帶捲邊的遮光罩與向下收斂的側護罩、沿用車內磨損漆面的面板、立在面板上的鍍鉻錶筒（向駕駛側張開，印刷錶面退在筒底、鏡片在筒口）、帶軸蓋的錐形指針、墊圈螺絲與調光旋鈕。只有錶面刻度、檔位字元與燈號符號是貼圖，沒有浮動標籤。整組上緣約 1.35 m，保留原座位相機與碰撞。
+
+車內幾乎只有環境光，所以立體感是烘進去的：車削件用頂點明暗做出亮緣與暗底，錶筒、遮光罩、護罩與面板相接處疊一層漸層陰影，鏡片有一道淡反光。調整造型時要一起調這些明暗，否則會退回平面感。夜間另有一盞無陰影小燈把背光灑到遮光罩與方向盤。
 
 - 左時速、右轉速；紅區起點讀 `Chassis.ENGINE_REDLINE_RPM`。
-- 中央上排八個車況燈：未亮時是暗色鏡片，亮起時鏡片與符號一起發光，顏色來自 `VehicleStatus`。
-- 檔位窗印有 R N 1 2 3 4：通電時全部微亮，目前檔位高亮。
+- 中央上方 4 × 2 車況燈塊：每格是淺色鏡片配實心黑色符號，亮起時鏡片依 `VehicleStatus` 顏色發光，中央亮、邊緣暗。符號刻意粗而簡單，在 540p 的駕駛視角仍可辨認。
+- 檔位窗印有 R N 1 2 3 4：通電時全部微亮，目前檔位高亮；同一列右側是充電燈。
 - 油量、電量各一顆 E–F 指針錶，低量段為紅區；指針有阻尼。充電燈只依 `generated_rate` 實際產電亮起。
 
 缺電時背光、檔位窗、充電燈及車況燈熄滅，電量錶歸零；時速與油量讀值仍保留。`Chassis.engine_rpm()` 由既有檔位速度帶、縱向車速及油門估算，熄火、缺油或引擎故障歸零；空檔／手煞車可空轉，僅影響表針與音調，不新增驅動力或油耗模型。駕駛 HUD 沒有行車文字列，手冊仍提供按鍵參考。
 
-錶面原稿由 `scripts/build_rv_instrument_art.gd` 產生到 `assets/rv_status/dial_*.svg` 與 `gear_strip.svg`，刻度角度讀儀表腳本的 `DIAL_SWEEP`／`LEVEL_SWEEP`。改掃角、量程或字形後重跑產生器再匯入；這些 SVG 的 `.import` 必須保留 `mipmaps/generate=true`，否則 540p 渲染下刻度會閃爍。
+錶面與燈號符號的原稿都由 `scripts/build_rv_instrument_art.gd` 產生到 `assets/rv_status/`（`dial_*.svg`、`gear_strip.svg` 與九個符號），刻度角度讀儀表腳本的 `DIAL_SWEEP`／`LEVEL_SWEEP`。改掃角、量程、字形或符號後重跑產生器再匯入；這些 SVG 的 `.import` 必須保留 `mipmaps/generate=true`，否則 540p 渲染下細線會閃爍。
 
 ```powershell
 godot --headless --path . -s scripts/build_rv_instrument_art.gd
 godot --path . res://tests/rv_design_workshop.tscn -- --capture
 ```
 
-第二行以正式 RV 與座位相機輸出白天行駛、夜間低油低電、斷電三種狀態的座位視角與近景到 `.godot/rv-workshop-captures/`。這是固定狀態畫面，不能取代道路駕駛手感驗收。自動測試在 `tests/test_rv_engine.gd`。
+第二行以正式 RV 輸出白天行駛、夜間低油低電、斷電、全燈號測試四種狀態，各有座位視角、近景與側向斜視三張，存到 `.godot/rv-workshop-captures/`。這是固定狀態畫面，不能取代道路駕駛手感驗收。自動測試在 `tests/test_rv_engine.gd`。
