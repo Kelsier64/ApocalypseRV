@@ -107,7 +107,7 @@ func check_instrument_cluster(rv: Chassis, world: Node3D) -> void:
 		var lamp: StandardMaterial3D = cluster.warning_lamps[row.id]
 		check((lamp.emission_energy_multiplier > 0.0) == (row.level > 0), "Cluster warning follows vehicle status for " + row.id)
 		if row.level > 0:
-			check(lamp.emission.is_equal_approx(InstrumentCluster.LAMP_RED), "Cluster warning lights red for " + row.id)
+			check(lamp.emission.is_equal_approx(InstrumentCluster.lamp_color(row.level)), "Cluster warning color follows severity for " + row.id)
 	rv.energy.charging = false
 	rv.energy.generated_rate = 1.0
 	rv.current_power = rv.max_power

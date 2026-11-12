@@ -126,10 +126,10 @@ func _capture() -> void:
 				rv.set_engine_running(true)
 		await get_tree().create_timer(4.0).timeout
 		if state == "lamp_test":
-			# Hold every lamp on to judge symbol legibility.
+			# Hold every lamp on, cycling the three severities, to judge symbol legibility.
 			visual.set_process(false)
 			for i in range(VehicleStatus.IDS.size()):
-				cluster.light_lamp(cluster.warning_lamps[VehicleStatus.IDS[i]], cluster.LAMP_RED, rv.instrument_brightness)
+				cluster.light_lamp(cluster.warning_lamps[VehicleStatus.IDS[i]], cluster.lamp_color(1 + i % 3), rv.instrument_brightness)
 		for shot in ["seat", "close", "angle"]:
 			var camera: Camera3D = seat.seat_camera
 			if shot != "seat":
