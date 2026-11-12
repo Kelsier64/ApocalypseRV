@@ -1,6 +1,5 @@
 extends RayCast3D
 ## The player owns a key gesture. Looking away cancels it; holding never repeats.
-const WALK_HINTS := {"G": "Drop", "E": "Interact", "F": "Place", "RMB": "Use item"}
 const DRIVE_HINTS := {
 	"W / S": "Throttle / Brake", "A / D": "Steer", "Space": "Parking brake", "B": "Toggle engine",
 	"Z / X / C": "Reverse / Neutral / 1st", "R / T": "Shift up / down", "L": "Headlights", "E": "Exit seat",
@@ -105,19 +104,27 @@ func _show_on_foot_hints(obj: Node) -> void:
 	if player.is_cheat_flying():
 		_control_hints.present("FLIGHT", {"W A S D": "Fly", "Space": "Ascend", "Ctrl": "Descend", "Shift": "Fly faster"})
 		return
-	var bindings := WALK_HINTS.duplicate()
-	_add_target_hints(obj, bindings)
-	if player.held_item_node is Flashlight:
-		bindings["RMB"] = "Toggle flashlight"
-	elif player.held_item_node is TrainingTerminal:
-		bindings["RMB"] = "Read terminal"
-	elif player.weapon.can_use():
-		bindings["RMB"] = "Hold to aim"
-	elif player.consumables.can_eat(player):
-		bindings["RMB"] = "Hold to eat"
-	_control_hints.present("ON FOOT", bindings)
+	var bindings := {}
+	var held: Dictionary = player.inventory.active_item()
+	var can_place: bool = not held.is_empty() and player.can_use_hands(2 if held.get("is_large", false) else 1)
+	if not held.is_empty(): bindings["G"] = "Drop"
+	_add_target_hints(obj, bindings, can_place)
+	if can_place:
+		if not bindings.has("F"): bindings["F"] = "Place"
+		if player.held_item_node is Flashlight:
+			bindings["RMB"] = "Toggle flashlight"
+		elif player.held_item_node is TrainingTerminal:
+			bindings["RMB"] = "Read terminal"
+		elif player.weapon.can_use():
+			bindings["RMB"] = "Hold to aim"
+		elif player.consumables.can_eat(player):
+			bindings["RMB"] = "Hold to eat"
+	if bindings.is_empty():
+		_control_hints.hide()
+	else:
+		_control_hints.present("ON FOOT", bindings)
 
-func _add_target_hints(obj: Node, bindings: Dictionary) -> void:
+func _add_target_hints(obj: Node, bindings: Dictionary, can_place: bool) -> void:
 	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not _can_interact(obj): return
 	if obj is Item and not obj.is_fixed:
 		bindings["E"] = "Pick up"
@@ -125,12 +132,15 @@ func _add_target_hints(obj: Node, bindings: Dictionary) -> void:
 	if obj is BunkerCache:
 		bindings["E"] = "Hold to search"
 		return
-	var has_tap := not obj is Item and obj.has_method("interact")
+	var has_tap := obj is Bed or obj is BatterySocket or (not obj is Item and obj.has_method("interact"))
 	if _held_delivery(obj):
 		bindings["E"] = "Hold to feed item"
 	elif _uses_hold(obj):
 		bindings["E"] = "Use / hold to service" if has_tap else "Hold to use"
-	if obj is Item and obj.can_pickup(player): bindings["F"] = "Place / hold to detach"
+	elif has_tap:
+		bindings["E"] = "Interact"
+	if obj is Item and obj.can_pickup(player):
+		bindings["F"] = "Place / hold to detach" if can_place else "Hold to detach"
 
 func _label(parent: Node, font_size: int) -> Label:
 	var label := Label.new()

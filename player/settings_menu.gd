@@ -246,7 +246,7 @@ func _build_input(page: VBoxContainer) -> void:
 func _build_help(page: VBoxContainer) -> void:
 	page.add_child(_label("These controls use fixed bindings."))
 	var rows := [
-		["Control Hints", "Press J during gameplay to show or hide control hints. Hints start hidden."],
+		["Control Hints", "Press J to enable or disable contextual hints. On foot, hints appear for the item you hold or the object you aim at."],
 		["Movement and View", "WASD to move, Left Shift to sprint, mouse to look, Space to jump. Sprinting and jumping cost stamina."],
 		["Climbing Ladders", "Face the rungs and press W to climb, S to descend or Space to let go. Put down large items first. Use the side ladder to board and the cabin ladder to reach the roof hatch."],
 		["Pickup and Interaction", "Tap E to pick up items, refuel or enter and exit interiors. Hold E for 1 second to sit, open the tablet, or install or remove a wheel."],

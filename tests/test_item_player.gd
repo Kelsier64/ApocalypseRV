@@ -1497,9 +1497,13 @@ func check_control_hints() -> void:
 	key.physical_keycode = KEY_J
 	key.pressed = true
 	check(not hints.visible, "Control hints start hidden")
+	var target := make_item("res://props/scrap.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
+	target.freeze = true
+	await steps()
+	check(ray.get_collider() == target and not hints.visible, "An aimed item stays hidden until hints are enabled")
 	Input.parse_input_event(key)
 	await steps()
-	check(hints.visible and hints._heading.text == "ON FOOT" and hints._bindings.keys() == ["G", "E", "F", "RMB"], "Physical J shows only the four basic item controls")
+	check(hints.visible and hints._heading.text == "ON FOOT" and hints._bindings == {"E": "Pick up"}, "An aimed loose item shows only its pickup key")
 	check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(layout.get_global_rect()), "The hint guide %s fits the %s viewport" % [layout.get_global_rect(), root.size])
 	check(not hints._key_frame.draw_center, "Keycaps have outlines without a fill")
 	key.echo = true
@@ -1507,14 +1511,22 @@ func check_control_hints() -> void:
 	await steps()
 	check(hints.visible, "Holding J does not repeatedly toggle hints")
 	key.echo = false
-	var target := make_item("res://props/scrap.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
-	target.freeze = true
-	await steps()
-	check(ray.get_collider() == target and hints._bindings.get("E") == "Pick up", "Aiming at a loose item shows its pickup key")
 	target.queue_free()
+	await steps()
+	check(not hints.visible, "Empty hands and no target hide the guide with hints enabled")
+	var terminal := make_item("res://equipment/training_terminal.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
+	terminal.confirm_placement(terminal.global_transform, entities)
+	await steps()
+	check(ray.get_collider() == terminal and hints.visible and hints._bindings.get("E") == "Hold to use", "Aiming at a mounted terminal shows its hold interaction")
+	var camera_pose: Transform3D = actor.camera.transform
+	actor.camera.rotate_y(PI)
+	await steps()
+	check(not hints.visible, "Looking away hides the mounted device hints")
+	actor.camera.transform = camera_pose
+	terminal.queue_free()
 	check(actor.add_item("Flashlight", false, "res://props/flashlight.tscn"), "Equip a flashlight for the item guide")
 	await steps()
-	check(hints._bindings.get("RMB") == "Toggle flashlight", "Right-click hint describes the held flashlight")
+	check(hints.visible and hints._bindings == {"G": "Drop", "F": "Place", "RMB": "Toggle flashlight"}, "Held flashlight shows only drop, placement and toggle hints")
 	check(actor.enter_equipment_placement(), "Open a real placement preview")
 	await steps()
 	check(hints.visible and hints._heading.text == "PLACEMENT" and hints._bindings.get("LMB") == "Place" and not hints._bindings.has("E"), "Placement replaces walking and interaction hints")
