@@ -75,7 +75,7 @@ func run() -> void:
 	original_position = DisplayServer.window_get_position()
 	original_mouse = Input.mouse_mode
 	settings.storage_path = PREFERENCES
-	var initial := {"window_mode": 0, "render_mode": 1, "render_scale": 1.0, "retro": false, "brightness": 1.0, "contrast": 1.0, "saturation": 1.0, "aa": 0, "fog_quality": 0, "walk_fov": 75.0, "max_fps": 60}
+	var initial := {"window_mode": 0, "render_mode": 1, "render_scale": 1.0, "retro": false, "shadow_trim": 0.0, "saturation": 1.0, "aa": 0, "fog_quality": 0, "walk_fov": 75.0, "max_fps": 60}
 	for key: String in initial:
 		settings.set_setting(key, initial[key], false)
 	evidence.renderer = RenderingServer.get_current_rendering_method()
@@ -325,8 +325,7 @@ func check_pixels() -> void:
 	var base_scene := baseline.get_pixelv(center)
 	var base_ui := baseline.get_pixelv(SWATCH_POINT)
 	check(base_scene.r > base_scene.g + 0.12 and base_scene.r > base_scene.b + 0.12, "Center GPU sample reaches the red fixture cube rather than the player model or background")
-	check(settings.set_setting("brightness", 0.75), "GPU validation brightness is an accepted preference value")
-	settings.set_setting("contrast", 1.0)
+	check(settings.set_setting("shadow_trim", 1.5), "GPU validation shadow trim is an accepted preference value")
 	settings.set_setting("saturation", 0.0)
 	var graded := await capture(root, "outdoor-graded.png")
 	if graded == null: return

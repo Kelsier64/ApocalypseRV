@@ -1,0 +1,126 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://world/roadside_kit/streetlight.gd" id="1_streetlight"]
+[ext_resource type="Shader" path="res://world/starting_shelter/materials/aged_metal.gdshader" id="2_metal"]
+
+[sub_resource type="StandardMaterial3D" id="Concrete"]
+albedo_color = Color(0.36, 0.35, 0.31, 1)
+roughness = 0.98
+
+[sub_resource type="BoxMesh" id="FootingMesh"]
+material = SubResource("Concrete")
+size = Vector3(0.46, 1.16, 0.46)
+
+[sub_resource type="ShaderMaterial" id="WeatheredSteel"]
+shader = ExtResource("2_metal")
+shader_parameter/metal_color = Color(0.34, 0.37, 0.35, 1)
+shader_parameter/corrosion = 0.68
+shader_parameter/pattern_offset = 1.2
+
+[sub_resource type="CylinderMesh" id="PostMesh"]
+material = SubResource("WeatheredSteel")
+top_radius = 0.065
+bottom_radius = 0.125
+height = 6.48
+radial_segments = 10
+rings = 1
+
+[sub_resource type="CylinderMesh" id="CollarMesh"]
+material = SubResource("WeatheredSteel")
+top_radius = 0.15
+bottom_radius = 0.18
+height = 0.44
+radial_segments = 10
+rings = 1
+
+[sub_resource type="CylinderMesh" id="ArmMesh"]
+material = SubResource("WeatheredSteel")
+top_radius = 0.04
+bottom_radius = 0.063
+height = 2.18
+radial_segments = 8
+rings = 1
+
+[sub_resource type="CylinderMesh" id="HousingMesh"]
+material = SubResource("WeatheredSteel")
+top_radius = 0.43
+bottom_radius = 0.54
+height = 0.18
+radial_segments = 8
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="LensMaterial"]
+resource_local_to_scene = true
+albedo_color = Color(0.31, 0.3, 0.26, 1)
+roughness = 0.62
+emission_enabled = true
+emission = Color(1, 0.89, 0.74, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="CylinderMesh" id="LensMesh"]
+top_radius = 0.46
+bottom_radius = 0.40
+height = 0.055
+radial_segments = 8
+rings = 1
+
+[sub_resource type="BoxShape3D" id="FootingShape"]
+size = Vector3(0.46, 1.16, 0.46)
+
+[sub_resource type="BoxShape3D" id="PostShape"]
+size = Vector3(0.25, 6.48, 0.25)
+
+[node name="Streetlight" type="Node3D"]
+script = ExtResource("1_streetlight")
+
+[node name="Footing" type="MeshInstance3D" parent="."]
+position = Vector3(0, -0.32, 0)
+mesh = SubResource("FootingMesh")
+
+[node name="Post" type="MeshInstance3D" parent="."]
+position = Vector3(0, 3.38, 0)
+mesh = SubResource("PostMesh")
+
+[node name="Collar" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.47, 0)
+mesh = SubResource("CollarMesh")
+
+[node name="Arm" type="MeshInstance3D" parent="."]
+position = Vector3(0, 6.86, -1.05)
+rotation = Vector3(-1.309, 0, 0)
+mesh = SubResource("ArmMesh")
+
+[node name="Housing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 7.04, -2.17)
+scale = Vector3(0.54, 1, 1)
+mesh = SubResource("HousingMesh")
+
+[node name="Lens" type="MeshInstance3D" parent="."]
+position = Vector3(0, 6.93, -2.17)
+scale = Vector3(0.54, 1, 1)
+material_override = SubResource("LensMaterial")
+mesh = SubResource("LensMesh")
+
+[node name="Light" type="SpotLight3D" parent="."]
+position = Vector3(0, 6.86, -2.19)
+rotation = Vector3(-1.222, 0, 0)
+visible = false
+light_energy = 4.0
+light_volumetric_fog_energy = 0.14
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 1.0
+spot_range = 17.0
+spot_angle = 58.0
+spot_angle_attenuation = 1.5
+spot_attenuation = 1.15
+
+[node name="Body" type="StaticBody3D" parent="."]
+
+[node name="FootingShape" type="CollisionShape3D" parent="Body"]
+position = Vector3(0, -0.32, 0)
+shape = SubResource("FootingShape")
+
+[node name="PostShape" type="CollisionShape3D" parent="Body"]
+position = Vector3(0, 3.38, 0)
+shape = SubResource("PostShape")

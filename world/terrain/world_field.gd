@@ -12,6 +12,7 @@ var _minor_sites: Dictionary = {}
 var _offroad_sites: Dictionary = {}
 var _megashelter_sites: Dictionary = {}
 var _site_queries: Dictionary = {}
+var streetlight_cells: Dictionary = {}
 var forest_cache: Dictionary = {}
 var destroyed_trees: Dictionary = {}
 var route: TerrainRoute

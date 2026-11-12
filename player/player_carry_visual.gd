@@ -377,7 +377,11 @@ func _align_flashlight() -> void:
 	var delta := skeleton.global_basis * skeleton.get_bone_global_pose(hand).basis * skeleton.get_bone_global_rest(hand).basis.inverse()
 	var frame: Basis = delta * hand_frames[active_hand]
 	var grip := item.get_node("GripRight") as Node3D
-	var forward := actor.global_basis * Basis(Vector3.RIGHT, clampf(actor.camera.rotation.x, -.45, .45) * .65) * Vector3.FORWARD
+	var look_pitch: float = actor.camera.rotation.x
+	var pitch := clampf(look_pitch, -.45, .45) * .65
+	# Tilt around the palm when looking up far enough to inspect overhead.
+	pitch = lerpf(pitch, look_pitch, smoothstep(.45, .95, look_pitch))
+	var forward := actor.global_basis * Basis(Vector3.RIGHT, pitch) * Vector3.FORWARD
 	var aiming_at_face: bool = actor.is_grabbed() and actor.grab_control.keep_flashlight
 	var target: Vector3 = actor.grab_control.captor.grab_face_position() if aiming_at_face else Vector3.ZERO
 	if aiming_at_face: forward = (target - grip_right).normalized()

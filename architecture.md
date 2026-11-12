@@ -2,7 +2,7 @@
 
 2026-11-09 精神值與白影。玩家的 `PlayerSurvival` 新增 `san`，以生存模擬時間從 100 在 1200 秒降至 0。Checkpoint v7 與列印身體 v2 共用此欄位，同格式既有存檔省略時以 100 載入。白影刷新以世界時鐘的 06:00–18:00 為白天，累計有效戶外物理時間，進入室內保留倒數。白天抽中後採樣距鏡頭 35–55 公尺的地面，以包住動態輪廓的球體檢查出現點完全位於鏡頭視錐外。日落後輪廓完全離開畫面時結束遭遇。白影現身後沿地面追向玩家，直視時速度為 5.5 m/s，其餘時間為 3 m/s。追擊使用接地採樣和膠囊掃掠，碰到玩家即進入既有死亡流程。坐姿以實際軀幹判定，車殼和設備可阻擋接觸。首次通過步行／駕駛視角的中央停留與頭胸遮擋判定後，按直視距離扣除 SAN。整個輪廓離開畫面時，以玩家為中心搜尋不同方位的接地點，確認落點淨空、視線暢通且整個輪廓位於視錐外後瞬移。每次重新直視都能再次觸發。連續遮蔽與不可見各有獨立計時，分別達 3 秒與 30 秒時隱藏並重設出現等待。白影材質依 3D 渲染像素在模型深度所覆蓋的寬度，有限度地加寬遠處輪廓，保留既有深度遮蔽。遭遇僅存在於當前戶外世界。詳見[白影指南](docs/guides/white-apparition.md)。
 
-2026-11-02 巨型避難所地下通道。室內依保存 seed，從接待室以外房間的未連通牆面接口抽選樓梯間入口，先檢查門前淨空與導航可達性。獨立的 `megashelter_stairwell` 副本經底部單扇小門連接既有 `bunker`。樓梯間和地堡使用該棟大樓衍生的種子與保存 ID。轉場管理器記住來時的門，離場時可逐層返回。[室內指南](docs/guides/megashelter-interiors.md)
+巨型避難所地下通道從接待室以外的未連通牆面接口抽選樓梯間入口，檢查門前淨空與導航可達性。巨型避難所、地堡及無燈柱廳的獨立樓梯間共用 `InteriorProfiles.STAIR_DESTINATIONS`，以各自的 seed 抽選底門目的地並保存 `stair_destination`。轉場管理器使用各副本的穩定保存 ID 並記住來時的門，離場時可逐層返回。[室內指南](docs/guides/megashelter-interiors.md)
 
 2026-11-01 巨型避難所室內：生成 v19 將 `modular_megashelter` 接到獨立 World3D 的 `megashelter` profile；外殼內容仍 v7，既有地形／道路及外觀 RNG 域保留。只開放地面一層，入口、大廳、三至五間功能房與少量連接空間通常共六至八個模組，按外部面積選擇模組尺寸。首訪二至四件散物與一個箱子，沒有敵人或升級引擎目標。`InteriorProfiles` 供生成與 Checkpoint 共用分流；保存完整布局、探索、箱子與散物，回訪不補貨。Checkpoint v7／VehicleSnapshot v6 不變，只接受生成 v19，舊局重新開始。本次轉場／保存檢查與 seed 42 實際回放已通過；完整範圍與待驗項目見[室內指南](docs/guides/megashelter-interiors.md)。
 
@@ -83,7 +83,7 @@ MainWorld
 
 ### 起始避難所與世界識別
 
-`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 固定選擇兩室 orientation_shelter；`cheat_test_profile.gd` 只覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留舊版按鈕開門車庫及完整起始 RV。此獨立測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 預設選擇兩室 `orientation_shelter`。Demo 在計算出生位置前複製繼承的主世界 profile，只改用按鈕開門的單間車庫。`cheat_test_profile.gd` 也覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留單間車庫及完整起始 RV。作弊測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
@@ -213,11 +213,11 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 
 WorldClock 獨佔正式室外 Environment 與 DirectionalLight3D 的光照設定，取代 WorldGenerator 的固定光照。太陽在 +X 升起、-X 落下，06:00／18:00 越過地平線，最高仰角約 58°；光源 basis 與天空 sun_direction 共用同一向量，地平線下光源能量歸零。天空與環境填光按太陽高度平滑插值；陰天距離霧為 24–230 m，晴天 64–230 m，天氣與載入保護可進一步收近，所有畫質共用。使用自訂陰天天空、低解析 radiance cache、關閉天空反射來源；Forward+ 體積霧見下方「局部體積霧」小節，天氣由 WorldWeather 取樣後合成。
 
-灰階暗部顯示由同世界的獨立 `DarkAdaptation`（NightVisionEffect）持有，不讀取時鐘或太陽高度，也不寫入原生 Environment。WorldClock 只控制自然光照與天氣；暗部效果先依視圖環境光亮度啟用，再用各處的實際照明及材質參考估計缺光量，明亮區域保留原生光色。室內 PoiInterior 建立自己的效果與 World3D，使用獨立的 [室內 profile](world/instances/interior_dark_adaptation.tres)：零環境底光、參考能量 0.06、距離區間 0～5 m，曲線從 0.72 衰減至 3 m 起為零；固定燈具使用局部衰減與柔和陰影，Forward+ 加上 SSAO 接觸遮蔽。室外仍使用原 [DarkAdaptationProfile](world/dark_adaptation_profile.tres) 與既有曲線。以下預設參數描述室外設定。`ambient_gate_enabled` 預設 true；Color 環境光的線性顏色 luminance × energy 在 ≤0.04 時完整啟用、0.04～0.06 反向 smoothstep 淡出、≥`ambient_threshold`（0.06）停用。`ambient_transition`（0.02）控制門檻下方漸變寬度；不累積前幀。Disabled 環境光視為 0；Sky／Background 或缺少 Environment 時保守維持啟用，避免猜測天空照度。明亮全域環境光下的局部陰影因此不補灰階；關閉 gate 可恢復持續局部處理。Inspector 的 `profile.distance_begin`／`distance_end` 預設為 0／60 m，`reference_energy` 為 0.06，`dark_ratio`／`lit_ratio` 為 0.1／1.0；曲線指向使用者已調整的 [Curve 資源](world/night_vision_curve.tres)，不重設或覆寫其控制點、切線。X 為區間內正規化距離、Y 為灰階補光保留量；支援非單調曲線，區間外使用端點值，亮度限制於 0～1。profile 及 Curve.changed 直接更新顯示，不經過 apply_time。
+灰階暗部由同世界的 `DarkAdaptation`（NightVisionEffect）持有。WorldClock 寫入自然照明及霧，深夜原生環境底光為零，預設天空和霧共用黑色終端。NightVisionEffect 依每個像素的線性亮度與材質參考求出缺光量，距離曲線控制補光強度。原生照明充足、曲線值為零或像素屬於天空時保留原始畫面。室外沿用 [DarkAdaptationProfile](world/dark_adaptation_profile.tres) 與 [距離曲線](world/night_vision_curve.tres)。距離區間預設 0～60 m，參考能量 0.06。室內 PoiInterior 使用獨立 World3D 與 [室內 profile](world/instances/interior_dark_adaptation.tres)，環境底光為零、參考能量 0.06、曲線在 3 m 起歸零。曲線編輯透過 `Curve.changed` 直接更新顯示。
 
-NightVisionEffect 為每個活動視圖建立同 World3D、同相機姿勢／投影的無實體燈光參考視圖，以中性底光估計材質亮度。正的線性亮度差額乘上局部暗部反應、距離曲線及環境光啟用強度後加至主圖；暗部反應為原生／參考亮度比例在 dark_ratio～lit_ratio 之間的反向 smoothstep，參考近零時不補足。單一燈具不控制全域啟閉；主圖、真實燈光、發光與陰影不乘曲線。這是視覺估計，不是精確的光照分解，微弱彩色照明可能被灰階柔化，體積霧低解析度取樣及複雜透明材質也可能有差異。
+每個活動視圖以同 World3D、同姿勢與投影渲染中性底光參考。參考讀取來源相機的 Environment，缺省時讀取所屬世界的 Environment 或 fallback。黑色背景與距離霧保留霧的遮蔽，體積霧參考關閉環境光與 GI 注入。主圖沿用原生燈光、陰影、霧散射和材質發光，玻璃與天氣接續透明繪製。Forward+ 參考同步原視圖的 SSAO，Compatibility 由主視圖在合成後套用 SSAO。正式室內外維持固定曝光與線性色調映射。
 
-參考環境每幀讀取來源 Camera3D.environment，缺省時讀取所屬 World3D 的 Environment／fallback；同一來源供環境光門檻使用。保留天空、距離霧與全域／局部體積霧的遮蔽，將參考環境光／GI 注入體積霧設為零，避免補出額外散射。主圖的霧及燈光不受效果啟閉影響。參考不含第二份雨幕／水花，雨與水花直接接受原生場景照明；透明玻璃與天氣在灰階合成後依原生流程繪製。只有低於環境光門檻的活動視圖增加一次同 3D 縮放比例的幾何參考渲染；明亮視圖停用參考更新及 Quad。不新增模擬或陰影 pass；兩側鏡只在既定刷新時同步參考。相機保留 bit 13～16 作四個視圖路由、bit 18 作實體燈光／天氣隔離；既有完整身體 bit 17、鏡面 bit 19、本地身體 bit 20 不變。同世界任一視圖啟用時，所有活動相機（含明亮視圖）保留燈光圖層並排除其他視圖 Quad；全數停用才還原原始相機／燈光圖層。合成 Quad 跟隨來源視錐中心，只略過遮蔽剔除，不能使用忽略所有剔除的 API，否則會繞過 layer mask 被自己的參考拍入並產生回饋。暫停保留上次門檻及參考圖，明確停用仍釋放相機及燈光路由；候選世界轉移後重新綁定目標 viewport／World3D。復古與使用者畫面偏好在其後獨立套用，HUD 不參與缺光估計。不新增存檔欄位。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
+啟用效果後，白天及夜間的活動視圖均增加一次同 3D 縮放比例的參考渲染，兩側鏡面只在既定刷新時同步參考。相機 bit 13～16 為視圖路由，bit 18 為實體燈光與天氣隔離。暫停保留上次參考，停用效果還原相機及燈光圖層。候選世界轉移後重新綁定目標 viewport 和 World3D。SDR 顯示校準在復古色調及飽和度之後套用，保留純黑與 64/255 以上的輸出；HUD 與嵌入的鏡面視圖各沿用原有呈現流程。Esc → Video → Calibrate Display 提供不調暗的即時場景與參考色階，Apply 保存，Cancel、Esc 或關閉面板恢復已保存值。舊亮度和對比設定不參與新校準。編輯及重載流程見[曲線指南](docs/guides/night-vision.md)。
 
 來源 `get_camera_transform()` 提供含偏移、必要時已插值的顯示姿勢。參考相機與 Quad 在 `frame_pre_draw` 逐幀更新，因此明確關閉自己的 physics interpolation，並在定位後各呼叫 `force_update_transform()`；此時 SceneTree 的普通 transform notification 已處理完，僅設定 global_transform 會使繪圖端晚一幀。車身帶動相機／燈光晃動與鏡面轉向必須使用輪廓幾何的首幀回歸，純黑接收面或等待多幀後擷取無法驗證這種錯位。
 
@@ -396,7 +396,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 玩家 `enter_*`／`exit_*` 授權 UI、座位與放置，呼叫方須尊重拒絕。DEAD 阻擋輸入／移動；平板和座位在玩家死亡或設備失效時釋放模式。
 
-TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟預設 TUI；英文管理頁為 Overview、Energy、Equipment、Crafting、Structure。隱藏 Ctrl+C／Ctrl+D 退出 TUI，q 無綁定，Esc 始終關閉整台平板；切換及關閉須清理獨立 PopupMenu，事件由目前與 popup viewport 消耗。退出 UI 捕捉仍按住的遊戲操作，放開後才恢復。shell 起始只有提示符，沒有 banner、提示或按鈕；歷史及輸出有上限，補全不派送命令。RVTerminalCommands 以明確登錄表解析純文字及回傳允許的 UI action，提供 help／status／rvctl／clear／exit／cheat／time／weather，不執行 OS 命令或任意程式。時間與天氣只沿已連接 RV 的祖先尋找所屬 WorldClock，不使用全域查詢，以隔離待載入世界。飛行作弊由 `cheat fly true/false/status` 操作目前終端的玩家，使用獨立 FLYING 移動狀態：相機方向 WASD、Space／Ctrl 升降、Shift 加速；跳過重力、碰撞及攀爬，沿用 UI／設定輸入鎖。關閉前檢查目前姿勢的膠囊淨空；飛行中拒絕保存，入座、死亡及世界轉場清除。三種 unlimited 旗標屬 Chassis 暫態，不進 VehicleSnapshot；成功讀檔重建車輛後重設，失敗保留原世界。VehicleEnergy 統一處理有效電力及各消耗，仍要求可用插槽與電池；燃油判斷涵蓋啟動、消耗、充電保留量及音效。免費製作以既有 job.costs 保存空字典，付費工作保存實付材料，取消與施工失敗退款依實付額，不依當下作弊開關。RVTerminalPresenter 只做英文呈現，原始服務狀態及交易仍由既有 owner 管理。施工要求 TUI 開啟，退出只取消本終端授權的施工；製作工作屬 CraftingStation，退出或關閉平板仍繼續。完整指令見 [README](README.md)；核心資源測試共用 [terminal_checks](tests/support/terminal_checks.gd)，不另增程序。
+TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟預設 TUI；英文管理頁為 Overview、Energy、Equipment、Crafting、Structure。隱藏 Ctrl+C／Ctrl+D 退出 TUI，q 無綁定，Esc 始終關閉整台平板；切換及關閉須清理獨立 PopupMenu，事件由目前與 popup viewport 消耗。退出 UI 捕捉仍按住的遊戲操作，放開後才恢復。有電時 shell 起始只有提示符。TUI 與 shell 共用缺電警告，供電狀態不影響 UI 所有權。歷史及輸出有上限，補全不派送命令。RVTerminalCommands 以明確登錄表解析純文字及回傳允許的 UI action，提供 help／status／rvctl／clear／exit／cheat／time／weather，不執行 OS 命令或任意程式。時間與天氣只沿已連接 RV 的祖先尋找所屬 WorldClock，不使用全域查詢，以隔離待載入世界。飛行作弊由 `cheat fly true/false/status` 操作目前終端的玩家，使用獨立 FLYING 移動狀態：相機方向 WASD、Space／Ctrl 升降、Shift 加速；跳過重力、碰撞及攀爬，沿用 UI／設定輸入鎖。關閉前檢查目前姿勢的膠囊淨空；飛行中拒絕保存，入座、死亡及世界轉場清除。三種 unlimited 旗標屬 Chassis 暫態，不進 VehicleSnapshot；成功讀檔重建車輛後重設，失敗保留原世界。VehicleEnergy 統一處理有效電力及各消耗，仍要求可用插槽與電池；燃油判斷涵蓋啟動、消耗、充電保留量及音效。免費製作以既有 job.costs 保存空字典，付費工作保存實付材料，取消與施工失敗退款依實付額，不依當下作弊開關。RVTerminalPresenter 只做英文呈現，原始服務狀態及交易仍由既有 owner 管理。施工要求 TUI 開啟，退出只取消本終端授權的施工；製作工作屬 CraftingStation，退出或關閉平板仍繼續。完整指令見 [README](README.md)；核心資源測試共用 [terminal_checks](tests/support/terminal_checks.gd)，不另增程序。
 
 
 <a id="section-5"></a>
@@ -606,6 +606,8 @@ Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`�
 文件更動核對連結與來源；程式更動選取最小有意義的測試，必要時執行預設核心集。物理更動另依 [AGENTS.md](AGENTS.md) 做互動觀察。Headless 結果不代表原生畫面、長途經濟、極端翻車或怪物群已完成驗收。
 
 底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
+
+駐車時，底盤在輪胎衝量結算後檢查車速與至少三輪的靜態地面接觸。低速時以有限的制動衝量逐步抑制沿支撐面的殘餘滑動，並補償沿坡重力，讓懸吊繼續運作。
 
 串流效能：地形取樣、網格組裝與導航接縫採約 4ms 的合作式時間預算；單次引擎 mesh／碰撞建構仍不可中斷，並非硬性幀時間上限。導航接縫重用共享頂點取樣；森林碰撞先在場景樹外完整組裝再加入，避免逐棵修改作用中的 compound body。遠距物件清理每 0.5 秒執行，最多延後半秒；載入與場址保護仍每幀檢查。量測與限制見 [串流效能驗證](docs/validation/2026-09-18-streaming-performance.md)。
 

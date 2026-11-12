@@ -107,12 +107,37 @@ func _connect_interior_doors() -> void:
 func enter_link(destination: StringName) -> void:
 	if busy or state != State.INDOOR or not is_instance_valid(interior): return
 	if not interior.link_doors.has(destination) or not is_instance_valid(_player): return
+	var child_id: String
+	var title: String
+	var seed_key: String
+	if InteriorProfiles.is_stairwell(interior.profile_id):
+		var entry: Dictionary = InteriorProfiles.STAIR_DESTINATIONS[destination]
+		child_id = _stair_child_id(active_id, interior.profile_id, destination)
+		title = entry.title
+		if interior.profile_id == &"megashelter_stairwell" and destination == &"bunker":
+			seed_key = "megashelter-link:v1:%d:%s" % [_active_seed, destination]
+		else:
+			seed_key = "bunker-link:v1:%d:%s" % [int(interior.layout.seed), destination]
+	elif destination == &"megashelter_stairwell":
+		child_id = active_id + ":stairs"
+		title = "STAIRWELL"
+		seed_key = "megashelter-link:v1:%d:%s" % [_active_seed, destination]
+	elif destination == &"bunker_stairwell":
+		child_id = active_id + ":liminal-stairs"
+		title = "STAIRWELL"
+		seed_key = "bunker-link:v1:%d:%s" % [int(interior.layout.seed), destination]
+	else:
+		return
 	if not _player.enter_ui_mode(): return
-	var child_id := active_id + ":stairs" if destination == &"megashelter_stairwell" else active_id.trim_suffix(":stairs") + ":bunker"
-	var seed_value := ("megashelter-link:v1:%d:%s" % [_active_seed, destination]).sha256_text().substr(0, 15).hex_to_int()
+	var seed_value := seed_key.sha256_text().substr(0, 15).hex_to_int()
 	_route_stack.append({"id": active_id, "profile": interior.profile_id, "seed": _active_seed,
 		"area": interior.exterior_area, "title": active_title, "return": interior.link_return_transforms[destination]})
-	await _switch_interior(child_id, destination, seed_value, "BUNKER ACCESS" if destination == &"megashelter_stairwell" else "BUNKER")
+	await _switch_interior(child_id, destination, seed_value, title)
+
+func _stair_child_id(stair_id: String, profile: StringName, destination: StringName) -> String:
+	if profile == &"megashelter_stairwell" and destination == &"bunker":
+		return stair_id.trim_suffix(":stairs") + ":bunker"
+	return stair_id + str(InteriorProfiles.STAIR_DESTINATIONS[destination].suffix)
 
 func _switch_interior(id: String, profile: StringName, seed_value: int, title: String, at: Variant = null, area := 1000.0) -> void:
 	busy = true
@@ -156,7 +181,7 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	interior.exterior_area = area
 	viewport.add_child(interior)
 	var build_result := {"done": false, "ok": false}
-	_build_interior(interior, seed_value, saved_instances.get(active_id, {}), build_result)
+	_build_interior(interior, seed_value, _saved_interior(profile), build_result)
 	while not build_result.done and token == operation:
 		await get_tree().process_frame
 	if token != operation: return
@@ -175,6 +200,17 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	BlackApparitionEncounter.attach_interior(interior, _player as CharacterBody3D)
 	_status.text = ""
 	print("POI ENTER: ", active_id, " rooms=", interior.rooms.size())
+
+func _saved_interior(profile: StringName) -> Dictionary:
+	var saved: Dictionary = saved_instances.get(active_id, {})
+	if not InteriorProfiles.is_stairwell(profile) or not saved.get("layout") is Dictionary or saved.layout.has("stair_destination"):
+		return saved
+	# Preserve explored children from before stair destinations were saved.
+	var legacy := &"bunker" if profile == &"megashelter_stairwell" else &"bunker_dark_column_hall"
+	if saved_instances.has(_stair_child_id(active_id, profile, legacy)):
+		saved = saved.duplicate(true)
+		saved.layout.stair_destination = str(legacy)
+	return saved
 
 func leave() -> void:
 	if busy or active_id.is_empty() or not is_instance_valid(_player) or not _player.enter_ui_mode():

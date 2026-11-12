@@ -9,7 +9,7 @@ class_name WorldAtmosphereProfile
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var landscape_end := 230.0
 @export_range(0.01, 4.0, 0.01) var distance_curve := 1.0
 @export_range(0.0, 1.0, 0.01) var white_strength := 1.0
-@export var night_mist_color := Color("030405")
+@export var night_mist_color := Color.BLACK
 @export var day_mist_color := Color("c3cbc8")
 @export var overcast_day_color := Color("a4afb0")
 @export var clear_day_color := Color("d0cbb8")

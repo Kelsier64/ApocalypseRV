@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://world/poi_kit/rooms/bunker/dark_column_hall.gd" id="room"]
+[ext_resource type="Script" path="res://world/poi_kit/poi_door_socket.gd" id="socket"]
+
+[node name="DarkColumnHall" type="Node3D"]
+script = ExtResource("room")
+room_id = &"dark_column_hall"
+footprint = Vector2(36, 30)
+clear_height = 12.6
+category = &"entry"
+
+[node name="DoorSockets" type="Node3D" parent="."]
+
+[node name="Return" type="Marker3D" parent="DoorSockets"]
+position = Vector3(3, 0, 15)
+rotation = Vector3(0, 3.1415927, 0)
+script = ExtResource("socket")
+socket_id = &"return"
+opening = Vector2(1.36, 2.52)
+
+[node name="Walkway" type="Node3D" parent="."]
+
+[node name="Spawn" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0.08, 13.05)
+
+[node name="Exit" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0, 14.4)
+rotation = Vector3(0, 3.1415927, 0)
+metadata/opening = Vector2(1.06, 2.32)
+
+[node name="StairExit" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0, -14.4)
+metadata/opening = Vector2(1.06, 2.32)
+
+[node name="StairSpawn" type="Marker3D" parent="Walkway"]
+position = Vector3(3, 0.08, -13.05)
+rotation = Vector3(0, 3.1415927, 0)

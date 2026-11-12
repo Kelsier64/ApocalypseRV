@@ -208,7 +208,6 @@ func _report_visible(stage: int, session: int) -> void:
 func _process(delta: float) -> void:
 	if not visible: return
 	if _boot.visible:
-		get_parent().advance_boot(delta)
 		if not _show_boot(): select_page("conditions")
 		return
 	_refresh_time += delta

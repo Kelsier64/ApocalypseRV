@@ -148,6 +148,50 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 		check.call(not player.is_cheat_flying() and _flags(rv) == [false, false, false] and clock.elapsed_seconds == time_before and clock.weather.capture() == weather_before and ui.command_history.size() == history_size, "Shell rejects commands after session ownership is lost")
 		terminal.current_user = player
 	terminal._close_ui()
+	rv.unlimited_power = false
+	rv.current_power = 0.0
+	var player_pose := player.global_transform
+	var camera: Camera3D = player.camera
+	var camera_pose := camera.transform
+	player.global_position += rv.to_global(Vector3(-0.4, 1.15, -0.4)) - camera.global_position
+	camera.look_at(terminal.global_position, rv.global_basis.y)
+	var ray: RayCast3D = camera.get_node("InteractRay")
+	ray.force_raycast_update()
+	check.call(ray.get_collider() == terminal, "The interaction ray reaches the installed tablet from the RV aisle")
+	var use_key := InputEventKey.new()
+	use_key.physical_keycode = KEY_E
+	use_key.pressed = true
+	Input.parse_input_event(use_key)
+	for tick in 65:
+		await tree.physics_frame
+	use_key = use_key.duplicate()
+	use_key.pressed = false
+	Input.parse_input_event(use_key)
+	player.global_transform = player_pose
+	camera.transform = camera_pose
+	await tree.process_frame
+	check.call(ui.visible and ui._owns_session() and ui._power_warning.is_visible_in_tree(), "Holding E opens the installed tablet with a warning when the battery is empty")
+	if ui.visible:
+		check.call(ui.controls["craft:add"].disabled and ui._texts["craft:reason"].text == "Insufficient battery charge", "Crafting reports its power requirement")
+		check.call(ui.controls["structure:repair"].disabled and ui._texts["structure:reason:repair"].text == "Construction requires vehicle power", "Construction reports its power requirement")
+		ui.controls.engine.pressed.emit()
+		check.call(rv.energy.engine_running, "The terminal can start the engine with an empty battery")
+		ui.enter_shell()
+		ui.submit_command("status")
+		check.call(ui._power_warning.is_visible_in_tree() and ui.terminal_lines.has("BATTERY 0.0 / %.1f" % rv.max_power), "The unpowered shell shows the warning and runs status")
+		rv.step_energy_system(0.0, 0.0, 0.0, 1.0)
+		ui._process(0.2)
+		check.call(rv.has_usable_power() and not ui._power_warning.visible, "Charging clears the warning without reopening the shell")
+		var battery := rv.energy.battery
+		rv.energy.battery = null
+		await tree.physics_frame
+		await tree.process_frame
+		ui._process(0.2)
+		check.call(ui.visible and ui._owns_session() and ui._power_warning.is_visible_in_tree(), "Removing the battery brings back the warning without closing the terminal")
+		ui.submit_command("rvctl")
+		check.call(ui.is_management_active(), "The shell can return to vehicle controls without an installed battery")
+		rv.energy.battery = battery
+		terminal._close_ui()
 	rv.current_fuel = saved.fuel
 	rv.current_power = saved.power
 	rv.unlimited_fuel = saved.fuel_cheat

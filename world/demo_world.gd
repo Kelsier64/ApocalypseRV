@@ -4,6 +4,14 @@ extends "res://world/main_world.gd"
 const COMPASS_SCENE := "res://props/electronic_compass.tscn"
 const COMPASS_DEFINITION = preload("res://props/electronic_compass_definition.tres")
 
+func _enter_tree() -> void:
+	if not _initial_placement_done:
+		var generator := get_node("WorldGenerator")
+		var demo_profile: WorldProfile = generator.profile.duplicate()
+		demo_profile.opening_shelter = "starting_shelter"
+		generator.profile = demo_profile
+	super._enter_tree()
+
 func _ready() -> void:
 	super._ready()
 	if fresh_start:

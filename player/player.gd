@@ -1331,6 +1331,7 @@ func _advance_survival(delta: float, rest_recovery := 0.0) -> void:
 func _physics_process(delta):
 	var survival_delta := sleep.advance(self, delta)
 	_advance_survival(survival_delta, sleep.recover_amount(survival_delta) if sleep.active() else 0.0)
+	inventory.advance_terminal_boot(delta)
 	consumables.advance(self, 0.0)
 	_update_food_bar()
 	# Cover restored/direct inventory changes before applying any carrier motion.

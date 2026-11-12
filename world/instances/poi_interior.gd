@@ -4,6 +4,7 @@ class_name PoiInterior
 const PROFILE: InteriorProfile = preload("res://world/instances/catalog/bunker.tres")
 const WALL = preload("res://world/poi_kit/materials/bunker/concrete.tres")
 const DARK_ADAPTATION_PROFILE: DarkAdaptationProfile = preload("res://world/instances/interior_dark_adaptation.tres")
+const BUNKER_STAIR_ACCESS = preload("res://world/instances/bunker_stair_access.gd")
 var profile_id: StringName = &"bunker"
 var profile: InteriorProfile = PROFILE
 var exterior_area := 1000.0
@@ -91,7 +92,8 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 	if not await _bake(): return false
 	# Choose the service door against published geometry before supplies or
 	# restored actors can influence placement on a later visit.
-	if not _add_links(): return false
+	if not _add_links(saved.is_empty()): return false
+	var passive := InteriorProfiles.is_passive(profile_id)
 	if saved.has("actors"):
 		# An existing empty interior stays empty. Never populate on reentry.
 		content = saved.content.duplicate(true)
@@ -100,13 +102,13 @@ func build(seed_value: int, saved: Dictionary = {}) -> bool:
 			cache.restore_state(state)
 			navigation.add_child(cache)
 			caches.append(cache)
-	elif populate_content and profile_id != &"megashelter_stairwell":
+	elif populate_content and not passive:
 		content = MegashelterInteriorContent.populate(self) if profile_id == &"megashelter" else BunkerContent.populate(self)
 	if not caches.is_empty() and not await _bake(): return false
 	# Restore movable actors only after all async geometry work is complete.
 	# Otherwise a saved drop can fall/move while the player is still loading.
 	if saved.has("actors"): _restore(saved.actors)
-	if not content.is_empty() and profile_id != &"megashelter_stairwell":
+	if not content.is_empty() and not passive:
 		var content_reachable: bool = MegashelterInteriorContent.reachable(self, saved.is_empty()) if profile_id == &"megashelter" else BunkerContent.reachable(self, saved.is_empty())
 		if not content_reachable: return false
 	for actor in entities.get_children():
@@ -179,14 +181,32 @@ func _add_exit() -> void:
 		exit_door.add_child(shape)
 		shape.global_transform = target.global_transform * Transform3D(Basis.IDENTITY, Vector3(0, opening.y*0.5, 0))
 
-func _add_links() -> bool:
-	if profile_id == &"megashelter":
-		return _add_stair_access()
-	elif profile_id == &"megashelter_stairwell":
-		var marker := rooms[0].get_node("Walkway/BunkerExit") as Marker3D
-		_add_link(&"bunker", marker.global_transform, marker.get_meta("opening", Vector2(2.8, 3.0)))
-		link_return_transforms[&"bunker"] = rooms[0].get_node("Walkway/BunkerSpawn").global_transform
+func _add_links(first_visit: bool) -> bool:
+	match profile_id:
+		&"megashelter":
+			return _add_stair_access()
+		&"megashelter_stairwell", &"bunker_stairwell":
+			if not layout.has("stair_destination"):
+				layout.stair_destination = str(InteriorProfiles.roll_stair_destination(int(layout.seed)))
+			_add_marked_link(StringName(layout.stair_destination), ^"Walkway/BunkerExit", ^"Walkway/BunkerSpawn")
+		&"bunker_dark_column_hall":
+			_add_marked_link(&"bunker_stairwell", ^"Walkway/StairExit", ^"Walkway/StairSpawn")
+		&"bunker":
+			if first_visit:
+				var access := BUNKER_STAIR_ACCESS.choose(self)
+				if not access.is_empty(): layout.stair_access = access
+			if layout.has("stair_access"):
+				var room: PoiRoom = rooms[layout.stair_access.room]
+				var socket := room.get_socket(StringName(layout.stair_access.socket))
+				var pose := BUNKER_STAIR_ACCESS.add_door(room, socket)
+				_add_link(&"bunker_stairwell", pose * Transform3D(Basis.IDENTITY, Vector3(0, 0, 0.3)), BUNKER_STAIR_ACCESS.OPENING)
+				link_return_transforms[&"bunker_stairwell"] = pose * Transform3D(Basis(Vector3.UP, PI), Vector3(0, 0.08, 1.5))
 	return true
+
+func _add_marked_link(destination: StringName, door_path: NodePath, landing_path: NodePath) -> void:
+	var marker := rooms[0].get_node(door_path) as Marker3D
+	_add_link(destination, marker.global_transform, marker.get_meta("opening"))
+	link_return_transforms[destination] = rooms[0].get_node(landing_path).global_transform
 
 func _add_stair_access() -> bool:
 	var candidates: Array[Dictionary] = []

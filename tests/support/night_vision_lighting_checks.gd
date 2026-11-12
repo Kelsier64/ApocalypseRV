@@ -155,6 +155,12 @@ func run() -> void:
 		print("INTERIOR-ONLY RESULT: ", "PASS" if failures == 0 else "FAIL (%d checks)" % failures)
 		quit(0 if failures == 0 else 1)
 		return
+	if OS.get_cmdline_user_args().has("--blend-only"):
+		await check_adaptation_light_sweep()
+		await check_adaptation_contact_shading()
+		print("BLEND-ONLY RESULT: ", "PASS" if failures == 0 else "FAIL (%d checks)" % failures)
+		quit(0 if failures == 0 else 1)
+		return
 	var unlit := pixel(await capture())
 	var reference: SubViewport = renderer._views[0].reference
 	check(unlit.r > 0.03 and absf(unlit.r - unlit.g) < 0.02 and absf(unlit.g - unlit.b) < 0.02, "A clock-free dark world receives local gray adaptation")
@@ -204,6 +210,9 @@ func run() -> void:
 	check(pixel(await capture()).r < 0.01 and light.layers == 1 and camera.cull_mask == original_camera_mask, "Disabling adaptation while paused immediately restores native pixels and owned layers")
 	world.process_mode = original_process_mode
 	renderer.enabled = true
+
+	await check_adaptation_light_sweep()
+	await check_adaptation_contact_shading()
 
 	# Production beam settings, rather than an oversized substitute test light.
 	renderer.profile.curve = constant_curve(0)
@@ -266,7 +275,7 @@ func run() -> void:
 	await check_independent_indoor_world()
 	await check_production_indoor_darkness()
 	await check_vehicle_reference_motion()
-	await check_ambient_gate()
+	await check_local_adaptation_in_bright_environment()
 	var local_gray := pixel(await capture())
 	var local_transform := world.transform
 	world.transform = Transform3D(Basis(Vector3(0.3, 1, 0.2).normalized(), 1.2), Vector3(18000, 500, -24000))
@@ -369,7 +378,7 @@ func run() -> void:
 	print("DARK ADAPTATION GPU ", "PASS" if failures == 0 else "FAIL", " failures=", failures)
 	quit(1 if failures else 0)
 
-func check_ambient_gate() -> void:
+func check_local_adaptation_in_bright_environment() -> void:
 	var target := SubViewport.new()
 	target.size = Vector2i(128, 128)
 	target.own_world_3d = true
@@ -400,87 +409,24 @@ func check_ambient_gate() -> void:
 	var lamp := OmniLight3D.new()
 	lamp.position.z = -2
 	lamp.omni_range = 20
-	lamp.light_energy = 3.0
+	lamp.light_energy = 12.0
 	lamp.light_color = Color.RED
 	lamp.layers = 1 << 2
 	scene.add_child(lamp)
 	var effect := add_renderer(scene, constant_curve(1))
 	effect.profile.reference_energy = 0.4
-	var scheduled := {"updates": 0}
-	# Observe the scheduling decision before UPDATE_ONCE resets after rendering.
-	var count_updates := func():
-		for entry in effect._views:
-			if entry.reference.render_target_update_mode != SubViewport.UPDATE_DISABLED: scheduled.updates += 1
-	RenderingServer.frame_pre_draw.connect(count_updates)
 	var native_state := environment_state(native)
 	var bright := pixel(await capture(target))
-	check(not effect._views[0].quad.visible and scheduled.updates == 0 and source.cull_mask == original_mask and lamp.layers == 1 << 2, "Bright ambient skips both reference rendering and composition and restores custom native layers")
 	effect.enabled = false
 	var native_bright := pixel(await capture(target))
-	check(color_distance(bright, native_bright) < 0.015 and bright.r > bright.g + 0.05, "A dormant ambient gate preserves native colored physical lighting")
-	effect.enabled = true
+	check(color_distance(bright, native_bright) < 0.015 and bright.r > bright.g + 0.05, "A brightly lit surface keeps its native colored light")
+	check(source.cull_mask == original_mask and lamp.layers == 1 << 2, "Disabling adaptation restores custom native layers")
 	lamp.visible = false
-	mesh.size = Vector2(3, 4)
-	await capture(target)
-	source.transform = Transform3D(Basis.from_euler(Vector3(0.04, 0.2, 0.09)), Vector3(0.75, 0.15, 0))
-	await capture(target)
-	native.ambient_light_energy = 0.0
-	var first_wake := await capture_frame(target)
-	var settled_wake := await capture(target)
-	var black := Image.create(128, 128, false, Image.FORMAT_RGBA8)
-	black.fill(Color.BLACK)
-	check(image_difference(first_wake, settled_wake) < 0.015 and image_difference(first_wake, black) > 0.1, "A dormant reference wakes with the camera's current silhouette in its first rendered frame")
-	source.transform = Transform3D.IDENTITY
-	mesh.size = Vector2(20, 20)
-	native.ambient_light_energy = 0.1
-	await capture(target)
-	var metric := native_environment()
-	metric.ambient_light_energy = 0.06
-	check(is_zero_approx(effect._ambient_strength(metric)), "Ambient gate is fully off at its threshold")
-	metric.ambient_light_energy = 0.04
-	check(is_equal_approx(effect._ambient_strength(metric), 1.0), "Ambient gate is fully on below the transition band")
-	metric.ambient_light_energy = 0.05
-	check(absf(effect._ambient_strength(metric) - 0.5) < 0.0001, "Ambient gate has a smooth half-strength transition midpoint")
-	metric.ambient_light_color = Color(0.5, 0.5, 0.5)
-	metric.ambient_light_energy = 0.2
-	var linear := metric.ambient_light_color.srgb_to_linear()
-	var expected := 1.0 - smoothstep(0.04, 0.06, Vector3(linear.r, linear.g, linear.b).dot(Vector3(0.2126, 0.7152, 0.0722)) * 0.2)
-	check(absf(effect._ambient_strength(metric) - expected) < 0.0001, "Ambient gate measures linear color luminance rather than raw sRGB components")
-	effect.profile.ambient_threshold = 0.0
-	metric.ambient_light_energy = 0.0
-	check(is_zero_approx(effect._ambient_strength(metric)), "A zero ambient threshold safely disables adaptation even at zero brightness")
-	effect.profile.ambient_threshold = 0.06
-	effect.profile.ambient_transition = 0.0
-	metric.ambient_light_color = Color.WHITE
-	metric.ambient_light_energy = 0.059
-	var below_step := effect._ambient_strength(metric)
-	# Environment energy and Vector3 luminance use float32; straddle the edge.
-	metric.ambient_light_energy = 0.061
-	check(is_equal_approx(below_step, 1.0) and is_zero_approx(effect._ambient_strength(metric)), "A zero-width ambient transition uses a finite threshold step")
-	for invalid in [NAN, INF, -INF]:
-		effect.profile.ambient_threshold = invalid
-		effect.profile.ambient_transition = invalid
-	check(is_equal_approx(effect.profile.ambient_threshold, 0.06) and is_zero_approx(effect.profile.ambient_transition), "Ambient profile setters reject NaN and infinite values")
-	effect.profile.ambient_transition = 0.02
-	metric.ambient_light_source = Environment.AMBIENT_SOURCE_DISABLED
-	check(is_equal_approx(effect._ambient_strength(metric), 1.0), "Disabled native ambient is treated as dark")
-	metric.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	check(is_equal_approx(effect._ambient_strength(metric), 1.0) and is_equal_approx(effect._ambient_strength(null), 1.0), "Unknown sky or missing Environment conservatively keeps adaptation available")
-	lamp.visible = false
-	native.ambient_light_energy = 0.05
-	effect.enabled = false
-	var native_middle := pixel(await capture(target))
+	var native_dim := pixel(await capture(target))
 	effect.enabled = true
-	effect.profile.ambient_gate_enabled = false
-	var full_middle := pixel(await capture(target))
-	effect.profile.ambient_gate_enabled = true
-	var middle := pixel(await capture(target))
-	check(middle.r > native_middle.r + 0.01 and middle.r < full_middle.r - 0.01, "Transition-band GPU fill lies between native and full adaptation")
-	native.ambient_light_energy = 0.0
-	var before_dark := int(scheduled.updates)
-	check(pixel(await capture(target)).r > 0.1 and effect._views[0].quad.visible and scheduled.updates > before_dark, "Dark ambient wakes the reference renderer and visible gray fill")
-	native.ambient_light_energy = 0.1
-	lamp.visible = true
+	var adapted_dim := pixel(await capture(target))
+	check(adapted_dim.r > native_dim.r + 0.02 and effect._views[0].quad.visible, "Bright global ambient does not veto a local luminance deficit")
+
 	var mirror := SubViewport.new()
 	mirror.size = target.size
 	mirror.world_3d = target.find_world_3d()
@@ -488,28 +434,16 @@ func check_ambient_gate() -> void:
 	root.add_child(mirror)
 	var mirror_camera := Camera3D.new()
 	mirror_camera.cull_mask = original_mask
-	var mirror_environment := native_environment()
-	mirror_camera.environment = mirror_environment
+	mirror_camera.environment = native_environment()
+	mirror_camera.environment.ambient_light_energy = 0.6
 	mirror.add_child(mirror_camera)
 	effect.register_viewport(mirror)
-	var mixed_bright := pixel(await capture(target))
-	check(not effect._views[0].quad.visible and effect._views[1].quad.visible and (source.cull_mask & NightVisionEffect.VIEW_MASK) == 0 and (source.cull_mask & NightVisionEffect.LIGHT_LAYER) != 0, "A bright main view stays routed while its dark camera-override mirror adapts")
-	check(color_distance(mixed_bright, native_bright) < 0.015 and lamp.layers == NightVisionEffect.LIGHT_LAYER, "Mixed views retain a custom-layer native lamp in the bright view")
-	native.ambient_light_energy = 0.0
-	mirror_environment.ambient_light_energy = 0.1
-	var mixed_mirror := pixel(await capture(mirror))
-	check(effect._views[0].quad.visible and not effect._views[1].quad.visible and (mirror_camera.cull_mask & NightVisionEffect.VIEW_MASK) == 0 and color_distance(mixed_mirror, native_bright) < 0.015, "Reversing dark and bright views switches routing without leaking another view's composite")
-	native.ambient_light_energy = 0.1
-	await capture(target)
-	var before_bright := int(scheduled.updates)
-	await capture(mirror)
-	check(scheduled.updates == before_bright and source.cull_mask == original_mask and mirror_camera.cull_mask == original_mask and lamp.layers == 1 << 2, "Returning all views to bright ambient stops reference draws and restores original camera and light layers")
-	effect.profile.ambient_gate_enabled = false
-	var before_forced := int(scheduled.updates)
-	await capture(target)
-	check(effect._views[0].quad.visible and effect._views[1].quad.visible and scheduled.updates > before_forced, "Disabling the ambient gate restores always-on per-pixel adaptation")
-	check(environment_state(native) == native_state, "Ambient gating leaves the native Environment unchanged")
-	RenderingServer.frame_pre_draw.disconnect(count_updates)
+	var mirrored := pixel(await capture(mirror))
+	var view_layer: int = effect._views[0].quad.layers
+	var mirror_layer: int = effect._views[1].quad.layers
+	check((source.cull_mask & NightVisionEffect.VIEW_MASK) == view_layer and (mirror_camera.cull_mask & NightVisionEffect.VIEW_MASK) == mirror_layer, "Each active camera sees only its own adaptation quad")
+	check(mirrored.r > adapted_dim.r + 0.02 and lamp.layers == NightVisionEffect.LIGHT_LAYER, "The mirror evaluates its own native Environment while sharing physical-light routing")
+	check(environment_state(native) == native_state, "Local adaptation leaves the native Environment unchanged")
 	mirror.queue_free()
 	target.queue_free()
 	await process_frame
@@ -749,6 +683,116 @@ func check_independent_indoor_world() -> void:
 	await capture()
 	check(NightVisionEffect.find_for(camera) == renderer and camera.get_meta(NightVisionEffect.CAMERA_OWNER, 0) == renderer.get_instance_id(), "Returning the player camera resolves and reclaims its original world renderer")
 	indoor.queue_free()
+	await process_frame
+
+func check_adaptation_light_sweep() -> void:
+	var original_color := material.albedo_color
+	var original_curve := renderer.profile.curve
+	material.albedo_color = Color.WHITE
+	var lamp := DirectionalLight3D.new()
+	lamp.light_color = Color(1.0, 0.55, 0.25)
+	world.add_child(lamp)
+	var no_fill := constant_curve(0.0)
+	var indoor_fill := constant_curve(0.72)
+	var full_fill := constant_curve(1.0)
+	var native_samples: Array[Color] = []
+	var indoor_samples: Array[Color] = []
+	var full_samples: Array[Color] = []
+	for energy in [0.0, 0.002, 0.004, 0.008, 0.012, 0.018, 0.024, 0.032, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.24, 0.5]:
+		lamp.light_energy = energy
+		renderer.profile.curve = no_fill
+		native_samples.append(pixel(await capture_frame()))
+		renderer.profile.curve = indoor_fill
+		indoor_samples.append(pixel(await capture_frame()))
+		renderer.profile.curve = full_fill
+		full_samples.append(pixel(await capture_frame()))
+	for samples in [indoor_samples, full_samples]:
+		var monotone := true
+		for index in range(1, samples.size()):
+			var previous: Color = samples[index - 1]
+			var current: Color = samples[index]
+			# PNG/viewport output rounds each channel independently.
+			monotone = monotone and current.srgb_to_linear().get_luminance() + 0.002 >= previous.srgb_to_linear().get_luminance()
+		check(monotone, "Increasing warm lamp energy never darkens an adapted receiver")
+	var dark := full_samples[0]
+	var weak := full_samples[5].srgb_to_linear()
+	var weak_native := native_samples[5].srgb_to_linear()
+	check(dark.r > 0.1 and absf(dark.r - dark.b) < 0.01, "Unlit white material still receives a neutral lift")
+	check(weak.r - weak.b > weak_native.r - weak_native.b + 0.005 and weak.get_luminance() > weak_native.get_luminance(), "Weak warm lighting colors some of the remaining lift")
+	check(color_distance(full_samples.back(), native_samples.back()) < 0.012, "A strong lamp hands off to the exact native color and luminance")
+	lamp.visible = false
+	material.emission_enabled = true
+	material.emission = Color(0.0, 0.3, 1.0)
+	material.emission_energy_multiplier = 0.8
+	var adapted_emission := pixel(await capture_frame())
+	renderer.profile.curve = no_fill
+	var native_emission := pixel(await capture_frame())
+	check(native_emission.b > 0.7 and color_distance(adapted_emission, native_emission) < 0.008, "Bright blue emission on a light surface stays native inside the fill range")
+	material.emission_enabled = false
+	material.emission_energy_multiplier = 1.0
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE light-sweep native=", native_samples, " indoor=", indoor_samples, " full=", full_samples)
+	lamp.queue_free()
+	renderer.profile.curve = original_curve
+	material.albedo_color = original_color
+	await process_frame
+
+func check_adaptation_contact_shading() -> void:
+	var backend := RenderingServer.get_current_rendering_method()
+	if backend == "mobile":
+		return
+	var room_view := SubViewport.new()
+	room_view.size = Vector2i(256, 256)
+	room_view.own_world_3d = true
+	room_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	root.add_child(room_view)
+	var room := Node3D.new()
+	room_view.add_child(room)
+	var holder := WorldEnvironment.new()
+	holder.environment = BunkerLighting.create_environment()
+	room.add_child(holder)
+	var view := Camera3D.new()
+	view.position = Vector3(0.0, 0.9, 0.8)
+	room.add_child(view)
+	view.look_at(Vector3(0.0, 0.05, -0.5))
+	var gray_material := StandardMaterial3D.new()
+	gray_material.albedo_color = Color(0.7, 0.7, 0.7)
+	gray_material.roughness = 1.0
+	var floor := MeshInstance3D.new()
+	var floor_mesh := PlaneMesh.new()
+	floor_mesh.size = Vector2(8.0, 8.0)
+	floor.mesh = floor_mesh
+	floor.material_override = gray_material
+	room.add_child(floor)
+	var box := MeshInstance3D.new()
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(0.65, 0.55, 0.65)
+	box.mesh = box_mesh
+	box.material_override = gray_material
+	box.position = Vector3(0.0, 0.275, -0.55)
+	room.add_child(box)
+	var effect := NightVisionEffect.new()
+	effect.profile = PoiInterior.DARK_ADAPTATION_PROFILE
+	room.add_child(effect)
+	var original_environment := environment_state(holder.environment)
+	var shaded := await diagnostic_capture("contact-ssao", room_view, effect)
+	var reference_environment: Environment = effect._views[0].camera.environment
+	check(reference_environment.ssao_enabled == (backend == "forward_plus"), "Only Forward+ needs SSAO in the reference to shade the composite once")
+	check(environment_state(holder.environment) == original_environment, "Contact shading leaves the native environment untouched")
+	holder.environment.ssao_enabled = false
+	var flat := await diagnostic_capture("contact-flat", room_view, effect)
+	var contact := Vector3(0.0, 0.0, -0.19)
+	var open_floor := Vector3(0.7, 0.0, -0.19)
+	var contact_delta := _sample_world_pixel(flat, view, contact).r - _sample_world_pixel(shaded, view, contact).r
+	var open_delta := absf(_sample_world_pixel(flat, view, open_floor).r - _sample_world_pixel(shaded, view, open_floor).r)
+	var output_step := 1.0 / 255.0
+	if backend == "forward_plus":
+		check(contact_delta > 2.0 * output_step and open_delta < 2.0 * output_step, "Authored AO shades the contact in the gray fill while leaving open floor readable")
+	else:
+		check(contact_delta >= output_step * 0.9, "Compatibility retains its native post-composite SSAO on the gray fill")
+	if OS.get_cmdline_user_args().has("--diagnostics"):
+		print("PROBE contact delta=", contact_delta, " open floor delta=", open_delta)
+	room_view.queue_free()
 	await process_frame
 
 func check_production_indoor_darkness() -> void:

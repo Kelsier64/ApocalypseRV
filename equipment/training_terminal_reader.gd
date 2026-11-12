@@ -1,7 +1,6 @@
 extends Node
 ## A reading session over the original inventory record, never an Item actor.
 const UI = preload("res://equipment/training_terminal_ui.gd")
-const BOOT = preload("res://equipment/training_terminal_boot.gd")
 const SCENE := "res://equipment/training_terminal.tscn"
 var current_user: Node3D
 var record: Dictionary
@@ -41,13 +40,6 @@ func boot_state() -> Dictionary:
 
 func start_boot() -> void:
 	if _user_valid(): boot_state().boot_started = true
-
-func advance_boot(delta: float) -> void:
-	if not _user_valid(): return
-	if BOOT.advance(boot_state(), delta):
-		var controller := tutorial_controller()
-		if controller != null and controller.has_method("terminal_initialized"):
-			controller.terminal_initialized(record.state.id, current_user)
 
 func tutorial_controller() -> Node:
 	var anchor: Node = current_user

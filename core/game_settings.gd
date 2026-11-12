@@ -8,13 +8,13 @@ const DEFAULTS := {
 	"window_mode": 1, "vsync": true, "max_fps": 0,
 	"render_mode": 0, "render_scale": 1.0, "aa": 0,
 	"shadow_quality": 0, "fog_quality": 2, "retro": true,
-	"brightness": 1.0, "contrast": 1.0, "saturation": 1.0,
+	"shadow_trim": 0.0, "saturation": 1.0,
 	"sensitivity": 1.0, "invert_y": false, "walk_fov": 75.0,
 	"drive_fov": 80.0, "master_volume": 1.0,
 }
 const RANGES := {
-	"render_scale": Vector2(0.5, 1.0), "brightness": Vector2(0.75, 1.25),
-	"contrast": Vector2(0.75, 1.25), "saturation": Vector2(0.0, 1.5),
+	"render_scale": Vector2(0.5, 1.0), "shadow_trim": Vector2(-0.5, 1.5),
+	"saturation": Vector2(0.0, 1.5),
 	"sensitivity": Vector2(0.25, 2.0), "walk_fov": Vector2(60.0, 100.0),
 	"drive_fov": Vector2(60.0, 100.0), "master_volume": Vector2(0.0, 1.0),
 }
@@ -36,6 +36,7 @@ var _save_delay := -1.0
 var _viewports: Dictionary = {}
 var _outdoor_active := true
 var _preview: Dictionary = {}
+var _shadow_trim_preview: Variant = null
 var _preset := 0
 var _applying_preset := false
 var _original_directional_size := 4096
@@ -87,6 +88,7 @@ func _valid(key: String, value: Variant) -> bool:
 
 func load_preferences(path: String = "") -> Error:
 	if not _preview.is_empty(): cancel_window_preview()
+	_shadow_trim_preview = null
 	if not path.is_empty(): storage_path = path
 	_config = ConfigFile.new()
 	var result := _config.load(storage_path)
@@ -117,10 +119,22 @@ func set_setting(key: StringName, value: Variant, persist: bool = true) -> bool:
 		_dirty = true
 		_save_delay = 0.3
 	_apply_global(name)
-	if name in QUALITY_KEYS or name in ["retro", "brightness", "contrast", "saturation"]:
+	if name in QUALITY_KEYS:
 		_apply_all_viewports()
+	elif name in ["retro", "shadow_trim", "saturation"]:
+		_apply_scene_colors()
 	setting_changed.emit(key, values[name])
 	return true
+
+func preview_shadow_trim(value: float) -> void:
+	if not _valid("shadow_trim", value) or _shadow_trim_preview == value: return
+	_shadow_trim_preview = value
+	_apply_scene_colors()
+
+func clear_shadow_trim_preview() -> void:
+	if _shadow_trim_preview == null: return
+	_shadow_trim_preview = null
+	_apply_scene_colors()
 
 func preset_index() -> int:
 	return _preset
@@ -227,7 +241,7 @@ func set_san_vision(viewport: Viewport, profile: int, amount: float, elapsed: fl
 	material.set_shader_parameter("san_profile", profile)
 	material.set_shader_parameter("san_amount", amount)
 	material.set_shader_parameter("san_elapsed", elapsed)
-	_update_grade_visibility(effect, _viewports[viewport.get_instance_id()].indoor, amount)
+	_update_grade_visibility(effect, _viewports[viewport.get_instance_id()].indoor)
 
 func set_outdoor_active(active: bool) -> void:
 	if _outdoor_active == active: return
@@ -250,16 +264,28 @@ func _apply_viewport(id: int) -> void:
 	viewport.msaa_3d = Viewport.MSAA_2X if int(values.aa) == 2 else (Viewport.MSAA_4X if int(values.aa) == 3 else Viewport.MSAA_DISABLED)
 	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if int(values.aa) == 1 else Viewport.SCREEN_SPACE_AA_DISABLED
 	viewport.positional_shadow_atlas_size = int(entry.atlas) if int(values.shadow_quality) == 0 else (2048 if int(values.shadow_quality) == 1 else 4096)
+	_apply_scene_color(entry)
+
+func _apply_scene_colors() -> void:
+	for entry: Dictionary in _viewports.values(): _apply_scene_color(entry)
+
+func _apply_scene_color(entry: Dictionary) -> void:
 	var effect := entry.effect.get_ref() as ColorRect
 	if effect == null: return
+	var indoor: bool = entry.indoor
+	var retro_enabled := bool(values.retro) and not indoor
+	var shadow_trim: float = float(values.shadow_trim) if _shadow_trim_preview == null else _shadow_trim_preview
 	var material := effect.material as ShaderMaterial
-	material.set_shader_parameter("retro_enabled", bool(values.retro) and not indoor)
-	for key in ["brightness", "contrast", "saturation"]: material.set_shader_parameter(key, float(values[key]))
-	_update_grade_visibility(effect, indoor, material.get_shader_parameter("san_amount"))
+	material.set_shader_parameter("retro_enabled", retro_enabled)
+	material.set_shader_parameter("shadow_trim", shadow_trim)
+	material.set_shader_parameter("saturation", float(values.saturation))
+	_update_grade_visibility(effect, indoor)
 
-func _update_grade_visibility(effect: ColorRect, indoor: bool, san_amount: float) -> void:
-	var base_grade: bool = (bool(values.retro) and not indoor) or values.brightness != 1.0 or values.contrast != 1.0 or values.saturation != 1.0
-	effect.visible = (indoor or _outdoor_active) and (base_grade or san_amount > 0.0)
+func _update_grade_visibility(effect: ColorRect, indoor: bool) -> void:
+	var material := effect.material as ShaderMaterial
+	var base_grade: bool = material.get_shader_parameter("retro_enabled") or material.get_shader_parameter("shadow_trim") != 0.0 or values.saturation != 1.0
+	var san_active: bool = material.get_shader_parameter("san_amount") > 0.0
+	effect.visible = (indoor or _outdoor_active) and (base_grade or san_active)
 
 func begin_window_preview(mode: int) -> bool:
 	if mode not in [0, 1]: return false

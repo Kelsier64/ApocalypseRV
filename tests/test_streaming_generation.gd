@@ -7,6 +7,7 @@ const OFFROAD_CONTRACTS = preload("res://tests/support/offroad_site_contracts.gd
 const MEGASHELTER_CONTRACTS = preload("res://tests/support/megashelter_contracts.gd")
 const BUILDING_LOCATOR_CONTRACTS = preload("res://tests/support/building_locator_contracts.gd")
 const NAV_SURFACE = preload("res://tests/support/nav_surface_probe.gd")
+const STREETLIGHT_SCENE = preload("res://world/roadside_kit/streetlight.tscn")
 var failures: Array[String] = []
 
 class TerrainHost extends Node3D:
@@ -38,6 +39,8 @@ func run() -> void:
 	var world := TerrainHost.new()
 	root.add_child(world)
 	current_scene = world
+	_check_streetlight_placement()
+	await _check_streetlight_flicker(world)
 	var reference: Dictionary = {}
 	var settings := WorldProfile.new()
 	for gradual: bool in [false, true]:
@@ -74,8 +77,216 @@ func run() -> void:
 	await _check_mountain_navigation(world)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms and crossings satisfy sampled contracts")
+	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms, crossings and streetlights satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
+
+func _check_streetlight_placement() -> void:
+	const BAND_COUNT := 36
+	var single_count := 0
+	var row_spacings: Array[float] = []
+	var crosses_seam := false
+	for world_seed: int in [6, 42, 99, 733, 1792913777, 1792932659, 1209537593]:
+		var field := WorldField.new(world_seed)
+		var other := WorldField.new(world_seed)
+		var band_length := field.profile.chunk_length
+		var plans: Array = []
+		var rows: Dictionary = {}
+		var singles: Dictionary = {}
+		var names: Dictionary = {}
+		check(RoadsideStreetlights.plan(field, -1).is_empty(), "Streetlights leave the route behind the origin empty")
+		for band in range(BAND_COUNT):
+			var plan := RoadsideStreetlights.plan(field, band)
+			plans.append(plan)
+			for light in plan:
+				var s: float = light.s
+				var point: Vector3 = light.pose.origin
+				var remainder := fposmod(-point.z, band_length)
+				var label := "Streetlight seed %d, band %d, s %.1f" % [world_seed, band, s]
+				check(s >= 150.0, label + " starts beyond the opening")
+				check(floori(-point.z / band_length) == band and remainder >= 5.0 and remainder <= band_length - 5.0, label + " belongs to one band with seam clearance")
+				check(not names.has(light.name), label + " has a unique stable name")
+				names[light.name] = true
+				var cell := floori(s / RoadsideStreetlights.CELL_LENGTH)
+				if String(light.name).begins_with("StreetlightV3Row"):
+					if not rows.has(cell): rows[cell] = []
+					rows[cell].append(light)
+				else:
+					check(not singles.has(cell), label + " has at most one isolated lamp per cell")
+					singles[cell] = s
+				var cell_offset := fposmod(s, RoadsideStreetlights.CELL_LENGTH)
+				check(cell_offset >= 35.0 and cell_offset <= RoadsideStreetlights.CELL_LENGTH - 35.0, label + " leaves a gap between patterns")
+				_check_streetlight_ground(field, s, point, label)
+		for band in range(BAND_COUNT - 1, -1, -1):
+			check(RoadsideStreetlights.plan(other, band) == plans[band], "Streetlight plans are identical when seed %d streams in reverse (band %d)" % [world_seed, band])
+		check(rows.has(0), "Seed %d has a complete row within the opening 900 m" % world_seed)
+		check(rows.size() >= 4, "Seed %d has at least four rows in the first 5.4 km" % world_seed)
+		single_count += singles.size()
+		for cell in rows:
+			var lamps: Array = rows[cell]
+			check(lamps.size() >= 11 and lamps.size() <= 16, "A streetlight row has 11–16 fixtures")
+			if lamps.size() < 2:
+				continue
+			lamps.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.s < b.s)
+			if singles.has(cell):
+				var single_s: float = singles[cell]
+				check(single_s <= float(lamps[0].s) - 95.0 + 0.001 or single_s >= float(lamps.back().s) + 95.0 - 0.001, "An isolated lamp is at least 95 m from its cell's row")
+			var spacing := _streetlight_road_distance(field, lamps[0].s, lamps[1].s)
+			row_spacings.append(spacing)
+			check(spacing >= 19.95 and spacing <= 28.05, "Row spacing is between 20 and 28 m (%.2f m)" % spacing)
+			var side := _streetlight_side(field, lamps[0])
+			for i in range(1, lamps.size()):
+				var gap := _streetlight_road_distance(field, lamps[i - 1].s, lamps[i].s)
+				check(absf(gap - spacing) < 0.06, "Streetlight row keeps its spacing through bends and across bands")
+				check(_streetlight_side(field, lamps[i]) == side, "Streetlight row stays on one shoulder")
+			crosses_seam = crosses_seam or floori(-lamps[0].pose.origin.z / band_length) != floori(-lamps.back().pose.origin.z / band_length)
+	check(single_count > 0 and row_spacings.size() > 1, "The route has isolated lamps and continuous rows")
+	check(crosses_seam, "At least one streetlight row spans multiple bands")
+	if not row_spacings.is_empty():
+		check(row_spacings.max() - row_spacings.min() > 0.5, "Different rows roll different spacing")
+
+func _streetlight_road_distance(field: WorldField, from: float, to: float) -> float:
+	var previous := field.road_frame(from).origin
+	var distance := 0.0
+	for i in range(1, ceili(to - from) + 1):
+		var point := field.road_frame(minf(from + i, to)).origin
+		distance += point.distance_to(previous)
+		previous = point
+	return distance
+
+func _streetlight_side(field: WorldField, lamp: Dictionary) -> float:
+	var road := field.road_frame(lamp.s)
+	var point: Vector3 = lamp.pose.origin
+	return signf((point - road.origin).dot(road.basis.x))
+
+func _check_streetlight_ground(field: WorldField, s: float, point: Vector3, label: String) -> void:
+	var surface := field.surface(point.x, point.z)
+	var road: Dictionary = surface.road
+	var setback := float(road.distance) - float(road.width) * 0.5
+	check(setback >= 1.99, label + " sits outside the asphalt")
+	check(not is_finite(float(surface.water_height)) and is_equal_approx(point.y, float(surface.height)), label + " sits on dry terrain")
+	var slope_limit := 50.0 if setback < 2.5 else 25.0
+	check(field.normal_at(point.x, point.z).y >= cos(deg_to_rad(slope_limit)), label + " has ground its footing can support")
+	check(not field.landforms.bridge_at(s - 15.0) and not field.landforms.bridge_at(s) and not field.landforms.bridge_at(s + 15.0), label + " stays off bridges and their approaches")
+	for site in field.sites_near_z(point.z):
+		check(field.court_distance(point.x, point.z, site) >= 20.0, label + " clears POI courts")
+
+func _check_streetlight_flicker(world: Node3D) -> void:
+	var clock := WorldClock.new()
+	clock.set_time(1, 12.0)
+	var chunk := Node3D.new()
+	world.add_child(chunk)
+	var steady := _add_streetlight(chunk, clock, RoadsideStreetlight.Fault.STEADY)
+	var dip := _add_streetlight(chunk, clock, RoadsideStreetlight.Fault.DIP)
+	var burst := _add_streetlight(chunk, clock, RoadsideStreetlight.Fault.BURST)
+	for lamp in [steady, dip, burst]:
+		check(_streetlight_energy(lamp).is_zero_approx() and lamp._flicker == null, "Daytime streetlights have no beam, lens emission or scheduled fault")
+	clock.set_time(1, 23.0)
+	check(_streetlight_energy(steady).is_equal_approx(Vector2.ONE) and steady._flicker == null, "A steady streetlight switches on at night without a tween")
+	var dip_events := _sample_streetlight(dip, 32.0)
+	var burst_events := _sample_streetlight(burst, 55.0)
+	check(_streetlight_energy(steady).is_equal_approx(Vector2.ONE), "Faulty streetlights do not change another lamp's beam or lens")
+	check(dip_events.size() >= 2, "A dip streetlight dims and restores repeatedly")
+	if dip_events.size() >= 2:
+		check(dip_events[0].x >= 1.95 and dip_events[0].x <= 10.05, "Dip profile starts after its randomized delay")
+		for event in dip_events:
+			check(event.z >= 0.349 and event.z <= 0.601, "Dip profile dims to 35–60% and restores to full")
+		var gap := dip_events[1].x - dip_events[0].y
+		check(gap >= 6.95 and gap <= 18.05, "Dip profile waits 7–18 seconds between dips (%.2f s)" % gap)
+	_check_streetlight_burst(burst_events)
+	check(_advance_streetlight_to_dip(burst), "Dawn test reaches an active burst dip")
+	var dusk_tweens: Array[Tween] = [dip._flicker, burst._flicker]
+	clock.set_time(2, 6.0)
+	for lamp in [steady, dip, burst]:
+		check(_streetlight_energy(lamp).is_zero_approx() and lamp._flicker == null, "Dawn cancels pending faults and switches off beam and lens")
+	for tween in dusk_tweens:
+		check(tween != null and not tween.is_valid(), "Dawn kills the active flicker tween")
+	clock.set_time(2, 23.0)
+	var unload_tween: Tween = burst._flicker
+	check(unload_tween != null and unload_tween.is_valid() and not dusk_tweens.has(unload_tween), "The next dusk starts a fresh fault schedule")
+	check(_advance_streetlight_to_dip(burst), "Unload test reaches an active burst dip")
+	chunk.queue_free()
+	await process_frame
+	await process_frame # The scene tree drops bound tweens on the frame after deletion.
+	check(not is_instance_valid(burst) and unload_tween != null and not unload_tween.is_valid(), "Unloading a chunk frees its lights and their active flicker tweens")
+	check(clock.minute_changed.get_connections().is_empty(), "Unloading streetlights releases their clock signal connections")
+	clock.free()
+
+func _add_streetlight(parent: Node3D, clock: WorldClock, fault: int) -> RoadsideStreetlight:
+	var lamp := STREETLIGHT_SCENE.instantiate() as RoadsideStreetlight
+	lamp.configure(clock, Color("ffd19e"), fault, 42)
+	parent.add_child(lamp)
+	return lamp
+
+func _streetlight_energy(lamp: RoadsideStreetlight) -> Vector2:
+	var light := lamp.get_node("Light") as SpotLight3D
+	var lens := lamp.get_node("Lens") as MeshInstance3D
+	var material := lens.material_override as StandardMaterial3D
+	return Vector2(light.light_energy / 2.5, material.emission_energy_multiplier / 2.2)
+
+func _advance_streetlight_to_dip(lamp: RoadsideStreetlight) -> bool:
+	for step in range(1200):
+		var tween := lamp._flicker
+		if tween == null or not tween.is_valid(): return false
+		tween.pause()
+		tween.custom_step(0.025)
+		var energy := _streetlight_energy(lamp).x
+		if energy >= 0.15 and energy <= 0.45: return true
+	return false
+
+# Each event records its start, restored time, lowest brightness and blackout duration.
+func _sample_streetlight(lamp: RoadsideStreetlight, duration: float) -> Array[Vector4]:
+	const STEP := 0.025
+	var events: Array[Vector4] = []
+	var started := -1.0
+	var lowest := 1.0
+	var dark_duration := 0.0
+	var last_dark := 0.0
+	var synchronized := true
+	for i in range(1, roundi(duration / STEP) + 1):
+		var tween: Tween = lamp._flicker
+		if tween == null or not tween.is_valid():
+			break
+		tween.pause()
+		tween.custom_step(STEP)
+		var energy := _streetlight_energy(lamp)
+		synchronized = synchronized and is_equal_approx(energy.x, energy.y)
+		var time := i * STEP
+		if energy.x < 0.98:
+			if started < 0.0:
+				started = time
+			lowest = minf(lowest, energy.x)
+			if is_zero_approx(energy.x):
+				dark_duration += STEP
+				last_dark = time
+		elif started >= 0.0:
+			events.append(Vector4(started, time, lowest, dark_duration))
+			if dark_duration > 0.0:
+				check(time - last_dark >= 0.45 and time - last_dark <= 0.55, "The lamp restores over about half a second after blackout")
+			started = -1.0
+			lowest = 1.0
+			dark_duration = 0.0
+	check(synchronized, "A flickering streetlight keeps its beam and lens in sync")
+	return events
+
+func _check_streetlight_burst(events: Array[Vector4]) -> void:
+	var blackout := -1
+	for i in range(events.size()):
+		if is_zero_approx(events[i].z):
+			blackout = i
+			break
+	check(blackout == 3 or blackout == 4, "A burst gives three or four dips before complete blackout (%d)" % blackout)
+	if blackout < 0:
+		return
+	check(events[0].x >= 2.95 and events[0].x <= 12.05, "Burst profile starts after its randomized delay")
+	for i in range(blackout):
+		check(events[i].z >= 0.149 and events[i].z <= 0.451, "Burst dips reach 15–45% brightness")
+		var lit_gap := events[i + 1].x - events[i].y
+		check(lit_gap >= 0.33 and lit_gap <= 0.68, "Burst dips are separated by about half a second of full light (%.2f s)" % lit_gap)
+	check(events[blackout].w >= 0.975 and events[blackout].w <= 2.025, "The lamp stays completely dark for one to two seconds (%.2f s)" % events[blackout].w)
+	check(events.size() > blackout + 1, "Burst profile starts another cycle after cooldown")
+	if events.size() > blackout + 1:
+		var cooldown := events[blackout + 1].x - events[blackout].y
+		check(cooldown >= 13.95 and cooldown <= 28.10, "Burst profile cools down for 14–28 seconds (%.2f s)" % cooldown)
 
 func _check_opening_profiles() -> void:
 	var current_profile := WorldProfile.new()

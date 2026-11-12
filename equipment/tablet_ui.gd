@@ -40,13 +40,15 @@ var _presentation_revision := 0
 var _device_list: VBoxContainer
 var _construction_row: HBoxContainer
 @onready var _screen: Control = $Screen
-@onready var _tui: VBoxContainer = $Screen/Margin/TUI
-@onready var _shell: VBoxContainer = $Screen/Margin/Shell
-@onready var shell_input: LineEdit = $Screen/Margin/Shell/Prompt/Input
-@onready var shell_output: RichTextLabel = $Screen/Margin/Shell/Output
+@onready var _power_warning: Label = $Screen/Margin/Console/PowerWarning
+@onready var _tui: VBoxContainer = $Screen/Margin/Console/TUI
+@onready var _shell: VBoxContainer = $Screen/Margin/Console/Shell
+@onready var shell_input: LineEdit = $Screen/Margin/Console/Shell/Prompt/Input
+@onready var shell_output: RichTextLabel = $Screen/Margin/Console/Shell/Output
 
 func _ready() -> void:
 	_screen.theme = RVTerminalTheme.make()
+	_power_warning.add_theme_color_override("font_color", RVTerminalTheme.AMBER)
 	shell_input.text_submitted.connect(submit_command)
 	shell_input.text_changed.connect(_sanitize_input)
 	_build_tui()
@@ -288,6 +290,7 @@ func _resize_console() -> void:
 
 func on_open() -> void:
 	connected_rv = get_parent().get_connected_rv()
+	_refresh_power_warning()
 	_message = ""
 	_type_slot = ""
 	enter_tui()
@@ -614,11 +617,15 @@ func _complete() -> void:
 	elif not candidates.is_empty(): _append_output(PackedStringArray(["  ".join(candidates)]))
 
 func _process(delta: float) -> void:
-	if not visible or mode != Mode.TUI: return
+	if not visible: return
 	_refresh_time -= delta
 	if _refresh_time <= 0:
 		_refresh_time = 0.2
-		_refresh()
+		_refresh_power_warning()
+		if mode == Mode.TUI: _refresh()
+
+func _refresh_power_warning() -> void:
+	_power_warning.visible = is_instance_valid(connected_rv) and not connected_rv.has_usable_power()
 
 func _text(id: String, value: String) -> void:
 	_texts[id].text = value
@@ -875,7 +882,7 @@ func _owns_session() -> bool:
 	if user.get("is_player_dead") == true: return false
 	if user.has_method("can_use_hands") and not user.can_use_hands(): return false
 	if user.has_method("get_player_mode") and user.get_player_mode() != user.PlayerMode.UI: return false
-	return terminal.can_operate() and terminal.get_connected_rv() == connected_rv and connected_rv.has_usable_power()
+	return terminal.can_operate() and terminal.get_connected_rv() == connected_rv
 
 func _toggle_engine() -> void:
 	if not _can_write(): return

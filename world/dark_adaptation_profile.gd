@@ -22,25 +22,6 @@ const DEFAULT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 		_watch_curve()
 		emit_changed()
 
-@export_group("Ambient Gate")
-## Skip reference rendering when the view's native ambient light is bright.
-@export var ambient_gate_enabled := true:
-	set(value):
-		ambient_gate_enabled = value
-		emit_changed()
-## Linear luminance (ambient color times energy), independent of clock time.
-@export_range(0.0, 1.0, 0.001, "or_greater") var ambient_threshold := 0.06:
-	set(value):
-		if not is_finite(value): return
-		ambient_threshold = maxf(0.0, value)
-		emit_changed()
-## Fade to zero across this brightness interval below the threshold.
-@export_range(0.0, 1.0, 0.001, "or_greater") var ambient_transition := 0.02:
-	set(value):
-		if not is_finite(value): return
-		ambient_transition = maxf(0.0, value)
-		emit_changed()
-
 @export_group("Brightness")
 ## Neutral material reference energy; does not change the world's ambient light.
 @export_range(0.0, 1.0, 0.001) var reference_energy := 0.06:
@@ -48,12 +29,13 @@ const DEFAULT_CURVE: Curve = preload("res://world/night_vision_curve.tres")
 		if not is_finite(value): return
 		reference_energy = clampf(value, 0.0, 1.0)
 		emit_changed()
-## Native/reference luminance ratios. Gray fill fades smoothly between these.
+## Native/reference luminance ratio used with lit_ratio to size the fade's rounded end.
 @export_range(0.0, 1.0, 0.01) var dark_ratio := 0.1:
 	set(value):
 		if not is_finite(value): return
 		dark_ratio = clampf(value, 0.0, 1.0)
 		emit_changed()
+## Native/reference luminance ratio at which gray fill reaches zero.
 @export_range(0.01, 2.0, 0.01) var lit_ratio := 1.0:
 	set(value):
 		if not is_finite(value): return

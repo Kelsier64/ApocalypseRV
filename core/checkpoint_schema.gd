@@ -46,6 +46,9 @@ static func profile_error(data: Dictionary) -> String:
 			if not VehicleSnapshot._number(value) or value != defaults.terrain_half_width: return "profile." + key
 		elif key == "generation_version":
 			if not value is int or value != defaults.generation_version: return "profile." + key
+		elif key == "opening_shelter":
+			# Older snapshots omit the selector and restore the default orientation shelter.
+			if not value is String or value != defaults.opening_shelter_id(): return "profile." + key
 		elif key in constants:
 			if value != defaults.get(key): return "profile." + key
 		elif key in ["chunks_ahead", "chunks_behind"]:
@@ -94,7 +97,7 @@ static func poi_error(value: Variant, path := "poi") -> String:
 			return prefix + ".missing_layout"
 		var content_error := MegashelterInteriorContent.validate_content(entry) if entry.layout.profile == "megashelter" else _bunker_content_error(entry)
 		if not content_error.is_empty(): return prefix + "." + content_error
-		if entry.layout.profile == "megashelter_stairwell":
+		if InteriorProfiles.is_passive(StringName(entry.layout.profile)):
 			if not entry.content.cargo_id.is_empty() or not entry.content.cargo_room.is_empty(): return prefix + ".content.cargo"
 			if not entry.caches.is_empty(): return prefix + ".caches"
 			for actor in entry.actors:

@@ -13,8 +13,7 @@ static func create_environment() -> Environment:
 	environment.ambient_light_color = Color.WHITE
 	environment.ambient_light_energy = AMBIENT_ENERGY
 	environment.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
-	# Contact shading grounds fixtures and furniture under the surviving lamps.
-	# Compatibility retains the same native lights without screen-space AO.
+	# Contact shading grounds fixtures and furniture in the dark interior.
 	environment.ssao_enabled = true
 	environment.ssao_radius = 0.3
 	environment.ssao_intensity = 0.8

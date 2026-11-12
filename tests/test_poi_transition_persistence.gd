@@ -223,5 +223,7 @@ func _run() -> void:
 	await _retired("megashelter exit")
 	await CHAIN.run(self, arena, manager, player, check)
 	await _retired("chained shelter exit")
-	if failures.is_empty(): print("PASS: POI transition failure persistence; megashelter layout/profile, cache/drop revisits and isolated stairwell/bunker return chain")
+	await CHAIN.run_bunker_service_route(self, manager, player, building, check)
+	await _retired("bunker service route exit")
+	if failures.is_empty(): print("PASS: POI transition persistence, megashelter chain and bunker service route")
 	quit(0 if failures.is_empty() else 1)

@@ -6,6 +6,7 @@ var player
 var settings
 var controls: Dictionary = {}
 var _root: Control
+var _shade: ColorRect
 var _panel: PanelContainer
 var _tabs: TabContainer
 var _status: Label
@@ -18,7 +19,15 @@ var _skip_tutorial: Button
 var _preset: OptionButton
 var _preset_current: Label
 var _resolution_label: Label
+var _calibrate: Button
+var _calibration: VBoxContainer
+var _calibration_slider: HSlider
+var _calibration_compare: CheckButton
+var _calibration_reset: Button
+var _calibration_patches: Array[ShaderMaterial] = []
 var _modal: Control
+var _modal_shade: ColorRect
+var _modal_center: CenterContainer
 var _modal_text: Label
 var _modal_accept: Button
 var _modal_cancel: Button
@@ -45,6 +54,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	if is_instance_valid(settings):
+		if _modal_kind == "calibration": settings.clear_shadow_trim_preview()
 		settings.cancel_window_preview()
 		settings.flush()
 
@@ -116,10 +126,10 @@ func _build() -> void:
 	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_root.theme = IndustrialTheme.make(18)
 	add_child(_root)
-	var shade := ColorRect.new()
-	shade.color = Color(0.0, 0.0, 0.0, 0.4)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_root.add_child(shade)
+	_shade = ColorRect.new()
+	_shade.color = Color(0.0, 0.0, 0.0, 0.4)
+	_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_root.add_child(_shade)
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right", "top", "bottom"]:
@@ -188,6 +198,9 @@ func _build() -> void:
 	_build_modal()
 
 func _build_display(page: VBoxContainer) -> void:
+	_calibrate = _button("Calibrate Display", _show_calibration)
+	_calibrate.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	page.add_child(_calibrate)
 	_section(page, "Graphics")
 	_preset = _option(["Game Default", "Low (Faster)", "Medium (Balanced)", "High (Sharper)", "Custom"])
 	_preset.set_item_disabled(4, true)
@@ -210,8 +223,6 @@ func _build_display(page: VBoxContainer) -> void:
 	_add_option(page, &"max_fps", "Frame Rate Limit", "Caps the frame rate to reduce GPU load.", ["Unlimited", "30 FPS", "60 FPS", "120 FPS", "144 FPS"], [0, 30, 60, 120, 144])
 	_section(page, "Color")
 	_add_toggle(page, &"retro", "Retro Colors", "Gives outdoor areas cooler, muted colors at the same resolution.")
-	_add_slider(page, &"brightness", "Brightness", "100% is the default brightness.", 0.75, 1.25, 0.05, "percent")
-	_add_slider(page, &"contrast", "Contrast", "100% is the default contrast.", 0.75, 1.25, 0.05, "percent")
 	_add_slider(page, &"saturation", "Saturation", "0% is grayscale. 100% is the default saturation.", 0.0, 1.5, 0.05, "percent")
 
 func _section(page: VBoxContainer, title: String) -> void:
@@ -434,35 +445,91 @@ func _build_modal() -> void:
 	_modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_modal.visible = false
 	_root.add_child(_modal)
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.45)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_modal.add_child(shade)
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_modal.add_child(center)
+	_modal_shade = ColorRect.new()
+	_modal_shade.color = Color(0, 0, 0, 0.45)
+	_modal_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_modal.add_child(_modal_shade)
+	_modal_center = CenterContainer.new()
+	_modal_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_modal.add_child(_modal_center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 0)
-	center.add_child(panel)
+	_modal_center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 18)
 	panel.add_child(box)
 	_modal_text = _label("")
 	box.add_child(_modal_text)
+	_build_calibration(box)
 	var buttons := HBoxContainer.new()
 	box.add_child(buttons)
 	_modal_accept = _button("Confirm", _accept_modal)
 	buttons.add_child(_modal_accept)
 	_modal_cancel = _button("Cancel", _cancel_modal)
 	buttons.add_child(_modal_cancel)
-	for button in [_modal_accept, _modal_cancel]:
-		var other: Button = _modal_cancel if button == _modal_accept else _modal_accept
-		button.focus_next = button.get_path_to(other)
-		button.focus_previous = button.get_path_to(other)
-		button.focus_neighbor_left = button.get_path_to(other)
-		button.focus_neighbor_right = button.get_path_to(other)
-		button.focus_neighbor_top = button.get_path_to(other)
-		button.focus_neighbor_bottom = button.get_path_to(other)
+
+func _build_calibration(box: VBoxContainer) -> void:
+	_calibration = VBoxContainer.new()
+	_calibration.add_theme_constant_override("separation", 8)
+	box.add_child(_calibration)
+	var chart := HBoxContainer.new()
+	chart.add_theme_constant_override("separation", 0)
+	_calibration.add_child(chart)
+	for code: int in [0, 2, 8, 16, 32, 64]:
+		var column := VBoxContainer.new()
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		chart.add_child(column)
+		var patch := ColorRect.new()
+		patch.custom_minimum_size.y = 54
+		patch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		column.add_child(patch)
+		var material := ShaderMaterial.new()
+		material.shader = preload("res://player/display_calibration_patch.gdshader")
+		material.set_shader_parameter("patch_level", float(code) / 255.0)
+		patch.material = material
+		_calibration_patches.append(material)
+		var marker := _label("Black" if code == 0 else ("▲" if code in [8, 16] else ""), 15)
+		marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(marker)
+	var trim_row := HBoxContainer.new()
+	_calibration.add_child(trim_row)
+	trim_row.add_child(_label("Shadow Detail"))
+	_calibration_slider = HSlider.new()
+	var bounds: Vector2 = settings.RANGES["shadow_trim"]
+	_calibration_slider.min_value = bounds.x
+	_calibration_slider.max_value = bounds.y
+	_calibration_slider.step = 0.05
+	_calibration_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	trim_row.add_child(_calibration_slider)
+	_calibration_slider.value_changed.connect(_refresh_calibration_preview.unbind(1))
+	var actions := HBoxContainer.new()
+	_calibration.add_child(actions)
+	_calibration_compare = CheckButton.new()
+	_calibration_compare.text = "Preview Default"
+	_calibration_compare.toggled.connect(_refresh_calibration_preview.unbind(1))
+	actions.add_child(_calibration_compare)
+	_calibration_reset = _button("Reset", _reset_calibration)
+	actions.add_child(_calibration_reset)
+
+func _show_calibration() -> void:
+	_modal_kind = "calibration"
+	_modal_text.text = "Adjust Shadow Detail until both marked patches are distinct from black. The darkest patch may blend in."
+	_modal_accept.text = "Apply"
+	_modal_cancel.text = "Cancel"
+	_calibration_compare.set_pressed_no_signal(false)
+	_calibration_slider.set_value_no_signal(settings.get_setting(&"shadow_trim"))
+	_refresh_calibration_preview()
+	_show_modal()
+
+func _refresh_calibration_preview() -> void:
+	var trim := 0.0 if _calibration_compare.button_pressed else _calibration_slider.value
+	settings.preview_shadow_trim(trim)
+	for patch in _calibration_patches: patch.set_shader_parameter("shadow_trim", trim)
+
+func _reset_calibration() -> void:
+	_calibration_compare.set_pressed_no_signal(false)
+	_calibration_slider.set_value_no_signal(0.0)
+	_refresh_calibration_preview()
 
 func _show_quit() -> void:
 	_modal_kind = "quit"
@@ -499,6 +566,7 @@ func _show_skip_tutorial() -> void:
 func _on_window_preview_changed(active: bool) -> void:
 	_refresh()
 	if active and visible:
+		if _modal_kind == "calibration": _hide_modal()
 		_modal_kind = "window"
 		_modal_accept.text = "Keep Display Mode"
 		_modal_cancel.text = "Revert"
@@ -509,6 +577,9 @@ func _on_window_preview_changed(active: bool) -> void:
 func _accept_modal() -> void:
 	if _modal_kind == "window":
 		settings.confirm_window_preview()
+	elif _modal_kind == "calibration":
+		settings.set_setting(&"shadow_trim", _calibration_slider.value)
+		settings.flush()
 	elif _modal_kind == "quit":
 		settings.cancel_window_preview()
 		settings.flush()
@@ -535,22 +606,47 @@ func _cancel_modal() -> void:
 	_hide_modal()
 
 func _hide_modal() -> void:
+	var was_calibration := _modal_kind == "calibration"
+	if was_calibration: settings.clear_shadow_trim_preview()
 	_modal_kind = ""
 	_modal.hide()
+	_panel.show()
+	_shade.show()
 	for control in _modal_focus_modes:
 		if is_instance_valid(control):
 			control.focus_mode = _modal_focus_modes[control]
 	_modal_focus_modes.clear()
 	if visible:
-		_return.grab_focus()
+		if was_calibration: _calibrate.grab_focus()
+		else: _return.grab_focus()
 
 func _show_modal() -> void:
-	# Explicitly remove background controls from keyboard navigation. Arrow
-	# neighbors and Tab then remain on the two confirmation buttons only.
+	# Confine keyboard navigation to the active modal.
 	if _modal_focus_modes.is_empty():
 		_suspend_background_focus(_panel)
+	var is_calibration := _modal_kind == "calibration"
+	_calibration.visible = is_calibration
+	_panel.visible = not is_calibration
+	_shade.visible = not is_calibration
+	_modal_shade.visible = not is_calibration
+	_modal_center.anchor_top = 0.4 if is_calibration else 0.0
+	var focus_order: Array[Control] = [_modal_accept, _modal_cancel]
+	if is_calibration:
+		focus_order = [_calibration_slider, _calibration_compare, _calibration_reset, _modal_accept, _modal_cancel]
+	for index in focus_order.size():
+		var control := focus_order[index]
+		var previous := control.get_path_to(focus_order[posmod(index - 1, focus_order.size())])
+		var next := control.get_path_to(focus_order[(index + 1) % focus_order.size()])
+		control.focus_previous = previous
+		control.focus_neighbor_top = previous
+		control.focus_next = next
+		control.focus_neighbor_bottom = next
+		if control != _calibration_slider:
+			control.focus_neighbor_left = previous
+			control.focus_neighbor_right = next
 	_modal.show()
-	_modal_cancel.grab_focus()
+	if is_calibration: _calibration_slider.grab_focus()
+	else: _modal_cancel.grab_focus()
 
 func _suspend_background_focus(node: Node) -> void:
 	if node is Control and node.focus_mode != Control.FOCUS_NONE:

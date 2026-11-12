@@ -195,6 +195,7 @@ func update_ghost(player: CharacterBody3D) -> void:
 				break
 			hit_node = hit_node.get_parent()
 
+		var horizontal_surface := absf(normal.dot(up_ref)) > 0.5
 		if equip is RVLadder:
 			# Both modes keep the ladder plane parallel to the actual wall.
 			# Local -Z mounts against it, and +Z faces the climber.
@@ -202,9 +203,17 @@ func update_ghost(player: CharacterBody3D) -> void:
 				base_basis = Basis.looking_at(-normal, up_ref)
 			else:
 				base_basis = Basis.IDENTITY
+		elif equip is TrainingTerminal and (placement_mode == PlacementMode.SURFACE or not horizontal_surface):
+			# Keep the mounting plate (-Z) flush and the display (+Z) readable.
+			var screen_up := up_ref.slide(normal)
+			if horizontal_surface:
+				screen_up = (-player.camera.global_basis.z).slide(normal)
+				if screen_up.length_squared() < 0.001:
+					screen_up = player.camera.global_basis.y.slide(normal)
+			base_basis = Basis.looking_at(-normal, screen_up)
 		elif placement_mode == PlacementMode.SURFACE:
 			# Mode 1: bottom_face sticks to the placement surface
-			if abs(normal.dot(up_ref)) > 0.5:
+			if horizontal_surface:
 				var cam_dir = -player.camera.global_transform.basis.z
 				cam_dir = (cam_dir - normal * cam_dir.dot(normal)).normalized()
 				if cam_dir.length_squared() < 0.001:
@@ -231,7 +240,7 @@ func update_ghost(player: CharacterBody3D) -> void:
 					rv_forward = Vector3.FORWARD
 				cam_dir = rv_forward
 
-			if abs(normal.dot(up_ref)) > 0.5:
+			if horizontal_surface:
 				# Horizontal surface: standard upright, facing camera direction
 				base_basis = Basis.looking_at(cam_dir, up_ref)
 			else:
