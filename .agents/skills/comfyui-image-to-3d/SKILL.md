@@ -39,7 +39,7 @@ description: Generate a textured 3D asset from a reference image with local Comf
 
 服務未開啟或多件生成需要續跑時，見[啟動與續跑](references/operations.md)。
 
-服務入口為 `http://127.0.0.1:8000/health`，腳本從這裡找到 ComfyUI 後端（通常是 `8188`）。連線被拒絕時先確認既有服務是否啟動，沿用已確認的本機啟動方式；不要將服務未啟動判為 graph 故障。Python 需要 Pillow；若 PATH 沒有 Python，可用 Codex 的 `load_workspace_dependencies` 找內建 runtime，以完整路徑執行，不必全域安裝。在專案根目錄執行：
+服務入口為 `http://127.0.0.1:8000/health`，腳本從這裡找到 ComfyUI 後端（通常是 `8188`）。連線被拒絕時先確認既有服務是否啟動，沿用已確認的本機啟動方式；不要將服務未啟動判為 graph 故障。Python 需要 Pillow；PATH 沒有可用 Python 時，見[本機操作](references/operations.md)的 runtime 說明，以完整路徑執行，不必全域安裝。在專案根目錄執行：
 
 ```powershell
 $skill = '.agents/skills/comfyui-image-to-3d'

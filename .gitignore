@@ -3,6 +3,10 @@
 /android/
 .worktrees/
 
+# Editor backups and local agent settings
+*.blend1
+.claude/settings.local.json
+
 # Local Slender Speaker authoring and review outputs
 /art_source/slender_speaker/
 /docs/validation/images/slender-speaker-*/

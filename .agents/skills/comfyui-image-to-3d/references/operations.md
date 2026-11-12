@@ -1,6 +1,6 @@
 # 本機操作
 
-專案根目錄執行，Python 需 Pillow。PATH 沒有 Python 時可用 Codex `load_workspace_dependencies` 找內建 runtime，改以完整路徑執行；工具說明見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。每次工作建立新的 `.godot/art-work/<asset>/<run>/`，生成 job、歷史、候選、檢查圖、失敗輸出、logs 與本機依賴都放在這裡。完整跑完技術檢查與目視驗收，保留本機產物供除錯；提交 Git 時只挑必要的來源、editable／重建資料、正式資產和少量代表證據，不預設清理工作資料。
+專案根目錄執行，Python 需 Pillow。PATH 上的 `python` 可能只是 Microsoft Store 佔位程式；不能用時，Codex 可用 `load_workspace_dependencies` 找內建 runtime，其他 agent 可直接用同一份 `$env:USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe`（含 Pillow），都找不到就詢問使用者，不要自行全域安裝。以下命令的 `python` 依此換成完整路徑；工具說明見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。每次工作建立新的 `.godot/art-work/<asset>/<run>/`，生成 job、歷史、候選、檢查圖、失敗輸出、logs 與本機依賴都放在這裡。完整跑完技術檢查與目視驗收，保留本機產物供除錯；提交 Git 時只挑必要的來源、editable／重建資料、正式資產和少量代表證據，不預設清理工作資料。
 
 ## ComfyUI 沒開啟時
 

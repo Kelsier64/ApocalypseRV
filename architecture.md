@@ -595,7 +595,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 ### 核心自動驗證
 
-[scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的 17 支 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
+[scripts/test.ps1](scripts/test.ps1) 自動發現 tests 根目錄的所有 `test_*.gd`，預設全部執行並加上 [正式主世界 smoke](tests/main_scene_smoke.gd)。現行覆蓋聚焦 Item 操作／保存、RV 引擎／煞車／資源循環／結構、移動攀爬、手槍、油桶爆炸、Raker 抓取、Slender Speaker 遭遇／抓取、檢查點失敗恢復、POI 轉場、串流，以及正式新課程交易與駕車離場。orientation departure 共用的旅程 fixture 位於 `tests/support/orientation_journey.gd`，不獨立執行。
 
 舊版本相容性專項、全 seed 掃描、逐姿勢美術與展示場自測已退出自動清單；手動場景仍保留，舊存檔相容分支已移除。歷史驗收結果保持原日期與範圍，不能當作本次通過證據。完整保留清單與命令見 [測試指南](tests/README.md)。
 

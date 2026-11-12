@@ -1,6 +1,6 @@
 # 自動測試
 
-從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。預設跑全部 **17 個核心測試 + 正式主世界 smoke**，匯入只做一次。Godot 版本由 [.godot-version](../.godot-version) 固定。
+從專案根目錄執行 [scripts/test.ps1](../scripts/test.ps1)。預設跑全部 **根層 `test_*.gd` 核心測試 + 正式主世界 smoke**，匯入只做一次。Godot 版本由 [.godot-version](../.godot-version) 固定。
 
 ```powershell
 # 日常與 CI 使用相同入口

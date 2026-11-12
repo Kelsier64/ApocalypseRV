@@ -163,7 +163,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -SmokeOnly
 ```
 
-預設執行全部 16 個核心測試及正式世界 smoke，CI 也使用同一命令、單一 Windows job。已移除舊分組與 `suites.json`；頂層 `tests/test_*.gd` 自動納入執行。`-TestFilter` 支援逗號分隔樣式、去重與排序；需要同時啟動主世界時加 `-Smoke`。舊版教學、相容性長情境及外觀專用自動回歸已精簡，手動測試場保留。
+預設執行所有根層 `tests/test_*.gd` 及正式世界 smoke，CI 也使用同一命令、單一 Windows job。已移除舊分組與 `suites.json`；頂層 `tests/test_*.gd` 自動納入執行。`-TestFilter` 支援逗號分隔樣式、去重與排序；需要同時啟動主世界時加 `-Smoke`。舊版教學、相容性長情境及外觀專用自動回歸已精簡，手動測試場保留。
 
 Runner 核對 `.godot-version`、共用一次匯入，並以固定 60 fps 執行各自獨立的 headless 程序；專案物理與求解器設定維持。遇到失敗立即停止，退出碼、錯誤日誌、PASS 標記與逾時仍會檢查。`-List` 不啟動引擎；`-SkipImport` 適用於已匯入且資產沒有變更的工作樹；`-RealTime` 可對照實時排程。每次執行保存 `results.json` 與各項日誌到 `.godot/test-logs/`。命令與覆蓋取捨見 [測試指南](tests/README.md)；可用 `-Godot 'C:/path/to/godot.exe'` 指定引擎。
 
