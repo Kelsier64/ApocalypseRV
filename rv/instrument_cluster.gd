@@ -13,6 +13,7 @@ const INK := Color("d9dfbe")
 const OFF := Color("172421")
 const UNLIT_PRINT := Color("59625c")
 const TILE_OFF := Color(0.17, 0.19, 0.185)
+const LAMP_RED := Color(1.0, 0.16, 0.1) # Every telltale lights in the same red.
 const PLATE := Vector2(1.3, 0.44)
 const BIG_DIAL := 0.165
 const SMALL_DIAL := 0.07
@@ -106,7 +107,7 @@ func update_instruments(rv: Chassis, delta: float) -> void:
 		# Every position is faintly backlit; the engaged one burns bright.
 		_glow(gear_lamps[i], INK if i == selected else UNLIT_PRINT, brightness * (2.4 if i == selected else 0.12))
 	var charging := powered and rv.energy.generated_rate > 0.000001
-	light_lamp(charge_material, Color("83c7a0"), brightness if charging else 0.0)
+	light_lamp(charge_material, LAMP_RED, brightness if charging else 0.0)
 	for mat in backlights:
 		mat.emission_energy_multiplier = brightness * 0.7
 	_glow_light.light_energy = brightness * 0.3
@@ -117,7 +118,7 @@ func update_instruments(rv: Chassis, delta: float) -> void:
 		if connected:
 			for row in VehicleStatus.read(rv):
 				var active: bool = powered and row.level > 0
-				light_lamp(warning_lamps[row.id], VehicleStatus.color(row.level), brightness if active else 0.0)
+				light_lamp(warning_lamps[row.id], LAMP_RED, brightness if active else 0.0)
 		else:
 			for id in warning_lamps: light_lamp(warning_lamps[id], OFF, 0.0)
 
@@ -192,8 +193,8 @@ func _gauge(title: String, at: Vector2, radius: float, art: String, rest: float)
 	_mesh("Lens", _disc(mouth * 0.995, 32), Vector3(0, 0, depth * 0.9), _lens, root)
 	return pivot
 
-## Eight warning tiles in a 4 x 2 annunciator block: a pale lens that lights in the
-## warning colour behind a solid black symbol.
+## Eight warning tiles in a 4 x 2 annunciator block: a pale lens that lights red
+## behind a solid black symbol.
 func _build_annunciator() -> void:
 	var pitch := Vector2(0.1, 0.07)
 	var center := Vector2(0, 0.133)
