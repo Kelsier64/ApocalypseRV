@@ -199,7 +199,9 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		var noon := clock.environment.fog_light_color
 		clock.set_time(1, 0.0)
 		var night := clock.environment.fog_light_color
-		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v19 gray-white daylight haze darkens with the native night lighting")
+		var mist_day := clock.atmosphere.day_mist_color
+		var mist_night := clock.atmosphere.night_mist_color
+		check.call(noon.is_equal_approx(mist_day) and night.is_equal_approx(mist_night) and night.get_luminance() < noon.get_luminance() * 0.1, "v19 gray-white daylight haze darkens with the native night lighting (noon %s, night %s)" % [noon.to_html(false), night.to_html(false)])
 		host.free()
 
 static func _check_weather_appearance(clock: WorldClock, check: Callable) -> void:
