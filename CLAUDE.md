@@ -62,7 +62,8 @@ Discuss first, then dispatch the agreed plan with the user-level `dispatch` skil
 
 - Keep scene modeling and 3D integration in the main agent.
 - Models: `opus` for deep reasoning, `haiku` for lookups and mechanical edits, `sonnet` for implementation and computer-use game testing.
-- The user-level `agy` skill reaches Antigravity CLI (Gemini) for a second opinion or reference images.
+- **Prefer agy to save Claude tokens.** Antigravity CLI (Gemini, user-level `agy` skill) runs on a separate quota. Send it work that is cheaper to check than to do: broad code research and summaries, code review and second opinions, test-log and CI triage, first drafts of docs, mechanical multi-file edits, and reference images. Give it a full brief (it reads `AGENTS.md`, which points here) and run it in the background. Use `--mode plan` for read-only work; for edits, point it at a separate worktree and review the diff before anything lands.
+- Keep with Claude: work that needs this conversation's context, 3D integration, harness changes, and final verification.
 
 ## Skills
 
