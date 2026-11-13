@@ -50,7 +50,7 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Working Defaults
 
-- Use `AskUserQuestion` early when a requirement, preference or tradeoff could materially change the result. Offer concise choices with a recommendation and keep doing independent work.
+- **Ask before starting** whenever the goal is unclear or the work needs a tradeoff you would otherwise settle yourself. Use `AskUserQuestion` with concise choices and a recommendation, and do not start on a guess. Read-only investigation that sharpens the question may come first.
 - Report architecture problems you notice. Ask before large architectural changes.
 - Validate with the smallest set that covers the changed behavior and its risks. Skip tests for simple, low-risk edits. For docs-only changes, check wording, consistency and links (`scripts/agent/check-links.ps1 <files>`); do not launch Godot.
 - Report what you checked, what you did not, and any material uncertainty. When the user must inspect something, name exactly what. Never claim visual or hands-on verification you did not do.
