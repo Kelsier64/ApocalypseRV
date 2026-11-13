@@ -36,7 +36,7 @@ Requirements:
 - Static PNG with a real transparent background; one complete object; three-quarter view with weak perspective; tall objects shot near horizontal.
 - Clear outline, feet, holes and joints; keep the intended colors and material style. No floor, shadow, background, collage or orthographic sheet.
 - Thicken thin wires or build them separately; show wear in the texture, not as extra loose parts.
-- No hints, key prompts, item names, status labels or glowing text (CLAUDE.md "In-Game Text").
+- No hints, key prompts, item names, status labels or glowing text (CLAUDE.md hard rule 1).
 
 Read the image yourself before generating. If the user asked to see it first, show it and wait.
 

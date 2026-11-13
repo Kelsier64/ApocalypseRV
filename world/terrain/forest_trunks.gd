@@ -1,6 +1,7 @@
 extends StaticBody3D
 class_name ForestTrunks
-## One compound body keeps dense forest physics cheap; shape owners identify trees.
+## Compound bodies keep dense forest physics cheap; shape owners identify plants.
+var is_shrub := false
 var visuals: Dictionary = {}
 var broken: Dictionary = {}
 
@@ -29,7 +30,7 @@ func _break_tree(shape: CollisionShape3D, direction: Vector3, vehicle_position: 
 	fallen.mesh = batch_node.multimesh.mesh
 	get_parent().add_child(fallen)
 	fallen.global_transform = batch_node.global_transform * pose
-	# Only the hit instance disappears; every other tree retains its transform.
+	# Only the hit instance disappears; its neighbours retain their transforms.
 	batch_node.multimesh.set_instance_transform(entry.index, Transform3D(Basis.from_scale(Vector3.ZERO), pose.origin))
-	TreeImpact.topple(fallen, direction, vehicle_position)
-	TreeImpact.navigation_changed(get_parent(), to_global(point))
+	TreeFall.spawn(fallen, direction, vehicle_position, is_shrub)
+	if not is_shrub: TreeImpact.navigation_changed(get_parent(), to_global(point))

@@ -1,6 +1,7 @@
 extends RefCounted
 class_name FloraMeshes
-## Small native ground cover. Batched visuals never add snagging colliders.
+## Small native ground cover meshes.
+const WOODY_SHRUB := 4
 static var cache: Dictionary = {}
 
 static func ground(kind: int) -> ArrayMesh:
@@ -9,7 +10,7 @@ static func ground(kind: int) -> ArrayMesh:
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7014 + kind
-	if kind == 4:
+	if kind == WOODY_SHRUB:
 		# A low opaque crown fills the sight gap below tall tree canopies.
 		for i in range(5):
 			var center := Vector3(sin(i * 2.4) * 0.28, 0.42 + i * 0.10, cos(i * 2.4) * 0.25)
@@ -45,7 +46,7 @@ static func ground(kind: int) -> ArrayMesh:
 	var mesh := st.commit()
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
-	if kind == 4: mat.vertex_color_is_srgb = true
+	if kind == WOODY_SHRUB: mat.vertex_color_is_srgb = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.roughness = 1.0
 	mat.metallic_specular = 0.0

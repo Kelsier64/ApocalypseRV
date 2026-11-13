@@ -75,6 +75,77 @@ func _ready() -> void:
 	instructions.add_theme_constant_override("shadow_offset_x", 2)
 	instructions.add_theme_constant_override("shadow_offset_y", 2)
 	canvas.add_child(instructions)
+	if "--capture" in OS.get_cmdline_user_args():
+		canvas.visible = false
+		_capture.call_deferred()
+
+## Renders the real seat view, a dashboard close-up and a raking side view for fixed
+## vehicle states, then quits.
+func _capture() -> void:
+	var folder := "res://.godot/rv-workshop-captures"
+	DirAccess.make_dir_recursive_absolute(folder)
+	var sun: DirectionalLight3D
+	var sky: Environment
+	for node in get_children():
+		if node is DirectionalLight3D: sun = node
+		if node is WorldEnvironment: sky = node.environment
+	var day_sun := sun.light_energy
+	var day_ambient := sky.ambient_light_energy
+	var visual: Node3D = seat.get_node("CockpitVisual")
+	var cluster: Node3D = visual.get_node("InstrumentCluster")
+	for state in ["day_drive", "night_faults", "unpowered", "lamp_test"]:
+		visual.set_process(true)
+		seat.exit_seat()
+		rv.control_override = {}
+		rv.linear_velocity = Vector3.ZERO
+		rv.current_fuel = rv.max_fuel * 0.65
+		rv.current_power = rv.max_power * 0.72
+		rv.headlights_requested = false
+		rv.handbrake = true
+		rv.set_gear(0)
+		rv.set_engine_running(false)
+		sun.light_energy = day_sun
+		sky.ambient_light_energy = day_ambient
+		seat.interact_hold(player)
+		match state:
+			"day_drive":
+				rv.set_engine_running(true)
+				rv.set_gear(2)
+				rv.handbrake = false
+				rv.control_override = {"throttle": 0.7}
+			"night_faults":
+				sun.light_energy = 0.02
+				sky.ambient_light_energy = 0.06
+				rv.current_fuel = rv.max_fuel * 0.08
+				rv.current_power = rv.max_power * 0.15
+				rv.headlights_requested = true
+				rv.set_engine_running(true)
+			"unpowered":
+				rv.current_power = 0.0
+			"lamp_test":
+				rv.set_engine_running(true)
+		await get_tree().create_timer(4.0).timeout
+		if state == "lamp_test":
+			# Hold every lamp on, cycling the three severities, to judge symbol legibility.
+			visual.set_process(false)
+			for i in range(VehicleStatus.IDS.size()):
+				cluster.light_lamp(cluster.warning_lamps[VehicleStatus.IDS[i]], cluster.lamp_color(1 + i % 3), rv.instrument_brightness)
+		for shot in ["seat", "close", "angle"]:
+			var camera: Camera3D = seat.seat_camera
+			if shot != "seat":
+				view = 5 if shot == "close" else 6
+				observer.cull_mask = camera.cull_mask
+				observer.fov = 52
+				observer.current = true
+			else:
+				camera.current = true
+			await RenderingServer.frame_post_draw
+			await RenderingServer.frame_post_draw
+			var path := "%s/%s_%s.png" % [folder, state, shot]
+			get_viewport().get_texture().get_image().save_png(path)
+			print("CAPTURE: ", ProjectSettings.globalize_path(path))
+	print("PASS: RV workshop captures")
+	get_tree().quit()
 
 func _process(_delta: float) -> void:
 	if view == 0:
@@ -86,6 +157,14 @@ func _process(_delta: float) -> void:
 	elif view == 4:
 		observer.global_position = rv.to_global(Vector3(0.85, 2.05, -2.9))
 		observer.look_at(seat.to_global(Vector3(0, 0.65, -0.55)))
+	elif view == 5:
+		var cluster: Node3D = seat.get_node("CockpitVisual/InstrumentCluster")
+		observer.global_position = seat.seat_camera.global_position.lerp(cluster.global_position, 0.3)
+		observer.look_at(cluster.global_position)
+	elif view == 6:
+		var cluster: Node3D = seat.get_node("CockpitVisual/InstrumentCluster")
+		observer.global_position = cluster.to_global(Vector3(0.75, 0.3, 0.62))
+		observer.look_at(cluster.global_position)
 	elif view == 3:
 		observer.global_position = legacy.get_node("Chassis").to_global(Vector3(11, 6, -13))
 		observer.look_at(legacy.get_node("Chassis").to_global(Vector3(0, 1, 0)))

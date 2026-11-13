@@ -1,53 +1,204 @@
-extends Node3D
+extends "res://world/main_world.gd"
 
 const CAPTURE_DIRECTORY := "res://.godot/white_apparition"
 const CAPTURE_PATH := CAPTURE_DIRECTORY + "/context.png"
+const CAPTURE_AFTER_PATH := CAPTURE_DIRECTORY + "/context-after.png"
+const WORLD_SEED := 42
+const ROAD_START := 330.0
+
+enum ReplayStep { WAITING, CAPTURING, PERIPHERAL, REPOSITIONING, LOOK_AWAY }
 
 @onready var player = $Player
-@onready var apparition: WhiteApparition = $WhiteApparition
-@onready var status: Label = $HUD/Status
+@onready var encounter = $WhiteApparitionEncounter
+@onready var status: Label = $PlaygroundHUD/Status
 
+var apparition: WhiteApparition
 var _replay := "--replay" in OS.get_cmdline_user_args()
 var _elapsed := 0.0
-var _capture_started := false
-var _capture_saved := false
-var _thresholds := 0
+var _sighting_requested := false
+var _replay_started := false
+var _spawn_checked := false
+var _replay_step := ReplayStep.WAITING
+var _san_at_capture := 0.0
+var _reposition_origin := Vector3.ZERO
+var _reposition_ticks := 0
+var _spawn_distance := 0.0
+var _look_away_distance := 0.0
+var _look_away_elapsed := 0.0
+var _last_pursuit_distance := INF
+
+func _enter_tree() -> void:
+	set_meta("checkpoint_staging", true)
+	var generator := get_node("WorldGenerator")
+	generator.world_seed = WORLD_SEED
+	super._enter_tree()
+	# Start past the tutorial without moving either actor when its band streams in.
+	fresh_start = false
+	get_node("StartRun").phase = "sealed"
+	var field := WorldField.new(WORLD_SEED, generator.profile)
+	var band := floori(ROAD_START / generator.profile.chunk_length)
+	generator.restore_bands.assign(range(band - generator.profile.chunks_behind, band + generator.profile.chunks_ahead + 1))
+	get_node("Player").transform = field.road_frame(ROAD_START).translated(Vector3.UP * 0.25)
 
 func _ready() -> void:
+	super._ready()
+	remove_meta("checkpoint_staging")
+	get_window().title = "ApocalypseRV - White Apparition Playground"
+	var clock: WorldClock = $WorldClock
+	clock.running = false
+	clock.weather_running = false
+	clock.weather.set_weather(Vector3.ZERO, true)
+	clock.set_time(1, 14.0)
 	player.camera.make_current()
-	if _replay: apparition._rng.seed = 2026
-	apparition.configure(player)
-	apparition.threshold_reached.connect(_on_threshold_reached)
+	if _replay:
+		player.camera.fov = 75.0
+		# The normal background drain stops at zero. Starting there isolates encounter drain.
+		player.survival.san = 0.0
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if _replay or not event is InputEventKey or not event.pressed or event.echo or event.physical_keycode != KEY_F6:
+		return
+	if is_instance_valid(apparition) and apparition._active_player_camera() != null:
+		_sighting_requested = true
+		get_viewport().set_input_as_handled()
 
 func _physics_process(delta: float) -> void:
+	if _replay:
+		_elapsed += delta
+		if _elapsed > 60.0:
+			_replay_error("White apparition replay timed out")
+			return
+		if _replay_step == ReplayStep.LOOK_AWAY and player.is_player_dead:
+			_verify_lethal_contact()
+			return
+	apparition = encounter._apparition
+	if not is_instance_valid(apparition) or apparition._world_id == 0: return
+	# Wait until the live player settles onto the streamed road.
+	if _replay and not _replay_started and _elapsed >= 0.2 and player.is_on_floor():
+		_replay_started = true
+		apparition._rng.seed = 2
+		_sighting_requested = true
+	if _sighting_requested:
+		_sighting_requested = false
+		var camera := apparition._active_player_camera()
+		if camera != null:
+			apparition._reset()
+			if not apparition._try_emerge(camera) and _replay:
+				_replay_error("White apparition replay could not find an offscreen spawn")
+				return
 	var phase := apparition._phase
-	status.text = "Sightings %d/3   %s" % [apparition._gaze.count, WhiteApparition.Phase.keys()[phase].capitalize()]
+	status.text = "WASD move   Mouse look   F6 request sighting\n%s   SAN %.1f" % [WhiteApparition.Phase.keys()[phase].capitalize(), player.survival.san]
 	if not _replay: return
-	_elapsed += delta
-	if _elapsed > 45.0:
-		push_error("White apparition replay timed out")
-		get_tree().quit(1)
-		return
-	if phase == WhiteApparition.Phase.VISIBLE:
-		player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
-		if apparition._presence >= 0.95 and not _capture_started:
-			_capture_started = true
-			_capture_context()
-	if phase == WhiteApparition.Phase.COOLDOWN and _thresholds == 1 and _capture_saved:
-		print("WHITE_APPARITION_REPLAY sightings=", apparition._gaze.count, " threshold=", _thresholds)
-		get_tree().quit()
+	match _replay_step:
+		ReplayStep.WAITING:
+			if phase == WhiteApparition.Phase.HIDDEN: return
+			if not _spawn_checked:
+				_spawn_checked = true
+				if not apparition._body_outside_view(apparition.global_position, player.camera.get_frustum()):
+					_replay_error("White apparition spawned in the current view")
+					return
+				_spawn_distance = apparition.global_position.distance_to(player.global_position)
+				print("WHITE_APPARITION_EMERGED offscreen=true distance=%.2f" % _spawn_distance)
+			player.camera.look_at(apparition.to_global(WhiteApparition.CHEST))
+			if phase == WhiteApparition.Phase.CONFIRMED and player.survival.san < 0.0:
+				_begin_reposition()
+		ReplayStep.PERIPHERAL:
+			_verify_peripheral()
+		ReplayStep.REPOSITIONING:
+			_verify_reposition(phase)
+		ReplayStep.LOOK_AWAY:
+			_verify_look_away(phase, delta)
 
-func _capture_context() -> void:
+func _begin_reposition() -> void:
+	var approach := _spawn_distance - apparition.global_position.distance_to(player.global_position)
+	if approach < 0.5:
+		_replay_error("White apparition did not approach while watched")
+		return
+	print("WHITE_APPARITION_PURSUIT watched_approach=%.2f" % approach)
+	_replay_step = ReplayStep.CAPTURING
+	if not await _save_capture(CAPTURE_PATH): return
+	var camera: Camera3D = player.camera
+	var rect := get_viewport().get_visible_rect()
+	var ray := camera.project_local_ray_normal(rect.position + rect.size * Vector2(0.74, 0.5))
+	_reposition_origin = apparition.global_position
+	_san_at_capture = player.survival.san
+	camera.rotate_y(atan2(ray.x, -ray.z))
+	_replay_step = ReplayStep.PERIPHERAL
+
+func _verify_peripheral() -> void:
+	_reposition_ticks += 1
+	if _reposition_ticks < 2: return
+	var camera: Camera3D = player.camera
+	if apparition.global_position.distance_to(_reposition_origin) > 0.2 or player.survival.san != _san_at_capture:
+		_replay_error("The apparition teleported or drained SAN in the periphery")
+		return
+	_reposition_origin = apparition.global_position
+	camera.look_at(apparition.to_global(WhiteApparition.CHEST))
+	camera.rotate_y(PI)
+	_reposition_ticks = 0
+	_replay_step = ReplayStep.REPOSITIONING
+
+func _verify_reposition(phase: WhiteApparition.Phase) -> void:
+	_reposition_ticks += 1
+	var camera: Camera3D = player.camera
+	if phase != WhiteApparition.Phase.CONFIRMED or not apparition.visible or player.survival.san != _san_at_capture:
+		_replay_error("The apparition vanished or drained SAN while the replay looked away")
+		return
+	var destination := apparition.global_position
+	var displacement := (destination - _reposition_origin).slide(Vector3.UP).length()
+	if displacement < 10.0 and _reposition_ticks < 3: return
+	var observer := camera.get_camera_transform().origin
+	var old_bearing := (_reposition_origin - observer).slide(Vector3.UP)
+	var new_bearing := (destination - observer).slide(Vector3.UP)
+	var bearing_change := rad_to_deg(old_bearing.angle_to(new_bearing))
+	if displacement < 10.0 or bearing_change < 59.0:
+		_replay_error("White apparition did not jump far enough (%.2f m, %.1f degrees)" % [displacement, bearing_change])
+		return
+	if not apparition._body_outside_view(destination, camera.get_frustum()):
+		_replay_error("White apparition teleported into the current view")
+		return
+	_replay_step = ReplayStep.CAPTURING
+	if not await _save_capture(CAPTURE_AFTER_PATH): return
+	print("WHITE_APPARITION_REPOSITION displacement=%.2f bearing_change=%.1f offscreen=true san_unchanged=true" % [displacement, bearing_change])
+	_look_away_distance = apparition.global_position.distance_to(player.global_position)
+	_last_pursuit_distance = _look_away_distance
+	_look_away_elapsed = apparition._unseen_elapsed
+	_replay_step = ReplayStep.LOOK_AWAY
+
+func _verify_look_away(phase: WhiteApparition.Phase, delta: float) -> void:
+	_look_away_elapsed += delta
+	_last_pursuit_distance = apparition.global_position.distance_to(player.global_position)
+	if player.survival.san != _san_at_capture:
+		_replay_error("White apparition kept draining SAN after the replay looked away")
+	elif _look_away_elapsed >= WhiteApparition.UNSEEN_DESPAWN_SECONDS or phase == WhiteApparition.Phase.HIDDEN:
+		_replay_error("White apparition did not reach the replay player (%.2f m remaining after %.2f s)" % [_last_pursuit_distance, _look_away_elapsed])
+	else:
+		# Verify lethal contact uses the death path even during hit immunity.
+		player.damage_cooldown = 1.0
+
+func _verify_lethal_contact() -> void:
+	# The encounter owner can remove the apparition before the next tick.
+	if not player.ragdoll_control.active: return
+	if player.current_player_health != 0.0 or player.damage_cooldown <= 0.0 \
+		or player.survival.san != _san_at_capture or _last_pursuit_distance > 1.5:
+		_replay_error("The replay player died without the expected lethal contact")
+		return
+	var approach := _look_away_distance - _last_pursuit_distance
+	print("WHITE_APPARITION_REPLAY lethal_contact=true unseen_approach=%.2f elapsed=%.2f san_unchanged=true" % [approach, _look_away_elapsed])
+	get_tree().quit()
+
+func _save_capture(path: String) -> bool:
+	if DisplayServer.get_name() == "headless": return true
 	await RenderingServer.frame_post_draw
 	var error := DirAccess.make_dir_recursive_absolute(CAPTURE_DIRECTORY)
 	if error == OK:
-		error = get_viewport().get_texture().get_image().save_png(CAPTURE_PATH)
+		error = get_viewport().get_texture().get_image().save_png(path)
 	if error != OK:
-		push_error("White apparition screenshot failed: %s" % error_string(error))
-		get_tree().quit(1)
-		return
-	_capture_saved = true
-	print("WHITE_APPARITION_CAPTURE distance=%.2f path=%s" % [player.camera.global_position.distance_to(apparition.global_position), CAPTURE_PATH])
+		_replay_error("White apparition screenshot failed: %s" % error_string(error))
+	else:
+		print("WHITE_APPARITION_SCREENSHOT path=", path)
+	return error == OK
 
-func _on_threshold_reached(observer: Node3D) -> void:
-	if observer == player: _thresholds += 1
+func _replay_error(message: String) -> void:
+	push_error(message)
+	get_tree().quit(1)

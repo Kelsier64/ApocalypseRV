@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://equipment/rv_side_panel.tscn" id="sidewall"]
 [ext_resource type="PackedScene" path="res://equipment/rv_side_door.tscn" id="sidedoor"]
 [ext_resource type="PackedScene" path="res://equipment/rv_rear_door.tscn" id="reardoor"]
+[ext_resource type="PackedScene" path="res://equipment/bed.tscn" id="bed"]
 
 [ext_resource type="PackedScene" path="res://equipment/tablet_screen.tscn" id="preset_tablet_screen"]
 [ext_resource type="PackedScene" path="res://equipment/cabin_light_strip.tscn" id="cabin_strip"]
@@ -63,6 +64,12 @@ collision_mask = 0
 [node name="ItemBox" parent="Chassis" instance=ExtResource("10_rack")]
 initial_support = NodePath("..")
 position = Vector3(1.25, 0.8, 3.7)
+freeze = true
+collision_mask = 0
+
+[node name="Bunk" parent="Chassis" instance=ExtResource("bed")]
+initial_support = NodePath("..")
+position = Vector3(-1.22, 0.5, 3.8)
 freeze = true
 collision_mask = 0
 

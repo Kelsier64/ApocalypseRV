@@ -6,6 +6,8 @@ var stamina_bar: ProgressBar
 var stamina_label: Label
 var food_bar: ProgressBar
 var food_label: Label
+var san_bar: ProgressBar
+var san_label: Label
 var damage_flash: ColorRect
 
 func _ready():
@@ -76,6 +78,19 @@ func _ready():
 	food_bar.add_theme_stylebox_override("background", bg_style)
 	vbox.add_child(food_bar)
 	set_food(PlayerSurvival.MAX_HUNGER)
+
+	san_label = Label.new()
+	vbox.add_child(san_label)
+	san_bar = ProgressBar.new()
+	san_bar.max_value = PlayerSurvival.MAX_SAN
+	san_bar.custom_minimum_size = Vector2(200, 14)
+	san_bar.show_percentage = false
+	san_bar.add_theme_stylebox_override("background", bg_style)
+	var san_fill := StyleBoxFlat.new()
+	san_fill.bg_color = Color("a99aba")
+	san_bar.add_theme_stylebox_override("fill", san_fill)
+	vbox.add_child(san_bar)
+	set_san(PlayerSurvival.MAX_SAN)
 	
 	# Damage flash (full-screen red overlay)
 	damage_flash = ColorRect.new()
@@ -116,3 +131,9 @@ func set_food(current: float) -> void:
 		fill = StyleBoxFlat.new()
 		fill.bg_color = color
 		food_bar.add_theme_stylebox_override("fill", fill)
+
+func set_san(current: float) -> void:
+	if not san_bar: return
+	san_bar.value = maxf(0.0, current)
+	var displayed := floorf(current) if current < 0.0 else ceilf(current)
+	san_label.text = "SAN: %s / %d" % [String.num(displayed, 0), int(PlayerSurvival.MAX_SAN)]

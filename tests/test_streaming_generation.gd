@@ -217,11 +217,19 @@ func _add_streetlight(parent: Node3D, clock: WorldClock, fault: int) -> Roadside
 	parent.add_child(lamp)
 	return lamp
 
+## Full-on beam and lens energies, read from the authored scene and script so
+## tuning them does not break the normalized flicker contract.
+func _streetlight_full_energy() -> Vector2:
+	var reference := STREETLIGHT_SCENE.instantiate()
+	var beam := (reference.get_node("Light") as SpotLight3D).light_energy
+	reference.free()
+	return Vector2(beam, RoadsideStreetlight.LENS_ENERGY)
+
 func _streetlight_energy(lamp: RoadsideStreetlight) -> Vector2:
 	var light := lamp.get_node("Light") as SpotLight3D
 	var lens := lamp.get_node("Lens") as MeshInstance3D
 	var material := lens.material_override as StandardMaterial3D
-	return Vector2(light.light_energy / 2.5, material.emission_energy_multiplier / 2.2)
+	return Vector2(light.light_energy, material.emission_energy_multiplier) / _streetlight_full_energy()
 
 func _advance_streetlight_to_dip(lamp: RoadsideStreetlight) -> bool:
 	for step in range(1200):

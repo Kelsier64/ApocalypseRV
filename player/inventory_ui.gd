@@ -205,5 +205,4 @@ func _label(node_name: String, text: String, font_size: int, color: Color) -> La
 	return label
 
 func _process(_delta: float) -> void:
-	# Driving uses its own dashboard in this screen area.
 	visible = get_parent().seated_in == null

@@ -30,7 +30,7 @@
 - `res://` 路徑和 Godot UID 都是引用入口；搬移或刪除場景、腳本時要檢查兩者。與仍在使用的腳本／資產成對的 `.gd.uid`／`.import` 檔應保留。
 - `SaveSceneCatalog` 根據存檔場景路徑載入白名單中的一般設備與道具；車體結構從 `RVStructureSlots` 的型態目錄建立。正式地板網格與碰撞固定在 `rv/chassis.tscn`，重量包含在底盤內，不屬於可破壞或施工的結構槽位。
 - `props/item.gd` 是唯一可搬運基類；`core/item_definition.gd` 集中物品定義，`core/item_state.gd` 驗證所有所有權領域的狀態，`core/item_mount.gd` 管理固定支撐與掉落。原 Prop／Equipment 基類已移除，不再按這兩種類型分流背包、回收或世界保存。
-- `Checkpoint` 和 `VehicleSnapshot` 僅接受 v6，預設 `user://rv_checkpoint_v6.save`；只支援生成 v14、shelter 正式世界及當前課程／房型。舊格式與舊路徑不支援，不提供遷移。結構、耐久、破口及門角度獨立保存；Item 支撐明確區分底盤、Item ID、結構槽位與靜態場景錨點。
+- `Checkpoint` 和 `VehicleSnapshot` 只接受當前版本；版本與存檔路徑以 `rv/checkpoint.gd`（`VERSION`、`PATH`）、`rv/vehicle_snapshot.gd`（`VERSION`）及 `world/terrain/world_profile.gd`（`generation_version`）為準，只支援 shelter 正式世界及當前課程／房型。舊格式與舊路徑不支援，不提供遷移。結構、耐久、破口及門角度獨立保存；Item 支撐明確區分底盤、Item ID、結構槽位與靜態場景錨點。
 - 結構目錄包含普通 `rv_ceiling` 與左側開孔 `rv_ceiling_hatch`，都能裝入 `roof_0`／`roof_1`／`roof_2`；總布局十一槽，屋頂每片 50 kg／120 HP。Snapshot v6 只接受當前十一槽；舊地板／單片屋頂資料不轉換。
 - `art_source/` 和建置腳本保存可編輯來源；`docs/validation/` 保存當次證據。圖片或模型未被主場景直接引用，也可能是匯入來源、展示場或審核證據。
 
@@ -44,4 +44,4 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-Runner 預設匯入資源、執行保留的 16 支根層核心測試並檢查正式主場景啟動；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [CLAUDE](../../CLAUDE.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。
+Runner 預設匯入資源、執行所有根層 `tests/test_*.gd` 並檢查正式主場景啟動，遇到第一項失敗即停止；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [playtest skill](../../.claude/skills/playtest/SKILL.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。

@@ -1,0 +1,50 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://props/field_terminal.gd" id="1"]
+[ext_resource type="Resource" path="res://props/field_terminal_definition.tres" id="2"]
+[ext_resource type="PackedScene" path="res://assets/models/field_terminal/field_terminal.glb" id="3"]
+[ext_resource type="Script" path="res://props/field_terminal_screen.gd" id="4"]
+
+[sub_resource type="QuadMesh" id="screen"]
+size = Vector2(0.158, 0.182)
+
+[sub_resource type="BoxShape3D" id="collision"]
+size = Vector3(0.224, 0.283, 0.107)
+
+[node name="FieldTerminal" type="RigidBody3D"]
+script = ExtResource("1")
+definition = ExtResource("2")
+item_name = "Field Terminal"
+mass = 0.62
+bottom_face = 2
+hold_rotation = Vector3(-9, 0, 0)
+carry_offset = Vector3(-0.065, 0.19, 0.11)
+
+[node name="Visuals" parent="." instance=ExtResource("3")]
+
+[node name="Glass" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.016, 0.039)
+mesh = SubResource("screen")
+cast_shadow = 0
+
+[node name="GripRight" type="Marker3D" parent="."]
+position = Vector3(0.098, -0.063, -0.025)
+
+[node name="GripLeft" type="Marker3D" parent="."]
+position = Vector3(-0.098, -0.063, -0.025)
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0, 0.0015)
+shape = SubResource("collision")
+
+[node name="Display" type="SubViewport" parent="."]
+size = Vector2i(384, 442)
+disable_3d = true
+gui_disable_input = true
+render_target_update_mode = 1
+
+[node name="Screen" type="Control" parent="Display"]
+offset_right = 384.0
+offset_bottom = 442.0
+mouse_filter = 2
+script = ExtResource("4")

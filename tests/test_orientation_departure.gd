@@ -3,6 +3,7 @@ extends "res://tests/support/orientation_journey.gd"
 ## sensor exit. Only negative clearance probes reposition actors temporarily.
 
 func initial_state() -> bool:
+	_check_repair_target_variation()
 	var scenes := {
 		"scrap_a": "res://props/scavenge_loot/copper_wire_spool.tscn",
 		"scrap_b": "res://props/scavenge_loot/broken_shortwave_radio.tscn",
@@ -48,6 +49,22 @@ func initial_state() -> bool:
 	if not failures.is_empty(): return false
 	return await super.initial_state()
 
+func _check_repair_target_variation() -> void:
+	var walls := {}
+	var wheels := {}
+	var rng := RandomNumberGenerator.new()
+	for seed_value in range(64):
+		rng.seed = seed_value
+		var targets := OrientationWorkshop._roll_repair_targets(rng)
+		check(targets.wall_a != targets.wall_b, "Each roll selects two distinct bodywork sections")
+		walls[targets.wall_a] = true
+		walls[targets.wall_b] = true
+		wheels[targets.wheel_slot] = true
+	for slot in RVStructureSlots.layout():
+		check(walls.has(slot.id) == (slot.kind != "roof"), "Bodywork rolls cover all wall and door slots: " + slot.id)
+	for slot in Chassis.WHEEL_SLOTS.size():
+		check(wheels.has(slot), "Tire rolls can select " + TireDynamics.NAMES[slot])
+
 func driving_check() -> bool:
 	check(not tutorial.departure_authorized and not run_owner.gate.is_open(), "Workshop completion alone does not open the exit")
 	tutorial._tick_departure()
@@ -72,11 +89,14 @@ func completion_check() -> bool:
 	player.seated_in.exit_seat(true)
 	await frames()
 	var checkpoint: Node = root.get_node("Checkpoint")
+	var repair_targets: Dictionary = workshop.targets.duplicate()
 	var open_exit: Dictionary = checkpoint.capture_world(world)
 	if not check(not open_exit.is_empty() and await checkpoint.load_snapshot(world, open_exit), "An authorized open exit persists through an actual checkpoint reload"): return false
 	if not await rebind_world(): return false
 	gate = run_owner.gate
 	check(tutorial.departure_authorized and gate.is_open() and run_owner.phase == "preparing" and not world.get_node("WorldClock").running, "Restoring an open gate preserves authorization and the safe preparation world")
+	check(workshop.targets == repair_targets, "Loading during preparation retains the original repair targets")
+	check(workshop.wall_ready(repair_targets.wall_a) and workshop.wall_ready(repair_targets.wall_b) and workshop.wheel_ready(), "Loading during preparation preserves both wall repairs and the spare tire")
 	var driver: Item = vehicle.get_node("DriverSeat")
 	player.global_position = driver.global_position + vehicle.global_basis.z
 	driver.interact_hold(player)

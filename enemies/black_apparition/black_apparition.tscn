@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/black_apparition/black_apparition.gd" id="1_actor"]
+[ext_resource type="Script" path="res://enemies/black_apparition/black_apparition_visual.gd" id="2_visual"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.36
+height = 2.67
+
+[node name="BlackApparition" type="CharacterBody3D"]
+visible = false
+collision_layer = 0
+floor_snap_length = 0.35
+script = ExtResource("1_actor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 1.335, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Visual" type="Node3D" parent="."]
+script = ExtResource("2_visual")

@@ -43,6 +43,44 @@ func _enter(id: String) -> bool:
 	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
 
+func _check_local_black_apparition() -> void:
+	# Exercise the real interior build and camera in a full-size, single-floor
+	# bunker. Keep the player alive and sensed, but stationary during attempts.
+	manager.interior_factory = func():
+		var room := PoiInterior.new()
+		room.room_count = 12
+		room.target_floors = 1
+		room.populate_content = false
+		return room
+	var id := "black-apparition-transition"
+	if not await _enter(id): return
+	var inside := manager.interior
+	var encounter := inside.get_node_or_null("BlackApparitionEncounter") as BlackApparitionEncounter
+	check(encounter != null, "A real bunker entry attaches its local black apparition encounter")
+	var actor: BlackApparition
+	if encounter != null:
+		player.process_mode = Node.PROCESS_MODE_INHERIT
+		player.set_physics_process(false)
+		var camera := player.get_node("Camera3D") as Camera3D
+		for room_index in inside.rooms.size():
+			player.global_position = inside.navigation_anchor(room_index)
+			for heading: Vector3 in [Vector3.FORWARD, Vector3.RIGHT, Vector3.BACK, Vector3.LEFT]:
+				camera.look_at(camera.global_position + heading)
+				await physics_frame
+				encounter._physics_process(121.0)
+				actor = encounter._actor
+				if is_instance_valid(actor): break
+			if is_instance_valid(actor): break
+		check(is_instance_valid(actor), "Bunker can refresh a black apparition through its normal delay")
+		if is_instance_valid(actor):
+			check(actor.get_parent() == encounter and WorldEntities.same_world(inside, actor), "Black apparition belongs to the bunker's local World3D")
+	player.process_mode = Node.PROCESS_MODE_DISABLED
+	await manager.leave()
+	await _retired("black apparition interior exit")
+	check(manager.state == PoiInstanceManager.State.OUTDOOR and not is_instance_valid(encounter) and not is_instance_valid(actor), "Leaving the bunker retires the encounter and its apparition")
+	var saved: Dictionary = manager.saved_instances.get(id, {})
+	check(not saved.is_empty() and saved.actors.is_empty(), "The transient apparition is absent from the bunker save")
+
 func _check_exploration_map() -> void:
 	var inside := manager.interior
 	var map := inside._map
@@ -88,7 +126,7 @@ func _interrupt_exit(mode: String, label: String) -> void:
 
 func _case(mode: String) -> void:
 	var id := "exit-" + mode
-	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 2.75})
+	player.survival.restore({"hunger": 0.0, "starvation_elapsed": 2.75, "san": -13.5})
 	if not await _enter(id): return
 	var room := manager.interior
 	var picked := _add_scrap(id + "-picked-first")
@@ -142,7 +180,7 @@ func _eat_interior_food() -> void:
 	player.consumables.handle_input(player, press)
 	player.process_mode = Node.PROCESS_MODE_DISABLED
 	check(player.inventory.items.size() == count and not player.inventory.items.any(func(record): return record.state.id == identity), "POI food is consumed exactly once through the real eating path")
-	check(player.survival.capture() == {"hunger": 40.0, "starvation_elapsed": 0.0}, "Eating inside POI restores hunger and clears starvation remainder")
+	check(player.survival.capture() == {"hunger": 40.0, "starvation_elapsed": 0.0, "san": -13.5}, "Eating inside POI restores hunger and clears starvation while preserving SAN debt")
 
 func _run() -> void:
 	arena = Node3D.new()
@@ -180,6 +218,7 @@ func _run() -> void:
 	check(manager.saved_instances["exit-cancel"] == preserved, "Failed entry keeps the prior saved interior")
 	await _retired("failed entry")
 	manager.transition_timeout_ms = 60000
+	await _check_local_black_apparition()
 	await MEGASHELTER.run(self, arena, manager, player, check)
 	await _retired("megashelter exit")
 	await CHAIN.run(self, arena, manager, player, check)

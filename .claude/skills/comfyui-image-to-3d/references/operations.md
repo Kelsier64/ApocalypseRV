@@ -52,7 +52,7 @@ On `SUBMISSION_INTENT` / `SUBMISSION_UNKNOWN` (for example a POST timeout): **do
 
 ## Environment problems
 
-- If `python` on PATH is the Windows Store stub, use the full `$py` path.
+- If `python` on PATH is the Windows Store stub, use the full `$py` path. If the ComfyUI venv is missing too, `$env:USERPROFILE\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe` (Python 3.12 with Pillow) works for scripts that do not need numpy. Otherwise ask the user; never install Python globally.
 - Missing Pillow/numpy and no venv: `python -m pip install --target "$work/deps/python" Pillow numpy`, then set `$env:PYTHONPATH = "$work/deps/python"` in the same command.
 - If the Windows temp directory refuses writes, point this process's `TEMP`/`TMP` at an ignored folder under `.godot/` before running tests or reviews.
 - Godot not on PATH: `review.py --godot 'C:/Program Files/godot/godot.exe'`.

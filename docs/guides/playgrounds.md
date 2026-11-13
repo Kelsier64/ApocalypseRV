@@ -2,6 +2,24 @@
 
 全部功能與接入狀態見 [功能總覽](features.md)，正式操作見 [README](../../README.md)，規則與數值見 [GDD](../../GDD.md)。本頁先列完整入口，再保留各測試場的詳細操作與歷史驗收連結。測試場快捷鍵不等同主世界按鍵。
 
+## SAN 幻覺測試場
+
+用 Godot 執行 [san_playground.tscn](../../tests/san_playground.tscn)。按 ↑／↓ 增減 5 點 SAN，按住可連續調整。F6 可輸入精確值或負值。F5 入座或離座，入座後按 Space 放手煞，再用 WASD 試駕。SAN 低於 20 時，F7 觸發閉眼，F8 觸發輸入延遲，F9 觸發方向誤動。徒步時按 1 或 2 選零食，再按住右鍵食用。F10 重設測試場。
+
+右上角的 Active 顯示當下效果與輸入延遲的毫秒數。按 F8 後連續變向，或在駕駛座放開手煞後踩油門，可感受指令晚一拍才生效。按 F9 可觀察走路或駕駛逐漸偏移，強烈發作時可能短暫反向轉向。每次都會重新抽選強度與持續時間。
+
+SAN 低於 20 時，按 F4 眨眼並在睜眼時隨機切換視覺幻覺，或按 Shift+F4 依序預覽負片、黑白、過飽和、空間扭曲、色彩分離和視野收窄。右上角顯示目前效果的剩餘秒數。倒數完會顯示 Next blink，可按 F7 測試睜眼後恢復或接續。SAN 為 0 或負值時，按 F11 觸發長閉眼。可用 F6 比較 SAN 19、10、0 和 −30 的自然發作頻率與持續時間。
+
+## 黑影測試場
+
+在 Godot 執行 [black_apparition_playground.tscn](../../tests/black_apparition_playground.tscn)，或從專案根目錄執行下方指令。
+
+```powershell
+godot --path . --log-file .godot/black-apparition-playground.log res://tests/black_apparition_playground.tscn
+```
+
+進場已裝備充滿電的手電筒。先往右轉找白眼，用 WASD 移動、滑鼠轉向、Shift 衝刺、右鍵開關手電筒。F6 請求黑影在畫面外另一處暗點現身，R 可在死亡後重開。螢幕顯示注視秒數和 SAN，可以測試連續注視 2 秒、移開視線重置、直照觸發、隔牆擋光與接觸即死。
+
 ## 完整場景目錄（2026-11-02）
 
 以實體檔案及場景腳本盤點：`tests/` 共 **58 個場景**，包含 **53 個 playground**（51 個頂層、2 個巢狀）及 **5 個檢視／工作坊／review**；其中 **56 個已納入 Git、2 個僅存在本機且被忽略**。下表逐一涵蓋，另列 5 個 `world/` 的遊玩／美術入口。操作依程式核對；本次文件整理未啟動 Godot，不代表這些場景都已完成新版人工驗收。
@@ -56,7 +74,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [rv_structure_playground](../../tests/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
-| [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台。 |
+| [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台；`--capture` 輸出四種車況（含全燈號測試）的駕駛視角、儀表近景與斜視到 `.godot/rv-workshop-captures/` 後退出。 |
 | [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F6／F7 左右鏡、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅。 |
 | [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
 | [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |
@@ -284,7 +302,7 @@ F1 切換外部／第一人稱、F2 輪換手電筒／廢鐵／電池／油桶�
 
 手指依骨架實際掌面屈曲，四指具有不同彎曲幅度，拇指朝前輕握。手腕保留移動動畫的局部旋轉，隨前臂自然抬起，不再由持物程式或抓點旋轉手腕。預設抓點位於物體側面的中央高度，油桶兩個表面 Marker3D 也在桶身中段；小型箱體的近節彎曲較放鬆，避免指節插入側面。圓柱物品不能以包圍盒角落作抓點。`GripRight`／`GripLeft` 僅提供位置，旋轉不控制手腕；先前的 `carry_hand_frame` 設定已移除。手臂以固定四次求解重新計算掌心位置，配合這個自然手腕方向。
 
-手電筒使用專用握姿：燈頭維持朝前並跟隨受限俯仰，燈身貼合自然掌面；四指依各自指根位置及指節長度包住圓柱截面，拇指沿燈身向前。每幀從原 hold transform 重新計算，避免燈身貼合偏移累積；手腕仍不覆寫。按 L 可驗證照明開關。
+手電筒使用專用握姿：燈頭維持朝前並跟隨受限俯仰，燈身貼合自然掌面；四指依各自指根位置及指節長度包住圓柱截面，拇指沿燈身向前。每幀從原 hold transform 重新計算，避免燈身貼合偏移累積；手腕仍不覆寫。按右鍵可驗證照明開關。
 
 <a id="minor-pois"></a>
 
@@ -415,14 +433,14 @@ godot --path . --log-file .godot/mountain-downhill.log res://tests/highway_playg
 
 16 個當前 content_version=2 廢棄地堡模組，沒有 content_version=1 載入支援，六種首批尺寸、隨機 1–3 層。普通模組 60% 暗房，外觀／碰撞／門口分層，可在編輯器擴充。[製作規格](bunker-interior.md)。
 
-美術檢查在地堡測試命令最後加 `--art-inspect`，可加 `--inspect-room=hall_03` 選起始房型（該 seed 未生成時回到入口）：測試專用手電筒自動拾取、怪物暫停；F4 轉向房內四角，F6／F7 切到下／上個房間，L 使用正式手電筒開關，F8 存當前房型和開關狀態截圖至 `.godot/bunker-art-*.png`。房間定位僅用於檢視，不能當成步行通過證據；F5 的連續搬運回放獨立驗證通行。正式遊戲仍須在初始世界地面 E 拾取手電筒。
+美術檢查在地堡測試命令最後加 `--art-inspect`，可加 `--inspect-room=hall_03` 選起始房型（該 seed 未生成時回到入口）：測試專用手電筒自動拾取、怪物暫停；F4 轉向房內四角，F6／F7 切到下／上個房間，右鍵開關手電筒，F8 存當前房型和開關狀態截圖至 `.godot/bunker-art-*.png`。房間定位僅用於檢視，不能當成步行通過證據；F5 的連續搬運回放獨立驗證通行。正式遊戲仍須在初始世界地面 E 拾取手電筒。
 
 ```powershell
 godot --path . --log-file .godot/bunker.log res://tests/bunker_playground.tscn -- --rooms=12 --floors=3 --seed=42
 godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playground.tscn -- --replay
 ```
 
-地堡測試場 F1 步行、F2 總覽、F3 掀頂、F5 連續搬運回放、R 重建、F8 截圖；M／Page Up／Down 是正式探索地圖。主世界回放 F6 或 --replay 從入口以 E 進出；F7 查看入口外觀、F8 截圖至 `.godot/bunker-exterior.png`。回放的測試引擎不屬於正式生成。舊資產 workshop／v2 playground 已移除。
+地堡測試場 F1 步行、F2 總覽、F3 掀頂、F5 連續搬運回放、R 重建、F8 截圖。步行時按 F9 可立即嘗試在畫面外的暗處刷新黑影。M／Page Up／Down 是正式探索地圖。主世界回放 F6 或 --replay 從入口以 E 進出；F7 查看入口外觀、F8 截圖至 `.godot/bunker-exterior.png`。回放的測試引擎不屬於正式生成。舊資產 workshop／v2 playground 已移除。
 
 <a id="section-6"></a>
 

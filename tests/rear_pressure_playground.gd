@@ -63,7 +63,7 @@ func _physics_process(_delta: float) -> void:
 		Input.action_press("move_forward")
 	if ready_for_test and world.get_node("DeviationPressure").state.active:
 		var state: RoutePressureState = world.get_node("DeviationPressure").state
-		status.text = "Rear pressure   %.1fs   fog %.2f   Rakers %d   F4: camera" % [state.exposure, state.fog, PressureSpawns.raker_count(world)]
+		status.text = "Rear pressure   %.1fs   fog %.2f   Speaker %s   F4: camera" % [state.exposure, state.fog, "present" if PressureSpawns.giant_present(world) else "absent"]
 
 func traverse() -> bool:
 	busy = true

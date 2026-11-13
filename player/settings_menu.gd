@@ -246,12 +246,13 @@ func _build_input(page: VBoxContainer) -> void:
 func _build_help(page: VBoxContainer) -> void:
 	page.add_child(_label("These controls use fixed bindings."))
 	var rows := [
+		["Control Hints", "Press J to enable or disable contextual hints. On foot, hints appear for the item you hold or the object you aim at."],
 		["Movement and View", "WASD to move, Left Shift to sprint, mouse to look, Space to jump. Sprinting and jumping cost stamina."],
 		["Climbing Ladders", "Face the rungs and press W to climb, S to descend or Space to let go. Put down large items first. Use the side ladder to board and the cabin ladder to reach the roof hatch."],
 		["Pickup and Interaction", "Tap E to pick up items, refuel or enter and exit interiors. Hold E for 1 second to sit, open the tablet, or install or remove a wheel."],
 		["Equipment Placement", "Hold F for 2 seconds to move equipment. Left-click to place, right-click or Esc to cancel, and R to toggle surface alignment. Use the tablet to modify the RV structure."],
 		["Placement Adjustments", "Q/E to rotate 15°. Hold Shift for 5° steps. Arrow keys move 5 cm."],
-		["Inventory and Flashlight", "Use 1–6 or the mouse wheel to select and G to drop. Large items lock selection. Press L to toggle a held flashlight."],
+		["Held Items", "Use 1–6 or the mouse wheel to select and G to drop. Large items lock selection. Right-click to toggle a flashlight or open a portable terminal. Hold right-click to eat or aim a pistol."],
 		["Driving", "W for throttle, A/D to steer, S for the foot brake, Space for the parking brake and E to exit. Driving controls are disabled while Settings is open."],
 		["Engine, Gears and Lights", "B toggles the engine and L toggles headlights. Z selects reverse, X neutral, C first gear, R shifts up and T shifts down."],
 		["Lights and Dashboard", "Use the tablet to control cabin, work and service lights, dashboard brightness and engine camera shake."],

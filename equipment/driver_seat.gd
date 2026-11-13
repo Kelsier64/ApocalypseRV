@@ -7,7 +7,6 @@ const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 @onready var game_settings = get_node("/root/GameSettings")
 
 var current_driver: Node3D = null
-var exit_message: String = ""
 
 func _ready() -> void:
 	super._ready()
@@ -16,9 +15,6 @@ func _ready() -> void:
 	seat_camera.cull_mask = (seat_camera.cull_mask & ~PlayerModelVisual.FULL_BODY_LAYER) | PlayerModelVisual.LOCAL_VIEW_LAYER
 	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))
 	game_settings.setting_changed.connect(_on_setting_changed)
-	var dashboard := CanvasLayer.new()
-	dashboard.set_script(load("res://rv/vehicle_dashboard.gd"))
-	add_child(dashboard)
 	# Defer setup so the RV parent's _ready() (which calls add_to_group("rv"))
 	# has already run before we walk up the tree looking for it.
 	call_deferred("_setup_if_on_rv")
@@ -52,10 +48,13 @@ func interact_hold(player: Node3D) -> void:
 	seat_camera.current = true
 
 	if rv.has_method("set_driving_state"):
-		rv.set_driving_state(true)
+		rv.set_driving_state(true, player)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not current_driver or current_driver.is_grabbed() or not current_driver.can_drive() or current_driver.is_gameplay_input_blocked():
+		return
+	if current_driver.handle_hotbar_input(event):
+		get_viewport().set_input_as_handled()
 		return
 
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
@@ -90,9 +89,7 @@ func exit_seat(forced: bool = false) -> void:
 	if forced: player.close_settings()
 	var exit_position := _find_clear_exit_position(forced)
 	if not exit_position.is_finite():
-		exit_message = "Exit blocked. Clear the aisle first."
 		return
-	exit_message = ""
 	current_driver = null
 
 	player.exit_seat_mode(exit_position)

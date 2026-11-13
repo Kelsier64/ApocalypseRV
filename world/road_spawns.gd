@@ -2,15 +2,12 @@ extends RefCounted
 class_name RoadSpawns
 ## Pure deterministic road encounters. No loaded-node queries or global RNG.
 const WRECK_SCENE := "res://world/starting_shelter/reused_wreck.tscn"
-const RAKER_SCENE := "res://enemies/raker.tscn"
 const BARREL_MAN_SCENE := "res://enemies/barrel_man.tscn"
 const OIL_BARREL_SCENE := "res://props/oil_barrel.tscn"
-# Roll these independently, never as replacements for Raker slots.
 const BARREL_CHANCE := 0.20
 const BARREL_MAN_CHANCE := 0.08
-const RAKER_ROAD_CHANCE := 0.40
 const BARREL_RADIUS := 0.33
-const CHANCES := {"strips": 0.15, "wrecks": 0.25, "monsters": 0.35}
+const STRIP_CHANCE := 0.15
 const ATTEMPTS := 4
 const SAFE_DISTANCE := 450.0
 const SEAM_MARGIN := 5.0
@@ -18,12 +15,6 @@ const SEAM_MARGIN := 5.0
 const WRECK_SIZE := Vector3(4.0, 2.3, 5.3)
 const WRECK_BOUNDS := AABB(Vector3(-2.0, -0.1, -2.4), WRECK_SIZE)
 const WRECK_MODEL_YAW := 0.2
-
-static func _raker_count(roll: float) -> int:
-	if roll < 0.65: return 0
-	if roll < 0.85: return 1
-	if roll < 0.95: return 2
-	return 3
 
 static func _wreck_count(roll: float) -> int:
 	if roll < 0.60: return 0
@@ -56,7 +47,7 @@ static func plan(field: WorldField, band: int) -> Dictionary:
 			occupied.append({"bounds": box, "footprint": footprint})
 			break
 	var strip_rng := field.rng_for(band, "road_v9_strips")
-	if strip_rng.randf() < CHANCES.strips:
+	if strip_rng.randf() < STRIP_CHANCE:
 		for attempt in range(ATTEMPTS):
 			var s := _distance(field, band, strip_rng)
 			var edge := field.road_width(s) * 0.5
@@ -81,38 +72,24 @@ static func plan(field: WorldField, band: int) -> Dictionary:
 			result.barrels.append({"transform": pose, "bounds": box, "scene": OIL_BARREL_SCENE})
 			occupied.append({"bounds": box, "footprint": footprint})
 			break
-	var raker_count := _raker_count(field.rng_for(band, "road_v9_raker_count").randf())
-	for index in range(raker_count):
-		_monster(field, band, result, occupied, field.rng_for(band, "road_v9_raker_%d" % index), RAKER_SCENE)
 	if field.rng_for(band, "road_v9_barrel_man_count").randf() < BARREL_MAN_CHANCE:
-		_monster(field, band, result, occupied, field.rng_for(band, "road_v9_barrel_man_0"), BARREL_MAN_SCENE)
+		_barrel_man(field, band, result, occupied, field.rng_for(band, "road_v9_barrel_man_0"))
 	return result
 
-static func _monster(field: WorldField, band: int, result: Dictionary, occupied: Array[Dictionary], rng: RandomNumberGenerator, scene: String) -> void:
+static func _barrel_man(field: WorldField, band: int, result: Dictionary, occupied: Array[Dictionary], rng: RandomNumberGenerator) -> void:
 	for attempt in range(ATTEMPTS):
 		var s := _distance(field, band, rng)
-		var edge := field.road_width(s) * 0.5
-		var offset: float
-		if scene == BARREL_MAN_SCENE:
-			offset = rng.randf_range(-edge * 0.5, edge * 0.5)
-		elif rng.randf() < RAKER_ROAD_CHANCE:
-			offset = rng.randf_range(-edge, edge)
-		else:
-			offset = (edge + rng.randf_range(0.5, 2.5)) * (-1.0 if rng.randf() < 0.5 else 1.0)
+		var center_half_width := field.road_width(s) * 0.25
+		var offset := rng.randf_range(-center_half_width, center_half_width)
 		var point := _pose(field, s, offset, 0.0, false).origin
 		var yaw := rng.randf_range(0.0, TAU)
-		var size := _monster_size(scene)
-		var box := AABB(point - Vector3(size.x * 0.5, 0, size.z * 0.5), size)
+		var box := AABB(point - Vector3(BARREL_RADIUS, 0, BARREL_RADIUS), Vector3(BARREL_RADIUS * 2.0, 2.5, BARREL_RADIUS * 2.0))
 		var footprint := _box_footprint(box)
 		if not _valid(field, band, box, footprint, occupied): continue
 		result.monsters.append(point + Vector3.UP * 0.5)
-		result.monster_scenes.append(scene)
+		result.monster_scenes.append(BARREL_MAN_SCENE)
 		result.monster_yaws.append(yaw)
-		occupied.append({"bounds": box, "footprint": footprint})
 		return
-
-static func _monster_size(scene: String) -> Vector3:
-	return Vector3(BARREL_RADIUS * 2.0, 2.5, BARREL_RADIUS * 2.0) if scene == BARREL_MAN_SCENE else Vector3(0.8, 2.616, 0.8)
 
 static func _distance(field: WorldField, band: int, rng: RandomNumberGenerator) -> float:
 	return band * field.profile.chunk_length + rng.randf_range(SEAM_MARGIN, field.profile.chunk_length - SEAM_MARGIN)

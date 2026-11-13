@@ -197,6 +197,7 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	_player.exit_ui_mode()
 	busy = false
 	state = State.INDOOR
+	BlackApparitionEncounter.attach_interior(interior, _player as CharacterBody3D)
 	_status.text = ""
 	print("POI ENTER: ", active_id, " rooms=", interior.rooms.size())
 

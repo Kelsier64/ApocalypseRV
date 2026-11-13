@@ -80,6 +80,148 @@ func check_compass() -> void:
 	clear_bag()
 	await steps()
 
+func check_field_terminal() -> void:
+	clear_bag()
+	var clock := WorldClock.new()
+	clock.name = "WorldClock"
+	clock.running = false
+	world.add_child(clock)
+	clock.set_time(3, 23.75)
+	var terminal := make_item(FieldTerminal.SCENE, Vector3(25, 1, 20)) as FieldTerminal
+	var state := terminal.capture_item_state()
+	check(terminal.screen.values.is_empty(), "An unheld terminal displays standby")
+	check(actor.add_prop_item(terminal, FieldTerminal.SCENE), "The terminal fits a normal handheld slot")
+	terminal.queue_free()
+	var held := actor.held_item_node as FieldTerminal
+	check(held != null and held.persistent_id == state.id, "Equipping keeps the terminal's Item identity")
+	if held != null:
+		actor.current_player_health = 72.0
+		actor.current_stamina = 48.0
+		actor.survival.hunger = 31.0
+		actor.survival.san = -4.5
+		await steps()
+		check(held.screen.values == PackedInt32Array([72, 48, 31, -5]), "The screen reflects four live values, including negative SAN")
+		check(held.screen.day == "DAY 3" and held.screen.time == "23:45", "The terminal displays the owning world's day and time")
+		var interior := SubViewport.new()
+		interior.own_world_3d = true
+		world.add_child(interior)
+		var room := Node3D.new()
+		interior.add_child(room)
+		actor.reparent(room)
+		clock.advance_game_seconds(1200.0, 0.0)
+		actor.current_stamina = 21.0
+		await steps()
+		check(held.screen.day == "DAY 4" and held.screen.time == "00:05", "Indoor time keeps updating across midnight")
+		check(held.screen.values[1] == 21, "Equipped values keep updating inside the interior viewport")
+		actor.reparent(world)
+		interior.queue_free()
+		actor.drop_item()
+		var dropped := find_item(state.id) as FieldTerminal
+		check(dropped != null and dropped.capture_item_state() == state and dropped.screen.values.is_empty(), "Dropping preserves saved item state and returns the display to standby")
+		if dropped != null: dropped.queue_free()
+	check(InventoryItemIcons.texture_for(FieldTerminal.SCENE) != InventoryItemIcons.FALLBACK, "The terminal has an inventory icon")
+	actor.current_player_health = actor.max_player_health
+	actor.current_stamina = actor.MAX_STAMINA
+	actor.survival.reset()
+	clock.queue_free()
+	clear_bag()
+	await steps()
+
+func check_driving_carry() -> void:
+	clear_bag()
+	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
+	rv.position = Vector3(20, 0, 30)
+	world.add_child(rv)
+	var chassis := rv.get_node("Chassis") as Chassis
+	chassis.freeze = true
+	var seat := chassis.get_node("DriverSeat")
+	check(actor.add_item("Field Terminal", false, FieldTerminal.SCENE), "Add a one-hand terminal")
+	check(actor.add_item("Scrapper", true, "res://equipment/scrapper.tscn"), "Add two-hand equipment")
+	check(actor.add_item("Pistol", false, "res://props/pistol.tscn"), "Add a small item with a two-hand stance")
+	await steps()
+	seat.interact_hold(actor)
+	check(seat.current_driver == null, "A selected two-hand item still prevents sitting")
+	# A large item may remain in a different slot after losing an arm.
+	actor.inventory.active_slot = 0
+	actor.refresh_inventory()
+	var terminal := actor.held_item_node as FieldTerminal
+	seat.interact_hold(actor)
+	await steps()
+	check(seat.current_driver == actor and seat.seat_camera.is_current(), "Sitting with a small item activates driving")
+	var toggle := InputEventAction.new()
+	toggle.action = &"toggle_control_hints"
+	toggle.pressed = true
+	ray._input(toggle)
+	ray._update_control_hints()
+	var hints = ray._control_hints
+	check(not hints.visible, "Seated driving keeps the optional control hint overlay hidden when J is toggled on")
+	var previous_size := root.size
+	root.size = Vector2i(960, 540)
+	await steps()
+	check(not hints.visible, "Seated driving keeps the optional control hint overlay hidden in a short window")
+	root.size = previous_size
+	ray._input(toggle)
+	var carry := actor.get_node("Visuals/Carry")
+	var wheel := seat.get_node("CockpitVisual/SteeringTilt/SteeringWheel") as Node3D
+	await steps(20)
+	var raised_palm: Vector3 = carry._palm_position("R")
+	for direction in [&"move_right", &"move_left"]:
+		Input.action_press(direction)
+		await steps(30)
+		Input.action_release(direction)
+		var turn_sign := 1.0 if direction == &"move_left" else -1.0
+		check(wheel.rotation.y * turn_sign > .25, "Steering input turns the wheel while holding an item")
+		var rim := wheel.to_global(Vector3(-.211, .018, -.07))
+		check(carry._palm_position("L").distance_to(rim) < .06, "Left hand follows the turning rim")
+		check(terminal.is_visible_in_tree() and carry._palm_position("R").distance_to(terminal.get_node("GripRight").global_position) < .01, "Right hand retains the visible terminal on the turn")
+		check(not terminal.screen.values.is_empty(), "The held display continues to update in the seat")
+
+	var hotbar := InputEventAction.new()
+	hotbar.action = &"hotbar_2"
+	hotbar.pressed = true
+	seat._unhandled_input(hotbar)
+	check(actor.inventory.active_slot == 0 and seat.current_driver == actor, "Seated hotbar refuses the large item without interrupting driving")
+	await steps(35)
+	var scroll := InputEventMouseButton.new()
+	scroll.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	scroll.pressed = true
+	seat._unhandled_input(scroll)
+	check(actor.inventory.active_slot == 2 and actor.held_item_node is Pistol and not actor.held_item_node.visible, "Scrolling skips the large item and the pistol stays holstered")
+	await steps(4)
+	var rim_right := wheel.to_global(Vector3(.211, .018, -.07))
+	var lowering_palm: Vector3 = carry._palm_position("R")
+	check(lowering_palm.distance_to(raised_palm) < .12 and lowering_palm.distance_to(rim_right) > .12, "Stowing eases the right hand back toward the wheel")
+	await steps(20)
+	var steering_palm: Vector3 = carry._palm_position("R")
+	check(steering_palm.distance_to(rim_right) < .06, "The right hand returns to the wheel after stowing")
+	hotbar.action = &"hotbar_1"
+	seat._unhandled_input(hotbar)
+	terminal = actor.held_item_node as FieldTerminal
+	check(carry._palm_position("R").distance_to(steering_palm) < .01, "Equipping between physics ticks leaves the hand in place")
+	await steps(6)
+	var lifting_palm: Vector3 = carry._palm_position("R")
+	check(lifting_palm.distance_to(steering_palm) > .04 and lifting_palm.distance_to(raised_palm) > .12, "The right hand passes through an intermediate pose during the lift")
+	check(terminal != null and terminal.visible and lifting_palm.distance_to(terminal.get_node("GripRight").global_position) < .01, "The terminal stays attached to the moving palm")
+	await steps(20)
+	check(carry._palm_position("R").distance_to(raised_palm) < .04, "The lift settles at the raised grip")
+
+	actor.body_state.sever(&"left_arm")
+	actor.refresh_inventory()
+	await steps()
+	check(seat.current_driver == actor and not actor.held_item_node.visible, "A driver with one arm keeps steering and stows the item")
+	actor.body_state.reset()
+	actor.refresh_inventory()
+	terminal = actor.held_item_node as FieldTerminal
+	seat.exit_seat(true)
+	actor.set_physics_process(false)
+	await steps()
+	check(actor.seated_in == null and actor.camera.is_current() and terminal.visible, "Leaving the seat restores walking carry")
+	rv.queue_free()
+	actor.position = Vector3(20, 1, 20)
+	actor.rotation = Vector3.ZERO
+	clear_bag()
+	await steps()
+
 func _init() -> void: run.call_deferred()
 
 func check(value: bool, note: String) -> void:
@@ -107,16 +249,20 @@ func clear_bag() -> void:
 	actor.inventory.active_slot = 0
 	actor.refresh_inventory()
 
-func food_button(pressed: bool) -> void:
+func right_mouse_event(pressed: bool) -> InputEventMouseButton:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_RIGHT
 	event.pressed = pressed
-	actor._input(event)
+	return event
+
+func food_button(pressed: bool) -> void:
+	actor._input(right_mouse_event(pressed))
 
 func check_survival() -> void:
 	var whole := PlayerSurvival.new()
 	var split := PlayerSurvival.new()
 	check(whole.advance(1200.0) == 0 and whole.hunger == 0.0, "Full food lasts exactly 20 simulation minutes")
+	check(whole.san == 0.0, "Full SAN lasts 20 simulation minutes and naturally stops at zero")
 	check(whole.advance(4.99) == 0 and whole.advance(.01) == 1, "Starvation first damages at five seconds")
 	var split_ticks := 0
 	for step in 12050: split_ticks += split.advance(.1)
@@ -140,6 +286,20 @@ func check_survival() -> void:
 	actor.current_stamina = 0.0
 	actor._update_stamina(1.0, false)
 	check(actor.current_stamina == 9.0, "Below 40 halves stamina recovery")
+	var san_before_recovery_checks: float = actor.survival.san
+	var stamina_before_recovery_checks: float = actor.current_stamina
+	actor.survival.hunger = 40.0
+	for sample in [Vector2(50.0, 18.0), Vector2(25.0, 11.25), Vector2(0.0, 9.0), Vector2(-50.0, 7.2)]:
+		actor.survival.san = sample.x
+		actor.current_stamina = 0.0
+		actor._update_stamina(1.0, false)
+		check(is_equal_approx(actor.current_stamina, sample.y), "Stamina recovers %.2f per second at %.0f SAN" % [sample.y, sample.x])
+	actor.survival.hunger = 39.99
+	actor.current_stamina = 0.0
+	actor._update_stamina(1.0, false)
+	check(is_equal_approx(actor.current_stamina, 3.6), "Low hunger halves the stamina recovery rate already reduced by negative SAN")
+	actor.survival.san = san_before_recovery_checks
+	actor.current_stamina = stamina_before_recovery_checks
 	Input.action_press("sprint")
 	actor.survival.hunger = 20.01
 	check(actor._can_sprint(true), "Hunger above 20 permits sprint")
@@ -152,6 +312,7 @@ func check_survival() -> void:
 	actor.survival.reset()
 	actor._advance_survival(60.0)
 	check(actor.survival.hunger == 100.0, "Preparing tutorial stops hunger")
+	check(actor.survival.san == 100.0, "Preparing tutorial stops passive SAN drain")
 	start.phase = "started"
 	actor.in_ui_mode = true
 	actor.settings_open = true
@@ -173,6 +334,7 @@ func check_survival() -> void:
 	manager.busy = false
 	actor._advance_survival(60.0)
 	check(is_equal_approx(actor.survival.hunger, 90.0), "Indoor exploration continues the same player survival state")
+	check(is_equal_approx(actor.survival.san, 90.0), "SAN shares hunger's UI, indoor, and transition simulation rules")
 	actor.reparent(world)
 	world.set_meta("checkpoint_staging", true)
 	actor._advance_survival(60.0)
@@ -182,7 +344,13 @@ func check_survival() -> void:
 	checkpoint.loading = true
 	actor._advance_survival(60.0)
 	check(is_equal_approx(actor.survival.hunger, 90.0), "Checkpoint loading stops hunger")
+	check(is_equal_approx(actor.survival.san, 90.0), "Staging and checkpoint loading stop SAN loss")
 	checkpoint.loading = false
+	actor.drain_san(90.0)
+	check(actor.health_bar.san_label.text == "SAN: 0 / 100", "SAN HUD shows zero")
+	actor.drain_san(0.25)
+	actor._advance_survival(1.0)
+	check(actor.survival.san == -0.25 and actor.health_bar.san_bar.value == 0.0 and actor.health_bar.san_label.text == "SAN: -1 / 100", "Hostile loss passes below zero, passive loss preserves debt, and HUD shows the negative value")
 	actor.survival.restore({"hunger": 0.0, "starvation_elapsed": 4.0})
 	actor.damage_cooldown = .4
 	actor.current_player_health = 100.0
@@ -198,6 +366,287 @@ func check_survival() -> void:
 	actor.survival.reset()
 	start.free()
 	manager.free()
+
+func check_san_effects() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var walk := PlayerSanEffects.InputMode.WALK
+	var drive := PlayerSanEffects.InputMode.DRIVE
+	effects._rng.seed = 7
+	actor.survival.san = 20.0
+	actor._advance_san_effects(.01)
+	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "SAN at exactly 20 leaves vision and movement clear")
+	actor.survival.san = 19.99
+	actor._advance_san_effects(.01)
+	effects._blink_wait = 0.0
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Blink can occur independently of directional disruption")
+	effects._blink_wait = 1.0
+	actor._advance_san_effects(effects._blink_duration + .01)
+	check(not effects._overlay.visible, "Blink clears quickly")
+	effects._blink_wait = 0.0
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible, "Blink can recur while SAN stays low")
+	actor.settings_open = true
+	actor._advance_san_effects(.01)
+	check(not effects._overlay.visible and effects.walk_direction(Vector2.UP) == Vector2.UP, "Settings suspends blinking and input effects")
+	actor.settings_open = false
+
+	var previous_wait := Vector3.ONE
+	for san in [19.0, 10.0, 0.0, -5.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._delay_wait = 1.0
+		effects._misdirection_wait = 1.0
+		effects._blink_wait = 1.0
+		effects.advance(.5, san, walk)
+		var remaining := Vector3(effects._delay_wait, effects._misdirection_wait, effects._blink_wait)
+		check(remaining.x < previous_wait.x and remaining.y < previous_wait.y and remaining.z < previous_wait.z, "Delay, misdirection, and blinking become more likely as SAN falls to %s" % san)
+		previous_wait = remaining
+	var previous_sample := Vector4.ZERO
+	for san in [19.0, 0.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._rng.seed = 23
+		effects._blink_wait = 1.0
+		effects._delay_wait = 0.0
+		effects._misdirection_wait = 0.0
+		effects.advance(.01, san, walk)
+		var sample := Vector4(effects._delay_seconds, effects._delay_remaining, effects._misdirection_strength, effects._misdirection_duration)
+		check(sample.x > previous_sample.x and sample.y > previous_sample.y and sample.z > previous_sample.z and sample.w > previous_sample.w, "Matched random draws yield longer and stronger directional effects at SAN %s" % san)
+		previous_sample = sample
+	effects.reset()
+
+	effects.advance(.01, 0.0, walk)
+	effects._delay_wait = 1.0
+	effects._misdirection_wait = 1.0
+	for sample in 20:
+		effects.advance(.02, 0.0, walk)
+		effects.walk_direction(Vector2.LEFT)
+	effects._delay_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	effects._delay_wait = 1.0
+	var delay := effects._delay_seconds
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "Delayed movement briefly uses the earlier direction")
+	effects.advance(delay * .9, 0.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.LEFT, "The previous direction persists long enough for the delay to register")
+	effects.advance(delay * .2, 0.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Delayed movement delivers the new direction within the brief delay")
+	effects._delay_remaining = .12
+	check(effects.walk_direction(Vector2.UP) == Vector2.RIGHT, "The last part of a delay still queues new input")
+	effects.advance(.1, 0.0, walk)
+	check(effects.walk_direction(Vector2.ZERO) == Vector2.UP, "The shortened delay delivers a late tap before the episode ends")
+	effects.advance(.01, 20.0, walk)
+	check(effects.walk_direction(Vector2.RIGHT) == Vector2.RIGHT, "Recovering to 20 immediately clears delayed input")
+
+	effects.advance(.01, -5.0, walk)
+	effects._delay_wait = 1.0
+	effects._misdirection_wait = 0.0
+	effects.advance(.01, -5.0, walk)
+	effects._misdirection_duration = 2.0
+	effects._misdirection_strength = 1.0
+	effects._sway_period = 1.0
+	effects._sway_phase = PI / 2.0
+	effects._side = 1.0
+	effects._misdirection_remaining = 2.0
+	check(effects.walk_direction(Vector2.UP).is_equal_approx(Vector2.UP), "Walking bias starts smoothly at zero")
+	effects._misdirection_remaining = 1.9
+	var onset := absf(effects.walk_direction(Vector2.UP).x)
+	effects._sway_phase = -PI / 2.0
+	effects._misdirection_remaining = 1.5
+	var biased_direction := effects.walk_direction(Vector2.UP)
+	check(onset > 0.0 and absf(biased_direction.x) > onset and biased_direction.y < 0.0, "A walking sway grows into a lateral bias while retaining forward movement")
+	var idle_sway := absf(effects.walk_direction(Vector2.ZERO).x)
+	check(idle_sway > 0.0 and idle_sway < absf(biased_direction.x), "The same sway gives an idle player a smaller sidestep")
+	effects._misdirection_remaining = .01
+	effects._sway_phase = PI / 2.0 - TAU * 1.99
+	check(absf(effects.walk_direction(Vector2.UP).x) < onset, "Walking bias fades before the episode ends")
+	effects.advance(0.0, -5.0, drive)
+	check(effects.driving_input(.6, .4).is_equal_approx(Vector2(.6, .4)), "Walking disruption does not carry over to driving inputs")
+	effects.driving_input(0.0, 0.0)
+	effects._delay_wait = 0.0
+	effects._misdirection_wait = 1.0
+	effects.advance(.01, -5.0, drive)
+	effects._delay_wait = 1.0
+	check(is_zero_approx(effects.driving_input(.6, 1.0).y), "A delayed throttle tap starts with no acceleration")
+	effects.advance(.1, -5.0, drive)
+	check(is_zero_approx(effects.driving_input(.6, 0.0).y), "Releasing the throttle takes effect immediately")
+	effects.advance(effects._delay_seconds - .05, -5.0, drive)
+	check(effects.driving_input(.6, 0.0).is_equal_approx(Vector2(.6, 0.0)), "A released throttle tap cannot accelerate later while the steering sample still arrives")
+	effects.advance(.01, -5.0, PlayerSanEffects.InputMode.NONE)
+	check(effects.driving_input(.6, .4).is_equal_approx(Vector2(.6, .4)), "Leaving active controls clears the driving episode")
+	effects.reset()
+	actor.survival.reset()
+
+func check_medium_san_vision() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var walk := PlayerSanEffects.InputMode.WALK
+	var settings := root.get_node("GameSettings")
+	var viewport := actor.get_viewport()
+	settings.register_viewport(viewport)
+	var grade: ColorRect = settings.viewport_effect(viewport)
+	var vision_material := grade.material as ShaderMaterial
+	var base_preferences := {&"retro": false, &"shadow_trim": 0.0, &"saturation": 1.0}
+	var previous_preferences := {}
+	for key in base_preferences:
+		previous_preferences[key] = settings.get_setting(key)
+		settings.set_setting(key, base_preferences[key], false)
+	check(not grade.visible, "The shared filter starts hidden with neutral base preferences")
+	settings.preview_shadow_trim(0.5)
+	settings.set_san_vision(viewport, 0, 0.5, 0.0)
+	settings.set_san_vision(viewport, 0, 0.0, 0.0)
+	check(grade.visible and is_equal_approx(float(vision_material.get_shader_parameter("shadow_trim")), 0.5), "Clearing SAN vision keeps the shadow trim preview active")
+	settings.clear_shadow_trim_preview()
+	check(not grade.visible, "Clearing both effects hides the shared filter")
+	var previous_blink := 0.0
+	for san in [19.0, 0.0, -30.0]:
+		effects.reset()
+		effects.advance(.01, san, walk)
+		effects._rng.seed = 23
+		effects._long_blink_wait = 1.0
+		effects._blink_wait = 0.0
+		effects.advance(.01, san, walk)
+		check(effects._overlay.visible and not effects._long_blink and effects._blink_duration > previous_blink, "A matched ordinary blink lasts longer at lower SAN %s" % san)
+		previous_blink = effects._blink_duration
+
+	var profile := PlayerSanEffects.VisionProfile.NEGATIVE
+	var start_first_vision := func(severity: float) -> void:
+		effects._start_vision(profile, severity)
+	effects.reset()
+	effects.advance(.01, 10.0, walk)
+	effects.vision_blink_reopening.connect(start_first_vision, Object.CONNECT_ONE_SHOT)
+	effects._blink_wait = 0.0
+	effects._long_blink_wait = 0.0
+	effects.advance(.01, 10.0, walk)
+	check(effects._overlay.visible and not effects._long_blink and not grade.visible, "A blink above zero SAN starts normally with no grade change while closing")
+	effects.advance(effects._blink_remaining + .01, 10.0, walk)
+	check(effects._vision_profile == profile and grade.visible, "Ordinary reopening below 20 SAN can enable vision distortion above zero")
+
+	effects.reset()
+	effects.advance(.01, 0.0, walk)
+	effects.vision_blink_reopening.connect(start_first_vision, Object.CONNECT_ONE_SHOT)
+	effects._blink_wait = 1.0
+	effects._long_blink_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	check(effects._long_blink and effects._overlay.visible and effects._blink_duration > previous_blink, "A long blink becomes eligible at zero SAN")
+	effects.advance(.25, 0.0, walk)
+	var closure := float(effects._eyelids.get_shader_parameter("closure"))
+	check(closure > .9 and not grade.visible and effects._vision_profile == -1, "Closed eyelids leave the normal grade in place until reopening")
+	effects.advance(effects._blink_remaining - .1, 0.0, walk)
+	check(grade.visible and float(vision_material.get_shader_parameter("san_amount")) > 0.0, "Reopening the eyes can enable the shared filter")
+	effects._blink_wait = 10.0
+	effects._long_blink_wait = 10.0
+	effects.advance(.6, 0.0, walk)
+	check(not effects._overlay.visible and effects._vision_elapsed > 0.0 and grade.visible, "The filter persists and its duration advances between blinks")
+	check(int(vision_material.get_shader_parameter("san_profile")) == profile and float(vision_material.get_shader_parameter("san_elapsed")) > 0.0, "The shared filter receives the active profile and elapsed time")
+	for blink in 3:
+		effects._blink_wait = 0.0
+		effects.advance(.01, 10.0, walk)
+		effects.advance(effects._blink_remaining + .01, 10.0, walk)
+		check(effects._vision_profile == profile and grade.visible, "An early reopening keeps the same filter even after SAN rises above zero")
+	effects._blink_wait = 100.0
+	effects._long_blink_wait = 100.0
+	effects.advance(effects._vision_duration - effects._vision_elapsed + .5, 10.0, walk)
+	check(not effects._overlay.visible and effects._vision_elapsed >= effects._vision_duration and effects._vision_profile == profile and grade.visible, "The expired filter stays until the next blink reopens")
+	effects._blink_wait = 0.0
+	effects.advance(.01, 0.0, walk)
+	check(effects._vision_profile == profile and grade.visible, "Closing the next blink still leaves the expired filter in place")
+	effects.advance(effects._blink_remaining + .01, 0.0, walk)
+	check(effects._vision_profile != profile, "The next reopening clears or replaces the expired filter")
+	for key in base_preferences:
+		check(settings.get_setting(key) == base_preferences[key], "SAN does not change the player's base filter preference for " + String(key))
+	effects._start_vision(profile, .5)
+	effects.advance(.01, 0.0, walk)
+	check(grade.visible, "The shared filter is active before SAN recovery")
+	effects._blink_wait = 1.0
+	effects.advance(.01, 0.01, walk)
+	check(not effects._long_blink and grade.visible, "Returning above zero preserves the active SAN grade")
+	effects._blink_wait = 0.0
+	effects.advance(.01, 0.01, walk)
+	check(effects._overlay.visible and not effects._long_blink, "An ordinary blink remains eligible above zero SAN")
+	var elapsed_before_suspend := effects._vision_elapsed
+	effects.advance(2.0, 0.01, PlayerSanEffects.InputMode.NONE)
+	check(not effects._overlay.visible and effects._vision_profile == profile and grade.visible and effects._vision_elapsed == elapsed_before_suspend, "Suspending controls stops the blink and pauses the active grade timer")
+	effects.advance(.01, 0.01, walk)
+	check(effects._vision_profile == profile and grade.visible and is_equal_approx(effects._vision_elapsed, elapsed_before_suspend + .01), "Resuming controls continues the same grade timer")
+	actor.survival.san = 19.0
+	actor.recover_san(1.0)
+	check(actor.survival.san == 20.0 and grade.visible, "SAN recovery keeps the grade until the recovery blink")
+	actor.survival.advance(.01)
+	actor._advance_san_effects(.01)
+	check(effects._overlay.visible and effects._vision_profile == profile and grade.visible, "A recovery blink closes with the active grade still in place")
+	actor._advance_san_effects(effects._blink_remaining + .01)
+	check(effects._vision_profile == -1 and not grade.visible and is_zero_approx(float(vision_material.get_shader_parameter("san_amount"))), "Reopening the recovery blink clears the active grade")
+	actor.survival.reset()
+
+	var interior := SubViewport.new()
+	viewport.add_child(interior)
+	settings.register_viewport(interior, true)
+	var interior_grade: ColorRect = settings.viewport_effect(interior)
+	effects.advance(0.0, 0.0, walk)
+	effects._start_vision(profile, .5)
+	effects.advance(.01, 0.0, walk)
+	check(grade.visible, "The source viewport has an active SAN grade")
+	effects.reparent(interior)
+	effects.advance(.1, 0.0, walk)
+	check(not grade.visible and interior_grade.visible, "An active SAN grade follows its viewport and clears the source")
+	effects.reparent(actor)
+	check(not interior_grade.visible, "Leaving the interior clears its SAN grade")
+	effects.reset()
+	interior.free()
+	for key in previous_preferences:
+		settings.set_setting(key, previous_preferences[key], false)
+
+func check_san_vision_chances() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	var profile := PlayerSanEffects.VisionProfile.NEGATIVE
+	var previous := Vector2i.ZERO
+	var previous_duration := 0.0
+	for severity in [0.05, 0.5, 0.9]:
+		effects._rng.seed = 83
+		effects._start_vision(profile, severity)
+		check(effects._vision_duration >= 12.0 and effects._vision_duration <= 36.0 and effects._vision_duration > previous_duration, "The same random draw gives a longer grade at lower SAN within 12–36 seconds")
+		previous_duration = effects._vision_duration
+		effects._rng.seed = 83
+		var counts := Vector2i.ZERO
+		for draw in 1000:
+			effects._end_vision()
+			effects._advance_vision_on_blink(severity)
+			if effects._vision_profile >= 0: counts.x += 1
+			effects._start_vision(profile, severity)
+			effects._vision_elapsed = effects._vision_duration
+			effects._advance_vision_on_blink(severity)
+			if effects._vision_profile >= 0: counts.y += 1
+		check(counts.x > previous.x and counts.y > previous.y, "Starting and extending vision become likelier as SAN falls")
+		if severity == 0.05:
+			check(counts.x < 60 and counts.y < 60, "Vision changes stay rare near 20 SAN")
+		if severity == 0.5:
+			check(abs(counts.x - 405) < 55 and abs(counts.y - 350) < 55, "Zero SAN retains the 40.5% start and 35% continuation chances")
+		previous = counts
+	effects.reset()
+
+func check_long_blink_distribution() -> void:
+	var effects: PlayerSanEffects = actor.san_effects
+	const DRAW_COUNT := 40000
+	var averages: Array[float] = []
+	for severity in [0.5, 0.9]:
+		effects._rng.seed = 83
+		var total := 0.0
+		var shortest := INF
+		var longest := -INF
+		var rare_closures := 0
+		var endpoint_draws := 0
+		for draw in DRAW_COUNT:
+			var duration := effects._sample_long_blink_duration(severity)
+			total += duration
+			shortest = minf(shortest, duration)
+			longest = maxf(longest, duration)
+			if duration >= 15.0: rare_closures += 1
+			if duration == 1.5 or duration == 16.0: endpoint_draws += 1
+		averages.append(total / DRAW_COUNT)
+		check(shortest >= 1.5 and longest <= 16.0 and endpoint_draws == 0, "Long closures stay within 1.5–16 seconds without piling up at the limits")
+		check(rare_closures < DRAW_COUNT * .001, "Closures of 15 seconds or more account for less than 0.1 percent")
+		if severity == 0.9: check(rare_closures > 0, "Closures of 15–16 seconds are possible at very low SAN")
+	check(averages[1] > averages[0] + .7, "Long closures last longer on average as SAN falls below zero")
 
 func check_eating() -> void:
 	clear_bag()
@@ -295,6 +744,47 @@ func check_eating() -> void:
 		Input.action_release("sprint")
 	actor.current_player_health = 100.0
 	actor.current_stamina = 100.0
+	actor.survival.reset()
+	clear_bag()
+
+func check_san_food() -> void:
+	var energy_bar := "res://props/food/energy_bar.tscn"
+	var jerky := "res://props/food/beef_jerky.tscn"
+	var canned := "res://props/food/canned_food.tscn"
+	actor.survival.san = 13.0
+	actor.add_item("Energy bar", false, energy_bar)
+	food_button(false)
+	food_button(true)
+	check(actor.consumables.eating, "Energy bar can be eaten at full hunger when SAN is missing")
+	actor.consumables.advance(actor, 1.0)
+	food_button(false)
+	check(actor.survival.san == 13.0 and actor.inventory.items.size() == 1, "Interrupted snack leaves SAN and the inventory unchanged")
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 25.0 and actor.survival.hunger == 100.0 and actor.inventory.items.is_empty(), "Energy bar restores 12 SAN on completion at full hunger")
+	actor.add_item("Beef jerky", false, jerky)
+	actor.survival.san = -5.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 3.0 and actor.inventory.items.is_empty(), "Jerky restores 8 SAN from below zero")
+	actor.add_item("Energy bar", false, energy_bar)
+	actor.survival.san = 99.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 100.0 and actor.inventory.items.is_empty(), "Snack recovery caps SAN at 100")
+	actor.add_item("Canned food", false, canned)
+	actor.survival.san = 13.0
+	food_button(false)
+	food_button(true)
+	check(not actor.consumables.eating, "Missing SAN alone does not allow eating canned food")
+	actor.survival.hunger = 20.0
+	food_button(false)
+	food_button(true)
+	actor.consumables.advance(actor, 2.0)
+	check(actor.survival.san == 13.0 and actor.survival.hunger > 20.0 and actor.inventory.items.is_empty(), "Canned food still restores hunger only")
+	food_button(false)
 	actor.survival.reset()
 	clear_bag()
 
@@ -742,7 +1232,9 @@ func check_flashlight_viewmodel() -> void:
 			var copy := off_entry.get("copy") as Light3D
 			all_copies_off = all_copies_off and copy != null and not copy.is_visible_in_tree()
 		check(all_copies_off and not light_copy.visible, "Off flashlight beam and spill do not illuminate the viewmodel")
-		actor._toggle_flashlight()
+		Input.parse_input_event(right_mouse_event(true))
+		Input.parse_input_event(right_mouse_event(false))
+		await steps()
 		view.update_view()
 		var emitters_match := true
 		var projector_matches := true
@@ -765,7 +1257,9 @@ func check_flashlight_viewmodel() -> void:
 			var entry_before_grab: Dictionary = view.held_light_copies.get(source.get_instance_id(), {})
 			var copy_before_grab := entry_before_grab.get("copy") as Light3D
 			if copy_before_grab != null: copies_before_grab.append(copy_before_grab)
-		actor._toggle_flashlight()
+		Input.parse_input_event(right_mouse_event(true))
+		Input.parse_input_event(right_mouse_event(false))
+		await steps()
 		view.update_view()
 		var all_copies_off_after_toggle := true
 		for source: Light3D in emitters:
@@ -1010,6 +1504,138 @@ func check_hud_toggle() -> void:
 	Input.parse_input_event(key)
 	await steps()
 
+func check_control_hints() -> void:
+	ray.set_physics_process(true)
+	var hints = ray._control_hints
+	var layout: VBoxContainer = hints._layout
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_J
+	key.pressed = true
+	check(not hints.visible, "Control hints start hidden")
+	var target := make_item("res://props/scrap.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
+	target.freeze = true
+	await steps()
+	check(ray.get_collider() == target and not hints.visible, "An aimed item stays hidden until hints are enabled")
+	Input.parse_input_event(key)
+	await steps()
+	check(hints.visible and hints._heading.text == "ON FOOT" and hints._bindings == {"E": "Pick up"}, "An aimed loose item shows only its pickup key")
+	check(Rect2(Vector2.ZERO, Vector2(root.size)).encloses(layout.get_global_rect()), "The hint guide %s fits the %s viewport" % [layout.get_global_rect(), root.size])
+	check(not hints._key_frame.draw_center, "Keycaps have outlines without a fill")
+	key.echo = true
+	Input.parse_input_event(key)
+	await steps()
+	check(hints.visible, "Holding J does not repeatedly toggle hints")
+	key.echo = false
+	target.queue_free()
+	await steps()
+	check(not hints.visible, "Empty hands and no target hide the guide with hints enabled")
+	var terminal := make_item("res://equipment/training_terminal.tscn", actor.camera.to_global(Vector3(0, 0, -1.5)))
+	terminal.confirm_placement(terminal.global_transform, entities)
+	await steps()
+	check(ray.get_collider() == terminal and hints.visible and hints._bindings.get("E") == "Hold to use", "Aiming at a mounted terminal shows its hold interaction")
+	var camera_pose: Transform3D = actor.camera.transform
+	actor.camera.rotate_y(PI)
+	await steps()
+	check(not hints.visible, "Looking away hides the mounted device hints")
+	actor.camera.transform = camera_pose
+	terminal.queue_free()
+	check(actor.add_item("Flashlight", false, "res://props/flashlight.tscn"), "Equip a flashlight for the item guide")
+	await steps()
+	check(hints.visible and hints._bindings == {"G": "Drop", "F": "Place", "RMB": "Toggle flashlight"}, "Held flashlight shows only drop, placement and toggle hints")
+	check(actor.enter_equipment_placement(), "Open a real placement preview")
+	await steps()
+	check(hints.visible and hints._heading.text == "PLACEMENT" and hints._bindings.get("LMB") == "Place" and not hints._bindings.has("E"), "Placement replaces walking and interaction hints")
+	Input.parse_input_event(right_mouse_event(true))
+	Input.parse_input_event(right_mouse_event(false))
+	await steps()
+	check(not actor.is_placing_equipment() and not actor.inventory.active_item().state.flashlight.on, "Right-click cancels placement without switching on the flashlight")
+	var menu := actor.get_node("SettingsMenu")
+	check(menu.open_menu(), "Settings can open while hints are enabled")
+	await steps()
+	check(not hints.visible, "Settings temporarily hide hints")
+	menu.close_menu()
+	await steps()
+	check(hints.visible and hints._heading.text == "ON FOOT", "Closing Settings restores the selected hint state")
+	key.pressed = false
+	Input.parse_input_event(key)
+	await steps()
+	key.pressed = true
+	Input.parse_input_event(key)
+	await steps()
+	check(not hints.visible and not HUDVisibility.hud_hidden, "Second J hides only control hints")
+	key.pressed = false
+	Input.parse_input_event(key)
+	clear_bag()
+	ray.set_physics_process(false)
+
+func check_bed_rest() -> void:
+	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
+	rv.position = Vector3(20.0, 0.0, 30.0)
+	world.add_child(rv)
+	var chassis := rv.get_node("Chassis") as Chassis
+	chassis.freeze = true
+	var bed := chassis.get_node("Bunk") as Bed
+	var clock := WorldClock.new()
+	clock.name = "WorldClock"
+	world.add_child(clock)
+	clock.set_time(1, 23.5)
+	clock.running = false
+	clear_bag()
+	actor.global_position = bed.to_global(Vector3(1.0, 0.10, 0.06))
+	actor.set_physics_process(true)
+	ray.set_physics_process(true)
+	await steps(30)
+	check(bed.is_fixed and bed.get_connected_rv() == chassis, "Starter bed uses the normal mounted Item contract")
+	check(ItemState.valid(bed.scene_file_path, bed.capture_item_state()), "Bed is accepted by the Item save catalog")
+	check(RecipeCatalog.find("rv_bunk").scene_path == bed.scene_file_path, "Older vehicles can obtain the same bed from crafting")
+	actor.look_at(actor.global_position + Vector3.LEFT)
+	actor.camera.look_at(bed.to_global(Vector3(0.0, 0.49, 0.0)))
+	actor.survival.san = 34.0
+	var key := InputEventAction.new()
+	key.action = &"interact"
+	key.pressed = true
+	Input.parse_input_event(key)
+	await steps(4)
+	key.pressed = false
+	Input.parse_input_event(key)
+	check(actor.get_player_mode() == actor.PlayerMode.RESTING and bed.occupant == actor, "Looking at the mounted bed and pressing E enters rest")
+	if actor.sleep.active():
+		check(actor.global_basis.y.dot(bed.global_basis.z) > 0.99, "The player lies with their head toward the pillow")
+		check(not actor.enter_ui_mode() and not bed.can_pickup(actor), "Rest owns player controls and prevents equipment pickup")
+		var san_before: float = actor.survival.san
+		var time_before := clock.elapsed_seconds
+		actor.sleep.request_skip(6)
+		await steps(12)
+		check(clock.elapsed_seconds == time_before and actor.survival.san > san_before, "Rest gradually restores SAN without advancing a frozen clock")
+		clock.running = true
+		san_before = actor.survival.san
+		var weather_before := clock.weather.capture()
+		actor.sleep.request_skip(1)
+		await steps(120)
+		check(actor.survival.san > san_before and actor.survival.san < san_before + 10.0, "A sleep skip restores SAN gradually over the interval")
+		await steps(132)
+		check(clock.day_number() == 2 and absf(clock.elapsed_seconds - time_before - 3600.0) < 45.0, "Sleep advances one hour across midnight")
+		check(absf(actor.survival.san - san_before - 10.0) < 0.2 and clock.weather.capture() != weather_before, "The skip advances weather and restores ten SAN per in-game hour")
+		var interrupt_time := clock.elapsed_seconds
+		actor.sleep.request_skip(6)
+		await steps(12)
+		actor.take_damage(1.0)
+		await steps(6)
+		check(actor.get_player_mode() == actor.PlayerMode.NORMAL and not is_instance_valid(bed.occupant) and actor.is_on_floor(), "Damage wakes the player on the deck and releases the bed")
+		check(clock.elapsed_seconds - interrupt_time < 3600.0, "Waking early cancels the remaining time skip")
+	actor.exit_ui_mode()
+	actor.current_player_health = actor.max_player_health
+	actor.damage_cooldown = 0.0
+	actor.survival.reset()
+	actor.set_physics_process(false)
+	ray.set_physics_process(false)
+	actor.global_position = Vector3(20, 1, 20)
+	actor.global_rotation = Vector3.ZERO
+	actor.camera.rotation = Vector3.ZERO
+	rv.queue_free()
+	clock.queue_free()
+	await steps()
+
 func check_training_terminal_placement(wall: StaticBody3D) -> void:
 	var path := "res://equipment/training_terminal.tscn"
 	var terminal := make_item(path, Vector3(22, 2, 20)) as TrainingTerminal
@@ -1082,10 +1708,13 @@ func check_held_terminal_boot() -> void:
 	terminal.queue_free()
 	actor.inventory.add_item(ItemNames.TRAINING_TERMINAL, false, path, state)
 	actor.refresh_inventory()
-	var reader: Node = actor.read_held_terminal()
-	if reader == null:
-		check(false, "A valid uninitialized terminal record can open in the inventory reader")
+	Input.parse_input_event(right_mouse_event(true))
+	Input.parse_input_event(right_mouse_event(false))
+	await steps()
+	if not actor.in_ui_mode:
+		check(false, "Right-click opens a valid uninitialized terminal in the inventory reader")
 	else:
+		var reader := actor.get_child(-1)
 		var enter := InputEventKey.new()
 		enter.keycode = KEY_ENTER
 		enter.pressed = true
@@ -1119,16 +1748,25 @@ func run() -> void:
 	wall.position = Vector3(0, 2, 0)
 	await steps()
 	check_survival()
+	check_san_effects()
+	check_medium_san_vision()
+	check_san_vision_chances()
+	check_long_blink_distribution()
 	check_eating()
+	check_san_food()
+	await check_bed_rest()
 	await check_compass()
+	await check_field_terminal()
+	await check_driving_carry()
 	await check_hud_toggle()
+	await check_control_hints()
 	await check_new_grants()
 	await check_scavenge_loot()
 	await check_carry_postures()
 	await check_first_person_carry()
 	await check_flashlight_viewmodel()
 	await check_carry_motion()
-	check_held_terminal_boot()
+	await check_held_terminal_boot()
 	await check_training_terminal_placement(wall)
 
 	# Capacity rejection leaves real fixed ownership and service state intact.
@@ -1240,5 +1878,5 @@ func run() -> void:
 	world.queue_free()
 	await steps()
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: unified Item player preflight, F gestures, preview ownership, commit/drop and support pickup")
+	if failures.is_empty(): print("PASS: unified Item player preflight, F gestures, preview ownership, commit/drop, support pickup and bed rest")
 	quit(0 if failures.is_empty() else 1)

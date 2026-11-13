@@ -3,6 +3,7 @@ extends RefCounted
 ## Only presentation bones are changed; vehicle input remains owned by Chassis.
 var active := false
 var phase := 0.0
+var right_wheel_contact := Vector3.ZERO
 
 func clear(skeleton: Skeleton3D) -> void:
 	if not active: return
@@ -31,12 +32,10 @@ func update(actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node, delta: fl
 	# Grab presentation owns the arms while restrained, preserving the seated legs.
 	if actor.is_grabbed(): return
 	carry.grip_kind = "small"
-	for side in ["L", "R"]:
-		if not actor.body_state.has_part(&"left_arm" if side == "L" else &"right_arm"): continue
-		# The wheel limits its travel to the existing hand range. Keep each
-		# palm at a fixed point on the rim throughout the turn.
-		var contact := wheel.to_global(Vector3(-.211 if side == "L" else .211, .018, -.07))
-		carry._arm(side, contact, 1.0)
+	# Carry moves the right palm between its contact on the rim and the item.
+	right_wheel_contact = wheel.to_global(Vector3(.211, .018, -.07))
+	if actor.body_state.has_part(&"left_arm"):
+		carry._arm("L", wheel.to_global(Vector3(-.211, .018, -.07)), 1.0)
 
 func _leg(side: String, seat: Node3D, skeleton: Skeleton3D, carry: Node, rv: Chassis) -> void:
 	var thigh := skeleton.find_bone("thigh_" + side)

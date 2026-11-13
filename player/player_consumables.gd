@@ -16,16 +16,21 @@ func cancel() -> void:
 	_scene = ""
 
 func can_eat(actor: CharacterBody3D) -> bool:
-	return PlayerSurvival.simulation_active(actor) and not actor.is_gameplay_input_blocked() and actor.get_player_mode() == actor.PlayerMode.NORMAL and actor.locomotion_state == actor.LocomotionState.NORMAL and actor.can_use_hands() and actor.survival.hunger < PlayerSurvival.MAX_HUNGER and not Input.is_action_pressed("sprint") and not Input.is_action_just_pressed("jump") and FoodCatalog.definition_for(str(actor.inventory.active_item().get("scene_path", ""))) != null
+	if not PlayerSurvival.simulation_active(actor) or actor.is_gameplay_input_blocked() or actor.get_player_mode() != actor.PlayerMode.NORMAL or actor.locomotion_state != actor.LocomotionState.NORMAL or not actor.can_use_hands() or Input.is_action_pressed("sprint") or Input.is_action_just_pressed("jump"):
+		return false
+	var definition := FoodCatalog.definition_for(str(actor.inventory.active_item().get("scene_path", "")))
+	return definition != null and _can_benefit(actor.survival, definition)
+
+func _can_benefit(survival: PlayerSurvival, definition: FoodDefinition) -> bool:
+	return survival.hunger < PlayerSurvival.MAX_HUNGER or (definition.san_recovery > 0.0 and survival.san < PlayerSurvival.MAX_SAN)
 
 func handle_input(actor: CharacterBody3D, event: InputEvent) -> void:
 	if event.is_action_pressed("sprint") or event.is_action_pressed("jump"): cancel()
-	if not event is InputEventMouseButton or event.button_index != MOUSE_BUTTON_RIGHT: return
-	if not event.pressed:
+	if event.is_action_released("use_held_item"):
 		_down = false
 		cancel()
 		return
-	if _down: return
+	if _down or not event.is_action_pressed("use_held_item"): return
 	_down = true
 	if not can_eat(actor): return
 	var item: Dictionary = actor.inventory.active_item()
@@ -49,15 +54,15 @@ func advance(actor: CharacterBody3D, delta: float) -> void:
 	var definition := FoodCatalog.definition_for(_scene)
 	if elapsed + 1e-9 < definition.eat_seconds: return
 	# All gates and stable identity were checked immediately before this
-	# synchronous transaction. Remove one record before granting nutrition.
-	var nutrition: float = definition.nutrition
+	# synchronous transaction. Remove one record before applying its effects.
 	cancel()
 	if actor.inventory.consume_active():
-		actor.survival.nourish(nutrition)
+		actor.survival.nourish(definition.nutrition)
+		if definition.san_recovery > 0.0: actor.recover_san(definition.san_recovery)
 		actor.refresh_inventory()
 		actor._update_food_bar()
 
 func hud_data(actor: CharacterBody3D) -> Dictionary:
 	var definition := FoodCatalog.definition_for(str(actor.inventory.active_item().get("scene_path", "")))
 	if definition == null: return {}
-	return {"visible": actor.get_player_mode() == actor.PlayerMode.NORMAL and actor.can_use_hands(), "eating": eating, "elapsed": elapsed, "seconds": definition.eat_seconds, "full": actor.survival.hunger >= PlayerSurvival.MAX_HUNGER}
+	return {"visible": actor.get_player_mode() == actor.PlayerMode.NORMAL and actor.can_use_hands(), "eating": eating, "elapsed": elapsed, "seconds": definition.eat_seconds, "full": not _can_benefit(actor.survival, definition)}

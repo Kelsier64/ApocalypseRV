@@ -4,7 +4,7 @@
 
 2026-11-08：套用 [v022 動作修整](../../../art_source/raker_motion_v022/README.md)，更新 idle／crouch_idle、walk／chase／sprint／crouch_walk 及三段地面揮擊。呼吸改由胸背和肩部帶動，步態增加承重轉移、肩髖反向轉動與手腕延遲，著地期間腳掌等速後移；揮擊加入軀幹蓄力、扭轉及回穩。原 v021 外觀、骨架、材質及另外 32 段動畫保持原資料。
 
-主世界一般戶外站點新生成的敵人使用此場景；[正式主世界驗證](../../../tests/test_main_world_monsters.gd) 檢查其既有範圍內的實際生成模型。新訪地堡的每個合格遭遇機會獨立以 30% 機率從可擴充敵人池生成，目前池中只有 Raker，一座地堡可有 0、1 或多隻。仍存在的 Raker 存檔照原狀還原；已移除場景的怪物在讀取舊檢查點時略過，保留其他世界資料。Zombie 不再是現行敵人或新訪地堡候選。
+主世界一般戶外站點新生成的敵人使用此場景。新訪地堡的每個合格遭遇機會獨立以 30% 機率從可擴充敵人池生成，目前池中只有 Raker，一座地堡可有 0、1 或多隻。仍存在的 Raker 存檔照原狀還原；已移除場景的怪物在讀取舊檢查點時略過，保留其他世界資料。Zombie 不再是現行敵人或新訪地堡候選。
 
 - 可編輯來源：[monster_refined_v021.blend](../../../art_source/monster_refined_v021/monster_refined_v021.blend)，細化場景 `MONSTER_REFINED_V021`；保留先前模型場景與動畫。原始動畫來源為 `C:/Users/evan4/Projects/3d/raker_animated_v008.blend`。
 - 最新動作來源：[raker_motion_v022.blend](../../../art_source/raker_motion_v022/raker_motion_v022.blend)，場景 `RAKER_MOTION_V022`，Blender 5.2.3 LTS；保留完整模型及 41 個 NLA track，九段修整動作已逐幀烘焙。
@@ -58,7 +58,7 @@ v022 保留上述速度與時長。選擇步態仍使用平滑速度與遲滯，
 
 [v021 動畫檢查](../../../art_source/monster_refined_v021/audit.py) 掃描每個烘焙影格；[結果](animation_audit.json) 保存 v021 當時的身體自交、牙齒互穿與五方向閉嘴遮齒掃描結果（嘴縫接觸、口腔及牙根嵌合區域除外），不代表 v022 修整片段已通過相同自交掃描；本輪範圍見 [v022 檢查](../../../art_source/raker_motion_v022/README.md)。[手指檢查](../../../art_source/monster_refined_v021/audit_hands.py) 另檢查實際替換的手網格、三節骨、蒙皮權重、手部拓樸及逐幀朝掌心屈曲。排除共用頂點的三角形，不代表任意跨動畫混合也已全部窮舉驗證。
 
-[遊戲場景](../../../enemies/raker.tscn)、[動作與戰鬥測試](../../../tests/test_raker.gd)、[車內回歸](../../../tests/test_raker_cabin.gd)。
+[遊戲場景](../../../enemies/raker.tscn)、[抓取測試](../../../tests/test_raker_grab.gd)、[移動 RV 攀爬測試](../../../tests/test_moving_rv_climbing.gd)。
 
 ## 可動頸部與抓咬
 

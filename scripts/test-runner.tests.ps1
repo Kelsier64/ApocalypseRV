@@ -116,7 +116,7 @@ exit /b 0
 function Invoke-MockRun([string]$Mode, [hashtable]$Parameters) {
     $Mode | Set-Content -LiteralPath (Join-Path $scratchRoot 'mode.txt') -Encoding ASCII
     $Parameters['Godot'] = $mock
-    $Parameters['TimeoutSeconds'] = 3
+    if (-not $Parameters.ContainsKey('TimeoutSeconds')) { $Parameters['TimeoutSeconds'] = 3 }
     $reportRoot = Join-Path $scratchRoot '.godot/test-logs'
     $before = @(Get-ChildItem -LiteralPath $reportRoot -Filter results.json -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName)
     $result = Invoke-Runner $Parameters
@@ -134,9 +134,13 @@ foreach ($case in @(
     @{ Mode = 'script'; Detail = 'SCRIPT ERROR:'; Status = 'FAIL' },
     @{ Mode = 'nomarker'; Detail = 'Missing PASS marker'; Status = 'FAIL' },
     @{ Mode = 'empty'; Detail = 'Empty engine log'; Status = 'FAIL' },
-    @{ Mode = 'timeout'; Detail = 'Exceeded 3 seconds'; Status = 'TIMEOUT' }
+    # The descendant is a cold Windows PowerShell start, which can exceed 3 s on CI
+    # runners; the deadline must outlast it or the fixture is killed before it records its PID.
+    @{ Mode = 'timeout'; Detail = 'Exceeded 15 seconds'; Status = 'TIMEOUT'; Timeout = 15 }
 )) {
-    $run = Invoke-MockRun $case.Mode @{ SkipImport = $true }
+    $parameters = @{ SkipImport = $true }
+    if ($case.Timeout) { $parameters['TimeoutSeconds'] = $case.Timeout }
+    $run = Invoke-MockRun $case.Mode $parameters
     Assert-True ($null -ne $run.Failure -and $run.Report.results[0].status -eq $case.Status -and $run.Report.results[0].detail -match $case.Detail) "Failure was not detected: $($case.Mode)"
     Assert-True ($run.Report.results.Count -eq 1 -and $run.Report.selected.Count -eq 3) 'Failure must stop later tests and smoke while retaining the selection'
 }
@@ -148,6 +152,12 @@ $run = Invoke-MockRun 'smoke' @{ SmokeOnly = $true; SkipImport = $true }
 Assert-True ($null -ne $run.Failure -and $run.Report.results[0].detail -eq 'Missing PASS marker') 'Smoke must reject a generic PASS marker'
 $run = Invoke-MockRun 'import' @{}
 Assert-True ($null -ne $run.Failure -and ($run.Report.results.name -join ',') -eq 'import') 'Import errors must stop tests'
+$run = Invoke-MockRun 'import' @{ KeepGoing = $true }
+Assert-True ($null -ne $run.Failure -and ($run.Report.results.name -join ',') -eq 'import') 'Import errors must stop tests even with KeepGoing'
+$run = Invoke-MockRun 'exit' @{ KeepGoing = $true }
+Assert-True ($run.Failure -match '2 checks failed: test_alpha, test_bravo') "KeepGoing must report every failed check: $($run.Failure)"
+Assert-True (($run.Report.results.name -join ',') -eq 'import,test_alpha,test_bravo,main-scene') 'KeepGoing must run every selected check'
+Assert-True (($run.Report.results.status -join ',') -eq 'PASS,FAIL,FAIL,PASS' -and $run.Report.metadata.keep_going) 'KeepGoing must record each status and the option'
 $run = Invoke-MockRun 'pass' @{ TestFilter = @('test_alpha.gd'); RealTime = $true; SkipImport = $true }
 Assert-True ($null -eq $run.Failure -and $run.Report.metadata.real_time -and -not $run.Report.metadata.import) 'Report must record execution options'
 Assert-True ((Get-Content -LiteralPath ($run.Report.results[0].log + '.args') -Raw) -notmatch '--fixed-fps') 'RealTime must omit fixed FPS'

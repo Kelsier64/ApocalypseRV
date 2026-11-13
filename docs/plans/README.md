@@ -1,8 +1,8 @@
 # 開發計畫總覽
 
-目前存檔契約（2026-10-30）：只支援 Checkpoint v7、VehicleSnapshot v6、生成 v18 與當前課程／房型；巨型避難所外殼內容為 v7。舊版相容、遷移及專門適配已移除；各計畫中的退役條款與歷史驗收不代表目前支援。
+存檔只支援當前版本（見 `rv/checkpoint.gd`、`rv/vehicle_snapshot.gd`、`world/terrain/world_profile.gd`）；舊版相容與遷移已移除，各計畫中的退役條款與歷史驗收不代表目前支援。
 
-狀態核對：2026-10-07（v9 公路獨立生成；其餘項目沿用各自核對日期）。此表依目前程式、場景、根目錄文件與驗收紀錄整理；RV 駕駛體驗、隨機地堡、Raker、玩家模型與新世界 v6 路邊小 POI 各有獨立驗收紀錄。地堡內容與 A04 離場取消修正見[本輪驗證](../validation/2026-09-29-bunker-content.md)；2026-09-22 架構審查的 A01–A03 仍待收斂。本次檔案清理見 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。以下順序是建議，不是排程承諾。
+**狀態未全面重新核對**：表格最後一次整體核對是 2026-10-07，之後只更新個別列。依賴某列狀態前，先對照程式與該列的驗收紀錄。此表當時依程式、場景、根目錄文件與驗收紀錄整理；RV 駕駛體驗、隨機地堡、Raker、玩家模型與新世界 v6 路邊小 POI 各有獨立驗收紀錄。地堡內容與 A04 離場取消修正見[本輪驗證](../validation/2026-09-29-bunker-content.md)；2026-09-22 架構審查的 A01–A03 仍待收斂。本次檔案清理見 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。以下順序是建議，不是排程承諾。
 
 [文件索引](../README.md) · [遊戲設計](../../GDD.md) · [技術架構](../../architecture.md)
 
@@ -11,7 +11,7 @@
 | [Abandoned Megashelter（灰井住宅城）](abandoned-megablock.md) | v7 牆面與入口細化；完整自由遊玩與最終美術確認未完成 | 保留生長量體與屋頂，改善入口及地面服務設備；無窗戶或可玩室內 | [外觀指南](../guides/megashelter-exteriors.md) · [本輪驗證](../validation/2026-10-30-megashelter-facade-refinement.md) |
 | [地形與道路改造](terrain-overhaul.md) | 第一個檢查點完成，等待使用者檢查 | v13 蜿蜒道路與地形／橋梁初版；每階段先停下，下一階段細化及輪驅驗收待確認 | [本次檢查](../validation/2026-10-20-terrain-stage1.md) |
 | [新版兩室教學](starting-tutorial-two-room.md) | 階段一已驗收，階段二完成等待驗收 | 第二室資源／修車流程已接入；感應離場、完整復原及最終美術留待後續 | [新版階段二](../validation/2026-10-15-orientation-stage2.md) |
-| [教學基地](starting-tutorial.md) | 階段一實作，等待使用者驗收 | 六階段沿用 codex/starting-tutorial；每階段測試與提交後停止，通過才繼續 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
+| [教學基地（舊九關）](starting-tutorial.md) | 已移除，由新版兩室教學取代 | 只保留歷史設計與驗收 | [階段一紀錄](../validation/2026-10-11-tutorial-stage1.md) |
 | [公路隨機刷新](random_spawn.md) | v9 獨立生成已接入；本輪驗證待記錄 | Raker／油桶人／普通油桶分開抽取，廢車逐台選點及朝向，安全避讓與當前格式保存 | [本輪紀錄](../validation/2026-10-07-independent-road-spawns.md) |
 | [裂爪 Raker](2026-09-22-raker.md) | 獨立怪物首版已完成並驗收 | 2.18 m、22 段動畫、新追擊／蓄力攻擊、低姿態進出 RV、正式生成與保存；地形腳掌 IK、極端翻車及群怪效能仍屬擴充 | [本次驗收](../validation/2026-09-22-raker.md)、[模型與動畫說明](../../assets/models/raker/README.md) |
 | [隨機地堡重作](2026-09-24-random-bunker.md) | 結構已驗收；初版內容與 A04 修正已接入 | 16 模組、新訪 30–60 目標、1–3 層；散落物、補給箱、每次合格機會 30% 的 Raker 遭遇、強化引擎與完整快照；長局平衡、自由遊玩和效能仍待驗收 | [契約](../guides/bunker-interior.md)、[結構驗收](../validation/2026-09-24-random-bunker.md)、[先前內容驗證](../validation/2026-09-29-bunker-content.md) |
@@ -35,7 +35,7 @@
 
 ## todo 核對與仍待收斂事項
 
-根目錄 [todo](../../todo) 保留每個原始項目與順序，新增完成／部分／待複查標記；[todo_prompt](../../todo_prompt) 保留 POI 三種類型與未來模型接入方向。確定完成的引擎維修、底盤模型重作、車門窗戶、車撞怪物傷害、戶外遮蔽與互動結果提示，不再列為從零開發工作。
+封存的 [todo](../archive/todo) 保留每個原始項目與順序，以及當時的完成／部分／待複查標記；[todo_prompt](../archive/todo_prompt) 保留 POI 三種類型與未來模型接入方向。確定完成的引擎維修、底盤模型重作、車門窗戶、車撞怪物傷害、戶外遮蔽與互動結果提示，不再列為從零開發工作。
 
 - 「移除發電機」已完成：改為引擎內建充電，設定與存檔規則見根目錄 GDD／architecture。
 - 「撞車受損」與「撞車車損」是同一待辦；怪物被撞扣血已完成，不代表 RV 撞牆會扣耐久。碰撞傷害需定義受損對象、門檻與冷卻；外掛設備仍是獨立凍結剛體，力矩傳遞另需實測。

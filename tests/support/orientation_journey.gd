@@ -123,6 +123,11 @@ func reception() -> bool:
 	await frames()
 	var page: Dictionary = reader.ui_instance.page_data
 	check(reader.ui_instance.visible and page.get("stage") == 2 and "Optional references" in page.get("title", ""), "Visible carried-terminal TUI presents the optional second-room field guide")
+	var targets: Dictionary = tutorial.workshop.targets
+	var instructions := "\n".join(page.get("steps", []))
+	for slot in [targets.wall_a, targets.wall_b]:
+		check(RVTerminalPresenter.slot_name(slot) in instructions, "Workshop guide names the selected bodywork section " + slot)
+	check(TireDynamics.NAMES[targets.wheel_slot].to_lower() in instructions, "Workshop guide names the selected tire position")
 	reader._close_ui()
 	await frames()
 	return failures.is_empty()
@@ -130,9 +135,23 @@ func reception() -> bool:
 func initial_state() -> bool:
 	if not check(vehicle.current_fuel == 0.0, "Fresh workshop RV has zero fuel"): return false
 	check(vehicle.get_item_count(ItemNames.METAL_PARTS) == 0 and vehicle.get_item_count(ItemNames.UNREFINED_FUEL) == 0, "Course starts without hidden repair or recipe materials")
-	for slot in ["left_0", "right_0"]:
-		var panel: RVStructurePanel = vehicle.get_node("StructureSlots").panel(slot)
-		check(is_equal_approx(panel.max_health - panel.current_health, 60.0), "Original " + slot + " has exactly sixty damage")
+	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	var wall_targets := [workshop.targets.wall_a, workshop.targets.wall_b]
+	for slot in RVStructureSlots.layout():
+		if slot.kind == "roof": continue
+		var panel := slots.panel(slot.id)
+		var damage := panel.max_health - panel.current_health
+		if slot.id in wall_targets:
+			check(not panel.is_destroyed and damage > 0.0 and damage <= panel.definition.repair_amount, "Selected section starts damaged and can be repaired once: " + slot.id)
+		else:
+			check(damage == 0.0, "Unselected section starts intact: " + slot.id)
+	var wheel_slot: int = workshop.targets.wheel_slot
+	var original_wheel: VehicleWheel3D = vehicle.installed_wheels[wheel_slot]
+	if not check(original_wheel != null and vehicle.wheel_ids[wheel_slot] == workshop.targets.original_wheel, "Selected tire starts installed with the recorded identity"): return false
+	check(vehicle.tire_warning().begins_with(TireDynamics.NAMES[wheel_slot]) and not vehicle.tire_warning().contains(","), "Only the selected tire is reported as worn or flat")
+	for index in Chassis.WHEEL_SLOTS.size():
+		if index == wheel_slot: continue
+		check(original_wheel.wheel_friction_slip < vehicle.installed_wheels[index].wheel_friction_slip, "Initial tire damage reduces grip relative to the other tires")
 	check(vehicle.get_engine() != null and vehicle.get_engine().health == 0.0 and not vehicle.has_working_engine(), "New workshop engine is completely broken")
 	check(vehicle.get_node("StructureSlots").panel("roof_1").is_destroyed, "The middle ceiling is completely destroyed")
 	var socket: BatterySocket = workshop.item("socket")
@@ -280,52 +299,60 @@ func manufacturing_lesson() -> bool:
 func repair_lesson() -> bool:
 	await stand_clear()
 	var tablet: Item = workshop.item("tablet")
-	var construction: RVStructureConstruction = vehicle.get_node("StructureSlots").construction
+	var slots: RVStructureSlots = vehicle.get_node("StructureSlots")
+	var construction: RVStructureConstruction = slots.construction
+	var metal_before := vehicle.get_item_count(ItemNames.METAL_PARTS)
+	var repair_cost := 0
 	tablet.interact_hold(player)
-	if not check(construction.begin(tablet, "right_0", "repair").is_empty(), "Existing rvctl begins the first specified wall repair"): return false
+	if not check(construction.begin(tablet, workshop.targets.wall_a, "repair").is_empty(), "Existing rvctl begins the first selected wall repair"): return false
 	tablet._close_ui()
-	check(construction.job.is_empty() and workshop.repaired_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == 12, "Closing rvctl cancels repair without material consumption or completion")
-	for slot in ["right_0", "left_0"]:
+	check(construction.job.is_empty() and workshop.repaired_ids.is_empty() and vehicle.get_item_count(ItemNames.METAL_PARTS) == metal_before, "Closing rvctl cancels repair without material consumption or completion")
+	for slot in [workshop.targets.wall_a, workshop.targets.wall_b]:
+		var panel := slots.panel(slot)
+		repair_cost += panel.definition.repair_cost
 		tablet.interact_hold(player)
 		if not check(construction.begin(tablet, slot, "repair").is_empty(), "Native rvctl starts repair of " + slot): return false
-		construction._physics_process(2.0)
+		construction._physics_process(panel.definition.repair_seconds)
 		tablet._close_ui()
-		var panel: RVStructurePanel = vehicle.get_node("StructureSlots").panel(slot)
 		if not check(slot in workshop.repaired_ids and panel.current_health == panel.max_health, "Real repair transaction restores " + slot): return false
-	check(workshop.step == 4 and vehicle.get_item_count(ItemNames.METAL_PARTS) == 8, "Both walls use four metal, leaving enough for ceiling reconstruction")
+	check(workshop.step == 4 and vehicle.get_item_count(ItemNames.METAL_PARTS) == metal_before - repair_cost, "Both wall repairs charge their configured cost")
 	tablet.interact_hold(player)
-	var roof_reason: String = construction.begin(tablet, "roof_1", "rebuild")
+	var roof_slot: String = workshop.targets.roof_slot
+	var roof_definition := slots.panel(roof_slot).definition
+	var roof_reason: String = construction.begin(tablet, roof_slot, "rebuild")
 	if not check(roof_reason.is_empty(), "Native rvctl accepts reconstruction of the destroyed roof: " + roof_reason): return false
-	construction._physics_process(6.0)
+	construction._physics_process(roof_definition.rebuild_seconds)
 	tablet._close_ui()
-	check(workshop.flags.roof_rebuilt and workshop.wall_ready("roof_1") and vehicle.get_item_count(ItemNames.METAL_PARTS) == 2, "Actual roof rebuild restores geometry and consumes six metal, retaining two spare metal")
-	var socket: Node3D = vehicle.get_node("WheelSocket0")
-	player.global_position = socket.global_position + vehicle.global_basis.x * 2
+	check(workshop.flags.roof_rebuilt and workshop.wall_ready(roof_slot) and vehicle.get_item_count(ItemNames.METAL_PARTS) == metal_before - repair_cost - roof_definition.rebuild_cost, "Actual roof rebuild restores geometry and charges its configured cost")
+	var wheel_slot: int = workshop.targets.wheel_slot
+	var socket: Node3D = vehicle.get_node("WheelSocket%d" % wheel_slot)
+	var outside := vehicle.global_basis.x * signf(socket.position.x) * 2.0
+	player.global_position = socket.global_position + outside
 	socket.interact_hold(player)
-	if not check(workshop.flags.wheel_removed and vehicle.installed_wheels[0] == null, "Native wheel removal releases the designated original flat tire"): return false
+	if not check(workshop.flags.wheel_removed and vehicle.installed_wheels[wheel_slot] == null, "Native wheel removal releases the designated damaged tire"): return false
 	var decoy: Item = load("res://props/wheel.tscn").instantiate()
 	decoy.persistent_id = "journey-unmarked-healthy-wheel"
 	WorldEntities.get_container(world).add_child(decoy)
-	decoy.global_position = player.global_position + vehicle.global_basis.x
+	decoy.global_position = player.global_position + outside.normalized()
 	decoy.pickup(player)
 	await frames()
 	if not check(select_item("journey-unmarked-healthy-wheel"), "Negative control picks up an actual unmarked healthy wheel"): return false
 	socket.interact_hold(player)
-	check(vehicle.wheel_ids[0] == "journey-unmarked-healthy-wheel" and not workshop.flags.wheel_installed and workshop.step == 4, "A real healthy unmarked wheel installation cannot satisfy the marked-spare lesson")
+	check(vehicle.wheel_ids[wheel_slot] == "journey-unmarked-healthy-wheel" and not workshop.flags.wheel_installed and workshop.step == 4, "A real healthy unmarked wheel installation cannot satisfy the marked-spare lesson")
 	select_item(workshop.gasoline_id)
 	socket.interact_hold(player)
-	if not check(vehicle.installed_wheels[0] == null, "Native removal frees the socket after the unmarked-wheel negative control"): return false
+	if not check(vehicle.installed_wheels[wheel_slot] == null, "Native removal frees the socket after the unmarked-wheel negative control"): return false
 	# This extra wheel exists only for the negative control. Leaving it beside
 	# the front axle can roll it underneath the RV during the departure test.
-	# Keep the original discarded flat tire as part of the production journey.
+	# Keep the original discarded tire as part of the production journey.
 	var removed_decoy: Item = workshop.by_id("journey-unmarked-healthy-wheel")
 	if not check(removed_decoy != null, "Native removal returns the unmarked fixture wheel to the world"): return false
 	removed_decoy.queue_free()
 	await frames()
 	if not await pickup("spare"): return false
-	player.global_position = socket.global_position + vehicle.global_basis.x * 2
+	player.global_position = socket.global_position + outside
 	socket.interact_hold(player)
-	if not check(workshop.flags.wheel_installed and vehicle.installed_wheels[0] != null, "Native wheel insertion installs the marked healthy spare"): return false
+	if not check(workshop.flags.wheel_installed and workshop.wheel_ready(), "Native wheel insertion installs the marked healthy spare"): return false
 	return await step_ready(5)
 
 func fuel_lesson() -> bool:
@@ -361,14 +388,15 @@ func fuel_lesson() -> bool:
 	scrapper.enabled = false
 	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "Disabled workshop equipment cannot turn optional tasks into an exit lock")
 	scrapper.enabled = true
-	var wall: RVStructurePanel = vehicle.get_node("StructureSlots").panel("left_0")
+	var wall: RVStructurePanel = vehicle.get_node("StructureSlots").panel(workshop.targets.wall_a)
 	wall.set_health(wall.max_health - 1.0)
 	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "An unfinished side wall cannot turn optional repair into an exit lock")
 	wall.set_health(wall.max_health)
-	var wheel_health: float = vehicle.wheel_health[0]
-	vehicle.wheel_health[0] = 0.0
+	var wheel_slot: int = workshop.targets.wheel_slot
+	var wheel_health: float = vehicle.wheel_health[wheel_slot]
+	vehicle.wheel_health[wheel_slot] = 0.0
 	check(workshop.ready_for_departure() and tutorial.departure_block_reason().is_empty(), "A flat tire affects ordinary physics without creating a tutorial exit lock")
-	vehicle.wheel_health[0] = wheel_health
+	vehicle.wheel_health[wheel_slot] = wheel_health
 	return check(workshop.ready_for_departure(), "Restored current working states recover readiness without replaying evidence")
 
 func driving_check() -> bool:

@@ -1,8 +1,6 @@
 extends RefCounted
 class_name VehicleStatus
 const IDS := ["engine", "fuel", "battery", "door", "brake", "tire", "ramp", "headlight"]
-static func color(level: int) -> Color:
-	return [Color(0.16, 0.22, 0.22), Color(0.35, 1.0, 0.65), Color(1.0, 0.68, 0.12), Color(1.0, 0.16, 0.1)][clampi(level, 0, 3)]
 static func read(rv: Node) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	var engine: EngineState = rv.get_engine()

@@ -380,6 +380,7 @@ func submit_struggle() -> bool:
 	return true
 
 func _input(event: InputEvent) -> void:
+	if event.is_action("toggle_control_hints"): return
 	if is_executing() and event is InputEventMouseMotion:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 			_execution_mouse_look(event)

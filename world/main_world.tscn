@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://world/tutorial_shelter/orientation_controller.gd" id="21_tutorial"]
 [ext_resource type="Script" path="res://world/night_vision_effect.gd" id="22_adaptation"]
 [ext_resource type="Script" path="res://world/white_apparition_encounter.gd" id="23_apparition"]
+[ext_resource type="Script" path="res://world/black_apparition_encounter.gd" id="24_black_apparition"]
 
 [sub_resource type="Resource" id="ProductionProfile"]
 script = ExtResource("19_profile")
@@ -73,4 +74,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8359404, 1.7807889, 1.9549
 
 [node name="WhiteApparitionEncounter" type="Node3D" parent="."]
 script = ExtResource("23_apparition")
+
+[node name="BlackApparitionEncounter" type="Node3D" parent="."]
+script = ExtResource("24_black_apparition")
 

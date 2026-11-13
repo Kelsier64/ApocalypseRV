@@ -29,7 +29,7 @@
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
 | `interior_profile` | 副本入口專用；支援 `bunker`／`megashelter`；見 [地堡規格](bunker-interior.md)／[巨型避難所室內](megashelter-interiors.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
-| `enemy_count_range` | WALK_IN 首訪敵人數量範圍，預設 (0,0)；本輪上限 2，需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D |
+| `enemy_count_range` | WALK_IN 候選名額範圍，預設 (0,0)，上限 2。非零時需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D。正式生成只在貨櫃與棚屋使用這些名額抽取油桶人。 |
 
 放置類別由 `placement_modes` 的 `ROADSIDE`、`OFF_ROAD` 旗標指定，與 `PoiDefinition.kind`（副本入口／直接探索）分開；兩個旗標可同時設定，無須複製定義或場景。四款地堡入口、camp、shed 同時支援兩類；兩款 shelter 僅支援越野，其他四個小型 POI 主題維持路旁。四款地堡入口 路旁位置為距道路中心 49 m 的獨立場址，局部整地只用於建築本體安置。越野候選使用橫向 3 欄、每格 300 × 900 m 的網格，需避開道路、水域、陡坡及既有 POI，按自然地面高度及隨機朝向放置。路旁專用的公路標誌、方向標誌及停車區配置不得套用到越野場址。越野地堡只在建築本地入口局部整地，不改造周遭地形。
 

@@ -1,0 +1,124 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/black_apparition_playground.gd" id="1_playground"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://enemies/black_apparition/black_apparition.tscn" id="3_apparition"]
+
+[sub_resource type="Environment" id="Environment_dark"]
+background_mode = 1
+background_color = Color(0.014, 0.016, 0.022, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.52, 0.59, 0.72, 1)
+ambient_light_energy = 0.13
+reflected_light_source = 2
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.26, 0.27, 0.29, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.34, 0.33, 0.31, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Material_cover"]
+albedo_color = Color(0.24, 0.27, 0.25, 1)
+roughness = 0.92
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_room"]
+vertices = PackedVector3Array(-11.25, 0.5, -4.5, 0.75, 0.5, -4.5, 1, 0.5, -5.5, 2.25, 0.5, -18.25, -11.25, 0.5, -18.25, 2.5, 0.5, -5.5, 6.5, 0.5, -5.5, 6.75, 0.5, -4.5, 11.5, 0.5, -4.5, 11.5, 0.5, -18.25, 1, 0.5, -3.5, -11.25, 0.5, 11.25, 2.25, 0.5, 11.25, 2.5, 0.5, -3.5, 6.5, 0.5, -3.5, 11.5, 0.5, 11.25)
+polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 4), PackedInt32Array(2, 4, 3), PackedInt32Array(3, 5, 2), PackedInt32Array(8, 7, 6), PackedInt32Array(6, 5, 3), PackedInt32Array(8, 6, 9), PackedInt32Array(9, 6, 3), PackedInt32Array(1, 10, 0), PackedInt32Array(0, 10, 11), PackedInt32Array(11, 10, 12), PackedInt32Array(10, 13, 12), PackedInt32Array(14, 7, 8), PackedInt32Array(12, 13, 14), PackedInt32Array(8, 15, 14), PackedInt32Array(14, 15, 12)]
+agent_height = 2.35
+agent_radius = 0.4
+filter_baking_aabb = AABB(-12, -0.25, -19, 24, 4.0, 31)
+
+[node name="BlackApparitionPlayground" type="Node3D"]
+script = ExtResource("1_playground")
+metadata/entity_domain = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_dark")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_room")
+
+[node name="Floor" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(0, -0.25, -3.5)
+use_collision = true
+size = Vector3(25, 0.5, 32)
+material = SubResource("Material_floor")
+
+[node name="Ceiling" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(0, 4.35, -3.5)
+use_collision = true
+size = Vector3(25, 0.5, 32)
+material = SubResource("Material_wall")
+
+[node name="NorthWall" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(0, 2.05, -19.25)
+use_collision = true
+size = Vector3(25, 4.1, 0.5)
+material = SubResource("Material_wall")
+
+[node name="SouthWall" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(0, 2.05, 12.25)
+use_collision = true
+size = Vector3(25, 4.1, 0.5)
+material = SubResource("Material_wall")
+
+[node name="EastWall" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(12.25, 2.05, -3.5)
+use_collision = true
+size = Vector3(0.5, 4.1, 31)
+material = SubResource("Material_wall")
+
+[node name="WestWall" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(-12.25, 2.05, -3.5)
+use_collision = true
+size = Vector3(0.5, 4.1, 31)
+material = SubResource("Material_wall")
+
+[node name="Cover" type="CSGBox3D" parent="NavigationRegion3D"]
+position = Vector3(3.7, 1.9, -4.5)
+use_collision = true
+size = Vector3(4.8, 3.8, 0.65)
+material = SubResource("Material_cover")
+
+[node name="ApparitionStart" type="Marker3D" parent="."]
+position = Vector3(0, 0.025, -7)
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector3(0, 0.05, 3)
+rotation = Vector3(0, 0.85, 0)
+
+[node name="BlackApparition" parent="." instance=ExtResource("3_apparition")]
+
+[node name="PlaygroundHUD" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Controls" type="Label" parent="PlaygroundHUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -580.0
+offset_top = 24.0
+offset_right = -24.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+text = "BLACK APPARITION
+WASD move   Shift sprint   Mouse look
+RMB flashlight   F6 new sighting   R restart
+Turn right for the first sighting."
+horizontal_alignment = 2
+
+[node name="Status" type="Label" parent="PlaygroundHUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -580.0
+offset_top = 148.0
+offset_right = -24.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+horizontal_alignment = 2

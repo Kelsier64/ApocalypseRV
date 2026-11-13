@@ -92,9 +92,7 @@ func handle_input(player: CharacterBody3D, event: InputEvent) -> void:
 			if event.button_index == MOUSE_BUTTON_LEFT:
 				update_ghost(player)
 				if can_place_equipment and is_instance_valid(target_support):
-					if not commit(player): _placement_feedback(player, "Placement blocked")
-				else:
-					_placement_feedback(player, rejection_reason)
+					commit(player)
 
 			elif event.button_index == MOUSE_BUTTON_RIGHT:
 				cancel(player, true)
@@ -277,8 +275,6 @@ func update_ghost(player: CharacterBody3D) -> void:
 		_clear_marker()
 		# Hide it when looking at the sky so they know they can't place
 		placing_equipment.visible = false
-func _placement_feedback(player: Node, reason: String) -> void:
-	player.get_node("Camera3D/InteractRay").show_feedback(reason)
 
 func _clear_marker() -> void:
 	if is_instance_valid(surface_marker): surface_marker.queue_free()

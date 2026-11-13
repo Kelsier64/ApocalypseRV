@@ -110,6 +110,10 @@ func _physics_process(delta: float) -> void:
 	if actor.is_grabbed():
 		suspend()
 		return
+	if actor.sleep.active():
+		_select("idle", 0.0)
+		_advance(delta)
+		return
 	if suspended:
 		current_clip = ""
 		suspended = false

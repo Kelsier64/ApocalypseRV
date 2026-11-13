@@ -68,13 +68,15 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF) -> void:
 			return
 
 func _process(delta: float) -> void:
-	var running := rv.energy.engine_running and rv.has_working_engine() and rv.has_usable_fuel()
+	var rpm := rv.engine_rpm()
+	var running := rpm > 0.0
 	if running and not engine_player.playing: engine_player.play()
 	if not running:
 		engine_player.stop()
 		if was_running: play_cue("stop")
 	was_running = running
-	engine_player.pitch_scale = lerpf(engine_player.pitch_scale, 0.85 + rv.throttle_input * 0.35 + clampf(rv.road_speed() / 25.0, 0, 1) * 0.5, minf(delta * 4.0, 1.0))
+	var rev_fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
+	engine_player.pitch_scale = lerpf(engine_player.pitch_scale, lerpf(0.85, 1.7, rev_fraction), minf(delta * 4.0, 1.0))
 	engine_player.volume_db = -15.0 + rv.throttle_input * 4.0
 	phase = fmod(phase + delta, 100.0)
 	# Only the engine's visual assembly moves. Collision, seat and aim stay still.

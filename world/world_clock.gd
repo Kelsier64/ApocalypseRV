@@ -95,11 +95,16 @@ func _process(delta: float) -> void:
 		apply_time(delta)
 
 func advance(real_seconds: float) -> void:
-	if not is_finite(real_seconds) or real_seconds < 0.0: return
-	var seconds := real_seconds * DAY_SECONDS / (maxf(1.0, day_length_minutes) * 60.0)
+	advance_game_seconds(real_seconds * game_seconds_per_real_second(), real_seconds)
+
+func game_seconds_per_real_second() -> float:
+	return DAY_SECONDS / (maxf(1.0, day_length_minutes) * 60.0)
+
+func advance_game_seconds(seconds: float, visual_delta: float) -> void:
+	if not is_finite(seconds) or seconds < 0.0: return
 	elapsed_seconds += seconds
 	if weather_running: weather.advance(seconds)
-	apply_time(real_seconds)
+	apply_time(visual_delta)
 	_notify_minute()
 
 func day_number() -> int:

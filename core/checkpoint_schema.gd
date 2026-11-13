@@ -46,6 +46,9 @@ static func profile_error(data: Dictionary) -> String:
 			if not VehicleSnapshot._number(value) or value != defaults.terrain_half_width: return "profile." + key
 		elif key == "generation_version":
 			if not value is int or value != defaults.generation_version: return "profile." + key
+		elif key == "opening_shelter":
+			# Older snapshots omit the selector and restore the default orientation shelter.
+			if not value is String or value != defaults.opening_shelter_id(): return "profile." + key
 		elif key in constants:
 			if value != defaults.get(key): return "profile." + key
 		elif key in ["chunks_ahead", "chunks_behind"]:

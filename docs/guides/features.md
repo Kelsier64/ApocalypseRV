@@ -54,7 +54,7 @@
 | 支撐鏈與掉落 | 正式；區分車輛歸屬及實際支撐；車板或底層設備失效，附掛物停機並帶平台速度掉落，保留身分與功能狀態 | [mount](../../core/item_mount.gd)、[RV support](../../core/rv_support.gd) |
 | 共用倉庫 | 正式；道具箱存取同車物品，材料為車輛數值庫存；拆除箱子不刪庫存 | [item box](../../equipment/item_box.gd)、[material storage](../../rv/material_storage.gd) |
 | 搜刮物與模型圖示 | 正式；12 款具名回收物、燃油／電池／引擎／輪胎／食物等；快捷欄使用預載模型快照，顯示雙手、電量及彈量 | [scavenge loot](../../core/scavenge_loot.gd)、[icons](../../core/inventory_item_icons.gd)、[props](../../props/) |
-| 手電筒 | 正式；手持 L 開關，有限內建電量、保存剩餘電量；目前不能充電 | [flashlight](../../props/flashlight.gd)、[bunker playground](../../tests/bunker_playground.tscn) |
+| 手電筒 | 正式；手持時按右鍵開關，有限內建電量、保存剩餘電量；目前不能充電 | [flashlight](../../props/flashlight.gd)、[bunker playground](../../tests/bunker_playground.tscn) |
 | 電子指南針 | 正式；手持自動定位 2 km 內最近巨型避難所，含未載入場址；獨立室內顯示無訊號 | [compass](../../props/electronic_compass.gd)、[building locator](../../core/building_locator.gd) |
 | 手槍與彈藥 | 正式；單發、瞄準、換彈、12 發彈匣與盒裝備彈；實體遮擋射線，怪物傷害與油桶人致命爆炸；巨人無敵 | [weapon](../../player/player_weapon.gd)、[pistol playground](../../tests/pistol_playground.tscn) |
 
@@ -63,7 +63,7 @@
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
 | 真實輪驅與排檔 | 正式；四輪 VehicleBody3D、前輪轉向／後輪驅動，四前進檔／空檔／倒檔、漸進油門及腳煞車、手煞車與高速轉向限制 | [Chassis](../../rv/chassis.gd)、[driving experience](../../tests/driving_experience_playground.tscn) |
-| 駕駛座、儀表與鏡面 | 正式；入／離座與安全淨空、速度／油電／輪況、左右後照鏡；離座不自動熄火或拉手煞車 | [driver seat](../../equipment/driver_seat.gd)、[dashboard](../../rv/vehicle_dashboard.gd)、[mirrors](../../rv/vehicle_mirrors.gd) |
+| 駕駛座、儀表與鏡面 | 正式；入／離座與安全淨空、速度／油電／輪況、左右後照鏡；離座不自動熄火或拉手煞車 | [driver seat](../../equipment/driver_seat.gd)、[instrument cluster](../../rv/instrument_cluster.gd)、[mirrors](../../rv/vehicle_mirrors.gd) |
 | 可換引擎與維修 | 正式；標準／強化引擎，維修蓋、停穩熄火交換、維修包；耐久歸零熄火但引擎保留 | [engine bay](../../rv/engine_bay.gd)、[rv rebuild](../../tests/rv_rebuild_playground.tscn) |
 | 輪胎磨耗、爆胎與換輪 | 正式；四輪獨立耐久，接地磨耗、釘帶爆胎、抓地／驅動／轉向減弱與偏移；拆裝保存輪況 | [tire dynamics](../../rv/tire_dynamics.gd)、[tire puncture](../../tests/tire_puncture_playground.tscn) |
 | 碰撞與敵人車撞 | 正式；RV 碰撞受損與按相對接近速度處理撞怪／Raker 倒地，爆炸造成車殼／引擎傷害 | [vehicle impact](../../rv/vehicle_impact.gd)、[raker impact](../../tests/raker_impact_playground.tscn) |
@@ -100,8 +100,8 @@
 | 巨型避難所室內 | 正式 v19；獨立單層、通常六至八模組、依外觀面積選房型；少量散物與一箱，無敵人／樓梯／升級引擎；大小出口門共用返回流程，回訪不補貨 | [室內指南](megashelter-interiors.md)、[interior playground](../../tests/megashelter_interior_playground.tscn) |
 | 隨機軍事地堡 | 正式；四種入口、16 房型、目標 30–60 模組及 1–3 層；接口／樓梯空間可能使規模減少；暗房、補給箱、機率 Raker 與強化引擎 | [地堡指南](bunker-interior.md)、[bunker playground](../../tests/bunker_playground.tscn) |
 | 副本轉場與探索地圖 | 正式；入口 E 進獨立 World3D、安全返回、探索圖與切層；外界 RV 油電持續，保存布局／探索／物資／箱子／敵人及玩家丟物 | [instance manager](../../world/instances/poi_instance_manager.gd)、[interior map](../../world/instances/interior_map.gd)、[poi instance](../../tests/poi_instance_playground.tscn) |
-| 公路障礙與遭遇 | 正式；開場安全段、後方最多 28 台廢車，公路分開抽取 Raker／油桶人／普通油桶／廢車／釘帶；廢車不能清除 | [road spawns](../../world/road_spawns.gd)、[rear wreck](../../world/starting_shelter/rear_wreck_layout.gd) |
-| 偏行壓迫 | 正式；退後或離路過遠會起霧並按時間追加怪物；合法探索場址／通道豁免，返回安全範圍後停止追加與退霧 | [deviation pressure](../../world/deviation_pressure.gd)、[rear pressure](../../tests/rear_pressure_playground.tscn) |
+| 公路障礙與遭遇 | 正式；開場安全段、後方最多 28 台廢車，公路分開抽取油桶人／普通油桶／廢車／釘帶；廢車不能清除 | [road spawns](../../world/road_spawns.gd)、[rear wreck](../../world/starting_shelter/rear_wreck_layout.gd) |
+| 偏行壓迫 | 正式；退後或離路過遠會起霧，事件持續 30 秒後可出現 Slender Speaker；合法探索場址／通道豁免，返回安全範圍後停止遭遇生成並退霧 | [deviation pressure](../../world/deviation_pressure.gd)、[rear pressure](../../tests/rear_pressure_playground.tscn) |
 | 樹木碰撞與倒塌 | 正式；RV／巨人撞樹、斷裂倒塌與破壞狀態保存 | [tree impact](../../world/terrain/tree_impact.gd)、[tree playground](../../tests/tree_impact_playground.tscn) |
 
 ## 敵人與遭遇

@@ -157,7 +157,7 @@ func terminal_page() -> Dictionary:
 	return {"available": true, "stage": 1, "title": "Take your field terminal",
 		"conditions": [{"id": "terminal_taken", "label": "Take this terminal with you.", "complete": flags.terminal_taken}],
 		"steps": ["Close this interface, then hold F while looking at the terminal to remove it into your inventory.", "Carry the same terminal through the open door into the workshop."],
-		"reference": ["Esc: close the terminal.", "Hold F: remove the fixed terminal.", "T: read the selected terminal from your inventory."]}
+		"reference": ["Esc: close the terminal.", "Hold F: remove the fixed terminal.", "Right-click to read the held terminal."]}
 
 func _physics_process(delta: float) -> void:
 	if initialized() and status in ["completed", "skipped"]:

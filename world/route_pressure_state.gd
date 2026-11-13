@@ -6,8 +6,8 @@ const EXIT_SECONDS := 3.0
 const FADE_SECONDS := 12.0
 const COOLDOWN_SECONDS := 60.0
 const RETRY_SECONDS := 2.0
-const FIRST_WAVE := 8.0
-const WAVE_INTERVAL := 30.0
+const HALF_FOG_SECONDS := 8.0
+const LEGACY_WAVE_INTERVAL := 30.0
 const GIANT_SECONDS := 30.0
 const MAX_SECONDS := 1000000000.0
 const MAX_PROGRESS := 1000000000.0
@@ -27,10 +27,7 @@ var exit_elapsed := 0.0
 var fog_elapsed := 0.0
 var fade_remaining := 0.0
 var fade_from := 0.0
-var pending_rakers := 0
-var wave_ordinal := 0
 var giant_done := false
-var retry_rakers := 0.0
 var retry_giant := 0.0
 
 func initialize(progress: float, start_origin: float) -> void:
@@ -91,16 +88,8 @@ func advance(delta: float, sample: Dictionary) -> void:
 	fade_from = 0.0
 	_tick_active(delta - inactive_delta, maxf(0.0, delta - maxf(inactive_delta, previous_cooldown)))
 
-func rakers_due() -> bool:
-	return active and cooldown <= 0.0 and pending_rakers > 0 and retry_rakers <= 0.0
-
 func giant_due() -> bool:
 	return active and cooldown <= 0.0 and exposure + TIME_EPSILON >= GIANT_SECONDS and not giant_done and retry_giant <= 0.0
-
-func resolve_raker_wave(emitted: int, capped: bool = false) -> void:
-	if not rakers_due(): return
-	pending_rakers = 0 if capped else maxi(0, pending_rakers - clampi(emitted, 0, pending_rakers))
-	retry_rakers = RETRY_SECONDS if pending_rakers > 0 else 0.0
 
 func resolve_giant(success: bool) -> void:
 	if not giant_due(): return
@@ -110,15 +99,8 @@ func resolve_giant(success: bool) -> void:
 func _tick_active(delta: float, spawn_delta: float) -> void:
 	fog_elapsed = minf(MAX_SECONDS, fog_elapsed + delta)
 	fog = maxf(fog, _fog_at(fog_elapsed))
-	retry_rakers = _countdown(retry_rakers, spawn_delta)
 	retry_giant = _countdown(retry_giant, spawn_delta)
 	exposure = minf(MAX_SECONDS, exposure + spawn_delta)
-	var current_wave := _wave_at(exposure)
-	if current_wave > wave_ordinal:
-		# Only the newest wave survives a long frame; no catch-up burst.
-		wave_ordinal = current_wave
-		pending_rakers = 2
-		retry_rakers = 0.0
 
 func _end_event() -> void:
 	active = false
@@ -126,10 +108,7 @@ func _end_event() -> void:
 	exposure = 0.0
 	fog_elapsed = 0.0
 	exit_elapsed = 0.0
-	pending_rakers = 0
-	wave_ordinal = 0
 	giant_done = false
-	retry_rakers = 0.0
 	retry_giant = 0.0
 	fade_from = fog
 	fade_remaining = FADE_SECONDS if fog > 0.0 else 0.0
@@ -141,23 +120,24 @@ func _tick_fade(delta: float) -> void:
 	if fade_remaining <= 0.0: fade_from = 0.0
 
 static func _fog_at(seconds: float) -> float:
-	if seconds <= FIRST_WAVE: return seconds / FIRST_WAVE * 0.5
-	return minf(1.0, 0.5 + (seconds - FIRST_WAVE) / (GIANT_SECONDS - FIRST_WAVE) * 0.5)
+	if seconds <= HALF_FOG_SECONDS: return seconds / HALF_FOG_SECONDS * 0.5
+	return minf(1.0, 0.5 + (seconds - HALF_FOG_SECONDS) / (GIANT_SECONDS - HALF_FOG_SECONDS) * 0.5)
 
-static func _wave_at(seconds: float) -> int:
-	return 0 if seconds + TIME_EPSILON < FIRST_WAVE else floori((seconds + TIME_EPSILON - FIRST_WAVE) / WAVE_INTERVAL) + 1
+static func _legacy_wave_at(seconds: float) -> int:
+	return 0 if seconds + TIME_EPSILON < HALF_FOG_SECONDS else floori((seconds + TIME_EPSILON - HALF_FOG_SECONDS) / LEGACY_WAVE_INTERVAL) + 1
 
 static func _countdown(remaining: float, delta: float) -> float:
 	var result := maxf(0.0, remaining - delta)
 	return 0.0 if result < TIME_EPSILON else result
 
 func capture() -> Dictionary:
+	# Keep the version 1 checkpoint fields without carrying over pending Rakers.
 	return {"version": 1, "initialized": initialized, "active": active, "origin": origin,
 		"highwater": highwater, "fog": fog, "reason": reason, "exposure": exposure,
 		"cooldown": cooldown, "entry_elapsed": entry_elapsed, "exit_elapsed": exit_elapsed,
 		"fog_elapsed": fog_elapsed, "fade_remaining": fade_remaining, "fade_from": fade_from,
-		"pending_rakers": pending_rakers, "wave_ordinal": wave_ordinal, "giant_done": giant_done,
-		"retry_rakers": retry_rakers, "retry_giant": retry_giant}
+		"pending_rakers": 0, "wave_ordinal": _legacy_wave_at(exposure), "giant_done": giant_done,
+		"retry_rakers": 0.0, "retry_giant": retry_giant}
 
 static func _empty_state() -> Dictionary:
 	return {"version": 1, "initialized": false, "active": false, "origin": 0.0,
@@ -184,7 +164,7 @@ static func valid_state(data: Variant) -> bool:
 	for key in ["retry_rakers", "retry_giant"]:
 		if not _number(data[key], 0.0, RETRY_SECONDS): return false
 	if not data.pending_rakers is int or data.pending_rakers < 0 or data.pending_rakers > 2: return false
-	if not data.wave_ordinal is int or data.wave_ordinal != _wave_at(float(data.exposure)): return false
+	if not data.wave_ordinal is int or data.wave_ordinal != _legacy_wave_at(float(data.exposure)): return false
 	if not data.reason is String or not data.reason in REASONS: return false
 	if not data.initialized: return data == _empty_state()
 	if data.highwater < data.origin or data.exposure > data.fog_elapsed: return false
@@ -209,4 +189,4 @@ func restore(data: Dictionary) -> bool:
 
 func _restore_values(data: Dictionary) -> void:
 	for key in _empty_state():
-		if key != "version": set(key, data[key])
+		if key not in ["version", "pending_rakers", "wave_ordinal", "retry_rakers"]: set(key, data[key])

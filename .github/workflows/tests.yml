@@ -21,7 +21,7 @@ jobs:
   tests:
     name: Godot / core
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Check runner
@@ -35,7 +35,8 @@ jobs:
           Expand-Archive -LiteralPath $archive -DestinationPath $destination
           "GODOT_EXE=$destination/Godot_v$version-stable_win64.exe" >> $env:GITHUB_ENV
       - name: Import and run core tests and main scene
-        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE
+        # CI runners are slower than a desktop; test_streaming_generation exceeds the 240 s default there.
+        run: ./scripts/test.ps1 -Godot $env:GODOT_EXE -KeepGoing -TimeoutSeconds 480
       - name: Upload diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

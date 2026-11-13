@@ -199,7 +199,9 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		var noon := clock.environment.fog_light_color
 		clock.set_time(1, 0.0)
 		var night := clock.environment.fog_light_color
-		check.call(noon.is_equal_approx(Color("c3cbc8")) and night.is_equal_approx(Color("030405")), "v19 gray-white daylight haze darkens with the native night lighting")
+		var mist_day := clock.atmosphere.day_mist_color
+		var mist_night := clock.atmosphere.night_mist_color
+		check.call(noon.is_equal_approx(mist_day) and night.is_equal_approx(mist_night) and night.get_luminance() < noon.get_luminance() * 0.1, "v19 gray-white daylight haze darkens with the native night lighting (noon %s, night %s)" % [noon.to_html(false), night.to_html(false)])
 		host.free()
 
 static func _check_weather_appearance(clock: WorldClock, check: Callable) -> void:
@@ -561,9 +563,8 @@ static func _check_forest_plans(field: WorldField, world: Node3D, check: Callabl
 	chunk.queue_free()
 	other.queue_free()
 
-static func _forest_snapshot(chunk: ChunkGenerator) -> Dictionary:
+static func _forest_snapshot(body: ForestTrunks) -> Dictionary:
 	var result: Dictionary = {}
-	var body := chunk.get_node("ForestTrunks") as ForestTrunks
 	for shape: CollisionShape3D in body.get_children():
 		var point: Vector3 = shape.get_meta("tree_point")
 		var visual: Dictionary = body.visuals[point]
@@ -616,9 +617,11 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 	chunk.band = band
 	await ForestScenery.build(chunk, false)
 	var planned := ForestScenery.trees(field, band)
-	var reference := _forest_snapshot(chunk)
-	var ground_reference := _ground_snapshot(chunk, check)
 	var body := chunk.get_node("ForestTrunks") as ForestTrunks
+	var reference := _forest_snapshot(body)
+	var ground_reference := _ground_snapshot(chunk, check)
+	var shrub_body := chunk.get_node("ForestShrubs") as ForestTrunks
+	var shrub_reference := _forest_snapshot(shrub_body)
 	var broadleaf := 0
 	var active := body.collision_layer == 1 and body.is_inside_tree()
 	for index in range(planned.size()):
@@ -643,6 +646,33 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 		return
 	var removed := TreeImpact.forest_id(band, floori(planned.size() / 2.0))
 	field.destroyed_trees[removed] = true
+	check.call(shrub_body.get_child_count() >= 2 and shrub_body.collision_layer == TreeImpact.SHRUB_LAYER and shrub_body.collision_mask == 0,
+		"v19 woody shrubs have compound RV-only collision")
+	if shrub_body.get_child_count() >= 2:
+		var struck := shrub_body.get_child(0) as CollisionShape3D
+		var neighbour := shrub_body.get_child(1) as CollisionShape3D
+		var shrub_id: String = struck.get_meta("tree_id")
+		var point: Vector3 = struck.get_meta("tree_point")
+		var visual: Dictionary = shrub_body.visuals[point]
+		var shape_index := 0
+		check.call(shrub_body.vehicle_tree_impact(shape_index, Vector3.FORWARD * 8.0) and not shrub_body.vehicle_tree_impact(shape_index, Vector3.FORWARD * 8.0),
+			"v19 a shrub accepts only one impact before its collider is disabled")
+		await tree.process_frame
+		var debris := chunk.get_node_or_null("TreeDebris")
+		var effect := debris.get_child(0) as TreeFall if debris != null else null
+		check.call(struck.disabled and not neighbour.disabled and effect != null and effect.leaf_pieces.size() > 1 and effect.wood_bodies.is_empty(),
+			"v19 a shrub scatters its branches and leaves and only its own collider yields")
+		check.call(field.destroyed_trees.has(shrub_id) and TreeImpact.valid_ledger(field.destroyed_trees), "v19 destroyed shrub IDs can be saved with destroyed trees")
+		shrub_reference.erase(shrub_id)
+		if DisplayServer.get_name() == "headless":
+			var cell: String = visual.node.name
+			ground_reference[cell].count -= 1
+			if ground_reference[cell].count == 0: ground_reference.erase(cell)
+		else:
+			var pose: Transform3D = visual.node.transform * visual.pose
+			ground_reference.erase(pose.origin)
+			check.call(visual.node.multimesh.get_instance_transform(visual.index).basis == Basis.from_scale(Vector3.ZERO),
+				"v19 a crushed shrub disappears from its original visual batch")
 	chunk.queue_free()
 	await tree.process_frame
 	var rebuilt := ChunkGenerator.new()
@@ -651,12 +681,14 @@ static func _check_forest_rebuild(tree: SceneTree, world: Node3D, check: Callabl
 	rebuilt.band = band
 	world.add_child(rebuilt)
 	await ForestScenery.build(rebuilt, true)
-	var after := _forest_snapshot(rebuilt)
+	var after := _forest_snapshot(rebuilt.get_node("ForestTrunks") as ForestTrunks)
 	var ground_message := "v19 sliced rebuilding preserves ground-cover batch mesh, kind, cell and count" if DisplayServer.get_name() == "headless" else "v19 sliced rebuilding preserves every ground-cover kind and transform"
 	check.call(_ground_snapshot(rebuilt, check) == ground_reference, ground_message)
 	check.call(not after.has(removed), "v19 saved tombstone removes the same tree during sliced forest rebuilding")
 	reference.erase(removed)
 	check.call(after == reference, "v19 sliced forest rebuilding preserves every surviving mesh, pose, trunk and stable identity")
+	check.call(_forest_snapshot(rebuilt.get_node("ForestShrubs") as ForestTrunks) == shrub_reference,
+		"v19 sliced rebuilding omits the crushed shrub and preserves neighbouring shrubs")
 	check.call(ForestScenery.trees(rebuilt.field, band) == planned, "v19 tombstones do not renumber or reroll the planned tree array")
 	rebuilt.queue_free()
 	await tree.process_frame

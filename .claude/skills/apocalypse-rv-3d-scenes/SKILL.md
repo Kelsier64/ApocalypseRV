@@ -29,12 +29,17 @@ For split buildings, keep the layout and assembly in Godot and make each compone
 You can read PNGs with the Read tool, so render and look rather than infer from numbers.
 
 - **A single GLB:** `comfyui-image-to-3d`'s `review.py` renders 12 views (six angles, textured and clay).
-- **In context:** most playgrounds have a capture flag (`--capture`, `--capture-all`, F7/F8 screenshot). Find the right one in [playgrounds](../../../docs/guides/playgrounds.md), run it with `run_in_background`, then read the written PNGs.
+- **In context:** render the integrated asset from the gameplay camera with a playground capture flag and read the PNGs before reporting. The `playtest` skill's "Render Captures First" section has the command and pitfalls.
+- Compare against the surrounding cab or room: clean vector art and self-lit flat panels read as UI pasted into the world.
 - Use computer use only when the check needs live interaction.
+
+## Textures added outside the editor
+
+`godot --headless --path . --import` creates the `.import` file without mipmaps. For any texture shown in 3D, set `mipmaps/generate=true` in it and import again, or thin lines shimmer at the default render scale.
 
 ## Text on models
 
-The full rule is "In-Game Text" in [CLAUDE.md](../../../CLAUDE.md). For 3D work in practice:
+The full rule is hard rule 1 in [CLAUDE.md](../../../CLAUDE.md); a hook blocks `Label3D`/`TextMesh` in game code. For 3D work in practice:
 
 - Never put hints, controls, instructions, item names or status labels on models, textures or in the world. No `Label3D`, `TextMesh`, floating, camera-facing, white/glowing or unshaded text.
 - Add words only where the fiction needs them (an essential sign, a manufacturer plate, a real instrument screen), as an authored texture, decal or device screen that matches the surface's lighting, wear and scale.
@@ -48,4 +53,6 @@ Blender 5.2 is on PATH. Use it headless for remeshing, baking, inspection and ex
 blender --background --python <script.py> -- <args>
 ```
 
-Keep scripts in an ignored work folder under `.godot/` unless they are a reusable build step (existing ones live in `scripts/build_*.py`). If a Blender MCP server is connected, you may use it for interactive work. Ask the user to open Blender only when the task truly needs the GUI and the CLI cannot do it; say what you tried.
+Keep scripts in an ignored work folder under `.godot/` unless they are a reusable build step (existing ones live in `scripts/build_*.py`).
+
+`.mcp.json` also configures a Blender MCP server (`mcp-for-blender`, safe mode) for interactive work in a running Blender. Prefer the CLI; use the MCP when you need to inspect or edit a scene the user has open. Ask the user to open Blender only when the task truly needs the GUI and the CLI cannot do it; say what you tried.
