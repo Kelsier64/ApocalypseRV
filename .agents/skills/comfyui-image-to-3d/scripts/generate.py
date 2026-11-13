@@ -1,4 +1,9 @@
-"""Pinned single-image ComfyUI client: one submit, resumable read-only collection."""
+"""Pinned single-image TRELLIS.2 client for local ComfyUI.
+
+One job per new output folder. `submit` posts at most once; `status`, `wait`, `collect`
+and `reconcile` only read the backend, so they are always safe to repeat.
+Exit codes: 0 done/ok, 1 stopped (see "error"), 2 job unknown to backend, 3 still running.
+"""
 import argparse
 import hashlib
 import io
@@ -7,6 +12,7 @@ import math
 import re
 import struct
 import sys
+import time
 import uuid
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -347,19 +353,34 @@ def collect(folder):
     return result
 
 
+def wait(folder, timeout=1800, interval=15, sleep=time.sleep, clock=time.monotonic):
+    """Poll one existing job until collected, unknown, or timed out. Never submits."""
+    deadline = clock() + timeout
+    while True:
+        result = collect(folder)
+        if result["state"] in ("ART_REVIEW_REQUIRED", "UNKNOWN"):
+            return result
+        if clock() >= deadline:
+            return {**result, "timed_out": True}
+        sleep(interval)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="action", required=True)
-    for name in ("preflight", "submit"):
+    for name in ("preflight", "submit", "run"):
         command = commands.add_parser(name)
         command.add_argument("--url", default="http://127.0.0.1:8000")
         command.add_argument("--backend")
-        if name == "submit":
+        if name != "preflight":
             command.add_argument("--image", required=True)
             command.add_argument("--output", required=True)
             command.add_argument("--asset-id", required=True)
-    for name in ("status", "collect"):
+    for name in ("status", "collect", "wait"):
         commands.add_parser(name).add_argument("--output", required=True)
+    for name in ("run", "wait"):
+        commands.choices[name].add_argument("--timeout", type=float, default=1800, help="seconds")
+        commands.choices[name].add_argument("--interval", type=float, default=15, help="seconds")
     recover = commands.add_parser("reconcile")
     recover.add_argument("--output", required=True)
     recover.add_argument("--prompt-id", required=True)
@@ -370,6 +391,11 @@ def main():
             result = Client(args.url, args.backend).preflight()
         elif args.action == "submit":
             result = submit(Client(args.url, args.backend), args.image, args.output, args.asset_id)
+        elif args.action == "run":
+            submit(Client(args.url, args.backend), args.image, args.output, args.asset_id)
+            result = wait(args.output, args.timeout, args.interval)
+        elif args.action == "wait":
+            result = wait(args.output, args.timeout, args.interval)
         elif args.action == "collect":
             result = collect(args.output)
         elif args.action == "status":
@@ -379,7 +405,8 @@ def main():
         else:
             result = inspect_glb(Path(args.glb).read_bytes())
         print(json.dumps(result, ensure_ascii=False))
-        return 2 if result.get("state") == "UNKNOWN" else 0
+        state = result.get("state")
+        return 2 if state == "UNKNOWN" else 3 if state in ("RUNNING", "QUEUED") else 0
     except Exception as error:
         print(json.dumps({"state": "STOPPED", "error": str(error)}, ensure_ascii=False))
         return 1

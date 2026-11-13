@@ -173,6 +173,39 @@ class ClientTests(unittest.TestCase):
                 generate.collect(self.output)
         self.assertEqual((self.output / "raw.glb").read_bytes(), previous)
 
+    def test_wait_polls_until_collected_without_posting(self):
+        backend, job = self.completed_job()
+        record = backend.history.pop(job["prompt_id"])
+        polls = []
+
+        def sleep(_):
+            polls.append(1)
+            if len(polls) == 2:
+                backend.history[job["prompt_id"]] = record
+
+        backend.get = lambda path: (backend.history if path.startswith("/history/")
+                                    else {"queue_running": [[0, job["prompt_id"]]], "queue_pending": []})
+        with patch.object(generate, "Client", return_value=backend):
+            result = generate.wait(self.output, timeout=60, interval=0, sleep=sleep)
+        self.assertEqual(result["state"], "ART_REVIEW_REQUIRED")
+        self.assertEqual(len(polls), 2)
+        self.assertTrue((self.output / "raw.glb").is_file())
+        self.assertEqual(backend.posts, [])
+
+    def test_wait_timeout_reports_running_and_keeps_job(self):
+        backend, job = self.completed_job()
+        backend.history.clear()
+        backend.get = lambda path: ({} if path.startswith("/history/")
+                                    else {"queue_running": [], "queue_pending": [[0, job["prompt_id"]]]})
+        ticks = iter([0, 5, 11])
+        with patch.object(generate, "Client", return_value=backend):
+            result = generate.wait(self.output, timeout=10, interval=0, sleep=lambda _: None,
+                                   clock=lambda: next(ticks))
+        self.assertEqual((result["state"], result["timed_out"]), ("QUEUED", True))
+        self.assertEqual(generate.read(self.output / "job.json")["prompt_id"], job["prompt_id"])
+        self.assertFalse((self.output / "raw.glb").exists())
+        self.assertEqual(backend.posts, [])
+
     def test_pose_rejects_scaling_and_reflection(self):
         pose = self.root / "pose.json"
         for rows in ([[2, 0, 0], [0, 1, 0], [0, 0, 1]],

@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import re
+import shutil
 import struct
 import subprocess
 from collections import Counter
@@ -179,11 +180,21 @@ def editable(doc, binary, folder, asset):
     save_json(folder/(asset+'.gltf'), ext)
 
 
+def find_gltfpack(explicit):
+    """Explicit path, then PATH, then the repository's ignored local copy."""
+    if explicit:
+        return explicit
+    local = Path(__file__).resolve().parents[4]/'.godot/gltfpack-1.3/bin/gltfpack.exe'
+    return shutil.which('gltfpack') or (str(local) if local.is_file() else None)
+
+
 def prepare(a):
+    if a.ratio is not None:
+        a.gltfpack = find_gltfpack(a.gltfpack)
     source = Path(a.source).resolve(); output = Path(a.output).resolve()
     require(not output.exists(), 'Use a new ignored output folder')
     require(re.fullmatch(r'[a-z][a-z0-9_\-]*', a.asset), 'Invalid asset name')
-    require(a.ratio is None or (a.gltfpack and math.isfinite(a.ratio) and 0 < a.ratio <= 1), 'Ratio needs gltfpack and must be in (0,1]')
+    require(a.ratio is None or (a.gltfpack and math.isfinite(a.ratio) and 0 < a.ratio <= 1), '--ratio must be in (0,1] and needs gltfpack (pass --gltfpack)')
     require(math.isfinite(a.error) and a.error > 0, 'Invalid reduction error')
     original = source.read_bytes(); doc, binary, _ = decode(source); prim = supported(doc, binary)
     raw_triangles = len(accessor(doc, binary, prim['indices']))//3
@@ -293,7 +304,7 @@ def main():
     p.add_argument('--origin', choices=['center', 'bottom-center'], required=True)
     p.add_argument('--rotation-y', type=float, default=0, help='Degrees; choose after inspecting source facing')
     p.add_argument('--front', choices=['+X', '-X', '+Z', '-Z'], required=True, help='Intended facing; must verify visually')
-    p.add_argument('--gltfpack'); p.add_argument('--ratio', type=float); p.add_argument('--error', type=float, default=0.025)
+    p.add_argument('--gltfpack', help='default: PATH, then .godot/gltfpack-1.3/bin'); p.add_argument('--ratio', type=float); p.add_argument('--error', type=float, default=0.025)
     p = subs.add_parser('publish', help='Invoke only after art review; retain Visuals/Model and hidden graybox')
     p.add_argument('--prepared', required=True); p.add_argument('--repo', default='.')
     p.add_argument('--scene', required=True); p.add_argument('--expected-scene', required=True)

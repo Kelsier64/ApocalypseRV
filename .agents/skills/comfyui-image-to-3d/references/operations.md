@@ -1,76 +1,56 @@
 # 本機操作
 
-專案根目錄執行，Python 需 Pillow。PATH 沒有 Python 時可用 Codex `load_workspace_dependencies` 找內建 runtime，改以完整路徑執行；工具說明見[操作指南](../../../../docs/guides/image-to-3d-workflow.md)。每次工作建立新的 `.godot/art-work/<asset>/<run>/`，生成 job、歷史、候選、檢查圖、失敗輸出、logs 與本機依賴都放在這裡。完整跑完技術檢查與目視驗收，保留本機產物供除錯；提交 Git 時只挑必要的來源、editable／重建資料、正式資產和少量代表證據，不預設清理工作資料。
+所有指令在專案根目錄執行，變數沿用 [SKILL.md](../SKILL.md#環境) 的 `$skill`、`$py`、`$work`。
 
-## ComfyUI 沒開啟時
+## 啟動服務
 
-preflight 若連線被拒絕，先確認服務是否已開；使用者已要求生成時，可使用本機已驗證的啟動器：
+`preflight` 連線被拒時，先確認服務是否已開。使用者已要求生成時，可用本機既有啟動器（不重裝、不下載權重）：
 
 ```powershell
 & "$env:USERPROFILE/Apps/Pixal3D-API-v2/start.ps1"
 ```
 
-先確認腳本存在；其他電腦沿用實際安裝的啟動方式。此腳本會隱藏啟動既有 ComfyUI 與 API，不需重裝或下載權重。等 8000 `/health` 的 `backend.available=true`，再跑 preflight；約兩分鐘仍未就緒就查啟動器旁的 `deployment/comfy.stderr.log` 和 `deployment/api-8000.stderr.log`。API 已開但後端失效時，啟動器會直接返回，需另查後端；不要反覆重啟共用服務。
+腳本會在背景啟動 ComfyUI（8188）與 API（8000），已在執行則直接返回。等 `/health` 回報 `backend.available=true` 再跑 preflight。約兩分鐘仍未就緒，查啟動器旁的 `deployment/comfy.stderr.log`、`deployment/api-8000.stderr.log`。API 已開但後端失效時另查後端，不要反覆重啟共用服務。其他電腦沿用實際安裝的啟動方式；只有 ComfyUI 時，preflight／submit／run 加 `--backend http://127.0.0.1:8188`。
 
-## 生成與收檔
+## 分步指令
 
 ```powershell
-$skill = '.agents/skills/comfyui-image-to-3d'
-$work = '.godot/art-work/example-asset/run-001'
 $job = "$work/generation"
-python "$skill/scripts/generate.py" preflight
-python "$skill/scripts/generate.py" submit --image '<reference.png>' --asset-id 'example-asset' --output $job
-python "$skill/scripts/generate.py" status --output $job
-python "$skill/scripts/generate.py" collect --output $job
-python "$skill/scripts/generate.py" inspect --glb "$job/raw.glb"
+& $py "$skill/scripts/generate.py" preflight                       # 節點、權重、佇列空閒
+& $py "$skill/scripts/generate.py" submit --image '<ref.png>' --asset-id '<asset>' --output $job
+& $py "$skill/scripts/generate.py" status --output $job            # 查一次
+& $py "$skill/scripts/generate.py" wait --output $job --timeout 900 # 輪詢直到完成並收檔
+& $py "$skill/scripts/generate.py" collect --output $job           # 收一次
+& $py "$skill/scripts/generate.py" inspect --glb "$job/raw.glb"     # 只做 GLB 技術檢查
 ```
 
-預設由 8000 `/health` 找後端；只用 ComfyUI 時，preflight／submit 加 `--backend http://127.0.0.1:8188`。會檢查 API／Comfy queue 空閒，但沒有跨程序鎖；腳本不啟停服務、下載權重或改 preset。
+| exit | 意義 |
+|---|---|
+| 0 | 完成（`READY`、`SUBMITTED`、`ART_REVIEW_REQUIRED` 等） |
+| 1 | `STOPPED`，看 `error` |
+| 2 | 後端找不到這個 prompt（`UNKNOWN`） |
+| 3 | 仍在 `RUNNING`／`QUEUED` |
 
-每次命令只操作一次，未完成稍後再查。沿用自動保存的 job、原圖、conditioning、prompt／history 與結果。`READY` 表示資源可用，`ART_REVIEW_REQUIRED` 表示技術檢查成功，仍需看模型。
+保證：
 
-## 多件生成與續跑
-
-多件逐件提交，收妥原 GLB 後再開始下一件；佇列忙碌就稍後再查，不清空或中斷其他工作。中途斷線先看原資料夾的 `job.json`，已有 prompt ID 就續用 status／collect；提交結果不明按下一節核對，不換資料夾重送。
+- `submit`／`run` 先檢查 API 與 ComfyUI 佇列都空閒才提交，同一輸出資料夾只會 POST 一次；沒有跨程序鎖，不要並行提交。
+- `status`／`wait`／`collect`／`reconcile` 只讀後端，可重複執行。收檔會核對保存的參考圖、graph 與 client ID；同 SHA 舊檔沿用，內容不同則停止並保留舊檔。
+- 腳本不啟停服務、不下載權重、不改 graph；`inspect` 只檢查不修改。拓樸（重複面、非流形邊）不在此檢查。
 
 ## 提交結果不明
 
-`SUBMISSION_INTENT`／`SUBMISSION_UNKNOWN` 不刪除、不重送。查同一 backend 的 `/queue` 或 `/history?max_items=100`，以確切 client ID＋graph 找既有 prompt ID：
+`SUBMISSION_INTENT`／`SUBMISSION_UNKNOWN`（例如 POST timeout）：**不要刪資料夾、不要重送。** 到同一後端查 `/queue` 或 `/history?max_items=100`，用 `job.json` 的 `client_id` 與 `prompt.json` 找到既有 prompt ID，再：
 
 ```powershell
-python "$skill/scripts/generate.py" reconcile --output $job --prompt-id '<existing-prompt-id>'
-python "$skill/scripts/generate.py" collect --output $job
+& $py "$skill/scripts/generate.py" reconcile --output $job --prompt-id '<prompt-id>'
+& $py "$skill/scripts/generate.py" wait --output $job
 ```
 
-reconcile 不提交新工作。找不到就保留 UNKNOWN 並回報；`NOT_SUBMITTED` 也停止批次。collect 可對同一工作重試；同 SHA 舊檔沿用，內容不同則停止。
+`reconcile` 會核對 graph 與 client ID，不會提交新工作。找不到就保留 UNKNOWN 並回報使用者；`NOT_SUBMITTED`（上傳後失敗、沒有 POST）也停止批次並回報。
 
-## 降面
+## 環境問題
 
-先讀[方法與限制](decimation.md)。固定 profile 腳本範例：
-
-```powershell
-$module = "$work/deps/meshoptimizer/node_modules/meshoptimizer/meshopt_simplifier.js"
-$reduced = "$work/candidates/reduced-20k"
-node "$skill/scripts/simplify.mjs" "$job/raw.glb" $reduced 20000 $module
-if ($LASTEXITCODE -ne 0) { throw '降面未通過，查看 simplification.json' }
-```
-
-查摘要的 requested／actual／target_reached；未達標 exit 2，不能當作通過，可另用副本修整。只有使用者明確授權放棄誤差上限才加 `--force-target`，勿暗改 flags。輸出 GLB、頂點 mapping 與摘要，`acceptance` 仍為 false。
-
-## 檢查圖
-
-```powershell
-python "$skill/scripts/review.py" --source "$job/raw.glb" --output "$work/reviews/raw" --godot '<Godot.exe>'
-```
-
-比較時加 `--candidate "$reduced/raw.glb"`，並將輸出放在 `$work/reviews/reduced-20k`。
-
-- viewer 使用臨時 Godot project，Windows 隱藏啟動，結束後關閉；日誌保存在輸出資料夾。
-- 產生 textured／受光灰色 clay 的 front、side、back、oblique、top、underside 六視角及 review JSON；比較共用 source 的鏡頭、光照與 framing。
-- 預設來源 up、front 為 +Z，不自動讀 pose。正位明確加 `--pose '<pose.json>'`，只接受右手正交 `rotation_rows` 3×3 旋轉，並保留來源 up 檢查；遊戲朝向／原點另確認。
-- 看完全部圖再填 `review.json` 的 views_inspected、checks、defects、limitations、state；測量附方法、單位與容差，觀察不冒充精度。
-- 技術 PASS 不等於外觀合格。面數／SHA／保全錯誤停止，渲染錯誤標 UNKNOWN；缺件、歪斜、預算未達或必要 UNKNOWN 時修整或回報。
-
-## 離線工具回歸
-
-`python "$skill/scripts/test_client.py" -v` 不連服務、不提交 GPU 工作；檢查忙碌拒收、提交 timeout 不重送、輸入綁定、唯讀重收、錯誤 history、原檔保全與剛體姿態限制。實際生成、渲染與美術驗收另做。
+- PATH 上的 `python` 是 Windows Store 佔位程式時，用 `$py` 的完整路徑。
+- 缺 Pillow／numpy 又不想用 ComfyUI venv：`python -m pip install --target "$work/deps/python" Pillow numpy`，執行時設 `$env:PYTHONPATH = "$work/deps/python"`。
+- Windows 暫存目錄被拒寫時，把本程序的 `TEMP`／`TMP` 改到 `.godot/` 下的忽略資料夾再跑測試或 review。
+- Godot 不在 PATH：`review.py --godot 'C:/Program Files/godot/godot.exe'`。
