@@ -58,17 +58,11 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Delegation
 
-Delegate only narrow, self-contained work with clear scope and acceptance criteria, and review the output before it lands. Keep scene modeling and 3D integration in the main agent.
+Discuss first, then dispatch the agreed plan with the user-level `dispatch` skill. Project specifics:
 
-- `Explore` agent for broad read-only searches.
-- `opus` for complex tasks that need deep reasoning; `haiku` for simple lookups and mechanical edits; `sonnet` for computer-use game testing.
-- The user-level `agy` skill sends work to Antigravity CLI (Gemini) for a second opinion or reference images.
-
-## Git
-
-- Before new work, ask whether to branch from `origin/main`. Default: stay on the current branch, and keep follow-ups on it.
-- Finish and validate, review `git status` and the diff, remove task-generated clutter, and commit the validated changes. Preserve and report unrelated user changes.
-- Ask before pushing or creating or updating a PR.
+- Keep scene modeling and 3D integration in the main agent.
+- Models: `opus` for deep reasoning, `haiku` for lookups and mechanical edits, `sonnet` for implementation and computer-use game testing.
+- The user-level `agy` skill reaches Antigravity CLI (Gemini) for a second opinion or reference images.
 
 ## Skills
 
@@ -81,3 +75,4 @@ Project skills live in `.claude/skills/`. Load one when its trigger applies.
 | `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md`, or anything under `docs/` |
 | `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
 | `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
+| `harness-maintenance` | Editing CLAUDE.md, AGENTS.md, skills, hooks, `scripts/agent/` or `.mcp.json` |
