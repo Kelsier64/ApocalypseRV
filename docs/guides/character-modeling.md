@@ -117,7 +117,7 @@
 2. 檢查蒙皮極端姿勢、循環接縫與 root 漂移，再檢查正式狀態切換、速度對應及攻擊命中。
 3. 在真實 RV 中核對門洞、走道、站起淨空、攀爬、持物／駕駛或抓咬，以及車身移動時的支撐。
 4. 布娃娃／斷肢檢查姿態交接、速度繼承、碰撞、復原及保存；各角色不同物理配置分別驗收。
-5. 依 [測試指南](../../tests/README.md)選取適用回歸並使用統一 runner；物理與畫面改動另依 [AGENTS](../../AGENTS.md)及 [測試場指南](playgrounds.md)做實機觀察。
+5. 依 [測試指南](../../tests/README.md)選取適用回歸並使用統一 runner；物理與畫面改動另依 [CLAUDE](../../CLAUDE.md)及 [測試場指南](playgrounds.md)做實機觀察。
 
 玩家匯入、正式模型、逐幀蒙皮、布娃娃、斷肢與 Raker 外觀的專項自測已退出核心自動清單；歷史證據保留於 [角色整合驗收](../validation/2026-09-27-player-model-integration.md) 與 [Raker 驗收](../validation/2026-09-22-raker.md)。目前保留 [Raker 抓取](../../tests/test_raker_grab.gd) 及 [Slender Speaker 抓取](../../tests/test_slender_speaker_acquisition.gd) 等行為檢查；新角色資產仍須自行檢查匯入、蒙皮及實際姿勢，尚無通用資產驗證器。
 

@@ -44,4 +44,4 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-Runner 預設匯入資源、執行保留的 16 支根層核心測試並檢查正式主場景啟動；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [AGENTS](../../AGENTS.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。
+Runner 預設匯入資源、執行保留的 16 支根層核心測試並檢查正式主場景啟動；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，再按 [CLAUDE](../../CLAUDE.md) 與展示場指南做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。

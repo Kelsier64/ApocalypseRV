@@ -9,7 +9,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ASSETS = ROOT / "assets/models/bunker_diesel_generator"
-sys.path.insert(0, str(ROOT / ".agents/skills/comfyui-image-to-3d/scripts"))
+sys.path.insert(0, str(ROOT / ".claude/skills/comfyui-image-to-3d/scripts"))
 from review import decode, images, tuples
 
 

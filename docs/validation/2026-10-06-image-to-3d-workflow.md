@@ -18,7 +18,7 @@
 | 獨立 agent forward review | 發現 raw PASS 與 final 面數預算互相阻塞；已明確將最終預算延後至降面後。未知提交／忙碌佇列／預算未達情境均停止新 submit，保留既有工作查證 |
 | 相對連結、git diff --check | 通過 |
 
-測試腳本與 QA 輸出位於本機忽略的 `.godot/workflow-checks/`，不附帶先前床實驗素材。Client submit 是 mock 行為測試；本次實際連線只做 preflight。固定 graph 的 GPU 生成依據屬[先前 profile 紀錄](../../.agents/skills/comfyui-image-to-3d/references/profile.md)，不是本次重新生成。
+測試腳本與 QA 輸出位於本機忽略的 `.godot/workflow-checks/`，不附帶先前床實驗素材。Client submit 是 mock 行為測試；本次實際連線只做 preflight。固定 graph 的 GPU 生成依據屬[先前 profile 紀錄](../../.claude/skills/comfyui-image-to-3d/references/profile.md)，不是本次重新生成。
 
 ## 同一 raw 的降面結果
 

@@ -1,12 +1,12 @@
 # 單圖 → 3D 操作指南
 
-日常流程、指令與判斷都在 [image-to-3D skill](../../.agents/skills/comfyui-image-to-3d/SKILL.md)；本頁只補人工安裝與交付注意事項。
+日常流程、指令與判斷都在 [image-to-3D skill](../../.claude/skills/comfyui-image-to-3d/SKILL.md)；本頁只補人工安裝與交付注意事項。
 
 ## 工具
 
 | 工具 | 用途 | 位置 |
 |---|---|---|
-| ComfyUI＋TRELLIS.2 權重 | 生成 | `C:/Users/evan4/Apps`，由 `Pixal3D-API-v2/start.ps1` 啟動（見[本機操作](../../.agents/skills/comfyui-image-to-3d/references/operations.md)） |
+| ComfyUI＋TRELLIS.2 權重 | 生成 | `C:/Users/evan4/Apps`，由 `Pixal3D-API-v2/start.ps1` 啟動（見[本機操作](../../.claude/skills/comfyui-image-to-3d/references/operations.md)） |
 | Python 3.11+、Pillow、numpy | skill 腳本 | 可直接用 `Apps/ComfyUI/pixal3d-runtime/.venv` |
 | [Godot 4.7.2](https://godotengine.org/download/archive/) | 六視角檢查圖 | PATH 上的 `godot` |
 | [gltfpack 1.3](https://github.com/zeux/meshoptimizer/releases/tag/v1.3) | 降面 | 解壓到忽略的 `.godot/gltfpack-1.3/bin/` |

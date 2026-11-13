@@ -34,7 +34,7 @@
 | [生鏽工業閥門](../../assets/models/scavenge_loot/industrial_valve.glb) | 49,490 | 7,360 | 32／36／27 |
 | [搪瓷熱水壺](../../assets/models/scavenge_loot/enamel_kettle.glb) | 48,364 | 5,802 | 27／25／21 |
 
-使用 [共用靜態道具工具](../../.agents/skills/comfyui-image-to-3d/references/static-props.md) 與 gltfpack 1.3（ratio 0.12、error 0.025）；誤差限制使部分道具未達 12% 面數，保留實際結果。沒有放寬誤差或強制達標。原本約 297k 面降至合計 47,362 面，嵌入貼圖 bytes 全數保留。
+使用 [共用靜態道具工具](../../.claude/skills/comfyui-image-to-3d/references/static-props.md) 與 gltfpack 1.3（ratio 0.12、error 0.025）；誤差限制使部分道具未達 12% 面數，保留實際結果。沒有放寬誤差或強制達標。原本約 297k 面降至合計 47,362 面，嵌入貼圖 bytes 全數保留。
 
 馬達繞 Y 旋轉 180°，醫療箱旋轉 90°，使輸出軸／醫療符號朝 +Z。醫療標記沿用原模，沒有額外新增標記。醫療箱厚度與閥門深度由原先概念提案調整，保留箱體及圓形手輪的比例。
 

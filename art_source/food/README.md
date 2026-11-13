@@ -17,7 +17,7 @@ Six textured and clay views were inspected, including backs and bottoms, followe
 Rebuild a working copy with the sizes/rotation above, for example from the repository root:
 
 ```powershell
-python .agents/skills/comfyui-image-to-3d/scripts/prepare_prop.py prepare --source art_source/food/canned_food/raw.glb --output .godot/art-work/food/canned-rebuild --asset canned_food --size 0.085 0.12 0.085 --origin center --front +Z --rotation-y 90 --gltfpack .godot/gltfpack-1.3/bin/gltfpack.exe --ratio 0.06 --error 0.025
+python .claude/skills/comfyui-image-to-3d/scripts/prepare_prop.py prepare --source art_source/food/canned_food/raw.glb --output .godot/art-work/food/canned-rebuild --asset canned_food --size 0.085 0.12 0.085 --origin center --front +Z --rotation-y 90 --gltfpack .godot/gltfpack-1.3/bin/gltfpack.exe --ratio 0.06 --error 0.025
 ```
 
 The gltfpack executable is a local authoring dependency, not a game dependency. Use another installed gltfpack 1.3 path when rebuilding elsewhere.

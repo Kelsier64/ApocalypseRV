@@ -1,6 +1,6 @@
 # 3D 場景 skill 獨立實際演練
 
-日期：2026-09-28。此紀錄先完成實際規劃與建模交接，再評估 skill；不是只做文字審查。測試對象：[apocalypse-rv-3d-scenes](../../.agents/skills/apocalypse-rv-3d-scenes/SKILL.md)，搭配 [prompt 範本](../modeling/TEMPLATE.md)、[建模索引](../modeling/README.md)、[POI 規範](../guides/poi-authoring.md)。基準 HEAD 為 `e877cc799d5079d9208252ac671d3c5efd6efe42`；skill 與相關新文件以當時工作樹內容為準。
+日期：2026-09-28。此紀錄先完成實際規劃與建模交接，再評估 skill；不是只做文字審查。測試對象：[apocalypse-rv-3d-scenes](../../.claude/skills/apocalypse-rv-3d-scenes/SKILL.md)，搭配 [prompt 範本](../modeling/TEMPLATE.md)、[建模索引](../modeling/README.md)、[POI 規範](../guides/poi-authoring.md)。基準 HEAD 為 `e877cc799d5079d9208252ac671d3c5efd6efe42`；skill 與相關新文件以當時工作樹內容為準。
 
 ## 演練要求與實際交付
 

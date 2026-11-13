@@ -366,7 +366,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 | 資源與供電 | 能源由 VehicleEnergy 調度，材料由本車 MaterialStorage 管理；設備／UI 不另持有一份油電材料總量。交易失敗不吞資源、不重複退款；生產輸入由工作站持有，缺電暫停，搬移／摧毀安全退料，出口受阻保留工作。 |
 | 受損與修復 | 所有 Item 免疫怪物傷害，選敵、接觸、腳下及實際命中均拒絕，命中物品不向底盤轉交或穿透。其他授權損傷與維修沿用 take_damage／needs_repair／repair_health；損傷外觀只讀同一耐久來源。 |
 | 保存 | 場景納入 SaveSceneCatalog；capture_item_state／restore_item_state 共用 ID、condition、回收結果、enabled、service 與專用子狀態，ItemState 驗證。世界記錄另保存 fixed、transform、physics 及 support；背包不保留舊支撐。所有權跨背包、倉庫、插槽、世界、副本及分解佇列，重複 ID 拒絕保存／載入。 |
-| 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動依 AGENTS 做實機攀爬／支撐／拆頂檢查。 |
+| 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動依 CLAUDE.md 做實機攀爬／支撐／拆頂檢查。 |
 
 現行自動回歸保留 [物品操作](tests/test_item_player.gd)、[物品保存](tests/test_item_persistence.gd) 及 [檢查點失敗恢復](tests/test_checkpoint_failures.gd)。凍結設備的碰撞力矩限制仍見第 6 節；遵守上述規格不代表大型外掛物理已解決。
 
@@ -601,7 +601,7 @@ VehicleAudio 快取原創 PCM stream，每車一個引擎迴圈／最多三個�
 
 Runner 核對引擎版本、程序退出碼、非空日誌、錯誤與 `PASS:`；smoke 另要求 `WORLD_READY_FOR_PLAY`。任一程序失敗或超過期限即停止，避免繼續使用受污染的狀態。版本、工作樹、選取清單、結果與耗時保存於 `.godot/test-logs/` 各次執行目錄。[CI](.github/workflows/tests.yml) 使用單一 Windows／pwsh job，期限 10 分鐘，在 main push、PR 或手動啟動；取消同一分支被取代的執行，僅文件變更略過。
 
-文件更動核對連結與來源；程式更動選取最小有意義的測試，必要時執行預設核心集。物理更動另依 [AGENTS.md](AGENTS.md) 做互動觀察。Headless 結果不代表原生畫面、長途經濟、極端翻車或怪物群已完成驗收。
+文件更動核對連結與來源；程式更動選取最小有意義的測試，必要時執行預設核心集。物理更動另依 [CLAUDE.md](CLAUDE.md) 做互動觀察。Headless 結果不代表原生畫面、長途經濟、極端翻車或怪物群已完成驗收。
 
 底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
 

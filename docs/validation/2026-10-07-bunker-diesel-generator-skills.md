@@ -30,11 +30,11 @@
 
 ## Skill 問題與修正
 
-- [ComfyUI skill](../../.agents/skills/comfyui-image-to-3d/SKILL.md) 的快檢指令指到不存在的專案 `scripts/review.py`：改成 skill 內完整相對路徑。PATH 無 Python 時補上 `load_workspace_dependencies`／完整執行檔路徑的選項。
-- [render_views.gd](../../.agents/skills/comfyui-image-to-3d/scripts/render_views.gd) 原 clay 是 unshaded 全白，無法檢查凹凸；改成受光灰、高 roughness。真實渲染發現原燈光令灰模過曝，再依實圖調整 key／fill／ambient 並加弱底光。新增 underside，與 [review.py](../../.agents/skills/comfyui-image-to-3d/scripts/review.py) 的完整輸出檢查同步。
+- [ComfyUI skill](../../.claude/skills/comfyui-image-to-3d/SKILL.md) 的快檢指令指到不存在的專案 `scripts/review.py`：改成 skill 內完整相對路徑。PATH 無 Python 時補上 `load_workspace_dependencies`／完整執行檔路徑的選項。
+- [render_views.gd](../../.claude/skills/comfyui-image-to-3d/scripts/render_views.gd) 原 clay 是 unshaded 全白，無法檢查凹凸；改成受光灰、高 roughness。真實渲染發現原燈光令灰模過曝，再依實圖調整 key／fill／ambient 並加弱底光。新增 underside，與 [review.py](../../.claude/skills/comfyui-image-to-3d/scripts/review.py) 的完整輸出檢查同步。
 - [active guide](../guides/image-to-3d-workflow.md) 殘留不存在的 request skill／自訂 agent 連結，並把現行可選步驟寫成必須：移除失效依賴，統一主 agent 直接生成、修整、接入及可選降面。
-- [3D scene skill](../../.agents/skills/apocalypse-rv-3d-scenes/SKILL.md) 原本只要 Blender MCP 不可用就要求使用者開 Blender：改成已有 CLI／glTF／Godot 工具足以完成時直接使用；確實需要 Blender 且無替代才詢問。補軸向、原點、設計尺寸與實際場景驗證、保留 wrapper／碰撞／功能。
-- 新增 [test_client.py](../../.agents/skills/comfyui-image-to-3d/scripts/test_client.py)：7 項離線不變量檢查，沒有更改 `generate.py` 或增加 GPU 重送。
+- [3D scene skill](../../.claude/skills/apocalypse-rv-3d-scenes/SKILL.md) 原本只要 Blender MCP 不可用就要求使用者開 Blender：改成已有 CLI／glTF／Godot 工具足以完成時直接使用；確實需要 Blender 且無替代才詢問。補軸向、原點、設計尺寸與實際場景驗證、保留 wrapper／碰撞／功能。
+- 新增 [test_client.py](../../.claude/skills/comfyui-image-to-3d/scripts/test_client.py)：7 項離線不變量檢查，沒有更改 `generate.py` 或增加 GPU 重送。
 - 初次未試降面是主 agent 的判斷遺漏；skill 也只寫依用途可選降面，缺少交付前的面數評估提醒。兩個 skill 已明確加入尺寸／距離／同屏量預算評估、成本偏高先試降面、保留高面數要說明理由；50k 是生成預設，不是遊戲預算。仍不設定全資產固定 20k 門檻。降面說明另補 `review.py --candidate` 只接受嚴格簡化腳本的 mapping，不能用在 gltfpack `-sv`。
 
 本輪修正的是專案 `.agents/skills/`。另外已安裝的個人 ComfyUI skill 原本已指示 ApocalypseRV 優先使用這裡的腳本；後續也同步加入精簡 Git 交付規則，保留其其他設定。
@@ -42,7 +42,7 @@
 ## 自動檢查
 
 ```powershell
-& 'C:/Users/evan4/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' -B .agents/skills/comfyui-image-to-3d/scripts/test_client.py -v
+& 'C:/Users/evan4/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe' -B .claude/skills/comfyui-image-to-3d/scripts/test_client.py -v
 & ./scripts/test.ps1 -Godot 'C:/Program Files/godot/godot.exe' -TestFilter 'test_poi_asset_kit.gd,test_bunker_lighting.gd,test_poi_definitions.gd' -Smoke
 ```
 

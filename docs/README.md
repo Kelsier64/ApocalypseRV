@@ -199,7 +199,7 @@ Raker 車撞：[撞飛、存活起身與死亡布娃娃](validation/2026-10-02-r
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
 | 執行與維護自動測試 | [測試指南](../tests/README.md) | 快速集、完整回歸、耗時與分類規則 |
-| 開發約定 | [AGENTS](../AGENTS.md) | 協作與工具指引 |
+| 開發約定 | [CLAUDE](../CLAUDE.md) | 協作與工具指引 |
 | 待辦與原始想法 | [todo](../todo)、[todo_prompt](../todo_prompt)、[GDD_add](../GDD_add.md) | 保留原項目、POI 方向與補充提案；實作狀態見 GDD 及計畫總覽 |
 
 ## 文件維護規則

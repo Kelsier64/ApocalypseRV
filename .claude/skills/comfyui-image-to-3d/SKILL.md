@@ -18,7 +18,7 @@ description: Turn one reference image into a textured GLB with local ComfyUI (TR
 在專案根目錄執行。Python 需要 Pillow（`prepare_prop.py` 另需 numpy）；系統 Python 沒有時，用 ComfyUI runtime 的 venv，不要全域安裝：
 
 ```powershell
-$skill = '.agents/skills/comfyui-image-to-3d'
+$skill = '.claude/skills/comfyui-image-to-3d'
 $py = "$env:USERPROFILE/Apps/ComfyUI/pixal3d-runtime/.venv/Scripts/python.exe"   # 或任何有 Pillow+numpy 的 Python
 $work = '.godot/art-work/<asset>/run-01'                                          # 每次用新的忽略資料夾
 ```
@@ -34,7 +34,7 @@ $work = '.godot/art-work/<asset>/run-01'                                        
 - 透明背景靜態 PNG，一張只有一件完整物體，弱透視三分之四視角；高大物件接近水平鏡頭。
 - 輪廓、腳、孔洞與接點清楚；保留原配色與材質風格。不要地板、投影、背景、拼圖或三視圖。
 - 細線加粗或另做；磨損用貼圖表現，不加需求外的碎零件。
-- **不得有**操作提示、按鍵、物品名稱、狀態標籤或白色／發光提示字（見 AGENTS.md「In-Game Text」）。
+- **不得有**操作提示、按鍵、物品名稱、狀態標籤或白色／發光提示字（見 CLAUDE.md「In-Game Text」）。
 
 先實際看過圖再生成。使用者要求先看圖時先給預覽。
 

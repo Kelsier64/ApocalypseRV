@@ -46,7 +46,7 @@ Godot 4.7.2，PATH 安裝位置 `C:\Program Files\godot\godot.exe`。AGENTS.md �
 
 正式主世界 seed 42、Forward+ 定點檢查第二室入口、貨架、屋架、接待室、水設備、正面／側面／背面、發電機與屋頂，共 13 個視角；修正護網支撐、風管吊架接觸及帆布角落穿插後，最終日誌 `.godot/depot-whole-building/review-final.log` 正常結束且無腳本錯誤。最後屋頂材質另以兩視角複查，`.godot/depot-whole-building/roof-final.log`。沒有人工走遍基地或手動完成教學。
 
-另以內建 ImageGen 製作了新空壓機的透明參考圖，依 [生成技能](../../.agents/skills/comfyui-image-to-3d/SKILL.md) 取得使用者確認後，完成下方 ComfyUI 生成與整合。
+另以內建 ImageGen 製作了新空壓機的透明參考圖，依 [生成技能](../../.claude/skills/comfyui-image-to-3d/SKILL.md) 取得使用者確認後，完成下方 ComfyUI 生成與整合。
 
 開始本輪時已有使用者的 `project.godot` 輸入序列化修改，保持原樣且不納入本輪提交。
 

@@ -17,3 +17,6 @@
 /tests/slender_speaker_animation_workshop.*
 /tests/slender_speaker_world_review.*
 /tests/test_slender_speaker_asset.*
+
+# Claude Code local settings
+.claude/settings.local.json

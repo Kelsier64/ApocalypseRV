@@ -4,7 +4,7 @@
 
 2026-09-29 後續：油桶與滿／空汽油罐保留遊戲包裝場景，外觀改為原生灰盒；原模型已 [收存](../../../art_source/retired_props/2026-09-29/README.md)。部分用途 README 已校正，當前對應見 [來源 manifest](asset-provenance.md)。以下為 2026-09-28 的靜態盤點基線，原分類不代表後續變更仍未處理。
 
-日期：2026-09-28。範圍是 `props/`、`equipment/`、`rv/`、`world/`、`player/`、`enemies/` 的場景、相關程序 mesh，以及 `assets/materials/`。依 [3D 場景 skill](../../../.agents/skills/apocalypse-rv-3d-scenes/SKILL.md)、[AGENTS](../../../AGENTS.md)、[架構](../../../architecture.md) 與 [目錄指南](../../guides/codebase.md) 做靜態盤點；沒有改場景、搬檔、重建模型、啟動 Godot 或執行遊戲驗收。
+日期：2026-09-28。範圍是 `props/`、`equipment/`、`rv/`、`world/`、`player/`、`enemies/` 的場景、相關程序 mesh，以及 `assets/materials/`。依 [3D 場景 skill](../../../.claude/skills/apocalypse-rv-3d-scenes/SKILL.md)、[AGENTS](../../../AGENTS.md)、[架構](../../../architecture.md) 與 [目錄指南](../../guides/codebase.md) 做靜態盤點；沒有改場景、搬檔、重建模型、啟動 Godot 或執行遊戲驗收。
 
 ## 判讀方法與涵蓋範圍
 
