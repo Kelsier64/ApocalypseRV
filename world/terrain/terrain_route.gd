@@ -45,6 +45,11 @@ func _curve(s: float) -> Vector3:
 		ddf = 6.0 * (1.0 - 2.0 * u) / pow(600.0 * scale, 2.0)
 	return Vector3(value * fade, value * df + first * fade, value * ddf + 2.0 * first * df + second * fade)
 
+## Signed plan curvature; positive bends toward +X as the route advances.
+func curvature(s: float) -> float:
+	var curve := _curve(s)
+	return curve.z / pow(1.0 + curve.y * curve.y, 1.5)
+
 func height(s: float) -> float:
 	if s <= 450.0: return 0.0
 	var t := (s - 450.0) / HEIGHT_STEP

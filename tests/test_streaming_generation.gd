@@ -7,6 +7,7 @@ const OFFROAD_CONTRACTS = preload("res://tests/support/offroad_site_contracts.gd
 const MEGASHELTER_CONTRACTS = preload("res://tests/support/megashelter_contracts.gd")
 const BUILDING_LOCATOR_CONTRACTS = preload("res://tests/support/building_locator_contracts.gd")
 const NAV_SURFACE = preload("res://tests/support/nav_surface_probe.gd")
+const WORLD_DETAIL_CONTRACTS = preload("res://tests/support/world_detail_contracts.gd")
 const STREETLIGHT_SCENE = preload("res://world/roadside_kit/streetlight.tscn")
 var failures: Array[String] = []
 
@@ -68,10 +69,11 @@ func run() -> void:
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
 	await V14_CONTRACTS.run(self, world, check)
+	await WORLD_DETAIL_CONTRACTS.run(self, world, check)
 	await OFFROAD_CONTRACTS.run(self, world, check)
 	BUILDING_LOCATOR_CONTRACTS.run(check)
 	await MEGASHELTER_CONTRACTS.run(self, world, check)
-	for version: int in [19]:
+	for version: int in [WorldProfile.CURRENT_GENERATION]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
 	await _check_mountain_navigation(world)
@@ -298,12 +300,12 @@ func _check_streetlight_burst(events: Array[Vector4]) -> void:
 
 func _check_opening_profiles() -> void:
 	var current_profile := WorldProfile.new()
-	check(current_profile.generation_version == 19 and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
+	check(current_profile.generation_version == WorldProfile.CURRENT_GENERATION and WorldField.new(42, current_profile).stop(0).definition_id == "orientation_shelter", "Current default profile selects the orientation shelter")
 	var sandbox: WorldProfile = load("res://world/cheat_test_profile.gd").new()
-	sandbox.generation_version = 19
+	sandbox.generation_version = WorldProfile.CURRENT_GENERATION
 	sandbox.max_grade = 0.12
 	var production := WorldProfile.new()
-	production.generation_version = 19
+	production.generation_version = WorldProfile.CURRENT_GENERATION
 	production.max_grade = sandbox.max_grade
 	var field := WorldField.new(42, sandbox)
 	var reference := WorldField.new(42, production)

@@ -24,7 +24,7 @@ $counts = (Get-Git @('rev-list', '--left-right', '--count', 'origin/main...HEAD'
 $relation = if ($counts.Count -eq 2) { "$($counts[1]) ahead, $($counts[0]) behind origin/main (as of last fetch)" } else { 'no origin/main' }
 $lines.Add("- Git: branch $branch at $head; $relation; $dirty uncommitted paths")
 
-$generation = Get-Constant 'world/terrain/world_profile.gd' 'generation_version\s*:\s*int\s*=\s*(\d+)'
+$generation = Get-Constant 'world/terrain/world_profile.gd' 'CURRENT_GENERATION\s*:=\s*(\d+)'
 $checkpoint = Get-Constant 'rv/checkpoint.gd' '^const VERSION\s*:?=\s*(\d+)'
 $snapshot = Get-Constant 'rv/vehicle_snapshot.gd' '^const VERSION\s*:?=\s*(\d+)'
 $godot = (Get-Content -LiteralPath (Join-Path $root '.godot-version') -Raw -ErrorAction SilentlyContinue).Trim()

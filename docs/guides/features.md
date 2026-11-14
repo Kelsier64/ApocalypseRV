@@ -20,7 +20,7 @@
 | [cheat_test_world.tscn](../../world/cheat_test_world.tscn) | 現行生成＋單間車庫；預設無限燃油／電力／材料，仍需有效電池；沒有正式檢查點 |
 | [test_world.tscn](../../world/test_world.tscn) | 保留的舊測試世界；沒有正式檢查點，配置不代表現行新局 |
 
-正式、Demo 與作弊世界均使用生成 **v19**。外殼內容 v7、Checkpoint v7、VehicleSnapshot v6 是不同版本欄位；目前保存至 `user://rv_checkpoint_v7.save`，只接受當前正式世界，不遷移舊局。依據：[WorldProfile](../../world/terrain/world_profile.gd)、[Checkpoint](../../rv/checkpoint.gd)、[VehicleSnapshot](../../rv/vehicle_snapshot.gd)。
+正式、Demo 與作弊世界均使用當前生成版本（`WorldProfile.CURRENT_GENERATION`）。外殼內容、Checkpoint、VehicleSnapshot 是各自獨立的版本欄位；目前保存至 `user://rv_checkpoint_v7.save`，只接受當前正式世界，不遷移舊局。依據：[WorldProfile](../../world/terrain/world_profile.gd)、[Checkpoint](../../rv/checkpoint.gd)、[VehicleSnapshot](../../rv/vehicle_snapshot.gd)。
 
 ## 開局與教學
 
@@ -90,7 +90,8 @@
 
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
-| 種子生成與雙向串流 | 正式 v19；150 m 區塊、道路／地形／內容獨立 RNG、分幀建立、往返重載及載入視野保護 | [generator](../../world/world_generator.gd)、[world field](../../world/terrain/world_field.gd)、[highway](../../tests/highway_playground.tscn) |
+| 種子生成與雙向串流 | 150 m 區塊、道路／地形／內容獨立 RNG、分幀建立、往返重載及載入視野保護 | [generator](../../world/world_generator.gd)、[world field](../../world/terrain/world_field.gd)、[highway](../../tests/highway_playground.tscn) |
+| 世界細節層 | 地形特徵（池塘／湖、泥土支線、路旁與野地場景、電塔）、16 層程序化散佈、道路設施；RV 可撞倒標誌／標柱／圍欄並保存 | [features](../../world/terrain/world_features.gd)、[scatter](../../world/scatter/scatter_scenery.gd)、[road details](../../world/terrain/road_details.gd)、[world detail](../../tests/world_detail_playground.tscn) |
 | 山路與六類地貌 | 正式；連續彎道、寬窄、升降、草原／懸崖／濕地／山脊／峽谷／森林盆地、分群樹木灌叢與近路遮蔽 | [route](../../world/terrain/terrain_route.gd)、[landforms](../../world/terrain/terrain_landforms.gd) |
 | 河川、橋梁與高架 | 正式；河谷／岸坡、全路寬跨河橋、依落差生成橋板／鋼梁／橋墩／護欄；沒有游泳或水流玩法 | [crossings](../../world/terrain/terrain_crossings.gd)、[bridge builder](../../world/terrain/bridge_builder.gd) |
 | 路旁與越野 POI 排程 | 正式；路旁區間與越野網格分開安排，避開道路／水域／陡坡及其他場址，局部整地與植被避讓 | [minor sites](../../world/terrain/minor_sites.gd)、[offroad sites](../../world/terrain/offroad_sites.gd) |

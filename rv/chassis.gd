@@ -440,7 +440,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var shape_index := state.get_contact_collider_shape(contact)
 		var target := TreeImpact.target_for(collider)
 		var hit := TreeImpact.hit(self, collider, shape_index, velocity, normal)
-		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = true
+		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = TreeImpact.retained_for(target)
 		if collider is Monster or collider is OilBarrel:
 			collider.receive_vehicle_body_contact(self, -normal, state.get_contact_local_position(contact))
 		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit, "offset": offset, "incoming": incoming})
@@ -473,9 +473,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	_monster_impacts.clear()
 	_monster_explosion_impacts.clear()
 	var yielding_blocked := false
+	# Every yielding obstacle keeps its own share of speed: a trunk costs 15%, a fence post far less.
+	var trunks_retained := 1.0
+	for key in new_trunks: trunks_retained *= float(new_trunks[key])
 	if pass_through and state.get_contact_count() < max_contacts_reported and incoming_horizontal.length() > 0.1:
 		var direction := incoming_horizontal.normalized()
-		var desired := incoming_horizontal.length() * pow(TreeImpact.SPEED_RETAINED, new_trunks.size()) * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters)
+		var desired := incoming_horizontal.length() * trunks_retained * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters)
 		var correction := direction * (desired - state.linear_velocity.dot(direction))
 		yielding_blocked = solid_normals.any(func(normal: Vector3) -> bool: return correction.dot(normal) < -0.05)
 		if not yielding_blocked:
@@ -486,12 +489,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		yielding_blocked = true
 	if not yielding_blocked and incoming_horizontal.length() > 0.1:
 		var remaining_loss := maxf(0.0, incoming_horizontal.length() - state.linear_velocity.dot(incoming_horizontal.normalized()))
-		var expected_loss := incoming_horizontal.length() * (1.0 - pow(TreeImpact.SPEED_RETAINED, new_trunks.size()) * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters))
+		var expected_loss := incoming_horizontal.length() * (1.0 - trunks_retained * pow(VehicleImpact.MONSTER_SPEED_RETAINED, new_monsters))
 		var scale_loss := minf(1.0, remaining_loss / expected_loss) if expected_loss > 0.0 else 0.0
 		var speed := incoming_horizontal.length()
 		for key in new_trunks:
-			_settle_vehicle_impact("tree", speed * (1.0 - TreeImpact.SPEED_RETAINED) * scale_loss)
-			speed *= TreeImpact.SPEED_RETAINED
+			_settle_vehicle_impact("tree", speed * (1.0 - float(new_trunks[key])) * scale_loss)
+			speed *= float(new_trunks[key])
 		for i in range(charged_monsters):
 			_settle_vehicle_impact("monster", speed * (1.0 - VehicleImpact.MONSTER_SPEED_RETAINED) * scale_loss)
 			speed *= VehicleImpact.MONSTER_SPEED_RETAINED

@@ -22,7 +22,7 @@
 
 2026-10-25 生存狀態：`PlayerSurvival` 屬目前受控身體，保存 `{hunger, starvation_elapsed}`，以玩家物理 delta 推進，沿自身祖先查找 StartRun／POI／staging 狀態並檢查載入 gate；不讀日夜累計時間或任意候選世界。滿值 100／1200 秒，零值每 5 秒獨立扣 1 HP，保留戰鬥無敵時間並沿用死亡入口。Player 在移動前推進，低於 40 時耐力恢復乘 0.5、20 以下禁止衝刺，同一 tick 生效。`PlayerConsumables` 以一次右鍵按壓持有 slot＋Item ID＋scene，完成 2 秒前反覆檢查能力與所有權，移除一份後才補營養；中斷／完成後需放開才可重試。`FoodDefinition extends ItemDefinition` 保存營養與食用時間，`FoodCatalog` 以允許場景查定義，不信任保存資料中的名稱或營養。食物沿用 Item 身分／倉庫／物理／串流快照；新局三份食物獨立於教學維修角色契約。Checkpoint v7 必要 `player.survival`；列印身體 v2 保存並交換同一 survival，未控制不推進，重生／新列印滿值。VehicleSnapshot 仍 v6，無格式遷移。下方 v6 描述涉及既往整合時，以此段及頂部政策為當前保存契約。
 
-**存檔更新政策（2026-10-27）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint v7／VehicleSnapshot v6、生成 v19、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
+**存檔更新政策（2026-10-27）**：更新造成舊存檔不相容時直接重新開局，不維護相容分支、資料遷移或專門適配。當前只接受 Checkpoint v7／VehicleSnapshot v6、當前生成版本（`WorldProfile.CURRENT_GENERATION`）、OrientationController v4 與 OrientationWorkshop v3；不偵測舊存檔路徑。歷史驗收紀錄保留原日期與範圍。
 
 2026-10-16 倉庫配置：v12 第二室新增可重用靜態貨架、貨箱與棧板，16 件原有 Item 改由分散的出生標記配置；保留舊矮架及碰撞路徑，已保存的物資維持原位置。`WarehouseApproaches` 僅保存設計用接近點，不生成遊戲提示或改變交易判定；貨架燈具屬建築、光源置於 Furnishings。[驗證與驗收](../validation/2026-10-16-orientation-warehouse.md)。
 
@@ -106,7 +106,7 @@ Checkpoint v6 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`�
 
 ### 公路獨立生成
 
-正式 main_world 與 WorldProfile 使用生成 v19；道路內容使用目前獨立規劃器。Checkpoint v7 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
+正式 main_world 與 WorldProfile 使用當前生成版本；道路內容使用目前獨立規劃器。Checkpoint v7 只接受 shelter 主世界，不再提供舊版本道路規劃或 legacy 存檔身分。
 
 RoadSpawns.plan(field, band) 使用當前純規劃器，分離釘帶、油桶人、普通油桶及廢車的數量／位置 RNG。油桶人 8% 一隻、普通油桶 20% 一個，各自獨立在中央路面選點。廢車 0–4 台機率為 60／25／10／4／1%，逐台獨立選位置及 0–TAU yaw，沒有固定陣形或中央通道保證。前 450 m、安全據點、5 m 接縫距離及實體重疊避讓維持，候選失敗可少於抽取數量。釘帶與廢車屬 chunk，加入導航烘焙；普通油桶為 WorldEntities 動態 Item。
 

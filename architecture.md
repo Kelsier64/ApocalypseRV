@@ -51,11 +51,11 @@ MainWorld
 
 ### 起始避難所與世界識別
 
-`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 預設選擇兩室 `orientation_shelter`。Demo 在計算出生位置前複製繼承的主世界 profile，只改用按鈕開門的單間車庫。`cheat_test_profile.gd` 也覆寫建築選擇，讓 `cheat_test_world.tscn` 使用 v19 世界生成，同時保留單間車庫及完整起始 RV。作弊測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
+`WorldProfile.opening_shelter_id()` 決定起始建築、局部整地與開場流程，與戶外生成版本分開。一般 profile 預設選擇兩室 `orientation_shelter`。Demo 在計算出生位置前複製繼承的主世界 profile，只改用按鈕開門的單間車庫。`cheat_test_profile.gd` 也覆寫建築選擇，讓 `cheat_test_world.tscn` 使用當前世界生成，同時保留單間車庫及完整起始 RV。作弊測試場沒有教學或檢查點存讀檔，預設三種資源作弊全開。
 
 起始建築外殼擴為 50 × 45 × 14 m，封閉側翼與主樓使用原生幾何完成立面，僅獨立屋頂設備保留灰盒；中央車庫與活動門接口保留。場址 Resource 的 bounds 同步管理整地／植被排除，側後方土坡依 building_bounds 計算。外殼的靜態盒碰撞以 navigation_solid 標記，ChunkGenerator 將其轉成投影障礙，避免碰撞盒下方留下可走地形；鄰區重建沿用相同標記。模型需求與本輪驗收見 [擴建紀錄](docs/validation/2026-10-01-shelter-expansion.md)。
 
-Checkpoint v7 要求 `world_id=shelter`、生成 v19 與完整 `start_state`；只載入受信任的 `world/main_world.tscn`。StartRun v1 要求 phase 為 preparing／started／sealed、一個 bay gate 布林值與當前兩室教學。門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。
+Checkpoint 要求 `world_id=shelter`、當前生成版本與完整 `start_state`；只載入受信任的 `world/main_world.tscn`。StartRun v1 要求 phase 為 preparing／started／sealed、一個 bay gate 布林值與當前兩室教學。門移動期間拒絕保存。恢復開場狀態發生於子節點 ready 前，動態物件完成轉移後重新套用敵人狀態。
 
 <a id="section-2"></a>
 
@@ -194,13 +194,20 @@ TabletUI 在同一平板／玩家 UI 所有權內切換 TUI 與 SHELL，開啟�
 
 WorldGenerator 建立 WorldField／WorldProfile／POISpawner → 正式 v9 初始後 2／目前 1／前 2 個固定網格帶（共用 profile 保留前 3 帶） → 查詢區域／道路／停靠計畫 → 共用整地結果生成地表、路面與碰撞 → 安置靜態內容 → 烘焙導航並生成動態內容。行駛中的建立分多影格執行，完成前不發佈到 active_chunks；一次只有一個建立作業。
 
-串流比較室外玩家或副本錨點 Z，維護前後窗口並可回頭載入。WorldField 以世界座標計算有界道路曲線，WorldProfile 預設生成 v19、路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。獨立 RNG 域隔離道路、停靠、地形、外觀、物資及敵人，場址 ID 固定當前格式。Checkpoint v7 要求完整 profile 與 generation_version=19，不使用舊版預設。
+串流比較室外玩家或副本錨點 Z，維護前後窗口並可回頭載入。WorldField 以世界座標計算有界道路曲線，WorldProfile 預設生成 `WorldProfile.CURRENT_GENERATION`、路寬 15／10 m、坡度上限 8%、區域長 900 m／過渡 240 m。獨立 RNG 域隔離道路、停靠、地形、外觀、物資及敵人，場址 ID 固定當前格式。Checkpoint 要求完整 profile 與相同的 generation_version，不使用舊版預設。
 
 外部停靠點位置為 index×450±75 m。v4 起始維修廠位於 (335.2,6,-45)，v3 保留 (135,6,-45)，每三點兩個離路入口、一個小補給；v2 保留 (49,0,-45) 近路維修站與原比例。ExplorationSite 以道路局部座標建立左右及前後鏡像模板，檢查完整場址是否落在版本對應碰撞帶內（v4 寬 900 m，v2／v3 寬 450 m），必要時改向另一側；無無限重抽。WorldField.surface 將場址平台、緩坡、步道及保留區整合到共用取樣，公路高度優先。spawn_site 使用同一份 building/road/frame/id/seed，外觀不消耗物資 RNG。四款外觀沿用既有入口及副本。
 
 地形網格使用相鄰取樣圈計算法線，邊界共享世界位置及高度。v4／v3 導航分別涵蓋 900／450 m 寬碰撞帶，cell_size=0.25 m；v2 維持 240 m／0.5 m。使用實體碰撞，排除高 7 cm 的重複瀝青層，補相鄰地形、圍牆與建築碰撞資料；邊界資料由共用計畫提供，不依賴相鄰 chunk 載入順序。v3／v4 高容許 detail 誤差抑制噪音坡面新增的重疊細三角形，可通行輪廓仍由 voxel 決定；v2 保留原設定。非同步烘焙後發佈獨立 NavigationMesh，navigation_ready 等待 region 和 map 真正同步，避免初始空網格。怪物地面高低差仍使用導航；path_height_offset 對齊角色腳底；落地且已到達路徑點水平範圍時，以實際腳下高度推進路徑點，避免簡化網格埋入土坡造成繞圈。未移動的目標不重複重設路徑；移動目標維持 0.25 秒更新間隔。
 
-場址牆段依中心 Z 歸唯一 chunk；整地跨帶查詢同一計畫。玩家位於場址 bounds 或室內 stream_anchor 時，protected_bands 保留並補建停車區、路線及建築的區塊與 halo。ForestScenery 以獨立 RNG 的 8 m 網格抖動形成樹林，逐列分幀規劃，樹幹簡化碰撞也提供相鄰導航 halo；快取至多 16 個帶。ForestMeshes 快取四款不對稱針葉樹、兩款枯樹與三款灌叢，共九批 MultiMesh；forest_art_variants 獨立亂數只選外觀，不改既有樹位、碰撞與 seed。遠景左右及前方網格只提供視覺。新造景延續分幀建立，build_ms／max_slice_ms 記錄成本。
+場址牆段依中心 Z 歸唯一 chunk；整地跨帶查詢同一計畫。玩家位於場址 bounds 或室內 stream_anchor 時，protected_bands 保留並補建停車區、路線及建築的區塊與 halo。ForestScenery 以獨立 RNG 的 8 m 網格抖動形成樹林與可撞毀灌叢，逐列分幀規劃，樹幹簡化碰撞也提供相鄰導航 halo；快取至多 16 個帶。ForestMeshes 快取四款不對稱針葉樹、兩款枯樹與三款灌叢，共九批 MultiMesh；forest_art_variants 獨立亂數只選外觀，不改既有樹位、碰撞與 seed。遠景左右及前方網格只提供視覺。新造景延續分幀建立，build_ms／max_slice_ms 記錄成本。
+
+世界細節分兩層，都只是「視覺＋實體障礙」，不產生物資或敵人：
+
+- **地形特徵層** [WorldFeatures](world/terrain/world_features.gd)（`WorldField.features`）：每 300 m 一格，只用未混合的原始地形規劃池塘／湖、泥土支線與盡頭空地、路旁與野地場景地塊、高壓電塔；一格完整擁有其特徵，規劃絕不呼叫 `surface()`。`WorldField.surface()` 經 `apply()` 套用水面、岸邊、路床高度與保留區，另回傳 `occupied`（不含路肩保留）與 `track`（寫入地形頂點色 alpha，供 `terrain_v14.gdshader` 畫泥路）。[FeatureBuilder](world/scatter/feature_builder.gd) 把特徵建成節點，遺跡小場景來自 [VignetteKit](world/scatter/vignette_kit.gd)。
+- **散佈圖層** [ScatterScenery](world/scatter/scatter_scenery.gd)：[ScatterCatalog](world/scatter/scatter_catalog.gd) 列出規則（[ScatterLayer](world/scatter/scatter_layer.gd)），每層有獨立 RNG 流 `scatter_<id>`、各地貌權重與程序化網格（[ScatterMeshes](world/scatter/scatter_meshes.gd)）。規劃讀區塊的 [TerrainGrid](world/terrain/terrain_grid.gd)，物件貼在玩家看到的三角面上；實體散佈離帶接縫與路緣保留間距，路肩留給 RoadSpawns。
+
+道路細節由 [RoadDetails](world/terrain/road_details.gd) 建立：路面著色條（`road_surface.gdshader`）、碎石路肩、電線桿與電線、彎道標誌及標柱，全部是路線的純函數，鄰帶可描述彼此的電線桿。標誌、標柱與圍欄是 [BreakableProps](world/scatter/breakable_props.gd)：只在 `TreeImpact.SHRUB_LAYER` 與 RV 碰撞，每個目標以 `vehicle_speed_retained` 決定 RV 撞擊後保留的速度比例，撞倒後以 `roadside:` 鍵寫入 `destroyed_trees` 帳本。樹木仍由 ForestScenery 管，因為倒樹與存檔契約綁在它身上。
 
 室外日夜照明由 WorldClock 控制，Forward+ 使用局部體積霧與遠景距離霧，Compatibility 降級只保留距離霧。GameSettings autoload 管理全域顯示、輸入與音量偏好；Esc SettingsMenu 是設定入口，F8 不再處理顯示。值在載入與寫入時檢查型別、有限值及範圍；缺漏或非法持久化欄位各自回預設。偏好寫入獨立 ConfigFile，不進角色／車輛或 Checkpoint 快照，短時間多次滑桿變更合併保存，關閉選單時 flush，錯誤由 save_completed 與 last_save_error 回報。偏好僅使用目前設定格式，舊顯示設定不遷移。
 

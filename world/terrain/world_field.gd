@@ -17,6 +17,7 @@ var forest_cache: Dictionary = {}
 var destroyed_trees: Dictionary = {}
 var route: TerrainRoute
 var landforms: TerrainLandforms
+var features: WorldFeatures
 
 func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 	world_seed = seed_value
@@ -30,12 +31,13 @@ func _init(seed_value: int = 42, settings: WorldProfile = null) -> void:
 		noises[i].fractal_octaves = 3
 	route = TerrainRoute.new(self)
 	landforms = TerrainLandforms.new(self)
+	features = WorldFeatures.new(self)
 
 func seed_for(id: int, domain: String, version_override: int = -1) -> int:
 	var version := profile.generation_version if version_override < 0 else version_override
-	# v16-v19 change the off-road pool and save identity, while retaining the
-	# established v15 rolls for placement, roadside content and encounters.
-	if version_override < 0 and version in [16, 17, 18, 19]: version = 15
+	# v16-v20 change the off-road pool, detail layers and save identity, while
+	# retaining the established v15 rolls for placement, roadside content and encounters.
+	if version_override < 0 and version in [16, 17, 18, 19, 20]: version = 15
 	return int(("%d:%d:%d:%s" % [version, world_seed, id, domain]).hash())
 
 func rng_for(id: int, domain: String, version_override: int = -1) -> RandomNumberGenerator:
@@ -164,7 +166,8 @@ func court_distance(x: float, z: float, site: Dictionary) -> float:
 func surface(x: float, z: float) -> Dictionary:
 	var road := road_query(x, z)
 	var height := landforms.height(x, z, road)
-	var reserved: bool = road.distance < road.width * 0.5 + 4.0
+	var road_margin: bool = road.distance < road.width * 0.5 + 4.0
+	var reserved := false
 	var gravel := 0.0
 	for site in sites_near_z(z):
 		if site.has("bounds"):
@@ -177,6 +180,15 @@ func surface(x: float, z: float) -> Dictionary:
 		height = lerpf(height, site.frame.origin.y, influence)
 		gravel = maxf(gravel, influence)
 		reserved = reserved or court_distance < 4.0
+	# Ponds, graded tracks and human-trace pads keep clear of courts and rivers,
+	# so they apply between the two without either one overriding them.
+	var feature := features.apply(x, z, height)
+	var track := 1.0
+	if not feature.is_empty():
+		track = feature.track
+		height = feature.height
+		gravel = maxf(gravel, float(feature.gravel))
+		reserved = reserved or feature.reserved
 	# Road wins where the edge of a court approaches the live carriageway.
 	var earthwork_width := clampf(profile.road_shoulder, 8.0, 18.0)
 	var water_height := -INF
@@ -188,6 +200,9 @@ func surface(x: float, z: float) -> Dictionary:
 	channel_influence = landforms.bridge_gap(float(road.s))
 	river_bank = channel.bank
 	reserved = reserved or channel.wet
+	if not feature.is_empty():
+		water_height = maxf(water_height, float(feature.water_height))
+		river_bank = maxf(river_bank, float(feature.bank))
 	var road_blend := 1.0 - smoothstep(float(road.width) * 0.5, float(road.width) * 0.5 + earthwork_width, float(road.distance))
 	road_blend *= 1.0 - channel_influence
 	height = lerpf(height, float(road.height), road_blend)
@@ -203,7 +218,8 @@ func surface(x: float, z: float) -> Dictionary:
 		var garage_surface := _starting_shelter_surface(x, z, height)
 		height = garage_surface.height
 		reserved = reserved or garage_surface.reserved
-	var result := {"height": height, "reserved": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank}
+	# `occupied` is reservation by anything except the bare carriageway margin.
+	var result := {"height": height, "reserved": reserved or road_margin, "occupied": reserved, "gravel": gravel, "road": road, "weights": region_weights(x, z), "water_height": water_height, "river_bank": river_bank, "track": track}
 	result.appearance = landforms.appearance_at(-z)
 	var a: Vector3 = result.appearance
 	result.moisture = lerpf(TerrainLandforms.MOISTURE[int(a.x)], TerrainLandforms.MOISTURE[int(a.y)], a.z)

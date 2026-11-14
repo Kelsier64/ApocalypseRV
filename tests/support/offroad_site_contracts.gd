@@ -157,7 +157,7 @@ static func _check_rng_stability(check: Callable) -> void:
 		for domain: String in domains:
 			for index: int in [0, 1, 17, 61]:
 				stable = stable and current.seed_for(index, domain) == previous.seed_for(index, domain)
-		check.call(stable, "v19 seed %d retains established v15 RNG domains" % seed_value)
+		check.call(stable, "v20 seed %d retains established v15 RNG domains" % seed_value)
 
 static func _has_id(sites: Array[Dictionary], identity: String) -> bool:
 	for site: Dictionary in sites:
