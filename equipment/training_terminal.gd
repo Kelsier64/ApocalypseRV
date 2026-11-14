@@ -29,7 +29,7 @@ func _ready() -> void:
 	ui_instance.set_script(UI)
 	ui_instance.visible = false
 	add_child(ui_instance)
-	ui_instance.close_requested.connect(_close_ui)
+	ui_instance.close_requested.connect(_on_close_requested)
 	ui_instance.current_conditions_visible.connect(_conditions_visible)
 	availability_changed.connect(_validate_user)
 	removing.connect(_close_ui)
@@ -146,12 +146,21 @@ func _on_body_state_changed() -> void:
 
 func _physics_process(delta: float) -> void:
 	_validate_user()
+	_advance_boot(delta)
+
+func _advance_boot(delta: float) -> void:
 	if not _portable.boot_started or _portable.initialized or manual_unlocked: return
 	if not can_operate() or not _has_power(): return
 	if BOOT.advance(_portable, delta):
 		var controller := tutorial_controller()
 		if controller != null and controller.has_method("terminal_initialized"):
 			controller.terminal_initialized(self)
+
+func _on_close_requested() -> void:
+	# Esc after Enter skips the rest of the boot: the same transition as a
+	# fully elapsed boot. Forced closes keep booting in the background.
+	_advance_boot(BOOT.DURATION)
+	_close_ui()
 
 func _on_service_stopped() -> void:
 	_close_ui()
