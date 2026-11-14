@@ -332,8 +332,7 @@ func _physics_process(delta: float) -> void:
 	var lateral := displacement.dot(vehicle.global_basis.x.slide(Vector3.UP).normalized())
 	var steering_angle := atan(-2.0 * wheelbase * lateral / maxf(displacement.length_squared(), 1.0))
 	var longitudinal_speed := absf(vehicle.linear_velocity.dot(-vehicle.global_basis.z))
-	var steering_limit := lerpf(vehicle.max_steering, vehicle.max_steering * vehicle.high_speed_steering_ratio, clampf(longitudinal_speed / vehicle.max_speed, 0, 1))
-	steering_limit = minf(steering_limit, atan(wheelbase * vehicle.steering_lateral_acceleration / maxf(1.0, longitudinal_speed * longitudinal_speed)))
+	var steering_limit := vehicle.steering_limit(longitudinal_speed)
 	var steering := clampf(steering_angle / maxf(steering_limit, 0.001), -1.0, 1.0)
 	var desired_speed := _curve_speed(field, s)
 	if parking_replay:
@@ -354,7 +353,14 @@ func _physics_process(delta: float) -> void:
 	var braking := 1.0 if stopping else clampf((speed - desired_speed - 0.1) * 0.8, 0.0, 1.0)
 	Input.action_press("move_forward", 0.0 if braking > 0.0 else clampf(0.2 + (desired_speed - speed) * 0.7, 0.0, 1.0))
 	Input.action_press("move_back", braking)
-	vehicle.gear = -1 if parking_reverse else 4
+	if parking_reverse:
+		vehicle.gear = -1
+	elif vehicle.gear < 0:
+		vehicle.gear = 1
+	elif vehicle.engine_rpm() > Chassis.ENGINE_REDLINE_RPM * 0.78:
+		vehicle.set_gear(vehicle.gear + 1)
+	elif vehicle.gear > 1 and vehicle.engine_rpm() < Chassis.ENGINE_REDLINE_RPM * 0.33:
+		vehicle.set_gear(vehicle.gear - 1)
 	_update_camera()
 	status.text = "DRIVE %.0f -> %.0fm | at %.0fm / height %.1fm | %.1f / %.1f m/s | lateral %.2fm | %d chunks" % [route_start, route_target, s, height, speed, desired_speed, query.distance, $WorldGenerator.active_chunks.size()]
 	if s > last_progress + 1.0:

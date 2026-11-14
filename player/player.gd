@@ -111,6 +111,13 @@ var climb_carrier_velocity := Vector3.ZERO
 var released_carrier_velocity := Vector3.ZERO
 var _seat_exit_velocity_has_carrier := false
 var rv_support := RVSupport.new()
+var _departure_rv: Chassis
+var _departure_profile: RVHandlingProfile
+var _departure_hit := false
+var _departure_stagger_remaining := 0.0
+var _crash_source_id := 0
+var _crash_event := 0
+var _crash_stun_remaining := 0.0
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
 var crawl_transition_remaining: float = 0.0
@@ -520,6 +527,7 @@ func complete_world_transition(at: Transform3D) -> void:
 	active_climb_rv = null
 	rv_support.clear()
 	released_carrier_velocity = Vector3.ZERO
+	_clear_rv_departure()
 	climb_carrier_velocity = Vector3.ZERO
 	camera.rotation = Vector3.ZERO
 	camera.current = true
@@ -570,6 +578,7 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	grab_control.clear_view_recovery()
 	_exit_climb_to_normal()
 	rv_support.clear()
+	_clear_rv_departure()
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	seated_in = seat
@@ -583,13 +592,16 @@ func enter_seat_mode(seat: Node3D) -> bool:
 	visible = true
 	return true
 
-func exit_seat_mode(exit_position: Vector3) -> void:
+func exit_seat_mode(exit_position: Vector3, leaves_rv: bool = false) -> void:
 	if is_grabbed(): grab_control.end("seat_lost")
 	grab_control.clear_view_recovery()
 	if seated_in == null:
 		return
 	var rv := _find_rv_ancestor(seated_in)
 	velocity = ClimbMath.point_velocity(rv, exit_position)
+	if leaves_rv and rv is Chassis:
+		velocity = _rv_point_velocity(rv, exit_position)
+		_begin_rv_departure(rv, velocity)
 	released_carrier_velocity = velocity
 	_seat_exit_velocity_has_carrier = true
 	seated_in = null
@@ -758,6 +770,7 @@ func set_cheat_flying(enabled: bool) -> bool:
 	rv_support.clear()
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
+	_clear_rv_departure()
 	_seat_exit_velocity_has_carrier = false
 	if enabled:
 		locomotion_state = LocomotionState.FLYING
@@ -916,7 +929,9 @@ func _update_stamina_bar() -> void:
 
 func _process_normal_movement(delta: float) -> void:
 	_seat_exit_velocity_has_carrier = false
-	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
+	_departure_stagger_remaining = maxf(0.0, _departure_stagger_remaining - delta)
+	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed() and _departure_stagger_remaining == 0.0 and _crash_stun_remaining == 0.0
+	var carrier := rv_support.rv as Chassis
 	var had_support := is_instance_valid(rv_support.rv)
 	var last_support_velocity := rv_support.carrier_velocity
 	var was_supported := rv_support.follow(self, delta)
@@ -924,9 +939,9 @@ func _process_normal_movement(delta: float) -> void:
 	if had_support and not was_supported:
 		released_carrier_velocity = last_support_velocity
 		velocity.y += last_support_velocity.y
-	if is_on_floor() and not (had_support and not was_supported):
+	if is_on_floor() and _departure_profile == null and not (had_support and not was_supported):
 		released_carrier_velocity = Vector3.ZERO
-	if not is_on_floor():
+	if not is_on_floor() or _departure_profile != null:
 		velocity.y -= gravity * delta
 
 	if input_allowed and not is_crawling() and not is_crouching() and not grab_control.jump_release_required and Input.is_action_just_pressed("jump") and is_on_floor() and _spend_stamina(JUMP_STAMINA_COST):
@@ -963,12 +978,67 @@ func _process_normal_movement(delta: float) -> void:
 
 	velocity.x += released_carrier_velocity.x
 	velocity.z += released_carrier_velocity.z
+	var incoming := velocity
 	move_and_slide()
 	velocity.x -= released_carrier_velocity.x
 	velocity.z -= released_carrier_velocity.z
-	if not rv_support.capture(self) and was_supported:
+	var on_rv := rv_support.capture(self)
+	if not on_rv and was_supported:
 		released_carrier_velocity = support_velocity
 		velocity.y += support_velocity.y
+		_begin_rv_departure(carrier, support_velocity)
+		incoming += support_velocity
+	if _departure_profile:
+		_resolve_rv_departure(incoming, delta)
+
+func _begin_rv_departure(rv: Chassis, inherited: Vector3) -> void:
+	if not is_instance_valid(rv) or inherited.is_zero_approx(): return
+	_departure_rv = rv
+	_departure_profile = rv.handling_profile
+	_departure_hit = false
+
+func _clear_rv_departure() -> void:
+	_departure_rv = null
+	_departure_profile = null
+	_departure_stagger_remaining = 0.0
+
+func _rv_point_velocity(rv: Chassis, point: Vector3) -> Vector3:
+	return rv.linear_velocity + rv.angular_velocity.cross(point - rv.to_global(rv.center_of_mass))
+
+func _resolve_rv_departure(incoming: Vector3, delta: float) -> void:
+	var profile := _departure_profile
+	var damage := 0.0
+	var slide := Vector3(released_carrier_velocity.x, 0.0, released_carrier_velocity.z)
+	for i in get_slide_collision_count():
+		var collision := get_slide_collision(i)
+		var contact_rv := _find_rv_ancestor(collision.get_collider()) as Chassis
+		if contact_rv != null and contact_rv == _departure_rv: continue
+		var contact_velocity := collision.get_collider_velocity()
+		if contact_rv != null:
+			contact_velocity = _rv_point_velocity(contact_rv, collision.get_position())
+		var relative := incoming - contact_velocity
+		var normal := collision.get_normal()
+		var inward := maxf(0.0, -relative.dot(normal))
+		if is_on_floor() and normal.dot(up_direction) >= cos(floor_max_angle):
+			var landing_excess := maxf(0.0, inward - profile.departure_safe_landing_speed)
+			var slide_excess := maxf(0.0, relative.slide(normal).length() - profile.departure_safe_slide_speed)
+			damage = maxf(damage, landing_excess ** 2 + slide_excess ** 2)
+		elif inward > 0.0:
+			var wall_excess := maxf(0.0, inward - profile.departure_safe_wall_speed)
+			damage = maxf(damage, wall_excess ** 2)
+			# Remove the carry component that hit the obstacle, keeping the tangent.
+			var lateral_normal := normal.slide(up_direction).normalized()
+			slide -= lateral_normal * minf(0.0, slide.dot(lateral_normal))
+	if is_on_floor():
+		slide = slide.move_toward(Vector3.ZERO, profile.departure_ground_deceleration * delta)
+	released_carrier_velocity = Vector3.ZERO if is_instance_valid(rv_support.rv) else slide
+	if is_instance_valid(rv_support.rv) or (is_on_floor() and slide.is_zero_approx()):
+		_departure_rv = null
+		_departure_profile = null
+	if damage > 0.0 and not _departure_hit:
+		_departure_hit = true
+		_departure_stagger_remaining = profile.departure_stagger_seconds
+		take_damage(damage * profile.departure_damage_scale)
 
 func _climb_feet() -> Vector3:
 	var capsule := body_collision_shape.shape as CapsuleShape3D
@@ -1021,6 +1091,7 @@ func begin_ladder_climb(ladder: RVLadder, descending: bool = false) -> bool:
 	active_wall_normal = ladder.global_basis.z.normalized()
 	climb_carrier_velocity = ClimbMath.point_velocity(active_climb_rv, global_position)
 	released_carrier_velocity = Vector3.ZERO
+	_clear_rv_departure()
 	velocity = Vector3.ZERO
 	rv_support.clear()
 	locomotion_state = LocomotionState.CLIMBING
@@ -1129,7 +1200,9 @@ func _process_climbing(delta: float) -> void:
 	if locomotion_state != LocomotionState.CLIMBING: return
 	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed()
 	if input_allowed and Input.is_action_just_pressed("jump"):
+		var carrier := active_climb_rv as Chassis
 		_abort_climb("manual detach")
+		_begin_rv_departure(carrier, released_carrier_velocity)
 		return
 	if active_climb_rv is RigidBody3D and active_climb_rv.angular_velocity.length() > CLIMB_MAX_RV_ANGULAR_SPEED:
 		_abort_climb("rv angular speed too high")
@@ -1308,6 +1381,7 @@ func _advance_survival(delta: float, rest_recovery := 0.0) -> void:
 	_update_san_bar()
 
 func _physics_process(delta):
+	_crash_stun_remaining = maxf(0.0, _crash_stun_remaining - delta)
 	var survival_delta := sleep.advance(self, delta)
 	_advance_survival(survival_delta, sleep.recover_amount(survival_delta) if sleep.active() else 0.0)
 	inventory.advance_terminal_boot(delta)
@@ -1380,6 +1454,42 @@ func take_damage(amount: float):
 		current_player_health = 0.0
 		_player_die()
 
+func apply_crash_hit(rv: Chassis, event_id: int, speed_change: float, inherited: Vector3, seated: bool, rng: RandomNumberGenerator = null) -> bool:
+	if is_player_dead or not is_instance_valid(rv) or not is_finite(speed_change) or not inherited.is_finite(): return false
+	var source := rv.get_instance_id()
+	if source == _crash_source_id and event_id <= _crash_event: return false
+	var consequences := RVCrashDamage.injury(rv.handling_profile, speed_change, seated)
+	if consequences.is_empty(): return false
+	_crash_source_id = source
+	_crash_event = event_id
+	var departure_already_hit := _departure_rv == rv and _departure_hit
+	if _departure_rv == rv: _departure_hit = true
+	var protected := damage_cooldown > 0.0 or departure_already_hit
+	var retain_seat := seated and is_instance_valid(seated_in)
+	var attached := rv_support.rv == rv or active_climb_rv == rv
+	if not retain_seat and (attached or _departure_rv == rv):
+		if active_climb_rv == rv: _abort_climb("vehicle crash")
+		rv_support.clear()
+		_move_with_climb_collision(Vector3.UP * 0.15)
+		velocity.y = maxf(inherited.y, rv.handling_profile.crash_launch_lift)
+		released_carrier_velocity = inherited.slide(Vector3.UP)
+		_begin_rv_departure(rv, inherited)
+		_departure_hit = true
+	if protected: return false
+	var stun: float = consequences.stun
+	if stun > 0.0:
+		_crash_stun_remaining = stun
+		health_bar.play_crash_stun(stun)
+	if rng == null: rng = RandomNumberGenerator.new()
+	if consequences.sever_chance > 0.0 and rng.randf() < consequences.sever_chance:
+		var limbs: Array[StringName] = []
+		for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg"]:
+			if body_state.has_part(part): limbs.append(part)
+		if not limbs.is_empty():
+			sever_part(limbs[rng.randi_range(0, limbs.size() - 1)], {"launch_velocity": inherited})
+	take_damage(consequences.damage)
+	return true
+
 ## Lethal contact ignores the ordinary damage cooldown.
 func kill() -> void:
 	if is_player_dead: return
@@ -1449,6 +1559,7 @@ func _player_die():
 		death_velocity += Vector3(released_carrier_velocity.x, 0, released_carrier_velocity.z)
 	_exit_climb_to_normal()
 	rv_support.clear()
+	_clear_rv_departure()
 	released_carrier_velocity = Vector3.ZERO
 	velocity = Vector3.ZERO
 	# Seat/grab cleanup relinquishes its camera. Keep that final world view

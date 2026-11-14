@@ -64,6 +64,8 @@ func set_health(value: float) -> void:
 	if is_destroyed and not was_destroyed:
 		removing.emit()
 		_on_service_stopped()
+		var rv := get_connected_rv() as Chassis
+		if rv: rv.queue_destroyed_hull_slot(mount_slot)
 	visible = not is_destroyed
 	collision_layer = 0 if is_destroyed else 1
 	for child in get_children():

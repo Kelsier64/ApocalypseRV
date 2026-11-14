@@ -79,6 +79,7 @@ static func _spawn_orientation_workshop(building: Node3D, container: Node3D) -> 
 	_spawn_orientation_food(building, container)
 	_spawn_orientation_device(building, container, "res://props/electronic_compass.tscn", "ElectronicCompass")
 	_spawn_orientation_device(building, container, FieldTerminal.SCENE, "FieldTerminal")
+	_spawn_orientation_device(building, container, RecoveryJack.SCENE, "RecoveryJack")
 
 static func _spawn_orientation_device(building: Node3D, container: Node, scene_path: String, marker: String) -> void:
 	# Ordinary starter stock, outside the tutorial's required repair roles.

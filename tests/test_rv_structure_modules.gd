@@ -68,8 +68,8 @@ func _run() -> void:
 	check(roof_weight == 150.0, "Segmenting the roof preserves its total 150 kg")
 	# Preserve the original chassis load and moment, whose 3000 kg included
 	# the deck, while adding installed shell, engine and Item as before.
-	var expected_intact_mass := 3000.0 + rv.get_engine().definition().weight
-	var expected_intact_moment := Vector3(0.0, -2400.0, 0.0) + rv.engine_bay.position * rv.get_engine().definition().weight
+	var expected_intact_mass := rv.base_mass + rv.get_engine().definition().weight
+	var expected_intact_moment := rv.handling_profile.base_center_of_mass * rv.base_mass + rv.engine_bay.position * rv.get_engine().definition().weight
 	for part in rv.get_structures():
 		expected_intact_mass += part.mass
 		expected_intact_moment += part.position * part.mass
@@ -78,7 +78,7 @@ func _run() -> void:
 		expected_intact_moment += device.position * device.mass
 	rv.update_load()
 	check(is_equal_approx(rv.mass, expected_intact_mass), "Fixed chassis floor preserves the original 3000 kg base vehicle weight")
-	check(rv.center_of_mass.is_equal_approx(expected_intact_moment / expected_intact_mass), "Fixed chassis floor preserves the intact vehicle center of mass")
+	check(rv.center_of_mass.is_equal_approx(expected_intact_moment / expected_intact_mass), "Installed items and panels shift the configured chassis center of mass")
 	var middle_roof: RVStructurePanel = slots.occupant("roof_1")
 	var roof_mass_before := rv.mass
 	var roof_moment_before := rv.center_of_mass * rv.mass

@@ -18,6 +18,7 @@
 | [RV 系統路線圖](2026-09-15-rv-systems-roadmap.md) | 首版實作，部分驗收待補 | 長途經濟、極端載重／翻車／外掛力矩與怪物群；舊油箱／材料架規則已由共用儲存修訂取代 | [RV 系統](../validation/2026-09-15-rv-systems.md)、[共用儲存](../validation/2026-09-16-rv-shared-storage.md) |
 | [完整 RV 與引擎](2026-09-16-rv-rebuild-engine.md) | 已接入正式場景 | 引擎、坡板、車燈與存檔 v3；維修蓋／坡板動畫已由駕駛體驗計畫補上 | [RV 重建](../validation/2026-09-16-rv-rebuild-engine.md) |
 | [RV 駕駛體驗](2026-09-16-rv-driving-experience.md) | 階段 1–3 已實作，4 部分驗收 | 已有駕駛調校、鏡面、音效、機械動畫、可控照明與白天／夜間受控完整回放；一般操作、音效聽感及更廣泛場景仍需人工驗收 | [本輪驗收](../validation/2026-09-22-driving-experience.md)、[煞車與效能](../validation/2026-09-22-driving-performance-braking.md)、[簡化載重](../validation/2026-09-22-simple-vehicle-load.md) |
+| [RV 擬真操控、翻車與車損](2026-11-14-rv-handling-rollover.md) | 首版實作，待人工驗收 | 輪胎、傳動、部位車損、乘員與跳車傷害、兩段千斤頂救援 | [測試與回放紀錄](../validation/2026-11-15-rv-handling-rollover.md) |
 | [室外恐怖氛圍](2026-09-16-outdoor-horror.md) | 首版實作，原規格部分已取代 | 新世界 v6 沿用遠距副本入口、D 低模、日夜／局部霧，另有路旁加油站、18 套小 POI 與動態天氣；天氣生存效果與室內美術仍待做 | [密林](../validation/2026-09-16-dense-forest.md)、[D](../validation/2026-09-17-outdoor-d.md)、[體積霧](../validation/2026-09-17-volumetric-fog.md)、[小 POI](../validation/2026-09-26-minor-pois.md)、[天氣](../validation/2026-09-20-weather.md) |
 
 ## 建議接續順序

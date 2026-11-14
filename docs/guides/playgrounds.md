@@ -77,6 +77,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
 | [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台；`--capture` 輸出四種車況（含全燈號測試）的駕駛視角、儀表近景與斜視到 `.godot/rv-workshop-captures/` 後退出。 |
 | [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F5 車內鏡、F6／F7 左右鏡、Backspace 拆／修前牆、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅；`--mirror-capture` 輸出車內鏡截圖。 |
+| [rv_handling_playground](../../tests/rv_handling_playground.tscn) | 正式操控、翻車、傷害與救援 | F2 蛇行與繞圈、F3 側坡、F4 路肩、F5 撞牆、F6 千斤頂。 |
 | [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
 | [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |
 | [item_playground](../../tests/item_playground.tscn) | 正式 Item 支撐、掉落、背包、放置與分解 | F2 拆牆、F3 看工作台、F4 鏡頭、F6 修牆、F7 看分解機、F8 長 E 回放。 |
@@ -132,8 +133,6 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
-| [slender_speaker_workshop](../../tests/slender_speaker_workshop.tscn) | 巨人 Stage 01 獨立造型／材質／尺寸工作坊 | 1–9 視角、L 燈光、F8 擷取、Esc 離開；`--capture-review --quit-after-review`。 |
-| [slender_speaker_animation_workshop](../../tests/slender_speaker_animation_workshop.tscn) | 巨人 Stage 02 動畫／手部／處刑視覺預覽；處刑預覽不結算正式行為 | 1–6 視角、[／] 片段、Space 暫停、逗號／句號逐格、E 處刑、M 位移、R 重播、F8 擷取；`--capture-hands-studio`／`--capture-motion-revision`。 |
 
 ## 詳細操作與驗收範圍
 
@@ -587,6 +586,19 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 使用正式主世界／RV、固定 seed 42、08:00 陰天、1024 × 720，停車取樣 4 秒，再以正式輪胎驅動直行取樣 24 秒。只在此量測程序停用 VSync，輸出平均、P95、P99、最慢幀及 CPU 渲染／GPU 時間；不改玩家偏好。結束自動退出。避免同時執行其他測試；headless 數據不能當作 GPU 幀時間。這是開局短路線量測，不包含長途、所有天氣與全部視角。
 
 加 `-- --no-mirrors` 關閉鏡面作對照。`-- --night-lights` 改為 22:00 停車、開蓋及開啟車內／工作／維修燈，暖機 4 秒後取樣 12 秒；再加 `--lights-off` 作同場景關燈對照。開蓋是效能場的初始化設定。
+
+## RV 操控與翻車救援
+
+```powershell
+godot --path . res://tests/rv_handling_playground.tscn
+```
+
+- **F2 蛇行與繞圈**。按 Space 放手煞車，WASD 駕駛，R／T 升降檔。先定速繞圈，再在彎中加煞車，觀察側傾、輪胎尖叫及推頭。
+- **F3 側坡、F4 路肩**。比較重心、滑移及地形對翻覆的影響。翻車停穩後確認引擎熄火、儀表亮燈，短按 E 到車外。
+- **F5 撞牆**。以相同起速重試，觀察座位減傷、車頭損傷、視線變暗和耳鳴。
+- **F6 千斤頂**。短按 E 拾取。靠近翻倒車身兩側，把千斤頂放在堅實地面。瞄準千斤頂長按 E 一秒。第一段落到側面後，等車停穩，再移動千斤頂到可抬升的一側重試。
+
+以 `-- --station=6` 直接進入救援站，附加 `--capture` 可擷取千斤頂固定相機畫面。
 
 ## 駕駛體驗與完整出車回放
 

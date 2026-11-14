@@ -22,6 +22,8 @@ var _f_time := 0.0
 var _e_done := false
 var _f_done := false
 var _repair_release_required := false
+var _recovery_message := ""
+var _recovery_message_time := 0.0
 var _input_edges: Array[Dictionary] = []
 
 func _ready() -> void:
@@ -118,6 +120,9 @@ func _show_on_foot_hints(obj: Node) -> void:
 
 func _add_target_hints(obj: Node, bindings: Dictionary, can_place: bool) -> void:
 	if not is_instance_valid(obj) or obj.is_queued_for_deletion() or not _can_interact(obj): return
+	if obj is RecoveryJack:
+		bindings["E"] = "Pick up / hold to lift RV"
+		return
 	if obj is Item and not obj.is_fixed:
 		bindings["E"] = "Pick up"
 		return
@@ -150,6 +155,7 @@ func _physics_process(delta: float) -> void:
 	var repair_pressed := Input.is_physical_key_pressed(KEY_H)
 	if not repair_pressed: _repair_release_required = false
 	var blocked: bool = player.is_gameplay_input_blocked()
+	_recovery_message_time = maxf(0.0, _recovery_message_time - delta)
 	if blocked or player.get_player_mode() != player.PlayerMode.NORMAL:
 		cancel_input_gestures()
 		aim_marker.visible = not blocked and player.get_player_mode() == player.PlayerMode.PLACING
@@ -172,6 +178,7 @@ func _physics_process(delta: float) -> void:
 		_step_buttons(target, edge.pressed if edge.key == "e" else _e_was_pressed, edge.pressed if edge.key == "f" else _f_was_pressed, 0.0)
 	if player.get_player_mode() == player.PlayerMode.NORMAL:
 		_step_buttons(obj, e_pressed, f_pressed, delta)
+	if _recovery_message_time > 0.0 and repair_label.text.is_empty(): repair_label.text = _recovery_message
 	repair_label.visible = not repair_label.text.is_empty()
 	action_panel.visible = player.get_player_mode() == player.PlayerMode.NORMAL and (action_progress.visible or repair_label.visible)
 	_update_control_hints(obj)
@@ -259,6 +266,7 @@ func _wheel_install(obj: Node) -> bool:
 	return obj.has_method("install_wheel") and player.get_active_item_name() == ItemNames.WHEEL
 
 func _uses_hold(obj: Node) -> bool:
+	if obj is RecoveryJack: return true
 	if obj is Item and not obj.is_fixed: return false
 	return obj.has_method("interact_hold") or _wheel_install(obj) or _held_delivery(obj)
 
@@ -270,6 +278,10 @@ func _invoke(obj: Node, method: String) -> void:
 	if not _can_interact(obj): return
 	if obj is PrintedPlayerBody:
 		obj.interact(player)
+		return
+	if obj is RecoveryJack and method == "interact_hold":
+		_recovery_message = obj.interact_hold(player)
+		_recovery_message_time = 2.5
 		return
 	if obj is Item and not obj.is_fixed:
 		obj.pickup(player)

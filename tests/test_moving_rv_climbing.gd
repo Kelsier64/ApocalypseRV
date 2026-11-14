@@ -237,6 +237,7 @@ func _run() -> void:
 	_expect(rv.to_local(monster.global_position).y < 2.0, "Monster falls when its supporting roof is destroyed.")
 	world.queue_free()
 	await _tick()
+	await _check_rv_departure()
 	if failures.is_empty():
 		print("PASS: moving RV climbing integration")
 		quit(0)
@@ -244,6 +245,111 @@ func _run() -> void:
 		for failure in failures:
 			push_error("FAIL: " + failure)
 		quit(1)
+
+func _check_rv_departure() -> void:
+	world = Node3D.new()
+	root.add_child(world)
+	current_scene = world
+	_add_box(Vector3(150, 1, 150), Vector3.DOWN * 0.5)
+	var shell: Node3D = load("res://rv/new_rv.tscn").instantiate()
+	rv = shell.get_node("Chassis")
+	rv.freeze = true
+	rv.position.y = 1.2
+	world.add_child(shell)
+	rv.set_physics_process(false)
+	var profile: RVHandlingProfile = rv.handling_profile
+	var speed := profile.departure_safe_slide_speed * 1.75
+	player = _spawn_departure_player(Vector3.ZERO)
+	var seat: Node3D = rv.get_node("DriverSeat")
+	await _tick()
+	seat.interact_hold(player)
+	_expect(seat.current_driver == player, "Departure fixture uses the production driver seat.")
+	rv.linear_velocity = Vector3.BACK * speed
+	var interact := InputEventAction.new()
+	interact.action = &"interact"
+	interact.pressed = true
+	seat._unhandled_input(interact)
+	await _departure_frames(_frames(30))
+	_expect(player.seated_in == null and player.rv_support.rv == rv and player.current_player_health == player.max_player_health,
+		"A single press leaves the driver on the moving RV without departure damage.")
+	player.queue_free()
+	await _tick()
+
+	# Mount the same seat beside the deck edge so its existing exit search finds
+	# the road. Neither the input nor the release path needs a new interaction.
+	var deck: CollisionShape3D = rv.get_node("DeckCollision")
+	seat.position.x = -deck.shape.size.x * 0.5 - 1.5 - 0.65
+	rv.position.y = 0.2
+	for departure_speed in [profile.departure_safe_slide_speed * 0.5, speed]:
+		var road_position := Vector3(seat.global_position.x, -0.2, seat.global_position.z)
+		player = _spawn_departure_player(road_position)
+		await _departure_frames(_frames(12))
+		_expect(player.is_on_floor(), "The exit fixture enters the seat after standing on the road.")
+		seat.interact_hold(player)
+		rv.linear_velocity = Vector3.BACK * departure_speed
+		seat._unhandled_input(interact)
+		_expect(player.seated_in == null and player.velocity.is_equal_approx(rv.linear_velocity),
+			"Leaving the seat directly onto the road inherits the moving RV velocity.")
+		var initial_health: float = player.current_player_health
+		await _departure_frames(_frames(25))
+		var health_after_landing: float = player.current_player_health
+		_expect((health_after_landing < initial_health) == (departure_speed > profile.departure_safe_slide_speed),
+			"Road contact at %.1f m/s applies damage only above the slide threshold." % departure_speed)
+		await _departure_frames(_frames(65))
+		_expect(is_equal_approx(player.current_player_health, health_after_landing) and player.released_carrier_velocity.is_zero_approx(),
+			"Horizontal inertia settles and road contact only charges once.")
+		player.queue_free()
+		await _tick()
+
+	rv.position.y = 1.2
+	var roof: Node3D = rv.get_node("RoofFront")
+	player = _spawn_departure_player(roof.global_position + Vector3.UP * 0.35 + Vector3.RIGHT * 1.6)
+	await _departure_frames(_frames(25))
+	_expect(player.rv_support.rv == rv, "Roof departure begins on actual RV support.")
+	var wall_z: float = player.global_position.z + 4.4
+	_add_box(Vector3(3.0, 5.0, 0.3), Vector3(3.6, 2.5, wall_z))
+	Input.action_press("move_right")
+	for i in _frames(42):
+		rv.position.z += speed * step_delta
+		await _departure_frames(1)
+		if player.global_position.x > 2.65 and player.rv_support.rv == null: break
+	Input.action_release("move_right")
+	_expect(player.rv_support.rv == null and player.released_carrier_velocity.z > profile.departure_safe_wall_speed,
+		"Walking off the moving roof inherits vehicle momentum.")
+	var health_before_wall: float = player.current_player_health
+	for i in _frames(36):
+		await _departure_frames(1)
+		if player.current_player_health < health_before_wall: break
+	_expect(player.current_player_health < health_before_wall and not player.is_on_floor() and player.global_position.z < wall_z,
+		"Off-vehicle momentum hits the wall before landing, without passing through it.")
+	var health_after_wall: float = player.current_player_health
+	await _departure_frames(_frames(80))
+	_expect(is_equal_approx(player.current_player_health, health_after_wall), "The wall and subsequent landing charge at most once.")
+	world.queue_free()
+	await _tick()
+
+func _add_box(size: Vector3, at: Vector3) -> void:
+	var box := BoxShape3D.new()
+	box.size = size
+	var collision := CollisionShape3D.new()
+	collision.shape = box
+	var body := StaticBody3D.new()
+	body.position = at
+	body.add_child(collision)
+	world.add_child(body)
+
+func _spawn_departure_player(at: Vector3) -> CharacterBody3D:
+	var actor: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	actor.position = at
+	world.add_child(actor)
+	actor.set_physics_process(false)
+	return actor
+
+func _departure_frames(count: int) -> void:
+	for i in count:
+		await _tick()
+		player.set_physics_process(false)
+		player._physics_process(step_delta)
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition:

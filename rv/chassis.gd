@@ -1,6 +1,8 @@
 extends VehicleBody3D
 class_name Chassis
 
+enum Rollover { UPRIGHT, SIDE, INVERTED }
+
 const PARKING_HOLD_MAX_SPEED := 0.5
 const PARKING_HOLD_RESPONSE := 40.0
 const ENGINE_SPEED_WEAR_THRESHOLD := 0.6
@@ -15,13 +17,10 @@ const ENGINE_MAX_RPM := 4800.0
 @export var parking_braking_force: float = 300.0
 @export_range(0.01, 2.0) var brake_apply_seconds: float = 0.35
 @export_range(0.01, 2.0) var brake_release_seconds: float = 0.15
-@export var max_steering: float = 0.6
 @export_range(0.01, 2.0) var throttle_apply_seconds: float = 0.45
 @export_range(0.01, 2.0) var throttle_release_seconds: float = 0.2
 @export var steering_response: float = 3.5
 @export var steering_return_response: float = 5.0
-@export_range(0.05, 1.0) var high_speed_steering_ratio: float = 0.18
-@export var steering_lateral_acceleration: float = 4.0
 var throttle_input: float = 0.0
 var _free_rev_pedal := 0.0
 @export_range(0.0, 1.0) var vibration_strength := 0.5
@@ -37,6 +36,9 @@ var _impact_velocity := Vector3.ZERO
 var _impact_angular_velocity := Vector3.ZERO
 signal vehicle_impact(kind: String, speed_loss: float, damage: float)
 var _vehicle_impacts := VehicleImpact.new()
+var _crash_damage := RVCrashDamage.new()
+var _hull := RVHullCollision.new()
+var hull_scrape_speed := 0.0
 var _impact_age := 0.0
 var _impact_position := Vector3.INF
 var _suspension_before := Vector3.ZERO
@@ -48,7 +50,11 @@ var _monster_impact_times: Dictionary = {}
 var _monster_explosion_impacts: Dictionary = {}
 @export var is_player_driving: bool = false
 var _player_driver: Node3D
-@export var center_of_mass_offset: Vector3 = Vector3(0, -0.8, 0)
+@export var handling_profile: RVHandlingProfile = preload("res://rv/handling_profile.tres")
+var max_steering: float:
+	get: return handling_profile.max_steering
+var drivetrain := RVDrivetrain.new()
+var _terrain_field: WorldField
 
 # --- WHEEL SLOT SYSTEM ---
 # Godot VehicleBody3D convention: -Z = forward, +X = left
@@ -151,6 +157,12 @@ func get_structures() -> Array[Node]:
 		if child is RVStructurePanel and not child.is_queued_for_deletion(): result.append(child)
 	return result
 
+func clear_destroyed_hull_slot(slot: String) -> void:
+	_hull.disable_slot(slot)
+
+func queue_destroyed_hull_slot(slot: String) -> void:
+	clear_destroyed_hull_slot.call_deferred(slot)
+
 func _ready() -> void:
 	contact_monitor = true
 	max_contacts_reported = maxi(max_contacts_reported, 128)
@@ -169,6 +181,7 @@ func _ready() -> void:
 	add_child(work_lights)
 	if starter_kits:
 		for i in range(2): stored_items.append({"name": "Engine Repair Kit", "is_large": false, "scene_path": "res://props/engine_repair_kit.tscn", "state": {"id": InstanceIds.create(), "condition": 100.0}})
+		stored_items.append({"name": "Recovery Jack", "is_large": false, "scene_path": RecoveryJack.SCENE, "state": {"id": InstanceIds.create(), "condition": 100.0}})
 	engine_bay = get_node("EngineBay")
 	rear_ramp = get_node_or_null("RearRamp")
 	for body in find_children("*", "StaticBody3D", true, false):
@@ -176,7 +189,7 @@ func _ready() -> void:
 		body.add_collision_exception_with(self)
 	base_mass = mass
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
-	center_of_mass = center_of_mass_offset
+	center_of_mass = handling_profile.base_center_of_mass
 	add_to_group(Groups.RV)
 	add_to_group(Groups.CHASSIS)
 	add_to_group(Groups.MONSTER_DAMAGEABLE)
@@ -188,9 +201,11 @@ func _ready() -> void:
 	power_changed.emit(current_power, max_power)
 	for slot_index in range(WHEEL_SLOTS.size()):
 		_create_wheel_socket(slot_index)
+	_hull.install_wheel_guards(self)
 	if pre_install_wheels:
 		for i in range(WHEEL_SLOTS.size()):
 			_create_wheel_at(i)
+	_hull.sync.call_deferred(self)
 
 func get_engine() -> EngineState:
 	return engine_bay.installed_engine if is_instance_valid(engine_bay) else null
@@ -204,18 +219,16 @@ func road_speed() -> float:
 	return _road_speed
 
 func engine_rpm() -> float:
-	# Presentation estimate from the drive speed bands. The drivetrain has no shaft RPM.
 	if not energy.engine_running or not has_working_engine() or not has_usable_fuel():
 		return 0.0
 	if gear == 0 or handbrake or drive_blocked():
 		return lerpf(ENGINE_IDLE_RPM, ENGINE_MAX_RPM, _free_rev_pedal)
-	var longitudinal_speed := absf(linear_velocity.dot(global_basis.z))
-	var speed_ratio := longitudinal_speed / maxf(_gear_speed(), 0.01)
-	var launch_rpm := throttle_input * 900.0 * maxf(0.0, 1.0 - speed_ratio)
-	return minf(ENGINE_MAX_RPM, lerpf(ENGINE_IDLE_RPM, ENGINE_REDLINE_RPM, speed_ratio) + launch_rpm)
+	return clampf(drivetrain.shaft_rpm(self), ENGINE_IDLE_RPM, ENGINE_MAX_RPM)
 
-func _gear_speed() -> float:
-	return [8.0, 16.0, 25.0, max_speed][clampi(gear - 1, 0, 3)]
+func steering_limit(longitudinal_speed: float) -> float:
+	var profile := handling_profile
+	var speed_factor := 1.0 / (1.0 + pow(longitudinal_speed / profile.steering_speed, 2.0))
+	return profile.max_steering * lerpf(profile.high_speed_steering_ratio, 1.0, speed_factor)
 
 func feedback(kind: String, at: Vector3 = Vector3.INF) -> void:
 	var sound := get_node_or_null("Audio")
@@ -244,10 +257,17 @@ func restore_comfort(data: Dictionary) -> void:
 	interior_powered = {"cabin": false, "service": false}
 
 func engine_start_reason() -> String:
+	if rollover_state() != Rollover.UPRIGHT: return "RV overturned: recover it before starting the engine"
 	if get_engine() == null: return "No engine installed: use the front engine bay"
 	if not has_working_engine(): return "Engine failed: use an Engine Repair Kit or replace the engine"
 	if not has_usable_fuel(): return "Fuel exhausted: refill through the fuel inlet"
 	return ""
+
+func rollover_state() -> Rollover:
+	var upright := global_basis.y.dot(Vector3.UP)
+	if upright <= handling_profile.rollover_inverted_up_dot: return Rollover.INVERTED
+	if upright <= handling_profile.rollover_side_up_dot: return Rollover.SIDE
+	return Rollover.UPRIGHT
 
 func has_usable_fuel() -> bool:
 	return unlimited_fuel or current_fuel > 0.0
@@ -385,6 +405,10 @@ func vehicle_impact_point_velocity(point: Vector3) -> Vector3:
 	var centre := global_transform * center_of_mass
 	return _impact_velocity + _impact_angular_velocity.cross(point - centre)
 
+func suspension_incoming_velocity(point: Vector3) -> Vector3:
+	# VehicleBody3D uses the chassis origin to measure damper velocity.
+	return _suspension_before + _suspension_angular_before.cross(point - global_position)
+
 func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, approach: float, charges_damage: bool = true) -> void:
 	if not is_instance_valid(monster) or not normal.is_finite() or not point.is_finite() or not is_finite(approach): return
 	if approach <= 0.1 or normal.is_zero_approx(): return
@@ -399,7 +423,7 @@ func queue_explosive_item_impact(item: Item, normal: Vector3, point: Vector3, ap
 	# shared blast resolver owns engine damage, never the ordinary body budget.
 	queue_monster_impact(item, normal, point, approach, false)
 
-func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF) -> void:
+func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF, slot: String = "", wheel: int = -1) -> void:
 	if _impact_age < 0.75: return
 	var paid := VehicleImpact.damage(loss, kind)
 	var effective_loss := loss
@@ -409,14 +433,15 @@ func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incomin
 		paid = result.damage
 		effective_loss = result.loss
 	if paid <= 0.0: return
-	take_damage(paid)
-	feedback("blocked")
+	RVCrashDamage.apply(self, paid, slot, wheel)
+	feedback("crash")
 	vehicle_impact.emit(kind, effective_loss, paid)
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	_vehicle_impacts.advance(state.step)
 	if _impact_position.is_finite() and state.transform.origin.distance_to(_impact_position) > maxf(10.0, _impact_velocity.length() * state.step * 4.0):
 		_vehicle_impacts.reset()
+		_crash_damage.reset()
 		_impact_age = 0.0
 		_impact_velocity = state.linear_velocity
 		_impact_angular_velocity = state.angular_velocity
@@ -443,7 +468,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if hit: new_trunks["%d:%d" % [collider.get_instance_id(), shape_index]] = TreeImpact.retained_for(target)
 		if collider is Monster or collider is OilBarrel:
 			collider.receive_vehicle_body_contact(self, -normal, state.get_contact_local_position(contact))
-		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "hit": hit, "offset": offset, "incoming": incoming})
+		var owner := RVHullCollision.shape_node(self, state.get_contact_local_shape(contact))
+		var slot: String = owner.get_meta(&"rv_hull_slot", "") if owner else ""
+		var wheel: int = owner.get_meta(&"rv_wheel_slot", -1) if owner else -1
+		contacts.append({"collider": collider, "normal": normal, "target": target, "shape": shape_index, "slot": slot, "wheel": wheel, "hit": hit, "offset": offset, "incoming": incoming})
 	# One trunk can report a glancing contact before its frontal hit. Classify
 	# blocking normals only after every shape has had a chance to break.
 	for contact in contacts:
@@ -501,6 +529,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	# Use only true collision normals, after all soft-obstacle restoration.
 	# Brake/steering losses tangent to the ground are not impact damage.
 	var losses: Dictionary = {}
+	var crash_loss := 0.0
+	var scrapes: Dictionary = {}
+	var overturned := state.transform.basis.y.dot(Vector3.UP) <= handling_profile.rollover_side_up_dot
 	for contact in contacts:
 		var collider: Node = contact.collider
 		if collider is Monster: continue
@@ -509,21 +540,43 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if is_ancestor_of(collider) or (collider is Item and collider.get_connected_rv() == self): continue
 		var normal: Vector3 = contact.normal.normalized()
 		var closing: float = -contact.incoming.dot(normal)
+		if contact.wheel >= 0 and absf(normal.dot(state.transform.basis.x)) > 0.55 and closing >= handling_profile.tire_side_impact_min_speed:
+			var wheel_damage := closing ** 2 * handling_profile.tire_side_impact_damage_scale
+			if _impact_age >= 0.75:
+				var wheel_key := "wheel:%d:%d" % [collider.get_instance_id(), contact.wheel]
+				var result := _vehicle_impacts.record(wheel_key, closing, "body", closing)
+				if not result.is_empty(): damage_tire(contact.wheel, minf(wheel_damage, result.damage))
+			crash_loss = maxf(crash_loss, closing)
+			continue
 		var ground := normal.y > 0.5
 		var key := "ground" if ground else "body:%d" % collider.get_instance_id()
 		if not ground: _vehicle_impacts.touch(key)
+		if overturned and ground and not contact.slot.is_empty():
+			var speed: float = contact.incoming.slide(normal).length()
+			scrapes[contact.slot] = maxf(scrapes.get(contact.slot, 0.0), speed)
 		if closing < (1.5 if ground else 0.75): continue
 		var after := state.linear_velocity + state.angular_velocity.cross(contact.offset)
 		var loss: float = maxf(0.0, (after - contact.incoming).dot(normal))
 		if ground:
 			# Load transfer pitches the chassis during acceleration/braking. A
 			# flat-floor contact needs real downward translation, not that pitch.
-			if normal.y > 0.98 and -_impact_velocity.dot(normal) < 1.5: continue
+			if contact.slot.is_empty() and normal.y > 0.98 and -_impact_velocity.dot(normal) < 1.5: continue
 			loss = maxf(0.0, loss + state.total_gravity.dot(normal) * state.step)
 		if ground and loss < 0.15: continue
-		var incoming_limit := maxf(0.0, -_impact_velocity.dot(normal)) if ground else closing
-		if not losses.has(key) or losses[key].loss < loss: losses[key] = {"loss": loss, "kind": "ground" if ground else "body", "limit": incoming_limit}
-	for key: String in losses: _settle_vehicle_impact(losses[key].kind, losses[key].loss, key, losses[key].limit)
+		crash_loss = maxf(crash_loss, loss)
+		var incoming_limit := maxf(0.0, -_impact_velocity.dot(normal)) if ground and contact.slot.is_empty() else closing
+		if not losses.has(key) or losses[key].loss < loss:
+			losses[key] = {"loss": loss, "kind": "ground" if ground else "body", "limit": incoming_limit, "slot": contact.slot}
+	for key: String in losses:
+		_settle_vehicle_impact(losses[key].kind, losses[key].loss, key, losses[key].limit, losses[key].slot)
+	if _impact_age >= 0.75:
+		_crash_damage.sample(self, _vehicle_impacts.clock, state, _impact_velocity, _impact_angular_velocity, crash_loss)
+	hull_scrape_speed = 0.0
+	for slot: String in scrapes:
+		var speed: float = scrapes[slot]
+		hull_scrape_speed = maxf(speed, hull_scrape_speed)
+		var amount := maxf(0.0, speed - handling_profile.shell_scrape_min_speed) * handling_profile.shell_scrape_damage_per_meter * state.step
+		if amount > 0.0: RVCrashDamage.apply(self, amount, slot, -1)
 	_impact_velocity = state.linear_velocity
 	_impact_angular_velocity = state.angular_velocity
 	_suspension_before = state.linear_velocity
@@ -535,6 +588,7 @@ func _sample_suspension_impact() -> void:
 		_was_impact_frozen = freeze
 		_impact_age = 0.0
 		_vehicle_impacts.reset()
+		_crash_damage.reset()
 		_suspension_pending = false
 	if freeze or not _suspension_pending: return
 	_suspension_pending = false
@@ -542,7 +596,9 @@ func _sample_suspension_impact() -> void:
 	if state == null: return
 	var loss := 0.0
 	var incoming_limit := 0.0
-	for wheel: VehicleWheel3D in installed_wheels:
+	var contact_wheel := -1
+	for index in installed_wheels.size():
+		var wheel: VehicleWheel3D = installed_wheels[index]
 		if wheel == null or not wheel.is_in_contact(): continue
 		var normal := wheel.get_contact_normal().normalized()
 		if normal.y < 0.5: continue
@@ -552,9 +608,14 @@ func _sample_suspension_impact() -> void:
 		if normal.y > 0.98 and -_suspension_before.dot(normal) < 1.5: continue
 		var after := state.linear_velocity + state.angular_velocity.cross(offset)
 		var shock := (after - before).dot(normal) + state.total_gravity.dot(normal) * state.step
-		loss = maxf(loss, shock)
+		if shock > loss:
+			loss = shock
+			contact_wheel = index
 		incoming_limit = maxf(incoming_limit, -_suspension_before.dot(normal))
-	if loss >= 0.15: _settle_vehicle_impact("ground", loss, "ground", incoming_limit)
+	if loss >= 0.15:
+		_settle_vehicle_impact("ground", loss, "ground", incoming_limit, "", contact_wheel)
+		if _impact_age >= 0.75:
+			_crash_damage.sample(self, _vehicle_impacts.clock, state, _suspension_before, _suspension_angular_before, loss)
 	# Incoming velocity for the next solver callback must include suspension
 	# and wheel traction impulses applied after _integrate_forces.
 	_impact_velocity = state.linear_velocity
@@ -646,6 +707,12 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	return true
 
 func _physics_process(delta: float) -> void:
+	_hull.sync(self)
+	if rollover_state() != Rollover.UPRIGHT: energy.engine_running = false
+	if _terrain_field == null:
+		var domain := WorldActorSnapshot.domain(self)
+		var generator := domain.get_node_or_null("WorldGenerator") if domain else null
+		if generator: _terrain_field = generator.get("field")
 	_sample_suspension_impact()
 	if _last_road_position.is_finite() and delta > 0:
 		var displacement := global_position - _last_road_position
@@ -678,7 +745,7 @@ func _physics_process(delta: float) -> void:
 		var applied: Vector2 = _player_driver.hallucinated_driving_input(turn, throttle if braking_input == 0.0 else 0.0)
 		turn = applied.x
 		throttle = applied.y
-	var drive_engaged := gear != 0 and not handbrake and not drive_blocked()
+	var drive_engaged := gear != 0 and not handbrake and not drive_blocked() and rollover_state() == Rollover.UPRIGHT
 	var pedal := clampf(throttle, 0.0, 1.0) if braking_input == 0.0 else 0.0
 	var target_throttle := pedal if drive_engaged else 0.0
 	var throttle_response := throttle_apply_seconds if target_throttle > throttle_input else throttle_release_seconds
@@ -691,30 +758,22 @@ func _physics_process(delta: float) -> void:
 	brake_input = move_toward(brake_input, clampf(braking_input, 0.0, 1.0), delta / maxf(0.01, brake_response))
 	var can_drive := step_energy_system(drive, braking_input, absf(turn), delta)
 	var longitudinal_speed := absf(linear_velocity.dot(global_basis.z))
-	var speed_factor := clampf(longitudinal_speed / max_speed, 0.0, 1.0)
 	var response := steering_return_response if is_zero_approx(turn) else steering_response
-	var steering_limit := lerpf(max_steering, max_steering * high_speed_steering_ratio, speed_factor)
-	# A speed-dependent steering envelope, not an extra stabilizing force.
-	var wheelbase := absf(WHEEL_SLOTS[0].position.z - WHEEL_SLOTS[2].position.z)
-	steering_limit = minf(steering_limit, atan(wheelbase * steering_lateral_acceleration / maxf(1.0, longitudinal_speed * longitudinal_speed)))
-	steering = lerpf(steering, clampf(turn, -1.0, 1.0) * steering_limit, 1.0 - exp(-response * delta))
+	steering = lerpf(steering, clampf(turn, -1.0, 1.0) * steering_limit(longitudinal_speed), 1.0 - exp(-response * delta))
 	engine_force = 0.0
-	# VehicleBody3D treats brake as a per-step impulse (engine force already
-	# includes its timestep). Preserve our authored 60 Hz braking strength.
 	var parking := handbrake or drive_blocked()
 	var braking_strength := parking_braking_force if parking else brake_input * max_braking_force
 	brake = braking_strength * 60.0 * delta
-	if can_drive and drive > 0.0 and brake_input == 0.0:
-		var engine := get_engine()
-		var spec := engine.definition()
-		var health_scale := minf(1.0, engine.health / (spec.max_health * ENGINE_SPEED_WEAR_THRESHOLD))
-		var speed_scale := lerpf(MIN_ENGINE_SPEED_SCALE, 1.0, health_scale)
-		var gear_speed := _gear_speed()
-		var torque := maxf(0.1 * speed_scale, 1.0 - longitudinal_speed / (gear_speed * speed_scale))
-		engine_force = -drive * max_engine_force * spec.force_multiplier * torque * (1.0 if gear > 0 else -0.3)
-	if not is_player_driving and control_override.is_empty():
-		engine_force = 0.0
-	TireDynamics.step(self)
+	if can_drive and drive > 0.0 and brake_input == 0.0 and (is_player_driving or scripted_controls):
+		engine_force = drivetrain.drive_force(self, drive)
+	# Preserve the chassis control readouts while disabling the solver's wheel impulses.
+	for wheel: VehicleWheel3D in installed_wheels:
+		if wheel: wheel.brake = 0.0
+	if not freeze and not sleeping:
+		drivetrain.step(self, _terrain_field, delta, parking, can_drive and drive_engaged)
+	else:
+		drivetrain.slip_speed = 0.0
+		hull_scrape_speed = 0.0
 	if parking and brake > 0.0:
 		_hold_parking_brake()
 
@@ -760,6 +819,7 @@ func remove_wheel(slot_index: int) -> void:
 	if wheel == null:
 		return
 	installed_wheels[slot_index] = null
+	drivetrain.spin[slot_index] = 0.0
 	wheel.queue_free()
 
 func get_installed_wheel_count() -> int:
@@ -778,14 +838,13 @@ func _create_wheel_at(slot_index: int) -> void:
 	var wheel := VehicleWheel3D.new()
 	wheel.name = slot["name"]
 	wheel.position = slot["position"]
-	wheel.use_as_traction = slot["traction"]
-	wheel.use_as_steering = slot["steering"]
-	wheel.wheel_friction_slip = 3.5
-	wheel.suspension_travel = 0.5
-	wheel.suspension_stiffness = 40.0
-	wheel.suspension_max_force = 15000.0
-	wheel.damping_compression = 0.88
-	wheel.damping_relaxation = 0.95
+	wheel.wheel_friction_slip = 0.0
+	wheel.wheel_rest_length = handling_profile.suspension_rest_length
+	wheel.suspension_travel = handling_profile.suspension_travel
+	wheel.suspension_stiffness = handling_profile.suspension_stiffness
+	wheel.suspension_max_force = handling_profile.max_suspension_force
+	wheel.damping_compression = handling_profile.compression_damping
+	wheel.damping_relaxation = handling_profile.rebound_damping
 	wheel.wheel_radius = WHEEL_RADIUS
 
 	var wheel_visual: Node3D = preload("res://rv/visuals/wheel.tscn").instantiate()
@@ -869,6 +928,14 @@ func puncture_wheel(slot: int) -> bool:
 	feedback("blocked", WHEEL_SLOTS[slot].position)
 	return true
 
+func damage_tire(slot: int, damage: float) -> void:
+	if installed_wheels[slot] == null or damage <= 0.0: return
+	if damage >= minf(wheel_health[slot], handling_profile.tire_impact_puncture_damage):
+		puncture_wheel(slot)
+	else:
+		wheel_health[slot] -= damage
+		_update_wheel_condition(slot)
+
 func tire_warning() -> String:
 	var issues := PackedStringArray()
 	for slot in range(4):
@@ -882,7 +949,7 @@ func update_load() -> void:
 	# Only installed engine/equipment affect vehicle load. Batteries, fuel and
 	# stored items keep their own state but do not contribute mass or moment.
 	var total := base_mass
-	var weighted := center_of_mass_offset * base_mass
+	var weighted := handling_profile.base_center_of_mass * base_mass
 	if get_engine():
 		total += get_engine().definition().weight
 		weighted += engine_bay.position * get_engine().definition().weight

@@ -1,6 +1,6 @@
 extends RefCounted
 class_name VehicleStatus
-const IDS := ["engine", "fuel", "battery", "door", "brake", "tire", "ramp", "headlight"]
+const IDS := ["engine", "fuel", "battery", "door", "brake", "tire", "ramp", "headlight", "tilt"]
 static func read(rv: Node) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	var engine: EngineState = rv.get_engine()
@@ -21,6 +21,10 @@ static func read(rv: Node) -> Array[Dictionary]:
 	rows.append({"id": "tire", "label": "Tires", "level": 3 if rv.get_installed_wheel_count() < 4 or minimum <= 0.0 else (2 if minimum < 30.0 else 0), "message": rv.tire_warning()})
 	rows.append({"id": "ramp", "label": "Ramp", "level": 2 if rv.drive_blocked() else 0, "message": "Stow the ramp to drive. The engine can still charge the battery at idle."})
 	rows.append({"id": "headlight", "label": "Headlights", "level": 1 if rv.headlights_requested and rv.lamps_powered else 0, "message": "Headlights on"})
+	var overturned: bool = rv.rollover_state() != Chassis.Rollover.UPRIGHT
+	var roll: float = absf(rv.global_basis.x.dot(Vector3.UP))
+	var tilt := 3 if overturned else (2 if roll > rv.handling_profile.tilt_warning_roll else 0)
+	rows.append({"id": "tilt", "label": "Tilt", "level": tilt, "message": "RV overturned: use a Recovery Jack" if overturned else "RV tilting: reduce speed"})
 	return rows
 static func messages(rv: Node) -> String:
 	var result := PackedStringArray()

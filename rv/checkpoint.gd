@@ -1,7 +1,7 @@
 extends Node
 ## Main-world checkpoint. Serialized Variants contain no objects or executable code.
-const VERSION := 7
-const PATH := "user://rv_checkpoint_v7.save"
+const VERSION := 8
+const PATH := "user://rv_checkpoint_v8.save"
 const WORLD_SCENE := "res://world/main_world.tscn"
 const ROUTE_PRESSURE = preload("res://world/deviation_pressure.gd")
 const REAR_WRECK_LAYOUT = preload("res://world/starting_shelter/rear_wreck_layout.gd")

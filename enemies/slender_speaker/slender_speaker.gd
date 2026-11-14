@@ -1349,6 +1349,11 @@ func _clear_grab_palm_path(from: Vector3, to: Vector3, radius: float) -> Diction
 		if collider is RVStructurePanel:
 			collider.take_damage(collider.current_health)
 			cleared = collider.is_destroyed
+			# This loop sweeps again immediately after clearing the panel.
+			# Remove its chassis proxy for that sweep too.
+			if cleared:
+				var vehicle := collider.get_connected_rv() as Chassis
+				if vehicle: vehicle.clear_destroyed_hull_slot(collider.mount_slot)
 		# Equipment remains a physical obstacle during a grab. Its direct
 		# demolition belongs to a smash, not to a reaching hand.
 		if not cleared: return hit

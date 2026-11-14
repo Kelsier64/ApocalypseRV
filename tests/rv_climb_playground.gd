@@ -15,6 +15,8 @@ var debug_next_sample: float = 0.0
 var cabin_view := false
 var side_route := false
 var top_review_time := 0.0
+var departure_review := false
+var departure_speed := 0.0
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Ladder Acceptance"
@@ -53,6 +55,17 @@ func _ready() -> void:
 	player.position = Vector3(2.65, 0.05, 0)
 	player.rotation.y = PI / 2.0
 	add_child(player)
+	if "--departure" in OS.get_cmdline_user_args():
+		departure_review = true
+		get_window().title = "ApocalypseRV - Moving RV Departure"
+		var overlay := CanvasLayer.new()
+		add_child(overlay)
+		status = Label.new()
+		status.position = Vector2(20, 80)
+		status.text = "F2: low-speed run | F3: high-speed run\nWalk off the right edge with D."
+		overlay.add_child(status)
+		_reset_departure(0.0)
+		return
 	var marker := MeshInstance3D.new()
 	var capsule := CapsuleMesh.new()
 	capsule.height = 1.5
@@ -122,6 +135,10 @@ func _start_replay() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	if departure_review:
+		if event.keycode == KEY_F2: _reset_departure(rv.handling_profile.departure_safe_slide_speed * 0.5)
+		if event.keycode == KEY_F3: _reset_departure(rv.handling_profile.departure_safe_slide_speed * 1.75)
+		return
 	match event.keycode:
 		KEY_F2:
 			replay = false
@@ -190,6 +207,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().reload_current_scene()
 
 func _physics_process(delta: float) -> void:
+	if departure_review:
+		if rv.position.z < 75.0:
+			rv.position.z += departure_speed * delta
+		return
 	elapsed += delta
 	if not is_instance_valid(monster):
 		status.text = "RV CLIMB PLAYGROUND | Monster defeated after release. R: reset"
@@ -237,6 +258,16 @@ func _physics_process(delta: float) -> void:
 		player.LocomotionState.keys()[player.locomotion_state], rv.to_local(player.global_position).y,
 		monster.LocomotionState.keys()[monster.locomotion_state], rv.to_local(monster.global_position).y,
 		str(driving), _roof_health_label()]
+
+func _reset_departure(speed: float) -> void:
+	departure_speed = speed
+	rv.position.z = -65.0
+	var roof := rv.get_node("RoofFront") as Node3D
+	var spawn := roof.global_position + Vector3.UP * 0.35 + Vector3.RIGHT * 1.2
+	player.complete_world_transition(Transform3D(Basis.IDENTITY, spawn))
+	player.current_player_health = player.max_player_health
+	player.damage_cooldown = 0.0
+	player._update_health_bar()
 
 func _roof_health_label() -> String:
 	var health := 0.0

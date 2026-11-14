@@ -67,6 +67,7 @@ func swing_blocker(index: int, start: float, finish: float) -> String:
 	box.size += Vector3(0.005, -0.02, 0.05)
 	var steps := maxi(1, ceili(absf(finish - start) / deg_to_rad(2.0)))
 	var offset := hinge_span * 0.25 * (1.0 if index == 0 else -1.0) if leaf_count == 2 else leaf_width * 0.5 + 0.01
+	var vehicle := get_connected_rv()
 	for step in range(1, steps + 1):
 		var angle := lerpf(start, finish, float(step) / steps)
 		var query := PhysicsShapeQueryParameters3D.new()
@@ -74,8 +75,10 @@ func swing_blocker(index: int, start: float, finish: float) -> String:
 		query.transform = global_transform * leaf_pose(index, angle) * Transform3D(Basis.IDENTITY, Vector3(offset, -0.03, 0))
 		query.exclude = [get_rid()]
 		query.collision_mask = 0xFFFFFFFF
-		var hits := get_world_3d().direct_space_state.intersect_shape(query, 1)
-		if not hits.is_empty(): return PlacementRules.object_name(hits[0].collider)
+		var hits := get_world_3d().direct_space_state.intersect_shape(query, 32)
+		for hit in hits:
+			if hit.collider == vehicle and RVHullCollision.slot_for(vehicle, hit.shape) == mount_slot: continue
+			return PlacementRules.object_name(hit.collider)
 	return ""
 
 func aimed_leaf(player: Node3D) -> int:

@@ -156,12 +156,21 @@ func initial_state() -> bool:
 		else:
 			check(damage == 0.0, "Unselected section starts intact: " + slot.id)
 	var wheel_slot: int = workshop.targets.wheel_slot
+	var jack_found := false
+	for prop in vehicle.get_tree().get_nodes_in_group(Groups.ITEMS):
+		if prop is RecoveryJack and WorldEntities.same_world(vehicle, prop):
+			jack_found = jack_found or prop.persistent_id.ends_with(":recovery_jack")
+	check(jack_found, "The second room includes a loose Recovery Jack")
 	var original_wheel: VehicleWheel3D = vehicle.installed_wheels[wheel_slot]
 	if not check(original_wheel != null and vehicle.wheel_ids[wheel_slot] == workshop.targets.original_wheel, "Selected tire starts installed with the recorded identity"): return false
 	check(vehicle.tire_warning().begins_with(TireDynamics.NAMES[wheel_slot]) and not vehicle.tire_warning().contains(","), "Only the selected tire is reported as worn or flat")
 	for index in Chassis.WHEEL_SLOTS.size():
 		if index == wheel_slot: continue
-		check(original_wheel.wheel_friction_slip < vehicle.installed_wheels[index].wheel_friction_slip, "Initial tire damage reduces grip relative to the other tires")
+		var tuning := vehicle.handling_profile
+		var load := vehicle.mass * 9.8 / 4.0
+		var worn := RVTireModel.grip_limit(tuning, load, load, tuning.asphalt_grip, vehicle.wheel_health[wheel_slot])
+		var intact := RVTireModel.grip_limit(tuning, load, load, tuning.asphalt_grip, vehicle.wheel_health[index])
+		check(worn < intact, "Initial tire damage reduces grip relative to the other tires")
 	check(vehicle.get_engine() != null and vehicle.get_engine().health == 0.0 and not vehicle.has_working_engine(), "New workshop engine is completely broken")
 	check(vehicle.get_node("StructureSlots").panel("roof_1").is_destroyed, "The middle ceiling is completely destroyed")
 	var socket: BatterySocket = workshop.item("socket")

@@ -265,9 +265,9 @@ MaterialStorage 保存底盤數字材料，material_capacity 預設 300；容量
 
 ### 駕駛、維修與保存
 
-控制仍由 Chassis 集中協調，未另做 VehicleController 類別。引擎狀態與入座分離，方向鍵遙控只可由測試明確啟用。輪槽常駐，即使沒有輪胎仍可射線互動；輪胎 ID／condition 在拆裝間保留。RepairOperation 累計持續瞄準時間，一般設備／輪胎完成才扣 2 Metal Parts 並補 60 HP；引擎另用專用維修包；切換目標、移動車輛、發動引擎或中斷免費取消。
+Chassis 協調駕駛輸入、能源、碰撞與裝載。[RVDrivetrain](rv/drivetrain.gd) 保留 Godot 射線懸吊，使用 [RVTireModel](rv/tire_model.gd) 計算輪胎合力與獨立輪速；[各項調校](rv/handling_profile.tres) 共用同一份資源。輪槽常駐，輪胎 ID 和耐久在拆裝間保留。RepairOperation 持續瞄準完成才扣材料並恢復耐久；引擎使用專用維修包。
 
-Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects，Checkpoint／VehicleSnapshot 均為 v6；先寫 `.tmp`、flush 並讀回比對，上次有效檔備份為 `.bak`，再 rename 至 `user://rv_checkpoint_v6.save`。舊版本直接拒絕，不執行遷移或舊路徑偵測。CheckpointSchema 與 SaveSceneCatalog 驗證完整欄位、值域、POI、場景根類別、槽位、支撐引用及循環；磁碟錯誤按階段回報。
+Checkpoint autoload 在主場景攔截 F6/F9。保存限室外 NORMAL 模式、沒有 POI 轉場、地形建立或車體施工。Variant 序列化禁用 objects。Checkpoint v8 先寫 `.tmp`、flush 並讀回比對，上次有效檔備份為 `.bak`，再 rename 至 `user://rv_checkpoint_v8.save`。VehicleSnapshot v6 的姿態足以還原翻車狀態。CheckpointSchema 與 SaveSceneCatalog 驗證完整欄位、值域、POI、場景根類別、槽位、支撐引用及循環；磁碟錯誤按階段回報。
 
 F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等待地形與導航就緒，再套用 actors；原世界直到提交成功才釋放。WorldEntities.transfer 保留設備的支撐、電池和工作生命週期。失敗或逾時恢復原世界，來源存檔不變。
 
@@ -326,7 +326,8 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 - 固定 EngineBay 持有唯一安裝狀態。Chassis.exchange_engine／remove_engine 原子轉移同格背包，service_reason 共用停穩／熄火／手煞車／開蓋條件。Chassis.take_damage 轉交引擎，has_working_engine 和 engine_start_reason 統一啟動條件；沒有底盤 HP 或整車毀損旗標。
 - RepairOperation 對引擎使用 repair_requirement 契約；鎖住目標、引擎 ID 與維修包 ID，連續 3 秒後再次驗證並消耗道具，+150 耐久。一般設備／輪胎沿用材料路徑。
 - VehicleEnergy 依引擎定義計算基礎油耗；只有有效引擎能運轉，並由底盤內建充電功能替插槽電池充電。處理充電、待機、工作後統一支付車燈負載，lamps_powered 為實際供電結果。
-- VehicleStatus.read 回傳 8 項圖示／等級／文字；實體 InstrumentCluster 與 TabletUI 讀同一結果，沒有副本數值；RVTerminalPresenter 僅翻譯英文顯示名稱及訊息，不改 domain owner 的原始訊息、交易或狀態。VehicleLights 控制真實 SpotLight3D 與燈罩發光；舊裝飾燈材質不再常亮。駕駛 HUD 沒有行車文字列或駕駛提示；實體時速／轉速錶、油量與電量指針錶、檔位窗、充電燈與車況燈提供行車資訊；`Chassis.engine_rpm()` 為既有車速／檔位／油門的呈現估算，由轉速表與音調共用，不另建動力或保存狀態。見 [儀表說明](rv/visuals/README.md#2026-11-12-實體儀表)。
+- VehicleStatus.read 提供儀表與 TabletUI 共用的圖示、等級與訊息，包含側傾警示。轉速表和引擎音效讀取由後輪速度與檔位推算的轉速。實體時速、油量、電量、檔位、充電與車況燈提供其餘行車資訊。見 [儀表說明](rv/visuals/README.md#2026-11-12-實體儀表)。
+- [RVHullCollision](rv/hull_collision.gd) 為每片現有面板建立略小的底盤碰撞形狀。面板原碰撞負責操作、角色和攀爬判定，車殼代理負責支撐翻倒車重與定位碰撞傷害。[RVCrashDamage](rv/crash_damage.gd) 依槽位結算車損，並以同次事故中乘員位置的最大速度變化結算一次傷害。翻車熄火及逃生離座由車身姿態推導。千斤頂使用 [物品與配方](props/recovery_jack.tscn) 的通用途徑保存與製作。
 - chassis.tscn 原生網格與簡單複合碰撞保留舊輪槽和車殼座標。正式 new_rv 預裝完整服務；Item.initial_support 僅設定新場景預設依附（平板→工作台）。讀檔由已保存 support ID 還原，不套預設配置。
 - RearRamp 是底盤固定子節點；檢查手煞車、速度、兩扇門角、地面法線與兩端支撐、完整展開路徑。1.4 m 寬斜面碰撞及兩折視覺分開，展開阻止 engine_force 並保持煞車，仍可怠速。收起檢查上方占用；狀態保存 deployed／angle／length。
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。

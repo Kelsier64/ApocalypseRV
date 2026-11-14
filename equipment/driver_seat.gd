@@ -7,10 +7,13 @@ const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 @onready var game_settings = get_node("/root/GameSettings")
 
 var current_driver: Node3D = null
+var _camera_rest_position := Vector3.ZERO
+var _last_driver_velocity := Vector3.ZERO
 
 func _ready() -> void:
 	super._ready()
 	if presentation_only: return
+	_camera_rest_position = seat_camera.position
 	seat_camera.rotation = REST_CAMERA_ROTATION
 	seat_camera.cull_mask = (seat_camera.cull_mask & ~PlayerModelVisual.FULL_BODY_LAYER) | PlayerModelVisual.LOCAL_VIEW_LAYER
 	seat_camera.fov = float(game_settings.get_setting(&"drive_fov"))
@@ -45,6 +48,7 @@ func interact_hold(player: Node3D) -> void:
 	if not player.enter_seat_mode(self):
 		return
 	current_driver = player
+	_last_driver_velocity = rv.linear_velocity
 	seat_camera.current = true
 
 	if rv.has_method("set_driving_state"):
@@ -87,18 +91,20 @@ func exit_seat(forced: bool = false) -> void:
 
 	var player := current_driver
 	if forced: player.close_settings()
-	var exit_position := _find_clear_exit_position(forced)
-	if not exit_position.is_finite():
+	var exit := _find_clear_exit(forced)
+	if exit.is_empty():
 		return
 	current_driver = null
 
-	player.exit_seat_mode(exit_position)
+	var rv := get_connected_rv() as Chassis
+	var leaves_rv := not forced and rv != null and rv.rollover_state() == Chassis.Rollover.UPRIGHT and ClimbMath.find_rv_ancestor(exit.support) != rv
+	player.exit_seat_mode(exit.position, leaves_rv)
 
-	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"):
 		rv.set_driving_state(false)
 
 	seat_camera.rotation = REST_CAMERA_ROTATION
+	seat_camera.position = _camera_rest_position
 
 func release_for_execution(player: Node3D) -> bool:
 	if current_driver != player or player.seated_in != self: return false
@@ -109,40 +115,49 @@ func release_for_execution(player: Node3D) -> bool:
 	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"): rv.set_driving_state(false)
 	seat_camera.rotation = REST_CAMERA_ROTATION
+	seat_camera.position = _camera_rest_position
 	return true
 
 # Use the real standing collider and supported floor points, never teleport into geometry.
-func _find_clear_exit_position(forced: bool = false) -> Vector3:
+func _find_clear_exit(forced: bool = false) -> Dictionary:
 	var candidates: Array[Vector3] = []
-	for offset in [Vector3(1.5, 0, 0), Vector3(-1.5, 0, 0), Vector3(0, 0, 1.5), Vector3(0, 0, -1.5)]:
-		candidates.append(to_global(offset))
-	var rv := get_connected_rv()
-	if rv:
-		for z in [-3.0, -1.5, 0.0, 1.5, 3.0, 4.6]: candidates.append(rv.to_global(Vector3(0, 0.55, z)))
+	var rv := get_connected_rv() as Chassis
+	var overturned := rv != null and rv.rollover_state() != Chassis.Rollover.UPRIGHT
+	if overturned:
+		for z in [-4.5, -2.0, 0.0, 2.0, 4.5]:
+			for x in [-3.8, 3.8]:
+				candidates.append(rv.to_global(Vector3(0, 1.0, z)) + rv.global_basis.z.slide(Vector3.UP).normalized().cross(Vector3.UP) * x)
+	else:
+		for offset in [Vector3(1.5, 0, 0), Vector3(-1.5, 0, 0), Vector3(0, 0, 1.5), Vector3(0, 0, -1.5)]:
+			candidates.append(to_global(offset))
+		if rv:
+			for z in [-3.0, -1.5, 0.0, 1.5, 3.0, 4.6]: candidates.append(rv.to_global(Vector3(0, 0.55, z)))
 	if forced:
 		for radius in [2.5, 4.0, 6.0]:
 			for i in range(12): candidates.append(global_position + Vector3(cos(i * TAU / 12.0) * radius, 0, sin(i * TAU / 12.0) * radius))
 	for candidate in candidates:
-		var query := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP * 0.4, candidate - Vector3.UP * (5.0 if forced else 0.8), 1, [get_rid(), current_driver.get_rid()])
+		var query := PhysicsRayQueryParameters3D.create(candidate + Vector3.UP * (2.0 if overturned else 0.4), candidate - Vector3.UP * (5.0 if forced or overturned else 0.8), 1, [get_rid(), current_driver.get_rid()])
 		var floor_hit := get_world_3d().direct_space_state.intersect_ray(query)
 		if floor_hit.is_empty() or floor_hit.normal.dot(Vector3.UP) < 0.7: continue
+		if overturned and ClimbMath.find_rv_ancestor(floor_hit.collider) == rv: continue
 		var point: Vector3 = floor_hit.position + Vector3.UP * 0.035
-		if _is_exit_position_clear(point): return point
+		if _is_exit_position_clear(point): return {"position": point, "support": floor_hit.collider}
 	# Destruction must release player ownership even if the entire surrounding volume is blocked.
 	# Find clear air immediately above; gravity then resolves the landing.
 	if forced:
 		for height in range(2, 21):
 			var point := global_position + Vector3.UP * height
-			if _is_exit_position_clear(point): return point
-		return global_position + Vector3.UP * 22.0
-	return Vector3.INF
+			if _is_exit_position_clear(point): return {"position": point, "support": null}
+		return {"position": global_position + Vector3.UP * 22.0, "support": null}
+	return {}
 
 func _is_exit_position_clear(candidate: Vector3) -> bool:
 	if not is_instance_valid(current_driver): return false
 	var collider: CollisionShape3D = current_driver.body_collision_shape
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = collider.shape
-	query.transform = Transform3D(current_driver.global_basis, candidate) * collider.transform
+	var upright := Basis(Vector3.UP, current_driver.global_rotation.y)
+	query.transform = Transform3D(upright, candidate) * collider.transform
 	query.collision_mask = current_driver.collision_mask
 	query.exclude = [current_driver.get_rid()]
 	return get_world_3d().direct_space_state.intersect_shape(query, 1).is_empty()
@@ -158,8 +173,13 @@ func _on_service_stopped() -> void:
 		else:
 			current_driver = null
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if is_instance_valid(current_driver):
-		var rv := get_connected_rv()
+		var rv := get_connected_rv() as Chassis
 		if not rv or not current_driver.can_drive():
 			exit_seat(true)
+			return
+		var motion := rv.global_basis.inverse() * (_last_driver_velocity - rv.linear_velocity)
+		var offset := (motion * rv.handling_profile.camera_inertia_scale).limit_length(0.08)
+		seat_camera.position = seat_camera.position.lerp(_camera_rest_position + offset, 1.0 - exp(-delta * 11.0))
+		_last_driver_velocity = rv.linear_velocity

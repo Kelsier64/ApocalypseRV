@@ -30,6 +30,8 @@
 | [item_player](test_item_player.gd)、[item_persistence](test_item_persistence.gd) | 正式玩家拾取／放置、物品 ID／所有權及保存 |
 | [rv_resource_cycle](test_rv_resource_cycle.gd)、[rv_engine](test_rv_engine.gd) | 回收、製造、燃料、維修、能源、引擎及車載作弊／時間／天氣指令 |
 | [rv_structure_modules](test_rv_structure_modules.gd)、[rv_braking](test_rv_braking.gd) | 車體結構／支撐與真實輪胎煞車 |
+| [rv_handling](test_rv_handling.gd)、[rv_rollover](test_rv_rollover.gd) | 合成輪胎力、柏油滑移、側坡翻車、屋頂車損與倒置離座 |
+| [rv_crash_injury](test_rv_crash_injury.gd)、[recovery_jack](test_recovery_jack.gd) | 乘員傷害、事件去重、固定種子斷肢、倒置快照與千斤頂兩段救援 |
 | [moving_rv_climbing](test_moving_rv_climbing.gd) | 玩家與 Raker 的移動 RV 攀爬 |
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |

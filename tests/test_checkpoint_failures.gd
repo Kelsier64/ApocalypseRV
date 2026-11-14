@@ -266,7 +266,7 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 func _test_survival_checkpoint(checkpoint: Node, saved: Dictionary) -> void:
-	check(saved.version == 7 and saved.vehicles[0].version == 6, "Survival changes only the outer checkpoint version")
+	check(saved.version == checkpoint.VERSION and saved.vehicles[0].version == VehicleSnapshot.VERSION, "Checkpoint and vehicle records use current versions")
 	check(saved.player.get("survival") == {"hunger": 0.0, "starvation_elapsed": 3.25, "san": -47.5}, "Checkpoint disk roundtrip retains starvation remainder and SAN debt")
 	for kind in ["missing", "type", "hunger_type", "nan", "infinity", "negative", "overflow", "elapsed_missing", "elapsed_type", "elapsed_nan", "elapsed_infinity", "elapsed_negative", "elapsed_boundary", "fed_remainder", "san_type", "san_nan", "san_infinity", "san_overflow"]:
 		var malformed := saved.duplicate(true)

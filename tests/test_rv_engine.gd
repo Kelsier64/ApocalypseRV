@@ -38,13 +38,16 @@ func check_engine_rpm(rv: Chassis) -> void:
 	rv._physics_process(rv.throttle_release_seconds)
 	rv.set_handbrake(false)
 	rv.linear_velocity = -rv.global_basis.z * 5.0
+	for i in [2, 3]: rv.drivetrain.spin[i] = 5.0 / rv.WHEEL_RADIUS
 	var first_gear_rpm := rv.engine_rpm()
 	rv.set_gear(2)
 	check(first_gear_rpm > rv.engine_rpm() and rv.engine_rpm() > Chassis.ENGINE_IDLE_RPM, "Upshifting at the same road speed lowers RPM")
 	rv.linear_velocity = Vector3.ZERO
+	rv.drivetrain.spin.fill(0.0)
 	check(rv.engine_rpm() == Chassis.ENGINE_IDLE_RPM, "Running engine idles at rest in gear")
 	rv.set_gear(-1)
 	rv.linear_velocity = rv.global_basis.z * 5.0
+	for i in [2, 3]: rv.drivetrain.spin[i] = -5.0 / rv.WHEEL_RADIUS
 	check(is_equal_approx(rv.engine_rpm(), first_gear_rpm), "Reverse raises RPM as the RV backs up")
 	rv.current_fuel = 0.0
 	check(rv.engine_rpm() == 0.0, "Empty tank reads zero RPM")
@@ -57,6 +60,7 @@ func check_engine_rpm(rv: Chassis) -> void:
 	rv.set_engine_running(false)
 	check(rv.engine_rpm() == 0.0, "Moving RV reads zero RPM after engine shutdown")
 	rv.linear_velocity = Vector3.ZERO
+	rv.drivetrain.spin.fill(0.0)
 	rv.set_gear(previous_gear)
 	rv.set_handbrake(previous_handbrake)
 	rv.allow_test_controls = false
@@ -275,7 +279,8 @@ func _run() -> void:
 	check(not rv.has_node("Generator"), "Charging needs no portable generator")
 	for name in ["CraftingStation", "Scrapper", "TabletScreen", "ItemBox", "FuelPort", "DriverSeat"]:
 		check(rv.get_node(name).can_operate(), "Default installed service: " + name)
-	check(rv.stored_items.size() == 2 and rv.stored_items[0].scene_path.ends_with("engine_repair_kit.tscn"), "Starter recovery kits")
+	check(rv.stored_items.filter(func(entry: Dictionary) -> bool: return entry.scene_path.ends_with("engine_repair_kit.tscn")).size() == 2, "Starter engine kits")
+	check(rv.stored_items.any(func(entry: Dictionary) -> bool: return entry.scene_path == RecoveryJack.SCENE), "Starter recovery jack")
 	check(rv.get_node("TabletScreen").mount_support == rv.get_node("CraftingStation"), "Tabletop tablet depends on workstation")
 	var bay := rv.engine_bay
 	check(rv.get_engine().health == 450 and not bay.hatch_open, "Standard engine and closed hatch at start")
@@ -303,7 +308,8 @@ func _run() -> void:
 	rv.take_damage(999)
 	check(not rv.set_engine_running(true) and level(rv, "engine") == 3, "Empty bay cannot start")
 	check(rv.store_player_item(player, 0), "Engine can enter shared warehouse")
-	check(rv.take_stored_item(player, 2), "Same engine can be taken back from warehouse")
+	var stored_engine := rv.stored_items.find_custom(func(entry: Dictionary) -> bool: return entry.state.get("engine", {}).get("id") == incoming.id)
+	check(rv.take_stored_item(player, stored_engine), "Same engine can be taken back from warehouse")
 	check(rv.exchange_engine(player).contains("Installed") and rv.get_engine().health == 257, "Warehouse roundtrip keeps engine condition")
 	rv.take_damage(999)
 	check(rv.get_engine().health == 0 and not rv.energy.engine_running, "Engine destruction stops only drivetrain")
@@ -403,6 +409,7 @@ func _run() -> void:
 	var previous_health := engine.health
 	rv.throttle_input = 1.0
 	rv.linear_velocity = -rv.global_basis.z * 4.0
+	for i in [2, 3]: rv.drivetrain.spin[i] = 4.0 / rv.WHEEL_RADIUS
 	var drive_force := {}
 	for percent in [100, 60, 59, 30, 10]:
 		engine.health = engine.definition().max_health * percent / 100.0
@@ -415,6 +422,7 @@ func _run() -> void:
 	check(is_equal_approx(absf(rv.engine_force), drive_force[100]), "Restored health recovers normal drive immediately")
 	engine.health = previous_health
 	rv.linear_velocity = Vector3.ZERO
+	rv.drivetrain.spin.fill(0.0)
 	rv.control_override.clear()
 	rv.set_engine_running(false)
 	rv.handbrake = true

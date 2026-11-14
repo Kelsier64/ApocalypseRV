@@ -2,6 +2,8 @@ extends Node3D
 ## Original deterministic PCM synthesis, shared immutable streams; see assets/audio/README.md.
 static var streams: Dictionary = {}
 var engine_player: AudioStreamPlayer3D
+var tire_player: AudioStreamPlayer3D
+var scrape_player: AudioStreamPlayer3D
 var cues: Array[AudioStreamPlayer3D] = []
 var cooldowns := {}
 var cue_counts := {}
@@ -12,8 +14,9 @@ var engine_rest := Vector3.ZERO
 
 static func synth(kind: String) -> AudioStreamWAV:
 	if streams.has(kind): return streams[kind]
-	var loop := kind == "engine"
+	var loop := kind in ["engine", "tire_slip", "hull_scrape"]
 	var duration := 1.0 if loop else (0.6 if kind in ["start", "stop"] else 0.18)
+	if kind == "ringing": duration = 1.25
 	var rate := 22050
 	var data := PackedByteArray()
 	data.resize(int(duration * rate) * 2)
@@ -28,6 +31,10 @@ static func synth(kind: String) -> AudioStreamWAV:
 		var pulse := pow(0.5 + 0.5 * sin(TAU * 23.0 * t), 4.0)
 		var signal_value := sin(TAU * freq * t) * 0.5 + sin(TAU * freq * 2.0 * t) * 0.18
 		signal_value += rng.randf_range(-1.0, 1.0) * (0.12 + pulse * 0.12)
+		if kind == "ringing": signal_value = sin(TAU * 2450.0 * t) * 0.32
+		if kind == "tire_slip": signal_value = sin(TAU * 923.0 * t + sin(TAU * 17.0 * t) * 2.0) * 0.6
+		if kind == "hull_scrape": signal_value = rng.randf_range(-0.65, 0.65) * (0.6 + pulse * 0.4) + 0.22 * sin(TAU * 213.0 * t)
+		if kind == "crash": signal_value = 0.54 * sin(TAU * (95.0 * t - 120.0 * t * t)) + rng.randf_range(-0.6, 0.6)
 		data.encode_s16(i * 2, int(clampf(signal_value * envelope * 0.55, -1.0, 1.0) * 32767))
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -50,6 +57,12 @@ func player() -> AudioStreamPlayer3D:
 func _ready() -> void:
 	engine_player = player()
 	engine_player.stream = synth("engine")
+	tire_player = player()
+	tire_player.position = Vector3.ZERO
+	tire_player.stream = synth("tire_slip")
+	scrape_player = player()
+	scrape_player.position = Vector3.ZERO
+	scrape_player.stream = synth("hull_scrape")
 	for i in range(3): cues.append(player())
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
@@ -68,6 +81,8 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF) -> void:
 			return
 
 func _process(delta: float) -> void:
+	update_loop(tire_player, rv.drivetrain.slip_speed, 2.0)
+	update_loop(scrape_player, rv.hull_scrape_speed, rv.handling_profile.shell_scrape_min_speed)
 	var rpm := rv.engine_rpm()
 	var running := rpm > 0.0
 	if running and not engine_player.playing: engine_player.play()
@@ -82,3 +97,11 @@ func _process(delta: float) -> void:
 	# Only the engine's visual assembly moves. Collision, seat and aim stay still.
 	var offset := Vector3(sin(phase * 107), sin(phase * 131), 0) * 0.0012 * rv.vibration_strength if running else Vector3.ZERO
 	rv.engine_bay.get_node("EngineVisual").position = engine_rest + offset
+
+func update_loop(sound: AudioStreamPlayer3D, speed: float, threshold: float) -> void:
+	if speed < threshold:
+		if sound.playing: sound.stop()
+		return
+	if not sound.playing: sound.play()
+	sound.volume_db = lerpf(-28.0, -11.0, clampf((speed - threshold) / 10.0, 0.0, 1.0))
+	sound.pitch_scale = lerpf(0.85, 1.2, clampf(speed / 16.0, 0.0, 1.0))

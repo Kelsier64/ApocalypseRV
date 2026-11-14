@@ -1279,3 +1279,6 @@ rotation_degrees = Vector3(-90, 0, 0)
 [node name="FieldTerminal" type="Marker3D" parent="WorkshopSupplies"]
 position = Vector3(11.95, 0.882, -20.75)
 rotation_degrees = Vector3(-90, 0, 0)
+
+[node name="RecoveryJack" type="Marker3D" parent="WorkshopSupplies"]
+position = Vector3(12.0, 0.04, -19.8)

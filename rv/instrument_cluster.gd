@@ -200,8 +200,7 @@ func _gauge(title: String, at: Vector2, radius: float, art: String, rest: float)
 	_mesh("Lens", _disc(mouth * 0.995, 32), Vector3(0, 0, depth * 0.9), _lens, root)
 	return pivot
 
-## Eight warning tiles in a 4 x 2 annunciator block: a dark lens whose solid symbol
-## lights yellow, amber or red.
+## Warning tiles use dark lenses whose symbols light yellow, amber or red.
 func _build_annunciator() -> void:
 	var pitch := Vector2(0.1, 0.07)
 	var center := Vector2(0, 0.133)
@@ -214,6 +213,14 @@ func _build_annunciator() -> void:
 	for i in range(VehicleStatus.IDS.size()):
 		var id: String = VehicleStatus.IDS[i]
 		var at := Vector3(center.x + (i % 4 - 1.5) * pitch.x, center.y + (0.5 - floorf(i / 4.0)) * pitch.y, 0.008)
+		if id == "tilt":
+			at = Vector3(center.x, center.y + pitch.y * 1.4, 0.008)
+			var lens := _box("TiltLens", Vector3(0.055, 0.027, 0.008), at, _housing)
+			var marker := _box("TiltSymbol", Vector3(0.034, 0.009, 0.005), at + Vector3.FORWARD * -0.007, _solid(SYMBOL_OFF, 0.45))
+			lens.rotation.z = -0.25
+			marker.rotation.z = -0.35
+			warning_lamps[id] = marker.material_override
+			continue
 		warning_lamps[id] = _telltale(id, at, pitch - Vector2(0.008, 0.008))
 
 ## Gear positions printed behind one smoked window, like a column-shift quadrant,

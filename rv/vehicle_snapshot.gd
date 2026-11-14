@@ -147,12 +147,13 @@ static func apply(rv: Node3D, data: Dictionary) -> bool:
 	rv.restore_comfort(data.comfort)
 	rv.engine_bay.get_node("Hatch").set_open(data.hatch_open)
 	if rv.rear_ramp: rv.rear_ramp.restore_state(data.ramp)
-	rv.energy.engine_running = data.engine and rv.has_working_engine() and rv.current_fuel > 0.0
+	rv.energy.engine_running = data.engine and rv.engine_start_reason().is_empty()
 	rv.energy.restore_charging(data.charging)
 	rv.gear = data.gear
 	rv.handbrake = data.handbrake
 	rv.linear_velocity = data.linear
 	rv.angular_velocity = data.angular
+	rv.drivetrain.spin.fill(0.0)
 	for index in range(4):
 		rv.remove_wheel(index)
 		var wheel: Dictionary = data.wheels[index]
