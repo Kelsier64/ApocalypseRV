@@ -339,7 +339,7 @@ CombatTargeting 做一般排序，Monster 觀測候選並執行攻擊；Item 在
 
 #### 新增驗證入口
 
-駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有兩個共享 World3D 的 SubViewport，相機裁掉鏡面專用第 20 層避免遞迴，192×256 並交錯 UPDATE_ONCE 更新；前側板弱參照由 structure_changed 刷新，離座停用、讀檔重連。
+駕駛體驗增量：Chassis 集中油門、腳煞車、速度相關轉向上限；road_speed 以物理步實際位移取樣，僅供儀表／聲音，不改變動力學。VehicleMirrors 擁有左右外鏡與車內鏡三個共享 World3D 的 SubViewport，各自弱參照所掛結構槽（left_0／right_0／front），由 structure_changed 刷新；相機裁掉鏡面專用第 20 層避免遞迴，車內鏡是電子後視鏡，鏡頭位於後門上方車外，另裁掉第 18 層完整玩家模型。三面鏡輪流 UPDATE_ONCE，各達 refresh_hz；離座停用、讀檔重連。
 
 EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前及逐步做碰撞掃掠，受阻維持姿態。坡板先滑出再翻折，動畫期間板面無碰撞，僅完全展開後啟用連續斜面；停穩並拉手煞車即可操作，不檢查後門開度、板上占用或折疊淨空，E 可從當下姿態反向。展開仍檢查中央接地與 30° 可行走坡度，不要求兩側角落支撐。save_block_reason 與 VehicleSnapshot.capture 拒絕非穩定狀態，Checkpoint 顯示具體原因；正式保存仍只寫既有穩定 hatch_open／ramp，不保存過渡動畫。
 

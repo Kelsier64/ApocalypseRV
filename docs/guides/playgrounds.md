@@ -76,7 +76,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [rv_roof_playground](../../tests/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
 | [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台；`--capture` 輸出四種車況（含全燈號測試）的駕駛視角、儀表近景與斜視到 `.godot/rv-workshop-captures/` 後退出。 |
-| [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F6／F7 左右鏡、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅。 |
+| [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F5 車內鏡、F6／F7 左右鏡、Backspace 拆／修前牆、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅；`--mirror-capture` 輸出車內鏡截圖。 |
 | [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
 | [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |
 | [item_playground](../../tests/item_playground.tscn) | 正式 Item 支撐、掉落、背包、放置與分解 | F2 拆牆、F3 看工作台、F4 鏡頭、F6 修牆、F7 看分解機、F8 長 E 回放。 |
@@ -592,7 +592,7 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 
 `godot --path . --log-file .godot/driving-experience.log res://tests/driving_experience_playground.tscn`
 
-開局入座；F6 左鏡、F7 右鏡、F1 前方；紅色／藍色障礙分別在車尾左右。F8 引擎艙視角後按 E 開蓋、F9 坡板、F11 夜間並開工作／維修燈、F3 車內視角、F12 正式輪驅回放。照明與儀表亮度統一由控制台操作。測試視角定位只用於觀察，不代表玩家已走到該位置。
+開局入座；F5 車內鏡、F6 左鏡、F7 右鏡、F1 前方，Backspace 拆除或重建掛車內鏡的前牆；紅色／藍色障礙分別在車尾左右。F8 引擎艙視角後按 E 開蓋、F9 坡板、F11 夜間並開工作／維修燈、F3 車內視角、F12 正式輪驅回放。照明與儀表亮度統一由控制台操作。測試視角定位只用於觀察，不代表玩家已走到該位置。
 
 正式主世界整趟回放：
 

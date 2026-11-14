@@ -234,11 +234,51 @@ func _run() -> void:
 	hit = world.get_world_3d().direct_space_state.intersect_ray(through_floor)
 	check(hit.get("collider") == rv and not deck.disabled and rv.get_node("Deck").visible, "Chassis damage does not destroy or remove the fixed floor")
 	check(is_equal_approx(rv.mass, mass_before_chassis_damage) and (rv.center_of_mass * rv.mass).is_equal_approx(moment_before_chassis_damage), "Damage keeps fixed deck weight and centre of mass unchanged")
+	await _exercise_interior_mirror(slots)
 	world.queue_free()
 	await process_frame
-	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop and persistent chassis floor")
+	if failures.is_empty(): print("PASS: independent fixed structures, door obstruction, tablet immunity, support drop, persistent chassis floor and cabin mirror")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+## The digital cabin mirror hangs from the front wall, faces the driver, views rearward,
+## never sees the complete player model and renders only while the player drives.
+func _exercise_interior_mirror(slots: RVStructureSlots) -> void:
+	var mirrors: Node3D = rv.get_node("Mirrors")
+	var mirror: Dictionary = mirrors.mirror_for("front")
+	check(not mirror.is_empty() and mirrors.mirrors.size() == 3, "Two side mirrors plus one cabin mirror")
+	if mirror.is_empty(): return
+	var camera: Camera3D = mirror.camera
+	var viewport: SubViewport = mirror.viewport
+	var face: MeshInstance3D = mirror.face
+	check(camera.cull_mask & (PlayerModelVisual.FULL_BODY_LAYER | PlayerModelVisual.LOCAL_VIEW_LAYER | mirrors.MIRROR_LAYER) == 0, "Cabin mirror never renders the driver's own model or any mirror")
+	check(viewport.size == mirrors.interior_resolution and viewport.size.x > viewport.size.y, "Cabin mirror uses its own wide render target")
+	var seat: Node3D = rv.get_node("DriverSeat")
+	var seat_camera: Camera3D = seat.seat_camera
+	seat_camera.rotation = seat.REST_CAMERA_ROTATION
+	var eye := seat_camera.global_position
+	var normal := face.global_basis.z.normalized()
+	check(normal.dot((eye - face.global_position).normalized()) > 0.95 and seat_camera.is_position_in_frustum(face.global_position), "Cabin mirror faces the seated driver and sits in the rest view")
+	var lens: Transform3D = mirror.lens
+	var rear_doors: Vector3 = RVStructureSlots.slot_info("rear").pose.origin
+	var rear_half_depth: float = RVStructureSlots.slot_info("rear").size.z * 0.5
+	check(lens.origin.z > rear_doors.z + rear_half_depth and lens.basis.z.dot(Vector3.BACK) < -0.95, "Digital cabin mirror looks rearward from outside the rear doors, past the cabin")
+	await process_frame
+	var rig: Node3D = mirror.rig
+	check(rig.visible and viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Mounted cabin mirror stays idle while nobody drives")
+	seat_camera.current = true
+	rv.set_driving_state(true, player)
+	var scheduled := false
+	for i in range(Engine.physics_ticks_per_second):
+		await process_frame
+		scheduled = scheduled or viewport.render_target_update_mode == SubViewport.UPDATE_ONCE
+	check(scheduled and camera.global_transform.is_equal_approx(rv.global_transform * lens), "Driving schedules cabin mirror renders from its RV-relative lens")
+	var front: RVStructurePanel = slots.occupant("front")
+	front.take_damage(1e9)
+	await process_frame
+	await process_frame
+	check(not rig.visible and viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED, "Destroying the front wall removes the cabin mirror and stops its renders")
+	rv.set_driving_state(false)
 
 func _exercise_free_construction(slots: RVStructureSlots) -> void:
 	var materials := rv.inventory.duplicate(true)
