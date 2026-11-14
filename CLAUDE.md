@@ -53,7 +53,8 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 - **Ask before starting** whenever the goal is unclear or the work needs a tradeoff you would otherwise settle yourself. Use `AskUserQuestion` with concise choices and a recommendation, and do not start on a guess. Read-only investigation that sharpens the question may come first.
 - Report architecture problems you notice. Ask before large architectural changes.
 - Validate with the smallest set that covers the changed behavior and its risks. Skip tests for simple, low-risk edits. For docs-only changes, check wording, consistency and links (`scripts/agent/check-links.ps1 <files>`); do not launch Godot.
-- Report what you checked, what you did not, and any material uncertainty. When the user must inspect something, name exactly what. Never claim visual or hands-on verification you did not do.
+- **Hand hands-on checks to the user.** When a change needs visual, feel or in-game verification, build or reuse a playground scene that sets up the exact state, launch it, and give the user a short checklist of what to look at and report back. Do not ask whether to verify, and do not spend tokens on screenshot loops. Automated tests still run as usual.
+- Report what you checked, what you did not, and any material uncertainty. Never claim visual or hands-on verification you did not do.
 - Work token-efficiently: use Grep/Glob, read targeted ranges, batch independent tool calls, and reuse established findings.
 
 ## Delegation
@@ -61,7 +62,7 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 Discuss first, then dispatch the agreed plan with the user-level `dispatch` skill. Project specifics:
 
 - Keep scene modeling and 3D integration in the main agent.
-- Models: `opus` for deep reasoning, `haiku` for lookups and mechanical edits, `sonnet` for implementation and computer-use game testing.
+- Models: `opus` for deep reasoning, `haiku` for lookups and mechanical edits, `sonnet` for implementation.
 - **Prefer agy to save Claude tokens.** Antigravity CLI (Gemini, user-level `agy` skill) runs on a separate quota. Send it work that is cheaper to check than to do: broad code research and summaries, code review and second opinions, test-log and CI triage, first drafts of docs, and mechanical multi-file edits. Give it a full brief (it reads `AGENTS.md`, which points here) and run it in the background. Use `--mode plan` for read-only work; for edits, point it at a separate worktree and review the diff before anything lands.
 - **Generate every image with agy** (reference images, textures, concept art, icons). Run it in an empty folder outside the repo and read the result before use; [reference images](.claude/skills/comfyui-image-to-3d/references/reference-images.md) has the tested call and checks.
 - Keep with Claude: work that needs this conversation's context, 3D integration, harness changes, and final verification.
@@ -73,7 +74,7 @@ Project skills live in `.claude/skills/`. Load one when its trigger applies.
 | Skill | Load when |
 |---|---|
 | `godot-tests` | Choosing, running, writing or debugging automated tests or CI failures |
-| `playtest` | A change needs render captures or live on-screen verification in the running game |
+| `playtest` | A change needs visual, feel or in-game verification: a playground for the user, or render captures |
 | `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md`, or anything under `docs/` |
 | `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
 | `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |

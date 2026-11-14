@@ -1,11 +1,11 @@
 ---
 name: playtest
-description: Use when an ApocalypseRV change needs live on-screen verification in the running game (climbing, turning, roof destruction, driving feel, visuals) through desktop control, or when launching a playground scene.
+description: Use when an ApocalypseRV change needs visual, feel or in-game verification (climbing, turning, roof destruction, driving feel, visuals), when building or launching a playground scene for the user, or when render captures are needed.
 ---
 
 # Live Playtest
 
-Use live play only when headless tests and renders cannot answer the question. If the user's visual judgment is what matters, ask them to look instead.
+**Default: the user plays, you set it up.** When headless tests cannot answer the question, build or reuse a playground scene that reaches the exact state with as few inputs as possible, launch it, and give the user a short checklist: what to do, what to look at, and what to report back. Do not ask whether to verify, and do not loop on screenshots. Drive the window yourself only when the user asks.
 
 ## Render Captures First
 
@@ -46,7 +46,7 @@ Omit `-- --replay` for manual WASD/Space play. Controls and arguments for every 
 | F10 | Placement review on the roof ladder |
 | R | Reload the scene |
 
-## Drive the Window
+## Drive the Window (only when the user asks)
 
 1. Read the `anthropic-skills:computer-use` skill, load the `mcp__computer-use__*` tools in one ToolSearch call, and `request_access` for Godot.
 2. The editor and the game share the Godot executable. Take a screenshot first and make sure the running game window, not the editor, is frontmost before sending any input.
