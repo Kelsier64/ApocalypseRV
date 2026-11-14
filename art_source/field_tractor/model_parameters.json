@@ -1,0 +1,67 @@
+{
+  "source_sha256": "18e0f71a231ddbc3025eef637afecdd8bea679ebd14f6b53c5c424a55e153dc6",
+  "size_m": [
+    1.782,
+    1.792,
+    2.908
+  ],
+  "origin": "bottom-center",
+  "rotation_y_degrees": 0.0,
+  "fit_scale_xyz": [
+    2.899284543012343,
+    2.9002913502553174,
+    2.9002328970255697
+  ],
+  "collapsed_tangents_repaired": 0,
+  "gltfpack_version": "gltfpack 1.3",
+  "asset": "field_tractor",
+  "up": "+Y",
+  "front_intended": "+Z",
+  "raw_triangles": 49898,
+  "triangles": 10470,
+  "vertices": 13386,
+  "final_sha256": "e4153c113c3e4db39e34d3afacede4598c38128f7ac8aec2f0edcd198840fcf3",
+  "texture_sha256": [
+    "aea5a593a73341ca372707e51ec9b8ba0fe2118b423a0cdb635fd500250f0b52",
+    "f8b987ad45931c0559cb291b7116e21c738c6383451959effa17ba969b90ba87",
+    "59a71be3570ace3a22fb834e0c012be3cbcaffd0f9226f285c11dfa2047fd024"
+  ],
+  "gltfpack_args": [
+    "-si",
+    "0.12",
+    "-se",
+    "0.025",
+    "-sp",
+    "-sv",
+    "-noq",
+    "-kn",
+    "-km"
+  ],
+  "bounds_min_m": [
+    -0.890999972820282,
+    1.1102230246251565e-16,
+    -1.4539999961853027
+  ],
+  "bounds_max_m": [
+    0.890999972820282,
+    1.7920000553131104,
+    1.4539999961853027
+  ],
+  "topology": {
+    "weld_m": 1e-06,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 203,
+    "duplicate_triangles": 82,
+    "zero_area_triangles": 0
+  },
+  "visual_review": "required",
+  "source_path": ".godot/art-work/field_tractor/run-01/generation/raw.glb",
+  "generation": {
+    "profile": "trellis-single-1024-50k",
+    "profile_sha256": "094ba479c7a9b5e78c0f71231c4e26a89c063305efe0e0733c158c50e23ad3d2",
+    "seed": 42,
+    "resolution": 1024,
+    "prompt_id": "fd3515e0-9368-492c-8fb3-55893e9c9be6",
+    "reference_sha256": "ab4292907fc383bd914a4615781ba1e7691c019a4c56a6e1ffd8afcb297af5ed"
+  }
+}

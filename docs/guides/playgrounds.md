@@ -51,6 +51,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [orientation_playground](../../tests/orientation_playground.tscn) | 主世界：目前接待室／終端課程／維修出發 | 正式操作；`--terminal-review` 開正式教學終端，`--workshop-review` 看工作區。 |
 | [starting_shelter_playground](../../tests/starting_shelter_playground.tscn) | 主世界：出庫、外殼與舊車庫驗收入口 | F2 輪驅離場、F3 外觀、F4 室內／玩家、F5 封路；`--replay`。 |
 | [highway_playground](../../tests/highway_playground.tscn) | 主世界：道路起伏、山路與停靠輪驅 | F1–F3 里程視角、F6 行駛、F7 停靠、F8 駕駛／跟車；`--replay`／`--parking`。 |
+| [world_detail_playground](../../tests/world_detail_playground.tscn) | 主世界：世界細節（池塘／湖、支線、路旁與野地場景、電塔、道路設施）固定視角審查 | `--seed=N --target=<名稱> [--skip=N]` 跳到第 N 個該類特徵，`--list` 列出目標後結束；F1 路面、F2 近景、F3 俯瞰、F7 截圖；`--capture` 依序輸出三張到 `.godot/world-detail-captures/` 後結束（不可加 `--headless`）。 |
 | [outdoor_horror_playground](../../tests/outdoor_horror_playground.tscn) | 主世界：正式戶外氛圍、入口與大物步行 | F2 視角、1–4 入口外觀、F3 搬運回放、F4 進出、F6 RV、F10 平板。 |
 | [rear_pressure_playground](../../tests/rear_pressure_playground.tscn) | 主世界 fixture：後方廢車通行與偏離壓力 | F2 穿越廢車、F3 後方霧／遭遇、F4 鏡頭；`--replay` 跑通行。 |
 | [gas_station_playground](../../tests/gas_station_playground.tscn) | 正式資產獨立場：加油站商店／維修間／加油棚 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |

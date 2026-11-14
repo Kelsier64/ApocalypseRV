@@ -32,6 +32,12 @@ static func valid_ledger(value: Variant) -> bool:
 		if not value[key] is bool or not value[key]: return false
 	return true
 
+## Share of speed the RV keeps after knocking this target down. Light props
+## declare their own `vehicle_speed_retained`; trunks use the default.
+static func retained_for(target: Node) -> float:
+	if target != null and target.get("vehicle_speed_retained") != null: return float(target.get("vehicle_speed_retained"))
+	return SPEED_RETAINED
+
 static func target_for(collider: Node) -> Node:
 	var target := collider
 	while target != null and not target.has_method("vehicle_tree_impact"):

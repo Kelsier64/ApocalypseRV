@@ -62,29 +62,9 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		body.add_child(shape)
 		chunk.decoration_positions.append(tree.point)
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
-	var rng := chunk.field.rng_for(chunk.band, "flora_v14_ground", 14)
-	for i in range(2400):
-		if gradual and i % 64 == 0 and chunk.slice_exhausted(): await chunk._pause()
-		var horizontal := Vector2(rng.randf_range(-440, 440), -chunk.band * 150.0 - rng.randf_range(1, 149))
-		var x := horizontal.x
-		var z := horizontal.y
-		var weights := chunk.field.landforms.flora_weights(x, z)
-		if rng.randf() > weights.y * chunk.field.profile.decoration_density: continue
-		var sample := chunk.field.surface(x, z)
-		if sample.reserved or sample.road.distance < sample.road.width * 0.5 + 4.5 or is_finite(float(sample.water_height)): continue
-		var normal := chunk.field.normal_at(x, z)
-		if normal.y < 0.70: continue
-		var point := Vector3(x, sample.height, z)
-		var appearance: Vector3 = sample.appearance
-		var biome := int(appearance.y) if rng.randf() < appearance.z else int(appearance.x)
-		var kind := 0
-		if biome == 2 or float(sample.river_bank) > 0.45: kind = 1
-		elif biome in [1, 3, 4]: kind = 2
-		elif biome == 5: kind = 3
-		var radius := rng.randf_range(0.7, 1.5)
-		shrubs[kind].append(Transform3D(Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3.ONE * radius), point))
+	# Grass, reeds, scree and ferns are ScatterCatalog layers. Only the roadside
+	# screens stay here: their woody shrubs are destructible and carry saved IDs.
 	# Keep the foreground layered: tall trunks alone expose the whole valley.
-	# A separate RNG leaves all existing tree/ground choices independent.
 	var shrub_body := ForestTrunks.new()
 	shrub_body.name = "ForestShrubs"
 	shrub_body.is_shrub = true
@@ -132,7 +112,7 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	chunk.add_child(body)
 	chunk.add_child(shrub_body)
-	print("FOREST v14 band=%d trees=%d ground=%d" % [chunk.band, planned.size(), shrubs[0].size() + shrubs[1].size() + shrubs[2].size() + shrubs[3].size() + shrubs[4].size()])
+	print("FOREST v14 band=%d trees=%d screens=%d" % [chunk.band, planned.size(), shrubs[1].size() + shrubs[4].size()])
 
 static func batch(parent: Node3D, title: String, mesh: Mesh, poses: Array) -> Dictionary:
 	var instances := {}

@@ -32,7 +32,7 @@ func run() -> void:
 	world = load("res://world/main_world.tscn").instantiate()
 	var generator: Node = world.get_node("WorldGenerator")
 	generator.profile = generator.profile.duplicate()
-	generator.profile.generation_version = 19
+	generator.profile.generation_version = WorldProfile.CURRENT_GENERATION
 	generator.profile.chunks_ahead = 0
 	generator.profile.chunks_behind = 1
 	generator.world_seed = 42
@@ -78,23 +78,33 @@ func reception() -> bool:
 	var terminal: TrainingTerminal = tutorial.designated_terminal()
 	if not check(terminal != null and terminal.can_operate(), "Original reception terminal operates on internal power"): return false
 	player.global_position = terminal.global_position + Vector3.RIGHT
-	terminal.interact_hold(player)
 	var ui := terminal.ui_instance
 	var enter := InputEventKey.new()
 	enter.keycode = KEY_ENTER
 	enter.pressed = true
-	ui._input(enter)
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true
+	terminal.interact_hold(player)
 	ui._input(escape)
-	if not check(not ui.visible and not player.in_ui_mode and not terminal.can_pickup(player), "Esc frees the player immediately while the unfinished boot keeps the dock locked"): return false
+	if not check(not ui.visible and not player.in_ui_mode and not terminal.boot_state().boot_started and not terminal.can_pickup(player), "Esc before Enter only closes the console"): return false
+	terminal.interact_hold(player)
+	ui._input(enter)
+	# A forced close (grab, power, leaving UI mode) is not the player's skip.
+	terminal._close_ui()
+	if not check(not ui.visible and not player.in_ui_mode and not terminal.can_pickup(player), "A forced close frees the player while the unfinished boot keeps the dock locked"): return false
 	if not check(await WAIT.until(self, func(): return terminal.boot_state().boot_elapsed >= 1.0, 3000, true), "Boot advances on physics ticks with the interface closed"): return false
 	terminal.interact_hold(player)
-	if not check(ui.visible and ui._boot.visible and terminal.boot_state().boot_elapsed >= 1.0, "Reopening during boot shows the current progress"): return false
+	var partial: Dictionary = terminal.boot_state().duplicate(true)
+	if not check(ui.visible and ui._boot.visible and partial.boot_elapsed >= 1.0 and not partial.initialized, "Reopening during boot shows the current progress"): return false
+	# Expected result of letting the same boot run out on fixed physics ticks.
+	var finished := partial.duplicate(true)
+	while not TrainingTerminal.BOOT.advance(finished, 1.0 / Engine.physics_ticks_per_second): pass
 	ui._input(escape)
-	if not check(await WAIT.until(self, func(): return tutorial.flags.boot_complete, 8000, true), "Boot completes and updates tutorial progress without an open interface"): return false
-	if not check(not ui.visible and terminal.can_pickup(player) and not tutorial.inner_gate_unlocked(), "Background boot unlocks the dock while the door still requires pickup"): return false
+	if not check(not ui.visible and not player.in_ui_mode, "Esc during boot closes the console"): return false
+	check(terminal.boot_state() == finished and terminal.has_completed_boot(), "Esc during boot leaves the terminal exactly as a fully elapsed boot")
+	if not check(tutorial.flags.boot_complete, "Esc during boot completes tutorial initialization at once"): return false
+	if not check(terminal.can_pickup(player) and not tutorial.inner_gate_unlocked(), "Skipped boot unlocks the dock while the door still requires pickup"): return false
 	terminal.interact_hold(player)
 	if not check(ui.visible and not ui._boot.visible and ui.current_page == "conditions" and ui.page_data.available, "Reopening after boot goes directly to the conditions page"): return false
 	ui._input(escape)

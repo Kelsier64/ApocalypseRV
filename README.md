@@ -45,7 +45,7 @@ Demo 啟動時沿用主世界的生成設定，開場使用獨立單間車庫。
 
 戶外已改用林間局部體積霧，會接受太陽與車燈照明；遠處另外保留淡距離霧。更新後須重新啟動遊戲，編輯器需重新載入專案。若顯示卡不支援，可用 `godot --path . --rendering-method gl_compatibility --rendering-driver opengl3`，降級為原距離霧。畫面與測試見 [局部體積霧驗收](docs/validation/2026-09-17-volumetric-fog.md)。
 
-正式新局使用目前版本的世界生成（`world/terrain/world_profile.gd`）。野外包含兩款可直接探索的民用避難所，以及低頻出現的[無窗巨型避難所外殼](docs/guides/megashelter-exteriors.md)。巨型外殼有三種程序樓型，入口保持封閉。Checkpoint 外層為 v7，只接受生成 v18；舊版存檔不支援，需重新開局。細化結果與目前待檢查項目見[地形計畫](docs/plans/terrain-overhaul.md)及[地形紀錄](docs/validation/2026-10-20-terrain-v14.md)。
+正式新局使用目前版本的世界生成（`world/terrain/world_profile.gd`）。野外包含兩款可直接探索的民用避難所，以及低頻出現的[無窗巨型避難所外殼](docs/guides/megashelter-exteriors.md)。巨型外殼有三種程序樓型，入口保持封閉。道路、自然散佈、人類遺跡與池塘／湖等世界細節見 [GDD 第 7 節](GDD.md#7-世界道路與-poi)。檢查點只接受當前生成版本；舊版存檔不支援，需重新開局。細化結果與目前待檢查項目見[地形計畫](docs/plans/terrain-overhaul.md)及[地形紀錄](docs/validation/2026-10-20-terrain-v14.md)。
 
 歷史生成 v11（沿用 v10 戶外系統）沿用 v9 的道路規則，每 150 m 獨立抽取釘帶、0–3 隻 Raker、0–4 台廢車、8% 一隻油桶人及 20% 一個普通油桶；起點前 450 m 保持安全。Raker 與廢車逐一選點，廢車各自隨機朝向，不保證中央通道；廢車尚無清除互動。普通油桶是可拾取、保存的動態 Item，回訪不補出；撞毀樹木沿用原功能，破壞狀態隨檢查點保存。靜態內容回訪按原位重建，怪物死亡或超出戶外前後約 450 m 後不補出。規則與歷次驗收見 [公路隨機刷新](docs/plans/random_spawn.md)。
 

@@ -28,6 +28,13 @@ void fragment() {
 	float damp = UV2.y * (1.0 - smoothstep(0.10, 0.45, slope)) * smoothstep(0.15, 0.37, stain);
 	ground *= 1.0 - damp * 0.25;
 	ground = mix(ground, vec3(0.38, 0.35, 0.27) * mix(0.75, 1.0, grain), max(UV.x * 0.85, UV.y * 0.65));
+	// Dirt tracks: COLOR.a is the distance to the centreline over 8 m. A ragged
+	// band of packed mud with two darker wheel ruts either side of a grown-over crown.
+	float track_distance = COLOR.a * 8.0 + (stain - 0.26) * 2.2;
+	float mud = 1.0 - smoothstep(1.9, 2.8, track_distance);
+	float rut = 1.0 - smoothstep(0.3, 0.7, abs(track_distance - 1.25));
+	ground = mix(ground, vec3(0.2, 0.172, 0.135) * mix(0.8, 1.12, grain), mud * 0.88);
+	ground *= 1.0 - rut * mud * 0.32;
 	ALBEDO = ground;
 	vec3 face = normalize(cross(dFdx(view_position), dFdy(view_position)));
 	face *= dot(face, NORMAL) < 0.0 ? -1.0 : 1.0;

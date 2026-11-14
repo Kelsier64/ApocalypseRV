@@ -1,6 +1,8 @@
 extends Resource
 class_name WorldProfile
-@export var generation_version: int = 19
+## The only generation the game builds and the only one a checkpoint may carry.
+const CURRENT_GENERATION := 20
+@export var generation_version: int = CURRENT_GENERATION
 ## All distances are metres. Determinism includes the generation version.
 var chunk_length: float = 150.0
 var terrain_half_width: float = 500.0

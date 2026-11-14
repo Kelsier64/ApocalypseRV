@@ -18,6 +18,7 @@ var giant_navigation_ready := true
 var _regular_navigation_ready := false
 var _terrain: MeshInstance3D
 var road_spawns: Dictionary = {}
+var grid: TerrainGrid
 var _road_monsters_spawned := false
 var _navigation_dirty := false
 var _navigation_rebuild_timer: Timer
@@ -50,7 +51,10 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 		var exterior := _build_site(site, spawner, not sliced_exterior)
 		if sliced_exterior and exterior != null:
 			await exterior.build_visuals_gradual(self)
+	FeatureBuilder.build(self)
+	if gradual: await _pause()
 	await ForestScenery.build(self, gradual)
+	await ScatterScenery.build(self, gradual)
 	if gradual:
 		await _pause()
 	await _build_navigation(gradual)
@@ -88,6 +92,7 @@ func _build_ground(gradual: bool) -> void:
 		rows.append(row)
 		if gradual and slice_exhausted():
 			await _pause()
+	grid = TerrainGrid.from_samples(rows, -field.profile.terrain_half_width - step_x, z0 + step, step_x, step)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for j in range(nz + 1):
@@ -100,6 +105,8 @@ func _build_ground(gradual: bool) -> void:
 			color = field.landforms.color_at(-z0 + j * step)
 			if is_finite(float(sample.water_height)): color = Color("454e43")
 			color = color.lerp(Color("716b54"), float(sample.river_bank) * 0.72)
+			# Alpha carries the dirt-track distance to the terrain shader (1 = none).
+			color.a = float(sample.track)
 			st.set_normal(normal)
 			st.set_color(color)
 			st.set_uv(Vector2(sample.gravel, sample.river_bank))
@@ -180,36 +187,10 @@ func _mesh(mesh: ArrayMesh, title: String, collision: bool) -> MeshInstance3D:
 	return node
 
 func _build_road() -> void:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(61):
-		var s := band * 150.0 + i * 2.5
-		var frame := field.road_frame(s)
-		for side in [-1.0, 1.0]:
-			var point: Vector3 = frame.origin + frame.basis.x * side * field.road_width(s) * 0.5
-			point.y += 0.07
-			st.set_color(Color(0.135, 0.145, 0.14))
-			st.add_vertex(point)
-	for i in range(60):
-		var a := i * 2
-		for v in [a, a + 2, a + 1, a + 1, a + 2, a + 3]:
-			st.add_index(v)
-	st.generate_normals()
-	_mesh(st.commit(), "Road", true)
-	for i in range(15):
-		var s := band * 150.0 + i * 10.0 + 3.0
-		var frame := field.road_frame(s)
-		var paint := RoadsideKit.part(self, Vector3(0.16, 0.015, 4), frame.origin + Vector3.UP * 0.09, Color(0.76, 0.69, 0.42))
-		paint.basis = frame.basis
-		var behind := field.road_frame(s - 2).origin
-		var ahead := field.road_frame(s + 2).origin
-		paint.basis = Basis.looking_at(ahead - behind)
-	for i in range(3):
-		var s := band * 150.0 + i * 50.0 + 20.0
-		var point := field.road_frame(s) * Vector3(14, 0, 0)
-		if (field.landforms.bridge_at(s) or field.road_width(s) > 18.0): continue
-		if not _near_site(point):
-			_place_module("pole", point, field.road_frame(s).basis)
+	var road := _mesh(RoadDetails.surface_mesh(field, band), "Road", true)
+	road.material_override = RoadDetails.surface_material()
+	RoadDetails.build(self)
+
 func _near_site(point: Vector3) -> bool:
 	for site in field.sites_near_z(point.z):
 		if field.court_distance(point.x, point.z, site) < 20:
@@ -316,6 +297,7 @@ func _build_navigation(gradual: bool = false) -> void:
 				leaf.collision_layer = 0
 	NavigationServer3D.parse_source_geometry_data(nav, source, self)
 	TerrainCrossings.navigation_obstacles(field, band, source)
+	field.features.navigation_obstacles(band, source)
 	# Closed mesh shells alone can leave terrain navigation underneath them.
 	# Authored solid decorative volumes explicitly remove that interior space.
 	for building in get_children():
