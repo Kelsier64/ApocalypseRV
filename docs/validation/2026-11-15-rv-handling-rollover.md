@@ -28,3 +28,17 @@ godot --headless --path . --fixed-fps 60 res://tests/highway_playground.tscn -- 
 ## 試玩
 
 F2–F6 五站均通過無頭啟動。已檢視千斤頂在正式材質和倒置 RV 旁的 OpenGL 截圖，保留在 `.godot/recovery-jack-playground.png`。駕駛手感、失衡、鏡頭與音效仍待人工試玩。[測試場操作](../guides/playgrounds.md#rv-操控與翻車救援)
+
+## 液壓千斤頂與測試場更新
+
+程式與模型版本為 `f9b09ab`。測試場可從選單進入各關，救援站的 F9 會把玩家定位到適合開始該段頂升的位置。
+
+此版本由乾淨副本匯入，通過千斤頂、物品互動及正式主場景檢查。操控、翻車、車損、離車傷害與存檔的回歸測試也在同一份副本通過。
+
+- 以鍵盤事件重播短按 E 拾取、F9 定位、長按 E 部署，完成倒置到側躺及側躺到落輪兩段。每段完成後回收的是同一支千斤頂。
+- [千斤頂測試](../../tests/test_recovery_jack.gd) 驗證液壓頂頭貼合車身接觸面，以及凸邊即使避開中心射線，只要侵入頂頭的預留空間就會阻擋部署。16° 斜面上，底座朝向地面法線，四角均保持在地表外。
+- 使用下方命令檢視收納、受力和頂頭近景。圖檔存於 `.godot/recovery-jack-folded.png`、`.godot/recovery-jack-deployed.png` 與 `.godot/recovery-jack-contact.png`。駕駛手感、失衡、鏡頭與音效的人工驗收仍待進行。
+
+```powershell
+godot --path . res://tests/rv_handling_playground.tscn -- --station=6 --capture
+```
