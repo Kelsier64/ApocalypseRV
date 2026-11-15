@@ -20,7 +20,7 @@
 | [cheat_test_world.tscn](../../world/cheat_test_world.tscn) | 現行生成＋單間車庫；預設無限燃油／電力／材料，仍需有效電池；沒有正式檢查點 |
 | [test_world.tscn](../../world/test_world.tscn) | 保留的舊測試世界；沒有正式檢查點，配置不代表現行新局 |
 
-正式、Demo 與作弊世界均使用當前生成版本（`WorldProfile.CURRENT_GENERATION`）。外殼內容、Checkpoint、VehicleSnapshot 是各自獨立的版本欄位；目前保存至 `user://rv_checkpoint_v7.save`，只接受當前正式世界，不遷移舊局。依據：[WorldProfile](../../world/terrain/world_profile.gd)、[Checkpoint](../../rv/checkpoint.gd)、[VehicleSnapshot](../../rv/vehicle_snapshot.gd)。
+正式、Demo 與作弊世界均使用當前生成版本（`WorldProfile.CURRENT_GENERATION`）。外殼內容、Checkpoint、VehicleSnapshot 是各自獨立的版本欄位；保存路徑見 Checkpoint 的 `PATH`，只接受當前正式世界，不遷移舊局。存檔開發目前凍結，新功能狀態不保存（見[存檔凍結](feature-contracts.md)）。依據：[WorldProfile](../../world/terrain/world_profile.gd)、[Checkpoint](../../rv/checkpoint.gd)、[VehicleSnapshot](../../rv/vehicle_snapshot.gd)。
 
 ## 開局與教學
 

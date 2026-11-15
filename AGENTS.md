@@ -12,7 +12,8 @@ ApocalypseRV is a first-person survival prototype in Godot. The main scene is `w
 
 - Keep player-facing text in English and put hints, controls, item names, and status in screen-space UI. Never add `Label3D`, `TextMesh`, floating text, or hints hidden in textures. Use integrated textures, decals, or device-screen artwork for essential in-fiction text such as signs and instrument displays.
 - Keep intermediate assets, logs, backups, and captures under `.godot/` or another ignored directory. Stage only deliverables and a few representative evidence images. Run `scripts/agent/check-staged.ps1` after staging and before committing.
-- Change local save formats directly and remove obsolete compatibility branches. Use fixed seeds for reproduction while preserving intentional variation in generation, encounters, and loot.
+- Change local save formats directly and remove obsolete compatibility branches. Save development is paused until late in the project (2026-11-15): keep the current F6/F9 checkpoint and its tests working, but do not extend it for new features. Register every new Item or Monster scene in `core/save_scene_catalog.gd`, because the tutorial stage restart and the F6 checkpoint share this whitelist.
+- Use fixed seeds for reproduction while preserving intentional variation in generation, encounters, and loot.
 - Read scene and resource values in tests or assert relative behavior. Avoid hard-coded copies of gameplay tuning.
 
 ## Work and verify
