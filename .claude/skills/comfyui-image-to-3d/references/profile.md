@@ -1,6 +1,6 @@
 # Generation profile
 
-`generate.py` uses a [pinned graph](../assets/trellis-single-1024-50k.json) and replaces only the input image and output prefix. To tune parameters, use ComfyUI's native graph/API and save a new profile; do not edit this one.
+`generate.py` uses a [pinned graph](../../../../scripts/comfyui-image-to-3d/assets/trellis-single-1024-50k.json) and replaces only the input image and output prefix. To tune parameters, use ComfyUI's native graph/API and save a new profile; do not edit this one.
 
 | Stage | Setting |
 |---|---|

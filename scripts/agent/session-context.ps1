@@ -1,5 +1,5 @@
 # Prints live repository facts for coding agents. Read-only; safe to run any time.
-# Claude Code runs it as a SessionStart hook; other agents run it manually.
+# Run directly or as a SessionStart hook.
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Continue'

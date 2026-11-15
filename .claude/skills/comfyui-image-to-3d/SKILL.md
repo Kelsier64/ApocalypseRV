@@ -18,7 +18,7 @@ Run the whole pipeline yourself: reference image → generate → review → fit
 Run from the repository root with the PowerShell tool. The scripts need Pillow (`prepare_prop.py` also needs numpy). Use the ComfyUI runtime venv rather than installing globally:
 
 ```powershell
-$skill = '.claude/skills/comfyui-image-to-3d'
+$skill = 'scripts/comfyui-image-to-3d'
 $py = "$env:USERPROFILE/Apps/ComfyUI/pixal3d-runtime/.venv/Scripts/python.exe"   # or any Python with Pillow + numpy
 $work = '.godot/art-work/<asset>/run-01'                                          # a fresh ignored folder per run
 ```

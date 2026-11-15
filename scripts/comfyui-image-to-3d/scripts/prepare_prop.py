@@ -184,7 +184,7 @@ def find_gltfpack(explicit):
     """Explicit path, then PATH, then the repository's ignored local copy."""
     if explicit:
         return explicit
-    local = Path(__file__).resolve().parents[4]/'.godot/gltfpack-1.3/bin/gltfpack.exe'
+    local = Path(__file__).resolve().parents[3]/'.godot/gltfpack-1.3/bin/gltfpack.exe'
     return shutil.which('gltfpack') or (str(local) if local.is_file() else None)
 
 

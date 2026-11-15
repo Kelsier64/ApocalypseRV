@@ -9,7 +9,7 @@
 | 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
 | 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
 | 執行與維護自動測試 | [測試指南](../tests/README.md) | 核心測試、覆蓋範圍與 CI |
-| 開發約定 | [CLAUDE](../CLAUDE.md) | 開發規則、hooks 與 skills 索引 |
+| 開發約定 | [Codex](../AGENTS.md)、[Claude Code](../CLAUDE.md) | 各自的專案規則、hooks 與 skills 索引 |
 | 實作細節、功能契約 | [功能實作契約](guides/feature-contracts.md) | 從 architecture 移出的各功能細節 |
 | 查當時的驗收結果 | [驗收紀錄索引](validation/README.md) | 依日期列出的歷史紀錄 |
 

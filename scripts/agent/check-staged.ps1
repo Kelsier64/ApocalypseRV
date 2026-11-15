@@ -1,10 +1,10 @@
 # Checks files about to be committed for intermediate outputs, oversized binaries
 # and new world-space text nodes.
 # Manual use: run after staging; exits 1 when something must not be committed.
-# -Hook: Claude Code PreToolUse payload on stdin; inspects only `git commit`
+# -Hook: PreToolUse payload on stdin; inspects only `git commit`
 # commands, including files staged earlier in the same command.
 [CmdletBinding()]
-param([switch]$Hook)
+param([switch]$Hook, [switch]$Codex)
 $ErrorActionPreference = 'Stop'
 $utf8 = [Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = $utf8
@@ -48,8 +48,7 @@ foreach ($file in $files) {
     if ($megabytes -gt 95) { $blocked.Add("$file ($megabytes MB, over GitHub's 100 MB limit)") }
     elseif ($megabytes -gt 25) { $warnings.Add("$file ($megabytes MB)") }
 }
-# World-space text nodes (CLAUDE.md hard rule 1). guard-edit.ps1 only sees Edit/Write
-# tool calls, so shell-made edits and agents without hooks are caught here.
+# Catch world-space text nodes in the pending commit, including shell-made edits.
 foreach ($file in $files) {
     if ($file -notmatch '\.(gd|tscn|tres|scn)$' -or $file -match '^(tests|art_source|docs|scripts|\.claude)/') { continue }
     $added = if ($newFiles.Contains($file)) { @(Get-Content -LiteralPath (Join-Path $root $file) -ErrorAction SilentlyContinue) }
@@ -64,6 +63,10 @@ if ($blocked.Count) { $message += "Must not be committed (fix it, or keep it in 
 if ($warnings.Count) { $message += "Review before committing: $($warnings -join '; ')." }
 if ($Hook) {
     if (-not $message) { exit 0 }
+    if ($Codex -and -not $blocked.Count) {
+        @{ systemMessage = "check-staged: $message" } | ConvertTo-Json -Compress
+        exit 0
+    }
     $decision = if ($blocked.Count) { 'deny' } else { 'ask' }
     @{ hookSpecificOutput = @{ hookEventName = 'PreToolUse'; permissionDecision = $decision; permissionDecisionReason = "check-staged: $message" } } |
         ConvertTo-Json -Compress -Depth 4

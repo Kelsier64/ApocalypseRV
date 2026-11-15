@@ -14,7 +14,7 @@ class PropTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # A real generated asset exercises interleaved accessors, PBR images and seams.
-        cls.repo = Path(__file__).resolve().parents[4]
+        cls.repo = Path(__file__).resolve().parents[3]
         cls.fixture = cls.repo/'assets/models/bunker_switchgear/bunker_switchgear.glb'
 
     def setUp(self):

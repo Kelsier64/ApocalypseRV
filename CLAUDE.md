@@ -1,6 +1,6 @@
 # ApocalypseRV
 
-Single-player first-person survival prototype in Godot 4.7.2: drive an RV, scavenge buildings, craft, and survive monsters that climb and wreck the vehicle. Main scene: `world/main_world.tscn`. This file is the single source of project instructions; `AGENTS.md` only points other agents here.
+Single-player first-person survival prototype in Godot 4.7.2: drive an RV, scavenge buildings, craft, and survive monsters that climb and wreck the vehicle. Main scene: `world/main_world.tscn`. This file is the entry point for Claude Code project instructions.
 
 ## Start Here
 
@@ -59,11 +59,8 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Delegation
 
-Discuss first, then dispatch the agreed plan with the user-level `dispatch` skill. Project specifics:
-
 - Keep scene modeling and 3D integration in the main agent.
-- Models: `opus` for deep reasoning, `haiku` for lookups and mechanical edits, `sonnet` for implementation.
-- **Prefer agy to save Claude tokens.** Antigravity CLI (Gemini, user-level `agy` skill) runs on a separate quota. Send it work that is cheaper to check than to do: broad code research and summaries, code review and second opinions, test-log and CI triage, first drafts of docs, and mechanical multi-file edits. Give it a full brief (it reads `AGENTS.md`, which points here) and run it in the background. Use `--mode plan` for read-only work; for edits, point it at a separate worktree and review the diff before anything lands.
+- **Prefer agy to save Claude tokens.** Antigravity CLI (Gemini, user-level `agy` skill) runs on a separate quota. Send it work that is cheaper to check than to do: broad code research and summaries, code review and second opinions, test-log and CI triage, first drafts of docs, and mechanical multi-file edits. Include relevant project rules and verification in its task brief and run it in the background. Use `--mode plan` for read-only work; for edits, point it at a separate worktree and review the diff before anything lands.
 - **Generate every image with agy** (reference images, textures, concept art, icons). Run it in an empty folder outside the repo and read the result before use; [reference images](.claude/skills/comfyui-image-to-3d/references/reference-images.md) has the tested call and checks.
 - Keep with Claude: work that needs this conversation's context, 3D integration, harness changes, and final verification.
 
@@ -78,4 +75,4 @@ Project skills live in `.claude/skills/`. Load one when its trigger applies.
 | `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md`, or anything under `docs/` |
 | `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
 | `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
-| `harness-maintenance` | Editing CLAUDE.md, AGENTS.md, skills, hooks, `scripts/agent/` or `.mcp.json` |
+| `harness-maintenance` | Editing CLAUDE.md, `.claude/`, `scripts/agent/` or `.mcp.json` |

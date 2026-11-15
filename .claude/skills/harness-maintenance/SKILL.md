@@ -1,24 +1,23 @@
 ---
 name: harness-maintenance
-description: Layout and rules for changing ApocalypseRV's agent harness — CLAUDE.md, AGENTS.md, .claude/skills, .claude/settings.json hooks, scripts/agent/*, .mcp.json. Use before editing any of these, when adding, renaming or removing a skill, when another agent's edits reshape the harness, or when agents keep misunderstanding or failing at something.
+description: Maintain the ApocalypseRV Claude Code harness in CLAUDE.md, .claude/skills, .claude/settings.json, and .mcp.json, as well as shared checks under scripts/agent/. Use when changing those instructions, skills, hooks, or tools.
 ---
 
 # Harness Maintenance
 
 ## Layout
 
-The harness is Claude-first. Keep one source for each thing:
+Keep Claude Code configuration and instructions in their own files.
 
 | Piece | Where | Rule |
 |---|---|---|
-| Project instructions | `CLAUDE.md` | Single source. Never `@import` AGENTS.md; with a CLAUDE.md present, Claude Code does not read it |
-| Other agents | `AGENTS.md` | A pointer to CLAUDE.md plus notes for agents without hooks (Codex). No rules of its own |
-| Skills | `.claude/skills/<name>/SKILL.md` | The only copy. No `.agents/`, no generated stubs, no sync script. Every skill has a row in CLAUDE.md's Skills table |
+| Project instructions | `CLAUDE.md` | Claude Code's entry point |
+| Skills | `.claude/skills/<name>/SKILL.md` | Every Claude Code skill has a row in CLAUDE.md's Skills table |
 | Hooks | `.claude/settings.json` | Run `scripts/agent/session-context.ps1`, `guard-edit.ps1`, `check-staged.ps1`. Keep the bash prefilter so unrelated calls stay cheap |
 | MCP servers | `.mcp.json` | Blender (`mcp-for-blender`, safe mode) |
 | User-level, outside the repo | `~/.claude/output-styles/co-lead.md`, `~/.claude/skills/{dispatch,agy}` | Cross-project behavior only; project rules never go there |
 
-If an incoming merge brings back `.agents/skills`, generated stubs or an `@AGENTS.md` import, fold the new content into this layout instead of taking it as is.
+Use only these entry points for agent guidance. Exclude `AGENTS.md`, `.agents/`, and `.codex/` from routine reads and searches. Keep reusable project tools in `scripts/`.
 
 ## Put content in the right place
 
