@@ -77,7 +77,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | [rv_rebuild_playground](../../tests/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
 | [rv_design_workshop](../../tests/rv_design_workshop.tscn) | WAYFARER 正式造型與舊版 RV 對照 | F2 外觀、F3 車內、F4 駕駛座、F5 真實輪驅、F6 舊版、F7 控制台；`--capture` 輸出四種車況（含全燈號測試）的駕駛視角、儀表近景與斜視到 `.godot/rv-workshop-captures/` 後退出。 |
 | [driving_experience_playground](../../tests/driving_experience_playground.tscn) | 正式駕駛視角、後視鏡、燈光與維護 | F1 前方、F5 車內鏡、F6／F7 左右鏡、Backspace 拆／修前牆、F8 引擎艙、F9 坡板、F11 夜間、F12 輪驅；`--mirror-capture` 輸出車內鏡截圖。 |
-| [rv_handling_playground](../../tests/rv_handling_playground.tscn) | 正式操控、翻車、傷害與救援 | F2 蛇行與繞圈、F3 側坡、F4 路肩、F5 撞牆、F6 千斤頂。 |
+| [rv_handling_playground](../../tests/rv_handling_playground.tscn) | 正式操控、翻車、傷害與救援 | Tab 選站與暫停，F2–F6 直達站點，F7 重試，F8 切鏡頭。 |
 | [tire_puncture_playground](../../tests/tire_puncture_playground.tscn) | 正式爆胎／釘帶與偏轉 | 1–4 單輪爆胎、F6 輪驅過釘帶、R 重設；`--replay`。 |
 | [tree_impact_playground](../../tests/tree_impact_playground.tscn) | 正式輪驅撞樹、斷木與落葉；無導航／串流 | F6 單樹、F7 16 棵連撞、R 重設；`--replay`／`--chain`。 |
 | [item_playground](../../tests/item_playground.tscn) | 正式 Item 支撐、掉落、背包、放置與分解 | F2 拆牆、F3 看工作台、F4 鏡頭、F6 修牆、F7 看分解機、F8 長 E 回放。 |
@@ -593,10 +593,12 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/monster_cabin_pla
 godot --path . res://tests/rv_handling_playground.tscn
 ```
 
-- **F2 蛇行與繞圈**。按 Space 放手煞車，WASD 駕駛，R／T 升降檔。先定速繞圈，再在彎中加煞車，觀察側傾、輪胎尖叫及推頭。
-- **F3 側坡、F4 路肩**。比較重心、滑移及地形對翻覆的影響。翻車停穩後確認引擎熄火、儀表亮燈，短按 E 到車外。
-- **F5 撞牆**。以相同起速重試，觀察座位減傷、車頭損傷、視線變暗和耳鳴。
-- **F6 千斤頂**。短按 E 拾取。靠近翻倒車身兩側，把千斤頂放在堅實地面。瞄準千斤頂長按 E 一秒。第一段落到側面後，等車停穩，再移動千斤頂到可抬升的一側重試。
+開場可滑鼠點選站點。Tab 隨時暫停並叫回選單，F7 重試本關，F8 在角色視角與追車視角之間切換。側坡、路肩和撞牆站在按 **Start run** 或 Enter 後開始。
+
+- **F2 蛇行與繞圈**。按 Space 放手煞車，WASD 駕駛，R／T 升降檔。跟著路錐蛇行，或往右進繞圈場。
+- **F3 側坡、F4 路肩**。從追車視角觀察輪胎離地、側滑及翻覆。車停穩後用 F8 切到駕駛視角看儀表。路肩站可短按 E 試逃生離座。
+- **F5 撞牆**。在選單選擇是否勾選 **Standing occupant**，兩種姿勢用同樣的起速。查看玩家 HP、車頭和輪胎損傷，並比較暈眩效果。
+- **F6 千斤頂**。開場已瞄準千斤頂，短按 E 拾取。按 F9 站到 RV 旁並瞄準車身，再長按 E 部署。車側躺並停穩後，千斤頂會收回，再按 F9 並長按 E 完成第二段。可加 `-- --station=6 --play` 直接進入，或用 `-- --station=6 --capture` 擷取收納與頂升畫面。
 
 以 `-- --station=6` 直接進入救援站，附加 `--capture` 可擷取千斤頂固定相機畫面。
 

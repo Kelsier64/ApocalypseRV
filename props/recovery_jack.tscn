@@ -1,39 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://props/recovery_jack.gd" id="1"]
-[ext_resource type="Material" path="res://rv/visuals/orange.tres" id="2"]
-[ext_resource type="Material" path="res://rv/visuals/metal.tres" id="3"]
-[ext_resource type="Material" path="res://rv/visuals/dark.tres" id="4"]
+[ext_resource type="PackedScene" path="res://assets/models/recovery_jack/recovery_jack.glb" id="2"]
 
 [sub_resource type="BoxShape3D" id="body"]
-size = Vector3(0.24, 0.21, 1.04)
-
-[sub_resource type="BoxMesh" id="rail"]
-size = Vector3(0.065, 0.08, 0.94)
-
-[sub_resource type="BoxMesh" id="base"]
-size = Vector3(0.24, 0.13, 0.06)
-
-[sub_resource type="BoxMesh" id="runner"]
-size = Vector3(0.18, 0.13, 0.18)
-
-[sub_resource type="BoxMesh" id="nose"]
-size = Vector3(0.18, 0.06, 0.27)
-
-[sub_resource type="CylinderMesh" id="bar"]
-top_radius = 0.025
-bottom_radius = 0.025
-height = 0.72
-radial_segments = 12
-
-[sub_resource type="CylinderMesh" id="grip"]
-top_radius = 0.032
-bottom_radius = 0.032
-height = 0.19
-radial_segments = 12
-
-[sub_resource type="BoxMesh" id="slot"]
-size = Vector3(0.026, 0.003, 0.019)
+size = Vector3(0.29, 0.237, 0.738)
 
 [node name="RecoveryJack" type="RigidBody3D"]
 mass = 9.0
@@ -44,67 +15,7 @@ hold_rotation = Vector3(16, 0, -16)
 scrap_yields = {"Metal Parts": Vector2(3, 5)}
 
 [node name="Collision" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.105, 0)
+position = Vector3(0, 0.1185, -0.242)
 shape = SubResource("body")
 
-[node name="Rail" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.066, 0)
-mesh = SubResource("rail")
-material_override = ExtResource("3")
-
-[node name="Foot" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.064, 0.48)
-mesh = SubResource("base")
-material_override = ExtResource("2")
-
-[node name="Runner" type="MeshInstance3D" parent="."]
-position = Vector3(-0.019, 0.065, 0.28)
-mesh = SubResource("runner")
-material_override = ExtResource("2")
-
-[node name="LiftingNose" type="MeshInstance3D" parent="."]
-position = Vector3(-0.019, 0.158, 0.20)
-mesh = SubResource("nose")
-material_override = ExtResource("2")
-
-[node name="Lever" type="MeshInstance3D" parent="."]
-position = Vector3(0.065, 0.068, -0.075)
-rotation = Vector3(1.5708, 0, 0)
-mesh = SubResource("bar")
-material_override = ExtResource("2")
-
-[node name="HandleGrip" type="MeshInstance3D" parent="."]
-position = Vector3(0.065, 0.068, -0.34)
-rotation = Vector3(1.5708, 0, 0)
-mesh = SubResource("grip")
-material_override = ExtResource("4")
-
-[node name="RailSlot1" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, -0.39)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
-
-[node name="RailSlot2" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, -0.31)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
-
-[node name="RailSlot3" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, -0.23)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
-
-[node name="RailSlot4" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, -0.15)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
-
-[node name="RailSlot5" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, -0.07)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
-
-[node name="RailSlot6" type="MeshInstance3D" parent="."]
-position = Vector3(-0.047, 0.107, 0.01)
-mesh = SubResource("slot")
-material_override = ExtResource("4")
+[node name="Model" parent="." instance=ExtResource("2")]

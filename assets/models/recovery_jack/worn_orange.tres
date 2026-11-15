@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/materials/industrial/worn_paint.png" id="wear"]
+
+[resource]
+albedo_color = Color(0.73, 0.42, 0.22, 1)
+albedo_texture = ExtResource("wear")
+roughness = 0.94
+texture_filter = 2
+uv1_triplanar = true
+uv1_scale = Vector3(3.2, 3.2, 3.2)
