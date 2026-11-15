@@ -4,6 +4,7 @@ const GIANT := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 const PLAYER := preload("res://player/player.tscn")
 const VEHICLE := preload("res://rv/new_rv.tscn")
 const ARM_POSE_METRICS := preload("res://tests/support/slender_speaker_arm_pose_metrics.gd")
+const LIVENESS := preload("res://tests/support/slender_speaker_liveness.gd")
 var failures: Array[String] = []
 var world: Node3D
 var giant: SlenderSpeaker
@@ -714,6 +715,7 @@ func run() -> void:
 	giant.phase_elapsed = 1.8
 	giant._advance_smash()
 	check(not escaping_panel.is_destroyed and not blocked_target.is_destroyed and giant.phase == SlenderSpeaker.Phase.RECOVER, "Vehicle escaping after first contact avoids damage at fixed1.8sec impact without redirecting to another panel")
+	await LIVENESS.new().run(self, world, check)
 	world.queue_free()
 	await frames()
 	if failures.is_empty(): print("PASS: production Slender Speaker acquisition variants")

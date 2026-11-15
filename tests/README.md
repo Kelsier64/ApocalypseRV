@@ -34,7 +34,7 @@
 | [rv_crash_injury](test_rv_crash_injury.gd)、[recovery_jack](test_recovery_jack.gd) | 乘員傷害、事件去重、固定種子斷肢、倒置快照與千斤頂兩段救援 |
 | [moving_rv_climbing](test_moving_rv_climbing.gd) | 玩家與 Raker 的移動 RV 攀爬 |
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
-| [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態與正式玩家／RV 抓取 |
+| [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態（含脫離冷卻）、正式玩家／RV 抓取，以及活性情境：巡邏點走不到、目標看得見卻走不到（[夾具](support/slender_speaker_liveness.gd)） |
 | [white_apparition](test_white_apparition.gd) | 白影在畫面外現身與換位、追擊與致死接觸、障礙阻擋、依距離扣 SAN、遮蔽與離開視野消失 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
 | [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；檢查點只接受當前世界生成（`WorldProfile.CURRENT_GENERATION`），檢查當前教學／重試入口及舊生成版本拒絕行為；巨型避難所固定 seed／面積布局、profile 分流、真實進出、補給箱與丟物回訪不補貨，以及完整檢查點磁碟往返 |

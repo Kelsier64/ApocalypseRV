@@ -108,6 +108,31 @@ var _attack_gait_pose: Array[Transform3D] = []
 var _strike_stopped_socket := Vector3.ZERO
 var _strike_panel_socket := Vector3.ZERO
 var _strike_panel_probe := Vector3.ZERO
+## Liveness: tracking must keep producing travel, turning, damage or a capture.
+## Why the last _navigate call stopped or continued: idle, no_map, moving,
+## arrived, detour (walking to the nearest reachable point) or blocked.
+var _navigation_status := "idle"
+var _navigation_requery := false
+var _liveness_anchor := Vector3.INF
+var _liveness_anchor_yaw := 0.0
+var _liveness_idle_seconds := 0.0
+var _liveness_drought_seconds := 0.0
+var _liveness_calm_seconds := 0.0
+var _liveness_level := 0
+var _liveness_escalations := 0
+var _liveness_waiting := false
+var _liveness_reason := ""
+var _ineffective_attacks := 0
+var _attack_anchor := Vector3.INF
+var _attack_effect := false
+var _reposition_point := Vector3.INF
+var _reposition_seconds := 0.0
+var _reposition_sign := 1.0
+var _ground_blocked := false
+var _patrol_blocked_skips := 0
+const REPOSITION_ARC := 1.75 # About 100 degrees around a ground target.
+const REPOSITION_MIN_RADIUS := 6.0
+const REPOSITION_MAX_RADIUS := 16.0
 @onready var visual: Node3D = get_node_or_null("BodyMesh")
 @onready var execution_anchor: Node3D = get_node_or_null("ExecutionAnchor")
 @onready var execution_focus: Node3D = get_node_or_null("ExecutionFocus")
@@ -178,6 +203,23 @@ func reset_after_restore() -> void:
 	_body_turn_rate = 0.0
 	_visible_target = false
 	home_position = global_position
+	_navigation_status = "idle"
+	_navigation_requery = false
+	_liveness_anchor = Vector3.INF
+	_liveness_idle_seconds = 0.0
+	_liveness_drought_seconds = 0.0
+	_liveness_calm_seconds = 0.0
+	_liveness_level = 0
+	_liveness_escalations = 0
+	_liveness_waiting = false
+	_liveness_reason = ""
+	_ineffective_attacks = 0
+	_attack_anchor = Vector3.INF
+	_attack_effect = false
+	_reposition_point = Vector3.INF
+	_reposition_seconds = 0.0
+	_ground_blocked = false
+	_patrol_blocked_skips = 0
 	_set_phase(Phase.PATROL)
 
 func is_execution_active() -> bool:
@@ -195,6 +237,8 @@ func die() -> void:
 func _physics_process(delta: float) -> void:
 	var starting_yaw := rotation.y
 	_parked_move_goal = Vector3.INF
+	_navigation_status = "idle"
+	_liveness_waiting = false
 	phase_elapsed += delta
 	_parked_approach_remaining = maxf(0.0, _parked_approach_remaining - delta)
 	_stagger_cooldown = maxf(0.0, _stagger_cooldown - delta)
@@ -212,8 +256,14 @@ func _physics_process(delta: float) -> void:
 			else:
 				var angle := float(_patrol_index) * 2.399963
 				var point := home_position + Vector3(cos(angle), 0, sin(angle)) * 22.0
-				if global_position.slide(Vector3.UP).distance_to(point.slide(Vector3.UP)) < 2.0: _patrol_index += 1
+				if global_position.slide(Vector3.UP).distance_to(point.slide(Vector3.UP)) < 2.0:
+					_patrol_index += 1
+					_patrol_blocked_skips = 0
 				desired = _navigate_around_vehicles(point, settings.patrol_speed, delta)
+				# A destination beyond navigation can never satisfy arrival. Move
+				# on from the nearest reachable place instead of waiting there.
+				if _navigation_status == "blocked" or _liveness_idle_seconds >= settings.liveness_stall_seconds:
+					_skip_patrol_point(_navigation_status == "blocked")
 		Phase.CONFIRM:
 			if not _visible_target: _set_phase(Phase.SEARCH if _encounter_decision.get("intent") == "search" else Phase.PATROL)
 			elif phase_elapsed >= settings.confirm_time: _set_phase(Phase.CHASE)
@@ -237,6 +287,7 @@ func _physics_process(delta: float) -> void:
 		_animate_locomotion(delta, speed)
 	_move_swept(desired, delta)
 	_update_parked_progress(delta)
+	_update_liveness(delta)
 	# Sample after world movement so a moving fist sweeps its complete path,
 	# including this tick's translation, against the locked world impact point.
 	if phase == Phase.SMASH: _advance_smash(delta)
@@ -255,6 +306,9 @@ func _chase_encounter(delta: float) -> Vector3:
 	if intent == "search":
 		_set_phase(Phase.SEARCH)
 		return _search_encounter(delta)
+	if _reposition_point != Vector3.INF:
+		var reposition := _follow_reposition(delta)
+		if _reposition_point != Vector3.INF: return reposition
 	if intent == "vehicle_assault":
 		var motion := _follow_vehicle(delta)
 		if _follow_plan.get("status") == "ready" and _facing_dot(_follow_plan.surface_point) > .85:
@@ -283,14 +337,23 @@ func _chase_encounter(delta: float) -> Vector3:
 		var point := _player_contact(target_player)
 		var gap := global_position.slide(Vector3.UP).distance_to(point.slide(Vector3.UP))
 		var facing := _facing_dot(point)
-		if gap <= 2.7 and facing > .985 and _player_can_be_executed():
+		# Navigation that ends short of a visible survivor still leaves the arms'
+		# physical reach. The real hand sweep decides whether that reach connects;
+		# repeated misses from one place are recovered by the liveness ladder.
+		var reach := ParkedAttack.GRAB_REACH if _ground_blocked else 2.7
+		var in_reach := gap <= reach and facing > .985
+		if in_reach and _player_can_be_executed():
 			_begin_grab()
 			return Vector3.ZERO
-		if gap <= 3.0 and facing <= .985:
+		# Standing over a survivor who cannot be taken yet is deliberate.
+		if in_reach: _liveness_waiting = true
+		if gap <= reach + .3 and facing <= .985:
 			var direction := (point - global_position).slide(Vector3.UP).normalized()
 			rotation.y = rotate_toward(rotation.y, atan2(-direction.x, -direction.z), deg_to_rad(settings.near_turn_degrees) * delta)
 			return Vector3.ZERO
-		return _navigate_visible_player(point, delta)
+		var motion := _navigate_visible_player(point, delta)
+		_ground_blocked = _navigation_status == "blocked"
+		return motion
 	return _search_encounter(delta)
 
 func _remember_cabin_plan() -> void:
@@ -325,6 +388,9 @@ func _search_encounter(delta: float) -> Vector3:
 	# A retained cabin observation can aim a smash at its exact last seen
 	# point, clearing its visible roof first. Hidden players never aim a grab.
 	_parked_plan.clear()
+	if _reposition_point != Vector3.INF:
+		var reposition := _follow_reposition(delta)
+		if _reposition_point != Vector3.INF: return reposition
 	if _parked_recovery_point != Vector3.INF:
 		_parked_recovery_seconds -= delta
 		if global_position.slide(Vector3.UP).distance_to(_parked_recovery_point.slide(Vector3.UP)) > .3 and _parked_recovery_seconds > 0.0:
@@ -352,7 +418,12 @@ func _search_encounter(delta: float) -> Vector3:
 		var turn_speed := settings.fast_turn_degrees if velocity.slide(Vector3.UP).length() > 7.0 else settings.near_turn_degrees
 		rotation.y += deg_to_rad(turn_speed) * delta * _scan_direction
 		return Vector3.ZERO
-	return _navigate_visible_player(last_seen_position, delta)
+	var yaw := rotation.y
+	var motion := _navigate_visible_player(last_seen_position, delta)
+	if _navigation_status == "blocked":
+		# As close as navigation allows: look around from there, not at a wall.
+		rotation.y = yaw + deg_to_rad(settings.near_turn_degrees) * delta * _scan_direction
+	return motion
 
 func _update_head_look(delta: float) -> void:
 	var point := Vector3.INF
@@ -377,6 +448,9 @@ func _set_phase(next: Phase) -> void:
 	if next not in [Phase.CHASE, Phase.SEARCH, Phase.STAGGER]:
 		_parked_recovery_point = Vector3.INF
 		_parked_recovery_context.clear()
+	_ground_blocked = false
+	if next == Phase.PATROL: _reposition_point = Vector3.INF
+	if next == Phase.RECOVER and phase in [Phase.SMASH, Phase.GRAB]: _record_attack_result()
 	if next == Phase.RECOVER:
 		_recovery_source = phase
 		_recovery_lift_time = phase_elapsed if phase == Phase.LIFT else 0.0
@@ -567,6 +641,12 @@ func _update_encounter(delta: float) -> void:
 			_parked_recovery_point = Vector3.INF
 			_parked_recovery_context.clear()
 			_reset_parked_progress()
+			# A different target or route starts its own recovery attempts.
+			_liveness_level = 0
+			_ineffective_attacks = 0
+			_attack_anchor = Vector3.INF
+			_reposition_point = Vector3.INF
+			_ground_blocked = false
 	target_player = context.get("player") if is_instance_valid(context.get("player")) else null
 	target_vehicle = context.get("vehicle") if is_instance_valid(context.get("vehicle")) else null
 	_visible_target = bool(_encounter_decision.get("player_visible", false)) or bool(_encounter_decision.get("vehicle_visible", false))
@@ -585,9 +665,13 @@ func _visible_roof(vehicle: Node3D) -> bool:
 func encounter_debug_text() -> String:
 	var survivor := str(_encounter_decision.get("player")) if is_instance_valid(_encounter_decision.get("player")) else "none"
 	var vehicle := str(_encounter_decision.get("vehicle")) if is_instance_valid(_encounter_decision.get("vehicle")) else "none"
-	return "Target %s / RV %s\nMode %s | Intent %s | Action %s\n%s" % [survivor, vehicle,
+	return "Target %s / RV %s\nMode %s | Intent %s | Action %s\n%s\nNav %s | Idle %.1fs | Recovery %d/%d%s%s\n%s" % [survivor, vehicle,
 		_encounter_decision.get("mode", "none"), _encounter_decision.get("intent", "none"),
-		_action_context.get("kind", "none"), _encounter_decision.get("reason", "no observation")]
+		_action_context.get("kind", "none"), _encounter_decision.get("reason", "no observation"),
+		_navigation_status, _liveness_idle_seconds, _liveness_level, settings.liveness_attempts,
+		" | Repositioning" if _reposition_point != Vector3.INF else "",
+		" | Ignoring last target" if _encounter_decision.get("ignoring", false) else "",
+		"Last stall: " + (_liveness_reason if not _liveness_reason.is_empty() else "none")]
 
 func can_see_player(player: Node3D) -> bool:
 	if not is_instance_valid(player) or not WorldEntities.same_world(self, player) or player.get("is_player_dead") == true: return false
@@ -675,8 +759,10 @@ func _follow_vehicle(delta: float) -> Vector3:
 	if route_direction.dot(target_direction) < -.5:
 		# After sudden braking the slot can be behind us. Back away along the
 		# navigation path while watching the RV, instead of turning out of sight.
-		return _navigate(_follow_plan.navigation_point, float(_follow_plan.speed), delta, .1, _follow_plan.surface_point)
-	return _navigate(_follow_plan.navigation_point, float(_follow_plan.speed), delta, .1)
+		return _navigate(_follow_plan.navigation_point, float(_follow_plan.speed), delta, .1, _follow_plan.surface_point, false)
+	# The follower already matches a moving slot's speed; its steering lookahead
+	# may leave navigation briefly without being a place to stop.
+	return _navigate(_follow_plan.navigation_point, float(_follow_plan.speed), delta, .1, Vector3.INF, false)
 
 func _follow_parked_vehicle(delta: float) -> Vector3:
 	_follow_plan.clear()
@@ -730,6 +816,8 @@ func _follow_parked_approach(plan: Dictionary, delta: float) -> Vector3:
 		_parked_facing_waypoint = Vector3.INF
 	if gap <= arrival and can_settle: _parked_facing_waypoint = waypoint
 	if _parked_facing_waypoint != Vector3.INF:
+		# Holding a reached stance over a survivor who cannot be taken yet is deliberate.
+		if is_instance_valid(plan.get("occupant")) and not _player_can_be_executed(): _liveness_waiting = true
 		var direction: Vector3 = (Vector3(plan.get("facing_point", plan.surface_point)) - global_position).slide(Vector3.UP).normalized()
 		rotation.y = rotate_toward(rotation.y, atan2(-direction.x, -direction.z), deg_to_rad(settings.near_turn_degrees) * delta)
 		return Vector3.ZERO
@@ -791,6 +879,185 @@ func _update_parked_progress(delta: float) -> void:
 	_parked_facing_waypoint = Vector3.INF
 	_parked_recoveries += 1
 	_reset_parked_progress()
+	# This step-out is the first recovery attempt. Repeating it beside the same
+	# RV without any effect must end in a different approach or disengagement.
+	_escalate("stance approach stalled", true)
+
+func _update_liveness(delta: float) -> void:
+	# Every tracking state must keep producing travel, turning, damage or a
+	# capture. Sight alone never counts: a visible target that cannot be reached
+	# or hurt is recovered by a replan, a reposition and finally disengagement.
+	_liveness_calm_seconds += delta
+	if _liveness_level > 0 and _liveness_calm_seconds >= settings.liveness_calm_seconds: _liveness_level = 0
+	if phase not in [Phase.PATROL, Phase.CONFIRM, Phase.CHASE, Phase.SEARCH]:
+		_liveness_anchor = Vector3.INF
+		_liveness_idle_seconds = 0.0
+		if phase_elapsed > _action_budget():
+			# Authored actions end on their own clocks; this bounds a broken one.
+			_liveness_reason = "action timeout"
+			print("SlenderSpeaker liveness: %s in phase %s" % [_liveness_reason, Phase.keys()[phase]])
+			if is_instance_valid(_execution_player): _cancel_execution("liveness_timeout")
+			_set_phase(Phase.CHASE if _visible_target else Phase.SEARCH)
+		return
+	var travelled := _liveness_anchor == Vector3.INF \
+		or global_position.slide(Vector3.UP).distance_to(_liveness_anchor.slide(Vector3.UP)) >= settings.liveness_progress_distance
+	var turned := absf(angle_difference(_liveness_anchor_yaw, rotation.y)) >= deg_to_rad(settings.liveness_progress_degrees)
+	if travelled or turned or _liveness_waiting:
+		_liveness_anchor = global_position
+		_liveness_anchor_yaw = rotation.y
+		_liveness_idle_seconds = 0.0
+	else:
+		_liveness_idle_seconds += delta
+	if phase == Phase.PATROL:
+		_liveness_drought_seconds = 0.0
+		return
+	# Turning and short steps reset the stall clock but achieve nothing alone.
+	# Slow tracking that never damages or captures anything still has to end.
+	if velocity.slide(Vector3.UP).length() < settings.patrol_speed * .5: _liveness_drought_seconds += delta
+	if _liveness_drought_seconds >= settings.liveness_drought_seconds:
+		_disengage("no damage or capture in %d s" % roundi(settings.liveness_drought_seconds))
+		return
+	if _reposition_point != Vector3.INF: return
+	if _ineffective_attacks >= settings.liveness_ineffective_attacks:
+		_escalate("%d attacks without effect" % _ineffective_attacks)
+	elif _liveness_idle_seconds >= settings.liveness_stall_seconds:
+		_escalate("no progress, navigation %s" % _navigation_status)
+
+func _action_budget() -> float:
+	match phase:
+		Phase.SMASH: return settings.smash_windup + 1.0
+		Phase.GRAB: return settings.grab_windup + 1.0
+		Phase.LIFT: return settings.lift_seconds + 1.0
+		Phase.HOLD: return settings.hold_seconds + 1.0
+		Phase.CRUSH: return settings.crush_seconds + 1.0
+		Phase.RECOVER: return settings.smash_recovery + 1.0
+		Phase.STAGGER: return settings.stagger_seconds + 1.0
+	return INF
+
+func _note_effect() -> void:
+	# Damage or a capture proves the current approach works.
+	_liveness_level = 0
+	_liveness_drought_seconds = 0.0
+	_liveness_idle_seconds = 0.0
+	_ineffective_attacks = 0
+	_attack_anchor = Vector3.INF
+	_liveness_reason = ""
+
+func _record_attack_result() -> void:
+	var effect := _attack_effect
+	if phase == Phase.SMASH: effect = effect or not _smash_damaged_item_rids.is_empty()
+	elif phase == Phase.GRAB: effect = effect or not _grab_cleared_obstacles.is_empty()
+	_attack_effect = false
+	if effect:
+		_note_effect()
+		return
+	# A fleeing target makes a moving attacker miss legitimately. Only repeats
+	# from the same place show that this stance cannot reach anything.
+	if _attack_anchor != Vector3.INF and global_position.slide(Vector3.UP).distance_to(_attack_anchor.slide(Vector3.UP)) < settings.liveness_progress_distance:
+		_ineffective_attacks += 1
+	else:
+		_ineffective_attacks = 1
+		_attack_anchor = global_position
+
+func _skip_patrol_point(unreachable: bool) -> void:
+	_patrol_index += 1
+	# Waiting for a navigation map says nothing about where home is.
+	if unreachable: _patrol_blocked_skips += 1
+	_liveness_idle_seconds = 0.0
+	_liveness_anchor = Vector3.INF
+	_navigation_requery = true
+	if _patrol_blocked_skips >= settings.patrol_rehome_skips:
+		# A chase can end far from a home whose navigation is no longer loaded
+		# or connected. Patrol where it stands rather than toward that edge.
+		home_position = global_position
+		_patrol_blocked_skips = 0
+
+func _escalate(reason: String, replanned := false) -> void:
+	_liveness_level += 1
+	_liveness_escalations += 1
+	_liveness_calm_seconds = 0.0
+	_liveness_idle_seconds = 0.0
+	_liveness_anchor = Vector3.INF
+	_ineffective_attacks = 0
+	_attack_anchor = Vector3.INF
+	_liveness_reason = reason
+	if _liveness_level > settings.liveness_attempts:
+		_disengage(reason)
+		return
+	print("SlenderSpeaker liveness: recovery %d/%d, %s" % [_liveness_level, settings.liveness_attempts, reason])
+	# A parked RV first gets a fresh stance on the same side. Everything else,
+	# and every later attempt, approaches from somewhere else.
+	var same_side := _liveness_level == 1 and _vehicle_is_observed(target_vehicle)
+	if not (replanned and same_side): _replan(not same_side)
+	if not same_side: _begin_reposition(reason)
+
+func _replan(clear_side: bool) -> void:
+	_parked_attack.invalidate_approach(clear_side)
+	_parked_plan.clear()
+	_follow_plan.clear()
+	_parked_approach_memory.clear()
+	_parked_approach_remaining = 0.0
+	_parked_facing_waypoint = Vector3.INF
+	_parked_recovery_point = Vector3.INF
+	_parked_recovery_context.clear()
+	_reset_parked_progress()
+	_navigation_recovery_point = Vector3.INF
+	_navigation_stall_seconds = 0.0
+	_navigation_requery = true
+
+func _begin_reposition(reason: String) -> void:
+	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) <= 0:
+		_disengage(reason + ", no navigation")
+		return
+	# Uses observed facts only: the visible RV's frame or the last seen point.
+	var around_vehicle := _vehicle_is_observed(target_vehicle)
+	var center := target_vehicle.global_position if around_vehicle else last_seen_position
+	var offset := (global_position - center).slide(Vector3.UP)
+	if offset.length() < .1: offset = global_basis.z.slide(Vector3.UP)
+	var radius := clampf(offset.length(), REPOSITION_MIN_RADIUS, REPOSITION_MAX_RADIUS)
+	# The far side of a vehicle first; otherwise another bearing on the survivor.
+	# The direction alternates so two attempts do not return to the same place.
+	var angles: Array[float] = [REPOSITION_ARC * _reposition_sign, -REPOSITION_ARC * _reposition_sign]
+	if around_vehicle: angles = [PI, PI * .5 * _reposition_sign, -PI * .5 * _reposition_sign]
+	for angle in angles:
+		var candidate := center + offset.normalized().rotated(Vector3.UP, angle) * radius
+		candidate.y = global_position.y
+		var reachable := NavigationServer3D.map_get_closest_point(giant_navigation_map, candidate)
+		if reachable.slide(Vector3.UP).distance_to(global_position.slide(Vector3.UP)) < settings.liveness_progress_distance * 2.0: continue
+		_reposition_point = reachable
+		_reposition_seconds = settings.liveness_reposition_seconds
+		_reposition_sign = -_reposition_sign
+		return
+	_disengage(reason + ", nowhere to reposition")
+
+func _follow_reposition(delta: float) -> Vector3:
+	# Walks to the other vantage, then hands back to the ordinary pursuit.
+	_reposition_seconds -= delta
+	if _reposition_seconds > 0.0 and global_position.slide(Vector3.UP).distance_to(_reposition_point.slide(Vector3.UP)) > 1.5:
+		var motion := _navigate_around_vehicles(_reposition_point, settings.patrol_speed, delta)
+		if _navigation_status != "blocked": return motion
+	_reposition_point = Vector3.INF
+	_navigation_requery = true
+	return Vector3.ZERO
+
+func _disengage(reason: String) -> void:
+	# Ends an engagement that cannot produce an effect. The encounter owner
+	# ignores this target for a while, so plain sight does not restart it.
+	_liveness_reason = "disengaged, " + reason
+	print("SlenderSpeaker liveness: %s" % _liveness_reason)
+	_encounter.disengage(settings)
+	_encounter_decision = _encounter.decision.duplicate()
+	_replan(true)
+	target_player = null
+	target_vehicle = null
+	_visible_target = false
+	_liveness_level = 0
+	_liveness_drought_seconds = 0.0
+	_liveness_idle_seconds = 0.0
+	_liveness_anchor = Vector3.INF
+	_ineffective_attacks = 0
+	_attack_anchor = Vector3.INF
+	_set_phase(Phase.PATROL)
 
 func _parked_body_margin() -> float:
 	if not _parked_plan.is_empty():
@@ -906,7 +1173,8 @@ func _navigate_around_vehicles(point: Vector3, speed: float, delta: float) -> Ve
 				_patrol_route = _patrol_obstacle.duplicate(true)
 	return _navigate(waypoint, speed, delta, .2 if nearest < INF else 1.5)
 
-func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1.5, facing_point := Vector3.INF) -> Vector3:
+func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1.5, facing_point := Vector3.INF, brake_at_path_end := true) -> Vector3:
+	_navigation_status = "no_map"
 	if not giant_navigation_map.is_valid() or nav_agent == null: return Vector3.ZERO
 	var map_iteration := NavigationServer3D.map_get_iteration_id(giant_navigation_map)
 	if map_iteration <= 0: return Vector3.ZERO
@@ -931,7 +1199,8 @@ func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1
 	# Finished partial paths stop listening for map changes. When streamed
 	# terrain arrives, resubmit an unmet goal instead of staying at that edge.
 	var retry_finished := map_changed and (point - global_position).slide(Vector3.UP).length() > arrival_distance and nav_agent.is_navigation_finished()
-	if target_shift > refresh_distance or phase_elapsed < delta * 1.5 or stalled or retry_finished:
+	if target_shift > refresh_distance or phase_elapsed < delta * 1.5 or stalled or retry_finished or _navigation_requery:
+		_navigation_requery = false
 		nav_agent.target_position = point
 		# A moving RV may refresh this goal several times during one real stall.
 		if stalled: _navigation_stall_seconds = 0.0
@@ -949,6 +1218,29 @@ func _navigate(point: Vector3, speed: float, delta: float, arrival_distance := 1
 		if global_position.slide(Vector3.UP).distance_to(waypoint.slide(Vector3.UP)) < nav_agent.path_desired_distance:
 			nav_agent.path_height_offset = waypoint.y - global_position.y
 			next = nav_agent.get_next_path_position()
+	# A path can end short of a goal that lies outside connected navigation.
+	# Steering at that last point overshoots and orbits it, turning the body
+	# away from the goal. Brake into it, then stop there facing the goal.
+	var goal_gap := (point - global_position).slide(Vector3.UP).length()
+	var path_end := path[path.size() - 1] if not path.is_empty() else global_position
+	var unreachable := path.is_empty() or (path_end - point).slide(Vector3.UP).length() > arrival_distance + .5
+	var end_band := maxf(arrival_distance, .5)
+	if unreachable and goal_gap > arrival_distance:
+		if (path_end - global_position).slide(Vector3.UP).length() <= end_band:
+			_navigation_status = "blocked"
+			var goal_direction := ((point if facing_point == Vector3.INF else facing_point) - global_position).slide(Vector3.UP).normalized()
+			if goal_direction.length_squared() > .1:
+				rotation.y = rotate_toward(rotation.y, atan2(-goal_direction.x, -goal_direction.z), deg_to_rad(settings.near_turn_degrees) * delta)
+			return Vector3.ZERO
+		_navigation_status = "detour"
+		if brake_at_path_end:
+			var remaining := (next - global_position).slide(Vector3.UP).length()
+			for index in range(path_index, path.size() - 1):
+				remaining += (path[index + 1] - path[index]).slide(Vector3.UP).length()
+			var braking := VehicleFollow.FOLLOW_BRAKING if is_instance_valid(target_vehicle) and _visible_target else settings.braking
+			speed = minf(speed, maxf(.3, sqrt(2.0 * braking * maxf(0.0, remaining - end_band * .5))))
+	else:
+		_navigation_status = "arrived" if goal_gap <= arrival_distance else "moving"
 	var direction := (next - global_position).slide(Vector3.UP).normalized()
 	if direction.length_squared() < 0.1: return Vector3.ZERO
 	var facing_direction := direction if facing_point == Vector3.INF else (facing_point - global_position).slide(Vector3.UP).normalized()
@@ -1058,6 +1350,7 @@ func _begin_smash(kind := "vehicle_assault") -> void:
 	if kind == "roof": _action_context.roof = _parked_plan.get("roof")
 	if is_instance_valid(target_vehicle): _action_context.local_point = target_vehicle.to_local(point)
 	_smash_entry_pose = _capture_pose()
+	_attack_effect = false
 	_set_phase(Phase.SMASH)
 	_strike_locked = false
 	_strike_resolved = false
@@ -1173,6 +1466,7 @@ func resolve_smash_hit(collider: Node) -> bool:
 	else:
 		if _action_context.get("kind", "vehicle_assault") != "vehicle_assault": return false
 		collider.take_damage(settings.smash_chassis_damage)
+	_attack_effect = true
 	attack_landed.emit(collider, "slender_speaker_smash")
 	return true
 
@@ -1240,6 +1534,7 @@ func _begin_grab() -> void:
 	_action_context.running_ground_grab = not is_instance_valid(target_vehicle) and not _action_context.climbing \
 		and not _action_context.crawling and target_velocity.slide(Vector3.UP).length() >= settings.ground_running_grab_min_speed
 	_action_context.grab_speed_scale = maxf(1.0, settings.ground_running_grab_speed_scale) if _action_context.running_ground_grab else 1.0
+	_attack_effect = false
 	_set_phase(Phase.GRAB)
 	_grab_locked = false
 	_grab_touched = false
@@ -1320,7 +1615,8 @@ func _advance_grab(delta: float = 1.0 / 60.0) -> void:
 		_grab_touched = true
 		_grab_hands_touched[side] = true
 		_grab_capture_sweep = contact_probes[side]
-		_start_execution()
+		# A refused capture must still end this reach instead of repeating it.
+		if not _start_execution() and phase == Phase.GRAB: _set_phase(Phase.RECOVER)
 		return
 	if phase_elapsed * float(_action_context.get("grab_speed_scale", 1.0)) >= settings.grab_windup: _finish_grab()
 
@@ -1566,6 +1862,7 @@ func _start_execution() -> bool:
 		return false
 	_execution_player = target_player
 	_execution_resolved = false
+	_note_effect()
 	# Carry the actual reached wrists into the shared authored lift.
 	_grab_capture_pose = _capture_pose()
 	var capture_wrists := {"R": _bone_position("hand.R"), "L": _bone_position("hand.L")}

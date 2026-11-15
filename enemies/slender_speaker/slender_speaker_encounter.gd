@@ -22,6 +22,11 @@ var _pending_observation: Dictionary = {}
 var _pending_remaining := 0.0
 var _suppressed_vehicle: Node3D
 var _rearm_seconds := 0.0
+var _ignored_player: Node3D
+var _ignored_vehicle: Node3D
+var _ignore_point := Vector3.ZERO
+var _ignore_remaining := 0.0
+var _ignore_rearm_seconds := 0.0
 
 func _init() -> void:
 	reset()
@@ -45,10 +50,72 @@ func reset() -> void:
 	_pending_remaining = 0.0
 	_suppressed_vehicle = null
 	_rearm_seconds = 0.0
+	_clear_ignore()
 	_publish({}, false)
+
+func disengage(settings: Resource) -> void:
+	# The controller abandons an engagement that produced no effect. Seeing the
+	# same survivor or RV where it was left must not restart it immediately.
+	if _mode == "none": return
+	_ignored_player = _player
+	_ignored_vehicle = _vehicle
+	_ignore_point = _point
+	_ignore_remaining = settings.disengage_seconds
+	_ignore_rearm_seconds = 0.0
+	_suppressed_vehicle = null
+	_rearm_seconds = 0.0
+	_clear("disengaged")
+	_publish({}, false)
+
+func is_ignoring() -> bool:
+	return _ignore_remaining > 0.0
+
+func _clear_ignore() -> void:
+	_ignored_player = null
+	_ignored_vehicle = null
+	_ignore_point = Vector3.ZERO
+	_ignore_remaining = 0.0
+	_ignore_rearm_seconds = 0.0
+
+func _without_ignored(observation: Dictionary, delta: float, settings: Resource) -> Dictionary:
+	# Only sight-confirmed facts re-arm an abandoned target: its deadline, the
+	# survivor observed well away from where they were left, or the RV driving off.
+	if _ignore_remaining <= 0.0: return observation
+	_ignore_remaining = maxf(0.0, _ignore_remaining - delta)
+	var ignored_player := _valid_player(_ignored_player)
+	var ignored_vehicle := _valid_node(_ignored_vehicle)
+	var seen_player := _observed_player(observation)
+	var seen_vehicle := _observed_vehicle(observation)
+	var sees_player := seen_player != null and seen_player == ignored_player
+	var sees_vehicle := seen_vehicle != null and seen_vehicle == ignored_vehicle
+	var rearm := _ignore_remaining <= 0.0 or (ignored_player == null and ignored_vehicle == null)
+	if sees_player and Vector3(observation.get("player_point", _ignore_point)).distance_to(_ignore_point) >= settings.disengage_rearm_distance:
+		rearm = true
+	if sees_vehicle and absf(float(observation.get("road_speed", 0.0))) > settings.pursuit_enter_speed:
+		_ignore_rearm_seconds += delta
+		if _ignore_rearm_seconds >= settings.pursuit_enter_seconds: rearm = true
+	else:
+		_ignore_rearm_seconds = 0.0
+	if rearm:
+		_clear_ignore()
+		return observation
+	if not sees_player and not sees_vehicle: return observation
+	var filtered := observation.duplicate()
+	if sees_player:
+		filtered.player = null
+		filtered.player_vehicle = null
+		filtered.player_in_cabin = false
+	# A different survivor aboard is new evidence about the same RV.
+	var aboard := _valid_node(filtered.get("player_vehicle", filtered.get("vehicle")))
+	if sees_vehicle and (_observed_player(filtered) == null or aboard != seen_vehicle):
+		filtered.vehicle = null
+		filtered.vehicle_visible = false
+		filtered.roof_visible = false
+	return filtered
 
 func update(observation: Dictionary, delta: float, settings: Resource, action_locked: bool = false) -> Dictionary:
 	var elapsed := maxf(delta, 0.0)
+	observation = _without_ignored(observation, elapsed, settings)
 	_cleanup_invalid()
 	if _mode != "none":
 		_remaining = maxf(0.0, _remaining - elapsed)
@@ -280,6 +347,7 @@ func _publish(observation: Dictionary, locked: bool) -> void:
 		"roof_inspection": _mode == "cabin" and vehicle_visible and observation.get("roof_visible", false) and _remaining > 0.0,
 		"point": _point, "search_point": search_point, "vehicle_frame": _vehicle_frame,
 		"reason": "action_locked" if locked and _mode != "none" else _reason,
+		"ignoring": _ignore_remaining > 0.0,
 		"generation": _generation}
 
 func _observed_player(observation: Dictionary) -> Node3D:

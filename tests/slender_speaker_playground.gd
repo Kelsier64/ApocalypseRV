@@ -6,6 +6,10 @@ const PLAYER := preload("res://player/player.tscn")
 const RV := preload("res://rv/new_rv.tscn")
 const VehicleSettle := preload("res://tests/support/vehicle_settle.gd")
 const MODE_NAMES := ["Free play", "Third-person execution", "Wheel-driven straight chase", "Wheel-driven bend chase", "One-panel smash", "Moving RV one-panel smash", "Steady cruise / wider gap", "Local shell opening / chassis smash", "Parked RV / roof removal / driver grab"]
+## `--liveness`: free play starts on a ledge the giant can see but not walk onto.
+const LIVENESS_LEDGE := Vector3(40, 3.0, 55)
+const LIVENESS_LEDGE_SIZE := Vector3(14, 3, 14)
+var liveness_review := false
 var actors: Node3D
 var giant: SlenderSpeaker
 var player: CharacterBody3D
@@ -176,6 +180,26 @@ func _build_navigation_forest() -> void:
 		trunk.add_child(trunk_collision)
 		nav_region.add_child(trunk)
 		trunk.position = tree.position + Vector3.UP * 8.0
+	liveness_review = "--liveness" in OS.get_cmdline_user_args()
+	if liveness_review:
+		# Baked as an obstacle: its top is a separate island beyond the step height.
+		var ledge := StaticBody3D.new()
+		var ledge_collision := CollisionShape3D.new()
+		var ledge_shape := BoxShape3D.new()
+		ledge_shape.size = LIVENESS_LEDGE_SIZE
+		ledge_collision.shape = ledge_shape
+		ledge.add_child(ledge_collision)
+		var ledge_mesh := MeshInstance3D.new()
+		var ledge_box := BoxMesh.new()
+		ledge_box.size = LIVENESS_LEDGE_SIZE
+		ledge_mesh.mesh = ledge_box
+		var ledge_material := StandardMaterial3D.new()
+		ledge_material.albedo_color = Color("7b7c78")
+		ledge_material.roughness = 1.0
+		ledge_mesh.material_override = ledge_material
+		ledge.add_child(ledge_mesh)
+		nav_region.add_child(ledge)
+		ledge.position = LIVENESS_LEDGE - Vector3.UP * LIVENESS_LEDGE_SIZE.y * .5
 	nav_region.bake_navigation_mesh(false)
 	for frame in 60:
 		await get_tree().physics_frame
@@ -298,6 +322,13 @@ func select_mode(next: int) -> bool:
 		giant.rotation.y = -PI * .5
 		observer_enabled = false
 		player.seated_in.seat_camera.make_current()
+		if liveness_review:
+			rv.get_node("DriverSeat").exit_seat(true)
+			player.global_position = LIVENESS_LEDGE + Vector3.UP * .3
+			player.velocity = Vector3.ZERO
+			player.rotation.y = PI * .5
+			player.camera.make_current()
+			giant.global_position = Vector3(LIVENESS_LEDGE.x - 40.0, .02, LIVENESS_LEDGE.z)
 	giant.set_giant_navigation_map(giant_map)
 	giant.attack_landed.connect(_record_attack)
 	giant_start = giant.global_position
@@ -305,7 +336,7 @@ func select_mode(next: int) -> bool:
 	previous_yaw = giant.rotation.y
 	capture_sources = _source_hashes()
 	running = true
-	set_giant_enabled(mode != 0)
+	set_giant_enabled(mode != 0 or liveness_review)
 	if controls == null:
 		controls = PlaygroundControls.new()
 		controls.playground = self
@@ -523,6 +554,7 @@ func _update_free_play() -> void:
 	var state: String = SlenderSpeaker.Phase.keys()[int(giant.phase)] if giant_enabled else "Paused"
 	hud.text = "Free Test · Giant %s · Vehicle %.1f km/h\nWASD Move/Drive · Mouse Look · E Exit Seat/Interact · Hold E to Enter Seat\nSpace Handbrake · B Engine · C First Gear · R/T Shift Gears\nF2 Toggle Giant · F6 Observer Camera · F7 Pause · F11 Reset All\nEsc Settings · Ctrl+F12 End Test" % [state, rv.road_speed() * 3.6 if is_instance_valid(rv) else 0.0]
 	hud.text += "\n" + giant.encounter_debug_text()
+	if liveness_review: hud.text += "\nLiveness review: the ledge is visible to the giant but outside its navigation."
 	if player.is_player_dead: hud.text += "\nPlayer is dead: use the usual respawn button or F11 to reset the scene."
 	if capture_requested and elapsed >= capture_time and not capture_pending and DisplayServer.get_name() != "headless":
 		capture_time = elapsed + 1.0 / 30.0

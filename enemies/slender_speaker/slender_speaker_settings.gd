@@ -39,3 +39,23 @@ class_name SlenderSpeakerSettings
 @export var impact_speed := 10.0
 @export var stagger_seconds := 0.8
 @export var stagger_cooldown := 8.0
+@export_group("Liveness")
+## Tracking without this much travel or turning, for this long, is a stall.
+@export var liveness_stall_seconds := 3.0
+@export var liveness_progress_distance := 1.5
+@export var liveness_progress_degrees := 45.0
+## Attacks from one spot that damage or capture nothing before recovery starts.
+@export var liveness_ineffective_attacks := 2
+## Recoveries (replan, then reposition) before the engagement is abandoned.
+@export var liveness_attempts := 2
+@export var liveness_reposition_seconds := 6.0
+## Recovery attempts are forgotten after this long without another stall.
+@export var liveness_calm_seconds := 30.0
+## Slow tracking with no damage or capture for this long ends the engagement.
+@export var liveness_drought_seconds := 25.0
+## An abandoned target is ignored this long, unless it visibly moves this far
+## or its RV drives off at pursuit speed.
+@export var disengage_seconds := 20.0
+@export var disengage_rearm_distance := 6.0
+## Consecutive unreachable patrol points before patrol adopts its current place.
+@export var patrol_rehome_skips := 3
