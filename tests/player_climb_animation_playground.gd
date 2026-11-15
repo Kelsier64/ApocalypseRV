@@ -1,6 +1,6 @@
 extends "res://tests/rv_climb_playground.gd"
 ## Close-up presentation review; the separate two-actor replay remains available.
-const OUT := "res://docs/validation/rv-ladders-20261005/"
+const OUT := "res://.godot/player-climb-animation/"
 var capture_directory := OUT
 var reviewing := false
 var side_view := false

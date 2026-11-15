@@ -33,7 +33,7 @@ for name,clip,frame,position,target,scale in [
     for ob in rig.children:
         if ob.name=='Leg_R' or (ob.name.startswith('Nail_') and ob.name.endswith('_R')):
             ob.hide_render=name=='medial-arch'
-    scene.render.filepath=ROOT+'docs/validation/barrel-man-feet/blender-'+name+'.png'
+    scene.render.filepath=ROOT+'.godot/barrel-man-feet-review/blender-'+name+'.png'
     bpy.ops.render.render(write_still=True)
 for ob in rig.children: ob.hide_render=False
 for suffix in ['R','L']:

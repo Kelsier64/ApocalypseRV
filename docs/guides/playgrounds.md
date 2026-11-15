@@ -478,7 +478,7 @@ godot --path . --log-file .godot/player-model.log res://tests/player_model_playg
 godot --path . --log-file .godot/player-model-replay.log res://tests/player_model_playground.tscn -- --replay --quit-replay
 ```
 
-載入正式主世界、固定 seed 42 與上午 10 點，使用正式 Player。F1 平視、F2 低頭、F3 外部觀察、F4 連續移動／跳躍／持物／上下車回放、Esc 關閉此測試視窗。第一人稱捕捉滑鼠，外部觀察釋放滑鼠；WASD／Space 使用正式控制器，TEST 骨架動畫不會播放。自動回放截圖輸出 `docs/validation/player-model-integration/`。獨立物理配置仍可使用 `tests/player_ragdoll_v020/playground.tscn`，正式死亡另見下方測試場。見 [整合驗收](../validation/2026-09-27-player-model-integration.md)。
+載入正式主世界、固定 seed 42 與上午 10 點，使用正式 Player。F1 平視、F2 低頭、F3 外部觀察、F4 連續移動／跳躍／持物／上下車回放、Esc 關閉此測試視窗。第一人稱捕捉滑鼠，外部觀察釋放滑鼠；WASD／Space 使用正式控制器，TEST 骨架動畫不會播放。自動回放截圖輸出 `.godot/player-model/`。獨立物理配置仍可使用 `tests/player_ragdoll_v020/playground.tscn`，正式死亡另見下方測試場。見 [整合驗收](../validation/2026-09-27-player-model-integration.md)。
 
 <a id="player-dismemberment"></a>
 
@@ -492,7 +492,7 @@ godot --path . --log-file .godot/player-arm-pov.log res://tests/player_dismember
 godot --path . --log-file .godot/player-head-pov.log res://tests/player_dismemberment_playground.tscn -- --replay --head-pov
 ```
 
-載入正式 Player、五切口、受傷爬行與 Raker 咬合流程；`--replay` 自動回放並結束，截圖輸出 `docs/validation/player-dismemberment/`。這裡列的是操作入口，不代表本次已完成目視驗收。
+載入正式 Player、五切口、受傷爬行與 Raker 咬合流程；`--replay` 自動回放並結束，截圖輸出 `.godot/player-dismemberment/`。這裡列的是操作入口，不代表本次已完成目視驗收。
 
 `--gore-review` 另拍頭顱落地後的正反近景，以及三個血泊在明亮／昏暗照明下的畫面，輸出至 `gore-review/after/`；不改變正式遊戲流程。
 
@@ -521,7 +521,7 @@ godot --path . --log-file .godot/player-death.log res://tests/player_death_playg
 godot --path . --log-file .godot/player-death-replay.log res://tests/player_death_playground.tscn -- --replay --quit-replay
 ```
 
-使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。第一人稱隨倒地下移、不翻滾，兩秒後找到安全站位才恢復；被堵住時等待淨空。本輪截圖與 replay.json 存在 `docs/validation/player-death-integration/current-60hz/`，見 [驗收報告](../validation/2026-09-27-player-death-integration.md)。
+使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。第一人稱隨倒地下移、不翻滾，兩秒後找到安全站位才恢復；被堵住時等待淨空。截圖與 replay.json 寫入 `.godot/player-death/`，2026-09-27 結果見 [驗收報告](../validation/2026-09-27-player-death-integration.md)。
 
 ### 移動 RV 攀爬
 
@@ -529,7 +529,7 @@ godot --path . --log-file .godot/player-death-replay.log res://tests/player_deat
 godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playground.tscn -- --replay
 ```
 
-玩家沿貼牆的車內梯從開口登頂，怪物沿車壁攀爬。F2 切換車輛運動、F3 車內梯回放、F4 換攝影機、F5 玩家入座測拆頂、F6 車內近景、F7 側門梯回放、F9 保存當前畫面、F10 以正式放置控制器搬移車內梯、R 重設；加 --animation-review 隱藏藍色玩家標記。F10 只設定玩家與鏡頭，由瞄準的真實牆面決定預覽位置，可用方向鍵細移後左鍵安裝。去掉 `-- --replay` 可手動 WASD／Space。這些按鍵只用於 playground，與主遊戲 R 的設備模式切換不同。
+玩家沿貼牆的車內梯從開口登頂，怪物沿車壁攀爬。F2 切換車輛運動、F3 車內梯回放、F4 換攝影機、F5 玩家入座測拆頂、F6 車內近景、F7 側門梯回放、F9 保存當前畫面至 `.godot/rv-climb-captures/`、F10 以正式放置控制器搬移車內梯、R 重設；加 --animation-review 隱藏藍色玩家標記。F10 只設定玩家與鏡頭，由瞄準的真實牆面決定預覽位置，可用方向鍵細移後左鍵安裝。去掉 `-- --replay` 可手動 WASD／Space。這些按鍵只用於 playground，與主遊戲 R 的設備模式切換不同。
 
 Replay 使用腳本控制車輛運動，整合測試另有物理驅動 RV 情境。Headless 通過仍不能代替鏡頭手感、實際輪驅操控、翻車、怪物群與設備對齊的視覺驗收。新增回歸涵蓋製作交易、電池交換、能源、維修、設備清理、重量及磁碟存讀檔；長途經濟仍需調整。
 
@@ -698,9 +698,9 @@ v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與�
 godot --path . --log-file .godot/player-animation.log res://tests/player_animation_playground.tscn -- --replay
 ```
 
-使用正式玩家與實際輸入回放待機、四方向慢跑／快跑、動作中死亡與重生。去掉 `-- --replay` 可手動 WASD／Shift；F1 低頭第一人稱、F2 外部視角、F3 完整回放、Esc 關閉。相機只屬測試場，沒有寫入正式玩家系統。物理固定沿用專案 60 Hz。證據寫入 `docs/validation/player-animations-v021/`，驗收與限制見 [本輪報告](../validation/2026-09-27-player-animations-v021.md)。
+使用正式玩家與實際輸入回放待機、四方向慢跑／快跑、動作中死亡與重生。去掉 `-- --replay` 可手動 WASD／Shift；F1 低頭第一人稱、F2 外部視角、F3 完整回放、Esc 關閉。相機只屬測試場，沒有寫入正式玩家系統。物理固定沿用專案 60 Hz。證據寫入 `.godot/player-animations-v021/`，驗收與限制見 [本輪報告](../validation/2026-09-27-player-animations-v021.md)。
 
-加入 `-- --jump` 使用較近的跳躍觀察鏡頭，Space 手動跳躍；F3 回放站立、慢跑、快跑跳躍並保存上升／下降／落地及低頭畫面至 `docs/validation/player-animations-v021/jump/`。使用 `-- --jump --replay` 自動回放並結束。跳躍高度、速度、耐力及物理 tick 均沿用正式控制器。
+加入 `-- --jump` 使用較近的跳躍觀察鏡頭，Space 手動跳躍；F3 回放站立、慢跑、快跑跳躍並保存上升／下降／落地及低頭畫面至 `.godot/player-animations-v021/jump/`。使用 `-- --jump --replay` 自動回放並結束。跳躍高度、速度、耐力及物理 tick 均沿用正式控制器。
 
 
 ### 玩家攀爬動作近照
@@ -709,11 +709,11 @@ godot --path . --log-file .godot/player-animation.log res://tests/player_animati
 godot --path . --log-file .godot/player-climb-desktop.log res://tests/player_climb_animation_playground.tscn -- --animation-review
 ```
 
-使用正式玩家與 RV，回放梯子攀升、下降、車輛轉彎中的停留與登頂收手。F1 第一人稱、F2 外部視角、F3 重播、Esc 關閉；截圖存到 `docs/validation/rv-ladders-20261005/`，舊版截圖保留。登頂仍由現有控制器直接轉移站位，動畫不改路徑或速度。
+使用正式玩家與 RV，回放梯子攀升、下降、車輛轉彎中的停留與登頂收手。F1 第一人稱、F2 外部視角、F3 重播、Esc 關閉；截圖存到 `.godot/player-climb-animation/`，重跑會覆蓋同名檔案。登頂仍由現有控制器直接轉移站位，動畫不改路徑或速度。
 
 雙角色回歸仍用 `rv_climb_playground.tscn -- --replay`，加 `--animation-review` 隱藏藍色標記以觀看正式模型。此測試車體凍結於抬高位置，回放起點設在車內梯下方，與 `test_moving_rv_climbing.gd` 一致；手動起點與正式玩家控制器不變。
 
-鏡頭同步複驗可加 `--camera-review`：保存攀爬低頭／平視畫面到 `docs/validation/rv-ladders-20261005/camera/`，保留上一版圖片。
+鏡頭同步複驗可加 `--camera-review`：保存攀爬低頭／平視畫面到 `.godot/player-climb-animation/camera/`。
 
 ### 玩家駕駛動作
 

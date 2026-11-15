@@ -1,6 +1,6 @@
 extends "res://world/test_world.gd"
 ## Production death entry points and main world; shortcuts/captures are test-only.
-const OUTPUT := "res://docs/validation/player-death-integration/current-60hz/"
+const OUTPUT := "res://.godot/player-death/"
 var observer: Camera3D
 var status: Label
 var replaying := false

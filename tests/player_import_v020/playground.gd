@@ -3,7 +3,7 @@ extends Node3D
 const MODEL = preload("res://assets/models/player_test_v020/player_export_test_v020.glb")
 const LOCAL_VIEW = preload("res://tests/player_import_v020/local_view.gd")
 const CLIP := &"TEST_v020_POSE_SAMPLES"
-const OUTPUT := "res://docs/validation/player-v020/"
+const OUTPUT := "res://.godot/player-v020/"
 const POSES := ["neutral", "side", "forward", "elbow", "crouch", "head", "fingers", "fp_pose"]
 var model: Node3D
 var animation: AnimationPlayer
@@ -133,6 +133,7 @@ func screenshot(filename: String) -> void:
 	label.visible = false
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
+	DirAccess.make_dir_recursive_absolute(OUTPUT)
 	var result := get_viewport().get_texture().get_image().save_png(OUTPUT + filename + ".png")
 	label.visible = true
 	if result != OK:

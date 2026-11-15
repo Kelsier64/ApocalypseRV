@@ -1,6 +1,6 @@
 extends "res://world/test_world.gd"
 ## Real main world and production Player. Only cameras/replay/capture are test code.
-const OUTPUT := "res://docs/validation/player-model-integration/"
+const OUTPUT := "res://.godot/player-model/"
 var observer: Camera3D
 var status: Label
 var replaying := false

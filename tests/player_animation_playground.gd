@@ -1,7 +1,7 @@
 extends Node3D
 ## Production actor/input; observer and capture logic exist only in this scene.
 const PLAYER = preload("res://player/player.tscn")
-const OUT := "res://docs/validation/player-animations-v021/"
+const OUT := "res://.godot/player-animations-v021/"
 var capture_directory := OUT
 var actor: CharacterBody3D
 var observer: Camera3D
