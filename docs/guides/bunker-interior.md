@@ -1,6 +1,6 @@
 # 隨機軍事地堡：房型製作與保存契約
 
-更新：2026-11-05。適用 `bunker`／布局版本 3。基礎結構依據為 [原地堡計畫](../plans/2026-09-24-random-bunker.md)，物資與敵人見[內容驗證](../validation/2026-09-29-bunker-content.md)，廢棄場景、照明與手電筒的早期驗證見[2026-09-29 記錄](../validation/2026-09-29-bunker-art-flashlight.md)，共用場址與資產規範見 [POI 製作規範](poi-authoring.md)。v2 房型已補齊燈具、家具、管線與污損模型；完整地表設施及長局平衡仍待後續完成。
+更新：2026-11-05。適用 `bunker`／布局版本 3。基礎結構依據為 [原地堡計畫](../archive/plans/2026-09-24-random-bunker.md)，物資與敵人見[內容驗證](../validation/2026-09-29-bunker-content.md)，廢棄場景、照明與手電筒的早期驗證見[2026-09-29 記錄](../validation/2026-09-29-bunker-art-flashlight.md)，共用場址與資產規範見 [POI 製作規範](poi-authoring.md)。v2 房型已補齊燈具、家具、管線與污損模型；完整地表設施及長局平衡仍待後續完成。
 
 ## 生成及遊玩
 

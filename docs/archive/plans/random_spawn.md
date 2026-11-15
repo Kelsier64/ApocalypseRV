@@ -1,6 +1,6 @@
 # 公路隨機刷新系統
 
-狀態（2026-10-07）：正式新局切換生成 v9，改用獨立數量、位置及朝向；自動與實機驗證狀態見 [v9 本輪紀錄](../validation/2026-10-07-independent-road-spawns.md)。既有 v8 存檔維持原車陣、種子流與怪物名額替換。[v8 首版驗收](../validation/2026-10-01-random-road-spawns.md)保留當時 93 支測試與 smoke 結果，不作為本輪通過證據。原誤拼檔名 `ramdom_spawn.md` 保留為相容連結。
+狀態（2026-10-07）：正式新局切換生成 v9，改用獨立數量、位置及朝向；自動與實機驗證狀態見 [v9 本輪紀錄](../../validation/2026-10-07-independent-road-spawns.md)。既有 v8 存檔維持原車陣、種子流與怪物名額替換。[v8 首版驗收](../../validation/2026-10-01-random-road-spawns.md)保留當時 93 支測試與 smoke 結果，不作為本輪通過證據。
 
 ## v9 生成規則
 

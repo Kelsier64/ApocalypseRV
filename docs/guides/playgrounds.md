@@ -341,7 +341,7 @@ godot --path . --log-file .godot/rv-systems-visible.log res://tests/rv_systems_p
 
 此場景用正式 RV／設備回放熄火耗電、原地充電、換電池、製作與輪驅轉彎。F2 引擎、F3 換電池、F4 入座、F5 平板、F6 回放、F7 傷害平板（免傷驗證）、R 重設。測試場按鍵與主世界 F6 存檔各自獨立。
 
-此次設備／儲存調整見 [新版設計與驗收](../../docs/validation/2026-09-16-rv-shared-storage.md)。執行進度見 [RV 計畫](../../docs/plans/2026-09-15-rv-systems-roadmap.md)，測試與限制見 [RV 驗收紀錄](../../docs/validation/2026-09-15-rv-systems.md)。凍結設備對外掛碰撞的力矩傳遞、極端翻車與怪物群尚未全面驗收。
+此次設備／儲存調整見 [新版設計與驗收](../../docs/validation/2026-09-16-rv-shared-storage.md)。執行進度見 [RV 計畫](../archive/plans/2026-09-15-rv-systems-roadmap.md)，測試與限制見 [RV 驗收紀錄](../../docs/validation/2026-09-15-rv-systems.md)。凍結設備對外掛碰撞的力矩傳遞、極端翻車與怪物群尚未全面驗收。
 
 <a id="section-2"></a>
 
@@ -396,7 +396,7 @@ godot --path . --log-file .godot/rv-rebuild-visible.log res://tests/rv_rebuild_p
 ```
 
 F8 引擎艙（E 開蓋）、F9 後門／坡板、F10 故障燈、F11 夜間、F12 輪驅回放；這些是測試場快捷鍵。
-[完整計畫](../../docs/plans/2026-09-16-rv-rebuild-engine.md) · [驗收與截圖](../../docs/validation/2026-09-16-rv-rebuild-engine.md)。
+[完整計畫](../archive/plans/2026-09-16-rv-rebuild-engine.md) · [驗收與截圖](../../docs/validation/2026-09-16-rv-rebuild-engine.md)。
 
 <a id="section-4"></a>
 

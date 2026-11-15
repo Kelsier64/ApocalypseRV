@@ -1,16 +1,16 @@
 # RV 車輛與設備系統完善計畫
 
-> 閱讀方式：第 1～8 節保留首版設計與執行紀錄，涉及油箱／材料架／底盤 HP／v1 存檔的舊規則不再是現況。先讀文末「2026-09-16 設計修訂」、[引擎計畫](2026-09-16-rv-rebuild-engine.md) 與 [R01–R07 修正](../report/ApocalypseRV_Fixes_2026-09-18.md)。目前為底盤共用儲存、獨立引擎耐久與 checkpoint v5；長途平衡及極端物理仍未完成。[計畫總覽](README.md)。
+> 閱讀方式：第 1～8 節保留首版設計與執行紀錄，涉及油箱／材料架／底盤 HP／v1 存檔的舊規則不再是現況。先讀文末「2026-09-16 設計修訂」、[引擎計畫](2026-09-16-rv-rebuild-engine.md) 與 [R01–R07 修正](../../report/ApocalypseRV_Fixes_2026-09-18.md)。目前為底盤共用儲存、獨立引擎耐久與 checkpoint v5；長途平衡及極端物理仍未完成。[計畫總覽](../../plans/README.md)。
 >
-> **狀態更新（2026-10-11）：** 本計畫中「引擎＋獨立發電機→電池」的能源設計已由引擎內建充電取代。現行設定、耗油、v5 存檔與舊便攜發電機資料拒絕規則，以根目錄 [GDD](../../GDD.md) 與 [architecture](../../architecture.md) 為準。下文能源規格與勾選項保留為歷史執行紀錄。
+> **狀態更新（2026-10-11）：** 本計畫中「引擎＋獨立發電機→電池」的能源設計已由引擎內建充電取代。現行設定、耗油、v5 存檔與舊便攜發電機資料拒絕規則，以根目錄 [GDD](../../../GDD.md) 與 [architecture](../../../architecture.md) 為準。下文能源規格與勾選項保留為歷史執行紀錄。
 >
-> 2026-09-22 核對：第 5.3／8.1 節的電池計重規則也已被 [簡化載重](../validation/2026-09-22-simple-vehicle-load.md) 取代：僅底盤、已安裝引擎與有效設備計重；電池本體、庫存、材料及燃油不計重。已有 [漸進煞車與行駛效能修正](../validation/2026-09-22-driving-performance-braking.md)，不代表極端物理或長途平衡結案。原始批次 1–3 已完成首版，下一步應讀 RV-06 的未勾選項與 [駕駛體驗計畫](2026-09-16-rv-driving-experience.md)。
+> 2026-09-22 核對：第 5.3／8.1 節的電池計重規則也已被 [簡化載重](../../validation/2026-09-22-simple-vehicle-load.md) 取代：僅底盤、已安裝引擎與有效設備計重；電池本體、庫存、材料及燃油不計重。已有 [漸進煞車與行駛效能修正](../../validation/2026-09-22-driving-performance-braking.md)，不代表極端物理或長途平衡結案。原始批次 1–3 已完成首版，下一步應讀 RV-06 的未勾選項與 [駕駛體驗計畫](2026-09-16-rv-driving-experience.md)。
 
 - 建立日期：2026-09-15。
 - 狀態：**首版已實作；RV-01～05 及 RV-06 保存／資源循環完成。廣泛長途平衡與極端物理驗收持續追蹤，未視為全案驗收完成。**
-- 執行更新：2026-09-16；結果見 [RV 驗收紀錄](../validation/2026-09-15-rv-systems.md)。
+- 執行更新：2026-09-16；結果見 [RV 驗收紀錄](../../validation/2026-09-15-rv-systems.md)。
 - 範圍：車輛控制、設備安裝與生命週期、引擎與能源、電池道具、材料與生產、維修、儀表、重量、保存及整合驗收。
-- 依據：根目錄 [GDD](../../GDD.md)、[architecture](../../architecture.md)、現有程式與測試，以及本輪討論。開始實作前須再次核對程式現況。
+- 依據：根目錄 [GDD](../../../GDD.md)、[architecture](../../../architecture.md)、現有程式與測試，以及本輪討論。開始實作前須再次核對程式現況。
 - 初稿為靜態審查；執行階段已找到本機 Godot 4.7.2，完成自動測試與實機檢查。當時 CI 為 4.6.1；目前開發／CI 基線已統一為 `.godot-version` 的 4.7.2。
 
 ## 1. 目標與已確認方向
@@ -48,21 +48,21 @@
 
 | 編號 | 問題與影響 | 處理方向 | 來源 |
 |---|---|---|---|
-| A01 | 平板先扣材料再呼叫出料，忽略失敗；例如電量 0.1 通過最低檢查，卻付不起出料費 0.6，材料仍被扣除 | 製作交易成功才提交，失敗不吞材料或電力 | [tablet_ui.gd](../../equipment/tablet_ui.gd)、[crafting_station.gd](../../equipment/crafting_station.gd) |
-| A02 | 配方與資源操作寫在 UI，新增配方、佇列和設備會擴大 UI 責任 | 配方資料化，生產服務統一處理 | [tablet_ui.gd](../../equipment/tablet_ui.gd) |
-| A03 | 發電機搬移預覽期間仍保留原車連線，未檢查搬移狀態；分解機只擋新進料，既有工作仍可能繼續 | 共用生命週期與可運作判斷，搬移即停止服務 | [scrapper.gd](../../equipment/scrapper.gd) |
-| A04 | 分解機凍結進料並關閉碰撞，毀損時未恢復進料物件；處理中的物件也未建立完整隨機器運動的持有規則 | 工作輸入所有權、隨車定位、停機退料與清理 | [scrapper.gd](../../equipment/scrapper.gd) |
-| A05 | 平板毀損沒有通知使用者退出 UI；取消搬移固定還原成凍結物體，未還原原物理狀態 | 共用撤銷與清理入口，恢復玩家控制及完整快照 | [tablet_screen.gd](../../equipment/tablet_screen.gd)、[equipment/](../../equipment/) |
-| A06 | 放置主要憑射線命中，沒有完整重疊、支撐、物品／怪物限制；確認時使用新射線卻沿用預覽變換 | 預覽與確認共用驗證器，提交前重新驗證同一候選 | [equipment_placement.gd](../../player/equipment_placement.gd) |
-| A07 | 命中車板後直接掛到底盤，只保存車輛歸屬，沒有真正安裝面資料；牆被拆除不會自動讓牆上設備掉落 | 分開保存車輛與支撐關係 | [equipment_placement.gd](../../player/equipment_placement.gd) |
-| A08 | 底盤同時管理控制、輪胎、耐久、油電、材料與加油；毀損只在當下關閉動力，後續入座與物理更新未全面阻止重啟 | 分工並集中車輛狀態授權；開發遙控只留於明確測試入口 | [chassis.gd](../../rv/chassis.gd)、[driver_seat.gd](../../equipment/driver_seat.gd) |
-| A09 | 底盤質量固定，已安裝設備質量與位置沒有彙總到整車；獨立凍結碰撞體的側撞、翻車與大型外掛效果需要實測 | 質量／重心計算及正式物理場景驗收 | [chassis.tscn](../../rv/chassis.tscn)、[equipment/](../../equipment/) |
-| A10 | 目前底盤依驅動輸入直接補電，發電機另行燒油補電，沒有引擎啟停；與使用者新設計不符 | 改為引擎狀態 → 發電機 → 電池 → 用電設備 | [chassis.gd](../../rv/chassis.gd) |
-| A11 | 停車固定耗電原因不透明；分解機一次扣一份工作電量，卻推進所有進料，缺乏處理容量 | 定義待機／工作耗能、處理槽位與可見提示 | [chassis.gd](../../rv/chassis.gd)、[scrapper.gd](../../equipment/scrapper.gd) |
-| A12 | 背包已有 state 欄位，但玩家拾取／還原與 POI 快照主要只保存回收產出；新增電池不能只接場景路徑 | 道具實例狀態契約，端到端保存電量和身分 | [player.gd](../../player/player.gd)、[player_inventory.gd](../../player/player_inventory.gd)、[poi_interior.gd](../../world/instances/poi_interior.gd) |
-| A13 | 輪胎拆下先移除車輪再生成道具，使用底盤父節點作容器；輪胎也沒有個別損傷狀態 | 拆裝交易、個別輪槽／道具狀態及 WorldEntities 歸屬 | [wheel_hitbox.gd](../../rv/wheel_hitbox.gd)、[chassis.gd](../../rv/chassis.gd) |
+| A01 | 平板先扣材料再呼叫出料，忽略失敗；例如電量 0.1 通過最低檢查，卻付不起出料費 0.6，材料仍被扣除 | 製作交易成功才提交，失敗不吞材料或電力 | [tablet_ui.gd](../../../equipment/tablet_ui.gd)、[crafting_station.gd](../../../equipment/crafting_station.gd) |
+| A02 | 配方與資源操作寫在 UI，新增配方、佇列和設備會擴大 UI 責任 | 配方資料化，生產服務統一處理 | [tablet_ui.gd](../../../equipment/tablet_ui.gd) |
+| A03 | 發電機搬移預覽期間仍保留原車連線，未檢查搬移狀態；分解機只擋新進料，既有工作仍可能繼續 | 共用生命週期與可運作判斷，搬移即停止服務 | [scrapper.gd](../../../equipment/scrapper.gd) |
+| A04 | 分解機凍結進料並關閉碰撞，毀損時未恢復進料物件；處理中的物件也未建立完整隨機器運動的持有規則 | 工作輸入所有權、隨車定位、停機退料與清理 | [scrapper.gd](../../../equipment/scrapper.gd) |
+| A05 | 平板毀損沒有通知使用者退出 UI；取消搬移固定還原成凍結物體，未還原原物理狀態 | 共用撤銷與清理入口，恢復玩家控制及完整快照 | [tablet_screen.gd](../../../equipment/tablet_screen.gd)、[equipment/](../../../equipment/) |
+| A06 | 放置主要憑射線命中，沒有完整重疊、支撐、物品／怪物限制；確認時使用新射線卻沿用預覽變換 | 預覽與確認共用驗證器，提交前重新驗證同一候選 | [equipment_placement.gd](../../../player/equipment_placement.gd) |
+| A07 | 命中車板後直接掛到底盤，只保存車輛歸屬，沒有真正安裝面資料；牆被拆除不會自動讓牆上設備掉落 | 分開保存車輛與支撐關係 | [equipment_placement.gd](../../../player/equipment_placement.gd) |
+| A08 | 底盤同時管理控制、輪胎、耐久、油電、材料與加油；毀損只在當下關閉動力，後續入座與物理更新未全面阻止重啟 | 分工並集中車輛狀態授權；開發遙控只留於明確測試入口 | [chassis.gd](../../../rv/chassis.gd)、[driver_seat.gd](../../../equipment/driver_seat.gd) |
+| A09 | 底盤質量固定，已安裝設備質量與位置沒有彙總到整車；獨立凍結碰撞體的側撞、翻車與大型外掛效果需要實測 | 質量／重心計算及正式物理場景驗收 | [chassis.tscn](../../../rv/chassis.tscn)、[equipment/](../../../equipment/) |
+| A10 | 目前底盤依驅動輸入直接補電，發電機另行燒油補電，沒有引擎啟停；與使用者新設計不符 | 改為引擎狀態 → 發電機 → 電池 → 用電設備 | [chassis.gd](../../../rv/chassis.gd) |
+| A11 | 停車固定耗電原因不透明；分解機一次扣一份工作電量，卻推進所有進料，缺乏處理容量 | 定義待機／工作耗能、處理槽位與可見提示 | [chassis.gd](../../../rv/chassis.gd)、[scrapper.gd](../../../equipment/scrapper.gd) |
+| A12 | 背包已有 state 欄位，但玩家拾取／還原與 POI 快照主要只保存回收產出；新增電池不能只接場景路徑 | 道具實例狀態契約，端到端保存電量和身分 | [player.gd](../../../player/player.gd)、[player_inventory.gd](../../../player/player_inventory.gd)、[poi_interior.gd](../../../world/instances/poi_interior.gd) |
+| A13 | 輪胎拆下先移除車輪再生成道具，使用底盤父節點作容器；輪胎也沒有個別損傷狀態 | 拆裝交易、個別輪槽／道具狀態及 WorldEntities 歸屬 | [wheel_hitbox.gd](../../../rv/wheel_hitbox.gd)、[chassis.gd](../../../rv/chassis.gd) |
 
-當時的設備生命週期測試涵蓋玩家模式授權、取消、跨車連線及供電，但使用簡化 RV，未完整驗證正式發電機、電池、製作交易、平板毀損或分解機退料。該專項測試已退出自動清單；現行核心覆蓋以 [測試指南](../../tests/README.md) 為準，攀爬測試不能代替設備交易與清理驗收。
+當時的設備生命週期測試涵蓋玩家模式授權、取消、跨車連線及供電，但使用簡化 RV，未完整驗證正式發電機、電池、製作交易、平板毀損或分解機退料。該專項測試已退出自動清單；現行核心覆蓋以 [測試指南](../../../tests/README.md) 為準，攀爬測試不能代替設備交易與清理驗收。
 
 ## 3. 建議架構與狀態所有權
 
@@ -90,7 +90,7 @@
 - `InstalledEquipmentState`：實例 ID、車輛 ID、支撐 ID／接點、本地變換、耐久、開關和設備專屬狀態。
 - `ProductionJobState`：工作 ID、配方、輸入／預留資源、進度、工作站、待出料結果。
 - 類型定義可以共用，但運行中電量、耐久和工作進度必須屬於個別實例，不能修改共用 Resource 而影響所有同型物件。
-- 沿用並逐步強化 [core 契約](../../core/rv_connection.gd)、[群組](../../core/groups.gd)、[WorldEntities](../../core/world_entities.gd)，避免 Equipment／Chassis 互相預載造成循環。
+- 沿用並逐步強化 [core 契約](../../../core/rv_connection.gd)、[群組](../../../core/groups.gd)、[WorldEntities](../../../core/world_entities.gd)，避免 Equipment／Chassis 互相預載造成循環。
 
 ### 3.2 生命週期
 
@@ -293,9 +293,9 @@
 驗證方式：
 
 - 行為測試使用正式 RV、設備與玩家場景；少量純邏輯測試可獨立驗證交易與資料狀態，但不能取代整合。
-- 程式變更執行適用測試及 [統一 runner](../../scripts/test.ps1)：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1`，必要時用 `-Godot` 指定執行檔。
+- 程式變更執行適用測試及 [統一 runner](../../../scripts/test.ps1)：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1`，必要時用 `-Godot` 指定執行檔。
 - 引擎版本以 `.godot-version` 的 Godot 4.7.2 為基準；使用其他版本時記錄版本與驗證範圍，不宣稱跨版本通過。
-- 物理變更依 [測試場指南](../guides/playgrounds.md) 做實機檢查，確認日誌，並只關閉本次啟動的測試視窗。
+- 物理變更依 [測試場指南](../../guides/playgrounds.md) 做實機檢查，確認日誌，並只關閉本次啟動的測試視窗。
 - 攀爬展示確認玩家與怪物爬車、轉彎保持支撐；F5 入座後屋頂 HP 到 DESTROYED、怪物落下。腳本車輛回放與真實輪驅結果分開記錄。
 - 真實輪驅、翻車、怪物群與不同裝載另做專項驗證；短按鍵不能取代持續駕駛。能源長測不得沿用關閉耗油的測試設定作平衡證據。
 - 每批記錄自動檢查、實機觀察、未測情境與重大限制，必要時新增 `docs/validation/` 紀錄；程式測試日誌留 `.godot/test-logs/`，不提交快取。
@@ -344,7 +344,7 @@
 3. 首先保護資源所有權、玩家控制與設備清理；新設備內容建立在共同契約上。
 4. 本車對外介面逐批遷移，刪除舊發電捷徑時檢查所有呼叫端及測試設定，避免兩套能源同時記帳。
 5. 完成驗收後才勾選工作並同步 GDD／architecture／README；本計畫中的提案不得提前寫成目前功能。
-6. 保留原始 `todo`、使用者對 `todo_for_ai` 的未提交修改及歷史文件。與 [POI 計畫](2026-09-15-poi-roadmap.md) 共用道具狀態與保存契約，避免兩邊各做一套。
+6. 保留原始 `todo`、使用者對 `todo_for_ai` 的未提交修改及歷史文件。與 [POI 計畫](../2026-09-24/poi-roadmap-interim.md) 共用道具狀態與保存契約，避免兩邊各做一套。
 
 ## 2026-09-16 設計修訂：底盤共用儲存與設備入口
 
@@ -360,4 +360,4 @@
 - [x] 存檔版本 2 保存共用倉庫與插槽狀態，轉換版本 1 燃油／電池／材料包。
 - [x] 完整自動回歸、道具存取／加油／掉落拾取及攀爬支撐實機驗收。
 
-具體規則和驗收範圍見 [共用儲存改版紀錄](../validation/2026-09-16-rv-shared-storage.md)。
+具體規則和驗收範圍見 [共用儲存改版紀錄](../../validation/2026-09-16-rv-shared-storage.md)。

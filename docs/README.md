@@ -38,7 +38,6 @@
 - [功能實作契約](guides/feature-contracts.md)
 - [目前功能總覽](guides/features.md)
 - [單圖 → 3D → 減面 → 驗收操作指南](guides/image-to-3d-workflow.md)
-- [舊室內 v2 規格已被取代](guides/interior-v2.md)
 - [廢棄巨型住宅外殼：室外外殼製作指南](guides/megashelter-exteriors.md)
 - [巨型避難所室內](guides/megashelter-interiors.md)
 - [灰階暗部顯示與曲線](guides/night-vision.md)
@@ -62,27 +61,12 @@
 - [D：低模與低解析度修正版](art_targets/outdoor/2026-09-17-d-revision.md) — `art_targets/outdoor/2026-09-17-d-revision.md`
 - [戶外目標圖：實際生成提示](art_targets/outdoor/2026-09-17-prompts.md) — `art_targets/outdoor/2026-09-17-prompts.md`
 - [戶外 gameplay 美術目標圖](art_targets/outdoor/README.md) — `art_targets/outdoor/README.md`
+- [灰井住宅城概念圖](art/graywell-megablock/README.md) — `art/graywell-megablock/README.md`
+- [模組避難所美術基準](art/modular-megashelter/README.md) — `art/modular-megashelter/README.md`
 
 ## 歷史封存
 
-- [Climbing and Combat Behavior](archive/2026-09-14/design/climbing-and-combat-behavior.md) — `archive/2026-09-14/design/climbing-and-combat-behavior.md`
-- [Player Interaction Flow](archive/2026-09-14/design/player-interaction-flow.md) — `archive/2026-09-14/design/player-interaction-flow.md`
-- [RV Equipment Interactions Design](archive/2026-09-14/design/rv-equipment-interactions.md) — `archive/2026-09-14/design/rv-equipment-interactions.md`
-- [RV Power and Crafting Design](archive/2026-09-14/design/rv-power-and-crafting.md) — `archive/2026-09-14/design/rv-power-and-crafting.md`
-- [World Generation and POI Pipeline](archive/2026-09-14/design/world-generation-and-pois.md) — `archive/2026-09-14/design/world-generation-and-pois.md`
-- [World Generation Procedural Buildings](archive/2026-09-14/design/world-generation-procedural-buildings.md) — `archive/2026-09-14/design/world-generation-procedural-buildings.md`
-- [ApocalypseRV - 遊戲設計企劃書（GDD）](archive/GDD.md) — `archive/GDD.md`
-- [docs 已封存](archive/README.md) — `archive/README.md`
-- [Architecture](archive/architecture.md) — `archive/architecture.md`
-- [Monster AI Module Contract](archive/modules/monster-ai.md) — `archive/modules/monster-ai.md`
-- [Player Traversal and Interaction Module Contract](archive/modules/player-traversal-and-interaction.md) — `archive/modules/player-traversal-and-interaction.md`
-- [RV Systems Equipment Module Contract](archive/modules/rv-systems-equipment.md) — `archive/modules/rv-systems-equipment.md`
-- [RV Systems Module Contract](archive/modules/rv-systems.md) — `archive/modules/rv-systems.md`
-- [World Generation POI System Contract](archive/modules/world-generation-poi-system.md) — `archive/modules/world-generation-poi-system.md`
-- [World Generation Procedural Building Module Contract](archive/modules/world-generation-procedural-building.md) — `archive/modules/world-generation-procedural-building.md`
-- [World Generation Module Contract](archive/modules/world-generation.md) — `archive/modules/world-generation.md`
-- [Monster Underfoot Raycast Single-Path Implementation Plan](archive/superpowers/plans/2026-04-09-monster-underfoot-raycast-single-path.md) — `archive/superpowers/plans/2026-04-09-monster-underfoot-raycast-single-path.md`
-- [Monster Underfoot Attack Redesign (Raycast Single Path)](archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md) — `archive/superpowers/specs/2026-04-09-monster-underfoot-raycast-single-path-design.md`
+封存文件不再更新，清單與封存時間見 [封存索引](archive/README.md)。
 
 ## 資產與製作規格
 

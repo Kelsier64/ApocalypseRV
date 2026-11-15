@@ -38,4 +38,4 @@
 
 分支 codex/random-bunker；不提交既有 Raker .import 修改或 .godot 快取。驗收紀錄另列自動結果、可見觀察及尚未完成項目。
 
-本輪實作與驗收已完成，結果與限制見 [2026-09-24 驗收](../validation/2026-09-24-random-bunker.md)。
+本輪實作與驗收已完成，結果與限制見 [2026-09-24 驗收](../../validation/2026-09-24-random-bunker.md)。

@@ -13,7 +13,8 @@
 | [GDD.md](GDD.md)、[architecture.md](architecture.md) | 2026-09-14 | 舊企劃與舊架構快照 |
 | [2026-09-14/design/](2026-09-14/design/)、[modules/](modules/) | 2026-09-14 | 舊行為設計與模組契約 |
 | [superpowers/](superpowers/) | 2026-09-14 | 歷史 specs／plans |
-| [2026-09-24/](2026-09-24/) | 2026-09-24 | 地堡改版前的 POI 路線圖與室內指南 |
+| [2026-09-24/](2026-09-24/) | 2026-09-24 | 地堡改版前的 POI 路線圖與室內指南；[poi-roadmap-interim.md](2026-09-24/poi-roadmap-interim.md) 是改版後留在計畫目錄的過渡說明，2026-11-15 移入 |
+| [plans/](plans/) | 2026-11-16 | 實作已在程式中或已被取代的計畫；封存原因、程式依據與未結項目見[計畫總覽](../plans/README.md#已封存) |
 | [modeling-2026-09-29/](modeling-2026-09-29/)、[modeling-2026-10-05/](modeling-2026-10-05/) | 2026-09-29、2026-10-05 | 資產盤點與角色建模舊規格 |
 | [todo](todo)、[todo_prompt](todo_prompt)、[GDD_add.md](GDD_add.md) | 2026-11-12 | 早期待辦、POI 方向與補充提案（原在根目錄） |
 | [architecture-history-2026-11.md](architecture-history-2026-11.md) | 2026-11-12 | 從 architecture.md 與 GDD.md 移出的過時狀態紀錄 |
