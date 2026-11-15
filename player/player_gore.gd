@@ -12,10 +12,11 @@ static func spawn(actor: CharacterBody3D, at: Vector3, context: Dictionary) -> v
 	parent.add_child(root)
 	root.global_position = at
 	root._burst(actor, context)
-	root._stain.call_deferred(actor)
+	if not bool(context.get("minor", false)): root._stain.call_deferred(actor)
 
 func _burst(actor: CharacterBody3D, context: Dictionary) -> void:
-	var at_rollers: bool = context.get("source", "") == "scrapper"
+	# Rollers and the first bite clamp spray lightly; a severing wound gushes.
+	var at_rollers: bool = context.get("source", "") == "scrapper" or bool(context.get("minor", false))
 	var droplets := CPUParticles3D.new()
 	droplets.amount = 22 if at_rollers else 65
 	droplets.lifetime = .45 if at_rollers else .7

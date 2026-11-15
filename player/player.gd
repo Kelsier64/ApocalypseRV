@@ -1736,6 +1736,14 @@ func grab_contact_origin() -> Vector3:
 	if is_grabbed(): return view.get_parent().to_global(grab_control.camera_rest_position)
 	return view.global_position
 
+func apply_grab_clamp(captor: Node3D) -> void:
+	# The teeth close before the tearing damage: a jolt and a first spray.
+	if not is_grabbed() or grab_control.captor != captor or is_player_dead: return
+	grab_control.bite_clamp()
+	var visuals := get_node_or_null("Visuals")
+	if visuals != null and visuals.has_method("bite_contact"):
+		preload("res://player/player_gore.gd").spawn(self, visuals.bite_contact(captor.grab.bite_part).origin, {"captor": captor, "minor": true})
+
 func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
 	if not is_grabbed() or grab_control.captor != captor or is_player_dead: return
 	grab_control.bite_impact()
