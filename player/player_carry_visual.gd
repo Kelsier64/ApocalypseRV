@@ -302,9 +302,17 @@ func _grab_arms(holding_item: bool) -> void:
 				_arm(side, actor.to_global(Vector3(-.32 if side == "L" else .32, .62 if actor.is_crawling() else 1.26, -.38)), weight)
 		return
 	var bite := 0.0
-	if grab.captor.grab.phase == grab.captor.grab.Phase.BITE and grab.captor.grab.bite_part == &"left_arm":
-		bite = preload("res://enemies/raker_pose_modifier.gd").bite_weight(grab.captor.grab.elapsed)
-	var left := Vector3(-.28, 1.53, -.49).lerp(Vector3(-.38, 1.48, -.55), bite)
+	var haul := 0.0
+	var shake := 0.0
+	var captor_grab: Node = grab.captor.grab
+	if captor_grab.phase == captor_grab.Phase.BITE and captor_grab.bite_part == &"left_arm":
+		bite = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor_grab.elapsed)
+		shake = captor_grab.thrash(captor_grab.elapsed)
+		haul = smoothstep(0.0, 1.0, captor_grab.tear_progress(captor_grab.elapsed)) * .04 + absf(shake) * .12
+	# The jaws hold the wound: each wrench hauls the clamped arm out toward the
+	# Raker and twists it a little with the rolling head. The mouth follows it.
+	var toward := actor.to_local(grab.captor.global_position).slide(Vector3.UP).normalized()
+	var left := Vector3(-.28, 1.53, -.49).lerp(Vector3(-.38, 1.48, -.55), bite) + toward * haul + Vector3(.03 * shake, 0, 0)
 	grip_kind = "small"
 	if actor.body_state.has_part(&"left_arm") and not (holding_item and active_hand == "L"):
 		_arm("L", actor.to_global(left), weight)

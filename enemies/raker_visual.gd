@@ -22,7 +22,8 @@ func _ready() -> void:
 		# Godot consumes glTF's _loop naming suffix during scene import.
 		var canonical: String = name + "_loop" if name in ["climb", "slip", "fall"] else name
 		var clip: Animation = animation_player.get_animation(name).duplicate()
-		clip.loop_mode = Animation.LOOP_LINEAR if canonical in LOOPS or canonical.ends_with("_hold") else Animation.LOOP_NONE
+		# Grab holds are one-shot: struggle, then a wind-up into the bite.
+		clip.loop_mode = Animation.LOOP_LINEAR if canonical in LOOPS else Animation.LOOP_NONE
 		library.add_animation(canonical, clip)
 	animation_player.add_animation_library("game", library)
 	flash_material = StandardMaterial3D.new()
@@ -77,9 +78,9 @@ func _attack(clip: String, duration: float) -> void:
 	var speed := 1.0
 	var blend := .16
 	if clip.begins_with("grab_"):
-		if clip.ends_with("_bite"):
-			speed = actor.grab.BITE_SPEED
-			blend = .035
+		if clip.ends_with("_bite") or clip.ends_with("_release"):
+			# Authored at gameplay speed; the lunge and the rip must not be softened.
+			blend = .05
 		elif clip.ends_with("_reach"):
 			speed = .6 / duration
 			blend = .10 if duration < actor.grab.REACH_DURATION else .06

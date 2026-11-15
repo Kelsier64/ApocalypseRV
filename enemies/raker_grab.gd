@@ -22,10 +22,19 @@ const MOVING_REACH_MIN_RETREAT_SPEED := 1.5
 const REACH_FOLLOW_DISTANCE := .85
 var reach_duration := REACH_DURATION
 var reach_direction := Vector3.ZERO
-const BITE_CONTACT := .22
-const BITE_SOURCE_CONTACT := .38
-const BITE_SPEED := BITE_SOURCE_CONTACT / BITE_CONTACT
-const DURATIONS := {Phase.REACH: REACH_DURATION, Phase.HOLD: GrabRules.HOLD_DURATION, Phase.BITE: BITE_CONTACT, Phase.RELEASE: .35, Phase.ESCAPE: 1.0, Phase.MISS: .45}
+# The bite lunges, clamps, then worries the victim before tearing free. Clips
+# are authored to these times (art_source/raker_motion_v023/author_grab.py).
+const BITE_CONTACT := .14 # Teeth close on the victim.
+const BITE_TEAR := .52 # Thrashing while clamped.
+const BITE_DURATION := BITE_CONTACT + BITE_TEAR # Damage, severing and release.
+const THRASH_CYCLES := 3.0
+# Struggle heaves during the hold: start times, then attack and give in seconds.
+const HOLD_TUGS := [.06, .27, .48]
+const HOLD_TUG_ATTACK := .06
+const HOLD_TUG_RELEASE := .14
+var clamped := false
+var resolving := false
+const DURATIONS := {Phase.REACH: REACH_DURATION, Phase.HOLD: GrabRules.HOLD_DURATION, Phase.BITE: BITE_DURATION, Phase.RELEASE: .6, Phase.ESCAPE: 1.0, Phase.MISS: .45}
 const CLIPS := {Phase.REACH: "reach", Phase.HOLD: "hold", Phase.BITE: "bite", Phase.RELEASE: "release", Phase.ESCAPE: "escape", Phase.MISS: "miss"}
 
 func _ready() -> void:
@@ -69,6 +78,37 @@ func _change(next: Phase) -> void:
 	if next != Phase.NONE:
 		actor.attack_started.emit("grab_" + variant + "_" + CLIPS[next], reach_duration if next == Phase.REACH else DURATIONS[next])
 
+static func tear_progress(seconds: float) -> float:
+	return clampf((seconds - BITE_CONTACT) / BITE_TEAR, 0.0, 1.0)
+
+static func _yank(x: float, attack: float, release: float) -> float:
+	# A sharp heave, then a slower partial give back.
+	if x <= 0.0 or x >= attack + release: return 0.0
+	if x < attack: return smoothstep(0.0, attack, x)
+	return 1.0 - smoothstep(0.0, release, x - attack)
+
+static func hold_tug(seconds: float) -> float:
+	# The gripping arms heave the victim in during the struggle, 0..1. The hold
+	# clips brace the body on the same beats.
+	var tug := 0.0
+	for at in HOLD_TUGS: tug = maxf(tug, _yank(seconds - at, HOLD_TUG_ATTACK, HOLD_TUG_RELEASE))
+	return tug
+
+static func yank(seconds: float) -> float:
+	# Unsigned strength of each clamped wrench, 0..1, growing to the rip and
+	# back at rest between wrenches and at the tear.
+	var tear := tear_progress(seconds)
+	if tear <= 0.0 or tear >= 1.0: return 0.0
+	var cycle := tear * THRASH_CYCLES
+	return _yank(cycle - floorf(cycle), .3, .7) * lerpf(.6, 1.0, tear)
+
+static func thrash(seconds: float) -> float:
+	# Signed wrench: the jaws twist the clamped flesh one way, then the other.
+	# The mouth stays on the wound; the head rolls about the bite and the
+	# victim is dragged toward the braced body.
+	var cycle := floori(tear_progress(seconds) * THRASH_CYCLES)
+	return yank(seconds) * (1.0 if cycle % 2 == 0 else -1.0)
+
 static func classify(presses: int, required: int) -> int:
 	if presses >= required: return 0
 	return 1 if GrabRules.reaches_wounded_threshold(presses, required) else 2
@@ -105,13 +145,20 @@ func tick(delta: float) -> void:
 					outcome = 2
 				bite_part = &"head" if outcome == 2 else &"left_arm"
 				resolved = false
+				clamped = false
 				_change(Phase.BITE)
 		Phase.BITE:
-			if not resolved and elapsed >= BITE_CONTACT:
+			if not clamped and elapsed >= BITE_CONTACT:
+				clamped = true
+				victim.apply_grab_clamp(actor)
+			if not resolved and elapsed >= BITE_DURATION:
 				resolved = true
+				resolving = true
 				victim.apply_grab_bite(actor, outcome == 2)
-				# Damage can re-enter cleanup through player death. Survivors regain
-				# control on this same contact tick; only the monster recovers.
+				resolving = false
+				# Damage can re-enter cleanup through player death, which has then
+				# already broken both sides. Survivors regain control on this same
+				# tearing tick; either way only the monster tears free and recovers.
 				if phase == Phase.BITE:
 					_release("bitten")
 					_change(Phase.RELEASE)
@@ -133,6 +180,7 @@ func _release(reason: String) -> void:
 
 func cancel(reason: String = "interrupted") -> void:
 	_release(reason)
+	if resolving: return # A kill still ends in the rip: tick() continues into RELEASE.
 	_change(Phase.NONE)
 	if is_instance_valid(actor):
 		actor.attack_timer = maxf(actor.attack_timer, .5)

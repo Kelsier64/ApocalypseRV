@@ -6,10 +6,24 @@ var pitch := 0.0
 var rear_side := 0.0
 var tracking_weight := 0.0
 var world_positions: Dictionary = {}
-var arm_contact_pose: Array[Transform3D] = []
-var arm_contact_mouth := Vector3.ZERO
+var bite_pose: Array[Transform3D] = []
+var bite_mouth := Vector3.ZERO
+const Grab = preload("res://enemies/raker_grab.gd")
 const WEIGHTS := [.35, .35, .30]
 const BONES := ["neck_01", "neck_02", "head"]
+# Clamped wrench at full strength: the skull rolls about the bite, turns to
+# the side and dips (degrees), and the body hauls the bite point back (metres).
+# A bitten arm only gets the turn and roll; the arm itself is dragged.
+const THRASH_ROLL := 24.0
+const HEAD_TURN := 28.0
+const HEAD_DIP := 28.0
+const HEAD_HAUL := .05
+const HEAD_YANK_HAUL := .12
+const ARM_THRASH_TURN := 28.0
+var head_latched := false
+var latched_bite := Vector3.ZERO
+var latched_facing := Vector3.FORWARD
+const RIP_PULL := Vector3(.10, .05, .16) # Actor-local: aside, up and back.
 
 func step_angles(direction: Vector3, delta: float, tracking: bool = true, crouched: bool = false, down_limit: float = 25.0) -> void:
 	var target_yaw := 0.0
@@ -30,17 +44,20 @@ func step_angles(direction: Vector3, delta: float, tracking: bool = true, crouch
 func _process_modification_with_delta(delta: float) -> void:
 	if not is_instance_valid(actor) or not actor.is_node_ready(): return
 	var sk := get_skeleton()
-	if actor.grab.phase == actor.grab.Phase.RELEASE and actor.grab.bite_part == &"left_arm" and arm_contact_pose.size() == sk.get_bone_count():
-		# The gameplay victim is released on contact. Retain the last evaluated
-		# bite for the visual recoil so the held arm cannot jump to the idle mouth.
-		var retained := 1.0 - smoothstep(.18, actor.grab.DURATIONS[actor.grab.Phase.RELEASE], actor.grab.elapsed)
-		for bone in sk.get_bone_count():
-			sk.set_bone_pose(bone, sk.get_bone_pose(bone).interpolate_with(arm_contact_pose[bone], retained))
-		var tear := smoothstep(0.0, .16, actor.grab.elapsed) * retained
-		var pull := sk.global_basis.inverse() * actor.global_basis * Vector3(.10, .015, .14)
-		_position_mouth(sk, mouth_position(sk).lerp(arm_contact_mouth + pull, tear), face_direction(sk))
-		_cache_contacts(sk)
-		return
+	if actor.grab.phase == actor.grab.Phase.RELEASE and bite_pose.size() == sk.get_bone_count():
+		# The victim is released on the tearing tick. Carry the last evaluated
+		# bite into the rip, so the head tears away from the wound (and a severed
+		# arm leaves with the mouth) instead of jumping to the recovery clip.
+		var retained := 1.0 - smoothstep(.10, .34, actor.grab.elapsed)
+		if retained > 0.0:
+			for bone in sk.get_bone_count():
+				sk.set_bone_pose(bone, sk.get_bone_pose(bone).interpolate_with(bite_pose[bone], retained))
+			var rip := smoothstep(0.0, .12, actor.grab.elapsed) * retained
+			var pull := sk.global_basis.inverse() * actor.global_basis * RIP_PULL
+			_position_mouth(sk, mouth_position(sk).lerp(bite_mouth + pull, rip), face_direction(sk))
+			tracking_weight = 0.0
+			_cache_contacts(sk)
+			return
 	var target: Node3D = actor.target_player
 	var tracking := is_instance_valid(target) and WorldEntities.same_world(actor, target) and not actor.is_dead
 	var direction := Vector3.ZERO
@@ -56,7 +73,10 @@ func _process_modification_with_delta(delta: float) -> void:
 	# Reach/hold keep the authored back posture; bite contact is solved below.
 	# The neck looks down to a nearby player; locomotion retains its old cap.
 	step_angles(direction, delta, tracking, actor.crouched, 70.0 if standing_grab else 25.0)
-	tracking_weight = move_toward(tracking_weight, 1.0 if tracking else 0.0, delta * 6.0)
+	# The rip and the escape stagger throw the head on their own; the face
+	# finds the target again as those clips settle.
+	var authored_head: bool = actor.grab.phase in [actor.grab.Phase.RELEASE, actor.grab.Phase.ESCAPE] and actor.grab.elapsed < actor.grab.DURATIONS[actor.grab.phase] - .22
+	tracking_weight = move_toward(tracking_weight, 1.0 if tracking and not authored_head else 0.0, delta * 6.0)
 	var biting: bool = is_instance_valid(actor.grab) and actor.grab.phase == actor.grab.Phase.BITE
 	var desired := actor.global_basis * Vector3(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch))
 	_align_face(sk, desired, tracking_weight)
@@ -75,12 +95,13 @@ func _process_modification_with_delta(delta: float) -> void:
 				var at := target_sk.global_transform * target_sk.get_bone_global_pose(bone).origin
 				grip = grip.lerp(at, arm_weight)
 			_solve_arm(sk, side, grip, weight)
-	if biting and actor.grab.bite_part == &"left_arm":
-		arm_contact_pose.clear()
-		for bone in sk.get_bone_count(): arm_contact_pose.append(sk.get_bone_pose(bone))
-		arm_contact_mouth = mouth_position(sk)
+	if biting and is_instance_valid(actor.grab.victim):
+		bite_pose.clear()
+		for bone in sk.get_bone_count(): bite_pose.append(sk.get_bone_pose(bone))
+		bite_mouth = mouth_position(sk)
 	elif actor.grab.phase != actor.grab.Phase.RELEASE:
-		arm_contact_pose.clear()
+		bite_pose.clear()
+	if not biting: head_latched = false
 	_cache_contacts(sk)
 
 func _cache_contacts(sk: Skeleton3D) -> void:
@@ -126,8 +147,9 @@ func _align_face(sk: Skeleton3D, desired_world: Vector3, weight: float) -> void:
 		_set_global(sk, bone, pose)
 
 static func bite_weight(seconds: float) -> float:
-	# Brief anticipation, then a fast lunge that stays at contact through damage.
-	return smoothstep(.045, .18, seconds)
+	# The wind-up is authored into the end of the hold; the lunge lands on the
+	# clamp and stays there through the thrash.
+	return smoothstep(.02, Grab.BITE_CONTACT, seconds)
 
 func mouth_position(sk: Skeleton3D) -> Vector3:
 	# v018 native mouth slit in imported rest space, converted to head-local.
@@ -172,9 +194,37 @@ func _solve_face_contact(sk: Skeleton3D, view: Camera3D, weight: float, clearanc
 		# Approach the shoulder from its front, rather than plunging vertically
 		# through the victim's eye with the back of the skull and neck.
 		contact_facing = ((wound - actor.global_position).slide(Vector3.UP).normalized() - Vector3.UP * .12).normalized()
+	# The Raker does the wrenching: the jaws hold the bite point while the head
+	# turns, dips and rolls about it and the braced body hauls it back. A
+	# clamped head is then carried rigidly by the skull (see follow_captor_head),
+	# so the victim sees the face hold still while the world is thrown about.
+	# On an arm the skull swings across the wound and the arm is dragged along.
+	var tear := Grab.tear_progress(actor.grab.elapsed)
+	var shake := Grab.thrash(actor.grab.elapsed)
+	var clamped_head: bool = tear > 0.0 and not wound.is_finite() and actor.grab.victim.is_grabbed()
+	if clamped_head:
+		var frame := view.get_parent() as Node3D # Seat-local, so a moving RV carries the bite.
+		if not head_latched:
+			head_latched = true
+			latched_bite = frame.to_local(sk.to_global(goal))
+			latched_facing = frame.global_basis.inverse() * contact_facing
+		contact_facing = (frame.global_basis * latched_facing).normalized()
+		var haul := HEAD_HAUL * smoothstep(0.0, 1.0, tear) + HEAD_YANK_HAUL * absf(shake)
+		goal = sk.to_local(frame.to_global(latched_bite) - contact_facing.slide(Vector3.UP).normalized() * haul)
+		var across := contact_facing.cross(Vector3.UP).normalized()
+		contact_facing = contact_facing.rotated(across, -absf(shake) * deg_to_rad(HEAD_DIP)).rotated(Vector3.UP, shake * deg_to_rad(HEAD_TURN))
+	elif wound.is_finite():
+		contact_facing = contact_facing.rotated(Vector3.UP, shake * deg_to_rad(ARM_THRASH_TURN))
 	var target := mouth_position(sk).lerp(goal, weight)
 	var bite_facing := face_direction(sk).slerp(contact_facing, weight).normalized()
 	_position_mouth(sk, target, bite_facing)
+	var head := sk.find_bone("head")
+	if not is_zero_approx(shake):
+		var pose := sk.get_bone_global_pose(head)
+		pose.basis = Basis((sk.global_basis.inverse() * face_direction(sk)).normalized(), shake * deg_to_rad(THRASH_ROLL)) * pose.basis
+		_set_global(sk, head, pose)
+	if clamped_head:
+		actor.grab.victim.grab_control.follow_captor_head(sk.global_transform * sk.get_bone_global_pose(head))
 
 func _position_mouth(sk: Skeleton3D, target: Vector3, bite_facing: Vector3) -> void:
 	var chain := ["spine_01", "spine_02", "spine_03"]

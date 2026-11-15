@@ -106,7 +106,7 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
 | [raker_playground](../../tests/raker_playground.tscn) | 正式 Raker AI 與動畫；玩家 HP 提高 | Space 移動目標、F6 受傷、F7 死亡、F8 23 段動畫、F9 定格、R 恢復 AI。 |
-| [raker_vehicle_playground](../../tests/raker_vehicle_playground.tscn) | 正式輪驅追車、步態、轉彎與地面／車內／駕駛抓咬 | F2 定速、F4 鏡頭、F6 重生、F8 預覽、F10 轉彎、F11 抓咬情境、F12 重試；`--grab-ground`／`--grab-cabin`／`--grab-driver`。 |
+| [raker_vehicle_playground](../../tests/raker_vehicle_playground.tscn) | 正式輪驅追車、步態、轉彎與地面／車內／駕駛抓咬 | F2 定速、F4 鏡頭、F6 重生、F8 預覽、F10 轉彎、F11 抓咬情境、F12 重試；`--grab-ground`／`--grab-cabin`／`--grab-driver`，加 `--grab-capture` 輸出定格圖。 |
 | [raker_impact_playground](../../tests/raker_impact_playground.tscn) | 正式輪驅撞擊、存活起身與致死布娃娃 | 1–4 案例、Space 開始、R 重播、F4 鏡頭、F9 暫停；`--replay --review --case=0`。 |
 | [monster_pursuit_playground](../../tests/monster_pursuit_playground.tscn) | 正式 Raker 追擊、玩家／設備傷害與牆壁遮擋 | F3 加牆並固定移動、F4 移牆；玩家 HP 提高，攻擊冷卻不變。 |
 | [monster_model_playground](../../tests/monster_model_playground.tscn) | 上列正式 Raker 戰鬥近景 | 沿用追擊場；F6 傷害閃白、R 重設。 |
@@ -691,7 +691,7 @@ godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playg
 
 使用正式輪驅 RV 與 Raker，不預設車速或直接呼叫撞擊。1–4 切換正面存活、受傷目標致命、偏側、輕撞四例；R 重播、Space 開始、F4 近景／全景、F9 暫停／繼續。可加 `--review` 在撞擊後 0.3 秒暫停檢視、`--case=0` 至 `--case=3` 選初始案例。畫面標示目標巡航速度，實際撞擊速度由儀表與日誌回報；致命案例的 Raker 初始為 60 HP。存活起身後暫停該測試目標的 AI，便於檢查；正式遊戲仍恢復追逐。輪驅測試、碰撞層與限制見 [驗收](../validation/2026-10-02-raker-impact-ragdoll.md)。
 
-## Raker 抓咬測試（v016）
+## Raker 抓咬測試
 
 `godot --path . res://tests/raker_vehicle_playground.tscn -- --grab-ground --grab-seed=218`
 
@@ -699,9 +699,11 @@ godot --path . --log-file .godot/raker-impact.log res://tests/raker_impact_playg
 
 加上 `--grab-slow` 可將整個測試場降至 0.1 倍時間，方便逐步觀察鏡頭、雙手與咬合；抓取仍是 1 秒遊戲時間。正式遊戲與預設測試場均為正常時間。
 
-v017 加上 `--bite-review` 可在咬合前暫停整个場景，檢查貼臉與雙臂接觸；F9 繼續，F12 重試，F11 換情境。正式遊戲不受這個檢查選項影響。
+`--bite-review` 可在咬合前暫停整个場景，檢查貼臉與雙臂接觸；F9 繼續，F12 重試，F11 換情境。正式遊戲不受這個檢查選項影響。
 
-加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 60% 次數，方便檢查左臂咬擊：完整的 100 HP 玩家在咬合時降至 50 HP 並失去左臂，立即恢復操作、關閉掙扎 HUD；鏡頭在接觸前持續看著怪物，接觸後才短暫轉向手臂再淡回，雙腿仍完整的駕駛留在座位並恢復單臂控制。左臂已缺失時升級為頭部致死咬擊。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
+`--grab-capture` 在掙扎、蓄力、前撲、咬合、三個甩頭時刻、扯離與吞嚥各拍一張玩家視角和一張側面圖，寫入 `.godot/raker-grab-captures/` 後結束；拍攝時以極慢時間取代暫停，動畫與姿勢解算照常求值。可搭配 `--grab-wounded` 與三種情境。這些是定格畫面，不能判斷動作節奏。
+
+加上 `--grab-wounded` 會透過正式掙扎介面自動補到最低 60% 次數，方便檢查左臂咬擊：完整的 100 HP 玩家被咬住甩扯約半秒，扯離時降至 50 HP 並失去左臂，同時恢復操作、關閉掙扎 HUD；鏡頭在咬合前持續看著怪物，咬合後轉向被撕扯的肩膀，解除後從該視角淡回，雙腿仍完整的駕駛留在座位並恢復單臂控制。左臂已缺失時升級為頭部致死咬擊。可搭配 `--bite-review` 在接觸前暫停。日誌 `GRAB_RELEASE reason=bitten` 表示咬合解除，其他取消原因也會記錄。此選項只在 playground 生效。
 
 地面／車內／駕駛咬後控制的專項視窗自測已移除。使用上方抓咬場景手動檢查咬後身體位移、水平與垂直轉向、油門恢復，以及抓取中失去滑鼠捕捉後的恢復。現行 `test_raker_grab.gd` 只作行為回歸，headless 結果不能驗證作業系統滑鼠捕捉。未達 60% 或剩餘 HP 不足時仍按原規則死亡，等待重生期間不是抓取狀態。
 

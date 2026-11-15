@@ -74,6 +74,29 @@ func check_ground_animation(raker: Raker) -> void:
 	visual._ground_locomotion(1.0, .16)
 	check(animation.current_animation == "game/crouch_walk" and is_equal_approx(animation.speed_scale, .16 / (.4 * model_scale)), "Slow crouch cadence follows movement")
 
+func check_grab_clips(animation: AnimationPlayer) -> void:
+	# Clip timing is authored in Blender against the same phase clock.
+	var skeleton: Skeleton3D = actor.get_node("BodyMesh").skeleton
+	var jaw := skeleton.find_bone("jaw")
+	var closed := skeleton.get_bone_rest(jaw).basis.get_rotation_quaternion()
+	for variant in ["stand", "low", "seat"]:
+		for phase: int in Grab.CLIPS:
+			var clip := animation.get_animation("game/grab_%s_%s" % [variant, Grab.CLIPS[phase]])
+			check(clip != null and clip.loop_mode == Animation.LOOP_NONE, "Grab clip %s/%s exists and plays once" % [variant, Grab.CLIPS[phase]])
+			if clip == null or phase == Grab.Phase.REACH: continue
+			check(clip.length > Grab.DURATIONS[phase] - .02, "Grab clip %s/%s covers its phase" % [variant, Grab.CLIPS[phase]])
+		var bite := animation.get_animation("game/grab_%s_bite" % variant)
+		if bite == null: continue
+		var track := bite.find_track(NodePath(str(animation.get_node(animation.root_node).get_path_to(skeleton)) + ":jaw"), Animation.TYPE_ROTATION_3D)
+		check(track >= 0, "Bite clip animates the jaw (%s)" % variant)
+		if track < 0: continue
+		var wound_up := closed.angle_to(bite.rotation_track_interpolate(track, 0.0))
+		var clamp := closed.angle_to(bite.rotation_track_interpolate(track, Grab.BITE_CONTACT))
+		var hold := animation.get_animation("game/grab_%s_hold" % variant)
+		var hold_track := hold.find_track(bite.track_get_path(track), Animation.TYPE_ROTATION_3D)
+		check(hold_track >= 0 and absf(closed.angle_to(hold.rotation_track_interpolate(hold_track, GrabRules.HOLD_DURATION)) - wound_up) < deg_to_rad(3), "Hold winds the jaw up into the bite (%s)" % variant)
+		check(wound_up > clamp + deg_to_rad(15) and clamp > deg_to_rad(4), "Jaw snaps from gaping to clamped on flesh at contact (%s)" % variant)
+
 func check_foot_pursuit(animation: AnimationPlayer) -> void:
 	const STEP := 1.0 / 60.0
 	for escape in ["walk", "sprint", "sidestep"]:
@@ -188,9 +211,20 @@ func run() -> void:
 	check(actor.grab.bite_part==&"left_arm","Wounded bite locks the left-arm target")
 	key(true)
 	check(player.grab_control.presses==6,"Deadline rejects new presses")
-	check(is_equal_approx(animation.speed_scale, Grab.BITE_SPEED), "Bite animation accelerates with damage timing")
-	actor.grab.tick(.20)
-	check(player.current_player_health==100 and player.is_grabbed(), "Contact approach does not damage early")
+	check(animation.current_animation == "game/grab_stand_bite" and is_equal_approx(animation.speed_scale, 1.0), "Bite clip plays at gameplay speed")
+	actor.grab.tick(Grab.BITE_CONTACT - .01)
+	check(not actor.grab.clamped and player.grab_control.impact_remaining == 0.0, "Lunge has not closed the teeth")
+	actor.grab.tick(.011)
+	check(actor.grab.clamped and player.grab_control.impact_remaining > 0.0, "Clamp jolts the victim")
+	check(player.current_player_health==100 and player.is_grabbed() and player.body_state.has_part(&"left_arm"), "Clamp neither damages nor severs")
+	actor.grab.tick(Grab.BITE_TEAR - .02)
+	check(player.current_player_health==100 and player.is_grabbed() and actor.grab.phase == Grab.Phase.BITE, "Thrash holds the victim until the tear")
+	# Wrenches start and end at rest and alternate sides; the struggle heaves
+	# stop before the wind-up. Clips and runtime share these beats.
+	var wrench := func(cycle: float) -> float: return Grab.thrash(Grab.BITE_CONTACT + Grab.BITE_TEAR * cycle / Grab.THRASH_CYCLES)
+	check(is_zero_approx(Grab.thrash(Grab.BITE_CONTACT)) and is_zero_approx(Grab.thrash(Grab.BITE_DURATION)), "Wrenches start at the clamp and settle by the tear")
+	check(wrench.call(.3) > .3 and wrench.call(1.3) < -.3 and wrench.call(2.3) > wrench.call(.3), "Wrenches alternate sides and grow")
+	check(Grab.hold_tug(Grab.HOLD_TUGS[0] + Grab.HOLD_TUG_ATTACK) > .99 and is_zero_approx(Grab.hold_tug(GrabRules.HOLD_DURATION - .3)), "Struggle heaves end before the wind-up")
 	actor.grab.tick(.021)
 	check(player.current_player_health==50,"Bite bypasses ordinary hurt cooldown")
 	check(not player.body_state.has_part(&"left_arm") and player.body_state.has_part(&"head") and player.body_state.has_part(&"right_arm"),"Wounded contact severs only the left arm")
@@ -211,29 +245,49 @@ func run() -> void:
 		player.grab_control.presses = 6
 		actor.grab.tick(GrabRules.HOLD_DURATION)
 		var face_view: Quaternion = player.camera.quaternion
-		actor.grab.tick(.20)
+		actor.grab.tick(Grab.BITE_CONTACT * .5)
 		player.grab_control._update_bite_pull()
 		player.grab_control._process(.01)
-		check(player.camera.quaternion.angle_to(face_view) < .001,"Arm approach keeps the face view until damage %.2f" % facing)
-		actor.grab.tick(Grab.BITE_CONTACT)
+		var follow: float = player.camera.quaternion.angle_to(face_view)
+		check(follow > .01,"Arm bite view starts following the lunge to the shoulder %.2f" % facing)
+		actor.grab.tick(Grab.BITE_CONTACT * .5 + Grab.BITE_TEAR * .5)
+		player.grab_control._update_bite_pull()
+		player.grab_control._process(.01)
+		check(player.is_grabbed() and player.current_player_health == 100,"Victim is still held mid-thrash %.2f" % facing)
+		check(player.camera.quaternion.angle_to(face_view) > maxf(.2, follow),"Clamped arm holds the view on the tearing %.2f" % facing)
+		check(absf(angle_difference(player.global_rotation.y, body_yaw)) < .0001,"Tearing view preserves body yaw %.2f" % facing)
+		# The last wrench settles before the rip, so release starts from it.
+		actor.grab.tick(Grab.BITE_TEAR * .5 - .01)
+		player.grab_control._update_bite_pull()
+		player.grab_control._process(.01)
+		var torn_view: Quaternion = player.camera.quaternion
+		actor.grab.tick(.011)
 		check(player.current_player_health == 50 and not player.is_grabbed(),"Turned POV arm bite survives and releases %.2f" % facing)
-		check(not player.grab_control.hud.visible and player.grab_control.camera == null,"Turned POV releases camera and HUD at contact %.2f" % facing)
+		check(not player.grab_control.hud.visible and player.grab_control.camera == null,"Turned POV releases camera and HUD at the tear %.2f" % facing)
 		check(absf(angle_difference(player.global_rotation.y, body_yaw)) < .0001,"Arm bite release preserves body yaw %.2f" % facing)
-		check(player.camera.quaternion.angle_to(face_view) < .001,"Contact schedules the turn without snapping the camera %.2f" % facing)
+		check(player.camera.quaternion.angle_to(torn_view) < .001,"Release continues from the tearing view without snapping %.2f" % facing)
 		player.grab_control._process(.16)
-		check(player.camera.quaternion.angle_to(face_view) > .2,"Only post-contact processing turns toward the arm %.2f" % facing)
+		check(player.camera.quaternion.angle_to(face_view) > .2,"View stays on the torn arm right after release %.2f" % facing)
 		player.camera.rotation.x -= .07
 		player.rotation.y -= .18
 		player.grab_control._process(1.0)
 		check(absf(angle_difference(player.global_rotation.y, body_yaw - .18)) < .0001,"Released view recovery preserves mouse yaw %.2f" % facing)
 		check(absf(player.camera.rotation.x + .07) < .0001,"Released view recovery preserves mouse pitch %.2f" % facing)
 		check(not player.is_grabbed() and player.grab_control.camera == null,"Released view recovery does not reacquire ownership %.2f" % facing)
+	capture(10)
+	player.grab_control._process(.2)
+	actor.grab.tick(GrabRules.HOLD_DURATION)
+	var held_view: Quaternion = player.camera.quaternion
+	actor.grab.tick(Grab.BITE_CONTACT * .5)
+	player.grab_control._update_bite_pull()
+	player.grab_control._process(.01)
+	check(actor.grab.bite_part == &"head" and player.camera.quaternion.angle_to(held_view) < .001,"Head bite keeps the face view through the lunge")
 	for cancel_view in [false, true]:
 		capture(10)
 		player.grab_control._process(.2)
 		player.grab_control.presses = 6
 		actor.grab.tick(GrabRules.HOLD_DURATION)
-		actor.grab.tick(Grab.BITE_CONTACT)
+		actor.grab.tick(Grab.BITE_DURATION)
 		player.grab_control._process(.16)
 		# Large mouse motion reaches the visible pitch limit while the effect
 		# still points down; removing it must not reveal a base above 80 degrees.
@@ -246,7 +300,7 @@ func run() -> void:
 	player.grab_control.presses = 6
 	actor.grab.tick(GrabRules.HOLD_DURATION)
 	player.camera.rotation = Vector3(-.5, .9, 0)
-	actor.grab.tick(Grab.BITE_CONTACT)
+	actor.grab.tick(Grab.BITE_DURATION)
 	check(player.current_player_health == 50 and not player.is_grabbed(),"World-transition fixture survives the arm bite")
 	var destination := Transform3D(Basis(Vector3.UP, -1.25), Vector3(3, .02, -2))
 	player.complete_world_transition(destination)
@@ -259,7 +313,7 @@ func run() -> void:
 	player.grab_control.presses = 6
 	actor.grab.tick(GrabRules.HOLD_DURATION)
 	check(actor.grab.outcome==2 and actor.grab.bite_part==&"head","Missing left arm promotes wounded result to fatal head bite")
-	actor.grab.tick(Grab.BITE_CONTACT)
+	actor.grab.tick(Grab.BITE_DURATION)
 	check(player.is_player_dead and not player.body_state.has_part(&"head"),"Promoted bite severs the head and follows death cleanup")
 	capture(6)
 	player.grab_control.presses = 6
@@ -299,7 +353,7 @@ func run() -> void:
 		player.grab_control.presses = 6 if low_health else 5
 		actor.grab.tick(GrabRules.HOLD_DURATION)
 		check(actor.grab.bite_part==(&"left_arm" if low_health else &"head"),"Fatal versus wounded result selects the actual bitten part")
-		actor.grab.tick(Grab.BITE_CONTACT)
+		actor.grab.tick(Grab.BITE_DURATION)
 		check(player.is_player_dead and player.current_player_health==0 and not player.is_grabbed(),"Fatal/sub-50 HP bite follows death cleanup")
 		check(player.grab_control.recovery_camera == null,"Fatal bite does not start a survivor arm turn")
 		check(player.body_state.has_part(&"head")==low_health,"Only a fatal head result removes the head")
@@ -338,6 +392,7 @@ func run() -> void:
 	player.position.x = 4
 	actor.grab.tick(.6)
 	check(actor.grab.phase==Grab.Phase.MISS and not player.is_grabbed(),"Windup rechecks range")
+	check_grab_clips(animation)
 	await check_foot_pursuit(animation)
 	capture(6)
 	actor.free()

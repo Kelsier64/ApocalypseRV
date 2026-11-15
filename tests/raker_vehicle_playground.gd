@@ -20,6 +20,11 @@ var bite_review_frozen := false
 var bite_review_seen := false
 var clip_index := 0
 const PREVIEW_CLIPS := ["idle", "walk", "chase", "sprint"]
+const PlayerVisual = preload("res://player/player_model_visual.gd")
+const CAPTURE_DIR := "res://.godot/raker-grab-captures"
+var capture_plan: Array = []
+var capturing := false
+var capture_deadline := 0.0
 
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - Raker Vehicle Playground"
@@ -91,7 +96,49 @@ func _ready() -> void:
 		if arg.begins_with("--grab-seed="): grab_seed = int(arg.trim_prefix("--grab-seed="))
 	for mode in ["--grab-ground", "--grab-cabin", "--grab-driver"]:
 		if mode in OS.get_cmdline_user_args(): setup_grab(["--grab-ground", "--grab-cabin", "--grab-driver"].find(mode))
+	if "--grab-capture" in OS.get_cmdline_user_args() and grab_scenario >= 0:
+		# Fixed moments of the grab, from the victim's eyes and from the side.
+		var grab: Node = monster.grab
+		capture_plan = [["1-hold-struggle", grab.Phase.HOLD, .30], ["2-hold-windup", grab.Phase.HOLD, .97],
+			["3-bite-lunge", grab.Phase.BITE, grab.BITE_CONTACT * .6], ["4-bite-clamp", grab.Phase.BITE, grab.BITE_CONTACT + .02],
+			["5-bite-thrash-a", grab.Phase.BITE, grab.BITE_CONTACT + grab.BITE_TEAR * .25],
+			["6-bite-thrash-b", grab.Phase.BITE, grab.BITE_CONTACT + grab.BITE_TEAR * .42],
+			["7-bite-thrash-c", grab.Phase.BITE, grab.BITE_CONTACT + grab.BITE_TEAR * .75],
+			["8-release-rip", grab.Phase.RELEASE, .10], ["9-release-swallow", grab.Phase.RELEASE, .34]]
+		capture_deadline = 12.0
 	print("PASS: RAKER_VEHICLE_PLAYGROUND_READY")
+
+func _capture(tag: String) -> void:
+	capturing = true
+	# Near-frozen time instead of a pause: animation and pose solvers keep
+	# evaluating, and slow PNG writes cannot fast-forward the grab.
+	Engine.time_scale = .01
+	var shots := {}
+	var scenario: String = ["ground", "cabin", "driver"][grab_scenario] + ("-wounded" if "--grab-wounded" in OS.get_cmdline_user_args() else "")
+	var view := get_viewport().get_camera_3d()
+	var animation: AnimationPlayer = monster.get_node("BodyMesh").animation_player
+	print("CAPTURE_STATE %s clip=%s at=%.3f playing=%s grab=%.3f mouth=%s eye=%s" % [tag, animation.current_animation, animation.current_animation_position, animation.is_playing(), monster.grab.elapsed, monster.get_node("BodyMesh").bone_world_position("mouth"), view.global_position])
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(CAPTURE_DIR))
+	status.hide()
+	for shot in ["view", "side"]:
+		if shot == "side":
+			var focus: Vector3 = player.grab_contact_origin()
+			observer.cull_mask = (view.cull_mask | PlayerVisual.FULL_BODY_LAYER) & ~PlayerVisual.LOCAL_VIEW_LAYER
+			observer.global_position = focus + monster.global_basis * Vector3(1.15, .2, -.35)
+			observer.look_at(focus + monster.global_basis * Vector3(0, .05, .3))
+			observer.current = true
+		await RenderingServer.frame_post_draw
+		await RenderingServer.frame_post_draw
+		shots["%s/%s-%s-%s.png" % [CAPTURE_DIR, scenario, tag, shot]] = get_viewport().get_texture().get_image()
+	view.current = true
+	status.show()
+	for path: String in shots:
+		shots[path].save_png(path)
+		print("CAPTURE: ", ProjectSettings.globalize_path(path))
+	await get_tree().process_frame
+	Engine.time_scale = 1.0
+	capturing = false
+	if capture_plan.is_empty(): get_tree().quit()
 
 func seat_player() -> void:
 	if not ready_to_drive: return
@@ -220,8 +267,19 @@ func _physics_process(delta: float) -> void:
 	else: rv.control_override = {"brake": 1.0}
 
 func _process(delta: float) -> void:
-	if bite_review_frozen: return
+	if bite_review_frozen or capturing: return
 	if not is_instance_valid(observer) or not is_instance_valid(rv): return
+	if not capture_plan.is_empty():
+		capture_deadline -= delta
+		var next: Array = capture_plan[0]
+		if is_instance_valid(monster) and monster.grab.phase == next[1] and monster.grab.elapsed >= next[2]:
+			capture_plan.pop_front()
+			_capture(next[0])
+			return
+		if capture_deadline < 0.0:
+			push_error("Grab capture never reached %s" % next[0])
+			get_tree().quit(1)
+			return
 	if "--bite-review" in OS.get_cmdline_user_args() and not bite_review_seen and is_instance_valid(monster) and monster.grab.phase == monster.grab.Phase.BITE and monster.grab.elapsed >= monster.grab.BITE_CONTACT - .04:
 		bite_review_seen = true
 		bite_review_frozen = true

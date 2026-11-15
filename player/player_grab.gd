@@ -11,6 +11,23 @@ const EXECUTION_VIEW_EASE_SECONDS := .6
 const EXECUTION_LOOK_YAW_LIMIT := 25.0
 const EXECUTION_LOOK_PITCH_LIMIT := 18.0
 const PlayerVisual = preload("res://player/player_model_visual.gd")
+const RakerGrab = preload("res://enemies/raker_grab.gd")
+const RakerPose = preload("res://enemies/raker_pose_modifier.gd")
+# The Raker's heaves move the victim, not the other way round. Struggle heaves
+# haul the gripped head straight in; any sideways turn of the view would read
+# as the Raker swaying. A clamped head rides on the Raker's skull instead
+# (follow_captor_head). The body behind a clamped arm is only jerked. Drags in
+# metres, turns in degrees.
+const HOLD_TUG_DRAG := .16
+const HOLD_TUG_NOD := 4.0
+const ARM_TEAR_DRAG := .02
+const ARM_TEAR_YANK_DRAG := .05
+const ARM_TEAR_TURN := 6.0
+const ARM_TEAR_ROLL := 4.0
+const WRENCH_FLASH := .3 # Red pulse at each wrench after the clamp.
+const ARM_JOLT := .4 # Share of that motion felt through a bitten arm.
+const ARM_VIEW_FOCUS := Vector3(-.34, 1.32, -.34) # Torn shoulder, player-local.
+const ARM_VIEW_SETTLE := .1 # Seconds after the clamp for the view to arrive there.
 # Jolt and live suspension can establish tiny floor or side resting contacts.
 # Recovery follows their normals, is bounded, and checks the complete volume.
 const EXECUTION_CONTACT_DEPTH := .005
@@ -52,6 +69,13 @@ var camera_rest_near := .05
 var camera_rest_fov := 75.0
 var bite_pull_offset := Vector3.ZERO
 var bite_pull_ready := false
+var tear_view := Quaternion.IDENTITY
+var tear_view_ready := false
+var tear_view_weight := 0.0
+var wrench := Vector3.ZERO # Camera-local pitch, yaw and roll in radians.
+var wrench_cycle := 0
+var head_lock := false
+var head_lock_offset := Transform3D.IDENTITY
 var keep_flashlight := false
 var hud: CanvasLayer
 var label: Label
@@ -155,6 +179,7 @@ func begin(owner_node: Node3D, count: int) -> bool:
 	arm_grip_weight = 0.0
 	bite_pull_ready = false
 	bite_pull_offset = Vector3.ZERO
+	_clear_tear_view()
 	if is_instance_valid(player.held_item_node): player.held_item_node.show()
 	player._advance_flashlight(0.0)
 	hud.show()
@@ -509,12 +534,17 @@ func _update_bite_pull(delta: float = 1.0 / 60.0) -> void:
 	var parent := camera.get_parent() as Node3D
 	var anchor := parent.to_global(camera_rest_position)
 	var weight := 0.0
+	var tear := 0.0
+	var shake := 0.0
+	var tug := 0.0
 	# The monster can restrain the arm before biting, but the camera keeps its
-	# face view until actual damage contact releases the survivor.
+	# face view until the teeth actually close.
 	var preparing_arm: bool = captor.grab.phase == captor.grab.Phase.HOLD and remaining <= ARM_GRIP_LEAD_TIME and player.body_state.has_part(&"left_arm") and GrabRules.reaches_wounded_threshold(presses, required)
 	var arm_bite: bool = captor.grab.bite_part == &"left_arm" or preparing_arm
 	arm_grip_weight = move_toward(arm_grip_weight, 1.0 if arm_bite else 0.0, delta / .18)
-	if captor.grab.phase == captor.grab.Phase.BITE:
+	if captor.grab.phase == captor.grab.Phase.HOLD:
+		tug = RakerGrab.hold_tug(captor.grab.elapsed)
+	elif captor.grab.phase == captor.grab.Phase.BITE:
 		if not bite_pull_ready:
 			var toward: Vector3 = (captor.global_position-anchor).slide(Vector3.UP).normalized()
 			var pull := toward * .18
@@ -524,13 +554,62 @@ func _update_bite_pull(delta: float = 1.0 / 60.0) -> void:
 				pull -= Vector3.UP * .17
 			bite_pull_offset = parent.global_basis.inverse() * pull
 			bite_pull_ready = true
-		weight = preload("res://enemies/raker_pose_modifier.gd").bite_weight(captor.grab.elapsed)
+			if captor.grab.bite_part == &"left_arm":
+				# The head dives for the shoulder: follow it there instead of
+				# staring at the space it left. A head bite comes to the eyes.
+				var look := player.to_global(ARM_VIEW_FOCUS) - anchor
+				tear_view = (parent.global_basis.inverse() * Basis.looking_at(look.normalized(), Vector3.UP)).get_rotation_quaternion()
+				tear_view_ready = true
+		weight = RakerPose.bite_weight(captor.grab.elapsed)
 		if captor.grab.bite_part == &"left_arm": weight *= .15
+		tear = RakerGrab.tear_progress(captor.grab.elapsed)
+		shake = RakerGrab.thrash(captor.grab.elapsed)
 	# Hands pull the victim's head forward during the bite. Keep body/seat fixed,
 	# and latch the direction once so camera/mouth solvers never chase each other.
 	# Seat-local offset follows moving RVs; a sphere sweep prevents wall clipping.
-	var motion := _safe_camera_motion(camera, parent.global_basis * bite_pull_offset * weight, captor)
+	var pull := parent.global_basis * bite_pull_offset
+	var offset := pull * weight
+	var arm: bool = captor.grab.bite_part == &"left_arm"
+	var jolt := ARM_JOLT if arm else 1.0
+	wrench = Vector3.ZERO
+	if tug > 0.0:
+		# The hands follow this camera, so the Raker is seen heaving the head
+		# in and nodding it forward.
+		offset += (captor.global_position - anchor).slide(Vector3.UP).normalized() * tug * HOLD_TUG_DRAG
+		wrench = Vector3(-tug * deg_to_rad(HOLD_TUG_NOD), 0.0, 0.0)
+	if tear > 0.0:
+		if arm:
+			# The body behind a clamped arm is jerked with each wrench; the
+			# arm itself is hauled out by the visual (player_carry_visual.gd).
+			var toward := pull.slide(Vector3.UP).normalized()
+			offset += toward * (smoothstep(0.0, 1.0, tear) * ARM_TEAR_DRAG + absf(shake) * ARM_TEAR_YANK_DRAG)
+			wrench = Vector3(0.0, shake * deg_to_rad(ARM_TEAR_TURN), shake * deg_to_rad(ARM_TEAR_ROLL))
+		var cycle := floori(tear * RakerGrab.THRASH_CYCLES)
+		if cycle > wrench_cycle:
+			# Each later wrench lands like the clamp did.
+			wrench_cycle = cycle
+			impact_remaining = .16
+			impact_strength = WRENCH_FLASH * jolt
+	else:
+		wrench_cycle = 0
+	tear_view_weight = smoothstep(.02, RakerGrab.BITE_CONTACT + ARM_VIEW_SETTLE, captor.grab.elapsed) if tear_view_ready and captor.grab.phase == captor.grab.Phase.BITE else 0.0
+	if head_lock: return # The Raker's skull carries the view (follow_captor_head).
+	var motion := _safe_camera_motion(camera, offset, captor)
 	camera.position = parent.to_local(anchor + motion)
+
+func follow_captor_head(head: Transform3D) -> void:
+	# Called by the Raker's pose solver after it wrenches a clamped head. The
+	# view rides rigidly on the skull from the moment the tearing starts, so
+	# the face stays put in frame and the world swings behind it.
+	if not active() or not is_instance_valid(camera): return
+	if not head_lock:
+		head_lock = true
+		head_lock_offset = head.affine_inverse() * camera.global_transform
+	var want := head * head_lock_offset
+	var parent := camera.get_parent() as Node3D
+	var anchor := parent.to_global(camera_rest_position)
+	camera.global_position = anchor + _safe_camera_motion(camera, want.origin - anchor, captor)
+	camera.global_basis = want.basis.orthonormalized()
 
 func _safe_camera_motion(view: Camera3D, motion: Vector3, owner_node: Node3D = null) -> Vector3:
 	var parent := view.get_parent() as Node3D
@@ -581,9 +660,13 @@ func _process(delta: float) -> void:
 					focus, captor.global_position, delta * weight)
 				_apply_execution_view()
 		return
-	# Lift toward the face once, then hold that parent-local view through bite.
-	# Following the lunging mouth caused a downward whip at contact.
-	camera.basis = Basis(camera_start.slerp(camera_target, clampf(camera_elapsed / .15, 0, 1)))
+	if head_lock: return
+	# Lift toward the face once, then hold that parent-local view through the
+	# lunge. Following the lunging mouth caused a downward whip at contact.
+	var view :=camera_start.slerp(camera_target, clampf(camera_elapsed / .15, 0, 1))
+	# An arm bite draws the eyes down to the shoulder being torn.
+	if tear_view_weight > 0.0: view = view.slerp(tear_view, tear_view_weight)
+	camera.basis = Basis(view) * Basis.from_euler(wrench)
 
 static func execution_view_basis(current_basis: Basis, eye: Vector3, focus: Vector3,
 		_captor_center: Vector3, delta: float) -> Basis:
@@ -607,6 +690,18 @@ static func execution_view_basis(current_basis: Basis, eye: Vector3, focus: Vect
 	var turn := Vector2(wrapf(target_yaw - yaw, -PI, PI), target_pitch - pitch)
 	turn = turn.limit_length(deg_to_rad(EXECUTION_VIEW_SPEED) * delta)
 	return Basis.from_euler(Vector3(pitch + turn.y, yaw + turn.x, 0.0))
+
+func bite_clamp() -> void:
+	# Teeth close: a short jolt before the tearing damage.
+	impact_remaining = .22
+	impact_strength = .22
+
+func _clear_tear_view() -> void:
+	tear_view_ready = false
+	tear_view_weight = 0.0
+	wrench = Vector3.ZERO
+	wrench_cycle = 0
+	head_lock = false
 
 func bite_impact() -> void:
 	# Brief crush flash survives fatal-grab cleanup, then clears independently.
@@ -659,7 +754,7 @@ func end(reason: String = "cancelled") -> void:
 			var motion := _safe_camera_motion(camera, player.global_basis * Vector3(-.13, .06, .12), previous)
 			recovery_target_position = parent.global_basis.inverse() * motion
 			var eye := parent.to_global(camera_rest_position + recovery_target_position)
-			var look := player.to_global(Vector3(-.34, 1.32, -.34)) - eye
+			var look := player.to_global(ARM_VIEW_FOCUS) - eye
 			recovery_target_rotation = (parent.global_basis.inverse() * Basis.looking_at(look.normalized(), Vector3.UP)).get_euler() - seated_camera_rotation
 			for axis in 3: recovery_target_rotation[axis] = recovery_rotation[axis] + wrapf(recovery_target_rotation[axis] - recovery_rotation[axis], -PI, PI)
 			recovery_elapsed = 0.0
@@ -676,6 +771,7 @@ func end(reason: String = "cancelled") -> void:
 		camera.rotation = seated_camera_rotation
 	camera = null
 	mode = Mode.RAKER
+	_clear_tear_view()
 	# Release the real input path as well as the ownership flag. A visible
 	# pointer (e.g. focus/UI changes during capture) otherwise leaves mouse look
 	# gated even though GRABBED and its HUD have already disappeared.

@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rxxuv5f3asjt"
-path.s3tc="res://.godot/imported/raker_Raker018_InternalTeeth_Color.png-d81215085f1378e19af69ac31fd8f5cf.s3tc.ctex"
+uid="uid://dir3fj12chdhf"
+path.s3tc="res://.godot/imported/raker_Raker023_MouthLining.png-6f76455d833f0111af895162733dda82.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "238cbdaa4a9536105bf792a54f548479"
+"md5": "079488e90011a14612574799787d0297"
 }
 
 [deps]
 
-source_file="res://assets/models/raker/raker_Raker018_InternalTeeth_Color.png"
-dest_files=["res://.godot/imported/raker_Raker018_InternalTeeth_Color.png-d81215085f1378e19af69ac31fd8f5cf.s3tc.ctex"]
+source_file="res://assets/models/raker/raker_Raker023_MouthLining.png"
+dest_files=["res://.godot/imported/raker_Raker023_MouthLining.png-6f76455d833f0111af895162733dda82.s3tc.ctex"]
 
 [params]
 

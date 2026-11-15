@@ -24,3 +24,7 @@
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Python bytecode from build scripts
+__pycache__/
+*.pyc
