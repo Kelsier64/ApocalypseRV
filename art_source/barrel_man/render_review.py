@@ -44,7 +44,7 @@ for name,clip,frame,position,target,scale in [
     camera.location = position
     camera.rotation_euler = (Vector(target)-camera.location).to_track_quat('-Z','Y').to_euler()
     camera.data.ortho_scale = scale
-    scene.render.filepath = ROOT+'docs/validation/barrel-man/blender-'+name+'.png'
+    scene.render.filepath = ROOT+'.godot/barrel-man-review/blender-'+name+'.png'
     bpy.ops.render.render(write_still=True)
 rig.animation_data.action = bpy.data.actions['idle']
 scene.frame_set(1)

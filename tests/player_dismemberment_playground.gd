@@ -13,7 +13,7 @@ var prone_review := false
 func _ready() -> void:
 	super._ready()
 	get_window().title = "ApocalypseRV - Dismemberment Acceptance"
-	capture_directory = "res://docs/validation/player-dismemberment/"
+	capture_directory = "res://.godot/player-dismemberment/"
 	DirAccess.make_dir_recursive_absolute(capture_directory)
 	observer.fov = 52
 

@@ -5,7 +5,7 @@ from pathlib import Path
 from mathutils import Vector
 
 root = Path(__file__).resolve().parents[1]
-out = root / 'docs/validation/player-animations-v021'
+out = root / '.godot/player-animations-v021'
 wrist_review = '--wrists-only' in sys.argv
 finger_review = '--relaxed-fingers' in sys.argv
 jump_review = '--jump' in sys.argv

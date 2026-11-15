@@ -289,6 +289,7 @@ func _capture_view() -> void:
 	var label := "cabin" if cabin_view else ("side" if side_route else "roof")
 	if _roof_health_label().begins_with("DESTROYED"): label += "-destroyed"
 	await RenderingServer.frame_post_draw
-	var path := "res://docs/validation/images/2026-10-06-rv-ladder-transition-%s.png" % label
+	DirAccess.make_dir_recursive_absolute("res://.godot/rv-climb-captures/")
+	var path := "res://.godot/rv-climb-captures/rv-ladder-transition-%s.png" % label
 	get_viewport().get_texture().get_image().save_png(path)
 	print("LADDER_CAPTURE ", path)

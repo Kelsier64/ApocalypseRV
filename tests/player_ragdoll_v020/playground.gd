@@ -1,7 +1,7 @@
 extends Node3D
 ## Independent ragdoll acceptance stage; all geometry and control are test-owned.
 const ACTOR = preload("res://tests/player_ragdoll_v020/actor.gd")
-const OUTPUT := "res://docs/validation/player-animations-v021/ragdoll/"
+const OUTPUT := "res://.godot/player-ragdoll-v020/"
 const CASES := ["stand_forward", "stand_back", "stand_left", "drop_face", "drop_back", "drop_right", "slope", "stairs", "animation_transition", "crouch_transition"]
 var actor: CharacterBody3D
 var camera: Camera3D

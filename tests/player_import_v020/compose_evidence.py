@@ -1,10 +1,14 @@
-"""Arrange actual Blender renders and Godot viewport captures without retouching."""
+"""Arrange actual Blender renders and Godot viewport captures without retouching.
+
+Reads and writes .godot/player-v020/. godot_*.png come from playground.tscn --capture;
+blender_*.png and roundtrip_*.png are Blender renders with no script in the repo and must be placed there first.
+"""
 from pathlib import Path
 import json
 from PIL import Image, ImageDraw, ImageFont, ImageChops
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "docs/validation/player-v020"
+OUT = ROOT / ".godot/player-v020"
 font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 23)
 small = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 17)
 

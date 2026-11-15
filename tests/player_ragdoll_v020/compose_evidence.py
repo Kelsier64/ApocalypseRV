@@ -2,7 +2,7 @@
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = Path(__file__).resolve().parents[2] / "docs/validation/player-v020-ragdoll"
+OUT = Path(__file__).resolve().parents[2] / ".godot/player-ragdoll-v020"
 font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 22)
 small = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 18)
 

@@ -61,5 +61,7 @@ report = {
     "note": "Source mask factor is 0.9 linear RGB; retained exactly. Runtime converts it to sRGB 0.954687.",
     "pass": True,
 }
-(ROOT / "docs/validation/player-v020/glb_audit.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+audit_path = ROOT / ".godot/player-v020/glb_audit.json"
+audit_path.parent.mkdir(parents=True, exist_ok=True)
+audit_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 print(f"PASS: GLB / {len(mesh_nodes)} meshes / {len(joint_names)} bones / {triangles} triangles / embedded PNG unchanged")
