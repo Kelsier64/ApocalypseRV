@@ -1,6 +1,6 @@
 # 廢棄巨型住宅外殼：室外外殼製作指南
 
-本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 7）。生成 v19 將此場址設為副本入口，封閉外殼由 `Entrance` 轉入獨立的 `megashelter` 地面室內，詳見[室內指南](megashelter-interiors.md)。外殼本身不生成物資或敵人。美術以[已選概念圖](../art/modular-megashelter/README.md)為準；最新細節與驗證見[v7 紀錄](../validation/2026-10-30-megashelter-facade-refinement.md)，生長機制沿用 v5。
+本指南描述目前實作的 Abandoned Megashelter 程序化室外外殼（資源 ID：`modular_megashelter`，內容版本 7）。生成 v19 將此場址設為副本入口，封閉外殼由 `Entrance` 轉入獨立的 `megashelter` 地面室內，詳見[室內指南](megashelter-interiors.md)。外殼本身不生成物資或敵人。美術以[已選概念圖](../reference/art/modular-megashelter/README.md)為準。
 
 ## 幾何規格
 
@@ -46,6 +46,6 @@
 
 純觀察場景：[megashelter_viewer.tscn](../../tests/megashelter_viewer.tscn)。在 Godot 開啟後按 F6 執行目前場景，預設無霧、固定日光，不載入玩家或世界串流。滑鼠右鍵拖曳環繞、中鍵平移、滾輪縮放；1 全棟、2 入口、3 屋頂、F5 下一個 seed、F6 換隨機 seed 並重新生長。根節點 Inspector 可設定初始 `seed_value`。也可執行 `godot --path . res://tests/megashelter_viewer.tscn`。
 
-生成、seed 與視覺驗證狀態及未完成項目記於[2026-10-28 多樣性紀錄](../validation/2026-10-28-megashelter-growth.md)。較早版本的場址、輪驅和美術結果保留於[歷史驗證索引](../README.md)，不代表本版驗證結果。
+
 
 視覺模型分材質合併建置，原生地面附件與碎塊也進入共用批次，生成設備重用 GLB；行駛中的區塊串流使用約 4 ms 合作式分幀預算。單次 mesh／collision 建立仍不可中斷，因此此預算不是硬性幀時間上限。

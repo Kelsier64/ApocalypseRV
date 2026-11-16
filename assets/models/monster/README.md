@@ -16,4 +16,3 @@ SHA-256：`7B50DED7AD30BB9F7568E5C2531378A1FBE273B64722AA17BEAA50CA6CDBC2A0`。
 
 [近距離預覽](../../../tests/monster_model_playground.tscn)：正式怪物追近玩家，F6 扣怪物 5 HP、R 重設；F3／F4 沿用追擊場的牆壁檢查。
 
-[本次驗收與已知問題](../../../docs/validation/2026-09-22-monster-model.md)。

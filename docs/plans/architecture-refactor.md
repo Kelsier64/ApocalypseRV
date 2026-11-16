@@ -75,7 +75,7 @@
 ## 建議順序
 
 1. ~~修好兩個失敗的測試，跑出全綠基準。~~ 完成：2026-11-16 完整測試 24 項全過（`7ada89e` 加上未提交的拆分）。`test_rv_resource_cycle` 已被先前的提交修好；壞掉的 `tests/slender_speaker_bend_review.*` 已刪除，它繼承的 workshop 腳本從未入庫，會讓匯入失敗。
-2. ~~合併 `codex/rv-handling-rollover` 回 main。~~ 完成：2026-11-16 快轉合併。擬真操控的試玩驗收沒有先做，仍列在[擬真操控計畫](2026-11-14-rv-handling-rollover.md)的未結項目。
+2. ~~合併 `codex/rv-handling-rollover` 回 main。~~ 完成：2026-11-16 快轉合併。擬真操控的試玩驗收沒有先做，仍列在[擬真操控計畫](rv-handling-rollover.md)的未結項目。
 3. 小清理與 `player.gd` 死碼，一個切片。
 4. 終端元件工廠、RV 撞擊元件、SlenderSpeaker 抓取，各自一個切片，先補缺的測試。
 5. 大改逐項提案，使用者同意後再排。

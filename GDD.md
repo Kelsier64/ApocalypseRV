@@ -2,7 +2,7 @@
 
 [啟動與操作](README.md) · [遊戲設計](GDD.md) · [技術架構](architecture.md)
 
-這份文件寫設計意圖與玩家會遇到的規則。數值、時序與實作細節在 [功能實作契約](docs/guides/feature-contracts.md)，調校值以程式為準；按鍵表在 [README](README.md#怎麼玩)。
+這份文件寫設計意圖與玩家會遇到的規則。數值、時序與實作細節在各[系統文件](docs/README.md#系統)，調校值以程式為準；按鍵表在 [README](README.md#怎麼玩)。
 
 ## 目錄
 
@@ -178,7 +178,7 @@ ApocalypseRV 是 PC 第一人稱末日公路生存原型。玩家把 RV 當成�
 
 **攀車與破頂。** 一般怪物的設計是追著車上的玩家攀上 RV、掛在門上破門、登頂後拆掉腳下的屋頂，車輛急加速、急煞與轉彎能把牠們甩下去。這套行為已經做好，但目前唯一會用它的 Raker 只在地堡室內出現，正式世界的公路上沒有會攀車的敵人，見第 9 節。
 
-各敵人的數值與判定見 [功能實作契約](docs/guides/feature-contracts.md)，白影另見[白影指南](docs/guides/white-apparition.md)。
+各敵人的數值與判定見[敵人與遭遇](docs/systems/enemies.md)。
 
 <a id="section-9"></a>
 
@@ -196,7 +196,7 @@ ApocalypseRV 是 PC 第一人稱末日公路生存原型。玩家把 RV 當成�
 
 ### 尚未落實的方向
 
-整理自封存企劃與原始待辦，保留意圖，不代表排程承諾：
+保留意圖，不代表排程承諾：
 
 | 方向 | 尚待落實 |
 |---|---|
@@ -210,4 +210,4 @@ ApocalypseRV 是 PC 第一人稱末日公路生存原型。玩家把 RV 當成�
 | 玩家 | 近戰、口渴、治療；槍聲引怪；手槍與彈藥的探索來源 |
 | 恐怖表現 | 室內美術、環境與操作音效、遭遇節奏 |
 
-進行中的工作與接續順序見 [計畫總覽](docs/plans/README.md)；早期的原始待辦封存在 [todo](docs/archive/todo)。
+進行中的工作與接續順序見 [計畫總覽](docs/plans/README.md)。

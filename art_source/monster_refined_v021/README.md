@@ -30,4 +30,4 @@ blender --background art_source/monster_refined_v021/monster_refined_v021.blend 
 | --- | --- |
 | ![素模](idle_oblique_clay.png) | ![抓握](grab_stand_hold_skin.png) |
 
-[遊戲近照](runtime-grip-hinges.png) · [模型與權重稽核](hand_validation.json) · [本次驗證](../../docs/validation/2026-09-23-raker-v021.md)
+[遊戲近照](runtime-grip-hinges.png) · [模型與權重稽核](hand_validation.json)

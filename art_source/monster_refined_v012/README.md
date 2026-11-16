@@ -24,4 +24,3 @@
 
 開啟含 v011 場景的來源檔，依序執行 [refine.py](refine.py)、[audit.py](audit.py)、[finish.py](finish.py)。refine 只重建自身 v012 場景，手動編輯請先另存副本。finish 沿用已打包的 v011 貼圖，不重新烘焙或修改舊版材質。輸出路徑在檔案頂端。
 
-遊戲接入與本次回歸結果見[驗證紀錄](../../docs/validation/2026-09-22-raker-v012.md)。

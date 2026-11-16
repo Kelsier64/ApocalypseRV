@@ -8,6 +8,6 @@
 - 根／mesh 名為 `oil_barrel`。模型不含碰撞、剛體或物品程式；整合時保留 [原道具包裝](../../../props/oil_barrel.tscn) 的碰撞、質量、握持標記與保存路徑。
 - Godot 預設將內嵌貼圖抽出為同目錄的三張 PNG；將 GLB、PNG 及各自的 `.import` 一起保留。
 
-[可編輯來源與製作參數](../../../art_source/oil_barrel/README.md) · [本輪驗證](../../../docs/validation/2026-10-06-oil-barrel-optimization.md)
+[可編輯來源與製作參數](../../../art_source/oil_barrel/README.md)
 
 來源作者與授權尚未核實；沒有因減面而變更來源紀錄。

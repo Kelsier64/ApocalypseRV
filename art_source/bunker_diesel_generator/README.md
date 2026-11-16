@@ -22,7 +22,7 @@ godot --path . --resolution 1280x720 --log-file .godot/diesel-generator-capture.
 
 ## 精簡驗證證據
 
-[交付資料檢查](validation/delivery-checks.json)、[六方向人工 review 摘要](validation/review.json)、[正式房間尺寸／碰撞結果](validation/context.json)、[Godot selected＋smoke 結果](validation/runner-results.json)及[完整驗證報告](../../docs/validation/2026-10-07-bunker-diesel-generator-skills.md)。代表圖僅保留[降面比較](validation/reduction_comparison.png)與[正式房間手電筒畫面](validation/power_hall_flashlight.png)。
+[交付資料檢查](validation/delivery-checks.json)、[六方向人工 review 摘要](validation/review.json)、[正式房間尺寸／碰撞結果](validation/context.json)、[Godot selected＋smoke 結果](validation/runner-results.json)。代表圖僅保留[降面比較](validation/reduction_comparison.png)與[正式房間手電筒畫面](validation/power_hall_flashlight.png)。
 
 [verify_delivery.py](verify_delivery.py)查來源 SHA、圖片 bytes、有限屬性、單位法線／正交切線、設計尺寸、editable 與 GLB 一致性，以及[原 wrapper](validation/wrapper_original.tscn)的節點／碰撞保留；[基準來源](validation/wrapper_baseline.json)記錄原 commit／SHA。保存的行為結果是歷史證據，新的行為測試仍需另跑 `scripts/test.ps1`。
 

@@ -32,7 +32,7 @@ Exit 0 or a smaller file does not mean it passed. Read the clay silhouettes, thi
 
 ## Blender remesh + bake
 
-Blender 5.2 is on PATH; run it headless (`blender --background --python <script.py>`) with the script in the work folder. On a copy: voxel remesh → reduce → Smart UV → bake from the high-poly. Oil-barrel starting point: voxel 0.0035 m, Smart UV 66° / margin 0.012, Cycles selected-to-active, cage 0.015 m, ray 0.06 m, padding 12 px, three 1024 maps; color as DIFFUSE color-only, metal/roughness transferred through emission (G roughness, B metallic). Scale the numbers to the object; do not apply them blindly to thin plates or fine holes. Details: [oil barrel record](../../../../docs/validation/2026-10-06-oil-barrel-optimization.md).
+Blender 5.2 is on PATH; run it headless (`blender --background --python <script.py>`) with the script in the work folder. On a copy: voxel remesh → reduce → Smart UV → bake from the high-poly. Oil-barrel starting point: voxel 0.0035 m, Smart UV 66° / margin 0.012, Cycles selected-to-active, cage 0.015 m, ray 0.06 m, padding 12 px, three 1024 maps; color as DIFFUSE color-only, metal/roughness transferred through emission (G roughness, B metallic). Scale the numbers to the object; do not apply them blindly to thin plates or fine holes.
 
 ## Measured results
 

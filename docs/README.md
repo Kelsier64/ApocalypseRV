@@ -1,82 +1,80 @@
-# 開發文件索引
+# 文件索引
 
-| 需求 | 文件 | 責任 |
-|---|---|---|
-| 啟動遊戲、查按鍵 | [README](../README.md) | 快速開始與統一驗證入口 |
-| 理解玩法、數值與未實作願景 | [GDD](../GDD.md) | 現行遊戲設計 |
-| 修改程式、查所有權與資料流 | [architecture](../architecture.md) | 現行實作與限制 |
-| 找程式、資產來源與清理邊界 | [程式與資產目錄指南](guides/codebase.md) | 目錄責任、引用、存檔相容及驗證 |
-| 選擇下一項開發工作 | [計畫總覽](plans/README.md) | 狀態、依賴與剩餘工作 |
-| 操作展示場、驗收場景 | [遊玩與測試場指南](guides/playgrounds.md) | 命令、快捷鍵與測試設定 |
-| 執行與維護自動測試 | [測試指南](../tests/README.md) | 核心測試、覆蓋範圍與 CI |
-| 開發約定 | [Codex](../AGENTS.md)、[Claude Code](../CLAUDE.md) | 各自的專案規則、hooks 與 skills 索引 |
-| 實作細節、功能契約 | [功能實作契約](guides/feature-contracts.md) | 從 architecture 移出的各功能細節 |
-| 查當時的驗收結果 | [驗收紀錄索引](validation/README.md) | 依日期列出的歷史紀錄 |
+現況以程式為準。文件只寫程式讀不出來的事：設計意圖、跨檔案的規則、製作流程，以及還沒做的事。
 
-## 文件分類
+## 依需求找文件
 
-| 位置 | 內容 |
+| 需求 | 文件 |
 |---|---|
-| 根目錄 `README.md`、`GDD.md`、`architecture.md` | 現行入口、設計與架構 |
-| `guides/` | 各領域的工作方式與實作契約 |
-| `plans/` | 進行中的計畫與狀態 |
-| `validation/`、`report/` | 有日期的歷史紀錄，不代表現況 |
-| `archive/` | 封存，內容保持原樣 |
+| 啟動、按鍵、終端指令 | [README](../README.md) |
+| 設計意圖、玩家會遇到的規則、未實作方向 | [GDD](../GDD.md) |
+| 模組責任、狀態所有權、共用契約、已知限制 | [architecture](../architecture.md) |
+| 某個系統目前的功能、數值與實作 | 下方[系統](#系統) |
+| 怎麼製作或操作某樣東西 | 下方[指南](#指南) |
+| 進行中的工作、待人工驗收、待辦 | [計畫總覽](plans/README.md) |
+| 自動測試的範圍與命令 | [tests/README](../tests/README.md) |
+| agent 的專案規則 | [CLAUDE.md](../CLAUDE.md)、[AGENTS.md](../AGENTS.md) |
 
-現況以程式為準；寫作與放置規則見 `docs-maintenance` skill。
+## 系統
 
-## 開發計畫
+每個系統一份，結構相同：功能一覽、規則與數值、實作契約。改某個系統前先讀對應的那一份。
 
-狀態與證據見[計畫總覽](plans/README.md)。
+| 文件 | 範圍 |
+|---|---|
+| [opening](systems/opening.md) | 兩室教學基地、故障車整備、出庫與啟程 |
+| [player](systems/player.md) | 移動、體力、生命與死亡、斷肢、飢餓、SAN、列印身體 |
+| [items](systems/items.md) | Item 契約、背包、固定放置與支撐、倉庫、手持物 |
+| [rv](systems/rv.md) | 底盤、駕駛、輪胎、引擎、車殼、施工、車損 |
+| [economy](systems/economy.md) | 燃油、電力、材料、分解、製作、配方、車載平板 |
+| [world](systems/world.md) | 世界入口、生成、道路與地形、串流、細節層、公路生成 |
+| [poi](systems/poi.md) | 加油站、路旁與越野場址、地堡、巨型避難所、副本轉場 |
+| [enemies](systems/enemies.md) | Raker、油桶人、Slender Speaker、白影、攀車與選敵、偏行壓迫 |
+| [environment](systems/environment.md) | 日夜、天氣、霧、暗部顯示、美術方向、HUD 與設定 |
+| [saves](systems/saves.md) | F6／F9 檢查點的範圍、驗證與凍結政策 |
+
+這些文件由舊的功能總覽、功能契約、架構流程與 README 合併而成，還沒有逐段對照程式改寫，段落裡仍有當時的日期與版本號。內容與程式不符時以程式為準，並直接改掉那一段。逐系統改寫列在[計畫總覽](plans/README.md#待辦)。
 
 ## 指南
 
-- [Raker 資產建置入口](guides/asset-builds.md)
-- [隨機軍事地堡：房型製作與保存契約](guides/bunker-interior.md)
-- [可動 3D 角色製作與接入規格](guides/character-modeling.md)
-- [程式與資產目錄指南](guides/codebase.md)
-- [功能實作契約](guides/feature-contracts.md)
-- [目前功能總覽](guides/features.md)
-- [單圖 → 3D → 減面 → 驗收操作指南](guides/image-to-3d-workflow.md)
-- [廢棄巨型住宅外殼：室外外殼製作指南](guides/megashelter-exteriors.md)
-- [巨型避難所室內](guides/megashelter-interiors.md)
-- [灰階暗部顯示與曲線](guides/night-vision.md)
-- [遊玩與測試場指南](guides/playgrounds.md)
-- [POI 共用製作與接入規範](guides/poi-authoring.md)
-- [白影遭遇](guides/white-apparition.md)
+| 指南 | 用途 |
+|---|---|
+| [程式與資產目錄](guides/codebase.md) | 目錄責任、引用方式、整理與刪除前的檢查 |
+| [測試場](guides/playgrounds.md) | 各測試場的命令、快捷鍵與檢查重點 |
+| [POI 製作](guides/poi-authoring.md) | 房間、家具、入口的製作與接入規範 |
+| [地堡房型](guides/bunker-interior.md) | 軍事地堡房型的製作與保存契約 |
+| [巨型避難所外殼](guides/megashelter-exteriors.md) | 程序化外殼的零件與生成規則 |
+| [巨型避難所室內](guides/megashelter-interiors.md) | 室內模組、轉場與保存 |
+| [角色建模](guides/character-modeling.md) | 可動角色的製作與接入規格 |
+| [單圖轉 3D](guides/image-to-3d-workflow.md) | 工具、交付規則與模型需求的寫法 |
+| [暗部顯示](guides/night-vision.md) | 灰階暗部曲線的欄位與調整方式 |
 
-## 審查報告
+## 計畫
 
-- [2026-09-22 架構、潛在問題與遺產清理審查](report/ApocalypseRV_Architecture_Audit_2026-09-22.md) — 保留當時重現證據；A04 離場保存已由下方地堡內容更新修正，A01–A03 仍待處理。
-- [R01–R07 修正與驗收](report/ApocalypseRV_Fixes_2026-09-18.md) — `report/ApocalypseRV_Fixes_2026-09-18.md`
-- [ApocalypseRV 專案審查與修改建議](report/ApocalypseRV_Review_2026-09-18.md) — `report/ApocalypseRV_Review_2026-09-18.md`
+[計畫總覽](plans/README.md)列出進行中的計畫、已實作但還沒人工驗收的項目，以及待辦。每個進行中的計畫一份檔案。
 
-## 設計研究
+## 參考資料
 
-- [Lethal Company 視覺風格與 ApocalypseRV 差距研究](research/2026-09-17-lethal-company-visual-direction.md) — `research/2026-09-17-lethal-company-visual-direction.md`
-- [《Lethal Company》恐怖氛圍設計研究](research/lethal-company-horror-atmosphere.md) — `research/lethal-company-horror-atmosphere.md`
+`reference/` 放設計時對照用的材料，不描述現況。
 
-## 美術目標
+| 位置 | 內容 |
+|---|---|
+| [reference/research/](reference/research/lethal-company-horror-atmosphere.md) | Lethal Company 的恐怖氛圍與視覺方向研究 |
+| [reference/art_targets/outdoor/](reference/art_targets/outdoor/README.md) | 戶外美術目標圖與生成提示；正式採用 D 方向 |
+| [reference/art/](reference/art/modular-megashelter/README.md) | 巨型避難所的美術基準與早期概念圖 |
+| `reference/ref_picture/` | 使用者提供的風格參考圖 |
+| `reference/mockups/` | 介面草稿 |
 
-- [D：低模與低解析度修正版](art_targets/outdoor/2026-09-17-d-revision.md) — `art_targets/outdoor/2026-09-17-d-revision.md`
-- [戶外目標圖：實際生成提示](art_targets/outdoor/2026-09-17-prompts.md) — `art_targets/outdoor/2026-09-17-prompts.md`
-- [戶外 gameplay 美術目標圖](art_targets/outdoor/README.md) — `art_targets/outdoor/README.md`
-- [灰井住宅城概念圖](art/graywell-megablock/README.md) — `art/graywell-megablock/README.md`
-- [模組避難所美術基準](art/modular-megashelter/README.md) — `art/modular-megashelter/README.md`
+## 寫在程式旁邊的說明
 
-## 歷史封存
+資產的來源、製作參數與匯入設定寫在資產旁的 README（`assets/`、`art_source/`、`world/` 下各資料夾）。這類說明只談那個資料夾裡的東西。
 
-封存文件不再更新，清單與封存時間見 [封存索引](archive/README.md)。
+## 文件規則
 
-## 資產與製作規格
+- **一件事只寫在一個地方。** 設計意圖在 GDD，跨模組的結構在 architecture，單一系統的行為在 `systems/`，做法在 `guides/`，還沒完成的事在 `plans/`。其他地方用連結，不重抄。
+- **只寫現況。** 事實改變時直接改掉舊句子，不加日期註記，不寫「本輪」「這次」。
+- **不留歷史。** 之後用不到的文件直接刪除，歷史在 git。沒有封存資料夾，也不寫逐次的驗收紀錄。
+- **設計一定要寫回文件。** 討論中定案的新設計或改動，在同一個變更裡更新 GDD 與對應的系統文件。
+- **驗證結果寫在 commit 或 PR。** 已實作但還沒人工驗收的項目，列在[計畫總覽](plans/README.md#待人工驗收)。
+- **會變的數字不寫死。** 版本、測試數、檔案數寫出處（常數或檔案），不寫數值。
 
-- [建模 prompt](modeling/README.md) — 簡單物件直接做；複雜物件用灰盒與一份 [短 prompt](modeling/TEMPLATE.md)，不另維護進度清單。
-- [2026-09-29 資產盤點與來源快照](archive/modeling-2026-09-29/inventory.md) — 歷史參考，不再日常更新；[來源說明](archive/modeling-2026-09-29/asset-provenance.md)。
-
-- [Original industrial horror materials](../assets/materials/industrial/README.md) — `assets/materials/industrial/README.md`
-- [正式戶外 D 風格素材](../assets/materials/outdoor/README.md) — `assets/materials/outdoor/README.md`
-- [Concrete wall albedo](../assets/materials/poi_kit/README.md) — `assets/materials/poi_kit/README.md`
-- [工業美術樣板材質](../assets/materials/style_sample/README.md) — `assets/materials/style_sample/README.md`
-- [WAYFARER RV 模型原型](../rv/visuals/README.md) — `rv/visuals/README.md`
-- [POI 資產樣板與製作規格](../world/poi_kit/README.md) — `world/poi_kit/README.md`
-- [路旁資產模組](../world/roadside_kit/README.md) — `world/roadside_kit/README.md`
+agent 的操作步驟在 `docs-maintenance` skill。

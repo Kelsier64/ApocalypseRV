@@ -111,7 +111,6 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 
 既有入口由 exterior_style.gd 在 Visuals/BunkerFacade 建立簡單軍事立面，沿用 service_entrance 的入口／返回點與原占地；外观附加量體不帶碰撞。既有定義的 legacy_visual_layout 旗標暫保留，尚未全面改成編輯器組裝資產；新資產不得沿用此例外。
 
-戶外整合的歷史結果見 [正式加油站驗收](../validation/2026-09-20-production-gas-station.md)，僅代表當時範圍。加油站保存 content_version；更動佈局時驗證當前版本，不維護舊版資產或存檔遷移。
+加油站保存 content_version；更動佈局時驗證當前版本，不維護舊版資產或存檔遷移。
 
-
-Abandoned Megashelter 使用專用模組規劃器與 `modular_megashelter` definition，依 `OFF_ROAD` 以獨立 2% 機率替換越野候選。`site.exterior_plan` 保存一次生成的規劃；正式視覺／碰撞呼叫 `POIConfig.instantiate_site(site, true)`，鄰帶導航呼叫 `POIConfig.instantiate_site(site, false)`，兩者共用 `modules`、`collision_boxes`、`building_bounds`、`site_bounds` 和 `access_point`。該資產現在是 `INSTANCE_ENTRANCE`，提供 `Entrance`／`ReturnPoint` 及 `megashelter` profile；室內物資由副本首訪生成，外殼本身不生成物資或敵人。生成 v19 保留 v18 的候選及外觀 RNG 域，詳見[室內指南](megashelter-interiors.md)。外部初版的歷史驗證見[巨型住宅驗證](../validation/2026-10-27-modular-megashelter.md)。
+Abandoned Megashelter 使用專用模組規劃器與 `modular_megashelter` definition，依 `OFF_ROAD` 以獨立 2% 機率替換越野候選。`site.exterior_plan` 保存一次生成的規劃；正式視覺／碰撞呼叫 `POIConfig.instantiate_site(site, true)`，鄰帶導航呼叫 `POIConfig.instantiate_site(site, false)`，兩者共用 `modules`、`collision_boxes`、`building_bounds`、`site_bounds` 和 `access_point`。該資產現在是 `INSTANCE_ENTRANCE`，提供 `Entrance`／`ReturnPoint` 及 `megashelter` profile；室內物資由副本首訪生成，外殼本身不生成物資或敵人。生成 v19 保留 v18 的候選及外觀 RNG 域，詳見[室內指南](megashelter-interiors.md)。

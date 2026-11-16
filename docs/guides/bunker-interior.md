@@ -1,6 +1,6 @@
 # 隨機軍事地堡：房型製作與保存契約
 
-更新：2026-11-05。適用 `bunker`／布局版本 3。基礎結構依據為 [原地堡計畫](../archive/plans/2026-09-24-random-bunker.md)，物資與敵人見[內容驗證](../validation/2026-09-29-bunker-content.md)，廢棄場景、照明與手電筒的早期驗證見[2026-09-29 記錄](../validation/2026-09-29-bunker-art-flashlight.md)，共用場址與資產規範見 [POI 製作規範](poi-authoring.md)。v2 房型已補齊燈具、家具、管線與污損模型；完整地表設施及長局平衡仍待後續完成。
+更新：2026-11-05。適用 `bunker`／布局版本 3。v2 房型已補齊燈具、家具、管線與污損模型；完整地表設施及長局平衡仍待後續完成。
 
 ## 生成及遊玩
 
@@ -58,7 +58,7 @@
 
 完整占用是地板到屋頂的矩形 AABB。L 型／凹形房可使用保守外包盒，不能把其他房塞進凹角。90° 旋轉由接口計算；新增尺寸、普通房與分類不改生成器。電梯、攀爬等新移動機制需另寫程式。
 
-7.5×15 m、同牆雙門與新增分類曾以獨立 fixture 驗收；該 fixture 及其專項自測已移除，歷史範圍見 [地堡驗收](../validation/2026-09-24-random-bunker.md)。新增房型請從正式模組複製並完成上列檢查，現行自動覆蓋見 [測試指南](../../tests/README.md)。
+7.5×15 m、同牆雙門與新增分類曾以獨立 fixture 驗收；該 fixture 及其專項自測已移除。新增房型請從正式模組複製並完成上列檢查，現行自動覆蓋見 [測試指南](../../tests/README.md)。
 
 首批舊版房型生成器已隨相容資產移除；目前直接編輯現行場景／Resource。
 
@@ -81,4 +81,4 @@ godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playgr
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_transition_persistence.gd
 ```
 
-目前自動入口只檢查 POI 轉場取消與保存；布局、seed 掃描與完整室內通路的專項自測已退出核心清單，需按上方場景另行驗收。F1 步行、F2 總覽、F3 掀頂（碰撞保留）、F5 連續輸入搬運回放、R 重建、F8 截圖。命令未提供 rooms／floors 時依 seed 隨機。回放用測試引擎驗證大型搬運，內容與持久化另見[本輪驗證](../validation/2026-09-29-bunker-content.md)；原結構測試結果見[地堡驗收](../validation/2026-09-24-random-bunker.md)。
+目前自動入口只檢查 POI 轉場取消與保存；布局、seed 掃描與完整室內通路的專項自測已退出核心清單，需按上方場景另行驗收。F1 步行、F2 總覽、F3 掀頂（碰撞保留）、F5 連續輸入搬運回放、R 重建、F8 截圖。命令未提供 rooms／floors 時依 seed 隨機。回放用測試引擎驗證大型搬運。

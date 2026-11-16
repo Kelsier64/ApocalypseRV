@@ -29,4 +29,4 @@ blender --background art_source/monster_refined_v019/monster_refined_v019.blend 
 
 ![正面掌心朝內](019_idle_front.png)
 
-正式 Godot 驗證為 `tests/test_raker_source_hands.gd`，特別關閉執行期姿勢修正器，檢查匯入動畫本身的拇指和掌面方向。[本次驗收](../../docs/validation/2026-09-23-raker-v019.md)。
+正式 Godot 驗證為 `tests/test_raker_source_hands.gd`，特別關閉執行期姿勢修正器，檢查匯入動畫本身的拇指和掌面方向。

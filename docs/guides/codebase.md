@@ -19,11 +19,11 @@
 | `art_source/` | 可重建資產的 Blender 來源、製作腳本和審核圖 | Raker 各版與玩家動畫來源 |
 | `scripts/` | 資產建置、效能量測、回放及統一測試入口 | `test.ps1` |
 | `tests/` | `test_*.gd` 自動測試、獨立展示場及測試資產 | `main_scene_smoke.gd` |
-| `docs/` | 現行指南、計畫、驗收、研究；`archive/` 保存歷史 | [文件索引](../README.md) |
+| `docs/` | 系統文件、指南、計畫與參考資料；不保留歷史 | [文件索引](../README.md) |
 
 `world/poi_kit/`、`world/roadside_kit/` 與 `world/roadside_pois/` 是內容製作層；場景可能由定義、生成器或測試場動態載入。`rv/legacy/`、`world/art_sample/` 與 `assets/materials/style_sample/` 是仍有展示或對照用途的資產。獨立的 `tests/*playground.tscn` 不會由主場景引用，但可直接執行，操作見 [展示場指南](playgrounds.md)。
 
-匯入模型用途見 [模型入口](../../assets/models/README.md)，來源與授權資訊有需要時記在各資產 README。建模需求使用 [短 prompt](../modeling/README.md)，不另維護全域清單；舊來源與使用關係可查 [2026-09-29 歷史盤點](../archive/modeling-2026-09-29/inventory.md)。
+匯入模型用途見 [模型入口](../../assets/models/README.md)，來源與授權資訊有需要時記在各資產 README。建模需求使用 [短 prompt](image-to-3d-workflow.md#模型需求)，不另維護全域清單。
 
 ## 資源與存檔格式
 
@@ -32,16 +32,16 @@
 - `props/item.gd` 是唯一可搬運基類；`core/item_definition.gd` 集中物品定義，`core/item_state.gd` 驗證所有所有權領域的狀態，`core/item_mount.gd` 管理固定支撐與掉落。原 Prop／Equipment 基類已移除，不再按這兩種類型分流背包、回收或世界保存。
 - `Checkpoint` 和 `VehicleSnapshot` 只接受當前版本；版本與存檔路徑以 `rv/checkpoint.gd`（`VERSION`、`PATH`）、`rv/vehicle_snapshot.gd`（`VERSION`）及 `world/terrain/world_profile.gd`（`generation_version`）為準，只支援 shelter 正式世界及當前課程／房型。舊格式與舊路徑不支援，不提供遷移。結構、耐久、破口及門角度獨立保存；Item 支撐明確區分底盤、Item ID、結構槽位與靜態場景錨點。
 - 結構目錄包含普通 `rv_ceiling` 與左側開孔 `rv_ceiling_hatch`，都能裝入 `roof_0`／`roof_1`／`roof_2`；總布局十一槽，屋頂每片 50 kg／120 HP。Snapshot v6 只接受當前十一槽；舊地板／單片屋頂資料不轉換。
-- `art_source/` 和建置腳本保存可編輯來源；`docs/validation/` 保存當次證據。圖片或模型未被主場景直接引用，也可能是匯入來源、展示場或審核證據。
+- `art_source/` 和建置腳本保存可編輯來源。圖片或模型未被主場景直接引用，也可能是匯入來源或展示場資產。
 
 ## 整理與驗證
 
-新增遊戲行為時，將場景放在擁有該行為的模組；共享純邏輯放 `core/`，正式資產放 `assets/`，可重建來源放 `art_source/`。測試與獨立展示場放 `tests/`。文件依 [索引](../README.md) 放入指南、計畫或驗收；歷史紀錄留在 `docs/archive/`。
+新增遊戲行為時，將場景放在擁有該行為的模組；共享純邏輯放 `core/`，正式資產放 `assets/`，可重建來源放 `art_source/`。測試與獨立展示場放 `tests/`。文件依[索引](../README.md)的規則放入系統文件、指南或計畫；用不到的文件直接刪除。
 
-刪除候選先查 `res://` 路徑、UID、`class_name`、場景的 `ext_resource`、程式中的動態組字路徑、存檔白名單、結構型態目錄、測試與製作腳本。確認現行存檔與仍使用中的測試場沒有消費者，再移除無用檔案；歷史文件保留。完成後從乾淨匯入開始執行：
+刪除候選先查 `res://` 路徑、UID、`class_name`、場景的 `ext_resource`、程式中的動態組字路徑、存檔白名單、結構型態目錄、測試與製作腳本。確認現行存檔與仍使用中的測試場沒有消費者，再移除無用檔案。完成後從乾淨匯入開始執行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1
 ```
 
-Runner 預設匯入資源、執行所有根層 `tests/test_*.gd` 並檢查正式主場景啟動，遇到第一項失敗即停止；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，依 [展示場指南](playgrounds.md) 選擇場景做實機檢查。本次清理範圍與實際檢查另記於 [整理紀錄](../validation/2026-09-28-codebase-cleanup.md)。
+Runner 預設匯入資源、執行所有根層 `tests/test_*.gd` 並檢查正式主場景啟動，遇到第一項失敗即停止；相關局部變更以 `-TestFilter` 選取最小有意義的範圍，命令與覆蓋限制見 [測試指南](../../tests/README.md)。Godot 4.7.2 必須可由 PATH 找到，或使用 `-Godot 'C:/path/to/godot.exe'`。日誌在 `.godot/test-logs/`。涉及畫面或物理時，依 [展示場指南](playgrounds.md) 選擇場景做實機檢查。

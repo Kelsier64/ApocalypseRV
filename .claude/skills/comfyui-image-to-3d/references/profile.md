@@ -15,4 +15,4 @@
 
 `preflight` confirms that the graph's node classes and all four weight files exist. Environment: ComfyUI 0.38.0 (`f1072eb`), RTX 5070 Ti 16 GB; run preflight first anywhere else.
 
-TRELLIS.2 and Pixal3D use different conditioning, so swapping the checkpoint alone does not work. Mesh-input texturing is not implemented locally. Historical tool validation: [workflow validation](../../../../docs/validation/2026-10-06-image-to-3d-workflow.md).
+TRELLIS.2 and Pixal3D use different conditioning, so swapping the checkpoint alone does not work. Mesh-input texturing is not implemented locally.

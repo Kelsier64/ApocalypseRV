@@ -30,4 +30,3 @@ blender --background art_source/monster_refined_v020/monster_refined_v020.blend 
 
 `render_runtime.gd` 以正式 Godot 模型及啟用的姿勢修正器渲染固定抓握姿勢，四張 `runtime-grip-*.png` 是 Forward+ GPU 輸出，並非人工操作回放。可用 `godot --path . --log-file .godot/grip-v020-runtime.log --script art_source/monster_refined_v020/render_runtime.gd` 重現。
 
-[本次驗證與限制](../../docs/validation/2026-09-23-raker-v020.md)。

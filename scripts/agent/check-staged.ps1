@@ -1,5 +1,5 @@
-# Checks files about to be committed for intermediate outputs, oversized binaries
-# and new world-space text nodes.
+# Checks files about to be committed for intermediate outputs, oversized binaries,
+# new world-space text nodes, and docs that break links or the docs/ layout.
 # Manual use: run after staging; exits 1 when something must not be committed.
 # -Hook: PreToolUse payload on stdin; inspects only `git commit`
 # commands, including files staged earlier in the same command.
@@ -57,6 +57,12 @@ foreach ($file in $files) {
 }
 $evidence = @($newFiles | Where-Object { $_ -match '^docs/.*\.(png|jpe?g|webp|gif|mp4)$' })
 if ($evidence.Count -gt 6) { $warnings.Add("$($evidence.Count) new images under docs/ (keep a few representative ones; leave the rest in .godot/)") }
+# Docs in the pending commit must keep their links and the docs/ layout (docs-maintenance skill).
+$docFiles = @($files | Where-Object { $_ -match '\.md$' -or $_ -match '^docs/' })
+if ($docFiles.Count) {
+    $docProblems = @(& (Join-Path $PSScriptRoot 'check-docs.ps1') @docFiles | Where-Object { $_ -match '^(BROKEN|MISPLACED)' })
+    if ($docProblems.Count) { $warnings.Add("docs check: $($docProblems -join ' | ')") }
+}
 
 $message = ''
 if ($blocked.Count) { $message += "Must not be committed (fix it, or keep it in .godot/ or another ignored path and unstage it): $($blocked -join '; '). " }

@@ -5,7 +5,6 @@
 - [可編輯來源](barrel_man.blend)：人腿網格、11 根骨骼、10 組 60 Hz Action、打包膚色圖、桶身參考及檢視攝影棚。
 - [遊戲 GLB](../../assets/models/barrel_man/barrel_man.glb)：只輸出雙腿、趾甲、骨架與動畫，共 **42,846 三角面**；桶身由遊戲共用 [原油桶](../../assets/models/oil_barrel/oil_barrel.glb)，不重複烘進 GLB。
 - [膚色圖](skin_basecolor.png)：2048×2048，Blender 程序污垢材質烘焙。材質與網格為本次製作；桶身來源沿用 [油桶來源紀錄](../oil_barrel/README.md)。
-- [初版功能驗收](../../docs/validation/2026-10-07-barrel-man.md)及[腳部細修驗收](../../docs/validation/2026-10-07-barrel-man-feet.md)。
 
 腳部第二版重塑內外踝、阿基里斯腱、腳跟、內側足弓及前腳掌；五趾有不同長短、圓潤趾腹與淺關節皺褶。趾甲以實際趾面射線定位，使用貼合皮膚的薄曲面與窄自由緣。踝部蒙皮限制在下脛／跟腱區，避免彎踝時拉扯整個腳背。初版完整 `.blend` 與 GLB 保留在 [versions/feet_v1](versions/feet_v1/)。
 

@@ -2,7 +2,7 @@
 
 2026-10-07 使用官方 **gltfpack 1.3** 原生 Windows 工具，直接讀取 [收存原 GLB](../../retired_props/2026-09-29/oil_barrel.glb)。沒有修改原件、既有 Blender 3,000 面候選或正式道具場景。
 
-[比較紀錄與 Godot 畫面](../../../docs/validation/2026-10-07-oil-barrel-meshoptimizer.md) · [重現腳本](run.ps1) · [單次處理時間](timings.json)
+[重現腳本](run.ps1) · [單次處理時間](timings.json)
 
 注意：以下是比較產物，**不是全部合格的遊戲資產**。所有模式都以 `-si 0.006001848` 嘗試約 3,000 三角形，保留原兩張 WebP，沒有重新烘焙。停用量化與 mesh compression，保留命名節點／材質：`-noq -kn -km`。
 

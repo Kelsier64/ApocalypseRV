@@ -19,4 +19,4 @@ godot --headless --path . --script res://art_source/barrel_vfx/bake_resources.gd
 godot --headless --editor --path . --import
 ```
 
-遊戲效果在 `enemies/barrel_explosion_effect.gd`：兩個有界火煙體積、地面揚塵、少量火星、八片無遊戲碰撞體的碎片；射線提供視覺反彈與落地聲。`barrel_blast_flipbook.gdshader` 把圖集輪廓配上深度密度，在 BoxMesh 邊界內沿視線取樣 12 次，以場景不透明深度限制可見區間，讓駕駛鏡頭進入體積仍看得到火煙。燃料火焰快速膨脹與上升，煙霧緩升；這是預烘焙輪廓的體積近似，不在遊戲中模擬流體。完整效果 8 秒後釋放，煙霧 3.8–8 秒漸淡；沒有持續燃燒傷害或可拾取殘骸。普通油桶與油桶人沿用相同效果。駕駛 POV 修正與驗證見[紀錄](../../docs/validation/2026-10-08-barrel-driver-explosion.md)。
+遊戲效果在 `enemies/barrel_explosion_effect.gd`：兩個有界火煙體積、地面揚塵、少量火星、八片無遊戲碰撞體的碎片；射線提供視覺反彈與落地聲。`barrel_blast_flipbook.gdshader` 把圖集輪廓配上深度密度，在 BoxMesh 邊界內沿視線取樣 12 次，以場景不透明深度限制可見區間，讓駕駛鏡頭進入體積仍看得到火煙。燃料火焰快速膨脹與上升，煙霧緩升；這是預烘焙輪廓的體積近似，不在遊戲中模擬流體。完整效果 8 秒後釋放，煙霧 3.8–8 秒漸淡；沒有持續燃燒傷害或可拾取殘骸。普通油桶與油桶人沿用相同效果。

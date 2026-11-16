@@ -22,4 +22,4 @@ blender --background art_source/monster_refined_v018/monster_refined_v018.blend 
 
 [validation.json](validation.json) 保存 41 段動畫逐影格檢查、根骨平移、下顎角度、牙齒碰撞及五方向遮齒射線。身體自交掃描排除嘴縫／口腔的刻意接觸區與牙根嵌入；射線取樣也不等於所有視角的逐像素保證。嘴部外觀另以 Blender 預覽與遊戲第一人稱檢查。
 
-[本次遊戲驗收](../../docs/validation/2026-09-23-raker-v018.md)。歷史模型與場景保留；不覆蓋使用者已開啟而未儲存的 Blender 視窗。
+歷史模型與場景保留；不覆蓋使用者已開啟而未儲存的 Blender 視窗。

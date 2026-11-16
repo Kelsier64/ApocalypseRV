@@ -13,7 +13,7 @@ Keep Claude Code configuration and instructions in their own files.
 |---|---|---|
 | Project instructions | `CLAUDE.md` | Claude Code's entry point |
 | Skills | `.claude/skills/<name>/SKILL.md` | Every Claude Code skill has a row in CLAUDE.md's Skills table |
-| Hooks | `.claude/settings.json` | Run `scripts/agent/session-context.ps1`, `guard-edit.ps1`, `check-staged.ps1`. Keep the bash prefilter so unrelated calls stay cheap |
+| Hooks | `.claude/settings.json` | Run `scripts/agent/session-context.ps1`, `guard-edit.ps1`, `check-staged.ps1` (which calls `check-docs.ps1` on staged docs). Keep the bash prefilter so unrelated calls stay cheap |
 | MCP servers | `.mcp.json` | Blender (`mcp-for-blender`, safe mode) |
 | User-level, outside the repo | `~/.claude/output-styles/co-lead.md`, `~/.claude/skills/{dispatch,agy}` | Cross-project behavior only; project rules never go there |
 
@@ -32,7 +32,7 @@ Write harness files in English and in the imperative. Docs under `docs/` stay in
 
 ## After changing
 
-1. Links: `scripts/agent/check-links.ps1 <changed .md files>`.
+1. Links and docs layout: `scripts/agent/check-docs.ps1 <changed .md files>`.
 2. Hook scripts: feed a sample payload and confirm both the block and the pass case, for example:
 
    ```powershell
@@ -41,5 +41,5 @@ Write harness files in English and in the imperative. Docs under `docs/` stay in
    ```
 
 3. `scripts/agent/session-context.ps1` runs clean.
-4. Grep for stale references to renamed paths, skills or rules (exclude `docs/validation`, `docs/report`, `docs/archive`, which are historical).
+4. Grep for stale references to renamed paths, skills or rules.
 5. New or renamed skills and output-style changes take effect in the next session; say so in the report.

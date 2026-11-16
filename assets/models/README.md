@@ -8,4 +8,4 @@
 - `raker/raker.glb` 是正式 v021 外觀，套用 [v022 動作修整](../../art_source/raker_motion_v022/README.md)。v009–v020 的製作版本保留在 `art_source/monster_refined_vNNN/`，不是額外的執行期模型。
 - 原 `assets/gas_can.glb`、`assets/oil_barrel.glb` 及配套貼圖／匯入設定已收存到 `art_source/retired_props/2026-09-29/`；道具場景路徑保留並改用 Godot 原生灰盒。
 
-需要追查舊資料時，可看 [2026-09-29 來源快照](../../docs/archive/modeling-2026-09-29/asset-provenance.md)，內容不代表目前狀態；不得由檔名中的 `test` 或目前沒有主場景文字引用推定可刪除。
+不得由檔名中的 `test` 或目前沒有主場景文字引用推定可刪除。

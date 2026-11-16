@@ -8,4 +8,4 @@
 
 只接入 [diesel_generator_graybox.tscn](../../../world/poi_kit/furniture/bunker/diesel_generator_graybox.tscn) 的 `Visuals/Model/Generator`。原 `Blockout`／`Cover` 保留名稱、類型與資料，設定隱藏；`Stencil` 文字節點於 2026-11-06 移除，不得補回模型提示字。wrapper、`Visuals`／`Model` 與 `Collision` 沒有改名或改變物理設定。
 
-皮帶罩網孔主要是貼圖凹凸，背部與底面為生成近似；詳見 [驗證紀錄](../../../docs/validation/2026-10-07-bunker-diesel-generator-skills.md)。
+皮帶罩網孔主要是貼圖凹凸，背部與底面為生成近似。
