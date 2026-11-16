@@ -8,7 +8,7 @@ Facts that drift (branch state, version constants, test count, last full test re
 
 Version constants live in `world/terrain/world_profile.gd` (`generation_version`), `rv/checkpoint.gd` and `rv/vehicle_snapshot.gd` (`VERSION`). For a class index generated from code, run `scripts/agent/module-index.ps1 [filter]`.
 
-Docs lag behind code. [docs/README.md](docs/README.md) is the index: `GDD.md` holds design intent, `architecture.md` cross-module structure, `docs/systems/<system>.md` one system's features, values and contracts, `docs/guides/` how-tos, and `docs/plans/` unfinished work. Read the matching system file before changing a system. The system files were merged from older documents and still carry dated paragraphs: verify a doc claim against code before relying on it, and correct stale statements you touch.
+Docs lag behind code. [docs/README.md](docs/README.md) is the index: `GDD.md` holds design intent, `architecture.md` cross-module structure, `docs/systems/<system>.md` one system's features, values and contracts, `docs/guides/` how-tos, and `docs/plans/` unfinished work. Read the matching system file before changing a system. A few system files are still merged from older documents and carry dated paragraphs (the list is in [docs/plans/README.md](docs/plans/README.md)): verify a doc claim against code before relying on it, and correct stale statements you touch.
 
 ## Map
 
