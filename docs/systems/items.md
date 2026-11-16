@@ -68,3 +68,7 @@ Item 共用契約：可搬運道具與原設備共用 `Item`、`ItemDefinition`�
 固定物品長 F 兩秒 → 檢查容量／雙手／使用狀態 → 停止服務並拾取；長按成功抑制同次 F 短按。手持短 F 在放開時進入 EquipmentPlacement，背包仍擁有物品，另建 presentation_only ghost；預覽期間暫時隱藏手持模型，只顯示目標輪廓，取消時恢復手持顯示。PlacementRules 檢查所有碰撞層、朝向、操作空間及支撐循環，允許靜態表面、固定結構與固定 Item，拒絕散落物、角色、活動門扇與坡板。左鍵重新檢查位置、距離、手臂及 inventory slot／ID，建立實物並成功固定後才消耗背包；右鍵／Esc 保留物品，G 取消後丟出。
 
 ItemMount 分開管理本車歸屬與 mount_support：固定於 RV 的物品登錄本車，靜態表面上的物品仍歸 WorldEntities。支撐 removing／tree_exiting 先停機，再延後解除固定，帶支撐點速度恢復物理。牆壁拆掉，上面的設備／其他 Item 會掉落成可拾取物；ID、耐久及內容物保留。移除底層物品令其上物品分別掉落，不收進同一背包。工作台退未完成材料、分解機釋放投入物、電池插槽另行掉電池，道具箱移除不清空底盤倉庫；共用停止入口避免重複退料。
+
+### 手電筒狀態
+
+Flashlight 是小型 Item，初始世界以場景實例放在地面。`state.flashlight={charge,on}` 使用獨立欄位，不能混用 RV 的 `state.battery`；VehicleSnapshot 驗證有限 0–100 電量和開關型別，SaveSceneCatalog 明確登錄場景。玩家背包狀態為耗电真值，手持節點只鏡射 Spotlight；在 NORMAL、選取且可見照明時按 100/300 每秒扣電。PlayerGrab 在抓取開始前記錄實際亮燈狀態；原本亮著的手電筒在 GRABBED 期間保持可見、正常耗電，由持物姿勢將燈頭朝向抓取者臉部，解除後恢復一般朝向。切換、丟棄及倉庫移轉在序列化前關燈；模式暫停不耗電。讀檔用原 actor 替換流程清除初始地面實例，不另補發。
