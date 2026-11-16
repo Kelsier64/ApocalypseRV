@@ -35,7 +35,7 @@
 
 | 項目 | 說明 |
 |---|---|
-| 系統文件逐份改寫 | `docs/systems/` 各檔由舊文件合併而成，要逐份對照程式改寫成現況，刪掉日期、版本史與重複段落。一次一份。尚未改寫：`opening`、`player`、`items`、`rv`、`economy`、`poi`、`enemies`、`environment`；重構會動到的 `player`、`rv`、`enemies` 跟著對應的[重構](architecture-refactor.md)切片改 |
+| 系統文件逐份改寫 | `docs/systems/` 各檔由舊文件合併而成，要逐份對照程式改寫成現況，刪掉日期、版本史與重複段落。一次一份。尚未改寫：`opening`、`player`、`items`、`rv`、`economy`、`enemies`、`environment`；重構會動到的 `player`、`rv`、`enemies` 跟著對應的[重構](architecture-refactor.md)切片改 |
 | 架構審查遺留 | 玩家 UI 與重力／`RVSupport` 的互動、普通動態物件的遠距清理；POI 導航生命週期與車內群怪重建路徑的成本尚未量測 |
 | 駕駛與安裝的小問題 | 方向盤左右、電池槽與設備的預設方向、加油孔尺寸、角落閃爍，需先重現 |
 | 車輛碰撞 | 外掛設備仍是獨立凍結剛體，碰撞力矩沒有併入車體 |
