@@ -184,7 +184,8 @@ func _add_exit() -> void:
 func _add_links(first_visit: bool) -> bool:
 	match profile_id:
 		&"megashelter":
-			return _add_stair_access()
+			# Like the bunker branch, a floor with no valid door position stays enterable.
+			_add_stair_access()
 		&"megashelter_stairwell", &"bunker_stairwell":
 			if not layout.has("stair_destination"):
 				layout.stair_destination = str(InteriorProfiles.roll_stair_destination(int(layout.seed)))
