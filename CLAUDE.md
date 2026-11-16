@@ -62,9 +62,8 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 ## Delegation
 
 - Keep scene modeling and 3D integration in the main agent.
-- **Prefer agy to save Claude tokens.** Antigravity CLI (Gemini, user-level `agy` skill) runs on a separate quota. Send it work that is cheaper to check than to do: broad code research and summaries, code review and second opinions, test-log and CI triage, first drafts of docs, and mechanical multi-file edits. Include relevant project rules and verification in its task brief and run it in the background. Use `--mode plan` for read-only work; for edits, point it at a separate worktree and review the diff before anything lands.
-- **Generate every image with agy** (reference images, textures, concept art, icons). Run it in an empty folder outside the repo and read the result before use; [reference images](.claude/skills/comfyui-image-to-3d/references/reference-images.md) has the tested call and checks.
-- Keep with Claude: work that needs this conversation's context, 3D integration, harness changes, and final verification.
+- **Use agy (Antigravity CLI, Gemini) only to generate images** (reference images, textures, concept art, icons). Claude has no image generator and local ComfyUI has no text-to-image model. Run it in an empty folder outside the repo and read the result before use; [reference images](.claude/skills/comfyui-image-to-3d/references/reference-images.md) has the tested call and checks.
+- Do not send agy code research, doc audits, reviews, log triage or edits. Its results still need a full check, and its failed runs cost more Claude tokens than it saves. To keep the main context small, use an Explore subagent for broad searches and start a fresh session per independent task.
 
 ## Skills
 

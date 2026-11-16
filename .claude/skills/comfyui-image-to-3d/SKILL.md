@@ -29,7 +29,7 @@ The service entry point is `http://127.0.0.1:8000/health`; the scripts find the 
 
 ## 1. Reference image
 
-Reuse a suitable existing image first (`art_source/<asset>/`). If none fits, have Gemini draw one through the user-level `agy` skill — see [reference images](references/reference-images.md) for the brief and checks. If agy fails, write the spec and ask the user for an image.
+Reuse a suitable existing image first (`art_source/<asset>/`). If none fits, have Gemini draw one through agy — see [reference images](references/reference-images.md) for the brief and checks. If agy fails, write the spec and ask the user for an image.
 
 Requirements:
 

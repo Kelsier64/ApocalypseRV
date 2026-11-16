@@ -1,6 +1,6 @@
 # Reference images via agy (Gemini)
 
-Claude has no image generator, and local ComfyUI has no text-to-image model. When no existing image fits, have Antigravity CLI draw one: its `image-generator` subagent paints the image, and agy removes the background itself. Read the user-level `agy` skill for locating the binary and general flags.
+Claude has no image generator, and local ComfyUI has no text-to-image model. When no existing image fits, have Antigravity CLI draw one: its `image-generator` subagent paints the image, and agy removes the background itself.
 
 ## Call
 
