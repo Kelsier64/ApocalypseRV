@@ -596,20 +596,11 @@ godot --path . res://tests/rv_handling_playground.tscn
 
 以 `-- --station=6` 直接進入救援站，附加 `--capture` 可擷取千斤頂固定相機畫面。
 
-## 駕駛體驗與完整出車回放
+## 駕駛體驗
 
 `godot --path . --log-file .godot/driving-experience.log res://tests/driving_experience_playground.tscn`
 
 開局入座；F5 車內鏡、F6 左鏡、F7 右鏡、F1 前方，Backspace 拆除或重建掛車內鏡的前牆；紅色／藍色障礙分別在車尾左右。F8 引擎艙視角後按 E 開蓋、F9 坡板、F11 夜間並開工作／維修燈、F3 車內視角、F12 正式輪驅回放。照明與儀表亮度統一由控制台操作。測試視角定位只用於觀察，不代表玩家已走到該位置。
-
-正式主世界整趟回放：
-
-```powershell
-godot --path . --log-file .godot/trip-day.log -s res://scripts/replay_rv_trip.gd
-godot --path . --log-file .godot/trip-night.log -s res://scripts/replay_rv_trip.gd -- --night --stay
-```
-
-涵蓋輪驅出車、步行搬運、分解／製作、故障維修與引擎交換、收妥車輛、存讀檔後再出發。`--stay` 保留結果視窗；headless 可加 `--fixed-fps 60`。固定種子、移除怪物、替換引擎／廢料供應與零耐久故障是測試設定；取放、製作與維修呼叫正式服務入口，並非逐一滑鼠瞄準的人工遊玩。存檔使用獨立 `user://driving_trip_validation.save`。
 
 ## 日夜與天氣驗收
 

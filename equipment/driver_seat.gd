@@ -69,18 +69,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		seat_camera.rotation.x = clamp(seat_camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 		seat_camera.rotation.y = clamp(seat_camera.rotation.y, deg_to_rad(-120), deg_to_rad(120))
 
-	if event is InputEventKey and event.pressed and not event.echo:
+	# Only fresh presses can trigger a drive action; skip the RV lookup otherwise.
+	if event.is_pressed() and not event.is_echo():
 		var rv := get_connected_rv()
 		if rv:
-			match event.physical_keycode:
-				KEY_B: rv.set_engine_running(not rv.energy.engine_running)
-				KEY_L: rv.headlights_requested = not rv.headlights_requested
-				KEY_SPACE: rv.set_handbrake(not rv.handbrake)
-				KEY_Z: rv.set_gear(-1)
-				KEY_X: rv.set_gear(0)
-				KEY_C: rv.set_gear(1)
-				KEY_R: rv.set_gear(rv.gear + 1)
-				KEY_T: rv.set_gear(maxi(1, rv.gear - 1))
+			if event.is_action_pressed("drive_engine_toggle"): rv.set_engine_running(not rv.energy.engine_running)
+			elif event.is_action_pressed("drive_headlights"): rv.headlights_requested = not rv.headlights_requested
+			elif event.is_action_pressed("drive_handbrake"): rv.set_handbrake(not rv.handbrake)
+			elif event.is_action_pressed("drive_gear_reverse"): rv.set_gear(-1)
+			elif event.is_action_pressed("drive_gear_neutral"): rv.set_gear(0)
+			elif event.is_action_pressed("drive_gear_forward"): rv.set_gear(1)
+			elif event.is_action_pressed("drive_gear_up"): rv.set_gear(rv.gear + 1)
+			elif event.is_action_pressed("drive_gear_down"): rv.set_gear(maxi(1, rv.gear - 1))
 	if event.is_action_pressed("interact"):
 		exit_seat()
 		get_viewport().set_input_as_handled()

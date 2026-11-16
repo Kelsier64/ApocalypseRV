@@ -1,6 +1,6 @@
 # 架構重構計畫
 
-| 狀態 | 盤點完成，測試基準已全綠，擬真操控分支已合回 main，尚未動程式 |
+| 狀態 | 盤點完成，測試基準已全綠，擬真操控分支已合回 main，小清理已開始 |
 |---|---|
 | 前提 | 完整測試全綠、`codex/rv-handling-rollover` 合回 main（皆已達成）；之後每個切片從 main 開 worktree |
 | 痛點 | 高層設計不清、大檔案難改、agent 容易迷路且耗 token、執行效能 |
@@ -16,7 +16,6 @@
 - **基底類別承擔子類別的行為。** `Monster`（`enemies/monster.gd`）四個子類別中，只有 Raker 與 Crawler 用到攀爬、選敵、導航與登車；BarrelMan 與 SlenderSpeaker 覆寫 `_physics_process` 且不呼叫 super，只用到基底很小的一部分。外部真正依賴的介面只有 `is_dead`、`take_damage`、`current_health`、`receive_vehicle_body_contact` 與群組。
 - **RV 車殼程式分散在兩個資料夾。** `rv/structure_slots.gd`、`rv/battery_socket.gd` 在 `rv/`，`equipment/rv_panel.gd`、`rv_door.gd`、`rv_ladder.gd` 在 `equipment/`。
 - **手動登錄清單重複。** 新增一件物品要改 `core/save_scene_catalog.gd`、`core/inventory_item_icons.gd`、`core/item_names.gd`、`equipment/rv_terminal_presenter.gd`，有自訂狀態再加 `core/item_state.gd` 與 `rv/vehicle_snapshot.gd`。新增配方要在 `equipment/recipe_catalog.gd` 手動 preload；新增 POI 要登錄在 `world/poi_config.gd`。
-- **駕駛按鍵寫死。** `equipment/driver_seat.gd` 直接比對實體鍵碼，不走 `project.godot` 的輸入對應。
 - **`tests/` 混放**自動測試、`support/` 契約、手動測試場與美術研究。
 
 ## 大檔案拆分縫
@@ -25,7 +24,6 @@
 
 | 檔案 | 切片 | 乾淨度 | 測試覆蓋 |
 |---|---|---|---|
-| `player/player.gd` | 刪掉沒有呼叫者的牆面攀爬包裝（`_build_climb_motion`、`_clamp_upward_climb_distance`、`_apply_wall_outward_alignment`、`_is_valid_climb_hit_height`、`_compute_rv_position_delta`、`_sanitize_velocity_after_climb`），它們是 `monster.gd` 的複本，玩家現在只爬梯 | 乾淨 | 不需要 |
 | `equipment/tablet_ui.gd` | 與 `training_terminal_ui.gd` 共用終端元件工廠 | 乾淨 | 無 UI 測試，要人工看 |
 | `rv/chassis.gd` | 撞擊處理（`_integrate_forces`、懸吊撞擊取樣、`queue_*_impact`、`_settle_vehicle_impact`）抽成獨立元件，沿用 drivetrain／crash_damage 的模式 | 乾淨，只共用 4 個變數 | 間接；先補撞樹與撞怪的測試 |
 | `enemies/slender_speaker/slender_speaker.gd` | 抓取與處決抽成 RefCounted helper，沿用既有 `update(actor, ...)` 模式 | 中等 | `test_slender_speaker_acquisition` 直接呼叫約 23 個私有方法，要加轉接或改測試 |
@@ -36,9 +34,6 @@
 
 ## 立即可做的小清理
 
-- 刪除沒人用的 `BarrelManSettings.ROAD_CHANCE`（`enemies/barrel_man_settings.gd`）；道路實際用 `RoadSpawns.BARREL_MAN_CHANCE`。
-- `scripts/replay_rv_trip.gd` 讀 `rv.rear_ramp.blocked_message`，但 `RearRamp` 沒有這個欄位，修好或退役。
-- 駕駛按鍵改成 `project.godot` 的輸入動作。
 - 手動測試場移到 `tests/playgrounds/`（要同步改 `scripts/test.ps1` 與文件連結）。
 - 命名：`world/main_world.gd` 繼承 `world/test_world.gd`，後者其實是正式世界的基底。
 

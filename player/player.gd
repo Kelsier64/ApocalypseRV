@@ -21,23 +21,13 @@ const SAN_STAMINA_RECOVERY_THRESHOLD = 50.0
 const STAMINA_RECOVERY_DELAY = 1.0
 const STAMINA_EXHAUSTION_RECOVERY = 20.0
 const MOUSE_SENSITIVITY = 0.002
-const CLIMB_WALL_MIN_DOT = 0.0
-const CLIMB_WALL_MAX_DOT = 0.85
-const CLIMB_MIN_HIT_Y = 0.1
-const CLIMB_MAX_HIT_Y = 1.4
-const CLIMB_EXIT_MAX_UP_VELOCITY = 0.1
 const CLIMB_VERTICAL_SPEED = 1.6
 const LADDER_TRANSITION_SPEED = 1.4
 const LADDER_ENTRY_FACING_DOT = 0.8
 const CLIMB_SIDE_SPEED = 1.2
-const CLIMB_WALL_STICK_SPEED = 0.0
-const CLIMB_CONTACT_GRACE_TIME = 0.6
-const CLIMB_START_CEILING_CHECK_DISTANCE = 0.6
 const CLIMB_MAX_RV_ANGULAR_SPEED = 2.4
 const CLIMB_MAX_FRAME_DELTA = 1.5
 const CLIMB_REENTER_COOLDOWN = 0.2
-const CLIMB_WALL_ALIGN_OFFSET = 0.22
-const CLIMB_WALL_MAX_OUTWARD_CORRECTION = 0.08
 const CLIMB_DEBUG_LOG_ABORTS = false
 
 @onready var camera = $Camera3D
@@ -122,10 +112,6 @@ var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
 var crawl_transition_remaining: float = 0.0
 var crouching := false
-var debug_last_ceiling_hit_distance: float = INF
-var debug_last_ceiling_hit_position: Vector3 = Vector3.ZERO
-var debug_last_ceiling_hit_source: String = ""
-var debug_last_ceiling_hit_node: String = ""
 var debug_climb_last_log_time_by_tag: Dictionary = {}
 
 # Health System
@@ -744,14 +730,6 @@ func _abort_climb_if_holding_large_item() -> bool:
 	_abort_climb("carrying large item")
 	return true
 
-## Shared geometry wrappers retained for math checks. Player entry is
-## authorized exclusively by begin_ladder_climb and an available RVLadder.
-func _is_rv_wall_normal(hit_normal: Vector3, rv_up: Vector3 = Vector3.UP) -> bool:
-	return ClimbMath.is_rv_wall_normal(hit_normal, rv_up, CLIMB_WALL_MIN_DOT, CLIMB_WALL_MAX_DOT)
-
-func _is_valid_climb_hit_height(local_hit_y: float) -> bool:
-	return ClimbMath.is_valid_hit_height(local_hit_y, CLIMB_MIN_HIT_Y, CLIMB_MAX_HIT_Y)
-
 func _should_disable_body_collision_for_locomotion(_state: int) -> bool:
 	return seated_in != null or is_player_dead or is_cheat_flying()
 
@@ -810,12 +788,6 @@ func _sync_body_collision_to_locomotion() -> void:
 		return
 	body_collision_shape.disabled = _should_disable_body_collision_for_locomotion(int(locomotion_state))
 
-func _compute_rv_position_delta(prev_rv_transform: Transform3D, next_rv_transform: Transform3D) -> Vector3:
-	return ClimbMath.rv_position_delta(prev_rv_transform, next_rv_transform)
-
-func _sanitize_velocity_after_climb(v: Vector3) -> Vector3:
-	return ClimbMath.sanitize_velocity_after_climb(v, CLIMB_EXIT_MAX_UP_VELOCITY)
-
 func _debug_v3(v: Vector3) -> String:
 	return ClimbMath.format_v3(v)
 
@@ -836,58 +808,10 @@ func _debug_climb_log(tag: String, message: String, force: bool = false) -> void
 	debug_climb_last_log_time_by_tag[tag] = now
 	print("[CLIMB_DEBUG][player][", tag, "] ", message)
 
-func _build_climb_motion(rv_up: Vector3, wall_normal: Vector3, vertical_input: float, horizontal_input: float, delta: float) -> Vector3:
-	return ClimbMath.build_climb_motion(rv_up, wall_normal, vertical_input, horizontal_input, delta,
-		CLIMB_VERTICAL_SPEED, CLIMB_SIDE_SPEED, CLIMB_WALL_STICK_SPEED, CLIMB_MAX_FRAME_DELTA, transform.basis.x)
-
-func _clamp_upward_climb_distance(rv_up: Vector3, desired_upward_distance: float) -> float:
-	debug_last_ceiling_hit_distance = INF
-	debug_last_ceiling_hit_position = Vector3.ZERO
-	debug_last_ceiling_hit_source = ""
-	debug_last_ceiling_hit_node = ""
-
-	if desired_upward_distance <= 0.0:
-		return 0.0
-
-	var from := global_position + rv_up * 0.2
-	var to := from + rv_up * (desired_upward_distance + 0.8)
-	var hit := ClimbMath.nearest_ceiling_hit(climb_upward_probe, self, from, to)
-	if hit.is_empty():
-		return desired_upward_distance
-
-	debug_last_ceiling_hit_distance = hit["distance"]
-	debug_last_ceiling_hit_position = hit["position"]
-	debug_last_ceiling_hit_source = hit["source"]
-	debug_last_ceiling_hit_node = hit["node_label"]
-
-	# Keep a small safety gap so we stop before interpenetrating the ceiling surface.
-	var safe_distance: float = maxf(0.0, hit["distance"] - 0.05)
-	return minf(desired_upward_distance, safe_distance)
-
 func _move_with_climb_collision(step: Vector3) -> KinematicCollision3D:
 	if step.length_squared() <= 0.0000001:
 		return null
 	return move_and_collide(step)
-
-func _apply_wall_outward_alignment(rv_up: Vector3) -> void:
-	if climb_wall_probe == null or not climb_wall_probe.is_colliding() or active_climb_rv == null:
-		return
-
-	var hit_node := climb_wall_probe.get_collider() as Node
-	if _find_rv_ancestor(hit_node) != active_climb_rv:
-		return
-
-	var wall_normal: Vector3 = climb_wall_probe.get_collision_normal().normalized()
-	if _is_rv_wall_normal(wall_normal, rv_up):
-		active_wall_normal = wall_normal
-
-	var desired_probe_position: Vector3 = climb_wall_probe.get_collision_point() + wall_normal * CLIMB_WALL_ALIGN_OFFSET
-	var correction: Vector3 = desired_probe_position - climb_wall_probe.global_position
-	var outward_mag: float = correction.dot(wall_normal)
-	if outward_mag <= 0.0:
-		return
-	var outward_step: Vector3 = wall_normal * minf(outward_mag, CLIMB_WALL_MAX_OUTWARD_CORRECTION)
-	_move_with_climb_collision(outward_step)
 
 func _find_rv_ancestor(node: Node) -> Node3D:
 	return ClimbMath.find_rv_ancestor(node)

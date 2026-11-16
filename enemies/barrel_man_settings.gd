@@ -1,7 +1,6 @@
 extends Resource
 class_name BarrelManSettings
 ## Shared tuning for the actor, deterministic spawn policy and explosion resolver.
-const ROAD_CHANCE := 0.10
 const MINOR_CHANCE := 0.15
 const BUNKER_CHANCE := 0.20
 
