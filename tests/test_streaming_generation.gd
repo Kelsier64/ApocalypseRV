@@ -1,31 +1,12 @@
 extends SceneTree
 ## Slicing must preserve geometry and collision, including every forest trunk.
+## Sampled v14/world-detail/off-road/POI contracts run in test_world_contracts.
 const WAIT = preload("res://tests/support/test_wait.gd")
+const TERRAIN_HOST = preload("res://tests/support/terrain_host.gd")
 const TERRAIN_CONTRACTS = preload("res://tests/support/terrain_contracts.gd")
-const V14_CONTRACTS = preload("res://tests/support/terrain_v14_contracts.gd")
-const OFFROAD_CONTRACTS = preload("res://tests/support/offroad_site_contracts.gd")
-const MEGASHELTER_CONTRACTS = preload("res://tests/support/megashelter_contracts.gd")
-const BUILDING_LOCATOR_CONTRACTS = preload("res://tests/support/building_locator_contracts.gd")
 const NAV_SURFACE = preload("res://tests/support/nav_surface_probe.gd")
-const WORLD_DETAIL_CONTRACTS = preload("res://tests/support/world_detail_contracts.gd")
 const STREETLIGHT_SCENE = preload("res://world/roadside_kit/streetlight.tscn")
 var failures: Array[String] = []
-
-class TerrainHost extends Node3D:
-	var giant_navigation_map := RID()
-
-	func _init() -> void:
-		giant_navigation_map = NavigationServer3D.map_create()
-		NavigationServer3D.map_set_cell_size(giant_navigation_map, 0.275)
-		NavigationServer3D.map_set_cell_height(giant_navigation_map, 0.25)
-		NavigationServer3D.map_set_merge_rasterizer_cell_scale(giant_navigation_map, 0.1)
-		NavigationServer3D.map_set_edge_connection_margin(giant_navigation_map, 0.8)
-		NavigationServer3D.map_set_active(giant_navigation_map, true)
-
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_PREDELETE and giant_navigation_map.is_valid():
-			NavigationServer3D.free_rid(giant_navigation_map)
-			giant_navigation_map = RID()
 
 func _init() -> void:
 	run.call_deferred()
@@ -37,7 +18,7 @@ func check(ok: bool, message: String) -> void:
 
 func run() -> void:
 	_check_opening_profiles()
-	var world := TerrainHost.new()
+	var world := TERRAIN_HOST.new()
 	root.add_child(world)
 	current_scene = world
 	_check_streetlight_placement()
@@ -68,11 +49,6 @@ func run() -> void:
 		chunk.queue_free()
 		await process_frame
 	TERRAIN_CONTRACTS.run(check)
-	await V14_CONTRACTS.run(self, world, check)
-	await WORLD_DETAIL_CONTRACTS.run(self, world, check)
-	await OFFROAD_CONTRACTS.run(self, world, check)
-	BUILDING_LOCATOR_CONTRACTS.run(check)
-	await MEGASHELTER_CONTRACTS.run(self, world, check)
 	for version: int in [WorldProfile.CURRENT_GENERATION]:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
@@ -328,7 +304,7 @@ func _check_crossing_chunk(world: Node3D, version: int) -> void:
 		return
 	var crossing: Dictionary = rivers[0]
 	var s := float(crossing.s)
-	var host := TerrainHost.new()
+	var host := TERRAIN_HOST.new()
 	world.add_child(host)
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(world.get_world_3d().navigation_map, 0.1)
 	var chunk := ChunkGenerator.new()
@@ -388,7 +364,7 @@ func _check_mountain_navigation(world: Node3D) -> void:
 	# The two bands adjoining the nearest summit seam include the highest
 	# sampled road point, and exercise independent vertical bake bounds.
 	var seam := roundi(peak_s / field.profile.chunk_length)
-	var host := TerrainHost.new()
+	var host := TERRAIN_HOST.new()
 	world.add_child(host)
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(world.get_world_3d().navigation_map, 0.1)
 	var chunks: Array[ChunkGenerator] = []
@@ -445,7 +421,7 @@ func _check_dry_viaduct(world: Node3D, version: int) -> void:
 			break
 	check(band >= 0, label + "fixture contains a sustained elevated road over a dry valley")
 	if band < 0: return
-	var host := TerrainHost.new()
+	var host := TERRAIN_HOST.new()
 	world.add_child(host)
 	var chunk := ChunkGenerator.new()
 	chunk.field = field

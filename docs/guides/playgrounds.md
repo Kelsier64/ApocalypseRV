@@ -121,7 +121,6 @@ godot --path . --log-file .godot/playground.log res://tests/megashelter_interior
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
 | [slender_speaker_playground](../../tests/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
-| [slender_speaker_bend_review](../../tests/slender_speaker_bend_review.tscn) | 正式接觸與彎腰／抬升的視覺專項 review；非自由遊玩 | `--scenario=ground` 或 `driver`；`--angle=front`／`side`／`hands`／`pov`；Space 播放／暫停、1–4 鏡頭。 |
 | [day_night_playground](../../tests/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
 | [weather_playground](../../tests/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、時間與車頂遮蔽 | 6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |
 | [volumetric_fog_playground](../../tests/volumetric_fog_playground.tscn) | 日夜場衍生霧效對照；局部體積霧與舊距離霧 | B 切模式、7／8 局部密度、其餘沿用日夜場；`--entry` 從入口開始。 |

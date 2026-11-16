@@ -19,7 +19,7 @@ description: Use when choosing, running, writing or debugging ApocalypseRV autom
 - A check passes only with exit code 0, a non-empty log, a `PASS:` line, and no `ERROR:`, `SCRIPT ERROR:`, `FAIL:` or crash lines. Any `push_error` fails it.
 - Without `-KeepGoing` the run stops at the first failure. Always say which selected checks did not run.
 - Run the scripts with the PowerShell tool. Launch full or multi-minute runs with `run_in_background` and wait for the notification.
-- `test_streaming_generation` dominates a full run (minutes). Select it only for terrain, roads, weather, fog, streetlights, POI placement or streaming changes.
+- `test_streaming_generation` (chunk slicing, streetlights, crossings, mountain navigation) and `test_world_contracts` (sampled v14, world-detail, off-road, building-locator and megashelter contracts) dominate a full run, minutes each. Select them only for terrain, roads, weather, fog, streetlights, POI placement or streaming changes. If either nears the 240 s local timeout, measure its phases and split again rather than raising the timeout.
 
 ## Choose
 

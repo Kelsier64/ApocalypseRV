@@ -39,11 +39,12 @@
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
 | [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；檢查點只接受當前世界生成（`WorldProfile.CURRENT_GENERATION`），檢查當前教學／重試入口及舊生成版本拒絕行為；巨型避難所固定 seed／面積布局、profile 分流、真實進出、補給箱與丟物回訪不補貨，以及完整檢查點磁碟往返 |
 | [streaming_generation](test_streaming_generation.gd) | 當前分幀／碰撞一致性、四種子 12 km 路線與地形契約、急彎及持續升降、固定道路指紋與獨立外觀域、全路寬河橋支撐、山頂跨區塊普通／巨人導航；霧外觀設定、載入視野保護及自然天氣 RNG／保存隔離 |
+| [world_contracts](test_world_contracts.gd) | v14 地形、世界細節、野外場址、建物定位與巨型避難所外殼的取樣契約；從 streaming_generation 拆出，讓兩者各自留在逐測試時限內 |
 | [main_scene_smoke](main_scene_smoke.gd) | 正式主世界可操作、教學凍結期間視野恢復且時間／天氣不前進、Esc 設定路由與玩家移動 |
 
-世界細節契約放在 [support/world_detail_contracts.gd](support/world_detail_contracts.gd)，由 streaming_generation 執行：特徵格與規劃順序無關、池塘／支線／地塊留在所屬格與帶內並避開 POI 與路肩、地表帶有水位／支線路床／保留區，道路設施與串流順序無關，散佈圖層目錄合法，以及一個真實帶的散佈規劃一致、實體散佈避開水／場址／路肩／接縫、可撞倒物件只碰 RV 並寫入破壞帳本。
+世界細節契約放在 [support/world_detail_contracts.gd](support/world_detail_contracts.gd)，由 world_contracts 執行：特徵格與規劃順序無關、池塘／支線／地塊留在所屬格與帶內並避開 POI 與路肩、地表帶有水位／支線路床／保留區，道路設施與串流順序無關，散佈圖層目錄合法，以及一個真實帶的散佈規劃一致、實體散佈避開水／場址／路肩／接縫、可撞倒物件只碰 RV 並寫入破壞帳本。
 
-巨型避難所室內契約放在 [support/megashelter_interior_contracts.gd](support/megashelter_interior_contracts.gd)，由轉場測試執行；外殼入口、相同碰撞及串流導航仍由 streaming_generation 的 [support/megashelter_contracts.gd](support/megashelter_contracts.gd) 檢查。
+巨型避難所室內契約放在 [support/megashelter_interior_contracts.gd](support/megashelter_interior_contracts.gd)，由轉場測試執行；外殼入口、相同碰撞及串流導航仍由 world_contracts 的 [support/megashelter_contracts.gd](support/megashelter_contracts.gd) 檢查。
 
 新版教學共用旅程放在 [support/orientation_journey.gd](support/orientation_journey.gd)，只由 departure 執行，避免同一批交易重跑。新增頂層 `test_*.gd` 會自動納入預設及 CI；優先擴充既有核心測試，共用 fixture 放在 `support/`。
 
