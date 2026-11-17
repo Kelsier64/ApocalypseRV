@@ -9,11 +9,11 @@
 [ext_resource type="Material" path="res://rv/visuals/dark.tres" id="dark"]
 
 [sub_resource type="BoxMesh" id="m1"]
-size = Vector3(0.43, 0.34, 0.5)
+size = Vector3(0.43, 0.54, 0.5)
 material = ExtResource("metal")
 
 [sub_resource type="BoxMesh" id="m2"]
-size = Vector3(0.68, 0.2, 0.65)
+size = Vector3(0.68, 0.2, 0.55)
 material = ExtResource("rubber")
 
 [sub_resource type="BoxMesh" id="m3"]
@@ -25,11 +25,11 @@ size = Vector3(0.43, 0.23, 0.18)
 material = ExtResource("rubber")
 
 [sub_resource type="BoxMesh" id="m5"]
-size = Vector3(0.04, 0.03, 0.6)
+size = Vector3(0.04, 0.03, 0.5)
 material = ExtResource("orange")
 
 [sub_resource type="BoxMesh" id="m6"]
-size = Vector3(0.04, 0.03, 0.6)
+size = Vector3(0.04, 0.03, 0.5)
 material = ExtResource("orange")
 
 [sub_resource type="BoxMesh" id="m7"]
@@ -112,36 +112,43 @@ material = ExtResource("metal")
 size = Vector3(0.1, 0.045, 0.2)
 material = ExtResource("rubber")
 
+[sub_resource type="BoxMesh" id="pedal_arm"]
+size = Vector3(0.045, 0.035, 0.55)
+material = ExtResource("metal")
+
 [node name="CockpitVisual" type="Node3D"]
 script = ExtResource("script")
 
 [node name="SeatPedestal" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.17, 0.05)
+position = Vector3(0, 0.27, 0.05)
 mesh = SubResource("m1")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="SeatCushion" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.46, 0.04)
+position = Vector3(0, 0.66, 0.085)
 mesh = SubResource("m2")
 rotation_degrees = Vector3(0, 0, 0)
 
+[node name="SeatedPelvis" type="Marker3D" parent="SeatCushion"]
+position = Vector3(0, 0.26, -0.14)
+
 [node name="SeatBack" type="MeshInstance3D" parent="."]
-position = Vector3(0, 0.9, 0.33)
+position = Vector3(0, 1.1, 0.33)
 mesh = SubResource("m3")
 rotation_degrees = Vector3(8, 0, 0)
 
 [node name="Headrest" type="MeshInstance3D" parent="."]
-position = Vector3(0, 1.29, 0.38)
+position = Vector3(0, 1.49, 0.38)
 mesh = SubResource("m4")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="SeatPipingL" type="MeshInstance3D" parent="."]
-position = Vector3(-0.28, 0.57, 0.04)
+position = Vector3(-0.28, 0.77, 0.085)
 mesh = SubResource("m5")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="SeatPipingR" type="MeshInstance3D" parent="."]
-position = Vector3(0.28, 0.57, 0.04)
+position = Vector3(0.28, 0.77, 0.085)
 mesh = SubResource("m6")
 rotation_degrees = Vector3(0, 0, 0)
 
@@ -237,14 +244,22 @@ mesh = SubResource("m23")
 rotation_degrees = Vector3(0, 0, 0)
 
 [node name="PedalBrake" type="MeshInstance3D" parent="."]
-position = Vector3(-0.18, 0.12, -0.53)
+position = Vector3(-0.18, 0.36, -0.53)
 mesh = SubResource("m24")
 rotation_degrees = Vector3(-25, 0, 0)
 
 [node name="PedalThrottle" type="MeshInstance3D" parent="."]
-position = Vector3(0.13, 0.1, -0.55)
+position = Vector3(0.13, 0.34, -0.55)
 mesh = SubResource("m25")
 rotation_degrees = Vector3(-25, 0, 0)
+
+[node name="BrakePedalArm" type="MeshInstance3D" parent="."]
+position = Vector3(-0.18, 0.33, -0.79)
+mesh = SubResource("pedal_arm")
+
+[node name="ThrottlePedalArm" type="MeshInstance3D" parent="."]
+position = Vector3(0.13, 0.31, -0.81)
+mesh = SubResource("pedal_arm")
 
 [node name="InstrumentCluster" type="Node3D" parent="."]
 position = Vector3(0, 1.10, -0.94)

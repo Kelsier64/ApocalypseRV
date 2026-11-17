@@ -20,8 +20,8 @@ func update(actor: CharacterBody3D, skeleton: Skeleton3D, carry: Node, delta: fl
 	var rv: Chassis = seat.get_connected_rv()
 	var pelvis := skeleton.find_bone("pelvis")
 	var root := skeleton.find_bone("root")
-	# Cushion top is 0.56 m. The hip joint sits above the clothed seat contact.
-	var hip := skeleton.to_local(seat.to_global(Vector3(0, .65, -.015)))
+	var anchor: Marker3D = cockpit.get_node("SeatCushion/SeatedPelvis")
+	var hip := skeleton.to_local(anchor.global_position)
 	skeleton.set_bone_pose_position(root, hip - skeleton.get_bone_global_pose(pelvis).origin)
 	var spine := skeleton.find_bone("spine_01")
 	var base := skeleton.get_bone_global_pose(spine).basis

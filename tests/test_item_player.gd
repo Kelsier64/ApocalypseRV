@@ -148,6 +148,11 @@ func check_driving_carry() -> void:
 	seat.interact_hold(actor)
 	await steps()
 	check(seat.current_driver == actor and seat.seat_camera.is_current(), "Sitting with a small item activates driving")
+	var skeleton: Skeleton3D = actor.get_node("Visuals").skeleton
+	var head: Vector3 = seat.to_local(skeleton.to_global(skeleton.get_bone_global_pose(skeleton.find_bone("head")).origin))
+	var dash_hood := seat.get_node("CockpitVisual/InstrumentCluster/Hood") as MeshInstance3D
+	var hood_in_seat: Transform3D = seat.global_transform.affine_inverse() * dash_hood.global_transform
+	check(head.y > (hood_in_seat * dash_hood.get_aabb()).end.y, "The seated driver's head clears the dashboard hood")
 	var toggle := InputEventAction.new()
 	toggle.action = &"toggle_control_hints"
 	toggle.pressed = true
