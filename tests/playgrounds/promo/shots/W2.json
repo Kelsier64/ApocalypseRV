@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":750,
+  "hour":10,
+  "weather":[1,0,0],
+  "action":"Play aerial rail",
+  "variants":[{"seed":43},{"seed":44}]
+}

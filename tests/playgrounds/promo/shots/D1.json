@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":2330,
+  "hour":14,
+  "weather":[1,0,0],
+  "seat":true,
+  "action":"Start engine and release brake"
+}

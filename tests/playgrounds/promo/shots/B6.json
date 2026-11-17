@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":1325,
+  "hour":9,
+  "weather":[0,0,0],
+  "interior":"bunker",
+  "action":"Pick up engine"
+}

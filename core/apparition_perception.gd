@@ -1,10 +1,14 @@
 extends RefCounted
 
 static func player_camera(actor: Node3D, player: Node3D) -> Camera3D:
-	if player.get("in_ui_mode") == true or player.is_gameplay_input_blocked() or player.is_grabbed(): return null
+	if player.get("in_ui_mode") == true or player.is_grabbed(): return null
 	var camera := actor.get_viewport().get_camera_3d()
 	var seat := player.get("seated_in") as Node3D
 	var expected := (seat.get("seat_camera") if is_instance_valid(seat) else player.get("camera")) as Camera3D
+	if camera != expected and player.has_method("apparition_view_for"):
+		camera = player.apparition_view_for(camera)
+	elif player.is_gameplay_input_blocked():
+		return null
 	if camera != expected or not WorldEntities.same_world(actor, camera): return null
 	return camera
 

@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":210,
+  "hour":9,
+  "weather":[0,0,0],
+  "workshop":true,
+  "action":"Structure"
+}

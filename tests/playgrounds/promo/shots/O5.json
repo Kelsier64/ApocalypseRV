@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":2150,
+  "hour":16,
+  "weather":[0,0,2],
+  "seat":true,
+  "action":"Release Slender Speaker"
+}

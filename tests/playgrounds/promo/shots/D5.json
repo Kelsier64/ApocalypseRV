@@ -1,0 +1,7 @@
+{
+  "seed":42,
+  "distance":1060,
+  "hour":11,
+  "weather":[1,0,0],
+  "action":"Release handbrake"
+}

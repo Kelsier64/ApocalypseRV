@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "distance":450,
+  "hour":10,
+  "weather":[1,0,0],
+  "stop":1,
+  "action":"Reveal white apparition"
+}

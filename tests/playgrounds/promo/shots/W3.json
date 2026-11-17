@@ -1,0 +1,7 @@
+{
+  "seed":42,
+  "distance":645,
+  "hour":5,
+  "weather":[1,0,0],
+  "action":"Start time lapse"
+}

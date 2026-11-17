@@ -1,0 +1,9 @@
+{
+  "seed":42,
+  "distance":2059.48,
+  "hour":15,
+  "weather":[1,0,0],
+  "band":13,
+  "event":"monsters",
+  "action":"Release Barrel Man"
+}
