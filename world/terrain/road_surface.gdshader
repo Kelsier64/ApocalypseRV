@@ -18,6 +18,27 @@ float fbm(vec2 p) {
 	return  value_noise(p) * 0.5 +  value_noise(p * 2.03 + 7.1) * 0.3 +  value_noise(p * 4.1 + 3.7) * 0.2;
 }
 
+// Average the fixed-width stripe over the pixel's transverse footprint.
+float stripe_coverage(float offset, float half_width) {
+	float span = max(fwidth(offset), 0.0001);
+	float left = max(offset - 0.5 * span, -half_width);
+	float right = min(offset + 0.5 * span, half_width);
+	return clamp((right - left) / span, 0.0, 1.0);
+}
+
+// Accumulated painted length for a 4 m dash every 10 m.
+float dash_length(float distance_along) {
+	float cycle = distance_along / 10.0;
+	return floor(cycle) * 4.0 + min(fract(cycle) * 10.0, 4.0);
+}
+
+float dash_coverage(float along) {
+	float span = max(fwidth(along), 0.0001);
+	float phase = mod(along - 1.0, 10.0);
+	float half_span = 0.5 * span;
+	return clamp((dash_length(phase + half_span) - dash_length(phase - half_span)) / span, 0.0, 1.0);
+}
+
 void fragment() {
 	float lateral = UV.x;
 	float along = UV.y;
@@ -53,8 +74,8 @@ void fragment() {
 	asphalt = mix(asphalt, vec3(0.04, 0.042, 0.04), max(crack * fatigue, joint * 0.8) * 0.55 * mix(0.3, 1.0, detail));
 	// Road paint, worn through wherever the tyres and weather got to it.
 	float wear = fbm(p * vec2(1.7, 0.55) + 5.0);
-	float centre_line = (1.0 - smoothstep(0.075, 0.105 + footprint, abs(lateral))) * step(fract((along - 1.0) / 10.0), 0.4);
-	float edge_line = 1.0 - smoothstep(0.065, 0.095 + footprint, abs(abs(lateral) - (half_width - 0.55)));
+	float centre_line = stripe_coverage(lateral, 0.09) * dash_coverage(along);
+	float edge_line = stripe_coverage(abs(lateral) - (half_width - 0.55), 0.08);
 	asphalt = mix(asphalt, vec3(0.42, 0.35, 0.13), centre_line * smoothstep(0.3, 0.52, wear) * 0.85);
 	asphalt = mix(asphalt, vec3(0.44, 0.44, 0.40), edge_line * smoothstep(0.44, 0.66, wear) * 0.8);
 	// Oil and damp.
