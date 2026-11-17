@@ -59,6 +59,15 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 - Report what you checked, what you did not, and any material uncertainty. Never claim visual or hands-on verification you did not do.
 - Work token-efficiently: use Grep/Glob, read targeted ranges, batch independent tool calls, and reuse established findings.
 
+## Git
+
+Solo project, trunk-based. The user delegates Git to you: commit and push without being asked.
+
+- **Where.** Work lands on `origin/main`. The main checkout works on `main`. Multi-day, risky or wide work (a `generation_version` bump, a cross-module refactor) goes in its own worktree on `claude/<topic>` and lands through a PR, so CI runs before it reaches `main`.
+- **Commit** each finished, verified unit of work, one topic per commit. Stage named paths only. Never use `git add -A`, `git add .`, `git commit -a` or `git stash`: other sessions and Codex may have uncommitted work in this checkout. Put test results and what was not verified in the message.
+- **Push** at the end of every task that committed something. First `git fetch`, then rebase your unpushed commits onto `origin/main` (another machine pushes to the same `main`), then `git push origin HEAD:main`. Hold the push and report instead when the rebase conflicts or a relevant test fails.
+- **Ask first** before force-pushing, `reset --hard`, rebasing or amending pushed commits, switching the main checkout's branch, or deleting branches and worktrees you did not create.
+
 ## Delegation
 
 - Keep scene modeling and 3D integration in the main agent.
