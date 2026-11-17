@@ -51,7 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var world := get_tree().current_scene
 	# The F6 orientation playground inherits the complete production world;
 	# its saves still restore the trusted main scene, without review cameras.
-	if world == null or world.scene_file_path not in [WORLD_SCENE, "res://tests/orientation_playground.tscn"]:
+	if world == null or world.scene_file_path not in [WORLD_SCENE, "res://tests/playgrounds/orientation_playground.tscn"]:
 		return
 	if loading: return
 	if event.physical_keycode == KEY_F6:

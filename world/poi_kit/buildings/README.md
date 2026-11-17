@@ -20,7 +20,7 @@
 ## 測試入口
 
 ```powershell
-godot --path . --log-file .godot/gas-station.log res://tests/gas_station_playground.tscn
+godot --path . --log-file .godot/gas-station.log res://tests/playgrounds/gas_station_playground.tscn
 ```
 
 正式玩家、完整 RV、固定種子物資與室外導航共用一個世界。WASD／滑鼠移動、E 拾取、G 丟棄；RV 沿用一般駕駛操作。

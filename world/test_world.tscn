@@ -9,7 +9,7 @@
 [ext_resource type="Script" uid="uid://umrhdcec7hn2" path="res://world/instances/poi_instance_manager.gd" id="14_instances"]
 [ext_resource type="PackedScene" path="res://props/battery.tscn" id="15_battery"]
 [ext_resource type="PackedScene" path="res://props/flashlight.tscn" id="15_flashlight"]
-[ext_resource type="Script" uid="uid://0ia4tupkiatx" path="res://world/test_world.gd" id="16_root"]
+[ext_resource type="Script" uid="uid://0ia4tupkiatx" path="res://world/world_base.gd" id="16_root"]
 [ext_resource type="Script" uid="uid://sdl8n0aibbxa" path="res://world/world_clock.gd" id="17_clock"]
 [ext_resource type="Script" path="res://world/night_vision_effect.gd" id="18_adaptation"]
 

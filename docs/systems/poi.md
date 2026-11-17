@@ -9,14 +9,14 @@
 | POI 定義 | 每個 POI 一份資源：場景、類型、可放的位置、佔地、入口 | [PoiDefinition](../../world/poi_definition.gd)、[POIConfig](../../world/poi_config.gd)、`world/poi_definitions/` | |
 | 場址生成 | 檢查定義與場景後放進世界，副本入口另外向轉場管理器登記 | [POISpawner](../../world/poi_spawner.gd) | |
 | 可步行場址 | 直接走進去的建築：首次到訪抽物資，離開後保存剩下的東西 | [WalkInSites](../../world/terrain/walk_in_sites.gd) | |
-| 加油站 | 商店、維修間與加油棚，加油機是造景 | [建築說明](../../world/poi_kit/buildings/README.md) | [gas_station](../../tests/gas_station_playground.tscn)、[production](../../tests/production_gas_station_playground.tscn) |
-| 路旁小場址 | 六種主題各三套配置 | [MinorSites](../../world/terrain/minor_sites.gd)、[資產說明](../../world/roadside_pois/README.md) | [minor_poi](../../tests/minor_poi_playground.tscn)、[production](../../tests/production_minor_poi_playground.tscn) |
-| 副本轉場 | 從入口進入獨立的室內世界、切換相連的室內、返回戶外 | [PoiInstanceManager](../../world/instances/poi_instance_manager.gd) | [poi_instance](../../tests/poi_instance_playground.tscn) |
+| 加油站 | 商店、維修間與加油棚，加油機是造景 | [建築說明](../../world/poi_kit/buildings/README.md) | [gas_station](../../tests/playgrounds/gas_station_playground.tscn)、[production](../../tests/playgrounds/production_gas_station_playground.tscn) |
+| 路旁小場址 | 六種主題各三套配置 | [MinorSites](../../world/terrain/minor_sites.gd)、[資產說明](../../world/roadside_pois/README.md) | [minor_poi](../../tests/playgrounds/minor_poi_playground.tscn)、[production](../../tests/playgrounds/production_minor_poi_playground.tscn) |
+| 副本轉場 | 從入口進入獨立的室內世界、切換相連的室內、返回戶外 | [PoiInstanceManager](../../world/instances/poi_instance_manager.gd) | [poi_instance](../../tests/playgrounds/poi_instance_playground.tscn) |
 | 室內組裝 | 依配置擺房間、封牆、烘導航、放內容、保存與還原 | [PoiInterior](../../world/instances/poi_interior.gd)、[InteriorLayout](../../world/instances/interior_layout.gd)、[InteriorProfiles](../../world/instances/interior_profiles.gd) | |
-| 隨機軍事地堡 | 多層房間迷宮，有物資、補給箱、怪物與一具強化引擎 | [BunkerContent](../../world/instances/bunker_content.gd)、[BunkerCache](../../world/instances/bunker_cache.gd)、[BunkerLighting](../../world/instances/bunker_lighting.gd)、[地堡指南](../guides/bunker-interior.md) | [bunker](../../tests/bunker_playground.tscn) |
+| 隨機軍事地堡 | 多層房間迷宮，有物資、補給箱、怪物與一具強化引擎 | [BunkerContent](../../world/instances/bunker_content.gd)、[BunkerCache](../../world/instances/bunker_cache.gd)、[BunkerLighting](../../world/instances/bunker_lighting.gd)、[地堡指南](../guides/bunker-interior.md) | [bunker](../../tests/playgrounds/bunker_playground.tscn) |
 | 勤務樓梯與無燈柱廳 | 室內的側門通往樓梯間，再往下接到另一座副本 | [bunker_stair_access.gd](../../world/instances/bunker_stair_access.gd)、`InteriorProfiles.STAIR_DESTINATIONS` | |
-| 巨型避難所外殼 | 由種子生長出來的封閉無窗大樓 | [MegashelterPlan](../../world/megashelter/megashelter_plan.gd)、[ModularMegashelter](../../world/megashelter/modular_megashelter.gd)、[外殼指南](../guides/megashelter-exteriors.md) | [megashelter](../../tests/megashelter_playground.tscn)、[world](../../tests/megashelter_world_playground.tscn)、[viewer](../../tests/megashelter_viewer.tscn) |
-| 巨型避難所室內 | 地面一層的小型公共避難所 | [MegashelterInteriorLayout](../../world/instances/megashelter_interior_layout.gd)、[MegashelterInteriorContent](../../world/instances/megashelter_interior_content.gd)、[室內指南](../guides/megashelter-interiors.md) | [interior](../../tests/megashelter_interior_playground.tscn) |
+| 巨型避難所外殼 | 由種子生長出來的封閉無窗大樓 | [MegashelterPlan](../../world/megashelter/megashelter_plan.gd)、[ModularMegashelter](../../world/megashelter/modular_megashelter.gd)、[外殼指南](../guides/megashelter-exteriors.md) | [megashelter](../../tests/playgrounds/megashelter_playground.tscn)、[world](../../tests/playgrounds/megashelter_world_playground.tscn)、[viewer](../../tests/playgrounds/megashelter_viewer.tscn) |
+| 巨型避難所室內 | 地面一層的小型公共避難所 | [MegashelterInteriorLayout](../../world/instances/megashelter_interior_layout.gd)、[MegashelterInteriorContent](../../world/instances/megashelter_interior_content.gd)、[室內指南](../guides/megashelter-interiors.md) | [interior](../../tests/playgrounds/megashelter_interior_playground.tscn) |
 | 探索地圖 | 室內按 M 顯示走過的房間 | [interior_map.gd](../../world/instances/interior_map.gd) | |
 | 房型套件 | 房間、門接口、家具、物資點與入口的共用元件 | [world/poi_kit/](../../world/poi_kit/README.md) | |
 

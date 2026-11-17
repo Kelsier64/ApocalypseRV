@@ -10,4 +10,4 @@ All 23 clips / 748 baked frames pass the nonadjacent triangle intersection audit
 
 Views: [walk](walk.png), [walk side](walk_side.png), [run](chase.png), [sprint](sprint.png), [sprint side](sprint_side.png).
 
-Runtime now uses distance hysteresis for pursuit speed, smoothed animation speed, separate walk/run/sprint thresholds and matching normalized foot phase when changing gait. The new [vehicle playground](../../tests/raker_vehicle_playground.tscn) offers actual wheel-driven pursuit and isolated animation preview.
+Runtime now uses distance hysteresis for pursuit speed, smoothed animation speed, separate walk/run/sprint thresholds and matching normalized foot phase when changing gait. The new [vehicle playground](../../tests/playgrounds/raker_vehicle_playground.tscn) offers actual wheel-driven pursuit and isolated animation preview.

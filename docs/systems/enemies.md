@@ -6,11 +6,11 @@ Raker、油桶人、Slender Speaker、白影、Crawler 原型，以及攀車、�
 
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
-| Raker | 正式；追擊／蓄力攻擊、接觸戰鬥、抓咬與斷肢、車撞倒地／布娃娃恢復、死亡屍體 | [Raker](../../enemies/raker.gd)、[raker](../../tests/raker_playground.tscn)、[impact](../../tests/raker_impact_playground.tscn) |
-| 攀車、車內追擊與拆殼 | 正式怪物流程；攀車追逐、車艙路徑／低姿態通行、攻擊玩家與車殼、破門拆頂，隨支撐破壞掉落 | [boarding](../../enemies/monster_boarding.gd)、[cabin route](../../enemies/monster_cabin_route.gd)、[boarding playground](../../tests/monster_boarding_playground.tscn) |
-| 油桶人與爆炸 | 正式；油桶偽裝、喚醒追逐、近距離倒數／接觸／致命槍傷爆炸，遮擋與傷害；普通油桶也支援車撞爆炸 | [barrel man](../../enemies/barrel_man.gd)、[explosion](../../enemies/barrel_explosion.gd)、[playground](../../tests/barrel_man_playground.tscn) |
-| Slender Speaker | 正式；霧天森林生成、視覺搜尋／記憶／追蹤、追車與繞車、逐片拆殼、跨車艙伸手、抓取抬升／處決、撞倒樹木；目前無敵 | [giant](../../enemies/slender_speaker/slender_speaker.gd)、[encounter](../../enemies/slender_speaker/slender_speaker_encounter.gd)、[playground](../../tests/slender_speaker_playground.tscn) |
-| Crawler／Reverse Crawler | 獨立原型；腹部朝下／朝上爬行姿勢，共用追擊與接觸攻擊，可獨立保存；尚未加入正式隨機生成池 | [crawler](../../tests/crawler_playground.tscn)、[reverse crawler](../../tests/reverse_crawler_playground.tscn) |
+| Raker | 正式；追擊／蓄力攻擊、接觸戰鬥、抓咬與斷肢、車撞倒地／布娃娃恢復、死亡屍體 | [Raker](../../enemies/raker.gd)、[raker](../../tests/playgrounds/raker_playground.tscn)、[impact](../../tests/playgrounds/raker_impact_playground.tscn) |
+| 攀車、車內追擊與拆殼 | 正式怪物流程；攀車追逐、車艙路徑／低姿態通行、攻擊玩家與車殼、破門拆頂，隨支撐破壞掉落 | [boarding](../../enemies/monster_boarding.gd)、[cabin route](../../enemies/monster_cabin_route.gd)、[boarding playground](../../tests/playgrounds/monster_boarding_playground.tscn) |
+| 油桶人與爆炸 | 正式；油桶偽裝、喚醒追逐、近距離倒數／接觸／致命槍傷爆炸，遮擋與傷害；普通油桶也支援車撞爆炸 | [barrel man](../../enemies/barrel_man.gd)、[explosion](../../enemies/barrel_explosion.gd)、[playground](../../tests/playgrounds/barrel_man_playground.tscn) |
+| Slender Speaker | 正式；霧天森林生成、視覺搜尋／記憶／追蹤、追車與繞車、逐片拆殼、跨車艙伸手、抓取抬升／處決、撞倒樹木；目前無敵 | [giant](../../enemies/slender_speaker/slender_speaker.gd)、[encounter](../../enemies/slender_speaker/slender_speaker_encounter.gd)、[playground](../../tests/playgrounds/slender_speaker_playground.tscn) |
+| Crawler／Reverse Crawler | 獨立原型；腹部朝下／朝上爬行姿勢，共用追擊與接觸攻擊，可獨立保存；尚未加入正式隨機生成池 | [crawler](../../tests/playgrounds/crawler_playground.tscn)、[reverse crawler](../../tests/playgrounds/reverse_crawler_playground.tscn) |
 
 一般怪物會繞行固定物品；設備的支撐被拆毀後會掉落。巨人另有直接砸擊設備的傷害規則，不能將「一般怪物不主動傷害 Item」套用到所有攻擊。細節以 [Monster](../../enemies/monster.gd) 與 [巨人砸擊](../../enemies/slender_speaker/slender_speaker_parked_attack.gd) 為準。
 
@@ -38,7 +38,7 @@ Raker、油桶人、Slender Speaker、白影、Crawler 原型，以及攀車、�
 
 SAN 隨受控身體以遊玩時間自然消耗，滿值 100 在 20 分鐘降到 0。HUD 的 SAN 條在零值和負值時為空，數字照常顯示。存檔保存 SAN，現有格式的存檔缺少 SAN 欄位時以 100 載入。白影遭遇與刷新倒數只存在於當前世界，載入檢查點後重新起算。
 
-用 `godot --path . res://tests/white_apparition_playground.tscn` 開啟主世界白影測試場。從戶外道路開始，可用 WASD 與滑鼠移動、按 F6 立即重新尋找白影的出現點。轉頭找牠並直視約 0.6 秒，再讓牠完全離開畫面後轉身找新的位置。加上 `-- --replay` 可驗證直視與轉頭時的追擊及接觸致死，並將直視時和轉頭後的截圖寫入 `.godot/white_apparition/context.png` 與 `.godot/white_apparition/context-after.png`。
+用 `godot --path . res://tests/playgrounds/white_apparition_playground.tscn` 開啟主世界白影測試場。從戶外道路開始，可用 WASD 與滑鼠移動、按 F6 立即重新尋找白影的出現點。轉頭找牠並直視約 0.6 秒，再讓牠完全離開畫面後轉身找新的位置。加上 `-- --replay` 可驗證直視與轉頭時的追擊及接觸致死，並將直視時和轉頭後的截圖寫入 `.godot/white_apparition/context.png` 與 `.godot/white_apparition/context-after.png`。
 
 ### Raker
 

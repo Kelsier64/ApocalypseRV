@@ -7,11 +7,11 @@
 | 功能 | 範圍 | 來源 | 測試場 |
 |---|---|---|---|
 | 開場階段 | 準備、開門、啟程、封閉四個階段；啟程前時間、天氣與怪物都停住 | [StartRun](../../world/starting_shelter/start_run.gd)、[ShelterGarageGate](../../world/starting_shelter/garage_gate.gd) | |
-| 兩室教學基地 | 接待室拿終端，倉庫整備 RV，開車出庫 | [OrientationController](../../world/tutorial_shelter/orientation_controller.gd)、[資產說明](../../world/tutorial_shelter/README.md) | [orientation](../../tests/orientation_playground.tscn) |
+| 兩室教學基地 | 接待室拿終端，倉庫整備 RV，開車出庫 | [OrientationController](../../world/tutorial_shelter/orientation_controller.gd)、[資產說明](../../world/tutorial_shelter/README.md) | [orientation](../../tests/playgrounds/orientation_playground.tscn) |
 | 故障車與倉庫指南 | 新局的 RV 帶著故障；倉庫有備品與一份選做的指南 | [OrientationWorkshop](../../world/tutorial_shelter/orientation_workshop.gd)、[OpeningSiteContent](../../world/tutorial_shelter/opening_site_content.gd) | |
 | 教學終端 | 開機、帶走、閱讀指南；離開基地後變成說明書 | [TrainingTerminal](../../equipment/training_terminal.gd)、[training_manual.gd](../../equipment/training_manual.gd) | |
 | 階段重來與略過 | 設定選單的 Restart Stage 與 Skip Tutorial | [OrientationRecovery](../../world/tutorial_shelter/orientation_recovery.gd)、[settings_menu.gd](../../player/settings_menu.gd) | |
-| 單間車庫 | 按鈕開門的舊開場，給 Demo 與作弊測試世界用 | [garage_button.gd](../../world/starting_shelter/garage_button.gd)、[資產說明](../../world/starting_shelter/README.md) | [starting_shelter](../../tests/starting_shelter_playground.tscn) |
+| 單間車庫 | 按鈕開門的舊開場，給 Demo 與作弊測試世界用 | [garage_button.gd](../../world/starting_shelter/garage_button.gd)、[資產說明](../../world/starting_shelter/README.md) | [starting_shelter](../../tests/playgrounds/starting_shelter_playground.tscn) |
 
 自動測試：[test_orientation_departure.gd](../../tests/test_orientation_departure.gd) 開車走完出庫流程；[test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd) 涵蓋教學狀態的存讀與階段重來。
 

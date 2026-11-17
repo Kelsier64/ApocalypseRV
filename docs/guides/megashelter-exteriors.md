@@ -44,7 +44,7 @@
 
 ## 分幀建構與測試入口
 
-純觀察場景：[megashelter_viewer.tscn](../../tests/megashelter_viewer.tscn)。在 Godot 開啟後按 F6 執行目前場景，預設無霧、固定日光，不載入玩家或世界串流。滑鼠右鍵拖曳環繞、中鍵平移、滾輪縮放；1 全棟、2 入口、3 屋頂、F5 下一個 seed、F6 換隨機 seed 並重新生長。根節點 Inspector 可設定初始 `seed_value`。也可執行 `godot --path . res://tests/megashelter_viewer.tscn`。
+純觀察場景：[megashelter_viewer.tscn](../../tests/playgrounds/megashelter_viewer.tscn)。在 Godot 開啟後按 F6 執行目前場景，預設無霧、固定日光，不載入玩家或世界串流。滑鼠右鍵拖曳環繞、中鍵平移、滾輪縮放；1 全棟、2 入口、3 屋頂、F5 下一個 seed、F6 換隨機 seed 並重新生長。根節點 Inspector 可設定初始 `seed_value`。也可執行 `godot --path . res://tests/playgrounds/megashelter_viewer.tscn`。
 
 
 

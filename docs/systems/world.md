@@ -21,19 +21,19 @@
 
 | 功能 | 範圍 | 來源 | 測試場 |
 |---|---|---|---|
-| 串流 | 依玩家位置前後載入區塊，可回頭；一次只建一個區塊，分幀進行 | [WorldGenerator](../../world/world_generator.gd)、[ChunkGenerator](../../world/chunk_generator.gd) | [highway](../../tests/highway_playground.tscn) |
+| 串流 | 依玩家位置前後載入區塊，可回頭；一次只建一個區塊，分幀進行 | [WorldGenerator](../../world/world_generator.gd)、[ChunkGenerator](../../world/chunk_generator.gd) | [highway](../../tests/playgrounds/highway_playground.tscn) |
 | 世界查詢 | 道路、高度、場址與亂數流，全部是種子與世界座標的純函數 | [WorldField](../../world/terrain/world_field.gd)、[WorldProfile](../../world/terrain/world_profile.gd) | |
-| 道路 | 連續彎道、寬窄變化、升降 | [TerrainRoute](../../world/terrain/terrain_route.gd) | [highway](../../tests/highway_playground.tscn) |
+| 道路 | 連續彎道、寬窄變化、升降 | [TerrainRoute](../../world/terrain/terrain_route.gd) | [highway](../../tests/playgrounds/highway_playground.tscn) |
 | 地貌 | 草原、懸崖、濕地、山脊、峽谷、森林盆地 | [TerrainLandforms](../../world/terrain/terrain_landforms.gd) | |
 | 河川與橋梁 | 河谷、水面、跨河橋與護欄 | [TerrainCrossings](../../world/terrain/terrain_crossings.gd)、[BridgeBuilder](../../world/terrain/bridge_builder.gd) | |
-| 森林 | 樹木、灌叢與可撞毀的樹幹碰撞 | [ForestScenery](../../world/terrain/forest_scenery.gd) | [tree impact](../../tests/tree_impact_playground.tscn) |
-| 地形特徵 | 池塘與湖、泥土支線、路旁與野地的遺跡場景、高壓電塔 | [WorldFeatures](../../world/terrain/world_features.gd)、[FeatureBuilder](../../world/scatter/feature_builder.gd) | [world detail](../../tests/world_detail_playground.tscn) |
-| 散佈 | 巨石、倒木、樹樁、草、蕨、蘆葦等程序化小物 | [ScatterScenery](../../world/scatter/scatter_scenery.gd)、[ScatterCatalog](../../world/scatter/scatter_catalog.gd) | [world detail](../../tests/world_detail_playground.tscn) |
-| 道路設施 | 路面、路肩、電線桿、彎道標誌、標柱、路燈 | [RoadDetails](../../world/terrain/road_details.gd)、[RoadsideStreetlights](../../world/terrain/roadside_streetlights.gd) | [world detail](../../tests/world_detail_playground.tscn) |
+| 森林 | 樹木、灌叢與可撞毀的樹幹碰撞 | [ForestScenery](../../world/terrain/forest_scenery.gd) | [tree impact](../../tests/playgrounds/tree_impact_playground.tscn) |
+| 地形特徵 | 池塘與湖、泥土支線、路旁與野地的遺跡場景、高壓電塔 | [WorldFeatures](../../world/terrain/world_features.gd)、[FeatureBuilder](../../world/scatter/feature_builder.gd) | [world detail](../../tests/playgrounds/world_detail_playground.tscn) |
+| 散佈 | 巨石、倒木、樹樁、草、蕨、蘆葦等程序化小物 | [ScatterScenery](../../world/scatter/scatter_scenery.gd)、[ScatterCatalog](../../world/scatter/scatter_catalog.gd) | [world detail](../../tests/playgrounds/world_detail_playground.tscn) |
+| 道路設施 | 路面、路肩、電線桿、彎道標誌、標柱、路燈 | [RoadDetails](../../world/terrain/road_details.gd)、[RoadsideStreetlights](../../world/terrain/roadside_streetlights.gd) | [world detail](../../tests/playgrounds/world_detail_playground.tscn) |
 | 場址排程 | 主要停靠點、路旁小場址、越野場址、巨型避難所 | `WorldField.stop`、[MinorSites](../../world/terrain/minor_sites.gd)、[OffroadSites](../../world/terrain/offroad_sites.gd) | |
-| 公路事件 | 廢車、釘帶、油桶、油桶人 | [RoadSpawns](../../world/road_spawns.gd) | [highway](../../tests/highway_playground.tscn) |
-| 起點後方的車群 | 開場後方的固定廢車 | [RearWreckLayout](../../world/starting_shelter/rear_wreck_layout.gd) | [rear pressure](../../tests/rear_pressure_playground.tscn) |
-| 撞倒景物 | RV 與 Slender Speaker 撞倒樹、灌叢、標誌、標柱與圍欄 | [TreeImpact](../../world/terrain/tree_impact.gd)、[TreeFall](../../world/terrain/tree_fall.gd)、[BreakableProps](../../world/scatter/breakable_props.gd) | [tree impact](../../tests/tree_impact_playground.tscn) |
+| 公路事件 | 廢車、釘帶、油桶、油桶人 | [RoadSpawns](../../world/road_spawns.gd) | [highway](../../tests/playgrounds/highway_playground.tscn) |
+| 起點後方的車群 | 開場後方的固定廢車 | [RearWreckLayout](../../world/starting_shelter/rear_wreck_layout.gd) | [rear pressure](../../tests/playgrounds/rear_pressure_playground.tscn) |
+| 撞倒景物 | RV 與 Slender Speaker 撞倒樹、灌叢、標誌、標柱與圍欄 | [TreeImpact](../../world/terrain/tree_impact.gd)、[TreeFall](../../world/terrain/tree_fall.gd)、[BreakableProps](../../world/scatter/breakable_props.gd) | [tree impact](../../tests/playgrounds/tree_impact_playground.tscn) |
 
 自動測試：[test_streaming_generation.gd](../../tests/test_streaming_generation.gd) 檢查區塊幾何、森林配置與碰撞；[test_world_contracts.gd](../../tests/test_world_contracts.gd) 以純取樣檢查道路、場址與生成契約。
 

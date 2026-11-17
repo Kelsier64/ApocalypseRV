@@ -6,15 +6,15 @@
 
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
-| 真實輪驅與排檔 | 正式；四輪 VehicleBody3D、前輪轉向／後輪驅動，四前進檔／空檔／倒檔、漸進油門及腳煞車、手煞車與高速轉向限制 | [Chassis](../../rv/chassis.gd)、[driving experience](../../tests/driving_experience_playground.tscn) |
+| 真實輪驅與排檔 | 正式；四輪 VehicleBody3D、前輪轉向／後輪驅動，四前進檔／空檔／倒檔、漸進油門及腳煞車、手煞車與高速轉向限制 | [Chassis](../../rv/chassis.gd)、[driving experience](../../tests/playgrounds/driving_experience_playground.tscn) |
 | 駕駛座、儀表與鏡面 | 正式；入／離座與安全淨空、速度／油電／輪況、左右與車內後照鏡；離座不自動熄火或拉手煞車 | [driver seat](../../equipment/driver_seat.gd)、[instrument cluster](../../rv/instrument_cluster.gd)、[mirrors](../../rv/vehicle_mirrors.gd) |
-| 可換引擎與維修 | 正式；標準／強化引擎，維修蓋、停穩熄火交換、維修包；耐久歸零熄火但引擎保留 | [engine bay](../../rv/engine_bay.gd)、[rv rebuild](../../tests/rv_rebuild_playground.tscn) |
-| 輪胎磨耗、爆胎與換輪 | 正式；四輪獨立耐久，接地磨耗、釘帶爆胎、抓地／驅動／轉向減弱與偏移；拆裝保存輪況 | [tire dynamics](../../rv/tire_dynamics.gd)、[tire puncture](../../tests/tire_puncture_playground.tscn) |
-| 碰撞與敵人車撞 | 正式；RV 碰撞受損與按相對接近速度處理撞怪／Raker 倒地，爆炸造成車殼／引擎傷害 | [vehicle impact](../../rv/vehicle_impact.gd)、[raker impact](../../tests/raker_impact_playground.tscn) |
-| 十一槽可破壞車殼 | 正式；六側面、前牆、後門及三片屋頂各自受損／破壞；地板固定在底盤，不是可施工槽位 | [structure slots](../../rv/structure_slots.gd)、[structure](../../tests/rv_structure_playground.tscn)、[roof](../../tests/rv_roof_playground.tscn) |
+| 可換引擎與維修 | 正式；標準／強化引擎，維修蓋、停穩熄火交換、維修包；耐久歸零熄火但引擎保留 | [engine bay](../../rv/engine_bay.gd)、[rv rebuild](../../tests/playgrounds/rv_rebuild_playground.tscn) |
+| 輪胎磨耗、爆胎與換輪 | 正式；四輪獨立耐久，接地磨耗、釘帶爆胎、抓地／驅動／轉向減弱與偏移；拆裝保存輪況 | [tire dynamics](../../rv/tire_dynamics.gd)、[tire puncture](../../tests/playgrounds/tire_puncture_playground.tscn) |
+| 碰撞與敵人車撞 | 正式；RV 碰撞受損與按相對接近速度處理撞怪／Raker 倒地，爆炸造成車殼／引擎傷害 | [vehicle impact](../../rv/vehicle_impact.gd)、[raker impact](../../tests/playgrounds/raker_impact_playground.tscn) |
+| 十一槽可破壞車殼 | 正式；六側面、前牆、後門及三片屋頂各自受損／破壞；地板固定在底盤，不是可施工槽位 | [structure slots](../../rv/structure_slots.gd)、[structure](../../tests/playgrounds/rv_structure_playground.tscn)、[roof](../../tests/playgrounds/rv_roof_playground.tscn) |
 | 車殼施工與變型 | 正式；平板維修／重建、側牆與門互換、普通與開孔屋頂互換；有電、停穩熄火、空間及支撐檢查，同車一項施工 | [construction](../../rv/structure_construction.gd) |
-| 車門、維修蓋與後坡板 | 正式；門片、鉸鏈蓋及雙折坡板動畫／碰撞；坡板互鎖行車，不穩定機械姿態限制保存 | [door](../../equipment/rv_door.gd)、[hatch](../../rv/engine_hatch.gd)、[ramp](../../rv/rear_ramp.gd)、[door playground](../../tests/rv_door_playground.tscn) |
-| 自由安裝梯子與設備 | 正式；側門梯／登頂梯為可搬移 Item，自由貼牆安裝，玩家依梯攀爬；固定設備接通本車才工作 | [RV ladder](../../equipment/rv_ladder.gd)、[interaction](../../tests/rv_interaction_playground.tscn) |
+| 車門、維修蓋與後坡板 | 正式；門片、鉸鏈蓋及雙折坡板動畫／碰撞；坡板互鎖行車，不穩定機械姿態限制保存 | [door](../../equipment/rv_door.gd)、[hatch](../../rv/engine_hatch.gd)、[ramp](../../rv/rear_ramp.gd)、[door playground](../../tests/playgrounds/rv_door_playground.tscn) |
+| 自由安裝梯子與設備 | 正式；側門梯／登頂梯為可搬移 Item，自由貼牆安裝，玩家依梯攀爬；固定設備接通本車才工作 | [RV ladder](../../equipment/rv_ladder.gd)、[interaction](../../tests/playgrounds/rv_interaction_playground.tscn) |
 | 重量與重心 | 正式簡化模型；底盤、存活車殼、引擎及固定 Item 按位置彙總；燃油、庫存、材料與電池本體不計重，外掛力矩仍有限制 | [Chassis](../../rv/chassis.gd)、[架構限制](../../architecture.md#6-已知限制) |
 | 燈光、音效與視覺 | 正式；頭燈、車內／維修照明、引擎與操作回饋、引擎外觀震動；車內遮霧與屋頂雨遮 | [lights](../../rv/vehicle_lights.gd)、[audio](../../rv/vehicle_audio.gd)、[cabin air](../../rv/cabin_air.gd) |
 
@@ -66,7 +66,7 @@ RV 使用 VehicleBody3D 與四個可拆裝輪槽，前輪轉向、後輪驅動�
 
 駕駛座綁定座椅、方向盤、儀表台、排檔桿、手煞車與踏板，F 搬移整組。方向盤跟隨底盤轉向，排檔桿／手煞車位置與速度、油電儀表同步車況；操控沿用 B、Space、Z/X/C、R/T。駕駛時背包欄隱藏，底部顯示車況與操作提示，離座恢復。加油孔與電池插槽位於車外維護側。
 
-[模型結構說明](../../rv/visuals/README.md)；[展示場景](../../tests/rv_design_workshop.tscn)（F2 外觀、F3 車內、F4 駕駛、F5 輪驅、F6 舊版、F7 控制台）。舊車殼保留在 [rv/legacy/new_rv.tscn](../../rv/legacy/new_rv.tscn)。
+[模型結構說明](../../rv/visuals/README.md)；[展示場景](../../tests/playgrounds/rv_design_workshop.tscn)（F2 外觀、F3 車內、F4 駕駛、F5 輪驅、F6 舊版、F7 控制台）。舊車殼保留在 [rv/legacy/new_rv.tscn](../../rv/legacy/new_rv.tscn)。
 
 ### 車殼與結構槽位
 
@@ -195,7 +195,7 @@ F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等�
 
 駕駛座綁定座椅、方向盤、儀表台、排檔桿、手煞車與踏板，F 搬移整組。方向盤跟隨底盤轉向，排檔桿／手煞車位置與速度、油電儀表同步車況；操控沿用 B、Space、Z/X/C、R/T。駕駛時背包欄隱藏，底部顯示車況與操作提示，離座恢復。加油孔與電池插槽位於車外維護側。
 
-[模型結構說明](../../rv/visuals/README.md)；[展示場景](../../tests/rv_design_workshop.tscn)（F2 外觀、F3 車內、F4 駕駛、F5 輪驅、F6 舊版、F7 控制台）。舊車殼保留在 [rv/legacy/new_rv.tscn](../../rv/legacy/new_rv.tscn)。
+[模型結構說明](../../rv/visuals/README.md)；[展示場景](../../tests/playgrounds/rv_design_workshop.tscn)（F2 外觀、F3 車內、F4 駕駛、F5 輪驅、F6 舊版、F7 控制台）。舊車殼保留在 [rv/legacy/new_rv.tscn](../../rv/legacy/new_rv.tscn)。
 
 #### 分片結構、槽位與門扇
 

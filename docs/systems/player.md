@@ -6,14 +6,14 @@
 
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
-| 第一人稱移動 | 正式；步行、衝刺、跳躍、蹲行、受阻保持蹲姿；移動載具上的相對運動與安全離座 | [Player](../../player/player.gd)、[player driving](../../tests/player_driving_playground.tscn) |
+| 第一人稱移動 | 正式；步行、衝刺、跳躍、蹲行、受阻保持蹲姿；移動載具上的相對運動與安全離座 | [Player](../../player/player.gd)、[player driving](../../tests/playgrounds/player_driving_playground.tscn) |
 | 體力 | 正式；衝刺／跳躍消耗、延遲恢復與耗盡限制；駕駛及攀梯不耗體力 | [Player](../../player/player.gd) |
-| 梯子攀爬 | 正式；W 上、S 下、Space 脫離，含登頂與從上方下梯；大型持物、缺臂或缺腿限制攀梯 | [RV ladder](../../equipment/rv_ladder.gd)、[rv climb](../../tests/rv_climb_playground.tscn) |
-| 完整身體與動畫 | 正式；低頭可見身體、完整影子、四向走跑、跳躍／落地、攀梯、持物與駕駛姿勢 | [model visual](../../player/player_model_visual.gd)、[animation](../../tests/player_animation_playground.tscn)、[carry](../../tests/player_carry_playground.tscn) |
-| 生命、死亡與屍體 | 正式；受傷冷卻、死亡布娃娃，約兩秒後在安全淨空處恢復；一般死亡留下可回收屍體，沒有局結束 | [ragdoll](../../player/player_ragdoll.gd)、[death](../../tests/player_death_playground.tscn)、[corpse](../../tests/corpse_playground.tscn) |
-| 活體斷肢與爬行 | 正式；頭、雙臂、雙腿五切口；缺肢限制移動／持物／駕駛，缺腿改爬行；存活身體狀態可保存 | [body state](../../player/player_body_state.gd)、[dismemberment](../../tests/player_dismemberment_playground.tscn) |
+| 梯子攀爬 | 正式；W 上、S 下、Space 脫離，含登頂與從上方下梯；大型持物、缺臂或缺腿限制攀梯 | [RV ladder](../../equipment/rv_ladder.gd)、[rv climb](../../tests/playgrounds/rv_climb_playground.tscn) |
+| 完整身體與動畫 | 正式；低頭可見身體、完整影子、四向走跑、跳躍／落地、攀梯、持物與駕駛姿勢 | [model visual](../../player/player_model_visual.gd)、[animation](../../tests/playgrounds/player_animation_playground.tscn)、[carry](../../tests/playgrounds/player_carry_playground.tscn) |
+| 生命、死亡與屍體 | 正式；受傷冷卻、死亡布娃娃，約兩秒後在安全淨空處恢復；一般死亡留下可回收屍體，沒有局結束 | [ragdoll](../../player/player_ragdoll.gd)、[death](../../tests/playgrounds/player_death_playground.tscn)、[corpse](../../tests/playgrounds/corpse_playground.tscn) |
+| 活體斷肢與爬行 | 正式；頭、雙臂、雙腿五切口；缺肢限制移動／持物／駕駛，缺腿改爬行；存活身體狀態可保存 | [body state](../../player/player_body_state.gd)、[dismemberment](../../tests/playgrounds/player_dismemberment_playground.tscn) |
 | 飢餓與食用 | 正式；FOOD 約二十分鐘降至零，影響體力／衝刺及飢餓傷害；三種食物，按住右鍵食用，受傷等操作可打斷 | [survival](../../player/player_survival.gd)、[consumables](../../player/player_consumables.gd)、[food catalog](../../core/food_catalog.gd) |
-| 列印身體與控制切換 | 正式配方；可製作 Player Body，以 E 交換控制，背包跟隨玩家，生命／部位／飢餓／體力／蹲姿隨各身體交換；須有安全空間，不能拾入背包 | [printed player](../../props/printed_player.gd)、[playground](../../tests/printed_player_playground.tscn) |
+| 列印身體與控制切換 | 正式配方；可製作 Player Body，以 E 交換控制，背包跟隨玩家，生命／部位／飢餓／體力／蹲姿隨各身體交換；須有安全空間，不能拾入背包 | [printed player](../../props/printed_player.gd)、[playground](../../tests/playgrounds/printed_player_playground.tscn) |
 
 ## 規則與數值
 

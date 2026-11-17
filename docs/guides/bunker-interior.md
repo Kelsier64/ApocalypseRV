@@ -75,9 +75,9 @@
 ## 預覽與驗收
 
 ```powershell
-godot --path . --log-file .godot/bunker.log res://tests/bunker_playground.tscn -- --seed=42 --rooms=12 --floors=3
-godot --path . --log-file .godot/bunker-replay.log res://tests/bunker_playground.tscn -- --seed=42 --rooms=12 --floors=3 --replay
-godot --path . --log-file .godot/bunker-main.log res://tests/poi_instance_playground.tscn -- --replay
+godot --path . --log-file .godot/bunker.log res://tests/playgrounds/bunker_playground.tscn -- --seed=42 --rooms=12 --floors=3
+godot --path . --log-file .godot/bunker-replay.log res://tests/playgrounds/bunker_playground.tscn -- --seed=42 --rooms=12 --floors=3 --replay
+godot --path . --log-file .godot/bunker-main.log res://tests/playgrounds/poi_instance_playground.tscn -- --replay
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1 -TestFilter test_poi_transition_persistence.gd
 ```
 

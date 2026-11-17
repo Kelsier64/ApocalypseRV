@@ -2,7 +2,7 @@ extends SceneTree
 ## Capture the production ground grab from the player's normal first-person view.
 func _init() -> void: run.call_deferred()
 func run() -> void:
-	var scene = load('res://tests/raker_vehicle_playground.tscn').instantiate()
+	var scene = load('res://tests/playgrounds/raker_vehicle_playground.tscn').instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	for i in 75: await physics_frame

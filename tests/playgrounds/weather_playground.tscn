@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://tlpuiiuufos4"]
+
+[ext_resource type="Script" uid="uid://bmeivyecnli10" path="res://tests/playgrounds/weather_playground.gd" id="1"]
+
+[node name="WeatherPlayground" type="Node3D" unique_id=768164102]
+script = ExtResource("1")

@@ -1,6 +1,6 @@
 # 架構重構計畫
 
-| 狀態 | 盤點完成，測試基準已全綠，擬真操控分支已合回 main，小清理已開始 |
+| 狀態 | 盤點完成，測試基準已全綠，擬真操控分支已合回 main，小清理已完成 |
 |---|---|
 | 前提 | 完整測試全綠、`codex/rv-handling-rollover` 合回 main（皆已達成）；之後每個切片從 main 開 worktree |
 | 痛點 | 高層設計不清、大檔案難改、agent 容易迷路且耗 token、執行效能 |
@@ -16,7 +16,6 @@
 - **基底類別承擔子類別的行為。** `Monster`（`enemies/monster.gd`）四個子類別中，只有 Raker 與 Crawler 用到攀爬、選敵、導航與登車；BarrelMan 與 SlenderSpeaker 覆寫 `_physics_process` 且不呼叫 super，只用到基底很小的一部分。外部真正依賴的介面只有 `is_dead`、`take_damage`、`current_health`、`receive_vehicle_body_contact` 與群組。
 - **RV 車殼程式分散在兩個資料夾。** `rv/structure_slots.gd`、`rv/battery_socket.gd` 在 `rv/`，`equipment/rv_panel.gd`、`rv_door.gd`、`rv_ladder.gd` 在 `equipment/`。
 - **手動登錄清單重複。** 新增一件物品要改 `core/save_scene_catalog.gd`、`core/inventory_item_icons.gd`、`core/item_names.gd`、`equipment/rv_terminal_presenter.gd`，有自訂狀態再加 `core/item_state.gd` 與 `rv/vehicle_snapshot.gd`。新增配方要在 `equipment/recipe_catalog.gd` 手動 preload；新增 POI 要登錄在 `world/poi_config.gd`。
-- **`tests/` 混放**自動測試、`support/` 契約、手動測試場與美術研究。
 
 ## 大檔案拆分縫
 
@@ -31,11 +30,6 @@
 | `player/player.gd` | 爬梯抽成 `PlayerLadder` | 中等 | `test_moving_rv_climbing`、`test_item_player`、`test_pistol` |
 
 暫緩：`monster.gd` 的攀爬與導航、SlenderSpeaker 的存活與重新定位、`player.gd` 的生命與死亡。三者都糾纏且覆蓋很少或沒有。
-
-## 立即可做的小清理
-
-- 手動測試場移到 `tests/playgrounds/`（要同步改 `scripts/test.ps1` 與文件連結）。
-- 命名：`world/main_world.gd` 繼承 `world/test_world.gd`，後者其實是正式世界的基底。
 
 ## 需要先決定的大改
 
@@ -52,14 +46,14 @@
 
 | 風險 | 位置 | 量測方式 |
 |---|---|---|
-| SlenderSpeaker 抓取時每手 16 根骨頭各做形狀掃掠，每次都新建 shape 與 query；腳掌接觸每幀約 20 次掃掠；手臂 IK 每寫一根骨頭就 `force_update_all_bone_transforms()` | `slender_speaker.gd`、`slender_speaker_foot_contact.gd`、`slender_speaker_arm_ik.gd` | `tests/slender_speaker_playground.tscn` 的 `_physics_process` 時間與物理查詢數 |
+| SlenderSpeaker 抓取時每手 16 根骨頭各做形狀掃掠，每次都新建 shape 與 query；腳掌接觸每幀約 20 次掃掠；手臂 IK 每寫一根骨頭就 `force_update_all_bone_transforms()` | `slender_speaker.gd`、`slender_speaker_foot_contact.gd`、`slender_speaker_arm_ik.gd` | `tests/playgrounds/slender_speaker_playground.tscn` 的 `_physics_process` 時間與物理查詢數 |
 | 夜視效果每幀以全解析度多渲染一個 SubViewport（含 MSAA、SSAO、體積霧）；手持物品再多一個，駕駛時再加三面後照鏡 | `world/night_vision_effect.gd`、`player/player_first_person_carry.gd`、`rv/vehicle_mirrors.gd` | 夜間駕駛手持物品與空手的 GPU 幀時間比較 |
 | chunk 載入在主執行緒同步做 trimesh 碰撞、導航幾何解析，還會實例化再釋放鄰近 POI 場景來取障礙物 | `world/chunk_generator.gd`、`world/world_generator.gd` | `scripts/benchmark_streaming.gd` 的 slice 峰值 |
-| 每隻怪物每個物理幀呼叫 `ItemDetour.direction`，每次新建 query 做形狀查詢與掃掠 | `enemies/item_detour.gd`、`enemies/monster.gd` | `tests/monster_pursuit_playground.tscn` 多隻怪物 |
+| 每隻怪物每個物理幀呼叫 `ItemDetour.direction`，每次新建 query 做形狀查詢與掃掠 | `enemies/item_detour.gd`、`enemies/monster.gd` | `tests/playgrounds/monster_pursuit_playground.tscn` 多隻怪物 |
 | 怪物每幀掃描玩家與可受傷群組兩三次，遠處閒置的怪物不停止處理 | `enemies/monster.gd` | 15 隻以上怪物時的腳本函式時間 |
-| 偽裝中的油桶人每幀兩次形狀重疊查詢，每 0.2 秒走訪 RV 全部碰撞形狀 | `enemies/barrel_man.gd` | `tests/barrel_man_playground.tscn` 放 10 隻以上 |
-| 撞倒樹會讓本 chunk 與相鄰 chunk 同步重解析導航幾何並重烘兩份 navmesh；每 chunk 可能有上千個樹幹碰撞形狀 | `world/terrain/tree_impact.gd`、`world/chunk_generator.gd` | `tests/tree_impact_playground.tscn` 連續撞樹 |
-| 下雨時每幀掃五個群組、排序、上傳 shader 陣列並做遮蔽射線 | `world/weather_rain.gd` | `tests/weather_playground.tscn` 乾燥與大雨比較 |
+| 偽裝中的油桶人每幀兩次形狀重疊查詢，每 0.2 秒走訪 RV 全部碰撞形狀 | `enemies/barrel_man.gd` | `tests/playgrounds/barrel_man_playground.tscn` 放 10 隻以上 |
+| 撞倒樹會讓本 chunk 與相鄰 chunk 同步重解析導航幾何並重烘兩份 navmesh；每 chunk 可能有上千個樹幹碰撞形狀 | `world/terrain/tree_impact.gd`、`world/chunk_generator.gd` | `tests/playgrounds/tree_impact_playground.tscn` 連續撞樹 |
+| 下雨時每幀掃五個群組、排序、上傳 shader 陣列並做遮蔽射線 | `world/weather_rain.gd` | `tests/playgrounds/weather_playground.tscn` 乾燥與大雨比較 |
 | 黑影每 0.1 秒用 `find_children` 走訪整個世界找燈 | `core/apparition_light_exposure.gd` | 載入多個 band 時計時 |
 | 每 chunk 新建 ShaderMaterial 與多個 FogVolume；路燈、車燈開陰影；車板碎片各有獨立 mesh 與材質 | `world/chunk_generator.gd`、`world/terrain/forest_fog.gd`、`world/roadside_kit/streetlight.gd`、`rv/panel_damage_effect.gd` | 主世界夜間的 Rendering 計數 |
 
@@ -71,6 +65,5 @@
 
 1. ~~修好兩個失敗的測試，跑出全綠基準。~~ 完成：2026-11-16 完整測試 24 項全過（`7ada89e` 加上未提交的拆分）。`test_rv_resource_cycle` 已被先前的提交修好；壞掉的 `tests/slender_speaker_bend_review.*` 已刪除，它繼承的 workshop 腳本從未入庫，會讓匯入失敗。
 2. ~~合併 `codex/rv-handling-rollover` 回 main。~~ 完成：2026-11-16 快轉合併。擬真操控的試玩驗收沒有先做，仍列在[擬真操控計畫](rv-handling-rollover.md)的未結項目。
-3. 小清理與 `player.gd` 死碼，一個切片。
-4. 終端元件工廠、RV 撞擊元件、SlenderSpeaker 抓取，各自一個切片，先補缺的測試。
-5. 大改逐項提案，使用者同意後再排。
+3. 終端元件工廠、RV 撞擊元件、SlenderSpeaker 抓取，各自一個切片，先補缺的測試。
+4. 大改逐項提案，使用者同意後再排。

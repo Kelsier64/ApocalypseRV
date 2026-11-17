@@ -1,4 +1,4 @@
-extends "res://world/test_world.gd"
+extends "res://world/world_base.gd"
 ## Production world keeps the shared checkpoint/readiness contract.
 var fresh_start := true
 var _initial_placement_done := false

@@ -30,7 +30,7 @@
 
 ## 查看
 
-執行 `tests/rv_design_workshop.tscn`：
+執行 `tests/playgrounds/rv_design_workshop.tscn`：
 F2 外觀、F3 車內、F4 入座、F5 輪驅展示、F6 舊車殼、F7 控制台全貌。
 F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C／R T／W A S D。
 
@@ -45,10 +45,10 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 - EngineAppearance 顯示引擎低耐久／故障。PanelWear 由車板耐久事件更新獨立材質，以連續比例增加掉漆、露出金屬及玻璃裂紋，保留原漆面貼圖；滿血還原原始材質。裂紋不影響碰撞，不添加獨立玻璃 HP。
 - 車板真實受擊由 `panel_damage_effect.gd` 產生小碎屑、粉塵與原創合成撞擊聲。歸零由 `panel_fracture.gd` 分割實際 BoxMesh 區塊，保留原烤漆貼圖、薄玻璃、板片厚度、彎折及裸露斷面；不跨屋頂開孔，也不把未支援的匯入網格包圍盒當車板。屋頂主要向下崩落，側牆向外剝落，均繼承車輛接觸點速度。碎片只以射線查詢實體表面來彈跳、減速、停留與跟隨支撐，支撐消失則繼續掉落；不加入物理碰撞體、車重、物資或保存狀態。此為外觀近似，中心射線不保證捕捉寬板邊角擦碰。
 - 每車最多六組效果；單次破壞最多 48 片、768 個板片三角形及十張粉塵面片，停留後於末 1.2 秒淡出、7 秒內清理。一般受擊七片小碎屑、2.4 秒內清理，以 100 ms 節流；破壞不被節流。聲音包含分段撕裂及每組最多三次落地聲。讀檔、維修、拆換不播受擊效果。
-- `tests/rv_structure_playground.tscn`：F6 右後牆扣 25%、F7 修復右後牆與後屋頂、F8 後屋頂扣 30、F9 車牆近景、F10 屋頂視角；F11／F12 直接拆右後牆／後屋頂，F1 切換 0.25 倍慢動作。逐次受擊可比較完整、輕傷、重傷與破口。
+- `tests/playgrounds/rv_structure_playground.tscn`：F6 右後牆扣 25%、F7 修復右後牆與後屋頂、F8 後屋頂扣 30、F9 車牆近景、F10 屋頂視角；F11／F12 直接拆右後牆／後屋頂，F1 切換 0.25 倍慢動作。逐次受擊可比較完整、輕傷、重傷與破口。
 - 預裝工作台左中、平板附在工作台；分解機右前、發電機左後、道具箱右後。中央走道至少 1 m，後門前方淨空。
 
-引擎／坡板／夜間／輪驅展示：tests/rv_rebuild_playground.tscn。F8 引擎艙、F9 後門坡板、F10 警示燈、F11 夜間、F12 輪驅回放。
+引擎／坡板／夜間／輪驅展示：tests/playgrounds/rv_rebuild_playground.tscn。F8 引擎艙、F9 後門坡板、F10 警示燈、F11 夜間、F12 輪驅回放。
 
 2026-10-10 車殼效果驗證：Godot 4.7.2 統一 runner 的 `test_rv_panel_damage`、`test_rv_structure_modules`、`test_rv_structure_snapshot`、`test_structure_construction`、`test_art_presentation`、`test_outdoor_style_sample` 通過。原生 Forward+ 畫面另確認右後牆與後屋頂 100／75／50／25／0% 耐久、牆面修復還原、破口與碎片清理，日誌無腳本／shader 錯誤。本輪沒有重測輪驅攀車、翻車、怪物群或 full suite；碎片是短暫無碰撞特效，不是可回收物資。
 
@@ -83,7 +83,7 @@ F5 是測試場授權的底盤輸入；正式遊戲仍使用 B／Space／Z X C�
 
 ```powershell
 godot --headless --path . -s scripts/build_rv_instrument_art.gd
-godot --path . res://tests/rv_design_workshop.tscn -- --capture
+godot --path . res://tests/playgrounds/rv_design_workshop.tscn -- --capture
 ```
 
 第二行以正式 RV 輸出白天行駛、夜間低油低電、斷電、全燈號測試四種狀態，各有座位視角、近景與側向斜視三張，存到 `.godot/rv-workshop-captures/`。這是固定狀態畫面，不能取代道路駕駛手感驗收。自動測試在 `tests/test_rv_engine.gd`。

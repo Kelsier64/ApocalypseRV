@@ -6,15 +6,15 @@
 
 | 功能 | 範圍 | 來源 | 測試場 |
 |---|---|---|---|
-| 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/day_night_playground.tscn) |
-| 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/weather_playground.tscn) |
-| 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/volumetric_fog_playground.tscn) |
+| 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/playgrounds/day_night_playground.tscn) |
+| 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/playgrounds/volumetric_fog_playground.tscn) |
 | 載入時的視野保護 | 地景還沒生成完的地方用霧遮住 | [WorldStreamVisibility](../../world/stream_visibility_guard.gd) | |
-| 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/weather_playground.tscn) |
-| 暗部顯示 | 沒有光的地方用灰階補出近處的輪廓 | [NightVisionEffect](../../world/night_vision_effect.gd)、[DarkAdaptationProfile](../../world/dark_adaptation_profile.gd) | [outdoor_horror](../../tests/outdoor_horror_playground.tscn) |
+| 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 暗部顯示 | 沒有光的地方用灰階補出近處的輪廓 | [NightVisionEffect](../../world/night_vision_effect.gd)、[DarkAdaptationProfile](../../world/dark_adaptation_profile.gd) | [outdoor_horror](../../tests/playgrounds/outdoor_horror_playground.tscn) |
 | 設定 | 顯示、操作、音量的偏好與存檔 | [GameSettings](../../core/game_settings.gd)（autoload）、[settings_menu.gd](../../player/settings_menu.gd) | |
 | HUD 與介面縮放 | HUD 的顯示開關、介面隨視窗大小縮放 | [HUDVisibility](../../core/hud_visibility.gd)、[UILayout](../../core/ui_layout.gd)、[IndustrialTheme](../../core/industrial_theme.gd) | |
-| 戶外美術 | 戶外建築與 RV 的共用材質 | [IndustrialArt](../../world/industrial_art.gd) | [industrial_style](../../tests/industrial_style_playground.tscn) |
+| 戶外美術 | 戶外建築與 RV 的共用材質 | [IndustrialArt](../../world/industrial_art.gd) | [industrial_style](../../tests/playgrounds/industrial_style_playground.tscn) |
 
 自動測試：這個系統沒有專屬的測試檔。時間與天氣的存讀在 [test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd)，設定的顯示檢查在 [validate_settings_display.gd](../../scripts/validate_settings_display.gd)。畫面、霧與雨的觀感只能實際看。
 

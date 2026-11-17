@@ -11,8 +11,8 @@ The production [player visual](../../../player/player_model_visual.tscn) now ins
 
 Keep the adjacent `.glb.import` settings: animation optimizer off, 24 fps, named skins, no retarget/rest replacement. The optimizer's default curve reduction changed the accepted pose samples. Source mask Base Color is 0.9 linear RGB, despite its PureWhite name; no source material was changed.
 
-Run [the isolated playground](../../../tests/player_import_v020/playground.tscn).
+Run [the isolated playground](../../../tests/playgrounds/player_import_v020/playground.tscn).
 The user subsequently approved continuing and left the mask constant to our discretion; 0.9 is retained.
-Run [the independent ragdoll playground](../../../tests/player_ragdoll_v020/playground.tscn) for physics testing.
+Run [the independent ragdoll playground](../../../tests/playgrounds/player_ragdoll_v020/playground.tscn) for physics testing.
 
 Production removes the TEST library references from its own AnimationPlayer instance and installs the separate v021 locomotion library. The asset itself retains the validation clip. Visuals rotate 180 degrees around Y to align this +Z-facing asset with the controller's -Z forward; there is no axis-conversion correction or rescaling. Local head culling and full shadows are presentation copies, never source geometry or weight edits. Death ragdoll now uses the accepted 14-body rig in the production Player. See [v021 locomotion](../player_animations_v021/README.md) for the current authored clips.

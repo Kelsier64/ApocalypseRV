@@ -20,7 +20,7 @@
 
 ### 什麼時候能存、能讀
 
-F6 與 F9 只在主世界（`world/main_world.tscn`）與教學測試場（`tests/orientation_playground.tscn`）有反應，設定選單開著時不反應。讀檔一律載入主世界。
+F6 與 F9 只在主世界（`world/main_world.tscn`）與教學測試場（`tests/playgrounds/orientation_playground.tscn`）有反應，設定選單開著時不反應。讀檔一律載入主世界。
 
 存檔會被以下狀況擋下，畫面左側顯示原因：
 

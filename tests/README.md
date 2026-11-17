@@ -60,4 +60,4 @@ Runner 檢查引擎版本、退出碼、非空日誌、錯誤訊息及 `PASS:`�
 
 [GitHub Actions](../.github/workflows/tests.yml) 只用一個 Windows job：runner 自測、安裝固定 Godot、匯入並以 `-KeepGoing -TimeoutSeconds 480` 執行核心集。main push、PR 及手動觸發；純 Markdown／docs 修改略過，更新同一分支會取消舊執行。job 上限 20 分鐘，失敗才上傳診斷。
 
-Headless 不驗證 GPU 畫面、手感、極端翻車或群怪；必要時依 [測試場指南](../docs/guides/playgrounds.md) 做相關人工驗收。
+Headless 不驗證 GPU 畫面、手感、極端翻車或群怪；必要時依 [測試場指南](../docs/guides/playgrounds.md) 做相關人工驗收。手動測試場放在 `tests/playgrounds/`，不會被 runner 選取。

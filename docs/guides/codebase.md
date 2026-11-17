@@ -18,7 +18,7 @@
 | `assets/` | 執行期貼圖、模型、圖示與材質 | 模型旁的 README 與匯入設定 |
 | `art_source/` | 可重建資產的 Blender 來源、製作腳本和審核圖 | Raker 各版與玩家動畫來源 |
 | `scripts/` | 資產建置、效能量測、回放及統一測試入口 | `test.ps1` |
-| `tests/` | `test_*.gd` 自動測試、獨立展示場及測試資產 | `main_scene_smoke.gd` |
+| `tests/` | 根層 `test_*.gd` 自動測試、`support/` 共用契約與夾具、`playgrounds/` 手動測試場與美術研究 | `main_scene_smoke.gd` |
 | `docs/` | 系統文件、指南、計畫與參考資料；不保留歷史 | [文件索引](../README.md) |
 
 `world/poi_kit/`、`world/roadside_kit/` 與 `world/roadside_pois/` 是內容製作層；場景可能由定義、生成器或測試場動態載入。`rv/legacy/`、`world/art_sample/` 與 `assets/materials/style_sample/` 是仍有展示或對照用途的資產。獨立的 `tests/*playground.tscn` 不會由主場景引用，但可直接執行，操作見 [展示場指南](playgrounds.md)。
@@ -36,7 +36,7 @@
 
 ## 整理與驗證
 
-新增遊戲行為時，將場景放在擁有該行為的模組；共享純邏輯放 `core/`，正式資產放 `assets/`，可重建來源放 `art_source/`。測試與獨立展示場放 `tests/`。文件依[索引](../README.md)的規則放入系統文件、指南或計畫；用不到的文件直接刪除。
+新增遊戲行為時，將場景放在擁有該行為的模組；共享純邏輯放 `core/`，正式資產放 `assets/`，可重建來源放 `art_source/`。自動測試放 `tests/` 根層，手動測試場放 `tests/playgrounds/`。文件依[索引](../README.md)的規則放入系統文件、指南或計畫；用不到的文件直接刪除。
 
 刪除候選先查 `res://` 路徑、UID、`class_name`、場景的 `ext_resource`、程式中的動態組字路徑、存檔白名單、結構型態目錄、測試與製作腳本。確認現行存檔與仍使用中的測試場沒有消費者，再移除無用檔案。完成後從乾淨匯入開始執行：
 

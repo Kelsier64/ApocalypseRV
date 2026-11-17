@@ -187,9 +187,9 @@
 
 **既有測試**：[test_moving_rv_climbing.gd](../../tests/test_moving_rv_climbing.gd) 已覆蓋車內離座、車外離座與屋頂離車，驗證低速無傷與高速傷害只結算一次。操控與車殼修改後需再驗證 `test_rv_braking.gd`、`test_rv_engine.gd` 和 `test_moving_rv_climbing.gd`。
 
-**跳車手感**：啟動 [rv_climb_playground.tscn](../../tests/rv_climb_playground.tscn)，加 `-- --departure`。F2 開始低速直線行駛，F3 開始高速直線行駛。按 D 從車頂右側走下，觀察落地滑行、失衡時間與扣血。
+**跳車手感**：啟動 [rv_climb_playground.tscn](../../tests/playgrounds/rv_climb_playground.tscn)，加 `-- --departure`。F2 開始低速直線行駛，F3 開始高速直線行駛。按 D 從車頂右側走下，觀察落地滑行、失衡時間與扣血。
 
-**Playground**：[rv_handling_playground.tscn](../../tests/rv_handling_playground.tscn) 已登記到 [遊玩與測試場指南](../guides/playgrounds.md#rv-操控與翻車救援)。站點如下：
+**Playground**：[rv_handling_playground.tscn](../../tests/playgrounds/rv_handling_playground.tscn) 已登記到 [遊玩與測試場指南](../guides/playgrounds.md#rv-操控與翻車救援)。站點如下：
 
 - 繞圈場與蛇行樁：試側傾、推頭、甩尾。
 - 側坡與路肩絆翻：試翻車門檻。

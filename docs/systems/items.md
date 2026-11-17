@@ -6,16 +6,16 @@
 
 | 功能 | 範圍 | 來源 | 測試場 |
 |---|---|---|---|
-| 物品 | 拾取、丟棄、耐久、固定與掉落的共用行為 | [Item](../../props/item.gd)、[ItemDefinition](../../core/item_definition.gd)、[ItemState](../../core/item_state.gd) | [item](../../tests/item_playground.tscn) |
+| 物品 | 拾取、丟棄、耐久、固定與掉落的共用行為 | [Item](../../props/item.gd)、[ItemDefinition](../../core/item_definition.gd)、[ItemState](../../core/item_state.gd) | [item](../../tests/playgrounds/item_playground.tscn) |
 | 背包 | 六格，每件一格，不堆疊 | [PlayerInventory](../../player/player_inventory.gd)、[inventory_ui.gd](../../player/inventory_ui.gd) | |
 | 固定放置 | 預覽、旋轉、微調、確認與拆卸 | [equipment_placement.gd](../../player/equipment_placement.gd)、[PlacementRules](../../core/placement_rules.gd) | |
 | 支撐與掉落 | 物品記得自己固定在誰身上；支撐沒了就掉下來 | [ItemMount](../../core/item_mount.gd) | |
 | 車上倉庫 | 每輛車一份道具倉庫，經由道具箱存取 | [item_box.gd](../../equipment/item_box.gd)、`Chassis.stored_items` | |
 | 回收物 | 具名的廢料外觀，由生成位置決定是哪一款 | [ScavengeLoot](../../core/scavenge_loot.gd)、`props/scavenge_loot/` | |
-| 手電筒 | 手持照明，電量有限 | [Flashlight](../../props/flashlight.gd) | [bunker](../../tests/bunker_playground.tscn) |
+| 手電筒 | 手持照明，電量有限 | [Flashlight](../../props/flashlight.gd) | [bunker](../../tests/playgrounds/bunker_playground.tscn) |
 | 電子指南針 | 指向最近的巨型避難所 | [electronic_compass.gd](../../props/electronic_compass.gd)、[BuildingLocator](../../core/building_locator.gd) | |
 | 野外終端 | 手持顯示玩家狀態與時間 | [field_terminal.gd](../../props/field_terminal.gd) | |
-| 手槍與彈藥 | 單發射擊、瞄準、換彈 | [player_weapon.gd](../../player/player_weapon.gd)、[PistolRules](../../core/pistol_rules.gd) | [pistol](../../tests/pistol_playground.tscn) |
+| 手槍與彈藥 | 單發射擊、瞄準、換彈 | [player_weapon.gd](../../player/player_weapon.gd)、[PistolRules](../../core/pistol_rules.gd) | [pistol](../../tests/playgrounds/pistol_playground.tscn) |
 
 自動測試：[test_item_player.gd](../../tests/test_item_player.gd) 涵蓋拾取、放置、支撐與手持物；[test_item_persistence.gd](../../tests/test_item_persistence.gd) 涵蓋物品狀態的保存；[test_pistol.gd](../../tests/test_pistol.gd) 涵蓋手槍。
 

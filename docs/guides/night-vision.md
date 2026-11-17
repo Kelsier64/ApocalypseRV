@@ -36,7 +36,7 @@ Y 控制灰階補光量；實際像素仍受物件材質、場景照明、天氣
 ## 在測試場重載
 
 ```powershell
-godot --path . --log-file .godot/day-night-playground.log res://tests/day_night_playground.tscn
+godot --path . --log-file .godot/day-night-playground.log res://tests/playgrounds/day_night_playground.tscn
 ```
 
 F1 循環切換清晨／中午／黃昏／夜間，並固定時間，用來觀察自然光變化。修改 Curve 後先儲存，再按 K，測試場會依目前 `profile.curve.resource_path` 重載並立即套用，即使時鐘停止也可觀察。使用另存的資源時，先將 `profile.curve` 指向該檔案；K 重載的是目前指定的已保存資源。

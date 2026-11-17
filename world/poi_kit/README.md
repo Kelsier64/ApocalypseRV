@@ -10,7 +10,7 @@
 
 房間保留 Visuals／Collision／DoorSockets／Furnishings／Walkway。家具原點在底部占地中心，碰撞不放入可替換模型；`furniture/bunker/` 為 v2 家具與複雜物件灰盒。PoiLootPoint 只描述呼叫者 RNG 抽選，不能自行生成內容。新地堡由 BunkerContent 獨立抽取物資、補給箱、Raker 與引擎；BunkerLighting 將普通模組的 60% 熄燈，入口與樓梯保留照明。
 
-先前布局系統的舊房間、workshop 與 bunker content_version=1 載入支援已移除。測試場為 `tests/bunker_playground.tscn`。下方原始紀錄只代表當時版本。
+先前布局系統的舊房間、workshop 與 bunker content_version=1 載入支援已移除。測試場為 `tests/playgrounds/bunker_playground.tscn`。下方原始紀錄只代表當時版本。
 
 ## 本次驗證紀錄（2026-09-15）
 

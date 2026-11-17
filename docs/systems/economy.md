@@ -8,11 +8,11 @@ RV 靠三種資源運作：油、電與材料。油讓引擎轉，引擎給電�
 
 | 功能 | 範圍 | 來源 | 測試場 |
 |---|---|---|---|
-| 油料 | 引擎耗油、汽油罐加油 | `Chassis.current_fuel`、[fuel_port.gd](../../equipment/fuel_port.gd) | [rv_systems](../../tests/rv_systems_playground.tscn) |
+| 油料 | 引擎耗油、汽油罐加油 | `Chassis.current_fuel`、[fuel_port.gd](../../equipment/fuel_port.gd) | [rv_systems](../../tests/playgrounds/rv_systems_playground.tscn) |
 | 電力 | 電池供電、待機與工作耗電、引擎充電 | [VehicleEnergy](../../rv/vehicle_energy.gd)、[BatterySocket](../../rv/battery_socket.gd)、[BatteryState](../../rv/battery_state.gd) | |
 | 材料 | 車上的數值庫存 | [MaterialStorage](../../rv/material_storage.gd) | |
 | 拆解機 | 把物品與屍體絞成材料 | [scrapper.gd](../../equipment/scrapper.gd)、[scrapper_feed_motion.gd](../../equipment/scrapper_feed_motion.gd) | |
-| 工作台 | 排隊製作物品，逐層列印 | [CraftingStation](../../equipment/crafting_station.gd) | [crafting_station](../../tests/crafting_station_playground.tscn) |
+| 工作台 | 排隊製作物品，逐層列印 | [CraftingStation](../../equipment/crafting_station.gd) | [crafting_station](../../tests/playgrounds/crafting_station_playground.tscn) |
 | 配方 | 每個配方一份資源 | [RecipeCatalog](../../equipment/recipe_catalog.gd)、`equipment/*_recipe.tres` | |
 | 車載平板 | 管理能源、設備、製作與車殼施工的五頁介面 | [tablet_ui.gd](../../equipment/tablet_ui.gd)、[rv_terminal_presenter.gd](../../equipment/rv_terminal_presenter.gd) | |
 | 終端指令與作弊 | 平板裡的指令列 | [terminal_commands.gd](../../equipment/terminal_commands.gd) | [cheat_test_world](../../world/cheat_test_world.tscn) |

@@ -12,12 +12,12 @@ description: Use when an ApocalypseRV change needs visual, feel or in-game verif
 For a static look (a model, a dashboard, lighting, a fixed vehicle state) render and read the image yourself; no desktop control is needed.
 
 ```powershell
-godot --path . --log-file .godot/rv-workshop-capture.log res://tests/rv_design_workshop.tscn -- --capture
+godot --path . --log-file .godot/rv-workshop-capture.log res://tests/playgrounds/rv_design_workshop.tscn -- --capture
 ```
 
 - Scenes with a capture flag are listed in [docs/guides/playgrounds.md](../../../docs/guides/playgrounds.md). They write PNGs under `.godot/<name>-captures/`, print each path as `CAPTURE:`, and quit. Run them with `run_in_background` and read the PNGs with the Read tool.
 - Never pass `--headless`: it has no renderer and produces empty images.
-- When a scene you need has no capture flag, add one that follows [rv_design_workshop.gd](../../../tests/rv_design_workshop.gd): fixed states, the real gameplay camera plus a close-up, two `frame_post_draw` waits before each grab.
+- When a scene you need has no capture flag, add one that follows [rv_design_workshop.gd](../../../tests/playgrounds/rv_design_workshop.gd): fixed states, the real gameplay camera plus a close-up, two `frame_post_draw` waits before each grab.
 - A camera that is not parented to a moving vehicle must be repositioned every frame, and an observer camera needs the gameplay camera's `cull_mask` or it sees the player's own head.
 - Outdoor 3D renders at 540 lines by default (`render_mode` in `core/game_settings.gd`). Judge legibility at that scale, not in a close-up.
 - Report captures as fixed-state renders. They say nothing about motion, feel or timing.
@@ -27,7 +27,7 @@ godot --path . --log-file .godot/rv-workshop-capture.log res://tests/rv_design_w
 Launch with the PowerShell tool (`run_in_background`) and an explicit log, never through the editor:
 
 ```powershell
-godot --path . --log-file .godot/climb-playground.log res://tests/rv_climb_playground.tscn -- --replay
+godot --path . --log-file .godot/climb-playground.log res://tests/playgrounds/rv_climb_playground.tscn -- --replay
 ```
 
 Omit `-- --replay` for manual WASD/Space play. Controls and arguments for every other scene are in [docs/guides/playgrounds.md](../../../docs/guides/playgrounds.md). Check the scene's `_unhandled_input` before trusting a key you have not used.
