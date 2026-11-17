@@ -82,3 +82,59 @@ func trigger(world) -> bool:
 		tablet.ui_instance.select_slot("roof_0")
 		tablet.ui_instance.select_page("structure")
 	return true
+
+## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
+func autoplay(world) -> float:
+	var tablet: Node = world.rv.get_node("TabletScreen")
+	match world.shot_id:
+		"R1":
+			for index in world.staged.size():
+				var input = world.staged[index]
+				if not world.trigger_take():
+					world._fail("Could not feed the scrapper")
+					return -1.0
+				for frame in 900:
+					await world.get_tree().physics_frame
+					if not is_instance_valid(input): break
+				if is_instance_valid(input):
+					world._fail("Scrapper did not finish " + input.item_name)
+					return -1.0
+				await world.get_tree().create_timer(0.45).timeout
+			return 4.0
+		"R2":
+			if not world.trigger_take():
+				world._fail("Could not open the tablet")
+				return -1.0
+			await world.get_tree().create_timer(0.75).timeout
+			tablet.ui_instance._craft()
+			if world.station.jobs.is_empty():
+				world._fail("Craft failed: " + world.station.last_error)
+				return -1.0
+			tablet._close_ui()
+			return RecipeCatalog.find(world.shot.recipes[0]).duration + 1.5
+		"R3":
+			if not world.trigger_take():
+				world._fail("Could not open Structure")
+				return -1.0
+			var construction: RVStructureConstruction = world.rv.get_node("StructureSlots").construction
+			await world.get_tree().create_timer(0.8).timeout
+			for job in [["roof_0", "repair"], ["right_2", "rebuild"]]:
+				tablet.ui_instance.select_slot(job[0])
+				tablet.ui_instance._begin_structure(job[1])
+				if not construction.is_building():
+					world._fail(construction.last_message)
+					return -1.0
+				await world.get_tree().create_timer(float(construction.job.duration) + 0.2).timeout
+				if construction.last_message != "Construction complete":
+					world._fail(construction.last_message)
+					return -1.0
+			tablet._close_ui()
+			world._aim_at(world.rv.to_global(Vector3(1.9, 1.7, 4.0)))
+			return 4.0
+	return -1.0
+
+func autoplay_error(world) -> String:
+	if world.shot_id == "R2" and not world.station.jobs.is_empty(): return "Print did not finish: " + world.station.last_error
+	if world.shot_id == "R1" and (not recycler.props_being_crushed.is_empty() or world.staged.any(func(item): return is_instance_valid(item))):
+		return "Scrapper did not finish all three items"
+	return ""

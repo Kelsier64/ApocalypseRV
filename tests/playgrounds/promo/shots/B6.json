@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Pick up engine"
+  "title": "Carry the engine out",
+  "steps": "Trigger picks up the upgraded engine. Carry it down the corridor to the exit. M shows the map.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Pick up engine"
 }

@@ -1,9 +1,19 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Next floor",
-  "variants":[{"floor":1}]
+  "title": "Bunker floor plan",
+  "steps": "Ceilings are cut away. Trigger switches floor and plays the rail. Variant 1 starts on the lower floor.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Next floor",
+  "variants": [
+    {
+      "floor": 1
+    }
+  ]
 }

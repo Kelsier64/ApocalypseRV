@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":210,
-  "hour":9,
-  "weather":[0,0,0],
-  "workshop":true,
-  "action":"Structure"
+  "title": "Repairs and installing",
+  "steps": "Repair Front roof and rebuild Right rear on the tablet, then close it and film the result. To install, close the tablet, aim at a flat panel and press F.",
+  "seed": 42,
+  "distance": 210,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "workshop": true,
+  "action": "Structure"
 }

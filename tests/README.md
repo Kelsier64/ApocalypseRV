@@ -29,7 +29,7 @@
 |---|---|
 | [item_player](test_item_player.gd)、[item_persistence](test_item_persistence.gd) | 正式玩家拾取／放置、物品 ID／所有權及保存 |
 | [rv_resource_cycle](test_rv_resource_cycle.gd)、[rv_engine](test_rv_engine.gd) | 回收、製造、燃料、維修、能源、引擎及車載作弊／時間／天氣指令 |
-| [promo_world](test_promo_world.gd) | 錄影擺場、室內外視角、遭遇、設備、運鏡與重錄。預設檢查代表鏡頭，完整逐鏡參數見[錄影指南](../docs/guides/promo-capture.md) |
+| [promo_world](test_promo_world.gd) | 錄影擺場、錄影面板暫停、自由鏡頭與跟拍的操作權、跟拍不隨目標翻滾、運鏡曲線等速且不倒退、路徑存讀、遭遇、設備與重錄。預設檢查代表鏡頭，完整逐鏡參數見[錄影指南](../docs/guides/promo-capture.md) |
 | [rv_structure_modules](test_rv_structure_modules.gd)、[rv_braking](test_rv_braking.gd) | 車體結構／支撐與真實輪胎煞車 |
 | [rv_handling](test_rv_handling.gd)、[rv_rollover](test_rv_rollover.gd) | 合成輪胎力、柏油滑移、側坡翻車、屋頂車損與倒置離座 |
 | [rv_crash_injury](test_rv_crash_injury.gd)、[recovery_jack](test_recovery_jack.gd) | 乘員傷害、事件去重、固定種子斷肢、倒置快照與千斤頂兩段救援 |

@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":245,
-  "hour":11,
-  "weather":[1,0,0],
-  "seat":true,
-  "action":"Start engine and release brake"
+  "title": "Shifting up",
+  "steps": "Accelerate on the straight, shifting up with R. Film the gauges first, then a Follow camera.",
+  "seed": 42,
+  "distance": 245,
+  "hour": 11,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "seat": true,
+  "action": "Start engine and release brake"
 }

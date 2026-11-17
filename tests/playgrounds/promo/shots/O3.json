@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":450,
-  "hour":10,
-  "weather":[1,0,0],
-  "stop":1,
-  "action":"Reveal white apparition"
+  "title": "White apparition at a roadside site",
+  "steps": "Film the site and loose parts first. After the trigger, look around for the figure; staring drains SAN and distorts the view.",
+  "seed": 42,
+  "distance": 450,
+  "hour": 10,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "stop": 1,
+  "action": "Reveal white apparition"
 }

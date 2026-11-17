@@ -1,7 +1,13 @@
 {
-  "seed":42,
-  "distance":868,
-  "hour":11,
-  "weather":[1,0,0],
-  "action":"Release RV on slope"
+  "title": "Rollover and jack",
+  "steps": "Wait for the RV to settle on its side, walk to the liftable side, select the jack and trigger again to deploy it.",
+  "seed": 42,
+  "distance": 868,
+  "hour": 11,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "action": "Release RV on slope"
 }

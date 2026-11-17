@@ -1,7 +1,13 @@
 {
-  "seed":42,
-  "distance":1060,
-  "hour":11,
-  "weather":[1,0,0],
-  "action":"Release handbrake"
+  "title": "Runaway RV",
+  "steps": "The handbrake releases on the slope. Film the RV rolling away from the shoulder, then chase it.",
+  "seed": 42,
+  "distance": 1060,
+  "hour": 11,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "action": "Release handbrake"
 }

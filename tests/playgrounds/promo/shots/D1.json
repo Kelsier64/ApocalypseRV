@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":2330,
-  "hour":14,
-  "weather":[1,0,0],
-  "seat":true,
-  "action":"Start engine and release brake"
+  "title": "Trees down",
+  "steps": "Drive along the shoulder into the three small trees.",
+  "seed": 42,
+  "distance": 2330,
+  "hour": 14,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "seat": true,
+  "action": "Start engine and release brake"
 }

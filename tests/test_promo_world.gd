@@ -2,6 +2,7 @@ extends SceneTree
 
 const SCENE := "res://tests/playgrounds/promo/promo_world.tscn"
 const Perception := preload("res://core/apparition_perception.gd")
+const RAIL := preload("res://tests/playgrounds/promo/promo_rail.gd")
 var failures: Array[String] = []
 
 func _initialize() -> void:
@@ -21,6 +22,7 @@ func _wait_for_take(id: String, previous: Node = null) -> Node:
 	return null
 
 func _run() -> void:
+	_check_rail_math()
 	change_scene_to_file(SCENE)
 	var world := await _wait_for_take("R2")
 	if world != null:
@@ -56,14 +58,7 @@ func _run() -> void:
 			_check(world.station.request_craft(next_id), "Workshop can queue " + next_id)
 			world.station.step_work(recipe.duration)
 			_check(_output(container, outputs.get(next_id, "")) != null, "Workshop can print " + next_id + " (" + world.station.last_error + ")")
-		world.director.rail.clear()
-		world.director.add_keyframe()
-		_check(world.director.use_free_camera(), "R2 enters free camera")
-		world.director.view.position.x += 0.2
-		world.director.add_keyframe()
-		_check(world.director.play_rail(), "Rail starts from the recorded view")
-		world.director._process(world.director.SEGMENT_SECONDS)
-		_check(world.director.view.global_transform.is_equal_approx(world.director.rail.back()), "Rail reaches the last keyframe")
+		await _check_director(world)
 		world.reload_take("R2")
 		world = await _wait_for_take("R2", world)
 		if world != null:
@@ -80,6 +75,50 @@ func _run() -> void:
 	if failures.is_empty(): print("PASS: promo stages, production actions, rails and resets")
 	for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+func _check_rail_math() -> void:
+	var rail = RAIL.new()
+	# Uneven spacing: progress must follow distance, not keyframe count.
+	for x in [0.0, 2.0, 20.0]: rail.add(Transform3D(Basis.IDENTITY, Vector3(x, 0, 0)), 60.0)
+	_check(absf(rail.sample(0.5).transform.origin.x - 10.0) < 0.3, "Rail progress follows arc length")
+	var forward := true
+	for step in 100: forward = forward and rail.sample((step + 1) / 100.0).transform.origin.x >= rail.sample(step / 100.0).transform.origin.x - 0.0001
+	_check(forward, "Rail never doubles back between unevenly spaced keys")
+	_check(rail.sample(0.0).transform.origin.is_equal_approx(Vector3.ZERO) and rail.sample(1.0).transform.origin.distance_to(Vector3(20, 0, 0)) < 0.01, "Rail starts and ends on its keys")
+	var cruise: float = rail.sample(0.47).transform.origin.distance_to(rail.sample(0.45).transform.origin)
+	var at_key: float = rail.sample(0.11).transform.origin.distance_to(rail.sample(0.09).transform.origin)
+	_check(cruise > 0.0 and at_key > 0.0, "Rail keeps moving through an inner keyframe")
+	var middle: float = rail.sample(0.51).transform.origin.distance_to(rail.sample(0.49).transform.origin)
+	_check(absf(middle / cruise - 1.0) < 0.05, "Rail cruises at constant speed between the eased ends")
+	var path := "res://.godot/promo-test/rail.json"
+	_check(rail.save_file(path) == OK, "Rail saves")
+	var loaded = RAIL.new()
+	_check(loaded.load_file(path) and loaded.size() == 3 and loaded.authored() and loaded.sample(0.5).transform.origin.is_equal_approx(rail.sample(0.5).transform.origin), "Saved rail loads back identically")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+func _check_director(world: Node) -> void:
+	var director: Node = world.director
+	director.open_panel()
+	_check(paused, "The director panel pauses the take")
+	director.close_panel_and(func(): pass)
+	_check(not paused, "Closing the panel resumes the take")
+	_check(director.use_free_camera() and world.actor.is_gameplay_input_blocked(), "Free camera takes the keyboard from the player")
+	_check(director.follow_preset("chase", world.rv) and not world.actor.is_gameplay_input_blocked(), "Follow camera leaves the player in control")
+	var original: Basis = world.rv.global_basis
+	world.rv.global_basis = original.rotated(original.z, deg_to_rad(60))
+	for frame in 30: director.view._process(1.0 / 30.0)
+	_check(absf(director.view.global_basis.x.y) < 0.05, "Follow camera ignores the roll of its target")
+	world.rv.global_basis = original
+	director.clear_rail()
+	_check(director.use_free_camera(), "R2 returns to free camera")
+	director.add_keyframe()
+	director.view.global_position.x += 0.4
+	director.add_keyframe()
+	_check(director.rail.source == RAIL.Source.EDITED and director.play_rail(), "Rail plays from recorded keys")
+	director.view._process(float(director.rail.duration) + 0.01)
+	_check(director.view.global_position.is_equal_approx(director.rail.keys.back().position), "Rail reaches the last keyframe")
+	director.use_player_camera()
+	_check(not world.actor.is_gameplay_input_blocked() and director.view == null, "Player view restores control")
 
 func _output(container: Node, id: String) -> Item:
 	if id.is_empty(): return null
@@ -129,7 +168,7 @@ func _check_remaining_takes() -> void:
 		var weather := Vector3(float(world.shot.weather[0]), float(world.shot.weather[1]), float(world.shot.weather[2]))
 		_check(world.actor.is_on_floor() or is_instance_valid(world.actor.seated_in), id + " has a grounded or seated operator")
 		_check(is_equal_approx(clock.hour_of_day(), world.shot.hour) and clock.weather.sample().is_equal_approx(weather), id + " starts with configured lighting and weather")
-		_check(world.trigger_take(), id + " F10 performs the configured action")
+		_check(world.trigger_take(), id + " F3 performs the configured action")
 		await _verify_action(world)
 		print("PROMO TEST: ", id)
 

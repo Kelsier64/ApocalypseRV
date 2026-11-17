@@ -40,7 +40,7 @@
 |---|---|
 | [程式與資產目錄](guides/codebase.md) | 目錄責任、引用方式、整理與刪除前的檢查 |
 | [測試場](guides/playgrounds.md) | 各測試場的命令、快捷鍵與檢查重點 |
-| [宣傳影片錄影](guides/promo-capture.md) | 22 個可重拍鏡頭、地堡及主世界運鏡、車內與公路操作、影片輸出 |
+| [宣傳影片錄影](guides/promo-capture.md) | 錄影面板、即時錄影與自動演出、自由鏡頭、跟拍、運鏡路徑、各鏡頭分組 |
 | [POI 製作](guides/poi-authoring.md) | 房間、家具、入口的製作與接入規範 |
 | [地堡房型](guides/bunker-interior.md) | 軍事地堡房型的製作與保存契約 |
 | [巨型避難所外殼](guides/megashelter-exteriors.md) | 程序化外殼的零件與生成規則 |

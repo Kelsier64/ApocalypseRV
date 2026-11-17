@@ -1,10 +1,16 @@
 {
-  "seed":43,
-  "distance":5125.92,
-  "hour":15,
-  "weather":[1,0,0],
-  "band":34,
-  "event":"barrels",
-  "seat":true,
-  "action":"Start engine and release brake"
+  "title": "RV hits a barrel",
+  "steps": "Aim at the barrel ahead and accelerate into it. Follow: chase films it from outside while you drive.",
+  "seed": 43,
+  "distance": 5125.92,
+  "hour": 15,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "band": 34,
+  "event": "barrels",
+  "seat": true,
+  "action": "Start engine and release brake"
 }

@@ -1,14 +1,16 @@
 extends "res://player/player.gd"
 
+## True while the free camera owns the keyboard. Follow and rail cameras leave
+## the player in control so a take can be driven or played while filmed from outside.
 var camera_locked := false
 var invulnerable := false
-var replay_driving := false
 
 func is_gameplay_input_blocked() -> bool:
-	return (camera_locked and not replay_driving) or super.is_gameplay_input_blocked()
+	return camera_locked or super.is_gameplay_input_blocked()
 
+## Apparitions judge gaze from the player's own view, not the filming camera.
 func apparition_view_for(presentation: Camera3D) -> Camera3D:
-	if not camera_locked or super.is_gameplay_input_blocked() or not is_instance_valid(presentation): return null
+	if super.is_gameplay_input_blocked() or not is_instance_valid(presentation): return null
 	if presentation.get_meta(&"promo_camera", false) != true: return null
 	return seated_in.seat_camera if is_instance_valid(seated_in) else camera
 

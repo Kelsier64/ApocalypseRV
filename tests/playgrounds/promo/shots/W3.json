@@ -1,7 +1,13 @@
 {
-  "seed":42,
-  "distance":645,
-  "hour":5,
-  "weather":[1,0,0],
-  "action":"Start time lapse"
+  "title": "Day and weather time-lapse",
+  "steps": "Runs a full day with passing fog in about 12 seconds while the rail plays.",
+  "seed": 42,
+  "distance": 645,
+  "hour": 5,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "action": "Start time lapse"
 }

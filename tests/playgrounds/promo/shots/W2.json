@@ -1,8 +1,21 @@
 {
-  "seed":42,
-  "distance":750,
-  "hour":10,
-  "weather":[1,0,0],
-  "action":"Play aerial rail",
-  "variants":[{"seed":43},{"seed":44}]
+  "title": "Same road, other seeds",
+  "steps": "Record variants 0, 1 and 2 with the same rail to compare seeds 42, 43 and 44.",
+  "seed": 42,
+  "distance": 750,
+  "hour": 10,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "action": "Play aerial rail",
+  "variants": [
+    {
+      "seed": 43
+    },
+    {
+      "seed": 44
+    }
+  ]
 }

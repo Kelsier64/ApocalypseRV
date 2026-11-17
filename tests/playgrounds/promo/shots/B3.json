@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Release Raker"
+  "title": "Raker grab",
+  "steps": "Turn the flashlight on, then trigger. Let the Raker reach you and tap Space repeatedly to struggle free.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Release Raker"
 }

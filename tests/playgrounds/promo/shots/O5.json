@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":2150,
-  "hour":16,
-  "weather":[0,0,2],
-  "seat":true,
-  "action":"Release Slender Speaker"
+  "title": "Slender Speaker takes the driver",
+  "steps": "The RV is parked with the driver side panel gone. Wait for the giant to break the front roof and grab the driver. Film from the seat or a free camera.",
+  "seed": 42,
+  "distance": 2150,
+  "hour": 16,
+  "weather": [
+    0,
+    0,
+    2
+  ],
+  "seat": true,
+  "action": "Release Slender Speaker"
 }

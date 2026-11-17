@@ -3,6 +3,8 @@ extends RefCounted
 const FLASHLIGHT := "res://props/flashlight.tscn"
 const SCRAP := "res://props/scrap.tscn"
 const RAKER := "res://enemies/raker.tscn"
+const GrabRules := preload("res://core/raker_grab_rules.gd")
+const FLOOR_RAIL_SECONDS := 8.0
 
 var inside: PoiInterior
 var floor_index := 0
@@ -29,8 +31,8 @@ func prepare(world) -> bool:
 		lighting.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		lighting.ambient_light_color = Color(0.72, 0.80, 0.87)
 		lighting.ambient_light_energy = 0.45
-		_show_floor(world, world.director.rail.is_empty())
-		return not world.director.rail.is_empty()
+		_show_floor(world)
+		return world.director.rail.playable()
 	world.actor.add_item(ItemNames.FLASHLIGHT, false, FLASHLIGHT)
 	if world.shot_id == "B6":
 		for entity in inside.entities.get_children():
@@ -129,10 +131,60 @@ func _show_floor(world, frame_floor := true) -> void:
 	for node in inside.navigation.get_children():
 		if node is BunkerCache or node is PoiEntrance:
 			node.visible = roundi(-node.position.y / float(inside.layout.floor_spacing)) == floor_index
-	if not frame_floor: return
+	if not frame_floor or not world.director.use_generated_rail(): return
 	var center := bounds.get_center()
 	var distance := maxf(9.0, bounds.size.length() * 0.62)
-	world.director.rail.clear()
+	world.director.clear_generated_rail()
+	world.director.rail.duration = FLOOR_RAIL_SECONDS
 	for direction in [Vector3(-0.32, 1, 0.35), Vector3(0.0, 1, 0.45), Vector3(0.32, 1, 0.35)]:
 		var origin: Vector3 = center + direction.normalized() * distance
-		world.director.rail.append(Transform3D(Basis.looking_at(center - origin), origin))
+		world.director.generated_rail_key(Transform3D(Basis.looking_at(center - origin), origin))
+
+## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
+func autoplay(world) -> float:
+	match world.shot_id:
+		"B2":
+			world.actor.invulnerable = true
+			if not world.trigger_take():
+				world._fail("Could not reveal the apparition")
+				return -1.0
+			world.actor._toggle_flashlight()
+			if not world.director.use_free_camera():
+				world._fail("Could not detach the camera")
+				return -1.0
+			world.director.view.global_position += world.director.view.global_basis.x * 0.55
+			for frame in 90:
+				await world.get_tree().physics_frame
+				if world.apparition.phase == BlackApparition.Phase.FRENZIED: return 2.5
+			world._fail("Flashlight did not trigger pursuit in the bunker")
+			return -1.0
+		"B5":
+			if not world.director.play_rail():
+				world._fail("Could not start the floor rail")
+				return -1.0
+			return float(world.director.rail.duration) + 0.5
+		"B1", "B3", "B4":
+			if world.shot_id != "B1": world.actor._toggle_flashlight()
+			if not world.trigger_take():
+				world._fail("Could not start the bunker action")
+				return -1.0
+			if world.shot_id == "B3":
+				for frame in 240:
+					await world.get_tree().physics_frame
+					if world.actor.is_grabbed(): break
+				if not world.actor.is_grabbed():
+					world._fail("Raker did not grab the player")
+					return -1.0
+				var grab: Node = world.actor.grab_control
+				var wounded := GrabRules.minimum_wounded_presses(grab.required)
+				while world.actor.is_grabbed() and grab.presses < wounded:
+					if not world.actor.submit_struggle(): break
+					await world.get_tree().create_timer(0.055).timeout
+			return 8.0
+	if not world.trigger_take():
+		world._fail("Could not start the take")
+		return -1.0
+	return 7.0
+
+func autoplay_error(_world) -> String:
+	return ""

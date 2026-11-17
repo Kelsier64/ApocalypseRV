@@ -1,11 +1,35 @@
 {
-  "seed":42,
-  "distance":210,
-  "hour":9,
-  "weather":[0,0,0],
-  "workshop":true,
-  "recipes":["battery",
-  "wheel","engine_standard"],
-  "action":"Crafting",
-  "variants":[{"recipes":["wheel","battery","engine_standard"]},{"recipes":["engine_standard","battery","wheel"]}]
+  "title": "Fabricator",
+  "steps": "Press Add to queue on the tablet, close it and film the print. Variants preselect Battery, Wheel or Standard Engine first.",
+  "seed": 42,
+  "distance": 210,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "workshop": true,
+  "recipes": [
+    "battery",
+    "wheel",
+    "engine_standard"
+  ],
+  "action": "Crafting",
+  "variants": [
+    {
+      "recipes": [
+        "wheel",
+        "battery",
+        "engine_standard"
+      ]
+    },
+    {
+      "recipes": [
+        "engine_standard",
+        "battery",
+        "wheel"
+      ]
+    }
+  ]
 }

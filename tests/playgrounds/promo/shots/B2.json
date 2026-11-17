@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Reveal apparition"
+  "title": "Black apparition in the dark",
+  "steps": "Right mouse aims the flashlight at the figure; it charges once lit. For a side angle, set the free camera first, then return to the player view and light it.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Reveal apparition"
 }

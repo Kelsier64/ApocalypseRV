@@ -2,6 +2,9 @@ extends RefCounted
 
 const TREE := "res://world/roadside_kit/tree.tscn"
 const FLASHLIGHT := "res://props/flashlight.tscn"
+const AERIAL_RAIL_SECONDS := 12.0
+const TIME_LAPSE_SECONDS := 12.0
+const DRIVE_SECONDS := {"D1": 13.0, "O4": 19.0}
 
 var road_event: Dictionary
 var event_mark := Vector3.INF
@@ -136,7 +139,7 @@ func prepare(world) -> bool:
 		"D5":
 			world._aim_at(rv.global_position + rv.global_basis.z * 3.0 + Vector3.UP * 0.35)
 		"W1", "W2", "W3":
-			if world.director.rail.is_empty(): _aerial_rail(world)
+			if world.director.use_generated_rail(): _aerial_rail(world)
 	return true
 
 func _event_actor(container: Node3D, mark: Vector3) -> Node3D:
@@ -166,19 +169,21 @@ func _find_giant_mark(generator: Node, target: Vector3, parked: bool) -> Vector3
 func _aerial_rail(world) -> void:
 	var field: WorldField = world.field
 	var center := float(world.shot.distance)
+	world.director.clear_generated_rail()
+	world.director.rail.duration = AERIAL_RAIL_SECONDS
 	for offset in [-65.0, -36.0, -6.0, 24.0, 55.0]:
 		var frame := field.road_frame(center + float(offset))
 		var target := field.road_frame(center + float(offset) + 50.0).origin
 		var origin := frame.origin + frame.basis.x * lerpf(39.0, 12.0, (float(offset) + 65.0) / 120.0)
 		origin.y = maxf(field.height_at(origin.x, origin.z), frame.origin.y) + 32.0
-		world.director.rail.append(Transform3D(Basis.looking_at(target - origin), origin))
+		world.director.generated_rail_key(Transform3D(Basis.looking_at(target - origin), origin))
 
 func trigger(world) -> bool:
 	var rv: Chassis = world.rv
 	if triggered:
 		if world.shot_id != "D4": return false
 		var result := RecoveryJack.deploy_from_inventory(world.actor, rv)
-		world.director._status(result.message)
+		world.director.notify(result.message)
 		return result.has("jack")
 	match world.shot_id:
 		"O1":
@@ -211,7 +216,7 @@ func trigger(world) -> bool:
 			return world.director.play_rail()
 		"W3":
 			if not world.director.play_rail(): return false
-			time_lapse_seconds = 12.0
+			time_lapse_seconds = TIME_LAPSE_SECONDS
 	triggered = true
 	return true
 
@@ -256,3 +261,48 @@ func mark_jack_operator(world) -> bool:
 			return true
 	player.global_position = prior
 	return false
+
+## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
+func autoplay(world) -> float:
+	match world.shot_id:
+		"W1", "W2", "W3":
+			var started: bool = world.trigger_take() if world.shot_id == "W3" else world.director.play_rail()
+			if not started:
+				world._fail("Could not start the rail")
+				return -1.0
+			var rail_seconds := float(world.director.rail.duration) + 0.5
+			return maxf(TIME_LAPSE_SECONDS, rail_seconds) if world.shot_id == "W3" else rail_seconds
+		"O3":
+			if not world.trigger_take():
+				world._fail("White apparition had no valid emergence point")
+				return -1.0
+			await world.get_tree().create_timer(0.6).timeout
+			world._aim_at(world.subject.global_position + WhiteApparition.CHEST)
+			return 4.5
+		"O2", "D1", "D2", "D3", "O4":
+			if not world.trigger_take():
+				world._fail("Could not start the driving action")
+				return -1.0
+			drive_replay = true
+			if world.director.exterior_requested(): world.director.follow_preset("chase", world.rv)
+			if world.shot_id == "D3":
+				await world.get_tree().create_timer(2.8).timeout
+				world.rv.set_gear(2)
+				await world.get_tree().create_timer(2.0).timeout
+				world.rv.set_gear(3)
+			return DRIVE_SECONDS.get(world.shot_id, 11.0)
+		"D4":
+			world.trigger_take()
+			await world.get_tree().create_timer(7.0).timeout
+			if world.rv.rollover_state() == Chassis.Rollover.UPRIGHT or not mark_jack_operator(world) or not world.trigger_take():
+				world._fail("RV did not settle at a usable recovery-jack mark")
+				return -1.0
+			return 9.0
+	if not world.trigger_take():
+		world._fail("Could not start the take")
+		return -1.0
+	return 45.0 if world.shot_id == "O5" else 7.0
+
+func autoplay_error(world) -> String:
+	if world.shot_id == "D4" and world.rv.rollover_state() != Chassis.Rollover.UPRIGHT: return "Recovery jack did not right the RV"
+	return ""

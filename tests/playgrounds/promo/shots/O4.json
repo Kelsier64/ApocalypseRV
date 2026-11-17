@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":2150,
-  "hour":16,
-  "weather":[0,0,2],
-  "seat":true,
-  "action":"Release Slender Speaker"
+  "title": "Slender Speaker chase",
+  "steps": "Accelerate along the foggy road. Use Follow: chase or side to film the giant catching up while you drive.",
+  "seed": 42,
+  "distance": 2150,
+  "hour": 16,
+  "weather": [
+    0,
+    0,
+    2
+  ],
+  "seat": true,
+  "action": "Release Slender Speaker"
 }

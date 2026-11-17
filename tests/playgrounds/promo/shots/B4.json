@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Release Barrel Man"
+  "title": "Barrel Man in the bunker",
+  "steps": "Face the barrel row and leave room to back away. Film it rising, chasing and exploding.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Release Barrel Man"
 }

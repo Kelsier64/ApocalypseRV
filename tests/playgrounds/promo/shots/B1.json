@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":1325,
-  "hour":9,
-  "weather":[0,0,0],
-  "interior":"bunker",
-  "action":"Turn on flashlight"
+  "title": "Bunker flashlight sweep",
+  "steps": "Walk the dark corridor along the beam. E picks up parts; hold E at the cache to search it.",
+  "seed": 42,
+  "distance": 1325,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "interior": "bunker",
+  "action": "Turn on flashlight"
 }

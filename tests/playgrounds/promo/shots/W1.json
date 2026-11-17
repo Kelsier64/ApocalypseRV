@@ -1,8 +1,27 @@
 {
-  "seed":42,
-  "distance":645,
-  "hour":10,
-  "weather":[1,0,0],
-  "action":"Play aerial rail",
-  "variants":[{"distance":300},{"distance":1650},{"distance":3050},{"distance":3320}]
+  "title": "Highway aerial",
+  "steps": "Plays the aerial rail. Variants 1 to 4 cover other stretches: bridge, hills, canyon, forest.",
+  "seed": 42,
+  "distance": 645,
+  "hour": 10,
+  "weather": [
+    1,
+    0,
+    0
+  ],
+  "action": "Play aerial rail",
+  "variants": [
+    {
+      "distance": 300
+    },
+    {
+      "distance": 1650
+    },
+    {
+      "distance": 3050
+    },
+    {
+      "distance": 3320
+    }
+  ]
 }

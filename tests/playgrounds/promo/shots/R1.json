@@ -1,8 +1,14 @@
 {
-  "seed":42,
-  "distance":210,
-  "hour":9,
-  "weather":[0,0,0],
-  "workshop":true,
-  "action":"Feed staged item"
+  "title": "Scrapper",
+  "steps": "Each trigger drops the next staged item into the scrapper: scrap, barrel, remains. Wait for each to finish, or carry them in yourself.",
+  "seed": 42,
+  "distance": 210,
+  "hour": 9,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "workshop": true,
+  "action": "Feed staged item"
 }

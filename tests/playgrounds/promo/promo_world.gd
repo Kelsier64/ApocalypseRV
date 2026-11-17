@@ -22,6 +22,8 @@ var road_pose: Transform3D
 var stage: RefCounted
 var staged: Array[Node3D] = []
 var take_ready := false
+var failed := false
+var _reloading := false
 var director: Node
 var actor: CharacterBody3D
 var rv: Chassis
@@ -233,19 +235,31 @@ func spawn(scene_path: String, point: Vector3, parent: Node3D, frozen := false) 
 	staged.append(entity)
 	return entity
 
-func reload_take(id: String) -> void:
-	if id not in SHOTS or not take_ready: return
+## Reloads the scene with another shot. A negative variant keeps the current one
+## for the same shot and selects the default for a different shot.
+func reload_take(id: String, next := -1) -> void:
+	if id not in SHOTS or _reloading or not (take_ready or failed): return
+	_reloading = true
+	get_tree().paused = false
 	await _finish_streaming()
-	next_variant = variant if shot_id == id else 0
+	next_variant = next if next >= 0 else (variant if shot_id == id else 0)
 	next_shot = id
 	var error := get_tree().reload_current_scene()
 	if error != OK:
 		next_shot = ""
+		_reloading = false
 		push_error("Could not reload take: " + error_string(error))
 
+## Unattended runs and tests exit with an error; an interactive session keeps
+## running and shows the reason so another shot can be picked from the panel.
 func _fail(reason: String) -> void:
 	push_error("PROMO: " + reason)
-	get_tree().quit(2)
+	take_ready = false
+	failed = true
+	if "--preview" in OS.get_cmdline_user_args() or DisplayServer.get_name() == "headless" or not is_instance_valid(director):
+		get_tree().quit(2)
+		return
+	director.show_error(reason)
 
 func finish_preview() -> void:
 	var tree := get_tree()
