@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemDefinition" format=3]
+
+[ext_resource type="Script" path="res://core/item_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+type_id = "shortwave_radio"
+display_name = "Shortwave Radio"
+weight = 1.3
+health = 100.0
+is_large = false
+requires_rv_connection = false
+scrap_yields = {"Metal Parts": Vector2(1, 2), "Electronic Scrap": Vector2(1, 2)}

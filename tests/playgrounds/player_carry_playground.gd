@@ -1,5 +1,5 @@
 extends Node3D
-const ITEMS := ["flashlight", "scrap", "battery", "engine_repair_kit", "gas_can", "gas_can_empty", "wheel", "oil_barrel", "engine_standard", "scavenge_loot/copper_wire_spool", "scavenge_loot/broken_shortwave_radio", "scavenge_loot/salvaged_motor", "scavenge_loot/medical_tin", "scavenge_loot/industrial_valve", "scavenge_loot/enamel_kettle", ""]
+const ITEMS := ["flashlight", "scrap", "battery", "engine_repair_kit", "gas_can", "gas_can_empty", "wheel", "oil_barrel", "engine_standard", "scavenge_loot/copper_wire_spool", "scavenge_loot/broken_shortwave_radio", "scavenge_loot/salvaged_motor", "scavenge_loot/medical_tin", "scavenge_loot/industrial_valve", "scavenge_loot/enamel_kettle", "shortwave_radio", ""]
 var actor: CharacterBody3D
 var observer: Camera3D
 var label: Label
@@ -46,7 +46,7 @@ func _ready() -> void:
 	var canvas := CanvasLayer.new()
 	add_child(canvas)
 	label = Label.new()
-	label.position = Vector2(20, 160)
+	label.position = Vector2(20, 220)
 	canvas.add_child(label)
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--item="):
@@ -61,9 +61,12 @@ func _equip() -> void:
 	actor.inventory.items.clear()
 	actor.inventory.active_slot = 0
 	var key: String = ITEMS[selected]
-	if not key.is_empty(): actor.add_item(key, key in ["oil_barrel", "engine_standard", "scavenge_loot/salvaged_motor"], "res://props/" + key + ".tscn")
+	var display_name := "Shortwave Radio" if key == "shortwave_radio" else key
+	if not key.is_empty():
+		actor.add_item(display_name, key in ["oil_barrel", "engine_standard", "scavenge_loot/salvaged_motor"], "res://props/" + key + ".tscn")
 	actor._equip_active_slot()
-	label.text = "F1 View | F2 Item | F3 Walk | F4 Look pitch | F5 Hands | F6 Orbit\n" + (key if not key.is_empty() else "Empty hands")
+	label.text = "F1 View | F2 Item | F3 Walk | F4 Look pitch | F5 Hands | F6 Orbit\n" + (display_name if not key.is_empty() else "Empty hands")
+	if key == "shortwave_radio": label.text += " | RMB Toggle radio"
 
 func _input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo: return

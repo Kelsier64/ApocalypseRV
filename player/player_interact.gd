@@ -108,6 +108,8 @@ func _show_on_foot_hints(obj: Node) -> void:
 		if not bindings.has("F"): bindings["F"] = "Place"
 		if player.held_item_node is Flashlight:
 			bindings["RMB"] = "Toggle flashlight"
+		elif player.held_item_node is ShortwaveRadio:
+			bindings["RMB"] = "Toggle radio"
 		elif player.held_item_node is TrainingTerminal:
 			bindings["RMB"] = "Read terminal"
 		elif player.weapon.can_use():
@@ -134,7 +136,9 @@ func _add_target_hints(obj: Node, bindings: Dictionary, can_place: bool) -> void
 		bindings["E"] = "Hold to search"
 		return
 	var has_tap := obj is Bed or obj is BatterySocket or (not obj is Item and obj.has_method("interact"))
-	if _held_delivery(obj):
+	if obj is ShortwaveRadio:
+		bindings["E"] = "Toggle radio"
+	elif _held_delivery(obj):
 		bindings["E"] = "Hold to feed item"
 	elif _uses_hold(obj):
 		bindings["E"] = "Use / hold to service" if has_tap else "Hold to use"

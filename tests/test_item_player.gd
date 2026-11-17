@@ -127,6 +127,63 @@ func check_field_terminal() -> void:
 	clear_bag()
 	await steps()
 
+func check_shortwave_radio(support: Node3D) -> void:
+	clear_bag()
+	var radio := make_item(ShortwaveRadio.SCENE, Vector3(20, 1, 18)) as ShortwaveRadio
+	radio.freeze = true
+	var identity := radio.persistent_id
+	check(not radio.enabled and radio._signal_timer.is_stopped(), "World radio starts switched off")
+	check(InventoryItemIcons.texture_for(ShortwaveRadio.SCENE) != InventoryItemIcons.FALLBACK, "Radio has a dedicated inventory icon")
+	check(actor.add_item("Shortwave Radio", false, ShortwaveRadio.SCENE), "A newly granted radio fits one inventory slot")
+	check(not actor.inventory.active_item().state.enabled, "A newly granted radio starts switched off")
+	clear_bag()
+	radio.pickup(actor)
+	var held := actor.held_item_node as ShortwaveRadio
+	check(held != null and not held.is_large and held.persistent_id == identity, "Radio can be picked up and equipped as a one-hand item")
+	if held == null: return
+	held._rng.seed = 42
+	actor._unhandled_input(right_mouse_event(true))
+	var first_delay := ShortwaveRadio.FIRST_SIGNAL_DELAY
+	check(held.enabled and actor.inventory.active_item().state.enabled, "RMB powers the held radio and updates the inventory entry")
+	check(held._signal_timer.wait_time >= first_delay.x and held._signal_timer.wait_time <= first_delay.y, "A powered held radio schedules its first transmission")
+	check(held._lamp.material_override == held.lit_lamp, "The receiver's pilot lamp indicates power")
+	held._signal_timer.start(0.01)
+	await steps(5)
+	var first := held._speaker.stream
+	check(first in held.transmissions and held._speaker.playing, "The timer plays a real transmission through the 3D speaker")
+	held._speaker.stop()
+	held._speaker.finished.emit()
+	var gap := ShortwaveRadio.SIGNAL_GAP
+	check(held._signal_timer.wait_time >= gap.x and held._signal_timer.wait_time <= gap.y, "The next signal waits a randomized silent interval")
+	held._signal_timer.start(0.01)
+	await steps(5)
+	check(held._speaker.playing and held._speaker.stream != first, "The next transmission is different")
+	actor._unhandled_input(right_mouse_event(true))
+	check(not held.enabled and not held._speaker.playing and held._signal_timer.is_stopped(), "RMB switches off and interrupts a broadcast")
+	actor._unhandled_input(right_mouse_event(true))
+	check(actor.enter_equipment_placement(), "A held radio enters normal placement")
+	var ghost := actor.placement.placing_equipment as ShortwaveRadio
+	check(ghost != null and ghost.enabled and ghost._signal_timer.is_stopped() and held._signal_timer.is_stopped(), "The powered preview and hidden held radio stay silent during placement")
+	actor.cancel_equipment_placement()
+	check(not held._signal_timer.is_stopped(), "Cancelling placement restores reception to the held radio")
+	held._signal_timer.start(0.01)
+	await steps(5)
+	actor._set_active_slot(1)
+	check(held._signal_timer.is_stopped() and not held._speaker.playing, "Stowing mutes the radio immediately")
+	actor._set_active_slot(0)
+	check(actor.held_item_node.enabled, "Re-equipping remembers the radio's switch position")
+	actor.drop_item()
+	var dropped := find_item(identity) as ShortwaveRadio
+	check(dropped != null and dropped.enabled and not dropped._signal_timer.is_stopped(), "A powered radio can continue receiving on the ground")
+	if dropped != null:
+		dropped.confirm_placement(dropped.global_transform, entities, support)
+		ray._step_buttons(dropped, true, false, 0.0)
+		ray._step_buttons(dropped, false, false, 0.0)
+		check(dropped.is_fixed and not dropped.enabled and dropped._signal_timer.is_stopped(), "Interacting with a fixed radio powers it off")
+		dropped.queue_free()
+	clear_bag()
+	await steps()
+
 func check_driving_carry() -> void:
 	clear_bag()
 	var rv := (load("res://rv/starter_rv.tscn") as PackedScene).instantiate()
@@ -1764,6 +1821,7 @@ func run() -> void:
 	await check_bed_rest()
 	await check_compass()
 	await check_field_terminal()
+	await check_shortwave_radio(wall)
 	await check_driving_carry()
 	await check_hud_toggle()
 	await check_control_hints()

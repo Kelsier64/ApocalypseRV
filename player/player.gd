@@ -307,6 +307,7 @@ func _equip_active_slot():
 			held_item_node.hide()
 			if held_item_node is Item: held_item_node.presentation_only = true
 			_restore_prop_state(held_item_node, item_data)
+			if held_item_node is ShortwaveRadio: held_item_node.set_carried()
 			if held_item_node.has_method("set_held"): held_item_node.set_held(true)
 			# Disable physics so it's just visual while held
 			if held_item_node is RigidBody3D:
@@ -681,6 +682,11 @@ func _unhandled_input(event):
 	if event.is_action_pressed("use_held_item") and get_player_mode() == PlayerMode.NORMAL:
 		if held_item_node is Flashlight:
 			_toggle_flashlight()
+			get_viewport().set_input_as_handled()
+			return
+		if held_item_node is ShortwaveRadio and can_use_hands():
+			held_item_node.toggle_power()
+			inventory.active_item()["state"]["enabled"] = held_item_node.enabled
 			get_viewport().set_input_as_handled()
 			return
 		if held_item_node is TrainingTerminal and read_held_terminal() != null:

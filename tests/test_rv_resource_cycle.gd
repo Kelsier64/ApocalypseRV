@@ -94,7 +94,7 @@ func _run() -> void:
 func _exercise_portable_recipes(rv: Chassis, station: CraftingStation) -> void:
 	var materials := rv.inventory.duplicate(true)
 	var charge := rv.current_power
-	for id in ["flashlight", "electronic_compass", "pistol", "pistol_ammo", "field_terminal"]:
+	for id in ["flashlight", "electronic_compass", "pistol", "pistol_ammo", "field_terminal", "shortwave_radio"]:
 		var recipe := RecipeCatalog.find(id)
 		check(recipe != null, "Portable recipe is registered: " + id)
 		if recipe == null: continue
@@ -119,6 +119,8 @@ func _exercise_portable_recipes(rv: Chassis, station: CraftingStation) -> void:
 				check(state.ammo.rounds == PistolRules.BOX_CAPACITY, "Crafted ammunition box contains 24 rounds")
 			elif id in ["electronic_compass", "field_terminal"]:
 				check(ItemState.valid(recipe.scene_path, state), "Crafted device uses the persistent portable Item contract: " + id)
+			elif id == "shortwave_radio":
+				check(output is ShortwaveRadio and not output.is_large and not output.enabled and ItemState.valid(recipe.scene_path, state), "The crafted one-hand radio uses the portable Item contract and starts switched off")
 			output.queue_free()
 		await process_frame
 		await physics_frame

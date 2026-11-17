@@ -34,6 +34,7 @@ const ICONS := {
 	"res://props/flashlight.tscn": preload("res://assets/inventory/flashlight.png"),
 	"res://props/electronic_compass.tscn": preload("res://assets/inventory/electronic_compass.png"),
 	"res://props/field_terminal.tscn": preload("res://assets/inventory/field_terminal.png"),
+	"res://props/shortwave_radio.tscn": preload("res://assets/inventory/shortwave_radio.png"),
 	"res://props/corpse.tscn": preload("res://assets/inventory/corpse.png"),
 	"res://props/printed_player.tscn": preload("res://assets/inventory/corpse_player.png"),
 	"res://equipment/side_door_ladder.tscn": preload("res://assets/inventory/side_door_ladder.png"),

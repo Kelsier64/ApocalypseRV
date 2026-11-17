@@ -15,6 +15,7 @@
 | 手電筒 | 手持照明，電量有限 | [Flashlight](../../props/flashlight.gd) | [bunker](../../tests/playgrounds/bunker_playground.tscn) |
 | 電子指南針 | 指向最近的巨型避難所 | [electronic_compass.gd](../../props/electronic_compass.gd)、[BuildingLocator](../../core/building_locator.gd) | |
 | 野外終端 | 手持顯示玩家狀態與時間 | [field_terminal.gd](../../props/field_terminal.gd) | |
+| 短波收音機 | 間歇收到廣播與干擾訊號，聲音從實體道具傳出 | [shortwave_radio.gd](../../props/shortwave_radio.gd) | [player_carry](../../tests/playgrounds/player_carry_playground.tscn) |
 | 手槍與彈藥 | 單發射擊、瞄準、換彈 | [player_weapon.gd](../../player/player_weapon.gd)、[PistolRules](../../core/pistol_rules.gd) | [pistol](../../tests/playgrounds/pistol_playground.tscn) |
 
 自動測試：[test_item_player.gd](../../tests/test_item_player.gd) 涵蓋拾取、放置、支撐與手持物；[test_item_persistence.gd](../../tests/test_item_persistence.gd) 涵蓋物品狀態的保存；[test_pistol.gd](../../tests/test_pistol.gd) 涵蓋手槍。
@@ -85,6 +86,12 @@
 ### 野外終端
 
 選取在手上時，螢幕顯示生命、體力、飢餓、SAN，以及遊戲內的日期與時間。在室內副本裡沿用外面世界的時鐘。取得方式：教學倉庫有一個，或工作台製作。
+
+### 短波收音機
+
+- 用工作台製作 `Shortwave Radio`。手持時按右鍵開關，固定放置後對它按 E 開關。琥珀色燈亮起代表開機。
+- 開機後先等一小段時間，再收到風格化人聲、雜訊或訊號音。持續收聽時，每段結束後等隨機時長，相鄰兩段會使用不同的音檔。等待範圍由 `ShortwaveRadio.FIRST_SIGNAL_DELAY` 和 `SIGNAL_GAP` 設定。
+- 聲音隨距離衰減。丟在地上或固定放置時仍能播放。收進背包欄後安靜，再拿在手上時依原本的開關位置恢復。收音機使用內部電源。
 
 ### 手槍
 
