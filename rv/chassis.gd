@@ -230,9 +230,9 @@ func steering_limit(longitudinal_speed: float) -> float:
 	var speed_factor := 1.0 / (1.0 + pow(longitudinal_speed / profile.steering_speed, 2.0))
 	return profile.max_steering * lerpf(profile.high_speed_steering_ratio, 1.0, speed_factor)
 
-func feedback(kind: String, at: Vector3 = Vector3.INF) -> void:
+func feedback(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	var sound := get_node_or_null("Audio")
-	if sound: sound.play_cue(kind, at)
+	if sound: sound.play_cue(kind, at, strength)
 
 func set_handbrake(value: bool) -> void:
 	if handbrake != value: feedback("mechanical", Vector3(-0.1, 1, -4))
@@ -416,14 +416,25 @@ func queue_monster_impact(monster: Node3D, normal: Vector3, point: Vector3, appr
 	if _vehicle_impacts.clock - _monster_impact_times.get(id, -10.0) < 1.0: return
 	_monster_impacts[id] = weakref(monster)
 	_monster_impact_times[id] = _vehicle_impacts.clock
-	if not charges_damage: _monster_explosion_impacts[id] = true
+	if not charges_damage:
+		_monster_explosion_impacts[id] = true
+		# Yielding barrels still make contact before the separate blast resolves.
+		_present_collision(normal.normalized(), approach * 0.35, point)
 
 func queue_explosive_item_impact(item: Item, normal: Vector3, point: Vector3, approach: float) -> void:
 	# Exploding cargo uses the same once-only yielding motion as a mimic. Its
 	# shared blast resolver owns engine damage, never the ordinary body budget.
 	queue_monster_impact(item, normal, point, approach, false)
 
-func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF, slot: String = "", wheel: int = -1) -> void:
+func _present_collision(direction: Vector3, loss: float, point := Vector3.INF) -> void:
+	var strength := clampf(loss / 12.0, 0.0, 1.0)
+	feedback("crash", to_local(point) if point.is_finite() else Vector3.INF, strength)
+	if not is_instance_valid(_player_driver): return
+	var seat: Node3D = _player_driver.seated_in
+	if is_instance_valid(seat):
+		seat.cabin_impact(direction, strength)
+
+func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incoming_limit: float = INF, slot: String = "", wheel: int = -1, direction := Vector3.ZERO, point := Vector3.INF) -> void:
 	if _impact_age < 0.75: return
 	var paid := VehicleImpact.damage(loss, kind)
 	var effective_loss := loss
@@ -434,7 +445,7 @@ func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incomin
 		effective_loss = result.loss
 	if paid <= 0.0: return
 	RVCrashDamage.apply(self, paid, slot, wheel)
-	feedback("crash")
+	_present_collision(direction, minf(effective_loss, loss), point)
 	vehicle_impact.emit(kind, effective_loss, paid)
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
@@ -521,10 +532,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var scale_loss := minf(1.0, remaining_loss / expected_loss) if expected_loss > 0.0 else 0.0
 		var speed := incoming_horizontal.length()
 		for key in new_trunks:
-			_settle_vehicle_impact("tree", speed * (1.0 - float(new_trunks[key])) * scale_loss)
+			_settle_vehicle_impact("tree", speed * (1.0 - float(new_trunks[key])) * scale_loss, "", INF, "", -1, incoming_horizontal.normalized())
 			speed *= float(new_trunks[key])
 		for i in range(charged_monsters):
-			_settle_vehicle_impact("monster", speed * (1.0 - VehicleImpact.MONSTER_SPEED_RETAINED) * scale_loss)
+			_settle_vehicle_impact("monster", speed * (1.0 - VehicleImpact.MONSTER_SPEED_RETAINED) * scale_loss, "", INF, "", -1, incoming_horizontal.normalized())
 			speed *= VehicleImpact.MONSTER_SPEED_RETAINED
 	# Use only true collision normals, after all soft-obstacle restoration.
 	# Brake/steering losses tangent to the ground are not impact damage.
@@ -540,12 +551,15 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if is_ancestor_of(collider) or (collider is Item and collider.get_connected_rv() == self): continue
 		var normal: Vector3 = contact.normal.normalized()
 		var closing: float = -contact.incoming.dot(normal)
+		var point: Vector3 = state.transform.origin + state.center_of_mass + contact.offset
 		if contact.wheel >= 0 and absf(normal.dot(state.transform.basis.x)) > 0.55 and closing >= handling_profile.tire_side_impact_min_speed:
 			var wheel_damage := closing ** 2 * handling_profile.tire_side_impact_damage_scale
 			if _impact_age >= 0.75:
 				var wheel_key := "wheel:%d:%d" % [collider.get_instance_id(), contact.wheel]
 				var result := _vehicle_impacts.record(wheel_key, closing, "body", closing)
-				if not result.is_empty(): damage_tire(contact.wheel, minf(wheel_damage, result.damage))
+				if not result.is_empty():
+					damage_tire(contact.wheel, minf(wheel_damage, result.damage))
+					_present_collision(-normal, closing, point)
 			crash_loss = maxf(crash_loss, closing)
 			continue
 		var ground := normal.y > 0.5
@@ -566,9 +580,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		crash_loss = maxf(crash_loss, loss)
 		var incoming_limit := maxf(0.0, -_impact_velocity.dot(normal)) if ground and contact.slot.is_empty() else closing
 		if not losses.has(key) or losses[key].loss < loss:
-			losses[key] = {"loss": loss, "kind": "ground" if ground else "body", "limit": incoming_limit, "slot": contact.slot}
+			losses[key] = {"loss": loss, "kind": "ground" if ground else "body", "limit": incoming_limit, "slot": contact.slot, "direction": -normal, "point": point}
 	for key: String in losses:
-		_settle_vehicle_impact(losses[key].kind, losses[key].loss, key, losses[key].limit, losses[key].slot)
+		var hit: Dictionary = losses[key]
+		_settle_vehicle_impact(hit.kind, hit.loss, key, hit.limit, hit.slot, -1, hit.direction, hit.point)
 	if _impact_age >= 0.75:
 		_crash_damage.sample(self, _vehicle_impacts.clock, state, _impact_velocity, _impact_angular_velocity, crash_loss)
 	hull_scrape_speed = 0.0
@@ -597,6 +612,8 @@ func _sample_suspension_impact() -> void:
 	var loss := 0.0
 	var incoming_limit := 0.0
 	var contact_wheel := -1
+	var direction := Vector3.ZERO
+	var point := Vector3.INF
 	for index in installed_wheels.size():
 		var wheel: VehicleWheel3D = installed_wheels[index]
 		if wheel == null or not wheel.is_in_contact(): continue
@@ -611,9 +628,11 @@ func _sample_suspension_impact() -> void:
 		if shock > loss:
 			loss = shock
 			contact_wheel = index
+			direction = -normal
+			point = wheel.get_contact_point()
 		incoming_limit = maxf(incoming_limit, -_suspension_before.dot(normal))
 	if loss >= 0.15:
-		_settle_vehicle_impact("ground", loss, "ground", incoming_limit, "", contact_wheel)
+		_settle_vehicle_impact("ground", loss, "ground", incoming_limit, "", contact_wheel, direction, point)
 		if _impact_age >= 0.75:
 			_crash_damage.sample(self, _vehicle_impacts.clock, state, _suspension_before, _suspension_angular_before, loss)
 	# Incoming velocity for the next solver callback must include suspension

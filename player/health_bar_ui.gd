@@ -8,10 +8,6 @@ var food_bar: ProgressBar
 var food_label: Label
 var san_bar: ProgressBar
 var san_label: Label
-var damage_flash: ColorRect
-var crash_shade: ColorRect
-var crash_tone: AudioStreamPlayer
-var crash_fade: Tween
 
 func _ready():
 	HUDVisibility.attach(self)
@@ -95,30 +91,7 @@ func _ready():
 	vbox.add_child(san_bar)
 	set_san(PlayerSurvival.MAX_SAN)
 	
-	# Damage flash (full-screen red overlay)
-	damage_flash = ColorRect.new()
-	damage_flash.color = Color(0.8, 0.0, 0.0, 0.0)
-	damage_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	screen.add_child(damage_flash)
-	crash_shade = ColorRect.new()
-	crash_shade.color = Color.TRANSPARENT
-	crash_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	crash_shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	screen.add_child(crash_shade)
-	crash_tone = AudioStreamPlayer.new()
-	crash_tone.volume_db = -19.0
-	add_child(crash_tone)
 	UILayout.attach(self, screen)
-
-func play_crash_stun(duration: float) -> void:
-	if crash_fade: crash_fade.kill()
-	crash_shade.color = Color(0.02, 0.02, 0.03, 0.85)
-	crash_fade = create_tween()
-	crash_fade.tween_property(crash_shade, "color:a", 0.0, duration)
-	if crash_tone.stream == null:
-		crash_tone.stream = preload("res://rv/vehicle_audio.gd").synth("ringing")
-	crash_tone.play()
 
 func set_health(current: float, maximum: float):
 	if health_bar:
@@ -127,12 +100,6 @@ func set_health(current: float, maximum: float):
 	if health_label:
 		health_label.text = "HP: " + str(int(current)) + " / " + str(int(maximum))
 	
-	# Flash red on damage
-	if damage_flash:
-		damage_flash.color = Color(0.8, 0.0, 0.0, 0.3)
-		var tween = create_tween()
-		tween.tween_property(damage_flash, "color:a", 0.0, 0.3)
-
 func set_stamina(current: float, maximum: float) -> void:
 	if stamina_bar:
 		stamina_bar.max_value = maximum

@@ -68,6 +68,8 @@ func damage_gate_and_cuts() -> void:
 	var impulse := Vector3(4, 3, 0)
 	check(actor.apply_explosion_hit(70, 2, impulse), "Intact player accepts one blast")
 	check(actor.current_player_health == 30 and present_limbs() == 2 and actor.body_state.has_part(&"head"), "One hit removes two different surviving limbs without head")
+	var injury = actor.injury_effects
+	check(is_equal_approx(injury._black_end - injury._black_start, injury.MAX_BLACKOUT_SECONDS), "A severe blast uses the bounded full blackout")
 	check(not actor.apply_explosion_hit(70, 2, impulse), "Hurt cooldown rejects health and cuts together")
 	check(actor.current_player_health == 30 and present_limbs() == 2, "Cooldown cannot cut additional limbs")
 	for effect: Node in get_nodes_in_group("player_detached_parts"):
@@ -80,6 +82,7 @@ func damage_gate_and_cuts() -> void:
 	actor.sever_part(&"left_leg")
 	actor.damage_cooldown = 0
 	check(actor.apply_explosion_hit(10, 2) and present_limbs() == 0, "Two requested cuts use only the single remaining limb")
+	check(injury._black_end > 0.0, "Actual limb loss raises otherwise light damage to blackout strength")
 	check(actor.body_state.has_part(&"head") and actor.current_player_health == 90, "No eligible limbs never promotes to head loss or extra HP damage")
 	actor.damage_cooldown = 0
 	check(actor.apply_explosion_hit(10, 2) and actor.current_player_health == 80, "Limbless player still takes ordinary blast damage")
@@ -92,6 +95,7 @@ func damage_gate_and_cuts() -> void:
 	check(actor.apply_explosion_hit(70, 2, impulse), "Fatal blast is accepted")
 	actor.body_state_changed.disconnect(observe)
 	check(actor.is_player_dead and actor.current_player_health == 0 and present_limbs() == 2, "Fatal health commits after both sever operations")
+	check(not injury.is_processing(), "Death owns the view immediately after a lethal blast")
 	check(cuts_before_death == [true, true], "Both body changes happen while the player is still alive")
 	check(not actor.apply_explosion_hit(70, 2) and present_limbs() == 2, "Dead player rejects subsequent blast/cuts")
 	await clear_effects()

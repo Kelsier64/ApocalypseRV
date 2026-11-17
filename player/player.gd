@@ -40,7 +40,9 @@ const MAX_SLOTS = PlayerInventory.MAX_SLOTS
 var inventory := PlayerInventory.new()
 var survival := PlayerSurvival.new()
 var sleep := PlayerSleep.new()
+const InjuryEffects := preload("res://player/player_injury_effects.gd")
 var san_effects := PlayerSanEffects.new()
+var injury_effects := InjuryEffects.new()
 var consumables := PlayerConsumables.new()
 var body_state := PlayerBodyState.new()
 var standing_collision_shape: Shape3D
@@ -107,7 +109,6 @@ var _departure_hit := false
 var _departure_stagger_remaining := 0.0
 var _crash_source_id := 0
 var _crash_event := 0
-var _crash_stun_remaining := 0.0
 var climb_contact_grace_remaining: float = 0.0
 var climb_reenter_cooldown_remaining: float = 0.0
 var crawl_transition_remaining: float = 0.0
@@ -332,6 +333,7 @@ func _ready():
 	standing_collision_shape = body_collision_shape.shape.duplicate()
 	standing_collision_transform = body_collision_shape.transform
 	add_child(san_effects)
+	add_child(injury_effects)
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
@@ -495,6 +497,7 @@ func exit_ui_mode():
 func complete_world_transition(at: Transform3D) -> void:
 	if sleep.active(): exit_ui_mode()
 	san_effects.reset()
+	injury_effects.reset()
 	consumables.cancel()
 	weapon.cancel_actions()
 	cancel_equipment_placement()
@@ -854,7 +857,7 @@ func _update_stamina_bar() -> void:
 func _process_normal_movement(delta: float) -> void:
 	_seat_exit_velocity_has_carrier = false
 	_departure_stagger_remaining = maxf(0.0, _departure_stagger_remaining - delta)
-	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed() and _departure_stagger_remaining == 0.0 and _crash_stun_remaining == 0.0
+	var input_allowed := not is_gameplay_input_blocked() and not is_grabbed() and _departure_stagger_remaining == 0.0
 	var carrier := rv_support.rv as Chassis
 	var had_support := is_instance_valid(rv_support.rv)
 	var last_support_velocity := rv_support.carrier_velocity
@@ -891,6 +894,7 @@ func _process_normal_movement(delta: float) -> void:
 	var movement_speed := SPRINT_SPEED if sprinting else SPEED
 	if is_crawling(): movement_speed = crawl_speed()
 	elif is_crouching(): movement_speed = CROUCH_SPEED
+	else: movement_speed *= injury_effects.stride_scale()
 	if crawl_transition_remaining > 0.0: movement_speed = 0.0
 	var direction := (transform.basis * Vector3(input_dir.x, 0.0, input_dir.y)).normalized() * input_dir.length()
 	if direction:
@@ -1297,15 +1301,12 @@ func _advance_survival(delta: float, rest_recovery := 0.0) -> void:
 			if is_player_dead: break
 			# Starvation neither observes nor changes combat invulnerability.
 			consumables.cancel()
-			current_player_health = maxf(0.0, current_player_health - 1.0)
-			_update_health_bar()
-			if current_player_health <= 0.0: _player_die()
+			_commit_health_loss(1.0, InjuryEffects.Cause.STARVATION)
 		if rest_recovery > 0.0 and not is_player_dead: recover_san(rest_recovery)
 	_update_food_bar()
 	_update_san_bar()
 
 func _physics_process(delta):
-	_crash_stun_remaining = maxf(0.0, _crash_stun_remaining - delta)
 	var survival_delta := sleep.advance(self, delta)
 	_advance_survival(survival_delta, sleep.recover_amount(survival_delta) if sleep.active() else 0.0)
 	inventory.advance_terminal_boot(delta)
@@ -1359,24 +1360,34 @@ func _physics_process(delta):
 
 
 
-func take_damage(amount: float):
+func take_damage(amount: float, cause := InjuryEffects.Cause.IMPACT, severed_limb := false) -> void:
 	if is_player_dead: return
 	if damage_cooldown > 0.0: return
 	if not is_finite(amount) or amount <= 0.0: return
 	if sleep.active(): sleep.request_wake()
 	consumables.cancel()
-	
-	current_player_health = maxf(0.0, current_player_health - amount)
 	damage_cooldown = 0.5  # Half second invincibility after hit
-	
+	_commit_health_loss(amount, cause, severed_limb)
 	print("Player took ", amount, " damage! HP: ", current_player_health, "/", max_player_health)
-	
-	# Screen flash effect
+
+func _commit_health_loss(amount: float, cause: InjuryEffects.Cause, severed_limb := false) -> void:
+	var before := current_player_health
+	current_player_health = maxf(0.0, before - amount)
 	_update_health_bar()
-	
-	if current_player_health <= 0.0:
-		current_player_health = 0.0
+	if current_player_health == 0.0:
 		_player_die()
+	elif current_player_health < before:
+		injury_effects.play_hit((before - current_player_health) / maxf(max_player_health, 1.0), cause, severed_limb)
+
+func start_cabin_injury_effect(rv: Chassis, speed_change: float) -> bool:
+	if is_player_dead or is_grabbed() or damage_cooldown > 0.0 or (_departure_rv == rv and _departure_hit): return false
+	if not is_instance_valid(seated_in) or ClimbMath.find_rv_ancestor(seated_in) != rv: return false
+	var injury := RVCrashDamage.injury(rv.handling_profile, speed_change, true)
+	var damage: float = injury.get("damage", 0.0)
+	var fraction := damage / maxf(max_player_health, 1.0)
+	if damage >= current_player_health or fraction < InjuryEffects.BLACKOUT_THRESHOLD: return false
+	injury_effects.play_hit(fraction, InjuryEffects.Cause.CRASH, false, true)
+	return true
 
 func apply_crash_hit(rv: Chassis, event_id: int, speed_change: float, inherited: Vector3, seated: bool, rng: RandomNumberGenerator = null) -> bool:
 	if is_player_dead or not is_instance_valid(rv) or not is_finite(speed_change) or not inherited.is_finite(): return false
@@ -1400,18 +1411,15 @@ func apply_crash_hit(rv: Chassis, event_id: int, speed_change: float, inherited:
 		_begin_rv_departure(rv, inherited)
 		_departure_hit = true
 	if protected: return false
-	var stun: float = consequences.stun
-	if stun > 0.0:
-		_crash_stun_remaining = stun
-		health_bar.play_crash_stun(stun)
+	var lost_limb := false
 	if rng == null: rng = RandomNumberGenerator.new()
 	if consequences.sever_chance > 0.0 and rng.randf() < consequences.sever_chance:
 		var limbs: Array[StringName] = []
 		for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg"]:
 			if body_state.has_part(part): limbs.append(part)
 		if not limbs.is_empty():
-			sever_part(limbs[rng.randi_range(0, limbs.size() - 1)], {"launch_velocity": inherited})
-	take_damage(consequences.damage)
+			lost_limb = sever_part(limbs[rng.randi_range(0, limbs.size() - 1)], {"launch_velocity": inherited})
+	take_damage(consequences.damage, InjuryEffects.Cause.CRASH, lost_limb)
 	return true
 
 ## Lethal contact ignores the ordinary damage cooldown.
@@ -1441,14 +1449,13 @@ func apply_explosion_hit(amount: float, limb_count: int = 0, blast_impulse: Vect
 	for part: StringName in [&"left_arm", &"right_arm", &"left_leg", &"right_leg"]:
 		if body_state.has_part(part): remaining.append(part)
 	# Uniform draws without replacement. The head is never a blast-cut target.
+	var lost_limb := false
 	for cut in mini(clampi(limb_count, 0, 2), remaining.size()):
 		var index := randi_range(0, remaining.size() - 1)
-		sever_part(remaining[index], {"launch_velocity": inherited, "blast_impulse": blast_impulse})
+		lost_limb = sever_part(remaining[index], {"launch_velocity": inherited, "blast_impulse": blast_impulse}) or lost_limb
 		remaining.remove_at(index)
-	current_player_health = maxf(0.0, current_player_health - amount)
-	_update_health_bar()
-	if current_player_health <= 0.0:
-		_player_die()
+	_commit_health_loss(amount, InjuryEffects.Cause.BLAST, lost_limb)
+	if is_player_dead:
 		# Deferred ragdoll start consumes the completed explosion velocity.
 		death_velocity = inherited + blast_impulse
 	return true
@@ -1460,6 +1467,7 @@ func _update_health_bar():
 func _player_die():
 	if is_player_dead: return
 	san_effects.reset()
+	injury_effects.reset()
 	consumables.cancel()
 	weapon.cancel_actions()
 	_death_corpse_released = false
@@ -1678,11 +1686,9 @@ func apply_grab_bite(captor: Node3D, fatal: bool) -> void:
 		sever_part(&"head", {"captor": captor})
 		_update_health_bar()
 		return
-	current_player_health = maxf(0, current_player_health - 50.0)
 	damage_cooldown = .5
-	sever_part(&"left_arm", {"captor": captor})
-	_update_health_bar()
-	if current_player_health <= 0: _player_die()
+	var lost_limb := sever_part(&"left_arm", {"captor": captor})
+	_commit_health_loss(50.0, InjuryEffects.Cause.IMPACT, lost_limb)
 
 func is_crawling() -> bool:
 	return not body_state.has_part(&"left_leg") or not body_state.has_part(&"right_leg")

@@ -361,6 +361,8 @@ func check_survival() -> void:
 	actor.current_player_health = 100.0
 	actor._advance_survival(1.0)
 	check(actor.current_player_health == 99.0 and actor.damage_cooldown == .4, "Starvation bypasses combat cooldown without changing immunity")
+	check(actor.injury_effects._fatigue > 0.0 and actor.injury_effects._black_start < 0.0 and actor.injury_effects._ring_start < 0.0,
+		"Starvation triggers fatigue without a sudden-injury blackout or ringing")
 	actor.is_player_dead = true
 	actor._advance_survival(10.0)
 	check(actor.current_player_health == 99.0 and actor.survival.starvation_elapsed == 0.0, "Dead player stops hunger and starvation")

@@ -2,6 +2,7 @@ extends Item
 
 const MOUSE_SENSITIVITY: float = 0.002
 const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
+const IMPACT_SECONDS := 0.18
 
 @onready var seat_camera: Camera3D = $Camera3D
 @onready var game_settings = get_node("/root/GameSettings")
@@ -9,6 +10,10 @@ const REST_CAMERA_ROTATION := Vector3(-0.12, 0.0, 0.0)
 var current_driver: Node3D = null
 var _camera_rest_position := Vector3.ZERO
 var _last_driver_velocity := Vector3.ZERO
+var _inertia_offset := Vector3.ZERO
+var _impact_direction := Vector3.ZERO
+var _impact_strength := 0.0
+var _impact_age := IMPACT_SECONDS
 
 func _ready() -> void:
 	super._ready()
@@ -49,6 +54,7 @@ func interact_hold(player: Node3D) -> void:
 		return
 	current_driver = player
 	_last_driver_velocity = rv.linear_velocity
+	_reset_camera_motion()
 	seat_camera.current = true
 
 	if rv.has_method("set_driving_state"):
@@ -104,7 +110,7 @@ func exit_seat(forced: bool = false) -> void:
 		rv.set_driving_state(false)
 
 	seat_camera.rotation = REST_CAMERA_ROTATION
-	seat_camera.position = _camera_rest_position
+	_reset_camera_motion()
 
 func release_for_execution(player: Node3D) -> bool:
 	if current_driver != player or player.seated_in != self: return false
@@ -115,7 +121,7 @@ func release_for_execution(player: Node3D) -> bool:
 	var rv := get_connected_rv()
 	if rv and rv.has_method("set_driving_state"): rv.set_driving_state(false)
 	seat_camera.rotation = REST_CAMERA_ROTATION
-	seat_camera.position = _camera_rest_position
+	_reset_camera_motion()
 	return true
 
 # Use the real standing collider and supported floor points, never teleport into geometry.
@@ -173,6 +179,20 @@ func _on_service_stopped() -> void:
 		else:
 			current_driver = null
 
+func cabin_impact(world_direction: Vector3, strength: float) -> void:
+	if not is_instance_valid(current_driver) or current_driver.is_grabbed(): return
+	if _impact_age < IMPACT_SECONDS and strength <= _impact_strength: return
+	_impact_direction = global_basis.orthonormalized().inverse() * world_direction
+	_impact_strength = strength
+	_impact_age = 0.0
+	_inertia_offset = Vector3.ZERO
+
+func _reset_camera_motion() -> void:
+	_inertia_offset = Vector3.ZERO
+	_impact_age = IMPACT_SECONDS
+	_impact_strength = 0.0
+	seat_camera.position = _camera_rest_position
+
 func _physics_process(delta: float) -> void:
 	if is_instance_valid(current_driver):
 		var rv := get_connected_rv() as Chassis
@@ -180,6 +200,13 @@ func _physics_process(delta: float) -> void:
 			exit_seat(true)
 			return
 		var motion := rv.global_basis.inverse() * (_last_driver_velocity - rv.linear_velocity)
-		var offset := (motion * rv.handling_profile.camera_inertia_scale).limit_length(0.08)
-		seat_camera.position = seat_camera.position.lerp(_camera_rest_position + offset, 1.0 - exp(-delta * 11.0))
+		var offset := Vector3.ZERO
+		if _impact_age >= IMPACT_SECONDS:
+			offset = (motion * rv.handling_profile.camera_inertia_scale).limit_length(0.08)
+		_inertia_offset = _inertia_offset.lerp(offset, 1.0 - exp(-delta * 11.0))
 		_last_driver_velocity = rv.linear_velocity
+		if current_driver.is_grabbed(): return
+		_impact_age = minf(_impact_age + delta, IMPACT_SECONDS)
+		var thrust := smoothstep(0.0, 0.035, _impact_age) * (1.0 - smoothstep(0.035, 0.12, _impact_age))
+		var shift := (_impact_direction * 0.15 + Vector3.DOWN * 0.045) * _impact_strength * thrust
+		seat_camera.position = _camera_rest_position + _inertia_offset + shift

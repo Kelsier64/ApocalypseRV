@@ -14,9 +14,9 @@ var engine_rest := Vector3.ZERO
 
 static func synth(kind: String) -> AudioStreamWAV:
 	if streams.has(kind): return streams[kind]
-	var loop := kind in ["engine", "tire_slip", "hull_scrape"]
+	var loop := kind in ["engine", "tire_slip", "hull_scrape", "ringing"]
 	var duration := 1.0 if loop else (0.6 if kind in ["start", "stop"] else 0.18)
-	if kind == "ringing": duration = 1.25
+	if kind == "crash": duration = 0.32
 	var rate := 22050
 	var data := PackedByteArray()
 	data.resize(int(duration * rate) * 2)
@@ -31,10 +31,15 @@ static func synth(kind: String) -> AudioStreamWAV:
 		var pulse := pow(0.5 + 0.5 * sin(TAU * 23.0 * t), 4.0)
 		var signal_value := sin(TAU * freq * t) * 0.5 + sin(TAU * freq * 2.0 * t) * 0.18
 		signal_value += rng.randf_range(-1.0, 1.0) * (0.12 + pulse * 0.12)
-		if kind == "ringing": signal_value = sin(TAU * 2450.0 * t) * 0.32
+		if kind == "ringing": signal_value = sin(TAU * 1886.0 * t) * 0.32 + sin(TAU * 2294.0 * t) * 0.065
 		if kind == "tire_slip": signal_value = sin(TAU * 923.0 * t + sin(TAU * 17.0 * t) * 2.0) * 0.6
 		if kind == "hull_scrape": signal_value = rng.randf_range(-0.65, 0.65) * (0.6 + pulse * 0.4) + 0.22 * sin(TAU * 213.0 * t)
-		if kind == "crash": signal_value = 0.54 * sin(TAU * (95.0 * t - 120.0 * t * t)) + rng.randf_range(-0.6, 0.6)
+		if kind == "crash":
+			var thump := 0.75 * sin(TAU * (84.0 * t - 83.0 * t * t)) * exp(-t * 11.0)
+			var metal := (0.23 * sin(TAU * 613.0 * t) + 0.19 * sin(TAU * 967.0 * t)) * exp(-t * 14.0)
+			var rattle := rng.randf_range(-0.5, 0.5) * exp(-t * 18.0)
+			var rebound := maxf(0.0, 1.0 - absf(t - 0.092) * 43.0)
+			signal_value = thump + metal + rattle * (1.0 + 2.0 * rebound)
 		data.encode_s16(i * 2, int(clampf(signal_value * envelope * 0.55, -1.0, 1.0) * 32767))
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -67,7 +72,7 @@ func _ready() -> void:
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
 
-func play_cue(kind: String, at: Vector3 = Vector3.INF) -> void:
+func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	var now := Time.get_ticks_msec()
 	if now - cooldowns.get(kind, -1000) < 120: return
 	cooldowns[kind] = now
@@ -75,7 +80,8 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF) -> void:
 		if not cue.playing:
 			cue.stream = synth(kind)
 			cue.position = at if at.is_finite() else Vector3(0, 0, -5.3)
-			cue.volume_db = -10.0
+			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
+			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
 			cue.play()
 			cue_counts[kind] = cue_counts.get(kind, 0) + 1
 			return

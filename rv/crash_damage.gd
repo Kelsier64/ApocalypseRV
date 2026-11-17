@@ -10,6 +10,7 @@ var _peak := 0.0
 var _settle_at := -INF
 var _last_contact_at := -INF
 var _event := 0
+var _cabin_effect_started := false
 
 func sample(vehicle: Chassis, clock: float, state: PhysicsDirectBodyState3D, before: Vector3, before_spin: Vector3, contact_loss: float) -> void:
 	if _occupant == null:
@@ -27,6 +28,7 @@ func sample(vehicle: Chassis, clock: float, state: PhysicsDirectBodyState3D, bef
 			_incoming = before + before_spin.cross(point - centre)
 			_peak = 0.0
 			_result = Vector3.ZERO
+			_cabin_effect_started = false
 			_settle_at = clock + VehicleImpact.EPISODE_SECONDS
 			_event += 1
 			break
@@ -37,6 +39,11 @@ func sample(vehicle: Chassis, clock: float, state: PhysicsDirectBodyState3D, bef
 		if change.length() > _peak:
 			_peak = change.length()
 			_result = change
+			if _seated and not _cabin_effect_started and clock < _settle_at:
+				# The peak can only rise. Start presentation once it clears the threshold.
+				var driver := _occupant.get_ref() as Node3D
+				if is_instance_valid(driver):
+					_cabin_effect_started = driver.start_cabin_injury_effect(vehicle, _peak)
 	if clock < _settle_at: return
 	var player := _occupant.get_ref() as Node3D
 	_occupant = null
@@ -56,7 +63,6 @@ static func injury(profile: RVHandlingProfile, speed_change: float, seated: bool
 	return {
 		"damage": damage * (profile.crash_seated_damage_scale if seated else 1.0),
 		"sever_chance": sever_chance * (profile.crash_seated_sever_scale if seated else 1.0),
-		"stun": profile.crash_stun_seconds if speed_change >= profile.crash_stun_speed else 0.0,
 	}
 
 static func apply(vehicle: Chassis, amount: float, slot: String, wheel: int) -> void:

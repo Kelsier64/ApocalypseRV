@@ -13,13 +13,11 @@ extends Resource
 
 @export_group("Occupants")
 @export var crash_injury_speed := 4.0
-@export var crash_stun_speed := 8.0
 @export var crash_sever_speed := 10.0
 @export var crash_lethal_speed := 14.0
 @export var crash_seated_damage_scale := 0.5
 @export var crash_seated_sever_scale := 0.3
 @export var crash_damage_at_lethal_speed := 105.0
-@export var crash_stun_seconds := 1.25
 @export var crash_launch_lift := 2.0
 @export var camera_inertia_scale := 0.035
 
