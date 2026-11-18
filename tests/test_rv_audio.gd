@@ -64,18 +64,27 @@ func _run() -> void:
 	var audio := chassis.get_node("Audio")
 	var door: RVDoor = chassis.get_node("RightMiddle")
 	var cabin := chassis.to_global(Vector3(0, 1.65, 0.75))
-	var closed_cover: float = audio.exterior_audio_cover(cabin)
-	check(closed_cover > audio.exterior_audio_cover(chassis.to_global(Vector3(0, 3.4, 0.75))), "The RV roof does not count as its cabin")
+	var outside := chassis.to_global(Vector3(6.0, 1.65, 0.75))
+	var closed_cover: float = audio.shell_cover()
+	check(closed_cover > 0.0, "A sealed shell separates cabin and exterior sound")
+	check(audio.contains_cabin_point(cabin) and not audio.contains_cabin_point(chassis.to_global(Vector3(0, 3.4, 0.75))),
+		"The RV roof does not count as its cabin")
+	check(sfx.bus_at(cabin, chassis.get_world_3d()) == &"Cabin" and sfx.bus_at(outside, chassis.get_world_3d()) == &"Exterior",
+		"Positioned events route by whether they play inside the cabin")
+	check(audio.engine_grains.bus == &"Exterior", "The engine bay sits outside the cabin mix")
 	var listener := Camera3D.new()
 	root.add_child(listener)
 	listener.make_current()
-	listener.global_position = chassis.to_global(Vector3(6.0, 1.65, 0.75))
+	listener.global_position = outside
 	await _settle_mix(sfx)
-	var outside_mix := _exterior_mix()
+	var outside_exterior := _bus_mix(&"Exterior")
+	var outside_cabin := _bus_mix(&"Cabin")
 	listener.global_position = cabin
 	await _settle_mix(sfx)
-	var cabin_mix := _exterior_mix()
-	check(cabin_mix.x < outside_mix.x and cabin_mix.y < outside_mix.y, "The cabin lowers the exterior bus level and cutoff")
+	var cabin_exterior := _bus_mix(&"Exterior")
+	var cabin_cabin := _bus_mix(&"Cabin")
+	check(cabin_exterior.x < outside_exterior.x and cabin_exterior.y < outside_exterior.y, "The cabin lowers the exterior bus level and cutoff")
+	check(outside_cabin.x < cabin_cabin.x and outside_cabin.y < cabin_cabin.y, "Standing outside lowers the cabin bus level and cutoff")
 	listener.queue_free()
 	await _settle_mix(sfx)
 	check(door.toggle_leaf(0) == "Door opening", "Production door opens in the audio fixture")
@@ -84,7 +93,7 @@ func _run() -> void:
 	for i in range(100):
 		if is_equal_approx(door.angles[0], door.targets[0]): break
 		await physics_frame
-	check(closed_cover > audio.exterior_audio_cover(cabin), "An open door noticeably reduces cabin cover")
+	check(closed_cover > audio.shell_cover(), "An open door noticeably reduces cabin cover")
 	check(door.toggle_leaf(0) == "Door closing", "Production door closes in the audio fixture")
 	for i in range(100):
 		if is_equal_approx(door.angles[0], door.targets[0]): break
@@ -196,8 +205,8 @@ func _check_event_folder(path: String) -> void:
 		check(event.volume_db <= 0.0, "%s leaves headroom" % file)
 
 
-func _exterior_mix() -> Vector2:
-	var bus := AudioServer.get_bus_index(&"Exterior")
+func _bus_mix(bus_name: StringName) -> Vector2:
+	var bus := AudioServer.get_bus_index(bus_name)
 	var filter := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
 	var cutoff := filter.cutoff_hz if AudioServer.is_bus_effect_enabled(bus, 0) else INF
 	return Vector2(AudioServer.get_bus_volume_db(bus), cutoff)

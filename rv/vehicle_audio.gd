@@ -125,26 +125,31 @@ func player() -> AudioStreamPlayer3D:
 func _ready() -> void:
 	for path in ENGINE_LOOP_PATHS:
 		var layer := player()
-		layer.bus = &"Cabin"
+		layer.bus = bus_for_local(ENGINE_POSITION)
 		layer.stream = load(path)
 		engine_layers.append(layer)
 	engine_synth = EngineGrainSynth.new(load(ENGINE_GRAINS))
 	engine_grains = player()
 	engine_grains.name = "EngineGrains"
-	engine_grains.bus = &"Cabin"
+	# The engine bay sits outside the cabin, so the driver hears it through the shell.
+	engine_grains.bus = bus_for_local(ENGINE_POSITION)
+	# Headroom stays in the samples; the shell muffle takes about this much back in the cabin.
+	engine_grains.volume_db = 3.0
 	var generator := AudioStreamGenerator.new()
 	generator.mix_rate = MIX_RATE
 	generator.buffer_length = ENGINE_BUFFER_SECONDS * 2.5
 	engine_grains.stream = generator
 	engine_cue = player()
-	engine_cue.bus = &"Cabin"
+	engine_cue.bus = bus_for_local(ENGINE_POSITION)
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
 	engine_stop_sound = load("res://assets/audio/rv/engine_stop.wav")
 	tire_player = player()
 	tire_player.position = Vector3.ZERO
+	tire_player.bus = bus_for_local(tire_player.position)
 	tire_player.stream = synth("tire_slip")
 	scrape_player = player()
 	scrape_player.position = Vector3.ZERO
+	scrape_player.bus = bus_for_local(scrape_player.position)
 	scrape_player.stream = synth("hull_scrape")
 	for i in range(3): cues.append(player())
 	for path in ROAD_LOOPS:
@@ -177,8 +182,17 @@ func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool
 	elif not opening and not started:
 		get_node("/root/Sfx").play(load(DOOR_CLOSE), door, latch)
 
-func exterior_audio_cover(listener_position: Vector3) -> float:
-	if not CABIN.has_point(rv.to_local(listener_position)): return 0.0
+## True when a world position lies inside the finished cabin. The roof counts as outside.
+func contains_cabin_point(world_position: Vector3) -> bool:
+	return CABIN.has_point(rv.to_local(world_position))
+
+## Mix bus for a sound at a chassis-local position.
+static func bus_for_local(local_position: Vector3) -> StringName:
+	return &"Cabin" if CABIN.has_point(local_position) else &"Exterior"
+
+## How strongly the shell separates cabin and exterior sound: 1 sealed, lower
+## with open doors or missing panels.
+func shell_cover() -> float:
 	var slots := rv.get_node_or_null("StructureSlots") as RVStructureSlots
 	if slots == null: return 0.0
 	var opening := 0.0
@@ -211,6 +225,7 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 		if not cue.playing:
 			cue.stream = synth(kind)
 			cue.position = at if at.is_finite() else ENGINE_POSITION
+			cue.bus = bus_for_local(cue.position)
 			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
 			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
 			cue.play()

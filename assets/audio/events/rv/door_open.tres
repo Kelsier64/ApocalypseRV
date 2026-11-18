@@ -6,6 +6,7 @@
 [resource]
 script = ExtResource("1")
 samples = Array[AudioStream]([ExtResource("2")])
-bus = &"Cabin"
+bus = &"Effects"
+occlusion_by_position = false
 volume_db = -9.0
 pitch_variation = 0.04
