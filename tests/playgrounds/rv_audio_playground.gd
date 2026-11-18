@@ -6,11 +6,16 @@ var side_door: RVDoor
 var outside := true
 var cue_side := 1.0
 var message := ""
+var previous_hud_hidden := false
 
 
 func _ready() -> void:
 	super._ready()
 	get_window().title = "ApocalypseRV - RV Audio Pilot"
+	get_window().mode = Window.MODE_WINDOWED
+	var viewport := get_viewport()
+	previous_hud_hidden = viewport.get_meta("cinematic_hud_hidden", false)
+	HUDVisibility.set_cinematic(viewport, true)
 	rv.freeze = true
 	rv.set_gear(0)
 	player.set_process_unhandled_input(false)
@@ -23,8 +28,11 @@ func _ready() -> void:
 	warning.volume_db = -16.0
 	rv.add_child(warning)
 	_position_warning()
-	instructions.add_theme_font_size_override("font_size", 20)
-	instructions.position.y = 42.0
+	instructions.position = Vector2(24, 24)
+
+
+func _exit_tree() -> void:
+	HUDVisibility.set_cinematic(get_viewport(), previous_hud_hidden)
 
 
 func _process(_delta: float) -> void:
