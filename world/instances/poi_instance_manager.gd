@@ -191,6 +191,7 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	_connect_interior_doors()
 	_player.reparent(interior)
 	_reset_player(interior.spawn_transform() if at == null else at)
+	get_node("/root/Sfx").set_listener_viewport(viewport)
 	_display.texture = viewport.get_texture()
 	_display.show()
 	_release_retained_view()
@@ -274,6 +275,7 @@ func recovery_home(player: Node3D) -> Node3D:
 
 func show_recovery_camera(exterior: bool) -> void:
 	_display.visible = not exterior
+	get_node("/root/Sfx").set_listener_viewport(get_tree().root if exterior else viewport)
 
 func return_to_print_bed(player: Node3D) -> void:
 	# The death controller has already left the physical corpse inside.
@@ -321,6 +323,7 @@ func _commit_interior_snapshot() -> void:
 	saved_instances[active_id] = interior.snapshot()
 
 func _clear_interior_view() -> void:
+	get_node("/root/Sfx").set_listener_viewport(get_tree().root)
 	_display.hide()
 	_display.texture = null
 	if is_instance_valid(interior): interior.cancelled = true

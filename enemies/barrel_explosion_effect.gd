@@ -50,6 +50,7 @@ func _ready() -> void:
 	flash.shadow_enabled = true
 	add_child(flash)
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.name = "PressureAndDebris"
 	sound.stream = BOOM
 	sound.max_distance = 75.0
@@ -223,6 +224,7 @@ func _play_metal_landing(at: Vector3, speed: float) -> void:
 		if not is_instance_valid(landing_voices[index]) or not landing_voices[index].playing: landing_voices.remove_at(index)
 	if landing_voices.size() >= MAX_LANDING_VOICES or landing_sound_count >= 5: return
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.name = "MetalLanding"
 	sound.stream = METAL_LAND[landing_sound_count % METAL_LAND.size()]
 	sound.volume_db = lerpf(-14.0, -10.0, clampf((speed - 2.0) / 7.0, 0, 1))

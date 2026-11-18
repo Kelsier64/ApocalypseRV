@@ -43,6 +43,7 @@ func _ready() -> void:
 	status.add_theme_constant_override("outline_size", 5)
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	breath.volume_db = -12
+	breath.bus = &"Effects"
 	add_child(breath)
 	hide()
 	set_physics_process(false)

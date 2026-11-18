@@ -45,6 +45,7 @@ static func _setup(effect: Node3D, point: Vector3, direction: Vector3, speed: fl
 			data.encode_s16(i*2, int(sample*23000.0))
 		thud.data = data
 	var audio := AudioStreamPlayer3D.new()
+	audio.bus = &"Effects"
 	audio.stream = thud
 	audio.volume_db = lerpf(-9.0, -1.0, clampf(speed/20.0,0,1))
 	audio.max_distance = 35.0

@@ -45,6 +45,7 @@ func _ready() -> void:
 	_emitter("ChipBurst", chip, 20, .55, 1.2, 3.2, true)
 	_emitter("BloodBurst", blood, 48, .5, 1.5, 3.7, true)
 	sound = AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.name = "GrindingSound"
 	sound.stream = _grinding_sound()
 	sound.volume_db = -16

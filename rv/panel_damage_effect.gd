@@ -97,6 +97,7 @@ func _build(panel: RVStructurePanel, destroyed: bool) -> void:
 			"spin": Vector3(rng.randf_range(-5, 5), rng.randf_range(-5, 5), rng.randf_range(-5, 5))})
 		if index < (9 if destroyed else 3): _add_dust(world_point, velocity * 0.2, destroyed, rng)
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.stream = _sound(destroyed)
 	sound.unit_size = 5.0
 	sound.max_distance = 45.0
@@ -256,6 +257,7 @@ func _landing(point: Vector3, glass: bool) -> void:
 	_landing_count += 1
 	_last_landing = age
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.stream = _sound(false)
 	sound.unit_size = 4.0
 	sound.max_distance = 30.0

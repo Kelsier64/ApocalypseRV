@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameSettings="*res://core/game_settings.gd"
+Sfx="*res://core/audio/sfx.gd"
 Checkpoint="*res://rv/checkpoint.gd"
 
 [display]

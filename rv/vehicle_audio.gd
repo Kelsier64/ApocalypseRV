@@ -1,7 +1,15 @@
 extends Node3D
-## Original deterministic PCM synthesis, shared immutable streams; see assets/audio/README.md.
+## Recorded engine and door pilot, with the remaining prototype cues sharing PCM.
+const ASSETS := "res://assets/audio/rv/"
+const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
+const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
+# Chassis-local volume bounded by the finished floor, side panels and ceiling.
+const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
+const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
+	"right_1", "right_2", "roof_0", "roof_1", "roof_2"]
 static var streams: Dictionary = {}
 var engine_player: AudioStreamPlayer3D
+var rev_player: AudioStreamPlayer3D
 var tire_player: AudioStreamPlayer3D
 var scrape_player: AudioStreamPlayer3D
 var cues: Array[AudioStreamPlayer3D] = []
@@ -10,6 +18,8 @@ var cue_counts := {}
 var was_running := false
 var phase := 0.0
 var engine_rest := Vector3.ZERO
+var legacy_audio := false
+var rev_blend := 0.0
 @onready var rv: Chassis = get_parent()
 
 static func synth(kind: String) -> AudioStreamWAV:
@@ -59,6 +69,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 
 func player() -> AudioStreamPlayer3D:
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.unit_size = 4.0
 	sound.max_distance = 55.0
 	sound.position = Vector3(0, 0, -5.3)
@@ -67,7 +78,11 @@ func player() -> AudioStreamPlayer3D:
 
 func _ready() -> void:
 	engine_player = player()
-	engine_player.stream = synth("engine")
+	engine_player.bus = &"Cabin"
+	engine_player.stream = load(ASSETS + "engine_idle.wav")
+	rev_player = player()
+	rev_player.bus = &"Cabin"
+	rev_player.stream = load(ASSETS + "engine_rev.wav")
 	tire_player = player()
 	tire_player.position = Vector3.ZERO
 	tire_player.stream = synth("tire_slip")
@@ -78,13 +93,43 @@ func _ready() -> void:
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
 
+func set_legacy_audio(enabled: bool) -> void:
+	if legacy_audio == enabled: return
+	legacy_audio = enabled
+	engine_player.stream = synth("engine") if enabled else load(ASSETS + "engine_idle.wav")
+	rev_player.stop()
+	rev_blend = 0.0
+
+func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool) -> void:
+	if legacy_audio:
+		play_cue("mechanical", rv.to_local(door.to_global(latch)))
+	elif opening and started:
+		get_node("/root/Sfx").play(load(DOOR_OPEN), door, latch)
+	elif not opening and not started:
+		get_node("/root/Sfx").play(load(DOOR_CLOSE), door, latch)
+
+func exterior_audio_cover(listener_position: Vector3) -> float:
+	if legacy_audio or not CABIN.has_point(rv.to_local(listener_position)): return 0.0
+	var slots := rv.get_node_or_null("StructureSlots") as RVStructureSlots
+	if slots == null: return 0.0
+	var opening := 0.0
+	for slot in HULL_SLOTS:
+		var panel := slots.occupant(slot)
+		if panel == null:
+			opening = 1.0
+			break
+		if panel is RVDoor:
+			for angle: float in panel.angles:
+				opening = maxf(opening, smoothstep(0.0, deg_to_rad(65.0), absf(angle)))
+	return lerpf(1.0, 0.45, opening)
+
 func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	var now := Time.get_ticks_msec()
 	if now - cooldowns.get(kind, -1000) < 120: return
 	cooldowns[kind] = now
 	for cue in cues:
 		if not cue.playing:
-			cue.stream = synth(kind)
+			cue.stream = _cue_stream(kind)
 			cue.position = at if at.is_finite() else Vector3(0, 0, -5.3)
 			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
 			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
@@ -92,23 +137,44 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 			cue_counts[kind] = cue_counts.get(kind, 0) + 1
 			return
 
+func _cue_stream(kind: String) -> AudioStream:
+	if not legacy_audio:
+		match kind:
+			"start", "stop": return load(ASSETS + "engine_" + kind + ".wav")
+	return synth(kind)
+
 func _process(delta: float) -> void:
 	update_loop(tire_player, rv.drivetrain.slip_speed, 2.0)
 	update_loop(scrape_player, rv.hull_scrape_speed, rv.handling_profile.shell_scrape_min_speed)
 	var rpm := rv.engine_rpm()
 	var running := rpm > 0.0
-	if running and not engine_player.playing: engine_player.play()
-	if not running:
-		engine_player.stop()
-		if was_running: play_cue("stop")
+	_update_engine(delta, rpm)
+	if not running and was_running: play_cue("stop")
 	was_running = running
-	var rev_fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
-	engine_player.pitch_scale = lerpf(engine_player.pitch_scale, lerpf(0.85, 1.7, rev_fraction), minf(delta * 4.0, 1.0))
-	engine_player.volume_db = -15.0 + rv.throttle_input * 4.0
 	phase = fmod(phase + delta, 100.0)
 	# Only the engine's visual assembly moves. Collision, seat and aim stay still.
 	var offset := Vector3(sin(phase * 107), sin(phase * 131), 0) * 0.0012 * rv.vibration_strength if running else Vector3.ZERO
 	rv.engine_bay.get_node("EngineVisual").position = engine_rest + offset
+
+func _update_engine(delta: float, rpm: float) -> void:
+	if rpm <= 0.0:
+		if engine_player.playing: engine_player.stop()
+		if rev_player.playing: rev_player.stop()
+		rev_blend = 0.0
+		return
+	var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
+	if legacy_audio:
+		engine_player.pitch_scale = lerpf(engine_player.pitch_scale, lerpf(0.85, 1.7, fraction), minf(delta * 4.0, 1.0))
+		engine_player.volume_db = -15.0 + rv.throttle_input * 4.0
+	else:
+		rev_blend = move_toward(rev_blend, smoothstep(0.12, 0.72, fraction), delta * 4.0)
+		engine_player.pitch_scale = lerpf(1.0, 1.24, fraction)
+		rev_player.pitch_scale = lerpf(0.86, 1.15, fraction)
+		engine_player.volume_db = -9.0 + linear_to_db(maxf(0.0001, sqrt(1.0 - rev_blend)))
+		rev_player.volume_db = -8.0 + linear_to_db(maxf(0.0001, sqrt(rev_blend)))
+		if rev_blend > 0.0 and not rev_player.playing: rev_player.play()
+		if rev_blend <= 0.0 and rev_player.playing: rev_player.stop()
+	if not engine_player.playing: engine_player.play()
 
 func update_loop(sound: AudioStreamPlayer3D, speed: float, threshold: float) -> void:
 	if speed < threshold:

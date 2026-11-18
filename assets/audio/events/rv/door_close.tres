@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/door_close.wav" id="2"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("2")])
+bus = &"Cabin"
+volume_db = -9.0
+pitch_variation = 0.03
