@@ -76,70 +76,23 @@ def loop_engine(audio, blend_seconds):
     return np.concatenate((audio[overlap:tail_start], seam))
 
 
-def steady_rev(source, start, end, target_hz, pulse_band):
-    # Track the combustion pulse through a real rev and remove the RPM sweep.
-    # The game can then vary pitch without replaying a rise and fall every loop.
-    half_window = round(0.08 * RATE)
-    hop = round(0.015 * RATE)
-    length = round((end - start) * RATE)
-    audio = engine_eq(read_clip(source, start - half_window / RATE, end + half_window / RATE))
-    frames = np.lib.stride_tricks.sliding_window_view(audio, 2 * half_window)[::hop]
-    fft_size = 32768
-    bins = np.fft.rfftfreq(fft_size, 1 / RATE)
-    first, last = np.searchsorted(bins, pulse_band)
-    spectrum = np.log(np.maximum(1.0, np.abs(np.fft.rfft(frames * np.hanning(2 * half_window), n=fft_size))))
-    peaks = first + np.argmax(spectrum[:, first:last], axis=1)
-    rows = np.arange(len(peaks))
-    left, center, right = (spectrum[rows, peaks + offset] for offset in (-1, 0, 1))
-    curvature = np.minimum(left - 2 * center + right, -1e-5)
-    offset = np.clip(0.5 * (left - right) / curvature, -0.5, 0.5)
-    frequency = (peaks + offset) * RATE / fft_size
-    samples = np.arange(length)
-    rate_ratio = np.interp(samples, rows * hop, frequency / target_hz)
-    warped_time = np.cumsum(rate_ratio)
-    return np.interp(np.arange(int(warped_time[-1])), warped_time, audio[half_window:half_window + length])
-
-
-def join_rev_passes(passes):
-    overlap = round(0.12 * RATE)
-    search = round(0.035 * RATE)
-    joined = passes[0]
-    for segment in passes[1:]:
-        start = overlap_offset(joined[-overlap:], segment[:overlap + search])
-        seam = blend_audio(joined[-overlap:], segment[start:start + overlap])
-        joined = np.concatenate((joined[:-overlap], seam, segment[start + overlap:]))
-    return loop_engine(joined, 0.18)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--engine-only", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    if not args.engine_only:
-        for name, start, end, peak in (("door_open", 0.55, 1.4, -3), ("door_close", 3.26, 3.96, -1)):
-            audio = read_clip(args.source / "door.wav", start, end)
-            audio -= np.mean(audio)
-            fade_one_shot(audio)
-            write_clip(args.output / f"{name}.wav", audio, peak)
-        # One lever motion each: out of the old gear, then into the new one.
-        for name, start, end in (("gear_shift_a", 0.24, 0.70), ("gear_shift_b", 0.94, 1.34)):
-            audio = read_clip(args.source / "gear_select.wav", start, end)
-            audio -= np.mean(audio)
-            fade_one_shot(audio, tail=0.08)
-            write_clip(args.output / f"{name}.wav", audio, -1)
-
-    idle = engine_eq(read_clip(args.source / "iveco_idle.wav", 24.5, 33.6))
-    write_clip(args.output / "engine_idle.wav", loop_engine(idle, 0.3), -3.0, loop=True, rms_db=-20.0)
-    for name, recording, target_hz, pulse_band, cuts in (
-        ("engine_mid", "iveco_lo", 52, (38, 72), ((12.37, 13.64), (14.03, 14.47))),
-        ("engine_rev", "iveco_hi", 100, (78, 120), ((5.47, 6.91), (9.66, 11.02), (14.8, 15.56))),
-    ):
-        source = args.source / f"{recording}.wav"
-        audio = join_rev_passes([steady_rev(source, start, end, target_hz, pulse_band) for start, end in cuts])
-        write_clip(args.output / f"{name}.wav", audio, -3.0, loop=True, rms_db=-20.0)
+    for name, start, end, peak in (("door_open", 0.55, 1.4, -3), ("door_close", 3.26, 3.96, -1)):
+        audio = read_clip(args.source / "door.wav", start, end)
+        audio -= np.mean(audio)
+        fade_one_shot(audio)
+        write_clip(args.output / f"{name}.wav", audio, peak)
+    # One lever motion each: out of the old gear, then into the new one.
+    for name, start, end in (("gear_shift_a", 0.24, 0.70), ("gear_shift_b", 0.94, 1.34)):
+        audio = read_clip(args.source / "gear_select.wav", start, end)
+        audio -= np.mean(audio)
+        fade_one_shot(audio, tail=0.08)
+        write_clip(args.output / f"{name}.wav", audio, -1)
     for name, start, end in (("engine_start", 0.23, 1.36), ("engine_stop", 19.93, 20.94)):
         audio = engine_eq(read_clip(args.source / "start_stop.wav", start, end))
         fade_one_shot(audio, tail=0.18)

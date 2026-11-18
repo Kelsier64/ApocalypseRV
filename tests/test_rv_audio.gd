@@ -144,10 +144,6 @@ func _run() -> void:
 	check(grains.playing, "The running engine fades under the shutdown instead of cutting")
 	audio._update_engine(0.4, 0.0)
 	check(not grains.playing, "The grain engine stops after shutdown")
-	audio.set_loop_engine(true)
-	for layer: AudioStreamPlayer3D in audio.engine_layers:
-		check((layer.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD, "The comparison loops still loop forward")
-	audio.set_loop_engine(false)
 	_check_grain_synth(audio.engine_synth.bank)
 	check(audio.road_layers.size() == RVTireModel.Surface.size(), "Every road surface has a rolling loop")
 	for layer: AudioStreamPlayer3D in audio.road_layers + [audio.wind_player]:

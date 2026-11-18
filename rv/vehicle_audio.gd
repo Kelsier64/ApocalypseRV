@@ -4,14 +4,6 @@ const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
 const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
 const ENGINE_GRAINS := "res://assets/audio/rv/engine_grains.tres"
-# The previous loop engine stays selectable for A/B listening until the pilot is approved.
-const ENGINE_LOOP_PATHS := [
-	"res://assets/audio/rv/engine_idle.wav",
-	"res://assets/audio/rv/engine_mid.wav",
-	"res://assets/audio/rv/engine_rev.wav",
-]
-# Pulse frequencies of the three recordings, measured before pitch shifting.
-const ENGINE_PULSE_HZ := [28.2, 52.0, 100.0]
 const MIX_RATE := 44100.0
 # Audio queued ahead of the mixer. Longer hides frame hitches but delays RPM changes.
 const ENGINE_BUFFER_SECONDS := 0.08
@@ -38,7 +30,6 @@ const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
 	"right_1", "right_2", "roof_0", "roof_1", "roof_2"]
 static var streams: Dictionary = {}
-var engine_layers: Array[AudioStreamPlayer3D] = []
 var engine_cue: AudioStreamPlayer3D
 var engine_start_sound: AudioStream
 var engine_stop_sound: AudioStream
@@ -50,7 +41,6 @@ var cue_counts := {}
 var was_running := false
 var phase := 0.0
 var engine_rest := Vector3.ZERO
-var loop_engine := false
 var engine_presence := 0.0
 var engine_speed := 0.0
 var engine_load := 0.0
@@ -125,11 +115,6 @@ func player() -> AudioStreamPlayer3D:
 	return sound
 
 func _ready() -> void:
-	for path in ENGINE_LOOP_PATHS:
-		var layer := player()
-		layer.bus = bus_for_local(ENGINE_POSITION)
-		layer.stream = load(path)
-		engine_layers.append(layer)
 	engine_synth = EngineGrainSynth.new(load(ENGINE_GRAINS))
 	engine_grains = player()
 	engine_grains.name = "EngineGrains"
@@ -169,14 +154,6 @@ func _cabin_loop(path: String) -> AudioStreamPlayer3D:
 	sound.unit_size = 6.0
 	sound.stream = load(path)
 	return sound
-
-## Switches between the granular engine and the previous loop recordings.
-func set_loop_engine(enabled: bool) -> void:
-	if loop_engine == enabled: return
-	loop_engine = enabled
-	for layer in engine_layers: layer.stop()
-	_stop_grains()
-	engine_presence = 0.0
 
 func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool) -> void:
 	if opening and started:
@@ -264,10 +241,7 @@ func _update_engine(delta: float, rpm: float) -> void:
 	elif engine_presence == 0.0:
 		engine_speed = 0.0
 		engine_load = 0.0
-	if loop_engine:
-		_update_loop_engine()
-	else:
-		_update_grain_engine()
+	_update_grain_engine()
 
 ## Load fades out over the first half of a shift and back in over the second.
 func _shift_load_scale() -> float:
@@ -309,26 +283,6 @@ func _update_grain_engine() -> void:
 func _stop_grains() -> void:
 	if engine_grains.playing: engine_grains.stop()
 	_engine_playback = null
-
-func _update_loop_engine() -> void:
-	# The recordings share the same target pulse rate during each crossfade.
-	var pulse_hz := lerpf(ENGINE_PULSE_HZ[0], 104.0, engine_speed)
-	var mid_gain := smoothstep(34.0, 46.0, pulse_hz)
-	var high_gain := smoothstep(62.0, 77.0, pulse_hz)
-	var mix_db := -6.0 + 4.0 * engine_speed + 4.0 * engine_load
-	_update_engine_layer(0, pulse_hz, mix_db, sqrt(1.0 - mid_gain))
-	_update_engine_layer(1, pulse_hz, mix_db, sqrt(mid_gain - high_gain))
-	_update_engine_layer(2, pulse_hz, mix_db, sqrt(high_gain))
-
-func _update_engine_layer(index: int, pulse_hz: float, mix_db: float, gain: float) -> void:
-	var layer := engine_layers[index]
-	var amplitude := engine_presence * gain
-	if amplitude <= 0.0001:
-		if layer.playing: layer.stop()
-		return
-	layer.pitch_scale = pulse_hz / ENGINE_PULSE_HZ[index]
-	layer.volume_db = mix_db + linear_to_db(amplitude)
-	if not layer.playing: layer.play()
 
 func _update_road(delta: float) -> void:
 	var speed := Vector2(rv.linear_velocity.x, rv.linear_velocity.z).length()

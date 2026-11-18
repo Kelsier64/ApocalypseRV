@@ -44,10 +44,10 @@ func _process(_delta: float) -> void:
 	var playback: AudioStreamGeneratorPlayback = grains.get_stream_playback() if grains.playing else null
 	var dropouts := playback.get_skips() if playback != null else 0
 	instructions.text = (
-		"RV AUDIO PILOT   |   %s   |   %s   |   %d RPM   |   %d engine dropouts\n" +
+		"RV AUDIO PILOT   |   %s   |   %d RPM   |   %d engine dropouts\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
-		"F6 Grain / loop engine   F7 Warning on / off   F8 Move warning\n%s"
-	) % ["Outside" if outside else "Cabin", "Loop recordings" if audio.loop_engine else "Grain engine",
+		"F7 Warning on / off   F8 Move warning\n%s"
+	) % ["Outside" if outside else "Cabin",
 		roundi(rv.engine_rpm()), dropouts, message]
 
 
@@ -69,9 +69,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			var start := rv.engine_rpm() == 0.0
 			if rv.set_engine_running(start): message = "Engine running" if start else "Engine off"
 			else: message = rv.engine_start_reason()
-		KEY_F6:
-			var audio := rv.get_node("Audio")
-			audio.set_loop_engine(not audio.loop_engine)
 		KEY_F7:
 			if warning.playing: warning.stop()
 			else: warning.play()
