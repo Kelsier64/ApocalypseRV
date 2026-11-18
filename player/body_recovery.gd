@@ -4,6 +4,8 @@ enum Phase { IDLE, DYING, WATCHING, WAKING }
 const RECIPE := "printed_player"
 const PlayerVisual = preload("res://player/player_model_visual.gd")
 const OBSERVATION_DELAY := 1.0
+const DEATH_FADE_SECONDS := 1.0
+const CRASH_FADE_SECONDS := 0.075
 const WAKE_SECONDS := 1.5
 var phase := Phase.IDLE
 var waking_in_printed_body := false
@@ -16,6 +18,7 @@ var exterior_status: Label
 var interior: PoiInstanceManager
 var attempted := false
 var elapsed := 0.0
+var _death_fade_seconds := DEATH_FADE_SECONDS
 var shade := ColorRect.new()
 var status := Label.new()
 var breath := AudioStreamPlayer.new()
@@ -44,12 +47,15 @@ func _ready() -> void:
 	hide()
 	set_physics_process(false)
 
-func begin() -> void:
+func begin(crash := false) -> void:
 	reset()
 	phase = Phase.DYING
+	var lost_head: bool = not player.body_state.has_part(&"head")
+	_death_fade_seconds = CRASH_FADE_SECONDS if crash else DEATH_FADE_SECONDS
+	if lost_head: _death_fade_seconds = 0.0
 	show()
 	_hide_hud(get_viewport())
-	_set_shade(1.0)
+	_set_shade(1.0 if lost_head else 0.0)
 	set_physics_process(true)
 
 func try_queue() -> void:
@@ -82,6 +88,8 @@ func _physics_process(delta: float) -> void:
 	elapsed += delta
 	match phase:
 		Phase.DYING:
+			if _death_fade_seconds > 0.0:
+				_set_shade(smoothstep(0.0, _death_fade_seconds, elapsed))
 			if elapsed >= OBSERVATION_DELAY and awaiting_print(): _start_watching()
 		Phase.WATCHING:
 			_update_watch()
@@ -160,6 +168,7 @@ func _abandon_print() -> void:
 	_release_order()
 	_end_observation()
 	phase = Phase.DYING
+	elapsed = _death_fade_seconds
 	_set_shade(1.0)
 	player.camera.make_current()
 
@@ -207,10 +216,10 @@ func _set_shade(closure: float) -> void:
 	shade.visible = closure > .001
 	if is_instance_valid(exterior_shade): exterior_shade.visible = shade.visible
 	shade.material.set_shader_parameter("closure", closure)
-	var dying := phase == Phase.DYING
-	game_settings.set_temporary_master_mute(self, dying)
+	var sudden_blackout := phase == Phase.DYING and _death_fade_seconds == 0.0
+	game_settings.set_temporary_master_mute(self, sudden_blackout)
 	if DisplayServer.get_name() != "headless":
-		player.injury_effects.set_consciousness_muffle(0.0 if dying else closure)
+		player.injury_effects.set_consciousness_muffle(0.0 if sudden_blackout else closure)
 
 func _release_order() -> void:
 	if is_instance_valid(station):

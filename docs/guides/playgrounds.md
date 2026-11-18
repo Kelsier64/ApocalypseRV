@@ -516,7 +516,7 @@ godot --path . --log-file .godot/player-death.log res://tests/playgrounds/player
 godot --path . --log-file .godot/player-death-replay.log res://tests/playgrounds/player_death_playground.tscn -- --replay --quit-replay
 ```
 
-使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。按 F3 或 F5 可檢查死亡瞬間是否直接黑屏及靜音。F7 補齊材料與電力再觸發死亡，接著觀看製造並在車內睜眼。使用 `--recovery-replay` 擷取黑屏、列印、甦醒及恢復操作。截圖與 replay.json 寫入 `.godot/player-death/`。
+使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。按 F3 或 F5 可檢查一般致死的倒地、漸暗和悶音。F7 補齊材料與電力再觸發死亡，接著觀看製造並在車內睜眼。使用 `--recovery-replay` 擷取死亡淡出、列印、甦醒及恢復操作。截圖與 replay.json 寫入 `.godot/player-death/`。斷頭瞬間黑屏和靜音可用上方斷肢場景的 `--head-pov` 驗證。
 
 ### 移動 RV 攀爬
 

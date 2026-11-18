@@ -76,6 +76,7 @@ func _print_replay() -> void:
 	var station: CraftingStation = $NewRv/Chassis/CraftingStation
 	await _capture_current("revival-0-before")
 	_fund_and_die()
+	await seconds($Player.recovery.DEATH_FADE_SECONDS * .55)
 	await _capture_current("revival-1-death")
 	await seconds(recipe.duration * .66)
 	await _capture_current("revival-2-print")

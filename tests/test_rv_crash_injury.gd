@@ -50,8 +50,10 @@ func run() -> void:
 		if wounded.body_state.has_part(part): remaining += 1
 	check(remaining == 3 and wounded.body_state.has_part(&"head") and wounded.is_player_dead, "A severe collision can kill and remove at most one limb")
 	check(not wounded.injury_effects.is_processing(), "Death clears any transient injury presentation")
-	check(wounded.recovery.shade.visible and wounded.recovery.shade.material.get_shader_parameter("closure") == 1.0, "A lethal crash fully closes the view before the next frame")
-	for i in 5: await physics_frame
+	check(not wounded.recovery.shade.visible and wounded.recovery._death_fade_seconds == wounded.recovery.CRASH_FADE_SECONDS, "A lethal crash uses the short death fade")
+	check(wounded.recovery.CRASH_FADE_SECONDS < wounded.recovery.DEATH_FADE_SECONDS and not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")), "The crash fades faster than an ordinary death and does not hard-mute")
+	for i in ceili(wounded.recovery.CRASH_FADE_SECONDS * Engine.physics_ticks_per_second) + 2: await physics_frame
+	check(wounded.recovery.shade.visible and wounded.recovery.shade.material.get_shader_parameter("closure") == 1.0, "The crash fade ends in full black")
 	player.queue_free()
 	wounded.queue_free()
 	await process_frame
