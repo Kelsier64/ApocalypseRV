@@ -8,7 +8,7 @@ const ENGINE_LOOP_PATHS := [
 	"res://assets/audio/rv/engine_rev.wav",
 ]
 # Pulse frequencies of the three recordings, measured before pitch shifting.
-const ENGINE_PULSE_HZ := [30.0, 83.5, 94.5]
+const ENGINE_PULSE_HZ := [28.2, 52.0, 100.0]
 # Chassis-local volume bounded by the finished floor, side panels and ceiling.
 const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
@@ -187,18 +187,19 @@ func _update_engine(delta: float, rpm: float) -> void:
 		and engine_cue.get_playback_position() < engine_start_sound.get_length() - 0.28
 	engine_presence = move_toward(engine_presence, 1.0 if running and not cranking else 0.0, delta * (5.0 if running else 12.0))
 	if running:
-		var response := 1.0 - exp(-delta * 13.0)
 		var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
-		engine_speed = lerpf(engine_speed, fraction, response)
-		engine_load = lerpf(engine_load, rv.throttle_input, response)
+		# Give the fall in pitch some inertia when the throttle is released.
+		var pitch_response := 12.0 if fraction > engine_speed else 6.5
+		engine_speed = lerpf(engine_speed, fraction, 1.0 - exp(-delta * pitch_response))
+		engine_load = lerpf(engine_load, rv.throttle_input, 1.0 - exp(-delta * 13.0))
 	elif engine_presence == 0.0:
 		engine_speed = 0.0
 		engine_load = 0.0
 
 	# The recordings share the same target pulse rate during each crossfade.
-	var pulse_hz := lerpf(ENGINE_PULSE_HZ[0], 112.0, engine_speed)
-	var mid_gain := smoothstep(44.0, 61.0, pulse_hz)
-	var high_gain := smoothstep(84.0, 101.0, pulse_hz)
+	var pulse_hz := lerpf(ENGINE_PULSE_HZ[0], 104.0, engine_speed)
+	var mid_gain := smoothstep(34.0, 46.0, pulse_hz)
+	var high_gain := smoothstep(62.0, 77.0, pulse_hz)
 	var mix_db := -6.0 + 4.0 * engine_speed + 4.0 * engine_load
 	_update_engine_layer(0, pulse_hz, mix_db, sqrt(1.0 - mid_gain))
 	_update_engine_layer(1, pulse_hz, mix_db, sqrt(mid_gain - high_gain))

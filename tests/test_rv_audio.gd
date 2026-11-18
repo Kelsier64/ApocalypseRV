@@ -90,16 +90,24 @@ func _run() -> void:
 	audio.engine_cue.stop()
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
 	check(layers[0].playing and not layers[1].playing and not layers[2].playing, "Only the idle layer runs when parked")
-	var above_idle := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.28)
+	var above_idle := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.16)
 	audio._update_engine(0.4, above_idle)
 	check(layers[0].playing and layers[1].playing, "Low RPM fades between idle and cruise")
 	check(is_equal_approx(layers[0].pitch_scale * audio.ENGINE_PULSE_HZ[0], layers[1].pitch_scale * audio.ENGINE_PULSE_HZ[1]),
 		"Adjacent engine layers share a pulse rate through the crossfade")
-	var cruising := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.53)
+	var cruising := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.36)
 	audio._update_engine(0.4, cruising)
 	check(not layers[0].playing and layers[1].playing and not layers[2].playing, "Cruising uses its own recording")
 	audio._update_engine(0.4, Chassis.ENGINE_MAX_RPM)
 	check(not layers[0].playing and not layers[1].playing and layers[2].playing, "High RPM fades into the higher engine recording")
+	var high_pitch := layers[2].pitch_scale
+	audio._update_engine(1.0 / 60.0, Chassis.ENGINE_IDLE_RPM)
+	check(layers[2].playing and layers[2].pitch_scale < high_pitch, "Lifting off starts to lower pitch without dropping the rev layer in one frame")
+	audio._update_engine(0.16, Chassis.ENGINE_IDLE_RPM)
+	check(layers[1].playing and not layers[2].playing, "The engine coasts down through the cruise recording")
+	audio._update_engine(0.6, Chassis.ENGINE_IDLE_RPM)
+	check(layers[0].playing and not layers[1].playing, "Engine audio settles back to idle after lifting off")
+	audio._update_engine(0.4, Chassis.ENGINE_MAX_RPM)
 	var running_volume := layers[2].volume_db
 	audio.was_running = true
 	check(chassis.set_engine_running(false), "The fixture shuts down through the production engine control")
