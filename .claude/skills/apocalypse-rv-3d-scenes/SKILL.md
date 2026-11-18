@@ -29,7 +29,7 @@ For split buildings, keep the layout and assembly in Godot and make each compone
 You can read PNGs with the Read tool, so render and look rather than infer from numbers.
 
 - **A single GLB:** `comfyui-image-to-3d`'s `review.py` renders 12 views (six angles, textured and clay).
-- **In context:** render the integrated asset from the gameplay camera with a playground capture flag and read the PNGs before reporting. The `playtest` skill's "Render Captures First" section has the command and pitfalls.
+- **In context:** render the integrated asset from the gameplay camera with a playground capture flag and read the PNGs before reporting. The [playground guide](../../../docs/guides/playgrounds.md#啟動與固定截圖) has the command and pitfalls.
 - Compare against the surrounding cab or room: clean vector art and self-lit flat panels read as UI pasted into the world.
 - Use computer use only when the check needs live interaction.
 

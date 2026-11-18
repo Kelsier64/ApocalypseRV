@@ -151,7 +151,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 | 資源與供電 | 能源由 VehicleEnergy 調度，材料由本車 MaterialStorage 管理；設備／UI 不另持有一份油電材料總量。交易失敗不吞資源、不重複退款；生產輸入由工作站持有，缺電暫停，搬移／摧毀安全退料，出口受阻保留工作。 |
 | 受損與修復 | 所有 Item 免疫怪物傷害，選敵、接觸、腳下及實際命中均拒絕，命中物品不向底盤轉交或穿透。其他授權損傷與維修沿用 take_damage／needs_repair／repair_health；損傷外觀只讀同一耐久來源。 |
 | 保存 | 場景納入 SaveSceneCatalog；capture_item_state／restore_item_state 共用 ID、condition、回收結果、enabled、service 與專用子狀態，ItemState 驗證。世界記錄另保存 fixed、transform、physics 及 support；背包不保留舊支撐。所有權跨背包、倉庫、插槽、世界、副本及分解佇列，重複 ID 拒絕保存／載入。 |
-| 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動依 playtest skill 做實機攀爬／支撐／拆頂檢查。 |
+| 接入驗證 | 以正式場景驗證預設方向／淨空、安裝／取消、跨車歸屬、斷電、支撐移除、歸零、資源清理及保存還原；功能另補適用測試。物理改動以[測試場](docs/guides/playgrounds.md)做實機攀爬／支撐／拆頂檢查。 |
 
 現行自動回歸保留 [物品操作](tests/test_item_player.gd)、[物品保存](tests/test_item_persistence.gd) 及 [檢查點失敗恢復](tests/test_checkpoint_failures.gd)。凍結設備的碰撞力矩限制仍見第 6 節；遵守上述規格不代表大型外掛物理已解決。
 

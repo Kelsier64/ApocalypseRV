@@ -21,7 +21,7 @@ ApocalypseRV is a first-person survival prototype in Godot. The main scene is `w
 
 - Use PowerShell from the repo root. Godot is at `C:\Program Files\godot\godot.exe`; check `.godot-version` for the pinned version. If sandbox access blocks the executable, retry through the tool's escalation mechanism. For long commands, use `exec_command` with a short yield and wait on its session.
 - Run the smallest useful automated check. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1` imports once and runs the top-level tests and main-scene smoke check. For Markdown-only edits, check wording and relative links with `scripts/agent/check-docs.ps1`.
-- For game feel or manual validation, build or reuse a playground, launch it at the relevant state, and give the user a short checklist. For fixed visual states, inspect a relevant capture. Report what you verified and what still needs hands-on testing.
+- For game feel or manual validation, build or reuse a playground, launch it at the relevant state, and give the user a short checklist. For fixed visual states, inspect a relevant capture. Launch commands, `--capture` renders and their pitfalls are in the [playground guide](docs/guides/playgrounds.md#啟動與固定截圖). Report what you verified and what still needs hands-on testing.
 - Ask about material ambiguity or broad architecture changes. Keep scene integration and final verification in the active session. Use the Codex image workflow for reference images and keep generated inputs in ignored work folders until selected for delivery.
 
 ## Skills
@@ -29,7 +29,6 @@ ApocalypseRV is a first-person survival prototype in Godot. The main scene is `w
 | Skill | Use for |
 | --- | --- |
 | `apocalypse-rv-tests` | Selecting, running, writing, and debugging Godot tests |
-| `apocalypse-rv-playtest` | Playgrounds, fixed renders, and hands-on validation |
 | `apocalypse-rv-3d-scenes` | Building or integrating 3D content in Godot |
 | `apocalypse-rv-image-to-3d` | Building reference images and generating 3D props with local ComfyUI |
 | `apocalypse-rv-docs` | Maintaining project documentation |

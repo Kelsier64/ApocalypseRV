@@ -26,7 +26,7 @@ description: Use when choosing, running, writing or debugging ApocalypseRV autom
 1. Find the covering test in the coverage table in [tests/README.md](../../../tests/README.md).
 2. Confirm with Grep for the class or function under `tests/`. Shared contracts in `tests/support/` run inside their parent tests.
 3. Add `-Smoke` when the change touches `world/main_world.tscn`, HUD, settings, startup or player movement.
-4. Headless tests do not cover visuals, feel, rollovers or crowds. Use the `playtest` skill or ask the user.
+4. Headless tests do not cover visuals, feel, rollovers or crowds. Use a playground ([docs/guides/playgrounds.md](../../../docs/guides/playgrounds.md)) or ask the user.
 
 ## Read Failures
 

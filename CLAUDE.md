@@ -55,7 +55,7 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 - Report architecture problems you notice. Ask before large architectural changes.
 - **Write decisions back to the docs.** Record agent rules in `CLAUDE.md` so later sessions can find them. When the user settles or changes a design, or a change alters behavior a document describes, update the design intent in `GDD.md` and the implementation contracts in the matching `docs/systems/` file in the same change, without being asked. Track features nobody has played yet and problems deferred for later in `docs/plans/README.md`. Delete documents that will not be used again. Git history is the archive. The `docs-maintenance` skill has the placement table.
 - Validate with the smallest set that covers the changed behavior and its risks. Skip tests for simple, low-risk edits. For docs-only changes, check wording, consistency, links and placement (`scripts/agent/check-docs.ps1 <files>`); do not launch Godot.
-- **Hand hands-on checks to the user.** When a change needs visual, feel or in-game verification, build or reuse a playground scene that sets up the exact state, launch it, and give the user a short checklist of what to look at and report back. Do not ask whether to verify, and do not spend tokens on screenshot loops. Automated tests still run as usual.
+- **Hand hands-on checks to the user.** When a change needs visual, feel or in-game verification, build or reuse a playground scene that sets up the exact state, launch it, and give the user a short checklist of what to look at and report back. Do not ask whether to verify, and do not spend tokens on screenshot loops. Launch commands, `--capture` renders and their pitfalls are in [docs/guides/playgrounds.md](docs/guides/playgrounds.md#啟動與固定截圖). Automated tests still run as usual.
 - Report what you checked, what you did not, and any material uncertainty. Never claim visual or hands-on verification you did not do.
 - Work token-efficiently: use Grep/Glob, read targeted ranges, batch independent tool calls, and reuse established findings.
 
@@ -81,7 +81,6 @@ Project skills live in `.claude/skills/`. Load one when its trigger applies.
 | Skill | Load when |
 |---|---|
 | `godot-tests` | Choosing, running, writing or debugging automated tests or CI failures |
-| `playtest` | A change needs visual, feel or in-game verification: a playground for the user, or render captures |
 | `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md` or `docs/`; a design is decided or changed; a code change makes a document stale; a plan starts or finishes |
 | `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
 | `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
