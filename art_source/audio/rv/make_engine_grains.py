@@ -1,9 +1,11 @@
 """Cut single-firing engine grains from the Iveco diesel recordings.
 
-Each grain spans one combustion pulse plus a short raised-cosine overlap on both
-sides. Consecutive grains from the recording therefore overlap-add back into the
-original sound, and the game can place them at any firing rate. The grains keep
-their own cycle length, so the uneven rhythm of a real diesel survives.
+Each grain spans one combustion pulse between two boundaries in the quiet part
+before each firing, plus a fixed raised-cosine overlap on both sides. Neighbours
+share their boundaries, so following grains overlap-add back into the original
+recording, and the game can place them at any firing rate. Every confident pulse
+is kept as part of a contiguous limb: the recordings never hold a raised rpm, so
+a held rate has to borrow from many short passes through it.
 """
 
 import argparse
@@ -14,19 +16,27 @@ import numpy as np
 
 from make_pilot_wavs import RATE, engine_eq, read_clip
 
-# (file, start, end) in seconds. Each clip holds idle and stationary revs.
+# (file, start, end) in seconds. The idle file is steady; the others blip the throttle.
 SOURCES = (
-    ("iveco_idle.wav", 1.0, 34.0),
+    ("iveco_idle.wav", 1.0, 13.0),
     ("iveco_lo.wav", 1.0, 34.5),
     ("iveco_hi.wav", 1.0, 20.9),
 )
-BIN_HZ = 2.0
-RUN = 6
-RUNS_PER_BIN = 2
-IDLE_RUNS = 8
+IDLE_SOURCE = 0
 IDLE_LIMIT_HZ = 31.0
 SLOPE_HZ_PER_S = 18.0
 STEADY, RISING, FALLING = 0, 1, 2
+# Half-width of the shared crossfade at every boundary, in samples.
+FADE = 64
+MIN_LIMB = 3
+CYLINDERS = 4
+# Part of each limb's slow level trend pulled toward the level of its rate and kind.
+LEVEL_PULL = 0.7
+TREND_GRAINS = 9
+BAND_HZ = 4.0
+# The top rate the game uses still has this many grains within the match band.
+TOP_POOL = 60
+TOP_BAND = 0.05
 
 
 def lowpass(audio, hz):
@@ -83,91 +93,106 @@ def find_pulses(audio, times, rates, scores):
     return pulses
 
 
-def cut_grains(audio, pulses, times, rates, source_index):
+def brightness_db(clip):
+    spectrum = np.abs(np.fft.rfft(clip * np.hanning(len(clip)), n=4096)) ** 2
+    frequency = np.fft.rfftfreq(4096, 1 / RATE)
+    return 10 * np.log10(spectrum[frequency > 1000].sum() / (spectrum.sum() + 1e-20) + 1e-12)
+
+
+def cut_limbs(audio, pulses, times, rates, source_index):
+    """Contiguous runs of confident grains; each grain ends where the next begins."""
     slope = np.gradient(rates, times)
     slope = np.convolve(slope, np.ones(9) / 9, mode="same")
-    grains = []
-    for index in range(1, len(pulses) - 2):
+    peaks = [pulse[0] for pulse in pulses]
+    # The boundary before each firing sits 30 % of the previous period ahead of its peak.
+    bounds = [None] + [peaks[i] - int(0.3 * (peaks[i] - peaks[i - 1])) for i in range(1, len(peaks))]
+    limbs, limb = [], []
+    for index in range(1, len(pulses) - 1):
         peak, hz, confidence = pulses[index]
-        period = pulses[index + 1][0] - peak
-        if confidence < 0.8 or not 0.7 < period * hz / RATE < 1.3:
-            grains.append(None)
-            continue
-        # Grain boundaries sit in the quiet part before each firing.
-        start = peak - int(0.3 * period)
-        fade = max(8, int(0.12 * period))
-        clip = audio[start - fade:start + period + fade].copy()
-        ramp = np.sin(np.linspace(0.0, np.pi / 2, 2 * fade)) ** 2
-        clip[:2 * fade] *= ramp
-        clip[-2 * fade:] *= ramp[::-1]
+        start, end = bounds[index], bounds[index + 1]
+        period = end - start
         rate_slope = np.interp(peak / RATE, times, slope)
         kind = RISING if rate_slope > SLOPE_HZ_PER_S else FALLING if rate_slope < -SLOPE_HZ_PER_S else STEADY
-        grains.append({"audio": clip, "period": period, "fade": fade, "hz": hz, "kind": kind,
-                       "confidence": confidence, "source": source_index, "time": peak / RATE})
-    return grains
+        idle = hz < IDLE_LIMIT_HZ and kind == STEADY
+        usable = (confidence >= 0.8 and 0.7 < period * hz / RATE < 1.3 and start - FADE >= 0
+                  and end + FADE <= len(audio) and idle == (source_index == IDLE_SOURCE))
+        if not usable:
+            if len(limb) >= MIN_LIMB: limbs.append(limb)
+            limb = []
+            continue
+        span = audio[start:end]
+        limb.append({
+            "start": start, "period": period, "hz": hz, "kind": kind, "idle": idle,
+            "level": 20 * np.log10(np.sqrt(np.mean(span**2)) + 1e-12),
+            "brightness": brightness_db(span),
+            "cylinder": index % CYLINDERS if source_index == IDLE_SOURCE else -1,
+            "source": source_index,
+        })
+    if len(limb) >= MIN_LIMB: limbs.append(limb)
+    return limbs
 
 
-def runs_of(grains):
-    """Consecutive grains of one kind, cut into fixed-length runs."""
-    runs, current = [], []
-    for grain in grains + [None]:
-        if grain is not None and (not current or grain["kind"] == current[0]["kind"]):
-            current.append(grain)
-        else:
-            runs.extend(current[i:i + RUN] for i in range(0, len(current) - RUN + 1, RUN))
-            current = [] if grain is None else [grain]
-    return runs
+def level_gains(limbs):
+    """Flattens each limb's slow level trend toward the level of its rate and kind."""
+    grains = [grain for limb in limbs for grain in limb]
+    hz = np.array([grain["hz"] for grain in grains])
+    kind = np.array([grain["kind"] for grain in grains])
+    level = np.array([grain["level"] for grain in grains])
+    for limb in limbs:
+        levels = np.array([grain["level"] for grain in limb])
+        padded = np.pad(levels, TREND_GRAINS // 2, mode="edge")
+        trend = np.convolve(padded, np.ones(TREND_GRAINS) / TREND_GRAINS, mode="valid")
+        for grain, slow in zip(limb, trend):
+            peers = (np.abs(hz - grain["hz"]) < BAND_HZ) & (kind == grain["kind"])
+            grain["gain_db"] = LEVEL_PULL * (np.median(level[peers]) - slow)
 
 
-def select_runs(runs):
-    chosen = {}
-    for run in runs:
-        rates = np.array([grain["hz"] for grain in run])
-        spread = np.ptp(rates) / np.mean(rates)
-        if spread > 0.4: continue
-        key = (int(np.mean(rates) // BIN_HZ), run[0]["kind"])
-        score = np.mean([grain["confidence"] for grain in run]) - spread
-        chosen.setdefault(key, []).append((score, run))
-    picked = []
-    for (bin_index, kind), candidates in chosen.items():
-        idle = (bin_index + 1) * BIN_HZ <= IDLE_LIMIT_HZ + BIN_HZ
-        limit = IDLE_RUNS if idle else RUNS_PER_BIN
-        # Prefer the cleanest runs, but spread picks across the recording.
-        candidates.sort(key=lambda item: -item[0])
-        taken = []
-        for score, run in candidates:
-            if len(taken) >= limit: break
-            if any(abs(run[0]["time"] - other[0]["time"]) < 0.5 and run[0]["source"] == other[0]["source"]
-                   for other in taken):
-                continue
-            taken.append(run)
-        picked.extend(taken)
-    return picked
+def top_rate(grains):
+    rates = np.sort([grain["hz"] for grain in grains])
+    for hz in rates[::-1]:
+        pool = np.sum((rates > hz / (1 + TOP_BAND)) & (rates < hz * (1 + TOP_BAND)))
+        if pool >= TOP_POOL: return float(hz)
+    return float(rates[-1])
 
 
-def write_bank(output, runs, peak_db):
-    grains = [grain for run in runs for grain in run]
-    data = np.concatenate([grain["audio"] for grain in grains])
+def write_bank(output, sources, limbs, peak_db):
+    ramp = np.sin(np.linspace(0.0, np.pi / 2, 2 * FADE)) ** 2
+    clips = []
+    for limb in limbs:
+        audio = sources[limb[0]["source"]]
+        for grain in limb:
+            clip = audio[grain["start"] - FADE:grain["start"] + grain["period"] + FADE] * 10 ** (grain["gain_db"] / 20)
+            clip[:2 * FADE] *= ramp
+            clip[-2 * FADE:] *= ramp[::-1]
+            clips.append(clip)
+    data = np.concatenate(clips)
     gain = 32767 * 10 ** (peak_db / 20) / np.max(np.abs(data))
-    wav_path = output / "engine_grains.wav"
-    with wave.open(str(wav_path), "wb") as clip:
+    with wave.open(str(output / "engine_grains.wav"), "wb") as clip:
         clip.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
         clip.writeframes(np.rint(data * gain).astype("<i2").tobytes())
-    starts, periods, fades, lengths, rates, kinds, follows = [], [], [], [], [], [], []
+    fields = {name: [] for name in ("starts", "periods", "fades", "lengths", "firing_hz", "kinds",
+                                    "follows", "levels", "brightness", "cylinders")}
     offset = 0
-    for run in runs:
-        for position, grain in enumerate(run):
-            starts.append(offset)
-            periods.append(grain["period"])
-            fades.append(grain["fade"])
-            lengths.append(len(grain["audio"]))
-            rates.append(round(float(grain["hz"]), 3))
-            kinds.append(grain["kind"])
-            follows.append(len(starts) if position < len(run) - 1 else -1)
-            offset += len(grain["audio"])
+    for limb in limbs:
+        for position, grain in enumerate(limb):
+            fields["starts"].append(offset)
+            fields["periods"].append(grain["period"])
+            fields["fades"].append(FADE)
+            fields["lengths"].append(grain["period"] + 2 * FADE)
+            fields["firing_hz"].append(round(float(grain["hz"]), 3))
+            fields["kinds"].append(grain["kind"])
+            fields["follows"].append(len(fields["starts"]) if position < len(limb) - 1 else -1)
+            fields["levels"].append(round(float(grain["level"] + grain["gain_db"]), 2))
+            fields["brightness"].append(round(float(grain["brightness"]), 2))
+            fields["cylinders"].append(grain["cylinder"])
+            offset += grain["period"] + 2 * FADE
+    grains = [grain for limb in limbs for grain in limb]
+    idle_hz = float(np.mean([grain["hz"] for grain in grains if grain["idle"]]))
+    floats = {"firing_hz", "levels", "brightness"}
 
-    def packed(kind, values):
-        return f"{kind}({', '.join(str(value) for value in values)})"
+    def packed(name):
+        kind = "PackedFloat32Array" if name in floats else "PackedInt32Array"
+        return f"{name} = {kind}({', '.join(str(value) for value in fields[name])})"
 
     resource = "\n".join([
         '[gd_resource type="Resource" script_class="EngineGrainBank" load_steps=3 format=3]',
@@ -178,17 +203,13 @@ def write_bank(output, runs, peak_db):
         "[resource]",
         'script = ExtResource("1")',
         'samples = ExtResource("2")',
-        f"starts = {packed('PackedInt32Array', starts)}",
-        f"periods = {packed('PackedInt32Array', periods)}",
-        f"fades = {packed('PackedInt32Array', fades)}",
-        f"lengths = {packed('PackedInt32Array', lengths)}",
-        f"firing_hz = {packed('PackedFloat32Array', rates)}",
-        f"kinds = {packed('PackedInt32Array', kinds)}",
-        f"follows = {packed('PackedInt32Array', follows)}",
+        f"idle_hz = {idle_hz:.3f}",
+        f"top_hz = {top_rate(grains):.3f}",
+        *(packed(name) for name in fields),
         "",
     ])
     (output / "engine_grains.tres").write_text(resource, encoding="utf-8")
-    return grains, len(data)
+    return grains, len(data), idle_hz
 
 
 def main():
@@ -196,31 +217,30 @@ def main():
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    all_runs = []
+    sources, limbs = [], []
     idle_reference = None
     for source_index, (name, start, end) in enumerate(SOURCES):
         audio = engine_eq(read_clip(args.source / name, start, end)) / 32768
         times, rates, scores = track_pulse(audio)
         pulses = find_pulses(audio, times, rates, scores)
-        grains = cut_grains(audio, pulses, times, rates, source_index)
         # The idle passages match the microphone gain between recordings.
-        idle = [g for g in grains if g is not None and g["hz"] < IDLE_LIMIT_HZ and g["kind"] == STEADY]
-        level = np.sqrt(np.mean(np.concatenate([g["audio"] for g in idle]) ** 2))
+        peaks = np.array([pulse[0] for pulse in pulses])
+        idle = [i for i in range(len(pulses) - 1) if pulses[i][1] < IDLE_LIMIT_HZ and pulses[i][2] >= 0.8]
+        level = np.sqrt(np.mean(np.concatenate([audio[peaks[i]:peaks[i + 1]] for i in idle]) ** 2))
         idle_reference = idle_reference or level
-        for grain in grains:
-            if grain is not None: grain["audio"] *= idle_reference / level
-        all_runs.extend(runs_of(grains))
-        print(f"{name}: {sum(g is not None for g in grains)} grains, "
+        audio = audio * idle_reference / level
+        found = cut_limbs(audio, pulses, times, rates, source_index)
+        sources.append(audio)
+        limbs.extend(found)
+        print(f"{name}: {sum(len(limb) for limb in found)} grains in {len(found)} limbs, "
               f"{rates.min():.1f}-{rates.max():.1f} Hz tracked")
-    runs = select_runs(all_runs)
-    runs.sort(key=lambda run: np.mean([grain["hz"] for grain in run]))
-    grains, total = write_bank(args.output, runs, -1.0)
-    print(f"bank: {len(grains)} grains in {len(runs)} runs, {total / RATE:.2f} s")
+    level_gains(limbs)
+    grains, total, idle_hz = write_bank(args.output, sources, limbs, -1.0)
+    print(f"bank: {len(grains)} grains in {len(limbs)} limbs, {total / RATE:.2f} s, idle {idle_hz:.1f} Hz")
     for kind, label in ((STEADY, "steady"), (RISING, "rising"), (FALLING, "falling")):
-        rates = sorted(grain["hz"] for grain in grains if grain["kind"] == kind)
-        bins = sorted({int(rate // BIN_HZ) for rate in rates})
-        gaps = [f"{a * BIN_HZ:.0f}-{b * BIN_HZ:.0f}" for a, b in zip(bins, bins[1:]) if b - a > 2]
-        print(f"  {label}: {len(rates)} grains, {rates[0]:.1f}-{rates[-1]:.1f} Hz, gaps over 4 Hz: {gaps or 'none'}")
+        rates = np.array(sorted(grain["hz"] for grain in grains if grain["kind"] == kind))
+        counts = [int(np.sum((rates >= lo) & (rates < lo + 10))) for lo in range(20, 120, 10)]
+        print(f"  {label}: {len(rates)} grains, per 10 Hz from 20: {counts}")
 
 
 if __name__ == "__main__":

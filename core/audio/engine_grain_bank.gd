@@ -1,12 +1,17 @@
 class_name EngineGrainBank
 extends Resource
 ## Single-firing grains cut offline by art_source/audio/rv/make_engine_grains.py.
-## Each grain holds one firing period plus a raised-cosine fade on both sides,
-## so consecutive grains overlap-add back into the recording.
+## Each grain holds one firing period plus a raised-cosine fade on both sides.
+## Neighbours share their boundaries, so following grains overlap-add back into
+## the recording.
 
 enum Kind { STEADY, RISING, FALLING }
 
 @export var samples: AudioStreamWAV
+## Mean firing rate of the recorded idle.
+@export var idle_hz := 0.0
+## Highest rate that still has a full pool of grains around it.
+@export var top_hz := 0.0
 @export var starts := PackedInt32Array()
 @export var periods := PackedInt32Array()
 @export var fades := PackedInt32Array()
@@ -16,6 +21,12 @@ enum Kind { STEADY, RISING, FALLING }
 @export var kinds := PackedInt32Array()
 ## Index of the grain that followed in the recording, or -1 at the end of a run.
 @export var follows := PackedInt32Array()
+## RMS level of the firing period in dB, after the offline level smoothing.
+@export var levels := PackedFloat32Array()
+## Share of energy above 1 kHz in dB.
+@export var brightness := PackedFloat32Array()
+## Cylinder of the firing in the steady idle recording, or -1 where it is unknown.
+@export var cylinders := PackedInt32Array()
 
 var _pcm := PackedFloat32Array()
 var _by_rate := PackedInt32Array()

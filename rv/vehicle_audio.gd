@@ -276,7 +276,7 @@ func _shift_load_scale() -> float:
 
 ## Firing rate the engine sound uses for the current smoothed speed.
 func engine_firing_hz() -> float:
-	return lerpf(engine_synth.idle_hz(), engine_synth.bank.max_hz() * 0.94, engine_speed)
+	return lerpf(engine_synth.idle_hz(), engine_synth.bank.top_hz * 0.94, engine_speed)
 
 func _update_grain_engine() -> void:
 	if engine_presence <= 0.0:

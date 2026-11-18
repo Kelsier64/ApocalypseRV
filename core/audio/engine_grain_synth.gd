@@ -1,45 +1,56 @@
 class_name EngineGrainSynth
 extends RefCounted
 ## Places recorded firing grains back to back at a requested firing rate.
-## Runs of consecutive grains from the recording are kept while they fit, so the
-## cylinder-to-cylinder unevenness of the source survives. Uses its own RNG.
+## The recording is followed grain by grain while it stays near the requested
+## rate. Where it drifts away, the next grain is the closest match in level,
+## brightness, rate and cylinder among a few random picks that were not played
+## recently, so splices stay smooth without repeating. Uses its own RNG.
 
-## Grains whose native rate lies within this ratio are eligible without a jump.
+## Grains whose native rate lies within this ratio are eligible for a jump.
 const MATCH_TOLERANCE := 0.05
-## A run continues while its next grain stays within this ratio of the target.
-const FOLLOW_TOLERANCE := 0.07
+## The recording keeps playing while its next grain stays within this ratio.
+const FOLLOW_TOLERANCE := 0.05
 const MAX_RESAMPLE := 0.25
 ## Throttle hysteresis between the coasting and the pulling grains.
 const PULL_ON := 0.55
 const PULL_OFF := 0.3
+## Random candidates compared at every jump.
+const JUMP_TRIES := 12
+## Grains played this recently cost extra, so a held rate does not cycle.
+const RECENT_GRAINS := 48
+## Each of these steps costs one unit at a jump.
+const LEVEL_STEP_DB := 2.0
+const BRIGHTNESS_STEP_DB := 2.0
+const KIND_COST := 1.5
+const CYLINDER_COST := 1.0
+const RECENT_COST := 4.0
+const CYLINDERS := 4
 
 var bank: EngineGrainBank
 var rng := RandomNumberGenerator.new()
 var grains_started := 0
+var jumps := 0
 var pulling := false
 
 var _pcm: PackedFloat32Array
-var _idle_hz := 0.0
 var _voice_grain := PackedInt32Array()
 var _voice_pos := PackedFloat32Array()
 var _voice_rate := PackedFloat32Array()
 var _last_grain := -1
+var _recent := PackedInt32Array()
+var _recent_index := 0
 
 
 func _init(grain_bank: EngineGrainBank) -> void:
 	bank = grain_bank
 	_pcm = bank.pcm()
-	var steady := 0
-	for i in range(bank.size()):
-		if bank.kinds[i] == EngineGrainBank.Kind.STEADY:
-			_idle_hz += bank.firing_hz[i]
-			steady += 1
-	_idle_hz = _idle_hz / steady if steady > 0 else bank.min_hz()
+	_recent.resize(RECENT_GRAINS)
+	_recent.fill(-1)
 
 
 ## Firing rate of the recorded idle.
 func idle_hz() -> float:
-	return _idle_hz
+	return bank.idle_hz
 
 
 ## Chooses between pulling and coasting grains with hysteresis on the throttle.
@@ -53,6 +64,7 @@ func reset() -> void:
 	_voice_pos.clear()
 	_voice_rate.clear()
 	_last_grain = -1
+	_recent.fill(-1)
 
 
 ## Renders frames of mono audio while the firing rate glides from its last value
@@ -102,28 +114,51 @@ func _start_grain(hz: float, offset_frames: float) -> void:
 	_voice_pos.append(offset_frames * rate)
 	_voice_rate.append(rate)
 	_last_grain = grain
+	_recent[_recent_index] = grain
+	_recent_index = (_recent_index + 1) % RECENT_GRAINS
 	grains_started += 1
 
 
 func _choose(hz: float) -> int:
 	var kind := EngineGrainBank.Kind.RISING if pulling else EngineGrainBank.Kind.FALLING
+	# The grain the recording would play next is the reference for a jump.
+	var reference := _last_grain
 	if _last_grain >= 0:
 		var next := bank.follows[_last_grain]
-		if next >= 0 and absf(bank.firing_hz[next] / hz - 1.0) < FOLLOW_TOLERANCE \
-				and _fits(bank.kinds[next], kind, hz):
-			return next
+		if next >= 0:
+			if absf(bank.firing_hz[next] / hz - 1.0) < FOLLOW_TOLERANCE and _fits(bank.kinds[next], kind):
+				return next
+			reference = next
 	var options := bank.candidates(hz, MATCH_TOLERANCE)
-	var fitting := PackedInt32Array()
-	for grain in options:
-		if _fits(bank.kinds[grain], kind, hz): fitting.append(grain)
-	if fitting.is_empty(): fitting = options
-	return fitting[rng.randi_range(0, fitting.size() - 1)]
+	if reference < 0 or options.size() == 1:
+		return options[rng.randi_range(0, options.size() - 1)]
+	jumps += 1
+	var best := options[0]
+	var best_cost := INF
+	for attempt in range(JUMP_TRIES):
+		var grain := options[rng.randi_range(0, options.size() - 1)]
+		var cost := _jump_cost(grain, reference, hz, kind)
+		if cost < best_cost:
+			best = grain
+			best_cost = cost
+	return best
 
 
-func _fits(grain_kind: int, wanted: int, hz: float) -> bool:
-	# Near idle the steady recording is the natural choice in either direction.
-	if hz < _idle_hz * 1.15: return grain_kind == EngineGrainBank.Kind.STEADY or grain_kind == wanted
-	return grain_kind == wanted
+func _jump_cost(grain: int, reference: int, hz: float, kind: int) -> float:
+	var cost := absf(bank.levels[grain] - bank.levels[reference]) / LEVEL_STEP_DB
+	cost += absf(bank.brightness[grain] - bank.brightness[reference]) / BRIGHTNESS_STEP_DB
+	cost += absf(log(bank.firing_hz[grain] / hz)) / MATCH_TOLERANCE
+	if not _fits(bank.kinds[grain], kind): cost += KIND_COST
+	var cylinder := bank.cylinders[_last_grain]
+	if cylinder >= 0 and bank.cylinders[grain] >= 0 and bank.cylinders[grain] != (cylinder + 1) % CYLINDERS:
+		cost += CYLINDER_COST
+	if grain in _recent: cost += RECENT_COST
+	return cost
+
+
+## Steady grains (the idle and the tops of the recorded revs) fit either way.
+func _fits(grain_kind: int, wanted: int) -> bool:
+	return grain_kind == EngineGrainBank.Kind.STEADY or grain_kind == wanted
 
 
 func _drop_finished() -> void:

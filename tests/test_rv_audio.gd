@@ -171,8 +171,11 @@ func _run() -> void:
 func _check_grain_synth(bank: EngineGrainBank) -> void:
 	var count := bank.size()
 	check(count > 0 and bank.periods.size() == count and bank.fades.size() == count and bank.lengths.size() == count
-		and bank.firing_hz.size() == count and bank.kinds.size() == count and bank.follows.size() == count,
+		and bank.firing_hz.size() == count and bank.kinds.size() == count and bank.follows.size() == count
+		and bank.levels.size() == count and bank.brightness.size() == count and bank.cylinders.size() == count,
 		"Every grain has a complete record")
+	check(bank.idle_hz >= bank.min_hz() and bank.top_hz > bank.idle_hz * 2.0 and bank.top_hz <= bank.max_hz(),
+		"The bank spans from its idle to a raised top rate")
 	var pcm := bank.pcm()
 	var valid := true
 	for i in range(count):
@@ -193,6 +196,7 @@ func _check_grain_synth(bank: EngineGrainBank) -> void:
 	var fast_grains := synth.grains_started - idle_grains
 	var expected_ratio := fast_hz / synth.idle_hz()
 	check(absf(float(fast_grains) / idle_grains / expected_ratio - 1.0) < 0.15, "Firings per second follow the requested rate")
+	check(synth.jumps * 2 < fast_grains, "A held raised rate follows the recording between splices")
 	var peak := 0.0
 	for sample in idle + fast: peak = maxf(peak, absf(sample))
 	check(peak > 0.0 and peak < 1.0, "Overlapping grains stay within full scale")
