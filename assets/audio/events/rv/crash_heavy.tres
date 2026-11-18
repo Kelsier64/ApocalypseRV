@@ -11,4 +11,4 @@ samples = Array[AudioStream]([ExtResource("3"), ExtResource("4")])
 volume_db = -2.0
 pitch_variation = 0.04
 attenuation = ExtResource("2")
-cooldown_seconds = 0.12
+cooldown_seconds = 0.8

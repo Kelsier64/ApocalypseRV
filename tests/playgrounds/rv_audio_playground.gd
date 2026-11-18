@@ -21,6 +21,9 @@ var outside := true
 var cue_side := 1.0
 var message := ""
 var previous_hud_hidden := false
+# Playground-owned copies, so holding a key is not undone by the RV's own contact speeds.
+var held_slip: SoundLoop
+var held_scrape: SoundLoop
 
 
 func _ready() -> void:
@@ -43,8 +46,9 @@ func _ready() -> void:
 	rv.add_child(warning)
 	_position_warning()
 	instructions.position = Vector2(24, 24)
-	# Runs after the RV audio node, so held contact loops override its own levels.
-	process_priority = 100
+	var audio := rv.get_node("Audio")
+	held_slip = audio._loop(audio.tire_player.stream, Vector3.ZERO, audio.CONTACT_DB)
+	held_scrape = audio._loop(audio.scrape_player.stream, Vector3.ZERO, audio.CONTACT_DB)
 
 
 func _exit_tree() -> void:
@@ -59,8 +63,8 @@ func _process(_delta: float) -> void:
 	var grains: AudioStreamPlayer3D = audio.engine_grains
 	var playback: AudioStreamGeneratorPlayback = grains.get_stream_playback() if grains.playing else null
 	var dropouts := playback.get_skips() if playback != null else 0
-	if Input.is_key_pressed(KEY_B): audio.tire_player.set_level(1.0)
-	if Input.is_key_pressed(KEY_N): audio.scrape_player.set_level(1.0)
+	held_slip.set_level(1.0 if Input.is_key_pressed(KEY_B) else 0.0)
+	held_scrape.set_level(1.0 if Input.is_key_pressed(KEY_N) else 0.0)
 	instructions.text = (
 		"RV AUDIO PILOT   |   %s   |   %d RPM   |   %d engine dropouts\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +

@@ -18,7 +18,7 @@ var _offsets: Dictionary[AudioStreamPlayer3D, Vector3] = {}
 ## Current muffle per bus name, 0 open to 1 sealed shell.
 var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0}
 ## Engine time in msec each event with a cooldown last played, by instance id
-## so the autoload never holds event resources until exit.
+## so the autoload holds no references to the events themselves.
 var _last_played: Dictionary[int, int] = {}
 
 
@@ -140,6 +140,6 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 
 
 func _exit_tree() -> void:
-	# Quitting with pooled voices still mixing could crash Godot on shutdown.
+	# Stop pooled voices before shutdown rather than leaving them mixing.
 	for voice in _voices:
 		if is_instance_valid(voice): voice.stop()

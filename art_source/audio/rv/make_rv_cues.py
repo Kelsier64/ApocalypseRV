@@ -4,6 +4,7 @@ Every input is a 44.1 kHz mono PCM16 WAV named after its key in SOURCES, decoded
 from the Freesound preview listed in assets/audio/rv/README.md. Variants of one
 event are matched in loudness, then the loudest is set to the peak target. The
 two contact loops have their slow level swings flattened before the seam.
+Cuts begin at the attack and get only a 1 ms fade-in.
 """
 
 import argparse
@@ -12,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from make_pilot_wavs import RATE, fade_one_shot, loop_engine, read_clip, write_clip
+from make_pilot_wavs import RATE, loop_engine, read_clip, write_clip
 
 # Output file: (source, start, end) in seconds. Files sharing a prefix before the
 # last underscore form one event and are loudness matched.
@@ -49,14 +50,17 @@ CUTS = {
     "crash_light_b": ("collide", 0.0, 0.90),
     "crash_medium_a": ("clank_crash", 0.0, 0.50),
     "crash_medium_b": ("metal_impact", 0.0, 2.20),
-    "crash_heavy_a": ("crash", 0.0, 4.40),
+    "crash_heavy_a": ("crash", 0.0, 2.40),
     "crash_heavy_b": ("crash_glass", 0.0, 2.60),
 }
 LOOPS = {
-    "tire_slip": ("squeal", 3.0, 9.0),
+    "tire_slip": ("squeal_4", 3.0, 13.5),
     "hull_scrape": ("sheet_scrape", 0.30, 2.55),
 }
 PEAK_DB = -1.0
+# Cuts start at the attack, so the fade-in stays short enough to keep it.
+FADE_IN = 0.001
+FADE_OUT = 0.04
 LEVEL_WINDOW = 0.3
 
 
@@ -82,7 +86,8 @@ def main():
     for name, (source, start, end) in CUTS.items():
         audio = read_clip(args.source / f"{source}.wav", start, end)
         audio -= np.mean(audio)
-        fade_one_shot(audio)
+        audio[:round(FADE_IN * RATE)] *= np.linspace(0.0, 1.0, round(FADE_IN * RATE))
+        audio[-round(FADE_OUT * RATE):] *= np.linspace(1.0, 0.0, round(FADE_OUT * RATE))
         events.setdefault(name.rsplit("_", 1)[0], []).append((name, audio))
     for variants in events.values():
         reference = np.mean([attack_rms(audio) for _, audio in variants])

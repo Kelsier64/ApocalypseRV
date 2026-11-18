@@ -170,7 +170,7 @@ func _run() -> void:
 		check(not layer.playing, "Road loops stay silent while the wheels are off the ground or parked")
 
 	vehicle.queue_free()
-	# Quitting while pooled voices still mix occasionally crashes Godot on shutdown.
+	# Silence pooled voices before quitting; see the exit-crash row in docs/plans/README.md.
 	for voice in sfx._voices: voice.stop()
 	await process_frame
 	await process_frame

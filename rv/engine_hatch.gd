@@ -94,7 +94,8 @@ func _physics_process(delta: float) -> void:
 		moving = false
 		opened = requested_open
 		bay().hatch_open = opened
-		bay().get_parent().feedback(LATCH_SOUND, bay().get_parent().to_local(global_position))
+		# Only closing ends on the latch; a fully open hatch just stops.
+		if not opened: bay().get_parent().feedback(LATCH_SOUND, bay().get_parent().to_local(global_position))
 
 func set_open(value: bool) -> void:
 	# Stable-state restoration only. Interactive operation always animates.
