@@ -125,7 +125,7 @@ RakerPoseModifier 使用 SkeletonModifier3D 在動畫後依實際臉向修正三
 
 ## 3. 共用契約
 
-共用音效由 [Sfx](core/audio/sfx.gd) 根據目前聆聽的 viewport 播放 3D 一次性事件。POI 啟用自己的 `World3D` 時，由 [PoiInstanceManager](world/instances/poi_instance_manager.gd) 切換聆聽者，聲源池只接受同一世界的來源。音檔抽選和音高使用音效服務自己的亂數。混音由 [default_bus_layout.tres](default_bus_layout.tres) 定義，音量偏好由 GameSettings 套用。
+共用音效由 [Sfx](core/audio/sfx.gd) 根據目前聆聽的 viewport 播放 3D 一次性事件。POI 啟用自己的 `World3D` 時，由 [PoiInstanceManager](world/instances/poi_instance_manager.gd) 切換聆聽者，聲源池只接受同一世界的來源。音檔抽選和音高使用音效服務自己的亂數。事件預設依播放位置是否在 RV 車廂內走 `Cabin` 或 `Exterior`，`Sfx` 依聆聽位置雙向套用車殼隔音。混音由 [default_bus_layout.tres](default_bus_layout.tres) 定義，音量偏好由 GameSettings 套用。
 
 - [groups.gd](core/groups.gd)：rv、chassis、items、monster_damageable、crafting_stations、player、monsters。Item 只加入 items，不加入 monster_damageable；正式程式用 `Groups.*`，部分測試用原字串釘住契約。
 - [item_names.gd](core/item_names.gd)：物品、背包、配方和材料庫名稱常數。

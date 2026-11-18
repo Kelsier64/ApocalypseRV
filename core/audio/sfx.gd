@@ -82,7 +82,9 @@ func _available_voice() -> AudioStreamPlayer3D:
 	if not is_instance_valid(_pool):
 		_pool = Node3D.new()
 		_pool.name = "SpatialOneShots"
-		_listener.add_child(_pool)
+		# Under the root viewport the pool hangs from this autoload, because a scene
+		# can play sounds from _ready while the root is still adding children.
+		(self if _listener == get_tree().root else _listener).add_child(_pool)
 	var voice := AudioStreamPlayer3D.new()
 	_pool.add_child(voice)
 	_voices.append(voice)

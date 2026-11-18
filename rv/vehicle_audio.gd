@@ -18,6 +18,8 @@ const ENGINE_BUFFER_SECONDS := 0.08
 const ENGINE_POSITION := Vector3(0, 0, -5.3)
 # Audio-only shift: load drops out and the firing rate glides to the new gear.
 const SHIFT_SECONDS := 0.3
+# Per-second response of the firing rate during a shift, a time constant near 0.3 s.
+const SHIFT_PITCH_RESPONSE := 3.5
 # Rolling loops per RVTireModel.Surface. Asphalt and rough come from an in-cab recording.
 const ROAD_LOOPS := [
 	"res://assets/audio/rv/road_asphalt.wav",
@@ -254,10 +256,10 @@ func _update_engine(delta: float, rpm: float) -> void:
 	shift_left = maxf(0.0, shift_left - delta)
 	if running:
 		var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
-		# Revs fall with some inertia, and glide across a gear change.
-		var pitch_response := 7.0 if shift_left > 0.0 else (12.0 if fraction > engine_speed else 6.5)
+		# Revs fall with some inertia, and glide more slowly across a gear change.
+		var pitch_response := SHIFT_PITCH_RESPONSE if shift_left > 0.0 else (12.0 if fraction > engine_speed else 6.5)
 		engine_speed = lerpf(engine_speed, fraction, 1.0 - exp(-delta * pitch_response))
-		var load_target := rv.throttle_input * _shift_load_scale()
+		var load_target := rv.engine_pedal() * _shift_load_scale()
 		engine_load = lerpf(engine_load, load_target, 1.0 - exp(-delta * 13.0))
 	elif engine_presence == 0.0:
 		engine_speed = 0.0
@@ -287,6 +289,7 @@ func _update_grain_engine() -> void:
 		engine_synth.reset()
 		_engine_hz = engine_firing_hz()
 		_engine_gain = 0.0
+	engine_synth.set_throttle(engine_load)
 	var queued := _engine_capacity - _engine_playback.get_frames_available()
 	var frames := int(ENGINE_BUFFER_SECONDS * MIX_RATE) - queued
 	if frames <= 0: return

@@ -88,7 +88,7 @@ func _run() -> void:
 	listener.queue_free()
 	await _settle_mix(sfx)
 	check(door.toggle_leaf(0) == "Door opening", "Production door opens in the audio fixture")
-	var pool := root.get_node_or_null("SpatialOneShots")
+	var pool := sfx.get_node_or_null("SpatialOneShots")
 	check(pool != null and _playing(pool, door_open.samples[0]), "Opening the door selects its latch release recording")
 	for i in range(100):
 		if is_equal_approx(door.angles[0], door.targets[0]): break
@@ -113,15 +113,30 @@ func _run() -> void:
 		audio._update_engine(step, Chassis.ENGINE_MAX_RPM)
 	var revved_hz: float = audio.engine_firing_hz()
 	check(revved_hz > idle_hz * 2.0, "Revving raises the firing rate well above idle")
+	var revved_speed: float = audio.engine_speed
+	var half_shift := ceili(audio.SHIFT_SECONDS * 0.5 / step)
+	for i in range(half_shift):
+		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
+	var plain_fall_hz: float = audio.engine_firing_hz()
+	audio.engine_speed = revved_speed
 	audio.play_cue("gear", Vector3(-0.1, 1, -4))
 	check(pool != null and _playing_any(pool, load(audio.GEAR_SHIFT).samples), "Changing gear plays a lever recording")
-	for i in range(ceili(audio.SHIFT_SECONDS * 0.5 / step)):
+	for i in range(half_shift):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
 	check(audio._shift_load_scale() < 0.25, "Load drops out halfway through a shift")
-	check(audio.engine_firing_hz() < revved_hz and audio.engine_firing_hz() > idle_hz, "The firing rate glides instead of jumping to the new gear")
+	check(audio.engine_firing_hz() > plain_fall_hz, "Revs glide down more slowly across a gear change than when lifting off")
 	for i in range(ceili(audio.SHIFT_SECONDS / step)):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
 	check(is_equal_approx(audio._shift_load_scale(), 1.0), "Load returns after the shift")
+	# Free revving in neutral goes through the real pedal path and pulls the engine.
+	chassis.set_gear(0)
+	chassis.allow_test_controls = true
+	chassis.control_override = {"throttle": 1.0}
+	for i in range(Engine.physics_ticks_per_second):
+		await physics_frame
+	check(chassis.engine_pedal() > audio.engine_synth.PULL_ON and audio.engine_synth.pulling,
+		"Revving in neutral plays the pulling grains")
+	chassis.control_override = {}
 	audio.was_running = true
 	check(chassis.set_engine_running(false), "The fixture shuts down through the production engine control")
 	audio._process(0.025)

@@ -230,6 +230,11 @@ func steering_limit(longitudinal_speed: float) -> float:
 	var speed_factor := 1.0 / (1.0 + pow(longitudinal_speed / profile.steering_speed, 2.0))
 	return profile.max_steering * lerpf(profile.high_speed_steering_ratio, 1.0, speed_factor)
 
+## Accelerator the engine is answering: the drive throttle in gear, or the free-rev
+## pedal in neutral or with the handbrake on.
+func engine_pedal() -> float:
+	return maxf(throttle_input, _free_rev_pedal)
+
 ## World field the tyres read road surfaces from; null outside a generated world.
 func terrain_field() -> WorldField:
 	return _terrain_field

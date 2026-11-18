@@ -42,6 +42,12 @@ func idle_hz() -> float:
 	return _idle_hz
 
 
+## Chooses between pulling and coasting grains with hysteresis on the throttle.
+func set_throttle(throttle: float) -> void:
+	if throttle > PULL_ON: pulling = true
+	elif throttle < PULL_OFF: pulling = false
+
+
 func reset() -> void:
 	_voice_grain.clear()
 	_voice_pos.clear()
@@ -52,8 +58,7 @@ func reset() -> void:
 ## Renders frames of mono audio while the firing rate glides from its last value
 ## to target_hz. throttle is 0 when coasting and 1 at full load.
 func render(frames: int, start_hz: float, target_hz: float, throttle: float) -> PackedFloat32Array:
-	if throttle > PULL_ON: pulling = true
-	elif throttle < PULL_OFF: pulling = false
+	set_throttle(throttle)
 	var out := PackedFloat32Array()
 	out.resize(frames)
 	if _voice_grain.is_empty():

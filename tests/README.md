@@ -33,6 +33,7 @@
 | [promo_world](test_promo_world.gd) | 錄影擺場、錄影面板暫停、自由鏡頭與跟拍的操作權、跟拍不隨目標翻滾、運鏡曲線等速且不倒退、路徑存讀、遭遇、設備與重錄。預設檢查代表鏡頭，完整逐鏡參數見[錄影指南](../docs/guides/promo-capture.md) |
 | [rv_structure_modules](test_rv_structure_modules.gd)、[rv_braking](test_rv_braking.gd) | 車體結構／支撐與真實輪胎煞車 |
 | [rv_handling](test_rv_handling.gd)、[rv_rollover](test_rv_rollover.gd) | 合成輪胎力、柏油滑移、側坡翻車、屋頂車損與倒置離座 |
+| [rv_audio](test_rv_audio.gd) | 音效事件、Sfx 聲源池與 POI 世界、亂數隔離、雙向車殼隔音、顆粒引擎、換檔過程與路噪 |
 | [rv_crash_injury](test_rv_crash_injury.gd)、[recovery_jack](test_recovery_jack.gd) | 乘員傷害、事件去重、固定種子斷肢、倒置快照與千斤頂兩段救援 |
 | [moving_rv_climbing](test_moving_rv_climbing.gd) | 玩家與 Raker 的移動 RV 攀爬 |
 | [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
