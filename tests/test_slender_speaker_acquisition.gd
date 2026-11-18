@@ -254,7 +254,7 @@ func check_single_hand_capture(side: String) -> void:
 	giant._set_phase(SlenderSpeaker.Phase.PATROL)
 	var finger := giant._bone_position(giant._hand_contact_bones(side)[0])
 	giant._hand_hits_player(finger, selected, .13, side)
-	check(not player.is_executing() and not giant.execution_music.playing, "Idle hand contact cannot start capture or execution music")
+	check(not player.is_executing(), "Idle hand contact cannot start capture")
 	giant._set_phase(SlenderSpeaker.Phase.GRAB)
 	giant.phase_elapsed = .5 + 1.0 / 60.0
 	for hand in ["R", "L"]:
@@ -323,7 +323,7 @@ func check_independent_finger_contact(side: String) -> void:
 			giant._previous_palms[hand] = giant._grab_palm_position(hand)
 			giant._remember_grab_hand(hand)
 		giant._advance_grab()
-		check(player.is_executing() and giant.phase == SlenderSpeaker.Phase.LIFT and giant.execution_music.playing,
+		check(player.is_executing() and giant.phase == SlenderSpeaker.Phase.LIFT and giant.patrol_music.playing,
 			side + " clear palm captures in the same tick despite a simultaneous separate finger obstruction")
 		check(giant._grab_hands_touched.has(side) and capture_path_clear() and is_instance_valid(blocker),
 			side + " capture uses its real independently clear probe while the finger obstruction stays physical")
@@ -487,6 +487,12 @@ func run() -> void:
 	world.add_child(player)
 	player.set_physics_process(false)
 	await frames()
+	var music := giant.patrol_music
+	var song := music.stream as AudioStreamWAV
+	check(music.playing and song != null and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
+		and absf(song.loop_end - song.get_length() * song.mix_rate) <= 1.0,
+		"Head loudspeaker loops the whole Für Elise file from spawn")
+	check(music.max_distance >= RoadSpawns.SAFE_DISTANCE, "Head loudspeaker is audible wherever the giant can stay loaded")
 	reset_player(Vector3(0, -.249, -2.1))
 	await frames()
 	settle_pose()
@@ -504,6 +510,7 @@ func run() -> void:
 		report_pose("GROUND_LIFT_CONTINUITY", ground_metrics)
 		check(player.is_player_dead and absf(capture_elapsed - 3.8) < .018,
 			"Capture-to-crush duration includes a two-second HOLD and finishes at 3.8 seconds within one physics frame")
+		check(giant.patrol_music.playing, "Für Elise keeps playing through capture, lift, hold and crush")
 	player.ragdoll_control.stop()
 	for part in get_nodes_in_group("player_detached_parts"): part.queue_free()
 	await frames()

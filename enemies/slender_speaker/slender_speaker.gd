@@ -8,6 +8,7 @@ const ParkedAttack := preload("res://enemies/slender_speaker/slender_speaker_par
 const Encounter := preload("res://enemies/slender_speaker/slender_speaker_encounter.gd")
 const HeadLook := preload("res://enemies/slender_speaker/slender_speaker_look.gd")
 const FootContact := preload("res://enemies/slender_speaker/slender_speaker_foot_contact.gd")
+const PATROL_MUSIC := "res://assets/audio/slender_speaker/patrol.wav"
 @export var settings: SlenderSpeakerSettings = SlenderSpeakerSettings.new()
 var _encounter := Encounter.new()
 var _observation: Dictionary = {}
@@ -69,8 +70,6 @@ var _grab_blocked := false
 var _grab_blocking_hits: Array[Dictionary] = []
 var _execution_player: Node3D
 var _execution_resolved := false
-var _music_fade := 0.0
-var _music_tail := false
 var _scan_direction := 1.0
 var _last_target_refresh := 0.0
 var _recovery_source: Phase = Phase.CRUSH
@@ -136,8 +135,9 @@ const REPOSITION_MAX_RADIUS := 16.0
 @onready var visual: Node3D = get_node_or_null("BodyMesh")
 @onready var execution_anchor: Node3D = get_node_or_null("ExecutionAnchor")
 @onready var execution_focus: Node3D = get_node_or_null("ExecutionFocus")
+## The head loudspeaker: a garbage-truck Für Elise that loops for the giant's whole life,
+## including capture and execution.
 @onready var patrol_music: AudioStreamPlayer3D = get_node_or_null("PatrolMusic")
-@onready var execution_music: AudioStreamPlayer3D = get_node_or_null("ExecutionMusic")
 
 func _ready() -> void:
 	enable_boarding_visual = false
@@ -148,21 +148,20 @@ func _ready() -> void:
 	last_seen_position = global_position
 	if nav_agent: nav_agent.path_height_offset = 0.0
 	if nav_agent != null and giant_navigation_map.is_valid(): nav_agent.set_navigation_map(giant_navigation_map)
-	for pair in [[patrol_music, "res://assets/audio/slender_speaker/patrol.wav"], [execution_music, "res://assets/audio/slender_speaker/execution.wav"]]:
-		if pair[0] != null and ResourceLoader.exists(pair[1]):
-			var stream: AudioStream = load(pair[1]).duplicate()
-			if stream is AudioStreamWAV: stream.loop_mode = AudioStreamWAV.LOOP_FORWARD if pair[0] == patrol_music else AudioStreamWAV.LOOP_DISABLED
-			pair[0].stream = stream
+	if patrol_music != null and ResourceLoader.exists(PATROL_MUSIC):
+		var stream: AudioStream = load(PATROL_MUSIC).duplicate()
+		if stream is AudioStreamWAV: stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		patrol_music.stream = stream
+		# Audible wherever the giant can exist: actors farther than this from the stream anchor are removed.
+		patrol_music.max_distance = RoadSpawns.SAFE_DISTANCE
 	if patrol_music != null and patrol_music.stream != null: patrol_music.play()
-	if execution_music != null: execution_music.finished.connect(_on_execution_music_finished)
 	_sample("idle_play", 0.0)
 
 func _enter_tree() -> void:
 	if is_node_ready(): _resume_patrol_after_transfer.call_deferred()
 
 func _resume_patrol_after_transfer() -> void:
-	if is_inside_tree() and patrol_music != null and patrol_music.stream != null and not is_instance_valid(_execution_player):
-		patrol_music.volume_db = -8.0
+	if is_inside_tree() and patrol_music != null and patrol_music.stream != null and not patrol_music.playing:
 		patrol_music.play()
 
 func set_giant_navigation_map(map: RID) -> void:
@@ -247,7 +246,6 @@ func _physics_process(delta: float) -> void:
 		_refresh_sight()
 		_sense_remaining = 0.1
 	_update_encounter(delta)
-	_update_music(delta)
 	var desired := Vector3.ZERO
 	match phase:
 		Phase.PATROL:
@@ -1876,9 +1874,6 @@ func _start_execution() -> bool:
 		var control: Node = _execution_player.grab_control
 		if not control.released.is_connected(_on_player_released): control.released.connect(_on_player_released)
 	# This event follows successful ownership, in the same physics frame.
-	_music_tail = false
-	_music_fade = 0.1
-	if execution_music != null and execution_music.stream != null: execution_music.play(0.0)
 	_set_phase(Phase.LIFT)
 	return true
 
@@ -1933,7 +1928,6 @@ func _advance_execution() -> void:
 		_execution_player.complete_execution(self)
 		_disconnect_player()
 		_execution_player = null
-		_music_tail = true
 		_set_phase(Phase.RECOVER)
 
 func _on_player_released(reason: String) -> void:
@@ -1952,18 +1946,11 @@ func _cancel_execution(reason: String) -> void:
 	_disconnect_player()
 	_execution_player = null
 	if is_instance_valid(player) and player.has_method("cancel_execution"): player.cancel_execution(self, reason)
-	_music_tail = false
-	_music_fade = 0.0
-	if execution_music != null: execution_music.stop()
-	if patrol_music != null and patrol_music.is_inside_tree() and patrol_music.stream != null:
-		patrol_music.volume_db = -8.0
-		if not patrol_music.playing: patrol_music.play()
 
 func _exit_tree() -> void:
 	_cancel_execution("owner_removed")
 	reset_after_restore()
 	if patrol_music != null: patrol_music.stop()
-	if execution_music != null: execution_music.stop()
 
 func _focus_position() -> Vector3:
 	return _bone_position("socket_focus") if visual != null and visual.get("available") == true else global_position + Vector3.UP * 13.85
@@ -2084,22 +2071,5 @@ func _on_hitbox_body_entered(_body: Node3D) -> void:
 	# accepts only the chassis/CharacterBody's actual collision callbacks.
 	pass
 
-func _update_music(delta: float) -> void:
-	if _music_fade > 0.0:
-		_music_fade = maxf(0.0, _music_fade - delta)
-		if patrol_music != null:
-			patrol_music.volume_db = linear_to_db(maxf(0.0001, _music_fade / 0.1)) - 8.0
-			if _music_fade <= 0.0: patrol_music.stop()
-
 func _update_audio_positions() -> void:
-	var position_world := _focus_position()
-	if patrol_music != null: patrol_music.global_position = position_world
-	if execution_music != null: execution_music.global_position = position_world
-
-func _on_execution_music_finished() -> void:
-	if not _music_tail: return
-	_music_tail = false
-	if execution_music != null: execution_music.stop()
-	if patrol_music != null and patrol_music.is_inside_tree() and patrol_music.stream != null:
-		patrol_music.volume_db = -8.0
-		patrol_music.play()
+	if patrol_music != null: patrol_music.global_position = _focus_position()

@@ -39,7 +39,7 @@ var last_phase := -1
 var phase_seen: Dictionary = {}
 var execution_seen := false
 var death_seen := false
-var execution_music_seen := false
+var music_during_execution := false
 var max_player_height := 0.0
 var max_giant_speed := 0.0
 var vehicle_start := Vector3.ZERO
@@ -239,7 +239,7 @@ func select_mode(next: int) -> bool:
 	phase_seen.clear()
 	execution_seen = false
 	death_seen = false
-	execution_music_seen = false
+	music_during_execution = false
 	max_player_height = 0.0
 	max_giant_speed = 0.0
 	vehicle_distance = 0.0
@@ -411,7 +411,7 @@ func _physics_process(delta: float) -> void:
 		execution_seen = execution_seen or player.is_executing()
 		death_seen = death_seen or player.is_player_dead
 		max_player_height = maxf(max_player_height, player.global_position.y)
-		if player.is_executing(): execution_music_seen = execution_music_seen or giant.execution_music.playing
+		if player.is_executing(): music_during_execution = music_during_execution or giant.patrol_music.playing
 	if is_instance_valid(rv):
 		vehicle_distance = maxf(vehicle_distance, rv.global_position.distance_to(vehicle_start))
 		var steering := .35 if mode == 3 and elapsed > 4.0 and elapsed < 10.0 else 0.0
@@ -477,12 +477,12 @@ func _finish_check() -> void:
 	# before publishing its manifest or terminating the fixture.
 	while capture_pending: await get_tree().process_frame
 	var valid := NavigationServer3D.map_get_iteration_id(giant_map) > 0
-	if mode == 1: valid = valid and execution_seen and death_seen and execution_music_seen and max_player_height > 9.0
+	if mode == 1: valid = valid and execution_seen and death_seen and music_during_execution and max_player_height > 9.0
 	elif mode in [2, 3]: valid = valid and vehicle_distance > 20.0 and giant_distance > 10.0 and max_giant_speed > 8.0 and max_giant_speed <= giant.settings.chase_speed + .01 and phase_seen.has(int(SlenderSpeaker.Phase.CHASE)) and fast_yaw_rate <= 45.01 and near_yaw_rate <= 90.01
 	elif mode == 4: valid = valid and _broken_panels() == broken_before + 1
 	elif mode == 5: valid = valid and _broken_panels() == broken_before + 1 and moving_attack_distance > 1.0 and moving_recovery_distance > 1.0
 	elif mode == 8:
-		valid = valid and execution_seen and death_seen and execution_music_seen and _broken_panels() == broken_before + 1 and vehicle_body_contacts == 0 and vehicle_distance < .25
+		valid = valid and execution_seen and death_seen and music_during_execution and _broken_panels() == broken_before + 1 and vehicle_body_contacts == 0 and vehicle_distance < .25
 		print("SLENDER_PARKED_GRAB_CHECK ", JSON.stringify({"valid": valid, "panels_removed": _broken_panels() - broken_before, "execution": execution_seen, "death": death_seen, "blocked_hands": giant._grab_blocking_hits}))
 	elif mode == 7:
 		valid = valid and chassis_hits >= 2 and _intact_panels() > 0 and vehicle_body_contacts == 0
@@ -494,7 +494,7 @@ func _finish_check() -> void:
 	if mode == 6:
 		valid = valid and peak_follow_braking <= 2.01 and first_braking_gap > 8.0
 		print("SLENDER_GENTLE_APPROACH ", JSON.stringify({"peak_braking_mps2": peak_follow_braking, "first_braking_gap_m": first_braking_gap}))
-	print("SLENDER_RUNTIME_CHECK ", JSON.stringify({"mode": mode, "valid": valid, "execution": execution_seen, "death": death_seen, "execution_music": execution_music_seen, "max_player_height": max_player_height, "max_giant_speed": max_giant_speed, "fast_yaw_deg_per_sec": fast_yaw_rate, "near_yaw_deg_per_sec": near_yaw_rate, "vehicle_distance": vehicle_distance, "giant_distance": giant_distance, "broken_panels": _broken_panels(), "phase_seen": phase_seen.keys(), "capture_frames": captured_frames, "vehicle_body_contacts": vehicle_body_contacts, "moving_attack_distance": moving_attack_distance, "moving_recovery_distance": moving_recovery_distance}))
+	print("SLENDER_RUNTIME_CHECK ", JSON.stringify({"mode": mode, "valid": valid, "execution": execution_seen, "death": death_seen, "music_during_execution": music_during_execution, "max_player_height": max_player_height, "max_giant_speed": max_giant_speed, "fast_yaw_deg_per_sec": fast_yaw_rate, "near_yaw_deg_per_sec": near_yaw_rate, "vehicle_distance": vehicle_distance, "giant_distance": giant_distance, "broken_panels": _broken_panels(), "phase_seen": phase_seen.keys(), "capture_frames": captured_frames, "vehicle_body_contacts": vehicle_body_contacts, "moving_attack_distance": moving_attack_distance, "moving_recovery_distance": moving_recovery_distance}))
 	if capture_requested:
 		var file := FileAccess.open(capture_directory.path_join("manifest.json"), FileAccess.WRITE)
 		if file != null:

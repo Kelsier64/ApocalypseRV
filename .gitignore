@@ -25,3 +25,8 @@
 # Python bytecode from build scripts
 __pycache__/
 *.pyc
+
+# REAPER work files for music sources (renders, backups, recorded media)
+/art_source/music/**/Backups/
+/art_source/music/**/Media/
+/art_source/music/**/renders/
