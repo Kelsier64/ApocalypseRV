@@ -11,12 +11,20 @@ const DEFAULTS := {
 	"shadow_trim": 0.0, "saturation": 1.0,
 	"sensitivity": 1.0, "invert_y": false, "walk_fov": 75.0,
 	"drive_fov": 80.0, "master_volume": 1.0,
+	"music_volume": 1.0, "effects_volume": 1.0, "ambience_volume": 1.0,
 }
 const RANGES := {
 	"render_scale": Vector2(0.5, 1.0), "shadow_trim": Vector2(-0.5, 1.5),
 	"saturation": Vector2(0.0, 1.5),
 	"sensitivity": Vector2(0.25, 2.0), "walk_fov": Vector2(60.0, 100.0),
 	"drive_fov": Vector2(60.0, 100.0), "master_volume": Vector2(0.0, 1.0),
+	"music_volume": Vector2(0.0, 1.0), "effects_volume": Vector2(0.0, 1.0),
+	"ambience_volume": Vector2(0.0, 1.0),
+}
+const AUDIO_BUSES := {
+	"music_volume": [&"Music"],
+	"effects_volume": [&"Effects", &"UI"],
+	"ambience_volume": [&"Ambience"],
 }
 const INPUT_KEYS := ["sensitivity", "invert_y", "walk_fov", "drive_fov"]
 const QUALITY_KEYS := ["render_mode", "render_scale", "aa", "shadow_quality", "fog_quality"]
@@ -70,7 +78,7 @@ func get_setting(key: StringName) -> Variant:
 
 func _section(key: String) -> String:
 	if key in INPUT_KEYS: return "input"
-	if key == "master_volume": return "audio"
+	if key == "master_volume" or AUDIO_BUSES.has(key): return "audio"
 	return "display"
 
 func _valid(key: String, value: Variant) -> bool:
@@ -208,6 +216,13 @@ func _apply_master_audio() -> void:
 func _apply_global(changed: String = "") -> void:
 	if changed.is_empty() or changed == "max_fps": Engine.max_fps = int(values.max_fps)
 	if changed.is_empty() or changed == "master_volume": _apply_master_audio()
+	for key: String in AUDIO_BUSES:
+		if not changed.is_empty() and changed != key: continue
+		var volume := float(values[key])
+		for bus_name: StringName in AUDIO_BUSES[key]:
+			var bus := AudioServer.get_bus_index(bus_name)
+			AudioServer.set_bus_mute(bus, volume <= 0.0)
+			AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(0.0001, volume)))
 	if DisplayServer.get_name() != "headless":
 		if _preview.is_empty() and (changed.is_empty() or changed == "window_mode"):
 			var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if int(values.window_mode) == 1 else DisplayServer.WINDOW_MODE_WINDOWED

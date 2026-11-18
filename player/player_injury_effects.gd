@@ -45,6 +45,7 @@ func _ready() -> void:
 	add_child(_shade)
 	_shade.hide()
 	_tone = AudioStreamPlayer.new()
+	_tone.bus = &"Effects"
 	add_child(_tone)
 	set_process(false)
 
@@ -158,15 +159,16 @@ func set_consciousness_muffle(pressure: float) -> void:
 	if _muffle == null:
 		_muffle = AudioEffectLowPassFilter.new()
 		_muffle.resonance = 0.5
-		AudioServer.add_bus_effect(0, _muffle)
+		AudioServer.add_bus_effect(AudioServer.get_bus_index(&"World"), _muffle)
 	# The shallow filter softens environmental detail while the ringing is audible.
 	_muffle.cutoff_hz = lerpf(22000.0, 950.0, smoothstep(0.10, 1.0, pressure))
 
 func _clear_muffle() -> void:
 	if _muffle == null: return
-	for index in AudioServer.get_bus_effect_count(0):
-		if AudioServer.get_bus_effect(0, index) == _muffle:
-			AudioServer.remove_bus_effect(0, index)
+	var bus := AudioServer.get_bus_index(&"World")
+	for index in AudioServer.get_bus_effect_count(bus):
+		if AudioServer.get_bus_effect(bus, index) == _muffle:
+			AudioServer.remove_bus_effect(bus, index)
 			break
 	_muffle = null
 

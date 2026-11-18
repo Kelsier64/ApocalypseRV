@@ -1,4 +1,5 @@
-extends "res://equipment/rv_panel.gd"
+class_name RVDoor
+extends RVStructurePanel
 ## Door leaf collision and damage belong to the fixed structure frame.
 @export var leaf_count: int = 1
 @export var leaf_width: float = 1.18
@@ -57,7 +58,7 @@ func _physics_process(delta: float) -> void:
 			get_connected_rv().feedback("blocked", position)
 			continue
 		angles[index] = next
-		if is_equal_approx(next, targets[index]): get_connected_rv().feedback("mechanical", position)
+		if is_equal_approx(next, targets[index]): _play_motion(index, not is_zero_approx(next), false)
 	_sync_leaves()
 
 func swing_blocker(index: int, start: float, finish: float) -> String:
@@ -106,8 +107,13 @@ func toggle_leaf(index: int) -> String:
 	blocked_message = ""
 	targets[index] = goal
 	open_requested[index] = opening
-	get_connected_rv().feedback("mechanical", position)
+	_play_motion(index, opening, true)
 	return "Door opening" if opening else "Door closing"
+
+func _play_motion(index: int, opening: bool, started: bool) -> void:
+	var audio := get_connected_rv().get_node_or_null("Audio")
+	if audio != null:
+		audio.play_door_motion(self, to_local(boarding_entry_point(index)), opening, started)
 
 func allows_mount_at(point: Vector3) -> bool:
 	for index in range(leaf_count):

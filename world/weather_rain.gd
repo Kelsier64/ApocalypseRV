@@ -31,7 +31,6 @@ var splashes: Array[Dictionary] = []
 var rays_last_tick := 0
 var visible_drops := 0 # Submitted instances; shader shelter/fades reduce actual visibility.
 var shelter := 0.0
-var bus_name: String
 var low_pass: AudioEffectLowPassFilter
 var voices: Array[AudioStreamPlayer] = []
 var listener: Node3D
@@ -56,16 +55,11 @@ func _ready() -> void:
 	splash_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(splash_instance)
 	listener = clock.get_parent().get_node_or_null("Player") as Node3D
-	bus_name = "Weather_%d" % get_instance_id()
-	AudioServer.add_bus()
-	var bus := AudioServer.bus_count - 1
-	AudioServer.set_bus_name(bus, bus_name)
-	low_pass = AudioEffectLowPassFilter.new()
-	AudioServer.add_bus_effect(bus, low_pass)
+	low_pass = AudioServer.get_bus_effect(AudioServer.get_bus_index(&"Rain"), 0) as AudioEffectLowPassFilter
 	for heavy in [false, true]:
 		var voice := AudioStreamPlayer.new()
 		voice.stream = make_rain_audio(heavy)
-		voice.bus = bus_name
+		voice.bus = &"Rain"
 		voice.volume_db = -80
 		add_child(voice)
 		voice.play()
@@ -97,8 +91,6 @@ static func make_rain_audio(heavy: bool) -> AudioStreamWAV:
 func _exit_tree() -> void:
 	for voice in voices:
 		voice.stop()
-	var bus := AudioServer.get_bus_index(bus_name)
-	if bus > 0: AudioServer.remove_bus(bus)
 
 func _build_field(count: int, radius: float, height: float, distant: bool) -> void:
 	var field := MultiMeshInstance3D.new()

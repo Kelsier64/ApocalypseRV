@@ -30,6 +30,7 @@ func _ready() -> void:
 		add_child(arm)
 		arms.append(arm)
 	sound = AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.max_distance = 25.0
 	sound.volume_db = -12.0
 	add_child(sound)

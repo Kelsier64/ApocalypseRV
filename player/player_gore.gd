@@ -60,6 +60,7 @@ func _burst(actor: CharacterBody3D, context: Dictionary) -> void:
 			data.encode_s16(i * 2, int(clampf(sample, -1, 1) * 28000))
 		tear_sound.data = data
 	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"Effects"
 	sound.stream = tear_sound
 	sound.volume_db = -15 if at_rollers else -2
 	sound.max_distance = 20

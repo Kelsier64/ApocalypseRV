@@ -14,6 +14,7 @@ func _ready() -> void:
 	_slide = find_child("Slide", true, false) as Node3D
 	_magazine = find_child("Magazine", true, false) as Node3D
 	_sound = AudioStreamPlayer3D.new()
+	_sound.bus = &"Effects"
 	_sound.max_distance = 65.0
 	_sound.unit_size = 8.0
 	add_child(_sound)
