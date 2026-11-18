@@ -4,6 +4,10 @@ const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
 const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
 const ENGINE_GRAINS := "res://assets/audio/rv/engine_grains.tres"
+const VEHICLE_RANGE: SoundAttenuation = preload("res://assets/audio/attenuation/vehicle.tres")
+# Slip and scrape loops reach this volume once they run 10 m/s past their threshold.
+const CONTACT_DB := -11.0
+const CONTACT_RANGE_DB := 17.0
 const MIX_RATE := 44100.0
 # Audio queued ahead of the mixer. Longer hides frame hitches but delays RPM changes.
 const ENGINE_BUFFER_SECONDS := 0.08
@@ -33,8 +37,8 @@ static var streams: Dictionary = {}
 var engine_cue: AudioStreamPlayer3D
 var engine_start_sound: AudioStream
 var engine_stop_sound: AudioStream
-var tire_player: AudioStreamPlayer3D
-var scrape_player: AudioStreamPlayer3D
+var tire_player: SoundLoop
+var scrape_player: SoundLoop
 var cues: Array[AudioStreamPlayer3D] = []
 var cooldowns := {}
 var cue_counts := {}
@@ -51,13 +55,12 @@ var _engine_playback: AudioStreamGeneratorPlayback
 var _engine_capacity := 0
 var _engine_hz := 0.0
 var _engine_gain := 0.0
-var road_layers: Array[AudioStreamPlayer3D] = []
+var road_layers: Array[SoundLoop] = []
 var road_weights := PackedFloat32Array([1.0, 0.0, 0.0])
 var road_surface := RVTireModel.Surface.ASPHALT
-var wind_player: AudioStreamPlayer3D
+var wind_player: SoundLoop
 var _surface_check := 0.0
 # Loop start offsets only; never touches gameplay randomness.
-var _rng := RandomNumberGenerator.new()
 @onready var rv: Chassis = get_parent()
 
 static func synth(kind: String) -> AudioStreamWAV:
@@ -106,12 +109,20 @@ static func synth(kind: String) -> AudioStreamWAV:
 	return stream
 
 func player() -> AudioStreamPlayer3D:
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.unit_size = 4.0
-	sound.max_distance = 55.0
-	sound.position = ENGINE_POSITION
+	return _place(AudioStreamPlayer3D.new(), ENGINE_POSITION)
+
+func _place(sound: AudioStreamPlayer3D, local_position: Vector3) -> AudioStreamPlayer3D:
+	VEHICLE_RANGE.apply(sound)
+	sound.position = local_position
+	sound.bus = bus_for_local(local_position)
 	add_child(sound)
+	return sound
+
+func _loop(stream: AudioStream, local_position: Vector3, base_db: float) -> SoundLoop:
+	var sound := SoundLoop.new()
+	sound.stream = stream
+	sound.base_db = base_db
+	_place(sound, local_position)
 	return sound
 
 func _ready() -> void:
@@ -130,29 +141,20 @@ func _ready() -> void:
 	engine_cue.bus = bus_for_local(ENGINE_POSITION)
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
 	engine_stop_sound = load("res://assets/audio/rv/engine_stop.wav")
-	tire_player = player()
-	tire_player.position = Vector3.ZERO
-	tire_player.bus = bus_for_local(tire_player.position)
-	tire_player.stream = synth("tire_slip")
-	scrape_player = player()
-	scrape_player.position = Vector3.ZERO
-	scrape_player.bus = bus_for_local(scrape_player.position)
-	scrape_player.stream = synth("hull_scrape")
+	tire_player = _loop(synth("tire_slip"), Vector3.ZERO, CONTACT_DB)
+	scrape_player = _loop(synth("hull_scrape"), Vector3.ZERO, CONTACT_DB)
 	for i in range(3): cues.append(player())
 	for path in ROAD_LOOPS:
-		var layer := _cabin_loop(path)
-		road_layers.append(layer)
-	wind_player = _cabin_loop(WIND_LOOP)
+		road_layers.append(_cabin_loop(path, ROAD_DB))
+	wind_player = _cabin_loop(WIND_LOOP, WIND_DB)
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
 
 ## The rolling and wind loops are in-cab recordings, so they play on the cabin mix.
-func _cabin_loop(path: String) -> AudioStreamPlayer3D:
-	var sound := player()
+func _cabin_loop(path: String, base_db: float) -> SoundLoop:
+	var sound := _loop(load(path), Vector3(0, 0.8, 0), base_db)
 	sound.bus = &"Cabin"
-	sound.position = Vector3(0, 0.8, 0)
 	sound.unit_size = 6.0
-	sound.stream = load(path)
 	return sound
 
 func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool) -> void:
@@ -212,8 +214,8 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 			return
 
 func _process(delta: float) -> void:
-	update_loop(tire_player, rv.drivetrain.slip_speed, 2.0)
-	update_loop(scrape_player, rv.hull_scrape_speed, rv.handling_profile.shell_scrape_min_speed)
+	_update_contact(tire_player, rv.drivetrain.slip_speed, 2.0)
+	_update_contact(scrape_player, rv.hull_scrape_speed, rv.handling_profile.shell_scrape_min_speed)
 	var rpm := rv.engine_rpm()
 	var running := rpm > 0.0
 	if not running and was_running: play_cue("stop")
@@ -297,8 +299,8 @@ func _update_road(delta: float) -> void:
 	var pitch := clampf(lerpf(0.8, 1.0, speed / ROAD_REFERENCE_SPEED), 0.8, 1.15)
 	for i in range(road_layers.size()):
 		road_weights[i] = move_toward(road_weights[i], 1.0 if i == road_surface else 0.0, delta / SURFACE_FADE_SECONDS)
-		_set_loop(road_layers[i], road * road_weights[i], ROAD_DB, pitch)
-	_set_loop(wind_player, wind_level(speed), WIND_DB, clampf(lerpf(0.9, 1.05, speed / WIND_REFERENCE_SPEED), 0.9, 1.1))
+		road_layers[i].set_level(road * road_weights[i], pitch)
+	wind_player.set_level(wind_level(speed), clampf(lerpf(0.9, 1.05, speed / WIND_REFERENCE_SPEED), 0.9, 1.1))
 
 ## Linear road loop gain for a horizontal speed in m/s.
 static func road_level(speed: float) -> float:
@@ -308,18 +310,10 @@ static func road_level(speed: float) -> float:
 static func wind_level(speed: float) -> float:
 	return pow(clampf(speed / WIND_REFERENCE_SPEED, 0.0, 1.4), 2.5)
 
-func _set_loop(sound: AudioStreamPlayer3D, level: float, base_db: float, pitch: float) -> void:
-	if level < 0.003:
-		if sound.playing: sound.stop()
-		return
-	sound.volume_db = base_db + linear_to_db(level)
-	sound.pitch_scale = pitch
-	if not sound.playing: sound.play(_rng.randf() * sound.stream.get_length())
-
-func update_loop(sound: AudioStreamPlayer3D, speed: float, threshold: float) -> void:
+## Slip and scrape loops start at their threshold speed and grow over the next 10 m/s.
+func _update_contact(sound: SoundLoop, speed: float, threshold: float) -> void:
 	if speed < threshold:
-		if sound.playing: sound.stop()
+		sound.set_level(0.0)
 		return
-	if not sound.playing: sound.play()
-	sound.volume_db = lerpf(-28.0, -11.0, clampf((speed - threshold) / 10.0, 0.0, 1.0))
-	sound.pitch_scale = lerpf(0.85, 1.2, clampf(speed / 16.0, 0.0, 1.0))
+	var excess := clampf((speed - threshold) / 10.0, 0.0, 1.0)
+	sound.set_level(db_to_linear(CONTACT_RANGE_DB * (excess - 1.0)), lerpf(0.85, 1.2, clampf(speed / 16.0, 0.0, 1.0)))

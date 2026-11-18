@@ -10,5 +10,7 @@ extends Resource
 @export var occlusion_by_position := true
 @export var volume_db := -10.0
 @export_range(0.0, 0.5) var pitch_variation := 0.0
-@export_range(0.1, 100.0) var unit_size := 2.0
-@export_range(1.0, 1000.0) var max_distance := 18.0
+@export var attenuation: SoundAttenuation = preload("res://assets/audio/attenuation/near.tres")
+## A repeat of the same event inside this window is skipped, so bursts of
+## contacts cannot fill the voice pool.
+@export_range(0.0, 2.0) var cooldown_seconds := 0.0

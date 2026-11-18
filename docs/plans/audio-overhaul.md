@@ -88,16 +88,16 @@ Master
 
 `core/audio/` 目前有：
 
-- **`SoundEvent`（Resource）**：音檔候選、音量、音高變化、bus 與衰減距離。
+- **`SoundEvent`（Resource）**：音檔候選、音量、音高變化、bus、距離衰減預設與冷卻時間。冷卻內重複播放同一事件會被略過，連續碰撞不會占滿聲源池。
+- **`SoundAttenuation`（Resource）**：距離衰減預設，放在 `assets/audio/attenuation/`：`near`（手邊操作，約 18 m）、`vehicle`（RV 與設備，約 55 m）、`loud`（槍聲、爆炸，約 90 m）。地標預設等 Slender Speaker 遷移時再加。
+- **`SoundLoop`（AudioStreamPlayer3D）**：持續聲源，由擁有者每幀餵入音量與音高；從自己的亂數決定的隨機位置開始播放，音量趨近零時停止。RV 的路噪、風聲、輪胎滑移和刮地已改用它。引擎因為是顆粒合成，不走這個元件。
 - **`Sfx`（autoload）**：`play(event, source, local_position)` 播放並跟隨一次性 3D 音效。池掛在目前聆聽的 viewport，POI 出入口會切換。首輪上限為 12，滿時略過下一個一次性音效。
 - **亂數**：`Sfx` 使用自己的亂數產生器，絕不讀寫玩法或世界生成的亂數。
 - **事件檔位置**：`assets/audio/events/<domain>/<name>.tres`，例如 `rv/door_open.tres`。素材放在同一個 domain 的 `assets/audio/<domain>/`。
 
 階段 3 遷移時再加入：
 
-- **`SoundAttenuation`（Resource）**：距離衰減預設，至少分成 `near`（手邊操作，約 15 m）、`vehicle`（RV 與設備，約 50 m）、`loud`（槍聲、爆炸，約 80 m）、`landmark`（Slender Speaker）。
-- **`SoundLoop`（Node3D 元件）**：持續聲源（輪胎滑移、刮地、絞碎機、雨），由擁有者每幀餵入參數。引擎因為是顆粒合成，不走這個元件。
-- `SoundEvent` 的強度曲線、冷卻時間、優先度與事件各自的發聲限制，以及池滿時依優先度搶占。
+- `SoundEvent` 的強度曲線、優先度與事件各自的發聲限制，以及池滿時依優先度搶占，等有聲音需要時再加。
 - `Chassis.feedback(kind, ...)` 這類字串介面改成直接傳 `SoundEvent`。排檔、手煞車、坡板、維修蓋、千斤頂、安裝完成、受阻各自獨立。
 
 ### 3. 引擎與車輛

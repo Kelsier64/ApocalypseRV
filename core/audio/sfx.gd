@@ -17,6 +17,9 @@ var _sources: Dictionary[AudioStreamPlayer3D, Node3D] = {}
 var _offsets: Dictionary[AudioStreamPlayer3D, Vector3] = {}
 ## Current muffle per bus name, 0 open to 1 sealed shell.
 var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0}
+## Engine time in msec each event with a cooldown last played, by instance id
+## so the autoload never holds event resources until exit.
+var _last_played: Dictionary[int, int] = {}
 
 
 func _ready() -> void:
@@ -29,6 +32,8 @@ func set_listener_viewport(viewport: Viewport) -> void:
 		_listener.audio_listener_enable_3d = false
 	if is_instance_valid(_pool):
 		for voice in _voices: voice.stop()
+		# Rename it now, so a pool created this frame keeps the name.
+		_pool.name = "RetiredOneShots"
 		_pool.queue_free()
 	_pool = null
 	_voices.clear()
@@ -43,6 +48,10 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO) -> 
 	if event.samples.is_empty() or not is_instance_valid(_listener) or not source.is_inside_tree():
 		return false
 	if source.get_world_3d() != _listener.find_world_3d(): return false
+	var now := Time.get_ticks_msec()
+	if event.cooldown_seconds > 0.0:
+		if now - _last_played.get(event.get_instance_id(), -1000000) < event.cooldown_seconds * 1000.0: return false
+		_last_played[event.get_instance_id()] = now
 	var voice := _available_voice()
 	if voice == null: return false
 	var at := source.to_global(local_position)
@@ -50,8 +59,7 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO) -> 
 	voice.bus = bus_at(at, source.get_world_3d()) if event.occlusion_by_position else event.bus
 	voice.volume_db = event.volume_db
 	voice.pitch_scale = 1.0 + _rng.randf_range(-event.pitch_variation, event.pitch_variation)
-	voice.unit_size = event.unit_size
-	voice.max_distance = event.max_distance
+	event.attenuation.apply(voice)
 	voice.global_position = at
 	_sources[voice] = source
 	_offsets[voice] = local_position

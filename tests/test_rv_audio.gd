@@ -46,6 +46,10 @@ func _run() -> void:
 	check(inside.get_node("SpatialOneShots").get_child(0).get_world_3d() == inside.find_world_3d(),
 		"The POI player resolves its position in the interior world")
 	sfx.set_listener_viewport(root)
+	var burst := door_close.duplicate() as SoundEvent
+	burst.cooldown_seconds = 1.0
+	check(sfx.play(burst, outside_source) and not sfx.play(burst, outside_source) and sfx.play(door_close, outside_source),
+		"A repeat inside the cooldown is skipped without blocking other events")
 	inside.queue_free()
 	outside_source.queue_free()
 
@@ -216,7 +220,8 @@ func _check_event_folder(path: String) -> void:
 		for sample in event.samples:
 			check(sample != null and sample.get_length() > 0.0, "%s samples load with audio" % file)
 		check(AudioServer.get_bus_index(event.bus) >= 0, "%s routes to a configured bus" % file)
-		check(event.max_distance > event.unit_size, "%s fades out beyond its reference distance" % file)
+		check(event.attenuation != null and event.attenuation.max_distance > event.attenuation.unit_size,
+			"%s fades out beyond its reference distance" % file)
 		check(event.volume_db <= 0.0, "%s leaves headroom" % file)
 
 
