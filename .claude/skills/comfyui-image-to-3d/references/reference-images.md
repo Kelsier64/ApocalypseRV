@@ -9,10 +9,15 @@ Run it in a fresh, empty folder **outside the repository**. `--mode auto` lets a
 ```powershell
 $agy = (Get-Command agy -ErrorAction SilentlyContinue).Source; if (-not $agy) { $agy = "$env:LOCALAPPDATA\agy\bin\agy.exe" }
 $ref = "$env:TEMP\agy-ref-<asset>"; New-Item -ItemType Directory -Force $ref | Out-Null; Push-Location $ref
-$p = "Generate an image and save it in the current directory as <asset>.png. Subject: <object, materials, wear, colors>. Single complete object, three-quarter view with weak perspective, camera near horizontal, isolated on a fully transparent background (real alpha channel, not a checkerboard), no floor, no shadow, no text or labels. Do not end your turn until the image generation has finished and <asset>.png exists on disk; wait for any subagent result. Then report the saved absolute path. Do nothing else."
-& $agy -p $p --output-format json --mode auto --sandbox --print-timeout 480s 2>$null | Out-String
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$p = @'
+Generate an image and save it in the current directory as <asset>.png. Subject: <object, materials, wear, colors>. Single complete object, three-quarter view with weak perspective, camera near horizontal, isolated on a fully transparent background (real alpha channel, not a checkerboard), no floor, no shadow, no text or labels. Do not end your turn until the image generation has finished and <asset>.png exists on disk; wait for any subagent result. Then report the saved absolute path. Do nothing else.
+'@
+$p | & $agy --output-format json --mode auto --sandbox --print-timeout 480s 2>$null | Out-String
 Pop-Location
 ```
+
+Pipe the prompt on stdin, as the `agy` skill's core call does; `-p "<text>"` breaks on embedded double quotes in Windows PowerShell 5.1.
 
 Without the "do not end your turn" sentence, print mode returns as soon as the subagent starts and nothing is written.
 
