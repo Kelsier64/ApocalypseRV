@@ -67,7 +67,7 @@ func transfer_control(player: Node3D) -> bool:
 	if not PlayerSurvival.valid_state(old_survival) or not PlayerSurvival.valid_state(target_survival): return false
 	# The production controller origin is 0.25 m above its standing boot sole.
 	var sole_offset: float = player.standing_collision_transform.origin.y - (player.standing_collision_shape as CapsuleShape3D).height * .5
-	var target := Transform3D(Basis(Vector3.UP, rotation.y), global_position - Vector3.UP * sole_offset)
+	var target := controller_pose(player)
 	var old_body := Transform3D(Basis(Vector3.UP, player.global_rotation.y), player.global_position + Vector3.UP * sole_offset)
 	if not _destination_clear(player, target) or not _old_body_clear(player, old_body):
 		last_transfer_error = "Clear space around the body first"
@@ -105,9 +105,21 @@ func transfer_control(player: Node3D) -> bool:
 		"body": target_parts, "survival": target_survival, "stamina": target_stamina, "stamina_exhausted": target_exhausted, "crouching": target_crouching, "transform": target})
 	player.stamina_recovery_delay_remaining = target_delay
 	player._apply_body_collision()
+	attach_controller_to_floor(player, target, target_velocity)
+	player.body_state_changed.emit()
+	availability_changed.emit()
+	last_transfer_error = ""
+	return true
+
+func controller_pose(player: CharacterBody3D) -> Transform3D:
+	var sole: float = player.standing_collision_transform.origin.y - (player.standing_collision_shape as CapsuleShape3D).height * .5
+	return Transform3D(Basis(Vector3.UP, global_rotation.y), global_position - Vector3.UP * sole)
+
+func attach_controller_to_floor(player: CharacterBody3D, target: Transform3D, target_velocity: Vector3) -> void:
 	# Establish the destination carrier explicitly; old floor contacts refer to
 	# the abandoned body until the next move_and_slide call.
-	var ray := PhysicsRayQueryParameters3D.create(target.origin + Vector3.UP * (sole_offset + .05), target.origin + Vector3.UP * (sole_offset - .15), player.collision_mask, [player.get_rid(), get_rid()])
+	var sole: float = player.standing_collision_transform.origin.y - (player.standing_collision_shape as CapsuleShape3D).height * .5
+	var ray := PhysicsRayQueryParameters3D.create(target.origin + Vector3.UP * (sole + .05), target.origin + Vector3.UP * (sole - .15), player.collision_mask, [player.get_rid(), get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
 	var carrier: Node3D = ClimbMath.find_rv_ancestor(hit.collider) if not hit.is_empty() else null
 	if is_instance_valid(carrier):
@@ -119,10 +131,6 @@ func transfer_control(player: Node3D) -> bool:
 	else:
 		player.velocity = target_velocity
 		player.released_carrier_velocity = Vector3(target_velocity.x, 0, target_velocity.z)
-	player.body_state_changed.emit()
-	availability_changed.emit()
-	last_transfer_error = ""
-	return true
 
 func _destination_clear(player: CharacterBody3D, target: Transform3D) -> bool:
 	var shape: Shape3D = player.standing_collision_shape

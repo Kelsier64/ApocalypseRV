@@ -134,13 +134,13 @@ func _process(delta: float) -> void:
 		_update_audio(maxf(black, focus))
 
 func _update_audio(pressure: float) -> void:
-	var muffling := smoothstep(0.10, 1.0, pressure)
 	var ring := 0.0
 	if _ring_start >= 0.0 and _age >= _ring_start and _age < _ring_end:
 		var fade_in := smoothstep(_ring_start, _ring_start + 0.07, _age)
 		var fade_out := 1.0 - smoothstep(_ring_start + 0.10, _ring_end, _age)
 		ring = _ring_peak * fade_in * fade_out
 	if ring > 0.001:
+		var muffling := smoothstep(0.10, 1.0, pressure)
 		# Compensate for the same low-pass acting on the internal ringing.
 		_tone.volume_db = linear_to_db(0.22 * ring * lerpf(1.0, 3.0, muffling))
 		if not _tone.playing:
@@ -149,6 +149,9 @@ func _update_audio(pressure: float) -> void:
 	elif _tone.playing:
 		_tone.stop()
 
+	set_consciousness_muffle(pressure)
+
+func set_consciousness_muffle(pressure: float) -> void:
 	if pressure < 0.10:
 		_clear_muffle()
 		return
@@ -157,7 +160,7 @@ func _update_audio(pressure: float) -> void:
 		_muffle.resonance = 0.5
 		AudioServer.add_bus_effect(0, _muffle)
 	# The shallow filter softens environmental detail while the ringing is audible.
-	_muffle.cutoff_hz = lerpf(22000.0, 950.0, muffling)
+	_muffle.cutoff_hz = lerpf(22000.0, 950.0, smoothstep(0.10, 1.0, pressure))
 
 func _clear_muffle() -> void:
 	if _muffle == null: return

@@ -43,6 +43,7 @@ var sleep := PlayerSleep.new()
 const InjuryEffects := preload("res://player/player_injury_effects.gd")
 var san_effects := PlayerSanEffects.new()
 var injury_effects := InjuryEffects.new()
+var recovery := preload("res://player/body_recovery.gd").new()
 var consumables := PlayerConsumables.new()
 var body_state := PlayerBodyState.new()
 var standing_collision_shape: Shape3D
@@ -335,6 +336,7 @@ func _ready():
 	standing_collision_transform = body_collision_shape.transform
 	add_child(san_effects)
 	add_child(injury_effects)
+	add_child(recovery)
 	grab_control = preload("res://player/player_grab.gd").new()
 	add_child(grab_control)
 	grab_started.connect(close_settings)
@@ -418,7 +420,7 @@ func _capture_settings_release_latch() -> void:
 		if Input.is_action_pressed(action): _settings_release_actions.append(action)
 
 func is_gameplay_input_blocked() -> bool:
-	if settings_open: return true
+	if settings_open or recovery.waking_in_printed_body: return true
 	for index in range(_settings_release_keys.size() - 1, -1, -1):
 		if not Input.is_physical_key_pressed(_settings_release_keys[index]): _settings_release_keys.remove_at(index)
 	for index in range(_settings_release_buttons.size() - 1, -1, -1):
@@ -497,6 +499,7 @@ func exit_ui_mode():
 
 func complete_world_transition(at: Transform3D) -> void:
 	if sleep.active(): exit_ui_mode()
+	recovery.reset()
 	san_effects.reset()
 	injury_effects.reset()
 	consumables.cancel()
@@ -1381,7 +1384,7 @@ func _commit_health_loss(amount: float, cause: InjuryEffects.Cause, severed_limb
 	current_player_health = maxf(0.0, before - amount)
 	_update_health_bar()
 	if current_player_health == 0.0:
-		_player_die()
+		_player_die(cause == InjuryEffects.Cause.CRASH)
 	elif current_player_health < before:
 		injury_effects.play_hit((before - current_player_health) / maxf(max_player_health, 1.0), cause, severed_limb)
 
@@ -1470,7 +1473,7 @@ func _update_health_bar():
 	if health_bar and health_bar.has_method("set_health"):
 		health_bar.set_health(current_player_health, max_player_health)
 
-func _player_die():
+func _player_die(crash := false):
 	if is_player_dead: return
 	san_effects.reset()
 	injury_effects.reset()
@@ -1507,6 +1510,7 @@ func _player_die():
 	exit_ui_mode()
 	if is_instance_valid(held_item_node): held_item_node.hide()
 	print(">>> PLAYER DIED! <<<")
+	recovery.begin(crash)
 	# A hit may arrive while physics queries are being flushed.
 	_begin_death_physics.call_deferred()
 
@@ -1514,34 +1518,42 @@ func _begin_death_physics() -> void:
 	if not is_player_dead: return
 	_sync_body_collision_to_locomotion()
 	visible = true
-	if not grab_control.has_execution_death_view(): camera.make_current()
+	grab_control.clear_execution_observer()
+	camera.make_current()
 	ragdoll_control.start(death_velocity)
+	recovery.try_queue()
 	if _death_corpse_released: ragdoll_control.release_body_for_recycling()
 
 func _respawn():
-	if not is_player_dead: return
+	if not is_player_dead or recovery.awaiting_print(): return
 	if ragdoll_control.active:
 		var standing: Vector3 = ragdoll_control.recovery_position()
 		if not standing.is_finite(): return
-		if not _death_corpse_released: load("res://props/corpse.gd").leave_player(self)
-		ragdoll_control.stop()
+		_leave_dead_body()
 		global_position = standing
 	elif not _standing_volume_clear(global_position):
 		return
+	_finish_respawn(false)
+
+func _leave_dead_body() -> void:
+	if not _death_corpse_released: load("res://props/corpse.gd").leave_player(self)
+	ragdoll_control.stop()
+
+func _finish_respawn(printed_crouching: bool) -> void:
 	grab_control.clear_execution_observer()
-	# Recovery checked the original upright volume before restoring any limb.
 	body_state.reset()
 	survival.reset()
 	consumables.cancel()
 	_death_corpse_released = false
 	crawl_transition_remaining = 0.0
-	crouching = false
+	crouching = printed_crouching
 	is_player_dead = false
 	_apply_body_capabilities()
 	get_node("Visuals/Locomotion").reset_posture()
 	velocity = Vector3.ZERO
 	released_carrier_velocity = Vector3.ZERO
 	rv_support.clear()
+	_apply_body_collision()
 	_sync_body_collision_to_locomotion()
 	set_process_unhandled_input(true)
 	camera.make_current()
@@ -1556,6 +1568,8 @@ func _respawn():
 	_update_stamina_bar()
 	_update_food_bar()
 	_update_san_bar()
+	body_state_changed.emit()
+	recovery.wake()
 	print("Player respawned!")
 
 func refresh_inventory() -> void:

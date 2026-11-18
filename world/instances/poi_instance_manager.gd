@@ -266,6 +266,25 @@ func _safe_return_transform() -> Transform3D:
 	result.origin.y += 2.5
 	return result
 
+## The exterior keeps simulating while the dead player is in this interior.
+func recovery_home(player: Node3D) -> Node3D:
+	if state == State.INDOOR and not busy and player == _player:
+		return _home as Node3D
+	return null
+
+func show_recovery_camera(exterior: bool) -> void:
+	_display.visible = not exterior
+
+func return_to_print_bed(player: Node3D) -> void:
+	# The death controller has already left the physical corpse inside.
+	_commit_interior_snapshot()
+	player.reparent(_home)
+	_clear_interior_view()
+	active_id = ""
+	_route_stack.clear()
+	_status.text = ""
+	state = State.OUTDOOR
+
 func _reset_player(at: Transform3D) -> void:
 	_player.complete_world_transition(at)
 

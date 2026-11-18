@@ -93,7 +93,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [player_carry_playground](../../tests/playgrounds/player_carry_playground.tscn) | 正式手持與握姿的原地觀察 | F1 鏡頭、F2 換道具、F3 原地走、F4 俯仰、F5 手部、F6 近景角度。 |
 | [player_climb_animation_playground](../../tests/playgrounds/player_climb_animation_playground.tscn) | 正式玩家攀梯動畫、收手與視角 | F1 第一人稱、F2 外部、F3 重播；`--animation-review`／`--camera-review`。 |
 | [player_driving_playground](../../tests/playgrounds/player_driving_playground.tscn) | 正式坐姿／方向盤／踏板觀察；車體凍結、車殼可隱藏 | F1 回正、F2 左轉、F3 右轉、F4 鏡頭、F5 踩踏、F6 車殼。 |
-| [player_death_playground](../../tests/playgrounds/player_death_playground.tscn) | 主世界：正式死亡布娃娃與座位清理 | F1 第一人稱、F2 旁觀、F3 致命傷、F4 回放、F5 坐姿死亡；`--replay --quit-replay`。 |
+| [player_death_playground](../../tests/playgrounds/player_death_playground.tscn) | 主世界：正式死亡布娃娃與座位清理 | F1 第一人稱、F2 旁觀、F3 致命傷、F4 回放、F5 坐姿死亡、F7 補齊 Body 配方並觸發死亡；`--replay --quit-replay`。 |
 | [player_dismemberment_playground](../../tests/playgrounds/player_dismemberment_playground.tscn) | 正式身體／受傷爬行／Raker 咬擊結果的隔離場 | 1 頭、2／3 左右臂、4／5 左右腿；F1 鏡頭、F6 傷殘咬、F7 致死咬、F8 前進、R 重設。 |
 | [corpse_playground](../../tests/playgrounds/corpse_playground.tscn) | 正式屍體物理、搬運與分解 | E 拾取、G 丟棄、F1 第一人稱、F2 拾取捷徑、F3 旁觀、F4 行走、F5 死亡、F6 分解捷徑；`--replay`。 |
 | [pistol_playground](../../tests/playgrounds/pistol_playground.tscn) | 正式玩家／手槍／彈藥與敵人射擊；敵人移動停用 | 左鍵單發、右鍵瞄準、R 換彈；F6 回放、F7 巨人射線、F8 拾取；`--replay --capture`／`--headless-check`。 |
@@ -516,7 +516,7 @@ godot --path . --log-file .godot/player-death.log res://tests/playgrounds/player
 godot --path . --log-file .godot/player-death-replay.log res://tests/playgrounds/player_death_playground.tscn -- --replay --quit-replay
 ```
 
-使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。第一人稱隨倒地下移、不翻滾，兩秒後找到安全站位才恢復；被堵住時等待淨空。截圖與 replay.json 寫入 `.godot/player-death/`。
+使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。F7 補齊材料與電力再觸發死亡，可從第一人稱倒地一路觀看製造並在車內睜眼。使用 `--recovery-replay` 擷取這四個階段。截圖與 replay.json 寫入 `.godot/player-death/`。
 
 ### 移動 RV 攀爬
 

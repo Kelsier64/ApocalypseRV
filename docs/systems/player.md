@@ -10,7 +10,7 @@
 | 體力 | 正式；衝刺／跳躍消耗、延遲恢復與耗盡限制；駕駛及攀梯不耗體力 | [Player](../../player/player.gd) |
 | 梯子攀爬 | 正式；W 上、S 下、Space 脫離，含登頂與從上方下梯；大型持物、缺臂或缺腿限制攀梯 | [RV ladder](../../equipment/rv_ladder.gd)、[rv climb](../../tests/playgrounds/rv_climb_playground.tscn) |
 | 完整身體與動畫 | 正式；低頭可見身體、完整影子、四向走跑、跳躍／落地、攀梯、持物與駕駛姿勢 | [model visual](../../player/player_model_visual.gd)、[animation](../../tests/playgrounds/player_animation_playground.tscn)、[carry](../../tests/playgrounds/player_carry_playground.tscn) |
-| 生命、死亡與屍體 | 正式；受傷冷卻、死亡布娃娃，約兩秒後在安全淨空處恢復；一般死亡留下可回收屍體，沒有局結束 | [ragdoll](../../player/player_ragdoll.gd)、[death](../../tests/playgrounds/player_death_playground.tscn)、[corpse](../../tests/playgrounds/corpse_playground.tscn) |
+| 生命、死亡與屍體 | 正式；受傷冷卻、死亡布娃娃，製造台自動列印新身體，無法下單時在附近安全處恢復；一般死亡留下可回收屍體，沒有局結束 | [ragdoll](../../player/player_ragdoll.gd)、[death](../../tests/playgrounds/player_death_playground.tscn)、[corpse](../../tests/playgrounds/corpse_playground.tscn) |
 | 活體斷肢與爬行 | 正式；頭、雙臂、雙腿五切口；缺肢限制移動／持物／駕駛，缺腿改爬行；存活身體狀態可保存 | [body state](../../player/player_body_state.gd)、[dismemberment](../../tests/playgrounds/player_dismemberment_playground.tscn) |
 | 飢餓與食用 | 正式；FOOD 約二十分鐘降至零，影響體力／衝刺及飢餓傷害；三種食物，按住右鍵食用，受傷等操作可打斷 | [survival](../../player/player_survival.gd)、[consumables](../../player/player_consumables.gd)、[food catalog](../../core/food_catalog.gd) |
 | 列印身體與控制切換 | 正式配方；可製作 Player Body，以 E 交換控制，背包跟隨玩家，生命／部位／飢餓／體力／蹲姿隨各身體交換；須有安全空間，不能拾入背包 | [printed player](../../props/printed_player.gd)、[playground](../../tests/playgrounds/printed_player_playground.tscn) |
@@ -19,7 +19,11 @@
 
 ### 死亡與復活
 
-玩家生命上限 100，受傷後有 0.5 秒冷卻。歸零後存活部位切換布娃娃，解除座位／抓取／攀爬及 UI；第一人稱鏡頭隨倒地下移但不翻滾。約 2 秒後在骨盆附近有支撐且可站立的位置恢復生命、體力、飽食、SAN 與控制；空間堵住時等待淨空。不清空物品；一般死亡在復活時留下保留死亡姿勢與缺肢狀態的屍體；分解機死亡先倒入滾輪逐個切離接觸的部位，再移交軀幹供回收，復活不再生成第二具。沒有起身動畫或局結束。
+生命歸零後，座位、抓取、攀爬與互動解除。視線隨布娃娃倒下，周邊變暗、聲音變悶，致命車禍會迅速轉黑。附近可受理訂單的房車製造台依 [Player Body 配方](../../equipment/printed_player_recipe.tres) 扣料、排隊與耗電。地下設施內死亡也能回到地表房車。
+
+第三人稱鏡頭跟著製造台觀看實際進度。只有本次訂單成功出料，玩家才會從新身體睜眼、恢復操作。低車頂下沿用列印蹲姿。無法下單時，約兩秒後在屍體附近找到安全站位便復活。已排單後若缺電或出料受阻，可等待或按 E 取消本次訂單，在死亡處附近復活；取消退回已扣材料，已耗電力不退。
+
+背包與裝備跟著玩家。復活恢復全部肢體、生命、體力、飽食與 SAN。死亡處留下保留當時姿勢與缺肢的可回收屍體。分解機已接走軀幹時不會再生成屍體。[死亡與鏡頭流程](../../player/body_recovery.gd)
 
 ### 受傷回饋
 
@@ -39,7 +43,7 @@
 
 缺一臂禁止大型持物、設備搬移及攀爬，保留小物、維修與雙腿完整時的駕駛。缺雙臂禁止拾取、使用、維修與駕駛，仍可環視、查看背包、丟棄或存入已有物品。缺任一腿以 0.45 秒倒地混合切入低姿態爬行，禁止衝刺、跳躍、攀爬及駕駛；雙臂可用時，一腿速度 0.8 m/s、無腿 0.55 m/s，剩一臂 0.35 m/s、無臂不能主動移動。失效操作取消，背包與物品 ID 保留；爬行玩家受 Raker 普通爪擊，不進入抓咬。
 
-存活缺肢由必要的 `player.body`（v1、五個布林完整性）保存，讀檔及跨副本保留，缺少欄位時拒絕載入。斷頭立即死亡；死亡約兩秒後找到安全站立淨空才恢復全部部位、生命、體力、飽食、SAN 與能力，受阻時等待。斷肢與血跡是限時效果，不寫入檢查點。實作範圍見 [角色規格](../guides/character-modeling.md#player-five-cuts)。
+存活缺肢由必要的 `player.body`（v1、五個布林完整性）保存，讀檔及跨副本保留，缺少欄位時拒絕載入。斷頭立即進入上述死亡與復活流程。斷肢與血跡是限時效果，不寫入檢查點。實作範圍見 [角色規格](../guides/character-modeling.md#player-five-cuts)。
 
 ### 耐力
 

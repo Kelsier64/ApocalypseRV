@@ -17,6 +17,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 	var loop := kind in ["engine", "tire_slip", "hull_scrape", "ringing"]
 	var duration := 1.0 if loop else (0.6 if kind in ["start", "stop"] else 0.18)
 	if kind == "crash": duration = 0.32
+	if kind == "inhale": duration = .78
 	var rate := 22050
 	var data := PackedByteArray()
 	data.resize(int(duration * rate) * 2)
@@ -25,6 +26,7 @@ static func synth(kind: String) -> AudioStreamWAV:
 	var freq := 46.0 if loop else (110.0 if kind == "start" else (65.0 if kind == "stop" else 280.0))
 	if kind == "complete": freq = 760.0
 	if kind == "blocked": freq = 170.0
+	var breath_noise := 0.0
 	for i in range(data.size() / 2):
 		var t := float(i) / rate
 		var envelope := 1.0 if loop else minf(t / 0.006, 1.0) * pow(1.0 - t / duration, 2.0)
@@ -32,6 +34,10 @@ static func synth(kind: String) -> AudioStreamWAV:
 		var signal_value := sin(TAU * freq * t) * 0.5 + sin(TAU * freq * 2.0 * t) * 0.18
 		signal_value += rng.randf_range(-1.0, 1.0) * (0.12 + pulse * 0.12)
 		if kind == "ringing": signal_value = sin(TAU * 1886.0 * t) * 0.32 + sin(TAU * 2294.0 * t) * 0.065
+		if kind == "inhale":
+			breath_noise = lerpf(breath_noise, rng.randf_range(-1, 1), .28)
+			envelope = pow(sin(PI * t / duration), .8)
+			signal_value = breath_noise * (1.0 + .3 * sin(TAU * (620.0 - 180.0 * t) * t))
 		if kind == "tire_slip": signal_value = sin(TAU * 923.0 * t + sin(TAU * 17.0 * t) * 2.0) * 0.6
 		if kind == "hull_scrape": signal_value = rng.randf_range(-0.65, 0.65) * (0.6 + pulse * 0.4) + 0.22 * sin(TAU * 213.0 * t)
 		if kind == "crash":

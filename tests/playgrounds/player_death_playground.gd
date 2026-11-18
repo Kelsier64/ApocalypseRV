@@ -27,7 +27,7 @@ func _ready() -> void:
 	status.position = Vector2(20, 145)
 	status.add_theme_font_size_override("font_size", 19)
 	canvas.add_child(status)
-	status.text = "DEATH / production world / %d Hz\nF1 first person | F2 observer | F3 lethal hit | F4 replay | F5 seated death | Esc close" % Engine.physics_ticks_per_second
+	status.text = "F1 first person | F2 observer | F3 lethal hit | F4 replay | F5 seated death | F7 print revival | Esc close"
 	$WorldClock.set_time(1, 10)
 	$WorldClock.set_process(false)
 	await seconds(1.0)
@@ -35,6 +35,7 @@ func _ready() -> void:
 	_view(false)
 	print("PLAYER_DEATH_READY")
 	if "--replay" in OS.get_cmdline_user_args(): _replay()
+	if "--recovery-replay" in OS.get_cmdline_user_args(): _print_replay()
 
 func seconds(duration: float) -> void:
 	for frame in ceili(duration * Engine.physics_ticks_per_second): await get_tree().physics_frame
@@ -50,6 +51,7 @@ func _input(event: InputEvent) -> void:
 		KEY_F2: _view(true)
 		KEY_F3: _kill()
 		KEY_F4: _replay()
+		KEY_F7: _fund_and_die()
 		KEY_F5:
 			$NewRv/Chassis/DriverSeat.interact_hold($Player)
 			_kill()
@@ -57,6 +59,44 @@ func _input(event: InputEvent) -> void:
 func _kill() -> void:
 	$Player.damage_cooldown = 0
 	$Player.take_damage(1000)
+
+func _fund_and_die() -> void:
+	if $Player.is_player_dead: return
+	var rv: Chassis = $NewRv/Chassis
+	rv.deposit_materials(RecipeCatalog.find("printed_player").costs)
+	rv.current_power = rv.max_power
+	_view(false)
+	_kill()
+
+func _print_replay() -> void:
+	replaying = true
+	status.hide()
+	DirAccess.make_dir_recursive_absolute(OUTPUT)
+	var recipe := RecipeCatalog.find("printed_player")
+	var station: CraftingStation = $NewRv/Chassis/CraftingStation
+	_fund_and_die()
+	await seconds(.55)
+	await _capture_current("revival-1-death")
+	await seconds(recipe.duration * .66)
+	await _capture_current("revival-2-print")
+	for frame in ceili(recipe.duration * Engine.physics_ticks_per_second):
+		if not $Player.is_player_dead: break
+		await get_tree().physics_frame
+	if not $Player.recovery.waking_in_printed_body:
+		push_error("Print revival did not complete: " + station.last_error)
+		get_tree().quit(1)
+		return
+	await seconds(.65)
+	await _capture_current("revival-3-wake")
+	await seconds(1.0)
+	await _capture_current("revival-4-control")
+	print("PASS: printed revival replay at ", $Player.global_position, " crouched=", $Player.is_crouching())
+	get_tree().quit()
+
+func _capture_current(label: String) -> void:
+	await RenderingServer.frame_post_draw
+	var path := OUTPUT + label + ".png"
+	if get_viewport().get_texture().get_image().save_png(path) == OK: print("CAPTURE: ", path)
 
 func _view(external: bool) -> void:
 	if external:

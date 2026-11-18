@@ -1,0 +1,115 @@
+extends SceneTree
+
+var failures: Array[String] = []
+var world := Node3D.new()
+var player: CharacterBody3D
+var rv: Chassis
+var station: CraftingStation
+var recipe := RecipeCatalog.find("printed_player")
+
+func _init() -> void:
+	_run.call_deferred()
+
+func check(ok: bool, message: String) -> void:
+	if not ok: failures.append(message)
+
+func frames(count: int) -> void:
+	for i in count: await physics_frame
+
+func _run() -> void:
+	root.add_child(world)
+	current_scene = world
+	world.set_meta("entity_domain", true)
+	var floor_body := StaticBody3D.new()
+	var shape := CollisionShape3D.new()
+	shape.shape = WorldBoundaryShape3D.new()
+	floor_body.add_child(shape)
+	world.add_child(floor_body)
+	var shell := preload("res://rv/new_rv.tscn").instantiate()
+	world.add_child(shell)
+	rv = shell.get_node("Chassis")
+	rv.freeze = true
+	rv.set_physics_process(false)
+	station = rv.get_node("CraftingStation")
+	player = preload("res://player/player.tscn").instantiate()
+	player.position = Vector3(12, 1, 0)
+	world.add_child(player)
+	await frames(5)
+	rv.inventory.clear()
+	player.kill()
+	await frames(135)
+	check(not player.is_player_dead and station.jobs.is_empty() and player.position.x > 8, "Missing materials allow recovery near the remains")
+	await frames(95)
+	rv.current_power = rv.max_power
+	rv.deposit_materials(recipe.costs)
+	player.kill()
+	await frames(75)
+	check(player.recovery.awaiting_print() and station.jobs.size() == 1, "Death places and pays for one body order")
+	rv.current_power = 0
+	station.step_work(.5)
+	await frames(3)
+	check(player.recovery.stalled and player.recovery.status.text.contains("battery"), "Loss of power explains the stall")
+	var interact := InputEventAction.new()
+	interact.action = "interact"
+	interact.pressed = true
+	root.push_input(interact, true)
+	await frames(75)
+	check(not player.is_player_dead and station.jobs.is_empty() and rv.has_materials(recipe.costs), "Cancelling refunds this order and revives at the corpse")
+	await frames(95)
+	await _interior_revival()
+	world.queue_free()
+	await process_frame
+	for message in failures: push_error(message)
+	if failures.is_empty(): print("PASS: funded, unavailable, stalled and underground body recovery")
+	quit(0 if failures.is_empty() else 1)
+
+func _interior_revival() -> void:
+	# Use the production viewport transition, corpse snapshot and installed cabin.
+	var manager := PoiInstanceManager.new()
+	world.add_child(manager)
+	var entrance := Node3D.new()
+	var marker := Marker3D.new()
+	marker.name = "ReturnPoint"
+	entrance.add_child(marker)
+	world.add_child(entrance)
+	manager.interior_factory = func() -> PoiInterior:
+		var room := PoiInterior.new()
+		room.room_count = 2
+		room.target_floors = 1
+		room.populate_content = false
+		return room
+	await manager.enter(player, entrance, "recovery-test", 42)
+	if manager.state != PoiInstanceManager.State.INDOOR:
+		check(false, "Recovery fixture entered the bunker")
+		return
+	player.add_item("Scrap", false, "res://props/scrap.tscn")
+	var inventory: Array = player.inventory.items.duplicate(true)
+	rv.current_power = rv.max_power
+	rv.deposit_materials(recipe.costs)
+	var prior := station.queue_recipe(recipe.recipe_id)
+	player.kill()
+	await frames(135)
+	check(player.is_player_dead and station.jobs.size() == 2 and player.recovery.job_id != prior, "Queued revival suppresses the old timer and preserves queue order")
+	if not player.recovery.awaiting_print(): return
+	check(root.get_camera_3d() == player.recovery.observer and not manager._display.visible, "An indoor death shows the exterior bed camera")
+	station.step_work(recipe.duration)
+	check(player.is_player_dead and station.jobs.size() == 1, "A previous body delivery cannot revive this death")
+	await frames(2)
+	station.step_work(recipe.duration)
+	await frames(2)
+	check(player.is_player_dead and player.recovery.stalled, "Occupied bed prevents handoff at full progress")
+	for output in WorldEntities.get_container(station).get_children():
+		if output is PrintedPlayerBody: output.free()
+	await frames(2)
+	station.step_work(.1)
+	await frames(2)
+	check(not player.is_player_dead and player.recovery.waking_in_printed_body and player.camera.current, "Completed body owns the waking first-person view")
+	check(manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == world and player.global_position.distance_to(station.spawn_marker.global_position) < 1, "Bunker revival returns to the exterior bed")
+	check(player.inventory.items == inventory and player.current_player_health == player.max_player_health, "The new body has full health and keeps inventory identity")
+	var corpses := 0
+	for actor in manager.saved_instances.get("recovery-test", {}).get("actors", []):
+		if actor.scene == "res://props/corpse.tscn": corpses += 1
+	check(corpses == 1 and station.jobs.is_empty(), "The interior snapshot retains exactly one corpse")
+	check(player.is_gameplay_input_blocked(), "Opening eyes precedes control")
+	await frames(100)
+	check(not player.is_gameplay_input_blocked() and not player.recovery.visible, "Normal input and HUD return after waking")

@@ -1,12 +1,14 @@
 extends Item
 class_name CraftingStation
 signal output_committed(rv_id: String, item_id: String, recipe_id: String)
+signal job_delivered(job_id: String, item: Item)
 
 @onready var spawn_marker: Marker3D = $SpawnMarker
 @export var power_cost_per_spawn: float = 0.6
 var last_error: String = ""
 var _committing: bool = false
 var jobs: Array[Dictionary] = []
+var work_blockage := ""
 @export var queue_capacity: int = 4
 @onready var print_visual: CraftingPrintVisual = $PrintVisual
 
@@ -48,30 +50,45 @@ func _craft_service_ready(item: Item) -> bool:
 	return not item.presentation_only and item.is_fixed and item.enabled and not item.support_lost and not item.is_being_placed and not item.is_destroyed and item.current_health > 0.0 and RVConnection.resolve(item.get_parent()) != null
 
 func request_craft(recipe_id: String) -> bool:
+	return not queue_recipe(recipe_id).is_empty()
+
+func queue_recipe(recipe_id: String) -> String:
 	var rejection := craft_rejection_reason(recipe_id)
 	if not rejection.is_empty():
 		last_error = rejection
-		return false
+		return ""
 	var recipe := RecipeCatalog.find(recipe_id)
 	var rv := get_connected_rv()
 	# Keep final service and power validation adjacent to the synchronous commit.
 	if not can_operate() or rv == null:
 		last_error = "Workstation unavailable"
-		return false
+		return ""
 	if not rv.has_usable_power(recipe.power_cost):
 		last_error = "Insufficient battery charge"
-		return false
+		return ""
 	_committing = true
 	var paid_costs: Dictionary = {} if rv.unlimited_materials else recipe.costs.duplicate(true)
 	var accepted: bool = rv.deduct_materials(recipe.costs)
+	var id := ""
 	if accepted:
-		jobs.append({"id": InstanceIds.create(), "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": paid_costs, "power": recipe.power_cost, "rv": rv})
+		id = InstanceIds.create()
+		jobs.append({"id": id, "recipe": recipe.recipe_id, "remaining": recipe.duration, "costs": paid_costs, "power": recipe.power_cost, "rv": rv})
 	_committing = false
 	last_error = "Queued" if accepted else "Insufficient materials"
 	_sync_print_visual()
-	return accepted
+	return id
+
+func cancel_job(id: String) -> void:
+	for index in jobs.size():
+		var job := jobs[index]
+		if job.id == id:
+			jobs.remove_at(index)
+			if is_instance_valid(job.rv): job.rv.deposit_materials(job.costs, true)
+			_sync_print_visual()
+			return
 
 func step_work(delta: float) -> void:
+	work_blockage = ""
 	if jobs.is_empty() or not can_operate():
 		return
 	var job := jobs[0]
@@ -83,11 +100,13 @@ func step_work(delta: float) -> void:
 		_sync_print_visual()
 		if not job.has("print_orientation"):
 			last_error = "Output blocked"
+			work_blockage = last_error
 			return
 	var elapsed := minf(delta, job.remaining)
 	var power_needed := minf(job.power, recipe.power_cost * elapsed / maxf(recipe.duration, 0.001))
 	if power_needed > 0.0 and not consume_rv_power(power_needed):
 		last_error = "Paused: battery empty"
+		work_blockage = last_error
 		return
 	job.power = maxf(0.0, job.power - power_needed)
 	job.remaining = maxf(0.0, job.remaining - elapsed)
@@ -102,6 +121,9 @@ func step_work(delta: float) -> void:
 			# completion retry cannot print the same job twice.
 			jobs.pop_front()
 			output_committed.emit(output_rv.persistent_id, item.persistent_id, recipe.recipe_id)
+			job_delivered.emit(job.id, item)
+		else:
+			work_blockage = last_error
 	_sync_print_visual()
 
 func spawn_item(scene_path: String, costs: Dictionary = {}, power_cost: float = -1.0, crouching: bool = false, orientation: int = -1, offset_index: int = 0) -> bool:

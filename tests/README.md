@@ -28,6 +28,7 @@
 | 核心測試 | 主要目的 |
 |---|---|
 | [item_player](test_item_player.gd)、[item_persistence](test_item_persistence.gd) | 正式玩家拾取／放置、物品 ID／所有權及保存 |
+| [body_recovery](test_body_recovery.gd) | 製造復活、地下設施遺體、佇列、缺料與停工取消 |
 | [rv_resource_cycle](test_rv_resource_cycle.gd)、[rv_engine](test_rv_engine.gd) | 回收、製造、燃料、維修、能源、引擎及車載作弊／時間／天氣指令 |
 | [promo_world](test_promo_world.gd) | 錄影擺場、錄影面板暫停、自由鏡頭與跟拍的操作權、跟拍不隨目標翻滾、運鏡曲線等速且不倒退、路徑存讀、遭遇、設備與重錄。預設檢查代表鏡頭，完整逐鏡參數見[錄影指南](../docs/guides/promo-capture.md) |
 | [rv_structure_modules](test_rv_structure_modules.gd)、[rv_braking](test_rv_braking.gd) | 車體結構／支撐與真實輪胎煞車 |
