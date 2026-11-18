@@ -78,16 +78,37 @@ func _run() -> void:
 		if is_equal_approx(door.angles[0], door.targets[0]): break
 		await physics_frame
 	check(pool != null and _playing(pool, door_close.samples[0]), "The closing recording plays when the latch reaches the frame")
-	var idle := audio.engine_player.stream as AudioStreamWAV
-	var rev := audio.rev_player.stream as AudioStreamWAV
-	check(idle.loop_mode == AudioStreamWAV.LOOP_FORWARD and rev.loop_mode == AudioStreamWAV.LOOP_FORWARD,
-		"Imported engine samples loop forward")
+	var layers: Array[AudioStreamPlayer3D] = audio.engine_layers
+	for layer in layers:
+		var recording := layer.stream as AudioStreamWAV
+		check(recording.loop_mode == AudioStreamWAV.LOOP_FORWARD, "Imported engine samples loop forward")
+		check(layer.bus == &"Cabin", "Engine layers share the cabin mix")
+	check(chassis.set_engine_running(true), "The fixture starts through the production engine control")
+	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_start_sound, "Starting the engine plays the starter recording")
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
-	var idle_mix: float = audio.rev_blend
+	check(not layers[0].playing, "Cranking starts before the engine loops")
+	audio.engine_cue.stop()
+	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
+	check(layers[0].playing and not layers[1].playing and not layers[2].playing, "Only the idle layer runs when parked")
+	var above_idle := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.28)
+	audio._update_engine(0.4, above_idle)
+	check(layers[0].playing and layers[1].playing, "Low RPM fades between idle and cruise")
+	check(is_equal_approx(layers[0].pitch_scale * audio.ENGINE_PULSE_HZ[0], layers[1].pitch_scale * audio.ENGINE_PULSE_HZ[1]),
+		"Adjacent engine layers share a pulse rate through the crossfade")
+	var cruising := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.53)
+	audio._update_engine(0.4, cruising)
+	check(not layers[0].playing and layers[1].playing and not layers[2].playing, "Cruising uses its own recording")
 	audio._update_engine(0.4, Chassis.ENGINE_MAX_RPM)
-	check(audio.rev_blend > idle_mix and audio.rev_player.playing, "Engine RPM crossfades to the rev recording")
+	check(not layers[0].playing and not layers[1].playing and layers[2].playing, "High RPM fades into the higher engine recording")
+	var running_volume := layers[2].volume_db
+	audio.was_running = true
+	check(chassis.set_engine_running(false), "The fixture shuts down through the production engine control")
+	audio._process(0.025)
+	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_stop_sound, "Shutting down plays the tail recording")
+	check(layers[2].playing and layers[2].volume_db < running_volume, "The running loop fades under the shutdown")
 	audio._update_engine(0.4, 0.0)
-	check(not audio.engine_player.playing and not audio.rev_player.playing, "Both engine loops stop")
+	for layer in layers:
+		check(not layer.playing, "Engine loops stop after shutdown")
 
 	vehicle.queue_free()
 	await process_frame

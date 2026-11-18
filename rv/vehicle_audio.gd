@@ -1,15 +1,23 @@
 extends Node3D
 ## Recorded engine and door pilot, with the remaining prototype cues sharing PCM.
-const ASSETS := "res://assets/audio/rv/"
 const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
+const ENGINE_LOOP_PATHS := [
+	"res://assets/audio/rv/engine_idle.wav",
+	"res://assets/audio/rv/engine_mid.wav",
+	"res://assets/audio/rv/engine_rev.wav",
+]
+# Pulse frequencies of the three recordings, measured before pitch shifting.
+const ENGINE_PULSE_HZ := [30.0, 83.5, 94.5]
 # Chassis-local volume bounded by the finished floor, side panels and ceiling.
 const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
 	"right_1", "right_2", "roof_0", "roof_1", "roof_2"]
 static var streams: Dictionary = {}
-var engine_player: AudioStreamPlayer3D
-var rev_player: AudioStreamPlayer3D
+var engine_layers: Array[AudioStreamPlayer3D] = []
+var engine_cue: AudioStreamPlayer3D
+var engine_start_sound: AudioStream
+var engine_stop_sound: AudioStream
 var tire_player: AudioStreamPlayer3D
 var scrape_player: AudioStreamPlayer3D
 var cues: Array[AudioStreamPlayer3D] = []
@@ -19,7 +27,9 @@ var was_running := false
 var phase := 0.0
 var engine_rest := Vector3.ZERO
 var legacy_audio := false
-var rev_blend := 0.0
+var engine_presence := 0.0
+var engine_speed := 0.0
+var engine_load := 0.0
 @onready var rv: Chassis = get_parent()
 
 static func synth(kind: String) -> AudioStreamWAV:
@@ -77,12 +87,15 @@ func player() -> AudioStreamPlayer3D:
 	return sound
 
 func _ready() -> void:
-	engine_player = player()
-	engine_player.bus = &"Cabin"
-	engine_player.stream = load(ASSETS + "engine_idle.wav")
-	rev_player = player()
-	rev_player.bus = &"Cabin"
-	rev_player.stream = load(ASSETS + "engine_rev.wav")
+	for path in ENGINE_LOOP_PATHS:
+		var layer := player()
+		layer.bus = &"Cabin"
+		layer.stream = load(path)
+		engine_layers.append(layer)
+	engine_cue = player()
+	engine_cue.bus = &"Cabin"
+	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
+	engine_stop_sound = load("res://assets/audio/rv/engine_stop.wav")
 	tire_player = player()
 	tire_player.position = Vector3.ZERO
 	tire_player.stream = synth("tire_slip")
@@ -96,9 +109,10 @@ func _ready() -> void:
 func set_legacy_audio(enabled: bool) -> void:
 	if legacy_audio == enabled: return
 	legacy_audio = enabled
-	engine_player.stream = synth("engine") if enabled else load(ASSETS + "engine_idle.wav")
-	rev_player.stop()
-	rev_blend = 0.0
+	for layer in engine_layers: layer.stop()
+	engine_cue.stop()
+	engine_layers[0].stream = synth("engine") if enabled else load(ENGINE_LOOP_PATHS[0])
+	engine_presence = 0.0
 
 func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool) -> void:
 	if legacy_audio:
@@ -124,12 +138,18 @@ func exterior_audio_cover(listener_position: Vector3) -> float:
 	return lerpf(1.0, 0.45, opening)
 
 func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
+	if not legacy_audio and kind in ["start", "stop"]:
+		engine_cue.stream = engine_start_sound if kind == "start" else engine_stop_sound
+		engine_cue.volume_db = -4.0
+		engine_cue.play()
+		cue_counts[kind] = cue_counts.get(kind, 0) + 1
+		return
 	var now := Time.get_ticks_msec()
 	if now - cooldowns.get(kind, -1000) < 120: return
 	cooldowns[kind] = now
 	for cue in cues:
 		if not cue.playing:
-			cue.stream = _cue_stream(kind)
+			cue.stream = synth(kind)
 			cue.position = at if at.is_finite() else Vector3(0, 0, -5.3)
 			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
 			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
@@ -137,19 +157,13 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 			cue_counts[kind] = cue_counts.get(kind, 0) + 1
 			return
 
-func _cue_stream(kind: String) -> AudioStream:
-	if not legacy_audio:
-		match kind:
-			"start", "stop": return load(ASSETS + "engine_" + kind + ".wav")
-	return synth(kind)
-
 func _process(delta: float) -> void:
 	update_loop(tire_player, rv.drivetrain.slip_speed, 2.0)
 	update_loop(scrape_player, rv.hull_scrape_speed, rv.handling_profile.shell_scrape_min_speed)
 	var rpm := rv.engine_rpm()
 	var running := rpm > 0.0
-	_update_engine(delta, rpm)
 	if not running and was_running: play_cue("stop")
+	_update_engine(delta, rpm)
 	was_running = running
 	phase = fmod(phase + delta, 100.0)
 	# Only the engine's visual assembly moves. Collision, seat and aim stay still.
@@ -157,24 +171,48 @@ func _process(delta: float) -> void:
 	rv.engine_bay.get_node("EngineVisual").position = engine_rest + offset
 
 func _update_engine(delta: float, rpm: float) -> void:
-	if rpm <= 0.0:
-		if engine_player.playing: engine_player.stop()
-		if rev_player.playing: rev_player.stop()
-		rev_blend = 0.0
-		return
-	var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
+	var running := rpm > 0.0
 	if legacy_audio:
-		engine_player.pitch_scale = lerpf(engine_player.pitch_scale, lerpf(0.85, 1.7, fraction), minf(delta * 4.0, 1.0))
-		engine_player.volume_db = -15.0 + rv.throttle_input * 4.0
-	else:
-		rev_blend = move_toward(rev_blend, smoothstep(0.12, 0.72, fraction), delta * 4.0)
-		engine_player.pitch_scale = lerpf(1.0, 1.24, fraction)
-		rev_player.pitch_scale = lerpf(0.86, 1.15, fraction)
-		engine_player.volume_db = -9.0 + linear_to_db(maxf(0.0001, sqrt(1.0 - rev_blend)))
-		rev_player.volume_db = -8.0 + linear_to_db(maxf(0.0001, sqrt(rev_blend)))
-		if rev_blend > 0.0 and not rev_player.playing: rev_player.play()
-		if rev_blend <= 0.0 and rev_player.playing: rev_player.stop()
-	if not engine_player.playing: engine_player.play()
+		var layer := engine_layers[0]
+		if not running:
+			if layer.playing: layer.stop()
+			return
+		var fraction := inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm)
+		layer.pitch_scale = lerpf(layer.pitch_scale, lerpf(0.85, 1.7, fraction), minf(delta * 4.0, 1.0))
+		layer.volume_db = -15.0 + rv.throttle_input * 4.0
+		if not layer.playing: layer.play()
+		return
+
+	var cranking := engine_cue.playing and engine_cue.stream == engine_start_sound \
+		and engine_cue.get_playback_position() < engine_start_sound.get_length() - 0.28
+	engine_presence = move_toward(engine_presence, 1.0 if running and not cranking else 0.0, delta * (5.0 if running else 12.0))
+	if running:
+		var response := 1.0 - exp(-delta * 13.0)
+		var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
+		engine_speed = lerpf(engine_speed, fraction, response)
+		engine_load = lerpf(engine_load, rv.throttle_input, response)
+	elif engine_presence == 0.0:
+		engine_speed = 0.0
+		engine_load = 0.0
+
+	# The recordings share the same target pulse rate during each crossfade.
+	var pulse_hz := lerpf(ENGINE_PULSE_HZ[0], 112.0, engine_speed)
+	var mid_gain := smoothstep(44.0, 61.0, pulse_hz)
+	var high_gain := smoothstep(84.0, 101.0, pulse_hz)
+	var mix_db := -6.0 + 4.0 * engine_speed + 4.0 * engine_load
+	_update_engine_layer(0, pulse_hz, mix_db, sqrt(1.0 - mid_gain))
+	_update_engine_layer(1, pulse_hz, mix_db, sqrt(mid_gain - high_gain))
+	_update_engine_layer(2, pulse_hz, mix_db, sqrt(high_gain))
+
+func _update_engine_layer(index: int, pulse_hz: float, mix_db: float, gain: float) -> void:
+	var layer := engine_layers[index]
+	var amplitude := engine_presence * gain
+	if amplitude <= 0.0001:
+		if layer.playing: layer.stop()
+		return
+	layer.pitch_scale = pulse_hz / ENGINE_PULSE_HZ[index]
+	layer.volume_db = mix_db + linear_to_db(amplitude)
+	if not layer.playing: layer.play()
 
 func update_loop(sound: AudioStreamPlayer3D, speed: float, threshold: float) -> void:
 	if speed < threshold:

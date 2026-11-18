@@ -19,23 +19,14 @@ def read_clip(source, start, end):
         return np.frombuffer(track.readframes(round((end - start) * RATE)), "<i2").astype(float)
 
 
-def make_clip(source, output, start, end, peak_db, loop=0.0):
-    audio = read_clip(source, start, end)
-    audio -= np.mean(audio)
-    if loop:
-        overlap = round(loop * RATE)
-        blend = (1.0 - np.cos(np.linspace(0.0, np.pi, overlap))) * 0.5
-        audio = np.concatenate((audio[overlap:-overlap],
-                                (1 - blend) * audio[-overlap:] + blend * audio[:overlap]))
-    else:
-        fade_in = round(0.008 * RATE)
-        fade_out = round(0.04 * RATE)
-        audio[:fade_in] *= np.linspace(0.0, 1.0, fade_in)
-        audio[-fade_out:] *= np.linspace(1.0, 0.0, fade_out)
-    audio *= 32767 * 10 ** (peak_db / 20) / np.max(np.abs(audio))
+def write_clip(output, audio, peak_db, loop=False, rms_db=None):
+    max_gain = 32767 * 10 ** (peak_db / 20) / np.max(np.abs(audio))
+    gain = max_gain
+    if rms_db is not None:
+        gain = min(max_gain, 32767 * 10 ** (rms_db / 20) / np.sqrt(np.mean(audio**2)))
     with wave.open(str(output), "wb") as clip:
         clip.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
-        clip.writeframes(np.rint(audio).astype("<i2").tobytes())
+        clip.writeframes(np.rint(audio * gain).astype("<i2").tobytes())
     if loop:
         # The WAV importer reads the forward loop directly from the smpl chunk.
         content = output.read_bytes()
@@ -46,22 +37,72 @@ def make_clip(source, output, start, end, peak_db, loop=0.0):
                            + content[8:] + chunk)
 
 
+def fade_one_shot(audio, tail=0.04):
+    fade_in = round(0.008 * RATE)
+    fade_out = round(tail * RATE)
+    audio[:fade_in] *= np.linspace(0.0, 1.0, fade_in)
+    audio[-fade_out:] *= np.linspace(1.0, 0.0, fade_out)
+
+
+def engine_eq(audio, resonance_hz=None):
+    # Remove subsonic noise, soften the mic/gear whine and preserve the engine pulses.
+    pad = RATE // 10
+    padded = np.pad(audio, pad, mode="reflect")
+    frequency = np.fft.rfftfreq(len(padded), 1 / RATE)
+    response = (1 - np.exp(-(frequency / 21) ** 4)) / (1 + (frequency / 3800) ** 2) ** 0.5
+    if resonance_hz is not None:
+        response *= 10 ** (-5 * np.exp(-0.5 * ((frequency - resonance_hz) / 15) ** 2) / 20)
+    return np.fft.irfft(np.fft.rfft(padded) * response, n=len(padded))[pad:-pad]
+
+
+def loop_engine(audio, blend_seconds):
+    overlap = round(blend_seconds * RATE)
+    search = round(0.08 * RATE)
+    # Match pulses near the cut before fading. Decimation is only used to select the cut.
+    stride = 6
+    head = audio[:overlap:stride]
+    tail = audio[-overlap - search::stride]
+    similarity = np.correlate(tail, head, mode="valid") / np.sqrt(np.convolve(tail**2, np.ones(len(head)), mode="valid"))
+    tail_start = len(audio) - overlap - search + stride * np.argmax(similarity)
+    tail_start = min(tail_start, len(audio) - overlap)
+    blend = (1 - np.cos(np.linspace(0.0, np.pi, overlap))) * 0.5
+    joined = (1 - blend) * audio[tail_start:tail_start + overlap] + blend * audio[:overlap]
+    return np.concatenate((audio[overlap:tail_start], joined))
+
+
+def make_engine_clip(source, output, start, end, *, overlap=0.0, resonance=None, rms_db=-20.0):
+    audio = engine_eq(read_clip(source, start, end), resonance)
+    if overlap:
+        audio = loop_engine(audio, overlap)
+    else:
+        fade_one_shot(audio, tail=0.18)
+    write_clip(output, audio, -3.0, loop=bool(overlap), rms_db=rms_db)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--engine-only", action="store_true")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    for name, recording, start, end, peak, overlap in (
-        ("door_open", "door", 0.55, 1.40, -3, 0.0),
-        ("door_close", "door", 3.26, 3.96, -1, 0.0),
-        ("engine_idle", "diesel", 5.60, 8.45, -5, 0.18),
-        ("engine_rev", "diesel", 17.80, 18.39, -4, 0.12),
-        ("engine_start", "diesel", 0.00, 0.78, -3, 0.0),
-        ("engine_stop", "diesel", 26.20, 27.15, -3, 0.0),
+    if not args.engine_only:
+        for name, start, end, peak in (("door_open", 0.55, 1.4, -3), ("door_close", 3.26, 3.96, -1)):
+            audio = read_clip(args.source / "door.wav", start, end)
+            audio -= np.mean(audio)
+            fade_one_shot(audio)
+            write_clip(args.output / f"{name}.wav", audio, peak)
+
+    for name, recording, start, end, overlap, resonance in (
+        ("engine_idle", "bus_idle", 0.40, 8.65, 0.30, 145),
+        ("engine_mid", "bus_low", 0.12, 1.64, 0.22, None),
+        ("engine_rev", "bus_mid", 0.26, 3.54, 0.22, 305),
     ):
-        make_clip(args.source / f"{recording}.wav", args.output / f"{name}.wav",
-                  start, end, peak, overlap)
+        make_engine_clip(args.source / f"{recording}.wav", args.output / f"{name}.wav",
+                         start, end, overlap=overlap, resonance=resonance)
+    for name, start, end in (("engine_start", 0.23, 1.36), ("engine_stop", 19.93, 20.94)):
+        make_engine_clip(args.source / "start_stop.wav", args.output / f"{name}.wav",
+                         start, end, rms_db=-18.0)
 
 
 if __name__ == "__main__":

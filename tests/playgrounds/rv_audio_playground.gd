@@ -43,8 +43,8 @@ func _process(_delta: float) -> void:
 	instructions.text = (
 		"RV AUDIO PILOT   |   %s   |   %s   |   %d RPM\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
-		"F6 Old / new   F7 Warning on / off   F8 Move warning\n%s"
-	) % ["Outside" if outside else "Cabin", "Original" if audio.legacy_audio else "Recorded", roundi(rv.engine_rpm()), message]
+		"F6 Diesel / synth   F7 Warning on / off   F8 Move warning\n%s"
+	) % ["Outside" if outside else "Cabin", "Synth prototype" if audio.legacy_audio else "Diesel recording", roundi(rv.engine_rpm()), message]
 
 
 func _physics_process(_delta: float) -> void:
