@@ -2,7 +2,7 @@
 
 | 狀態 | 盤點完成，測試基準已全綠，擬真操控分支已合回 main，小清理已完成 |
 |---|---|
-| 前提 | 完整測試全綠、`codex/rv-handling-rollover` 合回 main（皆已達成）；之後每個切片從 main 開 worktree |
+| 前提 | 完整測試全綠、`codex/rv-handling-rollover` 合回 main（皆已達成）；之後每個切片直接在 main 上提交 |
 | 痛點 | 高層設計不清、大檔案難改、agent 容易迷路且耗 token、執行效能 |
 
 [計畫總覽](README.md) · [技術架構](../../architecture.md) · [程式碼規範](../guides/codebase.md)
