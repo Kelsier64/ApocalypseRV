@@ -17,10 +17,19 @@ static func force(profile: RVHandlingProfile, slip: Vector2, grip: float) -> Vec
 	var lateral := signf(slip.y) * grip_curve(slip.y, profile.lateral_peak_angle, profile.sliding_grip_fraction)
 	return Vector2(forward, lateral).limit_length() * grip
 
+enum Surface { ASPHALT, SHOULDER, OFFROAD }
+
 static func surface_grip(profile: RVHandlingProfile, field: WorldField, point: Vector3) -> float:
-	if field == null: return profile.asphalt_grip
+	match surface(field, point):
+		Surface.ASPHALT: return profile.asphalt_grip
+		Surface.SHOULDER: return profile.shoulder_grip
+	return profile.offroad_grip
+
+## Road surface under a point. Without a world field everything counts as asphalt.
+static func surface(field: WorldField, point: Vector3) -> Surface:
+	if field == null: return Surface.ASPHALT
 	var road := field.road_query(point.x, point.z)
 	var edge: float = road.width * 0.5
-	if road.distance <= edge and absf(point.y - float(road.height)) < 1.5: return profile.asphalt_grip
-	if road.distance <= edge + field.profile.road_shoulder: return profile.shoulder_grip
-	return profile.offroad_grip
+	if road.distance <= edge and absf(point.y - float(road.height)) < 1.5: return Surface.ASPHALT
+	if road.distance <= edge + field.profile.road_shoulder: return Surface.SHOULDER
+	return Surface.OFFROAD

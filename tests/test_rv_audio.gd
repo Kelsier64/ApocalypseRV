@@ -125,6 +125,18 @@ func _run() -> void:
 		check((layer.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD, "The comparison loops still loop forward")
 	audio.set_loop_engine(false)
 	_check_grain_synth(audio.engine_synth.bank)
+	check(audio.road_layers.size() == RVTireModel.Surface.size(), "Every road surface has a rolling loop")
+	for layer: AudioStreamPlayer3D in audio.road_layers + [audio.wind_player]:
+		check((layer.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD, "Rolling and wind recordings loop forward")
+	check(RVTireModel.surface(null, Vector3.ZERO) == RVTireModel.Surface.ASPHALT, "Without a world field the road counts as asphalt")
+	var cruise: float = audio.ROAD_REFERENCE_SPEED
+	check(audio.road_level(0.0) == 0.0 and audio.wind_level(0.0) == 0.0, "A parked RV makes no rolling or wind noise")
+	check(audio.road_level(cruise) > audio.road_level(cruise * 0.5), "Rolling noise grows with speed")
+	check(audio.wind_level(cruise) / audio.wind_level(cruise * 0.5) > audio.road_level(cruise) / audio.road_level(cruise * 0.5),
+		"Wind grows faster with speed than rolling noise")
+	audio._update_road(0.1)
+	for layer: AudioStreamPlayer3D in audio.road_layers:
+		check(not layer.playing, "Road loops stay silent while the wheels are off the ground or parked")
 
 	vehicle.queue_free()
 	await process_frame

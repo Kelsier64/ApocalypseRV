@@ -18,6 +18,19 @@ const ENGINE_BUFFER_SECONDS := 0.08
 const ENGINE_POSITION := Vector3(0, 0, -5.3)
 # Audio-only shift: load drops out and the firing rate glides to the new gear.
 const SHIFT_SECONDS := 0.3
+# Rolling loops per RVTireModel.Surface. Asphalt and rough come from an in-cab recording.
+const ROAD_LOOPS := [
+	"res://assets/audio/rv/road_asphalt.wav",
+	"res://assets/audio/rv/road_rough.wav",
+	"res://assets/audio/rv/road_gravel.wav",
+]
+const WIND_LOOP := "res://assets/audio/rv/wind.wav"
+# Speeds in m/s at which the road and wind loops play at their base level.
+const ROAD_REFERENCE_SPEED := 20.0
+const WIND_REFERENCE_SPEED := 28.0
+const ROAD_DB := -6.0
+const WIND_DB := -13.0
+const SURFACE_FADE_SECONDS := 0.35
 # Chassis-local volume bounded by the finished floor, side panels and ceiling.
 const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
@@ -46,6 +59,13 @@ var _engine_playback: AudioStreamGeneratorPlayback
 var _engine_capacity := 0
 var _engine_hz := 0.0
 var _engine_gain := 0.0
+var road_layers: Array[AudioStreamPlayer3D] = []
+var road_weights := PackedFloat32Array([1.0, 0.0, 0.0])
+var road_surface := RVTireModel.Surface.ASPHALT
+var wind_player: AudioStreamPlayer3D
+var _surface_check := 0.0
+# Loop start offsets only; never touches gameplay randomness.
+var _rng := RandomNumberGenerator.new()
 @onready var rv: Chassis = get_parent()
 
 static func synth(kind: String) -> AudioStreamWAV:
@@ -127,8 +147,21 @@ func _ready() -> void:
 	scrape_player.position = Vector3.ZERO
 	scrape_player.stream = synth("hull_scrape")
 	for i in range(3): cues.append(player())
+	for path in ROAD_LOOPS:
+		var layer := _cabin_loop(path)
+		road_layers.append(layer)
+	wind_player = _cabin_loop(WIND_LOOP)
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
+
+## The rolling and wind loops are in-cab recordings, so they play on the cabin mix.
+func _cabin_loop(path: String) -> AudioStreamPlayer3D:
+	var sound := player()
+	sound.bus = &"Cabin"
+	sound.position = Vector3(0, 0.8, 0)
+	sound.unit_size = 6.0
+	sound.stream = load(path)
+	return sound
 
 ## Switches between the granular engine and the previous loop recordings.
 func set_loop_engine(enabled: bool) -> void:
@@ -191,6 +224,7 @@ func _process(delta: float) -> void:
 	var running := rpm > 0.0
 	if not running and was_running: play_cue("stop")
 	_update_engine(delta, rpm)
+	_update_road(delta)
 	was_running = running
 	phase = fmod(phase + delta, 100.0)
 	# Only the engine's visual assembly moves. Collision, seat and aim stay still.
@@ -277,6 +311,38 @@ func _update_engine_layer(index: int, pulse_hz: float, mix_db: float, gain: floa
 	layer.pitch_scale = pulse_hz / ENGINE_PULSE_HZ[index]
 	layer.volume_db = mix_db + linear_to_db(amplitude)
 	if not layer.playing: layer.play()
+
+func _update_road(delta: float) -> void:
+	var speed := Vector2(rv.linear_velocity.x, rv.linear_velocity.z).length()
+	_surface_check -= delta
+	if _surface_check <= 0.0:
+		_surface_check = 0.1
+		road_surface = RVTireModel.surface(rv.terrain_field(), rv.global_position)
+	var contact := 0.0
+	for wheel: VehicleWheel3D in rv.installed_wheels:
+		if wheel != null and wheel.is_in_contact(): contact += 1.0 / rv.installed_wheels.size()
+	var road := road_level(speed) * contact
+	var pitch := clampf(lerpf(0.8, 1.0, speed / ROAD_REFERENCE_SPEED), 0.8, 1.15)
+	for i in range(road_layers.size()):
+		road_weights[i] = move_toward(road_weights[i], 1.0 if i == road_surface else 0.0, delta / SURFACE_FADE_SECONDS)
+		_set_loop(road_layers[i], road * road_weights[i], ROAD_DB, pitch)
+	_set_loop(wind_player, wind_level(speed), WIND_DB, clampf(lerpf(0.9, 1.05, speed / WIND_REFERENCE_SPEED), 0.9, 1.1))
+
+## Linear road loop gain for a horizontal speed in m/s.
+static func road_level(speed: float) -> float:
+	return pow(clampf(speed / ROAD_REFERENCE_SPEED, 0.0, 1.5), 1.2)
+
+## Wind grows much faster than rolling noise and only matters at speed.
+static func wind_level(speed: float) -> float:
+	return pow(clampf(speed / WIND_REFERENCE_SPEED, 0.0, 1.4), 2.5)
+
+func _set_loop(sound: AudioStreamPlayer3D, level: float, base_db: float, pitch: float) -> void:
+	if level < 0.003:
+		if sound.playing: sound.stop()
+		return
+	sound.volume_db = base_db + linear_to_db(level)
+	sound.pitch_scale = pitch
+	if not sound.playing: sound.play(_rng.randf() * sound.stream.get_length())
 
 func update_loop(sound: AudioStreamPlayer3D, speed: float, threshold: float) -> void:
 	if speed < threshold:

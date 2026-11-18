@@ -230,6 +230,10 @@ func steering_limit(longitudinal_speed: float) -> float:
 	var speed_factor := 1.0 / (1.0 + pow(longitudinal_speed / profile.steering_speed, 2.0))
 	return profile.max_steering * lerpf(profile.high_speed_steering_ratio, 1.0, speed_factor)
 
+## World field the tyres read road surfaces from; null outside a generated world.
+func terrain_field() -> WorldField:
+	return _terrain_field
+
 func feedback(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	var sound := get_node_or_null("Audio")
 	if sound: sound.play_cue(kind, at, strength)
