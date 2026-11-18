@@ -1,6 +1,10 @@
 extends RefCounted
 class_name TreeImpact
 ## Actual chassis contacts only; scenery never scans the world each frame.
+
+const HIT_SOUND: SoundEvent = preload("res://assets/audio/events/rv/tree_hit.tres")
+# Chassis-local front bumper, where trunk contacts happen.
+const BUMPER_POSITION := Vector3(0, 0.8, -6.2)
 const MIN_SPEED := 3.0
 const SPEED_RETAINED := 0.85
 const SHRUB_LAYER := 1 << 2
@@ -54,7 +58,7 @@ static func hit(rv: Chassis, collider: Node, shape_index: int, velocity: Vector3
 	if target == null or not target.vehicle_tree_impact(shape_index, velocity, rv.global_position): return false
 	# Durability is settled by Chassis after its final yielding velocity, so a
 	# solver's temporary hard stop cannot be mistaken for a heavy impact.
-	rv.feedback("blocked")
+	rv.feedback(HIT_SOUND, BUMPER_POSITION)
 	return true
 
 static func topple(node: Node3D, direction: Vector3, vehicle_position: Vector3 = Vector3.INF) -> void:

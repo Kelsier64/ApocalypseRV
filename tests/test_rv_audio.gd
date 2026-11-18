@@ -125,6 +125,13 @@ func _run() -> void:
 	audio.engine_speed = revved_speed
 	audio.play_cue("gear", Vector3(-0.1, 1, -4))
 	check(pool != null and _playing_any(pool, load(audio.GEAR_SHIFT).samples), "Changing gear plays a lever recording")
+	chassis.set_handbrake(not chassis.handbrake)
+	check(_playing_any(pool, Chassis.HANDBRAKE_SOUND.samples), "The parking brake plays its lever recording")
+	chassis.set_handbrake(not chassis.handbrake)
+	audio.play_cue("crash", Vector3.INF, 1.0)
+	audio.play_cue("crash", Vector3.INF, 0.0)
+	check(_playing_any(pool, audio.CRASH_SOUNDS[-1].samples) and _playing_any(pool, audio.CRASH_SOUNDS[0].samples),
+		"Collision strength picks between the heavy and light recordings")
 	for i in range(half_shift):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
 	check(audio._shift_load_scale() < 0.25, "Load drops out halfway through a shift")
@@ -163,6 +170,9 @@ func _run() -> void:
 		check(not layer.playing, "Road loops stay silent while the wheels are off the ground or parked")
 
 	vehicle.queue_free()
+	# Quitting while pooled voices still mix occasionally crashes Godot on shutdown.
+	for voice in sfx._voices: voice.stop()
+	await process_frame
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)

@@ -2,6 +2,7 @@ extends RefCounted
 class_name RepairOperation
 ## Hold H while looking at damaged hardware. Resources commit only on completion.
 
+const REPAIR_SOUND: SoundEvent = preload("res://assets/audio/events/rv/repair_done.tres")
 var target: Node = null
 var progress: float = 0.0
 var repair_item_id: String = ""
@@ -43,7 +44,7 @@ func step(player: Node3D, candidate: Node, held: bool, delta: float) -> void:
 	if progress >= DURATION:
 		if rv.deduct_materials(COST):
 			candidate.repair_health(60.0)
-			rv.feedback("complete", rv.to_local(candidate.global_position))
+			rv.feedback(REPAIR_SOUND, rv.to_local(candidate.global_position))
 		progress = 0.0
 
 func cancel() -> void:
@@ -77,6 +78,6 @@ func _step_engine(player: Node3D, candidate: Node, delta: float) -> void:
 			candidate.repair_health(150.0)
 			if candidate.installed_engine == _original_engine and _original_engine.health > original_health and player.inventory.items.size() == item_count - 1:
 				candidate.rv.engine_repair_committed.emit(repaired_engine_id, repair_item_id)
-			candidate.rv.feedback("complete")
+			candidate.rv.feedback(REPAIR_SOUND, candidate.rv.to_local(candidate.global_position))
 			player.refresh_inventory()
 		progress = 0.0

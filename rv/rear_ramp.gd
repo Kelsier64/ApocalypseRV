@@ -1,5 +1,6 @@
 extends StaticBody3D
 class_name RearRamp
+const CLANK_SOUND: SoundEvent = preload("res://assets/audio/events/rv/ramp_clank.tres")
 var deployed: bool = false
 var angle: float = 0.0
 var length: float = 3.6
@@ -47,7 +48,7 @@ func _physics_process(delta: float) -> void:
 	if progress == target:
 		moving = false
 		deployed = requested_deployed
-		rv.feedback("mechanical", position)
+		rv.feedback(CLANK_SOUND, position)
 	_sync()
 func doors_open() -> bool:
 	var slots := rv.get_node_or_null("StructureSlots")
@@ -63,13 +64,13 @@ func interact(_player: Node3D) -> String:
 	if rv.linear_velocity.length() > 0.5 or not rv.handbrake: return "Stop the vehicle and apply the parking brake"
 	if moving:
 		requested_deployed = not requested_deployed
-		rv.feedback("mechanical", position)
+		rv.feedback(CLANK_SOUND, position)
 		_sync()
 		return "Ramp reversing to deploy" if requested_deployed else "Ramp reversing to stow"
 	if deployed or progress > 0.0:
 		requested_deployed = false
 		moving = true
-		rv.feedback("mechanical", position)
+		rv.feedback(CLANK_SOUND, position)
 		_sync()
 		return "Ramp stowing"
 	var end := to_global(Vector3(0, 0, 3.6))
@@ -84,7 +85,7 @@ func interact(_player: Node3D) -> String:
 	length = next_length
 	requested_deployed = true
 	moving = true
-	rv.feedback("mechanical", position)
+	rv.feedback(CLANK_SOUND, position)
 	_sync()
 	return "Ramp deploying. Stow it before driving."
 func _sync() -> void:

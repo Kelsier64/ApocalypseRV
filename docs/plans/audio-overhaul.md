@@ -98,7 +98,7 @@ Master
 階段 3 遷移時再加入：
 
 - `SoundEvent` 的強度曲線、優先度與事件各自的發聲限制，以及池滿時依優先度搶占，等有聲音需要時再加。
-- `Chassis.feedback(kind, ...)` 這類字串介面改成直接傳 `SoundEvent`。排檔、手煞車、坡板、維修蓋、千斤頂、安裝完成、受阻各自獨立。
+- `Chassis.feedback(event, at)` 直接傳 `SoundEvent`，RV 的操作回饋各有錄音。換檔、啟動與熄火、碰撞會改變音訊狀態或依強度選層，留在 `VehicleAudio.play_cue`。
 
 ### 3. 引擎與車輛
 
@@ -108,7 +108,7 @@ Master
 - 換檔過程與駕駛視角混音見上方決定表。
 - 啟動、熄火各自是一次性錄音；啟動失敗之後再加。
 - **路噪與風聲**：路噪依 [tire_model.gd](../../rv/tire_model.gd) `surface_grip` 背後的 `WorldField.road_query` 分柏油、路肩、越野三種，音量與亮度隨車速提高；風聲在中高速後才明顯。
-- 撞擊依強度選輕、中、重三層，重撞再疊一層玻璃或車殼撕裂聲。
+- 撞擊依強度選輕、中、重三組錄音，組內較輕的撞擊最多小 6 dB；重撞錄音已含玻璃碎裂。
 - 車殼受怪物攻擊、面板毀壞、碎片落地沿用 [panel_damage_effect.gd](../../rv/panel_damage_effect.gd) 的時序，只換素材並改走事件層。
 
 ### 4. 空間與遮蔽

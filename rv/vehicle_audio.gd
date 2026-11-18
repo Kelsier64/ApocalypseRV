@@ -1,9 +1,17 @@
 extends Node3D
-## Granular diesel engine, recorded doors and gear lever, and the remaining prototype cues.
+## Granular diesel engine, recorded one-shots and contact loops for the RV.
 const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
 const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
 const ENGINE_GRAINS := "res://assets/audio/rv/engine_grains.tres"
+# Light, medium and heavy collision recordings, chosen by impact strength.
+const CRASH_SOUNDS: Array[SoundEvent] = [
+	preload("res://assets/audio/events/rv/crash_light.tres"),
+	preload("res://assets/audio/events/rv/crash_medium.tres"),
+	preload("res://assets/audio/events/rv/crash_heavy.tres"),
+]
+# Each tier plays this much quieter at the bottom of its strength band.
+const CRASH_SPAN_DB := 6.0
 const VEHICLE_RANGE: SoundAttenuation = preload("res://assets/audio/attenuation/vehicle.tres")
 # Slip and scrape loops reach this volume once they run 10 m/s past their threshold.
 const CONTACT_DB := -11.0
@@ -39,8 +47,6 @@ var engine_start_sound: AudioStream
 var engine_stop_sound: AudioStream
 var tire_player: SoundLoop
 var scrape_player: SoundLoop
-var cues: Array[AudioStreamPlayer3D] = []
-var cooldowns := {}
 var cue_counts := {}
 var was_running := false
 var phase := 0.0
@@ -63,40 +69,26 @@ var _surface_check := 0.0
 # Loop start offsets only; never touches gameplay randomness.
 @onready var rv: Chassis = get_parent()
 
+## Player sounds that still synthesize until their own migration: the tinnitus
+## tone (ringing, looped) and the revival inhale.
 static func synth(kind: String) -> AudioStreamWAV:
 	if streams.has(kind): return streams[kind]
-	var loop := kind in ["engine", "tire_slip", "hull_scrape", "ringing"]
-	var duration := 1.0 if loop else (0.6 if kind in ["start", "stop"] else 0.18)
-	if kind == "crash": duration = 0.32
-	if kind == "inhale": duration = .78
+	var loop := kind == "ringing"
+	var duration := 1.0 if loop else 0.78
 	var rate := 22050
 	var data := PackedByteArray()
 	data.resize(int(duration * rate) * 2)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4501 + kind.hash()
-	var freq := 46.0 if loop else (110.0 if kind == "start" else (65.0 if kind == "stop" else 280.0))
-	if kind == "complete": freq = 760.0
-	if kind == "blocked": freq = 170.0
 	var breath_noise := 0.0
 	for i in range(data.size() / 2):
 		var t := float(i) / rate
-		var envelope := 1.0 if loop else minf(t / 0.006, 1.0) * pow(1.0 - t / duration, 2.0)
-		var pulse := pow(0.5 + 0.5 * sin(TAU * 23.0 * t), 4.0)
-		var signal_value := sin(TAU * freq * t) * 0.5 + sin(TAU * freq * 2.0 * t) * 0.18
-		signal_value += rng.randf_range(-1.0, 1.0) * (0.12 + pulse * 0.12)
-		if kind == "ringing": signal_value = sin(TAU * 1886.0 * t) * 0.32 + sin(TAU * 2294.0 * t) * 0.065
+		var envelope := 1.0
+		var signal_value := sin(TAU * 1886.0 * t) * 0.32 + sin(TAU * 2294.0 * t) * 0.065
 		if kind == "inhale":
 			breath_noise = lerpf(breath_noise, rng.randf_range(-1, 1), .28)
 			envelope = pow(sin(PI * t / duration), .8)
 			signal_value = breath_noise * (1.0 + .3 * sin(TAU * (620.0 - 180.0 * t) * t))
-		if kind == "tire_slip": signal_value = sin(TAU * 923.0 * t + sin(TAU * 17.0 * t) * 2.0) * 0.6
-		if kind == "hull_scrape": signal_value = rng.randf_range(-0.65, 0.65) * (0.6 + pulse * 0.4) + 0.22 * sin(TAU * 213.0 * t)
-		if kind == "crash":
-			var thump := 0.75 * sin(TAU * (84.0 * t - 83.0 * t * t)) * exp(-t * 11.0)
-			var metal := (0.23 * sin(TAU * 613.0 * t) + 0.19 * sin(TAU * 967.0 * t)) * exp(-t * 14.0)
-			var rattle := rng.randf_range(-0.5, 0.5) * exp(-t * 18.0)
-			var rebound := maxf(0.0, 1.0 - absf(t - 0.092) * 43.0)
-			signal_value = thump + metal + rattle * (1.0 + 2.0 * rebound)
 		data.encode_s16(i * 2, int(clampf(signal_value * envelope * 0.55, -1.0, 1.0) * 32767))
 	var stream := AudioStreamWAV.new()
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
@@ -141,9 +133,8 @@ func _ready() -> void:
 	engine_cue.bus = bus_for_local(ENGINE_POSITION)
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
 	engine_stop_sound = load("res://assets/audio/rv/engine_stop.wav")
-	tire_player = _loop(synth("tire_slip"), Vector3.ZERO, CONTACT_DB)
-	scrape_player = _loop(synth("hull_scrape"), Vector3.ZERO, CONTACT_DB)
-	for i in range(3): cues.append(player())
+	tire_player = _loop(load("res://assets/audio/rv/tire_slip.wav"), Vector3.ZERO, CONTACT_DB)
+	scrape_player = _loop(load("res://assets/audio/rv/hull_scrape.wav"), Vector3.ZERO, CONTACT_DB)
 	for path in ROAD_LOOPS:
 		road_layers.append(_cabin_loop(path, ROAD_DB))
 	wind_player = _cabin_loop(WIND_LOOP, WIND_DB)
@@ -199,19 +190,17 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 		if rv.engine_rpm() > 0.0: shift_left = SHIFT_SECONDS
 		cue_counts[kind] = cue_counts.get(kind, 0) + 1
 		return
-	var now := Time.get_ticks_msec()
-	if now - cooldowns.get(kind, -1000) < 120: return
-	cooldowns[kind] = now
-	for cue in cues:
-		if not cue.playing:
-			cue.stream = synth(kind)
-			cue.position = at if at.is_finite() else ENGINE_POSITION
-			cue.bus = bus_for_local(cue.position)
-			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
-			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
-			cue.play()
+	if kind == "crash":
+		# Strength picks the tier; within a tier the weaker hits play quieter.
+		var scaled := clampf(strength, 0.0, 1.0) * CRASH_SOUNDS.size()
+		var tier := mini(int(scaled), CRASH_SOUNDS.size() - 1)
+		var gain_db := CRASH_SPAN_DB * (minf(scaled - tier, 1.0) - 1.0)
+		if get_node("/root/Sfx").play(CRASH_SOUNDS[tier], rv, at if at.is_finite() else ENGINE_POSITION, gain_db):
 			cue_counts[kind] = cue_counts.get(kind, 0) + 1
-			return
+
+## Recorded one-shot from a chassis-local point, the engine bay when none is given.
+func play_event(event: SoundEvent, at: Vector3 = Vector3.INF) -> void:
+	get_node("/root/Sfx").play(event, rv, at if at.is_finite() else ENGINE_POSITION)
 
 func _process(delta: float) -> void:
 	_update_contact(tire_player, rv.drivetrain.slip_speed, 2.0)

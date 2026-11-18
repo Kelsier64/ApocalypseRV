@@ -44,7 +44,8 @@ func set_listener_viewport(viewport: Viewport) -> void:
 	for bus_name in _cover: _set_cover(bus_name, 0.0)
 
 
-func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO) -> bool:
+## gain_db scales this one playback, for example by impact strength.
+func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gain_db := 0.0) -> bool:
 	if event.samples.is_empty() or not is_instance_valid(_listener) or not source.is_inside_tree():
 		return false
 	if source.get_world_3d() != _listener.find_world_3d(): return false
@@ -57,7 +58,7 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO) -> 
 	var at := source.to_global(local_position)
 	voice.stream = event.samples[_rng.randi_range(0, event.samples.size() - 1)]
 	voice.bus = bus_at(at, source.get_world_3d()) if event.occlusion_by_position else event.bus
-	voice.volume_db = event.volume_db
+	voice.volume_db = event.volume_db + gain_db
 	voice.pitch_scale = 1.0 + _rng.randf_range(-event.pitch_variation, event.pitch_variation)
 	event.attenuation.apply(voice)
 	voice.global_position = at
@@ -136,3 +137,9 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover)
 	filter.cutoff_hz = exp(lerpf(log(OPEN_CUTOFF_HZ), log(CLOSED_CUTOFF_HZ), cover))
 	AudioServer.set_bus_effect_enabled(bus, 0, cover > 0.0)
+
+
+func _exit_tree() -> void:
+	# Quitting with pooled voices still mixing could crash Godot on shutdown.
+	for voice in _voices:
+		if is_instance_valid(voice): voice.stop()

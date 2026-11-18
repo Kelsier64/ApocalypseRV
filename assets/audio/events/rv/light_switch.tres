@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/near.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/light_switch_a.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/light_switch_b.wav" id="4"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4")])
+volume_db = -14.0
+pitch_variation = 0.05
+attenuation = ExtResource("2")

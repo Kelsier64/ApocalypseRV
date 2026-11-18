@@ -1,6 +1,20 @@
 extends "res://tests/playgrounds/rv_design_workshop.gd"
 ## Parked production RV with repeatable listener positions and the actual warning recording.
 
+# Number keys 1-0 play these recorded one-shots from their usual chassis point.
+const ONE_SHOTS := [
+	["Handbrake", "handbrake", Vector3(-0.1, 1, -4)],
+	["Light switch", "light_switch", Vector3(0, 2.2, -4)],
+	["Hatch release", "hatch_release", Vector3(0, -0.08, -5.88)],
+	["Hatch latch", "hatch_latch", Vector3(0, -0.08, -5.88)],
+	["Ramp clank", "ramp_clank", Vector3(0, 0.6, 5.9)],
+	["Jack ratchet", "jack_ratchet", Vector3(1.9, 0.3, 0)],
+	["Install", "install", Vector3(0, -0.03, -5.3)],
+	["Repair done", "repair_done", Vector3(0, -0.03, -5.3)],
+	["Blocked", "blocked", Vector3(1.8, 1.2, 0.75)],
+	["Puncture", "puncture", Vector3(1.6, 0.4, -3.8)],
+]
+
 var warning: AudioStreamPlayer3D
 var side_door: RVDoor
 var outside := true
@@ -29,6 +43,8 @@ func _ready() -> void:
 	rv.add_child(warning)
 	_position_warning()
 	instructions.position = Vector2(24, 24)
+	# Runs after the RV audio node, so held contact loops override its own levels.
+	process_priority = 100
 
 
 func _exit_tree() -> void:
@@ -43,10 +59,14 @@ func _process(_delta: float) -> void:
 	var grains: AudioStreamPlayer3D = audio.engine_grains
 	var playback: AudioStreamGeneratorPlayback = grains.get_stream_playback() if grains.playing else null
 	var dropouts := playback.get_skips() if playback != null else 0
+	if Input.is_key_pressed(KEY_B): audio.tire_player.set_level(1.0)
+	if Input.is_key_pressed(KEY_N): audio.scrape_player.set_level(1.0)
 	instructions.text = (
 		"RV AUDIO PILOT   |   %s   |   %d RPM   |   %d engine dropouts\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
-		"F7 Warning on / off   F8 Move warning\n%s"
+		"F7 Warning on / off   F8 Move warning\n" +
+		"1 Handbrake  2 Switch  3 Hatch release  4 Hatch latch  5 Ramp  6 Jack  7 Install  8 Repair  9 Blocked  0 Puncture\n" +
+		"Z / X / C Light / medium / heavy crash   V Tree hit   Hold B Tyre slip   Hold N Hull scrape\n%s"
 	) % ["Outside" if outside else "Cabin",
 		roundi(rv.engine_rpm()), dropouts, message]
 
@@ -75,3 +95,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_F8:
 			cue_side = -cue_side
 			_position_warning()
+		KEY_Z, KEY_X, KEY_C:
+			rv.get_node("Audio").play_cue("crash", Vector3(0, 0.8, -6.2), {KEY_Z: 0.15, KEY_X: 0.5, KEY_C: 0.95}[event.keycode])
+		KEY_V:
+			rv.feedback(TreeImpact.HIT_SOUND, TreeImpact.BUMPER_POSITION)
+		_:
+			var index: int = (event.keycode - KEY_1 + 10) % 10 if event.keycode >= KEY_0 and event.keycode <= KEY_9 else -1
+			if index >= 0:
+				var shot: Array = ONE_SHOTS[index]
+				rv.feedback(load("res://assets/audio/events/rv/%s.tres" % shot[1]), shot[2])
+				message = shot[0]

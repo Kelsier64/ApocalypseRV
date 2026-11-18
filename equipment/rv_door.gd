@@ -1,6 +1,9 @@
 class_name RVDoor
 extends RVStructurePanel
 ## Door leaf collision and damage belong to the fixed structure frame.
+
+const BLOCKED_SOUND: SoundEvent = preload("res://assets/audio/events/rv/blocked.tres")
+
 @export var leaf_count: int = 1
 @export var leaf_width: float = 1.18
 @export var hinge_span: float = 1.2
@@ -55,7 +58,7 @@ func _physics_process(delta: float) -> void:
 		if not reason.is_empty():
 			targets[index] = angles[index]
 			blocked_message = "Door blocked by " + reason + ". Clear it and press E again."
-			get_connected_rv().feedback("blocked", position)
+			get_connected_rv().feedback(BLOCKED_SOUND, position)
 			continue
 		angles[index] = next
 		if is_equal_approx(next, targets[index]): _play_motion(index, not is_zero_approx(next), false)

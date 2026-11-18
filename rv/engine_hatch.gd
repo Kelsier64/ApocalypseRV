@@ -1,4 +1,7 @@
 extends StaticBody3D
+const RELEASE_SOUND: SoundEvent = preload("res://assets/audio/events/rv/hatch_release.tres")
+const LATCH_SOUND: SoundEvent = preload("res://assets/audio/events/rv/hatch_latch.tres")
+const BLOCKED_SOUND: SoundEvent = preload("res://assets/audio/events/rv/blocked.tres")
 const CLOSED := Vector3(0, -0.05, -0.58)
 const HINGE := Vector3(0, 0.28, -0.53)
 const OPEN_ANGLE := deg_to_rad(105.0)
@@ -71,7 +74,7 @@ func interact(_player: Node3D) -> String:
 	opened = false
 	bay().hatch_open = false
 	blocked_message = ""
-	rv.feedback("mechanical")
+	rv.feedback(RELEASE_SOUND, rv.to_local(global_position))
 	return "Service hatch opening" if next else "Service hatch closing"
 
 func _physics_process(delta: float) -> void:
@@ -83,7 +86,7 @@ func _physics_process(delta: float) -> void:
 	if not reason.is_empty():
 		moving = false
 		blocked_message = reason
-		bay().get_parent().feedback("blocked")
+		bay().get_parent().feedback(BLOCKED_SOUND, bay().get_parent().to_local(global_position))
 		return
 	progress = next
 	apply_pose()
@@ -91,7 +94,7 @@ func _physics_process(delta: float) -> void:
 		moving = false
 		opened = requested_open
 		bay().hatch_open = opened
-		bay().get_parent().feedback("mechanical")
+		bay().get_parent().feedback(LATCH_SOUND, bay().get_parent().to_local(global_position))
 
 func set_open(value: bool) -> void:
 	# Stable-state restoration only. Interactive operation always animates.

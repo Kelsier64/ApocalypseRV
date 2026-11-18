@@ -1,6 +1,7 @@
 extends Item
 class_name RecoveryJack
 
+const RATCHET_SOUND: SoundEvent = preload("res://assets/audio/events/rv/jack_ratchet.tres")
 const SCENE := "res://props/recovery_jack.tscn"
 const REACH := 3.9
 const MAX_START_SPEED := 0.65
@@ -228,7 +229,7 @@ func _begin_lift(player: Node3D, target: Chassis, axis: Vector3, placement: Dict
 	_set_extension(MIN_EXTENSION)
 	model.reset_physics_interpolation()
 	target.sleeping = false
-	target.feedback("mechanical", target.to_local(load_surface().origin))
+	target.feedback(RATCHET_SOUND, target.to_local(load_surface().origin))
 
 func load_surface() -> Transform3D:
 	return _contact_body.global_transform * _contact_local
@@ -244,7 +245,7 @@ func _physics_process(delta: float) -> void:
 	var impulse_speed := _vehicle.angular_velocity.dot(_axis)
 	var target_up_dot := -0.02 if _inverted_stage else 0.72
 	if _released and _fold_time >= HINGE_TIME and upright >= target_up_dot and (not _inverted_stage or (absf(impulse_speed) < 0.12 and _vehicle.linear_velocity.length() < 0.4)):
-		_vehicle.feedback("mechanical")
+		_vehicle.feedback(RATCHET_SOUND, _vehicle.to_local(model.global_position))
 		_finish_lift("Move beside the RV for the second lift." if _inverted_stage else "RV recovered.", true)
 		return
 	if not _released and upright >= (-0.82 if _inverted_stage else 0.70):

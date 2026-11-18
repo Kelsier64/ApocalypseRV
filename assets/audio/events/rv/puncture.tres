@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/vehicle.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/puncture_a.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/puncture_b.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/puncture_c.wav" id="5"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/puncture_d.wav" id="6"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+volume_db = -4.0
+pitch_variation = 0.05
+attenuation = ExtResource("2")
+cooldown_seconds = 0.12

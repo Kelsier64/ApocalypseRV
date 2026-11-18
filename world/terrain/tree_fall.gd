@@ -9,7 +9,6 @@ const WOOD_MIN_KEEP_SECONDS := 8.0
 const WOOD_SECONDS := 20.0
 const WOOD_FADE_SECONDS := 2.0
 const FALL_MATERIAL = preload("res://world/terrain/fallen_tree.gdshader")
-const VEHICLE_AUDIO = preload("res://rv/vehicle_audio.gd")
 static var prepared := false
 static var preparing := false
 static var mesh_arrays: Dictionary = {}
@@ -49,7 +48,6 @@ static func prepare(parent: Node) -> void:
 		await parent.get_tree().process_frame
 		if prepared: return
 	preparing = true
-	VEHICLE_AUDIO.synth("blocked")
 	# Render real mesh layouts and materials during loading, including the
 	# transparent dust and alpha-hashed leaf/shadow pipelines. A tiny isolated
 	# viewport also warms Compatibility, without showing a fake tree in play.

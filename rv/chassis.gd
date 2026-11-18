@@ -10,6 +10,13 @@ const MIN_ENGINE_SPEED_SCALE := 0.4
 const ENGINE_IDLE_RPM := 750.0
 const ENGINE_REDLINE_RPM := 4200.0
 const ENGINE_MAX_RPM := 4800.0
+const HANDBRAKE_SOUND: SoundEvent = preload("res://assets/audio/events/rv/handbrake.tres")
+const SWITCH_SOUND: SoundEvent = preload("res://assets/audio/events/rv/light_switch.tres")
+const INSTALL_SOUND: SoundEvent = preload("res://assets/audio/events/rv/install.tres")
+const PUNCTURE_SOUND: SoundEvent = preload("res://assets/audio/events/rv/puncture.tres")
+# Chassis-local cab points for the driver's lever and the ceiling light switch.
+const LEVER_POSITION := Vector3(-0.1, 1, -4)
+const SWITCH_POSITION := Vector3(0, 2.2, -4)
 
 @export var max_engine_force: float = 5000.0
 @export var max_speed: float = 35.0
@@ -239,18 +246,24 @@ func engine_pedal() -> float:
 func terrain_field() -> WorldField:
 	return _terrain_field
 
-func feedback(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
+## Plays a recorded one-shot from a chassis-local point, the engine bay when none is given.
+func feedback(event: SoundEvent, at: Vector3 = Vector3.INF) -> void:
+	var sound := get_node_or_null("Audio")
+	if sound: sound.play_event(event, at)
+
+## Engine start, gear change and collisions also drive audio state, so they are cues.
+func _cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	var sound := get_node_or_null("Audio")
 	if sound: sound.play_cue(kind, at, strength)
 
 func set_handbrake(value: bool) -> void:
-	if handbrake != value: feedback("mechanical", Vector3(-0.1, 1, -4))
+	if handbrake != value: feedback(HANDBRAKE_SOUND, LEVER_POSITION)
 	handbrake = value
 
 func toggle_interior_light(kind: String) -> void:
 	if interior_requested.has(kind):
 		interior_requested[kind] = not interior_requested[kind]
-		feedback("mechanical")
+		feedback(SWITCH_SOUND, SWITCH_POSITION)
 
 func interior_light_status(kind: String) -> String:
 	var title: String = {"cabin": "Cabin lights", "service": "Service light"}.get(kind, kind)
@@ -305,7 +318,7 @@ func exchange_engine(player: Node3D) -> String:
 	else:
 		player.inventory.consume_active()
 	engine_bay.installed_engine = incoming
-	feedback("complete")
+	feedback(INSTALL_SOUND, engine_bay.position)
 	player.refresh_inventory()
 	update_load()
 	return "Installed " + incoming.definition().display_name
@@ -319,7 +332,7 @@ func remove_engine(player: Node3D) -> String:
 	var item := engine.item()
 	if not player.add_item(item.name, true, item.scene_path, item.state): return "Cannot remove engine: inventory full or already carrying a large item"
 	engine_bay.installed_engine = null
-	feedback("complete")
+	feedback(INSTALL_SOUND, engine_bay.position)
 	energy.engine_running = false
 	update_load()
 	return "Engine removed"
@@ -437,7 +450,7 @@ func queue_explosive_item_impact(item: Item, normal: Vector3, point: Vector3, ap
 
 func _present_collision(direction: Vector3, loss: float, point := Vector3.INF) -> void:
 	var strength := clampf(loss / 12.0, 0.0, 1.0)
-	feedback("crash", to_local(point) if point.is_finite() else Vector3.INF, strength)
+	_cue("crash", to_local(point) if point.is_finite() else Vector3.INF, strength)
 	if not is_instance_valid(_player_driver): return
 	var seat: Node3D = _player_driver.seated_in
 	if is_instance_valid(seat):
@@ -694,7 +707,7 @@ func step_energy_system(drive_input: float, _braking_input: float, _steering_inp
 func set_engine_running(running: bool) -> bool:
 	if running and not engine_start_reason().is_empty():
 		return false
-	if running and not energy.engine_running: feedback("start")
+	if running and not energy.engine_running: _cue("start")
 	energy.engine_running = running
 	return true
 
@@ -715,7 +728,7 @@ func exchange_battery(player: Node3D, socket: BatterySocket = null) -> bool:
 	else:
 		player.inventory.consume_active()
 	socket.installed_battery = next
-	feedback("complete", socket.position)
+	feedback(INSTALL_SOUND, socket.position)
 	player.refresh_inventory()
 	power_changed.emit(current_power, max_power)
 	battery_exchanged.emit(socket.persistent_id, old.id if old else "", next.id)
@@ -730,7 +743,7 @@ func remove_battery_to_player(player: Node3D, socket: BatterySocket = null) -> b
 	if not player.add_item(ItemNames.BATTERY, false, old.scene_path, old.item_state()):
 		return false
 	socket.installed_battery = null
-	feedback("complete", socket.position)
+	feedback(INSTALL_SOUND, socket.position)
 	power_changed.emit(0.0, 0.0)
 	return true
 
@@ -953,7 +966,7 @@ func puncture_wheel(slot: int) -> bool:
 		return false
 	wheel_health[slot] = 0.0
 	_update_wheel_condition(slot)
-	feedback("blocked", WHEEL_SLOTS[slot].position)
+	feedback(PUNCTURE_SOUND, WHEEL_SLOTS[slot].position)
 	return true
 
 func damage_tire(slot: int, damage: float) -> void:
@@ -1009,7 +1022,7 @@ func set_gear(next: int) -> bool:
 		return false
 	if gear < 0 and next > 0 and linear_velocity.length() > 0.5:
 		return false
-	if gear != next: feedback("gear", Vector3(-0.1, 1, -4))
+	if gear != next: _cue("gear", LEVER_POSITION)
 	gear = next
 	return true
 
