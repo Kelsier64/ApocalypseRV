@@ -90,50 +90,82 @@ func _run() -> void:
 		if is_equal_approx(door.angles[0], door.targets[0]): break
 		await physics_frame
 	check(pool != null and _playing(pool, door_close.samples[0]), "The closing recording plays when the latch reaches the frame")
-	var layers: Array[AudioStreamPlayer3D] = audio.engine_layers
-	for layer in layers:
-		var recording := layer.stream as AudioStreamWAV
-		check(recording.loop_mode == AudioStreamWAV.LOOP_FORWARD, "Imported engine samples loop forward")
-		check(layer.bus == &"Cabin", "Engine layers share the cabin mix")
+	var grains: AudioStreamPlayer3D = audio.engine_grains
 	check(chassis.set_engine_running(true), "The fixture starts through the production engine control")
 	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_start_sound, "Starting the engine plays the starter recording")
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
-	check(not layers[0].playing, "Cranking starts before the engine loops")
+	check(not grains.playing, "Cranking starts before the engine runs")
 	audio.engine_cue.stop()
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
-	check(layers[0].playing and not layers[1].playing and not layers[2].playing, "Only the idle layer runs when parked")
-	var above_idle := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.16)
-	audio._update_engine(0.4, above_idle)
-	check(layers[0].playing and layers[1].playing, "Low RPM fades between idle and cruise")
-	check(is_equal_approx(layers[0].pitch_scale * audio.ENGINE_PULSE_HZ[0], layers[1].pitch_scale * audio.ENGINE_PULSE_HZ[1]),
-		"Adjacent engine layers share a pulse rate through the crossfade")
-	var cruising := lerpf(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, 0.36)
-	audio._update_engine(0.4, cruising)
-	check(not layers[0].playing and layers[1].playing and not layers[2].playing, "Cruising uses its own recording")
-	audio._update_engine(0.4, Chassis.ENGINE_MAX_RPM)
-	check(not layers[0].playing and not layers[1].playing and layers[2].playing, "High RPM fades into the higher engine recording")
-	var high_pitch := layers[2].pitch_scale
-	audio._update_engine(1.0 / 60.0, Chassis.ENGINE_IDLE_RPM)
-	check(layers[2].playing and layers[2].pitch_scale < high_pitch, "Lifting off starts to lower pitch without dropping the rev layer in one frame")
-	audio._update_engine(0.16, Chassis.ENGINE_IDLE_RPM)
-	check(layers[1].playing and not layers[2].playing, "The engine coasts down through the cruise recording")
-	audio._update_engine(0.6, Chassis.ENGINE_IDLE_RPM)
-	check(layers[0].playing and not layers[1].playing, "Engine audio settles back to idle after lifting off")
-	audio._update_engine(0.4, Chassis.ENGINE_MAX_RPM)
-	var running_volume := layers[2].volume_db
+	check(grains.playing and grains.get_stream_playback() is AudioStreamGeneratorPlayback, "The grain engine streams at idle")
+	var idle_hz: float = audio.engine_firing_hz()
+	var step := 1.0 / Engine.physics_ticks_per_second
+	for i in range(Engine.physics_ticks_per_second):
+		audio._update_engine(step, Chassis.ENGINE_MAX_RPM)
+	var revved_hz: float = audio.engine_firing_hz()
+	check(revved_hz > idle_hz * 2.0, "Revving raises the firing rate well above idle")
+	audio.play_cue("gear", Vector3(-0.1, 1, -4))
+	check(pool != null and _playing_any(pool, load(audio.GEAR_SHIFT).samples), "Changing gear plays a lever recording")
+	for i in range(ceili(audio.SHIFT_SECONDS * 0.5 / step)):
+		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
+	check(audio._shift_load_scale() < 0.25, "Load drops out halfway through a shift")
+	check(audio.engine_firing_hz() < revved_hz and audio.engine_firing_hz() > idle_hz, "The firing rate glides instead of jumping to the new gear")
+	for i in range(ceili(audio.SHIFT_SECONDS / step)):
+		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
+	check(is_equal_approx(audio._shift_load_scale(), 1.0), "Load returns after the shift")
 	audio.was_running = true
 	check(chassis.set_engine_running(false), "The fixture shuts down through the production engine control")
 	audio._process(0.025)
 	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_stop_sound, "Shutting down plays the tail recording")
-	check(layers[2].playing and layers[2].volume_db < running_volume, "The running loop fades under the shutdown")
+	check(grains.playing, "The running engine fades under the shutdown instead of cutting")
 	audio._update_engine(0.4, 0.0)
-	for layer in layers:
-		check(not layer.playing, "Engine loops stop after shutdown")
+	check(not grains.playing, "The grain engine stops after shutdown")
+	audio.set_loop_engine(true)
+	for layer: AudioStreamPlayer3D in audio.engine_layers:
+		check((layer.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD, "The comparison loops still loop forward")
+	audio.set_loop_engine(false)
+	_check_grain_synth(audio.engine_synth.bank)
 
 	vehicle.queue_free()
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _check_grain_synth(bank: EngineGrainBank) -> void:
+	var count := bank.size()
+	check(count > 0 and bank.periods.size() == count and bank.fades.size() == count and bank.lengths.size() == count
+		and bank.firing_hz.size() == count and bank.kinds.size() == count and bank.follows.size() == count,
+		"Every grain has a complete record")
+	var pcm := bank.pcm()
+	var valid := true
+	for i in range(count):
+		valid = valid and bank.starts[i] + bank.lengths[i] <= pcm.size() and bank.follows[i] < count
+		valid = valid and bank.lengths[i] == bank.periods[i] + 2 * bank.fades[i]
+	check(valid, "Grain spans stay inside the sample data and runs point at real grains")
+	var synth := EngineGrainSynth.new(bank)
+	var frames := int(bank.samples.mix_rate)
+	seed(7710)
+	var expected := randi()
+	seed(7710)
+	var idle := synth.render(frames, synth.idle_hz(), synth.idle_hz(), 0.0)
+	check(randi() == expected, "Rendering grains leaves the gameplay RNG sequence intact")
+	var idle_grains := synth.grains_started
+	synth.reset()
+	var fast_hz := synth.idle_hz() * 3.0
+	var fast := synth.render(frames, fast_hz, fast_hz, 1.0)
+	var fast_grains := synth.grains_started - idle_grains
+	var expected_ratio := fast_hz / synth.idle_hz()
+	check(absf(float(fast_grains) / idle_grains / expected_ratio - 1.0) < 0.15, "Firings per second follow the requested rate")
+	var peak := 0.0
+	for sample in idle + fast: peak = maxf(peak, absf(sample))
+	check(peak > 0.0 and peak < 1.0, "Overlapping grains stay within full scale")
+
+
+func _playing_any(pool: Node, streams: Array) -> bool:
+	for stream in streams:
+		if _playing(pool, stream): return true
+	return false
 
 
 func _check_event_folder(path: String) -> void:

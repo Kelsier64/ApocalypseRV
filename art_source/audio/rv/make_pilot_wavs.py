@@ -124,6 +124,12 @@ def main():
             audio -= np.mean(audio)
             fade_one_shot(audio)
             write_clip(args.output / f"{name}.wav", audio, peak)
+        # One lever motion each: out of the old gear, then into the new one.
+        for name, start, end in (("gear_shift_a", 0.24, 0.70), ("gear_shift_b", 0.94, 1.34)):
+            audio = read_clip(args.source / "gear_select.wav", start, end)
+            audio -= np.mean(audio)
+            fade_one_shot(audio, tail=0.08)
+            write_clip(args.output / f"{name}.wav", audio, -1)
 
     idle = engine_eq(read_clip(args.source / "iveco_idle.wav", 24.5, 33.6))
     write_clip(args.output / "engine_idle.wav", loop_engine(idle, 0.3), -3.0, loop=True, rms_db=-20.0)

@@ -86,7 +86,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rv_systems_playground](../../tests/playgrounds/rv_systems_playground.tscn) | 正式能源、充電、電池、製作與車輛回放 | F2 引擎、F3 換電池、F4 入座、F5 平板、F6 回放、F7 平板免傷、R 重設；`--replay`。 |
 | [rv_interaction_playground](../../tests/playgrounds/rv_interaction_playground.tscn) | 正式射線／E 互動隔離場；固定玩家位置 | F2 電池槽、F3 座位、F4 加油孔、F5 道具箱、F6 掉落電池；1 電池、2 汽油罐。 |
 | [rv_door_playground](../../tests/playgrounds/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
-| [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 靜止 RV 的車門、引擎與定向預警試聽 | F2／F3 車外／車廂，F4 車門，F5 引擎，按住 W 拉轉，F6 切換柴油錄音與最初的合成原型，F7 預警開關，F8 移動預警的左右位置。 |
+| [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 靜止 RV 的車門、引擎與定向預警試聽 | F2／F3 車外／車廂，F4 車門，F5 引擎，按住 W 拉轉，F6 切換顆粒引擎與先前的迴圈錄音，F7 預警開關，F8 移動預警的左右位置。 |
 | [rv_structure_playground](../../tests/playgrounds/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/playgrounds/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/playgrounds/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |

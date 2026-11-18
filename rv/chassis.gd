@@ -1000,7 +1000,7 @@ func set_gear(next: int) -> bool:
 		return false
 	if gear < 0 and next > 0 and linear_velocity.length() > 0.5:
 		return false
-	if gear != next: feedback("mechanical", Vector3(-0.1, 1, -4))
+	if gear != next: feedback("gear", Vector3(-0.1, 1, -4))
 	gear = next
 	return true
 

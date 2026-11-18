@@ -1,7 +1,10 @@
 extends Node3D
-## Recorded engine and door pilot, with the remaining prototype cues sharing PCM.
+## Granular diesel engine, recorded doors and gear lever, and the remaining prototype cues.
 const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
+const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
+const ENGINE_GRAINS := "res://assets/audio/rv/engine_grains.tres"
+# The previous loop engine stays selectable for A/B listening until the pilot is approved.
 const ENGINE_LOOP_PATHS := [
 	"res://assets/audio/rv/engine_idle.wav",
 	"res://assets/audio/rv/engine_mid.wav",
@@ -9,6 +12,12 @@ const ENGINE_LOOP_PATHS := [
 ]
 # Pulse frequencies of the three recordings, measured before pitch shifting.
 const ENGINE_PULSE_HZ := [28.2, 52.0, 100.0]
+const MIX_RATE := 44100.0
+# Audio queued ahead of the mixer. Longer hides frame hitches but delays RPM changes.
+const ENGINE_BUFFER_SECONDS := 0.08
+const ENGINE_POSITION := Vector3(0, 0, -5.3)
+# Audio-only shift: load drops out and the firing rate glides to the new gear.
+const SHIFT_SECONDS := 0.3
 # Chassis-local volume bounded by the finished floor, side panels and ceiling.
 const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
@@ -26,10 +35,17 @@ var cue_counts := {}
 var was_running := false
 var phase := 0.0
 var engine_rest := Vector3.ZERO
-var legacy_audio := false
+var loop_engine := false
 var engine_presence := 0.0
 var engine_speed := 0.0
 var engine_load := 0.0
+var engine_grains: AudioStreamPlayer3D
+var engine_synth: EngineGrainSynth
+var shift_left := 0.0
+var _engine_playback: AudioStreamGeneratorPlayback
+var _engine_capacity := 0
+var _engine_hz := 0.0
+var _engine_gain := 0.0
 @onready var rv: Chassis = get_parent()
 
 static func synth(kind: String) -> AudioStreamWAV:
@@ -82,7 +98,7 @@ func player() -> AudioStreamPlayer3D:
 	sound.bus = &"Effects"
 	sound.unit_size = 4.0
 	sound.max_distance = 55.0
-	sound.position = Vector3(0, 0, -5.3)
+	sound.position = ENGINE_POSITION
 	add_child(sound)
 	return sound
 
@@ -92,6 +108,14 @@ func _ready() -> void:
 		layer.bus = &"Cabin"
 		layer.stream = load(path)
 		engine_layers.append(layer)
+	engine_synth = EngineGrainSynth.new(load(ENGINE_GRAINS))
+	engine_grains = player()
+	engine_grains.name = "EngineGrains"
+	engine_grains.bus = &"Cabin"
+	var generator := AudioStreamGenerator.new()
+	generator.mix_rate = MIX_RATE
+	generator.buffer_length = ENGINE_BUFFER_SECONDS * 2.5
+	engine_grains.stream = generator
 	engine_cue = player()
 	engine_cue.bus = &"Cabin"
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
@@ -106,24 +130,22 @@ func _ready() -> void:
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
 
-func set_legacy_audio(enabled: bool) -> void:
-	if legacy_audio == enabled: return
-	legacy_audio = enabled
+## Switches between the granular engine and the previous loop recordings.
+func set_loop_engine(enabled: bool) -> void:
+	if loop_engine == enabled: return
+	loop_engine = enabled
 	for layer in engine_layers: layer.stop()
-	engine_cue.stop()
-	engine_layers[0].stream = synth("engine") if enabled else load(ENGINE_LOOP_PATHS[0])
+	_stop_grains()
 	engine_presence = 0.0
 
 func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool) -> void:
-	if legacy_audio:
-		play_cue("mechanical", rv.to_local(door.to_global(latch)))
-	elif opening and started:
+	if opening and started:
 		get_node("/root/Sfx").play(load(DOOR_OPEN), door, latch)
 	elif not opening and not started:
 		get_node("/root/Sfx").play(load(DOOR_CLOSE), door, latch)
 
 func exterior_audio_cover(listener_position: Vector3) -> float:
-	if legacy_audio or not CABIN.has_point(rv.to_local(listener_position)): return 0.0
+	if not CABIN.has_point(rv.to_local(listener_position)): return 0.0
 	var slots := rv.get_node_or_null("StructureSlots") as RVStructureSlots
 	if slots == null: return 0.0
 	var opening := 0.0
@@ -138,10 +160,15 @@ func exterior_audio_cover(listener_position: Vector3) -> float:
 	return lerpf(1.0, 0.45, opening)
 
 func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
-	if not legacy_audio and kind in ["start", "stop"]:
+	if kind in ["start", "stop"]:
 		engine_cue.stream = engine_start_sound if kind == "start" else engine_stop_sound
 		engine_cue.volume_db = -4.0
 		engine_cue.play()
+		cue_counts[kind] = cue_counts.get(kind, 0) + 1
+		return
+	if kind == "gear":
+		get_node("/root/Sfx").play(load(GEAR_SHIFT), rv, at if at.is_finite() else Vector3.ZERO)
+		if rv.engine_rpm() > 0.0: shift_left = SHIFT_SECONDS
 		cue_counts[kind] = cue_counts.get(kind, 0) + 1
 		return
 	var now := Time.get_ticks_msec()
@@ -150,7 +177,7 @@ func play_cue(kind: String, at: Vector3 = Vector3.INF, strength := 0.5) -> void:
 	for cue in cues:
 		if not cue.playing:
 			cue.stream = synth(kind)
-			cue.position = at if at.is_finite() else Vector3(0, 0, -5.3)
+			cue.position = at if at.is_finite() else ENGINE_POSITION
 			cue.volume_db = lerpf(-20.0, -4.0, strength) if kind == "crash" else -10.0
 			cue.pitch_scale = lerpf(1.16, 0.82, strength) if kind == "crash" else 1.0
 			cue.play()
@@ -172,30 +199,66 @@ func _process(delta: float) -> void:
 
 func _update_engine(delta: float, rpm: float) -> void:
 	var running := rpm > 0.0
-	if legacy_audio:
-		var layer := engine_layers[0]
-		if not running:
-			if layer.playing: layer.stop()
-			return
-		var fraction := inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm)
-		layer.pitch_scale = lerpf(layer.pitch_scale, lerpf(0.85, 1.7, fraction), minf(delta * 4.0, 1.0))
-		layer.volume_db = -15.0 + rv.throttle_input * 4.0
-		if not layer.playing: layer.play()
-		return
-
 	var cranking := engine_cue.playing and engine_cue.stream == engine_start_sound \
 		and engine_cue.get_playback_position() < engine_start_sound.get_length() - 0.28
 	engine_presence = move_toward(engine_presence, 1.0 if running and not cranking else 0.0, delta * (5.0 if running else 12.0))
+	shift_left = maxf(0.0, shift_left - delta)
 	if running:
 		var fraction := clampf(inverse_lerp(Chassis.ENGINE_IDLE_RPM, Chassis.ENGINE_MAX_RPM, rpm), 0.0, 1.0)
-		# Give the fall in pitch some inertia when the throttle is released.
-		var pitch_response := 12.0 if fraction > engine_speed else 6.5
+		# Revs fall with some inertia, and glide across a gear change.
+		var pitch_response := 7.0 if shift_left > 0.0 else (12.0 if fraction > engine_speed else 6.5)
 		engine_speed = lerpf(engine_speed, fraction, 1.0 - exp(-delta * pitch_response))
-		engine_load = lerpf(engine_load, rv.throttle_input, 1.0 - exp(-delta * 13.0))
+		var load_target := rv.throttle_input * _shift_load_scale()
+		engine_load = lerpf(engine_load, load_target, 1.0 - exp(-delta * 13.0))
 	elif engine_presence == 0.0:
 		engine_speed = 0.0
 		engine_load = 0.0
+	if loop_engine:
+		_update_loop_engine()
+	else:
+		_update_grain_engine()
 
+## Load fades out over the first half of a shift and back in over the second.
+func _shift_load_scale() -> float:
+	if shift_left <= 0.0: return 1.0
+	return absf(1.0 - 2.0 * (1.0 - shift_left / SHIFT_SECONDS))
+
+## Firing rate the engine sound uses for the current smoothed speed.
+func engine_firing_hz() -> float:
+	return lerpf(engine_synth.idle_hz(), engine_synth.bank.max_hz() * 0.94, engine_speed)
+
+func _update_grain_engine() -> void:
+	if engine_presence <= 0.0:
+		_stop_grains()
+		return
+	if not engine_grains.playing:
+		engine_grains.play()
+		_engine_playback = engine_grains.get_stream_playback()
+		_engine_capacity = _engine_playback.get_frames_available()
+		engine_synth.reset()
+		_engine_hz = engine_firing_hz()
+		_engine_gain = 0.0
+	var queued := _engine_capacity - _engine_playback.get_frames_available()
+	var frames := int(ENGINE_BUFFER_SECONDS * MIX_RATE) - queued
+	if frames <= 0: return
+	var target_hz := engine_firing_hz()
+	var mono := engine_synth.render(frames, _engine_hz, target_hz, engine_load)
+	_engine_hz = target_hz
+	# Gain ramps across the block so presence and load changes stay click-free.
+	var gain := engine_presence * db_to_linear(-2.0 + 3.0 * engine_load)
+	var stereo := PackedVector2Array()
+	stereo.resize(frames)
+	for i in range(frames):
+		var sample := mono[i] * lerpf(_engine_gain, gain, float(i + 1) / frames)
+		stereo[i] = Vector2(sample, sample)
+	_engine_gain = gain
+	_engine_playback.push_buffer(stereo)
+
+func _stop_grains() -> void:
+	if engine_grains.playing: engine_grains.stop()
+	_engine_playback = null
+
+func _update_loop_engine() -> void:
 	# The recordings share the same target pulse rate during each crossfade.
 	var pulse_hz := lerpf(ENGINE_PULSE_HZ[0], 104.0, engine_speed)
 	var mid_gain := smoothstep(34.0, 46.0, pulse_hz)

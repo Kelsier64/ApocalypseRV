@@ -43,8 +43,8 @@ func _process(_delta: float) -> void:
 	instructions.text = (
 		"RV AUDIO PILOT   |   %s   |   %s   |   %d RPM\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
-		"F6 Diesel / synth   F7 Warning on / off   F8 Move warning\n%s"
-	) % ["Outside" if outside else "Cabin", "Synth prototype" if audio.legacy_audio else "Diesel recording", roundi(rv.engine_rpm()), message]
+		"F6 Grain / loop engine   F7 Warning on / off   F8 Move warning\n%s"
+	) % ["Outside" if outside else "Cabin", "Loop recordings" if audio.loop_engine else "Grain engine", roundi(rv.engine_rpm()), message]
 
 
 func _physics_process(_delta: float) -> void:
@@ -67,7 +67,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			else: message = rv.engine_start_reason()
 		KEY_F6:
 			var audio := rv.get_node("Audio")
-			audio.set_legacy_audio(not audio.legacy_audio)
+			audio.set_loop_engine(not audio.loop_engine)
 		KEY_F7:
 			if warning.playing: warning.stop()
 			else: warning.play()
