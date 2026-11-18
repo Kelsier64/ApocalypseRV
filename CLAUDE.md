@@ -50,8 +50,9 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Working Defaults
 
-- **Ask before starting** whenever the goal is unclear or the work needs a tradeoff you would otherwise settle yourself. Use `AskUserQuestion` with concise choices and a recommendation, and do not start on a guess. Read-only investigation that sharpens the question may come first.
+- **Ask before starting** whenever the goal is unclear or the work needs a tradeoff you would otherwise settle yourself. Ask with `AskUserQuestion` cards, one question per decision, concise options, your recommendation first; send more cards when there are more than four questions. Do not start on a guess. Decisions that come up mid-work use cards too. A card may hide the text before it, so make each one readable on its own and put drafts in the option preview. Read-only investigation that sharpens the question may come first.when suitable Always ask through question tool.
 - Report architecture problems you notice. Ask before large architectural changes.
+- **Record agreed decisions** where the project keeps them, so later sessions do not re-derive them: agent rules in CLAUDE.md, design intent in `GDD.md`, implementation contracts in `docs/guides/feature-contracts.md`.
 - Validate with the smallest set that covers the changed behavior and its risks. Skip tests for simple, low-risk edits. For docs-only changes, check wording, consistency and links (`scripts/agent/check-links.ps1 <files>`); do not launch Godot.
 - **Hand hands-on checks to the user.** When a change needs visual, feel or in-game verification, build or reuse a playground scene that sets up the exact state, launch it, and give the user a short checklist of what to look at and report back. Do not ask whether to verify, and do not spend tokens on screenshot loops. Automated tests still run as usual.
 - Report what you checked, what you did not, and any material uncertainty. Never claim visual or hands-on verification you did not do.
