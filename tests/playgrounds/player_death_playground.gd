@@ -74,8 +74,8 @@ func _print_replay() -> void:
 	DirAccess.make_dir_recursive_absolute(OUTPUT)
 	var recipe := RecipeCatalog.find("printed_player")
 	var station: CraftingStation = $NewRv/Chassis/CraftingStation
+	await _capture_current("revival-0-before")
 	_fund_and_die()
-	await seconds(.55)
 	await _capture_current("revival-1-death")
 	await seconds(recipe.duration * .66)
 	await _capture_current("revival-2-print")

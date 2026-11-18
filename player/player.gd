@@ -1384,7 +1384,7 @@ func _commit_health_loss(amount: float, cause: InjuryEffects.Cause, severed_limb
 	current_player_health = maxf(0.0, before - amount)
 	_update_health_bar()
 	if current_player_health == 0.0:
-		_player_die(cause == InjuryEffects.Cause.CRASH)
+		_player_die()
 	elif current_player_health < before:
 		injury_effects.play_hit((before - current_player_health) / maxf(max_player_health, 1.0), cause, severed_limb)
 
@@ -1473,7 +1473,7 @@ func _update_health_bar():
 	if health_bar and health_bar.has_method("set_health"):
 		health_bar.set_health(current_player_health, max_player_health)
 
-func _player_die(crash := false):
+func _player_die():
 	if is_player_dead: return
 	san_effects.reset()
 	injury_effects.reset()
@@ -1485,6 +1485,7 @@ func _player_die(crash := false):
 	var death_view: Vector3 = (seated_in.seat_camera.global_basis if was_seated else camera.global_basis).get_euler()
 	grab_control.clear_view_recovery()
 	is_player_dead = true
+	recovery.begin()
 	_advance_flashlight(0.0)
 	if is_grabbed(): grab_control.end("death")
 	cancel_equipment_placement()
@@ -1510,7 +1511,6 @@ func _player_die(crash := false):
 	exit_ui_mode()
 	if is_instance_valid(held_item_node): held_item_node.hide()
 	print(">>> PLAYER DIED! <<<")
-	recovery.begin(crash)
 	# A hit may arrive while physics queries are being flushed.
 	_begin_death_physics.call_deferred()
 

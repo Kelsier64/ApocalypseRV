@@ -50,6 +50,7 @@ func run() -> void:
 		if wounded.body_state.has_part(part): remaining += 1
 	check(remaining == 3 and wounded.body_state.has_part(&"head") and wounded.is_player_dead, "A severe collision can kill and remove at most one limb")
 	check(not wounded.injury_effects.is_processing(), "Death clears any transient injury presentation")
+	check(wounded.recovery.shade.visible and wounded.recovery.shade.material.get_shader_parameter("closure") == 1.0, "A lethal crash fully closes the view before the next frame")
 	for i in 5: await physics_frame
 	player.queue_free()
 	wounded.queue_free()

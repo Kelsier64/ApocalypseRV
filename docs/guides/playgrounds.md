@@ -491,7 +491,7 @@ godot --path . --log-file .godot/player-head-pov.log res://tests/playgrounds/pla
 
 `--gore-review` 另拍頭顱落地後的正反近景，以及三個血泊在明亮／昏暗照明下的畫面，輸出至 `gore-review/after/`；不改變正式遊戲流程。
 
-`--head-pov` 使用正式第一人稱記錄致命咬頭、銜住、落下、地面視角及復活，輸出至 `head-pov/after/`；`--before` 只改用 `before/` 輸出目錄，供在修正前版本建立對照，不會還原舊邏輯。畫面先保留於記憶體，回放完成才寫檔。
+`--head-pov` 使用正式第一人稱記錄咬頭、死亡黑屏及復活，輸出至 `head-pov/after/`；`--before` 只改用 `before/` 輸出目錄，供在修正前版本建立對照，不會還原舊邏輯。畫面先保留於記憶體，回放完成才寫檔。
 
 `--arm-pov` 記錄第一人稱掙扎、咬合前、斷臂、向外撕扯、掉落與恢復視角，輸出至 `arm-pov/`；初始先看怪物臉部（`00_face`），再於 1.05 秒拍攝掙扎中的 `01_struggle`，咬合前拍攝仍看著怪物臉部的 `01b_before_bite`；接觸後的 `04`／`05` 顯示鏡頭轉向咬手，`07` 顯示恢復視角。加 `--arm-observer` 改拍旁觀對照；加 `--grab-prop` 預先持有廢料，檢查持物時只抬空手，結果存於對應的 `held-prop/` 子目錄。畫面先存在記憶體、結束才寫 PNG，避免寫檔延遲跳過接觸瞬間。
 
@@ -516,7 +516,7 @@ godot --path . --log-file .godot/player-death.log res://tests/playgrounds/player
 godot --path . --log-file .godot/player-death-replay.log res://tests/playgrounds/player_death_playground.tscn -- --replay --quit-replay
 ```
 
-使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。F7 補齊材料與電力再觸發死亡，可從第一人稱倒地一路觀看製造並在車內睜眼。使用 `--recovery-replay` 擷取這四個階段。截圖與 replay.json 寫入 `.godot/player-death/`。
+使用正式主世界、Player 傷害／死亡／重生與目前 60 Hz／Jolt 32／32；局部慣量／角阻尼配置已通過 60 Hz 落地與恢復專項。F1 第一人稱、F2 外部、F3 致命傷害、F4 站立／空中／座位死亡回放、F5 入座死亡、Esc 關閉。按 F3 或 F5 可檢查死亡瞬間是否直接黑屏及靜音。F7 補齊材料與電力再觸發死亡，接著觀看製造並在車內睜眼。使用 `--recovery-replay` 擷取黑屏、列印、甦醒及恢復操作。截圖與 replay.json 寫入 `.godot/player-death/`。
 
 ### 移動 RV 攀爬
 

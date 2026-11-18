@@ -3,6 +3,7 @@ extends CanvasLayer
 enum Phase { IDLE, DYING, WATCHING, WAKING }
 const RECIPE := "printed_player"
 const PlayerVisual = preload("res://player/player_model_visual.gd")
+const OBSERVATION_DELAY := 1.0
 const WAKE_SECONDS := 1.5
 var phase := Phase.IDLE
 var waking_in_printed_body := false
@@ -15,7 +16,6 @@ var exterior_status: Label
 var interior: PoiInstanceManager
 var attempted := false
 var elapsed := 0.0
-var death_seconds := 1.0
 var shade := ColorRect.new()
 var status := Label.new()
 var breath := AudioStreamPlayer.new()
@@ -23,6 +23,7 @@ var stalled := false
 var wake_pitch := 0.0
 var hidden_hud: Viewport
 @onready var player: CharacterBody3D = get_parent()
+@onready var game_settings := get_node("/root/GameSettings")
 
 func _ready() -> void:
 	layer = 55
@@ -43,18 +44,17 @@ func _ready() -> void:
 	hide()
 	set_physics_process(false)
 
-func begin(crash: bool) -> void:
+func begin() -> void:
 	reset()
 	phase = Phase.DYING
-	death_seconds = .075 if crash else 1.0
 	show()
 	_hide_hud(get_viewport())
-	_set_shade(0.0)
+	_set_shade(1.0)
 	set_physics_process(true)
 
 func try_queue() -> void:
 	if attempted: return
-	if phase == Phase.IDLE: begin(false)
+	if phase == Phase.IDLE: begin()
 	attempted = true
 	var domain: Node3D = player
 	var origin := player.global_position
@@ -82,8 +82,7 @@ func _physics_process(delta: float) -> void:
 	elapsed += delta
 	match phase:
 		Phase.DYING:
-			_set_shade(smoothstep(0.0, death_seconds, elapsed))
-			if elapsed >= 1.0 and awaiting_print(): _start_watching()
+			if elapsed >= OBSERVATION_DELAY and awaiting_print(): _start_watching()
 		Phase.WATCHING:
 			_update_watch()
 		Phase.WAKING:
@@ -161,7 +160,6 @@ func _abandon_print() -> void:
 	_release_order()
 	_end_observation()
 	phase = Phase.DYING
-	elapsed = death_seconds
 	_set_shade(1.0)
 	player.camera.make_current()
 
@@ -209,8 +207,10 @@ func _set_shade(closure: float) -> void:
 	shade.visible = closure > .001
 	if is_instance_valid(exterior_shade): exterior_shade.visible = shade.visible
 	shade.material.set_shader_parameter("closure", closure)
+	var dying := phase == Phase.DYING
+	game_settings.set_temporary_master_mute(self, dying)
 	if DisplayServer.get_name() != "headless":
-		player.injury_effects.set_consciousness_muffle(closure)
+		player.injury_effects.set_consciousness_muffle(0.0 if dying else closure)
 
 func _release_order() -> void:
 	if is_instance_valid(station):
@@ -246,6 +246,7 @@ func reset() -> void:
 	_hide_hud(null)
 	if phase != Phase.IDLE and is_instance_valid(player.injury_effects):
 		player.injury_effects.set_consciousness_muffle(0.0)
+	game_settings.set_temporary_master_mute(self, false)
 	breath.stop()
 	phase = Phase.IDLE
 	attempted = false

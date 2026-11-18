@@ -39,6 +39,7 @@ var _preview: Dictionary = {}
 var _shadow_trim_preview: Variant = null
 var _preset := 0
 var _applying_preset := false
+var _master_mute_sources: Dictionary[int, bool] = {}
 var _original_directional_size := 4096
 var _original_directional_filter := 2
 var _original_positional_filter := 2
@@ -188,13 +189,25 @@ func supports_vsync_toggle() -> bool:
 func volumetric_fog_enabled() -> bool:
 	return supports_volumetric_fog() and int(values.fog_quality) > 0
 
+func set_temporary_master_mute(source: Node, muted: bool) -> void:
+	var id := source.get_instance_id()
+	if _master_mute_sources.has(id) == muted: return
+	if muted:
+		_master_mute_sources[id] = true
+	else:
+		_master_mute_sources.erase(id)
+	_apply_master_audio()
+
+func _apply_master_audio() -> void:
+	var master := AudioServer.get_bus_index("Master")
+	if master < 0: return
+	var volume := float(values.master_volume)
+	AudioServer.set_bus_mute(master, volume <= 0.0 or not _master_mute_sources.is_empty())
+	AudioServer.set_bus_volume_db(master, linear_to_db(maxf(0.0001, volume)))
+
 func _apply_global(changed: String = "") -> void:
 	if changed.is_empty() or changed == "max_fps": Engine.max_fps = int(values.max_fps)
-	if changed.is_empty() or changed == "master_volume":
-		var master := AudioServer.get_bus_index("Master")
-		if master >= 0:
-			AudioServer.set_bus_mute(master, float(values.master_volume) <= 0.0)
-			AudioServer.set_bus_volume_db(master, linear_to_db(maxf(0.0001, float(values.master_volume))))
+	if changed.is_empty() or changed == "master_volume": _apply_master_audio()
 	if DisplayServer.get_name() != "headless":
 		if _preview.is_empty() and (changed.is_empty() or changed == "window_mode"):
 			var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if int(values.window_mode) == 1 else DisplayServer.WINDOW_MODE_WINDOWED
