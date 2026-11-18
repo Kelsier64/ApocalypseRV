@@ -28,7 +28,7 @@ func _run() -> void:
 	var door_close := load("res://assets/audio/events/rv/door_close.tres") as SoundEvent
 	for event in [door_open, door_close]:
 		check(event.samples.size() == 1 and event.samples[0] is AudioStreamWAV, "The RV door uses a recorded sample")
-		check(AudioServer.get_bus_index(event.bus) >= 0, "The door routes to a configured bus")
+	_check_event_folder("res://assets/audio/events")
 
 	seed(7710)
 	var expected := randi()
@@ -66,6 +66,18 @@ func _run() -> void:
 	var cabin := chassis.to_global(Vector3(0, 1.65, 0.75))
 	var closed_cover: float = audio.exterior_audio_cover(cabin)
 	check(closed_cover > audio.exterior_audio_cover(chassis.to_global(Vector3(0, 3.4, 0.75))), "The RV roof does not count as its cabin")
+	var listener := Camera3D.new()
+	root.add_child(listener)
+	listener.make_current()
+	listener.global_position = chassis.to_global(Vector3(6.0, 1.65, 0.75))
+	await _settle_mix(sfx)
+	var outside_mix := _exterior_mix()
+	listener.global_position = cabin
+	await _settle_mix(sfx)
+	var cabin_mix := _exterior_mix()
+	check(cabin_mix.x < outside_mix.x and cabin_mix.y < outside_mix.y, "The cabin lowers the exterior bus level and cutoff")
+	listener.queue_free()
+	await _settle_mix(sfx)
 	check(door.toggle_leaf(0) == "Door opening", "Production door opens in the audio fixture")
 	var pool := root.get_node_or_null("SpatialOneShots")
 	check(pool != null and _playing(pool, door_open.samples[0]), "Opening the door selects its latch release recording")
@@ -122,6 +134,34 @@ func _run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _check_event_folder(path: String) -> void:
+	for folder in DirAccess.get_directories_at(path):
+		_check_event_folder(path.path_join(folder))
+	for file in DirAccess.get_files_at(path):
+		if file.get_extension() != "tres": continue
+		var event := load(path.path_join(file)) as SoundEvent
+		check(event != null, "%s is a SoundEvent" % file)
+		if event == null: continue
+		check(not event.samples.is_empty(), "%s has at least one sample" % file)
+		for sample in event.samples:
+			check(sample != null and sample.get_length() > 0.0, "%s samples load with audio" % file)
+		check(AudioServer.get_bus_index(event.bus) >= 0, "%s routes to a configured bus" % file)
+		check(event.max_distance > event.unit_size, "%s fades out beyond its reference distance" % file)
+		check(event.volume_db <= 0.0, "%s leaves headroom" % file)
+
+
+func _exterior_mix() -> Vector2:
+	var bus := AudioServer.get_bus_index(&"Exterior")
+	var filter := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
+	var cutoff := filter.cutoff_hz if AudioServer.is_bus_effect_enabled(bus, 0) else INF
+	return Vector2(AudioServer.get_bus_volume_db(bus), cutoff)
+
+
+func _settle_mix(sfx: Node) -> void:
+	for i in range(ceili(sfx.TRANSITION_SECONDS * Engine.physics_ticks_per_second) + 10):
+		await process_frame
 
 
 func _playing(pool: Node, stream: AudioStream) -> bool:
