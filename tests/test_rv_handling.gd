@@ -81,6 +81,36 @@ func run() -> void:
 	print("CURB up=", curb_up, " tires=", trip.wheel_health)
 	check(curb_up <= PROFILE.rollover_side_up_dot, "A strong sideways curb impact can trip the RV")
 	check(trip.wheel_health[1] < trip.wheel_health[0] or trip.wheel_health[3] < trip.wheel_health[2], "Tires on the impacted side suffer more damage")
+	world.free()
+	await check_high_gear_acceleration()
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: shared tire grip, surface handling and rollover")
+	if failures.is_empty(): print("PASS: tire grip, handling, rollover and high-gear acceleration")
 	quit(1 if not failures.is_empty() else 0)
+
+func check_high_gear_acceleration() -> void:
+	var world := Node3D.new()
+	root.add_child(world)
+	current_scene = world
+	var vehicle := Fixture.vehicle(world, Vector3.UP * 1.4)
+	var ground := Fixture.ground(world)
+	var collision := ground.get_child(0) as CollisionShape3D
+	var slab := collision.shape as BoxShape3D
+	slab.size.z = vehicle.max_speed * 70.0
+	ground.position.z = -slab.size.z * 0.45
+	for frame in 2 * Engine.physics_ticks_per_second: await physics_frame
+	vehicle.allow_test_controls = true
+	vehicle.set_handbrake(false)
+	vehicle.set_engine_running(true)
+	vehicle.control_override = {"throttle": 1.0}
+	for gear in [2, 3, 4]:
+		vehicle.set_gear(gear)
+		var shift_speed := vehicle.road_speed()
+		var shift_rpm := vehicle.engine_rpm()
+		for frame in 20 * Engine.physics_ticks_per_second: await physics_frame
+		print("DRIVE gear=%d speed=%.1f -> %.1f km/h rpm=%.0f -> %.0f" % [
+			gear, shift_speed * 3.6, vehicle.road_speed() * 3.6, shift_rpm, vehicle.engine_rpm(),
+		])
+		if gear > 2:
+			check(vehicle.road_speed() > shift_speed and vehicle.engine_rpm() > shift_rpm,
+				"Full throttle on level pavement builds speed and RPM after shifting into gear %d" % gear)
+	world.free()
