@@ -494,7 +494,8 @@ func run() -> void:
 	check(music.playing and song != null and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
 		and absf(song.loop_end - song.get_length() * song.mix_rate) <= 1.0,
 		"Head loudspeaker loops the whole Für Elise file from spawn")
-	check(music.max_distance >= RoadSpawns.SAFE_DISTANCE, "Head loudspeaker is audible wherever the giant can stay loaded")
+	check(music.max_distance > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE and music.max_distance < SlenderSpeakerSpawns.ACTIVE_DISTANCE,
+		"Warning reaches the farthest forest encounter and fades before distance cleanup")
 	reset_player(Vector3(0, -.249, -2.1))
 	await frames()
 	settle_pose()

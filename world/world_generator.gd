@@ -84,6 +84,7 @@ func _process(delta: float) -> void:
 	_bind_giants()
 	if not restoring_entities: _spawn_giant_segments(anchor)
 	var pinned := protected_bands(anchor)
+	var lookahead := _forest_lookahead_band(anchor, current) if not restoring_entities else -1
 	if not building:
 		for index in pinned:
 			if not active_chunks.any(func(c): return int(c.index) == index):
@@ -98,13 +99,20 @@ func _process(delta: float) -> void:
 			if not active_chunks.any(func(c): return int(c.index) == index):
 				_spawn_band(index, true)
 				break
+	if not building and lookahead >= 0 and not active_chunks.any(func(c): return int(c.index) == lookahead):
+		_spawn_band(lookahead, true, true)
 	for entry in active_chunks.duplicate():
-		if (entry.index < current - profile.chunks_behind or entry.index > current + profile.chunks_ahead) and entry.index not in pinned:
+		var in_window: bool = entry.index >= current - profile.chunks_behind and entry.index <= current + profile.chunks_ahead
+		if in_window and not restoring_entities and entry.node.actors_deferred:
+			entry.node.activate_deferred_actors(entry.index not in generated_bands)
+			if entry.index not in generated_bands: generated_bands.append(entry.index)
+			restore_dormant_items(entry.index)
+		elif not in_window and entry.index not in pinned and entry.index != lookahead:
 			retire_band(entry)
 	_cleanup_timer -= delta
 	if _cleanup_timer <= 0.0:
 		_cleanup_timer = 0.5
-		_despawn_entities_behind(anchor.z)
+		_despawn_entities_behind(anchor)
 
 func completed_scenery_clearance(eye: Vector3) -> float:
 	if profile == null or profile.chunk_length <= 0.0 or not eye.is_finite(): return 0.0
@@ -132,12 +140,23 @@ func protected_bands(anchor: Vector3) -> Array[int]:
 		var box: AABB = site.bounds
 		for index in range(floori(-box.end.z / 150.0) - 1, floori(-box.position.z / 150.0) + 2):
 			if index not in result: result.append(index)
+	# Keep the giant's ground and published navigation seams when it falls behind
+	# the ordinary streaming window. Do not generate extra bands around it.
+	for giant in get_tree().get_nodes_in_group("slender_speaker"):
+		if not WorldEntities.same_world(self, giant) or giant.is_queued_for_deletion(): continue
+		if SlenderSpeakerSpawns.horizontal_distance_squared(anchor, giant.global_position) > SlenderSpeakerSpawns.ACTIVE_DISTANCE ** 2: continue
+		var band := floori(-giant.global_position.z / profile.chunk_length)
+		for entry in active_chunks:
+			var index: int = entry.index
+			if absi(index - band) <= 1 and index not in result: result.append(index)
 	return result
 
-func _spawn_band(index: int, gradual: bool = false) -> void:
+func _spawn_band(index: int, gradual: bool = false, defer_actors: bool = false) -> void:
 	building = true
 	var chunk := ChunkGenerator.new()
 	chunk.name = "Band_%d" % index
+	# The existing band ledger distinguishes a saved preview from a populated band.
+	chunk.actors_deferred = defer_actors or (restoring_entities and index not in generated_bands)
 	add_child(chunk)
 	chunk.set_meta("skip_actors", restoring_entities or index in generated_bands)
 	chunk.set_meta("skip_walk_in", restoring_entities)
@@ -158,8 +177,9 @@ func _spawn_band(index: int, gradual: bool = false) -> void:
 					start_run.bind_shelter(child, site)
 					break
 	_stabilize_support_names(chunk)
-	if not restoring_entities: restore_dormant_items(index)
-	if index not in generated_bands: generated_bands.append(index)
+	if not chunk.actors_deferred:
+		if not restoring_entities: restore_dormant_items(index)
+		if index not in generated_bands: generated_bands.append(index)
 	active_chunks.append({"node": chunk, "index": index, "start_z": -index * profile.chunk_length, "end_z": -(index + 1) * profile.chunk_length})
 	active_chunks.sort_custom(func(a, b): return int(a.index) < int(b.index))
 	generation_times.append(chunk.build_ms)
@@ -211,17 +231,21 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 		horizon.queue_free()
 	horizon = next
 
-func _despawn_entities_behind(player_z: float) -> void:
+func _despawn_entities_behind(anchor: Vector3) -> void:
 	var distance := (profile.chunks_behind + 1) * profile.chunk_length
 	for node in get_tree().get_nodes_in_group(Groups.MONSTERS):
-		if node is Node3D and WorldEntities.same_world(self, node) and absf(node.global_position.z - player_z) > RoadSpawns.SAFE_DISTANCE and not _in_loaded_walk_in(node.global_position):
+		if not node is Node3D or not WorldEntities.same_world(self, node): continue
+		if node is SlenderSpeaker:
+			if SlenderSpeakerSpawns.horizontal_distance_squared(anchor, node.global_position) > SlenderSpeakerSpawns.ACTIVE_DISTANCE ** 2:
+				node.queue_free()
+		elif absf(node.global_position.z - anchor.z) > RoadSpawns.SAFE_DISTANCE and not _in_loaded_walk_in(node.global_position):
 			node.queue_free()
 	var container := WorldEntities.get_container(self)
 	if container != null and container.is_inside_tree():
 		for child in container.get_children():
 			# Monsters already use the symmetric current-position policy above.
 			if child is Monster: continue
-			if child is Node3D and child.global_position.z - player_z > distance and not _in_loaded_walk_in(child.global_position):
+			if child is Node3D and child.global_position.z - anchor.z > distance and not _in_loaded_walk_in(child.global_position):
 				if child is Item:
 					_store_items([child])
 				else: child.queue_free()
@@ -305,28 +329,51 @@ func _giant_weather_allows_spawn() -> bool:
 	var clock := get_parent().get_node_or_null("WorldClock") as WorldClock
 	return clock != null and clock.weather.sample().z >= WorldWeather.FOG_LIGHT
 
+func _giant_plan_for_band(band: int) -> Dictionary:
+	var segment := floori(band * profile.chunk_length / SlenderSpeakerSpawns.SEGMENT_LENGTH)
+	if segment < 1 or segment in generated_giant_segments: return {}
+	if not _giant_plans.has(segment): _giant_plans[segment] = SlenderSpeakerSpawns.plan(field, segment)
+	var plan: Dictionary = _giant_plans[segment]
+	return plan if int(plan.get("band", -1)) == band else {}
+
+func _forest_lookahead_band(anchor: Vector3, current: int) -> int:
+	if not _giant_weather_allows_spawn(): return -1
+	var band := current + profile.chunks_ahead + 1
+	var candidates: Array = _giant_plan_for_band(band).get("candidates", [])
+	for point: Vector3 in candidates:
+		var distance_squared := SlenderSpeakerSpawns.horizontal_distance_squared(point, anchor)
+		if distance_squared >= SlenderSpeakerSpawns.FOREST_MIN_DISTANCE ** 2 and distance_squared <= SlenderSpeakerSpawns.FOREST_MAX_DISTANCE ** 2:
+			return -1 if PressureSpawns.giant_present(self) else band
+	return -1
+
 func _spawn_giant_segments(anchor: Vector3) -> void:
 	if not giant_navigation_map.is_valid() or NavigationServer3D.map_get_iteration_id(giant_navigation_map) == 0: return
 	for entry in active_chunks:
-		var segment := floori(int(entry.index) * profile.chunk_length / SlenderSpeakerSpawns.SEGMENT_LENGTH)
-		if segment < 1 or segment in generated_giant_segments: continue
-		if not _giant_plans.has(segment): _giant_plans[segment] = SlenderSpeakerSpawns.plan(field, segment)
-		var plan: Dictionary = _giant_plans[segment]
-		if int(plan.get("band", -1)) != int(entry.index) or not entry.node.giant_navigation_ready: continue
+		if not entry.node.giant_navigation_ready: continue
+		var plan := _giant_plan_for_band(entry.index)
+		if plan.is_empty(): continue
+		var candidates: Array = plan.candidates
+		# A pinned band can be loaded well before its encounter is in range.
+		if not candidates.is_empty() and candidates.all(func(point: Vector3): return SlenderSpeakerSpawns.horizontal_distance_squared(point, anchor) > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE ** 2): continue
 		# Commit the encounter before choosing a location. Every failure is final
 		# for this segment, including an active giant or a too-close player.
+		var segment: int = plan.segment
 		generated_giant_segments.append(segment)
 		_giant_plans.erase(segment)
 		# A dry-weather encounter is spent too: fog arriving later must not
 		# replenish a visited segment. Existing/restored actors are unaffected.
 		if not _giant_weather_allows_spawn(): continue
-		if get_tree().get_nodes_in_group("slender_speaker").any(func(n): return WorldEntities.same_world(self, n) and not n.is_queued_for_deletion()): continue
-		for candidate: Vector3 in plan.get("candidates", []):
-			if candidate.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE or not SlenderSpeakerSpawns.forest_valid(field, candidate): continue
+		if PressureSpawns.giant_present(self): continue
+		for candidate: Vector3 in candidates:
+			var distance_squared := SlenderSpeakerSpawns.horizontal_distance_squared(candidate, anchor)
+			if distance_squared < SlenderSpeakerSpawns.FOREST_MIN_DISTANCE ** 2 or distance_squared > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE ** 2: continue
+			if not SlenderSpeakerSpawns.forest_valid(field, candidate): continue
 			var nav_point := NavigationServer3D.map_get_closest_point(giant_navigation_map, candidate)
 			if nav_point.distance_to(candidate) > 1.5: continue
 			var spawn_point := nav_point + Vector3.UP * 0.1
-			if spawn_point.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE or not SlenderSpeakerSpawns.static_valid(field, nav_point) or not SlenderSpeakerSpawns.forest_valid(field, nav_point): continue
+			distance_squared = SlenderSpeakerSpawns.horizontal_distance_squared(spawn_point, anchor)
+			if distance_squared < SlenderSpeakerSpawns.FOREST_MIN_DISTANCE ** 2 or distance_squared > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE ** 2: continue
+			if not SlenderSpeakerSpawns.static_valid(field, nav_point) or not SlenderSpeakerSpawns.forest_valid(field, nav_point): continue
 			var shape := CapsuleShape3D.new()
 			shape.height = SlenderSpeakerSpawns.HEIGHT
 			shape.radius = SlenderSpeakerSpawns.RADIUS
@@ -341,5 +388,5 @@ func _spawn_giant_segments(anchor: Vector3) -> void:
 			giant.position = container.to_local(spawn_point)
 			giant.set_giant_navigation_map(giant_navigation_map)
 			container.add_child(giant)
-			print("SLENDER_SPAWN segment=%d band=%d point=%s" % [segment, entry.index, giant.global_position])
+			print("SLENDER_SPAWN segment=%d band=%d distance=%.1fm point=%s" % [segment, entry.index, sqrt(distance_squared), giant.global_position])
 			break

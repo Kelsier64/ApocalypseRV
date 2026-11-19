@@ -15,6 +15,7 @@ var navigation: NavigationRegion3D
 var navigation_ready := false
 var giant_navigation: NavigationRegion3D
 var giant_navigation_ready := true
+var actors_deferred := false
 var _regular_navigation_ready := false
 var _terrain: MeshInstance3D
 var road_spawns: Dictionary = {}
@@ -463,7 +464,16 @@ func _finish_navigation() -> void:
 	_spawn_road_monsters()
 	if _navigation_dirty: request_navigation_rebuild()
 
+func activate_deferred_actors(spawn_new: bool) -> void:
+	if not actors_deferred: return
+	actors_deferred = false
+	set_meta("skip_actors", not spawn_new)
+	set_meta("skip_walk_in", false)
+	_spawn_actors()
+	_spawn_road_monsters()
+
 func _spawn_actors() -> void:
+	if actors_deferred: return
 	var container := WorldEntities.get_container(self)
 	if container == null:
 		container = self
@@ -485,7 +495,7 @@ func _spawn_actors() -> void:
 func _spawn_road_monsters() -> void:
 	# The shared once-only latch also owns loose barrels. They must not be
 	# rebuilt with static chunk geometry after pickup, explosion or a rebake.
-	if not navigation_ready or _road_monsters_spawned or road_spawns.is_empty(): return
+	if actors_deferred or not navigation_ready or _road_monsters_spawned or road_spawns.is_empty(): return
 	_road_monsters_spawned = true
 	if get_meta("skip_actors", false): return
 	var container := WorldEntities.get_container(self)

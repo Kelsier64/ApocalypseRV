@@ -1,23 +1,14 @@
 extends "res://world/world_generator.gd"
 ## One guaranteed encounter after a short drive, using the production giant AI.
 const DEPARTURE_DISTANCE := 60.0
-const ENCOUNTER_LEAD := 170.0
+const ENCOUNTER_LEAD := 400.0
+const MIN_PLAYER_DISTANCE := 295.0
 const SHOULDER_OFFSET := 2.0
 var _demo_spawned := false
 var _next_spawn_attempt_ms := 0
 
-func protected_bands(anchor: Vector3) -> Array[int]:
-	var bands := super.protected_bands(anchor)
-	# A pursuing giant can lag behind the player's two retained bands while
-	# still inside the 450m actor range. Keep its floor and adjoining nav seams.
-	for node in get_tree().get_nodes_in_group("slender_speaker"):
-		var giant := node as Node3D
-		if giant == null or giant.is_queued_for_deletion() or not WorldEntities.same_world(self, giant): continue
-		if absf(giant.global_position.z - anchor.z) > RoadSpawns.SAFE_DISTANCE: continue
-		var band := floori(-giant.global_position.z / profile.chunk_length)
-		for neighbour in range(band - 1, band + 2):
-			if neighbour not in bands: bands.append(neighbour)
-	return bands
+func _forest_lookahead_band(_anchor: Vector3, _current: int) -> int:
+	return -1
 
 func _spawn_giant_segments(anchor: Vector3) -> void:
 	# This demo owns its single encounter instead of the production random rolls.
@@ -33,7 +24,7 @@ func _spawn_giant_segments(anchor: Vector3) -> void:
 	if float(road.distance) > float(road.width) * 0.5 + 5.0: return
 	if not _giant_weather_allows_spawn() or not giant_navigation_map.is_valid(): return
 	if NavigationServer3D.map_get_iteration_id(giant_navigation_map) == 0: return
-	if get_tree().get_nodes_in_group("slender_speaker").any(func(n): return WorldEntities.same_world(self, n) and not n.is_queued_for_deletion()):
+	if PressureSpawns.giant_present(self):
 		_demo_spawned = true
 		return
 	var container := WorldEntities.get_container(self)
@@ -42,7 +33,8 @@ func _spawn_giant_segments(anchor: Vector3) -> void:
 	# that clear strip, and require a complete route back to the departure road.
 	var destination := NavigationServer3D.map_get_closest_point(giant_navigation_map, road.frame.origin)
 	if destination.slide(Vector3.UP).distance_to(Vector3(road.frame.origin).slide(Vector3.UP)) > 1.0: return
-	for lead in [ENCOUNTER_LEAD, ENCOUNTER_LEAD + 15.0, ENCOUNTER_LEAD + 30.0]:
+	# The furthest shoulders can still be baking when the RV first leaves.
+	for lead in [ENCOUNTER_LEAD, ENCOUNTER_LEAD + 15.0, ENCOUNTER_LEAD + 30.0, 325.0, 300.0]:
 		var distance := float(road.s) + float(lead)
 		var frame := field.road_frame(distance)
 		for side in [-1.0, 1.0]:
@@ -67,7 +59,7 @@ func _spawn_giant_segments(anchor: Vector3) -> void:
 			_demo_spawned = true
 			container.add_child(giant)
 			run.register_actor(giant)
-			print("DEMO_SLENDER_SPAWN band=%d point=%s" % [band, giant.global_position])
+			print("DEMO_SLENDER_SPAWN band=%d distance=%.1fm point=%s" % [band, sqrt(SlenderSpeakerSpawns.horizontal_distance_squared(spawn_point, anchor)), giant.global_position])
 			return
 
 func _demo_corridor_ready(first: int, last: int) -> bool:
@@ -76,7 +68,7 @@ func _demo_corridor_ready(first: int, last: int) -> bool:
 	return true
 
 func _demo_location_clear(point: Vector3, anchor: Vector3) -> bool:
-	if not point.is_finite() or point.distance_to(anchor) < SlenderSpeakerSpawns.PLAYER_CLEARANCE: return false
+	if not point.is_finite() or SlenderSpeakerSpawns.horizontal_distance_squared(point, anchor) < MIN_PLAYER_DISTANCE ** 2: return false
 	var road := field.road_query(point.x, point.z)
 	if float(road.distance) > float(road.width) * 0.5 + 5.0 - SlenderSpeakerSpawns.RADIUS: return false
 	if field.normal_at(point.x, point.z).y < cos(deg_to_rad(35.0)): return false

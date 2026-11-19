@@ -4,9 +4,14 @@ class_name SlenderSpeakerSpawns
 const SCENE := "res://enemies/slender_speaker/slender_speaker.tscn"
 const SEGMENT_LENGTH := 1500.0
 const CHANCE := 0.25
-const PLAYER_CLEARANCE := 160.0
+const FOREST_MIN_DISTANCE := 350.0
+const FOREST_MAX_DISTANCE := 750.0
+const ACTIVE_DISTANCE := 1050.0
 const HEIGHT := 15.0
 const RADIUS := 1.1
+
+static func horizontal_distance_squared(a: Vector3, b: Vector3) -> float:
+	return (a - b).slide(Vector3.UP).length_squared()
 
 static func plan(field: WorldField, segment: int) -> Dictionary:
 	if segment < 1: return {}

@@ -4,6 +4,8 @@ class_name PressureSpawns
 ## Every call is bounded; unavailable terrain simply defers the encounter.
 const GIANT_SCENE := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 const MAX_CANDIDATES := 24
+const MIN_DISTANCE := 160.0
+const MAX_DISTANCE := 200.0
 const NAV_TOLERANCE := 1.5
 const POI_CLEARANCE := 12.0
 const SUPPORT_EPSILON := 0.003
@@ -41,7 +43,7 @@ static func try_spawn_giant(owner: Node3D, sample: Dictionary, rng: RandomNumber
 	var space := owner.get_world_3d().direct_space_state
 	for attempt in MAX_CANDIDATES:
 		var direction := danger.rotated(Vector3.UP, rng.randf_range(-deg_to_rad(75.0), deg_to_rad(75.0)))
-		var candidate := anchor + direction * rng.randf_range(120.0, 160.0)
+		var candidate := anchor + direction * rng.randf_range(MIN_DISTANCE, MAX_DISTANCE)
 		candidate.y = field.height_at(candidate.x, candidate.z)
 		if not static_valid(field, candidate, capsule.radius) or not _band_ready(generator, candidate): continue
 		var projected := NavigationServer3D.map_get_closest_point(map, candidate)
@@ -51,7 +53,7 @@ static func try_spawn_giant(owner: Node3D, sample: Dictionary, rng: RandomNumber
 		if ground.is_empty(): continue
 		var point: Vector3 = ground.point
 		var distance := planar_distance(point, anchor)
-		if distance < 120.0 or distance > 160.0: continue
+		if distance < MIN_DISTANCE or distance > MAX_DISTANCE: continue
 		if not _spacing(owner, point, 12.0): continue
 		var facing := (player.global_position - point).slide(Vector3.UP)
 		if facing.length_squared() < .001: continue

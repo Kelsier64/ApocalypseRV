@@ -53,10 +53,77 @@ func run() -> void:
 		await _check_crossing_chunk(world, version)
 		await _check_dry_viaduct(world, version)
 	await _check_mountain_navigation(world)
+	await _check_distant_speaker(world)
 	world.queue_free()
 	await process_frame
 	if failures.is_empty(): print("PASS: sliced generation preserves geometry/collision; current routes, landforms, crossings and streetlights satisfy sampled contracts")
 	quit(0 if failures.is_empty() else 1)
+
+func _check_distant_speaker(world: Node3D) -> void:
+	var profile := WorldProfile.new()
+	var field := WorldField.new(42, profile)
+	var plan := SlenderSpeakerSpawns.plan(field, 1)
+	if plan.get("candidates", []).is_empty():
+		check(false, "The fixed seed provides a forest encounter fixture")
+		return
+	var candidate: Vector3 = plan.candidates[0]
+	var band: int = plan.band
+	var segment: int = plan.segment
+	var current := band - profile.chunks_ahead - 1
+	var anchor := Vector3(candidate.x, candidate.y, -(current + 0.25) * profile.chunk_length)
+	var generator := preload("res://world/world_generator.gd").new()
+	generator.profile = profile
+	generator.world_seed = field.world_seed
+	generator.restore_bands.append(band)
+	generator.restoring_entities = true
+	world.add_child(generator)
+	generator.set_process(false)
+	var clock := WorldClock.new()
+	clock.name = "WorldClock"
+	clock.weather_running = false
+	world.add_child(clock)
+	clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT), true)
+	if not await WAIT.generator_idle(self, generator):
+		check(false, "The distant forest band publishes its real giant navigation")
+		return
+	generator.restoring_entities = false
+	clock.weather.set_weather(Vector3.ZERO, true)
+	check(generator._forest_lookahead_band(anchor, current) == -1, "Clear weather needs no forest lookahead band")
+	clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_LIGHT), true)
+	check(generator._forest_lookahead_band(anchor, current) == band, "Fog preloads a planned encounter one band beyond ordinary streaming")
+	check(band not in generator.generated_bands and generator.active_chunks[0].node.actors_deferred,
+		"A band restored from lookahead still reserves ordinary actors for the normal window")
+	var too_far := anchor
+	too_far.z = -band * profile.chunk_length + SlenderSpeakerSpawns.FOREST_MAX_DISTANCE + 1.0
+	generator._spawn_giant_segments(too_far)
+	check(segment not in generator.generated_giant_segments, "An out-of-range pinned band does not consume its encounter")
+	generator._spawn_giant_segments(anchor)
+	var giant := get_first_node_in_group("slender_speaker") as SlenderSpeaker
+	check(giant != null and segment in generator.generated_giant_segments, "A real distant giant spawns once from the loaded forest band")
+	if giant == null: return
+	var distance := sqrt(SlenderSpeakerSpawns.horizontal_distance_squared(anchor, giant.global_position))
+	check(absf(giant.global_position.z - anchor.z) > RoadSpawns.SAFE_DISTANCE and distance <= SlenderSpeakerSpawns.FOREST_MAX_DISTANCE,
+		"The new early encounter starts at %.1f m beyond the ordinary monster cutoff" % distance)
+	var ordinary := Node3D.new()
+	ordinary.add_to_group(Groups.MONSTERS)
+	ordinary.position = giant.global_position
+	world.add_child(ordinary)
+	generator._despawn_entities_behind(anchor)
+	check(not giant.is_queued_for_deletion() and ordinary.is_queued_for_deletion() and band in generator.protected_bands(anchor),
+		"The giant keeps its ground beyond ordinary cleanup range while ordinary monsters keep their cutoff")
+	var player := Node3D.new()
+	player.position = giant.global_position
+	world.add_child(player)
+	generator.player = player
+	profile.chunks_ahead = 0
+	profile.chunks_behind = 0
+	generator._process(0.0)
+	check(band in generator.generated_bands and not generator.active_chunks[0].node.actors_deferred,
+		"The normal streaming window activates and records the prefetched band")
+	var escaped := giant.global_position + Vector3.RIGHT * (SlenderSpeakerSpawns.ACTIVE_DISTANCE + 1.0)
+	generator._despawn_entities_behind(escaped)
+	check(giant.is_queued_for_deletion() and band not in generator.protected_bands(escaped),
+		"Leaving the horizontal giant range removes the giant and releases its band even at the same Z")
 
 func _check_streetlight_placement() -> void:
 	const BAND_COUNT := 36
