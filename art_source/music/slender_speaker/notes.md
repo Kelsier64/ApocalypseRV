@@ -66,8 +66,7 @@ A：RMS -21.0 dBFS；B：-12.5（peak -0.1，頂到 limiter）；C：-19.1。響
   轉成單聲道 16-bit 44.1 kHz，+1.5 dB。
 - 分析：peak -1.3 dBFS、RMS -16.3 dBFS、crest 15.0 dB；頻段跟 v5 C 一樣；接縫兩端 < 0.0004。
 - 沒有用 REAPER 重新 render：當時 REAPER 的作用中分頁是別的 session 的專案，skill 規定不能自己切分頁。
-- 遊戲設定：PatrolMusic `volume_db` -5（舊檔 RMS 約 -13 dBFS，這版小 3.3 dB，所以從 -8 調到 -5）、`unit_size` 30，
-  `max_distance` = `RoadSpawns.SAFE_DISTANCE`（450 m，怪物超過這個距離就被移除）。匯入的 loop mode 改成 Forward。
+- 遊戲以 Forward 模式循環播放。喇叭的距離與音量設定見 [Slender Speaker 場景](../../../enemies/slender_speaker/slender_speaker.tscn) 和[敵人系統](../../../docs/systems/enemies.md#slender-speaker)。
   ExecutionMusic 和 `execution.wav` 已經刪除。
 
 ## 目前狀態（2026-11-18）

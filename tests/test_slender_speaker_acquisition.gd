@@ -482,12 +482,14 @@ func run() -> void:
 	world.add_child(floor_body)
 	giant = GIANT.instantiate()
 	world.add_child(giant)
+	var music := giant.patrol_music
+	check(music.global_position.is_equal_approx(giant._focus_position()) and music.bus == &"Exterior",
+		"Warning starts at the loudspeaker socket and passes through cabin muffling")
 	giant.set_physics_process(false)
 	player = PLAYER.instantiate()
 	world.add_child(player)
 	player.set_physics_process(false)
 	await frames()
-	var music := giant.patrol_music
 	var song := music.stream as AudioStreamWAV
 	check(music.playing and song != null and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
 		and absf(song.loop_end - song.get_length() * song.mix_rate) <= 1.0,

@@ -152,10 +152,11 @@ func _ready() -> void:
 		var stream: AudioStream = load(PATROL_MUSIC).duplicate()
 		if stream is AudioStreamWAV: stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		patrol_music.stream = stream
-		# Audible wherever the giant can exist: actors farther than this from the stream anchor are removed.
+		# Fade the warning out over the world's actor streaming distance.
 		patrol_music.max_distance = RoadSpawns.SAFE_DISTANCE
-	if patrol_music != null and patrol_music.stream != null: patrol_music.play()
 	_sample("idle_play", 0.0)
+	_update_audio_positions()
+	if patrol_music != null and patrol_music.stream != null: patrol_music.play()
 
 func _enter_tree() -> void:
 	if is_node_ready(): _resume_patrol_after_transfer.call_deferred()
