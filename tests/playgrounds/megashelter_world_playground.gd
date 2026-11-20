@@ -1,24 +1,26 @@
 extends "res://tests/playgrounds/megashelter_playground.gd"
 ## Actual scheduled site, production terrain, navigation and streaming.
 var site: Dictionary
+var play_ready := false
 
 func _enter_tree() -> void:
-	# The fixture is far beyond the opening tutorial and never restores a save.
-	var opening := get_node("StartRun")
-	remove_child(opening)
-	opening.free()
-	var world_seed := 6
-	var row := 33
-	var column := 2
+	# The fixture starts at the site, outside the opening and outdoor encounters.
+	for path in ["StartRun", "WhiteApparitionEncounter", "BlackApparitionEncounter", "DeviationPressure"]:
+		var node := get_node(path)
+		remove_child(node)
+		node.free()
+	var world_seed := 42
+	var row := 1
+	var column := -1
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--world-seed="): world_seed = arg.trim_prefix("--world-seed=").to_int()
 		if arg.begins_with("--row="): row = arg.trim_prefix("--row=").to_int()
 		if arg.begins_with("--column="): column = arg.trim_prefix("--column=").to_int()
-	var profile := WorldProfile.new()
+	var profile: WorldProfile = $WorldGenerator.profile.duplicate()
 	profile.chunks_ahead = 1
 	profile.chunks_behind = 1
 	var field := WorldField.new(world_seed, profile)
-	site = field.offroad_site(row, column)
+	site = field.megashelter_site(row) if column == -1 else field.offroad_site(row, column)
 	if site.is_empty() or site.definition_id != "modular_megashelter":
 		push_error("Requested cell does not contain a scheduled megashelter")
 		get_tree().quit(1)
@@ -27,13 +29,15 @@ func _enter_tree() -> void:
 	seed_value = plan.seed
 	$WorldGenerator.world_seed = world_seed
 	$WorldGenerator.profile = profile
-	var band := floori(float(site.s) / 150.0)
-	$WorldGenerator.restore_bands.assign(range(band - 1, band + 2))
 	$Player.transform = site.building * Transform3D(Basis.IDENTITY, plan.access_point + Vector3(7, 0.5, 3))
 	$NewRv.transform = site.building * Transform3D(Basis.IDENTITY, Vector3(plan.access_point.x, 1.8, float(plan.depth) * 0.5 + 19))
+	var band := floori(float(site.s) / profile.chunk_length)
+	var player_band := floori(-$Player.position.z / profile.chunk_length)
+	$WorldGenerator.restore_bands.assign(range(mini(band, player_band) - 1, maxi(band, player_band) + 2))
 	get_tree().node_added.connect(_freeze_enemy)
 
 func _ready() -> void:
+	if site.is_empty() or site.definition_id != "modular_megashelter": return
 	get_window().title = "ApocalypseRV - Scheduled Megashelter"
 	get_window().size = Vector2i(1280, 800)
 	player = $Player
@@ -48,8 +52,12 @@ func _ready() -> void:
 	camera.fov = 68
 	add_child(camera)
 	var deadline := Time.get_ticks_msec() + 90000
-	while ($WorldGenerator.building or $WorldGenerator.active_chunks.is_empty()) and Time.get_ticks_msec() < deadline:
+	while not _terrain_ready() and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
+	if not _terrain_ready():
+		push_error("Megashelter terrain did not become ready")
+		get_tree().quit(1)
+		return
 	for entry in $WorldGenerator.active_chunks:
 		for child in entry.node.get_children():
 			if child.get_meta("poi_id", "") == site.id: building = child
@@ -63,6 +71,7 @@ func _ready() -> void:
 	label.position = Vector2(18, 185)
 	layer.add_child(label)
 	label.text = "SCHEDULED MEGASHELTER / %s\nF2 exterior  F3 entrance  F4 walk  F9 capture  F10 parking" % site.id
+	play_ready = true
 	_overview()
 	print("SCHEDULED_MEGASHELTER_READY ", site.id, " position=", site.building.origin)
 	if "--capture" in OS.get_cmdline_user_args():
@@ -75,6 +84,10 @@ func _ready() -> void:
 	elif "--replay" in OS.get_cmdline_user_args():
 		await get_tree().create_timer(1.0).timeout
 		_drive()
+
+func _terrain_ready() -> bool:
+	var generator := $WorldGenerator
+	return not generator.building and not generator.active_chunks.is_empty() and generator.active_chunks.all(func(entry): return entry.node.navigation_ready)
 
 func _freeze_enemy(node: Node) -> void:
 	if node is Monster: node.process_mode = Node.PROCESS_MODE_DISABLED
@@ -97,7 +110,7 @@ func _entrance() -> void:
 	camera.make_current()
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo: return
+	if not play_ready or not event is InputEventKey or not event.pressed or event.echo: return
 	match event.keycode:
 		KEY_F2: _overview()
 		KEY_F3: _entrance()

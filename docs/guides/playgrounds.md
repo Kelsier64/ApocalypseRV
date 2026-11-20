@@ -75,7 +75,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [bunker_playground](../../tests/playgrounds/bunker_playground.tscn) | 正式系統獨立場：多層地堡生成、地圖與搬運 | F1 步行、F2 總覽、F3 掀頂、F5 搬運、R 重建；`--rooms=12 --floors=3 --seed=42`。 |
 | [poi_instance_playground](../../tests/playgrounds/poi_instance_playground.tscn) | 主世界：地堡入口、室內副本與返回 | F6 或 `--replay` 正式 E 進出、F7 外觀、F8 截圖。 |
 | [megashelter_playground](../../tests/playgrounds/megashelter_playground.tscn) | 正式資產獨立場：巨型避難所外殼、生長模組與停車 | F2 外觀、F3 入口、F4 步行、F5 下一 seed、F6 隨機、F7 天氣／時間、F8 模組、F10 輪驅。 |
-| [megashelter_world_playground](../../tests/playgrounds/megashelter_world_playground.tscn) | 主世界：排程生成的巨型避難所、坡度與停車 | `--world-seed=42 --row=0 --column=0`；F2 外觀、F3 入口、F4 步行、F9 截圖、F10 輪驅；`--replay`。 |
+| [megashelter_world_playground](../../tests/playgrounds/megashelter_world_playground.tscn) | 主世界：排程生成的巨型避難所、坡度與停車 | 預設 `--world-seed=42 --row=1`；加 `--column=N` 可指定一般野地地塊。F2 外觀、F3 入口、F4 步行、F9 截圖、F10 輪驅；`--replay`。 |
 | [megashelter_interior_playground](../../tests/playgrounds/megashelter_interior_playground.tscn) | 正式系統獨立場：真正外殼入口／室內管理器／玩家、全部房間與搬運返回 | F1 步行、F2 總覽、F3 掀頂、F4 下一房、F5 搬運回放、F6 下一 seed、F7 入口、F8 截圖；E 返回、L 手電筒、M 地圖。 |
 | [megashelter_viewer](../../tests/playgrounds/megashelter_viewer.tscn) | 正式外殼檢視器；不包含步行／室內驗收 | 右鍵旋轉、中鍵平移、滾輪縮放；1 全景、2 入口、3 屋頂、F5 下一 seed、F6 隨機。 |
 
