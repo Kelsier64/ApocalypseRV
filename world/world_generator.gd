@@ -270,6 +270,9 @@ func retire_band(entry: Dictionary) -> void:
 		if not actor is Item or _in_loaded_walk_in(actor.global_position): continue
 		if floori(-actor.global_position.z / profile.chunk_length) == entry.index or _supported_by_chunk(actor, entry.node): retiring.append(actor)
 	_store_items(retiring)
+	if entry.index == 0:
+		var start_run := get_parent().get_node_or_null("StartRun") as StartRun
+		if start_run != null: start_run.unbind_shelter()
 	active_chunks.erase(entry)
 	entry.node.queue_free()
 

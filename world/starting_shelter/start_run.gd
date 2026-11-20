@@ -114,6 +114,12 @@ func bind_shelter(building: Node3D, site: Dictionary) -> void:
 		rv.linear_velocity = Vector3.ZERO
 		rv.angular_velocity = Vector3.ZERO
 
+func unbind_shelter() -> void:
+	_remember_bay_gates()
+	_bay_gates.clear()
+	gate = null
+	shelter = null
+
 func begin_run(player: Node3D) -> String:
 	var tutorial := is_orientation_shelter()
 	if phase != "preparing": return "Journey already started"

@@ -172,7 +172,18 @@ func completion_check() -> bool:
 	check(run_owner.phase == "sealed" and run_owner.gate.target == 0.0 and tutorial.status == "completed" and world.get_node("WorldClock").running, "Reload retains permanent closure and the running completed course")
 	if not check(select_item(tutorial.terminal_id), "Completed reload retains one original inventory terminal"): return false
 	check(player.inventory.active_item().state.training_terminal.manual_unlocked and player.inventory.active_item().state.training_terminal.completion == "completed", "Completed reload preserves the original portable manual")
+	await _check_shelter_streaming()
 	return failures.is_empty()
+
+func _check_shelter_streaming() -> void:
+	var generator: Node = world.get_node("WorldGenerator")
+	for entry in generator.active_chunks:
+		if entry.index != 0: continue
+		generator.retire_band(entry)
+		break
+	if not check(run_owner.shelter == null and run_owner.gate == null, "Retiring the opening band clears its shelter and gate bindings before freeing them"): return
+	if not check(await WAIT.until(self, func(): return is_instance_valid(run_owner.shelter)), "Streaming the opening band back binds its replacement shelter"): return
+	check(run_owner.phase == "sealed" and run_owner.gate.target == 0.0, "Rebinding a streamed shelter retains the sealed departure")
 
 func clearance_probes(gate: ShelterGarageGate) -> void:
 	# Probe geometry before the checkpoint reload. Recreating the vehicle then
