@@ -55,6 +55,7 @@ func _ready() -> void:
 	# the same 25cm merge cell. Keep centimetre-scale matching on this map only.
 	NavigationServer3D.map_set_merge_rasterizer_cell_scale(get_world_3d().navigation_map, 0.1)
 	print("WORLD v%d seed=%d" % [profile.generation_version, world_seed])
+	SlenderSpeakerSpawns.prepare_visual(self)
 	var initial_bands: Array = range(-profile.chunks_behind, profile.chunks_ahead + 1) if restore_bands.is_empty() else restore_bands
 	for index in initial_bands:
 		_spawn_band(index)
@@ -195,6 +196,7 @@ func _spawn_band(index: int, gradual: bool = false, defer_actors: bool = false) 
 func _refresh_horizon(index: int, gradual: bool) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var slice_start := Time.get_ticks_usec()
 	for j in range(31):
 		var z := -index * profile.chunk_length - j * 30.0
 		for i in range(71):
@@ -207,8 +209,9 @@ func _refresh_horizon(index: int, gradual: bool) -> void:
 			st.set_uv(Vector2(sample.gravel, sample.river_bank))
 			st.set_uv2(field.landforms.material_weights(sample.appearance))
 			st.add_vertex(Vector3(x, sample.height, z))
-		if gradual and j % 5 == 0:
-			await get_tree().process_frame
+			if gradual and i % 16 == 0 and Time.get_ticks_usec() - slice_start >= ChunkGenerator.SLICE_BUDGET_USEC:
+				await get_tree().process_frame
+				slice_start = Time.get_ticks_usec()
 	for j in range(30):
 		for i in range(70):
 			var a := j * 71 + i

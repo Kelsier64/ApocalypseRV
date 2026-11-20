@@ -7,29 +7,29 @@ const WATER = preload("res://world/terrain/river_water.gdshader")
 const WRECK = preload("res://world/starting_shelter/reused_wreck.tscn")
 const TRACTOR_PATH := "res://assets/models/field_tractor/field_tractor.tscn"
 const CONDUCTOR := Color("3a3c3a")
-## Knock-down props gathered from every vignette of the band being built.
-static var _loose: Array[Dictionary] = []
-
-static func build(chunk: ChunkGenerator) -> void:
+static func build(chunk: ChunkGenerator, gradual: bool) -> void:
 	var field := chunk.field
 	var features := field.features
 	var count := 0
-	_loose = []
+	var loose: Array[Dictionary] = []
 	for plan: Dictionary in features.cells_for_band(chunk.band):
 		for pond: Dictionary in plan.ponds:
 			if features.owns(chunk.band, pond.z):
-				_pond(chunk, pond)
+				_pond(chunk, pond, loose)
 				count += 1
+				if gradual and chunk.slice_exhausted(): await chunk._pause()
 		for track: Dictionary in plan.tracks:
 			var centre: Vector3 = track.centre
 			if not features.owns(chunk.band, centre.z): continue
-			_vignette(chunk, track.content, centre.x, centre.z, track.yaw, track.seed)
+			_vignette(chunk, track.content, centre.x, centre.z, track.yaw, track.seed, loose)
 			count += 1
+			if gradual and chunk.slice_exhausted(): await chunk._pause()
 		for pad: Dictionary in plan.pads:
 			if not features.owns(chunk.band, pad.z): continue
-			if pad.type == "pylon": _pylon(chunk, pad)
-			elif pad.type != "reserve": _vignette(chunk, pad.type, pad.x, pad.z, pad.yaw, pad.seed)
+			if pad.type == "pylon": _pylon(chunk, pad, loose)
+			elif pad.type != "reserve": _vignette(chunk, pad.type, pad.x, pad.z, pad.yaw, pad.seed, loose)
 			count += 1
+			if gradual and chunk.slice_exhausted(): await chunk._pause()
 		for fence: Dictionary in plan.fences:
 			if not features.owns(chunk.band, fence.z): continue
 			var pose := Transform3D(Basis.IDENTITY, Vector3(fence.x, field.height_at(fence.x, fence.z), fence.z))
@@ -37,10 +37,10 @@ static func build(chunk: ChunkGenerator) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = fence.seed
 			VignetteKit._fence(shape, rng, Vector3.ZERO, fence.yaw, fence.length)
-			_place(chunk, shape, "Fence", pose)
+			_place(chunk, shape, "Fence", pose, loose)
 			count += 1
-	BreakableProps.build(chunk, "FeatureProps", _loose)
-	_loose = []
+			if gradual and chunk.slice_exhausted(): await chunk._pause()
+	BreakableProps.build(chunk, "FeatureProps", loose)
 	if count > 0: print("FEATURES band=%d built=%d" % [chunk.band, count])
 
 ## A PropMesh whose ground lookup reads the real terrain under the given pose.
@@ -51,14 +51,14 @@ static func _shape(field: WorldField, pose: Transform3D) -> PropMesh:
 		return field.height_at(point.x, point.z) - pose.origin.y
 	return shape
 
-static func _place(chunk: ChunkGenerator, shape: PropMesh, title: String, pose: Transform3D) -> Node3D:
-	for prop: Dictionary in shape.props: _loose.append({"mesh": prop.mesh, "pose": pose * prop.pose})
+static func _place(chunk: ChunkGenerator, shape: PropMesh, title: String, pose: Transform3D, loose: Array[Dictionary]) -> Node3D:
+	for prop: Dictionary in shape.props: loose.append({"mesh": prop.mesh, "pose": pose * prop.pose})
 	if shape.is_empty() and shape.solids.is_empty(): return null
 	var node := shape.instance(chunk, "%s_%d_%d" % [title, roundi(pose.origin.x), roundi(pose.origin.z)], pose)
 	node.set_meta("world_feature", title)
 	return node
 
-static func _vignette(chunk: ChunkGenerator, type: String, x: float, z: float, yaw: float, seed_value: int) -> void:
+static func _vignette(chunk: ChunkGenerator, type: String, x: float, z: float, yaw: float, seed_value: int, loose: Array[Dictionary]) -> void:
 	var field := chunk.field
 	var pose := Transform3D(Basis(Vector3.UP, yaw), Vector3(x, field.height_at(x, z), z))
 	var rng := RandomNumberGenerator.new()
@@ -68,7 +68,7 @@ static func _vignette(chunk: ChunkGenerator, type: String, x: float, z: float, y
 		return
 	var shape := _shape(field, pose)
 	VignetteKit.compose(type, shape, rng)
-	_place(chunk, shape, type.to_pascal_case(), pose)
+	_place(chunk, shape, type.to_pascal_case(), pose, loose)
 	if type == "ditched_car":
 		# Nose down the bank, rolled onto one side: it left the road at speed.
 		var car := WRECK.instantiate() as Node3D
@@ -90,7 +90,7 @@ static func _model(chunk: ChunkGenerator, scene: PackedScene, pose: Transform3D,
 	node.set_meta("world_feature", title)
 	chunk.add_child(node)
 
-static func _pond(chunk: ChunkGenerator, pond: Dictionary) -> void:
+static func _pond(chunk: ChunkGenerator, pond: Dictionary, loose: Array[Dictionary]) -> void:
 	var outline := WorldFeatures.pond_outline(pond, 1.2)
 	var centre := Vector3(pond.x, pond.level, pond.z)
 	var st := SurfaceTool.new()
@@ -123,9 +123,9 @@ static func _pond(chunk: ChunkGenerator, pond: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = pond.seed
 	VignetteKit.jetty(shape, rng, float(pond.level))
-	_place(chunk, shape, "Jetty", pose)
+	_place(chunk, shape, "Jetty", pose, loose)
 
-static func _pylon(chunk: ChunkGenerator, pad: Dictionary) -> void:
+static func _pylon(chunk: ChunkGenerator, pad: Dictionary, loose: Array[Dictionary]) -> void:
 	var field := chunk.field
 	var features := field.features
 	var index: int = pad.index
@@ -135,7 +135,7 @@ static func _pylon(chunk: ChunkGenerator, pad: Dictionary) -> void:
 	rng.seed = pad.seed
 	var shape := _shape(field, pose)
 	VignetteKit.compose("pylon", shape, rng)
-	_place(chunk, shape, "Pylon", pose)
+	_place(chunk, shape, "Pylon", pose, loose)
 	if next.is_empty(): return
 	var other := _tower_pose(next, features.tower(index + 2), pad)
 	var lines := PropMesh.new()

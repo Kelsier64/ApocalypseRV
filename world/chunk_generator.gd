@@ -39,20 +39,36 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	band = index
 	name = "TerrainBand_%d" % band
 	sites = field.stops_in_band(band)
+	# Hold loaded PackedScenes through construction so the spawner's normal
+	# ResourceLoader lookup reuses them, including their textures and meshes.
+	var site_scenes := {}
+	if gradual:
+		for site in sites:
+			var definition := POIConfig.definition_for_site(site)
+			if definition == null or site_scenes.has(definition.scene_path): continue
+			var result := {}
+			site_scenes[definition.scene_path] = result
+			_load_site_scene(definition.scene_path, get_tree(), result)
 	await _build_ground(gradual)
 	if gradual:
 		await _pause()
 	_build_road()
+	if gradual and slice_exhausted(): await _pause()
 	await TerrainCrossings.build(self, gradual)
+	if gradual and slice_exhausted(): await _pause()
 	RoadsideStreetlights.build(field, band, $RoadSafety)
 	road_spawns = RoadSpawns.plan(field, band)
 	RoadSpawns.build_static(self, road_spawns)
+	if gradual and slice_exhausted(): await _pause()
+	for result: Dictionary in site_scenes.values():
+		while result.is_empty(): await _pause()
 	for site in sites:
 		var sliced_exterior: bool = gradual and site.get("definition_id", "") == "modular_megashelter"
 		var exterior := _build_site(site, spawner, not sliced_exterior)
 		if sliced_exterior and exterior != null:
 			await exterior.build_visuals_gradual(self)
-	FeatureBuilder.build(self)
+		if gradual and slice_exhausted(): await _pause()
+	await FeatureBuilder.build(self, gradual)
 	if gradual: await _pause()
 	await ForestScenery.build(self, gradual)
 	await ScatterScenery.build(self, gradual)
@@ -62,6 +78,15 @@ func generate(data: WorldField, index: int, spawner: POISpawner, gradual: bool =
 	_spawn_actors()
 	ForestFog.build(self)
 	_measure_slice()
+
+static func _load_site_scene(path: String, tree: SceneTree, result: Dictionary) -> void:
+	# Drain the load even if a world transition frees the requesting band.
+	var scene: PackedScene
+	if ResourceLoader.load_threaded_request(path, "PackedScene") == OK:
+		while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			await tree.process_frame
+		scene = ResourceLoader.load_threaded_get(path) as PackedScene
+	result.scene = scene
 
 func _measure_slice() -> void:
 	var elapsed := (Time.get_ticks_usec() - _slice_start) / 1000.0

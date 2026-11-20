@@ -501,6 +501,9 @@ func run() -> void:
 	floor_body.add_child(floor_shape)
 	world.add_child(floor_body)
 	giant = GIANT.instantiate()
+	var loaded_song: AudioStream = giant.get_node("PatrolMusic").stream
+	check(giant.find_child("Skeleton3D", true, false) is Skeleton3D and loaded_song != null,
+		"The packed giant includes the rig and warning stream before entering the world")
 	world.add_child(giant)
 	var music := giant.patrol_music
 	check(music.global_position.is_equal_approx(giant._focus_position()) and music.bus == &"Exterior",
@@ -512,7 +515,7 @@ func run() -> void:
 	player.set_physics_process(false)
 	await frames()
 	var song := music.stream as AudioStreamWAV
-	check(music.playing and song != null and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
+	check(music.playing and song != null and song == loaded_song and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
 		and absf(song.loop_end - song.get_length() * song.mix_rate) <= 1.0,
 		"Head loudspeaker loops the whole Für Elise file from spawn")
 	check(music.max_distance > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE and music.max_distance < SlenderSpeakerSpawns.ACTIVE_DISTANCE,

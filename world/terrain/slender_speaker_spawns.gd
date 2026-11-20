@@ -2,6 +2,7 @@ extends RefCounted
 class_name SlenderSpeakerSpawns
 ## A segment owns one roll and one candidate band, independent of every other spawn RNG.
 const SCENE := "res://enemies/slender_speaker/slender_speaker.tscn"
+const VISUAL_SCENE := preload("res://enemies/slender_speaker/slender_speaker_visual.tscn")
 const SEGMENT_LENGTH := 1500.0
 const CHANCE := 0.25
 const FOREST_MIN_DISTANCE := 350.0
@@ -9,6 +10,32 @@ const FOREST_MAX_DISTANCE := 750.0
 const ACTIVE_DISTANCE := 1050.0
 const HEIGHT := 15.0
 const RADIUS := 1.1
+static var _visual_prepared := false
+
+static func prepare_visual(parent: Node) -> void:
+	if _visual_prepared or DisplayServer.get_name() == "headless": return
+	# Render the real skinned model and its shadows during initial loading.
+	# An isolated viewport needs neither the enemy's physics nor its audio.
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(32, 32)
+	viewport.own_world_3d = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	parent.add_child(viewport)
+	viewport.add_child(VISUAL_SCENE.instantiate())
+	var camera := Camera3D.new()
+	camera.position = Vector3(0, 8, -28)
+	camera.rotation.y = PI
+	camera.current = true
+	viewport.add_child(camera)
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-50, -25, 0)
+	light.shadow_enabled = true
+	viewport.add_child(light)
+	RenderingServer.frame_post_draw.connect(func():
+		if is_instance_valid(viewport):
+			_visual_prepared = true
+			viewport.queue_free()
+	, CONNECT_ONE_SHOT)
 
 static func horizontal_distance_squared(a: Vector3, b: Vector3) -> float:
 	return (a - b).slide(Vector3.UP).length_squared()

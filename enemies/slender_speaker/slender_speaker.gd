@@ -8,7 +8,6 @@ const ParkedAttack := preload("res://enemies/slender_speaker/slender_speaker_par
 const Encounter := preload("res://enemies/slender_speaker/slender_speaker_encounter.gd")
 const HeadLook := preload("res://enemies/slender_speaker/slender_speaker_look.gd")
 const FootContact := preload("res://enemies/slender_speaker/slender_speaker_foot_contact.gd")
-const PATROL_MUSIC := "res://assets/audio/slender_speaker/patrol.wav"
 const PATROL_FADE_SECONDS := 6.0
 const PATROL_ROLLOFF_DB := 11.0
 const PATROL_HALF_ROLLOFF_DISTANCE := 115.0
@@ -152,10 +151,6 @@ func _ready() -> void:
 	last_seen_position = global_position
 	if nav_agent: nav_agent.path_height_offset = 0.0
 	if nav_agent != null and giant_navigation_map.is_valid(): nav_agent.set_navigation_map(giant_navigation_map)
-	if patrol_music != null and ResourceLoader.exists(PATROL_MUSIC):
-		var stream: AudioStream = load(PATROL_MUSIC).duplicate()
-		if stream is AudioStreamWAV: stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		patrol_music.stream = stream
 	_sample("idle_play", 0.0)
 	_start_patrol_music()
 

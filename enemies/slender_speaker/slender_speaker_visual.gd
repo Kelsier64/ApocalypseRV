@@ -1,6 +1,5 @@
 extends Node3D
 ## Stage 2 presentation only. No actor ownership, hits, death or music.
-const MODEL_PATH := "res://assets/models/slender_speaker/slender_speaker_rigged.glb"
 const CLIPS := ["idle_play", "scan", "walk", "run", "turn_left", "turn_right", "smash", "grab_miss", "grab", "hold", "lift", "crush", "retract"]
 const LOOPS := ["idle_play", "scan", "walk", "run", "turn_left", "turn_right", "hold"]
 const REVIEW_CLIPS := ["review_hand_open", "review_hand_fist"]
@@ -10,19 +9,7 @@ var available := false
 var problem := ""
 
 func _ready() -> void:
-	if not ResourceLoader.exists(MODEL_PATH):
-		problem = "Rigged model is absent: " + MODEL_PATH
-		return
-	var resource := load(MODEL_PATH) as PackedScene
-	if resource == null:
-		problem = "Rigged model could not be loaded"
-		return
-	var offset := Node3D.new()
-	offset.name = "ModelOffset"
-	offset.rotation.y = PI # Imported +Z front becomes controller -Z.
-	add_child(offset)
-	var model := resource.instantiate()
-	offset.add_child(model)
+	var model := $ModelOffset/Rig
 	skeleton = model.find_child("Skeleton3D", true, false) as Skeleton3D
 	animation = model.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if skeleton == null or animation == null:

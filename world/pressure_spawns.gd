@@ -173,13 +173,6 @@ static func effective_fog_end(owner: Node3D) -> float:
 	return environment.fog_depth_end
 
 static func mesh_bounds(actor: Node3D) -> AABB:
-	# The giant's presentation loads the authored rig at ready time. Read
-	# that same model here without adding a temporary actor to the world.
-	if actor is SlenderSpeaker and actor.find_children("*", "MeshInstance3D", true, false).is_empty():
-		var model := load("res://assets/models/slender_speaker/slender_speaker_rigged.glb").instantiate() as Node3D
-		var bounds := mesh_bounds(model)
-		model.free()
-		return actor.get_node("BodyMesh").transform * Transform3D(Basis(Vector3.UP, PI), Vector3.ZERO) * bounds
 	var result := AABB()
 	var first := true
 	for child in actor.find_children("*", "MeshInstance3D", true, false):
