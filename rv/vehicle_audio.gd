@@ -1,9 +1,8 @@
 extends Node3D
-## Granular diesel engine, recorded one-shots and contact loops for the RV.
+## Simulated inline-six exhaust, recorded one-shots and contact loops for the RV.
 const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
 const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
-const ENGINE_GRAINS := "res://assets/audio/rv/engine_grains.tres"
 # Light, medium and heavy collision recordings, chosen by impact strength.
 const CRASH_SOUNDS: Array[SoundEvent] = [
 	preload("res://assets/audio/events/rv/crash_light.tres"),
@@ -16,9 +15,6 @@ const VEHICLE_RANGE: SoundAttenuation = preload("res://assets/audio/attenuation/
 # Slip and scrape loops reach this volume once they run 10 m/s past their threshold.
 const CONTACT_DB := -11.0
 const CONTACT_RANGE_DB := 17.0
-const MIX_RATE := 44100.0
-# Audio queued ahead of the mixer. Longer hides frame hitches but delays RPM changes.
-const ENGINE_BUFFER_SECONDS := 0.08
 const ENGINE_POSITION := Vector3(0, 0, -5.3)
 # Audio-only shift: load drops out and the firing rate glides to the new gear.
 const SHIFT_SECONDS := 0.3
@@ -54,13 +50,9 @@ var engine_rest := Vector3.ZERO
 var engine_presence := 0.0
 var engine_speed := 0.0
 var engine_load := 0.0
-var engine_grains: AudioStreamPlayer3D
-var engine_synth: EngineGrainSynth
+var engine_player: AudioStreamPlayer3D
+var engine_stream := BusEngineStream.new()
 var shift_left := 0.0
-var _engine_playback: AudioStreamGeneratorPlayback
-var _engine_capacity := 0
-var _engine_hz := 0.0
-var _engine_gain := 0.0
 var road_layers: Array[SoundLoop] = []
 var road_weights := PackedFloat32Array([1.0, 0.0, 0.0])
 var road_surface := RVTireModel.Surface.ASPHALT
@@ -118,17 +110,9 @@ func _loop(stream: AudioStream, local_position: Vector3, base_db: float) -> Soun
 	return sound
 
 func _ready() -> void:
-	engine_synth = EngineGrainSynth.new(load(ENGINE_GRAINS))
-	engine_grains = player()
-	engine_grains.name = "EngineGrains"
-	# The engine bay sits outside the cabin, so the driver hears it through the shell.
-	engine_grains.bus = bus_for_local(ENGINE_POSITION)
-	# Headroom stays in the samples; the shell muffle takes about this much back in the cabin.
-	engine_grains.volume_db = 3.0
-	var generator := AudioStreamGenerator.new()
-	generator.mix_rate = MIX_RATE
-	generator.buffer_length = ENGINE_BUFFER_SECONDS * 2.5
-	engine_grains.stream = generator
+	engine_player = player()
+	engine_player.name = "BusEngine"
+	engine_player.stream = engine_stream
 	engine_cue = player()
 	engine_cue.bus = bus_for_local(ENGINE_POSITION)
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
@@ -232,48 +216,27 @@ func _update_engine(delta: float, rpm: float) -> void:
 	elif engine_presence == 0.0:
 		engine_speed = 0.0
 		engine_load = 0.0
-	_update_grain_engine()
+	_update_engine_player()
 
 ## Load fades out over the first half of a shift and back in over the second.
 func _shift_load_scale() -> float:
 	if shift_left <= 0.0: return 1.0
 	return absf(1.0 - 2.0 * (1.0 - shift_left / SHIFT_SECONDS))
 
-## Firing rate the engine sound uses for the current smoothed speed.
-func engine_firing_hz() -> float:
-	return lerpf(engine_synth.idle_hz(), engine_synth.bank.top_hz * 0.94, engine_speed)
+## Map the drivetrain range onto the auditioned bus model's idle and redline.
+func sound_rpm() -> float:
+	return lerpf(BusEngineStream.RPMS.front(), BusEngineStream.RPMS.back(), engine_speed)
 
-func _update_grain_engine() -> void:
+func _update_engine_player() -> void:
 	if engine_presence <= 0.0:
-		_stop_grains()
+		if engine_player.playing: engine_player.stop()
 		return
-	if not engine_grains.playing:
-		engine_grains.play()
-		_engine_playback = engine_grains.get_stream_playback()
-		_engine_capacity = _engine_playback.get_frames_available()
-		engine_synth.reset()
-		_engine_hz = engine_firing_hz()
-		_engine_gain = 0.0
-	engine_synth.set_throttle(engine_load)
-	var queued := _engine_capacity - _engine_playback.get_frames_available()
-	var frames := int(ENGINE_BUFFER_SECONDS * MIX_RATE) - queued
-	if frames <= 0: return
-	var target_hz := engine_firing_hz()
-	var mono := engine_synth.render(frames, _engine_hz, target_hz, engine_load)
-	_engine_hz = target_hz
-	# Gain ramps across the block so presence and load changes stay click-free.
-	var gain := engine_presence * db_to_linear(-2.0 + 3.0 * engine_load)
-	var stereo := PackedVector2Array()
-	stereo.resize(frames)
-	for i in range(frames):
-		var sample := mono[i] * lerpf(_engine_gain, gain, float(i + 1) / frames)
-		stereo[i] = Vector2(sample, sample)
-	_engine_gain = gain
-	_engine_playback.push_buffer(stereo)
-
-func _stop_grains() -> void:
-	if engine_grains.playing: engine_grains.stop()
-	_engine_playback = null
+	var rpm := sound_rpm()
+	engine_stream.set_operating_point(rpm, engine_load)
+	engine_player.pitch_scale = BusEngineStream.pitch_for(rpm)
+	# The bay is outside the shell. Keep the same small boost for the driver.
+	engine_player.volume_db = 3.0 + linear_to_db(engine_presence)
+	if not engine_player.playing: engine_player.play()
 
 func _update_road(delta: float) -> void:
 	var speed := Vector2(rv.linear_velocity.x, rv.linear_velocity.z).length()

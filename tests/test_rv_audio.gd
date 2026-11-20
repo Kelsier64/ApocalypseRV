@@ -75,7 +75,7 @@ func _run() -> void:
 		"The RV roof does not count as its cabin")
 	check(sfx.bus_at(cabin, chassis.get_world_3d()) == &"Cabin" and sfx.bus_at(outside, chassis.get_world_3d()) == &"Exterior",
 		"Positioned events route by whether they play inside the cabin")
-	check(audio.engine_grains.bus == &"Exterior", "The engine bay sits outside the cabin mix")
+	check(audio.engine_player.bus == &"Exterior", "The engine bay sits outside the cabin mix")
 	var listener := Camera3D.new()
 	root.add_child(listener)
 	listener.make_current()
@@ -103,25 +103,25 @@ func _run() -> void:
 		if is_equal_approx(door.angles[0], door.targets[0]): break
 		await physics_frame
 	check(pool != null and _playing(pool, door_close.samples[0]), "The closing recording plays when the latch reaches the frame")
-	var grains: AudioStreamPlayer3D = audio.engine_grains
+	var engine_player: AudioStreamPlayer3D = audio.engine_player
 	check(chassis.set_engine_running(true), "The fixture starts through the production engine control")
 	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_start_sound, "Starting the engine plays the starter recording")
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
-	check(not grains.playing, "Cranking starts before the engine runs")
+	check(not engine_player.playing, "Cranking starts before the engine runs")
 	audio.engine_cue.stop()
 	audio._update_engine(0.4, Chassis.ENGINE_IDLE_RPM)
-	check(grains.playing and grains.get_stream_playback() is AudioStreamGeneratorPlayback, "The grain engine streams at idle")
-	var idle_hz: float = audio.engine_firing_hz()
+	check(engine_player.playing and engine_player.stream is BusEngineStream, "The bus engine plays at idle")
+	var idle_rpm: float = audio.sound_rpm()
 	var step := 1.0 / Engine.physics_ticks_per_second
 	for i in range(Engine.physics_ticks_per_second):
 		audio._update_engine(step, Chassis.ENGINE_MAX_RPM)
-	var revved_hz: float = audio.engine_firing_hz()
-	check(revved_hz > idle_hz * 2.0, "Revving raises the firing rate well above idle")
+	var revved_rpm: float = audio.sound_rpm()
+	check(revved_rpm > idle_rpm * 2.0, "Revving raises the simulated RPM well above idle")
 	var revved_speed: float = audio.engine_speed
 	var half_shift := ceili(audio.SHIFT_SECONDS * 0.5 / step)
 	for i in range(half_shift):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
-	var plain_fall_hz: float = audio.engine_firing_hz()
+	var plain_fall_rpm: float = audio.sound_rpm()
 	audio.engine_speed = revved_speed
 	audio.play_cue("gear", Vector3(-0.1, 1, -4))
 	check(pool != null and _playing_any(pool, load(audio.GEAR_SHIFT).samples), "Changing gear plays a lever recording")
@@ -135,7 +135,7 @@ func _run() -> void:
 	for i in range(half_shift):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
 	check(audio._shift_load_scale() < 0.25, "Load drops out halfway through a shift")
-	check(audio.engine_firing_hz() > plain_fall_hz, "Revs glide down more slowly across a gear change than when lifting off")
+	check(audio.sound_rpm() > plain_fall_rpm, "Revs glide down more slowly across a gear change than when lifting off")
 	for i in range(ceili(audio.SHIFT_SECONDS / step)):
 		audio._update_engine(step, Chassis.ENGINE_IDLE_RPM)
 	check(is_equal_approx(audio._shift_load_scale(), 1.0), "Load returns after the shift")
@@ -145,17 +145,18 @@ func _run() -> void:
 	chassis.control_override = {"throttle": 1.0}
 	for i in range(Engine.physics_ticks_per_second):
 		await physics_frame
-	check(chassis.engine_pedal() > audio.engine_synth.PULL_ON and audio.engine_synth.pulling,
-		"Revving in neutral plays the pulling grains")
+	check(chassis.engine_pedal() > 0.9 and audio.engine_load > 0.9
+		and engine_player.pitch_scale > BusEngineStream.pitch_for(idle_rpm),
+		"Revving in neutral raises the bus playback speed and selects loaded exhaust")
 	chassis.control_override = {}
 	audio.was_running = true
 	check(chassis.set_engine_running(false), "The fixture shuts down through the production engine control")
 	audio._process(0.025)
 	check(audio.engine_cue.playing and audio.engine_cue.stream == audio.engine_stop_sound, "Shutting down plays the tail recording")
-	check(grains.playing, "The running engine fades under the shutdown instead of cutting")
+	check(engine_player.playing, "The running engine fades under the shutdown instead of cutting")
 	audio._update_engine(0.4, 0.0)
-	check(not grains.playing, "The grain engine stops after shutdown")
-	_check_grain_synth(audio.engine_synth.bank)
+	check(not engine_player.playing, "The bus engine stops after shutdown")
+	_check_bus_loops(audio.engine_stream)
 	check(audio.road_layers.size() == RVTireModel.Surface.size(), "Every road surface has a rolling loop")
 	for layer: AudioStreamPlayer3D in audio.road_layers + [audio.wind_player]:
 		check((layer.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD, "Rolling and wind recordings loop forward")
@@ -178,38 +179,26 @@ func _run() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
-func _check_grain_synth(bank: EngineGrainBank) -> void:
-	var count := bank.size()
-	check(count > 0 and bank.periods.size() == count and bank.fades.size() == count and bank.lengths.size() == count
-		and bank.firing_hz.size() == count and bank.kinds.size() == count and bank.follows.size() == count
-		and bank.levels.size() == count and bank.brightness.size() == count and bank.cylinders.size() == count,
-		"Every grain has a complete record")
-	check(bank.idle_hz >= bank.min_hz() and bank.top_hz > bank.idle_hz * 2.0 and bank.top_hz <= bank.max_hz(),
-		"The bank spans from its idle to a raised top rate")
-	var pcm := bank.pcm()
-	var valid := true
-	for i in range(count):
-		valid = valid and bank.starts[i] + bank.lengths[i] <= pcm.size() and bank.follows[i] < count
-		valid = valid and bank.lengths[i] == bank.periods[i] + 2 * bank.fades[i]
-	check(valid, "Grain spans stay inside the sample data and runs point at real grains")
-	var synth := EngineGrainSynth.new(bank)
-	var frames := int(bank.samples.mix_rate)
-	seed(7710)
-	var expected := randi()
-	seed(7710)
-	var idle := synth.render(frames, synth.idle_hz(), synth.idle_hz(), 0.0)
-	check(randi() == expected, "Rendering grains leaves the gameplay RNG sequence intact")
-	var idle_grains := synth.grains_started
-	synth.reset()
-	var fast_hz := synth.idle_hz() * 3.0
-	var fast := synth.render(frames, fast_hz, fast_hz, 1.0)
-	var fast_grains := synth.grains_started - idle_grains
-	var expected_ratio := fast_hz / synth.idle_hz()
-	check(absf(float(fast_grains) / idle_grains / expected_ratio - 1.0) < 0.15, "Firings per second follow the requested rate")
-	check(synth.jumps * 2 < fast_grains, "A held raised rate follows the recording between splices")
-	var peak := 0.0
-	for sample in idle + fast: peak = maxf(peak, absf(sample))
-	check(peak > 0.0 and peak < 1.0, "Overlapping grains stay within full scale")
+func _check_bus_loops(bank: BusEngineStream) -> void:
+	var width := bank.RPMS.size()
+	check(bank.BANK.format == AudioStreamWAV.FORMAT_16_BITS and not bank.BANK.stereo,
+		"The bus sample bank imports as uncompressed mono PCM16")
+	check(bank.stream_count == width * bank.PEDALS.size(), "Every dyno operating point has a loop")
+	var first := bank.get_sync_stream(0) as AudioStreamWAV
+	for i in range(bank.stream_count):
+		var loop := bank.get_sync_stream(i) as AudioStreamWAV
+		check(loop.loop_mode == AudioStreamWAV.LOOP_FORWARD and loop.loop_end == first.loop_end
+			and loop.loop_end > 0 and loop.data.size() == loop.loop_end * 2,
+			"Bus layers loop across matching four-stroke cycles")
+	var middle := lerpf(bank.RPMS[1], bank.RPMS[2], 0.5)
+	bank.set_operating_point(middle, bank.PEDALS[1] * 0.5)
+	for i in range(bank.stream_count):
+		var expected := 0.25 if i in [1, 2, width + 1, width + 2] else 0.0
+		check(is_equal_approx(db_to_linear(bank.get_sync_stream_volume(i)), expected),
+			"RPM and pedal interpolate only the four adjacent dyno recordings")
+	bank.set_operating_point(bank.RPMS.back(), bank.PEDALS.back())
+	check(is_zero_approx(bank.get_sync_stream_volume(bank.stream_count - 1)),
+		"Full throttle at redline plays the highest loaded recording at unity gain")
 
 
 func _playing_any(pool: Node, streams: Array) -> bool:

@@ -60,19 +60,16 @@ func _process(_delta: float) -> void:
 	observer.global_position = rv.to_global(local_position)
 	observer.look_at(rv.to_global(local_position + Vector3(0, 0, -4)))
 	var audio := rv.get_node("Audio")
-	var grains: AudioStreamPlayer3D = audio.engine_grains
-	var playback: AudioStreamGeneratorPlayback = grains.get_stream_playback() if grains.playing else null
-	var dropouts := playback.get_skips() if playback != null else 0
 	held_slip.set_level(1.0 if Input.is_key_pressed(KEY_B) else 0.0)
 	held_scrape.set_level(1.0 if Input.is_key_pressed(KEY_N) else 0.0)
 	instructions.text = (
-		"RV AUDIO PILOT   |   %s   |   %d RPM   |   %d engine dropouts\n" +
+		"RV AUDIO PILOT   |   %s   |   %d drivetrain RPM   |   %d bus RPM\n" +
 		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
 		"F7 Warning on / off   F8 Move warning\n" +
 		"1 Handbrake  2 Switch  3 Hatch release  4 Hatch latch  5 Ramp  6 Jack  7 Install  8 Repair  9 Blocked  0 Puncture\n" +
 		"Z / X / C Light / medium / heavy crash   V Tree hit   Hold B Tyre slip   Hold N Hull scrape\n%s"
 	) % ["Outside" if outside else "Cabin",
-		roundi(rv.engine_rpm()), dropouts, message]
+		roundi(rv.engine_rpm()), roundi(audio.sound_rpm()) if audio.engine_player.playing else 0, message]
 
 
 func _physics_process(_delta: float) -> void:
