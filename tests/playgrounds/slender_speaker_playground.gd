@@ -531,9 +531,8 @@ func set_giant_enabled(enabled: bool) -> void:
 		giant.velocity = Vector3.ZERO
 		giant._sample("idle_play", 0.0)
 	giant.process_mode = Node.PROCESS_MODE_INHERIT if enabled else Node.PROCESS_MODE_DISABLED
-	if giant.patrol_music != null:
-		if enabled and not giant.patrol_music.playing: giant.patrol_music.play()
-		elif not enabled: giant.patrol_music.stop()
+	if enabled: giant._start_patrol_music()
+	elif giant.patrol_music != null: giant.patrol_music.stop()
 
 func set_paused(value: bool) -> void:
 	paused = value

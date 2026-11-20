@@ -47,7 +47,6 @@ avoidance_enabled = false
 
 [node name="PatrolMusic" type="AudioStreamPlayer3D" parent="."]
 bus = &"Exterior"
-unit_size = 320.0
+attenuation_model = 3
 max_db = 0.0
 max_distance = 1000.0
-volume_db = -5.0

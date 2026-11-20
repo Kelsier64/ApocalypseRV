@@ -471,6 +471,26 @@ func check_parked_vehicle_sight() -> void:
 		"Parked RV beyond visual range remains undetected")
 	clear_sight_memory()
 
+func check_warning_fade() -> void:
+	var music := giant.patrol_music
+	check(is_zero_approx(music.volume_linear), "A newly spawned loudspeaker starts silent")
+	var camera := Camera3D.new()
+	world.add_child(camera)
+	camera.make_current()
+	camera.global_position = music.global_position + Vector3.BACK * SlenderSpeakerSpawns.FOREST_MIN_DISTANCE
+	var half_fade := SlenderSpeaker.PATROL_FADE_SECONDS * 0.5
+	giant._process(half_fade)
+	var halfway := music.volume_linear
+	giant._process(half_fade)
+	check(halfway > 0.0 and halfway < music.volume_linear, "The music gradually fades in even while the listener stands still")
+	var previous := 0.0
+	for distance in [SlenderSpeakerSpawns.FOREST_MAX_DISTANCE, SlenderSpeakerSpawns.FOREST_MIN_DISTANCE, 180.0, 70.0, 10.0]:
+		camera.global_position = music.global_position + Vector3.BACK * distance
+		giant._process(0.0)
+		check(music.volume_linear > previous, "Approaching the speaker increases its gain at %s m" % distance)
+		previous = music.volume_linear
+	camera.free()
+
 func run() -> void:
 	world = Node3D.new()
 	root.add_child(world)
@@ -485,6 +505,7 @@ func run() -> void:
 	var music := giant.patrol_music
 	check(music.global_position.is_equal_approx(giant._focus_position()) and music.bus == &"Exterior",
 		"Warning starts at the loudspeaker socket and passes through cabin muffling")
+	check_warning_fade()
 	giant.set_physics_process(false)
 	player = PLAYER.instantiate()
 	world.add_child(player)
