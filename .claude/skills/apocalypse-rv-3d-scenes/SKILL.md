@@ -11,12 +11,23 @@ Default loop: build what the task needs → review it once in its real scene →
 
 | Content | Approach |
 |---|---|
-| Walls, floors, ramps, shells, anything a few meshes and materials can cover | Build it directly in Godot, visuals and function together |
+| Buildings: walls, openings, floors, roofs, stairs, columns | Compose with `BuildingKit` (`world/building_kit/`); see Buildings below. Never write another per-building `box()` helper |
+| Ramps, shells and other simple non-building geometry | Build it directly in Godot, visuals and function together |
 | Static props, decoration, crates, barrels, components, equipment with clear silhouettes where approximate detail is fine | Generate with the `comfyui-image-to-3d` skill |
 | Precise structure, openings, mating parts, moving joints, collision, interaction | Native meshes. A generated mesh may only be a visual shell over them |
 | Large buildings | Split into components (facade sections, entrance assemblies, roof equipment, interior fittings) |
 
 For split buildings, keep the layout and assembly in Godot and make each component replaceable on its own. Record each component's target node, local placement, orientation, and the adjoining dimensions or openings it must fit. Repeated instances share one asset. Build simple structural parts directly rather than generating them.
+
+## Buildings
+
+Agents are weak at judging their own architecture from screenshots, so a building passes the user at two gates. The full workflow, conventions and palette are in [the building kit guide](../../../docs/guides/building-kit.md).
+
+1. **Reference and style sheet first.** Get a reference image (from the user, or generated per [reference images](../comfyui-image-to-3d/references/reference-images.md)) and write a short style sheet: finishes, tints, detail density, damage. Ask the user to confirm it with an `AskUserQuestion` card before modeling.
+2. **Blockout gate.** Build only massing, openings, floors and stairs with the kit, make `validate()` return no issues, put it in a playground and hand it to the user. Do not add detail until the user approves the massing and routes.
+3. **Detail**, then self-review with `scripts/agent/review-scene.ps1` against the reference, then the final playground hand-off. Your own captures are a check, not acceptance.
+
+Stay inside the GDD palette (cold grey, low saturation). Derive a building's own tints with `BuildingKitMaterials.register()` instead of editing the shared finishes. Use the standard sizes in `building_kit.gd` (storey, wall, door, window, step) unless the design needs otherwise.
 
 ## Replace visuals without breaking gameplay
 
@@ -29,7 +40,9 @@ For split buildings, keep the layout and assembly in Godot and make each compone
 You can read PNGs with the Read tool, so render and look rather than infer from numbers.
 
 - **A single GLB:** `comfyui-image-to-3d`'s `review.py` renders 12 views (six angles, textured and clay).
+- **Any scene (building, POI, prop wrapper):** `scripts/agent/review-scene.ps1 -Scene res://<scene>.tscn [-Eye 'x,y,z:x,y,z;...'] [-Clay]` renders four obliques, front, side, top and eye-level views to `.godot/scene-review/<name>/` with a `review.json` of bounds, triangles, surfaces and materials. Use `-Eye` for interiors and doorways; it needs a renderer, so it opens a window briefly.
 - **In context:** render the integrated asset from the gameplay camera with a playground capture flag and read the PNGs before reporting. The `godot-playgrounds` skill has the command and pitfalls.
+- Read a few fixed views carefully rather than looping on many screenshots; more looking does not fix judgement. Check numbers (bounds, `validate()`, the Blender audit) for contact, floating parts and size.
 - Compare against the surrounding cab or room: clean vector art and self-lit flat panels read as UI pasted into the world.
 - Use computer use only when the check needs live interaction.
 
@@ -47,12 +60,13 @@ The full rule is hard rule 1 in [CLAUDE.md](../../../CLAUDE.md); a hook blocks `
 
 ## Blender
 
-Blender 5.2 is on PATH. Use it headless for remeshing, baking, inspection and export:
+Blender 5.2 is **not** on PATH. Call it by full path:
 
 ```powershell
-blender --background --python <script.py> -- <args>
+$blender = 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe'
+& $blender --background <file.blend> --python <script.py> -- <args>
 ```
 
-Keep scripts in an ignored work folder under `.godot/` unless they are a reusable build step (existing ones live in `scripts/build_*.py`).
+Prefer headless scripts: they are reproducible and leave a rebuild order in the asset README. Use the Blender MCP (`mcp-for-blender`, safe mode, in `.mcp.json`) only to inspect or edit a scene the user has open, and ask the user to open Blender only when the CLI cannot do the job. Some older asset READMEs (for example `art_source/barrel_man/`) say their scripts must run through the MCP; that holds for those scripts only.
 
-`.mcp.json` also configures a Blender MCP server (`mcp-for-blender`, safe mode) for interactive work in a running Blender. Prefer the CLI; use the MCP when you need to inspect or edit a scene the user has open. Ask the user to open Blender only when the task truly needs the GUI and the CLI cannot do it; say what you tried.
+Before authoring in Blender, read [Blender authoring](references/blender-authoring.md): build per part, retry with the traceback, read enums at run time, and run the shared audit `scripts/blender/asset_audit.py` instead of writing a new audit per asset.
