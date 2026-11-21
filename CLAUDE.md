@@ -61,12 +61,12 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Git
 
-Solo project, trunk-based by default; large changes go through a reviewed PR. The user delegates Git to you: commit, push, and for large changes open the PR, without being asked.
+Solo project, trunk-based by default; a large change goes through a worktree and a reviewed PR when the user chooses it. The user delegates the rest of Git to you: commit, push, and in a chosen worktree open the PR, without being asked.
 
 - **Where.** Work in this checkout on `main` and land it on `origin/main`. Never switch this checkout's branch. A session the app started in its own worktree lands its work the same way, with `git push origin HEAD:main`.
 - **Commit** each finished, verified unit of work, one topic per commit. Stage named paths only. Never use `git add -A`, `git add .`, `git commit -a` or `git stash`: other sessions and Codex may have uncommitted work in the same folder. Put test results and what was not verified in the message.
 - **Push** at the end of every task that committed something. First `git fetch`, then rebase your unpushed commits onto `origin/main` (another machine pushes to the same `main`), then `git push origin HEAD:main`. Hold the push and report instead when the rebase conflicts or a relevant test fails.
-- **Large changes** use a worktree and a PR instead of `main`: architecture or cross-module contract refactors, save-format or version-constant changes (`generation_version`, `VERSION`), features expected to span several sessions, experiments that may be thrown away, and anything the user asks to review. Say so when the task starts.
+- **Large changes** may use a worktree and a PR instead of `main`: architecture or cross-module contract refactors, save-format or version-constant changes (`generation_version`, `VERSION`), features expected to span several sessions, and experiments that may be thrown away. Never create a worktree on your own: ask with an `AskUserQuestion` card before starting (worktree + PR, or straight on `main`), and work on `main` unless the user picks the worktree. The user may also ask for one directly.
   - Start: `git fetch`, then `git worktree add .claude/worktrees/<topic> -b claude/<topic> origin/main`. Work and run Godot there (`godot --path .claude/worktrees/<topic>`; the first run imports from scratch).
   - Finish: rebase onto a fresh `origin/main` before the first push, then `git push -u origin HEAD` and `gh pr create`. The body says what changed, the test results, and what was not verified. Give the user the link and stop.
   - Follow-ups go to the same branch as new commits. After the first push, merge `origin/main` in instead of rebasing.
