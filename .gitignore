@@ -2,6 +2,7 @@
 .godot/
 /android/
 .worktrees/
+/.claude/worktrees/
 
 # Editor backups and local agent settings
 *.blend1

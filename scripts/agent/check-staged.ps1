@@ -3,22 +3,43 @@
 # Manual use: run after staging; exits 1 when something must not be committed.
 # -Hook: PreToolUse payload on stdin; inspects only `git commit`
 # commands, including files staged earlier in the same command.
+# Checks the repository the commit lands in: a worktree named by `git -C`, a leading
+# `cd`/`Set-Location`, or the hook's working directory (manual use: the current one).
 [CmdletBinding()]
 param([switch]$Hook, [switch]$Codex)
 $ErrorActionPreference = 'Stop'
 $utf8 = [Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = $utf8
 [Console]::OutputEncoding = $utf8
-$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+function Resolve-Repo([string]$Directory, [string]$Base) {
+    if (-not $Directory) { return $null }
+    if ($Base -and -not [IO.Path]::IsPathRooted($Directory)) { $Directory = Join-Path $Base $Directory }
+    $top = & git -C $Directory rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -eq 0 -and $top) { return "$top".Trim() }
+    return $null
+}
+$quotedPath = '(?:"([^"]+)"|''([^'']+)''|([^\s;&|]+))'
+$command = ''
+$workDir = (Get-Location).Path
+if ($Hook) {
+    try { $payload = [Console]::In.ReadToEnd().TrimStart([char]0xFEFF) | ConvertFrom-Json } catch { exit 0 }
+    $command = "$($payload.tool_input.command)"
+    if ($command -notmatch '\bgit\b[^\r\n;&|]*\bcommit\b') { exit 0 }
+    if ($payload.cwd) { $workDir = "$($payload.cwd)" }
+}
+$target = $null
+if ($command -match "\bgit\s+-C\s+$quotedPath") { $target = ($Matches[1], $Matches[2], $Matches[3] | Where-Object { $_ } | Select-Object -First 1) }
+elseif ($command -match "^\s*(?:cd|Set-Location|sl|pushd|Push-Location)\s+(?:-LiteralPath\s+|-Path\s+)?$quotedPath") { $target = ($Matches[1], $Matches[2], $Matches[3] | Where-Object { $_ } | Select-Object -First 1) }
+$root = Resolve-Repo $target $workDir
+if (-not $root) { $root = Resolve-Repo $workDir $null }
+if (-not $root) { $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent }
 function Get-GitList([string[]]$Arguments) { @(& git -C $root -c core.quotepath=false @Arguments 2>$null | Where-Object { $_ }) }
 
 $files = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 $newFiles = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 if ($Hook) {
-    try { $command = "$(([Console]::In.ReadToEnd().TrimStart([char]0xFEFF) | ConvertFrom-Json).tool_input.command)" } catch { exit 0 }
-    if ($command -notmatch '\bgit\b[^\r\n;&|]*\bcommit\b') { exit 0 }
-    foreach ($add in [regex]::Matches($command, '\bgit\s+add\b([^\r\n;&|]*)')) {
-        $words = @($add.Groups[1].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_.Trim('"', "'") })
+    foreach ($add in [regex]::Matches($command, "\bgit\s+(?:-C\s+$quotedPath\s+)?add\b(?<args>[^\r\n;&|]*)")) {
+        $words = @($add.Groups['args'].Value.Trim() -split '\s+' | Where-Object { $_ } | ForEach-Object { $_.Trim('"', "'") })
         $specs = @($words | Where-Object { $_ -notmatch '^-' })
         if ($words -contains '-A' -or $words -contains '--all' -or $specs -contains '.') { $specs = @() }
         elseif ($specs.Count -eq 0) { continue }
@@ -60,7 +81,7 @@ if ($evidence.Count -gt 6) { $warnings.Add("$($evidence.Count) new images under 
 # Docs in the pending commit must keep their links and the docs/ layout (docs-maintenance skill).
 $docFiles = @($files | Where-Object { $_ -match '\.md$' -or $_ -match '^docs/' })
 if ($docFiles.Count) {
-    $docProblems = @(& (Join-Path $PSScriptRoot 'check-docs.ps1') @docFiles | Where-Object { $_ -match '^(BROKEN|MISPLACED)' })
+    $docProblems = @(& (Join-Path $PSScriptRoot 'check-docs.ps1') -Root $root @docFiles | Where-Object { $_ -match '^(BROKEN|MISPLACED)' })
     if ($docProblems.Count) { $warnings.Add("docs check: $($docProblems -join ' | ')") }
 }
 
