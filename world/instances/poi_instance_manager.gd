@@ -19,6 +19,7 @@ var _player: Node3D
 var _home: Node
 var _return_transform := Transform3D.IDENTITY
 var _route_stack: Array[Dictionary] = []
+var _room_reverb: AudioEffectReverb
 var _active_seed := 0
 var _retained_viewport: SubViewport
 var _retained_interior: PoiInterior
@@ -191,7 +192,8 @@ func _load_interior(profile: StringName, seed_value: int, token: int, at: Varian
 	_connect_interior_doors()
 	_player.reparent(interior)
 	_reset_player(interior.spawn_transform() if at == null else at)
-	get_node("/root/Sfx").set_listener_viewport(viewport)
+	_room_reverb = InteriorProfiles.get_profile(profile).reverb
+	get_node("/root/Sfx").set_listener_viewport(viewport, _room_reverb)
 	_display.texture = viewport.get_texture()
 	_display.show()
 	_release_retained_view()
@@ -275,7 +277,8 @@ func recovery_home(player: Node3D) -> Node3D:
 
 func show_recovery_camera(exterior: bool) -> void:
 	_display.visible = not exterior
-	get_node("/root/Sfx").set_listener_viewport(get_tree().root if exterior else viewport)
+	if exterior: get_node("/root/Sfx").set_listener_viewport(get_tree().root)
+	else: get_node("/root/Sfx").set_listener_viewport(viewport, _room_reverb)
 
 func return_to_print_bed(player: Node3D) -> void:
 	# The death controller has already left the physical corpse inside.

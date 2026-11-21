@@ -69,7 +69,17 @@ func _run() -> void:
 	check(sfx.play(shot, inside_source) and sfx._echoes.is_empty(), "A gunshot inside a POI interior has no outdoor echo")
 	check(inside.get_node("SpatialOneShots").get_child(0).get_world_3d() == inside.find_world_3d(),
 		"The POI player resolves its position in the interior world")
+	var hall := load("res://assets/audio/rooms/hall.tres") as AudioEffectReverb
+	sfx.set_listener_viewport(inside, hall)
+	var effects := AudioServer.get_bus_index(&"Effects")
+	check(AudioServer.get_bus_effect_count(effects) == 1 and AudioServer.get_bus_effect(effects, 0) == hall,
+		"An interior listener hears world sound through its room reverb")
 	sfx.set_listener_viewport(root)
+	check(AudioServer.get_bus_effect_count(effects) == 0, "The outdoor listener hears no room reverb")
+	for file in DirAccess.get_files_at("res://world/instances/catalog"):
+		if file.get_extension() != "tres": continue
+		var profile := load("res://world/instances/catalog".path_join(file)) as InteriorProfile
+		check(profile != null and profile.reverb != null, "%s names a room reverb preset" % file)
 	var burst := door_close.duplicate() as SoundEvent
 	burst.cooldown_seconds = 1.0
 	check(sfx.play(burst, outside_source) and not sfx.play(burst, outside_source) and sfx.play(door_close, outside_source),

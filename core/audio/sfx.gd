@@ -32,6 +32,8 @@ var _started: Dictionary[AudioStreamPlayer3D, int] = {}
 var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0, &"Engine": 0.0}
 ## Current engine masking, 0 to 1.
 var _mask := 0.0
+## Room reverb inserted on Effects while the listener is inside a POI interior.
+var _room: AudioEffectReverb
 ## Engine time in msec each event with a cooldown last played, by instance id
 ## so the autoload holds no references to the events themselves.
 var _last_played: Dictionary[int, int] = {}
@@ -41,7 +43,9 @@ func _ready() -> void:
 	set_listener_viewport(get_tree().root)
 
 
-func set_listener_viewport(viewport: Viewport) -> void:
+## room is the interior's reverb preset; null outdoors.
+func set_listener_viewport(viewport: Viewport, room: AudioEffectReverb = null) -> void:
+	_set_room(room)
 	if _listener == viewport: return
 	if is_instance_valid(_listener):
 		_listener.audio_listener_enable_3d = false
@@ -216,6 +220,17 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 	AudioServer.set_bus_effect_enabled(bus, 0, cover > 0.0)
 
 
+func _set_room(room: AudioEffectReverb) -> void:
+	if room == _room: return
+	var bus := AudioServer.get_bus_index(&"Effects")
+	for index in AudioServer.get_bus_effect_count(bus):
+		if AudioServer.get_bus_effect(bus, index) == _room:
+			AudioServer.remove_bus_effect(bus, index)
+			break
+	_room = room
+	if room != null: AudioServer.add_bus_effect(bus, room, 0)
+
+
 ## Ducks Exterior by the engine masking and gives the loudspeaker most of it back.
 func _set_mask(mask: float) -> void:
 	_mask = mask
@@ -224,6 +239,7 @@ func _set_mask(mask: float) -> void:
 
 
 func _exit_tree() -> void:
+	_set_room(null)
 	# Stop pooled voices before shutdown rather than leaving them mixing.
 	for voice in _voices + _echoes:
 		if is_instance_valid(voice): voice.stop()

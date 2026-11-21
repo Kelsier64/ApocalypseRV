@@ -33,12 +33,20 @@ func _add_scrap(label: String) -> Item:
 	item.transform = Transform3D(Basis.IDENTITY, Vector3(0, 1, 2))
 	return item
 
+func _effects_reverb() -> AudioEffectReverb:
+	var bus := AudioServer.get_bus_index(&"Effects")
+	for index in AudioServer.get_bus_effect_count(bus):
+		if AudioServer.get_bus_effect(bus, index) is AudioEffectReverb: return AudioServer.get_bus_effect(bus, index)
+	return null
+
 func _enter(id: String) -> bool:
 	var survival: Dictionary = player.survival.capture()
 	await manager.enter(player, building, id, 913)
 	var ok: bool = manager.state == PoiInstanceManager.State.INDOOR and manager.interior != null and player.get_parent() == manager.interior
 	check(ok, id + " enters a complete real interior: " + manager.last_error)
 	if ok: check(manager._status.text.is_empty(), id + " clears transition text while playing indoors")
+	if ok: check(_effects_reverb() == InteriorProfiles.get_profile(manager.interior.profile_id).reverb and _effects_reverb() != null,
+		id + " plays world sound through its interior profile's reverb")
 	if ok: check(manager.interior.find_children("*", "Label3D", true, false).is_empty(), id + " bunker has no model text labels")
 	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
@@ -209,6 +217,7 @@ func _run() -> void:
 		_check_exploration_map()
 		await manager.leave()
 		check(manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == arena, "Normal exit returns the player")
+		check(_effects_reverb() == null, "Leaving the interior removes its room reverb")
 		await _retired("normal exit")
 	# Entering failure must not overwrite a previously committed visit.
 	var preserved: Dictionary = manager.saved_instances["exit-cancel"].duplicate(true)
