@@ -82,6 +82,13 @@ func _run() -> void:
 		if file.get_extension() != "tres": continue
 		var profile := load("res://world/instances/catalog".path_join(file)) as InteriorProfile
 		check(profile != null and profile.reverb != null, "%s names a room reverb preset" % file)
+		check(profile != null and profile.room_tone is AudioStreamOggVorbis and profile.room_tone.loop, "%s names a looping room tone" % file)
+	var tone := load("res://assets/audio/ambience/room_hall.ogg") as AudioStream
+	sfx.set_listener_viewport(inside, hall, tone)
+	check(sfx.room_tone() == tone and not sfx.listening_outdoors(), "An interior listener carries its room tone")
+	sfx.set_listener_viewport(root)
+	check(sfx.room_tone() == null and sfx.listening_outdoors(), "The outdoor listener has no room tone")
+	await _check_ambience(sfx, inside, tone)
 	var burst := door_close.duplicate() as SoundEvent
 	burst.cooldown_seconds = 1.0
 	check(sfx.play(burst, outside_source) and not sfx.play(burst, outside_source) and sfx.play(door_close, outside_source),
@@ -145,11 +152,13 @@ func _run() -> void:
 	await _settle_mix(sfx)
 	var outside_exterior := _bus_mix(&"Exterior")
 	var outside_cabin := _bus_mix(&"Cabin")
+	check(_bus_mix(&"Outdoors").is_equal_approx(outside_exterior), "Outdoor ambience is open beside the RV")
 	listener.global_position = cabin
 	await _settle_mix(sfx)
 	var cabin_exterior := _bus_mix(&"Exterior")
 	var cabin_cabin := _bus_mix(&"Cabin")
 	check(_bus_mix(&"Engine").is_equal_approx(cabin_exterior), "The engine bay is muffled like the rest of the exterior from the cabin")
+	check(_bus_mix(&"Outdoors").is_equal_approx(cabin_exterior), "Outdoor ambience is muffled like the exterior from the cabin")
 	check(cabin_exterior.x < outside_exterior.x and cabin_exterior.y < outside_exterior.y, "The cabin lowers the exterior bus level and cutoff")
 	check(outside_cabin.x < cabin_cabin.x and outside_cabin.y < cabin_cabin.y, "Standing outside lowers the cabin bus level and cutoff")
 	listener.queue_free()
@@ -257,6 +266,74 @@ func _run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _check_ambience(sfx: Node, inside: SubViewport, tone: AudioStream) -> void:
+	var day := WorldAmbience.weights(1.0, 0.0, 0.0)
+	var night := WorldAmbience.weights(0.0, 0.0, 0.0)
+	check(day[&"crow"] > 0.0 and day[&"cricket"] == 0.0 and night[&"cricket"] > 0.0 and night[&"crow"] == 0.0,
+		"Open ground hears crows by day and crickets by night")
+	check(day[&"tree_creak"] == 0.0 and day[&"branch_snap"] == 0.0 and day[&"metal_creak"] == 0.0,
+		"Open ground away from trees and road hears neither")
+	var woods := WorldAmbience.weights(1.0, 1.0, 0.0)
+	check(woods[&"tree_creak"] > 0.0 and woods[&"branch_snap"] > 0.0, "Trees creak and branches snap in the forest")
+	check(WorldAmbience.weights(1.0, 0.0, 1.0)[&"metal_creak"] > 0.0, "Metal creaks beside the road")
+	for sound in WorldAmbience.OUTDOOR:
+		var event: SoundEvent = WorldAmbience.OUTDOOR[sound]
+		check(event.bus == &"Outdoors" and not event.occlusion_by_position and not event.samples.is_empty(),
+			"The %s sound plays on the outdoor ambience bus" % sound)
+	for sound in WorldAmbience.INDOOR:
+		var event: SoundEvent = WorldAmbience.INDOOR[sound]
+		check(event.occlusion_by_position and not event.samples.is_empty(), "The %s sound plays through the room's reverb" % sound)
+
+	var clock := WorldClock.new()
+	var ambience := WorldAmbience.new()
+	ambience.clock = clock
+	ambience.forest_override = 0.0
+	ambience.road_override = 0.0
+	root.add_child(ambience)
+	var waits := func(mist: float, rain: float) -> float:
+		var total := 0.0
+		for i in range(200): total += ambience.next_wait(mist, rain)
+		return total / 200.0
+	var clear: float = waits.call(0.0, 0.0)
+	check(clear >= WorldAmbience.INTERVAL.x and clear <= WorldAmbience.INTERVAL.y, "Clear weather spaces sounds within the interval")
+	check(waits.call(WorldWeather.FOG_HEAVY, 0.0) > clear and waits.call(0.0, 1.0) > clear, "Fog and rain make sounds rarer")
+	var listener := Camera3D.new()
+	root.add_child(listener)
+	listener.make_current()
+	for voice in sfx._voices: voice.stop()
+	clock.set_time(1, 12.0)
+	check(ambience.play_next() and ambience.last_sound == &"crow", "A clear noon on open ground plays a crow")
+	var played: Array = sfx._voices.filter(func(voice): return voice.playing)
+	check(played.size() == 1 and played[0].bus == &"Outdoors" and played[0].stream in WorldAmbience.OUTDOOR[&"crow"].samples,
+		"The crow plays on the outdoor ambience bus")
+	check(ambience.last_distance >= WorldAmbience.OUTDOOR_DISTANCE.x and ambience.last_distance <= WorldAmbience.OUTDOOR_DISTANCE.y,
+		"An outdoor sound plays at a distance")
+	clock.weather.set_weather(Vector3(0.0, 0.0, WorldWeather.FOG_HEAVY), true)
+	var far := 0.0
+	for i in range(20):
+		ambience.play_next()
+		far = maxf(far, ambience.last_distance)
+	check(far > WorldAmbience.OUTDOOR_DISTANCE.y, "Fog puts outdoor sounds farther away")
+	for voice in sfx._voices: voice.stop()
+	var room_camera := Camera3D.new()
+	inside.add_child(room_camera)
+	room_camera.make_current()
+	sfx.set_listener_viewport(inside, null, tone)
+	check(ambience.play_next() and ambience.last_sound in WorldAmbience.INDOOR, "An interior plays a drip or a creak")
+	var pool := inside.get_node_or_null("SpatialOneShots")
+	check(pool != null and pool.get_children().any(func(voice): return voice.playing and voice.bus == &"Exterior"),
+		"The interior sound plays in the interior world through its room sound")
+	for i in range(ceili(WorldAmbience.ROOM_FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	check(ambience._room.playing and ambience._room.stream == tone and ambience.room_level > 0.0, "Inside an interior its faint hum plays")
+	sfx.set_listener_viewport(root)
+	for i in range(ceili(WorldAmbience.ROOM_FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	check(not ambience._room.playing, "Back outdoors the hum stops")
+	room_camera.queue_free()
+	listener.queue_free()
+	ambience.free()
+	clock.free()
 
 
 func _check_monster_footfalls() -> void:
