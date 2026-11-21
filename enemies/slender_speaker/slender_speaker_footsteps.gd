@@ -7,6 +7,8 @@ const STEP: SoundEvent = preload("res://assets/audio/events/slender_speaker/step
 ## Plant phases of the shared cycle, between those of the walk and run clips.
 const PLANTS := {&"gait": [[0.44, 0], [0.94, 1]]}
 const FEET := ["foot.L", "foot.R"]
+## The footfalls must still be plainly audible this far away.
+const HEARD_WITHIN := 80.0
 
 var actor: SlenderSpeaker
 var footfalls := MonsterFootfalls.new(PLANTS)

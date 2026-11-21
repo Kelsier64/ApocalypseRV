@@ -292,8 +292,21 @@ func _check_monster_footfalls() -> void:
 				"The Slender Speaker's shared gait lands on the %s plants" % clip)
 	giant.queue_free()
 	await process_frame
-	check(load("res://assets/audio/attenuation/presence.tres").max_distance > WhiteApparition.SPAWN_MAX,
-		"The white apparition's presence carries past its spawn ring")
+	# Each monster's decided range must sit well inside its fade to silence.
+	var ranges := [
+		[load("res://assets/audio/attenuation/presence.tres"), WhiteApparition.SPAWN_MAX, "The white apparition is heard across its spawn ring"],
+		[load("res://assets/audio/attenuation/breath.tres"), preload("res://enemies/black_apparition/black_apparition_audio.gd").BREATH_HEARD_WITHIN, "Black apparition breathing is heard within its range"],
+		[load("res://assets/audio/attenuation/vocal.tres"), preload("res://enemies/raker_audio.gd").VOCAL_HEARD_WITHIN, "Raker vocals and tells are heard within their range"],
+		[load("res://assets/audio/attenuation/giant.tres"), preload("res://enemies/slender_speaker/slender_speaker_footsteps.gd").HEARD_WITHIN, "Slender Speaker footfalls are heard within their range"]]
+	for entry in ranges:
+		check(_distance_db(entry[0], entry[1]) > -24.0, entry[2])
+
+
+## Godot 4.7 inverse-distance falloff, capped at +3 dB, times the linear fade
+## to silence at max_distance.
+static func _distance_db(attenuation: SoundAttenuation, distance: float) -> float:
+	var falloff := minf(attenuation.unit_size / distance, db_to_linear(3.0))
+	return linear_to_db(falloff * maxf(0.0, 1.0 - distance / attenuation.max_distance))
 
 
 static func _cycle_gap(a: float, b: float) -> float:

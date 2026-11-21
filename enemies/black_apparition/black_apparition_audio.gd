@@ -11,6 +11,8 @@ const MOUTH := Vector3(0.0, 2.3, 0.0)
 const PLANTS := {&"stride": [[0.0, 0], [0.5, 1]]}
 ## Stride weight below which the legs barely move and land no step.
 const MIN_STRIDE_WEIGHT := 0.3
+## The breathing must still be plainly audible this far away.
+const BREATH_HEARD_WITHIN := 5.0
 
 var actor: BlackApparition
 var breathing: SoundLoop
@@ -24,7 +26,7 @@ func _ready() -> void:
 	breathing = SoundLoop.new()
 	breathing.name = "Breathing"
 	breathing.stream = BREATHING
-	breathing.base_db = -16.0
+	breathing.base_db = -12.0
 	breathing.position = MOUTH
 	breathing.occlusion_by_position = true
 	preload("res://assets/audio/attenuation/breath.tres").apply(breathing)

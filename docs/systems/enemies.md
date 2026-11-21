@@ -81,9 +81,9 @@ Slender Speaker 只在實際天氣達到小霧以上時於正式森林生成；�
 
 | 怪物 | 安靜的時候 | 暴露的時候 |
 |---|---|---|
-| 白影 | 未現身 | 現身時一聲輕微氣音；在場時持續低語，可聽距離超過 55 m 的出現範圍，越近越響、聲像越窄越好定位；消失後 0.4 秒淡出 |
+| 白影 | 未現身 | 現身時一聲輕微氣音；在場時持續低語，可聽距離超過 55 m 的出現範圍，越近越響、聲像越窄越好定位；消失後 0.4 秒淡出。沒被看見的白影 6–10 秒後就離開，低語也隨之停止 |
 | 黑影 | 未現身、退場後 | 待機時只有 5 m 內聽得到呼吸；發狂時尖叫一次，奔跑的每一步都有定位腳步 |
-| Raker | 死亡、布娃娃期間 | 腳步落在步態動畫的著地點；遊蕩時每 5–10 秒、追擊時每 2.5–5 秒低吼或喀噠一次，約 30 m 內聽得到；橫掃、破門、腳下攻擊前有預備聲，抓咬伸手時有短促嘶吼 |
+| Raker | 死亡、布娃娃期間 | 腳步落在步態動畫的著地點；遊蕩時每 5–10 秒、追擊時每 2.5–5 秒低吼或喀噠一次，約 30 m 內聽得到，攻擊與抓咬期間暫停；橫掃、破門、腳下攻擊前有預備聲，抓咬伸手時有短促嘶吼 |
 | 油桶人 | 偽裝中、收腿時 | 只有從偽裝起身時金屬撞擊一次，收腿中再起身不重播；追逐時每步桶身敲擊加液體晃動；自爆倒數期間嘶聲音高從 0.85 升到 1.6 |
 | Slender Speaker | 遠處只有旋律 | 走跑時落地聲約 80 m 內聽得到 |
 
@@ -216,7 +216,7 @@ Checkpoint 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（�
 - 單發聲由狀態轉換觸發，持續聲每影格依狀態設定音量。白影的提示只在 `emerged` 訊號時播放，換位不播；油桶人的節點第一個 tick 只記錄階段，所以從存檔還原到起身中不會補播。
 - 腳步由 [MonsterFootfalls](../../enemies/monster_footfalls.gd) 把步態片段的播放相位換成著地事件。Raker 與油桶人讀 `AnimationPlayer` 的目前片段與相位，Slender Speaker 讀共用的 `gait_phase()`，黑影讀視覺節點的 `stride_phase()`；換片段時不補步。各節點的 `PLANTS` 表必須對上片段中腳骨最低點的相位，[test_rv_audio](../../tests/test_rv_audio.gd) 從片段重算並比對。
 - 間隔與取樣只用聲音節點自己的 RNG，不動遊戲用的亂數。
-- 距離預設在 [assets/audio/attenuation/](../../assets/audio/attenuation/)：`presence`、`breath`、`steps`、`vocal`、`giant`。`SoundLoop.occlusion_by_position` 讓持續聲跟著聲源換 `Cabin`／`Exterior`。
+- 距離預設在 [assets/audio/attenuation/](../../assets/audio/attenuation/)：`presence`、`breath`、`steps`、`vocal`、`giant`。`max_distance` 是線性淡到無聲的距離，所以都設在決定的可聽距離之外；各聲音節點的 `HEARD_WITHIN` 常數記錄決定的距離，測試確認那裡的衰減不超過 24 dB。`SoundLoop.occlusion_by_position` 讓持續聲跟著聲源換 `Cabin`／`Exterior`。
 - 事件在 [assets/audio/events/](../../assets/audio/events/) 的 `apparitions`、`raker`、`barrel_man`、`slender_speaker` 資料夾，錄音來源見各素材資料夾的 README。
 
 ### 攀爬與戰鬥

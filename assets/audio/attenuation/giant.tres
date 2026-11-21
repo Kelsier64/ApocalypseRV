@@ -5,4 +5,4 @@
 [resource]
 script = ExtResource("1")
 unit_size = 25.0
-max_distance = 80.0
+max_distance = 110.0

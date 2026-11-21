@@ -69,7 +69,7 @@ var chassis_review_gear := 2
 var chassis_review_stop_after_hit := false
 var chassis_hits_after_stop := 0
 
-class PlaygroundControls extends Node:
+class SlenderControls extends Node:
 	var playground: Node
 	func _input(event: InputEvent) -> void:
 		playground.handle_playground_input(event)
@@ -338,7 +338,7 @@ func select_mode(next: int) -> bool:
 	running = true
 	set_giant_enabled(mode != 0 or liveness_review)
 	if controls == null:
-		controls = PlaygroundControls.new()
+		controls = SlenderControls.new()
 		controls.playground = self
 		controls.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(controls)

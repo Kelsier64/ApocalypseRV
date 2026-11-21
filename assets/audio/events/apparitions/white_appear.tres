@@ -7,6 +7,6 @@
 [resource]
 script = ExtResource("1")
 samples = Array[AudioStream]([ExtResource("3")])
-volume_db = -14
+volume_db = -10
 attenuation = ExtResource("2")
 priority = 1

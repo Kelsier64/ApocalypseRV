@@ -14,6 +14,8 @@ const WANDER_VOCAL_SECONDS := Vector2(5.0, 10.0)
 const CHASE_VOCAL_SECONDS := Vector2(2.5, 5.0)
 ## Mouth height for vocals and tells.
 const MOUTH := Vector3(0.0, 2.2, 0.0)
+## Vocals and tells must still be plainly audible this far away.
+const VOCAL_HEARD_WITHIN := 30.0
 ## Plant phases of the gait clips, from the foot bones' lowest points.
 const PLANTS := {
 	&"game/walk": [[0.18, 0], [0.68, 1]],
@@ -41,7 +43,8 @@ func _physics_process(delta: float) -> void:
 		footfalls.advance(&"", 0.0)
 		return
 	_footfalls()
-	if actor.grab.busy(): return
+	# Hold vocals through a strike or grab so they never cover its tell.
+	if actor.grab.busy() or actor.strike_elapsed >= 0.0: return
 	vocal_in -= delta
 	if vocal_in > 0.0: return
 	var chasing := actor.ai_state != Monster.State.WANDER
