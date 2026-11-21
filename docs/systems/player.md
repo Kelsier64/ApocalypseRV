@@ -7,6 +7,7 @@
 | 功能 | 現況與範圍 | 主要來源／測試場 |
 |---|---|---|
 | 第一人稱移動 | 正式；步行、衝刺、跳躍、蹲行、受阻保持蹲姿；移動載具上的相對運動與安全離座 | [Player](../../player/player.gd)、[player driving](../../tests/playgrounds/player_driving_playground.tscn) |
+| 腳步聲 | 正式；依腳下路面取柏油、碎石、泥土、草地、木地板、鐵皮或混凝土的錄音，衝刺較響、蹲行較輕，落地加重一步 | [footsteps](../../player/player_footsteps.gd)、[surface](../../core/audio/footstep_surface.gd)、[footstep playground](../../tests/playgrounds/footstep_playground.tscn) |
 | 體力 | 正式；衝刺／跳躍消耗、延遲恢復與耗盡限制；駕駛及攀梯不耗體力 | [Player](../../player/player.gd) |
 | 梯子攀爬 | 正式；W 上、S 下、Space 脫離，含登頂與從上方下梯；大型持物、缺臂或缺腿限制攀梯 | [RV ladder](../../equipment/rv_ladder.gd)、[rv climb](../../tests/playgrounds/rv_climb_playground.tscn) |
 | 完整身體與動畫 | 正式；低頭可見身體、完整影子、四向走跑、跳躍／落地、攀梯、持物與駕駛姿勢 | [model visual](../../player/player_model_visual.gd)、[animation](../../tests/playgrounds/player_animation_playground.tscn)、[carry](../../tests/playgrounds/player_carry_playground.tscn) |
@@ -45,6 +46,12 @@
 
 存活缺肢由必要的 `player.body`（v1、五個布林完整性）保存，讀檔及跨副本保留，缺少欄位時拒絕載入。斷頭立即進入上述死亡與復活流程。斷肢與血跡是限時效果，不寫入檢查點。實作範圍見 [角色規格](../guides/character-modeling.md#player-five-cuts)。
 
+### 腳步聲
+
+走路每約兩公尺一步，衝刺步伐較長、聲音大 4 dB，蹲行步伐較短、小 9 dB。從空中落地超過 0.3 秒時加一聲大 5 dB 的落地聲。爬行、攀梯、飛行、坐著與在選單中沒有腳步聲。
+
+腳下的材質決定錄音：公路是柏油，路面邊緣約 2 m 的路肩與鋪碎石的場地是碎石，土路、陡坡和多岩地區是泥土，其餘地面是草地。RV 車廂內是木地板，車頂與車外踏面是鐵皮。其他地板，例如建築、地堡和室內，都是混凝土。
+
 ### 耐力
 
 玩家耐力上限 100，低於 15 時不能跳躍；攀爬與駕駛不消耗耐力。已提供手槍、彈藥、蹲下及下述飢餓／食物流程；玩家近戰、口渴與治療尚未實作。
@@ -76,6 +83,13 @@ SAN 低於 50% 時，體力恢復逐步變慢，負值也會繼續降低恢復�
 FOOD 從 100 經 20 分鐘實際遊玩時間降至 0；低於 40% 耐力恢復減半，20% 以下禁止衝刺，歸零每 5 秒扣 1 HP。教學準備不消耗，出發後駕駛、室內及選單仍持續。罐頭／能量棒／肉乾分別補 40／20／30，每份一格；教學倉庫靠接待室入口的右側第一排貨架下層各放一份，也可在加油站與路邊休息站取得。切換列印身體會交換飽食值，新列印與重生身體滿值。食物及飢餓狀態寫入 v7 檢查點；舊檔需重新開局。
 
 ## 實作契約
+
+### 腳步聲
+
+`PlayerFootsteps` 是 Player 在 `_ready` 加入的子節點 `Footsteps`，每個物理幀在玩家移動之後讀玩家自己的水平速度，所以站在行進中的 RV 上不會自己出聲。步距與音量差在腳本常數 `STRIDE`、`GAIN`。每步從玩家原點往下打一條射線取得地板，交給 `FootstepSurface.classify`，再用該材質的 `SoundEvent` 在接觸點播放，因此 Sfx 會依位置選 `Cabin` 或 `Exterior`。
+
+`FootstepSurface.classify` 依序判斷：碰撞體或任一祖先帶有 `FootstepSurface.META`（例如 `"wood"`）時用那個材質；屬於 RV 時看接觸點上方是否在車廂內；區塊的 `Road` 是柏油；區塊的 `Ground` 讀 `WorldField.surface` 的道路距離、碎石權重、土路距離、地區岩石度與坡度；其餘都是混凝土。新的地板不需要標記，只有想要木頭等其他聲音的室內才加 meta。
+
 
 ### 生存狀態
 

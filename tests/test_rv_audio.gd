@@ -246,8 +246,11 @@ func _run() -> void:
 	for layer: AudioStreamPlayer3D in audio.road_layers:
 		check(not layer.playing, "Road loops stay silent while the wheels are off the ground or parked")
 
+	_check_footstep_surfaces(chassis)
+	await _check_rv_footsteps(chassis)
 	vehicle.queue_free()
 	await _check_monster_footfalls()
+	await _check_player_footsteps()
 	# Silence pooled voices before quitting; see the exit-crash row in docs/plans/README.md.
 	for voice in sfx._voices + sfx._echoes: voice.stop()
 	await process_frame
@@ -300,6 +303,118 @@ func _check_monster_footfalls() -> void:
 		[load("res://assets/audio/attenuation/giant.tres"), preload("res://enemies/slender_speaker/slender_speaker_footsteps.gd").HEARD_WITHIN, "Slender Speaker footfalls are heard within their range"]]
 	for entry in ranges:
 		check(_distance_db(entry[0], entry[1]) > -24.0, entry[2])
+
+
+func _check_footstep_surfaces(chassis: Chassis) -> void:
+	var Kind := FootstepSurface.Kind
+	var plain := StaticBody3D.new()
+	check(FootstepSurface.classify(plain, Vector3.ZERO) == Kind.CONCRETE, "An untagged floor sounds like concrete")
+	var building := Node3D.new()
+	building.set_meta(FootstepSurface.META, "wood")
+	building.add_child(plain)
+	check(FootstepSurface.classify(plain, Vector3.ZERO) == Kind.WOOD, "A building's surface tag reaches the floors inside it")
+	building.free()
+	check(FootstepSurface.classify(chassis, chassis.to_global(Vector3(0, 0.45, 0))) == Kind.WOOD, "The RV cabin floor sounds like wood")
+	check(FootstepSurface.classify(chassis, chassis.to_global(Vector3(0, 2.75, 0))) == Kind.METAL, "The RV roof sounds like sheet metal")
+	# A loose chunk shaped like a streamed one: road and ground meshes over static bodies.
+	var field := WorldField.new(4242)
+	var chunk := ChunkGenerator.new()
+	chunk.field = field
+	var floors := {}
+	for surface_name in ["Road", "Ground"]:
+		var surface := MeshInstance3D.new()
+		surface.name = surface_name
+		chunk.add_child(surface)
+		floors[surface_name] = StaticBody3D.new()
+		surface.add_child(floors[surface_name])
+	var frame := field.road_frame(400.0)
+	var edge := field.road_width(400.0) * 0.5
+	check(FootstepSurface.classify(floors.Road, frame.origin) == Kind.ASPHALT, "Streamed road sounds like asphalt")
+	var shoulder := frame.origin + frame.basis.x * (edge + FootstepSurface.SHOULDER * 0.5)
+	check(FootstepSurface.classify(floors.Ground, shoulder) == Kind.GRAVEL, "Ground just past the carriageway is the gravel shoulder")
+	for offset in range(40, 120, 10):
+		var kind := FootstepSurface.classify(floors.Ground, frame.origin + frame.basis.x * offset)
+		check(kind in [Kind.GRASS, Kind.DIRT, Kind.GRAVEL], "Open ground is grass, dirt or a gravel pad")
+	var steep := Vector3(1, 1, 0).normalized()
+	check(FootstepSurface.ground(field, frame.origin + frame.basis.x * 80.0, steep) != Kind.GRASS, "Steep ground is bare earth, not grass")
+	chunk.free()
+
+
+## A player's own step inside the cabin plays wood on the Cabin bus; on the roof,
+## sheet metal outside the shell.
+func _check_rv_footsteps(chassis: Chassis) -> void:
+	var sfx := root.get_node("Sfx")
+	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	root.add_child(player)
+	var footsteps = player.get_node("Footsteps")
+	for spot in [[Vector3(0, 0.6, 2.0), FootstepSurface.Kind.WOOD, &"Cabin", "inside the cabin"],
+			[Vector3(0, 3.0, 0.0), FootstepSurface.Kind.METAL, &"Exterior", "on the roof"]]:
+		player.global_position = chassis.to_global(spot[0])
+		player.velocity = Vector3.ZERO
+		for i in 30: await physics_frame
+		MonsterSounds.stop_all(sfx)
+		check(footsteps.step(), "A step plays %s" % spot[3])
+		check(footsteps.last_surface == spot[1], "A step %s plays its surface" % spot[3])
+		var event: SoundEvent = footsteps.EVENTS[spot[1]]
+		var routed: Array = sfx._voices.filter(func(voice): return voice.playing and voice.stream in event.samples)
+		check(routed.size() == 1 and routed[0].bus == spot[2], "A step %s routes to %s" % [spot[3], spot[2]])
+	player.queue_free()
+	await physics_frame
+
+
+## A real player on a flat floor: steps follow the distance walked, sprinting and
+## crouching change stride and level, landing adds a step, standing makes none.
+func _check_player_footsteps() -> void:
+	var floor_body := StaticBody3D.new()
+	var shape := CollisionShape3D.new()
+	shape.shape = BoxShape3D.new()
+	shape.shape.size = Vector3(200, 0.2, 200)
+	floor_body.add_child(shape)
+	floor_body.position = Vector3(400, -0.1, 0)
+	root.add_child(floor_body)
+	var player: CharacterBody3D = load("res://player/player.tscn").instantiate()
+	player.position = Vector3(400, 0.05, 60)
+	root.add_child(player)
+	var footsteps = player.get_node("Footsteps")
+	var ticks := Engine.physics_ticks_per_second
+	for i in ticks: await physics_frame
+	check(footsteps.steps_taken == 0, "Standing still makes no footsteps")
+	var walks := {}
+	for gait in [&"walk", &"sprint", &"crouch"]:
+		if gait == &"sprint": Input.action_press("sprint")
+		if gait == &"crouch": Input.action_press("crouch")
+		for i in 10: await physics_frame
+		Input.action_press("move_forward")
+		var start := player.global_position
+		var before: int = footsteps.steps_taken
+		for i in ticks * 2: await physics_frame
+		check(footsteps.gait() == gait, "The %s gait is recognised" % gait)
+		Input.action_release("move_forward")
+		var walked := player.global_position.distance_to(start)
+		var taken: int = footsteps.steps_taken - before
+		var stride: float = footsteps.STRIDE[gait]
+		check(absi(taken - roundi(walked / stride)) <= 1, "%s steps follow the distance walked (%d over %.1f m)" % [gait, taken, walked])
+		check(is_equal_approx(footsteps.last_gain_db, footsteps.GAIN[gait]), "%s steps play at their gait level" % gait)
+		check(footsteps.last_surface == FootstepSurface.Kind.CONCRETE, "A plain floor plays concrete steps")
+
+		walks[gait] = taken / maxf(walked, 0.01)
+		Input.action_release("sprint")
+		Input.action_release("crouch")
+		for i in 20: await physics_frame
+	# Headless playback never ends, so the walks above filled the pool.
+	MonsterSounds.stop_all(root.get_node("Sfx"))
+	check(footsteps.step() and MonsterSounds.playing(root.get_node("Sfx"), footsteps.EVENTS[FootstepSurface.Kind.CONCRETE]) == 1,
+		"A step on a plain floor is heard")
+	check(walks[&"sprint"] < walks[&"walk"] and walks[&"walk"] < walks[&"crouch"], "Longer strides space steps out at speed")
+	var before_fall: int = footsteps.steps_taken
+	player.global_position += Vector3.UP * 2.0
+	player.velocity = Vector3.ZERO
+	for i in ticks * 2: await physics_frame
+	check(footsteps.steps_taken == before_fall + 1 and footsteps.last_gain_db > footsteps.GAIN[&"walk"],
+		"Landing from a fall plays one heavier step")
+	player.queue_free()
+	floor_body.queue_free()
+	await physics_frame
 
 
 ## Godot 4.7 inverse-distance falloff, capped at +3 dB, times the linear fade

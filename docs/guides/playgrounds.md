@@ -6,7 +6,7 @@
 
 新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
 
-目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
 ## 啟動與固定截圖
 
@@ -93,6 +93,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rv_interaction_playground](../../tests/playgrounds/rv_interaction_playground.tscn) | 正式射線／E 互動隔離場；固定玩家位置 | F2 電池槽、F3 座位、F4 加油孔、F5 道具箱、F6 掉落電池；1 電池、2 汽油罐。 |
 | [rv_door_playground](../../tests/playgrounds/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
 | [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 新式：停好的正式 RV，試聽車門、引擎、操作回饋、撞擊、全部音效事件、預警、雨與耳鳴 | 正式操作；情境 `Outside`、`Cabin`、`Driver seat`（`-- --scenario="Driver seat"`），其餘在 Esc 的 Playground 頁。 |
+| [footstep_playground](../../tests/playgrounds/footstep_playground.tscn) | 新式：平地上七塊帶材質標記的地板與一台停好的 RV，試聽玩家在每種材質、車廂與車頂上的腳步 | 正式操作；情境 `Surfaces`，讀數在 Esc 的 Playground 頁。實際地形的分類不在這裡 |
 | [monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn) | 新式：平地上的正式怪物，試聽白影、黑影、Raker、油桶人何時安靜、何時暴露位置，攻擊預備聲，以及 Slender Speaker 的腳步 | 正式操作；情境 `Raker`、`Barrel man`、`Black apparition`、`White apparition`、`Slender Speaker`（`-- --scenario="Barrel man"`），其餘在 Esc 的 Playground 頁。怪物是真的，會致死 |
 | [rv_structure_playground](../../tests/playgrounds/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/playgrounds/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
