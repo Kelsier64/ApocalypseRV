@@ -1,10 +1,8 @@
-# RV 音效
+# 聲音素材
 
 車門、排檔、引擎、路噪與風聲試點的來源和重製方式見 [RV 聲音素材](rv/README.md)。
 
-`rv/vehicle_audio.gd` 的操作回饋、撞擊、滑移和刮地都改用 CC0 錄音。它仍保留耳鳴與甦醒吸氣兩個原創合成聲，等玩家音效遷移時一併替換。
-
-`rv/panel_damage_effect.gd` also synthesizes two original 22,050 Hz mono PCM cues for shell impact and destruction, combining decaying metallic harmonics with deterministic noise and staggered tearing transients. These use no external samples. Streams are shared. Each burst has one initial spatial source and at most three quieter, rate-limited landing cues (higher pitch for glass), freed on completion or with the burst. A vehicle has at most six bursts; impact bursts last 2.4 seconds and destruction debris lasts 7 seconds. Snapshot restoration and repairs are silent.
+遊戲執行時不合成任何聲音。各資料夾的 README 記錄錄音來源、授權與處理方式，可重製的剪輯腳本是 [make_cues.py](../../art_source/audio/make_cues.py)。
 
 # Slender Speaker loudspeaker music
 

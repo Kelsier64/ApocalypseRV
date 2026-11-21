@@ -71,7 +71,7 @@ func _run() -> void:
 	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Exterior")) == &"Effects", "Threat cue follows the effects slider")
 	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Rain")) == &"Ambience", "Rain follows the ambience slider")
 	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Self")) == &"Master",
-		"The player's own ringing and breath bypass the World muffle")
+		"The player's own ringing bypasses the World muffle")
 	var original: float = settings.get_setting(&"effects_volume")
 	settings.set_setting(&"effects_volume", 0.0, false)
 	check(AudioServer.is_bus_mute(AudioServer.get_bus_index(&"Effects")), "The effects slider can mute gameplay sounds")

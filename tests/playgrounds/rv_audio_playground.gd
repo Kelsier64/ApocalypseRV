@@ -31,7 +31,6 @@ var event_inside := false
 var rain: Array[AudioStreamPlayer] = []
 var rain_level := 0
 var tinnitus := AudioStreamPlayer.new()
-var inhale := AudioStreamPlayer.new()
 
 
 func _ready() -> void:
@@ -64,15 +63,11 @@ func _ready() -> void:
 		voice.bus = &"Rain"
 		add_child(voice)
 		rain.append(voice)
-	# Same bus, stream and level as the injury and recovery code.
+	# Same bus, stream and level as the injury effects.
 	tinnitus.stream = preload("res://player/player_injury_effects.gd").RINGING
 	tinnitus.bus = &"Self"
 	tinnitus.volume_db = linear_to_db(0.22)
-	inhale.stream = preload("res://player/body_recovery.gd").INHALE
-	inhale.bus = &"Self"
-	inhale.volume_db = -12.0
 	add_child(tinnitus)
-	add_child(inhale)
 
 
 func _collect_events(path: String) -> void:
@@ -103,7 +98,7 @@ func _process(_delta: float) -> void:
 		"1 Handbrake  2 Switch  3 Hatch release  4 Hatch latch  5 Ramp  6 Jack  7 Install  8 Repair  9 Blocked  0 Puncture\n" +
 		"Z / X / C Light / medium / heavy crash   V Tree hit   Hold B Tyre slip   Hold N Hull scrape\n" +
 		", / . Pick event   Space Play %s %s   F9 Source in cabin / outside\n" +
-		"R Rain: %s   Hold T Tinnitus   Y Revival gasp\n%s"
+		"R Rain: %s   Hold T Tinnitus\n%s"
 	) % ["Outside" if outside else "Cabin",
 		roundi(rv.engine_rpm()), roundi(audio.sound_rpm()) if audio.engine_player.playing else 0,
 		events[event_index].trim_prefix("res://assets/audio/events/") if not events.is_empty() else "-",
@@ -152,7 +147,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				rain[i].volume_db = linear_to_db(0.7) if rain_level == i + 1 else -80.0
 				if rain_level == i + 1 and not rain[i].playing: rain[i].play()
 				elif rain_level != i + 1: rain[i].stop()
-		KEY_Y: inhale.play()
 		_:
 			var index: int = (event.keycode - KEY_1 + 10) % 10 if event.keycode >= KEY_0 and event.keycode <= KEY_9 else -1
 			if index >= 0:

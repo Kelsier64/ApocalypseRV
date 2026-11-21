@@ -7,7 +7,6 @@ const OBSERVATION_DELAY := 1.0
 const DEATH_FADE_SECONDS := 1.0
 const CRASH_FADE_SECONDS := 0.075
 const WAKE_SECONDS := 1.5
-const INHALE := preload("res://assets/audio/player/inhale_a.wav")
 var phase := Phase.IDLE
 var waking_in_printed_body := false
 var station: CraftingStation
@@ -22,7 +21,6 @@ var elapsed := 0.0
 var _death_fade_seconds := DEATH_FADE_SECONDS
 var shade := ColorRect.new()
 var status := Label.new()
-var breath := AudioStreamPlayer.new()
 var stalled := false
 var wake_pitch := 0.0
 var hidden_hud: Viewport
@@ -43,11 +41,6 @@ func _ready() -> void:
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.add_theme_constant_override("outline_size", 5)
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	breath.volume_db = -12
-	# The player's own gasp stays clear of the World muffle that fades with waking.
-	breath.bus = &"Self"
-	breath.stream = INHALE
-	add_child(breath)
 	hide()
 	set_physics_process(false)
 
@@ -209,7 +202,6 @@ func wake() -> void:
 	_hide_hud(get_viewport())
 	phase = Phase.WAKING
 	elapsed = 0.0
-	if DisplayServer.get_name() != "headless": breath.play()
 	show()
 	set_physics_process(true)
 	_set_shade(1.0)
@@ -258,7 +250,6 @@ func reset() -> void:
 	if phase != Phase.IDLE and is_instance_valid(player.injury_effects):
 		player.injury_effects.set_consciousness_muffle(0.0)
 	game_settings.set_temporary_master_mute(self, false)
-	breath.stop()
 	phase = Phase.IDLE
 	attempted = false
 	waking_in_printed_body = false

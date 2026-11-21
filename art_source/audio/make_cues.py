@@ -31,7 +31,7 @@ SOURCES = {
     "gut_rip": 530919, "gore_tear": 762900, "gore_impact": 641046,
     "power_kick": 586841, "body_fall_heavy": 504626,
     "shredder_factory": 679018, "rain_light": 167034, "rain_heavy": 200272,
-    "gasp_man": 401333, "tinnitus_t": 377205,
+    "tinnitus_t": 377205,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -75,7 +75,6 @@ CUTS = {
     "player/gore_tear_a": ([("gut_rip", 0.0, 1.30)], 0.30),
     "player/gore_tear_b": ([("gore_tear", 0.10, 0.80)], 0.20),
     "player/gore_tear_c": ([("gore_impact", 0.0, 0.95)], 0.25),
-    "player/inhale_a": ([("gasp_man", 0.0, 1.17)], 0.15),
 }
 
 # Output "domain/file": (source, start, end, seam seconds, RMS dBFS, processing).

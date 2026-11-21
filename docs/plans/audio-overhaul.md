@@ -52,7 +52,8 @@
 - 遷移順序：先做基礎與 RV 試點，你聽過並同意方向後才推廣到其他模組。
 - 引擎艙在車廂外，引擎依位置規則走 `Exterior`，駕駛聽到的是隔著車殼的悶聲；引擎播放器多給一點音量補回來。路噪與風聲是車內錄音，固定走 `Cabin`。車門聲兩側一樣，固定走 `Effects`。
 - 車板受擊與毀壞是車殼本身的聲音，和車門一樣固定走 `Effects`；碎片落地依位置分配。
-- 耳鳴與甦醒吸氣走新的 `Self` bus：直接送往 `Master`，不受受傷悶聲影響，音量跟隨音效滑桿，斷頭致死時一起靜音。
+- 耳鳴走新的 `Self` bus：直接送往 `Master`，不受受傷悶聲影響，音量跟隨音效滑桿，斷頭致死時一起靜音。
+- 列印身體甦醒時沒有吸氣聲。
 - 耳鳴用一段 CC0 的穩定 3.1 kHz 錄音做迴圈，比原本合成的 1.9 kHz 高。
 - 油桶的爆炸與落地聲維持原本預先烘焙的 22,050 Hz 檔案，留在 `assets/effects/barrel_blast/`，只改走事件層。
 - 槍聲與爆炸是否共用 `OutdoorEcho` 移到階段 4，與其他空間處理一起做。
@@ -83,7 +84,7 @@ Master
    │  └─ Voice     收音機人聲，保留既有空間距離
    └─ Ambience     環境音滑桿
       └─ Rain      只對下雨套用原有遮蔽濾波
-Self               耳鳴與甦醒吸氣，跟隨音效滑桿，不受 World 悶聲影響
+Self               玩家耳鳴，跟隨音效滑桿，不受 World 悶聲影響
 ```
 
 - 受傷悶聲掛在 World，UI 與音樂不受影響。
@@ -99,7 +100,7 @@ Self               耳鳴與甦醒吸氣，跟隨音效滑桿，不受 World 悶
 - **`SoundAttenuation`（Resource）**：距離衰減預設，放在 `assets/audio/attenuation/`：`near`（手邊操作，約 18 m）、`vehicle`（RV 與設備，約 55 m）、`loud`（槍聲、爆炸，約 90 m）。Slender Speaker 的喇叭有自己的距離曲線與回音層（見[敵人系統](../systems/enemies.md#slender-speaker)），遷移時決定是否抽成地標預設，並讓槍聲、爆炸等遠距聲源共用 `OutdoorEcho`。
 - **`SoundLoop`（AudioStreamPlayer3D）**：持續聲源，由擁有者每幀餵入音量與音高；從自己的亂數決定的隨機位置開始播放，音量趨近零時停止。RV 的路噪、風聲、輪胎滑移、刮地與絞碎機用它。引擎各層必須同步，使用獨立的同步串流。
 - **`Sfx`（autoload）**：`play(event, source, local_position, gain_db)` 播放並跟隨一次性 3D 音效，`gain_db` 依強度調整單次音量。池掛在目前聆聽的 viewport，POI 出入口會切換。上限為 12；池滿時，新事件接手優先度較低的最舊聲道，沒有可接手的就略過。`stop_from(source)` 停掉仍跟隨某個聲源的音效，例如中斷的換彈。
-- **非空間聲音**：雨、耳鳴與甦醒吸氣是一般的 `AudioStreamPlayer`，直接播放預載的音檔。
+- **非空間聲音**：雨與耳鳴是一般的 `AudioStreamPlayer`，直接播放預載的音檔。
 - **亂數**：`Sfx` 使用自己的亂數產生器，絕不讀寫玩法或世界生成的亂數。
 - **事件檔位置**：`assets/audio/events/<domain>/<name>.tres`，例如 `rv/door_open.tres`。素材放在同一個 domain 的 `assets/audio/<domain>/`。
 
@@ -149,7 +150,7 @@ Self               耳鳴與甦醒吸氣，跟隨音效滑桿，不受 World 悶
 
 ### 8. 試玩場景
 
-用 [RV 音效試點](../../tests/playgrounds/rv_audio_playground.tscn) 比較車內外、開關門、怠速到拉轉及同一個車外預警聲。同一場景可以逐一播放 `assets/audio/events/` 下的每個事件，聲源可放在車旁或車廂內，另有雨、耳鳴與甦醒吸氣。行車聲在可駕駛的試玩場景驗收。POI 殘響測試追加在後續階段。
+用 [RV 音效試點](../../tests/playgrounds/rv_audio_playground.tscn) 比較車內外、開關門、怠速到拉轉及同一個車外預警聲。同一場景可以逐一播放 `assets/audio/events/` 下的每個事件，聲源可放在車旁或車廂內，另有雨與耳鳴。行車聲在可駕駛的試玩場景驗收。POI 殘響測試追加在後續階段。
 
 ## 階段
 
@@ -158,7 +159,7 @@ Self               耳鳴與甦醒吸氣，跟隨音效滑桿，不受 World 悶
 | 0 | Bus 配置、四條設定滑桿、受傷悶聲移到 World、雨聲改用固定 bus | 已完成 |
 | 1 | 基礎 `SoundEvent`、`Sfx`、POI 聆聽切換 | 已完成 |
 | 2 | RV 試點：門、直六引擎、啟動與熄火、換檔過程、路噪與風聲、車外預警和雙向車廂遮蔽 | 已完成 |
-| 3 | `SoundAttenuation`、`SoundLoop`、`feedback` 改傳事件；遷移剩餘 RV 聲音，再推廣至手槍、車殼受損、怪物抓握與攻擊、血肉、Raker 撞擊、絞碎機、油桶、吸氣、耳鳴、倒樹、雨，並依聲源位置分配 bus | 已完成，錄音待試聽 |
+| 3 | `SoundAttenuation`、`SoundLoop`、`feedback` 改傳事件；遷移剩餘 RV 聲音，再推廣至手槍、車殼受損、怪物抓握與攻擊、血肉、Raker 撞擊、絞碎機、油桶、耳鳴、倒樹、雨，並依聲源位置分配 bus | 已完成，錄音待試聽 |
 | 4 | 空間：調整車內外混音、引擎遮蔽、POI 室內殘響、槍聲與爆炸的戶外回音，討論 POI 內是否聽見車外 | 試玩驗收車內外與室內聽感 |
 | 5 | 新聲音層：腳步、怪物特徵聲（先逐隻討論）、環境底噪與區塊環境聲源、操作聲、配樂 | 試玩驗收 |
 | 6 | 文件：改寫 [assets/audio/README.md](../../assets/audio/README.md)、[rv.md](../systems/rv.md) 的音效段落與 [environment.md](../systems/environment.md) 的設定；在 [architecture.md](../../architecture.md) 加入共用音效層 | 計畫檔刪除，未結項目移到計畫總覽 |
