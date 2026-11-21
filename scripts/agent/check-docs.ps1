@@ -1,12 +1,13 @@
 # Checks project docs: broken relative Markdown links, and files under docs/ that sit
 # outside the layout described in docs/README.md. With no arguments, checks every
 # tracked or new Markdown file and the whole docs/ tree; with paths, only those files.
+# -Root checks another checkout of this repository, such as a task worktree.
 [CmdletBinding()]
-param([Parameter(ValueFromRemainingArguments)][string[]]$Path)
+param([string]$Root, [Parameter(ValueFromRemainingArguments)][string[]]$Path)
 $ErrorActionPreference = 'Stop'
 $utf8 = [Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = $utf8
-$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$root = if ($Root) { $Root } else { Split-Path (Split-Path $PSScriptRoot -Parent) -Parent }
 function Get-GitList([string[]]$Arguments) { @(& git -C $root -c core.quotepath=false @Arguments 2>$null | Where-Object { $_ }) }
 
 if ($Path) {
