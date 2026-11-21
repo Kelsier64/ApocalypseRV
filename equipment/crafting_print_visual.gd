@@ -44,7 +44,7 @@ func clear() -> void:
 	_job_id = ""
 	progress = 0.0
 	var rig := get_node_or_null("../Details")
-	if rig: rig.set_print_pose(0.75, 0.0, AABB(), false)
+	if rig: rig.set_print_pose(0.0, 0.0, AABB(), false)
 
 func _build_preview(scene_path: String, marker_transform: Transform3D, crouching: bool = false, orientation: int = 0, offset_index: int = 0) -> void:
 	var source := (load(scene_path) as PackedScene).instantiate() as Node3D

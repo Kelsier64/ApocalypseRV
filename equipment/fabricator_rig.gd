@@ -2,18 +2,19 @@
 extends Node3D
 ## Expanding mast sections and independent X/Z carriages (Y is Godot height).
 const MAST = preload("res://assets/models/fabricator/fabricator_mast.glb")
+const NOZZLE_DROP := 0.22 # Distance from the unscaled gantry origin to the nozzle tip.
 var _sections: Array[Node3D] = []
 var _collision_ready := false
 const RETURN_SPEED := 0.45 # Metres per second; taller jobs take longer to retract.
-var _target_height := 0.97
+@onready var _parked_height: float = $Gantry.position.y
+var _target_height: float
 const HORIZONTAL_RETURN_SPEED := 0.65
 const HORIZONTAL_PRINT_SPEED := 3.0
 var _target_horizontal := Vector2(0.54, 0.55)
 var _printing := false
 
 func _ready() -> void:
-	_apply_height(0.97)
-	set_print_pose(0.75, 0.0, AABB(), false)
+	set_print_pose(0.0, 0.0, AABB(), false)
 
 func _physics_process(delta: float) -> void:
 	var current := Vector2($Gantry/Carriage/Head.position.x, $Gantry/Carriage.position.z)
@@ -30,7 +31,7 @@ func _physics_process(delta: float) -> void:
 		_apply_height(move_toward($Gantry.position.y, _target_height, RETURN_SPEED * delta))
 
 func set_print_pose(surface_height: float, elapsed: float, bounds: AABB, printing: bool) -> void:
-	_target_height = maxf(0.97, surface_height + 0.22)
+	_target_height = maxf(_parked_height, surface_height + NOZZLE_DROP * $Gantry.scale.y)
 	# Printing/loading can raise the rig immediately; downward requests retain
 	# the current pose and retract in physics time, even across repeated clears.
 	if Engine.is_editor_hint() or _target_height >= $Gantry.position.y:

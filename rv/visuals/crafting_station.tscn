@@ -13,7 +13,8 @@ script = ExtResource("rig")
 [node name="Masts" type="Node3D" parent="."]
 
 [node name="Gantry" type="Node3D" parent="."]
-position = Vector3(0, 0.97, 0)
+position = Vector3(0, 0.849, 0)
+scale = Vector3(1, 0.45, 1)
 
 [node name="Frame" parent="Gantry" instance=ExtResource("gantry")]
 
