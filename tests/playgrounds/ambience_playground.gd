@@ -29,6 +29,10 @@ func _ready() -> void:
 	var scenario := PlaygroundControls.scenario(SCENARIOS[0])
 	print("PLAYGROUND scenario=%s" % scenario)
 	PlaygroundStage.flat_lot(self)
+	# The clock drives the lot's sky and sun only if it finds them by these names.
+	for child in get_children():
+		if child is WorldEnvironment: child.name = "WorldEnvironment"
+		elif child is DirectionalLight3D: child.name = "DirectionalLight3D"
 	_build_shelter()
 	PlaygroundStage.parked_rv(self, Vector3(-8, 1.6, -6))
 	clock = WorldClock.new()
@@ -43,7 +47,7 @@ func _ready() -> void:
 	add_child(interior_listener)
 	add_child(controls)
 	controls.scenarios(SCENARIOS, scenario)
-	controls.note("Time and weather are frozen at the values below. The lot has no terrain, so Place stands in for the forest and highway around you. Sit in the RV (behind you, left) or stand under the open shed (ahead, right) to hear the beds muffled. Room tone plays an interior's sound as if you had walked in; the lot goes quiet meanwhile.")
+	controls.note("Time and weather are frozen at the values below. The lot has no terrain, so Place stands in for the forest and highway around you. Sit in the RV (ahead, left) or stand under the open shed (ahead, right) to hear the beds muffled. Room tone plays an interior's sound as if you had walked in; the lot goes quiet meanwhile.")
 	controls.slider("Hour", 0.0, 24.0, 0.25, START_HOUR, func(hour: float) -> void: clock.set_time(1, fmod(hour, 24.0)))
 	controls.choice("Place", PackedStringArray(PLACES.keys()), 0, _set_place)
 	controls.choice("Fog", PackedStringArray(["None", "Light", "Medium", "Heavy"]), 0, func(index: int) -> void:
@@ -57,7 +61,9 @@ func _ready() -> void:
 	controls.readout("Muffle", func() -> String: return "%d%%" % roundi(get_node("/root/Sfx").cover(&"Outdoors") * 100.0))
 	_set_place(0)
 	for i in range(Engine.physics_ticks_per_second): await get_tree().physics_frame
-	PlaygroundStage.player(self, Vector3(0, 0.05, 2))
+	var player := PlaygroundStage.player(self, Vector3(0, 0.05, 2))
+	# Rain looks for its listener when the clock starts, before the player exists.
+	clock.get_node("WeatherRain").listener = player
 
 
 func _ambience() -> WorldAmbience:
