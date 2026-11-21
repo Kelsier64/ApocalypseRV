@@ -1,6 +1,6 @@
 extends SceneTree
 ## Sampled world-generation contracts: v14 landforms, world detail, off-road
-## sites, building locators and megashelter exteriors. Split from
+## sites, building locators, the building kit and megashelter exteriors. Split from
 ## test_streaming_generation so each process stays well inside the runner timeout.
 const TERRAIN_HOST = preload("res://tests/support/terrain_host.gd")
 const V14_CONTRACTS = preload("res://tests/support/terrain_v14_contracts.gd")
@@ -29,6 +29,7 @@ func run() -> void:
 	await MILE_END_CONTRACTS.run(self, world, check)
 	await preload("res://tests/support/orbit_plaza_contracts.gd").run(self, world, check)
 	BUILDING_LOCATOR_CONTRACTS.run(check)
+	await preload("res://tests/support/building_kit_contracts.gd").run(self, world, check)
 	await MEGASHELTER_CONTRACTS.run(self, world, check)
 	world.queue_free()
 	await process_frame
