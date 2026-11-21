@@ -1,6 +1,9 @@
 extends Node3D
 ## One bounded, reusable cosmetic rig per mounted recycler; no physics/save actors.
 const DUST_SHADER := preload("res://equipment/scrapper_crush_dust.gdshader")
+const GRINDING := preload("res://assets/audio/scrapper/grinding.wav")
+## Flesh feeds the rollers this much quieter than metal.
+const ORGANIC_DB := -2.0
 var working := false
 var organic := false
 var burst_count := 0
@@ -9,8 +12,7 @@ var _heartbeat := 0.0
 var _input_id := 0
 var emitters: Array[CPUParticles3D] = []
 var dust_material: ShaderMaterial
-var sound: AudioStreamPlayer3D
-static var grinding_stream: AudioStreamWAV
+var sound: SoundLoop
 
 func _ready() -> void:
 	var chip := BoxMesh.new()
@@ -44,13 +46,11 @@ func _ready() -> void:
 	_emitter("Sparks", streak, 38, .24, 1.6, 3.5).set_particle_flag(CPUParticles3D.PARTICLE_FLAG_ALIGN_Y_TO_VELOCITY, true)
 	_emitter("ChipBurst", chip, 20, .55, 1.2, 3.2, true)
 	_emitter("BloodBurst", blood, 48, .5, 1.5, 3.7, true)
-	sound = AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
+	sound = SoundLoop.new()
 	sound.name = "GrindingSound"
-	sound.stream = _grinding_sound()
-	sound.volume_db = -16
-	sound.unit_size = 1.5
-	sound.max_distance = 22
+	sound.stream = GRINDING
+	sound.base_db = -16.0
+	preload("res://assets/audio/attenuation/near.tres").apply(sound)
 	add_child(sound)
 
 static func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
@@ -111,9 +111,8 @@ func advance_work(delta: float, flesh_input: bool, local_contact: Vector3, progr
 	if _input_id != input_id:
 		_input_id = input_id
 		impact(organic, local_contact)
-	sound.pitch_scale = 1.0 + sin(work_age * 32) * .035 + progress * .08
-	sound.volume_db = -18 if organic else -16
-	if not sound.playing: sound.play()
+	if not sound.playing: sound.bus = get_node("/root/Sfx").bus_at(sound.global_position, get_world_3d())
+	sound.set_level(db_to_linear(ORGANIC_DB) if organic else 1.0, 1.0 + sin(work_age * 32) * .035 + progress * .08)
 
 func impact(flesh_input: bool, local_contact: Vector3) -> void:
 	position = local_contact
@@ -136,28 +135,3 @@ func _process(delta: float) -> void:
 	_heartbeat -= delta
 	var processor := get_parent()
 	if _heartbeat <= 0 or not processor.is_powered_feed(): stop()
-
-static func _grinding_sound() -> AudioStreamWAV:
-	if grinding_stream != null: return grinding_stream
-	grinding_stream = AudioStreamWAV.new()
-	grinding_stream.format = AudioStreamWAV.FORMAT_16_BITS
-	grinding_stream.mix_rate = 22050
-	grinding_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	grinding_stream.loop_begin = 0
-	grinding_stream.loop_end = 22050
-	var bytes := PackedByteArray()
-	bytes.resize(44100)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 61721
-	var low := 0.0
-	for i in 22050:
-		var t := float(i) / 22050
-		var white := rng.randf_range(-1,1)
-		low = lerpf(low, white, .12)
-		var tooth := pow(maxf(0, sin(t * TAU * 14)), 12)
-		var sample := sin(t * TAU * 66) * .22 + sin(t * TAU * 132) * .10 + low * .40 + white * tooth * .13
-		# Match the loop seam; a quiet motor with repeated hard tooth impacts.
-		var seam := minf(1, minf(t, 1-t) * 150)
-		bytes.encode_s16(i * 2, int(sample * seam * 24000))
-	grinding_stream.data = bytes
-	return grinding_stream

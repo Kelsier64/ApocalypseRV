@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/near.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/pistol/reload_a.wav" id="3"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3")])
+volume_db = -10
+attenuation = ExtResource("2")
+priority = 1

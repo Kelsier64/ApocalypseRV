@@ -12,6 +12,7 @@ const MAX_BLACKOUT_SECONDS := 0.40
 const RETURN_LIGHT_SECONDS := 0.20
 const MAX_VISUAL_SECONDS := 3.2
 const MAX_RING_SECONDS := 4.1
+const RINGING := preload("res://assets/audio/player/tinnitus.wav")
 
 var _age := 0.0
 var _episode_start := 0.0
@@ -45,7 +46,9 @@ func _ready() -> void:
 	add_child(_shade)
 	_shade.hide()
 	_tone = AudioStreamPlayer.new()
-	_tone.bus = &"Effects"
+	# Ringing is inside the head, so the World muffle it accompanies leaves it clear.
+	_tone.bus = &"Self"
+	_tone.stream = RINGING
 	add_child(_tone)
 	set_process(false)
 
@@ -141,12 +144,8 @@ func _update_audio(pressure: float) -> void:
 		var fade_out := 1.0 - smoothstep(_ring_start + 0.10, _ring_end, _age)
 		ring = _ring_peak * fade_in * fade_out
 	if ring > 0.001:
-		var muffling := smoothstep(0.10, 1.0, pressure)
-		# Compensate for the same low-pass acting on the internal ringing.
-		_tone.volume_db = linear_to_db(0.22 * ring * lerpf(1.0, 3.0, muffling))
-		if not _tone.playing:
-			_tone.stream = preload("res://rv/vehicle_audio.gd").synth("ringing")
-			_tone.play()
+		_tone.volume_db = linear_to_db(0.22 * ring)
+		if not _tone.playing: _tone.play()
 	elif _tone.playing:
 		_tone.stop()
 

@@ -7,6 +7,7 @@ const OBSERVATION_DELAY := 1.0
 const DEATH_FADE_SECONDS := 1.0
 const CRASH_FADE_SECONDS := 0.075
 const WAKE_SECONDS := 1.5
+const INHALE := preload("res://assets/audio/player/inhale_a.wav")
 var phase := Phase.IDLE
 var waking_in_printed_body := false
 var station: CraftingStation
@@ -43,7 +44,9 @@ func _ready() -> void:
 	status.add_theme_constant_override("outline_size", 5)
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	breath.volume_db = -12
-	breath.bus = &"Effects"
+	# The player's own gasp stays clear of the World muffle that fades with waking.
+	breath.bus = &"Self"
+	breath.stream = INHALE
 	add_child(breath)
 	hide()
 	set_physics_process(false)
@@ -206,9 +209,7 @@ func wake() -> void:
 	_hide_hud(get_viewport())
 	phase = Phase.WAKING
 	elapsed = 0.0
-	if DisplayServer.get_name() != "headless":
-		breath.stream = preload("res://rv/vehicle_audio.gd").synth("inhale")
-		breath.play()
+	if DisplayServer.get_name() != "headless": breath.play()
 	show()
 	set_physics_process(true)
 	_set_shade(1.0)

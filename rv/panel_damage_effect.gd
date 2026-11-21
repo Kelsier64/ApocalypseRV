@@ -4,7 +4,10 @@ const FRACTURE := preload("res://rv/panel_fracture.gd")
 const GROUP := "rv_panel_damage_effect"
 const MAX_ACTIVE_PER_VEHICLE := 6
 const LIFETIME := 7.0
-static var _sounds: Dictionary = {}
+const DENT_SOUND: SoundEvent = preload("res://assets/audio/events/rv/panel_dent.tres")
+const BREAK_SOUND: SoundEvent = preload("res://assets/audio/events/rv/panel_break.tres")
+const METAL_LANDING: SoundEvent = preload("res://assets/audio/events/rv/debris_metal.tres")
+const GLASS_LANDING: SoundEvent = preload("res://assets/audio/events/rv/debris_glass.tres")
 var age := 0.0
 var lifetime := LIFETIME
 var fragments: Array[Dictionary] = []
@@ -96,15 +99,8 @@ func _build(panel: RVStructurePanel, destroyed: bool) -> void:
 			"settled": false, "bounces": 0, "delay": 0.0, "contact_normal": Vector3.UP,
 			"spin": Vector3(rng.randf_range(-5, 5), rng.randf_range(-5, 5), rng.randf_range(-5, 5))})
 		if index < (9 if destroyed else 3): _add_dust(world_point, velocity * 0.2, destroyed, rng)
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.stream = _sound(destroyed)
-	sound.unit_size = 5.0
-	sound.max_distance = 45.0
-	sound.volume_db = -8.0 if destroyed else -15.0
-	sound.pitch_scale = rng.randf_range(0.92, 1.08)
-	add_child(sound)
-	sound.play()
+	# The panel carries the sound along with a moving RV; the shell is heard the same from both sides.
+	get_node("/root/Sfx").play(BREAK_SOUND if destroyed else DENT_SOUND, panel)
 
 func _build_fracture(panel: RVStructurePanel, rng: RandomNumberGenerator) -> void:
 	var surfaces: Array[MeshInstance3D] = []
@@ -256,38 +252,4 @@ func _landing(point: Vector3, glass: bool) -> void:
 	if _landing_count >= 3 or age - _last_landing < 0.15: return
 	_landing_count += 1
 	_last_landing = age
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.stream = _sound(false)
-	sound.unit_size = 4.0
-	sound.max_distance = 30.0
-	sound.volume_db = -20.0
-	sound.pitch_scale = 2.3 if glass else 0.65
-	add_child(sound)
-	sound.global_position = point
-	sound.finished.connect(sound.queue_free)
-	sound.play()
-
-static func _sound(destroyed: bool) -> AudioStreamWAV:
-	if _sounds.has(destroyed): return _sounds[destroyed]
-	# Original metallic ring + brief broadband crunch; no external samples.
-	var duration := 1.05 if destroyed else 0.26
-	var rate := 22050
-	var data := PackedByteArray()
-	data.resize(int(rate * duration) * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 8421
-	for i in range(data.size() / 2):
-		var t := float(i) / rate
-		var ring := sin(t * TAU * 173.0) * 0.3 + sin(t * TAU * 397.0) * 0.18
-		var tear := exp(-t * 8.0)
-		if destroyed: tear += exp(-absf(t - 0.11) * 45.0) * 0.5 + exp(-absf(t - 0.24) * 35.0) * 0.25
-		var crunch := rng.randf_range(-1.0, 1.0) * (0.65 if destroyed else 0.3) * tear
-		var value := (ring * exp(-t * 9.0) + crunch) * minf(t * 1000.0, 1.0) * (1.0 - t / duration)
-		data.encode_s16(i * 2, int(clampf(value, -1.0, 1.0) * 32767))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.data = data
-	_sounds[destroyed] = stream
-	return stream
+	get_node("/root/Sfx").play(GLASS_LANDING if glass else METAL_LANDING, self, to_local(point))

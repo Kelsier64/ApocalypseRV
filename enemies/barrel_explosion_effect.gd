@@ -7,12 +7,15 @@ const FLIPBOOK_SHADER := preload("res://enemies/barrel_blast_flipbook.gdshader")
 const FIRE_ATLAS := preload("res://assets/effects/barrel_blast/fire_atlas.png")
 const SMOKE_ATLAS := preload("res://assets/effects/barrel_blast/smoke_atlas.png")
 const FRAGMENTS := preload("res://assets/effects/barrel_blast/fragments.glb")
-const BOOM := preload("res://assets/effects/barrel_blast/blast.wav")
-const METAL_LAND := [preload("res://assets/effects/barrel_blast/metal_land_1.wav"), preload("res://assets/effects/barrel_blast/metal_land_2.wav"), preload("res://assets/effects/barrel_blast/metal_land_3.wav")]
+const BOOM: SoundEvent = preload("res://assets/audio/events/barrel/blast.tres")
+const METAL_LAND: SoundEvent = preload("res://assets/audio/events/barrel/metal_land.tres")
 const TURBULENCE := preload("res://assets/effects/barrel_blast/turbulence.png")
 const DURATION := 8.0
-const MAX_LANDING_VOICES := 3
+const MAX_LANDINGS := 5
+## About the ring length of one landing divided by three overlapping voices.
+const LANDING_SPACING := 0.14
 var age := 0.0
+var last_landing := -INF
 var flash: OmniLight3D
 var core: MeshInstance3D
 var ground_anchor: Node3D
@@ -20,7 +23,6 @@ var fire_material: ShaderMaterial
 var smoke_material: ShaderMaterial
 var dust_material: ShaderMaterial
 var fragments: Array[Dictionary] = []
-var landing_voices: Array[AudioStreamPlayer3D] = []
 var landing_sound_count := 0
 static var quad: QuadMesh
 
@@ -49,15 +51,7 @@ func _ready() -> void:
 	# A single short-lived shadowed light avoids illuminating a sealed room.
 	flash.shadow_enabled = true
 	add_child(flash)
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.name = "PressureAndDebris"
-	sound.stream = BOOM
-	sound.max_distance = 75.0
-	sound.unit_size = 8.0
-	sound.volume_db = -3.0
-	add_child(sound)
-	sound.play()
+	get_node("/root/Sfx").play(BOOM, self)
 	_update_visuals()
 
 func _process(delta: float) -> void:
@@ -219,24 +213,12 @@ func _add_sparks_and_fragments() -> void:
 	model.free()
 
 func _play_metal_landing(at: Vector3, speed: float) -> void:
-	# One strong first landing per fragment; at most three voices and five hits.
-	for index in range(landing_voices.size() - 1, -1, -1):
-		if not is_instance_valid(landing_voices[index]) or not landing_voices[index].playing: landing_voices.remove_at(index)
-	if landing_voices.size() >= MAX_LANDING_VOICES or landing_sound_count >= 5: return
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.name = "MetalLanding"
-	sound.stream = METAL_LAND[landing_sound_count % METAL_LAND.size()]
-	sound.volume_db = lerpf(-14.0, -10.0, clampf((speed - 2.0) / 7.0, 0, 1))
-	sound.pitch_scale = randf_range(.94, 1.06)
-	sound.max_distance = 28.0
-	sound.unit_size = 3.0
-	add_child(sound)
-	sound.global_position = at
-	sound.finished.connect(sound.queue_free)
-	landing_voices.append(sound)
-	landing_sound_count += 1
-	sound.play()
+	# One strong first landing per fragment; at most five hits, spaced so no more
+	# than about three ring at once.
+	if landing_sound_count >= MAX_LANDINGS or age - last_landing < LANDING_SPACING: return
+	if get_node("/root/Sfx").play(METAL_LAND, self, to_local(at), lerpf(-2.0, 2.0, clampf((speed - 2.0) / 7.0, 0, 1))):
+		landing_sound_count += 1
+		last_landing = age
 
 func _burst(label: String, count: int, duration: float, particle_mesh: Mesh, min_speed: float, max_speed: float) -> CPUParticles3D:
 	var burst := CPUParticles3D.new()
