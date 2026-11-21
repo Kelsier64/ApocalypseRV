@@ -86,9 +86,12 @@ def _touch(a, b, tolerance):
 
 def _skin(obj):
     """Unweighted vertices, weight sums off 1 and vertices over the glTF influence limit."""
-    if not any(m.type == "ARMATURE" for m in obj.modifiers):
+    rigs = [m.object for m in obj.modifiers if m.type == "ARMATURE" and m.object]
+    if not rigs:
         return None
-    deform = {g.index for g in obj.vertex_groups}
+    # Only groups named after deforming bones count; marker groups do not skin.
+    bones = {b.name for rig in rigs for b in rig.data.bones if b.use_deform}
+    deform = {g.index for g in obj.vertex_groups if g.name in bones}
     unweighted = off_sum = over_limit = 0
     for vertex in obj.data.vertices:
         weights = [g.weight for g in vertex.groups if g.group in deform and g.weight > 1e-4]

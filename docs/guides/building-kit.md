@@ -12,7 +12,7 @@
 - 開口用 `BuildingKit.door()`、`BuildingKit.window()` 建立；窗可為完整玻璃（有碰撞）、破窗或無玻璃。kit 自動加兩面框、窗台板與寬窗的中梃。門洞碰撞淨空保持原尺寸。
 - 樓梯只畫踏步，碰撞是一條穿過踏步中點的坡道。平台樓板自己加。
 - 懸掛的零件（吊牌、纜線上的燈）傳 `hung: true`，否則 `validate()` 會判為懸空。
-- 碰撞只給牆、樓板、柱與玻璃；框、飾帶、勒腳與屋簷沒有碰撞。只要導航碰撞時呼叫 `build(parent, false, true)`。
+- 碰撞只給牆、樓板、柱與玻璃；框、飾帶、勒腳與屋簷沒有碰撞。依 [POI 場景層級](poi-authoring.md#3-尺度座標與場景層級)，對同一個 kit 呼叫兩次：`build(visuals, true, false)` 放進 `Visuals`，`build(collision, false, true)` 放進 `Collision`，參考建築就是這樣做。只要導航碰撞時只呼叫後者。
 
 ## 材質與色盤
 

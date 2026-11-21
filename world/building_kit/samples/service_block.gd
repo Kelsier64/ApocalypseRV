@@ -17,7 +17,15 @@ var kit: BuildingKit
 
 func _ready() -> void:
 	kit = compose(seed_value)
-	kit.build(self, visuals, true)
+	# POI layout: replaceable art under Visuals, simplified bodies under Collision.
+	var art := Node3D.new()
+	art.name = "Visuals"
+	add_child(art)
+	var solids := Node3D.new()
+	solids.name = "Collision"
+	add_child(solids)
+	kit.build(art, visuals, false)
+	kit.build(solids, false, true)
 
 
 static func compose(seed_number: int) -> BuildingKit:

@@ -40,7 +40,7 @@ Stay inside the GDD palette (cold grey, low saturation). Derive a building's own
 You can read PNGs with the Read tool, so render and look rather than infer from numbers.
 
 - **A single GLB:** `comfyui-image-to-3d`'s `review.py` renders 12 views (six angles, textured and clay).
-- **Any scene (building, POI, prop wrapper):** `scripts/agent/review-scene.ps1 -Scene res://<scene>.tscn [-Eye 'x,y,z:x,y,z;...'] [-Clay]` renders four obliques, front, side, top and eye-level views to `.godot/scene-review/<name>/` with a `review.json` of bounds, triangles, surfaces and materials. Use `-Eye` for interiors and doorways; it needs a renderer, so it opens a window briefly.
+- **Any scene (building, POI, prop wrapper):** `scripts/agent/review-scene.ps1 -Scene res://<scene>.tscn [-Eye 'x,y,z:x,y,z;...'] [-Clay]` renders four obliques, front, side, top and eye-level views to `.godot/scene-review/<name>/` with a `review.json` of bounds, triangles, surfaces and materials. Use `-Eye` for interiors and doorways, and `-Call 'configure,<seed>,true'` for site-configured POIs such as Orbit and Mile End. It needs a renderer, so it opens a window briefly. Scenes that need a generated world still need a playground capture.
 - **In context:** render the integrated asset from the gameplay camera with a playground capture flag and read the PNGs before reporting. The `godot-playgrounds` skill has the command and pitfalls.
 - Read a few fixed views carefully rather than looping on many screenshots; more looking does not fix judgement. Check numbers (bounds, `validate()`, the Blender audit) for contact, floating parts and size.
 - Compare against the surrounding cab or room: clean vector art and self-lit flat panels read as UI pasted into the world.

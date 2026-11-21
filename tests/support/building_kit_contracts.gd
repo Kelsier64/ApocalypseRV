@@ -11,7 +11,8 @@ const LIFT := Vector3(0, 400, 0)
 static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	var kit: BuildingKit = SAMPLE.compose(7)
 	check.call(kit.validate().is_empty(), "Kit sample validates: %s" % [kit.validate()])
-	check.call(SAMPLE.compose(7).stats() == kit.stats(), "Kit sample is deterministic per seed")
+	check.call(_surface_data(SAMPLE.compose(7)) == _surface_data(kit), "Kit sample geometry and shading are deterministic per seed")
+	check.call(_surface_data(SAMPLE.compose(8)) != _surface_data(kit), "Another seed varies the kit's shading and damage")
 	_validation_catches(check)
 	var live := Node3D.new()
 	live.position = LIFT
@@ -62,6 +63,19 @@ static func _validation_catches(check: Callable) -> void:
 	var hung := BuildingKit.new()
 	hung.box(Vector3(5, 3, 0), Vector3.ONE, &"block", {"hung": true})
 	check.call(hung.validate().is_empty(), "Kit accepts a piece marked as hung")
+
+
+## Vertices and vertex colours of every surface, built without materials' effect.
+static func _surface_data(source: BuildingKit) -> Array:
+	var holder := Node3D.new()
+	source.build(holder, true, false)
+	var mesh: ArrayMesh = (holder.get_node("KitMesh") as MeshInstance3D).mesh
+	var data := []
+	for i in mesh.get_surface_count():
+		var arrays := mesh.surface_get_arrays(i)
+		data.append([arrays[Mesh.ARRAY_VERTEX], arrays[Mesh.ARRAY_COLOR]])
+	holder.free()
+	return data
 
 
 static func _player_capsule() -> CapsuleShape3D:

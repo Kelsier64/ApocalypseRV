@@ -16,15 +16,21 @@ param(
 	[switch]$Clay,
 	[switch]$NoGround,
 	[string]$Size = '1280x720',
-	[string]$Project = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+	# Method and arguments to call on the scene root before it enters the tree,
+	# for site-configured POIs, e.g. 'configure,42,true'.
+	[string]$Call = '',
+	[string]$Project = ''
 )
 $ErrorActionPreference = 'Stop'
+# $PSScriptRoot is empty inside param defaults on Windows PowerShell 5.1.
+if (-not $Project) { $Project = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path }
 if (-not $Out) { $Out = Join-Path $Project ('.godot/scene-review/' + [IO.Path]::GetFileNameWithoutExtension($Scene)) }
 New-Item -ItemType Directory -Force $Out | Out-Null
 $log = Join-Path $Out 'godot.log'
 $userArgs = @("--scene=$Scene", "--out=$Out", "--size=$Size")
 foreach ($e in ($Eye -split ';' | Where-Object { $_.Trim() })) { $userArgs += "--eye=$($e.Trim())" }
 if ($Focus) { $userArgs += "--focus=$Focus" }
+if ($Call) { $userArgs += "--call=$Call" }
 if ($Clay) { $userArgs += '--clay' }
 if ($NoGround) { $userArgs += '--no-ground' }
 $godotArgs = @('--path', $Project, '--log-file', $log, '-s', 'res://scripts/agent/review_scene.gd', '--') + $userArgs

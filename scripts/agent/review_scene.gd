@@ -10,6 +10,9 @@ extends SceneTree
 ##   --clay                      also render every view with a flat grey override
 ##   --no-ground                 skip the neutral ground plane
 ##   --size=1280x720
+##   --call=method,arg,...       call this on the scene root before it enters the
+##                               tree, for site-configured POIs: --call=configure,42,true
+##                               (arguments are parsed with str_to_var)
 
 const HUGE := 150.0
 
@@ -35,6 +38,7 @@ func run() -> void:
 		elif arg == "--clay": settings.clay = true
 		elif arg == "--no-ground": settings.ground = false
 		elif arg.begins_with("--size="): settings.size = Vector2i(int(value.get_slice("x", 0)), int(value.get_slice("x", 1)))
+		elif arg.begins_with("--call="): settings.call = value.split(",")
 		else:
 			fail("Unknown argument " + arg)
 			return
@@ -48,6 +52,15 @@ func run() -> void:
 		return
 	root.size = settings.size
 	var scene: Node = (load(settings.scene) as PackedScene).instantiate()
+	if settings.has("call"):
+		var parts: PackedStringArray = settings.call
+		var arguments := []
+		for i in range(1, parts.size()):
+			arguments.append(str_to_var(parts[i]))
+		if not scene.has_method(parts[0]):
+			fail("Scene root has no method " + parts[0])
+			return
+		scene.callv(parts[0], arguments)
 	root.add_child(scene)
 	current_scene = scene
 	for i in 8:
@@ -188,5 +201,19 @@ func _stats(scene: Node) -> Dictionary:
 			var arrays := instance.mesh.surface_get_arrays(s)
 			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 			triangles += indices.size() / 3 if not indices.is_empty() else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
-	var multimeshes := scene.find_children("*", "MultiMeshInstance3D", true, false).size()
+	var multimeshes := 0
+	for batch: MultiMeshInstance3D in scene.find_children("*", "MultiMeshInstance3D", true, false):
+		if batch.multimesh == null or batch.multimesh.mesh == null:
+			continue
+		multimeshes += 1
+		var mesh := batch.multimesh.mesh
+		for s in mesh.get_surface_count():
+			surfaces += 1
+			var material := batch.material_override if batch.material_override != null else mesh.surface_get_material(s)
+			if material != null:
+				materials[material.get_instance_id()] = true
+			var arrays := mesh.surface_get_arrays(s)
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			var per := indices.size() / 3 if not indices.is_empty() else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
+			triangles += per * batch.multimesh.instance_count
 	return {"mesh_instances": meshes, "surfaces": surfaces, "materials": materials.size(), "triangles": triangles, "multimesh_instances": multimeshes}
