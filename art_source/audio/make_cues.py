@@ -1,4 +1,4 @@
-"""Cut the pistol, panel damage, monster, player, scrapper and rain sounds.
+"""Cut the pistol, panel damage, monster, player, footstep, scrapper and rain sounds.
 
 Inputs are the Freesound previews listed in the assets/audio/<domain>/README.md
 files, decoded to 44.1 kHz PCM16 WAV and named after the SOURCES keys below:
@@ -41,6 +41,8 @@ SOURCES = {
     "predator_clicks": 235529, "alien_clicks": 512472, "snarl_3": 204610, "snarl_4": 204611,
     "goblin_snarl": 442815, "metal_creak": 119468, "oil_drum": 506274,
     "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
+    "step_asphalt": 637556, "step_gravel": 521588, "step_dirt": 682127, "step_grass": 521587,
+    "step_wood": 119914, "step_tin": 466618, "step_concrete": 459964,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -81,6 +83,43 @@ CUTS = {
     "monsters/body_hit_c": ([("power_kick", 4.56, 4.97)], 0.12),
     "monsters/body_hit_d": ([("power_kick", 8.54, 8.95)], 0.12),
     "monsters/body_hit_e": ([("body_fall_heavy", 0.34, 0.95)], 0.15),
+    # Player footsteps, one shod step per cut: RV cabin floor is wood, RV roof is tin sheet.
+    "player/step_asphalt_a": ([("step_asphalt", 3.09, 3.49)], 0.10),
+    "player/step_asphalt_b": ([("step_asphalt", 4.29, 4.69)], 0.10),
+    "player/step_asphalt_c": ([("step_asphalt", 5.45, 5.85)], 0.10),
+    "player/step_asphalt_d": ([("step_asphalt", 6.55, 6.95)], 0.10),
+    "player/step_asphalt_e": ([("step_asphalt", 7.05, 7.45)], 0.10),
+    "player/step_asphalt_f": ([("step_asphalt", 7.59, 7.99)], 0.10),
+    "player/step_gravel_a": ([("step_gravel", 0.07, 0.52)], 0.10),
+    "player/step_gravel_b": ([("step_gravel", 0.83, 1.28)], 0.10),
+    "player/step_gravel_c": ([("step_gravel", 1.53, 1.98)], 0.10),
+    "player/step_gravel_d": ([("step_gravel", 2.19, 2.64)], 0.10),
+    "player/step_dirt_a": ([("step_dirt", 0.09, 0.45)], 0.10),
+    "player/step_dirt_b": ([("step_dirt", 0.65, 1.01)], 0.10),
+    "player/step_dirt_c": ([("step_dirt", 1.07, 1.43)], 0.10),
+    "player/step_dirt_d": ([("step_dirt", 1.59, 1.95)], 0.10),
+    "player/step_dirt_e": ([("step_dirt", 2.05, 2.41)], 0.10),
+    "player/step_dirt_f": ([("step_dirt", 3.09, 3.45)], 0.10),
+    "player/step_grass_a": ([("step_grass", 0.07, 0.47)], 0.10),
+    "player/step_grass_b": ([("step_grass", 0.77, 1.17)], 0.10),
+    "player/step_grass_c": ([("step_grass", 1.47, 1.87)], 0.10),
+    "player/step_grass_d": ([("step_grass", 3.03, 3.43)], 0.10),
+    "player/step_grass_e": ([("step_grass", 3.77, 4.17)], 0.10),
+    "player/step_wood_a": ([("step_wood", 1.13, 1.58)], 0.10),
+    "player/step_wood_b": ([("step_wood", 1.71, 2.16)], 0.10),
+    "player/step_wood_c": ([("step_wood", 2.27, 2.72)], 0.10),
+    "player/step_wood_d": ([("step_wood", 2.81, 3.26)], 0.10),
+    "player/step_wood_e": ([("step_wood", 3.91, 4.36)], 0.10),
+    "player/step_metal_a": ([("step_tin", 5.85, 6.35)], 0.10),
+    "player/step_metal_b": ([("step_tin", 10.09, 10.59)], 0.10),
+    "player/step_metal_c": ([("step_tin", 17.51, 18.01)], 0.10),
+    "player/step_metal_d": ([("step_tin", 18.09, 18.59)], 0.10),
+    "player/step_metal_e": ([("step_tin", 18.71, 19.21)], 0.10),
+    "player/step_concrete_a": ([("step_concrete", 0.00, 0.32)], 0.10),
+    "player/step_concrete_b": ([("step_concrete", 8.71, 9.03)], 0.10),
+    "player/step_concrete_c": ([("step_concrete", 14.99, 15.31)], 0.10),
+    "player/step_concrete_d": ([("step_concrete", 15.95, 16.27)], 0.10),
+    "player/step_concrete_e": ([("step_concrete", 18.15, 18.47)], 0.10),
     "player/gore_tear_a": ([("gut_rip", 0.0, 1.30)], 0.30),
     "player/gore_tear_b": ([("gore_tear", 0.10, 0.80)], 0.20),
     "player/gore_tear_c": ([("gore_impact", 0.0, 0.95)], 0.25),

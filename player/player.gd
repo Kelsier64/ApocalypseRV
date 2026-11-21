@@ -346,6 +346,9 @@ func _ready():
 	grab_started.connect(weapon.cancel_actions)
 	ragdoll_control = preload("res://player/player_ragdoll.gd").new()
 	add_child(ragdoll_control)
+	var footsteps: Node = preload("res://player/player_footsteps.gd").new()
+	footsteps.name = "Footsteps"
+	add_child(footsteps)
 	# Frozen RV panels need explicit support motion; avoid applying it twice.
 	platform_floor_layers = 0
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
