@@ -61,14 +61,17 @@ Hooks in `.claude/settings.json` enforce rules 1 and 2: before edits they block 
 
 ## Git
 
-Solo project. Every change reaches `main` through a pull request that the user reviews and merges, docs-only and one-line fixes included. The user delegates the rest to you: create the worktree, commit, push and open the PR without being asked.
+Solo project, trunk-based by default; large changes go through a reviewed PR. The user delegates Git to you: commit, push, and for large changes open the PR, without being asked.
 
-- **Where.** Give each task its own worktree on a new branch cut from `origin/main`: `git fetch`, then `git worktree add .claude/worktrees/<topic> -b claude/<topic> origin/main`, and work and run Godot there (`godot --path .claude/worktrees/<topic>`; the first test run imports). A session that already runs in its own worktree uses it. Leave the main checkout on `main`: never switch its branch and never commit to `main`.
-- **Commit** each finished, verified unit of work, one topic per commit. Stage named paths only. Never use `git add -A`, `git add .`, `git commit -a` or `git stash`: another session may share the folder.
-- **Open the PR** when the task is done. Rebase the branch onto a freshly fetched `origin/main` before its first push, then `git push -u origin HEAD` and `gh pr create`. The body says what changed and why, the test results, and what was not verified or still needs a hands-on check. Hold and report instead when the rebase conflicts or a relevant test fails. Give the user the PR link and stop; the task is done once the PR is open.
-- **Follow-ups** to an open PR go to the same branch as new commits. Once a branch is pushed, never rebase or amend it; when it falls behind or conflicts, merge `origin/main` into it.
-- **Merge** only when the user says so: `gh pr merge <n> --squash --delete-branch`. Then remove the worktree and the local branch (`git worktree remove .claude/worktrees/<topic>`, `git branch -D claude/<topic>`, since a squash leaves it unmerged), and fast-forward the main checkout with `git -C <main checkout> merge --ff-only origin/main` after a fetch.
-- **Ask first** before force-pushing, `reset --hard`, rewriting pushed commits, pushing to `main`, or deleting branches or worktrees you did not create.
+- **Where.** Work in this checkout on `main` and land it on `origin/main`. Never switch this checkout's branch. A session the app started in its own worktree lands its work the same way, with `git push origin HEAD:main`.
+- **Commit** each finished, verified unit of work, one topic per commit. Stage named paths only. Never use `git add -A`, `git add .`, `git commit -a` or `git stash`: other sessions and Codex may have uncommitted work in the same folder. Put test results and what was not verified in the message.
+- **Push** at the end of every task that committed something. First `git fetch`, then rebase your unpushed commits onto `origin/main` (another machine pushes to the same `main`), then `git push origin HEAD:main`. Hold the push and report instead when the rebase conflicts or a relevant test fails.
+- **Large changes** use a worktree and a PR instead of `main`: architecture or cross-module contract refactors, save-format or version-constant changes (`generation_version`, `VERSION`), features expected to span several sessions, experiments that may be thrown away, and anything the user asks to review. Say so when the task starts.
+  - Start: `git fetch`, then `git worktree add .claude/worktrees/<topic> -b claude/<topic> origin/main`. Work and run Godot there (`godot --path .claude/worktrees/<topic>`; the first run imports from scratch).
+  - Finish: rebase onto a fresh `origin/main` before the first push, then `git push -u origin HEAD` and `gh pr create`. The body says what changed, the test results, and what was not verified. Give the user the link and stop.
+  - Follow-ups go to the same branch as new commits. After the first push, merge `origin/main` in instead of rebasing.
+  - Merge only when the user says so: `gh pr merge <n> --squash --delete-branch`. Then `git worktree remove` the worktree, `git branch -D` the local branch, and fetch.
+- **Ask first** before force-pushing, `reset --hard`, rebasing or amending pushed commits, or deleting branches or worktrees you did not create.
 
 ## Delegation
 
