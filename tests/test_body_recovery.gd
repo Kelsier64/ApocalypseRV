@@ -119,6 +119,7 @@ func _interior_revival() -> void:
 	station.step_work(recipe.duration)
 	await frames(2)
 	check(player.is_player_dead and player.recovery.stalled, "Occupied bed prevents handoff at full progress")
+	_check_print_ceiling_clearance()
 	for output in WorldEntities.get_container(station).get_children():
 		if output is PrintedPlayerBody: output.free()
 	await frames(2)
@@ -134,3 +135,17 @@ func _interior_revival() -> void:
 	check(player.is_gameplay_input_blocked(), "Opening eyes precedes control")
 	await frames(100)
 	check(not player.is_gameplay_input_blocked() and not player.recovery.visible, "Normal input and HUD return after waking")
+
+func _check_print_ceiling_clearance() -> void:
+	var roof: CollisionShape3D = rv.get_node("RoofMiddle/CollisionRear")
+	var roof_box := roof.shape as BoxShape3D
+	var to_cabin := rv.global_transform.affine_inverse()
+	var roof_underside := (to_cabin * roof.global_transform).origin.y - roof_box.size.y * 0.5
+	var highest_mesh := -INF
+	for node in station.get_node("Details").find_children("*", "MeshInstance3D", true, false):
+		var mesh := node as MeshInstance3D
+		if not mesh.is_visible_in_tree(): continue
+		var cabin_bounds: AABB = to_cabin * mesh.global_transform * mesh.get_aabb()
+		highest_mesh = maxf(highest_mesh, cabin_bounds.end.y)
+	check(station.print_visual.progress == 1.0 and highest_mesh < roof_underside,
+		"The fabricator fits below the cabin roof at the full Body print height")
