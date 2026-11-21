@@ -37,6 +37,7 @@ var message := "-"
 func _ready() -> void:
 	get_window().title = "ApocalypseRV - RV Audio"
 	var scenario := PlaygroundControls.scenario(SCENARIOS[0])
+	print("PLAYGROUND scenario=%s" % scenario)
 	PlaygroundStage.flat_lot(self)
 	rv = PlaygroundStage.parked_rv(self)
 	add_child(controls)
@@ -85,7 +86,7 @@ func _build_sources() -> void:
 
 func _build_controls(scenario: String) -> void:
 	controls.scenarios(SCENARIOS, scenario)
-	controls.note("Play normally: E opens doors and enters the driver seat, B starts the engine, hold W in neutral to rev, Space toggles the handbrake, L the lights.")
+	controls.note("Play normally: E opens doors, hold E on the driver seat to sit, B starts the engine, hold W in neutral to rev, Space toggles the handbrake, L the lights.")
 	var audio := rv.get_node("Audio")
 	controls.readout("Listener", func():
 		var camera := get_viewport().get_camera_3d()

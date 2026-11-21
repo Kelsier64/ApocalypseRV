@@ -52,7 +52,7 @@ func _ready() -> void:
 
 `PlaygroundStage` holds shared set dressing: `flat_lot`, `parked_rv`, `player`. Add a helper there when a second playground needs the same setup; do not copy setup between playgrounds.
 
-- Needs the generated world, a POI or the tutorial? Extend `world/world_base.gd` or instance `world/main_world.tscn` with a fixed `--seed`, and wait for `ready_for_play`.
+- Needs the generated world or a POI? Build on `world/world_base.gd`, read `--seed=N` from `OS.get_cmdline_user_args()` and set `WorldGenerator.world_seed` before generation, as [production_minor_poi_playground.gd](../../../tests/playgrounds/production_minor_poi_playground.gd) does, then wait for `ready_for_play`.
 - Wait for physics to settle (a second of physics frames) before placing the player on or in a vehicle.
 - Register any new Item or Monster scene in `core/save_scene_catalog.gd` (CLAUDE.md rule 3).
 - In-game text rules apply: English, screen-space only, no `Label3D`.

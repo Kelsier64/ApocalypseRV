@@ -38,7 +38,6 @@ static func parked_rv(parent: Node3D, at := Vector3(0, 1.6, 0)) -> Chassis:
 	shell.position = at
 	parent.add_child(shell)
 	var rv: Chassis = shell.get_node("Chassis")
-	rv.allow_test_controls = true
 	rv.current_fuel = rv.max_fuel * 0.65
 	rv.current_power = rv.max_power * 0.72
 	rv.handbrake = true

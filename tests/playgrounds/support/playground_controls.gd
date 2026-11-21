@@ -117,6 +117,8 @@ func readout(text: String, value: Callable) -> void:
 	_rows.append(func(page: VBoxContainer):
 		var row := _labelled_row(page, text)
 		var shown := _label("", 16)
+		shown.autowrap_mode = TextServer.AUTOWRAP_OFF
+		shown.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(shown)
 		_readouts.append([shown, value]))
 
