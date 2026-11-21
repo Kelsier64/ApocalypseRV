@@ -10,3 +10,4 @@ samples = Array[AudioStream]([ExtResource("3")])
 volume_db = -3
 attenuation = ExtResource("2")
 priority = 2
+outdoor_echo_db = -10.0

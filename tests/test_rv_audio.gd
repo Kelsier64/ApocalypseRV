@@ -43,8 +43,16 @@ func _run() -> void:
 		"A full pool hands a lower-priority voice to a gunshot")
 	check(sfx.play(shot, outside_source) and not sfx.play(door_close, outside_source),
 		"Taken voices still count against the limit for low-priority events")
+	check(sfx._echoes.size() == 2 and sfx._echoes.all(func(echo): return echo.playing and echo.bus == &"OutdoorEcho"),
+		"Each outdoor gunshot adds an echo tail")
+	for i in range(sfx.MAX_ECHOES + 2): sfx.play(shot, outside_source)
+	check(sfx._echoes.size() == sfx.MAX_ECHOES and sfx._voices.size() == sfx.MAX_VOICES,
+		"Echo tails use their own capped voices instead of the one-shot pool")
 	var shooter := Node3D.new()
 	root.add_child(shooter)
+	for voice in sfx._voices + sfx._echoes: voice.stop()
+	check(sfx.play(door_open, outside_source) and not sfx._echoes.any(func(echo): return echo.playing),
+		"Events without an echo level play dry")
 	for voice in sfx._voices: voice.stop()
 	var reload := load("res://assets/audio/events/pistol/reload.tres") as SoundEvent
 	check(sfx.play(reload, shooter) and sfx.play(door_open, outside_source), "Two sources play side by side")
@@ -58,6 +66,7 @@ func _run() -> void:
 	check(inside.audio_listener_enable_3d and not root.audio_listener_enable_3d, "Only the selected viewport listens")
 	check(not sfx.play(door_open, outside_source), "The POI pool rejects coordinates from the highway world")
 	check(sfx.play(door_open, inside_source), "The POI pool accepts sources from its own World3D")
+	check(sfx.play(shot, inside_source) and sfx._echoes.is_empty(), "A gunshot inside a POI interior has no outdoor echo")
 	check(inside.get_node("SpatialOneShots").get_child(0).get_world_3d() == inside.find_world_3d(),
 		"The POI player resolves its position in the interior world")
 	sfx.set_listener_viewport(root)
@@ -99,6 +108,9 @@ func _run() -> void:
 		"The RV roof does not count as its cabin")
 	check(sfx.bus_at(cabin, chassis.get_world_3d()) == &"Cabin" and sfx.bus_at(outside, chassis.get_world_3d()) == &"Exterior",
 		"Positioned events route by whether they play inside the cabin")
+	for echo in sfx._echoes: echo.stop()
+	check(sfx.play(shot, chassis, chassis.to_local(cabin)) and not sfx._echoes.any(func(echo): return echo.playing),
+		"A gunshot inside the cabin has no outdoor echo")
 	check(audio.engine_player.bus == &"Exterior", "The engine bay sits outside the cabin mix")
 	var listener := Camera3D.new()
 	root.add_child(listener)
@@ -196,7 +208,7 @@ func _run() -> void:
 
 	vehicle.queue_free()
 	# Silence pooled voices before quitting; see the exit-crash row in docs/plans/README.md.
-	for voice in sfx._voices: voice.stop()
+	for voice in sfx._voices + sfx._echoes: voice.stop()
 	await process_frame
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")

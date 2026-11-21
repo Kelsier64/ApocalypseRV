@@ -13,3 +13,4 @@ volume_db = -3
 pitch_variation = 0.03
 attenuation = ExtResource("2")
 priority = 2
+outdoor_echo_db = -12.0

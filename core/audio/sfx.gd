@@ -8,11 +8,16 @@ const OPEN_CUTOFF_HZ := 20500.0
 const CLOSED_CUTOFF_HZ := 1500.0
 const CLOSED_GAIN_DB := -8.0
 const TRANSITION_SECONDS := 0.3
+## Outdoor echo tails play on their own voices, so they never take the pool.
+const MAX_ECHOES := 4
+## Echo level gained against the direct sound at the event's max distance.
+const ECHO_DISTANCE_GAIN_DB := 9.0
 
 var _rng := RandomNumberGenerator.new()
 var _listener: Viewport
 var _pool: Node3D
 var _voices: Array[AudioStreamPlayer3D] = []
+var _echoes: Array[AudioStreamPlayer3D] = []
 var _sources: Dictionary[AudioStreamPlayer3D, Node3D] = {}
 var _offsets: Dictionary[AudioStreamPlayer3D, Vector3] = {}
 ## Priority and start time of what each voice plays, for taking over voices.
@@ -34,12 +39,13 @@ func set_listener_viewport(viewport: Viewport) -> void:
 	if is_instance_valid(_listener):
 		_listener.audio_listener_enable_3d = false
 	if is_instance_valid(_pool):
-		for voice in _voices: voice.stop()
+		for voice in _voices + _echoes: voice.stop()
 		# Rename it now, so a pool created this frame keeps the name.
 		_pool.name = "RetiredOneShots"
 		_pool.queue_free()
 	_pool = null
 	_voices.clear()
+	_echoes.clear()
 	_sources.clear()
 	_offsets.clear()
 	_priorities.clear()
@@ -72,7 +78,36 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	_priorities[voice] = event.priority
 	_started[voice] = now
 	voice.play()
+	if event.outdoor_echo_db > -80.0 and voice.bus == &"Exterior" and _listener == get_tree().root:
+		_play_echo(voice, event)
 	return true
+
+
+## A wet copy on OutdoorEcho, wetter the farther the listener stands.
+func _play_echo(direct: AudioStreamPlayer3D, event: SoundEvent) -> void:
+	var echo: AudioStreamPlayer3D = null
+	for candidate in _echoes:
+		if not candidate.playing:
+			echo = candidate
+			break
+	if echo == null and _echoes.size() < MAX_ECHOES:
+		echo = AudioStreamPlayer3D.new()
+		echo.bus = &"OutdoorEcho"
+		_ensure_pool().add_child(echo)
+		_echoes.append(echo)
+	if echo == null:
+		echo = _echoes[0]
+		for candidate in _echoes:
+			if candidate.get_playback_position() > echo.get_playback_position(): echo = candidate
+	var camera := _listener.get_camera_3d()
+	var distance := camera.global_position.distance_to(direct.global_position) if camera != null else 0.0
+	var far := smoothstep(0.0, event.attenuation.max_distance, distance)
+	echo.stream = direct.stream
+	echo.pitch_scale = direct.pitch_scale
+	echo.volume_db = direct.volume_db + event.outdoor_echo_db + ECHO_DISTANCE_GAIN_DB * far
+	event.attenuation.apply(echo)
+	echo.global_position = direct.global_position
+	echo.play()
 
 
 ## Stops every one-shot still following source, such as an interrupted reload.
@@ -110,16 +145,20 @@ func _available_voice(priority: int) -> AudioStreamPlayer3D:
 				taken = voice
 		if taken != null: taken.stop()
 		return taken
+	var voice := AudioStreamPlayer3D.new()
+	_ensure_pool().add_child(voice)
+	_voices.append(voice)
+	return voice
+
+
+func _ensure_pool() -> Node3D:
 	if not is_instance_valid(_pool):
 		_pool = Node3D.new()
 		_pool.name = "SpatialOneShots"
 		# Under the root viewport the pool hangs from this autoload, because a scene
 		# can play sounds from _ready while the root is still adding children.
 		(self if _listener == get_tree().root else _listener).add_child(_pool)
-	var voice := AudioStreamPlayer3D.new()
-	_pool.add_child(voice)
-	_voices.append(voice)
-	return voice
+	return _pool
 
 
 func _process(delta: float) -> void:
@@ -165,5 +204,5 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 
 func _exit_tree() -> void:
 	# Stop pooled voices before shutdown rather than leaving them mixing.
-	for voice in _voices:
+	for voice in _voices + _echoes:
 		if is_instance_valid(voice): voice.stop()

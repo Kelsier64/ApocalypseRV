@@ -19,3 +19,7 @@ extends Resource
 ## priority instead of being skipped: debris 0, actions and hits 1, gunshots and
 ## blasts 2.
 @export_range(0, 3) var priority := 0
+## Level of the outdoor echo tail close to the source, relative to the direct
+## sound; -80 plays dry. The tail plays only for a source outside the RV cabin
+## heard in the outdoor world, and grows against the direct sound with distance.
+@export_range(-80.0, 0.0) var outdoor_echo_db := -80.0
