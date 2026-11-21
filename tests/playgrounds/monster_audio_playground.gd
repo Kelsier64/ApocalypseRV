@@ -15,7 +15,7 @@ const NOTES := {
 	"Raker": "A Raker wanders 25 m ahead and hunts you when it notices you. Listen for steps, growls and clicks, then the tell before each sweep and grab. It can grab, bite and kill.",
 	"Barrel man": "One barrel 14 m ahead is a barrel man. It should be silent until you come within 8 m, clang as it stands, slosh as it runs and hiss for 2 s before it blasts.",
 	"Black apparition": "Daylight lot; the apparition stays put until you stare at it for 2 s or press Enrage. Up close it breathes; enraged it shrieks and runs at you. Touch kills.",
-	"White apparition": "Press Appear: it appears 35-55 m behind you with a soft breath. Unseen it leaves after 6-10 s, so turn and look at it for about a second, then face away and listen to the whisper close in. Pressing Appear again sends the current one away first. Looking drains SAN; touch kills.",
+	"White apparition": "Press Appear: it appears 35-55 m behind you with a soft breath. Unseen it leaves after 6-10 s, so turn and look at it for about a second, then face away and listen to the whisper close in. It appears just after you close this menu; pressing Appear again sends the current one away first. Looking drains SAN; touch kills.",
 	"Slender Speaker": "The giant patrols a 22 m loop 60 m ahead. It sees you up to 220 m away, then runs at you and grabs; on foot that kills. Turn off its loudspeaker to hear the steps alone, and let it ignore you to hear patrol steps from far away.",
 }
 
@@ -25,6 +25,9 @@ var monster: Node3D
 var clock: WorldClock
 var scenario := ""
 var white_presses := 0
+## Seconds left before a requested white appearance, counted once the menu is closed; -1 when none.
+var white_delay := -1.0
+const WHITE_DELAY := 0.5
 var slender_map: RID
 var slender_music := true
 var slender_ignores := false
@@ -144,6 +147,20 @@ func _appear_white() -> void:
 	# Send a present one away first, so every press gives a fresh appearance.
 	if monster.is_present(): monster._enter_hidden()
 	white_presses += 1
+	white_delay = WHITE_DELAY
+	controls.set_meta("white_result", "Appears %.1f s after you close the menu (press %d)" % [WHITE_DELAY, white_presses])
+
+
+func _physics_process(delta: float) -> void:
+	if white_delay < 0.0 or not monster is WhiteApparition or not is_instance_valid(player): return
+	# The button is pressed in the Esc menu, and the apparition hides at once
+	# while the player is in a menu, so wait until play resumes.
+	if WhiteApparition.Perception.player_camera(monster, player) == null:
+		white_delay = WHITE_DELAY
+		return
+	white_delay -= delta
+	if white_delay > 0.0: return
+	white_delay = -1.0
 	var result := "Appeared" if monster._try_emerge(player.camera) else "No place to appear; step away from the lot edge"
 	controls.set_meta("white_result", "%s (press %d)" % [result, white_presses])
 
