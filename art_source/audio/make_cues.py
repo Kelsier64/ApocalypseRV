@@ -45,8 +45,8 @@ SOURCES = {
     "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
     "step_asphalt": 637556, "step_gravel": 521588, "step_dirt": 682127, "step_grass": 521587,
     "step_wood": 119914, "step_tin": 466618, "step_concrete": 459964,
-    "room_small": 451064, "room_hall": 451614, "drips": 262641,
-    "crows_cornwall": 144553, "crow_call": 813114, "tree_creaks": 726217, "branch_snap": 452109, "sign_creak": 759692, "metal_creaks": 625616, "cricket_single": 753272,
+    "room_small": 451064, "drips": 262641,
+    "crows_cornwall": 144553, "tree_creaks": 726217, "branch_snap": 452109, "sign_creak": 759692, "metal_creaks": 625616, "cricket_single": 753272,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -170,7 +170,6 @@ CUTS = {
     "slender_speaker/step_e": ([("drum_footsteps", 13.18, 14.28)], 0.50),
     # Sparse ambience, outdoors: one caw, creak, snap or chirp burst each.
     # The quieter Cornwall calls sit over other birds and are left out.
-    "ambience/crow_a": ([("crow_call", 0.00, 0.84)], 0.20),
     "ambience/crow_b": ([("crows_cornwall", 0.00, 1.60)], 0.40),
     "ambience/crow_c": ([("crows_cornwall", 51.99, 53.60)], 0.40),
     "ambience/tree_creak_a": ([("tree_creaks", 4.93, 6.50)], 0.40),
@@ -212,7 +211,7 @@ LOOPS = {
     "apparitions/black_breathing": ("creepy_breathing", 2.9, 22.0, 0.50, -24.0, ""),
     "barrel_man/fuse": ("fuse", 0.2, 3.5, 0.30, -18.0, "flatten"),
     "ambience/room_small": ("room_small", 17.0, 37.0, 1.5, -24.0, "rumble low ogg"),
-    "ambience/room_hall": ("room_hall", 155.0, 175.0, 1.5, -24.0, "rumble low ogg"),
+    "ambience/room_hall": ("room_small", 45.5, 65.5, 1.5, -24.0, "rumble low ogg"),
 }
 
 
