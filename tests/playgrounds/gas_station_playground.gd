@@ -87,6 +87,7 @@ func _ready() -> void:
 	player.get_node("Camera3D").make_current()
 	observer = Camera3D.new()
 	observer.far = 250
+	observer.cull_mask = player.get_node("Camera3D").cull_mask
 	add_child(observer)
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -104,7 +105,10 @@ func _ready() -> void:
 		get_window().set_deferred("title", "ApocalypseRV - Northline Gas Station")
 		get_window().set_deferred("size", Vector2i(1280, 800))
 	print("GAS_STATION_READY")
-	if "--replay" in OS.get_cmdline_user_args(): start_replay()
+	if "--capture" in OS.get_cmdline_user_args():
+		await _capture_station()
+	elif "--replay" in OS.get_cmdline_user_args():
+		start_replay()
 
 func _box(label: String, size: Vector3, at: Vector3, color: Color, solid := false) -> void:
 	var body := StaticBody3D.new()
@@ -159,6 +163,37 @@ func toggle_pump_visuals() -> void:
 func _capture() -> void:
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://.godot/gas-station-preview.png")
+
+func _capture_station() -> void:
+	var folder := "res://.godot/northline-captures"
+	if DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder)) != OK:
+		push_error("Could not create capture directory: " + folder)
+		get_tree().quit(1)
+		return
+	for layer: CanvasLayer in get_tree().root.find_children("*", "CanvasLayer", true, false):
+		layer.hide()
+	for control: Control in player.find_children("*", "Control", true, false):
+		control.hide()
+	_walk_view()
+	var results := [await _save_view(folder.path_join("arrival.png"))]
+	player.hide()
+	_view(Vector3(7, 3.6, 28), Vector3(-2.5, 3.1, 2))
+	results.append(await _save_view(folder.path_join("forecourt.png")))
+	_view(Vector3(0.8, 1.7, -6.5), Vector3(-5.5, 1.7, -12))
+	results.append(await _save_view(folder.path_join("market.png")))
+	_view(Vector3(5.1, 1.7, -7), Vector3(7, 1.7, -14))
+	results.append(await _save_view(folder.path_join("service.png")))
+	get_tree().quit(0 if results.count(OK) == results.size() else 1)
+
+func _save_view(path: String) -> Error:
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var error := get_viewport().get_texture().get_image().save_png(path)
+	if error != OK:
+		push_error("Could not capture %s (%s)" % [path, error_string(error)])
+	else:
+		print("CAPTURE: ", path)
+	return error
 
 func _walk_view() -> void:
 	player.set_physics_process(true)

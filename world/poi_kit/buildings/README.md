@@ -1,12 +1,12 @@
 # 可直接探索的室外建築
 
-共用規範見 [POI 製作規範](../../../docs/guides/poi-authoring.md)，本資產定義為 [gas_station.tres](../../poi_definitions/gas_station.tres)。登錄為 WALK_IN，已加入新世界生成 v5。AccessPoints 的 local -Z 朝建築外側。
+共用規範見 [POI 製作規範](../../../docs/guides/poi-authoring.md)，本資產定義為 [gas_station.tres](../../poi_definitions/gas_station.tres)。類型為 WALK_IN，AccessPoints 的 local -Z 朝建築外側。
 
-`gas_station.tscn` 是 NORTHLINE 加油站首個測試資產。商店、維修間、前院與後門在同一個 World3D，可直接步行穿越；沒有 PoiEntrance、SubViewport 或副本轉場。正式場址由 WalkInSites 配置，index % 3 == 1 為加油站。
+`gas_station.tscn` 是 NORTHLINE 公路加油站。從公路可見雙面油價牌、中央折低的雙翼雨棚與分叉鋼柱。加油島後方左側是棋盤地磚的商店，右側是附工具掛板的維修間。兩室相通，可從商店穿過後門繞到維修間，再回到前院。
 
 ## 使用
 
-將場景拖入已整平的室外場景，根節點保持單位縮放。原點是地面 Y=0；店面朝 +Z，商店位於 Z=-4～-16，前院加油棚位於 Z=1～13。建議保留 X=-18～18、Z=-20～17 的場址，另留 RV 的進出車道。場址尺寸包含招牌、前院與後門路線，不能只按店面 20×12 m 整地。
+將場景拖入已整平的室外場景，根節點保持單位縮放。原點是地面 Y=0，店面朝 +Z。商店位於 Z=-16～-4，加油棚以 Z=7 為中心。依定義的 site_bounds 保留 X=-18～18、Z=-20～22 的空間，讓 RV 進出，並留出後門步道。
 
 - `Visuals`：店面、玻璃、屋頂、招牌及棚架，可換成同尺寸模型。
 - `Collision`：獨立靜態碰撞；玻璃有碰撞，前門、維修間與後門保持開口。
@@ -15,7 +15,7 @@
 - `AccessPoints`：前門、後門、維修間和測試出生標記，不觸發傳送。
 - `Lights`：建築固定照明，測試用常亮，未接 RV 電力。
 
-加油機標示 OUT OF SERVICE，本輪是造景與碰撞，不提供免費燃油或新增加油交易。可拾取汽油罐沿用正式道具及 RV 加油規則。屋頂有碰撞，但沒有設計上屋頂路線；未提供可開關店門。
+四座加油機已停用。玩家可在店內的櫃台和維修間找到汽油罐，帶回 RV 加油。門洞常開，雨棚兩側斜面與店面屋頂均有碰撞。
 
 ## 測試入口
 
@@ -38,8 +38,8 @@ godot --path . --log-file .godot/gas-station.log res://tests/playgrounds/gas_sta
 
 展示視角暫停玩家物理，RV 及世界仍運作。F5 只在測試開始重設玩家位置，之後用正式移動輸入走完商店、後門、後院、維修間、內部連通口及前院；不沿路傳送，不刷新物資。重開整個測試場才重建物資。本場景不支援檢查點保存；F6 在此處是模型近看，不是主世界的保存操作。
 
-四座加油機外觀已替換為專案自製 GLB，遊戲外層 `fuel_pump.tscn` 保留原碰撞及文字。素材來源、重建方法、尺度及替換流程見 [模型說明](../../../assets/models/gas_station/README.md)。其餘建築仍為 Godot 原生灰盒，正式 v5 已接入場址、串流及保存；加油機仍為造景。
+在啟動指令後加上 `-- --capture`，可擷取玩家進站、前院全景、商店與維修間四個視角，輸出至 `.godot/northline-captures/` 後退出。雨棚、加油機及招牌素材見 [模型說明](../../../assets/models/gas_station/README.md)。
 
 ## 主世界接入狀態
 
-共用場址定義、地形整平／避讓、導航接縫、串流與穩定物資身分／保存已隨 v5 正式接入，v6 繼續使用。建築 `_ready()` 不負責首次物資生成；正式場址由 WalkInSites 管理。建築與加油機是可直接編輯的 `.tscn`，沒有執行時建模腳本。後續新增內容仍應沿用 [POI 製作規範](../../../docs/guides/poi-authoring.md) 的外層節點與驗證流程。
+正式路旁停靠點由 WalkInSites 配置、生成與還原物資。加油機外層、碰撞、燈具及物資標記都可在 Godot 場景中編輯。

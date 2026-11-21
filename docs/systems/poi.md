@@ -9,7 +9,7 @@
 | POI 定義 | 每個 POI 一份資源：場景、類型、可放的位置、佔地、入口 | [PoiDefinition](../../world/poi_definition.gd)、[POIConfig](../../world/poi_config.gd)、`world/poi_definitions/` | |
 | 場址生成 | 檢查定義與場景後放進世界，副本入口另外向轉場管理器登記 | [POISpawner](../../world/poi_spawner.gd) | |
 | 可步行場址 | 直接走進去的建築：首次到訪抽物資，離開後保存剩下的東西 | [WalkInSites](../../world/terrain/walk_in_sites.gd) | |
-| 加油站 | 商店、維修間與加油棚，加油機是造景 | [建築說明](../../world/poi_kit/buildings/README.md) | [gas_station](../../tests/playgrounds/gas_station_playground.tscn)、[production](../../tests/playgrounds/production_gas_station_playground.tscn) |
+| 加油站 | 雙面油價牌與雙翼雨棚標出站址。前院後方左側是商店、右側是維修間，可帶走汽油罐。 | [建築說明](../../world/poi_kit/buildings/README.md) | [gas_station](../../tests/playgrounds/gas_station_playground.tscn)、[production](../../tests/playgrounds/production_gas_station_playground.tscn) |
 | 路旁小場址 | 六種主題各三套配置 | [MinorSites](../../world/terrain/minor_sites.gd)、[資產說明](../../world/roadside_pois/README.md) | [minor_poi](../../tests/playgrounds/minor_poi_playground.tscn)、[production](../../tests/playgrounds/production_minor_poi_playground.tscn) |
 | 副本轉場 | 從入口進入獨立的室內世界、切換相連的室內、返回戶外 | [PoiInstanceManager](../../world/instances/poi_instance_manager.gd) | [poi_instance](../../tests/playgrounds/poi_instance_playground.tscn) |
 | 室內組裝 | 依配置擺房間、封牆、烘導航、放內容、保存與還原 | [PoiInterior](../../world/instances/poi_interior.gd)、[InteriorLayout](../../world/instances/interior_layout.gd)、[InteriorProfiles](../../world/instances/interior_profiles.gd) | |

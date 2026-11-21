@@ -17,6 +17,26 @@
 [ext_resource type="PackedScene" path="res://props/food/energy_bar.tscn" id="food_1"]
 [ext_resource type="PackedScene" path="res://props/food/beef_jerky.tscn" id="food_2"]
 
+[ext_resource type="PackedScene" path="res://assets/models/gas_station/northline_canopy.glb" id="canopy_model"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_pylon.jpg" id="pylon_art"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_storefront.jpg" id="storefront_art"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_tool_board.jpg" id="tool_board_art"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_market_print.jpg" id="market_print_art"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_floor.jpg" id="floor_art"]
+[ext_resource type="Texture2D" path="res://assets/models/gas_station/northline_forecourt.jpg" id="forecourt_art"]
+
+[sub_resource type="StandardMaterial3D" id="forecourt_finish"]
+albedo_texture = ExtResource("forecourt_art")
+albedo_color = Color(0.74, 0.74, 0.73, 1)
+roughness = 0.93
+
+[sub_resource type="QuadMesh" id="forecourt_surface"]
+material = SubResource("forecourt_finish")
+size = Vector2(21.6, 17)
+
+[sub_resource type="BoxShape3D" id="forecourt_slab"]
+size = Vector3(21.6, 0.09, 17)
+
 [sub_resource type="StandardMaterial3D" id="concrete"]
 albedo_texture = ExtResource("concrete_tex")
 uv1_triplanar = true
@@ -33,11 +53,11 @@ albedo_color = Color(0.7, 0.67, 0.55, 1)
 roughness = 0.88
 
 
-[sub_resource type="StandardMaterial3D" id="red"]
+[sub_resource type="StandardMaterial3D" id="petrol"]
 albedo_texture = ExtResource("wear")
 uv1_triplanar = true
 uv1_scale = Vector3(0.4, 0.4, 0.4)
-albedo_color = Color(0.4, 0.14, 0.09, 1)
+albedo_color = Color(0.20, 0.36, 0.33, 1)
 roughness = 0.88
 
 
@@ -50,10 +70,10 @@ roughness = 0.88
 
 
 [sub_resource type="StandardMaterial3D" id="floor"]
-albedo_texture = ExtResource("concrete_tex")
+albedo_texture = ExtResource("floor_art")
 uv1_triplanar = true
 uv1_scale = Vector3(0.5, 0.5, 0.5)
-albedo_color = Color(0.28, 0.3, 0.27, 1)
+albedo_color = Color(0.92, 0.92, 0.88, 1)
 roughness = 0.88
 
 
@@ -64,7 +84,6 @@ roughness = 0.88
 
 [sub_resource type="StandardMaterial3D" id="glass"]
 albedo_color = Color(0.26, 0.42, 0.41, 0.23)
-roughness = 0.88
 transparency = 1
 cull_mode = 2
 roughness = 0.2
@@ -301,41 +320,11 @@ size = Vector3(2.5, 0.06, 0.07)
 [sub_resource type="BoxMesh" id="mesh48"]
 size = Vector3(2.5, 0.06, 0.07)
 
-[sub_resource type="BoxMesh" id="mesh49"]
-size = Vector3(20, 0.35, 12)
-
-[sub_resource type="BoxShape3D" id="shape49"]
-size = Vector3(20, 0.35, 12)
-
-[sub_resource type="BoxMesh" id="mesh50"]
-size = Vector3(20.2, 0.65, 0.2)
-
-[sub_resource type="BoxShape3D" id="shape50"]
-size = Vector3(20.2, 0.65, 0.2)
-
-[sub_resource type="BoxMesh" id="mesh51"]
-size = Vector3(20.2, 0.65, 0.2)
-
-[sub_resource type="BoxShape3D" id="shape51"]
-size = Vector3(20.2, 0.65, 0.2)
-
 [sub_resource type="BoxMesh" id="mesh52"]
 size = Vector3(2.6, 0.14, 8)
 
 [sub_resource type="BoxShape3D" id="shape52"]
 size = Vector3(2.6, 0.14, 8)
-
-[sub_resource type="BoxMesh" id="mesh53"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxShape3D" id="shape53"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxMesh" id="mesh54"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxShape3D" id="shape54"]
-size = Vector3(0.26, 5.45, 0.26)
 
 [sub_resource type="BoxMesh" id="mesh55"]
 size = Vector3(0.18, 0.85, 0.18)
@@ -349,26 +338,11 @@ size = Vector3(0.18, 0.85, 0.18)
 [sub_resource type="BoxShape3D" id="shape56"]
 size = Vector3(0.18, 0.85, 0.18)
 
-[sub_resource type="BoxMesh" id="mesh57"]
-size = Vector3(0.18, 0.05, 7)
-
 [sub_resource type="BoxMesh" id="mesh58"]
 size = Vector3(2.6, 0.14, 8)
 
 [sub_resource type="BoxShape3D" id="shape58"]
 size = Vector3(2.6, 0.14, 8)
-
-[sub_resource type="BoxMesh" id="mesh59"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxShape3D" id="shape59"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxMesh" id="mesh60"]
-size = Vector3(0.26, 5.45, 0.26)
-
-[sub_resource type="BoxShape3D" id="shape60"]
-size = Vector3(0.26, 5.45, 0.26)
 
 [sub_resource type="BoxMesh" id="mesh61"]
 size = Vector3(0.18, 0.85, 0.18)
@@ -381,9 +355,6 @@ size = Vector3(0.18, 0.85, 0.18)
 
 [sub_resource type="BoxShape3D" id="shape62"]
 size = Vector3(0.18, 0.85, 0.18)
-
-[sub_resource type="BoxMesh" id="mesh63"]
-size = Vector3(0.18, 0.05, 7)
 
 [sub_resource type="BoxMesh" id="mesh64"]
 size = Vector3(3.2, 1.05, 0.9)
@@ -424,17 +395,102 @@ size = Vector3(0.1, 0.018, 1)
 [sub_resource type="BoxMesh" id="mesh73"]
 size = Vector3(0.1, 0.018, 1)
 
-[sub_resource type="BoxMesh" id="mesh74"]
-size = Vector3(0.3, 7, 0.3)
+[sub_resource type="StandardMaterial3D" id="pylon_enamel"]
+albedo_texture = ExtResource("pylon_art")
+roughness = 0.78
 
-[sub_resource type="BoxShape3D" id="shape74"]
-size = Vector3(0.3, 7, 0.3)
+[sub_resource type="StandardMaterial3D" id="storefront_enamel"]
+albedo_texture = ExtResource("storefront_art")
+roughness = 0.78
 
-[sub_resource type="BoxMesh" id="mesh75"]
-size = Vector3(4.8, 2.5, 0.25)
+[sub_resource type="StandardMaterial3D" id="tool_board_enamel"]
+albedo_texture = ExtResource("tool_board_art")
+roughness = 0.78
 
-[sub_resource type="BoxShape3D" id="shape75"]
-size = Vector3(4.8, 2.5, 0.25)
+[sub_resource type="StandardMaterial3D" id="market_print_enamel"]
+albedo_texture = ExtResource("market_print_art")
+roughness = 0.78
+
+[sub_resource type="ConvexPolygonShape3D" id="EastRoof"]
+points = PackedVector3Array(0, 5.45, -5.12, 0, 5.73, -5.12, 0, 5.45, 5.12, 0, 5.73, 5.12, 10.4, 7.27, -6.732, 10.4, 7.55, -6.732, 10.4, 7.27, 6.732, 10.4, 7.55, 6.732)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p32_4p34_0p34"]
+size = Vector3(0.32, 4.34, 0.34)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p43_0p82_0p45"]
+size = Vector3(0.43, 0.82, 0.45)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p32_3p2339604202896486_0p26"]
+size = Vector3(0.32, 3.23396, 0.26)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p32_3p840117185711915_0p26"]
+size = Vector3(0.32, 3.84012, 0.26)
+
+[sub_resource type="ConvexPolygonShape3D" id="WestRoof"]
+points = PackedVector3Array(0, 5.45, -5.12, 0, 5.73, -5.12, 0, 5.45, 5.12, 0, 5.73, 5.12, -10.4, 7.27, -6.732, -10.4, 7.55, -6.732, -10.4, 7.27, 6.732, -10.4, 7.55, 6.732)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p22_5p1_0p28"]
+size = Vector3(0.22, 5.1, 0.28)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p22_5p1_0p28"]
+size = Vector3(0.22, 5.1, 0.28)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p48_0p38_0p5"]
+size = Vector3(0.48, 0.38, 0.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p48_0p38_0p5"]
+size = Vector3(0.48, 0.38, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3p84_5p12_0p36"]
+size = Vector3(3.84, 5.12, 0.36)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_3p84_5p12_0p36"]
+size = Vector3(3.84, 5.12, 0.36)
+
+[sub_resource type="QuadMesh" id="QuadMesh_3p82_5p1"]
+size = Vector2(3.82, 5.1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_20p38_0p94"]
+size = Vector2(20.38, 0.94)
+
+[sub_resource type="BoxMesh" id="BoxMesh_20p5_0p055_0p28"]
+size = Vector3(20.5, 0.055, 0.28)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3p85_0p065_0p11"]
+size = Vector3(3.85, 0.065, 0.11)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4p95_0p063_0p15"]
+size = Vector3(4.95, 0.063, 0.15)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p09_3p16_0p16"]
+size = Vector3(0.09, 3.16, 0.16)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0p09_3p16_0p16"]
+size = Vector3(0.09, 3.16, 0.16)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p06_1p22_11p8"]
+size = Vector3(0.06, 1.22, 11.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p075_0p08_11p8"]
+size = Vector3(0.075, 0.08, 11.8)
+
+[sub_resource type="QuadMesh" id="QuadMesh_4p42_2p21"]
+size = Vector2(4.42, 2.21)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3p66_1p9_0p13"]
+size = Vector3(3.66, 1.9, 0.13)
+
+[sub_resource type="QuadMesh" id="QuadMesh_3p54_1p77"]
+size = Vector2(3.54, 1.77)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1p94_0p14_0p36"]
+size = Vector3(1.94, 0.14, 0.36)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1p79_0p045_0p25"]
+size = Vector3(1.79, 0.045, 0.25)
+
+[sub_resource type="BoxMesh" id="BoxMesh_0p1_0p012_7p65"]
+size = Vector3(0.1, 0.012, 7.65)
 
 [node name="GasStation" type="Node3D"]
 
@@ -454,6 +510,15 @@ size = Vector3(4.8, 2.5, 0.25)
 
 
 [node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="ForecourtPaving" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 0.055, 5.5)
+rotation_degrees = Vector3(-90, 0, 0)
+mesh = SubResource("forecourt_surface")
+
+[node name="ForecourtPaving" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 0.01, 5.5)
+shape = SubResource("forecourt_slab")
 
 
 [node name="Slab" type="MeshInstance3D" parent="Visuals"]
@@ -545,7 +610,7 @@ shape = SubResource("shape10")
 [node name="FrontLeftSill" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-6, 0.325, -4)
 mesh = SubResource("mesh11")
-material_override = SubResource("red")
+material_override = SubResource("petrol")
 
 [node name="FrontLeftSill" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-6, 0.325, -4)
@@ -563,7 +628,7 @@ shape = SubResource("shape12")
 [node name="FrontRightSill" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(2.5, 0.325, -4)
 mesh = SubResource("mesh13")
-material_override = SubResource("red")
+material_override = SubResource("petrol")
 
 [node name="FrontRightSill" type="CollisionShape3D" parent="Collision"]
 position = Vector3(2.5, 0.325, -4)
@@ -671,7 +736,7 @@ shape = SubResource("shape24")
 [node name="Fascia" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(0, 3.7, -3.95)
 mesh = SubResource("mesh25")
-material_override = SubResource("red")
+material_override = SubResource("petrol")
 
 [node name="Fascia" type="CollisionShape3D" parent="Collision"]
 position = Vector3(0, 3.7, -3.95)
@@ -804,33 +869,6 @@ position = Vector3(5.5, 5.36, -9.77)
 mesh = SubResource("mesh48")
 material_override = SubResource("steel")
 
-[node name="Canopy" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.8, 7)
-mesh = SubResource("mesh49")
-material_override = SubResource("cream")
-
-[node name="Canopy" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.8, 7)
-shape = SubResource("shape49")
-
-[node name="CanopyFront" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.65, 13)
-mesh = SubResource("mesh50")
-material_override = SubResource("red")
-
-[node name="CanopyFront" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.65, 13)
-shape = SubResource("shape50")
-
-[node name="CanopyBack" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(0, 5.65, 1)
-mesh = SubResource("mesh51")
-material_override = SubResource("red")
-
-[node name="CanopyBack" type="CollisionShape3D" parent="Collision"]
-position = Vector3(0, 5.65, 1)
-shape = SubResource("shape51")
-
 [node name="Island-6" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-6, 0.07, 7)
 mesh = SubResource("mesh52")
@@ -839,24 +877,6 @@ material_override = SubResource("concrete")
 [node name="Island-6" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-6, 0.07, 7)
 shape = SubResource("shape52")
-
-[node name="Pillar-6_3.5" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-6, 2.86, 3.5)
-mesh = SubResource("mesh53")
-material_override = SubResource("steel")
-
-[node name="Pillar-6_3.5" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-6, 2.86, 3.5)
-shape = SubResource("shape53")
-
-[node name="Pillar-6_10.5" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-6, 2.86, 10.5)
-mesh = SubResource("mesh54")
-material_override = SubResource("steel")
-
-[node name="Pillar-6_10.5" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-6, 2.86, 10.5)
-shape = SubResource("shape54")
 
 [node name="Pump-6_5" parent="Furnishings" instance=ExtResource("pump")]
 position = Vector3(-6, 0.14, 5)
@@ -884,11 +904,6 @@ material_override = SubResource("yellow")
 position = Vector3(-6, 0.55, 11)
 shape = SubResource("shape56")
 
-[node name="StripLight-6" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-6, 5.6, 7)
-mesh = SubResource("mesh57")
-material_override = SubResource("light")
-
 [node name="Island6" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(6, 0.07, 7)
 mesh = SubResource("mesh58")
@@ -897,24 +912,6 @@ material_override = SubResource("concrete")
 [node name="Island6" type="CollisionShape3D" parent="Collision"]
 position = Vector3(6, 0.07, 7)
 shape = SubResource("shape58")
-
-[node name="Pillar6_3.5" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(6, 2.86, 3.5)
-mesh = SubResource("mesh59")
-material_override = SubResource("steel")
-
-[node name="Pillar6_3.5" type="CollisionShape3D" parent="Collision"]
-position = Vector3(6, 2.86, 3.5)
-shape = SubResource("shape59")
-
-[node name="Pillar6_10.5" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(6, 2.86, 10.5)
-mesh = SubResource("mesh60")
-material_override = SubResource("steel")
-
-[node name="Pillar6_10.5" type="CollisionShape3D" parent="Collision"]
-position = Vector3(6, 2.86, 10.5)
-shape = SubResource("shape60")
 
 [node name="Pump6_5" parent="Furnishings" instance=ExtResource("pump")]
 position = Vector3(6, 0.14, 5)
@@ -942,15 +939,10 @@ material_override = SubResource("yellow")
 position = Vector3(6, 0.55, 11)
 shape = SubResource("shape62")
 
-[node name="StripLight6" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(6, 5.6, 7)
-mesh = SubResource("mesh63")
-material_override = SubResource("light")
-
 [node name="Counter" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(-6, 0.525, -6.1)
 mesh = SubResource("mesh64")
-material_override = SubResource("red")
+material_override = SubResource("petrol")
 
 [node name="Counter" type="CollisionShape3D" parent="Collision"]
 position = Vector3(-6, 0.525, -6.1)
@@ -997,7 +989,7 @@ rotation_degrees = Vector3(0, -90, 0)
 [node name="ServiceMat" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(6.5, 0.015, -8)
 mesh = SubResource("mesh67")
-material_override = SubResource("floor")
+material_override = SubResource("steel")
 
 [node name="BayStripe0" type="MeshInstance3D" parent="Visuals"]
 position = Vector3(4.3, 0.026, -5)
@@ -1028,24 +1020,6 @@ material_override = SubResource("yellow")
 position = Vector3(8.55, 0.026, -5)
 mesh = SubResource("mesh73")
 material_override = SubResource("yellow")
-
-[node name="SignPole" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-14, 3.5, 13)
-mesh = SubResource("mesh74")
-material_override = SubResource("steel")
-
-[node name="SignPole" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-14, 3.5, 13)
-shape = SubResource("shape74")
-
-[node name="RoadSign" type="MeshInstance3D" parent="Visuals"]
-position = Vector3(-14, 6.4, 13)
-mesh = SubResource("mesh75")
-material_override = SubResource("red")
-
-[node name="RoadSign" type="CollisionShape3D" parent="Collision"]
-position = Vector3(-14, 6.4, 13)
-shape = SubResource("shape75")
 
 [node name="Front" type="Marker3D" parent="AccessPoints"]
 rotation_degrees = Vector3(0, 180, 0)
@@ -1110,12 +1084,21 @@ light_energy = 1.1
 omni_range = 8
 shadow_enabled = true
 
-[node name="Forecourt" type="OmniLight3D" parent="Lights"]
-position = Vector3(0, 5, 7)
+[node name="WestForecourt" type="SpotLight3D" parent="Lights"]
+position = Vector3(-3.15, 5.78, 7)
+rotation_degrees = Vector3(-90, 0, 0)
 light_color = Color(1, 0.82, 0.56, 1)
-light_energy = 1.3
-omni_range = 15
-shadow_enabled = true
+light_energy = 0.9
+spot_range = 10
+spot_angle = 57
+
+[node name="EastForecourt" type="SpotLight3D" parent="Lights"]
+position = Vector3(3.15, 5.78, 7)
+rotation_degrees = Vector3(-90, 0, 0)
+light_color = Color(1, 0.82, 0.56, 1)
+light_energy = 0.9
+spot_range = 10
+spot_angle = 57
 
 [node name="Food0" type="Marker3D" parent="LootSpawns"]
 script = ExtResource("loot")
@@ -1140,3 +1123,301 @@ point_id = &"gas_station_food_2"
 category = &"food"
 spawn_chance = 0.5
 candidates = Array[PackedScene]([ExtResource("food_2")])
+
+[node name="ButterflyCanopy" parent="Visuals" instance=ExtResource("canopy_model")]
+position = Vector3(0, 0, 7)
+
+[node name="EastRoof" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 0, 7)
+shape = SubResource("EastRoof")
+
+[node name="EastBackColumn" type="CollisionShape3D" parent="Collision"]
+position = Vector3(6, 2.31, 3.5)
+shape = SubResource("BoxShape3D_0p32_4p34_0p34")
+
+[node name="EastBackPlinth" type="CollisionShape3D" parent="Collision"]
+position = Vector3(6, 0.55, 3.5)
+shape = SubResource("BoxShape3D_0p43_0p82_0p45")
+
+[node name="EastBackInner" type="CollisionShape3D" parent="Collision"]
+position = Vector3(4.66, 5.105, 3.5)
+rotation_degrees = Vector3(0, 0, 55.96597)
+shape = SubResource("BoxShape3D_0p32_3p2339604202896486_0p26")
+
+[node name="EastBackOuter" type="CollisionShape3D" parent="Collision"]
+position = Vector3(7.335, 5.58, 3.5)
+rotation_degrees = Vector3(0, 0, -44.05043)
+shape = SubResource("BoxShape3D_0p32_3p840117185711915_0p26")
+
+[node name="EastFrontColumn" type="CollisionShape3D" parent="Collision"]
+position = Vector3(6, 2.31, 10.5)
+shape = SubResource("BoxShape3D_0p32_4p34_0p34")
+
+[node name="EastFrontPlinth" type="CollisionShape3D" parent="Collision"]
+position = Vector3(6, 0.55, 10.5)
+shape = SubResource("BoxShape3D_0p43_0p82_0p45")
+
+[node name="EastFrontInner" type="CollisionShape3D" parent="Collision"]
+position = Vector3(4.66, 5.105, 10.5)
+rotation_degrees = Vector3(0, 0, 55.96597)
+shape = SubResource("BoxShape3D_0p32_3p2339604202896486_0p26")
+
+[node name="EastFrontOuter" type="CollisionShape3D" parent="Collision"]
+position = Vector3(7.335, 5.58, 10.5)
+rotation_degrees = Vector3(0, 0, -44.05043)
+shape = SubResource("BoxShape3D_0p32_3p840117185711915_0p26")
+
+[node name="WestRoof" type="CollisionShape3D" parent="Collision"]
+position = Vector3(0, 0, 7)
+shape = SubResource("WestRoof")
+
+[node name="WestBackColumn" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-6, 2.31, 3.5)
+shape = SubResource("BoxShape3D_0p32_4p34_0p34")
+
+[node name="WestBackPlinth" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-6, 0.55, 3.5)
+shape = SubResource("BoxShape3D_0p43_0p82_0p45")
+
+[node name="WestBackInner" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-4.66, 5.105, 3.5)
+rotation_degrees = Vector3(0, 0, -55.96597)
+shape = SubResource("BoxShape3D_0p32_3p2339604202896486_0p26")
+
+[node name="WestBackOuter" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-7.335, 5.58, 3.5)
+rotation_degrees = Vector3(0, 0, 44.05043)
+shape = SubResource("BoxShape3D_0p32_3p840117185711915_0p26")
+
+[node name="WestFrontColumn" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-6, 2.31, 10.5)
+shape = SubResource("BoxShape3D_0p32_4p34_0p34")
+
+[node name="WestFrontPlinth" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-6, 0.55, 10.5)
+shape = SubResource("BoxShape3D_0p43_0p82_0p45")
+
+[node name="WestFrontInner" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-4.66, 5.105, 10.5)
+rotation_degrees = Vector3(0, 0, -55.96597)
+shape = SubResource("BoxShape3D_0p32_3p2339604202896486_0p26")
+
+[node name="WestFrontOuter" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-7.335, 5.58, 10.5)
+rotation_degrees = Vector3(0, 0, 44.05043)
+shape = SubResource("BoxShape3D_0p32_3p840117185711915_0p26")
+
+[node name="WestPylonLeg" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-14.95339, 2.55, 13.04307)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("BoxMesh_0p22_5p1_0p28")
+material_override = SubResource("petrol")
+
+[node name="WestPylonLeg" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-14.95339, 2.55, 13.04307)
+rotation_degrees = Vector3(0, 34, 0)
+shape = SubResource("BoxShape3D_0p22_5p1_0p28")
+
+[node name="WestPylonShoe" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-14.95339, 0.19, 13.04307)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("BoxMesh_0p48_0p38_0p5")
+material_override = SubResource("concrete")
+
+[node name="WestPylonShoe" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-14.95339, 0.19, 13.04307)
+rotation_degrees = Vector3(0, 34, 0)
+shape = SubResource("BoxShape3D_0p48_0p38_0p5")
+
+[node name="EastPylonLeg" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-13.04661, 2.55, 11.75693)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("BoxMesh_0p22_5p1_0p28")
+material_override = SubResource("petrol")
+
+[node name="EastPylonLeg" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-13.04661, 2.55, 11.75693)
+rotation_degrees = Vector3(0, 34, 0)
+shape = SubResource("BoxShape3D_0p22_5p1_0p28")
+
+[node name="EastPylonShoe" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-13.04661, 0.19, 11.75693)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("BoxMesh_0p48_0p38_0p5")
+material_override = SubResource("concrete")
+
+[node name="EastPylonShoe" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-13.04661, 0.19, 11.75693)
+rotation_degrees = Vector3(0, 34, 0)
+shape = SubResource("BoxShape3D_0p48_0p38_0p5")
+
+[node name="PylonCabinet" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-14, 5.8, 12.4)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("BoxMesh_3p84_5p12_0p36")
+material_override = SubResource("steel")
+
+[node name="PylonCabinet" type="CollisionShape3D" parent="Collision"]
+position = Vector3(-14, 5.8, 12.4)
+rotation_degrees = Vector3(0, 34, 0)
+shape = SubResource("BoxShape3D_3p84_5p12_0p36")
+
+[node name="InboundEnamel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-13.89655, 5.8, 12.55337)
+rotation_degrees = Vector3(0, 34, 0)
+mesh = SubResource("QuadMesh_3p82_5p1")
+material_override = SubResource("pylon_enamel")
+
+[node name="OutboundEnamel" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-14.10345, 5.8, 12.24663)
+rotation_degrees = Vector3(0, 214, 0)
+mesh = SubResource("QuadMesh_3p82_5p1")
+material_override = SubResource("pylon_enamel")
+
+[node name="MarketAndServiceFascia" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 3.72, -3.718)
+mesh = SubResource("QuadMesh_20p38_0p94")
+material_override = SubResource("storefront_enamel")
+
+[node name="StorefrontDripEdge" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(0, 4.22, -3.76)
+mesh = SubResource("BoxMesh_20p5_0p055_0p28")
+material_override = SubResource("yellow")
+
+[node name="WindowRail8" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-8, 2.46, -3.955)
+mesh = SubResource("BoxMesh_3p85_0p065_0p11")
+material_override = SubResource("steel")
+
+[node name="WindowRail4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4, 2.46, -3.955)
+mesh = SubResource("BoxMesh_3p85_0p065_0p11")
+material_override = SubResource("steel")
+
+[node name="BayShutterSlat0" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 3.26, -4.18)
+mesh = SubResource("BoxMesh_4p95_0p063_0p15")
+material_override = SubResource("steel")
+
+[node name="BayShutterSlat1" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 3.34, -4.18)
+mesh = SubResource("BoxMesh_4p95_0p063_0p15")
+material_override = SubResource("steel")
+
+[node name="BayShutterSlat2" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 3.42, -4.18)
+mesh = SubResource("BoxMesh_4p95_0p063_0p15")
+material_override = SubResource("steel")
+
+[node name="BayShutterSlat3" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 3.5, -4.18)
+mesh = SubResource("BoxMesh_4p95_0p063_0p15")
+material_override = SubResource("steel")
+
+[node name="BayShutterSlat4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 3.58, -4.18)
+mesh = SubResource("BoxMesh_4p95_0p063_0p15")
+material_override = SubResource("steel")
+
+[node name="ShutterTrack4" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(4.08, 1.58, -4.04)
+mesh = SubResource("BoxMesh_0p09_3p16_0p16")
+material_override = SubResource("steel")
+
+[node name="ShutterTrack4" type="CollisionShape3D" parent="Collision"]
+position = Vector3(4.08, 1.58, -4.04)
+shape = SubResource("BoxShape3D_0p09_3p16_0p16")
+
+[node name="ShutterTrack8" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(8.92, 1.58, -4.04)
+mesh = SubResource("BoxMesh_0p09_3p16_0p16")
+material_override = SubResource("steel")
+
+[node name="ShutterTrack8" type="CollisionShape3D" parent="Collision"]
+position = Vector3(8.92, 1.58, -4.04)
+shape = SubResource("BoxShape3D_0p09_3p16_0p16")
+
+[node name="ShopWallBase" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.835, 0.61, -10)
+mesh = SubResource("BoxMesh_0p06_1p22_11p8")
+material_override = SubResource("petrol")
+
+[node name="ShopWallBand" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-9.835, 1.28, -10)
+mesh = SubResource("BoxMesh_0p075_0p08_11p8")
+material_override = SubResource("yellow")
+
+[node name="ServiceWallBase" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.835, 0.61, -10)
+mesh = SubResource("BoxMesh_0p06_1p22_11p8")
+material_override = SubResource("petrol")
+
+[node name="ServiceWallBand" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(9.835, 1.28, -10)
+mesh = SubResource("BoxMesh_0p075_0p08_11p8")
+material_override = SubResource("yellow")
+
+[node name="RoadsideMarketPrint" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-5.8, 3.05, -15.833)
+mesh = SubResource("QuadMesh_4p42_2p21")
+material_override = SubResource("market_print_enamel")
+
+[node name="ToolBoardFrame" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7, 2.34, -15.79)
+mesh = SubResource("BoxMesh_3p66_1p9_0p13")
+material_override = SubResource("steel")
+
+[node name="WorkshopToolBoard" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7, 2.34, -15.716)
+mesh = SubResource("QuadMesh_3p54_1p77")
+material_override = SubResource("tool_board_enamel")
+
+[node name="MarketFixture" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4, 4.12, -11)
+mesh = SubResource("BoxMesh_1p94_0p14_0p36")
+material_override = SubResource("steel")
+
+[node name="MarketDiffuser" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4, 4.032, -11)
+mesh = SubResource("BoxMesh_1p79_0p045_0p25")
+material_override = SubResource("light")
+
+[node name="ShopFrontFixture" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.6, 4.12, -6.7)
+mesh = SubResource("BoxMesh_1p94_0p14_0p36")
+material_override = SubResource("steel")
+
+[node name="ShopFrontDiffuser" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-6.6, 4.032, -6.7)
+mesh = SubResource("BoxMesh_1p79_0p045_0p25")
+material_override = SubResource("light")
+
+[node name="ServiceFixture" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 4.12, -12)
+mesh = SubResource("BoxMesh_1p94_0p14_0p36")
+material_override = SubResource("steel")
+
+[node name="ServiceDiffuser" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(6.5, 4.032, -12)
+mesh = SubResource("BoxMesh_1p79_0p045_0p25")
+material_override = SubResource("light")
+
+[node name="IslandEdge-7p19" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-7.19, 0.143, 7)
+mesh = SubResource("BoxMesh_0p1_0p012_7p65")
+material_override = SubResource("yellow")
+
+[node name="IslandEdge-4p81" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(-4.81, 0.143, 7)
+mesh = SubResource("BoxMesh_0p1_0p012_7p65")
+material_override = SubResource("yellow")
+
+[node name="IslandEdge4p81" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(4.81, 0.143, 7)
+mesh = SubResource("BoxMesh_0p1_0p012_7p65")
+material_override = SubResource("yellow")
+
+[node name="IslandEdge7p19" type="MeshInstance3D" parent="Visuals"]
+position = Vector3(7.19, 0.143, 7)
+mesh = SubResource("BoxMesh_0p1_0p012_7p65")
+material_override = SubResource("yellow")

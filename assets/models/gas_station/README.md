@@ -1,4 +1,18 @@
-# 加油機 GLB 匯入樣板
+# NORTHLINE 加油站模型
+
+## 雙翼雨棚與站體美術
+
+雙翼雨棚、分叉鋼柱與棚下燈具共用一個自製網格。模型以兩排加油機之間的地面為原點，在建築本地 Z=7 放置。兩側向外各伸出 10.4 公尺，柱心位於 X=±6 公尺。靜態碰撞保存在 [加油站場景](../../../world/poi_kit/buildings/gas_station.tscn)。
+
+用 Blender 的背景模式重建 [雨棚模型](../../../scripts/build_northline_canopy.py)，再由 Godot 匯入。
+
+```powershell
+blender --background --factory-startup --python-exit-code 1 --python scripts/build_northline_canopy.py
+```
+
+同目錄的 `northline_*.jpg` 是本案製作的油價牌、門面招牌、店內公路海報、維修工具板、棋盤地磚與前院混凝土圖面。前院圖面對應兩排加油島的位置，包含排水溝蓋、油漬、膨脹縫與磨損的黃線。
+
+## 加油機
 
 `fuel_pump.glb` 是本專案自製的低模外部模型，用於驗證「GLB → Godot 外觀 → 保留遊戲碰撞」流程。**不是下載或採購的第三方素材，也尚未驗證特定素材商店的檔案。** 無外部貼圖、字型或第三方模型依賴；使用六組內嵌 PBR 材質，1400 個三角形。
 
