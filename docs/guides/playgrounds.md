@@ -74,8 +74,8 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [world_detail_playground](../../tests/playgrounds/world_detail_playground.tscn) | 主世界：世界細節（池塘／湖、支線、路旁與野地場景、電塔、道路設施）固定視角審查 | `--seed=N --target=<名稱> [--skip=N]` 跳到第 N 個該類特徵，`--list` 列出目標後結束；F1 路面、F2 近景、F3 俯瞰、F7 截圖；`--capture` 依序輸出三張到 `.godot/world-detail-captures/` 後結束（不可加 `--headless`）。 |
 | [outdoor_horror_playground](../../tests/playgrounds/outdoor_horror_playground.tscn) | 主世界：正式戶外氛圍、入口與大物步行 | F2 視角、1–4 入口外觀、F3 搬運回放、F4 進出、F6 RV、F10 平板。 |
 | [rear_pressure_playground](../../tests/playgrounds/rear_pressure_playground.tscn) | 主世界 fixture：後方廢車通行與偏離壓力 | F2 穿越廢車、F3 後方霧／遭遇、F4 鏡頭；`--replay` 跑通行。 |
-| [gas_station_playground](../../tests/playgrounds/gas_station_playground.tscn) | 正式資產獨立場：加油站商店／維修間／加油棚 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |
-| [production_gas_station_playground](../../tests/playgrounds/production_gas_station_playground.tscn) | 主世界：正式加油站場址與整地／森林 | F2 鳥瞰、F3 玩家、F5 真實輪驅停靠、F7 截圖；此場移除怪物。 |
+| [gas_station_playground](../../tests/playgrounds/gas_station_playground.tscn) | 已封存的 Northline 獨立展示場 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |
+| [production_gas_station_playground](../../tests/playgrounds/production_gas_station_playground.tscn) | 主世界：Orbit 大型站、整地與森林 | F2 鳥瞰、F3 玩家、F5 真實輪驅停靠、F7 截圖；此場移除怪物。 |
 | [minor_poi_playground](../../tests/playgrounds/minor_poi_playground.tscn) | 正式資產獨立場：18 套路邊小 POI | 左右切佈局、N 換 seed、F1 步行、F2 總覽、F7 截圖；`--capture-all`。 |
 | [production_minor_poi_playground](../../tests/playgrounds/production_minor_poi_playground.tscn) | 主世界：實際小 POI 排程、地形及停靠 | `--seed=0 --cell=0` 選場址；F2 總覽、F3 步行、F5 輪驅；`--replay`。 |
 | [bunker_playground](../../tests/playgrounds/bunker_playground.tscn) | 正式系統獨立場：多層地堡生成、地圖與搬運 | F1 步行、F2 總覽、F3 掀頂、F5 搬運、R 重建；`--rooms=12 --floors=3 --seed=42`。 |
@@ -595,7 +595,7 @@ godot --path . --log-file .godot/cabin-visible.log res://tests/playgrounds/monst
 
 `godot --path . --log-file .godot/production-station-visible.log res://tests/playgrounds/production_gas_station_playground.tscn`
 
-繼承主場景，以 v5、seed 42 的正式場址、整地、森林、物資與 RV 啟動。F2 鳥瞰、F3 玩家視角、F5 公路轉入停車區的真實輪驅回放、F7 截圖至 `.godot/production-station.png`。回放只在初始化放置車輛，行駛不改 transform；怪物在此驗收場移除，正常主遊戲維持原生成。原獨立灰盒場仍供素材 A/B。
+預設以 seed 42 的第一座 Orbit 站、正式地形、物資與 RV 啟動。加 `-- --seed=數字` 可切換世界，`--capture` 依序擷取前院、早餐吧、市集、調度與收貨間。F2 鳥瞰、F3 玩家視角、F5 公路轉入停車區的真實輪驅回放、F7 截圖至 `.godot/production-station.png`。回放只在初始化放置車輛，行駛不改 transform；預設移除怪物以便量測停車，`-- --seed=17 --encounters` 可走訪有油桶人與汽油罐的場址。Northline 另以獨立場封存。
 
 ## 行駛幀時間量測
 

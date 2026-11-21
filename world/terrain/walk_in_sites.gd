@@ -1,7 +1,7 @@
 extends RefCounted
 class_name WalkInSites
 ## Current outdoor sites: roadside forecourt, authored footprint and dormant loose actors.
-static func configure(site: Dictionary, definition_id: String = "gas_station") -> void:
+static func configure(site: Dictionary, definition_id: String) -> void:
 	site.kind = "walk_in"
 	site.definition_id = definition_id
 	var definition := POIConfig.definition(StringName(definition_id))
@@ -48,7 +48,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var offroad: bool = site.get("placement", "roadside") == "off_road"
 	var loot_domain := "offroad_loot" if offroad else ("minor_loot" if site.get("minor", false) else "walk_in_loot")
-	if definition.definition_id == &"mile_end": loot_domain = "mile_end_loot"
+	if definition.definition_id in [&"mile_end", &"orbit_plaza"]: loot_domain = str(definition.definition_id) + "_loot"
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, loot_domain)
 	for point in building.find_children("*", "Marker3D", true, false):
 		if starter_site: continue
@@ -56,7 +56,7 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 		_spawn_loot(point, rng, container, "outdoor:%s:%s" % [site.id, building.get_path_to(point)])
 	if barrel_site and definition.enemy_count_range.y > 0:
 		var domain := "offroad" if offroad else "minor"
-		if definition.definition_id == &"mile_end": domain = "mile_end"
+		if definition.definition_id in [&"mile_end", &"orbit_plaza"]: domain = str(definition.definition_id)
 		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, domain + "_enemies")
 		var species: RandomNumberGenerator = generator.field.rng_for(site.index, domain + "_enemy_species")
 		var points := building.get_node("EnemySpawns").get_children()
@@ -83,7 +83,7 @@ static func _spawn_loot(point: PoiLootPoint, rng: RandomNumberGenerator, contain
 
 static func _barrel_site(definition: PoiDefinition) -> bool:
 	var id := str(definition.definition_id)
-	return id == "mile_end" or id.begins_with("roadside_cargo_") or id.begins_with("roadside_shed_")
+	return id in ["mile_end", "orbit_plaza"] or id.begins_with("roadside_cargo_") or id.begins_with("roadside_shed_")
 
 static func _ground_position(building: Node3D, point: Vector3, actor: CollisionObject3D = null) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point - Vector3.UP * 4.0, 1)

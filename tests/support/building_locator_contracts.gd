@@ -20,7 +20,7 @@ static func _check_selection(check: Callable) -> void:
 	var behind := _site("behind", Vector3(3.0, 900.0, 4.0))
 	var ahead := _site("ahead", Vector3(0.0, 0.0, -6.0))
 	var other := _site("other", Vector3.ZERO)
-	other.definition_id = "gas_station"
+	other.definition_id = "orbit_plaza"
 	var sites: Array[Dictionary] = [other, ahead, behind]
 	check.call(LOCATOR.nearest_site(sites, Vector3.ZERO, 10.0) == behind, "Building locator includes buildings behind and ignores height and other POI kinds")
 	check.call(LOCATOR.nearest_site(sites, Vector3.ZERO, 5.0) == behind, "Building locator includes the exact signal radius")

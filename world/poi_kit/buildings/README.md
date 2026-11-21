@@ -1,6 +1,6 @@
-# 可直接探索的室外建築
+# Northline 加油站（已封存）
 
-共用規範見 [POI 製作規範](../../../docs/guides/poi-authoring.md)，本資產定義為 [gas_station.tres](../../poi_definitions/gas_station.tres)。類型為 WALK_IN，AccessPoints 的 local -Z 朝建築外側。
+共用規範見 [POI 製作規範](../../../docs/guides/poi-authoring.md)，舊定義保存於 [Northline 封存區](archive/northline.tres)。類型為 WALK_IN，AccessPoints 的 local -Z 朝建築外側。
 
 `gas_station.tscn` 是 NORTHLINE 公路加油站。從公路可見雙面油價牌、中央折低的雙翼雨棚與分叉鋼柱。加油島後方左側是棋盤地磚的商店，右側是附工具掛板的維修間。兩室相通，可從商店穿過後門繞到維修間，再回到前院。
 
@@ -42,4 +42,4 @@ godot --path . --log-file .godot/gas-station.log res://tests/playgrounds/gas_sta
 
 ## 主世界接入狀態
 
-正式路旁停靠點由 WalkInSites 配置、生成與還原物資。加油機外層、碰撞、燈具及物資標記都可在 Godot 場景中編輯。
+Northline 僅供上述獨立場開啟。正式路旁主要停靠點使用 [Orbit](../../poi_definitions/orbit_plaza.tres)。

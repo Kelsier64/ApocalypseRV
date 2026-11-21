@@ -94,7 +94,7 @@ func stop(index: int) -> Dictionary:
 	var result := {"index": index, "id": "v%d:%d:stop:%d" % [profile.generation_version, world_seed, index], "s": s, "side": side, "road": road, "seed": seed_for(index, "interior"), "placement": "roadside"}
 	if index == 0 or index % 3 == 1:
 		result.side = ExplorationSite.select_side(road, side, self)
-		WalkInSites.configure(result, profile.opening_shelter_id() if index == 0 else "gas_station")
+		WalkInSites.configure(result, profile.opening_shelter_id() if index == 0 else "orbit_plaza")
 	else:
 		ExplorationSite.configure(result, self)
 	if index > 0 and not landforms.site_clear(result):
