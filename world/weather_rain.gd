@@ -13,6 +13,8 @@ const MAX_RAYS := COVER_NEAR_BUDGET + COVER_FAR_BUDGET + SPLASH_QUERIES + 1
 const MAX_SPLASHES := 64
 const MAX_ROOF_SHAPES := 32
 const SPLASH_LIFETIME := 0.18
+## Light and heavy beds, crossfaded by rain strength.
+const RAIN_LOOPS: Array[AudioStream] = [preload("res://assets/audio/weather/rain_light.wav"), preload("res://assets/audio/weather/rain_heavy.wav")]
 var clock: WorldClock
 var rng := RandomNumberGenerator.new()
 var fields: Array[MultiMeshInstance3D] = []
@@ -56,37 +58,14 @@ func _ready() -> void:
 	add_child(splash_instance)
 	listener = clock.get_parent().get_node_or_null("Player") as Node3D
 	low_pass = AudioServer.get_bus_effect(AudioServer.get_bus_index(&"Rain"), 0) as AudioEffectLowPassFilter
-	for heavy in [false, true]:
+	for loop in RAIN_LOOPS:
 		var voice := AudioStreamPlayer.new()
-		voice.stream = make_rain_audio(heavy)
+		voice.stream = loop
 		voice.bus = &"Rain"
 		voice.volume_db = -80
 		add_child(voice)
 		voice.play()
 		voices.append(voice)
-
-static func make_rain_audio(heavy: bool) -> AudioStreamWAV:
-	var noise := RandomNumberGenerator.new()
-	noise.seed = 917 if heavy else 319
-	var data := PackedByteArray()
-	const RATE := 22050
-	const COUNT := RATE * 4
-	data.resize(COUNT * 2)
-	var filtered := 0.0
-	for i in range(COUNT):
-		var white := noise.randf_range(-1, 1)
-		filtered = lerpf(filtered, white, 0.16 if heavy else 0.45)
-		var value := (filtered * 0.7 + white * 0.15) * 18000.0
-		# Fade only the seam to avoid an audible discontinuity in the loop.
-		value *= minf(1.0, minf(float(i), float(COUNT - 1 - i)) / 128.0)
-		data.encode_s16(i * 2, int(value))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = RATE
-	stream.data = data
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_end = COUNT
-	return stream
 
 func _exit_tree() -> void:
 	for voice in voices:

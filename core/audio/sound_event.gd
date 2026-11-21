@@ -12,5 +12,10 @@ extends Resource
 @export_range(0.0, 0.5) var pitch_variation := 0.0
 @export var attenuation: SoundAttenuation = preload("res://assets/audio/attenuation/near.tres")
 ## A repeat of the same event inside this window is skipped, so bursts of
-## contacts cannot fill the voice pool.
+## contacts cannot fill the voice pool. The window is shared by every source, so
+## leave it at zero for events several actors play at once.
 @export_range(0.0, 2.0) var cooldown_seconds := 0.0
+## When the pool is full, an event takes over the oldest voice of a lower
+## priority instead of being skipped: debris 0, actions and hits 1, gunshots and
+## blasts 2.
+@export_range(0, 3) var priority := 0

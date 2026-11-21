@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/near.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/effects/barrel_blast/metal_land_1.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/effects/barrel_blast/metal_land_2.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/effects/barrel_blast/metal_land_3.wav" id="5"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+volume_db = -12
+pitch_variation = 0.06
+attenuation = ExtResource("2")

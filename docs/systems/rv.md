@@ -227,7 +227,7 @@ F9 先在停用物理與處理的獨立 World3D 暫建完整候選世界，等�
 - DriverSeat 離座以 current_driver 的實際 Shape3D／局部變換和碰撞遮罩搜尋支撐地板。正常受阻保留所有權；破壞、拆除、死亡強制搜索外圈支撐／上方淨空並解除座位。
 - 駕駛坐姿由坐墊上的骨盆錨點定位，手腳各自對準方向盤和踏板。模型眼位接近 1.62 m 的駕駛鏡頭，視線越過儀表台並穿過擋風玻璃。
 - EquipmentPlacement 對一般設備放置累積繞面法線的旋轉和切面平移，細調後重新射線確認接觸仍屬原支撐，再用 PlacementRules 驗證。車體結構不進放置流程，V 吸附操作已移除。接觸箭頭與控制提示跟隨預覽清理。
-- RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與合成聲：一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](../../rv/visuals/README.md)。
+- RVStructurePanel.dependent_names／dependent_summary 沿 mount_support 遍歷本車設備，包含直接與間接依附。PanelWear 由 availability_changed 讀取耐久，以獨立材質疊加連續掉漆／金屬擦傷／玻璃裂紋，滿血恢復來源；EngineAppearance 維持引擎耐久呈現。take_damage 結算後才發 damage_applied，產生最多六組／車的碎片、粉塵與錄音：車板播放 `rv/panel_dent` 或 `rv/panel_break`（兩側聽起來一樣），結構碎片落地依玻璃或金屬播放 `rv/debris_glass`／`rv/debris_metal`，每組最多三次；一般受擊 2.4 秒，破壞 7 秒內清理。破壞以實體 BoxMesh 分割保留材質／厚度的彎折板片及玻璃，繼承接觸點速度，以外觀射線查詢落地／移動支撐後淡出；不加入物理碰撞體，不改既有支撐、HP 或保存所有權；set_health 的維修／讀檔不重播受擊效果。見 [RV 外觀規則](../../rv/visuals/README.md)。
 - v6 VehicleSnapshot 保存 structures、engine_item、headlights、hatch_open、ramp，拒絕舊版本且不遷移或補發。EngineState.unique_ids 對車輛快照與整份檢查點（含背包／地面／倉庫／POI／分解輸入）驗證引擎唯一性，並驗證模型與道具場景一致。
 - CraftingStation 依實際產物根層碰撞檢查出料空間，以產物旋轉後碰撞 AABB 底部計算出料高度。一般物品依空間嘗試原姿與兩軸 90 度平放，選擇有台面支撐的小幅偏移；工作保存固定姿態，預覽與實體共用變換，輪胎可在完整房車頂下平放交付。選姿保留牆頂與機台碰撞，暫時占床的未固定物品不改變下一件姿態；交付仍檢查全部碰撞。完成但阻塞的工作留在佇列，不重複出貨或扣款。PrintedPlayerBody 工作啟動時由 CraftingOutputPlacement 檢查平台站姿淨空，不足則將 crouching 姿勢寫入工作；預覽、交付與保存均沿用同一姿勢，產物留在台面。連蹲姿都受阻時等待清空台面／上方，不改道至地板。
 - CraftingPrintVisual 只讀工作進度顯示逐層列印；FabricatorRig 分別控制水平 X／Z 滑軌與 Y 升高，依高度增加立柱並同步獨立碰撞 Shape，沒有模型高度上限。完成／取消時水平兩軸以 0.65m/s 平滑回位，停靠後才以 0.45m/s 下降；偏移成品的加工路徑仍限制在實體滑軌行程內。printed_player 配方產生持久化的 PrintedPlayerBody Item；E 在休眠身體與唯一正式 Player 間交換位置、健康、肢體與體力，背包及控制器所有權不複製。切換前驗證狀態及兩處空間，保存經 ItemState 嚴格驗證。
@@ -240,7 +240,7 @@ EngineHatch／RearRamp 持有 progress、目標與 moving；維修蓋動作前�
 
 EngineHatch 以上緣後側固定鉸鏈向外旋轉 105°，用緩入緩出角度同步蓋板、把手碰撞與雙側伸縮支撐桿；障礙檢查沿轉動弧線每 ≤1° 採樣，停止後保留當下姿態。引擎槽標示只在完全開啟時顯示。
 
-VehicleAudio 持有車輛迴圈與剩餘的原型操作聲，車門一次性聲音交給共用 Sfx 播放。音源來源見 [音效說明](../../assets/audio/README.md)。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的必要 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。
+VehicleAudio 持有引擎、路噪、風聲與接觸迴圈，以及換檔、啟動熄火與撞擊這些會改變音訊狀態或依強度選層的提示；其餘操作回饋由 `Chassis.feedback` 傳入 `SoundEvent`，交給共用 Sfx 播放。音源來源見 [RV 錄音](../../assets/audio/rv/README.md)。WorkLighting 僅管理引擎維修燈，CabinLighting 跟獨立燈條；製作台不附帶燈或照明負載，Equipment 控制車內及維修燈，Overview 控制頭燈；平板不提供工作燈、儀表亮度或視覺震動控制，亮度與震動沿用保存值或新車預設；VehicleEnergy 支付各類可用燈具的負載。VehicleSnapshot 的必要 comfort 保存燈具請求、亮度與震動並在套用前檢查型別／有限值／範圍；獨立燈條以普通設備保存，已拆除燈條不補回，沒有舊車頂燈遷移。
 
 [test_rv_engine](../../tests/test_rv_engine.gd) 保留預裝、引擎所有權、交換、維修、性能、車燈、保存及製作檢查；終端呈現、坡板與駕駛姿勢需另行驗收。可見入口為 `rv_rebuild_playground.tscn`。
 

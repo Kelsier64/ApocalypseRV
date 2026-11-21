@@ -37,7 +37,6 @@ const SURFACE_FADE_SECONDS := 0.35
 const CABIN := AABB(Vector3(-1.82, 0.42, -5.90), Vector3(3.64, 2.16, 11.80))
 const HULL_SLOTS := ["front", "rear", "left_0", "left_1", "left_2", "right_0",
 	"right_1", "right_2", "roof_0", "roof_1", "roof_2"]
-static var streams: Dictionary = {}
 var engine_cue: AudioStreamPlayer3D
 var engine_start_sound: AudioStream
 var engine_stop_sound: AudioStream
@@ -60,37 +59,6 @@ var wind_player: SoundLoop
 var _surface_check := 0.0
 # Loop start offsets only; never touches gameplay randomness.
 @onready var rv: Chassis = get_parent()
-
-## Player sounds that still synthesize until their own migration: the tinnitus
-## tone (ringing, looped) and the revival inhale.
-static func synth(kind: String) -> AudioStreamWAV:
-	if streams.has(kind): return streams[kind]
-	var loop := kind == "ringing"
-	var duration := 1.0 if loop else 0.78
-	var rate := 22050
-	var data := PackedByteArray()
-	data.resize(int(duration * rate) * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4501 + kind.hash()
-	var breath_noise := 0.0
-	for i in range(data.size() / 2):
-		var t := float(i) / rate
-		var envelope := 1.0
-		var signal_value := sin(TAU * 1886.0 * t) * 0.32 + sin(TAU * 2294.0 * t) * 0.065
-		if kind == "inhale":
-			breath_noise = lerpf(breath_noise, rng.randf_range(-1, 1), .28)
-			envelope = pow(sin(PI * t / duration), .8)
-			signal_value = breath_noise * (1.0 + .3 * sin(TAU * (620.0 - 180.0 * t) * t))
-		data.encode_s16(i * 2, int(clampf(signal_value * envelope * 0.55, -1.0, 1.0) * 32767))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.data = data
-	if loop:
-		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		stream.loop_end = data.size() / 2
-	streams[kind] = stream
-	return stream
 
 func player() -> AudioStreamPlayer3D:
 	return _place(AudioStreamPlayer3D.new(), ENGINE_POSITION)

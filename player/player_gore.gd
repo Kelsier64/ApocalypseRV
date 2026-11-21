@@ -1,7 +1,9 @@
 extends Node3D
-## Bounded, cosmetic blood, surface stains and a synthesized wet tearing impact.
+## Bounded, cosmetic blood, surface stains and a recorded wet tearing impact.
+const TEAR_SOUND: SoundEvent = preload("res://assets/audio/events/player/gore_tear.tres")
+## Rollers and the first bite play the tear this much quieter than a severing wound.
+const LIGHT_TEAR_DB := -13.0
 var remaining := 2.0
-static var tear_sound: AudioStreamWAV
 const POOL_SHADER = preload("res://player/player_blood_pool.gdshader")
 static var pool_mesh: PlaneMesh
 
@@ -43,29 +45,7 @@ func _burst(actor: CharacterBody3D, context: Dictionary) -> void:
 	droplets.mesh = mesh
 	add_child(droplets)
 	droplets.emitting = true
-	if tear_sound == null:
-		tear_sound = AudioStreamWAV.new()
-		tear_sound.format = AudioStreamWAV.FORMAT_16_BITS
-		tear_sound.mix_rate = 22050
-		var data := PackedByteArray()
-		data.resize(12000)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 35131
-		var low := 0.0
-		for i in 6000:
-			var t := float(i) / 22050.0
-			low = lerpf(low, rng.randf_range(-1, 1), .23)
-			var envelope := exp(-t * 15.0) * minf(t * 400, 1)
-			var sample := (low * .75 + sin(t * TAU * (85 - t * 110)) * .35) * envelope
-			data.encode_s16(i * 2, int(clampf(sample, -1, 1) * 28000))
-		tear_sound.data = data
-	var sound := AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.stream = tear_sound
-	sound.volume_db = -15 if at_rollers else -2
-	sound.max_distance = 20
-	add_child(sound)
-	sound.play()
+	get_node("/root/Sfx").play(TEAR_SOUND, self, Vector3.ZERO, LIGHT_TEAR_DB if at_rollers else 0.0)
 
 func _stain(actor: CharacterBody3D) -> void:
 	if not is_instance_valid(actor): return

@@ -321,7 +321,7 @@ func cosmetic_lifecycle() -> void:
 		for tick in 240: first._physics_process(1.0 / 60.0)
 		check(fragment.bounces > 0 and fragment.settled, "Cosmetic fragment swept rays bounce and settle within four simulated seconds")
 		check(fragment_mesh.global_position.y >= domain.global_position.y and fragment_mesh.global_position.y <= domain.global_position.y + .3, "Settled fragment stays above the translated support surface")
-		check(first.landing_sound_count <= 5 and first.landing_voices.size() <= first.MAX_LANDING_VOICES, "Cosmetic metal landings bound both events and simultaneous audio voices")
+		check(first.landing_sound_count <= first.MAX_LANDINGS, "Cosmetic metal landings play a bounded number of hits")
 	first._process(.75)
 	var first_age: float = first.age
 	var fire_age: float = first.fire_material.get_shader_parameter("age")

@@ -1,6 +1,8 @@
 extends Node3D
-## Brief local impact puff and a synthesized thud, owned by the struck actor.
-static var thud: AudioStreamWAV
+## Brief local impact puff and a recorded body thud, owned by the struck actor.
+const THUD: SoundEvent = preload("res://assets/audio/events/monsters/body_hit.tres")
+## The thud gains this much from a crawl to a 20 m/s hit.
+const SLOW_HIT_DB := -8.0
 
 static func spawn(actor: Node3D, point: Vector3, direction: Vector3, speed: float) -> void:
 	var effect := Node3D.new()
@@ -31,24 +33,5 @@ static func _setup(effect: Node3D, point: Vector3, direction: Vector3, speed: fl
 	mesh.material = material
 	puff.mesh = mesh
 	effect.add_child(puff)
-	if thud == null:
-		thud = AudioStreamWAV.new()
-		thud.format = AudioStreamWAV.FORMAT_16_BITS
-		thud.mix_rate = 22050
-		var data := PackedByteArray()
-		data.resize(4410 * 2)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 43
-		for i in 4410:
-			var t := float(i) / 22050.0
-			var sample := (sin(TAU * (70.0*t - 80.0*t*t)) * .7 + rng.randf_range(-.3,.3)) * exp(-t*28.0) * minf(t*700.0,1.0)
-			data.encode_s16(i*2, int(sample*23000.0))
-		thud.data = data
-	var audio := AudioStreamPlayer3D.new()
-	audio.bus = &"Effects"
-	audio.stream = thud
-	audio.volume_db = lerpf(-9.0, -1.0, clampf(speed/20.0,0,1))
-	audio.max_distance = 35.0
-	effect.add_child(audio)
-	audio.play()
+	effect.get_node("/root/Sfx").play(THUD, effect, Vector3.ZERO, lerpf(SLOW_HIT_DB, 0.0, clampf(speed / 20.0, 0, 1)))
 	effect.get_tree().create_timer(.8).timeout.connect(effect.queue_free)

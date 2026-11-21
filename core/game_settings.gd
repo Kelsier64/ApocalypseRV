@@ -23,7 +23,7 @@ const RANGES := {
 }
 const AUDIO_BUSES := {
 	"music_volume": [&"Music"],
-	"effects_volume": [&"Effects", &"UI"],
+	"effects_volume": [&"Effects", &"UI", &"Self"],
 	"ambience_volume": [&"Ambience"],
 }
 const INPUT_KEYS := ["sensitivity", "invert_y", "walk_fov", "drive_fov"]

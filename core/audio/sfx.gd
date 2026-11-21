@@ -15,6 +15,9 @@ var _pool: Node3D
 var _voices: Array[AudioStreamPlayer3D] = []
 var _sources: Dictionary[AudioStreamPlayer3D, Node3D] = {}
 var _offsets: Dictionary[AudioStreamPlayer3D, Vector3] = {}
+## Priority and start time of what each voice plays, for taking over voices.
+var _priorities: Dictionary[AudioStreamPlayer3D, int] = {}
+var _started: Dictionary[AudioStreamPlayer3D, int] = {}
 ## Current muffle per bus name, 0 open to 1 sealed shell.
 var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0}
 ## Engine time in msec each event with a cooldown last played, by instance id
@@ -39,6 +42,8 @@ func set_listener_viewport(viewport: Viewport) -> void:
 	_voices.clear()
 	_sources.clear()
 	_offsets.clear()
+	_priorities.clear()
+	_started.clear()
 	_listener = viewport
 	_listener.audio_listener_enable_3d = true
 	for bus_name in _cover: _set_cover(bus_name, 0.0)
@@ -53,7 +58,7 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	if event.cooldown_seconds > 0.0:
 		if now - _last_played.get(event.get_instance_id(), -1000000) < event.cooldown_seconds * 1000.0: return false
 		_last_played[event.get_instance_id()] = now
-	var voice := _available_voice()
+	var voice := _available_voice(event.priority)
 	if voice == null: return false
 	var at := source.to_global(local_position)
 	voice.stream = event.samples[_rng.randi_range(0, event.samples.size() - 1)]
@@ -64,8 +69,16 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	voice.global_position = at
 	_sources[voice] = source
 	_offsets[voice] = local_position
+	_priorities[voice] = event.priority
+	_started[voice] = now
 	voice.play()
 	return true
+
+
+## Stops every one-shot still following source, such as an interrupted reload.
+func stop_from(source: Node3D) -> void:
+	for voice in _sources.keys():
+		if _sources[voice] == source: voice.stop()
 
 
 ## Cabin for a point inside any RV cabin of that world, otherwise Exterior.
@@ -84,10 +97,19 @@ func _vehicle_audio(world: World3D) -> Array[Node]:
 	return found
 
 
-func _available_voice() -> AudioStreamPlayer3D:
+func _available_voice(priority: int) -> AudioStreamPlayer3D:
 	for voice in _voices:
 		if not voice.playing: return voice
-	if _voices.size() >= MAX_VOICES: return null
+	if _voices.size() >= MAX_VOICES:
+		# Take over the oldest of the lowest-priority voices below this event.
+		var taken: AudioStreamPlayer3D = null
+		for voice in _voices:
+			var rank: int = _priorities.get(voice, 0)
+			if rank >= priority: continue
+			if taken == null or rank < _priorities.get(taken, 0) or (rank == _priorities.get(taken, 0) and _started.get(voice, 0) < _started.get(taken, 0)):
+				taken = voice
+		if taken != null: taken.stop()
+		return taken
 	if not is_instance_valid(_pool):
 		_pool = Node3D.new()
 		_pool.name = "SpatialOneShots"
@@ -107,6 +129,8 @@ func _process(delta: float) -> void:
 		if not voice.playing:
 			_sources.erase(voice)
 			_offsets.erase(voice)
+			_priorities.erase(voice)
+			_started.erase(voice)
 			continue
 		var source := _sources[voice]
 		if is_instance_valid(source) and source.is_inside_tree():

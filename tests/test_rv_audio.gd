@@ -38,6 +38,21 @@ func _run() -> void:
 	for i in range(sfx.MAX_VOICES - 1):
 		check(sfx.play(door_open, outside_source), "The pool allocates until its limit")
 	check(not sfx.play(door_close, outside_source), "The voice limit also applies across different events")
+	var shot := load("res://assets/audio/events/pistol/shot.tres") as SoundEvent
+	check(shot.priority > door_open.priority and sfx.play(shot, outside_source),
+		"A full pool hands a lower-priority voice to a gunshot")
+	check(sfx.play(shot, outside_source) and not sfx.play(door_close, outside_source),
+		"Taken voices still count against the limit for low-priority events")
+	var shooter := Node3D.new()
+	root.add_child(shooter)
+	for voice in sfx._voices: voice.stop()
+	var reload := load("res://assets/audio/events/pistol/reload.tres") as SoundEvent
+	check(sfx.play(reload, shooter) and sfx.play(door_open, outside_source), "Two sources play side by side")
+	sfx.stop_from(shooter)
+	var still_playing := 0
+	for voice in sfx._voices: if voice.playing: still_playing += 1
+	check(still_playing == 1, "Stopping one source's sounds leaves other sources playing")
+	shooter.queue_free()
 
 	sfx.set_listener_viewport(inside)
 	check(inside.audio_listener_enable_3d and not root.audio_listener_enable_3d, "Only the selected viewport listens")
@@ -55,10 +70,19 @@ func _run() -> void:
 
 	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Exterior")) == &"Effects", "Threat cue follows the effects slider")
 	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Rain")) == &"Ambience", "Rain follows the ambience slider")
+	check(AudioServer.get_bus_send(AudioServer.get_bus_index(&"Self")) == &"Master",
+		"The player's own ringing and breath bypass the World muffle")
 	var original: float = settings.get_setting(&"effects_volume")
 	settings.set_setting(&"effects_volume", 0.0, false)
 	check(AudioServer.is_bus_mute(AudioServer.get_bus_index(&"Effects")), "The effects slider can mute gameplay sounds")
+	check(AudioServer.is_bus_mute(AudioServer.get_bus_index(&"Self")), "The effects slider also mutes the player's own sounds")
 	settings.set_setting(&"effects_volume", original, false)
+	var loops: Array[AudioStream] = WeatherRain.RAIN_LOOPS.duplicate()
+	loops.append_array([load("res://player/player_injury_effects.gd").RINGING, load("res://equipment/scrapper_crush_effect.gd").GRINDING])
+	for loop: AudioStreamWAV in loops:
+		check(loop.loop_mode == AudioStreamWAV.LOOP_FORWARD and loop.mix_rate == 44100, "%s loops forward at 44.1 kHz" % loop.resource_path.get_file())
+	for loop: AudioStreamWAV in WeatherRain.RAIN_LOOPS:
+		check(loop.stereo, "%s keeps its stereo width" % loop.resource_path.get_file())
 
 	var vehicle: Node3D = load("res://rv/new_rv.tscn").instantiate()
 	root.add_child(vehicle)

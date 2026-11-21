@@ -1,15 +1,14 @@
 extends Node3D
 ## Boarding audio, plus placeholder arms for actors without an imported model.
+const GRIP_SOUND: SoundEvent = preload("res://assets/audio/events/monsters/climb_grip.tres")
+const STRIKE_SOUND: SoundEvent = preload("res://assets/audio/events/monsters/strike.tres")
+## Roughly where the hands are, so the sound sits on the hull rather than the feet.
+const HANDS := Vector3(0, 1.45, 0)
 var actor: Monster
 var arms: Array[Node3D] = []
-var sound: AudioStreamPlayer3D
 var strike: float = 0.0
 var phase: float = 0.0
 var last_mode: int = 0
-var grip_sound: AudioStreamWAV
-var strike_sound: AudioStreamWAV
-static var shared_grip_sound: AudioStreamWAV
-static var shared_strike_sound: AudioStreamWAV
 
 func _ready() -> void:
 	actor = get_parent()
@@ -29,40 +28,12 @@ func _ready() -> void:
 		arm.add_child(mesh)
 		add_child(arm)
 		arms.append(arm)
-	sound = AudioStreamPlayer3D.new()
-	sound.bus = &"Effects"
-	sound.max_distance = 25.0
-	sound.volume_db = -12.0
-	add_child(sound)
-	if shared_grip_sound == null:
-		shared_grip_sound = _make_sound(0.18, 170.0)
-		shared_strike_sound = _make_sound(0.25, 75.0)
-	grip_sound = shared_grip_sound
-	strike_sound = shared_strike_sound
 	actor.attack_landed.connect(_on_attack)
-
-func _make_sound(duration: float, frequency: float) -> AudioStreamWAV:
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = 22050
-	var count := int(duration * stream.mix_rate)
-	var bytes := PackedByteArray()
-	bytes.resize(count * 2)
-	var random := RandomNumberGenerator.new()
-	random.seed = 741
-	for index in range(count):
-		var t := float(index) / stream.mix_rate
-		var envelope := exp(-t * 23.0) * minf(t * 600.0, 1.0)
-		var value := (sin(TAU * frequency * t) * 0.65 + random.randf_range(-0.35, 0.35)) * envelope
-		bytes.encode_s16(index * 2, int(value * 22000.0))
-	stream.data = bytes
-	return stream
 
 func _on_attack(_target: Node3D, source: String) -> void:
 	if source != "door_breach" and source != "underfoot": return
 	strike = 0.3
-	sound.stream = strike_sound
-	sound.play()
+	get_node("/root/Sfx").play(STRIKE_SOUND, actor, HANDS)
 
 func _process(delta: float) -> void:
 	if actor.is_dead: return
@@ -70,8 +41,7 @@ func _process(delta: float) -> void:
 	strike = maxf(0.0, strike - delta)
 	var mode := actor.boarding.mode
 	if mode != last_mode and actor.locomotion_state == Monster.LocomotionState.CLIMBING:
-		sound.stream = grip_sound
-		sound.play()
+		get_node("/root/Sfx").play(GRIP_SOUND, actor, HANDS)
 	last_mode = mode
 	for index in range(arms.size()):
 		var angle := 0.1

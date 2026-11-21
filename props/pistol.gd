@@ -6,18 +6,14 @@ var _shot_time := 0.0
 var _reload_progress := -1.0
 var _slide: Node3D
 var _magazine: Node3D
-var _sound: AudioStreamPlayer3D
-static var _sounds: Dictionary = {}
+const SHOT_SOUND: SoundEvent = preload("res://assets/audio/events/pistol/shot.tres")
+const EMPTY_SOUND: SoundEvent = preload("res://assets/audio/events/pistol/dry_fire.tres")
+const RELOAD_SOUND: SoundEvent = preload("res://assets/audio/events/pistol/reload.tres")
 
 func _ready() -> void:
 	super._ready()
 	_slide = find_child("Slide", true, false) as Node3D
 	_magazine = find_child("Magazine", true, false) as Node3D
-	_sound = AudioStreamPlayer3D.new()
-	_sound.bus = &"Effects"
-	_sound.max_distance = 65.0
-	_sound.unit_size = 8.0
-	add_child(_sound)
 	set_process(presentation_only)
 
 func capture_item_state() -> Dictionary:
@@ -34,14 +30,15 @@ func muzzle_position() -> Vector3:
 
 func play_shot() -> void:
 	_shot_time = .10
-	_play_sound("shot")
+	_play_sound(SHOT_SOUND)
 
 func play_empty() -> void:
-	_play_sound("empty")
+	_play_sound(EMPTY_SOUND)
 
 func set_reload_progress(progress: float) -> void:
-	if progress >= 0.0 and _reload_progress < 0.0: _play_sound("reload")
-	if progress < 0.0 and _reload_progress >= 0.0 and _sound != null: _sound.stop()
+	if progress >= 0.0 and _reload_progress < 0.0: _play_sound(RELOAD_SOUND)
+	# An interrupted reload goes silent; a shot tail still ringing stops with it.
+	if progress < 0.0 and _reload_progress >= 0.0 and is_inside_tree(): get_node("/root/Sfx").stop_from(self)
 	_reload_progress = progress
 	if _magazine != null:
 		_magazine.position.y = -.06 * sin(progress * PI) if progress >= 0.0 else 0.0
@@ -100,38 +97,5 @@ func play_impact(point: Vector3, normal: Vector3) -> void:
 	tween.tween_property(spark, "scale", Vector3.ONE * .08, .12)
 	tween.tween_callback(spark.queue_free)
 
-func _play_sound(kind: String) -> void:
-	if _sound == null: return
-	if not _sounds.has(kind): _sounds[kind] = _make_sound(kind)
-	_sound.stream = _sounds[kind]
-	_sound.volume_db = -5.0 if kind == "shot" else -11.0
-	_sound.play()
-
-static func _make_sound(kind: String) -> AudioStreamWAV:
-	# Original deterministic PCM: a short mechanical crack and low body,
-	# separate magazine clicks. No downloaded recordings or runtime generators.
-	var rate := 22050
-	var duration := .38 if kind == "shot" else (1.4 if kind == "reload" else .09)
-	var samples := PackedByteArray()
-	samples.resize(int(rate * duration) * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7201
-	var smooth := 0.0
-	for i in samples.size() / 2:
-		var t := float(i) / rate
-		var noise := rng.randf_range(-1.0, 1.0)
-		smooth = lerpf(smooth, noise, .18)
-		var value := 0.0
-		if kind == "shot":
-			value = noise * exp(-t * 74.0) * .68 + smooth * exp(-t * 17.0) * .55 + sin(TAU * (100.0 * t - 52.0 * t * t)) * exp(-t * 24.0) * .35
-		else:
-			var clicks: Array = [0.0, .32, 1.12] if kind == "reload" else [0.0]
-			for start: float in clicks:
-				var local := t - start
-				if local >= 0.0: value += (noise * .40 + sin(local * TAU * 1700.0) * .18) * exp(-local * 90.0)
-		samples.encode_s16(i * 2, int(clampf(value, -.98, .98) * 32767))
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = rate
-	stream.data = samples
-	return stream
+func _play_sound(event: SoundEvent) -> void:
+	if is_inside_tree(): get_node("/root/Sfx").play(event, self, to_local(muzzle_position()) if event == SHOT_SOUND else Vector3.ZERO)
