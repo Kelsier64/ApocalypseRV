@@ -105,7 +105,8 @@ func apply_tire(vehicle: Chassis, field: WorldField, index: int, wheel: VehicleW
 	var radius := wheel.wheel_radius
 	var along := relative.dot(forward)
 	var across := relative.dot(lateral)
-	var slip := Vector2((free_spin * radius - along) / maxf(1.5, absf(along)), -atan2(across, maxf(1.5, absf(along))))
+	var reference_speed := maxf(1.5, absf(along))
+	var slip := Vector2((free_spin * radius - along) / reference_speed, -atan2(across, reference_speed))
 	var surface := RVTireModel.surface_grip(profile, field, point)
 	var condition := vehicle.wheel_health[index]
 	var grip := RVTireModel.grip_limit(profile, load, vehicle.mass * 9.8 * 0.25, surface, condition)
@@ -118,8 +119,11 @@ func apply_tire(vehicle: Chassis, field: WorldField, index: int, wheel: VehicleW
 	var rolling := -load * rolling_drag * clampf(along / 2.0, -1.0, 1.0)
 	var tread_force := (force + Vector2(rolling, 0.0)).limit_length(grip)
 	vehicle.apply_force(forward * tread_force.x + lateral * tread_force.y, point - vehicle.global_position)
-	if absf(slip.x) > profile.longitudinal_peak_slip or absf(slip.y) > profile.lateral_peak_angle:
-		slip_speed = maxf(slip_speed, Vector2(free_spin * radius - along, across).length())
+	# Audio measures the wheel speed retained from the previous contact solve.
+	# The free-spin prediction includes this step's torque before the tire reacts.
+	var longitudinal_slip_speed := spin[index] * radius - along
+	if absf(longitudinal_slip_speed) > profile.longitudinal_peak_slip * reference_speed or absf(slip.y) > profile.lateral_peak_angle:
+		slip_speed = maxf(slip_speed, Vector2(longitudinal_slip_speed, across).length())
 	return force.x
 
 static func apply_support(vehicle: Chassis, wheel: VehicleWheel3D, load: float) -> void:

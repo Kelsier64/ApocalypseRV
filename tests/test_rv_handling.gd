@@ -82,12 +82,16 @@ func run() -> void:
 	check(curb_up <= PROFILE.rollover_side_up_dot, "A strong sideways curb impact can trip the RV")
 	check(trip.wheel_health[1] < trip.wheel_health[0] or trip.wheel_health[3] < trip.wheel_health[2], "Tires on the impacted side suffer more damage")
 	world.free()
-	await check_high_gear_acceleration()
+	await check_straight_line_driving()
+	# Let playback queued during driving shut down before the headless audio server.
+	for voice in root.get_node("Sfx")._voices: voice.stop()
+	await process_frame
+	await process_frame
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: tire grip, handling, rollover and high-gear acceleration")
+	if failures.is_empty(): print("PASS: tire grip, handling, rollover, acceleration and tire audio")
 	quit(1 if not failures.is_empty() else 0)
 
-func check_high_gear_acceleration() -> void:
+func check_straight_line_driving() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -101,7 +105,15 @@ func check_high_gear_acceleration() -> void:
 	vehicle.allow_test_controls = true
 	vehicle.set_handbrake(false)
 	vehicle.set_engine_running(true)
+	var audio := vehicle.get_node("Audio")
 	vehicle.control_override = {"throttle": 1.0}
+	vehicle.set_gear(1)
+	var squealed := false
+	for frame in 4 * Engine.physics_ticks_per_second:
+		await physics_frame
+		squealed = squealed or audio.tire_player.playing
+	check(audio.road_layers[RVTireModel.Surface.ASPHALT].playing and not squealed,
+		"Full-throttle straight launch on asphalt plays rolling noise without tire squeal")
 	for gear in [2, 3, 4]:
 		vehicle.set_gear(gear)
 		var shift_speed := vehicle.road_speed()
@@ -113,4 +125,10 @@ func check_high_gear_acceleration() -> void:
 		if gear > 2:
 			check(vehicle.road_speed() > shift_speed and vehicle.engine_rpm() > shift_rpm,
 				"Full throttle on level pavement builds speed and RPM after shifting into gear %d" % gear)
+	vehicle.control_override = {"brake": 1.0}
+	squealed = false
+	for frame in Engine.physics_ticks_per_second:
+		await physics_frame
+		squealed = squealed or audio.tire_player.playing
+	check(squealed, "Hard braking from speed still plays tire squeal")
 	world.free()
