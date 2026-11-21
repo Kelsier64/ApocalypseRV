@@ -1,8 +1,9 @@
-[gd_resource type="Resource" script_class="InteriorProfile" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="InteriorProfile" load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://world/instances/interior_profile.gd" id="profile"]
 [ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room"]
 [ext_resource type="PackedScene" path="res://world/poi_kit/rooms/megashelter/stairwell.tscn" id="scene"]
+[ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/corridor.tres" id="reverb"]
 
 [sub_resource type="Resource" id="entry"]
 script = ExtResource("room")
@@ -13,6 +14,7 @@ selection_group = &"entry"
 
 [resource]
 script = ExtResource("profile")
+reverb = ExtResource("reverb")
 profile_id = &"bunker_stairwell"
 rooms = Array[ExtResource("room")]([SubResource("entry")])
 min_rooms = 1

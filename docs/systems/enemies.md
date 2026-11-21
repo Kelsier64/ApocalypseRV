@@ -192,7 +192,7 @@ Checkpoint 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（�
 
 既有 v8 道路、v8／v9 貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 保存 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；倒數狀態以 `proximity_fuse_remaining` 保存，缺欄位拒絕載入，死亡來源不保存。檢查點使用 v6、生成 v14，還原已保存活怪與清空區域。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
 
-`barrel_explosion_effect.gd` 負責獨立 8 秒特效生命週期：短閃光與單盞有陰影點光、Blender 預烘焙火煙、貼地揚塵、少量火星及八片彎曲桶身金屬。共用兩張火煙圖集，每次爆炸有獨立材質時間；火煙 shader 在 BoxMesh 邊界內沿視線積分 12 個密度樣本，以不透明場景深度截斷，避免駕駛鏡頭穿過中央平面時特效消失。火焰快速膨脹上升，煙霧缓升至消散；沒有即時流體求解。碎片以掃掠射線反彈／停落，每次爆炸最多五次落地聲，彼此間隔 `LANDING_SPACING`；爆炸與落地聲都是預先烘焙的音檔，經由 `assets/audio/events/barrel/` 的事件交給共用 `Sfx` 播放，爆炸聲的優先度能在聲源池滿時搶到聲道。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；揚塵只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物及其他 entity domain。所有視覺節點不含碰撞、傷害或保存身份，結束後一起釋放。
+`barrel_explosion_effect.gd` 負責獨立 8 秒特效生命週期：短閃光與單盞有陰影點光、Blender 預烘焙火煙、貼地揚塵、少量火星及八片彎曲桶身金屬。共用兩張火煙圖集，每次爆炸有獨立材質時間；火煙 shader 在 BoxMesh 邊界內沿視線積分 12 個密度樣本，以不透明場景深度截斷，避免駕駛鏡頭穿過中央平面時特效消失。火焰快速膨脹上升，煙霧缓升至消散；沒有即時流體求解。碎片以掃掠射線反彈／停落，每次爆炸最多五次落地聲，彼此間隔 `LANDING_SPACING`；爆炸與落地聲都是預先烘焙的音檔，經由 `assets/audio/events/barrel/` 的事件交給共用 `Sfx` 播放，爆炸聲的優先度能在聲源池滿時搶到聲道，在戶外還帶 `OutdoorEcho` 回音。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；揚塵只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物及其他 entity domain。所有視覺節點不含碰撞、傷害或保存身份，結束後一起釋放。
 
 ### 攀爬與戰鬥
 

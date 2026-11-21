@@ -16,6 +16,9 @@ const VEHICLE_RANGE: SoundAttenuation = preload("res://assets/audio/attenuation/
 const CONTACT_DB := -11.0
 const CONTACT_RANGE_DB := 17.0
 const ENGINE_POSITION := Vector3(0, 0, -5.3)
+# Engine masking is full in the cabin and within MASK_NEAR of the bay, gone by MASK_REACH.
+const MASK_NEAR := 4.0
+const MASK_REACH := 20.0
 # Audio-only shift: load drops out and the firing rate glides to the new gear.
 const SHIFT_SECONDS := 0.3
 # Per-second response of the firing rate during a shift, a time constant near 0.3 s.
@@ -82,7 +85,9 @@ func _ready() -> void:
 	engine_player.name = "BusEngine"
 	engine_player.stream = engine_stream
 	engine_cue = player()
-	engine_cue.bus = bus_for_local(ENGINE_POSITION)
+	# The engine has its own bus, so its masking of other outside sound skips it.
+	engine_player.bus = &"Engine"
+	engine_cue.bus = &"Engine"
 	engine_start_sound = load("res://assets/audio/rv/engine_start.wav")
 	engine_stop_sound = load("res://assets/audio/rv/engine_stop.wav")
 	tire_player = _loop(load("res://assets/audio/rv/tire_slip.wav"), Vector3.ZERO, CONTACT_DB)
@@ -109,6 +114,15 @@ func play_door_motion(door: Node3D, latch: Vector3, opening: bool, started: bool
 ## True when a world position lies inside the finished cabin. The roof counts as outside.
 func contains_cabin_point(world_position: Vector3) -> bool:
 	return CABIN.has_point(rv.to_local(world_position))
+
+## How strongly the running engine masks other outside sound for a listener, 0 to
+## 1: grows with revs and fades with distance from the bay outside the cabin.
+func engine_masking(listener_position: Vector3) -> float:
+	if engine_presence <= 0.0: return 0.0
+	var near := 1.0
+	if not contains_cabin_point(listener_position):
+		near = 1.0 - smoothstep(MASK_NEAR, MASK_REACH, rv.to_global(ENGINE_POSITION).distance_to(listener_position))
+	return engine_presence * engine_speed * near
 
 ## Mix bus for a sound at a chassis-local position.
 static func bus_for_local(local_position: Vector3) -> StringName:

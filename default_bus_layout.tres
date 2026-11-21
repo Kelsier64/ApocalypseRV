@@ -6,6 +6,9 @@ cutoff_hz = 20500.0
 [sub_resource type="AudioEffectLowPassFilter" id="cabin_muffle"]
 cutoff_hz = 20500.0
 
+[sub_resource type="AudioEffectLowPassFilter" id="engine_muffle"]
+cutoff_hz = 20500.0
+
 [sub_resource type="AudioEffectLowPassFilter" id="rain_muffle"]
 cutoff_hz = 16000.0
 
@@ -105,3 +108,11 @@ bus/12/mute = false
 bus/12/bypass_fx = false
 bus/12/volume_db = 0.0
 bus/12/send = &"Master"
+bus/13/name = &"Engine"
+bus/13/solo = false
+bus/13/mute = false
+bus/13/bypass_fx = false
+bus/13/volume_db = 0.0
+bus/13/send = &"Effects"
+bus/13/effect/0/effect = SubResource("engine_muffle")
+bus/13/effect/0/enabled = false

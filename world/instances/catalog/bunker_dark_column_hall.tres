@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dbu7xvkjt8lsc" path="res://world/instances/interior_profile.gd" id="profile"]
 [ext_resource type="Script" uid="uid://ch7q18o5qk8hh" path="res://world/instances/room_definition.gd" id="room"]
 [ext_resource type="PackedScene" path="res://world/poi_kit/rooms/bunker/dark_column_hall.tscn" id="scene"]
+[ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/hall.tres" id="reverb"]
 
 [sub_resource type="Resource" id="entry"]
 script = ExtResource("room")
@@ -13,6 +14,7 @@ selection_group = &"entry"
 
 [resource]
 script = ExtResource("profile")
+reverb = ExtResource("reverb")
 profile_id = &"bunker_dark_column_hall"
 rooms = Array[ExtResource("room")]([SubResource("entry")])
 min_rooms = 1

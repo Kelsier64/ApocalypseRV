@@ -43,8 +43,16 @@ func _run() -> void:
 		"A full pool hands a lower-priority voice to a gunshot")
 	check(sfx.play(shot, outside_source) and not sfx.play(door_close, outside_source),
 		"Taken voices still count against the limit for low-priority events")
+	check(sfx._echoes.size() == 2 and sfx._echoes.all(func(echo): return echo.playing and echo.bus == &"OutdoorEcho"),
+		"Each outdoor gunshot adds an echo tail")
+	for i in range(sfx.MAX_ECHOES + 2): sfx.play(shot, outside_source)
+	check(sfx._echoes.size() == sfx.MAX_ECHOES and sfx._voices.size() == sfx.MAX_VOICES,
+		"Echo tails use their own capped voices instead of the one-shot pool")
 	var shooter := Node3D.new()
 	root.add_child(shooter)
+	for voice in sfx._voices + sfx._echoes: voice.stop()
+	check(sfx.play(door_open, outside_source) and not sfx._echoes.any(func(echo): return echo.playing),
+		"Events without an echo level play dry")
 	for voice in sfx._voices: voice.stop()
 	var reload := load("res://assets/audio/events/pistol/reload.tres") as SoundEvent
 	check(sfx.play(reload, shooter) and sfx.play(door_open, outside_source), "Two sources play side by side")
@@ -58,9 +66,20 @@ func _run() -> void:
 	check(inside.audio_listener_enable_3d and not root.audio_listener_enable_3d, "Only the selected viewport listens")
 	check(not sfx.play(door_open, outside_source), "The POI pool rejects coordinates from the highway world")
 	check(sfx.play(door_open, inside_source), "The POI pool accepts sources from its own World3D")
+	check(sfx.play(shot, inside_source) and sfx._echoes.is_empty(), "A gunshot inside a POI interior has no outdoor echo")
 	check(inside.get_node("SpatialOneShots").get_child(0).get_world_3d() == inside.find_world_3d(),
 		"The POI player resolves its position in the interior world")
+	var hall := load("res://assets/audio/rooms/hall.tres") as AudioEffectReverb
+	sfx.set_listener_viewport(inside, hall)
+	var effects := AudioServer.get_bus_index(&"Effects")
+	check(AudioServer.get_bus_effect_count(effects) == 1 and AudioServer.get_bus_effect(effects, 0) == hall,
+		"An interior listener hears world sound through its room reverb")
 	sfx.set_listener_viewport(root)
+	check(AudioServer.get_bus_effect_count(effects) == 0, "The outdoor listener hears no room reverb")
+	for file in DirAccess.get_files_at("res://world/instances/catalog"):
+		if file.get_extension() != "tres": continue
+		var profile := load("res://world/instances/catalog".path_join(file)) as InteriorProfile
+		check(profile != null and profile.reverb != null, "%s names a room reverb preset" % file)
 	var burst := door_close.duplicate() as SoundEvent
 	burst.cooldown_seconds = 1.0
 	check(sfx.play(burst, outside_source) and not sfx.play(burst, outside_source) and sfx.play(door_close, outside_source),
@@ -99,7 +118,12 @@ func _run() -> void:
 		"The RV roof does not count as its cabin")
 	check(sfx.bus_at(cabin, chassis.get_world_3d()) == &"Cabin" and sfx.bus_at(outside, chassis.get_world_3d()) == &"Exterior",
 		"Positioned events route by whether they play inside the cabin")
-	check(audio.engine_player.bus == &"Exterior", "The engine bay sits outside the cabin mix")
+	for echo in sfx._echoes: echo.stop()
+	check(sfx.play(shot, chassis, chassis.to_local(cabin)) and not sfx._echoes.any(func(echo): return echo.playing),
+		"A gunshot inside the cabin has no outdoor echo")
+	check(audio.engine_player.bus == &"Engine" and audio.engine_cue.bus == &"Engine"
+		and AudioServer.get_bus_send(AudioServer.get_bus_index(&"Engine")) == &"Effects",
+		"The engine plays on its own bus under the effects slider")
 	var listener := Camera3D.new()
 	root.add_child(listener)
 	listener.make_current()
@@ -111,6 +135,7 @@ func _run() -> void:
 	await _settle_mix(sfx)
 	var cabin_exterior := _bus_mix(&"Exterior")
 	var cabin_cabin := _bus_mix(&"Cabin")
+	check(_bus_mix(&"Engine").is_equal_approx(cabin_exterior), "The engine bay is muffled like the rest of the exterior from the cabin")
 	check(cabin_exterior.x < outside_exterior.x and cabin_exterior.y < outside_exterior.y, "The cabin lowers the exterior bus level and cutoff")
 	check(outside_cabin.x < cabin_cabin.x and outside_cabin.y < cabin_cabin.y, "Standing outside lowers the cabin bus level and cutoff")
 	listener.queue_free()
@@ -167,8 +192,21 @@ func _run() -> void:
 	chassis.set_gear(0)
 	chassis.allow_test_controls = true
 	chassis.control_override = {"throttle": 1.0}
+	var driver := Camera3D.new()
+	root.add_child(driver)
+	driver.make_current()
+	driver.global_position = cabin
 	for i in range(Engine.physics_ticks_per_second):
 		await physics_frame
+	var unmasked: float = sfx.CLOSED_GAIN_DB * sfx._cover[&"Exterior"]
+	var exterior_duck := _bus_mix(&"Exterior").x - unmasked
+	var speaker_duck := exterior_duck + AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"))
+	check(exterior_duck < -1.0, "A revving engine masks other outside sound for the driver")
+	check(speaker_duck < 0.0 and speaker_duck > exterior_duck, "The Slender Speaker is masked less than other outside sound")
+	check(is_equal_approx(_bus_mix(&"Engine").x, sfx.CLOSED_GAIN_DB * sfx._cover[&"Engine"]), "The engine does not mask itself")
+	check(audio.engine_masking(cabin) > audio.engine_masking(outside) and audio.engine_masking(chassis.to_global(Vector3(40, 1.6, 0))) == 0.0,
+		"Engine masking fades with distance from the RV")
+	driver.queue_free()
 	check(chassis.engine_pedal() > 0.9 and audio.engine_load > 0.9
 		and engine_player.pitch_scale > BusEngineStream.pitch_for(idle_rpm),
 		"Revving in neutral raises the bus playback speed and selects loaded exhaust")
@@ -196,7 +234,7 @@ func _run() -> void:
 
 	vehicle.queue_free()
 	# Silence pooled voices before quitting; see the exit-crash row in docs/plans/README.md.
-	for voice in sfx._voices: voice.stop()
+	for voice in sfx._voices + sfx._echoes: voice.stop()
 	await process_frame
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")

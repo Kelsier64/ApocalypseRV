@@ -9,6 +9,9 @@ const MAX_SUPPORTED_ROOMS := 60
 @export var max_rooms := 60
 @export var floor_spacing := 4.5
 @export var max_floors := 3
+## Room sound for every world sound while the player is inside: one of the
+## presets in assets/audio/rooms/ (small_room, corridor, hall).
+@export var reverb: AudioEffectReverb
 
 func room(id: String, version := -1) -> InteriorRoomDefinition:
 	for definition in rooms:

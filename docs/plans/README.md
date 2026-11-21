@@ -10,7 +10,7 @@
 |---|---|---|
 | [RV 擬真操控、翻車與車損](rv-handling-rollover.md) | 首版已實作並合回 main，等待人工驗收 | 輪胎、傳動、部位車損、乘員與跳車傷害、兩段千斤頂救援的試玩手感與聽感 |
 | [地形與道路改造](terrain-overhaul.md) | 階段 1–3 已接入，等待使用者檢查實際渲染；階段 4 尚未開始 | 湖泊、水流玩法、RV 長途輪驅與完整串流成本；橋梁的實際輪驅驗收 |
-| [音效系統重做](audio-overhaul.md) | 階段 3 完成，所有聲音都改用錄音 | 階段 4 空間處理（引擎遮蔽、POI 殘響、戶外回音），再補腳步、怪物、環境音和配樂 |
+| [音效系統重做](audio-overhaul.md) | 階段 4 完成：戶外回音、引擎遮蔽與 POI 殘響 | 階段 5 補腳步、怪物、環境音和配樂 |
 | [架構重構](architecture-refactor.md) | 盤點完成，小清理已完成 | 從 main 分片重構；大型變更逐項提案 |
 
 ## 待人工驗收
@@ -30,6 +30,7 @@
 | 駕駛體驗 | 一般操作、UI 瞄準、音效聽感 |
 | RV 操作回饋與撞擊錄音 | 在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 站在車外與車廂內，從 Esc 的 Playground 頁逐一試聽：錄音是否符合動作、音量是否一致、車內外是否合理 |
 | 手槍、車板、怪物、血肉、油桶、絞碎機、雨與耳鳴錄音 | 在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 的 Playground 頁選事件，分別在車旁與車廂內播放，並開關雨與耳鳴。確認錄音符合動作、換彈三段對得上動畫、同類音量一致、雨聲大小合理。實際遊戲中再聽一次開槍、怪物攀爬與絞碎機 |
+| 戶外回音、引擎遮蔽與 POI 殘響 | 在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 的 Playground 頁選 `pistol/shot` 或 `barrel/blast`，比較車旁、車廂內與 45 m 外的回音；開啟 Slender Speaker 預警，從 Driver seat 情境空檔拉轉，聽其他車外聲是否被壓低、預警是否仍辨得出方向；切換 Room reverb 比較三種室內預設。實際遊戲中進一次地堡與巨型避難所確認殘響 |
 | 新式測試場 | 在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 用正式操作走動、開門、入座拉轉，並用 Esc 的 Playground 頁切情境與播放：確認比舊的快捷鍵版本好用，三個情境的起點正確 |
 | Slender Speaker 遠距預警 | 在[喇叭試聽場景](../../tests/playgrounds/slender_speaker_audio_playground.tscn)從 900 m 開近：遠處悶、帶回音、方向較模糊，靠近時持續變響變清楚，最後幾十公尺最有壓迫感；近距離限幅是否刺耳，回音是否太濕；關門與開門的差別。在正式世界確認關門行駛時仍能在看見巨人前聽出方向 |
 | 短波收音機 | 實際遊玩時的人聲能否聽清、廣播間隔與車內音量 |
