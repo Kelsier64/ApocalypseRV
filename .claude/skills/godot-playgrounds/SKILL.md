@@ -80,11 +80,19 @@ godot --path . --log-file .godot/<topic>-playground.log res://tests/playgrounds/
 godot --path . --log-file .godot/<topic>-playground.log res://tests/playgrounds/<topic>_playground.tscn -- --scenario="Driver seat"
 ```
 
-Then give the user a short checklist in chat:
+Every hand-off message to the user contains all of these, even when the playground is already open:
 
-- what to do, in game terms ("sit in the driver seat, rev in neutral"), plus which Playground tab entries to use;
-- what to listen or look for, and what counts as wrong;
-- what to report back.
+1. **What is being tested**: one or two sentences naming the change and the question the user's play answers ("Does the new engine idle sound loop without a click?").
+2. **The launch command** so the user can start or restart it themselves: the exact line in its own `powershell` block, one block per scenario that matters. Give `--path` as the absolute path of the checkout you worked in (this folder, or the worktree), so it runs from any folder:
+
+   ```powershell
+   godot --path "<absolute checkout path>" res://tests/playgrounds/<topic>_playground.tscn -- --scenario="Driver seat"
+   ```
+
+3. **A short checklist**:
+   - what to do, in game terms ("sit in the driver seat, rev in neutral"), plus which Playground tab entries to use;
+   - what to listen or look for, and what counts as wrong;
+   - what to report back.
 
 Do not ask whether to verify, do not loop on screenshots, and never claim you saw or heard it.
 
