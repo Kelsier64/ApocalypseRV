@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/steps.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_a.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_b.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_c.wav" id="5"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_d.wav" id="6"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_e.wav" id="7"]
+[ext_resource type="AudioStream" path="res://assets/audio/apparitions/black_step_f.wav" id="8"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")])
+volume_db = -12
+pitch_variation = 0.06
+attenuation = ExtResource("2")
+priority = 1

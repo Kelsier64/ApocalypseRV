@@ -44,6 +44,9 @@ func _ready() -> void:
 	add_child(grab)
 	ragdoll = preload("res://enemies/raker_ragdoll.gd").new()
 	add_child(ragdoll)
+	var audio := preload("res://enemies/raker_audio.gd").new()
+	audio.name = "Audio"
+	add_child(audio)
 	stagger_amount = 0.0
 	body_collision_shape.shape = body_collision_shape.shape.duplicate()
 	$HitBox/HitBoxShape.shape = $HitBox/HitBoxShape.shape.duplicate()

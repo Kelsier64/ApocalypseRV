@@ -10,7 +10,7 @@
 |---|---|---|
 | [RV 擬真操控、翻車與車損](rv-handling-rollover.md) | 首版已實作並合回 main，等待人工驗收 | 輪胎、傳動、部位車損、乘員與跳車傷害、兩段千斤頂救援的試玩手感與聽感 |
 | [地形與道路改造](terrain-overhaul.md) | 階段 1–3 已接入，等待使用者檢查實際渲染；階段 4 尚未開始 | 湖泊、水流玩法、RV 長途輪驅與完整串流成本；橋梁的實際輪驅驗收 |
-| [音效系統重做](audio-overhaul.md) | 階段 1–4 完成並已試聽；階段 5 的怪物聲音方向已定案 | 階段 5：先做怪物特徵聲，再補腳步、環境音、操作聲和關鍵時刻配樂 |
+| [音效系統重做](audio-overhaul.md) | 階段 1–4 完成並已試聽；階段 5 的怪物聲音已實作，待試聽 | 階段 5：玩家腳步、環境音、操作聲和關鍵時刻配樂 |
 | [架構重構](architecture-refactor.md) | 盤點完成，小清理已完成 | 從 main 分片重構；大型變更逐項提案 |
 
 ## 待人工驗收
@@ -29,6 +29,7 @@
 | [Mile End 廢棄小站](../../tests/playgrounds/mile_end_playground.tscn) | 開 RV 停靠、徒步搜店再搬油回車，確認油桶人露出的位置與時機。預設種子 25 可遇敵。 |
 | 軍事地堡 | 長局收益與遭遇節奏、自由遊玩、效能 |
 | 駕駛體驗 | 一般操作、UI 瞄準、音效聽感 |
+| 怪物聲音 | 在[怪物音效試聽場](../../tests/playgrounds/monster_audio_playground.tscn)逐一切情境：Raker 的腳步、低吼與喀噠是否在中距離就聽得出來，橫掃與抓咬前的預備聲是否來得及閃；油桶人在 8 m 外是否完全無聲、起身與跑動是否好認、倒數嘶聲是否夠急；黑影 4 m 內的呼吸、尖叫與腳步；白影不回頭時能否聽出它在身後、越近越清楚。在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 的 Driver seat 拉轉時播 `slender_speaker/step` 與 `apparitions/white_appear`，確認車內仍聽得到。實際遊戲中再聽一次地堡的 Raker 與霧中的巨人腳步 |
 | 新式測試場 | 在 [RV 音效試聽場](../../tests/playgrounds/rv_audio_playground.tscn) 用正式操作走動、開門、入座拉轉，並用 Esc 的 Playground 頁切情境與播放：確認比舊的快捷鍵版本好用，三個情境的起點正確 |
 | Slender Speaker 遠距預警 | 在[喇叭試聽場景](../../tests/playgrounds/slender_speaker_audio_playground.tscn)從 900 m 開近：遠處悶、帶回音、方向較模糊，靠近時持續變響變清楚，最後幾十公尺最有壓迫感；近距離限幅是否刺耳，回音是否太濕；關門與開門的差別。在正式世界確認關門行駛時仍能在看見巨人前聽出方向 |
 | 短波收音機 | 實際遊玩時的人聲能否聽清、廣播間隔與車內音量 |

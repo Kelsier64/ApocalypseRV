@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SoundEvent" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/steps.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/barrel_man/step_a.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/audio/barrel_man/step_b.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/audio/barrel_man/step_c.wav" id="5"]
+[ext_resource type="AudioStream" path="res://assets/audio/barrel_man/step_d.wav" id="6"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+volume_db = -14
+pitch_variation = 0.08
+attenuation = ExtResource("2")

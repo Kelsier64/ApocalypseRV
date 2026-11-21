@@ -4,6 +4,9 @@ const ApparitionScene := preload("res://enemies/white_apparition/white_apparitio
 const Apparition := preload("res://enemies/white_apparition/white_apparition.gd")
 const LightExposure := preload("res://core/apparition_light_exposure.gd")
 const BlackApparition := preload("res://enemies/black_apparition/black_apparition.gd")
+const MonsterSounds := preload("res://tests/support/monster_sound_probe.gd")
+const WhiteAudio := preload("res://enemies/white_apparition/white_apparition_audio.gd")
+const BlackAudio := preload("res://enemies/black_apparition/black_apparition_audio.gd")
 
 class Survivor extends CharacterBody3D:
 	var camera: Camera3D
@@ -50,6 +53,7 @@ func _run() -> void:
 	_check_refresh_chances()
 	await _check_encounter()
 	await _check_black_apparition()
+	await _check_sounds()
 	if _failures.is_empty():
 		print("PASS: White and black apparition encounter behavior")
 	quit(0 if _failures.is_empty() else 1)
@@ -582,6 +586,85 @@ func _check_black_apparition() -> void:
 	beam.queue_free()
 	floor.queue_free()
 	viewport.free()
+
+func _check_sounds() -> void:
+	var sfx := root.get_node("Sfx")
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	viewport.own_world_3d = true
+	root.add_child(viewport)
+	sfx.set_listener_viewport(viewport)
+	var world := Node3D.new()
+	viewport.add_child(world)
+	var chunk := ChunkGenerator.new()
+	world.add_child(chunk)
+	var surface := MeshInstance3D.new()
+	surface.name = "Ground"
+	chunk.add_child(surface)
+	_static_box(surface, Vector3(0, -0.5, 0), Vector3(120, 1, 120))
+	var player := Survivor.new()
+	player.camera = Camera3D.new()
+	player.camera.position = Vector3(0, 1.55, 0)
+	player.add_child(player.camera)
+	_box(player, Vector3(0, 1.55, 0), Vector3.ONE)
+	world.add_child(player)
+	player.camera.make_current()
+	var clock := WorldClock.new()
+	clock.set_process(false)
+	world.add_child(clock)
+	clock.elapsed_seconds = 14.0 * 3600.0
+	var white := ApparitionScene.instantiate() as Apparition
+	world.add_child(white)
+	white.set_physics_process(false)
+	white.get_node("Visual").set_process(false)
+	white.configure(player, clock)
+	var presence: SoundLoop = white.get_node("Audio").presence
+	await _frames(3)
+	_check(not presence.playing and MonsterSounds.playing(sfx, WhiteAudio.APPEAR) == 0, "A hidden white apparition is silent")
+	_check(white._try_emerge(player.camera), "The white apparition finds a place to appear for the sound check")
+	_check(MonsterSounds.playing(sfx, WhiteAudio.APPEAR) == 1, "Appearing plays the white apparition's cue")
+	await _frames(10)
+	_check(presence.playing, "The whisper hangs on a present white apparition")
+	white.suspend_outdoors()
+	await _frames(ceili(WhiteAudio.FADE_OUT_SECONDS * Engine.physics_ticks_per_second) + 4)
+	_check(not presence.playing, "The whisper fades out when the white apparition leaves")
+	white.queue_free()
+	MonsterSounds.stop_all(sfx)
+
+	var black: BlackApparition = load("res://enemies/black_apparition/black_apparition.tscn").instantiate()
+	world.add_child(black)
+	black.set_physics_process(false)
+	black.get_node("Visual").set_process(false)
+	await _frames(2)
+	black.configure(player, false)
+	var breathing: SoundLoop = black.get_node("Audio").breathing
+	_check(not breathing.playing, "A hidden black apparition is silent")
+	var spawn := Vector3(0, 0.04, -12.0)
+	black.emerge(spawn, player.camera)
+	await _frames(10)
+	_check(breathing.playing and breathing.max_distance < 10.0, "A watching black apparition breathes, audible only up close")
+	black._frenzy()
+	await _frames(2)
+	_check(MonsterSounds.playing(sfx, BlackAudio.SHRIEK) == 1 and not breathing.playing, "Rage swaps the breathing for one shriek")
+	var stepping := 0
+	for tick in 60:
+		black._physics_process(1.0 / 60.0)
+		await physics_frame
+		if MonsterSounds.playing(sfx, BlackAudio.STEP) > 0: stepping += 1
+		if player.is_player_dead: break
+	_check(stepping > 0, "The enraged black apparition's running lands footfalls")
+	black._retire()
+	MonsterSounds.stop_all(sfx)
+	await _frames(3)
+	_check(not breathing.playing and MonsterSounds.playing(sfx, BlackAudio.STEP) == 0, "A retired black apparition is silent")
+	MonsterSounds.stop_all(sfx)
+	sfx.set_listener_viewport(root)
+	viewport.free()
+
+func _frames(count: int) -> void:
+	for i in count:
+		await physics_frame
+		await process_frame
 
 func _static_box(parent: Node3D, center: Vector3, size: Vector3) -> StaticBody3D:
 	var body := StaticBody3D.new()

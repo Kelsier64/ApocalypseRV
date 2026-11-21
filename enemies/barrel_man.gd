@@ -40,6 +40,9 @@ func _ready() -> void:
 		nav_agent.path_height_offset = 0.5
 		nav_agent.target_desired_distance = 0.15
 	_update_collision(DISGUISED_HEIGHT)
+	var audio := preload("res://enemies/barrel_man_audio.gd").new()
+	audio.name = "Audio"
+	add_child(audio)
 
 func _physics_process(delta: float) -> void:
 	if is_dead: return

@@ -31,6 +31,11 @@ var _path_index := 0
 var _repath_time := 0.0
 var _daylight := false
 
+func _ready() -> void:
+	var audio := preload("res://enemies/black_apparition/black_apparition_audio.gd").new()
+	audio.name = "Audio"
+	add_child(audio)
+
 func configure(player: CharacterBody3D, indoors: bool) -> void:
 	_player = player
 	_indoors = indoors
