@@ -19,6 +19,9 @@ const ONE_SHOTS := [
 ]
 const BESIDE_RV := Vector3(3.0, 1.2, 1.5)
 const IN_CABIN := Vector3(0.0, 1.2, 1.5)
+# Far enough that a gunshot's outdoor echo is near its wettest.
+const FAR_AWAY := Vector3(45.0, 1.2, 1.5)
+const ROOMS := ["small_room", "corridor", "hall"]
 
 var rv: Chassis
 var player: CharacterBody3D
@@ -94,6 +97,8 @@ func _build_controls(scenario: String) -> void:
 		return "Cabin" if rv.get_node("Audio").CABIN.has_point(rv.to_local(camera.global_position)) else "Outside")
 	controls.readout("Drivetrain RPM", func(): return roundi(rv.engine_rpm()))
 	controls.readout("Engine sound RPM", func(): return roundi(audio.sound_rpm()) if audio.engine_player.playing else 0)
+	controls.readout("Engine masking", func():
+		return "%d%%, outside sounds %.1f dB" % [roundi(get_node("/root/Sfx")._mask * 100.0), get_node("/root/Sfx").ENGINE_MASK_DB * get_node("/root/Sfx")._mask])
 	controls.readout("Last played", func(): return message)
 	controls.section("RV one-shots")
 	var shots: Array = []
@@ -113,13 +118,17 @@ func _build_controls(scenario: String) -> void:
 	var names := PackedStringArray()
 	for path in events: names.append(path.trim_prefix("res://assets/audio/events/"))
 	controls.choice("Event", names, event_index, func(index: int): event_index = index)
-	controls.buttons([["Play beside RV", _play_event.bind(BESIDE_RV)], ["Play in cabin", _play_event.bind(IN_CABIN)]])
+	controls.buttons([["Play beside RV", _play_event.bind(BESIDE_RV)], ["Play in cabin", _play_event.bind(IN_CABIN)],
+		["Play 45 m away", _play_event.bind(FAR_AWAY)]])
+	controls.note("pistol/shot and barrel/blast add an outdoor echo, except when played in the cabin.")
 	controls.section("Surroundings")
 	controls.toggle("Slender Speaker warning", false, func(on: bool):
 		if on: warning.play()
 		else: warning.stop())
 	controls.choice("Warning side", PackedStringArray(["Right", "Left"]), 0, func(index: int): warning.position.x = 10.0 if index == 0 else -10.0)
 	controls.choice("Rain", PackedStringArray(["Off", "Light", "Heavy"]), 0, _set_rain)
+	controls.choice("Room reverb", PackedStringArray(["Off", "Small room", "Corridor", "Hall"]), 0, _set_room)
+	controls.note("Room reverb applies a POI interior preset to this outdoor lot for comparison only; real interiors pick theirs in the game.")
 	controls.toggle("Tinnitus", false, func(on: bool):
 		if on: tinnitus.play()
 		else: tinnitus.stop())
@@ -160,3 +169,12 @@ func _set_rain(level: int) -> void:
 			if not rain[i].playing: rain[i].play()
 		else:
 			rain[i].stop()
+
+
+func _set_room(index: int) -> void:
+	var room: AudioEffectReverb = null if index == 0 else load("res://assets/audio/rooms/%s.tres" % ROOMS[index - 1])
+	get_node("/root/Sfx").set_listener_viewport(get_viewport(), room)
+
+
+func _exit_tree() -> void:
+	get_node("/root/Sfx").set_listener_viewport(get_viewport())
