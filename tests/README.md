@@ -33,12 +33,12 @@
 | [promo_world](test_promo_world.gd) | 錄影擺場、錄影面板暫停、自由鏡頭與跟拍的操作權、跟拍不隨目標翻滾、運鏡曲線等速且不倒退、路徑存讀、遭遇、設備與重錄。預設檢查代表鏡頭，完整逐鏡參數見[錄影指南](../docs/guides/promo-capture.md) |
 | [rv_structure_modules](test_rv_structure_modules.gd)、[rv_braking](test_rv_braking.gd) | 車體結構／支撐與真實輪胎煞車 |
 | [rv_handling](test_rv_handling.gd)、[rv_rollover](test_rv_rollover.gd) | 合成輪胎力、柏油滑移、側坡翻車、屋頂車損與倒置離座 |
-| [rv_audio](test_rv_audio.gd) | 音效事件、Sfx 聲源池、冷卻與 POI 世界、亂數隔離、雙向車殼隔音、巴士直六的轉速與負載混音、換檔過程、手煞車與碰撞分層錄音、路噪 |
+| [rv_audio](test_rv_audio.gd) | 音效事件、Sfx 聲源池、冷卻與 POI 世界、亂數隔離、雙向車殼隔音、巴士直六的轉速與負載混音、換檔過程、手煞車與碰撞分層錄音、路噪、怪物腳步表對上步態著地點 |
 | [rv_crash_injury](test_rv_crash_injury.gd)、[recovery_jack](test_recovery_jack.gd) | 乘員傷害、事件去重、固定種子斷肢、倒置快照與千斤頂兩段救援 |
 | [moving_rv_climbing](test_moving_rv_climbing.gd) | 玩家與 Raker 的移動 RV 攀爬 |
-| [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害 |
+| [pistol](test_pistol.gd)、[raker_grab](test_raker_grab.gd)、[barrel_explosion](test_barrel_explosion.gd) | 武器、抓取所有權及爆炸傷害；Raker 與油桶人何時出聲 |
 | [slender_speaker_encounter](test_slender_speaker_encounter.gd)、[slender_speaker_acquisition](test_slender_speaker_acquisition.gd) | 巨人遭遇狀態（含脫離冷卻）、正式玩家／RV 抓取，以及活性情境：巡邏點走不到、目標看得見卻走不到（[夾具](support/slender_speaker_liveness.gd)） |
-| [white_apparition](test_white_apparition.gd) | 白影在畫面外現身與換位、追擊與致死接觸、障礙阻擋、依距離扣 SAN、遮蔽與離開視野消失 |
+| [white_apparition](test_white_apparition.gd) | 白影在畫面外現身與換位、追擊與致死接觸、障礙阻擋、依距離扣 SAN、遮蔽與離開視野消失；白影與黑影何時出聲 |
 | [orientation_departure](test_orientation_departure.gd) | 新版接待室、完整維修交易、真實輪驅出庫、封門與讀檔 |
 | [checkpoint_failures](test_checkpoint_failures.gd)、[poi_transition_persistence](test_poi_transition_persistence.gd) | 保存失敗處理與副本轉場所有權；檢查點只接受當前世界生成（`WorldProfile.CURRENT_GENERATION`），檢查當前教學／重試入口及舊生成版本拒絕行為；巨型避難所固定 seed／面積布局、profile 分流、真實進出、補給箱與丟物回訪不補貨，以及完整檢查點磁碟往返 |
 | [streaming_generation](test_streaming_generation.gd) | 當前分幀／碰撞一致性、四種子 12 km 路線與地形契約、急彎及持續升降、固定道路指紋與獨立外觀域、全路寬河橋支撐、山頂跨區塊普通／巨人導航；霧外觀設定、載入視野保護及自然天氣 RNG／保存隔離 |

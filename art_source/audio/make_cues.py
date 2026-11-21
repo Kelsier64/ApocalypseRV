@@ -6,7 +6,10 @@ mono, except the two rain recordings, which stay stereo. Variants of one event
 are matched in loudness after their attack, then the loudest is set to the peak
 target. Loops are crossfaded at the seam and carry a forward loop in a smpl chunk.
 
-    python art_source/audio/make_cues.py <decoded folder> assets/audio
+    python art_source/audio/make_cues.py <decoded folder> assets/audio [--only raker/ ...]
+
+--only limits the run to outputs whose name starts with one of the prefixes, so
+a folder holding only those sources is enough.
 """
 
 import argparse
@@ -32,6 +35,12 @@ SOURCES = {
     "power_kick": 586841, "body_fall_heavy": 504626,
     "shredder_factory": 679018, "rain_light": 167034, "rain_heavy": 200272,
     "tinnitus_t": 377205,
+    "ghost_whispers": 175944, "ghost_breath": 338344, "creepy_breathing": 369294,
+    "monster_shriek": 442564, "monster_scream": 427412, "barefoot_run": 788636,
+    "heavy_steps": 383724, "growl_large": 699932, "growl_9": 389653,
+    "predator_clicks": 235529, "alien_clicks": 512472, "snarl_3": 204610, "snarl_4": 204611,
+    "goblin_snarl": 442815, "metal_creak": 119468, "oil_drum": 506274,
+    "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -75,6 +84,47 @@ CUTS = {
     "player/gore_tear_a": ([("gut_rip", 0.0, 1.30)], 0.30),
     "player/gore_tear_b": ([("gore_tear", 0.10, 0.80)], 0.20),
     "player/gore_tear_c": ([("gore_impact", 0.0, 0.95)], 0.25),
+    # White apparition: a soft swelling breath when it appears.
+    "apparitions/white_appear_a": ([("ghost_breath", 1.0, 5.5)], 0.80),
+    # Black apparition: the shriek when it rages, and bare running steps.
+    "apparitions/black_shriek_a": ([("monster_shriek", 0.0, 3.30)], 0.30),
+    "apparitions/black_shriek_b": ([("monster_scream", 0.0, 2.00)], 0.30),
+    "apparitions/black_step_a": ([("barefoot_run", 0.45, 0.68)], 0.08),
+    "apparitions/black_step_b": ([("barefoot_run", 0.74, 0.97)], 0.08),
+    "apparitions/black_step_c": ([("barefoot_run", 1.02, 1.25)], 0.08),
+    "apparitions/black_step_d": ([("barefoot_run", 1.30, 1.53)], 0.08),
+    "apparitions/black_step_e": ([("barefoot_run", 1.64, 1.87)], 0.08),
+    "apparitions/black_step_f": ([("barefoot_run", 2.16, 2.39)], 0.08),
+    # Raker: heavy steps, idle growls and clicks, and the two attack tells. The
+    # tells start on the attack so they fit the 0.72 s sweep and 0.24 s reach.
+    "raker/step_a": ([("heavy_steps", 2.12, 2.42)], 0.12),
+    "raker/step_b": ([("heavy_steps", 3.40, 3.70)], 0.12),
+    "raker/step_c": ([("heavy_steps", 4.04, 4.34)], 0.12),
+    "raker/step_d": ([("heavy_steps", 6.57, 6.87)], 0.12),
+    "raker/step_e": ([("heavy_steps", 7.84, 8.14)], 0.12),
+    "raker/step_f": ([("heavy_steps", 9.66, 9.96)], 0.12),
+    "raker/growl_a": ([("growl_large", 0.0, 1.45)], 0.20),
+    "raker/growl_b": ([("growl_9", 0.05, 0.95)], 0.15),
+    "raker/click_a": ([("predator_clicks", 0.0, 1.75)], 0.20),
+    "raker/click_b": ([("predator_clicks", 3.40, 5.30)], 0.25),
+    "raker/click_c": ([("alien_clicks", 0.0, 0.98)], 0.15),
+    "raker/windup_a": ([("snarl_4", 0.28, 1.15)], 0.25),
+    "raker/windup_b": ([("snarl_3", 0.45, 1.35)], 0.25),
+    "raker/lunge_a": ([("goblin_snarl", 0.0, 0.45)], 0.10),
+    "raker/lunge_b": ([("goblin_snarl", 0.95, 1.40)], 0.10),
+    # Barrel man: a drum hit under a creak when it wakes, then knocks with slosh.
+    "barrel_man/wake_a": ([("oil_drum", 2.80, 3.70, 0.0), ("metal_creak", 0.0, 1.60, 0.12, -4.0)], 0.30),
+    "barrel_man/wake_b": ([("oil_drum", 11.91, 12.75, 0.0), ("metal_creak", 1.50, 3.10, 0.10, -4.0)], 0.30),
+    "barrel_man/step_a": ([("oil_drum", 5.12, 5.47, 0.0), ("bucket_slosh", 1.25, 1.70, 0.02, -3.0)], 0.15),
+    "barrel_man/step_b": ([("oil_drum", 10.93, 11.25, 0.0), ("bucket_slosh", 4.00, 4.45, 0.02, -3.0)], 0.15),
+    "barrel_man/step_c": ([("oil_drum", 21.41, 21.76, 0.0), ("bucket_slosh", 6.75, 7.20, 0.02, -3.0)], 0.15),
+    "barrel_man/step_d": ([("oil_drum", 14.37, 14.72, 0.0), ("bucket_slosh", 10.50, 10.95, 0.02, -3.0)], 0.15),
+    # Slender Speaker: deep drum footfalls, each left to ring.
+    "slender_speaker/step_a": ([("drum_footsteps", 0.25, 1.35)], 0.50),
+    "slender_speaker/step_b": ([("drum_footsteps", 2.60, 3.70)], 0.50),
+    "slender_speaker/step_c": ([("drum_footsteps", 5.25, 6.35)], 0.50),
+    "slender_speaker/step_d": ([("drum_footsteps", 9.20, 10.30)], 0.50),
+    "slender_speaker/step_e": ([("drum_footsteps", 13.18, 14.28)], 0.50),
 }
 
 # Output "domain/file": (source, start, end, seam seconds, RMS dBFS, processing).
@@ -85,6 +135,9 @@ LOOPS = {
     "player/tinnitus": ("tinnitus_t", 2.0, 3.2, 0.10, -16.0, ""),
     "weather/rain_light": ("rain_light", 4.0, 14.5, 0.50, -24.0, "limit"),
     "weather/rain_heavy": ("rain_heavy", 10.0, 20.5, 0.50, -20.0, "limit"),
+    "apparitions/white_presence": ("ghost_whispers", 3.0, 21.0, 0.50, -22.0, "flatten"),
+    "apparitions/black_breathing": ("creepy_breathing", 2.9, 22.0, 0.50, -24.0, ""),
+    "barrel_man/fuse": ("fuse", 0.2, 3.5, 0.30, -18.0, "flatten"),
 }
 
 
@@ -174,9 +227,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--only", nargs="+", default=[""])
     args = parser.parse_args()
+    wanted = lambda name: any(name.startswith(prefix) for prefix in args.only)
     events = {}
     for name, (layers, fade_out) in CUTS.items():
+        if not wanted(name): continue
         events.setdefault(name.rsplit("_", 1)[0], []).append((name, layered(args.source, layers, fade_out)))
     for variants in events.values():
         reference = np.mean([attack_rms(audio) for _, audio in variants])
@@ -187,6 +243,7 @@ def main():
             write(args.output / f"{name}.wav", audio * gain)
     ceiling = 10 ** (PEAK_DB / 20)
     for name, (source, start, end, seam, rms_db, processing) in LOOPS.items():
+        if not wanted(name): continue
         audio = read(args.source, source, start, end) / 32768
         audio -= audio.mean(axis=0)
         if processing == "flatten": audio = flatten(audio)

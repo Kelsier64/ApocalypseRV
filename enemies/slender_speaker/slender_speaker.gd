@@ -76,6 +76,7 @@ var _recovery_source: Phase = Phase.CRUSH
 var _recovery_pose: Array[Transform3D] = []
 var _recovery_lift_time := 0.0
 var _gait_phase := 0.0
+var _gait_frame := -1
 var _gait_blend := 0.0
 var _locomotion_clip := "idle_play"
 var _locomotion_transition_pose: Array[Transform3D] = []
@@ -149,6 +150,9 @@ func _ready() -> void:
 	if nav_agent != null and giant_navigation_map.is_valid(): nav_agent.set_navigation_map(giant_navigation_map)
 	_sample("idle_play", 0.0)
 	_start_patrol_music()
+	var footsteps := preload("res://enemies/slender_speaker/slender_speaker_footsteps.gd").new()
+	footsteps.name = "Footsteps"
+	add_child(footsteps)
 
 func _enter_tree() -> void:
 	if is_node_ready(): _start_patrol_music.call_deferred()
@@ -530,6 +534,7 @@ func _sample_gait(delta: float, speed: float) -> void:
 	var stride := lerpf(_duration("walk") * 4.0, _duration("run") * 10.0, _gait_blend)
 	var gait_direction := -1.0 if velocity.slide(Vector3.UP).dot(-global_basis.z) < -.1 else 1.0
 	_gait_phase = fposmod(_gait_phase + gait_direction * delta * speed / maxf(.001, stride), 1.0)
+	_gait_frame = Engine.get_physics_frames()
 	_sample("walk", _gait_phase * _duration("walk"))
 	if _gait_blend > .0001:
 		var walking := _capture_pose()
@@ -2017,6 +2022,10 @@ func _sample(clip: String, time: float) -> void:
 		visual.skeleton.reset_bone_poses()
 		visual.sample(clip, time)
 	_animation_clip = clip
+
+## The walk and run cycle, 0 to 1, in a physics frame that sampled it; else -1.
+func gait_phase() -> float:
+	return _gait_phase if _gait_frame == Engine.get_physics_frames() else -1.0
 
 func _duration(clip: String) -> float:
 	return maxf(0.01, visual.duration(clip)) if visual != null and visual.get("available") == true else 1.0

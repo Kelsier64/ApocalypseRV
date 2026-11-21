@@ -1,6 +1,8 @@
 extends SceneTree
 const GrabRules = preload("res://core/raker_grab_rules.gd")
 const Grab = preload("res://enemies/raker_grab.gd")
+const MonsterSounds := preload("res://tests/support/monster_sound_probe.gd")
+const RakerAudio := preload("res://enemies/raker_audio.gd")
 var failures: Array[String] = []
 var world: Node3D
 var player: CharacterBody3D
@@ -121,6 +123,47 @@ func check_foot_pursuit(animation: AnimationPlayer) -> void:
 			"walk": check(began_reach and player.is_grabbed(), "Raker catches a player retreating at 5 m/s inside the old slowdown range (phase %s, gap %.2f, %s)" % [Grab.Phase.keys()[actor.grab.phase], actor.position.distance_to(player.position), actor.grab.contact_failure])
 			"sprint": check(not began_reach and not player.is_grabbed(), "A straight 8 m/s sprint opens the gap")
 			"sidestep": check(began_reach and actor.grab.phase == Grab.Phase.MISS, "Sidestep during committed reach avoids capture")
+
+func check_sounds(animation: AnimationPlayer) -> void:
+	var sfx := root.get_node("Sfx")
+	var audio: Node = actor.get_node("Audio")
+	MonsterSounds.stop_all(sfx)
+	reset()
+	# Play one chase cycle under the audio node; the plants land as footfalls.
+	actor.velocity = Vector3.ZERO
+	actor.move_and_slide()
+	animation.play("game/chase", 0.0)
+	animation.advance(0.0)
+	var stepping_frames := 0
+	for frame in ceili(animation.current_animation_length * Engine.physics_ticks_per_second) + 2:
+		animation.advance(1.0 / Engine.physics_ticks_per_second)
+		await physics_frame
+		if MonsterSounds.playing(sfx, RakerAudio.STEP) > 0: stepping_frames += 1
+	check(stepping_frames > 0, "A chasing Raker's gait lands audible footfalls")
+	animation.play("game/idle", 0.0)
+	MonsterSounds.stop_all(sfx)
+	actor.attack_started.emit("attack_left", 1.2)
+	check(MonsterSounds.playing(sfx, RakerAudio.WINDUP) == 1, "A sweep starts with its windup tell")
+	actor.attack_started.emit("grab_stand_reach", Grab.REACH_DURATION)
+	check(MonsterSounds.playing(sfx, RakerAudio.LUNGE) == 1, "A grab reach starts with its lunge tell")
+	actor.attack_started.emit("grab_stand_hold", GrabRules.HOLD_DURATION)
+	check(MonsterSounds.playing(sfx, RakerAudio.WINDUP) == 1 and MonsterSounds.playing(sfx, RakerAudio.LUNGE) == 1,
+		"Later grab phases add no tell")
+	check(RakerAudio.WINDUP.priority > RakerAudio.GROWL.priority and RakerAudio.LUNGE.priority > RakerAudio.STEP.priority,
+		"Attack tells outrank vocals and footfalls in a full pool")
+	MonsterSounds.stop_all(sfx)
+	actor.ai_state = Monster.State.WANDER
+	audio.vocal_in = 0.0
+	await physics_frame
+	check(MonsterSounds.playing(sfx, RakerAudio.GROWL) + MonsterSounds.playing(sfx, RakerAudio.CLICK) == 1
+		and audio.vocal_in >= RakerAudio.WANDER_VOCAL_SECONDS.x and audio.vocal_in <= RakerAudio.WANDER_VOCAL_SECONDS.y,
+		"A wandering Raker growls or clicks, then waits a wander interval")
+	MonsterSounds.stop_all(sfx)
+	actor.is_dead = true
+	audio.vocal_in = 0.0
+	await physics_frame
+	check(MonsterSounds.playing(sfx, RakerAudio.GROWL) + MonsterSounds.playing(sfx, RakerAudio.CLICK) == 0, "A dead Raker is silent")
+	actor.is_dead = false
 
 func run() -> void:
 	world = Node3D.new()
@@ -394,6 +437,7 @@ func run() -> void:
 	check(actor.grab.phase==Grab.Phase.MISS and not player.is_grabbed(),"Windup rechecks range")
 	check_grab_clips(animation)
 	await check_foot_pursuit(animation)
+	await check_sounds(animation)
 	capture(6)
 	actor.free()
 	check(not player.is_grabbed() and not player.grab_control.hud.visible,"Removing monster releases HUD/input")

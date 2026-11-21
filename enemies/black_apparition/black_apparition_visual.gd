@@ -54,6 +54,13 @@ func advance_stride(distance: float, delta: float) -> void:
 	var weight := clampf(distance / (maxf(delta, 0.001) * 2.0), 0.0, 1.0)
 	_stride_weight = move_toward(_stride_weight, weight, delta * 8.0)
 
+## Running cycle, 0 to 1: the left foot lands at 0 and the right at 0.5.
+func stride_phase() -> float:
+	return _stride_phase
+
+func stride_weight() -> float:
+	return _stride_weight
+
 func _process(delta: float) -> void:
 	if not is_visible_in_tree() or not _rig_ready: return
 	if running:

@@ -3,6 +3,8 @@ extends SceneTree
 const PLAYER := preload("res://player/player.tscn")
 const PANEL := preload("res://equipment/rv_side_panel.tscn")
 const RV := preload("res://rv/new_rv.tscn")
+const MonsterSounds := preload("res://tests/support/monster_sound_probe.gd")
+const BarrelAudio := preload("res://enemies/barrel_man_audio.gd")
 var failures: Array[String] = []
 var arena: Node3D
 var actor: CharacterBody3D
@@ -368,6 +370,45 @@ func saved_monster_state() -> void:
 	monster.free()
 	restored.free()
 
+func barrel_man_sounds() -> void:
+	var sfx := root.get_node("Sfx")
+	MonsterSounds.stop_all(sfx)
+	var monster: BarrelMan = load("res://enemies/barrel_man.tscn").instantiate()
+	arena.add_child(monster)
+	monster.global_position = Vector3(30, 0, 0)
+	monster.set_physics_process(false)
+	var audio: Node = monster.get_node("Audio")
+	await steps(3)
+	check(MonsterSounds.playing(sfx, BarrelAudio.WAKE) == 0 and not audio.fuse.playing, "A disguised barrel man makes no sound")
+	monster._set_phase(BarrelMan.Phase.RISING)
+	await steps(2)
+	check(MonsterSounds.playing(sfx, BarrelAudio.WAKE) == 1, "Waking from the disguise clangs once")
+	monster._set_phase(BarrelMan.Phase.RETRACTING)
+	await steps()
+	monster._set_phase(BarrelMan.Phase.RISING)
+	await steps()
+	check(MonsterSounds.playing(sfx, BarrelAudio.WAKE) == 1, "Rising again from a retract does not clang again")
+	var duration := monster.settings.proximity_fuse_duration
+	monster.proximity_fuse_remaining = duration
+	await steps()
+	var armed_pitch: float = audio.fuse.pitch_scale
+	monster.proximity_fuse_remaining = duration * 0.25
+	await steps()
+	check(audio.fuse.playing and audio.fuse.pitch_scale > armed_pitch, "The armed fuse hisses, rising in pitch as it runs down")
+	monster.is_dead = true
+	await steps()
+	check(not audio.fuse.playing, "A spent barrel man stops hissing")
+	monster.free()
+	MonsterSounds.stop_all(sfx)
+	var restored: BarrelMan = load("res://enemies/barrel_man.tscn").instantiate()
+	arena.add_child(restored)
+	restored.set_physics_process(false)
+	restored.phase = BarrelMan.Phase.RISING
+	await steps(2)
+	check(MonsterSounds.playing(sfx, BarrelAudio.WAKE) == 0, "A barrel man restored mid-rise does not replay the wake")
+	restored.free()
+	MonsterSounds.stop_all(sfx)
+
 func run() -> void:
 	seed(817303)
 	arena = Node3D.new()
@@ -384,6 +425,7 @@ func run() -> void:
 	await shields_and_deduplication()
 	await production_rv_and_item()
 	await cosmetic_lifecycle()
+	await barrel_man_sounds()
 	arena.queue_free()
 	await steps(6)
 	if failures.is_empty(): print("PASS: barrel blast surface geometry, hurt gate, cuts/death order, shields, deduplication, RV rear-contact damage, World3D/Item isolation and cosmetic lifecycle")

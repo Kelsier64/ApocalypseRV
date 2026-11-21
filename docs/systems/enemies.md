@@ -10,6 +10,7 @@ Raker、油桶人、Slender Speaker、白影、Crawler 原型，以及攀車、�
 | 攀車、車內追擊與拆殼 | 正式怪物流程；攀車追逐、車艙路徑／低姿態通行、攻擊玩家與車殼、破門拆頂，隨支撐破壞掉落 | [boarding](../../enemies/monster_boarding.gd)、[cabin route](../../enemies/monster_cabin_route.gd)、[boarding playground](../../tests/playgrounds/monster_boarding_playground.tscn) |
 | 油桶人與爆炸 | 正式；油桶偽裝、喚醒追逐、近距離倒數／接觸／致命槍傷爆炸，遮擋與傷害；普通油桶也支援車撞爆炸 | [barrel man](../../enemies/barrel_man.gd)、[explosion](../../enemies/barrel_explosion.gd)、[playground](../../tests/playgrounds/barrel_man_playground.tscn) |
 | Slender Speaker | 正式；霧天森林生成、視覺搜尋／記憶／追蹤、追車與繞車、逐片拆殼、跨車艙伸手、抓取抬升／處決、撞倒樹木；目前無敵 | [giant](../../enemies/slender_speaker/slender_speaker.gd)、[encounter](../../enemies/slender_speaker/slender_speaker_encounter.gd)、[playground](../../tests/playgrounds/slender_speaker_playground.tscn) |
+| 怪物聲音 | 正式；白影、黑影、Raker、油桶人的特徵聲與 Slender Speaker 腳步，決定何時暴露位置 | [footfalls](../../enemies/monster_footfalls.gd)、[monster audio playground](../../tests/playgrounds/monster_audio_playground.tscn) |
 | Crawler／Reverse Crawler | 獨立原型；腹部朝下／朝上爬行姿勢，共用追擊與接觸攻擊，可獨立保存；尚未加入正式隨機生成池 | [crawler](../../tests/playgrounds/crawler_playground.tscn)、[reverse crawler](../../tests/playgrounds/reverse_crawler_playground.tscn) |
 
 一般怪物會繞行固定物品；設備的支撐被拆毀後會掉落。巨人另有直接砸擊設備的傷害規則，不能將「一般怪物不主動傷害 Item」套用到所有攻擊。細節以 [Monster](../../enemies/monster.gd) 與 [巨人砸擊](../../enemies/slender_speaker/slender_speaker_parked_attack.gd) 為準。
@@ -73,6 +74,20 @@ Slender Speaker 只在實際天氣達到小霧以上時於正式森林生成；�
 車殼 2 m 內受 120 HP 傷害，能直接毀掉一片完整車板；受波及引擎最多扣 60 HP，外圈同樣衰減。車尾、側面、倒車及低速真接觸也能引爆並傷害引擎。完整車殼仍擋住當次爆風對乘員的傷害，已有破口或開門則可能曝露；免傷 Item 的支撐被炸毀後正常掉落。自爆效果只留短暫火光、煙塵、碎片與聲音，不產生可拾取屍體、持續燃燒或怪物連鎖爆炸。
 
 道路油桶人以每 150 m 獨立 8% 機率抽取一隻，普通油桶另以獨立 20% 機率抽取一個。貨物／養護棚小據點抽取 0–2 個候選名額，每個名額有 15% 機率生成油桶人。Mile End 鄉間小站初訪抽一個名額，店側與後院皆有候選位置。新訪地堡的敵人名額有 20% 機率為油桶人。貨物／棚屋各配置一個普通油桶對照，不依是否生成油桶人而決定；正常保存、重訪不補。v2–v7 戶外種類不變，既有活怪與清空區域按原存檔恢復。雙腿模型、動畫及遊戲畫面驗收仍以該紀錄的實際證據為準。
+
+### 怪物聲音
+
+每種怪物的聲音決定牠何時暴露位置。單發聲走 `Sfx` 聲源池，持續聲是怪物身上的迴圈；兩者都依聲源是否在 RV 車廂內走 `Cabin` 或 `Exterior`。
+
+| 怪物 | 安靜的時候 | 暴露的時候 |
+|---|---|---|
+| 白影 | 未現身 | 現身時一聲輕微氣音；在場時持續低語，可聽距離超過 55 m 的出現範圍，越近越響、聲像越窄越好定位；消失後 0.4 秒淡出。沒被看見的白影 6–10 秒後就離開，低語也隨之停止 |
+| 黑影 | 未現身、退場後 | 待機時只有 5 m 內聽得到呼吸；發狂時尖叫一次，奔跑的每一步都有定位腳步 |
+| Raker | 死亡、布娃娃期間 | 腳步落在步態動畫的著地點；遊蕩時每 5–10 秒、追擊時每 2.5–5 秒低吼或喀噠一次，約 30 m 內聽得到，攻擊與抓咬期間暫停；橫掃、破門、腳下攻擊前有預備聲，抓咬伸手時有短促嘶吼 |
+| 油桶人 | 偽裝中、收腿時 | 只有從偽裝起身時金屬撞擊一次，收腿中再起身不重播；追逐時每步桶身敲擊加液體晃動；自爆倒數期間嘶聲音高從 0.85 升到 1.6 |
+| Slender Speaker | 遠處只有旋律 | 走跑時落地聲約 80 m 內聽得到 |
+
+攻擊預備聲與黑影尖叫優先度最高，聲源池滿時會接手低優先度的聲道。玩家在 POI 室內時聽不到外面的怪物。
 
 ### 攀爬與梯子
 
@@ -193,6 +208,16 @@ Checkpoint 要求 `route_pressure`（timing、RNG）和 `rear_wreck_layout`（�
 既有 v8 道路、v8／v9 貨物／棚屋小據點、新訪地堡以獨立種類 RNG 分別替換 10%、15%、20% 原敵人名額；數量、選點與既有物資 RNG 不變。貨物／棚屋各有一個普通 Item 油桶對照，首訪建立，後續按原 actor 保存。道路根原點去除原怪物出生的 0.5 m 抬高，小據點取實際地面。SaveSceneCatalog 允許 `barrel_man.tscn` 的 monster 身份；WorldActorSnapshot 保存 `barrel` 狀態，保存階段與過渡進度、讀檔重新找同世界目標；倒數狀態以 `proximity_fuse_remaining` 保存，缺欄位拒絕載入，死亡來源不保存。檢查點使用 v6、生成 v14，還原已保存活怪與清空區域。`BarrelManSettings` 集中追逐、倒數範圍／時間、爆炸與生成比例設定。
 
 `barrel_explosion_effect.gd` 負責獨立 8 秒特效生命週期：短閃光與單盞有陰影點光、Blender 預烘焙火煙、貼地揚塵、少量火星及八片彎曲桶身金屬。共用兩張火煙圖集，每次爆炸有獨立材質時間；火煙 shader 在 BoxMesh 邊界內沿視線積分 12 個密度樣本，以不透明場景深度截斷，避免駕駛鏡頭穿過中央平面時特效消失。火焰快速膨脹上升，煙霧缓升至消散；沒有即時流體求解。碎片以掃掠射線反彈／停落，每次爆炸最多五次落地聲，彼此間隔 `LANDING_SPACING`；爆炸與落地聲都是預先烘焙的音檔，經由 `assets/audio/events/barrel/` 的事件交給共用 `Sfx` 播放，爆炸聲的優先度能在聲源池滿時搶到聲道，在戶外還帶 `OutdoorEcho` 回音。加入 WorldEntities 前先設定爆點局部座標，使 world-space 粒子與地面查詢從正確位置開始；揚塵只在 2.5 m 內找到向上的實體支撐時建立，略過角色／斷肢／散落物及其他 entity domain。所有視覺節點不含碰撞、傷害或保存身份，結束後一起釋放。
+
+### 怪物聲音實作
+
+每種怪物在 `_ready` 掛一個聲音子節點：[白影](../../enemies/white_apparition/white_apparition_audio.gd)、[黑影](../../enemies/black_apparition/black_apparition_audio.gd)、[Raker](../../enemies/raker_audio.gd)、[油桶人](../../enemies/barrel_man_audio.gd)、[Slender Speaker 腳步](../../enemies/slender_speaker/slender_speaker_footsteps.gd)。`Monster` 基底不帶任何聲音，Crawler 因此維持無聲。
+
+- 單發聲由狀態轉換觸發，持續聲每影格依狀態設定音量。白影的提示只在 `emerged` 訊號時播放，換位不播；油桶人的節點第一個 tick 只記錄階段，所以從存檔還原到起身中不會補播。
+- 腳步由 [MonsterFootfalls](../../enemies/monster_footfalls.gd) 把步態片段的播放相位換成著地事件。Raker 與油桶人讀 `AnimationPlayer` 的目前片段與相位，Slender Speaker 讀共用的 `gait_phase()`，黑影讀視覺節點的 `stride_phase()`；換片段時不補步。各節點的 `PLANTS` 表必須對上片段中腳骨最低點的相位，[test_rv_audio](../../tests/test_rv_audio.gd) 從片段重算並比對。
+- 間隔與取樣只用聲音節點自己的 RNG，不動遊戲用的亂數。
+- 距離預設在 [assets/audio/attenuation/](../../assets/audio/attenuation/)：`presence`、`breath`、`steps`、`vocal`、`giant`。`max_distance` 是線性淡到無聲的距離，所以都設在決定的可聽距離之外；各聲音節點的 `HEARD_WITHIN` 常數記錄決定的距離，測試確認那裡的衰減不超過 24 dB。`SoundLoop.occlusion_by_position` 讓持續聲跟著聲源換 `Cabin`／`Exterior`。
+- 事件在 [assets/audio/events/](../../assets/audio/events/) 的 `apparitions`、`raker`、`barrel_man`、`slender_speaker` 資料夾，錄音來源見各素材資料夾的 README。
 
 ### 攀爬與戰鬥
 

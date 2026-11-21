@@ -1,6 +1,8 @@
 extends SceneTree
 ## Protect spatial playback across POI worlds and isolate sound variation from gameplay RNG.
 
+const MonsterSounds := preload("res://tests/support/monster_sound_probe.gd")
+
 var failures: Array[String] = []
 
 
@@ -118,6 +120,18 @@ func _run() -> void:
 		"The RV roof does not count as its cabin")
 	check(sfx.bus_at(cabin, chassis.get_world_3d()) == &"Cabin" and sfx.bus_at(outside, chassis.get_world_3d()) == &"Exterior",
 		"Positioned events route by whether they play inside the cabin")
+	var monster_loop := SoundLoop.new()
+	monster_loop.stream = load("res://assets/audio/barrel_man/fuse.wav")
+	monster_loop.occlusion_by_position = true
+	root.add_child(monster_loop)
+	monster_loop.global_position = cabin
+	monster_loop.set_level(1.0)
+	var cabin_bus := monster_loop.bus
+	monster_loop.global_position = outside
+	monster_loop.set_level(1.0)
+	check(cabin_bus == &"Cabin" and monster_loop.bus == &"Exterior",
+		"A positioned loop follows its source in and out of the cabin")
+	monster_loop.queue_free()
 	for echo in sfx._echoes: echo.stop()
 	check(sfx.play(shot, chassis, chassis.to_local(cabin)) and not sfx._echoes.any(func(echo): return echo.playing),
 		"A gunshot inside the cabin has no outdoor echo")
@@ -233,12 +247,70 @@ func _run() -> void:
 		check(not layer.playing, "Road loops stay silent while the wheels are off the ground or parked")
 
 	vehicle.queue_free()
+	await _check_monster_footfalls()
 	# Silence pooled voices before quitting; see the exit-crash row in docs/plans/README.md.
 	for voice in sfx._voices + sfx._echoes: voice.stop()
 	await process_frame
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _check_monster_footfalls() -> void:
+	var walker := MonsterFootfalls.new({&"walk": [[0.2, 0], [0.7, 1]]})
+	check(walker.advance(&"walk", 0.1).is_empty(), "A gait starts without a footfall")
+	check(walker.advance(&"walk", 0.25) == [0] and walker.advance(&"walk", 0.25).is_empty(),
+		"Crossing a plant lands that foot once")
+	check(walker.advance(&"walk", 0.75) == [1] and walker.advance(&"walk", 0.21) == [0],
+		"Footfalls continue across the end of the cycle")
+	check(walker.advance(&"walk", 0.15) == [0], "Walking backwards lands the foot it passes")
+	check(walker.advance(&"run", 0.25).is_empty(), "A changed clip lands nothing")
+	# Each table must match where its clip actually puts the feet down.
+	var specs := [
+		["res://enemies/raker.tscn", preload("res://enemies/raker_audio.gd").PLANTS, ["foot_L", "foot_R"]],
+		["res://enemies/barrel_man.tscn", preload("res://enemies/barrel_man_audio.gd").PLANTS, ["foot_L", "foot_R"]]]
+	for spec in specs:
+		var actor: Node3D = load(spec[0]).instantiate()
+		actor.process_mode = Node.PROCESS_MODE_DISABLED
+		root.add_child(actor)
+		await process_frame
+		for clip: StringName in spec[1]:
+			for entry: Array in spec[1][clip]:
+				var found := MonsterSounds.plant_phases(actor, clip, spec[2][entry[1]])
+				check(found.size() == 1 and _cycle_gap(found[0], entry[0]) < 0.03,
+					"%s %s lands on its clip's plant" % [spec[0].get_file(), clip])
+		actor.queue_free()
+	var giant: Node3D = load("res://enemies/slender_speaker/slender_speaker.tscn").instantiate()
+	giant.process_mode = Node.PROCESS_MODE_DISABLED
+	root.add_child(giant)
+	await process_frame
+	var gait: Array = preload("res://enemies/slender_speaker/slender_speaker_footsteps.gd").PLANTS[&"gait"]
+	for clip in ["review/walk", "review/run"]:
+		for entry: Array in gait:
+			var found := MonsterSounds.plant_phases(giant, clip, ["foot.L", "foot.R"][entry[1]])
+			check(found.size() == 1 and _cycle_gap(found[0], entry[0]) < 0.03,
+				"The Slender Speaker's shared gait lands on the %s plants" % clip)
+	giant.queue_free()
+	await process_frame
+	# Each monster's decided range must sit well inside its fade to silence.
+	var ranges := [
+		[load("res://assets/audio/attenuation/presence.tres"), WhiteApparition.SPAWN_MAX, "The white apparition is heard across its spawn ring"],
+		[load("res://assets/audio/attenuation/breath.tres"), preload("res://enemies/black_apparition/black_apparition_audio.gd").BREATH_HEARD_WITHIN, "Black apparition breathing is heard within its range"],
+		[load("res://assets/audio/attenuation/vocal.tres"), preload("res://enemies/raker_audio.gd").VOCAL_HEARD_WITHIN, "Raker vocals and tells are heard within their range"],
+		[load("res://assets/audio/attenuation/giant.tres"), preload("res://enemies/slender_speaker/slender_speaker_footsteps.gd").HEARD_WITHIN, "Slender Speaker footfalls are heard within their range"]]
+	for entry in ranges:
+		check(_distance_db(entry[0], entry[1]) > -24.0, entry[2])
+
+
+## Godot 4.7 inverse-distance falloff, capped at +3 dB, times the linear fade
+## to silence at max_distance.
+static func _distance_db(attenuation: SoundAttenuation, distance: float) -> float:
+	var falloff := minf(attenuation.unit_size / distance, db_to_linear(3.0))
+	return linear_to_db(falloff * maxf(0.0, 1.0 - distance / attenuation.max_distance))
+
+
+static func _cycle_gap(a: float, b: float) -> float:
+	return absf(fposmod(a - b + 0.5, 1.0) - 0.5)
 
 
 func _check_bus_loops(bank: BusEngineStream) -> void:

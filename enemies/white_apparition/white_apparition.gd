@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name WhiteApparition
 ## Transient outdoor encounter. The player, camera, and apparition share a World3D.
+## Emitted when it appears, not when it moves to another place out of view.
+signal emerged
 const Perception := preload("res://core/apparition_perception.gd")
 const CENTER := Rect2(0.30, 0.30, 0.40, 0.40)
 const CHEST := Vector3(0.0, 2.00, 0.0)
@@ -41,6 +43,13 @@ var _appearance_origin := Vector3.INF
 func _ready() -> void:
 	_rng.randomize()
 	hide()
+	var audio := preload("res://enemies/white_apparition/white_apparition_audio.gd").new()
+	audio.name = "Audio"
+	add_child(audio)
+
+## True from its appearance until it vanishes.
+func is_present() -> bool:
+	return _phase != Phase.HIDDEN
 
 func configure(player: Node3D, clock: WorldClock) -> void:
 	if is_instance_valid(_player) and player == _player and clock == _clock: return
@@ -249,6 +258,7 @@ func _try_emerge(camera: Camera3D) -> bool:
 	_time_left = _rng.randf_range(6.0, 10.0)
 	_visual.begin_appearance()
 	show()
+	emerged.emit()
 	return true
 
 func _find_emergence(camera: Camera3D) -> Vector3:

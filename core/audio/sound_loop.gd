@@ -8,6 +8,9 @@ const SILENT_LEVEL := 0.003
 
 ## Volume at level 1.
 @export var base_db := 0.0
+## When true, each set_level routes the loop to Cabin or Exterior from where it
+## is, like a SoundEvent; for sources that move in and out of the RV.
+@export var occlusion_by_position := false
 
 var _rng := RandomNumberGenerator.new()
 
@@ -21,6 +24,9 @@ func set_level(level: float, pitch := 1.0) -> void:
 	if level < SILENT_LEVEL:
 		if playing: stop()
 		return
+	# By path, as elsewhere: autoload names do not resolve in preloaded test scripts.
+	if occlusion_by_position and is_inside_tree():
+		bus = get_node("/root/Sfx").bus_at(global_position, get_world_3d())
 	volume_db = base_db + linear_to_db(level)
 	pitch_scale = pitch
 	if not playing: play(_rng.randf() * stream.get_length())
