@@ -9,6 +9,19 @@ cutoff_hz = 20500.0
 [sub_resource type="AudioEffectLowPassFilter" id="rain_muffle"]
 cutoff_hz = 16000.0
 
+[sub_resource type="AudioEffectHardLimiter" id="loudspeaker_limiter"]
+ceiling_db = -1.0
+
+[sub_resource type="AudioEffectReverb" id="outdoor_echo"]
+predelay_msec = 120.0
+predelay_feedback = 0.3
+room_size = 0.9
+damping = 0.6
+spread = 1.0
+hipass = 0.2
+dry = 0.0
+wet = 1.0
+
 [resource]
 bus/1/name = &"World"
 bus/1/solo = false
@@ -70,3 +83,19 @@ bus/9/mute = false
 bus/9/bypass_fx = false
 bus/9/volume_db = 0.0
 bus/9/send = &"Master"
+bus/10/name = &"Loudspeaker"
+bus/10/solo = false
+bus/10/mute = false
+bus/10/bypass_fx = false
+bus/10/volume_db = 0.0
+bus/10/send = &"Exterior"
+bus/10/effect/0/effect = SubResource("loudspeaker_limiter")
+bus/10/effect/0/enabled = true
+bus/11/name = &"OutdoorEcho"
+bus/11/solo = false
+bus/11/mute = false
+bus/11/bypass_fx = false
+bus/11/volume_db = 0.0
+bus/11/send = &"Exterior"
+bus/11/effect/0/effect = SubResource("outdoor_echo")
+bus/11/effect/0/enabled = true

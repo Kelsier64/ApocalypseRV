@@ -478,17 +478,32 @@ func check_warning_fade() -> void:
 	world.add_child(camera)
 	camera.make_current()
 	camera.global_position = music.global_position + Vector3.BACK * SlenderSpeakerSpawns.FOREST_MIN_DISTANCE
-	var half_fade := SlenderSpeaker.PATROL_FADE_SECONDS * 0.5
-	giant._process(half_fade)
+	var half_fade := SlenderSpeaker.Loudspeaker.FADE_SECONDS * 0.5
+	music._process(half_fade)
 	var halfway := music.volume_linear
-	giant._process(half_fade)
+	music._process(half_fade)
 	check(halfway > 0.0 and halfway < music.volume_linear, "The music gradually fades in even while the listener stands still")
-	var previous := 0.0
-	for distance in [SlenderSpeakerSpawns.FOREST_MAX_DISTANCE, SlenderSpeakerSpawns.FOREST_MIN_DISTANCE, 180.0, 70.0, 10.0]:
+	check(music.echo.playing and music.echo.stream == music.stream and music.echo.volume_linear > 0.0,
+		"The echo layer plays the same loop alongside the direct sound")
+	var previous := {}
+	var previous_gain := 0.0
+	var reference := music.reference_distance
+	for distance in [SlenderSpeakerSpawns.FOREST_MAX_DISTANCE, SlenderSpeakerSpawns.FOREST_MIN_DISTANCE, 180.0, 70.0, reference * 2.0, reference]:
 		camera.global_position = music.global_position + Vector3.BACK * distance
-		giant._process(0.0)
-		check(music.volume_linear > previous, "Approaching the speaker increases its gain at %s m" % distance)
-		previous = music.volume_linear
+		music._process(0.0)
+		check(music.volume_linear > previous_gain, "Approaching the speaker increases its gain at %s m" % distance)
+		previous_gain = music.volume_linear
+		var levels: Dictionary = music.mix(distance)
+		if not previous.is_empty():
+			check(levels.cutoff_hz > previous.cutoff_hz and levels.panning > previous.panning
+				and levels.echo_db - levels.direct_db < previous.echo_db - previous.direct_db,
+				"Closer is brighter, more precisely placed and drier at %s m" % distance)
+		previous = levels
+	# Halving the distance gains more close up than far away: the approach keeps building.
+	var far_halving: float = music.mix(SlenderSpeakerSpawns.FOREST_MIN_DISTANCE).direct_db - music.mix(SlenderSpeakerSpawns.FOREST_MIN_DISTANCE * 2.0).direct_db
+	var near_halving: float = music.mix(reference).direct_db - music.mix(reference * 2.0).direct_db
+	check(near_halving > far_halving and near_halving > 0.0, "The last halving of distance is the loudest step")
+	check(is_equal_approx(music.mix(reference * .5).direct_db, music.mix(reference).direct_db), "Inside the reference distance the level holds")
 	camera.free()
 
 func run() -> void:
@@ -506,8 +521,10 @@ func run() -> void:
 		"The packed giant includes the rig and warning stream before entering the world")
 	world.add_child(giant)
 	var music := giant.patrol_music
-	check(music.global_position.is_equal_approx(giant._focus_position()) and music.bus == &"Exterior",
-		"Warning starts at the loudspeaker socket and passes through cabin muffling")
+	check(music.global_position.is_equal_approx(giant._focus_position()) and music.echo.global_position.is_equal_approx(music.global_position)
+		and AudioServer.get_bus_send(AudioServer.get_bus_index(music.bus)) == &"Exterior"
+		and AudioServer.get_bus_send(AudioServer.get_bus_index(music.echo.bus)) == &"Exterior",
+		"Warning and its echo start at the loudspeaker socket and pass through cabin muffling")
 	check_warning_fade()
 	giant.set_physics_process(false)
 	player = PLAYER.instantiate()
@@ -518,7 +535,8 @@ func run() -> void:
 	check(music.playing and song != null and song == loaded_song and song.loop_mode == AudioStreamWAV.LOOP_FORWARD
 		and absf(song.loop_end - song.get_length() * song.mix_rate) <= 1.0,
 		"Head loudspeaker loops the whole Für Elise file from spawn")
-	check(music.max_distance > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE and music.max_distance < SlenderSpeakerSpawns.ACTIVE_DISTANCE,
+	check(music.max_distance > SlenderSpeakerSpawns.FOREST_MAX_DISTANCE and music.max_distance < SlenderSpeakerSpawns.ACTIVE_DISTANCE
+		and is_equal_approx(music.echo.max_distance, music.max_distance) and music.max_db >= music.near_db,
 		"Warning reaches the farthest forest encounter and fades before distance cleanup")
 	reset_player(Vector3(0, -.249, -2.1))
 	await frames()

@@ -8,9 +8,7 @@ const ParkedAttack := preload("res://enemies/slender_speaker/slender_speaker_par
 const Encounter := preload("res://enemies/slender_speaker/slender_speaker_encounter.gd")
 const HeadLook := preload("res://enemies/slender_speaker/slender_speaker_look.gd")
 const FootContact := preload("res://enemies/slender_speaker/slender_speaker_foot_contact.gd")
-const PATROL_FADE_SECONDS := 6.0
-const PATROL_ROLLOFF_DB := 11.0
-const PATROL_HALF_ROLLOFF_DISTANCE := 115.0
+const Loudspeaker := preload("res://enemies/slender_speaker/slender_speaker_loudspeaker.gd")
 @export var settings: SlenderSpeakerSettings = SlenderSpeakerSettings.new()
 var _encounter := Encounter.new()
 var _observation: Dictionary = {}
@@ -131,16 +129,14 @@ var _reposition_seconds := 0.0
 var _reposition_sign := 1.0
 var _ground_blocked := false
 var _patrol_blocked_skips := 0
-var _patrol_fade_elapsed := 0.0
 const REPOSITION_ARC := 1.75 # About 100 degrees around a ground target.
 const REPOSITION_MIN_RADIUS := 6.0
 const REPOSITION_MAX_RADIUS := 16.0
 @onready var visual: Node3D = get_node_or_null("BodyMesh")
 @onready var execution_anchor: Node3D = get_node_or_null("ExecutionAnchor")
 @onready var execution_focus: Node3D = get_node_or_null("ExecutionFocus")
-## The head loudspeaker: a garbage-truck Für Elise that loops for the giant's whole life,
-## including capture and execution.
-@onready var patrol_music: AudioStreamPlayer3D = get_node_or_null("PatrolMusic")
+## The head loudspeaker; it owns its distance mix and echo layer.
+@onready var patrol_music: Loudspeaker = get_node_or_null("PatrolMusic")
 
 func _ready() -> void:
 	enable_boarding_visual = false
@@ -158,25 +154,9 @@ func _enter_tree() -> void:
 	if is_node_ready(): _start_patrol_music.call_deferred()
 
 func _start_patrol_music() -> void:
-	if not is_inside_tree() or patrol_music == null or patrol_music.stream == null or patrol_music.playing:
-		return
+	if not is_inside_tree() or patrol_music == null: return
 	_update_audio_positions()
-	_patrol_fade_elapsed = 0.0
-	patrol_music.volume_linear = 0.0
-	patrol_music.play()
-
-func _process(delta: float) -> void:
-	if patrol_music == null or not patrol_music.playing: return
-	_patrol_fade_elapsed = minf(_patrol_fade_elapsed + delta, PATROL_FADE_SECONDS)
-	var viewport := get_viewport()
-	var listener: Node3D = viewport.get_audio_listener_3d()
-	if listener == null: listener = viewport.get_camera_3d()
-	if listener == null: return
-	var distance := listener.global_position.distance_to(patrol_music.global_position)
-	# Godot still pans the source and fades it to zero at max_distance.
-	var rolloff_db := PATROL_ROLLOFF_DB * distance / (distance + PATROL_HALF_ROLLOFF_DISTANCE)
-	var entrance := smoothstep(0.0, PATROL_FADE_SECONDS, _patrol_fade_elapsed)
-	patrol_music.volume_linear = entrance * db_to_linear(-rolloff_db)
+	patrol_music.start()
 
 func set_giant_navigation_map(map: RID) -> void:
 	if map == giant_navigation_map: return
@@ -1964,7 +1944,7 @@ func _cancel_execution(reason: String) -> void:
 func _exit_tree() -> void:
 	_cancel_execution("owner_removed")
 	reset_after_restore()
-	if patrol_music != null: patrol_music.stop()
+	if patrol_music != null: patrol_music.halt()
 
 func _focus_position() -> Vector3:
 	return _bone_position("socket_focus") if visual != null and visual.get("available") == true else global_position + Vector3.UP * 13.85

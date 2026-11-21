@@ -1,8 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://enemies/slender_speaker/slender_speaker.gd" id="1"]
 [ext_resource type="PackedScene" path="res://enemies/slender_speaker/slender_speaker_visual.tscn" id="2"]
 [ext_resource type="AudioStream" path="res://assets/audio/slender_speaker/patrol.wav" id="3"]
+[ext_resource type="Script" path="res://enemies/slender_speaker/slender_speaker_loudspeaker.gd" id="4"]
 
 [sub_resource type="CapsuleShape3D" id="body"]
 radius = 1.1
@@ -48,7 +49,17 @@ avoidance_enabled = false
 
 [node name="PatrolMusic" type="AudioStreamPlayer3D" parent="."]
 stream = ExtResource("3")
-bus = &"Exterior"
 attenuation_model = 3
-max_db = 0.0
+max_db = 9.0
 max_distance = 1000.0
+bus = &"Loudspeaker"
+script = ExtResource("4")
+
+[node name="Echo" type="AudioStreamPlayer3D" parent="PatrolMusic"]
+stream = ExtResource("3")
+attenuation_model = 3
+max_db = 9.0
+max_distance = 1000.0
+bus = &"OutdoorEcho"
+attenuation_filter_cutoff_hz = 2500.0
+panning_strength = 0.3

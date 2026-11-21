@@ -135,6 +135,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
+| [slender_speaker_audio_playground](../../tests/playgrounds/slender_speaker_audio_playground.tscn) | 1.5 km 直路、靜止巨人、可駕駛 RV；試聽喇叭的距離混音 | F2 切換起點 900／400／120 m 並重設，F3 切換巨人離路 20／60／120 m；HUD 顯示距離與各項混音數值。 |
 | [slender_speaker_playground](../../tests/playgrounds/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
 | [day_night_playground](../../tests/playgrounds/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
 | [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、時間與車頂遮蔽 | 6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |

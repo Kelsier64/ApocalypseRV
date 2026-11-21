@@ -72,6 +72,8 @@ Master
 └─ World           受傷與一般致死的悶聲濾波
    ├─ Effects      音效滑桿
    │  ├─ Exterior  車外聲源；聽者在車廂內時變悶
+   │  │  ├─ Loudspeaker  Slender Speaker 直達聲，硬限幅
+   │  │  └─ OutdoorEcho  純濕聲戶外殘響，聲源自行決定送出量
    │  ├─ Cabin     車廂內聲源、路噪與風聲；聽者在車外時變悶
    │  └─ Voice     收音機人聲，保留既有空間距離
    └─ Ambience     環境音滑桿
@@ -89,7 +91,7 @@ Master
 `core/audio/` 目前有：
 
 - **`SoundEvent`（Resource）**：音檔候選、音量、音高變化、bus、距離衰減預設與冷卻時間。冷卻內重複播放同一事件會被略過，連續碰撞不會占滿聲源池。
-- **`SoundAttenuation`（Resource）**：距離衰減預設，放在 `assets/audio/attenuation/`：`near`（手邊操作，約 18 m）、`vehicle`（RV 與設備，約 55 m）、`loud`（槍聲、爆炸，約 90 m）。地標預設等 Slender Speaker 遷移時再加。
+- **`SoundAttenuation`（Resource）**：距離衰減預設，放在 `assets/audio/attenuation/`：`near`（手邊操作，約 18 m）、`vehicle`（RV 與設備，約 55 m）、`loud`（槍聲、爆炸，約 90 m）。Slender Speaker 的喇叭有自己的距離曲線與回音層（見[敵人系統](../systems/enemies.md#slender-speaker)），遷移時決定是否抽成地標預設，並讓槍聲、爆炸等遠距聲源共用 `OutdoorEcho`。
 - **`SoundLoop`（AudioStreamPlayer3D）**：持續聲源，由擁有者每幀餵入音量與音高；從自己的亂數決定的隨機位置開始播放，音量趨近零時停止。RV 的路噪、風聲、輪胎滑移和刮地已改用它。引擎各層必須同步，使用獨立的同步串流。
 - **`Sfx`（autoload）**：`play(event, source, local_position)` 播放並跟隨一次性 3D 音效。池掛在目前聆聽的 viewport，POI 出入口會切換。首輪上限為 12，滿時略過下一個一次性音效。
 - **亂數**：`Sfx` 使用自己的亂數產生器，絕不讀寫玩法或世界生成的亂數。

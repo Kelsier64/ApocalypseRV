@@ -532,7 +532,7 @@ func set_giant_enabled(enabled: bool) -> void:
 		giant._sample("idle_play", 0.0)
 	giant.process_mode = Node.PROCESS_MODE_INHERIT if enabled else Node.PROCESS_MODE_DISABLED
 	if enabled: giant._start_patrol_music()
-	elif giant.patrol_music != null: giant.patrol_music.stop()
+	elif giant.patrol_music != null: giant.patrol_music.halt()
 
 func set_paused(value: bool) -> void:
 	paused = value
