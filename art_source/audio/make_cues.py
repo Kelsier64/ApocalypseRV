@@ -2,9 +2,11 @@
 
 Inputs are the Freesound previews listed in the assets/audio/<domain>/README.md
 files, decoded to 44.1 kHz PCM16 WAV and named after the SOURCES keys below:
-mono, except the two rain recordings, which stay stereo. Variants of one event
-are matched in loudness after their attack, then the loudest is set to the peak
-target. Loops are crossfaded at the seam and carry a forward loop in a smpl chunk.
+mono, except the rain and ambience recordings, which stay stereo. Variants of
+one event are matched in loudness after their attack, then the loudest is set to
+the peak target. Loops are crossfaded at the seam; WAV loops carry a forward loop
+in a smpl chunk, and the long ambience loops are written as Ogg Vorbis (needs the
+soundfile package), whose loop flag is set in the Godot import file.
 
     python art_source/audio/make_cues.py <decoded folder> assets/audio [--only raker/ ...]
 
@@ -43,6 +45,8 @@ SOURCES = {
     "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
     "step_asphalt": 637556, "step_gravel": 521588, "step_dirt": 682127, "step_grass": 521587,
     "step_wood": 119914, "step_tin": 466618, "step_concrete": 459964,
+    "amb_day": 639459, "amb_night": 454361, "amb_forest": 751473, "amb_highway": 697217,
+    "amb_fog": 212697, "room_small": 451064, "room_corridor": 262641, "room_hall": 451614,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -167,8 +171,13 @@ CUTS = {
 }
 
 # Output "domain/file": (source, start, end, seam seconds, RMS dBFS, processing).
-# "flatten" evens slow level swings; "limit" softly rounds off drip transients so
-# the rain can reach its loudness without clipping.
+# Processing is a space-separated list: "flatten" evens slow level swings; "limit"
+# softly rounds off drip transients so the loop can reach its loudness without
+# clipping; "rumble" removes wind rumble below 60 Hz before levelling; "dull"
+# eases 8 dB off the top, from 7 kHz to full cut above 11 kHz; "balance" levels
+# the two channels; "midband" sets the level on the 300 Hz - 8 kHz band small
+# speakers reproduce, so rumble-heavy beds and room hum stay audible; "ogg"
+# writes Ogg Vorbis.
 LOOPS = {
     "scrapper/grinding": ("shredder_factory", 40.0, 46.3, 0.25, -16.0, "flatten"),
     "player/tinnitus": ("tinnitus_t", 2.0, 3.2, 0.10, -16.0, ""),
@@ -177,6 +186,14 @@ LOOPS = {
     "apparitions/white_presence": ("ghost_whispers", 3.0, 21.0, 0.50, -22.0, "flatten"),
     "apparitions/black_breathing": ("creepy_breathing", 2.9, 22.0, 0.50, -24.0, ""),
     "barrel_man/fuse": ("fuse", 0.2, 3.5, 0.30, -18.0, "flatten"),
+    "ambience/day": ("amb_day", 24.0, 54.0, 2.0, -28.0, "rumble dull balance midband ogg"),
+    "ambience/night": ("amb_night", 16.0, 46.0, 2.0, -28.0, "rumble midband ogg"),
+    "ambience/forest": ("amb_forest", 107.0, 137.0, 2.0, -28.0, "rumble midband ogg"),
+    "ambience/highway": ("amb_highway", 10.0, 40.0, 2.0, -28.0, "rumble midband ogg"),
+    "ambience/fog": ("amb_fog", 116.0, 146.0, 2.0, -28.0, "rumble limit midband ogg"),
+    "ambience/room_small": ("room_small", 17.0, 37.0, 1.5, -34.0, "rumble midband ogg"),
+    "ambience/room_corridor": ("room_corridor", 5.0, 25.0, 1.5, -34.0, "rumble limit midband ogg"),
+    "ambience/room_hall": ("room_hall", 155.0, 175.0, 1.5, -34.0, "rumble midband ogg"),
 }
 
 
@@ -238,6 +255,28 @@ def write(path, audio, loop=False):
         path.write_bytes(content[:4] + struct.pack("<I", len(content) + len(chunk) - 8) + content[8:] + chunk)
 
 
+def write_ogg(path, audio):
+    import soundfile
+    path.parent.mkdir(parents=True, exist_ok=True)
+    audio = np.ascontiguousarray(np.clip(audio, -1.0, 1.0))
+    with soundfile.SoundFile(str(path), "w", RATE, audio.shape[1], format="OGG", subtype="VORBIS",
+                             compression_level=0.3) as out:
+        # libsndfile's Vorbis writer crashes on very large single writes.
+        for at in range(0, len(audio), 4096): out.write(audio[at:at + 4096])
+
+
+def equalize(audio, gain_at):
+    """Zero-phase gain curve over frequency; the loop seam hides the edges."""
+    spectrum = np.fft.rfft(audio, axis=0)
+    spectrum *= gain_at(np.fft.rfftfreq(len(audio), 1.0 / RATE))[:, None]
+    return np.fft.irfft(spectrum, n=len(audio), axis=0)
+
+
+def midband_rms(audio):
+    band = equalize(audio, lambda f: ((f >= 300.0) & (f < 8000.0)).astype(float))
+    return np.sqrt(np.mean(band ** 2))
+
+
 def flatten(audio, window=0.3):
     """Even out slow level swings so the loop has no audible pumping."""
     size = round(window * RATE)
@@ -283,14 +322,19 @@ def main():
     ceiling = 10 ** (PEAK_DB / 20)
     for name, (source, start, end, seam, rms_db, processing) in LOOPS.items():
         if not wanted(name): continue
+        steps = processing.split()
         audio = read(args.source, source, start, end) / 32768
         audio -= audio.mean(axis=0)
-        if processing == "flatten": audio = flatten(audio)
+        if "balance" in steps: audio *= np.sqrt(np.mean(audio ** 2)) / np.sqrt(np.mean(audio ** 2, axis=0))
+        if "rumble" in steps: audio = equalize(audio, lambda f: 1.0 / np.sqrt(1.0 + (60.0 / np.maximum(f, 1.0)) ** 8))
+        if "dull" in steps: audio = equalize(audio, lambda f: 10 ** (-8.0 / 20 * np.clip((f - 7000.0) / 4000.0, 0.0, 1.0)))
+        if "flatten" in steps: audio = flatten(audio)
         audio = seamless(audio, seam)
-        audio *= 10 ** (rms_db / 20) / np.sqrt(np.mean(audio ** 2))
-        if processing == "limit": audio = np.tanh(audio / ceiling) * ceiling
+        audio *= 10 ** (rms_db / 20) / (midband_rms(audio) if "midband" in steps else np.sqrt(np.mean(audio ** 2)))
+        if "limit" in steps: audio = np.tanh(audio / ceiling) * ceiling
         audio *= min(1.0, ceiling / np.max(np.abs(audio)))
-        write(args.output / f"{name}.wav", audio * 32767, loop=True)
+        if "ogg" in steps: write_ogg(args.output / f"{name}.ogg", audio)
+        else: write(args.output / f"{name}.wav", audio * 32767, loop=True)
 
 
 if __name__ == "__main__":

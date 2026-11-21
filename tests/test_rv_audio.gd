@@ -82,6 +82,13 @@ func _run() -> void:
 		if file.get_extension() != "tres": continue
 		var profile := load("res://world/instances/catalog".path_join(file)) as InteriorProfile
 		check(profile != null and profile.reverb != null, "%s names a room reverb preset" % file)
+		check(profile != null and profile.room_tone is AudioStreamOggVorbis and profile.room_tone.loop, "%s names a looping room tone" % file)
+	var tone := load("res://assets/audio/ambience/room_hall.ogg") as AudioStream
+	sfx.set_listener_viewport(inside, hall, tone)
+	check(sfx.room_tone() == tone and not sfx.listening_outdoors(), "An interior listener carries its room tone")
+	sfx.set_listener_viewport(root)
+	check(sfx.room_tone() == null and sfx.listening_outdoors(), "The outdoor listener has no room tone")
+	await _check_ambience(sfx, inside, tone)
 	var burst := door_close.duplicate() as SoundEvent
 	burst.cooldown_seconds = 1.0
 	check(sfx.play(burst, outside_source) and not sfx.play(burst, outside_source) and sfx.play(door_close, outside_source),
@@ -145,11 +152,13 @@ func _run() -> void:
 	await _settle_mix(sfx)
 	var outside_exterior := _bus_mix(&"Exterior")
 	var outside_cabin := _bus_mix(&"Cabin")
+	check(_bus_mix(&"Outdoors").is_equal_approx(outside_exterior), "Outdoor ambience is open beside the RV")
 	listener.global_position = cabin
 	await _settle_mix(sfx)
 	var cabin_exterior := _bus_mix(&"Exterior")
 	var cabin_cabin := _bus_mix(&"Cabin")
 	check(_bus_mix(&"Engine").is_equal_approx(cabin_exterior), "The engine bay is muffled like the rest of the exterior from the cabin")
+	check(_bus_mix(&"Outdoors").is_equal_approx(cabin_exterior), "Outdoor ambience is muffled like the exterior from the cabin")
 	check(cabin_exterior.x < outside_exterior.x and cabin_exterior.y < outside_exterior.y, "The cabin lowers the exterior bus level and cutoff")
 	check(outside_cabin.x < cabin_cabin.x and outside_cabin.y < cabin_cabin.y, "Standing outside lowers the cabin bus level and cutoff")
 	listener.queue_free()
@@ -257,6 +266,55 @@ func _run() -> void:
 	await process_frame
 	if failures.is_empty(): print("PASS: RV audio routing, playback isolation and engine transitions")
 	quit(0 if failures.is_empty() else 1)
+
+
+func _check_ambience(sfx: Node, inside: SubViewport, tone: AudioStream) -> void:
+	var loud := func(weights: Dictionary) -> float:
+		var total := 0.0
+		for bed in weights: total += weights[bed] * db_to_linear(WorldAmbience.BED_DB[bed])
+		return total
+	var noon := WorldAmbience.mix(1.0, 0.0, 0.0, 0.0, 0.0)
+	var midnight := WorldAmbience.mix(0.0, 0.0, 0.0, 0.0, 0.0)
+	check(noon[&"day"] > 0.0 and noon[&"night"] == 0.0 and midnight[&"night"] > 0.0 and midnight[&"day"] == 0.0,
+		"Day and night beds swap with the daylight")
+	check(loud.call(midnight) < loud.call(noon), "Night is quieter than day")
+	check(WorldAmbience.mix(0.0, 0.0, 0.0, 1.0, 1.0)[&"forest"] < WorldAmbience.mix(1.0, 0.0, 0.0, 1.0, 1.0)[&"forest"],
+		"Trees rustle more quietly at night")
+	var fog := WorldAmbience.mix(1.0, WorldWeather.FOG_HEAVY, 0.0, 0.0, 0.0)
+	check(fog[&"fog"] > noon[&"fog"] and fog[&"day"] < noon[&"day"], "Fog brings its bed in and damps the day bed")
+	check(WorldAmbience.mix(1.0, 0.0, 1.0, 0.0, 0.0)[&"day"] < noon[&"day"], "Rain quiets the day bed")
+	check(WorldAmbience.mix(1.0, 0.0, 0.0, 0.0, 1.0)[&"highway"] > WorldAmbience.mix(1.0, 0.0, 0.0, 1.0, 1.0)[&"highway"],
+		"A forest beside the road covers some of the open highway wind")
+	for bed in WorldAmbience.BEDS:
+		var stream := WorldAmbience.BEDS[bed] as AudioStreamOggVorbis
+		check(stream != null and stream.loop, "The %s bed loops" % bed)
+
+	var clock := WorldClock.new()
+	var ambience := WorldAmbience.new()
+	ambience.clock = clock
+	ambience.forest_override = 0.0
+	ambience.road_override = 0.0
+	root.add_child(ambience)
+	var settle := func() -> void:
+		for i in range(ceili(WorldAmbience.FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	clock.set_time(1, 12.0)
+	await settle.call()
+	var players: Array = ambience.get_children().filter(func(node): return node.stream in WorldAmbience.BEDS.values())
+	check(players.size() == WorldAmbience.BEDS.size() and players.all(func(voice): return voice.playing and voice.bus == &"Outdoors"),
+		"Every bed plays on the outdoor ambience bus")
+	check(ambience.levels[&"day"] > ambience.levels[&"night"], "Noon plays the day bed")
+	clock.set_time(1, 0.0)
+	await settle.call()
+	check(ambience.levels[&"night"] > ambience.levels[&"day"], "Midnight hands over to the night bed")
+	sfx.set_listener_viewport(inside, null, tone)
+	await settle.call()
+	check(ambience.levels.values().all(func(level): return level == 0.0), "Inside an interior the outdoor beds fall silent")
+	check(ambience._room.playing and ambience._room.stream == tone and ambience.room_level > 0.0, "Inside an interior its room tone plays")
+	sfx.set_listener_viewport(root)
+	await settle.call()
+	check(not ambience._room.playing and ambience.levels[&"night"] > 0.0, "Back outdoors the room tone stops and the beds return")
+	ambience.free()
+	clock.free()
 
 
 func _check_monster_footfalls() -> void:
