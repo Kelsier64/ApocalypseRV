@@ -2,7 +2,7 @@
 # outside the layout described in docs/README.md. With no arguments, checks every
 # tracked or new Markdown file and the whole docs/ tree; with paths, only those files.
 # -Root checks another checkout of this repository, such as a task worktree.
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding = $false)]
 param([string]$Root, [Parameter(ValueFromRemainingArguments)][string[]]$Path)
 $ErrorActionPreference = 'Stop'
 $utf8 = [Text.UTF8Encoding]::new($false)
