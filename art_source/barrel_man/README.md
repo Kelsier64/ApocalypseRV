@@ -12,7 +12,7 @@
 
 ## 製作與再匯出
 
-以下腳本的內容交給 **Blender MCP `execute_blender_code`** 執行，不以外部 Blender 批次程序替代。建立模型只在乾淨的新工作場景執行一次；之後動畫與渲染腳本可以重跑。
+以下腳本假設在已開啟的 Blender 工作階段中執行，透過 **Blender MCP `execute_blender_code`** 送入：它們依賴 `BARREL_MAN_AUTHORING` 場景與既有場景並存，尚未改寫成可獨立批次執行的版本。這是本資產的例外；新資產依 [3D 場景 skill](../../.claude/skills/apocalypse-rv-3d-scenes/SKILL.md) 優先用無介面腳本。建立模型只在乾淨的新工作場景執行一次；之後動畫與渲染腳本可以重跑。
 
 1. [build_model.py](build_model.py)：建立與合併解剖網格、UV、烘焙、蒙皮。此腳本建立新場景，重跑前應先另存自己的修改。
 2. [optimize_model.py](optimize_model.py)：在靜止網格上減面到遊戲預算，校正腳底；有已執行標記，避免重複減面。

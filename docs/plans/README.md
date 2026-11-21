@@ -28,6 +28,7 @@
 | 巨型避難所 | 完整自由遊玩與最終美術 |
 | [Orbit 大型加油站](../../tests/playgrounds/production_gas_station_playground.tscn) | 實際開 RV 在加油島間停靠，從早餐吧經調度窗口走到後場，評估貨架可讀性與搬運距離。 |
 | [Mile End 廢棄小站](../../tests/playgrounds/mile_end_playground.tscn) | 開 RV 停靠、徒步搜店再搬油回車，確認油桶人露出的位置與時機。預設種子 25 可遇敵。 |
+| [建築 kit](../../tests/playgrounds/building_kit_playground.tscn) | 走過參考建築的三個情境：冷灰材質是否符合想要的調性、牆面貼圖重複是否明顯、門窗框與窗台的比例、破窗與完整玻璃的觀感、戶外樓梯的手感，以及素模下量體是否清楚 |
 | 軍事地堡 | 長局收益與遭遇節奏、自由遊玩、效能 |
 | 駕駛體驗 | 一般操作、UI 瞄準、音效聽感 |
 | 玩家腳步（實際遊戲） | 試聽場已驗收。實際遊戲中從公路走到路肩、草地和土路，確認聽到的材質跟看到的地面一致 |
@@ -53,4 +54,6 @@
 | RV 車門錄音重製 | 依 [RV 錄音](../../assets/audio/rv/README.md) 重跑 `make_pilot_wavs.py` 產生的車門 WAV 與已提交的不同；要找回當初的 `door.wav` 解碼或改寫剪輯點 |
 | 天氣呈現參數 | 雨與霧的呈現參數還沒統一成單一設定資源 |
 | 終端指令 | `spawn`、`list`、`freeze`、`camera thirdperson` 尚未實作 |
+| 建築改用 kit | 既有建築仍各自用 11 套方塊函式（Orbit、Mile End、巨型避難所三套、避難所牆、POI kit、橋等），要逐棟改用[建築 kit](../guides/building-kit.md)並比較前後。Orbit 的青綠金黃配色不符 GDD 的冷灰低飽和，遷移時一併調整 |
+| 建築貼圖重複 | kit 材質以單一照片貼圖平鋪，大面牆看得出重複；需要大尺度的明暗變化或第二層污漬 |
 | 敵人 | 怪物在車內主動拆設備或拆出路線；群體遭遇節奏；場址的怪物刷新規則待重新設計（[GDD 第 9 節](../../GDD.md#section-9)） |
