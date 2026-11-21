@@ -90,3 +90,5 @@ Project skills live in `.claude/skills/`. Load one when its trigger applies.
 | `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
 | `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
 | `harness-maintenance` | Editing CLAUDE.md, `.claude/`, `scripts/agent/` or `.mcp.json` |
+| `co-lead` | Discussing or deciding design, architecture, direction, the harness or doc structure; asked for an opinion or a recommendation |
+| `agy` | Calling Antigravity CLI; in this project only to generate images (see Delegation) |

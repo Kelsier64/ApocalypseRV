@@ -20,9 +20,6 @@
 /tests/slender_speaker_world_review.*
 /tests/test_slender_speaker_asset.*
 
-# Claude Code local settings
-.claude/settings.local.json
-
 # Python bytecode from build scripts
 __pycache__/
 *.pyc

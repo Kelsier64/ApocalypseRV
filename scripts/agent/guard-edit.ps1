@@ -11,6 +11,8 @@ if ($null -eq $tool) { exit 0 }
 $path = "$($tool.file_path)" -replace '\\', '/'
 if (-not $path.StartsWith("$root/", [StringComparison]::OrdinalIgnoreCase)) { exit 0 }
 $relative = $path.Substring($root.Length + 1)
+# Task worktrees under .claude/worktrees/<topic>/ are full checkouts; check them like the main one.
+$relative = $relative -replace '^\.claude/worktrees/[^/]+/', ''
 if ($relative -notmatch '\.(gd|tscn|tres|scn)$') { exit 0 }
 if ($relative -match '^(tests|art_source|docs|scripts|\.claude)/') { exit 0 }
 

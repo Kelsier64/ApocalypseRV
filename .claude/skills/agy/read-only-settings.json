@@ -1,0 +1,1 @@
+{"permissions":{"allow":["command(regex:^git (grep|ls-files|log|show|diff|status)( [^;&|<>`$()\\r\\n]*)?$)"],"deny":["command(regex:.*\\s(-O|--open-files-in-pager|--output|--no-index|--ext-diff|--textconv).*)"]}}
