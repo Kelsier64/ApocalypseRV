@@ -6,7 +6,7 @@
 - 房型資源：`world/instances/catalog/bunker/`，Profile：`world/instances/catalog/bunker.tres`。
 - 基本外觀：`materials/bunker/`，混凝土貼圖沿用 `assets/materials/poi_kit/` 原有素材。
 - 室外入口：`exteriors/service_entrance.tscn` 及四款繼承場景，沿用場址、入口、返回點，加入簡單軍事立面。
-- 共用家具：`furniture/shelf.tscn`、`workbench.tscn`、`cabinet.tscn` 與 fuel_pump 仍供加油站使用，不隨舊副本移除。
+- 歷史家具 `furniture/shelf.tscn`、`workbench.tscn`、`cabinet.tscn` 與 fuel_pump 隨 [Northline 獨立展示場](../poi_kit/buildings/README.md) 保存。
 
 房間保留 Visuals／Collision／DoorSockets／Furnishings／Walkway。家具原點在底部占地中心，碰撞不放入可替換模型；`furniture/bunker/` 為 v2 家具與複雜物件灰盒。PoiLootPoint 只描述呼叫者 RNG 抽選，不能自行生成內容。新地堡由 BunkerContent 獨立抽取物資、補給箱、Raker 與引擎；BunkerLighting 將普通模組的 60% 熄燈，入口與樓梯保留照明。
 

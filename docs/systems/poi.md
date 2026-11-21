@@ -9,7 +9,7 @@
 | POI 定義 | 每個 POI 一份資源：場景、類型、可放的位置、佔地、入口 | [PoiDefinition](../../world/poi_definition.gd)、[POIConfig](../../world/poi_config.gd)、`world/poi_definitions/` | |
 | 場址生成 | 檢查定義與場景後放進世界，副本入口另外向轉場管理器登記 | [POISpawner](../../world/poi_spawner.gd) | |
 | 可步行場址 | 直接走進去的建築：首次到訪抽物資，離開後保存剩下的東西 | [WalkInSites](../../world/terrain/walk_in_sites.gd) | |
-| 加油站 | 雙面油價牌與雙翼雨棚標出站址。前院後方左側是商店、右側是維修間，可帶走汽油罐。 | [建築說明](../../world/poi_kit/buildings/README.md) | [gas_station](../../tests/playgrounds/gas_station_playground.tscn)、[production](../../tests/playgrounds/production_gas_station_playground.tscn) |
+| Orbit 大型加油站 | 雙拱跨過三座加油島；後方旅客服務樓設有早餐吧、冷飲市集、調度窗口與收貨間。 | [站區場景](../../world/roadside_pois/orbit_plaza/plaza.tscn) | [正式公路測試場](../../tests/playgrounds/production_gas_station_playground.tscn) |
 | Mile End 鄉間小站 | 折板棚下有一座停用的機械油泵。可從店前穿到卸貨後院。 | [小站場景](../../world/roadside_pois/mile_end/station.tscn) | [mile_end](../../tests/playgrounds/mile_end_playground.tscn) |
 | 路旁小場址 | 六種主題各三套配置 | [MinorSites](../../world/terrain/minor_sites.gd)、[資產說明](../../world/roadside_pois/README.md) | [minor_poi](../../tests/playgrounds/minor_poi_playground.tscn)、[production](../../tests/playgrounds/production_minor_poi_playground.tscn) |
 | 副本轉場 | 從入口進入獨立的室內世界、切換相連的室內、返回戶外 | [PoiInstanceManager](../../world/instances/poi_instance_manager.gd) | [poi_instance](../../tests/playgrounds/poi_instance_playground.tscn) |
@@ -33,7 +33,7 @@
 | 場址 | 定義 ID | 類型 | 出現位置 | 內容 |
 |---|---|---|---|---|
 | 地堡入口 | `maintenance`、`warehouse`、`pump`、`research` | 副本入口 | 路旁的主要停靠點、野地 | 四種外觀，裡面都是隨機軍事地堡 |
-| 加油站 | `gas_station` | 可步行 | 路旁的主要停靠點 | 商店、維修間、後院與加油棚裡的物資 |
+| Orbit 大型加油站 | `orbit_plaza` | 可步行 | 路旁的主要停靠點 | 拱高、缺棚、封窗、餐座或點心櫃、貨架位置、候車座與後場貨物依種子決定。早餐吧必有一份食物，廚房、市集、調度與收貨各自抽物資，後門另抽汽油罐。 |
 | 廢棄鄉間小站 | `mile_end` | 可步行 | 公路空檔 | 店面寬深、棚距、封板與家具隨站址種子變化。雜貨架、工具桌與行軍床各有對應物資；後門卸貨處另抽汽油罐。 |
 | 路旁小場址 | `roadside_<主題>_<0–2>`，主題為 `wreck`、`camp`、`shed`、`checkpoint`、`cargo`、`rest` | 可步行 | 路旁；`camp` 與 `shed` 也出現在野地 | 少量物資；`cargo` 與 `shed` 可能藏著油桶人 |
 | 民用避難所 | `civilian_shelter`、`courtyard_shelter` | 可步行 | 只在野地 | 荒廢的小型混凝土避難所與物資 |
@@ -46,9 +46,11 @@
 ### 可步行場址
 
 - 第一次靠近時，場址依建築裡的物資點抽出物資。之後不再補貨。
-- `cargo` 與 `shed` 場址會多放一個油桶當掩護，並依定義的 `enemy_count_range` 抽出零到兩個位置，每個位置有 `BarrelManSettings.MINOR_CHANCE` 的機率是油桶人，否則是空的。Mile End 小站在店側或後院抽一個候選位置，沿用相同機率，也有一個普通油桶。場址的怪物刷新規則待重新設計，見 [GDD 第 9 節](../../GDD.md#section-9)。
+- `cargo` 與 `shed` 場址會多放一個油桶當掩護，並依定義的 `enemy_count_range` 抽出零到兩個位置，每個位置有 `BarrelManSettings.MINOR_CHANCE` 的機率是油桶人，否則是空的。Orbit 在收貨外場、Mile End 在店側或後院各抽一個候選位置，沿用相同機率，也有一個普通油桶。場址的怪物刷新規則待重新設計，見 [GDD 第 9 節](../../GDD.md#section-9)。
 - 玩家離開、場址所在的區塊卸載時，場址範圍內所有的物品與活著的怪物會被收起來，包含玩家帶來丟下的東西。回來時原樣放回。車輛與車上的東西不算場址的。
 - 加油機是造景，沒有加油功能。可拾取的汽油罐照一般物品的規則使用。
+
+最早的 Northline 保留於[獨立展示場](../../tests/playgrounds/gas_station_playground.tscn)。正式生成已撤下其定義；含有舊 `gas_station` 場址紀錄的本機檢查點須重新開局。
 
 ### 進出副本
 

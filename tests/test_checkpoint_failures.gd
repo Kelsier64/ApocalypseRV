@@ -97,8 +97,8 @@ func _run() -> void:
 	var old_layout := InteriorLayout.generate(42, 12)
 	var old_content := {"version": 1, "cargo_id": "", "cargo_room": ""}
 	retired.poi["retired-test"] = {"layout": old_layout, "actors": [{"id": "retired-poi", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 30.0}], "explored": [], "content": old_content, "caches": []}
-	var station: PoiDefinition = POIConfig.definition(&"gas_station")
-	retired.outdoor_sites["retired-test"] = {"definition_id": "gas_station", "content_version": station.content_version, "loaded": false,
+	var station: PoiDefinition = POIConfig.definition(&"orbit_plaza")
+	retired.outdoor_sites["retired-test"] = {"definition_id": "orbit_plaza", "content_version": station.content_version, "loaded": false,
 		"actors": [{"kind": "monster", "scene": retired_scene, "transform": Transform3D.IDENTITY, "health": 20.0}]}
 	check(checkpoint.write_checkpoint(PATH + ".retired", retired), "Retired-monster fixture writes")
 	check(checkpoint.read_checkpoint(PATH + ".retired").is_empty(), "Unknown retired scenes are rejected without migration")

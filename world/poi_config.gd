@@ -8,7 +8,7 @@ const DEFINITIONS = [
 	preload("res://world/poi_definitions/warehouse.tres"),
 	preload("res://world/poi_definitions/pump.tres"),
 	preload("res://world/poi_definitions/research.tres"),
-	preload("res://world/poi_definitions/gas_station.tres"),
+	preload("res://world/poi_definitions/orbit_plaza.tres"),
 	preload("res://world/poi_definitions/mile_end.tres"),
 	preload("res://world/poi_definitions/starting_shelter.tres"),
 	preload("res://world/poi_definitions/orientation_shelter.tres"),
@@ -62,7 +62,7 @@ static func instantiate_site(site: Dictionary, include_visuals := true) -> Node3
 	if building == null:
 		instance.free()
 		return null
-	if site.get("definition_id", "") == "mile_end":
+	if site.get("definition_id", "") in ["mile_end", "orbit_plaza"]:
 		building.configure(int(site.seed), include_visuals)
 	elif site.get("definition_id", "") == "modular_megashelter":
 		var plan: Dictionary = site.get("exterior_plan", {})

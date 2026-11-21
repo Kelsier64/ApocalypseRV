@@ -29,7 +29,7 @@
 | `access_paths` | 可驗證的本地 Marker3D 路徑；直接探索型至少一個，涵蓋主要進出位置 |
 | `interior_profile` | 副本入口專用；支援 `bunker`／`megashelter`；見 [地堡規格](bunker-interior.md)／[巨型避難所室內](megashelter-interiors.md) |
 | `legacy_visual_layout` | 僅既有四款程序外觀可為 true，新資產必須為 false |
-| `enemy_count_range` | WALK_IN 候選名額範圍，預設 (0,0)，上限 2。非零時需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D。貨櫃、棚屋及 Mile End 鄉間小站使用這些名額抽取油桶人。 |
+| `enemy_count_range` | WALK_IN 候選名額範圍，預設 (0,0)，上限 2。非零時需提供足量且位於 site_bounds 內的 EnemySpawns/Marker3D。貨櫃、棚屋、Orbit 與 Mile End使用這些名額抽取油桶人。 |
 
 放置類別由 `placement_modes` 的 `ROADSIDE`、`OFF_ROAD` 旗標指定，與 `PoiDefinition.kind`（副本入口／直接探索）分開；兩個旗標可同時設定，無須複製定義或場景。四款地堡入口、camp、shed 同時支援兩類；兩款 shelter 僅支援越野，其他四個小型 POI 主題維持路旁。四款地堡入口 路旁位置為距道路中心 49 m 的獨立場址，局部整地只用於建築本體安置。越野候選使用橫向 3 欄、每格 300 × 900 m 的網格，需避開道路、水域、陡坡及既有 POI，按自然地面高度及隨機朝向放置。路旁專用的公路標誌、方向標誌及停車區配置不得套用到越野場址。越野地堡只在建築本地入口局部整地，不改造周遭地形。
 
@@ -84,7 +84,7 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 - 更換同尺寸外觀且不改通路／碰撞／標記，可視為美術替換。移牆、移家具、換生成規則或物資標記則需驗證當前資料；不相容時要求重新開局。
 - `content_version` 由戶外場址寫入檢查點並驗證；不支援的版本拒絕載入。改布局不需保留舊內容或提供遷移；不能用相同 seed 假定幾何一定相同。
 
-加油站在正式 v5 場址初訪抽取物資，卸載保存剩餘 actor；已拾取物品不因回訪重生。活動 actor 與休眠 actor 分別保存，避免重複所有權。
+加油站在場址初訪抽取物資，卸載保存剩餘 actor；已拾取物品不因回訪重生。活動 actor 與休眠 actor 分別保存，避免重複所有權。
 
 ## 6. 製作與驗收流程
 
@@ -104,7 +104,8 @@ ReturnPoint 的返回朝向由 PoiInstanceManager 依建築朝向計算；Access
 | 定義 | 類型／接入 | 當前用途 |
 |---|---|---|
 | maintenance／warehouse／pump／research | 目前副本入口生成池 | 路徑、顯示名稱及順序集中；同一室內 profile |
-| gas_station | 正式公路及獨立測試場 | 占地整地、回程串流、剩餘物資及檢查點保存 |
+| orbit_plaza／mile_end | 公路主要停靠點／公路空檔 | 種子化的加油站、戶外物資與油桶人 |
+| gas_station | 已封存的 Northline 獨立展示場 | 供檢視舊場景 |
 | civilian_shelter | WALK_IN、僅 OFF_ROAD、內容 v1 | 荒廢小型民用避難所；沿用戶外場址物資、串流與保存 |
 | courtyard_shelter | WALK_IN、僅 OFF_ROAD、內容 v1 | L 形庭院變體；沿用戶外場址物資、串流與保存 |
 | modular_megashelter | INSTANCE_ENTRANCE、僅 OFF_ROAD、外殼內容 v7 | megashelter 單層室內、獨立副本物資及探索保存 |

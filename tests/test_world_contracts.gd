@@ -27,6 +27,7 @@ func run() -> void:
 	await WORLD_DETAIL_CONTRACTS.run(self, world, check)
 	await OFFROAD_CONTRACTS.run(self, world, check)
 	await MILE_END_CONTRACTS.run(self, world, check)
+	await preload("res://tests/support/orbit_plaza_contracts.gd").run(self, world, check)
 	BUILDING_LOCATOR_CONTRACTS.run(check)
 	await MEGASHELTER_CONTRACTS.run(self, world, check)
 	world.queue_free()
