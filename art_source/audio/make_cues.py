@@ -1,11 +1,11 @@
-"""Cut the pistol, panel damage, monster, player, footstep, scrapper and rain sounds.
+"""Cut the pistol, panel damage, monster, player, footstep, scrapper, rain and ambience sounds.
 
 Inputs are the Freesound previews listed in the assets/audio/<domain>/README.md
 files, decoded to 44.1 kHz PCM16 WAV and named after the SOURCES keys below:
-mono, except the rain and ambience recordings, which stay stereo. Variants of
+mono, except the rain and room-tone recordings, which stay stereo. Variants of
 one event are matched in loudness after their attack, then the loudest is set to
 the peak target. Loops are crossfaded at the seam; WAV loops carry a forward loop
-in a smpl chunk, and the long ambience loops are written as Ogg Vorbis (needs the
+in a smpl chunk, and the room tones are written as Ogg Vorbis (needs the
 soundfile package), whose loop flag is set in the Godot import file.
 
     python art_source/audio/make_cues.py <decoded folder> assets/audio [--only raker/ ...]
@@ -45,8 +45,8 @@ SOURCES = {
     "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
     "step_asphalt": 637556, "step_gravel": 521588, "step_dirt": 682127, "step_grass": 521587,
     "step_wood": 119914, "step_tin": 466618, "step_concrete": 459964,
-    "amb_day": 639459, "amb_night": 454361, "amb_forest": 751473, "amb_highway": 697217,
-    "amb_fog": 212697, "room_small": 451064, "room_corridor": 262641, "room_hall": 451614,
+    "room_small": 451064, "room_hall": 451614, "drips": 262641,
+    "crows_cornwall": 144553, "crow_call": 813114, "tree_creaks": 726217, "branch_snap": 452109, "sign_creak": 759692, "metal_creaks": 625616, "cricket_single": 753272,
 }
 
 # Output "domain/file": list of (source, start, end, offset, gain dB) layers and
@@ -168,16 +168,41 @@ CUTS = {
     "slender_speaker/step_c": ([("drum_footsteps", 5.25, 6.35)], 0.50),
     "slender_speaker/step_d": ([("drum_footsteps", 9.20, 10.30)], 0.50),
     "slender_speaker/step_e": ([("drum_footsteps", 13.18, 14.28)], 0.50),
+    # Sparse ambience, outdoors: one caw, creak, snap or chirp burst each.
+    # The quieter Cornwall calls sit over other birds and are left out.
+    "ambience/crow_a": ([("crow_call", 0.00, 0.84)], 0.20),
+    "ambience/crow_b": ([("crows_cornwall", 0.00, 1.60)], 0.40),
+    "ambience/crow_c": ([("crows_cornwall", 51.99, 53.60)], 0.40),
+    "ambience/tree_creak_a": ([("tree_creaks", 4.93, 6.50)], 0.40),
+    "ambience/tree_creak_b": ([("tree_creaks", 9.87, 12.80)], 0.60),
+    "ambience/tree_creak_c": ([("tree_creaks", 16.19, 17.40)], 0.40),
+    "ambience/tree_creak_d": ([("tree_creaks", 21.47, 23.30)], 0.40),
+    "ambience/branch_snap_a": ([("branch_snap", 0.45, 1.40)], 0.30),
+    "ambience/branch_snap_b": ([("branch_snap", 1.41, 2.70)], 0.40),
+    "ambience/metal_creak_a": ([("sign_creak", 0.11, 1.50)], 0.30),
+    "ambience/metal_creak_b": ([("sign_creak", 2.41, 3.40)], 0.30),
+    "ambience/metal_creak_c": ([("sign_creak", 6.15, 7.90)], 0.30),
+    "ambience/metal_creak_d": ([("sign_creak", 10.15, 11.20)], 0.30),
+    "ambience/cricket_a": ([("cricket_single", 0.00, 1.85)], 0.30),
+    "ambience/cricket_b": ([("cricket_single", 4.23, 6.10)], 0.30),
+    "ambience/cricket_c": ([("cricket_single", 9.13, 11.00)], 0.30),
+    # Sparse ambience, interiors: a drip or a metal contraction creak.
+    "ambience/drip_a": ([("drips", 14.97, 15.50)], 0.25),
+    "ambience/drip_b": ([("drips", 25.75, 26.30)], 0.25),
+    "ambience/drip_c": ([("drips", 41.81, 42.40)], 0.25),
+    "ambience/drip_d": ([("drips", 90.31, 90.85)], 0.25),
+    "ambience/drip_e": ([("drips", 95.90, 96.45)], 0.25),
+    "ambience/drip_f": ([("drips", 98.39, 98.95)], 0.25),
+    "ambience/room_creak_a": ([("metal_creaks", 0.85, 3.20)], 0.50),
+    "ambience/room_creak_b": ([("metal_creaks", 6.17, 7.80)], 0.40),
 }
 
 # Output "domain/file": (source, start, end, seam seconds, RMS dBFS, processing).
 # Processing is a space-separated list: "flatten" evens slow level swings; "limit"
 # softly rounds off drip transients so the loop can reach its loudness without
-# clipping; "rumble" removes wind rumble below 60 Hz before levelling; "dull"
-# eases 8 dB off the top, from 7 kHz to full cut above 11 kHz; "balance" levels
-# the two channels; "midband" sets the level on the 300 Hz - 8 kHz band small
-# speakers reproduce, so rumble-heavy beds and room hum stay audible; "ogg"
-# writes Ogg Vorbis.
+# clipping; "rumble" removes rumble below 60 Hz before levelling; "low" keeps
+# only what lies below about 400 Hz, so a room tone is a felt hum with no hiss;
+# "ogg" writes Ogg Vorbis.
 LOOPS = {
     "scrapper/grinding": ("shredder_factory", 40.0, 46.3, 0.25, -16.0, "flatten"),
     "player/tinnitus": ("tinnitus_t", 2.0, 3.2, 0.10, -16.0, ""),
@@ -186,14 +211,8 @@ LOOPS = {
     "apparitions/white_presence": ("ghost_whispers", 3.0, 21.0, 0.50, -22.0, "flatten"),
     "apparitions/black_breathing": ("creepy_breathing", 2.9, 22.0, 0.50, -24.0, ""),
     "barrel_man/fuse": ("fuse", 0.2, 3.5, 0.30, -18.0, "flatten"),
-    "ambience/day": ("amb_day", 24.0, 54.0, 2.0, -28.0, "rumble dull balance midband ogg"),
-    "ambience/night": ("amb_night", 16.0, 46.0, 2.0, -28.0, "rumble midband ogg"),
-    "ambience/forest": ("amb_forest", 107.0, 137.0, 2.0, -28.0, "rumble midband ogg"),
-    "ambience/highway": ("amb_highway", 10.0, 40.0, 2.0, -28.0, "rumble midband ogg"),
-    "ambience/fog": ("amb_fog", 116.0, 146.0, 2.0, -28.0, "rumble limit midband ogg"),
-    "ambience/room_small": ("room_small", 17.0, 37.0, 1.5, -34.0, "rumble midband ogg"),
-    "ambience/room_corridor": ("room_corridor", 5.0, 25.0, 1.5, -34.0, "rumble limit midband ogg"),
-    "ambience/room_hall": ("room_hall", 155.0, 175.0, 1.5, -34.0, "rumble midband ogg"),
+    "ambience/room_small": ("room_small", 17.0, 37.0, 1.5, -24.0, "rumble low ogg"),
+    "ambience/room_hall": ("room_hall", 155.0, 175.0, 1.5, -24.0, "rumble low ogg"),
 }
 
 
@@ -272,11 +291,6 @@ def equalize(audio, gain_at):
     return np.fft.irfft(spectrum, n=len(audio), axis=0)
 
 
-def midband_rms(audio):
-    band = equalize(audio, lambda f: ((f >= 300.0) & (f < 8000.0)).astype(float))
-    return np.sqrt(np.mean(band ** 2))
-
-
 def flatten(audio, window=0.3):
     """Even out slow level swings so the loop has no audible pumping."""
     size = round(window * RATE)
@@ -325,12 +339,11 @@ def main():
         steps = processing.split()
         audio = read(args.source, source, start, end) / 32768
         audio -= audio.mean(axis=0)
-        if "balance" in steps: audio *= np.sqrt(np.mean(audio ** 2)) / np.sqrt(np.mean(audio ** 2, axis=0))
         if "rumble" in steps: audio = equalize(audio, lambda f: 1.0 / np.sqrt(1.0 + (60.0 / np.maximum(f, 1.0)) ** 8))
-        if "dull" in steps: audio = equalize(audio, lambda f: 10 ** (-8.0 / 20 * np.clip((f - 7000.0) / 4000.0, 0.0, 1.0)))
+        if "low" in steps: audio = equalize(audio, lambda f: 1.0 / np.sqrt(1.0 + (f / 400.0) ** 8))
         if "flatten" in steps: audio = flatten(audio)
         audio = seamless(audio, seam)
-        audio *= 10 ** (rms_db / 20) / (midband_rms(audio) if "midband" in steps else np.sqrt(np.mean(audio ** 2)))
+        audio *= 10 ** (rms_db / 20) / np.sqrt(np.mean(audio ** 2))
         if "limit" in steps: audio = np.tanh(audio / ceiling) * ceiling
         audio *= min(1.0, ceiling / np.max(np.abs(audio)))
         if "ogg" in steps: write_ogg(args.output / f"{name}.ogg", audio)

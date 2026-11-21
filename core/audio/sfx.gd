@@ -4,7 +4,8 @@ extends Node
 ## inside the cabin hears Exterior through the shell, one outside hears Cabin.
 ## The engine bus is outside the shell too, and a revving engine masks the rest
 ## of Exterior; the Slender Speaker keeps most of its level so it stays locatable.
-## The outdoor ambience bus is muffled like Exterior, and also under a roof.
+## The outdoor ambience bus is muffled and engine-masked like Exterior, and also
+## muffled under a roof.
 
 const MAX_VOICES := 12
 const OPEN_CUTOFF_HZ := 20500.0
@@ -101,6 +102,19 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	if event.outdoor_echo_db > -80.0 and voice.bus == &"Exterior" and _listener == get_tree().root:
 		_play_echo(voice, event)
 	return true
+
+
+## Plays an event at a fixed point of the world being listened to, for sounds
+## with no source node such as distant ambience.
+func play_at(event: SoundEvent, world_position: Vector3, gain_db := 0.0) -> bool:
+	if not is_instance_valid(_listener): return false
+	# The pool sits at the origin of the listening world and never moves.
+	return play(event, _ensure_pool(), world_position, gain_db)
+
+
+## The camera of the world being listened to, outdoors or inside a POI.
+func listener_camera() -> Camera3D:
+	return _listener.get_camera_3d() if is_instance_valid(_listener) else null
 
 
 ## A wet copy on OutdoorEcho, wetter the farther the listener stands.
@@ -237,7 +251,8 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 	_cover[bus_name] = cover
 	var bus := AudioServer.get_bus_index(bus_name)
 	var filter := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
-	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + (ENGINE_MASK_DB * _mask if bus_name == &"Exterior" else 0.0))
+	var masked := bus_name == &"Exterior" or bus_name == &"Outdoors"
+	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + (ENGINE_MASK_DB * _mask if masked else 0.0))
 	filter.cutoff_hz = exp(lerpf(log(OPEN_CUTOFF_HZ), log(CLOSED_CUTOFF_HZ), cover))
 	AudioServer.set_bus_effect_enabled(bus, 0, cover > 0.0)
 
@@ -257,6 +272,7 @@ func _set_room(room: AudioEffectReverb) -> void:
 func _set_mask(mask: float) -> void:
 	_mask = mask
 	_set_cover(&"Exterior", _cover[&"Exterior"])
+	_set_cover(&"Outdoors", _cover[&"Outdoors"])
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"), -ENGINE_MASK_DB * mask * (1.0 - LOUDSPEAKER_MASK_SHARE))
 
 

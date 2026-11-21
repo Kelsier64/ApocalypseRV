@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room"]
 [ext_resource type="PackedScene" path="res://world/poi_kit/rooms/megashelter/stairwell.tscn" id="scene"]
 [ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/corridor.tres" id="reverb"]
-[ext_resource type="AudioStream" path="res://assets/audio/ambience/room_corridor.ogg" id="room_tone"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/room_hall.ogg" id="room_tone"]
 
 [sub_resource type="Resource" id="entry"]
 script = ExtResource("room")

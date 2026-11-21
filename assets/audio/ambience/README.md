@@ -2,13 +2,15 @@
 
 | 遊戲檔案 | 來源 | 用途與處理 |
 | --- | --- | --- |
-| `day.ogg` | [summer meadow with wind，Garuda1982](https://freesound.org/people/Garuda1982/sounds/639459/) | 白天底噪：草叢風聲與蟲鳴。削去 60 Hz 以下的風噪，7 kHz 以上漸進壓低最多 8 dB，左右聲道音量拉平 |
-| `night.ogg` | [wind light desert day steady eerie with crickets.flac，kyles](https://freesound.org/people/kyles/sounds/454361/) | 夜晚底噪：低風聲與零星蟋蟀。削去 60 Hz 以下 |
-| `forest.ogg` | [Soft Wind in the Trees - Leaves rustle，Borgory](https://freesound.org/people/Borgory/sounds/751473/) | 森林層：風吹樹葉。原始錄音左右聲道相同，維持雙單聲道。削去 60 Hz 以下 |
-| `highway.ogg` | [Looping Gentle Wind Ambience on an Open Desert Plain.wav，dhallcomposer](https://freesound.org/people/dhallcomposer/sounds/697217/) | 公路層：空曠處的低沉風聲。削去 60 Hz 以下 |
-| `fog.ogg` | [Forest after winter，dasebr](https://freesound.org/people/dasebr/sounds/212697/) | 霧層：潮濕的滴水聲。削去 60 Hz 以下，滴水的尖峰柔和限幅 |
-| `room_small.ogg` | [room tone medium basement industrial cyclical bg hum and rumble MS.wav，kyles](https://freesound.org/people/kyles/sounds/451064/) | 地堡的室內底噪：機械嗡聲 |
-| `room_corridor.ogg` | [drops in a underground parking，heifara](https://freesound.org/people/heifara/sounds/262641/) | 樓梯間的室內底噪：地下空間的滴水。滴水的尖峰柔和限幅 |
-| `room_hall.ogg` | [room tone large convention hall vent large almost empty.flac，kyles](https://freesound.org/people/kyles/sounds/451614/) | 無燈柱廳與巨型避難所的室內底噪：大空間的通風聲 |
+| `crow_a.wav` | [Crow Call，qubodup](https://freesound.org/people/qubodup/sounds/813114/) | 白天遠處的烏鴉，一聲 |
+| `crow_b.wav`、`crow_c.wav` | [Crows In Cornwall-3.aiff，kiefspoon](https://freesound.org/people/kiefspoon/sounds/144553/) | 同上。背景有其他鳥的叫聲段落不採用 |
+| `tree_creak_a.wav`–`tree_creak_d.wav` | [Tree creaks，Sacha.Julien](https://freesound.org/people/Sacha.Julien/sounds/726217/) | 樹林裡樹幹的吱嘎，每段一次 |
+| `branch_snap_a.wav`、`branch_snap_b.wav` | [branch break snap crunch nice.wav，kyles](https://freesound.org/people/kyles/sounds/452109/) | 樹林裡樹枝斷裂 |
+| `metal_creak_a.wav`–`metal_creak_d.wav` | [weathervane: A metal weathervane or pub sign creaking in the wind，Fenfright](https://freesound.org/people/Fenfright/sounds/759692/) | 公路邊金屬招牌的吱嘎 |
+| `cricket_a.wav`–`cricket_c.wav` | [Single Cricket Chirping, Close Perspective 02，HECKFRICKER](https://freesound.org/people/HECKFRICKER/sounds/753272/) | 夜裡一隻蟋蟀，每段三聲 |
+| `drip_a.wav`–`drip_f.wav` | [drops in a underground parking，heifara](https://freesound.org/people/heifara/sounds/262641/) | 室內副本的滴水，每段一滴 |
+| `room_creak_a.wav`、`room_creak_b.wav` | [Metal creaks.mp3，hannahbelle144](https://freesound.org/people/hannahbelle144/sounds/625616/) | 室內副本的金屬冷縮聲 |
+| `room_small.ogg` | [room tone medium basement industrial cyclical bg hum and rumble MS.wav，kyles](https://freesound.org/people/kyles/sounds/451064/) | 地堡的室內嗡聲。只留約 400 Hz 以下 |
+| `room_hall.ogg` | [room tone large convention hall vent large almost empty.flac，kyles](https://freesound.org/people/kyles/sounds/451614/) | 樓梯間、無燈柱廳與巨型避難所的室內嗡聲。只留約 400 Hz 以下 |
 
-全部是 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)，剪自 Freesound 公開高品質試聽檔，保留立體聲。戶外五層各取 30 秒、室內三種各取 20 秒，接縫以等功率交叉淡化，電平以 300 Hz–8 kHz 頻段的 RMS 對齊，讓低頻為主的錄音在小喇叭上也聽得到。輸出為 Ogg Vorbis，迴圈旗標設在 `.ogg.import`。剪輯點與處理都在 [make_cues.py](../../../art_source/audio/make_cues.py)，執行需要 `soundfile` 套件。
+全部是 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)，剪自 Freesound 公開高品質試聽檔。一次性聲音是單聲道 WAV，同一事件的變體依起音後的響度對齊。室內嗡聲保留立體聲，取 20 秒，接縫以等功率交叉淡化，輸出 Ogg Vorbis，迴圈旗標設在 `.ogg.import`。剪輯點與處理都在 [make_cues.py](../../../art_source/audio/make_cues.py)，室內嗡聲的 Ogg 輸出需要 `soundfile` 套件。

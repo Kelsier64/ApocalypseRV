@@ -1,34 +1,43 @@
 class_name WorldAmbience
 extends Node
-## The outdoor ambience beds: day or night underneath, then forest, highway and
-## fog on top, crossfaded by the clock, the weather and where the listener
-## stands. Night is nearly silent so monster cues stand out. The beds play on
-## the Outdoors bus, which Sfx muffles in the RV cabin and under a roof; inside a
-## POI they stop and the interior's room tone plays instead.
+## Ambience that leaves the world mostly silent. Outdoors there is no bed: every
+## INTERVAL seconds one distant, positioned sound plays somewhere around the
+## listener, picked by time of day and place: a crow by day, a creaking trunk or
+## a snapping branch among trees, creaking metal by the road, a cricket at night.
+## Fog and rain make them rarer, and fog also puts them farther away and quieter.
+## They play on the Outdoors bus, which Sfx muffles in the RV cabin and under a
+## roof and masks under a revving engine. Inside a POI a very faint low hum loops
+## and now and then a drip or a metal creak sounds in the room.
 
-const BEDS := {
-	&"day": preload("res://assets/audio/ambience/day.ogg"),
-	&"night": preload("res://assets/audio/ambience/night.ogg"),
-	&"forest": preload("res://assets/audio/ambience/forest.ogg"),
-	&"highway": preload("res://assets/audio/ambience/highway.ogg"),
-	&"fog": preload("res://assets/audio/ambience/fog.ogg"),
+const OUTDOOR := {
+	&"crow": preload("res://assets/audio/events/ambience/crow.tres"),
+	&"tree_creak": preload("res://assets/audio/events/ambience/tree_creak.tres"),
+	&"branch_snap": preload("res://assets/audio/events/ambience/branch_snap.tres"),
+	&"metal_creak": preload("res://assets/audio/events/ambience/metal_creak.tres"),
+	&"cricket": preload("res://assets/audio/events/ambience/cricket.tres"),
 }
-## Level of each bed at full weight against its loop, in dB.
-const BED_DB := {&"day": -6.0, &"night": -12.0, &"forest": -6.0, &"highway": -8.0, &"fog": -8.0}
-const ROOM_TONE_DB := -8.0
-## Seconds a bed takes to fade fully in or out as time, weather or place change,
-## and the quicker fade when the player enters or leaves an interior.
-const FADE_SECONDS := 3.0
+const INDOOR := {
+	&"drip": preload("res://assets/audio/events/ambience/drip.tres"),
+	&"room_creak": preload("res://assets/audio/events/ambience/room_creak.tres"),
+}
+## Seconds between ambience sounds, drawn evenly from this range.
+const INTERVAL := Vector2(30.0, 90.0)
+## How much full fog and heavy rain each stretch the wait, as extra multiples.
+const FOG_SPARSER := 1.0
+const RAIN_SPARSER := 1.0
+## Distance of an outdoor sound and its height above the listener, in metres.
+const OUTDOOR_DISTANCE := Vector2(25.0, 60.0)
+const OUTDOOR_HEIGHT := Vector2(0.0, 6.0)
+## Full fog puts outdoor sounds this much farther away and this much quieter.
+const FOG_DISTANCE := 0.5
+const FOG_GAIN_DB := -6.0
+## Distance of an interior sound from the listener, in metres.
+const INDOOR_DISTANCE := Vector2(3.0, 10.0)
+## Level of the interior hum against its loop, and how fast it fades on entry.
+const ROOM_TONE_DB := -20.0
 const ROOM_FADE_SECONDS := 1.0
 ## Seconds between samples of the listener's place and overhead cover.
 const SAMPLE_SECONDS := 0.5
-## Forest and highway level at night against daytime.
-const NIGHT_PLACE := 0.5
-## Share of the day and night beds that full fog and heavy rain take away.
-const FOG_DUCK := 0.5
-const RAIN_DUCK := 0.6
-## Share of the highway bed a full forest takes away.
-const FOREST_OVER_ROAD := 0.5
 ## Mean tree chance around the listener at or below which there is no forest,
 ## and from which it is full forest, sampled at the listener and four points
 ## FOREST_RADIUS away. Open ground is near 0.1; the densest tenth of the land
@@ -36,7 +45,7 @@ const FOREST_OVER_ROAD := 0.5
 const FOREST_SPARSE := 0.1
 const FOREST_FULL := 0.35
 const FOREST_RADIUS := 20.0
-## Metres past the carriageway edge over which the highway bed fades out.
+## Metres past the carriageway edge over which the road counts less and less.
 const ROAD_FADE := 45.0
 ## Outdoor shelter while something solid is overhead within ROOF_PROBE metres.
 const ROOF_SHELTER := 0.7
@@ -46,32 +55,23 @@ var clock: WorldClock
 ## Playground overrides for the place weights, 0 to 1; negative reads the terrain.
 var forest_override := -1.0
 var road_override := -1.0
-## Place weights at the last sample, and each bed's target and current weight.
+## Place weights at the last sample.
 var forest := 0.0
 var road := 0.0
-var targets: Dictionary[StringName, float] = {}
-var levels: Dictionary[StringName, float] = {}
+## The last sound played and how far from the listener, and the wait to the next.
+var last_sound: StringName = &""
+var last_distance := 0.0
+var until_next := 0.0
 var room_level := 0.0
-var _players: Dictionary[StringName, AudioStreamPlayer] = {}
 var _room: AudioStreamPlayer
-## Only picks loop start points; never touches gameplay or generation randomness.
+## Only picks sounds, places and waits; never touches gameplay or generation randomness.
 var _rng := RandomNumberGenerator.new()
 var _until_sample := 0.0
 
 
 func _ready() -> void:
 	_rng.randomize()
-	for bed: StringName in BEDS:
-		var voice := AudioStreamPlayer.new()
-		voice.name = String(bed).capitalize()
-		voice.stream = BEDS[bed]
-		voice.bus = &"Outdoors"
-		voice.volume_db = -80.0
-		add_child(voice)
-		voice.play(_rng.randf() * voice.stream.get_length())
-		_players[bed] = voice
-		levels[bed] = 0.0
-		targets[bed] = 0.0
+	until_next = _rng.randf_range(INTERVAL.x, INTERVAL.y)
 	_room = AudioStreamPlayer.new()
 	_room.name = "RoomTone"
 	_room.bus = &"Ambience"
@@ -80,26 +80,28 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	for voice in _players.values(): voice.stop()
 	_room.stop()
 	var sfx := get_node_or_null("/root/Sfx")
 	if sfx != null: sfx.outdoor_shelter = 0.0
 
 
-## Weight of each bed, 0 to 1: daylight 0 to 1, mist the weather fog level,
-## rain 0 to 1, forest and road how much of each surrounds the listener.
-static func mix(daylight: float, mist: float, rain: float, forest_weight: float, road_weight: float) -> Dictionary[StringName, float]:
-	var fog := clampf(mist / WorldWeather.FOG_MEDIUM, 0.0, 1.0)
-	var open := 1.0 - FOG_DUCK * fog
-	var calm := 1.0 - RAIN_DUCK * clampf(rain, 0.0, 1.0)
-	var place := lerpf(NIGHT_PLACE, 1.0, daylight) * open
+## How likely each outdoor sound is, from daylight 0 to 1 and how much forest
+## and road surround the listener, 0 to 1.
+static func weights(daylight: float, forest_weight: float, road_weight: float) -> Dictionary[StringName, float]:
+	var open := 1.0 - 0.5 * forest_weight
 	return {
-		&"day": daylight * open * calm,
-		&"night": (1.0 - daylight) * open * calm,
-		&"forest": forest_weight * place,
-		&"highway": road_weight * (1.0 - FOREST_OVER_ROAD * forest_weight) * place,
-		&"fog": fog,
+		&"crow": daylight * open,
+		&"tree_creak": forest_weight,
+		&"branch_snap": forest_weight * 0.5,
+		&"metal_creak": road_weight * 0.8,
+		&"cricket": (1.0 - daylight) * open,
 	}
+
+
+## Seconds to wait before the next sound: mist is the weather fog level, rain 0 to 1.
+func next_wait(mist: float, rain: float) -> float:
+	var sparser := 1.0 + FOG_SPARSER * _fog(mist) + RAIN_SPARSER * clampf(rain, 0.0, 1.0)
+	return _rng.randf_range(INTERVAL.x, INTERVAL.y) * sparser
 
 
 func _process(delta: float) -> void:
@@ -110,13 +112,53 @@ func _process(delta: float) -> void:
 	if outdoors and _until_sample <= 0.0:
 		_until_sample = SAMPLE_SECONDS
 		_sample_place(sfx)
-	var weather := clock.effective_visual_weather()
-	targets = mix(clock.daylight(), weather.z, weather.y / 2.0, forest, road)
-	var step := delta / (FADE_SECONDS if outdoors else ROOM_FADE_SECONDS)
-	for bed: StringName in _players:
-		levels[bed] = move_toward(levels[bed], targets[bed] if outdoors else 0.0, step)
-		_players[bed].volume_db = linear_to_db(maxf(levels[bed], 0.0001)) + BED_DB[bed]
 	_update_room(null if outdoors else sfx.room_tone(), delta / ROOM_FADE_SECONDS)
+	until_next -= delta
+	if until_next <= 0.0:
+		play_next()
+		var weather := clock.effective_visual_weather()
+		until_next = next_wait(weather.z, weather.y / 2.0) if outdoors else _rng.randf_range(INTERVAL.x, INTERVAL.y)
+
+
+## Plays one ambience sound now, outdoors or in the interior being listened to.
+func play_next() -> bool:
+	var sfx := get_node("/root/Sfx")
+	var camera: Camera3D = sfx.listener_camera()
+	if camera == null: return false
+	var bearing := _rng.randf() * TAU
+	var flat := Vector3(cos(bearing), 0.0, sin(bearing))
+	var at: Vector3
+	var gain := 0.0
+	var event: SoundEvent
+	if sfx.listening_outdoors():
+		last_sound = _pick(weights(clock.daylight(), forest, road))
+		if last_sound.is_empty(): return false
+		var fog := _fog(clock.effective_visual_weather().z)
+		last_distance = _rng.randf_range(OUTDOOR_DISTANCE.x, OUTDOOR_DISTANCE.y) * (1.0 + FOG_DISTANCE * fog)
+		at = camera.global_position + flat * last_distance + Vector3.UP * _rng.randf_range(OUTDOOR_HEIGHT.x, OUTDOOR_HEIGHT.y)
+		gain = FOG_GAIN_DB * fog
+		event = OUTDOOR[last_sound]
+	else:
+		last_sound = INDOOR.keys()[_rng.randi_range(0, INDOOR.size() - 1)]
+		last_distance = _rng.randf_range(INDOOR_DISTANCE.x, INDOOR_DISTANCE.y)
+		at = camera.global_position + flat * last_distance + Vector3.UP * _rng.randf_range(-1.0, 1.0)
+		event = INDOOR[last_sound]
+	return sfx.play_at(event, at, gain)
+
+
+func _pick(chances: Dictionary[StringName, float]) -> StringName:
+	var total := 0.0
+	for chance in chances.values(): total += chance
+	if total <= 0.0: return &""
+	var roll := _rng.randf() * total
+	for sound in chances:
+		roll -= chances[sound]
+		if roll <= 0.0: return sound
+	return chances.keys().back()
+
+
+static func _fog(mist: float) -> float:
+	return clampf(mist / WorldWeather.FOG_MEDIUM, 0.0, 1.0)
 
 
 ## Fades the current room tone out before a different one, or none, takes over.

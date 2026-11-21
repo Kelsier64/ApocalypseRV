@@ -269,25 +269,22 @@ func _run() -> void:
 
 
 func _check_ambience(sfx: Node, inside: SubViewport, tone: AudioStream) -> void:
-	var loud := func(weights: Dictionary) -> float:
-		var total := 0.0
-		for bed in weights: total += weights[bed] * db_to_linear(WorldAmbience.BED_DB[bed])
-		return total
-	var noon := WorldAmbience.mix(1.0, 0.0, 0.0, 0.0, 0.0)
-	var midnight := WorldAmbience.mix(0.0, 0.0, 0.0, 0.0, 0.0)
-	check(noon[&"day"] > 0.0 and noon[&"night"] == 0.0 and midnight[&"night"] > 0.0 and midnight[&"day"] == 0.0,
-		"Day and night beds swap with the daylight")
-	check(loud.call(midnight) < loud.call(noon), "Night is quieter than day")
-	check(WorldAmbience.mix(0.0, 0.0, 0.0, 1.0, 1.0)[&"forest"] < WorldAmbience.mix(1.0, 0.0, 0.0, 1.0, 1.0)[&"forest"],
-		"Trees rustle more quietly at night")
-	var fog := WorldAmbience.mix(1.0, WorldWeather.FOG_HEAVY, 0.0, 0.0, 0.0)
-	check(fog[&"fog"] > noon[&"fog"] and fog[&"day"] < noon[&"day"], "Fog brings its bed in and damps the day bed")
-	check(WorldAmbience.mix(1.0, 0.0, 1.0, 0.0, 0.0)[&"day"] < noon[&"day"], "Rain quiets the day bed")
-	check(WorldAmbience.mix(1.0, 0.0, 0.0, 0.0, 1.0)[&"highway"] > WorldAmbience.mix(1.0, 0.0, 0.0, 1.0, 1.0)[&"highway"],
-		"A forest beside the road covers some of the open highway wind")
-	for bed in WorldAmbience.BEDS:
-		var stream := WorldAmbience.BEDS[bed] as AudioStreamOggVorbis
-		check(stream != null and stream.loop, "The %s bed loops" % bed)
+	var day := WorldAmbience.weights(1.0, 0.0, 0.0)
+	var night := WorldAmbience.weights(0.0, 0.0, 0.0)
+	check(day[&"crow"] > 0.0 and day[&"cricket"] == 0.0 and night[&"cricket"] > 0.0 and night[&"crow"] == 0.0,
+		"Open ground hears crows by day and crickets by night")
+	check(day[&"tree_creak"] == 0.0 and day[&"branch_snap"] == 0.0 and day[&"metal_creak"] == 0.0,
+		"Open ground away from trees and road hears neither")
+	var woods := WorldAmbience.weights(1.0, 1.0, 0.0)
+	check(woods[&"tree_creak"] > 0.0 and woods[&"branch_snap"] > 0.0, "Trees creak and branches snap in the forest")
+	check(WorldAmbience.weights(1.0, 0.0, 1.0)[&"metal_creak"] > 0.0, "Metal creaks beside the road")
+	for sound in WorldAmbience.OUTDOOR:
+		var event: SoundEvent = WorldAmbience.OUTDOOR[sound]
+		check(event.bus == &"Outdoors" and not event.occlusion_by_position and not event.samples.is_empty(),
+			"The %s sound plays on the outdoor ambience bus" % sound)
+	for sound in WorldAmbience.INDOOR:
+		var event: SoundEvent = WorldAmbience.INDOOR[sound]
+		check(event.occlusion_by_position and not event.samples.is_empty(), "The %s sound plays through the room's reverb" % sound)
 
 	var clock := WorldClock.new()
 	var ambience := WorldAmbience.new()
@@ -295,24 +292,46 @@ func _check_ambience(sfx: Node, inside: SubViewport, tone: AudioStream) -> void:
 	ambience.forest_override = 0.0
 	ambience.road_override = 0.0
 	root.add_child(ambience)
-	var settle := func() -> void:
-		for i in range(ceili(WorldAmbience.FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	var waits := func(mist: float, rain: float) -> float:
+		var total := 0.0
+		for i in range(200): total += ambience.next_wait(mist, rain)
+		return total / 200.0
+	var clear: float = waits.call(0.0, 0.0)
+	check(clear >= WorldAmbience.INTERVAL.x and clear <= WorldAmbience.INTERVAL.y, "Clear weather spaces sounds within the interval")
+	check(waits.call(WorldWeather.FOG_HEAVY, 0.0) > clear and waits.call(0.0, 1.0) > clear, "Fog and rain make sounds rarer")
+	var listener := Camera3D.new()
+	root.add_child(listener)
+	listener.make_current()
+	for voice in sfx._voices: voice.stop()
 	clock.set_time(1, 12.0)
-	await settle.call()
-	var players: Array = ambience.get_children().filter(func(node): return node.stream in WorldAmbience.BEDS.values())
-	check(players.size() == WorldAmbience.BEDS.size() and players.all(func(voice): return voice.playing and voice.bus == &"Outdoors"),
-		"Every bed plays on the outdoor ambience bus")
-	check(ambience.levels[&"day"] > ambience.levels[&"night"], "Noon plays the day bed")
-	clock.set_time(1, 0.0)
-	await settle.call()
-	check(ambience.levels[&"night"] > ambience.levels[&"day"], "Midnight hands over to the night bed")
+	check(ambience.play_next() and ambience.last_sound == &"crow", "A clear noon on open ground plays a crow")
+	var played: Array = sfx._voices.filter(func(voice): return voice.playing)
+	check(played.size() == 1 and played[0].bus == &"Outdoors" and played[0].stream in WorldAmbience.OUTDOOR[&"crow"].samples,
+		"The crow plays on the outdoor ambience bus")
+	check(ambience.last_distance >= WorldAmbience.OUTDOOR_DISTANCE.x and ambience.last_distance <= WorldAmbience.OUTDOOR_DISTANCE.y,
+		"An outdoor sound plays at a distance")
+	clock.weather.set_weather(Vector3(0.0, 0.0, WorldWeather.FOG_HEAVY), true)
+	var far := 0.0
+	for i in range(20):
+		ambience.play_next()
+		far = maxf(far, ambience.last_distance)
+	check(far > WorldAmbience.OUTDOOR_DISTANCE.y, "Fog puts outdoor sounds farther away")
+	for voice in sfx._voices: voice.stop()
+	var room_camera := Camera3D.new()
+	inside.add_child(room_camera)
+	room_camera.make_current()
 	sfx.set_listener_viewport(inside, null, tone)
-	await settle.call()
-	check(ambience.levels.values().all(func(level): return level == 0.0), "Inside an interior the outdoor beds fall silent")
-	check(ambience._room.playing and ambience._room.stream == tone and ambience.room_level > 0.0, "Inside an interior its room tone plays")
+	check(ambience.play_next() and ambience.last_sound in WorldAmbience.INDOOR, "An interior plays a drip or a creak")
+	var pool := inside.get_node_or_null("SpatialOneShots")
+	check(pool != null and pool.get_children().any(func(voice): return voice.playing and voice.bus == &"Exterior"),
+		"The interior sound plays in the interior world through its room sound")
+	for i in range(ceili(WorldAmbience.ROOM_FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	check(ambience._room.playing and ambience._room.stream == tone and ambience.room_level > 0.0, "Inside an interior its faint hum plays")
 	sfx.set_listener_viewport(root)
-	await settle.call()
-	check(not ambience._room.playing and ambience.levels[&"night"] > 0.0, "Back outdoors the room tone stops and the beds return")
+	for i in range(ceili(WorldAmbience.ROOM_FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	check(not ambience._room.playing, "Back outdoors the hum stops")
+	room_camera.queue_free()
+	listener.queue_free()
 	ambience.free()
 	clock.free()
 
