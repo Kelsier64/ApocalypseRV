@@ -57,6 +57,7 @@
 | 開場避難所 | 起點固定一座 | `WorldField.stop(0)` |
 | 主要停靠點 | 沿路每隔 `stop_spacing` 一個位置，前後抖動 `stop_jitter`；每三個位置依序是探索入口、加油站、空位 | `WorldField.stop` |
 | 路旁小場址 | 每個 `MinorSites.CELL_LENGTH` 區間至多一座，主題與配置各自抽選 | `MinorSites.plan` |
+| 廢棄鄉間小站 | 在主要停靠點的空位獨立抽選，避開河谷、相鄰車道及所有既有場址，用獨立場址 ID 記錄初訪與回訪。 | `WorldField._plan_fuel_station` |
 | 越野場址 | 離路的網格（`OffroadSites.CELL_LENGTH`、`CELL_WIDTH`、`COLUMNS`），每格先抽有沒有場址，再抽種類 | `OffroadSites.plan` |
 | 巨型避難所 | 每個 `MEGASHELTER_CELL_LENGTH` 區間嘗試放一座，地形或其他場址擋住就沒有；另外一般越野場址有 `MEGASHELTER_CHANCE` 的機率換成巨型避難所 | `OffroadSites.plan_megashelter` |
 

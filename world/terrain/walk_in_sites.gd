@@ -48,14 +48,17 @@ static func activate(generator: Node, site: Dictionary, chunk: Node) -> void:
 	if barrel_site: _spawn_barrel_decoy(building, container, site.id)
 	var offroad: bool = site.get("placement", "roadside") == "off_road"
 	var loot_domain := "offroad_loot" if offroad else ("minor_loot" if site.get("minor", false) else "walk_in_loot")
+	if definition.definition_id == &"mile_end": loot_domain = "mile_end_loot"
 	var rng: RandomNumberGenerator = generator.field.rng_for(site.index, loot_domain)
 	for point in building.find_children("*", "Marker3D", true, false):
 		if starter_site: continue
 		if not point is PoiLootPoint: continue
 		_spawn_loot(point, rng, container, "outdoor:%s:%s" % [site.id, building.get_path_to(point)])
 	if barrel_site and definition.enemy_count_range.y > 0:
-		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemies" if offroad else "minor_enemies")
-		var species: RandomNumberGenerator = generator.field.rng_for(site.index, "offroad_enemy_species" if offroad else "minor_enemy_species")
+		var domain := "offroad" if offroad else "minor"
+		if definition.definition_id == &"mile_end": domain = "mile_end"
+		var enemies: RandomNumberGenerator = generator.field.rng_for(site.index, domain + "_enemies")
+		var species: RandomNumberGenerator = generator.field.rng_for(site.index, domain + "_enemy_species")
 		var points := building.get_node("EnemySpawns").get_children()
 		var count := enemies.randi_range(definition.enemy_count_range.x, definition.enemy_count_range.y)
 		for i in range(count):
@@ -80,7 +83,7 @@ static func _spawn_loot(point: PoiLootPoint, rng: RandomNumberGenerator, contain
 
 static func _barrel_site(definition: PoiDefinition) -> bool:
 	var id := str(definition.definition_id)
-	return id.begins_with("roadside_cargo_") or id.begins_with("roadside_shed_")
+	return id == "mile_end" or id.begins_with("roadside_cargo_") or id.begins_with("roadside_shed_")
 
 static func _ground_position(building: Node3D, point: Vector3, actor: CollisionObject3D = null) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 2.0, point - Vector3.UP * 4.0, 1)

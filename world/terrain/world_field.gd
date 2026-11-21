@@ -8,6 +8,7 @@ var medium := FastNoiseLite.new()
 var detail := FastNoiseLite.new()
 var clusters := FastNoiseLite.new()
 var _stops: Dictionary = {}
+var _fuel_stations: Dictionary = {}
 var _minor_sites: Dictionary = {}
 var _offroad_sites: Dictionary = {}
 var _megashelter_sites: Dictionary = {}
@@ -116,6 +117,40 @@ func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 	radius = maxf(radius, 420.0)
 	var key := Vector2(z, radius)
 	if _site_queries.has(key): return _site_queries[key]
+	var found := _established_sites(z, radius)
+	var first := maxi(2, floori((-z - radius - profile.stop_jitter) / profile.stop_spacing))
+	var last := ceili((-z + radius + profile.stop_jitter) / profile.stop_spacing)
+	for index in range(first + posmod(2 - first, 3), last + 1, 3):
+		if not _fuel_stations.has(index): _fuel_stations[index] = _plan_fuel_station(index)
+		var station: Dictionary = _fuel_stations[index]
+		if not station.is_empty() and absf(float(station.s) + z) <= radius: found.append(station)
+	found.sort_custom(func(a, b): return a.s < b.s)
+	if _site_queries.size() >= 256: _site_queries.clear()
+	_site_queries[key] = found
+	return found
+
+## Supplemental stations yield to every established placement pool, including
+## wilderness footprints. Check neighbours at the candidate, independent of caller radius.
+func _plan_fuel_station(index: int) -> Dictionary:
+	var rng := rng_for(index, "mile_end_placement")
+	if rng.randf() >= 0.65: return {}
+	var s := index * profile.stop_spacing + rng.randf_range(-profile.stop_jitter, profile.stop_jitter)
+	if not landforms.crossing_clearance(s): return {}
+	var road := road_frame(s)
+	var side := ExplorationSite.select_side(road, -1.0 if rng.randf() < 0.5 else 1.0, self)
+	var site := {"index": index, "id": "v%d:%d:mile_end:%d" % [profile.generation_version, world_seed, index],
+		"s": s, "road": road, "side": side, "placement": "roadside", "seed": seed_for(index, "mile_end_art")}
+	WalkInSites.configure(site, "mile_end")
+	if not landforms.site_clear(site): return {}
+	var yard: AABB = site.bounds.grow(20)
+	for other in _established_sites(-s, 420.0):
+		if other.get("placement") == "roadside" and absf(float(other.s) - s) < 120.0: return {}
+		var bounds: AABB = other.bounds
+		if Rect2(yard.position.x, yard.position.z, yard.size.x, yard.size.z).intersects(
+				Rect2(bounds.position.x, bounds.position.z, bounds.size.x, bounds.size.z).grow(20)): return {}
+	return site
+
+func _established_sites(z: float, radius: float) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	var first := maxi(0, floori((-z - radius - profile.stop_jitter) / profile.stop_spacing))
 	var last := maxi(0, ceili((-z + radius + profile.stop_jitter) / profile.stop_spacing))
@@ -136,9 +171,6 @@ func sites_near_z(z: float, radius: float = 240.0) -> Array[Dictionary]:
 		var site := megashelter_site(row)
 		if not site.is_empty() and absf(float(site.s) + z) <= radius:
 			found.append(site)
-	found.sort_custom(func(a, b): return a.s < b.s)
-	if _site_queries.size() >= 256: _site_queries.clear()
-	_site_queries[key] = found
 	return found
 
 func minor_site(cell: int) -> Dictionary:

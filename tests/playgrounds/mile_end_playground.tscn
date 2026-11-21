@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tests/playgrounds/mile_end_playground.gd" id="root"]
+[ext_resource type="Script" path="res://world/world_generator.gd" id="world"]
+[ext_resource type="Script" path="res://world/world_clock.gd" id="clock"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="player"]
+[ext_resource type="PackedScene" path="res://rv/new_rv.tscn" id="rv"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_material"]
+
+[sub_resource type="Sky" id="sky"]
+sky_material = SubResource("sky_material")
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 2
+sky = SubResource("sky")
+
+[node name="MileEndPlayground" type="Node3D"]
+script = ExtResource("root")
+metadata/entity_domain = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
+
+[node name="Player" parent="." instance=ExtResource("player")]
+
+[node name="WorldEntities" type="Node3D" parent="."]
+
+[node name="WorldGenerator" type="Node3D" parent="."]
+script = ExtResource("world")
+player = NodePath("../Player")
+
+[node name="WorldClock" type="Node" parent="."]
+script = ExtResource("clock")
+
+[node name="NewRv" parent="." instance=ExtResource("rv")]
