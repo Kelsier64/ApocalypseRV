@@ -15,7 +15,7 @@ Keep Claude Code configuration and instructions in their own files.
 | Skills | `.claude/skills/<name>/SKILL.md` | Every Claude Code skill has a row in CLAUDE.md's Skills table |
 | Hooks | `.claude/settings.json` | Run `scripts/agent/session-context.ps1`, `guard-edit.ps1`, `check-staged.ps1` (which calls `check-docs.ps1` on staged docs). Keep the bash prefilter so unrelated calls stay cheap |
 | MCP servers | `.mcp.json` | Blender (`mcp-for-blender`, safe mode) |
-| User-level, outside the repo | `~/.claude/output-styles/co-lead.md`, `~/.claude/skills/dispatch` | Cross-project behavior only; project rules never go there |
+| User-level, outside the repo | `~/.claude/skills/co-lead` (design-discussion stance), `~/.claude/skills/agy` | Cross-project behavior only; project rules never go there |
 
 Use only these entry points for agent guidance. Exclude `AGENTS.md`, `.agents/`, and `.codex/` from routine reads and searches. Keep reusable project tools in `scripts/`.
 
