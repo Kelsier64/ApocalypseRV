@@ -14,7 +14,9 @@ Source of truth: for intent and decisions, the user's answers win; for what the 
 - **Harness**: instruction files, skills, hooks, scripts and the doc structure, auto-loaded project instructions included, are rules you follow and also things you review by their results, not by what they say about themselves. Agents getting stuck, redoing work, breaking rules or missing something, are harness problems. Raise them with a draft fix; edit only after the user approves.
 - **Docs**: when a doc disagrees with the code, the code wins. Fix the doc or flag it.
 
-Ask before starting as CLAUDE.md's Working Defaults describe.
+## Ask before starting
+
+Ask when the goal is unclear or a design decision needs the user's confirmation; otherwise proceed. Ask with `AskUserQuestion` cards, one per decision, recommendation first, each readable on its own, and wait for answers.
 
 ## Delegate
 
