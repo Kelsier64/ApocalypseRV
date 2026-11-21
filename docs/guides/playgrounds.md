@@ -93,7 +93,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rv_interaction_playground](../../tests/playgrounds/rv_interaction_playground.tscn) | 正式射線／E 互動隔離場；固定玩家位置 | F2 電池槽、F3 座位、F4 加油孔、F5 道具箱、F6 掉落電池；1 電池、2 汽油罐。 |
 | [rv_door_playground](../../tests/playgrounds/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
 | [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 新式：停好的正式 RV，試聽車門、引擎、操作回饋、撞擊、全部音效事件、預警、雨與耳鳴 | 正式操作；情境 `Outside`、`Cabin`、`Driver seat`（`-- --scenario="Driver seat"`），其餘在 Esc 的 Playground 頁。 |
-| [monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn) | 新式：平地上的正式怪物，試聽白影、黑影、Raker、油桶人何時安靜、何時暴露位置，以及攻擊預備聲 | 正式操作；情境 `Raker`、`Barrel man`、`Black apparition`、`White apparition`（`-- --scenario="Barrel man"`），其餘在 Esc 的 Playground 頁。怪物是真的，會致死 |
+| [monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn) | 新式：平地上的正式怪物，試聽白影、黑影、Raker、油桶人何時安靜、何時暴露位置，攻擊預備聲，以及 Slender Speaker 的腳步 | 正式操作；情境 `Raker`、`Barrel man`、`Black apparition`、`White apparition`、`Slender Speaker`（`-- --scenario="Barrel man"`），其餘在 Esc 的 Playground 頁。怪物是真的，會致死 |
 | [rv_structure_playground](../../tests/playgrounds/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/playgrounds/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/playgrounds/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |
