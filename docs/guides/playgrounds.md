@@ -1,6 +1,12 @@
 # 遊玩與測試場指南
 
-各系統的功能與接入狀態見[系統文件](../README.md#系統)，正式操作見 [README](../../README.md)。本頁先列完整入口，再列各測試場的詳細操作。測試場快捷鍵不等同主世界按鍵。
+各系統的功能與接入狀態見[系統文件](../README.md#系統)，正式操作見 [README](../../README.md)。本頁先列完整入口，再列各測試場的詳細操作。
+
+## 新式測試場
+
+新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
+
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
 ## 啟動與固定截圖
 
@@ -86,7 +92,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rv_systems_playground](../../tests/playgrounds/rv_systems_playground.tscn) | 正式能源、充電、電池、製作與車輛回放 | F2 引擎、F3 換電池、F4 入座、F5 平板、F6 回放、F7 平板免傷、R 重設；`--replay`。 |
 | [rv_interaction_playground](../../tests/playgrounds/rv_interaction_playground.tscn) | 正式射線／E 互動隔離場；固定玩家位置 | F2 電池槽、F3 座位、F4 加油孔、F5 道具箱、F6 掉落電池；1 電池、2 汽油罐。 |
 | [rv_door_playground](../../tests/playgrounds/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
-| [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 靜止 RV 的車門、引擎與定向預警試聽 | F2／F3 車外／車廂，F4 車門，F5 引擎，按住 W 拉轉，F7 預警開關，F8 移動預警的左右位置，數字鍵 1–0 播放手煞車到爆胎的操作回饋，Z／X／C 輕中重碰撞，V 撞樹，按住 B／N 輪胎滑移／車殼刮地；標題列並列底盤轉速與巴士音源轉速。 |
+| [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 新式：停好的正式 RV，試聽車門、引擎、操作回饋、撞擊、全部音效事件、預警、雨與耳鳴 | 正式操作；情境 `Outside`、`Cabin`、`Driver seat`（`-- --scenario="Driver seat"`），其餘在 Esc 的 Playground 頁。 |
 | [rv_structure_playground](../../tests/playgrounds/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/playgrounds/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
 | [rv_rebuild_playground](../../tests/playgrounds/rv_rebuild_playground.tscn) | 正式完整 RV、引擎艙、坡板及故障燈 | F8 引擎艙、F9 後門／坡板、F10 故障、F11 夜間、F12 輪驅；`--drive`。 |

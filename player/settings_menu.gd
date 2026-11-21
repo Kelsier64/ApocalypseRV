@@ -62,6 +62,7 @@ func open_menu() -> bool:
 	if visible or not player.can_open_settings():
 		return false
 	player.set_settings_open(true)
+	_attach_playground()
 	visible = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_refresh()
@@ -81,6 +82,24 @@ func close_menu() -> void:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	else:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+## Playground scenes register a node in this group; its build(page) fills an extra
+## tab, which opens first. Game scenes have none.
+func _attach_playground() -> void:
+	if _tabs.has_node("Playground"): return
+	var controls := get_tree().get_first_node_in_group(&"playground_controls")
+	if controls == null: return
+	var scroll := ScrollContainer.new()
+	scroll.name = "Playground"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	_tabs.add_child(scroll)
+	var page := VBoxContainer.new()
+	page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page.add_theme_constant_override("separation", 10)
+	scroll.add_child(page)
+	controls.build(page)
+	_tabs.current_tab = scroll.get_index()
 
 func _input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel") or event.is_echo():
@@ -152,7 +171,7 @@ func _build() -> void:
 	_tabs.get_tab_bar().focus_mode = Control.FOCUS_ALL
 	_tabs.tab_changed.connect(func(_index: int):
 		if is_instance_valid(_reset):
-			_reset.disabled = _tabs.current_tab == 3)
+			_reset.disabled = _tabs.current_tab >= CATEGORIES.size() - 1)
 	content.add_child(_tabs)
 	var pages: Array[VBoxContainer] = []
 	for tab_name in ["Video", "Controls", "Audio", "Key Bindings"]:

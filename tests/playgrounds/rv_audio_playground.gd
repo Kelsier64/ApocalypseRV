@@ -1,7 +1,10 @@
-extends "res://tests/playgrounds/rv_design_workshop.gd"
-## Parked production RV with repeatable listener positions and the actual warning recording.
+extends Node3D
+## Parked production RV for auditioning its sounds. Walk, open doors, sit and drive with
+## the normal controls; the Esc menu's Playground tab plays the recordings that normal
+## play cannot trigger on demand.
 
-# Number keys 1-0 play these recorded one-shots from their usual chassis point.
+const SCENARIOS := ["Outside", "Cabin", "Driver seat"]
+# Recorded one-shots and the chassis point each plays from in the game.
 const ONE_SHOTS := [
 	["Handbrake", "handbrake", Vector3(-0.1, 1, -4)],
 	["Light switch", "light_switch", Vector3(0, 2.2, -4)],
@@ -14,49 +17,58 @@ const ONE_SHOTS := [
 	["Blocked", "blocked", Vector3(1.8, 1.2, 0.75)],
 	["Puncture", "puncture", Vector3(1.6, 0.4, -3.8)],
 ]
+const BESIDE_RV := Vector3(3.0, 1.2, 1.5)
+const IN_CABIN := Vector3(0.0, 1.2, 1.5)
 
-var warning: AudioStreamPlayer3D
-var side_door: RVDoor
-var outside := true
-var cue_side := 1.0
-var message := ""
-var previous_hud_hidden := false
-# Playground-owned copies, so holding a key is not undone by the RV's own contact speeds.
+var rv: Chassis
+var player: CharacterBody3D
+var controls := PlaygroundControls.new()
+var warning := AudioStreamPlayer3D.new()
+var tinnitus := AudioStreamPlayer.new()
+var rain: Array[AudioStreamPlayer] = []
+# Playground-owned copies, so a held loop is not undone by the RV's own contact speeds.
 var held_slip: SoundLoop
 var held_scrape: SoundLoop
-# Every SoundEvent under assets/audio/events, played from beside or inside the RV.
 var events: Array[String] = []
 var event_index := 0
-var event_inside := false
-var rain: Array[AudioStreamPlayer] = []
-var rain_level := 0
-var tinnitus := AudioStreamPlayer.new()
+var message := "-"
 
 
 func _ready() -> void:
-	super._ready()
-	get_window().title = "ApocalypseRV - RV Audio Pilot"
-	get_window().mode = Window.MODE_WINDOWED
-	var viewport := get_viewport()
-	previous_hud_hidden = viewport.get_meta("cinematic_hud_hidden", false)
-	HUDVisibility.set_cinematic(viewport, true)
-	rv.freeze = true
-	rv.set_gear(0)
-	player.set_process_unhandled_input(false)
-	side_door = rv.get_node("RightMiddle") as RVDoor
-	warning = AudioStreamPlayer3D.new()
+	get_window().title = "ApocalypseRV - RV Audio"
+	var scenario := PlaygroundControls.scenario(SCENARIOS[0])
+	PlaygroundStage.flat_lot(self)
+	rv = PlaygroundStage.parked_rv(self)
+	add_child(controls)
+	_build_sources()
+	_build_controls(scenario)
+	# Let the chassis settle on its wheels before placing the player on or in it.
+	for i in range(Engine.physics_ticks_per_second): await get_tree().physics_frame
+	var aisle := rv.to_global(Vector3(0.25, rv.get_node("Audio").CABIN.position.y + 0.1, 1.65))
+	match scenario:
+		"Cabin":
+			player = PlaygroundStage.player(self, aisle, rv.global_rotation.y)
+		"Driver seat":
+			player = PlaygroundStage.player(self, aisle, rv.global_rotation.y)
+			await get_tree().physics_frame
+			rv.set_engine_running(true)
+			rv.get_node("DriverSeat").interact_hold(player)
+		_:
+			var beside := rv.to_global(Vector3(3.6, 0.0, 1.65))
+			player = PlaygroundStage.player(self, Vector3(beside.x, 0.05, beside.z), rv.global_rotation.y + PI / 2.0)
+
+
+func _build_sources() -> void:
+	var audio := rv.get_node("Audio")
+	held_slip = audio._loop(audio.tire_player.stream, Vector3.ZERO, audio.CONTACT_DB)
+	held_scrape = audio._loop(audio.scrape_player.stream, Vector3.ZERO, audio.CONTACT_DB)
 	warning.stream = preload("res://assets/audio/slender_speaker/patrol.wav")
 	warning.bus = &"Exterior"
 	warning.unit_size = 30.0
 	warning.max_distance = 75.0
 	warning.volume_db = -16.0
+	warning.position = Vector3(10.0, 2.0, -9.0)
 	rv.add_child(warning)
-	_position_warning()
-	instructions.position = Vector2(24, 24)
-	var audio := rv.get_node("Audio")
-	held_slip = audio._loop(audio.tire_player.stream, Vector3.ZERO, audio.CONTACT_DB)
-	held_scrape = audio._loop(audio.scrape_player.stream, Vector3.ZERO, audio.CONTACT_DB)
-	_collect_events("res://assets/audio/events")
 	for loop in WeatherRain.RAIN_LOOPS:
 		var voice := AudioStreamPlayer.new()
 		voice.stream = loop
@@ -68,6 +80,48 @@ func _ready() -> void:
 	tinnitus.bus = &"Self"
 	tinnitus.volume_db = linear_to_db(0.22)
 	add_child(tinnitus)
+	_collect_events("res://assets/audio/events")
+
+
+func _build_controls(scenario: String) -> void:
+	controls.scenarios(SCENARIOS, scenario)
+	controls.note("Play normally: E opens doors and enters the driver seat, B starts the engine, hold W in neutral to rev, Space toggles the handbrake, L the lights.")
+	var audio := rv.get_node("Audio")
+	controls.readout("Listener", func():
+		var camera := get_viewport().get_camera_3d()
+		if camera == null: return "-"
+		return "Cabin" if rv.get_node("Audio").CABIN.has_point(rv.to_local(camera.global_position)) else "Outside")
+	controls.readout("Drivetrain RPM", func(): return roundi(rv.engine_rpm()))
+	controls.readout("Engine sound RPM", func(): return roundi(audio.sound_rpm()) if audio.engine_player.playing else 0)
+	controls.readout("Last played", func(): return message)
+	controls.section("RV one-shots")
+	var shots: Array = []
+	for shot in ONE_SHOTS:
+		shots.append([shot[0], _play_one_shot.bind(shot)])
+	controls.buttons(shots)
+	controls.section("Impacts")
+	controls.buttons([
+		["Light crash", _crash.bind(0.15)],
+		["Medium crash", _crash.bind(0.5)],
+		["Heavy crash", _crash.bind(0.95)],
+		["Tree hit", _tree_hit],
+	])
+	controls.toggle("Tyre slip loop", false, func(on: bool): held_slip.set_level(1.0 if on else 0.0))
+	controls.toggle("Hull scrape loop", false, func(on: bool): held_scrape.set_level(1.0 if on else 0.0))
+	controls.section("Sound events")
+	var names := PackedStringArray()
+	for path in events: names.append(path.trim_prefix("res://assets/audio/events/"))
+	controls.choice("Event", names, event_index, func(index: int): event_index = index)
+	controls.buttons([["Play beside RV", _play_event.bind(BESIDE_RV)], ["Play in cabin", _play_event.bind(IN_CABIN)]])
+	controls.section("Surroundings")
+	controls.toggle("Slender Speaker warning", false, func(on: bool):
+		if on: warning.play()
+		else: warning.stop())
+	controls.choice("Warning side", PackedStringArray(["Right", "Left"]), 0, func(index: int): warning.position.x = 10.0 if index == 0 else -10.0)
+	controls.choice("Rain", PackedStringArray(["Off", "Light", "Heavy"]), 0, _set_rain)
+	controls.toggle("Tinnitus", false, func(on: bool):
+		if on: tinnitus.play()
+		else: tinnitus.stop())
 
 
 func _collect_events(path: String) -> void:
@@ -76,80 +130,32 @@ func _collect_events(path: String) -> void:
 		if file.get_extension() == "tres": events.append(path.path_join(file))
 
 
-func _exit_tree() -> void:
-	HUDVisibility.set_cinematic(get_viewport(), previous_hud_hidden)
+func _play_one_shot(shot: Array) -> void:
+	rv.feedback(load("res://assets/audio/events/rv/%s.tres" % shot[1]), shot[2])
+	message = shot[0]
 
 
-func _process(_delta: float) -> void:
-	var local_position := Vector3(4.3, 1.72, 1.65) if outside else Vector3(0.25, 1.72, 1.65)
-	observer.global_position = rv.to_global(local_position)
-	observer.look_at(rv.to_global(local_position + Vector3(0, 0, -4)))
-	var audio := rv.get_node("Audio")
-	held_slip.set_level(1.0 if Input.is_key_pressed(KEY_B) else 0.0)
-	held_scrape.set_level(1.0 if Input.is_key_pressed(KEY_N) else 0.0)
-	var ringing := Input.is_key_pressed(KEY_T)
-	if ringing != tinnitus.playing:
-		if ringing: tinnitus.play()
-		else: tinnitus.stop()
-	instructions.text = (
-		"RV AUDIO PILOT   |   %s   |   %d drivetrain RPM   |   %d bus RPM\n" +
-		"F2 Outside   F3 Cabin   F4 Door   F5 Engine   Hold W to rev\n" +
-		"F7 Warning on / off   F8 Move warning\n" +
-		"1 Handbrake  2 Switch  3 Hatch release  4 Hatch latch  5 Ramp  6 Jack  7 Install  8 Repair  9 Blocked  0 Puncture\n" +
-		"Z / X / C Light / medium / heavy crash   V Tree hit   Hold B Tyre slip   Hold N Hull scrape\n" +
-		", / . Pick event   Space Play %s %s   F9 Source in cabin / outside\n" +
-		"R Rain: %s   Hold T Tinnitus\n%s"
-	) % ["Outside" if outside else "Cabin",
-		roundi(rv.engine_rpm()), roundi(audio.sound_rpm()) if audio.engine_player.playing else 0,
-		events[event_index].trim_prefix("res://assets/audio/events/") if not events.is_empty() else "-",
-		"in cabin" if event_inside else "beside the RV", ["off", "light", "heavy"][rain_level], message]
+func _crash(strength: float) -> void:
+	rv.get_node("Audio").play_cue("crash", Vector3(0, 0.8, -6.2), strength)
+	message = "Crash %.2f" % strength
 
 
-func _physics_process(_delta: float) -> void:
-	rv.control_override["throttle"] = Input.get_action_strength("move_forward")
+func _tree_hit() -> void:
+	rv.feedback(TreeImpact.HIT_SOUND, TreeImpact.BUMPER_POSITION)
+	message = "Tree hit"
 
 
-func _position_warning() -> void:
-	warning.position = Vector3(10.0 * cue_side, 2.0, -9.0)
+func _play_event(point: Vector3) -> void:
+	if events.is_empty(): return
+	var played: bool = get_node("/root/Sfx").play(load(events[event_index]), rv, point)
+	message = events[event_index].get_file().get_basename() if played else "Voice pool full"
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventKey or not event.pressed or event.echo: return
-	match event.keycode:
-		KEY_F2: outside = true
-		KEY_F3: outside = false
-		KEY_F4: message = side_door.toggle_leaf(0)
-		KEY_F5:
-			var start := rv.engine_rpm() == 0.0
-			if rv.set_engine_running(start): message = "Engine running" if start else "Engine off"
-			else: message = rv.engine_start_reason()
-		KEY_F7:
-			if warning.playing: warning.stop()
-			else: warning.play()
-		KEY_F8:
-			cue_side = -cue_side
-			_position_warning()
-		KEY_Z, KEY_X, KEY_C:
-			rv.get_node("Audio").play_cue("crash", Vector3(0, 0.8, -6.2), {KEY_Z: 0.15, KEY_X: 0.5, KEY_C: 0.95}[event.keycode])
-		KEY_V:
-			rv.feedback(TreeImpact.HIT_SOUND, TreeImpact.BUMPER_POSITION)
-		KEY_COMMA, KEY_PERIOD:
-			if not events.is_empty(): event_index = posmod(event_index + (1 if event.keycode == KEY_PERIOD else -1), events.size())
-		KEY_SPACE:
-			if not events.is_empty():
-				var point := Vector3(0.0, 1.2, 1.5) if event_inside else Vector3(3.0, 1.2, 1.5)
-				message = "Played" if get_node("/root/Sfx").play(load(events[event_index]), rv, point) else "Voice pool full"
-		KEY_F9: event_inside = not event_inside
-		KEY_R:
-			rain_level = (rain_level + 1) % 3
-			for i in range(rain.size()):
-				# WeatherRain's level at full strength of either bed.
-				rain[i].volume_db = linear_to_db(0.7) if rain_level == i + 1 else -80.0
-				if rain_level == i + 1 and not rain[i].playing: rain[i].play()
-				elif rain_level != i + 1: rain[i].stop()
-		_:
-			var index: int = (event.keycode - KEY_1 + 10) % 10 if event.keycode >= KEY_0 and event.keycode <= KEY_9 else -1
-			if index >= 0:
-				var shot: Array = ONE_SHOTS[index]
-				rv.feedback(load("res://assets/audio/events/rv/%s.tres" % shot[1]), shot[2])
-				message = shot[0]
+func _set_rain(level: int) -> void:
+	for i in range(rain.size()):
+		if level == i + 1:
+			# WeatherRain's level at full strength of either bed.
+			rain[i].volume_db = linear_to_db(0.7)
+			if not rain[i].playing: rain[i].play()
+		else:
+			rain[i].stop()

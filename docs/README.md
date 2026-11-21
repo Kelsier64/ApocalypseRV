@@ -39,7 +39,7 @@
 | 指南 | 用途 |
 |---|---|
 | [程式與資產目錄](guides/codebase.md) | 目錄責任、引用方式、整理與刪除前的檢查 |
-| [測試場](guides/playgrounds.md) | 各測試場的命令、快捷鍵與檢查重點 |
+| [測試場](guides/playgrounds.md) | 各測試場的用途、情境與啟動命令 |
 | [宣傳影片錄影](guides/promo-capture.md) | 錄影面板、即時錄影與自動演出、自由鏡頭、跟拍、運鏡路徑、各鏡頭分組 |
 | [POI 製作](guides/poi-authoring.md) | 房間、家具、入口的製作與接入規範 |
 | [地堡房型](guides/bunker-interior.md) | 軍事地堡房型的製作與保存契約 |
