@@ -111,7 +111,9 @@ func _run() -> void:
 	for echo in sfx._echoes: echo.stop()
 	check(sfx.play(shot, chassis, chassis.to_local(cabin)) and not sfx._echoes.any(func(echo): return echo.playing),
 		"A gunshot inside the cabin has no outdoor echo")
-	check(audio.engine_player.bus == &"Exterior", "The engine bay sits outside the cabin mix")
+	check(audio.engine_player.bus == &"Engine" and audio.engine_cue.bus == &"Engine"
+		and AudioServer.get_bus_send(AudioServer.get_bus_index(&"Engine")) == &"Effects",
+		"The engine plays on its own bus under the effects slider")
 	var listener := Camera3D.new()
 	root.add_child(listener)
 	listener.make_current()
@@ -123,6 +125,7 @@ func _run() -> void:
 	await _settle_mix(sfx)
 	var cabin_exterior := _bus_mix(&"Exterior")
 	var cabin_cabin := _bus_mix(&"Cabin")
+	check(_bus_mix(&"Engine").is_equal_approx(cabin_exterior), "The engine bay is muffled like the rest of the exterior from the cabin")
 	check(cabin_exterior.x < outside_exterior.x and cabin_exterior.y < outside_exterior.y, "The cabin lowers the exterior bus level and cutoff")
 	check(outside_cabin.x < cabin_cabin.x and outside_cabin.y < cabin_cabin.y, "Standing outside lowers the cabin bus level and cutoff")
 	listener.queue_free()
@@ -179,8 +182,21 @@ func _run() -> void:
 	chassis.set_gear(0)
 	chassis.allow_test_controls = true
 	chassis.control_override = {"throttle": 1.0}
+	var driver := Camera3D.new()
+	root.add_child(driver)
+	driver.make_current()
+	driver.global_position = cabin
 	for i in range(Engine.physics_ticks_per_second):
 		await physics_frame
+	var unmasked: float = sfx.CLOSED_GAIN_DB * sfx._cover[&"Exterior"]
+	var exterior_duck := _bus_mix(&"Exterior").x - unmasked
+	var speaker_duck := exterior_duck + AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"))
+	check(exterior_duck < -1.0, "A revving engine masks other outside sound for the driver")
+	check(speaker_duck < 0.0 and speaker_duck > exterior_duck, "The Slender Speaker is masked less than other outside sound")
+	check(is_equal_approx(_bus_mix(&"Engine").x, sfx.CLOSED_GAIN_DB * sfx._cover[&"Engine"]), "The engine does not mask itself")
+	check(audio.engine_masking(cabin) > audio.engine_masking(outside) and audio.engine_masking(chassis.to_global(Vector3(40, 1.6, 0))) == 0.0,
+		"Engine masking fades with distance from the RV")
+	driver.queue_free()
 	check(chassis.engine_pedal() > 0.9 and audio.engine_load > 0.9
 		and engine_player.pitch_scale > BusEngineStream.pitch_for(idle_rpm),
 		"Revving in neutral raises the bus playback speed and selects loaded exhaust")
