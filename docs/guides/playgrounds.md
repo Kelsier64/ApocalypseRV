@@ -148,7 +148,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [slender_speaker_audio_playground](../../tests/playgrounds/slender_speaker_audio_playground.tscn) | 1.5 km 直路、靜止巨人、可駕駛 RV；試聽喇叭的距離混音 | F2 切換起點 900／400／120 m 並重設，F3 切換巨人離路 20／60／120 m；HUD 顯示距離與各項混音數值。 |
 | [slender_speaker_playground](../../tests/playgrounds/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
 | [day_night_playground](../../tests/playgrounds/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
-| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、時間與車頂遮蔽 | 6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |
+| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、風與沙塵量、時間與車頂遮蔽 | Playground 頁：風力、風向、地貌與讀值；6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |
 | [volumetric_fog_playground](../../tests/playgrounds/volumetric_fog_playground.tscn) | 日夜場衍生霧效對照；局部體積霧與舊距離霧 | B 切模式、7／8 局部密度、其餘沿用日夜場；`--entry` 從入口開始。 |
 | [industrial_style_playground](../../tests/playgrounds/industrial_style_playground.tscn) | 獨立工業美術樣板；部分針葉樹／高窗／RV 材質未接入正式版 | F1 樣板／目前正式版、F2 視角、F3 搬運、F4 進出、F6 RV、F9 損傷、F10 平板。 |
 
@@ -637,6 +637,7 @@ godot --path . res://tests/playgrounds/rv_handling_playground.tscn
 - `0` 切換自動天氣和時間推進；`F12` 一分鐘一天，`Home` 暫停／恢復時間；自然天氣使用平滑過渡。
 - `F1` 黎明／正午／黃昏／夜晚；`F2` 場址視角；`F6` RV／車內／設備；`Backspace` 破壞車頂；`R` 重置。
 - `F3` 既有步行回放、`F4` 入口互動／離開副本；`Esc` 正式設定，`F11` 隱藏說明。
+- Esc 的 Playground 頁控制風力、風向與地貌，並即時顯示風速、陣風、乾燥度、受風係數與沙塵量。風一開始強制為強風，切換天氣預設時不會重抽風。
 
 每 5 秒記錄天氣、GPU 粒子提交數、覆蓋範圍、最高射線數及平均幀時間。粒子提交數不是遮擋後實際可見數。切換後至少等待一個完整取樣區間再比較；固定視角測量不代表行車／串流壓力測試。聲音遮蔽在固定視角跟隨驗收攝影機，步行時跟隨玩家。
 

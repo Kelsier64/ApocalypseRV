@@ -31,6 +31,7 @@ func _init() -> void:
 	register_command("cheat", "cheat [status|true|false|fuel|power|materials|fly] [true|false|status]", "Read or change session-only RV resources or operator flight. cheat true/false changes resources only.", _cheat, _complete_cheat)
 	register_command("time", "time [set HH:MM [day]]", "Read or immediately set world time (day 1-1000000).", _time, _complete_set)
 	register_command("weather", "weather [set preset]", "Read sample/target or immediately set weather. Use Tab to list presets.", _weather, _complete_weather)
+	register_command("wind", "wind [set calm|breeze|strong|gale|natural]", "Read wind or override its strength until load. natural follows the weather.", _wind, _complete_wind)
 
 func register_command(name: String, usage: String, description: String, handler: Callable, completer: Callable = Callable()) -> bool:
 	if _commands.size() >= MAX_OUTPUT_LINES or not _valid_name(name) or _commands.has(name) or not handler.is_valid() or handler.get_argument_count() != 2:
@@ -306,7 +307,24 @@ func _weather(args: PackedStringArray, context: Dictionary) -> Dictionary:
 	return _result(true, PackedStringArray([
 		_weather_line("Sample", clock.weather.sample()),
 		_weather_line("Target", clock.weather.target),
+		_wind_line(clock),
 	]))
+
+func _wind(args: PackedStringArray, context: Dictionary) -> Dictionary:
+	var choices := WorldWind.NAMES + ["natural"]
+	if not args.is_empty() and (args.size() != 2 or args[0] != "set" or args[1] not in choices):
+		return _usage("wind")
+	var clock := _world_clock(context)
+	if clock == null: return _error("World clock unavailable.")
+	if not args.is_empty():
+		clock.wind.set_override(WorldWind.NAMES.find(args[1]))
+		clock.apply_time()
+	return _result(true, PackedStringArray([_wind_line(clock)]))
+
+func _wind_line(clock: WorldClock) -> String:
+	var wind := clock.wind
+	var seconds := clock.elapsed_seconds
+	return "Wind: %s, %.1f m/s, gust %.2f, toward %03d deg (strength %.2f, %s)" % [wind.description().to_lower(), wind.speed(seconds), wind.gust(seconds), roundi(rad_to_deg(wind.heading(seconds))) % 360, wind.strength(), "override" if wind.override_tier >= 0 else "natural"]
 
 func _weather_line(label: String, value: Vector3) -> String:
 	var conditions := PackedStringArray(["clear" if value.x > 0.5 else "overcast"])
@@ -339,4 +357,12 @@ func _complete_weather(args: PackedStringArray, _context: Dictionary) -> PackedS
 		var options: Array = []
 		for preset: String in WEATHER_PRESETS: options.append("weather set " + preset)
 		return _complete_options("weather set " + args[1], options)
+	return PackedStringArray()
+
+func _complete_wind(args: PackedStringArray, _context: Dictionary) -> PackedStringArray:
+	if args.size() == 1: return _complete_options("wind " + args[0], ["wind set"])
+	if args.size() == 2 and args[0] == "set":
+		var options: Array = []
+		for tier: String in WorldWind.NAMES + ["natural"]: options.append("wind set " + tier)
+		return _complete_options("wind set " + args[1], options)
 	return PackedStringArray()
