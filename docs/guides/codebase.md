@@ -17,11 +17,11 @@
 | `world/` | 主世界、地形串流、POI、建築與室內生成 | `main_world.tscn`、`starting_shelter/`、`terrain/`、`instances/` |
 | `assets/` | 執行期貼圖、模型、圖示與材質 | 模型旁的 README 與匯入設定 |
 | `art_source/` | 可重建資產的 Blender 來源、製作腳本和審核圖 | Raker 各版與玩家動畫來源 |
-| `scripts/` | 資產建置、效能量測、回放及統一測試入口 | `test.ps1` |
+| `scripts/` | 資產建置、效能量測、回放及統一測試入口；`agent/` 放代理工具（含任意場景審查圖），`blender/` 放共用 Blender 稽核 | `test.ps1` |
 | `tests/` | 根層 `test_*.gd` 自動測試、`support/` 共用契約與夾具、`playgrounds/` 手動測試場與美術研究 | `main_scene_smoke.gd` |
 | `docs/` | 系統文件、指南、計畫與參考資料；不保留歷史 | [文件索引](../README.md) |
 
-`world/poi_kit/`、`world/roadside_kit/` 與 `world/roadside_pois/` 是內容製作層；場景可能由定義、生成器或測試場動態載入。`rv/legacy/`、`world/art_sample/` 與 `assets/materials/style_sample/` 是仍有展示或對照用途的資產。獨立的 `tests/*playground.tscn` 不會由主場景引用，但可直接執行，操作見 [展示場指南](playgrounds.md)。
+`world/building_kit/`、`world/poi_kit/`、`world/roadside_kit/` 與 `world/roadside_pois/` 是內容製作層，新建築用 `world/building_kit/` 的共用零件組裝；場景可能由定義、生成器或測試場動態載入。`rv/legacy/`、`world/art_sample/` 與 `assets/materials/style_sample/` 是仍有展示或對照用途的資產。獨立的 `tests/*playground.tscn` 不會由主場景引用，但可直接執行，操作見 [展示場指南](playgrounds.md)。
 
 匯入模型用途見 [模型入口](../../assets/models/README.md)，來源與授權資訊有需要時記在各資產 README。建模需求使用 [短 prompt](image-to-3d-workflow.md#模型需求)，不另維護全域清單。
 
