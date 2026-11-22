@@ -4,8 +4,9 @@ class_name BuildingKit
 ## Compose walls with framed openings, rooms, slabs, roofs, columns, beams,
 ## stairs and bands on one metric convention instead of raw boxes, then call
 ## build() once: pieces batch into one ArrayMesh (a surface per finish) and
-## one StaticBody3D of box colliders. validate() reports floating pieces and
-## openings that do not fit. Units are building-local metres, Y up, the main
+## one StaticBody3D of box colliders. validate() reports openings that do not
+## fit, floating pieces, pieces that pass through a wall or slab, and coinciding
+## faces that z-fight. Units are building-local metres, Y up, the main
 ## facade faces +Z. Finishes come from BuildingKitMaterials.
 
 const STOREY := 3.0
@@ -23,6 +24,16 @@ const SILL := 0.9
 const STEP_RUN := 0.28
 const STEP_RISE := 0.18
 const SUPPORT_TOLERANCE := 0.02
+## Depth a piece may sink into another (a jamb into the floor) before a piece
+## passing through a panel counts as a clash.
+const CLASH_TOLERANCE := 0.03
+## Faces closer than this along their normal count as coplanar.
+const COPLANAR_TOLERANCE := 0.003
+## Shared area (square metres) of two coplanar faces that validate() reports as z-fighting.
+const COPLANAR_AREA := 0.0025
+## A piece counts as a panel (wall, slab, pane) when its thinnest side is at
+## most this fraction of its middle side.
+const PANEL_RATIO := 0.5
 
 class Surface extends RefCounted:
 	var vertices := PackedVector3Array()
@@ -65,7 +76,9 @@ func frame(at: Vector3, yaw := 0.0) -> void:
 # --- Pieces ---------------------------------------------------------------
 
 ## A box. options: basis (Basis), bevel (m), solid (bool), name, hung (bool:
-## the piece may rest on nothing, for example a sign on a cable).
+## the piece may rest on nothing, for example a sign on a cable), embedded
+## (bool: the piece may pass through or sit inside others, like a sill board
+## through its wall).
 func box(center: Vector3, size: Vector3, finish: StringName, options := {}) -> void:
 	_add_box(_origin * Transform3D(options.get("basis", Basis.IDENTITY), center), size, finish, options)
 
@@ -76,7 +89,8 @@ func box(center: Vector3, size: Vector3, finish: StringName, options := {}) -> v
 ##   thickness, base (bottom y), solid (default true)
 ##   openings: Array of door()/window() dictionaries
 ##   corner: &"cover" extends the wall over both corners, &"butt" stops it at
-##     the covering walls' inner faces, &"none" ends exactly at a and b
+##     the covering walls' inner faces, &"none" ends exactly at a and b as a
+##     free end that plinth and cap wrap around (join collinear walls into one)
 ##   frame (finish for opening frames, default &"trim"), inner_frame (bool)
 ##   plinth, cap (finish names; omitted means none)
 func wall(a: Vector2, b: Vector2, height: float, finish: StringName, options := {}) -> void:
@@ -123,12 +137,12 @@ func wall(a: Vector2, b: Vector2, height: float, finish: StringName, options := 
 		var run := _ends(length, thickness, options.get("corner", &"none"), PLINTH_DEPTH)
 		var start: float = run.x
 		for gap in doors:
-			_strip(pose, start, gap.x, 0.0, PLINTH, thickness + PLINTH_DEPTH * 2.0, 0.0, options.plinth)
+			_strip(pose, start, gap.x, 0.0, PLINTH, thickness + PLINTH_DEPTH * 2.0, 0.0, options.plinth, "plinth")
 			start = gap.y
-		_strip(pose, start, run.y, 0.0, PLINTH, thickness + PLINTH_DEPTH * 2.0, 0.0, options.plinth)
+		_strip(pose, start, run.y, 0.0, PLINTH, thickness + PLINTH_DEPTH * 2.0, 0.0, options.plinth, "plinth")
 	if options.has("cap"):
 		var top := _ends(length, thickness, options.get("corner", &"none"), CAP_DEPTH)
-		_strip(pose, top.x, top.y, height, height + 0.08, thickness + CAP_DEPTH * 2.0, 0.0, options.cap)
+		_strip(pose, top.x, top.y, height, height + 0.08, thickness + CAP_DEPTH * 2.0, 0.0, options.cap, "cap")
 
 
 ## Four walls around a plan rectangle (Rect2 in XZ). sides maps &"front" (+Z),
@@ -164,7 +178,7 @@ func band(a: Vector2, b: Vector2, bottom: float, height: float, finish: StringNa
 	var basis := Basis(Vector3(dir.x, 0, dir.y), Vector3.UP, Vector3(-dir.y, 0, dir.x))
 	var pose := _origin * Transform3D(basis, Vector3(a.x, options.get("base", 0.0), a.y))
 	var run := _ends(length, thickness, options.get("corner", &"none"), depth)
-	_strip(pose, run.x, run.y, bottom, bottom + height, depth, thickness * 0.5 + depth * 0.5, finish)
+	_strip(pose, run.x, run.y, bottom, bottom + height, depth, thickness * 0.5 + depth * 0.5, finish, "band")
 
 
 ## A floor, ceiling or roof slab whose top is at `top`. options: thickness, solid, bevel.
@@ -188,9 +202,9 @@ func roof(rect: Rect2, top: float, finish: StringName, options := {}) -> void:
 	var y := top + 0.06 - tall * 0.5
 	var c := outer.get_center()
 	for z: float in [outer.position.y - depth * 0.5, outer.end.y + depth * 0.5]:
-		box(Vector3(c.x, y, z), Vector3(outer.size.x + depth * 2.0, tall, depth), fascia, {"name": "fascia"})
+		box(Vector3(c.x, y, z), Vector3(outer.size.x + depth * 2.0, tall, depth), fascia, {"name": "fascia", "solid": true})
 	for x: float in [outer.position.x - depth * 0.5, outer.end.x + depth * 0.5]:
-		box(Vector3(x, y, c.y), Vector3(depth, tall, outer.size.y), fascia, {"name": "fascia"})
+		box(Vector3(x, y, c.y), Vector3(depth, tall, outer.size.y), fascia, {"name": "fascia", "solid": true})
 
 
 ## A column standing on `base`. options: size, round (bool), solid, bevel.
@@ -221,8 +235,9 @@ func beam(a: Vector3, b: Vector3, section: Vector2, finish: StringName, options 
 
 ## A straight flight that climbs `rise` from `start` (front edge, centre of the
 ## first step, at height base) towards local -Z after rotating by yaw. Steps are
-## visual; one ramp collider runs through the step midpoints so the player walks
-## up smoothly. Add the landing slab yourself.
+## visual; one ramp collider runs through the riser midpoints so the player
+## walks up smoothly, and blocks one step lower fill the solid flight under it.
+## Add the landing slab yourself.
 func stairs(start: Vector2, base: float, yaw: float, width: float, rise: float, finish: StringName, options := {}) -> void:
 	var run: float = options.get("run", STEP_RUN)
 	var count := maxi(1, ceili(rise / STEP_RISE))
@@ -241,13 +256,18 @@ func stairs(start: Vector2, base: float, yaw: float, width: float, rise: float, 
 		var basis := Basis(Vector3.RIGHT, slope)
 		var pose := _origin * Transform3D(basis, mid + basis.y * -ramp * 0.5)
 		_colliders.append([pose, Vector3(width, ramp, span)])
+		# The ramp top passes half a step above each lower tread, so these stay under it.
+		for i in range(1, count):
+			var block := _origin * Transform3D(Basis.IDENTITY, Vector3(0, step * i * 0.5, -run * (i + 0.5)))
+			_colliders.append([block, Vector3(width, step * i, run)])
 	_origin = saved
 
 
 # --- Output ---------------------------------------------------------------
 
-## Problems found while composing plus pieces that rest on nothing: a piece is
-## supported when it touches the ground or a chain of pieces reaching it.
+## Problems found while composing, pieces that rest on nothing (a piece is
+## supported when it touches the ground or a chain of pieces reaching it), and
+## clashes: a piece passing through a wall or slab, or two faces that coincide.
 func validate() -> Array[String]:
 	var result := _issues.duplicate()
 	var grounded: Array[bool] = []
@@ -268,6 +288,7 @@ func validate() -> Array[String]:
 	for i in _pieces.size():
 		if not grounded[i]:
 			result.append("%s at %s rests on nothing" % [_pieces[i].name, _pieces[i].aabb.position])
+	result.append_array(_clashes())
 	return result
 
 
@@ -328,7 +349,8 @@ func _ends(length: float, thickness: float, corner: StringName, depth: float) ->
 			return Vector2(-thickness * 0.5 - depth, length + thickness * 0.5 + depth)
 		&"butt":
 			return Vector2(thickness * 0.5 + depth, length - thickness * 0.5 - depth)
-	return Vector2(0.0, length)
+	# A free end: wrap it too, or the part's end face z-fights with the wall's.
+	return Vector2(-depth, length + depth)
 
 
 func _wall_piece(pose: Transform3D, x0: float, x1: float, y0: float, y1: float, thickness: float, finish: StringName, solid: bool) -> void:
@@ -338,11 +360,12 @@ func _wall_piece(pose: Transform3D, x0: float, x1: float, y0: float, y1: float, 
 	_add_box(pose * Transform3D(Basis.IDENTITY, center), Vector3(x1 - x0, y1 - y0, thickness), finish, {"solid": solid, "name": "wall"})
 
 
-func _strip(pose: Transform3D, x0: float, x1: float, y0: float, y1: float, depth: float, z: float, finish: StringName) -> void:
+## A strip along a wall. Plinths and caps wrap the wall, so they are embedded.
+func _strip(pose: Transform3D, x0: float, x1: float, y0: float, y1: float, depth: float, z: float, finish: StringName, label: String) -> void:
 	if x1 - x0 < 0.001:
 		return
 	_add_box(pose * Transform3D(Basis.IDENTITY, Vector3((x0 + x1) * 0.5, (y0 + y1) * 0.5, z)),
-		Vector3(x1 - x0, y1 - y0, depth), finish, {"name": "strip"})
+		Vector3(x1 - x0, y1 - y0, depth), finish, {"name": label, "embedded": label != "band"})
 
 
 ## Frames on both faces, a window sill board, mullion and glazing.
@@ -362,14 +385,14 @@ func _opening_details(pose: Transform3D, opening: Dictionary, thickness: float, 
 	if sill <= 0.0:
 		return
 	var board := Vector3(width + FRAME * 2.0 + 0.06, 0.06, thickness + 0.1)
-	_add_box(pose * Transform3D(Basis.IDENTITY, Vector3(x, sill - 0.035, 0.03)), board, finish, {"name": "sill"})
+	_add_box(pose * Transform3D(Basis.IDENTITY, Vector3(x, sill - 0.035, 0.03)), board, finish, {"name": "sill", "embedded": true})
 	if width >= 1.5:
 		_add_box(pose * Transform3D(Basis.IDENTITY, Vector3(x, sill + tall * 0.5, 0.0)),
 			Vector3(FRAME * 0.7, tall, 0.06), finish, {"name": "mullion"})
 	match opening.get("glazing", &"intact"):
 		&"intact":
 			_add_box(pose * Transform3D(Basis.IDENTITY, Vector3(x, sill + tall * 0.5, 0.0)),
-				Vector3(width + 0.04, tall + 0.04, 0.02), &"glass", {"solid": true, "name": "pane"})
+				Vector3(width + 0.04, tall + 0.04, 0.02), &"glass", {"solid": true, "name": "pane", "embedded": true})
 		&"broken":
 			for corner in 2:
 				var w := rng.randf_range(0.2, 0.45) * width
@@ -378,7 +401,7 @@ func _opening_details(pose: Transform3D, opening: Dictionary, thickness: float, 
 				var cx := x - width * 0.5 + w * 0.5 - 0.02 if left else x + width * 0.5 - w * 0.5 + 0.02
 				var cy := sill + h * 0.5 - 0.02 if left else sill + tall - h * 0.5 + 0.02
 				_add_box(pose * Transform3D(Basis(Vector3.BACK, rng.randf_range(-0.12, 0.12)), Vector3(cx, cy, 0.0)),
-					Vector3(w, h, 0.02), &"glass", {"name": "shard"})
+					Vector3(w, h, 0.02), &"glass", {"name": "shard", "embedded": true})
 
 
 func _surface(finish: StringName) -> Surface:
@@ -389,8 +412,18 @@ func _surface(finish: StringName) -> Surface:
 	return _surfaces[finish]
 
 
-func _record(name: String, bounds: AABB, options: Dictionary) -> void:
-	_pieces.append({"name": name, "aabb": bounds, "hung": options.get("hung", false)})
+## Keeps each piece as an oriented box for validate().
+func _record(name: String, pose: Transform3D, half: Vector3, bevel: float, options: Dictionary) -> void:
+	var axes: Array[Vector3] = [pose.basis.x, pose.basis.y, pose.basis.z]
+	var extent := Vector3.ZERO
+	for k in 3:
+		extent[k] = half[k] * axes[k].length()
+		axes[k] = axes[k].normalized()
+	_pieces.append({
+		"name": name, "aabb": pose * AABB(-half, half * 2.0), "hung": options.get("hung", false),
+		"embedded": options.get("embedded", false), "round": options.get("round", false),
+		"center": pose.origin, "axes": axes, "half": extent, "bevel": bevel,
+	})
 
 
 func _add_box(pose: Transform3D, size: Vector3, finish: StringName, options: Dictionary) -> void:
@@ -444,7 +477,7 @@ func _add_box(pose: Transform3D, size: Vector3, finish: StringName, options: Dic
 					_poly(surface, points, pose.basis * signs, 1.0)
 	if options.get("solid", false):
 		_colliders.append([pose, size])
-	_record(label, pose * AABB(-h, size), options)
+	_record(label, pose, h, bevel, options)
 
 
 func _add_cylinder(pose: Transform3D, radius: float, height: float, finish: StringName, solid: bool) -> void:
@@ -468,7 +501,7 @@ func _add_cylinder(pose: Transform3D, radius: float, height: float, finish: Stri
 	_poly(surface, bottom, pose.basis * Vector3.DOWN, 0.0)
 	if solid:
 		_colliders.append([pose, Vector3(radius * 2.0, height, radius * 2.0)])
-	_record("column", pose * AABB(Vector3(-radius, -half, -radius), Vector3(radius * 2.0, height, radius * 2.0)), {})
+	_record("column", pose, Vector3(radius, half, radius), 0.0, {"round": true})
 
 
 ## A flat convex polygon. UVs are building-local metres projected on the face,
@@ -494,3 +527,144 @@ func _poly(surface: Surface, points: Array[Vector3], normal: Vector3, edge: floa
 		surface.indices.append(offset)
 		surface.indices.append(offset + i)
 		surface.indices.append(offset + i + 1)
+
+
+# --- Clashes --------------------------------------------------------------
+
+func _clashes() -> Array[String]:
+	var result: Array[String] = []
+	for i in _pieces.size():
+		var a: Dictionary = _pieces[i]
+		for face: Dictionary in _faces(a):
+			if face.normal.y > 0.999 and absf(face.center.y - ground) < COPLANAR_TOLERANCE:
+				result.append("%s top at %s lies on the ground plane and z-fights with it" % [a.name, _snap(face.center)])
+		var near: AABB = a.aabb.grow(COPLANAR_TOLERANCE)
+		for j in range(i + 1, _pieces.size()):
+			var b: Dictionary = _pieces[j]
+			if not near.intersects(b.aabb):
+				continue
+			var where := _snap(near.intersection(b.aabb).get_center())
+			if not (a.embedded or b.embedded) and _overlap(a, b) > CLASH_TOLERANCE and (_pierces(a, b) or _pierces(b, a)):
+				result.append("%s and %s pass through each other at %s" % [a.name, b.name, where])
+			elif _shared_area(i, j) > COPLANAR_AREA:
+				result.append("%s and %s share a face at %s and z-fight" % [a.name, b.name, where])
+	return result
+
+
+## Depth along the shallowest separating-axis overlap; zero or less when apart.
+func _overlap(a: Dictionary, b: Dictionary) -> float:
+	var axes: Array[Vector3] = []
+	axes.append_array(a.axes)
+	axes.append_array(b.axes)
+	for p: Vector3 in a.axes:
+		for q: Vector3 in b.axes:
+			var cross := p.cross(q)
+			if cross.length_squared() > 1e-8:
+				axes.append(cross.normalized())
+	var offset: Vector3 = b.center - a.center
+	var least := INF
+	for axis in axes:
+		var depth := _radius(a, axis) + _radius(b, axis) - absf(axis.dot(offset))
+		if depth <= 0.0:
+			return depth
+		least = minf(least, depth)
+	return least
+
+
+static func _radius(piece: Dictionary, axis: Vector3) -> float:
+	var total := 0.0
+	for k in 3:
+		total += absf(axis.dot(piece.axes[k])) * piece.half[k]
+	return total
+
+
+## True when piece sticks out of both faces of panel along the panel's thin side.
+static func _pierces(piece: Dictionary, panel: Dictionary) -> bool:
+	var half: Vector3 = panel.half
+	var sides := [half.x, half.y, half.z]
+	sides.sort()
+	if sides[0] > sides[1] * PANEL_RATIO:
+		return false
+	var thin := 0
+	for k in 3:
+		if half[k] < half[thin]:
+			thin = k
+	var normal: Vector3 = panel.axes[thin]
+	var distance := normal.dot(piece.center - panel.center)
+	var reach := _radius(piece, normal)
+	return distance - reach < -half[thin] - CLASH_TOLERANCE and distance + reach > half[thin] + CLASH_TOLERANCE
+
+
+## Face rectangles, inset by the bevel; round pieces keep only their caps.
+static func _faces(piece: Dictionary) -> Array[Dictionary]:
+	var faces: Array[Dictionary] = []
+	for axis in 3:
+		if piece.round and axis != 1:
+			continue
+		var u: Vector3 = piece.axes[(axis + 1) % 3] * (piece.half[(axis + 1) % 3] - piece.bevel)
+		var v: Vector3 = piece.axes[(axis + 2) % 3] * (piece.half[(axis + 2) % 3] - piece.bevel)
+		for sign_value: float in [-1.0, 1.0]:
+			var normal: Vector3 = piece.axes[axis] * sign_value
+			var center: Vector3 = piece.center + normal * piece.half[axis]
+			faces.append({"center": center, "normal": normal, "points": [center - u - v, center + u - v, center + u + v, center - u + v]})
+	return faces
+
+
+## Visible area where pieces i and j have coplanar faces pointing the same way.
+## Parts pressed against a third piece's opposite face, or lying face down on
+## the ground, are hidden and do not count.
+func _shared_area(i: int, j: int) -> float:
+	var a: Dictionary = _pieces[i]
+	var b: Dictionary = _pieces[j]
+	var region: AABB = a.aabb.grow(COPLANAR_TOLERANCE).intersection(b.aabb.grow(COPLANAR_TOLERANCE))
+	var total := 0.0
+	for p: Dictionary in _faces(a):
+		if p.normal.y < -0.999 and absf(p.center.y - ground) < COPLANAR_TOLERANCE:
+			continue
+		for q: Dictionary in _faces(b):
+			if not _coplanar(p, q, 1.0):
+				continue
+			var u: Vector3 = p.normal.cross(Vector3.UP if absf(p.normal.y) < 0.9 else Vector3.RIGHT).normalized()
+			var v: Vector3 = p.normal.cross(u)
+			var shared: Array[PackedVector2Array] = Geometry2D.intersect_polygons(_flatten(p.points, u, v), _flatten(q.points, u, v))
+			for k in _pieces.size():
+				if shared.is_empty():
+					break
+				if k == i or k == j or not (_pieces[k].aabb as AABB).grow(COPLANAR_TOLERANCE).intersects(region):
+					continue
+				for r: Dictionary in _faces(_pieces[k]):
+					if not _coplanar(p, r, -1.0):
+						continue
+					var cover := _flatten(r.points, u, v)
+					var rest: Array[PackedVector2Array] = []
+					for polygon in shared:
+						if Geometry2D.is_polygon_clockwise(polygon):
+							rest.append(polygon)
+						else:
+							rest.append_array(Geometry2D.clip_polygons(polygon, cover))
+					shared = rest
+			for polygon in shared:
+				total += -_area(polygon) if Geometry2D.is_polygon_clockwise(polygon) else _area(polygon)
+	return total
+
+
+static func _coplanar(p: Dictionary, q: Dictionary, direction: float) -> bool:
+	return p.normal.dot(q.normal) * direction > 0.999 and absf(p.normal.dot(q.center - p.center)) < COPLANAR_TOLERANCE
+
+
+static func _flatten(points: Array, u: Vector3, v: Vector3) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	for point: Vector3 in points:
+		result.append(Vector2(point.dot(u), point.dot(v)))
+	return result
+
+
+static func _area(polygon: PackedVector2Array) -> float:
+	var twice := 0.0
+	for i in polygon.size():
+		twice += polygon[i].cross(polygon[(i + 1) % polygon.size()])
+	return absf(twice) * 0.5
+
+
+static func _snap(point: Vector3) -> Vector3:
+	return point.snapped(Vector3.ONE * 0.01)

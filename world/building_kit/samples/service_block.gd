@@ -56,8 +56,8 @@ static func _store(kit: BuildingKit) -> void:
 	var underside := 3.0
 	for x: float in [-4.6, 4.6]:
 		kit.column(Vector2(x, canopy.end.y - 0.25), 0.0, underside, &"steel", {"size": 0.18, "round": true})
-	kit.beam(Vector3(-5, underside - 0.1, canopy.end.y - 0.25), Vector3(5, underside - 0.1, canopy.end.y - 0.25), Vector2(0.14, 0.2), &"trim")
-	kit.slab(canopy, underside + 0.14, &"corrugated", {"thickness": 0.14, "solid": false})
+	kit.beam(Vector3(-5, underside - 0.1, canopy.end.y - 0.25), Vector3(5, underside - 0.1, canopy.end.y - 0.25), Vector2(0.14, 0.2), &"trim", {"solid": true})
+	kit.slab(canopy, underside + 0.14, &"corrugated", {"thickness": 0.14})
 
 
 static func _annex(kit: BuildingKit) -> void:
@@ -68,14 +68,16 @@ static func _annex(kit: BuildingKit) -> void:
 	}, {"plinth": &"concrete"})
 	var upper := ANNEX_STOREY + BuildingKit.SLAB
 	# The floor slab caps the full wall thickness and reads as a floor line.
-	kit.slab(ANNEX.grow(BuildingKit.WALL * 0.5 + 0.03), upper, &"slab")
+	var floor_line := ANNEX.grow(BuildingKit.WALL * 0.5 + 0.03)
+	kit.slab(floor_line, upper, &"slab")
 	kit.room(ANNEX, ANNEX_STOREY - BuildingKit.SLAB, &"paint", {
 		&"front": [BuildingKit.window(1.6), BuildingKit.window(4.4, BuildingKit.WINDOW, BuildingKit.SILL, &"broken")],
 		&"right": [BuildingKit.door(2.5)],
 	}, {"base": upper})
 	kit.roof(ANNEX, upper + ANNEX_STOREY, &"slab")
-	# Outside stair along the east wall to a landing at the upper door.
-	var face := ANNEX.end.x + BuildingKit.WALL * 0.5
+	# Outside stair along the east wall to a landing that starts at the floor
+	# slab's edge, so their tops never overlap and z-fight.
+	var face := floor_line.end.x
 	var landing := Rect2(face, -3.3, 1.4, 1.6)
 	kit.slab(landing, upper, &"steel", {"thickness": 0.16})
 	for z: float in [landing.position.y + 0.15, landing.end.y - 0.15]:
@@ -84,9 +86,9 @@ static func _annex(kit: BuildingKit) -> void:
 	var start := Vector2(face + 0.65, landing.end.y + run)
 	kit.stairs(start, 0.0, 0.0, 1.2, upper, &"concrete")
 	var rail_x := face + 1.3
-	kit.box(Vector3(rail_x, 0.5, start.y - 0.1), Vector3(0.06, 1.0, 0.06), &"trim", {"name": "post"})
-	kit.box(Vector3(rail_x, upper + 0.5, landing.end.y - 0.1), Vector3(0.06, 1.0, 0.06), &"trim", {"name": "post"})
-	kit.beam(Vector3(rail_x, 1.0, start.y - 0.1), Vector3(rail_x, upper + 1.0, landing.end.y - 0.1), Vector2(0.05, 0.05), &"trim")
+	kit.box(Vector3(rail_x, 0.5, start.y - 0.1), Vector3(0.06, 1.0, 0.06), &"trim", {"name": "post", "solid": true})
+	kit.box(Vector3(rail_x, upper + 0.5, landing.end.y - 0.1), Vector3(0.06, 1.0, 0.06), &"trim", {"name": "post", "solid": true})
+	kit.beam(Vector3(rail_x, 1.0, start.y - 0.1), Vector3(rail_x, upper + 1.0, landing.end.y - 0.1), Vector2(0.05, 0.05), &"trim", {"solid": true})
 
 
 static func _swatches(kit: BuildingKit) -> void:

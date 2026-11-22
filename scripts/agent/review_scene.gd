@@ -13,10 +13,30 @@ extends SceneTree
 ##   --call=method,arg,...       call this on the scene root before it enters the
 ##                               tree, for site-configured POIs: --call=configure,42,true
 ##                               (arguments are parsed with str_to_var)
+##   --no-probe                  skip the visual-against-collision probe
+##
+## The probe casts a grid of rays down and from four sides through the scene,
+## once against the visible meshes and once against the collision layers the
+## player collides with, and reports surfaces of one with none of the other
+## within PROBE_GAP: geometry that looks solid but the player walks through,
+## and invisible walls. Skinned meshes are skipped (they animate). review.json
+## lists them by node and place; *_probe.png marks them through walls (red:
+## visual only, blue: collision only).
 
 const HUGE := 150.0
+const PROBE_LAYER := 1 << 31
+const PLAYER_SCENE := "res://player/player.tscn"
+## Surfaces closer than this along a ray count as the same surface.
+const PROBE_GAP := 0.25
+const PROBE_STEP := 0.25
+## Upper bound of rays per direction; the grid widens on large scenes.
+const PROBE_RAYS := 4000
+const PROBE_HITS := 32
+const PROBE_INSTANCES := 20000
+const PROBE_CLUSTERS := 20
+const PROBE_VIEWS: Array[String] = ["top", "oblique_front_right", "oblique_back_left"]
 
-var settings := {"eyes": [], "clay": false, "ground": true, "size": Vector2i(1280, 720)}
+var settings := {"eyes": [], "clay": false, "ground": true, "probe": true, "size": Vector2i(1280, 720)}
 
 
 func _init() -> void:
@@ -37,6 +57,7 @@ func run() -> void:
 		elif arg.begins_with("--focus="): settings.focus = _pair(value)
 		elif arg == "--clay": settings.clay = true
 		elif arg == "--no-ground": settings.ground = false
+		elif arg == "--no-probe": settings.probe = false
 		elif arg.begins_with("--size="): settings.size = Vector2i(int(value.get_slice("x", 0)), int(value.get_slice("x", 1)))
 		elif arg.begins_with("--call="): settings.call = value.split(",")
 		else:
@@ -90,21 +111,39 @@ func run() -> void:
 			for geometry: GeometryInstance3D in scene.find_children("*", "GeometryInstance3D", true, false):
 				geometry.material_override = clay
 		for name: String in views:
-			camera.global_position = views[name][0]
-			camera.look_at(views[name][1], Vector3.UP if absf((views[name][1] - views[name][0]).normalized().y) < 0.99 else Vector3.FORWARD)
-			for i in 6:
-				await process_frame
-			await RenderingServer.frame_post_draw
-			var path := out.path_join("%s_%s.png" % [name, mode])
-			if root.get_texture().get_image().save_png(path) != OK:
-				fail("Cannot save " + path)
+			var path: String = await _shoot(camera, views[name], out.path_join("%s_%s.png" % [name, mode]))
+			if path.is_empty():
 				return
 			shots.append(path)
+	if settings.probe:
+		var probe: Dictionary = await _probe(scene, _bounds(scene))
+		report.probe = probe.summary
+		if not (probe.points.visual_only.is_empty() and probe.points.collision_only.is_empty()):
+			_markers(probe.points, maxf(0.12, bounds.size.length() / 300.0))
+			for name: String in views:
+				if not (name in PROBE_VIEWS or name.begins_with("eye_")):
+					continue
+				var path: String = await _shoot(camera, views[name], out.path_join("%s_probe.png" % name))
+				if path.is_empty():
+					return
+				shots.append(path)
 	report.shots = shots
 	var file := FileAccess.open(out.path_join("review.json"), FileAccess.WRITE)
 	file.store_string(JSON.stringify(report, "\t") + "\n")
 	print("REVIEW: ", JSON.stringify(report))
 	quit(0)
+
+
+func _shoot(camera: Camera3D, view: Array, path: String) -> String:
+	camera.global_position = view[0]
+	camera.look_at(view[1], Vector3.UP if absf((view[1] - view[0]).normalized().y) < 0.99 else Vector3.FORWARD)
+	for i in 6:
+		await process_frame
+	await RenderingServer.frame_post_draw
+	if root.get_texture().get_image().save_png(path) != OK:
+		fail("Cannot save " + path)
+		return ""
+	return path
 
 
 func _pair(text: String) -> Array[Vector3]:
@@ -217,3 +256,189 @@ func _stats(scene: Node) -> Dictionary:
 			var per := indices.size() / 3 if not indices.is_empty() else (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
 			triangles += per * batch.multimesh.instance_count
 	return {"mesh_instances": meshes, "surfaces": surfaces, "materials": materials.size(), "triangles": triangles, "multimesh_instances": multimeshes}
+
+
+# --- Probe ----------------------------------------------------------------
+
+## Compares rays against visible meshes (as temporary trimesh bodies on
+## PROBE_LAYER) with rays against the scene's own collision.
+func _probe(scene: Node, bounds: AABB) -> Dictionary:
+	var holder := Node3D.new()
+	holder.name = "ReviewProbe"
+	root.add_child(holder)
+	var sources := {}
+	var instances := 0
+	var skipped: Array[String] = []
+	for geometry: GeometryInstance3D in scene.find_children("*", "GeometryInstance3D", true, false):
+		if not geometry.is_visible_in_tree():
+			continue
+		var mesh: Mesh
+		var poses: Array[Transform3D] = []
+		if geometry is MeshInstance3D:
+			if (geometry as MeshInstance3D).skin != null:
+				skipped.append(String(scene.get_path_to(geometry)) + " (skinned)")
+				continue
+			mesh = geometry.mesh
+			poses.append(geometry.global_transform)
+		elif geometry is MultiMeshInstance3D and geometry.multimesh != null and geometry.multimesh.transform_format == MultiMesh.TRANSFORM_3D:
+			var batch: MultiMesh = geometry.multimesh
+			mesh = batch.mesh
+			var count := batch.instance_count if batch.visible_instance_count < 0 else batch.visible_instance_count
+			for k in count:
+				poses.append(geometry.global_transform * batch.get_instance_transform(k))
+		if mesh == null or poses.is_empty():
+			continue
+		if instances + poses.size() > PROBE_INSTANCES:
+			skipped.append(String(scene.get_path_to(geometry)) + " (instance limit)")
+			continue
+		var shape := mesh.create_trimesh_shape()
+		if shape == null:
+			continue
+		var body := StaticBody3D.new()
+		body.collision_layer = PROBE_LAYER
+		body.collision_mask = 0
+		holder.add_child(body)
+		for pose in poses:
+			var collider := CollisionShape3D.new()
+			collider.shape = shape
+			collider.transform = pose
+			body.add_child(collider)
+		sources[body.get_instance_id()] = String(scene.get_path_to(geometry))
+		instances += poses.size()
+	for i in 3:
+		await physics_frame
+	var space := root.get_world_3d().direct_space_state
+	var mask := _player_mask() & ~PROBE_LAYER
+	var area := bounds.grow(0.5)
+	var found := {"visual_only": {}, "collision_only": {}}
+	var points := {"visual_only": [], "collision_only": []}
+	var rays := 0
+	var steps := []
+	for direction: Vector3 in [Vector3.DOWN, Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+		var axis := direction.abs().max_axis_index()
+		var u := (axis + 1) % 3
+		var v := (axis + 2) % 3
+		var step := maxf(PROBE_STEP, sqrt(area.size[u] * area.size[v] / PROBE_RAYS))
+		steps.append(snappedf(step, 0.01))
+		for iu in ceili(area.size[u] / step):
+			for iv in ceili(area.size[v] / step):
+				var origin := area.position
+				origin[u] += (iu + 0.5) * step
+				origin[v] += (iv + 0.5) * step
+				origin[axis] = area.end[axis] if direction[axis] < 0.0 else area.position[axis]
+				var seen := _entries(space, origin, direction, area.size[axis], PROBE_LAYER)
+				var solid := _entries(space, origin, direction, area.size[axis], mask)
+				rays += 1
+				for hit: Array in seen:
+					var point: Vector3 = origin + direction * hit[0]
+					if not _matched(solid, hit[0]) and not _near(space, point, mask):
+						_note(found.visual_only, points.visual_only, point, sources.get(hit[1].get_instance_id(), "?"))
+				for hit: Array in solid:
+					var point: Vector3 = origin + direction * hit[0]
+					if not _matched(seen, hit[0]) and not _near(space, point, PROBE_LAYER):
+						_note(found.collision_only, points.collision_only, point, _collider_path(scene, hit[1], hit[2]))
+	holder.free()
+	var summary := {"rays": rays, "grid_step": steps, "gap": PROBE_GAP, "collision_mask": mask, "probed_instances": instances, "skipped": skipped}
+	for kind: String in found:
+		var clusters: Array = found[kind].values()
+		clusters.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.rays > b.rays)
+		var largest := []
+		var hits := 0
+		for cluster: Dictionary in clusters:
+			hits += cluster.rays
+			if largest.size() < PROBE_CLUSTERS:
+				largest.append({"node": cluster.node, "at": _vec(cluster.sum / cluster.rays), "rays": cluster.rays})
+		summary[kind] = {"hits": hits, "clusters": clusters.size(), "largest": largest}
+	return {"summary": summary, "points": points}
+
+
+## The layers the player collides with, so the probe reports what the player meets.
+## Read from the scene's root node without instancing it (the player brings HUD).
+func _player_mask() -> int:
+	var state := (load(PLAYER_SCENE) as PackedScene).get_state()
+	if not ClassDB.is_parent_class(state.get_node_type(0), "CollisionObject3D"):
+		return 0x7FFFFFFF
+	for i in state.get_node_property_count(0):
+		if state.get_node_property_name(0, i) == &"collision_mask":
+			return state.get_node_property_value(0, i)
+	return ClassDB.class_get_property_default_value(state.get_node_type(0), &"collision_mask")
+
+
+## Entry points along a ray: front faces of meshes, outer faces of convex shapes.
+func _entries(space: PhysicsDirectSpaceState3D, origin: Vector3, direction: Vector3, length: float, mask: int) -> Array:
+	var result := []
+	var from := origin
+	var end := origin + direction * length
+	for i in PROBE_HITS:
+		var query := PhysicsRayQueryParameters3D.create(from, end, mask)
+		query.hit_back_faces = false
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			break
+		result.append([(hit.position - origin).dot(direction), hit.collider, hit.shape])
+		from = hit.position + direction * 0.01
+		if (end - from).dot(direction) <= 0.0:
+			break
+	return result
+
+
+func _matched(hits: Array, distance: float) -> bool:
+	for hit: Array in hits:
+		if absf(hit[0] - distance) <= PROBE_GAP:
+			return true
+	return false
+
+
+## True when anything on mask lies within PROBE_GAP of point in any direction,
+## so thin trim beside a wall (a plinth lip, a frame edge) is not reported.
+func _near(space: PhysicsDirectSpaceState3D, point: Vector3, mask: int) -> bool:
+	var sphere := SphereShape3D.new()
+	sphere.radius = PROBE_GAP
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = sphere
+	query.transform = Transform3D(Basis.IDENTITY, point)
+	query.collision_mask = mask
+	return not space.intersect_shape(query, 1).is_empty()
+
+
+## Groups mismatches per node and 1 m cell.
+func _note(clusters: Dictionary, points: Array, point: Vector3, node: String) -> void:
+	var key := "%s|%s" % [node, point.floor()]
+	if not clusters.has(key):
+		clusters[key] = {"node": node, "sum": Vector3.ZERO, "rays": 0}
+	clusters[key].sum += point
+	clusters[key].rays += 1
+	if points.size() < 4000:
+		points.append(point)
+
+
+func _collider_path(scene: Node, collider: Object, shape_index: int) -> String:
+	var body := collider as CollisionObject3D
+	if body == null:
+		return "?"
+	var owner_node: Node = body.shape_owner_get_owner(body.shape_find_owner(shape_index))
+	var node: Node = owner_node if owner_node != null else body
+	return String(scene.get_path_to(node)) if scene.is_ancestor_of(node) else String(node.name)
+
+
+## Small boxes drawn through walls: red where only visuals are, blue where only collision is.
+func _markers(points: Dictionary, size: float) -> void:
+	for kind: String in points:
+		if points[kind].is_empty():
+			continue
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.no_depth_test = true
+		material.albedo_color = Color(0.95, 0.1, 0.1) if kind == "visual_only" else Color(0.15, 0.4, 1.0)
+		var cube := BoxMesh.new()
+		cube.size = Vector3.ONE * size
+		cube.material = material
+		var batch := MultiMesh.new()
+		batch.transform_format = MultiMesh.TRANSFORM_3D
+		batch.mesh = cube
+		batch.instance_count = points[kind].size()
+		for i in points[kind].size():
+			batch.set_instance_transform(i, Transform3D(Basis.IDENTITY, points[kind][i]))
+		var instance := MultiMeshInstance3D.new()
+		instance.multimesh = batch
+		root.add_child(instance)
