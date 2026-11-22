@@ -135,6 +135,10 @@ func velocity(seconds: float, exposure := 1.0) -> Vector3:
 func dust_at(seconds: float, appearance: Vector3) -> float:
 	return dust_amount(speed(seconds, exposure_for(appearance)), dryness_for(appearance), weather.sample().y)
 
+## Dust at the mean wind, without gusts; the haze reads this so it does not pump.
+func mean_dust_at(appearance: Vector3) -> float:
+	return dust_amount(mean_speed() * exposure_for(appearance), dryness_for(appearance), weather.sample().y)
+
 func description() -> String:
 	return DESCRIPTIONS[target_tier()]
 

@@ -11,6 +11,15 @@ var running := true
 var weather := WorldWeather.new()
 ## Derived from the weather segment and game time; ready after _ready.
 var wind := WorldWind.new()
+## Presentation samples at the active camera, refreshed by apply_time; never saved.
+## Visuals and sound read these instead of sampling the wind themselves.
+## `dust` follows the gusts (particles); `haze_dust` uses the mean wind, so the
+## haze, sky and sunlight do not pump with every gust.
+var dust := 0.0
+var haze_dust := 0.0
+var wind_velocity := Vector3.ZERO
+## Playground hook: a TerrainLandforms.KINDS index replaces the ground under the camera.
+var landform_override := -1
 var deviation_fog := 0.0
 var weather_running := true
 var fog_materials: Array[ShaderMaterial] = []
@@ -82,6 +91,11 @@ func _ready() -> void:
 	rain.name = "WeatherRain"
 	rain.clock = self
 	add_child(rain)
+	var dust_field := WeatherDust.new()
+	dust_field.name = "WeatherDust"
+	dust_field.clock = self
+	dust_field.rain = rain
+	add_child(dust_field)
 	var ambience := WorldAmbience.new()
 	ambience.name = "WorldAmbience"
 	ambience.clock = self
@@ -178,7 +192,9 @@ func apply_time(real_delta: float = 0.0) -> void:
 	horizon = horizon.lerp(Color("b3c8d4"), clear * daylight * 0.7) * (1.0 - rain * 0.2)
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
-	var profile := atmosphere.mist(conditions)
+	_sample_wind()
+	var profile := atmosphere.mist(conditions, haze_dust)
+	var dust_mix: float = profile.dust_mix
 	# Quality controls scattering only; all qualities retain the same haze.
 	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
 	environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
@@ -192,7 +208,11 @@ func apply_time(real_delta: float = 0.0) -> void:
 	# Lit white haze during the day; no emissive veil over dark nights.
 	horizon = horizon.lerp(white_mist, profile.white_strength)
 	zenith = zenith.lerp(white_mist, atmosphere.sky_white_blend * profile.white_strength)
-	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength)
+	# Dust browns the haze and the sky together, by its share against the fog.
+	var dust_tint := atmosphere.night_mist_color.lerp(atmosphere.dust_day_color, daylight)
+	horizon = horizon.lerp(dust_tint, dust_mix)
+	zenith = zenith.lerp(horizon, dust_mix * 0.8)
+	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength).lerp(atmosphere.dust_volume_albedo, dust_mix)
 	environment.volumetric_fog_density = profile.global_density
 	var local_density: float = profile.local_density
 	for material in fog_materials:
@@ -203,7 +223,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	environment.ambient_light_color = Color("7a8da5").lerp(Color("9ba9b0"), daylight)
 	environment.ambient_light_energy = (0.24 + clear * 0.07 - rain * 0.04) * daylight
 	sun.light_color = Color("e4ad7d").lerp(Color("dedbcc"), smoothstep(0.0, 0.48, direction.y))
-	sun.light_energy = lerpf(atmosphere.overcast_sun_energy, atmosphere.clear_sun_energy, clear) * smoothstep(0.0, 0.32, direction.y) * (1.0 - rain * 0.90) * (1.0 - mist * 0.85)
+	sun.light_energy = lerpf(atmosphere.overcast_sun_energy, atmosphere.clear_sun_energy, clear) * smoothstep(0.0, 0.32, direction.y) * (1.0 - rain * 0.90) * (1.0 - mist * 0.85) * (1.0 - haze_dust * atmosphere.dust_sun_dimming)
 	sun.light_volumetric_fog_energy = lerpf(1.0, 0.15, mist)
 	# The light emits along -Z; the visible disk sits in the opposite direction.
 	sun.global_basis = Basis.looking_at(-direction, Vector3.UP)
@@ -213,7 +233,27 @@ func apply_time(real_delta: float = 0.0) -> void:
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
 	sky_material.set_shader_parameter("fog_cover", light_mist)
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist))
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist) * (1.0 - haze_dust))
+
+## Wind and dust where the camera is. Without terrain (flat playgrounds, tests)
+## there is no ground to raise dust, unless a landform override names one.
+func _sample_wind() -> void:
+	var appearance := Vector3(-1, -1, 0)
+	if landform_override >= 0:
+		appearance = Vector3(landform_override, landform_override, 0)
+	else:
+		var generator := get_parent().get_node_or_null("WorldGenerator")
+		var camera := get_viewport().get_camera_3d() if is_inside_tree() else null
+		if generator != null and generator.get("field") != null and camera != null and camera.get_world_3d() == get_viewport().world_3d:
+			appearance = generator.field.landforms.appearance_at(-camera.global_position.z)
+	if appearance.x < 0:
+		dust = 0.0
+		haze_dust = 0.0
+		wind_velocity = wind.velocity(elapsed_seconds)
+		return
+	wind_velocity = wind.velocity(elapsed_seconds, WorldWind.exposure_for(appearance))
+	dust = wind.dust_at(elapsed_seconds, appearance)
+	haze_dust = wind.mean_dust_at(appearance)
 
 func _completed_scenery_mist_limit(real_delta: float) -> float:
 	var generator := get_parent().get_node_or_null("WorldGenerator")

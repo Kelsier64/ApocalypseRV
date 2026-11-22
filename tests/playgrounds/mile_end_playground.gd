@@ -49,7 +49,7 @@ func _capture(camera: Camera3D, at: Vector3, target: Vector3, label: String) -> 
 	camera.look_at(site.building * target)
 	# At initial load the streaming veil lifts gradually as finished chunks arrive.
 	var deadline := Time.get_ticks_msec() + 30000
-	var weather_limit: float = $WorldClock.atmosphere.mist($WorldClock.effective_visual_weather()).depth_end
+	var weather_limit: float = $WorldClock.atmosphere.mist($WorldClock.effective_visual_weather(), $WorldClock.haze_dust).depth_end
 	while $WorldClock.environment.fog_depth_end < minf(110.0, weather_limit - 1.0) and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw

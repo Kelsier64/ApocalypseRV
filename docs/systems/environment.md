@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/playgrounds/day_night_playground.tscn) |
 | 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
-| 風與沙塵量 | 四級風力、風向、陣風；地貌的乾燥度、受風係數與沙塵量。目前只有狀態與讀值，還沒有畫面、聲音與側風 | [WorldWind](../../world/world_wind.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 風與沙塵 | 四級風力、風向、陣風；地貌決定乾燥度與沙塵量。沙塵拉近視野、染黃天色，強風時有飛沙與貼地的沙團；雨幕隨風傾斜。還沒有風聲與側風 | [WorldWind](../../world/world_wind.gd)、[WeatherDust](../../world/weather_dust.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
 | 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/playgrounds/volumetric_fog_playground.tscn) |
 | 載入時的視野保護 | 地景還沒生成完的地方用霧遮住 | [WorldStreamVisibility](../../world/stream_visibility_guard.gd) | |
 | 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
@@ -46,7 +46,16 @@
 - 每段有一個基準風向，段內隨時間緩慢偏轉，最多 `MAX_VEER`。陣風在平均風速上下起伏 `GUST_SPREAD`。
 - 地貌決定乾燥度與受風係數：濕度與樹越多越不起沙，樹越多風越小。峽谷、山脊與懸崖最乾，草原居中，濕地與森林盆地幾乎不起沙。
 - 沙塵量由當地風速與乾燥度算出，從 `DUST_LIFT_SPEED` 開始揚起，到 `DUST_STORM_SPEED` 成為沙塵暴。平靜時沒有沙塵；雨量達到小雨就完全沒有沙塵。
-- 目前風與沙塵只有狀態，終端機與天氣測試場讀得到，還沒有畫面、聲音與側風。後續階段見[風與沙塵](../plans/wind-dust.md)。
+- 風還沒有聲音，也不推 RV。後續階段見[風與沙塵](../plans/wind-dust.md)。
+
+### 沙塵
+
+- 沙塵看的是攝影機所在的地貌與當下的風，所以從林子開進開闊乾燥的地方，視野會跟著縮。
+- 沙塵像霧一樣把視野拉近，暴風吹過最乾的地貌時近得像大霧（`dust_end`）。視野跟著平均風力變，不隨每陣風忽近忽遠；陣風只讓飛沙忽多忽少。它只會拉近，不會讓霧變遠；和霧同時出現時取較近的距離。
+- 天色和遠景霧依沙塵與霧的比重偏土褐，地平線和霧仍是同一個顏色。沙塵也會壓暗陽光，夜裡跟著變暗，不會自己發亮。
+- 沙塵中車燈與門燈照得出光束。
+- 近處有貼地飛的細沙，遠一點有慢慢滾過的大片沙團，都順著風走，風越大越多。有屋頂的地方沒有沙粒：建築下與車頂完整的 RV 車廂內看不到，車頂被拆掉的地方沙會進來。
+- 下雨時沒有沙塵。沙塵只是畫面，不改變天氣的霧量，也不影響怪物。
 
 ### 霧
 
@@ -66,7 +75,7 @@
 
 ### 雨
 
-- 雨幕跟著攝影機，分近、遠兩層。有屋頂的地方不下雨：建築、地形與 RV 的車頂都會遮雨，車頂被拆掉的地方雨會落進車裡。
+- 雨幕跟著攝影機，分近、遠兩層，隨風傾斜：風越大斜得越多，陣風時雨幕慢慢擺動。有屋頂的地方不下雨：建築、地形與 RV 的車頂都會遮雨，車頂被拆掉的地方雨會落進車裡。
 - 雨滴打到的地方有水花。雨聲是小雨與大雨兩段立體聲錄音，依雨量交叉淡化。頭頂有遮蔽時雨聲變悶。
 - 大雨會壓暗陽光。
 - 玩家在室內副本時看不到雨，只聽得到小聲的雨聲；外面的天氣照常變化。
@@ -149,6 +158,7 @@
 - 偏離公路的霧經由 `set_deviation_fog` 進來，在 `visual_conditions` 裡和自然天氣合成。它只改畫面，不產生自然天氣，也不消耗天氣的亂數。
 - 要讀「現在的自然天氣」用 `weather.sample()`；要讀「畫面上實際的狀況」用 `effective_visual_weather()`。
 - 天氣只能讓霧變近，不能讓常駐遠景霧的終點變遠（`mist` 裡的 `minf`）。地景的裁切距離是照這個終點設計的。
+- 沙塵是 `mist(conditions, dust)` 的第二個輸入，同樣只取較近的終點。回傳的 `dust_mix` 是沙塵在霧色裡的比重，`apply_time` 用它把地平線、天頂與體積霧的顏色往土褐色拉；地平線與霧仍寫同一個值。沙塵不進 `visual_conditions`，所以不改變天氣的霧量。
 
 ### 風由天氣段推得
 
@@ -159,6 +169,12 @@
 - 風不進檢查點，天氣的存檔格式不變。`override_tier` 與 `override_heading` 是終端機與測試場用的暫時設定，讀檔後回到自然值。
 - 對外讀取：`strength()`（0 到 3 的連續風力）、`speed(seconds, exposure)`、`velocity()`、`gust()`、`heading()`；地貌用 `dryness_for`、`exposure_for` 與 `dust_amount` 三個純函式，輸入是 `TerrainLandforms.appearance_at()` 的值，直接混合 `MOISTURE` 與 `TREE_DENSITY`，測試不必建世界。
 - 沙塵不寫進天氣的霧量，Slender Speaker 的霧量判斷不受影響。
+
+### 沙塵的取樣與成本
+
+- `apply_time` 每次在攝影機的位置取一次風與沙塵，存成 `clock.wind_velocity`、`clock.dust` 與 `clock.haze_dust`（`_sample_wind`）。`dust` 含陣風，給沙粒、沙團與之後的聲音用；`haze_dust` 用平均風速（`WorldWind.mean_dust_at`），給霧、天色與陽光用，所以遠景不會隨每陣風一收一放。畫面與聲音都讀這些值，不自己取樣。攝影機在別的世界（室內副本）或沒有地形時，沙塵是零。`landform_override` 是測試場用的地貌替換。
+- 沙粒與沙團各是一個固定種子的 `MultiMesh`（`WeatherDust`），位置由著色器依時間、累積的風與攝影機計算；每一幀只更新參數，顯示數量隨沙塵增減，上限是開頭的常數。
+- 遮蔽共用雨的高度圖與 RV 車頂碰撞盒：`WeatherRain` 在有雨或有沙塵時（`sheltering`）維持更新，並把車頂資料也寫給 `shelter_materials`。沙塵不另外打射線。兩邊的著色器共用 [weather_shelter.gdshaderinc](../../world/weather_shelter.gdshaderinc)。
 
 ### 霧與地景的配合
 

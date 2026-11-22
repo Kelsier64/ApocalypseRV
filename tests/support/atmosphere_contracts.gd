@@ -11,6 +11,7 @@ static func run(world: Node3D, check: Callable) -> void:
 	_check_weather(check)
 	WIND.run(check)
 	_check_owners(world, check)
+	_check_dust_haze(world, check)
 
 static func _check_profile(check: Callable) -> void:
 	var custom := DEFAULT.duplicate() as WorldAtmosphereProfile
@@ -141,6 +142,61 @@ static func _owner(world: Node3D, atmosphere: WorldAtmosphereProfile) -> Node3D:
 	host.add_child(clock)
 	clock.set_time(1, 12.0)
 	return host
+
+## Dust shortens the view like fog but is never weather: it cannot push the
+## haze out, cannot write the fog amount, and the sky horizon keeps the haze color.
+static func _check_dust_haze(world: Node3D, check: Callable) -> void:
+	var nearer := true
+	var unchanged := true
+	var mixing := true
+	for conditions: Vector3 in [Vector3(1, 0, 0), Vector3.ZERO, Vector3(0, 1, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 2, WorldWeather.FOG_HEAVY)]:
+		var still := DEFAULT.mist(conditions)
+		unchanged = unchanged and DEFAULT.mist(conditions, 0.0) == still and is_zero_approx(float(still.dust_mix))
+		var previous := still
+		for step in range(1, 11):
+			var sample := DEFAULT.mist(conditions, step / 10.0)
+			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001
+			mixing = mixing and sample.dust_mix >= previous.dust_mix - 0.0001 and sample.dust_mix <= 1.0
+			previous = sample
+	check.call(nearer, "Dust only pulls the haze nearer, never past the weather or landscape end")
+	check.call(unchanged, "Without dust the haze is exactly the weather haze")
+	check.call(mixing, "Dust's share of the haze color grows with dust and stays within 0 to 1")
+	var storm := DEFAULT.mist(Vector3.ZERO, 1.0)
+	check.call(is_equal_approx(float(storm.depth_end), minf(DEFAULT.dust_end, DEFAULT.landscape_end)) and is_equal_approx(float(storm.dust_mix), 1.0), "Full dust without fog reaches the profile's dust end and color")
+	check.call(DEFAULT.mist(Vector3(0, 0, WorldWeather.FOG_HEAVY), 1.0).dust_mix < storm.dust_mix, "Fog takes a share of the haze color from dust")
+	var driest := 0
+	for kind in range(TerrainLandforms.KINDS.size()):
+		if WorldWind.dryness_for(Vector3(kind, kind, 0)) > WorldWind.dryness_for(Vector3(driest, driest, 0)): driest = kind
+	var host := _owner(world, DEFAULT)
+	var clock := host.get_node("WorldClock") as WorldClock
+	clock.weather.set_weather(Vector3(1, 0, 0), true)
+	clock.wind.set_override(WorldWind.GALE)
+	clock.landform_override = driest
+	var weather := clock.weather.capture()
+	var sample := clock.weather.sample()
+	clock.apply_time()
+	var weather_end: float = DEFAULT.mist(clock.effective_visual_weather()).depth_end
+	check.call(clock.dust > 0.0 and clock.environment.fog_depth_end < weather_end, "A gale over the driest ground raises dust that pulls the haze in")
+	check.call(clock.environment.fog_light_color.is_equal_approx(clock.sky_material.get_shader_parameter("horizon_color")), "The dusty sky horizon and the haze share one color")
+	check.call(clock.weather.capture() == weather and clock.weather.sample() == sample and clock.effective_visual_weather() == sample, "Dust never writes the weather or its fog amount")
+	# Gusts move the particles' dust, never the haze: it follows the mean wind.
+	# A strong wind leaves the haze part-way, so a pumping haze would show.
+	clock.wind.set_override(WorldWind.STRONG)
+	clock.apply_time()
+	var haze_end := clock.environment.fog_depth_end
+	var steady := true
+	var gusty := false
+	var first_dust := clock.dust
+	for step in range(1, 40):
+		clock.elapsed_seconds += 23.0
+		clock.apply_time()
+		steady = steady and is_equal_approx(clock.environment.fog_depth_end, haze_end)
+		gusty = gusty or not is_equal_approx(clock.dust, first_dust)
+	check.call(steady and gusty, "Gusts change the blowing dust but the haze holds still")
+	clock.weather.set_weather(Vector3(0, 1, 0), true)
+	clock.apply_time()
+	check.call(clock.dust == 0.0, "Rain lays the dust")
+	host.free()
 
 static func _check_owners(world: Node3D, check: Callable) -> void:
 	var default_clock := WorldClock.new()

@@ -34,6 +34,17 @@ class_name WorldAtmosphereProfile
 @export_range(0.1, 500.0, 0.5, "suffix:m") var volume_max_length := 160.0
 @export_range(0.01, 1.0, 0.01) var volume_end_ratio := 0.3
 
+@export_group("Dust")
+## Haze at full dust (a gale over bare, dry ground). Dust only pulls the haze in.
+@export_range(0.0, 500.0, 0.5, "suffix:m") var dust_begin := 4.0
+@export_range(1.0, 1000.0, 0.5, "suffix:m") var dust_end := 42.0
+## Below 1, light dust already shortens the view noticeably.
+@export_range(0.05, 4.0, 0.01) var dust_curve := 0.6
+@export var dust_day_color := Color("a28b6b")
+@export_range(0.0, 1.0, 0.0001) var dust_volume_density := 0.03
+@export var dust_volume_albedo := Color("8f7859")
+@export_range(0.0, 1.0, 0.01) var dust_sun_dimming := 0.6
+
 @export_group("Streaming Visibility")
 @export_range(0.0, 100.0, 0.5, "suffix:m") var stream_margin := 8.0
 @export_range(0.0, 100.0, 0.5, "suffix:m/s") var stream_reveal_speed := 20.0
@@ -47,8 +58,10 @@ static func visual_conditions(natural: Vector3, deviation: float) -> Vector3:
 	return conditions
 
 ## Weather can thicken the permanent haze, never extend its visibility horizon.
+## Dust (0 to 1, from WorldWind at the camera) works the same way: the nearer
+## of the fog and dust ends wins, and `dust_mix` is dust's share of the color.
 ## This sample is independent of camera, rendering quality and simulation state.
-func mist(conditions: Vector3) -> Dictionary:
+func mist(conditions: Vector3, dust := 0.0) -> Dictionary:
 	var clear := clampf(conditions.x, 0.0, 1.0)
 	var fog := clampf(conditions.z, WorldWeather.FOG_NONE, WorldWeather.FOG_HEAVY)
 	var light := clampf(fog / WorldWeather.FOG_LIGHT, 0.0, 1.0)
@@ -57,13 +70,20 @@ func mist(conditions: Vector3) -> Dictionary:
 	# Local drifting mist fades before the denser weather haze takes over, so
 	# scattering cannot reveal geometry already concealed by distance fog.
 	var volume_weight := (1.0 - clear) * (1.0 - light)
+	var dust_level := clampf(dust, 0.0, 1.0)
+	var dust_pull := pow(dust_level, dust_curve)
+	var weather_begin_at := lerpf(lerpf(landscape_begin, clear_begin, clear), weather_begin, light)
+	var weather_end_at := minf(landscape_end, lerpf(lerpf(lerpf(landscape_end, light_end, light), medium_end, medium), heavy_end, heavy))
+	var fog_share := fog / WorldWeather.FOG_HEAVY
 	return {
-		"depth_begin": lerpf(lerpf(landscape_begin, clear_begin, clear), weather_begin, light),
-		"depth_end": minf(landscape_end, lerpf(lerpf(lerpf(landscape_end, light_end, light), medium_end, medium), heavy_end, heavy)),
+		"depth_begin": minf(weather_begin_at, lerpf(weather_begin_at, dust_begin, dust_pull)),
+		"depth_end": minf(weather_end_at, lerpf(landscape_end, dust_end, dust_pull)),
 		"depth_curve": distance_curve,
 		"white_strength": white_strength,
-		"global_density": (global_density + conditions.y * rain_density) * volume_weight,
+		# Dust scattering lets headlights and lamps draw beams in a dust storm.
+		"global_density": (global_density + conditions.y * rain_density) * volume_weight + dust_volume_density * dust_level,
 		"local_density": local_density * volume_weight,
+		"dust_mix": 0.0 if dust_level <= 0.0 else dust_level * dust_level / (dust_level + fog_share),
 	}
 
 ## All weather keeps an opaque terminal horizon, but its daylight color and

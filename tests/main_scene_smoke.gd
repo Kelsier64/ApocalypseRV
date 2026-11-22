@@ -76,7 +76,7 @@ func _tutorial_visibility_ready(world: Node3D) -> bool:
 			return false
 		var camera := world.get_viewport().get_camera_3d()
 		var clearance: float = generator.completed_scenery_clearance(camera.global_position)
-		var weather_cap: float = clock.atmosphere.mist(clock.effective_visual_weather()).depth_end
+		var weather_cap: float = clock.atmosphere.mist(clock.effective_visual_weather(), clock.haze_dust).depth_end
 		var expected := minf(weather_cap, clampf(clearance - clock.atmosphere.stream_margin, 1.0, clock.atmosphere.landscape_end))
 		if expected > 1.0 and clock.environment.fog_depth_end >= expected - 0.5:
 			return true

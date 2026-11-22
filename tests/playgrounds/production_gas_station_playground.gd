@@ -67,7 +67,7 @@ func _plaza_views() -> void:
 		observer.position = site.building * views[view][0]
 		observer.look_at(site.building * views[view][1])
 		var deadline := Time.get_ticks_msec() + 30000
-		var mist_limit: float = $WorldClock.atmosphere.mist($WorldClock.effective_visual_weather()).depth_end
+		var mist_limit: float = $WorldClock.atmosphere.mist($WorldClock.effective_visual_weather(), $WorldClock.haze_dust).depth_end
 		while $WorldClock.environment.fog_depth_end < minf(100.0,mist_limit-1.0) and Time.get_ticks_msec() < deadline:
 			await get_tree().process_frame
 		for i in range(5): await RenderingServer.frame_post_draw
