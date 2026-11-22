@@ -9,6 +9,7 @@ static func run(check: Callable) -> void:
 	_check_tiers(check)
 	_check_override(check)
 	_check_dust(check)
+	_check_surge(check)
 
 static func _wind_for(weather: WorldWeather, seed_value: int) -> WorldWind:
 	var wind := WorldWind.new()
@@ -149,6 +150,24 @@ static func _check_override(check: Callable) -> void:
 	var restored := WorldWeather.new()
 	restored.restore(weather.capture())
 	check.call(_wind_for(restored, 42).override_tier == -1, "A load returns the wind to nature")
+
+static func _check_surge(check: Callable) -> void:
+	var wind := _wind_for(_fresh(42), 42)
+	var twin := _wind_for(_fresh(42), 42)
+	var in_range := true
+	var same := true
+	var calm := 0
+	var peaks := 0
+	var samples := 4000
+	for index in range(samples):
+		var seconds := index * 50.0
+		var value := wind.surge(seconds)
+		in_range = in_range and value >= 0.0 and value <= 1.0
+		same = same and value == twin.surge(seconds)
+		if value <= 0.0: calm += 1
+		if value >= 0.5: peaks += 1
+	check.call(in_range and same, "Storm surges stay within 0 to 1 and repeat for the same seed")
+	check.call(calm > samples * 0.25 and peaks > samples * 0.02 and peaks < samples * 0.5, "Dust storms come in waves: mostly calm between surges, with real peaks")
 
 static func _check_dust(check: Callable) -> void:
 	var kinds := TerrainLandforms.KINDS

@@ -19,6 +19,8 @@ var dust := 0.0
 var haze_dust := 0.0
 ## Day colour of the dust at the camera, from the landform.
 var dust_color := Color.BLACK
+## 0 to 1: the slow swell of a dust storm at the camera (WorldWind.surge).
+var dust_surge := 0.0
 var wind_velocity := Vector3.ZERO
 ## Playground hook: a TerrainLandforms.KINDS index replaces the ground under the camera.
 var landform_override := -1
@@ -195,7 +197,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	zenith = zenith.lerp(Color("557f9f"), clear * daylight * 0.8) * (1.0 - rain * 0.3)
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
 	_sample_wind()
-	var profile := atmosphere.mist(conditions, haze_dust)
+	var profile := atmosphere.mist(conditions, haze_dust, dust_surge)
 	var dust_mix: float = profile.dust_mix
 	# Quality controls scattering only; all qualities retain the same haze.
 	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
@@ -252,12 +254,14 @@ func _sample_wind() -> void:
 		dust = 0.0
 		haze_dust = 0.0
 		dust_color = atmosphere.dust_day_color
+		dust_surge = 0.0
 		wind_velocity = wind.velocity(elapsed_seconds)
 		return
 	wind_velocity = wind.velocity(elapsed_seconds, WorldWind.exposure_for(appearance))
 	dust = wind.dust_at(elapsed_seconds, appearance)
 	haze_dust = wind.mean_dust_at(appearance)
 	dust_color = WorldWind.dust_color_for(appearance)
+	dust_surge = wind.surge(elapsed_seconds) if haze_dust > 0.0 else 0.0
 
 func _completed_scenery_mist_limit(real_delta: float) -> float:
 	var generator := get_parent().get_node_or_null("WorldGenerator")

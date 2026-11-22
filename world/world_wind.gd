@@ -19,6 +19,9 @@ const SPEEDS := [0.0, 5.0, 12.0, 20.0]
 const GUST_SPREAD := 0.35
 const GUST_FREQUENCY := 0.01 # per game second; ~2 real seconds at the default day
 const VEER_FREQUENCY := 0.0004
+## Dust storms come in waves: a slow swell under the gusts, one roughly every
+## 75 real seconds at the default day, at its peak for about 20.
+const SURGE_FREQUENCY := 0.0005
 const MAX_VEER := PI / 6.0
 ## Trees shelter the ground from wind; full canopy keeps this fraction out.
 const TREE_SHELTER := 0.9
@@ -33,6 +36,7 @@ const _STEP_SALT := 0x53544550
 const _HEADING_SALT := 0x48454144
 const _GUST_SALT := 0x47555354
 const _VEER_SALT := 0x56454552
+const _SURGE_SALT := 0x53555247
 
 ## Session-only overrides (terminal, playgrounds); a load returns to nature.
 var override_tier := -1
@@ -42,6 +46,7 @@ var world_seed := 0
 var _first_state := 0
 var _gusts := FastNoiseLite.new()
 var _veer := FastNoiseLite.new()
+var _surges := FastNoiseLite.new()
 var _synced := false
 var _state := 0
 var _natural_tier := CALM
@@ -56,12 +61,14 @@ func initialize(owner_weather: WorldWeather, seed_value: int) -> void:
 	weather = owner_weather
 	world_seed = seed_value
 	_first_state = WorldWeather.initial_rng_state(seed_value)
-	for pair: Array in [[_gusts, _GUST_SALT, GUST_FREQUENCY], [_veer, _VEER_SALT, VEER_FREQUENCY]]:
+	for pair: Array in [[_gusts, _GUST_SALT, GUST_FREQUENCY], [_veer, _VEER_SALT, VEER_FREQUENCY], [_surges, _SURGE_SALT, SURGE_FREQUENCY]]:
 		var noise: FastNoiseLite = pair[0]
 		noise.seed = hash([seed_value, pair[1]]) & 0x7fffffff
 		noise.frequency = pair[2]
 		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noise.fractal_octaves = 3
+	# One smooth swell, without the gusts' small wobbles.
+	_surges.fractal_octaves = 1
 	weather.changing.connect(_on_weather_changing)
 	_synced = false
 	_segment_change_expected = false
@@ -110,6 +117,11 @@ func mean_speed() -> float:
 ## Gust level 0 to 1, shared by visuals, sound and physics.
 func gust(seconds: float) -> float:
 	return clampf(_gusts.get_noise_1d(seconds) * 0.5 + 0.5, 0.0, 1.0)
+
+## Surge 0 to 1: the slow swell of a dust storm, 0 between waves. Deterministic
+## from the seed and game time like the gusts, so it needs no saving.
+func surge(seconds: float) -> float:
+	return smoothstep(0.5, 0.8, _surges.get_noise_1d(seconds) * 0.5 + 0.5)
 
 ## Heading in radians the wind blows toward, clockwise from -Z.
 func heading(seconds: float) -> float:

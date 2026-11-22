@@ -51,7 +51,7 @@
 ### 沙塵
 
 - 沙塵看的是攝影機所在的地貌與當下的風，所以從林子開進開闊乾燥的地方，視野會跟著縮。
-- 沙塵把遠景拉近成一層淡淡的土褐色沙霧，暴風吹過最乾的地貌時約一百多公尺外就看不到（`dust_end`）。沙霧只是背景，近處擋視線靠沙幕；它從車廂長度之外才開始（`dust_begin`），密閉的車廂裡看不到沙霧。視野跟著平均風力變，不隨每陣風忽近忽遠；陣風只讓飛沙忽多忽少。它只會拉近，不會讓霧變遠；和霧同時出現時取較近的距離。
+- 沙塵把遠景拉近成一層淡淡的土褐色沙霧，暴風吹過最乾的地貌時約一百多公尺外就看不到（`dust_end`）。沙霧只是背景，近處擋視線靠沙幕；它從車廂長度之外才開始（`dust_begin`），密閉的車廂裡看不到沙霧。視野跟著平均風力變，不隨每陣風忽近忽遠。沙塵暴一波一波來，大約每分多鐘一波：湧上來時沙霧在十幾秒內收近（`dust_surge_reach`），沙牆也來得更頻繁，過了再慢慢退開。陣風只讓飛沙忽多忽少。它只會拉近，不會讓霧變遠；和霧同時出現時取較近的距離。
 - 沙的顏色看地貌：峽谷揚起偏紅橙的沙，山脊與崖地偏灰白，草原偏黃褐（`TerrainLandforms.DUST_COLORS`），跨地貌時漸變。天色和遠景霧依沙塵與霧的比重染上這個顏色，地平線和霧仍是同一個顏色。沙塵也會稍微壓暗陽光與太陽（`dust_sun_dimming`），夜裡跟著變暗，不會自己發亮。
 - 沙塵中車燈與門燈照得出光束。陽光在濃沙裡散成均勻的光，不會拉出陰影光柱。
 - 近處有貼地飛的細沙，遠處有慢慢滾過的大片沙團，都順著風走，風越大越多。強風時近處還有一片片濃沙幕順風橫掃過去（`dust_sheet_*`），沙幕跟著空氣裡的濃淡一起移動，視野一下被吞掉、一下又打開。強陣風時沙幕變濃、空隙合起來，像一道沙牆壓過來再散開（`dust_gust_wall`）。晴天的沙幕被太陽照得偏亮偏暖，陰天偏灰暗，夜裡不發亮（`dust_sun_glow`）。
@@ -159,7 +159,7 @@
 - 偏離公路的霧經由 `set_deviation_fog` 進來，在 `visual_conditions` 裡和自然天氣合成。它只改畫面，不產生自然天氣，也不消耗天氣的亂數。
 - 要讀「現在的自然天氣」用 `weather.sample()`；要讀「畫面上實際的狀況」用 `effective_visual_weather()`。
 - 天氣只能讓霧變近，不能讓常駐遠景霧的終點變遠（`mist` 裡的 `minf`）。地景的裁切距離是照這個終點設計的。
-- 沙塵是 `mist(conditions, dust)` 的第二個輸入，同樣只取較近的終點。回傳的 `dust_mix` 是沙塵在霧色裡的比重，`apply_time` 用它把地平線、天頂與體積霧的顏色往土褐色拉；地平線與霧仍寫同一個值。沙塵不改霧的曲線：曲線小於 1 會在起點附近立刻變濃，看起來像一道牆，所以近處的遮擋交給沙幕。深度霧沒有遮蔽，`CabinAir` 只抵消體積霧，所以 `dust_begin` 要大於 RV 車廂的長度。遊戲邏輯（怪物生成距離）只讀 `fog_depth_end`，所以 `dust_end` 不低於白色幽影的最小生成距離。體積霧在沙塵中只加一點散射（`dust_volume_density`），讓車燈照出光束，Forward+ 與 Compatibility 的沙霧因此看起來差不多。沙塵不進 `visual_conditions`，所以不改變天氣的霧量。
+- 沙塵是 `mist(conditions, dust, surge)` 的第二個輸入，同樣只取較近的終點；第三個輸入是湧浪（`WorldWind.surge`，由種子與遊戲時間決定，不必存檔），把沙塵的終點再拉近 `dust_surge_reach`，沒有沙塵時沒有作用，拉到最近仍在白色幽影最小生成距離之外。回傳的 `dust_mix` 是沙塵在霧色裡的比重，`apply_time` 用它把地平線、天頂與體積霧的顏色往土褐色拉；地平線與霧仍寫同一個值。沙塵不改霧的曲線：曲線小於 1 會在起點附近立刻變濃，看起來像一道牆，所以近處的遮擋交給沙幕。深度霧沒有遮蔽，`CabinAir` 只抵消體積霧，所以 `dust_begin` 要大於 RV 車廂的長度。遊戲邏輯（怪物生成距離）只讀 `fog_depth_end`，所以 `dust_end` 不低於白色幽影的最小生成距離。體積霧在沙塵中只加一點散射（`dust_volume_density`），讓車燈照出光束，Forward+ 與 Compatibility 的沙霧因此看起來差不多。沙塵不進 `visual_conditions`，所以不改變天氣的霧量。
 
 ### 風由天氣段推得
 
@@ -173,8 +173,8 @@
 
 ### 沙塵的取樣與成本
 
-- `apply_time` 每次在攝影機的位置取一次風與沙塵，存成 `clock.wind_velocity`、`clock.dust`、`clock.haze_dust` 與地貌的沙色 `clock.dust_color`（`_sample_wind`；沒有地形時用 `dust_day_color`）。`dust` 含陣風，給沙粒、沙團與之後的聲音用；`haze_dust` 用平均風速（`WorldWind.mean_dust_at`），給霧、天色與陽光用，所以遠景不會隨每陣風一收一放。畫面與聲音都讀這些值，不自己取樣。攝影機在別的世界（室內副本）或沒有地形時，沙塵是零。`landform_override` 是測試場用的地貌替換。
-- 沙粒、遠處沙團與近處沙幕各是一個固定種子的 `MultiMesh`（`WeatherDust.FIELDS`），位置由著色器依時間、累積的風與攝影機計算；每一幀只更新參數，顯示數量隨沙塵增減（`field_share`），上限是開頭的常數。沙幕的濃淡由跟著風移動的雜訊決定。`WeatherDust.wall` 由陣風（`WorldWind.gust`）超過門檻的部分平滑而來（建立 `WALL_RISE`、散去 `WALL_FALL`），放大沙幕不透明度並收起空隙。沙幕與沙團的自發光是霧色加上太陽光色乘能量與 `dust_sun_glow`，所以會隨晴陰與時間變。
+- `apply_time` 每次在攝影機的位置取一次風與沙塵，存成 `clock.wind_velocity`、`clock.dust`、`clock.haze_dust`、湧浪 `clock.dust_surge` 與地貌的沙色 `clock.dust_color`（`_sample_wind`；沒有地形時用 `dust_day_color`）。`dust` 含陣風，給沙粒、沙團與之後的聲音用；`haze_dust` 用平均風速（`WorldWind.mean_dust_at`），給霧、天色與陽光用，所以遠景不會隨每陣風一收一放。畫面與聲音都讀這些值，不自己取樣。攝影機在別的世界（室內副本）或沒有地形時，沙塵是零。`landform_override` 是測試場用的地貌替換。
+- 沙粒、遠處沙團與近處沙幕各是一個固定種子的 `MultiMesh`（`WeatherDust.FIELDS`），位置由著色器依時間、累積的風與攝影機計算；每一幀只更新參數，顯示數量隨沙塵增減（`field_share`），上限是開頭的常數。沙幕的濃淡由跟著風移動的雜訊決定。`WeatherDust.wall` 由陣風（`WorldWind.gust`）超過門檻的部分平滑而來，湧浪時門檻降低（建立 `WALL_RISE`、散去 `WALL_FALL`），放大沙幕不透明度並收起空隙。沙幕與沙團的自發光是霧色加上太陽光色乘能量與 `dust_sun_glow`，所以會隨晴陰與時間變。
 - 沙雲是一個跟著攝影機的 `FogVolume`，`WeatherDust.show_billows` 預設關閉，第一次打開時才建立，所以遊戲不會編譯霧著色器。它的霧著色器 [dust_billows.gdshader](../../world/dust_billows.gdshader) 以減去風的累積位移後的世界座標取 3D 雜訊，所以沙雲跟著空氣走；高度從粗格遮蔽快取算起，屋頂或遮棚表面以下沒有沙雲。密度讀 `haze_dust`，不隨陣風起伏；RV 車廂的 `CabinAir`（-1.0）可以抵消，所以 `dust_billow_density` 上限低於 1。沙塵時體積霧的範圍拉長到 `dust_volume_end_ratio`，仍在霧的終點之內。
 - 遮蔽共用雨的高度圖與 RV 車頂碰撞盒：`WeatherRain` 在有雨或有沙塵時（`sheltering`）維持更新，並把車頂資料也寫給 `shelter_materials`。沙塵不另外打射線。兩邊的著色器共用 [weather_shelter.gdshaderinc](../../world/weather_shelter.gdshaderinc)。
 

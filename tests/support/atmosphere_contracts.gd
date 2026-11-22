@@ -170,6 +170,9 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 		var length := DEFAULT.volume_length(storm.depth_end, step / 10.0)
 		volume_ok = volume_ok and length >= DEFAULT.volume_length(storm.depth_end) - 0.0001 and length <= storm.depth_end
 	check.call(volume_ok, "Dust lengthens volumetric scattering but keeps it inside the haze end")
+	var surged := DEFAULT.mist(Vector3.ZERO, 1.0, 1.0)
+	check.call(surged.depth_end < storm.depth_end and DEFAULT.mist(Vector3.ZERO, 0.0, 1.0) == DEFAULT.mist(Vector3.ZERO), "A storm surge pulls the dust haze in, and does nothing without dust")
+	check.call(surged.depth_end > WhiteApparition.SPAWN_MIN, "The haze end at a full surge stays beyond the white apparition's nearest spawn")
 	check.call(DEFAULT.dust_billow_density < 1.0, "Dust billows stay below what the cabin's CabinAir volumes cancel")
 	check.call(DEFAULT.mist(Vector3(0, 0, WorldWeather.FOG_HEAVY), 1.0).dust_mix < storm.dust_mix, "Fog takes a share of the haze color from dust")
 	var driest := 0
@@ -187,20 +190,25 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 	check.call(clock.dust > 0.0 and clock.environment.fog_depth_end < weather_end, "A gale over the driest ground raises dust that pulls the haze in")
 	check.call(clock.environment.fog_light_color.is_equal_approx(clock.sky_material.get_shader_parameter("horizon_color")), "The dusty sky horizon and the haze share one color")
 	check.call(clock.weather.capture() == weather and clock.weather.sample() == sample and clock.effective_visual_weather() == sample, "Dust never writes the weather or its fog amount")
-	# Gusts move the particles' dust, never the haze: it follows the mean wind.
+	# Gusts move the particles' dust, never the haze: it follows the mean wind
+	# and the slow storm surge, so it may drift but never pumps with a gust.
 	# A strong wind leaves the haze part-way, so a pumping haze would show.
 	clock.wind.set_override(WorldWind.STRONG)
 	clock.apply_time()
 	var haze_end := clock.environment.fog_depth_end
-	var steady := true
+	var conditions := clock.effective_visual_weather()
+	var swing: float = clock.atmosphere.mist(conditions, clock.haze_dust, 0.0).depth_end - clock.atmosphere.mist(conditions, clock.haze_dust, 1.0).depth_end
+	var steady := swing > 0.0
 	var gusty := false
 	var first_dust := clock.dust
 	for step in range(1, 40):
 		clock.elapsed_seconds += 23.0
 		clock.apply_time()
-		steady = steady and is_equal_approx(clock.environment.fog_depth_end, haze_end)
+		var expected: float = clock.atmosphere.mist(conditions, clock.haze_dust, clock.wind.surge(clock.elapsed_seconds)).depth_end
+		steady = steady and is_equal_approx(clock.environment.fog_depth_end, expected) and absf(clock.environment.fog_depth_end - haze_end) <= swing * 0.15
+		haze_end = clock.environment.fog_depth_end
 		gusty = gusty or not is_equal_approx(clock.dust, first_dust)
-	check.call(steady and gusty, "Gusts change the blowing dust but the haze holds still")
+	check.call(steady and gusty, "Gusts change the blowing dust; the haze follows only the mean wind and the slow surge")
 	clock.weather.set_weather(Vector3(0, 1, 0), true)
 	clock.apply_time()
 	check.call(clock.dust == 0.0, "Rain lays the dust")

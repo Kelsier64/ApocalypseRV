@@ -45,6 +45,9 @@ class_name WorldAtmosphereProfile
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var dust_end := 120.0
 ## Below 1, light dust already shortens the view noticeably.
 @export_range(0.05, 4.0, 0.01) var dust_curve := 0.6
+## At the peak of a storm surge (WorldWind.surge) the dust haze end comes this
+## share closer; keep dust_end * (1 - this) above WhiteApparition.SPAWN_MIN.
+@export_range(0.0, 0.9, 0.01) var dust_surge_reach := 0.35
 ## Dust colour where no landform is known (flat playgrounds, tests); on terrain
 ## the colour comes from TerrainLandforms.DUST_COLORS.
 @export var dust_day_color := Color("a28b6b")
@@ -92,8 +95,9 @@ static func visual_conditions(natural: Vector3, deviation: float) -> Vector3:
 ## Weather can thicken the permanent haze, never extend its visibility horizon.
 ## Dust (0 to 1, from WorldWind at the camera) works the same way: the nearer
 ## of the fog and dust ends wins, and `dust_mix` is dust's share of the color.
+## A storm surge (0 to 1) pulls the dust end in further; without dust it does nothing.
 ## This sample is independent of camera, rendering quality and simulation state.
-func mist(conditions: Vector3, dust := 0.0) -> Dictionary:
+func mist(conditions: Vector3, dust := 0.0, surge := 0.0) -> Dictionary:
 	var clear := clampf(conditions.x, 0.0, 1.0)
 	var fog := clampf(conditions.z, WorldWeather.FOG_NONE, WorldWeather.FOG_HEAVY)
 	var light := clampf(fog / WorldWeather.FOG_LIGHT, 0.0, 1.0)
@@ -109,7 +113,7 @@ func mist(conditions: Vector3, dust := 0.0) -> Dictionary:
 	var fog_share := fog / WorldWeather.FOG_HEAVY
 	return {
 		"depth_begin": minf(weather_begin_at, lerpf(weather_begin_at, dust_begin, dust_pull)),
-		"depth_end": minf(weather_end_at, lerpf(landscape_end, dust_end, dust_pull)),
+		"depth_end": minf(weather_end_at, lerpf(landscape_end, dust_end * (1.0 - dust_surge_reach * clampf(surge, 0.0, 1.0)), dust_pull)),
 		"depth_curve": distance_curve,
 		"white_strength": white_strength,
 		# Dust scattering lets headlights and lamps draw beams in a dust storm.

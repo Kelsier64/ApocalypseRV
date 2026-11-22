@@ -159,7 +159,9 @@ func _process(delta: float) -> void:
 	billow_drift.z = fposmod(billow_drift.z, billow_period)
 	var amount := clock.dust
 	var profile := clock.atmosphere
-	var target := smoothstep(0.6, 0.9, clock.wind.gust(clock.elapsed_seconds)) * field_share(SHEETS, amount)
+	# A storm surge lowers the gust needed, so walls come in waves.
+	var surge_ease := 0.2 * clock.dust_surge
+	var target := smoothstep(0.6 - surge_ease, 0.9 - surge_ease, clock.wind.gust(clock.elapsed_seconds)) * field_share(SHEETS, amount)
 	wall = lerpf(wall, target, 1.0 - exp(-delta / (WALL_RISE if target > wall else WALL_FALL)))
 	var glow_color := clock.environment.fog_light_color
 	if is_instance_valid(clock.sun): glow_color += clock.sun.light_color * clock.sun.light_energy * profile.dust_sun_glow
