@@ -64,7 +64,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [test_world](../../world/test_world.tscn) | 獨立世界生成與存讀檔測試入口 | 正式玩家／完整 RV／物資；沒有正式新版教學起始流程。 |
 | [ruined_wall_study](../../world/art_samples/ruined_wall_study.tscn) | 獨立破損混凝土／鋼筋美術樣板 | F1 全景、F2 細節、F12 輸出當前畫面；`--capture` 自動輸出預覽。 |
 
-### 教學、世界與 POI（15 個）
+### 教學、世界與 POI（16 個）
 
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
@@ -76,6 +76,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rear_pressure_playground](../../tests/playgrounds/rear_pressure_playground.tscn) | 主世界 fixture：後方廢車通行與偏離壓力 | F2 穿越廢車、F3 後方霧／遭遇、F4 鏡頭；`--replay` 跑通行。 |
 | [gas_station_playground](../../tests/playgrounds/gas_station_playground.tscn) | 已封存的 Northline 獨立展示場 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |
 | [production_gas_station_playground](../../tests/playgrounds/production_gas_station_playground.tscn) | 主世界：Orbit 大型站、整地與森林 | F2 鳥瞰、F3 玩家、F5 真實輪驅停靠、F7 截圖；此場移除怪物。 |
+| [building_kit_playground](../../tests/playgrounds/building_kit_playground.tscn) | 獨立場：[建築 kit](building-kit.md) 參考建築的外觀、尺度、門窗與樓梯 | 正式操作；情境 `Street`、`Store interior`、`Upper landing`；Esc 的 Playground 分頁可切素模。 |
 | [minor_poi_playground](../../tests/playgrounds/minor_poi_playground.tscn) | 正式資產獨立場：18 套路邊小 POI | 左右切佈局、N 換 seed、F1 步行、F2 總覽、F7 截圖；`--capture-all`。 |
 | [production_minor_poi_playground](../../tests/playgrounds/production_minor_poi_playground.tscn) | 主世界：實際小 POI 排程、地形及停靠 | `--seed=0 --cell=0` 選場址；F2 總覽、F3 步行、F5 輪驅；`--replay`。 |
 | [bunker_playground](../../tests/playgrounds/bunker_playground.tscn) | 正式系統獨立場：多層地堡生成、地圖與搬運 | F1 步行、F2 總覽、F3 掀頂、F5 搬運、R 重建；`--rooms=12 --floors=3 --seed=42`。 |
