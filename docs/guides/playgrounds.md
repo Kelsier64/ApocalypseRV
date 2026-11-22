@@ -6,7 +6,7 @@
 
 新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
 
-目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
 ## 啟動與固定截圖
 
@@ -148,7 +148,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [slender_speaker_audio_playground](../../tests/playgrounds/slender_speaker_audio_playground.tscn) | 1.5 km 直路、靜止巨人、可駕駛 RV；試聽喇叭的距離混音 | F2 切換起點 900／400／120 m 並重設，F3 切換巨人離路 20／60／120 m；HUD 顯示距離與各項混音數值。 |
 | [slender_speaker_playground](../../tests/playgrounds/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
 | [day_night_playground](../../tests/playgrounds/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
-| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 主世界：正式雨／霧／晴陰、風與沙塵量、時間與車頂遮蔽 | Playground 頁：風力、風向、地貌與讀值；6 預設天氣、7 雨、8 霧、9 晴陰、0 自然推進、Backspace 拆頂；`--heavy-rain`。 |
+| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 生成世界：正式雨／霧／晴陰、時間、車頂遮雨、風與沙塵量（新式） | 情境 Roadside、Cabin、Driver seat；`--seed=N`。見[天氣驗收](#天氣驗收)。 |
 | [volumetric_fog_playground](../../tests/playgrounds/volumetric_fog_playground.tscn) | 日夜場衍生霧效對照；局部體積霧與舊距離霧 | B 切模式、7／8 局部密度、其餘沿用日夜場；`--entry` 從入口開始。 |
 | [industrial_style_playground](../../tests/playgrounds/industrial_style_playground.tscn) | 獨立工業美術樣板；部分針葉樹／高窗／RV 材質未接入正式版 | F1 樣板／目前正式版、F2 視角、F3 搬運、F4 進出、F6 RV、F9 損傷、F10 平板。 |
 
@@ -628,26 +628,17 @@ godot --path . res://tests/playgrounds/rv_handling_playground.tscn
 
 開局入座；F5 車內鏡、F6 左鏡、F7 右鏡、F1 前方，Backspace 拆除或重建掛車內鏡的前牆；紅色／藍色障礙分別在車尾左右。F8 引擎艙視角後按 E 開蓋、F9 坡板、F11 夜間並開工作／維修燈、F3 車內視角、F12 正式輪驅回放。照明與儀表亮度統一由控制台操作。測試視角定位只用於觀察，不代表玩家已走到該位置。
 
-## 日夜與天氣驗收
+## 天氣驗收
 
-執行 `godot --path . --log-file .godot/weather-visual.log res://tests/playgrounds/weather_playground.tscn`。
+[weather_playground](../../tests/playgrounds/weather_playground.tscn) 在生成世界的路上停好 RV，正午陰天開場，用正式按鍵走路、上車、開車。天氣、時間、風力、地貌讀值與拆車頂都在 Playground 頁。怪物會被移除；天氣與時間停住，直到打開自然推進。
 
-- `6` 依序切換陰天、小雨、大雨、小霧、中霧、大霧、晴天、大雨加大霧；預設立即切換方便比較。
-- `7` 雨勢、`8` 霧量、`9` 晴陰；晴天清空雨霧，增加雨霧會切回陰天。
-- `0` 切換自動天氣和時間推進；`F12` 一分鐘一天，`Home` 暫停／恢復時間；自然天氣使用平滑過渡。
-- `F1` 黎明／正午／黃昏／夜晚；`F2` 場址視角；`F6` RV／車內／設備；`Backspace` 破壞車頂；`R` 重置。
-- `F3` 既有步行回放、`F4` 入口互動／離開副本；`Esc` 正式設定，`F11` 隱藏說明。
-- Esc 的 Playground 頁控制風力、風向與地貌，並即時顯示風速、陣風、乾燥度、受風係數與沙塵量。風一開始強制為強風，切換天氣預設時不會重抽風。
+```powershell
+godot --path . --log-file .godot/weather-playground.log res://tests/playgrounds/weather_playground.tscn
+godot --path . --log-file .godot/weather-playground.log res://tests/playgrounds/weather_playground.tscn -- --scenario="Driver seat" --seed=7
+```
 
-每 5 秒記錄天氣、GPU 粒子提交數、覆蓋範圍、最高射線數及平均幀時間。粒子提交數不是遮擋後實際可見數。切換後至少等待一個完整取樣區間再比較；固定視角測量不代表行車／串流壓力測試。聲音遮蔽在固定視角跟隨驗收攝影機，步行時跟隨玩家。
-
-### 直接檢查新版大範圍雨幕
-
-`godot --path . --log-file .godot/rain-user-review.log res://tests/playgrounds/weather_playground.tscn -- --heavy-rain`
-
-直接以正午大雨開啟，無須等待自然天氣。`6` 切換天氣、`7` 循環雨勢、`F2` 更換戶外視角、`F6` 車外／車內、`Backspace` 破壞車頂。請確認近處密度、遠方樹林和建築前也有雨，轉頭／行走不露出小範圍雨柱，車內能看見窗外雨幕。高度快取首次填充約半秒，傳送到新位置時未知區暫時不顯示雨，避免穿屋頂。
-
-新版由使用者負責目視驗收；自動化只檢查行為與兩種渲染器的編譯／執行紀錄，不使用 Computer Use。
+- 雨幕：近處密度、遠方樹林與建築前也有雨，轉頭或走動時不露出小範圍的雨柱，車內看得見窗外的雨。高度快取首次填充約半秒，傳送到新位置時未知區暫時不下雨，避免雨穿過屋頂。
+- 日誌每 5 秒印一行 `WEATHER METRICS`：天氣、GPU 粒子提交數、最高射線數與平均幀時間。粒子提交數不是遮擋後實際看得見的數量。切換天氣後至少等一個取樣區間再比較。
 
 ## 裂爪 Raker（2.18 m）
 
