@@ -13,10 +13,8 @@ const START_S := 60.0
 const METRICS_SECONDS := 5.0
 ## Playground tab rows: label, profile property, min, max, step.
 const DUST_TUNING := [
-	["Haze begins (m)", &"dust_begin", 0.0, 30.0, 0.5],
-	["Haze ends (m)", &"dust_end", 8.0, 150.0, 1.0],
-	["Haze curve", &"dust_depth_curve", 0.1, 1.5, 0.05],
-	["Volume density", &"dust_volume_density", 0.0, 0.2, 0.005],
+	["Haze reach (m)", &"dust_end", 42.0, 230.0, 1.0],
+	["Beam haze", &"dust_volume_density", 0.0, 0.05, 0.001],
 	["Sheet opacity", &"dust_sheet_opacity", 0.0, 4.0, 0.1],
 	["Sheet gaps", &"dust_sheet_clump", 0.0, 1.0, 0.05],
 	["Billow density", &"dust_billow_density", 0.0, 0.9, 0.01],
@@ -25,8 +23,9 @@ const DUST_TUNING := [
 	["Billow height (m)", &"dust_billow_height", 0.5, 10.0, 0.25],
 	["Cloud opacity", &"dust_cloud_opacity", 0.0, 8.0, 0.25],
 ]
-## Playground "Dust style": sheets and billows on or off.
-const DUST_STYLES := {"Sheets and billows": [true, true], "Sheets only": [true, false], "Billows only": [false, true], "Haze only": [false, false]}
+## Playground "Dust style": sheets, clouds and billows on or off. The haze and
+## the grit are always on.
+const DUST_STYLES := {"Sheets and billows": [true, true, true], "Sheets only": [true, true, false], "Billows only": [false, false, true], "Haze only": [false, false, false]}
 ## Agent-only --capture: distances in metres from which to shoot the RV's side.
 const CAPTURE_DISTANCES := [6.0, 12.0, 20.0]
 
@@ -148,12 +147,8 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Ground", _landform_text)
 	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end)])
 	controls.section("Dust tuning")
-	controls.note("Sheets stream past close up; billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
-	var dust := clock.get_node("WeatherDust") as WeatherDust
-	controls.choice("Dust style", PackedStringArray(DUST_STYLES.keys()), 0, func(index: int) -> void:
-		var style: Array = DUST_STYLES.values()[index]
-		dust.show_sheets = style[0]
-		dust.show_billows = style[1])
+	controls.note("The haze is a faint brown backdrop; the sheets block the view close up and the clouds roll past farther out. Billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. Haze only leaves just the haze and the grit. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
+	controls.choice("Dust style", PackedStringArray(DUST_STYLES.keys()), 0, _set_dust_style)
 	var profile := clock.atmosphere
 	for row: Array in DUST_TUNING:
 		var property: StringName = row[1]
@@ -190,10 +185,7 @@ func _capture() -> void:
 		if argument.begins_with("--hour="):
 			clock.set_time(1, argument.trim_prefix("--hour=").to_float())
 		if argument.begins_with("--dust-style="):
-			var style: Array = DUST_STYLES.values()[argument.trim_prefix("--dust-style=").to_int()]
-			var dust := clock.get_node("WeatherDust") as WeatherDust
-			dust.show_sheets = style[0]
-			dust.show_billows = style[1]
+			_set_dust_style(argument.trim_prefix("--dust-style=").to_int())
 	var folder := ProjectSettings.globalize_path("res://.godot/weather-captures")
 	DirAccess.make_dir_recursive_absolute(folder)
 	await get_tree().create_timer(3.0).timeout
@@ -216,6 +208,14 @@ func _capture() -> void:
 
 func _set_dust_tuning(values: PackedFloat64Array) -> void:
 	for i in range(mini(values.size(), DUST_TUNING.size())): clock.atmosphere.set(DUST_TUNING[i][1], values[i])
+
+
+func _set_dust_style(index: int) -> void:
+	var style: Array = DUST_STYLES.values()[index]
+	var dust := clock.get_node("WeatherDust") as WeatherDust
+	dust.show_sheets = style[0]
+	dust.show_clouds = style[1]
+	dust.show_billows = style[2]
 
 
 func _shoot(folder: String, variant: int, shot: int) -> void:

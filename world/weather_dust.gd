@@ -36,6 +36,7 @@ var billows: FogVolume
 var billow_material: ShaderMaterial
 ## Session-only switches for playgrounds comparing the looks.
 var show_sheets := true
+var show_clouds := true
 var show_billows := true
 var drift := Vector3.ZERO
 var billow_drift := Vector3.ZERO
@@ -158,7 +159,7 @@ func _process(delta: float) -> void:
 	for i in range(fields.size()):
 		var field := fields[i]
 		var radius: float = FIELDS[i].radius
-		var shown := show_sheets or i != SHEETS
+		var shown: bool = [true, show_clouds, show_sheets][i]
 		var count := ceili(field.multimesh.instance_count * field_share(i, amount)) if shown else 0
 		field.multimesh.visible_instance_count = count
 		visible_particles += count

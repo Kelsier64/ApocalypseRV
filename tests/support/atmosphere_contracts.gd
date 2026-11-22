@@ -155,7 +155,7 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 		var previous := still
 		for step in range(1, 11):
 			var sample := DEFAULT.mist(conditions, step / 10.0)
-			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001 and sample.depth_curve <= previous.depth_curve + 0.0001
+			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001
 			mixing = mixing and sample.dust_mix >= previous.dust_mix - 0.0001 and sample.dust_mix <= 1.0
 			previous = sample
 	check.call(nearer, "Dust only pulls the haze nearer, never past the weather or landscape end")
@@ -163,10 +163,8 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 	check.call(mixing, "Dust's share of the haze color grows with dust and stays within 0 to 1")
 	var storm := DEFAULT.mist(Vector3.ZERO, 1.0)
 	check.call(is_equal_approx(float(storm.depth_end), minf(DEFAULT.dust_end, DEFAULT.landscape_end)) and is_equal_approx(float(storm.dust_mix), 1.0), "Full dust without fog reaches the profile's dust end and color")
-	check.call(is_equal_approx(float(storm.depth_curve), minf(DEFAULT.distance_curve, DEFAULT.dust_depth_curve)), "Full dust reaches the profile's dust haze curve")
-	var steep := DEFAULT.duplicate() as WorldAtmosphereProfile
-	steep.dust_depth_curve = DEFAULT.distance_curve * 2.0
-	check.call(is_equal_approx(float(steep.mist(Vector3.ZERO, 1.0).depth_curve), DEFAULT.distance_curve), "A dust curve above the weather's never thins the haze")
+	check.call(is_equal_approx(float(storm.depth_curve), DEFAULT.distance_curve), "Dust keeps the weather's haze curve; the sheets block the view up close")
+	check.call(storm.depth_begin >= DEFAULT.dust_begin - 0.0001 and storm.depth_end > storm.depth_begin, "Full dust haze begins at the profile's dust begin")
 	var volume_ok := is_equal_approx(DEFAULT.volume_length(storm.depth_end, 0.0), DEFAULT.volume_length(storm.depth_end))
 	for step in range(11):
 		var length := DEFAULT.volume_length(storm.depth_end, step / 10.0)

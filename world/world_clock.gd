@@ -211,7 +211,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	# Dust browns the haze and the sky together, by its share against the fog.
 	var dust_tint := atmosphere.night_mist_color.lerp(atmosphere.dust_day_color, daylight)
 	horizon = horizon.lerp(dust_tint, dust_mix)
-	zenith = zenith.lerp(horizon, dust_mix * 0.8)
+	zenith = zenith.lerp(horizon, dust_mix * 0.5)
 	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength).lerp(atmosphere.dust_volume_albedo, dust_mix)
 	environment.volumetric_fog_density = profile.global_density
 	var local_density: float = profile.local_density
@@ -233,7 +233,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	sky_material.set_shader_parameter("sun_color", sun.light_color)
 	sky_material.set_shader_parameter("cloud_cover", (1.0 - clear) * (0.7 + rain * 0.3))
 	sky_material.set_shader_parameter("fog_cover", light_mist)
-	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist) * (1.0 - haze_dust))
+	sky_material.set_shader_parameter("sun_strength", smoothstep(-0.035, 0.10, direction.y) * (1.0 - rain * 0.95) * (1.0 - mist) * (1.0 - haze_dust * atmosphere.dust_sun_dimming))
 
 ## Wind and dust where the camera is. Without terrain (flat playgrounds, tests)
 ## there is no ground to raise dust, unless a landform override names one.

@@ -35,21 +35,21 @@ class_name WorldAtmosphereProfile
 @export_range(0.01, 1.0, 0.01) var volume_end_ratio := 0.3
 
 @export_group("Dust")
-## Haze at full dust (a gale over bare, dry ground). Dust only pulls the haze in.
+## Haze at full dust (a gale over bare, dry ground): a faint brown backdrop.
+## The sheets block the view up close; the haze only shortens the horizon and
+## keeps the weather's own curve. Dust only pulls the haze in.
 ## Depth fog has no shelter, so the haze begins past the RV cabin's length.
-@export_range(0.0, 500.0, 0.5, "suffix:m") var dust_begin := 6.5
+@export_range(0.0, 500.0, 0.5, "suffix:m") var dust_begin := 10.0
 ## Apparitions cap their spawn distance at the haze end; keep it above
-## WhiteApparition.SPAWN_MIN and thicken the dust with the curve instead.
-@export_range(1.0, 1000.0, 0.5, "suffix:m") var dust_end := 42.0
+## WhiteApparition.SPAWN_MIN.
+@export_range(1.0, 1000.0, 0.5, "suffix:m") var dust_end := 120.0
 ## Below 1, light dust already shortens the view noticeably.
 @export_range(0.05, 4.0, 0.01) var dust_curve := 0.6
-## Haze curve at full dust. Below 1 the haze thickens close to the viewer
-## instead of only far away; it never thins the weather's own curve.
-@export_range(0.05, 4.0, 0.01) var dust_depth_curve := 0.3
 @export var dust_day_color := Color("a28b6b")
-@export_range(0.0, 1.0, 0.0001) var dust_volume_density := 0.05
+## Just enough scattering for headlight and lamp beams; the depth haze does the rest.
+@export_range(0.0, 1.0, 0.0001) var dust_volume_density := 0.008
 @export var dust_volume_albedo := Color("8f7859")
-@export_range(0.0, 1.0, 0.01) var dust_sun_dimming := 0.6
+@export_range(0.0, 1.0, 0.01) var dust_sun_dimming := 0.35
 ## Scales the opacity of the rolling dust clouds.
 @export_range(0.0, 8.0, 0.05) var dust_cloud_opacity := 2.0
 ## Clouds fade out closer than this to the camera, so none sits on the lens.
@@ -68,7 +68,7 @@ class_name WorldAtmosphereProfile
 @export_range(0.2, 20.0, 0.1, "suffix:m") var dust_billow_height := 3.0
 ## At full dust the volumetric range reaches this share of the haze end, so
 ## billows show from farther out than the default scattering range.
-@export_range(0.01, 1.0, 0.01) var dust_volume_end_ratio := 0.85
+@export_range(0.01, 1.0, 0.01) var dust_volume_end_ratio := 0.45
 
 @export_group("Streaming Visibility")
 @export_range(0.0, 100.0, 0.5, "suffix:m") var stream_margin := 8.0
@@ -103,7 +103,7 @@ func mist(conditions: Vector3, dust := 0.0) -> Dictionary:
 	return {
 		"depth_begin": minf(weather_begin_at, lerpf(weather_begin_at, dust_begin, dust_pull)),
 		"depth_end": minf(weather_end_at, lerpf(landscape_end, dust_end, dust_pull)),
-		"depth_curve": minf(distance_curve, lerpf(distance_curve, dust_depth_curve, dust_pull)),
+		"depth_curve": distance_curve,
 		"white_strength": white_strength,
 		# Dust scattering lets headlights and lamps draw beams in a dust storm.
 		"global_density": (global_density + conditions.y * rain_density) * volume_weight + dust_volume_density * dust_level,
