@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://world/instances/room_definition.gd" id="room"]
 [ext_resource type="PackedScene" path="res://world/poi_kit/rooms/megashelter/stairwell.tscn" id="scene"]
 [ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/corridor.tres" id="reverb"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/room_hall.ogg" id="room_tone"]
 
 [sub_resource type="Resource" id="entry"]
 script = ExtResource("room")
@@ -15,6 +16,7 @@ selection_group = &"entry"
 [resource]
 script = ExtResource("profile")
 reverb = ExtResource("reverb")
+room_tone = ExtResource("room_tone")
 profile_id = &"bunker_stairwell"
 rooms = Array[ExtResource("room")]([SubResource("entry")])
 min_rooms = 1

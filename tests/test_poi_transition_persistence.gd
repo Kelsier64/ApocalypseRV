@@ -47,6 +47,8 @@ func _enter(id: String) -> bool:
 	if ok: check(manager._status.text.is_empty(), id + " clears transition text while playing indoors")
 	if ok: check(_effects_reverb() == InteriorProfiles.get_profile(manager.interior.profile_id).reverb and _effects_reverb() != null,
 		id + " plays world sound through its interior profile's reverb")
+	if ok: check(root.get_node("Sfx").room_tone() == InteriorProfiles.get_profile(manager.interior.profile_id).room_tone and not root.get_node("Sfx").listening_outdoors(),
+		id + " swaps the outdoor ambience for its interior profile's room tone")
 	if ok: check(manager.interior.find_children("*", "Label3D", true, false).is_empty(), id + " bunker has no model text labels")
 	check(player.survival.capture() == survival, id + " entry retains physical hunger state")
 	return ok
@@ -218,6 +220,7 @@ func _run() -> void:
 		await manager.leave()
 		check(manager.state == PoiInstanceManager.State.OUTDOOR and player.get_parent() == arena, "Normal exit returns the player")
 		check(_effects_reverb() == null, "Leaving the interior removes its room reverb")
+		check(root.get_node("Sfx").room_tone() == null and root.get_node("Sfx").listening_outdoors(), "Leaving the interior brings back the outdoor ambience")
 		await _retired("normal exit")
 	# Entering failure must not overwrite a previously committed visit.
 	var preserved: Dictionary = manager.saved_instances["exit-cancel"].duplicate(true)

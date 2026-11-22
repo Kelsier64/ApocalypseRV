@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/distant.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/crow_b.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/crow_c.wav" id="5"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("4"), ExtResource("5")])
+bus = &"Outdoors"
+occlusion_by_position = false
+volume_db = -12
+pitch_variation = 0.05
+attenuation = ExtResource("2")

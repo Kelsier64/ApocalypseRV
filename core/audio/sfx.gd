@@ -4,6 +4,8 @@ extends Node
 ## inside the cabin hears Exterior through the shell, one outside hears Cabin.
 ## The engine bus is outside the shell too, and a revving engine masks the rest
 ## of Exterior; the Slender Speaker keeps most of its level so it stays locatable.
+## The outdoor ambience bus is muffled and engine-masked like Exterior, and also
+## muffled under a roof.
 
 const MAX_VOICES := 12
 const OPEN_CUTOFF_HZ := 20500.0
@@ -29,7 +31,12 @@ var _offsets: Dictionary[AudioStreamPlayer3D, Vector3] = {}
 var _priorities: Dictionary[AudioStreamPlayer3D, int] = {}
 var _started: Dictionary[AudioStreamPlayer3D, int] = {}
 ## Current muffle per bus name, 0 open to 1 sealed shell.
-var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0, &"Engine": 0.0}
+var _cover: Dictionary[StringName, float] = {&"Exterior": 0.0, &"Cabin": 0.0, &"Engine": 0.0, &"Outdoors": 0.0}
+## How sheltered the outdoor ambience sounds from overhead cover such as a roof,
+## 0 to 1; WorldAmbience sets it, the RV shell adds to it here.
+var outdoor_shelter := 0.0
+## The looping room sound of the interior being listened to; null outdoors.
+var _room_tone: AudioStream
 ## Current engine masking, 0 to 1.
 var _mask := 0.0
 ## Room reverb inserted on Effects while the listener is inside a POI interior.
@@ -43,9 +50,10 @@ func _ready() -> void:
 	set_listener_viewport(get_tree().root)
 
 
-## room is the interior's reverb preset; null outdoors.
-func set_listener_viewport(viewport: Viewport, room: AudioEffectReverb = null) -> void:
+## room is the interior's reverb preset and tone its room sound; null outdoors.
+func set_listener_viewport(viewport: Viewport, room: AudioEffectReverb = null, tone: AudioStream = null) -> void:
 	_set_room(room)
+	_room_tone = tone
 	if _listener == viewport: return
 	if is_instance_valid(_listener):
 		_listener.audio_listener_enable_3d = false
@@ -96,6 +104,19 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	return true
 
 
+## Plays an event at a fixed point of the world being listened to, for sounds
+## with no source node such as distant ambience.
+func play_at(event: SoundEvent, world_position: Vector3, gain_db := 0.0) -> bool:
+	if not is_instance_valid(_listener): return false
+	# The pool sits at the origin of the listening world and never moves.
+	return play(event, _ensure_pool(), world_position, gain_db)
+
+
+## The camera of the world being listened to, outdoors or inside a POI.
+func listener_camera() -> Camera3D:
+	return _listener.get_camera_3d() if is_instance_valid(_listener) else null
+
+
 ## A wet copy on OutdoorEcho, wetter the farther the listener stands.
 func _play_echo(direct: AudioStreamPlayer3D, event: SoundEvent) -> void:
 	var echo: AudioStreamPlayer3D = null
@@ -121,6 +142,20 @@ func _play_echo(direct: AudioStreamPlayer3D, event: SoundEvent) -> void:
 	event.attenuation.apply(echo)
 	echo.global_position = direct.global_position
 	echo.play()
+
+
+## True while the root world is heard, false while the player listens inside a POI.
+func listening_outdoors() -> bool:
+	return not is_instance_valid(_listener) or _listener == get_tree().root
+
+
+func room_tone() -> AudioStream:
+	return _room_tone
+
+
+## Current muffle of a bus Sfx manages, 0 open to 1 sealed.
+func cover(bus_name: StringName) -> float:
+	return _cover.get(bus_name, 0.0)
 
 
 ## Stops every one-shot still following source, such as an interrupted reload.
@@ -204,6 +239,7 @@ func _process(delta: float) -> void:
 				outside_cover = maxf(outside_cover, cover)
 		if not inside: targets[&"Cabin"] = outside_cover
 	targets[&"Engine"] = targets[&"Exterior"]
+	targets[&"Outdoors"] = maxf(targets[&"Exterior"], outdoor_shelter)
 	for bus_name in _cover:
 		if not is_equal_approx(_cover[bus_name], targets[bus_name]):
 			_set_cover(bus_name, move_toward(_cover[bus_name], targets[bus_name], delta / TRANSITION_SECONDS))
@@ -215,7 +251,8 @@ func _set_cover(bus_name: StringName, cover: float) -> void:
 	_cover[bus_name] = cover
 	var bus := AudioServer.get_bus_index(bus_name)
 	var filter := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
-	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + (ENGINE_MASK_DB * _mask if bus_name == &"Exterior" else 0.0))
+	var masked := bus_name == &"Exterior" or bus_name == &"Outdoors"
+	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + (ENGINE_MASK_DB * _mask if masked else 0.0))
 	filter.cutoff_hz = exp(lerpf(log(OPEN_CUTOFF_HZ), log(CLOSED_CUTOFF_HZ), cover))
 	AudioServer.set_bus_effect_enabled(bus, 0, cover > 0.0)
 
@@ -235,6 +272,7 @@ func _set_room(room: AudioEffectReverb) -> void:
 func _set_mask(mask: float) -> void:
 	_mask = mask
 	_set_cover(&"Exterior", _cover[&"Exterior"])
+	_set_cover(&"Outdoors", _cover[&"Outdoors"])
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"), -ENGINE_MASK_DB * mask * (1.0 - LOUDSPEAKER_MASK_SHARE))
 
 
