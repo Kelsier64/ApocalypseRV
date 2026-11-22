@@ -10,8 +10,15 @@ const STRONG := 2
 const GALE := 3
 const NAMES := ["calm", "breeze", "strong", "gale"]
 const DESCRIPTIONS := ["Calm", "Breeze", "Strong wind", "Gale"]
-## Natural tier chances, calm to gale. Heavy rain may lift the tier one step.
-const TIER_CHANCES := [0.40, 0.32, 0.20, 0.08]
+## Natural tier chances, calm to gale, per WorldWeather.FOG_LEVELS entry: fog
+## forms in still air, so strong wind and gales come with clear or thin fog.
+## Heavy rain may lift the tier one step, never past the fog's strongest tier.
+const TIER_CHANCES := [
+	[0.25, 0.30, 0.30, 0.15],
+	[0.35, 0.35, 0.22, 0.08],
+	[0.55, 0.45, 0.0, 0.0],
+	[0.75, 0.25, 0.0, 0.0],
+]
 const HEAVY_RAIN_STEP_UP := 0.5
 ## Mean speed per tier in m/s on fully exposed ground.
 const SPEEDS := [0.0, 5.0, 12.0, 20.0]
@@ -77,20 +84,31 @@ func initialize(owner_weather: WorldWeather, seed_value: int) -> void:
 static func roll(seed_value: int, state: int, salt: int) -> float:
 	return float(hash([seed_value, state, salt]) & 0xffffff) / 16777216.0
 
-static func tier_for(tier_roll: float, step_roll: float, heavy_rain: bool) -> int:
+## `fog` is a segment's fog level; values between levels use the next heavier row.
+static func tier_for(tier_roll: float, step_roll: float, heavy_rain: bool, fog: float) -> int:
+	var chances: Array = TIER_CHANCES[fog_row(fog)]
 	var tier := CALM
+	var strongest := CALM
 	var threshold := 0.0
-	for index in range(TIER_CHANCES.size()):
-		threshold += TIER_CHANCES[index]
+	for index in range(chances.size()):
+		if chances[index] > 0.0: strongest = index
+	for index in range(chances.size()):
+		threshold += chances[index]
 		tier = index
 		if tier_roll < threshold: break
-	if heavy_rain and step_roll < HEAVY_RAIN_STEP_UP: tier = mini(tier + 1, GALE)
+	tier = mini(tier, strongest)
+	if heavy_rain and step_roll < HEAVY_RAIN_STEP_UP: tier = mini(tier + 1, strongest)
 	return tier
+
+static func fog_row(fog: float) -> int:
+	for index in range(WorldWeather.FOG_LEVELS.size()):
+		if fog <= WorldWeather.FOG_LEVELS[index] + 0.001: return index
+	return WorldWeather.FOG_LEVELS.size() - 1
 
 ## The natural tier of a segment. The first segment of a run is always calm.
 func natural_tier_for(state: int, target: Vector3) -> int:
 	if state == _first_state: return CALM
-	return tier_for(roll(world_seed, state, _TIER_SALT), roll(world_seed, state, _STEP_SALT), target.y >= 2.0)
+	return tier_for(roll(world_seed, state, _TIER_SALT), roll(world_seed, state, _STEP_SALT), target.y >= 2.0, target.z)
 
 func target_tier() -> int:
 	if override_tier >= 0: return override_tier

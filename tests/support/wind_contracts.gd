@@ -110,28 +110,46 @@ static func _check_restore(check: Callable) -> void:
 static func _check_tiers(check: Callable) -> void:
 	var monotonic := true
 	var lifted := false
+	var fog_calms := true
+	var still_fog := true
 	var seen := {}
+	var sums := true
+	for row: Array in WorldWind.TIER_CHANCES:
+		var total := 0.0
+		for chance: float in row: total += chance
+		sums = sums and is_equal_approx(total, 1.0)
 	for roll_index in range(100):
 		for step_index in range(10):
 			var tier_roll := roll_index / 100.0
 			var step_roll := step_index / 10.0
-			var dry := WorldWind.tier_for(tier_roll, step_roll, false)
-			var stormy := WorldWind.tier_for(tier_roll, step_roll, true)
-			seen[dry] = true
-			monotonic = monotonic and stormy >= dry and stormy <= dry + 1 and stormy <= WorldWind.GALE
-			lifted = lifted or stormy > dry
-			if roll_index > 0: monotonic = monotonic and dry >= WorldWind.tier_for((roll_index - 1) / 100.0, step_roll, false)
-	check.call(seen.size() == WorldWind.NAMES.size(), "Every wind tier, calm to gale, is reachable")
+			var lighter := WorldWind.GALE
+			for fog: float in WorldWeather.FOG_LEVELS:
+				var dry := WorldWind.tier_for(tier_roll, step_roll, false, fog)
+				var stormy := WorldWind.tier_for(tier_roll, step_roll, true, fog)
+				if fog == WorldWeather.FOG_NONE: seen[dry] = true
+				monotonic = monotonic and stormy >= dry and stormy <= dry + 1 and stormy <= WorldWind.GALE
+				lifted = lifted or stormy > dry
+				if roll_index > 0: monotonic = monotonic and dry >= WorldWind.tier_for((roll_index - 1) / 100.0, step_roll, false, fog)
+				fog_calms = fog_calms and dry <= lighter
+				lighter = dry
+				if fog >= WorldWeather.FOG_MEDIUM: still_fog = still_fog and stormy <= WorldWind.BREEZE
+	check.call(sums, "Each fog level's wind chances add up to one")
+	check.call(seen.size() == WorldWind.NAMES.size(), "Every wind tier, calm to gale, is reachable without fog")
 	check.call(monotonic and lifted, "Heavy rain only raises the wind tier, by at most one step")
+	check.call(fog_calms, "Thicker fog never brings a stronger wind for the same rolls")
+	check.call(still_fog, "Medium and heavy fog never blow stronger than a breeze, even in heavy rain")
 	# Natural segments over many seeds produce more than one tier.
 	var natural := {}
+	var foggy_still := true
 	for seed_value in range(8):
 		var weather := _fresh(seed_value)
 		var wind := _wind_for(weather, seed_value)
 		for _segment in range(6):
 			weather.advance(weather.remaining)
 			natural[wind.target_tier()] = true
+			if weather.target.z >= WorldWeather.FOG_MEDIUM: foggy_still = foggy_still and wind.target_tier() <= WorldWind.BREEZE
 	check.call(natural.size() >= 3, "Natural weather segments vary the wind tier")
+	check.call(foggy_still, "Natural segments in medium or heavy fog keep the wind at a breeze or less")
 
 static func _check_override(check: Callable) -> void:
 	var weather := _fresh(42)

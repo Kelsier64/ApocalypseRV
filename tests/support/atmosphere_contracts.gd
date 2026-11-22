@@ -12,6 +12,7 @@ static func run(world: Node3D, check: Callable) -> void:
 	WIND.run(check)
 	_check_owners(world, check)
 	_check_dust_haze(world, check)
+	_check_mist_wind(world, check)
 
 static func _check_profile(check: Callable) -> void:
 	var custom := DEFAULT.duplicate() as WorldAtmosphereProfile
@@ -271,3 +272,36 @@ static func _check_owners(world: Node3D, check: Callable) -> void:
 	first.free()
 	second.free()
 	shared.free()
+
+## Ground mist rides the wind and tears in strong wind; the distance haze that
+## gameplay reads does not move with the wind.
+static func _check_mist_wind(world: Node3D, check: Callable) -> void:
+	var rising := DEFAULT.mist_drift_speed(0.0) > 0.0 and is_zero_approx(DEFAULT.mist_torn(0.0))
+	for tier in range(1, WorldWind.SPEEDS.size()):
+		var speed: float = WorldWind.SPEEDS[tier]
+		var below: float = WorldWind.SPEEDS[tier - 1]
+		rising = rising and DEFAULT.mist_drift_speed(speed) > DEFAULT.mist_drift_speed(below) and DEFAULT.mist_torn(speed) >= DEFAULT.mist_torn(below) and DEFAULT.mist_torn(speed) <= 1.0
+	check.call(rising, "Ground mist drifts even in still air and drifts faster and thinner as the wind rises")
+	check.call(DEFAULT.mist_torn(WorldWind.SPEEDS[WorldWind.GALE]) > DEFAULT.mist_torn(WorldWind.SPEEDS[WorldWind.BREEZE]), "A gale tears the ground mist more than a breeze")
+	var host := _owner(world, DEFAULT)
+	var clock := host.get_node("WorldClock") as WorldClock
+	clock.weather.set_weather(Vector3.ZERO, true)
+	var material := ShaderMaterial.new()
+	material.shader = load("res://world/terrain/white_mist.gdshader") as Shader
+	clock.register_fog(material)
+	clock.wind.set_override(WorldWind.CALM)
+	clock.apply_time(1.0)
+	var calm_density := float(material.get_shader_parameter("density"))
+	var calm_end := clock.environment.fog_depth_end
+	var weather := clock.weather.capture()
+	var start: Vector3 = material.get_shader_parameter("drift")
+	clock.wind.set_override(WorldWind.GALE)
+	clock.apply_time(1.0)
+	var moved: Vector3 = material.get_shader_parameter("drift") - start
+	var downwind := clock.wind.direction(clock.elapsed_seconds)
+	check.call(is_equal_approx(calm_density, float(DEFAULT.mist(Vector3.ZERO).local_density)) and calm_density > 0.0, "Still air leaves the ground mist at the weather's density")
+	check.call(float(material.get_shader_parameter("density")) < calm_density and float(material.get_shader_parameter("torn")) > 0.0, "A gale thins the ground mist")
+	check.call(moved.length() > DEFAULT.mist_drift_speed(0.0) and moved.normalized().dot(downwind) > 0.99, "The ground mist moves downwind, faster in a gale")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, calm_end) and clock.weather.capture() == weather, "Wind without dust leaves the distance haze and the weather unchanged")
+	clock.unregister_fog(material)
+	host.free()

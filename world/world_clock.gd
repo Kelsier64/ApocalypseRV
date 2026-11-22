@@ -27,6 +27,9 @@ var landform_override := -1
 var deviation_fog := 0.0
 var weather_running := true
 var fog_materials: Array[ShaderMaterial] = []
+## Ground mist offset carried by the wind, in meters; presentation only.
+var mist_drift := Vector3.ZERO
+var mist_torn := 0.0
 var environment: Environment
 var sun: DirectionalLight3D
 var sky_material: ShaderMaterial
@@ -198,6 +201,9 @@ func apply_time(real_delta: float = 0.0) -> void:
 	var light_mist := minf(conditions.z / WorldWeather.FOG_LIGHT, 1.0)
 	_sample_wind()
 	var profile := atmosphere.mist(conditions, haze_dust, dust_surge)
+	var wind_speed := wind_velocity.length()
+	mist_drift += wind.direction(elapsed_seconds) * atmosphere.mist_drift_speed(wind_speed) * real_delta
+	mist_torn = atmosphere.mist_torn(wind_speed)
 	var dust_mix: float = profile.dust_mix
 	# Quality controls scattering only; all qualities retain the same haze.
 	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
@@ -218,9 +224,9 @@ func apply_time(real_delta: float = 0.0) -> void:
 	zenith = zenith.lerp(horizon, dust_mix * 0.5)
 	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength).lerp(dust_color.darkened(0.12), dust_mix)
 	environment.volumetric_fog_density = profile.global_density
-	var local_density: float = profile.local_density
+	var local_density: float = profile.local_density * (1.0 - atmosphere.mist_tear * mist_torn)
 	for material in fog_materials:
-		material.set_shader_parameter("density", local_density)
+		_apply_fog(material, local_density)
 	# The fogged sky and fully hidden geometry must share one color, or distant
 	# objects reappear as white silhouettes against the darker sky.
 	environment.fog_light_color = horizon
@@ -274,8 +280,13 @@ func _completed_scenery_mist_limit(real_delta: float) -> float:
 func register_fog(material: ShaderMaterial) -> void:
 	fog_materials.append(material)
 	var conditions := effective_visual_weather()
-	var density: float = atmosphere.mist(conditions).local_density
+	var density: float = atmosphere.mist(conditions).local_density * (1.0 - atmosphere.mist_tear * mist_torn)
+	_apply_fog(material, density)
+
+func _apply_fog(material: ShaderMaterial, density: float) -> void:
 	material.set_shader_parameter("density", density)
+	material.set_shader_parameter("drift", mist_drift)
+	material.set_shader_parameter("torn", mist_torn)
 
 func unregister_fog(material: ShaderMaterial) -> void:
 	fog_materials.erase(material)

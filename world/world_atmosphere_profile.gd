@@ -33,6 +33,14 @@ class_name WorldAtmosphereProfile
 @export var white_volume_albedo := Color("c3cdc8")
 @export_range(0.1, 500.0, 0.5, "suffix:m") var volume_max_length := 160.0
 @export_range(0.01, 1.0, 0.01) var volume_end_ratio := 0.3
+## Ground mist rides the wind: it drifts downwind at a floor speed plus a share
+## of the local wind speed, and wind between the tear speeds thins it to wisps.
+## Only the local FogVolumes move; the distance haze gameplay reads never does.
+@export_range(0.0, 2.0, 0.01, "suffix:m/s") var mist_drift_floor := 0.3
+@export_range(0.0, 0.5, 0.01) var mist_drift_share := 0.1
+@export_range(0.0, 40.0, 0.5, "suffix:m/s") var mist_tear_start := 4.0
+@export_range(0.0, 40.0, 0.5, "suffix:m/s") var mist_tear_full := 15.0
+@export_range(0.0, 1.0, 0.01) var mist_tear := 0.85
 
 @export_group("Dust")
 ## Haze at full dust (a gale over bare, dry ground): a faint brown backdrop.
@@ -132,6 +140,14 @@ func day_color(conditions: Vector3) -> Color:
 ## Volume depth is view-axis based; keep its integration inside radial haze,
 ## including wide-angle screen corners and a temporarily shortened horizon.
 ## Dust lengthens it toward dust_volume_end_ratio; it stays inside the haze end.
+## Downwind speed of the ground mist in m/s for a local wind speed.
+func mist_drift_speed(wind_speed: float) -> float:
+	return mist_drift_floor + mist_drift_share * maxf(wind_speed, 0.0)
+
+## How torn the ground mist is, 0 (still air) to 1, for a local wind speed.
+func mist_torn(wind_speed: float) -> float:
+	return smoothstep(mist_tear_start, maxf(mist_tear_full, mist_tear_start + 0.01), wind_speed)
+
 func volume_length(depth_end: float, dust := 0.0) -> float:
 	var ratio := lerpf(volume_end_ratio, maxf(volume_end_ratio, dust_volume_end_ratio), clampf(dust, 0.0, 1.0))
 	return maxf(0.1, minf(volume_max_length, depth_end * ratio))

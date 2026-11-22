@@ -639,6 +639,7 @@ godot --path . --log-file .godot/weather-playground.log res://tests/playgrounds/
 
 - 雨幕：近處密度、遠方樹林與建築前也有雨，轉頭或走動時不露出小範圍的雨柱，車內看得見窗外的雨。高度快取首次填充約半秒，傳送到新位置時未知區暫時不下雨，避免雨穿過屋頂。
 - 沙塵：視野拉近的程度、天色和霧是否同色、沙粒和沙團是否順著風走、車廂內與屋簷下有沒有沙、夜裡開車燈時看不看得出光束。Dust tuning 的 Dust style 切換沙幕、遠處沙團與沙雲（第一個 Sheets only 和遊戲一樣；沙雲只在 Forward+ 有；Haze only 只留沙霧與細沙），Landform 換地貌看沙色，讀值顯示湧浪與陣風沙牆的強度，滑桿即時改沙霧距離、湧浪拉近、光束散射、沙幕、陣風沙牆、陽光散射、沙雲與遠處沙團（數值是全沙塵時的值），Log values 把目前的值印到日誌，滿意後寫回大氣設定檔。
+- 霧與風：Strength 選 Natural 時，風力跟著天氣的霧量（中霧以上最多微風）。陰天或下雨沒有霧時，路旁低處的白色霧塊（只在 Forward+ 且霧品質開著時有）會順著風飄，風大時變成一縷一縷、變淡；距離霧不動。Ground mist 讀值顯示撕裂程度與飄速，Ground mist tuning 的滑桿調飄速與撕裂，Log values 一併印出。
 - `--capture`（Claude 用）：在 Dust storm 從 6、12、20 m 外拍 RV，再拍車廂前後，存到 `.godot/weather-captures` 後結束。`--dust-tune=` 依滑桿順序給數值，逗號分隔，多組用分號；`--hour=` 設時間；`--dust-style=N` 選 Dust style。
 - 日誌每 5 秒印一行 `WEATHER METRICS`：天氣、沙塵量、雨與沙的粒子提交數、最高射線數與平均幀時間。粒子提交數不是遮擋後實際看得見的數量。切換天氣後至少等一個取樣區間再比較。
 

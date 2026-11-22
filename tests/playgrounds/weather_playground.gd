@@ -26,6 +26,14 @@ const DUST_TUNING := [
 	["Billow height (m)", &"dust_billow_height", 0.5, 10.0, 0.25],
 	["Cloud opacity", &"dust_cloud_opacity", 0.0, 8.0, 0.25],
 ]
+## Ground mist rides the wind; same row layout as DUST_TUNING.
+const MIST_TUNING := [
+	["Mist drift floor (m/s)", &"mist_drift_floor", 0.0, 2.0, 0.05],
+	["Mist drift share", &"mist_drift_share", 0.0, 0.5, 0.01],
+	["Mist tears from (m/s)", &"mist_tear_start", 0.0, 20.0, 0.5],
+	["Mist torn at (m/s)", &"mist_tear_full", 1.0, 30.0, 0.5],
+	["Mist tear", &"mist_tear", 0.0, 1.0, 0.05],
+]
 ## Playground "Dust style": sheets, clouds and billows on or off; the first
 ## matches the game. The haze and the grit are always on.
 const DUST_STYLES := {"Sheets only": [true, true, false], "Sheets and billows": [true, true, true], "Billows only": [false, false, true], "Haze only": [false, false, false]}
@@ -133,7 +141,7 @@ func _build_controls(scenario: String) -> void:
 	controls.slider("Hour", 0.0, 24.0, 0.25, START_HOUR, func(hour: float) -> void: clock.set_time(clock.day_number(), fmod(hour, 24.0)))
 	controls.readout("Clock", func() -> String: return "Day %d, %02d:%02d" % [clock.day_number(), floori(clock.hour_of_day()), floori(fmod(clock.hour_of_day(), 1.0) * 60.0)])
 	controls.section("Wind")
-	controls.note("Wind starts overridden so weather changes do not reroll it. Landform sets the ground the dust reads, wherever you are. Wind has no sound and does not push the RV yet.")
+	controls.note("Wind starts overridden so weather changes do not reroll it. Landform sets the ground the dust reads, wherever you are. Natural strength follows the weather's fog: medium and heavy fog keep it at a breeze or less. Wind has no sound and does not push the RV yet.")
 	var tiers := PackedStringArray(["Natural"])
 	for tier: String in WorldWind.DESCRIPTIONS: tiers.append(tier)
 	controls.choice("Strength", tiers, clock.wind.override_tier + 1, func(index: int) -> void:
@@ -149,6 +157,12 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Heading", func() -> String: return "%03d deg" % (roundi(rad_to_deg(clock.wind.heading(clock.elapsed_seconds))) % 360))
 	controls.readout("Ground", _landform_text)
 	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m, surge %.2f, gust wall %.2f" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end), clock.dust_surge, (clock.get_node("WeatherDust") as WeatherDust).wall])
+	controls.readout("Ground mist", func() -> String: return "torn %.2f, drifts %.1f m/s" % [clock.mist_torn, clock.atmosphere.mist_drift_speed(clock.wind_velocity.length())])
+	controls.section("Ground mist tuning")
+	controls.note("Low white mist banks off the road, only with Forward+ and fog quality on, and only under cloud without fog (Overcast, Rain, Heavy rain). They drift downwind and the wind tears them into wisps. The distance haze never moves with the wind.")
+	for row: Array in MIST_TUNING:
+		var mist_property: StringName = row[1]
+		controls.slider(row[0], row[2], row[3], row[4], clock.atmosphere.get(mist_property), func(value: float) -> void: clock.atmosphere.set(mist_property, value))
 	controls.section("Dust tuning")
 	controls.note("The haze is a faint brown backdrop; the sheets block the view close up and the clouds roll past farther out. Billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. A strong gust thickens the sheets into a wall. The storm comes in waves a little over a minute apart: in a surge the haze closes in and walls come more often. Dust colour follows the landform. Haze only leaves just the haze and the grit. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
 	controls.choice("Dust style", PackedStringArray(DUST_STYLES.keys()), 0, _set_dust_style)
@@ -171,7 +185,7 @@ func _build_controls(scenario: String) -> void:
 
 func _dust_tuning_text() -> String:
 	var parts := PackedStringArray()
-	for row: Array in DUST_TUNING: parts.append("%s=%s" % [row[1], snappedf(clock.atmosphere.get(row[1]), 0.001)])
+	for row: Array in DUST_TUNING + MIST_TUNING: parts.append("%s=%s" % [row[1], snappedf(clock.atmosphere.get(row[1]), 0.001)])
 	return " ".join(parts)
 
 
