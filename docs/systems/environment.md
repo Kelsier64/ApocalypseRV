@@ -8,6 +8,7 @@
 |---|---|---|---|
 | 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/playgrounds/day_night_playground.tscn) |
 | 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 風與沙塵量 | 四級風力、風向、陣風；地貌的乾燥度、受風係數與沙塵量。目前只有狀態與讀值，還沒有畫面、聲音與側風 | [WorldWind](../../world/world_wind.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
 | 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/playgrounds/volumetric_fog_playground.tscn) |
 | 載入時的視野保護 | 地景還沒生成完的地方用霧遮住 | [WorldStreamVisibility](../../world/stream_visibility_guard.gd) | |
 | 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
@@ -17,7 +18,7 @@
 | HUD 與介面縮放 | HUD 的顯示開關、介面隨視窗大小縮放 | [HUDVisibility](../../core/hud_visibility.gd)、[UILayout](../../core/ui_layout.gd)、[IndustrialTheme](../../core/industrial_theme.gd) | |
 | 戶外美術 | 戶外建築與 RV 的共用材質 | [IndustrialArt](../../world/industrial_art.gd) | [industrial_style](../../tests/playgrounds/industrial_style_playground.tscn) |
 
-自動測試：這個系統沒有專屬的測試檔。時間與天氣的存讀在 [test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd)，設定的顯示檢查在 [validate_settings_display.gd](../../scripts/validate_settings_display.gd)，環境音的挑選、間隔、距離、車廂遮蔽與室內嗡聲在 [test_rv_audio.gd](../../tests/test_rv_audio.gd) 與 [test_poi_transition_persistence.gd](../../tests/test_poi_transition_persistence.gd)。畫面、霧與雨的觀感與環境音的聽感只能實際看、實際聽。
+自動測試：這個系統沒有專屬的測試檔。時間與天氣的存讀在 [test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd)；霧、天氣亂數與風的契約在 [atmosphere_contracts.gd](../../tests/support/atmosphere_contracts.gd) 與 [wind_contracts.gd](../../tests/support/wind_contracts.gd)，由 [test_world_contracts.gd](../../tests/test_world_contracts.gd) 執行；設定的顯示檢查在 [validate_settings_display.gd](../../scripts/validate_settings_display.gd)，環境音的挑選、間隔、距離、車廂遮蔽與室內嗡聲在 [test_rv_audio.gd](../../tests/test_rv_audio.gd) 與 [test_poi_transition_persistence.gd](../../tests/test_poi_transition_persistence.gd)。畫面、霧與雨的觀感與環境音的聽感只能實際看、實際聽。
 
 ## 規則與數值
 
@@ -36,7 +37,16 @@
 - 新局從陰天、無雨、無霧開始。
 - 每換一段先抽是不是晴天（`CLEAR_CHANCE`）。晴天沒有雨也沒有霧。
 - 不是晴天時，雨勢與霧量各自獨立抽：雨有無雨、小雨、大雨三級；霧有無、小、中、大四級。門檻是同一個檔案裡的常數。所以大雨加大霧、連續兩段一樣的天氣都可能出現。
-- 天氣只影響畫面與聲音，唯一的例外是霧量決定森林裡能不能出現 Slender Speaker（見 [enemies](enemies.md)）。它不影響怪物的感知、玩家的狀態或輪胎的抓地。沒有雷電、積水與風；風與沙塵的計畫見[風與沙塵](../plans/wind-dust.md)。
+- 天氣只影響畫面與聲音，唯一的例外是霧量決定森林裡能不能出現 Slender Speaker（見 [enemies](enemies.md)）。它不影響怪物的感知、玩家的狀態或輪胎的抓地。沒有雷電與積水。
+
+### 風
+
+- 每段天氣有一級風力：平靜、微風、強風、暴風，機率是 `WorldWind.TIER_CHANCES`。大雨時有 `HEAVY_RAIN_STEP_UP` 的機會再往上一級。換段時風力和雨霧一樣用 `TRANSITION` 平滑過渡。
+- 新局的第一段天氣固定平靜，所以教學出庫前天氣停住時風也是平靜。
+- 每段有一個基準風向，段內隨時間緩慢偏轉，最多 `MAX_VEER`。陣風在平均風速上下起伏 `GUST_SPREAD`。
+- 地貌決定乾燥度與受風係數：濕度與樹越多越不起沙，樹越多風越小。峽谷、山脊與懸崖最乾，草原居中，濕地與森林盆地幾乎不起沙。
+- 沙塵量由當地風速與乾燥度算出，從 `DUST_LIFT_SPEED` 開始揚起，到 `DUST_STORM_SPEED` 成為沙塵暴。平靜時沒有沙塵；雨量達到小雨就完全沒有沙塵。
+- 目前風與沙塵只有狀態，終端機與天氣測試場讀得到，還沒有畫面、聲音與側風。後續階段見[風與沙塵](../plans/wind-dust.md)。
 
 ### 霧
 
@@ -140,6 +150,16 @@
 - 要讀「現在的自然天氣」用 `weather.sample()`；要讀「畫面上實際的狀況」用 `effective_visual_weather()`。
 - 天氣只能讓霧變近，不能讓常駐遠景霧的終點變遠（`mist` 裡的 `minf`）。地景的裁切距離是照這個終點設計的。
 
+### 風由天氣段推得
+
+- `WorldWind`（RefCounted）由 `WorldClock` 擁有（`clock.wind`），在時鐘的 `_ready` 以世界種子初始化。它只讀 `WorldWeather`，不寫天氣，也不讀寫任何亂數產生器。
+- 風力與基準風向是世界種子與 `weather.rng.state` 的雜湊（`WorldWind.roll`）。天氣的亂數只在換段時抽取，段內狀態不變且已存檔，所以同一段天氣永遠得到同樣的風。第一段的判斷是 `rng.state` 等於 `WorldWeather.initial_rng_state(seed)`。
+- 陣風與風向偏轉是遊戲秒數的平滑雜訊（`FastNoiseLite`），種子從世界種子衍生。畫面、聲音與物理都讀同一個 `gust(seconds)`。
+- 過渡進度直接讀 `weather.transition_elapsed`。`WorldWeather` 在換段前發出 `changing`，`WorldWind` 在那時記下即將離開的風力與風向當作過渡起點。這個起點只在記憶體裡：讀檔或第一次讀取時，風直接停在這一段的風力與風向，所以在過渡中讀檔會跳過剩下的風力過渡。
+- 風不進檢查點，天氣的存檔格式不變。`override_tier` 與 `override_heading` 是終端機與測試場用的暫時設定，讀檔後回到自然值。
+- 對外讀取：`strength()`（0 到 3 的連續風力）、`speed(seconds, exposure)`、`velocity()`、`gust()`、`heading()`；地貌用 `dryness_for`、`exposure_for` 與 `dust_amount` 三個純函式，輸入是 `TerrainLandforms.appearance_at()` 的值，直接混合 `MOISTURE` 與 `TREE_DENSITY`，測試不必建世界。
+- 沙塵不寫進天氣的霧量，Slender Speaker 的霧量判斷不受影響。
+
 ### 霧與地景的配合
 
 - 林間的霧塊由 `ForestFog` 隨區塊建立，建立時向時鐘登記材質（`register_fog`），區塊卸載時解除。密度由時鐘統一更新。
@@ -192,4 +212,4 @@
 
 ### 存檔
 
-檢查點存時鐘（累積秒數與一天的長度）與天氣（目前與目標的狀態、過渡進度、剩餘時間、亂數狀態），兩者都是必要欄位，由 `WorldClock.valid_state` 與 `WorldWeather.valid_state` 檢查。讀檔時在世界的子節點就緒之前還原。不計算離線時間。
+檢查點存時鐘（累積秒數與一天的長度）與天氣（目前與目標的狀態、過渡進度、剩餘時間、亂數狀態），兩者都是必要欄位，由 `WorldClock.valid_state` 與 `WorldWeather.valid_state` 檢查。讀檔時在世界的子節點就緒之前還原。不計算離線時間。風不存檔，由還原後的天氣段推得。

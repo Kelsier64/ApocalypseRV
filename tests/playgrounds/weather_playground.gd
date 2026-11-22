@@ -5,14 +5,20 @@ var metrics_elapsed := 0.0
 var frame_samples := 0
 var frame_total := 0.0
 var max_rays := 0
+var controls := PlaygroundControls.new()
+## -1 samples the landform under the camera; otherwise a TerrainLandforms.KINDS index.
+var landform := -1
 
 func _ready() -> void:
 	super._ready()
 	get_window().title = "ApocalypseRV - Weather Validation"
 	clock.weather_running = false
 	clock.set_time(1, 12)
+	# Weather presets start new segments, which would reroll natural wind.
+	clock.wind.set_override(WorldWind.STRONG)
 	stage = 0
 	_view()
+	_build_wind_controls()
 	time_controls.text += "\n6 weather presets | 7 rain | 8 fog | 9 clear/overcast | 0 auto weather | Backspace destroy roof"
 	# Audio must follow the observer in this detached-camera validation scene.
 	clock.get_node("WeatherRain").listener = camera
@@ -20,6 +26,38 @@ func _ready() -> void:
 		preset = 2
 		clock.weather.set_weather(PRESETS[preset], true)
 		clock.apply_time()
+
+func _build_wind_controls() -> void:
+	add_child(controls)
+	controls.section("Wind")
+	controls.note("Phase 1 has no dust or wind visuals yet; read the values below. Wind starts overridden to strong so weather presets do not reroll it.")
+	var tiers := PackedStringArray(["Natural"])
+	for tier: String in WorldWind.DESCRIPTIONS: tiers.append(tier)
+	controls.choice("Wind strength", tiers, clock.wind.override_tier + 1, func(index: int): clock.wind.set_override(index - 1))
+	controls.slider("Heading (deg)", 0.0, 359.0, 1.0, 0.0, func(value: float): clock.wind.override_heading = deg_to_rad(value))
+	controls.button("Natural heading", func(): clock.wind.override_heading = NAN)
+	var kinds := PackedStringArray(["Under the camera"])
+	for kind: String in TerrainLandforms.KINDS: kinds.append(kind.capitalize())
+	controls.choice("Landform", kinds, 0, func(index: int): landform = index - 1)
+	controls.readout("Wind", func(): return "%s (strength %.2f)" % [clock.wind.description(), clock.wind.strength()])
+	controls.readout("Speed / gust", func(): return "%.1f m/s / %.2f" % [clock.wind.speed(clock.elapsed_seconds, WorldWind.exposure_for(_appearance())), clock.wind.gust(clock.elapsed_seconds)])
+	controls.readout("Heading", func(): return "%03d deg" % (roundi(rad_to_deg(clock.wind.heading(clock.elapsed_seconds))) % 360))
+	controls.readout("Landform", func(): return _landform_text())
+	controls.readout("Dust", func(): return "%.2f" % clock.wind.dust_at(clock.elapsed_seconds, _appearance()))
+	controls.readout("Weather", func(): return clock.weather.description())
+
+func _appearance() -> Vector3:
+	if landform >= 0: return Vector3(landform, landform, 0)
+	var viewer := get_viewport().get_camera_3d()
+	var generator := main.get_node("WorldGenerator")
+	if viewer == null: return Vector3.ZERO
+	return generator.field.landforms.appearance_at(-viewer.global_position.z)
+
+func _landform_text() -> String:
+	var a := _appearance()
+	var kind: String = TerrainLandforms.KINDS[int(a.x)]
+	if a.z > 0.0: kind += " > %s %.0f%%" % [TerrainLandforms.KINDS[int(a.y)], a.z * 100.0]
+	return "%s, dryness %.2f, exposure %.2f" % [kind, WorldWind.dryness_for(a), WorldWind.exposure_for(a)]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:

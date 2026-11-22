@@ -1,6 +1,6 @@
 # 風與沙塵
 
-**進度。** 設計已定案，尚未實作。階段 3 的風聲建立在[音效系統重做](audio-overhaul.md)階段 5 的環境音上。
+**進度。** 階段 1（`WorldWind`、乾燥度與沙塵量、終端機與天氣試玩場的讀值）已實作，契約見[環境](../systems/environment.md#風由天氣段推得)；階段 2–4 尚未開始。階段 3 的風聲建立在[音效系統重做](audio-overhaul.md)階段 5 的環境音上。
 
 ## 目標
 
@@ -31,6 +31,7 @@
 - **強風遮蔽和引擎遮蔽取較大者**，不相加，上限和引擎遮蔽同一級。
 - **植被擺動不在第一輪。** 目前沒有任何擺動著色器，所有樹與草的材質都要改，另外開項目。雨幕隨風傾斜在第一輪。
 - 沙塵粒子不進有屋頂的地方，沿用 `RainCover`；車頂完整的車廂內沒有沙塵。
+- 過渡中讀檔時，風直接停在新一段的風力與風向，不從上一段過渡（檢查點沒有上一段的亂數狀態；2026-11-22 確認）。
 - 每個階段實作前，先確認走 worktree 與 PR 或直接上 main。
 
 ## 設計
@@ -40,7 +41,7 @@
 - 新增 `WorldWind`（RefCounted），和 `WorldWeather` 一樣由 `WorldClock` 擁有，只讀天氣的段落與遊戲時間，不寫天氣。
 - 對外提供：目前風力（含過渡）、風向、陣風、某個位置的風速，以及某組地貌條件下的沙塵量。地貌的乾燥度與受風係數是純函式，測試不必建世界。
 - 換段時風力和雨霧一樣用 `TRANSITION` 平滑過渡。教學出庫前天氣停住時，風也停在平靜。
-- 讀天氣的地方都要跟上：[terminal_commands.gd](../../equipment/terminal_commands.gd) 的 `weather` 輸出與新的風力設定、`WorldWeather.description()` 加上風力描述、[天氣試玩場](../../tests/playgrounds/weather_playground.tscn) 的控制。
+- 讀天氣的地方都要跟上：[terminal_commands.gd](../../equipment/terminal_commands.gd) 的 `weather` 輸出加上風的一行，另有 `wind` 指令強制風力；風的描述是 `WorldWind.description()`，`WorldWeather` 不知道風（還原後它沒有世界種子）；[天氣試玩場](../../tests/playgrounds/weather_playground.tscn) 的控制。
 - [world_generator.gd](../../world/world_generator.gd) 的 Slender Speaker 判斷只讀天氣的霧量；沙塵不寫進霧量，這條規則不用改。
 
 ### 2. 畫面

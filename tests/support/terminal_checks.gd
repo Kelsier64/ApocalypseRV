@@ -34,9 +34,9 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 	var clock_before := clock.capture()
 	var weather_before := clock.weather.capture()
 	var children_before := world.get_child_count()
-	for line in ["help", "help cheat", "help time", "help weather", "cheat", "cheat status", "status", "time", "weather"]:
+	for line in ["help", "help cheat", "help time", "help weather", "help wind", "cheat", "cheat status", "status", "time", "weather", "wind"]:
 		check.call(commands.execute(line, context).ok, "Terminal read succeeds: " + line)
-	for line in ["", "che", "cheat ", "cheat p", "cheat power ", "time ", "time set ", "weather ", "weather set ", "weather set heavy_"]:
+	for line in ["", "che", "cheat ", "cheat p", "cheat power ", "time ", "time set ", "weather ", "weather set ", "weather set heavy_", "wind ", "wind set ", "wind set g"]:
 		commands.completion_candidates(line, context)
 	check.call(commands.completion_candidates("cheat power ", context) == PackedStringArray(["cheat power false", "cheat power true"]), "Cheat completion lists only exact boolean spellings")
 	check.call(commands.completion_candidates("cheat fly ", context) == PackedStringArray(["cheat fly false", "cheat fly status", "cheat fly true"]), "Flight completion lists booleans and read-only status")
@@ -76,11 +76,20 @@ static func run(world: Node3D, rv: Chassis, player: CharacterBody3D, check: Call
 		var result := commands.execute("weather set " + preset, context)
 		var expected: Vector3 = RVTerminalCommands.WEATHER_PRESETS[preset]
 		check.call(result.ok and clock.weather.sample().is_equal_approx(expected) and clock.weather.target == expected, "Weather preset immediately sets sample and target: " + preset)
-		check.call(result.lines[0].begins_with("Sample: ") and result.lines[1].begins_with("Target: "), "Weather reports sample and target in English: " + preset)
+		check.call(result.lines[0].begins_with("Sample: ") and result.lines[1].begins_with("Target: ") and result.lines[2].begins_with("Wind: "), "Weather reports sample, target and wind in English: " + preset)
 	weather_before = clock.weather.capture()
 	for line in ["weather storm", "weather set", "weather set snow", "weather set CLEAR", "weather set clear extra"]:
 		check.call(not commands.execute(line, context).ok and clock.weather.capture() == weather_before, "Malformed weather is atomic: " + line)
 	check.call(clock.deviation_fog == 0.5 and not clock.running and not clock.weather_running, "Weather changes preserve staging and deviation fog")
+	check.call(commands.completion_candidates("wind set g", context) == PackedStringArray(["wind set gale"]) and commands.completion_candidates("wind set ", context).size() == WorldWind.NAMES.size() + 1, "Wind completion lists every tier and natural")
+	for tier in range(WorldWind.NAMES.size()):
+		var result := commands.execute("wind set " + WorldWind.NAMES[tier], context)
+		check.call(result.ok and result.lines[0].begins_with("Wind: ") and clock.wind.target_tier() == tier and is_equal_approx(clock.wind.strength(), tier), "Wind override applies immediately: " + WorldWind.NAMES[tier])
+	check.call(clock.weather.capture() == weather_before, "Wind overrides leave the weather capture and RNG untouched")
+	for line in ["wind storm", "wind set", "wind set GALE", "wind set hurricane", "wind set gale extra"]:
+		check.call(not commands.execute(line, context).ok and clock.wind.override_tier == WorldWind.GALE, "Malformed wind is atomic: " + line)
+	check.call(commands.execute("wind set natural", context).ok and clock.wind.override_tier == -1 and clock.wind.target_tier() == clock.wind.natural_tier_for(clock.weather.rng.state, clock.weather.target), "Wind natural returns to the weather segment's tier")
+	check.call(staged_clock.wind.override_tier == -1, "Wind commands leave the staged world's wind unchanged")
 	clock.set_time(2, 12.0)
 	var natural_time := clock.elapsed_seconds
 	var remaining := clock.weather.remaining
