@@ -45,10 +45,11 @@ class_name WorldAtmosphereProfile
 @export_range(1.0, 1000.0, 0.5, "suffix:m") var dust_end := 120.0
 ## Below 1, light dust already shortens the view noticeably.
 @export_range(0.05, 4.0, 0.01) var dust_curve := 0.6
+## Dust colour where no landform is known (flat playgrounds, tests); on terrain
+## the colour comes from TerrainLandforms.DUST_COLORS.
 @export var dust_day_color := Color("a28b6b")
 ## Just enough scattering for headlight and lamp beams; the depth haze does the rest.
 @export_range(0.0, 1.0, 0.0001) var dust_volume_density := 0.008
-@export var dust_volume_albedo := Color("8f7859")
 @export_range(0.0, 1.0, 0.01) var dust_sun_dimming := 0.35
 ## Scales the opacity of the rolling dust clouds.
 @export_range(0.0, 8.0, 0.05) var dust_cloud_opacity := 2.0
@@ -59,6 +60,12 @@ class_name WorldAtmosphereProfile
 @export_range(0.0, 20.0, 0.1, "suffix:m") var dust_sheet_near := 0.8
 ## 0 to 1: how far the sheets thin between passing walls of thick dust.
 @export_range(0.0, 1.0, 0.01) var dust_sheet_clump := 0.7
+## Extra sheet opacity at the peak of a strong gust; the gaps between sheets
+## close too, so a wall of dust sweeps over and then opens again.
+@export_range(0.0, 4.0, 0.05) var dust_gust_wall := 1.2
+## Sunlight the sheets and clouds scatter: brighter and warmer in sun, dull
+## under cloud, none at night.
+@export_range(0.0, 2.0, 0.01) var dust_sun_glow := 0.3
 ## Volumetric billows (Forward+ with volumetric fog): peak extinction per
 ## metre, the share of the air they fill, their size and height falloff.
 ## The cabin's CabinAir volumes cancel up to 1.0 in total.

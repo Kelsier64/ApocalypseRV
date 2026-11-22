@@ -17,15 +17,17 @@ const DUST_TUNING := [
 	["Beam haze", &"dust_volume_density", 0.0, 0.05, 0.001],
 	["Sheet opacity", &"dust_sheet_opacity", 0.0, 4.0, 0.1],
 	["Sheet gaps", &"dust_sheet_clump", 0.0, 1.0, 0.05],
+	["Gust wall", &"dust_gust_wall", 0.0, 4.0, 0.1],
+	["Sun glow", &"dust_sun_glow", 0.0, 1.5, 0.05],
 	["Billow density", &"dust_billow_density", 0.0, 0.9, 0.01],
 	["Billow coverage", &"dust_billow_coverage", 0.0, 1.0, 0.05],
 	["Billow size (m)", &"dust_billow_scale", 4.0, 60.0, 1.0],
 	["Billow height (m)", &"dust_billow_height", 0.5, 10.0, 0.25],
 	["Cloud opacity", &"dust_cloud_opacity", 0.0, 8.0, 0.25],
 ]
-## Playground "Dust style": sheets, clouds and billows on or off. The haze and
-## the grit are always on.
-const DUST_STYLES := {"Sheets and billows": [true, true, true], "Sheets only": [true, true, false], "Billows only": [false, false, true], "Haze only": [false, false, false]}
+## Playground "Dust style": sheets, clouds and billows on or off; the first
+## matches the game. The haze and the grit are always on.
+const DUST_STYLES := {"Sheets only": [true, true, false], "Sheets and billows": [true, true, true], "Billows only": [false, false, true], "Haze only": [false, false, false]}
 ## Agent-only --capture: distances in metres from which to shoot the RV's side.
 const CAPTURE_DISTANCES := [6.0, 12.0, 20.0]
 
@@ -145,9 +147,9 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Speed / gust", func() -> String: return "%.1f m/s / %.2f" % [clock.wind_velocity.length(), clock.wind.gust(clock.elapsed_seconds)])
 	controls.readout("Heading", func() -> String: return "%03d deg" % (roundi(rad_to_deg(clock.wind.heading(clock.elapsed_seconds))) % 360))
 	controls.readout("Ground", _landform_text)
-	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end)])
+	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m, gust wall %.2f" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end), (clock.get_node("WeatherDust") as WeatherDust).wall])
 	controls.section("Dust tuning")
-	controls.note("The haze is a faint brown backdrop; the sheets block the view close up and the clouds roll past farther out. Billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. Haze only leaves just the haze and the grit. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
+	controls.note("The haze is a faint brown backdrop; the sheets block the view close up and the clouds roll past farther out. Billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. A strong gust thickens the sheets into a wall. Dust colour follows the landform. Haze only leaves just the haze and the grit. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
 	controls.choice("Dust style", PackedStringArray(DUST_STYLES.keys()), 0, _set_dust_style)
 	var profile := clock.atmosphere
 	for row: Array in DUST_TUNING:

@@ -17,6 +17,8 @@ var wind := WorldWind.new()
 ## haze, sky and sunlight do not pump with every gust.
 var dust := 0.0
 var haze_dust := 0.0
+## Day colour of the dust at the camera, from the landform.
+var dust_color := Color.BLACK
 var wind_velocity := Vector3.ZERO
 ## Playground hook: a TerrainLandforms.KINDS index replaces the ground under the camera.
 var landform_override := -1
@@ -209,10 +211,10 @@ func apply_time(real_delta: float = 0.0) -> void:
 	horizon = horizon.lerp(white_mist, profile.white_strength)
 	zenith = zenith.lerp(white_mist, atmosphere.sky_white_blend * profile.white_strength)
 	# Dust browns the haze and the sky together, by its share against the fog.
-	var dust_tint := atmosphere.night_mist_color.lerp(atmosphere.dust_day_color, daylight)
+	var dust_tint := atmosphere.night_mist_color.lerp(dust_color, daylight)
 	horizon = horizon.lerp(dust_tint, dust_mix)
 	zenith = zenith.lerp(horizon, dust_mix * 0.5)
-	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength).lerp(atmosphere.dust_volume_albedo, dust_mix)
+	environment.volumetric_fog_albedo = atmosphere.base_volume_albedo.lerp(atmosphere.white_volume_albedo, profile.white_strength).lerp(dust_color.darkened(0.12), dust_mix)
 	environment.volumetric_fog_density = profile.global_density
 	var local_density: float = profile.local_density
 	for material in fog_materials:
@@ -249,11 +251,13 @@ func _sample_wind() -> void:
 	if appearance.x < 0:
 		dust = 0.0
 		haze_dust = 0.0
+		dust_color = atmosphere.dust_day_color
 		wind_velocity = wind.velocity(elapsed_seconds)
 		return
 	wind_velocity = wind.velocity(elapsed_seconds, WorldWind.exposure_for(appearance))
 	dust = wind.dust_at(elapsed_seconds, appearance)
 	haze_dust = wind.mean_dust_at(appearance)
+	dust_color = WorldWind.dust_color_for(appearance)
 
 func _completed_scenery_mist_limit(real_delta: float) -> float:
 	var generator := get_parent().get_node_or_null("WorldGenerator")

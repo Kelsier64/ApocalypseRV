@@ -178,6 +178,12 @@ static func _check_dust(check: Callable) -> void:
 		var mixed := WorldWind.dryness_for(Vector3(wet[0], dry[0], t))
 		blend_ok = blend_ok and mixed >= WorldWind.dryness_for(Vector3(wet[0], wet[0], 0)) - 0.0001 and mixed <= WorldWind.dryness_for(canyon) + 0.0001
 	check.call(blend_ok, "Dryness blends continuously across a landform transition")
+	check.call(TerrainLandforms.DUST_COLORS.size() == kinds.size(), "Every landform names a dust color")
+	var red_canyon: Color = WorldWind.dust_color_for(canyon)
+	var pale_ridge: Color = WorldWind.dust_color_for(Vector3(dry[1], dry[1], 0))
+	check.call(red_canyon.r - red_canyon.b > pale_ridge.r - pale_ridge.b, "Canyon dust is redder than ridge dust")
+	var ends_ok := WorldWind.dust_color_for(Vector3(wet[0], dry[0], 0.0)).is_equal_approx(TerrainLandforms.DUST_COLORS[wet[0]]) and WorldWind.dust_color_for(Vector3(wet[0], dry[0], 1.0)).is_equal_approx(TerrainLandforms.DUST_COLORS[dry[0]])
+	check.call(ends_ok, "Dust color blends from one landform to the next across a transition")
 	# The live path: calm first segment has no dust; an overridden gale over
 	# canyon in a rain-free segment does, and rain removes it.
 	var weather := _fresh(42)

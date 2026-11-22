@@ -5,8 +5,10 @@ class_name WeatherDust
 ## particle budget, and only uniforms updated per frame. Three fields:
 ## grit streaks skimming the ground, large clouds rolling past in the distance,
 ## and dense sheets streaming past close up that open and close the view.
+## Strong gusts thicken the sheets into a passing wall (wall). Colour follows the
+## landform (clock.dust_color) and the sheets scatter some sunlight.
 ## Billows add a volumetric FogVolume of rolling dust (Forward+ with
-## volumetric fog only). Roof shelter (cover caches and roof shapes) is
+## volumetric fog only); they are off unless show_billows is set. Roof shelter (cover caches and roof shapes) is
 ## WeatherRain's; dust adds no rays.
 const GRIT := 0
 const CLOUDS := 1
@@ -21,6 +23,9 @@ const FIELDS := [
 ## Half the width of the billow box that follows the camera, and its height.
 const BILLOW_RADIUS := 30.0
 const BILLOW_HEIGHT := 14.0
+## Seconds for a gust wall to build and to clear.
+const WALL_RISE := 0.6
+const WALL_FALL := 1.5
 ## Seconds for the dust's travel to follow a change in wind.
 const WIND_RESPONSE := 1.0
 ## Drift wraps at a common multiple of the field widths, keeping floats small.
@@ -37,7 +42,9 @@ var billow_material: ShaderMaterial
 ## Session-only switches for playgrounds comparing the looks.
 var show_sheets := true
 var show_clouds := true
-var show_billows := true
+var show_billows := false
+## 0 to 1: how far a strong gust has thickened the sheets into a wall.
+var wall := 0.0
 var drift := Vector3.ZERO
 var billow_drift := Vector3.ZERO
 var flow := Vector3.ZERO
@@ -53,8 +60,6 @@ func _ready() -> void:
 	noise.noise.seed = 5821
 	noise.noise.frequency = 0.03
 	for spec: Dictionary in FIELDS: _build_field(spec, noise)
-	# Fog shaders exist only with Forward+ volumetric fog.
-	if clock.game_settings.supports_volumetric_fog(): _build_billows()
 
 func _build_field(spec: Dictionary, noise: Texture2D) -> void:
 	var field := MultiMeshInstance3D.new()
@@ -72,7 +77,6 @@ func _build_field(spec: Dictionary, noise: Texture2D) -> void:
 	material.set_shader_parameter("band_height", spec.height)
 	material.set_shader_parameter("puff", spec.puff)
 	material.set_shader_parameter("noise", noise)
-	material.set_shader_parameter("dust_color", clock.atmosphere.dust_day_color)
 	if spec.puff:
 		material.set_shader_parameter("size_min", spec.size.x)
 		material.set_shader_parameter("size_max", spec.size.y)
@@ -138,6 +142,7 @@ static func field_share(field: int, amount: float) -> float:
 func _process(delta: float) -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null or not rain.sheltering or clock.dust <= MIN_DUST:
+		wall = 0.0
 		visible_particles = 0
 		for field in fields: field.multimesh.visible_instance_count = 0
 		if billows != null: billows.visible = false
@@ -154,7 +159,10 @@ func _process(delta: float) -> void:
 	billow_drift.z = fposmod(billow_drift.z, billow_period)
 	var amount := clock.dust
 	var profile := clock.atmosphere
+	var target := smoothstep(0.6, 0.9, clock.wind.gust(clock.elapsed_seconds)) * field_share(SHEETS, amount)
+	wall = lerpf(wall, target, 1.0 - exp(-delta / (WALL_RISE if target > wall else WALL_FALL)))
 	var glow_color := clock.environment.fog_light_color
+	if is_instance_valid(clock.sun): glow_color += clock.sun.light_color * clock.sun.light_energy * profile.dust_sun_glow
 	visible_particles = 0
 	for i in range(fields.size()):
 		var field := fields[i]
@@ -172,15 +180,18 @@ func _process(delta: float) -> void:
 		material.set_shader_parameter("simulation_time", simulation_time)
 		material.set_shader_parameter("density", smoothstep(0.0, 0.25, amount))
 		material.set_shader_parameter("glow_color", glow_color)
+		material.set_shader_parameter("dust_color", clock.dust_color)
 		match i:
 			CLOUDS:
 				material.set_shader_parameter("opacity_scale", profile.dust_cloud_opacity)
 				material.set_shader_parameter("near_fade", profile.dust_cloud_near)
 			SHEETS:
-				material.set_shader_parameter("opacity_scale", profile.dust_sheet_opacity)
+				material.set_shader_parameter("opacity_scale", profile.dust_sheet_opacity * (1.0 + profile.dust_gust_wall * wall))
 				material.set_shader_parameter("near_fade", profile.dust_sheet_near)
-				material.set_shader_parameter("clump", profile.dust_sheet_clump)
-	# Billows follow the haze dust so they do not pump with every gust.
+				material.set_shader_parameter("clump", profile.dust_sheet_clump * (1.0 - wall))
+	# Billows follow the haze dust so they do not pump with every gust. Fog
+	# shaders exist only with Forward+ volumetric fog; build them on first use.
+	if show_billows and billows == null and clock.game_settings.supports_volumetric_fog(): _build_billows()
 	if billows == null: return
 	billows.visible = show_billows and clock.haze_dust > MIN_DUST
 	if billows.visible:

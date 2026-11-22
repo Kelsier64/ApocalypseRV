@@ -149,6 +149,10 @@ static func _blend_landform(table: Array, appearance: Vector3) -> float:
 static func dryness_for(appearance: Vector3) -> float:
 	return (1.0 - _blend_landform(TerrainLandforms.MOISTURE, appearance)) * (1.0 - _blend_landform(TerrainLandforms.TREE_DENSITY, appearance))
 
+## Day colour of the dust raised here, blended across landform transitions.
+static func dust_color_for(appearance: Vector3) -> Color:
+	return TerrainLandforms.DUST_COLORS[int(appearance.x)].lerp(TerrainLandforms.DUST_COLORS[int(appearance.y)], appearance.z)
+
 ## Fraction of the open-ground wind that reaches this landform.
 static func exposure_for(appearance: Vector3) -> float:
 	return 1.0 - _blend_landform(TerrainLandforms.TREE_DENSITY, appearance) * TREE_SHELTER
