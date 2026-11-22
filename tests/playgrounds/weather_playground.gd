@@ -11,6 +11,24 @@ const START_HOUR := 12.0
 ## Road distance of the parked RV from the start of the route.
 const START_S := 60.0
 const METRICS_SECONDS := 5.0
+## Playground tab rows: label, profile property, min, max, step.
+const DUST_TUNING := [
+	["Haze begins (m)", &"dust_begin", 0.0, 30.0, 0.5],
+	["Haze ends (m)", &"dust_end", 8.0, 150.0, 1.0],
+	["Haze curve", &"dust_depth_curve", 0.1, 1.5, 0.05],
+	["Volume density", &"dust_volume_density", 0.0, 0.2, 0.005],
+	["Sheet opacity", &"dust_sheet_opacity", 0.0, 4.0, 0.1],
+	["Sheet gaps", &"dust_sheet_clump", 0.0, 1.0, 0.05],
+	["Billow density", &"dust_billow_density", 0.0, 0.9, 0.01],
+	["Billow coverage", &"dust_billow_coverage", 0.0, 1.0, 0.05],
+	["Billow size (m)", &"dust_billow_scale", 4.0, 60.0, 1.0],
+	["Billow height (m)", &"dust_billow_height", 0.5, 10.0, 0.25],
+	["Cloud opacity", &"dust_cloud_opacity", 0.0, 8.0, 0.25],
+]
+## Playground "Dust style": sheets and billows on or off.
+const DUST_STYLES := {"Sheets and billows": [true, true], "Sheets only": [true, false], "Billows only": [false, true], "Haze only": [false, false]}
+## Agent-only --capture: distances in metres from which to shoot the RV's side.
+const CAPTURE_DISTANCES := [6.0, 12.0, 20.0]
 
 var controls := PlaygroundControls.new()
 var main: Node3D
@@ -46,6 +64,8 @@ func _ready() -> void:
 	get_tree().node_added.connect(_remove_monster)
 	add_child(main)
 	clock = main.get_node("WorldClock")
+	# Tuning sliders edit a copy, so Restart returns to the profile's values.
+	clock.atmosphere = clock.atmosphere.duplicate()
 	# Weather stays where the Playground tab puts it. The clock runs so gusts move.
 	clock.weather_running = false
 	clock.set_time(1, START_HOUR)
@@ -64,7 +84,8 @@ func _ready() -> void:
 	await main.wait_for_play()
 	# Let the chassis settle on its wheels before placing the player on or in it.
 	for i in range(Engine.physics_ticks_per_second): await get_tree().physics_frame
-	_place_player(scenario)
+	await _place_player(scenario)
+	if "--capture" in OS.get_cmdline_user_args(): _capture()
 
 
 func _place_player(scenario: String) -> void:
@@ -79,11 +100,17 @@ func _place_player(scenario: String) -> void:
 				rv.set_engine_running(true)
 				rv.get_node("DriverSeat").interact_hold(player)
 		_:
-			var beside := rv.to_global(Vector3(3.6, 0.0, 1.65))
-			var ground: float = main.get_node("WorldGenerator").field.height_at(beside.x, beside.z)
-			player.global_position = Vector3(beside.x, ground + 0.1, beside.z)
-			player.rotation.y = rv.global_rotation.y + PI / 2.0
+			_stand_beside(3.6)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+## Stands the player on the ground this far out from the RV's side, facing it.
+func _stand_beside(distance: float) -> void:
+	var beside := rv.to_global(Vector3(distance, 0.0, 1.65))
+	var ground: float = main.get_node("WorldGenerator").field.height_at(beside.x, beside.z)
+	player.velocity = Vector3.ZERO
+	player.global_position = Vector3(beside.x, ground + 0.1, beside.z)
+	player.rotation.y = rv.global_rotation.y + PI / 2.0
 
 
 func _build_controls(scenario: String) -> void:
@@ -120,6 +147,18 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Heading", func() -> String: return "%03d deg" % (roundi(rad_to_deg(clock.wind.heading(clock.elapsed_seconds))) % 360))
 	controls.readout("Ground", _landform_text)
 	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end)])
+	controls.section("Dust tuning")
+	controls.note("Sheets stream past close up; billows are rolling 3D dust you can stand in, only with Forward+ and fog quality on. Values are at full dust and last until Restart; Log values prints them to the log so they can go into the atmosphere profile.")
+	var dust := clock.get_node("WeatherDust") as WeatherDust
+	controls.choice("Dust style", PackedStringArray(DUST_STYLES.keys()), 0, func(index: int) -> void:
+		var style: Array = DUST_STYLES.values()[index]
+		dust.show_sheets = style[0]
+		dust.show_billows = style[1])
+	var profile := clock.atmosphere
+	for row: Array in DUST_TUNING:
+		var property: StringName = row[1]
+		controls.slider(row[0], row[2], row[3], row[4], profile.get(property), func(value: float) -> void: profile.set(property, value))
+	controls.button("Log values", func() -> void: print("DUST TUNING ", _dust_tuning_text()))
 	controls.section("RV")
 	controls.note("A broken roof lets rain and dust into the cabin. It stays broken; Restart brings it back.")
 	controls.button("Break middle roof", func() -> void:
@@ -130,6 +169,60 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Dust particles", func() -> String: return str((clock.get_node("WeatherDust") as WeatherDust).visible_particles))
 	controls.readout("Cover rays", func() -> String: return str(_rain().rays_last_tick))
 	controls.readout("Frame", func() -> String: return "%.1f ms" % (1000.0 / maxf(Engine.get_frames_per_second(), 1.0)))
+
+
+func _dust_tuning_text() -> String:
+	var parts := PackedStringArray()
+	for row: Array in DUST_TUNING: parts.append("%s=%s" % [row[1], snappedf(clock.atmosphere.get(row[1]), 0.001)])
+	return " ".join(parts)
+
+
+## Shoots each --dust-tune variant into .godot/weather-captures and quits: the
+## RV's side from each CAPTURE_DISTANCES, then the cabin forward and aft.
+## A variant lists the DUST_TUNING values in order, comma separated; variants
+## are separated by semicolons. Without one it shoots the profile as is.
+## --hour=H sets the time of day first; --dust-style=N picks a DUST_STYLES entry.
+func _capture() -> void:
+	var variants: Array = [[]]
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--dust-tune="):
+			variants = Array(argument.trim_prefix("--dust-tune=").split(";")).map(func(text: String) -> PackedFloat64Array: return text.split_floats(","))
+		if argument.begins_with("--hour="):
+			clock.set_time(1, argument.trim_prefix("--hour=").to_float())
+		if argument.begins_with("--dust-style="):
+			var style: Array = DUST_STYLES.values()[argument.trim_prefix("--dust-style=").to_int()]
+			var dust := clock.get_node("WeatherDust") as WeatherDust
+			dust.show_sheets = style[0]
+			dust.show_billows = style[1]
+	var folder := ProjectSettings.globalize_path("res://.godot/weather-captures")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await get_tree().create_timer(3.0).timeout
+	# All outside shots first: boarding once keeps the RV where it settled.
+	for index in range(variants.size()):
+		_set_dust_tuning(variants[index])
+		for shot in range(CAPTURE_DISTANCES.size()):
+			_stand_beside(CAPTURE_DISTANCES[shot])
+			await _shoot(folder, index, shot)
+		print("CAPTURE %02d dust=%.2f haze_end=%.1f %s" % [index, clock.dust, clock.environment.fog_depth_end, _dust_tuning_text()])
+	await _place_player("Cabin")
+	for index in range(variants.size()):
+		_set_dust_tuning(variants[index])
+		player.rotation.y = rv.global_rotation.y
+		await _shoot(folder, index, CAPTURE_DISTANCES.size())
+		player.rotation.y = rv.global_rotation.y + PI
+		await _shoot(folder, index, CAPTURE_DISTANCES.size() + 1)
+	get_tree().quit()
+
+
+func _set_dust_tuning(values: PackedFloat64Array) -> void:
+	for i in range(mini(values.size(), DUST_TUNING.size())): clock.atmosphere.set(DUST_TUNING[i][1], values[i])
+
+
+func _shoot(folder: String, variant: int, shot: int) -> void:
+	await get_tree().create_timer(0.6).timeout
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(folder.path_join("%02d_%d.png" % [variant, shot]))
 
 
 func _apply_weather() -> void:

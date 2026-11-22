@@ -151,11 +151,11 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 	var mixing := true
 	for conditions: Vector3 in [Vector3(1, 0, 0), Vector3.ZERO, Vector3(0, 1, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 2, WorldWeather.FOG_HEAVY)]:
 		var still := DEFAULT.mist(conditions)
-		unchanged = unchanged and DEFAULT.mist(conditions, 0.0) == still and is_zero_approx(float(still.dust_mix))
+		unchanged = unchanged and DEFAULT.mist(conditions, 0.0) == still and is_zero_approx(float(still.dust_mix)) and is_equal_approx(float(still.depth_curve), DEFAULT.distance_curve)
 		var previous := still
 		for step in range(1, 11):
 			var sample := DEFAULT.mist(conditions, step / 10.0)
-			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001
+			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001 and sample.depth_curve <= previous.depth_curve + 0.0001
 			mixing = mixing and sample.dust_mix >= previous.dust_mix - 0.0001 and sample.dust_mix <= 1.0
 			previous = sample
 	check.call(nearer, "Dust only pulls the haze nearer, never past the weather or landscape end")
@@ -163,6 +163,16 @@ static func _check_dust_haze(world: Node3D, check: Callable) -> void:
 	check.call(mixing, "Dust's share of the haze color grows with dust and stays within 0 to 1")
 	var storm := DEFAULT.mist(Vector3.ZERO, 1.0)
 	check.call(is_equal_approx(float(storm.depth_end), minf(DEFAULT.dust_end, DEFAULT.landscape_end)) and is_equal_approx(float(storm.dust_mix), 1.0), "Full dust without fog reaches the profile's dust end and color")
+	check.call(is_equal_approx(float(storm.depth_curve), minf(DEFAULT.distance_curve, DEFAULT.dust_depth_curve)), "Full dust reaches the profile's dust haze curve")
+	var steep := DEFAULT.duplicate() as WorldAtmosphereProfile
+	steep.dust_depth_curve = DEFAULT.distance_curve * 2.0
+	check.call(is_equal_approx(float(steep.mist(Vector3.ZERO, 1.0).depth_curve), DEFAULT.distance_curve), "A dust curve above the weather's never thins the haze")
+	var volume_ok := is_equal_approx(DEFAULT.volume_length(storm.depth_end, 0.0), DEFAULT.volume_length(storm.depth_end))
+	for step in range(11):
+		var length := DEFAULT.volume_length(storm.depth_end, step / 10.0)
+		volume_ok = volume_ok and length >= DEFAULT.volume_length(storm.depth_end) - 0.0001 and length <= storm.depth_end
+	check.call(volume_ok, "Dust lengthens volumetric scattering but keeps it inside the haze end")
+	check.call(DEFAULT.dust_billow_density < 1.0, "Dust billows stay below what the cabin's CabinAir volumes cancel")
 	check.call(DEFAULT.mist(Vector3(0, 0, WorldWeather.FOG_HEAVY), 1.0).dust_mix < storm.dust_mix, "Fog takes a share of the haze color from dust")
 	var driest := 0
 	for kind in range(TerrainLandforms.KINDS.size()):

@@ -200,7 +200,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
 	environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
 	environment.fog_depth_curve = profile.depth_curve
-	environment.volumetric_fog_length = atmosphere.volume_length(environment.fog_depth_end)
+	environment.volumetric_fog_length = atmosphere.volume_length(environment.fog_depth_end, haze_dust)
 	# Weather haze and sky remain native lighting, independent of gray fill.
 	horizon = horizon.lerp(atmosphere.night_mist_color.lerp(Color("535c5b"), daylight), mist)
 	zenith = zenith.lerp(horizon, mist * 0.7)
