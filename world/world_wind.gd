@@ -10,8 +10,15 @@ const STRONG := 2
 const GALE := 3
 const NAMES := ["calm", "breeze", "strong", "gale"]
 const DESCRIPTIONS := ["Calm", "Breeze", "Strong wind", "Gale"]
-## Natural tier chances, calm to gale. Heavy rain may lift the tier one step.
-const TIER_CHANCES := [0.40, 0.32, 0.20, 0.08]
+## Natural tier chances, calm to gale, per WorldWeather.FOG_LEVELS entry: fog
+## forms in still air, so strong wind and gales come with clear or thin fog.
+## Heavy rain may lift the tier one step, never past the fog's strongest tier.
+const TIER_CHANCES := [
+	[0.25, 0.30, 0.30, 0.15],
+	[0.35, 0.35, 0.22, 0.08],
+	[0.55, 0.45, 0.0, 0.0],
+	[0.75, 0.25, 0.0, 0.0],
+]
 const HEAVY_RAIN_STEP_UP := 0.5
 ## Mean speed per tier in m/s on fully exposed ground.
 const SPEEDS := [0.0, 5.0, 12.0, 20.0]
@@ -19,6 +26,9 @@ const SPEEDS := [0.0, 5.0, 12.0, 20.0]
 const GUST_SPREAD := 0.35
 const GUST_FREQUENCY := 0.01 # per game second; ~2 real seconds at the default day
 const VEER_FREQUENCY := 0.0004
+## Dust storms come in waves: a slow swell under the gusts, one roughly every
+## 75 real seconds at the default day, at its peak for about 20.
+const SURGE_FREQUENCY := 0.0005
 const MAX_VEER := PI / 6.0
 ## Trees shelter the ground from wind; full canopy keeps this fraction out.
 const TREE_SHELTER := 0.9
@@ -33,6 +43,7 @@ const _STEP_SALT := 0x53544550
 const _HEADING_SALT := 0x48454144
 const _GUST_SALT := 0x47555354
 const _VEER_SALT := 0x56454552
+const _SURGE_SALT := 0x53555247
 
 ## Session-only overrides (terminal, playgrounds); a load returns to nature.
 var override_tier := -1
@@ -42,6 +53,7 @@ var world_seed := 0
 var _first_state := 0
 var _gusts := FastNoiseLite.new()
 var _veer := FastNoiseLite.new()
+var _surges := FastNoiseLite.new()
 var _synced := false
 var _state := 0
 var _natural_tier := CALM
@@ -56,12 +68,14 @@ func initialize(owner_weather: WorldWeather, seed_value: int) -> void:
 	weather = owner_weather
 	world_seed = seed_value
 	_first_state = WorldWeather.initial_rng_state(seed_value)
-	for pair: Array in [[_gusts, _GUST_SALT, GUST_FREQUENCY], [_veer, _VEER_SALT, VEER_FREQUENCY]]:
+	for pair: Array in [[_gusts, _GUST_SALT, GUST_FREQUENCY], [_veer, _VEER_SALT, VEER_FREQUENCY], [_surges, _SURGE_SALT, SURGE_FREQUENCY]]:
 		var noise: FastNoiseLite = pair[0]
 		noise.seed = hash([seed_value, pair[1]]) & 0x7fffffff
 		noise.frequency = pair[2]
 		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 		noise.fractal_octaves = 3
+	# One smooth swell, without the gusts' small wobbles.
+	_surges.fractal_octaves = 1
 	weather.changing.connect(_on_weather_changing)
 	_synced = false
 	_segment_change_expected = false
@@ -70,20 +84,31 @@ func initialize(owner_weather: WorldWeather, seed_value: int) -> void:
 static func roll(seed_value: int, state: int, salt: int) -> float:
 	return float(hash([seed_value, state, salt]) & 0xffffff) / 16777216.0
 
-static func tier_for(tier_roll: float, step_roll: float, heavy_rain: bool) -> int:
+## `fog` is a segment's fog level; values between levels use the next heavier row.
+static func tier_for(tier_roll: float, step_roll: float, heavy_rain: bool, fog: float) -> int:
+	var chances: Array = TIER_CHANCES[fog_row(fog)]
 	var tier := CALM
+	var strongest := CALM
 	var threshold := 0.0
-	for index in range(TIER_CHANCES.size()):
-		threshold += TIER_CHANCES[index]
+	for index in range(chances.size()):
+		if chances[index] > 0.0: strongest = index
+	for index in range(chances.size()):
+		threshold += chances[index]
 		tier = index
 		if tier_roll < threshold: break
-	if heavy_rain and step_roll < HEAVY_RAIN_STEP_UP: tier = mini(tier + 1, GALE)
+	tier = mini(tier, strongest)
+	if heavy_rain and step_roll < HEAVY_RAIN_STEP_UP: tier = mini(tier + 1, strongest)
 	return tier
+
+static func fog_row(fog: float) -> int:
+	for index in range(WorldWeather.FOG_LEVELS.size()):
+		if fog <= WorldWeather.FOG_LEVELS[index] + 0.001: return index
+	return WorldWeather.FOG_LEVELS.size() - 1
 
 ## The natural tier of a segment. The first segment of a run is always calm.
 func natural_tier_for(state: int, target: Vector3) -> int:
 	if state == _first_state: return CALM
-	return tier_for(roll(world_seed, state, _TIER_SALT), roll(world_seed, state, _STEP_SALT), target.y >= 2.0)
+	return tier_for(roll(world_seed, state, _TIER_SALT), roll(world_seed, state, _STEP_SALT), target.y >= 2.0, target.z)
 
 func target_tier() -> int:
 	if override_tier >= 0: return override_tier
@@ -111,6 +136,11 @@ func mean_speed() -> float:
 func gust(seconds: float) -> float:
 	return clampf(_gusts.get_noise_1d(seconds) * 0.5 + 0.5, 0.0, 1.0)
 
+## Surge 0 to 1: the slow swell of a dust storm, 0 between waves. Deterministic
+## from the seed and game time like the gusts, so it needs no saving.
+func surge(seconds: float) -> float:
+	return smoothstep(0.5, 0.8, _surges.get_noise_1d(seconds) * 0.5 + 0.5)
+
 ## Heading in radians the wind blows toward, clockwise from -Z.
 func heading(seconds: float) -> float:
 	if is_finite(override_heading): return override_heading
@@ -135,6 +165,10 @@ func velocity(seconds: float, exposure := 1.0) -> Vector3:
 func dust_at(seconds: float, appearance: Vector3) -> float:
 	return dust_amount(speed(seconds, exposure_for(appearance)), dryness_for(appearance), weather.sample().y)
 
+## Dust at the mean wind, without gusts; the haze reads this so it does not pump.
+func mean_dust_at(appearance: Vector3) -> float:
+	return dust_amount(mean_speed() * exposure_for(appearance), dryness_for(appearance), weather.sample().y)
+
 func description() -> String:
 	return DESCRIPTIONS[target_tier()]
 
@@ -144,6 +178,10 @@ static func _blend_landform(table: Array, appearance: Vector3) -> float:
 ## 0 (wet, wooded) to 1 (bare and dry), from the landform moisture and trees.
 static func dryness_for(appearance: Vector3) -> float:
 	return (1.0 - _blend_landform(TerrainLandforms.MOISTURE, appearance)) * (1.0 - _blend_landform(TerrainLandforms.TREE_DENSITY, appearance))
+
+## Day colour of the dust raised here, blended across landform transitions.
+static func dust_color_for(appearance: Vector3) -> Color:
+	return TerrainLandforms.DUST_COLORS[int(appearance.x)].lerp(TerrainLandforms.DUST_COLORS[int(appearance.y)], appearance.z)
 
 ## Fraction of the open-ground wind that reaches this landform.
 static func exposure_for(appearance: Vector3) -> float:

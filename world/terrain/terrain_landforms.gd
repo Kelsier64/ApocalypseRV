@@ -16,6 +16,9 @@ var _dry_valleys: Dictionary = {}
 const DRY_VALLEY_INTERVAL := 4200.0
 var relief := FastNoiseLite.new()
 const COLORS_V14 := [Color("65724e"), Color("74776c"), Color("414f3e"), Color("797b73"), Color("887259"), Color("424e36")]
+## Day colour of the dust the wind lifts off each landform: red canyon sand, pale
+## ridge and cliff grit, yellow-brown meadow loam. Wet landforms raise little.
+const DUST_COLORS := [Color("a8946a"), Color("9d968b"), Color("8c8068"), Color("aaa595"), Color("b07f58"), Color("958564")]
 const TREE_DENSITY := [0.16, 0.24, 0.13, 0.075, 0.10, 0.70]
 const GROUND_DENSITY := [0.82, 0.16, 0.78, 0.24, 0.16, 0.60]
 const MOISTURE := [0.25, 0.10, 0.90, 0.04, 0.06, 0.62]
