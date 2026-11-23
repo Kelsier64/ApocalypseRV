@@ -23,7 +23,7 @@
 | RV 擬真操控 | 見[計畫](rv-handling-rollover.md)的未結項目 |
 | 製造台復活 | 試玩 F7，確認眼睛閉合與睜開，以及移動中車內的觀看舒適度 |
 | 受傷暈眩 | 手動重撞、近爆或連續受傷時，確認全黑長度、復焦、耳鳴與逃生操作手感 |
-| 風聲 | 在[環境音試聽場](../../tests/playgrounds/ambience_playground.tscn)聽平靜到暴風、空地與樹林、車廂內與棚下、室內淡出、RV 嘯聲與拍打、強風蓋過遠處的低吼，見[計畫](wind-dust.md) |
+| 風聲 | 在[環境音試聽場](../../tests/playgrounds/ambience_playground.tscn)聽平靜到暴風、空地與樹林（樹梢呼嘯的錄音已選定）、車廂內與棚下、室內淡出、RV 嘯聲與拍打、強風蓋過遠處的低吼，見[計畫](wind-dust.md) |
 | 沙塵畫面 | 在[天氣試玩場](../../tests/playgrounds/weather_playground.tscn)看沙霧的濃淡與顏色、飛沙與沙團、車廂與屋簷下沒有沙、夜裡車燈的光束、雨幕隨風傾斜、路旁霧塊順風飄與強風時變薄，見[計畫](wind-dust.md) |
 | 地形階段 1–3 | 實際渲染、山路急彎與升降、橋梁輪驅，見[計畫](terrain-overhaul.md) |
 | 教學基地 | 階段四的建築美術 |
