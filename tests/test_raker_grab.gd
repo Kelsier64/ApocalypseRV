@@ -149,20 +149,20 @@ func check_sounds(animation: AnimationPlayer) -> void:
 	actor.attack_started.emit("grab_stand_hold", GrabRules.HOLD_DURATION)
 	check(MonsterSounds.playing(sfx, RakerAudio.WINDUP) == 1 and MonsterSounds.playing(sfx, RakerAudio.LUNGE) == 1,
 		"Later grab phases add no tell")
-	check(RakerAudio.WINDUP.priority > RakerAudio.CLICK.priority and RakerAudio.LUNGE.priority > RakerAudio.STEP.priority,
+	check(RakerAudio.WINDUP.priority > RakerAudio.GROWL.priority and RakerAudio.LUNGE.priority > RakerAudio.STEP.priority,
 		"Attack tells outrank vocals and footfalls in a full pool")
 	MonsterSounds.stop_all(sfx)
 	actor.ai_state = Monster.State.WANDER
 	audio.vocal_in = 0.0
 	await physics_frame
-	check(MonsterSounds.playing(sfx, RakerAudio.CLICK) == 1
+	check(MonsterSounds.playing(sfx, RakerAudio.GROWL) + MonsterSounds.playing(sfx, RakerAudio.CLICK) == 1
 		and audio.vocal_in >= RakerAudio.WANDER_VOCAL_SECONDS.x and audio.vocal_in <= RakerAudio.WANDER_VOCAL_SECONDS.y,
-		"A wandering Raker clicks, then waits a wander interval")
+		"A wandering Raker growls or clicks, then waits a wander interval")
 	MonsterSounds.stop_all(sfx)
 	actor.is_dead = true
 	audio.vocal_in = 0.0
 	await physics_frame
-	check(MonsterSounds.playing(sfx, RakerAudio.CLICK) == 0, "A dead Raker is silent")
+	check(MonsterSounds.playing(sfx, RakerAudio.GROWL) + MonsterSounds.playing(sfx, RakerAudio.CLICK) == 0, "A dead Raker is silent")
 	actor.is_dead = false
 
 func run() -> void:

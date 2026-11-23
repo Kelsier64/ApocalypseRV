@@ -403,7 +403,8 @@ func _check_wind_audio(sfx: Node, chassis: Chassis) -> void:
 	check(gale.playing and gale.bus == &"Outdoors", "A gale plays its bed on the outdoor ambience bus")
 	check(sfx.wind_masking > 0.0 and sfx.exterior_masking() > 0.0, "A gale masks outside sound")
 	for voice in sfx._voices: voice.stop()
-	check(sfx.play_at(load("res://assets/audio/events/raker/click.tres"), listener.global_position + Vector3(0, 0, -35)), "A distant click plays in the wind")
+	var growl := load("res://assets/audio/events/raker/growl.tres") as SoundEvent
+	check(sfx.play_at(growl, listener.global_position + Vector3(0, 0, -35)), "A distant growl plays in the wind")
 	var heard: Array = sfx._voices.filter(func(voice): return voice.playing)
 	check(heard.size() == 1 and heard[0].bus == &"Exterior" and heard[0].panning_strength < 1.0, "A gale blurs where outside sounds come from")
 	var open_db := gale.volume_db

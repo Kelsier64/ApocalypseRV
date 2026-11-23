@@ -1,10 +1,11 @@
 extends Node3D
-## Raker sounds. Footfalls follow the gait clips; clicks come every
+## Raker sounds. Footfalls follow the gait clips; growls and clicks come every
 ## few seconds while it wanders or hunts, so it gives itself away at middle
 ## distance; every sweep and grab starts with its own tell, early enough to dodge
 ## by ear. Timing and sample picks use this node's RNG, never gameplay randomness.
 
 const STEP: SoundEvent = preload("res://assets/audio/events/raker/step.tres")
+const GROWL: SoundEvent = preload("res://assets/audio/events/raker/growl.tres")
 const CLICK: SoundEvent = preload("res://assets/audio/events/raker/click.tres")
 const WINDUP: SoundEvent = preload("res://assets/audio/events/raker/windup.tres")
 const LUNGE: SoundEvent = preload("res://assets/audio/events/raker/lunge.tres")
@@ -49,7 +50,7 @@ func _physics_process(delta: float) -> void:
 	var chasing := actor.ai_state != Monster.State.WANDER
 	var gap := CHASE_VOCAL_SECONDS if chasing else WANDER_VOCAL_SECONDS
 	vocal_in = _rng.randf_range(gap.x, gap.y)
-	get_node("/root/Sfx").play(CLICK, actor, MOUTH)
+	get_node("/root/Sfx").play(GROWL if _rng.randf() < 0.6 else CLICK, actor, MOUTH)
 
 
 func _footfalls() -> void:
