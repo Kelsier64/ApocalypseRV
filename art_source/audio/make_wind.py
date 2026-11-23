@@ -16,7 +16,7 @@ is set in the Godot import file.
     python art_source/audio/make_wind.py <preview folder> <folder> --set B
 
 --set writes one of the candidate bed sets in BED_SETS instead of the chosen
-one plus the one-shots, for comparing in the ambience playground.
+beds plus the one-shots, for comparing in the ambience playground.
 """
 
 import argparse
@@ -46,7 +46,8 @@ BED_SETS = {
     "B": {"breeze": ("wind2", 46.0), "strong": ("strong_jpn", 6.0), "gale": ("polar", 13.0)},
     "C": {"breeze": ("winter_wind_01c", 186.0), "strong": ("gale", 6.0), "gale": ("howling_amb", 24.0)},
 }
-CHOSEN = "A"
+# The set each shipped bed comes from, picked by listening in the ambience playground.
+CHOSEN = {"breeze": "A", "strong": "B", "gale": "B"}
 BED_LENGTH = 24.0
 BED_SEAM = 2.0
 BED_RMS_DB = -24.0
@@ -199,7 +200,8 @@ def main():
         for tier, (source, start) in BED_SETS[args.set].items():
             write_ogg(args.output / f"wind_{tier}.ogg", bed(args.source, tier, source, start))
         return
-    for tier, (source, start) in BED_SETS[CHOSEN].items():
+    for tier, chosen_set in CHOSEN.items():
+        source, start = BED_SETS[chosen_set][tier]
         write_ogg(args.output / f"weather/wind_{tier}.ogg", bed(args.source, tier, source, start))
     events = {}
     for name, (source, start, end, cutoff, fade_in, fade_out) in SHOTS.items():
