@@ -43,7 +43,7 @@ func run() -> void:
 		overturned = overturned or vehicle.rollover_state() != Chassis.Rollover.UPRIGHT
 	print("ASPHALT roll=", roll, " slip=", slip, " speed=", vehicle.road_speed())
 	check(roll > 0.01 and slip > 0.0 and not overturned, "Flat asphalt full steering slides with body roll before overturning")
-	world.free()
+	await release_fixture(world)
 	world = Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -56,7 +56,7 @@ func run() -> void:
 		min_upright = minf(min_upright, slope_vehicle.global_basis.y.y)
 	print("SLOPE up=", min_upright)
 	check(min_upright <= PROFILE.rollover_side_up_dot, "A steep cross-slope can roll the RV onto its side")
-	world.free()
+	await release_fixture(world)
 	world = Node3D.new()
 	root.add_child(world)
 	current_scene = world
@@ -81,12 +81,8 @@ func run() -> void:
 	print("CURB up=", curb_up, " tires=", trip.wheel_health)
 	check(curb_up <= PROFILE.rollover_side_up_dot, "A strong sideways curb impact can trip the RV")
 	check(trip.wheel_health[1] < trip.wheel_health[0] or trip.wheel_health[3] < trip.wheel_health[2], "Tires on the impacted side suffer more damage")
-	world.free()
+	await release_fixture(world)
 	await check_straight_line_driving()
-	# Let playback queued during driving shut down before the headless audio server.
-	for voice in root.get_node("Sfx")._voices: voice.stop()
-	await process_frame
-	await process_frame
 	for failure in failures: push_error(failure)
 	if failures.is_empty(): print("PASS: tire grip, handling, rollover, acceleration and tire audio")
 	quit(1 if not failures.is_empty() else 0)
@@ -131,4 +127,20 @@ func check_straight_line_driving() -> void:
 		await physics_frame
 		squealed = squealed or audio.tire_player.playing
 	check(squealed, "Hard braking from speed still plays tire squeal")
+	await release_fixture(world)
+
+func release_fixture(world: Node3D) -> void:
+	world.process_mode = Node.PROCESS_MODE_DISABLED
+	for player: AudioStreamPlayer3D in world.find_children("*", "AudioStreamPlayer3D", true, false):
+		player.stop()
+	var sfx := root.get_node("Sfx")
+	for voice: AudioStreamPlayer3D in sfx._voices + sfx._echoes:
+		voice.stop()
+	# Scene frames can advance faster than the audio mixer under --fixed-fps.
+	var mix_interval := AudioServer.get_time_since_last_mix() + AudioServer.get_time_to_next_mix()
+	var drain_seconds := clampf(2.0 * mix_interval, 0.02, 0.25)
+	var drain_until := Time.get_ticks_usec() + ceili(drain_seconds * 1000000.0)
+	while Time.get_ticks_usec() < drain_until:
+		await process_frame
 	world.free()
+	await process_frame
