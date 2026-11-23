@@ -12,7 +12,7 @@ const SLENDER := preload("res://enemies/slender_speaker/slender_speaker.tscn")
 ## Half the side of the hand-made navigation square the giant walks on, inside the lot.
 const SLENDER_NAV_HALF := 165.0
 const NOTES := {
-	"Raker": "A Raker wanders 25 m ahead and hunts you when it notices you. Listen for steps, growls and clicks, then the tell before each sweep and grab. It can grab, bite and kill.",
+	"Raker": "A Raker wanders 25 m ahead and hunts you when it notices you. Listen for steps and clicks, then the tell before each sweep and grab. It can grab, bite and kill.",
 	"Barrel man": "One barrel 14 m ahead is a barrel man. It should be silent until you come within 8 m, clang as it stands, slosh as it runs and hiss for 2 s before it blasts.",
 	"Black apparition": "Daylight lot; the apparition stays put until you stare at it for 2 s or press Enrage. Up close it breathes; enraged it shrieks and runs at you. Touch kills.",
 	"White apparition": "Press Appear: it appears 35-55 m behind you with a soft breath. Unseen it leaves after 6-10 s, so turn and look at it for about a second, then face away and listen to the whisper close in. It appears just after you close this menu; pressing Appear again sends the current one away first. Looking drains SAN; touch kills.",

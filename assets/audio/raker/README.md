@@ -3,8 +3,6 @@
 | 遊戲檔案 | 來源 | 用途與處理 |
 | --- | --- | --- |
 | `step_a.wav` 至 `step_f.wav` | [Heavy Footsteps Walking，deleted_user_7146007](https://freesound.org/people/deleted_user_7146007/sounds/383724/) | 腳步，各取一步 0.3 秒 |
-| `growl_a.wav` | [Growl - Large Creature, Fantasy，8bitmyketison](https://freesound.org/people/8bitmyketison/sounds/699932/) | 遊蕩與追擊時的低吼 |
-| `growl_b.wav` | [growl 9，_stubb](https://freesound.org/people/_stubb/sounds/389653/) | 同上 |
 | `click_a.wav`、`click_b.wav` | [Predator Clicking 3，SlendyManGame](https://freesound.org/people/SlendyManGame/sounds/235529/) | 遊蕩與追擊時的喀噠聲，取兩段 |
 | `click_c.wav` | [Alien Clicks，michael_grinnell](https://freesound.org/people/michael_grinnell/sounds/512472/) | 同上 |
 | `windup_a.wav` | [Monster Snarl 4，pikachu09](https://freesound.org/people/pikachu09/sounds/204611/) | 橫掃與破門前的預備聲。從起音剪起，長度在 0.72 秒命中前後 |

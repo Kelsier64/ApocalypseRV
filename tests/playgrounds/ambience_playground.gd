@@ -5,7 +5,7 @@ extends Node3D
 ## with its drips and creaks. Real terrain picks forest and road by itself; check
 ## that part in the generated world. Also the weather wind: silent when calm,
 ## a dark bed swelling with the gusts, treetop rushes among trees, the RV hull
-## whistling and rattling, and distant outside sounds masked in a strong wind.
+## whistling and rattling, and other outside sound masked in a strong wind.
 
 const SCENARIOS := ["Lot"]
 const PLACES := {"Open ground": Vector2(0, 0), "Forest": Vector2(1, 0), "Roadside": Vector2(0, 1), "Road through forest": Vector2(1, 1)}
@@ -25,10 +25,6 @@ const START_WIND := WorldWind.STRONG
 ## wind_strong.ogg and wind_gale.ogg; kept out of Git under .godot.
 const CANDIDATES := "res://.godot/wind-candidates"
 const BED_FILES := ["wind_breeze.ogg", "wind_strong.ogg", "wind_gale.ogg"]
-## A distant outside cue for hearing the wind mask it, repeated while the toggle is on.
-const DISTANT_CUE := "res://assets/audio/events/raker/growl.tres"
-const DISTANT_CUE_DISTANCE := 25.0
-const DISTANT_CUE_SECONDS := 3.0
 ## Candidate treetop rush sets sit beside the beds in rushes-<set> folders of WAV files.
 const RUSH_PREFIX := "rushes-"
 
@@ -40,8 +36,6 @@ var _rain := 0
 var rv: Chassis
 var _candidates: Array[String] = []
 var _rush_sets: Array[String] = []
-var _growl_every := false
-var _growl_in := 0.0
 
 
 func _ready() -> void:
@@ -88,12 +82,9 @@ func _ready() -> void:
 	controls.readout("Next in", func() -> String: return "%d s" % ceili(_ambience().until_next) if _ambience() else "-")
 	controls.readout("Muffle", func() -> String: return "%d%%" % roundi(get_node("/root/Sfx").cover(&"Outdoors") * 100.0))
 	controls.section("Wind")
-	controls.note("Calm is silent. From a breeze up, a low wind bed swells and fades with the gusts; Place Forest shelters the ground, so the bed drops and treetop rushes pass overhead in a strong wind or gale. Strong wind and gales whistle over the RV roof and rattle its panels; every missing panel whistles louder. A strong wind masks distant outside sound: turn on the distant growl and step Strength from Calm to Gale. Inside the RV cabin and under the shed the wind is muffled; Interior fades it out. Play a treetop rush plays one now at the current strength (stand in Place Forest to hear it as in the game). Recordings and Treetop rushes switch to candidate cuts if any are on disk.")
+	controls.note("Calm is silent. From a breeze up, a low wind bed swells and fades with the gusts; Place Forest shelters the ground, so the bed drops and treetop rushes pass overhead in a strong wind or gale. Strong wind and gales whistle over the RV roof and rattle its panels; every missing panel whistles louder. Inside the RV cabin and under the shed the wind is muffled; Interior fades it out. Play a treetop rush plays one now at the current strength (stand in Place Forest to hear it as in the game). Recordings and Treetop rushes switch to candidate cuts if any are on disk.")
 	controls.choice("Strength", PackedStringArray(WIND_TIERS), START_WIND, func(index: int) -> void: clock.wind.set_override(index))
 	controls.toggle("Clock runs", true, func(on: bool) -> void: clock.running = on)
-	controls.toggle("Distant growl every 3 s", false, func(on: bool) -> void:
-		_growl_every = on
-		_growl_in = 0.0)
 	controls.button("Play a treetop rush", func() -> void: _wind_audio().play_rush(clock.wind.strength()))
 	controls.buttons([["Remove a hull panel", _remove_panel], ["Restore panels", _restore_panels]])
 	_candidates = _candidate_sets()
@@ -147,21 +138,6 @@ func _rv_wind() -> RVWindAudio:
 func _bed_text() -> String:
 	var levels := _wind_audio().bed_levels
 	return "breeze %.2f, strong %.2f, gale %.2f, %d rushes" % [levels[0], levels[1], levels[2], _wind_audio().rushes]
-
-
-func _process(delta: float) -> void:
-	if not _growl_every: return
-	_growl_in -= delta
-	if _growl_in > 0.0: return
-	_growl_in = DISTANT_CUE_SECONDS
-	_play_distant_cue()
-
-
-func _play_distant_cue() -> void:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null: return
-	var ahead := -camera.global_basis.z * Vector3(1, 0, 1)
-	get_node("/root/Sfx").play_at(load(DISTANT_CUE), camera.global_position + ahead.normalized() * DISTANT_CUE_DISTANCE)
 
 
 func _remove_panel() -> void:

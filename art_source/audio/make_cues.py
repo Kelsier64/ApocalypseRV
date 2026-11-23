@@ -39,7 +39,7 @@ SOURCES = {
     "tinnitus_t": 377205,
     "ghost_whispers": 175944, "ghost_breath": 338344, "creepy_breathing": 369294,
     "monster_shriek": 442564, "monster_scream": 427412, "barefoot_run": 788636,
-    "heavy_steps": 383724, "growl_large": 699932, "growl_9": 389653,
+    "heavy_steps": 383724,
     "predator_clicks": 235529, "alien_clicks": 512472, "snarl_3": 204610, "snarl_4": 204611,
     "goblin_snarl": 442815, "metal_creak": 119468, "oil_drum": 506274,
     "bucket_slosh": 388014, "fuse": 140715, "drum_footsteps": 487076,
@@ -138,7 +138,7 @@ CUTS = {
     "apparitions/black_step_d": ([("barefoot_run", 1.30, 1.53)], 0.08),
     "apparitions/black_step_e": ([("barefoot_run", 1.64, 1.87)], 0.08),
     "apparitions/black_step_f": ([("barefoot_run", 2.16, 2.39)], 0.08),
-    # Raker: heavy steps, idle growls and clicks, and the two attack tells. The
+    # Raker: heavy steps, idle clicks, and the two attack tells. The
     # tells start on the attack so they fit the 0.72 s sweep and 0.24 s reach.
     "raker/step_a": ([("heavy_steps", 2.12, 2.42)], 0.12),
     "raker/step_b": ([("heavy_steps", 3.40, 3.70)], 0.12),
@@ -146,8 +146,6 @@ CUTS = {
     "raker/step_d": ([("heavy_steps", 6.57, 6.87)], 0.12),
     "raker/step_e": ([("heavy_steps", 7.84, 8.14)], 0.12),
     "raker/step_f": ([("heavy_steps", 9.66, 9.96)], 0.12),
-    "raker/growl_a": ([("growl_large", 0.0, 1.45)], 0.20),
-    "raker/growl_b": ([("growl_9", 0.05, 0.95)], 0.15),
     "raker/click_a": ([("predator_clicks", 0.0, 1.75)], 0.20),
     "raker/click_b": ([("predator_clicks", 3.40, 5.30)], 0.25),
     "raker/click_c": ([("alien_clicks", 0.0, 0.98)], 0.15),
