@@ -1,5 +1,6 @@
 extends Node3D
-## Simulated inline-six exhaust, recorded one-shots and contact loops for the RV.
+## Simulated inline-six exhaust, recorded one-shots and contact loops for the RV;
+## the weather wind on the shell is RVWindAudio, a child.
 const DOOR_OPEN := "res://assets/audio/events/rv/door_open.tres"
 const DOOR_CLOSE := "res://assets/audio/events/rv/door_close.tres"
 const GEAR_SHIFT := "res://assets/audio/events/rv/gear_shift.tres"
@@ -59,6 +60,8 @@ var road_layers: Array[SoundLoop] = []
 var road_weights := PackedFloat32Array([1.0, 0.0, 0.0])
 var road_surface := RVTireModel.Surface.ASPHALT
 var wind_player: SoundLoop
+## Weather wind on the shell: whistle and panel rattles.
+var weather_wind: RVWindAudio
 var _surface_check := 0.0
 # Loop start offsets only; never touches gameplay randomness.
 @onready var rv: Chassis = get_parent()
@@ -95,6 +98,9 @@ func _ready() -> void:
 	for path in ROAD_LOOPS:
 		road_layers.append(_cabin_loop(path, ROAD_DB))
 	wind_player = _cabin_loop(WIND_LOOP, WIND_DB)
+	weather_wind = RVWindAudio.new()
+	weather_wind.name = "WeatherWind"
+	add_child(weather_wind)
 	# Chassis assigns its engine_bay reference later in its own ready callback.
 	engine_rest = rv.get_node("EngineBay/EngineVisual").position
 

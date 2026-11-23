@@ -4,17 +4,22 @@ extends Node
 ## inside the cabin hears Exterior through the shell, one outside hears Cabin.
 ## The engine bus is outside the shell too, and a revving engine masks the rest
 ## of Exterior; the Slender Speaker keeps most of its level so it stays locatable.
-## The outdoor ambience bus is muffled and engine-masked like Exterior, and also
-## muffled under a roof.
+## A strong wind masks Exterior the same way, up to the same limit: the larger of
+## the two masks applies, and while the wind masks, outside one-shots also lose
+## some of their direction. The outdoor ambience bus is muffled and engine-masked
+## like Exterior, and also muffled under a roof; the wind never masks it, since
+## the wind itself plays there.
 
 const MAX_VOICES := 12
 const OPEN_CUTOFF_HZ := 20500.0
 const CLOSED_CUTOFF_HZ := 1500.0
 const CLOSED_GAIN_DB := -8.0
 const TRANSITION_SECONDS := 0.3
-## Exterior level at full engine masking, and the share of it the loudspeaker takes.
+## Exterior level at full engine or wind masking, and the share of it the loudspeaker takes.
 const ENGINE_MASK_DB := -6.0
 const LOUDSPEAKER_MASK_SHARE := 1.0 / 3.0
+## Outside one-shots keep this share of their panning under full wind masking.
+const WIND_PANNING := 0.4
 ## Outdoor echo tails play on their own voices, so they never take the pool.
 const MAX_ECHOES := 4
 ## Echo level gained against the direct sound at the event's max distance.
@@ -39,6 +44,11 @@ var outdoor_shelter := 0.0
 var _room_tone: AudioStream
 ## Current engine masking, 0 to 1.
 var _mask := 0.0
+## How strongly the weather wind masks outside sound where the listener stands,
+## 0 to 1; WorldWindAudio sets it. It only applies in the outdoor world.
+var wind_masking := 0.0
+## Current wind masking after the transition, 0 to 1.
+var _wind := 0.0
 ## Room reverb inserted on Effects while the listener is inside a POI interior.
 var _room: AudioEffectReverb
 ## Engine time in msec each event with a cooldown last played, by instance id
@@ -72,8 +82,9 @@ func set_listener_viewport(viewport: Viewport, room: AudioEffectReverb = null, t
 	_listener = viewport
 	_listener.audio_listener_enable_3d = true
 	_mask = 0.0
+	_wind = 0.0
 	for bus_name in _cover: _set_cover(bus_name, 0.0)
-	_set_mask(0.0)
+	_set_mask(0.0, 0.0)
 
 
 ## gain_db scales this one playback, for example by impact strength.
@@ -93,6 +104,7 @@ func play(event: SoundEvent, source: Node3D, local_position := Vector3.ZERO, gai
 	voice.volume_db = event.volume_db + gain_db
 	voice.pitch_scale = 1.0 + _rng.randf_range(-event.pitch_variation, event.pitch_variation)
 	event.attenuation.apply(voice)
+	voice.panning_strength = _panning(voice.bus)
 	voice.global_position = at
 	_sources[voice] = source
 	_offsets[voice] = local_position
@@ -140,6 +152,7 @@ func _play_echo(direct: AudioStreamPlayer3D, event: SoundEvent) -> void:
 	echo.pitch_scale = direct.pitch_scale
 	echo.volume_db = direct.volume_db + event.outdoor_echo_db + ECHO_DISTANCE_GAIN_DB * far
 	event.attenuation.apply(echo)
+	echo.panning_strength = direct.panning_strength
 	echo.global_position = direct.global_position
 	echo.play()
 
@@ -151,6 +164,11 @@ func listening_outdoors() -> bool:
 
 func room_tone() -> AudioStream:
 	return _room_tone
+
+
+## How strongly Exterior is masked now, 0 to 1: the larger of engine and wind.
+func exterior_masking() -> float:
+	return maxf(_mask, _wind)
 
 
 ## Current muffle of a bus Sfx manages, 0 open to 1 sealed.
@@ -243,16 +261,20 @@ func _process(delta: float) -> void:
 	for bus_name in _cover:
 		if not is_equal_approx(_cover[bus_name], targets[bus_name]):
 			_set_cover(bus_name, move_toward(_cover[bus_name], targets[bus_name], delta / TRANSITION_SECONDS))
-	if not is_equal_approx(_mask, mask):
-		_set_mask(move_toward(_mask, mask, delta / TRANSITION_SECONDS))
+	var wind := clampf(wind_masking, 0.0, 1.0) if listening_outdoors() else 0.0
+	if not is_equal_approx(_mask, mask) or not is_equal_approx(_wind, wind):
+		_set_mask(move_toward(_mask, mask, delta / TRANSITION_SECONDS), move_toward(_wind, wind, delta / TRANSITION_SECONDS))
+		for voice in _sources: voice.panning_strength = _panning(voice.bus)
 
 
 func _set_cover(bus_name: StringName, cover: float) -> void:
 	_cover[bus_name] = cover
 	var bus := AudioServer.get_bus_index(bus_name)
 	var filter := AudioServer.get_bus_effect(bus, 0) as AudioEffectLowPassFilter
-	var masked := bus_name == &"Exterior" or bus_name == &"Outdoors"
-	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + (ENGINE_MASK_DB * _mask if masked else 0.0))
+	var mask := 0.0
+	if bus_name == &"Exterior": mask = exterior_masking()
+	elif bus_name == &"Outdoors": mask = _mask
+	AudioServer.set_bus_volume_db(bus, CLOSED_GAIN_DB * cover + ENGINE_MASK_DB * mask)
 	filter.cutoff_hz = exp(lerpf(log(OPEN_CUTOFF_HZ), log(CLOSED_CUTOFF_HZ), cover))
 	AudioServer.set_bus_effect_enabled(bus, 0, cover > 0.0)
 
@@ -268,12 +290,19 @@ func _set_room(room: AudioEffectReverb) -> void:
 	if room != null: AudioServer.add_bus_effect(bus, room, 0)
 
 
-## Ducks Exterior by the engine masking and gives the loudspeaker most of it back.
-func _set_mask(mask: float) -> void:
-	_mask = mask
+## Ducks Exterior by the larger of engine and wind masking, Outdoors by the
+## engine alone, and gives the loudspeaker most of the Exterior duck back.
+func _set_mask(engine: float, wind: float) -> void:
+	_mask = engine
+	_wind = wind
 	_set_cover(&"Exterior", _cover[&"Exterior"])
 	_set_cover(&"Outdoors", _cover[&"Outdoors"])
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"), -ENGINE_MASK_DB * mask * (1.0 - LOUDSPEAKER_MASK_SHARE))
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(&"Loudspeaker"), -ENGINE_MASK_DB * exterior_masking() * (1.0 - LOUDSPEAKER_MASK_SHARE))
+
+
+## Wind blurs where outside one-shots come from; everything else keeps full panning.
+func _panning(bus_name: StringName) -> float:
+	return lerpf(1.0, WIND_PANNING, _wind) if bus_name == &"Exterior" else 1.0
 
 
 func _exit_tree() -> void:

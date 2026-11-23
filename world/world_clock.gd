@@ -107,6 +107,11 @@ func _ready() -> void:
 	ambience.name = "WorldAmbience"
 	ambience.clock = self
 	add_child(ambience)
+	var wind_audio := WorldWindAudio.new()
+	wind_audio.name = "WorldWindAudio"
+	wind_audio.clock = self
+	wind_audio.ambience = ambience
+	add_child(wind_audio)
 	apply_time()
 	_last_minute = -1
 	_notify_minute()
