@@ -40,7 +40,20 @@ static func choose(clear_roll: float, rain_roll: float, fog_roll: float) -> Vect
 func sample() -> Vector3:
 	return source.lerp(target, smoothstep(0.0, TRANSITION, transition_elapsed))
 
+## Emitted before a new segment replaces the current one, while sample() and the
+## RNG state still describe the outgoing segment. Listeners must not draw.
+signal changing
+
+static func initial_rng_state(world_seed: int) -> int:
+	var probe := WorldWeather.new()
+	probe.initialize(world_seed)
+	return probe.rng.state
+
 func set_weather(value: Vector3, immediate := false) -> void:
+	changing.emit()
+	_replace(value, immediate)
+
+func _replace(value: Vector3, immediate: bool) -> void:
 	source = sample()
 	target = value
 	transition_elapsed = TRANSITION if immediate else 0.0
@@ -55,7 +68,8 @@ func advance(seconds: float) -> void:
 		remaining -= step
 		seconds -= step
 		if remaining <= 0:
-			set_weather(choose(rng.randf(), rng.randf(), rng.randf()))
+			changing.emit()
+			_replace(choose(rng.randf(), rng.randf(), rng.randf()), false)
 
 func description() -> String:
 	if target.x > 0.5: return "Clear"

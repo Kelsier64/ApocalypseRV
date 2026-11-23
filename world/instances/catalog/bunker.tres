@@ -36,10 +36,12 @@
 
 [ext_resource type="Resource" path="res://world/instances/catalog/bunker/v2/stairs.tres" id="stairs_v2"]
 [ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/small_room.tres" id="reverb"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/room_small.ogg" id="room_tone"]
 
 [resource]
 script = ExtResource("1")
 reverb = ExtResource("reverb")
+room_tone = ExtResource("room_tone")
 min_rooms = 30
 max_rooms = 60
 rooms = Array[ExtResource("room_script")]([ExtResource("passage_01_v2"), ExtResource("passage_02_v2"), ExtResource("corridor_01_v2"), ExtResource("corridor_02_v2"), ExtResource("small_01_v2"), ExtResource("small_02_v2"), ExtResource("small_03_v2"), ExtResource("medium_01_v2"), ExtResource("medium_02_v2"), ExtResource("large_01_v2"), ExtResource("large_02_v2"), ExtResource("hall_01_v2"), ExtResource("hall_02_v2"), ExtResource("hall_03_v2"), ExtResource("entry_v2"), ExtResource("stairs_v2")])

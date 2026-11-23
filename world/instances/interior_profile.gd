@@ -12,6 +12,9 @@ const MAX_SUPPORTED_ROOMS := 60
 ## Room sound for every world sound while the player is inside: one of the
 ## presets in assets/audio/rooms/ (small_room, corridor, hall).
 @export var reverb: AudioEffectReverb
+## Faint looping room sound heard instead of the outdoor ambience while the
+## player is inside: one of the room_* loops in assets/audio/ambience/.
+@export var room_tone: AudioStream
 
 func room(id: String, version := -1) -> InteriorRoomDefinition:
 	for definition in rooms:

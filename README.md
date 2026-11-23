@@ -86,9 +86,11 @@ time set 18:30                # 設定當天時間
 time set 08:00 3              # 設定第 3 天 08:00
 weather                       # 顯示目前及目標天氣
 weather set heavy_rain        # 立即設定天氣
+wind                          # 顯示目前風力、風速、陣風與風向
+wind set gale                 # 強制風力，讀檔後回到自然值
 ```
 
-天氣選項：`clear`、`overcast`、`rain`、`heavy_rain`、`fog`、`medium_fog`、`heavy_fog`、`storm`。作弊只作用於目前連接的 RV，讀檔或新遊戲後重設。完整規則見[能源、材料與製作](docs/systems/economy.md#車載平板與終端)。
+天氣選項：`clear`、`overcast`、`rain`、`heavy_rain`、`fog`、`medium_fog`、`heavy_fog`、`storm`。風力選項：`calm`、`breeze`、`strong`、`gale`，`natural` 取消強制。作弊只作用於目前連接的 RV，讀檔或新遊戲後重設。完整規則見[能源、材料與製作](docs/systems/economy.md#車載平板與終端)。
 
 ## 驗證
 

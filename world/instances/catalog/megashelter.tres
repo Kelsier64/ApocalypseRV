@@ -19,10 +19,12 @@
 [ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sanitary.tres" id="16"]
 [ext_resource type="Resource" path="res://world/instances/catalog/megashelter/sanitary_large.tres" id="17"]
 [ext_resource type="AudioEffectReverb" path="res://assets/audio/rooms/hall.tres" id="reverb"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/room_hall.ogg" id="room_tone"]
 
 [resource]
 script = ExtResource("1")
 reverb = ExtResource("reverb")
+room_tone = ExtResource("room_tone")
 profile_id = &"megashelter"
 rooms = Array[ExtResource("room_script")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17")])
 min_rooms = 6

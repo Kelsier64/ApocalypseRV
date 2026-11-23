@@ -3,11 +3,13 @@ extends RefCounted
 const DEFAULT = preload("res://world/world_atmosphere_profile.tres")
 const GUARD = preload("res://world/stream_visibility_guard.gd")
 const TERRAIN = preload("res://tests/support/terrain_contracts.gd")
+const WIND = preload("res://tests/support/wind_contracts.gd")
 
 static func run(world: Node3D, check: Callable) -> void:
 	_check_profile(check)
 	_check_guard(check)
 	_check_weather(check)
+	WIND.run(check)
 	_check_owners(world, check)
 
 static func _check_profile(check: Callable) -> void:
@@ -88,6 +90,9 @@ static func _check_weather(check: Callable) -> void:
 	for seed_value: int in [42, 314159]:
 		var weather := WorldWeather.new()
 		weather.initialize(seed_value)
+		# Wind listens to every segment change; the oracle below proves it never draws.
+		var wind := WorldWind.new()
+		wind.initialize(weather, seed_value)
 		var oracle := RandomNumberGenerator.new()
 		oracle.seed = seed_value ^ 0x57454154484552
 		var duration := oracle.randf_range(8640.0, 17280.0)
@@ -98,7 +103,10 @@ static func _check_weather(check: Callable) -> void:
 				var conditions := WorldAtmosphereProfile.visual_conditions(weather.sample(), sample_index * 0.25)
 				DEFAULT.mist(conditions)
 				DEFAULT.day_color(conditions)
-			check.call(weather.capture() == saved, "Atmosphere and weather sampling do not consume natural RNG or transition time")
+				wind.velocity(sample_index * 97.0, 0.5)
+				wind.dust_at(sample_index * 97.0, Vector3(sample_index, sample_index + 1, 0.5))
+				wind.description()
+			check.call(weather.capture() == saved, "Atmosphere, weather and wind sampling do not consume natural RNG or transition time")
 			# The outgoing transition completes before its duration expires.
 			var previous := weather.target
 			var clear_roll := oracle.randf()

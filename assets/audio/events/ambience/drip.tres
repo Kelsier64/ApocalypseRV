@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="1"]
+[ext_resource type="Resource" path="res://assets/audio/attenuation/near.tres" id="2"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_a.wav" id="3"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_b.wav" id="4"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_c.wav" id="5"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_d.wav" id="6"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_e.wav" id="7"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/drip_f.wav" id="8"]
+
+[resource]
+script = ExtResource("1")
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8")])
+volume_db = -20
+pitch_variation = 0.08
+attenuation = ExtResource("2")

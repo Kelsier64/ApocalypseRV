@@ -9,6 +9,8 @@ const DEFAULT_TIME := 8.0 * 3600.0
 var elapsed_seconds := DEFAULT_TIME
 var running := true
 var weather := WorldWeather.new()
+## Derived from the weather segment and game time; ready after _ready.
+var wind := WorldWind.new()
 var deviation_fog := 0.0
 var weather_running := true
 var fog_materials: Array[ShaderMaterial] = []
@@ -73,11 +75,17 @@ func _ready() -> void:
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	layer.add_child(label)
 	var generator := get_parent().get_node_or_null("WorldGenerator")
-	weather.initialize(generator.world_seed if generator != null else 42)
+	var world_seed: int = generator.world_seed if generator != null else 42
+	weather.initialize(world_seed)
+	wind.initialize(weather, world_seed)
 	var rain := WeatherRain.new()
 	rain.name = "WeatherRain"
 	rain.clock = self
 	add_child(rain)
+	var ambience := WorldAmbience.new()
+	ambience.name = "WorldAmbience"
+	ambience.clock = self
+	add_child(ambience)
 	apply_time()
 	_last_minute = -1
 	_notify_minute()
@@ -149,6 +157,10 @@ func sun_direction() -> Vector3:
 	var angle := (hour_of_day() - 6.0) / 24.0 * TAU
 	return Vector3(cos(angle), sin(angle) * 0.85, sin(angle) * 0.526783).normalized()
 
+## 0 at night to 1 in full day, from the sun's height; lighting and ambience share it.
+func daylight() -> float:
+	return smoothstep(-0.16, 0.22, sun_direction().y)
+
 func apply_time(real_delta: float = 0.0) -> void:
 	if environment == null or not is_instance_valid(sun): return
 	var volumetric: bool = game_settings.volumetric_fog_enabled()
@@ -157,7 +169,7 @@ func apply_time(real_delta: float = 0.0) -> void:
 	var rain := conditions.y / 2.0
 	var mist := conditions.z / 2.0
 	var direction := sun_direction()
-	var daylight := smoothstep(-0.16, 0.22, direction.y)
+	var daylight := self.daylight()
 	# Only physical lighting/weather depend on the clock. Display adaptation reads
 	# the resulting brightness independently, including daytime shadows/interiors.
 	var warmth := (1.0 - smoothstep(0.02, 0.42, absf(direction.y))) * daylight
