@@ -25,9 +25,12 @@ const START_WIND := WorldWind.STRONG
 ## wind_strong.ogg and wind_gale.ogg; kept out of Git under .godot.
 const CANDIDATES := "res://.godot/wind-candidates"
 const BED_FILES := ["wind_breeze.ogg", "wind_strong.ogg", "wind_gale.ogg"]
-## A distant outside cue for hearing the wind mask it.
+## A distant outside cue for hearing the wind mask it, repeated while the toggle is on.
 const DISTANT_CUE := "res://assets/audio/events/raker/growl.tres"
-const DISTANT_CUE_DISTANCE := 35.0
+const DISTANT_CUE_DISTANCE := 25.0
+const DISTANT_CUE_SECONDS := 3.0
+## Candidate treetop rush sets sit beside the beds in rushes-<set> folders of WAV files.
+const RUSH_PREFIX := "rushes-"
 
 var controls := PlaygroundControls.new()
 var clock: WorldClock
@@ -36,6 +39,9 @@ var _fog := 0
 var _rain := 0
 var rv: Chassis
 var _candidates: Array[String] = []
+var _rush_sets: Array[String] = []
+var _growl_every := false
+var _growl_in := 0.0
 
 
 func _ready() -> void:
@@ -82,16 +88,25 @@ func _ready() -> void:
 	controls.readout("Next in", func() -> String: return "%d s" % ceili(_ambience().until_next) if _ambience() else "-")
 	controls.readout("Muffle", func() -> String: return "%d%%" % roundi(get_node("/root/Sfx").cover(&"Outdoors") * 100.0))
 	controls.section("Wind")
-	controls.note("Calm is silent. From a breeze up, a low wind bed swells and fades with the gusts; Place Forest shelters the ground, so the bed drops and treetop rushes pass overhead in a strong wind or gale. Strong wind and gales whistle over the RV roof and rattle its panels; every missing panel whistles louder. A strong wind masks distant outside sound: Play a distant growl and compare Calm with Gale. Inside the RV cabin and under the shed the wind is muffled; Interior fades it out. Recordings switches candidate wind beds if any are on disk.")
+	controls.note("Calm is silent. From a breeze up, a low wind bed swells and fades with the gusts; Place Forest shelters the ground, so the bed drops and treetop rushes pass overhead in a strong wind or gale. Strong wind and gales whistle over the RV roof and rattle its panels; every missing panel whistles louder. A strong wind masks distant outside sound: turn on the distant growl and step Strength from Calm to Gale. Inside the RV cabin and under the shed the wind is muffled; Interior fades it out. Play a treetop rush plays one now at the current strength (stand in Place Forest to hear it as in the game). Recordings and Treetop rushes switch to candidate cuts if any are on disk.")
 	controls.choice("Strength", PackedStringArray(WIND_TIERS), START_WIND, func(index: int) -> void: clock.wind.set_override(index))
 	controls.toggle("Clock runs", true, func(on: bool) -> void: clock.running = on)
-	controls.button("Play a distant growl", _play_distant_cue)
+	controls.toggle("Distant growl every 3 s", false, func(on: bool) -> void:
+		_growl_every = on
+		_growl_in = 0.0)
+	controls.button("Play a treetop rush", func() -> void: _wind_audio().play_rush(clock.wind.strength()))
 	controls.buttons([["Remove a hull panel", _remove_panel], ["Restore panels", _restore_panels]])
 	_candidates = _candidate_sets()
 	if not _candidates.is_empty():
 		var names := PackedStringArray(["Chosen"])
 		names.append_array(_candidates)
 		controls.choice("Recordings", names, 0, _set_candidate)
+	if DirAccess.dir_exists_absolute(CANDIDATES):
+		_rush_sets.assign(Array(DirAccess.get_directories_at(CANDIDATES)).filter(func(folder: String) -> bool: return folder.begins_with(RUSH_PREFIX)))
+	if not _rush_sets.is_empty():
+		var sets := PackedStringArray(["Shipped"])
+		for folder in _rush_sets: sets.append(folder.trim_prefix(RUSH_PREFIX).capitalize())
+		controls.choice("Treetop rushes", sets, 0, _set_rush_set)
 	controls.readout("Wind", func() -> String: return "%s, %.1f m/s, gust %.2f" % [clock.wind.description(), clock.wind_velocity.length(), clock.wind.gust(clock.elapsed_seconds)])
 	controls.readout("Bed", _bed_text)
 	controls.readout("Outside masked", func() -> String: return "%d%%" % roundi(get_node("/root/Sfx").exterior_masking() * 100.0))
@@ -134,6 +149,14 @@ func _bed_text() -> String:
 	return "breeze %.2f, strong %.2f, gale %.2f, %d rushes" % [levels[0], levels[1], levels[2], _wind_audio().rushes]
 
 
+func _process(delta: float) -> void:
+	if not _growl_every: return
+	_growl_in -= delta
+	if _growl_in > 0.0: return
+	_growl_in = DISTANT_CUE_SECONDS
+	_play_distant_cue()
+
+
 func _play_distant_cue() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null: return
@@ -173,6 +196,20 @@ func _set_candidate(index: int) -> void:
 			stream.loop = true
 			beds.append(stream)
 	_wind_audio().bed_override = beds
+
+
+func _set_rush_set(index: int) -> void:
+	if index == 0:
+		_wind_audio().rush_override = null
+		return
+	var event: SoundEvent = WorldWindAudio.TREE_RUSH.duplicate()
+	var samples: Array[AudioStream] = []
+	var folder := CANDIDATES.path_join(_rush_sets[index - 1])
+	for file in DirAccess.get_files_at(folder):
+		if file.get_extension() == "wav":
+			samples.append(AudioStreamWAV.load_from_file(ProjectSettings.globalize_path(folder.path_join(file))))
+	event.samples = samples
+	_wind_audio().rush_override = event
 
 
 func _apply_weather() -> void:

@@ -47,6 +47,8 @@ var ambience: WorldAmbience
 var exposure_override := -1.0
 ## Playground override for the three beds; empty uses BEDS.
 var bed_override: Array[AudioStream] = []
+## Playground override for the treetop rush event; null uses TREE_RUSH.
+var rush_override: SoundEvent
 ## Linear level of each bed at the last update, and how many rushes played.
 var bed_levels := PackedFloat32Array([0.0, 0.0, 0.0])
 var rushes := 0
@@ -124,7 +126,7 @@ func play_rush(strength: float) -> bool:
 	var at := camera.global_position + Vector3(cos(bearing), 0.0, sin(bearing)) * _rng.randf_range(RUSH_DISTANCE.x, RUSH_DISTANCE.y) \
 		+ Vector3.UP * _rng.randf_range(RUSH_HEIGHT.x, RUSH_HEIGHT.y)
 	var gain := RUSH_STRONG_DB * (1.0 - smoothstep(float(WorldWind.STRONG), float(WorldWind.GALE), strength))
-	if not sfx.play_at(TREE_RUSH, at, gain): return false
+	if not sfx.play_at(rush_override if rush_override != null else TREE_RUSH, at, gain): return false
 	rushes += 1
 	return true
 

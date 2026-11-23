@@ -6,10 +6,11 @@
 [ext_resource type="AudioStream" path="res://assets/audio/weather/tree_rush_b.wav" id="4"]
 [ext_resource type="AudioStream" path="res://assets/audio/weather/tree_rush_c.wav" id="5"]
 [ext_resource type="AudioStream" path="res://assets/audio/weather/tree_rush_d.wav" id="6"]
+[ext_resource type="AudioStream" path="res://assets/audio/weather/tree_rush_e.wav" id="7"]
 
 [resource]
 script = ExtResource("1")
-samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
+samples = Array[AudioStream]([ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")])
 bus = &"Outdoors"
 occlusion_by_position = false
 volume_db = -12
