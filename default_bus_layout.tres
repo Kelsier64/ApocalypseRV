@@ -1,20 +1,5 @@
 [gd_resource type="AudioBusLayout" format=3 uid="uid://dpqp25esdsa6y"]
 
-[sub_resource type="AudioEffectLowPassFilter" id="exterior_muffle"]
-cutoff_hz = 20500.0
-
-[sub_resource type="AudioEffectLowPassFilter" id="cabin_muffle"]
-cutoff_hz = 20500.0
-
-[sub_resource type="AudioEffectLowPassFilter" id="engine_muffle"]
-cutoff_hz = 20500.0
-
-[sub_resource type="AudioEffectLowPassFilter" id="outdoors_muffle"]
-cutoff_hz = 20500.0
-
-[sub_resource type="AudioEffectLowPassFilter" id="rain_muffle"]
-cutoff_hz = 16000.0
-
 [sub_resource type="AudioEffectHardLimiter" id="loudspeaker_limiter"]
 ceiling_db = -1.0
 
@@ -23,10 +8,24 @@ predelay_msec = 120.0
 predelay_feedback = 0.3
 room_size = 0.9
 damping = 0.6
-spread = 1.0
 hipass = 0.2
 dry = 0.0
 wet = 1.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="engine_muffle"]
+cutoff_hz = 20500.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="outdoors_muffle"]
+cutoff_hz = 20500.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="exterior_muffle"]
+cutoff_hz = 20500.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="cabin_muffle"]
+cutoff_hz = 20500.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="rain_muffle"]
+cutoff_hz = 16000.0
 
 [resource]
 bus/1/name = &"World"

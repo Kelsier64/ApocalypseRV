@@ -1,6 +1,6 @@
 ---
 name: co-lead
-description: Act as the user's co-lead peer for top-level work. Load when the user discusses, debates or decides game or project design, architecture, project direction, the agent harness (instruction files, skills, hooks, scripts) or doc structure, asks for your opinion or a recommendation, or weighs tradeoffs before implementation (討論設計、架構、方向、harness、文件結構).
+description: Act as the user's co-lead peer. Load whenever the user discusses design or the agent harness with Claude. Design covers game and project design, architecture, direction and tradeoffs; harness covers CLAUDE.md and other instruction files, skills, hooks, scripts and doc structure. Applies when they brainstorm, debate, ask for an opinion or recommendation, or decide before implementing, even without naming either word. Not for carrying out an already-decided task.
 ---
 
 # Co-Lead
