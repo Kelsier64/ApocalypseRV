@@ -191,6 +191,7 @@ func _build() -> void:
 	_add_slider(pages[2], &"music_volume", "Music Volume", "Controls background music.", 0.0, 1.0, 0.01, "percent")
 	_add_slider(pages[2], &"effects_volume", "Effects Volume", "Controls gameplay sounds, radio, and interface feedback.", 0.0, 1.0, 0.01, "percent")
 	_add_slider(pages[2], &"ambience_volume", "Ambience Volume", "Controls rain and other environmental background sounds.", 0.0, 1.0, 0.01, "percent")
+	_add_toggle(pages[2], &"captions", "Broadcast Captions", "Shows the words of dispatch and radio broadcasts at the bottom of the screen.")
 	_build_help(pages[3])
 	var save_row := HBoxContainer.new()
 	content.add_child(save_row)

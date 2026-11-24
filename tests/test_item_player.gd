@@ -150,7 +150,8 @@ func check_shortwave_radio(support: Node3D) -> void:
 	held._signal_timer.start(0.01)
 	await steps(5)
 	var first := held._speaker.stream
-	check(first in held._signal_timer.transmissions and held._speaker.playing, "The timer plays a real transmission through the 3D speaker")
+	var spoken: bool = not held._signal_timer.caption.is_empty()
+	check((first in held._signal_timer.transmissions or (spoken and first is AudioStreamWAV)) and held._speaker.playing, "The timer plays a clip or a spoken broadcast through the 3D speaker")
 	held._speaker.stop()
 	held._speaker.finished.emit()
 	var gap := BroadcastSchedule.SIGNAL_GAP

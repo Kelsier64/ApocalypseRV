@@ -6,7 +6,7 @@
 
 新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
 
-目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)、[dispatch_speaker_playground](../../tests/playgrounds/dispatch_speaker_playground.tscn)（車內調度喇叭的收訊、詞庫廣播、話筒回覆與字幕）。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
 ## 啟動與固定截圖
 

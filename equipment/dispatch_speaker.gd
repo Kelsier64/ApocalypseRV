@@ -16,7 +16,8 @@ const ZERO_ANGLE := 55.0
 @export var dropout_interval: Vector2
 @export var dropout_depth_db: float
 @export var fade_seconds: float
-@export var replies: Array[AudioStream]
+## Local answers the receiver speaks from the broadcast word bank.
+@export var replies: PackedStringArray
 
 @onready var schedule: BroadcastSchedule = $SignalTimer
 @onready var speaker: AudioStreamPlayer3D = $Speaker
@@ -161,6 +162,7 @@ func receive() -> void:
 	if speaker.stream:
 		speaker.volume_db = level_db[level] + _exterior_gain()
 		speaker.play()
+		BroadcastCaptions.show_for(speaker, schedule.caption)
 
 func _finished() -> void:
 	if replying: _cue(HANG, $HandsetCollision.position)
@@ -203,10 +205,11 @@ func key_handset() -> String:
 	noise.stop()
 	_fading = false
 	replying = true
-	speaker.stream = replies[_reply_index]
+	speaker.stream = schedule.speak(WordBank.tokenize(replies[_reply_index]))
 	_reply_index = (_reply_index + 1) % replies.size()
 	speaker.volume_db = level_db[level] + _exterior_gain()
 	speaker.play()
+	BroadcastCaptions.show_for(speaker, schedule.caption)
 	return "Receive only"
 
 func _cue(event: SoundEvent, at: Vector3) -> void:

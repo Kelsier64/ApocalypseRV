@@ -12,6 +12,7 @@ const DEFAULTS := {
 	"sensitivity": 1.0, "invert_y": false, "walk_fov": 75.0,
 	"drive_fov": 80.0, "master_volume": 1.0,
 	"music_volume": 1.0, "effects_volume": 1.0, "ambience_volume": 1.0,
+	"captions": false,
 }
 const RANGES := {
 	"render_scale": Vector2(0.5, 1.0), "shadow_trim": Vector2(-0.5, 1.5),
@@ -78,7 +79,7 @@ func get_setting(key: StringName) -> Variant:
 
 func _section(key: String) -> String:
 	if key in INPUT_KEYS: return "input"
-	if key == "master_volume" or AUDIO_BUSES.has(key): return "audio"
+	if key in ["master_volume", "captions"] or AUDIO_BUSES.has(key): return "audio"
 	return "display"
 
 func _valid(key: String, value: Variant) -> bool:

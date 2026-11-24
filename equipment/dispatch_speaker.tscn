@@ -4,8 +4,6 @@
 [ext_resource type="Resource" path="res://equipment/dispatch_speaker_definition.tres" id="definition"]
 [ext_resource type="PackedScene" path="res://assets/models/dispatch_speaker/dispatch_speaker.glb" id="model"]
 [ext_resource type="PackedScene" path="res://core/audio/broadcast_schedule.tscn" id="schedule"]
-[ext_resource type="AudioStream" path="res://assets/audio/dispatch_speaker/receive_only.wav" id="receive"]
-[ext_resource type="AudioStream" path="res://assets/audio/dispatch_speaker/unauthorized.wav" id="unauthorized"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_speaker/receiver_static.wav" id="static"]
 
 [sub_resource type="BoxShape3D" id="housing"]
@@ -33,7 +31,7 @@ clear_signal = 0.78
 dropout_interval = Vector2(0.09, 0.38)
 dropout_depth_db = 30.0
 fade_seconds = 0.65
-replies = Array[AudioStream]([ExtResource("receive"), ExtResource("unauthorized")])
+replies = PackedStringArray("this line is receive only .", "unauthorized transmission .")
 
 [node name="Model" parent="." instance=ExtResource("model")]
 

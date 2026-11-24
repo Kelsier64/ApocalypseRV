@@ -59,7 +59,9 @@ func _update_power() -> void:
 func _receive() -> void:
 	if not _can_receive(): return
 	_speaker.stream = _signal_timer.draw()
-	if _speaker.stream != null: _speaker.play()
+	if _speaker.stream != null:
+		_speaker.play()
+		BroadcastCaptions.show_for(_speaker, _signal_timer.caption)
 
 func _schedule_next() -> void:
 	if _can_receive():

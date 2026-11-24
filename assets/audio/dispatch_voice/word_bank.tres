@@ -1,0 +1,164 @@
+[gd_resource type="Resource" script_class="WordBank" format=3]
+
+[ext_resource type="Script" path="res://core/audio/word_bank.gd" id="script"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/zero.wav" id="zero"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/one.wav" id="one"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/two.wav" id="two"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/three.wav" id="three"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/four.wav" id="four"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/five.wav" id="five"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/six.wav" id="six"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/seven.wav" id="seven"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/eight.wav" id="eight"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/nine.wav" id="nine"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/alpha.wav" id="alpha"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/bravo.wav" id="bravo"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/charlie.wav" id="charlie"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/delta.wav" id="delta"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/echo.wav" id="echo"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/foxtrot.wav" id="foxtrot"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/golf.wav" id="golf"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/hotel.wav" id="hotel"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/india.wav" id="india"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/juliett.wav" id="juliett"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/kilo.wav" id="kilo"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/lima.wav" id="lima"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/mike.wav" id="mike"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/november.wav" id="november"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/oscar.wav" id="oscar"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/papa.wav" id="papa"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/quebec.wav" id="quebec"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/romeo.wav" id="romeo"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/sierra.wav" id="sierra"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/tango.wav" id="tango"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/uniform.wav" id="uniform"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/victor.wav" id="victor"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/whiskey.wav" id="whiskey"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/xray.wav" id="xray"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/yankee.wav" id="yankee"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/zulu.wav" id="zulu"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/attention.wav" id="attention"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/all.wav" id="all"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/units.wav" id="units"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/unit.wav" id="unit"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/this.wav" id="this"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/is.wav" id="is"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/dispatch.wav" id="dispatch"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/relay.wav" id="relay"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/station.wav" id="station"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/shelter.wav" id="shelter"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/route.wav" id="route"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/road.wav" id="road"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/proceed.wav" id="proceed"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/to.wav" id="to"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/report.wav" id="report"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/hold.wav" id="hold"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/maintain.wav" id="maintain"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/remain.wav" id="remain"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/on.wav" id="on"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/assigned.wav" id="assigned"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/do.wav" id="do"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/not.wav" id="not"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/deviate.wav" id="deviate"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/status.wav" id="status"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/open.wav" id="open"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/closed.wav" id="closed"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/nominal.wav" id="nominal"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/clear.wav" id="clear"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/blocked.wav" id="blocked"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/ahead.wav" id="ahead"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/kilometers.wav" id="kilometers"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/advisory.wav" id="advisory"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/fog.wav" id="fog"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/end.wav" id="end"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/of.wav" id="of"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/message.wav" id="message"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/repeat.wav" id="repeat"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/line.wav" id="line"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/receive.wav" id="receive"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/only.wav" id="only"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/unauthorized.wav" id="unauthorized"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/transmission.wav" id="transmission"]
+
+[resource]
+script = ExtResource("script")
+words = Dictionary[StringName, AudioStreamWAV]({
+&"zero": ExtResource("zero"),
+&"one": ExtResource("one"),
+&"two": ExtResource("two"),
+&"three": ExtResource("three"),
+&"four": ExtResource("four"),
+&"five": ExtResource("five"),
+&"six": ExtResource("six"),
+&"seven": ExtResource("seven"),
+&"eight": ExtResource("eight"),
+&"nine": ExtResource("nine"),
+&"alpha": ExtResource("alpha"),
+&"bravo": ExtResource("bravo"),
+&"charlie": ExtResource("charlie"),
+&"delta": ExtResource("delta"),
+&"echo": ExtResource("echo"),
+&"foxtrot": ExtResource("foxtrot"),
+&"golf": ExtResource("golf"),
+&"hotel": ExtResource("hotel"),
+&"india": ExtResource("india"),
+&"juliett": ExtResource("juliett"),
+&"kilo": ExtResource("kilo"),
+&"lima": ExtResource("lima"),
+&"mike": ExtResource("mike"),
+&"november": ExtResource("november"),
+&"oscar": ExtResource("oscar"),
+&"papa": ExtResource("papa"),
+&"quebec": ExtResource("quebec"),
+&"romeo": ExtResource("romeo"),
+&"sierra": ExtResource("sierra"),
+&"tango": ExtResource("tango"),
+&"uniform": ExtResource("uniform"),
+&"victor": ExtResource("victor"),
+&"whiskey": ExtResource("whiskey"),
+&"xray": ExtResource("xray"),
+&"yankee": ExtResource("yankee"),
+&"zulu": ExtResource("zulu"),
+&"attention": ExtResource("attention"),
+&"all": ExtResource("all"),
+&"units": ExtResource("units"),
+&"unit": ExtResource("unit"),
+&"this": ExtResource("this"),
+&"is": ExtResource("is"),
+&"dispatch": ExtResource("dispatch"),
+&"relay": ExtResource("relay"),
+&"station": ExtResource("station"),
+&"shelter": ExtResource("shelter"),
+&"route": ExtResource("route"),
+&"road": ExtResource("road"),
+&"proceed": ExtResource("proceed"),
+&"to": ExtResource("to"),
+&"report": ExtResource("report"),
+&"hold": ExtResource("hold"),
+&"maintain": ExtResource("maintain"),
+&"remain": ExtResource("remain"),
+&"on": ExtResource("on"),
+&"assigned": ExtResource("assigned"),
+&"do": ExtResource("do"),
+&"not": ExtResource("not"),
+&"deviate": ExtResource("deviate"),
+&"status": ExtResource("status"),
+&"open": ExtResource("open"),
+&"closed": ExtResource("closed"),
+&"nominal": ExtResource("nominal"),
+&"clear": ExtResource("clear"),
+&"blocked": ExtResource("blocked"),
+&"ahead": ExtResource("ahead"),
+&"kilometers": ExtResource("kilometers"),
+&"advisory": ExtResource("advisory"),
+&"fog": ExtResource("fog"),
+&"end": ExtResource("end"),
+&"of": ExtResource("of"),
+&"message": ExtResource("message"),
+&"repeat": ExtResource("repeat"),
+&"line": ExtResource("line"),
+&"receive": ExtResource("receive"),
+&"only": ExtResource("only"),
+&"unauthorized": ExtResource("unauthorized"),
+&"transmission": ExtResource("transmission")
+})

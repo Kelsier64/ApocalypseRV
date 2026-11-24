@@ -1,0 +1,29 @@
+{
+  "voice": "am_michael",
+  "speed": 1.0,
+  "pitch": 0,
+  "words": {
+    "zero": "Zero", "one": "One", "two": "Two", "three": "Three", "four": "Four",
+    "five": "Five", "six": "Six", "seven": "Seven", "eight": "Eight", "nine": "Nine",
+
+    "alpha": "Alpha", "bravo": "Bravo", "charlie": "Charlie", "delta": "Delta",
+    "echo": "Echo", "foxtrot": "Foxtrot", "golf": "Golf", "hotel": "Hotel",
+    "india": "India", "juliett": "Juliet", "kilo": "Kilo", "lima": "Lima",
+    "mike": "Mike", "november": "November", "oscar": "Oscar", "papa": "Papa",
+    "quebec": "Quebec", "romeo": "Romeo", "sierra": "Sierra", "tango": "Tango",
+    "uniform": "Uniform", "victor": "Victor", "whiskey": "Whiskey", "xray": "X-ray",
+    "yankee": "Yankee", "zulu": "Zulu",
+
+    "attention": "Attention", "all": "All", "units": "Units", "unit": "Unit",
+    "this": "This", "is": "Is", "dispatch": "Dispatch", "relay": "Relay",
+    "station": "Station", "shelter": "Shelter", "route": "Route", "road": "Road",
+    "proceed": "Proceed", "to": "To", "report": "Report", "hold": "Hold",
+    "maintain": "Maintain", "remain": "Remain", "on": "On", "assigned": "Assigned",
+    "do": "Do", "not": "Not", "deviate": "Deviate", "status": "Status",
+    "open": "Open", "closed": "Closed", "nominal": "Nominal", "clear": "Clear",
+    "blocked": "Blocked", "ahead": "Ahead", "kilometers": "Kilometers",
+    "advisory": "Advisory", "fog": "Fog", "end": "End", "of": "Of",
+    "message": "Message", "repeat": "Repeat", "line": "Line", "receive": "Receive",
+    "only": "Only", "unauthorized": "Unauthorized", "transmission": "Transmission"
+  }
+}

@@ -20,6 +20,7 @@
 | 項目 | 要看什麼 |
 |---|---|
 | RV 擬真操控 | 見[計畫](rv-handling-rollover.md)的未結項目 |
+| 主管詞庫語音 | 在[調度喇叭試玩場](../../tests/playgrounds/dispatch_speaker_playground.tscn)聽拼字廣播與話筒回覆：每個詞是否清楚、平板音高與字間停頓像不像舊機器、窄頻音色、訊號弱時的斷續與淡出；設定的 Audio 頁開啟 Broadcast Captions 後字幕是否與聲音一致。規則見[車內調度喇叭](../systems/rv.md#車內調度喇叭)，素材見[詞庫說明](../../assets/audio/dispatch_voice/README.md) |
 | 製造台復活 | 試玩 F7，確認眼睛閉合與睜開，以及移動中車內的觀看舒適度 |
 | 受傷暈眩 | 手動重撞、近爆或連續受傷時，確認全黑長度、復焦、耳鳴與逃生操作手感 |
 | 風聲 | 在[環境音試聽場](../../tests/playgrounds/ambience_playground.tscn)聽平靜到暴風、空地與樹林（樹梢呼嘯的錄音已選定）、車廂內與棚下、室內淡出、RV 嘯聲與拍打、強風蓋過遠處的低吼；規則見[環境的風聲](../systems/environment.md#風聲) |
@@ -50,7 +51,6 @@
 
 | 項目 | 說明 |
 |---|---|
-| 主管詞庫語音 | 依[主管的聲音](../../GDD.md#世界觀)做詞庫與模板：離線語音合成逐字產生，批次壓平音高並做窄頻音色；廣播與字幕由同一串字產生，字幕放進設定且預設關。完成後刪掉 `assets/audio/shortwave_radio/` 的 `dispatch`、`relay`、`shelter` 三段暫代人聲（Windows 內建語音合成） |
 | 系統文件逐份改寫 | `docs/systems/` 各檔由舊文件合併而成，要逐份對照程式改寫成現況，刪掉日期、版本史與重複段落。一次一份。尚未改寫：`player`、`rv`、`enemies`；重構會動到的 `player`、`rv`、`enemies` 跟著對應的[重構](architecture-refactor.md)切片改 |
 | 架構審查遺留 | 玩家 UI 與重力／`RVSupport` 的互動、普通動態物件的遠距清理；POI 導航生命週期與車內群怪重建路徑的成本尚未量測 |
 | 駕駛與安裝的小問題 | 方向盤左右、電池槽與設備的預設方向、加油孔尺寸、角落閃爍，需先重現 |
