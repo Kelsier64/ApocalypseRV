@@ -8,17 +8,18 @@
 |---|---|---|---|
 | 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/playgrounds/day_night_playground.tscn) |
 | 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
-| 風與沙塵 | 四級風力、風向、陣風；地貌決定乾燥度與沙塵量。沙塵拉近視野、染黃天色，強風時有飛沙與貼地的沙團；雨幕隨風傾斜。還沒有風聲與側風 | [WorldWind](../../world/world_wind.gd)、[WeatherDust](../../world/weather_dust.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 風與沙塵 | 四級風力、風向、陣風；地貌決定乾燥度與沙塵量。沙塵拉近視野、染黃天色，強風時有飛沙與貼地的沙團；雨幕隨風傾斜。還沒有側風 | [WorldWind](../../world/world_wind.gd)、[WeatherDust](../../world/weather_dust.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
 | 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/playgrounds/volumetric_fog_playground.tscn) |
 | 載入時的視野保護 | 地景還沒生成完的地方用霧遮住 | [WorldStreamVisibility](../../world/stream_visibility_guard.gd) | |
 | 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
 | 環境音 | 寂靜為主，依時段與位置零星播放的遠處聲音；室內副本的微弱嗡聲與偶發聲 | [WorldAmbience](../../world/world_ambience.gd)、[素材](../../assets/audio/ambience/README.md) | [ambience](../../tests/playgrounds/ambience_playground.tscn) |
+| 風聲 | 無風時安靜；有風時低沉的風聲隨陣風起伏，樹林裡強風有樹梢呼嘯，RV 車殼嘯聲與車板拍打；強風蓋過遠處的車外聲 | [WorldWindAudio](../../world/world_wind_audio.gd)、[RVWindAudio](../../rv/vehicle_wind_audio.gd)、[素材](../../assets/audio/weather/README.md) | [ambience](../../tests/playgrounds/ambience_playground.tscn) |
 | 暗部顯示 | 沒有光的地方用灰階補出近處的輪廓 | [NightVisionEffect](../../world/night_vision_effect.gd)、[DarkAdaptationProfile](../../world/dark_adaptation_profile.gd) | [outdoor_horror](../../tests/playgrounds/outdoor_horror_playground.tscn) |
 | 設定 | 顯示、操作、音量的偏好與存檔 | [GameSettings](../../core/game_settings.gd)（autoload）、[settings_menu.gd](../../player/settings_menu.gd) | |
 | HUD 與介面縮放 | HUD 的顯示開關、介面隨視窗大小縮放 | [HUDVisibility](../../core/hud_visibility.gd)、[UILayout](../../core/ui_layout.gd)、[IndustrialTheme](../../core/industrial_theme.gd) | |
 | 戶外美術 | 戶外建築與 RV 的共用材質 | [IndustrialArt](../../world/industrial_art.gd) | [industrial_style](../../tests/playgrounds/industrial_style_playground.tscn) |
 
-自動測試：這個系統沒有專屬的測試檔。時間與天氣的存讀在 [test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd)；霧、天氣亂數與風的契約在 [atmosphere_contracts.gd](../../tests/support/atmosphere_contracts.gd) 與 [wind_contracts.gd](../../tests/support/wind_contracts.gd)，由 [test_world_contracts.gd](../../tests/test_world_contracts.gd) 執行；設定的顯示檢查在 [validate_settings_display.gd](../../scripts/validate_settings_display.gd)，環境音的挑選、間隔、距離、車廂遮蔽與室內嗡聲在 [test_rv_audio.gd](../../tests/test_rv_audio.gd) 與 [test_poi_transition_persistence.gd](../../tests/test_poi_transition_persistence.gd)。畫面、霧與雨的觀感與環境音的聽感只能實際看、實際聽。
+自動測試：這個系統沒有專屬的測試檔。時間與天氣的存讀在 [test_checkpoint_failures.gd](../../tests/test_checkpoint_failures.gd)；霧、天氣亂數與風的契約在 [atmosphere_contracts.gd](../../tests/support/atmosphere_contracts.gd) 與 [wind_contracts.gd](../../tests/support/wind_contracts.gd)，由 [test_world_contracts.gd](../../tests/test_world_contracts.gd) 執行；設定的顯示檢查在 [validate_settings_display.gd](../../scripts/validate_settings_display.gd)，環境音的挑選、間隔、距離、車廂遮蔽與室內嗡聲，以及風聲的分級、遮蔽與 RV 嘯聲在 [test_rv_audio.gd](../../tests/test_rv_audio.gd) 與 [test_poi_transition_persistence.gd](../../tests/test_poi_transition_persistence.gd)。畫面、霧與雨的觀感與環境音的聽感只能實際看、實際聽。
 
 ## 規則與數值
 
@@ -46,7 +47,7 @@
 - 每段有一個基準風向，段內隨時間緩慢偏轉，最多 `MAX_VEER`。陣風在平均風速上下起伏 `GUST_SPREAD`。
 - 地貌決定乾燥度與受風係數：濕度與樹越多越不起沙，樹越多風越小。峽谷、山脊與懸崖最乾，草原居中，濕地與森林盆地幾乎不起沙。
 - 沙塵量由當地風速與乾燥度算出，從 `DUST_LIFT_SPEED` 開始揚起，到 `DUST_STORM_SPEED` 成為沙塵暴。平靜時沒有沙塵；雨量達到小雨就完全沒有沙塵。
-- 風還沒有聲音，也不推 RV。後續階段見[風與沙塵](../plans/wind-dust.md)。
+- 風有聲音（見下方的風聲），但還不推 RV。側風見[風與沙塵](../plans/wind-dust.md)。
 
 ### 沙塵
 
@@ -89,6 +90,14 @@
 - 在 RV 車廂內，這些聲音和其他車外聲一樣變小、變悶，引擎轉速高時也被蓋過。頭頂有屋頂時（建築內、棚子下）也變悶，但沒有車廂那麼多。
 - 進入室內副本後只有極微弱、只有低頻的室內嗡聲，同樣每 30 到 90 秒在附近響一聲滴水或金屬冷縮聲，帶著房間的殘響。
 - 戶外的聲音與室內嗡聲跟隨設定裡的環境音滑桿；室內的滴水與冷縮聲跟隨音效。
+
+### 風聲
+
+- 平靜時沒有任何風聲。微風、強風、暴風各有一段低沉的立體聲風聲，風力過渡時交叉淡化，音量與音高跟著陣風起伏，和沙塵與雨幕是同一陣風。素材刻意切掉高頻，聽不到嘶聲。
+- 樹多的地方地面風小，風聲也小一些；強風與暴風時，樹梢的呼嘯在頭頂附近的隨機方向起落，暴風時最頻繁。
+- RV 在強風時車頂有嘯聲，每缺一片車板就更明顯；強陣風時鬆動的車板會拍打。兩者都在車殼外側，車廂內聽起來是悶的。行駛時的車速風聲另外計算，見 [RV](rv.md)。
+- 風聲在車廂內、屋頂下和其他戶外聲音一樣變悶，引擎轉速高時被壓低；進入室內副本後淡出。
+- 強風蓋過遠處的車外聲：怪物腳步與叫聲變小，方向也較模糊，暴風時和引擎拉轉一樣最多小 6 dB。強風和引擎同時存在時取較大者，不相加。Slender Speaker 的旋律仍補回大部分音量，辨得出方向。微風不遮蔽。
 
 ### 暗部顯示
 
@@ -201,6 +210,15 @@
 - `Outdoors` 的音量與截止頻率由 `Sfx` 寫入：遮蔽值取 `Exterior` 的車廂遮蔽與 `outdoor_shelter` 的較大者，曲線和引擎遮蔽都和 `Exterior` 相同。
 - 聲音經 `Sfx.play_at` 播在聆聽世界的固定點：聲源是位在原點、不會移動的聲源池。
 - 室內判斷看 `Sfx.listening_outdoors()`，不看 `PoiInstanceManager.active_id`：死亡後的戶外回放鏡頭雖然仍在副本裡，聽的是戶外。室內的滴水與冷縮聲依位置走 `Exterior`，所以會套上房間殘響。`InteriorProfile.room_tone` 經 `Sfx.set_listener_viewport` 傳入，`Sfx.room_tone()` 讀出，以 `ROOM_TONE_DB` 直接走 `Ambience`；換到不同的嗡聲時先淡出舊的再播新的。
+
+### 風聲
+
+- `WorldClock` 建立 `WorldWindAudio`，和 `WorldAmbience` 同一個生命週期，森林權重讀 `WorldAmbience.forest`。它自己的亂數只決定呼嘯的方位、時機與迴圈起點，不碰玩法或世界生成的亂數。
+- 三段底層是非空間化的 `AudioStreamPlayer`，走 `Outdoors`。各層音量是純函式 `WorldWindAudio.tier_levels(strength)`：0 時全部靜音，相鄰兩級等功率交叉淡化。陣風由 `WorldWind.gust` 決定，在 `GUST_RANGE_DB` 內起伏並微調音高；受風係數取 `clock.wind_velocity` 與開闊地風速的比值，越低越小聲（`SHELTER_DB`）。不在戶外聆聽時以 `FADE_SECONDS` 淡出。
+- 樹梢呼嘯是 `assets/audio/events/weather/tree_rush.tres`，經 `Sfx.play_at` 播在聽者上方；頻率是 `rush_rate(strength, forest, gust)`，從 `RUSH_START` 起增加。
+- 風的遮蔽：`WorldWindAudio` 每幀把 `masking_for(平均風速 × 受風係數)` 寫入 `Sfx.wind_masking`，不含陣風，所以不會一陣一陣地抽動。`Sfx` 只在戶外世界套用它，`Exterior` 的壓低取 `maxf(引擎遮蔽, 風遮蔽)`（`Sfx.exterior_masking()`），`Loudspeaker` 依同一個值補回；`Outdoors` 只受引擎遮蔽，風聲不會壓低自己。風遮蔽時，`Sfx` 池裡走 `Exterior` 的聲源 `panning_strength` 降到 `WIND_PANNING`。
+- RV 的嘯聲與拍打在 `RVWindAudio`（`VehicleAudio` 的子節點），從 RV 的祖先節點找 `WorldClock`，讀攝影機位置取樣的 `clock.wind_velocity`。嘯聲是車頂前緣外側的 `SoundLoop`，`whistle_level(speed, missing)` 依風速與缺少的車殼板數增加；拍打是 `panel_rattle.tres`，從一片仍在的車板外側播放，頻率是 `rattle_rate(speed, gust)`。
+- 素材在 [weather](../../assets/audio/weather/README.md) 與 [RV](../../assets/audio/rv/README.md)，剪輯與候選組合在 [make_wind.py](../../art_source/audio/make_wind.py)。
 
 ### 暗部顯示
 
