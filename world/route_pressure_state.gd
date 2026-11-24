@@ -1,6 +1,10 @@
 extends RefCounted
 class_name RoutePressureState
 ## Pure real-second encounter timing. The controller owns actor creation and RNG.
+const BACKTRACK_START := 120.0
+const BACKTRACK_SAFE := 80.0
+const FOREST_START := 100.0
+const FOREST_SAFE := 70.0
 const ENTRY_SECONDS := 3.0
 const EXIT_SECONDS := 3.0
 const FADE_SECONDS := 12.0
@@ -38,6 +42,12 @@ func initialize(progress: float, start_origin: float) -> void:
 	origin = start_origin
 	highwater = maxf(progress, origin)
 
+func signal_strength(sample: Dictionary) -> float:
+	if sample.is_empty() or sample.exempt: return 1.0
+	var backtrack := clampf(inverse_lerp(BACKTRACK_START, BACKTRACK_SAFE, highwater - float(sample.progress)), 0.0, 1.0)
+	var forest := clampf(inverse_lerp(FOREST_START, FOREST_SAFE, sample.forest_offset), 0.0, 1.0)
+	return minf(backtrack, forest)
+
 func advance(delta: float, sample: Dictionary) -> void:
 	if not initialized or not is_finite(delta) or delta <= 0.0: return
 	if not _number(sample.get("progress"), -MAX_PROGRESS, MAX_PROGRESS): return
@@ -49,9 +59,9 @@ func advance(delta: float, sample: Dictionary) -> void:
 	var gap := highwater - progress
 	var forest: float = sample.forest_offset
 	var exempt: bool = sample.exempt
-	var deviating := not exempt and (gap > 120.0 or forest > 100.0)
-	var safe := exempt or (gap <= 80.0 and forest <= 70.0)
-	var next_reason := "backtrack_forest" if gap > 120.0 and forest > 100.0 else ("backtrack" if gap > 120.0 else "forest")
+	var deviating := not exempt and (gap > BACKTRACK_START or forest > FOREST_START)
+	var safe := exempt or (gap <= BACKTRACK_SAFE and forest <= FOREST_SAFE)
+	var next_reason := "backtrack_forest" if gap > BACKTRACK_START and forest > FOREST_START else ("backtrack" if gap > BACKTRACK_START else "forest")
 	var previous_cooldown := cooldown
 	cooldown = _countdown(cooldown, delta)
 	if active:

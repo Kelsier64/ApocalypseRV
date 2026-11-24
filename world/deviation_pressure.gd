@@ -10,6 +10,11 @@ var _route_sample: Dictionary = {}
 func _ready() -> void:
 	_sync_fog()
 
+func signal_strength_at(point: Vector3) -> float:
+	var generator := get_parent().get_node_or_null("WorldGenerator")
+	if generator == null: return 1.0
+	return state.signal_strength(RoutePressureSample.sample(generator.field, point))
+
 func _sync_fog() -> void:
 	var clock := get_parent().get_node_or_null("WorldClock") as WorldClock
 	var instances := get_parent().get_node_or_null("PoiInstances") as PoiInstanceManager

@@ -136,7 +136,9 @@ func _add_target_hints(obj: Node, bindings: Dictionary, can_place: bool) -> void
 		bindings["E"] = "Hold to search"
 		return
 	var has_tap := obj is Bed or obj is BatterySocket or (not obj is Item and obj.has_method("interact"))
-	if obj is ShortwaveRadio:
+	if obj is DispatchSpeaker:
+		bindings["E"] = "Key handset" if obj.aims_at_handset(get_collision_point()) else "Change volume"
+	elif obj is ShortwaveRadio:
 		bindings["E"] = "Toggle radio"
 	elif _held_delivery(obj):
 		bindings["E"] = "Hold to feed item"
@@ -311,6 +313,9 @@ func _invoke(obj: Node, method: String) -> void:
 		return
 	if obj is Item and not obj.is_fixed:
 		obj.pickup(player)
+		return
+	if obj is DispatchSpeaker and method == "interact":
+		_show_recovery_result(obj.use_panel(get_collision_point()))
 		return
 	if not obj.has_method(method): return
 	if obj is Item and method == "interact_hold" and not obj.can_operate(): return

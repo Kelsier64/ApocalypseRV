@@ -3,10 +3,7 @@
 [ext_resource type="Script" path="res://props/shortwave_radio.gd" id="radio"]
 [ext_resource type="Resource" path="res://props/shortwave_radio_definition.tres" id="definition"]
 [ext_resource type="PackedScene" path="res://assets/models/shortwave_radio/shortwave_radio.glb" id="model"]
-[ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/relay.wav" id="relay"]
-[ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/dispatch.wav" id="dispatch"]
-[ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/shelter.wav" id="shelter"]
-[ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/carrier.wav" id="carrier"]
+[ext_resource type="PackedScene" path="res://core/audio/broadcast_schedule.tscn" id="schedule"]
 [ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/switch.wav" id="switch"]
 
 [sub_resource type="BoxShape3D" id="bounds"]
@@ -40,7 +37,6 @@ definition = ExtResource("definition")
 enabled = false
 hold_rotation = Vector3(13, -24, -5)
 carry_offset = Vector3(-0.045, 0.105, 0.05)
-transmissions = Array[AudioStream]([ExtResource("relay"), ExtResource("dispatch"), ExtResource("shelter"), ExtResource("carrier")])
 unlit_lamp = SubResource("lamp_off")
 lit_lamp = SubResource("lamp_on")
 
@@ -62,8 +58,7 @@ position = Vector3(0.136, -0.04, -0.004)
 [node name="GripLeft" type="Marker3D" parent="."]
 position = Vector3(-0.142, -0.04, -0.006)
 
-[node name="SignalTimer" type="Timer" parent="."]
-one_shot = true
+[node name="SignalTimer" parent="." instance=ExtResource("schedule")]
 
 [node name="Speaker" type="AudioStreamPlayer3D" parent="."]
 bus = &"Voice"

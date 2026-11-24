@@ -13,7 +13,7 @@ const ITEM_NAMES := {
 	"battery": "Battery", "battery_large": "Large Capacity Battery", "wheel": "Wheel",
 	"printed_player": "Player Body", "fuel_port": "Fuel inlet", "battery_socket": "Battery socket",
 	"item_box": "Item storage box", "roof_ladder": "Interior roof ladder", "side_door_ladder": "Side door ladder",
-	"cabin_light_strip": "Cabin light strip", "driver_seat": "Driver Seat",
+	"dispatch_speaker": "Dispatch Speaker", "cabin_light_strip": "Cabin light strip", "driver_seat": "Driver Seat",
 	"crafting_station": "Crafting Station", "scrapper": "Recycling Scrapper", "tablet_screen": "Tablet Screen",
 }
 const SLOT_NAMES := {

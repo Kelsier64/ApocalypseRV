@@ -39,6 +39,7 @@ const ICONS := {
 	"res://props/printed_player.tscn": preload("res://assets/inventory/corpse_player.png"),
 	"res://equipment/side_door_ladder.tscn": preload("res://assets/inventory/side_door_ladder.png"),
 	"res://equipment/roof_ladder.tscn": preload("res://assets/inventory/roof_ladder.png"),
+	"res://equipment/dispatch_speaker.tscn": preload("res://assets/inventory/dispatch_speaker.png"),
 	"res://equipment/cabin_light_strip.tscn": preload("res://assets/inventory/cabin_light_strip.png"),
 	"res://equipment/tablet_screen.tscn": preload("res://assets/inventory/tablet_screen.png"),
 	"res://equipment/training_terminal.tscn": preload("res://assets/inventory/tablet_screen.png"),

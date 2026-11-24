@@ -141,19 +141,19 @@ func check_shortwave_radio(support: Node3D) -> void:
 	var held := actor.held_item_node as ShortwaveRadio
 	check(held != null and not held.is_large and held.persistent_id == identity, "Radio can be picked up and equipped as a one-hand item")
 	if held == null: return
-	held._rng.seed = 42
+	held._signal_timer.rng.seed = 42
 	actor._unhandled_input(right_mouse_event(true))
-	var first_delay := ShortwaveRadio.FIRST_SIGNAL_DELAY
+	var first_delay := BroadcastSchedule.FIRST_SIGNAL_DELAY
 	check(held.enabled and actor.inventory.active_item().state.enabled, "RMB powers the held radio and updates the inventory entry")
 	check(held._signal_timer.wait_time >= first_delay.x and held._signal_timer.wait_time <= first_delay.y, "A powered held radio schedules its first transmission")
 	check(held._lamp.material_override == held.lit_lamp, "The receiver's pilot lamp indicates power")
 	held._signal_timer.start(0.01)
 	await steps(5)
 	var first := held._speaker.stream
-	check(first in held.transmissions and held._speaker.playing, "The timer plays a real transmission through the 3D speaker")
+	check(first in held._signal_timer.transmissions and held._speaker.playing, "The timer plays a real transmission through the 3D speaker")
 	held._speaker.stop()
 	held._speaker.finished.emit()
-	var gap := ShortwaveRadio.SIGNAL_GAP
+	var gap := BroadcastSchedule.SIGNAL_GAP
 	check(held._signal_timer.wait_time >= gap.x and held._signal_timer.wait_time <= gap.y, "The next signal waits a randomized silent interval")
 	held._signal_timer.start(0.01)
 	await steps(5)

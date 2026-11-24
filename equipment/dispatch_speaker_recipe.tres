@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="RecipeDefinition" format=3]
+
+[ext_resource type="Script" uid="uid://b2d22rb7ugbmm" path="res://equipment/recipe_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+recipe_id = "dispatch_speaker"
+display_name = "Dispatch Speaker"
+scene_path = "res://equipment/dispatch_speaker.tscn"
+costs = {
+"Electronic Scrap": 2,
+"Metal Parts": 2
+}
+duration = 4.0
+power_cost = 1.0

@@ -17,9 +17,18 @@
 | 自由安裝梯子與設備 | 正式；側門梯／登頂梯為可搬移 Item，自由貼牆安裝，玩家依梯攀爬；固定設備接通本車才工作 | [RV ladder](../../equipment/rv_ladder.gd)、[interaction](../../tests/playgrounds/rv_interaction_playground.tscn) |
 | 重量與重心 | 正式簡化模型；底盤、存活車殼、引擎及固定 Item 按位置彙總；燃油、庫存、材料與電池本體不計重，外掛力矩仍有限制 | [Chassis](../../rv/chassis.gd)、[架構限制](../../architecture.md#6-已知限制) |
 | 側風 | 天氣的風橫推 RV、側傾、陣風讓方向盤抖動 | [wind load](../../rv/wind_load.gd)、[weather](../../tests/playgrounds/weather_playground.tscn) |
+| 調度喇叭 | 前牆預裝的網路接收機，廣播、訊號表與本機發話回覆 | [設備](../../equipment/dispatch_speaker.tscn)、[試玩場景](../../tests/playgrounds/dispatch_speaker_playground.tscn) |
 | 燈光、音效與視覺 | 正式；頭燈、車內／維修照明、引擎與操作回饋、引擎外觀震動；車內遮霧與屋頂雨遮 | [lights](../../rv/vehicle_lights.gd)、[audio](../../rv/vehicle_audio.gd)、[cabin air](../../rv/cabin_air.gd) |
 
 ## 規則與數值
+
+### 車內調度喇叭
+
+駕駛室前擋右上方的喇叭預設中音量。離座後瞄準機身按 E，依序切換高、關、低、中；瞄準右側話筒按 E，會打斷廣播，交替播出兩句接收專線的本機回覆。回覆期間再按只聽到按鍵聲。長按 F 可以拆下，合成站可重製。
+
+通電時每秒消耗 0.01 電力，平板 Equipment 頁可查接收狀態或切換電源。缺電、關閉或失去支撐時，燈熄、指針歸零、聲音停止。檢查點沿用設備的開關欄位，重新載入時啟用的設備回到中音量。
+
+訊號表每半秒取樣車上裝置的位置。往回開或深入林地時，指針在起霧前開始往下掉；中等訊號混入底噪與斷續，低於門檻時廣播淡出，錯過的段落不補播。訊號歸零仍可聽見微弱底噪。發話回覆由車上機器產生，失訊仍可使用。[聲音來源](../../assets/audio/dispatch_speaker/README.md)
 
 ### 駕駛與檔位
 
@@ -167,6 +176,8 @@ RV 底盤以零線性阻尼覆蓋 Godot 的全域預設值。車輛行駛時的�
 油門與腳煞車逐步建立力道，高速時限制轉向角度。左右後照鏡可查看車側及後方，車內電子後視鏡直接顯示車尾後方，皆只在駕駛視角更新。維修蓋遇阻停止；兩折坡板動畫期間無碰撞，不受後門開度或板上人／物限制，E 可中途反向；坡板未收妥禁止行駛，維修蓋／坡板未到穩定姿態時不能保存。照明請求隨檢查點保存；comfort 必填且僅保存目前車內／維修燈請求、儀表亮度與視覺震動，但平板不提供這些調整控制。
 
 ## 實作契約
+
+- `VehicleEnergy.step()` 驅動調度喇叭的 `step_work(delta)`。裝置從 `DeviationPressure.signal_strength_at(global_position)` 讀取涵蓋，與起霧共用安全、危險距離。廣播和本機回覆走 `Voice`，車外聽感依距離與車殼開口衰減。
 
 ### 輪胎與爆胎路障
 

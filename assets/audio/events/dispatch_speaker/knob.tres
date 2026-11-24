@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SoundEvent" format=3]
+
+[ext_resource type="Script" path="res://core/audio/sound_event.gd" id="event"]
+[ext_resource type="AudioStream" path="res://assets/audio/rv/light_switch_b.wav" id="light_switch_b"]
+
+[resource]
+script = ExtResource("event")
+samples = Array[AudioStream]([ExtResource("light_switch_b")])
+volume_db = -13.0
+pitch_variation = 0.035
+priority = 1
