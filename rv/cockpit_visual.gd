@@ -5,6 +5,7 @@ const MAX_STEERING_ANGLE := 1.25 # Match the existing driving hand travel.
 @onready var steering_wheel: Node3D = $SteeringTilt/SteeringWheel
 @onready var gear_lever: Node3D = $GearLever
 @onready var parking_lever: Node3D = $ParkingLever
+var _steer_angle := 0.0
 
 func _process(delta: float) -> void:
 	var rv: Chassis = seat.get_connected_rv() as Chassis
@@ -13,7 +14,13 @@ func _process(delta: float) -> void:
 	var parked := rv.handbrake if connected else true
 	# Tilted local +Y points toward the driver: positive rotation is left.
 	var steer := clampf(rv.steering * 3.5, -MAX_STEERING_ANGLE, MAX_STEERING_ANGLE) if connected else 0.0
-	steering_wheel.rotation.y = lerp_angle(steering_wheel.rotation.y, steer, minf(delta * 12.0, 1.0))
+	_steer_angle = lerp_angle(_steer_angle, steer, minf(delta * 12.0, 1.0))
+	# Gusting crosswind shakes the wheel; the steering input itself is untouched.
+	var shake := 0.0
+	if connected and rv.wind_load.shake > 0.001:
+		var t := Time.get_ticks_msec() * 0.001
+		shake = rv.wind_load.shake * rv.handling_profile.crosswind_shake_angle * (sin(t * 17.0) * 0.6 + sin(t * 29.3 + 1.7) * 0.4)
+	steering_wheel.rotation.y = _steer_angle + shake
 	gear_lever.rotation.x = lerp_angle(gear_lever.rotation.x, -0.28 if gear < 0 else (0.0 if gear == 0 else 0.23), minf(delta * 12.0, 1.0))
 	gear_lever.rotation.z = lerp_angle(gear_lever.rotation.z, float(gear - 2) * 0.08 if gear > 0 else 0.0, minf(delta * 12.0, 1.0))
 	parking_lever.rotation.x = lerp_angle(parking_lever.rotation.x, 0.55 if parked else 0.0, minf(delta * 12.0, 1.0))

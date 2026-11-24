@@ -254,13 +254,9 @@ func apply_time(real_delta: float = 0.0) -> void:
 ## there is no ground to raise dust, unless a landform override names one.
 func _sample_wind() -> void:
 	var appearance := Vector3(-1, -1, 0)
-	if landform_override >= 0:
-		appearance = Vector3(landform_override, landform_override, 0)
-	else:
-		var generator := get_parent().get_node_or_null("WorldGenerator")
-		var camera := get_viewport().get_camera_3d() if is_inside_tree() else null
-		if generator != null and generator.get("field") != null and camera != null and camera.get_world_3d() == get_viewport().world_3d:
-			appearance = generator.field.landforms.appearance_at(-camera.global_position.z)
+	var camera := get_viewport().get_camera_3d() if is_inside_tree() else null
+	if landform_override >= 0 or (camera != null and camera.get_world_3d() == get_viewport().world_3d):
+		appearance = landform_at(camera.global_position if camera != null else Vector3.ZERO)
 	if appearance.x < 0:
 		dust = 0.0
 		haze_dust = 0.0
@@ -273,6 +269,20 @@ func _sample_wind() -> void:
 	haze_dust = wind.mean_dust_at(appearance)
 	dust_color = WorldWind.dust_color_for(appearance)
 	dust_surge = wind.surge(elapsed_seconds) if haze_dust > 0.0 else 0.0
+
+## TerrainLandforms.appearance_at() under a world position, honouring the
+## playground override; x < 0 where there is no generated terrain.
+func landform_at(world_position: Vector3) -> Vector3:
+	if landform_override >= 0: return Vector3(landform_override, landform_override, 0)
+	var generator := get_parent().get_node_or_null("WorldGenerator") if get_parent() != null else null
+	if generator == null or generator.get("field") == null: return Vector3(-1, -1, 0)
+	return generator.field.landforms.appearance_at(-world_position.z)
+
+## Wind velocity in m/s at a world position this instant, gusts and landform
+## shelter included; open ground where there is no terrain. Physics reads this.
+func wind_at(world_position: Vector3) -> Vector3:
+	var appearance := landform_at(world_position)
+	return wind.velocity(elapsed_seconds, WorldWind.exposure_for(appearance) if appearance.x >= 0 else 1.0)
 
 func _completed_scenery_mist_limit(real_delta: float) -> float:
 	var generator := get_parent().get_node_or_null("WorldGenerator")

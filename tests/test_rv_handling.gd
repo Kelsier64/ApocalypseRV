@@ -83,8 +83,9 @@ func run() -> void:
 	check(trip.wheel_health[1] < trip.wheel_health[0] or trip.wheel_health[3] < trip.wheel_health[2], "Tires on the impacted side suffer more damage")
 	await release_fixture(world)
 	await check_straight_line_driving()
+	await check_crosswind()
 	for failure in failures: push_error(failure)
-	if failures.is_empty(): print("PASS: tire grip, handling, rollover, acceleration and tire audio")
+	if failures.is_empty(): print("PASS: tire grip, handling, rollover, acceleration, tire audio and crosswind")
 	quit(1 if not failures.is_empty() else 0)
 
 func check_straight_line_driving() -> void:
@@ -128,6 +129,54 @@ func check_straight_line_driving() -> void:
 		squealed = squealed or audio.tire_player.playing
 	check(squealed, "Hard braking from speed still plays tire squeal")
 	await release_fixture(world)
+
+## Crosswind pushes sideways only, grows with wind speed, and the strongest
+## gust cannot blow over an intact RV parked or driving straight on flat ground.
+func check_crosswind() -> void:
+	var basis := Basis.IDENTITY
+	var gale_gust := WorldWind.SPEEDS[WorldWind.GALE] * (1.0 + WorldWind.GUST_SPREAD)
+	check(RVWindLoad.side_force(PROFILE, Vector3.ZERO, basis) == Vector3.ZERO, "Calm air puts no side force on the RV")
+	check(RVWindLoad.side_force(PROFILE, basis.z * gale_gust, basis).is_zero_approx(), "Wind along the body adds no drag")
+	var breeze := RVWindLoad.side_force(PROFILE, basis.x * WorldWind.SPEEDS[WorldWind.BREEZE], basis).length()
+	var strong := RVWindLoad.side_force(PROFILE, basis.x * WorldWind.SPEEDS[WorldWind.STRONG], basis).length()
+	var gale := RVWindLoad.side_force(PROFILE, -basis.x * gale_gust, basis)
+	check(breeze > 0.0 and strong > breeze and gale.length() >= strong and gale.length() <= PROFILE.crosswind_max_force + 0.01, "Side force grows with wind speed up to its cap")
+	check(gale.dot(basis.x) < 0.0, "Side force points downwind")
+	for driving in [false, true]:
+		var world := Node3D.new()
+		root.add_child(world)
+		current_scene = world
+		var vehicle := Fixture.vehicle(world, Vector3.UP * 1.4)
+		var ground := Fixture.ground(world)
+		var slab := (ground.get_child(0) as CollisionShape3D).shape as BoxShape3D
+		slab.size.z = 1200.0
+		ground.position.z = -slab.size.z * 0.45
+		for frame in 2 * Engine.physics_ticks_per_second: await physics_frame
+		vehicle.allow_test_controls = true
+		var across := vehicle.global_basis.x
+		if driving:
+			vehicle.set_handbrake(false)
+			vehicle.set_gear(3)
+			vehicle.set_engine_running(true)
+			vehicle.linear_velocity = -vehicle.global_basis.z * 19.0
+			for i in 4: vehicle.drivetrain.spin[i] = 19.0 / vehicle.WHEEL_RADIUS
+			vehicle.control_override = {"throttle": 0.5}
+		var lowest_up := 1.0
+		var lean := 0.0
+		var start := vehicle.global_position
+		# A steady gale gust, then the same gust pulsing near the body's rocking period.
+		for frame in 8 * Engine.physics_ticks_per_second:
+			var pulse := frame < 3 * Engine.physics_ticks_per_second or (frame / 40) % 2 == 0
+			vehicle.wind_load.velocity_override = across * gale_gust if pulse else Vector3.ZERO
+			await physics_frame
+			lowest_up = minf(lowest_up, vehicle.global_basis.y.y)
+			lean = maxf(lean, vehicle.global_basis.y.dot(across))
+		var drift := (vehicle.global_position - start).dot(across)
+		print("CROSSWIND driving=%s up=%.3f lean=%.3f drift=%.2f shake=%.2f" % [driving, lowest_up, lean, drift, vehicle.wind_load.shake])
+		check(vehicle.rollover_state() == Chassis.Rollover.UPRIGHT and lowest_up > PROFILE.rollover_side_up_dot, "The strongest gust does not blow over an RV %s on flat ground" % ("driving straight" if driving else "parked"))
+		check(lean > 0.0, "Crosswind leans the body downwind (%s)" % ("driving" if driving else "parked"))
+		if driving: check(drift > 0.5, "Crosswind pushes a driving RV downwind")
+		await release_fixture(world)
 
 func release_fixture(world: Node3D) -> void:
 	world.process_mode = Node.PROCESS_MODE_DISABLED

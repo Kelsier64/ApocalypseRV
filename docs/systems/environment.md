@@ -8,7 +8,7 @@
 |---|---|---|---|
 | 時間與太陽 | 遊戲時鐘、日夜光照、畫面右上的日期時間 | [WorldClock](../../world/world_clock.gd) | [day_night](../../tests/playgrounds/day_night_playground.tscn) |
 | 天氣 | 晴、陰、兩級雨、三級霧，隨時間自然變化 | [WorldWeather](../../world/world_weather.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
-| 風與沙塵 | 四級風力、風向、陣風；地貌決定乾燥度與沙塵量。沙塵拉近視野、染黃天色，強風時有飛沙與貼地的沙團；雨幕隨風傾斜。還沒有側風 | [WorldWind](../../world/world_wind.gd)、[WeatherDust](../../world/weather_dust.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
+| 風與沙塵 | 四級風力、風向、陣風；地貌決定乾燥度與沙塵量。沙塵拉近視野、染黃天色，強風時有飛沙與貼地的沙團；雨幕隨風傾斜；側風推 RV（見 [RV](rv.md#側風)） | [WorldWind](../../world/world_wind.gd)、[WeatherDust](../../world/weather_dust.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
 | 霧的外觀 | 常駐的遠景霧、天氣霧、林間的局部霧 | [WorldAtmosphereProfile](../../world/world_atmosphere_profile.gd)、[world_atmosphere_profile.tres](../../world/world_atmosphere_profile.tres)、[ForestFog](../../world/terrain/forest_fog.gd) | [volumetric_fog](../../tests/playgrounds/volumetric_fog_playground.tscn) |
 | 載入時的視野保護 | 地景還沒生成完的地方用霧遮住 | [WorldStreamVisibility](../../world/stream_visibility_guard.gd) | |
 | 雨 | 雨幕、水花、雨聲、屋頂遮雨 | [WeatherRain](../../world/weather_rain.gd)、[RainCover](../../world/rain_cover.gd) | [weather](../../tests/playgrounds/weather_playground.tscn) |
@@ -47,7 +47,8 @@
 - 每段有一個基準風向，段內隨時間緩慢偏轉，最多 `MAX_VEER`。陣風在平均風速上下起伏 `GUST_SPREAD`。
 - 地貌決定乾燥度與受風係數：濕度與樹越多越不起沙，樹越多風越小。峽谷、山脊與懸崖最乾，草原居中，濕地與森林盆地幾乎不起沙。
 - 沙塵量由當地風速與乾燥度算出，從 `DUST_LIFT_SPEED` 開始揚起，到 `DUST_STORM_SPEED` 成為沙塵暴。平靜時沒有沙塵；雨量達到小雨就完全沒有沙塵。
-- 風有聲音（見下方的風聲），但還不推 RV。側風見[風與沙塵](../plans/wind-dust.md)。
+- 受風係數只看樹，峽谷與崖壁不擋風。
+- 風有聲音（見下方的風聲），也會橫推 RV，見 [RV 的側風](rv.md#側風)。風不影響怪物的感知，也不推步行的玩家。
 
 ### 沙塵
 
@@ -178,6 +179,7 @@
 - 過渡進度直接讀 `weather.transition_elapsed`。`WorldWeather` 在換段前發出 `changing`，`WorldWind` 在那時記下即將離開的風力與風向當作過渡起點。這個起點只在記憶體裡：讀檔或第一次讀取時，風直接停在這一段的風力與風向，所以在過渡中讀檔會跳過剩下的風力過渡。
 - 風不進檢查點，天氣的存檔格式不變。`override_tier` 與 `override_heading` 是終端機與測試場用的暫時設定，讀檔後回到自然值。
 - 對外讀取：`strength()`（0 到 3 的連續風力）、`speed(seconds, exposure)`、`velocity()`、`gust()`、`heading()`；地貌用 `dryness_for`、`exposure_for` 與 `dust_amount` 三個純函式，輸入是 `TerrainLandforms.appearance_at()` 的值，直接混合 `MOISTURE` 與 `TREE_DENSITY`，測試不必建世界。
+- 物理讀 `WorldClock.wind_at(position)`：那個位置當下的風，含陣風與地貌的受風係數（`landform_at`，測試場的 `landform_override` 也適用；沒有地形時當作開闊地）。畫面與聲音讀攝影機位置的取樣（見下節）。
 - 沙塵不寫進天氣的霧量，Slender Speaker 的霧量判斷不受影響。
 
 ### 沙塵的取樣與成本

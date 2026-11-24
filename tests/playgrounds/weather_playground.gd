@@ -34,6 +34,13 @@ const MIST_TUNING := [
 	["Mist torn at (m/s)", &"mist_tear_full", 1.0, 30.0, 0.5],
 	["Mist tear", &"mist_tear", 0.0, 1.0, 0.05],
 ]
+## Crosswind rows on the RV handling profile; same row layout as DUST_TUNING.
+const CROSSWIND_TUNING := [
+	["Side area (m²)", &"crosswind_side_area", 0.0, 60.0, 1.0],
+	["Side coefficient", &"crosswind_coefficient", 0.0, 2.0, 0.05],
+	["Force cap (N)", &"crosswind_max_force", 0.0, 30000.0, 500.0],
+	["Wheel shake (rad)", &"crosswind_shake_angle", 0.0, 0.2, 0.005],
+]
 ## Playground "Dust style": sheets, clouds and billows on or off; the first
 ## matches the game. The haze and the grit are always on.
 const DUST_STYLES := {"Sheets only": [true, true, false], "Sheets and billows": [true, true, true], "Billows only": [false, false, true], "Haze only": [false, false, false]}
@@ -67,6 +74,8 @@ func _ready() -> void:
 	var frame := WorldField.new(world_seed, generator.profile).road_frame(START_S)
 	main.get_node("NewRv").transform = Transform3D.IDENTITY
 	rv = main.get_node("NewRv/Chassis")
+	# Crosswind sliders edit a copy, so Restart returns to the profile's values.
+	rv.handling_profile = rv.handling_profile.duplicate()
 	rv.transform = frame
 	rv.position.y += 1.8
 	player = main.get_node("Player")
@@ -141,7 +150,7 @@ func _build_controls(scenario: String) -> void:
 	controls.slider("Hour", 0.0, 24.0, 0.25, START_HOUR, func(hour: float) -> void: clock.set_time(clock.day_number(), fmod(hour, 24.0)))
 	controls.readout("Clock", func() -> String: return "Day %d, %02d:%02d" % [clock.day_number(), floori(clock.hour_of_day()), floori(fmod(clock.hour_of_day(), 1.0) * 60.0)])
 	controls.section("Wind")
-	controls.note("Wind starts overridden so weather changes do not reroll it. Landform sets the ground the dust reads, wherever you are. Natural strength follows the weather's fog: medium and heavy fog keep it at a breeze or less. Wind has no sound and does not push the RV yet.")
+	controls.note("Wind starts overridden so weather changes do not reroll it. Landform sets the ground the dust reads, wherever you are. Natural strength follows the weather's fog: medium and heavy fog keep it at a breeze or less. Wind across the RV pushes it toward the lee side and leans it, and gusts shake the steering wheel; drive straight, corner and park across the wind to feel it.")
 	var tiers := PackedStringArray(["Natural"])
 	for tier: String in WorldWind.DESCRIPTIONS: tiers.append(tier)
 	controls.choice("Strength", tiers, clock.wind.override_tier + 1, func(index: int) -> void:
@@ -156,6 +165,7 @@ func _build_controls(scenario: String) -> void:
 	controls.readout("Speed / gust", func() -> String: return "%.1f m/s / %.2f" % [clock.wind_velocity.length(), clock.wind.gust(clock.elapsed_seconds)])
 	controls.readout("Heading", func() -> String: return "%03d deg" % (roundi(rad_to_deg(clock.wind.heading(clock.elapsed_seconds))) % 360))
 	controls.readout("Ground", _landform_text)
+	controls.readout("RV crosswind", func() -> String: return "%.1f kN, lean %.1f deg, wheel shake %.2f" % [rv.wind_load.force.length() / 1000.0, rad_to_deg(asin(clampf(rv.global_basis.x.y, -1.0, 1.0))), rv.wind_load.shake])
 	controls.readout("Dust", func() -> String: return "%.2f with gusts, haze %.2f, haze ends at %d m, surge %.2f, gust wall %.2f" % [clock.dust, clock.haze_dust, roundi(clock.environment.fog_depth_end), clock.dust_surge, (clock.get_node("WeatherDust") as WeatherDust).wall])
 	controls.readout("Ground mist", func() -> String: return "torn %.2f, drifts %.1f m/s" % [clock.mist_torn, clock.atmosphere.mist_drift_speed(clock.wind_velocity.length())])
 	controls.section("Ground mist tuning")
@@ -171,6 +181,19 @@ func _build_controls(scenario: String) -> void:
 		var property: StringName = row[1]
 		controls.slider(row[0], row[2], row[3], row[4], profile.get(property), func(value: float) -> void: profile.set(property, value))
 	controls.button("Log values", func() -> void: print("DUST TUNING ", _dust_tuning_text()))
+	controls.section("Crosswind tuning")
+	controls.note("Side force grows with the square of the wind across the RV, up to the cap. Push height above the floor leans the body; push ahead of the centre (negative) turns the nose downwind. Values last until Restart; Log values prints them for the handling profile.")
+	var handling := rv.handling_profile
+	for row: Array in CROSSWIND_TUNING:
+		var handling_property: StringName = row[1]
+		controls.slider(row[0], row[2], row[3], row[4], handling.get(handling_property), func(value: float) -> void: handling.set(handling_property, value))
+	controls.slider("Push height (m)", -0.5, 3.0, 0.05, handling.crosswind_center.y, func(value: float) -> void: handling.crosswind_center.y = value)
+	controls.slider("Push ahead/behind (m)", -3.0, 3.0, 0.1, handling.crosswind_center.z, func(value: float) -> void: handling.crosswind_center.z = value)
+	controls.button("Log crosswind values", func() -> void:
+		var parts := PackedStringArray()
+		for row: Array in CROSSWIND_TUNING: parts.append("%s=%s" % [row[1], snappedf(handling.get(row[1]), 0.001)])
+		parts.append("crosswind_center=%s" % handling.crosswind_center)
+		print("CROSSWIND TUNING ", " ".join(parts)))
 	controls.section("RV")
 	controls.note("A broken roof lets rain and dust into the cabin. It stays broken; Restart brings it back.")
 	controls.button("Break middle roof", func() -> void:

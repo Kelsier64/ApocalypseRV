@@ -16,6 +16,7 @@
 | 車門、維修蓋與後坡板 | 正式；門片、鉸鏈蓋及雙折坡板動畫／碰撞；坡板互鎖行車，不穩定機械姿態限制保存 | [door](../../equipment/rv_door.gd)、[hatch](../../rv/engine_hatch.gd)、[ramp](../../rv/rear_ramp.gd)、[door playground](../../tests/playgrounds/rv_door_playground.tscn) |
 | 自由安裝梯子與設備 | 正式；側門梯／登頂梯為可搬移 Item，自由貼牆安裝，玩家依梯攀爬；固定設備接通本車才工作 | [RV ladder](../../equipment/rv_ladder.gd)、[interaction](../../tests/playgrounds/rv_interaction_playground.tscn) |
 | 重量與重心 | 正式簡化模型；底盤、存活車殼、引擎及固定 Item 按位置彙總；燃油、庫存、材料與電池本體不計重，外掛力矩仍有限制 | [Chassis](../../rv/chassis.gd)、[架構限制](../../architecture.md#6-已知限制) |
+| 側風 | 天氣的風橫推 RV、側傾、陣風讓方向盤抖動 | [wind load](../../rv/wind_load.gd)、[weather](../../tests/playgrounds/weather_playground.tscn) |
 | 燈光、音效與視覺 | 正式；頭燈、車內／維修照明、引擎與操作回饋、引擎外觀震動；車內遮霧與屋頂雨遮 | [lights](../../rv/vehicle_lights.gd)、[audio](../../rv/vehicle_audio.gd)、[cabin air](../../rv/cabin_air.gd) |
 
 ## 規則與數值
@@ -59,6 +60,10 @@ RV 底盤以零線性阻尼覆蓋 Godot 的全域預設值。車輛行駛時的�
 車輛採簡化載重：計底盤、存活車體結構、已安裝引擎與所有固定於 RV 的 Item，依位置計算重心。地板重量包含在固定底盤重量中，不另計結構重量或耐久。插槽中的電池本體、素材、背包／倉庫物品與燃油量不計重；電池插槽、道具箱等本體仍計重。鬆散道具保留碰撞與剛體行為，不額外彙總為車輛貨物重量。固定物品與車殼保留獨立凍結碰撞體，外掛碰撞向底盤傳遞的力矩未重新建模；不能據重量計算宣稱大型外掛、側撞、翻車都正確。
 
 腳煞車採漸進加壓：持續按 S 約 0.35 秒到完整力道，放開約 0.15 秒完全釋放。腳煞車最大值為 100，手煞車與坡板驅動互鎖維持獨立的 300；這些是傳動模型換算成輪上煞車力矩前的輸入值，並非牛頓；手煞車只作用於後輪。引擎熄火仍能煞車，倒車使用同一踏板反應，不直接清除車速。
+
+### 側風
+
+天氣的風（見[環境](environment.md#風)）橫吹 RV 時把車往下風處推，車身跟著側傾，車頭被推向下風，不修正方向的 RV 會慢慢偏向下風側的路肩。推力隨橫向風速平方增加並有上限，樹林裡風小、推力也小；順著車身吹的風不加阻力，所以極速與油耗不受影響。陣風讓駕駛視角的方向盤抖動，抖動只是畫面，不改變轉向輸入。平地上停著或直線行駛的完好 RV，最強的暴風陣風也吹不翻；高速過彎再遇上暴風才可能翻車。
 
 ### 駕駛室、後照鏡與音效
 
@@ -184,6 +189,12 @@ VehicleBody3D 在 _integrate_forces 之後才套用輪胎懸吊衝量：底盤�
 底盤腳煞車以固定物理步長逐步追蹤踏板輸入（加壓 0.35 s、釋放 0.15 s），最大制動值 100；手煞車／坡板互鎖使用獨立 300。這些保留為原 60 Hz 的調校值；VehicleBody3D 的 brake 實際為每步衝量上限，輸出乘以 `60 × delta`，避免提高至 120 Hz 後每秒制動加倍。設備重心透過父層局部 transform 組合，避免長距離行駛時 world-to-local 浮點誤差導致反覆寫入同一重心。
 
 駐車時，底盤在輪胎衝量結算後檢查車速與至少三輪的靜態地面接觸。低速時以有限的制動衝量逐步抑制沿支撐面的殘餘滑動，並補償沿坡重力，讓懸吊繼續運作。
+
+### 側風推力
+
+[RVWindLoad](../../rv/wind_load.gd)（`chassis.wind_load`）在 `Chassis._integrate_forces` 的每個物理步施力。風速取 `WorldClock.wind_at(RV 位置)`，含陣風與 RV 所在地貌的受風係數，不讀攝影機位置的 `clock.wind_velocity`；時鐘從底盤所在世界（`WorldActorSnapshot.domain`）找。只用風在車身左右軸的水平分量：推力 = 0.5 × `air_density` × `crosswind_coefficient` × `crosswind_side_area` × 橫向風速²，上限 `crosswind_max_force`，施力點是底盤座標的 `crosswind_center`（高於重心而偏前）。數值都在 [handling_profile.tres](../../rv/handling_profile.tres) 的 Crosswind 群組。`velocity_override` 給測試替換風速。
+
+方向盤抖動讀 `wind_load.shake`：推力變化率除以 `crosswind_shake_rate` 後平滑，[駕駛室外觀](../../rv/cockpit_visual.gd)以 `crosswind_shake_angle` 為上限疊在方向盤角度上。推力不存檔、不讀寫亂數。凍結或休眠的車體不跑 `_integrate_forces`，所以停到休眠的 RV 在陣風下不會晃。[test_rv_handling.gd](../../tests/test_rv_handling.gd) 驗證平靜無推力、順風無阻力、推力隨風速增加到上限，以及停車與直線行駛時最強陣風吹不翻。
 
 ### 駕駛、維修與保存
 
