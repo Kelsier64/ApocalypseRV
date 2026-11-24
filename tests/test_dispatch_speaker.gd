@@ -43,12 +43,14 @@ func run() -> void:
 		await physics_frame
 		var speaker := rv.get_node("DispatchSpeaker") as DispatchSpeaker
 		var count := rv.get_equipment().filter(func(device): return device is DispatchSpeaker).size()
-		check(count == 1 and speaker.mount_support == rv.get_node("WallFront"), "Both RV presets mount one receiver on their front panel")
+		check(count == 1 and speaker.mount_support == rv.get_node("RoofFront"), "Both RV presets hang one receiver from the front roof")
+		var to_driver: Vector3 = rv.get_node("DriverSeat/Camera3D").global_position - speaker.global_position
+		check(speaker.global_basis.z.dot(to_driver.normalized()) > 0.9, "The preinstalled receiver faces the driver")
 		if shell_scene.resource_path.ends_with("new_rv.tscn"):
 			check_device(rv, speaker)
-			rv.get_node("WallFront").take_damage(rv.get_node("WallFront").max_health)
+			rv.get_node("RoofFront").take_damage(rv.get_node("RoofFront").max_health)
 			await process_frame
-			check(not speaker.powered and not speaker.speaker.playing and not speaker.is_fixed, "Destroying the supporting wall drops and silences the receiver")
+			check(not speaker.powered and not speaker.speaker.playing and not speaker.is_fixed, "Destroying the supporting roof drops and silences the receiver")
 		else:
 			speaker.step_work(0.1)
 			speaker.receive()
@@ -157,7 +159,7 @@ func check_device(rv: Chassis, unit: DispatchSpeaker) -> void:
 	check(randi() == expected and coverage.rng.state == encounter_rng, "Receiver audio and sampling preserve gameplay RNG")
 	unit.detach_from_support()
 	check(not unit.powered and unit.schedule.is_stopped() and not unit.speaker.playing and not unit.noise.playing, "Detaching silences every playback layer")
-	unit.confirm_placement(unit.global_transform, rv, rv.get_node("WallFront"))
+	unit.confirm_placement(unit.global_transform, rv, rv.get_node("RoofFront"))
 	unit.step_work(0.1)
 	unit.key_handset()
 	check(unit.replying, "Reattaching restores service")

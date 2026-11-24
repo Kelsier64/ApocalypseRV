@@ -17,14 +17,14 @@
 | 自由安裝梯子與設備 | 正式；側門梯／登頂梯為可搬移 Item，自由貼牆安裝，玩家依梯攀爬；固定設備接通本車才工作 | [RV ladder](../../equipment/rv_ladder.gd)、[interaction](../../tests/playgrounds/rv_interaction_playground.tscn) |
 | 重量與重心 | 正式簡化模型；底盤、存活車殼、引擎及固定 Item 按位置彙總；燃油、庫存、材料與電池本體不計重，外掛力矩仍有限制 | [Chassis](../../rv/chassis.gd)、[架構限制](../../architecture.md#6-已知限制) |
 | 側風 | 天氣的風橫推 RV、側傾、陣風讓方向盤抖動 | [wind load](../../rv/wind_load.gd)、[weather](../../tests/playgrounds/weather_playground.tscn) |
-| 調度喇叭 | 前牆預裝的網路接收機，廣播、訊號表與本機發話回覆 | [設備](../../equipment/dispatch_speaker.tscn)、[試玩場景](../../tests/playgrounds/dispatch_speaker_playground.tscn) |
+| 調度喇叭 | 預裝在副駕駛上方天花板的網路接收機，廣播、訊號表與本機發話回覆 | [設備](../../equipment/dispatch_speaker.tscn)、[試玩場景](../../tests/playgrounds/dispatch_speaker_playground.tscn) |
 | 燈光、音效與視覺 | 正式；頭燈、車內／維修照明、引擎與操作回饋、引擎外觀震動；車內遮霧與屋頂雨遮 | [lights](../../rv/vehicle_lights.gd)、[audio](../../rv/vehicle_audio.gd)、[cabin air](../../rv/cabin_air.gd) |
 
 ## 規則與數值
 
 ### 車內調度喇叭
 
-駕駛室前擋右上方的喇叭預設中音量。離座後瞄準機身按 E，依序切換高、關、低、中；瞄準右側話筒按 E，會打斷廣播，交替播出兩句接收專線的本機回覆。回覆期間再按只聽到按鍵聲。長按 F 可以拆下，合成站可重製。
+喇叭預裝在副駕駛上方、前段屋頂的天花板下，貼近擋風玻璃，水平轉約 40° 朝向駕駛座，預設中音量；前段屋頂被打掉時會跟著掉落。離座後瞄準機身按 E，依序切換高、關、低、中；瞄準右側話筒按 E，會打斷廣播，交替播出兩句接收專線的本機回覆。回覆期間再按只聽到按鍵聲。長按 F 可以拆下，合成站可重製。
 
 通電時每秒消耗 0.01 電力，平板 Equipment 頁可查接收狀態或切換電源。缺電、關閉或失去支撐時，燈熄、指針歸零、聲音停止。檢查點沿用設備的開關欄位，重新載入時啟用的設備回到中音量。
 

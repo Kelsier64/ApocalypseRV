@@ -42,8 +42,9 @@ mount_slot = "roof_2"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.9)
 
 [node name="DispatchSpeaker" parent="Chassis" instance=ExtResource("dispatch")]
-position = Vector3(0.76, 2.36, -5.71)
-initial_support = NodePath("../WallFront")
+position = Vector3(0.7, 2.343, -5.385)
+rotation_degrees = Vector3(0, -40, 0)
+initial_support = NodePath("../RoofFront")
 freeze = true
 collision_mask = 0
 
