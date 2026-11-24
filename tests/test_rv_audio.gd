@@ -257,6 +257,7 @@ func _run() -> void:
 
 	_check_footstep_surfaces(chassis)
 	await _check_rv_footsteps(chassis)
+	await _check_wind_audio(sfx, chassis)
 	vehicle.queue_free()
 	await _check_monster_footfalls()
 	await _check_player_footsteps()
@@ -334,6 +335,129 @@ func _check_ambience(sfx: Node, inside: SubViewport, tone: AudioStream) -> void:
 	listener.queue_free()
 	ambience.free()
 	clock.free()
+
+
+func _check_wind_audio(sfx: Node, chassis: Chassis) -> void:
+	var calm := WorldWindAudio.tier_levels(0.0)
+	check(calm[0] == 0.0 and calm[1] == 0.0 and calm[2] == 0.0, "Calm plays no wind bed")
+	for tier in [WorldWind.BREEZE, WorldWind.STRONG, WorldWind.GALE]:
+		check(is_equal_approx(WorldWindAudio.tier_levels(float(tier))[tier - 1], 1.0), "%s plays its own wind bed" % WorldWind.DESCRIPTIONS[tier])
+	var between := WorldWindAudio.tier_levels(2.5)
+	check(between[1] > 0.0 and between[2] > 0.0 and is_equal_approx(between[1] * between[1] + between[2] * between[2], 1.0),
+		"Neighbouring wind beds crossfade at equal power")
+	check(WorldWindAudio.masking_for(0.0) == 0.0 and WorldWindAudio.masking_for(WorldWind.SPEEDS[WorldWind.BREEZE]) == 0.0
+		and WorldWindAudio.masking_for(WorldWind.SPEEDS[WorldWind.GALE]) > WorldWindAudio.masking_for(WorldWind.SPEEDS[WorldWind.STRONG]),
+		"Only a strong wind masks outside sound, a gale most")
+	check(WorldWindAudio.rush_rate(float(WorldWind.BREEZE), 1.0, 1.0) == 0.0 and WorldWindAudio.rush_rate(float(WorldWind.GALE), 0.0, 1.0) == 0.0
+		and WorldWindAudio.rush_rate(float(WorldWind.GALE), 1.0, 1.0) > WorldWindAudio.rush_rate(float(WorldWind.STRONG), 1.0, 1.0),
+		"Treetop rushes need trees and a strong wind, most in a gale")
+	for bed: AudioStream in WorldWindAudio.BEDS:
+		check(bed is AudioStreamOggVorbis and bed.loop, "%s is a looping Ogg Vorbis bed" % bed.resource_path.get_file())
+	check(WorldWindAudio.TREE_RUSH.bus == &"Outdoors" and not WorldWindAudio.TREE_RUSH.occlusion_by_position,
+		"Treetop rushes play on the outdoor ambience bus")
+
+	# Masking takes the larger of engine and wind, never their sum.
+	var exterior := AudioServer.get_bus_index(&"Exterior")
+	var outdoors := AudioServer.get_bus_index(&"Outdoors")
+	var speaker := AudioServer.get_bus_index(&"Loudspeaker")
+	sfx._set_mask(1.0, 1.0)
+	check(is_equal_approx(AudioServer.get_bus_volume_db(exterior), sfx.CLOSED_GAIN_DB * sfx._cover[&"Exterior"] + sfx.ENGINE_MASK_DB),
+		"Engine and wind masking together duck outside sound no more than either alone")
+	sfx._set_mask(0.0, 1.0)
+	check(is_equal_approx(AudioServer.get_bus_volume_db(exterior), sfx.CLOSED_GAIN_DB * sfx._cover[&"Exterior"] + sfx.ENGINE_MASK_DB),
+		"A full wind masks outside sound as much as a revving engine")
+	check(is_equal_approx(AudioServer.get_bus_volume_db(speaker), -sfx.ENGINE_MASK_DB * (1.0 - sfx.LOUDSPEAKER_MASK_SHARE)),
+		"The Slender Speaker gets most of the wind masking back")
+	check(is_equal_approx(AudioServer.get_bus_volume_db(outdoors), sfx.CLOSED_GAIN_DB * sfx._cover[&"Outdoors"]),
+		"The wind does not mask the outdoor bus it plays on")
+	sfx._set_mask(0.0, 0.0)
+
+	var clock := WorldClock.new()
+	clock.weather.initialize(7710)
+	clock.wind.initialize(clock.weather, 7710)
+	var ambience := WorldAmbience.new()
+	ambience.clock = clock
+	ambience.forest_override = 0.0
+	ambience.road_override = 0.0
+	var wind := WorldWindAudio.new()
+	wind.clock = clock
+	wind.ambience = ambience
+	root.add_child(ambience)
+	root.add_child(wind)
+	var listener := Camera3D.new()
+	root.add_child(listener)
+	listener.make_current()
+	listener.global_position = chassis.to_global(Vector3(30, 1.6, 0))
+	var settle := func() -> void:
+		clock.wind_velocity = clock.wind.velocity(clock.elapsed_seconds)
+		for i in range(ceili(sfx.TRANSITION_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	clock.wind.set_override(WorldWind.CALM)
+	await settle.call()
+	check(not wind._beds.any(func(bed): return bed.playing) and sfx.exterior_masking() == 0.0, "A calm is silent and masks nothing")
+	seed(7711)
+	var expected := randi()
+	seed(7711)
+	clock.wind.set_override(WorldWind.GALE)
+	await settle.call()
+	var gale: AudioStreamPlayer = wind._beds[WorldWind.GALE - 1]
+	check(gale.playing and gale.bus == &"Outdoors", "A gale plays its bed on the outdoor ambience bus")
+	check(sfx.wind_masking > 0.0 and sfx.exterior_masking() > 0.0, "A gale masks outside sound")
+	for voice in sfx._voices: voice.stop()
+	var growl := load("res://assets/audio/events/raker/growl.tres") as SoundEvent
+	check(sfx.play_at(growl, listener.global_position + Vector3(0, 0, -35)), "A distant growl plays in the wind")
+	var heard: Array = sfx._voices.filter(func(voice): return voice.playing)
+	check(heard.size() == 1 and heard[0].bus == &"Exterior" and heard[0].panning_strength < 1.0, "A gale blurs where outside sounds come from")
+	var open_db := gale.volume_db
+	wind.exposure_override = 1.0 - WorldWind.TREE_SHELTER
+	await process_frame
+	check(gale.volume_db < open_db, "Ground sheltered by trees hears the wind bed quieter")
+	wind.exposure_override = -1.0
+	ambience.forest = 1.0
+	check(wind.play_rush(float(WorldWind.GALE)), "A gale rushes through the treetops")
+	check(sfx._voices.any(func(voice): return voice.playing and voice.bus == &"Outdoors" and voice.stream in WorldWindAudio.TREE_RUSH.samples),
+		"Treetop rushes play on the outdoor ambience bus")
+	check(randi() == expected, "The wind audio leaves the gameplay RNG sequence intact")
+
+	var hull: RVWindAudio = chassis.get_node("Audio").weather_wind
+	check(RVWindAudio.whistle_level(0.0, 0) == 0.0 and RVWindAudio.whistle_level(WorldWind.SPEEDS[WorldWind.BREEZE], 0) == 0.0,
+		"The RV does not whistle in a calm or a breeze")
+	var gale_speed: float = WorldWind.SPEEDS[WorldWind.GALE]
+	check(RVWindAudio.whistle_level(gale_speed, 3) > RVWindAudio.whistle_level(gale_speed, 0)
+		and RVWindAudio.whistle_level(gale_speed, 0) > RVWindAudio.whistle_level(WorldWind.SPEEDS[WorldWind.STRONG], 0),
+		"The RV whistles louder in a gale and with panels missing")
+	check(RVWindAudio.rattle_rate(WorldWind.SPEEDS[WorldWind.BREEZE], 1.0) == 0.0 and RVWindAudio.rattle_rate(gale_speed, 0.0) == 0.0
+		and RVWindAudio.rattle_rate(gale_speed, 1.0) > 0.0, "Panels rattle only when a strong gust hits")
+	check(hull.whistle.bus == &"Exterior" and (hull.whistle.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD,
+		"The hull whistle loops outside the cabin shell")
+	hull.speed_override = gale_speed
+	await process_frame
+	check(hull.whistle.playing, "A gale whistles over the RV")
+	hull.speed_override = 0.0
+	await process_frame
+	check(not hull.whistle.playing, "The whistle stops when the wind drops")
+	hull.speed_override = -1.0
+	for voice in sfx._voices: voice.stop()
+	check(hull.play_rattle(), "A gust rattles a hull panel")
+	check(sfx._voices.any(func(voice): return voice.playing and voice.bus == &"Exterior" and voice.stream in RVWindAudio.RATTLE.samples),
+		"A panel rattle plays outside the cabin")
+
+	var inside := SubViewport.new()
+	inside.own_world_3d = true
+	root.add_child(inside)
+	var room_camera := Camera3D.new()
+	inside.add_child(room_camera)
+	room_camera.make_current()
+	sfx.set_listener_viewport(inside)
+	for i in range(ceili(WorldWindAudio.FADE_SECONDS * Engine.physics_ticks_per_second) + 10): await process_frame
+	check(not wind._beds.any(func(bed): return bed.playing) and sfx.exterior_masking() == 0.0, "Inside a POI the wind stops and masks nothing")
+	sfx.set_listener_viewport(root)
+	for voice in sfx._voices: voice.stop()
+	inside.queue_free()
+	listener.queue_free()
+	wind.free()
+	ambience.free()
+	clock.free()
+	check(sfx.wind_masking == 0.0, "Removing the wind audio clears its masking")
 
 
 func _check_monster_footfalls() -> void:
