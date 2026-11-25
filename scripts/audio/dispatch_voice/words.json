@@ -24,6 +24,19 @@
     "blocked": "Blocked", "ahead": "Ahead", "kilometers": "Kilometers",
     "advisory": "Advisory", "fog": "Fog", "end": "End", "of": "Of",
     "message": "Message", "repeat": "Repeat", "line": "Line", "receive": "Receive",
-    "only": "Only", "unauthorized": "Unauthorized", "transmission": "Transmission"
+    "only": "Only", "unauthorized": "Unauthorized", "transmission": "Transmission",
+
+    "you": "You", "are": "Are", "the": "The", "no": "No", "in": "In", "at": "At",
+    "from": "From", "if": "If", "does": "Does", "until": "Until",
+    "offline": "Offline", "restore": "Restore", "power": "Power", "arrival": "Arrival",
+    "resupply": "Resupply", "recover": "Recover", "materials": "Materials",
+    "survival": "Survival", "rules": "Rules", "look": "Look", "white": "White",
+    "dark": "Dark", "figures": "Figures", "light": "Light", "hear": "Hear",
+    "music": "Music", "drive": "Drive", "death": "Death", "assignment": "Assignment",
+    "replacement": "Replacement", "bodies": "Bodies", "authorized": "Authorized",
+    "evacuation": "Evacuation", "progress": "Progress", "corridor": "Corridor",
+    "complete": "Complete", "active": "Active", "lost": "Lost", "black": "Black",
+    "box": "Box", "response": "Response", "coverage": "Coverage", "ends": "Ends",
+    "signal": "Signal", "weak": "Weak", "alert": "Alert"
   }
 }

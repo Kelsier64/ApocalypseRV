@@ -61,11 +61,7 @@
 | 12 | 巨人是網路自己的警報單位，主管還把它當正常設備 |
 | 13–14 | 新身體醒來，同一條路線、同一個目的地，編號又加一 |
 
-### 要新增的詞
-
-旁白用到的詞有一部分還不在[詞庫](../../assets/audio/dispatch_voice/README.md)裡，要加進 `scripts/audio/dispatch_voice/words.json` 後重新產生：*you, are, offline, restore, power, arrival, no, resupply, recover, materials, from, the, survival, rules, look, at, white, figures, light, dark, if, hear, music, drive, death, does, assignment, replacement, bodies, authorized, evacuation, in, progress, corridor, until, complete, active, lost, black, box, response, coverage, ends, signal, weak, alert*。
-
-宣傳片要燒字幕，因為商店頁預設靜音自動播放。
+旁白用到的每個詞都在[詞庫](../../assets/audio/dispatch_voice/README.md)裡，可以用 `generate.mjs --audition am_adam --text "<全文>"` 拼出整段試聽，結果在 `.godot/dispatch_voice/audition/`。宣傳片要燒字幕，因為商店頁預設靜音自動播放。
 
 ## 劇本
 

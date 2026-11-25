@@ -79,6 +79,52 @@
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/only.wav" id="only"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/unauthorized.wav" id="unauthorized"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/transmission.wav" id="transmission"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/you.wav" id="you"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/are.wav" id="are"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/the.wav" id="the"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/no.wav" id="no"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/in.wav" id="in"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/at.wav" id="at"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/from.wav" id="from"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/if.wav" id="if"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/does.wav" id="does"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/until.wav" id="until"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/offline.wav" id="offline"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/restore.wav" id="restore"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/power.wav" id="power"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/arrival.wav" id="arrival"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/resupply.wav" id="resupply"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/recover.wav" id="recover"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/materials.wav" id="materials"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/survival.wav" id="survival"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/rules.wav" id="rules"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/look.wav" id="look"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/white.wav" id="white"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/dark.wav" id="dark"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/figures.wav" id="figures"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/light.wav" id="light"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/hear.wav" id="hear"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/music.wav" id="music"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/drive.wav" id="drive"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/death.wav" id="death"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/assignment.wav" id="assignment"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/replacement.wav" id="replacement"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/bodies.wav" id="bodies"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/authorized.wav" id="authorized"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/evacuation.wav" id="evacuation"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/progress.wav" id="progress"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/corridor.wav" id="corridor"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/complete.wav" id="complete"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/active.wav" id="active"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/lost.wav" id="lost"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/black.wav" id="black"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/box.wav" id="box"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/response.wav" id="response"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/coverage.wav" id="coverage"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/ends.wav" id="ends"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/signal.wav" id="signal"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/weak.wav" id="weak"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/alert.wav" id="alert"]
 
 [resource]
 script = ExtResource("script")
@@ -160,5 +206,51 @@ words = Dictionary[StringName, AudioStreamWAV]({
 &"receive": ExtResource("receive"),
 &"only": ExtResource("only"),
 &"unauthorized": ExtResource("unauthorized"),
-&"transmission": ExtResource("transmission")
+&"transmission": ExtResource("transmission"),
+&"you": ExtResource("you"),
+&"are": ExtResource("are"),
+&"the": ExtResource("the"),
+&"no": ExtResource("no"),
+&"in": ExtResource("in"),
+&"at": ExtResource("at"),
+&"from": ExtResource("from"),
+&"if": ExtResource("if"),
+&"does": ExtResource("does"),
+&"until": ExtResource("until"),
+&"offline": ExtResource("offline"),
+&"restore": ExtResource("restore"),
+&"power": ExtResource("power"),
+&"arrival": ExtResource("arrival"),
+&"resupply": ExtResource("resupply"),
+&"recover": ExtResource("recover"),
+&"materials": ExtResource("materials"),
+&"survival": ExtResource("survival"),
+&"rules": ExtResource("rules"),
+&"look": ExtResource("look"),
+&"white": ExtResource("white"),
+&"dark": ExtResource("dark"),
+&"figures": ExtResource("figures"),
+&"light": ExtResource("light"),
+&"hear": ExtResource("hear"),
+&"music": ExtResource("music"),
+&"drive": ExtResource("drive"),
+&"death": ExtResource("death"),
+&"assignment": ExtResource("assignment"),
+&"replacement": ExtResource("replacement"),
+&"bodies": ExtResource("bodies"),
+&"authorized": ExtResource("authorized"),
+&"evacuation": ExtResource("evacuation"),
+&"progress": ExtResource("progress"),
+&"corridor": ExtResource("corridor"),
+&"complete": ExtResource("complete"),
+&"active": ExtResource("active"),
+&"lost": ExtResource("lost"),
+&"black": ExtResource("black"),
+&"box": ExtResource("box"),
+&"response": ExtResource("response"),
+&"coverage": ExtResource("coverage"),
+&"ends": ExtResource("ends"),
+&"signal": ExtResource("signal"),
+&"weak": ExtResource("weak"),
+&"alert": ExtResource("alert")
 })
