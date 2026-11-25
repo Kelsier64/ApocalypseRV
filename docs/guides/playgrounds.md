@@ -8,6 +8,8 @@
 
 目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)、[dispatch_speaker_playground](../../tests/playgrounds/dispatch_speaker_playground.tscn)（車內調度喇叭的收訊、詞庫廣播、話筒回覆與字幕）。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
+[宣傳影片錄影世界](promo-capture.md)（`tests/playgrounds/promo/`）不是測試場，而是錄影工具：F 鍵錄影面板、接管鍵盤的自由鏡頭與 Movie Maker 自動演出都是刻意的設計，不改成新式。
+
 ## 啟動與固定截圖
 
 從專案根目錄直接啟動場景（不經編輯器），並把日誌寫到 `.godot/`。指令格式見[完整場景目錄](#完整場景目錄2026-11-02)。尚未用過的按鍵先對照場景腳本的 `_unhandled_input`。結束後檢查日誌沒有 `ERROR` 或 `SCRIPT ERROR`。

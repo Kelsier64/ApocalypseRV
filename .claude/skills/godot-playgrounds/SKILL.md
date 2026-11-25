@@ -9,6 +9,8 @@ A playground is a small slice of the game the user plays to judge a change by ha
 
 Older playgrounds in `tests/playgrounds/` use F-key panels, observer cameras and scripted replays. Do not copy them. Convert one to this design when the user next needs it; leave the rest alone.
 
+The promo capture world (`tests/playgrounds/promo/`) is a filming rig, not a playground. Its F-key director panel, free camera that takes over the keyboard, and Movie Maker autoplay are deliberate; do not convert it. See [promo-capture.md](../../../docs/guides/promo-capture.md).
+
 ## Principles
 
 1. **The user plays it like the game.** Use the production Player, RV, items and monsters with the normal input map and the normal HUD: WASD, mouse, E, F, G, the drive keys, Esc. Never rebind a game key to a playground action.
