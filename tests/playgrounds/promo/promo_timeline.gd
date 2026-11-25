@@ -16,6 +16,9 @@ const ACTIONS := {
 	"eyes": ["open", "seconds"],
 	"giant": [],
 	"steer": ["within"],
+	"giant_smash": [],
+	"giant_release": [],
+	"crawl": ["seconds"],
 	"marker": ["name"],
 	"end": [],
 }

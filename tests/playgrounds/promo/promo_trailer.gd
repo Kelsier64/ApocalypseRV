@@ -27,6 +27,14 @@ var swerve: Dictionary = {}
 var impact_seconds := -1.0
 var wreck: Node3D
 var giant: SlenderSpeaker
+## Giant phases already marked in take.json, and whether the crawl input is held.
+var _marked_phases: Dictionary = {}
+var _crawl_seconds := 0.0
+## Set by giant_release: forget the RV once the current attack ends.
+var _release_pending := false
+## After the release the giant turns to face the survivor before its AI resumes.
+var _turning := false
+const GIANT_TURN_DEGREES := 75.0
 var _speeds: Array[Vector2] = []
 var _look := {}
 var _eyes := {}
@@ -35,18 +43,52 @@ var _lids := ShaderMaterial.new()
 var _lid_rect: ColorRect
 
 func placement(world) -> Transform3D:
+	if world.shot.has("rv_at_pole"): return _crashed_pose(world)
 	return _road_mark(world.field, float(world.shot.distance), float(world.shot.get("lateral", 0.0)))
+
+## Where T2 leaves the RV: turned off the road with the pole `ahead` metres in front of
+## its centre and `side` metres to its right.
+func _crashed_pose(world) -> Transform3D:
+	var spec: Dictionary = world.shot.rv_at_pole
+	var pole_spec: Dictionary = world.shot.crash_pole
+	var point := _road_mark(world.field, float(world.shot.distance) + float(pole_spec.s), float(pole_spec.lateral))
+	var basis := point.basis.rotated(Vector3.UP, deg_to_rad(float(spec.get("yaw", 0.0))))
+	var origin := point.origin + basis.z * float(spec.ahead) - basis.x * float(spec.get("side", 0.0))
+	origin.y = world.field.height_at(origin.x, origin.z)
+	return Transform3D(basis, origin)
 
 func prepare(world) -> bool:
 	if not await super.prepare(world): return false
 	timeline.load_from(world.shot.timeline)
 	if not broadcast.attach(world.rv, int(world.shot.get("radio_level", 1))): return false
+	if not world.shot.get("radio", true): broadcast.silence()
 	_build_eyelids(world, 1.0 if world.shot.get("eyes_closed", false) else 0.0)
 	if world.shot.get("invulnerable", false): world.actor.invulnerable = true
 	if world.shot.has("wreck") and not await _stage_wreck(world, world.shot.wreck): return false
 	if world.shot.has("crash_pole"): _stage_pole(world, world.shot.crash_pole)
+	if world.shot.has("prone"): _stage_prone(world, world.shot.prone)
+	if not world.shot.get("engine", true): return true
 	# The engine idles behind the handbrake until the timeline starts.
 	return world.rv.set_engine_running(true)
+
+## The driver thrown clear: lying on the road in the crawl posture, looking at `look`
+## (road coordinates, metres up) with the keyboard theirs for the crawl.
+func _stage_prone(world, spec: Dictionary) -> void:
+	var field: WorldField = world.field
+	var actor: CharacterBody3D = world.actor
+	var mark := _road_mark(field, float(world.shot.distance) + float(spec.s), float(spec.lateral))
+	actor.global_position = mark.origin + Vector3.UP * 0.05
+	actor.camera_locked = false
+	actor.rv_support.clear()
+	actor.set_prone(true)
+	# The game cuts to a third-person observer when the giant holds the survivor at its
+	# speaker. Hand the view back before that frame is drawn.
+	actor.child_entered_tree.connect(func(node: Node) -> void:
+		if node.name == "ExecutionObserver": _keep_first_person.call_deferred(actor))
+	actor.reset_physics_interpolation()
+	var look: Dictionary = spec.look
+	var target := _road_mark(field, float(world.shot.distance) + float(look.s), float(look.lateral)).origin
+	world._aim_at(target + Vector3.UP * float(look.get("up", 0.0)))
 
 ## The previous unit's RV on its side, as scenery: no physics, no processing, and out of
 ## the RV groups so neither monsters nor equipment treat it as a vehicle.
@@ -99,7 +141,7 @@ func _rest_on_ground(node: Node3D, ground: float) -> void:
 
 func trigger(world) -> bool:
 	if timeline.running or triggered: return false
-	world.rv.set_handbrake(false)
+	if world.shot.get("seat", false): world.rv.set_handbrake(false)
 	timeline.start()
 	triggered = true
 	return true
@@ -113,13 +155,21 @@ func tick(world, delta: float) -> void:
 	if not swerve.is_empty(): _steer(world)
 	else: _cruise(world)
 	_watch_impact(world)
+	_watch_execution(world)
+	_hold_crawl(delta)
 	_ease_view(world, delta)
+
+const DRIVING := ["drive", "gear", "brake", "steer"]
 
 func _fire(world, cue: Dictionary) -> bool:
 	var rv: Chassis = world.rv
+	# Memory shots are driven by hand in live takes; only unattended takes follow the script.
+	if str(cue.do) in DRIVING and world.shot.get("live_controls", false) and not unattended: return true
 	match str(cue.do):
 		"drive":
-			cruise = {"speed": float(cue.speed), "lateral": float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))}
+			var from := float(cruise.get("lateral", world.shot.get("lateral", 0.0)))
+			cruise = {"speed": float(cue.speed), "lateral": float(cue.get("lateral", from)),
+				"from": from, "seconds": float(cue.get("seconds", 0.0)), "time": 0.0}
 			if rv.gear == 0: rv.set_gear(1)
 		"gear":
 			return rv.set_gear(int(cue.gear))
@@ -158,6 +208,14 @@ func _fire(world, cue: Dictionary) -> bool:
 		"steer":
 			if pole.is_empty(): return false
 			swerve = {"within": float(cue.within), "active": false}
+		"giant_smash":
+			return _giant_smash(world)
+		"giant_release":
+			if not is_instance_valid(giant): return false
+			_release_pending = true
+		"crawl":
+			# Live takes crawl with the keyboard.
+			if unattended: _crawl_seconds = float(cue.seconds)
 	return true
 
 ## The giant stands in the RV's lane just beyond a pole, facing the RV, with its AI off.
@@ -168,12 +226,101 @@ func _place_giant(world, cue: Dictionary) -> bool:
 	var lateral := float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))
 	var mark := _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), lateral)
 	giant = world.spawn(SlenderSpeakerSpawns.SCENE, mark.origin + Vector3.UP * 0.05, WorldEntities.get_container(world))
+	giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 	giant.set_physics_process(false)
 	var rv: Vector3 = world.rv.global_position
 	giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
+	# A take that opens on the giant starts with its music already at full level.
+	if not bool(cue.get("fade", true)): giant.patrol_music._fade_elapsed = giant.patrol_music.FADE_SECONDS
 	world.subject = giant
 	world.director.mark("giant")
 	return true
+
+## The giant tears at the crashed RV's roof as if it had seen someone in the cabin. From
+## there its own AI runs: it notices the survivor on the ground, grabs and executes them.
+func _giant_smash(world) -> bool:
+	if not is_instance_valid(giant): return false
+	var rv: Chassis = world.rv
+	var cabin: Vector3 = rv.get_node("DriverSeat").global_position + Vector3.UP * 0.6
+	giant.target_vehicle = rv
+	var plan: Dictionary = giant._parked_attack.update(giant, rv, 0.0, null, cabin)
+	if not plan.has("surface_point"):
+		push_error("PROMO: the giant found no roof to smash (%s)" % plan.get("status"))
+		return false
+	var stand: Vector3 = plan.get("standoff_point", plan.get("navigation_point", giant.global_position))
+	giant.global_position = Vector3(stand.x, world.field.height_at(stand.x, stand.z) + 0.05, stand.z)
+	var facing: Vector3 = plan.get("facing_point", plan.surface_point)
+	giant.look_at(Vector3(facing.x, giant.global_position.y, facing.z))
+	giant.reset_physics_interpolation()
+	plan = giant._parked_attack.update(giant, rv, 0.0, null, cabin)
+	if not plan.has("surface_point"): return false
+	giant._parked_plan = plan
+	if world.shot.has("prone") and world.shot.prone.has("from_giant"): _place_beside_giant(world, world.shot.prone.from_giant)
+	giant.set_physics_process(true)
+	giant._begin_smash(plan.get("smash_kind", "roof"))
+	world.director.mark("smash")
+	return true
+
+## Moves the prone survivor out on the giant's side of the RV, where the wreck cannot
+## block its sight: `distance` metres from the giant, `angle` degrees off the line from
+## the RV through the giant, looking between the giant's chest and the roof.
+func _place_beside_giant(world, spec: Dictionary) -> void:
+	var actor: CharacterBody3D = world.actor
+	var away: Vector3 = (giant.global_position - world.rv.global_position).slide(Vector3.UP).normalized()
+	var point: Vector3 = giant.global_position + away.rotated(Vector3.UP, deg_to_rad(float(spec.get("angle", 0.0)))) * float(spec.distance)
+	point.y = world.field.height_at(point.x, point.z) + 0.05
+	actor.global_position = point
+	actor.reset_physics_interpolation()
+	var focus := giant.global_position.lerp(world.rv.global_position, float(spec.get("toward_rv", 0.35)))
+	world._aim_at(focus + Vector3.UP * float(spec.get("up", 4.0)))
+
+func _keep_first_person(actor: Node) -> void:
+	var grab: Node = actor.grab_control
+	if is_instance_valid(grab.execution_observer) and grab.execution_observer.current and is_instance_valid(grab.camera):
+		grab.camera.make_current()
+
+## Keeps the execution in the survivor's eyes and marks the giant's attack phases.
+func _watch_execution(world) -> void:
+	_keep_first_person(world.actor)
+	if not is_instance_valid(giant): return
+	if _release_pending and giant.phase in [SlenderSpeaker.Phase.PATROL, SlenderSpeaker.Phase.CONFIRM, SlenderSpeaker.Phase.CHASE, SlenderSpeaker.Phase.SEARCH]:
+		# Left alone the giant keeps inspecting the roof it saw first and takes about
+		# twenty seconds to settle on the survivor in plain sight on the road. Taking
+		# the wreck out of the RV group leaves it only the survivor to pursue.
+		world.rv.remove_from_group(Groups.RV)
+		_release_pending = false
+		giant._encounter.reset()
+		giant._encounter_decision.clear()
+		giant._parked_plan.clear()
+		giant._parked_attack.reset()
+		giant.target_vehicle = null
+		giant._set_phase(SlenderSpeaker.Phase.PATROL)
+		giant.set_physics_process(false)
+		_turning = true
+		world.director.mark("release")
+	if _turning:
+		var to: Vector3 = (world.actor.global_position - giant.global_position).slide(Vector3.UP)
+		var yaw := atan2(-to.x, -to.z)
+		giant.rotation.y = rotate_toward(giant.rotation.y, yaw, deg_to_rad(GIANT_TURN_DEGREES) * world.get_physics_process_delta_time())
+		if absf(angle_difference(giant.rotation.y, yaw)) < 0.02:
+			_turning = false
+			giant.set_physics_process(true)
+			world.director.mark("turned")
+	var phase_names := {SlenderSpeaker.Phase.GRAB: "grab", SlenderSpeaker.Phase.LIFT: "lift",
+		SlenderSpeaker.Phase.HOLD: "hold", SlenderSpeaker.Phase.CRUSH: "crush"}
+	if phase_names.has(giant.phase) and not _marked_phases.has(giant.phase):
+		_marked_phases[giant.phase] = timeline.clock
+		world.director.mark(phase_names[giant.phase])
+	if world.actor.is_player_dead and not _marked_phases.has("death"):
+		_marked_phases["death"] = timeline.clock
+		world.director.mark("death")
+
+## Holds forward for the unattended crawl.
+func _hold_crawl(delta: float) -> void:
+	if _crawl_seconds <= 0.0: return
+	_crawl_seconds -= delta
+	if _crawl_seconds > 0.0: Input.action_press("move_forward")
+	else: Input.action_release("move_forward")
 
 ## Full throttle at the pole once the RV is within the armed distance of it.
 func _steer(world) -> void:
@@ -214,7 +361,10 @@ func _cruise(world) -> void:
 	var frame: Transform3D = road.frame
 	var speed := rv.linear_velocity.length() * 3.6
 	var lookahead := clampf(5.0 + speed / 3.6 * 0.65, 5.0, 13.0)
-	var ahead := _road_mark(field, float(road.s) + lookahead * absf(frame.basis.z.z), float(cruise.lateral))
+	# A lateral move eases across `seconds` instead of turning straight at the new line.
+	cruise.time += world.get_physics_process_delta_time()
+	var blend := smoothstep(0.0, 1.0, cruise.time / cruise.seconds) if cruise.seconds > 0.0 else 1.0
+	var ahead := _road_mark(field, float(road.s) + lookahead * absf(frame.basis.z.z), lerpf(cruise.from, cruise.lateral, blend))
 	var relative := rv.to_local(ahead.origin)
 	var correction := -atan2(relative.x, maxf(0.1, -relative.z))
 	var error := float(cruise.speed) - speed
@@ -264,6 +414,7 @@ func autoplay(world) -> float:
 	if world.director.exterior_requested(): world.director.follow_preset("chase", world.rv)
 	return timeline.length() + float(world.shot.get("tail", 0.5))
 
-func autoplay_error(_world) -> String:
+func autoplay_error(world) -> String:
 	if not swerve.is_empty() and impact_seconds < 0.0: return "The RV never hit the pole"
+	if world.shot.has("prone") and not _marked_phases.has("death"): return "The giant never executed the survivor"
 	return ""

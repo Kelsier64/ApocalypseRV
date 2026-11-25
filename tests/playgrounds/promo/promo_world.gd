@@ -10,7 +10,7 @@ const WORKSHOP := preload("res://tests/playgrounds/promo/promo_workshop.gd")
 const TRAILER := preload("res://tests/playgrounds/promo/promo_trailer.gd")
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const SHOTS := ["B1", "B2", "B3", "B4", "B5", "B6", "O1", "O2", "O3", "O4", "O5",
-	"D1", "D2", "D3", "D4", "D5", "R1", "R2", "R3", "W1", "W2", "W3", "T1", "T2"]
+	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "T1", "T2", "T3"]
 const SHOT_PATH := "res://tests/playgrounds/promo/shots/%s.json"
 static var next_shot := ""
 static var next_variant := 0

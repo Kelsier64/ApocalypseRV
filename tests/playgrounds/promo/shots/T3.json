@@ -1,0 +1,26 @@
+{
+  "title": "Act three on the ground (smash, grab, execution)",
+  "steps": "Thrown clear of the RV crashed at the pole in T2, lying on the road in heavy fog. F3 starts the timeline: open the eyes, watch the giant tear at the roof, then crawl forward (W). The giant notices you, grabs and lifts you to its speaker; the view stays first-person through the execution. Cut on the crush marker in take.json.",
+  "action": "Start the timeline",
+  "seed": 42,
+  "distance": 75,
+  "hour": 15,
+  "weather": [0, 0, 2],
+  "engine": false,
+  "radio": false,
+  "drives": true,
+  "crash_pole": { "s": 345, "lateral": 8.6, "lean": -3 },
+  "rv_at_pole": { "yaw": -30, "ahead": 6.2, "side": 1.8 },
+  "prone": { "s": 330, "lateral": -0.5, "look": { "s": 343, "lateral": 5.5, "up": 3.5 }, "from_giant": { "distance": 12, "angle": 35, "toward_rv": 0.35, "up": 4 } },
+  "eyes_closed": true,
+  "timeline": [
+    { "at": 0, "do": "giant", "beyond": 12, "fade": false },
+    { "at": 0.05, "do": "giant_smash" },
+    { "at": 0.2, "do": "eyes", "open": true, "seconds": 0.9 },
+    { "at": 1.7, "do": "eyes", "open": false, "seconds": 0.15 },
+    { "at": 1.9, "do": "eyes", "open": true, "seconds": 0.5 },
+    { "at": 2.0, "do": "giant_release" },
+    { "at": 3.0, "do": "crawl", "seconds": 4 },
+    { "at": 15.5, "do": "end" }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Off the road",
+  "steps": "Seated driver on the opening road with the engine idling. F3 releases the handbrake: drive off the road onto the grass on the left and keep going across it. An unattended take (-Preview) drives it on its own.",
+  "action": "Start the timeline",
+  "seed": 42,
+  "distance": 120,
+  "hour": 14,
+  "weather": [0, 0, 0],
+  "seat": true,
+  "drives": true,
+  "live_controls": true,
+  "lateral": -1.8,
+  "timeline": [
+    { "at": 0, "do": "drive", "speed": 22 },
+    { "at": 2.5, "do": "gear", "gear": 2 },
+    { "at": 4, "do": "drive", "speed": 28, "lateral": -24, "seconds": 4 },
+    { "at": 16, "do": "end" }
+  ]
+}
