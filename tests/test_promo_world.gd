@@ -178,7 +178,7 @@ func _check_bunker(world: Node) -> void:
 		_check(restarted.trigger_take() and restarted.apparition.global_position.is_equal_approx(initial), "B2 triggers again at the same mark")
 
 func _check_remaining_takes() -> void:
-	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "T1"]
+	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "T1", "T2"]
 	for id in ids:
 		if id in ["B2", "R2"]: continue
 		var previous := current_scene
@@ -287,6 +287,20 @@ func _verify_timeline(world: Node) -> void:
 	_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
 	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
 	_check(stage.timeline.clock >= first_line and world.rv.global_position.distance_to(start) > 5.0, world.shot_id + " cruises on the timeline")
+	if world.shot.has("wreck"):
+		var chassis: Node = stage.wreck.get_node("Chassis")
+		_check(stage.wreck.process_mode == Node.PROCESS_MODE_DISABLED and not chassis.is_in_group(Groups.RV),
+			world.shot_id + " stages the wreck as scenery, outside the RV group")
+	if not world.shot.has("crash_pole"): return
+	var limit := int((stage.timeline.length() + 1.0) * Engine.physics_ticks_per_second)
+	for frame in limit:
+		await physics_frame
+		if stage.impact_seconds >= 0.0 or not stage.timeline.running: break
+	_check(is_instance_valid(stage.giant) and not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing,
+		world.shot_id + " places a still giant whose loudspeaker plays")
+	_check(stage.impact_seconds >= 0.0 and world.rv.global_position.distance_to(stage.pole.point) < 10.0,
+		world.shot_id + " swerves into the staged pole (impact at %.2f s)" % stage.impact_seconds)
+	_check(not speaker.speaker.playing and not speaker.noise.playing, world.shot_id + " leaves the cab speaker silent after radio_off")
 
 func _verify_road_contact(world: Node) -> void:
 	world.stage.drive_replay = true

@@ -5,14 +5,29 @@ extends "res://tests/playgrounds/promo/promo_outdoor.gd"
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const BROADCAST := preload("res://tests/playgrounds/promo/promo_broadcast.gd")
 const EYELIDS := preload("res://player/san_eyelids.gdshader")
+const RV_SCENE := "res://rv/new_rv.tscn"
+const CORPSE := "res://props/corpse.tscn"
 const STEERING_GAIN := 2.4
 ## Throttle or brake per km/h of speed error.
 const SPEED_GAIN := 0.12
+## A sudden loss of this share of the speed, and at least IMPACT_DROP km/h, within
+## IMPACT_WINDOW seconds is the crash.
+const IMPACT_DROP := 10.0
+const IMPACT_SHARE := 0.35
+const IMPACT_WINDOW := 0.25
 
 var timeline := TIMELINE.new()
 var broadcast := BROADCAST.new()
 var cruise: Dictionary = {}
 var unattended := false
+## The staged pole the giant stands beyond and the swerve aims at: {s, point, node}.
+var pole: Dictionary = {}
+## Armed swerve: {"within": metres}; "active" once the RV is that close to the pole.
+var swerve: Dictionary = {}
+var impact_seconds := -1.0
+var wreck: Node3D
+var giant: SlenderSpeaker
+var _speeds: Array[Vector2] = []
 var _look := {}
 var _eyes := {}
 var _weather := {}
@@ -27,8 +42,60 @@ func prepare(world) -> bool:
 	timeline.load_from(world.shot.timeline)
 	if not broadcast.attach(world.rv, int(world.shot.get("radio_level", 1))): return false
 	_build_eyelids(world, 1.0 if world.shot.get("eyes_closed", false) else 0.0)
+	if world.shot.get("invulnerable", false): world.actor.invulnerable = true
+	if world.shot.has("wreck") and not await _stage_wreck(world, world.shot.wreck): return false
+	if world.shot.has("crash_pole"): _stage_pole(world, world.shot.crash_pole)
 	# The engine idles behind the handbrake until the timeline starts.
 	return world.rv.set_engine_running(true)
+
+## The previous unit's RV on its side, as scenery: no physics, no processing, and out of
+## the RV groups so neither monsters nor equipment treat it as a vehicle.
+func _stage_wreck(world, spec: Dictionary) -> bool:
+	var field: WorldField = world.field
+	var container := WorldEntities.get_container(world)
+	wreck = (load(RV_SCENE) as PackedScene).instantiate() as Node3D
+	wreck.name = "PromoWreck"
+	wreck.process_mode = Node.PROCESS_MODE_DISABLED
+	container.add_child(wreck)
+	var chassis := wreck.get_node("Chassis")
+	for group in [Groups.RV, Groups.CHASSIS, Groups.MONSTER_DAMAGEABLE]: chassis.remove_from_group(group)
+	var distance := float(world.shot.distance) + float(spec.s)
+	var pose := _road_mark(field, distance, float(spec.lateral))
+	pose.basis = pose.basis.rotated(pose.basis.y, deg_to_rad(float(spec.get("yaw", 0.0))))
+	pose.basis = pose.basis.rotated(pose.basis.z, deg_to_rad(float(spec.get("roll", 90.0))))
+	wreck.global_transform = pose
+	await world.get_tree().process_frame
+	_rest_on_ground(wreck, field.height_at(pose.origin.x, pose.origin.z))
+	if spec.has("corpse"):
+		var mark := _road_mark(field, distance + float(spec.corpse.s), float(spec.corpse.lateral))
+		var corpse: CorpseProp = world.spawn(CORPSE, mark.origin + Vector3.UP * 0.6, container)
+		corpse.kind = "player"
+		corpse.item_name = "Player remains"
+		corpse.rotate_y(deg_to_rad(float(spec.corpse.get("yaw", 0.0))))
+	return true
+
+## A utility pole on the flat shoulder. The generated poles stand on the embankment, where
+## the RV stalls before reaching them; in fog this one reads as part of the same line.
+func _stage_pole(world, spec: Dictionary) -> void:
+	var field: WorldField = world.field
+	var s := float(world.shot.distance) + float(spec.s)
+	var pose := _road_mark(field, s, float(spec.lateral))
+	pose.basis = pose.basis.rotated(pose.basis.x, deg_to_rad(float(spec.get("lean", 0.0))))
+	var node := RoadsideKit.instantiate_module("pole")
+	node.name = "PromoCrashPole"
+	WorldEntities.get_container(world).add_child(node)
+	node.global_transform = pose
+	pole = {"s": s, "point": pose.origin, "node": node}
+
+## Lowers or raises a node so its lowest mesh corner touches the ground height.
+func _rest_on_ground(node: Node3D, ground: float) -> void:
+	var lowest := INF
+	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
+		if not mesh.is_visible_in_tree() or mesh.mesh == null: continue
+		var box := mesh.get_aabb()
+		for corner in 8:
+			lowest = minf(lowest, (mesh.global_transform * box.get_endpoint(corner)).y)
+	if lowest < INF: node.global_position.y += ground + 0.03 - lowest
 
 func trigger(world) -> bool:
 	if timeline.running or triggered: return false
@@ -43,7 +110,9 @@ func tick(world, delta: float) -> void:
 	if not timeline.advance(delta, func(cue: Dictionary) -> bool: return _fire(world, cue)):
 		world._fail("Timeline action failed")
 		return
-	_cruise(world)
+	if not swerve.is_empty(): _steer(world)
+	else: _cruise(world)
+	_watch_impact(world)
 	_ease_view(world, delta)
 
 func _fire(world, cue: Dictionary) -> bool:
@@ -84,7 +153,58 @@ func _fire(world, cue: Dictionary) -> bool:
 				"seconds": maxf(0.01, float(cue.seconds)), "time": 0.0}
 		"marker":
 			world.director.mark(str(cue.name))
+		"giant":
+			return _place_giant(world, cue)
+		"steer":
+			if pole.is_empty(): return false
+			swerve = {"within": float(cue.within), "active": false}
 	return true
+
+## The giant stands in the RV's lane just beyond a pole, facing the RV, with its AI off.
+## Its head loudspeaker still fades in and stages distance on its own.
+func _place_giant(world, cue: Dictionary) -> bool:
+	if pole.is_empty(): return false
+	var field: WorldField = world.field
+	var lateral := float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))
+	var mark := _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), lateral)
+	giant = world.spawn(SlenderSpeakerSpawns.SCENE, mark.origin + Vector3.UP * 0.05, WorldEntities.get_container(world))
+	giant.set_physics_process(false)
+	var rv: Vector3 = world.rv.global_position
+	giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
+	world.subject = giant
+	world.director.mark("giant")
+	return true
+
+## Full throttle at the pole once the RV is within the armed distance of it.
+func _steer(world) -> void:
+	var rv: Chassis = world.rv
+	var flat := Vector3(pole.point.x, rv.global_position.y, pole.point.z)
+	if not swerve.active:
+		if rv.global_position.distance_to(flat) > swerve.within:
+			_cruise(world)
+			return
+		swerve.active = true
+		world.director.mark("swerve")
+	if impact_seconds >= 0.0:
+		rv.control_override = {"throttle": 0.0, "brake": 0.0, "steering": 0.0}
+		return
+	var relative := rv.to_local(flat)
+	var correction := -atan2(relative.x, maxf(0.1, -relative.z))
+	rv.control_override = {"throttle": 1.0, "brake": 0.0, "steering": clampf(correction * STEERING_GAIN, -1.0, 1.0)}
+
+## Marks the crash: a sudden loss of speed while swerving.
+func _watch_impact(world) -> void:
+	if swerve.is_empty() or not swerve.active or impact_seconds >= 0.0: return
+	var now := timeline.clock
+	var speed: float = world.rv.linear_velocity.length() * 3.6
+	_speeds.append(Vector2(now, speed))
+	while _speeds.size() > 1 and now - _speeds.front().x > IMPACT_WINDOW: _speeds.pop_front()
+	var peak := 0.0
+	for sample in _speeds: peak = maxf(peak, sample.y)
+	if peak - speed >= maxf(IMPACT_DROP, peak * IMPACT_SHARE):
+		impact_seconds = now
+		world.director.mark("impact")
+		print("PROMO IMPACT: %.2f s, %.0f -> %.0f km/h, %.1f m from the pole" % [now, peak, speed, world.rv.global_position.distance_to(pole.point)])
 
 func _cruise(world) -> void:
 	if cruise.is_empty(): return
@@ -145,4 +265,5 @@ func autoplay(world) -> float:
 	return timeline.length() + float(world.shot.get("tail", 0.5))
 
 func autoplay_error(_world) -> String:
+	if not swerve.is_empty() and impact_seconds < 0.0: return "The RV never hit the pole"
 	return ""

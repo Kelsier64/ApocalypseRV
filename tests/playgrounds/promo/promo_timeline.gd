@@ -14,6 +14,8 @@ const ACTIONS := {
 	"weather": ["to", "seconds"],
 	"look": ["yaw", "pitch", "seconds"],
 	"eyes": ["open", "seconds"],
+	"giant": [],
+	"steer": ["within"],
 	"marker": ["name"],
 	"end": [],
 }
