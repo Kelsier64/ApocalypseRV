@@ -78,12 +78,44 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | D1–D5 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車 |
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
+| T1 | 宣傳片：駕駛座錨點（開場；變體 1 是結尾）。加 `-Exterior` 錄第一段的車外跟拍 |
+
+T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡頭檔裡的時間軸。
 
 B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生成規則掃描種子，結果寫到 `.godot/promo/scout.json`：
 
 ```powershell
 godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 ```
+
+## 時間軸
+
+鏡頭檔可以有 `timeline`：一串依秒數排列的事件，F3 或 `-Preview` 開始計時。時間跟著遊戲的物理時間走，所以 F8 慢動作和 Movie Maker 都會同步。格式與每個動作需要的參數在 [promo_timeline.gd](../../tests/playgrounds/promo/promo_timeline.gd) 的 `ACTIONS`，做法在 [promo_trailer.gd](../../tests/playgrounds/promo/promo_trailer.gd)：
+
+| 動作 | 做什麼 |
+|---|---|
+| `drive` | 沿公路巡航，`speed` 是時速（km/h），`lateral` 是離路中心的側向距離 |
+| `gear`、`brake` | 換檔；剎停並結束巡航 |
+| `line` | 車內調度喇叭播出旁白第 `id` 句 |
+| `static` | 把收訊固定在 `level`（0–1），越低底噪越大；`cut` 立刻切斷正在播的句子 |
+| `radio_off` | 喇叭完全安靜到鏡頭結束 |
+| `weather` | 在 `seconds` 秒內把天氣變成 `to`（晴、雨、霧） |
+| `look` | 在 `seconds` 秒內把駕駛座視角轉到 `yaw`、`pitch`（度）。只在自動演出生效，現場錄影由滑鼠控制 |
+| `eyes` | 用遊戲的眼皮效果在 `seconds` 秒內睜眼或閉眼 |
+| `marker` | 在 `take.json` 留一個標記 |
+| `end` | 鏡頭在這裡結束；自動演出照這個時間停止錄影 |
+
+時間軸格式錯誤時，載入鏡頭就失敗並顯示原因。`line` 和 `marker` 會把影格編號寫進 `take.json` 的 `markers`，剪輯時用來對字幕與硬切點。
+
+### 旁白
+
+旁白的詞在 [narration.json](../../tests/playgrounds/promo/narration.json)，用遊戲的主管詞庫一個字一個字拼接，詞間與句間的停頓跟遊戲廣播相同。拍攝時車內喇叭的廣播排程停用、收訊固定，不會插播遊戲廣播。剪輯時另外上的句子用下面的指令匯出成 WAV，連同每句長度與字幕寫進 `.godot/promo/narration/`：
+
+```powershell
+godot --headless --path . --script res://scripts/promo_narration.gd
+```
+
+旁白用到的詞要先在詞庫裡，加詞的方法見[主管詞庫語音](../../assets/audio/dispatch_voice/README.md)。
 
 ## 測試
 

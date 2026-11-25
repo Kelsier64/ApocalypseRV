@@ -3,6 +3,8 @@ extends SceneTree
 const SCENE := "res://tests/playgrounds/promo/promo_world.tscn"
 const Perception := preload("res://core/apparition_perception.gd")
 const RAIL := preload("res://tests/playgrounds/promo/promo_rail.gd")
+const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
+const BROADCAST := preload("res://tests/playgrounds/promo/promo_broadcast.gd")
 var failures: Array[String] = []
 
 func _initialize() -> void:
@@ -23,6 +25,7 @@ func _wait_for_take(id: String, previous: Node = null) -> Node:
 
 func _run() -> void:
 	_check_rail_math()
+	_check_timelines()
 	change_scene_to_file(SCENE)
 	var world := await _wait_for_take("R2")
 	if world != null:
@@ -96,6 +99,24 @@ func _check_rail_math() -> void:
 	_check(loaded.load_file(path) and loaded.size() == 3 and loaded.authored() and loaded.sample(0.5).transform.origin.is_equal_approx(rail.sample(0.5).transform.origin), "Saved rail loads back identically")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
+func _check_timelines() -> void:
+	for sample in [[], [{"at": 1.0, "do": "drive", "speed": 50}, {"at": 0.5, "do": "end"}],
+		[{"at": 0.0, "do": "fly"}], [{"at": 0.0, "do": "line"}], [{"do": "end"}]]:
+		_check(not TIMELINE.check(sample).is_empty(), "Timeline check rejects %s" % JSON.stringify(sample))
+	var world_script: Script = load(SCENE.get_basename() + ".gd")
+	var shots: Array = world_script.SHOTS
+	for id in shots:
+		var shot: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(world_script.SHOT_PATH % id))
+		for entry in [shot] + shot.get("variants", []):
+			if entry.has("timeline"): _check(TIMELINE.check(entry.timeline).is_empty(), "%s timeline: %s" % [id, TIMELINE.check(entry.timeline)])
+			for cue in entry.get("timeline", []):
+				if cue.do == "line": _check(BROADCAST.narration().has(str(int(cue.id))), "%s plays an existing narration line" % id)
+	var bank: WordBank = load("res://assets/audio/dispatch_voice/word_bank.tres")
+	var lines := BROADCAST.narration()
+	_check(not lines.is_empty(), "Trailer narration loads")
+	for id in lines:
+		_check(bank.missing(BROADCAST.tokens(lines[id])).is_empty(), "Narration line %s uses only word-bank words: %s" % [id, bank.missing(BROADCAST.tokens(lines[id]))])
+
 func _check_director(world: Node) -> void:
 	var director: Node = world.director
 	director.open_panel()
@@ -157,7 +178,7 @@ func _check_bunker(world: Node) -> void:
 		_check(restarted.trigger_take() and restarted.apparition.global_position.is_equal_approx(initial), "B2 triggers again at the same mark")
 
 func _check_remaining_takes() -> void:
-	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2"]
+	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "T1"]
 	for id in ids:
 		if id in ["B2", "R2"]: continue
 		var previous := current_scene
@@ -173,6 +194,9 @@ func _check_remaining_takes() -> void:
 		print("PROMO TEST: ", id)
 
 func _verify_action(world: Node) -> void:
+	if world.shot.has("timeline"):
+		await _verify_timeline(world)
+		return
 	match world.shot_id:
 		"B1":
 			var cache: BunkerCache = world.staged[0]
@@ -246,6 +270,23 @@ func _verify_action(world: Node) -> void:
 			await physics_frame
 			world.actor.placement.update_ghost(world.actor)
 			_check(world.actor.placement.commit(world.actor), "R3 mount mark accepts installation of the staged item box")
+
+func _verify_timeline(world: Node) -> void:
+	var stage = world.stage
+	var speaker: DispatchSpeaker = stage.broadcast.speaker
+	var first_line := -1.0
+	for cue in world.shot.timeline:
+		if cue.do == "line":
+			first_line = float(cue.at)
+			break
+	var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
+	var start: Vector3 = world.rv.global_position
+	for frame in ticks:
+		await physics_frame
+		if speaker.speaker.playing: break
+	_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
+	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
+	_check(stage.timeline.clock >= first_line and world.rv.global_position.distance_to(start) > 5.0, world.shot_id + " cruises on the timeline")
 
 func _verify_road_contact(world: Node) -> void:
 	world.stage.drive_replay = true

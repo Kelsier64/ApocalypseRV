@@ -37,6 +37,10 @@
     "evacuation": "Evacuation", "progress": "Progress", "corridor": "Corridor",
     "complete": "Complete", "active": "Active", "lost": "Lost", "black": "Black",
     "box": "Box", "response": "Response", "coverage": "Coverage", "ends": "Ends",
-    "signal": "Signal", "weak": "Weak", "alert": "Alert"
+    "signal": "Signal", "weak": "Weak", "alert": "Alert",
+
+    "leave": "Leave", "vehicle": "Vehicle", "repair": "Repair", "provided": "Provided", "abandoned": "Abandoned", "shelters": "Shelters",
+    "along": "Along", "entry": "Entry", "salvage": "Salvage", "components": "Components", "fabrication": "Fabrication", "survey": "Survey",
+    "expired": "Expired", "terrain": "Terrain", "unverified": "Unverified"
   }
 }

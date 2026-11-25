@@ -125,6 +125,21 @@
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/signal.wav" id="signal"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/weak.wav" id="weak"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/alert.wav" id="alert"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/leave.wav" id="leave"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/vehicle.wav" id="vehicle"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/repair.wav" id="repair"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/provided.wav" id="provided"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/abandoned.wav" id="abandoned"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/shelters.wav" id="shelters"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/along.wav" id="along"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/entry.wav" id="entry"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/salvage.wav" id="salvage"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/components.wav" id="components"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/fabrication.wav" id="fabrication"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/survey.wav" id="survey"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/expired.wav" id="expired"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/terrain.wav" id="terrain"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/unverified.wav" id="unverified"]
 
 [resource]
 script = ExtResource("script")
@@ -252,5 +267,20 @@ words = Dictionary[StringName, AudioStreamWAV]({
 &"ends": ExtResource("ends"),
 &"signal": ExtResource("signal"),
 &"weak": ExtResource("weak"),
-&"alert": ExtResource("alert")
+&"alert": ExtResource("alert"),
+&"leave": ExtResource("leave"),
+&"vehicle": ExtResource("vehicle"),
+&"repair": ExtResource("repair"),
+&"provided": ExtResource("provided"),
+&"abandoned": ExtResource("abandoned"),
+&"shelters": ExtResource("shelters"),
+&"along": ExtResource("along"),
+&"entry": ExtResource("entry"),
+&"salvage": ExtResource("salvage"),
+&"components": ExtResource("components"),
+&"fabrication": ExtResource("fabrication"),
+&"survey": ExtResource("survey"),
+&"expired": ExtResource("expired"),
+&"terrain": ExtResource("terrain"),
+&"unverified": ExtResource("unverified")
 })

@@ -28,6 +28,8 @@ var _indicator: Label
 var _notice := ""
 var _notice_time := 0.0
 var _prior_hud: bool
+var _take_path := ""
+var _take := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -352,11 +354,26 @@ func _write_take_marker() -> void:
 	# Movie Maker writes one frame per process frame at its fixed rate.
 	var frame := Engine.get_process_frames()
 	print("PROMO TAKE START: frame %d" % frame)
-	if directory.is_empty(): return
-	var output := FileAccess.open(directory.path_join("take.json"), FileAccess.WRITE)
+	_take = {"shot": world.shot_id, "variant": world.variant, "start_frame": frame,
+		"start_seconds": float(frame) / fps if fps > 0 else 0.0, "fps": fps, "markers": []}
+	if not directory.is_empty(): _take_path = directory.path_join("take.json")
+	_save_take()
+
+## Records a named moment of the take (a narration line, an impact) by Movie Maker frame,
+## so the edit can place subtitles and hard cuts without scrubbing.
+func mark(label: String) -> void:
+	var frame := Engine.get_process_frames()
+	print("PROMO MARK: %s frame %d" % [label, frame])
+	if _take.is_empty(): return
+	var fps: int = _take.fps
+	_take.markers.append({"name": label, "frame": frame, "seconds": float(frame) / fps if fps > 0 else 0.0})
+	_save_take()
+
+func _save_take() -> void:
+	if _take_path.is_empty(): return
+	var output := FileAccess.open(_take_path, FileAccess.WRITE)
 	if output == null: return
-	output.store_string(JSON.stringify({"shot": world.shot_id, "variant": world.variant, "start_frame": frame,
-		"start_seconds": float(frame) / fps if fps > 0 else 0.0, "fps": fps}, "  ") + "\n")
+	output.store_string(JSON.stringify(_take, "  ") + "\n")
 	output.close()
 
 func exterior_requested() -> bool:
