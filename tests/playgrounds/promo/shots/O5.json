@@ -10,5 +10,9 @@
     2
   ],
   "seat": true,
-  "action": "Release Slender Speaker"
+  "action": "Release Slender Speaker",
+  "setup": "giant_parked",
+  "reverse": true,
+  "drives": true,
+  "autoplay_seconds": 45
 }

@@ -10,5 +10,7 @@
     0
   ],
   "interior": "bunker",
-  "action": "Reveal apparition"
+  "action": "Reveal apparition",
+  "setup": "black_apparition",
+  "dark_room": true
 }

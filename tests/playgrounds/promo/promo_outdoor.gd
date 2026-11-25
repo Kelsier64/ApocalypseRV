@@ -4,7 +4,6 @@ const TREE := "res://world/roadside_kit/tree.tscn"
 const FLASHLIGHT := "res://props/flashlight.tscn"
 const AERIAL_RAIL_SECONDS := 12.0
 const TIME_LAPSE_SECONDS := 12.0
-const DRIVE_SECONDS := {"D1": 13.0, "O4": 19.0}
 
 var road_event: Dictionary
 var event_mark := Vector3.INF
@@ -15,37 +14,42 @@ var time_lapse_seconds := 0.0
 var drive_replay := false
 var drive_offset := 0.0
 
+## Shots pick their staging and F3 action by `setup`, not by shot id, so a new shot or
+## variant can reuse one.
+func _setup(world) -> String:
+	return str(world.shot.get("setup", ""))
+
 func placement(world) -> Transform3D:
 	var field: WorldField = world.field
-	var id: String = world.shot_id
+	var setup := _setup(world)
 	var distance := float(world.shot.distance)
 	if world.shot.has("event"):
 		var plan := RoadSpawns.plan(field, int(world.shot.band))
 		var events: Array = plan[world.shot.event]
 		if not events.is_empty():
-			if id == "O1":
+			if setup == "roadside_monster":
 				event_mark = events.front()
 				event_mark.y -= 0.5
 			else:
 				road_event = events.front()
 				event_mark = road_event.transform.origin
-	if id == "O2" or id == "D2":
+	if setup in ["barrel_hit", "spike_strip"]:
 		if event_mark.is_finite():
 			var lane := field.road_query(event_mark.x, event_mark.z)
 			var approach: Transform3D = lane.frame
 			drive_offset = approach.basis.x.dot(event_mark - approach.origin)
-			if id == "D2": drive_offset += 1.25
-			var runup := 38.0 if id == "O2" else 16.0
+			drive_offset += float(world.shot.get("offset_shift", 0.0))
+			var runup := float(world.shot.runup)
 			return _road_mark(field, float(lane.s) - runup * absf(approach.basis.z.z), drive_offset)
-	if id == "D1":
+	if setup == "tree_row":
 		drive_offset = field.road_width(distance) * 0.5 + 0.7
 		return _road_mark(field, distance - 14.0, drive_offset)
-	if id == "D4": return _road_mark(field, distance, -4.5)
-	if id == "O5":
+	if world.shot.has("lateral"): return _road_mark(field, distance, float(world.shot.lateral))
+	if world.shot.get("reverse", false):
 		var parked := field.road_frame(distance)
 		parked.basis = parked.basis.rotated(Vector3.UP, PI)
 		return parked
-	if id == "O3" and world.shot.has("stop"):
+	if world.shot.has("stop"):
 		var site := field.stop(int(world.shot.stop))
 		var building: Transform3D = site.building
 		var point := building * Vector3(-4.5, 0, 8)
@@ -71,8 +75,8 @@ func prepare(world) -> bool:
 		seat.interact_hold(actor)
 		if seat.current_driver != actor: return false
 	if world.shot.has("event") and not event_mark.is_finite(): return false
-	match world.shot_id:
-		"O1":
+	match _setup(world):
+		"roadside_monster":
 			for child in container.get_children():
 				if child is BarrelMan and child.global_position.distance_to(event_mark) < 15.0:
 					child.queue_free()
@@ -87,17 +91,17 @@ func prepare(world) -> bool:
 			actor.global_position = event_mark + lane.basis.z * 8.0
 			actor.global_position.y = field.height_at(actor.global_position.x, actor.global_position.z) + 0.12
 			world._aim_at(event_mark + Vector3.UP * 0.72)
-		"O2":
+		"barrel_hit":
 			world.subject = _event_actor(container, event_mark)
 			if world.subject == null: return false
-		"O3":
+		"white":
 			world.spawn("res://props/scrap.tscn", actor.global_position + actor.global_basis.z * -1.8 + Vector3.UP * 0.08, container)
 			white = world.spawn("res://enemies/white_apparition/white_apparition.tscn", actor.global_position, container)
 			white.configure(actor, world.get_node("WorldClock"))
 			white._world_id = white.get_world_3d().get_instance_id()
 			white.set_physics_process(false)
-		"O4", "O5":
-			if world.shot_id == "O5":
+		"giant_chase", "giant_parked":
+			if _setup(world) == "giant_parked":
 				var slots: RVStructureSlots = rv.get_node("StructureSlots")
 				for slot in ["roof_0", "roof_1", "roof_2"]:
 					var panel := slots.panel(slot)
@@ -107,18 +111,18 @@ func prepare(world) -> bool:
 				slots.panel("left_0").set_health(0.0)
 			for frame in 240:
 				if NavigationServer3D.map_get_iteration_id(generator.giant_navigation_map) != 0:
-					giant_mark = _find_giant_mark(generator, rv.global_position, world.shot_id == "O5")
+					giant_mark = _find_giant_mark(generator, rv.global_position, _setup(world) == "giant_parked")
 					if giant_mark.is_finite(): break
 				await world.get_tree().physics_frame
 			if not giant_mark.is_finite(): return false
 			print("PROMO GIANT MARK: ", giant_mark)
-		"D1":
+		"tree_row":
 			var distance := float(world.shot.distance)
 			for offset in [0.0, 7.0, 14.0]:
 				var pose := _road_mark(field, distance + float(offset), field.road_width(distance) * 0.5 + 0.7)
 				var tree: Node3D = world.spawn(TREE, pose.origin, container)
 				tree.scale = Vector3.ONE * 0.74
-		"D2":
+		"spike_strip":
 			var chunk: Node3D
 			for entry in generator.active_chunks:
 				if entry.index == int(world.shot.band): chunk = entry.node
@@ -130,15 +134,15 @@ func prepare(world) -> bool:
 				var lane := field.road_query(event_mark.x, event_mark.z)
 				wreck.global_transform = _road_mark(field, float(lane.s) + 16.0, drive_offset + 4.4)
 				break
-		"D4":
+		"tipped":
 			actor.add_item("Recovery Jack", false, RecoveryJack.SCENE)
 			rv.global_basis = rv.global_basis.rotated(rv.global_basis.z, deg_to_rad(57))
 			rv.global_position.y += 0.42
 			rv.reset_physics_interpolation()
 			world._aim_at(rv.global_position + Vector3.UP)
-		"D5":
+		"rollaway":
 			world._aim_at(rv.global_position + rv.global_basis.z * 3.0 + Vector3.UP * 0.35)
-		"W1", "W2", "W3":
+		"aerial", "time_lapse":
 			if world.director.use_generated_rail(): _aerial_rail(world)
 	return true
 
@@ -181,40 +185,40 @@ func _aerial_rail(world) -> void:
 func trigger(world) -> bool:
 	var rv: Chassis = world.rv
 	if triggered:
-		if world.shot_id != "D4": return false
+		if _setup(world) != "tipped": return false
 		var result := RecoveryJack.deploy_from_inventory(world.actor, rv)
 		world.director.notify(result.message)
 		return result.has("jack")
-	match world.shot_id:
-		"O1":
+	match _setup(world):
+		"roadside_monster":
 			world.subject.set_physics_process(true)
-		"O3":
+		"white":
 			white._rng.seed = int(world.shot.seed) ^ 0x57484954
 			if not white._try_emerge(world.actor.camera): return false
 			white.set_physics_process(true)
 			world.subject = white
-		"O4", "O5":
+		"giant_chase", "giant_parked":
 			var giant: SlenderSpeaker = world.spawn(SlenderSpeakerSpawns.SCENE, giant_mark, WorldEntities.get_container(world))
 			giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 			var target := rv.global_position
 			giant.look_at(Vector3(target.x, giant_mark.y, target.z))
 			world.subject = giant
-			if world.shot_id == "O4":
+			if _setup(world) == "giant_chase":
 				rv.set_engine_running(true)
 				rv.set_handbrake(false)
-		"O2", "D1", "D2", "D3":
+		"barrel_hit", "tree_row", "spike_strip", "drive":
 			if not rv.set_engine_running(true): return false
 			rv.set_handbrake(false)
-		"D4":
+		"tipped":
 			rv.freeze = false
 			rv.sleeping = false
 			rv.angular_velocity = rv.global_basis.z * 0.65
-		"D5":
+		"rollaway":
 			rv.set_handbrake(false)
 			rv.sleeping = false
-		"W1", "W2":
+		"aerial":
 			return world.director.play_rail()
-		"W3":
+		"time_lapse":
 			if not world.director.play_rail(): return false
 			time_lapse_seconds = TIME_LAPSE_SECONDS
 	triggered = true
@@ -264,45 +268,47 @@ func mark_jack_operator(world) -> bool:
 
 ## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
 func autoplay(world) -> float:
-	match world.shot_id:
-		"W1", "W2", "W3":
-			var started: bool = world.trigger_take() if world.shot_id == "W3" else world.director.play_rail()
+	match _setup(world):
+		"aerial", "time_lapse":
+			var lapse := _setup(world) == "time_lapse"
+			var started: bool = world.trigger_take() if lapse else world.director.play_rail()
 			if not started:
 				world._fail("Could not start the rail")
 				return -1.0
 			var rail_seconds := float(world.director.rail.duration) + 0.5
-			return maxf(TIME_LAPSE_SECONDS, rail_seconds) if world.shot_id == "W3" else rail_seconds
-		"O3":
+			return maxf(TIME_LAPSE_SECONDS, rail_seconds) if lapse else rail_seconds
+		"white":
 			if not world.trigger_take():
 				world._fail("White apparition had no valid emergence point")
 				return -1.0
 			await world.get_tree().create_timer(0.6).timeout
 			world._aim_at(world.subject.global_position + WhiteApparition.CHEST)
-			return 4.5
-		"O2", "D1", "D2", "D3", "O4":
+			return float(world.shot.get("autoplay_seconds", 4.5))
+		"barrel_hit", "tree_row", "spike_strip", "drive", "giant_chase":
 			if not world.trigger_take():
 				world._fail("Could not start the driving action")
 				return -1.0
 			drive_replay = true
 			if world.director.exterior_requested(): world.director.follow_preset("chase", world.rv)
-			if world.shot_id == "D3":
-				await world.get_tree().create_timer(2.8).timeout
-				world.rv.set_gear(2)
-				await world.get_tree().create_timer(2.0).timeout
-				world.rv.set_gear(3)
-			return DRIVE_SECONDS.get(world.shot_id, 11.0)
-		"D4":
+			# [seconds after the start, gear] pairs, in order.
+			var elapsed := 0.0
+			for shift in world.shot.get("autoplay_gears", []):
+				await world.get_tree().create_timer(float(shift[0]) - elapsed).timeout
+				elapsed = float(shift[0])
+				world.rv.set_gear(int(shift[1]))
+			return float(world.shot.get("autoplay_seconds", 11.0))
+		"tipped":
 			world.trigger_take()
 			await world.get_tree().create_timer(7.0).timeout
 			if world.rv.rollover_state() == Chassis.Rollover.UPRIGHT or not mark_jack_operator(world) or not world.trigger_take():
 				world._fail("RV did not settle at a usable recovery-jack mark")
 				return -1.0
-			return 9.0
+			return float(world.shot.get("autoplay_seconds", 9.0))
 	if not world.trigger_take():
 		world._fail("Could not start the take")
 		return -1.0
-	return 45.0 if world.shot_id == "O5" else 7.0
+	return float(world.shot.get("autoplay_seconds", 7.0))
 
 func autoplay_error(world) -> String:
-	if world.shot_id == "D4" and world.rv.rollover_state() != Chassis.Rollover.UPRIGHT: return "Recovery jack did not right the RV"
+	if _setup(world) == "tipped" and world.rv.rollover_state() != Chassis.Rollover.UPRIGHT: return "Recovery jack did not right the RV"
 	return ""

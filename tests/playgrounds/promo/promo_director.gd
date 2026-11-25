@@ -71,7 +71,8 @@ func trigger() -> bool:
 	if not world.take_ready:
 		notify("The shot is not ready yet")
 		return false
-	if world.shot_id in ["R2", "R3"] and is_instance_valid(view): use_player_camera()
+	# Tablet shots need the player view: the tablet opens from the player's own camera.
+	if world.shot.get("player_camera", false) and is_instance_valid(view): use_player_camera()
 	var started: bool = world.trigger_take()
 	if not started: notify("Nothing to trigger right now")
 	return started

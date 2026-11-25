@@ -12,5 +12,8 @@
   "band": 34,
   "event": "barrels",
   "seat": true,
-  "action": "Start engine and release brake"
+  "action": "Start engine and release brake",
+  "setup": "barrel_hit",
+  "runup": 38,
+  "drives": true
 }

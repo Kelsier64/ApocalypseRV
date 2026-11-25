@@ -9,5 +9,6 @@
     0,
     0
   ],
-  "action": "Start time lapse"
+  "action": "Start time lapse",
+  "setup": "time_lapse"
 }

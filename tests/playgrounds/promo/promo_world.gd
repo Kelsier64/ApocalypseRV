@@ -94,7 +94,7 @@ func _enter_tree() -> void:
 	$NewRv.transform = road_pose * Transform3D(Basis.IDENTITY, Vector3(0, 1.0, 0))
 	rv = $NewRv/Chassis
 	if not stage is BUNKER: rv.starter_kits = true
-	if not (shot_id in ["O2", "O4", "O5", "D1", "D2", "D3", "D4", "D5"] or shot.get("drives", false)): rv.freeze = true
+	if not shot.get("drives", false): rv.freeze = true
 	if stage is OUTDOOR and not shot.get("seat", false):
 		var mark := road_pose * Vector3(4.5, 0, 0)
 		mark.y = field.height_at(mark.x, mark.z) + 0.15
@@ -110,7 +110,8 @@ func _enter_tree() -> void:
 	var band := floori(-actor.position.z / generator.profile.chunk_length)
 	generator.restore_bands.assign(range(band - generator.profile.chunks_behind, band + generator.profile.chunks_ahead + 1))
 	actor.camera_locked = true
-	if shot_id == "D4": rv.freeze = true
+	# A shot can keep live RV physics but hold the RV still until its action.
+	if shot.get("rv_frozen", false): rv.freeze = true
 	if stage is OUTDOOR and shot.get("seat", false): rv.allow_test_controls = true
 	# Natural giant rolls are reserved in the filmed regions; F10 places the chosen encounter.
 	for segment in range(maxi(1, floori(distance / SlenderSpeakerSpawns.SEGMENT_LENGTH) - 1), floori(distance / SlenderSpeakerSpawns.SEGMENT_LENGTH) + 2):
@@ -182,7 +183,7 @@ func find_bunker_lane(interior: PoiInterior) -> bool:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(interior.layout.seed)
 	var space := interior.get_world_3d().direct_space_state
-	var uses_bunker_population := shot_id in ["B3", "B4"]
+	var uses_bunker_population: bool = shot.get("bunker_population", false)
 	var distances := InteriorLayout.distances(interior.layout)
 	var entry := interior.spawn_transform().origin
 	for index in interior.rooms.size():
@@ -191,7 +192,7 @@ func find_bunker_lane(interior: PoiInterior) -> bool:
 			var definition := InteriorLayout.definition(interior.layout, index)
 			var bounds: AABB = definition.describe().bounds
 			if distances[index] < 24.0 or definition.role != &"ordinary" or bounds.size.x < 5.0 or bounds.size.z < 5.0: continue
-		if not room.get_meta("bunker_dark", false) and shot_id in ["B1", "B2", "B4"]: continue
+		if not room.get_meta("bunker_dark", false) and shot.get("dark_room", false): continue
 		var reserved: Array[Vector3] = []
 		for pick in 16:
 			var candidate := BunkerContent._position(interior, index, rng, reserved)

@@ -10,5 +10,6 @@
     0
   ],
   "stop": 1,
-  "action": "Reveal white apparition"
+  "action": "Reveal white apparition",
+  "setup": "white"
 }

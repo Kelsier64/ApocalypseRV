@@ -10,5 +10,8 @@
     0
   ],
   "seat": true,
-  "action": "Start engine and release brake"
+  "action": "Start engine and release brake",
+  "setup": "tree_row",
+  "drives": true,
+  "autoplay_seconds": 13
 }

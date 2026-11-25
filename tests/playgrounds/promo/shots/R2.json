@@ -16,6 +16,8 @@
     "engine_standard"
   ],
   "action": "Crafting",
+  "setup": "station",
+  "player_camera": true,
   "variants": [
     {
       "recipes": [

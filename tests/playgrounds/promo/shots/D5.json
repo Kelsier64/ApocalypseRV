@@ -9,5 +9,7 @@
     0,
     0
   ],
-  "action": "Release handbrake"
+  "action": "Release handbrake",
+  "setup": "rollaway",
+  "drives": true
 }

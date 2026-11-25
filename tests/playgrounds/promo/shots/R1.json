@@ -10,5 +10,6 @@
     0
   ],
   "workshop": true,
-  "action": "Feed staged item"
+  "action": "Feed staged item",
+  "setup": "recycler"
 }

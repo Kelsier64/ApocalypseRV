@@ -11,6 +11,7 @@
   ],
   "interior": "bunker",
   "action": "Next floor",
+  "setup": "floor_overlook",
   "variants": [
     {
       "floor": 1

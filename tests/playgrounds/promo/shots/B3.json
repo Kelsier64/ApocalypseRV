@@ -10,5 +10,8 @@
     0
   ],
   "interior": "bunker",
-  "action": "Release Raker"
+  "action": "Release Raker",
+  "setup": "monster",
+  "monster": "raker",
+  "bunker_population": true
 }

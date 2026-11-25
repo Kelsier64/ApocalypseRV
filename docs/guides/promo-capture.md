@@ -84,6 +84,8 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 
 T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡頭檔裡的時間軸。
 
+鏡頭檔有 `timeline` 時（T 組與 D6），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
+
 B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生成規則掃描種子，結果寫到 `.godot/promo/scout.json`：
 
 ```powershell

@@ -10,12 +10,16 @@ var inside: PoiInterior
 var floor_index := 0
 var ceilings: Array[Node3D] = []
 
+## Shots pick their staging and F3 action by `setup`, not by shot id.
+func _setup(world) -> String:
+	return str(world.shot.get("setup", ""))
+
 func prepare(world) -> bool:
 	inside = world.get_node("PoiInstances").interior
 	inside.get_node("BlackApparitionEncounter").set_physics_process(false)
 	for entity in inside.entities.get_children():
 		if entity is Monster: entity.queue_free()
-	if world.shot_id == "B5":
+	if _setup(world) == "floor_overlook":
 		floor_index = int(world.shot.get("floor", 0))
 		for room in inside.rooms:
 			for mesh in room.get_node("Visuals").get_children():
@@ -34,7 +38,7 @@ func prepare(world) -> bool:
 		_show_floor(world)
 		return world.director.rail.playable()
 	world.actor.add_item(ItemNames.FLASHLIGHT, false, FLASHLIGHT)
-	if world.shot_id == "B6":
+	if _setup(world) == "engine_cargo":
 		for entity in inside.entities.get_children():
 			if entity.get_meta("bunker_actor_id", "") != inside.content.cargo_id or not entity is Item: continue
 			world.subject = entity
@@ -60,8 +64,8 @@ func prepare(world) -> bool:
 	var mark: Vector3 = world._apparition_position
 	var toward: Vector3 = (mark - world.actor.global_position).slide(Vector3.UP).normalized()
 	var side := toward.cross(Vector3.UP)
-	match world.shot_id:
-		"B1":
+	match _setup(world):
+		"sweep":
 			var cache := BunkerContent.CACHE.instantiate() as BunkerCache
 			var rng := RandomNumberGenerator.new()
 			rng.seed = int(inside.layout.seed)
@@ -72,8 +76,8 @@ func prepare(world) -> bool:
 			inside.navigation.add_child(cache)
 			world.staged.append(cache)
 			world.spawn(SCRAP, mark - toward * 1.25 + Vector3.UP * 0.17, inside.entities, true)
-		"B3", "B4":
-			var path := RAKER if world.shot_id == "B3" else RoadSpawns.BARREL_MAN_SCENE
+		"monster":
+			var path := RAKER if world.shot.monster == "raker" else RoadSpawns.BARREL_MAN_SCENE
 			var enemy: Monster = world.spawn(path, mark + Vector3.UP * 0.12, inside.entities)
 			BunkerContent.configure_monster(enemy)
 			enemy.look_at(enemy.global_position - toward)
@@ -87,11 +91,11 @@ func prepare(world) -> bool:
 	return true
 
 func trigger(world) -> bool:
-	match world.shot_id:
-		"B1":
+	match _setup(world):
+		"sweep":
 			if not world.actor._active_flashlight_state().get("on", false): world.actor._toggle_flashlight()
 			return true
-		"B2":
+		"black_apparition":
 			if is_instance_valid(world.apparition) or world.actor.get_viewport() != world.get_node("PoiInstances").viewport: return false
 			var apparition := BlackApparitionEncounter.SCENE.instantiate() as BlackApparition
 			inside.entities.add_child(apparition)
@@ -100,15 +104,15 @@ func trigger(world) -> bool:
 			world.apparition = apparition
 			world.subject = apparition
 			return true
-		"B3", "B4":
+		"monster":
 			if not is_instance_valid(world.subject) or world.subject.is_physics_processing(): return false
 			world.subject.set_physics_process(true)
 			return true
-		"B5":
+		"floor_overlook":
 			floor_index = posmod(floor_index + 1, InteriorLayout.floor_count(inside.layout))
 			_show_floor(world)
 			return world.director.play_rail()
-		"B6":
+		"engine_cargo":
 			if not is_instance_valid(world.subject): return false
 			if world.subject.global_position.distance_to(world.actor.global_position) > 3.0: return false
 			world.subject.pickup(world.actor)
@@ -142,8 +146,8 @@ func _show_floor(world, frame_floor := true) -> void:
 
 ## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
 func autoplay(world) -> float:
-	match world.shot_id:
-		"B2":
+	match _setup(world):
+		"black_apparition":
 			world.actor.invulnerable = true
 			if not world.trigger_take():
 				world._fail("Could not reveal the apparition")
@@ -158,17 +162,17 @@ func autoplay(world) -> float:
 				if world.apparition.phase == BlackApparition.Phase.FRENZIED: return 2.5
 			world._fail("Flashlight did not trigger pursuit in the bunker")
 			return -1.0
-		"B5":
+		"floor_overlook":
 			if not world.director.play_rail():
 				world._fail("Could not start the floor rail")
 				return -1.0
 			return float(world.director.rail.duration) + 0.5
-		"B1", "B3", "B4":
-			if world.shot_id != "B1": world.actor._toggle_flashlight()
+		"sweep", "monster":
+			if _setup(world) == "monster": world.actor._toggle_flashlight()
 			if not world.trigger_take():
 				world._fail("Could not start the bunker action")
 				return -1.0
-			if world.shot_id == "B3":
+			if world.shot.get("monster", "") == "raker":
 				for frame in 240:
 					await world.get_tree().physics_frame
 					if world.actor.is_grabbed(): break
@@ -180,7 +184,7 @@ func autoplay(world) -> float:
 				while world.actor.is_grabbed() and grab.presses < wounded:
 					if not world.actor.submit_struggle(): break
 					await world.get_tree().create_timer(0.055).timeout
-			return 8.0
+			return float(world.shot.get("autoplay_seconds", 8.0))
 	if not world.trigger_take():
 		world._fail("Could not start the take")
 		return -1.0
