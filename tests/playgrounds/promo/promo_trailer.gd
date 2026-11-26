@@ -41,6 +41,14 @@ var _turning := false
 ## giant_watch: the still giant's head follows the RV until giant_wake hands it to its AI.
 var _watching := false
 const GIANT_TURN_DEGREES := 75.0
+## A giant placed by bearing may stand at most this far above or below the road.
+const MAX_REVEAL_RISE := 2.0
+## Sight rays toward the giant start this far out from the driver's eyes, past the cab.
+const CAB_CLEARANCE := 2.0
+## The giant's head loudspeaker, as a share of its height; the sight check needs it in view.
+const HEAD_HEIGHT_SHARE := 0.9
+## A look at the giant aims this share of the way up it, so the window frames all of it.
+const LOOK_HEIGHT_SHARE := 0.5
 var _speeds: Array[Vector2] = []
 var _look := {}
 var _eyes := {}
@@ -205,8 +213,16 @@ func _fire(world, cue: Dictionary) -> bool:
 				if not is_instance_valid(seat): return false
 				var rest: Vector3 = seat.REST_CAMERA_ROTATION
 				_look = {"camera": seat.seat_camera, "from": seat.seat_camera.rotation,
-					"to": rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0),
 					"seconds": maxf(0.01, float(cue.seconds)), "time": 0.0}
+				if cue.has("target"):
+					# Follows the giant until the next look, turned `yaw` degrees further left
+					# (negative right) to keep a window pillar off it.
+					if str(cue.target) != "giant" or not is_instance_valid(giant): return false
+					_look.track = deg_to_rad(float(cue.get("yaw", 0.0)))
+					var eye: Vector3 = seat.seat_camera.global_position
+					var head := _giant_point(HEAD_HEIGHT_SHARE)
+					print("PROMO LOOK: giant head %.1f m away, %.1f m above the eyes" % [eye.distance_to(head), head.y - eye.y])
+				else: _look.to = rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0)
 		"gaze":
 			# The prone survivor's view; live takes leave it to the mouse.
 			if str(cue.target) != "giant" or not is_instance_valid(giant): return false
@@ -247,31 +263,89 @@ func _fire(world, cue: Dictionary) -> bool:
 				_crawl_action = "move_back" if cue.get("back", false) else "move_forward"
 	return true
 
-## The giant stands with its AI off: `beyond` metres past the staged pole in the RV's lane,
-## or `ahead` metres up the road from the RV at `lateral`. It faces the RV, or across the
-## road with `facing: "road"`. Its head loudspeaker still fades in and stages distance on its own.
+## The giant stands with its AI off, `beyond` metres past the staged pole in the RV's lane,
+## or, with `bearing`, where the driver will see it `reveal` seconds after the cue (see
+## _reveal_spot). It faces the RV, or the road with `facing: "road"`. Its head loudspeaker
+## still fades in and stages distance on its own.
 func _place_giant(world, cue: Dictionary) -> bool:
 	var field: WorldField = world.field
-	var lateral := float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))
-	var mark: Transform3D
-	if cue.has("ahead"):
-		var rv_road := field.road_query(world.rv.global_position.x, world.rv.global_position.z)
-		mark = _road_mark(field, float(rv_road.s) + float(cue.ahead), lateral)
+	var spot: Vector3
+	var eye := Vector3.INF
+	if cue.has("bearing"):
+		var reveal := _reveal_spot(world, cue)
+		if reveal.is_empty(): return false
+		spot = reveal.spot
+		eye = reveal.eye
 	elif pole.is_empty(): return false
-	else: mark = _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), lateral)
-	giant = world.spawn(SlenderSpeakerSpawns.SCENE, mark.origin + Vector3.UP * 0.05, WorldEntities.get_container(world))
+	else: spot = _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))).origin
+	giant = world.spawn(SlenderSpeakerSpawns.SCENE, spot + Vector3.UP * 0.05, WorldEntities.get_container(world))
 	giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 	giant.set_physics_process(false)
 	var rv: Vector3 = world.rv.global_position
 	if str(cue.get("facing", "")) == "road":
-		var across := mark.basis.x * signf(lateral if lateral != 0.0 else 1.0)
-		giant.look_at(giant.global_position - Vector3(across.x, 0.0, across.z))
+		var road: Vector3 = (field.road_query(spot.x, spot.z).frame as Transform3D).origin
+		giant.look_at(Vector3(road.x, giant.global_position.y, road.z))
 	else: giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
+	if eye != Vector3.INF:
+		var blocked := _sight_blocked(eye)
+		if blocked != "":
+			push_error("PROMO: the driver will not see the giant: %s" % blocked)
+			return false
 	# A take that opens on the giant starts with its music already at full level.
 	if not bool(cue.get("fade", true)): giant.patrol_music._fade_elapsed = giant.patrol_music.FADE_SECONDS
 	world.subject = giant
 	world.director.mark("giant")
 	return true
+
+## Where the driver will see the giant `reveal` seconds after the cue: `bearing` degrees left
+## of the road ahead (negative is right) and `range` metres away on the ground, from the
+## driver's eyes carried on at the RV's current velocity. Fails when that ground is more than
+## `max_rise` metres (default MAX_REVEAL_RISE) above or below the road, so a seed or start
+## distance that puts the reveal over a ravine or behind a bank fails the take instead.
+func _reveal_spot(world, cue: Dictionary) -> Dictionary:
+	var seat: Node = world.actor.seated_in
+	if not is_instance_valid(seat):
+		push_error("PROMO: a giant placed by bearing needs the driver seated")
+		return {}
+	var field: WorldField = world.field
+	var rv: Chassis = world.rv
+	var eye: Vector3 = (seat.seat_camera as Camera3D).global_position + rv.linear_velocity.slide(Vector3.UP) * float(cue.get("reveal", 0.0))
+	var s := float(field.road_query(eye.x, eye.z).s)
+	var ahead := (field.road_frame(s + 1.0).origin - field.road_frame(s).origin).slide(Vector3.UP).normalized()
+	var spot := eye + ahead.rotated(Vector3.UP, deg_to_rad(float(cue.bearing))) * float(cue.range)
+	spot.y = field.height_at(spot.x, spot.z)
+	var rise := spot.y - field.road_height(s)
+	print("PROMO GIANT: bearing %.0f, %.1f m from the eyes, ground %+.1f m from the road" % [float(cue.bearing), float(cue.range), rise])
+	if absf(rise) > float(cue.get("max_rise", MAX_REVEAL_RISE)):
+		push_error("PROMO: the giant's ground is %+.1f m from the road; move the shot's distance to flatter ground" % rise)
+		return {}
+	return {"eye": eye, "spot": spot}
+
+## What blocks the line from `eye` to the giant's waist or head, or "" when both are clear.
+## The rays start outside the cab, which is still behind the predicted eye anyway.
+func _sight_blocked(eye: Vector3) -> String:
+	var space := giant.get_world_3d().direct_space_state
+	var own: Array[RID] = []
+	for body: CollisionObject3D in giant.find_children("*", "CollisionObject3D", true, false): own.append(body.get_rid())
+	own.append(giant.get_rid())
+	for share in [0.5, HEAD_HEIGHT_SHARE]:
+		var target := _giant_point(share)
+		var from := eye + (target - eye).normalized() * CAB_CLEARANCE
+		var query := PhysicsRayQueryParameters3D.create(from, target)
+		query.exclude = own
+		var hit := space.intersect_ray(query)
+		if not hit.is_empty(): return "%s at %.0f%% of its height" % [(hit.collider as Node).name, share * 100.0]
+	return ""
+
+## A point on the giant `share` of the way up its visible height.
+func _giant_point(share: float) -> Vector3:
+	var top := -INF
+	for mesh: MeshInstance3D in giant.find_children("*", "MeshInstance3D", true, false):
+		if not mesh.is_visible_in_tree() or mesh.mesh == null: continue
+		var box := mesh.get_aabb()
+		for corner in 8: top = maxf(top, (mesh.global_transform * box.get_endpoint(corner)).y)
+	var height := top - giant.global_position.y if top > -INF else 0.0
+	return giant.global_position + Vector3.UP * height * share
 
 ## The giant tears at the crashed RV's roof as if it had seen someone in the cabin. From
 ## there its own AI runs: it notices the survivor on the ground, grabs and executes them.
@@ -448,11 +522,15 @@ func _cruise(world) -> void:
 		"steering": clampf(correction * STEERING_GAIN, -1.0, 1.0)}
 
 func _ease_view(world, delta: float) -> void:
-	if not _look.is_empty():
+	if not _look.is_empty() and is_instance_valid(_look.camera):
 		_look.time += delta
 		var t := smoothstep(0.0, 1.0, minf(1.0, _look.time / _look.seconds))
-		if is_instance_valid(_look.camera): _look.camera.rotation = (_look.from as Vector3).lerp(_look.to, t)
-		if t >= 1.0: _look = {}
+		var camera: Camera3D = _look.camera
+		var tracking := _look.has("track") and is_instance_valid(giant)
+		var to: Vector3 = _aim(camera, _giant_point(LOOK_HEIGHT_SHARE)) + Vector3(0.0, float(_look.track), 0.0) if tracking else _look.to
+		var from: Vector3 = _look.from
+		camera.rotation = Vector3(lerp_angle(from.x, to.x, t), lerp_angle(from.y, to.y, t), lerpf(from.z, to.z, t))
+		if t >= 1.0 and not tracking: _look = {}
 	if not _eyes.is_empty():
 		_eyes.time += delta
 		var closure := lerpf(_eyes.from, _eyes.to, smoothstep(0.0, 1.0, minf(1.0, _eyes.time / _eyes.seconds)))
@@ -463,6 +541,12 @@ func _ease_view(world, delta: float) -> void:
 		var t := smoothstep(0.0, 1.0, minf(1.0, _weather.time / _weather.seconds))
 		(world.get_node("WorldClock") as WorldClock).weather.set_weather((_weather.from as Vector3).lerp(_weather.to, t), true)
 		if t >= 1.0: _weather = {}
+
+## The seat camera's local rotation that points it at `point`.
+func _aim(camera: Camera3D, point: Vector3) -> Vector3:
+	var parent := camera.get_parent() as Node3D
+	var local := parent.global_basis.orthonormalized().inverse() * (point - camera.global_position)
+	return Vector3(atan2(local.y, Vector2(local.x, local.z).length()), atan2(-local.x, -local.z), 0.0)
 
 ## The game's own eyelid shader on a layer the clean view keeps visible.
 func _build_eyelids(world, closure: float) -> void:

@@ -12,7 +12,7 @@ const ACTIONS := {
 	"static": ["level"],
 	"radio_off": [],
 	"weather": ["to", "seconds"],
-	"look": ["yaw", "pitch", "seconds"],
+	"look": ["seconds"],
 	"gaze": ["target", "seconds"],
 	"eyes": ["open", "seconds"],
 	"giant": [],
@@ -46,6 +46,12 @@ static func check(entries: Variant) -> String:
 		if not ACTIONS.has(action): return "timeline entry %d has unknown action '%s'" % [index, action]
 		for parameter in ACTIONS[action]:
 			if not cue.has(parameter): return "timeline entry %d (%s) needs '%s'" % [index, action, parameter]
+		# Alternative parameter sets: a look aims at a target or at yaw and pitch; a giant
+		# placed by bearing needs its range.
+		if action == "look" and not cue.has("target") and not (cue.has("yaw") and cue.has("pitch")):
+			return "timeline entry %d (look) needs 'target' or 'yaw' and 'pitch'" % index
+		if action == "giant" and cue.has("bearing") and not cue.has("range"):
+			return "timeline entry %d (giant) needs 'range' with 'bearing'" % index
 	return ""
 
 func load_from(entries: Array) -> void:

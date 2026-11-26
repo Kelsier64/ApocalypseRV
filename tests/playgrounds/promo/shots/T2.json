@@ -3,7 +3,7 @@
   "steps": "Seated driver on the same road as T1. F3 starts the timeline: pass the previous unit's wreck on the left shoulder during line 12, line 14 breaks up while fog closes in and the wind dies, then dead air and Fur Elise from the fog on the left. Look at the wreck as you pass, then the road; when the music is clear, turn to the left window: the giant stands in the field and its speaker turns to you. The RV shifts down and speeds up on its own; look back over your left shoulder as the giant walks out after you.",
   "action": "Start the timeline",
   "seed": 42,
-  "distance": 75,
+  "distance": 240,
   "hour": 15,
   "weather": [0, 0, 0.4],
   "seat": true,
@@ -30,13 +30,15 @@
     { "at": 13.2, "do": "weather", "to": [0, 0, 2], "seconds": 8 },
     { "at": 14.5, "do": "wind", "tier": 0 },
     { "at": 21.9, "do": "radio_off" },
-    { "at": 22.8, "do": "giant", "ahead": 60, "lateral": -24, "facing": "road" },
-    { "at": 26, "do": "look", "yaw": 45, "pitch": 8, "seconds": 1.2 },
+    { "at": 22.8, "do": "giant", "bearing": 55, "range": 42, "reveal": 4.4, "facing": "road" },
+    { "at": 25.4, "do": "weather", "to": [0, 0, 1.15], "seconds": 2 },
+    { "at": 26, "do": "look", "target": "giant", "seconds": 1.2 },
     { "at": 26.6, "do": "giant_watch" },
     { "at": 28, "do": "gear", "gear": 3 },
     { "at": 28, "do": "drive", "speed": 60 },
     { "at": 28.3, "do": "giant_wake" },
-    { "at": 28.3, "do": "look", "yaw": 112, "pitch": 4, "seconds": 1 },
+    { "at": 28.3, "do": "look", "target": "giant", "yaw": 20, "seconds": 1 },
+    { "at": 29, "do": "weather", "to": [0, 0, 2], "seconds": 5 },
     { "at": 31.5, "do": "end" }
   ]
 }
