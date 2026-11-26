@@ -10,6 +10,8 @@ const EXECUTION_VIEW_DELAY := .2
 const EXECUTION_VIEW_EASE_SECONDS := .6
 const EXECUTION_LOOK_YAW_LIMIT := 25.0
 const EXECUTION_LOOK_PITCH_LIMIT := 18.0
+## Metres the hand rises before a prone survivor starts to stand in it.
+const STAND_CLEARANCE := .05
 const PlayerVisual = preload("res://player/player_model_visual.gd")
 const RakerGrab = preload("res://enemies/raker_grab.gd")
 const RakerPose = preload("res://enemies/raker_pose_modifier.gd")
@@ -50,6 +52,13 @@ var execution_death_offset := Vector3.ZERO
 var execution_death_focus := Vector3.ZERO
 var execution_seat_rid: RID
 var execution_seat: CollisionObject3D
+## A survivor grabbed off the ground while crawling is stood upright in the hand as the
+## lift raises them: `execution_stand_shift` moves the body so the upright chest takes
+## the prone chest's place, and `execution_stand_weight` (0-1) is how much of it is done.
+## Neither moves the body lower than the contact height.
+var execution_stand_shift := Vector3.ZERO
+var execution_stand_weight := 0.0
+var execution_stand_anchor_height := 0.0
 var player: CharacterBody3D
 var captor: Node3D
 var required := 0
@@ -226,6 +235,13 @@ func begin_execution(owner_node: Node3D, anchor: Node3D, look_target: Node3D) ->
 	execution_look_target = look_target
 	# The chest anchor moves the body without snapping the initial contact.
 	execution_body_offset = player.global_position - anchor.global_position
+	execution_stand_shift = Vector3.ZERO
+	execution_stand_weight = 0.0
+	execution_stand_anchor_height = anchor.global_position.y
+	if player.is_crawling():
+		var prone_chest: Vector3 = player.to_local(player.execution_contact_position())
+		var shift: Vector3 = player.global_basis * (prone_chest - player.upright_chest_local())
+		if shift.y < -STAND_CLEARANCE: execution_stand_shift = shift
 	execution_wall_clearance = Vector3.ZERO
 	execution_wall_clearance_distance = 0.0
 	execution_finished = false
@@ -265,6 +281,7 @@ func advance_execution(_delta: float) -> void:
 		end("execution_path_blocked")
 		return
 	execution_body_offset += player.global_position - before_recovery
+	_advance_execution_stand()
 	var motion: Vector3 = execution_anchor.global_position + execution_body_offset - player.global_position
 	if motion.length_squared() > .000001:
 		var query := PhysicsShapeQueryParameters3D.new()
@@ -293,6 +310,19 @@ func advance_execution(_delta: float) -> void:
 			end("execution_path_blocked")
 			return
 	player.velocity = Vector3.ZERO
+
+## Stands a prone survivor up only as fast as the hand has risen, so lowering the body
+## to put the upright chest in the hand never pushes it below the contact height.
+func _advance_execution_stand() -> void:
+	if execution_stand_shift == Vector3.ZERO or execution_stand_weight >= 1.0: return
+	var rise := execution_anchor.global_position.y - execution_stand_anchor_height
+	var weight := clampf((rise - STAND_CLEARANCE) / -execution_stand_shift.y, 0.0, 1.0)
+	if weight <= execution_stand_weight: return
+	execution_body_offset += execution_stand_shift * (weight - execution_stand_weight)
+	execution_stand_weight = weight
+
+func is_standing_from_prone() -> bool:
+	return is_executing() and execution_stand_shift != Vector3.ZERO
 
 func _execution_lift_wall_clearance(motion: Vector3, safe: PackedFloat32Array) -> Vector3:
 	# A rolled side wall can lean into an otherwise clear vertical capture
@@ -727,6 +757,8 @@ func end(reason: String = "cancelled") -> void:
 	execution_guided_basis = Basis.IDENTITY
 	execution_look_offset = Vector2.ZERO
 	execution_body_offset = Vector3.ZERO
+	execution_stand_shift = Vector3.ZERO
+	execution_stand_weight = 0.0
 	execution_wall_clearance = Vector3.ZERO
 	execution_wall_clearance_distance = 0.0
 	execution_seat_rid = RID()

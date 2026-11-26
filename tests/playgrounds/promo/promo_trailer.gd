@@ -85,6 +85,10 @@ func _stage_prone(world, spec: Dictionary) -> void:
 	actor.camera_locked = false
 	actor.rv_support.clear()
 	actor.set_prone(true)
+	# The cut lands on the frame the giant's hand closes, after the grab takes the view.
+	if world.shot.has("cut_away"):
+		actor.grab_started.connect(func() -> void:
+			if not _cut_away and is_instance_valid(giant): _cut_away_from_eyes.call_deferred(world, world.shot.cut_away))
 	actor.reset_physics_interpolation()
 	var look: Dictionary = spec.look
 	var target := _road_mark(field, float(world.shot.distance) + float(look.s), float(look.lateral)).origin
@@ -285,11 +289,12 @@ func _place_beside_giant(world, spec: Dictionary) -> void:
 	world._aim_at(focus + Vector3.UP * float(spec.get("up", 4.0)))
 	if spec.has("pitch"): actor.camera.rotation.x = deg_to_rad(float(spec.pitch))
 
-## Cuts out of the survivor's eyes as the giant reaches for them: a still camera `back`
+## Cuts out of the survivor's eyes once the giant's hand has them: a still camera `back`
 ## metres behind the survivor (away from the giant), `side` metres to the side and `up`
 ## metres above the ground, that keeps the survivor in frame as they are lifted. The
 ## game's own execution view takes over at the speaker.
 func _cut_away_from_eyes(world, spec: Dictionary) -> void:
+	if _cut_away: return
 	_cut_away = true
 	_gaze = {}
 	var actor: Node3D = world.actor
@@ -315,11 +320,9 @@ func _track_gaze(world, delta: float) -> void:
 	actor.rotation.y = lerp_angle(float(_gaze.yaw), atan2(-offset.x, -offset.z), t)
 	actor.camera.rotation.x = lerpf(float(_gaze.pitch), atan2(offset.y, offset.slide(Vector3.UP).length()), t)
 
-## Cuts to third person as the giant reaches and marks the giant's attack phases.
+## Marks the giant's attack phases.
 func _watch_execution(world) -> void:
 	if not is_instance_valid(giant): return
-	if giant.phase == SlenderSpeaker.Phase.GRAB and not _cut_away and world.shot.has("cut_away"):
-		_cut_away_from_eyes(world, world.shot.cut_away)
 	if _release_pending and giant.phase in [SlenderSpeaker.Phase.PATROL, SlenderSpeaker.Phase.CONFIRM, SlenderSpeaker.Phase.CHASE, SlenderSpeaker.Phase.SEARCH]:
 		# Left alone the giant keeps inspecting the roof it saw first and takes about
 		# twenty seconds to settle on the survivor in plain sight on the road. Taking

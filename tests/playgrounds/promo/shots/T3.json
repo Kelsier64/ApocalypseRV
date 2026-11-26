@@ -1,6 +1,6 @@
 {
   "title": "Act three on the ground (smash, grab, execution)",
-  "steps": "Thrown clear of the RV crashed at the pole in T2, lying on the road in heavy fog. F3 starts the timeline: the eyes open on your own arms on the road; look up at the giant tearing at the roof, and when it turns to you, crawl back (S) while watching it. As it reaches for you the take cuts to a still third-person camera, and the game's execution view takes over at the speaker. Cut on the death marker in take.json.",
+  "steps": "Thrown clear of the RV crashed at the pole in T2, lying on the road in heavy fog. F3 starts the timeline: the eyes open on your own arms on the road; look up at the giant tearing at the roof, and when it turns to you, crawl back (S) while watching it. When its hand closes on you the take cuts to a still third-person camera while you stand up in its grip, and the game's execution view takes over at the speaker. Cut on the death marker in take.json.",
   "action": "Start the timeline",
   "seed": 42,
   "distance": 75,
@@ -22,7 +22,6 @@
     { "at": 1.9, "do": "eyes", "open": true, "seconds": 0.5 },
     { "at": 2.0, "do": "giant_release" },
     { "at": 2.8, "do": "gaze", "target": "giant", "up": 8, "seconds": 1.8 },
-    { "at": 5.5, "do": "crawl", "back": true, "seconds": 9 },
     { "at": 18.5, "do": "end" }
   ]
 }
