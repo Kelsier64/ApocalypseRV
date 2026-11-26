@@ -1,7 +1,7 @@
 extends SceneTree
 ## Writes every trailer narration line as a WAV for the edit, spelled from the dispatch
 ## word bank with the same gaps as in-game broadcasts, plus captions.txt with each
-## line's duration and subtitle text.
+## line's duration and subtitle text. Glitched lines are written broken, as the speaker plays them.
 ##
 ##   godot --headless --path . --script res://scripts/promo_narration.gd
 ##
@@ -20,13 +20,13 @@ func _initialize() -> void:
 	var ids := lines.keys()
 	ids.sort_custom(func(a, b): return int(a) < int(b))
 	for id in ids:
-		var tokens := BROADCAST.tokens(lines[id])
+		var tokens := BROADCAST.tokens(BROADCAST.text(lines[id]))
 		var missing := schedule.voice.missing(tokens)
 		if not missing.is_empty():
 			push_error("Line %s needs words the bank lacks: %s" % [id, ", ".join(missing)])
 			failed = true
 			continue
-		var clip := schedule.speak(tokens) as AudioStreamWAV
+		var clip := BROADCAST.clip(schedule, lines[id])
 		var path := "%s/%02d.wav" % [OUTPUT, int(id)]
 		if clip == null or clip.save_to_wav(path) != OK:
 			push_error("Could not write " + path)

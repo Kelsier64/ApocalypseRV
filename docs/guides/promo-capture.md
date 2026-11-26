@@ -79,7 +79,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
 | T1 | 宣傳片：駕駛座錨點（開場；變體 1 是結尾）。加 `-Exterior` 錄第一段的車外跟拍 |
-| T2 | 宣傳片第三段：經過路肩的前任 RV、旁白第 12 到 15 句、起霧與斷訊、霧裡的巨人，最後急轉撞上電線桿 |
+| T2 | 宣傳片第二十幕：經過路肩的前任 RV、旁白第 12 與 14 句（聲音異常）、起霧與風停、喇叭安靜、霧裡的《給愛麗絲》；轉頭看左窗時田裡的巨人把喇叭轉向 RV，換檔加速後回頭看它醒來追上來 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
 
 T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡頭檔裡的時間軸。
@@ -102,12 +102,15 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 | `gear`、`brake` | 換檔；剎停並結束巡航 |
 | `line` | 車內調度喇叭播出旁白第 `id` 句 |
 | `static` | 把收訊固定在 `level`（0–1），越低底噪越大；`cut` 立刻切斷正在播的句子 |
+| `wind` | 把風固定在 `tier`（0 無風到 3 強風），立刻生效 |
 | `radio_off` | 喇叭完全安靜到鏡頭結束 |
 | `weather` | 在 `seconds` 秒內把天氣變成 `to`（晴、雨、霧） |
 | `look` | 在 `seconds` 秒內把駕駛座視角轉到 `yaw`、`pitch`（度）。只在自動演出生效，現場錄影由滑鼠控制 |
 | `gaze` | 趴著的主角在 `seconds` 秒內轉頭看向 `target`（目前只有 `giant`）離地 `up` 公尺的位置，之後一直盯著它，直到被抓。只在自動演出生效 |
 | `eyes` | 用遊戲的眼皮效果在 `seconds` 秒內睜眼或閉眼 |
-| `giant` | 巨人站在撞擊電線桿後方 `beyond` 公尺（預設 12）的車道上，面向 RV。AI 關閉，頭上喇叭照遊戲的距離處理淡入 |
+| `giant` | 巨人站在撞擊電線桿後方 `beyond` 公尺（預設 12）的車道上；給 `ahead` 時改站在 RV 前方 `ahead` 公尺、側向 `lateral` 的位置。面向 RV，`facing: "road"` 改成面向公路。AI 關閉，頭上喇叭照遊戲的距離處理淡入 |
+| `giant_watch` | 靜止的巨人用自己的轉頭把喇叭轉向 RV 的駕駛座，一直跟著，直到 `giant_wake` |
+| `giant_wake` | 打開巨人的 AI：它照遊戲原本的方式看到 RV、確認、追車 |
 | `steer` | RV 離撞擊電線桿 `within` 公尺內時全油門轉向電線桿；撞上時留下 `impact` 標記並放開油門 |
 | `giant_smash` | 巨人走到撞毀的 RV 旁砸車頂，之後由遊戲的 AI 接手 |
 | `giant_release` | 這一下砸完以後，巨人不再理會 RV，轉向地上的主角，照遊戲原本的方式抓人、處決。不加這一步，巨人會一直檢查車頂，大約二十秒後才去抓人 |
@@ -128,6 +131,8 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 ```powershell
 godot --headless --path . --script res://scripts/promo_narration.gd
 ```
+
+句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）或被吞掉（`swallow`）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
 
 旁白用到的詞要先在詞庫裡，加詞的方法見[主管詞庫語音](../../assets/audio/dispatch_voice/README.md)。
 

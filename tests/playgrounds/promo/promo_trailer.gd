@@ -38,6 +38,8 @@ var _cut_away := false
 var _release_pending := false
 ## After the release the giant turns to face the survivor before its AI resumes.
 var _turning := false
+## giant_watch: the still giant's head follows the RV until giant_wake hands it to its AI.
+var _watching := false
 const GIANT_TURN_DEGREES := 75.0
 var _speeds: Array[Vector2] = []
 var _look := {}
@@ -160,8 +162,10 @@ func tick(world, delta: float) -> void:
 	else: _cruise(world)
 	_watch_impact(world)
 	_watch_execution(world)
+	_watch_chase(world)
 	_hold_crawl(delta)
 	_track_gaze(world, delta)
+	_watch_rv(world, delta)
 	_ease_view(world, delta)
 
 const DRIVING := ["drive", "gear", "brake", "steer"]
@@ -224,6 +228,18 @@ func _fire(world, cue: Dictionary) -> bool:
 		"giant_release":
 			if not is_instance_valid(giant): return false
 			_release_pending = true
+		"giant_watch":
+			if not is_instance_valid(giant): return false
+			_watching = true
+			world.director.mark("watch")
+		"giant_wake":
+			# Its own AI from here: it sees the RV, confirms and chases it.
+			if not is_instance_valid(giant): return false
+			_watching = false
+			giant.set_physics_process(true)
+			world.director.mark("wake")
+		"wind":
+			(world.get_node("WorldClock") as WorldClock).wind.set_override(int(cue.tier))
 		"crawl":
 			# Live takes crawl with the keyboard.
 			if unattended:
@@ -231,18 +247,26 @@ func _fire(world, cue: Dictionary) -> bool:
 				_crawl_action = "move_back" if cue.get("back", false) else "move_forward"
 	return true
 
-## The giant stands in the RV's lane just beyond a pole, facing the RV, with its AI off.
-## Its head loudspeaker still fades in and stages distance on its own.
+## The giant stands with its AI off: `beyond` metres past the staged pole in the RV's lane,
+## or `ahead` metres up the road from the RV at `lateral`. It faces the RV, or across the
+## road with `facing: "road"`. Its head loudspeaker still fades in and stages distance on its own.
 func _place_giant(world, cue: Dictionary) -> bool:
-	if pole.is_empty(): return false
 	var field: WorldField = world.field
 	var lateral := float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))
-	var mark := _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), lateral)
+	var mark: Transform3D
+	if cue.has("ahead"):
+		var rv_road := field.road_query(world.rv.global_position.x, world.rv.global_position.z)
+		mark = _road_mark(field, float(rv_road.s) + float(cue.ahead), lateral)
+	elif pole.is_empty(): return false
+	else: mark = _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), lateral)
 	giant = world.spawn(SlenderSpeakerSpawns.SCENE, mark.origin + Vector3.UP * 0.05, WorldEntities.get_container(world))
 	giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 	giant.set_physics_process(false)
 	var rv: Vector3 = world.rv.global_position
-	giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
+	if str(cue.get("facing", "")) == "road":
+		var across := mark.basis.x * signf(lateral if lateral != 0.0 else 1.0)
+		giant.look_at(giant.global_position - Vector3(across.x, 0.0, across.z))
+	else: giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
 	# A take that opens on the giant starts with its music already at full level.
 	if not bool(cue.get("fade", true)): giant.patrol_music._fade_elapsed = giant.patrol_music.FADE_SECONDS
 	world.subject = giant
@@ -319,6 +343,18 @@ func _track_gaze(world, delta: float) -> void:
 	var t := smoothstep(0.0, 1.0, minf(1.0, _gaze.time / _gaze.seconds))
 	actor.rotation.y = lerp_angle(float(_gaze.yaw), atan2(-offset.x, -offset.z), t)
 	actor.camera.rotation.x = lerpf(float(_gaze.pitch), atan2(offset.y, offset.slide(Vector3.UP).length()), t)
+
+## The still giant's head loudspeaker turns to follow the RV's cab.
+func _watch_rv(world, delta: float) -> void:
+	if not _watching or not is_instance_valid(giant): return
+	giant._head_look.update(giant, world.rv.get_node("DriverSeat").global_position, delta)
+
+## Marks the first moment the giant chases.
+func _watch_chase(world) -> void:
+	if not is_instance_valid(giant) or _marked_phases.has("chase"): return
+	if giant.phase == SlenderSpeaker.Phase.CHASE:
+		_marked_phases["chase"] = timeline.clock
+		world.director.mark("chase")
 
 ## Marks the giant's attack phases.
 func _watch_execution(world) -> void:

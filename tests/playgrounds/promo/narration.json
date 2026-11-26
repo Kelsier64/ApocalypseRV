@@ -11,11 +11,23 @@
     "9": "death does not end assignment . replacement bodies are authorized .",
     "10": "route survey . expired . terrain . unverified .",
     "11": "units active . one .",
-    "12": "unit four seven one one . lost . recover black box .",
+    "12": {
+      "text": "unit four seven one one . lost . replacement . you .",
+      "glitch": { "from": "lost", "drift": 0.035, "distortion": 0.12, "seed": 12,
+        "words": { "you": { "stretch": 1.25 } } }
+    },
     "13": "evacuation of shelter four . in progress . maintain the corridor until evacuation is complete .",
-    "14": "relay kilo . no response . coverage ends ahead . signal weak . remain on",
-    "15": "alert unit one four . status nominal .",
-    "16": "this is shelter four dispatch .",
-    "17": "unit four seven one three . you are assigned to route nine . proceed to relay station kilo ."
+    "14": {
+      "text": "relay kilo . no response . coverage ends ahead . remain on",
+      "glitch": { "from": "coverage", "drift": 0.12, "distortion": 0.85, "seed": 14,
+        "words": {
+          "ends": { "stutter": 3 },
+          "ahead": { "stretch": 1.7 },
+          "remain": { "swallow": 0.6 },
+          "on": { "swallow": 1.0, "reverse": true }
+        } }
+    },
+    "15": "this is shelter four dispatch .",
+    "16": "unit four seven one three . you are assigned to route nine . proceed to relay station kilo ."
   }
 }

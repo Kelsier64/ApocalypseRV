@@ -115,7 +115,7 @@ func _check_timelines() -> void:
 	var lines := BROADCAST.narration()
 	_check(not lines.is_empty(), "Trailer narration loads")
 	for id in lines:
-		_check(bank.missing(BROADCAST.tokens(lines[id])).is_empty(), "Narration line %s uses only word-bank words: %s" % [id, bank.missing(BROADCAST.tokens(lines[id]))])
+		_check(bank.missing(BROADCAST.tokens(BROADCAST.text(lines[id]))).is_empty(), "Narration line %s uses only word-bank words: %s" % [id, bank.missing(BROADCAST.tokens(BROADCAST.text(lines[id])))])
 
 func _check_director(world: Node) -> void:
 	var director: Node = world.director
@@ -298,15 +298,25 @@ func _verify_timeline(world: Node) -> void:
 		var chassis: Node = stage.wreck.get_node("Chassis")
 		_check(stage.wreck.process_mode == Node.PROCESS_MODE_DISABLED and not chassis.is_in_group(Groups.RV),
 			world.shot_id + " stages the wreck as scenery, outside the RV group")
-	if not world.shot.has("crash_pole"): return
-	var limit := int((stage.timeline.length() + 1.0) * Engine.physics_ticks_per_second)
-	for frame in limit:
+	if world.shot.timeline.any(func(cue: Dictionary) -> bool: return cue.do == "giant_wake"): await _verify_chase(world)
+
+## T2, unattended: the giant stands still in the field until its AI wakes, then chases the
+## RV on its own, while the cab speaker stays silent after radio_off.
+func _verify_chase(world: Node) -> void:
+	var stage = world.stage
+	var speaker: DispatchSpeaker = stage.broadcast.speaker
+	stage.unattended = true
+	var wake := 0.0
+	for cue in world.shot.timeline:
+		if cue.do == "giant_wake": wake = float(cue.at)
+	var still := false
+	while stage.timeline.running:
 		await physics_frame
-		if stage.impact_seconds >= 0.0 or not stage.timeline.running: break
-	_check(is_instance_valid(stage.giant) and not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing,
-		world.shot_id + " places a still giant whose loudspeaker plays")
-	_check(stage.impact_seconds >= 0.0 and world.rv.global_position.distance_to(stage.pole.point) < 10.0,
-		world.shot_id + " swerves into the staged pole (impact at %.2f s)" % stage.impact_seconds)
+		if stage.timeline.clock < wake - 0.2 and is_instance_valid(stage.giant):
+			still = not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing
+	_check(still, world.shot_id + " places a still giant whose loudspeaker plays before it wakes")
+	_check(stage._marked_phases.has("chase") and float(stage._marked_phases.chase) - wake < 1.0,
+		world.shot_id + " giant chases the RV on its own after waking (%s)" % stage._marked_phases)
 	_check(not speaker.speaker.playing and not speaker.noise.playing, world.shot_id + " leaves the cab speaker silent after radio_off")
 
 ## Memory shots leave driving to the player live; the unattended script must still run.
