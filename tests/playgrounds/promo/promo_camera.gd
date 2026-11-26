@@ -1,10 +1,10 @@
 extends Camera3D
 ## Detached filming camera: smoothed free flight, a damped follow rig that leaves
-## the keyboard to the player, and spline rail playback.
+## the keyboard to the player, a fixed tracking shot and spline rail playback.
 
 signal rail_finished
 
-enum Mode { FREE, FOLLOW, RAIL }
+enum Mode { FREE, FOLLOW, RAIL, TRACK }
 
 const LOOK_SENSITIVITY := 0.0022
 const LOOK_SMOOTHING := 14.0
@@ -35,6 +35,9 @@ var _velocity := Vector3.ZERO
 var _follow_yaw := 0.0
 var _follow_position := Vector3.ZERO
 var _follow_aim := Vector3.ZERO
+var _track_height := 0.0
+## In TRACK mode, the player view this camera takes the picture back from.
+var hold_over: Camera3D
 
 func _ready() -> void:
 	set_meta(&"promo_camera", true)
@@ -85,6 +88,16 @@ func follow_with_offset(target: Node3D, offset: Vector3) -> void:
 	global_position = target.global_position + Basis(Vector3.UP, _follow_yaw) * offset
 	_begin_follow()
 
+## Stands still at `point` and keeps the target `height` metres above its origin in frame.
+func track(target: Node3D, point: Vector3, height: float) -> void:
+	_stop_rail()
+	follow_target = target
+	_track_height = height
+	global_position = point
+	_follow_aim = target.global_position + Vector3.UP * height
+	mode = Mode.TRACK
+	if not global_position.is_equal_approx(_follow_aim): look_at(_follow_aim)
+
 func play(next_rail: RefCounted) -> bool:
 	if next_rail == null or not next_rail.playable(): return false
 	follow_target = null
@@ -111,6 +124,7 @@ func _process(delta: float) -> void:
 		Mode.FREE: _process_free(dt)
 		Mode.FOLLOW: _process_follow(dt)
 		Mode.RAIL: _process_rail(dt)
+		Mode.TRACK: _process_track(dt)
 
 func _process_free(dt: float) -> void:
 	_yaw = lerp_angle(_yaw, _target_yaw, _blend(LOOK_SMOOTHING, dt))
@@ -130,6 +144,16 @@ func _process_follow(dt: float) -> void:
 	_follow_position = _follow_position.lerp(wanted, _blend(FOLLOW_POSITION_SMOOTHING, dt))
 	_follow_aim = _follow_aim.lerp(follow_target.global_position + Vector3.UP * FOLLOW_AIM_HEIGHT, _blend(FOLLOW_AIM_SMOOTHING, dt))
 	global_position = _follow_position
+	if not global_position.is_equal_approx(_follow_aim): look_at(_follow_aim)
+
+func _process_track(dt: float) -> void:
+	if not is_instance_valid(follow_target) or not follow_target.is_inside_tree():
+		free_flight()
+		return
+	# Runs after physics and before drawing, so a grab that takes the player's view back
+	# during the physics step never reaches the picture.
+	if is_instance_valid(hold_over) and hold_over.current: make_current()
+	_follow_aim = _follow_aim.lerp(follow_target.global_position + Vector3.UP * _track_height, _blend(FOLLOW_AIM_SMOOTHING, dt))
 	if not global_position.is_equal_approx(_follow_aim): look_at(_follow_aim)
 
 func _process_rail(dt: float) -> void:

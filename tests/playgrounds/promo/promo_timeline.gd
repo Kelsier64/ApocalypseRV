@@ -13,6 +13,7 @@ const ACTIONS := {
 	"radio_off": [],
 	"weather": ["to", "seconds"],
 	"look": ["yaw", "pitch", "seconds"],
+	"gaze": ["target", "seconds"],
 	"eyes": ["open", "seconds"],
 	"giant": [],
 	"steer": ["within"],

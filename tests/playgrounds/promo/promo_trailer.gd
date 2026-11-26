@@ -30,6 +30,10 @@ var giant: SlenderSpeaker
 ## Giant phases already marked in take.json, and whether the crawl input is held.
 var _marked_phases: Dictionary = {}
 var _crawl_seconds := 0.0
+var _crawl_action := "move_forward"
+## Unattended prone takes: the survivor turns to keep the giant in view.
+var _gaze := {}
+var _cut_away := false
 ## Set by giant_release: forget the RV once the current attack ends.
 var _release_pending := false
 ## After the release the giant turns to face the survivor before its AI resumes.
@@ -81,10 +85,6 @@ func _stage_prone(world, spec: Dictionary) -> void:
 	actor.camera_locked = false
 	actor.rv_support.clear()
 	actor.set_prone(true)
-	# The game cuts to a third-person observer when the giant holds the survivor at its
-	# speaker. Hand the view back before that frame is drawn.
-	actor.child_entered_tree.connect(func(node: Node) -> void:
-		if node.name == "ExecutionObserver": _keep_first_person.call_deferred(actor))
 	actor.reset_physics_interpolation()
 	var look: Dictionary = spec.look
 	var target := _road_mark(field, float(world.shot.distance) + float(look.s), float(look.lateral)).origin
@@ -157,6 +157,7 @@ func tick(world, delta: float) -> void:
 	_watch_impact(world)
 	_watch_execution(world)
 	_hold_crawl(delta)
+	_track_gaze(world, delta)
 	_ease_view(world, delta)
 
 const DRIVING := ["drive", "gear", "brake", "steer"]
@@ -198,8 +199,14 @@ func _fire(world, cue: Dictionary) -> bool:
 				_look = {"camera": seat.seat_camera, "from": seat.seat_camera.rotation,
 					"to": rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0),
 					"seconds": maxf(0.01, float(cue.seconds)), "time": 0.0}
+		"gaze":
+			# The prone survivor's view; live takes leave it to the mouse.
+			if str(cue.target) != "giant" or not is_instance_valid(giant): return false
+			if unattended:
+				_gaze = {"up": float(cue.get("up", 0.0)), "seconds": maxf(0.01, float(cue.seconds)), "time": 0.0,
+					"yaw": world.actor.rotation.y, "pitch": world.actor.camera.rotation.x}
 		"eyes":
-			_eyes = {"from": float(_lids.get_shader_parameter("closure")), "to": 0.0 if bool(cue.open) else 1.0,
+			_eyes ={"from": float(_lids.get_shader_parameter("closure")), "to": 0.0 if bool(cue.open) else 1.0,
 				"seconds": maxf(0.01, float(cue.seconds)), "time": 0.0}
 		"marker":
 			world.director.mark(str(cue.name))
@@ -215,7 +222,9 @@ func _fire(world, cue: Dictionary) -> bool:
 			_release_pending = true
 		"crawl":
 			# Live takes crawl with the keyboard.
-			if unattended: _crawl_seconds = float(cue.seconds)
+			if unattended:
+				_crawl_seconds = float(cue.seconds)
+				_crawl_action = "move_back" if cue.get("back", false) else "move_forward"
 	return true
 
 ## The giant stands in the RV's lane just beyond a pole, facing the RV, with its AI off.
@@ -263,7 +272,8 @@ func _giant_smash(world) -> bool:
 
 ## Moves the prone survivor out on the giant's side of the RV, where the wreck cannot
 ## block its sight: `distance` metres from the giant, `angle` degrees off the line from
-## the RV through the giant, looking between the giant's chest and the roof.
+## the RV through the giant, looking between the giant's chest and the roof, or turned
+## that way and looking `pitch` degrees down at their own arms.
 func _place_beside_giant(world, spec: Dictionary) -> void:
 	var actor: CharacterBody3D = world.actor
 	var away: Vector3 = (giant.global_position - world.rv.global_position).slide(Vector3.UP).normalized()
@@ -273,16 +283,43 @@ func _place_beside_giant(world, spec: Dictionary) -> void:
 	actor.reset_physics_interpolation()
 	var focus := giant.global_position.lerp(world.rv.global_position, float(spec.get("toward_rv", 0.35)))
 	world._aim_at(focus + Vector3.UP * float(spec.get("up", 4.0)))
+	if spec.has("pitch"): actor.camera.rotation.x = deg_to_rad(float(spec.pitch))
 
-func _keep_first_person(actor: Node) -> void:
-	var grab: Node = actor.grab_control
-	if is_instance_valid(grab.execution_observer) and grab.execution_observer.current and is_instance_valid(grab.camera):
-		grab.camera.make_current()
+## Cuts out of the survivor's eyes as the giant reaches for them: a still camera `back`
+## metres behind the survivor (away from the giant), `side` metres to the side and `up`
+## metres above the ground, that keeps the survivor in frame as they are lifted. The
+## game's own execution view takes over at the speaker.
+func _cut_away_from_eyes(world, spec: Dictionary) -> void:
+	_cut_away = true
+	_gaze = {}
+	var actor: Node3D = world.actor
+	var away: Vector3 = (actor.global_position - giant.global_position).slide(Vector3.UP).normalized()
+	var point: Vector3 = actor.global_position + away * float(spec.back) + Vector3.UP.cross(away) * float(spec.get("side", 0.0))
+	point.y = world.field.height_at(point.x, point.z) + float(spec.get("up", 1.5))
+	if not world.director.track_from(actor, point, float(spec.get("aim_up", 1.0)), float(spec.get("fov", 60.0))):
+		world._fail("Could not cut to the third-person camera")
+		return
+	world.director.mark("cut_away")
 
-## Keeps the execution in the survivor's eyes and marks the giant's attack phases.
+## Turns the prone survivor toward the giant's `up` point, easing in over `seconds`,
+## then keeps the giant in view until it takes hold.
+func _track_gaze(world, delta: float) -> void:
+	if _gaze.is_empty() or not is_instance_valid(giant): return
+	var actor: CharacterBody3D = world.actor
+	if actor.is_grabbed() or actor.is_player_dead:
+		_gaze = {}
+		return
+	_gaze.time += delta
+	var offset: Vector3 = giant.global_position + Vector3.UP * float(_gaze.up) - actor.camera.global_position
+	var t := smoothstep(0.0, 1.0, minf(1.0, _gaze.time / _gaze.seconds))
+	actor.rotation.y = lerp_angle(float(_gaze.yaw), atan2(-offset.x, -offset.z), t)
+	actor.camera.rotation.x = lerpf(float(_gaze.pitch), atan2(offset.y, offset.slide(Vector3.UP).length()), t)
+
+## Cuts to third person as the giant reaches and marks the giant's attack phases.
 func _watch_execution(world) -> void:
-	_keep_first_person(world.actor)
 	if not is_instance_valid(giant): return
+	if giant.phase == SlenderSpeaker.Phase.GRAB and not _cut_away and world.shot.has("cut_away"):
+		_cut_away_from_eyes(world, world.shot.cut_away)
 	if _release_pending and giant.phase in [SlenderSpeaker.Phase.PATROL, SlenderSpeaker.Phase.CONFIRM, SlenderSpeaker.Phase.CHASE, SlenderSpeaker.Phase.SEARCH]:
 		# Left alone the giant keeps inspecting the roof it saw first and takes about
 		# twenty seconds to settle on the survivor in plain sight on the road. Taking
@@ -315,12 +352,12 @@ func _watch_execution(world) -> void:
 		_marked_phases["death"] = timeline.clock
 		world.director.mark("death")
 
-## Holds forward for the unattended crawl.
+## Holds forward or back for the unattended crawl.
 func _hold_crawl(delta: float) -> void:
 	if _crawl_seconds <= 0.0: return
 	_crawl_seconds -= delta
-	if _crawl_seconds > 0.0: Input.action_press("move_forward")
-	else: Input.action_release("move_forward")
+	if _crawl_seconds > 0.0: Input.action_press(_crawl_action)
+	else: Input.action_release(_crawl_action)
 
 ## Full throttle at the pole once the RV is within the armed distance of it.
 func _steer(world) -> void:

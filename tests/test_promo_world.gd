@@ -323,26 +323,54 @@ func _verify_scripted_drive(world: Node) -> void:
 	var offset: float = (road.frame as Transform3D).basis.x.dot(world.rv.global_position - (road.frame as Transform3D).origin)
 	_check(absf(offset - target) < 6.0, world.shot_id + " leaves the road for lateral %.0f m (at %.1f m)" % [target, offset])
 
-## T3: the giant smashes the roof, grabs the prone survivor and executes them, and the
-## take never cuts away from the survivor's own eyes.
+## T3, unattended: the giant smashes the roof, the prone survivor crawls back from it, and
+## the giant grabs and executes them. The take stays in the survivor's eyes until the
+## giant reaches for them, then never returns to them.
 func _verify_execution(world: Node) -> void:
 	var stage = world.stage
+	stage.unattended = true
 	_check(world.actor.is_crawling() and world.actor.body_state.has_part(&"left_leg") and world.actor.body_state.has_part(&"right_leg"),
 		world.shot_id + " lies in the crawl posture with every limb")
-	var first_person := true
-	var other_view := ""
-	var limit := int((stage.timeline.length() + 1.0) * Engine.physics_ticks_per_second)
-	for frame in limit:
-		await physics_frame
-		if is_instance_valid(stage.giant) and stage.giant.phase in [SlenderSpeaker.Phase.LIFT, SlenderSpeaker.Phase.HOLD, SlenderSpeaker.Phase.CRUSH]:
-			var view: Camera3D = world.get_viewport().get_camera_3d()
-			if view != world.actor.camera and other_view.is_empty():
-				first_person = false
-				other_view = "%s in %s, dead %s" % [view.get_path() if view else NodePath(), SlenderSpeaker.Phase.keys()[stage.giant.phase], world.actor.is_player_dead]
+	var crawl_at := -1.0
+	for cue in world.shot.timeline:
+		if cue.do == "crawl" and cue.get("back", false): crawl_at = float(cue.at)
+	_check(crawl_at >= 0.0, world.shot_id + " crawls back on its timeline")
+	var crawl_from := Vector3.INF
+	var away := Vector3.ZERO
+	var retreat := 0.0
+	var early_cut := ""
+	var pov_during_execution := ""
+	# Judge the view each frame is drawn with: sample after every node's own _process,
+	# where the filming camera takes the picture back from a grab in the physics step.
+	var sampler := Node.new()
+	var sampler_script := GDScript.new()
+	sampler_script.source_code = "extends Node\nsignal sampled\nfunc _process(_delta: float) -> void:\n\tsampled.emit()\n"
+	sampler_script.reload()
+	sampler.set_script(sampler_script)
+	sampler.process_priority = 1 << 30
+	root.add_child(sampler)
+	while stage.timeline.running:
+		await sampler.sampled
+		if not is_instance_valid(stage.giant): continue
+		var view: Camera3D = world.get_viewport().get_camera_3d()
+		var phase: int = stage.giant.phase
+		if crawl_from == Vector3.INF and stage.timeline.clock >= crawl_at:
+			crawl_from = world.actor.global_position
+			away = (crawl_from - stage.giant.global_position).slide(Vector3.UP).normalized()
+		if phase == SlenderSpeaker.Phase.GRAB and crawl_from != Vector3.INF and retreat == 0.0:
+			retreat = (world.actor.global_position - crawl_from).dot(away)
+		if not stage._marked_phases.has(SlenderSpeaker.Phase.GRAB) and view != world.actor.camera and early_cut.is_empty():
+			early_cut = "%s in %s" % [view.get_path() if view else NodePath(), SlenderSpeaker.Phase.keys()[phase]]
+		if phase in [SlenderSpeaker.Phase.LIFT, SlenderSpeaker.Phase.HOLD, SlenderSpeaker.Phase.CRUSH] and view == world.actor.camera and pov_during_execution.is_empty():
+			pov_during_execution = SlenderSpeaker.Phase.keys()[phase]
 		if stage._marked_phases.has("death"): break
 	for name in [SlenderSpeaker.Phase.GRAB, SlenderSpeaker.Phase.HOLD, SlenderSpeaker.Phase.CRUSH, "death"]:
 		_check(stage._marked_phases.has(name), world.shot_id + " reaches %s (marked %s)" % [name, stage._marked_phases])
-	_check(first_person, world.shot_id + " keeps the survivor's camera current through the execution (%s)" % other_view)
+	_check(retreat > 0.5, world.shot_id + " crawls back away from the giant before the grab (%.2f m)" % retreat)
+	_check(early_cut.is_empty(), world.shot_id + " stays in the survivor's eyes until the giant reaches (%s)" % early_cut)
+	_check(stage._cut_away and pov_during_execution.is_empty(), world.shot_id + " cuts to third person for the grab and execution (first person in %s)" % pov_during_execution)
+	Input.action_release("move_back")
+	sampler.queue_free()
 
 func _verify_road_contact(world: Node) -> void:
 	world.stage.drive_replay = true

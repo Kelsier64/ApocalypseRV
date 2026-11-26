@@ -388,6 +388,8 @@ func _update_crawl(delta: float) -> void:
 		# Authored palms pull back 34 cm during 67% of each cycle. Match the
 		# controller's travel while planted, including the slower one-arm drag.
 		var rate := 1.0 if clip == "prone_idle" else clampf(speed * animation.get_animation(name).length * .67 / .34, .0, 2.2)
+		# Crawling backwards runs the cycle in reverse: the palms push instead of pull.
+		if clip != "prone_idle" and local.z > absf(local.x): rate = -rate
 		animation.advance(delta * rate)
 	view_camera.position = view_camera.position.move_toward(crawl_eye, delta * 2.8)
 

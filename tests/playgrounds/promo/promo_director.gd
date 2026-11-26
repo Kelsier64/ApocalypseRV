@@ -138,6 +138,18 @@ func follow_preset(preset: String, target: Node3D = null) -> bool:
 	world.actor.camera_locked = false
 	return true
 
+## A still camera at `point` that keeps `target` in frame; the keyboard stays the player's,
+## and the player's own view cannot take the picture back.
+func track_from(target: Node3D, point: Vector3, height: float, fov: float) -> bool:
+	if not is_instance_valid(target) or not _detached_view(): return false
+	view.track(target, point, height)
+	view.hold_over = _player_view()
+	view.fov = fov
+	view.target_fov = fov
+	view.make_current()
+	world.actor.camera_locked = false
+	return true
+
 func set_fov(value: float) -> void:
 	if is_instance_valid(view): view.target_fov = value
 
@@ -273,7 +285,7 @@ func _indicator_text() -> String:
 	if not error.is_empty(): return "%s  FAILED: %s\nF2 panel to pick another shot" % [world.shot_id, error]
 	var state := "Ready" if world.take_ready else "Preparing..."
 	var camera := "Player"
-	if is_instance_valid(view): camera = ["Free", "Follow", "Rail"][view.mode]
+	if is_instance_valid(view): camera = ["Free", "Follow", "Rail", "Track"][view.mode]
 	var line := "%s  %s   Camera: %s" % [world.shot_id, state, camera]
 	if slow_index > 0: line += "   Speed %sx" % str(SLOW_SCALES[slow_index])
 	if is_instance_valid(world.actor) and world.actor.invulnerable: line += "   Invulnerable"
