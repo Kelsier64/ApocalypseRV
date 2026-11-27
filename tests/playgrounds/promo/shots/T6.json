@@ -1,0 +1,24 @@
+{
+  "title": "Scene 23: from the RV floor to the roof opening",
+  "steps": "Press F3 while prone in the crashed RV. Look down at your arms as your eyes open, then look up through the roof opening. The giant approaches and attacks using its own AI. The camera cuts away when the hand takes hold.",
+  "action": "Start the cabin take",
+  "chase_take": "cabin",
+  "seed": 42,
+  "distance": 393,
+  "start": { "s": 359.2, "lateral": -2.61, "rotation": [2.25, -3.8, 6.18], "height": 0.329 },
+  "hour": 15,
+  "weather": [0, 0, 0.7],
+  "engine": false,
+  "radio": false,
+  "eyes_closed": true,
+  "crash_car": { "s": 365, "lateral": -0.3, "yaw": 90 },
+  "cabin": { "position": [0.65, 0.7, -4.5], "look": [0.65, 0.16, -5.7], "panels": { "front": 33.6, "roof_2": 60 }, "roof": "roof_0" },
+  "cut_away": { "back": 12, "side": -5, "up": 4, "aim_up": 1.5, "fov": 64 },
+  "timeline": [
+    { "at": 0, "do": "wind", "tier": 0 },
+    { "at": 0, "do": "giant", "s": 361, "lateral": 5.1, "fade": false },
+    { "at": 0, "do": "giant_wake" },
+    { "at": 0.85, "do": "eyes", "open": true, "seconds": 0.75 },
+    { "at": 23.5, "do": "end" }
+  ]
+}

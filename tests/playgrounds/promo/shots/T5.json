@@ -1,0 +1,25 @@
+{
+  "title": "Scene 22: roof hit and wreck collision",
+  "steps": "Press F3 from the driver's seat. The RV holds its lane while the giant attacks. In a live take glance at the driver's side mirror at the hit, then face the road as the RV brakes and steers once. Preview moves the driver's head on its own.",
+  "action": "Start the roof hit and crash",
+  "chase_take": "collision",
+  "seed": 42,
+  "distance": 393,
+  "start": { "s": 317, "lateral": -1.8 },
+  "hour": 15,
+  "weather": [0, 0, 0.7],
+  "seat": true,
+  "drives": true,
+  "invulnerable": true,
+  "radio": false,
+  "initial_speed": 35,
+  "crash_car": { "s": 365, "lateral": -0.3, "yaw": 90, "brake_at": 10.0, "steer": 1.0, "steer_seconds": 0.3 },
+  "timeline": [
+    { "at": 0, "do": "wind", "tier": 0 },
+    { "at": 0, "do": "gear", "gear": 3 },
+    { "at": 0, "do": "drive", "speed": 39, "lateral": -1.8 },
+    { "at": 0.15, "do": "giant", "s": 310, "lateral": -2.0, "speed": 34, "fade": false },
+    { "at": 0.15, "do": "giant_wake" },
+    { "at": 10, "do": "end" }
+  ]
+}

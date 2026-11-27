@@ -184,7 +184,7 @@ func _check_bunker(world: Node) -> void:
 		_check(restarted.trigger_take() and restarted.apparition.global_position.is_equal_approx(initial), "B2 triggers again at the same mark")
 
 func _check_remaining_takes() -> void:
-	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "D6", "T1", "T2", "T3"]
+	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "D6", "T1", "T2", "T3", "T4", "T5", "T6"]
 	for id in ids:
 		if id in ["B2", "R2"]: continue
 		var previous := current_scene
@@ -286,6 +286,9 @@ func _verify_timeline(world: Node) -> void:
 			first_line = float(cue.at)
 			break
 	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
+	if world.shot.has("chase_take"):
+		await _verify_chase_take(world)
+		return
 	if first_line >= 0.0:
 		var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
 		for frame in ticks:
@@ -304,6 +307,43 @@ func _verify_timeline(world: Node) -> void:
 		_check(stage.wreck.process_mode == Node.PROCESS_MODE_DISABLED and not chassis.is_in_group(Groups.RV),
 			world.shot_id + " stages the wreck as scenery, outside the RV group")
 	if world.shot.timeline.any(func(cue: Dictionary) -> bool: return cue.do == "giant_wake"): await _verify_chase(world)
+
+func _verify_chase_take(world: Node) -> void:
+	var stage = world.stage
+	stage.unattended = true
+	if world.shot.chase_take == "cabin":
+		_check(world.actor.rv_support.rv == world.rv, "T6 begins supported by the crashed RV's floor")
+		await _verify_execution(world)
+		_check(float(stage._marked_phases.get("roof_open", INF)) < float(stage._marked_phases.get(SlenderSpeaker.Phase.GRAB, -INF)),
+			"T6 physically opens the front roof before the grab")
+		return
+	var framed := 0
+	while stage.timeline.running:
+		await physics_frame
+		if world.shot.chase_take != "exterior" or not is_instance_valid(stage.giant): continue
+		var view: Camera3D = world.director.view
+		if (view != null and view.is_position_in_frustum(world.rv.global_position)
+				and view.is_position_in_frustum(stage._giant_point(0.0))
+				and view.is_position_in_frustum(stage._giant_point(0.95))):
+			framed += 1
+	_check(stage.autoplay_error(world).is_empty(), world.shot_id + " completes the configured chase action: " + stage.autoplay_error(world))
+	if world.shot.chase_take == "exterior":
+		var camera: Camera3D = world.director.view
+		_check(is_instance_valid(camera) and camera.follow_target == world.rv and camera.follow_companion == stage.giant,
+			"T4 follows both the RV and the giant")
+		if DisplayServer.get_name() != "headless":
+			_check(framed >= Engine.physics_ticks_per_second, "T4 keeps the RV and the giant's whole height in frame for at least a second")
+		return
+	if stage.crash_state.is_empty(): return
+	var cabin: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(world.SHOT_PATH % "T6"))
+	var stop: Dictionary = stage.crash_state
+	for key in ["s", "lateral", "height"]:
+		_check(absf(float(stop[key]) - float(cabin.start[key])) < 0.2, "T6 reuses the collision's final " + key)
+	for axis in 3:
+		_check(absf(float(stop.rotation[axis]) - float(cabin.start.rotation[axis])) < 1.0, "T6 reuses the collision's final rotation")
+	_check(stop.panels.keys().size() == cabin.cabin.panels.keys().size(), "T6 restores every damaged panel from the collision")
+	for panel in stop.panels:
+		_check(is_equal_approx(float(stop.panels[panel]), float(cabin.cabin.panels.get(panel, -1.0))), "T6 restores collision damage on " + panel)
 
 ## T2, unattended: the driver looks as they pass the wreck, then hears the giant before seeing it.
 func _verify_chase(world: Node) -> void:

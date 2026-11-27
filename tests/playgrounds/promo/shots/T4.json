@@ -1,0 +1,25 @@
+{
+  "title": "Scene 21: wide road pursuit",
+  "steps": "Press F3 to start a side-rear follow camera and the scripted chase. The RV and the giant both drive the action in the same stretch of conifers as the preceding take.",
+  "action": "Start the wide pursuit",
+  "chase_take": "exterior",
+  "seed": 42,
+  "distance": 393,
+  "start": { "s": 275, "lateral": -1.8 },
+  "hour": 15,
+  "weather": [0, 0, 0.7],
+  "seat": true,
+  "drives": true,
+  "invulnerable": true,
+  "radio": false,
+  "initial_speed": 34,
+  "framing": { "offset": [17, 8, 10], "aim": [0, 5, 0], "fov": 72 },
+  "timeline": [
+    { "at": 0, "do": "wind", "tier": 0 },
+    { "at": 0, "do": "gear", "gear": 3 },
+    { "at": 0, "do": "drive", "speed": 36, "lateral": -1.8 },
+    { "at": 0, "do": "giant", "s": 253, "lateral": -2.7, "speed": 35, "fade": false },
+    { "at": 0, "do": "giant_wake" },
+    { "at": 4.0, "do": "end" }
+  ]
+}

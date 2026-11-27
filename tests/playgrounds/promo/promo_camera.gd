@@ -24,7 +24,9 @@ var speed := 5.0
 var target_fov := 70.0
 var move_input := Vector3.ZERO
 var follow_target: Node3D
+var follow_companion: Node3D
 var follow_offset := Vector3(0, 3.2, 11)
+var follow_aim_offset := Vector3(0, FOLLOW_AIM_HEIGHT, 0)
 var rail: RefCounted
 var rail_time := -1.0
 var _yaw := 0.0
@@ -76,16 +78,20 @@ func free_flight() -> void:
 func follow_from_here(target: Node3D) -> void:
 	_stop_rail()
 	follow_target = target
+	follow_companion = null
 	_follow_yaw = _heading(target)
 	follow_offset = Basis(Vector3.UP, _follow_yaw).inverse() * (global_position - target.global_position)
+	follow_aim_offset = Vector3.UP * FOLLOW_AIM_HEIGHT
 	_begin_follow()
 
-func follow_with_offset(target: Node3D, offset: Vector3) -> void:
+func follow_with_offset(target: Node3D, offset: Vector3, aim_offset := Vector3(0, FOLLOW_AIM_HEIGHT, 0), companion: Node3D = null) -> void:
 	_stop_rail()
 	follow_target = target
+	follow_companion = companion
 	_follow_yaw = _heading(target)
 	follow_offset = offset
-	global_position = target.global_position + Basis(Vector3.UP, _follow_yaw) * offset
+	follow_aim_offset = aim_offset
+	global_position = _follow_origin() + Basis(Vector3.UP, _follow_yaw) * offset
 	_begin_follow()
 
 ## Stands still at `point` and keeps the target `height` metres above its origin in frame.
@@ -109,12 +115,16 @@ func play(next_rail: RefCounted) -> bool:
 
 func _begin_follow() -> void:
 	_follow_position = global_position
-	_follow_aim = follow_target.global_position + Vector3.UP * FOLLOW_AIM_HEIGHT
+	_follow_aim = _follow_origin() + Basis(Vector3.UP, _follow_yaw) * follow_aim_offset
 	mode = Mode.FOLLOW
 	if not global_position.is_equal_approx(_follow_aim): look_at(_follow_aim)
 
 func _stop_rail() -> void:
 	rail_time = -1.0
+
+func _follow_origin() -> Vector3:
+	var origin := follow_target.global_position
+	return origin.lerp(follow_companion.global_position, 0.5) if is_instance_valid(follow_companion) else origin
 
 func _process(delta: float) -> void:
 	# Filming speed stays real-time under slow motion.
@@ -140,9 +150,11 @@ func _process_follow(dt: float) -> void:
 		return
 	# Follow heading only: rolls, pitching and bumps of the target never reach the camera.
 	_follow_yaw = lerp_angle(_follow_yaw, _heading(follow_target), _blend(FOLLOW_YAW_SMOOTHING, dt))
-	var wanted := follow_target.global_position + Basis(Vector3.UP, _follow_yaw) * follow_offset
+	var heading := Basis(Vector3.UP, _follow_yaw)
+	var origin := _follow_origin()
+	var wanted := origin + heading * follow_offset
 	_follow_position = _follow_position.lerp(wanted, _blend(FOLLOW_POSITION_SMOOTHING, dt))
-	_follow_aim = _follow_aim.lerp(follow_target.global_position + Vector3.UP * FOLLOW_AIM_HEIGHT, _blend(FOLLOW_AIM_SMOOTHING, dt))
+	_follow_aim = _follow_aim.lerp(origin + heading * follow_aim_offset, _blend(FOLLOW_AIM_SMOOTHING, dt))
 	global_position = _follow_position
 	if not global_position.is_equal_approx(_follow_aim): look_at(_follow_aim)
 

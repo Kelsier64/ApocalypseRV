@@ -8,9 +8,10 @@ const BUNKER := preload("res://tests/playgrounds/promo/promo_bunker.gd")
 const OUTDOOR := preload("res://tests/playgrounds/promo/promo_outdoor.gd")
 const WORKSHOP := preload("res://tests/playgrounds/promo/promo_workshop.gd")
 const TRAILER := preload("res://tests/playgrounds/promo/promo_trailer.gd")
+const CHASE := preload("res://tests/playgrounds/promo/promo_chase.gd")
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const SHOTS := ["B1", "B2", "B3", "B4", "B5", "B6", "O1", "O2", "O3", "O4", "O5",
-	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "T1", "T2", "T3"]
+	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "T1", "T2", "T3", "T4", "T5", "T6"]
 const SHOT_PATH := "res://tests/playgrounds/promo/shots/%s.json"
 static var next_shot := ""
 static var next_variant := 0
@@ -78,6 +79,7 @@ func _enter_tree() -> void:
 		distance = _entrance.s
 	else:
 		if shot.get("workshop", false): stage = WORKSHOP.new()
+		elif shot.has("chase_take"): stage = CHASE.new()
 		else: stage = TRAILER.new() if shot.has("timeline") else OUTDOOR.new()
 		var original := get_node("NewRv")
 		remove_child(original)

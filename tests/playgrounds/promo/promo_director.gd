@@ -138,6 +138,15 @@ func follow_preset(preset: String, target: Node3D = null) -> bool:
 	world.actor.camera_locked = false
 	return true
 
+func follow_framed(target: Node3D, companion: Node3D, offset: Vector3, aim: Vector3, fov: float) -> bool:
+	if not _detached_view(): return false
+	view.follow_with_offset(target, offset, aim, companion)
+	view.fov = fov
+	view.target_fov = fov
+	view.make_current()
+	world.actor.camera_locked = false
+	return true
+
 ## A still camera at `point` that keeps `target` in frame; the keyboard stays the player's,
 ## and the player's own view cannot take the picture back.
 func track_from(target: Node3D, point: Vector3, height: float, fov: float) -> bool:
