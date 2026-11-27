@@ -124,7 +124,8 @@
       "s": 217,
       "lateral": -25,
       "facing": "road",
-      "facing_yaw": 60
+      "facing_yaw": 60,
+      "head_fill": { "at": 28.4, "seconds": 1.5, "energy": 8.0 }
     },
     {
       "at": 16.5,
