@@ -45,21 +45,14 @@ static func _build_v14(chunk: ChunkGenerator, gradual: bool) -> void:
 	var shrubs: Array = [[], [], [], [], []]
 	var body := ForestTrunks.new()
 	body.name = "ForestTrunks"
-	var trunk_shape := BoxShape3D.new()
-	trunk_shape.size = Vector3(0.7, 1, 0.7)
 	var planned := trees(chunk.field, chunk.band)
 	for i in range(planned.size()):
 		var tree: Dictionary = planned[i]
-		if chunk.field.destroyed_trees.has(TreeImpact.forest_id(chunk.band, i)): continue
+		var tree_id := TreeImpact.forest_id(chunk.band, i)
+		if chunk.field.destroyed_trees.has(tree_id): continue
 		var kind: int = tree.mesh_kind
 		tree_poses[kind].append(Transform3D(Basis(Vector3.UP, tree.angle).scaled(Vector3(tree.width, tree.height, tree.width)), tree.point))
-		var shape := CollisionShape3D.new()
-		shape.shape = trunk_shape
-		shape.position = tree.point + Vector3.UP * tree.height * 0.5
-		shape.scale.y = tree.height
-		shape.set_meta("tree_id", TreeImpact.forest_id(chunk.band, i))
-		shape.set_meta("tree_point", tree.point)
-		body.add_child(shape)
+		body.add_trunk(tree.point, tree.height, tree_id)
 		chunk.decoration_positions.append(tree.point)
 		if gradual and chunk.slice_exhausted(): await chunk._pause()
 	# Grass, reeds, scree and ferns are ScatterCatalog layers. Only the roadside

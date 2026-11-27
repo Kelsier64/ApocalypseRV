@@ -62,7 +62,8 @@ var _lid_rect: ColorRect
 
 func placement(world) -> Transform3D:
 	if world.shot.has("rv_at_pole"): return _crashed_pose(world)
-	return _road_mark(world.field, float(world.shot.distance), float(world.shot.get("lateral", 0.0)))
+	var distance := float(world.shot.distance) - float(world.shot.get("lead_in_distance", 0.0))
+	return _road_mark(world.field, distance, float(world.shot.get("lateral", 0.0)))
 
 ## Where T2 leaves the RV: turned off the road with the pole `ahead` metres in front of
 ## its centre and `side` metres to its right.
@@ -313,16 +314,18 @@ func _soil_road(node: MeshInstance3D) -> void:
 	if material != null: mesh.surface_set_material(0, material)
 
 ## Stands the game's own tree meshes on a jittered `spacing` grid in the zone, kept off the
-## road by `road_margin` metres beyond its edge, a `density` share of the grid points filled
-## and a `dead` share of those bare. `clear` keeps the driver's view of the giant open: no
-## tree within `width` metres of the lines from the road `from`..`to` metres past the shot's
-## start (at `lateral`) to the giant's ground spot, or within `around` metres of that spot.
+## road by `road_margin` metres beyond its edge. `density` and `left_density` fill a share
+## of the grid points, with a `dead` share bare. `clear` forbids trees within `width` metres
+## of the sightlines from the road to the giant, or within `around` metres of its feet.
+## `extra_trees` sets individual trunks at road offsets (`s`, `lateral`) for the chase.
 func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 	if spec.is_empty(): return 0
 	var field: WorldField = world.field
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(spec.get("seed", 1))
 	var spacing := float(spec.get("spacing", 10.0))
+	var density := float(spec.get("density", 0.6))
+	var left_density := float(spec.get("left_density", density))
 	var lines := _clear_lines(world, spec.get("clear", {}))
 	var poses: Array = [[], [], [], [], [], []]
 	var planted := 0
@@ -330,10 +333,12 @@ func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 	while s <= float(zone.to):
 		var lateral := -float(zone.width)
 		while lateral <= float(zone.width):
-			var point := _road_mark(field, s + rng.randf_range(-0.4, 0.4) * spacing, lateral + rng.randf_range(-0.4, 0.4) * spacing).origin
+			var distance := s + rng.randf_range(-0.4, 0.4) * spacing
+			var offset := lateral + rng.randf_range(-0.4, 0.4) * spacing
+			var point := _road_mark(field, distance, offset).origin
 			point.y = _filled_height(field, point)
 			lateral += spacing
-			var filled := rng.randf() < float(spec.get("density", 0.6))
+			var filled := rng.randf() < (left_density if offset < 0.0 else density)
 			var dead := rng.randf() < float(spec.get("dead", 0.7))
 			var kind := 4 + rng.randi() % 2 if dead else rng.randi() % 4
 			var height := rng.randf_range(8.0, 14.0) if dead else rng.randf_range(11.0, 18.0)
@@ -347,15 +352,26 @@ func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 			poses[kind].append(Transform3D(Basis(Vector3.UP, angle).scaled(Vector3(width, height, width)), point + Vector3.DOWN * 0.15))
 			planted += 1
 		s += spacing
+	for tree: Dictionary in spec.get("extra_trees", []):
+		var pose := _road_mark(field, float(world.shot.distance) + float(tree.s), float(tree.lateral))
+		pose.origin.y = _filled_height(field, pose.origin) - 0.15
+		pose.basis = Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(2.5, 12.0, 2.5))
+		poses[4].append(pose)
+		planted += 1
 	# The streamer frees entities it finds behind the player, so the planting stands at the
 	# far end of its zone, with the trees placed relative to it.
 	var parent := Node3D.new()
 	parent.name = "PromoForest"
 	WorldEntities.get_container(world).add_child(parent)
 	parent.global_position = _road_mark(field, float(zone.to), 0.0).origin
+	var trunks := ForestTrunks.new()
+	trunks.name = "ForestTrunks"
 	for kind in poses.size():
 		var local: Array = poses[kind].map(func(pose: Transform3D) -> Transform3D: return pose.translated(-parent.global_position))
-		ForestScenery.batch(parent, "PromoTree%d" % kind, ForestMeshes.tree(kind), local)
+		trunks.visuals.merge(ForestScenery.batch(parent, "PromoTree%d" % kind, ForestMeshes.tree(kind), local))
+		for pose: Transform3D in local:
+			trunks.add_trunk(pose.origin, pose.basis.y.length())
+	parent.add_child(trunks)
 	return planted
 
 ## The flat sightlines `_plant` keeps open, as [from, to, width] with the giant's spot taken

@@ -311,6 +311,8 @@ func _verify_chase(world: Node) -> void:
 	var speaker: DispatchSpeaker = stage.broadcast.speaker
 	var camera: Camera3D = world.actor.seated_in.seat_camera
 	var clock := world.get_node("WorldClock") as WorldClock
+	var forest := WorldEntities.get_container(world).get_node_or_null("PromoForest")
+	var trunks := forest.get_node_or_null("ForestTrunks") as ForestTrunks if forest != null else null
 	stage.unattended = true
 	var wake := 0.0
 	for cue in world.shot.timeline:
@@ -318,6 +320,7 @@ func _verify_chase(world: Node) -> void:
 	var framed_wreck := false
 	var hidden_at_handoff := false
 	var still := false
+	var trees_felled_before_wake := false
 	while stage.timeline.running:
 		await physics_frame
 		var look: Dictionary = stage._look
@@ -329,11 +332,26 @@ func _verify_chase(world: Node) -> void:
 			hidden_at_handoff = giant_depth > clock.environment.fog_depth_end and not speaker.speaker.playing and not speaker.noise.playing
 		if stage.timeline.clock < wake - 0.2 and is_instance_valid(stage.giant):
 			still = not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing
+		if stage.timeline.clock < wake and trunks != null:
+			trees_felled_before_wake = not trunks.broken.is_empty()
 	_check(framed_wreck, world.shot_id + " turns toward the wreck before passing it")
 	_check(hidden_at_handoff, world.shot_id + " hands off from dispatch to music while the giant is still behind the fog")
 	_check(still, world.shot_id + " places a still giant whose loudspeaker plays before it wakes")
 	_check(stage._marked_phases.has("chase") and float(stage._marked_phases.chase) - wake < 1.0,
 		world.shot_id + " giant chases the RV on its own after waking (%s)" % stage._marked_phases)
+	var debris := forest.get_node_or_null("TreeDebris") if forest != null else null
+	var removed := false
+	if trunks != null:
+		for trunk: CollisionShape3D in trunks.broken:
+			if not trunk.disabled: continue
+			removed = true
+			# The headless rendering server has no instance transforms to read back.
+			if DisplayServer.get_name() != "headless":
+				var entry: Dictionary = trunks.visuals[trunk.get_meta("tree_point")]
+				var mesh_pose: Transform3D = entry.node.multimesh.get_instance_transform(entry.index)
+				_check(mesh_pose.basis.get_scale().is_zero_approx(), world.shot_id + " hides each felled tree's standing mesh")
+	_check(not trees_felled_before_wake and removed and debris != null and debris.get_child_count() > 0,
+		world.shot_id + " the chase disables planted trunks and spawns debris")
 	_check(not speaker.speaker.playing and not speaker.noise.playing, world.shot_id + " leaves the cab speaker silent after radio_off")
 
 ## Memory shots leave driving to the player live; the unattended script must still run.

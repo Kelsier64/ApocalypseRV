@@ -1,9 +1,10 @@
 {
   "title": "Act three drive (wreck, fog, giant in the conifer valley)",
-  "steps": "Seated driver on the same road as T1, through bare conifer woods. F3 starts the timeline: glance left as you approach the previous unit's wreck during line 12, then look back at the road. The dispatch goes quiet and Fur Elise rises from the fog on the left before the giant comes into view in the valley. The RV slows; look out the side window as the giant's speaker turns to you. The RV shifts down and speeds up on its own; look back over your left shoulder as the giant walks out after you.",
+  "steps": "F3 starts with five seconds of driving through the conifer woods. Glance left as you approach the previous unit's wreck during line 12, then look back at the road. The dispatch goes quiet and Fur Elise rises from the fog on the left before the giant comes into view in the valley. The RV slows; look out the side window as the giant's speaker turns to you. The RV shifts down and speeds up on its own; keep looking back over your left shoulder as the giant pursues you.",
   "action": "Start the timeline",
   "seed": 42,
   "distance": 393,
+  "lead_in_distance": 38,
   "hour": 15,
   "weather": [
     0,
@@ -26,8 +27,8 @@
     }
   },
   "dress": {
-    "from": -60,
-    "to": 280,
+    "from": -78,
+    "to": 365,
     "width": 140,
     "fade": 20,
     "ground": "54432f",
@@ -36,15 +37,20 @@
     "plant": {
       "seed": 20,
       "spacing": 9,
-      "density": 0.7,
+      "density": 0.8,
+      "left_density": 0.97,
       "dead": 0.25,
-      "road_margin": 8,
+      "road_margin": 6,
+      "extra_trees": [
+        { "s": 222.2, "lateral": -18.5 },
+        { "s": 226.3, "lateral": -14.8 }
+      ],
       "clear": {
-        "from": 150,
+        "from": 156,
         "to": 215,
         "lateral": -1.8,
-        "width": 5,
-        "around": 8
+        "width": 3,
+        "around": 6
       }
     }
   },
@@ -52,7 +58,7 @@
     {
       "at": 0,
       "do": "drive",
-      "speed": 44
+      "speed": 20
     },
     {
       "at": 0,
@@ -60,55 +66,60 @@
       "tier": 1
     },
     {
-      "at": 1,
+      "at": 5,
+      "do": "drive",
+      "speed": 44
+    },
+    {
+      "at": 6,
       "do": "line",
       "id": 12
     },
     {
-      "at": 2.5,
+      "at": 7.5,
       "do": "gear",
       "gear": 2
     },
     {
-      "at": 3.2,
+      "at": 8.2,
       "do": "look",
       "target": "wreck",
       "seconds": 1.1
     },
     {
-      "at": 5,
+      "at": 10,
       "do": "gear",
       "gear": 3
     },
     {
-      "at": 5.9,
+      "at": 10.9,
       "do": "weather",
       "to": [0, 0, 1.6],
       "seconds": 2.2
     },
     {
-      "at": 6.3,
+      "at": 11.3,
       "do": "look",
       "yaw": 0,
       "pitch": 0,
       "seconds": 1.4
     },
     {
-      "at": 8,
+      "at": 13,
       "do": "gear",
       "gear": 4
     },
     {
-      "at": 8.2,
+      "at": 13.2,
       "do": "wind",
       "tier": 0
     },
     {
-      "at": 8.25,
+      "at": 13.25,
       "do": "radio_off"
     },
     {
-      "at": 8.25,
+      "at": 13.25,
       "do": "giant",
       "s": 217,
       "lateral": -25,
@@ -116,18 +127,18 @@
       "facing_yaw": 60
     },
     {
-      "at": 11.5,
+      "at": 16.5,
       "do": "weather",
       "to": [0, 0, 0.7],
       "seconds": 7
     },
     {
-      "at": 18,
+      "at": 23,
       "do": "drive",
       "speed": 24
     },
     {
-      "at": 23.4,
+      "at": 28.4,
       "do": "look",
       "target": "giant",
       "lean": [
@@ -138,33 +149,33 @@
       "seconds": 2
     },
     {
-      "at": 26.4,
+      "at": 31.4,
       "do": "giant_watch",
       "seconds": 1.5
     },
     {
-      "at": 28.4,
+      "at": 33.4,
       "do": "gear",
       "gear": 3
     },
     {
-      "at": 28.4,
+      "at": 33.4,
       "do": "drive",
       "speed": 60
     },
     {
-      "at": 28.8,
+      "at": 33.8,
       "do": "giant_wake"
     },
     {
-      "at": 28.8,
+      "at": 33.8,
       "do": "look",
       "target": "giant",
       "yaw": 20,
       "seconds": 1
     },
     {
-      "at": 32,
+      "at": 42,
       "do": "end"
     }
   ]
