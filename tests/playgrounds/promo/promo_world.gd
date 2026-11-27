@@ -125,6 +125,10 @@ func _ready() -> void:
 	var clock: WorldClock = $WorldClock
 	clock.running = false
 	clock.weather_running = false
+	clock.keep_volumetric_fog_active = (
+		shot.get("setup", "") == "time_lapse"
+		or shot.get("timeline", []).any(func(cue: Dictionary) -> bool: return cue.do == "weather")
+	)
 	clock.weather.set_weather(Vector3(float(shot.weather[0]), float(shot.weather[1]), float(shot.weather[2])), true)
 	clock.set_time(1, float(shot.hour))
 	$DeviationPressure.set_physics_process(false)

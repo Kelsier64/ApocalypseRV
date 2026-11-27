@@ -196,6 +196,16 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 				check.call(is_equal_approx(clock.environment.volumetric_fog_density, expected_global), "v%d global volumetric fog follows its weather contract" % version)
 			_check_mist_transition(clock, material, volumetric, check)
 			_check_weather_appearance(clock, check)
+			clock.keep_volumetric_fog_active = true
+			clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
+			clock.register_fog(material)
+			clock.apply_time()
+			check.call(clock.environment.volumetric_fog_enabled == volumetric
+				and is_zero_approx(clock.environment.volumetric_fog_density)
+				and is_zero_approx(float(material.get_shader_parameter("density"))),
+				"Animated capture keeps the fog pass active at zero density when fog quality is on")
+			clock.unregister_fog(material)
+			clock.keep_volumetric_fog_active = false
 		clock.weather.set_weather(Vector3(0, 0, WorldWeather.FOG_HEAVY), true)
 		clock.set_time(1, 12.0)
 		var noon := clock.environment.fog_light_color

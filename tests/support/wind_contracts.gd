@@ -5,6 +5,7 @@ static func run(check: Callable) -> void:
 	_check_first_segment(check)
 	_check_determinism(check)
 	_check_transition(check)
+	_check_scripted_sample(check)
 	_check_restore(check)
 	_check_tiers(check)
 	_check_override(check)
@@ -80,6 +81,22 @@ static func _check_transition(check: Callable) -> void:
 		check.call(is_equal_approx(wind.strength(), wind.target_tier()), "Wind settles on the new tier once the weather transition ends")
 		break
 	check.call(found, "Seed 42 reaches a segment that changes the wind tier")
+
+static func _check_scripted_sample(check: Callable) -> void:
+	var weather := _fresh(42)
+	var wind := _wind_for(weather, 42)
+	weather.set_weather(Vector3(1, 0, 0), true)
+	var saved := weather.capture()
+	var velocity := wind.velocity(1234.0)
+	var scripted := Vector3(0, 1, WorldWeather.FOG_MEDIUM)
+	weather.sample_override = scripted
+	check.call(weather.sample() == scripted and weather.capture() == saved and wind.velocity(1234.0).is_equal_approx(velocity),
+		"Scripted weather changes the visible sample without rerolling wind or recording a segment")
+	weather.set_weather(Vector3.ZERO)
+	weather.advance(WorldWeather.TRANSITION * 0.5)
+	check.call(weather.sample().is_equal_approx(scripted.lerp(Vector3.ZERO, 0.5)), "A new weather segment blends out of the scripted sample")
+	weather.sample_override = scripted
+	check.call(weather.restore(saved) and weather.sample() == saved.target, "Restoring natural weather clears a scripted sample")
 
 static func _check_restore(check: Callable) -> void:
 	var weather := _fresh(314159)

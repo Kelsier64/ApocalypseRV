@@ -231,7 +231,7 @@ func tick(world, delta: float) -> void:
 	time_lapse_seconds -= delta
 	var clock := world.get_node("WorldClock") as WorldClock
 	var fog := 1.0 - smoothstep(2.0, 8.0, absf(time_lapse_seconds - 5.0))
-	clock.weather.set_weather(Vector3(1.0 - fog, fog, fog), true)
+	clock.weather.sample_override = Vector3(1.0 - fog, fog, fog)
 	clock.advance_game_seconds(delta * WorldClock.DAY_SECONDS / 12.0, delta)
 
 func _drive_road(world) -> void:

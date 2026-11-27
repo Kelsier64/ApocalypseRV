@@ -22,6 +22,8 @@ var target := Vector3.ZERO
 var transition_elapsed := TRANSITION
 var remaining := MIN_DURATION
 var initialized := false
+## Scripted takes can animate the sample while the simulation segment is frozen.
+var sample_override := Vector3.INF
 
 func initialize(world_seed: int) -> void:
 	if initialized: return
@@ -38,6 +40,7 @@ static func choose(clear_roll: float, rain_roll: float, fog_roll: float) -> Vect
 	return Vector3(0, 0 if rain_roll < NO_RAIN_CHANCE else (1 if rain_roll < LIGHT_RAIN_THRESHOLD else 2), fog)
 
 func sample() -> Vector3:
+	if sample_override.is_finite(): return sample_override
 	return source.lerp(target, smoothstep(0.0, TRANSITION, transition_elapsed))
 
 ## Emitted before a new segment replaces the current one, while sample() and the
@@ -55,6 +58,7 @@ func set_weather(value: Vector3, immediate := false) -> void:
 
 func _replace(value: Vector3, immediate: bool) -> void:
 	source = sample()
+	sample_override = Vector3.INF
 	target = value
 	transition_elapsed = TRANSITION if immediate else 0.0
 	remaining = rng.randf_range(MIN_DURATION, MAX_DURATION)
@@ -96,6 +100,7 @@ static func valid_state(data: Variant) -> bool:
 
 func restore(data: Dictionary) -> bool:
 	if not valid_state(data): return false
+	sample_override = Vector3.INF
 	source = data.source
 	target = data.target
 	transition_elapsed = data.transition_elapsed

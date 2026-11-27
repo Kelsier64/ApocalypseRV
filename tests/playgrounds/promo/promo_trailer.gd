@@ -854,7 +854,8 @@ func _ease_view(world, delta: float) -> void:
 	if not _weather.is_empty():
 		_weather.time += delta
 		var t := smoothstep(0.0, 1.0, minf(1.0, _weather.time / _weather.seconds))
-		(world.get_node("WorldClock") as WorldClock).weather.set_weather((_weather.from as Vector3).lerp(_weather.to, t), true)
+		var clock := world.get_node("WorldClock") as WorldClock
+		clock.weather.sample_override = (_weather.from as Vector3).lerp(_weather.to, t)
 		if t >= 1.0: _weather = {}
 
 ## The seat camera's local rotation that points it at `point`.

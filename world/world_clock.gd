@@ -26,6 +26,8 @@ var wind_velocity := Vector3.ZERO
 var landform_override := -1
 var deviation_fog := 0.0
 var weather_running := true
+## Shots with animated weather keep the fog pass active through zero density.
+var keep_volumetric_fog_active := false
 var fog_materials: Array[ShaderMaterial] = []
 ## Ground mist offset carried by the wind, in meters; presentation only.
 var mist_drift := Vector3.ZERO
@@ -211,7 +213,8 @@ func apply_time(real_delta: float = 0.0) -> void:
 	mist_torn = atmosphere.mist_torn(wind_speed)
 	var dust_mix: float = profile.dust_mix
 	# Quality controls scattering only; all qualities retain the same haze.
-	environment.volumetric_fog_enabled = volumetric and (profile.global_density > 0.0 or profile.local_density > 0.0)
+	var has_scattering: bool = profile.global_density > 0.0 or profile.local_density > 0.0
+	environment.volumetric_fog_enabled = volumetric and (has_scattering or keep_volumetric_fog_active)
 	environment.fog_depth_end = minf(profile.depth_end, _completed_scenery_mist_limit(real_delta))
 	environment.fog_depth_begin = minf(profile.depth_begin, environment.fog_depth_end * 0.5)
 	environment.fog_depth_curve = profile.depth_curve
