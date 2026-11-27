@@ -40,6 +40,8 @@ var _release_pending := false
 var _turning := false
 ## giant_watch: the still giant's head follows the RV until giant_wake hands it to its AI.
 var _watching := false
+## giant_watch `seconds`: the share of the game's head turn rate the watching head uses.
+var _watch_rate := 1.0
 const GIANT_TURN_DEGREES := 75.0
 ## A giant placed by bearing may stand at most this far above or below the road.
 const MAX_REVEAL_RISE := 2.0
@@ -51,6 +53,8 @@ const HEAD_HEIGHT_SHARE := 0.9
 const LOOK_HEIGHT_SHARE := 0.5
 var _speeds: Array[Vector2] = []
 var _look := {}
+## The seat camera's rest position before the first lean.
+var _seat_rest := Vector3.INF
 var _eyes := {}
 var _weather := {}
 var _lids := ShaderMaterial.new()
@@ -81,6 +85,7 @@ func prepare(world) -> bool:
 	if world.shot.has("wreck") and not await _stage_wreck(world, world.shot.wreck): return false
 	if world.shot.has("crash_pole"): _stage_pole(world, world.shot.crash_pole)
 	if world.shot.has("prone"): _stage_prone(world, world.shot.prone)
+	if world.shot.has("dress"): _dress(world, world.shot.dress)
 	if not world.shot.get("engine", true): return true
 	# The engine idles behind the handbrake until the timeline starts.
 	return world.rv.set_engine_running(true)
@@ -143,6 +148,243 @@ func _stage_pole(world, spec: Dictionary) -> void:
 	node.global_transform = pose
 	pole = {"s": s, "point": pose.origin, "node": node}
 
+## Scatter layers a dressed zone clears: the green ground cover. Rocks, logs, stumps and
+## dry bushes stay on the bare floor.
+const CLEARED_SCATTER := ["tall_grass", "grass", "reed", "shore_reed", "fern", "roadside_grass", "verge_weeds", "sapling"]
+
+## Bare forest floor for a scene. From `from` to `to` metres past the shot's start and up to
+## `width` metres either side of the road, easing out over `fade` metres beyond that, the
+## generated trees, bushes and green ground cover go and the ground turns `ground` (hex).
+## `plant` then stands dead trees and conifers there instead (see _plant).
+func _dress(world, spec: Dictionary) -> void:
+	var field: WorldField = world.field
+	var start := float(world.shot.distance)
+	var zone := {"from": start + float(spec.from), "to": start + float(spec.to),
+		"width": float(spec.get("width", 150.0)), "fade": float(spec.get("fade", 20.0))}
+	var dirt := Color(str(spec.get("ground", "54432f")))
+	var unbridge := bool(spec.get("unbridge", false))
+	var reach := float(zone.width) + float(zone.fade)
+	# Roadside sites advertise themselves with a sign on the shoulder, outside the site.
+	var signs: Array[Vector3] = []
+	if spec.get("hide_sites", false):
+		for site: Dictionary in field.sites_near_z(-(float(zone.from) + float(zone.to)) * 0.5, (float(zone.to) - float(zone.from)) * 0.5 + reach):
+			if site.get("placement", "roadside") == "off_road" or site.kind == "entrance" or not site.has("road"): continue
+			var sign: Vector3 = site.road * Vector3(float(site.side) * 12.0, 0, 21.0)
+			if _zone_weight(field, zone, sign) > 0.0: signs.append(sign)
+	var cleared := 0
+	var recoloured := 0
+	for entry: Dictionary in world.get_node("WorldGenerator").active_chunks:
+		# Bands are numbered along the road, so one far from the zone holds nothing in it.
+		var band_start := int(entry.index) * field.profile.chunk_length
+		if band_start > float(zone.to) + reach or band_start + field.profile.chunk_length < float(zone.from) - reach: continue
+		for child in (entry.node as Node).get_children():
+			if child is MultiMeshInstance3D and _clears(child.name): cleared += _clear_instances(field, zone, child)
+			elif child is ForestTrunks: _disable_trunks(field, zone, child)
+			elif child is MeshInstance3D and child.name == "Ground": recoloured += _recolour(field, zone, child, dirt, unbridge)
+			# `unbridge` takes the bridges down; _recolour fills the ground up to the road under them.
+			elif unbridge and child.name in ["BridgeDeck", "BridgeStructure"]: child.free()
+			elif unbridge and child is MeshInstance3D and child.name == "Road": _soil_road(child)
+			# With its trees gone a site would stand bare in the scene; `hide_sites` hides it.
+			elif child is Node3D and child.has_meta("poi_id") and spec.get("hide_sites", false) and _zone_weight(field, zone, child.global_position) > 0.0:
+				child.visible = false
+			elif child is Node3D and signs.any(func(sign: Vector3) -> bool: return Vector2(sign.x, sign.z).distance_to(Vector2(child.position.x, child.position.z)) < 0.5):
+				child.visible = false
+	var planted := _plant(world, spec.get("plant", {}), zone)
+	print("PROMO DRESS: %d plants cleared, %d ground points recoloured, %d trees planted" % [cleared, recoloured, planted])
+
+func _clears(title: String) -> bool:
+	if title.begins_with("ForestTree") or title.begins_with("ForestBrush"): return true
+	for layer: String in CLEARED_SCATTER:
+		if title.begins_with("Scatter_%s_" % layer): return true
+	return false
+
+## How fully the dressing covers `point`: 1 inside the zone, easing to 0 across its fade.
+func _zone_weight(field: WorldField, zone: Dictionary, point: Vector3) -> float:
+	# The road's s follows -z, so a point far outside the zone along z needs no road query.
+	var reach := float(zone.width) + float(zone.fade)
+	if -point.z < float(zone.from) - reach or -point.z > float(zone.to) + reach: return 0.0
+	var query := field.road_query(point.x, point.z)
+	var s := float(query.s)
+	var frame: Transform3D = query.frame
+	var lateral := absf((point - frame.origin).dot(frame.basis.x))
+	var outside := maxf(maxf(float(zone.from) - s, s - float(zone.to)), lateral - float(zone.width))
+	return 1.0 - smoothstep(0.0, float(zone.fade), outside)
+
+## Shrinks the instances inside the zone to nothing, as a felled tree's batch does.
+func _clear_instances(field: WorldField, zone: Dictionary, node: MultiMeshInstance3D) -> int:
+	var multi := node.multimesh
+	var count := 0
+	for i in multi.instance_count:
+		var pose := multi.get_instance_transform(i)
+		if _zone_weight(field, zone, node.global_transform * pose.origin) < 0.5: continue
+		multi.set_instance_transform(i, Transform3D(Basis.from_scale(Vector3.ZERO), pose.origin))
+		count += 1
+	return count
+
+## Turns off the trunk and shrub collision of the plants _clear_instances removed.
+func _disable_trunks(field: WorldField, zone: Dictionary, body: ForestTrunks) -> void:
+	for shape in body.get_children():
+		if shape is CollisionShape3D and shape.has_meta("tree_point") and _zone_weight(field, zone, shape.get_meta("tree_point")) >= 0.5:
+			shape.disabled = true
+
+## Blends the ground's vertex colour toward `dirt`; the alpha keeps the dirt-track distance.
+## With `fill` the ground under a bridge also rises to the road as an embankment.
+func _recolour(field: WorldField, zone: Dictionary, node: MeshInstance3D, dirt: Color, fill: bool) -> int:
+	var mesh := node.mesh as ArrayMesh
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+	# A road bend of 60 degrees puts a point `width` metres off it twice as far away in x.
+	var reach := 2.0 * (float(zone.width) + float(zone.fade)) + 20.0
+	var count := 0
+	var raised := false
+	for i in vertices.size():
+		var point := node.global_transform * vertices[i]
+		if absf(point.x - field.road_x(-point.z)) > reach: continue
+		# The fill reaches FILL_SLOPE past the road edge; 60 m in x covers it on a bend.
+		if fill and absf(point.x - field.road_x(-point.z)) < 60.0:
+			var height := _filled_height(field, point)
+			if height > point.y + 0.01:
+				vertices[i].y += height - point.y
+				raised = true
+		var weight := _zone_weight(field, zone, point)
+		if weight <= 0.0: continue
+		var colour := colours[i].lerp(dirt, weight)
+		colour.a = colours[i].a
+		colours[i] = colour
+		count += 1
+	if count == 0 and not raised: return 0
+	arrays[Mesh.ARRAY_COLOR] = colours
+	if raised:
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_NORMAL] = _grid_normals(vertices)
+	var material := mesh.surface_get_material(0)
+	mesh.clear_surfaces()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	if material != null: mesh.surface_set_material(0, material)
+	if raised:
+		var shape := node.get_child(0).get_child(0) as CollisionShape3D
+		shape.shape = mesh.create_trimesh_shape()
+	return count
+
+## Metres either side of the road's edge over which a filled bridge gap slopes back down.
+const FILL_SLOPE := 18.0
+
+## The ground at `point` once the gap under a bridge is filled: raised to the road within a
+## metre of its edge, easing back to the valley floor FILL_SLOPE metres out. Never lowered.
+func _filled_height(field: WorldField, point: Vector3) -> float:
+	var ground := field.height_at(point.x, point.z)
+	var query := field.road_query(point.x, point.z)
+	var gap := field.landforms.bridge_gap(float(query.s))
+	if gap <= 0.0: return ground
+	var edge := float(query.width) * 0.5
+	var weight := gap * (1.0 - smoothstep(edge + 1.0, edge + FILL_SLOPE, float(query.distance)))
+	return maxf(ground, lerpf(ground, float(query.height), weight))
+
+## Normals for the generator's ground grid (rows of equal z), from neighbouring heights.
+func _grid_normals(vertices: PackedVector3Array) -> PackedVector3Array:
+	var columns := 1
+	while columns < vertices.size() and is_equal_approx(vertices[columns].z, vertices[0].z): columns += 1
+	var rows := vertices.size() / columns
+	var normals := PackedVector3Array()
+	normals.resize(vertices.size())
+	for j in rows:
+		for i in columns:
+			var left := vertices[j * columns + maxi(i - 1, 0)]
+			var right := vertices[j * columns + mini(i + 1, columns - 1)]
+			var near := vertices[maxi(j - 1, 0) * columns + i]
+			var far := vertices[mini(j + 1, rows - 1) * columns + i]
+			var slope_x := (right.y - left.y) / maxf(right.x - left.x, 0.01)
+			var slope_z := (far.y - near.y) / minf(far.z - near.z, -0.01)
+			normals[j * columns + i] = Vector3(-slope_x, 1.0, -slope_z).normalized()
+	return normals
+
+## Clears the road shader's bridge flag, so verge soil reaches the asphalt where a deck was.
+func _soil_road(node: MeshInstance3D) -> void:
+	var mesh := node.mesh as ArrayMesh
+	var arrays := mesh.surface_get_arrays(0)
+	var colours: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+	if colours.is_empty(): return
+	colours.fill(Color(0, 0, 0))
+	arrays[Mesh.ARRAY_COLOR] = colours
+	var material := mesh.surface_get_material(0)
+	mesh.clear_surfaces()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	if material != null: mesh.surface_set_material(0, material)
+
+## Stands the game's own tree meshes on a jittered `spacing` grid in the zone, kept off the
+## road by `road_margin` metres beyond its edge, a `density` share of the grid points filled
+## and a `dead` share of those bare. `clear` keeps the driver's view of the giant open: no
+## tree within `width` metres of the lines from the road `from`..`to` metres past the shot's
+## start (at `lateral`) to the giant's ground spot, or within `around` metres of that spot.
+func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
+	if spec.is_empty(): return 0
+	var field: WorldField = world.field
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(spec.get("seed", 1))
+	var spacing := float(spec.get("spacing", 10.0))
+	var lines := _clear_lines(world, spec.get("clear", {}))
+	var poses: Array = [[], [], [], [], [], []]
+	var planted := 0
+	var s := float(zone.from)
+	while s <= float(zone.to):
+		var lateral := -float(zone.width)
+		while lateral <= float(zone.width):
+			var point := _road_mark(field, s + rng.randf_range(-0.4, 0.4) * spacing, lateral + rng.randf_range(-0.4, 0.4) * spacing).origin
+			point.y = _filled_height(field, point)
+			lateral += spacing
+			var filled := rng.randf() < float(spec.get("density", 0.6))
+			var dead := rng.randf() < float(spec.get("dead", 0.7))
+			var kind := 4 + rng.randi() % 2 if dead else rng.randi() % 4
+			var height := rng.randf_range(8.0, 14.0) if dead else rng.randf_range(11.0, 18.0)
+			var width := rng.randf_range(2.2, 3.2) if dead else rng.randf_range(2.6, 3.8)
+			var angle := rng.randf_range(-PI, PI)
+			if not filled or _zone_weight(field, zone, point) < 1.0: continue
+			var sample := field.surface(point.x, point.z)
+			if sample.reserved or is_finite(float(sample.water_height)): continue
+			if sample.road.distance < float(sample.road.width) * 0.5 + float(spec.get("road_margin", 8.0)): continue
+			if _blocks_view(point, lines): continue
+			poses[kind].append(Transform3D(Basis(Vector3.UP, angle).scaled(Vector3(width, height, width)), point + Vector3.DOWN * 0.15))
+			planted += 1
+		s += spacing
+	# The streamer frees entities it finds behind the player, so the planting stands at the
+	# far end of its zone, with the trees placed relative to it.
+	var parent := Node3D.new()
+	parent.name = "PromoForest"
+	WorldEntities.get_container(world).add_child(parent)
+	parent.global_position = _road_mark(field, float(zone.to), 0.0).origin
+	for kind in poses.size():
+		var local: Array = poses[kind].map(func(pose: Transform3D) -> Transform3D: return pose.translated(-parent.global_position))
+		ForestScenery.batch(parent, "PromoTree%d" % kind, ForestMeshes.tree(kind), local)
+	return planted
+
+## The flat sightlines `_plant` keeps open, as [from, to, width] with the giant's spot taken
+## from the timeline's first giant cue placed by `s`.
+func _clear_lines(world, spec: Dictionary) -> Array:
+	if spec.is_empty(): return []
+	var field: WorldField = world.field
+	var start := float(world.shot.distance)
+	var spot := Vector3.INF
+	for cue: Dictionary in world.shot.timeline:
+		if str(cue.do) == "giant" and cue.has("s"):
+			spot = _road_mark(field, start + float(cue.s), float(cue.get("lateral", 0.0))).origin
+			break
+	if spot == Vector3.INF: return []
+	var target := Vector2(spot.x, spot.z)
+	var lines := [[target, target, float(spec.get("around", 8.0))]]
+	var s := start + float(spec.from)
+	while s <= start + float(spec.to):
+		var eye := _road_mark(field, s, float(spec.get("lateral", 0.0))).origin
+		lines.append([Vector2(eye.x, eye.z), target, float(spec.get("width", 5.0))])
+		s += 3.0
+	return lines
+
+func _blocks_view(point: Vector3, lines: Array) -> bool:
+	var flat := Vector2(point.x, point.z)
+	for line: Array in lines:
+		if Geometry2D.get_closest_point_to_segment(flat, line[0], line[1]).distance_to(flat) < float(line[2]): return true
+	return false
+
 ## Lowers or raises a node so its lowest mesh corner touches the ground height.
 func _rest_on_ground(node: Node3D, ground: float) -> void:
 	var lowest := INF
@@ -175,6 +417,9 @@ func tick(world, delta: float) -> void:
 	_track_gaze(world, delta)
 	_watch_rv(world, delta)
 	_ease_view(world, delta)
+	# TEMP tuning trace
+	if floorf(timeline.clock * 2.0) != floorf((timeline.clock - delta) * 2.0):
+		print("PROMO TRACE %.1f: s %.0f %.0f km/h gear %s %s" % [timeline.clock, float(world.field.road_query(world.rv.global_position.x, world.rv.global_position.z).s), world.rv.linear_velocity.length() * 3.6, str(world.rv.get("gear")), _giant_from_eyes(world) if is_instance_valid(giant) else ""])
 
 const DRIVING := ["drive", "gear", "brake", "steer"]
 
@@ -223,6 +468,14 @@ func _fire(world, cue: Dictionary) -> bool:
 					var head := _giant_point(HEAD_HEIGHT_SHARE)
 					print("PROMO LOOK: giant head %.1f m away, %.1f m above the eyes" % [eye.distance_to(head), head.y - eye.y])
 				else: _look.to = rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0)
+				# `lean` moves the head [right, up, back] metres from its rest over the same
+				# seconds, e.g. toward the side window so more of a tall subject clears the
+				# roof. It holds until a later look leans again.
+				if cue.has("lean"):
+					if _seat_rest == Vector3.INF: _seat_rest = seat._camera_rest_position
+					_look.seat = seat
+					_look.lean_from = seat._camera_rest_position
+					_look.lean_to = _seat_rest + Vector3(float(cue.lean[0]), float(cue.lean[1]), float(cue.lean[2]))
 		"gaze":
 			# The prone survivor's view; live takes leave it to the mouse.
 			if str(cue.target) != "giant" or not is_instance_valid(giant): return false
@@ -247,6 +500,11 @@ func _fire(world, cue: Dictionary) -> bool:
 		"giant_watch":
 			if not is_instance_valid(giant): return false
 			_watching = true
+			# `seconds` slows the head so its full yaw range takes that long; the game's
+			# own rate otherwise.
+			var settings = giant.settings
+			_watch_rate = float(settings.head_yaw_degrees) / float(cue.seconds) / float(settings.head_turn_degrees) if cue.has("seconds") else 1.0
+			print("PROMO WATCH: ", _giant_from_eyes(world))
 			world.director.mark("watch")
 		"giant_wake":
 			# Its own AI from here: it sees the RV, confirms and chases it.
@@ -265,7 +523,9 @@ func _fire(world, cue: Dictionary) -> bool:
 
 ## The giant stands with its AI off, `beyond` metres past the staged pole in the RV's lane,
 ## or, with `bearing`, where the driver will see it `reveal` seconds after the cue (see
-## _reveal_spot). It faces the RV, or the road with `facing: "road"`. Its head loudspeaker
+## _reveal_spot), or with `s` at a fixed ground spot `s` metres past the shot's start and
+## `lateral` metres off the road (negative is left), unchecked for sight. It faces the RV, or the road with `facing: "road"`, turned `facing_yaw`
+## degrees from it toward the direction of travel. Its head loudspeaker
 ## still fades in and stages distance on its own.
 func _place_giant(world, cue: Dictionary) -> bool:
 	var field: WorldField = world.field
@@ -276,8 +536,10 @@ func _place_giant(world, cue: Dictionary) -> bool:
 		if reveal.is_empty(): return false
 		spot = reveal.spot
 		eye = reveal.eye
+	elif cue.has("s"): spot = _road_mark(field, float(world.shot.distance) + float(cue.s), float(cue.get("lateral", 0.0))).origin
 	elif pole.is_empty(): return false
 	else: spot = _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))).origin
+	print("PROMO TEMP spot ", spot, " rv ", world.rv.global_position)
 	giant = world.spawn(SlenderSpeakerSpawns.SCENE, spot + Vector3.UP * 0.05, WorldEntities.get_container(world))
 	giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 	giant.set_physics_process(false)
@@ -285,6 +547,11 @@ func _place_giant(world, cue: Dictionary) -> bool:
 	if str(cue.get("facing", "")) == "road":
 		var road: Vector3 = (field.road_query(spot.x, spot.z).frame as Transform3D).origin
 		giant.look_at(Vector3(road.x, giant.global_position.y, road.z))
+		# facing_yaw turns it from the road toward the direction of travel, so its head has
+		# further to turn when it finds the RV.
+		var forward := -giant.global_basis.z
+		var turn := deg_to_rad(float(cue.get("facing_yaw", 0.0)))
+		giant.rotate_y(turn * signf(forward.signed_angle_to(_road_ahead(field, spot), Vector3.UP)))
 	else: giant.look_at(Vector3(rv.x, giant.global_position.y, rv.z))
 	if eye != Vector3.INF:
 		var blocked := _sight_blocked(eye)
@@ -310,16 +577,27 @@ func _reveal_spot(world, cue: Dictionary) -> Dictionary:
 	var field: WorldField = world.field
 	var rv: Chassis = world.rv
 	var eye: Vector3 = (seat.seat_camera as Camera3D).global_position + rv.linear_velocity.slide(Vector3.UP) * float(cue.get("reveal", 0.0))
-	var s := float(field.road_query(eye.x, eye.z).s)
-	var ahead := (field.road_frame(s + 1.0).origin - field.road_frame(s).origin).slide(Vector3.UP).normalized()
-	var spot := eye + ahead.rotated(Vector3.UP, deg_to_rad(float(cue.bearing))) * float(cue.range)
+	var spot := eye + _road_ahead(field, eye).rotated(Vector3.UP, deg_to_rad(float(cue.bearing))) * float(cue.range)
 	spot.y = field.height_at(spot.x, spot.z)
-	var rise := spot.y - field.road_height(s)
+	var rise := spot.y - field.road_height(float(field.road_query(eye.x, eye.z).s))
 	print("PROMO GIANT: bearing %.0f, %.1f m from the eyes, ground %+.1f m from the road" % [float(cue.bearing), float(cue.range), rise])
 	if absf(rise) > float(cue.get("max_rise", MAX_REVEAL_RISE)):
 		push_error("PROMO: the giant's ground is %+.1f m from the road; move the shot's distance to flatter ground" % rise)
 		return {}
 	return {"eye": eye, "spot": spot}
+
+## Where the giant's head is from the driver's eyes, for tuning a shot's timing.
+func _giant_from_eyes(world) -> String:
+	var eye: Vector3 = (world.actor.seated_in.seat_camera as Camera3D).global_position
+	var offset := _giant_point(HEAD_HEIGHT_SHARE) - eye
+	return "giant %.0f degrees off the road ahead, head %.1f m away at %.1f degrees up" % [
+		rad_to_deg(_road_ahead(world.field, eye).signed_angle_to(offset.slide(Vector3.UP), Vector3.UP)), offset.length(),
+		rad_to_deg(atan2(offset.y, offset.slide(Vector3.UP).length()))]
+
+## The flat direction of travel along the road nearest `at`.
+func _road_ahead(field: WorldField, at: Vector3) -> Vector3:
+	var s := float(field.road_query(at.x, at.z).s)
+	return (field.road_frame(s + 1.0).origin - field.road_frame(s).origin).slide(Vector3.UP).normalized()
 
 ## What blocks the line from `eye` to the giant's waist or head, or "" when both are clear.
 ## The rays start outside the cab, which is still behind the predicted eye anyway.
@@ -421,7 +699,7 @@ func _track_gaze(world, delta: float) -> void:
 ## The still giant's head loudspeaker turns to follow the RV's cab.
 func _watch_rv(world, delta: float) -> void:
 	if not _watching or not is_instance_valid(giant): return
-	giant._head_look.update(giant, world.rv.get_node("DriverSeat").global_position, delta)
+	giant._head_look.update(giant, world.rv.get_node("DriverSeat").global_position, delta * _watch_rate)
 
 ## Marks the first moment the giant chases.
 func _watch_chase(world) -> void:
@@ -530,6 +808,8 @@ func _ease_view(world, delta: float) -> void:
 		var to: Vector3 = _aim(camera, _giant_point(LOOK_HEIGHT_SHARE)) + Vector3(0.0, float(_look.track), 0.0) if tracking else _look.to
 		var from: Vector3 = _look.from
 		camera.rotation = Vector3(lerp_angle(from.x, to.x, t), lerp_angle(from.y, to.y, t), lerpf(from.z, to.z, t))
+		if _look.has("seat") and is_instance_valid(_look.seat):
+			_look.seat._camera_rest_position = (_look.lean_from as Vector3).lerp(_look.lean_to, t)
 		if t >= 1.0 and not tracking: _look = {}
 	if not _eyes.is_empty():
 		_eyes.time += delta

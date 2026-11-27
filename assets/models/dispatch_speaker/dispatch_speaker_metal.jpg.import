@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dygift34t5g6o"
-path="res://.godot/imported/dispatch_speaker_metal.jpg-91ab4f099491eaed9868facbac36f266.ctex"
+path.s3tc="res://.godot/imported/dispatch_speaker_metal.jpg-91ab4f099491eaed9868facbac36f266.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "11b843c25c4cc19c8469803b3df1dfa6"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/dispatch_speaker/dispatch_speaker_metal.jpg"
-dest_files=["res://.godot/imported/dispatch_speaker_metal.jpg-91ab4f099491eaed9868facbac36f266.ctex"]
+dest_files=["res://.godot/imported/dispatch_speaker_metal.jpg-91ab4f099491eaed9868facbac36f266.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
