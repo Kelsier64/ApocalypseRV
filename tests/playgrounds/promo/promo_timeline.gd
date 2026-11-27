@@ -50,6 +50,8 @@ static func check(entries: Variant) -> String:
 		# placed by bearing needs its range.
 		if action == "look" and not cue.has("target") and not (cue.has("yaw") and cue.has("pitch")):
 			return "timeline entry %d (look) needs 'target' or 'yaw' and 'pitch'" % index
+		if action == "look" and cue.has("target") and cue.target not in ["giant", "wreck"]:
+			return "timeline entry %d (look) has unknown target '%s'" % [index, cue.target]
 		if action == "giant" and cue.has("bearing") and not cue.has("range"):
 			return "timeline entry %d (giant) needs 'range' with 'bearing'" % index
 	return ""

@@ -1,6 +1,6 @@
 {
   "title": "Act three drive (wreck, fog, giant in the conifer valley)",
-  "steps": "Seated driver on the same road as T1, through bare conifer woods. F3 starts the timeline: pass the previous unit's wreck on the left shoulder during line 12, line 14 breaks up while fog closes in and the wind dies, and Fur Elise rises from the fog on the left as the speaker goes dead. Look at the wreck as you pass, then the road; the giant stands among the trees in the valley ahead on the left, below the road. The RV slows; duck toward the side window to see all of it: its speaker turns to you. The RV shifts down and speeds up on its own; look back over your left shoulder as the giant walks out after you.",
+  "steps": "Seated driver on the same road as T1, through bare conifer woods. F3 starts the timeline: glance left as you approach the previous unit's wreck during line 12, then look back at the road. The dispatch goes quiet and Fur Elise rises from the fog on the left before the giant comes into view in the valley. The RV slows; look out the side window as the giant's speaker turns to you. The RV shifts down and speeds up on its own; look back over your left shoulder as the giant walks out after you.",
   "action": "Start the timeline",
   "seed": 42,
   "distance": 393,
@@ -70,16 +70,28 @@
       "gear": 2
     },
     {
+      "at": 3.2,
+      "do": "look",
+      "target": "wreck",
+      "seconds": 1.1
+    },
+    {
       "at": 5,
       "do": "gear",
       "gear": 3
     },
     {
+      "at": 5.9,
+      "do": "weather",
+      "to": [0, 0, 1.6],
+      "seconds": 2.2
+    },
+    {
       "at": 6.3,
       "do": "look",
-      "yaw": 35,
-      "pitch": -4,
-      "seconds": 2
+      "yaw": 0,
+      "pitch": 0,
+      "seconds": 1.4
     },
     {
       "at": 8,
@@ -87,34 +99,16 @@
       "gear": 4
     },
     {
-      "at": 8.6,
-      "do": "line",
-      "id": 14
-    },
-    {
-      "at": 9.8,
-      "do": "look",
-      "yaw": 0,
-      "pitch": 0,
-      "seconds": 2
-    },
-    {
-      "at": 11,
-      "do": "weather",
-      "to": [
-        0,
-        0,
-        0.7
-      ],
-      "seconds": 8
-    },
-    {
-      "at": 12.3,
+      "at": 8.2,
       "do": "wind",
       "tier": 0
     },
     {
-      "at": 16.8,
+      "at": 8.25,
+      "do": "radio_off"
+    },
+    {
+      "at": 8.25,
       "do": "giant",
       "s": 217,
       "lateral": -25,
@@ -122,8 +116,10 @@
       "facing_yaw": 60
     },
     {
-      "at": 17.1,
-      "do": "radio_off"
+      "at": 11.5,
+      "do": "weather",
+      "to": [0, 0, 0.7],
+      "seconds": 7
     },
     {
       "at": 18,

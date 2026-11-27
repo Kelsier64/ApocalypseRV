@@ -17,16 +17,6 @@
         "words": { "you": { "stretch": 1.25 } } }
     },
     "13": "evacuation of shelter four . in progress . maintain the corridor until evacuation is complete .",
-    "14": {
-      "text": "relay kilo . no response . coverage ends ahead . remain on",
-      "glitch": { "from": "coverage", "drift": 0.12, "distortion": 0.85, "seed": 14,
-        "words": {
-          "ends": { "stutter": 2 },
-          "ahead": { "stretch": 1.3 },
-          "remain": { "swallow": 0.6 },
-          "on": { "swallow": 1.0, "reverse": true }
-        } }
-    },
     "15": "this is shelter four dispatch .",
     "16": "unit four seven one three . you are assigned to route nine . proceed to relay station kilo ."
   }

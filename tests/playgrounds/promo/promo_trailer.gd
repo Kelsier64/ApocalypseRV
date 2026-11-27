@@ -417,9 +417,6 @@ func tick(world, delta: float) -> void:
 	_track_gaze(world, delta)
 	_watch_rv(world, delta)
 	_ease_view(world, delta)
-	# TEMP tuning trace
-	if floorf(timeline.clock * 2.0) != floorf((timeline.clock - delta) * 2.0):
-		print("PROMO TRACE %.1f: s %.0f %.0f km/h gear %s %s" % [timeline.clock, float(world.field.road_query(world.rv.global_position.x, world.rv.global_position.z).s), world.rv.linear_velocity.length() * 3.6, str(world.rv.get("gear")), _giant_from_eyes(world) if is_instance_valid(giant) else ""])
 
 const DRIVING := ["drive", "gear", "brake", "steer"]
 
@@ -460,13 +457,12 @@ func _fire(world, cue: Dictionary) -> bool:
 				_look = {"camera": seat.seat_camera, "from": seat.seat_camera.rotation,
 					"seconds": maxf(0.01, float(cue.seconds)), "time": 0.0}
 				if cue.has("target"):
-					# Follows the giant until the next look, turned `yaw` degrees further left
+					# Follows the subject until the next look, turned `yaw` degrees further left
 					# (negative right) to keep a window pillar off it.
-					if str(cue.target) != "giant" or not is_instance_valid(giant): return false
-					_look.track = deg_to_rad(float(cue.get("yaw", 0.0)))
-					var eye: Vector3 = seat.seat_camera.global_position
-					var head := _giant_point(HEAD_HEIGHT_SHARE)
-					print("PROMO LOOK: giant head %.1f m away, %.1f m above the eyes" % [eye.distance_to(head), head.y - eye.y])
+					var subject: Node3D = giant if cue.target == "giant" else wreck
+					if not is_instance_valid(subject): return false
+					_look.subject = subject
+					_look.yaw = deg_to_rad(float(cue.get("yaw", 0.0)))
 				else: _look.to = rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0)
 				# `lean` moves the head [right, up, back] metres from its rest over the same
 				# seconds, e.g. toward the side window so more of a tall subject clears the
@@ -539,7 +535,6 @@ func _place_giant(world, cue: Dictionary) -> bool:
 	elif cue.has("s"): spot = _road_mark(field, float(world.shot.distance) + float(cue.s), float(cue.get("lateral", 0.0))).origin
 	elif pole.is_empty(): return false
 	else: spot = _road_mark(field, float(pole.s) + float(cue.get("beyond", 12.0)), float(cue.get("lateral", cruise.get("lateral", world.shot.get("lateral", 0.0))))).origin
-	print("PROMO TEMP spot ", spot, " rv ", world.rv.global_position)
 	giant = world.spawn(SlenderSpeakerSpawns.SCENE, spot + Vector3.UP * 0.05, WorldEntities.get_container(world))
 	giant.set_giant_navigation_map(world.get_node("WorldGenerator").giant_navigation_map)
 	giant.set_physics_process(false)
@@ -804,8 +799,12 @@ func _ease_view(world, delta: float) -> void:
 		_look.time += delta
 		var t := smoothstep(0.0, 1.0, minf(1.0, _look.time / _look.seconds))
 		var camera: Camera3D = _look.camera
-		var tracking := _look.has("track") and is_instance_valid(giant)
-		var to: Vector3 = _aim(camera, _giant_point(LOOK_HEIGHT_SHARE)) + Vector3(0.0, float(_look.track), 0.0) if tracking else _look.to
+		var subject: Node3D = _look.get("subject")
+		var tracking := is_instance_valid(subject)
+		var to: Vector3 = _look.get("to", camera.rotation)
+		if tracking:
+			var point := _giant_point(LOOK_HEIGHT_SHARE) if subject == giant else subject.global_position
+			to = _aim(camera, point) + Vector3(0.0, float(_look.yaw), 0.0)
 		var from: Vector3 = _look.from
 		camera.rotation = Vector3(lerp_angle(from.x, to.x, t), lerp_angle(from.y, to.y, t), lerpf(from.z, to.z, t))
 		if _look.has("seat") and is_instance_valid(_look.seat):

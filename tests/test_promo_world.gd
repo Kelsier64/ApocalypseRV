@@ -101,7 +101,8 @@ func _check_rail_math() -> void:
 
 func _check_timelines() -> void:
 	for sample in [[], [{"at": 1.0, "do": "drive", "speed": 50}, {"at": 0.5, "do": "end"}],
-		[{"at": 0.0, "do": "fly"}], [{"at": 0.0, "do": "line"}], [{"do": "end"}]]:
+		[{"at": 0.0, "do": "fly"}], [{"at": 0.0, "do": "line"}], [{"do": "end"}],
+		[{"at": 0.0, "do": "look", "target": "road", "seconds": 1.0}]]:
 		_check(not TIMELINE.check(sample).is_empty(), "Timeline check rejects %s" % JSON.stringify(sample))
 	var world_script: Script = load(SCENE.get_basename() + ".gd")
 	var shots: Array = world_script.SHOTS
@@ -282,12 +283,11 @@ func _verify_timeline(world: Node) -> void:
 	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
 	if first_line >= 0.0:
 		var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
-		var start: Vector3 = world.rv.global_position
 		for frame in ticks:
 			await physics_frame
 			if speaker.speaker.playing: break
 		_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
-		_check(stage.timeline.clock >= first_line and world.rv.global_position.distance_to(start) > 5.0, world.shot_id + " cruises on the timeline")
+		_check(stage.timeline.clock >= first_line and world.rv.linear_velocity.length() > 0.5, world.shot_id + " is moving when its narration starts")
 	if world.shot.has("prone"):
 		await _verify_execution(world)
 		return
@@ -300,20 +300,32 @@ func _verify_timeline(world: Node) -> void:
 			world.shot_id + " stages the wreck as scenery, outside the RV group")
 	if world.shot.timeline.any(func(cue: Dictionary) -> bool: return cue.do == "giant_wake"): await _verify_chase(world)
 
-## T2, unattended: the giant stands still in the field until its AI wakes, then chases the
-## RV on its own, while the cab speaker stays silent after radio_off.
+## T2, unattended: the driver looks as they pass the wreck, then hears the giant before seeing it.
 func _verify_chase(world: Node) -> void:
 	var stage = world.stage
 	var speaker: DispatchSpeaker = stage.broadcast.speaker
+	var camera: Camera3D = world.actor.seated_in.seat_camera
+	var clock := world.get_node("WorldClock") as WorldClock
 	stage.unattended = true
 	var wake := 0.0
 	for cue in world.shot.timeline:
 		if cue.do == "giant_wake": wake = float(cue.at)
+	var framed_wreck := false
+	var hidden_at_handoff := false
 	var still := false
 	while stage.timeline.running:
 		await physics_frame
+		var look: Dictionary = stage._look
+		if look.get("subject") == stage.wreck and look.time >= look.seconds:
+			var wreck_offset: Vector3 = world.rv.to_local(stage.wreck.global_position)
+			framed_wreck = framed_wreck or (wreck_offset.z < 0.0 and camera.is_position_in_frustum(stage.wreck.global_position))
+		if not still and is_instance_valid(stage.giant):
+			var giant_depth := -camera.to_local(stage.giant.global_position).z
+			hidden_at_handoff = giant_depth > clock.environment.fog_depth_end and not speaker.speaker.playing and not speaker.noise.playing
 		if stage.timeline.clock < wake - 0.2 and is_instance_valid(stage.giant):
 			still = not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing
+	_check(framed_wreck, world.shot_id + " turns toward the wreck before passing it")
+	_check(hidden_at_handoff, world.shot_id + " hands off from dispatch to music while the giant is still behind the fog")
 	_check(still, world.shot_id + " places a still giant whose loudspeaker plays before it wakes")
 	_check(stage._marked_phases.has("chase") and float(stage._marked_phases.chase) - wake < 1.0,
 		world.shot_id + " giant chases the RV on its own after waking (%s)" % stage._marked_phases)
