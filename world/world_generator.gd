@@ -14,7 +14,6 @@ var restoring_entities: bool = false
 var active_chunks: Array = []
 var field: WorldField
 var poi_spawner := POISpawner.new()
-var next_band: int = 0
 var building: bool = false
 var horizon: MeshInstance3D
 var generation_times: Array[float] = []
@@ -59,9 +58,9 @@ func _ready() -> void:
 	var initial_bands: Array = range(-profile.chunks_behind, profile.chunks_ahead + 1) if restore_bands.is_empty() else restore_bands
 	for index in initial_bands:
 		_spawn_band(index)
-	next_band = int(initial_bands.back()) + 1
-	if not restore_bands.is_empty():
-		_refresh_horizon(next_band, false)
+	# Initial bands can finish after forest warmup yields. Set the horizon once
+	# beyond the whole window so a late inner band cannot move it onto the road.
+	_refresh_horizon(int(initial_bands.max()) + 1, false)
 	if not get_parent().has_node("OutdoorPresentation"):
 		var presentation := OutdoorPresentation.new()
 		presentation.name = "OutdoorPresentation"
@@ -188,7 +187,7 @@ func _spawn_band(index: int, gradual: bool = false, defer_actors: bool = false) 
 		generation_times.pop_front()
 	# Pinning may fill a band behind the player. Its horizon must not cover
 	# already-loaded roads and sites with a coarse visual-only terrain sheet.
-	if (gradual or index == profile.chunks_ahead) and index == int(active_chunks.back().index):
+	if gradual and index == int(active_chunks.back().index):
 		await _refresh_horizon(index + 1, gradual)
 	print("TERRAIN band=%d build_ms=%.1f max_slice_ms=%.1f active=%d" % [index, chunk.build_ms, chunk.max_slice_ms, active_chunks.size()])
 	building = false

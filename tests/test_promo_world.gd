@@ -29,6 +29,11 @@ func _run() -> void:
 	change_scene_to_file(SCENE)
 	var world := await _wait_for_take("R2")
 	if world != null:
+		var generator := world.get_node("WorldGenerator")
+		var first_unloaded_band := int(generator.restore_bands.max()) + 1
+		var horizon_start := -first_unloaded_band * float(generator.profile.chunk_length)
+		_check(is_instance_valid(generator.horizon) and is_equal_approx(generator.horizon.mesh.get_aabb().end.z, horizon_start),
+			"On a cold launch the distant terrain starts past the whole preloaded window")
 		var initial: Dictionary = world.rv.inventory.duplicate(true)
 		var initial_position: Vector3 = world.actor.global_position
 		var initial_hour: float = world.get_node("WorldClock").hour_of_day()
