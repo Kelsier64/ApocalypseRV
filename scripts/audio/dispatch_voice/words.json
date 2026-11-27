@@ -1,7 +1,7 @@
 {
   "voice": "am_adam",
   "speed": 1.0,
-  "pitch": 0,
+  "pitch": 125.343508534920971,
   "words": {
     "zero": "Zero", "one": "One", "two": "Two", "three": "Three", "four": "Four",
     "five": "Five", "six": "Six", "seven": "Seven", "eight": "Eight", "nine": "Nine",

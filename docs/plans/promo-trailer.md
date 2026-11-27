@@ -229,7 +229,8 @@
 | 開拍後 | 畫面 | 旁白 | 聲音與配樂 |
 |---|---|---|---|
 | 0–5 秒 | 從駕駛座看 RV 沿針葉林公路前進 | | 行車與風聲 |
-| 6 秒 | 前方左側是前任翻覆的 RV | *Relay station: no response for 999999 days.* | 從第一個 *nine* 起喇叭卡住重複、越來越失真 |
+| 3.3 秒 | 同上 | *Relay station: no response for 999999 days.*（約 9.7 秒） | |
+| 6 秒 | 前方左側是前任翻覆的 RV | | 從第一個 *nine* 起喇叭卡住重複、越來越失真 |
 | 約 8–13 秒 | 接近時往左看翻覆的 RV，從約 10 秒開始逐漸把視線帶回路面，霧開始變濃 | | 低頻持續音（M3）極輕進場 |
 | 約 13 秒 | 前方只剩濃霧中的公路 | | 第 12 句播完，風停下，車內喇叭靜音。《給愛麗絲》（M4）從左前方淡入，帶著遠處的回音 |
 | 約 20–24 秒 | 車子往前，霧漸薄，巨人的輪廓從左前方的林間浮現 | | 隨距離縮短，旋律逐漸清楚 |
@@ -325,15 +326,7 @@
 - T2 目前只拍到第二十幕結束（巨人追上來）。第二十二幕的砸車頂與撞廢車還沒做，T3 仍從舊的撞電線桿姿勢開始。
 - 第二十一幕起的成片時間要等新版 T2 剪入後重排。
 - [narration.json](../../tests/playgrounds/promo/narration.json) 的第 3–11 句仍是舊稿，要換成新的簡報第 3–9 句並刪掉 10、11。新稿缺 23 個詞，要先加進[主管詞庫](../../assets/audio/dispatch_voice/README.md)：*mission, briefing, expect, damage, repairs, your, responsibility, take, what, find, present, them, will, be, lit, expected, a, body, printed, has, been, reported, stop*。第 13 句仍是舊稿（*Maintain the corridor…*），成片不用這句。
-- 第 12 句改成 *Relay station: no response for 999999 days.*，新詞 *for, days* 已加進 [words.json](../../scripts/audio/dispatch_voice/words.json)，但還沒產生音檔（這台機器沒有 Kokoro 與 Praat）。到有工具的機器上重新產生詞庫，再把 narration.json 的第 12 句換成下面的起始值，試聽後調整；換好之後 T2 要用新句重拍。逐字故障以詞為鍵，六個 `nine` 會套同一組故障，逐個加重只靠 `from` 起算的漸進。燒進畫面的字幕寫 *999999*，不寫 *nine nine…*。
-
-  ```json
-  "12": {
-    "text": "relay station . no response for nine nine nine nine nine nine days .",
-    "glitch": { "from": "nine", "drift": 0.1, "distortion": 0.7, "seed": 12,
-      "words": { "nine": { "stutter": 1 }, "days": { "stretch": 1.6, "swallow": 0.6 } } }
-  }
-  ```
+- 第 12 句的聲音異常是起始值，還沒有人試聽過。逐字故障以詞為鍵，六個 `nine` 套同一組故障，逐個加重只靠 `from` 起算的漸進；聽起來太規律就要讓 `promo_glitch.gd` 依出現次數套故障。句子約 9.7 秒，T2 在 13.25 秒靜音，所以從 3.3 秒開播；改長度要一起調開播時間。字幕由詞庫產生，寫成 *999999*。
 - 回憶段的時間是依字數估算的，簡報匯出成 WAV 後照實際長度重排。
 - 已拍的 T2 裡翻覆的 RV 不一定跟回憶裡的 RV 相同；不同就要改場景重拍。
 - 簡報只提黑影，白影（O3）沒有排進成片。

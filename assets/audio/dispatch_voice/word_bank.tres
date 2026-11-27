@@ -140,6 +140,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/expired.wav" id="expired"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/terrain.wav" id="terrain"]
 [ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/unverified.wav" id="unverified"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/for.wav" id="for"]
+[ext_resource type="AudioStream" path="res://assets/audio/dispatch_voice/words/days.wav" id="days"]
 
 [resource]
 script = ExtResource("script")
@@ -282,5 +284,7 @@ words = Dictionary[StringName, AudioStreamWAV]({
 &"survey": ExtResource("survey"),
 &"expired": ExtResource("expired"),
 &"terrain": ExtResource("terrain"),
-&"unverified": ExtResource("unverified")
+&"unverified": ExtResource("unverified"),
+&"for": ExtResource("for"),
+&"days": ExtResource("days")
 })
