@@ -41,6 +41,8 @@
 
     "leave": "Leave", "vehicle": "Vehicle", "repair": "Repair", "provided": "Provided", "abandoned": "Abandoned", "shelters": "Shelters",
     "along": "Along", "entry": "Entry", "salvage": "Salvage", "components": "Components", "fabrication": "Fabrication", "survey": "Survey",
-    "expired": "Expired", "terrain": "Terrain", "unverified": "Unverified"
+    "expired": "Expired", "terrain": "Terrain", "unverified": "Unverified",
+
+    "for": "For", "hundred": "Hundred", "days": "Days"
   }
 }

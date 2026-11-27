@@ -24,11 +24,11 @@
 
 旁白就是「現在」這台 RV 出車時調度喇叭正在播的那一輪廣播：派遣、任務簡報、失聯通報。主角其實一直在開車聽廣播，回憶只在他腦中播放。
 
-**簡報講的其實是前任。** 派遣之後主管念任務簡報，聽起來是給主角的指示，內容卻是 4711 走過的那一趟：哪裡擋路、車會壞、地堡裡有什麼、會死一次、路的盡頭有音樂。回憶就是那一趟，所以簡報的每一句都對得上回憶的畫面，每一段回憶從對應那一句的第一個字切進去。第 12 句在路邊翻覆的 RV 旁揭曉簡報從哪裡來：那台車是回憶裡的同一台。
+**簡報講的其實是前任。** 派遣之後主管念任務簡報，聽起來是給主角的指示，內容卻是 4711 走過的那一趟：哪裡擋路、車會壞、地堡裡有什麼、會死一次、路的盡頭有音樂。回憶就是那一趟，所以簡報的每一句都對得上回憶的畫面，每一段回憶從對應那一句的第一個字切進去。經過路邊翻覆的 RV 時揭曉簡報從哪裡來：那台車是回憶裡的同一台。這個揭曉只靠畫面，旁白不提前任。
 
 **連成一段敘事，不是一條條規定。** 簡報照前任經歷的順序念，每一句是同一趟路的下一步。句型要變化（指令、預期、被動、通報），不重複同一個句首。
 
-**露餡藏在措辭裡。** 每句都像正常的簡報，但有三處是簡報不該事先知道的事：*One of them will be lit*、*One death is expected*、*Music has been reported*。第一次看只覺得怪，聽到第 12 句才明白簡報是用前任的經驗寫的；*Do not stop* 是前任停下來換來的教訓。
+**露餡藏在措辭裡。** 每句都像正常的簡報，但有三處是簡報不該事先知道的事：*One of them will be lit*、*One death is expected*、*Music has been reported*。第一次看只覺得怪，看到路邊翻覆的 RV 才明白簡報是用前任的經驗寫的；*Do not stop* 是前任停下來換來的教訓。第 12 句再露一次：第 2 句派主角去的中繼站已經九百天沒有回應，主管照樣派人去。
 
 **全片的世界觀都從廣播來。** 每一句至少帶出一個設定，沒有帶出設定的句子不放。進入未勘查路段後喇叭的聲音開始異常，最後完全安靜。
 
@@ -44,7 +44,7 @@
 | 2 | 剪輯時另外上音軌，加車內喇叭的音色 | 配的是車外跟拍，遊戲裡在車外聽不清楚 |
 | 3–9 | 剪輯時另外上音軌，不加處理 | 回憶是快剪，旁白要跨過剪接點，對拍點也要在剪輯時微調 |
 
-- 第 12 句從 *lost* 起輕微飄移，*you* 被拉長。聲音異常做在音檔裡，句子念完後車內喇叭連底噪一起停掉，接上遠處的《給愛麗絲》。
+- 第 12 句從 *nine hundred* 起輕微飄移，*days* 被拉長。聲音異常做在音檔裡，句子念完後車內喇叭連底噪一起停掉，接上遠處的《給愛麗絲》。
 - 遊戲裡播放的那幾句錄進了鏡頭，改字就要重拍，所以這幾句要在拍攝前定稿。
 - 錄影工具的時間軸讓車內喇叭在指定時間點播出指定的句子，拍攝期間不插播遊戲廣播；剪輯用的句子另外匯出成 WAV。做法見[宣傳影片錄影](../guides/promo-capture.md#旁白)。
 
@@ -53,7 +53,7 @@
 依播出順序：
 
 1. *This is Shelter Four dispatch.*
-2. *Unit four seven one two. You are assigned to route nine. Proceed to relay station Kilo.*
+2. *Unit four seven one two. You are assigned to route nine. Proceed to relay station.*
 3. *Mission briefing.*
 4. *Route nine is blocked ahead. Leave the road.*
 5. *Expect vehicle damage. Repairs are your responsibility.*
@@ -61,12 +61,12 @@
 7. *Dark figures are present. One of them will be lit.*
 8. *One death is expected. A replacement body will be printed.*
 9. *Music has been reported at the end of the route. Do not stop.*
-12. *Unit four seven one one: lost. Replacement: YOU.*
+12. *Relay station: no response for nine hundred days.*
 
-第 12 句與結尾兩句沿用錄影工具的旁白編號（T2 已照第 12 句拍攝），所以中間沒有 10、11 句。
+第 12 句與結尾兩句沿用錄影工具的旁白編號（T2 的時間軸用這個編號），所以中間沒有 10、11 句。
 
 15. *This is Shelter Four dispatch.*
-16. *Unit four seven one three. You are assigned to route nine. Proceed to relay station Kilo.*
+16. *Unit four seven one three. You are assigned to route nine. Proceed to relay station.*
 
 ### 每句搭配的畫面與帶出的設定
 
@@ -81,7 +81,7 @@
 | 7 | 黑影 | 黑影存在而且有規則，但簡報不說規則，只說「會照到一個」。*lit* 落在手電筒照到黑影的那一格 |
 | 8 | 油桶人、Raker、合成站列印 | 死是預料中的事，合成站會再印一具身體，任務照樣繼續。*One death is expected* 落在 Raker 撲過來，*printed* 落在合成站列印 |
 | 9 | 回憶最後一格：公路往遠處延伸 | 路的盡頭有音樂，有人通報過。替第三段的巨人埋線；*Do not stop* 是前任的教訓 |
-| 12 | 路邊翻覆的 RV | 簡報的來源揭曉：前任 4711 失聯，主角是它的替補。那台車就是回憶裡的同一台，呼應第 8 句的 *replacement* |
+| 12 | 路邊翻覆的 RV、起霧 | 第 2 句的目的地已經九百天沒有回應，主管照樣派人去；結尾派出 4713，表示它不會停。簡報的來源由畫面揭曉：那台車就是回憶裡的同一台，旁白不提 |
 | 15–16 | 同構圖睜眼 | 編號加一，路線與目的地不變 |
 
 ## 劇本
@@ -102,7 +102,7 @@
 
 | 時間 | 畫面 | 旁白 | 聲音與配樂 |
 |---|---|---|---|
-| 0:06 | 車外跟拍 RV 在公路上 | *Unit four seven one two. You are assigned to route nine. Proceed to relay station Kilo.* | |
+| 0:06 | 車外跟拍 RV 在公路上 | *Unit four seven one two. You are assigned to route nine. Proceed to relay station.* | |
 
 #### 第三幕：眨眼（T1）
 
@@ -229,7 +229,7 @@
 | 開拍後 | 畫面 | 旁白 | 聲音與配樂 |
 |---|---|---|---|
 | 0–5 秒 | 從駕駛座看 RV 沿針葉林公路前進 | | 行車與風聲 |
-| 6 秒 | 前方左側是前任翻覆的 RV | *Unit four seven one one: lost. Replacement: YOU.* | 從 *lost* 起廣播略有異常 |
+| 6 秒 | 前方左側是前任翻覆的 RV | *Relay station: no response for nine hundred days.* | 從 *nine hundred* 起廣播略有異常 |
 | 約 8–13 秒 | 接近時往左看翻覆的 RV，從約 10 秒開始逐漸把視線帶回路面，霧開始變濃 | | 低頻持續音（M3）極輕進場 |
 | 約 13 秒 | 前方只剩濃霧中的公路 | | 第 12 句播完，風停下，車內喇叭靜音。《給愛麗絲》（M4）從左前方淡入，帶著遠處的回音 |
 | 約 20–24 秒 | 車子往前，霧漸薄，巨人的輪廓從左前方的林間浮現 | | 隨距離縮短，旋律逐漸清楚 |
@@ -238,7 +238,7 @@
 
 巨人固定站在種子 42 的公路左側、低於路面的針葉林谷地。它在濃霧的可見範圍外開始播放音樂，車子接近與霧變薄時才逐漸看清。駕駛座鏡頭先從擋風玻璃看輪廓，靠近後才往左側窗看，最後往後轉開窗柱。
 
-翻覆的 RV 必須看得出是回憶裡的同一台：同樣的安裝設備，第十二幕扛回來的引擎也在車旁。第 12 句的揭曉靠這個畫面成立，旁白不講。
+翻覆的 RV 必須看得出是回憶裡的同一台：同樣的安裝設備，第十二幕扛回來的引擎也在車旁。簡報來源的揭曉只靠這個畫面，旁白不提。
 
 #### 第二十一幕：追車遠景（T2 外景，從 O5 改）
 
@@ -273,7 +273,7 @@
 | 2:23 | 全黑 | | 三秒完全無聲 |
 | 2:26 | 與 0:01 完全相同的構圖睜眼 | | 識別音（M1），與開場一模一樣 |
 | 2:27 | | *This is Shelter Four dispatch.* | |
-| 2:31 | | *Unit four seven one three. You are assigned to route nine. Proceed to relay station Kilo.* | |
+| 2:31 | | *Unit four seven one three. You are assigned to route nine. Proceed to relay station.* | |
 | 2:43 | 眨眼 | | |
 
 #### 第二十五幕：標題（後製）
@@ -325,6 +325,7 @@
 - T2 目前只拍到第二十幕結束（巨人追上來）。第二十二幕的砸車頂與撞廢車還沒做，T3 仍從舊的撞電線桿姿勢開始。
 - 第二十一幕起的成片時間要等新版 T2 剪入後重排。
 - [narration.json](../../tests/playgrounds/promo/narration.json) 的第 3–11 句仍是舊稿，要換成新的簡報第 3–9 句並刪掉 10、11。新稿缺 23 個詞，要先加進[主管詞庫](../../assets/audio/dispatch_voice/README.md)：*mission, briefing, expect, damage, repairs, your, responsibility, take, what, find, present, them, will, be, lit, expected, a, body, printed, has, been, reported, stop*。第 13 句仍是舊稿（*Maintain the corridor…*），成片不用這句。
+- 第 12 句改成 *Relay station: no response for nine hundred days.*，新詞 *for, hundred, days* 已加進 [words.json](../../scripts/audio/dispatch_voice/words.json)，但還沒產生音檔（這台機器沒有 Kokoro 與 Praat）。到有工具的機器上重新產生詞庫，再把 narration.json 的第 12 句換成 `relay station . no response for nine hundred days .`，聲音異常從 `nine` 起、拉長 `days`。換好之後 T2 要用新句重拍。
 - 回憶段的時間是依字數估算的，簡報匯出成 WAV 後照實際長度重排。
 - 已拍的 T2 裡翻覆的 RV 不一定跟回憶裡的 RV 相同；不同就要改場景重拍。
 - 簡報只提黑影，白影（O3）沒有排進成片。
