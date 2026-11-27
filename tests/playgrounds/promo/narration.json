@@ -14,7 +14,7 @@
     "12": {
       "text": "relay station . no response for six nine days .",
       "glitch": { "from": "six", "drift": 0.03, "distortion": 0.3, "seed": 12,
-        "words": { "nine": { "jam": { "at": 0.6, "grain": 0.06, "seconds": 3 } } } }
+        "words": { "nine": { "jam": { "at": 0.6, "grain": 0.06, "seconds": 3, "gain": 3 } } } }
     },
     "13": "evacuation of shelter four . in progress . maintain the corridor until evacuation is complete .",
     "15": "this is shelter four dispatch .",

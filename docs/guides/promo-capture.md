@@ -134,7 +134,7 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 godot --headless --path . --script res://scripts/promo_narration.gd
 ```
 
-句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）、被吞掉（`swallow`），或像數位緩衝區卡住（`jam`：念到一半卡在一小段聲音上不停重複，後面的字都不念，字幕也只寫到卡住的那個字）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
+句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）、被吞掉（`swallow`），或像數位緩衝區卡住（`jam`：念到一半卡在一小段聲音上不停重複，`gain` 可以讓卡音比原字大聲，後面的字都不念，字幕也只寫到卡住的那個字）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
 
 旁白用到的詞要先在詞庫裡，加詞的方法見[主管詞庫語音](../../assets/audio/dispatch_voice/README.md)。
 

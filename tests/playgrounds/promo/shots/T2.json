@@ -96,7 +96,7 @@
     {
       "at": 10.2,
       "do": "static",
-      "level": 0.75
+      "level": 0.8
     },
     {
       "at": 10.9,
@@ -105,24 +105,19 @@
       "seconds": 2.2
     },
     {
-      "at": 10.9,
-      "do": "static",
-      "level": 0.6
-    },
-    {
       "at": 11.7,
-      "do": "static",
-      "level": 0.5
-    },
-    {
-      "at": 12.1,
       "do": "static",
       "level": 0.45
     },
     {
+      "at": 12.1,
+      "do": "static",
+      "level": 0.38
+    },
+    {
       "at": 12.5,
       "do": "static",
-      "level": 0.4
+      "level": 0.32
     },
     {
       "at": 13,

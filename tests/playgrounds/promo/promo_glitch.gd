@@ -10,9 +10,10 @@ extends RefCounted
 ##   words       per-word faults, keyed by token: stutter (repeats of the onset),
 ##               stretch (tape slowdown factor), reverse, swallow (0 to 1: the word
 ##               sinks in pitch, crushes and fades out), jam (the buffer hangs and
-##               nothing after it plays: {keep, at, grain, seconds}. The first `keep`
-##               occurrences play normally; the next plays up to `at` of the word,
-##               then loops the `grain`-second slice there for `seconds`)
+##               nothing after it plays: {keep, at, grain, seconds, gain}. The first
+##               `keep` occurrences play normally; the next plays up to `at` of the
+##               word, then loops the `grain`-second slice there for `seconds`, `gain`
+##               dB louder than the word)
 
 const STUTTER_SECONDS := 0.09
 const DRIFT_HZ := 2.3
@@ -109,6 +110,8 @@ static func _jam(samples: PackedFloat32Array, jam: Dictionary, rate: int) -> Pac
 	var length := clampi(int(float(jam.get("grain", 0.06)) * rate), 1, samples.size())
 	var start := clampi(int(samples.size() * float(jam.get("at", 0.5))), 0, samples.size() - length)
 	var grain := samples.slice(start, start + length)
+	var gain := db_to_linear(float(jam.get("gain", 0.0)))
+	for i in grain.size(): grain[i] = clampf(grain[i] * gain, -1.0, 1.0)
 	var out := samples.slice(0, start)
 	var total := out.size() + int(float(jam.get("seconds", 1.0)) * rate)
 	while out.size() < total: out.append_array(grain)
