@@ -317,7 +317,10 @@ func _verify_chase(world: Node) -> void:
 	var wake := 0.0
 	for cue in world.shot.timeline:
 		if cue.do == "giant_wake": wake = float(cue.at)
+	var road_yaw := camera.rotation.y
 	var framed_wreck := false
+	var furthest_wreck_yaw := 0.0
+	var returned_to_road := false
 	var hidden_at_handoff := false
 	var still := false
 	var trees_felled_before_wake := false
@@ -327,6 +330,9 @@ func _verify_chase(world: Node) -> void:
 		if look.get("subject") == stage.wreck and look.time >= look.seconds:
 			var wreck_offset: Vector3 = world.rv.to_local(stage.wreck.global_position)
 			framed_wreck = framed_wreck or (wreck_offset.z < 0.0 and camera.is_position_in_frustum(stage.wreck.global_position))
+			furthest_wreck_yaw = maxf(furthest_wreck_yaw, absf(angle_difference(road_yaw, camera.rotation.y)))
+		if framed_wreck and not is_instance_valid(stage.giant) and look.is_empty():
+			returned_to_road = returned_to_road or is_zero_approx(angle_difference(road_yaw, camera.rotation.y))
 		if not still and is_instance_valid(stage.giant):
 			var giant_depth := -camera.to_local(stage.giant.global_position).z
 			hidden_at_handoff = giant_depth > clock.environment.fog_depth_end and not speaker.speaker.playing and not speaker.noise.playing
@@ -335,6 +341,8 @@ func _verify_chase(world: Node) -> void:
 		if stage.timeline.clock < wake and trunks != null:
 			trees_felled_before_wake = not trunks.broken.is_empty()
 	_check(framed_wreck, world.shot_id + " turns toward the wreck before passing it")
+	_check(furthest_wreck_yaw < PI * 0.5 and returned_to_road,
+		world.shot_id + " releases the wreck glance before looking behind and returns to the road")
 	_check(hidden_at_handoff, world.shot_id + " hands off from dispatch to music while the giant is still behind the fog")
 	_check(still, world.shot_id + " places a still giant whose loudspeaker plays before it wakes")
 	_check(stage._marked_phases.has("chase") and float(stage._marked_phases.chase) - wake < 1.0,

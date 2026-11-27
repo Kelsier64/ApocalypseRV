@@ -484,6 +484,9 @@ func _fire(world, cue: Dictionary) -> bool:
 					if not is_instance_valid(subject): return false
 					_look.subject = subject
 					_look.yaw = deg_to_rad(float(cue.get("yaw", 0.0)))
+					if cue.has("return_seconds"):
+						_look.return_at = _look.seconds + maxf(0.0, float(cue.get("hold_seconds", 0.0)))
+						_look.return_seconds = maxf(0.01, float(cue.return_seconds))
 				else: _look.to = rest + Vector3(deg_to_rad(float(cue.pitch)), deg_to_rad(float(cue.yaw)), 0.0)
 				# `lean` moves the head [right, up, back] metres from its rest over the same
 				# seconds, e.g. toward the side window so more of a tall subject clears the
@@ -847,15 +850,22 @@ func _ease_view(world, delta: float) -> void:
 		var camera: Camera3D = _look.camera
 		var subject: Node3D = _look.get("subject")
 		var tracking := is_instance_valid(subject)
+		var finished := t >= 1.0 and not tracking
 		var to: Vector3 = _look.get("to", camera.rotation)
 		if tracking:
 			var point := _giant_point(LOOK_HEIGHT_SHARE) if subject == giant else subject.global_position
 			to = _aim(camera, point) + Vector3(0.0, float(_look.yaw), 0.0)
+			# Fade out the moving target so the camera carries its current turn
+			# into the return, even while the wreck keeps moving across the window.
+			if _look.has("return_at"):
+				var release := smoothstep(0.0, 1.0, (_look.time - _look.return_at) / _look.return_seconds)
+				t *= 1.0 - release
+				finished = release >= 1.0
 		var from: Vector3 = _look.from
 		camera.rotation = Vector3(lerp_angle(from.x, to.x, t), lerp_angle(from.y, to.y, t), lerpf(from.z, to.z, t))
 		if _look.has("seat") and is_instance_valid(_look.seat):
 			_look.seat._camera_rest_position = (_look.lean_from as Vector3).lerp(_look.lean_to, t)
-		if t >= 1.0 and not tracking: _look = {}
+		if finished: _look = {}
 	if not _eyes.is_empty():
 		_eyes.time += delta
 		var closure := lerpf(_eyes.from, _eyes.to, smoothstep(0.0, 1.0, minf(1.0, _eyes.time / _eyes.seconds)))

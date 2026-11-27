@@ -105,7 +105,7 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 | `wind` | 把風固定在 `tier`（0 無風到 3 強風），立刻生效 |
 | `radio_off` | 喇叭完全安靜到鏡頭結束 |
 | `weather` | 在 `seconds` 秒內把天氣變成 `to`（晴、雨、霧） |
-| `look` | 在 `seconds` 秒內把駕駛座視角轉到 `yaw`、`pitch`（度）。`target: "giant"` 對準巨人身體中段，`target: "wreck"` 對準翻覆的 RV，持續跟拍到下一個 `look`。跟拍的 `yaw` 是額外往左轉的度數（負數往右），可用來避開車窗柱。只在自動演出生效，現場錄影由滑鼠控制 |
+| `look` | 在 `seconds` 秒內把駕駛座視角轉到 `yaw`、`pitch`（度）。`target: "giant"` 對準巨人身體中段，`target: "wreck"` 對準翻覆的 RV，預設跟拍到下一個 `look`。設定 `return_seconds` 時，跟拍 `hold_seconds` 秒（預設 0）後，逐漸把視線帶回轉頭前的方向。跟拍的 `yaw` 是額外往左轉的度數（負數往右），可用來避開車窗柱。只在自動演出生效，現場錄影由滑鼠控制 |
 | `gaze` | 趴著的主角在 `seconds` 秒內轉頭看向 `target`（目前只有 `giant`）離地 `up` 公尺的位置，之後一直盯著它，直到被抓。只在自動演出生效 |
 | `eyes` | 用遊戲的眼皮效果在 `seconds` 秒內睜眼或閉眼 |
 | `giant` | 巨人站在撞擊電線桿後方 `beyond` 公尺（預設 12）的車道上。給 `bearing` 時改用駕駛的眼睛定位：照 RV 當下的速度推算 `reveal` 秒後眼睛的位置，巨人站在公路前方往左 `bearing` 度（負數往右）、水平距離 `range` 公尺的地面上。那裡的地面跟路面高低差超過 `max_rise`（預設 2 公尺），或眼睛到巨人腰部或喇叭的視線被擋住時，這一步失敗，要換鏡頭的 `distance`。面向 RV，`facing: "road"` 改成面向公路。AI 關閉，頭上喇叭照遊戲的距離處理淡入 |

@@ -84,7 +84,9 @@
       "at": 8.2,
       "do": "look",
       "target": "wreck",
-      "seconds": 1.1
+      "seconds": 1.3,
+      "hold_seconds": 0.5,
+      "return_seconds": 2.6
     },
     {
       "at": 10,
@@ -96,13 +98,6 @@
       "do": "weather",
       "to": [0, 0, 1.6],
       "seconds": 2.2
-    },
-    {
-      "at": 11.3,
-      "do": "look",
-      "yaw": 0,
-      "pitch": 0,
-      "seconds": 1.4
     },
     {
       "at": 13,
