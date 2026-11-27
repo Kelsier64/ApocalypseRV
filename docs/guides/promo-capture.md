@@ -79,7 +79,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
 | T1 | 宣傳片：駕駛座錨點（開場；變體 1 是結尾）。加 `-Exterior` 錄第一段的車外跟拍 |
-| T2 | 宣傳片第二十幕。先開五秒林間公路，第 12 句從 3.3 秒開始播，再往左看路肩的前任 RV。第 12 句播完後車內喇叭靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
+| T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
 
 T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡頭檔裡的時間軸。
@@ -101,7 +101,7 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 | `drive` | 沿公路巡航，`speed` 是時速（km/h），`lateral` 是離路中心的側向距離；給 `seconds` 時在這段時間內慢慢移到新的側向位置（D6 用來開下公路） |
 | `gear`、`brake` | 換檔；剎停並結束巡航 |
 | `line` | 車內調度喇叭播出旁白第 `id` 句 |
-| `static` | 把收訊固定在 `level`（0–1），越低底噪越大；`cut` 立刻切斷正在播的句子 |
+| `static` | 把收訊固定在 `level`（0–1），越低底噪越大，低於清楚收訊時聲音會像遊戲裡一樣斷斷續續；`cut` 立刻切斷正在播的句子 |
 | `wind` | 把風固定在 `tier`（0 無風到 3 強風），立刻生效 |
 | `radio_off` | 喇叭完全安靜到鏡頭結束 |
 | `weather` | 在 `seconds` 秒內把天氣變成 `to`（晴、雨、霧） |
@@ -134,7 +134,7 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 godot --headless --path . --script res://scripts/promo_narration.gd
 ```
 
-句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）或被吞掉（`swallow`）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
+句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）、被吞掉（`swallow`），或像數位緩衝區卡住（`jam`：念到一半卡在一小段聲音上不停重複，後面的字都不念，字幕也只寫到卡住的那個字）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
 
 旁白用到的詞要先在詞庫裡，加詞的方法見[主管詞庫語音](../../assets/audio/dispatch_voice/README.md)。
 

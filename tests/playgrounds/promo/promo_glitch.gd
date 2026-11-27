@@ -9,10 +9,18 @@ extends RefCounted
 ##   seed        the wander's noise seed
 ##   words       per-word faults, keyed by token: stutter (repeats of the onset),
 ##               stretch (tape slowdown factor), reverse, swallow (0 to 1: the word
-##               sinks in pitch, crushes and fades out)
+##               sinks in pitch, crushes and fades out), jam (the buffer hangs and
+##               nothing after it plays: {keep, at, grain, seconds}. The first `keep`
+##               occurrences play normally; the next plays up to `at` of the word,
+##               then loops the `grain`-second slice there for `seconds`)
 
 const STUTTER_SECONDS := 0.09
 const DRIFT_HZ := 2.3
+
+## The tokens the speaker gets out, up to the word a jam hangs on, for the caption.
+static func heard(tokens: PackedStringArray, spec: Dictionary) -> PackedStringArray:
+	var hang := _jam_index(tokens, spec)
+	return tokens if hang < 0 else tokens.slice(0, hang + 1)
 
 static func compose(bank: WordBank, tokens: PackedStringArray, word_gap: float, stop_gap: float, spec: Dictionary) -> AudioStreamWAV:
 	var rate := 0
@@ -31,6 +39,7 @@ static func compose(bank: WordBank, tokens: PackedStringArray, word_gap: float, 
 	noise.seed = int(spec.get("seed", 0))
 	noise.frequency = DRIFT_HZ
 	var out := PackedFloat32Array()
+	var hang := _jam_index(tokens, spec)
 	for index in tokens.size():
 		var token := tokens[index]
 		var gap := word_gap
@@ -41,8 +50,12 @@ static func compose(bank: WordBank, tokens: PackedStringArray, word_gap: float, 
 			if word == null: continue
 			var samples := _decode(word.data)
 			if onset >= 0 and index >= onset:
+				var faults: Dictionary = words.get(token, {})
 				var progress := float(index - onset + 1) / float(maxi(1, last - onset + 1))
-				samples = _break(samples, words.get(token, {}), progress, spec, noise, out.size(), rate)
+				samples = _break(samples, faults, progress, spec, noise, out.size(), rate)
+				if index == hang:
+					out.append_array(_jam(samples, faults.jam, rate))
+					break
 			out.append_array(samples)
 		var silence := PackedFloat32Array()
 		silence.resize(int(gap * rate))
@@ -74,6 +87,33 @@ static func _break(samples: PackedFloat32Array, faults: Dictionary, progress: fl
 		return wander / stretch * lerpf(1.0, 0.35, swallow * t / maxf(0.001, float(samples.size()) / rate)), rate)
 	var drive := clampf(float(spec.get("distortion", 0.0)) * progress + swallow * 0.5, 0.0, 1.0)
 	return _damage(samples, drive, swallow)
+
+## Where the jam hangs the line: the first `keep` occurrences of its word after `from`
+## play, the next one hangs. -1 when the line has no jam.
+static func _jam_index(tokens: PackedStringArray, spec: Dictionary) -> int:
+	var onset := tokens.find(str(spec.get("from", "")))
+	if onset < 0: return -1
+	var words: Dictionary = spec.get("words", {})
+	var seen := {}
+	for index in range(onset, tokens.size()):
+		var faults: Dictionary = words.get(tokens[index], {})
+		if not faults.has("jam"): continue
+		var occurrence: int = seen.get(tokens[index], 0)
+		seen[tokens[index]] = occurrence + 1
+		if occurrence == int(faults.jam.get("keep", 0)): return index
+	return -1
+
+## A digital buffer that hangs: the word plays up to `at`, then the `grain`-second slice
+## there repeats back to back for `seconds`, hard-edged like a frozen audio frame.
+static func _jam(samples: PackedFloat32Array, jam: Dictionary, rate: int) -> PackedFloat32Array:
+	var length := clampi(int(float(jam.get("grain", 0.06)) * rate), 1, samples.size())
+	var start := clampi(int(samples.size() * float(jam.get("at", 0.5))), 0, samples.size() - length)
+	var grain := samples.slice(start, start + length)
+	var out := samples.slice(0, start)
+	var total := out.size() + int(float(jam.get("seconds", 1.0)) * rate)
+	while out.size() < total: out.append_array(grain)
+	out.resize(total)
+	return out
 
 ## Resamples at a playback speed that varies over the source time, like a wobbling tape:
 ## above 1 is faster and higher, below 1 slower and lower.

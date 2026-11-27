@@ -66,14 +66,14 @@
       "tier": 1
     },
     {
-      "at": 3.3,
-      "do": "line",
-      "id": 12
-    },
-    {
       "at": 5,
       "do": "drive",
       "speed": 44
+    },
+    {
+      "at": 6.8,
+      "do": "line",
+      "id": 12
     },
     {
       "at": 7.5,
@@ -94,10 +94,35 @@
       "gear": 3
     },
     {
+      "at": 10.2,
+      "do": "static",
+      "level": 0.75
+    },
+    {
       "at": 10.9,
       "do": "weather",
       "to": [0, 0, 1.6],
       "seconds": 2.2
+    },
+    {
+      "at": 10.9,
+      "do": "static",
+      "level": 0.6
+    },
+    {
+      "at": 11.7,
+      "do": "static",
+      "level": 0.5
+    },
+    {
+      "at": 12.1,
+      "do": "static",
+      "level": 0.45
+    },
+    {
+      "at": 12.5,
+      "do": "static",
+      "level": 0.4
     },
     {
       "at": 13,

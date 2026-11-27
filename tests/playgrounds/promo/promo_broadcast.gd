@@ -27,7 +27,7 @@ static func text(entry: Variant) -> String:
 static func clip(schedule: BroadcastSchedule, entry: Variant) -> AudioStreamWAV:
 	var spoken := tokens(text(entry))
 	if not (entry is Dictionary and entry.has("glitch")): return schedule.speak(spoken) as AudioStreamWAV
-	schedule.caption = WordBank.caption(spoken)
+	schedule.caption = WordBank.caption(GLITCH.heard(spoken, entry.glitch))
 	return GLITCH.compose(schedule.voice, spoken, schedule.word_gap, schedule.stop_gap, entry.glitch)
 
 func attach(rv: Chassis, level: int) -> bool:
@@ -74,5 +74,6 @@ func tick() -> void:
 func _pin() -> void:
 	speaker.strength = strength
 	speaker._jitter = 0.0
-	speaker._drop_db = 0.0
+	# Below clear signal the speaker's own dropouts chop the line, as in game.
+	if strength >= speaker.clear_signal: speaker._drop_db = 0.0
 	speaker._sample_in = NO_SAMPLE
