@@ -7,11 +7,15 @@ const DEVICE := "res://equipment/item_box.tscn"
 var recycler: Node
 var feed_index := 0
 
+## Shots pick their staging and F3 action by `setup`, not by shot id.
+func _setup(world) -> String:
+	return str(world.shot.get("setup", ""))
+
 func prepare(world) -> bool:
 	var rv: Chassis = world.rv
 	if not rv.interior_requested.cabin: rv.toggle_interior_light("cabin")
-	match world.shot_id:
-		"R1":
+	match _setup(world):
+		"recycler":
 			recycler = rv.get_node("Scrapper")
 			var container := WorldEntities.get_container(world)
 			for prop in [{"path": SCRAP, "mark": Vector3(0.5, 0.75, -0.8)},
@@ -25,13 +29,13 @@ func prepare(world) -> bool:
 					for part in [&"left_arm", &"right_arm"]: item.body_state.sever(part)
 			world.actor.global_position = rv.to_global(Vector3(-0.05, 0.55, 0.2))
 			world._aim_at(recycler.global_position + Vector3.UP * 0.55)
-		"R2":
+		"station":
 			world.station = rv.get_node("CraftingStation")
 			for id in world.shot.recipes:
 				var recipe := RecipeCatalog.find(id)
 				for material in recipe.costs: rv.add_item(material, int(recipe.costs[material]) * 3)
 			world._aim_at(world.station.spawn_marker.global_position + Vector3.UP * 0.22)
-		"R3":
+		"repairs":
 			var slots: RVStructureSlots = rv.get_node("StructureSlots")
 			mark_panel(slots.panel("roof_0"), false)
 			mark_panel(slots.panel("right_2"), true)
@@ -45,7 +49,7 @@ func mark_panel(panel: RVStructurePanel, destroyed: bool) -> void:
 	panel.set_health(0.0 if destroyed else panel.max_health * 0.35)
 
 func trigger(world) -> bool:
-	if world.shot_id == "R1":
+	if _setup(world) == "recycler":
 		while feed_index < world.staged.size():
 			var item = world.staged[feed_index]
 			if not is_instance_valid(item) or item.processing_owner == recycler:
@@ -75,7 +79,7 @@ func trigger(world) -> bool:
 	if world.actor.in_ui_mode: return false
 	tablet.interact_hold(world.actor)
 	if not tablet.is_management_active(): return false
-	if world.shot_id == "R2":
+	if _setup(world) == "station":
 		tablet.ui_instance.select_recipe(world.shot.recipes[0])
 		tablet.ui_instance.select_page("crafting")
 	else:
@@ -86,8 +90,8 @@ func trigger(world) -> bool:
 ## Unattended take for Movie Maker. Returns how long to keep filming, or -1 after failing.
 func autoplay(world) -> float:
 	var tablet: Node = world.rv.get_node("TabletScreen")
-	match world.shot_id:
-		"R1":
+	match _setup(world):
+		"recycler":
 			for index in world.staged.size():
 				var input = world.staged[index]
 				if not world.trigger_take():
@@ -101,7 +105,7 @@ func autoplay(world) -> float:
 					return -1.0
 				await world.get_tree().create_timer(0.45).timeout
 			return 4.0
-		"R2":
+		"station":
 			if not world.trigger_take():
 				world._fail("Could not open the tablet")
 				return -1.0
@@ -112,7 +116,7 @@ func autoplay(world) -> float:
 				return -1.0
 			tablet._close_ui()
 			return RecipeCatalog.find(world.shot.recipes[0]).duration + 1.5
-		"R3":
+		"repairs":
 			if not world.trigger_take():
 				world._fail("Could not open Structure")
 				return -1.0
@@ -134,7 +138,7 @@ func autoplay(world) -> float:
 	return -1.0
 
 func autoplay_error(world) -> String:
-	if world.shot_id == "R2" and not world.station.jobs.is_empty(): return "Print did not finish: " + world.station.last_error
-	if world.shot_id == "R1" and (not recycler.props_being_crushed.is_empty() or world.staged.any(func(item): return is_instance_valid(item))):
+	if _setup(world) == "station" and not world.station.jobs.is_empty(): return "Print did not finish: " + world.station.last_error
+	if _setup(world) == "recycler" and (not recycler.props_being_crushed.is_empty() or world.staged.any(func(item): return is_instance_valid(item))):
 		return "Scrapper did not finish all three items"
 	return ""

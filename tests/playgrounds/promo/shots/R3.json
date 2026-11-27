@@ -10,5 +10,7 @@
     0
   ],
   "workshop": true,
-  "action": "Structure"
+  "action": "Structure",
+  "setup": "repairs",
+  "player_camera": true
 }

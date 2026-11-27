@@ -11,6 +11,8 @@ static func run(world: Node3D, check: Callable) -> void:
 	_check_weather(check)
 	WIND.run(check)
 	_check_owners(world, check)
+	_check_dust_haze(world, check)
+	_check_mist_wind(world, check)
 
 static func _check_profile(check: Callable) -> void:
 	var custom := DEFAULT.duplicate() as WorldAtmosphereProfile
@@ -142,6 +144,77 @@ static func _owner(world: Node3D, atmosphere: WorldAtmosphereProfile) -> Node3D:
 	clock.set_time(1, 12.0)
 	return host
 
+## Dust shortens the view like fog but is never weather: it cannot push the
+## haze out, cannot write the fog amount, and the sky horizon keeps the haze color.
+static func _check_dust_haze(world: Node3D, check: Callable) -> void:
+	var nearer := true
+	var unchanged := true
+	var mixing := true
+	for conditions: Vector3 in [Vector3(1, 0, 0), Vector3.ZERO, Vector3(0, 1, WorldWeather.FOG_LIGHT), Vector3(0, 0, WorldWeather.FOG_MEDIUM), Vector3(0, 2, WorldWeather.FOG_HEAVY)]:
+		var still := DEFAULT.mist(conditions)
+		unchanged = unchanged and DEFAULT.mist(conditions, 0.0) == still and is_zero_approx(float(still.dust_mix)) and is_equal_approx(float(still.depth_curve), DEFAULT.distance_curve)
+		var previous := still
+		for step in range(1, 11):
+			var sample := DEFAULT.mist(conditions, step / 10.0)
+			nearer = nearer and sample.depth_end <= previous.depth_end + 0.0001 and sample.depth_begin <= previous.depth_begin + 0.0001 and sample.depth_end <= still.depth_end + 0.0001
+			mixing = mixing and sample.dust_mix >= previous.dust_mix - 0.0001 and sample.dust_mix <= 1.0
+			previous = sample
+	check.call(nearer, "Dust only pulls the haze nearer, never past the weather or landscape end")
+	check.call(unchanged, "Without dust the haze is exactly the weather haze")
+	check.call(mixing, "Dust's share of the haze color grows with dust and stays within 0 to 1")
+	var storm := DEFAULT.mist(Vector3.ZERO, 1.0)
+	check.call(is_equal_approx(float(storm.depth_end), minf(DEFAULT.dust_end, DEFAULT.landscape_end)) and is_equal_approx(float(storm.dust_mix), 1.0), "Full dust without fog reaches the profile's dust end and color")
+	check.call(is_equal_approx(float(storm.depth_curve), DEFAULT.distance_curve), "Dust keeps the weather's haze curve; the sheets block the view up close")
+	check.call(storm.depth_begin >= DEFAULT.dust_begin - 0.0001 and storm.depth_end > storm.depth_begin, "Full dust haze begins at the profile's dust begin")
+	var volume_ok := is_equal_approx(DEFAULT.volume_length(storm.depth_end, 0.0), DEFAULT.volume_length(storm.depth_end))
+	for step in range(11):
+		var length := DEFAULT.volume_length(storm.depth_end, step / 10.0)
+		volume_ok = volume_ok and length >= DEFAULT.volume_length(storm.depth_end) - 0.0001 and length <= storm.depth_end
+	check.call(volume_ok, "Dust lengthens volumetric scattering but keeps it inside the haze end")
+	var surged := DEFAULT.mist(Vector3.ZERO, 1.0, 1.0)
+	check.call(surged.depth_end < storm.depth_end and DEFAULT.mist(Vector3.ZERO, 0.0, 1.0) == DEFAULT.mist(Vector3.ZERO), "A storm surge pulls the dust haze in, and does nothing without dust")
+	check.call(surged.depth_end > WhiteApparition.SPAWN_MIN, "The haze end at a full surge stays beyond the white apparition's nearest spawn")
+	check.call(DEFAULT.dust_billow_density < 1.0, "Dust billows stay below what the cabin's CabinAir volumes cancel")
+	check.call(DEFAULT.mist(Vector3(0, 0, WorldWeather.FOG_HEAVY), 1.0).dust_mix < storm.dust_mix, "Fog takes a share of the haze color from dust")
+	var driest := 0
+	for kind in range(TerrainLandforms.KINDS.size()):
+		if WorldWind.dryness_for(Vector3(kind, kind, 0)) > WorldWind.dryness_for(Vector3(driest, driest, 0)): driest = kind
+	var host := _owner(world, DEFAULT)
+	var clock := host.get_node("WorldClock") as WorldClock
+	clock.weather.set_weather(Vector3(1, 0, 0), true)
+	clock.wind.set_override(WorldWind.GALE)
+	clock.landform_override = driest
+	var weather := clock.weather.capture()
+	var sample := clock.weather.sample()
+	clock.apply_time()
+	var weather_end: float = DEFAULT.mist(clock.effective_visual_weather()).depth_end
+	check.call(clock.dust > 0.0 and clock.environment.fog_depth_end < weather_end, "A gale over the driest ground raises dust that pulls the haze in")
+	check.call(clock.environment.fog_light_color.is_equal_approx(clock.sky_material.get_shader_parameter("horizon_color")), "The dusty sky horizon and the haze share one color")
+	check.call(clock.weather.capture() == weather and clock.weather.sample() == sample and clock.effective_visual_weather() == sample, "Dust never writes the weather or its fog amount")
+	# Gusts move the particles' dust, never the haze: it follows the mean wind
+	# and the slow storm surge, so it may drift but never pumps with a gust.
+	# A strong wind leaves the haze part-way, so a pumping haze would show.
+	clock.wind.set_override(WorldWind.STRONG)
+	clock.apply_time()
+	var haze_end := clock.environment.fog_depth_end
+	var conditions := clock.effective_visual_weather()
+	var swing: float = clock.atmosphere.mist(conditions, clock.haze_dust, 0.0).depth_end - clock.atmosphere.mist(conditions, clock.haze_dust, 1.0).depth_end
+	var steady := swing > 0.0
+	var gusty := false
+	var first_dust := clock.dust
+	for step in range(1, 40):
+		clock.elapsed_seconds += 23.0
+		clock.apply_time()
+		var expected: float = clock.atmosphere.mist(conditions, clock.haze_dust, clock.wind.surge(clock.elapsed_seconds)).depth_end
+		steady = steady and is_equal_approx(clock.environment.fog_depth_end, expected) and absf(clock.environment.fog_depth_end - haze_end) <= swing * 0.15
+		haze_end = clock.environment.fog_depth_end
+		gusty = gusty or not is_equal_approx(clock.dust, first_dust)
+	check.call(steady and gusty, "Gusts change the blowing dust; the haze follows only the mean wind and the slow surge")
+	clock.weather.set_weather(Vector3(0, 1, 0), true)
+	clock.apply_time()
+	check.call(clock.dust == 0.0, "Rain lays the dust")
+	host.free()
+
 static func _check_owners(world: Node3D, check: Callable) -> void:
 	var default_clock := WorldClock.new()
 	var another_default := WorldClock.new()
@@ -199,3 +272,36 @@ static func _check_owners(world: Node3D, check: Callable) -> void:
 	first.free()
 	second.free()
 	shared.free()
+
+## Ground mist rides the wind and tears in strong wind; the distance haze that
+## gameplay reads does not move with the wind.
+static func _check_mist_wind(world: Node3D, check: Callable) -> void:
+	var rising := DEFAULT.mist_drift_speed(0.0) > 0.0 and is_zero_approx(DEFAULT.mist_torn(0.0))
+	for tier in range(1, WorldWind.SPEEDS.size()):
+		var speed: float = WorldWind.SPEEDS[tier]
+		var below: float = WorldWind.SPEEDS[tier - 1]
+		rising = rising and DEFAULT.mist_drift_speed(speed) > DEFAULT.mist_drift_speed(below) and DEFAULT.mist_torn(speed) >= DEFAULT.mist_torn(below) and DEFAULT.mist_torn(speed) <= 1.0
+	check.call(rising, "Ground mist drifts even in still air and drifts faster and thinner as the wind rises")
+	check.call(DEFAULT.mist_torn(WorldWind.SPEEDS[WorldWind.GALE]) > DEFAULT.mist_torn(WorldWind.SPEEDS[WorldWind.BREEZE]), "A gale tears the ground mist more than a breeze")
+	var host := _owner(world, DEFAULT)
+	var clock := host.get_node("WorldClock") as WorldClock
+	clock.weather.set_weather(Vector3.ZERO, true)
+	var material := ShaderMaterial.new()
+	material.shader = load("res://world/terrain/white_mist.gdshader") as Shader
+	clock.register_fog(material)
+	clock.wind.set_override(WorldWind.CALM)
+	clock.apply_time(1.0)
+	var calm_density := float(material.get_shader_parameter("density"))
+	var calm_end := clock.environment.fog_depth_end
+	var weather := clock.weather.capture()
+	var start: Vector3 = material.get_shader_parameter("drift")
+	clock.wind.set_override(WorldWind.GALE)
+	clock.apply_time(1.0)
+	var moved: Vector3 = material.get_shader_parameter("drift") - start
+	var downwind := clock.wind.direction(clock.elapsed_seconds)
+	check.call(is_equal_approx(calm_density, float(DEFAULT.mist(Vector3.ZERO).local_density)) and calm_density > 0.0, "Still air leaves the ground mist at the weather's density")
+	check.call(float(material.get_shader_parameter("density")) < calm_density and float(material.get_shader_parameter("torn")) > 0.0, "A gale thins the ground mist")
+	check.call(moved.length() > DEFAULT.mist_drift_speed(0.0) and moved.normalized().dot(downwind) > 0.99, "The ground mist moves downwind, faster in a gale")
+	check.call(is_equal_approx(clock.environment.fog_depth_end, calm_end) and clock.weather.capture() == weather, "Wind without dust leaves the distance haze and the weather unchanged")
+	clock.unregister_fog(material)
+	host.free()

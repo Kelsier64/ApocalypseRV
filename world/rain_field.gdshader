@@ -7,45 +7,24 @@ uniform float radius = 24.0;
 uniform float field_height = 32.0;
 uniform bool distant = false;
 uniform float density = 1.0;
+// Horizontal wind in m/s; drops drift downwind as they fall.
+uniform vec3 wind = vec3(0.0);
 uniform sampler2D near_cover : filter_nearest, repeat_disable;
 uniform sampler2D far_cover : filter_nearest, repeat_disable;
-uniform int roof_count = 0;
-uniform vec3 roof_origin[32];
-uniform vec3 roof_row_x[32];
-uniform vec3 roof_row_y[32];
-uniform vec3 roof_row_z[32];
-uniform vec3 roof_extents[32];
 varying float visibility;
 varying float opacity;
 
-// Cache texels carry world cell coordinates so stale/unknown cells never leak rain.
-float surface_height(sampler2D field, vec2 world_xz, float cell_size) {
-	vec2 cell = floor(world_xz / cell_size);
-	vec2 index = mod(cell, 64.0);
-	vec4 sample_data = textureLod(field, (index + vec2(0.5)) / 64.0, 0.0);
-	if (sample_data.a < 0.5 || any(greaterThan(abs(sample_data.gb - cell), vec2(0.1)))) return 100000.0;
-	return sample_data.r;
-}
-
-bool roof_blocks(vec3 point, int index) {
-	vec3 origin = vec3(dot(roof_row_x[index], point), dot(roof_row_y[index], point), dot(roof_row_z[index], point)) + roof_origin[index];
-	vec3 direction = vec3(roof_row_x[index].y, roof_row_y[index].y, roof_row_z[index].y);
-	vec3 inverse_direction = 1.0 / (mix(vec3(-1.0), vec3(1.0), greaterThanEqual(direction, vec3(0.0))) * max(abs(direction), vec3(0.00001)));
-	vec3 a = (-roof_extents[index] - origin) * inverse_direction;
-	vec3 b = (roof_extents[index] - origin) * inverse_direction;
-	vec3 low = min(a, b);
-	vec3 high = max(a, b);
-	float entry = max(max(low.x, low.y), low.z);
-	float exit_distance = min(min(high.x, high.y), high.z);
-	return exit_distance >= max(entry, 0.0);
-}
+#include "res://world/weather_shelter.gdshaderinc"
 
 void vertex() {
 	vec3 seed = MODEL_MATRIX[3].xyz;
 	float speed = mix(10.0, 17.0, INSTANCE_CUSTOM.b);
 	vec3 point;
-	point.xz = mod(seed.xz - camera_center.xz + vec2(radius), vec2(radius * 2.0)) - vec2(radius) + camera_center.xz;
 	point.y = camera_center.y + field_height * 0.5 - mod(camera_center.y + field_height * 0.5 - seed.y + simulation_time * speed, field_height);
+	// Horizontal travel per metre fallen. Offsetting by height relative to the
+	// camera keeps the lean bounded and moves each drop downwind as it falls.
+	vec2 lean = wind.xz / speed;
+	point.xz = mod(seed.xz - lean * (point.y - camera_center.y) - camera_center.xz + vec2(radius), vec2(radius * 2.0)) - vec2(radius) + camera_center.xz;
 	float distance_to_camera = length(point.xz - camera_center.xz);
 	float width = mix(0.022, 0.048, INSTANCE_CUSTOM.r);
 	float streak_length = mix(0.18, 0.46, INSTANCE_CUSTOM.g);
@@ -65,14 +44,13 @@ void vertex() {
 	if (distant) visibility *= smoothstep(14.0, 23.0, distance_to_camera);
 	visibility *= 1.0 - smoothstep(field_height * 0.38, field_height * 0.5, abs(point.y - camera_center.y));
 	visibility *= smoothstep(height_limit + streak_length * 0.5, height_limit + streak_length, point.y);
-	for (int i = 0; i < 32; i++) {
-		if (i >= roof_count) break;
-		if (roof_blocks(point - vec3(0.0, streak_length * 0.5, 0.0), i)) visibility = 0.0;
-	}
+	if (under_roof(point - vec3(0.0, streak_length * 0.5, 0.0))) visibility = 0.0;
 	opacity = mix(0.24, 0.54, INSTANCE_CUSTOM.a) * density;
 	vec3 right = vec3(INV_VIEW_MATRIX[0].x, 0.0, INV_VIEW_MATRIX[0].z);
 	right = length(right) > 0.001 ? normalize(right) : vec3(1.0, 0.0, 0.0);
-	vec3 offset = right * VERTEX.x * width + vec3(0.0, VERTEX.y * streak_length, 0.0);
+	// Streaks lie along the drop's path, upwind at the top.
+	vec3 path = vec3(-lean.x, 1.0, -lean.y);
+	vec3 offset = right * VERTEX.x * width + path * VERTEX.y * streak_length;
 	VERTEX = (VIEW_MATRIX * vec4(point + offset, 1.0)).xyz;
 	NORMAL = vec3(0.0, 0.0, 1.0);
 	if (visibility < 0.001) VERTEX = vec3(0.0, 0.0, -0.01);

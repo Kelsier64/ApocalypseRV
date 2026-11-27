@@ -12,5 +12,9 @@
   "band": 18,
   "event": "strips",
   "seat": true,
-  "action": "Start engine and release brake"
+  "action": "Start engine and release brake",
+  "setup": "spike_strip",
+  "runup": 16,
+  "offset_shift": 1.25,
+  "drives": true
 }

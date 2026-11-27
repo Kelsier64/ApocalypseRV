@@ -10,5 +10,6 @@
     0
   ],
   "interior": "bunker",
-  "action": "Pick up engine"
+  "action": "Pick up engine",
+  "setup": "engine_cargo"
 }

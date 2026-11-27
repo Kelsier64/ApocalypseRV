@@ -1,0 +1,46 @@
+{
+  "voice": "am_adam",
+  "speed": 1.0,
+  "pitch": 0,
+  "words": {
+    "zero": "Zero", "one": "One", "two": "Two", "three": "Three", "four": "Four",
+    "five": "Five", "six": "Six", "seven": "Seven", "eight": "Eight", "nine": "Nine",
+
+    "alpha": "Alpha", "bravo": "Bravo", "charlie": "Charlie", "delta": "Delta",
+    "echo": "Echo", "foxtrot": "Foxtrot", "golf": "Golf", "hotel": "Hotel",
+    "india": "India", "juliett": "Juliet", "kilo": "Kilo", "lima": "Lima",
+    "mike": "Mike", "november": "November", "oscar": "Oscar", "papa": "Papa",
+    "quebec": "Quebec", "romeo": "Romeo", "sierra": "Sierra", "tango": "Tango",
+    "uniform": "Uniform", "victor": "Victor", "whiskey": "Whiskey", "xray": "X-ray",
+    "yankee": "Yankee", "zulu": "Zulu",
+
+    "attention": "Attention", "all": "All", "units": "Units", "unit": "Unit",
+    "this": "This", "is": "Is", "dispatch": "Dispatch", "relay": "Relay",
+    "station": "Station", "shelter": "Shelter", "route": "Route", "road": "Road",
+    "proceed": "Proceed", "to": "To", "report": "Report", "hold": "Hold",
+    "maintain": "Maintain", "remain": "Remain", "on": "On", "assigned": "Assigned",
+    "do": "Do", "not": "Not", "deviate": "Deviate", "status": "Status",
+    "open": "Open", "closed": "Closed", "nominal": "Nominal", "clear": "Clear",
+    "blocked": "Blocked", "ahead": "Ahead", "kilometers": "Kilometers",
+    "advisory": "Advisory", "fog": "Fog", "end": "End", "of": "Of",
+    "message": "Message", "repeat": "Repeat", "line": "Line", "receive": "Receive",
+    "only": "Only", "unauthorized": "Unauthorized", "transmission": "Transmission",
+
+    "you": "You", "are": "Are", "the": "The", "no": "No", "in": "In", "at": "At",
+    "from": "From", "if": "If", "does": "Does", "until": "Until",
+    "offline": "Offline", "restore": "Restore", "power": "Power", "arrival": "Arrival",
+    "resupply": "Resupply", "recover": "Recover", "materials": "Materials",
+    "survival": "Survival", "rules": "Rules", "look": "Look", "white": "White",
+    "dark": "Dark", "figures": "Figures", "light": "Light", "hear": "Hear",
+    "music": "Music", "drive": "Drive", "death": "Death", "assignment": "Assignment",
+    "replacement": "Replacement", "bodies": "Bodies", "authorized": "Authorized",
+    "evacuation": "Evacuation", "progress": "Progress", "corridor": "Corridor",
+    "complete": "Complete", "active": "Active", "lost": "Lost", "black": "Black",
+    "box": "Box", "response": "Response", "coverage": "Coverage", "ends": "Ends",
+    "signal": "Signal", "weak": "Weak", "alert": "Alert",
+
+    "leave": "Leave", "vehicle": "Vehicle", "repair": "Repair", "provided": "Provided", "abandoned": "Abandoned", "shelters": "Shelters",
+    "along": "Along", "entry": "Entry", "salvage": "Salvage", "components": "Components", "fabrication": "Fabrication", "survey": "Survey",
+    "expired": "Expired", "terrain": "Terrain", "unverified": "Unverified"
+  }
+}

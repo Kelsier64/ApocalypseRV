@@ -1608,6 +1608,17 @@ func execution_contact_position() -> Vector3:
 			if bone >= 0: return (skeleton.global_transform * skeleton.get_bone_global_pose(bone)).origin
 	return to_global(Vector3(0, .42 if is_crawling() else 1.25, 0))
 
+## The chest of the standing skin, player-local: where a prone survivor's chest goes
+## once the giant's hand has stood them upright.
+func upright_chest_local() -> Vector3:
+	var visuals := get_node_or_null("Visuals")
+	if visuals != null and visuals.get("skeleton") is Skeleton3D:
+		var skeleton: Skeleton3D = visuals.skeleton
+		for name in ["spine_02", "chest", "spine_01"]:
+			var bone := skeleton.find_bone(name)
+			if bone >= 0: return to_local(skeleton.global_transform * skeleton.get_bone_global_rest(bone).origin)
+	return Vector3(0, 1.25, 0)
+
 func begin_execution(owner: Node3D, anchor: Node3D, look_target: Node3D) -> bool:
 	return grab_control.begin_execution(owner, anchor, look_target)
 

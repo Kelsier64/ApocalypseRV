@@ -1,0 +1,171 @@
+{
+  "title": "Act three drive (wreck, fog, giant in the conifer valley)",
+  "steps": "Seated driver on the same road as T1, through bare conifer woods. F3 starts the timeline: glance left as you approach the previous unit's wreck during line 12, then look back at the road. The dispatch goes quiet and Fur Elise rises from the fog on the left before the giant comes into view in the valley. The RV slows; look out the side window as the giant's speaker turns to you. The RV shifts down and speeds up on its own; look back over your left shoulder as the giant walks out after you.",
+  "action": "Start the timeline",
+  "seed": 42,
+  "distance": 393,
+  "hour": 15,
+  "weather": [
+    0,
+    0,
+    0.4
+  ],
+  "seat": true,
+  "drives": true,
+  "invulnerable": true,
+  "lateral": -1.8,
+  "wreck": {
+    "s": 34,
+    "lateral": -8.5,
+    "yaw": 25,
+    "roll": 92,
+    "corpse": {
+      "s": -4,
+      "lateral": 2.6,
+      "yaw": 70
+    }
+  },
+  "dress": {
+    "from": -60,
+    "to": 280,
+    "width": 140,
+    "fade": 20,
+    "ground": "54432f",
+    "hide_sites": true,
+    "unbridge": true,
+    "plant": {
+      "seed": 20,
+      "spacing": 9,
+      "density": 0.7,
+      "dead": 0.25,
+      "road_margin": 8,
+      "clear": {
+        "from": 150,
+        "to": 215,
+        "lateral": -1.8,
+        "width": 5,
+        "around": 8
+      }
+    }
+  },
+  "timeline": [
+    {
+      "at": 0,
+      "do": "drive",
+      "speed": 44
+    },
+    {
+      "at": 0,
+      "do": "wind",
+      "tier": 1
+    },
+    {
+      "at": 1,
+      "do": "line",
+      "id": 12
+    },
+    {
+      "at": 2.5,
+      "do": "gear",
+      "gear": 2
+    },
+    {
+      "at": 3.2,
+      "do": "look",
+      "target": "wreck",
+      "seconds": 1.1
+    },
+    {
+      "at": 5,
+      "do": "gear",
+      "gear": 3
+    },
+    {
+      "at": 5.9,
+      "do": "weather",
+      "to": [0, 0, 1.6],
+      "seconds": 2.2
+    },
+    {
+      "at": 6.3,
+      "do": "look",
+      "yaw": 0,
+      "pitch": 0,
+      "seconds": 1.4
+    },
+    {
+      "at": 8,
+      "do": "gear",
+      "gear": 4
+    },
+    {
+      "at": 8.2,
+      "do": "wind",
+      "tier": 0
+    },
+    {
+      "at": 8.25,
+      "do": "radio_off"
+    },
+    {
+      "at": 8.25,
+      "do": "giant",
+      "s": 217,
+      "lateral": -25,
+      "facing": "road",
+      "facing_yaw": 60
+    },
+    {
+      "at": 11.5,
+      "do": "weather",
+      "to": [0, 0, 0.7],
+      "seconds": 7
+    },
+    {
+      "at": 18,
+      "do": "drive",
+      "speed": 24
+    },
+    {
+      "at": 23.4,
+      "do": "look",
+      "target": "giant",
+      "lean": [
+        -0.3,
+        -0.1,
+        -0.1
+      ],
+      "seconds": 2
+    },
+    {
+      "at": 26.4,
+      "do": "giant_watch",
+      "seconds": 1.5
+    },
+    {
+      "at": 28.4,
+      "do": "gear",
+      "gear": 3
+    },
+    {
+      "at": 28.4,
+      "do": "drive",
+      "speed": 60
+    },
+    {
+      "at": 28.8,
+      "do": "giant_wake"
+    },
+    {
+      "at": 28.8,
+      "do": "look",
+      "target": "giant",
+      "yaw": 20,
+      "seconds": 1
+    },
+    {
+      "at": 32,
+      "do": "end"
+    }
+  ]
+}

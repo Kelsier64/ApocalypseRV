@@ -2,7 +2,7 @@
 
 [文件索引](../README.md) · [POI 共用規範](poi-authoring.md) · [展示場指南](playgrounds.md)
 
-建築外觀用 [BuildingKit](../../world/building_kit/building_kit.gd) 的建築詞彙組裝：帶門窗開口的牆、房間、樓板、屋頂、柱、梁、樓梯與飾帶，不再為每棟建築另寫 `box()`。kit 一次輸出一個 ArrayMesh（每種材質一個 surface）與一個方塊碰撞的 StaticBody3D，並用 `validate()` 檢查開口與懸空零件。[參考建築](../../world/building_kit/samples/service_block.gd)示範每種零件，也是 kit 測試的夾具。
+建築外觀用 [BuildingKit](../../world/building_kit/building_kit.gd) 的建築詞彙組裝：帶門窗開口的牆、房間、樓板、屋頂、柱、梁、樓梯與飾帶，不再為每棟建築另寫 `box()`。kit 一次輸出一個 ArrayMesh（每種材質一個 surface）與一個方塊碰撞的 StaticBody3D，並用 `validate()` 檢查開口、懸空零件與穿模。[參考建築](../../world/building_kit/samples/service_block.gd)示範每種零件，也是 kit 測試的夾具。
 
 ## 慣例
 
@@ -10,9 +10,14 @@
 - 標準尺寸是 [building_kit.gd](../../world/building_kit/building_kit.gd) 開頭的常數：層高、牆厚、樓板厚、門窗尺寸、窗台高、踏步。新建築先用這些尺寸，偏離時要有理由。
 - 牆沿中心線從 a 畫到 b，外側朝 `(-d.y, 0, d.x)`。`room()` 讓前後牆包住轉角、側牆頂在內面，所以轉角沒有重疊面。開口的 `at` 是開口中心到牆起點的距離。
 - 開口用 `BuildingKit.door()`、`BuildingKit.window()` 建立；窗可為完整玻璃（有碰撞）、破窗或無玻璃。kit 自動加兩面框、窗台板與寬窗的中梃。門洞碰撞淨空保持原尺寸。
-- 樓梯只畫踏步，碰撞是一條穿過踏步中點的坡道。平台樓板自己加。
+- 樓梯只畫踏步。碰撞是一條穿過踢面中點的坡道，坡道下方再加低一階的實心塊，所以從側面走不進樓梯。平台樓板要自己加。
 - 懸掛的零件（吊牌、纜線上的燈）傳 `hung: true`，否則 `validate()` 會判為懸空。
-- 碰撞只給牆、樓板、柱與玻璃；框、飾帶、勒腳與屋簷沒有碰撞。依 [POI 場景層級](poi-authoring.md#3-尺度座標與場景層級)，對同一個 kit 呼叫兩次：`build(visuals, true, false)` 放進 `Visuals`，`build(collision, false, true)` 放進 `Collision`，參考建築就是這樣做。只要導航碰撞時只呼叫後者。
+- `validate()` 也抓兩種穿模：
+  - 零件穿過牆、樓板或玻璃這類薄板，兩面都露出來，例如兩個房間的牆交錯、樓梯穿牆。
+  - 兩個朝同一方向的面重合、會閃爍（z-fighting），例如重複的牆、平台和樓板頂面重疊，或頂面剛好落在地面高度。被第三個零件貼住的面看不到，不算。
+
+  零件陷入另一個不超過 3 cm（例如門框底部陷入地板）不算穿模。故意要穿過的零件（窗台板、勒腳、壓頂、玻璃）傳 `embedded: true`，kit 自己的這些零件已經標好。`corner: &"none"` 的牆端會被勒腳和壓頂包住；兩道共線的牆請合成一道，不要頭尾相接。
+- 預設有碰撞的是牆、樓板、柱、玻璃和屋頂封簷板；框、飾帶、勒腳和梁沒有。看起來是實心、玩家碰得到的零件（雨棚、欄杆）要傳 `solid: true`。依 [POI 場景層級](poi-authoring.md#3-尺度座標與場景層級)，對同一個 kit 呼叫兩次：`build(visuals, true, false)` 放進 `Visuals`，`build(collision, false, true)` 放進 `Collision`，參考建築就是這樣做。只要導航碰撞時只呼叫後者。
 
 ## 材質與色盤
 
@@ -36,6 +41,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/agent/review-scene.p
 ```
 
 輸出在 `.godot/scene-review/<場景名>/`，含每張 PNG 與 `review.json`（範圍、三角面數、surface 與材質數）。
+
+腳本也會比對外觀和碰撞：從上方和四個側面各打一片網格射線，分別打可見網格和場景碰撞，只算玩家會碰撞的圖層，找出 0.25 m 內沒有對應的面。`review.json` 的 `probe` 依節點和位置列出兩類：
+- 看得到但沒碰撞，走得過去。
+- 有碰撞但看不到，也就是隱形牆。
+
+`*_probe.png` 會穿牆標出這兩類，紅色是只有外觀，藍色是只有碰撞。自己做的建築裡，玩家或攀爬怪物碰得到的每一群都要修，或說明為什麼是故意的，例如破窗碎玻璃；碰不到的屋頂細節可以保留。帶骨架的網格會動，所以不檢查。不需要時傳 `-NoProbe`。
 
 ## 現況
 

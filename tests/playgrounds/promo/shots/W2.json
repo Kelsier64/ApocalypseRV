@@ -10,6 +10,7 @@
     0
   ],
   "action": "Play aerial rail",
+  "setup": "aerial",
   "variants": [
     {
       "seed": 43

@@ -1,0 +1,23 @@
+{
+  "lines": {
+    "1": "this is shelter four dispatch .",
+    "2": "unit four seven one two . you are assigned to route nine . proceed to relay station kilo .",
+    "3": "do not leave the route .",
+    "4": "vehicle repair is not provided .",
+    "5": "no resupply . abandoned shelters along the route . entry authorized .",
+    "6": "survival rules . do not look at white figures . do not light dark figures .",
+    "7": "if you hear music . drive .",
+    "8": "salvage all components . fabrication is authorized .",
+    "9": "death does not end assignment . replacement bodies are authorized .",
+    "10": "route survey . expired . terrain . unverified .",
+    "11": "units active . one .",
+    "12": {
+      "text": "unit four seven one one . lost . replacement . you .",
+      "glitch": { "from": "lost", "drift": 0.035, "distortion": 0.12, "seed": 12,
+        "words": { "you": { "stretch": 1.25 } } }
+    },
+    "13": "evacuation of shelter four . in progress . maintain the corridor until evacuation is complete .",
+    "15": "this is shelter four dispatch .",
+    "16": "unit four seven one three . you are assigned to route nine . proceed to relay station kilo ."
+  }
+}

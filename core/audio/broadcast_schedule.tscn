@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://core/audio/broadcast_schedule.gd" id="script"]
+[ext_resource type="AudioStream" path="res://assets/audio/shortwave_radio/carrier.wav" id="carrier"]
+[ext_resource type="Resource" path="res://assets/audio/dispatch_voice/word_bank.tres" id="voice"]
+
+[node name="SignalTimer" type="Timer"]
+script = ExtResource("script")
+one_shot = true
+transmissions = Array[AudioStream]([ExtResource("carrier")])
+templates = PackedStringArray("attention unit {unit} . proceed to relay station {letter} {digit} . end of message .", "all units . maintain assigned route . do not deviate . repeat . do not deviate . end of message .", "advisory . road {clear|blocked} ahead . {two|three|four|five|six|seven|eight|nine} kilometers . remain on route .", "relay station {letter} {digit} . status {nominal|closed} . end of message .", "shelter {letter} {digit} {digit} . status {open|closed} . end of message .", "advisory . fog ahead . remain on route . end of message .")
+voice = ExtResource("voice")
+word_gap = 0.07
+stop_gap = 0.45

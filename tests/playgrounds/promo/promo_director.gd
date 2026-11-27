@@ -28,6 +28,8 @@ var _indicator: Label
 var _notice := ""
 var _notice_time := 0.0
 var _prior_hud: bool
+var _take_path := ""
+var _take := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -69,7 +71,8 @@ func trigger() -> bool:
 	if not world.take_ready:
 		notify("The shot is not ready yet")
 		return false
-	if world.shot_id in ["R2", "R3"] and is_instance_valid(view): use_player_camera()
+	# Tablet shots need the player view: the tablet opens from the player's own camera.
+	if world.shot.get("player_camera", false) and is_instance_valid(view): use_player_camera()
 	var started: bool = world.trigger_take()
 	if not started: notify("Nothing to trigger right now")
 	return started
@@ -132,6 +135,18 @@ func follow_preset(preset: String, target: Node3D = null) -> bool:
 	if target == null: target = _subject()
 	if target == null or not _detached_view(): return false
 	view.follow_with_offset(target, FOLLOW_PRESETS[preset])
+	world.actor.camera_locked = false
+	return true
+
+## A still camera at `point` that keeps `target` in frame; the keyboard stays the player's,
+## and the player's own view cannot take the picture back.
+func track_from(target: Node3D, point: Vector3, height: float, fov: float) -> bool:
+	if not is_instance_valid(target) or not _detached_view(): return false
+	view.track(target, point, height)
+	view.hold_over = _player_view()
+	view.fov = fov
+	view.target_fov = fov
+	view.make_current()
 	world.actor.camera_locked = false
 	return true
 
@@ -270,7 +285,7 @@ func _indicator_text() -> String:
 	if not error.is_empty(): return "%s  FAILED: %s\nF2 panel to pick another shot" % [world.shot_id, error]
 	var state := "Ready" if world.take_ready else "Preparing..."
 	var camera := "Player"
-	if is_instance_valid(view): camera = ["Free", "Follow", "Rail"][view.mode]
+	if is_instance_valid(view): camera = ["Free", "Follow", "Rail", "Track"][view.mode]
 	var line := "%s  %s   Camera: %s" % [world.shot_id, state, camera]
 	if slow_index > 0: line += "   Speed %sx" % str(SLOW_SCALES[slow_index])
 	if is_instance_valid(world.actor) and world.actor.invulnerable: line += "   Invulnerable"
@@ -352,11 +367,26 @@ func _write_take_marker() -> void:
 	# Movie Maker writes one frame per process frame at its fixed rate.
 	var frame := Engine.get_process_frames()
 	print("PROMO TAKE START: frame %d" % frame)
-	if directory.is_empty(): return
-	var output := FileAccess.open(directory.path_join("take.json"), FileAccess.WRITE)
+	_take = {"shot": world.shot_id, "variant": world.variant, "start_frame": frame,
+		"start_seconds": float(frame) / fps if fps > 0 else 0.0, "fps": fps, "markers": []}
+	if not directory.is_empty(): _take_path = directory.path_join("take.json")
+	_save_take()
+
+## Records a named moment of the take (a narration line, an impact) by Movie Maker frame,
+## so the edit can place subtitles and hard cuts without scrubbing.
+func mark(label: String) -> void:
+	var frame := Engine.get_process_frames()
+	print("PROMO MARK: %s frame %d" % [label, frame])
+	if _take.is_empty(): return
+	var fps: int = _take.fps
+	_take.markers.append({"name": label, "frame": frame, "seconds": float(frame) / fps if fps > 0 else 0.0})
+	_save_take()
+
+func _save_take() -> void:
+	if _take_path.is_empty(): return
+	var output := FileAccess.open(_take_path, FileAccess.WRITE)
 	if output == null: return
-	output.store_string(JSON.stringify({"shot": world.shot_id, "variant": world.variant, "start_frame": frame,
-		"start_seconds": float(frame) / fps if fps > 0 else 0.0, "fps": fps}, "  ") + "\n")
+	output.store_string(JSON.stringify(_take, "  ") + "\n")
 	output.close()
 
 func exterior_requested() -> bool:

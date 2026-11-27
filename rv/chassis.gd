@@ -61,6 +61,7 @@ var _player_driver: Node3D
 var max_steering: float:
 	get: return handling_profile.max_steering
 var drivetrain := RVDrivetrain.new()
+var wind_load := RVWindLoad.new()
 var _terrain_field: WorldField
 
 # --- WHEEL SLOT SYSTEM ---
@@ -472,6 +473,7 @@ func _settle_vehicle_impact(kind: String, loss: float, key: String = "", incomin
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	_vehicle_impacts.advance(state.step)
+	wind_load.apply(self, state)
 	if _impact_position.is_finite() and state.transform.origin.distance_to(_impact_position) > maxf(10.0, _impact_velocity.length() * state.step * 4.0):
 		_vehicle_impacts.reset()
 		_crash_damage.reset()

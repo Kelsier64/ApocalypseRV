@@ -2,25 +2,18 @@ extends Item
 class_name ShortwaveRadio
 
 const SCENE := "res://props/shortwave_radio.tscn"
-const FIRST_SIGNAL_DELAY := Vector2(3.0, 7.0)
-const SIGNAL_GAP := Vector2(18.0, 42.0)
-
-@export var transmissions: Array[AudioStream] = []
 @export var unlit_lamp: Material
 @export var lit_lamp: Material
 
-@onready var _signal_timer: Timer = $SignalTimer
+@onready var _signal_timer: BroadcastSchedule = $SignalTimer
 @onready var _speaker: AudioStreamPlayer3D = $Speaker
 @onready var _switch: AudioStreamPlayer3D = $Switch
 @onready var _lamp: MeshInstance3D = $PilotLamp
 
 var _carried := false
-var _rng := RandomNumberGenerator.new()
-var _last_signal := -1
 
 func _ready() -> void:
 	super._ready()
-	_rng.randomize()
 	visibility_changed.connect(_update_power)
 	availability_changed.connect(_update_power)
 	_signal_timer.timeout.connect(_receive)
@@ -60,23 +53,19 @@ func _update_power() -> void:
 		_signal_timer.stop()
 		_speaker.stop()
 		_switch.stop()
-	elif _signal_timer.is_stopped() and not _speaker.playing and not transmissions.is_empty():
-		_signal_timer.start(_rng.randf_range(FIRST_SIGNAL_DELAY.x, FIRST_SIGNAL_DELAY.y))
+	elif _signal_timer.is_stopped() and not _speaker.playing:
+		_signal_timer.start_first()
 
 func _receive() -> void:
-	if not _can_receive() or transmissions.is_empty(): return
-	# Draw from every clip except the one just heard.
-	var count := transmissions.size()
-	var exclude_last := _last_signal >= 0 and count > 1
-	var index := _rng.randi_range(0, count - (2 if exclude_last else 1))
-	if exclude_last and index >= _last_signal: index += 1
-	_last_signal = index
-	_speaker.stream = transmissions[index]
-	_speaker.play()
+	if not _can_receive(): return
+	_speaker.stream = _signal_timer.draw()
+	if _speaker.stream != null:
+		_speaker.play()
+		BroadcastCaptions.show_for(_speaker, _signal_timer.caption)
 
 func _schedule_next() -> void:
 	if _can_receive():
-		_signal_timer.start(_rng.randf_range(SIGNAL_GAP.x, SIGNAL_GAP.y))
+		_signal_timer.start_next()
 
 func _on_service_stopped() -> void:
 	_signal_timer.stop()

@@ -9,5 +9,9 @@
     0,
     0
   ],
-  "action": "Release RV on slope"
+  "action": "Release RV on slope",
+  "setup": "tipped",
+  "lateral": -4.5,
+  "drives": true,
+  "rv_frozen": true
 }

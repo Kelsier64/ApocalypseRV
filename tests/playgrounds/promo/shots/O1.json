@@ -11,5 +11,6 @@
   ],
   "band": 13,
   "event": "monsters",
-  "action": "Release Barrel Man"
+  "action": "Release Barrel Man",
+  "setup": "roadside_monster"
 }

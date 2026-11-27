@@ -10,5 +10,7 @@
     0
   ],
   "interior": "bunker",
-  "action": "Turn on flashlight"
+  "action": "Turn on flashlight",
+  "setup": "sweep",
+  "dark_room": true
 }

@@ -9,6 +9,7 @@ static func run(check: Callable) -> void:
 	_check_tiers(check)
 	_check_override(check)
 	_check_dust(check)
+	_check_surge(check)
 
 static func _wind_for(weather: WorldWeather, seed_value: int) -> WorldWind:
 	var wind := WorldWind.new()
@@ -109,28 +110,46 @@ static func _check_restore(check: Callable) -> void:
 static func _check_tiers(check: Callable) -> void:
 	var monotonic := true
 	var lifted := false
+	var fog_calms := true
+	var still_fog := true
 	var seen := {}
+	var sums := true
+	for row: Array in WorldWind.TIER_CHANCES:
+		var total := 0.0
+		for chance: float in row: total += chance
+		sums = sums and is_equal_approx(total, 1.0)
 	for roll_index in range(100):
 		for step_index in range(10):
 			var tier_roll := roll_index / 100.0
 			var step_roll := step_index / 10.0
-			var dry := WorldWind.tier_for(tier_roll, step_roll, false)
-			var stormy := WorldWind.tier_for(tier_roll, step_roll, true)
-			seen[dry] = true
-			monotonic = monotonic and stormy >= dry and stormy <= dry + 1 and stormy <= WorldWind.GALE
-			lifted = lifted or stormy > dry
-			if roll_index > 0: monotonic = monotonic and dry >= WorldWind.tier_for((roll_index - 1) / 100.0, step_roll, false)
-	check.call(seen.size() == WorldWind.NAMES.size(), "Every wind tier, calm to gale, is reachable")
+			var lighter := WorldWind.GALE
+			for fog: float in WorldWeather.FOG_LEVELS:
+				var dry := WorldWind.tier_for(tier_roll, step_roll, false, fog)
+				var stormy := WorldWind.tier_for(tier_roll, step_roll, true, fog)
+				if fog == WorldWeather.FOG_NONE: seen[dry] = true
+				monotonic = monotonic and stormy >= dry and stormy <= dry + 1 and stormy <= WorldWind.GALE
+				lifted = lifted or stormy > dry
+				if roll_index > 0: monotonic = monotonic and dry >= WorldWind.tier_for((roll_index - 1) / 100.0, step_roll, false, fog)
+				fog_calms = fog_calms and dry <= lighter
+				lighter = dry
+				if fog >= WorldWeather.FOG_MEDIUM: still_fog = still_fog and stormy <= WorldWind.BREEZE
+	check.call(sums, "Each fog level's wind chances add up to one")
+	check.call(seen.size() == WorldWind.NAMES.size(), "Every wind tier, calm to gale, is reachable without fog")
 	check.call(monotonic and lifted, "Heavy rain only raises the wind tier, by at most one step")
+	check.call(fog_calms, "Thicker fog never brings a stronger wind for the same rolls")
+	check.call(still_fog, "Medium and heavy fog never blow stronger than a breeze, even in heavy rain")
 	# Natural segments over many seeds produce more than one tier.
 	var natural := {}
+	var foggy_still := true
 	for seed_value in range(8):
 		var weather := _fresh(seed_value)
 		var wind := _wind_for(weather, seed_value)
 		for _segment in range(6):
 			weather.advance(weather.remaining)
 			natural[wind.target_tier()] = true
+			if weather.target.z >= WorldWeather.FOG_MEDIUM: foggy_still = foggy_still and wind.target_tier() <= WorldWind.BREEZE
 	check.call(natural.size() >= 3, "Natural weather segments vary the wind tier")
+	check.call(foggy_still, "Natural segments in medium or heavy fog keep the wind at a breeze or less")
 
 static func _check_override(check: Callable) -> void:
 	var weather := _fresh(42)
@@ -149,6 +168,24 @@ static func _check_override(check: Callable) -> void:
 	var restored := WorldWeather.new()
 	restored.restore(weather.capture())
 	check.call(_wind_for(restored, 42).override_tier == -1, "A load returns the wind to nature")
+
+static func _check_surge(check: Callable) -> void:
+	var wind := _wind_for(_fresh(42), 42)
+	var twin := _wind_for(_fresh(42), 42)
+	var in_range := true
+	var same := true
+	var calm := 0
+	var peaks := 0
+	var samples := 4000
+	for index in range(samples):
+		var seconds := index * 50.0
+		var value := wind.surge(seconds)
+		in_range = in_range and value >= 0.0 and value <= 1.0
+		same = same and value == twin.surge(seconds)
+		if value <= 0.0: calm += 1
+		if value >= 0.5: peaks += 1
+	check.call(in_range and same, "Storm surges stay within 0 to 1 and repeat for the same seed")
+	check.call(calm > samples * 0.25 and peaks > samples * 0.02 and peaks < samples * 0.5, "Dust storms come in waves: mostly calm between surges, with real peaks")
 
 static func _check_dust(check: Callable) -> void:
 	var kinds := TerrainLandforms.KINDS
@@ -178,6 +215,12 @@ static func _check_dust(check: Callable) -> void:
 		var mixed := WorldWind.dryness_for(Vector3(wet[0], dry[0], t))
 		blend_ok = blend_ok and mixed >= WorldWind.dryness_for(Vector3(wet[0], wet[0], 0)) - 0.0001 and mixed <= WorldWind.dryness_for(canyon) + 0.0001
 	check.call(blend_ok, "Dryness blends continuously across a landform transition")
+	check.call(TerrainLandforms.DUST_COLORS.size() == kinds.size(), "Every landform names a dust color")
+	var red_canyon: Color = WorldWind.dust_color_for(canyon)
+	var pale_ridge: Color = WorldWind.dust_color_for(Vector3(dry[1], dry[1], 0))
+	check.call(red_canyon.r - red_canyon.b > pale_ridge.r - pale_ridge.b, "Canyon dust is redder than ridge dust")
+	var ends_ok := WorldWind.dust_color_for(Vector3(wet[0], dry[0], 0.0)).is_equal_approx(TerrainLandforms.DUST_COLORS[wet[0]]) and WorldWind.dust_color_for(Vector3(wet[0], dry[0], 1.0)).is_equal_approx(TerrainLandforms.DUST_COLORS[dry[0]])
+	check.call(ends_ok, "Dust color blends from one landform to the next across a transition")
 	# The live path: calm first segment has no dust; an overridden gale over
 	# canyon in a rain-free segment does, and rain removes it.
 	var weather := _fresh(42)

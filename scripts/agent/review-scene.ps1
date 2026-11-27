@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
 Render any Godot scene from fixed views (four obliques, front, side, top, plus
-optional eye-level views) to PNGs for an agent to read.
+optional eye-level views) to PNGs for an agent to read, and probe where visible
+geometry and collision disagree (see review_scene.gd).
 
 .EXAMPLE
 scripts/agent/review-scene.ps1 -Scene res://world/building_kit/samples/service_block.tscn
@@ -15,6 +16,8 @@ param(
 	[string]$Focus,
 	[switch]$Clay,
 	[switch]$NoGround,
+	# Skip the visual-against-collision probe (on by default).
+	[switch]$NoProbe,
 	[string]$Size = '1280x720',
 	# Method and arguments to call on the scene root before it enters the tree,
 	# for site-configured POIs, e.g. 'configure,42,true'.
@@ -33,6 +36,7 @@ if ($Focus) { $userArgs += "--focus=$Focus" }
 if ($Call) { $userArgs += "--call=$Call" }
 if ($Clay) { $userArgs += '--clay' }
 if ($NoGround) { $userArgs += '--no-ground' }
+if ($NoProbe) { $userArgs += '--no-probe' }
 $godotArgs = @('--path', $Project, '--log-file', $log, '-s', 'res://scripts/agent/review_scene.gd', '--') + $userArgs
 $process = Start-Process -FilePath 'godot' -ArgumentList $godotArgs -NoNewWindow -Wait -PassThru
 $errors = @()
@@ -45,4 +49,11 @@ if ($process.ExitCode -ne 0 -or $errors.Count -gt 0) {
 	exit 1
 }
 Get-ChildItem $Out -Filter '*.png' | ForEach-Object { $_.FullName }
-Write-Host "Report: $(Join-Path $Out 'review.json')"
+$reportPath = Join-Path $Out 'review.json'
+$report = Get-Content $reportPath -Raw | ConvertFrom-Json
+if ($report.probe) {
+	Write-Host ("Probe: {0} rays; visual only {1} hits in {2} places; collision only {3} hits in {4} places" -f `
+		$report.probe.rays, $report.probe.visual_only.hits, $report.probe.visual_only.clusters,
+		$report.probe.collision_only.hits, $report.probe.collision_only.clusters)
+}
+Write-Host "Report: $reportPath"

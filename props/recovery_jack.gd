@@ -104,7 +104,7 @@ static func _find_deployment(player: Node3D, rv: Chassis, forward: Vector3, outw
 		var lateral := forward.slide(inward).normalized()
 		var surface := Transform3D(Basis(lateral, inward, lateral.cross(inward)), contact)
 		if not _shoe_is_clear(space, shoe_query, surface): continue
-		var pose := _find_footing(space, player.global_position, surface, outward, excluded)
+		var pose := _find_footing(space, player.global_position, surface, outward, excluded, ClimbMath.point_velocity(rv, contact))
 		if pose != Transform3D.IDENTITY:
 			var body := face.collider as Node3D
 			return {"pose": pose, "body": body, "contact": body.global_transform.affine_inverse() * surface}
@@ -124,7 +124,7 @@ static func _shoe_is_clear(space: PhysicsDirectSpaceState3D, query: PhysicsShape
 	return space.intersect_shape(query, 1).is_empty()
 
 static func _find_footing(space: PhysicsDirectSpaceState3D, player_position: Vector3, surface: Transform3D,
-		outward: Vector3, excluded: Array[RID]) -> Transform3D:
+		outward: Vector3, excluded: Array[RID], surface_velocity: Vector3) -> Transform3D:
 	var clearance := PhysicsShapeQueryParameters3D.new()
 	var box := BoxShape3D.new()
 	box.size = Vector3(2.0 * FOOT_HALF_SIZE.x + 0.015, 0.12, 2.0 * FOOT_HALF_SIZE.y + 0.015)
@@ -141,6 +141,8 @@ static func _find_footing(space: PhysicsDirectSpaceState3D, player_position: Vec
 		var socket := pose * Vector3(0.0, 0.111, 0.004)
 		var rod := contact - socket
 		if rod.length() < SADDLE_HEIGHT or rod.dot(pose.basis.y) < rod.length() * 0.6: continue
+		# Leave room for the hull to settle during the unloaded hinge stroke.
+		if (rod + surface_velocity * HINGE_TIME).length() < SADDLE_HEIGHT: continue
 		if not space.intersect_ray(PhysicsRayQueryParameters3D.create(socket, contact - rod.normalized() * 0.025, 1, excluded)).is_empty(): continue
 		return pose
 	return Transform3D.IDENTITY

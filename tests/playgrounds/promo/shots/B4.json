@@ -10,5 +10,9 @@
     0
   ],
   "interior": "bunker",
-  "action": "Release Barrel Man"
+  "action": "Release Barrel Man",
+  "setup": "monster",
+  "monster": "barrel_man",
+  "bunker_population": true,
+  "dark_room": true
 }

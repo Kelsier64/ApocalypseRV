@@ -75,15 +75,66 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 |---|---|
 | B1–B6 | 地堡：手電筒探索、黑影、Raker 抓人、油桶人、樓層俯瞰、扛引擎 |
 | O1–O5 | 戶外：路邊油桶人、撞油桶、白影、Slender Speaker 追車與抓司機 |
-| D1–D5 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車 |
+| D1–D6 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車、越野 |
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
+| T1 | 宣傳片：駕駛座錨點（開場；變體 1 是結尾）。加 `-Exterior` 錄第一段的車外跟拍 |
+| T2 | 宣傳片第二十幕。接近路肩的前任 RV 時往左看，第 12 句播完後車內喇叭靜音，《給愛麗絲》從濃霧裡淡入。車輛接近時才看見林間的巨人，從左窗看它轉頭，再換檔加速，回頭看它追上來 |
+| T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
+
+T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡頭檔裡的時間軸。
+
+鏡頭檔有 `timeline` 時（T 組與 D6），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
 
 B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生成規則掃描種子，結果寫到 `.godot/promo/scout.json`：
 
 ```powershell
 godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 ```
+
+## 時間軸
+
+鏡頭檔可以有 `timeline`：一串依秒數排列的事件，F3 或 `-Preview` 開始計時。時間跟著遊戲的物理時間走，所以 F8 慢動作和 Movie Maker 都會同步。格式與每個動作需要的參數在 [promo_timeline.gd](../../tests/playgrounds/promo/promo_timeline.gd) 的 `ACTIONS`，做法在 [promo_trailer.gd](../../tests/playgrounds/promo/promo_trailer.gd)：
+
+| 動作 | 做什麼 |
+|---|---|
+| `drive` | 沿公路巡航，`speed` 是時速（km/h），`lateral` 是離路中心的側向距離；給 `seconds` 時在這段時間內慢慢移到新的側向位置（D6 用來開下公路） |
+| `gear`、`brake` | 換檔；剎停並結束巡航 |
+| `line` | 車內調度喇叭播出旁白第 `id` 句 |
+| `static` | 把收訊固定在 `level`（0–1），越低底噪越大；`cut` 立刻切斷正在播的句子 |
+| `wind` | 把風固定在 `tier`（0 無風到 3 強風），立刻生效 |
+| `radio_off` | 喇叭完全安靜到鏡頭結束 |
+| `weather` | 在 `seconds` 秒內把天氣變成 `to`（晴、雨、霧） |
+| `look` | 在 `seconds` 秒內把駕駛座視角轉到 `yaw`、`pitch`（度）。`target: "giant"` 對準巨人身體中段，`target: "wreck"` 對準翻覆的 RV，持續跟拍到下一個 `look`。跟拍的 `yaw` 是額外往左轉的度數（負數往右），可用來避開車窗柱。只在自動演出生效，現場錄影由滑鼠控制 |
+| `gaze` | 趴著的主角在 `seconds` 秒內轉頭看向 `target`（目前只有 `giant`）離地 `up` 公尺的位置，之後一直盯著它，直到被抓。只在自動演出生效 |
+| `eyes` | 用遊戲的眼皮效果在 `seconds` 秒內睜眼或閉眼 |
+| `giant` | 巨人站在撞擊電線桿後方 `beyond` 公尺（預設 12）的車道上。給 `bearing` 時改用駕駛的眼睛定位：照 RV 當下的速度推算 `reveal` 秒後眼睛的位置，巨人站在公路前方往左 `bearing` 度（負數往右）、水平距離 `range` 公尺的地面上。那裡的地面跟路面高低差超過 `max_rise`（預設 2 公尺），或眼睛到巨人腰部或喇叭的視線被擋住時，這一步失敗，要換鏡頭的 `distance`。面向 RV，`facing: "road"` 改成面向公路。AI 關閉，頭上喇叭照遊戲的距離處理淡入 |
+| `giant_watch` | 靜止的巨人用自己的轉頭把喇叭轉向 RV 的駕駛座，一直跟著，直到 `giant_wake` |
+| `giant_wake` | 打開巨人的 AI：它照遊戲原本的方式看到 RV、確認、追車 |
+| `steer` | RV 離撞擊電線桿 `within` 公尺內時全油門轉向電線桿；撞上時留下 `impact` 標記並放開油門 |
+| `giant_smash` | 巨人走到撞毀的 RV 旁砸車頂，之後由遊戲的 AI 接手 |
+| `giant_release` | 這一下砸完以後，巨人不再理會 RV，轉向地上的主角，照遊戲原本的方式抓人、處決。不加這一步，巨人會一直檢查車頂，大約二十秒後才去抓人 |
+| `crawl` | 自動演出時按住前進 `seconds` 秒，`back` 改成按住後退；現場錄影由鍵盤控制 |
+| `marker` | 在 `take.json` 留一個標記 |
+| `end` | 鏡頭在這裡結束；自動演出照這個時間停止錄影 |
+
+`live_controls` 的鏡頭（回憶段，例如 D6）現場錄影時由玩家自己開車，`drive`、`gear`、`brake`、`steer` 只在自動演出生效。
+
+鏡頭檔另有三個佈景欄位：`wreck` 是側翻的前任 RV（只有外觀，不參與物理，也不算 RV，可附 `corpse` 屍體），`crash_pole` 是放在路肩平地上的電線桿（遊戲生成的電線桿都在路堤上，RV 開不到），`invulnerable` 讓主角在撞擊中不受傷。T3 另有 `rv_at_pole`（RV 停在撞擊電線桿上的姿勢）、`prone`（主角四肢完整地趴在地上；`from_giant` 讓主角在巨人開始砸車時移到巨人那一側，車身才不會擋住巨人的視線，`pitch` 讓主角面向巨人但低頭往下看幾度）、`cut_away`（巨人的手抓到主角那一格切到一台固定的第三人稱鏡頭：在主角背向巨人那一側 `back` 公尺、橫向 `side` 公尺、離地 `up` 公尺，鏡頭一路對著主角上方 `aim_up` 公尺，`fov` 是視角）、`engine` 與 `radio`（關掉引擎與車內喇叭）。位置都是相對鏡頭 `distance` 的公路座標 `s` 與側向 `lateral`。
+
+時間軸格式錯誤時，載入鏡頭就失敗並顯示原因。`line` 和 `marker` 會把影格編號寫進 `take.json` 的 `markers`，剪輯時用來對字幕與硬切點。T3 另外標記巨人的 `grab`、`lift`、`hold`、`crush` 與主角死亡的 `death`；硬切點就是 `death` 那一格。T3 在手抓到主角時另外標記 `cut_away`；舉到喇叭前、進入 `hold` 時，遊戲自己的處決鏡頭會接手，一直到死亡。
+
+### 旁白
+
+旁白的詞在 [narration.json](../../tests/playgrounds/promo/narration.json)，用遊戲的主管詞庫一個字一個字拼接，詞間與句間的停頓跟遊戲廣播相同。拍攝時車內喇叭的廣播排程停用、收訊固定，不會插播遊戲廣播。剪輯時另外上的句子用下面的指令匯出成 WAV，連同每句長度與字幕寫進 `.godot/promo/narration/`：
+
+```powershell
+godot --headless --path . --script res://scripts/promo_narration.gd
+```
+
+句子可以帶 `glitch`，把聲音異常直接做進音檔：從 `from` 那個字開始，音高飄移（`drift`）與失真（`distortion`）逐字加重到句尾，`words` 再指定個別的字結巴（`stutter`）、拉長（`stretch`）、倒放（`reverse`）或被吞掉（`swallow`）。格式在 [promo_glitch.gd](../../tests/playgrounds/promo/promo_glitch.gd)；遊戲裡播放與匯出的 WAV 是同一段聲音。
+
+旁白用到的詞要先在詞庫裡，加詞的方法見[主管詞庫語音](../../assets/audio/dispatch_voice/README.md)。
 
 ## 測試
 

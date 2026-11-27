@@ -747,7 +747,8 @@ func _refresh_devices() -> void:
 	if selected:
 		var state: String = "Ready" if selected.can_operate() else ("Disabled" if not selected.enabled else "Disconnected / damaged")
 		var activity := ""
-		if selected is CabinLightStrip: activity = "\nLighting: " + ("Powered" if selected.enabled and selected.can_operate() and connected_rv.interior_powered.cabin else "Off")
+		if selected is DispatchSpeaker: state = selected.get_status()
+		elif selected is CabinLightStrip: activity = "\nLighting: " + ("Powered" if selected.enabled and selected.can_operate() and connected_rv.interior_powered.cabin else "Off")
 		elif selected is BatterySocket: activity = "\nBattery %.1f / %.1f%s" % [connected_rv.current_power, connected_rv.max_power, _unlimited(connected_rv.unlimited_power)]
 		elif selected is CraftingStation: activity = "\nCraft queue %d / %d" % [selected.jobs.size(), selected.queue_capacity]
 		elif "props_being_crushed" in selected:

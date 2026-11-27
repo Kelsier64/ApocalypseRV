@@ -1,0 +1,37 @@
+{
+  "title": "Driver's seat anchor (opening)",
+  "steps": "Seated driver, eyes closed. F3 starts the cruise, opens the eyes and plays narration line 1 from the cab speaker, then blinks. Variant 1 is the ending with lines 15 and 16 in the same framing. Keep the view on the road; an unattended take holds the rest pose.",
+  "action": "Start the timeline",
+  "seed": 42,
+  "distance": 300,
+  "hour": 15,
+  "weather": [
+    0,
+    0,
+    0
+  ],
+  "seat": true,
+  "drives": true,
+  "lateral": -1.8,
+  "eyes_closed": true,
+  "timeline": [
+    { "at": 0, "do": "drive", "speed": 55 },
+    { "at": 4, "do": "eyes", "open": true, "seconds": 1.2 },
+    { "at": 5, "do": "line", "id": 1 },
+    { "at": 10.5, "do": "eyes", "open": false, "seconds": 0.35 },
+    { "at": 11.5, "do": "end" }
+  ],
+  "variants": [
+    {
+      "title": "Driver's seat anchor (ending)",
+      "timeline": [
+        { "at": 0, "do": "drive", "speed": 55 },
+        { "at": 4, "do": "eyes", "open": true, "seconds": 1.2 },
+        { "at": 5, "do": "line", "id": 15 },
+        { "at": 9.2, "do": "line", "id": 16 },
+        { "at": 21.5, "do": "eyes", "open": false, "seconds": 0.35 },
+        { "at": 22.5, "do": "end" }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,23 @@ extends Resource
 @export var engine_braking_force := 700.0
 @export var front_brake_bias := 0.65
 
+@export_group("Crosswind")
+## Side force = 0.5 * air density * coefficient * side area * crosswind speed²,
+## from the weather wind only (no general air drag), capped at the maximum.
+@export var crosswind_side_area := 28.0
+@export var crosswind_coefficient := 1.1
+@export var air_density := 1.2
+@export var crosswind_max_force := 12000.0
+## Chassis-local point the side force acts on (front is -Z): above the centre
+## of mass so the body leans, ahead of it so the nose is pushed downwind and
+## an uncorrected RV drifts toward the lee side. Behind it, the nose would turn
+## into the wind and the RV would wander upwind instead.
+@export var crosswind_center := Vector3(0.0, 1.3, -0.5)
+## Presentation only: steering wheel shake from how fast the side force
+## changes, full at this rate in N/s, up to this angle in radians.
+@export var crosswind_shake_rate := 6000.0
+@export var crosswind_shake_angle := 0.05
+
 @export_group("Departure")
 @export var departure_safe_landing_speed := 10.0
 @export var departure_safe_slide_speed := 8.0

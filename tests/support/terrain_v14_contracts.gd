@@ -160,6 +160,8 @@ static func _check_mist_clock(world: Node3D, check: Callable) -> void:
 		# Inject only this clock's quality view; preserve the real autoload's preferences.
 		var quality := FogSettingsStub.new()
 		clock.game_settings = quality
+		# Still air: wind thins the ground mist, which atmosphere_contracts covers.
+		clock.wind.set_override(WorldWind.CALM)
 		var material := ShaderMaterial.new()
 		material.shader = load("res://world/terrain/white_mist.gdshader") as Shader
 		check.call(material.shader != null, "v%d local mist retains its own loadable shader" % version)

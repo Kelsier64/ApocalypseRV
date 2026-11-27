@@ -9,7 +9,7 @@ slower than real time and is therefore not playable by hand.
 #>
 [CmdletBinding()]
 param(
-    [ValidatePattern('^[BODRWbodrw][1-6]$')][string]$Shot = 'R2',
+    [ValidatePattern('^[BODRWTbodrwt][1-9]$')][string]$Shot = 'R2',
     [ValidateRange(0, 9)][int]$Variant = 0,
     [switch]$Preview,
     [switch]$Movie,

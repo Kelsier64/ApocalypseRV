@@ -10,5 +10,17 @@
     0
   ],
   "seat": true,
-  "action": "Start engine and release brake"
+  "action": "Start engine and release brake",
+  "setup": "drive",
+  "drives": true,
+  "autoplay_gears": [
+    [
+      2.8,
+      2
+    ],
+    [
+      4.8,
+      3
+    ]
+  ]
 }

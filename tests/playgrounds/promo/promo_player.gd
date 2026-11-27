@@ -37,3 +37,16 @@ func crush_in_scrapper(owner: Node3D) -> bool:
 
 func sever_part(part: StringName, context: Dictionary = {}) -> bool:
 	return not invulnerable and super.sever_part(part, context)
+
+## Filming only: the game's crawl posture (low capsule, ground view, crawl speed) with
+## every limb intact, for the trailer's thrown-clear shot.
+var prone := false
+
+func set_prone(value: bool) -> void:
+	if prone == value: return
+	prone = value
+	if prone: crawl_transition_remaining = 0.0
+	_apply_body_capabilities()
+
+func is_crawling() -> bool:
+	return prone or super.is_crawling()

@@ -2,7 +2,6 @@ extends RefCounted
 class_name RoutePressureSample
 ## XZ-only route policy; terrain-course AABBs deliberately confer no immunity.
 const ROUTE_CLEARANCE := 12.0
-const SAFE_FOREST_OFFSET := 70.0
 
 static func sample(field: WorldField, point: Vector3) -> Dictionary:
 	if field == null or not point.is_finite(): return {}
@@ -16,10 +15,10 @@ static func sample(field: WorldField, point: Vector3) -> Dictionary:
 	backward_direction.y = 0.0
 	backward_direction = backward_direction.normalized()
 	var result := {"progress": float(road.s), "forest_offset": offset,
-		"exempt": false, "progress_valid": offset <= SAFE_FOREST_OFFSET,
-		"danger_direction": forest_direction if offset > 100.0 else backward_direction,
+		"exempt": false, "progress_valid": offset <= RoutePressureState.FOREST_SAFE,
+		"danger_direction": forest_direction if offset > RoutePressureState.FOREST_START else backward_direction,
 		"forest_direction": forest_direction, "backward_direction": backward_direction,
-		"reason": "forest" if offset > 100.0 else ""}
+		"reason": "forest" if offset > RoutePressureState.FOREST_START else ""}
 	var nearest := INF
 	for site: Dictionary in field.sites_near_z(point.z, 400.0):
 		if not _site_exempt(point, site): continue

@@ -13,6 +13,9 @@ const MAX_RAYS := COVER_NEAR_BUDGET + COVER_FAR_BUDGET + SPLASH_QUERIES + 1
 const MAX_SPLASHES := 64
 const MAX_ROOF_SHAPES := 32
 const SPLASH_LIFETIME := 0.18
+## Seconds for the rain's lean to follow a change in wind, so gusts sway the
+## sheets instead of snapping them.
+const WIND_RESPONSE := 1.5
 ## Light and heavy beds, crossfaded by rain strength.
 const RAIN_LOOPS: Array[AudioStream] = [preload("res://assets/audio/weather/rain_light.wav"), preload("res://assets/audio/weather/rain_heavy.wav")]
 var clock: WorldClock
@@ -26,6 +29,11 @@ var roof_sizes := PackedVector3Array()
 var cover_exclusions: Array[RID] = []
 var simulation_time := 0.0
 var rain_active := false
+## Roof shelter (cover caches and roof shapes) runs while rain or dust is out.
+var sheltering := false
+## Other weather materials (dust) that receive the cover textures and roof shapes.
+var shelter_materials: Array[ShaderMaterial] = []
+var lean_wind := Vector3.ZERO
 var last_center := Vector3.INF
 var splash_instance: MultiMeshInstance3D
 var splash_material: ShaderMaterial
@@ -144,7 +152,7 @@ func _update_roofs(center: Vector3) -> void:
 		rows_y.append(Vector3(transform.basis.x.y, transform.basis.y.y, transform.basis.z.y))
 		rows_z.append(Vector3(transform.basis.x.z, transform.basis.y.z, transform.basis.z.z))
 		if sizes.size() < MAX_ROOF_SHAPES: sizes.append(Vector3.ZERO)
-	for material in materials:
+	for material in materials + shelter_materials:
 		material.set_shader_parameter("roof_count", roof_transforms.size())
 		material.set_shader_parameter("roof_origin", origins)
 		material.set_shader_parameter("roof_row_x", rows_x)
@@ -187,11 +195,13 @@ func _physics_process(delta: float) -> void:
 		var blend := (1.0 - rain) if i == 0 else rain
 		voices[i].volume_db = linear_to_db(maxf(0.0001, volume * blend * 0.7))
 	rain_active = camera != null and not indoor and rain > 0.001
+	sheltering = camera != null and not indoor and (rain > 0.001 or clock.dust > 0.001)
 	if not rain_active:
 		splashes.clear()
 		splash_instance.multimesh.visible_instance_count = 0
 		visible_drops = 0
 		for field in fields: field.multimesh.visible_instance_count = 0
+	if not sheltering:
 		last_center = Vector3.INF
 		return
 	var center := camera.global_position
@@ -202,6 +212,7 @@ func _physics_process(delta: float) -> void:
 	_update_roofs(center)
 	near_cover.update(center, COVER_NEAR_BUDGET, _static_hit)
 	far_cover.update(center, COVER_FAR_BUDGET, _static_hit)
+	if not rain_active: return
 	_advance_splashes(delta)
 	for i in range(SPLASH_QUERIES):
 		if rng.randf() > rain: continue
@@ -215,6 +226,7 @@ func _process(delta: float) -> void:
 	if camera == null: return
 	simulation_time += delta
 	var rain := clock.weather.sample().y / 2.0
+	lean_wind = lean_wind.lerp(clock.wind_velocity, 1.0 - exp(-delta / WIND_RESPONSE))
 	visible_drops = 0
 	for i in range(fields.size()):
 		var field := fields[i]
@@ -228,6 +240,7 @@ func _process(delta: float) -> void:
 		materials[i].set_shader_parameter("camera_center", camera.global_position)
 		materials[i].set_shader_parameter("simulation_time", simulation_time)
 		materials[i].set_shader_parameter("density", smoothstep(0.0, 0.15, rain))
+		materials[i].set_shader_parameter("wind", lean_wind)
 
 func _add_splash(hit: Dictionary, center: Vector3) -> void:
 	if splashes.size() >= MAX_SPLASHES or hit.normal.y < 0.5 or hit.position.distance_to(center) > 12: return

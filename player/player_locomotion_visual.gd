@@ -39,6 +39,9 @@ var view_camera: Camera3D
 var camera_rest_position := Vector3.ZERO
 var was_crawling := false
 var crawl_eye := Vector3(0, .58, -.48)
+const STAND_CLIP := "idle"
+var _stand_weight := 0.0
+var _stand_eye_from := Vector3.ZERO
 var crouch_eye_drop := 0.0
 var driving := preload("res://player/player_driving_visual.gd").new()
 
@@ -104,7 +107,8 @@ func _physics_process(delta: float) -> void:
 	# Extraction keeps the contact pose, including seated/prone torso height,
 	# so the grabbed chest cannot jump when seat ownership is relinquished.
 	if actor.is_executing():
-		suspend()
+		if actor.grab_control.is_standing_from_prone(): _update_execution_stand()
+		else: suspend()
 		return
 	driving.clear(skeleton)
 	if actor.is_grabbed():
@@ -388,8 +392,27 @@ func _update_crawl(delta: float) -> void:
 		# Authored palms pull back 34 cm during 67% of each cycle. Match the
 		# controller's travel while planted, including the slower one-arm drag.
 		var rate := 1.0 if clip == "prone_idle" else clampf(speed * animation.get_animation(name).length * .67 / .34, .0, 2.2)
+		# Crawling backwards runs the cycle in reverse: the palms push instead of pull.
+		if clip != "prone_idle" and local.z > absf(local.x): rate = -rate
 		animation.advance(delta * rate)
 	view_camera.position = view_camera.position.move_toward(crawl_eye, delta * 2.8)
+
+## A prone survivor in the giant's hand stands upright as the lift raises them. The
+## crossfade from the held crawl pose advances by exactly the grab's stand weight, so
+## the pose and the body's move into the hand finish together.
+func _update_execution_stand() -> void:
+	var weight: float = actor.grab_control.execution_stand_weight
+	if current_clip != STAND_CLIP:
+		_clear_pose_offset()
+		animation.play("locomotion/" + STAND_CLIP, 1.0)
+		current_clip = STAND_CLIP
+		suspended = false
+		_stand_weight = 0.0
+		_stand_eye_from = view_camera.position
+	if weight > _stand_weight:
+		animation.advance(weight - _stand_weight)
+		_stand_weight = weight
+	view_camera.position = _stand_eye_from.lerp(camera_rest_position, _stand_weight)
 
 func _injury_library() -> AnimationLibrary:
 	var result := AnimationLibrary.new()

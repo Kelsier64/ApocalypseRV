@@ -77,19 +77,4 @@ Solo project, trunk-based by default; a large change goes through a worktree and
 
 - Keep scene modeling and 3D integration in the main agent.
 - **Use agy (Antigravity CLI, Gemini) only to generate images** (reference images, textures, concept art, icons). Claude has no image generator and local ComfyUI has no text-to-image model. Run it in an empty folder outside the repo and read the result before use; [reference images](.claude/skills/comfyui-image-to-3d/references/reference-images.md) has the tested call and checks.
-- Do not send agy code research, doc audits, reviews, log triage or edits. Its results still need a full check, and its failed runs cost more Claude tokens than it saves. To keep the main context small, use an Explore subagent for broad searches and start a fresh session per independent task.
 
-## Skills
-
-Project skills live in `.claude/skills/`. Load one when its trigger applies.
-
-| Skill | Load when |
-|---|---|
-| `godot-tests` | Choosing, running, writing or debugging automated tests or CI failures |
-| `godot-playgrounds` | Building, converting or launching a playground; handing the user a hands-on check |
-| `docs-maintenance` | Editing `README.md`, `GDD.md`, `architecture.md` or `docs/`; a design is decided or changed; a code change makes a document stale; a plan starts or finishes |
-| `apocalypse-rv-3d-scenes` | Building or editing 3D scenes, or replacing visual assets |
-| `comfyui-image-to-3d` | Generating a 3D prop from a reference image with local ComfyUI |
-| `harness-maintenance` | Editing CLAUDE.md, `.claude/`, `scripts/agent/` or `.mcp.json` |
-| `co-lead` | Discussing or deciding design, architecture, direction, the harness or doc structure; asked for an opinion or a recommendation |
-| `agy` | Calling Antigravity CLI; in this project only to generate images (see Delegation) |

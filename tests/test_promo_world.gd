@@ -3,6 +3,8 @@ extends SceneTree
 const SCENE := "res://tests/playgrounds/promo/promo_world.tscn"
 const Perception := preload("res://core/apparition_perception.gd")
 const RAIL := preload("res://tests/playgrounds/promo/promo_rail.gd")
+const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
+const BROADCAST := preload("res://tests/playgrounds/promo/promo_broadcast.gd")
 var failures: Array[String] = []
 
 func _initialize() -> void:
@@ -23,9 +25,15 @@ func _wait_for_take(id: String, previous: Node = null) -> Node:
 
 func _run() -> void:
 	_check_rail_math()
+	_check_timelines()
 	change_scene_to_file(SCENE)
 	var world := await _wait_for_take("R2")
 	if world != null:
+		var generator := world.get_node("WorldGenerator")
+		var first_unloaded_band := int(generator.restore_bands.max()) + 1
+		var horizon_start := -first_unloaded_band * float(generator.profile.chunk_length)
+		_check(is_instance_valid(generator.horizon) and is_equal_approx(generator.horizon.mesh.get_aabb().end.z, horizon_start),
+			"On a cold launch the distant terrain starts past the whole preloaded window")
 		var initial: Dictionary = world.rv.inventory.duplicate(true)
 		var initial_position: Vector3 = world.actor.global_position
 		var initial_hour: float = world.get_node("WorldClock").hour_of_day()
@@ -96,6 +104,25 @@ func _check_rail_math() -> void:
 	_check(loaded.load_file(path) and loaded.size() == 3 and loaded.authored() and loaded.sample(0.5).transform.origin.is_equal_approx(rail.sample(0.5).transform.origin), "Saved rail loads back identically")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
+func _check_timelines() -> void:
+	for sample in [[], [{"at": 1.0, "do": "drive", "speed": 50}, {"at": 0.5, "do": "end"}],
+		[{"at": 0.0, "do": "fly"}], [{"at": 0.0, "do": "line"}], [{"do": "end"}],
+		[{"at": 0.0, "do": "look", "target": "road", "seconds": 1.0}]]:
+		_check(not TIMELINE.check(sample).is_empty(), "Timeline check rejects %s" % JSON.stringify(sample))
+	var world_script: Script = load(SCENE.get_basename() + ".gd")
+	var shots: Array = world_script.SHOTS
+	for id in shots:
+		var shot: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(world_script.SHOT_PATH % id))
+		for entry in [shot] + shot.get("variants", []):
+			if entry.has("timeline"): _check(TIMELINE.check(entry.timeline).is_empty(), "%s timeline: %s" % [id, TIMELINE.check(entry.timeline)])
+			for cue in entry.get("timeline", []):
+				if cue.do == "line": _check(BROADCAST.narration().has(str(int(cue.id))), "%s plays an existing narration line" % id)
+	var bank: WordBank = load("res://assets/audio/dispatch_voice/word_bank.tres")
+	var lines := BROADCAST.narration()
+	_check(not lines.is_empty(), "Trailer narration loads")
+	for id in lines:
+		_check(bank.missing(BROADCAST.tokens(BROADCAST.text(lines[id]))).is_empty(), "Narration line %s uses only word-bank words: %s" % [id, bank.missing(BROADCAST.tokens(BROADCAST.text(lines[id])))])
+
 func _check_director(world: Node) -> void:
 	var director: Node = world.director
 	director.open_panel()
@@ -157,7 +184,7 @@ func _check_bunker(world: Node) -> void:
 		_check(restarted.trigger_take() and restarted.apparition.global_position.is_equal_approx(initial), "B2 triggers again at the same mark")
 
 func _check_remaining_takes() -> void:
-	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2"]
+	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "D6", "T1", "T2", "T3"]
 	for id in ids:
 		if id in ["B2", "R2"]: continue
 		var previous := current_scene
@@ -173,6 +200,9 @@ func _check_remaining_takes() -> void:
 		print("PROMO TEST: ", id)
 
 func _verify_action(world: Node) -> void:
+	if world.shot.has("timeline"):
+		await _verify_timeline(world)
+		return
 	match world.shot_id:
 		"B1":
 			var cache: BunkerCache = world.staged[0]
@@ -246,6 +276,122 @@ func _verify_action(world: Node) -> void:
 			await physics_frame
 			world.actor.placement.update_ghost(world.actor)
 			_check(world.actor.placement.commit(world.actor), "R3 mount mark accepts installation of the staged item box")
+
+func _verify_timeline(world: Node) -> void:
+	var stage = world.stage
+	var speaker: DispatchSpeaker = stage.broadcast.speaker
+	var first_line := -1.0
+	for cue in world.shot.timeline:
+		if cue.do == "line":
+			first_line = float(cue.at)
+			break
+	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
+	if first_line >= 0.0:
+		var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
+		for frame in ticks:
+			await physics_frame
+			if speaker.speaker.playing: break
+		_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
+		_check(stage.timeline.clock >= first_line and world.rv.linear_velocity.length() > 0.5, world.shot_id + " is moving when its narration starts")
+	if world.shot.has("prone"):
+		await _verify_execution(world)
+		return
+	if world.shot.get("live_controls", false):
+		await _verify_scripted_drive(world)
+		return
+	if world.shot.has("wreck"):
+		var chassis: Node = stage.wreck.get_node("Chassis")
+		_check(stage.wreck.process_mode == Node.PROCESS_MODE_DISABLED and not chassis.is_in_group(Groups.RV),
+			world.shot_id + " stages the wreck as scenery, outside the RV group")
+	if world.shot.timeline.any(func(cue: Dictionary) -> bool: return cue.do == "giant_wake"): await _verify_chase(world)
+
+## T2, unattended: the driver looks as they pass the wreck, then hears the giant before seeing it.
+func _verify_chase(world: Node) -> void:
+	var stage = world.stage
+	var speaker: DispatchSpeaker = stage.broadcast.speaker
+	var camera: Camera3D = world.actor.seated_in.seat_camera
+	var clock := world.get_node("WorldClock") as WorldClock
+	stage.unattended = true
+	var wake := 0.0
+	for cue in world.shot.timeline:
+		if cue.do == "giant_wake": wake = float(cue.at)
+	var framed_wreck := false
+	var hidden_at_handoff := false
+	var still := false
+	while stage.timeline.running:
+		await physics_frame
+		var look: Dictionary = stage._look
+		if look.get("subject") == stage.wreck and look.time >= look.seconds:
+			var wreck_offset: Vector3 = world.rv.to_local(stage.wreck.global_position)
+			framed_wreck = framed_wreck or (wreck_offset.z < 0.0 and camera.is_position_in_frustum(stage.wreck.global_position))
+		if not still and is_instance_valid(stage.giant):
+			var giant_depth := -camera.to_local(stage.giant.global_position).z
+			hidden_at_handoff = giant_depth > clock.environment.fog_depth_end and not speaker.speaker.playing and not speaker.noise.playing
+		if stage.timeline.clock < wake - 0.2 and is_instance_valid(stage.giant):
+			still = not stage.giant.is_physics_processing() and stage.giant.patrol_music.playing
+	_check(framed_wreck, world.shot_id + " turns toward the wreck before passing it")
+	_check(hidden_at_handoff, world.shot_id + " hands off from dispatch to music while the giant is still behind the fog")
+	_check(still, world.shot_id + " places a still giant whose loudspeaker plays before it wakes")
+	_check(stage._marked_phases.has("chase") and float(stage._marked_phases.chase) - wake < 1.0,
+		world.shot_id + " giant chases the RV on its own after waking (%s)" % stage._marked_phases)
+	_check(not speaker.speaker.playing and not speaker.noise.playing, world.shot_id + " leaves the cab speaker silent after radio_off")
+
+## Memory shots leave driving to the player live; the unattended script must still run.
+func _verify_scripted_drive(world: Node) -> void:
+	var stage = world.stage
+	stage.unattended = true
+	var target := 0.0
+	for cue in world.shot.timeline:
+		if cue.do == "drive": target = float(cue.get("lateral", target))
+	for frame in int((stage.timeline.length() + 0.5) * Engine.physics_ticks_per_second):
+		await physics_frame
+		if not stage.timeline.running: break
+	var road: Dictionary = world.field.road_query(world.rv.global_position.x, world.rv.global_position.z)
+	var offset: float = (road.frame as Transform3D).basis.x.dot(world.rv.global_position - (road.frame as Transform3D).origin)
+	_check(absf(offset - target) < 6.0, world.shot_id + " leaves the road for lateral %.0f m (at %.1f m)" % [target, offset])
+
+## T3, unattended: the giant smashes the roof, grabs the prone survivor and executes them.
+## The take stays in the survivor's eyes until the hand closes, then never returns to
+## them, and the survivor stands upright in the giant's grip.
+func _verify_execution(world: Node) -> void:
+	var stage = world.stage
+	stage.unattended = true
+	_check(world.actor.is_crawling() and world.actor.body_state.has_part(&"left_leg") and world.actor.body_state.has_part(&"right_leg"),
+		world.shot_id + " lies in the crawl posture with every limb")
+	var contact_chest := -1.0
+	var held_chest := -1.0
+	var early_cut := ""
+	var pov_during_execution := ""
+	# Judge the view each frame is drawn with: sample after every node's own _process,
+	# where the filming camera takes the picture back from a grab in the physics step.
+	var sampler := Node.new()
+	var sampler_script := GDScript.new()
+	sampler_script.source_code = "extends Node\nsignal sampled\nfunc _process(_delta: float) -> void:\n\tsampled.emit()\n"
+	sampler_script.reload()
+	sampler.set_script(sampler_script)
+	sampler.process_priority = 1 << 30
+	root.add_child(sampler)
+	while stage.timeline.running:
+		await sampler.sampled
+		if not is_instance_valid(stage.giant): continue
+		var view: Camera3D = world.get_viewport().get_camera_3d()
+		var phase: int = stage.giant.phase
+		var chest: float = world.actor.to_local(world.actor.execution_contact_position()).y
+		if world.actor.is_executing() and contact_chest < 0.0: contact_chest = chest
+		if phase == SlenderSpeaker.Phase.HOLD and held_chest < 0.0: held_chest = chest
+		if not world.actor.is_executing() and not world.actor.is_player_dead and view != world.actor.camera and early_cut.is_empty():
+			early_cut = "%s in %s" % [view.get_path() if view else NodePath(), SlenderSpeaker.Phase.keys()[phase]]
+		if phase in [SlenderSpeaker.Phase.LIFT, SlenderSpeaker.Phase.HOLD, SlenderSpeaker.Phase.CRUSH] and view == world.actor.camera and pov_during_execution.is_empty():
+			pov_during_execution = SlenderSpeaker.Phase.keys()[phase]
+		if stage._marked_phases.has("death"): break
+	for name in [SlenderSpeaker.Phase.GRAB, SlenderSpeaker.Phase.HOLD, SlenderSpeaker.Phase.CRUSH, "death"]:
+		_check(stage._marked_phases.has(name), world.shot_id + " reaches %s (marked %s)" % [name, stage._marked_phases])
+	_check(early_cut.is_empty(), world.shot_id + " stays in the survivor's eyes until the hand closes (%s)" % early_cut)
+	var upright: float = world.actor.upright_chest_local().y
+	_check(contact_chest >= 0.0 and held_chest > contact_chest and absf(held_chest - upright) < absf(contact_chest - upright) * 0.25,
+		world.shot_id + " stands the survivor upright in the grip (chest %.2f m at contact, %.2f m held, %.2f m upright)" % [contact_chest, held_chest, upright])
+	_check(stage._cut_away and pov_during_execution.is_empty(), world.shot_id + " cuts to third person for the grab and execution (first person in %s)" % pov_during_execution)
+	sampler.queue_free()
 
 func _verify_road_contact(world: Node) -> void:
 	world.stage.drive_replay = true

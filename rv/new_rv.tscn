@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://equipment/crafting_station.tscn" id="preset_crafting_station"]
 [ext_resource type="PackedScene" path="res://equipment/scrapper.tscn" id="preset_scrapper"]
 [ext_resource type="PackedScene" path="res://equipment/tablet_screen.tscn" id="preset_tablet_screen"]
+[ext_resource type="PackedScene" path="res://equipment/dispatch_speaker.tscn" id="dispatch"]
 [ext_resource type="PackedScene" path="res://equipment/cabin_light_strip.tscn" id="cabin_strip"]
 
 [ext_resource type="PackedScene" path="res://equipment/side_door_ladder.tscn" id="side_ladder"]
@@ -40,6 +41,13 @@ mount_slot = "roof_2"
 
 [node name="WallFront" parent="Chassis" unique_id=1457687698 instance=ExtResource("7_wf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -5.9)
+
+[node name="DispatchSpeaker" parent="Chassis" instance=ExtResource("dispatch")]
+position = Vector3(0.7, 2.343, -5.385)
+rotation_degrees = Vector3(0, -40, 0)
+initial_support = NodePath("../RoofFront")
+freeze = true
+collision_mask = 0
 
 [node name="CabinLightFront" parent="Chassis" instance=ExtResource("cabin_strip")]
 position = Vector3(0, 2.4405738, -3.2)

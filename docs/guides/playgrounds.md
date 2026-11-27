@@ -6,7 +6,9 @@
 
 新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
 
-目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)、[dispatch_speaker_playground](../../tests/playgrounds/dispatch_speaker_playground.tscn)（車內調度喇叭的收訊、詞庫廣播、話筒回覆與字幕）。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+
+[宣傳影片錄影世界](promo-capture.md)（`tests/playgrounds/promo/`）不是測試場，而是錄影工具：F 鍵錄影面板、接管鍵盤的自由鏡頭與 Movie Maker 自動演出都是刻意的設計，不改成新式。
 
 ## 啟動與固定截圖
 
@@ -95,7 +97,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [rv_door_playground](../../tests/playgrounds/rv_door_playground.tscn) | 正式側門／雙扇後門、阻擋與破壞 | F2 側門、F3／F4 後門兩扇、F5 拆側門、F6 障礙箱、F7 拆後門；E 正式開關。 |
 | [rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn) | 新式：停好的正式 RV，試聽車門、引擎、操作回饋、撞擊、全部音效事件、預警、雨與耳鳴 | 正式操作；情境 `Outside`、`Cabin`、`Driver seat`（`-- --scenario="Driver seat"`），其餘在 Esc 的 Playground 頁。 |
 | [footstep_playground](../../tests/playgrounds/footstep_playground.tscn) | 新式：平地上七塊帶材質標記的地板與一台停好的 RV，試聽玩家在每種材質、車廂與車頂上的腳步 | 正式操作；情境 `Surfaces`，讀數在 Esc 的 Playground 頁。實際地形的分類不在這裡 |
-| [ambience_playground](../../tests/playgrounds/ambience_playground.tscn) | 新式：平地上一台停好的 RV 與一座有頂的棚子，試聽寂靜為主的零星環境聲在不同時段、位置、霧與雨下的變化，以及各室內的嗡聲與偶發聲 | 正式操作；情境 `Lot`，立刻播一聲、時間、天氣、所在位置與室內在 Esc 的 Playground 頁。時間與天氣固定不走，實際地形的森林與公路判斷不在這裡 |
+| [ambience_playground](../../tests/playgrounds/ambience_playground.tscn) | 新式：平地上一台停好的 RV 與一座有頂的棚子，試聽寂靜為主的零星環境聲在不同時段、位置、霧與雨下的變化，各室內的嗡聲與偶發聲，以及各級風聲、樹梢呼嘯、RV 嘯聲與拍打和強風遮蔽 | 正式操作；情境 `Lot`，控制在 Esc 的 Playground 頁。天氣固定不變，時鐘照走讓陣風起伏；風的底層與樹梢呼嘯候選從忽略的 `.godot/wind-candidates/` 讀取。實際地形的森林與公路判斷不在這裡 |
 | [monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn) | 新式：平地上的正式怪物，試聽白影、黑影、Raker、油桶人何時安靜、何時暴露位置，攻擊預備聲，以及 Slender Speaker 的腳步 | 正式操作；情境 `Raker`、`Barrel man`、`Black apparition`、`White apparition`、`Slender Speaker`（`-- --scenario="Barrel man"`），其餘在 Esc 的 Playground 頁。怪物是真的，會致死 |
 | [rv_structure_playground](../../tests/playgrounds/rv_structure_playground.tscn) | 正式固定結構、受損、支撐掉落與平板施工 | F2 平板、F3 傷左中牆、F4 拆右前牆、F5 拆中屋頂、F1 慢動作、R 重設。 |
 | [rv_roof_playground](../../tests/playgrounds/rv_roof_playground.tscn) | 正式三片屋頂／梯子；繼承攀車場 | F1 平板、F11 只拆中屋頂；其餘沿用攀車場；`--art-review`。 |
@@ -148,7 +150,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [slender_speaker_audio_playground](../../tests/playgrounds/slender_speaker_audio_playground.tscn) | 1.5 km 直路、靜止巨人、可駕駛 RV；試聽喇叭的距離混音 | F2 切換起點 900／400／120 m 並重設，F3 切換巨人離路 20／60／120 m；HUD 顯示距離與各項混音數值。 |
 | [slender_speaker_playground](../../tests/playgrounds/slender_speaker_playground.tscn) | 正式巨人／玩家／RV；自由駕駛及 8 種行為重播 | 預設 mode 0 自由模式；F2 啟停巨人、F6 鏡頭、F7 暫停、F11 重設；`--mode=1` 至 `--mode=8` 明確啟用回放。 |
 | [day_night_playground](../../tests/playgrounds/day_night_playground.tscn) | 主世界：正式日夜、光照與夜視曲線 | F1 四時段、F12 快轉、Home 暫停、F2 視角、5 高處太陽、K 重載夜間曲線。 |
-| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 生成世界：正式雨／霧／晴陰、時間、車頂遮雨、風與沙塵量（新式） | 情境 Roadside、Cabin、Driver seat；`--seed=N`。見[天氣驗收](#天氣驗收)。 |
+| [weather_playground](../../tests/playgrounds/weather_playground.tscn) | 生成世界：正式雨／霧／晴陰、時間、車頂遮雨遮沙、雨幕傾斜、沙霧與沙粒（新式） | 情境 Roadside、Cabin、Driver seat、Dust storm；`--seed=N`。見[天氣驗收](#天氣驗收)。 |
 | [volumetric_fog_playground](../../tests/playgrounds/volumetric_fog_playground.tscn) | 日夜場衍生霧效對照；局部體積霧與舊距離霧 | B 切模式、7／8 局部密度、其餘沿用日夜場；`--entry` 從入口開始。 |
 | [industrial_style_playground](../../tests/playgrounds/industrial_style_playground.tscn) | 獨立工業美術樣板；部分針葉樹／高窗／RV 材質未接入正式版 | F1 樣板／目前正式版、F2 視角、F3 搬運、F4 進出、F6 RV、F9 損傷、F10 平板。 |
 
@@ -630,7 +632,7 @@ godot --path . res://tests/playgrounds/rv_handling_playground.tscn
 
 ## 天氣驗收
 
-[weather_playground](../../tests/playgrounds/weather_playground.tscn) 在生成世界的路上停好 RV，正午陰天開場，用正式按鍵走路、上車、開車。天氣、時間、風力、地貌讀值與拆車頂都在 Playground 頁。怪物會被移除；天氣與時間停住，直到打開自然推進。
+[weather_playground](../../tests/playgrounds/weather_playground.tscn) 在生成世界的路上停好 RV，正午陰天、強風開場，用正式按鍵走路、上車、開車。Dust storm 情境改成晴天暴風，地貌固定為最乾的一種，一開場就是沙塵暴。天氣、時間、風力、地貌與拆車頂都在 Playground 頁。怪物會被移除；天氣停住，直到打開自然推進；時鐘照常走，陣風才會起伏。
 
 ```powershell
 godot --path . --log-file .godot/weather-playground.log res://tests/playgrounds/weather_playground.tscn
@@ -638,7 +640,10 @@ godot --path . --log-file .godot/weather-playground.log res://tests/playgrounds/
 ```
 
 - 雨幕：近處密度、遠方樹林與建築前也有雨，轉頭或走動時不露出小範圍的雨柱，車內看得見窗外的雨。高度快取首次填充約半秒，傳送到新位置時未知區暫時不下雨，避免雨穿過屋頂。
-- 日誌每 5 秒印一行 `WEATHER METRICS`：天氣、GPU 粒子提交數、最高射線數與平均幀時間。粒子提交數不是遮擋後實際看得見的數量。切換天氣後至少等一個取樣區間再比較。
+- 沙塵：視野拉近的程度、天色和霧是否同色、沙粒和沙團是否順著風走、車廂內與屋簷下有沒有沙、夜裡開車燈時看不看得出光束。Dust tuning 的 Dust style 切換沙幕、遠處沙團與沙雲（第一個 Sheets only 和遊戲一樣；沙雲只在 Forward+ 有；Haze only 只留沙霧與細沙），Landform 換地貌看沙色，讀值顯示湧浪與陣風沙牆的強度，滑桿即時改沙霧距離、湧浪拉近、光束散射、沙幕、陣風沙牆、陽光散射、沙雲與遠處沙團（數值是全沙塵時的值），Log values 把目前的值印到日誌，滿意後寫回大氣設定檔。
+- 霧與風：Strength 選 Natural 時，風力跟著天氣的霧量（中霧以上最多微風）。陰天或下雨沒有霧時，路旁低處的白色霧塊（只在 Forward+ 且霧品質開著時有）會順著風飄，風大時變成一縷一縷、變淡；距離霧不動。Ground mist 讀值顯示撕裂程度與飄速，Ground mist tuning 的滑桿調飄速與撕裂，Log values 一併印出。
+- `--capture`（Claude 用）：在 Dust storm 從 6、12、20 m 外拍 RV，再拍車廂前後，存到 `.godot/weather-captures` 後結束。`--dust-tune=` 依滑桿順序給數值，逗號分隔，多組用分號；`--hour=` 設時間；`--dust-style=N` 選 Dust style。
+- 日誌每 5 秒印一行 `WEATHER METRICS`：天氣、沙塵量、雨與沙的粒子提交數、最高射線數與平均幀時間。粒子提交數不是遮擋後實際看得見的數量。切換天氣後至少等一個取樣區間再比較。
 
 ## 裂爪 Raker（2.18 m）
 

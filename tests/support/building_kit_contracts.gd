@@ -1,8 +1,9 @@
 extends RefCounted
 ## BuildingKit contracts: the reference building composes cleanly and
-## deterministically, validation catches misfit openings and floating pieces,
-## collision-only builds match, and the player capsule fits through doors and
-## up the stair while windows and walls block it.
+## deterministically, validation catches misfit openings, floating pieces,
+## pieces passing through walls and z-fighting faces, collision-only builds
+## match, and the player capsule fits through doors while windows, walls and
+## the stair flight's sides block it.
 
 const SAMPLE = preload("res://world/building_kit/samples/service_block.gd")
 const LIFT := Vector3(0, 400, 0)
@@ -42,6 +43,9 @@ static func run(tree: SceneTree, world: Node3D, check: Callable) -> void:
 	var middle := Vector3(14.25, 10, SAMPLE.ANNEX.end.y - 1.7 + run * 0.5)
 	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(middle + LIFT, middle + LIFT + Vector3.DOWN * 20))
 	check.call(not hit.is_empty() and absf(hit.position.y - LIFT.y - upper * 0.5) < BuildingKit.STEP_RISE, "Stair ramp follows the treads: %s" % [hit.get("position")])
+	# Near the top the ramp passes above the capsule; the flight below it must still be solid.
+	var high_z := SAMPLE.ANNEX.end.y - 1.7 + 4.0 * BuildingKit.STEP_RUN
+	check.call(not _walk(space, capsule, Vector3(16.5, stand, high_z), Vector3(14.3, stand, high_z)), "Player cannot walk into the stair flight from the side")
 	live.queue_free()
 	await tree.process_frame
 
@@ -63,6 +67,24 @@ static func _validation_catches(check: Callable) -> void:
 	var hung := BuildingKit.new()
 	hung.box(Vector3(5, 3, 0), Vector3.ONE, &"block", {"hung": true})
 	check.call(hung.validate().is_empty(), "Kit accepts a piece marked as hung")
+	var crossing := BuildingKit.new()
+	crossing.wall(Vector2(0, 0), Vector2(6, 0), 3.0, &"block")
+	crossing.wall(Vector2(3, -2), Vector2(3, 2), 3.0, &"block")
+	var crossed := crossing.validate()
+	check.call(crossed.size() == 1 and "pass through" in crossed[0], "Kit flags walls that pass through each other: %s" % [crossed])
+	var doubled := BuildingKit.new()
+	for i in 2:
+		doubled.wall(Vector2(0, 0), Vector2(4, 0), 3.0, &"block")
+	var fighting := doubled.validate()
+	check.call(fighting.size() == 1 and "z-fight" in fighting[0], "Kit flags coinciding faces: %s" % [fighting])
+	var flush := BuildingKit.new()
+	flush.slab(Rect2(0, 0, 4, 4), flush.ground, &"slab")
+	var grounded := flush.validate()
+	check.call(grounded.size() == 1 and "ground plane" in grounded[0], "Kit flags a top face lying on the ground: %s" % [grounded])
+	var threaded := BuildingKit.new()
+	threaded.wall(Vector2(0, 0), Vector2(6, 0), 3.0, &"block")
+	threaded.box(Vector3(3, 1, 0), Vector3(0.1, 0.1, 1.0), &"steel", {"embedded": true})
+	check.call(threaded.validate().is_empty(), "Kit accepts an embedded piece through a wall: %s" % [threaded.validate()])
 
 
 ## Vertices and vertex colours of every surface, built without materials' effect.
