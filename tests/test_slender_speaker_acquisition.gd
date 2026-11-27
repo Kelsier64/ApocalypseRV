@@ -506,6 +506,33 @@ func check_warning_fade() -> void:
 	check(is_equal_approx(music.mix(reference * .5).direct_db, music.mix(reference).direct_db), "Inside the reference distance the level holds")
 	camera.free()
 
+func check_head_fill() -> void:
+	var visual := giant.visual
+	var fill := visual.get_node("HeadFill") as OmniLight3D
+	var lit_meshes: Array[String] = []
+	for mesh: MeshInstance3D in visual.find_children("*", "MeshInstance3D", true, false):
+		if mesh.layers & fill.light_cull_mask: lit_meshes.append(String(mesh.name))
+	lit_meshes.sort()
+	check(lit_meshes == ["Speaker_Center", "Speaker_Left", "Speaker_Right"] and is_zero_approx(fill.light_volumetric_fog_energy),
+		"The production fill reaches only the three speaker cabinets")
+	var camera := Camera3D.new()
+	world.add_child(camera)
+	camera.make_current()
+	var head := giant._focus_position()
+	camera.global_position = head + Vector3.BACK * visual.HEAD_FILL_FULL_DISTANCE
+	await frames()
+	var near := fill.light_energy
+	check(near > 0.0 and fill.global_position.z > head.z and fill.global_position.y > head.y,
+		"The fill sits above the animated speaker on the active camera's side")
+	camera.global_position = head + Vector3.FORWARD * lerpf(visual.HEAD_FILL_FULL_DISTANCE, visual.HEAD_FILL_END_DISTANCE, 0.5)
+	await frames()
+	check(fill.light_energy > 0.0 and fill.light_energy < near and fill.global_position.z < head.z,
+		"The fill follows the camera around the head and gets weaker at a distance")
+	camera.global_position = head + Vector3.FORWARD * visual.HEAD_FILL_END_DISTANCE
+	await frames()
+	check(is_zero_approx(fill.light_energy), "The fill fades out before a distant giant appears")
+	camera.free()
+
 func run() -> void:
 	world = Node3D.new()
 	root.add_child(world)
@@ -527,6 +554,7 @@ func run() -> void:
 		"Warning and its echo start at the loudspeaker socket and pass through cabin muffling")
 	check_warning_fade()
 	giant.set_physics_process(false)
+	await check_head_fill()
 	player = PLAYER.instantiate()
 	world.add_child(player)
 	player.set_physics_process(false)

@@ -3,10 +3,25 @@ extends Node3D
 const CLIPS := ["idle_play", "scan", "walk", "run", "turn_left", "turn_right", "smash", "grab_miss", "grab", "hold", "lift", "crush", "retract"]
 const LOOPS := ["idle_play", "scan", "walk", "run", "turn_left", "turn_right", "hold"]
 const REVIEW_CLIPS := ["review_hand_open", "review_hand_fist"]
+const HEAD_FILL_ENERGY := 8.0
+const HEAD_FILL_NIGHT_SHARE := 0.2
+const HEAD_FILL_FULL_DISTANCE := 35.0
+const HEAD_FILL_END_DISTANCE := 80.0
 var skeleton: Skeleton3D
 var animation: AnimationPlayer
 var available := false
 var problem := ""
+var _clock: WorldClock
+var _head_fill_override_energy := -1.0
+var _head_fill_override_view := Vector3.INF
+@onready var head_fill: OmniLight3D = $HeadFill
+
+func _enter_tree() -> void:
+	_clock = null
+	var ancestor := get_parent()
+	while ancestor != null and _clock == null:
+		_clock = ancestor.get_node_or_null("WorldClock") as WorldClock
+		ancestor = ancestor.get_parent()
 
 func _ready() -> void:
 	var model := $ModelOffset/Rig
@@ -33,7 +48,36 @@ func _ready() -> void:
 	for socket in ["socket_grip_R", "socket_focus", "socket_strike_R"]:
 		if skeleton.find_bone(socket) < 0: problem += "Missing socket %s. " % socket
 	available = problem.is_empty()
-	if available: sample("idle_play", 0.0)
+	if available:
+		for cabinet: MeshInstance3D in model.find_children("Speaker_*", "MeshInstance3D", true, false):
+			cabinet.layers |= head_fill.light_cull_mask
+		sample("idle_play", 0.0)
+
+## Filming can choose when the shared light fades in and where it is aimed from.
+func set_head_fill_override(energy: float, viewpoint: Vector3) -> void:
+	_head_fill_override_energy = energy
+	_head_fill_override_view = viewpoint
+
+func _process(_delta: float) -> void:
+	if not available: return
+	var viewpoint := _head_fill_override_view
+	if not viewpoint.is_finite():
+		var camera := get_viewport().get_camera_3d()
+		if camera == null:
+			head_fill.light_energy = 0.0
+			return
+		viewpoint = camera.global_position
+	var head := bone_world("socket_focus").origin
+	var energy := _head_fill_override_energy
+	if energy < 0.0:
+		var distance_fade := 1.0 - smoothstep(HEAD_FILL_FULL_DISTANCE, HEAD_FILL_END_DISTANCE, head.distance_to(viewpoint))
+		var daylight := _clock.daylight() if is_instance_valid(_clock) else 1.0
+		energy = HEAD_FILL_ENERGY * distance_fade * lerpf(HEAD_FILL_NIGHT_SHARE, 1.0, daylight)
+	head_fill.light_energy = energy
+	if energy <= 0.0: return
+	var toward_viewer := (viewpoint - head).slide(Vector3.UP)
+	toward_viewer /= maxf(1.0, toward_viewer.length())
+	head_fill.global_position = head + toward_viewer * 5.0 + toward_viewer.cross(Vector3.UP) * 4.0 + Vector3.UP * 2.5
 
 func duration(clip: String) -> float:
 	return animation.get_animation("review/" + clip).length if animation != null and animation.has_animation("review/" + clip) else 0.0

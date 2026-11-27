@@ -10,3 +10,10 @@ script = ExtResource("1")
 rotation = Vector3(0, 3.14159265, 0)
 
 [node name="Rig" parent="ModelOffset" instance=ExtResource("2")]
+
+[node name="HeadFill" type="OmniLight3D" parent="."]
+light_color = Color(0.831373, 0.87451, 0.898039, 1)
+light_energy = 0.0
+light_volumetric_fog_energy = 0.0
+light_cull_mask = 128
+omni_range = 15.0

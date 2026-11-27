@@ -120,7 +120,7 @@ godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 
 `live_controls` 的鏡頭（回憶段，例如 D6）現場錄影時由玩家自己開車，`drive`、`gear`、`brake`、`steer` 只在自動演出生效。
 
-`giant` 可加 `head_fill`。`at` 是從開拍起算的補光時間，`seconds` 是淡入秒數，`energy` 是淡入後的亮度。補光只照巨人頭部的三個喇叭，現場錄影和自動演出都會生效。
+`giant` 沿用[正式遊戲的頭部補光](../systems/enemies.md#slender-speaker)。T2 加上 `head_fill` 指定拍攝時機。`at` 是從開拍起算的補光時間，`seconds` 是淡入秒數，`energy` 是淡入後的亮度。現場錄影和自動演出都會生效。
 
 鏡頭檔另有三個佈景欄位：`wreck` 是側翻的前任 RV（只有外觀，不參與物理，也不算 RV，可附 `corpse` 屍體），`crash_pole` 是放在路肩平地上的電線桿（遊戲生成的電線桿都在路堤上，RV 開不到），`invulnerable` 讓主角在撞擊中不受傷。T3 另有 `rv_at_pole`（RV 停在撞擊電線桿上的姿勢）、`prone`（主角四肢完整地趴在地上；`from_giant` 讓主角在巨人開始砸車時移到巨人那一側，車身才不會擋住巨人的視線，`pitch` 讓主角面向巨人但低頭往下看幾度）、`cut_away`（巨人的手抓到主角那一格切到一台固定的第三人稱鏡頭：在主角背向巨人那一側 `back` 公尺、橫向 `side` 公尺、離地 `up` 公尺，鏡頭一路對著主角上方 `aim_up` 公尺，`fov` 是視角）、`engine` 與 `radio`（關掉引擎與車內喇叭）。位置都是相對鏡頭 `distance` 的公路座標 `s` 與側向 `lateral`。
 

@@ -15,8 +15,6 @@ const SPEED_GAIN := 0.12
 const IMPACT_DROP := 10.0
 const IMPACT_SHARE := 0.35
 const IMPACT_WINDOW := 0.25
-## Render layer reserved for the loudspeakers in takes with head fill.
-const GIANT_HEAD_FILL_LAYER := 1 << 7
 
 var timeline := TIMELINE.new()
 var broadcast := BROADCAST.new()
@@ -44,7 +42,6 @@ var _turning := false
 var _watching := false
 ## giant_watch `seconds`: the share of the game's head turn rate the watching head uses.
 var _watch_rate := 1.0
-var _head_fill: OmniLight3D
 var _head_fill_spec: Dictionary = {}
 const GIANT_TURN_DEGREES := 75.0
 ## A giant placed by bearing may stand at most this far above or below the road.
@@ -579,34 +576,17 @@ func _place_giant(world, cue: Dictionary) -> bool:
 			return false
 	# A take that opens on the giant starts with its music already at full level.
 	if not bool(cue.get("fade", true)): giant.patrol_music._fade_elapsed = giant.patrol_music.FADE_SECONDS
-	if cue.has("head_fill"): _add_head_fill(cue.head_fill)
+	_head_fill_spec = cue.get("head_fill", {})
 	world.subject = giant
 	world.director.mark("giant")
 	return true
 
-## Light the three speaker cabinets without lighting the forest or fog around them.
-func _add_head_fill(spec: Dictionary) -> void:
-	for mesh: MeshInstance3D in giant.find_children("Speaker_*", "MeshInstance3D", true, false):
-		mesh.layers |= GIANT_HEAD_FILL_LAYER
-	_head_fill_spec = spec
-	_head_fill = OmniLight3D.new()
-	_head_fill.name = &"PromoHeadFill"
-	_head_fill.light_cull_mask = GIANT_HEAD_FILL_LAYER
-	_head_fill.light_color = Color("d4dfe5")
-	_head_fill.light_energy = 0.0
-	_head_fill.light_volumetric_fog_energy = 0.0
-	_head_fill.omni_range = 15.0
-	giant.add_child(_head_fill)
-
-## Keep the fill slightly off to one side as the RV passes and the giant turns.
+## Use the production fill with the take's own cue and position relative to the RV.
 func _update_head_fill(world) -> void:
-	if not is_instance_valid(_head_fill): return
+	if _head_fill_spec.is_empty() or not is_instance_valid(giant): return
 	var start := float(_head_fill_spec.at)
-	if timeline.clock < start: return
-	var head := giant._focus_position()
-	var toward_rv: Vector3 = (world.rv.global_position - head).slide(Vector3.UP).normalized()
-	_head_fill.global_position = head + toward_rv * 5.0 + toward_rv.cross(Vector3.UP) * 4.0 + Vector3.UP * 2.5
-	_head_fill.light_energy = float(_head_fill_spec.energy) * smoothstep(start, start + float(_head_fill_spec.seconds), timeline.clock)
+	var energy := float(_head_fill_spec.energy) * smoothstep(start, start + float(_head_fill_spec.seconds), timeline.clock)
+	giant.visual.set_head_fill_override(energy, world.rv.global_position)
 
 ## Where the driver will see the giant `reveal` seconds after the cue: `bearing` degrees left
 ## of the road ahead (negative is right) and `range` metres away on the ground, from the
