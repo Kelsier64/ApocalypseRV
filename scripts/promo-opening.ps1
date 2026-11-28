@@ -20,13 +20,29 @@ $assignment = (Resolve-Path -LiteralPath (Join-Path $Narration '02.wav')).Path
 $briefing = (Resolve-Path -LiteralPath (Join-Path $Narration '03.wav')).Path
 $bed = Join-Path $root 'assets/audio/promo/memory_intro.wav'
 
+$fps = 60
+$opening = Get-Content -Raw -LiteralPath (Join-Path $root 'tests/playgrounds/promo/shots/T1.json') | ConvertFrom-Json
+$cues = $opening.timeline
+$exteriorAt = ($cues | Where-Object name -eq 'exterior_cut').at
+$briefingAt = ($cues | Where-Object name -eq 'briefing_cut').at
+$lineAt = ($cues | Where-Object { $_.do -eq 'line' -and $_.id -eq 1 }).at
+$cutCues = @{
+    'exterior_cut' = $exteriorAt
+    'briefing_cut' = $briefingAt
+    'blink_closed' = ($cues | Where-Object name -eq 'blink_closed').at
+    'line 1' = $lineAt
+}
+
 function Get-TakeStart([string]$Directory) {
     $take = Get-Content -Raw -LiteralPath (Join-Path $Directory 'take.json') | ConvertFrom-Json
-    if ($take.shot -ne 'T1' -or $take.variant -ne 0 -or $take.fps -ne 60) {
-        throw "Expected a T1 opening at 60 fps in $Directory."
+    if ($take.shot -ne 'T1' -or $take.variant -ne 0 -or $take.fps -ne $fps) {
+        throw "Expected a T1 opening at $fps fps in $Directory."
     }
-    foreach ($name in @('exterior_cut', 'briefing_cut', 'blink_closed')) {
-        if ($name -notin $take.markers.name) { throw "The T1 take in $Directory is missing $name." }
+    foreach ($name in $cutCues.Keys) {
+        $marker = @($take.markers | Where-Object name -eq $name)
+        if ($marker.Count -ne 1 -or [Math]::Abs($marker[0].frame - $take.start_frame - $cutCues[$name] * $fps) -gt 2) {
+            throw "The T1 take in $Directory does not match the current timing for $name."
+        }
     }
     return [int]$take.start_frame
 }
@@ -34,13 +50,20 @@ function Get-TakeStart([string]$Directory) {
 # Use the same take clock for the cab and exterior so the RV keeps its place in the drive.
 $cabStart = Get-TakeStart $Cab
 $exteriorStart = Get-TakeStart $Exterior
-$exteriorCut = 6 * 60
-$briefingCut = 18 * 60
-$end = 20 * 60
-$samplesPerFrame = 48000 / 60
+$exteriorCut = $exteriorAt * $fps
+$briefingCut = $briefingAt * $fps
+$end = ($cues | Where-Object do -eq 'end').at * $fps
+$samplesPerFrame = 48000 / $fps
 $output = (New-Item -ItemType Directory -Force -Path $OutputDirectory).FullName
 $subtitleFile = Join-Path $output 'opening.ass'
-@'
+function Get-Subtitle([double]$Start, [double]$End, [string]$Text) {
+    $format = 'h\:mm\:ss\.ff'
+    $from = [TimeSpan]::FromMilliseconds([Math]::Round($Start * 1000)).ToString($format)
+    $to = [TimeSpan]::FromMilliseconds([Math]::Round($End * 1000)).ToString($format)
+    "Dialogue: 0,$from,$to,Dispatch,,0,0,0,,$Text"
+}
+
+$subtitleHeader = @'
 [Script Info]
 ScriptType: v4.00+
 PlayResX: 1280
@@ -52,12 +75,15 @@ Style: Dispatch,Arial,34,&H00F8F8F8,&H00F8F8F8,&H000B0B0B,&H64000000,0,0,0,0,100
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:02.00,0:00:05.62,Dispatch,,0,0,0,,This is Shelter Four dispatch.
-Dialogue: 0,0:00:06.00,0:00:09.33,Dispatch,,0,0,0,,Unit 4712.
-Dialogue: 0,0:00:09.56,0:00:13.52,Dispatch,,0,0,0,,You are assigned to Route 9.
-Dialogue: 0,0:00:13.80,0:00:16.86,Dispatch,,0,0,0,,Proceed to relay station.
-Dialogue: 0,0:00:18.00,0:00:19.64,Dispatch,,0,0,0,,Mission briefing.
-'@ | Set-Content -LiteralPath $subtitleFile -Encoding ascii
+'@
+@(
+    $subtitleHeader
+    (Get-Subtitle $lineAt ($lineAt + 3.62) 'This is Shelter Four dispatch.')
+    (Get-Subtitle $exteriorAt ($exteriorAt + 3.33) 'Unit 4712.')
+    (Get-Subtitle ($exteriorAt + 3.56) ($exteriorAt + 7.52) 'You are assigned to Route 9.')
+    (Get-Subtitle ($exteriorAt + 7.80) ($exteriorAt + 10.86) 'Proceed to relay station.')
+    (Get-Subtitle $briefingAt ($briefingAt + 1.64) 'Mission briefing.')
+) | Set-Content -LiteralPath $subtitleFile -Encoding ascii
 
 function Get-CutFilters([int]$InputIndex, [int]$FirstFrame, [int]$LastFrame, [string]$Name) {
     $firstSample = $FirstFrame * $samplesPerFrame
@@ -67,12 +93,15 @@ function Get-CutFilters([int]$InputIndex, [int]$FirstFrame, [int]$LastFrame, [st
     "[${InputIndex}:a]atrim=start_sample=${firstSample}:end_sample=${lastSample},asetpts=PTS-STARTPTS[a$Name]"
 }
 
+$culture = [Globalization.CultureInfo]::InvariantCulture
+$cabFade = ($exteriorAt - 0.04).ToString('0.00', $culture)
+$exteriorFade = ($briefingAt - $exteriorAt - 0.04).ToString('0.00', $culture)
 $filters = @(
     (Get-CutFilters 0 $cabStart ($cabStart + $exteriorCut) 'cab')
     (Get-CutFilters 1 ($exteriorStart + $exteriorCut) ($exteriorStart + $briefingCut) 'exterior')
     (Get-CutFilters 0 ($cabStart + $briefingCut) ($cabStart + $end) 'briefing')
-    '[acab]afade=t=in:st=1:d=0.32,afade=t=out:st=5.96:d=0.04[cab]'
-    '[aexterior]volume=0.55,afade=t=in:d=0.04,afade=t=out:st=11.96:d=0.04[road]'
+    "[acab]afade=t=in:st=1:d=0.32,afade=t=out:st=${cabFade}:d=0.04[cab]"
+    "[aexterior]volume=0.55,afade=t=in:d=0.04,afade=t=out:st=${exteriorFade}:d=0.04[road]"
     '[2:a]highpass=f=320,lowpass=f=3150,aecho=1:0.82:30|63:0.12|0.04,volume=1.6,aresample=48000,aformat=channel_layouts=stereo[assignment]'
     '[road][assignment]amix=inputs=2:duration=first:normalize=0[exterior]'
     '[abriefing]afade=t=in:d=0.04,asplit[dry][muffled]'

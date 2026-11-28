@@ -1,9 +1,10 @@
 {
   "title": "Opening (cab, departure, blink)",
-  "steps": "F3 starts the 20-second opening. Eyes open at 1 s, the cab speaker chimes and plays line 1, and the driver blinks into the briefing at the end. Keep the view on the road. For the 6–18 s exterior insert, follow the RV or record a second unattended take with Exterior. Variant 1 is the ending.",
+  "steps": "F3 starts the opening on the conifer road. Eyes open at 1 s. Drive in silence from the cab speaker until its chime at 4.1 s, followed by line 1. For the 9–21 s exterior insert, follow the RV or record a second unattended take with Exterior. The driver blinks into the briefing at the end. Variant 1 is the ending.",
   "action": "Start the timeline",
   "seed": 42,
-  "distance": 300,
+  "distance": 335,
+  "dress_from": "T2",
   "hour": 15,
   "weather": [
     0,
@@ -23,18 +24,20 @@
   "timeline": [
     { "at": 0, "do": "drive", "speed": 42 },
     { "at": 1, "do": "eyes", "open": true, "seconds": 0.58 },
-    { "at": 1.10, "do": "dispatch_ident" },
-    { "at": 2, "do": "line", "id": 1 },
+    { "at": 4.1, "do": "dispatch_ident" },
     { "at": 4.4, "do": "gear", "gear": 2 },
-    { "at": 6, "do": "marker", "name": "exterior_cut" },
-    { "at": 18, "do": "marker", "name": "briefing_cut" },
-    { "at": 19.24, "do": "eyes", "open": false, "seconds": 0.32 },
-    { "at": 19.6, "do": "marker", "name": "blink_closed" },
-    { "at": 20, "do": "end" }
+    { "at": 5, "do": "line", "id": 1 },
+    { "at": 9, "do": "marker", "name": "exterior_cut" },
+    { "at": 21, "do": "marker", "name": "briefing_cut" },
+    { "at": 22.24, "do": "eyes", "open": false, "seconds": 0.32 },
+    { "at": 22.6, "do": "marker", "name": "blink_closed" },
+    { "at": 23, "do": "end" }
   ],
   "variants": [
     {
       "title": "Driver's seat anchor (ending)",
+      "distance": 300,
+      "dress_from": "",
       "timeline": [
         { "at": 0, "do": "drive", "speed": 55 },
         { "at": 4, "do": "eyes", "open": true, "seconds": 1.2 },

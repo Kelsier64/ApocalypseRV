@@ -91,7 +91,12 @@ func prepare(world) -> bool:
 	if world.shot.has("wreck") and not await _stage_wreck(world, world.shot.wreck): return false
 	if world.shot.has("crash_pole"): _stage_pole(world, world.shot.crash_pole)
 	if world.shot.has("prone"): _stage_prone(world, world.shot.prone)
-	if world.shot.has("dress"): _dress(world, world.shot.dress)
+	var layout: Variant = world.shot
+	var dress_from: String = world.shot.get("dress_from", "")
+	if not dress_from.is_empty():
+		layout = JSON.parse_string(FileAccess.get_file_as_string(world.SHOT_PATH % dress_from))
+		if not layout is Dictionary or not layout.get("dress") is Dictionary: return false
+	if layout.has("dress"): _dress(world, layout)
 	if not world.shot.get("engine", true): return true
 	# The engine idles behind the handbrake until the timeline starts.
 	return world.rv.set_engine_running(true)
@@ -162,9 +167,10 @@ const CLEARED_SCATTER := ["tall_grass", "grass", "reed", "shore_reed", "fern", "
 ## `width` metres either side of the road, easing out over `fade` metres beyond that, the
 ## generated trees, bushes and green ground cover go and the ground turns `ground` (hex).
 ## `plant` then stands dead trees and conifers there instead (see _plant).
-func _dress(world, spec: Dictionary) -> void:
+func _dress(world, layout: Dictionary) -> void:
 	var field: WorldField = world.field
-	var start := float(world.shot.distance)
+	var spec: Dictionary = layout.dress
+	var start := float(layout.distance)
 	var zone := {"from": start + float(spec.from), "to": start + float(spec.to),
 		"width": float(spec.get("width", 150.0)), "fade": float(spec.get("fade", 20.0))}
 	var dirt := Color(str(spec.get("ground", "54432f")))
@@ -195,7 +201,7 @@ func _dress(world, spec: Dictionary) -> void:
 				child.visible = false
 			elif child is Node3D and signs.any(func(sign: Vector3) -> bool: return Vector2(sign.x, sign.z).distance_to(Vector2(child.position.x, child.position.z)) < 0.5):
 				child.visible = false
-	var planted := _plant(world, spec.get("plant", {}), zone)
+	var planted := _plant(world, spec.get("plant", {}), zone, layout)
 	print("PROMO DRESS: %d plants cleared, %d ground points recoloured, %d trees planted" % [cleared, recoloured, planted])
 
 func _clears(title: String) -> bool:
@@ -323,7 +329,7 @@ func _soil_road(node: MeshInstance3D) -> void:
 ## of the grid points, with a `dead` share bare. `clear` forbids trees within `width` metres
 ## of the sightlines from the road to the giant, or within `around` metres of its feet.
 ## `extra_trees` sets individual trunks at road offsets (`s`, `lateral`) for the chase.
-func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
+func _plant(world, spec: Dictionary, zone: Dictionary, layout: Dictionary) -> int:
 	if spec.is_empty(): return 0
 	var field: WorldField = world.field
 	var rng := RandomNumberGenerator.new()
@@ -331,7 +337,7 @@ func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 	var spacing := float(spec.get("spacing", 10.0))
 	var density := float(spec.get("density", 0.6))
 	var left_density := float(spec.get("left_density", density))
-	var lines := _clear_lines(world, spec.get("clear", {}))
+	var lines := _clear_lines(field, layout, spec.get("clear", {}))
 	var poses: Array = [[], [], [], [], [], []]
 	var planted := 0
 	var s := float(zone.from)
@@ -358,7 +364,7 @@ func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 			planted += 1
 		s += spacing
 	for tree: Dictionary in spec.get("extra_trees", []):
-		var pose := _road_mark(field, float(world.shot.distance) + float(tree.s), float(tree.lateral))
+		var pose := _road_mark(field, float(layout.distance) + float(tree.s), float(tree.lateral))
 		pose.origin.y = _filled_height(field, pose.origin) - 0.15
 		pose.basis = Basis(Vector3.UP, rng.randf_range(-PI, PI)).scaled(Vector3(2.5, 12.0, 2.5))
 		poses[4].append(pose)
@@ -381,12 +387,11 @@ func _plant(world, spec: Dictionary, zone: Dictionary) -> int:
 
 ## The flat sightlines `_plant` keeps open, as [from, to, width] with the giant's spot taken
 ## from the timeline's first giant cue placed by `s`.
-func _clear_lines(world, spec: Dictionary) -> Array:
+func _clear_lines(field: WorldField, layout: Dictionary, spec: Dictionary) -> Array:
 	if spec.is_empty(): return []
-	var field: WorldField = world.field
-	var start := float(world.shot.distance)
+	var start := float(layout.distance)
 	var spot := Vector3.INF
-	for cue: Dictionary in world.shot.timeline:
+	for cue: Dictionary in layout.timeline:
 		if str(cue.do) == "giant" and cue.has("s"):
 			spot = _road_mark(field, start + float(cue.s), float(cue.get("lateral", 0.0))).origin
 			break
@@ -463,6 +468,7 @@ func _fire(world, cue: Dictionary) -> bool:
 			world.director.mark("line " + id)
 			return broadcast.play(id)
 		"dispatch_ident":
+			world.director.mark("dispatch_ident")
 			return broadcast.play_clip(DISPATCH_IDENT)
 		"static":
 			broadcast.set_signal(float(cue.level), bool(cue.get("cut", false)))

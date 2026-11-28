@@ -292,14 +292,24 @@ func _verify_timeline(world: Node) -> void:
 	if first_line >= 0.0:
 		var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
 		var heard_ident := false
+		var silent_driving := 0.0
 		for frame in ticks:
 			await physics_frame
-			if not speaker.speaker.playing: continue
+			if not speaker.speaker.playing:
+				if world.shot_id == "T1" and not heard_ident and not stage._lid_rect.visible and world.rv.linear_velocity.length() > 0.5:
+					silent_driving += 1.0 / Engine.physics_ticks_per_second
+				continue
 			if stage.timeline.clock >= first_line and speaker.speaker.stream != stage.DISPATCH_IDENT: break
 			if speaker.speaker.stream == stage.DISPATCH_IDENT: heard_ident = true
 		_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
 		_check(stage.timeline.clock >= first_line and world.rv.linear_velocity.length() > 0.5, world.shot_id + " is moving when its narration starts")
 		if world.shot_id == "T1":
+			var reveal: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(world.SHOT_PATH % "T2"))
+			var forest := WorldEntities.get_container(world).get_node_or_null("PromoForest") as Node3D
+			var forest_end: Transform3D = stage._road_mark(world.field, float(reveal.distance) + float(reveal.dress.to), 0.0)
+			_check(is_instance_valid(forest) and forest.global_position.is_equal_approx(forest_end.origin),
+				"T1 plants the T2 forest at its original road coordinates")
+			_check(silent_driving >= 2.0, "T1 drives for at least two seconds with eyes open before the radio starts")
 			_check(heard_ident, "T1 plays the dispatch ident before line 1")
 			_check(not stage._lid_rect.visible, "T1's eyes are open when line 1 starts")
 			while stage.timeline.running:
