@@ -6,7 +6,7 @@
 
 新式測試場用正式按鍵遊玩，啟動時已經在要檢查的狀態。切換情境、重來、按需播放或觸發、調數值與即時讀數，都在 Esc 選單的 **Playground** 頁用滑鼠操作，這一頁自己會說明用法，本頁只列場景、用途與情境。製作規則見 [godot-playgrounds skill](../../.claude/skills/godot-playgrounds/SKILL.md)。
 
-目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)、[dispatch_speaker_playground](../../tests/playgrounds/dispatch_speaker_playground.tscn)（車內調度喇叭的收訊、詞庫廣播、話筒回覆與字幕）。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
+目前的新式測試場：[rv_audio_playground](../../tests/playgrounds/rv_audio_playground.tscn)、[monster_audio_playground](../../tests/playgrounds/monster_audio_playground.tscn)、[footstep_playground](../../tests/playgrounds/footstep_playground.tscn)、[ambience_playground](../../tests/playgrounds/ambience_playground.tscn)、[weather_playground](../../tests/playgrounds/weather_playground.tscn)、[dispatch_speaker_playground](../../tests/playgrounds/dispatch_speaker_playground.tscn)（車內調度喇叭的收訊、詞庫廣播、話筒回覆與字幕）、[terrain_playground](../../tests/playgrounds/terrain_playground.tscn)（六種地貌、河川與乾河谷）。其他測試場仍是舊式：用 F 鍵切換，這些快捷鍵不等同主世界按鍵；需要時再改成新式。
 
 [宣傳影片錄影世界](promo-capture.md)（`tests/playgrounds/promo/`）不是測試場，而是錄影工具：F 鍵錄影面板、接管鍵盤的自由鏡頭與 Movie Maker 自動演出都是刻意的設計，不改成新式。
 
@@ -68,7 +68,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [test_world](../../world/test_world.tscn) | 獨立世界生成與存讀檔測試入口 | 正式玩家／完整 RV／物資；沒有正式新版教學起始流程。 |
 | [ruined_wall_study](../../world/art_samples/ruined_wall_study.tscn) | 獨立破損混凝土／鋼筋美術樣板 | F1 全景、F2 細節、F12 輸出當前畫面；`--capture` 自動輸出預覽。 |
 
-### 教學、世界與 POI（16 個）
+### 教學、世界與 POI（17 個）
 
 | 場景 | 用途與接入狀態 | 主要操作／模式 |
 |---|---|---|
@@ -76,6 +76,7 @@ godot --path . --log-file .godot/playground.log res://tests/playgrounds/megashel
 | [starting_shelter_playground](../../tests/playgrounds/starting_shelter_playground.tscn) | 主世界：出庫、外殼與舊車庫驗收入口 | F2 輪驅離場、F3 外觀、F4 室內／玩家、F5 封路；`--replay`。 |
 | [highway_playground](../../tests/playgrounds/highway_playground.tscn) | 主世界：道路起伏、山路與停靠輪驅 | F1–F3 里程視角、F6 行駛、F7 停靠、F8 駕駛／跟車；`--replay`／`--parking`。 |
 | [world_detail_playground](../../tests/playgrounds/world_detail_playground.tscn) | 主世界：世界細節（池塘／湖、支線、路旁與野地場景、電塔、道路設施）固定視角審查 | `--seed=N --target=<名稱> [--skip=N]` 跳到第 N 個該類特徵，`--list` 列出目標後結束；F1 路面、F2 近景、F3 俯瞰、F7 截圖；`--capture` 依序輸出三張到 `.godot/world-detail-captures/` 後結束（不可加 `--headless`）。 |
+| [terrain_playground](../../tests/playgrounds/terrain_playground.tscn) | 主世界：六種地貌（草原、懸崖、濕地、山脊、峽谷、森林盆地）、跨河橋與乾河谷 | 新式；情境 `Meadow`、`Cliff`、`Wetland`、`Ridge`、`Canyon`、`Basin`、`River`、`Valley`，RV 停在該地形的路上；`--seed=N` 換世界（地貌順序隨種子改變）。移除怪物，固定正午晴天。 |
 | [outdoor_horror_playground](../../tests/playgrounds/outdoor_horror_playground.tscn) | 主世界：正式戶外氛圍、入口與大物步行 | F2 視角、1–4 入口外觀、F3 搬運回放、F4 進出、F6 RV、F10 平板。 |
 | [rear_pressure_playground](../../tests/playgrounds/rear_pressure_playground.tscn) | 主世界 fixture：後方廢車通行與偏離壓力 | F2 穿越廢車、F3 後方霧／遭遇、F4 鏡頭；`--replay` 跑通行。 |
 | [gas_station_playground](../../tests/playgrounds/gas_station_playground.tscn) | 已封存的 Northline 獨立展示場 | F1 步行、F2 外觀、F3 商店、F4 維修間、F5 回放、F6 加油機、F7 灰盒／模型。 |

@@ -24,8 +24,8 @@
 | 串流 | 依玩家位置前後載入區塊，可回頭；一次只建一個區塊，分幀進行 | [WorldGenerator](../../world/world_generator.gd)、[ChunkGenerator](../../world/chunk_generator.gd) | [highway](../../tests/playgrounds/highway_playground.tscn) |
 | 世界查詢 | 道路、高度、場址與亂數流，全部是種子與世界座標的純函數 | [WorldField](../../world/terrain/world_field.gd)、[WorldProfile](../../world/terrain/world_profile.gd) | |
 | 道路 | 連續彎道、寬窄變化、升降 | [TerrainRoute](../../world/terrain/terrain_route.gd) | [highway](../../tests/playgrounds/highway_playground.tscn) |
-| 地貌 | 草原、懸崖、濕地、山脊、峽谷、森林盆地 | [TerrainLandforms](../../world/terrain/terrain_landforms.gd) | |
-| 河川與橋梁 | 河谷、水面、跨河橋與護欄 | [TerrainCrossings](../../world/terrain/terrain_crossings.gd)、[BridgeBuilder](../../world/terrain/bridge_builder.gd) | |
+| 地貌 | 草原、懸崖、濕地、山脊、峽谷、森林盆地 | [TerrainLandforms](../../world/terrain/terrain_landforms.gd) | [terrain](../../tests/playgrounds/terrain_playground.tscn) |
+| 河川與橋梁 | 河谷、水面、跨河橋與護欄 | [TerrainCrossings](../../world/terrain/terrain_crossings.gd)、[BridgeBuilder](../../world/terrain/bridge_builder.gd) | [terrain](../../tests/playgrounds/terrain_playground.tscn) |
 | 森林 | 樹木、灌叢與可撞毀的樹幹碰撞 | [ForestScenery](../../world/terrain/forest_scenery.gd) | [tree impact](../../tests/playgrounds/tree_impact_playground.tscn) |
 | 地形特徵 | 池塘與湖、泥土支線、路旁與野地的遺跡場景、高壓電塔 | [WorldFeatures](../../world/terrain/world_features.gd)、[FeatureBuilder](../../world/scatter/feature_builder.gd) | [world detail](../../tests/playgrounds/world_detail_playground.tscn) |
 | 散佈 | 巨石、倒木、樹樁、草、蕨、蘆葦等程序化小物 | [ScatterScenery](../../world/scatter/scatter_scenery.gd)、[ScatterCatalog](../../world/scatter/scatter_catalog.gd) | [world detail](../../tests/playgrounds/world_detail_playground.tscn) |
