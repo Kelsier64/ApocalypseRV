@@ -6,7 +6,7 @@ ApocalypseRV is a first-person survival prototype in Godot. The main scene is `w
 
 - Use the live facts from `scripts/agent/session-context.ps1`. Run it once if startup context is absent. Use `scripts/agent/module-index.ps1 [filter]` to look up classes.
 - `player/`, `enemies/`, and `props/` hold actors and interactables. `rv/` and `equipment/` hold vehicle and mounted systems. `world/` holds terrain, streaming, POIs, and buildings. `core/` holds shared rules. See the [codebase guide](docs/guides/codebase.md) for placement and cleanup.
-- Verify current behavior in code. `docs/README.md` indexes the docs: `GDD.md` for design intent, `architecture.md` for cross-module structure, `docs/systems/<system>.md` for one system's features and contracts, `docs/guides/` for how-tos, and `docs/plans/` for unfinished work. Read the generation and save version constants in `world/terrain/world_profile.gd`, `rv/checkpoint.gd`, and `rv/vehicle_snapshot.gd`.
+- Verify current behavior in code. `docs/README.md` indexes the docs: `GDD.md` for design intent, `architecture.md` for cross-module structure, `docs/systems/<system>.md` for one system's features and contracts, `docs/guides/` for how-tos, `docs/plans/` for unfinished work, and `ISSUES.md` for unfixed bugs. Read the generation and save version constants in `world/terrain/world_profile.gd`, `rv/checkpoint.gd`, and `rv/vehicle_snapshot.gd`.
 
 ## Project rules
 
@@ -24,6 +24,7 @@ ApocalypseRV is a first-person survival prototype in Godot. The main scene is `w
 - Use PowerShell from the repo root. Godot is at `C:\Program Files\godot\godot.exe`; check `.godot-version` for the pinned version. If sandbox access blocks the executable, retry through the tool's escalation mechanism. For long commands, use `exec_command` with a short yield and wait on its session.
 - Run the smallest useful automated check. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1` imports once and runs the top-level tests and main-scene smoke check. For Markdown-only edits, check wording and relative links with `scripts/agent/check-docs.ps1`.
 - For game feel or manual validation, build or reuse a playground, launch it at the relevant state, and give the user a short checklist. For fixed visual states, inspect a relevant capture. Launch commands, `--capture` renders and their pitfalls are in the [playground guide](docs/guides/playgrounds.md#啟動與固定截圖). Report what you verified and what still needs hands-on testing.
+- When you hit a bug, crash, flaky test or wrong behavior and do not fix it in this task, add it to [ISSUES.md](ISSUES.md) before you finish: symptom, how to reproduce (command, scene, seed, commit), what you tried, what is still unknown. Search the file first and extend an existing section instead of duplicating it. A bug fixed in the same task goes in the commit message only; delete its section in the commit that fixes it.
 - Ask about material ambiguity or broad architecture changes. Keep scene integration and final verification in the active session. Use the Codex image workflow for reference images and keep generated inputs in ignored work folders until selected for delivery.
 
 ## Skills

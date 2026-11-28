@@ -16,7 +16,8 @@ Docs hold what the code cannot say: design intent, rules that span files, how to
 | Cross-module structure: scene tree, module responsibilities, shared contracts, state ownership, known limits | `architecture.md` | Anything that belongs to a single system |
 | One system's current features, values and implementation contracts | `docs/systems/<system>.md` | Other systems' behavior, plans |
 | How to make or operate something (authoring rules, tools, playgrounds) | `docs/guides/` | Descriptions of current game behavior |
-| Unfinished work: active plans, pending hands-on checks, backlog | `docs/plans/` | Finished work, test logs |
+| Unfinished work: active plans, pending hands-on checks, backlog | `docs/plans/` | Finished work, test logs, bugs |
+| Unfixed bugs: wrong behavior, crashes, flaky tests, assets that do not rebuild | `ISSUES.md` | Unbuilt features, structural limits (`architecture.md`) |
 | Material to design against: research, art targets, concept images, mockups | `docs/reference/` | Claims about the current game |
 | Provenance, build parameters and import notes for one asset folder | `README.md` beside the asset | Anything outside that folder |
 
@@ -33,7 +34,9 @@ Do the doc update in the same change as the work, without being asked:
 | Code changes module boundaries, ownership or a shared contract | `architecture.md` |
 | A feature is built but not yet played by a person | Add a row to `待人工驗收` in `docs/plans/README.md` |
 | The user confirms a hands-on check | Delete that row |
-| A problem is found that will not be fixed now | Add a row to `待辦` in `docs/plans/README.md` |
+| A bug is found that will not be fixed now | Add or extend its section in `ISSUES.md`, using the format at the top of that file |
+| A bug in `ISSUES.md` is fixed | Delete its section in the fixing commit |
+| Work is found that will not be done now | Add a row to `待辦` in `docs/plans/README.md` |
 | Work starts that spans several sessions | New `docs/plans/<topic>.md` and a row under `進行中` |
 | A plan finishes or is replaced | Move its open items to `待人工驗收` or `待辦`, delete the plan file and its row |
 | A control or terminal command changes | The table in `README.md` |

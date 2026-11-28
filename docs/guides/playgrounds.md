@@ -14,6 +14,8 @@
 
 從專案根目錄直接啟動場景（不經編輯器），並把日誌寫到 `.godot/`。指令格式見[完整場景目錄](#完整場景目錄2026-11-02)。尚未用過的按鍵先對照場景腳本的 `_unhandled_input`。結束後檢查日誌沒有 `ERROR` 或 `SCRIPT ERROR`。
 
+用 Windows PowerShell 5.1 的 `Start-Process` 啟動時，`-ArgumentList` 要寫成一整個字串並把情境名稱加引號，例如 `-ArgumentList '--path . res://tests/playgrounds/weather_playground.tscn -- "--scenario=Dust storm"'`。傳陣列時 PowerShell 不會替含空格的元素加引號，遊戲只收到 `--scenario=Dust`，然後默默退回第一個情境。交給使用者前先從日誌確認載入的是正確情境。
+
 靜態外觀（模型、儀表、燈光、固定車況）用場景的 `--capture` 參數輸出 PNG 再檢視。這類參數會把 PNG 寫到 `.godot/<名稱>-captures/`、在日誌印出 `CAPTURE:` 路徑後退出。
 
 - 不可加 `--headless`：沒有渲染器，輸出是空圖。

@@ -82,6 +82,8 @@ godot --path . --log-file .godot/<topic>-playground.log res://tests/playgrounds/
 godot --path . --log-file .godot/<topic>-playground.log res://tests/playgrounds/<topic>_playground.tscn -- --scenario="Driver seat"
 ```
 
+Never pass a scenario name with spaces through a `Start-Process -ArgumentList` array: PowerShell 5.1 drops the quoting and the game silently falls back to the first scenario ([launch pitfalls](../../../docs/guides/playgrounds.md#啟動與固定截圖)). Confirm the loaded scenario in the log before handing off.
+
 Every hand-off message to the user contains all of these, even when the playground is already open:
 
 1. **What is being tested**: one or two sentences naming the change and the question the user's play answers ("Does the new engine idle sound loop without a click?").
