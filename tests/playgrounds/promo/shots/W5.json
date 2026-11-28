@@ -1,0 +1,91 @@
+{
+  "title": "World and weather drive",
+  "steps": "Record variants 0 to 4 for a continuous RV journey through the meadow, cliff road, wetland bridge, forest basin and canyon. Cut on landscape_start and landscape_end.",
+  "seed": 228,
+  "distance": 5360,
+  "hour": 14,
+  "weather": [1, 0, 0],
+  "wind_heading": 95,
+  "run_clock": true,
+  "drives": true,
+  "seat": true,
+  "radio": false,
+  "follow_on_start": true,
+  "initial_speed": 38,
+  "action": "Start the landscape drive",
+  "exterior_follow": { "offset": [-10, 9.5, 16], "aim": [1.0, 1.9, -6.5], "fov": 56 },
+  "timeline": [
+    { "at": 0, "do": "drive", "speed": 40 },
+    { "at": 0, "do": "gear", "gear": 2 },
+    { "at": 0, "do": "wind", "tier": 1 },
+    { "at": 2.5, "do": "marker", "name": "landscape_start" },
+    { "at": 4.4, "do": "weather", "to": [0, 0, 0], "seconds": 1.7 },
+    { "at": 6.5, "do": "marker", "name": "landscape_end" },
+    { "at": 6.75, "do": "end" }
+  ],
+  "variants": [
+    {
+      "seed": 314,
+      "distance": 10525,
+      "weather": [0, 0, 0],
+      "exterior_follow": { "offset": [-7.5, 9.5, 16], "aim": [-3.2, 2.3, -6.0], "fov": 57 },
+      "timeline": [
+        { "at": 0, "do": "drive", "speed": 40 },
+        { "at": 0, "do": "gear", "gear": 2 },
+        { "at": 0, "do": "wind", "tier": 1 },
+        { "at": 2.5, "do": "marker", "name": "landscape_start" },
+        { "at": 3.8, "do": "wind", "tier": 2 },
+        { "at": 3.8, "do": "weather", "to": [0, 2, 0], "seconds": 1.65 },
+        { "at": 6.5, "do": "marker", "name": "landscape_end" },
+        { "at": 6.75, "do": "end" }
+      ]
+    },
+    {
+      "seed": 44,
+      "distance": 1098,
+      "weather": [0, 2, 0],
+      "exterior_follow": { "offset": [-14, 13, 15], "aim": [0, -0.2, -5.5], "fov": 59 },
+      "timeline": [
+        { "at": 0, "do": "drive", "speed": 40 },
+        { "at": 0, "do": "gear", "gear": 2 },
+        { "at": 0, "do": "wind", "tier": 2 },
+        { "at": 16.3, "do": "marker", "name": "landscape_start" },
+        { "at": 16.75, "do": "wind", "tier": 1 },
+        { "at": 16.75, "do": "weather", "to": [0.35, 0, 0.4], "seconds": 1.55 },
+        { "at": 20.8, "do": "marker", "name": "landscape_end" },
+        { "at": 21.05, "do": "end" }
+      ]
+    },
+    {
+      "seed": 42,
+      "distance": 3240,
+      "weather": [0.35, 0, 0.4],
+      "timeline": [
+        { "at": 0, "do": "drive", "speed": 40 },
+        { "at": 0, "do": "gear", "gear": 2 },
+        { "at": 0, "do": "wind", "tier": 1 },
+        { "at": 2.5, "do": "marker", "name": "landscape_start" },
+        { "at": 4.2, "do": "weather", "to": [0, 0, 1.7], "seconds": 1.9 },
+        { "at": 6.5, "do": "marker", "name": "landscape_end" },
+        { "at": 6.75, "do": "end" }
+      ]
+    },
+    {
+      "seed": 314,
+      "distance": 4250,
+      "weather": [0, 0, 1.7],
+      "timeline": [
+        { "at": 0, "do": "drive", "speed": 40 },
+        { "at": 0, "do": "gear", "gear": 2 },
+        { "at": 0, "do": "wind", "tier": 1 },
+        { "at": 2.5, "do": "marker", "name": "landscape_start" },
+        { "at": 2.8, "do": "weather", "to": [1, 0, 0], "seconds": 1.9 },
+        { "at": 3.9, "do": "wind", "tier": 2 },
+        { "at": 4.8, "do": "wind", "tier": 3 },
+        { "at": 6.35, "do": "eyes", "open": false, "seconds": 0.38 },
+        { "at": 7, "do": "marker", "name": "landscape_end" },
+        { "at": 7.25, "do": "end" }
+      ]
+    }
+  ]
+}

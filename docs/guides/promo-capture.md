@@ -79,6 +79,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、四種地貌對照、日夜與天氣縮時 |
 | W4 | 第 19 幕 A：車外跟拍行駛中的 RV，晴天、暴雨、濃霧與沙塵在同一鏡內轉換 |
+| W5 | 第 19 幕 B：以行駛中的 RV 串接五段地貌，天氣跨切點延續 |
 | T1 | 第一至三幕。F3 開始在 T2 的針葉林公路上行駛，睜眼後先開一小段，才由車內喇叭播放識別音與第 1 句。加 `-Exterior` 錄第 2 幕的車外跟拍。變體 1 是結尾 |
 | T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
@@ -92,7 +93,7 @@ T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡�
 
 T5 的 `take.json` 標記車頂受擊、轉回前方、閃避、撞車與停車。Godot 日誌的 `PROMO CRASH STATE` 是停車時的路面位置、角度和面板耐久。重拍後可用它校對 T6 的起始姿勢和車損。T6 標記前車頂脫落及抓取各階段。
 
-鏡頭檔有 `timeline` 時（T 組、D6 和 W4），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
+鏡頭檔有 `timeline` 時（T 組、D6、W4 和 W5），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
 
 B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生成規則掃描種子，結果寫到 `.godot/promo/scout.json`：
 
@@ -137,6 +138,19 @@ godot --headless --path . --script res://scripts/promo_narration.gd
 ```
 
 [剪輯腳本](../../scripts/promo-weather.ps1)依 `take.json` 的 `weather_start` 和 `weather_end` 標記，取出加速完成後的 12 秒單鏡，輸出 `.godot/promo-weather/promo-weather-review.mp4`。剪全片時把 W2 獨立版裁到第 13.2 秒，接上這段，再由片尾眨眼切回 T2 的駕駛座。
+
+## 地貌與天氣合併剪輯
+
+用 Forward+ 與相同的解析度、60 fps 錄 W5 的變體 0 至 4。按草原、懸崖公路、濕地河橋、森林盆地、峽谷公路的順序，把五趟 `Take files` 路徑傳給剪輯腳本。
+
+```powershell
+0..4 | ForEach-Object {
+    ./scripts/promo-capture.ps1 -Shot W5 -Variant $_ -Preview -Movie -WindowResolution 1280x720
+}
+./scripts/promo-landscape-weather.ps1 -Takes @('<變體 0>', '<變體 1>', '<變體 2>', '<變體 3>', '<變體 4>')
+```
+
+[剪輯腳本](../../scripts/promo-landscape-weather.ps1)取每趟 `landscape_start` 到 `landscape_end` 之間的行車畫面。換地貌時直接切畫面，下一段的行車與天氣聲提前 0.24 秒混入。輸出為 `.godot/promo-landscape-weather/promo-landscape-weather-review.mp4`。
 
 ## 時間軸
 

@@ -11,7 +11,7 @@ const TRAILER := preload("res://tests/playgrounds/promo/promo_trailer.gd")
 const CHASE := preload("res://tests/playgrounds/promo/promo_chase.gd")
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const SHOTS := ["B1", "B2", "B3", "B4", "B5", "B6", "O1", "O2", "O3", "O4", "O5",
-	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "W4", "T1", "T2", "T3", "T4", "T5", "T6"]
+	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "W4", "W5", "T1", "T2", "T3", "T4", "T5", "T6"]
 const SHOT_PATH := "res://tests/playgrounds/promo/shots/%s.json"
 static var next_shot := ""
 static var next_variant := 0
