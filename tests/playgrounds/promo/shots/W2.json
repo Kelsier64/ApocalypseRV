@@ -1,9 +1,9 @@
 {
-  "title": "Same road, other seeds",
-  "steps": "Record variants 0, 1 and 2 with the same rail to compare seeds 42, 43 and 44.",
-  "seed": 42,
-  "distance": 750,
-  "hour": 10,
+  "title": "World variety",
+  "steps": "Record variants 0 to 3 for the meadow, cliff, river crossing and forest basin.",
+  "seed": 228,
+  "distance": 5370,
+  "hour": 15,
   "weather": [
     1,
     0,
@@ -11,14 +11,21 @@
   ],
   "action": "Play aerial rail",
   "setup": "aerial",
+  "rail_side": -1,
   "rail_seconds": 13.5,
   "rail_preroll": 12,
   "variants": [
     {
-      "seed": 43
+      "seed": 1024,
+      "distance": 1700
     },
     {
-      "seed": 44
+      "seed": 44,
+      "distance": 1170
+    },
+    {
+      "seed": 314,
+      "distance": 7150
     }
   ]
 }

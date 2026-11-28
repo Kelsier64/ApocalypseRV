@@ -385,7 +385,8 @@ func _write_take_marker() -> void:
 	# Movie Maker writes one frame per process frame at its fixed rate.
 	var frame := Engine.get_process_frames()
 	print("PROMO TAKE START: frame %d" % frame)
-	_take = {"shot": world.shot_id, "variant": world.variant, "start_frame": frame,
+	_take = {"shot": world.shot_id, "variant": world.variant, "seed": int(world.shot.seed),
+		"distance": float(world.shot.distance), "start_frame": frame,
 		"start_seconds": float(frame) / fps if fps > 0 else 0.0, "fps": fps, "markers": []}
 	if not directory.is_empty(): _take_path = directory.path_join("take.json")
 	_save_take()

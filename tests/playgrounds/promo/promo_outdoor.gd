@@ -173,12 +173,13 @@ func _find_giant_mark(generator: Node, target: Vector3, parked: bool) -> Vector3
 func _aerial_rail(world) -> void:
 	var field: WorldField = world.field
 	var center := float(world.shot.distance)
+	var side := float(world.shot.get("rail_side", 1.0))
 	world.director.clear_generated_rail()
 	world.director.rail.duration = float(world.shot.get("rail_seconds", AERIAL_RAIL_SECONDS))
 	for offset in [-65.0, -36.0, -6.0, 24.0, 55.0]:
 		var frame := field.road_frame(center + float(offset))
 		var target := field.road_frame(center + float(offset) + 50.0).origin
-		var origin := frame.origin + frame.basis.x * lerpf(39.0, 12.0, (float(offset) + 65.0) / 120.0)
+		var origin := frame.origin + frame.basis.x * side * lerpf(39.0, 12.0, (float(offset) + 65.0) / 120.0)
 		origin.y = maxf(field.height_at(origin.x, origin.z), frame.origin.y) + 32.0
 		world.director.generated_rail_key(Transform3D(Basis.looking_at(target - origin), origin))
 

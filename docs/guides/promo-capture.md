@@ -77,7 +77,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | O1–O5 | 戶外：路邊油桶人、撞油桶、白影、Slender Speaker 追車與抓司機 |
 | D1–D6 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車、越野 |
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
-| W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
+| W1–W3 | 主世界：公路空拍、四種地貌對照、日夜與天氣縮時 |
 | T1 | 第一至三幕。F3 開始在 T2 的針葉林公路上行駛，睜眼後先開一小段，才由車內喇叭播放識別音與第 1 句。加 `-Exterior` 錄第 2 幕的車外跟拍。變體 1 是結尾 |
 | T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
@@ -114,16 +114,17 @@ godot --headless --path . --script res://scripts/promo_narration.gd
 
 ## 第 19 幕剪輯
 
-用同一解析度錄 W2 的變體 0、1、2。每趟自動演出先停在運鏡起點，等串流霧退開，才記錄 `take.json` 的開拍影格並開始移動。
+用同一解析度錄 W2 的變體 0 至 3，順序是草原、懸崖、濕地河道、森林盆地。每趟自動演出先停在運鏡起點，等串流霧退開，才記錄 `take.json` 的開拍影格並開始移動。
 
 ```powershell
 ./scripts/promo-capture.ps1 -Shot W2 -Variant 0 -Preview -Movie -WindowResolution 1280x720
 ./scripts/promo-capture.ps1 -Shot W2 -Variant 1 -Preview -Movie -WindowResolution 1280x720
 ./scripts/promo-capture.ps1 -Shot W2 -Variant 2 -Preview -Movie -WindowResolution 1280x720
-./scripts/promo-scene-19.ps1 -Takes @('<變體 0 資料夾>', '<變體 1 資料夾>', '<變體 2 資料夾>')
+./scripts/promo-capture.ps1 -Shot W2 -Variant 3 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-scene-19.ps1 -Takes @('<變體 0 資料夾>', '<變體 1 資料夾>', '<變體 2 資料夾>', '<變體 3 資料夾>')
 ```
 
-[剪輯腳本](../../scripts/promo-scene-19.ps1)用三趟的開拍影格對齊運鏡，在片段的 1.67 與 3.33 秒切換種子，最後套用眨眼。它用 FFmpeg 輸出 `.godot/promo-scene-19/promo-scene-19-review.mp4`，含 M2 和遊戲的風聲。可以用 `-Godot` 和 `-Ffmpeg` 指定錄影及剪輯工具的路徑。
+[剪輯腳本](../../scripts/promo-scene-19.ps1)用四趟的開拍影格對齊運鏡，在片段的 2.67、5.33、8 秒切換地貌，最後套用眨眼。它用 FFmpeg 輸出 `.godot/promo-scene-19/promo-scene-19-review.mp4`，含 M2 和遊戲的風聲。可以用 `-Godot` 和 `-Ffmpeg` 指定錄影及剪輯工具的路徑。
 
 ## 時間軸
 
