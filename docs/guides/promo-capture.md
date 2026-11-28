@@ -79,7 +79,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、四種地貌對照、日夜與天氣縮時 |
 | W4 | 第 19 幕 A：車外跟拍行駛中的 RV，晴天、暴雨、濃霧與沙塵在同一鏡內轉換 |
-| W5 | 第 19 幕 B：以行駛中的 RV 串接五段地貌，天氣跨切點延續 |
+| W5 | 第 19 幕 B：跟拍 RV 持續行駛，地貌與天氣在同一格切換 |
 | T1 | 第一至三幕。F3 開始在 T2 的針葉林公路上行駛，睜眼後先開一小段，才由車內喇叭播放識別音與第 1 句。加 `-Exterior` 錄第 2 幕的車外跟拍。變體 1 是結尾 |
 | T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
@@ -150,7 +150,7 @@ godot --headless --path . --script res://scripts/promo_narration.gd
 ./scripts/promo-landscape-weather.ps1 -Takes @('<變體 0>', '<變體 1>', '<變體 2>', '<變體 3>', '<變體 4>')
 ```
 
-[剪輯腳本](../../scripts/promo-landscape-weather.ps1)取每趟 `landscape_start` 到 `landscape_end` 之間的行車畫面。換地貌時直接切畫面，下一段的行車與天氣聲提前 0.24 秒混入。輸出為 `.godot/promo-landscape-weather/promo-landscape-weather-review.mp4`。
+[剪輯腳本](../../scripts/promo-landscape-weather.ps1)取每趟 `cut_in` 到 `cut_out` 之間的行車畫面。每趟錄影先設定該段天氣，剪接時地貌、天氣與環境聲一起換。輸出為 `.godot/promo-landscape-weather/promo-landscape-weather-sync.mp4`。先前的漸變試剪放在同一資料夾的 `promo-landscape-weather-review.mp4`。
 
 ## 時間軸
 

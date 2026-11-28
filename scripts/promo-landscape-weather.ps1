@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Edits the five W5 drives into one trailer scene.
+Cuts between the five W5 drives, changing terrain and weather together.
 #>
 [CmdletBinding()]
 param(
@@ -16,7 +16,8 @@ $shot = Get-Content -Raw -LiteralPath (Join-Path $root 'tests/playgrounds/promo/
 $locations = @($shot) + $shot.variants
 $fps = 60
 $sampleRate = 48000
-$overlapSamples = 11520 # The incoming road and weather sound leads each picture cut by 0.24 s.
+$overlapSamples = [int]($sampleRate / $fps)
+$halfOverlap = [int]($overlapSamples / 2)
 $movies = @()
 $filters = @()
 $videoLabels = ''
@@ -31,10 +32,10 @@ for ($index = 0; $index -lt $Takes.Count; $index++) {
         throw "Expected W5 variant $index, seed $($location.seed), at $($location.distance) m and $fps fps in $directory."
     }
 
-    $startCue = $location.timeline | Where-Object name -EQ 'landscape_start'
-    $endCue = $location.timeline | Where-Object name -EQ 'landscape_end'
-    $startMark = $take.markers | Where-Object name -EQ 'landscape_start'
-    $endMark = $take.markers | Where-Object name -EQ 'landscape_end'
+    $startCue = $location.timeline | Where-Object name -EQ 'cut_in'
+    $endCue = $location.timeline | Where-Object name -EQ 'cut_out'
+    $startMark = $take.markers | Where-Object name -EQ 'cut_in'
+    $endMark = $take.markers | Where-Object name -EQ 'cut_out'
     $frameCount = [int][Math]::Round(($endCue.at - $startCue.at) * $fps)
     if ($null -eq $startMark.frame -or $null -eq $endMark.frame -or $startMark.frame -lt 0 -or
         [Math]::Abs(($endMark.frame - $startMark.frame) - $frameCount) -gt 1) {
@@ -45,8 +46,10 @@ for ($index = 0; $index -lt $Takes.Count; $index++) {
     $first = [int]$startMark.frame + 1
     $last = $first + $frameCount
     $firstSample = [int]($first * $sampleRate / $fps)
-    if ($index -gt 0) { $firstSample -= $overlapSamples }
     $lastSample = [int]($last * $sampleRate / $fps)
+    # Smooth the audio splice over one video frame, centred on the cut.
+    if ($index -gt 0) { $firstSample -= $halfOverlap }
+    if ($index -lt $Takes.Count - 1) { $lastSample += $halfOverlap }
     $movies += @('-i', (Resolve-Path -LiteralPath (Join-Path $directory 'take.avi')).Path)
     $filters += "[${index}:v]trim=start_frame=${first}:end_frame=${last},setpts=PTS-STARTPTS,scale=out_range=tv,format=yuv420p[v$index]"
     $filters += "[${index}:a]aresample=${sampleRate},atrim=start_sample=${firstSample}:end_sample=${lastSample},asetpts=PTS-STARTPTS[a$index]"
@@ -62,12 +65,12 @@ for ($index = 1; $index -lt $Takes.Count; $index++) {
 $duration = $totalFrames / $fps
 $endTimeline = $locations[-1].timeline
 $blink = $endTimeline | Where-Object do -EQ 'eyes'
-$endCue = $endTimeline | Where-Object name -EQ 'landscape_end'
+$endCue = $endTimeline | Where-Object name -EQ 'cut_out'
 $fadeAt = ($duration - ($endCue.at - $blink.at)).ToString('0.###', [Globalization.CultureInfo]::InvariantCulture)
 $filters += "[$audioLabel]highpass=f=55,volume=8dB,afade=t=in:d=0.22,afade=t=out:st=${fadeAt}:d=0.52[sound]"
 
 $output = (New-Item -ItemType Directory -Force -Path $OutputDirectory).FullName
-$movie = Join-Path $output 'promo-landscape-weather-review.mp4'
+$movie = Join-Path $output 'promo-landscape-weather-sync.mp4'
 & $encoder -nostdin -y -hide_banner -loglevel warning @movies `
     -filter_complex_threads 2 -filter_complex ($filters -join ';') -map '[picture]' -map '[sound]' `
     -c:v libx264 -preset fast -crf 18 -c:a aac -b:a 192k -movflags +faststart $movie
