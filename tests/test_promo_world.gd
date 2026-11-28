@@ -184,7 +184,7 @@ func _check_bunker(world: Node) -> void:
 		_check(restarted.trigger_take() and restarted.apparition.global_position.is_equal_approx(initial), "B2 triggers again at the same mark")
 
 func _check_remaining_takes() -> void:
-	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "D6", "T1", "T2", "T3", "T4", "T5", "T6"]
+	var ids: Array = current_scene.SHOTS if "--all-takes" in OS.get_cmdline_user_args() else ["B5", "O3", "D2", "R3", "W2", "W4", "D6", "T1", "T2", "T3", "T4", "T5", "T6"]
 	for id in ids:
 		if id in ["B2", "R2"]: continue
 		var previous := current_scene
@@ -215,13 +215,19 @@ func _verify_action(world: Node) -> void:
 				if world.shot_id == "B3" and world.actor.is_grabbed(): break
 				if world.subject is BarrelMan and world.subject.phase >= BarrelMan.Phase.CHASE: break
 			_check(world.actor.is_grabbed() if world.shot_id == "B3" else not is_instance_valid(world.subject) or world.subject.phase >= BarrelMan.Phase.CHASE, world.shot_id + " performs a real approach to the player")
-		"B5", "W1", "W2", "W3":
+		"B5", "W1", "W2", "W3", "W4":
 			_check(world.director.rail.size() >= 2 and is_instance_valid(world.director.view), world.shot_id + " plays an authored or generated rail")
 			if world.shot_id == "W3":
 				var clock := world.get_node("WorldClock") as WorldClock
 				var start := clock.elapsed_seconds
 				for frame in 60: await physics_frame
 				_check(clock.elapsed_seconds - start > 3600.0, "W3 advances time faster than a normal take")
+			if world.shot_id == "W4":
+				var clock := world.get_node("WorldClock") as WorldClock
+				var speaker := world.rv.get_node("DispatchSpeaker") as DispatchSpeaker
+				_check(clock.running and not clock.weather_running and clock.wind.target_tier() == int(world.shot.wind_tier),
+					"W4 animates wind without rerolling the configured weather")
+				_check(not speaker.enabled, "W4 keeps dispatch out of the weather montage")
 		"B6":
 			_check(is_instance_valid(world.actor.held_item_node), "B6 carries the real upgraded engine")
 		"O3":

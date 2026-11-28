@@ -1,0 +1,25 @@
+{
+  "title": "One road in four weather conditions",
+  "steps": "Record variants 0 to 3 for clear skies, heavy rain, dense fog and blowing dust. All four use the same canyon road and camera move.",
+  "seed": 42,
+  "distance": 1770,
+  "hour": 13.5,
+  "weather": [1, 0, 0],
+  "wind_tier": 1,
+  "wind_heading": 95,
+  "rail_clock": true,
+  "drives": true,
+  "seat": true,
+  "radio_off": true,
+  "action": "Play roadside rail",
+  "setup": "aerial",
+  "rail_look_ahead": 33,
+  "rail_marks": [[-38, 7.5, 4.2], [-29, 6.8, 3.8], [-20, 6.1, 3.4]],
+  "rail_seconds": 12.5,
+  "rail_preroll": 10,
+  "variants": [
+    { "weather": [0, 2, 0], "wind_tier": 2 },
+    { "weather": [0, 0, 2], "wind_tier": 0 },
+    { "weather": [1, 0, 0], "wind_tier": 3 }
+  ]
+}

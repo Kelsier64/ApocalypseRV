@@ -10,6 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'promo-eyelids.ps1')
 $root = Split-Path $PSScriptRoot -Parent
 $encoder = (Get-Command $Ffmpeg -CommandType Application).Source
 $fps = 60
@@ -36,12 +37,7 @@ for ($index = 0; $index -lt $Takes.Count; $index++) {
     $filters += "[${index}:v]trim=start_frame=${first}:end_frame=${last},setpts=PTS-STARTPTS,scale=out_range=tv,format=yuv420p[v$index]"
 }
 
-# Reuse the shape and feather of player/san_eyelids.gdshader for the post-production blink.
-$eyeClosure = 'clip((T-13.2)/0.34,0,1)'
-$eyeOpening = '1.08-(1.12+0.15*pow(2*(X+0.5)/W-1,2))*ld(1)'
-$lid = "st(0,$eyeClosure);st(1,ld(0)*ld(0)*(3-2*ld(0)));st(2,$eyeOpening);st(3,clip((abs(2*(Y+0.5)/H-1)-ld(2)+0.035)/0.07,0,1));"
-$visible = '(1-ld(3)*ld(3)*(3-2*ld(3)))'
-$blink = "geq=lum='${lid}16+(lum(X,Y)-16)*${visible}':cb='${lid}128+(cb(X,Y)-128)*${visible}':cr='${lid}128+(cr(X,Y)-128)*${visible}':enable='gte(t,13.2)'"
+$blink = Get-PromoEyelidsFilter '13.2' '0.34'
 $firstBeat = [int]($cuts[1] * $sampleRate / $fps)
 $secondBeat = [int]($cuts[2] * $sampleRate / $fps)
 $thirdBeat = [int]($cuts[3] * $sampleRate / $fps)

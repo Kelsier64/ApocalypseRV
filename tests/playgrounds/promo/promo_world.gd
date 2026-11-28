@@ -11,7 +11,7 @@ const TRAILER := preload("res://tests/playgrounds/promo/promo_trailer.gd")
 const CHASE := preload("res://tests/playgrounds/promo/promo_chase.gd")
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const SHOTS := ["B1", "B2", "B3", "B4", "B5", "B6", "O1", "O2", "O3", "O4", "O5",
-	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "T1", "T2", "T3", "T4", "T5", "T6"]
+	"D1", "D2", "D3", "D4", "D5", "D6", "R1", "R2", "R3", "W1", "W2", "W3", "W4", "T1", "T2", "T3", "T4", "T5", "T6"]
 const SHOT_PATH := "res://tests/playgrounds/promo/shots/%s.json"
 static var next_shot := ""
 static var next_variant := 0
@@ -132,6 +132,8 @@ func _ready() -> void:
 		or shot.get("timeline", []).any(func(cue: Dictionary) -> bool: return cue.do == "weather")
 	)
 	clock.weather.set_weather(Vector3(float(shot.weather[0]), float(shot.weather[1]), float(shot.weather[2])), true)
+	if shot.has("wind_tier"): clock.wind.set_override(int(shot.wind_tier))
+	if shot.has("wind_heading"): clock.wind.override_heading = deg_to_rad(float(shot.wind_heading))
 	clock.set_time(1, float(shot.hour))
 	$DeviationPressure.set_physics_process(false)
 	$WhiteApparitionEncounter.set_physics_process(false)
