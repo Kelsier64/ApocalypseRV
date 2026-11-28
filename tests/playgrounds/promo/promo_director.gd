@@ -353,6 +353,15 @@ static func _unattended() -> bool:
 
 func preview() -> void:
 	set_clean(true)
+	var preroll := float(world.shot.get("rail_preroll", 0.0))
+	if preroll > 0.0 and rail.playable() and use_free_camera():
+		# Let streaming haze recede at the aerial framing before the rail moves.
+		var first: Dictionary = rail.sample(0.0)
+		view.global_transform = first.transform
+		view.fov = first.fov
+		view.target_fov = first.fov
+		view.free_flight()
+		await get_tree().create_timer(preroll).timeout
 	_write_take_marker()
 	var started := Time.get_ticks_usec()
 	var first_frame := Engine.get_process_frames()

@@ -11,6 +11,8 @@
   ],
   "action": "Play aerial rail",
   "setup": "aerial",
+  "rail_seconds": 13.5,
+  "rail_preroll": 12,
   "variants": [
     {
       "seed": 43

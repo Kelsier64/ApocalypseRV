@@ -112,6 +112,19 @@ godot --headless --path . --script res://scripts/promo_narration.gd
 
 [剪輯腳本](../../scripts/promo-opening.ps1)用 FFmpeg 輸出 `.godot/promo-opening/promo-scenes-01-03-review.mp4`。FFmpeg 需支援 libass，或用 `-Ffmpeg` 指向支援 libass 的執行檔。成片依開拍影格對齊兩趟，按 T1 時間軸切換車內外。它保留車內實錄的識別音與第 1 句，混入車外窄頻處理的第 2 句、原音第 3 句和 M2 開頭，並燒錄英文字幕。
 
+## 第 19 幕剪輯
+
+用同一解析度錄 W2 的變體 0、1、2。每趟自動演出先停在運鏡起點，等串流霧退開，才記錄 `take.json` 的開拍影格並開始移動。
+
+```powershell
+./scripts/promo-capture.ps1 -Shot W2 -Variant 0 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-capture.ps1 -Shot W2 -Variant 1 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-capture.ps1 -Shot W2 -Variant 2 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-scene-19.ps1 -Takes @('<變體 0 資料夾>', '<變體 1 資料夾>', '<變體 2 資料夾>')
+```
+
+[剪輯腳本](../../scripts/promo-scene-19.ps1)用三趟的開拍影格對齊運鏡，在片段的 1.67 與 3.33 秒切換種子，最後套用眨眼。它用 FFmpeg 輸出 `.godot/promo-scene-19/promo-scene-19-review.mp4`，含 M2 和遊戲的風聲。可以用 `-Godot` 和 `-Ffmpeg` 指定錄影及剪輯工具的路徑。
+
 ## 時間軸
 
 鏡頭檔可以有 `timeline`：一串依秒數排列的事件，F3 或 `-Preview` 開始計時。時間跟著遊戲的物理時間走，所以 F8 慢動作和 Movie Maker 都會同步。格式與每個動作需要的參數在 [promo_timeline.gd](../../tests/playgrounds/promo/promo_timeline.gd) 的 `ACTIONS`，做法在 [promo_trailer.gd](../../tests/playgrounds/promo/promo_trailer.gd)：

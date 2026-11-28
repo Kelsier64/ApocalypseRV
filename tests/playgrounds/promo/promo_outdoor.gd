@@ -174,7 +174,7 @@ func _aerial_rail(world) -> void:
 	var field: WorldField = world.field
 	var center := float(world.shot.distance)
 	world.director.clear_generated_rail()
-	world.director.rail.duration = AERIAL_RAIL_SECONDS
+	world.director.rail.duration = float(world.shot.get("rail_seconds", AERIAL_RAIL_SECONDS))
 	for offset in [-65.0, -36.0, -6.0, 24.0, 55.0]:
 		var frame := field.road_frame(center + float(offset))
 		var target := field.road_frame(center + float(offset) + 50.0).origin
