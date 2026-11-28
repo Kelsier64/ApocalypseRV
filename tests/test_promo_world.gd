@@ -291,11 +291,20 @@ func _verify_timeline(world: Node) -> void:
 		return
 	if first_line >= 0.0:
 		var ticks := int((first_line + 1.0) * Engine.physics_ticks_per_second)
+		var heard_ident := false
 		for frame in ticks:
 			await physics_frame
-			if speaker.speaker.playing: break
+			if not speaker.speaker.playing: continue
+			if stage.timeline.clock >= first_line and speaker.speaker.stream != stage.DISPATCH_IDENT: break
+			if speaker.speaker.stream == stage.DISPATCH_IDENT: heard_ident = true
 		_check(speaker.speaker.playing and speaker.speaker.stream is AudioStreamWAV, world.shot_id + " plays its narration through the RV's dispatch speaker")
 		_check(stage.timeline.clock >= first_line and world.rv.linear_velocity.length() > 0.5, world.shot_id + " is moving when its narration starts")
+		if world.shot_id == "T1":
+			_check(heard_ident, "T1 plays the dispatch ident before line 1")
+			_check(not stage._lid_rect.visible, "T1's eyes are open when line 1 starts")
+			while stage.timeline.running:
+				await physics_frame
+			_check(stage._lids.get_shader_parameter("closure") == 1.0, "T1 closes its eyelids at the briefing cut")
 	if world.shot.has("prone"):
 		await _verify_execution(world)
 		return

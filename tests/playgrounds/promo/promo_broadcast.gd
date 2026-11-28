@@ -47,10 +47,14 @@ func attach(rv: Chassis, level: int) -> bool:
 func play(id: String) -> bool:
 	if not lines.has(id): return false
 	if not speaker.schedule.voice.missing(tokens(text(lines[id]))).is_empty(): return false
+	return play_clip(clip(speaker.schedule, lines[id]))
+
+func play_clip(stream: AudioStream) -> bool:
+	if stream == null: return false
 	strength = 1.0
 	_pin()
 	speaker._fading = false
-	speaker.speaker.stream = clip(speaker.schedule, lines[id])
+	speaker.speaker.stream = stream
 	speaker.speaker.volume_db = speaker.level_db[speaker.level] + speaker._exterior_gain()
 	speaker.speaker.play()
 	return speaker.speaker.playing

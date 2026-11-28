@@ -4,5 +4,6 @@
 
 | 素材 | 來源與處理 |
 | --- | --- |
+| `dispatch_ident.wav` | 宣傳片開場的四音識別音。以正弦波與衰減泛音合成，模擬短促的機械鐘聲。在 T1 從車內調度喇叭實際播出。 |
 | `receiver_static.wav` | JovianSounds 的對講機背景底噪，CC0。取公開試聽檔中段，混成單聲道，交叉淡化頭尾以供循環。[Radio Static](https://freesound.org/people/JovianSounds/sounds/524204/) |
 | 旋鈕、發話鍵、拿起與掛回 | 四個空間音效事件引用既有的 CC0 開關與金屬搭扣錄音，重新調整音量和音高變化。[來源及授權](../rv/README.md) |

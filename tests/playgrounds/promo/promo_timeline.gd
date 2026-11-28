@@ -9,6 +9,7 @@ const ACTIONS := {
 	"gear": ["gear"],
 	"brake": [],
 	"line": ["id"],
+	"dispatch_ident": [],
 	"static": ["level"],
 	"radio_off": [],
 	"weather": ["to", "seconds"],

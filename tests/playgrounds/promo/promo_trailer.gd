@@ -4,6 +4,7 @@ extends "res://tests/playgrounds/promo/promo_outdoor.gd"
 
 const TIMELINE := preload("res://tests/playgrounds/promo/promo_timeline.gd")
 const BROADCAST := preload("res://tests/playgrounds/promo/promo_broadcast.gd")
+const DISPATCH_IDENT := preload("res://assets/audio/dispatch_speaker/dispatch_ident.wav")
 const EYELIDS := preload("res://player/san_eyelids.gdshader")
 const RV_SCENE := "res://rv/new_rv.tscn"
 const CORPSE := "res://props/corpse.tscn"
@@ -80,6 +81,9 @@ func _crashed_pose(world) -> Transform3D:
 func prepare(world) -> bool:
 	if not await super.prepare(world): return false
 	timeline.load_from(world.shot.timeline)
+	if world.shot.has("seat_pitch_degrees"):
+		var seat: Node3D = world.actor.seated_in
+		seat.seat_camera.rotation.x += deg_to_rad(float(world.shot.seat_pitch_degrees))
 	if not broadcast.attach(world.rv, int(world.shot.get("radio_level", 1))): return false
 	if not world.shot.get("radio", true): broadcast.silence()
 	_build_eyelids(world, 1.0 if world.shot.get("eyes_closed", false) else 0.0)
@@ -458,6 +462,8 @@ func _fire(world, cue: Dictionary) -> bool:
 			var id := str(int(cue.id)) if cue.id is float else str(cue.id)
 			world.director.mark("line " + id)
 			return broadcast.play(id)
+		"dispatch_ident":
+			return broadcast.play_clip(DISPATCH_IDENT)
 		"static":
 			broadcast.set_signal(float(cue.level), bool(cue.get("cut", false)))
 		"radio_off":
@@ -887,8 +893,18 @@ func autoplay(world) -> float:
 	if not world.trigger_take():
 		world._fail("Could not start the trailer timeline")
 		return -1.0
-	if world.director.exterior_requested(): world.director.follow_preset("chase", world.rv)
+	if world.director.exterior_requested(): _start_exterior(world)
 	return timeline.length() + float(world.shot.get("tail", 0.5))
+
+func _start_exterior(world) -> void:
+	var framing: Dictionary = world.shot.get("exterior_follow", {})
+	if framing.is_empty():
+		world.director.follow_preset("chase", world.rv)
+		return
+	var offset: Array = framing.offset
+	var aim: Array = framing.aim
+	world.director.follow_framed(world.rv, null, Vector3(offset[0], offset[1], offset[2]),
+		Vector3(aim[0], aim[1], aim[2]), float(framing.fov))
 
 func autoplay_error(world) -> String:
 	if not swerve.is_empty() and impact_seconds < 0.0: return "The RV never hit the pole"

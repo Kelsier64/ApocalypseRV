@@ -63,7 +63,7 @@ B5、W1–W3 沒有存過路徑時，會自動產生一條預設路徑；存過�
 ./scripts/promo-capture.ps1 -Shot D3 -Preview -Movie -Exterior
 ```
 
-`-Preview` 會自動觸發、演完後結束。`-Movie` 預設輸出 1920×1080、60 FPS 的 AVI；`-Fps`、`-WindowResolution` 可以調，`-Format Png` 改成影格序列。`-Exterior` 讓 O2、O4、D1、D2、D3 的腳本駕駛改用車後跟拍。
+`-Preview` 會自動觸發、演完後結束。`-Movie` 預設輸出 1920×1080、60 FPS 的 AVI；`-Fps`、`-WindowResolution` 可以調，`-Format Png` 改成影格序列。`-Exterior` 讓 O2、O4、D1、D2、D3 和 T1 的腳本駕駛改用車外跟拍。
 
 Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影的資料夾在 `.godot/promo-captures/`，裡面的 `take.json` 記錄正式開演的影格與秒數，剪輯時從那裡開始。
 
@@ -78,7 +78,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | D1–D6 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車、越野 |
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、不同種子對照、日夜與天氣縮時 |
-| T1 | 宣傳片：駕駛座錨點（開場；變體 1 是結尾）。加 `-Exterior` 錄第一段的車外跟拍 |
+| T1 | 第一至三幕。F3 開始 20 秒開場，由車內喇叭播放識別音與第 1 句，最後閉眼接回憶。加 `-Exterior` 錄第 2 幕的車外跟拍。變體 1 是結尾 |
 | T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
 | T4 | 第二十一幕追車遠景。F3 啟動側後方跟拍，鏡頭跟著 RV 和巨人之間的位置取景 |
@@ -99,12 +99,26 @@ B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生�
 godot --headless --path . --script res://scripts/promo_scout.gd -- 42 43 44
 ```
 
+## 開場剪輯
+
+用相同畫面大小錄兩趟 T1。第一趟拍駕駛座，第二趟加 `-Exterior`。兩趟使用同一條腳本路線，`take.json` 記錄開拍、車外切點、簡報切點和閉眼完成的影格。
+
+```powershell
+./scripts/promo-capture.ps1 -Shot T1 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-capture.ps1 -Shot T1 -Preview -Movie -WindowResolution 1280x720 -Exterior
+godot --headless --path . --script res://scripts/promo_narration.gd
+./scripts/promo-opening.ps1 -Cab <車內錄影資料夾> -Exterior <車外錄影資料夾>
+```
+
+[剪輯腳本](../../scripts/promo-opening.ps1)用 FFmpeg 輸出 `.godot/promo-opening/promo-scenes-01-03-review.mp4`。FFmpeg 需支援 libass，或用 `-Ffmpeg` 指向支援 libass 的執行檔。成片依開拍影格對齊兩趟，在 0:06 切車外、0:18 切回車內。它保留車內實錄的識別音與第 1 句，混入車外窄頻處理的第 2 句、原音第 3 句和 M2 開頭，並燒錄英文字幕。
+
 ## 時間軸
 
 鏡頭檔可以有 `timeline`：一串依秒數排列的事件，F3 或 `-Preview` 開始計時。時間跟著遊戲的物理時間走，所以 F8 慢動作和 Movie Maker 都會同步。格式與每個動作需要的參數在 [promo_timeline.gd](../../tests/playgrounds/promo/promo_timeline.gd) 的 `ACTIONS`，做法在 [promo_trailer.gd](../../tests/playgrounds/promo/promo_trailer.gd)：
 
 | 動作 | 做什麼 |
 |---|---|
+| `dispatch_ident` | 由車內調度喇叭播放四音識別音 |
 | `drive` | 沿公路巡航，`speed` 是時速（km/h），`lateral` 是離路中心的側向距離；給 `seconds` 時在這段時間內慢慢移到新的側向位置（D6 用來開下公路） |
 | `gear`、`brake` | 換檔；剎停並結束巡航 |
 | `line` | 車內調度喇叭播出旁白第 `id` 句 |

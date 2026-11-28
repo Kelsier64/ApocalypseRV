@@ -1,6 +1,6 @@
 {
-  "title": "Driver's seat anchor (opening)",
-  "steps": "Seated driver, eyes closed. F3 starts the cruise, opens the eyes and plays narration line 1 from the cab speaker, then blinks. Variant 1 is the ending with lines 15 and 16 in the same framing. Keep the view on the road; an unattended take holds the rest pose.",
+  "title": "Opening (cab, departure, blink)",
+  "steps": "F3 starts the 20-second opening. Eyes open at 1 s, the cab speaker chimes and plays line 1, and the driver blinks into the briefing at the end. Keep the view on the road. For the 6–18 s exterior insert, follow the RV or record a second unattended take with Exterior. Variant 1 is the ending.",
   "action": "Start the timeline",
   "seed": 42,
   "distance": 300,
@@ -14,12 +14,23 @@
   "drives": true,
   "lateral": -1.8,
   "eyes_closed": true,
+  "seat_pitch_degrees": -12.0,
+  "exterior_follow": {
+    "offset": [-6.4, 3.0, 12.0],
+    "aim": [0.0, 1.1, -2.8],
+    "fov": 61.0
+  },
   "timeline": [
-    { "at": 0, "do": "drive", "speed": 55 },
-    { "at": 4, "do": "eyes", "open": true, "seconds": 1.2 },
-    { "at": 5, "do": "line", "id": 1 },
-    { "at": 10.5, "do": "eyes", "open": false, "seconds": 0.35 },
-    { "at": 11.5, "do": "end" }
+    { "at": 0, "do": "drive", "speed": 42 },
+    { "at": 1, "do": "eyes", "open": true, "seconds": 0.58 },
+    { "at": 1.10, "do": "dispatch_ident" },
+    { "at": 2, "do": "line", "id": 1 },
+    { "at": 4.4, "do": "gear", "gear": 2 },
+    { "at": 6, "do": "marker", "name": "exterior_cut" },
+    { "at": 18, "do": "marker", "name": "briefing_cut" },
+    { "at": 19.24, "do": "eyes", "open": false, "seconds": 0.32 },
+    { "at": 19.6, "do": "marker", "name": "blink_closed" },
+    { "at": 20, "do": "end" }
   ],
   "variants": [
     {
