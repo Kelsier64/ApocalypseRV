@@ -215,19 +215,13 @@ func _verify_action(world: Node) -> void:
 				if world.shot_id == "B3" and world.actor.is_grabbed(): break
 				if world.subject is BarrelMan and world.subject.phase >= BarrelMan.Phase.CHASE: break
 			_check(world.actor.is_grabbed() if world.shot_id == "B3" else not is_instance_valid(world.subject) or world.subject.phase >= BarrelMan.Phase.CHASE, world.shot_id + " performs a real approach to the player")
-		"B5", "W1", "W2", "W3", "W4":
+		"B5", "W1", "W2", "W3":
 			_check(world.director.rail.size() >= 2 and is_instance_valid(world.director.view), world.shot_id + " plays an authored or generated rail")
 			if world.shot_id == "W3":
 				var clock := world.get_node("WorldClock") as WorldClock
 				var start := clock.elapsed_seconds
 				for frame in 60: await physics_frame
 				_check(clock.elapsed_seconds - start > 3600.0, "W3 advances time faster than a normal take")
-			if world.shot_id == "W4":
-				var clock := world.get_node("WorldClock") as WorldClock
-				var speaker := world.rv.get_node("DispatchSpeaker") as DispatchSpeaker
-				_check(clock.running and not clock.weather_running and clock.wind.target_tier() == int(world.shot.wind_tier),
-					"W4 animates wind without rerolling the configured weather")
-				_check(not speaker.enabled, "W4 keeps dispatch out of the weather montage")
 		"B6":
 			_check(is_instance_valid(world.actor.held_item_node), "B6 carries the real upgraded engine")
 		"O3":
@@ -292,6 +286,9 @@ func _verify_timeline(world: Node) -> void:
 			first_line = float(cue.at)
 			break
 	_check(speaker.schedule.process_mode == Node.PROCESS_MODE_DISABLED, world.shot_id + " keeps in-game broadcasts off the speaker")
+	if world.shot_id == "W4":
+		await _verify_weather_drive(world, speaker)
+		return
 	if world.shot.has("chase_take"):
 		await _verify_chase_take(world)
 		return
@@ -332,6 +329,44 @@ func _verify_timeline(world: Node) -> void:
 		_check(stage.wreck.process_mode == Node.PROCESS_MODE_DISABLED and not chassis.is_in_group(Groups.RV),
 			world.shot_id + " stages the wreck as scenery, outside the RV group")
 	if world.shot.timeline.any(func(cue: Dictionary) -> bool: return cue.do == "giant_wake"): await _verify_chase(world)
+
+func _verify_weather_drive(world: Node, speaker: DispatchSpeaker) -> void:
+	var clock := world.get_node("WorldClock") as WorldClock
+	var timeline = world.stage.timeline
+	var view: Camera3D = world.director.view
+	var start := 0.0
+	var targets: Array[Vector3] = []
+	for cue in world.shot.timeline:
+		if cue.do == "marker" and cue.name == "weather_start": start = float(cue.at)
+		if cue.do == "weather": targets.append(Vector3(cue.to[0], cue.to[1], cue.to[2]))
+	var previous := clock.weather.sample()
+	var reached := 0
+	var has_blend := false
+	var slowest_forward := INF
+	var in_frame := true
+	var radio_silent := true
+	_check(clock.running and not clock.weather_running, "W4 advances the wind without rerolling weather")
+	_check(is_instance_valid(view) and view.follow_target == world.rv, "W4 follows the moving RV")
+	while timeline.running:
+		await physics_frame
+		if timeline.clock < start: continue
+		slowest_forward = minf(slowest_forward, -world.rv.linear_velocity.z)
+		radio_silent = radio_silent and not speaker.speaker.playing and not speaker.noise.playing
+		if DisplayServer.get_name() != "headless" and is_instance_valid(view):
+			in_frame = in_frame and view.is_position_in_frustum(world.rv.global_position)
+		if reached >= targets.size(): continue
+		var sample := clock.weather.sample()
+		if sample.is_equal_approx(targets[reached]):
+			_check(has_blend, "W4 blends into weather state %d" % (reached + 1))
+			previous = sample
+			reached += 1
+			has_blend = false
+		elif not sample.is_equal_approx(previous):
+			has_blend = true
+	_check(slowest_forward > 2.5, "W4 drives forward throughout the clip (minimum %.2f m/s along the road)" % slowest_forward)
+	_check(in_frame and radio_silent, "W4 keeps the RV framed and dispatch silent")
+	_check(reached == targets.size() and clock.haze_dust > 0.0, "W4 reaches every weather target and raises dust on the canyon road")
+	_check(world.stage._lids.get_shader_parameter("closure") == 1.0, "W4 closes its eyelids at the handoff")
 
 func _verify_chase_take(world: Node) -> void:
 	var stage = world.stage

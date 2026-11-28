@@ -47,13 +47,6 @@ func prepare(world) -> bool:
 	if world.shot.chase_take == "cabin": _stage_cabin(world)
 	return true
 
-func trigger(world) -> bool:
-	if not super.trigger(world): return false
-	if world.shot.has("initial_speed"):
-		var rv: Chassis = world.rv
-		rv.linear_velocity = -rv.global_basis.z * (float(world.shot.initial_speed) / 3.6)
-	return true
-
 func _fire(world, cue: Dictionary) -> bool:
 	if not super._fire(world, cue): return false
 	if cue.do == "giant":

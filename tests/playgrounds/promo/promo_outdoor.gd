@@ -69,9 +69,6 @@ func prepare(world) -> bool:
 	var actor: Node3D = world.actor
 	var rv: Chassis = world.rv
 	var field: WorldField = generator.field
-	if world.shot.get("radio_off", false):
-		var speaker := rv.get_node("DispatchSpeaker") as DispatchSpeaker
-		speaker.set_enabled(false)
 	if world.shot.get("seat", false):
 		actor.camera_locked = false
 		var seat: Node = rv.get_node("DriverSeat")
@@ -179,12 +176,6 @@ func _aerial_rail(world) -> void:
 	var side := float(world.shot.get("rail_side", 1.0))
 	world.director.clear_generated_rail()
 	world.director.rail.duration = float(world.shot.get("rail_seconds", AERIAL_RAIL_SECONDS))
-	if world.shot.has("rail_marks"):
-		var target := field.road_frame(center + float(world.shot.rail_look_ahead)).origin + Vector3.UP * 1.8
-		for mark: Array in world.shot.rail_marks:
-			var origin := _road_mark(field, center + float(mark[0]), float(mark[1])).origin + Vector3.UP * float(mark[2])
-			world.director.generated_rail_key(Transform3D(Basis.looking_at(target - origin), origin))
-		return
 	for offset in [-65.0, -36.0, -6.0, 24.0, 55.0]:
 		var frame := field.road_frame(center + float(offset))
 		var target := field.road_frame(center + float(offset) + 50.0).origin
@@ -227,11 +218,7 @@ func trigger(world) -> bool:
 			rv.set_handbrake(false)
 			rv.sleeping = false
 		"aerial":
-			if not world.director.play_rail(): return false
-			if world.shot.get("rail_clock", false):
-				var clock := world.get_node("WorldClock") as WorldClock
-				clock.running = true
-			return true
+			return world.director.play_rail()
 		"time_lapse":
 			if not world.director.play_rail(): return false
 			time_lapse_seconds = TIME_LAPSE_SECONDS

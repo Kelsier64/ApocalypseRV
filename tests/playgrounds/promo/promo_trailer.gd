@@ -423,7 +423,15 @@ func _rest_on_ground(node: Node3D, ground: float) -> void:
 
 func trigger(world) -> bool:
 	if timeline.running or triggered: return false
+	if world.shot.get("follow_on_start", false) or (unattended and world.director.exterior_requested()):
+		if not _start_exterior(world): return false
 	if world.shot.get("seat", false): world.rv.set_handbrake(false)
+	if world.shot.has("initial_speed"):
+		var rv: Chassis = world.rv
+		rv.linear_velocity = -rv.global_basis.z * (float(world.shot.initial_speed) / 3.6)
+	if world.shot.get("run_clock", false):
+		var clock := world.get_node("WorldClock") as WorldClock
+		clock.running = true
 	timeline.start()
 	triggered = true
 	return true
@@ -899,17 +907,14 @@ func autoplay(world) -> float:
 	if not world.trigger_take():
 		world._fail("Could not start the trailer timeline")
 		return -1.0
-	if world.director.exterior_requested(): _start_exterior(world)
 	return timeline.length() + float(world.shot.get("tail", 0.5))
 
-func _start_exterior(world) -> void:
+func _start_exterior(world) -> bool:
 	var framing: Dictionary = world.shot.get("exterior_follow", {})
-	if framing.is_empty():
-		world.director.follow_preset("chase", world.rv)
-		return
+	if framing.is_empty(): return world.director.follow_preset("chase", world.rv)
 	var offset: Array = framing.offset
 	var aim: Array = framing.aim
-	world.director.follow_framed(world.rv, null, Vector3(offset[0], offset[1], offset[2]),
+	return world.director.follow_framed(world.rv, null, Vector3(offset[0], offset[1], offset[2]),
 		Vector3(aim[0], aim[1], aim[2]), float(framing.fov))
 
 func autoplay_error(world) -> String:

@@ -54,7 +54,7 @@ Movie Maker 每一幀都要編碼，實際只跑十幾 fps，遊戲時間跟著�
 3. F2 開面板，設定總秒數與要不要頭尾加減速，按 `Play rail` 試看。
 4. 滿意後按 `Save rail`，存到 `tests/playgrounds/promo/rails/<鏡頭>[-<變體>].json`。這些檔案要提交，之後重開與自動演出都用同一條路徑。
 
-B5、W1–W4 沒有存過路徑時，會自動產生一條預設路徑；存過之後就改用存下來的。
+B5、W1–W3 沒有存過路徑時，會自動產生一條預設路徑；存過之後就改用存下來的。
 
 ## 自動演出
 
@@ -78,7 +78,7 @@ Movie Maker 從啟動就開始錄，載入畫面也在檔案裡。每次錄影�
 | D1–D6 | 駕駛：撞樹、釘帶與廢車、換檔、翻車與千斤頂、溜車、越野 |
 | R1–R3 | 車內：分解機、合成站、修車與安裝設備 |
 | W1–W3 | 主世界：公路空拍、四種地貌對照、日夜與天氣縮時 |
-| W4 | 第 19 幕 A：用同一條路徑拍同一座峽谷路橋的晴天、暴雨、濃霧和沙塵 |
+| W4 | 第 19 幕 A：車外跟拍行駛中的 RV，晴天、暴雨、濃霧與沙塵在同一鏡內轉換 |
 | T1 | 第一至三幕。F3 開始在 T2 的針葉林公路上行駛，睜眼後先開一小段，才由車內喇叭播放識別音與第 1 句。加 `-Exterior` 錄第 2 幕的車外跟拍。變體 1 是結尾 |
 | T2 | 宣傳片第二十幕。先開五秒林間公路，往左看路肩的前任 RV 時播第 12 句，收訊同時變弱，句尾卡音時車內喇叭直接靜音，《給愛麗絲》從濃霧裡淡入。從左窗看巨人轉頭時，側上方補光逐漸照亮頭部喇叭。再換檔加速，回頭看它撞倒樹木追上來。時間軸全長 42 秒 |
 | T3 | 宣傳片第三段：撞車後趴在路上，睜眼先看到自己趴著的手臂，抬頭看巨人拆車頂；巨人轉身走過來時盯著它往後爬（現場錄影用 S，自動演出不爬），巨人的手抓到主角時切到第三人稱，主角在手裡站直、被舉到喇叭前處決 |
@@ -92,7 +92,7 @@ T 組的鏡頭照[宣傳片劇本](../plans/promo-trailer.md)拍，F3 開始鏡�
 
 T5 的 `take.json` 標記車頂受擊、轉回前方、閃避、撞車與停車。Godot 日誌的 `PROMO CRASH STATE` 是停車時的路面位置、角度和面板耐久。重拍後可用它校對 T6 的起始姿勢和車損。T6 標記前車頂脫落及抓取各階段。
 
-鏡頭檔有 `timeline` 時（T 組與 D6），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
+鏡頭檔有 `timeline` 時（T 組、D6 和 W4），F3 開始時間軸，見[時間軸](#時間軸)。其他鏡頭用 `setup` 指定佈置與 F3 動作，例如 `tree_row`、`spike_strip`、`monster`、`recycler`，同一個 `setup` 可以給新鏡頭或變體重用；可用的名稱與各自讀取的欄位在 `promo_outdoor.gd`、`promo_bunker.gd`、`promo_workshop.gd` 的 `prepare` 裡。這些鏡頭的 F3 動作多半要等條件成立（Raker 抓到人、分解機處理完、第二次按 F3 放千斤頂），所以不寫成依秒數觸發的時間軸。其他共用欄位：`drives`（RV 保留物理，不凍結）、`rv_frozen`（保留物理但在動作前先固定）、`autoplay_seconds`（自動演出的錄影長度）、`autoplay_gears`（自動演出的換檔時間）、`dark_room` 與 `bunker_population`（地堡選點條件）、`player_camera`（F3 前切回玩家視角）。
 
 B1–B6 共用種子 42 的同一座地堡。要找其他地點，用正式生成規則掃描種子，結果寫到 `.godot/promo/scout.json`：
 
@@ -129,14 +129,14 @@ godot --headless --path . --script res://scripts/promo_narration.gd
 
 ## 天氣展示剪輯
 
-用 Forward+ 開啟體積霧，依序錄 W4 的變體 0 至 3。四趟共用種子 42、1770 公尺處的峽谷路橋與相同的開拍時刻。使用遊戲的雨、霧與風沙，錄影時關閉調度喇叭。開拍前會在路橋下的起點等串流與天氣效果穩定，再開始推進。
+用 Forward+ 開啟體積霧，錄一趟 W4。F3 或自動演出會啟動車外跟拍，由時間軸控制油門、轉向和天氣。RV 在種子 314 的峽谷公路下坡，以約 40 km/h 經過晴天、暴雨、濃霧和沙塵。錄影使用遊戲的車聲與天氣聲，調度喇叭保持安靜。
 
 ```powershell
-0..3 | ForEach-Object { ./scripts/promo-capture.ps1 -Shot W4 -Variant $_ -Preview -Movie -WindowResolution 1280x720 }
-./scripts/promo-weather.ps1 -Takes @('<晴天資料夾>', '<暴雨資料夾>', '<濃霧資料夾>', '<沙塵資料夾>')
+./scripts/promo-capture.ps1 -Shot W4 -Preview -Movie -WindowResolution 1280x720
+./scripts/promo-weather.ps1 -Take '<錄影資料夾>'
 ```
 
-[剪輯腳本](../../scripts/promo-weather.ps1)用 `take.json` 對齊四趟，在第 3、6、8.75 秒以相同運鏡進度切換天氣，交疊實錄的環境聲。預覽輸出在 `.godot/promo-weather/promo-weather-review.mp4`。剪全片時把 W2 獨立版裁到第 13.2 秒，接這段 12 秒的天氣幕，再由片尾眨眼切回 T2 的駕駛座。
+[剪輯腳本](../../scripts/promo-weather.ps1)依 `take.json` 的 `weather_start` 和 `weather_end` 標記，取出加速完成後的 12 秒單鏡，輸出 `.godot/promo-weather/promo-weather-review.mp4`。剪全片時把 W2 獨立版裁到第 13.2 秒，接上這段，再由片尾眨眼切回 T2 的駕駛座。
 
 ## 時間軸
 
